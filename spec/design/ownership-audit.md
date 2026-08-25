@@ -39,12 +39,19 @@ fill-as-stroke for line-only symbols, while Rust owns implicit 1px line-only
 width, symbol paths, extent-aware clipping, legend swatches, and
 SVG/raster/browser lowering. Authored scatter stroke paint/width remains on the
 compatibility route for a later bounded cutover.
+The public literal triangle-mesh slice admits at most 1,024 unjoined faces with
+one constant fill and scalar overall opacity. Python and Node pack six authored
+vertex columns as three-row PolyFill runs; Rust owns their stable-run grouping,
+plot clipping, legend swatch, and SVG/raster/browser lowering. Joined fills,
+component alpha, authored outlines, per-face paint/style, alternate axes, and
+larger meshes remain compatibility behavior.
 
 Static-export routing status (#117): `Figure.to_svg`, native `to_png`, native
 `to_image(..., "svg"|"png"|"pdf")`, `write_image`, and the native branch of
 `write_images` now delegate the proven
 literal Cartesian public geometry subset—constant-style built-in scatter symbols
-scatter and polylines, ordinary finite fixed-domain area/error-band Bands,
+and polylines, bounded fill-only unjoined triangle meshes, ordinary finite
+fixed-domain area/error-band Bands,
 ordinary bar/column/histogram Rects, bounded disconnected
 segment/error-bar/stem endpoint pairs, and finite literal solid-color ribbons
 expanded by Rust—plus the proven literal static

@@ -98,7 +98,11 @@ Rust SVG and native-raster consumers. Public Python SVG/PNG/PDF select the Rust
 Scene consumers only for the proven bounded literal Cartesian geometry subset:
 all 19 constant built-in scatter symbols and constant-style polylines, ordinary area/error-band
 Bands, bar/column/histogram Rects, disconnected segment/error-bar/stem endpoint
-pairs with bounded stem markers, and finite literal solid ribbons. For ribbons,
+pairs with bounded stem markers, at most 1,024 fill-only unjoined constant-color
+triangle-mesh faces, and finite literal solid ribbons. Each accepted mesh face
+is one three-vertex PolyFill group shared by SVG, raster, and browser consumers;
+joined fills, component alpha, outlines, per-face styles, alternate axes, and
+larger meshes remain compatibility behavior. For ribbons,
 Python and Node pack two adjacent endpoint rows and ABI 97 makes Rust apply the
 axis transforms and expand the fixed 96-interval cubic into 97 paired Scene
 Band samples. Two-ended gradients, polar projection, LOD/density, and

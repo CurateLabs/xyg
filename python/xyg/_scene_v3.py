@@ -33,6 +33,12 @@ _SUPPORTED_KINDS = (
 )
 _STROKE_KINDS = frozenset({"line"}) | _SEGMENT_KINDS
 
+# Each unjoined triangle is one PolyFill group in the Rust browser painter.
+# Keep the public route inside its canonical group budget; larger meshes remain
+# available through the screen-bounded compatibility path until Scene gains a
+# compact multi-triangle painter record.
+_MAX_PUBLIC_TRIANGLE_MESHES = 1024
+
 _LEGEND_LOCATIONS = {
     "upper right": 0,
     "upper left": 1,
@@ -1559,9 +1565,10 @@ def scene_export_support_reason(
     This is deliberately narrower than :func:`figure_scene`: the explicit
     Scene API can exercise a migrating record before the public compatibility
     renderer's complete output contract is modeled. The bounded literal
-    Cartesian geometry subset routes all constant built-in scatter symbols, polylines,
-    ordinary Rects, disconnected segment/error-bar/stem endpoint pairs, and
-    bounded solid ribbons expanded by Rust in axis-transformed space.
+    Cartesian geometry subset routes all constant built-in scatter symbols,
+    polylines, ordinary Rects, disconnected segment/error-bar/stem endpoint
+    pairs, bounded fill-only triangle meshes, and bounded solid ribbons
+    expanded by Rust in axis-transformed space.
     The proven literal Cartesian chrome slice also routes automatically:
     backgrounds, title, authored axes/ticks,
     primary legend, literal colorbar, and the existing bounded primary
@@ -1694,6 +1701,7 @@ def scene_export_support_reason(
         "area",
         "error_band",
         "ribbon",
+        "triangle_mesh",
     }
     public_style_keys = {
         "scatter": {"color", "opacity", "symbol", "size", "role"},
@@ -1768,6 +1776,10 @@ def scene_export_support_reason(
             "fill_opacity",
             "stroke_opacity",
         },
+        # The first public PolyFill slice is deliberately fill-only. Authored
+        # outlines and component alpha remain compatibility behavior until the
+        # Scene packing seam preserves their complete style contract.
+        "triangle_mesh": {"opacity", "role"},
     }
     has_literal_geometry = any(
         trace.kind
@@ -1782,6 +1794,7 @@ def scene_export_support_reason(
             "area",
             "error_band",
             "ribbon",
+            "triangle_mesh",
         }
         for trace in figure.traces
     )
@@ -1794,6 +1807,7 @@ def scene_export_support_reason(
             default_side = "bottom" if axis_id == "x" else "left"
             if axis.get("domain") is None or axis.get("side") not in (None, default_side):
                 return "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+    public_triangle_mesh_count = 0
     for trace_index, trace in enumerate(figure.traces):
         opacity = float((getattr(trace, "style", None) or {}).get("opacity", 1.0))
         if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
@@ -1827,6 +1841,22 @@ def scene_export_support_reason(
                 return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
         if trace.kind in _RIBBON_KINDS and (trace.style or {}).get("role") != "ribbon":
             return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+        if trace.kind in _POLYFILL_KINDS:
+            mesh_columns = (trace.x0, trace.y0, trace.x1, trace.y1, trace.x, trace.y)
+            if any(column is None for column in mesh_columns):
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
+            mesh_lengths = {len(column.values) for column in mesh_columns}
+            mesh_count = next(iter(mesh_lengths), 0)
+            public_triangle_mesh_count += mesh_count
+            if (
+                len(mesh_lengths) != 1
+                or public_triangle_mesh_count > _MAX_PUBLIC_TRIANGLE_MESHES
+                or any(not np.isfinite(column.values).all() for column in mesh_columns)
+            ):
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
+            mesh_style = trace.style or {}
+            if mesh_style.get("role") != "triangle-mesh" or mesh_style.get("joined_fill"):
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
         # The only generated companion scatter accepted here is the immediate
         # endpoint marker for a preceding stem. This preserves author order
         # and prevents a generic role from leaking into the public contract.
@@ -1857,7 +1887,7 @@ def scene_export_support_reason(
         ):
             return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
     try:
-        figure_scene(figure, width=width, height=height)
+        scene = figure_scene(figure, width=width, height=height)
     except UnsupportedSceneV3 as unsupported:
         return str(unsupported)
     except ValueError as exc:
@@ -1868,6 +1898,17 @@ def scene_export_support_reason(
         if str(exc) == "invalid canonical scene plot layout":
             return "XYG_SCENE_UNSUPPORTED_VIEWPORT"
         raise
+    if public_triangle_mesh_count:
+        # A PolyFill face is one Rust painter group. Ask the authoritative
+        # consumer as well as enforcing the face budget so a mixed figure near
+        # the boundary cannot pass preflight and then fragment past the shared
+        # descriptor limit.
+        try:
+            _native.scene_browser_painter(scene)
+        except ValueError as exc:
+            if str(exc) == "invalid canonical scene for browser painter":
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
+            raise
     return None
 
 

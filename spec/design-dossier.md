@@ -543,11 +543,13 @@ F3, still pending (above).
   native-raster command consumers. Public static exports route the proven
   literal Cartesian subset through those consumers: all 19 constant built-in scatter symbols,
   constant-style polyline, ordinary area/error-band Bands,
-  bar/column/histogram rectangles, solid ribbons, and
+  bar/column/histogram rectangles, at most 1,024 fill-only unjoined
+  constant-color triangle-mesh faces, solid ribbons, and
   disconnected `segments`/error-bar/stem endpoint pairs (including the
   immediately-following generated constant built-in stem marker). Gradients,
   rounded corners, dashed or data-driven segment styles, LOD/density,
-  nonliteral palettes, two-ended ribbon gradients, polar geometry, and
+  nonliteral palettes, triangle-mesh component alpha/outlines/per-face styles/
+  joined fills/larger batches, two-ended ribbon gradients, polar geometry, and
   unmodeled marks retain their
   compatibility renderers. Rust
   now owns chart/plot backgrounds, authored axis side/visibility and

@@ -10972,7 +10972,7 @@ mod tests {
     }
 
     #[test]
-    fn scene_v7_polyfill_closes_triangle_path() {
+    fn scene_v7_polyfill_triangle_runs_drive_every_consumer_and_clip() {
         let layout = PlotLayout::new(200.0, 120.0, 20.0, 10.0, 20.0, 20.0).unwrap();
         let x = AxisScale::new(
             ScaleKind::Linear,
@@ -10994,24 +10994,44 @@ mod tests {
             false,
         )
         .unwrap();
-        let batch = SceneBatch::new(
+        let legend = SceneLegend {
+            location: LegendLocation::UpperRight,
+            title: String::new(),
+            font_size: 11.0,
+            title_font_size: 12.0,
+            text_rgba: [32, 32, 32, 255],
+            frame_fill_rgba: [255, 255, 255, 230],
+            frame_stroke_rgba: [32, 32, 32, 71],
+            entries: vec![SceneLegendEntry {
+                style_ref: 0,
+                kind: SceneRecordKind::PolyFill,
+                symbol: 0,
+                fill_rgba: [34, 197, 94, 191],
+                stroke_rgba: [0, 0, 0, 0],
+                label: "literal mesh".into(),
+            }],
+        };
+        let batch = SceneBatch::new_with_decorations(
             layout,
             1,
             2,
             x,
             y,
-            &[4, 4, 4],
-            &[9, 9, 9],
-            &[0, 0, 0],
-            &[34, 197, 94, 255],
+            SceneChromeStyle::default(),
+            SceneChromeText::default(),
+            Some(legend),
+            &[4, 4, 4, 4, 4, 4],
+            &[9, 9, 9, 10, 10, 10],
+            &[0, 0, 0, 0, 0, 0],
+            &[34, 197, 94, 191],
             &[0, 0, 0, 0],
             &[0.0],
-            &[0.0, 0.0, 0.0],
-            &[0, 0, 0],
-            &[0.0, 1.0, 0.5],
-            &[0.0, 0.0, 1.0],
-            &[0.0, 0.0, 0.0],
-            &[0.0, 0.0, 0.0],
+            &[0.0; 6],
+            &[0; 6],
+            &[-0.25, 0.75, 0.25, 1.0, 2.25, 1.5],
+            &[0.25, 0.25, 1.25, 0.5, 0.5, 1.75],
+            &[0.0; 6],
+            &[0.0; 6],
         )
         .unwrap();
         let encoded = batch.encode();
@@ -11019,14 +11039,130 @@ mod tests {
             u32::from_le_bytes(encoded[4..8].try_into().unwrap()),
             SCENE_VERSION
         );
-        let svg = SceneDocument::decode(&encoded).unwrap().to_svg();
-        assert!(svg.contains("<path d=\"M "));
-        assert!(svg.contains(" Z\""));
-        let commands = SceneDocument::decode(&encoded)
+        let document = SceneDocument::decode(&encoded).unwrap();
+        let svg = document.to_svg();
+        assert_eq!(svg.matches("<path d=\"M ").count(), 2);
+        assert_eq!(svg.matches(" Z\"").count(), 2);
+        assert!(svg.contains("<g clip-path=\"url(#xy-scene-plot)\">"));
+        assert!(svg.contains("role=\"listitem\"") && svg.contains("literal mesh"));
+
+        let commands = document.to_raster_commands(1.0).unwrap();
+        assert_eq!(commands[82], 0); // canonical plot clip follows two backgrounds
+        let grid_count = linear_ticks(0.0, 1.0, 3).unwrap().ticks.len() * 2;
+        let mark_offset = 82 + 17 + grid_count * 35;
+        assert_eq!(commands[mark_offset], 1);
+        assert_eq!(
+            u32::from_le_bytes(
+                commands[mark_offset + 1..mark_offset + 5]
+                    .try_into()
+                    .unwrap()
+            ),
+            3
+        );
+        assert_eq!(commands[mark_offset + 33], 1);
+        assert!(commands.windows(12).any(|window| window == b"literal mesh"));
+
+        let painter = document.to_browser_painter(64 * 1024).unwrap();
+        assert_eq!(u32::from_le_bytes(painter[20..24].try_into().unwrap()), 2);
+        for group in 0..2 {
+            let descriptor = BROWSER_PAINTER_HEADER_BYTES + group * BROWSER_PAINTER_TRACE_BYTES;
+            assert_eq!(painter[descriptor], SceneRecordKind::PolyFill as u8);
+            assert_eq!(
+                u32::from_le_bytes(painter[descriptor + 4..descriptor + 8].try_into().unwrap()),
+                3
+            );
+            assert_eq!(
+                &painter[descriptor + 32..descriptor + 36],
+                &[34, 197, 94, 191]
+            );
+            assert_eq!(&painter[descriptor + 36..descriptor + 40], &[0, 0, 0, 0]);
+            assert_eq!(
+                f32::from_le_bytes(
+                    painter[descriptor + 40..descriptor + 44]
+                        .try_into()
+                        .unwrap()
+                ),
+                0.0
+            );
+            let id_offset = u32::from_le_bytes(
+                painter[descriptor + 24..descriptor + 28]
+                    .try_into()
+                    .unwrap(),
+            ) as usize;
+            assert!((0..3).all(|row| {
+                u32::from_le_bytes(
+                    painter[id_offset + row * 4..id_offset + row * 4 + 4]
+                        .try_into()
+                        .unwrap(),
+                ) == 9 + group as u32
+            }));
+        }
+        let first_x_offset = u32::from_le_bytes(
+            painter[BROWSER_PAINTER_HEADER_BYTES + 8..BROWSER_PAINTER_HEADER_BYTES + 12]
+                .try_into()
+                .unwrap(),
+        ) as usize;
+        assert!(
+            f32::from_le_bytes(
+                painter[first_x_offset..first_x_offset + 4]
+                    .try_into()
+                    .unwrap()
+            ) < layout.left as f32
+        );
+        assert!(painter.windows(4).any(|window| window == b"XYLG"));
+    }
+
+    #[test]
+    fn polyfill_browser_groups_honor_the_canonical_trace_budget() {
+        let make_document = |triangle_count: usize| {
+            let layout = PlotLayout::new(120.0, 100.0, 10.0, 10.0, 10.0, 10.0).unwrap();
+            let record_count = triangle_count * 3;
+            let mut stable_ids = Vec::with_capacity(record_count);
+            for triangle in 0..triangle_count as u64 {
+                stable_ids.extend_from_slice(&[triangle, triangle, triangle]);
+            }
+            SceneDocument::decode(
+                &SceneBatch::new_with_decorations(
+                    layout,
+                    1,
+                    2,
+                    AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 10.0, 110.0, 1.0, false).unwrap(),
+                    AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 90.0, 10.0, 1.0, false).unwrap(),
+                    SceneChromeStyle::default(),
+                    SceneChromeText::default(),
+                    None,
+                    &vec![SceneRecordKind::PolyFill as u8; record_count],
+                    &stable_ids,
+                    &vec![0; record_count],
+                    &[34, 197, 94, 255],
+                    &[0, 0, 0, 0],
+                    &[0.0],
+                    &vec![0.0; record_count],
+                    &vec![0; record_count],
+                    &vec![0.5; record_count],
+                    &vec![0.5; record_count],
+                    &vec![0.0; record_count],
+                    &vec![0.0; record_count],
+                )
+                .unwrap()
+                .encode(),
+            )
             .unwrap()
-            .to_raster_commands(1.0)
-            .unwrap();
-        assert!(commands.contains(&1));
+        };
+        assert_eq!(
+            u32::from_le_bytes(
+                make_document(MAX_BROWSER_PAINTER_TRACES)
+                    .to_browser_painter(1024 * 1024)
+                    .unwrap()[20..24]
+                    .try_into()
+                    .unwrap()
+            ) as usize,
+            MAX_BROWSER_PAINTER_TRACES
+        );
+        assert_eq!(
+            make_document(MAX_BROWSER_PAINTER_TRACES + 1).to_browser_painter(1024 * 1024),
+            Err(SceneError::PainterTraceLimit)
+        );
     }
 
     #[test]

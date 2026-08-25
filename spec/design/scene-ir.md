@@ -231,13 +231,22 @@ fixed-domain area/error-band Bands; constant-style
 polyline (including Rust-expanded literal steps); and the ordinary Rect family
 (`bar`/`column`/`histogram`); plus bounded literal disconnected endpoint pairs
 for `segments`, error-bar stems/caps, and `stem` with its immediate generated
-built-in constant marker; plus finite literal solid-color ribbons whose two-row
-host ingress Rust-expands after axis transformation. The geometry records are
+built-in constant marker; at most 1,024 finite unjoined `triangle_mesh` faces
+with a constant fill and scalar overall opacity; plus finite literal solid-color
+ribbons whose two-row host ingress Rust-expands after axis transformation. Each
+mesh face is one three-row PolyFill group, matching the Rust browser painter's
+1,024-group bound; public selection also asks that authoritative consumer to
+validate the complete mixed-figure group budget before routing. Joined fills,
+component alpha, authored outlines, per-face
+paint/style, alternate axes, and larger meshes stay on the compatibility route.
+The geometry records are
 byte-identical for the shared
-Python/Node line+bar and disconnected-segment fixtures, with separate exact
-cross-host fixtures for step expansion, histogram bins, and Python
-`column`/Node `bar` Rect equivalence. Newly selected line, Rect, endpoint-pair,
-and ribbon figures require explicit Cartesian domains on the default axis sides
+Python/Node line+bar, disconnected-segment, and `public_triangle_mesh_sha256`
+fixtures, with separate exact cross-host fixtures for step expansion, histogram
+bins, and Python
+`column`/Node `bar` Rect equivalence. Newly selected line, Rect, Band,
+endpoint-pair, mesh, and ribbon figures require explicit Cartesian domains on the
+default axis sides
 and must remain inside the bounded host-input and expanded-record budgets. For
 segment-family traces, one row is
 one emitted endpoint pair, so generated error-bar cap pairs count toward that
