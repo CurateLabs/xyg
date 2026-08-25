@@ -222,6 +222,9 @@ Owner: Shared TypeScript client with canonical-policy debt. Disposition: `move-r
 Allowed:
 
 - Temporary tick consumption and browser-specific label presentation during scene migration.
+- The existing TypeScript generator stays frozen as an interaction compatibility
+  path until #59 can execute the Rust-owned linear/log/symlog/category/angular/time
+  ladders for each browser view and resize.
 
 Forbidden:
 

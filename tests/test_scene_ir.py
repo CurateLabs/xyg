@@ -23,6 +23,8 @@ EXPECTED_SCATTER = (
     'stroke-opacity="0.25" stroke-width="1"/></g>'
 )
 
+AXIS_TICK_FIXTURE = json.loads((Path(__file__).parent / "fixtures" / "axis_ticks.json").read_text())
+
 
 def test_strict_csp_authored_scene_fixture_is_public_figure_bytes() -> None:
     """Keep the direct-browser full-chrome proof tied to public authoring."""
@@ -643,6 +645,69 @@ def test_time_ticks_are_consumed_from_the_rust_scene(monkeypatch) -> None:
         hi,
     ]
     assert calls == [(5, 0.0, 3.0 * hour, 6), (5, lo, hi, 6)]
+
+
+def test_symlog_ticks_are_consumed_from_the_rust_scene(monkeypatch) -> None:
+    calls: list[tuple[int, float, float, int, float]] = []
+    original = _native.scene_axis_ticks
+
+    def recording(kind: int, lo: float, hi: float, target: int, aux: float = 0.0):
+        calls.append((kind, lo, hi, target, aux))
+        return original(kind, lo, hi, target, aux=aux)
+
+    monkeypatch.setattr(_native, "scene_axis_ticks", recording)
+    ticks, labeled, step = _svg.axis_ticks(
+        {"kind": "linear", "scale": "symlog", "constant": 2.0, "range": [-10.0, 10.0]},
+        320.0,
+        True,
+    )
+    assert ticks == labeled == pytest.approx([-3.43656365691809, 0.0, 3.43656365691809])
+    assert step == pytest.approx(3.43656365691809)
+    assert calls == [(6, -10.0, 10.0, 4, 2.0)]
+
+
+def test_all_axis_tick_families_match_the_shared_cross_host_fixture() -> None:
+    assert AXIS_TICK_FIXTURE["schema"] == "xyg-axis-ticks-v1"
+    kind_codes = {"linear": 0, "log": 1, "category": 2, "time": 5, "symlog": 6}
+    for case in AXIS_TICK_FIXTURE["cases"]:
+        kind = case["kind"]
+        if kind == "angular":
+            code = 3 if case["unit"] == "degrees" else 4
+            aux = 0.0
+        else:
+            code = kind_codes[kind]
+            aux = float(case.get("categories", case.get("constant", 0.0)))
+        ticks, labeled, step = _native.scene_axis_ticks(
+            code, case["lo"], case["hi"], case["target"], aux=aux
+        )
+        assert {"ticks": ticks, "labeled": labeled, "step": step} == case["expected"], case["name"]
+
+
+@pytest.mark.parametrize(
+    ("lo", "hi", "target", "constant"),
+    [
+        (-1.0, 1.0, 0, 1.0),
+        (-1.0, 1.0, 201, 1.0),
+        (-1.0, 1.0, 6, 0.0),
+        (-1.0, 1.0, 6, -1.0),
+        (-1.0, 1.0, 6, float("nan")),
+        (-1.0, 1.0, 6, float("inf")),
+        (float("nan"), 1.0, 6, 1.0),
+        (-1.0, float("inf"), 6, 1.0),
+    ],
+)
+def test_symlog_tick_abi_fails_closed_on_invalid_bounds(
+    lo: float, hi: float, target: int, constant: float
+) -> None:
+    with pytest.raises(ValueError, match="invalid canonical axis tick request"):
+        _native.scene_axis_ticks(6, lo, hi, target, aux=constant)
+
+
+def test_symlog_tick_abi_accepts_the_200_tick_target_ceiling() -> None:
+    ticks, labeled, step = _native.scene_axis_ticks(6, -1e12, 1e12, 200, aux=1.0)
+    assert 0 < len(ticks) <= 200
+    assert ticks == labeled
+    assert step > 0.0
 
 
 def test_static_scale_consumes_rust_scene_policy_for_all_numeric_kinds(monkeypatch) -> None:

@@ -240,7 +240,8 @@
       "disposition": "move-rust",
       "follow_up_issue": 58,
       "allowed_responsibilities": [
-        "Temporary tick consumption and browser-specific label presentation during scene migration."
+        "Temporary tick consumption and browser-specific label presentation during scene migration.",
+        "The existing TypeScript generator stays frozen as an interaction compatibility path until #59 can execute the Rust-owned linear/log/symlog/category/angular/time ladders for each browser view and resize."
       ],
       "forbidden_responsibilities": [
         "Expanding canonical tick generation or layout policy in TypeScript."

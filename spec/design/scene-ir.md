@@ -44,8 +44,8 @@ visibility, deterministic numeric formatting, and SVG fragment construction.
 Unknown symbol codes fail closed to the circle shape, matching the existing
 compatibility fallback.
 
-The same schema owns bounded f64 tick records for linear and base-10 log axes,
-plus vectorized linear, log, and symlog scale records.
+The same schema owns bounded f64 tick records for linear, base-10 log, and
+symmetric-log axes, plus vectorized linear, log, and symlog scale records.
 Each record carries all tick positions, the labeled subset, and the canonical
 step. Rust applies the existing 1/2/2.5/5/10 linear ladder and 1/2/5 log
 ladder, with a hard 200-tick ceiling. Python's SVG and raster exporters call
@@ -830,8 +830,9 @@ source-indexed labels.
 
 Authored solid chart/plot backgrounds, axis sides, and major/minor tick
 geometry/styles are Scene v8.
-Category, angular, and time/calendar tick ladders already move
-through `xyg_scene_axis_ticks` kinds 2–5; Scene v5 carries authored chrome
+Category, angular, time/calendar, and symmetric-log tick ladders already move
+through `xyg_scene_axis_ticks` kinds 2–6 (`aux` is the positive symlog
+linear-region constant for kind 6); Scene v5 carries authored chrome
 paints plus title/axis-label UTF-8; ABI `xyg_scene_plot_layout` owns Cartesian
 gutters, including the selected literal-colorbar outer lane, for Scene compilation. Cartesian rect-family hosts
 (`bar`, `column`, `histogram`, `violin`, `box`) share Scene Rect records;

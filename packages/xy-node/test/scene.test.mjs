@@ -10,6 +10,7 @@ const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures
 const figureSceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/figure_scene_v3.json", import.meta.url), "utf8"));
 const authoredSceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/authored_scene_v20.json", import.meta.url), "utf8"));
 const axisVisibilityFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/public_axis_visibility_scene.json", import.meta.url), "utf8"));
+const axisTickFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/axis_ticks.json", import.meta.url), "utf8"));
 
 test("Node projects Rust-owned Scene support decisions verbatim", () => {
   assert.equal(sceneSupportReason(0), "");
@@ -780,6 +781,36 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
     Date.UTC(2021, 6, 1),
     hi,
   ]);
+});
+
+test("Node matches every Rust-owned axis tick family in the shared cross-host fixture", () => {
+  assert.equal(axisTickFixture.schema, "xyg-axis-ticks-v1");
+  for (const value of axisTickFixture.cases) {
+    const args = { kind: value.kind, lo: value.lo, hi: value.hi, target: value.target };
+    if (value.categories !== undefined) args.categories = new Array(value.categories);
+    if (value.unit !== undefined) args.unit = value.unit;
+    if (value.constant !== undefined) args.constant = value.constant;
+    assert.deepEqual(axisTicks(args), value.expected, value.name);
+  }
+});
+
+test("Node symlog ticks fail closed at invalid arguments and honor the 200 target ceiling", () => {
+  for (const args of [
+    { lo: -1, hi: 1, target: 0, constant: 1 },
+    { lo: -1, hi: 1, target: 201, constant: 1 },
+    { lo: -1, hi: 1, target: 6, constant: 0 },
+    { lo: -1, hi: 1, target: 6, constant: -1 },
+    { lo: -1, hi: 1, target: 6, constant: Number.NaN },
+    { lo: -1, hi: 1, target: 6, constant: Number.POSITIVE_INFINITY },
+    { lo: Number.NaN, hi: 1, target: 6, constant: 1 },
+    { lo: -1, hi: Number.POSITIVE_INFINITY, target: 6, constant: 1 },
+  ]) {
+    assert.throws(() => axisTicks({ kind: "symlog", ...args }), /invalid canonical axis tick request/);
+  }
+  const boundary = axisTicks({ kind: "symlog", lo: -1e12, hi: 1e12, target: 200, constant: 1 });
+  assert.ok(boundary.ticks.length > 0 && boundary.ticks.length <= 200);
+  assert.deepEqual(boundary.ticks, boundary.labeled);
+  assert.ok(boundary.step > 0);
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
