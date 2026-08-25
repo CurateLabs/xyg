@@ -1542,9 +1542,11 @@ def scene_export_support_reason(
 
     This is deliberately narrower than :func:`figure_scene`: the explicit
     Scene API can exercise a migrating record before the public compatibility
-    renderer's complete output contract is modeled. Besides the basic
-    constant-style circle-scatter subset, the proven literal Cartesian chrome
-    slice routes automatically: backgrounds, title, authored axes/ticks,
+    renderer's complete output contract is modeled. The bounded literal
+    Cartesian geometry subset routes circle/diamond scatter, polylines,
+    ordinary Rects, and disconnected segment/error-bar/stem endpoint pairs.
+    The proven literal Cartesian chrome slice also routes automatically:
+    backgrounds, title, authored axes/ticks,
     primary legend, literal colorbar, and the existing bounded primary
     Cartesian annotation family: unoffset plain text, labelled rules/bands/markers,
     unlabeled straight arrows, ordinary callouts, and bounded wrapped text or
@@ -1645,16 +1647,25 @@ def scene_export_support_reason(
     colorbar = getattr(figure, "colorbar_options", None) or {}
     if any(key not in {"domain", "stops", "ticks", "minor_ticks", "title"} for key in colorbar):
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR"
-    # This is the bounded literal geometry increment.  The Rust consumers
-    # already own the record semantics for ordinary polylines and rectangles,
-    # so use those exact records for public static output too.  Keep this
-    # deliberately narrower than the explicit ``to_scene``
-    # seam: it does not bless generated palettes, density/LOD, gradients,
-    # rounded geometry, rich text, polar coordinates, or the other migrating
-    # mark families merely because an internal record happens to exist.
-    public_kinds = {"scatter", "line", "bar", "column", "histogram"}
+    # This is the bounded literal geometry increment. Rust already owns the
+    # record semantics for ordinary polylines, rectangles, and disconnected
+    # endpoint pairs, so use those exact records for public static output too.
+    # Keep this deliberately narrower than the explicit ``to_scene`` seam: it
+    # does not bless generated palettes, density/LOD, gradients, rounded
+    # geometry, rich text, polar coordinates, or other migrating mark families
+    # merely because an internal record happens to exist.
+    public_kinds = {
+        "scatter",
+        "line",
+        "bar",
+        "column",
+        "histogram",
+        "segments",
+        "errorbar",
+        "stem",
+    }
     public_style_keys = {
-        "scatter": {"color", "opacity", "symbol", "size"},
+        "scatter": {"color", "opacity", "symbol", "size", "role"},
         # A literal ``step`` is expanded before Scene packing; Rust then owns
         # the resulting polyline, clipping, raster, and SVG policy.
         "line": {"color", "opacity", "width", "step"},
@@ -1694,20 +1705,24 @@ def scene_export_support_reason(
             "stroke_width",
             "corner_radius",
         },
+        "segments": {"color", "opacity", "width", "role"},
+        "errorbar": {"color", "opacity", "width", "role"},
+        "stem": {"color", "opacity", "width", "role"},
     }
-    has_new_geometry = any(
-        trace.kind in {"line", "bar", "column", "histogram"} for trace in figure.traces
+    has_literal_geometry = any(
+        trace.kind in {"line", "bar", "column", "histogram", "segments", "errorbar", "stem"}
+        for trace in figure.traces
     )
-    # The new geometry route is intentionally anchored to an explicit
+    # The literal geometry route is intentionally anchored to an explicit
     # Cartesian viewport. The compatibility writer's implicit domains and
     # alternate axis-side label offsets remain separate byte/pixel contracts.
-    if has_new_geometry:
+    if has_literal_geometry:
         for axis_id in ("x", "y"):
             axis = figure.axis_options.get(axis_id, {})
             default_side = "bottom" if axis_id == "x" else "left"
             if axis.get("domain") is None or axis.get("side") not in (None, default_side):
                 return "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
-    for trace in figure.traces:
+    for trace_index, trace in enumerate(figure.traces):
         opacity = float((getattr(trace, "style", None) or {}).get("opacity", 1.0))
         if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
             raise ValueError("trace opacity must be finite and in [0, 1]")
@@ -1716,6 +1731,41 @@ def scene_export_support_reason(
             return "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
         if trace.kind not in public_kinds:
             return "XYG_SCENE_UNSUPPORTED_PUBLIC_MARK"
+        if trace.kind in _SEGMENT_KINDS:
+            # A public disconnected primitive is exactly four finite endpoint
+            # columns.  ``figure_scene`` performs the same authoritative
+            # validation; this shape check prevents a future host-only trace
+            # form from being selected merely because it reuses a kind name.
+            endpoint_columns = (trace.x0, trace.y0, trace.x1, trace.y1)
+            if any(column is None for column in endpoint_columns):
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS"
+            endpoint_lengths = {len(column.values) for column in endpoint_columns}
+            if len(endpoint_lengths) != 1 or next(iter(endpoint_lengths), 0) > 10_000:
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS"
+            accepted_roles = {
+                "segments": {"segments"},
+                "errorbar": {"y-errorbar", "x-errorbar"},
+                "stem": {"stem"},
+            }[trace.kind]
+            if (trace.style or {}).get("role") not in accepted_roles:
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+        # The only generated companion scatter accepted here is the immediate
+        # endpoint marker for a preceding stem. This preserves author order
+        # and prevents a generic role from leaking into the public contract.
+        if (
+            trace.kind == "scatter"
+            and (trace.style or {}).get("role") is not None
+            and (
+                (trace.style or {}).get("role") != "stem-marker"
+                or trace_index == 0
+                or figure.traces[trace_index - 1].kind != "stem"
+                or trace.x is None
+                or trace.y is None
+                or not np.array_equal(trace.x.values, figure.traces[trace_index - 1].x1.values)
+                or not np.array_equal(trace.y.values, figure.traces[trace_index - 1].y1.values)
+            )
+        ):
+            return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
         if trace.kind == "scatter" and (trace.style or {}).get("symbol", "circle") not in {
             "circle",
             "diamond",

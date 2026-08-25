@@ -1974,6 +1974,11 @@ def stem(
                 density=None,
                 symbol=symbol,
             )
+            # Retain the generated relationship for the bounded public Scene
+            # exporter.  This is host provenance only: Rust still receives the
+            # same ordinary scatter record after the stem record, preserving
+            # paint order without adding a Scene schema feature.
+            self.traces[-1].style["role"] = "stem-marker"
         return self
     except Exception:
         self._rollback(checkpoint)

@@ -30,8 +30,10 @@ hosts reject polar Scene compilation until the Scene schema records that mode.
 Static-export routing status (#117): `Figure.to_svg`, native `to_png`, native
 `to_image(..., "svg"|"png"|"pdf")`, `write_image`, and the native branch of
 `write_images` now delegate the proven
-constant-style Cartesian circle/diamond-scatter public subset, plus the proven literal
-static chrome contract (chart/plot backgrounds, title, authored axis
+literal Cartesian public geometry subset—constant-style circle/diamond
+scatter and polylines, ordinary bar/column/histogram Rects, and bounded
+disconnected segment/error-bar/stem endpoint pairs—plus the proven literal static
+chrome contract (chart/plot backgrounds, title, authored axis
 labels/sides/major-minor ticks, independent literal `ticks`/`text` visibility
 switches, primary legend, literal colorbar), and the existing bounded primary
 Cartesian annotation family: unoffset plain text, Rust-positioned labelled rules/bands/markers,
@@ -48,8 +50,9 @@ the documented compatibility exceptions. `_svg.py`, `_raster.py`, and
 `_pdf.py` remain compatibility owners for rich text and legend variants, every
 annotation outside that bounded primary Cartesian family (including rotation,
 collision/layout directives, markup, CSS/classes, and custom typography), themes, custom fonts or CSS/classes,
-nonliteral/custom chrome, symbols other than circle/diamond, non-scatter marks, LOD inputs, export
-background overrides, and any other unmodeled output contract; #58/#117 must
+nonliteral/custom chrome, symbols other than circle/diamond, unmodeled marks or
+segment roles/styles, LOD inputs, export background overrides, and any other
+unmodeled output contract; #58/#117 must
 retire each exception only with cross-host differential and performance proof.
 
 ## Binding seam decision

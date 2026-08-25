@@ -542,18 +542,23 @@ F3, still pending (above).
   then exposes the exact same Scene v12 bytes to explicit Rust SVG and
   native-raster command consumers. Public static exports route the proven
   literal Cartesian subset through those consumers: circle/diamond scatter,
-  constant-style polyline, and ordinary bar/column/histogram rectangles.
-  Gradients, rounded corners, areas, LOD/density, nonliteral palettes, polar
-  geometry, and unmodeled marks retain
-  their compatibility renderers. Rust
+  constant-style polyline, ordinary bar/column/histogram rectangles, and
+  disconnected `segments`/error-bar/stem endpoint pairs (including the
+  immediately-following generated circle/diamond stem marker). Gradients,
+  rounded corners, areas, dashed or data-driven segment styles, LOD/density,
+  nonliteral palettes, polar geometry, and unmodeled marks retain their
+  compatibility renderers. Rust
   now owns chart/plot backgrounds, authored axis side/visibility and
   major/minor tick geometry/paint, default numeric tick/label/grid/spine, and
   chrome ordering, plus bounded primary static legend entry ordering,
   placement, frame, text, and swatch policy;
   fully hidden Cartesian chrome is omitted by Rust lowering without changing
   coordinate semantics—polar Scene projection remains an explicit unsupported
-  boundary rather than an inference from transparent paint;
-  unsupported marks, missing values, and customization fail closed at the
+  boundary rather than an inference from transparent paint. Rust owns the
+  selected endpoint-pair order, clipping, SVG, PDF, and raster output;
+  nonfinite/missing breaks, custom styles, and every other segment-like mark
+  remain explicit compatibility boundaries.
+  Unsupported marks, missing values, and customization fail closed at the
   explicit Scene boundary while records migrate. ABI 84 adds a versioned
   authored-feature presence predicate whose ordered actionable diagnostic is
   Rust-owned and relayed verbatim by Python and Node. Browser paint and interaction lifecycle stay
