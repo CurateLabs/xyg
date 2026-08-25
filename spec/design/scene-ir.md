@@ -209,10 +209,15 @@ layout, and rendering authority.
 Public Python SVG/PNG/PDF route the proven literal Cartesian static contract
 through Rust Scene: constant-style circle/diamond scatter; constant-style
 polyline (including host-expanded literal steps); and the ordinary Rect family
-(`bar`/`column`/`histogram`). The geometry records are byte-identical for the
-shared Python/Node line+bar fixture, with separate exact cross-host fixtures for
-step expansion, histogram bins, and Python `column`/Node `bar` Rect equivalence. Chart/plot
-backgrounds, title, authored axis labels/sides/major-minor ticks, the independent public
+(`bar`/`column`/`histogram`); plus bounded literal disconnected endpoint pairs
+for `segments`, error-bar stems/caps, and `stem` with its immediate generated
+circle/diamond marker. The geometry records are byte-identical for the shared
+Python/Node line+bar and disconnected-segment fixtures, with separate exact
+cross-host fixtures for step expansion, histogram bins, and Python
+`column`/Node `bar` Rect equivalence. Newly selected line, Rect, and endpoint-pair
+figures require explicit Cartesian domains on the default axis sides and at
+most 10,000 source records per trace. Chart/plot backgrounds, title, authored
+axis labels/sides/major-minor ticks, the independent public
 `x_axis(..., ticks=False|text=False)` and `y_axis(..., ticks=False|text=False)`
 visibility switches, primary legend, literal colorbar, one bounded callout, and
 its one bounded wrapped-callout companion.
@@ -274,17 +279,18 @@ y-label with deterministic margin-relative anchors. Hosts may now compile
 figure titles and axis labels into the explicit Scene path; annotations,
 legends, custom sides, and authored tick geometry remain rejected until later
 slices. `xyg_scene_plot_layout` owns Cartesian gutters for Scene compilation.
-The public SVG/PNG/PDF router now selects these Rust consumers only for the
-proven constant-style Cartesian circle-scatter subset. Explicit Scene APIs may
-exercise broader migrating records, but line/rect/band/segment/ribbon marks,
+At the version-4 boundary, the public SVG/PNG/PDF router selected these Rust
+consumers only for the proven constant-style Cartesian circle-scatter subset.
+Explicit Scene APIs could exercise broader migrating records, but
+line/rect/band/segment/ribbon marks,
 non-circle symbols, annotations, text, legends, themes/style tokens, customized
 axis chrome beyond the supported literal contract, export-only backgrounds,
 fluid or too-small viewports, and
 screen-bounded LOD inputs remain on the compatibility renderer before
 compilation. Malformed input and Rust consumer failures propagate and never
-cause fallback. The public literal `ticks=False` / `text=False` switches are
-no longer exceptions: they route through the same Rust Scene contract for the
-bounded circle/diamond-scatter static subset. `ticks=False` hides only major
+cause fallback. The public literal `ticks=False` / `text=False` switches later
+ceased to be exceptions: they route through the same Rust Scene contract for
+the bounded literal Cartesian static subset. `ticks=False` hides only major
 tick geometry; `text=False` hides only tick-label/title paint. All other
 literal chrome remains unchanged, so either switch cannot re-style the other
 axis by crossing the routing boundary.
@@ -410,17 +416,20 @@ clipping, identity, tick generation, or label formatting policy.
 Remaining polar marks and richer legend variants stay explicit compatibility
 exceptions. Public SVG and native PNG auto-route supported figures through
 Rust Scene; PDF consumes that Rust SVG. The public annotation route is the
-bounded primary Cartesian family on the otherwise proven constant-style
-circle/diamond-scatter slice: unoffset plain text, Rust-positioned labelled
+bounded primary Cartesian family on the otherwise proven literal Cartesian
+geometry slice: unoffset plain text, Rust-positioned labelled
 rules/bands/markers, unlabeled straight arrows, ordinary callouts, and bounded
 wrapped text/callouts. Ordinary/wrapped callouts retain literal color, opacity,
 width, anchor, offsets, and literal label background/border; Rust alone
 validates them and resolves leaders, label boxes, and wrapped line breaks.
 Unwrapped text offsets/anchors and marker-label offsets/anchors are not Scene
 fields and deliberately remain compatibility exceptions. Other annotation
-combinations/kinds, themes, classes/CSS/custom fonts, nonliteral
-chrome, symbols other than circle/diamond, non-scatter marks, and LOD remain compatibility
-preflight exceptions. ``try_public_svg`` /
+combinations/kinds, themes, classes/CSS/custom fonts, nonliteral chrome,
+symbols other than circle/diamond, unmodeled marks, and LOD remain compatibility
+preflight exceptions. Literal disconnected segments, error-bar stems/caps,
+and stems with their immediate generated circle/diamond markers share the
+selected Scene with ordinary polylines and Rects; other segment-like roles and
+styles remain compatibility exceptions. ``try_public_svg`` /
 ``try_public_png`` / ``try_public_pdf`` expose the same consumers to callers
 that need an optional result. Unlabeled cartesian annotations remain rejected
 rather than being approximated as marks.

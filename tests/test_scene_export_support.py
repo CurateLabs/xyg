@@ -141,6 +141,19 @@ def _public_literal_geometry_variant(kind: str) -> Figure:
     return figure
 
 
+def _public_disconnected_segments() -> Figure:
+    """One ordered literal fixture for the public endpoint-pair slice."""
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 4.0)
+    figure.axis_options["y"]["domain"] = (0.0, 5.0)
+    figure.segments([0.25, 2.5], [0.5, 0.75], [1.25, 3.5], [1.5, 2.0], color="#ef4444")
+    figure.errorbar([1.0, 2.0], [2.0, 3.0], yerr=[0.25, 0.5], cap_size=0.2, color="#16a34a")
+    figure.stem([3.0, 3.5], [3.5, 4.0], base=1.0, color="#2563eb", symbol="diamond")
+    for index, trace in enumerate(figure.traces):
+        trace.id = index
+    return figure
+
+
 # Each factory builds a figure that `figure_scene` rejects; the substring is the
 # stable diagnostic token the predicate must surface for the router to log.
 UNSUPPORTED: dict[str, tuple[Callable[[], Figure], str]] = {
@@ -339,6 +352,84 @@ def test_public_literal_geometry_boundary_fails_closed_for_unmodeled_behavior(fa
     """A successful internal record must not silently widen static routing."""
     reason = scene_export_support_reason(factory()) or ""
     assert reason
+
+
+def test_public_router_routes_literal_disconnected_segments_through_all_static_consumers() -> None:
+    from xyg import _native, _pdf, kernels
+
+    figure = _public_disconnected_segments()
+    assert scene_export_support_reason(figure) is None
+    scene = figure_scene(figure)
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
+    assert hashlib.sha256(scene).hexdigest() == fixture["public_disconnected_segments_sha256"]
+    # Two user segments, six error-bar stem/cap pairs, then two stems and
+    # their endpoint scatter. This order is the public paint contract.
+    svg = _native.scene_svg(scene)
+    assert svg.count("<polyline ") == 10
+    assert svg.count("<path ") == 2  # two diamond endpoint markers
+    assert svg.rfind("<polyline ") < svg.rfind("<path ")  # endpoint markers paint last
+    assert figure.to_svg().encode() == svg.encode()
+    assert figure.to_png(scale=1) == kernels.rasterize_png(
+        _native.scene_raster_commands(scene), figure.width, figure.height
+    )
+    assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(svg)
+
+
+@pytest.mark.parametrize(
+    "mutate,reason",
+    [
+        (lambda figure: figure.traces[0].style.__setitem__("dash", "4,2"), "PUBLIC_STYLE"),
+        (lambda figure: figure.traces[0].style.__setitem__("role", "custom"), "PUBLIC_STYLE"),
+        (lambda figure: figure.traces[0].x0.values.__setitem__(0, np.nan), "missing-data"),
+        (lambda figure: figure.traces[-1].style.__setitem__("symbol", "square"), "PUBLIC_SYMBOL"),
+    ],
+)
+def test_public_disconnected_segment_router_fails_closed(
+    mutate: Callable[[Figure], None], reason: str
+) -> None:
+    figure = _public_disconnected_segments()
+    mutate(figure)
+    result = scene_export_support_reason(figure)
+    if reason == "missing-data":
+        with pytest.raises(UnsupportedSceneV3, match=reason):
+            figure_scene(figure)
+        assert result is not None
+    else:
+        assert result is not None and reason in result
+
+
+@pytest.mark.parametrize(
+    "axis_id,key,value",
+    [
+        ("x", "domain", None),
+        ("y", "domain", None),
+        ("x", "side", "top"),
+        ("y", "side", "right"),
+    ],
+)
+def test_public_disconnected_segments_require_explicit_default_side_cartesian_axes(
+    axis_id: str, key: str, value: object
+) -> None:
+    figure = _public_disconnected_segments()
+    figure.axis_options[axis_id][key] = value
+    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+
+
+def test_public_disconnected_segments_reject_more_than_ten_thousand_endpoint_pairs() -> None:
+    values = np.arange(10_001, dtype=np.float64)
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 10_001.0)
+    figure.axis_options["y"]["domain"] = (0.0, 10_001.0)
+    figure.segments(values, values, values + 0.5, values + 0.5)
+    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
+
+
+def test_public_stem_marker_must_immediately_follow_its_exact_stem_geometry() -> None:
+    figure = _public_disconnected_segments()
+    stem_marker = figure.traces.pop()
+    figure.scatter([0.0], [0.0])
+    figure.traces.append(stem_marker)
+    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
 
 
 def test_fluid_viewport_uses_compatibility_until_static_dimensions_are_given() -> None:

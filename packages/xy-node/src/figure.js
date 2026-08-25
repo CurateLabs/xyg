@@ -676,17 +676,18 @@ export class Figure {
   }
 
   segments(x0, y0, x1, y1, opts = {}) {
+    const t = composeSegments(x0, y0, x1, y1, opts).traces[0];
     this.traces.push({
-      id: opts.id ?? nextTraceId++,
-      kind: "segments",
-      name: opts.name ?? null,
-      x0: asF64(x0),
-      y0: asF64(y0),
-      x1: asF64(x1),
-      y1: asF64(y1),
-      style: { ...(opts.style ?? {}) },
-      x_axis: opts.xAxis ?? "x",
-      y_axis: opts.yAxis ?? "y",
+      id: opts.id ?? t.id ?? nextTraceId++,
+      kind: t.kind,
+      name: t.name,
+      x0: t.x0,
+      y0: t.y0,
+      x1: t.x1,
+      y1: t.y1,
+      style: { ...t.style },
+      x_axis: t.x_axis,
+      y_axis: t.y_axis,
       ...(opts.color != null ? { color: opts.color } : {}),
       ...(opts.tooltip_rows != null ? { tooltip_rows: opts.tooltip_rows } : {}),
     });

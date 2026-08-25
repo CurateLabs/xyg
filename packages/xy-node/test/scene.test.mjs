@@ -352,6 +352,26 @@ test("Node Scene v20 Cartesian callout matches the Python exact-byte fixture", (
   assert.ok(Buffer.from(sceneBrowserPainter(scene)).includes(Buffer.from("XYLB")));
 });
 
+test("Node matches the public Python disconnected segments, errorbar caps, and stem fixture", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 4]); figure.setAxisDomain("y", [0, 5]);
+  figure.segments([0.25, 2.5], [0.5, 0.75], [1.25, 3.5], [1.5, 2], { color: "#ef4444" });
+  figure.errorbar([1, 2], [2, 3], { yerr: [0.25, 0.5], capSize: 0.2, color: "#16a34a" });
+  figure.stem([3, 3.5], [3.5, 4], { base: 1, color: "#2563eb", symbol: "diamond" });
+  // Bindings assign trace identities independently; fixture identity is
+  // explicit so exact bytes prove the shared Rust-owned paint order.
+  figure.traces.forEach((trace, index) => { trace.id = index; });
+  const scene = figure.toScene();
+  assert.equal(
+    crypto.createHash("sha256").update(scene).digest("hex"),
+    figureSceneFixture.public_disconnected_segments_sha256,
+  );
+  const svg = sceneSvg(scene);
+  assert.equal((svg.match(/<polyline /g) ?? []).length, 10);
+  assert.ok(sceneRasterCommands(scene).length > 100);
+  assert.ok(sceneBrowserPainter(scene).length > 100);
+});
+
 test("Node Scene v9 compiles ribbon and triangle_mesh", () => {
   const ribbon = new Figure({ width: 320, height: 200 });
   ribbon.setAxisDomain("x", [0, 1]); ribbon.setAxisDomain("y", [0, 1]);
