@@ -9,6 +9,7 @@ surface exercises the same public Python chart construction and Scene bytes.
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 from collections.abc import Iterator
 from pathlib import Path
@@ -132,9 +133,29 @@ def main() -> int:
         type=Path,
         help="write deterministic .bin fixtures and authored-scene-manifest.json here",
     )
+    parser.add_argument(
+        "--write-browser-fixture",
+        type=Path,
+        help="regenerate the strict-CSP browser fixture from the public Figure workload",
+    )
     args = parser.parse_args()
     selected = tuple(args.count) if args.count else COUNTS
     generated = list(scenes(selected))
+    if args.write_browser_fixture:
+        if selected != (100,):
+            raise ValueError("--write-browser-fixture requires exactly --count 100")
+        args.write_browser_fixture.write_text(
+            json.dumps(
+                {
+                    "schema": "xyg-authored-scene-v20-fixture-v1",
+                    "count": 100,
+                    "scene_base64": base64.b64encode(generated[0][1]).decode("ascii"),
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
     report = []
     if args.output_dir:
         args.output_dir.mkdir(parents=True, exist_ok=True)

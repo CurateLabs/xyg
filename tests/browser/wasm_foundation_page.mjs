@@ -619,7 +619,9 @@ async function run() {
   const worker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",
     wasm: wasmModule,
-    maxArenaBytes: 4096,
+    // Canonical Scene browser paint now exceeds the deliberately tiny 4 KiB
+    // fixture budget; resource-limit probes below retain their narrow caps.
+    maxArenaBytes: 8192,
   });
   const ready = await worker.ready;
   if (ready.abiVersion !== 21 || ready.sceneVersion !== 21) {
