@@ -26,7 +26,11 @@ function authoredScene(count) {
   const y = Float64Array.from({ length: count }, (_, index) => ((index * 37) % 997) / 498 - 1);
   const figure = new Figure({
     width: authoring.viewport[0], height: authoring.viewport[1], title: authoring.title,
-    legend: authoring.legend, annotations: [{ kind: "callout", ...authoring.callout }],
+    legend: authoring.legend,
+    annotations: [
+      { kind: "callout", ...authoring.callout },
+      { kind: "callout", ...authoring.wrapped_callout },
+    ],
   });
   figure.style = authoring.style;
   figure.setAxis("x", authoring.axes.x); figure.setAxis("y", authoring.axes.y);

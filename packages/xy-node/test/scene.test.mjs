@@ -452,7 +452,10 @@ test("Node public Figure matches the combined Python authored Scene v24 fixture"
   const figure = new Figure({
     width: fixture.viewport[0], height: fixture.viewport[1], title: fixture.title,
     legend: fixture.legend,
-    annotations: [{ kind: "callout", ...fixture.callout }],
+    annotations: [
+      { kind: "callout", ...fixture.callout },
+      { kind: "callout", ...fixture.wrapped_callout },
+    ],
   });
   figure.style = fixture.style;
   figure.setAxis("x", fixture.axes.x); figure.setAxis("y", fixture.axes.y);
@@ -471,7 +474,7 @@ test("Node public Figure matches the combined Python authored Scene v24 fixture"
   assert.equal(new DataView(scene.buffer, scene.byteOffset, scene.byteLength).getUint32(4, true), 24);
   assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), authoredSceneFixture.scene_sha256);
   const svg = sceneSvg(scene), raster = sceneRasterCommands(scene);
-  for (const text of ["Authored Scene evidence", "Fraction", "Signal", "Series", "observations", "Intensity", "representative callout"]) {
+  for (const text of ["Authored Scene evidence", "Fraction", "Signal", "Series", "observations", "Intensity", "representative callout", "wrapped annotation", "evidence", "second line"]) {
     assert.match(svg, new RegExp(text));
     assert.ok(Buffer.from(raster).includes(Buffer.from(text)));
   }
@@ -489,6 +492,21 @@ test("Node public Figure matches the combined Python authored Scene v24 fixture"
     const rejected = new Figure({ width: fixture.viewport[0], height: fixture.viewport[1] });
     rejected.scatter(x, y, fixture.scatter); mutate(rejected);
     assert.throws(() => rejected.toScene(), reason);
+  }
+});
+
+test("Node Scene v24 wrapped annotations reject host layout features", () => {
+  for (const [field, value, reason] of [
+    ["class_name", "browser-only", /BROWSER_CSS|class behavior/],
+    ["style", { font_family: "Example Sans" }, /custom fonts/],
+    ["style", { markup: "<b>rich<\\/b>" }, /markup/],
+    ["style", { collision: "avoid" }, /collision/],
+  ]) {
+    const figure = new Figure({ width: 320, height: 240 });
+    figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+    figure.annotations = [{ kind: "callout", x: 0.5, y: 0.5, text: "wrapped annotation", wrap: 96 }];
+    figure.annotations[0][field] = value;
+    assert.throws(() => figure.toScene(), reason);
   }
 });
 

@@ -700,7 +700,7 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         chrome.x_tick_labels = x_tick_label_values;
         chrome.y_tick_labels = y_tick_label_values;
         let chrome = chrome.validated().ok()?;
-        scene::SceneBatch::new_with_decorations_colorbar(
+        let batch = scene::SceneBatch::new_with_decorations_colorbar(
             layout,
             x_axis_id,
             y_axis_id,
@@ -723,11 +723,10 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             f64s(y0),
             f64s(x1),
             f64s(y1),
-        )
-        .ok()?
-        .with_authored_annotations(authored_text_bytes)
-        .ok()
-        .map(|batch| batch.encode())
+        ).ok()?;
+        batch.with_authored_annotations(authored_text_bytes)
+            .ok()
+            .map(|batch| batch.encode())
     }) else {
         return usize::MAX;
     };

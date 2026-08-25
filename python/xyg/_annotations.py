@@ -197,6 +197,7 @@ class AnnotationsMixin(_Host):
         *,
         dx: float = 6.0,
         dy: float = -6.0,
+        wrap: float | None = None,
         color: Optional[str] = None,
         anchor: str = "start",
         class_name: Optional[str] = None,
@@ -217,6 +218,11 @@ class AnnotationsMixin(_Host):
                 "dx": dx,
                 "dy": dy,
                 "anchor": anchor,
+                **(
+                    {"wrap": self._finite_scalar(wrap, "text annotation wrap")}
+                    if wrap is not None
+                    else {}
+                ),
                 "style": {
                     "color": self._optional_css_color(color, "text annotation color"),
                     **self._style_mapping(style or {}, "text annotation style"),
@@ -345,6 +351,7 @@ class AnnotationsMixin(_Host):
         *,
         dx: float = 36.0,
         dy: float = -30.0,
+        wrap: float | None = None,
         color: Optional[str] = "#344054",
         width: float = 1.5,
         opacity: float = 1.0,
@@ -369,9 +376,10 @@ class AnnotationsMixin(_Host):
                 "dx": dx,
                 "dy": dy,
                 "anchor": anchor,
+                **({"wrap": self._finite_scalar(wrap, "callout wrap")} if wrap is not None else {}),
                 "style": {
                     "color": self._optional_css_color(color, "callout color"),
-                    "width": width,
+                    **({} if wrap is not None else {"width": width}),
                     "opacity": opacity,
                     **self._style_mapping(style or {}, "callout style"),
                 },

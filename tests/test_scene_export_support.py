@@ -124,6 +124,15 @@ def test_one_bounded_cartesian_callout_is_a_supported_public_scene_slice() -> No
     assert b"here" in figure_scene(figure)
 
 
+def test_proven_ordinary_and_wrapped_callout_fixture_is_a_supported_public_slice() -> None:
+    """The v24 public evidence fixture must not fall back before Rust sees XYAW."""
+    from scripts.generate_authored_scene_benchmark import authored_scene_figure
+
+    figure = authored_scene_figure(100)
+    assert scene_export_support_reason(figure) is None
+    assert b"XYLB" in figure_scene(figure)
+
+
 @pytest.mark.parametrize(
     "annotations",
     [
@@ -132,6 +141,7 @@ def test_one_bounded_cartesian_callout_is_a_supported_public_scene_slice() -> No
             {"kind": "callout", "x": 1.0, "y": 2.0, "text": "first"},
             {"kind": "callout", "x": 2.0, "y": 3.0, "text": "second"},
         ],
+        [{"kind": "callout", "x": 1.0, "y": 2.0, "text": "wrapped", "wrap": 96.0}],
     ],
 )
 def test_only_one_bounded_callout_enters_the_public_annotation_slice(

@@ -210,7 +210,7 @@ _ALLOWED_ATTRS: dict[str, frozenset[str]] = {
     "text": frozenset(
         {"x", "y", "transform", "text-anchor", "font-size", "font-weight", "fill", "fill-opacity"}
     ),
-    "tspan": frozenset({"x", "y"}),
+    "tspan": frozenset({"x", "y", "dy"}),
     "image": frozenset({"x", "y", "width", "height", "preserveAspectRatio", "style", "href"}),
 }
 
@@ -1098,16 +1098,25 @@ class _Converter:
         if tspans:
             if el.text and el.text.strip():
                 _unsupported("<text> mixing direct text and <tspan>")
+            inherited_x = _float(el.get("x"), 0.0, "x")
+            inherited_y = _float(el.get("y"), 0.0, "y")
             for ts in tspans:
                 if _local(ts.tag) != "tspan":
                     _unsupported(f"<text> child <{_local(ts.tag)}>")
                 _check_attrs(ts, "tspan", _ALLOWED_ATTRS["tspan"])
                 if list(ts):
                     _unsupported("nested <tspan>")
+                if ts.get("y") is not None and ts.get("dy") is not None:
+                    _unsupported("<tspan> combining y and dy")
+                x = _float(ts.get("x"), inherited_x, "tspan x")
+                if ts.get("y") is not None:
+                    inherited_y = _float(ts.get("y"), inherited_y, "tspan y")
+                elif ts.get("dy") is not None:
+                    inherited_y += _float(ts.get("dy"), 0.0, "tspan dy")
                 runs.append(
                     (
-                        _float(ts.get("x"), 0.0, "tspan x"),
-                        _float(ts.get("y"), 0.0, "tspan y"),
+                        x,
+                        inherited_y,
                         ts.text or "",
                     )
                 )

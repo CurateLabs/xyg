@@ -111,6 +111,17 @@ AUTHORED_AUTHORING = {
         "text": "representative callout",
         "style": {"label_background": "#ffffff"},
     },
+    "wrapped_callout": {
+        "x": 0.2,
+        "y": -0.35,
+        "text": "wrapped annotation evidence\nsecond line",
+        "wrap": 128.0,
+        "style": {
+            "label_background": "#fff3cd",
+            "label_border_color": "#a16207",
+            "label_border_width": 1.0,
+        },
+    },
 }
 
 
@@ -159,6 +170,13 @@ def authored_scene_figure(count: int) -> Figure:
         "representative callout",
         style={"label_background": "#ffffff"},
     )
+    figure.callout(
+        AUTHORED_AUTHORING["wrapped_callout"]["x"],
+        AUTHORED_AUTHORING["wrapped_callout"]["y"],
+        AUTHORED_AUTHORING["wrapped_callout"]["text"],
+        wrap=AUTHORED_AUTHORING["wrapped_callout"]["wrap"],
+        style=dict(AUTHORED_AUTHORING["wrapped_callout"]["style"]),
+    )
     return figure
 
 
@@ -186,8 +204,10 @@ def authored_scene(count: int) -> bytes:
     """Return a validated Scene 24 workload for one canonical evidence tier."""
     figure = authored_scene_figure(count)
     annotation_input = _authored_annotation_input(figure)
-    if not annotation_input.startswith(b"XYAD\x02\x00\x00\x00"):
-        raise AssertionError("authored Scene workload must frame annotations as XYAD v2")
+    if not annotation_input.startswith(b"XYAD\x03\x00\x00\x00") or b"XYAW" not in annotation_input:
+        raise AssertionError(
+            "authored Scene workload must frame wrapped annotations as XYAD v3/XYAW"
+        )
 
     scene = figure.to_scene()
     if scene[:4] != b"XYGS" or int.from_bytes(scene[4:8], "little") != SCENE_VERSION:

@@ -830,8 +830,12 @@ def figure_scene(
             tuple[tuple[int, int, int, int], float] | None,
         ]
     ] = []
+    wrapped_annotations: list[dict[str, Any]] = []
     for annotation_index, annotation in enumerate(annotations):
         kind = annotation.get("kind")
+        if kind in {"text", "callout"} and "wrap" in annotation:
+            wrapped_annotations.append(annotation)
+            continue
         if kind == "text":
             continue
         if kind == "arrow":
@@ -1182,7 +1186,9 @@ def figure_scene(
     else:
         left, right, top, bottom = margins
     text_annotations = [
-        annotation for annotation in annotations if annotation.get("kind") == "text"
+        annotation
+        for annotation in annotations
+        if annotation.get("kind") == "text" and "wrap" not in annotation
     ]
     if len(cartesian_callouts) > 128:
         raise UnsupportedSceneV3("Scene callouts are limited to 128 entries")
@@ -1325,18 +1331,115 @@ def figure_scene(
             xyac.extend(bytes(label_border[0] if label_border else (0, 0, 0, 0)))
             xyac.extend(struct.pack("<d", label_border[1] if label_border else 0.0))
         xyac.extend(encoded)
+    xyaw = bytearray(
+        b"XYAW" + (1).to_bytes(4, "little") + len(wrapped_annotations).to_bytes(4, "little")
+    )
+    for annotation in wrapped_annotations:
+        kind = annotation["kind"]
+        if annotation.get("class_name") not in (None, ""):
+            raise UnsupportedSceneV3("Scene wrapped annotations do not encode class_name")
+        text = annotation.get("text")
+        if not isinstance(text, str) or not text or "\0" in text or "\r" in text:
+            raise UnsupportedSceneV3("Scene wrapped annotations require nonempty NUL-free LF text")
+        encoded = text.encode("utf-8")
+        if len(encoded) > 4096:
+            raise UnsupportedSceneV3("Scene wrapped annotations are limited to 4,096 UTF-8 bytes")
+        style = dict(annotation.get("style") or {})
+        if style.get("color") is None:
+            style.pop("color", None)
+        allowed = {
+            "color",
+            "opacity",
+            "label_background",
+            "label_border_color",
+            "label_border_width",
+        }
+        bad = sorted(
+            key for key, value in style.items() if key not in allowed and value is not None
+        )
+        if bad:
+            raise UnsupportedSceneV3(f"Scene wrapped annotations do not encode {bad!r}")
+        x, y = (
+            annotation_number(annotation, "x", None, "wrapped x"),
+            annotation_number(annotation, "y", None, "wrapped y"),
+        )
+        dx = annotation_number(annotation, "dx", 36.0 if kind == "callout" else 0.0, "wrapped dx")
+        dy = annotation_number(annotation, "dy", -30.0 if kind == "callout" else 0.0, "wrapped dy")
+        wrap = annotation_number(annotation, "wrap", None, "wrapped width")
+        if not all(np.isfinite(value) for value in (x, y, dx, dy, wrap)) or wrap < 0:
+            raise ValueError(
+                "Scene wrapped annotation coordinates and wrap must be finite; wrap must be nonnegative"
+            )
+        anchor = {"start": 0, "middle": 1, "end": 2}.get(annotation.get("anchor", "start"))
+        if anchor is None:
+            raise UnsupportedSceneV3(
+                "Scene wrapped annotation anchor must be start, middle, or end"
+            )
+        opacity = annotation_number(style, "opacity", 1.0, "wrapped opacity")
+        if not np.isfinite(opacity) or not 0 <= opacity <= 1:
+            raise ValueError("Scene wrapped annotation opacity must be in [0, 1]")
+        rgba = _rgba(
+            annotation_color(
+                style, "color", "#344054" if kind == "callout" else "#667085", "wrapped color"
+            ),
+            opacity,
+        )
+        fill = (
+            _rgba(annotation_color(style, "label_background", "", "wrapped background"), 1.0)
+            if style.get("label_background") is not None
+            else (0, 0, 0, 0)
+        )
+        border_color, border_width = (
+            style.get("label_border_color"),
+            style.get("label_border_width"),
+        )
+        if (border_color is None) != (border_width is None):
+            raise UnsupportedSceneV3("Scene wrapped label border requires color and width")
+        border_rgba = (
+            _rgba(annotation_color(style, "label_border_color", "", "wrapped border"), 1.0)
+            if border_color is not None
+            else (0, 0, 0, 0)
+        )
+        border = annotation_number(style, "label_border_width", 0.0, "wrapped border width")
+        if border_color is not None and (not np.isfinite(border) or border <= 0):
+            raise ValueError("Scene wrapped label border width must be positive and finite")
+        if border_color is not None and fill[3] == 0:
+            raise UnsupportedSceneV3("Scene wrapped label border requires label_background")
+        xyaw.extend(
+            struct.pack(
+                "<ddddd4s4s4sdBB2xI",
+                x,
+                y,
+                dx,
+                dy,
+                wrap,
+                bytes(rgba),
+                bytes(fill),
+                bytes(border_rgba),
+                border,
+                kind == "callout",
+                anchor,
+                len(encoded),
+            )
+        )
+        xyaw.extend(encoded)
+    xyad_v3 = bool(wrapped_annotations)
     framed_annotations = bytearray(
         b"XYAD"
-        + (2).to_bytes(4, "little")
+        + (3 if xyad_v3 else 2).to_bytes(4, "little")
         + len(xyat).to_bytes(4, "little")
         + len(xyal).to_bytes(4, "little")
         + len(xyar).to_bytes(4, "little")
         + len(xyac).to_bytes(4, "little")
     )
+    if xyad_v3:
+        framed_annotations.extend(len(xyaw).to_bytes(4, "little"))
     framed_annotations.extend(xyat)
     framed_annotations.extend(xyal)
     framed_annotations.extend(xyar)
     framed_annotations.extend(xyac)
+    if xyad_v3:
+        framed_annotations.extend(xyaw)
     return _native.scene_batch_encode(
         viewport=(w, h),
         margins=(left, right, top, bottom),
@@ -1367,7 +1470,11 @@ def figure_scene(
         legend_input=_legend_input(figure, legend_entries, styles),
         colorbar_input=colorbar_input,
         authored_text_annotations=bytes(framed_annotations)
-        if text_annotations or attached_labels or straight_arrows or cartesian_callouts
+        if text_annotations
+        or attached_labels
+        or straight_arrows
+        or cartesian_callouts
+        or wrapped_annotations
         else b"",
     )
 
@@ -1462,13 +1569,26 @@ def scene_export_support_reason(
     if getattr(figure, "title_options", None):
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_TEXT"
     annotations = list(getattr(figure, "annotations", None) or [])
-    if annotations and (len(annotations) != 1 or annotations[0].get("kind") != "callout"):
-        # #117's first annotation public-route slice is intentionally one
-        # bounded Cartesian callout.  ``figure_scene`` below remains the sole
-        # authority for its literal field validation, resource limits, Rust
-        # projection, and label-box semantics.  Do not turn this structural
-        # exception into broad annotation support merely because the explicit
-        # Scene API can encode more record kinds.
+    ordinary_callout = (
+        len(annotations) == 1
+        and annotations[0].get("kind") == "callout"
+        and "wrap" not in annotations[0]
+    )
+    ordinary_and_wrapped_callout = (
+        len(annotations) == 2
+        and annotations[0].get("kind") == "callout"
+        and "wrap" not in annotations[0]
+        and annotations[1].get("kind") == "callout"
+        and "wrap" in annotations[1]
+    )
+    if annotations and not (ordinary_callout or ordinary_and_wrapped_callout):
+        # The proven public annotation slice is one ordinary bounded Cartesian
+        # callout, optionally followed by one bounded wrapped Cartesian
+        # callout. ``figure_scene`` below remains the sole authority for its
+        # literal field validation, resource limits, Rust projection, and
+        # label-box semantics. Do not turn this structural exception into broad
+        # annotation support merely because the explicit Scene API can encode
+        # more record kinds.
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
     legend = getattr(figure, "legend_options", None) or {}
     if any(key not in {"loc", "title", "highlight", "toggle"} for key in legend):

@@ -3313,7 +3313,7 @@ impl<'a> SceneBatch<'a> {
             return Err(SceneError::Length);
         }
         let version = batch_u32(bytes, 4)?;
-        if version != 1 && version != 2 {
+        if !(1..=3).contains(&version) {
             return Err(SceneError::Length);
         }
         let xyat_len = batch_u32(bytes, 8)? as usize;
@@ -3327,11 +3327,16 @@ impl<'a> SceneBatch<'a> {
             }
             batch_u32(bytes, 20)? as usize
         };
-        let start: usize = if version == 1 { 20 } else { 24 };
+        let xyaw_len = if version == 3 {
+            if bytes.len() < 28 { return Err(SceneError::Length); }
+            batch_u32(bytes, 24)? as usize
+        } else { 0 };
+        let start: usize = if version == 1 { 20 } else if version == 2 { 24 } else { 28 };
         let xyat_end = start.checked_add(xyat_len).ok_or(SceneError::Limit)?;
         let xyal_end = xyat_end.checked_add(xyal_len).ok_or(SceneError::Limit)?;
         let xyar_end = xyal_end.checked_add(xyar_len).ok_or(SceneError::Limit)?;
-        let end = xyar_end.checked_add(xyac_len).ok_or(SceneError::Limit)?;
+        let xyac_end = xyar_end.checked_add(xyac_len).ok_or(SceneError::Limit)?;
+        let end = xyac_end.checked_add(xyaw_len).ok_or(SceneError::Limit)?;
         if end != bytes.len() {
             return Err(SceneError::Length);
         }
@@ -3469,8 +3474,8 @@ impl<'a> SceneBatch<'a> {
             return Err(SceneError::Length);
         }
         self.arrows = arrows;
-        let callouts = decode_xyac(
-            &bytes[xyar_end..end],
+        let mut callouts = decode_xyac(
+            &bytes[xyar_end..xyac_end],
             self.x_scale,
             self.y_scale,
             self.layout,
@@ -3503,6 +3508,10 @@ impl<'a> SceneBatch<'a> {
         // resolved backgrounds are emitted in the matching XYLB entries.  Do
         // not also append them to `self.labels`: that would duplicate labels
         // and lose the background on the first copy during a Scene round trip.
+        let (mut wrapped, mut wrapped_backgrounds, mut wrapped_callouts) = decode_xyaw(&bytes[xyac_end..end], self.x_scale, self.y_scale, self.layout)?;
+        self.labels.append(&mut wrapped);
+        self.label_backgrounds.append(&mut wrapped_backgrounds);
+        callouts.append(&mut wrapped_callouts);
         self.callouts = callouts;
         Ok(self)
     }
