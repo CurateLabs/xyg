@@ -45,7 +45,12 @@ match. `destroy()` cancels any request; an explicitly owned Worker is then
 disposed. Worker failures emit the `wasm_density_error` chart event with the
 stable error code, corrective message, and resource/copy diagnostics, never
 user data. Its event detail includes the failed `traceId` for a multi-trace
-attachment. While automatic source provisioning and retirement of the legacy
+attachment. Normal kernel-backed ChartViews with exactly one retained typed
+density source use automatic source provisioning to own a packaged same-origin
+WASM worker and pass
+decoded canonical f64 source values through the same XYAG/XYAO adapter; this
+does not apply TypeScript aggregation or alter the bounded kernel-less fallback.
+While retirement of the legacy
 standalone worker remain outside this supported contract pending parity,
 strict-CSP browser, and performance evidence for #119.
 

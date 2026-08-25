@@ -49,6 +49,14 @@ export interface XygStandaloneWasmDensityOptions extends XygWasmWorkerOptions {
   delay?: number;
 }
 
+/** The packaged ESM client owns these same-origin module assets. */
+function packagedDensityWorkerOptions(): XygWasmWorkerOptions {
+  return {
+    workerUrl: new URL("./wasm-worker.js", import.meta.url),
+    wasm: new URL("./xyg-wasm.wasm", import.meta.url),
+  };
+}
+
 export interface XygWasmDensityDiagnostics {
   sequence: number;
   /** Trace whose Rust aggregate produced this snapshot. */
@@ -74,6 +82,25 @@ function validInput(input: XygWasmDensityInput) {
       || input.rgba.length !== input.x.length * 4)) {
     throw new TypeError("WASM density rgba must contain four bytes per source point");
   }
+}
+
+/**
+ * Decode the bounded retained sample into the canonical f64 values accepted by
+ * XYAG. This is source provisioning, never a TypeScript aggregation path.
+ */
+function retainedSampleInput(view: ChartView & any, target: any): XygWasmDensityInput | null {
+  const cpu = target?.sampleOverlay?._cpu;
+  const count = cpu ? Math.min(cpu.x?.length || 0, cpu.y?.length || 0) : 0;
+  if (!count || count > 8_000_000) return null;
+  const x = new Float64Array(count), y = new Float64Array(count);
+  for (let index = 0; index < count; index++) {
+    x[index] = view._decodeValue(cpu.x, cpu.xMeta, index);
+    y[index] = view._decodeValue(cpu.y, cpu.yMeta, index);
+  }
+  return {
+    traceId: target.trace.id, x, y,
+    rgba: view._sampleBinColors(target, count) || undefined,
+  };
 }
 
 /**
@@ -285,19 +312,14 @@ export async function attachStandaloneWasmDensity(
   if (targets.length !== 1) {
     throw new RangeError("attachStandaloneWasmDensity requires exactly one retained-sample density trace");
   }
-  const trace = targets[0], cpu = trace.sampleOverlay._cpu;
-  const count = Math.min(cpu.x.length, cpu.y.length);
-  if (!count) throw new RangeError("standalone density sample is empty");
-  const x = new Float64Array(count), y = new Float64Array(count);
-  for (let index = 0; index < count; index++) {
-    x[index] = view._decodeValue(cpu.x, cpu.xMeta, index);
-    y[index] = view._decodeValue(cpu.y, cpu.yMeta, index);
-  }
+  const trace = targets[0];
+  const input = retainedSampleInput(view, trace);
+  if (!input) throw new RangeError("standalone density sample is empty or unsupported");
   const worker = createXygWasmWorker(options);
   try {
     return await attachWasmDensity(view, {
       worker,
-      input: { traceId: trace.trace.id, x, y, rgba: view._sampleBinColors(trace, count) || undefined },
+      input,
       workerOwnership: "own",
       delay: options.delay,
       sampleRebin: true,
@@ -306,4 +328,54 @@ export async function attachStandaloneWasmDensity(
     await worker.dispose();
     throw error;
   }
+}
+
+/**
+ * Begin the normal kernel-backed ChartView migration without an application
+ * attachment. Only one retained-sample Cartesian density trace is supported
+ * here; everything else keeps the kernel/legacy route. The packaged worker is
+ * owned by the view and all values cross into Rust through XYAG/XYAO.
+ */
+export function provisionKernelWasmDensity(
+  view: ChartView & any, viewOverride = view?.view, options: any = {},
+): Promise<XygWasmDensityHandle | null> | null {
+  if (!view || !view.comm || view._destroyed || view._wasmDensity || view._wasmDensityProvision) return null;
+  // Only a host that explicitly supplied the bounded retained typed source
+  // contract may divert a live kernel request. Older/exported payloads can
+  // still carry a sample for paint/hover, but are not a WASM source promise.
+  if (view.spec?.wasm_density?.automatic !== true) return null;
+  const targets = (view.gpuTraces || []).filter((g: any) =>
+    g.tier === "density" && g.sampleOverlay && g.sampleOverlay._cpu,
+  );
+  if (targets.length !== 1) return null;
+  const input = retainedSampleInput(view, targets[0]);
+  if (!input) return null;
+  const provision = (async () => {
+    try {
+      const worker = createXygWasmWorker(packagedDensityWorkerOptions());
+      const handle = await attachWasmDensity(view, {
+        worker, input, workerOwnership: "own", delay: 0,
+      });
+      if (view._destroyed || view._wasmDensity !== handle) {
+        await handle.dispose();
+        return null;
+      }
+      // The triggering viewport did not wait for worker initialization.
+      // Schedule its current revision once ownership is established.
+      handle.schedule(viewOverride, { ...options, delay: options.delay ?? 0 });
+      return handle;
+    } catch (cause) {
+      if (!view._destroyed) view._dispatchChartEvent?.("wasm_density_error", {
+        code: cause instanceof XygWasmError ? cause.code : "XYG_WASM_WORKER_ERROR",
+        message: cause instanceof Error ? cause.message : "WASM density provisioning failed",
+        diagnostics: cause instanceof XygWasmError ? cause.diagnostics : null,
+        traceId: input.traceId,
+      });
+      return null;
+    } finally {
+      view._wasmDensityProvision = null;
+    }
+  })();
+  view._wasmDensityProvision = provision;
+  return provision;
 }

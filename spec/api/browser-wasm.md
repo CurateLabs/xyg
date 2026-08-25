@@ -40,7 +40,7 @@ without disposing the caller's lifecycle Worker. Rust remains authoritative for 
 geometry, canonical Scene encoding, and painter lowering; TypeScript only
 frames transferable columns and schedules lifecycle checkpoints.
 
-## Opt-in ChartView density refinement
+## ChartView density refinement
 
 `attachWasmDensity(view, { worker, input })` attaches the Rust `XYAG` to
 `XYAO` aggregate seam to explicitly sourced already-painted Cartesian density
@@ -87,8 +87,16 @@ in order: each remains a separate Rust-owned request and therefore retains its
 own axis scale without TypeScript aggregation. A newer viewport cancels the
 active request and prevents the remaining old viewport inputs from publishing.
 `diagnostics()` identifies the trace that produced its latest snapshot.
-While automatic source provisioning, fallback deletion, and claims of full-product
-density parity remain outside this API.
+For the normal kernel-backed Cartesian `ChartView` journey, automatic source provisioning
+decodes one retained typed sample to canonical f64 source values and provisions it
+to an owned packaged same-origin module Worker. No application attachment is
+required: normal viewport scheduling waits for that bounded Rust `XYAG` →
+`XYAO` route, then stale-result, revision, error, and ChartView-destroy
+semantics are the same as an explicit handle. The support predicate is exactly
+one density trace with retained typed x/y source; multi-trace, missing-source,
+and self-contained/kernel-less journeys retain their existing routes. This is
+not fallback deletion of the legacy worker or a claim of full-product density
+parity.
 
 If a Worker success response contains an invalid `XYAO` payload, the event code
 is `XYG_WASM_MALFORMED_OUTPUT`. Its diagnostics preserve the Worker accounting

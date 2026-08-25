@@ -47,8 +47,9 @@ def test_direct_wasm_density_is_public_and_documents_explicit_trace_sources() ->
     assert "attachWasmDensity" in entries
     assert "XygWasmDensityHandle" in entries
     assert "attached kernel-backed scatter workload" in doc
+    assert "provisionKernelWasmDensity" in entries
     assert "automatic source provisioning" in doc
-    assert "## Opt-in ChartView density refinement" in api
+    assert "## ChartView density refinement" in api
     assert "xy:wasm_density_error" in api
     assert "inputs" in api
     assert "distinct trace ids" in api
@@ -64,3 +65,15 @@ def test_direct_wasm_density_multitrace_keeps_rust_as_the_only_aggregator() -> N
     assert "this.view._axisRange(g.xAxis, snapshot)" in source
     assert "aggregateWasmBin2d(this.worker" in source
     assert "xyCreateRebinWorker" not in source
+
+
+def test_kernel_backed_density_automatically_provisions_one_supported_typed_source() -> None:
+    source = (ROOT / "js" / "src" / "49_wasm_density.ts").read_text(encoding="utf-8")
+    kernel = (ROOT / "js" / "src" / "54_kernel.ts").read_text(encoding="utf-8")
+    browser = (ROOT / "tests" / "browser" / "wasm_foundation_page.mjs").read_text(encoding="utf-8")
+    assert "function retainedSampleInput" in source
+    assert "export function provisionKernelWasmDensity" in source
+    assert "view.spec?.wasm_density?.automatic !== true" in source
+    assert 'workerOwnership: "own"' in source
+    assert "provisionKernelWasmDensity(this, viewOverride, opts)" in kernel
+    assert "automatic kernel-backed WASM density lifecycle" in browser
