@@ -2181,6 +2181,7 @@ async function run() {
     { kind: "scatter", x: new Float64Array([0]), y: new Float64Array([1]), diameter: -1 },
     { kind: "scatter", x: new Float64Array([0]), y: new Float64Array([1]), diameter: [2] },
     { kind: "line", x: new Float64Array([0]), y: new Float64Array([1]), style: { fillRgba: [1, 2, 3, 4] } },
+    { kind: "line", x: new Float64Array([0]), y: new Float64Array([1]), style: { step: "mid" } },
     { kind: "scatter", x: new Float64Array([0]), y: new Float64Array([1]), stableIdBase: 1n, stableIds: new BigUint64Array([2n]) },
   ]) {
     try {

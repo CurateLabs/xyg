@@ -114,6 +114,13 @@ export function frameWasmChart(input: XygWasmChartCompileInput): XygWasmTypedSer
   };
   input.series.forEach((series, seriesIndex) => {
     if (!(series.x instanceof Float64Array) || !series.x.length) throw new TypeError("series x must be a non-empty Float64Array");
+    if (series.style != null) {
+      const allowedStyle = new Set(["fillRgba", "strokeRgba", "strokeWidth"]);
+      const unsupportedStyle = Object.keys(series.style).find((key) => !allowedStyle.has(key));
+      if (unsupportedStyle !== undefined) {
+        throw new TypeError(`typed-series style ${unsupportedStyle} is not supported by XYTS v2`);
+      }
+    }
     if (series.kind !== "scatter" && (series.diameter !== undefined || series.symbol !== undefined)) {
       throw new TypeError("diameter and symbol are supported only for scatter series");
     }

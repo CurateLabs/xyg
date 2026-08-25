@@ -254,6 +254,22 @@ test("Node matches Python bytes for bounded literal geometry host transforms", (
   }
 });
 
+test("Node matches Python exact Rust-expanded step bytes in every mode and consumer", () => {
+  for (const where of ["pre", "mid", "post"]) {
+    const figure = new Figure({ width: 320, height: 240 });
+    figure.setAxisDomain("x", [0, 4]); figure.setAxisDomain("y", [0, 5]);
+    figure.step([0, 1, 2], [1, 3, 2], { id: 0, where });
+    const scene = figure.toScene();
+    assert.equal(
+      crypto.createHash("sha256").update(scene).digest("hex"),
+      figureSceneFixture.rust_step_modes_sha256[where],
+    );
+    assert.equal((sceneSvg(scene).match(/<polyline /g) ?? []).length, 1);
+    assert.ok(sceneRasterCommands(scene).length > 100);
+    assert.ok(sceneBrowserPainter(scene).length > 300);
+  }
+});
+
 test("Node Figure authoring accepts bounded annotations without exposing a second policy", () => {
   const source = { kind: "text", x: 0.5, y: 0.5, text: "owned by Rust", style: { color: "#ff0000" } };
   const fromConstructor = new Figure({ width: 320, height: 240, annotations: [source] });
@@ -651,6 +667,17 @@ test("Node Scene v4 rejects malformed batches", () => {
   assert.throws(() => sceneBatchEncode({ ...base, kinds: [9] }), /invalid canonical scene batch/);
   assert.throws(() => sceneBatchEncode({ ...base, styleRefs: [1] }), /invalid canonical scene batch/);
   assert.throws(() => sceneBatchEncode({ ...base, margins: [60, 40, 10, 10] }), /invalid canonical scene batch/);
+  assert.throws(() => sceneBatchEncode({ ...base, stepModes: [] }), /stepModes must have length 1/);
+  assert.throws(() => sceneBatchEncode({ ...base, stepModes: [4] }), /stepModes values must be integers from 0 through 3/);
+  assert.throws(() => sceneBatchEncode({ ...base, stepModes: [1] }), /invalid canonical scene batch/);
+
+  const line = {
+    ...base,
+    kinds: [1, 1], stableIds: [2, 2], styleRefs: [0, 0],
+    diameter: [0, 0], symbols: [0, 0], x0: [0, 1], y0: [0, 1], x1: [0, 0], y1: [0, 0],
+  };
+  assert.throws(() => sceneBatchEncode({ ...line, styles: [base.styles[0], base.styles[0]], styleRefs: [0, 1], stepModes: [1, 1] }), /invalid canonical scene batch/);
+  assert.throws(() => sceneBatchEncode({ ...line, x0: [0, Number.NaN], stepModes: [2, 2] }), /invalid canonical scene batch/);
 });
 
 test("Node Scene v4 validates unsigned fields before typed-array coercion", () => {

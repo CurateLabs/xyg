@@ -558,6 +558,12 @@ F3, still pending (above).
   selected endpoint-pair order, clipping, SVG, PDF, and raster output;
   nonfinite/missing breaks, custom styles, and every other segment-like mark
   remain explicit compatibility boundaries.
+  ABI 95 adds one bounded parallel step-mode enum to the whole-Scene ingress.
+  Python and Node pass compact finite f64 line samples for `pre`/`mid`/`post`;
+  `xyg-engine` validates stable-id/style run boundaries, expands the exact
+  ordered Polyline corners, and applies the expanded-record budget before Scene
+  v25 encoding. The direct-browser `XYTS` v2 vocabulary has no step-mode field
+  and continues to reject step authoring rather than inferring host policy.
   Unsupported marks, missing values, and customization fail closed at the
   explicit Scene boundary while records migrate. ABI 84 adds a versioned
   authored-feature presence predicate whose ordered actionable diagnostic is

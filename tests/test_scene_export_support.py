@@ -141,6 +141,15 @@ def _public_literal_geometry_variant(kind: str) -> Figure:
     return figure
 
 
+def _public_step_mode(where: str) -> Figure:
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 4.0)
+    figure.axis_options["y"]["domain"] = (0.0, 5.0)
+    figure.step([0, 1, 2], [1, 3, 2], where=where)
+    figure.traces[-1].id = 0
+    return figure
+
+
 def _public_disconnected_segments() -> Figure:
     """One ordered literal fixture for the public endpoint-pair slice."""
     figure = Figure(width=320, height=240)
@@ -251,6 +260,38 @@ def test_literal_geometry_cross_host_variants_match_exact_scene_bytes(kind: str)
         hashlib.sha256(figure_scene(figure)).hexdigest()
         == fixture["public_literal_geometry_variants_sha256"][kind]
     )
+
+
+@pytest.mark.parametrize("where", ["pre", "mid", "post"])
+def test_rust_step_modes_match_exact_cross_host_bytes_and_every_static_consumer(
+    where: str,
+) -> None:
+    from xyg import _native, _pdf, kernels
+
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
+    figure = _public_step_mode(where)
+    assert scene_export_support_reason(figure) is None
+    scene = figure_scene(figure)
+    assert hashlib.sha256(scene).hexdigest() == fixture["rust_step_modes_sha256"][where]
+    svg = _native.scene_svg(scene)
+    assert svg.count("<polyline ") == 1
+    assert figure.to_svg().encode() == svg.encode()
+    assert figure.to_png(scale=1) == kernels.rasterize_png(
+        _native.scene_raster_commands(scene), figure.width, figure.height
+    )
+    assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(svg)
+    painter = _native.scene_browser_painter(scene)
+    assert painter.startswith(b"XYPB") and len(painter) > 300
+
+
+def test_migrated_scene_packers_have_no_host_step_geometry_expander() -> None:
+    root = Path(__file__).parents[1]
+    python_packer = (root / "python/xyg/_scene_v3.py").read_text()
+    node_packer = (root / "packages/xy-node/src/scene.js").read_text()
+    assert "def _step_arrays" not in python_packer
+    assert "function stepArrays" not in node_packer
+    assert "step_modes=step_modes" in python_packer
+    assert "stepModes, x0, y0" in node_packer
 
 
 @pytest.mark.parametrize(

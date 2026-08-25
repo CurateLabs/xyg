@@ -387,26 +387,6 @@ def _reject_rect_extras(style: dict[str, Any], kind: str) -> None:
         raise UnsupportedSceneV3(f"Scene v12 does not yet encode {kind} wedge_gap")
 
 
-def _step_arrays(xv: np.ndarray, yv: np.ndarray, where: str) -> tuple[np.ndarray, np.ndarray]:
-    """Expand compact step samples into polyline corners (parity with `_svg`)."""
-    if len(xv) < 2:
-        return xv, yv
-    xs = [float(xv[0])]
-    ys = [float(yv[0])]
-    for index in range(1, len(xv)):
-        if where == "pre":
-            xs.extend((float(xv[index - 1]), float(xv[index])))
-            ys.extend((float(yv[index]), float(yv[index])))
-        elif where == "mid":
-            mid = (float(xv[index - 1]) + float(xv[index])) * 0.5
-            xs.extend((mid, mid, float(xv[index])))
-            ys.extend((float(yv[index - 1]), float(yv[index]), float(yv[index])))
-        else:
-            xs.extend((float(xv[index]), float(xv[index])))
-            ys.extend((float(yv[index - 1]), float(yv[index])))
-    return np.asarray(xs), np.asarray(ys)
-
-
 def _rect_columns(trace: Any) -> list[np.ndarray]:
     if any(value is None for value in (trace.x0, trace.y0, trace.x1, trace.y1)):
         raise ValueError(f"{trace.kind} Scene v12 compilation requires four rectangle columns")
@@ -534,6 +514,7 @@ def figure_scene(
     diameters: list[float] = []
     symbols: list[int] = []
     coordinates: list[list[float]] = [[], [], [], []]
+    step_runs: list[tuple[int, int, int]] = []
     legend_entries: list[tuple[int, int, int, str]] = []
     for trace in figure.traces:
         if trace.x_axis != "x" or trace.y_axis != "y":
@@ -773,11 +754,11 @@ def figure_scene(
                 raise UnsupportedSceneV3("Scene v12 step expansion applies only to line traces")
             if where not in {"pre", "post", "mid"}:
                 raise UnsupportedSceneV3(f"Scene v12 does not support step mode {where!r}")
-            xv, yv = _step_arrays(xv, yv, where)
         if not np.isfinite(xv).all() or not np.isfinite(yv).all():
             raise UnsupportedSceneV3(
                 "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
             )
+        run_start = len(kinds)
         for index in range(len(xv)):
             kinds.append(kind_code)
             stable_ids.append(int(trace.id))
@@ -788,6 +769,8 @@ def figure_scene(
             coordinates[1].append(float(yv[index]))
             coordinates[2].append(0.0)
             coordinates[3].append(0.0)
+        if where is not None:
+            step_runs.append((run_start, len(kinds), {"pre": 1, "mid": 2, "post": 3}[where]))
 
     # Scene v12's bounded primary-annotation subset is represented by ordinary
     # canonical records with a reserved stable-id namespace. Rust therefore
@@ -1170,6 +1153,9 @@ def figure_scene(
     fill_rgba = [channel for fill, _, _ in styles for channel in fill]
     stroke_rgba = [channel for _, stroke, _ in styles for channel in stroke]
     stroke_width = [value for _, _, value in styles]
+    step_modes = [0] * len(kinds)
+    for start, end, mode in step_runs:
+        step_modes[start:end] = [mode] * (end - start)
     kind_codes = {"linear": 0, "log": 1, "symlog": 2}
 
     def axis(axis_id: str, stable_id: int) -> tuple[int, int, float, float, float, bool]:
@@ -1476,6 +1462,7 @@ def figure_scene(
         stroke_width=stroke_width,
         diameter=diameters,
         symbols=symbols,
+        step_modes=step_modes,
         x0=coordinates[0],
         y0=coordinates[1],
         x1=coordinates[2],

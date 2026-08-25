@@ -221,6 +221,7 @@ function figureChromeStyle(figure) {
 /** Encode the shared backend-neutral Scene v12 typed batch. */
 export function sceneBatchEncode({
   viewport, margins, xAxis, yAxis, kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1,
+  stepModes = null,
   title = "", xLabel = "", yLabel = "", chromeStyle = null,
   xMajorTicks = null, xMinorTicks = [], yMajorTicks = null, yMinorTicks = [],
   xTickLabels = null, yTickLabels = null,
@@ -240,6 +241,9 @@ export function sceneBatchEncode({
   const styleRefArray = asUnsignedArray(styleRefs, "styleRefs", 0xffff_ffff, Uint32Array);
   const diameters = asF64Array(diameter, "diameter");
   const symbolCodes = asUnsignedArray(symbols, "symbols", 255, Uint8Array);
+  const stepModeCodes = stepModes == null
+    ? new Uint8Array(kindArray.length)
+    : asUnsignedArray(stepModes, "stepModes", 3, Uint8Array);
   const fills = new Uint8Array(styles.length * 4);
   const strokes = new Uint8Array(styles.length * 4);
   const widths = new Float64Array(styles.length);
@@ -254,7 +258,7 @@ export function sceneBatchEncode({
   }
   const coordinates = [x0, y0, x1, y1].map((value, index) => asF64Array(value, ["x0", "y0", "x1", "y1"][index]));
   const length = kindArray.length;
-  for (const [value, name] of [[ids, "stableIds"], [styleRefArray, "styleRefs"], [diameters, "diameter"], [symbolCodes, "symbols"], ...coordinates.map((value, index) => [value, ["x0", "y0", "x1", "y1"][index]])]) requireLength(value, length, name);
+  for (const [value, name] of [[ids, "stableIds"], [styleRefArray, "styleRefs"], [diameters, "diameter"], [symbolCodes, "symbols"], [stepModeCodes, "stepModes"], ...coordinates.map((value, index) => [value, ["x0", "y0", "x1", "y1"][index]])]) requireLength(value, length, name);
   const xd = axisDescriptor(xAxis, "xAxis");
   const yd = axisDescriptor(yAxis, "yAxis");
   const titleBytes = new TextEncoder().encode(String(title ?? ""));
@@ -300,7 +304,7 @@ export function sceneBatchEncode({
       authoredText.length ? u8Ptr(authoredText) : 0, BigInt(authoredText.length),
       u8Ptr(kindArray), pointer(ids, "uint64_t *"), u32Ptr(styleRefArray),
       u8Ptr(fills), u8Ptr(strokes), f64Ptr(widths), BigInt(widths.length),
-      f64Ptr(diameters), u8Ptr(symbolCodes),
+      f64Ptr(diameters), u8Ptr(symbolCodes), u8Ptr(stepModeCodes),
       ...coordinates.map(f64Ptr), BigInt(length),
       titleBytes.length ? u8Ptr(titleBytes) : 0, BigInt(titleBytes.length),
       xLabelBytes.length ? u8Ptr(xLabelBytes) : 0, BigInt(xLabelBytes.length),
@@ -501,26 +505,6 @@ function rejectRectExtras(style, kind) {
   }
 }
 
-function stepArrays(xv, yv, where) {
-  if (xv.length < 2) return { x: xv, y: yv };
-  const xs = [Number(xv[0])];
-  const ys = [Number(yv[0])];
-  for (let index = 1; index < xv.length; index += 1) {
-    if (where === "pre") {
-      xs.push(Number(xv[index - 1]), Number(xv[index]));
-      ys.push(Number(yv[index]), Number(yv[index]));
-    } else if (where === "mid") {
-      const mid = (Number(xv[index - 1]) + Number(xv[index])) * 0.5;
-      xs.push(mid, mid, Number(xv[index]));
-      ys.push(Number(yv[index - 1]), Number(yv[index]), Number(yv[index]));
-    } else {
-      xs.push(Number(xv[index]), Number(xv[index]));
-      ys.push(Number(yv[index - 1]), Number(yv[index]));
-    }
-  }
-  return { x: xs, y: ys };
-}
-
 function requireEqualColumns(columns, kind, label) {
   if (columns.some((column) => column == null)) {
     throw new RangeError(`${kind} Scene v12 compilation requires four ${label} columns`);
@@ -567,7 +551,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   if (reason) throw new RangeError(reason);
   const unsupported = figure.traces.find((trace) => !SUPPORTED_KINDS.has(trace.kind));
   if (unsupported) throw new RangeError(`Scene v12 figure compilation does not yet support ${unsupported.kind}`);
-  const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [], legendEntries = [];
+  const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [], legendEntries = [], stepRuns = [];
   const xDomain = figure._range("x");
   const yDomain = figure._range("y");
   for (const trace of figure.traces) {
@@ -735,8 +719,6 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       if (!["pre", "post", "mid"].includes(where)) {
         throw new RangeError(`Scene v12 does not support step mode ${JSON.stringify(where)}`);
       }
-      const stepped = stepArrays(xv, yv, where);
-      xv = stepped.x; yv = stepped.y;
     }
     if (xv == null || yv == null || xv.length !== yv.length) {
       throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
@@ -745,12 +727,14 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
     }
     const kindCode = trace.kind === "scatter" ? 0 : 1;
+    const runStart = kinds.length;
     for (let index = 0; index < xv.length; index += 1) {
       kinds.push(kindCode); stableIds.push(id); styleRefs.push(styleRef);
       diameter.push(trace.kind === "scatter" ? Number(style.size ?? style.diameter ?? 4) : 0);
       symbols.push(trace.kind === "scatter" ? sceneSymbolCode(style.symbol ?? 0) : 0);
       x0.push(xv[index]); y0.push(yv[index]); x1.push(0); y1.push(0);
     }
+    if (where != null) stepRuns.push([runStart, kinds.length, { pre: 1, mid: 2, post: 3 }[where]]);
   }
   const annotationPrefix = 0x5859000000000000n, attachedLabels = [], straightArrows = [], cartesianCallouts = [], wrappedAnnotations = [];
   for (const [annotationIndex, annotation] of (figure.annotations ?? []).entries()) {
@@ -878,6 +862,8 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     const xyadV3 = wrapped.length > 0, header = xyadV3 ? 28 : 24, out = new Uint8Array(header + xyat.length + xyal.length + xyar.length + xyac.length + (xyadV3 ? xyaw.length : 0)), view = new DataView(out.buffer); out.set(textEncoder.encode("XYAD")); view.setUint32(4,xyadV3 ? 3 : 2,true); view.setUint32(8,xyat.length,true); view.setUint32(12,xyal.length,true); view.setUint32(16,xyar.length,true); view.setUint32(20,xyac.length,true); if (xyadV3) view.setUint32(24,xyaw.length,true); out.set(xyat,header); out.set(xyal,header+xyat.length); out.set(xyar,header+xyat.length+xyal.length); out.set(xyac,header+xyat.length+xyal.length+xyar.length); if (xyadV3) out.set(xyaw,header+xyat.length+xyal.length+xyar.length+xyac.length); return out;
   })();
   const title = figure.title ?? "";
+  const stepModes = new Uint8Array(kinds.length);
+  for (const [start, end, mode] of stepRuns) stepModes.fill(mode, start, end);
   // `Figure.setAxis({ label })` is the public Node authoring form, matching
   // Python's `axis_options`; do not silently drop those bytes before the Rust
   // layout/Scene seam.
@@ -904,7 +890,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   }
   return sceneBatchEncode({ viewport: [figure.width, figure.height], margins: resolvedMargins,
     xAxis: { id: 1, domain: xDomain }, yAxis: { id: 2, domain: yDomain },
-    kinds, stableIds, styleRefs, styles, diameter, symbols, x0, y0, x1, y1,
+    kinds, stableIds, styleRefs, styles, diameter, symbols, stepModes, x0, y0, x1, y1,
     title, xLabel, yLabel, chromeStyle: figureChromeStyle(figure), xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, xMinorTicks: (figure.xAxis ?? figure.x_axis)?.minorTickValues ?? (figure.xAxis ?? figure.x_axis)?.minor_tick_values ?? [], yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, yMinorTicks: (figure.yAxis ?? figure.y_axis)?.minorTickValues ?? (figure.yAxis ?? figure.y_axis)?.minor_tick_values ?? [], xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText,
   });
 }
