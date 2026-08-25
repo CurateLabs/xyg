@@ -156,6 +156,9 @@ jobs:
           npx playwright install chromium
       - name: Generate and measure four-size authored-Scene first paint
         env:
+          # Node's package resolver intentionally never probes checkout paths;
+          # this one evidence step consumes the just-built development cdylib.
+          XYG_NATIVE_LIB: $GITHUB_WORKSPACE/target/release/libxyg_core.so
           XYG_AUTHORED_SCENE_DIR: authored-scenes
           XYG_EVIDENCE_PATH: authored-scene-browser-${{ github.sha }}.json
         run: |
