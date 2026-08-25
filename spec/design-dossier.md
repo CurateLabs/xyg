@@ -587,6 +587,13 @@ F3, still pending (above).
   but does not yet replace the density fallback. Transferable ArrayBuffers
   avoid a main↔Worker clone, followed by an explicit bounded copy into WASM linear
   memory. SharedArrayBuffer remains an optional isolated-context optimization.
+- The direct-browser product-path successor to whole-source `XYAG` is the
+  Rust-owned `XYAS` stream ABI: a fixed header declares the exact f64 domain,
+  grid, and total count; only bounded 32,768-point raw x/y chunks are staged
+  between cancellation checkpoints; Rust retains only the count grid and emits
+  the existing `XYAO` texture payload. This is count-only until the channel
+  algebra and product integration have their own bounded contracts; TypeScript
+  may transfer/stage chunks but cannot scan, bin, or choose aggregation policy.
 - *Historical decision, now narrowed:* the original design made Worker/WASM the
   universal engine. §32 correctly made native host compute primary. #59 restores
   Worker/WASM only for direct-browser execution; it does not force Python/Node hosts

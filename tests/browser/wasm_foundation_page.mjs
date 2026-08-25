@@ -328,6 +328,9 @@ async function fixtureModule({
     "xyg_wasm_scene_compile_prepare",
     "xyg_wasm_aggregate_bin2d",
     "xyg_wasm_aggregate_step",
+    "xyg_wasm_aggregate_stream_begin",
+    "xyg_wasm_aggregate_stream_push",
+    "xyg_wasm_aggregate_stream_finish",
     "xyg_wasm_graph_begin",
     "xyg_wasm_graph_step",
     "xyg_wasm_output_ptr",
@@ -361,7 +364,7 @@ async function fixtureModule({
     ]),
   ];
   const functionTypes = [
-    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 4, 3, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 3, 1, 1, 4, 3,
+    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 4, 3, 4, 4, 2, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 3, 1, 1, 4, 3,
   ];
   const functions = [...u32(functionTypes.length), ...functionTypes.flatMap(u32)];
   const memory = [1, 0, 1]; // one memory, no maximum, one 64 KiB page
@@ -372,9 +375,10 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    21, 24, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
+    22, 24, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
+    0, 0, 0,
     0, 0,
     aggregateOutputOutOfRange ? 65520 : 0,
     aggregateOutputOutOfRange ? 32 : 0,
@@ -480,7 +484,7 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 21,
+    expectedAbiVersion: 22,
     expectedSceneVersion: 24,
   };
 }
@@ -641,7 +645,7 @@ async function run() {
     maxArenaBytes: 8192,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 21 || ready.sceneVersion !== 24) {
+  if (ready.abiVersion !== 22 || ready.sceneVersion !== 24) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -914,7 +918,7 @@ async function run() {
         // This exercises the browser-side contract boundary without teaching
         // the fixture WASM module a second aggregate implementation.
         result: Promise.resolve({
-          sequence, aggregate: new ArrayBuffer(0), abiVersion: 21, sceneVersion: 20,
+          sequence, aggregate: new ArrayBuffer(0), abiVersion: 22, sceneVersion: 20,
           records: 0, styles: 0, copyCount: 1,
           copyBytesLo: 48, copyBytesHi: 0, arenaBytes: 0,
           arenaHighWaterBytes: 48, memoryBytes: 65536,

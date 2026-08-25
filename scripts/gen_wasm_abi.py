@@ -357,6 +357,13 @@ def render(manifest: dict[str, object]) -> str:
         f"export const XYG_WASM_AGGREGATE_MAX_GRID_CELLS = {int(aggregate['max_grid_cells'])} as const;",
         f"export const XYG_WASM_AGGREGATE_OFFSETS = {json.dumps(aggregate['request_offsets'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_AGGREGATE_OUTPUT_OFFSETS = {json.dumps(aggregate['output_offsets'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_AGGREGATE_STREAM_MAGIC = {json.dumps(aggregate['stream_magic'])} as const;",
+        f"export const XYG_WASM_AGGREGATE_STREAM_VERSION = {int(aggregate['stream_version'])} as const;",
+        f"export const XYG_WASM_AGGREGATE_STREAM_HEADER_BYTES = {int(aggregate['stream_header_bytes'])} as const;",
+        f"export const XYG_WASM_AGGREGATE_STREAM_HEADER_OFFSETS = {json.dumps(aggregate['stream_header_offsets'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_AGGREGATE_STREAM_CHUNK_POINTS = {int(aggregate['stream_chunk_points'])} as const;",
+        f"export const XYG_WASM_AGGREGATE_STREAM_CHUNK_BYTES = {int(aggregate['stream_chunk_bytes'])} as const;",
+        f"export const XYG_WASM_AGGREGATE_STREAM_CHUNK_COPY_FACTOR = {int(aggregate['stream_chunk_copy_factor'])} as const;",
         f"export const XYG_WASM_GRAPH_VERSION = {int(graph['version'])} as const;",
         f"export const XYG_WASM_GRAPH_MAGIC = {json.dumps(graph['request_magic'])} as const;",
         f"export const XYG_WASM_GRAPH_HEADER_BYTES = {int(graph['header_bytes'])} as const;",
@@ -700,6 +707,34 @@ def verify_rust(manifest: dict[str, object]) -> None:
         ("OUTPUT_COPY_FACTOR", "output_copy_factor"),
         ("MAX_POINTS", "max_points"),
         ("MAX_GRID_CELLS", "max_grid_cells"),
+    ):
+        match = re.search(rf"pub const {rust_name}: (?:u32|usize) = ([0-9_ *]+);", aggregate_source)
+        rust_value = (
+            0
+            if not match
+            else math.prod(int(part.strip().replace("_", "")) for part in match.group(1).split("*"))
+        )
+        if not match or rust_value != int(manifest["aggregate"][manifest_name]):
+            raise SystemExit(f"xyg-wasm aggregate {rust_name} differs from spec/wasm/abi.json")
+    for rust_name, manifest_name in (("STREAM_MAGIC", "stream_magic"),):
+        if (
+            f'pub const {rust_name}: &[u8; 4] = b"{manifest["aggregate"][manifest_name]}";'
+            not in aggregate_source
+        ):
+            raise SystemExit(f"xyg-wasm aggregate {rust_name} differs from spec/wasm/abi.json")
+    expected = list(manifest["aggregate"]["stream_header_offsets"].values())
+    literal = ", ".join(str(value) for value in expected)
+    if (
+        f"pub const REQUEST_OFFSETS: [usize; {len(expected)}] = [{literal}];"
+        not in aggregate_source
+    ):
+        raise SystemExit("xyg-wasm aggregate stream header offsets differ from spec/wasm/abi.json")
+    for rust_name, manifest_name in (
+        ("STREAM_VERSION", "stream_version"),
+        ("STREAM_HEADER_BYTES", "stream_header_bytes"),
+        ("STREAM_CHUNK_POINTS", "stream_chunk_points"),
+        ("STREAM_CHUNK_BYTES", "stream_chunk_bytes"),
+        ("STREAM_CHUNK_COPY_FACTOR", "stream_chunk_copy_factor"),
     ):
         match = re.search(rf"pub const {rust_name}: (?:u32|usize) = ([0-9_ *]+);", aggregate_source)
         rust_value = (

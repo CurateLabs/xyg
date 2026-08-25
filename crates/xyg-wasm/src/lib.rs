@@ -19,7 +19,7 @@ mod typed_series_abi_generated;
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 21;
+pub const WASM_ABI_VERSION: u32 = 22;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -57,6 +57,7 @@ struct Instance {
     last_scene_records: usize,
     last_scene_styles: usize,
     aggregate_job: Option<aggregate::AggregateJob>,
+    stream_aggregate_job: Option<aggregate::StreamAggregateJob>,
     aggregate_sequence: u32,
     temporal: Option<xyg_engine::temporal_controller::TemporalController>,
     temporal_graph: Option<temporal_graph::WasmTemporalGraph>,
@@ -78,6 +79,7 @@ struct CompileJob {
 impl Instance {
     fn clear_aggregate(&mut self) {
         self.aggregate_job = None;
+        self.stream_aggregate_job = None;
         self.aggregate_sequence = 0;
     }
 }
@@ -156,6 +158,7 @@ impl Registry {
                 last_scene_records: 0,
                 last_scene_styles: 0,
                 aggregate_job: None,
+                stream_aggregate_job: None,
                 aggregate_sequence: 0,
                 temporal: None,
                 temporal_graph: None,
@@ -277,7 +280,19 @@ pub extern "C" fn xyg_wasm_arena_resize(handle: u32, length: usize) -> i32 {
                 "requested staging arena exceeds the instance byte budget",
             );
         }
-        instance.clear_aggregate();
+        if instance.stream_aggregate_job.is_some() && length > aggregate::STREAM_CHUNK_BYTES {
+            return fail(
+                instance,
+                STATUS_RESOURCE_LIMIT,
+                "stream aggregate staging exceeds one bounded source chunk",
+            );
+        }
+        // A streaming aggregate owns its bounded count grid while each source
+        // chunk is staged through this arena. All other operations clear it
+        // at their own sequence boundary.
+        if instance.stream_aggregate_job.is_none() {
+            instance.clear_aggregate();
+        }
         instance.compile_job = None;
         if length > instance.arena.capacity()
             && instance
@@ -338,6 +353,10 @@ pub extern "C" fn xyg_wasm_cancel(handle: u32, sequence: u32) -> i32 {
             .is_some_and(|job| job.sequence <= sequence)
         {
             instance.compile_job = None;
+            instance.arena = Vec::new();
+        }
+        if instance.aggregate_sequence != 0 && instance.aggregate_sequence <= sequence {
+            instance.clear_aggregate();
             instance.arena = Vec::new();
         }
         instance.last_error.clear();
@@ -1057,6 +1076,154 @@ pub extern "C" fn xyg_wasm_aggregate_bin2d(
     .unwrap_or(STATUS_INVALID_HANDLE)
 }
 
+fn aggregate_stream_begin_from_arena(
+    instance: &mut Instance,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    instance.output = Vec::new();
+    if sequence == 0 {
+        return fail(instance, STATUS_INVALID_ARGUMENT, "sequence zero is reserved");
+    }
+    if sequence <= instance.cancelled_through {
+        return fail(instance, STATUS_CANCELLED, "request was cancelled");
+    }
+    if sequence <= instance.latest_sequence {
+        return fail(instance, STATUS_STALE_SEQUENCE, "request sequence is stale");
+    }
+    instance.clear_aggregate();
+    let arena = std::mem::take(&mut instance.arena);
+    let Some(end) = offset.checked_add(length) else {
+        return fail(instance, STATUS_INVALID_ARGUMENT, "stream header range overflow");
+    };
+    let Some(header) = arena.get(offset..end) else {
+        return fail(
+            instance,
+            STATUS_INVALID_ARGUMENT,
+            "stream header lies outside the arena",
+        );
+    };
+    instance.latest_sequence = sequence;
+    let job = match aggregate::StreamAggregateJob::begin(header, instance.max_arena_bytes) {
+        Ok(job) => job,
+        Err(error) => return map_aggregate_error(instance, error),
+    };
+    instance.stream_aggregate_job = Some(job);
+    instance.aggregate_sequence = sequence;
+    instance.last_error.clear();
+    STATUS_PENDING
+}
+
+/// Begin a count-only `XYAS` stream aggregate. The header defines the full
+/// domain, screen grid, and declared point count; it carries no source values.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_aggregate_stream_begin(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        aggregate_stream_begin_from_arena(instance, sequence, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Push one canonical `[x: f64; n][y: f64; n]` source chunk into the active
+/// stream. A chunk is bounded to one checkpoint, so the Worker can process
+/// cancellation or a newer viewport before staging another chunk.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_aggregate_stream_push(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_instance_mut(handle, |instance| {
+        instance.output.clear();
+        if sequence == 0 {
+            return fail(instance, STATUS_INVALID_ARGUMENT, "sequence zero is reserved");
+        }
+        if sequence != instance.aggregate_sequence || instance.stream_aggregate_job.is_none() {
+            return fail(instance, STATUS_CANCELLED, "stream aggregate was superseded");
+        }
+        if sequence <= instance.cancelled_through {
+            instance.clear_aggregate();
+            instance.arena = Vec::new();
+            return fail(
+                instance,
+                STATUS_CANCELLED,
+                "stream aggregate was cancelled at a chunk checkpoint",
+            );
+        }
+        let arena = std::mem::take(&mut instance.arena);
+        let Some(end) = offset.checked_add(length) else {
+            instance.clear_aggregate();
+            return fail(instance, STATUS_INVALID_ARGUMENT, "stream chunk range overflow");
+        };
+        let Some(chunk) = arena.get(offset..end) else {
+            instance.clear_aggregate();
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "stream chunk lies outside the arena",
+            );
+        };
+        let result = instance
+            .stream_aggregate_job
+            .as_mut()
+            .expect("checked stream aggregate")
+            .push(chunk);
+        match result {
+            Ok(false) => {
+                instance.last_error.clear();
+                STATUS_PENDING
+            }
+            Ok(true) => unreachable!("stream chunks always yield"),
+            Err(error) => {
+                instance.clear_aggregate();
+                map_aggregate_error(instance, error)
+            }
+        }
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Finish the active `XYAS` stream and place the existing transferable `XYAO`
+/// output in the normal result buffer. Finishing before the declared count is
+/// an invalid request and drops the bounded accumulator.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_aggregate_stream_finish(handle: u32, sequence: u32) -> i32 {
+    with_instance_mut(handle, |instance| {
+        instance.output.clear();
+        if sequence == 0 {
+            return fail(instance, STATUS_INVALID_ARGUMENT, "sequence zero is reserved");
+        }
+        if sequence != instance.aggregate_sequence || instance.stream_aggregate_job.is_none() {
+            return fail(instance, STATUS_CANCELLED, "stream aggregate was superseded");
+        }
+        if sequence <= instance.cancelled_through {
+            instance.clear_aggregate();
+            return fail(instance, STATUS_CANCELLED, "stream aggregate was cancelled");
+        }
+        let job = instance
+            .stream_aggregate_job
+            .take()
+            .expect("checked stream aggregate");
+        instance.aggregate_sequence = 0;
+        match job.finish() {
+            Ok(output) => {
+                instance.output = output;
+                instance.last_error.clear();
+                STATUS_OK
+            }
+            Err(error) => map_aggregate_error(instance, error),
+        }
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
 /// Advance the active aggregate by at most `max_points`. `PENDING` requires
 /// the Worker to yield before calling again so cancel/new viewport messages run.
 #[no_mangle]
@@ -1467,6 +1634,98 @@ mod tests {
             out.extend_from_slice(&0.5f64.to_le_bytes());
         }
         out
+    }
+
+    fn stream_header(points: usize) -> Vec<u8> {
+        let mut out = vec![0u8; aggregate::STREAM_HEADER_BYTES];
+        out[..4].copy_from_slice(aggregate::STREAM_MAGIC);
+        out[4..8].copy_from_slice(&aggregate::STREAM_VERSION.to_le_bytes());
+        out[8..12].copy_from_slice(&(aggregate::STREAM_HEADER_BYTES as u32).to_le_bytes());
+        out[16..20].copy_from_slice(&(points as u32).to_le_bytes());
+        out[20..24].copy_from_slice(&4u32.to_le_bytes());
+        out[24..28].copy_from_slice(&4u32.to_le_bytes());
+        for (offset, value) in [(32, 0.0f64), (40, 1.0), (48, 0.0), (56, 1.0)] {
+            out[offset..offset + 8].copy_from_slice(&value.to_le_bytes());
+        }
+        out
+    }
+
+    fn stream_chunk(points: usize) -> Vec<u8> {
+        let mut out = Vec::with_capacity(points * aggregate::REQUEST_STRIDE_COUNT);
+        for _ in 0..points {
+            out.extend_from_slice(&0.5f64.to_le_bytes());
+        }
+        for _ in 0..points {
+            out.extend_from_slice(&0.5f64.to_le_bytes());
+        }
+        out
+    }
+
+    #[test]
+    fn stream_aggregate_uses_bounded_chunks_and_existing_xyao_output() {
+        let handle = xyg_wasm_instance_new(2 * 1024 * 1024);
+        let header = stream_header(3);
+        write_arena(handle, &header);
+        assert_eq!(
+            xyg_wasm_aggregate_stream_begin(handle, 1, 0, header.len()),
+            STATUS_PENDING
+        );
+        assert_eq!(xyg_wasm_arena_len(handle), 0);
+        let first = stream_chunk(2);
+        write_arena(handle, &first);
+        assert_eq!(
+            xyg_wasm_aggregate_stream_push(handle, 1, 0, first.len()),
+            STATUS_PENDING
+        );
+        assert_eq!(xyg_wasm_arena_len(handle), 0);
+        assert_eq!(
+            xyg_wasm_arena_resize(handle, aggregate::STREAM_CHUNK_BYTES + 1),
+            STATUS_RESOURCE_LIMIT
+        );
+        assert_eq!(
+            xyg_wasm_aggregate_stream_finish(handle, 1),
+            STATUS_INVALID_ARGUMENT
+        );
+
+        let header = stream_header(3);
+        write_arena(handle, &header);
+        assert_eq!(
+            xyg_wasm_aggregate_stream_begin(handle, 2, 0, header.len()),
+            STATUS_PENDING
+        );
+        for points in [2, 1] {
+            let chunk = stream_chunk(points);
+            write_arena(handle, &chunk);
+            assert_eq!(
+                xyg_wasm_aggregate_stream_push(handle, 2, 0, chunk.len()),
+                STATUS_PENDING
+            );
+        }
+        assert_eq!(xyg_wasm_aggregate_stream_finish(handle, 2), STATUS_OK);
+        assert!(xyg_wasm_output_len(handle) > aggregate::OUTPUT_HEADER_BYTES);
+        let output_magic = with_instance_mut(handle, |instance| instance.output[..4].to_vec()).unwrap();
+        assert_eq!(output_magic, aggregate::OUTPUT_MAGIC);
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+    }
+
+    #[test]
+    fn stream_aggregate_cancels_between_chunks() {
+        let handle = xyg_wasm_instance_new(2 * 1024 * 1024);
+        let header = stream_header(2);
+        write_arena(handle, &header);
+        assert_eq!(
+            xyg_wasm_aggregate_stream_begin(handle, 1, 0, header.len()),
+            STATUS_PENDING
+        );
+        assert_eq!(xyg_wasm_cancel(handle, 1), STATUS_OK);
+        let chunk = stream_chunk(1);
+        write_arena(handle, &chunk);
+        assert_eq!(
+            xyg_wasm_aggregate_stream_push(handle, 1, 0, chunk.len()),
+            STATUS_CANCELLED
+        );
+        assert_eq!(xyg_wasm_output_len(handle), 0);
+        assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
     }
 
     #[test]

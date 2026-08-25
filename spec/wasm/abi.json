@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "abi_version": 21,
+  "abi_version": 22,
   "scene_version": 24,
   "painter_version": 13,
   "painter_header_bytes": 300,
@@ -52,7 +52,14 @@
     "request_copy_factor": 2,
     "output_copy_factor": 2,
     "max_points": 8000000,
-    "max_grid_cells": 4194304
+    "max_grid_cells": 4194304,
+    "stream_magic": "XYAS",
+    "stream_version": 1,
+    "stream_header_bytes": 64,
+    "stream_header_offsets": {"version": 4, "header_bytes": 8, "flags": 12, "point_count": 16, "width": 20, "height": 24, "reserved": 28, "x0": 32, "x1": 40, "y0": 48, "y1": 56},
+    "stream_chunk_points": 32768,
+    "stream_chunk_bytes": 524288,
+    "stream_chunk_copy_factor": 2
   },
   "statuses": {
     "OK": 0,
@@ -258,6 +265,34 @@
     {
       "name": "xyg_wasm_aggregate_step",
       "params": ["u32", "u32", "usize"],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_aggregate_stream_begin",
+      "params": [
+        "u32",
+        "u32",
+        "usize",
+        "usize"
+      ],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_aggregate_stream_push",
+      "params": [
+        "u32",
+        "u32",
+        "usize",
+        "usize"
+      ],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_aggregate_stream_finish",
+      "params": [
+        "u32",
+        "u32"
+      ],
       "result": "i32"
     },
     {

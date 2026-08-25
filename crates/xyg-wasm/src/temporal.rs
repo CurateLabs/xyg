@@ -311,6 +311,7 @@ mod tests {
             last_scene_records: 0,
             last_scene_styles: 0,
             aggregate_job: None,
+            stream_aggregate_job: None,
             aggregate_sequence: 0,
             temporal: None,
             temporal_graph: None,

@@ -52,6 +52,24 @@ columns are canonical `Float64Array` values owned by the caller; an optional
 `Uint8Array` supplies four straight-alpha RGBA8 bytes per point. Rust owns
 binning, mean-color aggregation, aggregate bounds, and all resource counters.
 
+### Streaming aggregate ABI foundation
+
+`XYAS` v1 is the count-only successor seam for the product path. Its 64-byte
+header declares the full f64 domain, screen grid, and exact expected point
+count, but carries no source planes. The Worker then stages at most 32,768
+canonical little-endian f64 pairs per `xyg_wasm_aggregate_stream_push` call
+(`x[0..n]`, followed by `y[0..n]`). Rust alone validates the declaration and
+chunks, accumulates the count grid, and `xyg_wasm_aggregate_stream_finish`
+returns the existing `XYAO` v1 output. Each push returns `PENDING`, which is
+the required cancellation/supersession checkpoint before another chunk is
+staged. A finish before the declared count, an empty/oversized/misaligned
+chunk, flags, mean-color data, or domain/grid mismatch fails closed.
+
+This ABI foundation deliberately does **not** wire a host payload yet: it does
+not authorize a JavaScript binner, a full-source `XYAG` request, color planes,
+or a change to export routes. The next vertical must make ChartView transfer
+only these bounded chunks and prove its strict-CSP lifecycle.
+
 ```js
 const density = await attachWasmDensity(view, {
   worker,
