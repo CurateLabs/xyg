@@ -138,6 +138,46 @@ def test_python_callout_label_background_uses_xyac_v2_only_when_requested(
         scene_v3.figure_scene(invalid)
 
 
+def test_python_label_borders_select_v23_frames_and_reject_partial_style(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: list[bytes] = []
+
+    def capture_scene_batch_encode(**kwargs: object) -> bytes:
+        value = kwargs["authored_text_annotations"]
+        assert isinstance(value, bytes)
+        captured.append(value)
+        return b"scene"
+
+    monkeypatch.setattr(scene_v3._native, "scene_batch_encode", capture_scene_batch_encode)
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    style = {
+        "color": "#667085",
+        "label_background": "#ffffff",
+        "label_border_color": "#123456",
+        "label_border_width": 1.5,
+    }
+    figure.text(0.25, 0.25, "text", style=style)
+    figure.marker(0.5, 0.5, text="attached", style=style)
+    figure.callout(0.75, 0.75, "callout", dx=-20, dy=-20, style=style)
+    assert scene_v3.figure_scene(figure) == b"scene"
+    envelope = captured.pop()
+    lengths = struct.unpack_from("<IIII", envelope, 8)
+    at = 24
+    assert envelope[at : at + 8] == b"XYAT\x03\x00\x00\x00"
+    at += lengths[0]
+    assert envelope[at : at + 8] == b"XYAL\x04\x00\x00\x00"
+    at += lengths[1] + lengths[2]
+    assert envelope[at : at + 8] == b"XYAC\x03\x00\x00\x00"
+    invalid = Figure().text(
+        0.5, 0.5, "bad", style={"color": "#667085", "label_border_color": "#000"}
+    )
+    with pytest.raises(UnsupportedSceneV3, match="requires color and width"):
+        scene_v3.figure_scene(invalid)
+
+
 def test_scene_v19_colorbar_python_framer_encodes_bounded_ticks_and_minor_flag() -> None:
     figure = Figure()
     figure.colorbar_options = {
@@ -185,7 +225,7 @@ def test_scene_v11_primary_annotations_are_canonical_and_ordered() -> None:
     figure.marker(0.75, 0.8, color="#0000ff", size=10.0, symbol="diamond")
     encoded = figure.to_scene()
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 22
+    assert int.from_bytes(encoded[4:8], "little") == 23
     svg = _native.scene_svg(encoded)
     assert svg.index("rgb(255,0,0)") < svg.index("rgb(0,255,0)") < svg.index("rgb(0,0,255)")
     assert "rgb(255,0,0)" in svg
@@ -301,7 +341,7 @@ def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
     )
     assert hashlib.sha256(encoded).hexdigest() == fixture["expected_sha256"]
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 22
+    assert int.from_bytes(encoded[4:8], "little") == 23
     records = 160 + len(fixture["styles"]) * 16
     assert encoded[records + 1] == 1  # center is outside, marker extent overlaps
     assert encoded[records + 2] == 2  # diamond
@@ -628,7 +668,7 @@ def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> No
 
 
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
-    assert _native.scene_version() == 22
+    assert _native.scene_version() == 23
 
 
 def test_scene_authored_tick_labels_keep_their_explicit_tick_pairing() -> None:

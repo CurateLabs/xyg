@@ -21,7 +21,7 @@ from xyg import _scene_v3
 from xyg._figure import Figure
 
 COUNTS = (100, 10_000, 100_000, 1_000_000)
-SCENE_VERSION = 22
+SCENE_VERSION = 23
 _FINAL_SCENE_CHUNKS = (b"XYLG", b"XYCB", b"XYLB")
 
 

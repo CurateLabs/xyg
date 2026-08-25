@@ -7,7 +7,7 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 22 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 23 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
@@ -496,6 +496,18 @@ output. SVG, raster, and browser consume that output only. XYAT v1 remains
 valid. Offsets, padding, borders, radius, wrapping, collision, rich markup,
 custom typography, CSS/classes, and host-resolved coordinates remain
 unsupported.
+
+## Version 23 bounded label-box borders
+
+Scene v23 adds one optional literal border to an already-supported Cartesian
+label box. `XYAT` v3, `XYAL` v4, and `XYAC` v3 retain their prior fields and
+append RGBA8 border paint plus a positive finite f64 width; a border requires
+the existing literal label background. Rust alone derives the fixed-inset
+rectangle, validates the border before allocation, and emits `XYLB` v4 with
+the resolved border. SVG, raster, and browser consume those Rust-owned bounds
+and paint order. Older ingress and `XYLB` v1--v3 frames remain byte-valid.
+Padding, radius, wrapping, collision, markup, custom typography, CSS/classes,
+and host-resolved coordinates remain unsupported.
 
 ## Version 19 Rust-owned bounded colorbar ticks
 

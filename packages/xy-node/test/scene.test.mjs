@@ -173,7 +173,7 @@ test("Node Scene v13 compiles bounded primary annotations and fails closed", () 
   for (const annotation of figureSceneFixture.node_public_annotations) figure.annotate(annotation);
   const scene = figure.toScene(), svg = sceneSvg(scene);
   assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.node_public_annotations_sha256);
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 22);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 23);
   assert.ok(svg.indexOf("rgb(255,0,0)") < svg.indexOf("rgb(0,255,0)"));
   assert.ok(svg.indexOf("rgb(0,255,0)") < svg.indexOf("rgb(0,0,255)"));
   figure.annotations[2].text = "must not vanish";
@@ -222,7 +222,7 @@ test("Node Scene v16 frames bounded plain and attached text annotations and reje
   figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
   figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "<safe>" }];
   const scene = figure.toScene();
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 22);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 23);
   assert.match(sceneSvg(scene), /&lt;safe&gt;/);
   assert.ok(sceneRasterCommands(scene).length > 100);
   figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "boxed", style: { label_background: "#ffffff" } }];
@@ -553,7 +553,7 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 22);
+  assert.equal(sceneVersion(), 23);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],
@@ -594,7 +594,7 @@ test("Node Scene compiles column and histogram as Rect records", () => {
   column.setAxisDomain("y", [0, 5]);
   column.bar([1, 2], [3, 2], { kind: "column", color: "#22c55e", opacity: 0.85, name: null });
   const columnScene = column.toScene();
-  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 22);
+  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 23);
   assert.match(sceneSvg(columnScene), /<rect /);
 
   const hist = new Figure({ width: 240, height: 160 });
@@ -669,4 +669,24 @@ test("Node Scene compiles segments, step lines, and stem", () => {
   stem.stem([0, 1], [1, 2], { color: "#22c55e", name: null });
   const stemSvg = sceneSvg(stem.toScene());
   assert.equal((stemSvg.match(/<polyline /g) ?? []).length, 2);
+});
+
+test("Node frames literal v23 borders for text, attached, and callout label boxes", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  const style = { color: "#667085", label_background: "#ffffff", label_border_color: "#123456", label_border_width: 1.5 };
+  figure.annotations = [
+    { kind: "text", x: 0.2, y: 0.2, text: "text", style },
+    { kind: "marker", x: 0.5, y: 0.5, text: "attached", size: 8, style },
+    { kind: "callout", x: 0.75, y: 0.75, dx: -20, dy: -20, text: "callout", style },
+  ];
+  const scene = figure.toScene();
+  const svg = sceneSvg(scene);
+  assert.match(svg, /annotation_label_box[^>]*stroke="rgba\(18,52,86,1\.000000\)"/);
+  assert.match(svg, /stroke-width="1\.5"/);
+  assert.ok(sceneRasterCommands(scene).byteLength > 0);
+  const painter = sceneBrowserPainter(scene);
+  assert.ok(new TextDecoder().decode(painter).includes("XYLB\x04"));
+  const invalid = new Figure(); invalid.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "bad", style: { color: "#667085", label_border_color: "#000" } }];
+  assert.throws(() => invalid.toScene(), /requires color and width/);
 });

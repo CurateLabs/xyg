@@ -229,12 +229,12 @@ function compilePainter(painter: ArrayBuffer) {
     colorbar = { domain: [lo, hi], orientation: flags & 1 ? "horizontal" : "vertical", placement: "scene", levels: count - 1, boundaries: stops.map((stop) => stop.value), band_colors: stops.slice(0, -1).map((_, index) => Array.from(bytes.subarray(start + 64 + index * 12, start + 68 + index * 12))), ticks: resolvedTicks.slice(0, majorCount).map((tick) => tick.value), minor_ticks: Boolean(flags & 4), text_color: rgba(bytes.subarray(start + 40, start + 44)), label: title || null, resolved: { bounds: [f32(geometry + 8), f32(geometry + 12), f32(geometry + 16), f32(geometry + 20)], major_ticks: resolvedTicks.slice(0, majorCount), minor_ticks: resolvedTicks.slice(majorCount) } };
   }
   nextString += colorbarLength;
-  const sceneLabels: Array<{stableId: bigint; x: number; y: number; fontSize: number; color: string; anchor: number; text: string; box?: {x: number; y: number; width: number; height: number; fill: string}}> = [];
+  const sceneLabels: Array<{stableId: bigint; x: number; y: number; fontSize: number; color: string; anchor: number; text: string; box?: {x: number; y: number; width: number; height: number; fill: string; border?: {color: string; width: number}}}> = [];
   if (sceneLabelLength) {
     const start = nextString, end = start + sceneLabelLength;
     const version = u32(start + 4);
-    if (sceneLabelLength < 16 || String.fromCharCode(...bytes.subarray(start, start + 4)) !== "XYLB" || (version !== 1 && version !== 2 && version !== 3)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label header is invalid");
-    const count = u32(start + 8), textBytes = u32(start + 12), recordBytes = version === 1 ? 40 : version === 2 ? 44 : 84, tableEnd = start + 16 + count * recordBytes;
+    if (sceneLabelLength < 16 || String.fromCharCode(...bytes.subarray(start, start + 4)) !== "XYLB" || (version !== 1 && version !== 2 && version !== 3 && version !== 4)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label header is invalid");
+    const count = u32(start + 8), textBytes = u32(start + 12), recordBytes = version === 1 ? 40 : version === 2 ? 44 : version === 3 ? 84 : 100, tableEnd = start + 16 + count * recordBytes;
     if (count > 128 || textBytes > 8192 || tableEnd + textBytes !== end) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label table is invalid");
     let textOffset = tableEnd;
     for (let index = 0; index < count; index++) {
@@ -244,8 +244,8 @@ function compilePainter(painter: ArrayBuffer) {
       if (!(x >= 0 && x <= width && y >= 0 && y <= height && fontSize >= 1 && fontSize <= 1000) || anchor > 2 || (version >= 2 && bytes.subarray(record + 37, record + 40).some((value) => value !== 0)) || textOffset + length > end) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label geometry is invalid");
       let label: string; try { label = decoder.decode(bytes.subarray(textOffset, textOffset + length)); } catch { throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label text is invalid UTF-8"); }
       if (!label || label.includes("\0")) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label text is invalid");
-      let box: {x: number; y: number; width: number; height: number; fill: string} | undefined;
-      if (version === 3) {
+      let box: {x: number; y: number; width: number; height: number; fill: string; border?: {color: string; width: number}} | undefined;
+      if (version >= 3) {
         const flags = bytes[record + 44];
         const boxX = f64(record + 48), boxY = f64(record + 56), boxWidth = f64(record + 64), boxHeight = f64(record + 72), fill = bytes.subarray(record + 80, record + 84);
         if (flags > 1 || bytes.subarray(record + 45, record + 48).some((value) => value !== 0)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label box flags are invalid");
@@ -255,6 +255,12 @@ function compilePainter(painter: ArrayBuffer) {
         } else if (boxX !== 0 || boxY !== 0 || boxWidth !== 0 || boxHeight !== 0 || fill.some((value) => value !== 0)) {
           throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label box is noncanonical");
         }
+      }
+      if (version === 4) {
+        const borderFlags = bytes[record + 84], border = bytes.subarray(record + 88, record + 92), borderWidth = f64(record + 92);
+        if (borderFlags > 1 || bytes.subarray(record + 85, record + 88).some((value) => value !== 0)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label border flags are invalid");
+        if (borderFlags) { if (!box || !(Number.isFinite(borderWidth) && borderWidth > 0 && border[3] > 0)) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label border is invalid"); box.border = {color: rgba(border), width: borderWidth}; }
+        else if (border.some((value) => value !== 0) || borderWidth !== 0) throw new XygWasmError("XYG_WASM_MALFORMED_OUTPUT", "Rust painter label border is noncanonical");
       }
       sceneLabels.push({stableId: view.getBigUint64(record, true), x, y, fontSize, color: rgba(bytes.subarray(record + 32, record + 36)), anchor, text: label, ...(box ? {box} : {})});
       textOffset += length;
@@ -314,7 +320,7 @@ export function hydrateWasmPainter(
         box.dataset.xySlot = annotation ? "annotation_label_box" : "graph_label_box";
         box.dataset.xyStableId = label.stableId.toString();
         box.setAttribute("aria-hidden", "true");
-        Object.assign(box.style, {position:"absolute", left:`${label.box.x}px`, top:`${label.box.y}px`, width:`${label.box.width}px`, height:`${label.box.height}px`, backgroundColor:label.box.fill});
+        Object.assign(box.style, {position:"absolute", left:`${label.box.x}px`, top:`${label.box.y}px`, width:`${label.box.width}px`, height:`${label.box.height}px`, backgroundColor:label.box.fill, ...(label.box.border ? {border:`${label.box.border.width}px solid ${label.box.border.color}`, boxSizing:"border-box"} : {})});
         layer.appendChild(box);
       }
       const item = document.createElement("span");
