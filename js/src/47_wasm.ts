@@ -19,6 +19,12 @@ export interface XygWasmWorkerOptions {
   maxArenaBytes?: number;
 }
 
+/** Checked bytes plus a generated classic Worker IIFE for a file: export. */
+export interface XygInlineWasmWorkerOptions {
+  inline: { base64: string; classicWorkerSource: string };
+  maxArenaBytes?: number;
+}
+
 export interface XygWasmDiagnostics {
   abiVersion: number;
   sceneVersion: number;
@@ -180,24 +186,34 @@ export class XygWasmWorker {
   private nextSequence = 1;
   private disposed = false;
   private readonly maxArenaBytes: number;
+  private readonly inline: boolean;
+  private readonly inlineBlobUrl: string | null;
   readonly ready: Promise<XygWasmDiagnostics>;
 
-  constructor(options: XygWasmWorkerOptions) {
-    if (!options || !options.workerUrl) {
+  constructor(options: XygWasmWorkerOptions | XygInlineWasmWorkerOptions) {
+    if (!options) throw new TypeError("worker options are required");
+    const inline = "inline" in options;
+    if (!inline && !options.workerUrl) {
       throw new TypeError("workerUrl is required; XYG does not guess worker asset paths");
+    }
+    if (inline && (typeof options.inline?.base64 !== "string" || !options.inline.base64
+        || typeof options.inline.classicWorkerSource !== "string" || !options.inline.classicWorkerSource)) {
+      throw new TypeError("inline worker requires generated base64 bytes and classic worker source");
     }
     // Validate and normalize the source before allocating a Worker so a bad
     // source cannot leak an otherwise unreachable worker process.
-    const loaded = sourceMessage(options.wasm);
+    const loaded = inline ? null : sourceMessage((options as XygWasmWorkerOptions).wasm);
     const maxArenaBytes = options.maxArenaBytes ?? 16 * 1024 * 1024;
     if (!Number.isInteger(maxArenaBytes) || maxArenaBytes <= 0 || maxArenaBytes > XYG_WASM_MAX_ARENA_BYTES) {
       throw new RangeError(`maxArenaBytes must be an integer in 1..${XYG_WASM_MAX_ARENA_BYTES}`);
     }
     this.maxArenaBytes = maxArenaBytes;
-    this.worker = new Worker(String(options.workerUrl), {
-      type: "module",
-      name: "xyg-wasm",
-    });
+    this.inline = inline;
+    const blobUrl = inline ? URL.createObjectURL(new Blob([(options as XygInlineWasmWorkerOptions).inline.classicWorkerSource], { type: "application/javascript" })) : null;
+    this.inlineBlobUrl = blobUrl;
+    this.worker = inline
+      ? new Worker(blobUrl!, { name: "xyg-wasm-inline" })
+      : new Worker(String((options as XygWasmWorkerOptions).workerUrl), { type: "module", name: "xyg-wasm" });
     this.worker.onmessage = (event) => this.onMessage(event.data);
     this.worker.onerror = (event) => {
       this.failAll(new XygWasmError("XYG_WASM_WORKER_TRAP", event.message || "worker trapped"));
@@ -219,12 +235,12 @@ export class XygWasmWorker {
         {
           type: "init",
           requestId,
-          source: loaded.source,
+          ...(inline ? { base64: (options as XygInlineWasmWorkerOptions).inline.base64 } : { source: loaded!.source }),
           maxArenaBytes,
           expectedAbiVersion: XYG_WASM_ABI_VERSION,
           expectedSceneVersion: XYG_WASM_SCENE_VERSION,
         },
-        loaded.transfer,
+        loaded?.transfer ?? [],
       );
     } catch (cause) {
       this.pending.delete(requestId);
@@ -503,7 +519,9 @@ export class XygWasmWorker {
     const result = new Promise<T>((resolve, reject) => this.pending.set(requestId, { resolve, reject, progress: options.onProgress, sequence }));
     try {
       this.worker.postMessage(
-        { type, requestId, sequence, scene: payload.buffer },
+        this.inline && type === "aggregate.bin2d"
+          ? { type, requestId, sequence, request: payload.buffer }
+          : { type, requestId, sequence, scene: payload.buffer },
         payload.transfer,
       );
     } catch (cause) {
@@ -548,7 +566,8 @@ export class XygWasmWorker {
       // Termination below is the bounded fallback when messaging is broken.
     } finally {
       if (timeout !== undefined) clearTimeout(timeout);
-      this.worker.terminate();
+    this.worker.terminate();
+    if (this.inlineBlobUrl) URL.revokeObjectURL(this.inlineBlobUrl);
       this.failAll(new XygWasmError("XYG_WASM_DISPOSED", "worker was disposed"));
     }
   }
@@ -602,6 +621,6 @@ export class XygWasmWorker {
   }
 }
 
-export function createXygWasmWorker(options: XygWasmWorkerOptions): XygWasmWorker {
+export function createXygWasmWorker(options: XygWasmWorkerOptions | XygInlineWasmWorkerOptions): XygWasmWorker {
   return new XygWasmWorker(options);
 }

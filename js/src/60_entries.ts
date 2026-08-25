@@ -17,7 +17,7 @@ import {
   decodeWasmAggregateOutput,
   encodeWasmAggregate,
 } from "./49_wasm_aggregate";
-import { attachStandaloneWasmDensity, attachWasmDensity, provisionKernelWasmDensity, XygWasmDensityHandle } from "./49_wasm_density";
+import { attachInlineStandaloneWasmDensity, attachStandaloneWasmDensity, attachWasmDensity, provisionKernelWasmDensity, XygWasmDensityHandle } from "./49_wasm_density";
 import { XygWasmTemporalController } from "./49_wasm_temporal";
 import { XygWasmTemporalGraph, decodeWasmTemporalGraphFrame, encodeWasmTemporalGraphCreate, encodeWasmTemporalGraphFrame } from "./49_wasm_temporal_graph";
 import { decodeWasmGraphCheckpoint, encodeWasmCose, layoutWasmCose } from "./49_wasm_graph";
@@ -121,6 +121,20 @@ export function renderStandalone(el, spec, arrayBuffer) {
       }
     }
   }
+  // `to_html()` embeds the checked bytes plus a classic IIFE only for density
+  // documents. This establishes the Rust-owned path without a module URL or
+  // network fetch; an unavailable/invalid artifact leaves the established
+  // legacy sample worker intact during the transition.
+  const inline = (globalThis as any).__xygInlineWasm;
+  if (inline && view.gpuTraces.some((g: any) => g.tier === "density" && g.sampleOverlay?._cpu)) {
+    void attachInlineStandaloneWasmDensity(view, { inline, delay: 0 }).catch((cause) => {
+      if (!view._destroyed) view._dispatchChartEvent?.("wasm_density_error", {
+        code: cause instanceof XygWasmError ? cause.code : "XYG_WASM_WORKER_ERROR",
+        message: cause instanceof Error ? cause.message : "inline WASM density provisioning failed",
+        diagnostics: cause instanceof XygWasmError ? cause.diagnostics : null,
+      });
+    });
+  }
   return view;
 }
 
@@ -147,6 +161,7 @@ export {
   decodeWasmAggregateOutput,
   aggregateWasmBin2d,
   attachWasmDensity,
+  attachInlineStandaloneWasmDensity,
   attachStandaloneWasmDensity,
   provisionKernelWasmDensity,
   XygWasmDensityHandle,

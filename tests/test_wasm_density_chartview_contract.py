@@ -51,11 +51,22 @@ def test_direct_wasm_density_is_public_and_documents_explicit_trace_sources() ->
     assert "automatic source provisioning" in doc
     assert "## ChartView density refinement" in api
     assert "xy:wasm_density_error" in api
+
+
+def test_self_contained_density_uses_only_the_inline_classic_wasm_contract() -> None:
+    entries = (ROOT / "js" / "src" / "60_entries.ts").read_text(encoding="utf-8")
+    density = (ROOT / "js" / "src" / "49_wasm_density.ts").read_text(encoding="utf-8")
+    export = (ROOT / "python" / "xyg" / "export.py").read_text(encoding="utf-8")
+    api = (ROOT / "spec" / "api" / "browser-wasm.md").read_text(encoding="utf-8")
+    assert "attachInlineStandaloneWasmDensity" in entries
+    assert "__xygInlineWasm" in entries
+    assert "inline standalone density" in density
+    assert '_bundled_js("xyg-wasm-inline")' in export
     assert "inputs" in api
     assert "distinct trace ids" in api
     assert "kernel `density_view` fallback" in api
     assert "automatic source provisioning" in api
-    assert "fallback deletion" in api
+    assert "legacy worker" in api
 
 
 def test_direct_wasm_density_multitrace_keeps_rust_as_the_only_aggregator() -> None:

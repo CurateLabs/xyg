@@ -14,6 +14,7 @@ import {
   type XygWasmTask,
   type XygWasmWorker,
   type XygWasmWorkerOptions,
+  type XygInlineWasmWorkerOptions,
 } from "./47_wasm";
 import type { ChartView } from "./50_chartview";
 
@@ -327,6 +328,33 @@ export async function attachStandaloneWasmDensity(
     await worker.dispose();
     throw error;
   }
+}
+
+/**
+ * File-safe counterpart of attachStandaloneWasmDensity. The caller supplies
+ * the generated inline artifact from the self-contained document; this path
+ * never resolves a module URL or fetches a sibling WASM file.
+ */
+export async function attachInlineStandaloneWasmDensity(
+  view: ChartView & any,
+  options: XygInlineWasmWorkerOptions & { delay?: number },
+): Promise<XygWasmDensityHandle> {
+  if (!view || typeof view._scheduleSampleRebin !== "function" || view._destroyed || view.comm) {
+    throw new TypeError("attachInlineStandaloneWasmDensity requires a live kernel-less ChartView");
+  }
+  const targets = view.gpuTraces.filter((g: any) =>
+    g.tier === "density" && g.sampleOverlay && g.sampleOverlay._cpu,
+  );
+  if (!targets.length) throw new RangeError("inline standalone density requires retained-sample density traces");
+  const inputs = targets.map((trace: any) => retainedSampleInput(view, trace));
+  if (inputs.some((input) => input === null)) throw new RangeError("inline standalone density sample is empty or unsupported");
+  const worker = createXygWasmWorker(options);
+  try {
+    return await attachWasmDensity(view, {
+      worker, inputs: inputs as XygWasmDensityInput[], workerOwnership: "own", delay: options.delay,
+      sampleRebin: targets.length === 1,
+    });
+  } catch (error) { await worker.dispose(); throw error; }
 }
 
 /**

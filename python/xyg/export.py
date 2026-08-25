@@ -315,6 +315,13 @@ def to_html(
         )
     spec_js = _json_for_inline_script(spec)
     client_js = _javascript_for_inline_script(_bundled_js("standalone"))
+    # Density exports retain a bounded source sample; include the generated
+    # classic Rust/WASM worker beside that self-contained payload so file: URLs
+    # do not need a module worker or sibling fetch. Ordinary charts pay none
+    # of this byte cost.
+    inline_wasm_js = ""
+    if any(trace.get("tier") == "density" for trace in spec.get("traces", [])):
+        inline_wasm_js = _javascript_for_inline_script(_bundled_js("xyg-wasm-inline"))
     title_html = _html.escape(fig.title or "xy")
     # One <script> block PER chunk: a script element's source is itself a V8
     # string, so folding every chunk into one block would rebuild the very
@@ -346,6 +353,7 @@ html,body{{margin:0;width:100%;min-height:100%;font-family:system-ui,sans-serif;
 <body>
 <div id="chart"></div>
 <script>""",
+        inline_wasm_js,
         client_js,
         """</script>
 <script>var __xyChunks = [];</script>
