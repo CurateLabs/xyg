@@ -96,6 +96,20 @@ function requireAnnotationObject(annotation) {
   return annotation;
 }
 
+function requirePlainObject(value, name) {
+  if (value == null || typeof value !== "object" || Array.isArray(value)) {
+    throw new TypeError(`${name} must be an object`);
+  }
+  return value;
+}
+
+function copySceneOptions(value, name) {
+  // Preserve the user's literal values without interpreting them, while
+  // preventing later caller mutation from changing the eventual ABI input.
+  // Node 20+ supplies structuredClone for the public runtime contract.
+  return structuredClone(requirePlainObject(value, name));
+}
+
 function finiteBounds(arr) {
   const mm = minMax(arr);
   return mm == null ? [0.0, 0.0] : mm;
@@ -212,7 +226,12 @@ export class Figure {
     this.title = opts.title ?? null;
     this.coords = opts.coords ?? "cartesian";
     this.showLegend = opts.showLegend ?? true;
-    this.legend = opts.legend ?? {};
+    // These are deliberately inert host snapshots. `figureSceneV3` is the
+    // only validation/packing seam, so Node cannot grow a competing chrome
+    // layout or default-resolution policy.
+    this.style = opts.style == null ? {} : copySceneOptions(opts.style, "style");
+    this.legend = opts.legend == null ? {} : copySceneOptions(opts.legend, "legend");
+    this.colorbarOptions = opts.colorbar == null ? null : copySceneOptions(opts.colorbar, "colorbar");
     if (opts.annotations != null && !Array.isArray(opts.annotations)) {
       throw new TypeError("annotations must be an array");
     }
@@ -227,6 +246,8 @@ export class Figure {
     /** @type {Map<number|string, PyramidCache>} */
     this._pyramids = new Map();
     this._appendSeq = 0;
+    if (opts.xAxis != null || opts.x_axis != null) this.setAxis("x", opts.xAxis ?? opts.x_axis);
+    if (opts.yAxis != null || opts.y_axis != null) this.setAxis("y", opts.yAxis ?? opts.y_axis);
   }
 
   /**
@@ -263,8 +284,32 @@ export class Figure {
   /** Bounded Cartesian Scene axis authoring; Rust resolves layout and chrome. */
   setAxis(axisId, options = {}) {
     if (axisId !== "x" && axisId !== "y") throw new RangeError("axisId must be x or y");
+    options = copySceneOptions(options, `Scene ${axisId} axis options`);
     this[`${axisId}Axis`] = { ...(this[`${axisId}Axis`] ?? {}), ...options };
     if (options.domain != null) this.setAxisDomain(axisId, options.domain);
+    return this;
+  }
+
+  /**
+   * Set literal chart/plot paint for the bounded Scene subset.
+   *
+   * This does not resolve CSS, defaults, or geometry: Rust validates the
+   * resulting Scene frame when a consumer asks for `toScene()`.
+   */
+  setStyle(style = {}) {
+    this.style = copySceneOptions(style, "Scene style");
+    return this;
+  }
+
+  /** Set one bounded static legend request for the Rust Scene compiler. */
+  setLegend(legend = {}) {
+    this.legend = copySceneOptions(legend, "Scene legend");
+    return this;
+  }
+
+  /** Set (or clear with `null`) one literal-banded Scene colorbar request. */
+  setColorbar(colorbar = null) {
+    this.colorbarOptions = colorbar == null ? null : copySceneOptions(colorbar, "Scene colorbar");
     return this;
   }
 

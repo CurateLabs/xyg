@@ -97,6 +97,19 @@ AUTHORED_AUTHORING = {
         "symbol": "diamond",
         "name": "observations",
     },
+    # A second, deliberately small direct series proves that symbol selection
+    # remains authored data rather than host-side Scene chrome policy. Keeping
+    # it bounded makes the four evidence tiers exercise identical structure.
+    "circle_scatter": {
+        "id": 1,
+        "x": [0.1, 0.5, 0.9],
+        "y": [-0.8, 0.0, 0.8],
+        "color": "#e11d48",
+        "size": 7.0,
+        "opacity": 1.0,
+        "symbol": "circle",
+        "name": "reference",
+    },
     "legend": {"loc": "upper right", "title": "Series", "highlight": False, "toggle": False},
     "colorbar": {
         "domain": [0.0, 1.0],
@@ -159,6 +172,17 @@ def authored_scene_figure(count: int) -> Figure:
     # The shared Node authoring fixture pins identity explicitly; defaults are
     # host-local allocation detail, not canonical Scene policy.
     figure.traces[-1].id = 0
+    figure.scatter(
+        AUTHORED_AUTHORING["circle_scatter"]["x"],
+        AUTHORED_AUTHORING["circle_scatter"]["y"],
+        color=AUTHORED_AUTHORING["circle_scatter"]["color"],
+        size=AUTHORED_AUTHORING["circle_scatter"]["size"],
+        opacity=AUTHORED_AUTHORING["circle_scatter"]["opacity"],
+        symbol=AUTHORED_AUTHORING["circle_scatter"]["symbol"],
+        name=AUTHORED_AUTHORING["circle_scatter"]["name"],
+        density=False,
+    )
+    figure.traces[-1].id = AUTHORED_AUTHORING["circle_scatter"]["id"]
     figure.legend_options = dict(AUTHORED_AUTHORING["legend"])
     figure.colorbar_options = {
         **AUTHORED_AUTHORING["colorbar"],

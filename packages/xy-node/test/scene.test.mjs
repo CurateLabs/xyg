@@ -469,15 +469,13 @@ test("Node public Figure matches the combined Python authored Scene v24 fixture"
   const y = Float64Array.from({ length: count }, (_, index) => ((index * 37) % 997) / 498 - 1);
   const figure = new Figure({
     width: fixture.viewport[0], height: fixture.viewport[1], title: fixture.title,
-    legend: fixture.legend,
+    style: fixture.style, legend: fixture.legend, colorbar: fixture.colorbar,
+    xAxis: fixture.axes.x, yAxis: fixture.axes.y,
     annotations: [
       { kind: "callout", ...fixture.callout },
       { kind: "callout", ...fixture.wrapped_callout },
     ],
   });
-  figure.style = fixture.style;
-  figure.setAxis("x", fixture.axes.x); figure.setAxis("y", fixture.axes.y);
-  figure.colorbarOptions = fixture.colorbar;
   figure.scatter(x, y, {
     id: fixture.scatter.id,
     name: fixture.scatter.name,
@@ -488,11 +486,21 @@ test("Node public Figure matches the combined Python authored Scene v24 fixture"
       symbol: fixture.scatter.symbol,
     },
   });
+  figure.scatter(fixture.circle_scatter.x, fixture.circle_scatter.y, {
+    id: fixture.circle_scatter.id,
+    name: fixture.circle_scatter.name,
+    style: {
+      color: fixture.circle_scatter.color,
+      size: fixture.circle_scatter.size,
+      opacity: fixture.circle_scatter.opacity,
+      symbol: fixture.circle_scatter.symbol,
+    },
+  });
   const scene = figure.toScene();
   assert.equal(new DataView(scene.buffer, scene.byteOffset, scene.byteLength).getUint32(4, true), 24);
   assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), authoredSceneFixture.scene_sha256);
   const svg = sceneSvg(scene), raster = sceneRasterCommands(scene);
-  for (const text of ["Authored Scene evidence", "Fraction", "Signal", "Series", "observations", "Intensity", "representative callout", "wrapped annotation", "evidence", "second line"]) {
+  for (const text of ["Authored Scene evidence", "Fraction", "Signal", "Series", "observations", "reference", "Intensity", "representative callout", "wrapped annotation", "evidence", "second line"]) {
     assert.match(svg, new RegExp(text));
     assert.ok(Buffer.from(raster).includes(Buffer.from(text)));
   }
@@ -510,6 +518,31 @@ test("Node public Figure matches the combined Python authored Scene v24 fixture"
     const rejected = new Figure({ width: fixture.viewport[0], height: fixture.viewport[1] });
     rejected.scatter(x, y, fixture.scatter); mutate(rejected);
     assert.throws(() => rejected.toScene(), reason);
+  }
+});
+
+test("Node public Scene chrome setters snapshot literals and retain Rust validation", () => {
+  const style = { background: "#f0f8ff", "--chart-bg": "#f8fafc" };
+  const legend = { loc: "lower left", title: "Series", toggle: false, highlight: false };
+  const colorbar = {
+    domain: [0, 1], stops: [[0, [0, 0, 0, 255]], [1, [255, 255, 255, 255]]],
+  };
+  const figure = new Figure({ width: 320, height: 240 })
+    .setStyle(style)
+    .setLegend(legend)
+    .setColorbar(colorbar)
+    .setAxis("x", { domain: [0, 1], side: "top", tick_values: [0, 0.5, 1] })
+    .setAxis("y", { domain: [0, 1], side: "right", minor_tick_values: [0.25, 0.75] });
+  style.background = "not a color"; legend.loc = "best"; colorbar.domain[0] = 2;
+  figure.scatter([0.25], [0.5], { name: "one", style: { symbol: "circle" } });
+  assert.doesNotThrow(() => figure.toScene());
+  assert.throws(() => figure.setColorbar({ domain: [0, 1], stops: [] }).toScene(), /UNSUPPORTED_COLORBAR/);
+  figure.setColorbar({
+    domain: [0, 1], stops: [[0, [0, 0, 0, 255]], [1, [255, 255, 255, 255]]],
+  });
+  assert.throws(() => figure.setLegend({ loc: "best" }).toScene(), /location/);
+  for (const [call, value] of [[() => figure.setStyle([]), /Scene style must be an object/], [() => figure.setLegend(null), /Scene legend must be an object/], [() => figure.setAxis("x", []), /Scene x axis options must be an object/]]) {
+    assert.throws(call, value);
   }
 });
 
