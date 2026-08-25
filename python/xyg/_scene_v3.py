@@ -1459,7 +1459,14 @@ def scene_export_support_reason(
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
     if getattr(figure, "title", None) or getattr(figure, "title_options", None):
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_TEXT"
-    if getattr(figure, "annotations", None):
+    annotations = list(getattr(figure, "annotations", None) or [])
+    if annotations and (len(annotations) != 1 or annotations[0].get("kind") != "callout"):
+        # #117's first annotation public-route slice is intentionally one
+        # bounded Cartesian callout.  ``figure_scene`` below remains the sole
+        # authority for its literal field validation, resource limits, Rust
+        # projection, and label-box semantics.  Do not turn this structural
+        # exception into broad annotation support merely because the explicit
+        # Scene API can encode more record kinds.
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
     if getattr(figure, "legend_options", None) or any(
         getattr(trace, "name", None) for trace in figure.traces

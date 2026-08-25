@@ -113,10 +113,28 @@ def test_supported_figure_has_no_reason() -> None:
     assert scene_export_support_reason(figure) is None
 
 
-def test_bounded_cartesian_callout_remains_explicit_scene_only_until_public_parity() -> None:
+def test_one_bounded_cartesian_callout_is_a_supported_public_scene_slice() -> None:
     figure = _callout()
-    assert "PUBLIC_ANNOTATION" in (scene_export_support_reason(figure) or "")
+    assert scene_export_support_reason(figure) is None
     assert b"here" in figure_scene(figure)
+
+
+@pytest.mark.parametrize(
+    "annotations",
+    [
+        [{"kind": "marker", "x": 1.0, "y": 2.0, "text": "peak"}],
+        [
+            {"kind": "callout", "x": 1.0, "y": 2.0, "text": "first"},
+            {"kind": "callout", "x": 2.0, "y": 3.0, "text": "second"},
+        ],
+    ],
+)
+def test_only_one_bounded_callout_enters_the_public_annotation_slice(
+    annotations: list[dict[str, object]],
+) -> None:
+    figure = _supported()
+    figure.annotations = annotations
+    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
 
 
 @pytest.mark.parametrize("name", sorted(UNSUPPORTED))

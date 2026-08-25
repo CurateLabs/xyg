@@ -388,7 +388,14 @@ clipping, identity, tick generation, or label formatting policy.
 
 Remaining polar marks and richer legend variants stay explicit compatibility
 exceptions. Public SVG and native PNG auto-route supported figures through
-Rust Scene; PDF consumes that Rust SVG. ``try_public_svg`` /
+Rust Scene; PDF consumes that Rust SVG. The first public annotation route is
+exactly one bounded Cartesian callout on the otherwise proven constant-style
+circle-scatter slice. Its literal color, opacity, width, anchor, offsets, and
+literal label background/border compile through the same Scene contract; Rust
+alone validates them and resolves its leader and label box. A second callout,
+every other annotation kind, classes/CSS/fonts, and any surrounding public
+chrome/style/title/axis/legend/mark/LOD feature remains a compatibility
+preflight exception. ``try_public_svg`` /
 ``try_public_png`` / ``try_public_pdf`` expose the same consumers to callers
 that need an optional result. Unlabeled cartesian annotations remain rejected
 rather than being approximated as marks.
