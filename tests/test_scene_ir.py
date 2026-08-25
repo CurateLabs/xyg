@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import struct
@@ -21,6 +22,20 @@ EXPECTED_SCATTER = (
     'M 20 16.5 V 25.5" fill="none" stroke="rgb(17,24,39)" '
     'stroke-opacity="0.25" stroke-width="1"/></g>'
 )
+
+
+def test_strict_csp_authored_scene_fixture_is_public_figure_bytes() -> None:
+    """Keep the direct-browser full-chrome proof tied to public authoring."""
+    from scripts.generate_authored_scene_benchmark import authored_scene
+
+    fixture = json.loads(
+        (Path(__file__).parent / "fixtures" / "authored_scene_v20.json").read_text()
+    )
+    assert fixture["schema"] == "xyg-authored-scene-v20-fixture-v1"
+    assert fixture["count"] == 100
+    scene = base64.b64decode(fixture["scene_base64"], validate=True)
+    assert scene == authored_scene(100)
+    assert all(chunk in scene for chunk in (b"XYGS", b"XYLG", b"XYCB", b"XYLB"))
 
 
 def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:

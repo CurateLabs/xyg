@@ -99,3 +99,13 @@ bytes. Browser tests submit the requests to a real Worker/WASM instance. Native
 Python, native Node, and Pyodide validate the resulting Scene through their
 Rust consumers, because XYTS itself is browser-only ingress. Consumers must
 not copy its default, identity, overflow, or bar-width policy.
+
+The strict-CSP direct-browser smoke also hydrates the checked-in
+`tests/fixtures/authored_scene_v20.json` fixture through that same Worker. The
+fixture is byte-for-byte output of the public Python `Figure` workload and
+carries the supported Cartesian authored-chrome subset together: chart/plot
+backgrounds, axes, primary legend, literal banded colorbar with Rust-resolved
+major/minor ticks, and a fixed-background callout. The smoke asserts the
+browser's structural and computed-style projection under `default-src 'none'`
+and same-origin `script-src`/`worker-src`; it is not evidence for polar,
+custom-font, CSS/class, or richer annotation semantics.
