@@ -42,6 +42,7 @@ def authored_scene_figure(count: int) -> Figure:
     y = ((indices * 37.0) % 997.0) / 498.0 - 1.0
 
     figure = Figure(width=960, height=540, title="Authored Scene evidence")
+    figure.style = {"background": "#f0f8ff", "--chart-bg": "#f8fafc"}
     figure.axis_options["x"]["domain"] = (0.0, 1.0)
     figure.axis_options["y"]["domain"] = (-1.0, 1.0)
     figure.scatter(

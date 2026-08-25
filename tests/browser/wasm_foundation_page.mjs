@@ -1339,6 +1339,65 @@ async function run() {
   authoredHost.remove();
   await authoredWorker.dispose();
 
+  // This byte-exact fixture originates from the public Python Figure builder
+  // (see the paired fixture test). It carries the full currently supported
+  // authored Cartesian chrome subset through the real strict-CSP Worker.
+  foundationStage = "strict-CSP full authored Cartesian Scene chrome";
+  const authoredFixture = await (await fetch("/tests/fixtures/authored_scene_v20.json")).json();
+  const authoredScene = Uint8Array.from(atob(authoredFixture.scene_base64), (byte) => byte.charCodeAt(0));
+  const fullChromeWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 1024 * 1024,
+  });
+  await fullChromeWorker.ready;
+  const fullChromeHost = document.body.appendChild(document.createElement("div"));
+  const fullChrome = await renderWasmScene({
+    el: fullChromeHost, scene: authoredScene, worker: fullChromeWorker, transfer: false,
+  });
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  const fullChromeRoot = fullChromeHost.querySelector(".xy[role='region']");
+  const fullChromeSurface = fullChromeHost.firstElementChild;
+  const fullChromeText = fullChromeRoot?.textContent ?? "";
+  const fullChromeAxisCount = fullChromeHost.querySelectorAll(
+    '[data-xy-axis-side="bottom"], [data-xy-axis-side="left"]',
+  ).length;
+  const fullChromeLegend = fullChromeHost.querySelector('[data-xy-slot="legend"][role="list"]');
+  const fullChromeLegendRows = [...fullChromeHost.querySelectorAll(
+    '[data-xy-slot="legend_item"][role="listitem"]',
+  )];
+  const fullChromeColorbarTicks = fullChromeHost.querySelectorAll('[data-xy-slot="colorbar_tick"]');
+  const fullChromeColorbarMinors = fullChromeHost.querySelectorAll('[data-xy-slot="colorbar_minor_tick"]');
+  const fullChromeCallout = [...fullChromeHost.querySelectorAll(
+    '[data-xy-slot="annotation_label"][role="note"]',
+  )].find((node) => node.textContent === "representative callout");
+  const fullChromeCalloutBox = fullChromeHost.querySelector(
+    '[data-xy-slot="annotation_label_box"][aria-hidden="true"]',
+  );
+  const fullChromeStyle = fullChromeSurface ? getComputedStyle(fullChromeSurface) : null;
+  if (fullChromeAxisCount < 2
+      || !fullChromeLegend
+      || fullChromeLegendRows.length !== 1
+      || fullChromeLegendRows[0].getAttribute("aria-label") !== "observations"
+      || fullChromeColorbarTicks.length !== 3
+      || fullChromeColorbarMinors.length !== 8
+      || !fullChromeText.includes("Intensity")
+      || fullChromeCallout?.textContent !== "representative callout"
+      || !fullChromeCalloutBox
+      || fullChromeStyle?.backgroundColor !== "rgb(240, 248, 255)"
+      || fullChromeStyle?.getPropertyValue("--chart-bg").trim() !== "rgba(248 250 252 / 1)"
+      || getComputedStyle(fullChromeCalloutBox).backgroundColor !== "rgb(255, 255, 255)") {
+    throw new Error(`strict-CSP full authored Scene chrome lost structural or perceptual parity: ${JSON.stringify({
+      axes: fullChromeAxisCount,
+      legend: fullChromeLegendRows.map((row) => row.getAttribute("aria-label")),
+      colorbarTicks: fullChromeColorbarTicks.length,
+      colorbarMinors: fullChromeColorbarMinors.length,
+      text: fullChromeText,
+      rootBackground: fullChromeStyle?.backgroundColor,
+      plotBackground: fullChromeStyle?.getPropertyValue("--chart-bg").trim(),
+      calloutBackground: fullChromeCalloutBox && getComputedStyle(fullChromeCalloutBox).backgroundColor,
+    })}`);
+  }
+  fullChrome.destroy(); fullChromeHost.remove(); await fullChromeWorker.dispose();
+
   const fragmentedWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",
     wasm: wasmModule,

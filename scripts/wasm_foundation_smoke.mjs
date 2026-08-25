@@ -9,6 +9,7 @@ const root = normalize(join(fileURLToPath(new URL(".", import.meta.url)), ".."))
 const allowed = new Set([
   "/tests/browser/wasm_foundation_page.mjs",
   "/tests/fixtures/figure_scene_v3.json",
+  "/tests/fixtures/authored_scene_v20.json",
   "/tests/fixtures/xyts_cross_host.json",
   "/tests/fixtures/graphforge/semantic_compound.json",
   "/packages/xy-client/dist/index.js",
