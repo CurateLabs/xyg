@@ -796,7 +796,9 @@ def figure_scene(
 
     # XYAL v2 carries only literal RGBA paint with the annotation identity and
     # text. Rust still owns the anchor, clipping, typography, and paint order.
-    attached_labels: list[tuple[int, tuple[int, int, int, int], str]] = []
+    attached_labels: list[
+        tuple[int, tuple[int, int, int, int], tuple[int, int, int, int] | None, str]
+    ] = []
     straight_arrows: list[
         tuple[int, float, float, float, float, tuple[int, int, int, int], float, float]
     ] = []
