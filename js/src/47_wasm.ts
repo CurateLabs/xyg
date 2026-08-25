@@ -101,6 +101,14 @@ export interface XygWasmAggregateStreamRequest {
   x0: number; x1: number; y0: number; y1: number; width: number; height: number;
 }
 
+/** Capability-gated observations from the production module Worker. */
+export interface XygWasmStreamObservation {
+  phase: "begin" | "push" | "cancelled" | "finish";
+  requestId: number;
+  sequence: number;
+  pushes: number;
+}
+
 type AggregateTransferContract = Exclude<XygWasmAggregateTaskOptions["transfer"], undefined>;
 type AssertTrue<T extends true> = T;
 type AggregateTransferMustRemainTrue = AssertTrue<AggregateTransferContract>;
@@ -202,6 +210,9 @@ export class XygWasmWorker {
   private readonly inline: boolean;
   private readonly inlineBlobUrl: string | null;
   private readonly evidenceCapability: string | null;
+  // This is deliberately populated only by an explicitly capability-gated
+  // Worker.  It is evidence telemetry, never scheduling or render policy.
+  private readonly streamObservations: XygWasmStreamObservation[] = [];
   readonly ready: Promise<XygWasmDiagnostics>;
 
   constructor(options: XygWasmWorkerOptions | XygInlineWasmWorkerOptions) {
@@ -434,7 +445,11 @@ export class XygWasmWorker {
         this.worker.postMessage({ type: "aggregate.stream_push", requestId, sequence, chunk: chunk.buffer }, [chunk.buffer]);
         setTimeout(push, 0);
       };
-      setTimeout(push, 0);
+      // The evidence capability deliberately leaves one bounded turn between
+      // stream declaration and first source copy.  That makes an observed
+      // Worker cancellation testable even for a one-chunk source; normal
+      // production streams retain their immediate replay cadence.
+      setTimeout(push, this.evidenceCapability ? 25 : 0);
     } catch (cause) { this.pending.delete(requestId); throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT", cause instanceof Error ? cause.message : "could not start aggregate stream"); }
     return { requestId, sequence, result, cancel: () => {
       const pending = this.pending.get(requestId); if (!pending) return;
@@ -442,6 +457,14 @@ export class XygWasmWorker {
       if (!this.disposed) this.worker.postMessage({ type: "cancel", requestId, sequence });
     } };
   }
+
+  /** @internal Strict-CSP evidence only; returns actual Worker observations. */
+  evidenceStreamObservations(): readonly XygWasmStreamObservation[] {
+    return this.evidenceCapability ? this.streamObservations.map((entry) => ({ ...entry })) : [];
+  }
+
+  /** @internal Whether capability-gated evidence telemetry is active. */
+  evidenceEnabled(): boolean { return this.evidenceCapability !== null; }
 
   /** Gated test-only worker boundary used by the strict-CSP lifecycle proof. */
   evidenceLifecycle(action: "malformed" | "resource" | "trap" | "stream_resource", sequence?: number): Promise<never> {
@@ -668,6 +691,19 @@ export class XygWasmWorker {
   }
 
   private onMessage(message: any) {
+    if (message?.type === "aggregate.stream_observation") {
+      if (this.evidenceCapability && (message.phase === "begin" || message.phase === "push"
+          || message.phase === "cancelled" || message.phase === "finish")
+          && Number.isSafeInteger(message.requestId) && Number.isSafeInteger(message.sequence)
+          && Number.isSafeInteger(message.pushes) && message.pushes >= 0) {
+        // Bound evidence bookkeeping even if a deliberately hostile page
+        // submits many streams while its diagnostic capability is enabled.
+        if (this.streamObservations.length === 256) this.streamObservations.shift();
+        this.streamObservations.push({ phase: message.phase, requestId: message.requestId,
+          sequence: message.sequence, pushes: message.pushes });
+      }
+      return;
+    }
     const pending = this.pending.get(message?.requestId);
     if (!pending) return;
     if (message.progress && message.ok) {

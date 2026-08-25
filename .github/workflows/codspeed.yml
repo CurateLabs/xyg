@@ -115,7 +115,10 @@ jobs:
             .venv/bin/python -m pytest benchmarks/test_codspeed_*.py --codspeed
 
   authored-scene-browser-evidence:
-    name: Authored-Scene browser evidence
+    # This shares the main-only/manual scheduler for cost control, but it is
+    # wall-clock artifact evidence: it never invokes CodSpeed or uploads data
+    # to CodSpeed, and is absent from PR CI.
+    name: Main-only browser evidence (not CodSpeed)
     runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: detect
     if: needs.detect.outputs.should_run == 'true'
@@ -174,6 +177,10 @@ jobs:
             --chrome "$XYG_CHROMIUM" \
             --output "hosted-density-browser-${{ github.sha }}.json"
           .venv/bin/python scripts/verify_inline_density_benchmark.py "hosted-density-browser-${{ github.sha }}.json" --sha "${{ github.sha }}"
+          .venv/bin/python scripts/stream_density_browser_benchmark.py \
+            --chrome "$XYG_CHROMIUM" \
+            --output "hosted-stream-density-browser-${{ github.sha }}.json"
+          .venv/bin/python scripts/verify_stream_density_browser_benchmark.py "hosted-stream-density-browser-${{ github.sha }}.json" --sha "${{ github.sha }}"
       - name: Upload SHA-keyed raw authored-Scene evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -182,6 +189,7 @@ jobs:
           path: |
             authored-scene-browser-${{ github.sha }}.json
             hosted-density-browser-${{ github.sha }}.json
+            hosted-stream-density-browser-${{ github.sha }}.json
             authored-scene-native-${{ github.sha }}.json
             authored-scenes/authored-scene-manifest.json
             authored-scenes/*.svg

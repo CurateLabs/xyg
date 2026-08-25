@@ -33,7 +33,7 @@ let compileLeaf = false;
 let operationSequenceWatermark = 0;
 const queued = new Map<number, number>();
 let activeAggregate: { requestId: number; sequence: number; timer: number } | null = null;
-let activeAggregateStream: { requestId: number; sequence: number } | null = null;
+let activeAggregateStream: { requestId: number; sequence: number; pushes: number } | null = null;
 let activeGraph: { requestId: number; sequence: number; revision: number; timer: number; chunkSteps: number; started: number; maxWallMs: number; first: boolean } | null = null;
 let activeCompile: { requestId: number; sequence: number; timer: number; paint: boolean; leaf?: Worker; loweringAnnounced?: boolean } | null = null;
 const COMPILE_CHECKPOINT_RECORDS = 4096;
@@ -44,6 +44,12 @@ function isDisposed(): boolean {
 
 function reply(requestId: number, value: unknown, transfer: Transferable[] = []) {
   scope.postMessage({ requestId, ok: true, value }, transfer);
+}
+
+/** Capability-gated observational telemetry for hosted strict-CSP evidence. */
+function streamObservation(phase: "begin" | "push" | "cancelled" | "finish", active: { requestId: number; sequence: number; pushes: number }) {
+  if (evidenceCapability) scope.postMessage({ type: "aggregate.stream_observation", phase,
+    requestId: active.requestId, sequence: active.sequence, pushes: active.pushes });
 }
 
 function error(requestId: number, code: string, message: string, status: number | null = null) {
@@ -198,6 +204,15 @@ function evidenceLifecycle(message: any) {
   if (!evidenceCapability || message.capability !== evidenceCapability) {
     error(message.requestId, "XYG_WASM_EVIDENCE_DISABLED", "lifecycle evidence is not enabled"); return;
   }
+  if (message.action === "trap") {
+    // Capability-gated evidence only: exercise the same terminal lifecycle
+    // boundary a Rust/WASM trap takes, so the host must rebuild a Worker and
+    // replay its retained split source.
+    lifecycle = "failed";
+    disposeRust();
+    error(message.requestId, "XYG_WASM_TRAP", "evidence-injected Rust/WASM trap");
+    return;
+  }
   if (message.action !== "stream_resource") {
     error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "unknown lifecycle evidence action", XYG_WASM_STATUS.INVALID_ARGUMENT); return;
   }
@@ -250,7 +265,8 @@ function beginAggregateStream(message: any) {
     if (staged !== XYG_WASM_STATUS.OK) { streamFailure(message, staged); return; }
     const status = exports.xyg_wasm_aggregate_stream_begin(handle, Number(message.sequence), 0, message.header.byteLength);
     if (status !== XYG_WASM_STATUS.PENDING) { streamFailure(message, status); return; }
-    activeAggregateStream = { requestId: message.requestId, sequence: Number(message.sequence) };
+    activeAggregateStream = { requestId: message.requestId, sequence: Number(message.sequence), pushes: 0 };
+    streamObservation("begin", activeAggregateStream);
   } catch (cause) { error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", cause instanceof Error ? cause.message : "aggregate stream begin failed", XYG_WASM_STATUS.INVALID_ARGUMENT); }
 }
 
@@ -263,6 +279,7 @@ function pushAggregateStream(message: any) {
     if (staged !== XYG_WASM_STATUS.OK) { streamFailure(message, staged); return; }
     const status = exports!.xyg_wasm_aggregate_stream_push(handle, active.sequence, 0, message.chunk.byteLength);
     if (status !== XYG_WASM_STATUS.PENDING) streamFailure(message, status);
+    else { active.pushes++; streamObservation("push", active); }
   } catch (cause) { error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", cause instanceof Error ? cause.message : "aggregate stream push failed", XYG_WASM_STATUS.INVALID_ARGUMENT); activeAggregateStream = null; }
 }
 
@@ -276,7 +293,9 @@ function finishAggregateStream(message: any) {
     const ptr = exports.xyg_wasm_output_ptr(handle) >>> 0, len = exports.xyg_wasm_output_len(handle) >>> 0;
     if (!ptr || !len || ptr + len > exports.memory.buffer.byteLength) throw new Error("Rust stream aggregate output returned an invalid range");
     const aggregate = new Uint8Array(exports.memory.buffer, ptr, len).slice().buffer;
-    reply(message.requestId, { sequence: active.sequence, ...diagnostics(), arenaBytes: 0, aggregate }, [aggregate]);
+    streamObservation("finish", active);
+    reply(message.requestId, { sequence: active.sequence, streamPushes: active.pushes,
+      ...diagnostics(), arenaBytes: 0, aggregate }, [aggregate]);
   } catch (cause) { activeAggregateStream = null; lifecycle = "failed"; disposeRust(); error(message.requestId, "XYG_WASM_TRAP", cause instanceof Error ? cause.message : "WASM aggregate stream trapped"); }
 }
 
@@ -949,6 +968,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
       }
       if (activeAggregateStream?.requestId === message.requestId && exports && handle) {
         exports.xyg_wasm_cancel(handle, Number(message.sequence));
+        streamObservation("cancelled", activeAggregateStream);
         activeAggregateStream = null;
       }
       if (activeGraph?.requestId === message.requestId) { clearTimeout(activeGraph.timer); activeGraph = null; }

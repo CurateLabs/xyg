@@ -75,6 +75,8 @@ export interface XygWasmDensityDiagnostics {
   arenaHighWaterBytes: number;
   memoryBytes: number;
   memoryHighWaterBytes: number;
+  /** Actual Worker-side XYAS pushes for this completed aggregate. */
+  streamPushes?: number;
 }
 
 function fullSourceInput(view: ChartView & any): XygWasmDensityInput | null {
@@ -141,6 +143,7 @@ export class XygWasmDensityHandle {
   private aggregateSequence = 0;
   private disposed = false;
   private latest: XygWasmDensityDiagnostics | null = null;
+  private readonly evidenceApplications: number[] = [];
 
   constructor(
     private readonly view: ChartView & any,
@@ -154,6 +157,10 @@ export class XygWasmDensityHandle {
 
   diagnostics(): XygWasmDensityDiagnostics | null {
     return this.latest ? { ...this.latest } : null;
+  }
+  /** @internal Capability-gated evidence of successful ChartView application. */
+  evidenceApplicationSequences(): readonly number[] {
+    return this.worker.evidenceEnabled() ? [...this.evidenceApplications] : [];
   }
   /** Evidence/control boundary: cancel only the currently pending viewport. */
   cancel() { this.task?.cancel(); this.task = null; }
@@ -282,7 +289,10 @@ export class XygWasmDensityHandle {
         sequence, traceId: input.traceId, copyCount: result.copyCount, copyBytesLo: result.copyBytesLo, copyBytesHi: result.copyBytesHi,
         arenaBytes: result.arenaBytes, arenaHighWaterBytes: result.arenaHighWaterBytes,
         memoryBytes: result.memoryBytes, memoryHighWaterBytes: result.memoryHighWaterBytes,
+        ...(this.streamSource && Number.isSafeInteger(result.streamPushes)
+          ? { streamPushes: result.streamPushes } : {}),
       };
+      if (this.worker.evidenceEnabled()) this.evidenceApplications.push(sequence);
       this.task = null;
     } catch (cause) {
       // A superseded request is expected and must neither blank the existing
