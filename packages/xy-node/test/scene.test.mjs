@@ -236,6 +236,24 @@ test("Node matches Python bytes for the bounded public literal geometry family",
   assert.ok(sceneBrowserPainter(scene).length > 300);
 });
 
+test("Node matches Python bytes for bounded literal geometry host transforms", () => {
+  const variants = [
+    ["step", (figure) => figure.step([0, 1, 2], [1, 3, 2], { id: 0, where: "mid" })],
+    ["histogram", (figure) => figure.histogram([0, 1, 1, 2], { id: 0, bins: 2 })],
+    // Node `bar` and Python `column` intentionally lower to the same Rect.
+    ["column_bar", (figure) => figure.bar([0, 1], [1, 2], { id: 0 })],
+  ];
+  for (const [name, author] of variants) {
+    const figure = new Figure({ width: 320, height: 240 });
+    figure.setAxisDomain("x", [0, 4]); figure.setAxisDomain("y", [0, 5]);
+    author(figure);
+    assert.equal(
+      crypto.createHash("sha256").update(figure.toScene()).digest("hex"),
+      figureSceneFixture.public_literal_geometry_variants_sha256[name],
+    );
+  }
+});
+
 test("Node Figure authoring accepts bounded annotations without exposing a second policy", () => {
   const source = { kind: "text", x: 0.5, y: 0.5, text: "owned by Rust", style: { color: "#ff0000" } };
   const fromConstructor = new Figure({ width: 320, height: 240, annotations: [source] });

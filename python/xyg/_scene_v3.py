@@ -1646,9 +1646,9 @@ def scene_export_support_reason(
     if any(key not in {"domain", "stops", "ticks", "minor_ticks", "title"} for key in colorbar):
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR"
     # This is the bounded literal geometry increment.  The Rust consumers
-    # already own the record semantics for ordinary polylines, rectangles,
-    # and top/base bands, so use those exact records for public static output
-    # too.  Keep this deliberately narrower than the explicit ``to_scene``
+    # already own the record semantics for ordinary polylines and rectangles,
+    # so use those exact records for public static output too.  Keep this
+    # deliberately narrower than the explicit ``to_scene``
     # seam: it does not bless generated palettes, density/LOD, gradients,
     # rounded geometry, rich text, polar coordinates, or the other migrating
     # mark families merely because an internal record happens to exist.
@@ -1696,7 +1696,7 @@ def scene_export_support_reason(
         },
     }
     has_new_geometry = any(
-        trace.kind in {"line", "bar", "column", "histogram", "area"} for trace in figure.traces
+        trace.kind in {"line", "bar", "column", "histogram"} for trace in figure.traces
     )
     # The new geometry route is intentionally anchored to an explicit
     # Cartesian viewport. The compatibility writer's implicit domains and

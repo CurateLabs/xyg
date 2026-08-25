@@ -542,9 +542,9 @@ F3, still pending (above).
   then exposes the exact same Scene v12 bytes to explicit Rust SVG and
   native-raster command consumers. Public static exports route the proven
   literal Cartesian subset through those consumers: circle/diamond scatter,
-  constant-style polyline, ordinary bar/column/histogram rectangles, and
-  fill-only area bands. Gradients, rounded corners, visible area perimeters,
-  LOD/density, nonliteral palettes, polar geometry, and unmodeled marks retain
+  constant-style polyline, and ordinary bar/column/histogram rectangles.
+  Gradients, rounded corners, areas, LOD/density, nonliteral palettes, polar
+  geometry, and unmodeled marks retain
   their compatibility renderers. Rust
   now owns chart/plot backgrounds, authored axis side/visibility and
   major/minor tick geometry/paint, default numeric tick/label/grid/spine, and

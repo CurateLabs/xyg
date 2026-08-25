@@ -122,6 +122,25 @@ def _public_literal_geometry() -> Figure:
     return figure
 
 
+def _public_literal_geometry_variant(kind: str) -> Figure:
+    """Build one exact cross-host transform fixture on fixed domains."""
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 4.0)
+    figure.axis_options["y"]["domain"] = (0.0, 5.0)
+    if kind == "step":
+        figure.step([0, 1, 2], [1, 3, 2], where="mid")
+    elif kind == "histogram":
+        figure.histogram([0, 1, 1, 2], bins=2)
+    elif kind == "column_bar":
+        # Node's public `bar` emits the same canonical Rect as Python's
+        # `column`; the exact hash below pins that intentional host alias.
+        figure.column([0, 1], [1, 2])
+    else:  # pragma: no cover - closed fixture vocabulary
+        raise AssertionError(f"unknown literal geometry fixture {kind!r}")
+    figure.traces[-1].id = 0
+    return figure
+
+
 # Each factory builds a figure that `figure_scene` rejects; the substring is the
 # stable diagnostic token the predicate must surface for the router to log.
 UNSUPPORTED: dict[str, tuple[Callable[[], Figure], str]] = {
@@ -197,6 +216,18 @@ def test_literal_geometry_routes_all_public_static_exports_and_matches_scene_byt
         _native.scene_raster_commands(scene), figure.width, figure.height
     )
     assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(svg)
+
+
+@pytest.mark.parametrize("kind", ["step", "histogram", "column_bar"])
+def test_literal_geometry_cross_host_variants_match_exact_scene_bytes(kind: str) -> None:
+    """Host transforms must converge before Rust consumes the Scene."""
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
+    figure = _public_literal_geometry_variant(kind)
+    assert scene_export_support_reason(figure) is None
+    assert (
+        hashlib.sha256(figure_scene(figure)).hexdigest()
+        == fixture["public_literal_geometry_variants_sha256"][kind]
+    )
 
 
 @pytest.mark.parametrize(

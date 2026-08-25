@@ -208,9 +208,10 @@ layout authority for that already-versioned bounded contract.
 layout, and rendering authority.
 Public Python SVG/PNG/PDF route the proven literal Cartesian static contract
 through Rust Scene: constant-style circle/diamond scatter; constant-style
-polyline (including host-expanded literal steps); the ordinary Rect family
-(`bar`/`column`/`histogram`); and fill-only `area` Bands. The geometry records
-are byte-identical for the shared Python/Node line+bar+area fixture. Chart/plot
+polyline (including host-expanded literal steps); and the ordinary Rect family
+(`bar`/`column`/`histogram`). The geometry records are byte-identical for the
+shared Python/Node line+bar fixture, with separate exact cross-host fixtures for
+step expansion, histogram bins, and Python `column`/Node `bar` Rect equivalence. Chart/plot
 backgrounds, title, authored axis labels/sides/major-minor ticks, the independent public
 `x_axis(..., ticks=False|text=False)` and `y_axis(..., ticks=False|text=False)`
 visibility switches, primary legend, literal colorbar, one bounded callout, and
