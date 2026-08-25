@@ -201,7 +201,7 @@ plus painter buffers must always stay within `max_arena_bytes`.
 
 ## Version and scene contract
 
-`WASM_ABI_VERSION` is 21. ABI 21 retains the bounded `XYSA` v1 envelope and
+`WASM_ABI_VERSION` is 22. ABI 22 retains the bounded `XYSA` v1 envelope and
 accepts `XYAD` v2 annotation decorations: existing `XYAT`/`XYAL`/`XYAR` slices
 plus bounded `XYAC` v1 Cartesian callouts. Rust decodes the complete canonical
 `XYGS` Scene first, then validates and projects raw Cartesian anchors through
@@ -229,7 +229,7 @@ The temporal subprotocol is version 2: its variable tail is a bounded raw-u64
 stable-ID selection owned and canonicalized by Rust, while all temporal samples
 remain raw i64. A range/cursor/window/selection snapshot is decoded and committed as
 one Worker response; TypeScript neither sorts IDs nor applies partial state.
-`SCENE_VERSION` remains independently versioned and is 20 for this contract.
+`SCENE_VERSION` remains independently versioned and is 24 for this contract.
 `scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
 the manifest, raw Rust exports, generated TypeScript declarations, and the Rust
 scene constant, including aggregate and temporal lifecycle exports. `js/package-wasm.mjs` parses the compiled module's type,

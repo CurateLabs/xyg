@@ -377,7 +377,7 @@ impl StreamAggregateJob {
     /// Adds exactly one bounded source chunk. Returning `false` makes the
     /// caller yield/check cancellation before staging another chunk.
     pub fn push(&mut self, chunk: &[u8]) -> Result<bool, AggregateError> {
-        if chunk.is_empty() || chunk.len() % REQUEST_STRIDE_COUNT != 0 {
+        if chunk.is_empty() || !chunk.len().is_multiple_of(REQUEST_STRIDE_COUNT) {
             return Err(AggregateError::Length);
         }
         let points = chunk.len() / REQUEST_STRIDE_COUNT;
