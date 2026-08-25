@@ -9,6 +9,15 @@ import math
 from pathlib import Path
 
 EXPECTED_COUNTS = [100, 10_000, 100_000, 1_000_000]
+# Rust raster and WebGL use different paint/compositing implementations. These
+# are measured plot-only ceilings (not pixel-identity claims); callout geometry
+# is compared in the shared resolved Scene coordinate system.
+VISUAL_CEILINGS = {
+    100: (255.0, 1.0),
+    10_000: (200.0, 1.0),
+    100_000: (20.0, 0.5),
+    1_000_000: (10.0, 0.15),
+}
 
 
 def require_non_negative_metrics(
@@ -79,12 +88,24 @@ def main() -> int:
                 "firstPaintMs",
                 "browserVisualTolerancePx",
                 "visibleCanvasPixels",
+                "plotMeanRgbDelta",
+                "plotDifferingFraction",
+                "calloutGeometryDeltaPx",
             ),
         )
         if row["sceneBytes"] <= 0 or row["painterBytes"] <= 0:
             raise SystemExit("authored-Scene browser evidence has an empty payload")
         if row["browserVisualTolerancePx"] > 1 or row["visibleCanvasPixels"] <= 0:
             raise SystemExit("authored-Scene browser evidence failed the visual-tolerance probe")
+        mean_ceiling, fraction_ceiling = VISUAL_CEILINGS[row["count"]]
+        if (
+            row["plotMeanRgbDelta"] > mean_ceiling
+            or row["plotDifferingFraction"] > fraction_ceiling
+            or row["calloutGeometryDeltaPx"] > 1
+        ):
+            raise SystemExit(
+                "authored-Scene browser evidence exceeded the visual-differential tolerance"
+            )
         require_staging_copy(row, kind="authored-Scene")
         for key in ("legendSemantics", "colorbarSemantics", "annotationSemantics"):
             if row.get(key) is not True:

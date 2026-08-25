@@ -18,7 +18,7 @@ from unittest.mock import patch
 
 import numpy as np
 
-from xyg import _scene_v3
+from xyg import _native, _scene_v3, kernels
 from xyg._figure import Figure
 
 COUNTS = (100, 10_000, 100_000, 1_000_000)
@@ -202,7 +202,7 @@ def main() -> int:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        help="write deterministic .bin fixtures and authored-scene-manifest.json here",
+        help="write deterministic Scene/Rust-rendered fixtures and authored-scene-manifest.json here",
     )
     parser.add_argument(
         "--write-browser-fixture",
@@ -234,6 +234,10 @@ def main() -> int:
         args.output_dir.mkdir(parents=True, exist_ok=True)
     for count, scene in generated:
         filename = f"authored-scene-{count}.bin"
+        svg_filename = f"authored-scene-{count}.svg"
+        png_filename = f"authored-scene-{count}.png"
+        svg = _native.scene_svg(scene)
+        png = kernels.rasterize_png(_native.scene_raster_commands(scene), 960, 540)
         # The manifest is deliberately checked alongside Node's independently
         # authored output.  Keeping the digest here means the retained
         # four-tier artifact is useful without checking in its 1M-point blob.
@@ -243,10 +247,16 @@ def main() -> int:
                 "file": filename,
                 "sceneBytes": len(scene),
                 "sceneSha256": hashlib.sha256(scene).hexdigest(),
+                "svgFile": svg_filename,
+                "svgSha256": hashlib.sha256(svg.encode()).hexdigest(),
+                "pngFile": png_filename,
+                "pngSha256": hashlib.sha256(png).hexdigest(),
             }
         )
         if args.output_dir:
             (args.output_dir / filename).write_bytes(scene)
+            (args.output_dir / svg_filename).write_text(svg, encoding="utf-8")
+            (args.output_dir / png_filename).write_bytes(png)
     result = {"schema": "xyg-authored-scene-workload-v1", "measurements": report}
     if args.output_dir:
         (args.output_dir / "authored-scene-manifest.json").write_text(

@@ -12,6 +12,14 @@ const authoredScenes = new Map([100, 10_000, 100_000, 1_000_000].map((count) => 
   `/authored-scenes/authored-scene-${count}.bin`,
   authoredSceneDir ? join(authoredSceneDir, `authored-scene-${count}.bin`) : null,
 ]));
+const authoredRaster = new Map([100, 10_000, 100_000, 1_000_000].map((count) => [
+  `/authored-scenes/authored-scene-${count}.png`,
+  authoredSceneDir ? join(authoredSceneDir, `authored-scene-${count}.png`) : null,
+]));
+const authoredSvg = new Map([100, 10_000, 100_000, 1_000_000].map((count) => [
+  `/authored-scenes/authored-scene-${count}.svg`,
+  authoredSceneDir ? join(authoredSceneDir, `authored-scene-${count}.svg`) : null,
+]));
 if (!authoredSceneDir) throw new Error("XYG_AUTHORED_SCENE_DIR is required for authored-Scene browser evidence");
 const server = createServer(async (request, response) => {
   const path = new URL(request.url, "http://127.0.0.1").pathname;
@@ -21,11 +29,11 @@ const server = createServer(async (request, response) => {
     response.end('<script type="module" src="/tests/browser/wasm_scene_benchmark_page.mjs"></script>');
     return;
   }
-  const authoredScene = authoredScenes.get(path);
+  const authoredScene = authoredScenes.get(path) ?? authoredRaster.get(path) ?? authoredSvg.get(path);
   if (!allowed.has(path) && !authoredScene) { response.statusCode = 404; response.end("not found"); return; }
   try {
     const body = await readFile(authoredScene ?? join(root, path));
-    response.setHeader("Content-Type", extname(path) === ".wasm" ? "application/wasm" : authoredScene ? "application/octet-stream" : "text/javascript");
+    response.setHeader("Content-Type", extname(path) === ".wasm" ? "application/wasm" : extname(path) === ".png" ? "image/png" : extname(path) === ".svg" ? "image/svg+xml" : authoredScene ? "application/octet-stream" : "text/javascript");
     response.end(body);
   } catch (cause) {
     response.statusCode = 500;

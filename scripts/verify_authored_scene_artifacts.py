@@ -8,7 +8,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from xyg import _native
+from xyg import _native, kernels
 
 COUNTS = [100, 10_000, 100_000, 1_000_000]
 CHROME_TEXT = (
@@ -60,6 +60,18 @@ def main() -> int:
         svg = _native.scene_svg(py_scene)
         raster = _native.scene_raster_commands(py_scene)
         painter = _native.scene_browser_painter(py_scene)
+        for key, payload in (
+            ("svg", svg.encode()),
+            ("png", kernels.rasterize_png(raster, 960, 540)),
+        ):
+            filename = py_row.get(f"{key}File")
+            digest_key = f"{key}Sha256"
+            if (
+                not isinstance(filename, str)
+                or (args.python_dir / filename).read_bytes() != payload
+                or hashlib.sha256(payload).hexdigest() != py_row.get(digest_key)
+            ):
+                raise SystemExit(f"{count}: retained Rust {key} artifact does not match its Scene")
         for text in CHROME_TEXT:
             encoded = text.encode()
             if text not in svg or encoded not in raster or encoded not in painter:

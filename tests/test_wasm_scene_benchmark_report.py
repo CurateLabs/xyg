@@ -41,6 +41,9 @@ def report() -> dict[str, object]:
                     "firstPaintMs": 1.0,
                     "browserVisualTolerancePx": 1,
                     "visibleCanvasPixels": 64,
+                    "plotMeanRgbDelta": 1.0,
+                    "plotDifferingFraction": 0.01,
+                    "calloutGeometryDeltaPx": 0.0,
                     "copyCount": 1,
                     "copyBytesLo": count * 16,
                     "copyBytesHi": 0,
@@ -118,3 +121,13 @@ def test_rejects_authored_scene_visual_tolerance_failure(tmp_path: Path) -> None
     result = verify(tmp_path, value)
     assert result.returncode != 0
     assert "visual-tolerance" in result.stderr
+
+
+def test_rejects_authored_scene_visual_differential_failure(tmp_path: Path) -> None:
+    value = report()
+    rows = value["measurements"]
+    assert isinstance(rows, list) and isinstance(rows[7], dict)
+    rows[7]["calloutGeometryDeltaPx"] = 1.1
+    result = verify(tmp_path, value)
+    assert result.returncode != 0
+    assert "visual-differential" in result.stderr
