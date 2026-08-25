@@ -20,7 +20,7 @@ def test_standalone_retained_sample_can_create_an_explicit_local_wasm_adapter() 
     browser = (ROOT / "tests" / "browser" / "wasm_foundation_page.mjs").read_text(encoding="utf-8")
     assert "attachStandaloneWasmDensity" in source
     assert "createXygWasmWorker(options)" in source
-    assert "sampleRebin: true" in source
+    assert "sampleRebin: targets.length === 1" in source
     assert "XY_REBIN_WORKER_SRC" not in source
     assert "if (this._wasmDensity) return this._wasmDensity.schedule(viewOverride, opts);" in kernel
     assert "kernel-less retained-sample density uses local Rust/WASM" in browser
@@ -84,3 +84,9 @@ def test_kernel_backed_typed_source_contract_provisions_all_supported_density_tr
     assert "const typedInputs = inputs as XygWasmDensityInput[]" in source
     assert "worker, inputs: typedInputs" in source
     assert "if (!targets.length) return null" in source
+
+
+def test_standalone_adapter_accepts_supported_multi_trace_sources_without_js_aggregation() -> None:
+    source = (ROOT / "js" / "src" / "49_wasm_density.ts").read_text(encoding="utf-8")
+    assert "inputs: inputs as XygWasmDensityInput[]" in source
+    assert "sampleRebin: targets.length === 1" in source

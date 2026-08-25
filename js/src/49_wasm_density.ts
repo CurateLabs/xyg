@@ -295,7 +295,7 @@ export async function attachWasmDensity(
 }
 
 /**
- * Locally create a Rust/WASM worker for the one retained-sample density trace
+ * Locally create a Rust/WASM worker for supported retained-sample density traces
  * in a kernel-less ChartView. Asset URLs/bytes remain explicit: no CDN, path
  * guessing, Blob worker, or TypeScript aggregation is introduced.
  */
@@ -309,20 +309,19 @@ export async function attachStandaloneWasmDensity(
   const targets = view.gpuTraces.filter((g: any) =>
     g.tier === "density" && g.sampleOverlay && g.sampleOverlay._cpu,
   );
-  if (targets.length !== 1) {
-    throw new RangeError("attachStandaloneWasmDensity requires exactly one retained-sample density trace");
-  }
-  const trace = targets[0];
-  const input = retainedSampleInput(view, trace);
-  if (!input) throw new RangeError("standalone density sample is empty or unsupported");
+  if (!targets.length) throw new RangeError("attachStandaloneWasmDensity requires retained-sample density traces");
+  const inputs = targets.map((trace: any) => retainedSampleInput(view, trace));
+  if (inputs.some((input) => input === null)) throw new RangeError("standalone density sample is empty or unsupported");
   const worker = createXygWasmWorker(options);
   try {
     return await attachWasmDensity(view, {
       worker,
-      input,
+      inputs: inputs as XygWasmDensityInput[],
       workerOwnership: "own",
       delay: options.delay,
-      sampleRebin: true,
+      // One trace retains the established home-grid restore policy. Multiple
+      // traces keep their independent scale windows and re-aggregate in Rust.
+      sampleRebin: targets.length === 1,
     });
   } catch (error) {
     await worker.dispose();

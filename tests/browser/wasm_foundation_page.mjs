@@ -769,14 +769,11 @@ async function run() {
   }
   standaloneDensityHost.remove();
 
-  foundationStage = "direct WASM ChartView density multi-trace supersession and scales";
+  foundationStage = "standalone WASM density multi-trace supersession and scales";
   const multiDensityHost = document.createElement("div");
   multiDensityHost.style.cssText = "width:320px;height:240px";
   document.body.append(multiDensityHost);
   const multiDensityView = directDensityFixture(multiDensityHost, null, true);
-  const multiDensityWorker = createXygWasmWorker({
-    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 4 * 1024 * 1024,
-  });
   // One extra point beyond Rust's 32,768-point checkpoint leaves the first
   // trace in flight, so the next viewport cancels it before its second trace
   // can start. This exercises the grouped attachment, not just one trace.
@@ -785,18 +782,17 @@ async function run() {
     slowX[index] = 0.1 + (index % 100) / 125;
     slowY[index] = 0.1 + (index % 80) / 100;
   }
+  const multiSource = multiDensityView.gpuTraces.filter((trace) => trace.tier === "density");
+  multiSource[0].sampleOverlay = { trace: { color: null }, _cpu: { x: slowX, y: slowY, xMeta: { scale: 1, offset: 0 }, yMeta: { scale: 1, offset: 0 } } };
+  multiSource[1].sampleOverlay = { trace: { color: null }, _cpu: { x: new Float64Array([10.5, 19.5]), y: new Float64Array([105, 195]), xMeta: { scale: 1, offset: 0 }, yMeta: { scale: 1, offset: 0 } } };
   const multiApplies = [];
   const applyMultiGrid = multiDensityView._applySampleRebinGrid;
   multiDensityView._applySampleRebinGrid = function(trace, grid, ...rest) {
     multiApplies.push({ traceId: trace.trace.id, xRange: grid.xRange, yRange: grid.yRange });
     return applyMultiGrid.call(this, trace, grid, ...rest);
   };
-  const multiDensityHandle = await attachWasmDensity(multiDensityView, {
-    worker: multiDensityWorker,
-    inputs: [
-      { traceId: 0, x: slowX, y: slowY },
-      { traceId: 1, x: new Float64Array([10.5, 19.5]), y: new Float64Array([105, 195]) },
-    ], delay: 0,
+  const multiDensityHandle = await attachStandaloneWasmDensity(multiDensityView, {
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 4 * 1024 * 1024, delay: 0,
   });
   const obsoleteMultiRevision = multiDensityView._scheduleViewRequest({
     ranges: { x: [0.1, 0.9], y: [0.15, 0.85], x2: [11, 19], y2: [110, 190] },
@@ -816,14 +812,13 @@ async function run() {
       || multiTraces[1]?.density?.yRange.join(",") !== "120,180"
       || multiDensityView._rebinWorker
       || multiApplies.some((apply) => apply.xRange.join(",") === "0.1,0.9")) {
-    throw new Error(`direct WASM density multi-trace supersession/scales drifted: ${JSON.stringify({
+    throw new Error(`standalone WASM density multi-trace supersession/scales drifted: ${JSON.stringify({
       obsoleteMultiRevision, multiRevision, diagnostics: multiDensityHandle.diagnostics(),
       applies: multiApplies, traces: multiTraces.map((trace) => trace.density),
     })}`);
   }
   await multiDensityHandle.dispose();
   multiDensityView.destroy();
-  await multiDensityWorker.dispose();
   multiDensityHost.remove();
 
   foundationStage = "direct WASM ChartView density resource diagnostic";
