@@ -118,10 +118,14 @@ def test_supported_figure_has_no_reason() -> None:
     assert scene_export_support_reason(figure) is None
 
 
-def test_one_bounded_cartesian_callout_is_a_supported_public_scene_slice() -> None:
+def test_up_to_two_ordinary_bounded_cartesian_callouts_are_a_supported_public_scene_slice() -> None:
     figure = _callout()
     assert scene_export_support_reason(figure) is None
     assert b"here" in figure_scene(figure)
+    figure.annotations.append({"kind": "callout", "x": 2.0, "y": 3.0, "text": "there", "dx": -24.0})
+    assert scene_export_support_reason(figure) is None
+    scene = figure_scene(figure)
+    assert b"here" in scene and b"there" in scene
 
 
 def test_proven_ordinary_and_wrapped_callout_fixture_is_a_supported_public_slice() -> None:
@@ -140,11 +144,12 @@ def test_proven_ordinary_and_wrapped_callout_fixture_is_a_supported_public_slice
         [
             {"kind": "callout", "x": 1.0, "y": 2.0, "text": "first"},
             {"kind": "callout", "x": 2.0, "y": 3.0, "text": "second"},
+            {"kind": "callout", "x": 3.0, "y": 4.0, "text": "third"},
         ],
         [{"kind": "callout", "x": 1.0, "y": 2.0, "text": "wrapped", "wrap": 96.0}],
     ],
 )
-def test_only_one_bounded_callout_enters_the_public_annotation_slice(
+def test_only_two_ordinary_bounded_callouts_enter_the_public_annotation_slice(
     annotations: list[dict[str, object]],
 ) -> None:
     figure = _supported()

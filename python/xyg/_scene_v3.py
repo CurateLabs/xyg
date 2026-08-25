@@ -1545,9 +1545,9 @@ def scene_export_support_reason(
     renderer's complete output contract is modeled. Besides the basic
     constant-style circle-scatter subset, the proven literal Cartesian chrome
     slice routes automatically: backgrounds, title, authored axes/ticks,
-    primary legend, literal colorbar, and one callout. Input errors (for
-    example a non-finite opacity) are not a routing question and propagate
-    unchanged.
+    primary legend, literal colorbar, and up to two ordinary callouts. Input
+    errors (for example a non-finite opacity) are not a routing question and
+    propagate unchanged.
     """
     # The compatibility exporter resolves fluid authoring dimensions at its
     # document boundary.  Scene records require concrete viewport dimensions;
@@ -1569,10 +1569,9 @@ def scene_export_support_reason(
     if getattr(figure, "title_options", None):
         return "XYG_SCENE_UNSUPPORTED_PUBLIC_TEXT"
     annotations = list(getattr(figure, "annotations", None) or [])
-    ordinary_callout = (
-        len(annotations) == 1
-        and annotations[0].get("kind") == "callout"
-        and "wrap" not in annotations[0]
+    ordinary_callouts = 1 <= len(annotations) <= 2 and all(
+        annotation.get("kind") == "callout" and "wrap" not in annotation
+        for annotation in annotations
     )
     ordinary_and_wrapped_callout = (
         len(annotations) == 2
@@ -1581,10 +1580,10 @@ def scene_export_support_reason(
         and annotations[1].get("kind") == "callout"
         and "wrap" in annotations[1]
     )
-    if annotations and not (ordinary_callout or ordinary_and_wrapped_callout):
-        # The proven public annotation slice is one ordinary bounded Cartesian
-        # callout, optionally followed by one bounded wrapped Cartesian
-        # callout. ``figure_scene`` below remains the sole authority for its
+    if annotations and not (ordinary_callouts or ordinary_and_wrapped_callout):
+        # The proven public annotation slice is one or two ordinary bounded
+        # Cartesian callouts, plus the separately evidenced ordinary-and-wrapped
+        # pair. ``figure_scene`` below remains the sole authority for its
         # literal field validation, resource limits, Rust projection, and
         # label-box semantics. Do not turn this structural exception into broad
         # annotation support merely because the explicit Scene API can encode
