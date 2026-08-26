@@ -936,6 +936,15 @@ result as an ordinary `post` Step, whose expansion and all three consumers are
 already Rust-owned. This changes no ABI or Scene version. Binned ECDF domain,
 bin selection, and cumulative assembly remain an explicit later cutover.
 
+Omitted-bin composition histograms in Python and Node resolve their uniform
+edges with the existing synchronous Rust `xyg_histogram_edges` auto estimator,
+then use `xyg_histogram_uniform` and the existing Histogram Rect Scene path.
+Explicit positive integer bins and the empty/all-nonfinite ten-bin compatibility
+case are unchanged. Rust rejects automatic results above 10,000 bins before
+allocating the edge plane; each binding uses one fixed 10,001-edge bounded
+scratch plane for the existing ABI 98 write call. No ABI or Scene version changes. Authored arbitrary edges
+and cumulative-bin assembly remain later cutovers.
+
 ABI 98 makes the composition violin a compact Rust-owned ingress without a
 Scene-version change. Hosts pack flat canonical f64 samples, monotone group
 offsets, centers, bins, positive finite width, and orientation. Rust filters

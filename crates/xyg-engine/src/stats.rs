@@ -25,6 +25,9 @@ pub enum HistogramEdgesMethod {
     Sturges = 1,
 }
 
+/// Maximum number of uniform histogram bins produced by automatic edge resolution.
+pub const MAX_HISTOGRAM_BINS: usize = 10_000;
+
 impl HistogramEdgesMethod {
     pub fn from_i32(v: i32) -> Option<Self> {
         match v {
@@ -319,6 +322,9 @@ pub fn histogram_edges(
             1
         }
     };
+    if n_bins > MAX_HISTOGRAM_BINS {
+        return None;
+    }
     let mut edges = Vec::with_capacity(n_bins + 1);
     let width = (last_edge - first_edge) / n_bins as f64;
     for i in 0..=n_bins {
@@ -741,6 +747,24 @@ mod tests {
         // Empty without range → single bin over [0, 1] (NumPy auto).
         let empty = histogram_edges(&[], None, HistogramEdgesMethod::Auto).unwrap();
         assert_eq!(empty, vec![0.0, 1.0]);
+    }
+
+    #[test]
+    fn histogram_edges_enforces_resource_bound() {
+        let data = [0.0, 1.0];
+        let at_bound = histogram_edges(
+            &data,
+            Some((0.0, MAX_HISTOGRAM_BINS as f64 / 2.0)),
+            HistogramEdgesMethod::Auto,
+        )
+        .unwrap();
+        assert_eq!(at_bound.len(), MAX_HISTOGRAM_BINS + 1);
+        assert!(histogram_edges(
+            &data,
+            Some((0.0, MAX_HISTOGRAM_BINS as f64 / 2.0 + 0.5)),
+            HistogramEdgesMethod::Auto,
+        )
+        .is_none());
     }
 
     #[test]

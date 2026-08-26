@@ -195,6 +195,16 @@ def test_histogram_edges_match_numpy_auto() -> None:
     np.testing.assert_allclose(sturges, exp_s, atol=1e-10)
 
 
+def test_histogram_edges_wide_range_and_resource_bound() -> None:
+    data = np.array([0.0, 1.0])
+    edges = kernels.histogram_edges(data, range=(-10.0, 10.0), method="auto")
+    np.testing.assert_allclose(edges, np.linspace(-10.0, 10.0, 41))
+    boundary = kernels.histogram_edges(data, range=(0.0, 5_000.0), method="auto")
+    assert len(boundary) == 10_001
+    with pytest.raises(ValueError, match="invalid histogram_edges arguments"):
+        kernels.histogram_edges(data, range=(0.0, 5_000.5), method="auto")
+
+
 def _legacy_wind_rose_bins(directions, speeds, sectors, speed_bins=None):
     import math
 

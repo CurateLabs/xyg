@@ -6376,9 +6376,8 @@ def histogram_edges(
     else:
         use_range = 1
         lo, hi = _finite_increasing(range[0], range[1], "histogram range")
-    # NumPy auto floors FD by sqrt/2, so n_bins ≤ ceil(2√n); sturges is ~log2(n).
-    n = max(len(data), 1)
-    capacity = max(int(2 * (n**0.5) + 4), 16)
+    # ABI 98 caps Rust auto resolution at 10,000 bins (10,001 edges).
+    capacity = 10_001
     out = np.empty(capacity, dtype=np.float64)
     written = _lib.xyg_histogram_edges(
         _ptr_f64(data),

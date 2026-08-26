@@ -64,6 +64,16 @@ and literal Step style packing; Rust expands that Step for the shared Scene
 consumers. Binned ECDF domain and cumulative-bin assembly remain migration debt
 under #58.
 
+Omitted-bin composition histogram edges now use Rust's NumPy-compatible auto
+estimator in both Python and Node instead of Node silently selecting ten bins.
+Hosts retain coercion, explicit integer-bin validation, literal style packing,
+and the historical all-nonfinite ten-bin compatibility case; Rust owns the
+ordinary adaptive edge count and coordinates. The resulting bounded Histogram
+Rects already route public SVG/PNG/PDF and browser paint through the canonical
+Scene. Rust rejects automatic results above 10,000 bins, and each thin binding
+uses one 10,001-edge ABI scratch plane. Arbitrary authored edges and cumulative
+assembly remain #58 debt.
+
 Static-export routing status (#117): `Figure.to_svg`, native `to_png`, native
 `to_image(..., "svg"|"png"|"pdf")`, `write_image`, and the native branch of
 `write_images` now delegate the proven
