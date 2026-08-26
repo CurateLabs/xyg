@@ -123,6 +123,10 @@ def test_histogram_auto_counts_density_and_every_public_consumer() -> None:
     assert mixed.traces[0].y1.values.sum() == 10
     density = _figure(*CASES["density_cumulative"])
     np.testing.assert_allclose(density.traces[0].y1.values, [5 / 9, 7 / 9, 7 / 9, 8 / 9, 1])
+    authored = _figure(*CASES["authored"])
+    np.testing.assert_array_equal(authored.traces[0].y1.values, [2.0, 1.0, 1.0])
+    authored_cdf = _figure(*CASES["authored_cumulative"])
+    np.testing.assert_array_equal(authored_cdf.traces[0].y1.values, [2.0, 3.0, 4.0])
 
     assert scene_export_support_reason(mixed) is None
     scene = mixed.to_scene()
