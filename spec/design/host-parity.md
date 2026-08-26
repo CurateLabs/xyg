@@ -146,6 +146,14 @@ non-increasing edges, or larger results fail through the hosts' existing
 histogram argument errors. Unsorted, repeated, nonfinite, constant, ranged,
 authored-edge, density, and cumulative fixtures produce identical Rect Scenes
 for SVG, raster, and browser consumers.
+ABI 102 makes composition hexbin ingress Rust-owned without a Scene-version
+change. Both hosts pass raw f64 x/y (and optional C) plus either a scalar
+grid width or an explicit pair; `grid_h == 0` selects matplotlib
+`int(width / √3)` floored at 2, and `use_range == 0` applies the shared
+automatic-domain pad. Finite-pair filtering ignores nonfinite x, y, or C.
+Python custom reducers keep host group reduction after `xyg_hexbin_ingress`
+resolves the same domain and aspect. The compact result remains the existing
+centers-only hexbin trace.
 ABI 99 gives both composition hosts one compact grouped box ingress. Hosts pack
 the same f64 values/offsets/centers and literal options; Rust returns typed
 active-group IDs, fixed 25-f64 group records, monotone outlier offsets, and

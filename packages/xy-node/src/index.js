@@ -12,6 +12,7 @@ export {
   histogramBins,
   histogramEdges,
   hexbin,
+  hexbinIngress,
   violinDensity,
   boxStats,
   quantiles,

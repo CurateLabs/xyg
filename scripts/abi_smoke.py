@@ -508,6 +508,7 @@ def load() -> ctypes.CDLL:
         ctypes.c_double,
         ctypes.c_double,
         ctypes.c_double,
+        ctypes.c_int32,
         ctypes.c_size_t,
         ctypes.c_int32,
         F64P,
@@ -517,6 +518,26 @@ def load() -> ctypes.CDLL:
         ctypes.c_size_t,
         F64P,
         F64P,
+    ]
+    lib.xyg_hexbin_ingress.restype = ctypes.c_int32
+    lib.xyg_hexbin_ingress.argtypes = [
+        F64P,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        F64P,
+        F64P,
+        F64P,
+        F64P,
+        ctypes.POINTER(ctypes.c_size_t),
+        ctypes.POINTER(ctypes.c_size_t),
     ]
     lib.xyg_violin_density.restype = ctypes.c_int32
     lib.xyg_violin_density.argtypes = [
@@ -1911,6 +1932,7 @@ def main() -> None:
         0.0,
         1.0,
         1,
+        1,
         0,
         _ptr(hx_cx, ctypes.c_double),
         _ptr(hx_cy, ctypes.c_double),
@@ -1923,6 +1945,40 @@ def main() -> None:
     ok(
         hx_n == 4 and abs(hx_dx.value - 0.25) < 1e-12 and sum(hx_c[:hx_n]) == 4.0,
         "hexbin count cells",
+    )
+
+    hx_in_x0 = ctypes.c_double()
+    hx_in_x1 = ctypes.c_double()
+    hx_in_y0 = ctypes.c_double()
+    hx_in_y1 = ctypes.c_double()
+    hx_in_w = ctypes.c_size_t()
+    hx_in_h = ctypes.c_size_t()
+    hx_in_ok = lib.xyg_hexbin_ingress(
+        _ptr(array("d", [10.0, float("nan")]), ctypes.c_double),
+        _ptr(array("d", [4.0, 1.0]), ctypes.c_double),
+        null_f64,
+        2,
+        16,
+        0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0,
+        ctypes.byref(hx_in_x0),
+        ctypes.byref(hx_in_x1),
+        ctypes.byref(hx_in_y0),
+        ctypes.byref(hx_in_y1),
+        ctypes.byref(hx_in_w),
+        ctypes.byref(hx_in_h),
+    )
+    ok(
+        hx_in_ok == 1
+        and hx_in_w.value == 16
+        and hx_in_h.value == 9
+        and abs(hx_in_x0.value - 9.5) < 1e-12
+        and abs(hx_in_y0.value - 3.8) < 1e-12,
+        "hexbin ingress auto domain and aspect",
     )
 
     # wind_rose_bins: three bearings into a 4-sector rose, one speed band.
