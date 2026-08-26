@@ -28,7 +28,9 @@ import {
   boxChart,
   ecdfChart,
   heatmapChart,
+  hexbin,
   hexbinChart,
+  hexbinIngress,
   violinChart,
   lineChart,
   m4DecimateLine,
@@ -497,6 +499,26 @@ test("hexbin kernel matches Python fixture when present", () => {
   }
   const fig = hexbinChart(x, y, { range, gridsize });
   assert.equal(fig.buildPayload().spec.traces[0].kind, "hexbin");
+});
+
+test("hexbin auto domain and default aspect are rust-owned", () => {
+  const x = new Float64Array([Number.NaN, 10, Number.POSITIVE_INFINITY, 10]);
+  const y = new Float64Array([0, 4, 1, 4]);
+  const C = new Float64Array([1, 2, 3, Number.NaN]);
+  const ingress = hexbinIngress(x, y, { gridsize: 16, C });
+  assert.deepEqual(ingress.gridsize, [16, 9]);
+  assert.deepEqual(ingress.range, [
+    [9.5, 10.5],
+    [3.8, 4.2],
+  ]);
+  const hx = hexbin(x, y, { gridsize: 16, C, reduce: "mean" });
+  assert.equal(hx.counts.length, 1);
+  assert.equal(hx.counts[0], 1);
+  assert.equal(hx.metrics[0], 2);
+  assert.throws(() => hexbin(new Float64Array([Number.NaN]), new Float64Array([Number.NaN]), { gridsize: 8 }), {
+    name: "RangeError",
+    message: /finite pair/,
+  });
 });
 
 test("violin density matches Python fixture when present", () => {

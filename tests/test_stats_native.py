@@ -180,6 +180,25 @@ def test_hexbin_matches_legacy_numpy(reduce: str) -> None:
     assert dy == pytest.approx(exp[5])
 
 
+def test_hexbin_auto_domain_and_default_aspect_are_rust_owned() -> None:
+    assert "hexbin_ingress" in kernels.__all__
+    x = np.array([np.nan, 10.0, np.inf, 10.0])
+    y = np.array([0.0, 4.0, 1.0, 4.0])
+    c = np.array([1.0, 2.0, 3.0, np.nan])
+    xr, yr, w, h = kernels.hexbin_ingress(x, y, gridsize=16, C=c)
+    assert (w, h) == (16, 9)
+    assert xr == pytest.approx((9.5, 10.5))
+    assert yr == pytest.approx((3.8, 4.2))
+    _cx, _cy, metric, counts, dx, dy = kernels.hexbin(x, y, gridsize=16, C=c, reduce="mean")
+    assert len(counts) == 1
+    assert counts[0] == 1.0
+    assert metric[0] == pytest.approx(2.0)
+    assert dx == pytest.approx((xr[1] - xr[0]) / 16)
+    assert dy == pytest.approx((yr[1] - yr[0]) / 9)
+    with pytest.raises(ValueError, match="at least one finite pair"):
+        kernels.hexbin(np.array([np.nan]), np.array([np.nan]), gridsize=8)
+
+
 def test_histogram_edges_match_numpy_auto() -> None:
     data = np.arange(1.0, 11.0)
     got = kernels.histogram_edges(data, method="auto")

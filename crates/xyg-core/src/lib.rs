@@ -97,7 +97,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 101;
+pub const ABI_VERSION: u32 = 102;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -2378,10 +2378,8 @@ pub unsafe extern "C" fn xyg_histogram_bins(
     let Some(counts_end) = counts_start.checked_add(count_bytes) else {
         return usize::MAX;
     };
-    let values_overlap = len > 0
-        && !values.is_null()
-        && values_start < counts_end
-        && counts_start < values_end;
+    let values_overlap =
+        len > 0 && !values.is_null() && values_start < counts_end && counts_start < values_end;
     let edges_overlap = edges_start < counts_end && counts_start < edges_end;
     if n_bins == 0
         || n_bins > stats::MAX_HISTOGRAM_BINS
@@ -2401,9 +2399,9 @@ pub unsafe extern "C" fn xyg_histogram_bins(
         std::slice::from_raw_parts(values, len)
     };
     let edges = std::slice::from_raw_parts(edges, edge_len);
-    let Some(result) =
-        ffi_guard(None, || stats::histogram_bins(values, edges, density != 0, cumulative != 0))
-    else {
+    let Some(result) = ffi_guard(None, || {
+        stats::histogram_bins(values, edges, density != 0, cumulative != 0)
+    }) else {
         return usize::MAX;
     };
     debug_assert_eq!(result.len(), n_bins);
@@ -7325,7 +7323,11 @@ pub unsafe extern "C" fn xyg_graph_layout(
             }
             _ => return -1,
         };
-        if ok { 0 } else { -1 }
+        if ok {
+            0
+        } else {
+            -1
+        }
     })
 }
 
@@ -9107,10 +9109,118 @@ pub unsafe extern "C" fn xyg_box_geometry(
     groups
 }
 
+/// Borrow hexbin source columns for one FFI call.
+///
+/// # Safety
+/// Non-empty `x`/`y` (and `c` when non-null) must address `len` readable f64s.
+unsafe fn hexbin_columns<'a>(
+    x: *const f64,
+    y: *const f64,
+    c: *const f64,
+    len: usize,
+) -> Option<(&'a [f64], &'a [f64], Option<&'a [f64]>)> {
+    let (xs, ys) = if len == 0 {
+        (&[][..], &[][..])
+    } else {
+        if x.is_null() || y.is_null() {
+            return None;
+        }
+        (
+            std::slice::from_raw_parts(x, len),
+            std::slice::from_raw_parts(y, len),
+        )
+    };
+    let cs = if c.is_null() {
+        None
+    } else if len == 0 {
+        Some(&[][..])
+    } else {
+        Some(std::slice::from_raw_parts(c, len))
+    };
+    Some((xs, ys, cs))
+}
+
+fn hexbin_policy_args(
+    grid_h: usize,
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+    use_range: i32,
+) -> Option<(Option<usize>, Option<((f64, f64), (f64, f64))>)> {
+    if !matches!(use_range, 0 | 1) {
+        return None;
+    }
+    let grid_h = if grid_h == 0 { None } else { Some(grid_h) };
+    let range = (use_range == 1).then_some(((x0, x1), (y0, y1)));
+    Some((grid_h, range))
+}
+
+/// Resolve hexbin grid height and data domain. `grid_h == 0` selects the
+/// matplotlib `int(width / √3)` default (floored at 2). `use_range` is exactly
+/// zero (automatic finite-pair domain with the shared constant-pad rule) or one
+/// (explicit finite increasing rectangle). `c` may be null; when present it
+/// also participates in the finite-pair filter. Writes the resolved domain and
+/// grid. Returns 1 on success, 0 when there is no finite pair or args are
+/// invalid.
+///
+/// # Safety
+/// Non-empty inputs and all out pointers must be valid for the given lengths.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_hexbin_ingress(
+    x: *const f64,
+    y: *const f64,
+    c: *const f64,
+    len: usize,
+    grid_w: usize,
+    grid_h: usize,
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+    use_range: i32,
+    out_x0: *mut f64,
+    out_x1: *mut f64,
+    out_y0: *mut f64,
+    out_y1: *mut f64,
+    out_grid_w: *mut usize,
+    out_grid_h: *mut usize,
+) -> i32 {
+    if out_x0.is_null()
+        || out_x1.is_null()
+        || out_y0.is_null()
+        || out_y1.is_null()
+        || out_grid_w.is_null()
+        || out_grid_h.is_null()
+    {
+        return 0;
+    }
+    let Some((grid_h, range)) = hexbin_policy_args(grid_h, x0, x1, y0, y1, use_range) else {
+        return 0;
+    };
+    let Some((xs, ys, cs)) = hexbin_columns(x, y, c, len) else {
+        return 0;
+    };
+    let Some(ingress) = ffi_guard(None, || {
+        hexbin::hexbin_ingress(xs, ys, cs, grid_w, grid_h, range)
+    }) else {
+        return 0;
+    };
+    *out_x0 = ingress.x0;
+    *out_x1 = ingress.x1;
+    *out_y0 = ingress.y0;
+    *out_y1 = ingress.y1;
+    *out_grid_w = ingress.grid_w;
+    *out_grid_h = ingress.grid_h;
+    1
+}
+
 /// Matplotlib-compatible hex binning. `reduce` is 0=count, 1=mean, 2=sum.
-/// `c` may be null when `reduce=count`. Writes up to `capacity` occupied (or
-/// threshold-passing) cells into the parallel out buffers and sets `*out_dx` /
-/// `*out_dy`. Returns the cell count written, or `usize::MAX` on invalid args /
+/// `c` may be null when `reduce=count`. `grid_h == 0` selects the default
+/// aspect; `use_range` is exactly zero (automatic domain) or one (explicit
+/// `x0..y1`). Writes up to `capacity` occupied (or threshold-passing) cells
+/// into the parallel out buffers and sets `*out_dx` / `*out_dy`. Returns the
+/// cell count written, or `usize::MAX` on invalid args / no finite pair /
 /// undersized capacity.
 ///
 /// # Safety
@@ -9127,6 +9237,7 @@ pub unsafe extern "C" fn xyg_hexbin(
     x1: f64,
     y0: f64,
     y1: f64,
+    use_range: i32,
     mincnt: usize,
     reduce: i32,
     out_cx: *mut f64,
@@ -9149,26 +9260,14 @@ pub unsafe extern "C" fn xyg_hexbin(
     {
         return usize::MAX;
     }
-    let (xs, ys) = if len == 0 {
-        (&[][..], &[][..])
-    } else {
-        if x.is_null() || y.is_null() {
-            return usize::MAX;
-        }
-        (
-            std::slice::from_raw_parts(x, len),
-            std::slice::from_raw_parts(y, len),
-        )
+    let Some((grid_h, range)) = hexbin_policy_args(grid_h, x0, x1, y0, y1, use_range) else {
+        return usize::MAX;
     };
-    let cs = if c.is_null() {
-        None
-    } else if len == 0 {
-        Some(&[][..])
-    } else {
-        Some(std::slice::from_raw_parts(c, len))
+    let Some((xs, ys, cs)) = hexbin_columns(x, y, c, len) else {
+        return usize::MAX;
     };
     let result = match ffi_guard(None, || {
-        hexbin::hexbin(xs, ys, cs, grid_w, grid_h, x0, x1, y0, y1, mincnt, reduce)
+        hexbin::hexbin_with_policy(xs, ys, cs, grid_w, grid_h, range, mincnt, reduce)
     }) {
         Some(r) => r,
         None => return usize::MAX,
@@ -9976,6 +10075,111 @@ mod tests {
     }
 
     #[test]
+    fn hexbin_ffi_auto_policy_and_explicit_range() {
+        let x = [10.0, f64::NAN, 10.0];
+        let y = [4.0, 1.0, 4.0];
+        let mut out_x0 = 0.0;
+        let mut out_x1 = 0.0;
+        let mut out_y0 = 0.0;
+        let mut out_y1 = 0.0;
+        let mut out_w = 0usize;
+        let mut out_h = 0usize;
+        assert_eq!(
+            unsafe {
+                xyg_hexbin_ingress(
+                    x.as_ptr(),
+                    y.as_ptr(),
+                    std::ptr::null(),
+                    x.len(),
+                    16,
+                    0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0,
+                    &mut out_x0,
+                    &mut out_x1,
+                    &mut out_y0,
+                    &mut out_y1,
+                    &mut out_w,
+                    &mut out_h,
+                )
+            },
+            1
+        );
+        assert_eq!((out_w, out_h), (16, 9));
+        assert!((out_x0 - 9.5).abs() < 1e-12);
+        assert!((out_x1 - 10.5).abs() < 1e-12);
+        assert!((out_y0 - 3.8).abs() < 1e-12);
+        assert!((out_y1 - 4.2).abs() < 1e-12);
+
+        let cap = hexbin::hexbin_capacity(4, 4);
+        let mut cx = vec![0.0; cap];
+        let mut cy = vec![0.0; cap];
+        let mut metric = vec![0.0; cap];
+        let mut counts = vec![0.0; cap];
+        let mut dx = 0.0;
+        let mut dy = 0.0;
+        let hx_x = [0.1, 0.5, 0.9, 0.2];
+        let hx_y = [0.1, 0.5, 0.9, 0.8];
+        let written = unsafe {
+            xyg_hexbin(
+                hx_x.as_ptr(),
+                hx_y.as_ptr(),
+                std::ptr::null(),
+                hx_x.len(),
+                4,
+                4,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                1,
+                1,
+                0,
+                cx.as_mut_ptr(),
+                cy.as_mut_ptr(),
+                metric.as_mut_ptr(),
+                counts.as_mut_ptr(),
+                cap,
+                &mut dx,
+                &mut dy,
+            )
+        };
+        assert_eq!(written, 4);
+        assert!((dx - 0.25).abs() < 1e-12);
+        assert_eq!(counts[..written].iter().sum::<f64>(), 4.0);
+        assert_eq!(
+            unsafe {
+                xyg_hexbin(
+                    hx_x.as_ptr(),
+                    hx_y.as_ptr(),
+                    std::ptr::null(),
+                    hx_x.len(),
+                    4,
+                    4,
+                    0.0,
+                    1.0,
+                    0.0,
+                    1.0,
+                    2,
+                    1,
+                    0,
+                    cx.as_mut_ptr(),
+                    cy.as_mut_ptr(),
+                    metric.as_mut_ptr(),
+                    counts.as_mut_ptr(),
+                    cap,
+                    &mut dx,
+                    &mut dy,
+                )
+            },
+            usize::MAX
+        );
+    }
+
+    #[test]
     fn histogram_edges_write_capacity_and_resource_contract() {
         let data = [0.0, 1.0];
         let required = 41;
@@ -10068,11 +10272,9 @@ mod tests {
             },
             required
         );
-        assert!(
-            std::str::from_utf8(&output)
-                .unwrap()
-                .starts_with("XYG_SCENE_UNSUPPORTED_CUSTOM_FONT:")
-        );
+        assert!(std::str::from_utf8(&output)
+            .unwrap()
+            .starts_with("XYG_SCENE_UNSUPPORTED_CUSTOM_FONT:"));
         assert_eq!(
             unsafe {
                 xyg_scene_support_reason(
@@ -11567,13 +11769,12 @@ mod tests {
             },
             required
         );
-        assert!(
-            x0.into_iter()
-                .chain(y0)
-                .chain(x1)
-                .chain(y1)
-                .all(f64::is_finite)
-        );
+        assert!(x0
+            .into_iter()
+            .chain(y0)
+            .chain(x1)
+            .chain(y1)
+            .all(f64::is_finite));
         assert_eq!(groups, [0]);
         assert_eq!(
             unsafe {

@@ -970,6 +970,19 @@ Density with zero in-range mass fails closed so hosts never receive non-finite
 heights. The compact result remains ordinary Histogram Rects. No Scene version
 change.
 
+ABI 102 makes composition hexbin ingress Rust-owned without changing Scene 25.
+`xyg_hexbin` / `xyg_hexbin_ingress` accept raw f64 x/y (optional C), a grid
+width in `2..=2048`, optional height (`0` = matplotlib `int(width / √3)`,
+floored at 2), and either automatic bounds or one finite strictly increasing
+authored rectangle. Rust filters nonfinite pairs, rejects an all-nonfinite
+source, widens a constant nonzero automatic domain by 5% of its absolute value
+(falling back to plus/minus 0.5 at zero or for a non-useful pad), and bins
+the same lattice both hosts already consumed. Invalid metadata, missing finite
+pairs, or short capacity return `size_t::MAX` without a partial honeycomb.
+Hosts keep coercion, `mincnt` defaults, log-color post-processing, and custom
+Python reducers over Rust-resolved membership. The compact result remains the
+existing centers-only hexbin trace.
+
 ABI 98 makes the composition violin a compact Rust-owned ingress without a
 Scene-version change. Hosts pack flat canonical f64 samples, monotone group
 offsets, centers, bins, positive finite width, and orientation. Rust filters
