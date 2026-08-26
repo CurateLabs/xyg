@@ -116,11 +116,11 @@ pub fn hexbin_ingress(
             return None;
         }
     }
-    if grid_w < 2 || grid_w > MAX_GRID {
+    if !(2..=MAX_GRID).contains(&grid_w) {
         return None;
     }
     let grid_h = grid_h.unwrap_or_else(|| default_grid_height(grid_w));
-    if grid_h < 2 || grid_h > MAX_GRID {
+    if !(2..=MAX_GRID).contains(&grid_h) {
         return None;
     }
 
