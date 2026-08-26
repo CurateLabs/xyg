@@ -339,8 +339,8 @@ Allowed:
 - Explicit static Worker/WASM asset loading, bounded memory copies, stable
   status transport, cancellation, trap handling, and disposal.
 - Latest-wins viewport framing and cache admission for Rust-owned automatic
-  primary Cartesian linear/log/symlog ticks; TypeScript may schedule and paint
-  but may neither generate nor format a covered attached axis.
+  primary Cartesian linear/log/symlog/category/UTC-time ticks; TypeScript may
+  schedule and paint but may neither generate nor format a covered attached axis.
 - O(series) validation and framing for transferable typed columns. Rust owns
   per-record expansion, stable identities, and default mark/bar geometry. Exact
   per-record u64 identities remain an attached transferable column; TypeScript
