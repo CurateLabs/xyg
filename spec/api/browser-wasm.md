@@ -28,10 +28,9 @@ await worker.dispose(); // required for the default borrowed ownership
 WASM ABI 23 exposes `encodeWasmTickBatch`, `decodeWasmTickBatch`, and
 `resolveWasmTicks` from the public browser entry point. The low-level
 `XygWasmWorker.resolveTicks()` task carries one atomic `XYTK` request and `XYTO`
-result. This is a versioned foundation seam, not yet installed on ChartView:
-callers must supply the full axis batch and explicitly manage the returned task.
-Authored values—including an explicitly empty set—and authored labels retain
-their provenance in the result.
+result. Low-level callers supply the full axis batch and explicitly manage the
+returned task. Authored values—including an explicitly empty set—and authored
+labels retain their provenance in the result.
 
 Tick requests use an independent Worker lane and do not supersede compile,
 density, graph, or temporal work. Cancellation rejects only the selected tick
@@ -39,11 +38,61 @@ task; disposing the Worker rejects every outstanding task.
 Each axis admits at most 200 authored/output ticks, 65,536 source categories,
 65,536 UTF-8 bytes of label/category text, and a 256-byte format string.
 
-All Worker and WASM assets remain explicit. The future ChartView cutover may
-not use eval, Blob-created Workers, guessed paths, a CDN, implicit fetches,
-synchronous main-thread WASM, or a JavaScript generation/formatting fallback.
-Ordinary host behavior and `30_ticks.ts` remain unchanged until an explicit
-external-worker asset contract exists for Python, Node, notebooks, and Reflex.
+`attachWasmTicks(view, { worker, workerOwnership })` installs that seam on the
+covered ChartView path: automatic primary Cartesian x/y axes whose scale is
+linear, log, or symlog. It resolves one atomic batch before mounting, then
+intercepts both tick positions and label text. Category, time, angular/polar,
+secondary-axis, colorbar, authored-value, and authored-empty paths remain
+unchanged and are not claimed by this API.
+
+```js
+import {
+  attachWasmTicks,
+  createXygWasmWorker,
+} from "@curatelabs/xyg";
+
+const worker = createXygWasmWorker({
+  // Explicit same-origin copies of the package's `./wasm-worker` and
+  // `./xyg-wasm.wasm` exports.
+  workerUrl: "/assets/xyg/wasm-worker.js",
+  wasm: "/assets/xyg/xyg-wasm.wasm",
+  maxArenaBytes: 1024 * 1024,
+});
+const ticks = await attachWasmTicks(view, {
+  worker,
+  workerOwnership: "own",
+});
+```
+
+The package path requires the ESM client, external module Worker, and WASM
+artifact from one `@curatelabs/xyg` version. Release
+`ASSET-MANIFEST.json` provides byte lengths, SHA-256 hashes, and protocol/ABI/
+Scene/painter versions for pre-deployment verification. The Worker validates
+WASM ABI 23 and the Scene version before the first attachment can mount.
+Callers using `workerOwnership: "borrow"` must dispose the Worker separately.
+Notebook, `to_html()`, Reflex, and any self-contained host that cannot provide
+these same-origin external assets are not supported by this tick attachment
+yet. It never uses eval, Blob/data Workers, guessed paths, a CDN, implicit
+asset lookup, synchronous main-thread WASM, or JavaScript tick generation for
+a covered attached axis.
+
+Each viewport/resize snapshot gets a monotonic axis revision and Worker tick
+sequence. New work cancels the old task; only the current sequence, revision,
+axis identity, attachment, ChartView, and GL lifecycle may admit. Until then
+the last admitted Rust-produced positions and labels remain painted. `cancel()`
+retires the current request without deleting that cache. `dispose()` cancels
+work, detaches from ChartView, and disposes an owned Worker. ChartView
+`destroy()` invokes the same cleanup.
+
+`diagnostics()` returns `{ sequence, revision, axisIds, cancellations }` for
+the latest admitted result and never includes domains, tick values, labels, or
+other user data. Initialization, framing, malformed output, Worker failure, and
+trap errors dispatch one bubbling `xy:wasm_ticks_error` event per failed
+snapshot. Its detail is `{ code, message, diagnostics }`, using a stable
+`XygWasmError` code and Rust diagnostic counters when available. A failed
+initial attachment emits the event and rejects before partial mount. A failure
+after mounting retains the last Rust cache; it does not fall through to
+`30_ticks.ts`.
 
 Every Worker-reported `XygWasmError` after the Rust instance initializes
 carries a read-only `diagnostics` snapshot. Locally rejected argument,

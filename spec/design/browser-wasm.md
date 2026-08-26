@@ -20,15 +20,22 @@ at 200 output positions and 65,536 source categories; label/category text is
 capped at 65,536 UTF-8 bytes per axis, and malformed
 or nonfinite input fails before output.
 
-This is intentionally a foundation slice, not the ChartView cutover. Existing
-host rendering and `js/src/30_ticks.ts` remain unchanged. Pan/zoom/resize
-debounce, latest-wins cache admission, measurement feedback, secondary/polar/
-colorbar integration, and all-host initial snapshots remain #59 work. That
-cutover requires an explicit external-worker asset contract: a self-contained
-offline HTML page cannot start an asynchronous Worker while simultaneously
-forbidding Blob/data workers, implicit fetch, and main-thread WASM. This slice
-does not weaken CSP, create such a worker, or claim the product integration is
-live.
+`attachWasmTicks(view, { worker })` now installs the first bounded ChartView
+product cutover: automatic primary Cartesian linear, log, and symlog axes only.
+The attachment frames the current x/y batch, but Rust exclusively chooses
+positions and labels. The first current `XYTO` result is admitted before the
+attachment becomes authoritative; later pan/zoom/resize requests cancel older
+work and retain only the last admitted Rust cache until a matching sequence and
+axis revision returns. A stale, cancelled, destroyed, or replaced attachment
+cannot publish. Once attached, a covered axis never calls `30_ticks.ts`, even
+after a Worker failure.
+
+This cutover is deliberately explicit and bounded. Category, UTC-time,
+angular/polar, secondary axes, colorbars, authored values, and authored-empty
+provenance retain their existing compatibility paths. Self-contained
+Blob-worker HTML is not eligible. Notebook, `to_html()`, and Reflex delivery of
+the external tick assets remains follow-up work under #59; this slice neither
+claims nor closes that issue.
 
 ## Tier-2 aggregate seam (`XYAG` to `XYAO`)
 
@@ -128,6 +135,7 @@ chrome.
 | `js/src/49_wasm_columns.ts` | Packed `XYCC` typed-column framing; no Scene policy in TypeScript |
 | `js/src/49_wasm_semantic_graph.ts` | Packed direct-tier `XYGG` semantic planes; Rust emits styles, primitives, and legend |
 | `js/src/49_wasm_chart.ts` | Bounded O(series) validation/framing and lifecycle handle; no record expansion or mark defaults |
+| `js/src/49_wasm_ticks.ts` | XYTK/XYTO codec plus latest-wins primary Cartesian ChartView attachment |
 | `dist/xyg-wasm.wasm` | Separately built direct-browser engine adapter; never copied into the Python static tree |
 
 The WASM adapter disables `xyg-engine`'s default `raster` feature. Native
@@ -231,7 +239,8 @@ plus painter buffers must always stay within `max_arena_bytes`.
 
 ## Version and scene contract
 
-`WASM_ABI_VERSION` is 22. ABI 22 retains the bounded `XYSA` v1 envelope and
+`WASM_ABI_VERSION` is 23. ABI 23 adds the bounded `XYTK`/`XYTO` tick resolver
+and its independent Worker sequence lane. ABI 22 retains the bounded `XYSA` v1 envelope and
 accepts `XYAD` v2 annotation decorations: existing `XYAT`/`XYAL`/`XYAR` slices
 plus bounded `XYAC` v1 Cartesian callouts. Rust decodes the complete canonical
 `XYGS` Scene first, then validates and projects raw Cartesian anchors through
@@ -489,6 +498,17 @@ const chartView = await renderWasmChart({
     series: [{ kind: "scatter", x: xs, y: ys }],
   },
 });
+// Or cut a normal ChartView's supported primary numeric ticks to Rust.
+// These are deployed same-origin files copied from one @curatelabs/xyg release.
+const tickWorker = createXygWasmWorker({
+  workerUrl: "/assets/xyg/wasm-worker.js",
+  wasm: "/assets/xyg/xyg-wasm.wasm",
+  maxArenaBytes: 1024 * 1024,
+});
+const tickHandle = await attachWasmTicks(existingChartView, {
+  worker: tickWorker,
+  workerOwnership: "own",
+});
 // `update()` is sequence-safe; cancel an in-flight compile without disposing
 // the caller-owned Worker.
 const pendingUpdate = chartView.update(nextChart);
@@ -513,6 +533,22 @@ asset authority. `Module`/bytes loading performs no WASM fetch. A strict policy 
 `script-src 'self' 'wasm-unsafe-eval'`, `worker-src 'self'`, and
 `connect-src 'self'` when a local WASM URL is used. `wasm-unsafe-eval` permits
 WebAssembly compilation; it does not permit JavaScript `eval`.
+
+The browser-package tick asset contract is the ESM client plus the exported
+`./wasm-worker` and `./xyg-wasm.wasm` files from one package version. A host
+must deploy the Worker and WASM at explicit same-origin URLs (or pass checked
+WASM bytes/`WebAssembly.Module`) and must not mix versions. Release
+`ASSET-MANIFEST.json` records every shipped filename's byte length and SHA-256
+alongside the wire, WASM ABI, Scene, and painter versions; release staging and
+the published-package smoke verify those hashes before deployment. There is no
+runtime Worker-byte hash helper—the Worker URL is loaded directly so a
+fetch-then-Worker check would introduce a time-of-check/time-of-use gap.
+Initialization still fails closed on the generated ABI/Scene version check
+before `attachWasmTicks` mounts. A missing asset emits
+`xy:wasm_ticks_error` and rejects the attachment; a failure after mounting
+retains the last Rust-produced cache and never starts JavaScript generation.
+This contract does not authorize Blob/data Workers or synchronous main-thread
+WASM.
 
 `scripts/wasm_foundation_smoke.mjs` serves an allowlisted local-only asset set
 under that CSP and tests explicit Module/bytes/URL loading, transfer and copy
@@ -567,6 +603,10 @@ PR CI or a CodSpeed simulation claim.
 
 ## Remaining #59 work
 
+- category, UTC-time, angular/polar, secondary-axis, colorbar, and authored-tick
+  ChartView cutovers;
+- external Worker/WASM tick-asset delivery for notebooks, `to_html()`, Reflex,
+  and other self-contained hosts;
 - aggregate production paths beyond direct Scene records;
 - interpreted budgets/comparisons after collecting the SHA-keyed
   small-through-massive CodSpeed and browser artifacts; and

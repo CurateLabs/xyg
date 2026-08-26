@@ -242,7 +242,7 @@
       "follow_up_issue": 58,
       "allowed_responsibilities": [
         "Temporary tick consumption and browser-specific label presentation during scene migration.",
-        "The existing TypeScript generator stays frozen as an interaction compatibility path until #59 can execute the Rust-owned linear/log/symlog/category/angular/time ladders for each browser view and resize."
+        "The existing TypeScript generator stays frozen for unattached charts and category/time/angular/polar/secondary/colorbar/authored compatibility paths; explicitly attached automatic primary Cartesian linear/log/symlog axes consume only Rust-produced positions and labels."
       ],
       "forbidden_responsibilities": [
         "Expanding canonical tick generation or layout policy in TypeScript."
@@ -270,6 +270,7 @@
       "allowed_responsibilities": [
         "Explicit static Worker and WASM asset loading, bounded memory copies, status transport, cancellation, trap handling, and disposal.",
         "Browser-facing lifecycle ergonomics around engine-owned WASM exports.",
+        "Latest-wins viewport framing and cache admission for Rust-owned automatic primary Cartesian linear/log/symlog ticks; TypeScript schedules and paints but does not generate or format covered attached axes.",
         "O(series) validation and framing for transferable typed columns; Rust owns per-record expansion, stable identities, and default mark and bar geometry.",
         "Generated XYTS offsets, flags, and kind codes from the versioned WASM manifest; handwritten wire-layout numbers are forbidden in the adapter."
       ],
