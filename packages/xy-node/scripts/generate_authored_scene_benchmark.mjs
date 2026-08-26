@@ -52,6 +52,20 @@ function authoredScene(count) {
     },
     force_direct: true,
   });
+  // Preserve the fixture's bounded reference series as independently authored
+  // data. Python includes the same three literal circle records and legend row
+  // at every tier so the retained evidence has identical structure.
+  figure.scatter(authoring.circle_scatter.x, authoring.circle_scatter.y, {
+    id: authoring.circle_scatter.id,
+    name: authoring.circle_scatter.name,
+    style: {
+      color: authoring.circle_scatter.color,
+      size: authoring.circle_scatter.size,
+      opacity: authoring.circle_scatter.opacity,
+      symbol: authoring.circle_scatter.symbol,
+    },
+    force_direct: true,
+  });
   return figure.toScene();
 }
 
