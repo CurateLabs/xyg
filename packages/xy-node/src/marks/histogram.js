@@ -1,14 +1,28 @@
 /**
- * Thin histogram mark builder — TypedArray values → Rust `xyg_histogram_uniform`
+ * Thin histogram mark builder — TypedArray values → Rust `xyg_histogram_bins`
  * → rectangle columns attached as a histogram trace (Python common path).
  */
 
-import { asF64Array, histogramEdges, histogramUniform, minMax } from "../encode.js";
+import { asF64Array, histogramBins, histogramEdges, minMax } from "../encode.js";
+
+function uniformEdges(lo, hi, nBins) {
+  const edges = new Float64Array(nBins + 1);
+  const width = (hi - lo) / nBins;
+  for (let i = 0; i < nBins; i += 1) {
+    edges[i] = lo + i * width;
+  }
+  edges[nBins] = hi;
+  return edges;
+}
+
+function isAuthoredEdges(bins) {
+  return Array.isArray(bins) || ArrayBuffer.isView(bins);
+}
 
 /**
  * @param {ArrayLike|TypedArray} values
  * @param {{
- *   bins?: number,
+ *   bins?: number|ArrayLike,
  *   range?: [number, number]|null,
  *   density?: boolean,
  *   cumulative?: boolean,
@@ -25,10 +39,6 @@ import { asF64Array, histogramEdges, histogramUniform, minMax } from "../encode.
  */
 export function composeHistogram(values, opts = {}) {
   const vals = asF64Array(values, "values");
-  let nBins = opts.bins ?? 10;
-  if (!Number.isInteger(nBins) || nBins <= 0) {
-    throw new RangeError("histogram bins must be a positive integer");
-  }
   const density = Boolean(opts.density);
   const cumulative = Boolean(opts.cumulative);
   let lo;
@@ -41,48 +51,41 @@ export function composeHistogram(values, opts = {}) {
     }
   }
   const mm = minMax(vals);
-  let resolvedEdges = null;
-  if (opts.bins == null && mm != null) {
-    resolvedEdges = Float64Array.from(
-      histogramEdges(vals, { range: opts.range, method: "auto" }),
-    );
-    nBins = resolvedEdges.length - 1;
-    lo = resolvedEdges[0];
-    hi = resolvedEdges[nBins];
-  } else if (opts.range == null) {
-    if (mm == null) {
-      lo = 0;
-      hi = 1;
-    } else if (mm[0] === mm[1]) {
-      lo = mm[0] - 0.5;
-      hi = mm[1] + 0.5;
+  let edges;
+  if (isAuthoredEdges(opts.bins)) {
+    edges = asF64Array(opts.bins, "bins");
+    if (edges.length < 2) {
+      throw new RangeError("histogram bins must contain at least two edges");
+    }
+  } else {
+    let nBins = opts.bins ?? 10;
+    if (!Number.isInteger(nBins) || nBins <= 0) {
+      throw new RangeError("histogram bins must be a positive integer");
+    }
+    if (opts.bins == null && mm != null) {
+      edges = Float64Array.from(histogramEdges(vals, { range: opts.range, method: "auto" }));
     } else {
-      [lo, hi] = mm;
+      // Empty/all-nonfinite input keeps the host-owned ten-bin [0, 1]
+      // (or authored-range) compatibility result; Rust only counts.
+      if (opts.range == null) {
+        if (mm == null) {
+          lo = 0;
+          hi = 1;
+        } else if (mm[0] === mm[1]) {
+          lo = mm[0] - 0.5;
+          hi = mm[1] + 0.5;
+        } else {
+          [lo, hi] = mm;
+        }
+      }
+      edges = uniformEdges(lo, hi, nBins);
     }
   }
-  const { counts: rawCounts, edges: uniformEdges, total } = histogramUniform(vals, lo, hi, nBins, {
-    density,
-  });
-  const edges = resolvedEdges ?? uniformEdges;
-  let counts = rawCounts;
-  if (cumulative) {
-    const out = new Float64Array(counts.length);
-    if (density) {
-      let acc = 0;
-      for (let i = 0; i < counts.length; i += 1) {
-        const width = edges[i + 1] - edges[i];
-        acc += counts[i] * width;
-        out[i] = acc;
-      }
-    } else {
-      let acc = 0;
-      for (let i = 0; i < counts.length; i += 1) {
-        acc += counts[i];
-        out[i] = acc;
-      }
-    }
-    counts = out;
-  }
+  const counts = histogramBins(vals, edges, { density, cumulative });
+  const nBins = counts.length;
+  const total = density
+    ? Number.NaN
+    : Number(cumulative ? (counts[nBins - 1] ?? 0) : counts.reduce((sum, value) => sum + value, 0));
   const x0 = edges.subarray(0, nBins);
   const x1 = edges.subarray(1, nBins + 1);
   const y0 = new Float64Array(nBins);

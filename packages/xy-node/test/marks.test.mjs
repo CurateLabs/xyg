@@ -143,6 +143,26 @@ test("histogram_uniform counts match Python fixture when present", () => {
   assert.equal(spec.traces[0].n_marks, bins);
 });
 
+test("histogram authored edges and cumulative assembly stay in Rust", () => {
+  const values = new Float64Array([0.1, 0.2, 1.2, 2.4, Number.NaN]);
+  const edges = [0, 1, 2, 3];
+  const counts = composeHistogram(values, { bins: edges });
+  assert.deepEqual([...counts.counts], [2, 1, 1]);
+  assert.deepEqual([...counts.edges], [0, 1, 2, 3]);
+  const cumulative = composeHistogram(values, { bins: edges, cumulative: true });
+  assert.deepEqual([...cumulative.counts], [2, 3, 4]);
+  const density = composeHistogram(new Float64Array([0.1, 0.2, 1.2, 2.4]), {
+    bins: edges,
+    density: true,
+    cumulative: true,
+  });
+  assert.equal(density.counts[2], 1);
+  assert.throws(
+    () => composeHistogram(values, { bins: [1, 0] }),
+    /xyg_histogram_bins failed/,
+  );
+});
+
 test("histogram auto edges support wide ranges and enforce the Rust cap", () => {
   const wide = composeHistogram(new Float64Array([0, 1]), { range: [-10, 10] });
   assert.equal(wide.edges.length, 41);

@@ -2791,6 +2791,33 @@ def histogram_uniform(
     return counts, edges
 
 
+def histogram_bins(
+    data: npt.NDArray[np.float64],
+    edges: npt.NDArray[np.float64],
+    *,
+    density: bool = False,
+    cumulative: bool = False,
+) -> npt.NDArray[np.float64]:
+    """Authored-edge histogram counts with Rust-owned density/cumulative modes."""
+    data = _as_f64(data, "data")
+    edges = _as_f64(edges, "edges")
+    if edges.ndim != 1 or not 2 <= len(edges) <= 10_001:
+        raise ValueError("histogram edges must contain 2 through 10,001 values")
+    counts = np.empty(len(edges) - 1, dtype=np.float64)
+    written = _lib.xyg_histogram_bins(
+        _ptr_f64(data),
+        len(data),
+        _ptr_f64(edges),
+        len(edges),
+        int(bool(density)),
+        int(bool(cumulative)),
+        _ptr_f64(counts),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid histogram_bins arguments")
+    return counts
+
+
 def normalize_f32(
     data: npt.NDArray[np.float64],
     domain: tuple[float, float],

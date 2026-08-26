@@ -6,7 +6,7 @@
  * - Emits `protocol`, width/height, axes ranges, traces, columns, graph meta.
  * - Geometry columns are offset-encoded f32 via `xyg_encode_f32` (§29).
  * - Line traces apply Rust M4 when over DECIMATION_THRESHOLD (§28).
- * - Histogram traces ship as rectangle columns from `xyg_histogram_uniform`.
+ * - Histogram traces ship as rectangle columns from `xyg_histogram_bins`.
  * - Polar charts emit `coords: "polar"` + theta/r axis descriptors.
  * - Ribbon / sankey ship flow-band geometry (`target_y0`/`target_y1`).
  * - Scatter uses density tier when n ≥ SCATTER_DENSITY_THRESHOLD (Rust bin_2d).

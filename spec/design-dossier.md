@@ -1223,6 +1223,14 @@ arithmetic fails atomically. The public authored-column router admits 10,001
 points only for compact Step lines so the maximum-bin anchor is representable;
 ordinary traces stay at 10,000 and 10,002 Step points fail closed.
 
+ABI 101 applies the same ownership rule to composition histograms. Hosts resolve
+integer, automatic, or authored edges and pack the raw f64 column. Rust validates
+finite strictly increasing edges, counts with the last bin closed, applies
+density over in-range mass, and accumulates left-to-right when requested.
+Automatic or authored results above 10,000 bins, non-increasing edges, and
+density with zero in-range mass fail atomically. Public SVG/PNG/PDF and the
+browser painter already consume the resulting Histogram Rects.
+
 Contract-wide invariants: every tier transition is hysteresis-guarded and logged
 (no silent quality change); every aggregated visual states its aggregation in the
 hover UI; every derived artifact is reproducible from (canonical, viewport, params) —

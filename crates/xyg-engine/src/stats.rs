@@ -1,5 +1,5 @@
-//! Quantiles, Tukey box-plot statistics, violin density, histogram edges, and
-//! wind-rose directional/speed binning.
+//! Quantiles, Tukey box-plot statistics, violin density, histogram edges,
+//! authored-edge histogram assembly, and wind-rose directional/speed binning.
 //!
 //! Hosts assemble geometry from these numbers; the rank math stays in Rust so
 //! Python and Node share one implementation
@@ -530,6 +530,102 @@ pub fn histogram_edges(
     }
     edges[n_bins] = last_edge;
     Some(edges)
+}
+
+fn uniform_histogram_domain(edges: &[f64]) -> Option<(f64, f64)> {
+    let n_bins = edges.len().checked_sub(1)?;
+    if n_bins == 0 {
+        return None;
+    }
+    let lo = edges[0];
+    let hi = edges[n_bins];
+    if !(lo.is_finite() && hi.is_finite() && hi > lo && (hi - lo).is_finite()) {
+        return None;
+    }
+    let width = (hi - lo) / n_bins as f64;
+    if !(width.is_finite() && width > 0.0) {
+        return None;
+    }
+    for (index, edge) in edges.iter().enumerate().take(n_bins) {
+        if *edge != lo + index as f64 * width {
+            return None;
+        }
+    }
+    (edges[n_bins] == hi).then_some((lo, hi))
+}
+
+fn apply_histogram_modes(
+    counts: &mut [f64],
+    edges: &[f64],
+    total: u64,
+    density: bool,
+    cumulative: bool,
+) -> Option<()> {
+    if counts.len() + 1 != edges.len() {
+        return None;
+    }
+    if density {
+        if total == 0 {
+            return None;
+        }
+        let mass = total as f64;
+        for (index, count) in counts.iter_mut().enumerate() {
+            let width = edges[index + 1] - edges[index];
+            if !(width.is_finite() && width > 0.0) {
+                return None;
+            }
+            *count /= mass * width;
+            if !count.is_finite() {
+                return None;
+            }
+        }
+    }
+    if cumulative {
+        let mut acc = 0.0;
+        if density {
+            for (index, count) in counts.iter_mut().enumerate() {
+                let width = edges[index + 1] - edges[index];
+                acc += *count * width;
+                if !acc.is_finite() {
+                    return None;
+                }
+                *count = acc;
+            }
+        } else {
+            for count in counts.iter_mut() {
+                acc += *count;
+                if !acc.is_finite() {
+                    return None;
+                }
+                *count = acc;
+            }
+        }
+    }
+    Some(())
+}
+
+/// Count values into authored 1-D edges, then apply density and cumulative
+/// assembly. Uniform edges reuse the closed-last-bin uniform counter; irregular
+/// edges use NumPy's array-bin assignment. Density with zero in-range mass is
+/// rejected so hosts never receive non-finite heights.
+pub fn histogram_bins(
+    data: &[f64],
+    edges: &[f64],
+    density: bool,
+    cumulative: bool,
+) -> Option<Vec<f64>> {
+    let n_bins = edges.len().checked_sub(1)?;
+    if n_bins == 0 || n_bins > MAX_HISTOGRAM_BINS {
+        return None;
+    }
+    let mut counts = vec![0.0; n_bins];
+    let total = if let Some((lo, hi)) = uniform_histogram_domain(edges) {
+        kernels::histogram_uniform(data, lo, hi, &mut counts)
+    } else {
+        kernels::histogram_irregular(data, edges, &mut counts)?
+    };
+    apply_histogram_modes(&mut counts, edges, total, density, cumulative)?;
+    Some(counts)
 }
 
 /// Uniformly binned ECDF coordinates with a zero anchor and occupied-bin
@@ -1216,6 +1312,59 @@ mod tests {
         .unwrap();
         assert_eq!(maximum.x.len(), MAX_HISTOGRAM_BINS + 1);
         assert_eq!(maximum.cumulative.last(), Some(&1.0));
+    }
+
+    #[test]
+    fn histogram_bins_counts_density_and_cumulative() {
+        let data = [0.1, 0.2, 1.2, 2.4, f64::NAN];
+        let edges = [0.0, 1.0, 2.0, 3.0];
+        assert_eq!(
+            histogram_bins(&data, &edges, false, false).unwrap(),
+            vec![2.0, 1.0, 1.0]
+        );
+        assert_eq!(
+            histogram_bins(&data, &edges, false, true).unwrap(),
+            vec![2.0, 3.0, 4.0]
+        );
+        let density = histogram_bins(&data, &edges, true, false).unwrap();
+        assert!((density[0] - 0.5).abs() < 1e-12);
+        assert!((density[1] - 0.25).abs() < 1e-12);
+        assert!((density[2] - 0.25).abs() < 1e-12);
+        let cdf = histogram_bins(&data, &edges, true, true).unwrap();
+        assert!((cdf[0] - 0.5).abs() < 1e-12);
+        assert!((cdf[1] - 0.75).abs() < 1e-12);
+        assert!((cdf[2] - 1.0).abs() < 1e-12);
+
+        let irregular = [0.0, 0.5, 2.0, 4.0];
+        assert_eq!(
+            histogram_bins(&[0.25, 1.0, 3.0, 3.0], &irregular, false, false).unwrap(),
+            vec![1.0, 1.0, 2.0]
+        );
+        let irregular_density =
+            histogram_bins(&[0.25, 1.0, 3.0, 3.0], &irregular, true, true).unwrap();
+        assert!((irregular_density[2] - 1.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn histogram_bins_enforces_edges_modes_and_empty_density() {
+        assert!(histogram_bins(&[0.0], &[0.0], false, false).is_none());
+        assert!(histogram_bins(&[0.0], &[1.0, 0.0], false, false).is_none());
+        assert!(histogram_bins(&[0.0], &[0.0, f64::NAN], false, false).is_none());
+        assert!(histogram_bins(&[10.0], &[0.0, 1.0], true, false).is_none());
+        assert_eq!(
+            histogram_bins(&[], &[0.0, 1.0, 2.0], false, false).unwrap(),
+            vec![0.0, 0.0]
+        );
+        assert_eq!(
+            histogram_bins(&[f64::NAN, f64::INFINITY], &[0.0, 1.0], false, true).unwrap(),
+            vec![0.0]
+        );
+
+        let mut oversized = vec![0.0; MAX_HISTOGRAM_BINS + 2];
+        for (index, edge) in oversized.iter_mut().enumerate() {
+            *edge = index as f64;
+        }
+        assert!(histogram_bins(&[0.5], &oversized, false, false).is_none());
     }
 
     #[test]

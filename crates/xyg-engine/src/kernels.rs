@@ -1191,6 +1191,37 @@ fn histogram_edge_bin(value: f64, edges: &[f64]) -> Option<usize> {
         .filter(|index| *index + 1 < edges.len())
 }
 
+fn authored_histogram_edges_valid(edges: &[f64]) -> bool {
+    edges.len() >= 2
+        && edges.iter().all(|value| value.is_finite())
+        && edges
+            .windows(2)
+            .all(|pair| pair[1] > pair[0] && (pair[1] - pair[0]).is_finite())
+}
+
+/// 1-D histogram over arbitrary strictly increasing finite edges.
+///
+/// The last bin is closed, matching NumPy's array-bin contract and
+/// `histogram2d_into`. Non-finite values and values outside the outer edges
+/// are skipped. `out` is fully overwritten on success.
+pub fn histogram_irregular(data: &[f64], edges: &[f64], out: &mut [f64]) -> Option<u64> {
+    if !authored_histogram_edges_valid(edges) || out.len() + 1 != edges.len() {
+        return None;
+    }
+    let mut bins = vec![0u64; out.len()];
+    let mut total = 0u64;
+    for &value in data {
+        if let Some(index) = histogram_edge_bin(value, edges) {
+            bins[index] += 1;
+            total += 1;
+        }
+    }
+    for (slot, count) in out.iter_mut().zip(bins) {
+        *slot = count as f64;
+    }
+    Some(total)
+}
+
 /// Weighted 2-D histogram over arbitrary monotonically increasing edges.
 ///
 /// Output is x-major `(nx, ny)`, matching common statistical APIs. Non-finite
@@ -7913,6 +7944,18 @@ mod fuzz {
             };
             assert_eq!(norm[i].to_bits(), r.to_bits(), "normalize i={i}");
         }
+    }
+
+    #[test]
+    fn histogram_irregular_matches_closed_last_bin() {
+        let data = [0.0, 0.25, 1.0, 1.5, 2.0, f64::NAN, 3.0];
+        let edges = [0.0, 1.0, 2.0];
+        let mut out = vec![0.0; 2];
+        let total = histogram_irregular(&data, &edges, &mut out).unwrap();
+        assert_eq!(total, 5);
+        assert_eq!(out, vec![2.0, 3.0]);
+        assert!(histogram_irregular(&data, &[0.0], &mut out).is_none());
+        assert!(histogram_irregular(&data, &[0.0, 0.0], &mut out).is_none());
     }
 
     #[test]

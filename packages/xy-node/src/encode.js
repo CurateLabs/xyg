@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -191,6 +191,30 @@ export function histogramUniform(data, lo, hi, nBins, { density = false } = {}) 
     edges[i] = lo + i * width;
   }
   return { counts, edges, total };
+}
+
+export function histogramBins(data, edges, { density = false, cumulative = false } = {}) {
+  const values = asF64Array(data);
+  const binEdges = asF64Array(edges, "edges");
+  if (binEdges.length < 2 || binEdges.length > 10_001) {
+    throw new RangeError("histogram edges must contain 2 through 10,001 values");
+  }
+  const counts = new Float64Array(binEdges.length - 1);
+  const written = Number(
+    xyHistogramBins(
+      f64Ptr(values),
+      BigInt(values.length),
+      f64Ptr(binEdges),
+      BigInt(binEdges.length),
+      density ? 1 : 0,
+      cumulative ? 1 : 0,
+      f64Ptr(counts),
+    ),
+  );
+  if (!Number.isFinite(written) || written !== counts.length) {
+    throw new Error("xyg_histogram_bins failed");
+  }
+  return counts;
 }
 
 /** NumPy-compatible auto/sturges edges (`method`: `"auto"` | `"sturges"`). */

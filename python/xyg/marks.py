@@ -2196,6 +2196,15 @@ def scatter(
         raise
 
 
+def _uniform_histogram_edges(lo: float, hi: float, n_bins: int) -> np.ndarray:
+    """Pack the same closed-last-bin uniform edges Rust counts against."""
+    width = (hi - lo) / n_bins
+    edges = np.empty(n_bins + 1, dtype=np.float64)
+    edges[:-1] = lo + np.arange(n_bins, dtype=np.float64) * width
+    edges[-1] = hi
+    return edges
+
+
 def histogram(
     self: "Figure",
     values: ArrayLike,
@@ -2233,46 +2242,39 @@ def histogram(
     vals = self._as_1d_float(values, "histogram values")
     if density and not np.isfinite(vals).any():
         raise ValueError("histogram density requires at least one finite value")
+    hist_range = None if range is None else self._finite_increasing_pair(range, "histogram range")
     if isinstance(bins, (int, np.integer)) and not isinstance(bins, bool):
         n_bins = int(bins)
         if n_bins <= 0:
             raise ValueError("histogram bins must be positive")
-        if range is None:
+        if hist_range is None:
             lo, hi = self._auto_domain(kernels.min_max(vals))
         else:
-            lo, hi = self._finite_increasing_pair(range, "histogram range")
-        counts, edges = kernels.histogram_uniform(vals, lo, hi, n_bins, density=density)
+            lo, hi = hist_range
+        edges = _uniform_histogram_edges(lo, hi, n_bins)
     elif isinstance(bins, str) and bins.lower() in {"auto", "sturges"}:
         # Empty finite + estimator strings historically used 10 bins over the
         # resolved range (or [0, 1]); keep that host policy. Non-empty data
         # uses Rust edges matching NumPy `bins="auto"` / `"sturges"`.
         finite = vals[np.isfinite(vals)]
-        hist_range = (
-            None if range is None else self._finite_increasing_pair(range, "histogram range")
-        )
         if len(finite) == 0:
             lo, hi = (0.0, 1.0) if hist_range is None else hist_range
-            counts, edges = kernels.histogram_uniform(vals, lo, hi, 10, density=density)
+            edges = _uniform_histogram_edges(lo, hi, 10)
         else:
             edges = kernels.histogram_edges(vals, range=hist_range, method=bins.lower())
-            lo, hi = float(edges[0]), float(edges[-1])
-            counts, edges = kernels.histogram_uniform(vals, lo, hi, len(edges) - 1, density=density)
     else:
         finite = vals[np.isfinite(vals)]
-        hist_bins = 10 if len(finite) == 0 and isinstance(bins, str) else bins
-        hist_range = (
-            None if range is None else self._finite_increasing_pair(range, "histogram range")
-        )
-        with np.errstate(over="ignore", divide="ignore", invalid="ignore"):
-            counts, edges = np.histogram(finite, bins=hist_bins, range=hist_range, density=density)
-        if not np.isfinite(counts).all() or not np.isfinite(edges).all():
-            raise ValueError("histogram could not produce finite bins")
-    counts = counts.astype(np.float64, copy=False)
-    if cumulative:
-        # Density mode integrates density*width into an empirical CDF whose
-        # last bin is ~1.0 (exactly 1.0 when every value is in range); count
-        # mode simply accumulates bin counts.
-        counts = np.cumsum(counts * np.diff(edges)) if density else np.cumsum(counts)
+        if len(finite) == 0 and isinstance(bins, str):
+            lo, hi = (0.0, 1.0) if hist_range is None else hist_range
+            edges = _uniform_histogram_edges(lo, hi, 10)
+        else:
+            edges = np.asarray(bins, dtype=np.float64)
+            if edges.ndim != 1 or edges.size < 2:
+                raise ValueError("histogram bins must be a 1-D increasing sequence")
+    try:
+        counts = kernels.histogram_bins(vals, edges, density=density, cumulative=cumulative)
+    except ValueError as exc:
+        raise ValueError("histogram could not produce finite bins") from exc
     n_bins = len(counts)
     direct_color = (
         channels.resolve_color(color, n_bins, default_constant=DEFAULT_PALETTE[0])
