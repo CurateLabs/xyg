@@ -81,6 +81,45 @@ def test_violin_density_matches_legacy_numpy() -> None:
     np.testing.assert_allclose(dens, exp_dens, atol=1e-12)
 
 
+@pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
+def test_violin_rects_compile_grouped_geometry_in_rust(orientation: str) -> None:
+    result = kernels.violin_rects(
+        np.array([1.0, np.nan, 2.0, np.inf, 3.0, 4.0]),
+        np.array([0, 3, 4, 6], dtype=np.uintp),
+        np.array([0.0, 1.0, 2.0]),
+        4,
+        0.8,
+        orientation,
+    )
+    x0, y0, x1, y1, active, edges, density = result
+    np.testing.assert_array_equal(active, [0, 2])
+    assert len(x0) == len(y0) == len(x1) == len(y1) == 8
+    assert len(edges) == len(density) == 2
+    assert all(np.isfinite(column).all() for column in (x0, y0, x1, y1))
+
+
+def test_violin_rects_reject_malformed_and_over_budget_groups() -> None:
+    values = np.array([1.0, 2.0])
+    with pytest.raises(ValueError):
+        kernels.violin_rects(
+            values, np.array([1, 2], dtype=np.uintp), np.array([0.0]), 4, 0.8, "vertical"
+        )
+    with pytest.raises(ValueError):
+        kernels.violin_rects(
+            values, np.array([0, 2], dtype=np.uintp), np.array([0.0]), 4, np.inf, "vertical"
+        )
+    groups = 2501
+    with pytest.raises(ValueError):
+        kernels.violin_rects(
+            np.ones(groups),
+            np.arange(groups + 1, dtype=np.uintp),
+            np.arange(groups, dtype=float),
+            4,
+            0.8,
+            "vertical",
+        )
+
+
 def _legacy_hexbin(x, y, c, w, h, xr, yr, threshold, reduce):
     fx = (x - xr[0]) * w / (xr[1] - xr[0])
     fy = (y - yr[0]) * h / (yr[1] - yr[0])

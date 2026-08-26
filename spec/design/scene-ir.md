@@ -926,3 +926,15 @@ emits the fixed 96-interval Band sequence. `triangle_mesh` shares Scene PolyFill
 records. Browser DOM measurement and
 WebGL paint remain environment-specific consumers with documented layout
 tolerances (§7 and §21).
+
+ABI 98 makes the composition violin a compact Rust-owned ingress without a
+Scene-version change. Hosts pack flat canonical f64 samples, monotone group
+offsets, centers, bins, positive finite width, and orientation. Rust filters
+nonfinite samples, skips empty groups without reordering, runs and normalizes
+the shared density kernel, applies width/orientation, and emits at most 10,000
+ordinary Rect rows plus group-major density metadata. Malformed offsets,
+centers, bins, width/orientation, coordinate overflow, all-empty groups, and
+over-budget output fail before partial writes. Constant-style primary
+Cartesian violins with explicit domains route public SVG/PNG/PDF through these
+Scene Rects; pyplot KDE bodies, polar, gradients, alternate axes, and per-item
+styles remain compatibility paths.

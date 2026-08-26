@@ -67,7 +67,8 @@
       "follow_up_issue": null,
       "allowed_responsibilities": [
         "Row scans, geometry, aggregation, layout, LOD, encoding, and deterministic product policy.",
-        "Canonical scene and static-export construction shared by every host."
+        "Canonical scene and static-export construction shared by every host.",
+        "Violin grouping validation, density scaling, orientation, width, and bounded final geometry."
       ],
       "forbidden_responsibilities": [
         "Python, Node, browser DOM, or transport-specific API behavior.",

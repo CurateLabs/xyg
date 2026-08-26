@@ -392,6 +392,20 @@ test("Node matches Python bytes for the bounded public literal geometry family",
   assert.ok(sceneBrowserPainter(scene).length > 300);
 });
 
+test("Node matches Python bytes for Rust-owned bounded violin geometry", () => {
+  for (const orientation of ["vertical", "horizontal"]) {
+    const figure = new Figure({ width: 320, height: 240 });
+    figure.setAxisDomain("x", [-1, 5]); figure.setAxisDomain("y", [-1, 5]);
+    figure.violin([[1, 2, 2, 3, 4], [2, 2.5, 3.5]], {
+      bins: 8, width: 0.7, orientation, id: 0,
+      color: "#7c3aed", opacity: 0.6, style: { fill: "#22c55e" },
+    });
+    const scene = figure.toScene();
+    assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.public_violin_sha256[orientation]);
+    assert.match(sceneSvg(scene), /<rect /); assert.ok(sceneRasterCommands(scene).length > 100); assert.ok(sceneBrowserPainter(scene).length > 300);
+  }
+});
+
 test("Node matches Python bytes for bounded literal geometry host transforms", () => {
   const variants = [
     ["step", (figure) => figure.step([0, 1, 2], [1, 3, 2], { id: 0, where: "mid" })],

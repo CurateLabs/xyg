@@ -111,6 +111,12 @@ axis transforms and expand the fixed 96-interval cubic into 97 paired Scene
 Band samples. Two-ended gradients, polar projection, LOD/density, and
 direct-browser ribbon authoring remain explicit boundaries; the last is #59
 work. Every unmodeled output contract remains an explicit compatibility route.
+ABI 98 additionally gives both composition hosts one compact grouped violin
+ingress. Hosts pack values, group offsets/centers, bins, width, orientation,
+and literal style; Rust owns finite filtering, density normalization,
+width/orientation, the 10,000-Rect bound, and final geometry. Vertical and
+horizontal exact-byte fixtures feed the same SVG, raster, and browser Scene
+consumers. Pyplot KDE bodies and advanced/polar variants remain compatibility.
 Scene v13 covers solid chart/plot backgrounds, authored
   Cartesian side/visibility/major-minor geometry and paint, and a bounded
   single-column primary static legend for named constant-style traces, plus a

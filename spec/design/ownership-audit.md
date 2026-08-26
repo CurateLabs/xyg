@@ -46,6 +46,15 @@ plot clipping, legend swatch, and SVG/raster/browser lowering. Joined fills,
 component alpha, authored outlines, per-face paint/style, alternate axes, and
 larger meshes remain compatibility behavior.
 
+ABI 98 removes composition-violin geometry policy from both hosts. They retain
+coercion, group/category factorization, rollback, and literal style authoring,
+then pack flat f64 samples, monotone offsets, centers, bins, width, and
+orientation. Rust alone filters samples, skips empty groups, computes and
+normalizes density, applies width/orientation, validates the 10,000-Rect bound,
+and emits final coordinates. Public constant-style primary Cartesian violins
+use the existing Scene consumers; pyplot KDE bodies and advanced variants stay
+on their explicit compatibility paths.
+
 Static-export routing status (#117): `Figure.to_svg`, native `to_png`, native
 `to_image(..., "svg"|"png"|"pdf")`, `write_image`, and the native branch of
 `write_images` now delegate the proven
@@ -53,7 +62,7 @@ literal Cartesian public geometry subset—constant-style built-in scatter symbo
 with optional constant marker strokes and scalar widths
 and polylines, bounded fill-only unjoined triangle meshes, ordinary finite
 fixed-domain area/error-band Bands,
-ordinary bar/column/histogram Rects, bounded disconnected
+ordinary bar/column/histogram Rects and Rust-expanded constant-style violins, bounded disconnected
 segment/error-bar/stem endpoint pairs, and finite literal solid-color ribbons
 expanded by Rust—plus the proven literal static
 chrome contract (chart/plot backgrounds, title, authored axis

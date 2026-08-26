@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 97
-#define XYG_ABI_SIGNATURE_SHA256 "afbad4c9531e530a26cfa0c24d300d10419c235dbecab47e039f8f4a98a995fc"
+#define XYG_ABI_VERSION 98
+#define XYG_ABI_SIGNATURE_SHA256 "aed7db37fd39566123734fe7697a9c2a8af51119c0cb1ed2cdae067eed0e1298"
 
 #ifdef __cplusplus
 extern "C" {
@@ -195,6 +195,7 @@ size_t xyg_triangle_edges(const double * x, const double * y, size_t vertex_coun
 size_t xyg_valid_indices_f64(const double *const * columns, size_t n_columns, size_t len, uint64_t positive_mask, uint32_t * out, size_t capacity);
 size_t xyg_vector_segments(const double * x, const double * y, const double * u, const double * v, size_t len, double scale, uint32_t pivot, double head_ratio, double * out_x0, double * out_x1, double * out_y0, double * out_y1);
 int32_t xyg_violin_density(const double * data, size_t len, size_t n_bins, double * out_edges, double * out_density);
+size_t xyg_violin_rects(const double * values, size_t values_len, const size_t * offsets, size_t offsets_len, const double * centers, size_t centers_len, size_t bins, double width, uint32_t orientation, double * out_x0, double * out_y0, double * out_x1, double * out_y1, uint32_t * out_groups, double * out_edges, double * out_density, size_t out_cap);
 size_t xyg_weighted_ecdf(const double * values, const double * weights, size_t len, double * out_values, double * out_cumulative);
 int32_t xyg_welch_spectra(const double * x, const double * y, size_t len, size_t nfft, size_t noverlap, double sample_rate, double * out_frequency, double * out_pxx, double * out_pyy, double * out_pxy_real, double * out_pxy_imag);
 size_t xyg_wind_rose_bins(const double * directions, const double * speeds, size_t len, size_t sectors, const double * speed_edges, size_t n_speed_edges, double * out_edges, size_t capacity_edges, double * out_centres, double * out_counts, size_t capacity_counts, size_t * out_n_obs);

@@ -1695,6 +1695,7 @@ def scene_export_support_reason(
         "bar",
         "column",
         "histogram",
+        "violin",
         "segments",
         "errorbar",
         "stem",
@@ -1744,6 +1745,7 @@ def scene_export_support_reason(
             "stroke_width",
             "corner_radius",
         },
+        "violin": {"color", "opacity", "role", "fill", "stroke", "stroke_width"},
         "segments": {"color", "opacity", "width", "role"},
         "errorbar": {"color", "opacity", "width", "role"},
         "stem": {"color", "opacity", "width", "role"},
@@ -1788,6 +1790,7 @@ def scene_export_support_reason(
             "bar",
             "column",
             "histogram",
+            "violin",
             "segments",
             "errorbar",
             "stem",
@@ -1838,6 +1841,15 @@ def scene_export_support_reason(
                 "stem": {"stem"},
             }[trace.kind]
             if (trace.style or {}).get("role") not in accepted_roles:
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+        if trace.kind == "violin":
+            rect_columns = (trace.x0, trace.y0, trace.x1, trace.y1)
+            if any(column is None for column in rect_columns):
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_MARK"
+            lengths = {len(column.values) for column in rect_columns}
+            if len(lengths) != 1 or next(iter(lengths), 0) > 10_000:
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
+            if (trace.style or {}).get("role") != "violin":
                 return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
         if trace.kind in _RIBBON_KINDS and (trace.style or {}).get("role") != "ribbon":
             return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
