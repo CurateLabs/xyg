@@ -175,7 +175,7 @@
       "python": "ready",
       "node": "ready",
       "rust": "ready",
-      "notes": "packages/xy-node marks/histogram via xy_histogram_uniform; tests/test_node_mark_parity.py fixed-edge counts"
+      "notes": "Python and packages/xy-node omitted-bin composition histograms use bounded xy_histogram_edges(auto) plus xy_histogram_uniform; tests/test_histogram_auto_scene.py proves exact cross-host Scene bytes for unsorted/repeated/non-finite, constant, authored-range, fixed-bin, empty, density, and cumulative cases"
     },
     {
       "kind": "area",

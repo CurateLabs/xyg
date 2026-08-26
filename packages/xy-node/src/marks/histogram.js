@@ -3,7 +3,7 @@
  * → rectangle columns attached as a histogram trace (Python common path).
  */
 
-import { asF64Array, histogramUniform, minMax } from "../encode.js";
+import { asF64Array, histogramEdges, histogramUniform, minMax } from "../encode.js";
 
 /**
  * @param {ArrayLike|TypedArray} values
@@ -25,7 +25,7 @@ import { asF64Array, histogramUniform, minMax } from "../encode.js";
  */
 export function composeHistogram(values, opts = {}) {
   const vals = asF64Array(values, "values");
-  const nBins = opts.bins ?? 10;
+  let nBins = opts.bins ?? 10;
   if (!Number.isInteger(nBins) || nBins <= 0) {
     throw new RangeError("histogram bins must be a positive integer");
   }
@@ -39,8 +39,17 @@ export function composeHistogram(values, opts = {}) {
     if (!(Number.isFinite(lo) && Number.isFinite(hi) && hi > lo)) {
       throw new RangeError("histogram range must be a finite increasing pair");
     }
-  } else {
-    const mm = minMax(vals);
+  }
+  const mm = minMax(vals);
+  let resolvedEdges = null;
+  if (opts.bins == null && mm != null) {
+    resolvedEdges = Float64Array.from(
+      histogramEdges(vals, { range: opts.range, method: "auto" }),
+    );
+    nBins = resolvedEdges.length - 1;
+    lo = resolvedEdges[0];
+    hi = resolvedEdges[nBins];
+  } else if (opts.range == null) {
     if (mm == null) {
       lo = 0;
       hi = 1;
@@ -51,9 +60,10 @@ export function composeHistogram(values, opts = {}) {
       [lo, hi] = mm;
     }
   }
-  const { counts: rawCounts, edges, total } = histogramUniform(vals, lo, hi, nBins, {
+  const { counts: rawCounts, edges: uniformEdges, total } = histogramUniform(vals, lo, hi, nBins, {
     density,
   });
+  const edges = resolvedEdges ?? uniformEdges;
   let counts = rawCounts;
   if (cumulative) {
     const out = new Float64Array(counts.length);

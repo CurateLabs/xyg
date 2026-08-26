@@ -142,6 +142,19 @@ test("histogram_uniform counts match Python fixture when present", () => {
   assert.equal(spec.traces[0].n_marks, bins);
 });
 
+test("histogram auto edges support wide ranges and enforce the Rust cap", () => {
+  const wide = composeHistogram(new Float64Array([0, 1]), { range: [-10, 10] });
+  assert.equal(wide.edges.length, 41);
+  assert.equal(wide.edges[0], -10);
+  assert.equal(wide.edges[40], 10);
+  const boundary = composeHistogram(new Float64Array([0, 1]), { range: [0, 5_000] });
+  assert.equal(boundary.edges.length, 10_001);
+  assert.throws(
+    () => composeHistogram(new Float64Array([0, 1]), { range: [0, 5_000.5] }),
+    /xyg_histogram_edges failed/,
+  );
+});
+
 test("graphChart convenience wraps figure.graph", () => {
   const fig = graphChart(
     ["a", "b", "c"],

@@ -54,7 +54,7 @@ Precisely:
 | static display-list raster, row-banded polyline/point/segment paint, batched fill+stroke triangle meshes, affine scatter projection plus typed color/size resolution, density/heatmap colormap and sampling | Rust (ABI v36) | correct — commands borrow f32/u8 payload or canonical spans synchronously; compact stratified sampling reuses factorization counts; batched/banded output is byte-identical |
 | signal processing: `xyg_rfft`, `xyg_welch_spectra`, `xyg_spectrogram` | Rust (ABI v36) | correct — O(N) transforms over sample columns; Hann windowing and segment traversal are native, with Matplotlib-compatible `detrend_none` defaults; explicit pyplot detrending modes fail loudly until the kernel can select them deliberately |
 | geometry/triangulation: `xyg_delaunay_triangles`, `xyg_polygon_triangles`, `xyg_marching_squares`, `xyg_marching_triangles`, `xyg_streamlines`, `xyg_vector_segments`, `xyg_quad_mesh_triangles`, `xyg_sector_triangles`, `xyg_indexed_triangles`, `xyg_triangle_edges` | Rust (ABI v36) | correct — output is screen-bounded index/vertex buffers; level choice and styling stay in Python |
-| statistics: `xyg_correlation`, `xyg_weighted_ecdf`, `xyg_histogram2d`, `xyg_stacked_bounds` | Rust (ABI v36) | correct — row-scan reductions; binning policy and labels stay in Python. Unweighted `xyg_histogram2d` fans out with per-worker u64 grids (integer merge, thread-count invariant); the weighted case stays serial because f64 accumulation order must not vary with core count (§21) |
+| statistics: `xyg_correlation`, `xyg_weighted_ecdf`, `xyg_histogram2d`, `xyg_stacked_bounds` | Rust (ABI v36) | correct — row-scan reductions; 1D automatic histogram edge policy and uniform binning are Rust-owned while labels remain host presentation. Unweighted `xyg_histogram2d` fans out with per-worker u64 grids (integer merge, thread-count invariant); the weighted case stays serial because f64 accumulation order must not vary with core count (§21) |
 | style/text helpers: `xyg_css_check` (`css.rs`), `xyg_svg_poly_path` (`svg.rs`) | Rust (ABI v36) | correct by a different rule — not O(rows) but O(points)/per-value on the export and validation paths, where per-item Python object churn dominates; error *messages* still assembled in Python |
 | ohlc_decimate (when finance returns) | was NumPy-in-kernels.py | acceptable stopgap **only** because candles decimate to ≤px buckets; promote to Rust with the pyramid work |
 | tier decisions, hysteresis, drill_seq that change shipped buffers | Rust (dual-host) / thin host assembly | **promote** — hosts must not diverge; see host-parity.md |
@@ -78,7 +78,9 @@ only when it is entirely distinct) · histogram stats ✅ · quantiles (`xyg_qua
 (`xyg_box_stats` ✅ Tukey; `xyg_violin_density` ✅ fixed smooth kernel;
 `xyg_violin_rects` ✅ ABI 98 grouped, normalized, bounded Scene geometry) · hexbin
 reducer (`xyg_hexbin` ✅ count/mean/sum) · histogram edges (`xyg_histogram_edges`
-✅ NumPy `bins="auto"` / Sturges) · wind-rose bins (`xyg_wind_rose_bins` ✅
+✅ NumPy `bins="auto"` / Sturges, used by both composition hosts for omitted
+bins, capped at 10,000 bins / 10,001 edges before allocation; invalid or
+over-cap results fail without a partial write) · wind-rose bins (`xyg_wind_rose_bins` ✅
 sector × speed-band counts; polar bar assembly stays host-side) · contourf
 densify (`xyg_contourf_densify` ✅) + corner-mask bands (`xyg_contourf_bands` ✅
 ContourPy-style one-masked-corner clip) · bar offsets (`xyg_bar_stack` ✅

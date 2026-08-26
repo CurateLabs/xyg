@@ -127,6 +127,16 @@ Rust-expanded Step Scene path. Exact unsorted/repeated/nonfinite and singleton
 fixtures are byte-identical through SVG, raster, and browser consumers. Binned
 ECDF domain, histogram, and cumulative assembly remain separately recorded
 host-policy debt.
+An omitted composition-histogram bin count now resolves through the existing
+Rust `xyg_histogram_edges(..., auto)` policy in both Python and Node. Explicit
+positive integer bins remain uniform and unchanged; all-nonfinite input retains
+the documented ten-bin `[0, 1]` (or authored-range) compatibility result.
+Rust caps automatic resolution at 10,000 bins (10,001 edges); invalid ranges or
+larger results fail through the hosts' existing histogram argument errors.
+Unsorted, repeated, nonfinite, constant, ranged, density, and cumulative
+fixtures produce identical Rect Scenes for SVG, raster, and browser consumers.
+Authored arbitrary edges and cumulative assembly remain separate host-policy
+debt.
 Scene v13 covers solid chart/plot backgrounds, authored
   Cartesian side/visibility/major-minor geometry and paint, and a bounded
   single-column primary static legend for named constant-style traces, plus a

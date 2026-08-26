@@ -203,8 +203,8 @@ export function histogramEdges(data, { range = null, method = "auto" } = {}) {
   const useRange = range == null ? 0 : 1;
   const lo = range == null ? 0 : Number(range[0]);
   const hi = range == null ? 0 : Number(range[1]);
-  const n = Math.max(arr.length, 1);
-  const capacity = Math.max(Math.ceil(2 * Math.sqrt(n) + 4), 16);
+  // ABI 98 caps Rust auto resolution at 10,000 bins (10,001 edges).
+  const capacity = 10_001;
   const out = new Float64Array(capacity);
   const written = Number(
     xyHistogramEdges(

@@ -9046,10 +9046,12 @@ pub unsafe extern "C" fn xyg_violin_rects(
 /// Freedman–Diaconis with sqrt/2 floor — see `stats::histogram_edges`), 1 =
 /// Sturges alone. When `use_range` is 0, `lo`/`hi` are ignored and outer edges
 /// come from the finite sample (empty → `[0,1]`). Returns the number of edges
-/// written (`n_bins + 1`), or `usize::MAX` on invalid args / undersized capacity.
+/// written (`n_bins + 1`), or `usize::MAX` on invalid args, resource overflow,
+/// or undersized capacity. Automatic resolution is capped at 10,000 bins.
 ///
 /// # Safety
-/// `out_edges` must hold `capacity` writable f64s when non-null.
+/// `out_edges` must hold `capacity` writable f64s and be non-null. Non-empty
+/// `data` must be valid for `len` readable f64s.
 #[no_mangle]
 pub unsafe extern "C" fn xyg_histogram_edges(
     data: *const f64,
@@ -9530,6 +9532,75 @@ pub unsafe extern "C" fn xyg_geo_column_crs(handle: u64) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn histogram_edges_write_capacity_and_resource_contract() {
+        let data = [0.0, 1.0];
+        let required = 41;
+        let mut edges = vec![0.0; required];
+        assert_eq!(
+            unsafe {
+                xyg_histogram_edges(
+                    data.as_ptr(),
+                    data.len(),
+                    -10.0,
+                    10.0,
+                    1,
+                    0,
+                    edges.as_mut_ptr(),
+                    edges.len(),
+                )
+            },
+            required
+        );
+        assert_eq!((edges[0], edges[required - 1]), (-10.0, 10.0));
+        assert_eq!(
+            unsafe {
+                xyg_histogram_edges(
+                    data.as_ptr(),
+                    data.len(),
+                    -10.0,
+                    10.0,
+                    1,
+                    0,
+                    edges.as_mut_ptr(),
+                    required - 1,
+                )
+            },
+            usize::MAX
+        );
+        assert_eq!(
+            unsafe {
+                xyg_histogram_edges(
+                    data.as_ptr(),
+                    data.len(),
+                    -10.0,
+                    10.0,
+                    1,
+                    0,
+                    std::ptr::null_mut(),
+                    0,
+                )
+            },
+            usize::MAX
+        );
+        let mut maximum = vec![0.0; stats::MAX_HISTOGRAM_BINS + 1];
+        assert_eq!(
+            unsafe {
+                xyg_histogram_edges(
+                    data.as_ptr(),
+                    data.len(),
+                    0.0,
+                    stats::MAX_HISTOGRAM_BINS as f64 / 2.0 + 0.5,
+                    1,
+                    0,
+                    maximum.as_mut_ptr(),
+                    maximum.len(),
+                )
+            },
+            usize::MAX
+        );
+    }
 
     #[test]
     fn scene_support_abi_queries_copies_and_rejects_unknown_bits() {
