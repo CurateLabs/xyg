@@ -20,12 +20,14 @@ at 200 output positions and 65,536 source categories; label/category text is
 capped at 65,536 UTF-8 bytes per axis, and malformed
 or nonfinite input fails before output.
 
-`attachWasmTicks(view, { worker })` now installs the first bounded ChartView
-product cutover: automatic primary Cartesian linear, log, and symlog axes only.
-The attachment frames every currently eligible x/y slot, but Rust exclusively
-chooses positions and labels. Eligibility excludes polar, authored
-`tick_values`, and `theta_unit` axes. An axis is *covered* only after an
-admitted Rust cache exists for that eligible slot; newly eligible slots after
+`attachWasmTicks(view, { worker })` now installs the bounded ChartView
+product cutover: automatic primary Cartesian linear, log, symlog, category,
+and UTC-time axes. The attachment frames every currently eligible x/y slot,
+but Rust exclusively chooses positions and labels. Eligibility excludes polar,
+authored `tick_values`, `theta_unit` axes, and category axes without a
+non-empty NUL-free string table. An axis is *covered* only after an admitted
+Rust cache exists for that eligible slot and still matches its current family,
+category table, and format; newly eligible slots or family switches after
 mount stay on `30_ticks.ts` until that cache arrives and are never painted as
 empty WASM ticks. The first current `XYTO` result is admitted before the
 attachment becomes authoritative; later pan/zoom/resize requests cancel older
@@ -36,9 +38,9 @@ Once attached, a covered axis never calls `30_ticks.ts`, even after a Worker
 failure. Failed snapshots emit one coalesced `xy:wasm_ticks_error` and remain
 eligible to retry.
 
-This cutover is deliberately explicit and bounded. Category, UTC-time,
-angular/polar, secondary axes, colorbars, authored values, and authored-empty
-provenance retain their existing compatibility paths. Self-contained
+This cutover is deliberately explicit and bounded. Angular/polar, secondary
+axes, colorbars, authored values, and authored-empty provenance retain their
+existing compatibility paths. Self-contained
 Blob-worker HTML is not eligible. Notebook, `to_html()`, and Reflex delivery of
 the external tick assets remains follow-up work under #59; this slice neither
 claims nor closes that issue.
@@ -504,7 +506,7 @@ const chartView = await renderWasmChart({
     series: [{ kind: "scatter", x: xs, y: ys }],
   },
 });
-// Or cut a normal ChartView's supported primary numeric ticks to Rust.
+// Or cut a normal ChartView's supported primary Cartesian ticks to Rust.
 // These are deployed same-origin files copied from one @curatelabs/xyg release.
 const tickWorker = createXygWasmWorker({
   workerUrl: "/assets/xyg/wasm-worker.js",
@@ -609,8 +611,8 @@ PR CI or a CodSpeed simulation claim.
 
 ## Remaining #59 work
 
-- category, UTC-time, angular/polar, secondary-axis, colorbar, and authored-tick
-  ChartView cutovers;
+- angular/polar, secondary-axis, colorbar, and authored-tick ChartView
+  cutovers;
 - external Worker/WASM tick-asset delivery for notebooks, `to_html()`, Reflex,
   and other self-contained hosts;
 - aggregate production paths beyond direct Scene records;

@@ -659,9 +659,10 @@ UTF-8, embedded-NUL, and oversized fields fail closed. Legacy raw `XYAD` bytes
 remain accepted byte-for-byte. This envelope deliberately avoids Koffi's
 64-parameter function ceiling.
 
-Time/category/polar/secondary axes and broader numeric grammars remain on their
+Polar/secondary Scene paths and broader numeric grammars remain on their
 documented compatibility routes. WASM ABI 23 plus `attachWasmTicks` cut
-explicitly attached automatic primary Cartesian linear/log/symlog ChartView
+explicitly attached automatic primary Cartesian
+linear/log/symlog/category/UTC-time ChartView
 axes to that resolver; `js/src/30_ticks.ts` stays the compatibility generator
 for unattached charts and remaining families until #59 covers those hosts.
 

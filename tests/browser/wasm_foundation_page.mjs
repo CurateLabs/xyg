@@ -728,6 +728,140 @@ async function run() {
   }
   chartTickHost.remove();
 
+  foundationStage = "primary Cartesian ChartView category and UTC-time ticks use Rust/WASM";
+  const familyTickHost = document.createElement("div");
+  familyTickHost.style.cssText = "width:320px;height:240px";
+  document.body.append(familyTickHost);
+  const familyTickView = directDensityFixture(familyTickHost);
+  Object.assign(familyTickView.axes.x, {
+    kind: "category", categories: ["alpha", "beta", "gamma"], range: [0, 2],
+  });
+  Object.assign(familyTickView.axes.y, {
+    kind: "time", range: [0, 7_200_000], format: "%H:%M",
+  });
+  familyTickView.view0 = familyTickView._copyView({
+    ranges: { x: [0, 2], y: [0, 7_200_000] },
+  });
+  familyTickView.view = familyTickView._copyView(familyTickView.view0);
+  const familyTickWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  const familyTickHandle = await attachWasmTicks(familyTickView, {
+    worker: familyTickWorker,
+    workerOwnership: "own",
+  });
+  await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  const familyX = familyTickView._axisTicks("x", 3);
+  const familyY = familyTickView._axisTicks("y", 6);
+  const familyTickLabels = [...familyTickView.root.querySelectorAll(
+    '[data-xy-label-kind="tick"]',
+  )].map((node) => node.textContent);
+  const familyXLabel = familyTickView._axisTickText(familyTickView.axes.x, 0, familyX.step);
+  const familyYLabel = familyTickView._axisTickText(
+    familyTickView.axes.y, familyY.ticks[0], familyY.step,
+  );
+  if (familyX.source !== "wasm" || familyY.source !== "wasm"
+      || familyTickHandle.diagnostics()?.axisIds.join(",") !== "x,y"
+      || familyX.ticks.join(",") !== "0,1,2"
+      || familyXLabel !== "alpha"
+      || familyTickHandle.label("x", 1) !== "beta"
+      || !familyY.ticks.length
+      || !/^\d{2}:\d{2}$/.test(familyYLabel || "")
+      || !familyTickLabels.includes("alpha")
+      || !familyTickLabels.some((label) => /^\d{2}:\d{2}$/.test(label || ""))) {
+    throw new Error(`ChartView did not consume Rust category/UTC-time ticks: ${JSON.stringify({
+      diagnostics: familyTickHandle.diagnostics(),
+      familyX,
+      familyY,
+      familyXLabel,
+      familyYLabel,
+      familyTickLabels,
+    })}`);
+  }
+  await familyTickHandle.dispose();
+  familyTickView.destroy();
+  familyTickHost.remove();
+
+  foundationStage = "family switch after attach waits for a matching Rust cache";
+  const switchTickHost = document.createElement("div");
+  switchTickHost.style.cssText = "width:320px;height:240px";
+  document.body.append(switchTickHost);
+  const switchTickView = directDensityFixture(switchTickHost);
+  const switchTickWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  const switchTickHandle = await attachWasmTicks(switchTickView, {
+    worker: switchTickWorker,
+    workerOwnership: "own",
+  });
+  const linearXTicks = switchTickView._axisTicks("x", 6);
+  Object.assign(switchTickView.axes.x, {
+    kind: "category", categories: ["alpha", "beta", "gamma"], range: [0, 2],
+  });
+  switchTickView.view = switchTickView._copyView({ ranges: { x: [0, 2], y: [0, 1] } });
+  const switchedXTicks = switchTickView._axisTicks("x", 3);
+  const switchedXLabel = switchTickView._axisTickText(switchTickView.axes.x, 0, switchedXTicks.step);
+  if (linearXTicks.source !== "wasm" || !switchTickHandle.eligible("x")
+      || switchTickHandle.covers("x") || switchedXTicks.source === "wasm"
+      || switchedXTicks.ticks.join(",") !== "0,1,2" || switchedXLabel !== "alpha") {
+    throw new Error(`family switch reused a stale WASM cache: ${JSON.stringify({
+      eligible: switchTickHandle.eligible("x"),
+      covers: switchTickHandle.covers("x"),
+      linearXTicks,
+      switchedXTicks,
+      switchedXLabel,
+    })}`);
+  }
+  switchTickHandle.schedule();
+  for (let attempt = 0; attempt < 100 && !switchTickHandle.covers("x"); attempt++) {
+    await nextTask();
+  }
+  const admittedSwitchTicks = switchTickView._axisTicks("x", 3);
+  const admittedSwitchLabel = switchTickView._axisTickText(
+    switchTickView.axes.x, 1, admittedSwitchTicks.step,
+  );
+  if (!switchTickHandle.covers("x") || admittedSwitchTicks.source !== "wasm"
+      || admittedSwitchTicks.ticks.join(",") !== "0,1,2"
+      || admittedSwitchLabel !== "beta"
+      || switchTickHandle.label("x", 2) !== "gamma") {
+    throw new Error(`family switch did not admit a matching category cache: ${JSON.stringify({
+      covers: switchTickHandle.covers("x"),
+      admittedSwitchTicks,
+      admittedSwitchLabel,
+    })}`);
+  }
+  switchTickView.axes.x.categories = ["red", "green"];
+  const renamedXTicks = switchTickView._axisTicks("x", 2);
+  if (switchTickHandle.covers("x") || renamedXTicks.source === "wasm"
+      || renamedXTicks.ticks.join(",") !== "0,1"
+      || switchTickView._axisTickText(switchTickView.axes.x, 0, renamedXTicks.step) !== "red") {
+    throw new Error(`category-table change stayed on a stale WASM cache: ${JSON.stringify({
+      covers: switchTickHandle.covers("x"),
+      renamedXTicks,
+    })}`);
+  }
+  switchTickHandle.schedule();
+  for (let attempt = 0; attempt < 100 && !switchTickHandle.covers("x"); attempt++) {
+    await nextTask();
+  }
+  const renamedAdmitted = switchTickView._axisTicks("x", 2);
+  if (!switchTickHandle.covers("x") || renamedAdmitted.source !== "wasm"
+      || switchTickHandle.label("x", 0) !== "red"
+      || switchTickHandle.label("x", 1) !== "green") {
+    throw new Error(`category-table change did not admit a matching cache: ${JSON.stringify({
+      covers: switchTickHandle.covers("x"),
+      renamedAdmitted,
+      labels: [switchTickHandle.label("x", 0), switchTickHandle.label("x", 1)],
+    })}`);
+  }
+  await switchTickHandle.dispose();
+  switchTickView.destroy();
+  switchTickHost.remove();
+
   foundationStage = "sequential ChartView tick re-attach replaces the previous handle";
   const reattachHost = document.createElement("div");
   reattachHost.style.cssText = "width:320px;height:240px";
@@ -819,7 +953,7 @@ async function run() {
   document.body.append(lateTickHost);
   const lateTickView = directDensityFixture(lateTickHost);
   Object.assign(lateTickView.axes.y, {
-    kind: "category", categories: ["low", "high"], range: [0, 1],
+    tick_values: [0, 1], range: [0, 1],
   });
   lateTickView.view0 = lateTickView._copyView({ ranges: { x: [0, 1], y: [0, 1] } });
   lateTickView.view = lateTickView._copyView(lateTickView.view0);
@@ -832,18 +966,17 @@ async function run() {
     worker: lateTickWorker,
     workerOwnership: "own",
   });
-  const categoryYTicks = lateTickView._axisTicks("y", 2);
-  lateTickView.axes.y.kind = "linear";
-  delete lateTickView.axes.y.categories;
+  const authoredYTicks = lateTickView._axisTicks("y", 2);
+  delete lateTickView.axes.y.tick_values;
   const immediateYTicks = lateTickView._axisTicks("y", 6);
   if (!lateTickHandle.eligible("y") || lateTickHandle.covers("y")
-      || categoryYTicks.source === "wasm"
+      || authoredYTicks.source === "wasm"
       || immediateYTicks.source === "wasm"
       || !immediateYTicks.ticks.length) {
     throw new Error(`newly eligible y painted empty wasm before admission: ${JSON.stringify({
       eligible: lateTickHandle.eligible("y"),
       covers: lateTickHandle.covers("y"),
-      categoryYTicks,
+      authoredYTicks,
       immediateYTicks,
     })}`);
   }
@@ -1026,10 +1159,10 @@ async function run() {
   document.body.append(uncoveredTickHost);
   const uncoveredTickView = directDensityFixture(uncoveredTickHost);
   Object.assign(uncoveredTickView.axes.x, {
-    kind: "category", categories: ["alpha", "beta", "gamma"], range: [0, 2],
+    kind: "category", categories: [], range: [0, 1],
   });
   uncoveredTickView.view0 = uncoveredTickView._copyView({
-    ranges: { x: [0, 2], y: [0, 1] },
+    ranges: { x: [0, 1], y: [0, 1] },
   });
   uncoveredTickView.view = uncoveredTickView._copyView(uncoveredTickView.view0);
   const uncoveredTickWorker = createXygWasmWorker({
@@ -1041,23 +1174,12 @@ async function run() {
     worker: uncoveredTickWorker,
     workerOwnership: "own",
   });
-  const categoryTicks = uncoveredTickView._axisTicks("x", 3);
+  const emptyCategoryTicks = uncoveredTickView._axisTicks("x", 3);
   const coveredYTicks = uncoveredTickView._axisTicks("y", 6);
-  uncoveredTickView.axes.x.kind = "time";
+  uncoveredTickView.axes.x.kind = "linear";
   delete uncoveredTickView.axes.x.categories;
-  uncoveredTickView.axes.x.range = [0, 7_200_000];
-  uncoveredTickView.view = uncoveredTickView._copyView({
-    ranges: { x: [0, 7_200_000], y: [0, 1] },
-  });
-  const timeAxisTicks = uncoveredTickView._axisTicks("x", 6);
-  uncoveredTickView.axes.x.kind = "linear";
   uncoveredTickView.axes.x.tick_values = [0.2, 0.8];
-  uncoveredTickView.axes.x.range = [0, 1];
-  uncoveredTickView.view = uncoveredTickView._copyView({
-    ranges: { x: [0, 1], y: [0, 1] },
-  });
   const authoredAxisTicks = uncoveredTickView._axisTicks("x", 6);
-  uncoveredTickView.axes.x.kind = "linear";
   delete uncoveredTickView.axes.x.tick_values;
   uncoveredTickView.axes.x.theta_unit = "degrees";
   const angularAxisTicks = uncoveredTickView._axisTicks("x", 6);
@@ -1066,27 +1188,20 @@ async function run() {
     "xy:wasm_ticks_error",
     (event) => uncoveredTickErrors.push(event.detail),
   );
-  delete uncoveredTickView.axes.x.theta_unit;
-  uncoveredTickView.axes.x.kind = "category";
-  uncoveredTickView.axes.x.categories = ["alpha", "beta"];
-  uncoveredTickView.axes.y.kind = "category";
-  uncoveredTickView.axes.y.categories = ["low", "high"];
   uncoveredTickView.draw();
   await new Promise((resolve) => requestAnimationFrame(() => resolve()));
-  const idleYTicks = uncoveredTickView._axisTicks("y", 2);
-  if (categoryTicks.source !== undefined || categoryTicks.ticks.join(",") !== "0,1,2"
-      || coveredYTicks.source !== "wasm" || timeAxisTicks.source !== undefined
-      || !timeAxisTicks.ticks.length
+  const idleAngularTicks = uncoveredTickView._axisTicks("x", 6);
+  if (emptyCategoryTicks.source !== undefined
+      || coveredYTicks.source !== "wasm"
       || authoredAxisTicks.source !== undefined || authoredAxisTicks.ticks.join(",") !== "0.2,0.8"
       || angularAxisTicks.source !== undefined || !angularAxisTicks.ticks.length
-      || idleYTicks.source !== undefined || uncoveredTickErrors.length) {
+      || idleAngularTicks.source !== undefined || uncoveredTickErrors.length) {
     throw new Error(`uncovered tick family routing drifted: ${JSON.stringify({
-      categoryTicks,
+      emptyCategoryTicks,
       coveredYTicks,
-      timeAxisTicks,
       authoredAxisTicks,
       angularAxisTicks,
-      idleYTicks,
+      idleAngularTicks,
       uncoveredTickErrors,
     })}`);
   }
