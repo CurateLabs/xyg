@@ -1867,12 +1867,9 @@ def ecdf(
 
     Exact mode coalesces repeated values before shipping. ``bins`` provides a
     bounded approximation for very large distributions using the native
-    histogram kernel.
+    binned-ECDF kernel.
     """
     raw_values = self._as_1d_float(values, "ecdf values")
-    finite = np.isfinite(raw_values)
-    if not finite.any():
-        raise ValueError("ecdf values must contain at least one finite value")
     if bins is not None:
         if (
             isinstance(bins, (bool, np.bool_))
@@ -1880,16 +1877,12 @@ def ecdf(
             or int(bins) <= 0
         ):
             raise ValueError("ecdf bins must be a positive integer or None")
-        vals = raw_values[finite]
-        lo, hi = self._auto_domain(kernels.min_max(vals))
-        counts, edges = kernels.histogram_uniform(vals, lo, hi, int(bins), density=False)
-        keep = counts > 0
-        # A bin's cumulative mass is only guaranteed at its RIGHT edge; the
-        # left edge would bias the CDF up by as much as one bin. Anchoring 0
-        # at edges[0] keeps the step right-continuous and never above the
-        # exact ECDF.
-        sx = np.concatenate(([edges[0]], edges[1:][keep]))
-        sy = np.concatenate(([0.0], np.cumsum(counts)[keep] / len(vals)))
+        try:
+            sx, sy = kernels.binned_ecdf(raw_values, int(bins))
+        except ValueError:
+            if not np.isfinite(raw_values).any():
+                raise ValueError("ecdf values must contain at least one finite value") from None
+            raise
         return self.step(
             sx,
             sy,
@@ -1901,6 +1894,9 @@ def ecdf(
             dash=dash,
             style=style,
         )
+    finite = np.isfinite(raw_values)
+    if not finite.any():
+        raise ValueError("ecdf values must contain at least one finite value")
     unique, cdf = kernels.weighted_ecdf(raw_values, np.ones(len(raw_values), dtype=np.float64))
     sx = np.concatenate(([unique[0]], unique))
     sy = np.concatenate(([0.0], cdf))

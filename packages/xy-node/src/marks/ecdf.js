@@ -1,8 +1,9 @@
 /**
- * ECDF mark — exact path via `xy_weighted_ecdf`, binned path via histogram.
+ * ECDF mark — exact and binned paths via `xyg_weighted_ecdf` and
+ * `xyg_binned_ecdf`.
  */
 
-import { asF64Array, histogramUniform, weightedEcdf } from "../encode.js";
+import { asF64Array, binnedEcdf, weightedEcdf } from "../encode.js";
 
 function finiteValues(values) {
   const arr = asF64Array(values, "values");
@@ -22,42 +23,25 @@ function finiteValues(values) {
  * @param {{ bins?: number|null, range?: [number, number]|null }} [opts]
  */
 export function computeEcdf(values, opts = {}) {
-  const vals = finiteValues(values);
+  const rawValues = asF64Array(values, "values");
   if (opts.bins != null) {
     const nBins = Number(opts.bins);
     if (!Number.isInteger(nBins) || nBins <= 0) {
       throw new RangeError("ecdf bins must be a positive integer");
     }
-    let lo;
-    let hi;
-    if (opts.range != null) {
-      lo = Number(opts.range[0]);
-      hi = Number(opts.range[1]);
-    } else {
-      lo = vals[0];
-      hi = vals[0];
-      for (let i = 1; i < vals.length; i += 1) {
-        if (vals[i] < lo) lo = vals[i];
-        if (vals[i] > hi) hi = vals[i];
+    let result;
+    try {
+      result = binnedEcdf(rawValues, nBins, { range: opts.range ?? null });
+    } catch (error) {
+      if (!rawValues.some(Number.isFinite)) {
+        throw new RangeError("ecdf values must contain at least one finite value");
       }
-      if (lo === hi) {
-        lo -= 0.5;
-        hi += 0.5;
-      }
+      throw error;
     }
-    const { counts, edges } = histogramUniform(vals, lo, hi, nBins, { density: false });
-    const sx = [edges[0]];
-    const sy = [0.0];
-    let acc = 0;
-    for (let i = 0; i < counts.length; i += 1) {
-      if (counts[i] > 0) {
-        acc += counts[i];
-        sx.push(edges[i + 1]);
-        sy.push(acc / vals.length);
-      }
-    }
-    return { x: Float64Array.from(sx), y: Float64Array.from(sy), mode: "binned" };
+    const { x, cumulative } = result;
+    return { x, y: cumulative, mode: "binned" };
   }
+  const vals = finiteValues(rawValues);
   const weights = new Float64Array(vals.length).fill(1.0);
   const { values: unique, cumulative } = weightedEcdf(vals, weights);
   const sx = new Float64Array(unique.length + 1);

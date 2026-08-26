@@ -1018,6 +1018,33 @@ def test_public_disconnected_segments_reject_more_than_ten_thousand_endpoint_pai
     assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
 
 
+def test_compact_step_allows_only_the_binned_ecdf_anchor_above_ten_thousand() -> None:
+    maximum_values = np.concatenate(
+        (np.arange(10_000, dtype=np.float64) + 0.5, np.array([0.0, 10_000.0]))
+    )
+    binned = Figure(width=320, height=240).ecdf(maximum_values, bins=10_000)
+    binned.axis_options["x"]["domain"] = (0.0, 10_000.0)
+    binned.axis_options["y"]["domain"] = (0.0, 1.0)
+    assert len(binned.traces[0].x.values) == 10_001
+    assert scene_export_support_reason(binned) is None
+    assert binned.to_scene()
+
+    accepted = Figure(width=320, height=240).step(
+        np.arange(10_001, dtype=np.float64), np.arange(10_001, dtype=np.float64)
+    )
+    accepted.axis_options["x"]["domain"] = (0.0, 10_001.0)
+    accepted.axis_options["y"]["domain"] = (0.0, 10_001.0)
+    assert scene_export_support_reason(accepted) is None
+    assert accepted.to_scene()
+
+    rejected = Figure(width=320, height=240).step(
+        np.arange(10_002, dtype=np.float64), np.arange(10_002, dtype=np.float64)
+    )
+    rejected.axis_options["x"]["domain"] = (0.0, 10_002.0)
+    rejected.axis_options["y"]["domain"] = (0.0, 10_002.0)
+    assert scene_export_support_reason(rejected) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
+
+
 def test_public_stem_marker_must_immediately_follow_its_exact_stem_geometry() -> None:
     figure = _public_disconnected_segments()
     stem_marker = figure.traces.pop()

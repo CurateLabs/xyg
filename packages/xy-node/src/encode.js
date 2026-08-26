@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -355,6 +355,41 @@ export function weightedEcdf(values, weights) {
     values: outValues.subarray(0, written),
     cumulative: cumulative.subarray(0, written),
   };
+}
+
+/** Uniformly binned ECDF with Rust-owned finite filtering and compaction. */
+export function binnedEcdf(values, nBins, { range = null } = {}) {
+  const vals = asF64Array(values);
+  const bins = Number(nBins);
+  if (!Number.isInteger(bins) || bins <= 0) {
+    throw new RangeError("ecdf bins must be a positive integer");
+  }
+  if (bins > 10_000) {
+    throw new RangeError("ecdf bins must be <= 10000");
+  }
+  const useRange = range == null ? 0 : 1;
+  const lo = range == null ? 0 : Number(range[0]);
+  const hi = range == null ? 0 : Number(range[1]);
+  const capacity = bins + 1;
+  const x = new Float64Array(capacity);
+  const cumulative = new Float64Array(capacity);
+  const written = Number(
+    xyBinnedEcdf(
+      f64Ptr(vals),
+      BigInt(vals.length),
+      BigInt(bins),
+      lo,
+      hi,
+      useRange,
+      f64Ptr(x),
+      f64Ptr(cumulative),
+      BigInt(capacity),
+    ),
+  );
+  if (!Number.isSafeInteger(written) || written <= 0 || written > capacity) {
+    throw new RangeError("ecdf values must contain a finite representable distribution");
+  }
+  return { x: x.slice(0, written), cumulative: cumulative.slice(0, written) };
 }
 
 /** Map scalar heatmap grid to vertically flipped RGBA bytes (h, w, 4). */

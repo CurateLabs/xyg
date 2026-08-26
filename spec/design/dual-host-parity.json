@@ -210,7 +210,7 @@
       "python": "ready",
       "node": "ready",
       "rust": "ready",
-      "notes": "packages/xy-node marks/ecdf via xy_weighted_ecdf + histogram binned path; tests/test_node_mark_parity.py"
+      "notes": "packages/xy-node marks/ecdf via xyg_weighted_ecdf exact + ABI100 xyg_binned_ecdf; tests/test_exact_ecdf_scene.py + tests/test_binned_ecdf_scene.py"
     },
     {
       "kind": "segments",

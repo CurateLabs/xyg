@@ -934,8 +934,26 @@ sorting, duplicate coalescing, and normalization are not host policy. Python
 passes raw f64 values and Rust filters nonfinite observations; Node retains its
 equivalent coercion/validation seam. Hosts prepend the literal `(first, 0)` anchor and submit the
 result as an ordinary `post` Step, whose expansion and all three consumers are
-already Rust-owned. This changes no ABI or Scene version. Binned ECDF domain,
-bin selection, and cumulative assembly remain an explicit later cutover.
+already Rust-owned. Exact mode does not change in ABI 100.
+
+ABI 100 makes binned composition ECDF ingress Rust-owned without changing
+Scene 25. `xyg_binned_ecdf` accepts a nonempty raw f64 source column, a bin
+count in `[1, 10000]`, and either automatic bounds or one finite strictly
+increasing authored range. Hosts allocate exactly `bins + 1` values for each
+output plane. Rust filters nonfinite samples, rejects an all-nonfinite or
+nonrepresentable domain, widens a constant nonzero automatic domain by 5% of
+its absolute value (falling back to plus/minus 0.5 at zero or for a non-useful pad),
+includes the exact upper bound in the last bin, normalizes over every finite
+source sample, omits empty bins, and emits `(lo, 0)` followed by occupied-bin
+right edges. Thus automatic-range output ends at one; an authored range can end
+below one or at the anchor when every finite sample is outside it. Invalid
+metadata, short capacity, overlapping output planes, overflow, and over-budget requests return
+`size_t::MAX` without writing either output plane. Python exposes no new range
+option; Node preserves its existing optional authored range. Both submit the
+result as the existing `post` Step. The authored-column preflight remains
+10,000 for ordinary traces but admits 10,001 points only for compact Step lines
+(the ABI100 anchor plus 10,000 occupied bins); 10,002 still fails closed, and
+canonical Scene expansion budgets remain independent.
 
 Omitted-bin composition histograms in Python and Node resolve their uniform
 edges with the existing synchronous Rust `xyg_histogram_edges` auto estimator,

@@ -5,6 +5,8 @@
 //! Python and Node share one implementation
 //! ([host-parity.md](../../spec/design/host-parity.md), rust-engine §6).
 
+use crate::kernels;
+
 /// Fixed 5-tap smooth kernel used by the violin mark (Python legacy defaults).
 const VIOLIN_KERNEL: [f64; 5] = [1.0, 2.0, 3.0, 2.0, 1.0];
 
@@ -27,6 +29,13 @@ pub enum HistogramEdgesMethod {
 
 /// Maximum number of uniform histogram bins produced by automatic edge resolution.
 pub const MAX_HISTOGRAM_BINS: usize = 10_000;
+
+/// Compact right-continuous coordinates for a uniformly binned ECDF.
+#[derive(Clone, Debug, PartialEq)]
+pub struct BinnedEcdf {
+    pub x: Vec<f64>,
+    pub cumulative: Vec<f64>,
+}
 
 impl HistogramEdgesMethod {
     pub fn from_i32(v: i32) -> Option<Self> {
@@ -521,6 +530,84 @@ pub fn histogram_edges(
     }
     edges[n_bins] = last_edge;
     Some(edges)
+}
+
+/// Uniformly binned ECDF coordinates with a zero anchor and occupied-bin
+/// right edges. Non-finite samples are ignored. An authored range preserves
+/// the host contract by normalizing in-range mass over every finite sample.
+pub fn binned_ecdf(data: &[f64], n_bins: usize, range: Option<(f64, f64)>) -> Option<BinnedEcdf> {
+    if data.is_empty() || n_bins == 0 || n_bins > MAX_HISTOGRAM_BINS {
+        return None;
+    }
+    let mut finite_count = 0u64;
+    let mut finite_lo = f64::INFINITY;
+    let mut finite_hi = f64::NEG_INFINITY;
+    for &value in data {
+        if value.is_finite() {
+            finite_count += 1;
+            finite_lo = finite_lo.min(value);
+            finite_hi = finite_hi.max(value);
+        }
+    }
+    if finite_count == 0 {
+        return None;
+    }
+    let (lo, hi) = if let Some((lo, hi)) = range {
+        if !(lo.is_finite() && hi.is_finite() && hi > lo && (hi - lo).is_finite()) {
+            return None;
+        }
+        (lo, hi)
+    } else if finite_lo == finite_hi {
+        let mut pad = finite_lo.abs() * 0.05;
+        let mut lo = finite_lo - pad;
+        let mut hi = finite_hi + pad;
+        if !(pad.is_finite() && pad > 0.0 && lo < finite_lo && hi > finite_hi) {
+            pad = 0.5;
+            lo = finite_lo - pad;
+            hi = finite_hi + pad;
+        }
+        if !(lo.is_finite() && hi.is_finite() && hi > lo && (hi - lo).is_finite()) {
+            return None;
+        }
+        (lo, hi)
+    } else {
+        if !(finite_hi > finite_lo && (finite_hi - finite_lo).is_finite()) {
+            return None;
+        }
+        (finite_lo, finite_hi)
+    };
+
+    let scale = n_bins as f64 / (hi - lo);
+    if !(scale.is_finite() && scale > 0.0) {
+        return None;
+    }
+    let mut counts = vec![0.0; n_bins];
+    kernels::histogram_uniform(data, lo, hi, &mut counts);
+    let width = (hi - lo) / n_bins as f64;
+    if !(width.is_finite() && width > 0.0) {
+        return None;
+    }
+    let mut x = Vec::with_capacity(n_bins + 1);
+    let mut cumulative = Vec::with_capacity(n_bins + 1);
+    x.push(lo);
+    cumulative.push(0.0);
+    let mut acc = 0.0;
+    for (index, count) in counts.into_iter().enumerate() {
+        acc += count;
+        if count > 0.0 {
+            let right = if index + 1 == n_bins {
+                hi
+            } else {
+                lo + (index + 1) as f64 * width
+            };
+            if !right.is_finite() || right <= *x.last().unwrap_or(&lo) {
+                return None;
+            }
+            x.push(right);
+            cumulative.push(acc / finite_count as f64);
+        }
+    }
+    Some(BinnedEcdf { x, cumulative })
 }
 
 fn outer_edges(data: &[f64], range: Option<(f64, f64)>) -> Option<(f64, f64, Vec<f64>)> {
@@ -1066,6 +1153,69 @@ mod tests {
         // Empty without range → single bin over [0, 1] (NumPy auto).
         let empty = histogram_edges(&[], None, HistogramEdgesMethod::Auto).unwrap();
         assert_eq!(empty, vec![0.0, 1.0]);
+    }
+
+    #[test]
+    fn binned_ecdf_filters_compacts_and_anchors_right_edges() {
+        let result = binned_ecdf(&[0.0, 0.2, f64::NAN, 0.2, 0.9], 4, None).unwrap();
+        assert_eq!(result.x, vec![0.0, 0.225, 0.9]);
+        assert_eq!(result.cumulative, vec![0.0, 0.75, 1.0]);
+
+        let constant = binned_ecdf(&[7.0, 7.0], 2, None).unwrap();
+        assert_eq!(constant.x, vec![6.65, 7.0]);
+        assert_eq!(constant.cumulative, vec![0.0, 1.0]);
+
+        let zero = binned_ecdf(&[0.0], 2, None).unwrap();
+        assert_eq!(zero.x, vec![-0.5, 0.5]);
+        assert_eq!(zero.cumulative, vec![0.0, 1.0]);
+
+        let tiny_value = f64::from_bits(1);
+        let tiny = binned_ecdf(&[tiny_value], 2, None).unwrap();
+        assert_eq!(tiny.x, vec![tiny_value - 0.5, tiny_value + 0.5]);
+        assert_eq!(tiny.cumulative, vec![0.0, 1.0]);
+    }
+
+    #[test]
+    fn binned_ecdf_authored_range_uses_all_finite_mass() {
+        let result = binned_ecdf(&[-1.0, 0.25, 0.75, 2.0, f64::INFINITY], 2, Some((0.0, 1.0)))
+            .unwrap();
+        assert_eq!(result.x, vec![0.0, 0.5, 1.0]);
+        assert_eq!(result.cumulative, vec![0.0, 0.25, 0.5]);
+
+        let outside = binned_ecdf(&[-2.0, 2.0], 4, Some((0.0, 1.0))).unwrap();
+        assert_eq!(outside.x, vec![0.0]);
+        assert_eq!(outside.cumulative, vec![0.0]);
+    }
+
+    #[test]
+    fn binned_ecdf_enforces_domain_and_step_capacity_contracts() {
+        assert!(binned_ecdf(&[f64::NAN], 1, None).is_none());
+        assert!(binned_ecdf(&[0.0], 0, None).is_none());
+        assert!(binned_ecdf(&[0.0], MAX_HISTOGRAM_BINS + 1, None).is_none());
+        assert!(binned_ecdf(&[0.0], 1, Some((0.0, 0.0))).is_none());
+        assert!(binned_ecdf(&[-f64::MAX, f64::MAX], 1, None).is_none());
+        assert!(binned_ecdf(&[f64::MAX], 2, None).is_none());
+        assert!(binned_ecdf(&[-f64::MAX], 2, None).is_none());
+        assert!(binned_ecdf(&[0.0, 2.0e-309, 1.0e-308], 2, None).is_none());
+
+        for safe_domain in [[1.0e-300, 2.0e-300], [1.0e300, 1.1e300]] {
+            let result = binned_ecdf(&safe_domain, 2, None).unwrap();
+            assert!(result.x.windows(2).all(|pair| pair[1] > pair[0]));
+            assert!(result.x.into_iter().all(f64::is_finite));
+            assert_eq!(result.cumulative.last(), Some(&1.0));
+        }
+
+        let values: Vec<f64> = (0..MAX_HISTOGRAM_BINS)
+            .map(|index| index as f64 + 0.5)
+            .collect();
+        let maximum = binned_ecdf(
+            &values,
+            MAX_HISTOGRAM_BINS,
+            Some((0.0, MAX_HISTOGRAM_BINS as f64)),
+        )
+        .unwrap();
+        assert_eq!(maximum.x.len(), MAX_HISTOGRAM_BINS + 1);
+        assert_eq!(maximum.cumulative.last(), Some(&1.0));
     }
 
     #[test]

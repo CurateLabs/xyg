@@ -1206,6 +1206,21 @@ bounded to +/- 0.12 of box width; hiding outliers retains statistical metadata
 with zero placement coordinates. Five fixed geometry records per active group
 plus all outlier records are capped at 10,000.
 
+ABI 100 applies the rule to bounded composition ECDF approximation. Hosts pass
+the raw f64 column, `1..=10000` bins, and either automatic bounds or Node's
+existing finite increasing authored range. Rust filters nonfinite samples,
+uses finite min/max with 5% absolute-value widening for a nonzero constant
+automatic domain (falling back to 0.5 at zero or for a non-useful pad),
+domain, performs uniform counting with the exact upper endpoint in the last
+bin, normalizes over every finite source sample, compacts empty bins, and emits
+the zero anchor plus occupied-bin right edges. Python deliberately adds no
+public range option. Both hosts retain style, axis, id, and error presentation,
+then author the result as the existing `post` Step. Each output plane is
+bounded by `bins + 1`; invalid input, short or overlapping output planes, or nonrepresentable
+arithmetic fails atomically. The public authored-column router admits 10,001
+points only for compact Step lines so the maximum-bin anchor is representable;
+ordinary traces stay at 10,000 and 10,002 Step points fail closed.
+
 Contract-wide invariants: every tier transition is hysteresis-guarded and logged
 (no silent quality change); every aggregated visual states its aggregation in the
 hover UI; every derived artifact is reproducible from (canonical, viewport, params) —
