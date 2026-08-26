@@ -1188,6 +1188,12 @@ recomputes on zoom.*
 | **Streaming (any kind)** | ring capacity declared up front | ring buffer + incremental decimation (Tier-1 buckets updated, not rebuilt); pyramid tiles updated incrementally for touched cells | same as base kind, within retained window | append is O(appended); eviction from ring updates affected buckets only |
 | **Box / violin / stat traces** | raw column | stats computed in worker from canonical (streaming algorithms; KDE on a bounded grid) — drawn geometry is tiny | stat readout (exact) | recompute stats for visible subset if axis-linked |
 
+For the bounded composition violin, ABI 98 is the native realization of this
+ownership rule: hosts pack grouped canonical samples and parameters; Rust
+filters, computes and normalizes the bounded density, applies width and
+orientation, and emits no more than 10,000 final Rect rows. Browser-worker
+recomputation for future axis-linked subsets reuses this same engine function.
+
 Contract-wide invariants: every tier transition is hysteresis-guarded and logged
 (no silent quality change); every aggregated visual states its aggregation in the
 hover UI; every derived artifact is reproducible from (canonical, viewport, params) —

@@ -6268,6 +6268,91 @@ def violin_density(
     return edges, density
 
 
+def violin_rects(
+    values: npt.NDArray[np.float64],
+    offsets: npt.NDArray[np.uintp],
+    centers: npt.NDArray[np.float64],
+    n_bins: int,
+    width: float,
+    orientation: str,
+) -> tuple[
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.uint32],
+    list[npt.NDArray[np.float64]],
+    list[npt.NDArray[np.float64]],
+]:
+    values = _as_f64(values, "values")
+    centers = _as_f64(centers, "centers")
+    offsets = np.ascontiguousarray(offsets, dtype=np.uintp)
+    code = {"vertical": 0, "horizontal": 1}.get(orientation, -1)
+    required = int(
+        _lib.xyg_violin_rects(
+            _ptr_f64(values),
+            len(values),
+            offsets.ctypes.data,
+            len(offsets),
+            _ptr_f64(centers),
+            len(centers),
+            int(n_bins),
+            float(width),
+            code,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+        )
+    )
+    if required == _USIZE_MAX:
+        raise ValueError("invalid bounded violin geometry")
+    active = required // int(n_bins)
+    x0 = np.empty(required)
+    y0 = np.empty(required)
+    x1 = np.empty(required)
+    y1 = np.empty(required)
+    groups = np.empty(active, dtype=np.uint32)
+    edges = np.empty(active * (int(n_bins) + 1))
+    density = np.empty(required)
+    written = int(
+        _lib.xyg_violin_rects(
+            _ptr_f64(values),
+            len(values),
+            offsets.ctypes.data,
+            len(offsets),
+            _ptr_f64(centers),
+            len(centers),
+            int(n_bins),
+            float(width),
+            code,
+            _ptr_f64(x0),
+            _ptr_f64(y0),
+            _ptr_f64(x1),
+            _ptr_f64(y1),
+            groups.ctypes.data,
+            _ptr_f64(edges),
+            _ptr_f64(density),
+            required,
+        )
+    )
+    if written != required:
+        raise ValueError("invalid bounded violin geometry")
+    return (
+        x0,
+        y0,
+        x1,
+        y1,
+        groups,
+        [row.copy() for row in edges.reshape(active, int(n_bins) + 1)],
+        [row.copy() for row in density.reshape(active, int(n_bins))],
+    )
+
+
 def histogram_edges(
     data: npt.NDArray[np.float64],
     *,

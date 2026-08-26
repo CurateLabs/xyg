@@ -227,6 +227,23 @@ def _public_literal_geometry() -> Figure:
     return figure
 
 
+def _public_violin(orientation: str = "vertical") -> Figure:
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (-1.0, 5.0)
+    figure.axis_options["y"]["domain"] = (-1.0, 5.0)
+    figure.violin(
+        [[1, 2, 2, 3, 4], [2, 2.5, 3.5]],
+        bins=8,
+        width=0.7,
+        orientation=orientation,
+        color="#7c3aed",
+        opacity=0.6,
+        style={"fill": "#22c55e"},
+    )
+    figure.traces[-1].id = 0
+    return figure
+
+
 def _public_literal_geometry_variant(kind: str) -> Figure:
     """Build one exact cross-host transform fixture on fixed domains."""
     figure = Figure(width=320, height=240)
@@ -381,6 +398,32 @@ def test_literal_geometry_routes_all_public_static_exports_and_matches_scene_byt
         _native.scene_raster_commands(scene), figure.width, figure.height
     )
     assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(svg)
+
+
+@pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
+def test_public_violin_is_rust_owned_and_routes_every_static_consumer(orientation: str) -> None:
+    from xyg import _native, _pdf, kernels
+
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
+    figure = _public_violin(orientation)
+    assert scene_export_support_reason(figure) is None
+    scene = figure_scene(figure)
+    assert hashlib.sha256(scene).hexdigest() == fixture["public_violin_sha256"][orientation]
+    svg = _native.scene_svg(scene)
+    assert svg.count("<rect ") >= 8
+    assert figure.to_svg().encode() == svg.encode()
+    assert figure.to_png(scale=1) == kernels.rasterize_png(
+        _native.scene_raster_commands(scene), 320, 240
+    )
+    assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(svg)
+    assert _native.scene_browser_painter(scene).startswith(b"XYPB")
+
+
+@pytest.mark.parametrize("key", ["fill_opacity", "stroke_opacity"])
+def test_public_violin_unrepresented_opacity_channels_fail_closed(key: str) -> None:
+    figure = _public_violin()
+    figure.traces[0].style[key] = 0.5
+    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
 
 
 @pytest.mark.parametrize("kind", ["step", "histogram", "column_bar"])

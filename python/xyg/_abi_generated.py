@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 97
-SIGNATURE_SHA256 = "afbad4c9531e530a26cfa0c24d300d10419c235dbecab47e039f8f4a98a995fc"
+ABI_VERSION = 98
+SIGNATURE_SHA256 = "aed7db37fd39566123734fe7697a9c2a8af51119c0cb1ed2cdae067eed0e1298"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -746,6 +746,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_violin_density
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p]
+    # size_t xyg_violin_rects(const double * values, size_t values_len, const size_t * offsets, size_t offsets_len, const double * centers, size_t centers_len, size_t bins, double width, uint32_t orientation, double * out_x0, double * out_y0, double * out_x1, double * out_y1, uint32_t * out_groups, double * out_edges, double * out_density, size_t out_cap)
+    function = lib.xyg_violin_rects
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_double, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
     # size_t xyg_weighted_ecdf(const double * values, const double * weights, size_t len, double * out_values, double * out_cumulative)
     function = lib.xyg_weighted_ecdf
     function.restype = ctypes.c_size_t

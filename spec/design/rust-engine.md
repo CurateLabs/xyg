@@ -75,7 +75,8 @@ declined only for a near-unique id/key column, where Python must materialize
 essentially the whole label set regardless. Wide records cross over sooner —
 above 32 B they are declined once the probe is 95% distinct, at or below 32 B
 only when it is entirely distinct) · histogram stats ✅ · quantiles (`xyg_quantiles` ✅, linear/NumPy-default) · box stats
-(`xyg_box_stats` ✅ Tukey; `xyg_violin_density` ✅ fixed smooth kernel) · hexbin
+(`xyg_box_stats` ✅ Tukey; `xyg_violin_density` ✅ fixed smooth kernel;
+`xyg_violin_rects` ✅ ABI 98 grouped, normalized, bounded Scene geometry) · hexbin
 reducer (`xyg_hexbin` ✅ count/mean/sum) · histogram edges (`xyg_histogram_edges`
 ✅ NumPy `bins="auto"` / Sturges) · wind-rose bins (`xyg_wind_rose_bins` ✅
 sector × speed-band counts; polar bar assembly stays host-side) · contourf

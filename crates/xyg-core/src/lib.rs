@@ -97,7 +97,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 97;
+pub const ABI_VERSION: u32 = 98;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -7192,11 +7192,7 @@ pub unsafe extern "C" fn xyg_graph_layout(
             }
             _ => return -1,
         };
-        if ok {
-            0
-        } else {
-            -1
-        }
+        if ok { 0 } else { -1 }
     })
 }
 
@@ -8956,6 +8952,96 @@ pub unsafe extern "C" fn xyg_violin_density(
     1
 }
 
+/// Compile grouped violin samples to canonical bounded Rect geometry.
+/// Returns the required rectangle count, or `usize::MAX` for invalid input.
+/// A zero-capacity call is a size query; successful writes fill four `f64`
+/// rectangle planes, active source-group indices, group-major edges, and
+/// group-major unnormalised density values.
+///
+/// # Safety
+/// `values`, `offsets`, and `centers` must be aligned and readable for their
+/// respective declared lengths; `offsets` must be non-null even when its
+/// length is zero. When `out_cap` is at least the returned required rectangle
+/// count, each rectangle output must be aligned and writable for that count,
+/// `out_groups` must be writable for the number of active groups,
+/// `out_edges` for `active_groups * (bins + 1)` values, and `out_density` for
+/// `active_groups * bins` values. All writable output regions must be
+/// non-overlapping with one another and with the readable input regions for
+/// the duration of the call. Output pointers may be null for a size query or
+/// whenever `out_cap` is smaller than the required rectangle count.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_violin_rects(
+    values: *const f64,
+    values_len: usize,
+    offsets: *const usize,
+    offsets_len: usize,
+    centers: *const f64,
+    centers_len: usize,
+    bins: usize,
+    width: f64,
+    orientation: u32,
+    out_x0: *mut f64,
+    out_y0: *mut f64,
+    out_x1: *mut f64,
+    out_y1: *mut f64,
+    out_groups: *mut u32,
+    out_edges: *mut f64,
+    out_density: *mut f64,
+    out_cap: usize,
+) -> usize {
+    if (values_len > 0 && values.is_null())
+        || offsets.is_null()
+        || (centers_len > 0 && centers.is_null())
+    {
+        return usize::MAX;
+    }
+    let values = if values_len == 0 {
+        &[]
+    } else {
+        std::slice::from_raw_parts(values, values_len)
+    };
+    let offsets = std::slice::from_raw_parts(offsets, offsets_len);
+    let centers = if centers_len == 0 {
+        &[]
+    } else {
+        std::slice::from_raw_parts(centers, centers_len)
+    };
+    let orientation = match orientation {
+        0 => stats::ViolinOrientation::Vertical,
+        1 => stats::ViolinOrientation::Horizontal,
+        _ => return usize::MAX,
+    };
+    let Some(result) = ffi_guard(None, || {
+        stats::violin_rects(values, offsets, centers, bins, width, orientation)
+    }) else {
+        return usize::MAX;
+    };
+    let required = result.x0.len();
+    if out_cap < required {
+        return required;
+    }
+    let groups = result.active_groups.len();
+    if required > 0 && [out_x0, out_y0, out_x1, out_y1].iter().any(|p| p.is_null())
+        || groups > 0 && (out_groups.is_null() || out_edges.is_null() || out_density.is_null())
+    {
+        return usize::MAX;
+    }
+    std::slice::from_raw_parts_mut(out_x0, required).copy_from_slice(&result.x0);
+    std::slice::from_raw_parts_mut(out_y0, required).copy_from_slice(&result.y0);
+    std::slice::from_raw_parts_mut(out_x1, required).copy_from_slice(&result.x1);
+    std::slice::from_raw_parts_mut(out_y1, required).copy_from_slice(&result.y1);
+    for (dest, source) in std::slice::from_raw_parts_mut(out_groups, groups)
+        .iter_mut()
+        .zip(result.active_groups)
+    {
+        *dest = source as u32;
+    }
+    std::slice::from_raw_parts_mut(out_edges, result.edges.len()).copy_from_slice(&result.edges);
+    std::slice::from_raw_parts_mut(out_density, result.density.len())
+        .copy_from_slice(&result.density);
+    required
+}
+
 /// Uniform histogram edges. `method` is 0 = NumPy `bins="auto"` (Sturges vs
 /// Freedman–Diaconis with sqrt/2 floor — see `stats::histogram_edges`), 1 =
 /// Sturges alone. When `use_range` is 0, `lo`/`hi` are ignored and outer edges
@@ -9469,9 +9555,11 @@ mod tests {
             },
             required
         );
-        assert!(std::str::from_utf8(&output)
-            .unwrap()
-            .starts_with("XYG_SCENE_UNSUPPORTED_CUSTOM_FONT:"));
+        assert!(
+            std::str::from_utf8(&output)
+                .unwrap()
+                .starts_with("XYG_SCENE_UNSUPPORTED_CUSTOM_FONT:")
+        );
         assert_eq!(
             unsafe {
                 xyg_scene_support_reason(
@@ -10765,5 +10853,129 @@ mod tests {
         assert_eq!(value, [99; 5]);
         assert_eq!(rgba, [99; 20]);
         assert_eq!(shape, [99; 5]);
+    }
+
+    #[test]
+    fn violin_rects_query_and_short_copy_are_capacity_safe() {
+        let values = [1.0_f64, 2.0];
+        let offsets = [0_usize, 2];
+        let centers = [0.0_f64];
+        let required = unsafe {
+            xyg_violin_rects(
+                values.as_ptr(),
+                values.len(),
+                offsets.as_ptr(),
+                offsets.len(),
+                centers.as_ptr(),
+                centers.len(),
+                4,
+                0.8,
+                0,
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                0,
+            )
+        };
+        assert_eq!(required, 4);
+
+        let mut x0 = [99.0_f64; 3];
+        let mut y0 = [99.0_f64; 3];
+        let mut x1 = [99.0_f64; 3];
+        let mut y1 = [99.0_f64; 3];
+        let mut groups = [99_u32; 1];
+        let mut edges = [99.0_f64; 5];
+        let mut density = [99.0_f64; 4];
+        assert_eq!(
+            unsafe {
+                xyg_violin_rects(
+                    values.as_ptr(),
+                    values.len(),
+                    offsets.as_ptr(),
+                    offsets.len(),
+                    centers.as_ptr(),
+                    centers.len(),
+                    4,
+                    0.8,
+                    0,
+                    x0.as_mut_ptr(),
+                    y0.as_mut_ptr(),
+                    x1.as_mut_ptr(),
+                    y1.as_mut_ptr(),
+                    groups.as_mut_ptr(),
+                    edges.as_mut_ptr(),
+                    density.as_mut_ptr(),
+                    3,
+                )
+            },
+            required
+        );
+        assert_eq!(x0, [99.0; 3]);
+        assert_eq!(density, [99.0; 4]);
+
+        let mut x0 = [0.0_f64; 4];
+        let mut y0 = [0.0_f64; 4];
+        let mut x1 = [0.0_f64; 4];
+        let mut y1 = [0.0_f64; 4];
+        assert_eq!(
+            unsafe {
+                xyg_violin_rects(
+                    values.as_ptr(),
+                    values.len(),
+                    offsets.as_ptr(),
+                    offsets.len(),
+                    centers.as_ptr(),
+                    centers.len(),
+                    4,
+                    0.8,
+                    0,
+                    x0.as_mut_ptr(),
+                    y0.as_mut_ptr(),
+                    x1.as_mut_ptr(),
+                    y1.as_mut_ptr(),
+                    groups.as_mut_ptr(),
+                    edges.as_mut_ptr(),
+                    density.as_mut_ptr(),
+                    4,
+                )
+            },
+            required
+        );
+        assert!(
+            x0.into_iter()
+                .chain(y0)
+                .chain(x1)
+                .chain(y1)
+                .all(f64::is_finite)
+        );
+        assert_eq!(groups, [0]);
+        assert_eq!(
+            unsafe {
+                xyg_violin_rects(
+                    values.as_ptr(),
+                    values.len(),
+                    offsets.as_ptr(),
+                    offsets.len(),
+                    centers.as_ptr(),
+                    centers.len(),
+                    4,
+                    0.8,
+                    2,
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                    0,
+                )
+            },
+            usize::MAX
+        );
     }
 }

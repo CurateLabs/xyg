@@ -56,6 +56,10 @@
   ],
   "public_annotation_family_sha256": "d04f2a2b7a018452b2c4909784121310eca1585effbf6bb1ae5fc396f872e3db",
   "public_literal_geometry_sha256": "76ce4aa3c11fb5bf92615c83b763f52692021de76a93cedeedd17698b84c9627",
+  "public_violin_sha256": {
+    "vertical": "f0c9468cc9d6487e808d3283386c124fdda84634936ac22b7b921748ebc6bd7a",
+    "horizontal": "e7b8ad0397690b1db172497be6f52c9ccdf2ed1c5a569acbf85e96c6d9f72454"
+  },
   "public_literal_geometry_variants_sha256": {
     "step": "5516ae43c68d22b268639eeb73fcca809995b5210bfd023051bf80f454091388",
     "histogram": "a87d6f536cfc06b0ea9fdeda0bfaeb4389dd75f4993fb5eccf0ce79658279622",

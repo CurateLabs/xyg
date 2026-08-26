@@ -2,7 +2,7 @@
  * Violin mark — `xy_violin_density` → instanced rectangle bands (multi-group).
  */
 
-import { violinDensity } from "../encode.js";
+import { violinRects } from "../encode.js";
 import { distributionGroups } from "./distribution.js";
 
 /**
@@ -31,46 +31,14 @@ export function composeViolin(values, opts = {}) {
   }
   const width = Number(opts.width ?? 0.8);
   const orientation = opts.orientation ?? "vertical";
+  if (!Number.isFinite(width) || width <= 0) throw new RangeError("violin width must be positive and finite");
+  if (orientation !== "vertical" && orientation !== "horizontal") throw new RangeError("violin orientation must be 'vertical' or 'horizontal'");
   const color = opts.color ?? "#3987e5";
   const opacity = opts.opacity ?? 0.55;
 
-  const x0 = [];
-  const x1 = [];
-  const y0 = [];
-  const y1 = [];
-  const allEdges = [];
-  const allDensity = [];
-
-  for (let gi = 0; gi < groups.length; gi += 1) {
-    const finite = groups[gi].filter((v) => Number.isFinite(v));
-    if (finite.length === 0) continue;
-    const { edges, density } = violinDensity(Float64Array.from(finite), nBins);
-    let peak = 0;
-    for (let i = 0; i < density.length; i += 1) {
-      if (density[i] > peak) peak = density[i];
-    }
-    if (peak === 0) peak = 1;
-    const center = positions[gi];
-    for (let i = 0; i < nBins; i += 1) {
-      const half = (width * 0.5 * density[i]) / peak;
-      if (orientation === "vertical") {
-        x0.push(center - half);
-        x1.push(center + half);
-        y0.push(edges[i]);
-        y1.push(edges[i + 1]);
-      } else {
-        x0.push(edges[i]);
-        x1.push(edges[i + 1]);
-        y0.push(center - half);
-        y1.push(center + half);
-      }
-    }
-    allEdges.push(edges);
-    allDensity.push(density);
-  }
-  if (x0.length === 0) {
-    throw new RangeError("violin values must contain at least one finite group");
-  }
+  const compiled = violinRects(groups.map((group) => Float64Array.from(group)), positions, nBins, width, orientation);
+  const { x0, x1, y0, y1 } = compiled;
+  const allEdges = compiled.groupEdges, allDensity = compiled.groupDensity;
 
   const style = {
     color,
@@ -84,10 +52,7 @@ export function composeViolin(values, opts = {}) {
       {
         kind: "violin",
         name: opts.name ?? null,
-        x0: Float64Array.from(x0),
-        x1: Float64Array.from(x1),
-        y0: Float64Array.from(y0),
-        y1: Float64Array.from(y1),
+        x0, x1, y0, y1,
         style,
         edges: allEdges[0],
         density: allDensity[0],

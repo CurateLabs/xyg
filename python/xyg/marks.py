@@ -1123,6 +1123,7 @@ def _distribution_groups(
     x: Optional[ArrayLike],
     group: Optional[ArrayLike],
     kind: str,
+    category_axis: str = "x",
 ) -> tuple[list[np.ndarray], np.ndarray]:
     """Return finite value groups and their category/position coordinates.
 
@@ -1154,7 +1155,7 @@ def _distribution_groups(
             return groups, np.arange(len(groups), dtype=np.float64)
         if np.ndim(x) == 0:
             raise ValueError(f"{kind} x must be 1-D with one label per group")
-        positions = self._axis_positions(x, "x", commit=False)
+        positions = self._axis_positions(x, category_axis, commit=False)
         if len(positions) != len(groups):
             raise ValueError(f"{kind} x must have one label per group")
         return groups, positions
@@ -1162,7 +1163,7 @@ def _distribution_groups(
     key, key_name = (group, "group") if group is not None else (x, "x")
     if key is None:
         return [vals], np.array([0.0])
-    positions = self._axis_positions(key, "x", commit=False)
+    positions = self._axis_positions(key, category_axis, commit=False)
     if len(positions) != len(vals):
         raise ValueError(f"{kind} {key_name} must have length {len(vals)}, got {len(positions)}")
     return _split_by_positions(vals, positions)
@@ -2564,8 +2565,8 @@ def violin(
 ) -> "Figure":
     """Add bounded-resolution violin distributions.
 
-    Density estimation is a smoothed histogram computed once in the native
-        core (`xyg_violin_density`); each group ships its fixed ``bins``-sized
+    Density estimation and bounded rectangle geometry are computed once in the
+    native core (`xyg_violin_rects`); each group ships its fixed ``bins``-sized
     band set. The client draws the bands through the shared instanced
     rectangle path, so input cardinality does not become DOM/GPU object
     cardinality.
@@ -2588,40 +2589,31 @@ def violin(
         color = self.next_series_color()
     width = self._positive_scalar(width, "violin width")
     opacity = self._opacity(opacity, "violin opacity")
-    groups, positions = _distribution_groups(self, values, x, group, "violin")
-    rect_x0: list[np.ndarray] = []
-    rect_x1: list[np.ndarray] = []
-    rect_y0: list[np.ndarray] = []
-    rect_y1: list[np.ndarray] = []
+    category_axis = "x" if orientation == "vertical" else "y"
+    groups, positions = _distribution_groups(
+        self, values, x, group, "violin", category_axis=category_axis
+    )
     n_bins = int(bins)
-    for center, group_values in zip(positions, groups, strict=True):
-        finite = group_values[np.isfinite(group_values)]
-        if len(finite) == 0:
-            continue
-        edges, smooth = kernels.violin_density(finite, n_bins)
-        peak = float(np.max(smooth)) or 1.0
-        half_width = width * 0.5 * smooth / peak
-        if orientation == "vertical":
-            rect_x0.append(center - half_width)
-            rect_x1.append(center + half_width)
-            rect_y0.append(edges[:-1])
-            rect_y1.append(edges[1:])
-        else:
-            rect_x0.append(edges[:-1])
-            rect_x1.append(edges[1:])
-            rect_y0.append(center - half_width)
-            rect_y1.append(center + half_width)
-    if not rect_x0:
-        raise ValueError("violin values must contain at least one finite group")
+    offsets = np.empty(len(groups) + 1, dtype=np.uintp)
+    offsets[0] = 0
+    for index, group_values in enumerate(groups):
+        offsets[index + 1] = offsets[index] + len(group_values)
+    flat = np.concatenate(groups) if groups else np.empty(0, dtype=np.float64)
+    try:
+        rect_x0, rect_y0, rect_x1, rect_y1, _active, _edges, _density = kernels.violin_rects(
+            flat, offsets, np.asarray(positions, dtype=np.float64), n_bins, width, orientation
+        )
+    except ValueError as exc:
+        raise ValueError("violin values must contain at least one finite group") from exc
     checkpoint = self._checkpoint()
     try:
-        self._commit_axis_positions(x if x is not None else group, "x")
+        self._commit_axis_positions(x if x is not None else group, category_axis)
         self._append_rect_trace(
             "violin",
-            np.concatenate(rect_x0),
-            np.concatenate(rect_x1),
-            np.concatenate(rect_y0),
-            np.concatenate(rect_y1),
+            rect_x0,
+            rect_x1,
+            rect_y0,
+            rect_y1,
             name=name,
             color=color,
             opacity=opacity,

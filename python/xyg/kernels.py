@@ -116,6 +116,7 @@ quantiles = _impl.quantiles
 box_stats = _impl.box_stats
 hexbin = _impl.hexbin
 violin_density = _impl.violin_density
+violin_rects = _impl.violin_rects
 histogram_edges = _impl.histogram_edges
 wind_rose_bins = _impl.wind_rose_bins
 contourf_densify = _impl.contourf_densify
@@ -211,6 +212,7 @@ __all__ = [
     "valid_indices_f64",
     "vector_segments",
     "violin_density",
+    "violin_rects",
     "weighted_ecdf",
     "welch_spectra",
     "wind_rose_bins",

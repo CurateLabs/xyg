@@ -183,6 +183,97 @@ pub fn violin_density(data: &[f64], n_bins: usize) -> Option<ViolinDensity> {
     Some(ViolinDensity { edges, density })
 }
 
+pub const MAX_VIOLIN_RECTS: usize = 10_000;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ViolinOrientation {
+    Vertical,
+    Horizontal,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ViolinRects {
+    pub x0: Vec<f64>,
+    pub y0: Vec<f64>,
+    pub x1: Vec<f64>,
+    pub y1: Vec<f64>,
+    pub active_groups: Vec<usize>,
+    pub edges: Vec<f64>,
+    pub density: Vec<f64>,
+}
+
+/// Compile grouped canonical samples into bounded ordinary Scene Rect geometry.
+/// Hosts retain only coercion/factorization; density normalization, orientation,
+/// width policy, empty-group handling, and final coordinates are Rust-owned.
+pub fn violin_rects(
+    values: &[f64],
+    offsets: &[usize],
+    centers: &[f64],
+    bins: usize,
+    width: f64,
+    orientation: ViolinOrientation,
+) -> Option<ViolinRects> {
+    if offsets.len() != centers.len().checked_add(1)?
+        || offsets.first() != Some(&0)
+        || offsets.last() != Some(&values.len())
+        || offsets.windows(2).any(|p| p[0] > p[1])
+        || centers.iter().any(|v| !v.is_finite())
+        || !width.is_finite()
+        || width <= 0.0
+        || !(4..=1024).contains(&bins)
+    {
+        return None;
+    }
+    let mut out = ViolinRects {
+        x0: vec![],
+        y0: vec![],
+        x1: vec![],
+        y1: vec![],
+        active_groups: vec![],
+        edges: vec![],
+        density: vec![],
+    };
+    for (group, (&start, &end)) in offsets.iter().zip(&offsets[1..]).enumerate() {
+        let result = match violin_density(values.get(start..end)?, bins) {
+            Some(v) => v,
+            None => continue,
+        };
+        if out.x0.len().checked_add(bins)? > MAX_VIOLIN_RECTS {
+            return None;
+        }
+        let peak = result.density.iter().copied().fold(0.0, f64::max);
+        let peak = if peak == 0.0 { 1.0 } else { peak };
+        out.active_groups.push(group);
+        out.edges.extend_from_slice(&result.edges);
+        out.density.extend_from_slice(&result.density);
+        for i in 0..bins {
+            let half = width * 0.5 * result.density[i] / peak;
+            let (x0, y0, x1, y1) = match orientation {
+                ViolinOrientation::Vertical => (
+                    centers[group] - half,
+                    result.edges[i],
+                    centers[group] + half,
+                    result.edges[i + 1],
+                ),
+                ViolinOrientation::Horizontal => (
+                    result.edges[i],
+                    centers[group] - half,
+                    result.edges[i + 1],
+                    centers[group] + half,
+                ),
+            };
+            if [x0, y0, x1, y1].iter().any(|v| !v.is_finite()) {
+                return None;
+            }
+            out.x0.push(x0);
+            out.y0.push(y0);
+            out.x1.push(x1);
+            out.y1.push(y1);
+        }
+    }
+    (!out.active_groups.is_empty()).then_some(out)
+}
+
 /// NumPy-style `mode="same"` convolution into `out` (len = signal len).
 #[allow(clippy::needless_range_loop)] // i indexes signal and out with a signed kernel offset
 fn convolve_same(signal: &[f64], kernel: &[f64], out: &mut [f64]) {
@@ -512,6 +603,130 @@ mod tests {
         assert!((c.edges[4] - 3.5).abs() < 1e-12);
         assert!(violin_density(&[], 8).is_none());
         assert!(violin_density(&[1.0], 3).is_none());
+    }
+
+    #[test]
+    fn violin_rects_own_group_filter_normalization_orientation_and_bounds() {
+        let values = [1.0, f64::NAN, 2.0, f64::INFINITY, 3.0, 4.0];
+        let offsets = [0, 3, 4, 6];
+        let vertical = violin_rects(
+            &values,
+            &offsets,
+            &[0.0, 1.0, 2.0],
+            4,
+            0.8,
+            ViolinOrientation::Vertical,
+        )
+        .unwrap();
+        assert_eq!(vertical.active_groups, [0, 2]);
+        assert_eq!(vertical.x0.len(), 8);
+        assert_eq!(vertical.edges.len(), 10);
+        assert_eq!(vertical.density.len(), 8);
+        assert!(vertical.x0.iter().zip(&vertical.x1).all(|(a, b)| a <= b));
+        let horizontal = violin_rects(
+            &values,
+            &offsets,
+            &[0.0, 1.0, 2.0],
+            4,
+            0.8,
+            ViolinOrientation::Horizontal,
+        )
+        .unwrap();
+        assert_eq!(vertical.y0, horizontal.x0);
+        assert_eq!(vertical.y1, horizontal.x1);
+        assert_eq!(vertical.x0, horizontal.y0);
+        assert_eq!(vertical.x1, horizontal.y1);
+        assert!(
+            violin_rects(
+                &values,
+                &[1, 6],
+                &[0.0],
+                4,
+                0.8,
+                ViolinOrientation::Vertical
+            )
+            .is_none()
+        );
+        assert!(
+            violin_rects(
+                &values,
+                &[0, 7],
+                &[0.0],
+                4,
+                0.8,
+                ViolinOrientation::Vertical
+            )
+            .is_none()
+        );
+        assert!(
+            violin_rects(
+                &values,
+                &[0, 6],
+                &[f64::NAN],
+                4,
+                0.8,
+                ViolinOrientation::Vertical
+            )
+            .is_none()
+        );
+        assert!(
+            violin_rects(
+                &values,
+                &[0, 6],
+                &[0.0],
+                3,
+                0.8,
+                ViolinOrientation::Vertical
+            )
+            .is_none()
+        );
+        assert!(
+            violin_rects(
+                &values,
+                &[0, 6],
+                &[0.0],
+                4,
+                0.0,
+                ViolinOrientation::Vertical
+            )
+            .is_none()
+        );
+    }
+
+    #[test]
+    fn violin_rects_enforce_the_ten_thousand_record_contract() {
+        let groups = MAX_VIOLIN_RECTS / 4;
+        let values = vec![1.0; groups];
+        let offsets: Vec<usize> = (0..=groups).collect();
+        let centers: Vec<f64> = (0..groups).map(|v| v as f64).collect();
+        assert_eq!(
+            violin_rects(
+                &values,
+                &offsets,
+                &centers,
+                4,
+                0.8,
+                ViolinOrientation::Vertical
+            )
+            .unwrap()
+            .x0
+            .len(),
+            MAX_VIOLIN_RECTS
+        );
+        let values = vec![1.0; groups + 1];
+        let offsets: Vec<usize> = (0..=groups + 1).collect();
+        let centers: Vec<f64> = (0..=groups).map(|v| v as f64).collect();
+        assert!(
+            violin_rects(
+                &values,
+                &offsets,
+                &centers,
+                4,
+                0.8,
+                ViolinOrientation::Vertical
+            )
+            .is_none()
+        );
     }
 
     #[test]

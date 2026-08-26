@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyHistogramEdges, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -305,6 +305,29 @@ export function violinDensity(data, nBins) {
     throw new Error("xy_violin_density failed");
   }
   return { edges, density };
+}
+
+export function violinRects(groups, positions, nBins, width, orientation) {
+  const offsets = new BigUint64Array(groups.length + 1);
+  let total = 0;
+  for (let i = 0; i < groups.length; i += 1) { total += groups[i].length; offsets[i + 1] = BigInt(total); }
+  const values = new Float64Array(total); let at = 0;
+  for (const group of groups) { values.set(group, at); at += group.length; }
+  const centers = Float64Array.from(positions);
+  const call = (x0,y0,x1,y1,active,edges,density,cap) => Number(xyViolinRects(
+    f64Ptr(values), BigInt(values.length), pointer(offsets, "size_t *"), BigInt(offsets.length),
+    f64Ptr(centers), BigInt(centers.length), BigInt(nBins), Number(width), orientation === "vertical" ? 0 : orientation === "horizontal" ? 1 : 2,
+    f64Ptr(x0), f64Ptr(y0), f64Ptr(x1), f64Ptr(y1), u32Ptr(active), f64Ptr(edges), f64Ptr(density), BigInt(cap),
+  ));
+  const required = call(null,null,null,null,null,null,null,0);
+  if (!Number.isSafeInteger(required) || required <= 0 || required > 10_000) throw new RangeError("invalid bounded violin geometry");
+  const activeCount = required / nBins;
+  const x0=new Float64Array(required), y0=new Float64Array(required), x1=new Float64Array(required), y1=new Float64Array(required);
+  const active=new Uint32Array(activeCount), edges=new Float64Array(activeCount*(nBins+1)), density=new Float64Array(required);
+  if (call(x0,y0,x1,y1,active,edges,density,required) !== required) throw new Error("xy_violin_rects failed");
+  return { x0,y0,x1,y1,activeGroups:active,
+    groupEdges:Array.from({length:activeCount},(_,i)=>edges.slice(i*(nBins+1),(i+1)*(nBins+1))),
+    groupDensity:Array.from({length:activeCount},(_,i)=>density.slice(i*nBins,(i+1)*nBins)) };
 }
 
 /** Weighted ECDF: sorted unique values + cumulative mass in [0, 1]. */

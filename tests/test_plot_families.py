@@ -50,6 +50,43 @@ def test_distribution_marks_group_1d_values_by_categories() -> None:
     assert spec["traces"][1]["n_marks"] == 2
 
 
+@pytest.mark.parametrize(
+    ("orientation", "category_axis", "orthogonal_axis", "lo_name", "hi_name"),
+    [
+        ("vertical", "x", "y", "x0", "x1"),
+        ("horizontal", "y", "x", "y0", "y1"),
+    ],
+)
+def test_violin_categories_follow_the_distribution_axis(
+    orientation: str,
+    category_axis: str,
+    orthogonal_axis: str,
+    lo_name: str,
+    hi_name: str,
+) -> None:
+    fig = Figure().violin(
+        [[1.0, 2.0, 3.0], [2.0, 3.0, 4.0]],
+        x=["first", "second"],
+        bins=4,
+        orientation=orientation,
+    )
+    assert fig._axis_categories == {category_axis: ["first", "second"]}
+    spec, _ = fig.build_payload()
+    assert spec["axes"][category_axis]["kind"] == "category"
+    assert spec["axes"][category_axis]["categories"] == ["first", "second"]
+    assert spec["axes"][orthogonal_axis]["kind"] == "linear"
+    trace = fig.traces[0]
+    centers = (getattr(trace, lo_name).values + getattr(trace, hi_name).values) * 0.5
+    assert np.allclose(np.unique(centers), [0.0, 1.0])
+
+
+def test_violin_rects_is_part_of_the_kernel_export_contract() -> None:
+    from xyg import kernels
+
+    assert "violin_rects" in kernels.__all__
+    assert callable(kernels.violin_rects)
+
+
 def test_hexbin_is_screen_bounded_and_contour_emits_isolines() -> None:
     rng = np.random.default_rng(3)
     x = rng.normal(size=100_000)
