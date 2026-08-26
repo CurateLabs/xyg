@@ -97,7 +97,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 99;
+pub const ABI_VERSION: u32 = 100;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -2276,6 +2276,65 @@ pub unsafe extern "C" fn xyg_weighted_ecdf(
         kernels::weighted_ecdf_into(values, weights, output_values, cumulative)
             .unwrap_or(usize::MAX)
     })
+}
+
+/// Uniformly binned empirical CDF. Returns the compact written point count or
+/// `usize::MAX` when the inputs are invalid. Results are committed only after
+/// the complete Rust-owned result validates, so failures leave outputs intact.
+///
+/// # Safety
+/// `values` addresses `len` readable f64s. Both outputs address `capacity`
+/// writable, non-overlapping f64s. `use_range` is exactly zero or one.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_binned_ecdf(
+    values: *const f64,
+    len: usize,
+    n_bins: usize,
+    lo: f64,
+    hi: f64,
+    use_range: i32,
+    out_x: *mut f64,
+    out_cumulative: *mut f64,
+    capacity: usize,
+) -> usize {
+    let Some(required) = n_bins.checked_add(1) else {
+        return usize::MAX;
+    };
+    let Some(output_bytes) = capacity.checked_mul(std::mem::size_of::<f64>()) else {
+        return usize::MAX;
+    };
+    let x_start = out_x as usize;
+    let cumulative_start = out_cumulative as usize;
+    let Some(x_end) = x_start.checked_add(output_bytes) else {
+        return usize::MAX;
+    };
+    let Some(cumulative_end) = cumulative_start.checked_add(output_bytes) else {
+        return usize::MAX;
+    };
+    let outputs_overlap = x_start < cumulative_end && cumulative_start < x_end;
+    if len == 0
+        || values.is_null()
+        || n_bins == 0
+        || n_bins > stats::MAX_HISTOGRAM_BINS
+        || !matches!(use_range, 0 | 1)
+        || capacity < required
+        || out_x.is_null()
+        || out_cumulative.is_null()
+        || outputs_overlap
+    {
+        return usize::MAX;
+    }
+    let values = std::slice::from_raw_parts(values, len);
+    let range = (use_range == 1).then_some((lo, hi));
+    let Some(result) = ffi_guard(None, || stats::binned_ecdf(values, n_bins, range)) else {
+        return usize::MAX;
+    };
+    let written = result.x.len();
+    debug_assert_eq!(written, result.cumulative.len());
+    debug_assert!(written <= required);
+    std::ptr::copy_nonoverlapping(result.x.as_ptr(), out_x, written);
+    std::ptr::copy_nonoverlapping(result.cumulative.as_ptr(), out_cumulative, written);
+    written
 }
 
 /// Expand indexed topology into independent filled triangles.
@@ -9669,6 +9728,107 @@ pub unsafe extern "C" fn xyg_geo_column_crs(handle: u64) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn binned_ecdf_ffi_is_compact_bounded_and_atomic() {
+        let values = [-1.0, 0.25, 0.75, 2.0, f64::NAN];
+        let mut x = [-9.0; 3];
+        let mut cumulative = [-8.0; 3];
+        assert_eq!(
+            unsafe {
+                xyg_binned_ecdf(
+                    values.as_ptr(),
+                    values.len(),
+                    2,
+                    0.0,
+                    1.0,
+                    1,
+                    x.as_mut_ptr(),
+                    cumulative.as_mut_ptr(),
+                    x.len(),
+                )
+            },
+            3
+        );
+        assert_eq!(x, [0.0, 0.5, 1.0]);
+        assert_eq!(cumulative, [0.0, 0.25, 0.5]);
+
+        let sentinel_x = [11.0; 3];
+        let sentinel_y = [12.0; 3];
+        x = sentinel_x;
+        cumulative = sentinel_y;
+        assert_eq!(
+            unsafe {
+                xyg_binned_ecdf(
+                    values.as_ptr(),
+                    values.len(),
+                    2,
+                    1.0,
+                    0.0,
+                    1,
+                    x.as_mut_ptr(),
+                    cumulative.as_mut_ptr(),
+                    x.len(),
+                )
+            },
+            usize::MAX
+        );
+        assert_eq!(x, sentinel_x);
+        assert_eq!(cumulative, sentinel_y);
+        assert_eq!(
+            unsafe {
+                xyg_binned_ecdf(
+                    values.as_ptr(),
+                    values.len(),
+                    2,
+                    0.0,
+                    1.0,
+                    1,
+                    x.as_mut_ptr(),
+                    x.as_mut_ptr(),
+                    x.len(),
+                )
+            },
+            usize::MAX
+        );
+        assert_eq!(x, sentinel_x);
+        let mut partially_overlapping = [13.0; 6];
+        assert_eq!(
+            unsafe {
+                xyg_binned_ecdf(
+                    values.as_ptr(),
+                    values.len(),
+                    1,
+                    0.0,
+                    1.0,
+                    1,
+                    partially_overlapping.as_mut_ptr(),
+                    partially_overlapping.as_mut_ptr().add(2),
+                    4,
+                )
+            },
+            usize::MAX
+        );
+        assert_eq!(partially_overlapping, [13.0; 6]);
+        assert_eq!(
+            unsafe {
+                xyg_binned_ecdf(
+                    values.as_ptr(),
+                    values.len(),
+                    2,
+                    0.0,
+                    1.0,
+                    1,
+                    x.as_mut_ptr(),
+                    cumulative.as_mut_ptr(),
+                    2,
+                )
+            },
+            usize::MAX
+        );
+        assert_eq!(x, sentinel_x);
+        assert_eq!(cumulative, sentinel_y);
+    }
 
     #[test]
     fn histogram_edges_write_capacity_and_resource_contract() {

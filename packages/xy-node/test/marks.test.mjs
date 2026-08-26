@@ -24,6 +24,7 @@ import {
   histogramChart,
   areaChart,
   barChart,
+  binnedEcdf,
   boxChart,
   ecdfChart,
   heatmapChart,
@@ -401,6 +402,23 @@ test("ecdf weighted kernel matches Python fixture when present", () => {
   assert.equal(trace.kind, "line");
   assert.equal(trace.style.step, "post");
   assert.equal(trace.style.role, "ecdf");
+});
+
+test("binned ecdf is Rust-owned, compact, bounded, and range-stable", () => {
+  const compact = binnedEcdf(new Float64Array([0, 0.2, NaN, 0.2, 0.9]), 4);
+  assert.deepEqual(Array.from(compact.x), [0, 0.225, 0.9]);
+  assert.deepEqual(Array.from(compact.cumulative), [0, 0.75, 1]);
+
+  const ranged = computeEcdf([-1, 0.25, 0.75, 2, Infinity], { bins: 2, range: [0, 1] });
+  assert.deepEqual(Array.from(ranged.x), [0, 0.5, 1]);
+  assert.deepEqual(Array.from(ranged.y), [0, 0.25, 0.5]);
+  assert.equal(ranged.mode, "binned");
+
+  const outside = computeEcdf([-2, 2], { bins: 4, range: [0, 1] });
+  assert.deepEqual(Array.from(outside.x), [0]);
+  assert.deepEqual(Array.from(outside.y), [0]);
+  assert.throws(() => computeEcdf([NaN, Infinity], { bins: 4 }), /at least one finite value/);
+  assert.throws(() => computeEcdf([0], { bins: 10_001 }), /<= 10000/);
 });
 
 test("segments compose matches Python fixture when present", () => {

@@ -205,6 +205,33 @@ def test_histogram_edges_wide_range_and_resource_bound() -> None:
         kernels.histogram_edges(data, range=(0.0, 5_000.5), method="auto")
 
 
+def test_binned_ecdf_native_contract() -> None:
+    x, cumulative = kernels.binned_ecdf(np.array([0.0, 0.2, np.nan, 0.2, 0.9]), 4)
+    np.testing.assert_allclose(x, [0.0, 0.225, 0.9], atol=1e-15)
+    np.testing.assert_array_equal(cumulative, [0.0, 0.75, 1.0])
+
+    x, cumulative = kernels.binned_ecdf(
+        np.array([-1.0, 0.25, 0.75, 2.0, np.inf]), 2, range=(0.0, 1.0)
+    )
+    np.testing.assert_array_equal(x, [0.0, 0.5, 1.0])
+    np.testing.assert_array_equal(cumulative, [0.0, 0.25, 0.5])
+
+    x, cumulative = kernels.binned_ecdf(np.array([-2.0, 2.0]), 4, range=(0.0, 1.0))
+    np.testing.assert_array_equal(x, [0.0])
+    np.testing.assert_array_equal(cumulative, [0.0])
+
+
+def test_binned_ecdf_native_rejects_invalid_and_overflowing_inputs() -> None:
+    with pytest.raises(ValueError, match="finite representable"):
+        kernels.binned_ecdf(np.array([np.nan, np.inf]), 4)
+    with pytest.raises(ValueError, match="<= 10000"):
+        kernels.binned_ecdf(np.array([0.0]), 10_001)
+    with pytest.raises(ValueError, match="finite representable"):
+        kernels.binned_ecdf(np.array([-np.finfo(float).max, np.finfo(float).max]), 4)
+    with pytest.raises(ValueError, match="finite representable"):
+        kernels.binned_ecdf(np.array([0.0, 2.0e-309, 1.0e-308]), 2)
+
+
 def _legacy_wind_rose_bins(directions, speeds, sectors, speed_bins=None):
     import math
 

@@ -15,6 +15,7 @@ export {
   boxStats,
   quantiles,
   weightedEcdf,
+  binnedEcdf,
   heatmapRgba,
   windRoseBins,
   contourfDensify,

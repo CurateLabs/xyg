@@ -177,7 +177,7 @@ depth: strip/swarm/boxen/rug distributions, regression diagnostics, richer
 | 5 | Box plot | Standard distribution summary in Plotly, Matplotlib, Altair, and many dashboards. | Implemented: quartiles/outliers plus compact rectangle/segment geometry. |
 | 6 | Violin plot | Common in data science, especially alongside box plots. | Implemented: bounded smoothed density bands. |
 | 7 | Error bars / bands | Popular for scientific charts and uncertainty displays. | Implemented: instanced line segments and filled area bands. |
-| 8 | ECDF / cumulative histogram | Common distribution diagnostic and cheap to render. | Implemented: exact unique-value mode and native histogram approximation. |
+| 8 | ECDF / cumulative histogram | Common distribution diagnostic and cheap to render. | Implemented: Rust-owned exact unique-value mode and ABI100 bounded histogram approximation with compact right-edge Step coordinates. |
 | 9 | 2D histogram / hexbin | Popular for dense scatter analysis and present in Matplotlib/Plotly/Altair. | Implemented hexbin; future work is richer hover/readout and 2D histogram aliases. |
 | 10 | Contour / filled contour | Common scientific chart and Plotly/Matplotlib compatibility target. | Implemented regular-grid marching-squares isolines and optional fill. |
 | 11 | Strip / swarm / boxen / rug | Seaborn-style categorical distribution charts. | Reuse points plus jitter/packing and compact summaries. |

@@ -50,6 +50,7 @@ marching_triangles = _impl.marching_triangles
 is_sorted = _impl.is_sorted
 min_max = _impl.min_max
 bin_2d = _impl.bin_2d
+binned_ecdf = _impl.binned_ecdf
 bin_2d_f32 = _impl.bin_2d_f32
 bin_2d_indices = _impl.bin_2d_indices
 bin_2d_mean_color = _impl.bin_2d_mean_color
@@ -136,6 +137,7 @@ __all__ = [
     "bin_2d_mean_color",
     "bin_2d_sample_range",
     "bin_2d_stratified_sample_range_u8_counted",
+    "binned_ecdf",
     "box_geometry",
     "box_stats",
     "contourf_bands",

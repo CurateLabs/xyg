@@ -1300,6 +1300,46 @@ def weighted_ecdf(
     return output_values[:written].copy(), cumulative[:written].copy()
 
 
+def binned_ecdf(
+    values: npt.NDArray[np.float64],
+    n_bins: int,
+    *,
+    range: tuple[float, float] | None = None,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Rust-owned finite filtering, uniform binning, and compact ECDF steps."""
+    value_array = _as_f64(values, "values")
+    if len(value_array) == 0:
+        raise ValueError("ecdf values must contain at least one finite value")
+    n_bins = _bounded_positive_int(n_bins, "ecdf bins", max_value=10_000)
+    if range is None:
+        lo = hi = 0.0
+        use_range = 0
+    else:
+        try:
+            range_lo, range_hi = range
+        except (TypeError, ValueError) as e:
+            raise ValueError("ecdf range must contain two finite increasing values") from e
+        lo, hi = _finite_increasing(range_lo, range_hi, "ecdf range")
+        use_range = 1
+    capacity = n_bins + 1
+    output_x = np.empty(capacity, dtype=np.float64)
+    cumulative = np.empty(capacity, dtype=np.float64)
+    written = _lib.xyg_binned_ecdf(
+        _ptr_f64(value_array),
+        len(value_array),
+        n_bins,
+        lo,
+        hi,
+        use_range,
+        _ptr_f64(output_x),
+        _ptr_f64(cumulative),
+        capacity,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("ecdf values must contain a finite representable distribution")
+    return output_x[:written].copy(), cumulative[:written].copy()
+
+
 def _triangle_inputs(
     x: npt.NDArray[np.float64],
     y: npt.NDArray[np.float64],

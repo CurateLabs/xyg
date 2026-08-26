@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 99
-SIGNATURE_SHA256 = "4b95c64d8ee22c405dc2a45067b99f9e6f5915ada45fd7db8225cc238fb42579"
+ABI_VERSION = 100
+SIGNATURE_SHA256 = "a855aa330c2e0f52ec88bd756195b75d502c54e65d1d4f5b89130a47530ced8f"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -46,6 +46,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_bin_2d_stratified_sample_range_u8_counted
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_uint64, ctypes.c_double, ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_binned_ecdf(const double * values, size_t len, size_t n_bins, double lo, double hi, int32_t use_range, double * out_x, double * out_cumulative, size_t capacity)
+    function = lib.xyg_binned_ecdf
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
     # size_t xyg_box_geometry(const double * values, size_t values_len, const size_t * offsets, size_t offsets_len, const double * centers, size_t centers_len, double width, uint32_t orientation, int32_t show_outliers, size_t * out_n_outliers, uint32_t * active_groups, double * group_records, size_t * outlier_offsets, double * outlier_records, size_t group_cap, size_t outlier_cap)
     function = lib.xyg_box_geometry
     function.restype = ctypes.c_size_t

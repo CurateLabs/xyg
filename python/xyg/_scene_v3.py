@@ -1825,7 +1825,16 @@ def scene_export_support_reason(
         if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
             raise ValueError("trace opacity must be finite and in [0, 1]")
         x_column = getattr(trace, "x", None)
-        if x_column is not None and len(x_column.values) > 10_000:
+        # ABI 100 binned ECDF can emit the zero anchor plus one occupied right
+        # edge per bin. Keep the general authored-column bound at 10,000 while
+        # admitting exactly 10,001 compact Step points; Scene expansion remains
+        # independently bounded by its canonical output budgets.
+        point_limit = (
+            10_001
+            if trace.kind == "line" and (trace.style or {}).get("step") in {"pre", "post", "mid"}
+            else 10_000
+        )
+        if x_column is not None and len(x_column.values) > point_limit:
             return "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
         if trace.kind in _BAND_KINDS and (x_column is None or len(x_column.values) < 2):
             # SVG/raster/browser Band topology requires a polygon run. Keep

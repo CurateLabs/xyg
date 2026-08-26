@@ -125,8 +125,16 @@ before the same kernel. After those validation/coercion seams, hosts prepend
 the right-continuous zero anchor and author literal line style before the existing
 Rust-expanded Step Scene path. Exact unsorted/repeated/nonfinite and singleton
 fixtures are byte-identical through SVG, raster, and browser consumers. Binned
-ECDF domain, histogram, and cumulative assembly remain separately recorded
-host-policy debt.
+ECDFs use ABI 100 `xyg_binned_ecdf` in both hosts. Rust filters nonfinite
+samples; applies the shared automatic-domain rule (constant nonzero values
+widen by 5% of their absolute value, falling back to plus/minus 0.5 at zero or
+when that pad is not useful) or Node's optional finite increasing authored range; enforces
+the 10,000-bin bound; counts, normalizes, and omits empty bins; and returns the
+zero anchor plus occupied-bin right edges. An authored Node range normalizes
+in-range mass over every finite source sample, so excluded samples remain
+visible in the final probability. Python deliberately adds no public range
+option. The compact result remains an ordinary `post` Step and exact mode
+remains `xyg_weighted_ecdf`.
 An omitted composition-histogram bin count now resolves through the existing
 Rust `xyg_histogram_edges(..., auto)` policy in both Python and Node. Explicit
 positive integer bins remain uniform and unchanged; all-nonfinite input retains

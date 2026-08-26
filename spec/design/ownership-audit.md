@@ -61,8 +61,14 @@ passes raw f64 values through Rust's finite filtering, while Node retains its
 equivalent finite-value coercion seam.
 The hosts retain validation/error wording, the right-continuous zero anchor,
 and literal Step style packing; Rust expands that Step for the shared Scene
-consumers. Binned ECDF domain and cumulative-bin assembly remain migration debt
-under #58.
+consumers. ABI 100 also moves binned ECDF finite filtering, automatic domain
+(including 5% absolute-value widening for nonzero constants and a 0.5 fallback
+at zero or for a non-useful pad), the 10,000-bin ceiling, uniform
+counting, cumulative normalization, empty-bin compaction, right-edge placement,
+and zero anchor into `xyg_binned_ecdf`. Node retains its optional authored
+range and denominator contract; Python adds no public range option. Hosts keep
+coercion, stable validation wording, literal style/axis/id packing, and the
+existing Step Scene route.
 
 Omitted-bin composition histogram edges now use Rust's NumPy-compatible auto
 estimator in both Python and Node instead of Node silently selecting ten bins.
@@ -442,7 +448,7 @@ Forbidden:
 | `packages/xy-node/src/marks/box.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/marks/contour.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/distribution.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
-| `packages/xy-node/src/marks/ecdf.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
+| `packages/xy-node/src/marks/ecdf.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/marks/error_band.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/errorbar.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/heatmap.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
