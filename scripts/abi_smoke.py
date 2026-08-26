@@ -1953,9 +1953,11 @@ def main() -> None:
     hx_in_y1 = ctypes.c_double()
     hx_in_w = ctypes.c_size_t()
     hx_in_h = ctypes.c_size_t()
+    hx_in_xs = array("d", [10.0, float("nan")])
+    hx_in_ys = array("d", [4.0, 1.0])
     hx_in_ok = lib.xyg_hexbin_ingress(
-        _ptr(array("d", [10.0, float("nan")]), ctypes.c_double),
-        _ptr(array("d", [4.0, 1.0]), ctypes.c_double),
+        _ptr(hx_in_xs, ctypes.c_double),
+        _ptr(hx_in_ys, ctypes.c_double),
         null_f64,
         2,
         16,
