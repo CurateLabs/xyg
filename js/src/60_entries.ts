@@ -4,7 +4,7 @@ import { MARK_KINDS, markOf } from "./55_marks";
 import { createXygWasmWorker, XygWasmError, XygWasmWorker } from "./47_wasm";
 export { encodeWasmDashboardPlan, decodeWasmDashboardPlan, planWasmDashboardResources, applyWasmDashboardResourceBudget, watchWasmDashboardResourceBudget } from "./49_wasm_dashboard";
 export type { XygWasmDashboardResource, XygWasmDashboardAdmissionController } from "./49_wasm_dashboard";
-export {
+import {
   attachWasmTicks,
   decodeWasmTickBatch,
   encodeWasmTickBatch,
@@ -249,6 +249,11 @@ export {
   createXygWasmWorker,
   XygWasmError,
   XygWasmWorker,
+  attachWasmTicks,
+  decodeWasmTickBatch,
+  encodeWasmTickBatch,
+  resolveWasmTicks,
+  XygWasmTicksHandle,
   renderWasmScene,
   hydrateWasmPainter,
   encodeWasmColumns,

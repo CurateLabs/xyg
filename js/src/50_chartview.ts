@@ -1309,12 +1309,32 @@ export class ChartView {
     return axis.theta_unit === "degrees" ? 360 : 2 * Math.PI;
   }
 
+  _wasmTickAxisId(axisOrId) {
+    if (axisOrId === "x" || axisOrId === "y") return axisOrId;
+    const axes = this.axes;
+    if (axisOrId && typeof axisOrId === "object") {
+      if (axisOrId === axes?.x) return "x";
+      if (axisOrId === axes?.y) return "y";
+      return this._wasmTickAxisId(axisOrId.id);
+    }
+    if (axes?.x && axisOrId === axes.x.id && (axes[axisOrId] == null || axes[axisOrId] === axes.x)) {
+      return "x";
+    }
+    if (axes?.y && axisOrId === axes.y.id && (axes[axisOrId] == null || axes[axisOrId] === axes.y)) {
+      return "y";
+    }
+    return axisOrId;
+  }
+
   _axisTicks(axisId, target): any {
     // ABI 23 ChartView cutover: once an explicit attachment is active, covered
     // primary Cartesian numeric axes consume only its last admitted Rust cache.
     // A pending/failed newer request never falls through to 30_ticks.ts.
+    axisId = this._wasmTickAxisId(axisId);
     const wasmTicks = this._wasmTicks?.ticks?.(axisId);
-    if (wasmTicks) return wasmTicks;
+    if (wasmTicks || this._wasmTicks?.covers?.(axisId)) {
+      return wasmTicks || { ticks: Object.freeze([]), labels: Object.freeze([]), step: 1, source: "wasm" };
+    }
     const axis = this._axis(axisId);
     let [lo, hi] = this._axisRange(axisId);
     if (this.spec?.coords === "polar" && this._axisDim(axisId) === "x") {
@@ -1373,15 +1393,11 @@ export class ChartView {
   }
 
   _axisTickText(axis, value, step) {
-    const axisId = axis?.id === "x" || axis?.id === "y"
-      ? axis.id
-      : axis === this.axes?.x
-        ? "x"
-        : axis === this.axes?.y
-          ? "y"
-          : axis?.id;
+    const axisId = this._wasmTickAxisId(axis);
     const wasmLabel = this._wasmTicks?.label?.(axisId, Number(value));
-    if (wasmLabel !== null && wasmLabel !== undefined) return wasmLabel;
+    if ((wasmLabel !== null && wasmLabel !== undefined) || this._wasmTicks?.covers?.(axisId)) {
+      return wasmLabel ?? "";
+    }
     if (Array.isArray(axis.tick_values) && Array.isArray(axis.tick_labels)) {
       const index = axis.tick_values.findIndex((candidate) => Number(candidate) === Number(value));
       if (index >= 0 && index < axis.tick_labels.length) return String(axis.tick_labels[index]);

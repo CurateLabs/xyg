@@ -728,6 +728,91 @@ async function run() {
   }
   chartTickHost.remove();
 
+  foundationStage = "sequential ChartView tick re-attach replaces the previous handle";
+  const reattachHost = document.createElement("div");
+  reattachHost.style.cssText = "width:320px;height:240px";
+  document.body.append(reattachHost);
+  const reattachView = directDensityFixture(reattachHost);
+  const firstTickWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  const firstTickHandle = await attachWasmTicks(reattachView, {
+    worker: firstTickWorker,
+    workerOwnership: "own",
+  });
+  const firstTickRevision = firstTickHandle.diagnostics()?.revision;
+  const secondTickWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  const secondTickHandle = await attachWasmTicks(reattachView, {
+    worker: secondTickWorker,
+    workerOwnership: "own",
+  });
+  const reattachedX = reattachView._axisTicks("x", 6);
+  const reattachedY = reattachView._axisTicks("y", 6);
+  if (reattachView._wasmTicks !== secondTickHandle
+      || firstTickHandle.schedule() !== null
+      || secondTickHandle.diagnostics()?.revision < 1
+      || firstTickRevision < 1
+      || reattachedX.source !== "wasm" || reattachedY.source !== "wasm"
+      || !reattachedX.ticks.length || !reattachedY.ticks.length) {
+    throw new Error(`sequential ChartView tick re-attach failed: ${JSON.stringify({
+      sameHandle: reattachView._wasmTicks === secondTickHandle,
+      firstSchedule: firstTickHandle.schedule(),
+      firstTickRevision,
+      secondRevision: secondTickHandle.diagnostics()?.revision,
+      xSource: reattachedX.source,
+      ySource: reattachedY.source,
+    })}`);
+  }
+  await firstTickHandle.dispose();
+  if (reattachView._wasmTicks !== secondTickHandle) {
+    throw new Error("disposing the previous tick handle clobbered the live attachment");
+  }
+  await secondTickHandle.dispose();
+  reattachView.destroy();
+  reattachHost.remove();
+
+  foundationStage = "secondary ChartView axes stay on the compatibility tick path";
+  const secondaryTickHost = document.createElement("div");
+  secondaryTickHost.style.cssText = "width:320px;height:240px";
+  document.body.append(secondaryTickHost);
+  const secondaryTickView = directDensityFixture(secondaryTickHost, null, true);
+  const secondaryTickWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  const secondaryTickHandle = await attachWasmTicks(secondaryTickView, {
+    worker: secondaryTickWorker,
+    workerOwnership: "own",
+  });
+  const primaryXTicks = secondaryTickView._axisTicks("x", 6);
+  const primaryYTicks = secondaryTickView._axisTicks("y", 6);
+  const secondaryXTicks = secondaryTickView._axisTicks("x2", 6);
+  const secondaryYTicks = secondaryTickView._axisTicks("y2", 6);
+  if (primaryXTicks.source !== "wasm" || primaryYTicks.source !== "wasm"
+      || secondaryXTicks.source === "wasm" || secondaryYTicks.source === "wasm"
+      || secondaryTickHandle.diagnostics()?.axisIds.join(",") !== "x,y"
+      || !secondaryXTicks.ticks.length || !secondaryYTicks.ticks.length
+      || secondaryXTicks.ticks.every((value) => value >= 0 && value <= 1)
+      || secondaryYTicks.ticks.every((value) => value >= 0 && value <= 1)) {
+    throw new Error(`secondary axes were claimed by WASM ticks: ${JSON.stringify({
+      axisIds: secondaryTickHandle.diagnostics()?.axisIds,
+      primaryX: primaryXTicks,
+      primaryY: primaryYTicks,
+      secondaryX: secondaryXTicks,
+      secondaryY: secondaryYTicks,
+    })}`);
+  }
+  await secondaryTickHandle.dispose();
+  secondaryTickView.destroy();
+  secondaryTickHost.remove();
+
   foundationStage = "ChartView tick latest-wins admission and fail-closed Worker error";
   const lifecycleTickHost = document.createElement("div");
   lifecycleTickHost.style.cssText = "width:320px;height:240px";

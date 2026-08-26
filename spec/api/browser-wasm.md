@@ -78,7 +78,7 @@ a covered attached axis.
 
 Each viewport/resize snapshot gets a monotonic axis revision and Worker tick
 sequence. New work cancels the old task; only the current sequence, revision,
-axis identity, attachment, ChartView, and GL lifecycle may admit. Until then
+axis identity, attachment, and ChartView may admit. Until then
 the last admitted Rust-produced positions and labels remain painted. `cancel()`
 retires the current request without deleting that cache. `dispose()` cancels
 work, detaches from ChartView, and disposes an owned Worker. ChartView

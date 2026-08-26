@@ -462,6 +462,7 @@ export class XygWasmTicksHandle {
   private task: XygWasmTask<XygWasmTickBatchResult> | null = null;
   private requestedKey: string | null = null;
   private admittedKey: string | null = null;
+  /** Last failed snapshot. Same viewport is not retried until the frame changes. */
   private failedKey: string | null = null;
   private revision = 0;
   private disposed = false;
@@ -476,17 +477,39 @@ export class XygWasmTicksHandle {
     private readonly ownWorker: boolean,
   ) {}
 
-  /** True only for this slice's automatic primary Cartesian numeric axes. */
-  covers(axisId: unknown): axisId is PrimaryAxisId {
-    if (axisId !== "x" && axisId !== "y") return false;
+  /** Map a ChartView axis key/object onto the primary x/y slot this handle owns. */
+  private primarySlot(axisId: unknown): PrimaryAxisId | null {
+    if (axisId === "x" || axisId === "y") return axisId;
+    const axes = this.view.axes;
+    if (axisId && typeof axisId === "object") {
+      if (axisId === axes?.x) return "x";
+      if (axisId === axes?.y) return "y";
+      return this.primarySlot((axisId as { id?: unknown }).id);
+    }
+    if (axes?.x && axisId === axes.x.id && (axes[axisId as string] == null || axes[axisId as string] === axes.x)) {
+      return "x";
+    }
+    if (axes?.y && axisId === axes.y.id && (axes[axisId as string] == null || axes[axisId as string] === axes.y)) {
+      return "y";
+    }
+    return null;
+  }
+
+  private slotCovered(slot: PrimaryAxisId): boolean {
     if (this.view.spec?.coords === "polar") return false;
-    const axis = this.view._axis(axisId);
+    const axis = this.view._axis(slot);
     if (!axis || typeof axis !== "object" || Array.isArray(axis.tick_values) || axis.theta_unit) {
       return false;
     }
     const kind = axis.kind ?? "linear";
     const scale = axis.scale ?? "linear";
     return kind === "linear" && (scale === "linear" || scale === "log" || scale === "symlog");
+  }
+
+  /** True only for this slice's automatic primary Cartesian numeric axes. */
+  covers(axisId: unknown): axisId is PrimaryAxisId {
+    const slot = this.primarySlot(axisId);
+    return slot !== null && this.slotCovered(slot);
   }
 
   /** Internal ChartView resolver. A covered axis never falls through to JS. */
@@ -496,8 +519,9 @@ export class XygWasmTicksHandle {
     step: number;
     source: "wasm";
   } | null {
-    if (!this.covers(axisId)) return null;
-    const cached = this.cache.get(axisId);
+    const slot = this.primarySlot(axisId);
+    if (!slot || !this.slotCovered(slot)) return null;
+    const cached = this.cache.get(slot);
     return cached
       ? {
         ticks: cached.ticks,
@@ -510,8 +534,9 @@ export class XygWasmTicksHandle {
 
   /** Internal ChartView formatter. Missing output fails closed to no text. */
   label(axisId: unknown, value: number): string | null {
-    if (!this.covers(axisId)) return null;
-    return this.cache.get(axisId)?.labelByValue.get(value) ?? "";
+    const slot = this.primarySlot(axisId);
+    if (!slot || !this.slotCovered(slot)) return null;
+    return this.cache.get(slot)?.labelByValue.get(value) ?? "";
   }
 
   diagnostics(): XygWasmTicksDiagnostics | null {
@@ -533,7 +558,7 @@ export class XygWasmTicksHandle {
     const axisIds: PrimaryAxisId[] = [];
     let covered = 0;
     for (const axisId of ["x", "y"] as const) {
-      if (!this.covers(axisId)) continue;
+      if (!this.slotCovered(axisId)) continue;
       covered += 1;
       const axis = this.view._axis(axisId);
       const [loRaw, hiRaw] = this.view._axisRange(axisId);
@@ -579,7 +604,7 @@ export class XygWasmTicksHandle {
 
   private isCurrent(frame: ChartTickFrame, task: XygWasmTask<XygWasmTickBatchResult>): boolean {
     if (this.disposed || this.task !== task || this.requestedKey !== frame.key
-        || this.view._destroyed || !this.ownsAttachment()) {
+        || this.view._destroyed || this.view._glLost || !this.ownsAttachment()) {
       return false;
     }
     try {
@@ -672,14 +697,18 @@ export class XygWasmTicksHandle {
         cancellations: this.cancellations,
       });
       if (this.active && !this.disposed && !this.view._destroyed && this.view._wasmTicks === this) {
-        // One admission can change measured gutters. Re-layout once, then the
-        // ordinary draw path rechecks whether the screen-bounded target changed.
-        this.view._layout();
+        // Paint the admitted Rust cache only. Do not `_layout()` here: that
+        // rewrites `plot` without moving the marks canvas (geometry lives in
+        // `_resize`), and label-driven gutter changes can flip `target` and
+        // oscillate with chrome `schedule()`. Gutter feedback is a follow-up.
         this.view.draw();
       }
       return true;
     } catch (cause) {
-      if (task && (this.task !== task || this.requestedKey !== frame.key)) return false;
+      if (this.disposed || this.view._destroyed || !this.ownsAttachment()
+          || (task && (this.task !== task || this.requestedKey !== frame.key))) {
+        return false;
+      }
       if (task) {
         this.task = null;
         this.requestedKey = null;
@@ -695,7 +724,7 @@ export class XygWasmTicksHandle {
   /** Resolve a current initial cache before this adapter becomes authoritative. */
   async initialize() {
     await this.worker.ready;
-    while (!this.disposed && !this.view._destroyed && this.ownsAttachment()) {
+    while (!this.disposed && !this.view._destroyed && !this.view._glLost && this.ownsAttachment()) {
       const frame = this.frame();
       if (!frame) {
         throw new RangeError(
@@ -714,7 +743,7 @@ export class XygWasmTicksHandle {
 
   /** Schedule the latest viewport; identical view/target snapshots are deduplicated. */
   schedule(): number | null {
-    if (this.disposed || !this.active || this.view._destroyed) return null;
+    if (this.disposed || !this.active || this.view._destroyed || this.view._glLost) return null;
     let frame: ChartTickFrame | null;
     try {
       frame = this.frame();
@@ -803,8 +832,8 @@ export async function attachWasmTicks(
   handle.activate();
   view._wasmTicks = handle;
   previous?.destroy?.();
-  // Atomic cutover: this first layout already sees only the admitted Rust cache.
-  view._layout();
+  // Atomic cutover: paint the admitted Rust cache. Skip `_layout()` here so
+  // gutters do not desync the marks canvas or oscillate tick targets.
   view.draw();
   return handle;
 }
