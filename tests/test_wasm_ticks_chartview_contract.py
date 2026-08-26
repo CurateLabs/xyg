@@ -21,8 +21,14 @@ def test_chartview_wasm_ticks_are_a_lifecycle_adapter_not_a_generator() -> None:
     assert "this._wasmTicks?.label?.(axisId, Number(value))" in chartview
     assert "this._wasmTicks?.covers?.(axisId)" in chartview
     assert "primarySlot" in ticks
+    assert "slotEligible" in ticks
+    assert "eligible(axisId: unknown)" in ticks
     assert 'source: "wasm"' in ticks
     assert "this.cache.has(slot)" in ticks
+    assert (
+        'return { ticks: Object.freeze([]), labels: Object.freeze([]), step: 1, source: "wasm" }'
+        not in ticks
+    )
 
 
 def test_chartview_wasm_ticks_are_latest_wins_and_destroy_safe() -> None:
@@ -36,6 +42,13 @@ def test_chartview_wasm_ticks_are_latest_wins_and_destroy_safe() -> None:
     assert "ownsAttachment()" in ticks
     assert "!this.active || this.view._wasmTicks === this" in ticks
     assert "this.disposed || this.view._destroyed || !this.ownsAttachment()" in ticks
+    assert "lastErrorKey" in ticks
+    assert "failedKey" not in ticks
+    assert (
+        "frame.key === this.admittedKey || (frame.key === this.requestedKey && this.task)" in ticks
+    )
+    assert "this.view._layout()" not in ticks
+    assert "this.view.draw()" in ticks
     assert '"wasm_ticks_error"' in ticks
     assert "this.view._wasmTicks === this" in ticks
     assert ticks.index("await handle.initialize();") < ticks.index("handle.activate();")
@@ -47,6 +60,8 @@ def test_chartview_wasm_ticks_are_latest_wins_and_destroy_safe() -> None:
     assert "uncovered after attach does not emit" in browser
     assert "sequential ChartView tick re-attach replaces the previous handle" in browser
     assert "secondary ChartView axes stay on the compatibility tick path" in browser
+    assert "newly eligible axis after attach does not paint empty wasm" in browser
+    assert "failed ChartView tick snapshot retries without a second event" in browser
 
 
 def test_chartview_wasm_tick_assets_and_scope_are_explicit() -> None:
@@ -72,3 +87,6 @@ def test_chartview_wasm_tick_assets_and_scope_are_explicit() -> None:
     assert "axis.theta_unit" in ticks
     assert 'if (eligible) throw new TypeError("tick range must be finite")' in ticks
     assert "return null;" in ticks
+    assert "lastErrorKey" in api
+    assert "`_layout()`" in api
+    assert "eligible" in design

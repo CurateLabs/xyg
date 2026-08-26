@@ -39,11 +39,16 @@ Each axis admits at most 200 authored/output ticks, 65,536 source categories,
 65,536 UTF-8 bytes of label/category text, and a 256-byte format string.
 
 `attachWasmTicks(view, { worker, workerOwnership })` installs that seam on the
-covered ChartView path: automatic primary Cartesian x/y axes whose scale is
-linear, log, or symlog. It resolves one atomic batch before mounting, then
-intercepts both tick positions and label text. Category, time, angular/polar,
-secondary-axis, colorbar, authored-value, and authored-empty paths remain
-unchanged and are not claimed by this API.
+eligible ChartView path: automatic primary Cartesian x/y axes whose scale is
+linear, log, or symlog. Polar, `tick_values`, and `theta_unit` axes are
+excluded. It resolves one atomic batch before mounting, then intercepts both
+tick positions and label text for axes that already have an admitted Rust
+cache (`covers`). `frame()` still requests every currently eligible axis,
+including one that became eligible after mount; that new slot stays on
+`30_ticks.ts` until its first cache arrives and is never painted as a
+synthetic empty WASM result. Category, time, angular/polar, secondary-axis,
+colorbar, authored-value, and authored-empty paths remain unchanged and are
+not claimed by this API.
 
 ```js
 import {
@@ -79,19 +84,26 @@ a covered attached axis.
 Each viewport/resize snapshot gets a monotonic axis revision and Worker tick
 sequence. New work cancels the old task; only the current sequence, revision,
 axis identity, attachment, and ChartView may admit. Until then
-the last admitted Rust-produced positions and labels remain painted. `cancel()`
-retires the current request without deleting that cache. `dispose()` cancels
-work, detaches from ChartView, and disposes an owned Worker. ChartView
-`destroy()` invokes the same cleanup.
+the last admitted Rust-produced positions and labels remain painted. Admission
+and attach paint through `draw()` only — they must not call `_layout()`, which
+rewrites `plot` without moving the marks canvas and can oscillate the
+screen-bounded tick target. Sequential re-attach admits on the incoming handle
+while the previous attachment is still installed (`ownsAttachment` is
+`!active || view._wasmTicks === this`), then activates, owns the slot, and
+retires the previous handle. `cancel()` retires the current request without
+deleting that cache. `dispose()` cancels work, detaches from ChartView, and
+disposes an owned Worker. ChartView `destroy()` invokes the same cleanup.
 
 `diagnostics()` returns `{ sequence, revision, axisIds, cancellations }` for
 the latest admitted result and never includes domains, tick values, labels, or
 other user data. Initialization, framing, malformed output, Worker failure, and
 trap errors dispatch one bubbling `xy:wasm_ticks_error` event per failed
-snapshot. Its detail is `{ code, message, diagnostics }`, using a stable
-`XygWasmError` code and Rust diagnostic counters when available. A failed
-initial attachment emits the event and rejects before partial mount. A failure
-after mounting retains the last Rust cache; it does not fall through to
+snapshot. Identical snapshots coalesce through `lastErrorKey` and do not
+permanently block a later retry of the same viewport. Its detail is
+`{ code, message, diagnostics }`, using a stable `XygWasmError` code and Rust
+diagnostic counters when available. A failed initial attachment emits the
+event and rejects before partial mount. A failure after mounting retains the
+last Rust cache for already-covered axes; it does not fall through to
 `30_ticks.ts`.
 
 Every Worker-reported `XygWasmError` after the Rust instance initializes

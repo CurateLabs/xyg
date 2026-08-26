@@ -22,13 +22,19 @@ or nonfinite input fails before output.
 
 `attachWasmTicks(view, { worker })` now installs the first bounded ChartView
 product cutover: automatic primary Cartesian linear, log, and symlog axes only.
-The attachment frames the current x/y batch, but Rust exclusively chooses
-positions and labels. The first current `XYTO` result is admitted before the
+The attachment frames every currently eligible x/y slot, but Rust exclusively
+chooses positions and labels. Eligibility excludes polar, authored
+`tick_values`, and `theta_unit` axes. An axis is *covered* only after an
+admitted Rust cache exists for that eligible slot; newly eligible slots after
+mount stay on `30_ticks.ts` until that cache arrives and are never painted as
+empty WASM ticks. The first current `XYTO` result is admitted before the
 attachment becomes authoritative; later pan/zoom/resize requests cancel older
 work and retain only the last admitted Rust cache until a matching sequence and
-axis revision returns. A stale, cancelled, destroyed, or replaced attachment
-cannot publish. Once attached, a covered axis never calls `30_ticks.ts`, even
-after a Worker failure.
+axis revision returns. Admission paints with `draw()` only (no `_layout()`).
+A stale, cancelled, destroyed, or replaced attachment cannot publish.
+Once attached, a covered axis never calls `30_ticks.ts`, even after a Worker
+failure. Failed snapshots emit one coalesced `xy:wasm_ticks_error` and remain
+eligible to retry.
 
 This cutover is deliberately explicit and bounded. Category, UTC-time,
 angular/polar, secondary axes, colorbars, authored values, and authored-empty
