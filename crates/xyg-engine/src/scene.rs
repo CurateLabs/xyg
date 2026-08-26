@@ -10221,6 +10221,33 @@ mod tests {
         assert_eq!(line.stroke_width, 1.0);
         assert_eq!(line.extent_x, 0.5);
         assert_eq!(line.extent_y, 0.5);
+
+        // An authored non-zero stroke is part of the outer marker diameter:
+        // the path shrinks by half the width and clipping adds it back. Keep
+        // the exact overlap boundary pinned for the public scatter-stroke route.
+        let stroked = SceneBatch::new(
+            layout,
+            1,
+            2,
+            scale,
+            scale,
+            &[0; 2],
+            &[11, 12],
+            &[0; 2],
+            &[51, 102, 153, 255],
+            &[255, 136, 0, 255],
+            &[6.0],
+            &[20.0; 2],
+            &[ScatterSymbol::Circle as u8; 2],
+            &[-9.9, -10.1],
+            &[40.0; 2],
+            &[0.0; 2],
+            &[0.0; 2],
+        )
+        .unwrap()
+        .encode();
+        assert_eq!(stroked[records + 1], 1);
+        assert_eq!(stroked[records + SCENE_BATCH_RECORD_BYTES + 1], 0);
     }
 
     #[test]

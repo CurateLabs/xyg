@@ -32,13 +32,13 @@ Python and Node pack two adjacent compact endpoint rows, while Rust transforms
 the endpoints through the selected Cartesian axes and expands the fixed
 96-interval cubic into ordinary Scene v25 Band samples. Host-local ribbon
 polygon helpers remain compatibility-renderer code, not canonical Scene policy.
-The public constant built-in marker slice admits all 19 fixed symbol codes when
-the scatter mark does not author a separate stroke or stroke width. Python and
-Node preserve the constant fill paint in the Scene style table, including
-fill-as-stroke for line-only symbols, while Rust owns implicit 1px line-only
-width, symbol paths, extent-aware clipping, legend swatches, and
-SVG/raster/browser lowering. Authored scatter stroke paint/width remains on the
-compatibility route for a later bounded cutover.
+The public constant built-in marker slice admits all 19 fixed symbol codes and
+an optional literal constant CSS stroke with a finite non-negative scalar
+width. Python and Node preserve the constant fill and stroke paint in the Scene
+style table and normalize stroke-only authoring to 1px. Rust owns implicit 1px line-only width,
+symbol paths, stroke-inclusive extent clipping, legend swatches, and
+SVG/raster/browser lowering. Width-only match-fill, per-item stroke/width,
+custom paths/glyphs, and density/LOD scatter remain compatibility routes.
 The public literal triangle-mesh slice admits at most 1,024 unjoined faces with
 one constant fill and scalar overall opacity. Python and Node pack six authored
 vertex columns as three-row PolyFill runs; Rust owns their stable-run grouping,
@@ -50,6 +50,7 @@ Static-export routing status (#117): `Figure.to_svg`, native `to_png`, native
 `to_image(..., "svg"|"png"|"pdf")`, `write_image`, and the native branch of
 `write_images` now delegate the proven
 literal Cartesian public geometry subset—constant-style built-in scatter symbols
+with optional constant marker strokes and scalar widths
 and polylines, bounded fill-only unjoined triangle meshes, ordinary finite
 fixed-domain area/error-band Bands,
 ordinary bar/column/histogram Rects, bounded disconnected

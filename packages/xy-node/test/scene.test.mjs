@@ -217,6 +217,34 @@ test("Node figure defaults match Python Scene bytes and canonical values", () =>
   assert.equal(new DataView(line.buffer, line.byteOffset).getFloat64(168, true), 1.5);
 });
 
+test("Node constant scatter stroke matches Python bytes and public defaults", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 2]); figure.setAxisDomain("y", [0, 2]);
+  figure.scatter([0.25, 1.75], [0.5, 1.5], {
+    id: 41, name: "outlined",
+    style: { color: "#336699", opacity: 0.75, size: 12, symbol: "diamond", stroke: "#ff8800", stroke_width: 3.5 },
+  });
+  const scene = figure.toScene();
+  assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.public_scatter_stroke_sha256);
+  const svg = sceneSvg(scene);
+  assert.match(svg, /stroke="rgb\(255,136,0\)" stroke-opacity="0\.75"/);
+  assert.match(svg, /stroke-width="3\.5"/);
+  assert.match(svg, /outlined/);
+  assert.ok(sceneRasterCommands(scene).byteLength > 0);
+  assert.ok(sceneBrowserPainter(scene).byteLength > 0);
+
+  const strokeOnly = new Figure({ width: 320, height: 240 });
+  strokeOnly.scatter([0.5], [0.5], { style: { color: "#336699", stroke: "#ff8800" } });
+  assert.equal(strokeOnly.traces[0].style.stroke_width, 1);
+  assert.equal(new DataView(strokeOnly.toScene().buffer).getFloat64(168, true), 1);
+
+  for (const strokeWidth of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
+    const invalid = new Figure({ width: 320, height: 240 });
+    invalid.scatter([0.5], [0.5], { style: { stroke: "#ff8800", stroke_width: strokeWidth } });
+    assert.throws(() => invalid.toScene(), /invalid canonical scene batch/);
+  }
+});
+
 test("Node frames the literal Scene colorbar side before Rust reserves its lane", () => {
   for (const [side, offset, viewport] of [["right", 64, 320], ["bottom", 72, 240]]) {
     const figure = new Figure({ width: 320, height: 240 });

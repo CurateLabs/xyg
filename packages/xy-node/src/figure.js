@@ -40,7 +40,7 @@ import {
 } from "./pyramid.js";
 import { composeGraph } from "./graph.js";
 import { composeSankey } from "./sankey.js";
-import { composeScatter } from "./marks/scatter.js";
+import { composeScatter, normalizeScatterStyle } from "./marks/scatter.js";
 import { composeLine, F64_EPS } from "./marks/line.js";
 import { composeHistogram } from "./marks/histogram.js";
 import { composeArea } from "./marks/area.js";
@@ -341,7 +341,7 @@ export class Figure {
         name: opts.name ?? null,
         x: asF64(x),
         y: asF64(y),
-        style: { ...(opts.style ?? {}) },
+        style: normalizeScatterStyle(opts.style),
         x_axis: opts.xAxis ?? "x",
         y_axis: opts.yAxis ?? "y",
         ...(opts.color != null ? { color: opts.color } : {}),

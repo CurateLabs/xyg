@@ -5,6 +5,14 @@
 
 import { asF64Array, encodeF32Values, minMax } from "../encode.js";
 
+export function normalizeScatterStyle(style = {}) {
+  const normalized = { ...style };
+  if (normalized.stroke != null && normalized.stroke_width == null) {
+    normalized.stroke_width = 1;
+  }
+  return normalized;
+}
+
 function optionalBoolean(value, name) {
   if (value == null) return undefined;
   if (typeof value !== "boolean") {
@@ -39,7 +47,7 @@ export function composeScatter(x, y, opts = {}) {
         name: opts.name ?? null,
         x: xa,
         y: ya,
-        style: { opacity: 0.8, ...(opts.style ?? {}) },
+        style: normalizeScatterStyle({ opacity: 0.8, ...(opts.style ?? {}) }),
         x_axis: opts.xAxis ?? "x",
         y_axis: opts.yAxis ?? "y",
         ...(forceDensity != null ? { force_density: Boolean(forceDensity) } : {}),

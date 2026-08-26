@@ -96,7 +96,10 @@ and Node now compile the same representative constant-style scatter/line/bar
 figure fixture to identical Scene bytes; explicit host APIs feed those bytes to
 Rust SVG and native-raster consumers. Public Python SVG/PNG/PDF select the Rust
 Scene consumers only for the proven bounded literal Cartesian geometry subset:
-all 19 constant built-in scatter symbols and constant-style polylines, ordinary area/error-band
+all 19 constant built-in scatter symbols either without authored stroke or with
+an authored constant CSS stroke and optional finite non-negative scalar width
+(default 1px), and constant-style
+polylines, ordinary area/error-band
 Bands, bar/column/histogram Rects, disconnected segment/error-bar/stem endpoint
 pairs with bounded stem markers, at most 1,024 fill-only unjoined constant-color
 triangle-mesh faces, and finite literal solid ribbons. Each accepted mesh face
@@ -129,7 +132,8 @@ Extra legends, named/advanced colorbars, other deferred
   compilers route real polar, custom-font, CSS/class, and normalized gradient
   representations through it and reject non-u32 request versions before FFI
   coercion. See
-[scene-ir.md](scene-ir.md). Python custom glyph/path markers and other
+[scene-ir.md](scene-ir.md). Per-item scatter stroke/width, custom marker
+paths/glyphs, and density/LOD remain explicit compatibility exceptions. Python custom glyph/path markers and other
 not-yet-migrated customization remain explicit compatibility exceptions until
 bounded path, text, and chrome records land.
 

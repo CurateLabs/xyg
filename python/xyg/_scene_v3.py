@@ -1704,7 +1704,7 @@ def scene_export_support_reason(
         "triangle_mesh",
     }
     public_style_keys = {
-        "scatter": {"color", "opacity", "symbol", "size", "role"},
+        "scatter": {"color", "opacity", "symbol", "size", "role", "stroke", "stroke_width"},
         # A literal ``step`` is expanded before Scene packing; Rust then owns
         # the resulting polyline, clipping, raster, and SVG policy.
         "line": {"color", "opacity", "width", "step"},
@@ -1881,6 +1881,15 @@ def scene_export_support_reason(
             # compatibility behavior. The fixed built-in vocabulary is fully
             # represented by the canonical Scene record.
             return "XYG_SCENE_UNSUPPORTED_PUBLIC_SYMBOL"
+        if (
+            trace.kind == "scatter"
+            and (trace.style or {}).get("stroke_width") is not None
+            and (trace.style or {}).get("stroke") is None
+        ):
+            # Width-only scatter authoring is a match-fill channel. Keep that
+            # semantic on the compatibility renderer until Scene represents
+            # it explicitly rather than inferring paint in the host router.
+            return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
         if any(
             value is not None and key not in public_style_keys[trace.kind]
             for key, value in (getattr(trace, "style", None) or {}).items()

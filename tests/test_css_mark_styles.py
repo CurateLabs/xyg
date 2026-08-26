@@ -150,8 +150,10 @@ def test_css_mark_style_reaches_svg_and_native_renderers() -> None:
     ).figure()
 
     svg = fig.to_svg()
-    assert 'fill="#22c55e"' in svg
-    assert 'stroke="#052e16"' in svg
+    # The public constant-stroke slice now lowers literal CSS paint through
+    # the canonical RGBA style table; spelling changes, paint semantics do not.
+    assert 'fill="rgb(34,197,94)"' in svg
+    assert 'stroke="rgb(5,46,22)"' in svg
     assert 'stroke-width="2"' in svg
 
     image = _raster.render_raster(*fig.build_payload(), scale=1)
