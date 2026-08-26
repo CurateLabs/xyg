@@ -97,7 +97,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 98;
+pub const ABI_VERSION: u32 = 99;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -8837,6 +8837,143 @@ pub unsafe extern "C" fn xyg_box_stats(
     1
 }
 
+/// Compile grouped box samples into bounded canonical body, whisker/cap,
+/// median, and optional outlier geometry. Returns the required active-group
+/// count, or `usize::MAX` for invalid input. `out_n_outliers` receives the
+/// statistical outlier count even when outlier geometry is disabled. Calls
+/// with zero capacities are size queries.
+///
+/// # Safety
+/// `values`, `offsets`, and `centers` must be aligned and readable for their
+/// declared lengths; `offsets` and `out_n_outliers` must be non-null. For a
+/// write call, `active_groups` must hold `group_cap` u32s, `group_records`
+/// must hold `group_cap * 25` f64s, `outlier_offsets` must hold
+/// `group_cap + 1` size_t values, and `outlier_records` must hold
+/// `outlier_cap * 3` f64s. Group records are `[q1, median, q3, low, high,
+/// body x0/y0/x1/y1, three whisker x0/y0/x1/y1 records, median x0/y0/x1/y1]`.
+/// Outlier records are `[value, x, y]`; x/y are zero when outliers are hidden.
+/// All writable
+/// regions must be mutually non-overlapping and must not overlap readable
+/// inputs for the duration of the call. Output pointers may be null for a size
+/// query or when either supplied capacity is smaller than the required count.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_box_geometry(
+    values: *const f64,
+    values_len: usize,
+    offsets: *const usize,
+    offsets_len: usize,
+    centers: *const f64,
+    centers_len: usize,
+    width: f64,
+    orientation: u32,
+    show_outliers: i32,
+    out_n_outliers: *mut usize,
+    active_groups: *mut u32,
+    group_records: *mut f64,
+    outlier_offsets: *mut usize,
+    outlier_records: *mut f64,
+    group_cap: usize,
+    outlier_cap: usize,
+) -> usize {
+    if (values_len > 0 && values.is_null())
+        || offsets.is_null()
+        || (centers_len > 0 && centers.is_null())
+        || out_n_outliers.is_null()
+        || !matches!(show_outliers, 0 | 1)
+    {
+        return usize::MAX;
+    }
+    let values = if values_len == 0 {
+        &[]
+    } else {
+        std::slice::from_raw_parts(values, values_len)
+    };
+    let offsets = std::slice::from_raw_parts(offsets, offsets_len);
+    let centers = if centers_len == 0 {
+        &[]
+    } else {
+        std::slice::from_raw_parts(centers, centers_len)
+    };
+    let orientation = match orientation {
+        0 => stats::BoxOrientation::Vertical,
+        1 => stats::BoxOrientation::Horizontal,
+        _ => return usize::MAX,
+    };
+    let Some(result) = ffi_guard(None, || {
+        stats::grouped_box_geometry(
+            values,
+            offsets,
+            centers,
+            width,
+            orientation,
+            show_outliers != 0,
+        )
+    }) else {
+        return usize::MAX;
+    };
+    let groups = result.active_groups.len();
+    let outliers = result.outlier_values.len();
+    *out_n_outliers = outliers;
+    if group_cap < groups || outlier_cap < outliers {
+        return groups;
+    }
+    if groups > 0
+        && (active_groups.is_null() || group_records.is_null() || outlier_offsets.is_null())
+        || outliers > 0 && outlier_records.is_null()
+    {
+        return usize::MAX;
+    }
+    for (dest, source) in std::slice::from_raw_parts_mut(active_groups, groups)
+        .iter_mut()
+        .zip(result.active_groups.iter().copied())
+    {
+        *dest = source as u32;
+    }
+    std::slice::from_raw_parts_mut(outlier_offsets, groups + 1)
+        .copy_from_slice(&result.outlier_offsets);
+    let group_records = std::slice::from_raw_parts_mut(group_records, groups * 25);
+    for group in 0..groups {
+        let record = &mut group_records[group * 25..(group + 1) * 25];
+        record[..5].copy_from_slice(&result.stats[group * 5..(group + 1) * 5]);
+        record[5..9].copy_from_slice(&[
+            result.body_x0[group],
+            result.body_y0[group],
+            result.body_x1[group],
+            result.body_y1[group],
+        ]);
+        for segment in 0..3 {
+            let source = group * 3 + segment;
+            let at = 9 + segment * 4;
+            record[at..at + 4].copy_from_slice(&[
+                result.whisker_x0[source],
+                result.whisker_y0[source],
+                result.whisker_x1[source],
+                result.whisker_y1[source],
+            ]);
+        }
+        record[21..25].copy_from_slice(&[
+            result.median_x0[group],
+            result.median_y0[group],
+            result.median_x1[group],
+            result.median_y1[group],
+        ]);
+    }
+    if outliers > 0 {
+        let outlier_records = std::slice::from_raw_parts_mut(outlier_records, outliers * 3);
+        for index in 0..outliers {
+            outlier_records[index * 3] = result.outlier_values[index];
+            if show_outliers != 0 {
+                outlier_records[index * 3 + 1] = result.outlier_x[index];
+                outlier_records[index * 3 + 2] = result.outlier_y[index];
+            } else {
+                outlier_records[index * 3 + 1] = 0.0;
+                outlier_records[index * 3 + 2] = 0.0;
+            }
+        }
+    }
+    groups
+}
+
 /// Matplotlib-compatible hex binning. `reduce` is 0=count, 1=mean, 2=sum.
 /// `c` may be null when `reduce=count`. Writes up to `capacity` occupied (or
 /// threshold-passing) cells into the parallel out buffers and sets `*out_dx` /
@@ -10924,6 +11061,115 @@ mod tests {
         assert_eq!(value, [99; 5]);
         assert_eq!(rgba, [99; 20]);
         assert_eq!(shape, [99; 5]);
+    }
+
+    #[test]
+    fn box_geometry_query_short_copy_and_empty_outlier_plane_are_safe() {
+        let values = [1.0_f64, 2.0, 3.0];
+        let offsets = [0_usize, 3];
+        let centers = [4.0_f64];
+        let mut n_outliers = 99_usize;
+        let query = unsafe {
+            xyg_box_geometry(
+                values.as_ptr(),
+                values.len(),
+                offsets.as_ptr(),
+                offsets.len(),
+                centers.as_ptr(),
+                centers.len(),
+                0.6,
+                0,
+                1,
+                &mut n_outliers,
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                0,
+                0,
+            )
+        };
+        assert_eq!(query, 1);
+        assert_eq!(n_outliers, 0);
+
+        let mut active = [99_u32; 1];
+        let mut records = [99.0_f64; 25];
+        let mut outlier_offsets = [99_usize; 2];
+        assert_eq!(
+            unsafe {
+                xyg_box_geometry(
+                    values.as_ptr(),
+                    values.len(),
+                    offsets.as_ptr(),
+                    offsets.len(),
+                    centers.as_ptr(),
+                    centers.len(),
+                    0.6,
+                    0,
+                    1,
+                    &mut n_outliers,
+                    active.as_mut_ptr(),
+                    records.as_mut_ptr(),
+                    outlier_offsets.as_mut_ptr(),
+                    std::ptr::null_mut(),
+                    0,
+                    0,
+                )
+            },
+            1
+        );
+        assert_eq!(active, [99]);
+        assert_eq!(records, [99.0; 25]);
+        assert_eq!(
+            unsafe {
+                xyg_box_geometry(
+                    values.as_ptr(),
+                    values.len(),
+                    offsets.as_ptr(),
+                    offsets.len(),
+                    centers.as_ptr(),
+                    centers.len(),
+                    0.6,
+                    0,
+                    1,
+                    &mut n_outliers,
+                    active.as_mut_ptr(),
+                    records.as_mut_ptr(),
+                    outlier_offsets.as_mut_ptr(),
+                    std::ptr::null_mut(),
+                    1,
+                    0,
+                )
+            },
+            1
+        );
+        assert_eq!(active, [0]);
+        assert_eq!(outlier_offsets, [0, 0]);
+        assert!(records.iter().all(|value| value.is_finite()));
+
+        assert_eq!(
+            unsafe {
+                xyg_box_geometry(
+                    values.as_ptr(),
+                    values.len(),
+                    offsets.as_ptr(),
+                    offsets.len(),
+                    centers.as_ptr(),
+                    centers.len(),
+                    0.6,
+                    2,
+                    1,
+                    &mut n_outliers,
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                    0,
+                    0,
+                )
+            },
+            usize::MAX
+        );
     }
 
     #[test]

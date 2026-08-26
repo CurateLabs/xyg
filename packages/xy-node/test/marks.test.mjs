@@ -304,12 +304,23 @@ test("multi-group box / violin", () => {
   const box = composeBox(groups);
   assert.equal(box.groups, 2);
   assert.equal(box.groupStats.length, 2);
-  assert.ok(box.traces.find((t) => t.kind === "bar").x0.length === 2);
+  assert.ok(box.traces.find((t) => t.kind === "box").x0.length === 2);
+  const boxPayload = boxChart(groups).buildPayload().spec;
+  assert.deepEqual(
+    boxPayload.traces.slice(0, 3).map((trace) => trace.kind),
+    ["box_whisker", "box", "box_median"],
+  );
 
   const grouped = composeBox(new Float64Array([1, 2, 10, 11, 12]), {
     group: ["a", "a", "b", "b", "b"],
   });
   assert.equal(grouped.groups, 2);
+  for (const badCenter of [Number.NaN, Number.POSITIVE_INFINITY]) {
+    assert.throws(
+      () => composeBox([[1], [2]], { x: [10, badCenter], showOutliers: false }),
+      /invalid bounded box geometry/,
+    );
+  }
 
   const violin = composeViolin(groups, { bins: 8 });
   assert.equal(violin.groups, 2);

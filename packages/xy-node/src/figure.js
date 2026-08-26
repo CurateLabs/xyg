@@ -459,12 +459,12 @@ export class Figure {
   box(values, opts = {}) {
     const composed = composeBox(values, opts);
     for (const t of composed.traces) {
-      if (t.kind === "segments") {
-        this.segments(t.x0, t.y0, t.x1, t.y1, { name: t.name, style: t.style });
-      } else if (t.kind === "bar") {
-        this._pushRectTrace("bar", t, { name: t.name, style: t.style });
+      if (t.kind === "box_whisker" || t.kind === "box_median") {
+        this._pushSegmentTrace(t, { name: t.name, style: t.style });
+      } else if (t.kind === "box") {
+        this._pushRectTrace("box", t, { name: t.name, style: t.style });
       } else if (t.kind === "scatter") {
-        this.scatter(t.x, t.y, { name: t.name, style: t.style, _composed: true });
+        this.scatter(t.x, t.y, { name: t.name, style: t.style, xAxis: t.x_axis, yAxis: t.y_axis, _composed: true });
       }
     }
     return this;
@@ -626,6 +626,10 @@ export class Figure {
       count: t.count,
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
+      ...(opts.color ?? t.color) != null ? { color: opts.color ?? t.color } : {},
+      ...(opts.tooltip_rows ?? t.tooltip_rows) != null
+        ? { tooltip_rows: opts.tooltip_rows ?? t.tooltip_rows }
+        : {},
     });
   }
 
@@ -677,20 +681,7 @@ export class Figure {
 
   segments(x0, y0, x1, y1, opts = {}) {
     const t = composeSegments(x0, y0, x1, y1, opts).traces[0];
-    this.traces.push({
-      id: opts.id ?? t.id ?? nextTraceId++,
-      kind: t.kind,
-      name: t.name,
-      x0: t.x0,
-      y0: t.y0,
-      x1: t.x1,
-      y1: t.y1,
-      style: { ...t.style },
-      x_axis: t.x_axis,
-      y_axis: t.y_axis,
-      ...(opts.color != null ? { color: opts.color } : {}),
-      ...(opts.tooltip_rows != null ? { tooltip_rows: opts.tooltip_rows } : {}),
-    });
+    this._pushSegmentTrace(t, opts);
     return this;
   }
 
@@ -787,6 +778,7 @@ export class Figure {
         t.kind === "segments" ||
         t.kind === "histogram" ||
         t.kind === "bar" ||
+        t.kind === "box" ||
         t.kind === "violin" ||
         t.kind === "contour" ||
         t.kind === "errorbar" ||
@@ -1357,7 +1349,7 @@ export class Figure {
         specTraces.push(this._emitSegments(t, pw));
       } else if (t.kind === "area" || t.kind === "error_band") {
         specTraces.push(this._emitArea(t, pw, xr, widthPx));
-      } else if (t.kind === "bar" || t.kind === "violin") {
+      } else if (t.kind === "bar" || t.kind === "violin" || t.kind === "box") {
         specTraces.push(this._emitRect(t, pw, t.kind));
       } else if (t.kind === "heatmap") {
         specTraces.push(this._emitHeatmap(t, pw));

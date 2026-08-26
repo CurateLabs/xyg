@@ -43,7 +43,7 @@ export function distributionGroups(values, opts = {}) {
     if (typeof opts.x === "number" || (typeof opts.x !== "object" && opts.x != null && !Array.isArray(opts.x) && !ArrayBuffer.isView(opts.x))) {
       throw new RangeError(`${kind} x must be 1-D with one label per group`);
     }
-    const positions = categoryPositions(opts.x);
+    const positions = axisPositions(opts.x);
     if (positions.length !== groups.length) {
       throw new RangeError(`${kind} x must have one label per group`);
     }
@@ -56,7 +56,7 @@ export function distributionGroups(values, opts = {}) {
   if (key == null) {
     return { groups: [vals], positions: Float64Array.of(0) };
   }
-  const positions = categoryPositions(key);
+  const positions = axisPositions(key);
   if (positions.length !== vals.length) {
     throw new RangeError(`${kind} ${keyName} must have length ${vals.length}`);
   }
@@ -83,6 +83,15 @@ export function categoryPositions(key) {
     out[i] = index.get(k);
   }
   return out;
+}
+
+/** Preserve finite numeric coordinates; factorize only categorical labels. */
+function axisPositions(key) {
+  const items = [...key];
+  if (items.every((item) => typeof item === "number")) {
+    return Float64Array.from(items);
+  }
+  return categoryPositions(items);
 }
 
 /**

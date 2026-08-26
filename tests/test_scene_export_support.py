@@ -244,6 +244,23 @@ def _public_violin(orientation: str = "vertical") -> Figure:
     return figure
 
 
+def _public_box(orientation: str = "vertical") -> Figure:
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (-2.0, 102.0)
+    figure.axis_options["y"]["domain"] = (-2.0, 102.0)
+    figure.box(
+        [[1, 2, 3, 100], [2, 3, 4, 5]],
+        orientation=orientation,
+        width=0.7,
+        color="#7c3aed",
+        opacity=0.6,
+        name="dist",
+    )
+    for trace_id, trace in enumerate(figure.traces):
+        trace.id = trace_id
+    return figure
+
+
 def _public_literal_geometry_variant(kind: str) -> Figure:
     """Build one exact cross-host transform fixture on fixed domains."""
     figure = Figure(width=320, height=240)
@@ -411,6 +428,25 @@ def test_public_violin_is_rust_owned_and_routes_every_static_consumer(orientatio
     assert hashlib.sha256(scene).hexdigest() == fixture["public_violin_sha256"][orientation]
     svg = _native.scene_svg(scene)
     assert svg.count("<rect ") >= 8
+    assert figure.to_svg().encode() == svg.encode()
+    assert figure.to_png(scale=1) == kernels.rasterize_png(
+        _native.scene_raster_commands(scene), 320, 240
+    )
+    assert figure.to_image(format="pdf") == _pdf.svg_to_pdf(svg)
+    assert _native.scene_browser_painter(scene).startswith(b"XYPB")
+
+
+@pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
+def test_public_box_is_rust_owned_and_routes_every_static_consumer(orientation: str) -> None:
+    from xyg import _native, _pdf, kernels
+
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
+    figure = _public_box(orientation)
+    assert scene_export_support_reason(figure) is None
+    scene = figure_scene(figure)
+    assert hashlib.sha256(scene).hexdigest() == fixture["public_box_sha256"][orientation]
+    svg = _native.scene_svg(scene)
+    assert "<rect " in svg and "<polyline " in svg
     assert figure.to_svg().encode() == svg.encode()
     assert figure.to_png(scale=1) == kernels.rasterize_png(
         _native.scene_raster_commands(scene), 320, 240

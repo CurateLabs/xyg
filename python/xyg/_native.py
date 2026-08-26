@@ -6150,6 +6150,74 @@ def box_stats(
     )
 
 
+def box_geometry(
+    values: npt.NDArray[np.float64],
+    offsets: npt.NDArray[np.uintp],
+    centers: npt.NDArray[np.float64],
+    width: float,
+    orientation: str,
+    show_outliers: bool,
+) -> dict[str, Any]:
+    """Grouped Tukey statistics and canonical box-part geometry from Rust."""
+    values = _as_f64(values, "values")
+    centers = _as_f64(centers, "centers")
+    offsets = np.ascontiguousarray(offsets, dtype=np.uintp)
+    code = {"vertical": 0, "horizontal": 1}.get(orientation, -1)
+    n_outliers = ctypes.c_size_t()
+
+    def call(outputs: list[npt.NDArray[Any] | None], group_cap: int, outlier_cap: int) -> int:
+        pointers = [0 if value is None else value.ctypes.data for value in outputs]
+        return int(
+            _lib.xyg_box_geometry(
+                _ptr_f64(values),
+                len(values),
+                offsets.ctypes.data,
+                len(offsets),
+                _ptr_f64(centers),
+                len(centers),
+                float(width),
+                code,
+                int(show_outliers),
+                ctypes.byref(n_outliers),
+                *pointers,
+                group_cap,
+                outlier_cap,
+            )
+        )
+
+    required = call([None] * 4, 0, 0)
+    if required == _USIZE_MAX or required <= 0 or required > 2_000:
+        raise ValueError("invalid bounded box geometry")
+    outliers = int(n_outliers.value)
+    if outliers < 0 or required * 5 + outliers > 10_000:
+        raise ValueError("invalid bounded box geometry")
+    active = np.empty(required, dtype=np.uint32)
+    records = np.empty((required, 25))
+    outlier_offsets = np.empty(required + 1, dtype=np.uintp)
+    outlier_records = np.empty((outliers, 3))
+    if call([active, records, outlier_offsets, outlier_records], required, outliers) != required:
+        raise ValueError("invalid bounded box geometry")
+    body = tuple(records[:, index].copy() for index in range(5, 9))
+    whiskers = tuple(
+        records[:, [9 + segment * 4 + coordinate for segment in range(3)]].reshape(-1)
+        for coordinate in range(4)
+    )
+    medians = tuple(records[:, index].copy() for index in range(21, 25))
+    group_stats = []
+    for index in range(required):
+        start, end = int(outlier_offsets[index]), int(outlier_offsets[index + 1])
+        group_stats.append((*map(float, records[index, :5]), outlier_records[start:end, 0].copy()))
+    return {
+        "active_groups": active,
+        "group_stats": group_stats,
+        "body": body,
+        "whiskers": whiskers,
+        "medians": medians,
+        "outlier_x": outlier_records[:, 1].copy() if show_outliers else np.empty(0),
+        "outlier_y": outlier_records[:, 2].copy() if show_outliers else np.empty(0),
+    }
+
+
 HEX_REDUCE_COUNT = 0
 HEX_REDUCE_MEAN = 1
 HEX_REDUCE_SUM = 2

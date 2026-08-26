@@ -957,3 +957,22 @@ over-budget output fail before partial writes. Constant-style primary
 Cartesian violins with explicit domains route public SVG/PNG/PDF through these
 Scene Rects; pyplot KDE bodies, polar, gradients, alternate axes, and per-item
 styles remain compatibility paths.
+
+ABI 99 makes composition boxes a compact Rust-owned ingress without changing
+Scene 25. `xyg_box_geometry` is a bounded query/write operation over flat f64
+values, monotone `size_t` offsets, f64 centers, orientation, positive finite
+width, and `show_outliers`. Its fixed-stride output planes are active source
+group IDs (`u32`); 25-f64 group records (five Tukey statistics, body rectangle,
+three whisker/cap segments, median segment); monotone `size_t` outlier offsets;
+and 3-f64 outlier records (value, x, y). Rust owns finite filtering, Tukey
+statistics, stable group order, orientation/width policy, deterministic bounded
+outlier jitter, and the combined 10,000-record bound. A zero-capacity query and
+any short-capacity write return the required active-group and outlier counts
+without writing output planes. Nonfinite source samples are filtered; malformed
+offsets or orientation/visibility metadata, nonfinite centers/width, coordinate
+overflow, all-empty input, and over-budget output fail atomically. Hosts retain coercion,
+grouping/category packing, literal
+style, and conversion to existing Rect, Polyline, and Scatter Scene families.
+Constant-style primary-Cartesian boxes route public SVG/PNG/PDF through those
+Scene consumers; alternate axes, polar, gradients, and per-item styles remain
+explicit compatibility paths.

@@ -406,6 +406,36 @@ test("Node matches Python bytes for Rust-owned bounded violin geometry", () => {
   }
 });
 
+test("Node matches Python bytes for Rust-owned bounded box geometry", () => {
+  for (const orientation of ["vertical", "horizontal"]) {
+    const figure = new Figure({ width: 320, height: 240 });
+    figure.setAxisDomain("x", [-2, 102]); figure.setAxisDomain("y", [-2, 102]);
+    figure.box([[1, 2, 3, 100], [2, 3, 4, 5]], {
+      orientation, width: 0.7, color: "#7c3aed", opacity: 0.6, name: "dist",
+    });
+    figure.traces.forEach((trace, id) => { trace.id = id; });
+    const scene = figure.toScene();
+    assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.public_box_sha256[orientation]);
+    assert.match(sceneSvg(scene), /<rect /); assert.match(sceneSvg(scene), /<polyline /);
+    assert.ok(sceneRasterCommands(scene).length > 100); assert.ok(sceneBrowserPainter(scene).length > 300);
+  }
+});
+
+test("Node preserves authored numeric box centers in both orientations", () => {
+  for (const orientation of ["vertical", "horizontal"]) {
+    const figure = new Figure({ width: 320, height: 240 });
+    figure.setAxisDomain("x", [-2, 22]); figure.setAxisDomain("y", [-2, 22]);
+    figure.box([[1, 2, 3], [4, 5, 20]], {
+      x: [10, 20], orientation, width: 0.6, showOutliers: true,
+    });
+    figure.traces.forEach((trace, id) => { trace.id = id; });
+    assert.equal(
+      crypto.createHash("sha256").update(figure.toScene()).digest("hex"),
+      figureSceneFixture.public_box_numeric_centers_sha256[orientation],
+    );
+  }
+});
+
 test("Node matches Python bytes for bounded literal geometry host transforms", () => {
   const variants = [
     ["step", (figure) => figure.step([0, 1, 2], [1, 3, 2], { id: 0, where: "mid" })],

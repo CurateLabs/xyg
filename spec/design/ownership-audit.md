@@ -73,6 +73,14 @@ Rects already route public SVG/PNG/PDF and browser paint through the canonical
 Scene. Rust rejects automatic results above 10,000 bins, and each thin binding
 uses one 10,001-edge ABI scratch plane. Arbitrary authored edges and cumulative
 assembly remain #58 debt.
+ABI 99 likewise removes grouped composition-box statistics and geometry policy
+from both hosts. Python and Node pack canonical values, offsets, centers,
+orientation, width, visibility, and literal styles; Rust owns finite filtering,
+Tukey statistics, stable group ordering, body/whisker/cap/median geometry,
+deterministic bounded outlier placement, and the 10,000-record cap. Supported
+constant-style primary-Cartesian boxes now use the existing Rect, Polyline, and
+Scatter Scene consumers for public SVG/PNG/PDF; alternate-axis, polar,
+gradient, and per-item-style cases remain explicit compatibility paths.
 
 Static-export routing status (#117): `Figure.to_svg`, native `to_png`, native
 `to_image(..., "svg"|"png"|"pdf")`, `write_image`, and the native branch of
@@ -81,7 +89,7 @@ literal Cartesian public geometry subset—constant-style built-in scatter symbo
 with optional constant marker strokes and scalar widths
 and polylines, bounded fill-only unjoined triangle meshes, ordinary finite
 fixed-domain area/error-band Bands,
-ordinary bar/column/histogram Rects and Rust-expanded constant-style violins, bounded disconnected
+ordinary bar/column/histogram Rects and Rust-expanded constant-style violins and boxes, bounded disconnected
 segment/error-bar/stem endpoint pairs, and finite literal solid-color ribbons
 expanded by Rust—plus the proven literal static
 chrome contract (chart/plot backgrounds, title, authored axis
@@ -431,7 +439,7 @@ Forbidden:
 | `packages/xy-node/src/index.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/marks/area.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/bar.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
-| `packages/xy-node/src/marks/box.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
+| `packages/xy-node/src/marks/box.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/marks/contour.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/distribution.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/ecdf.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |

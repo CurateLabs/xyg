@@ -1696,6 +1696,9 @@ def scene_export_support_reason(
         "column",
         "histogram",
         "violin",
+        "box",
+        "box_whisker",
+        "box_median",
         "segments",
         "errorbar",
         "stem",
@@ -1746,6 +1749,9 @@ def scene_export_support_reason(
             "corner_radius",
         },
         "violin": {"color", "opacity", "role", "fill", "stroke", "stroke_width"},
+        "box": {"color", "opacity", "role", "stroke", "stroke_width", "box_orientation"},
+        "box_whisker": {"color", "opacity", "width", "role"},
+        "box_median": {"color", "opacity", "width", "role"},
         "segments": {"color", "opacity", "width", "role"},
         "errorbar": {"color", "opacity", "width", "role"},
         "stem": {"color", "opacity", "width", "role"},
@@ -1791,6 +1797,9 @@ def scene_export_support_reason(
             "column",
             "histogram",
             "violin",
+            "box",
+            "box_whisker",
+            "box_median",
             "segments",
             "errorbar",
             "stem",
@@ -1839,17 +1848,19 @@ def scene_export_support_reason(
                 "segments": {"segments"},
                 "errorbar": {"y-errorbar", "x-errorbar"},
                 "stem": {"stem"},
+                "box_whisker": {"box-whisker"},
+                "box_median": {"box-median"},
             }[trace.kind]
             if (trace.style or {}).get("role") not in accepted_roles:
                 return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-        if trace.kind == "violin":
+        if trace.kind in {"violin", "box"}:
             rect_columns = (trace.x0, trace.y0, trace.x1, trace.y1)
             if any(column is None for column in rect_columns):
                 return "XYG_SCENE_UNSUPPORTED_PUBLIC_MARK"
             lengths = {len(column.values) for column in rect_columns}
             if len(lengths) != 1 or next(iter(lengths), 0) > 10_000:
                 return "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
-            if (trace.style or {}).get("role") != "violin":
+            if (trace.style or {}).get("role") != trace.kind:
                 return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
         if trace.kind in _RIBBON_KINDS and (trace.style or {}).get("role") != "ribbon":
             return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
@@ -1869,23 +1880,34 @@ def scene_export_support_reason(
             mesh_style = trace.style or {}
             if mesh_style.get("role") != "triangle-mesh" or mesh_style.get("joined_fill"):
                 return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-        # The only generated companion scatter accepted here is the immediate
-        # endpoint marker for a preceding stem. This preserves author order
-        # and prevents a generic role from leaking into the public contract.
-        if (
-            trace.kind == "scatter"
-            and (trace.style or {}).get("role") is not None
-            and (
-                (trace.style or {}).get("role") != "stem-marker"
-                or trace_index == 0
-                or figure.traces[trace_index - 1].kind != "stem"
-                or trace.x is None
-                or trace.y is None
-                or not np.array_equal(trace.x.values, figure.traces[trace_index - 1].x1.values)
-                or not np.array_equal(trace.y.values, figure.traces[trace_index - 1].y1.values)
-            )
-        ):
-            return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+        # Generated companion scatters are accepted only in their exact
+        # canonical sequence: stem endpoints, or bounded Rust-positioned box
+        # outliers after whisker/body/median records.
+        if trace.kind == "scatter" and (role := (trace.style or {}).get("role")) is not None:
+            if trace.x is None or trace.y is None or len(trace.x.values) != len(trace.y.values):
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+            if role == "stem-marker":
+                if (
+                    trace_index == 0
+                    or figure.traces[trace_index - 1].kind != "stem"
+                    or not np.array_equal(trace.x.values, figure.traces[trace_index - 1].x1.values)
+                    or not np.array_equal(trace.y.values, figure.traces[trace_index - 1].y1.values)
+                ):
+                    return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+            elif role == "box-outlier":
+                if (
+                    trace_index < 3
+                    or [item.kind for item in figure.traces[trace_index - 3 : trace_index]]
+                    != ["box_whisker", "box", "box_median"]
+                    or len(trace.x.values) > 10_000
+                    or not np.isfinite(trace.x.values).all()
+                    or not np.isfinite(trace.y.values).all()
+                    or trace.x_axis != figure.traces[trace_index - 1].x_axis
+                    or trace.y_axis != figure.traces[trace_index - 1].y_axis
+                ):
+                    return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+            else:
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
         if trace.kind == "scatter" and (trace.style or {}).get("symbol", "circle") not in (
             _SYMBOL_CODES
         ):
