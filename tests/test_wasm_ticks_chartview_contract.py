@@ -61,6 +61,7 @@ def test_chartview_wasm_ticks_are_latest_wins_and_destroy_safe() -> None:
     assert "sequential ChartView tick re-attach replaces the previous handle" in browser
     assert "secondary ChartView axes stay on the compatibility tick path" in browser
     assert "newly eligible axis after attach does not paint empty wasm" in browser
+    assert "primary Cartesian ChartView category and UTC-time ticks use Rust/WASM" in browser
     assert "failed ChartView tick snapshot retries without a second event" in browser
 
 
@@ -80,7 +81,10 @@ def test_chartview_wasm_tick_assets_and_scope_are_explicit() -> None:
     assert "and ChartView may admit" in api
     assert "GL lifecycle" not in api
     assert "this.view._glLost" not in ticks
-    assert "Category, time, angular/polar" in api
+    assert "Angular/polar, secondary-axis" in api
+    assert '"utc_time"' in ticks
+    assert 'family === "category"' in ticks
+    assert "slotIdentity" in ticks
     assert "Notebook, `to_html()`, Reflex" in api
     assert "Self-contained" in design
     assert "claims nor closes that issue" in design

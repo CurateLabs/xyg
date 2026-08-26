@@ -427,6 +427,7 @@ interface ChartTickFrame {
 }
 
 interface ChartTickCache {
+  identity: string;
   step: number;
   ticks: readonly number[];
   labeledValues: readonly number[];
@@ -452,7 +453,7 @@ function asTickError(cause: unknown, malformedOutput = false): XygWasmError {
 }
 
 /**
- * Latest-wins ChartView adapter for the bounded primary numeric-axis slice.
+ * Latest-wins ChartView adapter for the bounded primary Cartesian-axis slice.
  *
  * Rust owns generation and formatting. TypeScript only snapshots the viewport,
  * frames XYTK, admits a matching XYTO revision, and paints the last admitted
@@ -495,27 +496,64 @@ export class XygWasmTicksHandle {
     return null;
   }
 
+  private categoryTable(axis: { categories?: unknown }): readonly string[] | null {
+    const categories = axis.categories;
+    if (!Array.isArray(categories) || categories.length === 0) return null;
+    if (categories.some((value) => typeof value !== "string" || value.includes("\0"))) {
+      return null;
+    }
+    return categories;
+  }
+
+  private axisFamily(axis: {
+    kind?: unknown;
+    scale?: unknown;
+  }): XygWasmTickFamily | null {
+    const kind = axis.kind ?? "linear";
+    if (kind === "category") return "category";
+    if (kind === "time") return "utc_time";
+    if (kind !== "linear") return null;
+    const scale = axis.scale ?? "linear";
+    if (scale === "log" || scale === "symlog" || scale === "linear") return scale;
+    return null;
+  }
+
+  private slotIdentity(slot: PrimaryAxisId): string | null {
+    if (!this.slotEligible(slot)) return null;
+    const axis = this.view._axis(slot);
+    const family = this.axisFamily(axis);
+    if (!family) return null;
+    return JSON.stringify({
+      family,
+      format: typeof axis.format === "string" ? axis.format : "",
+      categories: family === "category" ? [...(this.categoryTable(axis) ?? [])] : [],
+      constant: family === "symlog" ? Number(this.view._axisConstant(slot)) : 0,
+      mask: family === "log" && axis.nonpositive === "mask",
+    });
+  }
+
   private slotEligible(slot: PrimaryAxisId): boolean {
     if (this.view.spec?.coords === "polar") return false;
     const axis = this.view._axis(slot);
     if (!axis || typeof axis !== "object" || Array.isArray(axis.tick_values) || axis.theta_unit) {
       return false;
     }
-    const kind = axis.kind ?? "linear";
-    const scale = axis.scale ?? "linear";
-    return kind === "linear" && (scale === "linear" || scale === "log" || scale === "symlog");
+    const family = this.axisFamily(axis);
+    if (family == null) return false;
+    return family !== "category" || this.categoryTable(axis) != null;
   }
 
-  /** Policy: this slice can request this automatic primary Cartesian numeric axis. */
+  /** Policy: this slice can request this automatic primary Cartesian axis. */
   eligible(axisId: unknown): axisId is PrimaryAxisId {
     const slot = this.primarySlot(axisId);
     return slot !== null && this.slotEligible(slot);
   }
 
-  /** Authoritative only after an admitted Rust cache exists for an eligible slot. */
+  /** Authoritative only after an admitted Rust cache matches the current slot. */
   covers(axisId: unknown): axisId is PrimaryAxisId {
     const slot = this.primarySlot(axisId);
-    return slot !== null && this.slotEligible(slot) && this.cache.has(slot);
+    return slot !== null && this.slotEligible(slot) && this.cache.has(slot)
+      && this.cache.get(slot)?.identity === this.slotIdentity(slot);
   }
 
   /** Internal ChartView resolver. A covered axis never falls through to JS. */
@@ -550,9 +588,9 @@ export class XygWasmTicksHandle {
       : null;
   }
 
-  private target(axisId: PrimaryAxisId): number {
+  private target(axisId: PrimaryAxisId, family: XygWasmTickFamily): number {
     const fallback = axisId === "x"
-      ? Math.max(3, Number(this.view.plot?.w) / 80)
+      ? Math.max(3, Number(this.view.plot?.w) / (family === "utc_time" ? 90 : 80))
       : Math.max(3, Number(this.view.plot?.h) / 45);
     const target = Number(this.view._axisTickTarget(axisId, fallback));
     return Math.max(1, Math.min(MAX_TICKS, Math.floor(Number.isFinite(target) ? target : 6)));
@@ -570,20 +608,18 @@ export class XygWasmTicksHandle {
       const lo = Number(loRaw), hi = Number(hiRaw);
       // A sibling axis with a torn range must not block the finite axis.
       if (!Number.isFinite(lo) || !Number.isFinite(hi)) continue;
-      const family: XygWasmTickFamily = axis.scale === "log"
-        ? "log"
-        : axis.scale === "symlog"
-          ? "symlog"
-          : "linear";
+      const family = this.axisFamily(axis);
+      if (!family) continue;
       axes.push({
         axisId: PRIMARY_AXIS_CODES[axisId],
         family,
         provenance: "automatic",
         lo,
         hi,
-        target: this.target(axisId),
+        target: this.target(axisId, family),
         ...(family === "symlog" ? { constant: this.view._axisConstant(axisId) } : {}),
         ...(family === "log" ? { maskNonpositive: axis.nonpositive === "mask" } : {}),
+        ...(family === "category" ? { categories: this.categoryTable(axis) ?? [] } : {}),
         ...(typeof axis.format === "string" ? { format: axis.format } : {}),
       });
       axisIds.push(axisId);
@@ -681,6 +717,7 @@ export class XygWasmTicksHandle {
           throw new TypeError("Rust tick output axis identity is malformed");
         }
         next.set(axisId, {
+          identity: this.slotIdentity(axisId) ?? "",
           step: actual.step,
           ticks: actual.ticks,
           labeledValues: actual.labeledValues,
@@ -693,7 +730,7 @@ export class XygWasmTicksHandle {
       if (!this.isCurrent(frame, task)) return false;
       for (const [axisId, value] of next) this.cache.set(axisId, value);
       for (const axisId of [...this.cache.keys()]) {
-        if (!this.slotEligible(axisId)) this.cache.delete(axisId);
+        if (!this.covers(axisId)) this.cache.delete(axisId);
       }
       this.task = null;
       this.requestedKey = null;
@@ -736,7 +773,7 @@ export class XygWasmTicksHandle {
       const frame = this.frame();
       if (!frame) {
         throw new RangeError(
-          "attachWasmTicks requires an automatic primary Cartesian linear, log, or symlog axis",
+          "attachWasmTicks requires an automatic primary Cartesian linear, log, symlog, category, or UTC-time axis",
         );
       }
       if (await this.request(frame, false, true)) return;
@@ -789,6 +826,8 @@ export class XygWasmTicksHandle {
 
 /**
  * Attach Rust-owned automatic ticks to supported primary Cartesian axes.
+ *
+ * Eligible families are linear, log, symlog, category, and UTC-time.
  *
  * The first XYTO batch is admitted before the adapter is installed, so an
  * asset/version failure emits one stable event and rejects without a partial

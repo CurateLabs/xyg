@@ -136,10 +136,11 @@ and measures gutters. `python/xyg/_scene_v3.py` and
 UTF-8 through the versioned ABI envelope. `js/src/30_ticks.ts` remains
 canonical-policy debt for uncovered dynamic browser paths under #59. WASM ABI
 23 plus `attachWasmTicks` now cut explicitly attached automatic primary
-Cartesian linear/log/symlog ChartView axes to the Rust resolver and independent
-Worker lane. Category/time/polar, secondary axes, colorbars, authored ticks,
-unattached charts, and hosts without explicit external assets remain on the
-frozen compatibility path; this is not the all-host ChartView cutover.
+Cartesian linear/log/symlog/category/UTC-time ChartView axes to the Rust
+resolver and independent Worker lane. Polar, secondary axes, colorbars,
+authored ticks, unattached charts, and hosts without explicit external assets
+remain on the frozen compatibility path; this is not the all-host ChartView
+cutover.
 
 ## Binding seam decision
 
@@ -307,8 +308,9 @@ Allowed:
 
 - Temporary tick consumption and browser-specific label presentation during scene migration.
 - The existing TypeScript generator stays frozen for unattached charts and the
-  category/time/angular/polar/secondary/colorbar/authored compatibility paths.
-  An explicitly attached automatic primary Cartesian linear/log/symlog axis
+  angular/polar/secondary/colorbar/authored compatibility paths.
+  An explicitly attached automatic primary Cartesian
+  linear/log/symlog/category/UTC-time axis
   consumes only Rust-produced positions and labels for each view and resize.
 
 Forbidden:

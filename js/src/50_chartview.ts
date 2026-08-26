@@ -1328,7 +1328,8 @@ export class ChartView {
 
   _axisTicks(axisId, target): any {
     // ABI 23 ChartView cutover: once an explicit attachment is active, covered
-    // primary Cartesian numeric axes consume only its last admitted Rust cache.
+    // primary Cartesian linear/log/symlog/category/UTC-time axes consume only
+    // the last admitted Rust cache that still matches that slot's identity.
     // A pending/failed newer request never falls through to 30_ticks.ts.
     axisId = this._wasmTickAxisId(axisId);
     const wasmTicks = this._wasmTicks?.ticks?.(axisId);
