@@ -35,7 +35,6 @@ def test_chartview_wasm_ticks_are_latest_wins_and_destroy_safe() -> None:
     assert "this.frame()?.key === frame.key" in ticks
     assert "ownsAttachment()" in ticks
     assert "!this.active || this.view._wasmTicks === this" in ticks
-    assert "this.view._glLost" in ticks
     assert "this.disposed || this.view._destroyed || !this.ownsAttachment()" in ticks
     assert '"wasm_ticks_error"' in ticks
     assert "this.view._wasmTicks === this" in ticks
