@@ -62,6 +62,9 @@ def test_chartview_wasm_tick_assets_and_scope_are_explicit() -> None:
     assert "XygWasmTicksHandle" in entries
     assert entries.split("// Public API.", 1)[1].count("attachWasmTicks") == 1
     assert "xy:wasm_ticks_error" in api
+    assert "and ChartView may admit" in api
+    assert "GL lifecycle" not in api
+    assert "this.view._glLost" not in ticks
     assert "Category, time, angular/polar" in api
     assert "Notebook, `to_html()`, Reflex" in api
     assert "Self-contained" in design

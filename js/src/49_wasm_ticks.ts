@@ -604,7 +604,7 @@ export class XygWasmTicksHandle {
 
   private isCurrent(frame: ChartTickFrame, task: XygWasmTask<XygWasmTickBatchResult>): boolean {
     if (this.disposed || this.task !== task || this.requestedKey !== frame.key
-        || this.view._destroyed || this.view._glLost || !this.ownsAttachment()) {
+        || this.view._destroyed || !this.ownsAttachment()) {
       return false;
     }
     try {
@@ -724,7 +724,7 @@ export class XygWasmTicksHandle {
   /** Resolve a current initial cache before this adapter becomes authoritative. */
   async initialize() {
     await this.worker.ready;
-    while (!this.disposed && !this.view._destroyed && !this.view._glLost && this.ownsAttachment()) {
+    while (!this.disposed && !this.view._destroyed && this.ownsAttachment()) {
       const frame = this.frame();
       if (!frame) {
         throw new RangeError(
@@ -743,7 +743,7 @@ export class XygWasmTicksHandle {
 
   /** Schedule the latest viewport; identical view/target snapshots are deduplicated. */
   schedule(): number | null {
-    if (this.disposed || !this.active || this.view._destroyed || this.view._glLost) return null;
+    if (this.disposed || !this.active || this.view._destroyed) return null;
     let frame: ChartTickFrame | null;
     try {
       frame = this.frame();
