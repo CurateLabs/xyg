@@ -927,6 +927,15 @@ records. Browser DOM measurement and
 WebGL paint remain environment-specific consumers with documented layout
 tolerances (§7 and §21).
 
+Exact composition ECDF canonical values and cumulative mass are resolved by
+the existing `xyg_weighted_ecdf` Rust kernel in Python and Node: total-order
+sorting, duplicate coalescing, and normalization are not host policy. Python
+passes raw f64 values and Rust filters nonfinite observations; Node retains its
+equivalent coercion/validation seam. Hosts prepend the literal `(first, 0)` anchor and submit the
+result as an ordinary `post` Step, whose expansion and all three consumers are
+already Rust-owned. This changes no ABI or Scene version. Binned ECDF domain,
+bin selection, and cumulative assembly remain an explicit later cutover.
+
 ABI 98 makes the composition violin a compact Rust-owned ingress without a
 Scene-version change. Hosts pack flat canonical f64 samples, monotone group
 offsets, centers, bins, positive finite width, and orientation. Rust filters

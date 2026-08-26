@@ -117,6 +117,16 @@ and literal style; Rust owns finite filtering, density normalization,
 width/orientation, the 10,000-Rect bound, and final geometry. Vertical and
 horizontal exact-byte fixtures feed the same SVG, raster, and browser Scene
 consumers. Pyplot KDE bodies and advanced/polar variants remain compatibility.
+Exact composition ECDFs in both hosts use the existing synchronous
+`xyg_weighted_ecdf` kernel for total-order sorting, duplicate coalescing, and
+normalized cumulative mass. Python passes its raw f64 column so Rust also
+filters nonfinite observations; Node's existing coercion seam removes them
+before the same kernel. After those validation/coercion seams, hosts prepend
+the right-continuous zero anchor and author literal line style before the existing
+Rust-expanded Step Scene path. Exact unsorted/repeated/nonfinite and singleton
+fixtures are byte-identical through SVG, raster, and browser consumers. Binned
+ECDF domain, histogram, and cumulative assembly remain separately recorded
+host-policy debt.
 Scene v13 covers solid chart/plot backgrounds, authored
   Cartesian side/visibility/major-minor geometry and paint, and a bounded
   single-column primary static legend for named constant-style traces, plus a

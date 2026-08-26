@@ -55,6 +55,15 @@ and emits final coordinates. Public constant-style primary Cartesian violins
 use the existing Scene consumers; pyplot KDE bodies and advanced variants stay
 on their explicit compatibility paths.
 
+Exact composition ECDF sorting, duplicate coalescing, and cumulative
+normalization now use `xyg_weighted_ecdf` in both Python and Node. Python also
+passes raw f64 values through Rust's finite filtering, while Node retains its
+equivalent finite-value coercion seam.
+The hosts retain validation/error wording, the right-continuous zero anchor,
+and literal Step style packing; Rust expands that Step for the shared Scene
+consumers. Binned ECDF domain and cumulative-bin assembly remain migration debt
+under #58.
+
 Static-export routing status (#117): `Figure.to_svg`, native `to_png`, native
 `to_image(..., "svg"|"png"|"pdf")`, `write_image`, and the native branch of
 `write_images` now delegate the proven
