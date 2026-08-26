@@ -1373,7 +1373,14 @@ export class ChartView {
   }
 
   _axisTickText(axis, value, step) {
-    const wasmLabel = this._wasmTicks?.label?.(axis?.id, Number(value));
+    const axisId = axis?.id === "x" || axis?.id === "y"
+      ? axis.id
+      : axis === this.axes?.x
+        ? "x"
+        : axis === this.axes?.y
+          ? "y"
+          : axis?.id;
+    const wasmLabel = this._wasmTicks?.label?.(axisId, Number(value));
     if (wasmLabel !== null && wasmLabel !== undefined) return wasmLabel;
     if (Array.isArray(axis.tick_values) && Array.isArray(axis.tick_labels)) {
       const index = axis.tick_values.findIndex((candidate) => Number(candidate) === Number(value));

@@ -481,7 +481,9 @@ export class XygWasmTicksHandle {
     if (axisId !== "x" && axisId !== "y") return false;
     if (this.view.spec?.coords === "polar") return false;
     const axis = this.view._axis(axisId);
-    if (!axis || Array.isArray(axis.tick_values)) return false;
+    if (!axis || typeof axis !== "object" || Array.isArray(axis.tick_values) || axis.theta_unit) {
+      return false;
+    }
     const kind = axis.kind ?? "linear";
     const scale = axis.scale ?? "linear";
     return kind === "linear" && (scale === "linear" || scale === "log" || scale === "symlog");
@@ -526,13 +528,17 @@ export class XygWasmTicksHandle {
     return Math.max(1, Math.min(MAX_TICKS, Math.floor(Number.isFinite(target) ? target : 6)));
   }
 
-  private frame(): ChartTickFrame {
+  private frame(): ChartTickFrame | null {
     const axes: Omit<XygWasmTickAxisRequest, "revision">[] = [];
     const axisIds: PrimaryAxisId[] = [];
     for (const axisId of ["x", "y"] as const) {
       if (!this.covers(axisId)) continue;
       const axis = this.view._axis(axisId);
-      const [lo, hi] = this.view._axisRange(axisId);
+      const [loRaw, hiRaw] = this.view._axisRange(axisId);
+      const lo = Number(loRaw), hi = Number(hiRaw);
+      if (!Number.isFinite(lo) || !Number.isFinite(hi)) {
+        throw new TypeError("tick range must be finite");
+      }
       const family: XygWasmTickFamily = axis.scale === "log"
         ? "log"
         : axis.scale === "symlog"
@@ -542,8 +548,8 @@ export class XygWasmTicksHandle {
         axisId: PRIMARY_AXIS_CODES[axisId],
         family,
         provenance: "automatic",
-        lo: Number(lo),
-        hi: Number(hi),
+        lo,
+        hi,
         target: this.target(axisId),
         ...(family === "symlog" ? { constant: this.view._axisConstant(axisId) } : {}),
         ...(family === "log" ? { maskNonpositive: axis.nonpositive === "mask" } : {}),
@@ -551,11 +557,7 @@ export class XygWasmTicksHandle {
       });
       axisIds.push(axisId);
     }
-    if (!axes.length) {
-      throw new RangeError(
-        "attachWasmTicks requires an automatic primary Cartesian linear, log, or symlog axis",
-      );
-    }
+    if (!axes.length) return null;
     return {
       // This is request identity, not policy: every field is explicit XYTK
       // ingress or the current screen-bounded target.
@@ -565,13 +567,17 @@ export class XygWasmTicksHandle {
     };
   }
 
+  private ownsAttachment(): boolean {
+    return this.view._wasmTicks == null || this.view._wasmTicks === this;
+  }
+
   private isCurrent(frame: ChartTickFrame, task: XygWasmTask<XygWasmTickBatchResult>): boolean {
     if (this.disposed || this.task !== task || this.requestedKey !== frame.key
-        || this.view._destroyed || (this.active && this.view._wasmTicks !== this)) {
+        || this.view._destroyed || !this.ownsAttachment()) {
       return false;
     }
     try {
-      return this.frame().key === frame.key;
+      return this.frame()?.key === frame.key;
     } catch {
       return false;
     }
@@ -659,7 +665,7 @@ export class XygWasmTicksHandle {
         axisIds: Object.freeze([...frame.axisIds]),
         cancellations: this.cancellations,
       });
-      if (this.active) {
+      if (this.active && !this.disposed && !this.view._destroyed && this.view._wasmTicks === this) {
         // One admission can change measured gutters. Re-layout once, then the
         // ordinary draw path rechecks whether the screen-bounded target changed.
         this.view._layout();
@@ -683,8 +689,13 @@ export class XygWasmTicksHandle {
   /** Resolve a current initial cache before this adapter becomes authoritative. */
   async initialize() {
     await this.worker.ready;
-    while (!this.disposed && !this.view._destroyed) {
+    while (!this.disposed && !this.view._destroyed && this.ownsAttachment()) {
       const frame = this.frame();
+      if (!frame) {
+        throw new RangeError(
+          "attachWasmTicks requires an automatic primary Cartesian linear, log, or symlog axis",
+        );
+      }
       if (await this.request(frame, false, true)) return;
     }
     throw new XygWasmError("XYG_WASM_DISPOSED", "ChartView tick attachment was disposed");
@@ -698,13 +709,20 @@ export class XygWasmTicksHandle {
   /** Schedule the latest viewport; identical view/target snapshots are deduplicated. */
   schedule(): number | null {
     if (this.disposed || !this.active || this.view._destroyed) return null;
-    let frame: ChartTickFrame;
+    let frame: ChartTickFrame | null;
     try {
       frame = this.frame();
     } catch (cause) {
-      this.report(asTickError(cause));
+      // Persist the failed snapshot so a sticky invalid range cannot emit on
+      // every chrome paint. A later valid or different snapshot retries.
+      const key = "invalid-frame";
+      if (this.failedKey !== key) {
+        this.failedKey = key;
+        this.report(asTickError(cause));
+      }
       return null;
     }
+    if (!frame) return this.revision;
     if (frame.key === this.admittedKey || frame.key === this.failedKey
         || (frame.key === this.requestedKey && this.task)) {
       return this.revision;

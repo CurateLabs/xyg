@@ -13,10 +13,12 @@ def test_chartview_wasm_ticks_are_a_lifecycle_adapter_not_a_generator() -> None:
     assert "resolveWasmTicks(this.worker" in ticks
     assert "family," in ticks
     assert 'provenance: "automatic"' in ticks
+    assert 'from "./30_ticks"' not in ticks
     assert "linearTicks(" not in ticks
     assert "logTicks(" not in ticks
+    assert "fmtAxis(" not in ticks
     assert "const wasmTicks = this._wasmTicks?.ticks?.(axisId)" in chartview
-    assert "const wasmLabel = this._wasmTicks?.label?.(" in chartview
+    assert "this._wasmTicks?.label?.(axisId, Number(value))" in chartview
 
 
 def test_chartview_wasm_ticks_are_latest_wins_and_destroy_safe() -> None:
@@ -26,15 +28,18 @@ def test_chartview_wasm_ticks_are_latest_wins_and_destroy_safe() -> None:
 
     assert "this.cancelActive()" in ticks
     assert "this.requestedKey !== frame.key" in ticks
-    assert "this.frame().key === frame.key" in ticks
-    assert "this.view._wasmTicks !== this" in ticks
+    assert "this.frame()?.key === frame.key" in ticks
+    assert "ownsAttachment()" in ticks
     assert '"wasm_ticks_error"' in ticks
+    assert "this.view._wasmTicks === this" in ticks
     assert "this._wasmTicks?.destroy?.();" in chartview
     assert "ChartView tick latest-wins admission" in browser
     assert 'retainedXTicks.source !== "wasm"' in browser
+    assert "uncovered after attach does not emit" in browser
 
 
 def test_chartview_wasm_tick_assets_and_scope_are_explicit() -> None:
+    ticks = (ROOT / "js" / "src" / "49_wasm_ticks.ts").read_text(encoding="utf-8")
     package = (ROOT / "packages" / "xy-client" / "package.json").read_text(encoding="utf-8")
     entries = (ROOT / "js" / "src" / "60_entries.ts").read_text(encoding="utf-8")
     api = (ROOT / "spec" / "api" / "browser-wasm.md").read_text(encoding="utf-8")
@@ -49,3 +54,5 @@ def test_chartview_wasm_tick_assets_and_scope_are_explicit() -> None:
     assert "Notebook, `to_html()`, Reflex" in api
     assert "Self-contained" in design
     assert "claims nor closes that issue" in design
+    assert "axis.theta_unit" in ticks
+    assert "if (!axes.length) return null;" in ticks

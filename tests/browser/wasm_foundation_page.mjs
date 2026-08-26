@@ -720,6 +720,7 @@ async function run() {
       chartTickLabels,
     })}`);
   }
+  await chartTickHandle.dispose();
   chartTickView.destroy();
   await nextTask();
   if (chartTickView._wasmTicks !== null) {
@@ -896,18 +897,82 @@ async function run() {
     ranges: { x: [0, 7_200_000], y: [0, 1] },
   });
   const timeAxisTicks = uncoveredTickView._axisTicks("x", 6);
+  uncoveredTickView.axes.x.kind = "linear";
+  uncoveredTickView.axes.x.tick_values = [0.2, 0.8];
+  uncoveredTickView.axes.x.range = [0, 1];
+  uncoveredTickView.view = uncoveredTickView._copyView({
+    ranges: { x: [0, 1], y: [0, 1] },
+  });
+  const authoredAxisTicks = uncoveredTickView._axisTicks("x", 6);
+  uncoveredTickView.axes.x.kind = "linear";
+  delete uncoveredTickView.axes.x.tick_values;
+  uncoveredTickView.axes.x.theta_unit = "degrees";
+  const angularAxisTicks = uncoveredTickView._axisTicks("x", 6);
+  const uncoveredTickErrors = [];
+  uncoveredTickView.root.addEventListener(
+    "xy:wasm_ticks_error",
+    (event) => uncoveredTickErrors.push(event.detail),
+  );
+  delete uncoveredTickView.axes.x.theta_unit;
+  uncoveredTickView.axes.x.kind = "category";
+  uncoveredTickView.axes.x.categories = ["alpha", "beta"];
+  uncoveredTickView.axes.y.kind = "category";
+  uncoveredTickView.axes.y.categories = ["low", "high"];
+  uncoveredTickView.draw();
+  await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  const idleYTicks = uncoveredTickView._axisTicks("y", 2);
   if (categoryTicks.source !== undefined || categoryTicks.ticks.join(",") !== "0,1,2"
       || coveredYTicks.source !== "wasm" || timeAxisTicks.source !== undefined
-      || !timeAxisTicks.ticks.length) {
+      || !timeAxisTicks.ticks.length
+      || authoredAxisTicks.source !== undefined || authoredAxisTicks.ticks.join(",") !== "0.2,0.8"
+      || angularAxisTicks.source !== undefined || !angularAxisTicks.ticks.length
+      || idleYTicks.source !== undefined || uncoveredTickErrors.length) {
     throw new Error(`uncovered tick family routing drifted: ${JSON.stringify({
       categoryTicks,
       coveredYTicks,
       timeAxisTicks,
+      authoredAxisTicks,
+      angularAxisTicks,
+      idleYTicks,
+      uncoveredTickErrors,
     })}`);
   }
+  foundationStage = "uncovered after attach does not emit";
   await uncoveredTickHandle.dispose();
   uncoveredTickView.destroy();
   uncoveredTickHost.remove();
+
+  foundationStage = "polar ChartView ticks reject before attachment";
+  const polarTickHost = document.createElement("div");
+  polarTickHost.style.cssText = "width:320px;height:240px";
+  document.body.append(polarTickHost);
+  const polarTickView = directDensityFixture(polarTickHost);
+  polarTickView.spec.coords = "polar";
+  const polarTickErrors = [];
+  polarTickView.root.addEventListener(
+    "xy:wasm_ticks_error",
+    (event) => polarTickErrors.push(event.detail),
+  );
+  const polarTickWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  await rejected(
+    attachWasmTicks(polarTickView, {
+      worker: polarTickWorker,
+      workerOwnership: "own",
+    }),
+    "XYG_WASM_INVALID_ARGUMENT",
+  );
+  if (polarTickErrors.length !== 1 || polarTickView._wasmTicks != null) {
+    throw new Error(`polar ChartView tick attachment was not rejected: ${JSON.stringify({
+      polarTickErrors,
+      attached: polarTickView._wasmTicks != null,
+    })}`);
+  }
+  polarTickView.destroy();
+  polarTickHost.remove();
 
   const fromHex = (value) => Uint8Array.from(value.match(/../g) ?? [], (pair) => Number.parseInt(pair, 16));
   const fixtureWorker = createXygWasmWorker({
