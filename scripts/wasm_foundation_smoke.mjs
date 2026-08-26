@@ -124,7 +124,7 @@ try {
   await page.goto(`http://127.0.0.1:${address.port}/`);
   const result = await Promise.race([
     page.evaluate(async () => globalThis.__xygWasmFoundation),
-    new Promise((_, reject) => setTimeout(() => reject(new Error("browser foundation smoke timed out")), 45_000)),
+    new Promise((_, reject) => setTimeout(() => reject(new Error("browser foundation smoke timed out")), 60_000)),
   ]);
   if (pageErrors.length) throw new Error(`browser page errors: ${pageErrors.join(" | ")}`);
   if (!result?.ok) throw new Error(result?.error ?? "browser foundation smoke failed");

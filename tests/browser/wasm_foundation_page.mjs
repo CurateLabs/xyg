@@ -813,6 +813,55 @@ async function run() {
   secondaryTickView.destroy();
   secondaryTickHost.remove();
 
+  foundationStage = "newly eligible axis after attach does not paint empty wasm";
+  const lateTickHost = document.createElement("div");
+  lateTickHost.style.cssText = "width:320px;height:240px";
+  document.body.append(lateTickHost);
+  const lateTickView = directDensityFixture(lateTickHost);
+  Object.assign(lateTickView.axes.y, {
+    kind: "category", categories: ["low", "high"], range: [0, 1],
+  });
+  lateTickView.view0 = lateTickView._copyView({ ranges: { x: [0, 1], y: [0, 1] } });
+  lateTickView.view = lateTickView._copyView(lateTickView.view0);
+  const lateTickWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  const lateTickHandle = await attachWasmTicks(lateTickView, {
+    worker: lateTickWorker,
+    workerOwnership: "own",
+  });
+  const categoryYTicks = lateTickView._axisTicks("y", 2);
+  lateTickView.axes.y.kind = "linear";
+  delete lateTickView.axes.y.categories;
+  const immediateYTicks = lateTickView._axisTicks("y", 6);
+  if (!lateTickHandle.eligible("y") || lateTickHandle.covers("y")
+      || categoryYTicks.source === "wasm"
+      || immediateYTicks.source === "wasm"
+      || !immediateYTicks.ticks.length) {
+    throw new Error(`newly eligible y painted empty wasm before admission: ${JSON.stringify({
+      eligible: lateTickHandle.eligible("y"),
+      covers: lateTickHandle.covers("y"),
+      categoryYTicks,
+      immediateYTicks,
+    })}`);
+  }
+  lateTickHandle.schedule();
+  for (let attempt = 0; attempt < 100 && !lateTickHandle.covers("y"); attempt++) {
+    await nextTask();
+  }
+  const admittedYTicks = lateTickView._axisTicks("y", 6);
+  if (!lateTickHandle.covers("y") || admittedYTicks.source !== "wasm" || !admittedYTicks.ticks.length) {
+    throw new Error(`newly eligible y did not admit a Rust cache: ${JSON.stringify({
+      covers: lateTickHandle.covers("y"),
+      admittedYTicks,
+    })}`);
+  }
+  await lateTickHandle.dispose();
+  lateTickView.destroy();
+  lateTickHost.remove();
+
   foundationStage = "ChartView tick latest-wins admission and fail-closed Worker error";
   const lifecycleTickHost = document.createElement("div");
   lifecycleTickHost.style.cssText = "width:320px;height:240px";
@@ -899,6 +948,7 @@ async function run() {
   lifecycleTickView.view = lifecycleTickView._copyView({
     ranges: { x: [0.5, 0.75], y: [0, 1] },
   });
+  const failedCalls = tickProxyCalls;
   lifecycleTickHandle.schedule();
   await nextTask();
   lifecycleTickView.draw();
@@ -908,11 +958,25 @@ async function run() {
       || lifecycleTickErrors[0].code !== "XYG_WASM_DISPOSED"
       || Object.keys(lifecycleTickErrors[0]).sort().join(",") !== "code,diagnostics,message"
       || retainedXTicks.source !== "wasm"
-      || retainedXTicks.ticks.join(",") !== lastGoodTicks) {
+      || retainedXTicks.ticks.join(",") !== lastGoodTicks
+      || tickProxyCalls <= failedCalls) {
     throw new Error(`ChartView tick Worker failure did not fail closed: ${JSON.stringify({
       lifecycleTickErrors,
       retainedXTicks,
       lastGoodTicks,
+      failedCalls,
+      tickProxyCalls,
+    })}`);
+  }
+  foundationStage = "failed ChartView tick snapshot retries without a second event";
+  const retryCalls = tickProxyCalls;
+  lifecycleTickHandle.schedule();
+  await nextTask();
+  if (tickProxyCalls <= retryCalls || lifecycleTickErrors.length !== 1) {
+    throw new Error(`failed tick snapshot did not retry or re-emitted: ${JSON.stringify({
+      retryCalls,
+      tickProxyCalls,
+      lifecycleTickErrors,
     })}`);
   }
   await lifecycleTickHandle.dispose();
