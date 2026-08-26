@@ -189,7 +189,9 @@ def test_hexbin_auto_domain_and_default_aspect_are_rust_owned() -> None:
     assert (w, h) == (16, 9)
     assert xr == pytest.approx((9.5, 10.5))
     assert yr == pytest.approx((3.8, 4.2))
-    _cx, _cy, metric, counts, dx, dy = kernels.hexbin(x, y, gridsize=16, C=c, reduce="mean")
+    _cx, _cy, metric, counts, dx, dy = kernels.hexbin(
+        x, y, gridsize=16, C=c, reduce="mean", mincnt=1
+    )
     assert len(counts) == 1
     assert counts[0] == 1.0
     assert metric[0] == pytest.approx(2.0)

@@ -511,7 +511,7 @@ test("hexbin auto domain and default aspect are rust-owned", () => {
     [9.5, 10.5],
     [3.8, 4.2],
   ]);
-  const hx = hexbin(x, y, { gridsize: 16, C, reduce: "mean" });
+  const hx = hexbin(x, y, { gridsize: 16, C, reduce: "mean", mincnt: 1 });
   assert.equal(hx.counts.length, 1);
   assert.equal(hx.counts[0], 1);
   assert.equal(hx.metrics[0], 2);
