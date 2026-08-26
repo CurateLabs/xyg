@@ -30,6 +30,7 @@ def test_chartview_wasm_ticks_are_latest_wins_and_destroy_safe() -> None:
     assert "this.requestedKey !== frame.key" in ticks
     assert "this.frame()?.key === frame.key" in ticks
     assert "ownsAttachment()" in ticks
+    assert "!this.active || this.view._wasmTicks === this" in ticks
     assert '"wasm_ticks_error"' in ticks
     assert "this.view._wasmTicks === this" in ticks
     assert "this._wasmTicks?.destroy?.();" in chartview
@@ -49,10 +50,12 @@ def test_chartview_wasm_tick_assets_and_scope_are_explicit() -> None:
     assert '"./xyg-wasm.wasm": "./dist/xyg-wasm.wasm"' in package
     assert "attachWasmTicks" in entries
     assert "XygWasmTicksHandle" in entries
+    assert entries.split("// Public API.", 1)[1].count("attachWasmTicks") == 1
     assert "xy:wasm_ticks_error" in api
     assert "Category, time, angular/polar" in api
     assert "Notebook, `to_html()`, Reflex" in api
     assert "Self-contained" in design
     assert "claims nor closes that issue" in design
     assert "axis.theta_unit" in ticks
-    assert "if (!axes.length) return null;" in ticks
+    assert "if (covered) throw new TypeError(\"tick range must be finite\")" in ticks
+    assert "return null;" in ticks

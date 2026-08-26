@@ -531,14 +531,15 @@ export class XygWasmTicksHandle {
   private frame(): ChartTickFrame | null {
     const axes: Omit<XygWasmTickAxisRequest, "revision">[] = [];
     const axisIds: PrimaryAxisId[] = [];
+    let covered = 0;
     for (const axisId of ["x", "y"] as const) {
       if (!this.covers(axisId)) continue;
+      covered += 1;
       const axis = this.view._axis(axisId);
       const [loRaw, hiRaw] = this.view._axisRange(axisId);
       const lo = Number(loRaw), hi = Number(hiRaw);
-      if (!Number.isFinite(lo) || !Number.isFinite(hi)) {
-        throw new TypeError("tick range must be finite");
-      }
+      // A sibling axis with a torn range must not block the finite axis.
+      if (!Number.isFinite(lo) || !Number.isFinite(hi)) continue;
       const family: XygWasmTickFamily = axis.scale === "log"
         ? "log"
         : axis.scale === "symlog"
@@ -557,7 +558,10 @@ export class XygWasmTicksHandle {
       });
       axisIds.push(axisId);
     }
-    if (!axes.length) return null;
+    if (!axes.length) {
+      if (covered) throw new TypeError("tick range must be finite");
+      return null;
+    }
     return {
       // This is request identity, not policy: every field is explicit XYTK
       // ingress or the current screen-bounded target.
@@ -568,7 +572,9 @@ export class XygWasmTicksHandle {
   }
 
   private ownsAttachment(): boolean {
-    return this.view._wasmTicks == null || this.view._wasmTicks === this;
+    // Initialize must admit while a previous handle is still installed;
+    // after activate(), only the live ChartView attachment may publish.
+    return !this.active || this.view._wasmTicks === this;
   }
 
   private isCurrent(frame: ChartTickFrame, task: XygWasmTask<XygWasmTickBatchResult>): boolean {
@@ -790,6 +796,9 @@ export async function attachWasmTicks(
     await handle.dispose();
     throw new XygWasmError("XYG_WASM_DISPOSED", "ChartView was destroyed during tick attachment");
   }
+  // Sequential re-attach: admit first, then activate, then own the slot,
+  // then retire the previous handle. Initialize must be allowed to run
+  // while `_wasmTicks` still names the outgoing attachment.
   const previous = view._wasmTicks;
   handle.activate();
   view._wasmTicks = handle;
