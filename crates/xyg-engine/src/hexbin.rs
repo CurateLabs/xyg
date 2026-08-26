@@ -230,7 +230,7 @@ pub fn hexbin(
             return None;
         }
     }
-    if grid_w < 2 || grid_h < 2 || grid_w > MAX_GRID || grid_h > MAX_GRID {
+    if !(2..=MAX_GRID).contains(&grid_w) || !(2..=MAX_GRID).contains(&grid_h) {
         return None;
     }
     if !(x0.is_finite() && x1.is_finite() && y0.is_finite() && y1.is_finite() && x1 > x0 && y1 > y0)
