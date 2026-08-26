@@ -23,6 +23,28 @@ await chart.dispose();
 await worker.dispose(); // required for the default borrowed ownership
 ```
 
+## Dynamic viewport ticks
+
+WASM ABI 23 exposes `encodeWasmTickBatch`, `decodeWasmTickBatch`, and
+`resolveWasmTicks` from the public browser entry point. The low-level
+`XygWasmWorker.resolveTicks()` task carries one atomic `XYTK` request and `XYTO`
+result. This is a versioned foundation seam, not yet installed on ChartView:
+callers must supply the full axis batch and explicitly manage the returned task.
+Authored values—including an explicitly empty set—and authored labels retain
+their provenance in the result.
+
+Tick requests use an independent Worker lane and do not supersede compile,
+density, graph, or temporal work. Cancellation rejects only the selected tick
+task; disposing the Worker rejects every outstanding task.
+Each axis admits at most 200 authored/output ticks, 65,536 source categories,
+65,536 UTF-8 bytes of label/category text, and a 256-byte format string.
+
+All Worker and WASM assets remain explicit. The future ChartView cutover may
+not use eval, Blob-created Workers, guessed paths, a CDN, implicit fetches,
+synchronous main-thread WASM, or a JavaScript generation/formatting fallback.
+Ordinary host behavior and `30_ticks.ts` remain unchanged until an explicit
+external-worker asset contract exists for Python, Node, notebooks, and Reflex.
+
 Every Worker-reported `XygWasmError` after the Rust instance initializes
 carries a read-only `diagnostics` snapshot. Locally rejected argument,
 messaging, cancellation, and initialization errors use `null`. The snapshot

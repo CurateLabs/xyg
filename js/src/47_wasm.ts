@@ -205,6 +205,7 @@ export class XygWasmWorker {
   private pending = new Map<number, Pending>();
   private nextRequestId = 1;
   private nextSequence = 1;
+  private nextTickSequence = 1;
   private disposed = false;
   private readonly maxArenaBytes: number;
   private readonly inline: boolean;
@@ -481,6 +482,58 @@ export class XygWasmWorker {
     return result;
   }
 
+  /** Allocate a globally monotonic sequence for the tick-only lane. */
+  allocateTickSequence(): number {
+    this.assertLive();
+    const sequence = this.nextTickSequence++;
+    if (sequence > 0xffff_ffff) {
+      throw new XygWasmError("XYG_WASM_RESOURCE_LIMIT", "tick sequence space is exhausted", 3);
+    }
+    return sequence;
+  }
+
+  /** Submit one atomic XYTK batch on the tick-only sequence lane. */
+  resolveTicks(request: ArrayBuffer, options: { sequence: number }): XygWasmTask<ArrayBuffer> {
+    this.assertLive();
+    if (!(request instanceof ArrayBuffer) || request.byteLength < 32
+        || request.byteLength > this.maxArenaBytes) {
+      throw new TypeError("tick request must be a bounded ArrayBuffer");
+    }
+    const sequence = options?.sequence;
+    if (!Number.isInteger(sequence) || sequence <= 0 || sequence > 0xffff_ffff) {
+      throw new RangeError("tick sequence must be a nonzero u32");
+    }
+    if (new DataView(request).getUint32(12, true) !== sequence) {
+      throw new TypeError("tick request header sequence must match the task sequence");
+    }
+    this.nextTickSequence = Math.max(this.nextTickSequence, sequence + 1);
+    const requestId = this.allocateRequest();
+    const result = new Promise<ArrayBuffer>((resolve, reject) => {
+      this.pending.set(requestId, { resolve, reject, sequence });
+    });
+    try {
+      this.worker.postMessage({ type: "ticks.resolve", requestId, sequence, request }, [request]);
+    } catch (cause) {
+      this.pending.delete(requestId);
+      throw new XygWasmError(
+        "XYG_WASM_INVALID_ARGUMENT",
+        cause instanceof Error ? cause.message : "could not post the tick request",
+      );
+    }
+    return {
+      requestId,
+      sequence,
+      result,
+      cancel: () => {
+        const pending = this.pending.get(requestId);
+        if (!pending) return;
+        this.pending.delete(requestId);
+        pending.reject(new XygWasmError("XYG_WASM_CANCELLED", "tick request was cancelled", 6));
+        if (!this.disposed) this.worker.postMessage({ type: "ticks.cancel", requestId, sequence });
+      },
+    };
+  }
+
   /** Submit one packed Rust-owned `XYDP` dashboard resource plan. */
   dashboardPlan(request: ArrayBuffer, options: { sequence?: number } = {}): XygWasmTask<ArrayBuffer> {
     this.assertLive();
@@ -656,6 +709,10 @@ export class XygWasmWorker {
   async dispose(): Promise<void> {
     if (this.disposed) return;
     this.disposed = true;
+    const disposedError = new XygWasmError("XYG_WASM_DISPOSED", "worker was disposed");
+    // Reject application work before waiting for the worker acknowledgement;
+    // a short synchronous WASM operation must not win disposal's lifecycle race.
+    this.failAll(disposedError);
     const requestId = this.allocateRequest();
     const complete = this.promiseFor<void>(requestId);
     let timeout: ReturnType<typeof setTimeout> | undefined;
@@ -674,7 +731,7 @@ export class XygWasmWorker {
       if (timeout !== undefined) clearTimeout(timeout);
     this.worker.terminate();
     if (this.inlineBlobUrl) URL.revokeObjectURL(this.inlineBlobUrl);
-      this.failAll(new XygWasmError("XYG_WASM_DISPOSED", "worker was disposed"));
+      this.failAll(disposedError);
     }
   }
 

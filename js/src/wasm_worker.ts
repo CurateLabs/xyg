@@ -31,11 +31,16 @@ let evidenceCapability: string | null = null;
 let initializedModule: WebAssembly.Module | null = null;
 let compileLeaf = false;
 let operationSequenceWatermark = 0;
+let tickSequenceWatermark = 0;
 const queued = new Map<number, number>();
 let activeAggregate: { requestId: number; sequence: number; timer: number } | null = null;
 let activeAggregateStream: { requestId: number; sequence: number; pushes: number } | null = null;
 let activeGraph: { requestId: number; sequence: number; revision: number; timer: number; chunkSteps: number; started: number; maxWallMs: number; first: boolean } | null = null;
 let activeCompile: { requestId: number; sequence: number; timer: number; paint: boolean; leaf?: Worker; loweringAnnounced?: boolean } | null = null;
+let activeTick: { requestId: number; sequence: number; timer: number; bytes: number } | null = null;
+const tickQueue: any[] = [];
+let retainedTickBytes = 0;
+const MAX_RETAINED_TICK_REQUESTS = 64;
 const COMPILE_CHECKPOINT_RECORDS = 4096;
 
 function isDisposed(): boolean {
@@ -79,6 +84,9 @@ function disposeRust() {
   } finally {
     handle = 0;
     exports = null;
+    if (lifecycle === "failed") {
+      rejectTicks("XYG_WASM_TRAP", "WASM instance failed while tick work was pending");
+    }
   }
 }
 
@@ -722,6 +730,150 @@ function runSceneOp(message: any) {
   }
 }
 
+function tickLaneBusy(): boolean {
+  return activeCompile !== null || activeAggregate !== null
+    || activeAggregateStream !== null || activeGraph !== null;
+}
+
+function startNextTick() {
+  if (activeTick || lifecycle !== "initialized") return;
+  const message = tickQueue.shift();
+  if (!message) return;
+  const timer = setTimeout(() => runTicks(message), 0) as unknown as number;
+  activeTick = {
+    requestId: message.requestId,
+    sequence: Number(message.sequence),
+    timer,
+    bytes: message.request.byteLength,
+  };
+  queued.set(message.requestId, timer);
+}
+
+function finishTick() {
+  if (activeTick) retainedTickBytes = Math.max(0, retainedTickBytes - activeTick.bytes);
+  activeTick = null;
+  startNextTick();
+}
+
+function rejectTicks(code: string, message: string, status: number | null = null) {
+  const rejected: number[] = [];
+  if (activeTick) {
+    clearTimeout(activeTick.timer);
+    queued.delete(activeTick.requestId);
+    rejected.push(activeTick.requestId);
+  }
+  for (const pending of tickQueue) rejected.push(pending.requestId);
+  activeTick = null;
+  tickQueue.length = 0;
+  retainedTickBytes = 0;
+  for (const requestId of rejected) error(requestId, code, message, status);
+}
+
+/** Run a bounded synchronous tick batch without entering any other operation's
+ * sequence/cancellation lane. A compile/aggregate owns the shared staging
+ * arena across checkpoints, so tick work waits instead of cancelling it. */
+function runTicks(message: any) {
+  if (!activeTick || activeTick.requestId !== message.requestId) return;
+  if (!exports || !handle || lifecycle !== "initialized") {
+    queued.delete(message.requestId);
+    finishTick();
+    error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized");
+    return;
+  }
+  if (tickLaneBusy()) {
+    const timer = setTimeout(() => runTicks(message), 0) as unknown as number;
+    activeTick.timer = timer;
+    queued.set(message.requestId, timer);
+    return;
+  }
+  queued.delete(message.requestId);
+  try {
+    if (!(message.request instanceof ArrayBuffer)
+        || message.request.byteLength < 32
+        || message.request.byteLength > operationBudgetBytes) {
+      error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "tick request is not a bounded ArrayBuffer", XYG_WASM_STATUS.INVALID_ARGUMENT);
+      finishTick();
+      return;
+    }
+    let status = exports.xyg_wasm_arena_resize(handle, message.request.byteLength);
+    if (status !== XYG_WASM_STATUS.OK) {
+      rustError(message.requestId, statusCode(status), readXygWasmError(exports, handle), status);
+      finishTick();
+      return;
+    }
+    const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0;
+    const end = ptr + message.request.byteLength;
+    if (!ptr || !Number.isSafeInteger(end) || end > exports.memory.buffer.byteLength) {
+      throw new Error("Rust tick staging range is invalid");
+    }
+    new Uint8Array(exports.memory.buffer, ptr, message.request.byteLength)
+      .set(new Uint8Array(message.request));
+    status = exports.xyg_wasm_ticks_resolve(handle, 0, message.request.byteLength);
+    if (status !== XYG_WASM_STATUS.OK) {
+      const detail = readXygWasmError(exports, handle);
+      exports.xyg_wasm_arena_resize(handle, 0);
+      rustError(message.requestId, statusCode(status), detail, status);
+      finishTick();
+      return;
+    }
+    const outputPtr = exports.xyg_wasm_output_ptr(handle) >>> 0;
+    const outputLen = exports.xyg_wasm_output_len(handle) >>> 0;
+    const outputEnd = outputPtr + outputLen;
+    if (!outputPtr || !outputLen || !Number.isSafeInteger(outputEnd)
+        || outputEnd > exports.memory.buffer.byteLength) {
+      throw new Error("Rust tick output range is invalid");
+    }
+    const output = new Uint8Array(exports.memory.buffer, outputPtr, outputLen).slice().buffer;
+    exports.xyg_wasm_arena_resize(handle, 0);
+    reply(message.requestId, output, [output]);
+    finishTick();
+  } catch (cause) {
+    lifecycle = "failed";
+    rejectTicks(
+      "XYG_WASM_TRAP",
+      cause instanceof Error ? cause.message : "WASM tick operation trapped",
+    );
+    disposeRust();
+  }
+}
+
+function queueTicks(message: any) {
+  const sequence = Number(message.sequence);
+  if (!Number.isInteger(sequence) || sequence <= 0 || sequence > 0xffff_ffff) {
+    error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "tick sequence must be a nonzero u32", XYG_WASM_STATUS.INVALID_ARGUMENT);
+    return;
+  }
+  if (lifecycle !== "initialized") {
+    error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized");
+    return;
+  }
+  if (!(message.request instanceof ArrayBuffer) || message.request.byteLength < 32) {
+    error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "tick request is not a bounded ArrayBuffer", XYG_WASM_STATUS.INVALID_ARGUMENT);
+    return;
+  }
+  if (message.request.byteLength > operationBudgetBytes) {
+    error(message.requestId, "XYG_WASM_RESOURCE_LIMIT", "tick request exceeds the worker byte budget", XYG_WASM_STATUS.RESOURCE_LIMIT);
+    return;
+  }
+  if (new DataView(message.request).getUint32(12, true) !== sequence) {
+    error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "tick request header sequence does not match its envelope", XYG_WASM_STATUS.INVALID_ARGUMENT);
+    return;
+  }
+  if (sequence <= tickSequenceWatermark) {
+    error(message.requestId, "XYG_WASM_STALE_SEQUENCE", "tick request sequence is stale", XYG_WASM_STATUS.STALE_SEQUENCE);
+    return;
+  }
+  if (tickQueue.length + (activeTick ? 1 : 0) >= MAX_RETAINED_TICK_REQUESTS
+      || retainedTickBytes + message.request.byteLength > operationBudgetBytes) {
+    error(message.requestId, "XYG_WASM_RESOURCE_LIMIT", "pending tick requests exceed the worker queue bound", XYG_WASM_STATUS.RESOURCE_LIMIT);
+    return;
+  }
+  tickSequenceWatermark = sequence;
+  retainedTickBytes += message.request.byteLength;
+  tickQueue.push(message);
+  startNextTick();
+}
+
 function runTemporalCommand(message: any) {
   if (!exports || !handle || lifecycle !== "initialized") {
     error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized");
@@ -907,6 +1059,23 @@ scope.onmessage = (event: MessageEvent<any>) => {
   if (message?.type === "aggregate.stream_begin") { beginAggregateStream(message); return; }
   if (message?.type === "aggregate.stream_push") { pushAggregateStream(message); return; }
   if (message?.type === "aggregate.stream_finish") { finishAggregateStream(message); return; }
+  if (message?.type === "ticks.resolve") { queueTicks(message); return; }
+  if (message?.type === "ticks.cancel") {
+    if (activeTick?.requestId === message.requestId
+        && activeTick.sequence === Number(message.sequence)) {
+      clearTimeout(activeTick.timer);
+      queued.delete(activeTick.requestId);
+      finishTick();
+    } else {
+      const index = tickQueue.findIndex((queuedTick) => queuedTick.requestId === message.requestId
+        && Number(queuedTick.sequence) === Number(message.sequence));
+      if (index >= 0) {
+        const [cancelled] = tickQueue.splice(index, 1);
+        retainedTickBytes = Math.max(0, retainedTickBytes - cancelled.request.byteLength);
+      }
+    }
+    return;
+  }
   const sequenced = message?.type === "scene.validate" || message?.type === "scene.paint" || message?.type === "scene.paint_annotations"
     || message?.type === "scene.compile" || message?.type === "scene.compile_paint"
     || message?.type === "series.compile_paint" || message?.type === "aggregate.bin2d"
@@ -987,6 +1156,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
   }
   if (message?.type === "dispose") {
     lifecycle = "disposed";
+    rejectTicks("XYG_WASM_DISPOSED", "worker was disposed", XYG_WASM_STATUS.DISPOSED);
     for (const timer of queued.values()) clearTimeout(timer);
     if (activeGraph) clearTimeout(activeGraph.timer);
     if (activeCompile) terminateActiveCompile("disposal", false);

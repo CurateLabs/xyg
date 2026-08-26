@@ -660,8 +660,9 @@ remain accepted byte-for-byte. This envelope deliberately avoids Koffi's
 64-parameter function ceiling.
 
 Time/category/polar/secondary axes and broader numeric grammars remain on their
-documented compatibility routes. `js/src/30_ticks.ts` is unchanged: its dynamic
-browser-runtime cutover belongs to #59, not this #58 static-Scene slice.
+documented compatibility routes. WASM ABI 23 provides a low-level bounded tick
+resolver, but `js/src/30_ticks.ts` and the existing painter contract are
+unchanged until #59 defines an explicit all-host external-worker asset seam.
 
 ## Version 25 Band outline topology
 

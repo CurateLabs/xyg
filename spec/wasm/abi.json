@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "abi_version": 22,
+  "abi_version": 23,
   "scene_version": 25,
   "painter_version": 14,
   "painter_header_bytes": 300,
@@ -25,6 +25,26 @@
     "descriptor_offsets": {"kind": 0, "symbol": 4, "record_count": 8, "flags": 12, "stable_id_base": 16, "diameter": 24, "stroke_width": 32, "fill_rgba": 40, "stroke_rgba": 44, "x": 48, "y": 52, "y0": 56, "y1": 60, "diameters": 64, "stable_ids": 68},
     "flags": {"diameters": 1, "y0": 2, "y1": 4, "fill_rgba": 8, "stroke_rgba": 16, "stable_id_base": 32, "stable_ids": 64},
     "kinds": {"scatter": 0, "line": 1, "bar": 2, "area": 3}
+  },
+  "ticks": {
+    "request_magic": "XYTK",
+    "output_magic": "XYTO",
+    "version": 1,
+    "max_axes": 32,
+    "max_ticks_per_axis": 200,
+    "max_categories_per_axis": 65536,
+    "max_label_bytes": 65536,
+    "max_format_bytes": 256,
+    "request_header_bytes": 32,
+    "request_descriptor_bytes": 96,
+    "request_header_offsets": {"version": 4, "header_bytes": 8, "sequence": 12, "axis_count": 16, "descriptor_bytes": 20, "total_bytes": 24, "reserved": 28},
+    "request_descriptor_offsets": {"axis_id": 0, "revision": 4, "family": 8, "flags": 12, "provenance": 16, "target": 20, "authored_count": 24, "authored_label_count": 28, "category_count": 32, "format_len": 36, "authored_labels_text_len": 40, "categories_text_len": 44, "lo": 48, "hi": 56, "constant": 64, "authored_values": 72, "authored_label_lengths": 76, "authored_label_text": 80, "category_lengths": 84, "category_text": 88, "format": 92},
+    "families": {"linear": 0, "log": 1, "symlog": 2, "category": 3, "angular_radians": 4, "angular_degrees": 5, "utc_time": 6},
+    "provenance": {"automatic": 0, "authored_values": 1, "authored_empty": 2},
+    "output_header_bytes": 32,
+    "output_descriptor_bytes": 64,
+    "output_header_offsets": {"version": 4, "header_bytes": 8, "sequence": 12, "axis_count": 16, "descriptor_bytes": 20, "total_bytes": 24, "reserved": 28},
+    "output_descriptor_offsets": {"axis_id": 0, "revision": 4, "provenance": 8, "reserved0": 12, "tick_count": 16, "labeled_count": 20, "text_len": 24, "reserved1": 28, "step": 32, "ticks": 40, "labeled_values": 44, "label_lengths": 48, "label_text": 52, "reserved_tail": 56}
   },
   "max_arena_bytes": 402653184,
   "painter_max_legend_bytes": 57424,
@@ -303,6 +323,11 @@
     {
       "name": "xyg_wasm_graph_step",
       "params": ["u32", "u32", "u32", "u32"],
+      "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_ticks_resolve",
+      "params": ["u32", "usize", "usize"],
       "result": "i32"
     },
     {

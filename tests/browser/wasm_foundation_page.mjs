@@ -4,11 +4,13 @@ import {
   attachWasmDensity,
   ChartView,
   createXygWasmWorker,
+  decodeWasmTickBatch,
   frameWasmChart,
   encodeWasmAggregate,
   encodeWasmCose,
   encodeWasmColumns,
   encodeWasmDashboardPlan,
+  encodeWasmTickBatch,
   hydrateWasmPainter,
   layoutWasmCose,
   planWasmDashboardResources,
@@ -18,6 +20,7 @@ import {
   renderWasmScene,
   encodeWasmSemanticGraph,
   renderWasmSemanticGraph,
+  resolveWasmTicks,
   transitionWasmCompound,
   XygWasmError,
   XygWasmTemporalController,
@@ -353,6 +356,7 @@ async function fixtureModule({
     "xyg_wasm_scene_compile_phase",
     "xyg_wasm_dashboard_plan",
     "xyg_wasm_compound_transition",
+    "xyg_wasm_ticks_resolve",
   ];
   const arities = [0, 1, 2, 3, 4, 5];
   const types = [
@@ -366,7 +370,7 @@ async function fixtureModule({
     ]),
   ];
   const functionTypes = [
-    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 4, 3, 4, 4, 2, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 3, 1, 1, 4, 3,
+    0, 0, 0, 1, 1, 2, 1, 1, 2, 4, 4, 4, 4, 4, 4, 3, 4, 4, 2, 5, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 5, 3, 1, 1, 4, 3, 3,
   ];
   const functions = [...u32(functionTypes.length), ...functionTypes.flatMap(u32)];
   const memory = [1, 0, 1]; // one memory, no maximum, one 64 KiB page
@@ -377,7 +381,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    22, 25, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
+    23, 25, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     0, 0, 0,
@@ -388,7 +392,7 @@ async function fixtureModule({
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? highBit : 0,
     highBitDiagnostics ? 1 : 0,
-    0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0,
   ];
   if (names.length !== functionTypes.length || names.length !== values.length) {
     throw new Error("fake WASM export tables are misaligned");
@@ -486,7 +490,7 @@ function rawInit(requestId, source) {
     requestId,
     source,
     maxArenaBytes: 1024,
-    expectedAbiVersion: 22,
+    expectedAbiVersion: 23,
     expectedSceneVersion: 25,
   };
 }
@@ -519,6 +523,159 @@ async function run() {
   const wasmResponse = await fetch("/packages/xy-client/dist/xyg-wasm.wasm");
   const wasmBytes = await wasmResponse.arrayBuffer();
   const wasmModule = await WebAssembly.compile(wasmBytes);
+
+  foundationStage = "Rust-owned viewport tick codec and Worker lifecycle";
+  const tickWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  await tickWorker.ready;
+  const automaticAxes = [
+    { axisId: 101, revision: 9, family: "linear", provenance: "automatic", lo: 0, hi: 1000, target: 6, format: "$,.1f" },
+    { axisId: 102, revision: 9, family: "log", provenance: "automatic", lo: 0.1, hi: 100, target: 6, maskNonpositive: true },
+    { axisId: 103, revision: 9, family: "symlog", provenance: "automatic", lo: -10, hi: 10, target: 7, constant: 1 },
+    { axisId: 104, revision: 9, family: "category", provenance: "automatic", lo: 0, hi: 2, target: 3, categories: ["alpha", "beta", "gamma"] },
+    { axisId: 105, revision: 9, family: "angular_radians", provenance: "automatic", lo: 0, hi: Math.PI * 2, target: 6 },
+    { axisId: 106, revision: 9, family: "angular_degrees", provenance: "automatic", lo: 0, hi: 360, target: 6 },
+    { axisId: 107, revision: 9, family: "utc_time", provenance: "automatic", lo: 0, hi: 7_200_000, target: 6, format: "%H:%M" },
+  ];
+  for (const axis of automaticAxes) {
+    foundationStage = `Rust-owned ${axis.family} viewport ticks`;
+    const sequence = tickWorker.allocateTickSequence();
+    const single = await resolveWasmTicks(tickWorker, { sequence, axes: [axis] }).result;
+    if (single.sequence !== sequence || single.axes[0]?.axisId !== axis.axisId) {
+      throw new Error(`${axis.family} tick identity did not round-trip`);
+    }
+  }
+  foundationStage = "atomic seven-family Rust-owned viewport ticks";
+  const automaticSequence = tickWorker.allocateTickSequence();
+  const automatic = await resolveWasmTicks(tickWorker, {
+    sequence: automaticSequence,
+    axes: automaticAxes,
+  }).result;
+  if (automatic.sequence !== automaticSequence || automatic.axes.length !== automaticAxes.length
+      || !Object.isFrozen(automatic) || !Object.isFrozen(automatic.axes)) {
+    throw new Error("atomic seven-family tick result lost its sequence or immutable batch shape");
+  }
+  for (const [index, axis] of automatic.axes.entries()) {
+    if (axis.axisId !== automaticAxes[index].axisId || axis.revision !== 9
+        || axis.provenance !== "automatic" || axis.ticks.length === 0
+        || axis.labeledValues.length !== axis.labels.length
+        || axis.ticks.some((value) => !Number.isFinite(value))
+        || !Object.isFrozen(axis) || !Object.isFrozen(axis.ticks)
+        || !Object.isFrozen(axis.labeledValues) || !Object.isFrozen(axis.labels)) {
+      throw new Error(`automatic tick family ${automaticAxes[index].family} returned a malformed result`);
+    }
+  }
+  if (!automatic.axes[0].labels.every((label) => label.startsWith("$"))
+      || automatic.axes[3].labels.join("|") !== "alpha|beta|gamma"
+      || !automatic.axes[5].labels.some((label) => label.includes("°"))
+      || !automatic.axes[6].labels.every((label) => label.includes(":"))) {
+    throw new Error(`Rust-owned tick formatting drifted: ${JSON.stringify(automatic.axes.map((axis) => axis.labels))}`);
+  }
+
+  const authoredSequence = tickWorker.allocateTickSequence();
+  const authoredTicks = await resolveWasmTicks(tickWorker, {
+    sequence: authoredSequence,
+    axes: [
+      {
+        axisId: 201, revision: 3, family: "linear", provenance: "authored_values",
+        lo: 0, hi: 2, target: 5, authoredValues: [-1, 0, 1, 3],
+        authoredLabels: ["minus", "zero", "one", "three"], format: "$,.1f",
+      },
+      { axisId: 202, revision: 4, family: "linear", provenance: "authored_empty", lo: 0, hi: 1, target: 5 },
+    ],
+  }).result;
+  if (authoredTicks.axes[0].provenance !== "authored_values"
+      || authoredTicks.axes[0].ticks.join(",") !== "0,1"
+      || authoredTicks.axes[0].labels.join("|") !== "zero|one"
+      || authoredTicks.axes[1].provenance !== "authored_empty"
+      || authoredTicks.axes[1].ticks.length !== 0 || authoredTicks.axes[1].labels.length !== 0) {
+    throw new Error(`authored tick provenance drifted: ${JSON.stringify(authoredTicks.axes)}`);
+  }
+
+  const expectTickCodecFailure = (callback, constructor, label) => {
+    try { callback(); }
+    catch (error) {
+      if (error instanceof constructor) return;
+      throw new Error(`${label} raised ${error?.constructor?.name ?? typeof error}, wanted ${constructor.name}`);
+    }
+    throw new Error(`${label} unexpectedly succeeded`);
+  };
+  expectTickCodecFailure(() => encodeWasmTickBatch({ sequence: 1, axes: [] }), RangeError, "empty tick batch");
+  expectTickCodecFailure(() => encodeWasmTickBatch({
+    sequence: 1,
+    axes: [automaticAxes[0], { ...automaticAxes[1], axisId: automaticAxes[0].axisId }],
+  }), TypeError, "duplicate tick axis id");
+  expectTickCodecFailure(() => encodeWasmTickBatch({
+    sequence: 1,
+    axes: [{ ...automaticAxes[0], format: "x".repeat(257) }],
+  }), RangeError, "oversized tick format");
+  expectTickCodecFailure(() => encodeWasmTickBatch({
+    sequence: 1,
+    axes: [{ ...automaticAxes[0], provenance: "authored_values", authoredValues: [0, 1], authoredLabels: ["zero"] }],
+  }), RangeError, "authored label cardinality mismatch");
+  expectTickCodecFailure(() => decodeWasmTickBatch(new ArrayBuffer(31)), TypeError, "truncated tick output");
+  expectTickCodecFailure(() => tickWorker.resolveTicks(
+    new ArrayBuffer(1024 * 1024 + 1),
+    { sequence: 1 },
+  ), TypeError, "over-budget raw tick request");
+
+  const rawSequence = tickWorker.allocateTickSequence();
+  const rawOutput = await tickWorker.resolveTicks(encodeWasmTickBatch({
+    sequence: rawSequence,
+    axes: [automaticAxes[0]],
+  }), { sequence: rawSequence }).result;
+  const decodedRaw = decodeWasmTickBatch(rawOutput);
+  if (decodedRaw.sequence !== rawSequence || decodedRaw.axes[0].axisId !== automaticAxes[0].axisId) {
+    throw new Error("raw tick Worker seam did not round-trip through the strict decoder");
+  }
+  const malformedOutput = rawOutput.slice(0);
+  new Uint8Array(malformedOutput)[0] = 0;
+  expectTickCodecFailure(() => decodeWasmTickBatch(malformedOutput), TypeError, "malformed tick output magic");
+
+  const malformedSequence = tickWorker.allocateTickSequence();
+  const malformedRequest = encodeWasmTickBatch({ sequence: malformedSequence, axes: [automaticAxes[0]] });
+  new Uint8Array(malformedRequest)[0] = 0;
+  await rejected(
+    tickWorker.resolveTicks(malformedRequest, { sequence: malformedSequence }).result,
+    "XYG_WASM_INVALID_ARGUMENT",
+    2,
+  );
+
+  foundationStage = "independent tick cancellation lane";
+  const cancelledSequence = tickWorker.allocateTickSequence();
+  const cancelledTick = resolveWasmTicks(tickWorker, {
+    sequence: cancelledSequence,
+    axes: automaticAxes,
+  });
+  cancelledTick.cancel();
+  await rejected(cancelledTick.result, "XYG_WASM_CANCELLED", 6);
+  await tickWorker.validateScene(canonicalSceneV9(), { sequence: 1, transfer: false }).result;
+  const afterCancelSequence = tickWorker.allocateTickSequence();
+  const afterCancel = await resolveWasmTicks(tickWorker, {
+    sequence: afterCancelSequence,
+    axes: [automaticAxes[0]],
+  }).result;
+  if (afterCancel.sequence !== afterCancelSequence) {
+    throw new Error("tick cancellation poisoned its independent sequence lane");
+  }
+
+  foundationStage = "tick Worker disposal";
+  await tickWorker.dispose();
+  try {
+    tickWorker.allocateTickSequence();
+    throw new Error("disposed tick Worker allocated another sequence");
+  } catch (error) {
+    if (!(error instanceof XygWasmError) || error.code !== "XYG_WASM_DISPOSED") throw error;
+  }
+  try {
+    resolveWasmTicks(tickWorker, { sequence: 0xffff_ffff, axes: [automaticAxes[0]] });
+    throw new Error("disposed tick Worker accepted another batch");
+  } catch (error) {
+    if (!(error instanceof XygWasmError) || error.code !== "XYG_WASM_DISPOSED") throw error;
+  }
 
   const fromHex = (value) => Uint8Array.from(value.match(/../g) ?? [], (pair) => Number.parseInt(pair, 16));
   const fixtureWorker = createXygWasmWorker({
@@ -695,7 +852,7 @@ async function run() {
     maxArenaBytes: 8192,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 22 || ready.sceneVersion !== 25) {
+  if (ready.abiVersion !== 23 || ready.sceneVersion !== 25) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
