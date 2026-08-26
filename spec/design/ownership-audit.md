@@ -72,13 +72,15 @@ existing Step Scene route.
 
 Omitted-bin composition histogram edges now use Rust's NumPy-compatible auto
 estimator in both Python and Node instead of Node silently selecting ten bins.
-Hosts retain coercion, explicit integer-bin validation, literal style packing,
-and the historical all-nonfinite ten-bin compatibility case; Rust owns the
-ordinary adaptive edge count and coordinates. The resulting bounded Histogram
-Rects already route public SVG/PNG/PDF and browser paint through the canonical
-Scene. Rust rejects automatic results above 10,000 bins, and each thin binding
-uses one 10,001-edge ABI scratch plane. Arbitrary authored edges and cumulative
-assembly remain #58 debt.
+ABI 101 `xyg_histogram_bins` then owns authored-edge validation, closed-last-bin
+assignment, density normalization, and cumulative assembly for every composition
+histogram path. Hosts retain coercion, explicit integer-bin validation, literal
+style packing, and the historical all-nonfinite ten-bin compatibility case;
+Rust owns the ordinary adaptive edge count, irregular counting, density, and
+cumulative heights. The resulting bounded Histogram Rects already route public
+SVG/PNG/PDF and browser paint through the canonical Scene. Rust rejects
+automatic or authored results above 10,000 bins, and each thin binding uses one
+10,001-edge ABI scratch plane.
 ABI 99 likewise removes grouped composition-box statistics and geometry policy
 from both hosts. Python and Node pack canonical values, offsets, centers,
 orientation, width, visibility, and literal styles; Rust owns finite filtering,

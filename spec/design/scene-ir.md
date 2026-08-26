@@ -957,13 +957,17 @@ result as the existing `post` Step. The authored-column preflight remains
 canonical Scene expansion budgets remain independent.
 
 Omitted-bin composition histograms in Python and Node resolve their uniform
-edges with the existing synchronous Rust `xyg_histogram_edges` auto estimator,
-then use `xyg_histogram_uniform` and the existing Histogram Rect Scene path.
+edges with the existing synchronous Rust `xyg_histogram_edges` auto estimator.
+ABI 101 `xyg_histogram_bins` then owns counting, density, and cumulative
+assembly for those edges and for finite strictly increasing authored edges.
 Explicit positive integer bins and the empty/all-nonfinite ten-bin compatibility
-case are unchanged. Rust rejects automatic results above 10,000 bins before
-allocating the edge plane; each binding uses one fixed 10,001-edge bounded
-scratch plane for the existing ABI 98 write call. No ABI or Scene version changes. Authored arbitrary edges
-and cumulative-bin assembly remain later cutovers.
+case are unchanged. Uniform edges reuse the closed-last-bin uniform counter;
+irregular edges use NumPy's array-bin assignment. Rust rejects automatic or
+authored results above 10,000 bins before writing counts; each binding uses one
+fixed 10,001-edge bounded scratch plane for the existing ABI 98 write call.
+Density with zero in-range mass fails closed so hosts never receive non-finite
+heights. The compact result remains ordinary Histogram Rects. No Scene version
+change.
 
 ABI 98 makes the composition violin a compact Rust-owned ingress without a
 Scene-version change. Hosts pack flat canonical f64 samples, monotone group

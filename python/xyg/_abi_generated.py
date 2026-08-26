@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 100
-SIGNATURE_SHA256 = "a855aa330c2e0f52ec88bd756195b75d502c54e65d1d4f5b89130a47530ced8f"
+ABI_VERSION = 101
+SIGNATURE_SHA256 = "f1378ba04135cbe5443a01f2bfb6010c9c608e9ead693cbf4df5fb04f1aa401c"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -274,6 +274,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_histogram2d
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+    # size_t xyg_histogram_bins(const double * values, size_t len, const double * edges, size_t edge_len, int32_t density, int32_t cumulative, double * out_counts)
+    function = lib.xyg_histogram_bins
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p]
     # size_t xyg_histogram_edges(const double * data, size_t len, double lo, double hi, int32_t use_range, int32_t method, double * out_edges, size_t capacity)
     function = lib.xyg_histogram_edges
     function.restype = ctypes.c_size_t

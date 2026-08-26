@@ -9,6 +9,7 @@ export {
   minMax,
   isSorted,
   histogramUniform,
+  histogramBins,
   histogramEdges,
   hexbin,
   violinDensity,

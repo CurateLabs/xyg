@@ -97,7 +97,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 100;
+pub const ABI_VERSION: u32 = 101;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -2335,6 +2335,80 @@ pub unsafe extern "C" fn xyg_binned_ecdf(
     std::ptr::copy_nonoverlapping(result.x.as_ptr(), out_x, written);
     std::ptr::copy_nonoverlapping(result.cumulative.as_ptr(), out_cumulative, written);
     written
+}
+
+/// Authored-edge 1-D histogram. Returns the bin count or `usize::MAX` when the
+/// inputs are invalid. Results are committed only after the complete Rust-owned
+/// result validates, so failures leave `out_counts` intact.
+///
+/// # Safety
+/// `values` addresses `len` readable f64s, or is unused when `len` is zero.
+/// `edges` addresses `edge_len` readable f64s. `out_counts` addresses
+/// `edge_len - 1` writable f64s that do not overlap either input. `density`
+/// and `cumulative` are exactly zero or one.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_histogram_bins(
+    values: *const f64,
+    len: usize,
+    edges: *const f64,
+    edge_len: usize,
+    density: i32,
+    cumulative: i32,
+    out_counts: *mut f64,
+) -> usize {
+    let Some(n_bins) = edge_len.checked_sub(1) else {
+        return usize::MAX;
+    };
+    let Some(edge_bytes) = edge_len.checked_mul(std::mem::size_of::<f64>()) else {
+        return usize::MAX;
+    };
+    let Some(count_bytes) = n_bins.checked_mul(std::mem::size_of::<f64>()) else {
+        return usize::MAX;
+    };
+    let Some(value_bytes) = len.checked_mul(std::mem::size_of::<f64>()) else {
+        return usize::MAX;
+    };
+    let values_start = values as usize;
+    let edges_start = edges as usize;
+    let counts_start = out_counts as usize;
+    let values_end = values_start.saturating_add(value_bytes);
+    let Some(edges_end) = edges_start.checked_add(edge_bytes) else {
+        return usize::MAX;
+    };
+    let Some(counts_end) = counts_start.checked_add(count_bytes) else {
+        return usize::MAX;
+    };
+    let values_overlap = len > 0
+        && !values.is_null()
+        && values_start < counts_end
+        && counts_start < values_end;
+    let edges_overlap = edges_start < counts_end && counts_start < edges_end;
+    if n_bins == 0
+        || n_bins > stats::MAX_HISTOGRAM_BINS
+        || edges.is_null()
+        || out_counts.is_null()
+        || !matches!(density, 0 | 1)
+        || !matches!(cumulative, 0 | 1)
+        || values_overlap
+        || edges_overlap
+        || (len > 0 && values.is_null())
+    {
+        return usize::MAX;
+    }
+    let values = if len == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(values, len)
+    };
+    let edges = std::slice::from_raw_parts(edges, edge_len);
+    let Some(result) =
+        ffi_guard(None, || stats::histogram_bins(values, edges, density != 0, cumulative != 0))
+    else {
+        return usize::MAX;
+    };
+    debug_assert_eq!(result.len(), n_bins);
+    std::ptr::copy_nonoverlapping(result.as_ptr(), out_counts, n_bins);
+    n_bins
 }
 
 /// Expand indexed topology into independent filled triangles.
@@ -9828,6 +9902,77 @@ mod tests {
         );
         assert_eq!(x, sentinel_x);
         assert_eq!(cumulative, sentinel_y);
+    }
+
+    #[test]
+    fn histogram_bins_ffi_is_bounded_and_atomic() {
+        let values = [0.1, 0.2, 1.2, 2.4, f64::NAN];
+        let edges = [0.0, 1.0, 2.0, 3.0];
+        let mut counts = [-7.0; 3];
+        assert_eq!(
+            unsafe {
+                xyg_histogram_bins(
+                    values.as_ptr(),
+                    values.len(),
+                    edges.as_ptr(),
+                    edges.len(),
+                    0,
+                    1,
+                    counts.as_mut_ptr(),
+                )
+            },
+            3
+        );
+        assert_eq!(counts, [2.0, 3.0, 4.0]);
+
+        let sentinel = [11.0; 3];
+        counts = sentinel;
+        assert_eq!(
+            unsafe {
+                xyg_histogram_bins(
+                    values.as_ptr(),
+                    values.len(),
+                    edges.as_ptr(),
+                    edges.len(),
+                    2,
+                    0,
+                    counts.as_mut_ptr(),
+                )
+            },
+            usize::MAX
+        );
+        assert_eq!(counts, sentinel);
+        assert_eq!(
+            unsafe {
+                xyg_histogram_bins(
+                    values.as_ptr(),
+                    values.len(),
+                    edges.as_ptr(),
+                    1,
+                    0,
+                    0,
+                    counts.as_mut_ptr(),
+                )
+            },
+            usize::MAX
+        );
+        assert_eq!(counts, sentinel);
+        let mut overlapping = [0.0, 1.0, 2.0, 3.0];
+        assert_eq!(
+            unsafe {
+                xyg_histogram_bins(
+                    values.as_ptr(),
+                    values.len(),
+                    overlapping.as_ptr(),
+                    overlapping.len(),
+                    0,
+                    0,
+                    overlapping.as_mut_ptr(),
+                )
+            },
+            usize::MAX
+        );
+        assert_eq!(overlapping, [0.0, 1.0, 2.0, 3.0]);
     }
 
     #[test]

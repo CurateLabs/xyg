@@ -594,6 +594,27 @@ def test_histogram_uniform_density(impl):
     np.testing.assert_allclose(counts, expect)
 
 
+def test_histogram_bins_matches_numpy_authored_edges(impl):
+    x = np.array([0.25, 1.0, 3.0, 3.0, np.nan, 9.0])
+    edges = np.array([0.0, 0.5, 2.0, 4.0], dtype=np.float64)
+    expect, _ = np.histogram(x[np.isfinite(x)], bins=edges)
+    np.testing.assert_allclose(impl.histogram_bins(x, edges), expect)
+    expect_density, _ = np.histogram(x[np.isfinite(x)], bins=edges, density=True)
+    np.testing.assert_allclose(impl.histogram_bins(x, edges, density=True), expect_density)
+    np.testing.assert_allclose(
+        impl.histogram_bins(x, edges, cumulative=True),
+        np.cumsum(expect),
+    )
+    np.testing.assert_allclose(
+        impl.histogram_bins(x, edges, density=True, cumulative=True),
+        np.cumsum(expect_density * np.diff(edges)),
+    )
+    with pytest.raises(ValueError, match="histogram_bins"):
+        impl.histogram_bins(x, np.array([0.0, 0.0]))
+    with pytest.raises(ValueError, match="histogram_bins"):
+        impl.histogram_bins(np.array([10.0]), edges, density=True)
+
+
 def test_normalize_f32_modes(impl):
     x = np.array([-1.0, 0.0, 5.0, 10.0, 11.0, np.nan, np.inf])
     zero = impl.normalize_f32(x, (0.0, 10.0), nonfinite="zero")

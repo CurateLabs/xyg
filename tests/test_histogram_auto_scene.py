@@ -28,6 +28,11 @@ CASES = {
         {"density": True, "cumulative": True},
     ),
     "fixed": ([0, 0.1, 0.2, 0.3, 2, 3, 5, 8, 13], {"bins": 10}),
+    "authored": ([0.1, 0.2, 1.2, 2.4, np.nan], {"bins": [0.0, 1.0, 2.0, 3.0]}),
+    "authored_cumulative": (
+        [0.1, 0.2, 1.2, 2.4],
+        {"bins": [0.0, 0.5, 2.0, 4.0], "cumulative": True},
+    ),
     "empty": ([], {}),
     "all_nonfinite": ([np.nan, np.inf], {}),
 }
@@ -65,6 +70,8 @@ const cases = {
   wide_range: [[0,1], {range:[-10,10]}],
   density_cumulative: [[0,.1,.2,.3,2,3,5,8,13], {density:true,cumulative:true}],
   fixed: [[0,.1,.2,.3,2,3,5,8,13], {bins:10}],
+  authored: [[.1,.2,1.2,2.4,NaN], {bins:[0,1,2,3]}],
+  authored_cumulative: [[.1,.2,1.2,2.4], {bins:[0,.5,2,4],cumulative:true}],
   empty: [[], {}],
   all_nonfinite: [[NaN,Infinity], {}],
 };
@@ -103,6 +110,8 @@ def test_histogram_auto_is_cross_host_exact_and_bounded(name: str) -> None:
     trace = figure.traces[0]
     if name in {"empty", "all_nonfinite", "fixed"}:
         assert len(trace.x0.values) == 10
+    elif name in {"authored", "authored_cumulative"}:
+        assert len(trace.x0.values) == 3
     else:
         assert len(trace.x0.values) <= 10_000
     if name == "wide_range":
@@ -114,6 +123,10 @@ def test_histogram_auto_counts_density_and_every_public_consumer() -> None:
     assert mixed.traces[0].y1.values.sum() == 10
     density = _figure(*CASES["density_cumulative"])
     np.testing.assert_allclose(density.traces[0].y1.values, [5 / 9, 7 / 9, 7 / 9, 8 / 9, 1])
+    authored = _figure(*CASES["authored"])
+    np.testing.assert_array_equal(authored.traces[0].y1.values, [2.0, 1.0, 1.0])
+    authored_cdf = _figure(*CASES["authored_cumulative"])
+    np.testing.assert_array_equal(authored_cdf.traces[0].y1.values, [2.0, 3.0, 4.0])
 
     assert scene_export_support_reason(mixed) is None
     scene = mixed.to_scene()
