@@ -72,6 +72,7 @@ def test_box_parts_compile_to_independent_shared_renderer_traces() -> None:
         "symbol": "diamond",
         "stroke": "#dc2626",
         "stroke_width": 2.0,
+        "role": "box-outlier",
     }
 
 
@@ -98,7 +99,7 @@ def test_unstyled_box_keeps_its_existing_trace_style_defaults() -> None:
             "width": 1.4,
             "role": "box-median",
         },
-        {"opacity": 0.85},
+        {"opacity": 0.85, "role": "box-outlier"},
     ]
 
 

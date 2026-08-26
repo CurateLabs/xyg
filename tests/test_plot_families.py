@@ -397,6 +397,19 @@ def test_failing_box_and_violin_commit_no_axis_categories() -> None:
         assert len(fig.traces) == 0
 
 
+def test_box_resource_bound_is_not_misreported_as_empty_input() -> None:
+    with pytest.raises(ValueError, match="invalid bounded box geometry"):
+        Figure().box([[1.0]] * 2001, show_outliers=False)
+
+
+def test_box_resource_bound_counts_only_rust_active_groups() -> None:
+    fig = Figure().box([[np.nan]] * 2000 + [[1.0]], show_outliers=False)
+
+    assert fig.traces[1].kind == "box"
+    assert len(fig.traces[1].x0.values) == 1
+    assert (fig.traces[1].x0.values[0] + fig.traces[1].x1.values[0]) * 0.5 == 2000.0
+
+
 def test_box_2d_values_are_column_oriented() -> None:
     rng = np.random.default_rng(8)
     tall = rng.normal(size=(100, 3))

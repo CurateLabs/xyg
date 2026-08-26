@@ -1196,6 +1196,16 @@ filters, computes and normalizes the bounded density, applies width and
 orientation, and emits no more than 10,000 final Rect rows. Browser-worker
 recomputation for future axis-linked subsets reuses this same engine function.
 
+ABI 99 applies the same ownership rule to bounded composition boxes. Hosts
+pack flat canonical f64 samples, monotone group offsets, centers, orientation,
+width, and the outlier-visibility flag. Rust filters nonfinite samples, computes
+Tukey quartiles and 1.5-IQR whiskers, preserves source-group order, and emits
+the final body, whisker, cap, median, and outlier coordinates. Outlier jitter is
+deterministic SplitMix64 keyed by source-group and within-group outlier index,
+bounded to +/- 0.12 of box width; hiding outliers retains statistical metadata
+with zero placement coordinates. Five fixed geometry records per active group
+plus all outlier records are capped at 10,000.
+
 Contract-wide invariants: every tier transition is hysteresis-guarded and logged
 (no silent quality change); every aggregated visual states its aggregation in the
 hover UI; every derived artifact is reproducible from (canonical, viewport, params) —

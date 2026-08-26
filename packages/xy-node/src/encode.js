@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -409,6 +409,66 @@ export function boxStats(data) {
     low: stats[3],
     high: stats[4],
     outliers: outliers.subarray(0, Number(nOut[0])),
+  };
+}
+
+export function boxGeometry(groups, positions, width, orientation, showOutliers = true) {
+  const offsets = new BigUint64Array(groups.length + 1);
+  let total = 0;
+  for (let index = 0; index < groups.length; index += 1) {
+    total += groups[index].length;
+    offsets[index + 1] = BigInt(total);
+  }
+  const values = new Float64Array(total);
+  let at = 0;
+  for (const group of groups) { values.set(group, at); at += group.length; }
+  const centers = Float64Array.from(positions);
+  const nOutliers = new BigUint64Array(1);
+  const call = (active, records, outlierOffsets, outlierRecords, groupCap, outlierCap) => Number(xyBoxGeometry(
+    f64Ptr(values), BigInt(values.length), pointer(offsets, "size_t *"), BigInt(offsets.length),
+    f64Ptr(centers), BigInt(centers.length), Number(width),
+    orientation === "vertical" ? 0 : orientation === "horizontal" ? 1 : 2,
+    showOutliers ? 1 : 0, pointer(nOutliers, "size_t *"), u32Ptr(active), f64Ptr(records),
+    pointer(outlierOffsets, "size_t *"), f64Ptr(outlierRecords), BigInt(groupCap), BigInt(outlierCap),
+  ));
+  const required = call(null, null, null, null, 0, 0);
+  const outliers = Number(nOutliers[0]);
+  if (!Number.isSafeInteger(required) || required <= 0 || required > 2_000 ||
+      !Number.isSafeInteger(outliers) || outliers < 0 || required * 5 + outliers > 10_000) {
+    throw new RangeError("invalid bounded box geometry");
+  }
+  const active = new Uint32Array(required);
+  const records = new Float64Array(required * 25);
+  const outlierOffsets = new BigUint64Array(required + 1);
+  const outlierRecords = new Float64Array(outliers * 3);
+  if (call(active, records, outlierOffsets, outlierRecords, required, outliers) !== required) {
+    throw new Error("xy_box_geometry failed");
+  }
+  const body = [0, 1, 2, 3].map(() => new Float64Array(required));
+  const whiskers = [0, 1, 2, 3].map(() => new Float64Array(required * 3));
+  const medians = [0, 1, 2, 3].map(() => new Float64Array(required));
+  const groupStats = [];
+  for (let group = 0; group < required; group += 1) {
+    const base = group * 25;
+    for (let coordinate = 0; coordinate < 4; coordinate += 1) {
+      body[coordinate][group] = records[base + 5 + coordinate];
+      medians[coordinate][group] = records[base + 21 + coordinate];
+      for (let segment = 0; segment < 3; segment += 1) {
+        whiskers[coordinate][group * 3 + segment] = records[base + 9 + segment * 4 + coordinate];
+      }
+    }
+    const start = Number(outlierOffsets[group]);
+    const end = Number(outlierOffsets[group + 1]);
+    groupStats.push({
+      q1: records[base], median: records[base + 1], q3: records[base + 2],
+      low: records[base + 3], high: records[base + 4],
+      outliers: Float64Array.from({ length: end - start }, (_, index) => outlierRecords[(start + index) * 3]),
+    });
+  }
+  return {
+    activeGroups: active, groupStats, body, whiskers, medians,
+    outlierX: showOutliers ? Float64Array.from({ length: outliers }, (_, index) => outlierRecords[index * 3 + 1]) : new Float64Array(),
+    outlierY: showOutliers ? Float64Array.from({ length: outliers }, (_, index) => outlierRecords[index * 3 + 2]) : new Float64Array(),
   };
 }
 

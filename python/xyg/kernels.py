@@ -114,6 +114,7 @@ lod_grid_shape = _impl.lod_grid_shape
 lod_plan = _impl.lod_plan
 quantiles = _impl.quantiles
 box_stats = _impl.box_stats
+box_geometry = _impl.box_geometry
 hexbin = _impl.hexbin
 violin_density = _impl.violin_density
 violin_rects = _impl.violin_rects
@@ -135,6 +136,7 @@ __all__ = [
     "bin_2d_mean_color",
     "bin_2d_sample_range",
     "bin_2d_stratified_sample_range_u8_counted",
+    "box_geometry",
     "box_stats",
     "contourf_bands",
     "contourf_densify",

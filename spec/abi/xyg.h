@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 98
-#define XYG_ABI_SIGNATURE_SHA256 "aed7db37fd39566123734fe7697a9c2a8af51119c0cb1ed2cdae067eed0e1298"
+#define XYG_ABI_VERSION 99
+#define XYG_ABI_SIGNATURE_SHA256 "4b95c64d8ee22c405dc2a45067b99f9e6f5915ada45fd7db8225cc238fb42579"
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,6 +20,7 @@ size_t xyg_bin_2d_indices(const double * x, const double * y, size_t len, double
 int32_t xyg_bin_2d_mean_color(const double * x, const double * y, size_t len, const uint8_t * idx, const uint8_t * rgba, const uint8_t * lut, size_t lut_len, double x0, double x1, double y0, double y1, size_t w, size_t h, uint8_t * out);
 size_t xyg_bin_2d_sample_range(const double * x, const double * y, size_t len, double x0, double x1, double y0, double y1, size_t w, size_t h, uint64_t seed, uint64_t threshold, float * grid, uint32_t * out, size_t capacity);
 size_t xyg_bin_2d_stratified_sample_range_u8_counted(const double * x, const double * y, const uint8_t * groups, size_t len, const uint64_t * counts, size_t n_groups, double x0, double x1, double y0, double y1, size_t w, size_t h, uint64_t seed, double fraction, uint64_t min_count, float * grid, uint32_t * out, size_t capacity);
+size_t xyg_box_geometry(const double * values, size_t values_len, const size_t * offsets, size_t offsets_len, const double * centers, size_t centers_len, double width, uint32_t orientation, int32_t show_outliers, size_t * out_n_outliers, uint32_t * active_groups, double * group_records, size_t * outlier_offsets, double * outlier_records, size_t group_cap, size_t outlier_cap);
 int32_t xyg_box_stats(const double * data, size_t len, double * out_stats, double * out_outliers, size_t outliers_cap, size_t * out_n_outliers);
 int32_t xyg_chunked_columns_cancel_before(uint64_t store, uint64_t generation);
 int32_t xyg_chunked_columns_free(uint64_t store);

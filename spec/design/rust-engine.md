@@ -75,8 +75,9 @@ declined only for a near-unique id/key column, where Python must materialize
 essentially the whole label set regardless. Wide records cross over sooner —
 above 32 B they are declined once the probe is 95% distinct, at or below 32 B
 only when it is entirely distinct) · histogram stats ✅ · quantiles (`xyg_quantiles` ✅, linear/NumPy-default) · box stats
-(`xyg_box_stats` ✅ Tukey; `xyg_violin_density` ✅ fixed smooth kernel;
-`xyg_violin_rects` ✅ ABI 98 grouped, normalized, bounded Scene geometry) · hexbin
+(`xyg_box_stats` ✅ Tukey; `xyg_box_geometry` ✅ ABI 99 grouped,
+deterministic, bounded Scene geometry; `xyg_violin_density` ✅ fixed smooth
+kernel; `xyg_violin_rects` ✅ ABI 98 grouped, normalized, bounded Scene geometry) · hexbin
 reducer (`xyg_hexbin` ✅ count/mean/sum) · histogram edges (`xyg_histogram_edges`
 ✅ NumPy `bins="auto"` / Sturges, used by both composition hosts for omitted
 bins, capped at 10,000 bins / 10,001 edges before allocation; invalid or
@@ -186,7 +187,7 @@ crates/
     graph_style.rs      # graph labels, v1 semantic paint/scales/legends, states, compounds
     sankey.rs           # sankey layout (`xyg_sankey_layout`), dual-host.
     transition.rs       # stable animation-key encoding (`xyg_transition_keys_fixed`).
-    stats.rs            # quantiles + Tukey box_stats + violin_density +
+    stats.rs            # quantiles + Tukey box/grouped geometry + violin_density +
                         #   histogram_edges (NumPy auto) + wind_rose_bins ✅
     hexbin.rs           # matplotlib-compatible hex lattice (`xyg_hexbin`) ✅
     lod_plan.rs         # view LOD drill/grid decision math ✅ (`xyg_lod_plan`).

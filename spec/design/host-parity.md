@@ -137,6 +137,13 @@ Unsorted, repeated, nonfinite, constant, ranged, density, and cumulative
 fixtures produce identical Rect Scenes for SVG, raster, and browser consumers.
 Authored arbitrary edges and cumulative assembly remain separate host-policy
 debt.
+ABI 99 gives both composition hosts one compact grouped box ingress. Hosts pack
+the same f64 values/offsets/centers and literal options; Rust returns typed
+active-group IDs, fixed 25-f64 group records, monotone outlier offsets, and
+fixed 3-f64 outlier records. Vertical and horizontal fixtures compile to
+identical Python/Node Scene bytes and feed SVG, raster, and browser consumers.
+Host grouping/coercion and literal styles remain seams; Tukey policy, geometry,
+stable ordering, deterministic outlier placement, and bounds do not.
 Scene v13 covers solid chart/plot backgrounds, authored
   Cartesian side/visibility/major-minor geometry and paint, and a bounded
   single-column primary static legend for named constant-style traces, plus a

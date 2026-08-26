@@ -1170,9 +1170,8 @@ def _distribution_groups(
 
 
 def _distribution_stats(group: np.ndarray) -> tuple[float, float, float, float, float, np.ndarray]:
-    """Tukey box stats via Rust (`xyg_box_stats`); geometry assembly stays here."""
-    arr = np.asarray(group, dtype=np.float64)
-    return kernels.box_stats(arr)
+    """Compatibility helper for one Rust-owned Tukey summary."""
+    return kernels.box_stats(np.asarray(group, dtype=np.float64))
 
 
 def _contour_segments(
@@ -2422,59 +2421,34 @@ def box(
     opacity = self._opacity(opacity, "box opacity")
     show_outliers = self._bool_param(show_outliers, "box show_outliers")
     outlier_size = self._nonnegative_scalar(outlier_size, "box outlier_size")
-    groups, positions = _distribution_groups(self, values, x, group, "box")
-    if len(groups) != len(positions):
-        raise ValueError("box groups and positions must have equal length")
-    stats = [_distribution_stats(g) for g in groups]
-    finite_stats = [s for s in stats if np.isfinite(s[0])]
-    if not finite_stats:
+    category_axis = "x" if orientation == "vertical" else "y"
+    groups, positions = _distribution_groups(
+        self, values, x, group, "box", category_axis=category_axis
+    )
+    offsets = np.empty(len(groups) + 1, dtype=np.uintp)
+    offsets[0] = 0
+    for index, group_values in enumerate(groups):
+        offsets[index + 1] = offsets[index] + len(group_values)
+    flat = np.concatenate(groups) if groups else np.empty(0, dtype=np.float64)
+    if not np.isfinite(flat).any():
         raise ValueError("box values must contain at least one finite group")
+    try:
+        geometry = kernels.box_geometry(
+            flat,
+            offsets,
+            np.asarray(positions, dtype=np.float64),
+            width,
+            orientation,
+            show_outliers,
+        )
+    except ValueError as exc:
+        raise ValueError("invalid bounded box geometry") from exc
     checkpoint = self._checkpoint()
     try:
-        self._commit_axis_positions(x if x is not None else group, "x")
-        q1 = np.asarray([s[0] for s in stats], dtype=np.float64)
-        med = np.asarray([s[1] for s in stats], dtype=np.float64)
-        q3 = np.asarray([s[2] for s in stats], dtype=np.float64)
-        low = np.asarray([s[3] for s in stats], dtype=np.float64)
-        high = np.asarray([s[4] for s in stats], dtype=np.float64)
-        valid = np.isfinite(q1) & np.isfinite(q3)
-        centers = np.asarray(positions, dtype=np.float64)
-        if orientation == "vertical":
-            bx0, bx1, by0, by1 = centers - width / 2.0, centers + width / 2.0, q1, q3
-            wx0, wx1, wy0, wy1 = (
-                np.concatenate(
-                    (centers[valid], centers[valid] - width * 0.3, centers[valid] - width * 0.3)
-                ),
-                np.concatenate(
-                    (centers[valid], centers[valid] + width * 0.3, centers[valid] + width * 0.3)
-                ),
-                np.concatenate((low[valid], low[valid], high[valid])),
-                np.concatenate((high[valid], low[valid], high[valid])),
-            )
-            mx0, mx1, my0, my1 = (
-                centers[valid] - width / 2.0,
-                centers[valid] + width / 2.0,
-                med[valid],
-                med[valid],
-            )
-        else:
-            bx0, bx1, by0, by1 = q1, q3, centers - width / 2.0, centers + width / 2.0
-            wx0, wx1, wy0, wy1 = (
-                np.concatenate((low[valid], low[valid], high[valid])),
-                np.concatenate((high[valid], low[valid], high[valid])),
-                np.concatenate(
-                    (centers[valid], centers[valid] - width * 0.3, centers[valid] - width * 0.3)
-                ),
-                np.concatenate(
-                    (centers[valid], centers[valid] + width * 0.3, centers[valid] + width * 0.3)
-                ),
-            )
-            mx0, mx1, my0, my1 = (
-                med[valid],
-                med[valid],
-                centers[valid] - width / 2.0,
-                centers[valid] + width / 2.0,
-            )
+        self._commit_axis_positions(x if x is not None else group, category_axis)
+        bx0, by0, bx1, by1 = geometry["body"]
+        wx0, wy0, wx1, wy1 = geometry["whiskers"]
+        mx0, my0, mx1, my1 = geometry["medians"]
         self._append_segment_trace(
             "box_whisker",
             wx0,
@@ -2490,10 +2464,10 @@ def box(
         )
         self._append_rect_trace(
             "box",
-            bx0[valid],
-            bx1[valid],
-            by0[valid],
-            by1[valid],
+            bx0,
+            bx1,
+            by0,
+            by1,
             name=name,
             color=color,
             opacity=opacity,
@@ -2518,31 +2492,19 @@ def box(
             role="box-median",
             extra_style=styles._opacity_channels(median_css),
         )
-        if show_outliers:
-            out_x: list[float] = []
-            out_y: list[float] = []
-            rng = np.random.default_rng(0)
-            for center, s in zip(centers, stats, strict=True):
-                points = s[5]
-                jitter = rng.uniform(-width * 0.12, width * 0.12, len(points))
-                if orientation == "vertical":
-                    out_x.extend((center + jitter).tolist())
-                    out_y.extend(points.tolist())
-                else:
-                    out_x.extend(points.tolist())
-                    out_y.extend((center + jitter).tolist())
-            if out_x:
-                self.scatter(
-                    out_x,
-                    out_y,
-                    name=None,
-                    color=color,
-                    size=outlier_size,
-                    opacity=opacity,
-                    density=None,
-                    symbol="circle",
-                    style=outlier_style,
-                )
+        if show_outliers and len(geometry["outlier_x"]):
+            self.scatter(
+                geometry["outlier_x"],
+                geometry["outlier_y"],
+                name=None,
+                color=color,
+                size=outlier_size,
+                opacity=opacity,
+                density=None,
+                symbol="circle",
+                style=outlier_style,
+            )
+            self.traces[-1].style["role"] = "box-outlier"
         return self
     except Exception:
         self._rollback(checkpoint)

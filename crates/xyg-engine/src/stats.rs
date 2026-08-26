@@ -137,6 +137,195 @@ pub fn box_stats(data: &[f64]) -> BoxStats {
     }
 }
 
+/// Maximum combined grouped-box output rows. Each active group charges one
+/// body, three whisker/cap segments, one median, and every statistical outlier.
+pub const MAX_BOX_GEOMETRY_ROWS: usize = 10_000;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum BoxOrientation {
+    Vertical,
+    Horizontal,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct GroupedBoxGeometry {
+    pub active_groups: Vec<usize>,
+    /// Group-major `[q1, median, q3, low, high]`.
+    pub stats: Vec<f64>,
+    /// Group-major offsets into `outlier_values` and the optional position planes.
+    pub outlier_offsets: Vec<usize>,
+    pub outlier_values: Vec<f64>,
+    pub body_x0: Vec<f64>,
+    pub body_y0: Vec<f64>,
+    pub body_x1: Vec<f64>,
+    pub body_y1: Vec<f64>,
+    pub whisker_x0: Vec<f64>,
+    pub whisker_y0: Vec<f64>,
+    pub whisker_x1: Vec<f64>,
+    pub whisker_y1: Vec<f64>,
+    pub median_x0: Vec<f64>,
+    pub median_y0: Vec<f64>,
+    pub median_x1: Vec<f64>,
+    pub median_y1: Vec<f64>,
+    pub outlier_x: Vec<f64>,
+    pub outlier_y: Vec<f64>,
+}
+
+fn box_outlier_jitter(group: usize, index: usize, width: f64) -> f64 {
+    // SplitMix64 is used only as a deterministic coordinate mixer. Group and
+    // within-group index make placement independent of host RNG state.
+    let mut z = (group as u64)
+        .wrapping_mul(0x9e37_79b9_7f4a_7c15)
+        .wrapping_add(index as u64)
+        .wrapping_add(0x9e37_79b9_7f4a_7c15);
+    z = (z ^ (z >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+    z ^= z >> 31;
+    let unit = (z >> 11) as f64 * (1.0 / ((1_u64 << 53) as f64));
+    (unit * 2.0 - 1.0) * width * 0.12
+}
+
+/// Compile grouped canonical samples into ordinary Scene body, whisker/cap,
+/// median, and optional outlier geometry. Hosts retain coercion, category
+/// factorization, literal styles, and trace assembly only.
+pub fn grouped_box_geometry(
+    values: &[f64],
+    offsets: &[usize],
+    centers: &[f64],
+    width: f64,
+    orientation: BoxOrientation,
+    show_outliers: bool,
+) -> Option<GroupedBoxGeometry> {
+    if offsets.len() != centers.len().checked_add(1)?
+        || offsets.first() != Some(&0)
+        || offsets.last() != Some(&values.len())
+        || offsets.windows(2).any(|pair| pair[0] > pair[1])
+        || centers.iter().any(|value| !value.is_finite())
+        || !width.is_finite()
+        || width <= 0.0
+    {
+        return None;
+    }
+    let mut out = GroupedBoxGeometry {
+        active_groups: vec![],
+        stats: vec![],
+        outlier_offsets: vec![0],
+        outlier_values: vec![],
+        body_x0: vec![],
+        body_y0: vec![],
+        body_x1: vec![],
+        body_y1: vec![],
+        whisker_x0: vec![],
+        whisker_y0: vec![],
+        whisker_x1: vec![],
+        whisker_y1: vec![],
+        median_x0: vec![],
+        median_y0: vec![],
+        median_x1: vec![],
+        median_y1: vec![],
+        outlier_x: vec![],
+        outlier_y: vec![],
+    };
+    for (group, (&start, &end)) in offsets.iter().zip(&offsets[1..]).enumerate() {
+        let stats = box_stats(values.get(start..end)?);
+        if !stats.q1.is_finite() {
+            continue;
+        }
+        let next_rows = out
+            .active_groups
+            .len()
+            .checked_add(1)?
+            .checked_mul(5)?
+            .checked_add(out.outlier_values.len())?
+            .checked_add(stats.outliers.len())?;
+        if next_rows > MAX_BOX_GEOMETRY_ROWS {
+            return None;
+        }
+        let center = centers[group];
+        let half = width * 0.5;
+        let cap = width * 0.3;
+        let (body, whiskers, median) = match orientation {
+            BoxOrientation::Vertical => (
+                (center - half, stats.q1, center + half, stats.q3),
+                [
+                    (center, stats.low, center, stats.high),
+                    (center - cap, stats.low, center + cap, stats.low),
+                    (center - cap, stats.high, center + cap, stats.high),
+                ],
+                (center - half, stats.median, center + half, stats.median),
+            ),
+            BoxOrientation::Horizontal => (
+                (stats.q1, center - half, stats.q3, center + half),
+                [
+                    (stats.low, center, stats.high, center),
+                    (stats.low, center - cap, stats.low, center + cap),
+                    (stats.high, center - cap, stats.high, center + cap),
+                ],
+                (stats.median, center - half, stats.median, center + half),
+            ),
+        };
+        let coordinates = [
+            body.0,
+            body.1,
+            body.2,
+            body.3,
+            median.0,
+            median.1,
+            median.2,
+            median.3,
+            whiskers[0].0,
+            whiskers[0].1,
+            whiskers[0].2,
+            whiskers[0].3,
+            whiskers[1].0,
+            whiskers[1].1,
+            whiskers[1].2,
+            whiskers[1].3,
+            whiskers[2].0,
+            whiskers[2].1,
+            whiskers[2].2,
+            whiskers[2].3,
+        ];
+        if coordinates.iter().any(|value| !value.is_finite()) {
+            return None;
+        }
+        out.active_groups.push(group);
+        out.stats
+            .extend_from_slice(&[stats.q1, stats.median, stats.q3, stats.low, stats.high]);
+        out.body_x0.push(body.0);
+        out.body_y0.push(body.1);
+        out.body_x1.push(body.2);
+        out.body_y1.push(body.3);
+        for segment in whiskers {
+            out.whisker_x0.push(segment.0);
+            out.whisker_y0.push(segment.1);
+            out.whisker_x1.push(segment.2);
+            out.whisker_y1.push(segment.3);
+        }
+        out.median_x0.push(median.0);
+        out.median_y0.push(median.1);
+        out.median_x1.push(median.2);
+        out.median_y1.push(median.3);
+        for (index, value) in stats.outliers.iter().copied().enumerate() {
+            out.outlier_values.push(value);
+            if show_outliers {
+                let jitter = box_outlier_jitter(group, index, width);
+                let (x, y) = match orientation {
+                    BoxOrientation::Vertical => (center + jitter, value),
+                    BoxOrientation::Horizontal => (value, center + jitter),
+                };
+                if !x.is_finite() || !y.is_finite() {
+                    return None;
+                }
+                out.outlier_x.push(x);
+                out.outlier_y.push(y);
+            }
+        }
+        out.outlier_offsets.push(out.outlier_values.len());
+    }
+    (!out.active_groups.is_empty()).then_some(out)
+}
+
 /// Bounded-resolution violin density matching the prior NumPy path.
 ///
 /// Builds a uniform histogram over `[lo, hi]` (auto from finite samples when
@@ -642,61 +831,51 @@ mod tests {
         assert_eq!(vertical.y1, horizontal.x1);
         assert_eq!(vertical.x0, horizontal.y0);
         assert_eq!(vertical.x1, horizontal.y1);
-        assert!(
-            violin_rects(
-                &values,
-                &[1, 6],
-                &[0.0],
-                4,
-                0.8,
-                ViolinOrientation::Vertical
-            )
-            .is_none()
-        );
-        assert!(
-            violin_rects(
-                &values,
-                &[0, 7],
-                &[0.0],
-                4,
-                0.8,
-                ViolinOrientation::Vertical
-            )
-            .is_none()
-        );
-        assert!(
-            violin_rects(
-                &values,
-                &[0, 6],
-                &[f64::NAN],
-                4,
-                0.8,
-                ViolinOrientation::Vertical
-            )
-            .is_none()
-        );
-        assert!(
-            violin_rects(
-                &values,
-                &[0, 6],
-                &[0.0],
-                3,
-                0.8,
-                ViolinOrientation::Vertical
-            )
-            .is_none()
-        );
-        assert!(
-            violin_rects(
-                &values,
-                &[0, 6],
-                &[0.0],
-                4,
-                0.0,
-                ViolinOrientation::Vertical
-            )
-            .is_none()
-        );
+        assert!(violin_rects(
+            &values,
+            &[1, 6],
+            &[0.0],
+            4,
+            0.8,
+            ViolinOrientation::Vertical
+        )
+        .is_none());
+        assert!(violin_rects(
+            &values,
+            &[0, 7],
+            &[0.0],
+            4,
+            0.8,
+            ViolinOrientation::Vertical
+        )
+        .is_none());
+        assert!(violin_rects(
+            &values,
+            &[0, 6],
+            &[f64::NAN],
+            4,
+            0.8,
+            ViolinOrientation::Vertical
+        )
+        .is_none());
+        assert!(violin_rects(
+            &values,
+            &[0, 6],
+            &[0.0],
+            3,
+            0.8,
+            ViolinOrientation::Vertical
+        )
+        .is_none());
+        assert!(violin_rects(
+            &values,
+            &[0, 6],
+            &[0.0],
+            4,
+            0.0,
+            ViolinOrientation::Vertical
+        )
+        .is_none());
     }
 
     #[test]
@@ -722,17 +901,157 @@ mod tests {
         let values = vec![1.0; groups + 1];
         let offsets: Vec<usize> = (0..=groups + 1).collect();
         let centers: Vec<f64> = (0..=groups).map(|v| v as f64).collect();
-        assert!(
-            violin_rects(
+        assert!(violin_rects(
+            &values,
+            &offsets,
+            &centers,
+            4,
+            0.8,
+            ViolinOrientation::Vertical
+        )
+        .is_none());
+    }
+
+    #[test]
+    fn grouped_box_geometry_owns_orientation_order_and_outlier_placement() {
+        let values = [1.0, 2.0, 3.0, 100.0, f64::NAN, 4.0, 5.0, 6.0];
+        let offsets = [0, 4, 5, 8];
+        let centers = [10.0, 20.0, 30.0];
+        let vertical = grouped_box_geometry(
+            &values,
+            &offsets,
+            &centers,
+            2.0,
+            BoxOrientation::Vertical,
+            true,
+        )
+        .unwrap();
+        assert_eq!(vertical.active_groups, [0, 2]);
+        assert_eq!(vertical.body_x0, [9.0, 29.0]);
+        assert_eq!(vertical.whisker_x0.len(), 6);
+        assert_eq!(vertical.median_x0.len(), 2);
+        assert_eq!(vertical.outlier_offsets, [0, 1, 1]);
+        assert_eq!(vertical.outlier_values, [100.0]);
+        assert!((9.76..=10.24).contains(&vertical.outlier_x[0]));
+        assert_eq!(vertical.outlier_y, [100.0]);
+        assert_eq!(
+            vertical,
+            grouped_box_geometry(
                 &values,
                 &offsets,
                 &centers,
-                4,
-                0.8,
-                ViolinOrientation::Vertical
+                2.0,
+                BoxOrientation::Vertical,
+                true,
             )
-            .is_none()
+            .unwrap()
         );
+
+        let horizontal = grouped_box_geometry(
+            &values,
+            &offsets,
+            &centers,
+            2.0,
+            BoxOrientation::Horizontal,
+            true,
+        )
+        .unwrap();
+        assert_eq!(horizontal.body_y0, vertical.body_x0);
+        assert_eq!(horizontal.body_y1, vertical.body_x1);
+        assert_eq!(horizontal.body_x0, vertical.body_y0);
+        assert_eq!(horizontal.body_x1, vertical.body_y1);
+        assert_eq!(horizontal.outlier_x, vertical.outlier_y);
+        assert_eq!(horizontal.outlier_y, vertical.outlier_x);
+
+        let hidden = grouped_box_geometry(
+            &values,
+            &offsets,
+            &centers,
+            2.0,
+            BoxOrientation::Vertical,
+            false,
+        )
+        .unwrap();
+        assert_eq!(hidden.outlier_values, [100.0]);
+        assert!(hidden.outlier_x.is_empty() && hidden.outlier_y.is_empty());
+    }
+
+    #[test]
+    fn grouped_box_geometry_rejects_malformed_and_overflowing_inputs() {
+        let values = [1.0, 2.0];
+        for offsets in [&[1, 2][..], &[0, 3][..], &[0, 2, 1][..]] {
+            assert!(grouped_box_geometry(
+                &values,
+                offsets,
+                &[0.0],
+                0.6,
+                BoxOrientation::Vertical,
+                true,
+            )
+            .is_none());
+        }
+        assert!(grouped_box_geometry(
+            &values,
+            &[0, 2],
+            &[f64::NAN],
+            0.6,
+            BoxOrientation::Vertical,
+            true,
+        )
+        .is_none());
+        assert!(grouped_box_geometry(
+            &values,
+            &[0, 2],
+            &[f64::MAX],
+            f64::MAX,
+            BoxOrientation::Vertical,
+            true,
+        )
+        .is_none());
+        assert!(grouped_box_geometry(
+            &values,
+            &[0, 2],
+            &[0.0],
+            0.0,
+            BoxOrientation::Vertical,
+            true,
+        )
+        .is_none());
+        assert!(grouped_box_geometry(
+            &[f64::NAN],
+            &[0, 1],
+            &[0.0],
+            0.6,
+            BoxOrientation::Vertical,
+            true,
+        )
+        .is_none());
+
+        let groups = MAX_BOX_GEOMETRY_ROWS / 5;
+        let values = vec![1.0; groups];
+        let offsets: Vec<usize> = (0..=groups).collect();
+        let centers: Vec<f64> = (0..groups).map(|value| value as f64).collect();
+        assert!(grouped_box_geometry(
+            &values,
+            &offsets,
+            &centers,
+            0.6,
+            BoxOrientation::Vertical,
+            false,
+        )
+        .is_some());
+        let values = vec![1.0; groups + 1];
+        let offsets: Vec<usize> = (0..=groups + 1).collect();
+        let centers: Vec<f64> = (0..=groups).map(|value| value as f64).collect();
+        assert!(grouped_box_geometry(
+            &values,
+            &offsets,
+            &centers,
+            0.6,
+            BoxOrientation::Vertical,
+            false,
+        )
+        .is_none());
     }
 
     #[test]
