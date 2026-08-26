@@ -660,9 +660,10 @@ remain accepted byte-for-byte. This envelope deliberately avoids Koffi's
 64-parameter function ceiling.
 
 Time/category/polar/secondary axes and broader numeric grammars remain on their
-documented compatibility routes. WASM ABI 23 provides a low-level bounded tick
-resolver, but `js/src/30_ticks.ts` and the existing painter contract are
-unchanged until #59 defines an explicit all-host external-worker asset seam.
+documented compatibility routes. WASM ABI 23 plus `attachWasmTicks` cut
+explicitly attached automatic primary Cartesian linear/log/symlog ChartView
+axes to that resolver; `js/src/30_ticks.ts` stays the compatibility generator
+for unattached charts and remaining families until #59 covers those hosts.
 
 ## Version 25 Band outline topology
 

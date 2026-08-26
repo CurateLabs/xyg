@@ -335,12 +335,17 @@ subset:
 ## 6. Axis ticks and label formatting (`30_ticks.ts`)
 
 Ticks are computed on the CPU in f64 and never round-trip through the f32
-render path (§16). `ChartView._ticksFor` dispatches on the axis
-(`50_chartview.ts:395–398`), checking in this order: `kind === "time"` →
-`timeTicks`, `kind === "category"` → `categoryTicks`, `scale === "log"` →
-`logTicks`, otherwise `linearTicks`. Every generator takes `(lo, hi, target)`
-with `target = 6` by default and returns `{ ticks, step }`; `logTicks` adds
-`labels` and `log: true`.
+render path (§16). An explicit `attachWasmTicks` handle intercepts automatic
+primary Cartesian linear/log/symlog axes before this module: Rust owns those
+positions and labels, and a covered attached axis (eligible plus an admitted
+cache) never falls through to the generators below. A newly eligible axis
+after mount is requested on the next frame and stays on this module until that
+cache arrives. Unattached charts and category/time/angular/polar/secondary,
+colorbar, and authored paths still use `ChartView._axisTicks`, which checks in
+this order: authored `tick_values` → `kind === "category"` → `theta_unit` →
+`kind === "time"` → `scale === "log"` / `symlog` → `linearTicks`. Every
+generator takes `(lo, hi, target)` with `target = 6` by default and returns
+`{ ticks, step }`; `logTicks` adds `labels` and `log: true`.
 
 ### 6.1 Generators
 

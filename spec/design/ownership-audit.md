@@ -132,9 +132,12 @@ fallback, log sub-unit collapse protection, and explicit-label precedence),
 and measures gutters. `python/xyg/_scene_v3.py` and
 `packages/xy-node/src/scene.js` only retain authoring options and pack bounded
 UTF-8 through the versioned ABI envelope. `js/src/30_ticks.ts` remains
-canonical-policy debt for the dynamic browser path under #59; WASM ABI 23 now
-provides the low-level Rust resolver and Worker lane without claiming the
-all-host ChartView cutover.
+canonical-policy debt for uncovered dynamic browser paths under #59. WASM ABI
+23 plus `attachWasmTicks` now cut explicitly attached automatic primary
+Cartesian linear/log/symlog ChartView axes to the Rust resolver and independent
+Worker lane. Category/time/polar, secondary axes, colorbars, authored ticks,
+unattached charts, and hosts without explicit external assets remain on the
+frozen compatibility path; this is not the all-host ChartView cutover.
 
 ## Binding seam decision
 
@@ -301,9 +304,10 @@ Owner: Shared TypeScript client with canonical-policy debt. Disposition: `move-r
 Allowed:
 
 - Temporary tick consumption and browser-specific label presentation during scene migration.
-- The existing TypeScript generator stays frozen as an interaction compatibility
-  path until #59 can execute the Rust-owned linear/log/symlog/category/angular/time
-  ladders for each browser view and resize.
+- The existing TypeScript generator stays frozen for unattached charts and the
+  category/time/angular/polar/secondary/colorbar/authored compatibility paths.
+  An explicitly attached automatic primary Cartesian linear/log/symlog axis
+  consumes only Rust-produced positions and labels for each view and resize.
 
 Forbidden:
 
@@ -330,6 +334,9 @@ Allowed:
 
 - Explicit static Worker/WASM asset loading, bounded memory copies, stable
   status transport, cancellation, trap handling, and disposal.
+- Latest-wins viewport framing and cache admission for Rust-owned automatic
+  primary Cartesian linear/log/symlog ticks; TypeScript may schedule and paint
+  but may neither generate nor format a covered attached axis.
 - O(series) validation and framing for transferable typed columns. Rust owns
   per-record expansion, stable identities, and default mark/bar geometry. Exact
   per-record u64 identities remain an attached transferable column; TypeScript

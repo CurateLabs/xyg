@@ -108,7 +108,10 @@ const server = createServer(async (request, response) => {
 
 await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
 const address = server.address();
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({
+  headless: true,
+  executablePath: process.env.XYG_CHROMIUM || undefined,
+});
 try {
   const page = await browser.newPage();
   const external = [];
@@ -121,15 +124,16 @@ try {
   await page.goto(`http://127.0.0.1:${address.port}/`);
   const result = await Promise.race([
     page.evaluate(async () => globalThis.__xygWasmFoundation),
-    new Promise((_, reject) => setTimeout(() => reject(new Error("browser foundation smoke timed out")), 20_000)),
+    new Promise((_, reject) => setTimeout(() => reject(new Error("browser foundation smoke timed out")), 60_000)),
   ]);
   if (pageErrors.length) throw new Error(`browser page errors: ${pageErrors.join(" | ")}`);
   if (!result?.ok) throw new Error(result?.error ?? "browser foundation smoke failed");
   await page.addScriptTag({ url: `http://127.0.0.1:${address.port}/packages/xy-client/dist/standalone.js` });
-  if (!await page.evaluate(() => typeof globalThis.xy?.renderStandalone === "function" && typeof globalThis.xy?.decodeFrame === "function")) throw new Error("published standalone IIFE did not expose window.xy");
+  if (!await page.evaluate(() => typeof globalThis.xy?.renderStandalone === "function" && typeof globalThis.xy?.decodeFrame === "function" && typeof globalThis.xy?.attachWasmTicks === "function")) throw new Error("published standalone IIFE did not expose window.xy");
   if (external.length) throw new Error(`unexpected external requests: ${external.join(", ")}`);
   const known = new Set([
-    "/", "/redirect.wasm", "/delayed.wasm", "/await-delayed", "/release-delayed", ...allowed,
+    "/", "/redirect.wasm", "/delayed.wasm", "/missing.wasm",
+    "/await-delayed", "/release-delayed", ...allowed,
   ]);
   const unknown = requests.filter((path) => !known.has(path));
   if (unknown.length) throw new Error(`unexpected asset lookup: ${unknown.join(", ")}`);

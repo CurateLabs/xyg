@@ -36,10 +36,13 @@ CDN, or silently runs chart algorithms in JavaScript. The worker currently
 proves bounded memory/lifecycle handling, Scene validate/paint, packed
 typed-column (`XYCC`) compile for scatter/polyline/rect/band, and packed
 progressive CoSE (`XYGL`/`XYGO`) with cancellation, revisions, pins, compounds,
-and explicit scheduler bounds. `encodeWasmCose` plus
+and explicit scheduler bounds. `attachWasmTicks(view, { worker })` additionally
+cuts automatic primary Cartesian linear/log/symlog ChartView ticks to the
+Rust-owned `XYTK`/`XYTO` lane. Category/time/polar, secondary axes, colorbars,
+authored ticks, and self-contained hosts remain compatibility/follow-up paths.
+`encodeWasmCose` plus
 `XygWasmWorker.layoutCose` keep every force tick in Rust inside the Worker;
-remaining
-chart-spec ergonomics and density replacement stay tracked by
+remaining all-host cutovers and hosted evidence stay tracked by
 [#59](https://github.com/CurateLabs/xyg/issues/59).
 
 The Node host (`packages/xy-node`, published later as `@curatelabs/xyg-node`)

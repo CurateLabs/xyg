@@ -189,8 +189,9 @@ scale kind, symlog constant, and log nonpositive policy. Explicit authored
 labels win, invalid grammar retains default labels, and legacy raw `XYAD`
 annotation input remains accepted. WASM ABI 23 adds a bounded, atomic Worker
 foundation for Rust-owned f64 linear/log/symlog/category/angular/UTC-time
-values, steps, and formatting. Installing it across Python, Node, notebook,
-Reflex, secondary/polar/colorbar, and ChartView lifecycle remains #59 work.
+values, steps, and formatting. Attached automatic primary Cartesian ChartView
+axes already use that lifecycle via `attachWasmTicks`. Notebook, Reflex, and
+secondary/polar/colorbar paths remain #59 work.
 
 For the migrated subset, public Python SVG and native PNG now use the Rust
 Scene consumers and public PDF consumes their Rust SVG. The shared predicate

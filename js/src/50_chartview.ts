@@ -1309,7 +1309,30 @@ export class ChartView {
     return axis.theta_unit === "degrees" ? 360 : 2 * Math.PI;
   }
 
+  _wasmTickAxisId(axisOrId) {
+    if (axisOrId === "x" || axisOrId === "y") return axisOrId;
+    const axes = this.axes;
+    if (axisOrId && typeof axisOrId === "object") {
+      if (axisOrId === axes?.x) return "x";
+      if (axisOrId === axes?.y) return "y";
+      return this._wasmTickAxisId(axisOrId.id);
+    }
+    if (axes?.x && axisOrId === axes.x.id && (axes[axisOrId] == null || axes[axisOrId] === axes.x)) {
+      return "x";
+    }
+    if (axes?.y && axisOrId === axes.y.id && (axes[axisOrId] == null || axes[axisOrId] === axes.y)) {
+      return "y";
+    }
+    return axisOrId;
+  }
+
   _axisTicks(axisId, target): any {
+    // ABI 23 ChartView cutover: once an explicit attachment is active, covered
+    // primary Cartesian numeric axes consume only its last admitted Rust cache.
+    // A pending/failed newer request never falls through to 30_ticks.ts.
+    axisId = this._wasmTickAxisId(axisId);
+    const wasmTicks = this._wasmTicks?.ticks?.(axisId);
+    if (wasmTicks || this._wasmTicks?.covers?.(axisId)) return wasmTicks;
     const axis = this._axis(axisId);
     let [lo, hi] = this._axisRange(axisId);
     if (this.spec?.coords === "polar" && this._axisDim(axisId) === "x") {
@@ -1368,6 +1391,10 @@ export class ChartView {
   }
 
   _axisTickText(axis, value, step) {
+    const axisId = this._wasmTickAxisId(axis);
+    const wasmLabel = this._wasmTicks?.label?.(axisId, Number(value));
+    if (wasmLabel !== null && wasmLabel !== undefined) return wasmLabel;
+    if (this._wasmTicks?.covers?.(axisId)) return "";
     if (Array.isArray(axis.tick_values) && Array.isArray(axis.tick_labels)) {
       const index = axis.tick_values.findIndex((candidate) => Number(candidate) === Number(value));
       if (index >= 0 && index < axis.tick_labels.length) return String(axis.tick_labels[index]);
@@ -6979,6 +7006,10 @@ export class ChartView {
 
 
   _drawChrome() {
+    // View, resize, and animation paints all converge here. The attachment
+    // deduplicates identical snapshots and retains its last-good Rust result
+    // while the current XYTK batch runs on the independent Worker lane.
+    this._wasmTicks?.schedule?.();
     const s = this.spec;
     const dpr = this.dpr;
     const ctx = this.chrome.getContext("2d");
@@ -8314,8 +8345,10 @@ export class ChartView {
     this._ctxRecoveryTimer = null;
     clearTimeout(this._glHostRecoveryTimer);
     this._glHostRecoveryTimer = null;
-    // Direct-WASM density may own a dedicated Worker; dispose its request and
-    // Worker lifecycle before the ChartView releases WebGL state.
+    // Direct-WASM adapters may own dedicated Workers; dispose their requests
+    // and Worker lifecycle before the ChartView releases WebGL state.
+    this._wasmTicks?.destroy?.();
+    this._wasmTicks = null;
     this._wasmDensity?.destroy?.();
     this._wasmDensity = null;
     this._ro?.disconnect();
