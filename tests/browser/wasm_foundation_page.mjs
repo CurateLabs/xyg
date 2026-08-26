@@ -2,6 +2,7 @@ import {
   aggregateWasmBin2d,
   attachStandaloneWasmDensity,
   attachWasmDensity,
+  attachWasmTicks,
   ChartView,
   createXygWasmWorker,
   decodeWasmTickBatch,
@@ -676,6 +677,237 @@ async function run() {
   } catch (error) {
     if (!(error instanceof XygWasmError) || error.code !== "XYG_WASM_DISPOSED") throw error;
   }
+
+  foundationStage = "primary Cartesian ChartView ticks use Rust/WASM";
+  const chartTickHost = document.createElement("div");
+  chartTickHost.style.cssText = "width:320px;height:240px";
+  document.body.append(chartTickHost);
+  const chartTickView = directDensityFixture(chartTickHost);
+  Object.assign(chartTickView.axes.x, {
+    scale: "log", nonpositive: "mask", range: [0.1, 100], format: "$,.1f",
+  });
+  Object.assign(chartTickView.axes.y, {
+    scale: "symlog", constant: 1, range: [-10, 10],
+  });
+  chartTickView.view0 = chartTickView._copyView({
+    ranges: { x: [0.1, 100], y: [-10, 10] },
+  });
+  chartTickView.view = chartTickView._copyView(chartTickView.view0);
+  const chartTickWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  const chartTickHandle = await attachWasmTicks(chartTickView, {
+    worker: chartTickWorker,
+    workerOwnership: "own",
+  });
+  await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  const chartTickDiagnostics = chartTickHandle.diagnostics();
+  const chartX = chartTickView._axisTicks("x", 6);
+  const chartY = chartTickView._axisTicks("y", 6);
+  const chartTickLabels = [...chartTickView.root.querySelectorAll(
+    '[data-xy-label-kind="tick"]',
+  )].map((node) => node.textContent);
+  if (chartX.source !== "wasm" || chartY.source !== "wasm"
+      || chartTickDiagnostics?.axisIds.join(",") !== "x,y"
+      || !chartX.ticks.length || !chartY.ticks.length
+      || !chartTickLabels.some((label) => label?.startsWith("$"))) {
+    throw new Error(`ChartView did not consume Rust log/symlog ticks: ${JSON.stringify({
+      chartTickDiagnostics,
+      xSource: chartX.source,
+      ySource: chartY.source,
+      chartTickLabels,
+    })}`);
+  }
+  chartTickView.destroy();
+  await nextTask();
+  if (chartTickView._wasmTicks !== null) {
+    throw new Error("destroyed ChartView retained its owned WASM tick attachment");
+  }
+  chartTickHost.remove();
+
+  foundationStage = "ChartView tick latest-wins admission and fail-closed Worker error";
+  const lifecycleTickHost = document.createElement("div");
+  lifecycleTickHost.style.cssText = "width:320px;height:240px";
+  document.body.append(lifecycleTickHost);
+  const lifecycleTickView = directDensityFixture(lifecycleTickHost);
+  const lifecycleTickErrors = [];
+  lifecycleTickView.root.addEventListener(
+    "xy:wasm_ticks_error",
+    (event) => lifecycleTickErrors.push(event.detail),
+  );
+  const lifecycleTickWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  let tickProxyCalls = 0;
+  let tickProxyCancels = 0;
+  const delayedTickWorker = {
+    ready: lifecycleTickWorker.ready,
+    allocateTickSequence: () => lifecycleTickWorker.allocateTickSequence(),
+    resolveTicks(request, options) {
+      const call = ++tickProxyCalls;
+      let forwarded = null;
+      const result = new Promise((resolve, reject) => {
+        setTimeout(() => {
+          try {
+            forwarded = lifecycleTickWorker.resolveTicks(request, options);
+            forwarded.result.then(resolve, reject);
+          } catch (error) {
+            reject(error);
+          }
+        }, call === 2 ? 50 : 0);
+      });
+      return {
+        requestId: call,
+        sequence: options.sequence,
+        result,
+        // Deliberately leave the delayed transport alive: the adapter must
+        // reject a late result independently of cooperative cancellation.
+        cancel() {
+          tickProxyCancels++;
+          forwarded?.cancel();
+        },
+      };
+    },
+    dispose: () => lifecycleTickWorker.dispose(),
+  };
+  const lifecycleTickHandle = await attachWasmTicks(lifecycleTickView, {
+    worker: delayedTickWorker,
+  });
+  const initialTickRevision = lifecycleTickHandle.diagnostics().revision;
+  lifecycleTickView.view = lifecycleTickView._copyView({
+    ranges: { x: [0, 0.25], y: [0, 1] },
+  });
+  const staleRevision = lifecycleTickHandle.schedule();
+  lifecycleTickView.view = lifecycleTickView._copyView({
+    ranges: { x: [0.75, 1], y: [0, 1] },
+  });
+  const currentRevision = lifecycleTickHandle.schedule();
+  for (let attempt = 0; attempt < 100
+    && lifecycleTickHandle.diagnostics().revision < initialTickRevision + 2; attempt++) {
+    await nextTask();
+  }
+  await new Promise((resolve) => setTimeout(resolve, 70));
+  const currentTickDiagnostics = lifecycleTickHandle.diagnostics();
+  const currentXTicks = lifecycleTickView._axisTicks("x", 6);
+  if (staleRevision >= currentRevision || tickProxyCancels < 1
+      || currentTickDiagnostics.revision !== currentRevision
+      || currentTickDiagnostics.cancellations < 1
+      || currentXTicks.source !== "wasm"
+      || currentXTicks.ticks.some((value) => value < 0.75 || value > 1)
+      || lifecycleTickErrors.length) {
+    throw new Error(`ChartView tick latest-wins admission drifted: ${JSON.stringify({
+      staleRevision,
+      currentRevision,
+      tickProxyCancels,
+      currentTickDiagnostics,
+      currentXTicks,
+      lifecycleTickErrors,
+    })}`);
+  }
+  const lastGoodTicks = currentXTicks.ticks.join(",");
+  await lifecycleTickWorker.dispose();
+  lifecycleTickView.view = lifecycleTickView._copyView({
+    ranges: { x: [0.5, 0.75], y: [0, 1] },
+  });
+  lifecycleTickHandle.schedule();
+  await nextTask();
+  lifecycleTickView.draw();
+  await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  const retainedXTicks = lifecycleTickView._axisTicks("x", 6);
+  if (lifecycleTickErrors.length !== 1
+      || lifecycleTickErrors[0].code !== "XYG_WASM_DISPOSED"
+      || Object.keys(lifecycleTickErrors[0]).sort().join(",") !== "code,diagnostics,message"
+      || retainedXTicks.source !== "wasm"
+      || retainedXTicks.ticks.join(",") !== lastGoodTicks) {
+    throw new Error(`ChartView tick Worker failure did not fail closed: ${JSON.stringify({
+      lifecycleTickErrors,
+      retainedXTicks,
+      lastGoodTicks,
+    })}`);
+  }
+  await lifecycleTickHandle.dispose();
+  lifecycleTickView.destroy();
+  lifecycleTickHost.remove();
+
+  foundationStage = "ChartView tick missing assets reject before attachment";
+  const missingTickHost = document.createElement("div");
+  missingTickHost.style.cssText = "width:320px;height:240px";
+  document.body.append(missingTickHost);
+  const missingTickView = directDensityFixture(missingTickHost);
+  const missingTickErrors = [];
+  missingTickView.root.addEventListener(
+    "xy:wasm_ticks_error",
+    (event) => missingTickErrors.push(event.detail),
+  );
+  const missingTickWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: "/missing.wasm",
+    maxArenaBytes: 1024 * 1024,
+  });
+  await rejected(
+    attachWasmTicks(missingTickView, {
+      worker: missingTickWorker,
+      workerOwnership: "own",
+    }),
+    "XYG_WASM_INIT_FAILED",
+  );
+  if (missingTickErrors.length !== 1
+      || missingTickErrors[0].code !== "XYG_WASM_INIT_FAILED"
+      || missingTickView._wasmTicks != null) {
+    throw new Error(`missing ChartView tick assets did not reject atomically: ${JSON.stringify({
+      missingTickErrors,
+      attached: missingTickView._wasmTicks != null,
+    })}`);
+  }
+  missingTickView.destroy();
+  missingTickHost.remove();
+
+  foundationStage = "uncovered ChartView tick families retain compatibility paths";
+  const uncoveredTickHost = document.createElement("div");
+  uncoveredTickHost.style.cssText = "width:320px;height:240px";
+  document.body.append(uncoveredTickHost);
+  const uncoveredTickView = directDensityFixture(uncoveredTickHost);
+  Object.assign(uncoveredTickView.axes.x, {
+    kind: "category", categories: ["alpha", "beta", "gamma"], range: [0, 2],
+  });
+  uncoveredTickView.view0 = uncoveredTickView._copyView({
+    ranges: { x: [0, 2], y: [0, 1] },
+  });
+  uncoveredTickView.view = uncoveredTickView._copyView(uncoveredTickView.view0);
+  const uncoveredTickWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  const uncoveredTickHandle = await attachWasmTicks(uncoveredTickView, {
+    worker: uncoveredTickWorker,
+    workerOwnership: "own",
+  });
+  const categoryTicks = uncoveredTickView._axisTicks("x", 3);
+  const coveredYTicks = uncoveredTickView._axisTicks("y", 6);
+  uncoveredTickView.axes.x.kind = "time";
+  delete uncoveredTickView.axes.x.categories;
+  uncoveredTickView.axes.x.range = [0, 7_200_000];
+  uncoveredTickView.view = uncoveredTickView._copyView({
+    ranges: { x: [0, 7_200_000], y: [0, 1] },
+  });
+  const timeAxisTicks = uncoveredTickView._axisTicks("x", 6);
+  if (categoryTicks.source !== undefined || categoryTicks.ticks.join(",") !== "0,1,2"
+      || coveredYTicks.source !== "wasm" || timeAxisTicks.source !== undefined
+      || !timeAxisTicks.ticks.length) {
+    throw new Error(`uncovered tick family routing drifted: ${JSON.stringify({
+      categoryTicks,
+      coveredYTicks,
+      timeAxisTicks,
+    })}`);
+  }
+  await uncoveredTickHandle.dispose();
+  uncoveredTickView.destroy();
+  uncoveredTickHost.remove();
 
   const fromHex = (value) => Uint8Array.from(value.match(/../g) ?? [], (pair) => Number.parseInt(pair, 16));
   const fixtureWorker = createXygWasmWorker({

@@ -1,4 +1,9 @@
-import type { XygWasmTask, XygWasmWorker } from "./47_wasm";
+import {
+  XygWasmError,
+  type XygWasmTask,
+  type XygWasmWorker,
+} from "./47_wasm";
+import type { ChartView } from "./50_chartview";
 import {
   XYG_WASM_MAX_ARENA_BYTES,
   XYG_WASM_TICKS_FAMILIES,
@@ -393,4 +398,386 @@ export function resolveWasmTicks(
 ): XygWasmTask<XygWasmTickBatchResult> {
   const task = worker.resolveTicks(encodeWasmTickBatch(request), { sequence: request.sequence });
   return { ...task, result: task.result.then(decodeWasmTickBatch) };
+}
+
+export interface XygWasmTicksOptions {
+  /** Explicitly provisioned external module Worker and Rust/WASM instance. */
+  worker: XygWasmWorker;
+  /** Borrow by default; only a dedicated Worker should be owned here. */
+  workerOwnership?: "borrow" | "own";
+}
+
+export interface XygWasmTicksDiagnostics {
+  /** Latest admitted Worker sequence. */
+  sequence: number;
+  /** Latest admitted ChartView tick revision. */
+  revision: number;
+  /** Primary Cartesian axes currently served by Rust/WASM. */
+  axisIds: readonly ("x" | "y")[];
+  /** Requests cancelled by a newer viewport or explicit cancellation. */
+  cancellations: number;
+}
+
+type PrimaryAxisId = "x" | "y";
+
+interface ChartTickFrame {
+  key: string;
+  axes: readonly Omit<XygWasmTickAxisRequest, "revision">[];
+  axisIds: readonly PrimaryAxisId[];
+}
+
+interface ChartTickCache {
+  step: number;
+  ticks: readonly number[];
+  labeledValues: readonly number[];
+  labels: readonly string[];
+  labelByValue: ReadonlyMap<number, string>;
+}
+
+const PRIMARY_AXIS_CODES: Readonly<Record<PrimaryAxisId, number>> = Object.freeze({
+  x: 1,
+  y: 2,
+});
+
+function asTickError(cause: unknown, malformedOutput = false): XygWasmError {
+  if (cause instanceof XygWasmError) return cause;
+  return new XygWasmError(
+    malformedOutput ? "XYG_WASM_MALFORMED_OUTPUT" : "XYG_WASM_INVALID_ARGUMENT",
+    cause instanceof Error
+      ? cause.message
+      : malformedOutput
+        ? "Rust tick output is malformed"
+        : "WASM tick request is invalid",
+  );
+}
+
+/**
+ * Latest-wins ChartView adapter for the bounded primary numeric-axis slice.
+ *
+ * Rust owns generation and formatting. TypeScript only snapshots the viewport,
+ * frames XYTK, admits a matching XYTO revision, and paints the last admitted
+ * cache while a newer request is pending.
+ */
+export class XygWasmTicksHandle {
+  private task: XygWasmTask<XygWasmTickBatchResult> | null = null;
+  private requestedKey: string | null = null;
+  private admittedKey: string | null = null;
+  private failedKey: string | null = null;
+  private revision = 0;
+  private disposed = false;
+  private active = false;
+  private cancellations = 0;
+  private latest: XygWasmTicksDiagnostics | null = null;
+  private readonly cache = new Map<PrimaryAxisId, ChartTickCache>();
+
+  constructor(
+    private readonly view: ChartView & any,
+    private readonly worker: XygWasmWorker,
+    private readonly ownWorker: boolean,
+  ) {}
+
+  /** True only for this slice's automatic primary Cartesian numeric axes. */
+  covers(axisId: unknown): axisId is PrimaryAxisId {
+    if (axisId !== "x" && axisId !== "y") return false;
+    if (this.view.spec?.coords === "polar") return false;
+    const axis = this.view._axis(axisId);
+    if (!axis || Array.isArray(axis.tick_values)) return false;
+    const kind = axis.kind ?? "linear";
+    const scale = axis.scale ?? "linear";
+    return kind === "linear" && (scale === "linear" || scale === "log" || scale === "symlog");
+  }
+
+  /** Internal ChartView resolver. A covered axis never falls through to JS. */
+  ticks(axisId: unknown): {
+    ticks: readonly number[];
+    labels: readonly number[];
+    step: number;
+    source: "wasm";
+  } | null {
+    if (!this.covers(axisId)) return null;
+    const cached = this.cache.get(axisId);
+    return cached
+      ? {
+        ticks: cached.ticks,
+        labels: cached.labeledValues,
+        step: cached.step,
+        source: "wasm",
+      }
+      : { ticks: Object.freeze([]), labels: Object.freeze([]), step: 1, source: "wasm" };
+  }
+
+  /** Internal ChartView formatter. Missing output fails closed to no text. */
+  label(axisId: unknown, value: number): string | null {
+    if (!this.covers(axisId)) return null;
+    return this.cache.get(axisId)?.labelByValue.get(value) ?? "";
+  }
+
+  diagnostics(): XygWasmTicksDiagnostics | null {
+    return this.latest
+      ? { ...this.latest, axisIds: [...this.latest.axisIds] }
+      : null;
+  }
+
+  private target(axisId: PrimaryAxisId): number {
+    const fallback = axisId === "x"
+      ? Math.max(3, Number(this.view.plot?.w) / 80)
+      : Math.max(3, Number(this.view.plot?.h) / 45);
+    const target = Number(this.view._axisTickTarget(axisId, fallback));
+    return Math.max(1, Math.min(MAX_TICKS, Math.floor(Number.isFinite(target) ? target : 6)));
+  }
+
+  private frame(): ChartTickFrame {
+    const axes: Omit<XygWasmTickAxisRequest, "revision">[] = [];
+    const axisIds: PrimaryAxisId[] = [];
+    for (const axisId of ["x", "y"] as const) {
+      if (!this.covers(axisId)) continue;
+      const axis = this.view._axis(axisId);
+      const [lo, hi] = this.view._axisRange(axisId);
+      const family: XygWasmTickFamily = axis.scale === "log"
+        ? "log"
+        : axis.scale === "symlog"
+          ? "symlog"
+          : "linear";
+      axes.push({
+        axisId: PRIMARY_AXIS_CODES[axisId],
+        family,
+        provenance: "automatic",
+        lo: Number(lo),
+        hi: Number(hi),
+        target: this.target(axisId),
+        ...(family === "symlog" ? { constant: this.view._axisConstant(axisId) } : {}),
+        ...(family === "log" ? { maskNonpositive: axis.nonpositive === "mask" } : {}),
+        ...(typeof axis.format === "string" ? { format: axis.format } : {}),
+      });
+      axisIds.push(axisId);
+    }
+    if (!axes.length) {
+      throw new RangeError(
+        "attachWasmTicks requires an automatic primary Cartesian linear, log, or symlog axis",
+      );
+    }
+    return {
+      // This is request identity, not policy: every field is explicit XYTK
+      // ingress or the current screen-bounded target.
+      key: JSON.stringify(axes),
+      axes,
+      axisIds,
+    };
+  }
+
+  private isCurrent(frame: ChartTickFrame, task: XygWasmTask<XygWasmTickBatchResult>): boolean {
+    if (this.disposed || this.task !== task || this.requestedKey !== frame.key
+        || this.view._destroyed || (this.active && this.view._wasmTicks !== this)) {
+      return false;
+    }
+    try {
+      return this.frame().key === frame.key;
+    } catch {
+      return false;
+    }
+  }
+
+  private cancelActive() {
+    if (!this.task) return;
+    this.cancellations += 1;
+    const task = this.task;
+    this.task = null;
+    this.requestedKey = null;
+    task.cancel();
+  }
+
+  private report(error: XygWasmError) {
+    if (this.view._destroyed) return;
+    this.view._dispatchChartEvent?.("wasm_ticks_error", {
+      code: error.code,
+      message: error.message,
+      diagnostics: error.diagnostics ?? null,
+    });
+  }
+
+  private async request(
+    frame: ChartTickFrame,
+    reportFailure: boolean,
+    throwFailure: boolean,
+  ): Promise<boolean> {
+    this.cancelActive();
+    if (this.revision >= 0xffff_ffff) {
+      const error = new XygWasmError(
+        "XYG_WASM_RESOURCE_LIMIT",
+        "ChartView tick revision space is exhausted",
+        3,
+      );
+      if (reportFailure) this.report(error);
+      if (throwFailure) throw error;
+      return false;
+    }
+    const revision = ++this.revision;
+    let task: XygWasmTask<XygWasmTickBatchResult> | null = null;
+    try {
+      const sequence = this.worker.allocateTickSequence();
+      task = resolveWasmTicks(this.worker, {
+        sequence,
+        axes: frame.axes.map((axis) => ({ ...axis, revision })),
+      });
+      this.task = task;
+      this.requestedKey = frame.key;
+      const result = await task.result;
+      if (!this.isCurrent(frame, task)) return false;
+      if (result.sequence !== sequence || result.axes.length !== frame.axes.length) {
+        throw new TypeError("Rust tick output identity does not match the current ChartView batch");
+      }
+      const next = new Map<PrimaryAxisId, ChartTickCache>();
+      for (let index = 0; index < frame.axes.length; index++) {
+        const expected = frame.axes[index];
+        const axisId = frame.axisIds[index];
+        const actual = result.axes[index];
+        if (!actual || actual.axisId !== expected.axisId || actual.revision !== revision
+            || actual.provenance !== "automatic"
+            || actual.labeledValues.length !== actual.labels.length) {
+          throw new TypeError("Rust tick output axis identity is malformed");
+        }
+        next.set(axisId, {
+          step: actual.step,
+          ticks: actual.ticks,
+          labeledValues: actual.labeledValues,
+          labels: actual.labels,
+          labelByValue: new Map(
+            actual.labeledValues.map((value, labelIndex) => [value, actual.labels[labelIndex]]),
+          ),
+        });
+      }
+      if (!this.isCurrent(frame, task)) return false;
+      this.cache.clear();
+      for (const [axisId, value] of next) this.cache.set(axisId, value);
+      this.task = null;
+      this.requestedKey = null;
+      this.admittedKey = frame.key;
+      this.failedKey = null;
+      this.latest = Object.freeze({
+        sequence,
+        revision,
+        axisIds: Object.freeze([...frame.axisIds]),
+        cancellations: this.cancellations,
+      });
+      if (this.active) {
+        // One admission can change measured gutters. Re-layout once, then the
+        // ordinary draw path rechecks whether the screen-bounded target changed.
+        this.view._layout();
+        this.view.draw();
+      }
+      return true;
+    } catch (cause) {
+      if (task && (this.task !== task || this.requestedKey !== frame.key)) return false;
+      if (task) {
+        this.task = null;
+        this.requestedKey = null;
+      }
+      const error = asTickError(cause, task !== null);
+      this.failedKey = frame.key;
+      if (reportFailure) this.report(error);
+      if (throwFailure) throw error;
+      return false;
+    }
+  }
+
+  /** Resolve a current initial cache before this adapter becomes authoritative. */
+  async initialize() {
+    await this.worker.ready;
+    while (!this.disposed && !this.view._destroyed) {
+      const frame = this.frame();
+      if (await this.request(frame, false, true)) return;
+    }
+    throw new XygWasmError("XYG_WASM_DISPOSED", "ChartView tick attachment was disposed");
+  }
+
+  activate() {
+    if (this.disposed) throw new XygWasmError("XYG_WASM_DISPOSED", "tick attachment was disposed");
+    this.active = true;
+  }
+
+  /** Schedule the latest viewport; identical view/target snapshots are deduplicated. */
+  schedule(): number | null {
+    if (this.disposed || !this.active || this.view._destroyed) return null;
+    let frame: ChartTickFrame;
+    try {
+      frame = this.frame();
+    } catch (cause) {
+      this.report(asTickError(cause));
+      return null;
+    }
+    if (frame.key === this.admittedKey || frame.key === this.failedKey
+        || (frame.key === this.requestedKey && this.task)) {
+      return this.revision;
+    }
+    void this.request(frame, true, false);
+    return this.revision;
+  }
+
+  cancel() {
+    this.cancelActive();
+  }
+
+  async dispose() {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.active = false;
+    this.cancelActive();
+    if (this.view._wasmTicks === this) this.view._wasmTicks = null;
+    if (this.ownWorker) await this.worker.dispose();
+  }
+
+  destroy() {
+    void this.dispose();
+  }
+}
+
+/**
+ * Attach Rust-owned automatic ticks to supported primary Cartesian axes.
+ *
+ * The first XYTO batch is admitted before the adapter is installed, so an
+ * asset/version failure emits one stable event and rejects without a partial
+ * mount. Once installed, covered axes never call the TypeScript generators.
+ */
+export async function attachWasmTicks(
+  view: ChartView & any,
+  options: XygWasmTicksOptions,
+): Promise<XygWasmTicksHandle> {
+  if (!view || typeof view._axisTicks !== "function" || view._destroyed) {
+    throw new TypeError("attachWasmTicks requires a live ChartView");
+  }
+  if (!options || !options.worker) throw new TypeError("worker is required");
+  if (options.workerOwnership !== undefined
+      && options.workerOwnership !== "borrow"
+      && options.workerOwnership !== "own") {
+    throw new TypeError("workerOwnership must be borrow or own");
+  }
+  const handle = new XygWasmTicksHandle(
+    view,
+    options.worker,
+    options.workerOwnership === "own",
+  );
+  try {
+    await handle.initialize();
+  } catch (cause) {
+    const error = asTickError(cause);
+    if (!view._destroyed) view._dispatchChartEvent?.("wasm_ticks_error", {
+      code: error.code,
+      message: error.message,
+      diagnostics: error.diagnostics ?? null,
+    });
+    await handle.dispose();
+    throw error;
+  }
+  if (view._destroyed) {
+    await handle.dispose();
+    throw new XygWasmError("XYG_WASM_DISPOSED", "ChartView was destroyed during tick attachment");
+  }
+  const previous = view._wasmTicks;
+  handle.activate();
+  view._wasmTicks = handle;
+  previous?.destroy?.();
+  // Atomic cutover: this first layout already sees only the admitted Rust cache.
+  view._layout();
+  view.draw();
+  return handle;
 }

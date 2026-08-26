@@ -129,7 +129,8 @@ try {
   if (!await page.evaluate(() => typeof globalThis.xy?.renderStandalone === "function" && typeof globalThis.xy?.decodeFrame === "function")) throw new Error("published standalone IIFE did not expose window.xy");
   if (external.length) throw new Error(`unexpected external requests: ${external.join(", ")}`);
   const known = new Set([
-    "/", "/redirect.wasm", "/delayed.wasm", "/await-delayed", "/release-delayed", ...allowed,
+    "/", "/redirect.wasm", "/delayed.wasm", "/missing.wasm",
+    "/await-delayed", "/release-delayed", ...allowed,
   ]);
   const unknown = requests.filter((path) => !known.has(path));
   if (unknown.length) throw new Error(`unexpected asset lookup: ${unknown.join(", ")}`);
