@@ -22,7 +22,7 @@ def test_chartview_wasm_ticks_are_a_lifecycle_adapter_not_a_generator() -> None:
     assert "this._wasmTicks?.covers?.(axisId)" in chartview
     assert "primarySlot" in ticks
     assert 'source: "wasm"' in ticks
-    assert "Object.freeze([])" in ticks
+    assert "this.cache.has(slot)" in ticks
 
 
 def test_chartview_wasm_ticks_are_latest_wins_and_destroy_safe() -> None:
@@ -70,5 +70,5 @@ def test_chartview_wasm_tick_assets_and_scope_are_explicit() -> None:
     assert "Self-contained" in design
     assert "claims nor closes that issue" in design
     assert "axis.theta_unit" in ticks
-    assert 'if (covered) throw new TypeError("tick range must be finite")' in ticks
+    assert 'if (eligible) throw new TypeError("tick range must be finite")' in ticks
     assert "return null;" in ticks

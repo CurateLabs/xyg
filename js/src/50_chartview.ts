@@ -1332,9 +1332,7 @@ export class ChartView {
     // A pending/failed newer request never falls through to 30_ticks.ts.
     axisId = this._wasmTickAxisId(axisId);
     const wasmTicks = this._wasmTicks?.ticks?.(axisId);
-    if (wasmTicks || this._wasmTicks?.covers?.(axisId)) {
-      return wasmTicks || { ticks: Object.freeze([]), labels: Object.freeze([]), step: 1, source: "wasm" };
-    }
+    if (wasmTicks || this._wasmTicks?.covers?.(axisId)) return wasmTicks;
     const axis = this._axis(axisId);
     let [lo, hi] = this._axisRange(axisId);
     if (this.spec?.coords === "polar" && this._axisDim(axisId) === "x") {
@@ -1395,9 +1393,8 @@ export class ChartView {
   _axisTickText(axis, value, step) {
     const axisId = this._wasmTickAxisId(axis);
     const wasmLabel = this._wasmTicks?.label?.(axisId, Number(value));
-    if ((wasmLabel !== null && wasmLabel !== undefined) || this._wasmTicks?.covers?.(axisId)) {
-      return wasmLabel ?? "";
-    }
+    if (wasmLabel !== null && wasmLabel !== undefined) return wasmLabel;
+    if (this._wasmTicks?.covers?.(axisId)) return "";
     if (Array.isArray(axis.tick_values) && Array.isArray(axis.tick_labels)) {
       const index = axis.tick_values.findIndex((candidate) => Number(candidate) === Number(value));
       if (index >= 0 && index < axis.tick_labels.length) return String(axis.tick_labels[index]);

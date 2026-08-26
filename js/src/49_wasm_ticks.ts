@@ -462,8 +462,8 @@ export class XygWasmTicksHandle {
   private task: XygWasmTask<XygWasmTickBatchResult> | null = null;
   private requestedKey: string | null = null;
   private admittedKey: string | null = null;
-  /** Last failed snapshot. Same viewport is not retried until the frame changes. */
-  private failedKey: string | null = null;
+  /** Last snapshot that already emitted wasm_ticks_error. Retries still run. */
+  private lastErrorKey: string | null = null;
   private revision = 0;
   private disposed = false;
   private active = false;
@@ -495,7 +495,7 @@ export class XygWasmTicksHandle {
     return null;
   }
 
-  private slotCovered(slot: PrimaryAxisId): boolean {
+  private slotEligible(slot: PrimaryAxisId): boolean {
     if (this.view.spec?.coords === "polar") return false;
     const axis = this.view._axis(slot);
     if (!axis || typeof axis !== "object" || Array.isArray(axis.tick_values) || axis.theta_unit) {
@@ -506,10 +506,16 @@ export class XygWasmTicksHandle {
     return kind === "linear" && (scale === "linear" || scale === "log" || scale === "symlog");
   }
 
-  /** True only for this slice's automatic primary Cartesian numeric axes. */
+  /** Policy: this slice can request this automatic primary Cartesian numeric axis. */
+  eligible(axisId: unknown): axisId is PrimaryAxisId {
+    const slot = this.primarySlot(axisId);
+    return slot !== null && this.slotEligible(slot);
+  }
+
+  /** Authoritative only after an admitted Rust cache exists for an eligible slot. */
   covers(axisId: unknown): axisId is PrimaryAxisId {
     const slot = this.primarySlot(axisId);
-    return slot !== null && this.slotCovered(slot);
+    return slot !== null && this.slotEligible(slot) && this.cache.has(slot);
   }
 
   /** Internal ChartView resolver. A covered axis never falls through to JS. */
@@ -520,22 +526,21 @@ export class XygWasmTicksHandle {
     source: "wasm";
   } | null {
     const slot = this.primarySlot(axisId);
-    if (!slot || !this.slotCovered(slot)) return null;
+    if (!slot || !this.covers(slot)) return null;
     const cached = this.cache.get(slot);
-    return cached
-      ? {
-        ticks: cached.ticks,
-        labels: cached.labeledValues,
-        step: cached.step,
-        source: "wasm",
-      }
-      : { ticks: Object.freeze([]), labels: Object.freeze([]), step: 1, source: "wasm" };
+    if (!cached) return null;
+    return {
+      ticks: cached.ticks,
+      labels: cached.labeledValues,
+      step: cached.step,
+      source: "wasm",
+    };
   }
 
   /** Internal ChartView formatter. Missing output fails closed to no text. */
   label(axisId: unknown, value: number): string | null {
     const slot = this.primarySlot(axisId);
-    if (!slot || !this.slotCovered(slot)) return null;
+    if (!slot || !this.covers(slot)) return null;
     return this.cache.get(slot)?.labelByValue.get(value) ?? "";
   }
 
@@ -556,10 +561,10 @@ export class XygWasmTicksHandle {
   private frame(): ChartTickFrame | null {
     const axes: Omit<XygWasmTickAxisRequest, "revision">[] = [];
     const axisIds: PrimaryAxisId[] = [];
-    let covered = 0;
+    let eligible = 0;
     for (const axisId of ["x", "y"] as const) {
-      if (!this.slotCovered(axisId)) continue;
-      covered += 1;
+      if (!this.slotEligible(axisId)) continue;
+      eligible += 1;
       const axis = this.view._axis(axisId);
       const [loRaw, hiRaw] = this.view._axisRange(axisId);
       const lo = Number(loRaw), hi = Number(hiRaw);
@@ -584,7 +589,7 @@ export class XygWasmTicksHandle {
       axisIds.push(axisId);
     }
     if (!axes.length) {
-      if (covered) throw new TypeError("tick range must be finite");
+      if (eligible) throw new TypeError("tick range must be finite");
       return null;
     }
     return {
@@ -623,8 +628,10 @@ export class XygWasmTicksHandle {
     task.cancel();
   }
 
-  private report(error: XygWasmError) {
+  private report(error: XygWasmError, key: string | null = null) {
     if (this.view._destroyed) return;
+    if (key != null && this.lastErrorKey === key) return;
+    if (key != null) this.lastErrorKey = key;
     this.view._dispatchChartEvent?.("wasm_ticks_error", {
       code: error.code,
       message: error.message,
@@ -684,12 +691,14 @@ export class XygWasmTicksHandle {
         });
       }
       if (!this.isCurrent(frame, task)) return false;
-      this.cache.clear();
       for (const [axisId, value] of next) this.cache.set(axisId, value);
+      for (const axisId of [...this.cache.keys()]) {
+        if (!this.slotEligible(axisId)) this.cache.delete(axisId);
+      }
       this.task = null;
       this.requestedKey = null;
       this.admittedKey = frame.key;
-      this.failedKey = null;
+      this.lastErrorKey = null;
       this.latest = Object.freeze({
         sequence,
         revision,
@@ -714,8 +723,7 @@ export class XygWasmTicksHandle {
         this.requestedKey = null;
       }
       const error = asTickError(cause, task !== null);
-      this.failedKey = frame.key;
-      if (reportFailure) this.report(error);
+      if (reportFailure) this.report(error, frame.key);
       if (throwFailure) throw error;
       return false;
     }
@@ -748,18 +756,13 @@ export class XygWasmTicksHandle {
     try {
       frame = this.frame();
     } catch (cause) {
-      // Persist the failed snapshot so a sticky invalid range cannot emit on
-      // every chrome paint. A later valid or different snapshot retries.
-      const key = "invalid-frame";
-      if (this.failedKey !== key) {
-        this.failedKey = key;
-        this.report(asTickError(cause));
-      }
+      // Coalesce sticky invalid-frame events. Framing is cheap; a later valid
+      // snapshot retries. lastErrorKey must not block Worker retries.
+      this.report(asTickError(cause), "invalid-frame");
       return null;
     }
     if (!frame) return this.revision;
-    if (frame.key === this.admittedKey || frame.key === this.failedKey
-        || (frame.key === this.requestedKey && this.task)) {
+    if (frame.key === this.admittedKey || (frame.key === this.requestedKey && this.task)) {
       return this.revision;
     }
     void this.request(frame, true, false);
