@@ -14,12 +14,13 @@ mod dashboard;
 mod graph;
 mod temporal;
 mod temporal_graph;
+pub mod ticks;
 mod typed_series_abi_generated;
 
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 22;
+pub const WASM_ABI_VERSION: u32 = 23;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -32,6 +33,52 @@ pub const STATUS_PENDING: i32 = 8;
 pub const STATUS_DISPOSED: i32 = 9;
 pub const STATUS_STALE_REVISION: i32 = 10;
 pub const STATUS_SELF_ECHO: i32 = 11;
+
+/// Resolve one atomic packed batch of viewport ticks. Tick request sequences
+/// are deliberately independent of long-running compile/aggregate scheduling.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_ticks_resolve(handle: u32, offset: usize, length: usize) -> i32 {
+    with_instance_mut(handle, |instance| {
+        instance.output.clear();
+        let Some(end) = offset.checked_add(length) else {
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "tick staging range overflow",
+            );
+        };
+        if length == 0 || end > instance.arena.len() {
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "tick staging range lies outside the arena",
+            );
+        }
+        match ticks::execute(&instance.arena[offset..end]) {
+            Ok(output) if output.len() <= instance.max_arena_bytes => {
+                instance.output = output;
+                instance.last_error.clear();
+                STATUS_OK
+            }
+            Ok(_) | Err(SceneError::Limit | SceneError::PainterTraceLimit) => fail(
+                instance,
+                STATUS_RESOURCE_LIMIT,
+                "tick request or output exceeds its bound",
+            ),
+            Err(SceneError::NonFinite) => fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "tick request contains a non-finite value",
+            ),
+            Err(_) => fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "tick request is malformed",
+            ),
+        }
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
 
 pub const MAX_INSTANCES: usize = 64;
 pub const MAX_ARENA_BYTES: usize = 402_653_184;
@@ -1084,7 +1131,11 @@ fn aggregate_stream_begin_from_arena(
 ) -> i32 {
     instance.output = Vec::new();
     if sequence == 0 {
-        return fail(instance, STATUS_INVALID_ARGUMENT, "sequence zero is reserved");
+        return fail(
+            instance,
+            STATUS_INVALID_ARGUMENT,
+            "sequence zero is reserved",
+        );
     }
     if sequence <= instance.cancelled_through {
         return fail(instance, STATUS_CANCELLED, "request was cancelled");
@@ -1095,7 +1146,11 @@ fn aggregate_stream_begin_from_arena(
     instance.clear_aggregate();
     let arena = std::mem::take(&mut instance.arena);
     let Some(end) = offset.checked_add(length) else {
-        return fail(instance, STATUS_INVALID_ARGUMENT, "stream header range overflow");
+        return fail(
+            instance,
+            STATUS_INVALID_ARGUMENT,
+            "stream header range overflow",
+        );
     };
     let Some(header) = arena.get(offset..end) else {
         return fail(
@@ -1143,10 +1198,18 @@ pub extern "C" fn xyg_wasm_aggregate_stream_push(
     with_instance_mut(handle, |instance| {
         instance.output.clear();
         if sequence == 0 {
-            return fail(instance, STATUS_INVALID_ARGUMENT, "sequence zero is reserved");
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "sequence zero is reserved",
+            );
         }
         if sequence != instance.aggregate_sequence || instance.stream_aggregate_job.is_none() {
-            return fail(instance, STATUS_CANCELLED, "stream aggregate was superseded");
+            return fail(
+                instance,
+                STATUS_CANCELLED,
+                "stream aggregate was superseded",
+            );
         }
         if sequence <= instance.cancelled_through {
             instance.clear_aggregate();
@@ -1160,7 +1223,11 @@ pub extern "C" fn xyg_wasm_aggregate_stream_push(
         let arena = std::mem::take(&mut instance.arena);
         let Some(end) = offset.checked_add(length) else {
             instance.clear_aggregate();
-            return fail(instance, STATUS_INVALID_ARGUMENT, "stream chunk range overflow");
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "stream chunk range overflow",
+            );
         };
         let Some(chunk) = arena.get(offset..end) else {
             instance.clear_aggregate();
@@ -1198,10 +1265,18 @@ pub extern "C" fn xyg_wasm_aggregate_stream_finish(handle: u32, sequence: u32) -
     with_instance_mut(handle, |instance| {
         instance.output.clear();
         if sequence == 0 {
-            return fail(instance, STATUS_INVALID_ARGUMENT, "sequence zero is reserved");
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "sequence zero is reserved",
+            );
         }
         if sequence != instance.aggregate_sequence || instance.stream_aggregate_job.is_none() {
-            return fail(instance, STATUS_CANCELLED, "stream aggregate was superseded");
+            return fail(
+                instance,
+                STATUS_CANCELLED,
+                "stream aggregate was superseded",
+            );
         }
         if sequence <= instance.cancelled_through {
             instance.clear_aggregate();
@@ -1703,7 +1778,8 @@ mod tests {
         }
         assert_eq!(xyg_wasm_aggregate_stream_finish(handle, 2), STATUS_OK);
         assert!(xyg_wasm_output_len(handle) > aggregate::OUTPUT_HEADER_BYTES);
-        let output_magic = with_instance_mut(handle, |instance| instance.output[..4].to_vec()).unwrap();
+        let output_magic =
+            with_instance_mut(handle, |instance| instance.output[..4].to_vec()).unwrap();
         assert_eq!(output_magic, aggregate::OUTPUT_MAGIC);
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
     }

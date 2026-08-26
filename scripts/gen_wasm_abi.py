@@ -14,6 +14,7 @@ MANIFEST = ROOT / "spec" / "wasm" / "abi.json"
 RUST = ROOT / "crates" / "xyg-wasm" / "src" / "lib.rs"
 AGGREGATE_RUST = ROOT / "crates" / "xyg-wasm" / "src" / "aggregate.rs"
 GRAPH_RUST = ROOT / "crates" / "xyg-wasm" / "src" / "graph.rs"
+TICKS_RUST = ROOT / "crates" / "xyg-wasm" / "src" / "ticks.rs"
 OUTPUT = ROOT / "js" / "src" / "wasm_abi_generated.ts"
 RUST_TYPED_SERIES_OUTPUT = ROOT / "crates" / "xyg-wasm" / "src" / "typed_series_abi_generated.rs"
 PYTHON_AGGREGATE_OUTPUT = ROOT / "python" / "xyg" / "_wasm_aggregate_generated.py"
@@ -258,6 +259,7 @@ def render(manifest: dict[str, object]) -> str:
     typed_series_peak_bytes_per_series = int(manifest["typed_series_peak_bytes_per_series"])
     typed_series_peak_input_multiplier = int(manifest["typed_series_peak_input_multiplier"])
     typed_series = manifest["typed_series"]
+    ticks = manifest["ticks"]
     max_arena_bytes = int(manifest["max_arena_bytes"])
     painter_max_legend_bytes = int(manifest["painter_max_legend_bytes"])
     aggregate = manifest["aggregate"]
@@ -272,6 +274,7 @@ def render(manifest: dict[str, object]) -> str:
         or not isinstance(exports, list)
         or not isinstance(aggregate, dict)
         or not isinstance(typed_series, dict)
+        or not isinstance(ticks, dict)
         or not isinstance(graph, dict)
         or not isinstance(temporal_graph, dict)
         or not isinstance(semantic_graph, dict)
@@ -306,6 +309,24 @@ def render(manifest: dict[str, object]) -> str:
         f"export const XYG_WASM_TYPED_SERIES_DESCRIPTOR_OFFSETS = {json.dumps(typed_series['descriptor_offsets'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_TYPED_SERIES_FLAGS = {json.dumps(typed_series['flags'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_TYPED_SERIES_KINDS = {json.dumps(typed_series['kinds'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_TICKS_MAGIC = {json.dumps(ticks['request_magic'])} as const;",
+        f"export const XYG_WASM_TICKS_OUTPUT_MAGIC = {json.dumps(ticks['output_magic'])} as const;",
+        f"export const XYG_WASM_TICKS_VERSION = {int(ticks['version'])} as const;",
+        f"export const XYG_WASM_TICKS_MAX_AXES = {int(ticks['max_axes'])} as const;",
+        f"export const XYG_WASM_TICKS_MAX_TICKS_PER_AXIS = {int(ticks['max_ticks_per_axis'])} as const;",
+        f"export const XYG_WASM_TICKS_MAX_CATEGORIES_PER_AXIS = {int(ticks['max_categories_per_axis'])} as const;",
+        f"export const XYG_WASM_TICKS_MAX_LABEL_BYTES = {int(ticks['max_label_bytes'])} as const;",
+        f"export const XYG_WASM_TICKS_MAX_FORMAT_BYTES = {int(ticks['max_format_bytes'])} as const;",
+        f"export const XYG_WASM_TICKS_REQUEST_HEADER_BYTES = {int(ticks['request_header_bytes'])} as const;",
+        f"export const XYG_WASM_TICKS_REQUEST_DESCRIPTOR_BYTES = {int(ticks['request_descriptor_bytes'])} as const;",
+        f"export const XYG_WASM_TICKS_REQUEST_HEADER_OFFSETS = {json.dumps(ticks['request_header_offsets'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_TICKS_REQUEST_DESCRIPTOR_OFFSETS = {json.dumps(ticks['request_descriptor_offsets'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_TICKS_FAMILIES = {json.dumps(ticks['families'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_TICKS_PROVENANCE = {json.dumps(ticks['provenance'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_TICKS_OUTPUT_HEADER_BYTES = {int(ticks['output_header_bytes'])} as const;",
+        f"export const XYG_WASM_TICKS_OUTPUT_DESCRIPTOR_BYTES = {int(ticks['output_descriptor_bytes'])} as const;",
+        f"export const XYG_WASM_TICKS_OUTPUT_HEADER_OFFSETS = {json.dumps(ticks['output_header_offsets'], separators=(',', ':'))} as const;",
+        f"export const XYG_WASM_TICKS_OUTPUT_DESCRIPTOR_OFFSETS = {json.dumps(ticks['output_descriptor_offsets'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_SEMANTIC_GRAPH_MAGIC = {json.dumps(semantic_graph['request_magic'])} as const;",
         f"export const XYG_WASM_SEMANTIC_GRAPH_VERSION = {int(semantic_graph['version'])} as const;",
         f"export const XYG_WASM_SEMANTIC_GRAPH_HEADER_BYTES = {int(semantic_graph['header_bytes'])} as const;",
@@ -662,6 +683,32 @@ def verify_rust(manifest: dict[str, object]) -> None:
         raise SystemExit("xyg-wasm MAX_ARENA_BYTES differs from spec/wasm/abi.json")
     if int(manifest["aggregate"]["total_memory_bytes"]) > arena_value:
         raise SystemExit("aggregate total_memory_bytes exceeds xyg-wasm MAX_ARENA_BYTES")
+    ticks_source = TICKS_RUST.read_text(encoding="utf-8")
+    for rust_name, manifest_name in (
+        ("REQUEST_MAGIC", "request_magic"),
+        ("OUTPUT_MAGIC", "output_magic"),
+    ):
+        if (
+            f'pub const {rust_name}: &[u8; 4] = b"{manifest["ticks"][manifest_name]}";'
+            not in ticks_source
+        ):
+            raise SystemExit(f"xyg-wasm ticks {rust_name} differs from spec/wasm/abi.json")
+    for rust_name, manifest_name in (
+        ("VERSION", "version"),
+        ("HEADER_BYTES", "request_header_bytes"),
+        ("REQUEST_DESCRIPTOR_BYTES", "request_descriptor_bytes"),
+        ("OUTPUT_DESCRIPTOR_BYTES", "output_descriptor_bytes"),
+        ("MAX_AXES", "max_axes"),
+        ("MAX_TICKS", "max_ticks_per_axis"),
+        ("MAX_CATEGORIES", "max_categories_per_axis"),
+        ("MAX_TEXT_BYTES_PER_AXIS", "max_label_bytes"),
+        ("MAX_FORMAT_BYTES", "max_format_bytes"),
+    ):
+        match = re.search(rf"pub const {rust_name}: (?:u32|usize) = ([0-9_]+);", ticks_source)
+        if not match or int(match.group(1).replace("_", "")) != int(
+            manifest["ticks"][manifest_name]
+        ):
+            raise SystemExit(f"xyg-wasm ticks {rust_name} differs from spec/wasm/abi.json")
     aggregate_source = AGGREGATE_RUST.read_text(encoding="utf-8")
     for rust_name, manifest_name in (
         ("AGGREGATE_MAGIC", "request_magic"),

@@ -1,5 +1,35 @@
 # Direct-browser Rust/WASM boundary
 
+## Dynamic viewport ticks (`XYTK` to `XYTO`)
+
+WASM ABI 23 makes tick resolution one bounded Rust-owned Worker operation.
+Axes carry explicit scale family and `automatic`, `authored_values`, or
+`authored_empty` provenance; symlog constants, log masking, angular units,
+UTC-time semantics, category tables, and bounded formats are versioned input,
+never inferred from packed bytes. Authored values and labels always win, and an
+explicitly empty authored set remains distinct from automatic provenance.
+
+The low-level TypeScript codec submits an atomic axis batch and strictly decodes
+the echoed sequence, axis identity, revision, provenance, f64 values/step, and
+UTF-8 labels. The Worker owns a tick-specific FIFO and cancellation watermark,
+so a cancelled or disposed request cannot publish a result.
+
+Tick work is independent and therefore does not cancel compile, density,
+graph, or temporal work. Each axis is capped
+at 200 output positions and 65,536 source categories; label/category text is
+capped at 65,536 UTF-8 bytes per axis, and malformed
+or nonfinite input fails before output.
+
+This is intentionally a foundation slice, not the ChartView cutover. Existing
+host rendering and `js/src/30_ticks.ts` remain unchanged. Pan/zoom/resize
+debounce, latest-wins cache admission, measurement feedback, secondary/polar/
+colorbar integration, and all-host initial snapshots remain #59 work. That
+cutover requires an explicit external-worker asset contract: a self-contained
+offline HTML page cannot start an asynchronous Worker while simultaneously
+forbidding Blob/data workers, implicit fetch, and main-thread WASM. This slice
+does not weaken CSP, create such a worker, or claim the product integration is
+live.
+
 ## Tier-2 aggregate seam (`XYAG` to `XYAO`)
 
 WASM ABI 5 adds a resumable Rust-owned density aggregate operation. TypeScript

@@ -118,8 +118,9 @@ fallback, log sub-unit collapse protection, and explicit-label precedence),
 and measures gutters. `python/xyg/_scene_v3.py` and
 `packages/xy-node/src/scene.js` only retain authoring options and pack bounded
 UTF-8 through the versioned ABI envelope. `js/src/30_ticks.ts` remains
-canonical-policy debt for the dynamic browser path under #59; this slice does
-not duplicate or extend it.
+canonical-policy debt for the dynamic browser path under #59; WASM ABI 23 now
+provides the low-level Rust resolver and Worker lane without claiming the
+all-host ChartView cutover.
 
 ## Binding seam decision
 
@@ -354,6 +355,7 @@ Forbidden:
 | `crates/xyg-wasm/src/graph.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-wasm/src/aggregate.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-wasm/src/temporal.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
+| `crates/xyg-wasm/src/ticks.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-wasm/src/temporal_graph.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-wasm/src/typed_series_abi_generated.rs` | Generated cross-host WASM contract binding | `browser-wasm-generated` | `generate` | #59 |
 | `crates/xyg-engine/src/css.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
@@ -397,6 +399,7 @@ Forbidden:
 | `js/src/49_wasm_graph.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_columns.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_semantic_graph.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+| `js/src/49_wasm_ticks.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_chart.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_aggregate.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/49_wasm_density.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |

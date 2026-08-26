@@ -5227,6 +5227,170 @@ pub fn format_numeric_tick(value: f64, step: f64, kind: ScaleKind, format: Optio
     )
 }
 
+/// Format an angular tick without locale-dependent host APIs.
+pub fn format_angular_tick(value: f64, step: f64, degrees: bool, format: Option<&str>) -> String {
+    if let Some(format) = format.and_then(NumericTickFormat::parse) {
+        return format.format(value, step, ScaleKind::Linear);
+    }
+    if degrees {
+        return format!(
+            "{}\u{00b0}",
+            format_tick(
+                value,
+                if step == 0.0 { 1.0 } else { step },
+                ScaleKind::Linear
+            )
+        );
+    }
+    if value.abs() < 1e-12 {
+        return "0".to_owned();
+    }
+    let fraction = value / std::f64::consts::PI;
+    for denominator in [1_i32, 2, 3, 4, 6, 8, 12] {
+        let scaled = fraction * f64::from(denominator);
+        let numerator = scaled.round() as i64;
+        if numerator != 0 && (scaled - numerator as f64).abs() < 1e-6 {
+            let magnitude = if numerator.abs() == 1 {
+                String::new()
+            } else {
+                numerator.abs().to_string()
+            };
+            let body = format!(
+                "{}{}\u{03c0}",
+                if numerator < 0 { "-" } else { "" },
+                magnitude
+            );
+            return if denominator == 1 {
+                body
+            } else {
+                format!("{body}/{denominator}")
+            };
+        }
+    }
+    format_tick(value, 0.01, ScaleKind::Linear)
+}
+
+const UTC_MONTH_SHORT: [&str; 12] = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+const UTC_MONTH_LONG: [&str; 12] = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+];
+
+fn utc_parts(ms: f64) -> Option<(i32, usize, u32, u32, u32, u32)> {
+    if !ms.is_finite() || ms.abs() > 8_640_000_000_000_000.0 {
+        return None;
+    }
+    let whole_ms = ms.floor() as i64;
+    let days = whole_ms.div_euclid(MS_D as i64);
+    let day_ms = whole_ms.rem_euclid(MS_D as i64);
+    let z = days + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = z - era * 146_097;
+    let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365;
+    let mut year = yoe + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let day = doy - (153 * mp + 2) / 5 + 1;
+    let month = if mp < 10 { mp + 3 } else { mp - 9 };
+    if month <= 2 {
+        year += 1;
+    }
+    let hour = day_ms / 3_600_000;
+    let minute = day_ms % 3_600_000 / 60_000;
+    let second = day_ms % 60_000 / 1_000;
+    let milli = day_ms % 1_000;
+    Some((
+        year as i32,
+        (month - 1) as usize,
+        day as u32,
+        hour as u32,
+        minute as u32,
+        second as u32 * 1000 + milli as u32,
+    ))
+}
+
+/// Format a UTC-millisecond tick with the same bounded grammar as browser axes.
+pub fn format_time_tick(value: f64, step: f64, format: Option<&str>) -> String {
+    let Some((year, month, day, hour, minute, second_millis)) = utc_parts(value) else {
+        return String::new();
+    };
+    let second = second_millis / 1000;
+    let millis = second_millis % 1000;
+    if let Some(pattern) = format {
+        let mut out = String::with_capacity(pattern.len().saturating_add(16));
+        let mut chars = pattern.chars().peekable();
+        while let Some(ch) = chars.next() {
+            if ch != '%' {
+                out.push(ch);
+                continue;
+            }
+            match chars.peek().copied() {
+                Some('Y') => {
+                    chars.next();
+                    out.push_str(&year.to_string());
+                }
+                Some('m') => {
+                    chars.next();
+                    out.push_str(&format!("{:02}", month + 1));
+                }
+                Some('d') => {
+                    chars.next();
+                    out.push_str(&format!("{day:02}"));
+                }
+                Some('H') => {
+                    chars.next();
+                    out.push_str(&format!("{hour:02}"));
+                }
+                Some('M') => {
+                    chars.next();
+                    out.push_str(&format!("{minute:02}"));
+                }
+                Some('S') => {
+                    chars.next();
+                    out.push_str(&format!("{second:02}"));
+                }
+                Some('b') => {
+                    chars.next();
+                    out.push_str(UTC_MONTH_SHORT[month]);
+                }
+                Some('B') => {
+                    chars.next();
+                    out.push_str(UTC_MONTH_LONG[month]);
+                }
+                _ => out.push('%'),
+            }
+        }
+        return out;
+    }
+    if step >= 28.0 * MS_D {
+        if month == 0 {
+            year.to_string()
+        } else {
+            format!("{} {year}", UTC_MONTH_SHORT[month])
+        }
+    } else if step >= MS_D {
+        format!("{} {day:02}", UTC_MONTH_SHORT[month])
+    } else if step >= MS_M {
+        format!("{hour:02}:{minute:02}")
+    } else if step >= MS_S {
+        format!("{hour:02}:{minute:02}:{second:02}")
+    } else {
+        format!("{minute:02}:{second:02}.{millis:03}")
+    }
+}
+
 /// Compile bounded authored numeric formats into the existing canonical major
 /// positions and `XYTL` labels. Explicit authored labels retain precedence.
 /// Automatic minor positions are materialized too so log grids do not change
@@ -10720,6 +10884,22 @@ mod tests {
             format_numeric_tick(1.25, 1.0, ScaleKind::Linear, Some(&oversized)),
             format_numeric_tick(1.25, 1.0, ScaleKind::Linear, None)
         );
+    }
+
+    #[test]
+    fn angular_and_utc_time_labels_are_deterministic_and_authored_formats_win() {
+        assert_eq!(
+            format_angular_tick(std::f64::consts::PI / 2.0, 1.0, false, None),
+            "π/2"
+        );
+        assert_eq!(format_angular_tick(22.5, 22.5, true, None), "22.5°");
+        assert_eq!(format_angular_tick(0.125, 1.0, true, Some(".1%")), "12.5%");
+        assert_eq!(format_time_tick(0.0, 60_000.0, None), "00:00");
+        assert_eq!(
+            format_time_tick(0.0, 86_400_000.0, Some("%Y-%m-%d %H:%M:%S %b %B")),
+            "1970-01-01 00:00:00 Jan January"
+        );
+        assert_eq!(format_time_tick(-1.0, 1.0, None), "59:59.999");
     }
 
     #[test]
