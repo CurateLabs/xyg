@@ -9109,6 +9109,12 @@ pub unsafe extern "C" fn xyg_box_geometry(
     groups
 }
 
+/// Borrowed x/y plus optional C for one hexbin FFI call.
+type HexbinColumns<'a> = (&'a [f64], &'a [f64], Option<&'a [f64]>);
+
+/// Optional explicit height and optional explicit data rectangle.
+type HexbinPolicyArgs = (Option<usize>, Option<((f64, f64), (f64, f64))>);
+
 /// Borrow hexbin source columns for one FFI call.
 ///
 /// # Safety
@@ -9118,7 +9124,7 @@ unsafe fn hexbin_columns<'a>(
     y: *const f64,
     c: *const f64,
     len: usize,
-) -> Option<(&'a [f64], &'a [f64], Option<&'a [f64]>)> {
+) -> Option<HexbinColumns<'a>> {
     let (xs, ys) = if len == 0 {
         (&[][..], &[][..])
     } else {
@@ -9147,7 +9153,7 @@ fn hexbin_policy_args(
     y0: f64,
     y1: f64,
     use_range: i32,
-) -> Option<(Option<usize>, Option<((f64, f64), (f64, f64))>)> {
+) -> Option<HexbinPolicyArgs> {
     if !matches!(use_range, 0 | 1) {
         return None;
     }
