@@ -1870,9 +1870,9 @@ def ecdf(
     bounded approximation for very large distributions using the native
     histogram kernel.
     """
-    vals = self._as_1d_float(values, "ecdf values")
-    vals = vals[np.isfinite(vals)]
-    if len(vals) == 0:
+    raw_values = self._as_1d_float(values, "ecdf values")
+    finite = np.isfinite(raw_values)
+    if not finite.any():
         raise ValueError("ecdf values must contain at least one finite value")
     if bins is not None:
         if (
@@ -1881,6 +1881,7 @@ def ecdf(
             or int(bins) <= 0
         ):
             raise ValueError("ecdf bins must be a positive integer or None")
+        vals = raw_values[finite]
         lo, hi = self._auto_domain(kernels.min_max(vals))
         counts, edges = kernels.histogram_uniform(vals, lo, hi, int(bins), density=False)
         keep = counts > 0
@@ -1901,8 +1902,7 @@ def ecdf(
             dash=dash,
             style=style,
         )
-    unique, counts = np.unique(vals, return_counts=True)
-    cdf = np.cumsum(counts, dtype=np.float64) / len(vals)
+    unique, cdf = kernels.weighted_ecdf(raw_values, np.ones(len(raw_values), dtype=np.float64))
     sx = np.concatenate(([unique[0]], unique))
     sy = np.concatenate(([0.0], cdf))
     return self.step(
