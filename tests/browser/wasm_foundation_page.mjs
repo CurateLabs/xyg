@@ -879,9 +879,13 @@ async function run() {
   });
   let tickProxyCalls = 0;
   let tickProxyCancels = 0;
+  let tickAllocations = 0;
   const delayedTickWorker = {
     ready: lifecycleTickWorker.ready,
-    allocateTickSequence: () => lifecycleTickWorker.allocateTickSequence(),
+    allocateTickSequence() {
+      tickAllocations += 1;
+      return lifecycleTickWorker.allocateTickSequence();
+    },
     resolveTicks(request, options) {
       const call = ++tickProxyCalls;
       let forwarded = null;
@@ -948,7 +952,7 @@ async function run() {
   lifecycleTickView.view = lifecycleTickView._copyView({
     ranges: { x: [0.5, 0.75], y: [0, 1] },
   });
-  const failedCalls = tickProxyCalls;
+  const failedAllocations = tickAllocations;
   lifecycleTickHandle.schedule();
   await nextTask();
   lifecycleTickView.draw();
@@ -959,23 +963,23 @@ async function run() {
       || Object.keys(lifecycleTickErrors[0]).sort().join(",") !== "code,diagnostics,message"
       || retainedXTicks.source !== "wasm"
       || retainedXTicks.ticks.join(",") !== lastGoodTicks
-      || tickProxyCalls <= failedCalls) {
+      || tickAllocations <= failedAllocations) {
     throw new Error(`ChartView tick Worker failure did not fail closed: ${JSON.stringify({
       lifecycleTickErrors,
       retainedXTicks,
       lastGoodTicks,
-      failedCalls,
-      tickProxyCalls,
+      failedAllocations,
+      tickAllocations,
     })}`);
   }
   foundationStage = "failed ChartView tick snapshot retries without a second event";
-  const retryCalls = tickProxyCalls;
+  const retryAllocations = tickAllocations;
   lifecycleTickHandle.schedule();
   await nextTask();
-  if (tickProxyCalls <= retryCalls || lifecycleTickErrors.length !== 1) {
+  if (tickAllocations <= retryAllocations || lifecycleTickErrors.length !== 1) {
     throw new Error(`failed tick snapshot did not retry or re-emitted: ${JSON.stringify({
-      retryCalls,
-      tickProxyCalls,
+      retryAllocations,
+      tickAllocations,
       lifecycleTickErrors,
     })}`);
   }
