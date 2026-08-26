@@ -1221,6 +1221,16 @@ arithmetic fails atomically. The public authored-column router admits 10,001
 points only for compact Step lines so the maximum-bin anchor is representable;
 ordinary traces stay at 10,000 and 10,002 Step points fail closed.
 
+ABI 101 applies the same rule to cumulative histogram Rect heights without
+changing Scene v25. Python and Node pass already-binned heights plus the exact
+one-longer edge plane. Rust validates finite nonnegative heights, finite
+strictly increasing edges, and the complete running arithmetic before writing:
+count mode accumulates heights directly, while density mode integrates
+`height * bin_width` into empirical cumulative mass. The hosts retain API
+validation, bin-selection/counting seams, literal style, and Rect packing, but
+no cumulative loop. Invalid metadata, overflow, and overlapping output/input
+spans fail atomically. Arbitrary authored-edge counting remains #58 debt.
+
 Contract-wide invariants: every tier transition is hysteresis-guarded and logged
 (no silent quality change); every aggregated visual states its aggregation in the
 hover UI; every derived artifact is reproducible from (canonical, viewport, params) —

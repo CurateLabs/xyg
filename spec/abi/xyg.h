@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 100
-#define XYG_ABI_SIGNATURE_SHA256 "a855aa330c2e0f52ec88bd756195b75d502c54e65d1d4f5b89130a47530ced8f"
+#define XYG_ABI_VERSION 101
+#define XYG_ABI_SIGNATURE_SHA256 "82d9949fe731d005ef4f772ca406456ce0459a83276058b5f524886266ae4751"
 
 #ifdef __cplusplus
 extern "C" {
@@ -77,6 +77,7 @@ int32_t xyg_graph_visual_state_resolve(uint64_t n, const uint32_t * flags, uint8
 int32_t xyg_heatmap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out);
 size_t xyg_hexbin(const double * x, const double * y, const double * c, size_t len, size_t grid_w, size_t grid_h, double x0, double x1, double y0, double y1, size_t mincnt, int32_t reduce, double * out_cx, double * out_cy, double * out_metric, double * out_counts, size_t capacity, double * out_dx, double * out_dy);
 int32_t xyg_histogram2d(const double * x, const double * y, const double * weights, size_t len, const double * x_edges, size_t x_edge_len, const double * y_edges, size_t y_edge_len, double * out);
+int32_t xyg_histogram_cumulative(const double * heights, const double * edges, size_t n_bins, int32_t density, double * out);
 size_t xyg_histogram_edges(const double * data, size_t len, double lo, double hi, int32_t use_range, int32_t method, double * out_edges, size_t capacity);
 size_t xyg_histogram_uniform(const double * data, size_t len, double lo, double hi, size_t n_bins, int32_t density, double * out_counts);
 size_t xyg_indexed_triangles(const double * x, const double * y, size_t vertex_count, const int64_t * triangles, size_t face_count, const double * values, size_t value_len, uint32_t value_mode, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, double * out_values);

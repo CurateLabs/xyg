@@ -297,7 +297,11 @@ pub fn execute(b: &[u8]) -> Result<Vec<u8>, SceneError> {
         tail = tail.checked_add(length).ok_or(SceneError::Limit)?;
         boundaries.push(tail);
     }
-    if tail != b.len() || empty_offsets.iter().any(|offset| !boundaries.contains(offset)) {
+    if tail != b.len()
+        || empty_offsets
+            .iter()
+            .any(|offset| !boundaries.contains(offset))
+    {
         return Err(SceneError::Length);
     }
     let mut axes = Vec::with_capacity(n);

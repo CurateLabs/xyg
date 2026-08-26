@@ -205,6 +205,23 @@ def test_histogram_edges_wide_range_and_resource_bound() -> None:
         kernels.histogram_edges(data, range=(0.0, 5_000.5), method="auto")
 
 
+def test_histogram_cumulative_native_count_density_and_validation() -> None:
+    np.testing.assert_array_equal(
+        kernels.histogram_cumulative(np.array([2.0, 1.0, 1.0]), np.array([0.0, 1.0, 2.0, 3.0])),
+        [2.0, 3.0, 4.0],
+    )
+    np.testing.assert_array_equal(
+        kernels.histogram_cumulative(
+            np.array([0.5, 0.25]), np.array([0.0, 1.0, 3.0]), density=True
+        ),
+        [0.5, 1.0],
+    )
+    with pytest.raises(ValueError, match="one more value"):
+        kernels.histogram_cumulative(np.array([1.0]), np.array([0.0]))
+    with pytest.raises(ValueError, match="invalid cumulative"):
+        kernels.histogram_cumulative(np.array([1.0]), np.array([0.0, 0.0]))
+
+
 def test_binned_ecdf_native_contract() -> None:
     x, cumulative = kernels.binned_ecdf(np.array([0.0, 0.2, np.nan, 0.2, 0.9]), 4)
     np.testing.assert_allclose(x, [0.0, 0.225, 0.9], atol=1e-15)

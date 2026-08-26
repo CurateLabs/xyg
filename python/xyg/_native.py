@@ -2791,6 +2791,30 @@ def histogram_uniform(
     return counts, edges
 
 
+def histogram_cumulative(
+    heights: npt.NDArray[np.float64],
+    edges: npt.NDArray[np.float64],
+    *,
+    density: bool = False,
+) -> npt.NDArray[np.float64]:
+    """Rust-owned cumulative count or integrated-density histogram heights."""
+    heights = _as_f64(heights, "heights")
+    edges = _as_f64(edges, "edges")
+    if len(heights) == 0 or len(edges) != len(heights) + 1:
+        raise ValueError("cumulative histogram edges must have one more value than heights")
+    out = np.empty(len(heights), dtype=np.float64)
+    ok = _lib.xyg_histogram_cumulative(
+        _ptr_f64(heights),
+        _ptr_f64(edges),
+        len(heights),
+        int(density),
+        _ptr_f64(out),
+    )
+    if ok != 1:
+        raise ValueError("invalid cumulative histogram arguments")
+    return out
+
+
 def normalize_f32(
     data: npt.NDArray[np.float64],
     domain: tuple[float, float],

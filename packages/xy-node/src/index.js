@@ -8,6 +8,7 @@ export {
   m4Indices,
   minMax,
   isSorted,
+  histogramCumulative,
   histogramUniform,
   histogramEdges,
   hexbin,

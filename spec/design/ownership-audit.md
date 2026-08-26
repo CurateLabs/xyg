@@ -77,8 +77,13 @@ and the historical all-nonfinite ten-bin compatibility case; Rust owns the
 ordinary adaptive edge count and coordinates. The resulting bounded Histogram
 Rects already route public SVG/PNG/PDF and browser paint through the canonical
 Scene. Rust rejects automatic results above 10,000 bins, and each thin binding
-uses one 10,001-edge ABI scratch plane. Arbitrary authored edges and cumulative
-assembly remain #58 debt.
+uses one 10,001-edge ABI scratch plane. ABI 101 additionally makes cumulative
+histogram height assembly Rust-owned: hosts pass already-binned heights and
+edges, while `xyg_histogram_cumulative` validates finite nonnegative heights,
+strictly increasing finite edges, density-width integration, finite running
+mass, and atomic output. Count and density cumulative modes therefore feed the
+same Rect Scene heights in Python and Node. Arbitrary authored-edge counting
+remains #58 debt.
 ABI 99 likewise removes grouped composition-box statistics and geometry policy
 from both hosts. Python and Node pack canonical values, offsets, centers,
 orientation, width, visibility, and literal styles; Rust owns finite filtering,

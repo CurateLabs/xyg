@@ -143,8 +143,11 @@ Rust caps automatic resolution at 10,000 bins (10,001 edges); invalid ranges or
 larger results fail through the hosts' existing histogram argument errors.
 Unsorted, repeated, nonfinite, constant, ranged, density, and cumulative
 fixtures produce identical Rect Scenes for SVG, raster, and browser consumers.
-Authored arbitrary edges and cumulative assembly remain separate host-policy
-debt.
+ABI 101 removes cumulative assembly from those hosts: both pass the binned
+heights and exact edge plane to `xyg_histogram_cumulative`; Rust validates
+nonnegative finite heights, strictly increasing finite edges, finite running
+arithmetic, and then accumulates counts directly or density times bin width
+atomically. Authored arbitrary-edge counting remains separate host-policy debt.
 ABI 99 gives both composition hosts one compact grouped box ingress. Hosts pack
 the same f64 values/offsets/centers and literal options; Rust returns typed
 active-group IDs, fixed 25-f64 group records, monotone outlier offsets, and

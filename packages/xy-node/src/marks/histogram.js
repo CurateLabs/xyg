@@ -3,7 +3,13 @@
  * → rectangle columns attached as a histogram trace (Python common path).
  */
 
-import { asF64Array, histogramEdges, histogramUniform, minMax } from "../encode.js";
+import {
+  asF64Array,
+  histogramCumulative,
+  histogramEdges,
+  histogramUniform,
+  minMax,
+} from "../encode.js";
 
 /**
  * @param {ArrayLike|TypedArray} values
@@ -66,22 +72,7 @@ export function composeHistogram(values, opts = {}) {
   const edges = resolvedEdges ?? uniformEdges;
   let counts = rawCounts;
   if (cumulative) {
-    const out = new Float64Array(counts.length);
-    if (density) {
-      let acc = 0;
-      for (let i = 0; i < counts.length; i += 1) {
-        const width = edges[i + 1] - edges[i];
-        acc += counts[i] * width;
-        out[i] = acc;
-      }
-    } else {
-      let acc = 0;
-      for (let i = 0; i < counts.length; i += 1) {
-        acc += counts[i];
-        out[i] = acc;
-      }
-    }
-    counts = out;
+    counts = histogramCumulative(counts, edges, { density });
   }
   const x0 = edges.subarray(0, nBins);
   const x1 = edges.subarray(1, nBins + 1);

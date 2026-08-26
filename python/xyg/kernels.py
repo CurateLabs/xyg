@@ -57,6 +57,7 @@ bin_2d_mean_color = _impl.bin_2d_mean_color
 bin_2d_sample_range = _impl.bin_2d_sample_range
 bin_2d_stratified_sample_range_u8_counted = _impl.bin_2d_stratified_sample_range_u8_counted
 histogram_uniform = _impl.histogram_uniform
+histogram_cumulative = _impl.histogram_cumulative
 heatmap_rgba = _impl.heatmap_rgba
 histogram2d = _impl.histogram2d
 indexed_triangles = _impl.indexed_triangles
@@ -156,6 +157,7 @@ __all__ = [
     "heatmap_rgba",
     "hexbin",
     "histogram2d",
+    "histogram_cumulative",
     "histogram_edges",
     "histogram_uniform",
     "indexed_triangles",

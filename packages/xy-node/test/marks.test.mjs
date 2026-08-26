@@ -21,6 +21,7 @@ import {
   encodeScatterPositions,
   figure,
   graphChart,
+  histogramCumulative,
   histogramChart,
   areaChart,
   barChart,
@@ -141,6 +142,27 @@ test("histogram_uniform counts match Python fixture when present", () => {
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "histogram");
   assert.equal(spec.traces[0].n_marks, bins);
+});
+
+test("histogram cumulative count and density heights are Rust-owned", () => {
+  assert.deepEqual(
+    [...histogramCumulative([2, 1, 1], [0, 1, 2, 3])],
+    [2, 3, 4],
+  );
+  assert.deepEqual(
+    [...histogramCumulative([0.5, 0.25], [0, 1, 3], { density: true })],
+    [0.5, 1],
+  );
+  assert.throws(
+    () => histogramCumulative([1], [0, 0]),
+    /xyg_histogram_cumulative failed/,
+  );
+  const composed = composeHistogram([0.1, 0.2, 1.2, 2.4], {
+    bins: 3,
+    range: [0, 3],
+    cumulative: true,
+  });
+  assert.deepEqual([...composed.counts], [2, 3, 4]);
 });
 
 test("histogram auto edges support wide ranges and enforce the Rust cap", () => {

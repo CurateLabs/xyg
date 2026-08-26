@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramCumulative, xyHistogramUniform, xyNormalizeF32, xyHexbin, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -191,6 +191,27 @@ export function histogramUniform(data, lo, hi, nBins, { density = false } = {}) 
     edges[i] = lo + i * width;
   }
   return { counts, edges, total };
+}
+
+/** Rust-owned cumulative count or integrated-density histogram heights. */
+export function histogramCumulative(heights, edges, { density = false } = {}) {
+  const values = asF64Array(heights, "heights");
+  const binEdges = asF64Array(edges, "edges");
+  if (values.length === 0 || binEdges.length !== values.length + 1) {
+    throw new RangeError("cumulative histogram edges must have one more value than heights");
+  }
+  const out = new Float64Array(values.length);
+  const ok = xyHistogramCumulative(
+    f64Ptr(values),
+    f64Ptr(binEdges),
+    BigInt(values.length),
+    density ? 1 : 0,
+    f64Ptr(out),
+  );
+  if (ok !== 1) {
+    throw new Error("xyg_histogram_cumulative failed");
+  }
+  return out;
 }
 
 /** NumPy-compatible auto/sturges edges (`method`: `"auto"` | `"sturges"`). */

@@ -994,3 +994,22 @@ style, and conversion to existing Rect, Polyline, and Scatter Scene families.
 Constant-style primary-Cartesian boxes route public SVG/PNG/PDF through those
 Scene consumers; alternate axes, polar, gradients, and per-item styles remain
 explicit compatibility paths.
+
+## ABI 101 cumulative histogram heights (Scene v25 unchanged)
+
+ABI 101 removes cumulative histogram height assembly from both composition
+hosts. `xyg_histogram_cumulative` accepts already-binned f64 heights, their
+exact one-longer f64 edge plane, and the count-versus-density mode. Rust
+requires a nonempty exact-length contract, finite nonnegative heights, and
+finite strictly increasing edges. Count mode accumulates heights directly;
+density mode accumulates each height multiplied by its authored bin width, so
+the final Rect heights are empirical cumulative mass.
+
+The engine validates the complete running series, including finite edge
+differences, products, and sums, before writing output. Invalid metadata,
+arithmetic overflow, and overlapping output/input spans fail without a partial
+write. Python and Node retain public boolean validation, bin selection,
+counting seams, literal style, and Rect packing, but contain no cumulative
+loop. Existing exact cross-host histogram Scene hashes and SVG/raster/browser
+consumers remain unchanged. Arbitrary authored-edge counting is still #58 debt;
+this slice does not change Scene 25 or any browser/WASM tick contract.

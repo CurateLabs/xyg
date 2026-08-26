@@ -610,6 +610,60 @@ pub fn binned_ecdf(data: &[f64], n_bins: usize, range: Option<(f64, f64)>) -> Op
     Some(BinnedEcdf { x, cumulative })
 }
 
+/// Integrate histogram bin heights into a left-to-right cumulative series.
+///
+/// Count heights accumulate directly. Density heights integrate each bin's
+/// density times its authored width, yielding empirical cumulative mass.
+/// Validation completes before `out` is touched so callers never observe a
+/// partial series.
+pub fn histogram_cumulative_into(
+    heights: &[f64],
+    edges: &[f64],
+    density: bool,
+    out: &mut [f64],
+) -> bool {
+    if heights.is_empty()
+        || out.len() != heights.len()
+        || edges.len() != heights.len().saturating_add(1)
+    {
+        return false;
+    }
+
+    let mut cumulative = 0.0;
+    for (index, &height) in heights.iter().enumerate() {
+        let lo = edges[index];
+        let hi = edges[index + 1];
+        if !(height.is_finite() && height >= 0.0 && lo.is_finite() && hi.is_finite() && hi > lo) {
+            return false;
+        }
+        let contribution = if density {
+            let width = hi - lo;
+            if !(width.is_finite() && width > 0.0) {
+                return false;
+            }
+            height * width
+        } else {
+            height
+        };
+        cumulative += contribution;
+        if !contribution.is_finite() || !cumulative.is_finite() {
+            return false;
+        }
+    }
+
+    cumulative = 0.0;
+    for (index, (&height, value)) in heights.iter().zip(out.iter_mut()).enumerate() {
+        let contribution = if density {
+            height * (edges[index + 1] - edges[index])
+        } else {
+            height
+        };
+        cumulative += contribution;
+        *value = cumulative;
+    }
+    true
+}
+
 fn outer_edges(data: &[f64], range: Option<(f64, f64)>) -> Option<(f64, f64, Vec<f64>)> {
     let finite: Vec<f64> = data.iter().copied().filter(|v| v.is_finite()).collect();
     let (mut first, mut last) = if let Some((lo, hi)) = range {
@@ -1177,14 +1231,54 @@ mod tests {
 
     #[test]
     fn binned_ecdf_authored_range_uses_all_finite_mass() {
-        let result = binned_ecdf(&[-1.0, 0.25, 0.75, 2.0, f64::INFINITY], 2, Some((0.0, 1.0)))
-            .unwrap();
+        let result =
+            binned_ecdf(&[-1.0, 0.25, 0.75, 2.0, f64::INFINITY], 2, Some((0.0, 1.0))).unwrap();
         assert_eq!(result.x, vec![0.0, 0.5, 1.0]);
         assert_eq!(result.cumulative, vec![0.0, 0.25, 0.5]);
 
         let outside = binned_ecdf(&[-2.0, 2.0], 4, Some((0.0, 1.0))).unwrap();
         assert_eq!(outside.x, vec![0.0]);
         assert_eq!(outside.cumulative, vec![0.0]);
+    }
+
+    #[test]
+    fn histogram_cumulative_integrates_counts_and_variable_width_density() {
+        let mut counts = [-1.0; 3];
+        assert!(histogram_cumulative_into(
+            &[2.0, 1.0, 1.0],
+            &[0.0, 1.0, 2.0, 3.0],
+            false,
+            &mut counts,
+        ));
+        assert_eq!(counts, [2.0, 3.0, 4.0]);
+
+        let mut density = [-1.0; 2];
+        assert!(histogram_cumulative_into(
+            &[0.5, 0.25],
+            &[0.0, 1.0, 3.0],
+            true,
+            &mut density,
+        ));
+        assert_eq!(density, [0.5, 1.0]);
+    }
+
+    #[test]
+    fn histogram_cumulative_rejects_invalid_bins_without_partial_output() {
+        for (heights, edges, density) in [
+            (vec![], vec![0.0], false),
+            (vec![1.0], vec![0.0], false),
+            (vec![-1.0], vec![0.0, 1.0], false),
+            (vec![f64::NAN], vec![0.0, 1.0], false),
+            (vec![1.0], vec![1.0, 1.0], false),
+            (vec![1.0], vec![-f64::MAX, f64::MAX], true),
+            (vec![f64::MAX, f64::MAX], vec![0.0, 1.0, 2.0], false),
+        ] {
+            let mut out = vec![-7.0; heights.len()];
+            assert!(!histogram_cumulative_into(
+                &heights, &edges, density, &mut out,
+            ));
+            assert_eq!(out, vec![-7.0; heights.len()]);
+        }
     }
 
     #[test]

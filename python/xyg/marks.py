@@ -2269,10 +2269,7 @@ def histogram(
             raise ValueError("histogram could not produce finite bins")
     counts = counts.astype(np.float64, copy=False)
     if cumulative:
-        # Density mode integrates density*width into an empirical CDF whose
-        # last bin is ~1.0 (exactly 1.0 when every value is in range); count
-        # mode simply accumulates bin counts.
-        counts = np.cumsum(counts * np.diff(edges)) if density else np.cumsum(counts)
+        counts = kernels.histogram_cumulative(counts, edges, density=density)
     n_bins = len(counts)
     direct_color = (
         channels.resolve_color(color, n_bins, default_constant=DEFAULT_PALETTE[0])

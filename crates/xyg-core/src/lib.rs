@@ -97,7 +97,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 100;
+pub const ABI_VERSION: u32 = 101;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -3633,6 +3633,69 @@ pub unsafe extern "C" fn xyg_histogram_uniform(
         }
     }
     total as usize
+}
+
+/// Left-to-right cumulative histogram heights. Count heights accumulate
+/// directly; density heights integrate density times each bin width. Returns
+/// 1 on success and 0 on invalid inputs. Validation is atomic: `out` remains
+/// unchanged on failure.
+///
+/// # Safety
+/// `heights` and `out` must each address `n_bins` readable/writable f64s;
+/// `edges` must address `n_bins + 1` readable f64s. The output span must not
+/// overlap either input span. `density` is exactly zero or one.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_histogram_cumulative(
+    heights: *const f64,
+    edges: *const f64,
+    n_bins: usize,
+    density: i32,
+    out: *mut f64,
+) -> i32 {
+    let Some(edge_count) = n_bins.checked_add(1) else {
+        return 0;
+    };
+    let Some(bin_bytes) = n_bins.checked_mul(std::mem::size_of::<f64>()) else {
+        return 0;
+    };
+    let Some(edge_bytes) = edge_count.checked_mul(std::mem::size_of::<f64>()) else {
+        return 0;
+    };
+    let heights_start = heights as usize;
+    let edges_start = edges as usize;
+    let out_start = out as usize;
+    let Some(heights_end) = heights_start.checked_add(bin_bytes) else {
+        return 0;
+    };
+    let Some(edges_end) = edges_start.checked_add(edge_bytes) else {
+        return 0;
+    };
+    let Some(out_end) = out_start.checked_add(bin_bytes) else {
+        return 0;
+    };
+    let overlaps_heights = out_start < heights_end && heights_start < out_end;
+    let overlaps_edges = out_start < edges_end && edges_start < out_end;
+    if n_bins == 0
+        || heights.is_null()
+        || edges.is_null()
+        || out.is_null()
+        || !matches!(density, 0 | 1)
+        || overlaps_heights
+        || overlaps_edges
+    {
+        return 0;
+    }
+    let heights = std::slice::from_raw_parts(heights, n_bins);
+    let edges = std::slice::from_raw_parts(edges, edge_count);
+    let out = std::slice::from_raw_parts_mut(out, n_bins);
+    ffi_guard(0, || {
+        i32::from(stats::histogram_cumulative_into(
+            heights,
+            edges,
+            density == 1,
+            out,
+        ))
+    })
 }
 
 /// Normalize f64 values into f32 `[0,1]`. `nan_mode=0` maps non-finite values to
@@ -7251,7 +7314,11 @@ pub unsafe extern "C" fn xyg_graph_layout(
             }
             _ => return -1,
         };
-        if ok { 0 } else { -1 }
+        if ok {
+            0
+        } else {
+            -1
+        }
     })
 }
 
@@ -9831,6 +9898,68 @@ mod tests {
     }
 
     #[test]
+    fn histogram_cumulative_ffi_is_exact_bounded_and_atomic() {
+        let heights = [0.5, 0.25];
+        let edges = [0.0, 1.0, 3.0];
+        let mut cumulative = [-1.0; 2];
+        assert_eq!(
+            unsafe {
+                xyg_histogram_cumulative(
+                    heights.as_ptr(),
+                    edges.as_ptr(),
+                    heights.len(),
+                    1,
+                    cumulative.as_mut_ptr(),
+                )
+            },
+            1
+        );
+        assert_eq!(cumulative, [0.5, 1.0]);
+
+        let sentinel = [-7.0; 2];
+        cumulative = sentinel;
+        let bad_edges = [0.0, 1.0, 1.0];
+        assert_eq!(
+            unsafe {
+                xyg_histogram_cumulative(
+                    heights.as_ptr(),
+                    bad_edges.as_ptr(),
+                    heights.len(),
+                    1,
+                    cumulative.as_mut_ptr(),
+                )
+            },
+            0
+        );
+        assert_eq!(cumulative, sentinel);
+        assert_eq!(
+            unsafe {
+                xyg_histogram_cumulative(
+                    heights.as_ptr(),
+                    edges.as_ptr(),
+                    heights.len(),
+                    2,
+                    cumulative.as_mut_ptr(),
+                )
+            },
+            0
+        );
+        assert_eq!(cumulative, sentinel);
+        assert_eq!(
+            unsafe {
+                xyg_histogram_cumulative(
+                    heights.as_ptr(),
+                    edges.as_ptr(),
+                    heights.len(),
+                    0,
+                    heights.as_ptr().cast_mut(),
+                )
+            },
+            0
+        );
+    }
+
+    #[test]
     fn histogram_edges_write_capacity_and_resource_contract() {
         let data = [0.0, 1.0];
         let required = 41;
@@ -9923,11 +10052,9 @@ mod tests {
             },
             required
         );
-        assert!(
-            std::str::from_utf8(&output)
-                .unwrap()
-                .starts_with("XYG_SCENE_UNSUPPORTED_CUSTOM_FONT:")
-        );
+        assert!(std::str::from_utf8(&output)
+            .unwrap()
+            .starts_with("XYG_SCENE_UNSUPPORTED_CUSTOM_FONT:"));
         assert_eq!(
             unsafe {
                 xyg_scene_support_reason(
@@ -11422,13 +11549,12 @@ mod tests {
             },
             required
         );
-        assert!(
-            x0.into_iter()
-                .chain(y0)
-                .chain(x1)
-                .chain(y1)
-                .all(f64::is_finite)
-        );
+        assert!(x0
+            .into_iter()
+            .chain(y0)
+            .chain(x1)
+            .chain(y1)
+            .all(f64::is_finite));
         assert_eq!(groups, [0]);
         assert_eq!(
             unsafe {

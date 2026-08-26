@@ -351,7 +351,11 @@ impl StreamAggregateJob {
             .checked_mul(ACCUMULATOR_STRIDE_COUNT)
             .ok_or(AggregateError::Limit)?;
         let output = OUTPUT_HEADER_BYTES
-            .checked_add(cells.checked_mul(OUTPUT_STRIDE_COUNT).ok_or(AggregateError::Limit)?)
+            .checked_add(
+                cells
+                    .checked_mul(OUTPUT_STRIDE_COUNT)
+                    .ok_or(AggregateError::Limit)?,
+            )
             .ok_or(AggregateError::Limit)?;
         let peak = STREAM_HEADER_BYTES
             .checked_add(accumulator)
@@ -533,7 +537,10 @@ mod tests {
         assert!(!job.push(&stream_chunk(&[(2.5, 2.5)])).unwrap());
         let output = job.finish().unwrap();
         assert_eq!(&output[..4], OUTPUT_MAGIC);
-        assert_eq!(f32::from_le_bytes(output[OUTPUT_HEADER_BYTES..][..4].try_into().unwrap()), 1.0);
+        assert_eq!(
+            f32::from_le_bytes(output[OUTPUT_HEADER_BYTES..][..4].try_into().unwrap()),
+            1.0
+        );
 
         let mut job = StreamAggregateJob::begin(&stream_header(1), 8 << 20).unwrap();
         assert_eq!(job.push(&[]).unwrap_err(), AggregateError::Length);
