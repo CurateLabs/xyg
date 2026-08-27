@@ -1439,7 +1439,9 @@ kind 4 on the existing `DensityBlit` Image blit. ABI 143 polar density
 tessellates occupied `DensityBlit` cells to PolyFill wedges (no XYIM). ABI 144
 admits cartesian `error_band(curve="smooth")` on existing `BandFlatten=12` and
 polar `curve="smooth"` line/area/error_band as identity chords (polar-axes.md
-§5). Polar+step+smooth and authored markers stay compatibility. Irregular
+§5). ABI 145 admits constant scatter `marker_path` via an XYMP extras sidecar
+tessellated to PolyFill/Polyline after pixel mapping. Polar+step+smooth and
+authored marker glyphs stay compatibility. Irregular
 spacing, and LOD stay compatibility.
 
 Contract-wide invariants: every tier transition is hysteresis-guarded and logged

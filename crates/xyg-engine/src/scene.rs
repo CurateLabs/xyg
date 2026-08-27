@@ -3112,13 +3112,17 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
         PolarSceneState::from_xypl(xypl, layout)?;
     }
     let images = parse_xyim(xyim)?;
-    let (dash_bytes, cap_bytes) = split_style_sidecars(xyds)?;
+    let (dash_bytes, cap_bytes, marker_bytes) = split_style_sidecars(xyds)?;
     let dashes = parse_xyds(dash_bytes)?;
     let caps = parse_xylc(cap_bytes)?;
+    let markers = parse_xymp(marker_bytes)?;
     if dashes
         .iter()
         .any(|entry| entry.style_ref as usize >= styles)
         || caps.iter().any(|entry| entry.style_ref as usize >= styles)
+        || markers
+            .iter()
+            .any(|entry| entry.style_ref as usize >= styles)
     {
         return Err(SceneError::Length);
     }
@@ -3598,8 +3602,9 @@ pub const XYIM_FORMAT_RGBA8: u32 = 0;
 pub const MAX_SCENE_IMAGE_PIXELS: usize = 2_000_000;
 /// XYEX v1 wraps optional XYPL polar bytes plus optional XYHP paint so
 /// `xyg_scene_batch_encode` stays at Koffi's 64-parameter ceiling.
-/// XYEX v2 adds a dash length so constant dash and linecap sidecars ride the
-/// same extras pointer as XYDS/XYLC (ABI 138–139) without a 65th ABI argument.
+/// XYEX v2 adds a dash length so constant dash, linecap, and authored-marker
+/// sidecars ride the same extras pointer as XYDS/XYLC/XYMP (ABI 138–145)
+/// without a 65th ABI argument.
 pub const XYEX_MAGIC: &[u8; 4] = b"XYEX";
 pub const XYEX_VERSION: u32 = 1;
 pub const XYEX_VERSION_DASH: u32 = 2;
@@ -3622,6 +3627,16 @@ pub const XYLC_ENTRY_BYTES: usize = 8;
 pub const LINECAP_BUTT: u8 = 0;
 pub const LINECAP_ROUND: u8 = 1;
 pub const LINECAP_SQUARE: u8 = 2;
+/// XYMP v1 authored-marker sidecar (ABI 145). One entry per host style_ref
+/// that carries a constant validated `marker_path`. Concatenated after XYLC
+/// in the extras dash slot. Encoded Scene does not keep XYMP: `prepared_mark_records`
+/// tessellates scatter centres to PolyFill/Polyline (v31 kinds).
+pub const XYMP_MAGIC: &[u8; 4] = b"XYMP";
+pub const XYMP_VERSION: u32 = 1;
+pub const XYMP_V1_HEADER_BYTES: usize = 16;
+pub const XYMP_MAX_CONTOURS: usize = 32;
+pub const XYMP_MAX_VERTICES: usize = 96;
+pub const XYMP_VERTEX_LIMIT: f64 = 0.500001;
 
 /// One XYHP paint plane keyed by the compact lattice's stable identity.
 #[derive(Clone, Copy, Debug)]
@@ -3684,8 +3699,8 @@ fn scene_read_f64(bytes: &[u8], offset: usize) -> Result<f64, SceneError> {
 /// Split a host extras payload into polar XYPL, XYHP paint, and style-sidecar
 /// bytes. Empty input is Cartesian with no paint or dash. Raw XYPL (92 bytes)
 /// stays valid polar-only authoring. Raw XYHP is Cartesian painted heatmaps.
-/// Raw XYDS, raw XYLC, or XYDS+XYLC concat occupy the dash slot. XYEX v1 wraps
-/// polar+paint; XYEX v2 `dash_len` covers XYDS and/or XYLC.
+/// Raw XYDS, raw XYLC, raw XYMP, or XYDS+XYLC+XYMP concat occupy the dash slot.
+/// XYEX v1 wraps polar+paint; XYEX v2 `dash_len` covers XYDS and/or XYLC and/or XYMP.
 pub fn split_scene_extras(bytes: &[u8]) -> Option<(&[u8], &[u8], &[u8])> {
     if bytes.is_empty() {
         return Some((&[], &[], &[]));
@@ -3696,7 +3711,10 @@ pub fn split_scene_extras(bytes: &[u8]) -> Option<(&[u8], &[u8], &[u8])> {
     if bytes.get(..4) == Some(&XYHP_MAGIC[..]) {
         return Some((&[], bytes, &[]));
     }
-    if bytes.get(..4) == Some(&XYDS_MAGIC[..]) || bytes.get(..4) == Some(&XYLC_MAGIC[..]) {
+    if bytes.get(..4) == Some(&XYDS_MAGIC[..])
+        || bytes.get(..4) == Some(&XYLC_MAGIC[..])
+        || bytes.get(..4) == Some(&XYMP_MAGIC[..])
+    {
         return Some((&[], &[], bytes));
     }
     if bytes.get(..4) != Some(&XYEX_MAGIC[..]) {
@@ -3739,6 +3757,7 @@ pub fn split_scene_extras(bytes: &[u8]) -> Option<(&[u8], &[u8], &[u8])> {
     if dash_len > 0
         && dash.get(..4) != Some(&XYDS_MAGIC[..])
         && dash.get(..4) != Some(&XYLC_MAGIC[..])
+        && dash.get(..4) != Some(&XYMP_MAGIC[..])
     {
         return None;
     }
@@ -4402,10 +4421,7 @@ fn encode_xylc(entries: &[StyleCap]) -> Result<Vec<u8>, SceneError> {
     Ok(out)
 }
 
-fn parse_xylc(bytes: &[u8]) -> Result<Vec<StyleCap>, SceneError> {
-    if bytes.is_empty() {
-        return Ok(Vec::new());
-    }
+fn parse_xylc_prefix(bytes: &[u8]) -> Result<(Vec<StyleCap>, usize), SceneError> {
     if bytes.len() < XYLC_V1_HEADER_BYTES || bytes.get(..4) != Some(&XYLC_MAGIC[..]) {
         return Err(SceneError::Length);
     }
@@ -4437,31 +4453,198 @@ fn parse_xylc(bytes: &[u8]) -> Result<Vec<StyleCap>, SceneError> {
         cursor = end;
         entries.push(StyleCap { style_ref, cap });
     }
+    Ok((entries, cursor))
+}
+
+fn parse_xylc(bytes: &[u8]) -> Result<Vec<StyleCap>, SceneError> {
+    if bytes.is_empty() {
+        return Ok(Vec::new());
+    }
+    let (entries, end) = parse_xylc_prefix(bytes)?;
+    if end != bytes.len() {
+        return Err(SceneError::Length);
+    }
+    Ok(entries)
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct AuthoredMarkerPath {
+    filled: bool,
+    contours: Vec<Vec<(f64, f64)>>,
+}
+
+struct StyleMarkerPath {
+    style_ref: u32,
+    path: AuthoredMarkerPath,
+}
+
+fn parse_xymp(bytes: &[u8]) -> Result<Vec<StyleMarkerPath>, SceneError> {
+    if bytes.is_empty() {
+        return Ok(Vec::new());
+    }
+    if bytes.len() < XYMP_V1_HEADER_BYTES || bytes.get(..4) != Some(&XYMP_MAGIC[..]) {
+        return Err(SceneError::Length);
+    }
+    if scene_read_u32(bytes, 4)? != XYMP_VERSION {
+        return Err(SceneError::Version);
+    }
+    let n_entries = scene_read_u32(bytes, 8)? as usize;
+    if scene_read_u32(bytes, 12)? != 0 || n_entries == 0 || n_entries > MAX_SCENE_STYLES {
+        return Err(SceneError::Length);
+    }
+    let mut entries = Vec::with_capacity(n_entries);
+    let mut seen = std::collections::BTreeSet::new();
+    let mut cursor = XYMP_V1_HEADER_BYTES;
+    for _ in 0..n_entries {
+        if cursor.checked_add(16).ok_or(SceneError::Limit)? > bytes.len() {
+            return Err(SceneError::Length);
+        }
+        let style_ref = scene_read_u32(bytes, cursor)?;
+        let flags = scene_read_u32(bytes, cursor + 4)?;
+        let n_contours = scene_read_u32(bytes, cursor + 8)? as usize;
+        let n_vertices = scene_read_u32(bytes, cursor + 12)? as usize;
+        if flags > 1
+            || n_contours == 0
+            || n_contours > XYMP_MAX_CONTOURS
+            || n_vertices < 2
+            || n_vertices > XYMP_MAX_VERTICES
+            || !seen.insert(style_ref)
+        {
+            return Err(SceneError::Length);
+        }
+        cursor += 16;
+        let filled = flags == 1;
+        let mut contours = Vec::with_capacity(n_contours);
+        let mut counted = 0usize;
+        for _ in 0..n_contours {
+            if cursor.checked_add(8).ok_or(SceneError::Limit)? > bytes.len() {
+                return Err(SceneError::Length);
+            }
+            let n_verts = scene_read_u32(bytes, cursor)? as usize;
+            if scene_read_u32(bytes, cursor + 4)? != 0
+                || n_verts < 2
+                || (filled && n_verts < 3)
+            {
+                return Err(SceneError::Length);
+            }
+            cursor += 8;
+            let values_end = cursor
+                .checked_add(n_verts.checked_mul(16).ok_or(SceneError::Limit)?)
+                .ok_or(SceneError::Limit)?;
+            if values_end > bytes.len() {
+                return Err(SceneError::Length);
+            }
+            let mut contour = Vec::with_capacity(n_verts);
+            for _ in 0..n_verts {
+                let x = scene_read_f64(bytes, cursor)?;
+                let y = scene_read_f64(bytes, cursor + 8)?;
+                if !x.is_finite()
+                    || !y.is_finite()
+                    || x.abs() > XYMP_VERTEX_LIMIT
+                    || y.abs() > XYMP_VERTEX_LIMIT
+                {
+                    return Err(SceneError::NonFinite);
+                }
+                contour.push((x, y));
+                cursor += 16;
+            }
+            counted = counted.checked_add(n_verts).ok_or(SceneError::Limit)?;
+            contours.push(contour);
+        }
+        if counted != n_vertices {
+            return Err(SceneError::Length);
+        }
+        entries.push(StyleMarkerPath {
+            style_ref,
+            path: AuthoredMarkerPath { filled, contours },
+        });
+    }
     if cursor != bytes.len() {
         return Err(SceneError::Length);
     }
     Ok(entries)
 }
 
-fn split_style_sidecars(bytes: &[u8]) -> Result<(&[u8], &[u8]), SceneError> {
+#[cfg(test)]
+fn encode_xymp(entries: &[StyleMarkerPath]) -> Result<Vec<u8>, SceneError> {
+    if entries.is_empty() {
+        return Ok(Vec::new());
+    }
+    if entries.len() > MAX_SCENE_STYLES {
+        return Err(SceneError::Limit);
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    let mut out = Vec::new();
+    out.extend_from_slice(XYMP_MAGIC);
+    out.extend_from_slice(&XYMP_VERSION.to_le_bytes());
+    out.extend_from_slice(&(entries.len() as u32).to_le_bytes());
+    out.extend_from_slice(&0u32.to_le_bytes());
+    for entry in entries {
+        let n_vertices: usize = entry.path.contours.iter().map(Vec::len).sum();
+        if entry.path.contours.is_empty()
+            || entry.path.contours.len() > XYMP_MAX_CONTOURS
+            || n_vertices < 2
+            || n_vertices > XYMP_MAX_VERTICES
+            || !seen.insert(entry.style_ref)
+        {
+            return Err(SceneError::Length);
+        }
+        out.extend_from_slice(&entry.style_ref.to_le_bytes());
+        out.extend_from_slice(&(u32::from(entry.path.filled)).to_le_bytes());
+        out.extend_from_slice(&(entry.path.contours.len() as u32).to_le_bytes());
+        out.extend_from_slice(&(n_vertices as u32).to_le_bytes());
+        for contour in &entry.path.contours {
+            if contour.len() < 2 || (entry.path.filled && contour.len() < 3) {
+                return Err(SceneError::Length);
+            }
+            out.extend_from_slice(&(contour.len() as u32).to_le_bytes());
+            out.extend_from_slice(&0u32.to_le_bytes());
+            for &(x, y) in contour {
+                if !x.is_finite()
+                    || !y.is_finite()
+                    || x.abs() > XYMP_VERTEX_LIMIT
+                    || y.abs() > XYMP_VERTEX_LIMIT
+                {
+                    return Err(SceneError::NonFinite);
+                }
+                out.extend_from_slice(&x.to_le_bytes());
+                out.extend_from_slice(&y.to_le_bytes());
+            }
+        }
+    }
+    Ok(out)
+}
+
+fn split_style_sidecars(bytes: &[u8]) -> Result<(&[u8], &[u8], &[u8]), SceneError> {
     if bytes.is_empty() {
-        return Ok((&[], &[]));
+        return Ok((&[], &[], &[]));
     }
-    if bytes.get(..4) == Some(&XYLC_MAGIC[..]) {
-        parse_xylc(bytes)?;
-        return Ok((&[], bytes));
-    }
-    if bytes.get(..4) != Some(&XYDS_MAGIC[..]) {
-        return Err(SceneError::Length);
-    }
-    let (_, end) = parse_xyds_prefix(bytes)?;
-    let dash = bytes.get(..end).ok_or(SceneError::Length)?;
-    let rest = bytes.get(end..).ok_or(SceneError::Length)?;
-    if rest.is_empty() {
-        return Ok((dash, &[]));
-    }
-    parse_xylc(rest)?;
-    Ok((dash, rest))
+    let mut offset = 0usize;
+    let dash = if bytes.get(..4) == Some(&XYDS_MAGIC[..]) {
+        let (_, end) = parse_xyds_prefix(bytes)?;
+        offset = end;
+        bytes.get(..end).ok_or(SceneError::Length)?
+    } else {
+        &[][..]
+    };
+    let cap = if bytes.get(offset..offset.saturating_add(4)) == Some(&XYLC_MAGIC[..]) {
+        let (_, end) = parse_xylc_prefix(&bytes[offset..])?;
+        let cap = bytes.get(offset..offset + end).ok_or(SceneError::Length)?;
+        offset += end;
+        cap
+    } else {
+        &[][..]
+    };
+    let markers = if offset < bytes.len() {
+        if bytes.get(offset..offset.saturating_add(4)) != Some(&XYMP_MAGIC[..]) {
+            return Err(SceneError::Length);
+        }
+        parse_xymp(&bytes[offset..])?;
+        bytes.get(offset..).ok_or(SceneError::Length)?
+    } else {
+        &[][..]
+    };
+    Ok((dash, cap, markers))
 }
 
 fn apply_style_dashes(styles: &mut [EncodedStyle], entries: &[StyleDash]) -> Result<(), SceneError> {
@@ -4484,9 +4667,25 @@ fn apply_style_caps(styles: &mut [EncodedStyle], entries: &[StyleCap]) -> Result
 }
 
 fn apply_style_sidecars(styles: &mut [EncodedStyle], bytes: &[u8]) -> Result<(), SceneError> {
-    let (dash, cap) = split_style_sidecars(bytes)?;
+    let (dash, cap, markers) = split_style_sidecars(bytes)?;
     apply_style_dashes(styles, &parse_xyds(dash)?)?;
     apply_style_caps(styles, &parse_xylc(cap)?)?;
+    let marker_entries = parse_xymp(markers)?;
+    if marker_entries
+        .iter()
+        .any(|entry| entry.style_ref as usize >= styles.len())
+    {
+        return Err(SceneError::Length);
+    }
+    for entry in marker_entries {
+        if !entry.path.filled {
+            let style = &mut styles[entry.style_ref as usize];
+            style.stroke = style.fill;
+            if style.stroke_width <= 0.0 {
+                style.stroke_width = 1.0;
+            }
+        }
+    }
     Ok(())
 }
 
@@ -4503,7 +4702,10 @@ fn scene_sidecars_after_chrome(
     if after.is_empty() {
         return Ok((xypl, after, after));
     }
-    if after.get(..4) == Some(&XYDS_MAGIC[..]) || after.get(..4) == Some(&XYLC_MAGIC[..]) {
+    if after.get(..4) == Some(&XYDS_MAGIC[..])
+        || after.get(..4) == Some(&XYLC_MAGIC[..])
+        || after.get(..4) == Some(&XYMP_MAGIC[..])
+    {
         split_style_sidecars(after)?;
         return Ok((xypl, &[][..], after));
     }
@@ -5308,6 +5510,7 @@ pub struct SceneBatch<'a> {
     polar: Option<PolarSceneState>,
     images: Vec<SceneImage>,
     dashes: Vec<u8>,
+    marker_paths: Vec<Option<AuthoredMarkerPath>>,
 }
 
 #[derive(Clone, Debug)]
@@ -6175,6 +6378,7 @@ impl<'a> SceneBatch<'a> {
             polar: None,
             images: Vec::new(),
             dashes: Vec::new(),
+            marker_paths: Vec::new(),
         })
     }
 
@@ -6191,16 +6395,18 @@ impl<'a> SceneBatch<'a> {
         Ok(self)
     }
 
-    /// Attach a host-packed XYDS/XYLC style sidecar. Empty keeps every style
-    /// solid and round-capped. Style refs address the host style table before
-    /// arrow/callout extras.
+    /// Attach a host-packed XYDS/XYLC/XYMP style sidecar. Empty keeps every
+    /// style solid, round-capped, and built-in-symbol. Style refs address the
+    /// host style table before arrow/callout extras. XYMP is consumed at encode
+    /// (tessellate scatter) and stripped from the encoded sidecar.
     pub fn with_dashes(mut self, bytes: &[u8]) -> Result<Self, SceneError> {
         if bytes.is_empty() {
             return Ok(self);
         }
-        let (dash, cap) = split_style_sidecars(bytes)?;
+        let (dash, cap, markers) = split_style_sidecars(bytes)?;
         let dash_entries = parse_xyds(dash)?;
         let cap_entries = parse_xylc(cap)?;
+        let marker_entries = parse_xymp(markers)?;
         let style_count = self.stroke_width.len();
         if dash_entries
             .iter()
@@ -6208,10 +6414,21 @@ impl<'a> SceneBatch<'a> {
             || cap_entries
                 .iter()
                 .any(|entry| entry.style_ref as usize >= style_count)
+            || marker_entries
+                .iter()
+                .any(|entry| entry.style_ref as usize >= style_count)
         {
             return Err(SceneError::Length);
         }
-        self.dashes = bytes.to_vec();
+        let mut kept = Vec::with_capacity(dash.len() + cap.len());
+        kept.extend_from_slice(dash);
+        kept.extend_from_slice(cap);
+        self.dashes = kept;
+        let mut paths = vec![None; style_count];
+        for entry in marker_entries {
+            paths[entry.style_ref as usize] = Some(entry.path);
+        }
+        self.marker_paths = paths;
         Ok(self)
     }
 
@@ -6390,6 +6607,51 @@ impl<'a> SceneBatch<'a> {
                     SceneRecordKind::Band => mapped,
                 }
             };
+            if kind == SceneRecordKind::Scatter {
+                if let Some(path) = self
+                    .marker_paths
+                    .get(self.style_refs[index] as usize)
+                    .and_then(|value| value.as_ref())
+                {
+                    if visible {
+                        let style = self.style_refs[index] as usize;
+                        let mut stroke_w = self.stroke_width[style];
+                        if !path.filled && stroke_w <= 0.0 {
+                            stroke_w = 1.0;
+                        }
+                        let scale = (self.diameter[index] - stroke_w).max(0.0);
+                        let cx = mapped[0];
+                        let cy = mapped[1];
+                        let emit_kind = if path.filled {
+                            SceneRecordKind::PolyFill
+                        } else {
+                            SceneRecordKind::Polyline
+                        };
+                        for (contour_index, contour) in path.contours.iter().enumerate() {
+                            if out.len().saturating_add(contour.len()) > MAX_SCENE_MARKS {
+                                break;
+                            }
+                            let mark_id = self.stable_ids[index]
+                                .wrapping_shl(32)
+                                | ((index as u64) << 8)
+                                | (contour_index as u64);
+                            for &(unit_x, unit_y) in contour {
+                                out.push(PreparedMarkRecord {
+                                    kind: emit_kind,
+                                    visible: true,
+                                    symbol: 0,
+                                    annotation_tag,
+                                    style_ref: self.style_refs[index],
+                                    stable_id: mark_id,
+                                    coordinates: [cx + scale * unit_x, cy - scale * unit_y, 0.0, 0.0],
+                                    diameter: 0.0,
+                                });
+                            }
+                        }
+                    }
+                    continue;
+                }
+            }
             out.push(PreparedMarkRecord {
                 kind,
                 visible,
@@ -6477,9 +6739,25 @@ impl<'a> SceneBatch<'a> {
         debug_assert_eq!(out.len(), SCENE_BATCH_HEADER_BYTES);
 
         for index in 0..self.stroke_width.len() {
-            out.extend_from_slice(&self.fill_rgba[index * 4..index * 4 + 4]);
-            out.extend_from_slice(&self.stroke_rgba[index * 4..index * 4 + 4]);
-            out.extend_from_slice(&self.stroke_width[index].to_le_bytes());
+            let filled = self
+                .marker_paths
+                .get(index)
+                .and_then(|value| value.as_ref())
+                .is_none_or(|path| path.filled);
+            let fill = &self.fill_rgba[index * 4..index * 4 + 4];
+            let stroke = if filled {
+                &self.stroke_rgba[index * 4..index * 4 + 4]
+            } else {
+                fill
+            };
+            let stroke_width = if filled {
+                self.stroke_width[index]
+            } else {
+                self.stroke_width[index].max(1.0)
+            };
+            out.extend_from_slice(fill);
+            out.extend_from_slice(stroke);
+            out.extend_from_slice(&stroke_width.to_le_bytes());
         }
         for arrow in &self.arrows {
             let rgba = straight_arrow_alpha(arrow.rgba, arrow.opacity).expect("validated arrow");
@@ -12711,6 +12989,100 @@ mod tests {
         let round_svg = SceneDocument::decode(&round_default).unwrap().to_svg();
         assert!(round_svg.contains("stroke-linecap=\"round\""));
         assert!(!round_svg.contains("stroke-linecap=\"butt\""));
+    }
+
+    #[test]
+    fn constant_marker_path_tessellates_after_pixel_mapping() {
+        let layout = PlotLayout::new(240.0, 160.0, 20.0, 20.0, 20.0, 20.0).unwrap();
+        let x_scale = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 20.0, 220.0, 1.0, false).unwrap();
+        let y_scale = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 140.0, 20.0, 1.0, false).unwrap();
+        let diamond = encode_xymp(&[StyleMarkerPath {
+            style_ref: 0,
+            path: AuthoredMarkerPath {
+                filled: true,
+                contours: vec![vec![(-0.5, 0.0), (0.0, 0.5), (0.5, 0.0), (0.0, -0.5)]],
+            },
+        }])
+        .unwrap();
+        let encoded = SceneBatch::new_with_decorations_colorbar(
+            layout,
+            1,
+            2,
+            x_scale,
+            y_scale,
+            SceneChromeStyle::default(),
+            SceneChromeText::default(),
+            None,
+            None,
+            Vec::new(),
+            &[SceneRecordKind::Scatter as u8],
+            &[11],
+            &[0],
+            &[51, 102, 153, 255],
+            &[0, 0, 0, 0],
+            &[0.0],
+            &[4.0],
+            &[0],
+            &[0.5],
+            &[0.5],
+            &[0.0],
+            &[0.0],
+        )
+        .unwrap()
+        .with_dashes(&diamond)
+        .unwrap()
+        .encode();
+        assert_eq!(&encoded[4..8], &31u32.to_le_bytes());
+        assert!(!encoded.windows(4).any(|window| window == b"XYMP"));
+        let svg = SceneDocument::decode(&encoded).unwrap().to_svg();
+        assert!(svg.contains("<path d=\"M "));
+        assert!(svg.contains(" Z\""));
+        assert!(svg.contains("stroke=\"none\""));
+
+        let plus = encode_xymp(&[StyleMarkerPath {
+            style_ref: 0,
+            path: AuthoredMarkerPath {
+                filled: false,
+                contours: vec![
+                    vec![(-0.5, 0.0), (0.5, 0.0)],
+                    vec![(0.0, -0.5), (0.0, 0.5)],
+                ],
+            },
+        }])
+        .unwrap();
+        let encoded_plus = SceneBatch::new_with_decorations_colorbar(
+            layout,
+            1,
+            2,
+            x_scale,
+            y_scale,
+            SceneChromeStyle::default(),
+            SceneChromeText::default(),
+            None,
+            None,
+            Vec::new(),
+            &[SceneRecordKind::Scatter as u8],
+            &[11],
+            &[0],
+            &[51, 102, 153, 255],
+            &[0, 0, 0, 0],
+            &[0.0],
+            &[4.0],
+            &[0],
+            &[0.5],
+            &[0.5],
+            &[0.0],
+            &[0.0],
+        )
+        .unwrap()
+        .with_dashes(&plus)
+        .unwrap()
+        .encode();
+        assert!(!encoded_plus.windows(4).any(|window| window == b"XYMP"));
+        let plus_svg = SceneDocument::decode(&encoded_plus).unwrap().to_svg();
+        assert_eq!(plus_svg.matches("<polyline ").count(), 2);
+        assert!(plus_svg.contains("stroke-width=\"1\""));
+        assert!(plus_svg.contains("fill=\"none\""));
     }
 
     #[test]

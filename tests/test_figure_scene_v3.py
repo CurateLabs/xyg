@@ -1261,6 +1261,64 @@ def test_python_scene_compiles_constant_linecap_polylines() -> None:
         marked.to_scene()
 
 
+_DIAMOND_MARKER_PATH = {
+    "contours": [[-0.5, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, -0.5]],
+    "filled": True,
+}
+_PLUS_MARKER_PATH = {
+    "contours": [[-0.5, 0.0, 0.5, 0.0], [0.0, -0.5, 0.0, 0.5]],
+    "filled": False,
+}
+
+
+def test_python_scene_compiles_constant_marker_paths() -> None:
+    figure = Figure(width=240, height=160)
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    figure.scatter(
+        [0.5, 1.5],
+        [0.5, 1.5],
+        color="#336699",
+        size=12,
+        _marker_path=_DIAMOND_MARKER_PATH,
+    )
+    scene = figure.to_scene()
+    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert b"XYMP" not in scene
+    svg = _native.scene_svg(scene)
+    assert '<path d="M ' in svg
+    assert ' Z"' in svg
+    assert figure.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(figure) is None
+
+    plus = Figure(width=240, height=160)
+    plus.axis_options["x"]["domain"] = (0.0, 2.0)
+    plus.axis_options["y"]["domain"] = (0.0, 2.0)
+    plus.scatter([1.0], [1.0], color="#336699", size=12, _marker_path=_PLUS_MARKER_PATH)
+    plus_svg = _native.scene_svg(plus.to_scene())
+    assert plus_svg.count("<polyline ") == 2
+    assert 'stroke-width="1"' in plus_svg
+    assert plus.to_svg() == plus_svg
+    assert _scene_v3.scene_export_support_reason(plus) is None
+
+    polar = Figure(width=400, height=400, coords="polar")
+    polar.axis_options["x"]["domain"] = (0.0, math.tau)
+    polar.axis_options["y"]["domain"] = (0.0, 1.0)
+    polar.scatter([0.0], [0.5], color="#336699", size=12, _marker_path=_DIAMOND_MARKER_PATH)
+    polar_svg = _native.scene_svg(polar.to_scene())
+    assert '<path d="M ' in polar_svg
+    assert polar.to_svg() == polar_svg
+    assert _scene_v3.scene_export_support_reason(polar) is None
+
+    glyph = Figure().scatter([1.0], [1.0], _marker_glyph="A")
+    with pytest.raises(UnsupportedSceneV3, match="authored markers"):
+        glyph.to_scene()
+    invalid = Figure().scatter([1.0], [1.0])
+    invalid.traces[-1].style["marker_path"] = "M0 0"
+    with pytest.raises(UnsupportedSceneV3, match="authored markers"):
+        invalid.to_scene()
+
+
 def _polyline_vertex_count(svg: str) -> int:
     counts = [len(points.split()) for points in re.findall(r"<polyline points=\"([^\"]+)\"", svg)]
     assert counts

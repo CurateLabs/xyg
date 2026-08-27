@@ -325,6 +325,7 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "role",
             "stroke",
             "stroke_width",
+            "marker_path",
         ],
         KIND_LINE => &["color", "opacity", "width", "step", "dash", "linecap", "curve"],
         KIND_BAR | KIND_COLUMN => &[

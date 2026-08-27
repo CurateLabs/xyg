@@ -13,6 +13,8 @@
 //! ABI 144 admits cartesian `error_band(curve="smooth")` on that same
 //! `BandFlatten` mapping; polar `curve="smooth"` line/area/error_band pack as
 //! identity chords (no `step_mode=4`).
+//! ABI 145 admits constant `marker_path` via an XYMP extras sidecar;
+//! tessellation is Scene-owned after pixel mapping (no new pack kind).
 
 use crate::scene::MAX_SCENE_MARKS;
 

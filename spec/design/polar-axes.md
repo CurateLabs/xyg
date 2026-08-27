@@ -459,6 +459,8 @@ matching polar errorbar) through Rust
 labels when hosts pass explicit XYPL v1. ABI 143 polar density-tier scatter
 tessellates occupied cells to PolyFill wedges. ABI 144 polar `curve="smooth"`
 line/area pack as identity chords (§5), not flattened Hermite polylines.
+ABI 145 tessellates constant polar `marker_path` contours in pixel space
+around each projected centre.
 Inverse-sample `<image>` blit stays on the
 compatibility exporters for polar heatmap because polar Image+XYPL stays forbidden.
 Transparent Cartesian axis/grid paint

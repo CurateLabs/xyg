@@ -185,6 +185,8 @@ crates/
                         #   ABI 144 cartesian error_band(curve="smooth") uses
                         #   BandFlatten=12; polar curve="smooth" is identity
                         #   chords (polar-axes.md §5).
+                        #   ABI 145 tessellates constant marker_path (XYMP
+                        #   extras) to PolyFill/Polyline after pixel mapping.
     scene_pack.rs       # compact Figure→Scene row packing (ABI 109): record
                         #   kinds, stable-id splitting, expansion modes,
                         #   ribbon/triangle doubling, heatmap lattice framing,
@@ -197,7 +199,8 @@ crates/
                         #   mean-color density XYHP kind 4 plus ABI 143 polar
                         #   DensityBlit occupied-cell Rect tessellation plus
                         #   ABI 144 cartesian error_band BandFlatten and polar
-                        #   identity-chord smooth.
+                        #   identity-chord smooth plus ABI 145 constant
+                        #   marker_path XYMP tessellation.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -719,5 +722,6 @@ landed; the remainder, in order:
    ABI 142 cartesian mean-color density XYHP kind 4 (`scene.rs`) ✅;
    ABI 143 polar density PolyFill tessellation (`scene.rs`) ✅;
    ABI 144 cartesian `error_band(curve="smooth")` `BandFlatten=12` plus polar
-   identity-chord `curve="smooth"` (`scene.rs` / host packers) ✅.
+   identity-chord `curve="smooth"` (`scene.rs` / host packers) ✅;
+   ABI 145 constant `marker_path` XYMP tessellation (`scene.rs`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

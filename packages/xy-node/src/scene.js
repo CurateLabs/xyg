@@ -1279,6 +1279,71 @@ function packXylc(linecaps) {
   return out;
 }
 
+function validateMarkerPath(value) {
+  if (value == null || typeof value !== "object" || Array.isArray(value)) return null;
+  const contours = value.contours;
+  if (!Array.isArray(contours) || contours.length < 1 || contours.length > 32) return null;
+  const result = [];
+  let totalVertices = 0;
+  for (const contour of contours) {
+    if (!Array.isArray(contour)) return null;
+    const values = contour.map(Number);
+    if (values.length < 4 || values.length % 2) return null;
+    if (values.some((item) => !Number.isFinite(item) || Math.abs(item) > 0.500001)) return null;
+    totalVertices += values.length / 2;
+    result.push(values);
+  }
+  if (totalVertices > 96) return null;
+  return { contours: result, filled: value.filled == null ? true : Boolean(value.filled) };
+}
+
+function packXymp(paths) {
+  const entries = paths.map((path, index) => [index, path]).filter(([, path]) => path);
+  if (!entries.length) return new Uint8Array();
+  const bodyLen = entries.reduce((sum, [, path]) => {
+    const nVertices = path.contours.reduce((count, contour) => count + contour.length / 2, 0);
+    return sum + 16 + path.contours.length * 8 + nVertices * 16;
+  }, 0);
+  const out = new Uint8Array(16 + bodyLen);
+  const view = new DataView(out.buffer);
+  out.set(encodeUtf8Magic("XYMP"), 0);
+  view.setUint32(4, 1, true);
+  view.setUint32(8, entries.length, true);
+  view.setUint32(12, 0, true);
+  let offset = 16;
+  for (const [styleRef, path] of entries) {
+    const nVertices = path.contours.reduce((count, contour) => count + contour.length / 2, 0);
+    view.setUint32(offset, styleRef, true);
+    view.setUint32(offset + 4, path.filled ? 1 : 0, true);
+    view.setUint32(offset + 8, path.contours.length, true);
+    view.setUint32(offset + 12, nVertices, true);
+    offset += 16;
+    for (const contour of path.contours) {
+      view.setUint32(offset, contour.length / 2, true);
+      view.setUint32(offset + 4, 0, true);
+      offset += 8;
+      for (let index = 0; index < contour.length; index += 1) {
+        view.setFloat64(offset, contour[index], true);
+        offset += 8;
+      }
+    }
+  }
+  return out;
+}
+
+function concatStyleSidecars(dashes, linecaps, markerPaths) {
+  const parts = [packXyds(dashes), packXylc(linecaps), packXymp(markerPaths)].filter((part) => part.length);
+  if (!parts.length) return new Uint8Array();
+  if (parts.length === 1) return parts[0];
+  const out = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
+  let offset = 0;
+  for (const part of parts) {
+    out.set(part, offset);
+    offset += part.length;
+  }
+  return out;
+}
+
 function packSceneExtras(polar, paint, dash = new Uint8Array()) {
   if (!polar.length && !paint.length && !dash.length) return new Uint8Array();
   if (polar.length && !paint.length && !dash.length) return polar;
@@ -1730,8 +1795,8 @@ export function sceneBatchEncode({
     : asUnsignedArray(polarInput, "polarInput", 255, Uint8Array);
   if (polar.length) {
     const magic = String.fromCharCode(...polar.subarray(0, 4));
-    if (!["XYPL", "XYHP", "XYEX", "XYDS", "XYLC"].includes(magic)) {
-      throw new RangeError("polarInput must be empty, XYPL, XYHP, XYEX, XYDS, or XYLC");
+    if (!["XYPL", "XYHP", "XYEX", "XYDS", "XYLC", "XYMP"].includes(magic)) {
+      throw new RangeError("polarInput must be empty, XYPL, XYHP, XYEX, XYDS, XYLC, or XYMP");
     }
     if (magic === "XYPL" && polar.length !== 92) {
       throw new RangeError("polarInput must be empty or a 92-byte XYPL v1 envelope");
@@ -1947,7 +2012,6 @@ const XYFS_TRACE_JOINED_FILL = 1 << 8;
 const XYFS_TRACE_CUSTOM_HEX_REDUCE = 1 << 9;
 const XYFS_TRACE_HEATMAP_COLORMAP = 1 << 10;
 const XYFS_TRACE_NON_CSS_FILL = 1 << 11;
-const XYFS_CURVE_MARKER_KEYS = ["marker_path", "marker_glyph"];
 const SCENE_DASH_PRESETS = {
   solid: null,
   dashed: [6, 4],
@@ -2879,7 +2943,16 @@ function figureTraceSupport(figure, trace) {
     || scatterHasDroppedPerItem(trace)
     || (scatterHasNonConstantColor(trace) && !scatterUsesDensity(trace))
   ) flags |= XYFS_TRACE_HIDDEN_OR_PER_ITEM;
-  if (XYFS_CURVE_MARKER_KEYS.some((key) => style[key] != null)) flags |= XYFS_TRACE_DASHED_MARKERS;
+  if (style.marker_glyph != null) flags |= XYFS_TRACE_DASHED_MARKERS;
+  if (style.marker_path != null) {
+    if (kind !== "scatter") flags |= XYFS_TRACE_DASHED_MARKERS;
+    else {
+      const validated = validateMarkerPath(style.marker_path);
+      if (validated == null || (validated.filled && validated.contours.some((contour) => contour.length < 6))) {
+        flags |= XYFS_TRACE_DASHED_MARKERS;
+      }
+    }
+  }
   if (style.smooth != null) flags |= XYFS_TRACE_DASHED_MARKERS;
   const curve = style.curve;
   if (curve != null) {
@@ -2923,7 +2996,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   try { encodedColorbar = colorbarInput(figure); } catch { colorbarUnsupported = Boolean(figure.colorbarOptions ?? figure.colorbar_options); }
   const reason = sceneFigureSupportReason(figure, { colorbarUnsupported });
   if (reason) throw new RangeError(reason);
-  const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], expansionModes = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [], dashes = [], linecaps = [], legendEntries = [], heatmapPaintPlanes = [];
+  const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], expansionModes = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [], dashes = [], linecaps = [], markerPaths = [], legendEntries = [], heatmapPaintPlanes = [];
   const xDomain = figure._range("x");
   const yDomain = figure._range("y");
   const sceneAxis = (axis, id, domain) => {
@@ -2957,6 +3030,14 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     dashes.push(parsedDash === false ? null : parsedDash);
     const parsedCap = parseSceneLinecap(style.linecap ?? style.lineCap);
     linecaps.push(parsedCap === false ? null : parsedCap);
+    let markerPath = null;
+    if (trace.kind === "scatter" && style.marker_path != null) {
+      markerPath = validateMarkerPath(style.marker_path);
+      if (markerPath && markerPath.filled && markerPath.contours.some((contour) => contour.length < 6)) {
+        markerPath = null;
+      }
+    }
+    markerPaths.push(markerPath);
     const styleRef = styles.length - 1;
     if (trace.name != null && String(trace.name).length > 0 && figure.showLegend !== false) {
       const legendKind = trace.kind === "scatter" ? 0 : STROKE_KINDS.has(trace.kind) ? 1 : 2;
@@ -3251,7 +3332,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   return sceneBatchEncode({ viewport: [figure.width, figure.height], margins: resolvedMargins,
     xAxis: xSceneAxis, yAxis: ySceneAxis,
     kinds, stableIds, styleRefs, styles, diameter, symbols, expansionModes, x0, y0, x1, y1,
-    title, xLabel, yLabel, chromeStyle: figureChromeStyle(figure), xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, xMinorTicks: (figure.xAxis ?? figure.x_axis)?.minorTickValues ?? (figure.xAxis ?? figure.x_axis)?.minor_tick_values ?? [], yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, yMinorTicks: (figure.yAxis ?? figure.y_axis)?.minorTickValues ?? (figure.yAxis ?? figure.y_axis)?.minor_tick_values ?? [], xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, xFormat: xSceneAxis.format, yFormat: ySceneAxis.format, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText, polarInput: packSceneExtras(packPolarSceneInput(figure), packXyhp(heatmapPaintPlanes), (() => { const dash = packXyds(dashes); const cap = packXylc(linecaps); if (!dash.length) return cap; if (!cap.length) return dash; const out = new Uint8Array(dash.length + cap.length); out.set(dash, 0); out.set(cap, dash.length); return out; })()),
+    title, xLabel, yLabel, chromeStyle: figureChromeStyle(figure), xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, xMinorTicks: (figure.xAxis ?? figure.x_axis)?.minorTickValues ?? (figure.xAxis ?? figure.x_axis)?.minor_tick_values ?? [], yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, yMinorTicks: (figure.yAxis ?? figure.y_axis)?.minorTickValues ?? (figure.yAxis ?? figure.y_axis)?.minor_tick_values ?? [], xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, xFormat: xSceneAxis.format, yFormat: ySceneAxis.format, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText, polarInput: packSceneExtras(packPolarSceneInput(figure), packXyhp(heatmapPaintPlanes), concatStyleSidecars(dashes, linecaps, markerPaths)),
   });
 }
 

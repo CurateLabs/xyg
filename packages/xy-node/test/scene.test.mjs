@@ -99,6 +99,51 @@ test("Node Scene v30 compiles constant dash polylines and keeps authored markers
   assert.throws(() => marked.toScene(), /authored markers/);
 });
 
+test("Node Scene compiles constant marker_path contours and keeps glyphs fail-closed", () => {
+  const diamond = { contours: [[-0.5, 0, 0, 0.5, 0.5, 0, 0, -0.5]], filled: true };
+  const plus = { contours: [[-0.5, 0, 0.5, 0], [0, -0.5, 0, 0.5]], filled: false };
+  const figure = new Figure({ width: 240, height: 160 });
+  figure.setAxisDomain("x", [0, 2]);
+  figure.setAxisDomain("y", [0, 2]);
+  figure.scatter([0.5, 1.5], [0.5, 1.5], {
+    _composed: true,
+    style: { color: "#336699", size: 12, marker_path: diamond },
+  });
+  const scene = figure.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  assert.ok(!Buffer.from(scene).includes(Buffer.from("XYMP")));
+  const svg = sceneSvg(scene);
+  assert.match(svg, /<path d="M /);
+  assert.match(svg, / Z"/);
+  assert.equal(sceneExportSupportReason(figure), null);
+  const stroke = new Figure({ width: 240, height: 160 });
+  stroke.setAxisDomain("x", [0, 2]);
+  stroke.setAxisDomain("y", [0, 2]);
+  stroke.scatter([1], [1], {
+    _composed: true,
+    style: { color: "#336699", size: 12, marker_path: plus },
+  });
+  const strokeSvg = sceneSvg(stroke.toScene());
+  assert.equal((strokeSvg.match(/<polyline /g) ?? []).length, 2);
+  assert.match(strokeSvg, /stroke-width="1"/);
+  assert.equal(sceneExportSupportReason(stroke), null);
+  const polar = new Figure({ width: 400, height: 400, coords: "polar" });
+  polar.setAxisDomain("x", [0, Math.PI * 2]);
+  polar.setAxisDomain("y", [0, 1]);
+  polar.scatter([0], [0.5], {
+    _composed: true,
+    style: { color: "#336699", size: 12, marker_path: diamond },
+  });
+  assert.match(sceneSvg(polar.toScene()), /<path d="M /);
+  assert.equal(sceneExportSupportReason(polar), null);
+  const glyph = new Figure();
+  glyph.scatter([1], [1], { _composed: true, style: { marker_glyph: "A" } });
+  assert.throws(() => glyph.toScene(), /authored markers/);
+  const invalid = new Figure();
+  invalid.scatter([1], [1], { _composed: true, style: { marker_path: "M0 0" } });
+  assert.throws(() => invalid.toScene(), /authored markers/);
+});
+
 test("Node Scene v30 compiles flattened smooth polylines and polar smooth as chords", () => {
   const figure = new Figure({ width: 240, height: 160 });
   figure.setAxisDomain("x", [0, 2]);

@@ -190,7 +190,9 @@ mean-color density as XYHP kind 4 on the existing `DensityBlit` Image blit.
 ABI 143 polar density tessellates occupied `DensityBlit` cells to PolyFill
 wedges. ABI 144 admits cartesian `error_band(curve="smooth")` on existing
 `BandFlatten=12` and polar `curve="smooth"` line/area/error_band as identity
-chords (polar-axes.md §5). Polar+step+smooth and authored markers stay
+chords (polar-axes.md §5). ABI 145 admits constant scatter `marker_path`
+via an XYMP extras sidecar tessellated after pixel mapping. Polar+step+smooth
+and authored marker glyphs stay
 compatibility. ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate

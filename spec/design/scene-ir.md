@@ -81,9 +81,12 @@ resolve to per-cell literal styles) when hosts pass an XYPL v1 envelope into
 `xyg_scene_batch_encode`. Polar density (ABI 143) tessellates occupied
 `DensityBlit` cells to PolyFill wedges through the same `polar_wedge_points`
 path as polar heatmap; Image+XYPL stays fail-closed. Labeled-annotation extras
-still reject with `XYG_SCENE_UNSUPPORTED_POLAR`. Authored arbitrary marker paths and
-font glyph markers stay on the existing Python compatibility path because they
-need separate bounded path/text records.
+still reject with `XYG_SCENE_UNSUPPORTED_POLAR`. ABI 145 admits constant
+validated `marker_path` contours: hosts pack XYMP on the extras dash slot and
+Rust tessellates each scatter centre to PolyFill (filled) or Polyline
+(stroke-only) after pixel mapping. Encoded Scene v31 is unchanged and does
+not keep XYMP. Font glyph markers (`marker_glyph`) stay on the compatibility
+path because they need custom-font/text records.
 
 ## Version 3: backend-neutral core scene batch
 
@@ -384,7 +387,10 @@ match Python on the public Scene route. ABI 144 admits cartesian
 allowlist includes `curve` for `KIND_ERROR_BAND`) and polar
 `curve="smooth"` line/area/error_band as identity chords (polar-axes.md §5;
 hosts must not pack `step_mode=4` under `coords="polar"`). Polar+step+smooth
-and authored markers stay on the compatibility exporters.
+and authored marker glyphs stay on the compatibility exporters. ABI 145 admits
+constant scatter `marker_path` via an XYMP extras sidecar; Rust tessellates
+centres to existing PolyFill/Polyline after pixel mapping (public allowlist
+includes `marker_path` for `KIND_SCATTER`; encoded Scene v31 is unchanged).
 
 ABI 110 adds `xyg_scene_pack_legend` so both hosts pass loc/flags/paints
 and receive XYLG bytes; header layout, text offsets, and bounded-text
@@ -1221,8 +1227,10 @@ admits cartesian mean-color density as XYHP kind 4 on the existing
 `DensityBlit` intern occupied cells as Rects that `with_polar` tessellates
 to PolyFill wedges (encoded Scene v31 is unchanged). ABI 144 admits cartesian
 `error_band(curve="smooth")` on existing `BandFlatten=12` and polar
-`curve="smooth"` as identity chords (encoded Scene v31 is unchanged). Polar+step+smooth
-and authored markers stay compatibility. ABI 116 does not change Scene records either;
+`curve="smooth"` as identity chords (encoded Scene v31 is unchanged). ABI 145
+admits constant scatter `marker_path` as XYMP extras tessellated to
+PolyFill/Polyline after pixel mapping (encoded Scene v31 is unchanged).
+Polar+step+smooth and authored marker glyphs stay compatibility. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;
 `xyg_scene_figure_support_reason` owns figure-compile support from packed

@@ -121,7 +121,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 144;
+pub const ABI_VERSION: u32 = 145;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1504,8 +1504,9 @@ fn decode_scene_authoring_input(bytes: &[u8]) -> Option<(Option<&str>, Option<&s
 /// Host view for `xyg_scene_batch_encode` extras input. Koffi's 64-parameter
 /// ceiling packs `data` + `len` as one pointer immediately before `out`.
 /// Bytes may be XYPL (polar), XYHP (painted heatmap or density blit), XYDS
-/// (constant dash), XYLC (constant linecap), XYDS+XYLC concat, or XYEX
-/// (v1 polar+paint, v2 polar+paint+dash/linecap).
+/// (constant dash), XYLC (constant linecap), XYMP (authored marker paths),
+/// XYDS+XYLC+XYMP concat, or XYEX (v1 polar+paint, v2 polar+paint+style
+/// sidecars).
 #[repr(C)]
 struct PolarAbiInput {
     data: *const u8,
@@ -1558,7 +1559,10 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// Image records plus XYPL stay fail-closed. ABI 144 admits cartesian
 /// `error_band(curve="smooth")` on existing `BandFlatten=12` and polar
 /// `curve="smooth"` line/area/error_band as identity chords (polar-axes.md §5);
-/// encoded Scene v31 is unchanged.
+/// encoded Scene v31 is unchanged. ABI 145 admits constant validated
+/// `marker_path` contours: hosts pack XYMP on the extras dash slot; Rust
+/// tessellates each scatter centre to PolyFill (filled) or Polyline
+/// (stroke-only) after pixel mapping. `marker_glyph` stays fail-closed.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety

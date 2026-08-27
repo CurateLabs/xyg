@@ -16,7 +16,7 @@ import numpy as np
 
 from . import _native, channels
 from .config import DENSITY_GRID
-from .marks import _SYMBOL_CODES
+from .marks import _SYMBOL_CODES, _validated_marker_path
 
 # Host mark kinds that lower to Scene Rect (kind 2). Geometry is already
 # x0/y0/x1/y1 columns on the Trace; Scene does not recompute bar stacking.
@@ -63,7 +63,6 @@ _XYFS_TRACE_JOINED_FILL = 1 << 8
 _XYFS_TRACE_CUSTOM_HEX_REDUCE = 1 << 9
 _XYFS_TRACE_HEATMAP_COLORMAP = 1 << 10
 _XYFS_TRACE_NON_CSS_FILL = 1 << 11
-_XYFS_CURVE_MARKER_KEYS = ("marker_path", "marker_glyph")
 _SCENE_DASH_PRESETS: dict[str, list[float] | None] = {
     "solid": None,
     "dashed": [6.0, 4.0],
@@ -924,8 +923,22 @@ def _figure_trace_support_flags(trace: Any) -> tuple[int, str]:
         trace.has_per_item_channels() and not _density_aggregates_color(trace)
     ):
         flags |= _XYFS_TRACE_HIDDEN_OR_PER_ITEM
-    if any(style.get(key) is not None for key in _XYFS_CURVE_MARKER_KEYS):
+    if style.get("marker_glyph") is not None:
         flags |= _XYFS_TRACE_DASHED_MARKERS
+    marker_path = style.get("marker_path")
+    if marker_path is not None:
+        if kind != "scatter":
+            flags |= _XYFS_TRACE_DASHED_MARKERS
+        else:
+            try:
+                validated = _validated_marker_path(marker_path)
+            except ValueError:
+                flags |= _XYFS_TRACE_DASHED_MARKERS
+            else:
+                if validated["filled"] and any(
+                    len(contour) < 6 for contour in validated["contours"]
+                ):
+                    flags |= _XYFS_TRACE_DASHED_MARKERS
     curve = style.get("curve")
     if curve is not None:
         curve_name = str(curve).strip().lower()
@@ -1299,8 +1312,26 @@ def _pack_xyds(dashes: list[list[float] | None]) -> bytes:
     return bytes(out)
 
 
+def _pack_xymp(paths: list[dict[str, Any] | None]) -> bytes:
+    """Pack constant authored marker paths keyed by host style_ref as XYMP v1."""
+    entries = [(index, path) for index, path in enumerate(paths) if path]
+    if not entries:
+        return b""
+    out = bytearray(struct.pack("<4sIII", b"XYMP", 1, len(entries), 0))
+    for style_ref, path in entries:
+        contours = path["contours"]
+        n_vertices = sum(len(contour) // 2 for contour in contours)
+        flags = 1 if path.get("filled", True) else 0
+        out.extend(struct.pack("<IIII", int(style_ref), flags, len(contours), int(n_vertices)))
+        for contour in contours:
+            values = [float(value) for value in contour]
+            out.extend(struct.pack("<II", len(values) // 2, 0))
+            out.extend(struct.pack(f"<{len(values)}d", *values))
+    return bytes(out)
+
+
 def _pack_scene_extras(polar: bytes, paint: bytes, dash: bytes = b"") -> bytes:
-    """Pack polar XYPL, XYHP paint, and/or XYDS/XYLC style sidecars."""
+    """Pack polar XYPL, XYHP paint, and/or XYDS/XYLC/XYMP style sidecars."""
     if not polar and not paint and not dash:
         return b""
     if polar and not paint and not dash:
@@ -1343,6 +1374,7 @@ def figure_scene(
     styles: list[tuple[tuple[int, ...], tuple[int, ...], float]] = []
     dashes: list[list[float] | None] = []
     linecaps: list[int | None] = []
+    marker_paths: list[dict[str, Any] | None] = []
     diameters: list[float] = []
     symbols: list[int] = []
     coordinates: list[list[float]] = [[], [], [], []]
@@ -1376,6 +1408,20 @@ def figure_scene(
         dashes.append(None if parsed_dash is False else parsed_dash)
         parsed_cap = _parse_scene_linecap(style.get("linecap"))
         linecaps.append(None if parsed_cap is False else parsed_cap)
+        marker_path = None
+        raw_marker_path = style.get("marker_path")
+        if trace.kind == "scatter" and raw_marker_path is not None:
+            try:
+                marker_path = _validated_marker_path(raw_marker_path)
+            except ValueError:
+                marker_path = None
+            if (
+                marker_path is not None
+                and marker_path["filled"]
+                and any(len(contour) < 6 for contour in marker_path["contours"])
+            ):
+                marker_path = None
+        marker_paths.append(marker_path)
         style_ref = len(styles) - 1
         diameter = (
             float(trace.size_ch.constant)
@@ -2133,7 +2179,7 @@ def figure_scene(
         polar_input=_pack_scene_extras(
             _pack_polar_scene_input(figure),
             _pack_xyhp(heatmap_paint_planes),
-            _pack_xyds(dashes) + _pack_xylc(linecaps),
+            _pack_xyds(dashes) + _pack_xylc(linecaps) + _pack_xymp(marker_paths),
         ),
     )
 
