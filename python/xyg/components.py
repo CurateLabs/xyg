@@ -2088,6 +2088,7 @@ def heatmap(
     y: Union[str, ArrayLike, None] = None,
     data: TableLike = None,
     name: Optional[str] = None,
+    color: Any = None,
     colormap: channels.ColormapLike = channels.DEFAULT_COLORMAP,
     domain: Optional[tuple[float, float]] = None,
     opacity: float = 0.95,
@@ -2104,6 +2105,7 @@ def heatmap(
         y: Optional y coordinates or a column name.
         data: Table used to resolve column-name inputs.
         name: Series label used by legends and tooltips.
+        color: Literal constant CSS paint. When omitted, cells use ``colormap``.
         colormap: Colormap used for cell values.
         domain: Explicit minimum and maximum for the color scale.
         opacity: Cell opacity from zero to one.
@@ -2122,6 +2124,7 @@ def heatmap(
         style=_mark_style_dict(style, "heatmap style"),
         props={
             "z": z,
+            "color": color,
             "colormap": colormap,
             "domain": domain,
             "opacity": opacity,
@@ -6159,6 +6162,7 @@ def _apply_heatmap(fig: Figure, m: Mark, data: Any) -> None:
         x=_resolve(data, m.x, context=f"{m.kind}.x") if m.x is not None else None,
         y=_resolve(data, m.y, context=f"{m.kind}.y") if m.y is not None else None,
         name=m.name,
+        color=m.props.get("color"),
         colormap=m.props["colormap"],
         domain=m.props["domain"],
         opacity=m.props["opacity"],

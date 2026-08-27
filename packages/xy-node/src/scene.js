@@ -406,6 +406,7 @@ const RIBBON_KINDS = new Set(["ribbon"]);
 const POLYFILL_KINDS = new Set(["triangle_mesh"]);
 const HEXBIN_KINDS = new Set(["hexbin"]);
 const HEXBIN_REDUCES = new Set(["count", "mean", "sum"]);
+const HEATMAP_KINDS = new Set(["heatmap"]);
 // Pointy-top hexagon ring as fractions of hex_dx/hex_dy. Same contract as
 // python/xyg/_svg.py HEX_RING and js/src/50_chartview.ts _buildHexbinMark.
 const HEXBIN_RING = [
@@ -420,7 +421,7 @@ const STROKE_KINDS = new Set(["line", "segments", "errorbar", "stem", "contour",
 const SUPPORTED_KINDS = new Set([
   "scatter", "line", "bar", "column", "histogram", "violin", "box",
   "segments", "errorbar", "stem", "contour", "box_whisker", "box_median",
-  "area", "error_band", "ribbon", "triangle_mesh", "hexbin",
+  "area", "error_band", "ribbon", "triangle_mesh", "hexbin", "heatmap",
 ]);
 
 /** Return Rust's stable diagnostic for authored Scene feature bits. */
@@ -609,6 +610,12 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       if (style[key] != null) throw new RangeError(`Scene v12 figure compilation does not yet support ${key}`);
     }
     if (RECT_KINDS.has(trace.kind)) rejectRectExtras(style, trace.kind);
+    if (HEATMAP_KINDS.has(trace.kind)) {
+      rejectRectExtras(style, trace.kind);
+      if (style.truecolor || style.colormap != null || trace.rgba_grid != null || trace.rgba != null) {
+        throw new RangeError("Scene v12 does not yet encode heatmap colormap");
+      }
+    }
     const opacity = Number(style.opacity ?? 1);
     if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) throw new RangeError("trace opacity must be in [0, 1]");
     const fillOpacity = BAND_KINDS.has(trace.kind) || RIBBON_KINDS.has(trace.kind) ? Number(style.fill_opacity ?? 1) : 1;
@@ -743,6 +750,57 @@ export function figureSceneV3(figure, { margins = null } = {}) {
           kinds.push(4); stableIds.push(stableId); styleRefs.push(styleRef);
           diameter.push(0); symbols.push(0);
           x0.push(cx + rx * dx); y0.push(cy + ry * dy); x1.push(0); y1.push(0);
+        }
+      }
+      continue;
+    }
+
+    if (HEATMAP_KINDS.has(trace.kind)) {
+      const shape = trace.grid_shape;
+      if (shape == null || shape.length !== 2) {
+        throw new RangeError("Scene v12 heatmap requires a rows x cols grid_shape");
+      }
+      const rows = Number(shape[0]);
+      const cols = Number(shape[1]);
+      if (!Number.isInteger(rows) || !Number.isInteger(cols) || rows < 1 || cols < 1) {
+        throw new RangeError("Scene v12 heatmap requires a positive grid_shape");
+      }
+      const grid = trace.grid;
+      if (grid == null) {
+        throw new RangeError("heatmap Scene v12 compilation requires a scalar grid");
+      }
+      if (grid.length !== rows * cols) {
+        throw new RangeError("Scene v12 heatmap grid must match rows x cols");
+      }
+      if (Array.from(grid).some((value) => !Number.isFinite(value))) {
+        throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
+      }
+      const xv = trace.x;
+      const yv = trace.y;
+      if (xv == null || yv == null || xv.length !== 2 || yv.length !== 2) {
+        throw new RangeError("Scene v12 heatmap range columns must be two endpoints");
+      }
+      const x0Extent = Number(xv[0]);
+      const x1Extent = Number(xv[1]);
+      const y0Extent = Number(yv[0]);
+      const y1Extent = Number(yv[1]);
+      if (
+        ![x0Extent, x1Extent, y0Extent, y1Extent].every(Number.isFinite)
+        || x0Extent >= x1Extent
+        || y0Extent >= y1Extent
+      ) {
+        throw new RangeError("Scene v12 heatmap requires a finite increasing cell extent");
+      }
+      const dx = (x1Extent - x0Extent) / cols;
+      const dy = (y1Extent - y0Extent) / rows;
+      for (let row = 0; row < rows; row += 1) {
+        for (let col = 0; col < cols; col += 1) {
+          kinds.push(2); stableIds.push(id); styleRefs.push(styleRef);
+          diameter.push(0); symbols.push(0);
+          x0.push(x0Extent + col * dx);
+          y0.push(y0Extent + row * dy);
+          x1.push(x0Extent + (col + 1) * dx);
+          y1.push(y0Extent + (row + 1) * dy);
         }
       }
       continue;

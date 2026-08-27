@@ -1243,6 +1243,9 @@ host after Rust resolves that domain and aspect. The compact wire result
 remains the centers-only hexbin trace. Constant-style Cartesian native
 lattices compile those centers plus cell pitch onto existing Scene PolyFill
 records; polar, custom reducers, colormaps, and LOD stay compatibility.
+Constant-style Cartesian heatmap compiles a regular rows x cols lattice onto
+existing Scene Rect records; polar, colormaps, truecolor, irregular
+spacing, and LOD stay compatibility.
 
 Contract-wide invariants: every tier transition is hysteresis-guarded and logged
 (no silent quality change); every aggregated visual states its aggregation in the

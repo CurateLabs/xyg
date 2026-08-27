@@ -236,6 +236,14 @@ Scene kind. Polar hexbin, custom `reduce_C_function`, metric colormaps, LOD
 over the 1,024-group painter budget, and rich style exceptions remain
 compatibility exporters.
 
+Constant-style Cartesian heatmap also expands a regular rows×cols lattice
+onto existing Scene v25 Rect records (one rectangle per cell) for public
+SVG/PNG/PDF. A literal ``color`` keeps constant paint so hosts do not add
+a Scene kind; omitted ``color`` keeps the metric colormap on the
+compatibility exporters. Polar heatmap, truecolor RGBA, irregular
+spacing, LOD over the 10,000-Rect histogram ceiling, and rich style
+exceptions remain compatibility exporters.
+
 **Coordinate space.** The two exporters expand in data space and then apply the
 axis scale. The WebGL client instead expands in the centers' *encoded* space:
 stored = `(value − offset) × scale`, so a data-space delta scales by the column's

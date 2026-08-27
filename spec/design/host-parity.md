@@ -103,7 +103,9 @@ polylines, ordinary area/error-band
 Bands, bar/column/histogram Rects, disconnected segment/error-bar/stem endpoint
 pairs with bounded stem markers, at most 1,024 fill-only unjoined constant-color
 triangle-mesh faces, constant-style Cartesian hexbin PolyFill cells (one
-6-vertex group per cell, sharing that 1,024-group painter budget), and finite
+6-vertex group per cell, sharing that 1,024-group painter budget), constant-style
+Cartesian heatmap Rects (one regular cell per Rect, sharing the 10,000-bin
+histogram ceiling), and finite
 literal solid ribbons. Each accepted mesh face
 is one three-vertex PolyFill group shared by SVG, raster, and browser consumers;
 joined fills, component alpha, outlines, per-face styles, alternate axes, and
@@ -162,7 +164,11 @@ Python and Node fixtures are byte-identical through SVG, raster, and
 browser consumers. Constant-style mean and sum share Scene bytes when they
 occupy the same lattice, because paint ignores the metric. Polar hexbin, custom `reduce_C_function`, metric
 colormaps, LOD beyond the 1,024-group painter budget, and rich style
-exceptions remain compatibility routes. Heatmap colormap Scene is later.
+exceptions remain compatibility routes. Constant-style Cartesian heatmap
+now compiles a regular rows x cols lattice onto existing Scene v25 Rect
+records. Polar heatmap, metric colormaps, truecolor RGBA, LOD beyond
+10,000 cells, and rich style exceptions remain compatibility routes.
+Heatmap colormap Scene is later.
 ABI 99 gives both composition hosts one compact grouped box ingress. Hosts pack
 the same f64 values/offsets/centers and literal options; Rust returns typed
 active-group IDs, fixed 25-f64 group records, monotone outlier offsets, and

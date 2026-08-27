@@ -224,7 +224,7 @@
       "python": "ready",
       "node": "partial",
       "rust": "ready",
-      "notes": "packages/xy-node marks/heatmap grid + xy_heatmap_rgba; categorical axes follow-up"
+      "notes": "packages/xy-node marks/heatmap grid + xy_heatmap_rgba; constant-style Cartesian Scene Rects; categorical axes follow-up"
     },
     {
       "kind": "hexbin",

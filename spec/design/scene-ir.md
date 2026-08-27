@@ -988,6 +988,15 @@ for ``try_public_svg`` / ``try_public_png`` / ``try_public_pdf``. Polar
 hexbin, custom reducers, metric colormaps, LOD, and rich style exceptions
 fail closed and keep the compatibility exporters. Scene 25 is unchanged.
 
+Constant-style Cartesian heatmap expands a regular rows×cols lattice onto
+existing Scene v25 Rect records (one rectangle per cell) for
+``try_public_svg`` / ``try_public_png`` / ``try_public_pdf``. Hosts
+reconstruct uniform cells from the stored range endpoints plus
+`grid_shape`; paint uses the literal style color. Polar heatmap, metric
+colormaps, truecolor RGBA, irregular spacing, LOD over the 10,000-Rect
+histogram ceiling, and rich style exceptions fail closed and keep the
+compatibility exporters. Scene 25 is unchanged.
+
 ABI 98 makes the composition violin a compact Rust-owned ingress without a
 Scene-version change. Hosts pack flat canonical f64 samples, monotone group
 offsets, centers, bins, positive finite width, and orientation. Rust filters
