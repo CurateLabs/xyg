@@ -1,0 +1,34 @@
+name: M2 assign milestone
+
+# Cloud Agent App tokens can merge PRs but lack issues:write (403).
+# Actions GITHUB_TOKEN assigns #271–#283 to Milestone 2, labels them,
+# rescopes #276, and closes permission-probe leftovers #267–#270.
+# Idempotent — safe to re-run. Does not close the milestone.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/m2-assign-milestone.yml"
+      - "scripts/m2_assign_milestone.sh"
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: m2-assign-milestone
+  cancel-in-progress: false
+
+jobs:
+  assign:
+    name: Assign M2 follow-ons / close probes
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Assign milestone, labels, rescope #276, close probes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: bash scripts/m2_assign_milestone.sh
