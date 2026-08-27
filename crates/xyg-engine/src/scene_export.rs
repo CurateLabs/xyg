@@ -377,6 +377,7 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "dash",
             "linecap",
             "curve",
+            "role",
         ],
         KIND_ERROR_BAND => &[
             "color",

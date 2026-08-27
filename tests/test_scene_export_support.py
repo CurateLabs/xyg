@@ -182,7 +182,7 @@ def _polar_density() -> Figure:
 
 def _smooth_error_band() -> Figure:
     figure = _supported().error_band([0, 1, 2], [1, 2, 1], [2, 3, 2], color="#22c55e")
-    figure.traces[0].style["curve"] = "smooth"
+    figure.traces[-1].style["curve"] = "smooth"
     return figure
 
 
