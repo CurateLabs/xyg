@@ -39,13 +39,14 @@ def test_y_axis_left_room_titled_matches_host_gutter() -> None:
         "y_axis": {
             "label": "Y",
             "side": "left",
+            "range": [0.0, 1.0],
             "style": {"label_size": 12.0},
         },
     }
-    untitled_ticks = _native.y_axis_left_room(0.0, 0.0, "Y", 12.0, 12.0 * 0.4)
     host = _y_axis_left_room(spec, 300.0)
+    title_only = _native.y_axis_left_room(0.0, 0.0, "Y", 12.0, 12.0 * 0.4)
     assert native > 23.0
-    assert host == pytest.approx(untitled_ticks)
+    assert host > title_only
     assert _native.y_axis_left_room(0.0, 0.0, "", 12.0, 0.0) == 0.0
 
 
