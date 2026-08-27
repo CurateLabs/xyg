@@ -2605,15 +2605,16 @@ def hexbin(
     """Add a screen-bounded hexagonal density plot.
 
     Binning is performed by the native ``xyg_hexbin`` kernel (count / mean /
-    sum). Custom ``reduce_C_function`` callables fall back to a host reduce
+    sum). Rust owns finite-pair filtering, automatic domain, and default grid
+    aspect. Custom ``reduce_C_function`` callables fall back to a host reduce
     over the same lattice. Only threshold-passing bins are shipped as centers
     plus one scalar count/color channel.
     """
     css = styles.compile_mark_style("hexbin", style)
     opacity = css.get("opacity", opacity)
     if isinstance(gridsize, (int, np.integer)) and not isinstance(gridsize, (bool, np.bool_)):
+        resolved_gridsize: int | tuple[int, int] = int(gridsize)
         w = int(gridsize)
-        h = max(2, int(w / np.sqrt(3.0)))
     elif isinstance(gridsize, (tuple, list)) and len(gridsize) == 2:
         if any(
             isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, np.integer))
@@ -2621,11 +2622,16 @@ def hexbin(
         ):
             raise ValueError("hexbin gridsize dimensions must be integers")
         w, h = int(gridsize[0]), int(gridsize[1])
+        resolved_gridsize = (w, h)
+        if h < 2:
+            raise ValueError("hexbin gridsize dimensions must be >= 2")
+        if h > 2048:
+            raise ValueError("hexbin gridsize dimensions must be <= 2048")
     else:
         raise ValueError("hexbin gridsize must be a positive integer or (width, height)")
-    if w < 2 or h < 2:
+    if w < 2:
         raise ValueError("hexbin gridsize dimensions must be >= 2")
-    if w > 2048 or h > 2048:
+    if w > 2048:
         raise ValueError("hexbin gridsize dimensions must be <= 2048")
     if bins not in {"count", "log"}:
         raise ValueError("hexbin bins must be 'count' or 'log'")
@@ -2646,30 +2652,23 @@ def hexbin(
         c_all, _c_kind, _c_copies = columns._canonicalize(C)
         if len(c_all) != len(x_all):
             raise ValueError("hexbin C must have the same length as x and y")
-    finite = np.isfinite(x_all) & np.isfinite(y_all)
-    if c_all is not None:
-        finite &= np.isfinite(c_all)
-    if not np.any(finite):
-        raise ValueError("hexbin x and y must contain at least one finite pair")
-    xv, yv = x_all[finite], y_all[finite]
-    cv = None if c_all is None else c_all[finite]
-    if range is None:
-        xr = self._auto_domain(kernels.min_max(xv))
-        yr = self._auto_domain(kernels.min_max(yv))
-    else:
+    authored_range = None
+    if range is not None:
         if len(range) != 2:
             raise ValueError("hexbin range must be ((x0, x1), (y0, y1))")
-        xr = self._finite_increasing_pair(range[0], "hexbin x range")
-        yr = self._finite_increasing_pair(range[1], "hexbin y range")
+        authored_range = (
+            self._finite_increasing_pair(range[0], "hexbin x range"),
+            self._finite_increasing_pair(range[1], "hexbin y range"),
+        )
     # Matplotlib displays zero-count cells when C is absent and mincnt is not
     # specified, producing the full rectangular honeycomb. Reducer hexbins
     # cannot reduce an empty group and therefore default to one observation.
-    threshold = (0 if cv is None else 1) if mincnt is None else int(mincnt)
+    threshold = (0 if c_all is None else 1) if mincnt is None else int(mincnt)
     if threshold < 0:
         raise ValueError("hexbin mincnt must be nonnegative")
 
     native_reduce: str | None
-    if cv is None:
+    if c_all is None:
         native_reduce = "count"
     elif reduce_C_function is np.mean or reduce_C_function is np.nanmean:
         native_reduce = "mean"
@@ -2679,18 +2678,37 @@ def hexbin(
         native_reduce = None
 
     if native_reduce is not None:
-        centers_x, centers_y, metric, counts, dx, dy = kernels.hexbin(
-            xv,
-            yv,
-            gridsize=(w, h),
-            range=(xr, yr),
-            mincnt=threshold,
-            C=cv,
-            reduce=native_reduce,
-        )
+        try:
+            centers_x, centers_y, metric, counts, dx, dy = kernels.hexbin(
+                x_all,
+                y_all,
+                gridsize=resolved_gridsize,
+                range=authored_range,
+                mincnt=threshold,
+                C=c_all,
+                reduce=native_reduce,
+            )
+        except ValueError as exc:
+            raise ValueError("hexbin x and y must contain at least one finite pair") from exc
         if len(counts) == 0:
             raise ValueError("hexbin range contains no finite points")
     else:
+        # Custom reducers: Rust owns domain/aspect; host still reduces groups.
+        try:
+            xr, yr, w, h = kernels.hexbin_ingress(
+                x_all,
+                y_all,
+                gridsize=resolved_gridsize,
+                range=authored_range,
+                C=c_all,
+            )
+        except ValueError as exc:
+            raise ValueError("hexbin x and y must contain at least one finite pair") from exc
+        # Custom reducers only run when C is present (native_reduce is None).
+        assert c_all is not None
+        finite = np.isfinite(x_all) & np.isfinite(y_all) & np.isfinite(c_all)
+        xv, yv = x_all[finite], y_all[finite]
+        cv = c_all[finite]
         # Custom reducers: same lattice assignment as ``xyg_hexbin``, host reduce.
         fx = (xv - xr[0]) * w / (xr[1] - xr[0])
         fy = (yv - yr[0]) * h / (yr[1] - yr[0])

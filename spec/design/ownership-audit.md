@@ -81,6 +81,16 @@ cumulative heights. The resulting bounded Histogram Rects already route public
 SVG/PNG/PDF and browser paint through the canonical Scene. Rust rejects
 automatic or authored results above 10,000 bins, and each thin binding uses one
 10,001-edge ABI scratch plane.
+ABI 102 moves composition-hexbin finite-pair filtering, automatic domain
+(including the shared 5% absolute-value widening for nonzero constants and a
+0.5 fallback at zero or for a non-useful pad), and the matplotlib
+`int(width / √3)` default grid height into `xyg_hexbin` /
+`xyg_hexbin_ingress`. Python and Node pack raw f64 columns, an optional
+authored rectangle, and either a scalar width or an explicit `(width, height)`;
+they no longer scan finite pairs, pad degenerate extents, or choose the
+default height (`Math.round` on Node was the host drift). Custom Python
+`reduce_C_function` paths still reduce groups on the host after Rust resolves
+the lattice. Public hexbin traces remain centers-only; Scene 25 is unchanged.
 ABI 99 likewise removes grouped composition-box statistics and geometry policy
 from both hosts. Python and Node pack canonical values, offsets, centers,
 orientation, width, visibility, and literal styles; Rust owns finite filtering,
@@ -463,7 +473,7 @@ Forbidden:
 | `packages/xy-node/src/marks/error_band.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/errorbar.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/heatmap.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
-| `packages/xy-node/src/marks/hexbin.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
+| `packages/xy-node/src/marks/hexbin.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust`; ABI 102 removed finite-pair/domain/aspect policy, remaining debt is trace assembly | #58 |
 | `packages/xy-node/src/marks/histogram.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/line.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/polar.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |

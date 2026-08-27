@@ -118,6 +118,7 @@ quantiles = _impl.quantiles
 box_stats = _impl.box_stats
 box_geometry = _impl.box_geometry
 hexbin = _impl.hexbin
+hexbin_ingress = _impl.hexbin_ingress
 violin_density = _impl.violin_density
 violin_rects = _impl.violin_rects
 histogram_edges = _impl.histogram_edges
@@ -156,6 +157,7 @@ __all__ = [
     "factorize_unicode1_u8_counts",
     "heatmap_rgba",
     "hexbin",
+    "hexbin_ingress",
     "histogram2d",
     "histogram_bins",
     "histogram_edges",

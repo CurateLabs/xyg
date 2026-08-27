@@ -1232,6 +1232,15 @@ Automatic or authored results above 10,000 bins, non-increasing edges, and
 density with zero in-range mass fail atomically. Public SVG/PNG/PDF and the
 browser painter already consume the resulting Histogram Rects.
 
+ABI 102 applies the same ownership rule to composition hexbin ingress. Hosts
+pass raw f64 x/y (and optional C) plus either a scalar grid width or an
+explicit pair. Rust filters finite pairs, pads a constant automatic domain
+(5% of absolute value, falling back to 0.5), selects matplotlib
+`int(width / √3)` when height is omitted, and assigns the existing
+count/mean/sum lattice. Custom Python reducers still reduce groups on the
+host after Rust resolves that domain and aspect. The compact result remains
+the centers-only hexbin trace.
+
 Contract-wide invariants: every tier transition is hysteresis-guarded and logged
 (no silent quality change); every aggregated visual states its aggregation in the
 hover UI; every derived artifact is reproducible from (canonical, viewport, params) —

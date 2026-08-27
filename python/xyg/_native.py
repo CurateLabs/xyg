@@ -6290,12 +6290,89 @@ HEX_REDUCE_MEAN = 1
 HEX_REDUCE_SUM = 2
 
 
+def _hexbin_grid_and_range(
+    gridsize: int | tuple[int, int],
+    range: tuple[tuple[float, float], tuple[float, float]] | None,
+) -> tuple[int, int, float, float, float, float, int]:
+    if isinstance(gridsize, (int, np.integer)) and not isinstance(gridsize, (bool, np.bool_)):
+        w, h = int(gridsize), 0
+    elif isinstance(gridsize, (tuple, list)) and len(gridsize) == 2:
+        w, h = int(gridsize[0]), int(gridsize[1])
+    else:
+        raise ValueError("hexbin gridsize must be a positive integer or (width, height)")
+    if w < 2 or w > 2048:
+        raise ValueError("hexbin gridsize dimensions must be in 2..=2048")
+    if h != 0 and (h < 2 or h > 2048):
+        raise ValueError("hexbin gridsize dimensions must be in 2..=2048")
+    if range is None:
+        return w, h, 0.0, 0.0, 0.0, 0.0, 0
+    try:
+        (raw_x0, raw_x1), (raw_y0, raw_y1) = range
+    except (TypeError, ValueError) as exc:
+        raise ValueError("hexbin range must be ((x0, x1), (y0, y1))") from exc
+    x0, x1 = _finite_increasing(raw_x0, raw_x1, "hexbin x range")
+    y0, y1 = _finite_increasing(raw_y0, raw_y1, "hexbin y range")
+    return w, h, x0, x1, y0, y1, 1
+
+
+def hexbin_ingress(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    *,
+    gridsize: int | tuple[int, int],
+    range: tuple[tuple[float, float], tuple[float, float]] | None = None,
+    C: npt.NDArray[np.float64] | None = None,
+) -> tuple[tuple[float, float], tuple[float, float], int, int]:
+    """Rust-owned hexbin finite-pair domain and default grid aspect."""
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("hexbin x and y must have equal length")
+    w, h, x0, x1, y0, y1, use_range = _hexbin_grid_and_range(gridsize, range)
+    c_arr = None if C is None else _as_f64(C, "C")
+    if c_arr is not None and len(c_arr) != len(x):
+        raise ValueError("hexbin C must have the same length as x and y")
+    out_x0 = ctypes.c_double()
+    out_x1 = ctypes.c_double()
+    out_y0 = ctypes.c_double()
+    out_y1 = ctypes.c_double()
+    out_w = ctypes.c_size_t()
+    out_h = ctypes.c_size_t()
+    ok = _lib.xyg_hexbin_ingress(
+        _ptr_f64(x),
+        _ptr_f64(y),
+        0 if c_arr is None else _ptr_f64(c_arr),
+        len(x),
+        w,
+        h,
+        x0,
+        x1,
+        y0,
+        y1,
+        use_range,
+        ctypes.byref(out_x0),
+        ctypes.byref(out_x1),
+        ctypes.byref(out_y0),
+        ctypes.byref(out_y1),
+        ctypes.byref(out_w),
+        ctypes.byref(out_h),
+    )
+    if not ok:
+        raise ValueError("hexbin x and y must contain at least one finite pair")
+    return (
+        (float(out_x0.value), float(out_x1.value)),
+        (float(out_y0.value), float(out_y1.value)),
+        int(out_w.value),
+        int(out_h.value),
+    )
+
+
 def hexbin(
     x: npt.NDArray[np.float64],
     y: npt.NDArray[np.float64],
     *,
-    gridsize: tuple[int, int],
-    range: tuple[tuple[float, float], tuple[float, float]],
+    gridsize: int | tuple[int, int],
+    range: tuple[tuple[float, float], tuple[float, float]] | None = None,
     mincnt: int = 0,
     C: npt.NDArray[np.float64] | None = None,
     reduce: str = "count",
@@ -6307,22 +6384,16 @@ def hexbin(
     float,
     float,
 ]:
-    """Hexagonal binning via ``xy_hexbin`` (count / mean / sum).
+    """Hexagonal binning via ``xyg_hexbin`` (count / mean / sum).
 
-    Returns ``(centers_x, centers_y, metrics, counts, dx, dy)``.
+    Rust owns finite-pair filtering, automatic domain, and default grid
+    aspect. Returns ``(centers_x, centers_y, metrics, counts, dx, dy)``.
     """
     x = _as_f64(x, "x")
     y = _as_f64(y, "y")
     if len(x) != len(y):
         raise ValueError("hexbin x and y must have equal length")
-    if len(gridsize) != 2:
-        raise ValueError("hexbin gridsize must be (width, height)")
-    w, h = int(gridsize[0]), int(gridsize[1])
-    if w < 2 or h < 2 or w > 2048 or h > 2048:
-        raise ValueError("hexbin gridsize dimensions must be in 2..=2048")
-    (x0, x1), (y0, y1) = range
-    x0, x1 = _finite_increasing(x0, x1, "hexbin x range")
-    y0, y1 = _finite_increasing(y0, y1, "hexbin y range")
+    w, h, x0, x1, y0, y1, use_range = _hexbin_grid_and_range(gridsize, range)
     if mincnt < 0:
         raise ValueError("hexbin mincnt must be nonnegative")
     reduce_key = str(reduce).strip().lower()
@@ -6339,7 +6410,9 @@ def hexbin(
         raise ValueError("hexbin C must have the same length as x and y")
     if reduce_code != HEX_REDUCE_COUNT and c_arr is None:
         raise ValueError("hexbin mean/sum reduce requires C")
-    capacity = (w + 1) * (h + 1) + w * h
+    # Auto height is at most ``w``; allocate the conservative square lattice.
+    h_cap = w if h == 0 else h
+    capacity = (w + 1) * (h_cap + 1) + w * h_cap
     out_cx = np.empty(capacity, dtype=np.float64)
     out_cy = np.empty(capacity, dtype=np.float64)
     out_metric = np.empty(capacity, dtype=np.float64)
@@ -6357,6 +6430,7 @@ def hexbin(
         x1,
         y0,
         y1,
+        use_range,
         int(mincnt),
         reduce_code,
         _ptr_f64(out_cx),
@@ -6368,7 +6442,7 @@ def hexbin(
         ctypes.byref(dy),
     )
     if written == _USIZE_MAX:
-        raise ValueError("invalid hexbin arguments")
+        raise ValueError("hexbin x and y must contain at least one finite pair")
     n = int(written)
     return (
         out_cx[:n].copy(),

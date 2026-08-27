@@ -36,14 +36,15 @@ def test_host_declarations_match_rust_symbol_set() -> None:
     assert errors == []
 
 
-def test_abi_version_is_101() -> None:
+def test_abi_version_is_102() -> None:
     manifest = gen_abi_manifest.generate_manifest()
-    assert manifest["abi_version"] == 101
+    assert manifest["abi_version"] == 102
     assert manifest["artifact"] == "xyg_core"
     assert all(item["name"].startswith("xyg_") for item in manifest["symbols"])
     assert any(item["name"] == "xyg_abi_version" for item in manifest["symbols"])
     names = {item["name"] for item in manifest["symbols"]}
     assert "xyg_histogram_bins" in names
+    assert "xyg_hexbin_ingress" in names
     assert "xyg_graph_force_create_cose" in names
     assert "xyg_graph_compound_transition" in names
     assert {

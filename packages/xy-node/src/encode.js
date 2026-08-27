@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -250,15 +250,88 @@ export function histogramEdges(data, { range = null, method = "auto" } = {}) {
 
 const HEX_REDUCE = Object.freeze({ count: 0, mean: 1, sum: 2 });
 
-/** Matplotlib-compatible hexbin; `reduce` is count|mean|sum. */
-export function hexbin(x, y, { gridsize, range, mincnt = 0, C = null, reduce = "count" } = {}) {
+function hexbinGridAndRange(gridsize, range) {
+  const [w, h] = Array.isArray(gridsize) ? gridsize : [gridsize, 0];
+  const width = Number(w);
+  const height = Number(h);
+  if (!Number.isInteger(width) || width < 2 || width > 2048) {
+    throw new RangeError("hexbin gridsize dimensions must be in 2..=2048");
+  }
+  if (height !== 0 && (!Number.isInteger(height) || height < 2 || height > 2048)) {
+    throw new RangeError("hexbin gridsize dimensions must be in 2..=2048");
+  }
+  if (range == null) {
+    return { w: width, h: height, x0: 0, x1: 0, y0: 0, y1: 0, useRange: 0 };
+  }
+  const x0 = Number(range[0][0]);
+  const x1 = Number(range[0][1]);
+  const y0 = Number(range[1][0]);
+  const y1 = Number(range[1][1]);
+  if (!(Number.isFinite(x0) && Number.isFinite(x1) && x1 > x0 && Number.isFinite(y0) && Number.isFinite(y1) && y1 > y0)) {
+    throw new RangeError("hexbin range must be a finite increasing rectangle");
+  }
+  return { w: width, h: height, x0, x1, y0, y1, useRange: 1 };
+}
+
+/** Rust-owned hexbin finite-pair domain and default grid aspect. */
+export function hexbinIngress(x, y, { gridsize, range = null, C = null } = {}) {
   const xa = asF64Array(x);
   const ya = asF64Array(y);
   if (xa.length !== ya.length) {
     throw new RangeError("hexbin x/y length mismatch");
   }
-  const [w, h] = Array.isArray(gridsize) ? gridsize : [gridsize, gridsize];
-  const [[x0, x1], [y0, y1]] = range;
+  const { w, h, x0, x1, y0, y1, useRange } = hexbinGridAndRange(gridsize, range);
+  const ca = C == null ? null : asF64Array(C);
+  if (ca != null && ca.length !== xa.length) {
+    throw new RangeError("hexbin C length mismatch");
+  }
+  const outX0 = new Float64Array(1);
+  const outX1 = new Float64Array(1);
+  const outY0 = new Float64Array(1);
+  const outY1 = new Float64Array(1);
+  const outW = new BigUint64Array(1);
+  const outH = new BigUint64Array(1);
+  const ok = Number(
+    xyHexbinIngress(
+      f64Ptr(xa),
+      f64Ptr(ya),
+      ca == null ? null : f64Ptr(ca),
+      BigInt(xa.length),
+      BigInt(w),
+      BigInt(h),
+      x0,
+      x1,
+      y0,
+      y1,
+      useRange,
+      f64Ptr(outX0),
+      f64Ptr(outX1),
+      f64Ptr(outY0),
+      f64Ptr(outY1),
+      pointer(outW, "size_t *"),
+      pointer(outH, "size_t *"),
+    ),
+  );
+  if (ok !== 1) {
+    throw new RangeError("hexbin x and y must contain at least one finite pair");
+  }
+  return {
+    range: [
+      [outX0[0], outX1[0]],
+      [outY0[0], outY1[0]],
+    ],
+    gridsize: [Number(outW[0]), Number(outH[0])],
+  };
+}
+
+/** Matplotlib-compatible hexbin; `reduce` is count|mean|sum. */
+export function hexbin(x, y, { gridsize, range = null, mincnt = 0, C = null, reduce = "count" } = {}) {
+  const xa = asF64Array(x);
+  const ya = asF64Array(y);
+  if (xa.length !== ya.length) {
+    throw new RangeError("hexbin x/y length mismatch");
+  }
+  const { w, h, x0, x1, y0, y1, useRange } = hexbinGridAndRange(gridsize, range);
   const reduceId = HEX_REDUCE[reduce];
   if (reduceId == null) {
     throw new Error("hexbin reduce must be count, mean, or sum");
@@ -267,7 +340,8 @@ export function hexbin(x, y, { gridsize, range, mincnt = 0, C = null, reduce = "
   if (ca != null && ca.length !== xa.length) {
     throw new RangeError("hexbin C length mismatch");
   }
-  const capacity = (w + 1) * (h + 1) + w * h;
+  const hCap = h === 0 ? w : h;
+  const capacity = (w + 1) * (hCap + 1) + w * hCap;
   const outCx = new Float64Array(capacity);
   const outCy = new Float64Array(capacity);
   const outMetric = new Float64Array(capacity);
@@ -282,10 +356,11 @@ export function hexbin(x, y, { gridsize, range, mincnt = 0, C = null, reduce = "
       BigInt(xa.length),
       BigInt(w),
       BigInt(h),
-      Number(x0),
-      Number(x1),
-      Number(y0),
-      Number(y1),
+      x0,
+      x1,
+      y0,
+      y1,
+      useRange,
       BigInt(mincnt),
       reduceId,
       f64Ptr(outCx),
@@ -298,7 +373,7 @@ export function hexbin(x, y, { gridsize, range, mincnt = 0, C = null, reduce = "
     ),
   );
   if (!Number.isFinite(written) || written < 0 || written > capacity) {
-    throw new Error("xy_hexbin failed");
+    throw new RangeError("hexbin x and y must contain at least one finite pair");
   }
   return {
     centersX: outCx.subarray(0, written),

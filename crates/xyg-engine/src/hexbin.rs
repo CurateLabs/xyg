@@ -2,7 +2,9 @@
 //!
 //! Two overlapping lattices — an integer grid and a half-cell offset grid —
 //! compete in the hex metric; each finite point joins the nearer center.
-//! Hosts assemble color/geometry from the occupied cells
+//! ABI 102 also owns the composition ingress: finite-pair filtering, automatic
+//! domain padding, and the default `int(width / √3)` grid height. Hosts assemble
+//! color/geometry from the occupied cells
 //! ([rust-engine.md](../spec/design/rust-engine.md)).
 
 /// Reduction applied to optional per-point `C` values inside each hex cell.
@@ -42,6 +44,163 @@ pub struct HexbinResult {
 /// Maximum grid dimension accepted by the ABI (matches the Python mark).
 pub const MAX_GRID: usize = 2048;
 
+/// Resolved lattice size and data domain after finite-pair ingress.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct HexbinIngress {
+    pub grid_w: usize,
+    pub grid_h: usize,
+    pub x0: f64,
+    pub x1: f64,
+    pub y0: f64,
+    pub y1: f64,
+}
+
+/// Matplotlib `int(nx / sqrt(3))`, floored at 2 so the lattice ABI stays valid.
+///
+/// Python previously used `int(w / √3)` while Node used `Math.round(w / √3)`.
+/// Truncation toward zero is the matplotlib / Python contract and is now the
+/// only host-visible default.
+pub fn default_grid_height(grid_w: usize) -> usize {
+    ((grid_w as f64 / 3.0_f64.sqrt()).trunc() as usize).max(2)
+}
+
+/// Shared automatic-domain pad (Python `Figure._auto_domain` / ABI 100 binned ECDF).
+///
+/// A constant nonzero span widens by 5% of its absolute value; zero or a
+/// non-useful pad falls back to plus/minus 0.5. Non-representable intervals
+/// return `None`.
+pub fn pad_auto_domain(lo: f64, hi: f64) -> Option<(f64, f64)> {
+    if lo == hi {
+        let mut pad = lo.abs() * 0.05;
+        let mut left = lo - pad;
+        let mut right = hi + pad;
+        if !(pad.is_finite() && pad > 0.0 && left < lo && right > hi) {
+            pad = 0.5;
+            left = lo - pad;
+            right = hi + pad;
+        }
+        if !(left.is_finite() && right.is_finite() && right > left && (right - left).is_finite()) {
+            return None;
+        }
+        Some((left, right))
+    } else if hi > lo && (hi - lo).is_finite() {
+        Some((lo, hi))
+    } else {
+        None
+    }
+}
+
+fn finite_increasing_range(lo: f64, hi: f64) -> bool {
+    lo.is_finite() && hi.is_finite() && hi > lo && (hi - lo).is_finite()
+}
+
+/// Scan finite pairs and resolve grid height plus data domain.
+///
+/// `grid_h = None` selects [`default_grid_height`]. `range = None` pads the
+/// finite x/y extents independently. A present `C` column also requires a
+/// finite `C` value to count as a pair, matching the previous host filter.
+/// Returns `None` when there is no finite pair or the arguments are invalid.
+pub fn hexbin_ingress(
+    x: &[f64],
+    y: &[f64],
+    c: Option<&[f64]>,
+    grid_w: usize,
+    grid_h: Option<usize>,
+    range: Option<((f64, f64), (f64, f64))>,
+) -> Option<HexbinIngress> {
+    if x.len() != y.len() {
+        return None;
+    }
+    if let Some(c) = c {
+        if c.len() != x.len() {
+            return None;
+        }
+    }
+    if !(2..=MAX_GRID).contains(&grid_w) {
+        return None;
+    }
+    let grid_h = grid_h.unwrap_or_else(|| default_grid_height(grid_w));
+    if !(2..=MAX_GRID).contains(&grid_h) {
+        return None;
+    }
+
+    let mut xmin = f64::INFINITY;
+    let mut xmax = f64::NEG_INFINITY;
+    let mut ymin = f64::INFINITY;
+    let mut ymax = f64::NEG_INFINITY;
+    let mut any = false;
+    for i in 0..x.len() {
+        let xv = x[i];
+        let yv = y[i];
+        if !xv.is_finite() || !yv.is_finite() {
+            continue;
+        }
+        if let Some(c) = c {
+            if !c[i].is_finite() {
+                continue;
+            }
+        }
+        any = true;
+        xmin = xmin.min(xv);
+        xmax = xmax.max(xv);
+        ymin = ymin.min(yv);
+        ymax = ymax.max(yv);
+    }
+    if !any {
+        return None;
+    }
+
+    let ((x0, x1), (y0, y1)) = if let Some(((x0, x1), (y0, y1))) = range {
+        if !(finite_increasing_range(x0, x1) && finite_increasing_range(y0, y1)) {
+            return None;
+        }
+        ((x0, x1), (y0, y1))
+    } else {
+        (pad_auto_domain(xmin, xmax)?, pad_auto_domain(ymin, ymax)?)
+    };
+
+    Some(HexbinIngress {
+        grid_w,
+        grid_h,
+        x0,
+        x1,
+        y0,
+        y1,
+    })
+}
+
+/// Composition hexbin: resolve ingress, then bin the raw columns.
+///
+/// `grid_h = None` and `range = None` select the Rust-owned defaults. Hosts
+/// pass unfiltered source columns; non-finite rows are ignored here and again
+/// during lattice assignment.
+#[allow(clippy::too_many_arguments)]
+pub fn hexbin_with_policy(
+    x: &[f64],
+    y: &[f64],
+    c: Option<&[f64]>,
+    grid_w: usize,
+    grid_h: Option<usize>,
+    range: Option<((f64, f64), (f64, f64))>,
+    mincnt: usize,
+    reduce: HexReduce,
+) -> Option<HexbinResult> {
+    let ingress = hexbin_ingress(x, y, c, grid_w, grid_h, range)?;
+    hexbin(
+        x,
+        y,
+        c,
+        ingress.grid_w,
+        ingress.grid_h,
+        ingress.x0,
+        ingress.x1,
+        ingress.y0,
+        ingress.y1,
+        mincnt,
+        reduce,
+    )
+}
+
 /// Bin `(x, y)` into a matplotlib-style hex lattice.
 ///
 /// `mincnt` keeps cells with `count >= mincnt`. When `C` is absent the metric
@@ -71,7 +230,7 @@ pub fn hexbin(
             return None;
         }
     }
-    if grid_w < 2 || grid_h < 2 || grid_w > MAX_GRID || grid_h > MAX_GRID {
+    if !(2..=MAX_GRID).contains(&grid_w) || !(2..=MAX_GRID).contains(&grid_h) {
         return None;
     }
     if !(x0.is_finite() && x1.is_finite() && y0.is_finite() && y1.is_finite() && x1 > x0 && y1 > y0)
@@ -401,5 +560,79 @@ mod tests {
         )
         .unwrap();
         assert!(r.centers_x.is_empty());
+    }
+
+    #[test]
+    fn default_grid_height_matches_matplotlib_truncation() {
+        assert_eq!(default_grid_height(2), 2);
+        assert_eq!(default_grid_height(5), 2);
+        assert_eq!(default_grid_height(16), 9);
+        assert_eq!(default_grid_height(64), 36);
+        assert_eq!(default_grid_height(100), 57);
+        // The former Node `Math.round(5 / √3)` produced 3; Rust keeps int().
+        assert_ne!(
+            default_grid_height(5),
+            ((5.0 / 3.0_f64.sqrt()).round() as usize).max(2)
+        );
+    }
+
+    #[test]
+    fn auto_domain_pads_constant_nonzero_by_five_percent() {
+        let (lo, hi) = pad_auto_domain(20.0, 20.0).unwrap();
+        assert!((lo - 19.0).abs() < 1e-12);
+        assert!((hi - 21.0).abs() < 1e-12);
+        let (zlo, zhi) = pad_auto_domain(0.0, 0.0).unwrap();
+        assert_eq!((zlo, zhi), (-0.5, 0.5));
+    }
+
+    #[test]
+    fn ingress_skips_nonfinite_pairs_and_c_then_resolves_auto_policy() {
+        let x = [f64::NAN, 10.0, f64::INFINITY, 10.0];
+        let y = [0.0, 4.0, 1.0, 4.0];
+        let c = [1.0, 2.0, 3.0, f64::NAN];
+        let ingress = hexbin_ingress(&x, &y, Some(&c), 16, None, None).unwrap();
+        assert_eq!(ingress.grid_w, 16);
+        assert_eq!(ingress.grid_h, 9);
+        assert!((ingress.x0 - 9.5).abs() < 1e-12);
+        assert!((ingress.x1 - 10.5).abs() < 1e-12);
+        assert!((ingress.y0 - 3.8).abs() < 1e-12);
+        assert!((ingress.y1 - 4.2).abs() < 1e-12);
+        assert!(hexbin_ingress(&[f64::NAN], &[1.0], None, 8, None, None).is_none());
+        assert!(hexbin_ingress(
+            &[1.0],
+            &[1.0],
+            None,
+            8,
+            None,
+            Some(((1.0, 1.0), (0.0, 1.0)))
+        )
+        .is_none());
+    }
+
+    #[test]
+    fn with_policy_auto_matches_explicit_resolved_ingress() {
+        let x = [0.0, 1.0, f64::NAN];
+        let y = [2.0, 3.0, 4.0];
+        let auto = hexbin_with_policy(&x, &y, None, 8, None, None, 1, HexReduce::Count).unwrap();
+        let ingress = hexbin_ingress(&x, &y, None, 8, None, None).unwrap();
+        let explicit = hexbin(
+            &x,
+            &y,
+            None,
+            ingress.grid_w,
+            ingress.grid_h,
+            ingress.x0,
+            ingress.x1,
+            ingress.y0,
+            ingress.y1,
+            1,
+            HexReduce::Count,
+        )
+        .unwrap();
+        assert_eq!(auto.centers_x, explicit.centers_x);
+        assert_eq!(auto.centers_y, explicit.centers_y);
+        assert_eq!(auto.counts, explicit.counts);
+        assert_eq!(auto.dx, explicit.dx);
+        assert_eq!(auto.dy, explicit.dy);
     }
 }
