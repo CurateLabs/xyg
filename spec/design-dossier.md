@@ -568,9 +568,9 @@ F3, still pending (above).
   fully hidden Cartesian chrome is omitted by Rust lowering without changing
   coordinate semantics—polar Scene projection is explicit XYPL v1 input, never
   an inference from transparent paint. Scene v26 compiles polar line, scatter,
-  area, bar/column (PolyFill annular sectors), and errorbar; polar heatmap
-  and contour remain explicit unsupported
-  boundaries.
+  area, bar/column (PolyFill annular sectors), errorbar, and heatmap
+  (tessellated lattice cells); polar contour remains an explicit unsupported
+  boundary.
   Rust owns the
   selected endpoint-pair order, clipping, SVG, PDF, and raster output;
   nonfinite/missing breaks, custom styles, and every other segment-like mark
@@ -1373,9 +1373,11 @@ ABI 131 moves static polar (theta, r) → screen-pixel projection into Rust.
 Hosts call `xyg_polar_layout`, `xyg_polar_project`, and the polar visibility-mask
 helpers; wedge/ring/polygon helpers remain host-side and call native projection.
 ChartView GLSL `xyPolarPos` is unchanged until WASM (#277). Scene v26 / ABI 133
-compiles polar line, scatter, area, bar/column, and errorbar through XYPL v1 into `xyg_scene_batch_encode`;
-polar heatmap, contour, and density stay rejected with
-`XYG_SCENE_UNSUPPORTED_POLAR`.
+compiles polar line, scatter, area, bar/column, errorbar, and heatmap through XYPL v1 into `xyg_scene_batch_encode`;
+polar contour and density stay rejected with
+`XYG_SCENE_UNSUPPORTED_POLAR`. Polar heatmap tessellates lattice Rects to
+PolyFill wedges (scalar colormaps become per-cell literal styles); inverse-sample
+`<image>` blit stays on the compatibility exporters because Scene has no image record.
 ABI 132 moves first-paint density scatter emit policy into Rust. Hosts call
 `xyg_density_emit_meta`, `xyg_density_grid_path`, `xyg_density_format_binning`,
 `xyg_density_pyramid_preflight`, and `xyg_density_wasm_eligible`; kernel
@@ -1387,9 +1389,10 @@ interpolation (matching `_svg._lut`) is engine-owned and distinct from
 `xyg_heatmap_rgba`'s `((value * 255 - 1) / 254)` remap. Hosts still
 resolve colormap stop tables, CSS paint colors, truecolor RGBA buffers,
 and polar inverse-raster sampling (#283).
-ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar: hosts pack XYPL v1
+ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
-rim tick-label placement. Cartesian Scene bytes change only the version u32.
+rim tick-label placement. Polar heatmap uses the same Rect tessellation (per-cell
+literal styles for scalar colormaps). Cartesian Scene bytes change only the version u32.
 ABI 110 moves primary Scene legend framing into Rust. Hosts pass loc/flags,
 font sizes, paints, title, and per-entry meta plus labels; XYLG header
 layout, text offsets, and bounded-text rejection are engine-owned and
@@ -1414,7 +1417,8 @@ ABI 115 moves filter-0 PNG encode into Rust. Hosts pass packed RGB/RGBA8
 pixels plus mode/compression; indexed-palette selection, `tRNS`, and zlib
 IDAT are engine-owned and identical for Python and Node.
 Constant-style Cartesian heatmap compiles a regular rows x cols lattice onto
-existing Scene Rect records; polar, colormaps, truecolor, irregular
+existing Scene Rect records; polar Scene tessellates those Rects to PolyFill
+annular sectors. Cartesian colormaps, truecolor, irregular
 spacing, and LOD stay compatibility.
 
 Contract-wide invariants: every tier transition is hysteresis-guarded and logged

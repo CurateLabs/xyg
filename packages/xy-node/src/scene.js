@@ -2035,7 +2035,11 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
     if (style.joined_fill || style.joinedFill) flagsTr |= 1 << 10;
     let heatmapRows = 0, heatmapCols = 0, heatmapValues = 0;
     if (trace.kind === "heatmap") {
-      if (style.truecolor || style.colormap != null || trace.rgba_grid != null || trace.rgba != null) flagsTr |= 1 << 11;
+      if (style.truecolor || style.colormap != null || trace.rgba_grid != null || trace.rgba != null) {
+        if (!((figure.coords ?? "cartesian") === "polar" && polarHeatmapTessellatesColormap(trace))) {
+          flagsTr |= 1 << 11;
+        }
+      }
       const shape = trace.grid_shape ?? trace.gridShape;
       const grid = exportColumn(trace, "grid");
       const hx = xv, hy = yv;
@@ -2483,9 +2487,49 @@ function figureTraceSupport(figure, trace) {
   if (
     HEATMAP_KINDS.has(kind)
     && (style.truecolor || style.colormap != null || trace.rgba_grid != null || trace.rgba != null)
+    && !((figure.coords ?? "cartesian") === "polar" && polarHeatmapTessellatesColormap(trace))
   ) flags |= XYFS_TRACE_HEATMAP_COLORMAP;
   if (Object.hasOwn(style, "fill") && typeof style.fill !== "string") flags |= XYFS_TRACE_NON_CSS_FILL;
   return { flags, kind };
+}
+
+function polarHeatmapTessellatesColormap(trace) {
+  const style = trace.style ?? {};
+  if (style.truecolor || trace.rgba_grid != null) return false;
+  return trace.rgba != null;
+}
+
+function heatmapLatticeRectangles(rows, cols, x0, x1, y0, y1) {
+  const dx = (x1 - x0) / cols;
+  const dy = (y1 - y0) / rows;
+  const cellX0 = new Float64Array(rows * cols);
+  const cellY0 = new Float64Array(rows * cols);
+  const cellX1 = new Float64Array(rows * cols);
+  const cellY1 = new Float64Array(rows * cols);
+  let index = 0;
+  for (let row = 0; row < rows; row += 1) {
+    for (let col = 0; col < cols; col += 1) {
+      cellX0[index] = x0 + col * dx;
+      cellY0[index] = y0 + row * dy;
+      cellX1[index] = cellX0[index] + dx;
+      cellY1[index] = cellY0[index] + dy;
+      index += 1;
+    }
+  }
+  return [cellX0, cellY0, cellX1, cellY1];
+}
+
+function polarHeatmapCellFills(trace, rows, cols) {
+  const packed = trace.rgba;
+  if (packed == null) return null;
+  const bytes = packed instanceof Uint8Array ? packed : Uint8Array.from(packed);
+  if (bytes.length !== rows * cols * 4) return null;
+  const out = new Uint8Array(bytes.length);
+  for (let row = 0; row < rows; row += 1) {
+    const src = (rows - 1 - row) * cols * 4;
+    out.set(bytes.subarray(src, src + cols * 4), row * cols * 4);
+  }
+  return out;
 }
 
 function requireEqualColumns(columns, kind, label) {
@@ -2630,6 +2674,43 @@ export function figureSceneV3(figure, { margins = null } = {}) {
         || y0Extent >= y1Extent
       ) {
         throw new RangeError("Scene v12 heatmap requires a finite increasing cell extent");
+      }
+      if (
+        (figure.coords ?? "cartesian") === "polar"
+        && polarHeatmapTessellatesColormap(trace)
+      ) {
+        const fills = polarHeatmapCellFills(trace, rows, cols);
+        if (fills == null) {
+          throw new RangeError("Scene v12 does not yet encode heatmap colormap");
+        }
+        const [cellX0, cellY0, cellX1, cellY1] = heatmapLatticeRectangles(
+          rows, cols, x0Extent, x1Extent, y0Extent, y1Extent,
+        );
+        const intern = new Map();
+        const cellRefs = [];
+        const base = styles[styleRef];
+        for (let index = 0; index < rows * cols; index += 1) {
+          const fill = Array.from(fills.subarray(index * 4, index * 4 + 4));
+          const key = fill.join(",");
+          let ref = intern.get(key);
+          if (ref == null) {
+            styles.push({
+              fillRgba: fill,
+              strokeRgba: base.strokeRgba,
+              strokeWidth: base.strokeWidth,
+            });
+            ref = styles.length - 1;
+            intern.set(key, ref);
+          }
+          cellRefs.push(ref);
+        }
+        const start = styleRefs.length;
+        appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packTrace({
+          packKind: 2, styleRef, traceId: id,
+          columns: [cellX0, cellY0, cellX1, cellY1],
+        }));
+        for (let index = 0; index < cellRefs.length; index += 1) styleRefs[start + index] = cellRefs[index];
+        continue;
       }
       appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packTrace({
         packKind: 7, styleRef, traceId: id, extra0: rows, extra1: cols,

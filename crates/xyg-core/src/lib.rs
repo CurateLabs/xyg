@@ -1361,8 +1361,9 @@ unsafe fn polar_abi_bytes<'a>(view: *const u8) -> Option<&'a [u8]> {
 /// null when the corresponding length is zero. `authored_text_annotations` may
 /// carry the ABI 96 `XYAF` envelope for bounded primary-axis numeric formats;
 /// ABI 133 packs polar authoring as one `polar_input` pointer so the function
-/// stays at Koffi's 64-parameter ceiling. Returns required bytes or `usize::MAX`
-/// on error.
+/// stays at Koffi's 64-parameter ceiling. Polar `HeatmapLattice` inputs expand
+/// in data space, then tessellate to PolyFill wedges. Returns required bytes
+/// or `usize::MAX` on error.
 ///
 /// # Safety
 /// Every record input array must address `len` readable elements. The chrome
@@ -1649,13 +1650,10 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             std::slice::from_raw_parts(expansion_modes, len)
         };
         let polar_bytes = unsafe { polar_abi_bytes(polar_input) }?;
-        if !polar_bytes.is_empty()
-            && expansion_modes
-                .iter()
-                .any(|&mode| mode == scene::SceneExpansionMode::HeatmapLattice as u8)
-        {
-            return None;
-        }
+        // Polar HeatmapLattice stays compact through this ABI: expansion is
+        // data-space (rows×cols Rect cells), then `with_polar` tessellates
+        // those cells to PolyFill annular sectors. Rejecting the lattice here
+        // would force hosts to pre-expand constant-style polar heatmaps.
         let records = scene::expand_scene_records(
             scene::SceneExpansionInput {
                 kinds,

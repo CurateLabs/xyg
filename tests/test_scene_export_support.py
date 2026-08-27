@@ -166,9 +166,15 @@ def _polar() -> Figure:
     return figure
 
 
-def _polar_heatmap() -> Figure:
+def _polar_contour() -> Figure:
     figure = Figure(width=320, height=240, coords="polar")
-    figure.heatmap([[1.0, 2.0], [3.0, 4.0]])
+    figure.contour([[1.0, 2.0], [3.0, 4.0]], levels=2, color="#3987e5")
+    return figure
+
+
+def _polar_density() -> Figure:
+    figure = Figure(width=320, height=240, coords="polar")
+    figure.scatter([0.0, 1.0], [0.5, 0.8], density=True, color="#3987e5")
     return figure
 
 
@@ -424,7 +430,8 @@ def _public_disconnected_segments() -> Figure:
 # Each factory builds a figure that `figure_scene` rejects; the substring is the
 # stable diagnostic token the predicate must surface for the router to log.
 UNSUPPORTED: dict[str, tuple[Callable[[], Figure], str]] = {
-    "polar_heatmap": (_polar_heatmap, "XYG_SCENE_UNSUPPORTED_POLAR"),
+    "polar_contour": (_polar_contour, "XYG_SCENE_UNSUPPORTED_POLAR"),
+    "polar_density": (_polar_density, "density"),
     "custom_font": (_custom_font, "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT"),
     "browser_css": (_browser_css, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS"),
     "colorbar": (_colorbar, "XYG_SCENE_UNSUPPORTED_COLORBAR"),
@@ -446,6 +453,26 @@ def test_polar_scatter_is_scene_supported() -> None:
     exported = public_static_export(figure, "svg")
     assert exported is not None
     assert exported.startswith(b"<svg") or b"<svg" in exported
+
+
+def test_polar_heatmap_is_scene_supported() -> None:
+    figure = Figure(width=320, height=240, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    figure.heatmap([[1.0, 2.0], [3.0, 4.0]])
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"<path" in exported
+    assert b"<rect x=" not in exported
+    constant = Figure(width=320, height=240, coords="polar")
+    constant.axis_options["x"]["domain"] = (0.0, 2.0)
+    constant.axis_options["y"]["domain"] = (0.0, 2.0)
+    constant.heatmap([[1.0, 2.0], [3.0, 4.0]], color="#3987e5")
+    assert scene_export_support_reason(constant) is None
+    constant_svg = public_static_export(constant, "svg")
+    assert constant_svg is not None
+    assert b"<path" in constant_svg
 
 
 def test_polar_bar_is_scene_supported() -> None:
@@ -981,13 +1008,12 @@ def test_colormap_heatmap_stays_on_compatibility() -> None:
 @pytest.mark.parametrize(
     "mutate",
     [
-        lambda figure: setattr(figure, "coords", "polar"),
         lambda figure: setattr(figure.traces[0], "x_axis", "x2"),
         lambda figure: figure.traces[0].style.__setitem__("colormap", "viridis"),
         lambda figure: figure.traces[0].grid.values.__setitem__(0, np.nan),
     ],
 )
-def test_public_heatmap_compiler_rejects_polar_colormap_and_nonfinite(
+def test_public_heatmap_compiler_rejects_cartesian_colormap_and_nonfinite(
     mutate: Callable[[Figure], None],
 ) -> None:
     figure = _public_heatmap()
@@ -1076,7 +1102,7 @@ def test_generated_stem_markers_route_every_builtin_symbol(symbol: str) -> None:
         lambda figure: figure.scatter([2.5, 3.5], [2.5, 3.5], color=[0.0, 1.0]),
         lambda figure: (
             setattr(figure, "coords", "polar"),
-            figure.heatmap([[1.0, 2.0], [3.0, 4.0]]),
+            figure.contour([[1.0, 2.0], [3.0, 4.0]], levels=2, color="#3987e5"),
         ),
         lambda figure: figure.scatter(range(10_001), range(10_001)),
     ],

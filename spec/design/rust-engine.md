@@ -238,7 +238,7 @@ crates/
     density_emit.rs     # first-paint density scatter emit policy (ABI 132) ✅
     polar.rs            # (theta, r) -> screen-pixel projection (ABI 131)
                         #   + XYPL v1 polar Scene compile (ABI 133 / Scene v26)
-                        #     line/scatter/area/bar/column/errorbar
+                        #     line/scatter/area/bar/column/errorbar/heatmap
                         #   + pyplot tight-layout solve (ABI 127) ✅
     textblock.rs        # newline-delimited chrome measure (ABI 125) ✅
     geom.rs             # ribbon/curve/rounded-rect tessellation (ABI 121) ✅

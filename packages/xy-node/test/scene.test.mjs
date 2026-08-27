@@ -39,7 +39,14 @@ test("Node projects Rust-owned Scene support decisions verbatim", () => {
   const polarSvg = sceneSvg(polarScene);
   assert.ok(polarSvg.includes('data-xy-grid="ring"') || polarSvg.includes("<circle"));
   const polarBar = new Figure({ coords: "polar" }); polarBar.bar([0, 1], [0.5, 0.8]);
-  assert.throws(() => polarBar.toScene(), /XYG_SCENE_UNSUPPORTED_POLAR/);
+  const polarBarScene = polarBar.toScene();
+  assert.equal(new DataView(polarBarScene.buffer, polarBarScene.byteOffset).getUint32(4, true), 26);
+  const polarHeat = new Figure({ coords: "polar" }); polarHeat.heatmap([[1, 2], [3, 4]]);
+  const polarHeatScene = polarHeat.toScene();
+  assert.ok(sceneSvg(polarHeatScene).includes("<path"));
+  const polarContour = new Figure({ coords: "polar" });
+  polarContour.contour([[1, 2], [3, 4]], { levels: 2, color: "#3987e5" });
+  assert.throws(() => polarContour.toScene(), /XYG_SCENE_UNSUPPORTED_POLAR/);
   const customFont = new Figure(); customFont.line([0, 1], [0, 1]);
   customFont.chromeStyles = { title: { fontFamily: "Example Sans" } };
   assert.throws(() => customFont.toScene(), /XYG_SCENE_UNSUPPORTED_CUSTOM_FONT/);

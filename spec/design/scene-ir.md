@@ -72,10 +72,11 @@ public validation text, channel-to-RGBA resolution, and plot layout until
 those policies move in later slices. Polar (theta, r) → screen-pixel projection
 is Rust-owned (ABI 131). Scene v26 / ABI 133 compiles polar `line`, `scatter`,
 `area` (including step-line as line), `bar`/`column` (annular-sector PolyFill
-via `polar_wedge_points`), and `errorbar` (projected polylines) when hosts
-pass an XYPL v1 envelope into `xyg_scene_batch_encode`. Polar heatmap, contour,
-density, and labeled-annotation extras still
-reject with `XYG_SCENE_UNSUPPORTED_POLAR`. Authored arbitrary marker paths and
+via `polar_wedge_points`), `errorbar` (projected polylines), and `heatmap`
+(lattice Rects tessellated to the same PolyFill wedges; scalar colormaps
+resolve to per-cell literal styles) when hosts pass an XYPL v1 envelope into
+`xyg_scene_batch_encode`. Polar contour, density, and labeled-annotation extras
+still reject with `XYG_SCENE_UNSUPPORTED_POLAR`. Authored arbitrary marker paths and
 font glyph markers stay on the existing Python compatibility path because they
 need separate bounded path/text records.
 
@@ -474,8 +475,8 @@ lowering while retaining backgrounds, marks, titles, and legends. Paint alpha
 is never a coordinate-system discriminator: a Cartesian Scene with hidden
 chrome remains Cartesian. Polar projection and polar chrome require explicit
 XYPL v1 input on `xyg_scene_batch_encode`; Scene v26 compiles polar
-line/scatter/area/bar/column/errorbar plus rings, spokes, disc/sector clip, and rim tick labels.
-Polar heatmap/contour stay rejected with
+line/scatter/area/bar/column/errorbar/heatmap plus rings, spokes, disc/sector clip, and rim tick labels.
+Polar contour stays rejected with
 `XYG_SCENE_UNSUPPORTED_POLAR`.
 
 Python and Node mechanically pack the same 200-byte block and tick arrays;
@@ -756,7 +757,8 @@ and `fill_betweenx` remain outside this increment. Ribbon expansion is a
 separate ABI 97 ingress mode and does not alter the v25 outline-topology
 contract. Scene v26 later admits polar area (Band) by projecting both
 `(theta, r)` samples independently; polar bar/column Rects tessellate to
-PolyFill annular sectors in the same version. Polar heatmap/contour stay rejected.
+PolyFill annular sectors in the same version. Polar heatmap tessellates
+the same way; polar contour stays rejected.
 
 ## Version 26 polar Scene compile (ABI 133)
 
@@ -816,13 +818,17 @@ uses polygon rings through angular ticks. Tick labels use
 or `xyg_tick_format`.
 
 Eligible polar kinds: `line` (including step-line), `scatter`, `area`,
-`bar`, `column`, and `errorbar`. Polar `bar`/`column` host-pack the same
+`bar`, `column`, `errorbar`, and `heatmap`. Polar `bar`/`column` host-pack the same
 `(x0,y0,x1,y1)` Rect columns as Cartesian bars; Rust tessellates
 `(theta0,r0,theta1,r1)` into a PolyFill vertex run via `polar_wedge_points`
 (span-proportional `polar_bar_segments`, gap=0/corner=0). Polar `errorbar`
 uses existing SegmentPair polylines through `polar_project` (chords, matching
-§5). `XYG_SCENE_UNSUPPORTED_POLAR` remains for polar heatmap, contour,
-density, and other kinds. Hidden Cartesian chrome is never inferred
+§5). Polar `heatmap` uses the same Rect→PolyFill tessellation: constant-style
+lattices expand in Rust, and scalar colormaps resolve to per-cell literal
+styles before encode. Scene has no image-blit record, so this is annular-sector
+geometry rather than the compatibility inverse-sample `<image>`.
+`XYG_SCENE_UNSUPPORTED_POLAR` remains for polar contour, density, and other
+kinds. Hidden Cartesian chrome is never inferred
 as polar.
 
 The older direct-browser `XYTS` v2 area descriptor has no outline-mode field.
@@ -1174,8 +1180,10 @@ Constant-style Cartesian heatmap expands a regular rows×cols lattice onto
 existing Scene v25 Rect records (one rectangle per cell) for
 `public_static_export`. Hosts
 reconstruct uniform cells from the stored range endpoints plus
-`grid_shape`; paint uses the literal style color. Polar heatmap, metric
-colormaps, truecolor RGBA, irregular spacing, LOD over the 10,000-Rect
+`grid_shape`; paint uses the literal style color. Polar heatmap tessellates
+those same Rects to PolyFill annular sectors (scalar colormaps become per-cell
+literal styles). Metric
+colormaps on Cartesian, truecolor RGBA, irregular spacing, LOD over the 10,000-Rect
 histogram ceiling, and rich style exceptions fail closed and keep the
 compatibility exporters. Scene 25 is unchanged.
 

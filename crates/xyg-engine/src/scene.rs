@@ -102,7 +102,7 @@ pub fn scene_support_reason(version: u32, features: u64) -> Result<&'static str,
         return Err(SceneError::Version);
     }
     let reasons = [
-        (SCENE_FEATURE_POLAR, "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, area, bar, column, and errorbar only"),
+        (SCENE_FEATURE_POLAR, "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, area, bar, column, errorbar, and heatmap only"),
         (SCENE_FEATURE_CUSTOM_FONT, "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v12 does not encode custom font resources"),
         (SCENE_FEATURE_BROWSER_CSS, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS: Scene v12 does not encode browser-only CSS or class behavior"),
         (SCENE_FEATURE_GRADIENT, "XYG_SCENE_UNSUPPORTED_GRADIENT: Scene v12 supports solid literal paints only"),
@@ -4835,9 +4835,8 @@ impl<'a> SceneBatch<'a> {
     }
 
     /// Attach a host-packed XYPL v1 polar envelope. Empty bytes keep Cartesian
-    /// mapping. Labeled-annotation extras fail closed. Polar Rects tessellate
-    /// to PolyFill annular sectors at encode; heatmap lattices stay rejected
-    /// at expansion.
+    /// mapping. Labeled-annotation extras fail closed. Polar Rects — including
+    /// heatmap-lattice cells — tessellate to PolyFill annular sectors at encode.
     pub fn with_polar(mut self, bytes: &[u8]) -> Result<Self, SceneError> {
         if bytes.is_empty() {
             return Ok(self);
@@ -13118,6 +13117,111 @@ mod tests {
         assert!(svg.contains("<path d=\"M"));
         assert!(!svg.contains("<rect x="));
         assert!(svg.contains("data-xy-grid=\"ring\"") || svg.contains("<circle"));
+        assert!(document.to_raster_commands(1.0).unwrap().len() > 100);
+    }
+
+    #[test]
+    fn polar_heatmap_lattice_tessellates_to_polyfill_wedges() {
+        let kinds = [SceneRecordKind::Rect as u8, SceneRecordKind::Rect as u8];
+        let ids = [9u64, 9];
+        let styles = [0u32, 0];
+        let diameter = [2.0, 2.0];
+        let symbols = [0u8, 0];
+        let x0 = [0.0, 0.0];
+        let y0 = [0.0, 0.0];
+        let x1 = [std::f64::consts::PI, 0.0];
+        let y1 = [1.0, 0.0];
+        let modes = [
+            SceneExpansionMode::HeatmapLattice as u8,
+            SceneExpansionMode::HeatmapLattice as u8,
+        ];
+        let expanded = expand_scene_records(
+            SceneExpansionInput {
+                kinds: &kinds,
+                stable_ids: &ids,
+                style_refs: &styles,
+                diameter: &diameter,
+                symbols: &symbols,
+                x0: &x0,
+                y0: &y0,
+                x1: &x1,
+                y1: &y1,
+                expansion_modes: &modes,
+            },
+            test_linear_x_scale(),
+            test_linear_y_scale(),
+        )
+        .unwrap();
+        assert_eq!(expanded.kinds.len(), 4);
+        assert!(expanded
+            .kinds
+            .iter()
+            .all(|kind| *kind == SceneRecordKind::Rect as u8));
+
+        let layout = PlotLayout::new(400.0, 400.0, 0.0, 0.0, 0.0, 0.0).unwrap();
+        let x = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            std::f64::consts::PI,
+            0.0,
+            400.0,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 400.0, 0.0, 1.0, false).unwrap();
+        let envelope = polar::PolarEnvelope {
+            theta_unit: 0,
+            theta_direction: 0,
+            n_categories: 0,
+            r_scale_kind: 0,
+            grid_shape: 0,
+            r_mask_nonpositive: false,
+            theta_zero: 0.0,
+            sector_start: 0.0,
+            sector_end: std::f64::consts::PI,
+            r_lo: 0.0,
+            r_hi: 1.0,
+            r_origin: f64::NAN,
+            hole: 0.0,
+            r_constant: 1.0,
+        };
+        let xypl = polar::encode_xypl(&envelope);
+        let fill = [37u8, 99, 235, 255];
+        let stroke = [0u8, 0, 0, 255];
+        let widths = [0.0f64];
+        let encoded = SceneBatch::new(
+            layout,
+            1,
+            2,
+            x,
+            y,
+            &expanded.kinds,
+            &expanded.stable_ids,
+            &expanded.style_refs,
+            &fill,
+            &stroke,
+            &widths,
+            &expanded.diameter,
+            &expanded.symbols,
+            &expanded.x0,
+            &expanded.y0,
+            &expanded.x1,
+            &expanded.y1,
+        )
+        .unwrap()
+        .with_polar(&xypl)
+        .unwrap()
+        .encode();
+        let document = SceneDocument::decode(&encoded).unwrap();
+        assert!(document.records.len() >= 12);
+        assert!(document
+            .records
+            .iter()
+            .all(|record| record.kind == SceneRecordKind::PolyFill));
+        let svg = document.to_svg();
+        assert!(svg.contains("<path d=\"M"));
+        assert!(!svg.contains("<rect x="));
         assert!(document.to_raster_commands(1.0).unwrap().len() > 100);
     }
 

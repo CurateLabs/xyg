@@ -129,8 +129,15 @@ def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
     assert "<path" in bar_svg and 'd="M' in bar_svg
     polar_heatmap = Figure(coords="polar")
     polar_heatmap.heatmap([[1.0, 2.0], [3.0, 4.0]])
+    heat_scene = polar_heatmap.to_scene()
+    assert heat_scene[4:8] == (26).to_bytes(4, "little")
+    heat_svg = _native.scene_svg(heat_scene)
+    assert "<path" in heat_svg and 'd="M' in heat_svg
+    assert "<rect x=" not in heat_svg
+    polar_contour = Figure(coords="polar")
+    polar_contour.contour([[1.0, 2.0], [3.0, 4.0]], levels=2, color="#3987e5")
     with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_POLAR"):
-        polar_heatmap.to_scene()
+        polar_contour.to_scene()
 
     custom_font = Figure().line([0.0, 1.0], [0.0, 1.0])
     custom_font.chrome_styles = {"title": {"font-family": "Example Sans"}}

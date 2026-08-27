@@ -35,6 +35,8 @@ _HEXBIN_KINDS = frozenset({"hexbin"})
 _HEXBIN_REDUCES = frozenset({"count", "mean", "sum"})
 # Regular Cartesian heatmap cells expand onto Rect records in Rust
 # (`SceneExpansionMode::HeatmapLattice`). Hosts pack extent plus rows/cols.
+# Polar heatmap keeps that lattice for constant paint, or packs one Rect per
+# cell with a literal style when a scalar colormap is resolved to RGBA.
 _HEATMAP_KINDS = frozenset({"heatmap"})
 _POINT_KINDS = frozenset({"scatter", "line"})
 _SUPPORTED_KINDS = (
@@ -68,8 +70,9 @@ _XYFS_DASH_KEYS = ("dash", "curve", "linecap", "marker_path", "marker_glyph")
 # compact multi-cell painter record.
 _MAX_PUBLIC_TRIANGLE_MESHES = 1024
 # Regular heatmap cells are ordinary Rect records and share the histogram
-# 10,000-bin public ceiling. Colormap, polar, truecolor, and irregular grids
-# stay on the compatibility exporters.
+# 10,000-bin public ceiling. Cartesian colormap, truecolor, and irregular
+# grids stay on the compatibility exporters. Polar scalar-colormap heatmaps
+# tessellate those Rects to PolyFill annular sectors.
 _MAX_PUBLIC_HEATMAP_CELLS = 10_000
 
 _PUBLIC_EXPORT_KIND_CODES = {
@@ -866,7 +869,7 @@ def _rect_extra_flags(style: dict[str, Any]) -> int:
     return flags
 
 
-def _figure_trace_support_flags(trace: Any) -> tuple[int, str]:
+def _figure_trace_support_flags(trace: Any, *, polar: bool = False) -> tuple[int, str]:
     """Observe per-trace Scene allowlist bits; Rust owns the diagnostic."""
     kind = str(getattr(trace, "kind", "") or "mark")
     style = getattr(trace, "style", None) or {}
@@ -887,7 +890,11 @@ def _figure_trace_support_flags(trace: Any) -> tuple[int, str]:
         flags |= _XYFS_TRACE_JOINED_FILL
     if kind in _HEXBIN_KINDS and style.get("reduce") not in _HEXBIN_REDUCES:
         flags |= _XYFS_TRACE_CUSTOM_HEX_REDUCE
-    if kind in _HEATMAP_KINDS and _heatmap_uses_colormap(trace):
+    if (
+        kind in _HEATMAP_KINDS
+        and _heatmap_uses_colormap(trace)
+        and not (polar and _polar_heatmap_tessellates_colormap(trace))
+    ):
         flags |= _XYFS_TRACE_HEATMAP_COLORMAP
     if "fill" in style and not isinstance(style["fill"], str):
         flags |= _XYFS_TRACE_NON_CSS_FILL
@@ -938,6 +945,20 @@ def _heatmap_uses_colormap(trace: Any) -> bool:
     )
 
 
+def _polar_heatmap_tessellates_colormap(trace: Any) -> bool:
+    """Return whether polar Scene can resolve this heatmap to per-cell paints.
+
+    Truecolor RGBA planes stay on compatibility. A scalar colormap or a packed
+    RGBA grid becomes one Rect per cell; polar encode tessellates those Rects
+    to PolyFill annular sectors. Scene has no image-blit record for inverse
+    sampling.
+    """
+    style = getattr(trace, "style", None) or {}
+    if style.get("truecolor") or getattr(trace, "rgba_grid", None) is not None:
+        return False
+    return bool(style.get("colormap") is not None or getattr(trace, "rgba", None) is not None)
+
+
 def _heatmap_shape(trace: Any) -> tuple[int, int]:
     """Return the finite rows x cols lattice, or fail closed."""
     shape = getattr(trace, "grid_shape", None)
@@ -970,6 +991,45 @@ def _heatmap_extent(trace: Any) -> tuple[float, float, float, float]:
     if not np.isfinite([x0, x1, y0, y1]).all() or x0 >= x1 or y0 >= y1:
         raise UnsupportedSceneV3("Scene v12 heatmap requires a finite increasing cell extent")
     return x0, x1, y0, y1
+
+
+def _heatmap_lattice_rectangles(
+    rows: int, cols: int, x0: float, x1: float, y0: float, y1: float
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Row-major cell rectangles matching Rust `HeatmapLattice` expansion."""
+    dx = (x1 - x0) / cols
+    dy = (y1 - y0) / rows
+    if not np.isfinite([dx, dy]).all():
+        raise UnsupportedSceneV3("Scene v12 heatmap requires a finite increasing cell extent")
+    row_i, col_i = np.divmod(np.arange(rows * cols, dtype=np.float64), cols)
+    cell_x0 = x0 + col_i * dx
+    cell_y0 = y0 + row_i * dy
+    return cell_x0, cell_y0, cell_x0 + dx, cell_y0 + dy
+
+
+def _polar_heatmap_cell_fills(
+    trace: Any, values: np.ndarray, rows: int, cols: int, alpha: int
+) -> np.ndarray:
+    """Map polar heatmap cells to row-major RGBA matching lattice order."""
+    packed = getattr(trace, "rgba", None)
+    if packed is not None:
+        rgba = np.asarray(packed, dtype=np.uint8).reshape(rows, cols, 4)
+        return np.ascontiguousarray(rgba[::-1].reshape(-1, 4))
+    from . import kernels
+    from ._svg import _colormap_stops
+
+    style = getattr(trace, "style", None) or {}
+    colormap = style.get("colormap", "viridis")
+    stops = np.asarray(_colormap_stops(colormap), dtype=np.uint8)
+    domain = style.get("domain")
+    if domain is None or len(domain) != 2:
+        lo, hi = float(np.nanmin(values)), float(np.nanmax(values))
+    else:
+        lo, hi = float(domain[0]), float(domain[1])
+    if not np.isfinite([lo, hi]).all() or lo == hi:
+        lo, hi = (lo - 0.5, hi + 0.5) if np.isfinite(lo) else (0.0, 1.0)
+    rgba = kernels.colormap_rgba_canonical(values, cols, rows, (lo, hi), stops, int(alpha))
+    return np.ascontiguousarray(rgba[::-1].reshape(-1, 4))
 
 
 def _band_columns(trace: Any) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -1150,6 +1210,38 @@ def figure_scene(
                     "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
                 )
             x0, x1, y0, y1 = _heatmap_extent(trace)
+            polar = getattr(figure, "coords", "cartesian") == "polar"
+            if polar and _polar_heatmap_tessellates_colormap(trace):
+                cell_x0, cell_y0, cell_x1, cell_y1 = _heatmap_lattice_rectangles(
+                    rows, cols, x0, x1, y0, y1
+                )
+                fills = _polar_heatmap_cell_fills(trace, values, rows, cols, fill[3])
+                intern: dict[tuple[int, int, int, int], int] = {}
+                cell_refs: list[int] = []
+                for rgba in fills:
+                    key = (int(rgba[0]), int(rgba[1]), int(rgba[2]), int(rgba[3]))
+                    ref = intern.get(key)
+                    if ref is None:
+                        styles.append((key, stroke, stroke_width))
+                        ref = len(styles) - 1
+                        intern[key] = ref
+                    cell_refs.append(ref)
+                start = len(style_refs)
+                _append_packed(
+                    kinds,
+                    stable_ids,
+                    style_refs,
+                    diameters,
+                    symbols,
+                    expansion_modes,
+                    coordinates,
+                    2,
+                    [cell_x0, cell_y0, cell_x1, cell_y1],
+                    style_ref=style_ref,
+                    trace_id=int(trace.id),
+                )
+                style_refs[start:] = cell_refs
+                continue
             _append_packed(
                 kinds,
                 stable_ids,
@@ -2068,7 +2160,9 @@ def _pack_figure_support(
         payload.extend(len(keys).to_bytes(4, "little"))
         _xyep_put_keys(payload, keys)
     for trace in traces:
-        trace_flags, kind = _figure_trace_support_flags(trace)
+        trace_flags, kind = _figure_trace_support_flags(
+            trace, polar=getattr(figure, "coords", "cartesian") == "polar"
+        )
         encoded = str(kind).encode("utf-8")[:32]
         payload.extend(trace_flags.to_bytes(2, "little"))
         payload.extend(bytes((len(encoded), 0)))
@@ -2229,7 +2323,10 @@ def _pack_public_export_support(
             flags_tr |= 1 << 10
         heatmap_rows = heatmap_cols = heatmap_values = 0
         if trace.kind == "heatmap":
-            if _heatmap_uses_colormap(trace):
+            polar = getattr(figure, "coords", "cartesian") == "polar"
+            if _heatmap_uses_colormap(trace) and not (
+                polar and _polar_heatmap_tessellates_colormap(trace)
+            ):
                 flags_tr |= 1 << 11
             try:
                 heatmap_rows, heatmap_cols = _heatmap_shape(trace)

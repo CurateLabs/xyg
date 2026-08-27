@@ -108,7 +108,8 @@ const POLAR_AXIS_KEYS: &[&str] = &[
     "hole",
     "r_origin",
 ];
-const POLAR_SCENE_KINDS: &[&str] = &["line", "scatter", "area", "bar", "column", "errorbar"];
+const POLAR_SCENE_KINDS: &[&str] =
+    &["line", "scatter", "area", "bar", "column", "errorbar", "heatmap"];
 const PUBLIC_SYMBOLS: &[&str] = &[
     "circle",
     "square",
@@ -372,7 +373,16 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
         ],
         KIND_TRIANGLE_MESH => &["opacity", "role"],
         KIND_HEXBIN => &["color", "opacity", "hex_dx", "hex_dy", "role", "reduce"],
-        KIND_HEATMAP => &["color", "opacity", "role", "domain", "x_range", "y_range"],
+        KIND_HEATMAP => &[
+            "color",
+            "opacity",
+            "role",
+            "domain",
+            "x_range",
+            "y_range",
+            "colormap",
+            "truecolor",
+        ],
         _ => &[],
     }
 }
@@ -1139,17 +1149,17 @@ mod tests {
             scene_figure_support_reason(&xyfs_v2(
                 OBS_POLAR,
                 &PRIMARY_XY,
-                &[(XYFS_TRACE_UNSUPPORTED_KIND, "heatmap")]
+                &[(XYFS_TRACE_UNSUPPORTED_KIND, "contour")]
             )),
             Ok(
-                "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, area, bar, column, and errorbar only"
+                "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, area, bar, column, errorbar, and heatmap only"
                     .to_string()
             )
         );
     }
 
     #[test]
-    fn figure_support_accepts_polar_bar_and_rejects_heatmap() {
+    fn figure_support_accepts_polar_bar_heatmap_and_rejects_contour() {
         assert_eq!(
             scene_figure_support_reason(&xyfs_v2(OBS_POLAR, &PRIMARY_XY, &[(0, "bar")])),
             Ok(String::new())
@@ -1164,8 +1174,12 @@ mod tests {
         );
         assert_eq!(
             scene_figure_support_reason(&xyfs_v2(OBS_POLAR, &PRIMARY_XY, &[(0, "heatmap")])),
+            Ok(String::new())
+        );
+        assert_eq!(
+            scene_figure_support_reason(&xyfs_v2(OBS_POLAR, &PRIMARY_XY, &[(0, "contour")])),
             Ok(
-                "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, area, bar, column, and errorbar only"
+                "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, area, bar, column, errorbar, and heatmap only"
                     .to_string()
             )
         );
