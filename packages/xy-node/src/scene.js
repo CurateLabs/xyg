@@ -1645,7 +1645,7 @@ export function sceneBatchEncode({
   const symbolCodes = asUnsignedArray(symbols, "symbols", 255, Uint8Array);
   const expansionModeCodes = expansionModes == null
     ? new Uint8Array(kindArray.length)
-    : asUnsignedArray(expansionModes, "expansionModes", 10, Uint8Array);
+    : asUnsignedArray(expansionModes, "expansionModes", 11, Uint8Array);
   const fills = new Uint8Array(styles.length * 4);
   const strokes = new Uint8Array(styles.length * 4);
   const widths = new Float64Array(styles.length);
@@ -1919,7 +1919,7 @@ const XYFS_TRACE_JOINED_FILL = 1 << 8;
 const XYFS_TRACE_CUSTOM_HEX_REDUCE = 1 << 9;
 const XYFS_TRACE_HEATMAP_COLORMAP = 1 << 10;
 const XYFS_TRACE_NON_CSS_FILL = 1 << 11;
-const XYFS_CURVE_MARKER_KEYS = ["curve", "marker_path", "marker_glyph", "smooth"];
+const XYFS_CURVE_MARKER_KEYS = ["marker_path", "marker_glyph"];
 const SCENE_DASH_PRESETS = {
   solid: null,
   dashed: [6, 4],
@@ -2798,6 +2798,17 @@ function figureTraceSupport(figure, trace) {
     })
   ) flags |= XYFS_TRACE_DENSITY;
   if (XYFS_CURVE_MARKER_KEYS.some((key) => style[key] != null)) flags |= XYFS_TRACE_DASHED_MARKERS;
+  if (style.smooth != null) flags |= XYFS_TRACE_DASHED_MARKERS;
+  const curve = style.curve;
+  if (curve != null) {
+    const curveName = String(curve).trim().toLowerCase();
+    const polar = (figure.coords ?? "cartesian") === "polar";
+    if (curveName === "smooth") {
+      if (polar || kind !== "line" || style.step != null) flags |= XYFS_TRACE_DASHED_MARKERS;
+    } else if (curveName !== "linear") {
+      flags |= XYFS_TRACE_DASHED_MARKERS;
+    }
+  }
   const linecap = style.linecap ?? style.lineCap;
   if (linecap != null && !["butt", "round", "square"].includes(String(linecap).trim().toLowerCase())) {
     flags |= XYFS_TRACE_DASHED_MARKERS;
@@ -2925,11 +2936,14 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       if (strokePerimeter) flags |= FLAG_STROKE_PERIMETER;
     } else if (trace.kind === "line") {
       const where = style.step;
+      const curve = style.curve;
       if (where != null) {
         if (!["pre", "post", "mid"].includes(where)) {
           throw new RangeError(`Scene v12 does not support step mode ${JSON.stringify(where)}`);
         }
         stepMode = { pre: 1, mid: 2, post: 3 }[where];
+      } else if (curve != null && String(curve).trim().toLowerCase() === "smooth") {
+        stepMode = 4;
       }
     } else if (trace.kind === "scatter") {
       packSymbol = sceneSymbolCode(style.symbol ?? 0);

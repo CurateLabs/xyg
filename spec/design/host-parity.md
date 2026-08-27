@@ -182,7 +182,9 @@ record plus XYIM. Polar density stays compatibility. ABI 138 / Scene v28
 adds XYDS constant dash on the same extras pointer (raw XYDS or XYEX v2)
 and an XYDS sidecar after XYIM. ABI 139 / Scene v29 adds XYLC constant
 linecap on that same extras pointer (raw XYLC, XYDS+XYLC concat, or XYEX v2)
-and an XYLC sidecar after XYDS; curve/authored markers stay
+and an XYLC sidecar after XYDS. ABI 140 / Scene v30 adds `CurveFlatten=11`
+so cartesian `curve="smooth"` polylines flatten in Rust from compact knots
+(pack `step_mode=4`); area smooth and authored markers stay
 compatibility. ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate

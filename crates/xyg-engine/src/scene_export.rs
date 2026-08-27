@@ -326,7 +326,7 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "stroke",
             "stroke_width",
         ],
-        KIND_LINE => &["color", "opacity", "width", "step", "dash", "linecap"],
+        KIND_LINE => &["color", "opacity", "width", "step", "dash", "linecap", "curve"],
         KIND_BAR | KIND_COLUMN => &[
             "color",
             "opacity",
@@ -835,7 +835,7 @@ const FIGURE_AXIS_KEYS_REASON: &str =
 const FIGURE_TRACE_AXIS_REASON: &str = "Scene v12 currently supports only the primary x/y axes";
 const FIGURE_HIDDEN_REASON: &str = "Scene v12 does not yet encode hidden or per-item styled marks";
 const FIGURE_DENSITY_REASON: &str = "Scene v12 does not yet encode density-tier scatter";
-const FIGURE_DASHED_REASON: &str = "Scene v12 does not yet encode curved or authored markers";
+const FIGURE_DASHED_REASON: &str = "Scene v12 does not yet encode authored markers";
 const FIGURE_JOINED_FILL_REASON: &str = "Scene v12 does not yet encode joined triangle-mesh fills";
 const FIGURE_HEX_REDUCE_REASON: &str = "Scene v12 does not yet encode custom hexbin reducers";
 const FIGURE_HEATMAP_REASON: &str = "Scene v12 does not yet encode heatmap colormap";

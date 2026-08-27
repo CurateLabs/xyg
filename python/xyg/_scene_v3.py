@@ -63,7 +63,7 @@ _XYFS_TRACE_JOINED_FILL = 1 << 8
 _XYFS_TRACE_CUSTOM_HEX_REDUCE = 1 << 9
 _XYFS_TRACE_HEATMAP_COLORMAP = 1 << 10
 _XYFS_TRACE_NON_CSS_FILL = 1 << 11
-_XYFS_CURVE_MARKER_KEYS = ("curve", "marker_path", "marker_glyph")
+_XYFS_CURVE_MARKER_KEYS = ("marker_path", "marker_glyph")
 _SCENE_DASH_PRESETS: dict[str, list[float] | None] = {
     "solid": None,
     "dashed": [6.0, 4.0],
@@ -917,6 +917,14 @@ def _figure_trace_support_flags(trace: Any, *, polar: bool = False) -> tuple[int
         flags |= _XYFS_TRACE_DENSITY
     if any(style.get(key) is not None for key in _XYFS_CURVE_MARKER_KEYS):
         flags |= _XYFS_TRACE_DASHED_MARKERS
+    curve = style.get("curve")
+    if curve is not None:
+        curve_name = str(curve).strip().lower()
+        if curve_name == "smooth":
+            if polar or kind != "line" or style.get("step") is not None:
+                flags |= _XYFS_TRACE_DASHED_MARKERS
+        elif curve_name != "linear":
+            flags |= _XYFS_TRACE_DASHED_MARKERS
     linecap = style.get("linecap")
     if linecap is not None and str(linecap).strip().lower() not in {"butt", "round", "square"}:
         flags |= _XYFS_TRACE_DASHED_MARKERS
@@ -1361,10 +1369,13 @@ def figure_scene(
                 flags |= _PACK_FLAG_STROKE_PERIMETER
         elif trace.kind == "line":
             where = style.get("step")
+            curve = style.get("curve")
             if where is not None:
                 if where not in {"pre", "post", "mid"}:
                     raise UnsupportedSceneV3(f"Scene v12 does not support step mode {where!r}")
                 step_mode = {"pre": 1, "mid": 2, "post": 3}[where]
+            elif curve is not None and str(curve).strip().lower() == "smooth":
+                step_mode = 4
         elif trace.kind == "scatter":
             pack_symbol = _SYMBOL_CODES[symbol_name]
             pack_diameter = diameter

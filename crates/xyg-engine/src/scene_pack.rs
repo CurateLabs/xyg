@@ -6,6 +6,7 @@
 //! expansion-mode assignment, heatmap lattice framing, ribbon/triangle
 //! doubling, rule/band/marker domain expansion, and finite-coordinate
 //! rejection so Python and Node cannot drift on the packed row contract.
+//! ABI 140 maps line `step_mode=4` onto expansion `CurveFlatten=11`.
 
 use crate::scene::MAX_SCENE_MARKS;
 
@@ -42,6 +43,7 @@ const EXP_SEGMENT: u8 = 7;
 const EXP_TRIANGLE: u8 = 8;
 const EXP_HEATMAP_PAINTED: u8 = 9;
 const EXP_DENSITY_BLIT: u8 = 10;
+const EXP_CURVE_FLATTEN: u8 = 11;
 
 /// Why a pack request was rejected. Discriminants are the C-ABI error codes
 /// (returned negated by `xyg_scene_pack_trace`).
@@ -303,7 +305,7 @@ pub fn pack_trace(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, Pack
     if input.flags & !FLAG_STROKE_PERIMETER != 0 {
         return Err(PackError::Length);
     }
-    if input.step_mode > 3 {
+    if input.step_mode > 4 {
         return Err(PackError::Length);
     }
     if input.pack_kind != PACK_LINE && input.step_mode != 0 {
@@ -311,7 +313,14 @@ pub fn pack_trace(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, Pack
     }
     match input.pack_kind {
         PACK_SCATTER => pack_xy(input, KIND_SCATTER, input.symbol, input.diameter, EXP_NONE),
-        PACK_LINE => pack_xy(input, KIND_POLYLINE, 0, 0.0, input.step_mode),
+        PACK_LINE => {
+            let expansion = if input.step_mode == 4 {
+                EXP_CURVE_FLATTEN
+            } else {
+                input.step_mode
+            };
+            pack_xy(input, KIND_POLYLINE, 0, 0.0, expansion)
+        }
         PACK_RECT => pack_quad(input, KIND_RECT, 0, 0.0, EXP_NONE, false),
         PACK_SEGMENT => pack_quad(input, KIND_POLYLINE, 0, 0.0, EXP_SEGMENT, true),
         PACK_BAND => pack_band(input),
@@ -920,6 +929,44 @@ mod tests {
                 columns: &[&x, &y],
             }),
             Err(PackError::NonFinite)
+        );
+    }
+
+    #[test]
+    fn smooth_line_packs_curve_flatten_expansion() {
+        let x = [0.0, 1.0, 2.0];
+        let y = [0.0, 1.0, 0.5];
+        let rows = pack_trace(TracePackInput {
+            pack_kind: PACK_LINE,
+            flags: 0,
+            step_mode: 4,
+            symbol: 0,
+            style_ref: 0,
+            trace_id: 11,
+            diameter: 0.0,
+            extra0: 0.0,
+            extra1: 0.0,
+            columns: &[&x, &y],
+        })
+        .unwrap();
+        assert_eq!(rows.len(), 3);
+        assert!(rows
+            .iter()
+            .all(|row| row.expansion_mode == EXP_CURVE_FLATTEN && row.kind == KIND_POLYLINE));
+        assert_eq!(
+            pack_trace(TracePackInput {
+                pack_kind: PACK_LINE,
+                flags: 0,
+                step_mode: 5,
+                symbol: 0,
+                style_ref: 0,
+                trace_id: 0,
+                diameter: 0.0,
+                extra0: 0.0,
+                extra1: 0.0,
+                columns: &[&x, &y],
+            }),
+            Err(PackError::Length)
         );
     }
 

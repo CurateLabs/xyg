@@ -1431,8 +1431,9 @@ polar density stays compatibility. ABI 138 / Scene v28 compiles constant dash
 polylines as an XYDS sidecar (raw XYDS extras or XYEX v2) so SVG/raster emit
 `stroke-dasharray`. ABI 139 / Scene v29 compiles constant non-round linecaps as
 an XYLC sidecar (raw XYLC, XYDS+XYLC concat, or XYEX v2) so SVG/raster emit
-`stroke-linecap`; curve and authored markers stay
-compatibility.
+`stroke-linecap`. ABI 140 / Scene v30 compiles cartesian `curve="smooth"`
+polylines as denser Scene polylines (`CurveFlatten=11`); area smooth and
+authored markers stay compatibility.
 Irregular
 spacing, and LOD stay compatibility.
 

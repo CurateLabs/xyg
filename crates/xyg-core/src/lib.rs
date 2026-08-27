@@ -121,7 +121,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 139;
+pub const ABI_VERSION: u32 = 140;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1547,7 +1547,9 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// an XYDS sidecar after XYIM so `scene_svg` retains dash. ABI 139 reuses
 /// that pointer for XYLC constant-linecap tables (raw XYLC, XYDS+XYLC concat,
 /// or XYEX v2 `dash_len` covering both); Scene v29 appends XYLC after XYDS.
-/// Polar `HeatmapLattice`
+/// ABI 140 / Scene v30 adds expansion mode `CurveFlatten=11`: compact
+/// polyline knots flatten through `geom::curve_flatten` into a denser
+/// Polyline run. Polar `HeatmapLattice`
 /// and `HeatmapPainted` inputs expand in data space, then tessellate to
 /// PolyFill wedges. Polar density and Image records stay fail-closed.
 /// Returns required bytes or `usize::MAX` on error.
@@ -1556,7 +1558,7 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// Every record input array must address `len` readable elements. The chrome
 /// style pointer must address exactly `SCENE_CHROME_STYLE_INPUT_BYTES` bytes;
 /// `expansion_modes` must address `len` bytes, each in the bounded ABI 104 enum
-/// (ABI 137 extends it with `DensityBlit=10`);
+/// (ABI 137 extends it with `DensityBlit=10`; ABI 140 adds `CurveFlatten=11`);
 /// each tick pointer must address its corresponding count when non-zero. Text
 /// and bounded legend-input pointers must address `*_len` readable bytes when
 /// non-zero. If capacity is sufficient, `out` must address `out_cap` writable
