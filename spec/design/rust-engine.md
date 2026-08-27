@@ -163,6 +163,10 @@ crates/
                         #   built-in scatter validation, stroke-inclusive marker
                         #   geometry/symbols, visibility, and SVG construction;
                         #   consumed identically by Python and Node (#58).
+    scene_pack.rs       # compact Figure→Scene row packing (ABI 109): record
+                        #   kinds, stable-id splitting, expansion modes,
+                        #   ribbon/triangle doubling, heatmap lattice framing,
+                        #   and finite-coordinate rejection.
     svg.rs              # screen-space coordinate serialization for the SVG path:
                         #   `poly_path` alone, folding parallel f64 x/y arrays
                         #   into one `M`/`L` path-data string with Python-matching
@@ -563,6 +567,10 @@ per-kind fill/stroke/width defaults. ABI v108 adds
 `xyg_scene_resolve_chrome_style` over packed `XYCH` v1 chrome so both hosts
 share one 200-byte Scene chrome style, including default RGBA/widths and
 `grid_opacity` scaling of the default grid color.
+ABI v109 adds `xyg_scene_pack_trace` so Python and Node share one
+Figure→Scene row packer: record kinds, stable-id splitting, expansion
+modes, ribbon/triangle doubling, heatmap lattice framing, and
+finite-coordinate rejection.
 
 This is not yet the complete issue `#110` store: remote ranges, browser/WASM bounded
 staging, spatially unordered data, chart-lifecycle overview/refinement wiring,

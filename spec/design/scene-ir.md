@@ -317,6 +317,10 @@ v1 metadata. ABI 107 likewise leaves Scene records unchanged and adds
 `XYMS` v1 CSS literals instead of resolving fill/stroke defaults locally.
 ABI 108 adds `xyg_scene_resolve_chrome_style` so both hosts pack `XYCH` v1
 chrome literals instead of resolving the 200-byte default style locally.
+ABI 109 adds `xyg_scene_pack_trace` so both hosts pass kind/flags/columns
+and receive 56-byte Scene rows; record kinds, stable-id splitting,
+expansion modes, ribbon/triangle doubling, heatmap lattice framing, and
+finite-coordinate rejection cannot drift.
 
 ## Version 4: default numeric Cartesian chrome
 
@@ -1032,7 +1036,10 @@ Scene records either; `xyg_scene_resolve_mark_styles` owns per-kind fill/stroke
 defaults and CSS→RGBA8 from packed `XYMS` v1. ABI 108 does not change Scene
 records; `xyg_scene_resolve_chrome_style` owns the 200-byte chrome style input
 from packed `XYCH` v1, and chrome/annotation packers call `xyg_css_color_rgba`
-for the same conversion. Polar
+for the same conversion. ABI 109 does not change Scene records either;
+`xyg_scene_pack_trace` owns Figure→Scene row packing (kinds, stable ids,
+expansion modes, ribbon/triangle doubling, heatmap lattice framing) from
+literal columns. Polar
 hexbin, custom reducers, metric colormaps, LOD, and rich style exceptions
 fail closed and keep the compatibility exporters. Scene 25 is unchanged.
 

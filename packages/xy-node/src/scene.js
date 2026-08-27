@@ -6,6 +6,7 @@ import {
   xySceneBrowserPainter,
   xyScenePlotLayout,
   xyScenePublicExportReason,
+  xyScenePackTrace,
   xySceneRasterCommands,
   xySceneResolveChromeStyle,
   xySceneResolveMarkStyles,
@@ -27,6 +28,67 @@ const SYMBOL_CODES = new Map([
   "triangle_down", "triangle_left", "triangle_right", "x", "point", "pixel",
   "thin_diamond", "plus_line", "x_line", "horizontal_line", "vertical_line",
 ].map((name, code) => [name, code]));
+
+function columnArg(column) {
+  if (column == null || column.length === 0) return { ptr: 0, n: 0, keep: null };
+  const arr = asF64Array(column, "trace column");
+  return { ptr: f64Ptr(arr), n: arr.length, keep: arr };
+}
+
+function packTrace({
+  packKind, flags = 0, stepMode = 0, symbol = 0, styleRef = 0, traceId = 0,
+  diameter = 0, extra0 = 0, extra1 = 0, columns = [],
+}) {
+  const packedCols = [...columns];
+  while (packedCols.length < 6) packedCols.push(null);
+  const args = packedCols.slice(0, 6).map(columnArg);
+  const packedId = asU64(traceId, "stableIds value");
+  const n0 = args[0].n;
+  const nRows = packKind === 4 || packKind === 5 ? n0 * 2 : packKind === 7 ? 2 : n0;
+  const out = new Uint8Array(Math.max(nRows, 1) * 56);
+  const code = xyScenePackTrace(
+    packKind, flags, stepMode, symbol, styleRef, packedId,
+    Number(diameter), Number(extra0), Number(extra1),
+    args[0].ptr, BigInt(args[0].n),
+    args[1].ptr, BigInt(args[1].n),
+    args[2].ptr, BigInt(args[2].n),
+    args[3].ptr, BigInt(args[3].n),
+    args[4].ptr, BigInt(args[4].n),
+    args[5].ptr, BigInt(args[5].n),
+    u8Ptr(out), BigInt(out.length),
+  );
+  if (code === -5) throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
+  if (code < 0) throw new RangeError("invalid scene trace packing");
+  const view = new DataView(out.buffer, out.byteOffset, Math.max(code, 0) * 56);
+  const rows = { kinds: [], stableIds: [], styleRefs: [], diameter: [], symbols: [], expansion: [], x0: [], y0: [], x1: [], y1: [] };
+  for (let index = 0; index < code; index += 1) {
+    const at = index * 56;
+    rows.kinds.push(out[at]);
+    rows.symbols.push(out[at + 1]);
+    rows.expansion.push(out[at + 2]);
+    rows.styleRefs.push(view.getUint32(at + 4, true));
+    rows.stableIds.push(view.getBigUint64(at + 8, true));
+    rows.diameter.push(view.getFloat64(at + 16, true));
+    rows.x0.push(view.getFloat64(at + 24, true));
+    rows.y0.push(view.getFloat64(at + 32, true));
+    rows.x1.push(view.getFloat64(at + 40, true));
+    rows.y1.push(view.getFloat64(at + 48, true));
+  }
+  return rows;
+}
+
+function appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packed) {
+  kinds.push(...packed.kinds);
+  stableIds.push(...packed.stableIds);
+  styleRefs.push(...packed.styleRefs);
+  diameter.push(...packed.diameter);
+  symbols.push(...packed.symbols);
+  expansionModes.push(...packed.expansion);
+  x0.push(...packed.x0);
+  y0.push(...packed.y0);
+  x1.push(...packed.x1);
+  y1.push(...packed.y1);
+}
 
 function sceneSymbolCode(value) {
   if (typeof value === "string") {
@@ -1059,7 +1121,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   if (reason) throw new RangeError(reason);
   const unsupported = figure.traces.find((trace) => !SUPPORTED_KINDS.has(trace.kind));
   if (unsupported) throw new RangeError(`Scene v12 figure compilation does not yet support ${unsupported.kind}`);
-  const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [], legendEntries = [], expansionRuns = [];
+  const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], expansionModes = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [], legendEntries = [];
   const xDomain = figure._range("x");
   const yDomain = figure._range("y");
   const sceneAxis = (axis, id, domain) => {
@@ -1132,23 +1194,9 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       if (cols.some((column) => column.length !== count)) {
         throw new RangeError("Scene v12 ribbon columns must have equal length");
       }
-      if (cols.some((column) => Array.from(column).some((value) => !Number.isFinite(value)))) {
-        throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
-      }
-      for (let bandIndex = 0; bandIndex < count; bandIndex += 1) {
-        const stableId = (BigInt(id) << 32n) | BigInt(bandIndex);
-        const runStart = kinds.length;
-        for (const [startY, endY] of [
-          [trace.y1[bandIndex], trace.y[bandIndex]],
-          [trace.y0[bandIndex], trace.x[bandIndex]],
-        ]) {
-          kinds.push(3); stableIds.push(stableId); styleRefs.push(styleRef);
-          diameter.push(0); symbols.push(2);
-          x0.push(Number(trace.x0[bandIndex])); y0.push(Number(startY));
-          x1.push(Number(trace.x1[bandIndex])); y1.push(Number(endY));
-        }
-        expansionRuns.push([runStart, kinds.length, 4]);
-      }
+      appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packTrace({
+        packKind: 4, styleRef, traceId: id, columns: cols,
+      }));
       continue;
     }
 
@@ -1162,20 +1210,9 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       if (cols.some((column) => column.length !== count)) {
         throw new RangeError("Scene v12 triangle_mesh columns must have equal length");
       }
-      if (cols.some((column) => Array.from(column).some((value) => !Number.isFinite(value)))) {
-        throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
-      }
-      for (let triIndex = 0; triIndex < count; triIndex += 1) {
-        const stableId = (BigInt(id) << 32n) | BigInt(triIndex);
-        const runStart = kinds.length;
-        kinds.push(4, 4); stableIds.push(stableId, stableId); styleRefs.push(styleRef, styleRef);
-        diameter.push(0, 0); symbols.push(0, 0);
-        x0.push(Number(trace.x0[triIndex]), Number(trace.x[triIndex]));
-        y0.push(Number(trace.y0[triIndex]), Number(trace.y[triIndex]));
-        x1.push(Number(trace.x1[triIndex]), 0);
-        y1.push(Number(trace.y1[triIndex]), 0);
-        expansionRuns.push([runStart, kinds.length, 8]);
-      }
+      appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packTrace({
+        packKind: 5, styleRef, traceId: id, columns: cols,
+      }));
       continue;
     }
 
@@ -1188,26 +1225,14 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       if (xv == null || yv == null || xv.length !== yv.length) {
         throw new RangeError("Scene v12 hexbin columns must have equal length");
       }
-      if (
-        Array.from(xv).some((value) => !Number.isFinite(value))
-        || Array.from(yv).some((value) => !Number.isFinite(value))
-      ) {
-        throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
-      }
       const dx = Number(style.hex_dx ?? style.dx);
       const dy = Number(style.hex_dy ?? style.dy);
       if (!Number.isFinite(dx) || !Number.isFinite(dy) || dx <= 0 || dy <= 0) {
         throw new RangeError("Scene v12 hexbin requires finite hex_dx/hex_dy cell pitch");
       }
-      const runStart = kinds.length;
-      for (let cellIndex = 0; cellIndex < xv.length; cellIndex += 1) {
-        const stableId = (BigInt(id) << 32n) | BigInt(cellIndex);
-        kinds.push(4); stableIds.push(stableId); styleRefs.push(styleRef);
-        diameter.push(0); symbols.push(0);
-        x0.push(Number(xv[cellIndex])); y0.push(Number(yv[cellIndex]));
-        x1.push(dx); y1.push(dy);
-      }
-      expansionRuns.push([runStart, kinds.length, 5]);
+      appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packTrace({
+        packKind: 6, styleRef, traceId: id, extra0: dx, extra1: dy, columns: [xv, yv],
+      }));
       continue;
     }
 
@@ -1247,17 +1272,10 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       ) {
         throw new RangeError("Scene v12 heatmap requires a finite increasing cell extent");
       }
-      const runStart = kinds.length;
-      kinds.push(2, 2);
-      stableIds.push(id, id);
-      styleRefs.push(styleRef, styleRef);
-      diameter.push(rows, cols);
-      symbols.push(0, 0);
-      x0.push(x0Extent, 0);
-      y0.push(y0Extent, 0);
-      x1.push(x1Extent, 0);
-      y1.push(y1Extent, 0);
-      expansionRuns.push([runStart, kinds.length, 6]);
+      appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packTrace({
+        packKind: 7, styleRef, traceId: id, extra0: rows, extra1: cols,
+        columns: [[x0Extent], [y0Extent], [x1Extent], [y1Extent]],
+      }));
       continue;
     }
 
@@ -1269,75 +1287,57 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       if (!(xv.length === yv.length && yv.length === base.length)) {
         throw new RangeError(`Scene v12 ${trace.kind} band columns must have equal length`);
       }
-      if (
-        Array.from(xv).some((value) => !Number.isFinite(value))
-        || Array.from(yv).some((value) => !Number.isFinite(value))
-        || Array.from(base).some((value) => !Number.isFinite(value))
-      ) {
-        throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
-      }
       const strokePerimeter = style.stroke_perimeter === undefined ? false : style.stroke_perimeter;
       if (typeof strokePerimeter !== "boolean") {
         throw new RangeError("Scene v25 area stroke_perimeter must be a boolean");
       }
-      const outline = strokePerimeter ? 2 : 1;
-      for (let index = 0; index < xv.length; index += 1) {
-        kinds.push(3); stableIds.push(id); styleRefs.push(styleRef);
-        diameter.push(0); symbols.push(outline);
-        x0.push(xv[index]); y0.push(yv[index]); x1.push(xv[index]); y1.push(base[index]);
-      }
+      appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packTrace({
+        packKind: 3, flags: strokePerimeter ? 1 : 0, styleRef, traceId: id, columns: [xv, yv, base],
+      }));
       continue;
     }
 
     if (RECT_KINDS.has(trace.kind)) {
-      const count = requireEqualColumns([trace.x0, trace.y0, trace.x1, trace.y1], trace.kind, "rectangle");
-      for (let index = 0; index < count; index += 1) {
-        kinds.push(2); stableIds.push(id); styleRefs.push(styleRef);
-        diameter.push(0); symbols.push(0);
-        x0.push(trace.x0[index]); y0.push(trace.y0[index]); x1.push(trace.x1[index]); y1.push(trace.y1[index]);
-      }
+      requireEqualColumns([trace.x0, trace.y0, trace.x1, trace.y1], trace.kind, "rectangle");
+      appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packTrace({
+        packKind: 2, styleRef, traceId: id, columns: [trace.x0, trace.y0, trace.x1, trace.y1],
+      }));
       continue;
     }
 
     if (SEGMENT_KINDS.has(trace.kind)) {
-      const count = requireEqualColumns([trace.x0, trace.y0, trace.x1, trace.y1], trace.kind, "endpoint");
-      for (let index = 0; index < count; index += 1) {
-        const stableId = (BigInt(id) << 32n) | BigInt(index);
-        const runStart = kinds.length;
-        kinds.push(1); stableIds.push(stableId); styleRefs.push(styleRef);
-        diameter.push(0); symbols.push(0);
-        x0.push(trace.x0[index]); y0.push(trace.y0[index]);
-        x1.push(trace.x1[index]); y1.push(trace.y1[index]);
-        expansionRuns.push([runStart, kinds.length, 7]);
-      }
+      requireEqualColumns([trace.x0, trace.y0, trace.x1, trace.y1], trace.kind, "endpoint");
+      appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packTrace({
+        packKind: 8, styleRef, traceId: id, columns: [trace.x0, trace.y0, trace.x1, trace.y1],
+      }));
       continue;
     }
 
     let xv = trace.x;
     let yv = trace.y;
     const where = style.step;
+    let stepMode = 0;
     if (where != null) {
       if (trace.kind !== "line") throw new RangeError("Scene v12 step expansion applies only to line traces");
       if (!["pre", "post", "mid"].includes(where)) {
         throw new RangeError(`Scene v12 does not support step mode ${JSON.stringify(where)}`);
       }
+      stepMode = { pre: 1, mid: 2, post: 3 }[where];
     }
     if (xv == null || yv == null || xv.length !== yv.length) {
       throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
     }
-    if (Array.from(xv).some((value) => !Number.isFinite(value)) || Array.from(yv).some((value) => !Number.isFinite(value))) {
-      throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
-    }
-    const kindCode = trace.kind === "scatter" ? 0 : 1;
-    const runStart = kinds.length;
-    for (let index = 0; index < xv.length; index += 1) {
-      kinds.push(kindCode); stableIds.push(id); styleRefs.push(styleRef);
-      diameter.push(trace.kind === "scatter" ? Number(style.size ?? style.diameter ?? 4) : 0);
-      symbols.push(trace.kind === "scatter" ? sceneSymbolCode(style.symbol ?? 0) : 0);
-      x0.push(xv[index]); y0.push(yv[index]); x1.push(0); y1.push(0);
-    }
-    if (where != null) expansionRuns.push([runStart, kinds.length, { pre: 1, mid: 2, post: 3 }[where]]);
+    appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packTrace({
+      packKind: trace.kind === "scatter" ? 0 : 1,
+      stepMode,
+      symbol: trace.kind === "scatter" ? sceneSymbolCode(style.symbol ?? 0) : 0,
+      styleRef,
+      traceId: id,
+      diameter: trace.kind === "scatter" ? Number(style.size ?? style.diameter ?? 4) : 0,
+      columns: [xv, yv],
+    }));
   }
+
   const annotationPrefix = 0x5859000000000000n, attachedLabels = [], straightArrows = [], cartesianCallouts = [], wrappedAnnotations = [];
   for (const [annotationIndex, annotation] of (figure.annotations ?? []).entries()) {
     const kind = annotation.kind;
@@ -1411,7 +1411,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     }
     const append = (recordKind, a, b, c = 0, d = 0, size = 0, symbol = 0) => {
       if (![a, b, c, d, size].every(Number.isFinite)) throw new RangeError(`Scene v12 ${kind} annotation geometry must be finite`);
-      kinds.push(recordKind); stableIds.push(stableId); styleRefs.push(styleRef); diameter.push(size); symbols.push(symbol); x0.push(a); y0.push(b); x1.push(c); y1.push(d);
+      kinds.push(recordKind); stableIds.push(stableId); styleRefs.push(styleRef); diameter.push(size); symbols.push(symbol); expansionModes.push(0); x0.push(a); y0.push(b); x1.push(c); y1.push(d);
     };
     if (kind === "rule") {
       const value = annotationNumber(annotation, "value", undefined, `${kind} value`);
@@ -1464,8 +1464,6 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     const xyadV3 = wrapped.length > 0, header = xyadV3 ? 28 : 24, out = new Uint8Array(header + xyat.length + xyal.length + xyar.length + xyac.length + (xyadV3 ? xyaw.length : 0)), view = new DataView(out.buffer); out.set(textEncoder.encode("XYAD")); view.setUint32(4,xyadV3 ? 3 : 2,true); view.setUint32(8,xyat.length,true); view.setUint32(12,xyal.length,true); view.setUint32(16,xyar.length,true); view.setUint32(20,xyac.length,true); if (xyadV3) view.setUint32(24,xyaw.length,true); out.set(xyat,header); out.set(xyal,header+xyat.length); out.set(xyar,header+xyat.length+xyal.length); out.set(xyac,header+xyat.length+xyal.length+xyar.length); if (xyadV3) out.set(xyaw,header+xyat.length+xyal.length+xyar.length+xyac.length); return out;
   })();
   const title = figure.title ?? "";
-  const expansionModes = new Uint8Array(kinds.length);
-  for (const [start, end, mode] of expansionRuns) expansionModes.fill(mode, start, end);
   // `Figure.setAxis({ label })` is the public Node authoring form, matching
   // Python's `axis_options`; do not silently drop those bytes before the Rust
   // layout/Scene seam.

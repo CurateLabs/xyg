@@ -300,6 +300,41 @@ class UnsupportedSceneV3(ValueError):
     """The figure uses a feature outside the currently migrated Scene subset."""
 
 
+def _append_packed(
+    kinds: list[int],
+    stable_ids: list[int],
+    style_refs: list[int],
+    diameters: list[float],
+    symbols: list[int],
+    expansion_modes: list[int],
+    coordinates: list[list[float]],
+    pack_kind: int,
+    columns: list[Any],
+    **kwargs: Any,
+) -> None:
+    """Append Rust-packed Scene rows for one trace's geometry columns."""
+    try:
+        (
+            packed_kinds,
+            packed_ids,
+            packed_refs,
+            packed_diameters,
+            packed_symbols,
+            packed_modes,
+            coords,
+        ) = _native.scene_pack_trace(pack_kind, columns, **kwargs)
+    except ValueError as error:
+        raise UnsupportedSceneV3(str(error)) from error
+    kinds.extend(int(value) for value in packed_kinds)
+    stable_ids.extend(int(value) for value in packed_ids)
+    style_refs.extend(int(value) for value in packed_refs)
+    diameters.extend(float(value) for value in packed_diameters)
+    symbols.extend(int(value) for value in packed_symbols)
+    expansion_modes.extend(int(value) for value in packed_modes)
+    for axis in range(4):
+        coordinates[axis].extend(float(value) for value in coords[axis])
+
+
 def _rgba(css: str, opacity: float) -> tuple[int, int, int, int]:
     return _native.css_color_rgba(css, opacity)
 
@@ -742,7 +777,7 @@ def figure_scene(
     diameters: list[float] = []
     symbols: list[int] = []
     coordinates: list[list[float]] = [[], [], [], []]
-    expansion_runs: list[tuple[int, int, int]] = []
+    expansion_modes: list[int] = []
     legend_entries: list[tuple[int, int, int, str]] = []
     for trace in figure.traces:
         if trace.x_axis != "x" or trace.y_axis != "y":
@@ -797,7 +832,6 @@ def figure_scene(
             if trace.kind == "scatter" and trace.size_ch is not None
             else float(style.get("size", 4.0))
         )
-        kind_code = _KIND_CODES[trace.kind]
         if trace.name and figure.show_legend:
             legend_kind = 0 if trace.kind == "scatter" else 1 if trace.kind in _STROKE_KINDS else 2
             legend_entries.append(
@@ -815,43 +849,29 @@ def figure_scene(
                 for value in (trace.x0, trace.x1, trace.y0, trace.y1, trace.x, trace.y)
             ):
                 raise ValueError("ribbon Scene v12 compilation requires six geometry columns")
-            x0s = np.asarray(trace.x0.values, dtype=np.float64)
-            x1s = np.asarray(trace.x1.values, dtype=np.float64)
-            source_lo = np.asarray(trace.y0.values, dtype=np.float64)
-            source_hi = np.asarray(trace.y1.values, dtype=np.float64)
-            target_lo = np.asarray(trace.x.values, dtype=np.float64)
-            target_hi = np.asarray(trace.y.values, dtype=np.float64)
-            if not (
-                len(x0s)
-                == len(x1s)
-                == len(source_lo)
-                == len(source_hi)
-                == len(target_lo)
-                == len(target_hi)
-            ):
+            columns = [
+                np.asarray(trace.x0.values, dtype=np.float64),
+                np.asarray(trace.x1.values, dtype=np.float64),
+                np.asarray(trace.y0.values, dtype=np.float64),
+                np.asarray(trace.y1.values, dtype=np.float64),
+                np.asarray(trace.x.values, dtype=np.float64),
+                np.asarray(trace.y.values, dtype=np.float64),
+            ]
+            if len({len(column) for column in columns}) != 1:
                 raise UnsupportedSceneV3("Scene v12 ribbon columns must have equal length")
-            arrays = (x0s, x1s, source_lo, source_hi, target_lo, target_hi)
-            if any(not np.isfinite(column).all() for column in arrays):
-                raise UnsupportedSceneV3(
-                    "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
-                )
-            for band_index in range(len(x0s)):
-                stable_id = (int(trace.id) << 32) | band_index
-                run_start = len(kinds)
-                for start_y, end_y in (
-                    (source_hi[band_index], target_hi[band_index]),
-                    (source_lo[band_index], target_lo[band_index]),
-                ):
-                    kinds.append(3)
-                    stable_ids.append(stable_id)
-                    style_refs.append(style_ref)
-                    diameters.append(0.0)
-                    symbols.append(2)
-                    coordinates[0].append(float(x0s[band_index]))
-                    coordinates[1].append(float(start_y))
-                    coordinates[2].append(float(x1s[band_index]))
-                    coordinates[3].append(float(end_y))
-                expansion_runs.append((run_start, len(kinds), 4))
+            _append_packed(
+                kinds,
+                stable_ids,
+                style_refs,
+                diameters,
+                symbols,
+                expansion_modes,
+                coordinates,
+                4,
+                columns,
+                style_ref=style_ref,
+                trace_id=int(trace.id),
+            )
             continue
 
         if trace.kind in _POLYFILL_KINDS:
@@ -860,41 +880,29 @@ def figure_scene(
                 for value in (trace.x0, trace.y0, trace.x1, trace.y1, trace.x, trace.y)
             ):
                 raise ValueError("triangle_mesh Scene v12 compilation requires six vertex columns")
-            x0s = np.asarray(trace.x0.values, dtype=np.float64)
-            y0s = np.asarray(trace.y0.values, dtype=np.float64)
-            x1s = np.asarray(trace.x1.values, dtype=np.float64)
-            y1s = np.asarray(trace.y1.values, dtype=np.float64)
-            x2s = np.asarray(trace.x.values, dtype=np.float64)
-            y2s = np.asarray(trace.y.values, dtype=np.float64)
-            if not (len(x0s) == len(y0s) == len(x1s) == len(y1s) == len(x2s) == len(y2s)):
+            columns = [
+                np.asarray(trace.x0.values, dtype=np.float64),
+                np.asarray(trace.y0.values, dtype=np.float64),
+                np.asarray(trace.x1.values, dtype=np.float64),
+                np.asarray(trace.y1.values, dtype=np.float64),
+                np.asarray(trace.x.values, dtype=np.float64),
+                np.asarray(trace.y.values, dtype=np.float64),
+            ]
+            if len({len(column) for column in columns}) != 1:
                 raise UnsupportedSceneV3("Scene v12 triangle_mesh columns must have equal length")
-            arrays = (x0s, y0s, x1s, y1s, x2s, y2s)
-            if any(not np.isfinite(column).all() for column in arrays):
-                raise UnsupportedSceneV3(
-                    "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
-                )
-            for tri_index in range(len(x0s)):
-                stable_id = (int(trace.id) << 32) | tri_index
-                run_start = len(kinds)
-                for px, py, qx, qy in (
-                    (
-                        float(x0s[tri_index]),
-                        float(y0s[tri_index]),
-                        float(x1s[tri_index]),
-                        float(y1s[tri_index]),
-                    ),
-                    (float(x2s[tri_index]), float(y2s[tri_index]), 0.0, 0.0),
-                ):
-                    kinds.append(4)
-                    stable_ids.append(stable_id)
-                    style_refs.append(style_ref)
-                    diameters.append(0.0)
-                    symbols.append(0)
-                    coordinates[0].append(px)
-                    coordinates[1].append(py)
-                    coordinates[2].append(qx)
-                    coordinates[3].append(qy)
-                expansion_runs.append((run_start, len(kinds), 8))
+            _append_packed(
+                kinds,
+                stable_ids,
+                style_refs,
+                diameters,
+                symbols,
+                expansion_modes,
+                coordinates,
+                5,
+                columns,
+                style_ref=style_ref,
+                trace_id=int(trace.id),
+            )
             continue
 
         if trace.kind in _HEXBIN_KINDS:
@@ -904,23 +912,22 @@ def figure_scene(
             yv = np.asarray(trace.y.values, dtype=np.float64)
             if len(xv) != len(yv):
                 raise UnsupportedSceneV3("Scene v12 hexbin columns must have equal length")
-            if not np.isfinite(xv).all() or not np.isfinite(yv).all():
-                raise UnsupportedSceneV3(
-                    "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
-                )
             dx, dy = _hexbin_pitch(style)
-            run_start = len(kinds)
-            for cell_index, (cx, cy) in enumerate(zip(xv, yv, strict=True)):
-                kinds.append(4)
-                stable_ids.append((int(trace.id) << 32) | cell_index)
-                style_refs.append(style_ref)
-                diameters.append(0.0)
-                symbols.append(0)
-                coordinates[0].append(float(cx))
-                coordinates[1].append(float(cy))
-                coordinates[2].append(dx)
-                coordinates[3].append(dy)
-            expansion_runs.append((run_start, len(kinds), 5))
+            _append_packed(
+                kinds,
+                stable_ids,
+                style_refs,
+                diameters,
+                symbols,
+                expansion_modes,
+                coordinates,
+                6,
+                [xv, yv],
+                style_ref=style_ref,
+                trace_id=int(trace.id),
+                extra0=dx,
+                extra1=dy,
+            )
             continue
 
         if trace.kind in _HEATMAP_KINDS:
@@ -933,105 +940,109 @@ def figure_scene(
                     "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
                 )
             x0, x1, y0, y1 = _heatmap_extent(trace)
-            run_start = len(kinds)
-            kinds.extend((2, 2))
-            stable_ids.extend((int(trace.id), int(trace.id)))
-            style_refs.extend((style_ref, style_ref))
-            diameters.extend((float(rows), float(cols)))
-            symbols.extend((0, 0))
-            coordinates[0].extend((x0, 0.0))
-            coordinates[1].extend((y0, 0.0))
-            coordinates[2].extend((x1, 0.0))
-            coordinates[3].extend((y1, 0.0))
-            expansion_runs.append((run_start, len(kinds), 6))
+            _append_packed(
+                kinds,
+                stable_ids,
+                style_refs,
+                diameters,
+                symbols,
+                expansion_modes,
+                coordinates,
+                7,
+                [
+                    np.asarray([x0], dtype=np.float64),
+                    np.asarray([y0], dtype=np.float64),
+                    np.asarray([x1], dtype=np.float64),
+                    np.asarray([y1], dtype=np.float64),
+                ],
+                style_ref=style_ref,
+                trace_id=int(trace.id),
+                extra0=float(rows),
+                extra1=float(cols),
+            )
             continue
 
         if trace.kind in _BAND_KINDS:
             xv, yv, base = _band_columns(trace)
-            if not (np.isfinite(xv).all() and np.isfinite(yv).all() and np.isfinite(base).all()):
-                raise UnsupportedSceneV3(
-                    "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
-                )
             stroke_perimeter = style.get("stroke_perimeter", False)
             if not isinstance(stroke_perimeter, bool):
                 raise UnsupportedSceneV3("Scene v25 area stroke_perimeter must be a boolean")
-            outline = 2 if stroke_perimeter else 1
-            for index in range(len(xv)):
-                kinds.append(3)
-                stable_ids.append(int(trace.id))
-                style_refs.append(style_ref)
-                diameters.append(0.0)
-                symbols.append(outline)
-                coordinates[0].append(float(xv[index]))
-                coordinates[1].append(float(yv[index]))
-                coordinates[2].append(float(xv[index]))
-                coordinates[3].append(float(base[index]))
+            _append_packed(
+                kinds,
+                stable_ids,
+                style_refs,
+                diameters,
+                symbols,
+                expansion_modes,
+                coordinates,
+                3,
+                [xv, yv, base],
+                flags=1 if stroke_perimeter else 0,
+                style_ref=style_ref,
+                trace_id=int(trace.id),
+            )
             continue
 
         if trace.kind in _RECT_KINDS:
             arrays = _rect_columns(trace)
-            if any(not np.isfinite(source).all() for source in arrays):
-                raise UnsupportedSceneV3(
-                    "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
-                )
-            for index in range(len(arrays[0])):
-                kinds.append(kind_code)
-                stable_ids.append(int(trace.id))
-                style_refs.append(style_ref)
-                diameters.append(0.0)
-                symbols.append(0)
-                for destination, source in zip(coordinates, arrays, strict=True):
-                    destination.append(float(source[index]))
+            _append_packed(
+                kinds,
+                stable_ids,
+                style_refs,
+                diameters,
+                symbols,
+                expansion_modes,
+                coordinates,
+                2,
+                arrays,
+                style_ref=style_ref,
+                trace_id=int(trace.id),
+            )
             continue
 
         if trace.kind in _SEGMENT_KINDS:
             arrays = _segment_columns(trace)
-            if any(not np.isfinite(source).all() for source in arrays):
-                raise UnsupportedSceneV3(
-                    "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
-                )
-            x0s, y0s, x1s, y1s = arrays
-            for index in range(len(x0s)):
-                # Unique stable id per segment so polyline runs stay disconnected.
-                stable_id = (int(trace.id) << 32) | index
-                run_start = len(kinds)
-                kinds.append(1)
-                stable_ids.append(stable_id)
-                style_refs.append(style_ref)
-                diameters.append(0.0)
-                symbols.append(0)
-                coordinates[0].append(float(x0s[index]))
-                coordinates[1].append(float(y0s[index]))
-                coordinates[2].append(float(x1s[index]))
-                coordinates[3].append(float(y1s[index]))
-                expansion_runs.append((run_start, len(kinds), 7))
+            _append_packed(
+                kinds,
+                stable_ids,
+                style_refs,
+                diameters,
+                symbols,
+                expansion_modes,
+                coordinates,
+                8,
+                arrays,
+                style_ref=style_ref,
+                trace_id=int(trace.id),
+            )
             continue
 
         xv = np.asarray(trace.x.values, dtype=np.float64)
         yv = np.asarray(trace.y.values, dtype=np.float64)
         where = style.get("step")
+        step_mode = 0
         if where is not None:
             if trace.kind != "line":
                 raise UnsupportedSceneV3("Scene v12 step expansion applies only to line traces")
             if where not in {"pre", "post", "mid"}:
                 raise UnsupportedSceneV3(f"Scene v12 does not support step mode {where!r}")
-        if not np.isfinite(xv).all() or not np.isfinite(yv).all():
-            raise UnsupportedSceneV3(
-                "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
-            )
-        run_start = len(kinds)
-        for index in range(len(xv)):
-            kinds.append(kind_code)
-            stable_ids.append(int(trace.id))
-            style_refs.append(style_ref)
-            diameters.append(diameter if trace.kind == "scatter" else 0.0)
-            symbols.append(_SYMBOL_CODES[symbol_name] if trace.kind == "scatter" else 0)
-            coordinates[0].append(float(xv[index]))
-            coordinates[1].append(float(yv[index]))
-            coordinates[2].append(0.0)
-            coordinates[3].append(0.0)
-        if where is not None:
-            expansion_runs.append((run_start, len(kinds), {"pre": 1, "mid": 2, "post": 3}[where]))
+            step_mode = {"pre": 1, "mid": 2, "post": 3}[where]
+        _append_packed(
+            kinds,
+            stable_ids,
+            style_refs,
+            diameters,
+            symbols,
+            expansion_modes,
+            coordinates,
+            0 if trace.kind == "scatter" else 1,
+            [xv, yv],
+            step_mode=step_mode,
+            symbol=_SYMBOL_CODES[symbol_name] if trace.kind == "scatter" else 0,
+            style_ref=style_ref,
+            trace_id=int(trace.id),
+            diameter=diameter if trace.kind == "scatter" else 0.0,
+        )
 
     # Scene v12's bounded primary-annotation subset is represented by ordinary
     # canonical records with a reserved stable-id namespace. Rust therefore
@@ -1366,6 +1377,7 @@ def figure_scene(
             style_refs.append(annotation_style_ref)
             diameters.append(size)
             symbols.append(symbol)
+            expansion_modes.append(0)
             for destination, value in zip(coordinates, (a, b, c, d), strict=True):
                 destination.append(float(value))
 
@@ -1414,9 +1426,6 @@ def figure_scene(
     fill_rgba = [channel for fill, _, _ in styles for channel in fill]
     stroke_rgba = [channel for _, stroke, _ in styles for channel in stroke]
     stroke_width = [value for _, _, value in styles]
-    expansion_modes = [0] * len(kinds)
-    for start, end, mode in expansion_runs:
-        expansion_modes[start:end] = [mode] * (end - start)
     kind_codes = {"linear": 0, "log": 1, "symlog": 2}
 
     def axis(axis_id: str, stable_id: int) -> tuple[int, int, float, float, float, bool]:

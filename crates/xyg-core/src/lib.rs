@@ -36,6 +36,7 @@ use xyg_engine::projection;
 use xyg_engine::raster;
 use xyg_engine::sankey;
 use xyg_engine::scene;
+use xyg_engine::scene_pack::{self, PackError};
 use xyg_engine::scene_public_export_reason;
 use xyg_engine::scene_style::{self, MarkStyleError};
 use xyg_engine::stats;
@@ -102,7 +103,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 108;
+pub const ABI_VERSION: u32 = 109;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -262,6 +263,122 @@ pub unsafe extern "C" fn xyg_scene_resolve_chrome_style(
                     std::slice::from_raw_parts_mut(out, out_cap)
                 };
                 match scene_style::encode_chrome_style(&style, dest) {
+                    Ok(count) => count,
+                    Err(error) => -(error as i32),
+                }
+            }
+            Err(error) => -(error as i32),
+        }
+    })
+}
+
+/// Pack one Figure trace's columns into Scene rows.
+///
+/// Hosts pass authoring kind, style ref, trace id, diameter/symbol, optional
+/// extras (hex pitch, heatmap shape), and up to six f64 columns. Rust owns
+/// Scene record kinds, stable-id splitting, expansion-mode assignment,
+/// ribbon/triangle doubling, heatmap lattice framing, and finite-coordinate
+/// rejection. Returns the row count on success. `-1` malformed, `-2`
+/// reserved, `-3` over the mark budget, `-4` when `out` is too small, `-5`
+/// when a required coordinate is non-finite.
+///
+/// Each output record is 56 bytes: kind, symbol, expansion mode, pad,
+/// little-endian u32 style_ref, u64 stable_id, and five f64 fields
+/// (diameter, x0, y0, x1, y1).
+///
+/// # Safety
+/// Each non-zero `nK` requires `colK` to address that many readable f64s.
+/// When `out_cap` is non-zero, `out` must address that many writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_pack_trace(
+    pack_kind: u8,
+    flags: u8,
+    step_mode: u8,
+    symbol: u8,
+    style_ref: u32,
+    trace_id: u64,
+    diameter: f64,
+    extra0: f64,
+    extra1: f64,
+    col0: *const f64,
+    n0: usize,
+    col1: *const f64,
+    n1: usize,
+    col2: *const f64,
+    n2: usize,
+    col3: *const f64,
+    n3: usize,
+    col4: *const f64,
+    n4: usize,
+    col5: *const f64,
+    n5: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if out_cap > 0 && out.is_null() {
+        return -(PackError::Length as i32);
+    }
+    ffi_guard(-(PackError::Length as i32), || {
+        let slice = |ptr: *const f64, n: usize| -> Result<&[f64], i32> {
+            if n == 0 {
+                Ok(&[])
+            } else if ptr.is_null() {
+                Err(-(PackError::Length as i32))
+            } else {
+                Ok(std::slice::from_raw_parts(ptr, n))
+            }
+        };
+        let columns = [
+            match slice(col0, n0) {
+                Ok(value) => value,
+                Err(code) => return code,
+            },
+            match slice(col1, n1) {
+                Ok(value) => value,
+                Err(code) => return code,
+            },
+            match slice(col2, n2) {
+                Ok(value) => value,
+                Err(code) => return code,
+            },
+            match slice(col3, n3) {
+                Ok(value) => value,
+                Err(code) => return code,
+            },
+            match slice(col4, n4) {
+                Ok(value) => value,
+                Err(code) => return code,
+            },
+            match slice(col5, n5) {
+                Ok(value) => value,
+                Err(code) => return code,
+            },
+        ];
+        match scene_pack::pack_trace(scene_pack::TracePackInput {
+            pack_kind,
+            flags,
+            step_mode,
+            symbol,
+            style_ref,
+            trace_id,
+            diameter,
+            extra0,
+            extra1,
+            columns: &columns,
+        }) {
+            Ok(rows) => {
+                let needed = rows
+                    .len()
+                    .saturating_mul(scene_pack::PACKED_SCENE_ROW_BYTES);
+                if needed > out_cap {
+                    return -(PackError::Output as i32);
+                }
+                let dest = if out_cap == 0 {
+                    &mut []
+                } else {
+                    std::slice::from_raw_parts_mut(out, out_cap)
+                };
+                match scene_pack::encode_packed_rows(&rows, dest) {
                     Ok(count) => count,
                     Err(error) => -(error as i32),
                 }

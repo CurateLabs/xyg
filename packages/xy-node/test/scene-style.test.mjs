@@ -3,8 +3,8 @@ import test from "node:test";
 
 import { cssColorRgba8, lineChart, scatterChart } from "../src/index.js";
 import { figureSceneV3 } from "../src/scene.js";
-import { xySceneResolveChromeStyle } from "../src/native.js";
-import { u8Ptr } from "../src/encode.js";
+import { xyScenePackTrace, xySceneResolveChromeStyle } from "../src/native.js";
+import { f64Ptr, u8Ptr } from "../src/encode.js";
 
 test("cssColorRgba8 matches Python named colors and none", () => {
   assert.deepEqual(Array.from(cssColorRgba8("#3b82f6")), [0x3b, 0x82, 0xf6, 255]);
@@ -73,4 +73,70 @@ test("grid_opacity scales the default grid color without authored grid_color", (
   const chrome = resolveChrome(envelope);
   assert.deepEqual(Array.from(chrome.subarray(24 + 12, 24 + 16)), [32, 32, 32, 0]);
   assert.deepEqual(Array.from(chrome.subarray(112 + 12, 112 + 16)), [32, 32, 32, 36]);
+});
+
+function packTrace(packKind, columns, extras = {}) {
+  const padded = [...columns];
+  while (padded.length < 6) padded.push(null);
+  const args = padded.slice(0, 6).map((column) => {
+    if (column == null || column.length === 0) return { ptr: 0, n: 0, keep: null };
+    const arr = Float64Array.from(column, Number);
+    return { ptr: f64Ptr(arr), n: arr.length, keep: arr };
+  });
+  const n0 = args[0].n;
+  const nRows = packKind === 4 || packKind === 5 ? n0 * 2 : packKind === 7 ? 2 : n0;
+  const out = new Uint8Array(Math.max(nRows, 1) * 56);
+  const code = xyScenePackTrace(
+    packKind,
+    extras.flags ?? 0,
+    extras.stepMode ?? 0,
+    extras.symbol ?? 0,
+    extras.styleRef ?? 0,
+    BigInt(extras.traceId ?? 0),
+    extras.diameter ?? 0,
+    extras.extra0 ?? 0,
+    extras.extra1 ?? 0,
+    args[0].ptr, BigInt(args[0].n),
+    args[1].ptr, BigInt(args[1].n),
+    args[2].ptr, BigInt(args[2].n),
+    args[3].ptr, BigInt(args[3].n),
+    args[4].ptr, BigInt(args[4].n),
+    args[5].ptr, BigInt(args[5].n),
+    u8Ptr(out),
+    BigInt(out.length),
+  );
+  return { code, out };
+}
+
+test("pack_trace scatter keeps one row per point", () => {
+  const { code, out } = packTrace(0, [[0, 1], [2, 3]], { symbol: 4, styleRef: 1, traceId: 7, diameter: 6 });
+  assert.equal(code, 2);
+  const view = new DataView(out.buffer);
+  assert.equal(out[0], 0);
+  assert.equal(out[1], 4);
+  assert.equal(view.getUint32(4, true), 1);
+  assert.equal(view.getBigUint64(8, true), 7n);
+  assert.equal(view.getFloat64(16, true), 6);
+  assert.equal(view.getFloat64(24, true), 0);
+  assert.equal(view.getFloat64(32, true), 2);
+  assert.equal(out[56], 0);
+  assert.equal(view.getFloat64(56 + 24, true), 1);
+  assert.equal(view.getFloat64(56 + 32, true), 3);
+});
+
+test("pack_trace heatmap frames extent then shape", () => {
+  const { code, out } = packTrace(7, [[1], [2], [3], [4]], { styleRef: 9, traceId: 11, extra0: 2, extra1: 3 });
+  assert.equal(code, 2);
+  const view = new DataView(out.buffer);
+  assert.equal(out[0], 2);
+  assert.equal(out[2], 6);
+  assert.equal(view.getFloat64(16, true), 2);
+  assert.equal(view.getFloat64(24, true), 1);
+  assert.equal(view.getFloat64(56 + 16, true), 3);
+  assert.equal(view.getFloat64(56 + 24, true), 0);
+});
+
+test("pack_trace rejects nonfinite coordinates", () => {
+  const { code } = packTrace(1, [[0, Number.NaN], [1, 2]]);
+  assert.equal(code, -5);
 });

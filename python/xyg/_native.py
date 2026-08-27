@@ -1896,6 +1896,103 @@ def scene_resolve_chrome_style(payload: bytes) -> bytes:
     return bytes(out)
 
 
+def scene_pack_trace(
+    pack_kind: int,
+    columns: list[npt.NDArray[np.float64] | None],
+    *,
+    flags: int = 0,
+    step_mode: int = 0,
+    symbol: int = 0,
+    style_ref: int = 0,
+    trace_id: int = 0,
+    diameter: float = 0.0,
+    extra0: float = 0.0,
+    extra1: float = 0.0,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Pack one trace's columns into Scene rows (kind/id/coords/expansion)."""
+    keep_alive: list[np.ndarray] = []
+    lengths: list[int] = []
+    pointers: list[int] = []
+    padded = list(columns) + [None] * 6
+    for column in padded[:6]:
+        if column is None:
+            keep_alive.append(np.empty(0, dtype=np.float64))
+            lengths.append(0)
+            pointers.append(0)
+            continue
+        arr = np.ascontiguousarray(np.asarray(column, dtype=np.float64).reshape(-1))
+        keep_alive.append(arr)
+        lengths.append(int(arr.size))
+        pointers.append(_ptr_f64(arr) if arr.size else 0)
+    n0 = lengths[0]
+    if pack_kind in {4, 5}:
+        n_rows = n0 * 2
+    elif pack_kind == 7:
+        n_rows = 2
+    else:
+        n_rows = n0
+    out = np.zeros(max(n_rows, 1) * 56, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_pack_trace(
+            int(pack_kind),
+            int(flags),
+            int(step_mode),
+            int(symbol),
+            int(style_ref),
+            int(trace_id),
+            float(diameter),
+            float(extra0),
+            float(extra1),
+            pointers[0],
+            lengths[0],
+            pointers[1],
+            lengths[1],
+            pointers[2],
+            lengths[2],
+            pointers[3],
+            lengths[3],
+            pointers[4],
+            lengths[4],
+            pointers[5],
+            lengths[5],
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if len(keep_alive) != 6:
+        raise RuntimeError("scene pack columns must be six native buffers")
+    if code == -5:
+        raise ValueError(
+            "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
+        )
+    if code < 0:
+        raise ValueError("invalid scene trace packing")
+    empty_u8 = np.empty(0, dtype=np.uint8)
+    empty_u64 = np.empty(0, dtype=np.uint64)
+    empty_u32 = np.empty(0, dtype=np.uint32)
+    empty_f64 = np.empty(0, dtype=np.float64)
+    if code == 0:
+        return (
+            empty_u8,
+            empty_u64,
+            empty_u32,
+            empty_f64,
+            empty_u8,
+            empty_u8,
+            empty_f64.reshape(4, 0),
+        )
+    raw = np.frombuffer(out[: code * 56].tobytes(), dtype=np.uint8).reshape(code, 56)
+    kinds = np.ascontiguousarray(raw[:, 0])
+    symbols = np.ascontiguousarray(raw[:, 1])
+    expansion = np.ascontiguousarray(raw[:, 2])
+    style_refs = np.ascontiguousarray(raw[:, 4:8].copy().view("<u4").reshape(code))
+    stable_ids = np.ascontiguousarray(raw[:, 8:16].copy().view("<u8").reshape(code))
+    nums = raw[:, 16:56].copy().view("<f8").reshape(code, 5)
+    diameters = np.ascontiguousarray(nums[:, 0])
+    coords = np.ascontiguousarray(nums[:, 1:5].T)
+    return kinds, stable_ids, style_refs, diameters, symbols, expansion, coords
+
+
 def rect_zero_baseline_flags(base: npt.NDArray[np.float64], value: npt.NDArray[np.float64]) -> int:
     """Pack rectangle zero-baseline predicates for an XYAR trace row."""
     base_arr = np.ascontiguousarray(np.asarray(base, dtype=np.float64))

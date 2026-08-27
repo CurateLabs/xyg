@@ -1278,6 +1278,11 @@ Hosts pack an `XYCH` v1 envelope of background CSS, per-axis sides, paint
 flags, opacities, widths, and CSS strings; `grid_opacity` still scales the
 default grid color when `grid_color` is unauthored, and named chrome paints
 cannot drift.
+ABI 109 moves Figure→Scene row packing into Rust. Hosts pass kind, flags,
+step mode, style ref, trace id, diameter/symbol, extras, and literal f64
+columns; record kinds, stable-id splitting, expansion-mode assignment,
+ribbon/triangle doubling, heatmap lattice framing, and finite-coordinate
+rejection are engine-owned and identical for Python and Node.
 Constant-style Cartesian heatmap compiles a regular rows x cols lattice onto
 existing Scene Rect records; polar, colormaps, truecolor, irregular
 spacing, and LOD stay compatibility.
