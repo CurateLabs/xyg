@@ -714,6 +714,41 @@ def load() -> ctypes.CDLL:
         U32P,
         ctypes.c_size_t,
     ]
+    lib.xyg_legend_box_layout.restype = ctypes.c_size_t
+    lib.xyg_legend_box_layout.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        F64P,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_size_t),
+    ]
     lib.xyg_hexbin_groups.restype = ctypes.c_size_t
     lib.xyg_hexbin_groups.argtypes = [
         F64P,
@@ -2204,6 +2239,58 @@ def main() -> None:
         and abs(tick_angle[0] + 30.0) < 1e-12
         and list(tick_row) == [0] * 9,
         "tick_label_layout end-anchor rotate keeps all",
+    )
+    lg_labels = [b"1", b"2", b"3", b"4"]
+    lg_packed = b"".join(lg_labels)
+    lg_lens = array("I", [len(item) for item in lg_labels])
+    lg_bytes = array("B", lg_packed)
+    lg_title = array("B", b"Classes")
+    lg_loc = array("B", b"lower left")
+    lg_metrics = array("d", [0.0] * 17)
+    lg_widths = array("d", [0.0] * 4)
+    lg_offsets = array("d", [0.0] * 4)
+    lg_name_lens = array("I", [0] * 4)
+    lg_names = array("B", [0] * 64)
+    lg_title_out = array("B", [0] * 32)
+    lg_title_len = ctypes.c_size_t(0)
+    lg_n = lib.xyg_legend_box_layout(
+        0.0,
+        0.0,
+        560.0,
+        400.0,
+        _ptr(lg_lens, ctypes.c_uint32),
+        _ptr(lg_bytes, ctypes.c_uint8),
+        len(lg_packed),
+        4,
+        _ptr(lg_title, ctypes.c_uint8),
+        len(lg_title),
+        _ptr(lg_loc, ctypes.c_uint8),
+        len(lg_loc),
+        11.0,
+        float("nan"),
+        float("nan"),
+        float("nan"),
+        1,
+        0.4,
+        0.5,
+        null_f64,
+        0,
+        0.0,
+        _ptr(lg_metrics, ctypes.c_double),
+        _ptr(lg_widths, ctypes.c_double),
+        _ptr(lg_offsets, ctypes.c_double),
+        4,
+        _ptr(lg_name_lens, ctypes.c_uint32),
+        _ptr(lg_names, ctypes.c_uint8),
+        len(lg_names),
+        _ptr(lg_title_out, ctypes.c_uint8),
+        len(lg_title_out),
+        ctypes.byref(lg_title_len),
+    )
+    lg_title_text = bytes(lg_title_out[: lg_title_len.value]).decode()
+    ok(
+        lg_n == 4 and lg_title_text.startswith("Clas") and lg_metrics[12] > 0.0,
+        "legend_box_layout keeps Classes title prefix",
     )
     cf_x = array("d", [0.0, 1.0, 2.0, 3.0, 4.0])
     cf_y = array("d", [0.0, 1.0, 0.5, 2.0, 1.5])

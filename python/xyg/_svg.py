@@ -6197,16 +6197,11 @@ def legend_clip_rect(plot: dict) -> tuple[float, float, float, float]:
 
 
 def _legend_layout(named: list[dict], plot: dict, options: dict) -> dict[str, Any]:
-    """Shared bounded legend geometry for SVG and native raster exports.
+    """Thin packer over Rust static legend box packing (ABI 124).
 
-    Static files cannot offer the browser legend's scrollbar, so an oversized
-    legend is kept inside the plot and its labels are visibly ellipsized. A
-    Columns follow Matplotlib's handle/text/column spacing and size to their
-    own labels rather than inheriting the width of the longest label.
-
-    A polar chart hands over a `legend_box_*` gutter beside the disc
-    (`_recut_polar_plot`); everything below then bounds and places the legend in
-    that box instead of over the marks, and `loc` chooses where within it.
+    Hosts still resolve CSS font-size / em paddings and pack entry strings.
+    Column sizing, measured ellipsis, and loc / bbox-to-anchor placement live
+    in ``legend_layout.rs`` so SVG, raster, and Node cannot drift.
     """
     if "legend_box_w" in plot:
         plot = {
@@ -6218,176 +6213,25 @@ def _legend_layout(named: list[dict], plot: dict, options: dict) -> dict[str, An
         }
     style_opts = options.get("style") or {}
     font_size = _legend_font_size(style_opts)
-    char_width = font_size * (_LEGEND_CHAR_WIDTH / 11.0)
-    text_h = font_size * 1.03
-    borderpad = _legend_em(style_opts, "padding", 0.4)
-    labelspacing = _legend_em(style_opts, "rowGap", 0.5)
-    # Matplotlib's legend dimensions are expressed in font-size units:
-    # borderpad is applied on both sides, handlelength=2, handletextpad=.8,
-    # columnspacing=2, and labelspacing=.5 by default.
-    pad = 2.0 * borderpad * font_size
-    handle = max(0.0, float(options.get("handlelength", 2.0))) * font_size
-    gap = max(0.0, float(options.get("handletextpad", 0.8))) * font_size
-    column_gap = 2.0 * font_size
-    row_gap = labelspacing * font_size
-    line_h = text_h + row_gap
-    requested_handleheight = options.get("handleheight")
-    swatch_h = 8.0
-    if requested_handleheight is not None:
-        swatch_h = max(8.0, 11.0 * float(requested_handleheight))
-        line_h = max(line_h, swatch_h + 2.0)
-
-    requested_cols = min(len(named), max(1, int(options.get("ncols", 1))))
-    title = options.get("title")
-    title_h = line_h if title else 0.0
-    inset = 6.0
-    anchor = options.get("anchor")
-    # An anchored legend is positioned from ``bbox_to_anchor`` rather than
-    # inset from both plot edges.  Charging it the unanchored 6 px inset on
-    # both sides unnecessarily shortened otherwise fitting labels.  The
-    # Matplotlib survey-gallery legend is the boundary case: its measured
-    # five-column box fits the axes width, but not ``axes width - 12 px``.
-    # Keep the plot-width cap so genuinely oversized static legends still
-    # ellipsize instead of escaping the bounded export.
-    available_w = max(
-        1.0,
-        float(plot["w"]) if anchor and len(anchor) in (2, 4) else float(plot["w"]) - 2 * inset,
+    raw_title = options.get("title")
+    raw_anchor = options.get("anchor")
+    laid = _native.scene_legend_box_layout(
+        plot=plot,
+        names=[str(item.get("name", "")) for item in named],
+        title=str(raw_title) if raw_title else None,
+        loc=str(options.get("loc") or "upper right"),
+        font_size=font_size,
+        handlelength=options.get("handlelength"),
+        handletextpad=options.get("handletextpad"),
+        handleheight=options.get("handleheight"),
+        ncols=max(1, int(options.get("ncols", 1))),
+        padding_em=_legend_em(style_opts, "padding", 0.4),
+        row_gap_em=_legend_em(style_opts, "rowGap", 0.5),
+        anchor=raw_anchor if raw_anchor is not None and len(raw_anchor) in (2, 4) else None,
+        border_axes_pad=max(0.0, float(options.get("border_pad", 0.0) or 0.0)),
     )
-    ncols = requested_cols
-    min_column_w = handle + gap + 4 * char_width
-    if ncols * min_column_w + (ncols - 1) * column_gap + pad > available_w:
-        # A column must at least retain its handle and a visible ellipsis.
-        max_fit_cols = max(
-            1,
-            int(max(0.0, available_w - pad + column_gap) // (min_column_w + column_gap)),
-        )
-        ncols = min(ncols, max_fit_cols)
-
-    natural_text_widths = [
-        max(
-            _legend_text_width(named[index].get("name", ""), char_width)
-            for index in range(column, len(named), ncols)
-        )
-        for column in range(ncols)
-    ]
-    available_text_w = max(
-        0.0,
-        available_w - pad - ncols * (handle + gap) - (ncols - 1) * column_gap,
-    )
-    minimum_text_w = 4 * char_width
-    text_widths = [min(width, minimum_text_w) for width in natural_text_widths]
-    remaining = max(0.0, available_text_w - sum(text_widths))
-    needs = [
-        max(0.0, width - current)
-        for width, current in zip(natural_text_widths, text_widths, strict=True)
-    ]
-    needed = sum(needs)
-    if needed:
-        scale = min(1.0, remaining / needed)
-        text_widths = [
-            current + need * scale for current, need in zip(text_widths, needs, strict=True)
-        ]
-    column_widths = [handle + gap + width for width in text_widths]
-    box_w = min(available_w, sum(column_widths) + (ncols - 1) * column_gap + pad)
-    if title:
-        # ``pad`` is the sum of the two side pads. The previous one-sided
-        # calculation expanded the box to the title's glyph width but then
-        # ellipsized against ``box_w - 2 * pad`` (e.g. "Classes" -> "Cl...").
-        title_w = _legend_text_width(title, char_width) + pad
-        if title_w > box_w:
-            extra = min(available_w - box_w, title_w - box_w)
-            column_widths = [width + extra / ncols for width in column_widths]
-            text_widths = [width + extra / ncols for width in text_widths]
-            box_w += extra
-    column_offsets = []
-    cursor = pad / 2
-    for width in column_widths:
-        column_offsets.append(cursor)
-        cursor += width + column_gap
-
-    nrows = (len(named) + ncols - 1) // ncols
-    available_h = max(1.0, float(plot["h"]) - 2 * inset)
-    visible_rows = nrows
-    content_rows = nrows + (1 if title else 0)
-    natural_box_h = content_rows * text_h + max(0, content_rows - 1) * row_gap + pad
-    if natural_box_h > available_h:
-        title_room = text_h + row_gap if title else 0.0
-        available_entries_h = max(0.0, available_h - pad - title_room)
-        visible_rows = max(0, int((available_entries_h + row_gap) // line_h))
-    visible_count = min(len(named), visible_rows * ncols)
-    visible_content_rows = visible_rows + (1 if title else 0)
-    box_h = min(
-        available_h,
-        visible_content_rows * text_h + max(0, visible_content_rows - 1) * row_gap + pad,
-    )
-
-    loc = options.get("loc") or "upper right"
-    loc_tokens = set(re.split(r"[\s_-]+", loc))
-    loc_is_upper = "upper" in loc or "top" in loc_tokens
-    loc_is_lower = "lower" in loc or "bottom" in loc_tokens
-    if anchor and len(anchor) in (2, 4):
-        ax, ay = float(anchor[0]), float(anchor[1])
-        aw, ah = (0.0, 0.0) if len(anchor) == 2 else (float(anchor[2]), float(anchor[3]))
-        hx = 0.0 if "left" in loc else 1.0 if "right" in loc else 0.5
-        vy = 0.0 if loc_is_lower else 1.0 if loc_is_upper else 0.5
-        target_x = float(plot["x"]) + (ax + hx * aw) * float(plot["w"])
-        target_y = float(plot["y"]) + (1.0 - ay - vy * ah) * float(plot["h"])
-        x = target_x - hx * box_w
-        y = target_y - (1.0 - vy) * box_h
-        border_axes_pad = max(0.0, float(options.get("border_pad", 0.0)))
-        x += border_axes_pad if hx == 0.0 else -border_axes_pad if hx == 1.0 else 0.0
-        # SVG/raster coordinates increase downward, so a "lower" legend is
-        # moved upward from its anchor and an "upper" legend moves downward.
-        y += border_axes_pad if vy == 1.0 else -border_axes_pad if vy == 0.0 else 0.0
-    else:
-        if "left" in loc:
-            x = float(plot["x"]) + inset
-        elif "right" in loc:
-            x = float(plot["x"]) + float(plot["w"]) - box_w - inset
-        else:
-            x = float(plot["x"]) + (float(plot["w"]) - box_w) / 2
-        if loc_is_upper:
-            y = float(plot["y"]) + inset
-        elif loc_is_lower:
-            y = float(plot["y"]) + float(plot["h"]) - box_h - inset
-        else:
-            y = float(plot["y"]) + (float(plot["h"]) - box_h) / 2
-        x = min(
-            max(x, float(plot["x"]) + inset),
-            float(plot["x"]) + float(plot["w"]) - box_w - inset,
-        )
-        y = min(
-            max(y, float(plot["y"]) + inset),
-            float(plot["y"]) + float(plot["h"]) - box_h - inset,
-        )
-
-    return {
-        "style": style_opts,
-        "pad": pad,
-        "handle": handle,
-        "gap": gap,
-        "column_gap": column_gap,
-        "row_gap": row_gap,
-        "font_size": font_size,
-        "text_h": text_h,
-        "line_h": line_h,
-        "swatch_h": swatch_h,
-        "ncols": ncols,
-        "title": _legend_text(title, max(0.0, box_w - pad), char_width) if title else None,
-        "title_h": title_h,
-        "cell_w": max(column_widths),
-        "column_widths": column_widths,
-        "column_offsets": column_offsets,
-        "box_w": box_w,
-        "box_h": box_h,
-        "x": x,
-        "y": y,
-        "visible_count": visible_count,
-        "names": [
-            _legend_text(t.get("name", ""), text_widths[index % ncols], char_width)
-            for index, t in enumerate(named[:visible_count])
-        ],
-    }
+    laid["style"] = style_opts
+    return laid
 
 
 def _legend(

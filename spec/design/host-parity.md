@@ -217,6 +217,11 @@ ABI 123 moves tick-label collision thinning into Rust: Python and Node
 call `xyg_scene_tick_label_layout` so auto / hide / rotate / stagger,
 the edge-anchor rotate gap, and stride downsampling cannot drift.
 Hosts still format label strings and map tick values to pixels.
+ABI 124 moves static legend box packing into Rust: Python and Node
+call `xyg_legend_box_layout` so column fit, measured ellipsis, and loc /
+bbox-to-anchor placement cannot drift. Hosts still resolve CSS font-size
+/ em paddings and pack entry strings. Polar `legend_box_*` remapping
+stays host-side.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call

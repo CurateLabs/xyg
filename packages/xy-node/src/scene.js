@@ -3,6 +3,7 @@ import {
   pointer,
   xySceneAxisTicks,
   xySceneTickLabelLayout,
+  xyLegendBoxLayout,
   xySceneBatchEncode,
   xySceneBrowserPainter,
   xyScenePackAnnotations,
@@ -362,6 +363,134 @@ export function tickLabelLayout({
     angle: outAngle[index],
     row: outRow[index],
   }));
+}
+
+export function legendBoxLayout({
+  plot,
+  names = [],
+  title = null,
+  loc = "upper right",
+  fontSize = 11,
+  handleLength,
+  handleTextPad,
+  handleHeight,
+  ncols = 1,
+  paddingEm = 0.4,
+  rowGapEm = 0.5,
+  anchor,
+  borderAxesPad = 0,
+} = {}) {
+  if (plot == null || typeof plot !== "object") {
+    throw new TypeError("plot must be an object with x, y, w, and h");
+  }
+  const texts = Array.from(names ?? [], (name) => String(name));
+  const encoder = new TextEncoder();
+  const encoded = texts.map((text) => encoder.encode(text));
+  const packedLen = encoded.reduce((sum, bytes) => sum + bytes.length, 0);
+  const packed = new Uint8Array(packedLen);
+  const lens = new Uint32Array(texts.length);
+  let at = 0;
+  for (const [index, bytes] of encoded.entries()) {
+    lens[index] = bytes.length;
+    packed.set(bytes, at);
+    at += bytes.length;
+  }
+  const titleBytes = encoder.encode(title == null ? "" : String(title));
+  const locBytes = encoder.encode(loc == null || loc === "" ? "upper right" : String(loc));
+  const n = texts.length;
+  const colCap = Math.max(n, 1);
+  const metrics = new Float64Array(17);
+  const widths = new Float64Array(colCap);
+  const offsets = new Float64Array(colCap);
+  const nameLens = new Uint32Array(colCap);
+  const namesCap = packedLen + 3 * n;
+  const namesOut = new Uint8Array(Math.max(namesCap, 1));
+  const titleCap = Math.max(titleBytes.length + 8, 1);
+  const titleOut = new Uint8Array(titleCap);
+  const titleLen = new BigUint64Array(1);
+  let anchorArr = null;
+  let anchorLen = 0;
+  if (anchor != null) {
+    const vals = Array.from(anchor, (value) => Number(value));
+    if (vals.length !== 2 && vals.length !== 4) {
+      throw new RangeError("legend anchor must have length 2 or 4");
+    }
+    anchorArr = Float64Array.from(vals);
+    anchorLen = vals.length;
+  }
+  const nan = Number.NaN;
+  const rawWritten = xyLegendBoxLayout(
+    Number(plot.x),
+    Number(plot.y),
+    Number(plot.w),
+    Number(plot.h),
+    n ? u32Ptr(lens) : 0,
+    packedLen ? u8Ptr(packed) : 0,
+    BigInt(packedLen),
+    BigInt(n),
+    titleBytes.length ? u8Ptr(titleBytes) : 0,
+    BigInt(titleBytes.length),
+    locBytes.length ? u8Ptr(locBytes) : 0,
+    BigInt(locBytes.length),
+    Number(fontSize),
+    handleLength == null ? nan : Number(handleLength),
+    handleTextPad == null ? nan : Number(handleTextPad),
+    handleHeight == null ? nan : Number(handleHeight),
+    Math.max(1, Number(ncols) | 0),
+    Number(paddingEm),
+    Number(rowGapEm),
+    anchorArr ? f64Ptr(anchorArr) : 0,
+    BigInt(anchorLen),
+    Number(borderAxesPad),
+    f64Ptr(metrics),
+    f64Ptr(widths),
+    f64Ptr(offsets),
+    BigInt(colCap),
+    u32Ptr(nameLens),
+    u8Ptr(namesOut),
+    BigInt(namesOut.length),
+    u8Ptr(titleOut),
+    BigInt(titleOut.length),
+    pointer(titleLen, "size_t *"),
+  );
+  if (rawWritten === USIZE_MAX_64) throw new RangeError("invalid legend box layout request");
+  const visible = Number(rawWritten);
+  if (!Number.isSafeInteger(visible) || visible < 0) {
+    throw new RangeError("legend box layout exceeded host output limits");
+  }
+  const decoder = new TextDecoder();
+  const outNames = [];
+  let nameAt = 0;
+  for (let index = 0; index < visible; index += 1) {
+    const length = nameLens[index];
+    outNames.push(decoder.decode(namesOut.subarray(nameAt, nameAt + length)));
+    nameAt += length;
+  }
+  const titleText = decoder.decode(titleOut.subarray(0, Number(titleLen[0])));
+  const ncolsOut = metrics[9] | 0;
+  return {
+    pad: metrics[0],
+    handle: metrics[1],
+    gap: metrics[2],
+    columnGap: metrics[3],
+    rowGap: metrics[4],
+    fontSize: metrics[5],
+    textH: metrics[6],
+    lineH: metrics[7],
+    swatchH: metrics[8],
+    ncols: ncolsOut,
+    title: titleText || null,
+    titleH: metrics[10],
+    cellW: metrics[11],
+    columnWidths: Array.from(widths.subarray(0, ncolsOut)),
+    columnOffsets: Array.from(offsets.subarray(0, ncolsOut)),
+    boxW: metrics[12],
+    boxH: metrics[13],
+    x: metrics[14],
+    y: metrics[15],
+    visibleCount: visible,
+    names: outNames,
+  };
 }
 
 export function scaleMap({ values, kind = "linear", operation = "pixel", domain, range = [0, 1], constant = 1, nonpositive = "clip" }) {

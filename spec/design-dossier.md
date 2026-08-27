@@ -1325,6 +1325,11 @@ ABI 123 moves tick-label collision thinning into Rust. Hosts call
 edge-anchor rotate gap, and stride downsampling are engine-owned and
 identical for Python and Node. Hosts still format `_tick_text` and map
 values to pixels (#276).
+ABI 124 moves static legend box packing into Rust. Hosts call
+`xyg_legend_box_layout`; column fit, measured ellipsis, and loc /
+bbox-to-anchor placement are engine-owned and identical for Python and
+Node. Hosts still resolve CSS font-size / em paddings, pack entry
+strings, and remap polar `legend_box_*` gutters (#275).
 ABI 110 moves primary Scene legend framing into Rust. Hosts pass loc/flags,
 font sizes, paints, title, and per-entry meta plus labels; XYLG header
 layout, text offsets, and bounded-text rejection are engine-owned and

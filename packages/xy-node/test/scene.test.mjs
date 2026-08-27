@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import test from "node:test";
 
-import { axisTicks, tickLabelLayout, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
+import { axisTicks, tickLabelLayout, legendBoxLayout, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
 import { Figure, sceneRasterCommands, sceneSvg } from "../src/index.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
@@ -1149,6 +1149,26 @@ test("Node consumes Rust-owned tick-label collision layout", () => {
   });
   assert.ok(centered.length > 0 && centered.length < 9);
   assert.deepEqual(tickLabelLayout({ positions: [0, 10], labels: ["a", "b"], kind: "none" }), []);
+});
+
+test("Node consumes Rust-owned static legend box packing", () => {
+  const plot = { x: 0, y: 0, w: 560, h: 400 };
+  const titled = legendBoxLayout({
+    plot, names: ["1", "2", "3", "4"], title: "Classes", loc: "lower left",
+  });
+  assert.equal(titled.visibleCount, 4);
+  assert.ok(String(titled.title).startsWith("Clas"), `title was ${titled.title}`);
+  assert.ok(titled.boxW > 0 && titled.boxH > 0);
+  const wide = legendBoxLayout({
+    plot, names: ["alpha", "beta", "gamma"], title: "Classes", loc: "lower left",
+  });
+  assert.equal(wide.title, "Classes");
+  const narrow = legendBoxLayout({
+    plot: { x: 0, y: 0, w: 150, h: 400 },
+    names: ["Wmmmmmmmmmmmmmmmmmmmm", "iiiiiiiiiiiiiiiiiiii"],
+    loc: "upper right",
+  });
+  assert.ok(narrow.names.some((name) => name.endsWith("...")));
 });
 
 test("Node matches every Rust-owned axis tick family in the shared cross-host fixture", () => {

@@ -34,6 +34,7 @@ use xyg_engine::jpeg;
 use xyg_engine::kernels;
 use xyg_engine::kernels::ZoneMap;
 use xyg_engine::legend_fit;
+use xyg_engine::legend_layout;
 use xyg_engine::lod_plan;
 use xyg_engine::pdf;
 use xyg_engine::png_encode;
@@ -114,7 +115,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 123;
+pub const ABI_VERSION: u32 = 124;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10254,6 +10255,217 @@ pub unsafe extern "C" fn xyg_scene_tick_label_layout(
     })
 }
 
+/// Static legend box packing (ABI 124). `handlelength` / `handletextpad` are
+/// NaN for the 2.0 / 0.8 em defaults; `handleheight` is NaN when unset.
+/// `anchor_len` is 0, 2, or 4. Writes 17 metric slots, `ncols` column
+/// widths/offsets, packed ellipsized names, and the ellipsized title.
+/// Returns the visible entry count, or `usize::MAX`.
+///
+/// # Safety
+/// Packed label bytes must cover `labels_len`. Output buffers must hold the
+/// requested capacities when those capacities are nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_legend_box_layout(
+    plot_x: f64,
+    plot_y: f64,
+    plot_w: f64,
+    plot_h: f64,
+    label_lens: *const u32,
+    labels: *const u8,
+    labels_len: usize,
+    n: usize,
+    title: *const u8,
+    title_len: usize,
+    loc: *const u8,
+    loc_len: usize,
+    font_size: f64,
+    handlelength: f64,
+    handletextpad: f64,
+    handleheight: f64,
+    ncols: u32,
+    padding_em: f64,
+    row_gap_em: f64,
+    anchor: *const f64,
+    anchor_len: usize,
+    border_axes_pad: f64,
+    out_metrics: *mut f64,
+    out_column_widths: *mut f64,
+    out_column_offsets: *mut f64,
+    col_cap: usize,
+    out_name_lens: *mut u32,
+    out_names: *mut u8,
+    names_cap: usize,
+    out_title: *mut u8,
+    title_cap: usize,
+    out_title_len: *mut usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        let lens = if n == 0 {
+            &[][..]
+        } else {
+            if label_lens.is_null() {
+                return usize::MAX;
+            }
+            std::slice::from_raw_parts(label_lens, n)
+        };
+        let bytes = if labels_len == 0 {
+            &[][..]
+        } else {
+            if labels.is_null() {
+                return usize::MAX;
+            }
+            std::slice::from_raw_parts(labels, labels_len)
+        };
+        let mut texts = Vec::with_capacity(n);
+        let mut offset = 0usize;
+        for &len in lens {
+            let len = len as usize;
+            let end = match offset.checked_add(len) {
+                Some(end) if end <= bytes.len() => end,
+                _ => return usize::MAX,
+            };
+            let Ok(text) = std::str::from_utf8(&bytes[offset..end]) else {
+                return usize::MAX;
+            };
+            texts.push(text);
+            offset = end;
+        }
+        if offset != bytes.len() {
+            return usize::MAX;
+        }
+        let title = if title_len == 0 {
+            None
+        } else {
+            if title.is_null() {
+                return usize::MAX;
+            }
+            match std::str::from_utf8(std::slice::from_raw_parts(title, title_len)) {
+                Ok(text) => Some(text),
+                Err(_) => return usize::MAX,
+            }
+        };
+        let loc = if loc_len == 0 {
+            "upper right"
+        } else {
+            if loc.is_null() {
+                return usize::MAX;
+            }
+            match std::str::from_utf8(std::slice::from_raw_parts(loc, loc_len)) {
+                Ok(text) => text,
+                Err(_) => return usize::MAX,
+            }
+        };
+        let anchor = match anchor_len {
+            0 => None,
+            2 | 4 => {
+                if anchor.is_null() {
+                    return usize::MAX;
+                }
+                let vals = std::slice::from_raw_parts(anchor, anchor_len);
+                Some((
+                    vals[0],
+                    vals[1],
+                    if anchor_len == 4 { vals[2] } else { 0.0 },
+                    if anchor_len == 4 { vals[3] } else { 0.0 },
+                ))
+            }
+            _ => return usize::MAX,
+        };
+        let refs: Vec<&str> = texts.iter().copied().collect();
+        let Some(laid) = legend_layout::legend_box_layout(legend_layout::LegendBoxRequest {
+            plot_x,
+            plot_y,
+            plot_w,
+            plot_h,
+            names: &refs,
+            title,
+            loc,
+            font_size,
+            handlelength: if handlelength.is_nan() {
+                None
+            } else {
+                Some(handlelength)
+            },
+            handletextpad: if handletextpad.is_nan() {
+                None
+            } else {
+                Some(handletextpad)
+            },
+            handleheight: if handleheight.is_nan() {
+                None
+            } else {
+                Some(handleheight)
+            },
+            ncols,
+            padding_em,
+            row_gap_em,
+            anchor,
+            border_axes_pad,
+        }) else {
+            return usize::MAX;
+        };
+        let ncols = laid.ncols as usize;
+        if col_cap < ncols || out_metrics.is_null() {
+            return usize::MAX;
+        }
+        let metrics = std::slice::from_raw_parts_mut(out_metrics, legend_layout::METRICS_LEN);
+        metrics.copy_from_slice(&laid.metrics());
+        if ncols > 0 {
+            if out_column_widths.is_null() || out_column_offsets.is_null() {
+                return usize::MAX;
+            }
+            std::slice::from_raw_parts_mut(out_column_widths, col_cap)[..ncols]
+                .copy_from_slice(&laid.column_widths);
+            std::slice::from_raw_parts_mut(out_column_offsets, col_cap)[..ncols]
+                .copy_from_slice(&laid.column_offsets);
+        }
+        let vis = laid.names.len();
+        if vis > 0 && (out_name_lens.is_null() || out_names.is_null()) {
+            return usize::MAX;
+        }
+        let mut packed_len = 0usize;
+        for name in &laid.names {
+            packed_len = match packed_len.checked_add(name.len()) {
+                Some(total) => total,
+                None => return usize::MAX,
+            };
+        }
+        if packed_len > names_cap {
+            return usize::MAX;
+        }
+        if vis > 0 {
+            if out_name_lens.is_null() {
+                return usize::MAX;
+            }
+            let lens_out = std::slice::from_raw_parts_mut(out_name_lens, vis);
+            let names_out = std::slice::from_raw_parts_mut(out_names, names_cap);
+            let mut at = 0usize;
+            for (i, name) in laid.names.iter().enumerate() {
+                let bytes = name.as_bytes();
+                lens_out[i] = bytes.len() as u32;
+                names_out[at..at + bytes.len()].copy_from_slice(bytes);
+                at += bytes.len();
+            }
+        }
+        let title_bytes = laid.title.as_deref().unwrap_or("").as_bytes();
+        if out_title_len.is_null() {
+            return usize::MAX;
+        }
+        if title_bytes.len() > title_cap {
+            return usize::MAX;
+        }
+        *out_title_len = title_bytes.len();
+        if !title_bytes.is_empty() {
+            if out_title.is_null() {
+                return usize::MAX;
+            }
+            std::slice::from_raw_parts_mut(out_title, title_cap)[..title_bytes.len()]
+                .copy_from_slice(title_bytes);
+        }
+        vis
+    })
+}
+
 /// Linear (NumPy-default) quantiles for probabilities in `[0, 1]`.
 ///
 /// Writes `n_probs` f64s into `out`. Returns the finite sample count used, or
@@ -12483,6 +12695,68 @@ mod tests {
             assert_eq!(out_index[i], i as u32);
             assert_eq!(out_row[i], 0);
         }
+    }
+
+    #[test]
+    fn legend_box_layout_keeps_classes_title_prefix() {
+        let labels = ["1", "2", "3", "4"];
+        let mut lens = [0u32; 4];
+        let mut packed = Vec::new();
+        for (i, label) in labels.iter().enumerate() {
+            let bytes = label.as_bytes();
+            lens[i] = bytes.len() as u32;
+            packed.extend_from_slice(bytes);
+        }
+        let title = b"Classes";
+        let loc = b"lower left";
+        let mut metrics = [0.0f64; 17];
+        let mut widths = [0.0f64; 4];
+        let mut offsets = [0.0f64; 4];
+        let mut name_lens = [0u32; 4];
+        let mut names_out = [0u8; 64];
+        let mut title_out = [0u8; 32];
+        let mut title_len = 0usize;
+        let n = unsafe {
+            xyg_legend_box_layout(
+                0.0,
+                0.0,
+                560.0,
+                400.0,
+                lens.as_ptr(),
+                packed.as_ptr(),
+                packed.len(),
+                4,
+                title.as_ptr(),
+                title.len(),
+                loc.as_ptr(),
+                loc.len(),
+                11.0,
+                f64::NAN,
+                f64::NAN,
+                f64::NAN,
+                1,
+                0.4,
+                0.5,
+                std::ptr::null(),
+                0,
+                0.0,
+                metrics.as_mut_ptr(),
+                widths.as_mut_ptr(),
+                offsets.as_mut_ptr(),
+                4,
+                name_lens.as_mut_ptr(),
+                names_out.as_mut_ptr(),
+                names_out.len(),
+                title_out.as_mut_ptr(),
+                title_out.len(),
+                &mut title_len,
+            )
+        };
+        assert_eq!(n, 4);
+        let title_text = std::str::from_utf8(&title_out[..title_len]).unwrap();
+        assert!(title_text.starts_with("Clas"), "title was {title_text}");
+        assert!(metrics[12] > 0.0);
+        assert!(metrics[13] > 0.0);
     }
 
     #[test]

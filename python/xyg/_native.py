@@ -2415,6 +2415,122 @@ def scene_tick_label_layout(
     ]
 
 
+def scene_legend_box_layout(
+    *,
+    plot: Mapping[str, float],
+    names: Sequence[str],
+    title: str | None = None,
+    loc: str = "upper right",
+    font_size: float = 11.0,
+    handlelength: float | None = None,
+    handletextpad: float | None = None,
+    handleheight: float | None = None,
+    ncols: int = 1,
+    padding_em: float = 0.4,
+    row_gap_em: float = 0.5,
+    anchor: Sequence[float] | None = None,
+    border_axes_pad: float = 0.0,
+) -> dict[str, Any]:
+    """Static legend box packing via ``xyg_legend_box_layout`` (ABI 124)."""
+    texts = [str(name) for name in names]
+    encoded = [text.encode("utf-8") for text in texts]
+    lens = np.asarray([len(item) for item in encoded], dtype=np.uint32)
+    packed = (
+        np.frombuffer(b"".join(encoded), dtype=np.uint8).copy()
+        if encoded
+        else np.empty(0, dtype=np.uint8)
+    )
+    n = len(texts)
+    title_b = np.frombuffer((title or "").encode("utf-8"), dtype=np.uint8).copy()
+    loc_b = np.frombuffer((loc or "upper right").encode("utf-8"), dtype=np.uint8).copy()
+    metrics = np.empty(17, dtype=np.float64)
+    col_cap = max(n, 1)
+    widths = np.empty(col_cap, dtype=np.float64)
+    offsets = np.empty(col_cap, dtype=np.float64)
+    name_lens = np.empty(col_cap, dtype=np.uint32)
+    names_cap = len(packed) + 3 * n
+    names_out = np.empty(max(names_cap, 1), dtype=np.uint8)
+    title_cap = max(int(title_b.size) + 8, 1)
+    title_out = np.empty(title_cap, dtype=np.uint8)
+    title_len = ctypes.c_size_t()
+    anchor_arr = None
+    anchor_len = 0
+    if anchor is not None:
+        vals = [float(v) for v in anchor]
+        if len(vals) not in (2, 4):
+            raise ValueError("legend anchor must have length 2 or 4")
+        anchor_arr = np.asarray(vals, dtype=np.float64)
+        anchor_len = len(vals)
+    written = _lib.xyg_legend_box_layout(
+        float(plot["x"]),
+        float(plot["y"]),
+        float(plot["w"]),
+        float(plot["h"]),
+        lens.ctypes.data if n else 0,
+        _ptr_u8(packed) if len(packed) else 0,
+        len(packed),
+        n,
+        _ptr_u8(title_b) if title_b.size else 0,
+        int(title_b.size),
+        _ptr_u8(loc_b) if loc_b.size else 0,
+        int(loc_b.size),
+        float(font_size),
+        float("nan") if handlelength is None else float(handlelength),
+        float("nan") if handletextpad is None else float(handletextpad),
+        float("nan") if handleheight is None else float(handleheight),
+        max(1, int(ncols)),
+        float(padding_em),
+        float(row_gap_em),
+        _ptr_f64(anchor_arr) if anchor_arr is not None else 0,
+        anchor_len,
+        float(border_axes_pad),
+        _ptr_f64(metrics),
+        _ptr_f64(widths),
+        _ptr_f64(offsets),
+        col_cap,
+        name_lens.ctypes.data,
+        _ptr_u8(names_out),
+        len(names_out),
+        _ptr_u8(title_out),
+        len(title_out),
+        ctypes.byref(title_len),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid legend box layout request")
+    vis = int(written)
+    ncols_out = int(metrics[9])
+    at = 0
+    out_names: list[str] = []
+    for i in range(vis):
+        length = int(name_lens[i])
+        out_names.append(bytes(names_out[at : at + length]).decode("utf-8"))
+        at += length
+    title_s = bytes(title_out[: int(title_len.value)]).decode("utf-8")
+    return {
+        "pad": float(metrics[0]),
+        "handle": float(metrics[1]),
+        "gap": float(metrics[2]),
+        "column_gap": float(metrics[3]),
+        "row_gap": float(metrics[4]),
+        "font_size": float(metrics[5]),
+        "text_h": float(metrics[6]),
+        "line_h": float(metrics[7]),
+        "swatch_h": float(metrics[8]),
+        "ncols": ncols_out,
+        "title": title_s or None,
+        "title_h": float(metrics[10]),
+        "cell_w": float(metrics[11]),
+        "column_widths": widths[:ncols_out].tolist(),
+        "column_offsets": offsets[:ncols_out].tolist(),
+        "box_w": float(metrics[12]),
+        "box_h": float(metrics[13]),
+        "x": float(metrics[14]),
+        "y": float(metrics[15]),
+        "visible_count": vis,
+        "names": out_names,
+    }
+
+
 def scene_scale_map(
     values: npt.ArrayLike,
     kind: int,
