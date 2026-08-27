@@ -749,6 +749,83 @@ def load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.POINTER(ctypes.c_size_t),
     ]
+    lib.xyg_text_block_measure.restype = ctypes.c_size_t
+    lib.xyg_text_block_measure.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        U32P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_text_block_rotated_extent.restype = ctypes.c_size_t
+    lib.xyg_text_block_rotated_extent.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        F64P,
+    ]
+    lib.xyg_y_tick_label_extent.restype = ctypes.c_size_t
+    lib.xyg_y_tick_label_extent.argtypes = [
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+    ]
+    lib.xyg_y_axis_left_room.restype = ctypes.c_size_t
+    lib.xyg_y_axis_left_room.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+    ]
+    lib.xyg_x_axis_title_room.restype = ctypes.c_size_t
+    lib.xyg_x_axis_title_room.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        F64P,
+    ]
+    lib.xyg_x_tick_label_room.restype = ctypes.c_size_t
+    lib.xyg_x_tick_label_room.argtypes = [
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        F64P,
+        U32P,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+    ]
+    lib.xyg_x_tick_label_edge_rooms.restype = ctypes.c_size_t
+    lib.xyg_x_tick_label_edge_rooms.argtypes = [
+        ctypes.c_double,
+        F64P,
+        ctypes.c_size_t,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        F64P,
+        U32P,
+        ctypes.c_double,
+        F64P,
+        F64P,
+    ]
     lib.xyg_hexbin_groups.restype = ctypes.c_size_t
     lib.xyg_hexbin_groups.argtypes = [
         F64P,
@@ -2291,6 +2368,52 @@ def main() -> None:
     ok(
         lg_n == 4 and lg_title_text.startswith("Clas") and lg_metrics[12] > 0.0,
         "legend_box_layout keeps Classes title prefix",
+    )
+    tb_text = array("B", b"first\r\nsecond")
+    tb_metrics = array("d", [0.0] * 6)
+    tb_lens = array("I", [0, 0, 0, 0])
+    tb_packed = array("B", [0] * 64)
+    tb_n = lib.xyg_text_block_measure(
+        _ptr(tb_text, ctypes.c_uint8),
+        len(tb_text),
+        12.0,
+        float("nan"),
+        float("nan"),
+        _ptr(tb_metrics, ctypes.c_double),
+        _ptr(tb_lens, ctypes.c_uint32),
+        4,
+        _ptr(tb_packed, ctypes.c_uint8),
+        len(tb_packed),
+    )
+    tb_rot_x = ctypes.c_double()
+    tb_rot_y = ctypes.c_double()
+    tb_rot = lib.xyg_text_block_rotated_extent(
+        10.0,
+        4.0,
+        90.0,
+        ctypes.byref(tb_rot_x),
+        ctypes.byref(tb_rot_y),
+    )
+    y_title = array("B", b"Y")
+    y_room = ctypes.c_double()
+    y_n = lib.xyg_y_axis_left_room(
+        7.0,
+        23.0,
+        _ptr(y_title, ctypes.c_uint8),
+        len(y_title),
+        12.0,
+        4.8,
+        ctypes.byref(y_room),
+    )
+    ok(
+        tb_n == 2
+        and tb_metrics[5] == 2.0
+        and bytes(tb_packed[:5]) == b"first"
+        and tb_rot == 2
+        and abs(tb_rot_x.value - 4.0) < 1e-12
+        and y_n == 1
+        and y_room.value > 23.0,
+        "text_block_measure CRLF and titled y room",
     )
     cf_x = array("d", [0.0, 1.0, 2.0, 3.0, 4.0])
     cf_y = array("d", [0.0, 1.0, 0.5, 2.0, 1.5])

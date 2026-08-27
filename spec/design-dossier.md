@@ -1330,6 +1330,14 @@ ABI 124 moves static legend box packing into Rust. Hosts call
 bbox-to-anchor placement are engine-owned and identical for Python and
 Node. Hosts still resolve CSS font-size / em paddings, pack entry
 strings, and remap polar `legend_box_*` gutters (#275).
+ABI 125 moves text-block measure and cartesian axis rooms into Rust.
+Hosts call `xyg_text_block_measure`, `xyg_text_block_rotated_extent`,
+`xyg_y_tick_label_extent`, `xyg_y_axis_left_room`,
+`xyg_x_axis_title_room`, `xyg_x_tick_label_room`, and
+`xyg_x_tick_label_edge_rooms`; wrap, rotated extent, and title/tick
+gutter formulas are engine-owned and identical for Python and Node.
+Hosts still format `_tick_text`, resolve CSS visibility / tick offsets,
+iterate axes, and run `layout()` padding/colorbar/polar recut (#275).
 ABI 110 moves primary Scene legend framing into Rust. Hosts pass loc/flags,
 font sizes, paints, title, and per-entry meta plus labels; XYLG header
 layout, text offsets, and bounded-text rejection are engine-owned and

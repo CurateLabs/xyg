@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import test from "node:test";
 
-import { axisTicks, tickLabelLayout, legendBoxLayout, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
+import { axisTicks, tickLabelLayout, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yAxisLeftRoom, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
 import { Figure, sceneRasterCommands, sceneSvg } from "../src/index.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
@@ -1169,6 +1169,21 @@ test("Node consumes Rust-owned static legend box packing", () => {
     loc: "upper right",
   });
   assert.ok(narrow.names.some((name) => name.endsWith("...")));
+});
+
+test("Node consumes Rust-owned text-block measure and axis rooms", () => {
+  const crlf = textBlockMeasure("first\r\nsecond", 12);
+  const lf = textBlockMeasure("first\nsecond", 12);
+  assert.deepEqual(crlf.lines, ["first", "second"]);
+  assert.deepEqual(lf.lines, crlf.lines);
+  assert.equal(crlf.lineCount, 2);
+  const rotated = textBlockRotatedExtent(10, 4, 90);
+  assert.ok(Math.abs(rotated[0] - 4) < 1e-12);
+  assert.ok(Math.abs(rotated[1] - 10) < 1e-12);
+  const titled = yAxisLeftRoom(7, 23, "Y", 12, 12 * 0.4);
+  const untitled = yAxisLeftRoom(0, 0, "", 12, 0);
+  assert.ok(titled > 23);
+  assert.equal(untitled, 0);
 });
 
 test("Node matches every Rust-owned axis tick family in the shared cross-host fixture", () => {

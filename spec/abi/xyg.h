@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 124
-#define XYG_ABI_SIGNATURE_SHA256 "81657f3ee5d2bb092410a5acbdde9cfea061294620f2db9e7dd873d28c8391a2"
+#define XYG_ABI_VERSION 125
+#define XYG_ABI_SIGNATURE_SHA256 "fc63dadbd8275ffb7c2e5d16a01b80707ead16c4624c2ec87f15a6e8238f0742"
 
 #ifdef __cplusplus
 extern "C" {
@@ -220,6 +220,8 @@ int32_t xyg_temporal_interval_index_destroy(uint64_t handle);
 int32_t xyg_temporal_interval_index_len(uint64_t handle, uint64_t * out_len);
 int32_t xyg_temporal_interval_visibility_at(uint64_t handle, int64_t instant_micros, uint8_t * out_visibility, uint64_t capacity, uint64_t budget, const uint32_t * cancel_flag);
 uint64_t xyg_temporal_selection_limit();
+size_t xyg_text_block_measure(const uint8_t * text, size_t text_len, double font_size, double line_height, double max_width, double * out_metrics, uint32_t * out_line_lens, size_t line_cap, uint8_t * out_lines, size_t lines_cap);
+size_t xyg_text_block_rotated_extent(double width, double height, double angle_degrees, double * out_x, double * out_y);
 int32_t xyg_tile_budget_set(uint64_t bytes);
 int32_t xyg_tile_store_append(uint64_t store, const double * x, const double * y, size_t len);
 int32_t xyg_tile_store_compose(uint64_t store, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float * out);
@@ -236,6 +238,11 @@ size_t xyg_violin_rects(const double * values, size_t values_len, const size_t *
 size_t xyg_weighted_ecdf(const double * values, const double * weights, size_t len, double * out_values, double * out_cumulative);
 int32_t xyg_welch_spectra(const double * x, const double * y, size_t len, size_t nfft, size_t noverlap, double sample_rate, double * out_frequency, double * out_pxx, double * out_pyy, double * out_pxy_real, double * out_pxy_imag);
 size_t xyg_wind_rose_bins(const double * directions, const double * speeds, size_t len, size_t sectors, const double * speed_edges, size_t n_speed_edges, double * out_edges, size_t capacity_edges, double * out_centres, double * out_counts, size_t capacity_counts, size_t * out_n_obs);
+size_t xyg_x_axis_title_room(const uint8_t * title, size_t title_len, double font_size, double offset, int32_t top, double * out_room);
+size_t xyg_x_tick_label_edge_rooms(double plot_w, const double * positions, size_t n, const uint32_t * label_lens, const uint8_t * labels, size_t labels_len, const double * angles, const uint32_t * anchors, double font_size, double * out_left, double * out_right);
+size_t xyg_x_tick_label_room(const uint32_t * label_lens, const uint8_t * labels, size_t labels_len, size_t n, const double * angles, const uint32_t * rows, double font_size, double label_offset, double title_room, double * out_room);
+size_t xyg_y_axis_left_room(double tick_offset, double tick_room, const uint8_t * title, size_t title_len, double title_font_size, double title_gap, double * out_room);
+size_t xyg_y_tick_label_extent(const uint32_t * label_lens, const uint8_t * labels, size_t labels_len, size_t n, double font_size, double angle, double * out_extent);
 size_t xyg_zone_maps(const double * data, size_t len, size_t chunk_size, double * out_min, double * out_max, uint64_t * out_count, uint64_t * out_null_count, double * out_sum, double * out_sum_sq, double * out_positive_min, double * out_positive_max);
 size_t xyg_zone_maps_pair(const double * x, const double * y, size_t len, size_t chunk_size, void * out_x, void * out_y);
 

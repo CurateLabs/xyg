@@ -33,6 +33,7 @@ use xyg_engine::hexbin;
 use xyg_engine::jpeg;
 use xyg_engine::kernels;
 use xyg_engine::kernels::ZoneMap;
+use xyg_engine::layout_rooms;
 use xyg_engine::legend_fit;
 use xyg_engine::legend_layout;
 use xyg_engine::lod_plan;
@@ -55,6 +56,7 @@ use xyg_engine::svg;
 use xyg_engine::temporal;
 use xyg_engine::temporal_controller;
 use xyg_engine::temporal_graph;
+use xyg_engine::textblock;
 use xyg_engine::tick_layout;
 #[cfg(not(target_os = "emscripten"))]
 use xyg_engine::tile_store;
@@ -115,7 +117,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 124;
+pub const ABI_VERSION: u32 = 125;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10466,6 +10468,376 @@ pub unsafe extern "C" fn xyg_legend_box_layout(
     })
 }
 
+unsafe fn read_utf8<'a>(ptr: *const u8, len: usize) -> Option<&'a str> {
+    if len == 0 {
+        Some("")
+    } else if ptr.is_null() {
+        None
+    } else {
+        std::str::from_utf8(std::slice::from_raw_parts(ptr, len)).ok()
+    }
+}
+
+unsafe fn read_packed_utf8<'a>(
+    label_lens: *const u32,
+    labels: *const u8,
+    labels_len: usize,
+    n: usize,
+) -> Option<Vec<&'a str>> {
+    let lens = if n == 0 {
+        &[][..]
+    } else {
+        if label_lens.is_null() {
+            return None;
+        }
+        std::slice::from_raw_parts(label_lens, n)
+    };
+    let bytes = if labels_len == 0 {
+        &[][..]
+    } else {
+        if labels.is_null() {
+            return None;
+        }
+        std::slice::from_raw_parts(labels, labels_len)
+    };
+    let mut texts = Vec::with_capacity(n);
+    let mut offset = 0usize;
+    for &len in lens {
+        let len = len as usize;
+        let end = offset.checked_add(len)?;
+        if end > bytes.len() {
+            return None;
+        }
+        texts.push(std::str::from_utf8(&bytes[offset..end]).ok()?);
+        offset = end;
+    }
+    if offset != bytes.len() {
+        return None;
+    }
+    Some(texts)
+}
+
+/// Measure a newline-delimited chrome block (ABI 125). `line_height` is NaN
+/// for 1.2; `max_width` is NaN when wrapping is off. Writes 6 metric slots
+/// and packed wrapped lines. Returns the line count, or `usize::MAX`.
+///
+/// # Safety
+/// Packed output buffers must hold the requested capacities when nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_text_block_measure(
+    text: *const u8,
+    text_len: usize,
+    font_size: f64,
+    line_height: f64,
+    max_width: f64,
+    out_metrics: *mut f64,
+    out_line_lens: *mut u32,
+    line_cap: usize,
+    out_lines: *mut u8,
+    lines_cap: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        let Some(source) = read_utf8(text, text_len) else {
+            return usize::MAX;
+        };
+        let height = if line_height.is_nan() {
+            textblock::LINE_HEIGHT
+        } else {
+            line_height
+        };
+        let wrap = if max_width.is_nan() {
+            None
+        } else {
+            Some(max_width)
+        };
+        let Some(block) = textblock::measure(source, font_size, height, wrap) else {
+            return usize::MAX;
+        };
+        if out_metrics.is_null() {
+            return usize::MAX;
+        }
+        std::slice::from_raw_parts_mut(out_metrics, textblock::METRICS_LEN)
+            .copy_from_slice(&block.metrics());
+        let n = block.lines.len();
+        if n > line_cap {
+            return usize::MAX;
+        }
+        let mut packed_len = 0usize;
+        for line in &block.lines {
+            packed_len = match packed_len.checked_add(line.len()) {
+                Some(total) => total,
+                None => return usize::MAX,
+            };
+        }
+        if packed_len > lines_cap {
+            return usize::MAX;
+        }
+        if n > 0 && (out_line_lens.is_null() || (packed_len > 0 && out_lines.is_null())) {
+            return usize::MAX;
+        }
+        if n > 0 {
+            let lens_out = std::slice::from_raw_parts_mut(out_line_lens, n);
+            if packed_len > 0 {
+                let lines_out = std::slice::from_raw_parts_mut(out_lines, lines_cap);
+                let mut at = 0usize;
+                for (i, line) in block.lines.iter().enumerate() {
+                    let bytes = line.as_bytes();
+                    lens_out[i] = bytes.len() as u32;
+                    lines_out[at..at + bytes.len()].copy_from_slice(bytes);
+                    at += bytes.len();
+                }
+            } else {
+                for slot in lens_out.iter_mut() {
+                    *slot = 0;
+                }
+            }
+        }
+        n
+    })
+}
+
+/// Axis-aligned extent of a measured block after rotation (ABI 125).
+///
+/// # Safety
+/// `out_x` and `out_y` must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_text_block_rotated_extent(
+    width: f64,
+    height: f64,
+    angle_degrees: f64,
+    out_x: *mut f64,
+    out_y: *mut f64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out_x.is_null() || out_y.is_null() {
+            return usize::MAX;
+        }
+        let Some((x, y)) = textblock::rotated_extent(width, height, angle_degrees) else {
+            return usize::MAX;
+        };
+        *out_x = x;
+        *out_y = y;
+        2
+    })
+}
+
+/// Widest rotated x-extent of y tick labels (ABI 125). Writes one f64.
+///
+/// # Safety
+/// Packed labels must cover `labels_len`. `out_extent` must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_y_tick_label_extent(
+    label_lens: *const u32,
+    labels: *const u8,
+    labels_len: usize,
+    n: usize,
+    font_size: f64,
+    angle: f64,
+    out_extent: *mut f64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out_extent.is_null() {
+            return usize::MAX;
+        }
+        let Some(texts) = read_packed_utf8(label_lens, labels, labels_len, n) else {
+            return usize::MAX;
+        };
+        let Some(extent) = layout_rooms::y_tick_label_extent(&texts, font_size, angle) else {
+            return usize::MAX;
+        };
+        *out_extent = extent;
+        1
+    })
+}
+
+/// Left gutter for one y axis after the host resolved tick ink (ABI 125).
+///
+/// # Safety
+/// Title bytes must cover `title_len`. `out_room` must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_y_axis_left_room(
+    tick_offset: f64,
+    tick_room: f64,
+    title: *const u8,
+    title_len: usize,
+    title_font_size: f64,
+    title_gap: f64,
+    out_room: *mut f64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out_room.is_null() {
+            return usize::MAX;
+        }
+        let Some(title_text) = read_utf8(title, title_len) else {
+            return usize::MAX;
+        };
+        let title = if title_text.is_empty() {
+            None
+        } else {
+            Some(title_text)
+        };
+        let Some(room) = layout_rooms::y_axis_left_room(
+            tick_offset,
+            tick_room,
+            title,
+            title_font_size,
+            title_gap,
+        ) else {
+            return usize::MAX;
+        };
+        *out_room = room;
+        1
+    })
+}
+
+/// Outside x-axis title room (ABI 125). `top` is 1 for `side="top"`.
+///
+/// # Safety
+/// Title bytes must cover `title_len`. `out_room` must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_x_axis_title_room(
+    title: *const u8,
+    title_len: usize,
+    font_size: f64,
+    offset: f64,
+    top: i32,
+    out_room: *mut f64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out_room.is_null() || !matches!(top, 0 | 1) {
+            return usize::MAX;
+        }
+        let Some(title_text) = read_utf8(title, title_len) else {
+            return usize::MAX;
+        };
+        let title = if title_text.is_empty() {
+            None
+        } else {
+            Some(title_text)
+        };
+        let Some(room) = layout_rooms::x_axis_title_room(title, font_size, offset, top == 1) else {
+            return usize::MAX;
+        };
+        *out_room = room;
+        1
+    })
+}
+
+/// Measured x tick-label band after collision layout (ABI 125).
+///
+/// # Safety
+/// Packed labels, angles, and rows must match `n`. `out_room` must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_x_tick_label_room(
+    label_lens: *const u32,
+    labels: *const u8,
+    labels_len: usize,
+    n: usize,
+    angles: *const f64,
+    rows: *const u32,
+    font_size: f64,
+    label_offset: f64,
+    title_room: f64,
+    out_room: *mut f64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out_room.is_null() {
+            return usize::MAX;
+        }
+        let Some(texts) = read_packed_utf8(label_lens, labels, labels_len, n) else {
+            return usize::MAX;
+        };
+        let angle_slice = if n == 0 {
+            &[][..]
+        } else {
+            if angles.is_null() {
+                return usize::MAX;
+            }
+            std::slice::from_raw_parts(angles, n)
+        };
+        let row_slice = if n == 0 {
+            &[][..]
+        } else {
+            if rows.is_null() {
+                return usize::MAX;
+            }
+            std::slice::from_raw_parts(rows, n)
+        };
+        let Some(room) = layout_rooms::x_tick_label_room(
+            &texts,
+            angle_slice,
+            row_slice,
+            font_size,
+            label_offset,
+            title_room,
+        ) else {
+            return usize::MAX;
+        };
+        *out_room = room;
+        1
+    })
+}
+
+/// Canvas-edge overhang from laid-out x tick labels (ABI 125).
+/// Writes left then right. Returns 2, or `usize::MAX`.
+///
+/// # Safety
+/// Packed arrays must match `n`. Output pointers must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_x_tick_label_edge_rooms(
+    plot_w: f64,
+    positions: *const f64,
+    n: usize,
+    label_lens: *const u32,
+    labels: *const u8,
+    labels_len: usize,
+    angles: *const f64,
+    anchors: *const u32,
+    font_size: f64,
+    out_left: *mut f64,
+    out_right: *mut f64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out_left.is_null() || out_right.is_null() {
+            return usize::MAX;
+        }
+        let Some(texts) = read_packed_utf8(label_lens, labels, labels_len, n) else {
+            return usize::MAX;
+        };
+        let pos = if n == 0 {
+            &[][..]
+        } else {
+            if positions.is_null() || angles.is_null() || anchors.is_null() {
+                return usize::MAX;
+            }
+            std::slice::from_raw_parts(positions, n)
+        };
+        let angle_slice = if n == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(angles, n)
+        };
+        let anchor_slice = if n == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(anchors, n)
+        };
+        let Some((left, right)) = layout_rooms::x_tick_label_edge_rooms(
+            plot_w,
+            pos,
+            &texts,
+            angle_slice,
+            anchor_slice,
+            font_size,
+        ) else {
+            return usize::MAX;
+        };
+        *out_left = left;
+        *out_right = right;
+        2
+    })
+}
+
 /// Linear (NumPy-default) quantiles for probabilities in `[0, 1]`.
 ///
 /// Writes `n_probs` f64s into `out`. Returns the finite sample count used, or
@@ -12757,6 +13129,60 @@ mod tests {
         assert!(title_text.starts_with("Clas"), "title was {title_text}");
         assert!(metrics[12] > 0.0);
         assert!(metrics[13] > 0.0);
+    }
+
+    #[test]
+    fn text_block_measure_normalizes_crlf() {
+        let text = b"first\r\nsecond";
+        let mut metrics = [0.0f64; 6];
+        let mut lens = [0u32; 4];
+        let mut packed = [0u8; 64];
+        let n = unsafe {
+            xyg_text_block_measure(
+                text.as_ptr(),
+                text.len(),
+                12.0,
+                f64::NAN,
+                f64::NAN,
+                metrics.as_mut_ptr(),
+                lens.as_mut_ptr(),
+                4,
+                packed.as_mut_ptr(),
+                packed.len(),
+            )
+        };
+        assert_eq!(n, 2);
+        assert_eq!(metrics[5], 2.0);
+        assert_eq!(&packed[..5], b"first");
+        assert_eq!(&packed[5..11], b"second");
+        let mut rotated_x = 0.0;
+        let mut rotated_y = 0.0;
+        let written = unsafe {
+            xyg_text_block_rotated_extent(10.0, 4.0, 90.0, &mut rotated_x, &mut rotated_y)
+        };
+        assert_eq!(written, 2);
+        assert!((rotated_x - 4.0).abs() < 1e-12);
+        assert!((rotated_y - 10.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn y_axis_left_room_titled_matches_engine() {
+        let title = b"Y";
+        let mut room = 0.0f64;
+        let n = unsafe {
+            xyg_y_axis_left_room(
+                7.0,
+                23.0,
+                title.as_ptr(),
+                title.len(),
+                12.0,
+                12.0 * 0.4,
+                &mut room,
+            )
+        };
+        assert_eq!(n, 1);
+        let expected = layout_rooms::y_axis_left_room(7.0, 23.0, Some("Y"), 12.0, 4.8).unwrap();
+        assert!((room - expected).abs() < 1e-12);
     }
 
     #[test]

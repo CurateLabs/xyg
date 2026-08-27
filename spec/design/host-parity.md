@@ -222,6 +222,14 @@ call `xyg_legend_box_layout` so column fit, measured ellipsis, and loc /
 bbox-to-anchor placement cannot drift. Hosts still resolve CSS font-size
 / em paddings and pack entry strings. Polar `legend_box_*` remapping
 stays host-side.
+ABI 125 moves text-block measure and cartesian axis rooms into Rust:
+Python and Node call `xyg_text_block_measure`,
+`xyg_text_block_rotated_extent`, `xyg_y_tick_label_extent`,
+`xyg_y_axis_left_room`, `xyg_x_axis_title_room`,
+`xyg_x_tick_label_room`, and `xyg_x_tick_label_edge_rooms` so wrap,
+rotated extent, and title/tick gutter formulas cannot drift. Hosts still
+format `_tick_text`, resolve CSS visibility / tick offsets, iterate axes,
+and run `layout()` padding/colorbar/polar recut.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call

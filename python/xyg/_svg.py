@@ -2048,10 +2048,8 @@ def _y_title_baseline(
 def _y_tick_label_room(axis: dict[str, Any], plot_h: float) -> tuple[float, float]:
     """(offset from the spine, widest tick-label extent) for a y axis, in px.
 
-    Measured from the advance widths of the strings that will actually be drawn,
-    using the same DejaVu metrics the Rust rasterizer blits (`crates/xyg-engine/src/font.rs`) —
-    which is also Matplotlib's default face, so an advance measured here is the
-    advance Matplotlib lays out.
+    Hosts still skip none/off/invisible axes, format `_tick_text`, and resolve
+    the spine offset. The rotated DejaVu extent lives in Rust (ABI 125).
     """
     if _axis_tick_label_strategy(axis) in {"none", "off"} or not _axis_text_paint_visible(
         axis, "tick_label_color", "tick_color"
@@ -2061,16 +2059,10 @@ def _y_tick_label_room(axis: dict[str, Any], plot_h: float) -> tuple[float, floa
     raw_angle = axis.get("tick_label_angle")
     angle = float(raw_angle or 0.0)
     _values, labels, step = axis_ticks(axis, plot_h, False)
-    room = 0.0
-    for value in labels:
-        block = _textblock.measure(_tick_text(axis, value, step), font_size)
-        # A rotated block trades its measured width for its full line-box
-        # height about the pinned edge.
-        room = max(room, _textblock.rotated_extent(block, angle)[0])
-    # Match the SVG y-label placement below.  A y label's anchored edge is
-    # already the glyph-side edge, so unlike an x-label baseline it needs no
-    # extra font-room term.
-    return _axis_tick_label_offset(axis, 8.0), room
+    texts = [_tick_text(axis, value, step) for value in labels]
+    return _axis_tick_label_offset(axis, 8.0), float(
+        _native.y_tick_label_extent(texts, font_size, angle)
+    )
 
 
 def _y_axis_left_room(spec: dict[str, Any], plot_h: float) -> float:
@@ -2087,6 +2079,11 @@ def _y_axis_left_room(spec: dict[str, Any], plot_h: float) -> float:
     a canvas inset, so widening only the static exporters' right gutter would
     move their title away from the browser's. That asymmetry is recorded in
     `spec/api/styling.md`, not silently fixed here.
+
+    Hosts still iterate axes, skip sides, and resolve CSS visibility. Column
+    combination of title + tick ink lives in Rust (ABI 125) so SVG, raster, and
+    pyplot cannot drift. `_y_tick_label_room` stays a host seam so tests can
+    pin the once-per-axis tick measure.
     """
     room = 0.0
     for axis_id, axis in _axes_by_id(spec).items():
@@ -2102,23 +2099,12 @@ def _y_axis_left_room(spec: dict[str, Any], plot_h: float) -> float:
             and _has_outside_y_title(axis)
             and _axis_text_paint_visible(axis, "label_color")
         )
-        if not title_visible:
-            if tick_offset == 0.0 and tick_room == 0.0:
-                continue
-            room = max(room, _AXIS_TEXT_EDGE_PAD + tick_offset + tick_room)
-            continue
+        title = str(axis.get("label") or "") if title_visible else ""
         label_size = float((axis.get("style") or {}).get("label_size", 12))
-        block = _textblock.measure(axis["label"], label_size)
         gap = float(axis.get("label_offset", _Y_TITLE_TICK_GAP * label_size))
         room = max(
             room,
-            _AXIS_TEXT_EDGE_PAD
-            + block.ascent
-            + block.descent
-            + (block.line_count - 1) * block.line_step
-            + gap
-            + tick_offset
-            + tick_room,
+            float(_native.y_axis_left_room(tick_offset, tick_room, title, label_size, gap)),
         )
     return room
 
@@ -2126,10 +2112,9 @@ def _y_axis_left_room(spec: dict[str, Any], plot_h: float) -> float:
 def _x_axis_title_room(axis: dict[str, Any]) -> float:
     """Outward room needed by an outside x-axis title.
 
-    ``_axis_label_geometry()`` positions x titles from their line-box top and
-    converts that top to a static-text baseline.  Measure the corresponding
-    outer glyph edge here so tight/constrained layout does not stop at the
-    historical 36/42 px band while the title itself extends past the canvas.
+    Hosts still skip inside/invisible titles. The baseline-conversion formula
+    lives in Rust (ABI 125) so tight layout cannot stop at the historical
+    36/42 px band while the title itself extends past the canvas.
     """
     if not axis.get("label") or not _axis_text_paint_visible(axis, "label_color"):
         return 0.0
@@ -2139,31 +2124,23 @@ def _x_axis_title_room(axis: dict[str, Any]) -> float:
         return 0.0
     style = axis.get("style") or {}
     font_size = float(style.get("label_size", 12))
-    block = _textblock.measure(axis["label"], font_size)
     offset = float(axis.get("label_offset", 0.0))
-    if axis.get("side", "bottom") == "top":
-        # outside_top = plot-top - 34; the baseline conversion then moves
-        # 0.82em back toward the plot.
-        return _AXIS_TEXT_EDGE_PAD + 34.0 + offset - font_size * 0.82 + block.ascent
-    # outside_bottom = plot-bottom + 24; later lines move farther outward.
-    return (
-        _AXIS_TEXT_EDGE_PAD
-        + 24.0
-        + offset
-        + font_size * 0.82
-        + (block.line_count - 1) * block.line_step
-        + block.descent
+    return float(
+        _native.x_axis_title_room(
+            str(axis["label"]),
+            font_size,
+            offset,
+            axis.get("side", "bottom") == "top",
+        )
     )
 
 
 def _x_tick_label_room(axis: dict[str, Any], plot_w: float) -> float:
     """Outward room needed by the x axis's final tick-label set and title.
 
-    The old 32/42 px bands only fit horizontal labels. Measure the strings and
-    project their DejaVu advance plus line box through the authored angle; this
-    is deliberately evaluated *after* collision policy, so ``auto`` reserves
-    only labels it will draw while pyplot's ``preserve`` reserves all fixed
-    locations. The same value is used by SVG and native PNG layout.
+    The old 32/42 px bands only fit horizontal labels. Hosts still keep the
+    none/off/auto-horizontal shortcuts and call collision layout. The measured
+    band combination lives in Rust (ABI 125).
     """
     strategy = _axis_tick_label_strategy(axis)
     if strategy == "none":
@@ -2201,28 +2178,29 @@ def _x_tick_label_room(axis: dict[str, Any], plot_w: float) -> float:
         # Measured bands are reserved for rotation, staggering, or multiline
         # chrome; ordinary auto ticks retain their historical geometry.
         return title_room
-    extent = 0.0
-    for item in items:
-        block = _textblock.measure(item["text"], font_size)
-        extent = max(extent, _textblock.rotated_extent(block, float(item["angle"]))[1])
     side = axis.get("side", "bottom")
     label_offset = (
         _axis_tick_label_offset(axis, 7.0, 0.2)
         if side == "top"
         else _axis_tick_label_offset(axis, 16.0, 0.8)
     )
-    rows = max(int(item.get("row", 0)) for item in items)
-    tick_room = _AXIS_TEXT_EDGE_PAD + label_offset + rows * (font_size + 4.0) + extent
-    return max(title_room, tick_room)
+    return float(
+        _native.x_tick_label_room(
+            [item["text"] for item in items],
+            [float(item["angle"]) for item in items],
+            [int(item.get("row", 0)) for item in items],
+            font_size,
+            float(label_offset),
+            title_room,
+        )
+    )
 
 
 def _x_tick_label_edge_rooms(axes: dict[str, dict[str, Any]], plot_w: float) -> tuple[float, float]:
     """Canvas-edge room needed by x tick labels that overhang the plot.
 
-    A terminal tick label is centered on the end of the spine by default, so
-    half its ink lives outside the plot rectangle. Matplotlib includes every
-    visible tick-label bbox in ``Axes.get_tightbbox``; mirror that horizontal
-    union here instead of relying on the compact layout's flat right gutter.
+    Hosts still skip none/off/invisible axes, format labels, and choose
+    anchors. Per-axis rotated overhang lives in Rust (ABI 125).
     """
     left = right = 0.0
     for axis_id, axis in axes.items():
@@ -2234,9 +2212,8 @@ def _x_tick_label_edge_rooms(axes: dict[str, dict[str, Any]], plot_w: float) -> 
             continue
         _ticks, values, step = axis_ticks(axis, plot_w, True)
         scale = _Scale(axis, 0.0, max(1.0, plot_w))
-        style = axis.get("style") or {}
         font_size = _axis_tick_font_size(axis)
-        explicit_anchor = _tick_label_anchor(axis, style, "")
+        explicit_anchor = _tick_label_anchor(axis, axis.get("style") or {}, "")
         for side in _axis_tick_label_sides(axis, is_x=True):
             side_axis = {**axis, "side": side}
             if (
@@ -2255,6 +2232,9 @@ def _x_tick_label_edge_rooms(axes: dict[str, dict[str, Any]], plot_w: float) -> 
                 ]
             else:
                 items = _axis_tick_label_layout(side_axis, values, step, scale, True)
+            if not items:
+                continue
+            anchors: list[str] = []
             for item in items:
                 angle = float(item["angle"])
                 anchor = explicit_anchor
@@ -2265,25 +2245,18 @@ def _x_tick_label_edge_rooms(axes: dict[str, dict[str, Any]], plot_w: float) -> 
                         anchor = "end"
                     else:
                         anchor = "start"
-                block = _textblock.measure(item["text"], font_size)
-                if anchor == "end":
-                    x0, x1 = -block.width, 0.0
-                elif anchor == "center":
-                    x0, x1 = -block.width / 2, block.width / 2
-                else:
-                    x0, x1 = 0.0, block.width
-                y0 = -block.ascent
-                y1 = block.descent + (block.line_count - 1) * block.line_step
-                radians = math.radians(angle)
-                cosine, sine = math.cos(radians), math.sin(radians)
-                rotated_x = [x * cosine - y * sine for x in (x0, x1) for y in (y0, y1)]
-                position = float(item["pos"])
-                left = max(left, _AXIS_TEXT_EDGE_PAD - position - min(rotated_x))
-                right = max(
-                    right,
-                    _AXIS_TEXT_EDGE_PAD + position + max(rotated_x) - plot_w,
-                )
-    return float(math.ceil(max(0.0, left))), float(math.ceil(max(0.0, right)))
+                anchors.append(str(anchor))
+            left_i, right_i = _native.x_tick_label_edge_rooms(
+                plot_w,
+                [float(item["pos"]) for item in items],
+                [item["text"] for item in items],
+                [float(item["angle"]) for item in items],
+                anchors,
+                font_size,
+            )
+            left = max(left, left_i)
+            right = max(right, right_i)
+    return float(left), float(right)
 
 
 def _x_axis_rooms(

@@ -4,6 +4,13 @@ import {
   xySceneAxisTicks,
   xySceneTickLabelLayout,
   xyLegendBoxLayout,
+  xyTextBlockMeasure,
+  xyTextBlockRotatedExtent,
+  xyYTickLabelExtent,
+  xyYAxisLeftRoom,
+  xyXAxisTitleRoom,
+  xyXTickLabelRoom,
+  xyXTickLabelEdgeRooms,
   xySceneBatchEncode,
   xySceneBrowserPainter,
   xyScenePackAnnotations,
@@ -491,6 +498,200 @@ export function legendBoxLayout({
     visibleCount: visible,
     names: outNames,
   };
+}
+
+function packUtf8Strings(values) {
+  const encoder = new TextEncoder();
+  const encoded = Array.from(values ?? [], (value) => encoder.encode(String(value)));
+  const packedLen = encoded.reduce((sum, bytes) => sum + bytes.length, 0);
+  const packed = new Uint8Array(packedLen);
+  const lens = new Uint32Array(encoded.length);
+  let at = 0;
+  for (const [index, bytes] of encoded.entries()) {
+    lens[index] = bytes.length;
+    packed.set(bytes, at);
+    at += bytes.length;
+  }
+  return { lens, packed, n: encoded.length };
+}
+
+function unpackUtf8Strings(lens, packed, count) {
+  const decoder = new TextDecoder();
+  const out = [];
+  let at = 0;
+  for (let index = 0; index < count; index += 1) {
+    const length = lens[index];
+    out.push(decoder.decode(packed.subarray(at, at + length)));
+    at += length;
+  }
+  return out;
+}
+
+const ANCHOR_CODES = { start: 0, center: 1, end: 2 };
+
+export function textBlockMeasure(text, fontSize, lineHeight = 1.2, maxWidth = null) {
+  const encoder = new TextEncoder();
+  const textBytes = encoder.encode(String(text ?? ""));
+  let lineCap = Math.max(textBytes.length + 8, 8);
+  let packedCap = Math.max(textBytes.length + 8, 8);
+  const metrics = new Float64Array(6);
+  let written = USIZE_MAX_64;
+  let lineLens = new Uint32Array(lineCap);
+  let packed = new Uint8Array(packedCap);
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    lineLens = new Uint32Array(lineCap);
+    packed = new Uint8Array(packedCap);
+    written = xyTextBlockMeasure(
+      textBytes.length ? u8Ptr(textBytes) : 0,
+      BigInt(textBytes.length),
+      Number(fontSize),
+      Number(lineHeight),
+      maxWidth == null ? Number.NaN : Number(maxWidth),
+      f64Ptr(metrics),
+      u32Ptr(lineLens),
+      BigInt(lineCap),
+      u8Ptr(packed),
+      BigInt(packedCap),
+    );
+    if (written !== USIZE_MAX_64) break;
+    lineCap *= 4;
+    packedCap *= 4;
+  }
+  if (written === USIZE_MAX_64) throw new RangeError("invalid text-block measure request");
+  const n = Number(written);
+  if (!Number.isSafeInteger(n) || n < 0) {
+    throw new RangeError("text-block measure exceeded host output limits");
+  }
+  return {
+    lines: unpackUtf8Strings(lineLens, packed, n),
+    width: metrics[0],
+    height: metrics[1],
+    lineStep: metrics[2],
+    ascent: metrics[3],
+    descent: metrics[4],
+    lineCount: n,
+  };
+}
+
+export function textBlockRotatedExtent(width, height, angleDegrees) {
+  const outX = new Float64Array(1);
+  const outY = new Float64Array(1);
+  const written = xyTextBlockRotatedExtent(
+    Number(width),
+    Number(height),
+    Number(angleDegrees),
+    f64Ptr(outX),
+    f64Ptr(outY),
+  );
+  if (written === USIZE_MAX_64) throw new RangeError("invalid text-block rotation request");
+  return [outX[0], outY[0]];
+}
+
+export function yTickLabelExtent(labels, fontSize, angle) {
+  const { lens, packed, n } = packUtf8Strings(labels);
+  const out = new Float64Array(1);
+  const written = xyYTickLabelExtent(
+    n ? u32Ptr(lens) : 0,
+    packed.length ? u8Ptr(packed) : 0,
+    BigInt(packed.length),
+    BigInt(n),
+    Number(fontSize),
+    Number(angle),
+    f64Ptr(out),
+  );
+  if (written === USIZE_MAX_64) throw new RangeError("invalid y tick-label extent request");
+  return out[0];
+}
+
+export function yAxisLeftRoom(tickOffset, tickRoom, title, titleFontSize, titleGap) {
+  const titleBytes = new TextEncoder().encode(title == null ? "" : String(title));
+  const out = new Float64Array(1);
+  const written = xyYAxisLeftRoom(
+    Number(tickOffset),
+    Number(tickRoom),
+    titleBytes.length ? u8Ptr(titleBytes) : 0,
+    BigInt(titleBytes.length),
+    Number(titleFontSize),
+    Number(titleGap),
+    f64Ptr(out),
+  );
+  if (written === USIZE_MAX_64) throw new RangeError("invalid y-axis left-room request");
+  return out[0];
+}
+
+export function xAxisTitleRoom(title, fontSize, offset, top) {
+  const titleBytes = new TextEncoder().encode(title == null ? "" : String(title));
+  const out = new Float64Array(1);
+  const written = xyXAxisTitleRoom(
+    titleBytes.length ? u8Ptr(titleBytes) : 0,
+    BigInt(titleBytes.length),
+    Number(fontSize),
+    Number(offset),
+    top ? 1 : 0,
+    f64Ptr(out),
+  );
+  if (written === USIZE_MAX_64) throw new RangeError("invalid x-axis title-room request");
+  return out[0];
+}
+
+export function xTickLabelRoom(labels, angles, rows, fontSize, labelOffset, titleRoom) {
+  const texts = Array.from(labels ?? [], (label) => String(label));
+  const n = texts.length;
+  if (n !== (angles?.length ?? 0) || n !== (rows?.length ?? 0)) {
+    throw new RangeError("x tick-label room arrays must have equal length");
+  }
+  const { lens, packed } = packUtf8Strings(texts);
+  const angleArr = Float64Array.from(angles ?? [], (angle) => Number(angle));
+  const rowArr = Uint32Array.from(rows ?? [], (row) => Number(row) >>> 0);
+  const out = new Float64Array(1);
+  const written = xyXTickLabelRoom(
+    n ? u32Ptr(lens) : 0,
+    packed.length ? u8Ptr(packed) : 0,
+    BigInt(packed.length),
+    BigInt(n),
+    n ? f64Ptr(angleArr) : 0,
+    n ? u32Ptr(rowArr) : 0,
+    Number(fontSize),
+    Number(labelOffset),
+    Number(titleRoom),
+    f64Ptr(out),
+  );
+  if (written === USIZE_MAX_64) throw new RangeError("invalid x tick-label room request");
+  return out[0];
+}
+
+export function xTickLabelEdgeRooms(plotW, positions, labels, angles, anchors, fontSize) {
+  const texts = Array.from(labels ?? [], (label) => String(label));
+  const n = texts.length;
+  if (n !== (positions?.length ?? 0) || n !== (angles?.length ?? 0) || n !== (anchors?.length ?? 0)) {
+    throw new RangeError("x tick-label edge-room arrays must have equal length");
+  }
+  const { lens, packed } = packUtf8Strings(texts);
+  const posArr = Float64Array.from(positions ?? [], (pos) => Number(pos));
+  const angleArr = Float64Array.from(angles ?? [], (angle) => Number(angle));
+  const anchorArr = new Uint32Array(n);
+  for (let index = 0; index < n; index += 1) {
+    const code = ANCHOR_CODES[String(anchors[index])];
+    if (code === undefined) throw new RangeError("anchor must be start, center, or end");
+    anchorArr[index] = code;
+  }
+  const outLeft = new Float64Array(1);
+  const outRight = new Float64Array(1);
+  const written = xyXTickLabelEdgeRooms(
+    Number(plotW),
+    n ? f64Ptr(posArr) : 0,
+    BigInt(n),
+    n ? u32Ptr(lens) : 0,
+    packed.length ? u8Ptr(packed) : 0,
+    BigInt(packed.length),
+    n ? f64Ptr(angleArr) : 0,
+    n ? u32Ptr(anchorArr) : 0,
+    Number(fontSize),
+    f64Ptr(outLeft),
+    f64Ptr(outRight),
+  );
+  if (written === USIZE_MAX_64) throw new RangeError("invalid x tick-label edge-room request");
+  return [outLeft[0], outRight[0]];
 }
 
 export function scaleMap({ values, kind = "linear", operation = "pixel", domain, range = [0, 1], constant = 1, nonpositive = "clip" }) {

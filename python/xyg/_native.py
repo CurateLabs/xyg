@@ -2531,6 +2531,260 @@ def scene_legend_box_layout(
     }
 
 
+_ANCHOR_CODES = {"start": 0, "center": 1, "end": 2}
+
+
+def _pack_utf8_strings(texts: Sequence[str]) -> tuple[np.ndarray, np.ndarray]:
+    encoded = [str(text).encode("utf-8") for text in texts]
+    lens = np.asarray([len(item) for item in encoded], dtype=np.uint32)
+    packed = (
+        np.frombuffer(b"".join(encoded), dtype=np.uint8).copy()
+        if encoded
+        else np.empty(0, dtype=np.uint8)
+    )
+    return lens, packed
+
+
+def _unpack_utf8_strings(lens: np.ndarray, packed: np.ndarray, count: int) -> list[str]:
+    out: list[str] = []
+    at = 0
+    for i in range(count):
+        length = int(lens[i])
+        out.append(bytes(packed[at : at + length]).decode("utf-8"))
+        at += length
+    return out
+
+
+def text_block_measure(
+    text: object,
+    font_size: float,
+    line_height: float = 1.2,
+    max_width: float | None = None,
+) -> dict[str, Any]:
+    """Newline-delimited chrome measure via ``xyg_text_block_measure`` (ABI 125)."""
+    text_b = np.frombuffer(str(text).encode("utf-8"), dtype=np.uint8).copy()
+    line_cap = max(int(text_b.size) + 8, 8)
+    packed_cap = max(int(text_b.size) + 8, 8)
+    metrics = np.empty(6, dtype=np.float64)
+    written = _USIZE_MAX
+    line_lens = np.empty(0, dtype=np.uint32)
+    packed = np.empty(0, dtype=np.uint8)
+    for _ in range(4):
+        line_lens = np.empty(line_cap, dtype=np.uint32)
+        packed = np.empty(packed_cap, dtype=np.uint8)
+        written = _lib.xyg_text_block_measure(
+            _ptr_u8(text_b) if text_b.size else 0,
+            int(text_b.size),
+            float(font_size),
+            float(line_height),
+            float("nan") if max_width is None else float(max_width),
+            _ptr_f64(metrics),
+            line_lens.ctypes.data,
+            line_cap,
+            _ptr_u8(packed),
+            packed_cap,
+        )
+        if written != _USIZE_MAX:
+            break
+        line_cap *= 4
+        packed_cap *= 4
+    if written == _USIZE_MAX:
+        raise ValueError("invalid text-block measure request")
+    n = int(written)
+    return {
+        "lines": _unpack_utf8_strings(line_lens, packed, n),
+        "width": float(metrics[0]),
+        "height": float(metrics[1]),
+        "line_step": float(metrics[2]),
+        "ascent": float(metrics[3]),
+        "descent": float(metrics[4]),
+        "line_count": n,
+    }
+
+
+def text_block_rotated_extent(
+    width: float,
+    height: float,
+    angle_degrees: float,
+) -> tuple[float, float]:
+    """Axis-aligned extent after rotation via ``xyg_text_block_rotated_extent``."""
+    out_x = ctypes.c_double()
+    out_y = ctypes.c_double()
+    written = _lib.xyg_text_block_rotated_extent(
+        float(width),
+        float(height),
+        float(angle_degrees),
+        ctypes.byref(out_x),
+        ctypes.byref(out_y),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid text-block rotation request")
+    return float(out_x.value), float(out_y.value)
+
+
+def y_tick_label_extent(
+    labels: Sequence[str],
+    font_size: float,
+    angle: float,
+) -> float:
+    """Widest rotated x-extent of y tick labels (ABI 125)."""
+    lens, packed = _pack_utf8_strings([str(label) for label in labels])
+    n = len(labels)
+    out = ctypes.c_double()
+    written = _lib.xyg_y_tick_label_extent(
+        lens.ctypes.data if n else 0,
+        _ptr_u8(packed) if packed.size else 0,
+        int(packed.size),
+        n,
+        float(font_size),
+        float(angle),
+        ctypes.byref(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid y tick-label extent request")
+    return float(out.value)
+
+
+def y_axis_left_room(
+    tick_offset: float,
+    tick_room: float,
+    title: str | None,
+    title_font_size: float,
+    title_gap: float,
+) -> float:
+    """Left gutter for one y axis after the host resolved tick ink (ABI 125)."""
+    title_b = np.frombuffer(str(title or "").encode("utf-8"), dtype=np.uint8).copy()
+    out = ctypes.c_double()
+    written = _lib.xyg_y_axis_left_room(
+        float(tick_offset),
+        float(tick_room),
+        _ptr_u8(title_b) if title_b.size else 0,
+        int(title_b.size),
+        float(title_font_size),
+        float(title_gap),
+        ctypes.byref(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid y-axis left-room request")
+    return float(out.value)
+
+
+def x_axis_title_room(
+    title: str | None,
+    font_size: float,
+    offset: float,
+    top: bool,
+) -> float:
+    """Outside x-axis title room via ``xyg_x_axis_title_room`` (ABI 125)."""
+    title_b = np.frombuffer(str(title or "").encode("utf-8"), dtype=np.uint8).copy()
+    out = ctypes.c_double()
+    written = _lib.xyg_x_axis_title_room(
+        _ptr_u8(title_b) if title_b.size else 0,
+        int(title_b.size),
+        float(font_size),
+        float(offset),
+        1 if top else 0,
+        ctypes.byref(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid x-axis title-room request")
+    return float(out.value)
+
+
+def x_tick_label_room(
+    labels: Sequence[str],
+    angles: Sequence[float],
+    rows: Sequence[int],
+    font_size: float,
+    label_offset: float,
+    title_room: float,
+) -> float:
+    """Measured x tick-label band after collision layout (ABI 125)."""
+    texts = [str(label) for label in labels]
+    n = len(texts)
+    if n != len(angles) or n != len(rows):
+        raise ValueError("x tick-label room arrays must have equal length")
+    lens, packed = _pack_utf8_strings(texts)
+    angle_arr = (
+        np.asarray([float(angle) for angle in angles], dtype=np.float64)
+        if n
+        else np.empty(0, dtype=np.float64)
+    )
+    row_arr = (
+        np.asarray([int(row) for row in rows], dtype=np.uint32)
+        if n
+        else np.empty(0, dtype=np.uint32)
+    )
+    out = ctypes.c_double()
+    written = _lib.xyg_x_tick_label_room(
+        lens.ctypes.data if n else 0,
+        _ptr_u8(packed) if packed.size else 0,
+        int(packed.size),
+        n,
+        _ptr_f64(angle_arr) if n else 0,
+        row_arr.ctypes.data if n else 0,
+        float(font_size),
+        float(label_offset),
+        float(title_room),
+        ctypes.byref(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid x tick-label room request")
+    return float(out.value)
+
+
+def x_tick_label_edge_rooms(
+    plot_w: float,
+    positions: Sequence[float],
+    labels: Sequence[str],
+    angles: Sequence[float],
+    anchors: Sequence[str],
+    font_size: float,
+) -> tuple[float, float]:
+    """Canvas-edge overhang from laid-out x tick labels (ABI 125)."""
+    texts = [str(label) for label in labels]
+    n = len(texts)
+    if n != len(positions) or n != len(angles) or n != len(anchors):
+        raise ValueError("x tick-label edge-room arrays must have equal length")
+    lens, packed = _pack_utf8_strings(texts)
+    pos_arr = (
+        np.asarray([float(pos) for pos in positions], dtype=np.float64)
+        if n
+        else np.empty(0, dtype=np.float64)
+    )
+    angle_arr = (
+        np.asarray([float(angle) for angle in angles], dtype=np.float64)
+        if n
+        else np.empty(0, dtype=np.float64)
+    )
+    try:
+        anchor_arr = (
+            np.asarray([_ANCHOR_CODES[str(anchor)] for anchor in anchors], dtype=np.uint32)
+            if n
+            else np.empty(0, dtype=np.uint32)
+        )
+    except KeyError as exc:
+        raise ValueError("anchor must be start, center, or end") from exc
+    out_left = ctypes.c_double()
+    out_right = ctypes.c_double()
+    written = _lib.xyg_x_tick_label_edge_rooms(
+        float(plot_w),
+        _ptr_f64(pos_arr) if n else 0,
+        n,
+        lens.ctypes.data if n else 0,
+        _ptr_u8(packed) if packed.size else 0,
+        int(packed.size),
+        _ptr_f64(angle_arr) if n else 0,
+        anchor_arr.ctypes.data if n else 0,
+        float(font_size),
+        ctypes.byref(out_left),
+        ctypes.byref(out_right),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid x tick-label edge-room request")
+    return float(out_left.value), float(out_right.value)
+
+
 def scene_scale_map(
     values: npt.ArrayLike,
     kind: int,

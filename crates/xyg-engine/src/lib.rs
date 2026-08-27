@@ -27,6 +27,7 @@ pub mod hexbin;
 #[cfg(feature = "raster")]
 pub mod jpeg;
 pub mod kernels;
+pub mod layout_rooms;
 pub mod legend_fit;
 pub mod legend_layout;
 pub mod lod_plan;
@@ -59,6 +60,7 @@ pub mod svg;
 pub mod temporal;
 pub mod temporal_controller;
 pub mod temporal_graph;
+pub mod textblock;
 pub mod tick_layout;
 #[cfg(not(target_family = "wasm"))]
 pub mod tile_store;
