@@ -171,7 +171,9 @@ hex-cell ring and the regular heatmap lattice reconstruction into Rust
 center+pitch rows and a two-row extent+shape lattice. ABI 134 adds
 `HeatmapPainted=9` plus an XYHP paint sidecar (or XYEX wrapping XYPL+XYHP on
 the existing extras pointer): hosts pack the same two-row lattice plus RGBA8 or
-scalar+stops payload; Rust tessellates cells and interns unique fills. ABI 104 likewise moves
+scalar+stops payload; Rust tessellates cells and interns unique fills. ABI 135
+adds `xyg_colormap_stops` and XYHP paint kind 2 so named tables live in Rust;
+hosts pack a name or a custom RGB ramp. ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate
 row per segment and two PolyFill rows per face. ABI 105 makes the public

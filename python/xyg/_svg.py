@@ -88,7 +88,9 @@ def _flag_stops() -> list[tuple[int, int, int]]:
     return [(int(row[0]), int(row[1]), int(row[2])) for row in rgb]
 
 
-# Mirrors js/src/10_colormaps.ts COLORMAP_STOPS (§36) — test-guarded.
+# Built-in tables mirrored from `crates/xyg-engine/src/colormap.rs` and
+# `js/src/10_colormaps.ts` (§36) — native ABI 135 is authoritative for hosts;
+# this copy stays for JS-sync tests and gallery goldens.
 COLORMAP_STOPS: dict[str, list[tuple[int, int, int]]] = {
     "binary": [(255, 255, 255), (0, 0, 0)],
     "flag": _flag_stops(),
@@ -906,15 +908,13 @@ def _colormap_key(colormap: Any) -> str:
 def _colormap_stops(colormap: Any) -> list[tuple[int, int, int]]:
     """Evenly spaced RGB stops for a shipped colormap.
 
-    Mirrors `colormapStops` in js/src/10_colormaps.ts: a string names a
-    built-in table (`_r` reverses it), while a sequence is an already-resolved
-    custom ramp (`channels.resolve_colormap`) and is used verbatim."""
+    Named maps resolve through ``xyg_colormap_stops`` (ABI 135). A sequence is
+    an already-resolved custom ramp (`channels.resolve_colormap`) and is used
+    verbatim.
+    """
     if not isinstance(colormap, str):
         return [(int(r), int(g), int(b)) for r, g, b in colormap]
-    reversed_map = colormap.endswith("_r")
-    base = colormap[:-2] if reversed_map else colormap
-    stops = COLORMAP_STOPS.get(base) or COLORMAP_STOPS["viridis"]
-    return list(reversed(stops)) if reversed_map else stops
+    return [(int(row[0]), int(row[1]), int(row[2])) for row in _native.colormap_stops(colormap)]
 
 
 def _lut(colormap: Any, t: np.ndarray) -> np.ndarray:

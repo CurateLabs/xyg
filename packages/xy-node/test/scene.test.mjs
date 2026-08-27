@@ -402,6 +402,9 @@ test("Node Scene v9 whole-scene consumers reject malformed and unsupported input
   const figure = new Figure().heatmap([[0, 1], [1, 0]], { colormapStops: [0, 0, 0, 255, 255, 255] });
   const svg = sceneSvg(figure.toScene());
   assert.ok(svg.includes("<rect"));
+  const named = new Figure({ width: 320, height: 240 }).heatmap([[0, 1], [1, 0]], { colormap: "binary" });
+  assert.equal(sceneExportSupportReason(named), null);
+  assert.ok(sceneSvg(named.toScene()).includes("<rect"));
 });
 
 test("Node Scene v13 compiles bounded primary annotations and fails closed", () => {

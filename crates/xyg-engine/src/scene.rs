@@ -4,6 +4,7 @@
 //! coerce author input and resolve paint channels, but marker geometry,
 //! stroke-inclusive sizing, validation, bounds, and SVG construction live here.
 
+use crate::colormap;
 use crate::css;
 use crate::geom;
 use crate::kernels::{colormap_color, normalize_one_f32};
@@ -3489,12 +3490,15 @@ pub const SCENE_HEXBIN_RING: [(f64, f64); 6] = [
 
 /// XYHP v1 painted-heatmap sidecar (ABI 134). Hosts pack one plane per
 /// `HeatmapPainted` lattice; Rust tessellates cells and interns unique fills.
+/// Kind 2 packs a colormap name instead of RGB stops (ABI 135).
 pub const XYHP_MAGIC: &[u8; 4] = b"XYHP";
 pub const XYHP_VERSION: u32 = 1;
 pub const XYHP_V1_HEADER_BYTES: usize = 16;
 pub const XYHP_PLANE_HEADER_BYTES: usize = 24;
 pub const XYHP_PAINT_RGBA: u32 = 0;
 pub const XYHP_PAINT_COLORMAP: u32 = 1;
+pub const XYHP_PAINT_NAMED: u32 = 2;
+pub const XYHP_MAX_NAME_BYTES: usize = 64;
 /// XYEX v1 wraps optional XYPL polar bytes plus optional XYHP paint so
 /// `xyg_scene_batch_encode` stays at Koffi's 64-parameter ceiling.
 pub const XYEX_MAGIC: &[u8; 4] = b"XYEX";
@@ -3622,7 +3626,13 @@ fn parse_heatmap_paint(bytes: &[u8]) -> Result<Vec<HeatmapPaintPlane<'_>>, Scene
         let cols = scene_read_u32(bytes, cursor + 12)? as usize;
         let kind = scene_read_u32(bytes, cursor + 16)?;
         let payload_len = scene_read_u32(bytes, cursor + 20)? as usize;
-        if rows == 0 || cols == 0 || !matches!(kind, XYHP_PAINT_RGBA | XYHP_PAINT_COLORMAP) {
+        if rows == 0
+            || cols == 0
+            || !matches!(
+                kind,
+                XYHP_PAINT_RGBA | XYHP_PAINT_COLORMAP | XYHP_PAINT_NAMED
+            )
+        {
             return Err(SceneError::Length);
         }
         let payload_end = header_end.checked_add(payload_len).ok_or(SceneError::Limit)?;
@@ -3633,19 +3643,26 @@ fn parse_heatmap_paint(bytes: &[u8]) -> Result<Vec<HeatmapPaintPlane<'_>>, Scene
                 return Err(SceneError::Length);
             }
         } else {
-            // lo, hi, n_stops, pad, values[cells], RGB stops
+            // lo, hi, count, pad, values[cells], RGB stops or UTF-8 name
             if payload_len < 24 {
                 return Err(SceneError::Length);
             }
-            let n_stops = scene_read_u32(payload, 16)? as usize;
-            if n_stops == 0 || scene_read_u32(payload, 20)? != 0 {
+            let count = scene_read_u32(payload, 16)? as usize;
+            if count == 0 || scene_read_u32(payload, 20)? != 0 {
                 return Err(SceneError::Length);
             }
             let values_bytes = cells.checked_mul(8).ok_or(SceneError::Limit)?;
-            let stops_bytes = n_stops.checked_mul(3).ok_or(SceneError::Limit)?;
+            let tail_bytes = if kind == XYHP_PAINT_NAMED {
+                if count > XYHP_MAX_NAME_BYTES {
+                    return Err(SceneError::Limit);
+                }
+                count
+            } else {
+                count.checked_mul(3).ok_or(SceneError::Limit)?
+            };
             let expected = 24usize
                 .checked_add(values_bytes)
-                .and_then(|value| value.checked_add(stops_bytes))
+                .and_then(|value| value.checked_add(tail_bytes))
                 .ok_or(SceneError::Limit)?;
             if payload_len != expected {
                 return Err(SceneError::Length);
@@ -3707,6 +3724,29 @@ fn padded_colormap_domain(lo: f64, hi: f64) -> [f64; 2] {
     }
 }
 
+fn heatmap_colormap_domain(lo: f64, hi: f64, values: impl Iterator<Item = f64>) -> [f64; 2] {
+    if lo.is_finite() && hi.is_finite() && lo != hi {
+        return [lo, hi];
+    }
+    let mut min = f64::INFINITY;
+    let mut max = f64::NEG_INFINITY;
+    for value in values {
+        if value.is_finite() {
+            min = min.min(value);
+            max = max.max(value);
+        }
+    }
+    padded_colormap_domain(min, max)
+}
+
+fn heatmap_payload_values(payload: &[u8], cells: usize) -> Result<Vec<f64>, SceneError> {
+    let mut values = Vec::with_capacity(cells);
+    for index in 0..cells {
+        values.push(scene_read_f64(payload, 24 + index * 8)?);
+    }
+    Ok(values)
+}
+
 fn heatmap_paint_fills(plane: HeatmapPaintPlane<'_>, alpha: u8) -> Result<Vec<[u8; 4]>, SceneError> {
     let cells = plane.rows.checked_mul(plane.cols).ok_or(SceneError::Limit)?;
     let mut fills = Vec::with_capacity(cells);
@@ -3721,43 +3761,51 @@ fn heatmap_paint_fills(plane: HeatmapPaintPlane<'_>, alpha: u8) -> Result<Vec<[u
         }
         return Ok(fills);
     }
-    let n_stops = scene_read_u32(plane.payload, 16)? as usize;
-    let values_off = 24usize;
-    let stops_off = values_off
-        .checked_add(cells.checked_mul(8).ok_or(SceneError::Limit)?)
-        .ok_or(SceneError::Limit)?;
-    let stops_end = stops_off
-        .checked_add(n_stops.checked_mul(3).ok_or(SceneError::Limit)?)
-        .ok_or(SceneError::Limit)?;
-    let stop_bytes = plane.payload.get(stops_off..stops_end).ok_or(SceneError::Length)?;
-    let mut stops = Vec::with_capacity(n_stops);
-    for chunk in stop_bytes.chunks_exact(3) {
-        stops.push([chunk[0], chunk[1], chunk[2]]);
-    }
-    if stops.is_empty() {
-        return Err(SceneError::Length);
-    }
-    let domain = padded_colormap_domain(
+    let values = heatmap_payload_values(plane.payload, cells)?;
+    let domain = heatmap_colormap_domain(
         scene_read_f64(plane.payload, 0)?,
         scene_read_f64(plane.payload, 8)?,
+        values.iter().copied(),
     );
-    for row in 0..plane.rows {
-        for col in 0..plane.cols {
-            let value = scene_read_f64(
-                plane.payload,
-                values_off + (row * plane.cols + col) * 8,
-            )?;
-            if !value.is_finite() {
-                fills.push([0, 0, 0, 0]);
-                continue;
-            }
-            let t = f64::from(normalize_one_f32(value, domain[0], domain[1], f32::NAN));
-            fills.push(if t.is_nan() {
-                [0, 0, 0, 0]
-            } else {
-                colormap_color(t, &stops, alpha)
-            });
+    let count = scene_read_u32(plane.payload, 16)? as usize;
+    let tail_off = 24usize
+        .checked_add(cells.checked_mul(8).ok_or(SceneError::Limit)?)
+        .ok_or(SceneError::Limit)?;
+    let stops = if plane.kind == XYHP_PAINT_NAMED {
+        let name_bytes = plane
+            .payload
+            .get(tail_off..tail_off + count)
+            .ok_or(SceneError::Length)?;
+        let name = std::str::from_utf8(name_bytes).map_err(|_| SceneError::Length)?;
+        colormap::colormap_named_stops(name)
+    } else {
+        let stops_end = tail_off
+            .checked_add(count.checked_mul(3).ok_or(SceneError::Limit)?)
+            .ok_or(SceneError::Limit)?;
+        let stop_bytes = plane
+            .payload
+            .get(tail_off..stops_end)
+            .ok_or(SceneError::Length)?;
+        let mut stops = Vec::with_capacity(count);
+        for chunk in stop_bytes.chunks_exact(3) {
+            stops.push([chunk[0], chunk[1], chunk[2]]);
         }
+        if stops.is_empty() {
+            return Err(SceneError::Length);
+        }
+        stops
+    };
+    for value in values {
+        if !value.is_finite() {
+            fills.push([0, 0, 0, 0]);
+            continue;
+        }
+        let t = f64::from(normalize_one_f32(value, domain[0], domain[1], f32::NAN));
+        fills.push(if t.is_nan() {
+            [0, 0, 0, 0]
+        } else {
+            colormap_color(t, &stops, alpha)
+        });
     }
     Ok(fills)
 }
@@ -10815,6 +10863,39 @@ mod tests {
         out
     }
 
+    fn xyhp_named(
+        stable_id: u64,
+        rows: u32,
+        cols: u32,
+        lo: f64,
+        hi: f64,
+        values: &[f64],
+        name: &str,
+    ) -> Vec<u8> {
+        let name_bytes = name.as_bytes();
+        let mut payload = Vec::new();
+        payload.extend_from_slice(&lo.to_le_bytes());
+        payload.extend_from_slice(&hi.to_le_bytes());
+        payload.extend_from_slice(&(name_bytes.len() as u32).to_le_bytes());
+        payload.extend_from_slice(&0u32.to_le_bytes());
+        for value in values {
+            payload.extend_from_slice(&value.to_le_bytes());
+        }
+        payload.extend_from_slice(name_bytes);
+        let mut out = Vec::new();
+        out.extend_from_slice(b"XYHP");
+        out.extend_from_slice(&1u32.to_le_bytes());
+        out.extend_from_slice(&1u32.to_le_bytes());
+        out.extend_from_slice(&0u32.to_le_bytes());
+        out.extend_from_slice(&stable_id.to_le_bytes());
+        out.extend_from_slice(&rows.to_le_bytes());
+        out.extend_from_slice(&cols.to_le_bytes());
+        out.extend_from_slice(&XYHP_PAINT_NAMED.to_le_bytes());
+        out.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+        out.extend_from_slice(&payload);
+        out
+    }
+
     #[test]
     fn compact_heatmap_painted_interns_image_top_rgba() {
         // Image-top-first 2x2: top row red/green, bottom blue/white.
@@ -10905,6 +10986,44 @@ mod tests {
         assert_eq!(expanded.style_refs, [1, 2]);
         assert_eq!(&styles.fill_rgba[4..8], &[0, 0, 0, 180]);
         assert_eq!(&styles.fill_rgba[8..12], &[255, 255, 255, 180]);
+    }
+
+    #[test]
+    fn compact_heatmap_painted_named_colormap_resolves_in_rust() {
+        let paint = xyhp_named(
+            5,
+            1,
+            2,
+            f64::NAN,
+            f64::NAN,
+            &[0.0, 1.0],
+            "binary",
+        );
+        let (expanded, painted) = expand_scene_records_painted(
+            SceneExpansionInput {
+                kinds: &[2, 2],
+                stable_ids: &[5, 5],
+                style_refs: &[0, 0],
+                diameter: &[1.0, 2.0],
+                symbols: &[0, 0],
+                x0: &[0.0, 0.0],
+                y0: &[0.0, 0.0],
+                x1: &[2.0, 0.0],
+                y1: &[1.0, 0.0],
+                expansion_modes: &[9, 9],
+            },
+            test_linear_x_scale(),
+            test_linear_y_scale(),
+            &[255, 0, 0, 200],
+            &[0, 0, 0, 0],
+            &[0.0],
+            &paint,
+        )
+        .unwrap();
+        let styles = painted.unwrap();
+        assert_eq!(expanded.style_refs, [1, 2]);
+        assert_eq!(&styles.fill_rgba[4..8], &[255, 255, 255, 200]);
+        assert_eq!(&styles.fill_rgba[8..12], &[0, 0, 0, 200]);
     }
 
     #[test]

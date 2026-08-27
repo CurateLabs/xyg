@@ -838,6 +838,15 @@ def test_colormap_stops_stay_in_sync_with_js_client() -> None:
     assert set(COLORMAP_STOPS) == set(channels.COLORMAPS), (
         "renderer and public colormap registries diverged"
     )
+    from xyg import _native
+
+    for name, stops in COLORMAP_STOPS.items():
+        native = [tuple(int(v) for v in row) for row in _native.colormap_stops(name)]
+        assert native == list(stops), f"native colormap {name} diverged from COLORMAP_STOPS"
+        reversed_native = [
+            tuple(int(v) for v in row) for row in _native.colormap_stops(f"{name}_r")
+        ]
+        assert reversed_native == list(reversed(stops))
 
 
 def test_matplotlib_gallery_colormap_stops_and_reversal() -> None:

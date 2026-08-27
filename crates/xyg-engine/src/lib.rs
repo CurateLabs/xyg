@@ -16,6 +16,7 @@ pub use autorange::{auto_domain, figure_autorange, rect_zero_baseline_flags};
 #[cfg(not(target_family = "wasm"))]
 pub mod chunked_columns;
 pub mod compat_layout;
+pub mod colormap;
 pub mod css;
 pub mod dashboard;
 pub mod density_emit;

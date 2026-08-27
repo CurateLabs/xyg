@@ -7753,6 +7753,23 @@ def colormap_rgba_canonical(
     return out
 
 
+def colormap_stops(name: str) -> npt.NDArray[np.uint8]:
+    """Resolve a named colormap to ``(n, 3)`` uint8 RGB stops (ABI 135)."""
+    encoded = str(name).encode("utf-8")
+    out = np.empty((256, 3), dtype=np.uint8)
+    count = int(
+        _lib.xyg_colormap_stops(
+            encoded if encoded else 0,
+            len(encoded),
+            _ptr_u8(out),
+            out.size,
+        )
+    )
+    if count <= 0:
+        raise ValueError("native colormap stops rejected the inputs")
+    return out[:count].copy()
+
+
 def heatmap_rgba(
     raw: npt.ArrayLike,
     w: int,

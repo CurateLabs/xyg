@@ -33,6 +33,7 @@ export {
   heatmapRgba,
   colormapRgba,
   colormapRgbaCanonical,
+  colormapNamedStops,
   windRoseBins,
   contourfDensify,
   contourfBands,

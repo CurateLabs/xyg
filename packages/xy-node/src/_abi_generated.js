@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 134;
-export const SIGNATURE_SHA256 = "af070f3c0df837947b1b8cd2356bb33a4b336c736340cf08210d98717c07afe1";
+export const ABI_VERSION = 135;
+export const SIGNATURE_SHA256 = "c98de964569753217125d2f04e845f4c4d3336b55151624a92b91fed20fd90d0";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -28,6 +28,7 @@ export let xyChunkedColumnsReadPage;
 export let xyChunkedColumnsRows;
 export let xyColormapRgba;
 export let xyColormapRgbaCanonical;
+export let xyColormapStops;
 export let xyCompatColorbarExtra;
 export let xyCompatDefaultPadding;
 export let xyCompatIsCompact;
@@ -291,6 +292,7 @@ export function bindGeneratedAbi(lib) {
   xyChunkedColumnsRows = lib.func("uint64_t xyg_chunked_columns_rows(uint64_t store)");
   xyColormapRgba = lib.func("int32_t xyg_colormap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)");
   xyColormapRgbaCanonical = lib.func("int32_t xyg_colormap_rgba_canonical(const double * raw, size_t w, size_t h, double domain_lo, double domain_hi, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)");
+  xyColormapStops = lib.func("uint32_t xyg_colormap_stops(const uint8_t * name, size_t name_len, uint8_t * out, size_t cap)");
   xyCompatColorbarExtra = lib.func("size_t xyg_compat_colorbar_extra(uint32_t kind, int32_t has_label, int32_t pad_zero, double * out_right, double * out_bottom)");
   xyCompatDefaultPadding = lib.func("size_t xyg_compat_default_padding(int32_t compact, double * out_pad)");
   xyCompatIsCompact = lib.func("int32_t xyg_compat_is_compact(double width)");

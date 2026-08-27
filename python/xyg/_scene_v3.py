@@ -1029,25 +1029,31 @@ def _heatmap_paint_plane(
         payload = np.ascontiguousarray(np.stack(channels, axis=-1)).tobytes()
         kind = 0
     else:
-        from ._svg import _colormap_stops
-
         style = getattr(trace, "style", None) or {}
         colormap = style.get("colormap", "viridis")
-        stops = np.ascontiguousarray(_colormap_stops(colormap), dtype=np.uint8)
-        if stops.ndim != 2 or stops.shape[1] != 3 or stops.shape[0] < 1:
-            raise UnsupportedSceneV3("Scene heatmap colormap requires RGB stops")
         domain = style.get("domain")
         if domain is None or len(domain) != 2:
-            lo, hi = float(np.nanmin(values)), float(np.nanmax(values))
+            lo, hi = float("nan"), float("nan")
         else:
             lo, hi = float(domain[0]), float(domain[1])
         grid = np.ascontiguousarray(values.reshape(-1), dtype=np.float64)
-        payload = (
-            struct.pack("<ddII", lo, hi, int(stops.shape[0]), 0)
-            + grid.tobytes()
-            + np.ascontiguousarray(stops).tobytes()
-        )
-        kind = 1
+        if isinstance(colormap, str):
+            name = colormap.encode("utf-8")
+            payload = struct.pack("<ddII", lo, hi, len(name), 0) + grid.tobytes() + name
+            kind = 2
+        else:
+            stops = np.ascontiguousarray(
+                [(int(r), int(g), int(b)) for r, g, b in colormap],
+                dtype=np.uint8,
+            )
+            if stops.ndim != 2 or stops.shape[1] != 3 or stops.shape[0] < 1:
+                raise UnsupportedSceneV3("Scene heatmap colormap requires RGB stops")
+            payload = (
+                struct.pack("<ddII", lo, hi, int(stops.shape[0]), 0)
+                + grid.tobytes()
+                + np.ascontiguousarray(stops).tobytes()
+            )
+            kind = 1
     header = struct.pack("<QIIII", int(stable_id), int(rows), int(cols), int(kind), len(payload))
     return header + payload
 

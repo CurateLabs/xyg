@@ -1022,6 +1022,28 @@ function heatmapPaintPlane(trace, rows, cols, stableId) {
         }
       }
     }
+  } else if (typeof (style.colormap ?? trace.colormap) === "string") {
+    const name = String(style.colormap ?? trace.colormap ?? "viridis");
+    const nameBytes = new TextEncoder().encode(name);
+    if (nameBytes.length < 1 || nameBytes.length > 64) {
+      throw new RangeError("Scene heatmap colormap name must be 1-64 UTF-8 bytes");
+    }
+    const grid = trace.grid;
+    if (grid == null) throw new RangeError("heatmap Scene v12 compilation requires a scalar grid");
+    const domain = style.domain;
+    const lo = domain == null || domain.length !== 2 ? Number.NaN : Number(domain[0]);
+    const hi = domain == null || domain.length !== 2 ? Number.NaN : Number(domain[1]);
+    payload = new Uint8Array(24 + grid.length * 8 + nameBytes.length);
+    const view = new DataView(payload.buffer);
+    view.setFloat64(0, lo, true);
+    view.setFloat64(8, hi, true);
+    view.setUint32(16, nameBytes.length, true);
+    view.setUint32(20, 0, true);
+    for (let index = 0; index < grid.length; index += 1) {
+      view.setFloat64(24 + index * 8, Number(grid[index]), true);
+    }
+    payload.set(nameBytes, 24 + grid.length * 8);
+    kind = 2;
   } else if (hasColormap) {
     const grid = trace.grid;
     if (grid == null) throw new RangeError("heatmap Scene v12 compilation requires a scalar grid");
@@ -1033,20 +1055,8 @@ function heatmapPaintPlane(trace, rows, cols, stableId) {
     }
     const nStops = stopBytes.length / 3;
     const domain = style.domain;
-    let lo;
-    let hi;
-    if (domain == null || domain.length !== 2) {
-      lo = Number.POSITIVE_INFINITY;
-      hi = Number.NEGATIVE_INFINITY;
-      for (let index = 0; index < grid.length; index += 1) {
-        const value = Number(grid[index]);
-        if (Number.isFinite(value) && value < lo) lo = value;
-        if (Number.isFinite(value) && value > hi) hi = value;
-      }
-    } else {
-      lo = Number(domain[0]);
-      hi = Number(domain[1]);
-    }
+    const lo = domain == null || domain.length !== 2 ? Number.NaN : Number(domain[0]);
+    const hi = domain == null || domain.length !== 2 ? Number.NaN : Number(domain[1]);
     payload = new Uint8Array(24 + grid.length * 8 + stopBytes.length);
     const view = new DataView(payload.buffer);
     view.setFloat64(0, lo, true);

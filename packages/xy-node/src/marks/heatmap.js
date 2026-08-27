@@ -85,6 +85,7 @@ export function composeHeatmap(z, opts = {}) {
     domain: [lo, hi],
     x_range: [xEdges[0], xEdges[xEdges.length - 1]],
     y_range: [yEdges[0], yEdges[yEdges.length - 1]],
+    ...(opts.colormap != null ? { colormap: opts.colormap } : {}),
     ...(opts.style ?? {}),
   };
   let rgba = null;

@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 134
-#define XYG_ABI_SIGNATURE_SHA256 "af070f3c0df837947b1b8cd2356bb33a4b336c736340cf08210d98717c07afe1"
+#define XYG_ABI_VERSION 135
+#define XYG_ABI_SIGNATURE_SHA256 "c98de964569753217125d2f04e845f4c4d3336b55151624a92b91fed20fd90d0"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,6 +34,7 @@ size_t xyg_chunked_columns_read_page(uint64_t store, double x0, double x1, doubl
 uint64_t xyg_chunked_columns_rows(uint64_t store);
 int32_t xyg_colormap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out);
 int32_t xyg_colormap_rgba_canonical(const double * raw, size_t w, size_t h, double domain_lo, double domain_hi, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out);
+uint32_t xyg_colormap_stops(const uint8_t * name, size_t name_len, uint8_t * out, size_t cap);
 size_t xyg_compat_colorbar_extra(uint32_t kind, int32_t has_label, int32_t pad_zero, double * out_right, double * out_bottom);
 size_t xyg_compat_default_padding(int32_t compact, double * out_pad);
 int32_t xyg_compat_is_compact(double width);

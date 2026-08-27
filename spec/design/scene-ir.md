@@ -316,6 +316,8 @@ over-budget cases stay on the compatibility exporters. ABI 134 adds
 image-top-first or scalar values + RGB stops + domain). Rust tessellates cells
 and interns unique fills so Python and Node no longer expand N Rects or intern
 styles in the host. Polar encode still maps those Rects to PolyFill wedges.
+ABI 135 adds XYHP paint kind 2: hosts pack a colormap name (plus optional
+`_r`) and Rust resolves the stop table. Custom RGB ramps still use kind 1.
 
 ABI 104 adds `SegmentPair=7` and `TriangleFace=8` to the same authoring enum.
 A disconnected endpoint pair is one compact Polyline row whose four coordinates

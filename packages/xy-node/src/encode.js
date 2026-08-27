@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyBin2d, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapStops, xyBin2d, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -936,6 +936,22 @@ export function colormapRgbaCanonical(raw, w, h, domain, stops, alpha = 255) {
     throw new Error("xy_colormap_rgba_canonical failed");
   }
   return { rgba: out, width: ww, height: hh };
+}
+
+/** Resolve a named colormap to packed RGB triples (`n * 3` bytes). */
+export function colormapNamedStops(name) {
+  const encoded = new TextEncoder().encode(String(name ?? ""));
+  const out = new Uint8Array(256 * 3);
+  const count = Number(xyColormapStops(
+    encoded.length ? u8Ptr(encoded) : null,
+    BigInt(encoded.length),
+    u8Ptr(out),
+    BigInt(out.length),
+  ));
+  if (count <= 0) {
+    throw new Error("xy_colormap_stops failed");
+  }
+  return out.subarray(0, count * 3);
 }
 
 export function boxStats(data) {

@@ -22,6 +22,7 @@
 
 use xyg_engine::auto_domain;
 use xyg_engine::autorange::{rect_zero_baseline_flags, AutorangeError};
+use xyg_engine::colormap;
 #[cfg(not(target_os = "emscripten"))]
 use xyg_engine::chunked_columns;
 use xyg_engine::compat_layout;
@@ -120,7 +121,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 134;
+pub const ABI_VERSION: u32 = 135;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4546,6 +4547,36 @@ pub unsafe extern "C" fn xyg_colormap_rgba_canonical(
     ffi_guard(0, || {
         kernels::colormap_rgba_canonical_into(raw, w, h, [domain_lo, domain_hi], stops, alpha, out)
             as i32
+    })
+}
+
+/// Resolve a named colormap to packed RGB stops, including `_r` reversal.
+/// Unknown names fall back to viridis. Returns the stop count, or 0 when the
+/// name is not UTF-8 or `out` is too small.
+///
+/// # Safety
+/// `name` contains `name_len` readable bytes when `name_len > 0`. `out`
+/// contains `cap` writable bytes when `cap > 0`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_colormap_stops(
+    name: *const u8,
+    name_len: usize,
+    out: *mut u8,
+    cap: usize,
+) -> u32 {
+    if (name_len > 0 && name.is_null()) || cap == 0 || out.is_null() {
+        return 0;
+    }
+    ffi_guard(0, || {
+        let name = if name_len == 0 {
+            ""
+        } else {
+            let Some(text) = read_utf8(name, name_len) else {
+                return 0;
+            };
+            text
+        };
+        colormap::write_colormap_stops(name, std::slice::from_raw_parts_mut(out, cap)) as u32
     })
 }
 
@@ -13680,6 +13711,29 @@ pub unsafe extern "C" fn xyg_geo_column_crs(handle: u64) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn colormap_stops_resolves_names_and_reversal() {
+        let mut out = [0u8; 768];
+        let n = unsafe {
+            xyg_colormap_stops(b"binary".as_ptr(), 6, out.as_mut_ptr(), out.len())
+        };
+        assert_eq!(n, 2);
+        assert_eq!(&out[..6], &[255, 255, 255, 0, 0, 0]);
+        let reversed = unsafe {
+            xyg_colormap_stops(b"binary_r".as_ptr(), 8, out.as_mut_ptr(), out.len())
+        };
+        assert_eq!(reversed, 2);
+        assert_eq!(&out[..6], &[0, 0, 0, 255, 255, 255]);
+        let unknown = unsafe {
+            xyg_colormap_stops(b"nope".as_ptr(), 4, out.as_mut_ptr(), out.len())
+        };
+        let viridis = unsafe {
+            xyg_colormap_stops(b"viridis".as_ptr(), 7, out.as_mut_ptr(), out.len())
+        };
+        assert_eq!(unknown, viridis);
+        assert!(unknown > 0);
+    }
 
     #[test]
     fn polar_abi_bytes_reads_packed_view_or_empty() {

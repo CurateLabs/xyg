@@ -1421,7 +1421,8 @@ Constant-style Cartesian heatmap compiles a regular rows x cols lattice onto
 existing Scene Rect records; polar Scene tessellates those Rects to PolyFill
 annular sectors. ABI 134 `HeatmapPainted` moves scalar colormap and truecolor
 tessellation plus style intern into Rust: hosts pack an XYHP plane, Rust emits
-per-cell literal Rect fills. Irregular
+per-cell literal Rect fills. ABI 135 named colormap tables live in Rust
+(`xyg_colormap_stops`, XYHP paint kind 2). Irregular
 spacing, and LOD stay compatibility.
 
 Contract-wide invariants: every tier transition is hysteresis-guarded and logged
