@@ -144,6 +144,46 @@ test("Node Scene compiles constant marker_path contours and keeps glyphs fail-cl
   assert.throws(() => invalid.toScene(), /authored markers/);
 });
 
+test("Node Scene compiles constant linear-gradient fills and keeps var() fail-closed", () => {
+  const fill = "linear-gradient(to bottom, #000000, #ffffff)";
+  const figure = new Figure({ width: 240, height: 160 });
+  figure.setAxisDomain("x", [0, 2]);
+  figure.setAxisDomain("y", [0, 3]);
+  figure.bar([0, 1], [1, 2], { style: { fill } });
+  const scene = figure.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  assert.ok(Buffer.from(scene).includes(Buffer.from("XYGR")));
+  const svg = sceneSvg(scene);
+  assert.match(svg, /<linearGradient id="xy-scene-g0"/);
+  assert.match(svg, /fill="url\(#xy-scene-g0\)"/);
+  assert.equal(sceneExportSupportReason(figure), null);
+  const area = new Figure({ width: 240, height: 160 });
+  area.setAxisDomain("x", [0, 2]);
+  area.setAxisDomain("y", [0, 2]);
+  area.area([0, 1, 2], [0.5, 1.5, 0.75], { style: { fill } });
+  assert.match(sceneSvg(area.toScene()), /<linearGradient id="xy-scene-g0"/);
+  assert.equal(sceneExportSupportReason(area), null);
+  const transparent = new Figure({ width: 240, height: 160 });
+  transparent.setAxisDomain("x", [0, 2]);
+  transparent.setAxisDomain("y", [0, 3]);
+  transparent.bar([0, 1], [1, 2], { style: { fill: "linear-gradient(#ff0000, transparent)" } });
+  const transparentSvg = sceneSvg(transparent.toScene());
+  assert.match(transparentSvg, /stop-color="rgb\(255,0,0\)" stop-opacity="0"/);
+  assert.doesNotMatch(transparentSvg, /stop-color="rgb\(0,0,0\)" stop-opacity="0"/);
+  const plot = new Figure({ width: 240, height: 160 });
+  plot.setAxisDomain("x", [0, 2]);
+  plot.setAxisDomain("y", [0, 3]);
+  plot.bar([0, 1], [1, 2], {
+    style: { fill: { gradient: "linear-gradient(to right, #000000, #ffffff)", space: "plot" } },
+  });
+  assert.match(sceneSvg(plot.toScene()), /gradientUnits="userSpaceOnUse"/);
+  const unresolved = new Figure({ width: 240, height: 160 });
+  unresolved.setAxisDomain("x", [0, 1]);
+  unresolved.setAxisDomain("y", [0, 1]);
+  unresolved.area([0, 1], [0.2, 0.8], { style: { fill: "linear-gradient(to bottom, var(--a), #ffffff)" } });
+  assert.throws(() => unresolved.toScene(), /solid literal paints|gradient fills|non-CSS/);
+});
+
 test("Node Scene v30 compiles flattened smooth polylines and polar smooth as chords", () => {
   const figure = new Figure({ width: 240, height: 160 });
   figure.setAxisDomain("x", [0, 2]);

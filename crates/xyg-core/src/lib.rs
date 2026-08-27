@@ -121,7 +121,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 145;
+pub const ABI_VERSION: u32 = 146;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1505,8 +1505,8 @@ fn decode_scene_authoring_input(bytes: &[u8]) -> Option<(Option<&str>, Option<&s
 /// ceiling packs `data` + `len` as one pointer immediately before `out`.
 /// Bytes may be XYPL (polar), XYHP (painted heatmap or density blit), XYDS
 /// (constant dash), XYLC (constant linecap), XYMP (authored marker paths),
-/// XYDS+XYLC+XYMP concat, or XYEX (v1 polar+paint, v2 polar+paint+style
-/// sidecars).
+/// XYGR (constant linear-gradient fills), XYDS+XYLC+XYMP+XYGR concat, or XYEX
+/// (v1 polar+paint, v2 polar+paint+style sidecars).
 #[repr(C)]
 struct PolarAbiInput {
     data: *const u8,
@@ -1563,6 +1563,11 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// `marker_path` contours: hosts pack XYMP on the extras dash slot; Rust
 /// tessellates each scatter centre to PolyFill (filled) or Polyline
 /// (stroke-only) after pixel mapping. `marker_glyph` stays fail-closed.
+/// ABI 146 admits constant validated mark `fill` linear-gradients: hosts pack
+/// XYGR on the extras dash slot; Rust keeps XYGR on the encoded Scene so SVG
+/// emits `<linearGradient>` and raster emits `OP_FILL_POLY_GRAD`. Two-ended
+/// ribbon `color2_ch` and data-driven `color_ch` stay fail-closed. Encoded
+/// Scene v31 is unchanged.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety

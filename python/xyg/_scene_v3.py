@@ -14,7 +14,7 @@ from typing import Any
 
 import numpy as np
 
-from . import _native, channels
+from . import _native, _validate, channels
 from .config import DENSITY_GRID
 from .marks import _SYMBOL_CODES, _validated_marker_path
 
@@ -665,10 +665,17 @@ def _pack_mark_style_record(
     fill_b = b""
     if "fill" in style:
         fill_value = style["fill"]
-        if not isinstance(fill_value, str):
-            raise UnsupportedSceneV3(f"Scene v12 does not yet encode {trace.kind} non-CSS fills")
+        if not isinstance(fill_value, str) or str(fill_value).strip().lower().startswith(
+            "linear-gradient("
+        ):
+            admitted = _admitted_fill_gradient(trace)
+            if admitted is None:
+                raise UnsupportedSceneV3(
+                    f"Scene v12 does not yet encode {trace.kind} non-CSS fills"
+                )
+            fill_value = _gradient_solid_css(admitted)
         flags |= _MS_HAS_FILL
-        fill_b = fill_value.encode("utf-8")
+        fill_b = str(fill_value).encode("utf-8")
     stroke_b = b""
     if "stroke" in style:
         flags |= _MS_HAS_STROKE
@@ -890,7 +897,7 @@ def _rect_extra_flags(style: dict[str, Any]) -> int:
     """Pack Scene-unsupported rect extras as XYFS v2 trace flags."""
     flags = 0
     fill = style.get("fill")
-    if isinstance(fill, dict):
+    if isinstance(fill, dict) and _admitted_fill_gradient_from_fill(fill, "#3987e5") is None:
         flags |= _XYFS_TRACE_RECT_GRADIENT
     radius = style.get("corner_radius", 0.0)
     if isinstance(radius, (list, tuple)):
@@ -965,7 +972,11 @@ def _figure_trace_support_flags(trace: Any) -> tuple[int, str]:
         and not _heatmap_tessellates_cell_fills(trace)
     ):
         flags |= _XYFS_TRACE_HEATMAP_COLORMAP
-    if "fill" in style and not isinstance(style["fill"], str):
+    if (
+        "fill" in style
+        and not isinstance(style["fill"], str)
+        and _admitted_fill_gradient(trace) is None
+    ):
         flags |= _XYFS_TRACE_NON_CSS_FILL
     return flags, kind
 
@@ -1312,6 +1323,95 @@ def _pack_xyds(dashes: list[list[float] | None]) -> bytes:
     return bytes(out)
 
 
+def _fill_is_gradient_authoring(fill: Any) -> bool:
+    if isinstance(fill, dict):
+        return True
+    return isinstance(fill, str) and fill.strip().lower().startswith("linear-gradient(")
+
+
+_GRAD_DIR_CODES = {"down": 0, "up": 1, "right": 2, "left": 3}
+
+
+def _admitted_fill_gradient_from_fill(fill: Any, mark_color: str) -> dict[str, Any] | None:
+    """Return a resolved XYGR payload, or None to keep the fill fail-closed."""
+    spec: dict[str, Any] | None
+    if isinstance(fill, dict) and {"space", "dir", "stops"} <= set(fill):
+        spec = fill
+    else:
+        try:
+            spec = _validate.mark_fill(fill, "fill")
+        except (TypeError, ValueError):
+            return None
+    if not spec:
+        return None
+    space = spec.get("space")
+    direction = spec.get("dir")
+    stops = spec.get("stops")
+    if space not in {"mark", "plot"} or direction not in _GRAD_DIR_CODES:
+        return None
+    if not isinstance(stops, (list, tuple)) or not 2 <= len(stops) <= 8:
+        return None
+    resolved: list[tuple[float, tuple[int, int, int, int]]] = []
+    prev_t = -1.0
+    for stop in stops:
+        if not isinstance(stop, (list, tuple)) or len(stop) != 2:
+            return None
+        try:
+            t = float(stop[0])
+        except (TypeError, ValueError):
+            return None
+        if not math.isfinite(t) or t < 0.0 or t > 1.0 or t < prev_t:
+            return None
+        css = str(stop[1]).strip()
+        lowered = css.lower()
+        if "var(" in lowered:
+            return None
+        if lowered in {"currentcolor", ""}:
+            css = mark_color
+        try:
+            rgba = _native.css_color_rgba(css, 1.0)
+        except ValueError:
+            return None
+        resolved.append((t, rgba))
+        prev_t = t
+    return {"space": space, "dir": direction, "stops": resolved}
+
+
+def _admitted_fill_gradient(trace: Any) -> dict[str, Any] | None:
+    fill = (getattr(trace, "style", None) or {}).get("fill")
+    if fill is None or not _fill_is_gradient_authoring(fill):
+        return None
+    try:
+        mark_color = _constant_color(trace, "#3987e5")
+    except UnsupportedSceneV3:
+        return None
+    return _admitted_fill_gradient_from_fill(fill, mark_color)
+
+
+def _gradient_solid_css(gradient: dict[str, Any]) -> str:
+    for _t, rgba in gradient["stops"]:
+        if rgba[3] > 0:
+            return f"rgb({rgba[0]},{rgba[1]},{rgba[2]})"
+    return "rgb(0,0,0)"
+
+
+def _pack_xygr(gradients: list[dict[str, Any] | None]) -> bytes:
+    """Pack constant linear-gradient fills keyed by host style_ref as XYGR v1."""
+    entries = [(index, gradient) for index, gradient in enumerate(gradients) if gradient]
+    if not entries:
+        return b""
+    out = bytearray(struct.pack("<4sIII", b"XYGR", 1, len(entries), 0))
+    for style_ref, gradient in entries:
+        flags = _GRAD_DIR_CODES[gradient["dir"]]
+        if gradient.get("space") == "plot":
+            flags |= 1 << 2
+        stops = gradient["stops"]
+        out.extend(struct.pack("<IIII", int(style_ref), flags, len(stops), 0))
+        for t, rgba in stops:
+            out.extend(struct.pack("<f4B", float(t), rgba[0], rgba[1], rgba[2], rgba[3]))
+    return bytes(out)
+
+
 def _pack_xymp(paths: list[dict[str, Any] | None]) -> bytes:
     """Pack constant authored marker paths keyed by host style_ref as XYMP v1."""
     entries = [(index, path) for index, path in enumerate(paths) if path]
@@ -1331,7 +1431,7 @@ def _pack_xymp(paths: list[dict[str, Any] | None]) -> bytes:
 
 
 def _pack_scene_extras(polar: bytes, paint: bytes, dash: bytes = b"") -> bytes:
-    """Pack polar XYPL, XYHP paint, and/or XYDS/XYLC/XYMP style sidecars."""
+    """Pack polar XYPL, XYHP paint, and/or XYDS/XYLC/XYMP/XYGR style sidecars."""
     if not polar and not paint and not dash:
         return b""
     if polar and not paint and not dash:
@@ -1375,6 +1475,7 @@ def figure_scene(
     dashes: list[list[float] | None] = []
     linecaps: list[int | None] = []
     marker_paths: list[dict[str, Any] | None] = []
+    fill_gradients: list[dict[str, Any] | None] = []
     diameters: list[float] = []
     symbols: list[int] = []
     coordinates: list[list[float]] = [[], [], [], []]
@@ -1422,6 +1523,7 @@ def figure_scene(
             ):
                 marker_path = None
         marker_paths.append(marker_path)
+        fill_gradients.append(_admitted_fill_gradient(trace))
         style_ref = len(styles) - 1
         diameter = (
             float(trace.size_ch.constant)
@@ -2179,7 +2281,10 @@ def figure_scene(
         polar_input=_pack_scene_extras(
             _pack_polar_scene_input(figure),
             _pack_xyhp(heatmap_paint_planes),
-            _pack_xyds(dashes) + _pack_xylc(linecaps) + _pack_xymp(marker_paths),
+            _pack_xyds(dashes)
+            + _pack_xylc(linecaps)
+            + _pack_xymp(marker_paths)
+            + _pack_xygr(fill_gradients),
         ),
     )
 
@@ -2314,12 +2419,15 @@ def _pack_figure_support(
     ):
         flags |= 1 << 2
     if any(
-        isinstance((getattr(trace, "style", None) or {}).get("fill"), dict)
-        or getattr(trace, "color2_ch", None) is not None
+        getattr(trace, "color2_ch", None) is not None
         or (
             getattr(trace, "color_ch", None) is not None
             and (trace.color_ch.mode != "constant" or trace.color_ch.constant is None)
             and not (str(getattr(trace, "kind", "") or "") == "scatter" and trace.use_density())
+        )
+        or (
+            _fill_is_gradient_authoring((getattr(trace, "style", None) or {}).get("fill"))
+            and _admitted_fill_gradient(trace) is None
         )
         for trace in figure.traces
     ):

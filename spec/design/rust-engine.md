@@ -187,6 +187,8 @@ crates/
                         #   chords (polar-axes.md §5).
                         #   ABI 145 tessellates constant marker_path (XYMP
                         #   extras) to PolyFill/Polyline after pixel mapping.
+                        #   ABI 146 keeps XYGR linear-gradient fills on
+                        #   encoded Scene for SVG/raster paint.
     scene_pack.rs       # compact Figure→Scene row packing (ABI 109): record
                         #   kinds, stable-id splitting, expansion modes,
                         #   ribbon/triangle doubling, heatmap lattice framing,
@@ -200,7 +202,8 @@ crates/
                         #   DensityBlit occupied-cell Rect tessellation plus
                         #   ABI 144 cartesian error_band BandFlatten and polar
                         #   identity-chord smooth plus ABI 145 constant
-                        #   marker_path XYMP tessellation.
+                        #   marker_path XYMP tessellation plus ABI 146
+                        #   constant linear-gradient XYGR fills.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -723,5 +726,6 @@ landed; the remainder, in order:
    ABI 143 polar density PolyFill tessellation (`scene.rs`) ✅;
    ABI 144 cartesian `error_band(curve="smooth")` `BandFlatten=12` plus polar
    identity-chord `curve="smooth"` (`scene.rs` / host packers) ✅;
-   ABI 145 constant `marker_path` XYMP tessellation (`scene.rs`) ✅.
+   ABI 145 constant `marker_path` XYMP tessellation (`scene.rs`) ✅;
+   ABI 146 constant mark `fill` linear-gradient XYGR (`scene.rs`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

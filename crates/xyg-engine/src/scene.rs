@@ -3112,15 +3112,19 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
         PolarSceneState::from_xypl(xypl, layout)?;
     }
     let images = parse_xyim(xyim)?;
-    let (dash_bytes, cap_bytes, marker_bytes) = split_style_sidecars(xyds)?;
+    let (dash_bytes, cap_bytes, marker_bytes, grad_bytes) = split_style_sidecars(xyds)?;
     let dashes = parse_xyds(dash_bytes)?;
     let caps = parse_xylc(cap_bytes)?;
     let markers = parse_xymp(marker_bytes)?;
+    let gradients = parse_xygr(grad_bytes)?;
     if dashes
         .iter()
         .any(|entry| entry.style_ref as usize >= styles)
         || caps.iter().any(|entry| entry.style_ref as usize >= styles)
         || markers
+            .iter()
+            .any(|entry| entry.style_ref as usize >= styles)
+        || gradients
             .iter()
             .any(|entry| entry.style_ref as usize >= styles)
     {
@@ -3637,6 +3641,22 @@ pub const XYMP_V1_HEADER_BYTES: usize = 16;
 pub const XYMP_MAX_CONTOURS: usize = 32;
 pub const XYMP_MAX_VERTICES: usize = 96;
 pub const XYMP_VERTEX_LIMIT: f64 = 0.500001;
+/// XYGR v1 constant linear-gradient fill sidecar (ABI 146). One entry per
+/// host style_ref that carries a validated mark `fill` `{space, dir, stops}`.
+/// Concatenated after XYMP in the extras dash slot. Encoded Scene keeps XYGR
+/// (paint sidecar) so SVG/raster can emit `<linearGradient>` / `OP_FILL_POLY_GRAD`.
+/// Two-ended ribbon `color2_ch` and data-driven `color_ch` stay fail-closed.
+pub const XYGR_MAGIC: &[u8; 4] = b"XYGR";
+pub const XYGR_VERSION: u32 = 1;
+pub const XYGR_V1_HEADER_BYTES: usize = 16;
+pub const XYGR_ENTRY_BYTES: usize = 16;
+pub const XYGR_STOP_BYTES: usize = 8;
+pub const XYGR_MAX_STOPS: usize = 8;
+pub const XYGR_DIR_DOWN: u32 = 0;
+pub const XYGR_DIR_UP: u32 = 1;
+pub const XYGR_DIR_RIGHT: u32 = 2;
+pub const XYGR_DIR_LEFT: u32 = 3;
+pub const XYGR_FLAG_PLOT_SPACE: u32 = 1 << 2;
 
 /// One XYHP paint plane keyed by the compact lattice's stable identity.
 #[derive(Clone, Copy, Debug)]
@@ -3699,8 +3719,9 @@ fn scene_read_f64(bytes: &[u8], offset: usize) -> Result<f64, SceneError> {
 /// Split a host extras payload into polar XYPL, XYHP paint, and style-sidecar
 /// bytes. Empty input is Cartesian with no paint or dash. Raw XYPL (92 bytes)
 /// stays valid polar-only authoring. Raw XYHP is Cartesian painted heatmaps.
-/// Raw XYDS, raw XYLC, raw XYMP, or XYDS+XYLC+XYMP concat occupy the dash slot.
-/// XYEX v1 wraps polar+paint; XYEX v2 `dash_len` covers XYDS and/or XYLC and/or XYMP.
+/// Raw XYDS, raw XYLC, raw XYMP, raw XYGR, or XYDS+XYLC+XYMP+XYGR concat occupy
+/// the dash slot. XYEX v1 wraps polar+paint; XYEX v2 `dash_len` covers those
+/// style sidecars.
 pub fn split_scene_extras(bytes: &[u8]) -> Option<(&[u8], &[u8], &[u8])> {
     if bytes.is_empty() {
         return Some((&[], &[], &[]));
@@ -3714,6 +3735,7 @@ pub fn split_scene_extras(bytes: &[u8]) -> Option<(&[u8], &[u8], &[u8])> {
     if bytes.get(..4) == Some(&XYDS_MAGIC[..])
         || bytes.get(..4) == Some(&XYLC_MAGIC[..])
         || bytes.get(..4) == Some(&XYMP_MAGIC[..])
+        || bytes.get(..4) == Some(&XYGR_MAGIC[..])
     {
         return Some((&[], &[], bytes));
     }
@@ -3758,6 +3780,7 @@ pub fn split_scene_extras(bytes: &[u8]) -> Option<(&[u8], &[u8], &[u8])> {
         && dash.get(..4) != Some(&XYDS_MAGIC[..])
         && dash.get(..4) != Some(&XYLC_MAGIC[..])
         && dash.get(..4) != Some(&XYMP_MAGIC[..])
+        && dash.get(..4) != Some(&XYGR_MAGIC[..])
     {
         return None;
     }
@@ -4478,10 +4501,7 @@ struct StyleMarkerPath {
     path: AuthoredMarkerPath,
 }
 
-fn parse_xymp(bytes: &[u8]) -> Result<Vec<StyleMarkerPath>, SceneError> {
-    if bytes.is_empty() {
-        return Ok(Vec::new());
-    }
+fn parse_xymp_prefix(bytes: &[u8]) -> Result<(Vec<StyleMarkerPath>, usize), SceneError> {
     if bytes.len() < XYMP_V1_HEADER_BYTES || bytes.get(..4) != Some(&XYMP_MAGIC[..]) {
         return Err(SceneError::Length);
     }
@@ -4559,7 +4579,15 @@ fn parse_xymp(bytes: &[u8]) -> Result<Vec<StyleMarkerPath>, SceneError> {
             path: AuthoredMarkerPath { filled, contours },
         });
     }
-    if cursor != bytes.len() {
+    Ok((entries, cursor))
+}
+
+fn parse_xymp(bytes: &[u8]) -> Result<Vec<StyleMarkerPath>, SceneError> {
+    if bytes.is_empty() {
+        return Ok(Vec::new());
+    }
+    let (entries, end) = parse_xymp_prefix(bytes)?;
+    if end != bytes.len() {
         return Err(SceneError::Length);
     }
     Ok(entries)
@@ -4615,9 +4643,149 @@ fn encode_xymp(entries: &[StyleMarkerPath]) -> Result<Vec<u8>, SceneError> {
     Ok(out)
 }
 
-fn split_style_sidecars(bytes: &[u8]) -> Result<(&[u8], &[u8], &[u8]), SceneError> {
+#[derive(Clone, Debug, PartialEq)]
+struct AuthoredGradient {
+    plot_space: bool,
+    dir: u8,
+    stops: Vec<(f32, [u8; 4])>,
+}
+
+struct StyleGradient {
+    style_ref: u32,
+    gradient: AuthoredGradient,
+}
+
+fn parse_xygr_prefix(bytes: &[u8]) -> Result<(Vec<StyleGradient>, usize), SceneError> {
+    if bytes.len() < XYGR_V1_HEADER_BYTES || bytes.get(..4) != Some(&XYGR_MAGIC[..]) {
+        return Err(SceneError::Length);
+    }
+    if scene_read_u32(bytes, 4)? != XYGR_VERSION {
+        return Err(SceneError::Version);
+    }
+    let n_entries = scene_read_u32(bytes, 8)? as usize;
+    if scene_read_u32(bytes, 12)? != 0 || n_entries == 0 || n_entries > MAX_SCENE_STYLES {
+        return Err(SceneError::Length);
+    }
+    let mut entries = Vec::with_capacity(n_entries);
+    let mut seen = std::collections::BTreeSet::new();
+    let mut cursor = XYGR_V1_HEADER_BYTES;
+    for _ in 0..n_entries {
+        if cursor
+            .checked_add(XYGR_ENTRY_BYTES)
+            .ok_or(SceneError::Limit)?
+            > bytes.len()
+        {
+            return Err(SceneError::Length);
+        }
+        let style_ref = scene_read_u32(bytes, cursor)?;
+        let flags = scene_read_u32(bytes, cursor + 4)?;
+        let n_stops = scene_read_u32(bytes, cursor + 8)? as usize;
+        if scene_read_u32(bytes, cursor + 12)? != 0
+            || flags & !0b111 != 0
+            || (flags & 0b11) > XYGR_DIR_LEFT
+            || n_stops < 2
+            || n_stops > XYGR_MAX_STOPS
+            || !seen.insert(style_ref)
+        {
+            return Err(SceneError::Length);
+        }
+        cursor += XYGR_ENTRY_BYTES;
+        let stops_end = cursor
+            .checked_add(n_stops.checked_mul(XYGR_STOP_BYTES).ok_or(SceneError::Limit)?)
+            .ok_or(SceneError::Limit)?;
+        if stops_end > bytes.len() {
+            return Err(SceneError::Length);
+        }
+        let mut stops = Vec::with_capacity(n_stops);
+        let mut prev_t = f32::NEG_INFINITY;
+        for _ in 0..n_stops {
+            let t = f32::from_le_bytes(
+                bytes[cursor..cursor + 4]
+                    .try_into()
+                    .map_err(|_| SceneError::Length)?,
+            );
+            if !t.is_finite() || !(0.0..=1.0).contains(&t) || t < prev_t {
+                return Err(SceneError::NonFinite);
+            }
+            let rgba = [
+                bytes[cursor + 4],
+                bytes[cursor + 5],
+                bytes[cursor + 6],
+                bytes[cursor + 7],
+            ];
+            stops.push((t, rgba));
+            prev_t = t;
+            cursor += XYGR_STOP_BYTES;
+        }
+        entries.push(StyleGradient {
+            style_ref,
+            gradient: AuthoredGradient {
+                plot_space: flags & XYGR_FLAG_PLOT_SPACE != 0,
+                dir: (flags & 0b11) as u8,
+                stops,
+            },
+        });
+    }
+    Ok((entries, cursor))
+}
+
+fn parse_xygr(bytes: &[u8]) -> Result<Vec<StyleGradient>, SceneError> {
     if bytes.is_empty() {
-        return Ok((&[], &[], &[]));
+        return Ok(Vec::new());
+    }
+    let (entries, end) = parse_xygr_prefix(bytes)?;
+    if end != bytes.len() {
+        return Err(SceneError::Length);
+    }
+    Ok(entries)
+}
+
+#[cfg(test)]
+fn encode_xygr(entries: &[StyleGradient]) -> Result<Vec<u8>, SceneError> {
+    if entries.is_empty() {
+        return Ok(Vec::new());
+    }
+    if entries.len() > MAX_SCENE_STYLES {
+        return Err(SceneError::Limit);
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    let mut out = Vec::new();
+    out.extend_from_slice(XYGR_MAGIC);
+    out.extend_from_slice(&XYGR_VERSION.to_le_bytes());
+    out.extend_from_slice(&(entries.len() as u32).to_le_bytes());
+    out.extend_from_slice(&0u32.to_le_bytes());
+    for entry in entries {
+        if entry.gradient.stops.len() < 2
+            || entry.gradient.stops.len() > XYGR_MAX_STOPS
+            || entry.gradient.dir > XYGR_DIR_LEFT as u8
+            || !seen.insert(entry.style_ref)
+        {
+            return Err(SceneError::Length);
+        }
+        let mut flags = u32::from(entry.gradient.dir);
+        if entry.gradient.plot_space {
+            flags |= XYGR_FLAG_PLOT_SPACE;
+        }
+        out.extend_from_slice(&entry.style_ref.to_le_bytes());
+        out.extend_from_slice(&flags.to_le_bytes());
+        out.extend_from_slice(&(entry.gradient.stops.len() as u32).to_le_bytes());
+        out.extend_from_slice(&0u32.to_le_bytes());
+        let mut prev_t = f32::NEG_INFINITY;
+        for &(t, rgba) in &entry.gradient.stops {
+            if !t.is_finite() || !(0.0..=1.0).contains(&t) || t < prev_t {
+                return Err(SceneError::NonFinite);
+            }
+            out.extend_from_slice(&t.to_le_bytes());
+            out.extend_from_slice(&rgba);
+            prev_t = t;
+        }
+    }
+    Ok(out)
+}
+
+fn split_style_sidecars(bytes: &[u8]) -> Result<(&[u8], &[u8], &[u8], &[u8]), SceneError> {
+    if bytes.is_empty() {
+        return Ok((&[], &[], &[], &[]));
     }
     let mut offset = 0usize;
     let dash = if bytes.get(..4) == Some(&XYDS_MAGIC[..]) {
@@ -4635,16 +4803,26 @@ fn split_style_sidecars(bytes: &[u8]) -> Result<(&[u8], &[u8], &[u8]), SceneErro
     } else {
         &[][..]
     };
-    let markers = if offset < bytes.len() {
-        if bytes.get(offset..offset.saturating_add(4)) != Some(&XYMP_MAGIC[..]) {
-            return Err(SceneError::Length);
-        }
-        parse_xymp(&bytes[offset..])?;
-        bytes.get(offset..).ok_or(SceneError::Length)?
+    let markers = if bytes.get(offset..offset.saturating_add(4)) == Some(&XYMP_MAGIC[..]) {
+        let (_, end) = parse_xymp_prefix(&bytes[offset..])?;
+        let markers = bytes.get(offset..offset + end).ok_or(SceneError::Length)?;
+        offset += end;
+        markers
     } else {
         &[][..]
     };
-    Ok((dash, cap, markers))
+    let gradients = if bytes.get(offset..offset.saturating_add(4)) == Some(&XYGR_MAGIC[..]) {
+        let (_, end) = parse_xygr_prefix(&bytes[offset..])?;
+        let gradients = bytes.get(offset..offset + end).ok_or(SceneError::Length)?;
+        offset += end;
+        gradients
+    } else {
+        &[][..]
+    };
+    if offset != bytes.len() {
+        return Err(SceneError::Length);
+    }
+    Ok((dash, cap, markers, gradients))
 }
 
 fn apply_style_dashes(styles: &mut [EncodedStyle], entries: &[StyleDash]) -> Result<(), SceneError> {
@@ -4666,14 +4844,21 @@ fn apply_style_caps(styles: &mut [EncodedStyle], entries: &[StyleCap]) -> Result
     Ok(())
 }
 
-fn apply_style_sidecars(styles: &mut [EncodedStyle], bytes: &[u8]) -> Result<(), SceneError> {
-    let (dash, cap, markers) = split_style_sidecars(bytes)?;
+fn apply_style_sidecars(
+    styles: &mut [EncodedStyle],
+    bytes: &[u8],
+) -> Result<Vec<Option<AuthoredGradient>>, SceneError> {
+    let (dash, cap, markers, grads) = split_style_sidecars(bytes)?;
     apply_style_dashes(styles, &parse_xyds(dash)?)?;
     apply_style_caps(styles, &parse_xylc(cap)?)?;
     let marker_entries = parse_xymp(markers)?;
+    let gradient_entries = parse_xygr(grads)?;
     if marker_entries
         .iter()
         .any(|entry| entry.style_ref as usize >= styles.len())
+        || gradient_entries
+            .iter()
+            .any(|entry| entry.style_ref as usize >= styles.len())
     {
         return Err(SceneError::Length);
     }
@@ -4686,7 +4871,11 @@ fn apply_style_sidecars(styles: &mut [EncodedStyle], bytes: &[u8]) -> Result<(),
             }
         }
     }
-    Ok(())
+    let mut gradients = vec![None; styles.len()];
+    for entry in gradient_entries {
+        gradients[entry.style_ref as usize] = Some(entry.gradient);
+    }
+    Ok(gradients)
 }
 
 fn scene_sidecars_after_chrome(
@@ -4705,6 +4894,7 @@ fn scene_sidecars_after_chrome(
     if after.get(..4) == Some(&XYDS_MAGIC[..])
         || after.get(..4) == Some(&XYLC_MAGIC[..])
         || after.get(..4) == Some(&XYMP_MAGIC[..])
+        || after.get(..4) == Some(&XYGR_MAGIC[..])
     {
         split_style_sidecars(after)?;
         return Ok((xypl, &[][..], after));
@@ -6395,18 +6585,20 @@ impl<'a> SceneBatch<'a> {
         Ok(self)
     }
 
-    /// Attach a host-packed XYDS/XYLC/XYMP style sidecar. Empty keeps every
-    /// style solid, round-capped, and built-in-symbol. Style refs address the
-    /// host style table before arrow/callout extras. XYMP is consumed at encode
-    /// (tessellate scatter) and stripped from the encoded sidecar.
+    /// Attach a host-packed XYDS/XYLC/XYMP/XYGR style sidecar. Empty keeps every
+    /// style solid, round-capped, built-in-symbol, and ungraded. Style refs
+    /// address the host style table before arrow/callout extras. XYMP is
+    /// consumed at encode (tessellate scatter) and stripped from the encoded
+    /// sidecar; XYGR is kept so SVG/raster can paint linear-gradient fills.
     pub fn with_dashes(mut self, bytes: &[u8]) -> Result<Self, SceneError> {
         if bytes.is_empty() {
             return Ok(self);
         }
-        let (dash, cap, markers) = split_style_sidecars(bytes)?;
+        let (dash, cap, markers, grads) = split_style_sidecars(bytes)?;
         let dash_entries = parse_xyds(dash)?;
         let cap_entries = parse_xylc(cap)?;
         let marker_entries = parse_xymp(markers)?;
+        let gradient_entries = parse_xygr(grads)?;
         let style_count = self.stroke_width.len();
         if dash_entries
             .iter()
@@ -6417,12 +6609,16 @@ impl<'a> SceneBatch<'a> {
             || marker_entries
                 .iter()
                 .any(|entry| entry.style_ref as usize >= style_count)
+            || gradient_entries
+                .iter()
+                .any(|entry| entry.style_ref as usize >= style_count)
         {
             return Err(SceneError::Length);
         }
-        let mut kept = Vec::with_capacity(dash.len() + cap.len());
+        let mut kept = Vec::with_capacity(dash.len() + cap.len() + grads.len());
         kept.extend_from_slice(dash);
         kept.extend_from_slice(cap);
+        kept.extend_from_slice(grads);
         self.dashes = kept;
         let mut paths = vec![None; style_count];
         for entry in marker_entries {
@@ -6879,6 +7075,96 @@ impl EncodedStyle {
 
     fn dash_values(&self) -> &[f32] {
         &self.dash[..self.dash_count as usize]
+    }
+}
+
+fn rewrite_transparent_stops(stops: &[(f32, [u8; 4])]) -> Vec<(f32, [u8; 4])> {
+    let opaque = |rgba: [u8; 4]| rgba[3] > 0;
+    let mut out = Vec::with_capacity(stops.len());
+    for (index, &(t, rgba)) in stops.iter().enumerate() {
+        if opaque(rgba) {
+            out.push((t, rgba));
+            continue;
+        }
+        let previous = (0..index)
+            .rev()
+            .find_map(|j| opaque(stops[j].1).then_some(stops[j].1));
+        let following = ((index + 1)..stops.len())
+            .find_map(|j| opaque(stops[j].1).then_some(stops[j].1));
+        let hue = previous.or(following).unwrap_or(rgba);
+        out.push((t, [hue[0], hue[1], hue[2], 0]));
+        if let (Some(prev), Some(next)) = (previous, following) {
+            if prev[0] != next[0] || prev[1] != next[1] || prev[2] != next[2] {
+                out.push((t, [next[0], next[1], next[2], 0]));
+            }
+        }
+    }
+    out
+}
+
+fn gradient_svg_ends(gradient: &AuthoredGradient, layout: PlotLayout) -> (bool, f64, f64, f64, f64) {
+    let ends = match gradient.dir as u32 {
+        XYGR_DIR_UP => (0.0, 1.0, 0.0, 0.0),
+        XYGR_DIR_RIGHT => (0.0, 0.0, 1.0, 0.0),
+        XYGR_DIR_LEFT => (1.0, 0.0, 0.0, 0.0),
+        _ => (0.0, 0.0, 0.0, 1.0),
+    };
+    if gradient.plot_space {
+        let x = layout.left;
+        let y = layout.top;
+        let w = layout.right - layout.left;
+        let h = layout.bottom - layout.top;
+        (
+            true,
+            x + ends.0 * w,
+            y + ends.1 * h,
+            x + ends.2 * w,
+            y + ends.3 * h,
+        )
+    } else {
+        (false, ends.0, ends.1, ends.2, ends.3)
+    }
+}
+
+fn points_bbox(points: &[(f64, f64)]) -> (f64, f64, f64, f64) {
+    let mut min_x = f64::INFINITY;
+    let mut min_y = f64::INFINITY;
+    let mut max_x = f64::NEG_INFINITY;
+    let mut max_y = f64::NEG_INFINITY;
+    for &(x, y) in points {
+        min_x = min_x.min(x);
+        min_y = min_y.min(y);
+        max_x = max_x.max(x);
+        max_y = max_y.max(y);
+    }
+    if !min_x.is_finite() {
+        return (0.0, 0.0, 0.0, 0.0);
+    }
+    (min_x, min_y, (max_x - min_x).max(0.0), (max_y - min_y).max(0.0))
+}
+
+fn gradient_raster_line(
+    gradient: &AuthoredGradient,
+    bbox: (f64, f64, f64, f64),
+    layout: PlotLayout,
+) -> (f64, f64, f64, f64) {
+    let (x, y, w, h) = if gradient.plot_space {
+        (
+            layout.left,
+            layout.top,
+            layout.right - layout.left,
+            layout.bottom - layout.top,
+        )
+    } else {
+        bbox
+    };
+    let cx = x + w * 0.5;
+    let cy = y + h * 0.5;
+    match gradient.dir as u32 {
+        XYGR_DIR_UP => (cx, y + h, cx, y),
+        XYGR_DIR_RIGHT => (x, cy, x + w, cy),
+        XYGR_DIR_LEFT => (x + w, cy, x, cy),
+        _ => (cx, y, cx, y + h),
     }
 }
 
@@ -8026,6 +8312,7 @@ pub struct SceneDocument {
     raster_mark_capacity: usize,
     polar: Option<PolarSceneState>,
     images: Vec<SceneImage>,
+    gradients: Vec<Option<AuthoredGradient>>,
 }
 
 impl SceneDocument {
@@ -8530,7 +8817,7 @@ impl SceneDocument {
             ));
             offset += SCENE_STYLE_RECORD_BYTES;
         }
-        apply_style_sidecars(&mut styles, xyds)?;
+        let gradients = apply_style_sidecars(&mut styles, xyds)?;
         if legend.as_ref().is_some_and(|value| {
             value.entries.iter().any(|entry| {
                 entry.style_ref >= styles.len()
@@ -8738,6 +9025,7 @@ impl SceneDocument {
             raster_mark_capacity,
             polar,
             images,
+            gradients,
         })
     }
 
@@ -9161,7 +9449,103 @@ impl SceneDocument {
             push_num(out, self.layout.bottom - self.layout.top);
             out.push_str("\"/>");
         }
-        out.push_str("</clipPath></defs>");
+        out.push_str("</clipPath>");
+        self.append_svg_gradients(out);
+        out.push_str("</defs>");
+    }
+
+    fn style_gradient(&self, style_ref: usize) -> Option<&AuthoredGradient> {
+        self.gradients.get(style_ref).and_then(Option::as_ref)
+    }
+
+    fn append_svg_gradients(&self, out: &mut String) {
+        for (index, gradient) in self.gradients.iter().enumerate() {
+            let Some(gradient) = gradient else {
+                continue;
+            };
+            let (user_space, x1, y1, x2, y2) = gradient_svg_ends(gradient, self.layout);
+            out.push_str("<linearGradient id=\"xy-scene-g");
+            let _ = write!(out, "{index}");
+            out.push('"');
+            if user_space {
+                out.push_str(" gradientUnits=\"userSpaceOnUse\"");
+            }
+            out.push_str(" x1=\"");
+            push_num(out, x1);
+            out.push_str("\" y1=\"");
+            push_num(out, y1);
+            out.push_str("\" x2=\"");
+            push_num(out, x2);
+            out.push_str("\" y2=\"");
+            push_num(out, y2);
+            out.push_str("\">");
+            for (t, rgba) in rewrite_transparent_stops(&gradient.stops) {
+                out.push_str("<stop offset=\"");
+                push_num(out, f64::from(t) * 100.0);
+                out.push_str("%\" stop-color=\"rgb(");
+                let _ = write!(out, "{},{},{}", rgba[0], rgba[1], rgba[2]);
+                out.push_str(")\"");
+                if rgba[3] < 255 {
+                    out.push_str(" stop-opacity=\"");
+                    push_num(out, f64::from(rgba[3]) / 255.0);
+                    out.push('"');
+                }
+                out.push_str("/>");
+            }
+            out.push_str("</linearGradient>");
+        }
+    }
+
+    fn push_svg_fill(&self, out: &mut String, style: EncodedStyle, style_ref: usize) {
+        if self.style_gradient(style_ref).is_some() {
+            out.push_str(" fill=\"url(#xy-scene-g");
+            let _ = write!(out, "{style_ref}");
+            out.push_str(")\"");
+        } else {
+            push_paint(out, "fill", style.fill, None);
+        }
+    }
+
+    fn push_raster_poly_fill(
+        &self,
+        out: &mut Vec<u8>,
+        points: &[(f64, f64)],
+        style: EncodedStyle,
+        style_ref: usize,
+        scale: f64,
+    ) -> Result<(), SceneError> {
+        if points.len() < 3 {
+            return Ok(());
+        }
+        if let Some(gradient) = self.style_gradient(style_ref) {
+            let bbox = points_bbox(points);
+            let (g0x, g0y, g1x, g1y) = gradient_raster_line(gradient, bbox, self.layout);
+            let stops = rewrite_transparent_stops(&gradient.stops);
+            out.push(2); // OP_FILL_POLY_GRAD
+            out.extend_from_slice(&(points.len() as u32).to_le_bytes());
+            for &(x, y) in points {
+                push_raster_f32(out, x, scale)?;
+                push_raster_f32(out, y, scale)?;
+            }
+            push_raster_f32(out, g0x, scale)?;
+            push_raster_f32(out, g0y, scale)?;
+            push_raster_f32(out, g1x, scale)?;
+            push_raster_f32(out, g1y, scale)?;
+            out.extend_from_slice(&(stops.len() as u32).to_le_bytes());
+            for (t, rgba) in stops {
+                out.extend_from_slice(&t.to_le_bytes());
+                out.extend_from_slice(&rgba);
+            }
+            return Ok(());
+        }
+        out.push(1); // OP_FILL_POLY
+        out.extend_from_slice(&(points.len() as u32).to_le_bytes());
+        for &(x, y) in points {
+            push_raster_f32(out, x, scale)?;
+            push_raster_f32(out, y, scale)?;
+        }
+        out.extend_from_slice(&style.fill);
+        Ok(())
     }
 
     fn append_svg_polar_grid(&self, out: &mut String, x_ticks: &AxisTicks, y_ticks: &AxisTicks) {
@@ -9558,7 +9942,7 @@ impl SceneDocument {
                     out.push_str("\" height=\"");
                     push_num(&mut out, record.coordinates[3] - record.coordinates[1]);
                     out.push('"');
-                    push_paint(&mut out, "fill", style.fill, None);
+                    self.push_svg_fill(&mut out, style, record.style_ref);
                     if style.stroke_width > 0.0 {
                         push_paint(&mut out, "stroke", style.stroke, None);
                         out.push_str(" stroke-width=\"");
@@ -9633,7 +10017,7 @@ impl SceneDocument {
                             push_num(&mut out, point.coordinates[3]);
                         }
                         out.push_str(" Z\"");
-                        push_paint(&mut out, "fill", style.fill, None);
+                        self.push_svg_fill(&mut out, style, record.style_ref);
                         if record.symbol == BandOutline::Perimeter as u8 {
                             push_paint(&mut out, "stroke", style.stroke, None);
                             out.push_str(" stroke-width=\"");
@@ -9690,7 +10074,7 @@ impl SceneDocument {
                             push_num(&mut out, point.coordinates[1]);
                         }
                         out.push_str(" Z\"");
-                        push_paint(&mut out, "fill", style.fill, None);
+                        self.push_svg_fill(&mut out, style, record.style_ref);
                         if style.stroke_width > 0.0 {
                             push_paint(&mut out, "stroke", style.stroke, None);
                             out.push_str(" stroke-width=\"");
@@ -10698,13 +11082,13 @@ impl SceneDocument {
                         (record.coordinates[2], record.coordinates[3]),
                         (record.coordinates[0], record.coordinates[3]),
                     ];
-                    out.push(1);
-                    out.extend_from_slice(&4u32.to_le_bytes());
-                    for (x, y) in points {
-                        push_raster_f32(out, x, scale)?;
-                        push_raster_f32(out, y, scale)?;
-                    }
-                    out.extend_from_slice(&style.fill);
+                    self.push_raster_poly_fill(
+                        out,
+                        &points,
+                        style,
+                        record.style_ref,
+                        scale,
+                    )?;
                     if style.stroke_width > 0.0 {
                         out.push(3);
                         out.extend_from_slice(&4u32.to_le_bytes());
@@ -10759,17 +11143,14 @@ impl SceneDocument {
                     let run = &self.records[start..index];
                     if run.len() >= 2 {
                         let count = (run.len() * 2) as u32;
-                        out.push(1); // OP_FILL_POLY
-                        out.extend_from_slice(&count.to_le_bytes());
+                        let mut points = Vec::with_capacity(run.len() * 2);
                         for point in run {
-                            push_raster_f32(out, point.coordinates[0], scale)?;
-                            push_raster_f32(out, point.coordinates[1], scale)?;
+                            points.push((point.coordinates[0], point.coordinates[1]));
                         }
                         for point in run.iter().rev() {
-                            push_raster_f32(out, point.coordinates[2], scale)?;
-                            push_raster_f32(out, point.coordinates[3], scale)?;
+                            points.push((point.coordinates[2], point.coordinates[3]));
                         }
-                        out.extend_from_slice(&style.fill);
+                        self.push_raster_poly_fill(out, &points, style, style_ref, scale)?;
                         if record.symbol != BandOutline::None as u8 {
                             let perimeter = record.symbol == BandOutline::Perimeter as u8;
                             let stroke_count = if perimeter { count } else { run.len() as u32 };
@@ -10810,13 +11191,11 @@ impl SceneDocument {
                     let run = &self.records[start..index];
                     if run.len() >= 3 {
                         let count = run.len() as u32;
-                        out.push(1); // OP_FILL_POLY
-                        out.extend_from_slice(&count.to_le_bytes());
-                        for point in run {
-                            push_raster_f32(out, point.coordinates[0], scale)?;
-                            push_raster_f32(out, point.coordinates[1], scale)?;
-                        }
-                        out.extend_from_slice(&style.fill);
+                        let points: Vec<(f64, f64)> = run
+                            .iter()
+                            .map(|point| (point.coordinates[0], point.coordinates[1]))
+                            .collect();
+                        self.push_raster_poly_fill(out, &points, style, style_ref, scale)?;
                         if style.stroke_width > 0.0 {
                             out.push(3); // OP_STROKE
                             out.extend_from_slice(&count.to_le_bytes());
@@ -13083,6 +13462,101 @@ mod tests {
         assert_eq!(plus_svg.matches("<polyline ").count(), 2);
         assert!(plus_svg.contains("stroke-width=\"1\""));
         assert!(plus_svg.contains("fill=\"none\""));
+    }
+
+    #[test]
+    fn constant_linear_gradient_fill_reaches_svg_and_raster() {
+        let layout = PlotLayout::new(240.0, 160.0, 20.0, 20.0, 20.0, 20.0).unwrap();
+        let x_scale = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 20.0, 220.0, 1.0, false).unwrap();
+        let y_scale = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 140.0, 20.0, 1.0, false).unwrap();
+        let xygr = encode_xygr(&[StyleGradient {
+            style_ref: 0,
+            gradient: AuthoredGradient {
+                plot_space: false,
+                dir: XYGR_DIR_DOWN as u8,
+                stops: vec![(0.0, [0, 0, 0, 255]), (1.0, [255, 255, 255, 255])],
+            },
+        }])
+        .unwrap();
+        let encoded = SceneBatch::new_with_decorations_colorbar(
+            layout,
+            1,
+            2,
+            x_scale,
+            y_scale,
+            SceneChromeStyle::default(),
+            SceneChromeText::default(),
+            None,
+            None,
+            Vec::new(),
+            &[SceneRecordKind::Rect as u8],
+            &[11],
+            &[0],
+            &[0, 0, 0, 255],
+            &[0, 0, 0, 0],
+            &[0.0],
+            &[0.0],
+            &[0],
+            &[0.2],
+            &[0.2],
+            &[0.8],
+            &[0.8],
+        )
+        .unwrap()
+        .with_dashes(&xygr)
+        .unwrap()
+        .encode();
+        assert_eq!(&encoded[4..8], &31u32.to_le_bytes());
+        assert!(encoded.windows(4).any(|window| window == b"XYGR"));
+        let document = SceneDocument::decode(&encoded).unwrap();
+        let svg = document.to_svg();
+        assert!(svg.contains("<linearGradient id=\"xy-scene-g0\""));
+        assert!(svg.contains("fill=\"url(#xy-scene-g0)\""));
+        assert!(svg.contains("stop-color=\"rgb(0,0,0)\""));
+        assert!(svg.contains("stop-color=\"rgb(255,255,255)\""));
+        let commands = document.to_raster_commands(1.0).unwrap();
+        assert!(commands.contains(&2));
+
+        let transparent = encode_xygr(&[StyleGradient {
+            style_ref: 0,
+            gradient: AuthoredGradient {
+                plot_space: false,
+                dir: XYGR_DIR_DOWN as u8,
+                stops: vec![(0.0, [255, 0, 0, 255]), (1.0, [0, 0, 0, 0])],
+            },
+        }])
+        .unwrap();
+        let encoded_t = SceneBatch::new_with_decorations_colorbar(
+            layout,
+            1,
+            2,
+            x_scale,
+            y_scale,
+            SceneChromeStyle::default(),
+            SceneChromeText::default(),
+            None,
+            None,
+            Vec::new(),
+            &[SceneRecordKind::Rect as u8],
+            &[11],
+            &[0],
+            &[255, 0, 0, 255],
+            &[0, 0, 0, 0],
+            &[0.0],
+            &[0.0],
+            &[0],
+            &[0.2],
+            &[0.2],
+            &[0.8],
+            &[0.8],
+        )
+        .unwrap()
+        .with_dashes(&transparent)
+        .unwrap()
+        .encode();
+        let transparent_svg = SceneDocument::decode(&encoded_t).unwrap().to_svg();
+        assert!(transparent_svg.contains("stop-color=\"rgb(255,0,0)\" stop-opacity=\"0\""));
+        assert!(!transparent_svg.contains("stop-color=\"rgb(0,0,0)\" stop-opacity=\"0\""));
     }
 
     #[test]

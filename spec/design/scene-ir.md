@@ -86,7 +86,13 @@ validated `marker_path` contours: hosts pack XYMP on the extras dash slot and
 Rust tessellates each scatter centre to PolyFill (filled) or Polyline
 (stroke-only) after pixel mapping. Encoded Scene v31 is unchanged and does
 not keep XYMP. Font glyph markers (`marker_glyph`) stay on the compatibility
-path because they need custom-font/text records.
+path because they need custom-font/text records. ABI 146 admits constant
+validated mark `fill` linear-gradients: hosts pack XYGR on the extras dash
+slot (`{space, dir, stops}` with 2–8 RGBA8 stops, axis-aligned `down|up|left|right`,
+`mark` or `plot` space). Encoded Scene v31 keeps XYGR so SVG emits
+`<linearGradient>` and raster emits `OP_FILL_POLY_GRAD`. Transparent stops
+rewrite to the adjacent opaque hue. Two-ended ribbon `color2_ch`, data-driven
+`color_ch`, `var()` stops, and chart/theme CSS gradients stay fail-closed.
 
 ## Version 3: backend-neutral core scene batch
 
@@ -391,6 +397,9 @@ and authored marker glyphs stay on the compatibility exporters. ABI 145 admits
 constant scatter `marker_path` via an XYMP extras sidecar; Rust tessellates
 centres to existing PolyFill/Polyline after pixel mapping (public allowlist
 includes `marker_path` for `KIND_SCATTER`; encoded Scene v31 is unchanged).
+ABI 146 admits constant mark `fill` linear-gradients via an XYGR extras
+sidecar (public allowlist already includes `fill` for area/bar/column/histogram;
+encoded Scene v31 keeps XYGR).
 
 ABI 110 adds `xyg_scene_pack_legend` so both hosts pass loc/flags/paints
 and receive XYLG bytes; header layout, text offsets, and bounded-text
@@ -1229,8 +1238,9 @@ to PolyFill wedges (encoded Scene v31 is unchanged). ABI 144 admits cartesian
 `error_band(curve="smooth")` on existing `BandFlatten=12` and polar
 `curve="smooth"` as identity chords (encoded Scene v31 is unchanged). ABI 145
 admits constant scatter `marker_path` as XYMP extras tessellated to
-PolyFill/Polyline after pixel mapping (encoded Scene v31 is unchanged).
-Polar+step+smooth and authored marker glyphs stay compatibility. ABI 116 does not change Scene records either;
+PolyFill/Polyline after pixel mapping (encoded Scene v31 is unchanged). ABI 146
+admits constant mark `fill` linear-gradients as XYGR extras (encoded Scene v31
+keeps XYGR). Polar+step+smooth and authored marker glyphs stay compatibility. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;
 `xyg_scene_figure_support_reason` owns figure-compile support from packed

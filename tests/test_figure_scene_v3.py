@@ -1319,6 +1319,60 @@ def test_python_scene_compiles_constant_marker_paths() -> None:
         invalid.to_scene()
 
 
+def test_python_scene_compiles_constant_linear_gradient_fills() -> None:
+    figure = Figure(width=240, height=160)
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 3.0)
+    figure.bar([0.0, 1.0], [1.0, 2.0], fill="linear-gradient(to bottom, #000000, #ffffff)")
+    scene = figure.to_scene()
+    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert b"XYGR" in scene
+    svg = _native.scene_svg(scene)
+    assert '<linearGradient id="xy-scene-g0"' in svg
+    assert 'fill="url(#xy-scene-g0)"' in svg
+    assert figure.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(figure) is None
+
+    area = Figure(width=240, height=160)
+    area.axis_options["x"]["domain"] = (0.0, 2.0)
+    area.axis_options["y"]["domain"] = (0.0, 2.0)
+    area.area(
+        [0.0, 1.0, 2.0], [0.5, 1.5, 0.75], fill="linear-gradient(to bottom, #000000, #ffffff)"
+    )
+    area_svg = _native.scene_svg(area.to_scene())
+    assert '<linearGradient id="xy-scene-g0"' in area_svg
+    assert area.to_svg() == area_svg
+    assert _scene_v3.scene_export_support_reason(area) is None
+
+    transparent = Figure(width=240, height=160)
+    transparent.axis_options["x"]["domain"] = (0.0, 2.0)
+    transparent.axis_options["y"]["domain"] = (0.0, 3.0)
+    transparent.bar([0.0, 1.0], [1.0, 2.0], fill="linear-gradient(#ff0000, transparent)")
+    transparent_svg = _native.scene_svg(transparent.to_scene())
+    assert 'stop-color="rgb(255,0,0)" stop-opacity="0"' in transparent_svg
+    assert 'stop-color="rgb(0,0,0)" stop-opacity="0"' not in transparent_svg
+    assert transparent.to_svg() == transparent_svg
+
+    plot_space = Figure(width=240, height=160)
+    plot_space.axis_options["x"]["domain"] = (0.0, 2.0)
+    plot_space.axis_options["y"]["domain"] = (0.0, 3.0)
+    plot_space.bar(
+        [0.0, 1.0],
+        [1.0, 2.0],
+        fill={"gradient": "linear-gradient(to right, #000000, #ffffff)", "space": "plot"},
+    )
+    plot_svg = _native.scene_svg(plot_space.to_scene())
+    assert 'gradientUnits="userSpaceOnUse"' in plot_svg
+    assert plot_space.to_svg() == plot_svg
+
+    ribbon = Figure(width=240, height=160)
+    ribbon.axis_options["x"]["domain"] = (0.0, 1.0)
+    ribbon.axis_options["y"]["domain"] = (0.0, 1.0)
+    ribbon.area([0.0, 1.0], [0.2, 0.8], fill="linear-gradient(to bottom, var(--a), #ffffff)")
+    with pytest.raises(UnsupportedSceneV3, match=r"solid literal paints|gradient fills|non-CSS"):
+        ribbon.to_scene()
+
+
 def _polyline_vertex_count(svg: str) -> int:
     counts = [len(points.split()) for points in re.findall(r"<polyline points=\"([^\"]+)\"", svg)]
     assert counts

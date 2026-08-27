@@ -15,6 +15,8 @@
 //! identity chords (no `step_mode=4`).
 //! ABI 145 admits constant `marker_path` via an XYMP extras sidecar;
 //! tessellation is Scene-owned after pixel mapping (no new pack kind).
+//! ABI 146 admits constant mark `fill` linear-gradients via an XYGR extras
+//! sidecar (no new pack kind); encoded Scene keeps XYGR.
 
 use crate::scene::MAX_SCENE_MARKS;
 

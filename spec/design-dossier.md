@@ -1440,7 +1440,9 @@ tessellates occupied `DensityBlit` cells to PolyFill wedges (no XYIM). ABI 144
 admits cartesian `error_band(curve="smooth")` on existing `BandFlatten=12` and
 polar `curve="smooth"` line/area/error_band as identity chords (polar-axes.md
 §5). ABI 145 admits constant scatter `marker_path` via an XYMP extras sidecar
-tessellated to PolyFill/Polyline after pixel mapping. Polar+step+smooth and
+tessellated to PolyFill/Polyline after pixel mapping. ABI 146 admits constant
+mark `fill` linear-gradients via an XYGR extras sidecar kept on encoded Scene.
+Polar+step+smooth and
 authored marker glyphs stay compatibility. Irregular
 spacing, and LOD stay compatibility.
 

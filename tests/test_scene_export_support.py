@@ -1394,13 +1394,7 @@ def test_public_router_selects_only_the_proven_literal_cartesian_geometry_subset
 @pytest.mark.parametrize(
     "factory",
     [
-        lambda: _supported().bar(
-            [0, 1], [1, 2], fill="linear-gradient(to bottom, #000000, #ffffff)"
-        ),
         lambda: _supported().column([0, 1], [1, 2], corner_radius=2),
-        lambda: _supported().area(
-            [0, 1], [1, 2], fill="linear-gradient(to bottom, #000000, #ffffff)"
-        ),
         lambda: _supported().scatter(range(10_001), range(10_001)),
     ],
 )
@@ -1408,6 +1402,25 @@ def test_public_literal_geometry_boundary_fails_closed_for_unmodeled_behavior(fa
     """A successful internal record must not silently widen static routing."""
     reason = scene_export_support_reason(factory()) or ""
     assert reason
+
+
+@pytest.mark.parametrize(
+    "factory",
+    [
+        lambda: _supported().bar(
+            [0, 1], [1, 2], fill="linear-gradient(to bottom, #000000, #ffffff)"
+        ),
+        lambda: _supported().area(
+            [0, 1], [1, 2], fill="linear-gradient(to bottom, #000000, #ffffff)"
+        ),
+    ],
+)
+def test_public_literal_linear_gradient_fills_route_through_scene(factory) -> None:
+    figure = factory()
+    assert scene_export_support_reason(figure) is None
+    svg = figure.to_svg()
+    assert "<linearGradient" in svg
+    assert 'fill="url(#xy-scene-g' in svg
 
 
 @pytest.mark.parametrize(

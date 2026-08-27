@@ -1331,8 +1331,179 @@ function packXymp(paths) {
   return out;
 }
 
-function concatStyleSidecars(dashes, linecaps, markerPaths) {
-  const parts = [packXyds(dashes), packXylc(linecaps), packXymp(markerPaths)].filter((part) => part.length);
+const GRAD_DIR_CODES = { down: 0, up: 1, right: 2, left: 3 };
+const GRADIENT_DIRS = { "to top": "up", "to bottom": "down", "to left": "left", "to right": "right" };
+
+function fillIsGradientAuthoring(fill) {
+  if (fill != null && typeof fill === "object") return true;
+  return typeof fill === "string" && fill.trim().toLowerCase().startsWith("linear-gradient(");
+}
+
+function splitTopLevel(text) {
+  const parts = [];
+  let current = "";
+  let depth = 0;
+  for (const ch of text) {
+    if (ch === "(") depth += 1;
+    else if (ch === ")") depth = Math.max(0, depth - 1);
+    if (ch === "," && depth === 0) {
+      parts.push(current.trim());
+      current = "";
+      continue;
+    }
+    current += ch;
+  }
+  if (current.trim()) parts.push(current.trim());
+  return parts;
+}
+
+function parseGradientStop(item) {
+  const tokens = item.trim().split(/\s+/);
+  if (tokens.length >= 2 && tokens[tokens.length - 1].endsWith("%")) {
+    const pos = Number(tokens[tokens.length - 1].slice(0, -1)) / 100;
+    if (!Number.isFinite(pos)) return null;
+    return { t: Math.min(1, Math.max(0, pos)), color: tokens.slice(0, -1).join(" ") };
+  }
+  return { t: null, color: item.trim() };
+}
+
+function parseLinearGradient(value, space = "mark") {
+  if (typeof value !== "string") return null;
+  const text = value.trim();
+  const lowered = text.toLowerCase();
+  if (!lowered.startsWith("linear-gradient(") || !text.endsWith(")")) return null;
+  let args = splitTopLevel(text.slice("linear-gradient(".length, -1));
+  let dir = "down";
+  if (args.length && Object.hasOwn(GRADIENT_DIRS, args[0].toLowerCase())) {
+    dir = GRADIENT_DIRS[args[0].toLowerCase()];
+    args = args.slice(1);
+  } else if (args.length && (args[0].toLowerCase().startsWith("to ") || args[0].toLowerCase().endsWith("deg"))) {
+    return null;
+  }
+  if ((dir === "left" || dir === "right") && space === "mark") return null;
+  if (args.length < 2 || args.length > 8) return null;
+  const parsed = args.map(parseGradientStop);
+  if (parsed.some((item) => item == null || !item.color)) return null;
+  const count = parsed.length;
+  const anchors = new Map();
+  parsed.forEach((item, index) => {
+    if (item.t != null) anchors.set(index, item.t);
+  });
+  if (!anchors.has(0)) anchors.set(0, 0);
+  if (!anchors.has(count - 1)) anchors.set(count - 1, 1);
+  const keys = [...anchors.keys()].sort((a, b) => a - b);
+  let prev = 0;
+  for (const key of keys) {
+    prev = Math.max(anchors.get(key), prev);
+    anchors.set(key, prev);
+  }
+  const resolved = new Array(count).fill(0);
+  for (let i = 0; i < keys.length - 1; i += 1) {
+    const i0 = keys[i];
+    const i1 = keys[i + 1];
+    const v0 = anchors.get(i0);
+    const v1 = anchors.get(i1);
+    for (let k = i0; k < i1; k += 1) {
+      resolved[k] = v0 + ((v1 - v0) * (k - i0)) / (i1 - i0);
+    }
+  }
+  resolved[count - 1] = anchors.get(count - 1);
+  return {
+    space,
+    dir,
+    stops: parsed.map((item, index) => [resolved[index], item.color]),
+  };
+}
+
+function normalizeFillSpec(fill) {
+  if (fill != null && typeof fill === "object" && fill.space != null && fill.dir != null && Array.isArray(fill.stops)) {
+    return fill;
+  }
+  if (fill != null && typeof fill === "object") {
+    const keys = Object.keys(fill).filter((key) => key !== "gradient" && key !== "space");
+    if (keys.length) return null;
+    return parseLinearGradient(fill.gradient, fill.space ?? "mark");
+  }
+  return parseLinearGradient(fill, "mark");
+}
+
+function constantMarkColor(trace) {
+  const channel = trace.color_ch ?? trace.colorChannel ?? trace.color;
+  if (trace.color_target != null) return null;
+  if (channel == null) return String(trace.style?.color ?? "#3987e5");
+  if (typeof channel === "string") return channel;
+  if (channel.mode === "constant" && channel.constant != null) return String(channel.constant);
+  if (String(trace.kind ?? "") === "scatter" && scatterUsesDensity(trace)) {
+    return String(trace.style?.color ?? "#3987e5");
+  }
+  return null;
+}
+
+function admitFillGradient(trace) {
+  const fill = trace.style?.fill;
+  if (!fillIsGradientAuthoring(fill)) return null;
+  const spec = normalizeFillSpec(fill);
+  const markColor = constantMarkColor(trace);
+  if (spec == null || markColor == null) return null;
+  if (!["mark", "plot"].includes(spec.space) || !Object.hasOwn(GRAD_DIR_CODES, spec.dir)) return null;
+  if (!Array.isArray(spec.stops) || spec.stops.length < 2 || spec.stops.length > 8) return null;
+  const resolved = [];
+  let prevT = -1;
+  for (const stop of spec.stops) {
+    if (!Array.isArray(stop) || stop.length !== 2) return null;
+    const t = Number(stop[0]);
+    if (!Number.isFinite(t) || t < 0 || t > 1 || t < prevT) return null;
+    let css = String(stop[1]).trim();
+    const lowered = css.toLowerCase();
+    if (lowered.includes("var(")) return null;
+    if (lowered === "currentcolor" || css === "") css = markColor;
+    const rgba = cssColorRgba8(css, 1);
+    resolved.push([t, rgba]);
+    prevT = t;
+  }
+  return { space: spec.space, dir: spec.dir, stops: resolved };
+}
+
+function gradientSolidCss(gradient) {
+  for (const [, rgba] of gradient.stops) {
+    if (rgba[3] > 0) return `rgb(${rgba[0]},${rgba[1]},${rgba[2]})`;
+  }
+  return "rgb(0,0,0)";
+}
+
+function packXygr(gradients) {
+  const entries = gradients.map((gradient, index) => [index, gradient]).filter(([, gradient]) => gradient);
+  if (!entries.length) return new Uint8Array();
+  const bodyLen = entries.reduce((sum, [, gradient]) => sum + 16 + gradient.stops.length * 8, 0);
+  const out = new Uint8Array(16 + bodyLen);
+  const view = new DataView(out.buffer);
+  out.set(encodeUtf8Magic("XYGR"), 0);
+  view.setUint32(4, 1, true);
+  view.setUint32(8, entries.length, true);
+  view.setUint32(12, 0, true);
+  let offset = 16;
+  for (const [styleRef, gradient] of entries) {
+    let flags = GRAD_DIR_CODES[gradient.dir];
+    if (gradient.space === "plot") flags |= 1 << 2;
+    view.setUint32(offset, styleRef, true);
+    view.setUint32(offset + 4, flags, true);
+    view.setUint32(offset + 8, gradient.stops.length, true);
+    view.setUint32(offset + 12, 0, true);
+    offset += 16;
+    for (const [t, rgba] of gradient.stops) {
+      view.setFloat32(offset, t, true);
+      out[offset + 4] = rgba[0];
+      out[offset + 5] = rgba[1];
+      out[offset + 6] = rgba[2];
+      out[offset + 7] = rgba[3];
+      offset += 8;
+    }
+  }
+  return out;
+}
+
+function concatStyleSidecars(dashes, linecaps, markerPaths, gradients = []) {
+  const parts = [packXyds(dashes), packXylc(linecaps), packXymp(markerPaths), packXygr(gradients)].filter((part) => part.length);
   if (!parts.length) return new Uint8Array();
   if (parts.length === 1) return parts[0];
   const out = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
@@ -1795,8 +1966,8 @@ export function sceneBatchEncode({
     : asUnsignedArray(polarInput, "polarInput", 255, Uint8Array);
   if (polar.length) {
     const magic = String.fromCharCode(...polar.subarray(0, 4));
-    if (!["XYPL", "XYHP", "XYEX", "XYDS", "XYLC", "XYMP"].includes(magic)) {
-      throw new RangeError("polarInput must be empty, XYPL, XYHP, XYEX, XYDS, XYLC, or XYMP");
+    if (!["XYPL", "XYHP", "XYEX", "XYDS", "XYLC", "XYMP", "XYGR"].includes(magic)) {
+      throw new RangeError("polarInput must be empty, XYPL, XYHP, XYEX, XYDS, XYLC, XYMP, or XYGR");
     }
     if (magic === "XYPL" && polar.length !== 92) {
       throw new RangeError("polarInput must be empty or a 92-byte XYPL v1 envelope");
@@ -2070,10 +2241,13 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
   ) flags |= 1 << 2;
   if ((figure.traces ?? []).some((trace) => (
     trace.color_target != null
-    || (trace.style?.fill != null && typeof trace.style.fill === "object")
     || (
       scatterHasNonConstantColor(trace)
       && !scatterUsesDensity(trace)
+    )
+    || (
+      fillIsGradientAuthoring(trace.style?.fill)
+      && admitFillGradient(trace) == null
     )
   ))) flags |= 1 << 3;
   if (colorbarUnsupported) flags |= 1 << 4;
@@ -2169,9 +2343,14 @@ function packMarkStyleRecord(trace, opacity, fillOpacity, strokeOpacity, lineOpa
   const parts = [];
   let fill = new Uint8Array(0);
   if (Object.hasOwn(style, "fill")) {
-    if (typeof style.fill !== "string") throw new RangeError(`Scene v12 does not yet encode ${trace.kind} non-CSS fills`);
+    let fillValue = style.fill;
+    if (typeof fillValue !== "string" || String(fillValue).trim().toLowerCase().startsWith("linear-gradient(")) {
+      const admitted = admitFillGradient(trace);
+      if (admitted == null) throw new RangeError(`Scene v12 does not yet encode ${trace.kind} non-CSS fills`);
+      fillValue = gradientSolidCss(admitted);
+    }
     flags |= MS_HAS_FILL;
-    fill = encodeUtf8(style.fill);
+    fill = encodeUtf8(fillValue);
   }
   let stroke = new Uint8Array(0);
   if (Object.hasOwn(style, "stroke")) {
@@ -2921,7 +3100,7 @@ function resolveDensityBinColors(trace) {
 
 function rectExtraFlags(style) {
   let flags = 0;
-  if (style.fill != null && typeof style.fill === "object") flags |= XYFS_TRACE_RECT_GRADIENT;
+  if (style.fill != null && typeof style.fill === "object" && admitFillGradient({ style }) == null) flags |= XYFS_TRACE_RECT_GRADIENT;
   const radius = style.corner_radius ?? 0;
   if (Array.isArray(radius)) {
     if (radius.some((value) => Number(value) !== 0)) flags |= XYFS_TRACE_CORNER_RADIUS;
@@ -2976,7 +3155,9 @@ function figureTraceSupport(figure, trace) {
     && (style.truecolor || style.colormap != null || trace.rgba_grid != null || trace.rgba != null)
     && !heatmapTessellatesCellFills(trace)
   ) flags |= XYFS_TRACE_HEATMAP_COLORMAP;
-  if (Object.hasOwn(style, "fill") && typeof style.fill !== "string") flags |= XYFS_TRACE_NON_CSS_FILL;
+  if (Object.hasOwn(style, "fill") && typeof style.fill !== "string") {
+    if (admitFillGradient(trace) == null) flags |= XYFS_TRACE_NON_CSS_FILL;
+  }
   return { flags, kind };
 }
 
@@ -2996,7 +3177,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   try { encodedColorbar = colorbarInput(figure); } catch { colorbarUnsupported = Boolean(figure.colorbarOptions ?? figure.colorbar_options); }
   const reason = sceneFigureSupportReason(figure, { colorbarUnsupported });
   if (reason) throw new RangeError(reason);
-  const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], expansionModes = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [], dashes = [], linecaps = [], markerPaths = [], legendEntries = [], heatmapPaintPlanes = [];
+  const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], expansionModes = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [], dashes = [], linecaps = [], markerPaths = [], fillGradients = [], legendEntries = [], heatmapPaintPlanes = [];
   const xDomain = figure._range("x");
   const yDomain = figure._range("y");
   const sceneAxis = (axis, id, domain) => {
@@ -3038,6 +3219,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       }
     }
     markerPaths.push(markerPath);
+    fillGradients.push(admitFillGradient(trace));
     const styleRef = styles.length - 1;
     if (trace.name != null && String(trace.name).length > 0 && figure.showLegend !== false) {
       const legendKind = trace.kind === "scatter" ? 0 : STROKE_KINDS.has(trace.kind) ? 1 : 2;
@@ -3332,7 +3514,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   return sceneBatchEncode({ viewport: [figure.width, figure.height], margins: resolvedMargins,
     xAxis: xSceneAxis, yAxis: ySceneAxis,
     kinds, stableIds, styleRefs, styles, diameter, symbols, expansionModes, x0, y0, x1, y1,
-    title, xLabel, yLabel, chromeStyle: figureChromeStyle(figure), xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, xMinorTicks: (figure.xAxis ?? figure.x_axis)?.minorTickValues ?? (figure.xAxis ?? figure.x_axis)?.minor_tick_values ?? [], yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, yMinorTicks: (figure.yAxis ?? figure.y_axis)?.minorTickValues ?? (figure.yAxis ?? figure.y_axis)?.minor_tick_values ?? [], xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, xFormat: xSceneAxis.format, yFormat: ySceneAxis.format, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText, polarInput: packSceneExtras(packPolarSceneInput(figure), packXyhp(heatmapPaintPlanes), concatStyleSidecars(dashes, linecaps, markerPaths)),
+    title, xLabel, yLabel, chromeStyle: figureChromeStyle(figure), xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, xMinorTicks: (figure.xAxis ?? figure.x_axis)?.minorTickValues ?? (figure.xAxis ?? figure.x_axis)?.minor_tick_values ?? [], yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, yMinorTicks: (figure.yAxis ?? figure.y_axis)?.minorTickValues ?? (figure.yAxis ?? figure.y_axis)?.minor_tick_values ?? [], xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, xFormat: xSceneAxis.format, yFormat: ySceneAxis.format, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText, polarInput: packSceneExtras(packPolarSceneInput(figure), packXyhp(heatmapPaintPlanes), concatStyleSidecars(dashes, linecaps, markerPaths, fillGradients)),
   });
 }
 
