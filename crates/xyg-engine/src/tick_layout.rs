@@ -1,8 +1,10 @@
-//! Tick-label collision layout (M2 #276 / ABI 123).
+//! Tick-label collision layout and authored tick-window policy (M2 #276).
 //!
-//! Hosts format label strings and map tick values to pixels. This module
-//! owns auto / hide / rotate / stagger thinning so SVG, raster, and Node
-//! cannot drift from ChartView `_layoutTickLabels`.
+//! Collision thinning (ABI 123) owns auto / hide / rotate / stagger so SVG,
+//! raster, and Node cannot drift from ChartView `_layoutTickLabels`. Authored
+//! tick-window resolve/filter (ABI 128) owns linear vs modular angular
+//! containment so seam-crossing polar sectors keep the same spokes as marks.
+//! Hosts still format `_tick_text` and map values to pixels.
 
 use crate::scene::scene_text_advance;
 
@@ -236,6 +238,95 @@ pub fn tick_label_layout(
     Some(to_items(&items))
 }
 
+pub const THETA_NONE: u32 = 0;
+pub const THETA_DEGREES: u32 = 1;
+pub const THETA_RADIANS: u32 = 2;
+pub const KIND_LINEAR: u32 = 0;
+pub const KIND_CATEGORY: u32 = 1;
+
+/// Resolve the value window ticks are drawn in.
+///
+/// `sector_lo`/`sector_hi` are NaN when the axis did not author a sector.
+pub fn tick_window(
+    range_lo: f64,
+    range_hi: f64,
+    theta_unit: u32,
+    kind: u32,
+    n_categories: u32,
+    sector_lo: f64,
+    sector_hi: f64,
+) -> Option<(f64, f64)> {
+    if !matches!(theta_unit, THETA_NONE | THETA_DEGREES | THETA_RADIANS)
+        || !matches!(kind, KIND_LINEAR | KIND_CATEGORY)
+        || !range_lo.is_finite()
+        || !range_hi.is_finite()
+    {
+        return None;
+    }
+    if theta_unit == THETA_NONE {
+        return Some((range_lo, range_hi));
+    }
+    if kind == KIND_CATEGORY {
+        return Some((0.0, f64::from(n_categories.saturating_sub(1))));
+    }
+    if sector_lo.is_nan() && sector_hi.is_nan() {
+        return Some((range_lo, range_hi));
+    }
+    if sector_lo.is_finite() && sector_hi.is_finite() {
+        return Some((sector_lo, sector_hi));
+    }
+    None
+}
+
+/// Whether `value` falls inside the tick window, matching `_svg._tick_window_filter`.
+pub fn tick_in_window(value: f64, lo: f64, hi: f64, theta_unit: u32, kind: u32) -> Option<bool> {
+    if !lo.is_finite()
+        || !hi.is_finite()
+        || !matches!(theta_unit, THETA_NONE | THETA_DEGREES | THETA_RADIANS)
+        || !matches!(kind, KIND_LINEAR | KIND_CATEGORY)
+    {
+        return None;
+    }
+    let low = lo.min(hi);
+    let high = lo.max(hi);
+    if theta_unit == THETA_NONE || kind == KIND_CATEGORY {
+        return Some(value >= low && value <= high);
+    }
+    let turn = if theta_unit == THETA_DEGREES {
+        360.0
+    } else {
+        2.0 * std::f64::consts::PI
+    };
+    let span = high - low;
+    Some((value - low).rem_euclid(turn) <= span + turn * 1e-9)
+}
+
+/// Compact `values` that fall inside the window into `out`.
+pub fn filter_tick_values(
+    values: &[f64],
+    lo: f64,
+    hi: f64,
+    theta_unit: u32,
+    kind: u32,
+    require_finite: bool,
+    out: &mut [f64],
+) -> Option<usize> {
+    if out.len() < values.len() {
+        return None;
+    }
+    let mut written = 0;
+    for &value in values {
+        if require_finite && !value.is_finite() {
+            continue;
+        }
+        if tick_in_window(value, lo, hi, theta_unit, kind)? {
+            out[written] = value;
+            written += 1;
+        }
+    }
+    Some(written)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -340,5 +431,50 @@ mod tests {
         .unwrap();
         assert!(kept.len() < 9);
         assert!(!kept.is_empty());
+    }
+
+    #[test]
+    fn seam_crossing_degree_sector_keeps_far_side_ticks() {
+        let values = [300.0, 330.0, 0.0, 30.0, 60.0, 200.0];
+        let mut out = [0.0; 6];
+        let n = filter_tick_values(
+            &values,
+            300.0,
+            420.0,
+            THETA_DEGREES,
+            KIND_LINEAR,
+            false,
+            &mut out,
+        )
+        .unwrap();
+        assert_eq!(&out[..n], &[300.0, 330.0, 0.0, 30.0, 60.0]);
+    }
+
+    #[test]
+    fn linear_window_rejects_outside_and_nan() {
+        let values = [0.0, 45.0, 90.0, 200.0, -10.0, f64::NAN];
+        let mut out = [0.0; 6];
+        let n = filter_tick_values(
+            &values,
+            0.0,
+            180.0,
+            THETA_NONE,
+            KIND_LINEAR,
+            false,
+            &mut out,
+        )
+        .unwrap();
+        assert_eq!(&out[..n], &[0.0, 45.0, 90.0]);
+        let (lo, hi) = tick_window(
+            1.0,
+            2.0,
+            THETA_DEGREES,
+            KIND_CATEGORY,
+            4,
+            f64::NAN,
+            f64::NAN,
+        )
+        .unwrap();
+        assert_eq!((lo, hi), (0.0, 3.0));
     }
 }

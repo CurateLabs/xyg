@@ -177,7 +177,7 @@ export function createEngine(opts = {}) {
 
 export { Figure, PayloadWriter, figure, toHtml, autoDomain };
 
-export { axisTicks, tickLabelLayout, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yTickLabelExtent, yAxisLeftRoom, xAxisTitleRoom, xTickLabelRoom, xTickLabelEdgeRooms, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatTitleRoom, compatXAxisSideRoom, compatColorbarExtra, compatRightYRoom, polarLegendRoom, polarLegendReserve, polarLabelRoom, recutPolarPlot, tightLayoutSolve, encodeJpeg, encodePng, encodeWebp, figureSceneV3, scaleMap, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneRasterCommands, sceneSupportReason, sceneSvg, sceneVersion, scatterSceneSvg, svgToPdf } from "./scene.js";
+export { axisTicks, tickLabelLayout, tickWindow, tickWindowFilter, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yTickLabelExtent, yAxisLeftRoom, xAxisTitleRoom, xTickLabelRoom, xTickLabelEdgeRooms, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatTitleRoom, compatXAxisSideRoom, compatColorbarExtra, compatRightYRoom, polarLegendRoom, polarLegendReserve, polarLabelRoom, recutPolarPlot, tightLayoutSolve, encodeJpeg, encodePng, encodeWebp, figureSceneV3, scaleMap, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneRasterCommands, sceneSupportReason, sceneSvg, sceneVersion, scatterSceneSvg, svgToPdf } from "./scene.js";
 
 export { runForceTicks, runForceTicks as runForceAnimation } from "./force_scheduler.js";
 

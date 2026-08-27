@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 127
-SIGNATURE_SHA256 = "06b5db28fffaee4bb9a7deded7c306ecc1297fe9721e18b35fe28b6a1480a854"
+ABI_VERSION = 128
+SIGNATURE_SHA256 = "9ca84a48d5589de2fa17f0456460f00b4ade31490d323c6696af1059e81d1af1"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -898,6 +898,14 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_text_block_rotated_extent
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p]
+    # size_t xyg_tick_window(double range_lo, double range_hi, uint32_t theta_unit, uint32_t kind, uint32_t n_categories, double sector_lo, double sector_hi, double * out_lo, double * out_hi)
+    function = lib.xyg_tick_window
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p]
+    # size_t xyg_tick_window_filter(const double * values, size_t n, double lo, double hi, uint32_t theta_unit, uint32_t kind, int32_t require_finite, double * out, size_t out_cap)
+    function = lib.xyg_tick_window_filter
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t]
     # size_t xyg_tight_layout_solve(double canvas_w, double canvas_h, uint32_t nrows, uint32_t ncols, int32_t compact, const double * in_panels, size_t n_panels, const double * extra, double pad, double w_pad, double h_pad, double point_px, const double * rect, double * out)
     function = lib.xyg_tight_layout_solve
     function.restype = ctypes.c_size_t

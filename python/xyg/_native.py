@@ -2415,6 +2415,70 @@ def scene_tick_label_layout(
     ]
 
 
+def _tick_window_theta_unit(theta_unit: object) -> int:
+    if theta_unit is None:
+        return 0
+    return 1 if theta_unit == "degrees" else 2
+
+
+def tick_window(
+    range_lo: float,
+    range_hi: float,
+    *,
+    theta_unit: str | None = None,
+    kind: str = "linear",
+    n_categories: int = 0,
+    sector_lo: float = float("nan"),
+    sector_hi: float = float("nan"),
+) -> tuple[float, float]:
+    """Authored tick-window resolve via ``xyg_tick_window`` (ABI 128)."""
+    out_lo = ctypes.c_double()
+    out_hi = ctypes.c_double()
+    written = _lib.xyg_tick_window(
+        float(range_lo),
+        float(range_hi),
+        _tick_window_theta_unit(theta_unit),
+        1 if kind == "category" else 0,
+        int(n_categories),
+        float(sector_lo),
+        float(sector_hi),
+        ctypes.byref(out_lo),
+        ctypes.byref(out_hi),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid tick-window request")
+    return float(out_lo.value), float(out_hi.value)
+
+
+def tick_window_filter(
+    values: npt.ArrayLike,
+    lo: float,
+    hi: float,
+    *,
+    theta_unit: str | None = None,
+    kind: str = "linear",
+    require_finite: bool = False,
+) -> list[float]:
+    """Authored tick-window filter via ``xyg_tick_window_filter`` (ABI 128)."""
+    arr = _as_f64(np.asarray(values, dtype=np.float64).reshape(-1), "values")
+    n = len(arr)
+    out = np.empty(n, dtype=np.float64)
+    written = _lib.xyg_tick_window_filter(
+        _ptr_f64(arr) if n else 0,
+        n,
+        float(lo),
+        float(hi),
+        _tick_window_theta_unit(theta_unit),
+        1 if kind == "category" else 0,
+        1 if require_finite else 0,
+        _ptr_f64(out) if n else 0,
+        n,
+    )
+    if written == _USIZE_MAX or written > n:
+        raise ValueError("invalid tick-window filter request")
+    return out[:written].tolist()
+
+
 def scene_legend_box_layout(
     *,
     plot: Mapping[str, float],

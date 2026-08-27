@@ -1356,6 +1356,12 @@ extras, and Matplotlib pad/rect; edge maxima, neighbor gaps, pad
 multiples, and `subplots_adjust` fractions are engine-owned. Hosts still
 measure `_panel_chrome`, suptitle, figure labels, and outside legends
 (#275).
+ABI 128 moves authored tick-window resolve and filter into Rust. Hosts
+call `xyg_tick_window` and `xyg_tick_window_filter`; linear vs modular
+angular containment (including seam-crossing sectors) is engine-owned
+and identical for Python and Node. Hosts still format `_tick_text`,
+choose tick families via `xyg_scene_axis_ticks`, and map values to
+pixels (#276).
 ABI 110 moves primary Scene legend framing into Rust. Hosts pass loc/flags,
 font sizes, paints, title, and per-entry meta plus labels; XYLG header
 layout, text offsets, and bounded-text rejection are engine-owned and

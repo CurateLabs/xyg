@@ -906,6 +906,30 @@ def load() -> ctypes.CDLL:
         F64P,
         F64P,
     ]
+    lib.xyg_tick_window.restype = ctypes.c_size_t
+    lib.xyg_tick_window.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        F64P,
+    ]
+    lib.xyg_tick_window_filter.restype = ctypes.c_size_t
+    lib.xyg_tick_window_filter.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_int32,
+        F64P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_hexbin_groups.restype = ctypes.c_size_t
     lib.xyg_hexbin_groups.argtypes = [
         F64P,
@@ -2548,6 +2572,54 @@ def main() -> None:
         tight_n == 6 and abs(tight_out[0] - 62.0 / 800.0) < 1e-12,
         "tight_layout_solve empty wide defaults",
     )
+    tick_lo = ctypes.c_double()
+    tick_hi = ctypes.c_double()
+    tick_window_n = lib.xyg_tick_window(
+        0.0,
+        360.0,
+        1,
+        0,
+        0,
+        300.0,
+        420.0,
+        ctypes.byref(tick_lo),
+        ctypes.byref(tick_hi),
+    )
+    tick_values = array("d", [300.0, 330.0, 0.0, 30.0, 60.0, 200.0])
+    tick_out = array("d", [0.0] * 6)
+    tick_n = lib.xyg_tick_window_filter(
+        _ptr(tick_values, ctypes.c_double),
+        6,
+        tick_lo.value,
+        tick_hi.value,
+        1,
+        0,
+        0,
+        _ptr(tick_out, ctypes.c_double),
+        6,
+    )
+    ok(
+        tick_window_n == 2
+        and tick_lo.value == 300.0
+        and tick_hi.value == 420.0
+        and tick_n == 5
+        and list(tick_out[:5]) == [300.0, 330.0, 0.0, 30.0, 60.0],
+        "tick_window seam-crossing degree sector",
+    )
+    linear_values = array("d", [0.0, 45.0, 90.0, 200.0, -10.0, float("nan")])
+    linear_out = array("d", [0.0] * 6)
+    linear_n = lib.xyg_tick_window_filter(
+        _ptr(linear_values, ctypes.c_double),
+        6,
+        0.0,
+        180.0,
+        0,
+        0,
+        0,
+        _ptr(linear_out, ctypes.c_double),
+        6,
+    )
+    ok(linear_n == 3 and list(linear_out[:3]) == [0.0, 45.0, 90.0], "tick_window linear reject")
     cf_x = array("d", [0.0, 1.0, 2.0, 3.0, 4.0])
     cf_y = array("d", [0.0, 1.0, 0.5, 2.0, 1.5])
     cf_m = array("d", [0.0]) * 5

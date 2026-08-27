@@ -244,6 +244,11 @@ ABI 127 moves the pyplot tight-layout grid solve into Rust: Python and
 Node call `xyg_tight_layout_solve` so edge maxima, neighbor gaps, pad
 multiples, and `subplots_adjust` fractions cannot drift. Hosts still
 measure per-panel chrome, suptitle, figure labels, and outside legends.
+ABI 128 moves authored tick-window resolve and filter into Rust: Python
+and Node call `xyg_tick_window` and `xyg_tick_window_filter` so linear
+vs modular angular containment cannot drift. Hosts still format
+`_tick_text`, choose tick families, and map values to pixels. ChartView
+JS `_polarAngularTurn` / `_axisTicks` seam filter stays until WASM.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call

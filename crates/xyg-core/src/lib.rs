@@ -118,7 +118,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 127;
+pub const ABI_VERSION: u32 = 128;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10258,6 +10258,89 @@ pub unsafe extern "C" fn xyg_scene_tick_label_layout(
     })
 }
 
+/// Authored tick-window resolve (ABI 128). `theta_unit` is 0=none, 1=degrees,
+/// 2=radians. `kind` is 0=linear, 1=category. `sector_lo`/`sector_hi` are
+/// NaN when the axis did not author a sector. Writes `out_lo`/`out_hi`.
+/// Returns 2, or `usize::MAX`.
+///
+/// # Safety
+/// Output pointers must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_tick_window(
+    range_lo: f64,
+    range_hi: f64,
+    theta_unit: u32,
+    kind: u32,
+    n_categories: u32,
+    sector_lo: f64,
+    sector_hi: f64,
+    out_lo: *mut f64,
+    out_hi: *mut f64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out_lo.is_null() || out_hi.is_null() {
+            return usize::MAX;
+        }
+        let Some((lo, hi)) = tick_layout::tick_window(
+            range_lo,
+            range_hi,
+            theta_unit,
+            kind,
+            n_categories,
+            sector_lo,
+            sector_hi,
+        ) else {
+            return usize::MAX;
+        };
+        *out_lo = lo;
+        *out_hi = hi;
+        2
+    })
+}
+
+/// Authored tick-window filter (ABI 128). `require_finite` is 0/1. Writes
+/// kept values into `out`. Returns the keep count, or `usize::MAX`.
+///
+/// # Safety
+/// Non-empty `values` must be valid for `n` f64s. `out` must hold `out_cap`
+/// slots when that capacity is nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_tick_window_filter(
+    values: *const f64,
+    n: usize,
+    lo: f64,
+    hi: f64,
+    theta_unit: u32,
+    kind: u32,
+    require_finite: i32,
+    out: *mut f64,
+    out_cap: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if !matches!(require_finite, 0 | 1) {
+            return usize::MAX;
+        }
+        let values = if n == 0 {
+            &[][..]
+        } else {
+            if values.is_null() {
+                return usize::MAX;
+            }
+            std::slice::from_raw_parts(values, n)
+        };
+        let out = if out_cap == 0 {
+            &mut [][..]
+        } else {
+            if out.is_null() {
+                return usize::MAX;
+            }
+            std::slice::from_raw_parts_mut(out, out_cap)
+        };
+        tick_layout::filter_tick_values(values, lo, hi, theta_unit, kind, require_finite != 0, out)
+            .unwrap_or(usize::MAX)
+    })
+}
+
 /// Static legend box packing (ABI 124). `handlelength` / `handletextpad` are
 /// NaN for the 2.0 / 0.8 em defaults; `handleheight` is NaN when unset.
 /// `anchor_len` is 0, 2, or 4. Writes 17 metric slots, `ncols` column
@@ -13435,6 +13518,33 @@ mod tests {
             assert_eq!(out_index[i], i as u32);
             assert_eq!(out_row[i], 0);
         }
+    }
+
+    #[test]
+    fn tick_window_filter_keeps_seam_crossing_degree_ticks() {
+        let values = [300.0, 330.0, 0.0, 30.0, 60.0, 200.0];
+        let mut lo = 0.0f64;
+        let mut hi = 0.0f64;
+        let window_n =
+            unsafe { xyg_tick_window(0.0, 360.0, 1, 0, 0, 300.0, 420.0, &mut lo, &mut hi) };
+        assert_eq!(window_n, 2);
+        assert_eq!((lo, hi), (300.0, 420.0));
+        let mut out = [0.0f64; 6];
+        let n = unsafe {
+            xyg_tick_window_filter(
+                values.as_ptr(),
+                values.len(),
+                lo,
+                hi,
+                1,
+                0,
+                0,
+                out.as_mut_ptr(),
+                out.len(),
+            )
+        };
+        assert_eq!(n, 5);
+        assert_eq!(&out[..n], &[300.0, 330.0, 0.0, 30.0, 60.0]);
     }
 
     #[test]

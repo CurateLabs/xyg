@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 127
-#define XYG_ABI_SIGNATURE_SHA256 "06b5db28fffaee4bb9a7deded7c306ecc1297fe9721e18b35fe28b6a1480a854"
+#define XYG_ABI_VERSION 128
+#define XYG_ABI_SIGNATURE_SHA256 "9ca84a48d5589de2fa17f0456460f00b4ade31490d323c6696af1059e81d1af1"
 
 #ifdef __cplusplus
 extern "C" {
@@ -233,6 +233,8 @@ int32_t xyg_temporal_interval_visibility_at(uint64_t handle, int64_t instant_mic
 uint64_t xyg_temporal_selection_limit();
 size_t xyg_text_block_measure(const uint8_t * text, size_t text_len, double font_size, double line_height, double max_width, double * out_metrics, uint32_t * out_line_lens, size_t line_cap, uint8_t * out_lines, size_t lines_cap);
 size_t xyg_text_block_rotated_extent(double width, double height, double angle_degrees, double * out_x, double * out_y);
+size_t xyg_tick_window(double range_lo, double range_hi, uint32_t theta_unit, uint32_t kind, uint32_t n_categories, double sector_lo, double sector_hi, double * out_lo, double * out_hi);
+size_t xyg_tick_window_filter(const double * values, size_t n, double lo, double hi, uint32_t theta_unit, uint32_t kind, int32_t require_finite, double * out, size_t out_cap);
 size_t xyg_tight_layout_solve(double canvas_w, double canvas_h, uint32_t nrows, uint32_t ncols, int32_t compact, const double * in_panels, size_t n_panels, const double * extra, double pad, double w_pad, double h_pad, double point_px, const double * rect, double * out);
 int32_t xyg_tile_budget_set(uint64_t bytes);
 int32_t xyg_tile_store_append(uint64_t store, const double * x, const double * y, size_t len);

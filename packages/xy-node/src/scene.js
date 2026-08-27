@@ -3,6 +3,8 @@ import {
   pointer,
   xySceneAxisTicks,
   xySceneTickLabelLayout,
+  xyTickWindow,
+  xyTickWindowFilter,
   xyLegendBoxLayout,
   xyTextBlockMeasure,
   xyTextBlockRotatedExtent,
@@ -382,6 +384,67 @@ export function tickLabelLayout({
     angle: outAngle[index],
     row: outRow[index],
   }));
+}
+
+function thetaUnitCode(thetaUnit) {
+  if (thetaUnit == null) return 0;
+  return thetaUnit === "degrees" ? 1 : 2;
+}
+
+export function tickWindow({
+  rangeLo,
+  rangeHi,
+  thetaUnit = null,
+  kind = "linear",
+  nCategories = 0,
+  sectorLo = Number.NaN,
+  sectorHi = Number.NaN,
+} = {}) {
+  const outLo = new Float64Array(1);
+  const outHi = new Float64Array(1);
+  const written = xyTickWindow(
+    Number(rangeLo),
+    Number(rangeHi),
+    thetaUnitCode(thetaUnit),
+    kind === "category" ? 1 : 0,
+    Number(nCategories) >>> 0,
+    Number(sectorLo),
+    Number(sectorHi),
+    f64Ptr(outLo),
+    f64Ptr(outHi),
+  );
+  if (written === USIZE_MAX_64) throw new RangeError("invalid tick-window request");
+  return [outLo[0], outHi[0]];
+}
+
+export function tickWindowFilter({
+  values,
+  lo,
+  hi,
+  thetaUnit = null,
+  kind = "linear",
+  requireFinite = false,
+} = {}) {
+  const arr = asF64Array(values ?? [], "values");
+  const n = arr.length;
+  const out = new Float64Array(n);
+  const written = xyTickWindowFilter(
+    n ? f64Ptr(arr) : 0,
+    BigInt(n),
+    Number(lo),
+    Number(hi),
+    thetaUnitCode(thetaUnit),
+    kind === "category" ? 1 : 0,
+    requireFinite ? 1 : 0,
+    n ? f64Ptr(out) : 0,
+    BigInt(n),
+  );
+  if (written === USIZE_MAX_64) throw new RangeError("invalid tick-window filter request");
+  const kept = Number(written);
+  if (!Number.isSafeInteger(kept) || kept > n) {
+    throw new RangeError("tick-window filter exceeded host output limits");
+  }
+  return Array.from(out.subarray(0, kept));
 }
 
 export function legendBoxLayout({

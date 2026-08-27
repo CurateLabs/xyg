@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import test from "node:test";
 
-import { axisTicks, tickLabelLayout, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yAxisLeftRoom, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatColorbarExtra, polarLegendRoom, polarLabelRoom, recutPolarPlot, tightLayoutSolve, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
+import { axisTicks, tickLabelLayout, tickWindow, tickWindowFilter, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yAxisLeftRoom, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatColorbarExtra, polarLegendRoom, polarLabelRoom, recutPolarPlot, tightLayoutSolve, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
 import { Figure, sceneRasterCommands, sceneSvg } from "../src/index.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
@@ -1149,6 +1149,34 @@ test("Node consumes Rust-owned tick-label collision layout", () => {
   });
   assert.ok(centered.length > 0 && centered.length < 9);
   assert.deepEqual(tickLabelLayout({ positions: [0, 10], labels: ["a", "b"], kind: "none" }), []);
+});
+
+test("Node consumes Rust-owned authored tick-window filter", () => {
+  assert.deepEqual(
+    tickWindow({ rangeLo: 0, rangeHi: 360, thetaUnit: "degrees", sectorLo: 300, sectorHi: 420 }),
+    [300, 420],
+  );
+  assert.deepEqual(
+    tickWindowFilter({
+      values: [300, 330, 0, 30, 60, 200],
+      lo: 300,
+      hi: 420,
+      thetaUnit: "degrees",
+    }),
+    [300, 330, 0, 30, 60],
+  );
+  assert.deepEqual(
+    tickWindowFilter({
+      values: [0, 45, 90, 200, -10, Number.NaN],
+      lo: 0,
+      hi: 180,
+    }),
+    [0, 45, 90],
+  );
+  assert.deepEqual(
+    tickWindow({ rangeLo: 1, rangeHi: 2, thetaUnit: "degrees", kind: "category", nCategories: 4 }),
+    [0, 3],
+  );
 });
 
 test("Node consumes Rust-owned static legend box packing", () => {

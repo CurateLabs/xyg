@@ -2655,17 +2655,32 @@ def _recut_polar_plot(
 
 def _tick_window(axis: dict[str, Any]) -> tuple[float, float]:
     """The value window ticks are drawn in — the sector for an angular axis."""
-    lo, hi = axis["range"]
-    if axis.get("theta_unit") is not None:
-        if axis.get("kind") == "category":
-            lo, hi = 0.0, float(max(0, len(axis.get("categories") or []) - 1))
-        else:
-            lo, hi = axis.get("sector") or (lo, hi)
-    return float(lo), float(hi)
+    lo, hi = (float(v) for v in axis["range"])
+    sector = axis.get("sector")
+    if sector:
+        sector_lo, sector_hi = float(sector[0]), float(sector[1])
+    else:
+        sector_lo = sector_hi = float("nan")
+    return _native.tick_window(
+        lo,
+        hi,
+        theta_unit=axis.get("theta_unit"),
+        kind="category" if axis.get("kind") == "category" else "linear",
+        n_categories=len(axis.get("categories") or []),
+        sector_lo=sector_lo,
+        sector_hi=sector_hi,
+    )
 
 
-def _tick_window_filter(axis: dict[str, Any], lo: float, hi: float) -> Callable[[float], bool]:
-    """Predicate keeping the tick values that fall inside the axis window.
+def _tick_window_filter(
+    axis: dict[str, Any],
+    lo: float,
+    hi: float,
+    values: Sequence[Any],
+    *,
+    require_finite: bool = False,
+) -> list[float]:
+    """Compact ``values`` that fall inside the axis window.
 
     An angular window may cross the 0/turn seam — ``sector=(300, 420)``, or the
     compass-natural ``(-30, 30)``. The plain ``low <= v <= high`` test throws
@@ -2676,15 +2691,14 @@ def _tick_window_filter(axis: dict[str, Any], lo: float, hi: float) -> Callable[
     `_PolarProjection._angular_value_visible_mask`, so the spokes and the marks
     agree about what the sector contains.
     """
-    low, high = min(lo, hi), max(lo, hi)
-    unit = axis.get("theta_unit")
-    if unit is None or axis.get("kind") == "category":
-        return lambda value: low <= value <= high
-    turn = 360.0 if unit == "degrees" else 2.0 * math.pi
-    span = high - low
-    # NaN falls out of both branches: np.mod propagates it and the comparison
-    # is False, matching the linear test it replaces.
-    return lambda value: bool(np.mod(value - low, turn) <= span + turn * 1e-9)
+    return _native.tick_window_filter(
+        [float(v) for v in values],
+        lo,
+        hi,
+        theta_unit=axis.get("theta_unit"),
+        kind="category" if axis.get("kind") == "category" else "linear",
+        require_finite=require_finite,
+    )
 
 
 def axis_ticks(
@@ -2695,8 +2709,7 @@ def axis_ticks(
     kind = axis.get("kind")
     lo, hi = _tick_window(axis)
     if axis.get("tick_values") is not None:
-        keep = _tick_window_filter(axis, lo, hi)
-        ticks = [float(v) for v in axis["tick_values"] if keep(float(v))]
+        ticks = _tick_window_filter(axis, lo, hi, axis["tick_values"])
         step = abs(ticks[1] - ticks[0]) if len(ticks) > 1 else 1.0
         return ticks, ticks, step
     requested = axis.get("tick_count")
@@ -2735,8 +2748,8 @@ def minor_axis_ticks(axis: dict[str, Any]) -> list[float]:
     values = axis.get("minor_tick_values")
     if values is None:
         return []
-    keep = _tick_window_filter(axis, *_tick_window(axis))
-    return [float(value) for value in values if np.isfinite(float(value)) and keep(float(value))]
+    lo, hi = _tick_window(axis)
+    return _tick_window_filter(axis, lo, hi, values, require_finite=True)
 
 
 def _axis_tick_label_strategy(axis: dict[str, Any]) -> str:
