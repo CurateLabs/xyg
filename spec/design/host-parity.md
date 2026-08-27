@@ -167,7 +167,10 @@ browser consumers. Constant-style mean and sum share Scene bytes when they
 occupy the same lattice, because paint ignores the metric. ABI 103 moves that
 hex-cell ring and the regular heatmap lattice reconstruction into Rust
 `expansion_modes` (`HexCell=5`, `HeatmapLattice=6`); hosts pack compact
-center+pitch rows and a two-row extent+shape lattice. Polar hexbin, custom `reduce_C_function`, metric
+center+pitch rows and a two-row extent+shape lattice. ABI 104 likewise moves
+disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
+(`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate
+row per segment and two PolyFill rows per face. Polar hexbin, custom `reduce_C_function`, metric
 colormaps, LOD beyond the 1,024-group painter budget, and rich style
 exceptions remain compatibility routes. Polar heatmap, metric colormaps, truecolor RGBA, LOD beyond
 10,000 cells, and rich style exceptions remain compatibility routes.

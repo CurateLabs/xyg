@@ -301,6 +301,14 @@ Rust emits the row-major `rows×cols` Rect grid the retired host packers produce
 Scene v25 bytes are unchanged. Polar, colormap, truecolor, custom-reduce, and
 over-budget cases stay on the compatibility exporters.
 
+ABI 104 adds `SegmentPair=7` and `TriangleFace=8` to the same authoring enum.
+A disconnected endpoint pair is one compact Polyline row whose four coordinates
+are the two endpoints; Rust expands it to two vertices that share a unique
+stable identity so the run stays disconnected. A triangle face is exactly two
+compact PolyFill rows sharing that face identity: `(x0, y0, x1, y1)` then
+`(x2, y2, 0, 0)`. Rust emits the three vertices the retired host packers
+produced. Scene v25 bytes are unchanged.
+
 ## Version 4: default numeric Cartesian chrome
 
 Version 4 keeps the version-3 byte widths but changes whole-scene rendering
@@ -998,8 +1006,10 @@ the existing centers-only hexbin trace. Constant-style Cartesian native
 count/mean/sum lattices expand those centers plus `hex_dx`/`hex_dy` onto
 existing Scene v25 PolyFill records (one 6-vertex `SCENE_HEXBIN_RING` group per
 cell). ABI 103 makes that ring expansion and regular heatmap lattice
-reconstruction Rust-owned compact authoring (`HexCell=5`, `HeatmapLattice=6`).
-for `public_static_export`. Polar
+reconstruction Rust-owned compact authoring (`HexCell=5`, `HeatmapLattice=6`)
+for `public_static_export`. ABI 104 adds `SegmentPair=7` and `TriangleFace=8`
+so disconnected endpoint pairs and unjoined triangle faces use the same
+compact expansion. Polar
 hexbin, custom reducers, metric colormaps, LOD, and rich style exceptions
 fail closed and keep the compatibility exporters. Scene 25 is unchanged.
 

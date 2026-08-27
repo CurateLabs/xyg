@@ -97,7 +97,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 103;
+pub const ABI_VERSION: u32 = 104;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -455,7 +455,7 @@ fn decode_scene_authoring_input(bytes: &[u8]) -> Option<(Option<&str>, Option<&s
 /// # Safety
 /// Every record input array must address `len` readable elements. The chrome
 /// style pointer must address exactly `SCENE_CHROME_STYLE_INPUT_BYTES` bytes;
-/// `expansion_modes` must address `len` bytes, each in the bounded ABI 97 enum;
+/// `expansion_modes` must address `len` bytes, each in the bounded ABI 104 enum;
 /// each tick pointer must address its corresponding count when non-zero. Text
 /// and bounded legend-input pointers must address `*_len` readable bytes when
 /// non-zero. If capacity is sufficient, `out` must address `out_cap` writable

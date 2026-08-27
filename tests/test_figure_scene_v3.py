@@ -316,7 +316,7 @@ def test_python_expansion_mode_ingress_fails_closed_before_scene_encoding() -> N
     with pytest.raises(ValueError, match="equal length"):
         _native.scene_batch_encode(**base, expansion_modes=[1])
     with pytest.raises(ValueError, match="unsigned integer range"):
-        _native.scene_batch_encode(**base, expansion_modes=[7, 7])
+        _native.scene_batch_encode(**base, expansion_modes=[9, 9])
     with pytest.raises(ValueError, match="invalid canonical scene batch"):
         _native.scene_batch_encode(**{**base, "kinds": [0, 0]}, expansion_modes=[1, 1])
     with pytest.raises(ValueError, match="invalid canonical scene batch"):

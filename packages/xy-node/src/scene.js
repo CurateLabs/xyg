@@ -248,7 +248,7 @@ export function sceneBatchEncode({
   const symbolCodes = asUnsignedArray(symbols, "symbols", 255, Uint8Array);
   const expansionModeCodes = expansionModes == null
     ? new Uint8Array(kindArray.length)
-    : asUnsignedArray(expansionModes, "expansionModes", 6, Uint8Array);
+    : asUnsignedArray(expansionModes, "expansionModes", 8, Uint8Array);
   const fills = new Uint8Array(styles.length * 4);
   const strokes = new Uint8Array(styles.length * 4);
   const widths = new Float64Array(styles.length);
@@ -699,15 +699,14 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       }
       for (let triIndex = 0; triIndex < count; triIndex += 1) {
         const stableId = (BigInt(id) << 32n) | BigInt(triIndex);
-        for (const [px, py] of [
-          [trace.x0[triIndex], trace.y0[triIndex]],
-          [trace.x1[triIndex], trace.y1[triIndex]],
-          [trace.x[triIndex], trace.y[triIndex]],
-        ]) {
-          kinds.push(4); stableIds.push(stableId); styleRefs.push(styleRef);
-          diameter.push(0); symbols.push(0);
-          x0.push(px); y0.push(py); x1.push(0); y1.push(0);
-        }
+        const runStart = kinds.length;
+        kinds.push(4, 4); stableIds.push(stableId, stableId); styleRefs.push(styleRef, styleRef);
+        diameter.push(0, 0); symbols.push(0, 0);
+        x0.push(Number(trace.x0[triIndex]), Number(trace.x[triIndex]));
+        y0.push(Number(trace.y0[triIndex]), Number(trace.y[triIndex]));
+        x1.push(Number(trace.x1[triIndex]), 0);
+        y1.push(Number(trace.y1[triIndex]), 0);
+        expansionRuns.push([runStart, kinds.length, 8]);
       }
       continue;
     }
@@ -836,11 +835,12 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       const count = requireEqualColumns([trace.x0, trace.y0, trace.x1, trace.y1], trace.kind, "endpoint");
       for (let index = 0; index < count; index += 1) {
         const stableId = (BigInt(id) << 32n) | BigInt(index);
-        for (const [px, py] of [[trace.x0[index], trace.y0[index]], [trace.x1[index], trace.y1[index]]]) {
-          kinds.push(1); stableIds.push(stableId); styleRefs.push(styleRef);
-          diameter.push(0); symbols.push(0);
-          x0.push(px); y0.push(py); x1.push(0); y1.push(0);
-        }
+        const runStart = kinds.length;
+        kinds.push(1); stableIds.push(stableId); styleRefs.push(styleRef);
+        diameter.push(0); symbols.push(0);
+        x0.push(trace.x0[index]); y0.push(trace.y0[index]);
+        x1.push(trace.x1[index]); y1.push(trace.y1[index]);
+        expansionRuns.push([runStart, kinds.length, 7]);
       }
       continue;
     }

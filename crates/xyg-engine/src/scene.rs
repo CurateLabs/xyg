@@ -3349,8 +3349,8 @@ impl SceneRecordKind {
 
 /// Compact authored expansion mode accepted by the whole-Scene ABI. The enum is
 /// deliberately not serialized into Scene: Rust expands compact step,
-/// ribbon, hex-cell, and heatmap-lattice inputs to ordinary canonical records
-/// before Scene v25 encoding.
+/// ribbon, hex-cell, heatmap-lattice, segment-pair, and triangle-face inputs
+/// to ordinary canonical records before Scene v25 encoding.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(u8)]
 pub enum SceneExpansionMode {
@@ -3364,6 +3364,10 @@ pub enum SceneExpansionMode {
     HexCell = 5,
     /// Two Rect rows carry a regular lattice extent plus rows then cols.
     HeatmapLattice = 6,
+    /// One Polyline row is a disconnected endpoint pair.
+    SegmentPair = 7,
+    /// Two PolyFill rows are one triangle face: `(x0,y0,x1,y1)` then `(x2,y2,0,0)`.
+    TriangleFace = 8,
 }
 
 impl SceneExpansionMode {
@@ -3376,6 +3380,8 @@ impl SceneExpansionMode {
             4 => Ok(Self::Ribbon),
             5 => Ok(Self::HexCell),
             6 => Ok(Self::HeatmapLattice),
+            7 => Ok(Self::SegmentPair),
+            8 => Ok(Self::TriangleFace),
             _ => Err(SceneError::Length),
         }
     }
@@ -3383,9 +3389,11 @@ impl SceneExpansionMode {
     fn expected_kind(self) -> Option<u8> {
         match self {
             Self::None => None,
-            Self::Pre | Self::Mid | Self::Post => Some(SceneRecordKind::Polyline as u8),
+            Self::Pre | Self::Mid | Self::Post | Self::SegmentPair => {
+                Some(SceneRecordKind::Polyline as u8)
+            }
             Self::Ribbon => Some(SceneRecordKind::Band as u8),
-            Self::HexCell => Some(SceneRecordKind::PolyFill as u8),
+            Self::HexCell | Self::TriangleFace => Some(SceneRecordKind::PolyFill as u8),
             Self::HeatmapLattice => Some(SceneRecordKind::Rect as u8),
         }
     }
@@ -3422,6 +3430,25 @@ fn scene_expansion_run_end(stable_ids: &[u64], start: usize) -> usize {
     stable_ids[start + 1..]
         .iter()
         .position(|candidate| *candidate != stable_id)
+        .map_or(stable_ids.len(), |offset| start + 1 + offset)
+}
+
+fn scene_expansion_group_end(
+    stable_ids: &[u64],
+    kinds: &[u8],
+    expansion_modes: &[u8],
+    start: usize,
+) -> usize {
+    let stable_id = stable_ids[start];
+    let kind = kinds[start];
+    let mode = expansion_modes[start];
+    stable_ids[start + 1..]
+        .iter()
+        .zip(kinds[start + 1..].iter())
+        .zip(expansion_modes[start + 1..].iter())
+        .position(|((candidate_id, candidate_kind), candidate_mode)| {
+            *candidate_id != stable_id || *candidate_kind != kind || *candidate_mode != mode
+        })
         .map_or(stable_ids.len(), |offset| start + 1 + offset)
 }
 
@@ -3544,12 +3571,14 @@ impl ExpandedSceneRecords {
     }
 }
 
-/// Expand compact step runs, two-row ribbon pairs, hex-cell centers, and
-/// heatmap lattices into canonical Scene records. Ribbon cubics are evaluated
-/// in axis-transformed space, as required by the public ribbon contract; the
-/// inverse transform produces values that the existing Scene encoder maps to
-/// those same canonical pixels. Hex rings and heatmap cells expand in data
-/// space so the encoder maps the same vertices the retired host packers emitted.
+/// Expand compact step runs, two-row ribbon pairs, hex-cell centers,
+/// heatmap lattices, disconnected endpoint pairs, and triangle faces into
+/// canonical Scene records. Ribbon cubics are evaluated in axis-transformed
+/// space, as required by the public ribbon contract; the inverse transform
+/// produces values that the existing Scene encoder maps to those same
+/// canonical pixels. Hex rings, heatmap cells, segments, and triangle faces
+/// expand in data space so the encoder maps the same vertices the retired
+/// host packers emitted.
 pub fn expand_scene_records(
     input: SceneExpansionInput<'_>,
     x_scale: AxisScale,
@@ -3574,15 +3603,21 @@ pub fn expand_scene_records(
     }
 
     // Stable identity is the canonical Polyline run boundary. Reject any
-    // attempt to switch step mode inside one contiguous identity before a
-    // zero-mode prefix and stepped suffix could be emitted as one path.
+    // attempt to switch step mode inside one contiguous same-kind identity
+    // before a zero-mode prefix and stepped suffix could be emitted as one
+    // path. Distinct kinds that reuse an identity (stem vertices then
+    // stem-markers) stay separate expansion groups.
     let mut run_cursor = 0usize;
     while run_cursor < len {
         let run_end = scene_expansion_run_end(input.stable_ids, run_cursor);
         let mode = SceneExpansionMode::from_code(input.expansion_modes[run_cursor])?;
-        if input.expansion_modes[run_cursor..run_end]
+        let same_kind = input.kinds[run_cursor..run_end]
             .iter()
-            .any(|candidate| SceneExpansionMode::from_code(*candidate) != Ok(mode))
+            .all(|kind| *kind == input.kinds[run_cursor]);
+        if same_kind
+            && input.expansion_modes[run_cursor..run_end]
+                .iter()
+                .any(|candidate| SceneExpansionMode::from_code(*candidate) != Ok(mode))
         {
             return Err(SceneError::Length);
         }
@@ -3599,7 +3634,8 @@ pub fn expand_scene_records(
             continue;
         }
         let style_ref = input.style_refs[cursor];
-        let run_end = scene_expansion_run_end(input.stable_ids, cursor);
+        let run_end =
+            scene_expansion_group_end(input.stable_ids, input.kinds, input.expansion_modes, cursor);
         let expected_kind = mode.expected_kind().expect("nonzero expansion mode");
         for index in cursor..run_end {
             if input.kinds[index] != expected_kind
@@ -3673,6 +3709,18 @@ pub fn expand_scene_records(
                 let cols = exact_positive_usize(input.diameter[cursor + 1])?;
                 rows.checked_mul(cols).ok_or(SceneError::Limit)?
             }
+            SceneExpansionMode::SegmentPair => {
+                if run_len != 1 {
+                    return Err(SceneError::Length);
+                }
+                2
+            }
+            SceneExpansionMode::TriangleFace => {
+                if run_len != 2 || input.x1[cursor + 1] != 0.0 || input.y1[cursor + 1] != 0.0 {
+                    return Err(SceneError::Length);
+                }
+                3
+            }
         };
         expanded_len = expanded_len
             .checked_add(required)
@@ -3694,7 +3742,8 @@ pub fn expand_scene_records(
         }
         let stable_id = input.stable_ids[cursor];
         let style_ref = input.style_refs[cursor];
-        let run_end = scene_expansion_run_end(input.stable_ids, cursor);
+        let run_end =
+            scene_expansion_group_end(input.stable_ids, input.kinds, input.expansion_modes, cursor);
         if mode == SceneExpansionMode::Ribbon {
             let upper = cursor;
             let lower = cursor + 1;
@@ -3774,6 +3823,24 @@ pub fn expand_scene_records(
             cursor = run_end;
             continue;
         }
+        if mode == SceneExpansionMode::SegmentPair {
+            output.push_step(stable_id, style_ref, input.x0[cursor], input.y0[cursor]);
+            output.push_step(stable_id, style_ref, input.x1[cursor], input.y1[cursor]);
+            cursor = run_end;
+            continue;
+        }
+        if mode == SceneExpansionMode::TriangleFace {
+            output.push_hex_vertex(stable_id, style_ref, input.x0[cursor], input.y0[cursor]);
+            output.push_hex_vertex(stable_id, style_ref, input.x1[cursor], input.y1[cursor]);
+            output.push_hex_vertex(
+                stable_id,
+                style_ref,
+                input.x0[cursor + 1],
+                input.y0[cursor + 1],
+            );
+            cursor = run_end;
+            continue;
+        }
         output.push_step(stable_id, style_ref, input.x0[cursor], input.y0[cursor]);
         for index in cursor + 1..run_end {
             let previous = index - 1;
@@ -3804,7 +3871,9 @@ pub fn expand_scene_records(
                 SceneExpansionMode::None
                 | SceneExpansionMode::Ribbon
                 | SceneExpansionMode::HexCell
-                | SceneExpansionMode::HeatmapLattice => unreachable!(),
+                | SceneExpansionMode::HeatmapLattice
+                | SceneExpansionMode::SegmentPair
+                | SceneExpansionMode::TriangleFace => unreachable!(),
             }
         }
         cursor = run_end;
@@ -9371,6 +9440,173 @@ mod tests {
         assert_eq!(expanded.y1, [12.0, 12.0, 12.0, 14.0, 14.0, 14.0]);
         assert!(expanded.stable_ids.iter().all(|id| *id == 9));
         assert!(expanded.style_refs.iter().all(|style| *style == 3));
+    }
+
+    #[test]
+    fn compact_segment_pair_emits_two_polyline_vertices() {
+        let expanded = expand_scene_records(
+            SceneExpansionInput {
+                kinds: &[1],
+                stable_ids: &[11],
+                style_refs: &[4],
+                diameter: &[0.0],
+                symbols: &[0],
+                x0: &[0.25],
+                y0: &[0.5],
+                x1: &[1.25],
+                y1: &[1.5],
+                expansion_modes: &[7],
+            },
+            test_linear_x_scale(),
+            test_linear_y_scale(),
+        )
+        .unwrap();
+        assert_eq!(expanded.kinds, [1, 1]);
+        assert_eq!(expanded.stable_ids, [11, 11]);
+        assert_eq!(expanded.style_refs, [4, 4]);
+        assert_eq!(expanded.x0, [0.25, 1.25]);
+        assert_eq!(expanded.y0, [0.5, 1.5]);
+        assert_eq!(expanded.x1, [0.0, 0.0]);
+        assert_eq!(expanded.y1, [0.0, 0.0]);
+    }
+
+    #[test]
+    fn compact_segment_pair_keeps_later_scatter_with_reused_identity() {
+        let kinds = [1u8, 0, 0];
+        let ids = [1u64, 1, 1];
+        let styles = [0u32, 1, 1];
+        let diameter = [0.0, 4.0, 4.0];
+        let symbols = [0u8, 0, 0];
+        let x0 = [0.0, 0.0, 1.0];
+        let y0 = [0.0, 1.0, 2.0];
+        let x1 = [0.0, 0.0, 0.0];
+        let y1 = [1.0, 0.0, 0.0];
+        let modes = [7u8, 0, 0];
+        let expanded = expand_scene_records(
+            SceneExpansionInput {
+                kinds: &kinds,
+                stable_ids: &ids,
+                style_refs: &styles,
+                diameter: &diameter,
+                symbols: &symbols,
+                x0: &x0,
+                y0: &y0,
+                x1: &x1,
+                y1: &y1,
+                expansion_modes: &modes,
+            },
+            test_linear_x_scale(),
+            test_linear_y_scale(),
+        )
+        .unwrap();
+        assert_eq!(expanded.kinds, [1, 1, 0, 0]);
+        assert_eq!(expanded.stable_ids, [1, 1, 1, 1]);
+        assert_eq!(expanded.x0, [0.0, 0.0, 0.0, 1.0]);
+        assert_eq!(expanded.y0, [0.0, 1.0, 1.0, 2.0]);
+        assert_eq!(expanded.diameter, [0.0, 0.0, 4.0, 4.0]);
+    }
+
+    #[test]
+    fn compact_segment_pair_rejects_shared_identity() {
+        let kinds = [1u8, 1];
+        let ids = [1u64, 1];
+        let styles = [0u32, 0];
+        let zeros = [0.0, 0.0];
+        let symbols = [0u8, 0];
+        let x0 = [0.0, 1.0];
+        let y0 = [0.0, 1.0];
+        let x1 = [0.5, 1.5];
+        let y1 = [0.5, 1.5];
+        let modes = [7u8, 7];
+        assert_eq!(
+            expand_scene_records(
+                SceneExpansionInput {
+                    kinds: &kinds,
+                    stable_ids: &ids,
+                    style_refs: &styles,
+                    diameter: &zeros,
+                    symbols: &symbols,
+                    x0: &x0,
+                    y0: &y0,
+                    x1: &x1,
+                    y1: &y1,
+                    expansion_modes: &modes,
+                },
+                test_linear_x_scale(),
+                test_linear_y_scale(),
+            ),
+            Err(SceneError::Length)
+        );
+    }
+
+    #[test]
+    fn compact_triangle_face_emits_three_polyfill_vertices() {
+        let kinds = [4u8, 4];
+        let ids = [21u64, 21];
+        let styles = [2u32, 2];
+        let zeros = [0.0, 0.0];
+        let symbols = [0u8, 0];
+        let x0 = [-0.25, 0.25];
+        let y0 = [0.25, 1.25];
+        let x1 = [0.75, 0.0];
+        let y1 = [0.25, 0.0];
+        let modes = [8u8, 8];
+        let expanded = expand_scene_records(
+            SceneExpansionInput {
+                kinds: &kinds,
+                stable_ids: &ids,
+                style_refs: &styles,
+                diameter: &zeros,
+                symbols: &symbols,
+                x0: &x0,
+                y0: &y0,
+                x1: &x1,
+                y1: &y1,
+                expansion_modes: &modes,
+            },
+            test_linear_x_scale(),
+            test_linear_y_scale(),
+        )
+        .unwrap();
+        assert_eq!(expanded.kinds, [4, 4, 4]);
+        assert_eq!(expanded.stable_ids, [21, 21, 21]);
+        assert_eq!(expanded.x0, [-0.25, 0.75, 0.25]);
+        assert_eq!(expanded.y0, [0.25, 0.25, 1.25]);
+        assert_eq!(expanded.x1, [0.0, 0.0, 0.0]);
+        assert_eq!(expanded.y1, [0.0, 0.0, 0.0]);
+    }
+
+    #[test]
+    fn compact_triangle_face_rejects_nonzero_second_endpoint() {
+        let kinds = [4u8, 4];
+        let ids = [21u64, 21];
+        let styles = [2u32, 2];
+        let zeros = [0.0, 0.0];
+        let symbols = [0u8, 0];
+        let x0 = [-0.25, 0.25];
+        let y0 = [0.25, 1.25];
+        let x1 = [0.75, 0.5];
+        let y1 = [0.25, 0.0];
+        let modes = [8u8, 8];
+        assert_eq!(
+            expand_scene_records(
+                SceneExpansionInput {
+                    kinds: &kinds,
+                    stable_ids: &ids,
+                    style_refs: &styles,
+                    diameter: &zeros,
+                    symbols: &symbols,
+                    x0: &x0,
+                    y0: &y0,
+                    x1: &x1,
+                    y1: &y1,
+                    expansion_modes: &modes,
+                },
+                test_linear_x_scale(),
+                test_linear_y_scale(),
+            ),
+            Err(SceneError::Length)
+        );
     }
 
     #[allow(clippy::too_many_arguments)]

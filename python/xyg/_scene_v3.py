@@ -756,10 +756,15 @@ def figure_scene(
                 )
             for tri_index in range(len(x0s)):
                 stable_id = (int(trace.id) << 32) | tri_index
-                for px, py in (
-                    (float(x0s[tri_index]), float(y0s[tri_index])),
-                    (float(x1s[tri_index]), float(y1s[tri_index])),
-                    (float(x2s[tri_index]), float(y2s[tri_index])),
+                run_start = len(kinds)
+                for px, py, qx, qy in (
+                    (
+                        float(x0s[tri_index]),
+                        float(y0s[tri_index]),
+                        float(x1s[tri_index]),
+                        float(y1s[tri_index]),
+                    ),
+                    (float(x2s[tri_index]), float(y2s[tri_index]), 0.0, 0.0),
                 ):
                     kinds.append(4)
                     stable_ids.append(stable_id)
@@ -768,8 +773,9 @@ def figure_scene(
                     symbols.append(0)
                     coordinates[0].append(px)
                     coordinates[1].append(py)
-                    coordinates[2].append(0.0)
-                    coordinates[3].append(0.0)
+                    coordinates[2].append(qx)
+                    coordinates[3].append(qy)
+                expansion_runs.append((run_start, len(kinds), 8))
             continue
 
         if trace.kind in _HEXBIN_KINDS:
@@ -869,19 +875,17 @@ def figure_scene(
             for index in range(len(x0s)):
                 # Unique stable id per segment so polyline runs stay disconnected.
                 stable_id = (int(trace.id) << 32) | index
-                for x_value, y_value in (
-                    (float(x0s[index]), float(y0s[index])),
-                    (float(x1s[index]), float(y1s[index])),
-                ):
-                    kinds.append(1)
-                    stable_ids.append(stable_id)
-                    style_refs.append(style_ref)
-                    diameters.append(0.0)
-                    symbols.append(0)
-                    coordinates[0].append(x_value)
-                    coordinates[1].append(y_value)
-                    coordinates[2].append(0.0)
-                    coordinates[3].append(0.0)
+                run_start = len(kinds)
+                kinds.append(1)
+                stable_ids.append(stable_id)
+                style_refs.append(style_ref)
+                diameters.append(0.0)
+                symbols.append(0)
+                coordinates[0].append(float(x0s[index]))
+                coordinates[1].append(float(y0s[index]))
+                coordinates[2].append(float(x1s[index]))
+                coordinates[3].append(float(y1s[index]))
+                expansion_runs.append((run_start, len(kinds), 7))
             continue
 
         xv = np.asarray(trace.x.values, dtype=np.float64)

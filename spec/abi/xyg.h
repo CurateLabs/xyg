@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 103
+#define XYG_ABI_VERSION 104
 #define XYG_ABI_SIGNATURE_SHA256 "a98390d0f6489854fd4592a621ea518272a5827241a9da2479e05b5ff2a07ade"
 
 #ifdef __cplusplus

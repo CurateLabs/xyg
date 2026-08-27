@@ -1256,6 +1256,9 @@ records; polar, custom reducers, colormaps, and LOD stay compatibility.
 ABI 103 moves that Cartesian hex-cell ring and regular heatmap lattice
 reconstruction into Rust compact authoring so Python and Node pack centers+pitch
 and extent+shape only.
+ABI 104 moves disconnected endpoint pairs and unjoined triangle faces onto the
+same compact expansion so hosts pack one four-coordinate row per segment and
+two PolyFill rows per face.
 Constant-style Cartesian heatmap compiles a regular rows x cols lattice onto
 existing Scene Rect records; polar, colormaps, truecolor, irregular
 spacing, and LOD stay compatibility.

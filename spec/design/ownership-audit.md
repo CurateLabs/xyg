@@ -95,7 +95,10 @@ constant-style Cartesian hex-cell ring expansion and regular heatmap lattice
 reconstruction into `expand_scene_records` (`HexCell=5`, `HeatmapLattice=6`).
 Python and Node pack one compact center+pitch row per hex cell and a two-row
 extent+shape heatmap lattice; Rust emits the same Scene v25 PolyFill rings and
-Rects the retired host packers produced. Polar hexbin, custom
+Rects the retired host packers produced. ABI 104 moves disconnected endpoint
+pairs and unjoined triangle faces into the same compact expansion
+(`SegmentPair=7`, `TriangleFace=8`): hosts pack one four-coordinate Polyline
+row per segment and two PolyFill rows per face. Polar hexbin, custom
 `reduce_C_function`, metric colormaps, LOD over the 1,024-group painter
 budget, and rich style exceptions stay on the compatibility exporters.
 Scene 25 is unchanged. Polar heatmap, metric
@@ -132,7 +135,7 @@ listed below still exists.
 | `_svg._linear_ticks`, `_log_ticks`, `_category_ticks`, `_angular_ticks`, `_time_ticks` | `crates/xyg-engine/src/scene.rs` owns all ladders; `xyg_scene_axis_ticks` exposes them through `crates/xyg-core/src/lib.rs`; Python SVG/raster/pyplot call `_native.scene_axis_ticks` through `_svg.axis_ticks`, and Node calls `axisTicks` in `packages/xy-node/src/scene.js` | Rust Scene tick unit tests, `tests/test_scene_ir.py`, and `packages/xy-node/test/scene.test.mjs` | **removed** |
 | `_scene_v3.try_public_svg`, `try_public_png`, `try_public_pdf` | Rust `SceneDocument` owns SVG/raster/painter lowering; `Figure.to_svg` and `export._native_image` use the one `public_static_export` selector, while Node uses `sceneSvg` / `sceneRasterCommands` | `tests/test_figure_scene_v3.py`, `tests/test_scene_export_support.py`, and `scripts/bench_public_scene_routes.py` exercise the product selector and exact Rust consumers | **removed** |
 | `_svg.py`, `_raster.py`, `_scene.py` compatibility rendering | No complete Rust replacement yet for polar Scene, custom fonts/CSS/classes, continuous gradients, custom marker paths/glyphs, colormap heatmaps/hexbins, density/LOD export, and the rich style/text exceptions below | Existing polar, SVG, raster, style, export, and pyplot suites | **keep loudly** |
-| `_scene_v3.py` figure-to-record assembly | Rust owns record validation, mapping, expansion modes, layout, and consumers, but compact Rust ingress is still absent for several host-assembled mark families such as regular heatmap cells, hex-cell rings, triangle faces, and disconnected endpoint pairs | Cross-host Scene bytes and consumer tests pin current assembly | **keep as migration debt** |
+| `_scene_v3.py` figure-to-record assembly | Rust owns record validation, mapping, expansion modes, layout, and consumers, but compact Rust ingress is still absent for remaining host-assembled chrome, legend, colorbar, annotation framing, and ordinary scatter/line/rect/band packing | Cross-host Scene bytes and consumer tests pin current assembly | **keep as migration debt** |
 | `_figure.py` / `marks.py` host code | Public composition, ingest coercion, validation text, category factorization, rollback, and explicit custom-reducer/empty-input compatibility are host responsibilities; remaining geometry/statistics helpers call Rust where a replacement exists | Mark, composition, pyplot, and host-parity suites | **keep host seams** |
 | `xyg_scene_scatter_svg` Python/Node adapters | Whole-Scene owns the bounded product route, but the version-1 Rust wrapper still serves compatibility scatter rendering and the explicit low-level Node surface | `tests/test_scene_ir.py` and `packages/xy-node/test/scene.test.mjs` | **keep compatibility ABI** |
 
@@ -521,10 +524,10 @@ Forbidden:
 | `packages/xy-node/src/marks/radar.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/ribbon.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/scatter.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
-| `packages/xy-node/src/marks/segments.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
+| `packages/xy-node/src/marks/segments.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust`; ABI 104 moves Cartesian Scene endpoint-pair expansion into Rust; remaining debt is role/style assembly | #58 |
 | `packages/xy-node/src/marks/stem.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/step.js` | Node compact authoring adapter | `node-host-authoring` | `keep-thin`; ABI 95 passes compact step mode/source columns and Rust owns canonical Scene expansion | #58 |
-| `packages/xy-node/src/marks/triangle_mesh.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
+| `packages/xy-node/src/marks/triangle_mesh.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust`; ABI 104 moves Cartesian Scene triangle-face expansion into Rust; remaining debt is joined-fill/style assembly | #58 |
 | `packages/xy-node/src/marks/violin.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/native-path.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/native.js` | Node host | `node-host` | `keep-host` | — |
