@@ -1,16 +1,109 @@
 {
   "schema": "xyg-public-axis-visibility-scene-v1",
-  "viewport": [420, 260],
-  "domain": [0.94, 3.06],
-  "scatter": {"x": [1, 2, 3], "y": [1, 2, 3], "id": 0, "style": {"color": "#3987e5", "size": 4, "opacity": 0.8}},
+  "viewport": [
+    420,
+    260
+  ],
+  "domain": [
+    0.94,
+    3.06
+  ],
+  "scatter": {
+    "x": [
+      1,
+      2,
+      3
+    ],
+    "y": [
+      1,
+      2,
+      3
+    ],
+    "id": 0,
+    "style": {
+      "color": "#3987e5",
+      "size": 4,
+      "opacity": 0.8
+    }
+  },
   "cases": [
-    {"axis": "x", "ticks": true, "text": true, "style": {}, "sha256": "23c11faba3d0c5099e15b9459e1792d9821dc31d9dd212bc83f228a3ad61cb8d"},
-    {"axis": "x", "ticks": false, "text": true, "style": {"tick_length": 0, "tick_width": 0}, "sha256": "30d0b7569e662afab4673b1446385064d2600e8b55e42bcc611b7bf41bd2ee2f"},
-    {"axis": "x", "ticks": true, "text": false, "style": {"tick_label_color": "#00000000", "label_color": "#00000000"}, "sha256": "346f24304d8ee95f64b926f128b143ea80044d8d7c7ced75a05fe1386ee11e05"},
-    {"axis": "x", "ticks": false, "text": false, "style": {"tick_length": 0, "tick_width": 0, "tick_label_color": "#00000000", "label_color": "#00000000"}, "sha256": "012ccc445d58ecb5ddb6c2b7207a2d6b7e1bf1213b9494b4010283033d5aa767"},
-    {"axis": "y", "ticks": true, "text": true, "style": {}, "sha256": "23c11faba3d0c5099e15b9459e1792d9821dc31d9dd212bc83f228a3ad61cb8d"},
-    {"axis": "y", "ticks": false, "text": true, "style": {"tick_length": 0, "tick_width": 0}, "sha256": "682da9ffeca76c3d86d00631bc34853d65eaec5a2820bd7dbe51dcff77f34750"},
-    {"axis": "y", "ticks": true, "text": false, "style": {"tick_label_color": "#00000000", "label_color": "#00000000"}, "sha256": "b340076e9a897852848480044aaa90a2667ac72f3ce732a71cf21a9cd415a361"},
-    {"axis": "y", "ticks": false, "text": false, "style": {"tick_length": 0, "tick_width": 0, "tick_label_color": "#00000000", "label_color": "#00000000"}, "sha256": "9226b2d57ccb274be643e8bc022010b712a024df9932803be6dec7c390925aec"}
+    {
+      "axis": "x",
+      "ticks": true,
+      "text": true,
+      "style": {},
+      "sha256": "960b553181356d17c19e824bb6e8f8f2a9db4f4d71e96cb007fb293784988954"
+    },
+    {
+      "axis": "x",
+      "ticks": false,
+      "text": true,
+      "style": {
+        "tick_length": 0,
+        "tick_width": 0
+      },
+      "sha256": "9907a64b8105a034efbd91ec89de84f719ae7d254efce41775cb30f9361a5c55"
+    },
+    {
+      "axis": "x",
+      "ticks": true,
+      "text": false,
+      "style": {
+        "tick_label_color": "#00000000",
+        "label_color": "#00000000"
+      },
+      "sha256": "947cd538bdd1a98344fce04415961af8ad44bd2452ed9b306c079d15e008c18a"
+    },
+    {
+      "axis": "x",
+      "ticks": false,
+      "text": false,
+      "style": {
+        "tick_length": 0,
+        "tick_width": 0,
+        "tick_label_color": "#00000000",
+        "label_color": "#00000000"
+      },
+      "sha256": "a1f8110dfc57f0828d7727fa05a14cf28f9b805d8e3db05282b000a100a7e551"
+    },
+    {
+      "axis": "y",
+      "ticks": true,
+      "text": true,
+      "style": {},
+      "sha256": "960b553181356d17c19e824bb6e8f8f2a9db4f4d71e96cb007fb293784988954"
+    },
+    {
+      "axis": "y",
+      "ticks": false,
+      "text": true,
+      "style": {
+        "tick_length": 0,
+        "tick_width": 0
+      },
+      "sha256": "2f4bcb4a5a7748f3cfaa6fbfd231c1fb584abbe798874b66f1fc360182d42cf0"
+    },
+    {
+      "axis": "y",
+      "ticks": true,
+      "text": false,
+      "style": {
+        "tick_label_color": "#00000000",
+        "label_color": "#00000000"
+      },
+      "sha256": "7113ebfc208f8fbc302935a85779af9155bf5d7f184e1755497fea5accf9d1d5"
+    },
+    {
+      "axis": "y",
+      "ticks": false,
+      "text": false,
+      "style": {
+        "tick_length": 0,
+        "tick_width": 0,
+        "tick_label_color": "#00000000",
+        "label_color": "#00000000"
+      },
+      "sha256": "398a9773a6b239a4cb5e7a9f75772088d13d542c8415533d5a56b28d7718fdcb"
+    }
   ]
 }

@@ -125,7 +125,7 @@ def _authored_tick_labels() -> Figure:
 def test_authored_cartesian_tick_labels_are_a_supported_scene_v23_slice() -> None:
     figure = _authored_tick_labels()
     encoded = figure_scene(figure)
-    assert encoded[4:8] == (25).to_bytes(4, "little")
+    assert encoded[4:8] == (26).to_bytes(4, "little")
     assert b"XYTL" in encoded
 
 
@@ -146,7 +146,7 @@ def test_primary_numeric_axis_format_routes_through_rust_scene(
     figure.set_axis("y", type_=kind, domain=domain, constant=constant, format="$,.0f USD")
     assert scene_export_support_reason(figure) is None
     scene = figure_scene(figure)
-    assert scene[4:8] == (25).to_bytes(4, "little")
+    assert scene[4:8] == (26).to_bytes(4, "little")
     assert b"XYTL" in scene
     svg = _native.scene_svg(scene)
     if kind == "log":
@@ -855,9 +855,16 @@ def test_unsupported_feature_reported(name: str) -> None:
 def test_predicate_never_claims_public_support_when_the_compiler_rejects(name: str) -> None:
     factory, _token = UNSUPPORTED[name]
     predicate_reason = scene_export_support_reason(factory())
+    assert predicate_reason is not None
+    if name == "polar":
+        # Scene v26 compiles allowlisted polar scatter/line; public export stays
+        # on the compatibility renderer until that cutover lands.
+        scene = figure_scene(factory())
+        assert scene[98] == 1
+        assert scene[-96:-92] == b"XYPO"
+        return
     with pytest.raises(UnsupportedSceneV3) as excinfo:
         figure_scene(factory())
-    assert predicate_reason is not None
     assert str(excinfo.value)
 
 

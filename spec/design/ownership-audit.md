@@ -25,8 +25,10 @@ Rust also owns bounded multiline/wrapped annotation line breaking, line count,
 and screen-space box/leader bounds; public hosts only pack literal inputs and
 reject markup, CSS/classes, custom fonts, and collision policy. Rust also owns
 whether resolved Cartesian Scene chrome produces SVG/raster
-primitives. Host paint alpha is data, not an implicit polar-mode signal; both
-hosts reject polar Scene compilation until the Scene schema records that mode.
+primitives. Host paint alpha is data, not an implicit polar-mode signal.
+Scene v26 records polar mode and a Rust-owned `XYPO` projection; hosts pack
+that envelope for allowlisted scatter/line only and keep every other polar
+kind, plus public polar static export, fail-closed.
 ABI 97 also makes Rust authoritative for bounded solid-ribbon Scene geometry:
 Python and Node pack two adjacent compact endpoint rows, while Rust transforms
 the endpoints through the selected Cartesian axes and expands the fixed

@@ -410,24 +410,38 @@ pub unsafe extern "C" fn xyg_scene_scale_map(
 }
 
 /// Decode the optional versioned authoring envelope while accepting legacy raw
-/// `XYAD` annotation bytes unchanged.
-fn decode_scene_authoring_input(bytes: &[u8]) -> Option<(Option<&str>, Option<&str>, &[u8])> {
-    if !bytes.starts_with(b"XYAF") {
-        return Some((None, None, bytes));
+/// `XYAD` annotation bytes unchanged. Scene v26 may prefix a 96-byte `XYPO`
+/// polar projection record before the optional `XYAF` envelope.
+fn decode_scene_authoring_input(
+    bytes: &[u8],
+) -> Option<(Option<&[u8]>, Option<&str>, Option<&str>, &[u8])> {
+    let (polar, rest) = if bytes.starts_with(b"XYPO") {
+        if bytes.len() < scene::SCENE_POLAR_RECORD_BYTES {
+            return None;
+        }
+        (
+            Some(&bytes[..scene::SCENE_POLAR_RECORD_BYTES]),
+            &bytes[scene::SCENE_POLAR_RECORD_BYTES..],
+        )
+    } else {
+        (None, bytes)
+    };
+    if !rest.starts_with(b"XYAF") {
+        return Some((polar, None, None, rest));
     }
-    if bytes.len() < 20 || u32::from_le_bytes(bytes[4..8].try_into().ok()?) != 1 {
+    if rest.len() < 20 || u32::from_le_bytes(rest[4..8].try_into().ok()?) != 1 {
         return None;
     }
-    let x_len = u32::from_le_bytes(bytes[8..12].try_into().ok()?) as usize;
-    let y_len = u32::from_le_bytes(bytes[12..16].try_into().ok()?) as usize;
-    let annotation_len = u32::from_le_bytes(bytes[16..20].try_into().ok()?) as usize;
+    let x_len = u32::from_le_bytes(rest[8..12].try_into().ok()?) as usize;
+    let y_len = u32::from_le_bytes(rest[12..16].try_into().ok()?) as usize;
+    let annotation_len = u32::from_le_bytes(rest[16..20].try_into().ok()?) as usize;
     if x_len > scene::MAX_SCENE_AXIS_FORMAT_BYTES || y_len > scene::MAX_SCENE_AXIS_FORMAT_BYTES {
         return None;
     }
     let x_end = 20usize.checked_add(x_len)?;
     let y_end = x_end.checked_add(y_len)?;
     let end = y_end.checked_add(annotation_len)?;
-    if end != bytes.len() {
+    if end != rest.len() {
         return None;
     }
     fn decode_format(value: &[u8]) -> Option<Option<&str>> {
@@ -438,9 +452,10 @@ fn decode_scene_authoring_input(bytes: &[u8]) -> Option<(Option<&str>, Option<&s
         (!value.contains('\0')).then_some(Some(value))
     }
     Some((
-        decode_format(&bytes[20..x_end])?,
-        decode_format(&bytes[x_end..y_end])?,
-        &bytes[y_end..end],
+        polar,
+        decode_format(&rest[20..x_end])?,
+        decode_format(&rest[x_end..y_end])?,
+        &rest[y_end..end],
     ))
 }
 
@@ -556,6 +571,7 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
                 + 44
                 + 20
                 + scene::MAX_SCENE_AXIS_FORMAT_BYTES * 2
+                + scene::SCENE_POLAR_RECORD_BYTES
         || (authored_text_annotations_len > 0 && authored_text_annotations.is_null())
         || title_len > scene::MAX_SCENE_TEXT_BYTES
         || x_label_len > scene::MAX_SCENE_TEXT_BYTES
@@ -611,7 +627,7 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         } else {
             std::slice::from_raw_parts(authored_text_annotations, authored_text_annotations_len)
         };
-        let (x_format, y_format, authored_text_bytes) =
+        let (polar_record, x_format, y_format, authored_text_bytes) =
             decode_scene_authoring_input(authored_input)?;
         // Final canonical gutters belong to Rust, after it has validated the
         // exact strings that all consumers will paint.  No host font/layout
@@ -832,6 +848,15 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             &records.y1,
         )
         .ok()?;
+        let batch = if let Some(polar_bytes) = polar_record {
+            if expansion_modes.iter().any(|mode| *mode != 0) {
+                return None;
+            }
+            let polar = scene::PolarProjection::from_record(polar_bytes, layout).ok()?;
+            batch.with_polar(polar).ok()?
+        } else {
+            batch
+        };
         batch
             .with_authored_annotations(authored_text_bytes)
             .ok()
@@ -10511,8 +10536,11 @@ mod tests {
     #[test]
     fn scene_authoring_envelope_is_exact_bounded_and_legacy_compatible() {
         let legacy = b"XYADlegacy";
-        let (x, y, annotations) = decode_scene_authoring_input(legacy).unwrap();
-        assert_eq!((x, y, annotations), (None, None, legacy.as_slice()));
+        let (polar, x, y, annotations) = decode_scene_authoring_input(legacy).unwrap();
+        assert_eq!(
+            (polar, x, y, annotations),
+            (None, None, None, legacy.as_slice())
+        );
 
         let x_format = b".1%";
         let y_format = b"$,.0f USD";
@@ -10526,7 +10554,7 @@ mod tests {
         envelope.extend_from_slice(legacy);
         assert_eq!(
             decode_scene_authoring_input(&envelope),
-            Some((Some(".1%"), Some("$,.0f USD"), legacy.as_slice()))
+            Some((None, Some(".1%"), Some("$,.0f USD"), legacy.as_slice()))
         );
 
         let mut malformed = envelope.clone();

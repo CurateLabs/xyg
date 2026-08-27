@@ -88,7 +88,7 @@ load. The Pyodide gate calls every stub and checks its documented sentinel and
 signature; it never emulates filesystem policy in Python or JavaScript. These
 stubs are Emscripten-specific, not a blanket policy for every WASM target.
 
-The #58 scene migration is active: scene schema version 25 provides one
+The #58 scene migration is active: scene schema version 26 provides one
 backend-neutral Rust-owned typed batch with fixed caller-provided plot bounds, axes,
 scatter, polyline, rectangle, and versioned bounded decoration records through both host bindings. The v1
 scatter SVG wrapper remains temporarily for scatter-only compatibility. Python

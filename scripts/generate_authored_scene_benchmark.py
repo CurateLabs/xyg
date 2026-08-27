@@ -22,7 +22,7 @@ from xyg import _native, _scene_v3, kernels
 from xyg._figure import Figure
 
 COUNTS = (100, 10_000, 100_000, 1_000_000)
-SCENE_VERSION = 25
+SCENE_VERSION = 26
 _FINAL_SCENE_CHUNKS = (b"XYLG", b"XYCB", b"XYLB")
 
 # One shared, declarative Cartesian chrome workload. The Node parity test reads
@@ -270,7 +270,7 @@ def main() -> int:
         args.write_browser_fixture.write_text(
             json.dumps(
                 {
-                    "schema": "xyg-authored-scene-v25-fixture-v1",
+                    "schema": "xyg-authored-scene-v26-fixture-v1",
                     "count": 100,
                     "authoring": AUTHORED_AUTHORING,
                     "scene_base64": base64.b64encode(generated[0][1]).decode("ascii"),

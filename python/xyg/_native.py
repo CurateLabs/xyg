@@ -1967,6 +1967,7 @@ def scene_batch_encode(
     legend_input: bytes = b"",
     colorbar_input: bytes = b"",
     authored_text_annotations: bytes = b"",
+    polar_record: bytes = b"",
 ) -> bytes:
     """Encode the bounded backend-neutral Scene v16 typed batch."""
 
@@ -2113,6 +2114,10 @@ def scene_batch_encode(
             + y_format_b
             + authored_text_annotations
         )
+    if polar_record:
+        if not isinstance(polar_record, (bytes, bytearray)) or len(polar_record) != 96:
+            raise ValueError("scene polar record must be exactly 96 bytes")
+        authored_input = bytes(polar_record) + authored_input
     authored_text_array = np.frombuffer(authored_input, dtype=np.uint8)
     if len(legend_array) > MAX_SCENE_LEGEND_INPUT_BYTES:
         raise ValueError(f"scene legend input is limited to {MAX_SCENE_LEGEND_INPUT_BYTES:,} bytes")

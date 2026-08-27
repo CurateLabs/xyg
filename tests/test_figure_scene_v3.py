@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import math
 import struct
 from pathlib import Path
 
@@ -14,6 +15,17 @@ from xyg._figure import Figure
 from xyg._scene_v3 import UnsupportedSceneV3
 
 FIXTURE = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
+
+
+def polar_scatter_line_figure() -> Figure:
+    figure = Figure(width=400, height=400, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, 2.0 * math.pi)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.scatter([0.0], [1.0], color="#3987e5", size=8)
+    figure.traces[-1].id = 1
+    figure.line([0.0, math.pi / 2.0], [0.5, 0.5], color="#ef4444", width=2)
+    figure.traces[-1].id = 2
+    return figure
 
 
 def representative_figure() -> Figure:
@@ -136,6 +148,33 @@ def test_python_figure_compiles_exact_scene_v3_fixture() -> None:
     assert 'data-xy-chrome="axes"' in svg
     assert svg.count("<text ") == 6
     assert ">0<" in svg and ">4<" in svg
+
+
+def test_python_polar_scatter_line_compiles_rust_owned_projection() -> None:
+    scene = polar_scatter_line_figure().to_scene()
+    assert scene[4:8] == (26).to_bytes(4, "little")
+    assert scene[98] == 1
+    assert scene[-96:-92] == b"XYPO"
+    assert hashlib.sha256(scene).hexdigest() == FIXTURE["polar_scatter_line_sha256"]
+    svg = _native.scene_svg(scene)
+    assert (
+        'data-xy-chrome="polar-ring"' in svg
+        or 'data-xy-chrome="polar-frame"' in svg
+        or "cx=" in svg
+    )
+    for _kind, builder in (
+        ("bar", lambda: Figure(width=200, height=200, coords="polar").bar([0.0], [1.0])),
+        (
+            "area",
+            lambda: Figure(width=200, height=200, coords="polar").area([0.0, 1.0], [0.5, 1.0]),
+        ),
+        (
+            "heatmap",
+            lambda: Figure(width=200, height=200, coords="polar").heatmap([[0.0, 1.0], [1.0, 0.0]]),
+        ),
+    ):
+        with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_POLAR"):
+            builder().to_scene()
 
 
 def test_python_scene_defaults_have_shared_noncoincidental_bytes() -> None:
@@ -738,7 +777,7 @@ def test_python_scene_v8_authors_backgrounds_axis_side_and_major_minor_ticks() -
         },
     )
     encoded = figure.to_scene()
-    assert int.from_bytes(encoded[4:8], "little") == 25
+    assert int.from_bytes(encoded[4:8], "little") == 26
     svg = _native.scene_svg(encoded)
     assert 'fill="rgba(16,32,48,1.000000)"' in svg
     assert 'fill="rgba(241,245,249,1.000000)"' in svg
@@ -787,8 +826,9 @@ def test_scene_v10_explicit_hidden_cartesian_chrome_stays_cartesian() -> None:
     assert "Cartesian title" in svg
 
     figure.coords = "polar"
-    with pytest.raises(UnsupportedSceneV3, match="supports Cartesian coordinates only"):
-        figure.to_scene()
+    polar_scene = figure.to_scene()
+    assert polar_scene[98] == 1
+    assert polar_scene[-96:-92] == b"XYPO"
 
 
 def test_python_scene_rejects_malformed_and_falls_back_for_unsupported_marks() -> None:
@@ -806,7 +846,7 @@ def test_python_scene_compiles_ribbon_and_triangle_mesh() -> None:
     ribbon.axis_options["y"]["domain"] = (0.0, 1.0)
     ribbon.ribbon([0.1], [0.9], [0.2], [0.5], [0.3], [0.7], color="#7c3aed")
     scene = ribbon.to_scene()
-    assert scene[4:8] == (25).to_bytes(4, "little")
+    assert scene[4:8] == (26).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     assert '<path d="M ' in svg
     assert ' Z"' in svg
@@ -852,7 +892,7 @@ def test_python_scene_compiles_area_and_error_band() -> None:
         expected = FIXTURE["band_outlines"][mode]
         assert scene == base64.b64decode(expected["scene_base64"])
         assert hashlib.sha256(scene).hexdigest() == expected["sha256"]
-        assert scene[4:8] == (25).to_bytes(4, "little")
+        assert scene[4:8] == (26).to_bytes(4, "little")
         assert scene[160:168] == bytes((57, 135, 229, 102, 17, 34, 51, 26))
         assert scene[160 + 16 + 2] == symbol
         svg = _native.scene_svg(scene)
@@ -998,7 +1038,7 @@ def test_python_scene_attached_label_background_uses_xyal_v3_and_rust_box() -> N
     figure = representative_figure()
     figure.marker(2.0, 2.0, text="threshold", style={"label_background": "#ffffff"})
     scene = figure.to_scene()
-    assert scene[:8] == b"XYGS\x19\x00\x00\x00"
+    assert scene[:8] == b"XYGS\x1a\x00\x00\x00"
     assert b"XYLB\x03\x00\x00\x00" in scene
     svg = _native.scene_svg(scene)
     assert "threshold" in svg
@@ -1015,7 +1055,7 @@ def test_python_scene_compiles_rect_family_aliases(kind: str) -> None:
     else:
         figure.histogram([1.0, 1.5, 2.0, 2.5, 3.0], bins=4, range=(0.0, 4.0), color="#22c55e")
     scene = figure.to_scene()
-    assert scene[4:8] == (25).to_bytes(4, "little")  # SCENE_VERSION
+    assert scene[4:8] == (26).to_bytes(4, "little")  # SCENE_VERSION
     svg = _native.scene_svg(scene)
     assert svg.count("<rect ") >= 2  # plot clip plus at least one bar
     assert 'clip-path="url(#xy-scene-plot)"' in svg

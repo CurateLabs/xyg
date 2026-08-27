@@ -8,6 +8,7 @@ does not exist yet.
 
 from __future__ import annotations
 
+import math
 import struct
 from typing import Any
 
@@ -32,6 +33,22 @@ _SUPPORTED_KINDS = (
     _POINT_KINDS | _RECT_KINDS | _SEGMENT_KINDS | _BAND_KINDS | _RIBBON_KINDS | _POLYFILL_KINDS
 )
 _STROKE_KINDS = frozenset({"line"}) | _SEGMENT_KINDS
+# Scene v26 owns last-step polar projection for scatter/line only. Public
+# POLAR_MARK_KINDS still includes bar/area/heatmap/contour/errorbar; those
+# remain Scene-rejected until annular-sector and inverse-raster records land.
+_SCENE_POLAR_MARK_KINDS = frozenset({"scatter", "line"})
+_POLAR_AXIS_KEYS = frozenset(
+    {
+        "theta_unit",
+        "theta_zero",
+        "theta_direction",
+        "sector",
+        "grid_shape",
+        "hole",
+        "r_origin",
+    }
+)
+_THETA_ZERO_RADIANS = {"E": 0.0, "N": math.pi / 2.0, "W": math.pi, "S": -math.pi / 2.0}
 
 # Each unjoined triangle is one PolyFill group in the Rust browser painter.
 # Keep the public route inside its canonical group budget; larger meshes remain
@@ -50,6 +67,74 @@ _LEGEND_LOCATIONS = {
     "lower center": 7,
     "center": 8,
 }
+
+
+def _scene_polar_allowlisted(figure: Any) -> bool:
+    return getattr(figure, "coords", "cartesian") == "polar" and all(
+        getattr(trace, "kind", None) in _SCENE_POLAR_MARK_KINDS for trace in figure.traces
+    )
+
+
+def _polar_projection_record(figure: Any) -> bytes:
+    x_options = figure.axis_options.get("x", {})
+    y_options = figure.axis_options.get("y", {})
+    unit = x_options.get("theta_unit") or "radians"
+    direction = x_options.get("theta_direction") or "counterclockwise"
+    grid_shape = x_options.get("grid_shape") or "circular"
+    if unit not in {"radians", "degrees"}:
+        raise UnsupportedSceneV3(
+            "XYG_SCENE_UNSUPPORTED_POLAR: theta_unit must be radians or degrees"
+        )
+    if direction not in {"counterclockwise", "clockwise"}:
+        raise UnsupportedSceneV3(
+            "XYG_SCENE_UNSUPPORTED_POLAR: theta_direction must be counterclockwise or clockwise"
+        )
+    if grid_shape != "circular":
+        raise UnsupportedSceneV3(
+            "XYG_SCENE_UNSUPPORTED_POLAR: only circular polar grid_shape is Scene-owned"
+        )
+    if (x_options.get("type") or "linear") != "linear":
+        raise UnsupportedSceneV3("XYG_SCENE_UNSUPPORTED_POLAR: angular axis must be linear")
+    zero = x_options.get("theta_zero")
+    if zero is None:
+        zero_rad = 0.0
+    elif isinstance(zero, str):
+        if zero not in _THETA_ZERO_RADIANS:
+            raise UnsupportedSceneV3("XYG_SCENE_UNSUPPORTED_POLAR: theta_zero compass is invalid")
+        zero_rad = _THETA_ZERO_RADIANS[zero]
+    else:
+        zero_rad = float(zero)
+        if not math.isfinite(zero_rad):
+            raise UnsupportedSceneV3("XYG_SCENE_UNSUPPORTED_POLAR: theta_zero must be finite")
+    turn = 360.0 if unit == "degrees" else 2.0 * math.pi
+    sector = x_options.get("sector") or (0.0, turn)
+    if not (
+        isinstance(sector, (list, tuple))
+        and len(sector) == 2
+        and all(math.isfinite(float(value)) for value in sector)
+    ):
+        raise UnsupportedSceneV3("XYG_SCENE_UNSUPPORTED_POLAR: sector must be two finite values")
+    hole = y_options.get("hole")
+    hole = 0.0 if hole is None else float(hole)
+    if not math.isfinite(hole) or not 0.0 <= hole < 1.0:
+        raise UnsupportedSceneV3("XYG_SCENE_UNSUPPORTED_POLAR: r_inner must be in [0, 1)")
+    r_origin = y_options.get("r_origin")
+    origin_authored = r_origin is not None
+    r_origin_value = 0.0 if r_origin is None else float(r_origin)
+    if origin_authored and not math.isfinite(r_origin_value):
+        raise UnsupportedSceneV3("XYG_SCENE_UNSUPPORTED_POLAR: r_origin must be finite")
+    record = bytearray(96)
+    record[0:4] = b"XYPO"
+    record[4:8] = (1).to_bytes(4, "little")
+    record[8] = 0 if unit == "radians" else 1
+    record[9] = 0 if direction == "counterclockwise" else 1
+    record[11] = 1 if origin_authored else 0
+    struct.pack_into("<d", record, 16, zero_rad)
+    struct.pack_into("<d", record, 24, float(sector[0]))
+    struct.pack_into("<d", record, 32, float(sector[1]))
+    struct.pack_into("<d", record, 40, hole)
+    struct.pack_into("<d", record, 48, r_origin_value)
+    return bytes(record)
 
 
 def _colorbar_input(figure: Any) -> bytes:
@@ -433,8 +518,16 @@ def figure_scene(
     """Compile migrated cartesian marks plus x/y axes to Scene v12."""
     annotations = list(getattr(figure, "annotations", None) or [])
     features = 0
+    polar_record = b""
     if figure.coords != "cartesian":
-        features |= 1 << 0
+        if _scene_polar_allowlisted(figure):
+            polar_record = _polar_projection_record(figure)
+            if annotations:
+                raise UnsupportedSceneV3(
+                    "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 polar compilation does not encode annotations"
+                )
+        else:
+            features |= 1 << 0
     chrome_styles = getattr(figure, "chrome_styles", None) or {}
     if any("font-family" in (style or {}) for style in chrome_styles.values()):
         features |= 1 << 1
@@ -491,6 +584,8 @@ def figure_scene(
             "minor_tick_values",
             "format",
         }
+        if polar_record:
+            supported_axis_keys |= _POLAR_AXIS_KEYS
         if any(
             key not in supported_axis_keys and value not in (None, False, [], {})
             for key, value in options.items()
@@ -774,6 +869,10 @@ def figure_scene(
             coordinates[2].append(0.0)
             coordinates[3].append(0.0)
         if where is not None:
+            if polar_record:
+                raise UnsupportedSceneV3(
+                    "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 polar compilation does not encode step expansion"
+                )
             expansion_runs.append((run_start, len(kinds), {"pre": 1, "mid": 2, "post": 3}[where]))
 
     # Scene v12's bounded primary-annotation subset is represented by ordinary
@@ -1498,6 +1597,7 @@ def figure_scene(
         or cartesian_callouts
         or wrapped_annotations
         else b"",
+        polar_record=polar_record,
     )
 
 
@@ -1581,6 +1681,8 @@ def scene_export_support_reason(
     # document boundary.  Scene records require concrete viewport dimensions;
     # keep fluid figures on that documented path unless a static override is
     # supplied by the caller.
+    if getattr(figure, "coords", "cartesian") != "cartesian":
+        return "XYG_SCENE_UNSUPPORTED_POLAR"
     if (width is None and not isinstance(figure.width, int)) or (
         height is None and not isinstance(figure.height, int)
     ):

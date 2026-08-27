@@ -440,11 +440,21 @@ grid blits will silently project through a straight-line map.
 `heatmap`, `contour`, and `errorbar` (`POLAR_MARK_KINDS`,
 `python/xyg/config.py`).
 
-This public polar renderer support does not imply canonical Scene v12 support.
-Python and Node Scene compilation reject `coords="polar"` until Rust owns an
-explicit polar projection/chrome record. Transparent Cartesian axis/grid paint
-must not be used to infer polar coordinates; it means only independently hidden
-Cartesian chrome.
+This public polar renderer support does not imply full canonical Scene support.
+Scene v26 records polar mode and a Rust-owned `XYPO` v1 projection when hosts
+compile the allowlisted last-step subset `{"scatter", "line"}`. Python and Node
+pack that record and stop setting `SCENE_FEATURE_POLAR` for those kinds.
+`bar`, `column`, `heatmap`, `area`, `contour`, and `errorbar` remain
+Scene-rejected until annular-sector, inverse-raster, and polar-fill records
+land. Public static export still selects the compatibility `_svg` / `_raster`
+path for every polar figure. LOD/density polar policy stays rejected.
+Transparent Cartesian axis/grid paint must not be used to infer polar
+coordinates; it means only independently hidden Cartesian chrome.
+
+Follow-ups after this Scene v26 scatter/line slice: annular-sector geometry,
+heatmap inverse raster, polar area/contour/errorbar, polygonal `grid_shape`,
+categorical θ, polar legend gutter, polar annotations, public-export cutover,
+and WASM/browser painter polar consumption (#59).
 
 `area` uses chord-bounded fill geometry, which supports the categorical
 composition built by `xyg.radar_chart(...)`. Each radar series closes at a full

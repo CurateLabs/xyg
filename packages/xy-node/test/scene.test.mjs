@@ -34,7 +34,11 @@ test("Node projects Rust-owned Scene support decisions verbatim", () => {
   }
 
   const polar = new Figure({ coords: "polar" }); polar.line([0, 1], [0, 1]);
-  assert.throws(() => polar.toScene(), /XYG_SCENE_UNSUPPORTED_POLAR/);
+  const polarScene = polar.toScene();
+  assert.equal(polarScene[98], 1);
+  assert.equal(Buffer.from(polarScene.subarray(polarScene.length - 96, polarScene.length - 92)).toString(), "XYPO");
+  const polarBar = new Figure({ coords: "polar" }); polarBar.bar([0], [1]);
+  assert.throws(() => polarBar.toScene(), /XYG_SCENE_UNSUPPORTED_POLAR/);
   const customFont = new Figure(); customFont.line([0, 1], [0, 1]);
   customFont.chromeStyles = { title: { fontFamily: "Example Sans" } };
   assert.throws(() => customFont.toScene(), /XYG_SCENE_UNSUPPORTED_CUSTOM_FONT/);
@@ -71,6 +75,30 @@ test("Node figure compiles the exact shared scatter, line, bar Scene v4 fixture"
   assert.match(svg, /data-xy-chrome="axes"/);
   assert.equal((svg.match(/<text /g) ?? []).length, 6);
   assert.ok(sceneRasterCommands(encoded).length > 100);
+});
+
+test("Node polar scatter and line compile a Rust-owned projection record", () => {
+  const figure = new Figure({ width: 400, height: 400, coords: "polar" });
+  figure.setAxisDomain("x", [0, 2 * Math.PI]);
+  figure.setAxisDomain("y", [0, 1]);
+  figure.scatter([0], [1], { id: 1, style: { color: "#3987e5", size: 8 } });
+  figure.line([0, Math.PI / 2], [0.5, 0.5], { id: 2, color: "#ef4444", width: 2 });
+  const scene = figure.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 26);
+  assert.equal(scene[98], 1);
+  assert.equal(Buffer.from(scene.subarray(scene.length - 96, scene.length - 92)).toString(), "XYPO");
+  assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.polar_scatter_line_sha256);
+  const svg = sceneSvg(scene);
+  assert.ok(/data-xy-chrome="polar-(?:ring|frame)"/.test(svg) || svg.includes("cx="));
+  const polarBar = new Figure({ width: 200, height: 200, coords: "polar" });
+  polarBar.bar([0], [1]);
+  assert.throws(() => polarBar.toScene(), /XYG_SCENE_UNSUPPORTED_POLAR/);
+  const polarArea = new Figure({ width: 200, height: 200, coords: "polar" });
+  polarArea.area([0, 1], [0.5, 1]);
+  assert.throws(() => polarArea.toScene(), /XYG_SCENE_UNSUPPORTED_POLAR/);
+  const polarHeat = new Figure({ width: 200, height: 200, coords: "polar" });
+  polarHeat.heatmap([[0, 1], [1, 0]]);
+  assert.throws(() => polarHeat.toScene(), /XYG_SCENE_UNSUPPORTED_POLAR/);
 });
 
 test("Node matches Python bytes for all constant built-in scatter symbols", () => {
@@ -295,7 +323,9 @@ test("Node explicit hidden Cartesian chrome omits invisible groups without imply
 
   const polar = new Figure({ coords: "polar" });
   polar.scatter([0], [1]);
-  assert.throws(() => polar.toScene(), /supports Cartesian coordinates only/);
+  const polarScene = polar.toScene();
+  assert.equal(polarScene[98], 1);
+  assert.equal(Buffer.from(polarScene.subarray(polarScene.length - 96, polarScene.length - 92)).toString(), "XYPO");
 });
 
 test("Node Scene v9 primary legend matches Python bytes and rejects unsupported variants", () => {
@@ -331,7 +361,7 @@ test("Node Scene v13 compiles bounded primary annotations and fails closed", () 
   for (const annotation of figureSceneFixture.node_public_annotations) figure.annotate(annotation);
   const scene = figure.toScene(), svg = sceneSvg(scene);
   assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.node_public_annotations_sha256);
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 25);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 26);
   assert.ok(svg.indexOf("rgb(255,0,0)") < svg.indexOf("rgb(0,255,0)"));
   assert.ok(svg.indexOf("rgb(0,255,0)") < svg.indexOf("rgb(0,0,255)"));
   figure.annotations[2].text = "must not vanish";
@@ -523,7 +553,7 @@ test("Node Scene v16 frames bounded plain and attached text annotations and reje
   figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
   figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "<safe>" }];
   const scene = figure.toScene();
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 25);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 26);
   assert.match(sceneSvg(scene), /&lt;safe&gt;/);
   assert.ok(sceneRasterCommands(scene).length > 100);
   figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "boxed", style: { label_background: "#ffffff" } }];
@@ -804,7 +834,7 @@ test("Node public Figure matches the combined Python authored Scene v25 fixture"
     },
   });
   const scene = figure.toScene();
-  assert.equal(new DataView(scene.buffer, scene.byteOffset, scene.byteLength).getUint32(4, true), 25);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset, scene.byteLength).getUint32(4, true), 26);
   assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), authoredSceneFixture.scene_sha256);
   const svg = sceneSvg(scene), raster = sceneRasterCommands(scene);
   for (const text of ["Authored Scene evidence", "Fraction", "Signal", "Series", "observations", "reference", "Intensity", "representative callout", "wrapped annotation", "evidence", "second line"]) {
@@ -1076,7 +1106,7 @@ test("Node symlog ticks fail closed at invalid arguments and honor the 200 targe
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 25);
+  assert.equal(sceneVersion(), 26);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],
@@ -1117,7 +1147,7 @@ test("Node Scene compiles column and histogram as Rect records", () => {
   column.setAxisDomain("y", [0, 5]);
   column.bar([1, 2], [3, 2], { kind: "column", color: "#22c55e", opacity: 0.85, name: null });
   const columnScene = column.toScene();
-  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 25);
+  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 26);
   assert.match(sceneSvg(columnScene), /<rect /);
 
   const hist = new Figure({ width: 240, height: 160 });

@@ -1417,7 +1417,7 @@ async function run() {
     maxArenaBytes: 8192,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 23 || ready.sceneVersion !== 25) {
+  if (ready.abiVersion !== 23 || ready.sceneVersion !== 26) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
@@ -2394,7 +2394,7 @@ async function run() {
   // authored Cartesian chrome subset through the real strict-CSP Worker.
   foundationStage = "strict-CSP full authored Cartesian Scene chrome";
   const authoredFixture = await (await fetch("/tests/fixtures/authored_scene_v20.json")).json();
-  if (authoredFixture.schema !== "xyg-authored-scene-v25-fixture-v1") {
+  if (authoredFixture.schema !== "xyg-authored-scene-v26-fixture-v1") {
     throw new Error(`unexpected authored Scene fixture schema: ${authoredFixture.schema}`);
   }
   const authoredScene = Uint8Array.from(atob(authoredFixture.scene_base64), (byte) => byte.charCodeAt(0));

@@ -19,6 +19,69 @@ const USIZE_MAX_64 = (1n << 64n) - 1n;
 const MAX_SCENE_MARKS = 2_000_000;
 const MAX_SCENE_STYLES = 65_536;
 const MAX_SCENE_TEXT_BYTES = 4_096;
+const SCENE_POLAR_MARK_KINDS = new Set(["scatter", "line"]);
+const THETA_ZERO_RADIANS = { E: 0, N: Math.PI / 2, W: Math.PI, S: -Math.PI / 2 };
+
+function scenePolarAllowlisted(figure) {
+  return (figure.coords ?? "cartesian") === "polar"
+    && (figure.traces ?? []).every((trace) => SCENE_POLAR_MARK_KINDS.has(trace.kind));
+}
+
+function polarProjectionRecord(figure) {
+  const xAxis = figure.xAxis ?? figure.x_axis ?? {};
+  const yAxis = figure.yAxis ?? figure.y_axis ?? {};
+  const meta = figure._polarMeta ?? {};
+  const unit = xAxis.theta_unit ?? xAxis.thetaUnit ?? meta.thetaUnit ?? "radians";
+  const direction = xAxis.theta_direction ?? xAxis.thetaDirection ?? meta.thetaDirection ?? "counterclockwise";
+  const gridShape = xAxis.grid_shape ?? xAxis.gridShape ?? meta.gridShape ?? "circular";
+  if (unit !== "radians" && unit !== "degrees") throw new RangeError("XYG_SCENE_UNSUPPORTED_POLAR: theta_unit must be radians or degrees");
+  if (direction !== "counterclockwise" && direction !== "clockwise") {
+    throw new RangeError("XYG_SCENE_UNSUPPORTED_POLAR: theta_direction must be counterclockwise or clockwise");
+  }
+  if (gridShape !== "circular") {
+    throw new RangeError("XYG_SCENE_UNSUPPORTED_POLAR: only circular polar grid_shape is Scene-owned");
+  }
+  const kind = xAxis.kind ?? xAxis.type ?? "linear";
+  if (kind !== "linear") throw new RangeError("XYG_SCENE_UNSUPPORTED_POLAR: angular axis must be linear");
+  let zero = xAxis.theta_zero ?? xAxis.thetaZero ?? meta.thetaZero ?? "E";
+  let zeroRad;
+  if (zero == null) zeroRad = 0;
+  else if (typeof zero === "string") {
+    if (!(zero in THETA_ZERO_RADIANS)) throw new RangeError("XYG_SCENE_UNSUPPORTED_POLAR: theta_zero compass is invalid");
+    zeroRad = THETA_ZERO_RADIANS[zero];
+  } else {
+    zeroRad = Number(zero);
+    if (!Number.isFinite(zeroRad)) throw new RangeError("XYG_SCENE_UNSUPPORTED_POLAR: theta_zero must be finite");
+  }
+  const turn = unit === "degrees" ? 360 : 2 * Math.PI;
+  const sector = xAxis.sector ?? meta.sector ?? [0, turn];
+  if (!Array.isArray(sector) || sector.length !== 2 || sector.some((value) => !Number.isFinite(Number(value)))) {
+    throw new RangeError("XYG_SCENE_UNSUPPORTED_POLAR: sector must be two finite values");
+  }
+  const hole = Number(yAxis.hole ?? meta.hole ?? 0);
+  if (!Number.isFinite(hole) || hole < 0 || hole >= 1) {
+    throw new RangeError("XYG_SCENE_UNSUPPORTED_POLAR: r_inner must be in [0, 1)");
+  }
+  const origin = yAxis.r_origin ?? yAxis.rOrigin ?? meta.rOrigin;
+  const originAuthored = origin != null;
+  const rOrigin = originAuthored ? Number(origin) : 0;
+  if (originAuthored && !Number.isFinite(rOrigin)) {
+    throw new RangeError("XYG_SCENE_UNSUPPORTED_POLAR: r_origin must be finite");
+  }
+  const out = new Uint8Array(96);
+  const view = new DataView(out.buffer);
+  out.set(new TextEncoder().encode("XYPO"));
+  view.setUint32(4, 1, true);
+  out[8] = unit === "degrees" ? 1 : 0;
+  out[9] = direction === "clockwise" ? 1 : 0;
+  out[11] = originAuthored ? 1 : 0;
+  view.setFloat64(16, zeroRad, true);
+  view.setFloat64(24, Number(sector[0]), true);
+  view.setFloat64(32, Number(sector[1]), true);
+  view.setFloat64(40, hole, true);
+  view.setFloat64(48, rOrigin, true);
+  return out;
+}
 const SYMBOL_CODES = new Map([
   "circle", "square", "diamond", "triangle", "cross", "hexagon", "pentagon", "star",
   "triangle_down", "triangle_left", "triangle_right", "x", "point", "pixel",
@@ -231,6 +294,7 @@ export function sceneBatchEncode({
   xTickLabels = null, yTickLabels = null,
   xFormat = null, yFormat = null,
   legendInput = null, colorbarInput = null, authoredTextAnnotations = null,
+  polarRecord = null,
 }) {
   if (!Array.isArray(viewport) || viewport.length !== 2 || !Array.isArray(margins) || margins.length !== 4) {
     throw new RangeError("viewport and margins must contain two and four values");
@@ -314,9 +378,23 @@ export function sceneBatchEncode({
     out.set(authoredText, 20 + xFormatBytes.length + yFormatBytes.length);
     return out;
   })() : authoredText;
+  const polarBytes = polarRecord == null || (polarRecord instanceof Uint8Array && polarRecord.length === 0)
+    ? new Uint8Array()
+    : asUnsignedArray(polarRecord, "polarRecord", 255, Uint8Array);
+  if (polarBytes.length && polarBytes.length !== 96) {
+    throw new RangeError("scene polar record must be exactly 96 bytes");
+  }
+  const authoredWithPolar = polarBytes.length
+    ? (() => {
+      const out = new Uint8Array(polarBytes.length + authoredInput.length);
+      out.set(polarBytes);
+      out.set(authoredInput, polarBytes.length);
+      return out;
+    })()
+    : authoredInput;
   if (colorbar.length > 4_600) throw new RangeError("scene colorbar input is limited to 4,600 bytes");
   if (tickArrays.some((value) => value != null && value.length > 200)) throw new RangeError("scene axis tick lists are limited to 200 values");
-  let capacity = 160 + widths.length * 16 + length * 56 + 248 + titleBytes.length + xLabelBytes.length + yLabelBytes.length + xTickLabelBytes.length + yTickLabelBytes.length + authoredInput.length + legend.length + colorbar.length + tickArrays.reduce((sum, value) => sum + (value?.byteLength ?? 0), 0);
+  let capacity = 160 + widths.length * 16 + length * 56 + 248 + titleBytes.length + xLabelBytes.length + yLabelBytes.length + xTickLabelBytes.length + yTickLabelBytes.length + authoredWithPolar.length + legend.length + colorbar.length + tickArrays.reduce((sum, value) => sum + (value?.byteLength ?? 0), 0);
   for (;;) {
     const output = new Uint8Array(capacity);
     const rawWritten = xySceneBatchEncode(
@@ -328,7 +406,7 @@ export function sceneBatchEncode({
       f64Ptr(tickArrays[3]), BigInt(tickArrays[3]?.length ?? 0),
       xTickLabelBytes.length ? u8Ptr(xTickLabelBytes) : 0, BigInt(xTickLabelBytes.length),
       yTickLabelBytes.length ? u8Ptr(yTickLabelBytes) : 0, BigInt(yTickLabelBytes.length),
-      authoredInput.length ? u8Ptr(authoredInput) : 0, BigInt(authoredInput.length),
+      authoredWithPolar.length ? u8Ptr(authoredWithPolar) : 0, BigInt(authoredWithPolar.length),
       u8Ptr(kindArray), pointer(ids, "uint64_t *"), u32Ptr(styleRefArray),
       u8Ptr(fills), u8Ptr(strokes), f64Ptr(widths), BigInt(widths.length),
       f64Ptr(diameters), u8Ptr(symbolCodes), u8Ptr(expansionModeCodes),
@@ -536,7 +614,17 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   let encodedColorbar = new Uint8Array(), colorbarUnsupported = false;
   try { encodedColorbar = colorbarInput(figure); } catch { colorbarUnsupported = Boolean(figure.colorbarOptions ?? figure.colorbar_options); }
   let features = 0n;
-  if (figure.coords !== "cartesian") features |= 1n << 0n;
+  let polarRecord = null;
+  if (figure.coords !== "cartesian") {
+    if (scenePolarAllowlisted(figure)) {
+      polarRecord = polarProjectionRecord(figure);
+      if ((figure.annotations ?? []).length) {
+        throw new RangeError("XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 polar compilation does not encode annotations");
+      }
+    } else {
+      features |= 1n << 0n;
+    }
+  }
   if (Object.values(chromeStyles).some((style) => style?.fontFamily != null || style?.["font-family"] != null)) features |= 1n << 1n;
   if (
     figure.className
@@ -777,7 +865,10 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       symbols.push(trace.kind === "scatter" ? sceneSymbolCode(style.symbol ?? 0) : 0);
       x0.push(xv[index]); y0.push(yv[index]); x1.push(0); y1.push(0);
     }
-    if (where != null) expansionRuns.push([runStart, kinds.length, { pre: 1, mid: 2, post: 3 }[where]]);
+    if (where != null) {
+      if (polarRecord) throw new RangeError("XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 polar compilation does not encode step expansion");
+      expansionRuns.push([runStart, kinds.length, { pre: 1, mid: 2, post: 3 }[where]]);
+    }
   }
   const annotationPrefix = 0x5859000000000000n, attachedLabels = [], straightArrows = [], cartesianCallouts = [], wrappedAnnotations = [];
   for (const [annotationIndex, annotation] of (figure.annotations ?? []).entries()) {
@@ -942,7 +1033,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   return sceneBatchEncode({ viewport: [figure.width, figure.height], margins: resolvedMargins,
     xAxis: xSceneAxis, yAxis: ySceneAxis,
     kinds, stableIds, styleRefs, styles, diameter, symbols, expansionModes, x0, y0, x1, y1,
-    title, xLabel, yLabel, chromeStyle: figureChromeStyle(figure), xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, xMinorTicks: (figure.xAxis ?? figure.x_axis)?.minorTickValues ?? (figure.xAxis ?? figure.x_axis)?.minor_tick_values ?? [], yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, yMinorTicks: (figure.yAxis ?? figure.y_axis)?.minorTickValues ?? (figure.yAxis ?? figure.y_axis)?.minor_tick_values ?? [], xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, xFormat: xSceneAxis.format, yFormat: ySceneAxis.format, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText,
+    title, xLabel, yLabel, chromeStyle: figureChromeStyle(figure), xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, xMinorTicks: (figure.xAxis ?? figure.x_axis)?.minorTickValues ?? (figure.xAxis ?? figure.x_axis)?.minor_tick_values ?? [], yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, yMinorTicks: (figure.yAxis ?? figure.y_axis)?.minorTickValues ?? (figure.yAxis ?? figure.y_axis)?.minor_tick_values ?? [], xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, xFormat: xSceneAxis.format, yFormat: ySceneAxis.format, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText, polarRecord,
   });
 }
 

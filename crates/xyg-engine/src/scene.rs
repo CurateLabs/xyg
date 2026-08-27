@@ -8,7 +8,7 @@ use crate::css;
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 25;
+pub const SCENE_VERSION: u32 = 26;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -24,6 +24,8 @@ pub const SCENE_STYLE_RECORD_BYTES: usize = 16;
 pub const SCENE_BATCH_RECORD_BYTES: usize = 56;
 /// Fixed chrome trailer before UTF-8 labels and authored tick payloads (Scene v9).
 pub const SCENE_CHROME_TRAILER_BYTES: usize = 248;
+/// Scene v26 polar projection record (`XYPO` v1) packed after the chrome payload.
+pub const SCENE_POLAR_RECORD_BYTES: usize = 96;
 pub const SCENE_CHROME_STYLE_INPUT_BYTES: usize = 200;
 pub const MAX_SCENE_CHROME_LENGTH: f64 = 1_000.0;
 pub const BROWSER_PAINTER_VERSION: u32 = 14;
@@ -83,7 +85,7 @@ pub fn scene_support_reason(version: u32, features: u64) -> Result<&'static str,
         return Err(SceneError::Version);
     }
     let reasons = [
-        (SCENE_FEATURE_POLAR, "XYG_SCENE_UNSUPPORTED_POLAR: Scene v12 supports Cartesian coordinates only"),
+        (SCENE_FEATURE_POLAR, "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 polar compilation requires an allowlisted mark kind and a Rust-owned projection record"),
         (SCENE_FEATURE_CUSTOM_FONT, "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v12 does not encode custom font resources"),
         (SCENE_FEATURE_BROWSER_CSS, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS: Scene v12 does not encode browser-only CSS or class behavior"),
         (SCENE_FEATURE_GRADIENT, "XYG_SCENE_UNSUPPORTED_GRADIENT: Scene v12 supports solid literal paints only"),
@@ -3003,8 +3005,27 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
             return Err(SceneError::Length);
         }
     }
-    if bytes.len() != total {
+    let coord_mode = bytes[98];
+    let polar_len = if coord_mode == 1 {
+        SCENE_POLAR_RECORD_BYTES
+    } else {
+        0
+    };
+    if coord_mode > 1 || bytes.len() != total + polar_len {
         return Err(SceneError::Length);
+    }
+    if coord_mode == 1 {
+        PolarProjection::from_record(
+            &bytes[total..total + SCENE_POLAR_RECORD_BYTES],
+            PlotLayout {
+                viewport_width: batch_f64(bytes, 32)?,
+                viewport_height: batch_f64(bytes, 40)?,
+                left: batch_f64(bytes, 48)?,
+                top: batch_f64(bytes, 56)?,
+                right: batch_f64(bytes, 64)?,
+                bottom: batch_f64(bytes, 72)?,
+            },
+        )?;
     }
 
     let viewport_width = batch_f64(bytes, 32)?;
@@ -3028,15 +3049,18 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
         return Err(SceneError::NonFinite);
     }
 
-    for axis in [96usize, 104] {
-        let kind = bytes[axis];
-        let mask = bytes[axis + 1];
-        if kind > ScaleKind::SymLog as u8
-            || mask > 1
-            || bytes[axis + 2..axis + 8].iter().any(|value| *value != 0)
-        {
-            return Err(SceneError::Length);
-        }
+    if bytes[96] > ScaleKind::SymLog as u8
+        || bytes[97] > 1
+        || bytes[98] > 1
+        || bytes[99..104].iter().any(|value| *value != 0)
+    {
+        return Err(SceneError::Length);
+    }
+    if bytes[104] > ScaleKind::SymLog as u8
+        || bytes[105] > 1
+        || bytes[106..112].iter().any(|value| *value != 0)
+    {
+        return Err(SceneError::Length);
     }
     let transformed = [
         batch_f64(bytes, 112)?,
@@ -3701,13 +3725,44 @@ pub struct SceneBatch<'a> {
     x1: &'a [f64],
     y1: &'a [f64],
     annotations_from_ids: bool,
+    polar: Option<PolarProjection>,
 }
 
 impl<'a> SceneBatch<'a> {
+    /// Attach a Rust-owned polar projection before canonical Scene encoding.
+    ///
+    /// Scene v26 allowlists last-step polar Scatter and Polyline only. Rect,
+    /// Band, and PolyFill need annular-sector or inverse-raster geometry that
+    /// this slice does not own. Annotations stay Cartesian-only.
+    pub fn with_polar(mut self, polar: PolarProjection) -> Result<Self, SceneError> {
+        if self.polar.is_some() {
+            return Err(SceneError::Length);
+        }
+        if self.x_scale.kind != ScaleKind::Linear {
+            return Err(SceneError::Length);
+        }
+        if !self.arrows.is_empty() || !self.callouts.is_empty() {
+            return Err(SceneError::Length);
+        }
+        if self.kinds.iter().any(|kind| {
+            matches!(
+                SceneRecordKind::from_code(*kind),
+                Ok(SceneRecordKind::Rect | SceneRecordKind::Band | SceneRecordKind::PolyFill)
+            )
+        }) {
+            return Err(SceneError::Length);
+        }
+        self.polar = Some(polar);
+        Ok(self)
+    }
+
     /// Attach bounded authored decorations before canonical Scene encoding.
     pub fn with_authored_annotations(mut self, bytes: &[u8]) -> Result<Self, SceneError> {
         if bytes.is_empty() {
             return Ok(self);
+        }
+        if self.polar.is_some() {
+            return Err(SceneError::Length);
         }
         if bytes.len() < 20 || &bytes[..4] != b"XYAD" {
             return Err(SceneError::Length);
@@ -4444,6 +4499,7 @@ impl<'a> SceneBatch<'a> {
             x1,
             y1,
             annotations_from_ids,
+            polar: None,
         })
     }
 
@@ -4506,7 +4562,8 @@ impl<'a> SceneBatch<'a> {
         // AxisScene records: kind/mask, transformed domain, and symlog constant.
         out.push(self.x_scale.kind as u8);
         out.push(u8::from(self.x_scale.mask_nonpositive));
-        out.extend_from_slice(&[0; 6]);
+        out.push(u8::from(self.polar.is_some()));
+        out.extend_from_slice(&[0; 5]);
         out.push(self.y_scale.kind as u8);
         out.push(u8::from(self.y_scale.mask_nonpositive));
         out.extend_from_slice(&[0; 6]);
@@ -4537,21 +4594,35 @@ impl<'a> SceneBatch<'a> {
 
         for index in 0..self.kinds.len() {
             let kind = SceneRecordKind::from_code(self.kinds[index]).expect("validated kind");
-            let mapped = match kind {
-                SceneRecordKind::Scatter
-                | SceneRecordKind::Polyline
-                | SceneRecordKind::PolyFill => [
-                    self.x_scale.pixel(self.x0[index]),
-                    self.y_scale.pixel(self.y0[index]),
-                    0.0,
-                    0.0,
-                ],
-                SceneRecordKind::Rect | SceneRecordKind::Band => [
-                    self.x_scale.pixel(self.x0[index]),
-                    self.y_scale.pixel(self.y0[index]),
-                    self.x_scale.pixel(self.x1[index]),
-                    self.y_scale.pixel(self.y1[index]),
-                ],
+            let mapped = if let Some(polar) = self.polar {
+                match kind {
+                    SceneRecordKind::Scatter | SceneRecordKind::Polyline => {
+                        match polar.project(self.x0[index], self.y0[index], self.y_scale) {
+                            Some((px, py)) => [px, py, 0.0, 0.0],
+                            None => [f64::NAN, f64::NAN, 0.0, 0.0],
+                        }
+                    }
+                    SceneRecordKind::Rect | SceneRecordKind::Band | SceneRecordKind::PolyFill => {
+                        [f64::NAN, f64::NAN, f64::NAN, f64::NAN]
+                    }
+                }
+            } else {
+                match kind {
+                    SceneRecordKind::Scatter
+                    | SceneRecordKind::Polyline
+                    | SceneRecordKind::PolyFill => [
+                        self.x_scale.pixel(self.x0[index]),
+                        self.y_scale.pixel(self.y0[index]),
+                        0.0,
+                        0.0,
+                    ],
+                    SceneRecordKind::Rect | SceneRecordKind::Band => [
+                        self.x_scale.pixel(self.x0[index]),
+                        self.y_scale.pixel(self.y0[index]),
+                        self.x_scale.pixel(self.x1[index]),
+                        self.y_scale.pixel(self.y1[index]),
+                    ],
+                }
             };
             let visible = mapped.iter().all(|value| value.is_finite())
                 && match kind {
@@ -4685,6 +4756,9 @@ impl<'a> SceneBatch<'a> {
             self.colorbar.as_ref(),
             &label_bytes,
         );
+        if let Some(polar) = self.polar {
+            out.extend_from_slice(&polar.encode_record());
+        }
         out
     }
 }
@@ -5488,6 +5562,254 @@ fn push_svg_line(out: &mut String, x1: f64, y1: f64, x2: f64, y2: f64, paint: &s
     out.push_str("\"/>");
 }
 
+/// Rust-owned polar projection and chrome contract (`spec/design/polar-axes.md` §3).
+///
+/// Scene v26 stores this as a trailing `XYPO` v1 record after the chrome payload
+/// when header byte 98 is `1`. Hosts pack the authored envelope; Rust alone
+/// validates the record, fits the disc, projects last-step θ/r → px/py, and
+/// emits polar rings/spokes instead of Cartesian grid/spines.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PolarProjection {
+    pub unit: u8,
+    pub direction: u8,
+    pub grid_shape: u8,
+    pub origin_authored: bool,
+    pub zero: f64,
+    pub sector_start: f64,
+    pub sector_end: f64,
+    pub hole: f64,
+    pub r_origin: f64,
+    pub cx: f64,
+    pub cy: f64,
+    pub radius: f64,
+}
+
+impl PolarProjection {
+    pub fn from_record(bytes: &[u8], layout: PlotLayout) -> Result<Self, SceneError> {
+        if bytes.len() != SCENE_POLAR_RECORD_BYTES || &bytes[0..4] != b"XYPO" {
+            return Err(SceneError::Length);
+        }
+        let version = u32::from_le_bytes(bytes[4..8].try_into().expect("checked slice"));
+        if version != 1 {
+            return Err(SceneError::Version);
+        }
+        let unit = bytes[8];
+        let direction = bytes[9];
+        let grid_shape = bytes[10];
+        let flags = bytes[11];
+        if unit > 1 || direction > 1 || grid_shape != 0 {
+            return Err(SceneError::Length);
+        }
+        if bytes[12..16] != [0; 4] || bytes[56..96] != [0; 40] {
+            return Err(SceneError::Length);
+        }
+        let origin_authored = flags & 1 != 0;
+        let zero = f64::from_le_bytes(bytes[16..24].try_into().expect("checked slice"));
+        let sector_start = f64::from_le_bytes(bytes[24..32].try_into().expect("checked slice"));
+        let sector_end = f64::from_le_bytes(bytes[32..40].try_into().expect("checked slice"));
+        let hole = f64::from_le_bytes(bytes[40..48].try_into().expect("checked slice"));
+        let r_origin = f64::from_le_bytes(bytes[48..56].try_into().expect("checked slice"));
+        if !zero.is_finite()
+            || !sector_start.is_finite()
+            || !sector_end.is_finite()
+            || !hole.is_finite()
+            || !r_origin.is_finite()
+        {
+            return Err(SceneError::NonFinite);
+        }
+        if !(0.0..1.0).contains(&hole) {
+            return Err(SceneError::Length);
+        }
+        let (cx, cy, radius) =
+            Self::fit_disc(layout, zero, direction, sector_start, sector_end, unit);
+        Ok(Self {
+            unit,
+            direction,
+            grid_shape,
+            origin_authored,
+            zero,
+            sector_start,
+            sector_end,
+            hole,
+            r_origin,
+            cx,
+            cy,
+            radius,
+        })
+    }
+
+    fn fit_disc(
+        layout: PlotLayout,
+        zero: f64,
+        direction: u8,
+        sector_start: f64,
+        sector_end: f64,
+        unit: u8,
+    ) -> (f64, f64, f64) {
+        let left = layout.left.min(layout.right);
+        let right = layout.left.max(layout.right);
+        let top = layout.top.min(layout.bottom);
+        let bottom = layout.top.max(layout.bottom);
+        let width = (right - left).max(0.0);
+        let height = (bottom - top).max(0.0);
+        let cx = (left + right) * 0.5;
+        let cy = (top + bottom) * 0.5;
+        let inscribed = width.min(height) * 0.5;
+        let span = Self::to_radians(sector_end, unit) - Self::to_radians(sector_start, unit);
+        if !span.is_finite() || span <= 0.0 || (span - std::f64::consts::TAU).abs() <= 1e-12 {
+            return (cx, cy, inscribed);
+        }
+        let start = Self::to_radians(sector_start, unit);
+        let mut min_x = 0.0_f64;
+        let mut max_x = 0.0_f64;
+        let mut min_y = 0.0_f64;
+        let mut max_y = 0.0_f64;
+        let mut theta = start;
+        let end = start + span;
+        while theta <= end + 1e-12 {
+            let screen = Self::screen_angle(theta, zero, direction);
+            min_x = min_x.min(screen.cos());
+            max_x = max_x.max(screen.cos());
+            min_y = min_y.min(screen.sin());
+            max_y = max_y.max(screen.sin());
+            theta += std::f64::consts::PI / 180.0;
+        }
+        for &theta in &[start, end] {
+            let screen = Self::screen_angle(theta, zero, direction);
+            min_x = min_x.min(screen.cos());
+            max_x = max_x.max(screen.cos());
+            min_y = min_y.min(screen.sin());
+            max_y = max_y.max(screen.sin());
+        }
+        let bbox_w = (max_x - min_x).max(1e-12);
+        let bbox_h = (max_y - min_y).max(1e-12);
+        let radius = (width / bbox_w).min(height / bbox_h);
+        let ox = (min_x + max_x) * 0.5;
+        let oy = (min_y + max_y) * 0.5;
+        (cx - ox * radius, cy + oy * radius, radius)
+    }
+
+    fn to_radians(value: f64, unit: u8) -> f64 {
+        if unit == 1 {
+            value.to_radians()
+        } else {
+            value
+        }
+    }
+
+    fn screen_angle(theta_radians: f64, zero: f64, direction: u8) -> f64 {
+        if direction == 1 {
+            zero - theta_radians
+        } else {
+            zero + theta_radians
+        }
+    }
+
+    fn sector_contains(&self, theta: f64) -> bool {
+        let start = self.sector_start;
+        let end = self.sector_end;
+        let span = end - start;
+        let turn = if self.unit == 1 {
+            360.0
+        } else {
+            std::f64::consts::TAU
+        };
+        if !span.is_finite() || span.abs() >= turn - 1e-12 {
+            return true;
+        }
+        if span >= 0.0 {
+            theta + 1e-12 >= start && theta - 1e-12 <= end
+        } else {
+            theta - 1e-12 <= start && theta + 1e-12 >= end
+        }
+    }
+
+    pub fn project(&self, theta: f64, r_coord: f64, y_scale: AxisScale) -> Option<(f64, f64)> {
+        if !theta.is_finite() || !r_coord.is_finite() || !self.sector_contains(theta) {
+            return None;
+        }
+        let (d0, d1) = y_scale.domain();
+        let r_origin = if self.origin_authored {
+            self.r_origin
+        } else {
+            d0.min(d1)
+        };
+        let r_hi = d0.max(d1);
+        let c0 = y_scale.coord(r_origin);
+        let c1 = y_scale.coord(r_hi);
+        let cr = y_scale.coord(r_coord);
+        if !c0.is_finite() || !c1.is_finite() || !cr.is_finite() || (c1 - c0).abs() <= f64::EPSILON
+        {
+            return None;
+        }
+        let t = (cr - c0) / (c1 - c0);
+        if !t.is_finite() || t < -1e-12 || t > 1.0 + 1e-12 {
+            return None;
+        }
+        let rn = self.hole + (1.0 - self.hole) * t.clamp(0.0, 1.0);
+        let screen = Self::screen_angle(
+            Self::to_radians(theta, self.unit),
+            self.zero,
+            self.direction,
+        );
+        Some((
+            self.cx + rn * self.radius * screen.cos(),
+            self.cy - rn * self.radius * screen.sin(),
+        ))
+    }
+
+    pub fn encode_record(&self) -> [u8; SCENE_POLAR_RECORD_BYTES] {
+        let mut out = [0_u8; SCENE_POLAR_RECORD_BYTES];
+        out[0..4].copy_from_slice(b"XYPO");
+        out[4..8].copy_from_slice(&1_u32.to_le_bytes());
+        out[8] = self.unit;
+        out[9] = self.direction;
+        out[10] = self.grid_shape;
+        out[11] = u8::from(self.origin_authored);
+        out[16..24].copy_from_slice(&self.zero.to_le_bytes());
+        out[24..32].copy_from_slice(&self.sector_start.to_le_bytes());
+        out[32..40].copy_from_slice(&self.sector_end.to_le_bytes());
+        out[40..48].copy_from_slice(&self.hole.to_le_bytes());
+        out[48..56].copy_from_slice(&self.r_origin.to_le_bytes());
+        out
+    }
+
+    fn ring_radii(&self, y_scale: AxisScale, ticks: Option<&[f64]>) -> Vec<f64> {
+        let mut values = match ticks {
+            Some(values) if !values.is_empty() => values.to_vec(),
+            _ => {
+                let (d0, d1) = y_scale.domain();
+                vec![d0, (d0 + d1) * 0.5, d1]
+            }
+        };
+        values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        values.dedup_by(|a, b| (*a - *b).abs() <= 1e-12);
+        values
+            .into_iter()
+            .filter_map(|value| {
+                let (_, y) = self.project(self.sector_start, value, y_scale)?;
+                Some((self.cy - y).abs())
+            })
+            .collect()
+    }
+
+    fn spoke_thetas(&self, ticks: Option<&[f64]>) -> Vec<f64> {
+        match ticks {
+            Some(values) if !values.is_empty() => values.to_vec(),
+            _ => {
+                let start = self.sector_start;
+                let end = self.sector_end;
+                let span = end - start;
+                if !span.is_finite() || span.abs() <= f64::EPSILON {
+                    vec![start]
+                } else {
+                    (0..8).map(|i| start + span * (i as f64) / 8.0).collect()
+                }
+            }
+        }
+    }
+}
+
 fn rgba_css(rgba: [u8; 4]) -> String {
     format!(
         "rgba({},{},{},{:.6})",
@@ -5572,6 +5894,7 @@ pub struct SceneDocument {
     styles: Vec<EncodedStyle>,
     records: Vec<EncodedRecord>,
     raster_mark_capacity: usize,
+    polar: Option<PolarProjection>,
 }
 
 impl SceneDocument {
@@ -5941,7 +6264,13 @@ impl SceneDocument {
             .ok_or(SceneError::Limit)?;
         let (chrome, text, legend, colorbar, labels, label_backgrounds, total) =
             read_chrome_trailer(bytes, body)?;
-        if bytes.len() != total {
+        let coord_mode = bytes[98];
+        let polar_len = if coord_mode == 1 {
+            SCENE_POLAR_RECORD_BYTES
+        } else {
+            0
+        };
+        if coord_mode > 1 || bytes.len() != total + polar_len {
             return Err(SceneError::Length);
         }
         let viewport_width = f64_at(32);
@@ -5981,7 +6310,8 @@ impl SceneDocument {
             || bytes[104] > ScaleKind::SymLog as u8
             || !matches!(bytes[97], 0 | 1)
             || !matches!(bytes[105], 0 | 1)
-            || bytes[98..104] != [0; 6]
+            || bytes[98] > 1
+            || bytes[99..104] != [0; 5]
             || bytes[106..112] != [0; 6]
             || (112..160)
                 .step_by(8)
@@ -6053,6 +6383,14 @@ impl SceneDocument {
             f64_at(152),
             bytes[105] == 1,
         )?;
+        let polar = if coord_mode == 1 {
+            Some(PolarProjection::from_record(
+                &bytes[total..total + SCENE_POLAR_RECORD_BYTES],
+                layout,
+            )?)
+        } else {
+            None
+        };
         let mut styles = Vec::with_capacity(style_count);
         let mut offset = SCENE_BATCH_HEADER_BYTES;
         for _ in 0..style_count {
@@ -6254,6 +6592,16 @@ impl SceneDocument {
             }
             annotation_cursor = run_end;
         }
+        if polar.is_some()
+            && (records.iter().any(|record| {
+                matches!(
+                    record.kind,
+                    SceneRecordKind::Rect | SceneRecordKind::Band | SceneRecordKind::PolyFill
+                ) || record.annotation_tag != 0
+            }) || !labels.is_empty())
+        {
+            return Err(SceneError::Length);
+        }
         Ok(Self {
             layout,
             x_scale,
@@ -6267,6 +6615,7 @@ impl SceneDocument {
             styles,
             records,
             raster_mark_capacity,
+            polar,
         })
     }
 
@@ -6641,6 +6990,82 @@ impl SceneDocument {
         out.push_str("</g>");
     }
 
+    fn append_svg_polar_chrome(
+        &self,
+        out: &mut String,
+        polar: PolarProjection,
+        x_ticks: &AxisTicks,
+        y_ticks: &AxisTicks,
+    ) {
+        let y_style = self.chrome.y_axis;
+        let x_style = self.chrome.x_axis;
+        if y_style.has_visible_grid() {
+            out.push_str("<g data-xy-chrome=\"polar-ring\">");
+            for radius in polar.ring_radii(self.y_scale, Some(y_ticks.labeled.as_slice())) {
+                out.push_str("<circle cx=\"");
+                push_num(out, polar.cx);
+                out.push_str("\" cy=\"");
+                push_num(out, polar.cy);
+                out.push_str("\" r=\"");
+                push_num(out, radius);
+                out.push_str("\" fill=\"none\" stroke=\"");
+                out.push_str(&rgba_css(y_style.grid_rgba));
+                out.push_str("\" stroke-width=\"");
+                push_num(out, y_style.grid_width);
+                out.push_str("\"/>");
+            }
+            out.push_str("</g>");
+        }
+        if x_style.has_visible_grid() {
+            out.push_str("<g data-xy-chrome=\"polar-spoke\">");
+            for theta in polar.spoke_thetas(Some(x_ticks.labeled.as_slice())) {
+                let Some((x1, y1)) = polar.project(theta, self.y_scale.domain().0, self.y_scale)
+                else {
+                    continue;
+                };
+                let Some((x2, y2)) = polar.project(theta, self.y_scale.domain().1, self.y_scale)
+                else {
+                    continue;
+                };
+                push_svg_line(
+                    out,
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    &rgba_css(x_style.grid_rgba),
+                    x_style.grid_width,
+                );
+            }
+            out.push_str("</g>");
+        }
+        if x_style.has_visible_axis() || y_style.has_visible_axis() {
+            out.push_str("<g data-xy-chrome=\"polar-frame\">");
+            out.push_str("<circle cx=\"");
+            push_num(out, polar.cx);
+            out.push_str("\" cy=\"");
+            push_num(out, polar.cy);
+            out.push_str("\" r=\"");
+            push_num(out, polar.radius);
+            out.push_str("\" fill=\"none\" stroke=\"");
+            let frame = if y_style.has_visible_axis() {
+                y_style.axis_rgba
+            } else {
+                x_style.axis_rgba
+            };
+            let width = if y_style.has_visible_axis() {
+                y_style.axis_width
+            } else {
+                x_style.axis_width
+            };
+            out.push_str(&rgba_css(frame));
+            out.push_str("\" stroke-width=\"");
+            push_num(out, width);
+            out.push_str("\"/>");
+            out.push_str("</g>");
+        }
+    }
+
     fn append_svg_grid(&self, out: &mut String, x_ticks: &AxisTicks, y_ticks: &AxisTicks) {
         for (ticks, scale, style, is_x) in [
             (x_ticks, self.x_scale, self.chrome.x_axis, true),
@@ -6748,7 +7173,9 @@ impl SceneDocument {
             labeled: Vec::new(),
             step: 1.0,
         });
-        if self.chrome.x_axis.has_visible_grid() || self.chrome.y_axis.has_visible_grid() {
+        if let Some(polar) = self.polar {
+            self.append_svg_polar_chrome(&mut out, polar, &x_ticks, &y_ticks);
+        } else if self.chrome.x_axis.has_visible_grid() || self.chrome.y_axis.has_visible_grid() {
             out.push_str("<g data-xy-chrome=\"grid\">");
             self.append_svg_grid(&mut out, &x_ticks, &y_ticks);
             out.push_str("</g>");
@@ -6938,7 +7365,9 @@ impl SceneDocument {
             }
         }
         out.push_str("</g>");
-        if self.chrome.x_axis.has_visible_axis() || self.chrome.y_axis.has_visible_axis() {
+        if self.polar.is_none()
+            && (self.chrome.x_axis.has_visible_axis() || self.chrome.y_axis.has_visible_axis())
+        {
             out.push_str("<g data-xy-chrome=\"axes\">");
             for (is_x, ticks, scale, style) in [
                 (true, &x_ticks, self.x_scale, self.chrome.x_axis),
@@ -7097,6 +7526,75 @@ impl SceneDocument {
     }
 
     #[inline(never)]
+    fn append_raster_polar_chrome(
+        &self,
+        out: &mut Vec<u8>,
+        scale: f64,
+        polar: PolarProjection,
+        x_ticks: &AxisTicks,
+        y_ticks: &AxisTicks,
+    ) -> Result<(), SceneError> {
+        let ring = |out: &mut Vec<u8>, radius: f64, width: f64, rgba: [u8; 4]| {
+            const SEGMENTS: u32 = 64;
+            out.push(3);
+            out.extend_from_slice(&SEGMENTS.to_le_bytes());
+            for i in 0..SEGMENTS {
+                let theta = std::f64::consts::TAU * (i as f64) / f64::from(SEGMENTS);
+                push_raster_f32(out, polar.cx + radius * theta.cos(), scale)?;
+                push_raster_f32(out, polar.cy - radius * theta.sin(), scale)?;
+            }
+            push_raster_f32(out, width, scale)?;
+            out.extend_from_slice(&rgba);
+            out.push(1);
+            out.extend_from_slice(&0u32.to_le_bytes());
+            out.push(1);
+            Ok::<(), SceneError>(())
+        };
+        if SceneAxisChromeStyle::visible_stroke(
+            self.chrome.y_axis.grid_rgba,
+            self.chrome.y_axis.grid_width,
+        ) {
+            for radius in polar.ring_radii(self.y_scale, Some(y_ticks.labeled.as_slice())) {
+                ring(
+                    out,
+                    radius,
+                    self.chrome.y_axis.grid_width,
+                    self.chrome.y_axis.grid_rgba,
+                )?;
+            }
+        }
+        if SceneAxisChromeStyle::visible_stroke(
+            self.chrome.x_axis.grid_rgba,
+            self.chrome.x_axis.grid_width,
+        ) {
+            for theta in polar.spoke_thetas(Some(x_ticks.labeled.as_slice())) {
+                let Some(start) = polar.project(theta, self.y_scale.domain().0, self.y_scale)
+                else {
+                    continue;
+                };
+                let Some(end) = polar.project(theta, self.y_scale.domain().1, self.y_scale) else {
+                    continue;
+                };
+                push_raster_stroke(
+                    out,
+                    [start, end],
+                    self.chrome.x_axis.grid_width,
+                    self.chrome.x_axis.grid_rgba,
+                    scale,
+                )?;
+            }
+        }
+        if self.chrome.x_axis.has_visible_axis() || self.chrome.y_axis.has_visible_axis() {
+            let (rgba, width) = if self.chrome.y_axis.has_visible_axis() {
+                (self.chrome.y_axis.axis_rgba, self.chrome.y_axis.axis_width)
+            } else {
+                (self.chrome.x_axis.axis_rgba, self.chrome.x_axis.axis_width)
+            };
+            ring(out, polar.radius, width, rgba)?;
+        }
+        Ok(())
+    }
+
     fn append_raster_grid(
         &self,
         out: &mut Vec<u8>,
@@ -7398,7 +7896,8 @@ impl SceneDocument {
                 label_capacity(y_ticks, self.y_scale.kind)
                     .saturating_mul(self.chrome.y_axis.tick_label_sides.count_ones() as usize),
             )
-            .saturating_add(186);
+            .saturating_add(186)
+            .saturating_add(if self.polar.is_some() { 16_384 } else { 0 });
         let legend_capacity = self.legend.as_ref().map_or(0, |legend| {
             256usize.saturating_add(legend.title.len()).saturating_add(
                 legend
@@ -7959,11 +8458,17 @@ impl SceneDocument {
         f32_push(&mut out, self.layout.top)?;
         f32_push(&mut out, self.layout.right - self.layout.left)?;
         f32_push(&mut out, self.layout.bottom - self.layout.top)?;
-        self.append_raster_grid(&mut out, scale, &x_ticks, &y_ticks)?;
+        if let Some(polar) = self.polar {
+            self.append_raster_polar_chrome(&mut out, scale, polar, &x_ticks, &y_ticks)?;
+        } else {
+            self.append_raster_grid(&mut out, scale, &x_ticks, &y_ticks)?;
+        }
         self.append_raster_marks(&mut out, scale)?;
         // Reset the plot clip before chrome, then draw the canonical bottom
         // and left axes through the same display-list primitive as line marks.
-        self.append_raster_axes(&mut out, scale, &x_ticks, &y_ticks)?;
+        if self.polar.is_none() {
+            self.append_raster_axes(&mut out, scale, &x_ticks, &y_ticks)?;
+        }
         self.append_raster_labels(&mut out, scale)?;
         self.append_raster_legend(&mut out, scale)?;
         self.append_raster_colorbar(&mut out, scale)?;
@@ -9526,7 +10031,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 25);
+        assert_eq!(SCENE_VERSION, 26);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
@@ -11501,6 +12006,139 @@ mod tests {
         assert!(svg.contains("data-xy-chrome=\"title\""));
         assert!(svg.contains("Cartesian title"));
         assert!(!document.to_raster_commands(1.0).unwrap().is_empty());
+        assert_eq!(encoded[98], 0);
+        assert!(!encoded[encoded.len().saturating_sub(96)..].starts_with(b"XYPO"));
+    }
+
+    #[test]
+    fn scene_v26_polar_scatter_and_line_encode_a_projection_record() {
+        let layout = PlotLayout::new(200.0, 200.0, 20.0, 20.0, 20.0, 20.0).unwrap();
+        let x = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            std::f64::consts::TAU,
+            layout.left,
+            layout.right,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.bottom,
+            layout.top,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let mut record = [0_u8; SCENE_POLAR_RECORD_BYTES];
+        record[0..4].copy_from_slice(b"XYPO");
+        record[4..8].copy_from_slice(&1u32.to_le_bytes());
+        record[24..32].copy_from_slice(&0.0f64.to_le_bytes());
+        record[32..40].copy_from_slice(&std::f64::consts::TAU.to_le_bytes());
+        let polar = PolarProjection::from_record(&record, layout).unwrap();
+        let encoded = SceneBatch::new(
+            layout,
+            1,
+            2,
+            x,
+            y,
+            &[
+                SceneRecordKind::Scatter as u8,
+                SceneRecordKind::Polyline as u8,
+                SceneRecordKind::Polyline as u8,
+            ],
+            &[1, 2, 2],
+            &[0, 1, 1],
+            &[57, 135, 229, 255, 239, 68, 68, 255],
+            &[0, 0, 0, 255, 239, 68, 68, 255],
+            &[0.0, 2.0],
+            &[8.0, 0.0, 0.0],
+            &[0, 0, 0],
+            &[0.0, 0.0, std::f64::consts::FRAC_PI_2],
+            &[1.0, 0.5, 0.5],
+            &[0.0, 0.0, 0.0],
+            &[0.0, 0.0, 0.0],
+        )
+        .unwrap()
+        .with_polar(polar)
+        .unwrap()
+        .encode();
+        assert_eq!(encoded[98], 1);
+        assert!(encoded.ends_with(&polar.encode_record()));
+        let document = SceneDocument::decode(&encoded).unwrap();
+        let svg = document.to_svg();
+        assert!(
+            svg.contains("data-xy-chrome=\"polar-ring\"")
+                || svg.contains("data-xy-chrome=\"polar-frame\"")
+                || svg.contains("cx=")
+        );
+        document
+            .to_raster_commands(1.0)
+            .expect("polar scene raster commands");
+        let mut missing = encoded.clone();
+        missing.truncate(encoded.len() - SCENE_POLAR_RECORD_BYTES);
+        assert!(SceneDocument::decode(&missing).is_err());
+        let mut cartesian = encoded.clone();
+        cartesian[98] = 0;
+        assert!(SceneDocument::decode(&cartesian).is_err());
+    }
+
+    #[test]
+    fn scene_v26_polar_rejects_rect_and_linear_grid() {
+        let layout = PlotLayout::new(200.0, 200.0, 20.0, 20.0, 20.0, 20.0).unwrap();
+        let x = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.left,
+            layout.right,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.bottom,
+            layout.top,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let mut record = [0_u8; SCENE_POLAR_RECORD_BYTES];
+        record[0..4].copy_from_slice(b"XYPO");
+        record[4..8].copy_from_slice(&1u32.to_le_bytes());
+        record[10] = 1;
+        record[32..40].copy_from_slice(&std::f64::consts::TAU.to_le_bytes());
+        assert!(PolarProjection::from_record(&record, layout).is_err());
+        record[10] = 0;
+        let polar = PolarProjection::from_record(&record, layout).unwrap();
+        assert!(SceneBatch::new(
+            layout,
+            1,
+            2,
+            x,
+            y,
+            &[SceneRecordKind::Rect as u8],
+            &[1],
+            &[0],
+            &[57, 135, 229, 255],
+            &[0, 0, 0, 255],
+            &[0.0],
+            &[0.0],
+            &[0],
+            &[0.0],
+            &[0.0],
+            &[1.0],
+            &[1.0],
+        )
+        .unwrap()
+        .with_polar(polar)
+        .is_err());
     }
 
     #[test]

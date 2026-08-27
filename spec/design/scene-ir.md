@@ -7,18 +7,19 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 25 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 26 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in Scene v25, so additive emission is not safe.
+bitmap or schema negotiation in Scene v26, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
 `validate_scene_batch` is the allocation-free Rust decoder used by the #59
-WASM lifecycle foundation; it validates the current Scene v25 batch layout,
+WASM lifecycle foundation; it validates the current Scene v26 batch layout,
 including the shared fixed header/mark widths retained since version 4, bounds,
-reserved bytes, kinds, style references, finite coordinates, and canonical
+reserved bytes, kinds, style references, finite coordinates, the optional
+trailing `XYPO` polar record, and canonical
 hidden-record zeroing rather than duplicating offsets in TypeScript.
 
 The IR is an in-process typed contract, not a JSON data path. Numeric arrays
@@ -65,8 +66,10 @@ the direct Rust/WASM execution boundary in #59 is available.
 
 Python calls the scatter path from `_svg._scatter_marks`; Node exposes the same record
 through `scatterSceneSvg`. Python remains responsible for ingest coercion,
-public validation text, channel-to-RGBA resolution, plot layout, and polar projection
-until those policies move in later slices. Authored arbitrary marker paths and
+public validation text, channel-to-RGBA resolution, and plot layout
+until those policies move in later slices. Scene v26 owns last-step polar
+projection for allowlisted scatter/line; compatibility SVG/raster still use
+`_svg.py` for the rest of `POLAR_MARK_KINDS` and for public polar export. Authored arbitrary marker paths and
 font glyph markers stay on the existing Python compatibility path because they
 need separate bounded path/text records.
 
@@ -1013,3 +1016,25 @@ style, and conversion to existing Rect, Polyline, and Scatter Scene families.
 Constant-style primary-Cartesian boxes route public SVG/PNG/PDF through those
 Scene consumers; alternate axes, polar, gradients, and per-item styles remain
 explicit compatibility paths.
+
+## Version 26 polar projection record
+
+Scene v26 is Cartesian-identical to v25 except the version field. Polar mode
+adds two coordinated slots:
+
+- header byte 98 is the coordinate mode (`0` cartesian, `1` polar). Bytes
+  99–103 stay reserved zero. A polar bit without a trailing record is invalid.
+- when mode is polar, a 96-byte `XYPO` v1 record follows the chrome payload:
+  magic `XYPO`, version `1`, θ unit (`0` radians / `1` degrees), direction
+  (`0` ccw / `1` cw), `grid_shape` (`0` circular only), flags (bit 0 = authored
+  `r_origin`), reserved zeros, then little-endian f64 `zero` (radians),
+  sector start/end (authored units), hole in `[0, 1)`, and `r_origin`.
+
+Rust owns disc fitting, last-step θ/r → pixel projection, sector/radial cull,
+and circular ring/spoke/frame chrome. Hosts pack `XYPO` ahead of the existing
+`XYAF`/`XYAD` authoring envelope and do not set `SCENE_FEATURE_POLAR` for the
+allowlisted scatter/line subset. Rect, Band, and PolyFill polar compilation
+stays fail-closed. Public static export remains on the compatibility renderer
+for every `coords="polar"` figure. Linear/polygonal grids, annotations, and
+step/ribbon expansion stay rejected on this slice. The C `ABI_VERSION` does
+not change.
