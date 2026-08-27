@@ -554,7 +554,9 @@ predicate. It returns Rust's stable ordered diagnostic verbatim, so Python and
 Node cannot silently diverge on polar, custom-font, browser-CSS, gradient, or
 deferred chrome support policy. ABI v105 adds `xyg_scene_public_export_reason`
 over packed `XYEP` v1 figure metadata so the public static-export allowlists
-and `XYG_SCENE_UNSUPPORTED_*` wording are likewise Rust-owned.
+and `XYG_SCENE_UNSUPPORTED_*` wording are likewise Rust-owned. ABI v106 adds
+`xyg_figure_autorange` / `xyg_auto_domain` over packed `XYAR` v1 extents so
+Python and Node share one domain, padding, polar, and zero-baseline policy.
 
 This is not yet the complete issue `#110` store: remote ranges, browser/WASM bounded
 staging, spatially unordered data, chart-lifecycle overview/refinement wiring,

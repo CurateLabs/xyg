@@ -5,14 +5,15 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 105
-#define XYG_ABI_SIGNATURE_SHA256 "b7a8938af5fd21e4b5a22814278d44518105d6788d3db0da210a553af81dec80"
+#define XYG_ABI_VERSION 106
+#define XYG_ABI_SIGNATURE_SHA256 "d664c9902313d3f9051f9c279f1d746546a444a50df9391e61e3fd06cc591c97"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 uint32_t xyg_abi_version();
+int32_t xyg_auto_domain(uint32_t has_bounds, double lo, double hi, double * out_lo, double * out_hi);
 int32_t xyg_bar_stack(const double * pos, size_t n_items, const double * values, size_t n_series, const double * width, size_t width_len, const double * base, size_t base_len, uint32_t mode, uint32_t orientation, double * out_x0, double * out_x1, double * out_y0, double * out_y1);
 int32_t xyg_bin_2d(const double * x, const double * y, size_t len, double x0, double x1, double y0, double y1, size_t w, size_t h, float * out);
 int32_t xyg_bin_2d_f32(const float * x, const float * y, size_t len, double x0, double x1, double y0, double y1, size_t w, size_t h, float * out);
@@ -43,6 +44,7 @@ size_t xyg_factorize_fixed(const uint8_t * data, size_t len, size_t width, uint3
 size_t xyg_factorize_fixed_u8(const uint8_t * data, size_t len, size_t width, uint8_t * out_codes, uint32_t * out_unique_indices, size_t unique_capacity);
 size_t xyg_factorize_fixed_u8_counts(const uint8_t * data, size_t len, size_t width, uint8_t * out_codes, uint32_t * out_unique_indices, uint64_t * out_counts, size_t unique_capacity);
 size_t xyg_factorize_unicode1_u8_counts(const uint32_t * data, size_t len, int32_t swap_endian, uint8_t * out_codes, uint32_t * out_unique_indices, uint64_t * out_counts, size_t unique_capacity);
+int32_t xyg_figure_autorange(const uint8_t * input, size_t len, double * out_lo, double * out_hi);
 uint32_t xyg_geo_column_crs(uint64_t handle);
 int32_t xyg_geo_column_free(uint64_t handle);
 uint32_t xyg_geo_column_geometry(uint64_t handle);
@@ -114,6 +116,7 @@ size_t xyg_rasterize_png(const uint8_t * cmd, size_t cmd_len, uint8_t * out, siz
 size_t xyg_rasterize_png_data(const uint8_t * cmd, size_t cmd_len, const uint8_t * data, size_t data_len, uint8_t * out, size_t out_capacity, size_t w, size_t h);
 size_t xyg_rasterize_png_spans(const uint8_t * cmd, size_t cmd_len, const uint8_t *const * span_ptrs, const size_t * span_lens, size_t span_count, uint8_t * out, size_t out_capacity, size_t w, size_t h);
 int32_t xyg_rasterize_spans(const uint8_t * cmd, size_t cmd_len, const uint8_t *const * span_ptrs, const size_t * span_lens, size_t span_count, uint8_t * out, size_t w, size_t h);
+uint8_t xyg_rect_zero_baseline_flags(const double * base, const double * value, size_t n);
 int32_t xyg_remap_u8(uint8_t * values, size_t len, const uint8_t * mapping, size_t mapping_len);
 int32_t xyg_rfft(const double * data, size_t len, size_t nfft, double sample_rate, double * out_frequency, double * out_real, double * out_imag);
 int32_t xyg_sample_mask(const uint64_t * ids, size_t len, uint64_t seed, uint64_t threshold, uint8_t * out);

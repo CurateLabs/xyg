@@ -310,6 +310,14 @@
       "rationale": "One versioned cdylib serves ctypes, Koffi, and future browser-facing adapters."
     },
     {
+      "path": "crates/xyg-engine/src/autorange.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
       "path": "crates/xyg-engine/src/css.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
@@ -439,6 +447,14 @@
     },
     {
       "path": "crates/xyg-engine/src/scene.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/scene_export.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
       "disposition": "keep-rust",

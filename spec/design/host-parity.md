@@ -173,7 +173,9 @@ disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 row per segment and two PolyFill rows per face. ABI 105 makes the public
 static-export support predicate Rust-owned: Python and Node pack the same
 `XYEP` v1 envelope and surface `xyg_scene_public_export_reason` verbatim.
-Polar hexbin, custom `reduce_C_function`, metric
+ABI 106 makes Figure autorange/domain the same way: Python and Node pack
+`XYAR` v1 extents and zero-baseline predicates, then call
+`xyg_figure_autorange` / `xyg_auto_domain`. Polar hexbin, custom `reduce_C_function`, metric
 colormaps, LOD beyond the 1,024-group painter budget, and rich style
 exceptions remain compatibility routes. Polar heatmap, metric colormaps, truecolor RGBA, LOD beyond
 10,000 cells, and rich style exceptions remain compatibility routes.
@@ -238,7 +240,9 @@ consumer failure remains an error rather than a fallback signal.
 `public_static_export` is now the only optional Python product-route selector;
 the older format-specific `try_public_*` adapters have been retired. The
 support predicate itself is ABI 105 `xyg_scene_public_export_reason`; hosts
-only pack literal figure metadata. Explicit Scene diagnostics and consumers
+only pack literal figure metadata. ABI 106 `xyg_figure_autorange` owns the
+product domain/padding/polar/zero-baseline decisions from the same packed
+extents both hosts already had. Explicit Scene diagnostics and consumers
 remain available through `scene_export_support_reason` /
 `sceneExportSupportReason`, `figure_scene`, `figure_svg`, and
 `figure_raster_commands`. Python SVG/raster and pyplot automatic tick requests

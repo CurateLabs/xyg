@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 105
-SIGNATURE_SHA256 = "b7a8938af5fd21e4b5a22814278d44518105d6788d3db0da210a553af81dec80"
+ABI_VERSION = 106
+SIGNATURE_SHA256 = "d664c9902313d3f9051f9c279f1d746546a444a50df9391e61e3fd06cc591c97"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -18,6 +18,10 @@ def bind_abi_version(lib: ctypes.CDLL):
 
 
 def bind_generated_abi(lib: ctypes.CDLL) -> None:
+    # int32_t xyg_auto_domain(uint32_t has_bounds, double lo, double hi, double * out_lo, double * out_hi)
+    function = lib.xyg_auto_domain
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p]
     # int32_t xyg_bar_stack(const double * pos, size_t n_items, const double * values, size_t n_series, const double * width, size_t width_len, const double * base, size_t base_len, uint32_t mode, uint32_t orientation, double * out_x0, double * out_x1, double * out_y0, double * out_y1)
     function = lib.xyg_bar_stack
     function.restype = ctypes.c_int32
@@ -138,6 +142,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_factorize_unicode1_u8_counts
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_figure_autorange(const uint8_t * input, size_t len, double * out_lo, double * out_hi)
+    function = lib.xyg_figure_autorange
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p]
     # uint32_t xyg_geo_column_crs(uint64_t handle)
     function = lib.xyg_geo_column_crs
     function.restype = ctypes.c_uint32
@@ -422,6 +430,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_rasterize_spans
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t]
+    # uint8_t xyg_rect_zero_baseline_flags(const double * base, const double * value, size_t n)
+    function = lib.xyg_rect_zero_baseline_flags
+    function.restype = ctypes.c_uint8
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_remap_u8(uint8_t * values, size_t len, const uint8_t * mapping, size_t mapping_len)
     function = lib.xyg_remap_u8
     function.restype = ctypes.c_int32

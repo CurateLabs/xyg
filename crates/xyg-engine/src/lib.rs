@@ -11,6 +11,8 @@
 mod font;
 mod simd;
 
+pub mod autorange;
+pub use autorange::{auto_domain, figure_autorange, rect_zero_baseline_flags};
 #[cfg(not(target_family = "wasm"))]
 pub mod chunked_columns;
 pub mod css;

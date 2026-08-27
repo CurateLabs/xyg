@@ -1790,6 +1790,61 @@ def scene_public_export_reason(payload: bytes) -> str:
     return output.raw.decode("utf-8")
 
 
+def figure_autorange(payload: bytes) -> tuple[float, float]:
+    """Return Rust's product axis range for a packed XYAR envelope."""
+    if not isinstance(payload, (bytes, bytearray, memoryview)):
+        raise TypeError("figure autorange envelope must be bytes")
+    array = (
+        np.frombuffer(bytes(payload), dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    )
+    array = np.ascontiguousarray(array)
+    pointer = _ptr_u8(array) if len(array) else 0
+    out_lo = ctypes.c_double()
+    out_hi = ctypes.c_double()
+    code = int(
+        _lib.xyg_figure_autorange(pointer, len(array), ctypes.byref(out_lo), ctypes.byref(out_hi))
+    )
+    if code == 0:
+        return (float(out_lo.value), float(out_hi.value))
+    if code == -4:
+        raise ValueError("log axis requires at least one positive value")
+    raise ValueError("invalid figure autorange envelope")
+
+
+def auto_domain(bounds: tuple[float, float] | None) -> tuple[float, float]:
+    """Expand a possibly-degenerate scalar domain in Rust."""
+    out_lo = ctypes.c_double()
+    out_hi = ctypes.c_double()
+    if bounds is None:
+        code = int(_lib.xyg_auto_domain(0, 0.0, 0.0, ctypes.byref(out_lo), ctypes.byref(out_hi)))
+    else:
+        lo, hi = bounds
+        code = int(
+            _lib.xyg_auto_domain(
+                1, float(lo), float(hi), ctypes.byref(out_lo), ctypes.byref(out_hi)
+            )
+        )
+    if code != 0:
+        raise ValueError("native auto_domain rejected the bounds")
+    return (float(out_lo.value), float(out_hi.value))
+
+
+def rect_zero_baseline_flags(base: npt.NDArray[np.float64], value: npt.NDArray[np.float64]) -> int:
+    """Pack rectangle zero-baseline predicates for an XYAR trace row."""
+    base_arr = np.ascontiguousarray(np.asarray(base, dtype=np.float64))
+    value_arr = np.ascontiguousarray(np.asarray(value, dtype=np.float64))
+    if len(base_arr) != len(value_arr):
+        return 0xFF
+    n = len(base_arr)
+    return int(
+        _lib.xyg_rect_zero_baseline_flags(
+            _ptr_f64(base_arr) if n else 0,
+            _ptr_f64(value_arr) if n else 0,
+            n,
+        )
+    )
+
+
 def scene_axis_ticks(
     kind: int,
     lo: float,

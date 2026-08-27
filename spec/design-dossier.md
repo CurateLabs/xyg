@@ -1263,6 +1263,11 @@ ABI 105 moves the public static-export support predicate into Rust. Hosts pack
 an `XYEP` v1 envelope of literal figure metadata; allowlists, check order, and
 `XYG_SCENE_UNSUPPORTED_*` wording are engine-owned and identical for Python
 and Node.
+ABI 106 moves Figure autorange, `_auto_domain`, and zero-baseline pinning
+into Rust. Hosts pack an `XYAR` v1 envelope of axis options, column extents,
+and rectangle predicates; padding, log-positive extents, polar defaults,
+reverse, and the default 3% margin are engine-owned and identical for Python
+and Node.
 Constant-style Cartesian heatmap compiles a regular rows x cols lattice onto
 existing Scene Rect records; polar, colormaps, truecolor, irregular
 spacing, and LOD stay compatibility.

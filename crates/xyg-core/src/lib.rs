@@ -20,9 +20,12 @@
 
 #![allow(clippy::too_many_arguments)] // C ABI entry points; arity is the contract
 
+use xyg_engine::auto_domain;
+use xyg_engine::autorange::{rect_zero_baseline_flags, AutorangeError};
 #[cfg(not(target_os = "emscripten"))]
 use xyg_engine::chunked_columns;
 use xyg_engine::css;
+use xyg_engine::figure_autorange;
 use xyg_engine::geo;
 use xyg_engine::graph;
 use xyg_engine::hexbin;
@@ -98,7 +101,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 105;
+pub const ABI_VERSION: u32 = 106;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -168,6 +171,105 @@ pub unsafe extern "C" fn xyg_scene_public_export_reason(
             std::ptr::copy_nonoverlapping(encoded.as_ptr(), out, encoded.len());
         }
         encoded.len()
+    })
+}
+
+/// Resolve a packed `XYAR` v1 envelope to the product axis range.
+///
+/// Writes `(lo, hi)` on success and returns 0. Hosts pack axis options,
+/// per-trace column extents, and rectangle zero-baseline predicates; padding,
+/// log-positive extents, polar defaults, reverse, degenerate widening, the
+/// default 3% margin, and zero-baseline pinning stay in Rust. Returns `-1`
+/// for a malformed envelope, `-2` for an unknown version, `-3` when the
+/// envelope exceeds the trace/column budget, or `-4` when a log axis has no
+/// positive finite value.
+///
+/// # Safety
+/// `input` must address `len` readable bytes when `len` is non-zero.
+/// `out_lo` and `out_hi` must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_figure_autorange(
+    input: *const u8,
+    len: usize,
+    out_lo: *mut f64,
+    out_hi: *mut f64,
+) -> i32 {
+    if (len > 0 && input.is_null()) || out_lo.is_null() || out_hi.is_null() {
+        return -(AutorangeError::Length as i32);
+    }
+    ffi_guard(-(AutorangeError::Length as i32), || {
+        let bytes = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(input, len)
+        };
+        match figure_autorange(bytes) {
+            Ok((lo, hi)) => {
+                *out_lo = lo;
+                *out_hi = hi;
+                0
+            }
+            Err(error) => -(error as i32),
+        }
+    })
+}
+
+/// Expand a possibly-degenerate scalar domain the way `Figure._auto_domain`
+/// does. `has_bounds == 0` writes `(0, 1)`. Returns 0 on success or `-1`
+/// when an output pointer is null.
+///
+/// # Safety
+/// `out_lo` and `out_hi` must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_auto_domain(
+    has_bounds: u32,
+    lo: f64,
+    hi: f64,
+    out_lo: *mut f64,
+    out_hi: *mut f64,
+) -> i32 {
+    if out_lo.is_null() || out_hi.is_null() {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        let (resolved_lo, resolved_hi) = if has_bounds == 0 {
+            auto_domain(None)
+        } else {
+            auto_domain(Some((lo, hi)))
+        };
+        *out_lo = resolved_lo;
+        *out_hi = resolved_hi;
+        0
+    })
+}
+
+/// Scan one rectangle baseline/value pair for zero-baseline pinning.
+/// Returns the packed predicate byte, or `0xFF` when lengths/pointers are
+/// invalid. Hosts pack that byte into `XYAR`; Rust still owns the pin.
+///
+/// # Safety
+/// When `n` is non-zero, `base` and `value` must address `n` readable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_rect_zero_baseline_flags(
+    base: *const f64,
+    value: *const f64,
+    n: usize,
+) -> u8 {
+    if n > 0 && (base.is_null() || value.is_null()) {
+        return 0xFF;
+    }
+    ffi_guard(0xFF, || {
+        let base = if n == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(base, n)
+        };
+        let value = if n == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(value, n)
+        };
+        rect_zero_baseline_flags(base, value)
     })
 }
 

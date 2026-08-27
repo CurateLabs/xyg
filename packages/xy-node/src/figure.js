@@ -30,7 +30,14 @@ import {
   normalizeF32,
   pinsOffsetToZero,
   shouldUseDensity,
+  f64Ptr,
+  u8Ptr,
 } from "./encode.js";
+import {
+  xyAutoDomain,
+  xyFigureAutorange,
+  xyRectZeroBaselineFlags,
+} from "./native.js";
 import {
   PyramidCache,
   densityViewFromPyramid,
@@ -70,6 +77,172 @@ function asF64(value) {
   if (value instanceof Float64Array) return value;
   if (value == null) return new Float64Array(0);
   return Float64Array.from(value, Number);
+}
+
+const AUTORANGE_KIND = {
+  scatter: 0,
+  line: 1,
+  bar: 2,
+  column: 3,
+  histogram: 4,
+  violin: 5,
+  box: 6,
+  box_whisker: 7,
+  box_median: 8,
+  segments: 9,
+  errorbar: 10,
+  stem: 11,
+  area: 12,
+  error_band: 13,
+  ribbon: 14,
+  triangle_mesh: 15,
+  hexbin: 16,
+  heatmap: 17,
+};
+const AUTORANGE_ROLES = [
+  ["x", 0],
+  ["y", 1],
+  ["x0", 2],
+  ["x1", 3],
+  ["y0", 4],
+  ["y1", 5],
+  ["base", 6],
+];
+
+function axisOptions(figure, axisId) {
+  return figure.axis_options?.[axisId] ?? figure[`${axisId}Axis`] ?? {};
+}
+
+function columnValues(col) {
+  if (col == null) return null;
+  if (col instanceof Column) return col.values;
+  if (col instanceof Float64Array) return col;
+  if (ArrayBuffer.isView(col) || Array.isArray(col)) return asF64(col);
+  if (col.values != null) return asF64(col.values);
+  return asF64(col);
+}
+
+function columnExtent(col) {
+  const values = columnValues(col);
+  if (values == null) return null;
+  let min = Number.POSITIVE_INFINITY;
+  let max = Number.NEGATIVE_INFINITY;
+  let posMin = Number.POSITIVE_INFINITY;
+  let posMax = Number.NEGATIVE_INFINITY;
+  for (let i = 0; i < values.length; i += 1) {
+    const value = values[i];
+    if (!Number.isFinite(value)) continue;
+    if (value < min) min = value;
+    if (value > max) max = value;
+    if (value > 0) {
+      if (value < posMin) posMin = value;
+      if (value > posMax) posMax = value;
+    }
+  }
+  return {
+    min: Number.isFinite(min) ? min : Number.NaN,
+    max: Number.isFinite(max) ? max : Number.NaN,
+    posMin: Number.isFinite(posMin) ? posMin : Number.NaN,
+    posMax: Number.isFinite(posMax) ? posMax : Number.NaN,
+  };
+}
+
+function packColumnExtent(role, extent) {
+  const row = new Uint8Array(40);
+  const view = new DataView(row.buffer);
+  row[0] = role;
+  view.setFloat64(8, extent.min, true);
+  view.setFloat64(16, extent.max, true);
+  view.setFloat64(24, extent.posMin, true);
+  view.setFloat64(32, extent.posMax, true);
+  return row;
+}
+
+function rectZeroBaselineFlags(base, value) {
+  const baseArr = columnValues(base);
+  const valueArr = columnValues(value);
+  if (baseArr == null || valueArr == null || baseArr.length !== valueArr.length) return 0xff;
+  return xyRectZeroBaselineFlags(f64Ptr(baseArr), f64Ptr(valueArr), BigInt(baseArr.length));
+}
+
+/** Expand a possibly-degenerate scalar domain in Rust (`Figure._auto_domain`). */
+export function autoDomain(bounds) {
+  const lo = new Float64Array(1);
+  const hi = new Float64Array(1);
+  const code = bounds == null
+    ? xyAutoDomain(0, 0, 0, f64Ptr(lo), f64Ptr(hi))
+    : xyAutoDomain(1, Number(bounds[0]), Number(bounds[1]), f64Ptr(lo), f64Ptr(hi));
+  if (code !== 0) throw new RangeError("native auto_domain rejected the bounds");
+  return [lo[0], hi[0]];
+}
+
+function packFigureAutorange(figure, axisId, { useDomain = true } = {}) {
+  const options = axisOptions(figure, axisId);
+  const explicit = figure._axisRange?.[axisId];
+  const domain = options.domain ?? explicit;
+  let flags = 0;
+  if (useDomain) flags |= 1 << 0;
+  if (options.reverse) flags |= 1 << 1;
+  if (domain != null) flags |= 1 << 2;
+  if (options.margin != null) flags |= 1 << 3;
+  if (figure.coords === "polar") flags |= 1 << 4;
+  const axisDimX = typeof axisId === "string" ? axisId.startsWith("x") : axisId === "x";
+  if (axisDimX) flags |= 1 << 5;
+  const authoredType = options.type ?? options.kind;
+  const scaleCode = authoredType === "log" ? 1 : authoredType === "symlog" ? 2 : 0;
+  const categories = options.categories ?? figure._axis_categories?.[axisId];
+  const kindCode = authoredType === "time" ? 1 : categories?.length ? 2 : 0;
+  const thetaUnit = (options.theta_unit ?? options.thetaUnit ?? figure._polarMeta?.thetaUnit ?? "radians") === "degrees" ? 1 : 0;
+  const nCategories = figure.coords === "polar" && categories?.length ? categories.length : 0;
+  const traces = figure.traces ?? [];
+  if (traces.length > 0xffff) throw new RangeError("figure autorange trace budget exceeded");
+  const header = new Uint8Array(48);
+  const view = new DataView(header.buffer);
+  header.set([88, 89, 65, 82]);
+  view.setUint32(4, 1, true);
+  view.setUint32(8, flags, true);
+  header[12] = scaleCode;
+  header[13] = kindCode;
+  header[14] = thetaUnit;
+  header[15] = 0;
+  view.setUint16(16, traces.length, true);
+  view.setUint16(18, nCategories, true);
+  view.setUint32(20, 0, true);
+  view.setFloat64(24, domain != null ? Number(domain[0]) : 0, true);
+  view.setFloat64(32, domain != null ? Number(domain[1]) : 0, true);
+  view.setFloat64(40, options.margin == null ? 0 : Number(options.margin), true);
+  const parts = [header];
+  for (const trace of traces) {
+    let traceFlags = 0;
+    if ((trace.x_axis ?? "x") === axisId) traceFlags |= 1 << 0;
+    if ((trace.y_axis ?? "y") === axisId) traceFlags |= 1 << 1;
+    const hasEndpoints = trace.x0 != null && trace.x1 != null && trace.y0 != null && trace.y1 != null;
+    if (hasEndpoints) traceFlags |= 1 << 2;
+    if (trace.base != null) traceFlags |= 1 << 3;
+    const columns = [];
+    for (const [name, role] of AUTORANGE_ROLES) {
+      const extent = columnExtent(trace[name]);
+      if (extent == null) continue;
+      columns.push(packColumnExtent(role, extent));
+    }
+    let zb = 0xff;
+    if ((trace.kind === "bar" || trace.kind === "column" || trace.kind === "histogram") && hasEndpoints) {
+      zb = rectZeroBaselineFlags(axisDimX ? trace.x0 : trace.y0, axisDimX ? trace.x1 : trace.y1);
+    }
+    const row = new Uint8Array(4);
+    row[0] = AUTORANGE_KIND[trace.kind] ?? 255;
+    row[1] = traceFlags;
+    row[2] = columns.length;
+    row[3] = zb;
+    parts.push(row, ...columns);
+  }
+  const out = new Uint8Array(parts.reduce((n, part) => n + part.length, 0));
+  let offset = 0;
+  for (const part of parts) {
+    out.set(part, offset);
+    offset += part.length;
+  }
+  return out;
 }
 
 function optionalBoolean(value, name) {
@@ -755,66 +928,16 @@ export class Figure {
     return this;
   }
 
-  _range(axisId) {
-    if (this._axisRange[axisId] != null) {
-      return this._axisRange[axisId];
+  _range(axisId, { useDomain = true } = {}) {
+    const packed = packFigureAutorange(this, axisId, { useDomain });
+    const lo = new Float64Array(1);
+    const hi = new Float64Array(1);
+    const code = xyFigureAutorange(u8Ptr(packed), BigInt(packed.length), f64Ptr(lo), f64Ptr(hi));
+    if (code === -4) {
+      throw new RangeError(`${axisId} log axis requires at least one positive value`);
     }
-    let lo = Number.POSITIVE_INFINITY;
-    let hi = Number.NEGATIVE_INFINITY;
-    for (const t of this.traces) {
-      let cols;
-      if (t.kind === "ribbon") {
-        // x: faces; y: all four span edges (incl. target y in x/y slots).
-        cols =
-          axisId === "x" || axisId === (t.x_axis ?? "x")
-            ? [t.x0, t.x1]
-            : [t.y0, t.y1, t.x, t.y];
-      } else if (t.kind === "triangle_mesh") {
-        cols =
-          axisId === "x" || axisId === (t.x_axis ?? "x")
-            ? [t.x0, t.x1, t.x]
-            : [t.y0, t.y1, t.y];
-      } else if (
-        t.kind === "segments" ||
-        t.kind === "histogram" ||
-        t.kind === "bar" ||
-        t.kind === "box" ||
-        t.kind === "violin" ||
-        t.kind === "contour" ||
-        t.kind === "errorbar" ||
-        t.kind === "stem" ||
-        t.kind === "box_whisker" ||
-        t.kind === "box_median"
-      ) {
-        cols =
-          axisId === "x" || axisId === (t.x_axis ?? "x") ? [t.x0, t.x1] : [t.y0, t.y1];
-      } else if (t.kind === "area" || t.kind === "error_band") {
-        cols =
-          axisId === "x" || axisId === (t.x_axis ?? "x")
-            ? [t.x]
-            : [t.y, t.base];
-      } else {
-        cols = axisId === "x" || axisId === (t.x_axis ?? "x") ? [t.x] : [t.y];
-      }
-      for (const col of cols) {
-        if (col == null) continue;
-        const mm = minMax(col);
-        if (mm == null) continue;
-        lo = Math.min(lo, mm[0]);
-        hi = Math.max(hi, mm[1]);
-      }
-    }
-    if (!Number.isFinite(lo) || !Number.isFinite(hi)) {
-      lo = 0;
-      hi = 1;
-    }
-    if (lo === hi) {
-      hi = lo + 1;
-    }
-    const pad = (hi - lo) * 0.05;
-    const range = [lo - pad, hi + pad];
-    this._axisRange[axisId] = range;
-    return range;
+    if (code !== 0) throw new RangeError("invalid figure autorange envelope");
+    return [lo[0], hi[0]];
   }
 
   _emitScatter(t, pw, xr, yr) {

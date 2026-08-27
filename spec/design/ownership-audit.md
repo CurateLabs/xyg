@@ -102,7 +102,12 @@ row per segment and two PolyFill rows per face. ABI 105 moves
 `scene_export_support_reason` allowlists, check order, and diagnostic wording
 into `crates/xyg-engine/src/scene_export.rs`. Python and Node only pack `XYEP`
 v1 metadata and surface the returned diagnostic; they still compile the Scene
-so encoder and router cannot disagree. Polar hexbin, custom
+so encoder and router cannot disagree. ABI 106 moves Figure autorange, default
+3% margin, log-positive extents, polar theta/radial defaults, reverse,
+degenerate widening, `_auto_domain`, and zero-baseline pinning into
+`crates/xyg-engine/src/autorange.rs`. Python and Node pack an `XYAR` v1 envelope
+of axis options, zone extents, and rectangle zero-baseline predicates; they no
+longer apply host-local padding (Node's former 5% pad). Polar hexbin, custom
 `reduce_C_function`, metric colormaps, LOD over the 1,024-group painter
 budget, and rich style exceptions stay on the compatibility exporters.
 Scene 25 is unchanged. Polar heatmap, metric
@@ -442,6 +447,7 @@ Forbidden:
 | `crates/xyg-wasm/src/temporal_graph.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |
 | `crates/xyg-wasm/src/typed_series_abi_generated.rs` | Generated cross-host WASM contract binding | `browser-wasm-generated` | `generate` | #59 |
 | `crates/xyg-engine/src/css.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/autorange.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/dashboard.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/font.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
@@ -458,6 +464,7 @@ Forbidden:
 | `crates/xyg-engine/src/raster.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/sankey.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/scene_export.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/simd.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/stats.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/stream.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |

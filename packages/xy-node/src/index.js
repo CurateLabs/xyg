@@ -155,7 +155,7 @@ export {
   composeGraph,
 } from "./graph.js";
 
-import { Figure, PayloadWriter, figure } from "./figure.js";
+import { Figure, PayloadWriter, figure, autoDomain } from "./figure.js";
 import { toHtml } from "./html.js";
 
 /** Stable engine entry — alias of {@link figure} for Node servers / VS Code hosts. */
@@ -163,7 +163,7 @@ export function createEngine(opts = {}) {
   return figure(opts);
 }
 
-export { Figure, PayloadWriter, figure, toHtml };
+export { Figure, PayloadWriter, figure, toHtml, autoDomain };
 
 export { axisTicks, figureSceneV3, scaleMap, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneRasterCommands, sceneSupportReason, sceneSvg, sceneVersion, scatterSceneSvg } from "./scene.js";
 

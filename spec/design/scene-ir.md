@@ -1021,7 +1021,9 @@ keys, axis facts, annotation field names, and compact per-trace facts, while
 Rust owns the public-subset allowlists, check order, and
 `XYG_SCENE_UNSUPPORTED_*` wording. An empty reason selects the Scene route;
 hosts still compile the Scene and may still report compiler or viewport
-diagnostics, including the shared PolyFill group budget. Polar
+diagnostics, including the shared PolyFill group budget. ABI 106 does not
+change Scene records; `xyg_figure_autorange` owns the domain the annotation
+and chrome packers already pass as `figure._range`. Polar
 hexbin, custom reducers, metric colormaps, LOD, and rich style exceptions
 fail closed and keep the compatibility exporters. Scene 25 is unchanged.
 

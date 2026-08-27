@@ -1,12 +1,13 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 105;
-export const SIGNATURE_SHA256 = "b7a8938af5fd21e4b5a22814278d44518105d6788d3db0da210a553af81dec80";
+export const ABI_VERSION = 106;
+export const SIGNATURE_SHA256 = "d664c9902313d3f9051f9c279f1d746546a444a50df9391e61e3fd06cc591c97";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
 }
 
+export let xyAutoDomain;
 export let xyBarStack;
 export let xyBin2d;
 export let xyBin2dF32;
@@ -37,6 +38,7 @@ export let xyFactorizeFixed;
 export let xyFactorizeFixedU8;
 export let xyFactorizeFixedU8Counts;
 export let xyFactorizeUnicode1U8Counts;
+export let xyFigureAutorange;
 export let xyGeoColumnCrs;
 export let xyGeoColumnFree;
 export let xyGeoColumnGeometry;
@@ -108,6 +110,7 @@ export let xyRasterizePng;
 export let xyRasterizePngData;
 export let xyRasterizePngSpans;
 export let xyRasterizeSpans;
+export let xyRectZeroBaselineFlags;
 export let xyRemapU8;
 export let xyRfft;
 export let xySampleMask;
@@ -202,6 +205,7 @@ export let xyZoneMaps;
 export let xyZoneMapsPair;
 
 export function bindGeneratedAbi(lib) {
+  xyAutoDomain = lib.func("int32_t xyg_auto_domain(uint32_t has_bounds, double lo, double hi, double * out_lo, double * out_hi)");
   xyBarStack = lib.func("int32_t xyg_bar_stack(const double * pos, size_t n_items, const double * values, size_t n_series, const double * width, size_t width_len, const double * base, size_t base_len, uint32_t mode, uint32_t orientation, double * out_x0, double * out_x1, double * out_y0, double * out_y1)");
   xyBin2d = lib.func("int32_t xyg_bin_2d(const double * x, const double * y, size_t len, double x0, double x1, double y0, double y1, size_t w, size_t h, float * out)");
   xyBin2dF32 = lib.func("int32_t xyg_bin_2d_f32(const float * x, const float * y, size_t len, double x0, double x1, double y0, double y1, size_t w, size_t h, float * out)");
@@ -232,6 +236,7 @@ export function bindGeneratedAbi(lib) {
   xyFactorizeFixedU8 = lib.func("size_t xyg_factorize_fixed_u8(const uint8_t * data, size_t len, size_t width, uint8_t * out_codes, uint32_t * out_unique_indices, size_t unique_capacity)");
   xyFactorizeFixedU8Counts = lib.func("size_t xyg_factorize_fixed_u8_counts(const uint8_t * data, size_t len, size_t width, uint8_t * out_codes, uint32_t * out_unique_indices, uint64_t * out_counts, size_t unique_capacity)");
   xyFactorizeUnicode1U8Counts = lib.func("size_t xyg_factorize_unicode1_u8_counts(const uint32_t * data, size_t len, int32_t swap_endian, uint8_t * out_codes, uint32_t * out_unique_indices, uint64_t * out_counts, size_t unique_capacity)");
+  xyFigureAutorange = lib.func("int32_t xyg_figure_autorange(const uint8_t * input, size_t len, double * out_lo, double * out_hi)");
   xyGeoColumnCrs = lib.func("uint32_t xyg_geo_column_crs(uint64_t handle)");
   xyGeoColumnFree = lib.func("int32_t xyg_geo_column_free(uint64_t handle)");
   xyGeoColumnGeometry = lib.func("uint32_t xyg_geo_column_geometry(uint64_t handle)");
@@ -303,6 +308,7 @@ export function bindGeneratedAbi(lib) {
   xyRasterizePngData = lib.func("size_t xyg_rasterize_png_data(const uint8_t * cmd, size_t cmd_len, const uint8_t * data, size_t data_len, uint8_t * out, size_t out_capacity, size_t w, size_t h)");
   xyRasterizePngSpans = lib.func("size_t xyg_rasterize_png_spans(const uint8_t * cmd, size_t cmd_len, const uint8_t *const * span_ptrs, const size_t * span_lens, size_t span_count, uint8_t * out, size_t out_capacity, size_t w, size_t h)");
   xyRasterizeSpans = lib.func("int32_t xyg_rasterize_spans(const uint8_t * cmd, size_t cmd_len, const uint8_t *const * span_ptrs, const size_t * span_lens, size_t span_count, uint8_t * out, size_t w, size_t h)");
+  xyRectZeroBaselineFlags = lib.func("uint8_t xyg_rect_zero_baseline_flags(const double * base, const double * value, size_t n)");
   xyRemapU8 = lib.func("int32_t xyg_remap_u8(uint8_t * values, size_t len, const uint8_t * mapping, size_t mapping_len)");
   xyRfft = lib.func("int32_t xyg_rfft(const double * data, size_t len, size_t nfft, double sample_rate, double * out_frequency, double * out_real, double * out_imag)");
   xySampleMask = lib.func("int32_t xyg_sample_mask(const uint64_t * ids, size_t len, uint64_t seed, uint64_t threshold, uint8_t * out)");
