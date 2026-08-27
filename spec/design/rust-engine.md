@@ -584,6 +584,8 @@ over packed `XYEP` v1 figure metadata so the public static-export allowlists
 and `XYG_SCENE_UNSUPPORTED_*` wording are likewise Rust-owned. ABI v106 adds
 `xyg_figure_autorange` / `xyg_auto_domain` over packed `XYAR` v1 extents so
 Python and Node share one domain, padding, polar, and zero-baseline policy.
+Direct-browser WASM compile calls the same `auto_domain` for degenerate
+column spans.
 ABI v107 adds `xyg_scene_resolve_mark_styles` / `xyg_css_color_rgba` over packed
 `XYMS` v1 mark styles so Python and Node share one CSS→RGBA8 conversion and
 per-kind fill/stroke/width defaults. ABI v108 adds

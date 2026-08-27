@@ -175,7 +175,9 @@ static-export support predicate Rust-owned: Python and Node pack the same
 `XYEP` v1 envelope and surface `xyg_scene_public_export_reason` verbatim.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call
-`xyg_figure_autorange` / `xyg_auto_domain`. Polar hexbin, custom `reduce_C_function`, metric
+`xyg_figure_autorange` / `xyg_auto_domain`. Direct-browser WASM compile uses
+the same `auto_domain` degenerate pad instead of a host-local ±0.5 fork.
+Polar hexbin, custom `reduce_C_function`, metric
 colormaps, LOD beyond the 1,024-group painter budget, and rich style
 exceptions remain compatibility routes. ABI 107 makes Scene CSS→RGBA8 and
 per-kind mark style defaults the same way: Python and Node pack `XYMS` v1

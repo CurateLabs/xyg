@@ -107,7 +107,8 @@ so encoder and router cannot disagree. ABI 106 moves Figure autorange, default
 degenerate widening, `_auto_domain`, and zero-baseline pinning into
 `crates/xyg-engine/src/autorange.rs`. Python and Node pack an `XYAR` v1 envelope
 of axis options, zone extents, and rectangle zero-baseline predicates; they no
-longer apply host-local padding (Node's former 5% pad). ABI 107 moves Scene
+longer apply host-local padding (Node's former 5% pad). Direct-browser WASM
+compile uses the same `auto_domain` degenerate pad. ABI 107 moves Scene
 CSS→RGBA8 conversion and per-kind mark fill/stroke/width defaults into
 `crates/xyg-engine/src/scene_style.rs` (plus `css::color_rgba8`). Python and
 Node pack an `XYMS` v1 envelope of kind, opacities, authored CSS strings, and
