@@ -2050,6 +2050,61 @@ def scene_pack_legend(
     return bytes(out[:code])
 
 
+def scene_pack_colorbar(
+    *,
+    flags: int,
+    lo: float,
+    hi: float,
+    text_rgba: bytes,
+    title: bytes,
+    stop_values: npt.NDArray[np.float64] | list[float],
+    stop_rgba: bytes,
+    ticks: npt.NDArray[np.float64] | list[float],
+) -> bytes:
+    """Frame a primary Scene colorbar as XYCB v2 bytes."""
+    title_arr = np.frombuffer(title, dtype=np.uint8) if title else np.empty(0, dtype=np.uint8)
+    color_arr = np.frombuffer(bytes(text_rgba), dtype=np.uint8)
+    values = np.ascontiguousarray(np.asarray(stop_values, dtype=np.float64).reshape(-1))
+    rgba_arr = np.frombuffer(bytes(stop_rgba), dtype=np.uint8)
+    tick_arr = np.ascontiguousarray(np.asarray(ticks, dtype=np.float64).reshape(-1))
+    if len(color_arr) != 4:
+        raise ValueError("colorbar text_rgba must be RGBA8")
+    out = np.zeros(MAX_SCENE_COLORBAR_INPUT_BYTES, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_pack_colorbar(
+            int(flags),
+            float(lo),
+            float(hi),
+            _ptr_u8(color_arr),
+            _ptr_u8(title_arr) if len(title_arr) else 0,
+            len(title_arr),
+            int(values.size),
+            _ptr_f64(values) if values.size else 0,
+            _ptr_u8(rgba_arr) if len(rgba_arr) else 0,
+            len(rgba_arr),
+            int(tick_arr.size),
+            _ptr_f64(tick_arr) if tick_arr.size else 0,
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if code == -5:
+        raise ValueError(
+            "Scene v19 colorbar values must be finite and RGBA literals exactly four bytes"
+        )
+    if code == -6:
+        raise ValueError(
+            "Scene v19 colorbar stops must be strictly increasing and match the domain endpoints"
+        )
+    if code == -7:
+        raise ValueError("Scene v19 colorbar ticks are limited to 32 finite ordered values")
+    if code == -3:
+        raise ValueError("Scene v19 colorbar ticks are limited to 32 finite ordered values")
+    if code < 0:
+        raise ValueError("invalid scene colorbar packing")
+    return bytes(out[:code])
+
+
 def rect_zero_baseline_flags(base: npt.NDArray[np.float64], value: npt.NDArray[np.float64]) -> int:
     """Pack rectangle zero-baseline predicates for an XYAR trace row."""
     base_arr = np.ascontiguousarray(np.asarray(base, dtype=np.float64))

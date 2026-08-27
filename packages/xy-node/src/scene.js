@@ -4,6 +4,7 @@ import {
   xySceneAxisTicks,
   xySceneBatchEncode,
   xySceneBrowserPainter,
+  xyScenePackColorbar,
   xyScenePackLegend,
   xyScenePlotLayout,
   xyScenePublicExportReason,
@@ -1068,7 +1069,6 @@ function colorbarInput(figure) {
   const domain = options.domain, stops = options.stops;
   if (!Array.isArray(domain) || domain.length !== 2 || !Array.isArray(stops) || stops.length < 2 || stops.length > 16) throw new RangeError("Scene v19 colorbar requires a domain and 2–16 stops");
   const lo = Number(domain[0]), hi = Number(domain[1]);
-  if (!Number.isFinite(lo) || !Number.isFinite(hi) || lo >= hi) throw new RangeError("Scene v19 colorbar domain must be finite and ordered");
   const title = options.title ?? "";
   if (typeof title !== "string") throw new TypeError("Scene v19 colorbar title must be a string");
   const titleBytes = new TextEncoder().encode(title), text = asUnsignedArray(options.text_rgba ?? [32, 32, 32, 255], "colorbar text_rgba", 255, Uint8Array);
@@ -1076,21 +1076,41 @@ function colorbarInput(figure) {
   const rawTicks = options.ticks;
   if (rawTicks != null && (!Array.isArray(rawTicks) || rawTicks.length > 32)) throw new RangeError("Scene v19 colorbar ticks are limited to 32 finite ordered values");
   const ticks = rawTicks == null ? [] : rawTicks.map(Number);
-  if (ticks.some((value, index) => !Number.isFinite(value) || value < lo || value > hi || (index && value <= ticks[index - 1]))) throw new RangeError("Scene v19 colorbar ticks are limited to 32 finite ordered values");
-  const authoredTicks = ticks.length > 0;
   const minorTicks = options.minor_ticks ?? false;
   if (typeof minorTicks !== "boolean") throw new TypeError("Scene v19 colorbar minor_ticks must be a boolean");
-  const out = new Uint8Array(56 + stops.length * 12 + ticks.length * 8 + titleBytes.length), view = new DataView(out.buffer);
-  out.set([88, 89, 67, 66]); view.setUint32(4, 2, true);
   const side = options.side ?? "right"; if (side !== "right" && side !== "bottom") throw new RangeError("Scene v19 colorbar side is right or bottom");
-  out[8] = Number(side === "bottom") | 2 | (Number(minorTicks) << 2) | (Number(authoredTicks) << 3);
-  view.setUint32(12, stops.length, true); view.setUint32(16, ticks.length, true); view.setUint32(20, titleBytes.length, true); view.setFloat64(24, lo, true); view.setFloat64(32, hi, true); out.set(text, 40);
-  let previous = -Infinity;
-  for (const [index, stop] of stops.entries()) { if (!Array.isArray(stop) || stop.length !== 2) throw new TypeError("colorbar stops are [value, RGBA]"); const value = Number(stop[0]), rgba = asUnsignedArray(stop[1], `colorbar stops[${index}]`, 255, Uint8Array); requireLength(rgba, 4, `colorbar stops[${index}]`); if (!Number.isFinite(value) || value < lo || value > hi || value <= previous) throw new RangeError("colorbar stops must be ordered within the domain"); previous = value; view.setFloat64(56 + index * 12, value, true); out.set(rgba, 64 + index * 12); }
-  if (view.getFloat64(56, true) !== lo || view.getFloat64(56 + (stops.length - 1) * 12, true) !== hi) throw new RangeError("colorbar stops must span the domain");
-  const ticksStart = 56 + stops.length * 12;
-  for (const [index, value] of ticks.entries()) view.setFloat64(ticksStart + index * 8, value, true);
-  out.set(titleBytes, ticksStart + ticks.length * 8); return out;
+  const stopValues = new Float64Array(stops.length);
+  const stopRgba = new Uint8Array(stops.length * 4);
+  for (const [index, stop] of stops.entries()) {
+    if (!Array.isArray(stop) || stop.length !== 2) throw new TypeError("colorbar stops are [value, RGBA]");
+    stopValues[index] = Number(stop[0]);
+    const rgba = asUnsignedArray(stop[1], `colorbar stops[${index}]`, 255, Uint8Array);
+    requireLength(rgba, 4, `colorbar stops[${index}]`);
+    stopRgba.set(rgba, index * 4);
+  }
+  const tickValues = Float64Array.from(ticks);
+  const out = new Uint8Array(56 + stops.length * 12 + ticks.length * 8 + titleBytes.length);
+  const code = xyScenePackColorbar(
+    Number(side === "bottom") | (Number(minorTicks) << 2),
+    lo,
+    hi,
+    u8Ptr(text),
+    titleBytes.length ? u8Ptr(titleBytes) : 0,
+    BigInt(titleBytes.length),
+    stops.length,
+    f64Ptr(stopValues),
+    u8Ptr(stopRgba),
+    BigInt(stopRgba.length),
+    ticks.length,
+    ticks.length ? f64Ptr(tickValues) : 0,
+    u8Ptr(out),
+    BigInt(out.length),
+  );
+  if (code === -5) throw new RangeError("Scene v19 colorbar domain must be finite and ordered");
+  if (code === -6) throw new RangeError("colorbar stops must span the domain");
+  if (code === -7) throw new RangeError("Scene v19 colorbar ticks are limited to 32 finite ordered values");
+  if (code < 0) throw new RangeError("invalid scene colorbar packing");
+  return out.subarray(0, code);
 }
 
 function rejectRectExtras(style, kind) {

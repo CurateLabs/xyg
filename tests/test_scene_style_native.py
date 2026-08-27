@@ -1,4 +1,4 @@
-"""Rust-owned Scene CSS, packing, chrome, and legend framing (ABI 107–110)."""
+"""Rust-owned Scene CSS, packing, chrome, legend, and colorbar (ABI 107–111)."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ import pytest
 from xyg._figure import Figure
 from xyg._native import (
     css_color_rgba,
+    scene_pack_colorbar,
     scene_pack_legend,
     scene_pack_trace,
     scene_resolve_chrome_style,
@@ -137,3 +138,38 @@ def test_named_scatter_legend_compiles_through_rust_xylg() -> None:
     encoded = figure_scene(figure)
     assert b"XYLG" in encoded
     assert b"series" in encoded
+
+
+def test_pack_colorbar_frames_v2_header_stops_and_ticks() -> None:
+    framed = scene_pack_colorbar(
+        flags=1 << 2,
+        lo=0.0,
+        hi=1.0,
+        text_rgba=bytes((32, 32, 32, 255)),
+        title=b"",
+        stop_values=[0.0, 1.0],
+        stop_rgba=bytes((0, 0, 0, 255, 255, 255, 255, 255)),
+        ticks=[0.0, 0.5, 1.0],
+    )
+    assert framed[:4] == b"XYCB"
+    assert int.from_bytes(framed[4:8], "little") == 2
+    assert framed[8] == 0b1110
+    assert int.from_bytes(framed[16:20], "little") == 3
+    ticks_at = 56 + 2 * 12
+    assert struct.unpack_from("<d", framed, ticks_at)[0] == 0.0
+    assert struct.unpack_from("<d", framed, ticks_at + 8)[0] == 0.5
+    assert struct.unpack_from("<d", framed, ticks_at + 16)[0] == 1.0
+
+
+def test_pack_colorbar_rejects_stops_that_miss_the_domain() -> None:
+    with pytest.raises(ValueError, match="strictly increasing"):
+        scene_pack_colorbar(
+            flags=0,
+            lo=0.0,
+            hi=1.0,
+            text_rgba=bytes((32, 32, 32, 255)),
+            title=b"",
+            stop_values=[0.1, 1.0],
+            stop_rgba=bytes((0, 0, 0, 255, 255, 255, 255, 255)),
+            ticks=[],
+        )

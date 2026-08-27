@@ -36,6 +36,7 @@ use xyg_engine::projection;
 use xyg_engine::raster;
 use xyg_engine::sankey;
 use xyg_engine::scene;
+use xyg_engine::scene_colorbar::{self, ColorbarError};
 use xyg_engine::scene_legend::{self, LegendError};
 use xyg_engine::scene_pack::{self, PackError};
 use xyg_engine::scene_public_export_reason;
@@ -104,7 +105,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 110;
+pub const ABI_VERSION: u32 = 111;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -499,6 +500,116 @@ pub unsafe extern "C" fn xyg_scene_pack_legend(
                 match i32::try_from(bytes.len()) {
                     Ok(count) => count,
                     Err(_) => -(LegendError::Limit as i32),
+                }
+            }
+            Err(error) => -(error as i32),
+        }
+    })
+}
+
+/// Frame a primary Scene colorbar as XYCB v2 bytes.
+///
+/// Hosts pass horizontal/minor flags, domain, text RGBA, title, stop
+/// values/RGBA, and optional ticks. Rust owns the XYCB header, stop/tick
+/// tables, domain-span checks, and bounded-text rejection. Returns the byte
+/// count on success. `-1` malformed, `-2` reserved, `-3` over the colorbar
+/// budget, `-4` when `out` is too small, `-5` when a required value is
+/// non-finite, `-6` when stops are unordered or miss the domain, or `-7`
+/// when ticks are unordered or outside the domain.
+///
+/// `flags` bit 0 is horizontal (`side=bottom`); bit 2 is `minor_ticks`.
+/// Stop RGBA is `n_stops * 4` bytes. `ticks` may be null when `n_ticks` is 0.
+///
+/// # Safety
+/// Non-zero lengths require readable pointers. When `out_cap` is non-zero,
+/// `out` must address that many writable bytes. `text_rgba` must address
+/// four readable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_pack_colorbar(
+    flags: u8,
+    lo: f64,
+    hi: f64,
+    text_rgba: *const u8,
+    title: *const u8,
+    title_len: usize,
+    n_stops: u32,
+    stop_values: *const f64,
+    stop_rgba: *const u8,
+    stop_rgba_len: usize,
+    n_ticks: u32,
+    ticks: *const f64,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if out_cap > 0 && out.is_null() {
+        return -(ColorbarError::Length as i32);
+    }
+    if text_rgba.is_null() {
+        return -(ColorbarError::Length as i32);
+    }
+    ffi_guard(-(ColorbarError::Length as i32), || {
+        let title = if title_len == 0 {
+            &[][..]
+        } else if title.is_null() {
+            return -(ColorbarError::Length as i32);
+        } else {
+            std::slice::from_raw_parts(title, title_len)
+        };
+        let n_stops = n_stops as usize;
+        let n_ticks = n_ticks as usize;
+        let values = if n_stops == 0 {
+            &[][..]
+        } else if stop_values.is_null() {
+            return -(ColorbarError::Length as i32);
+        } else {
+            std::slice::from_raw_parts(stop_values, n_stops)
+        };
+        let rgba = if stop_rgba_len == 0 {
+            &[][..]
+        } else if stop_rgba.is_null() {
+            return -(ColorbarError::Length as i32);
+        } else {
+            std::slice::from_raw_parts(stop_rgba, stop_rgba_len)
+        };
+        if rgba.len() != n_stops.saturating_mul(4) {
+            return -(ColorbarError::Length as i32);
+        }
+        let tick_values = if n_ticks == 0 {
+            &[][..]
+        } else if ticks.is_null() {
+            return -(ColorbarError::Length as i32);
+        } else {
+            std::slice::from_raw_parts(ticks, n_ticks)
+        };
+        let mut stops = Vec::with_capacity(n_stops);
+        for (index, &value) in values.iter().enumerate() {
+            let at = index * 4;
+            stops.push(scene_colorbar::ColorbarStop {
+                value,
+                rgba: rgba[at..at + 4].try_into().unwrap(),
+            });
+        }
+        match scene_colorbar::pack_colorbar(scene_colorbar::ColorbarFrameInput {
+            flags,
+            lo,
+            hi,
+            text_rgba: std::slice::from_raw_parts(text_rgba, 4).try_into().unwrap(),
+            title,
+            stops: &stops,
+            ticks: tick_values,
+        }) {
+            Ok(bytes) => {
+                if bytes.len() > out_cap {
+                    return -(ColorbarError::Output as i32);
+                }
+                if bytes.is_empty() {
+                    return 0;
+                }
+                let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                dest[..bytes.len()].copy_from_slice(&bytes);
+                match i32::try_from(bytes.len()) {
+                    Ok(count) => count,
+                    Err(_) => -(ColorbarError::Limit as i32),
                 }
             }
             Err(error) => -(error as i32),
