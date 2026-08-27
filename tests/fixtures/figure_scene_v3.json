@@ -91,9 +91,9 @@
   "public_scatter_stroke_sha256": "31172f14e2c8104c3d4ff504db12d618b77bc4b6b6e387361464f98ab114c001",
   "public_triangle_mesh_sha256": "eb25e8405b61d419b9839c5fba89f5920810a55f655aea3e5f7ba6ddcfea6ff0",
   "public_hexbin_sha256": {
-    "count": "4eef6829f52aa576ab63d5b81ad032b59442c754d1fbca773c88b1cefd10bd27",
-    "mean": "5346bb7d122a40305a5227c098bcd5fd5ebb885d3b4b2dd782c5a22c5470e78d",
-    "sum": "5346bb7d122a40305a5227c098bcd5fd5ebb885d3b4b2dd782c5a22c5470e78d"
+    "count": "f39a0cdb44b31ff98813acc3a3a571b0b13ea613f642c029ed418cf815b86b84",
+    "mean": "ff483c0b93089af6a5fb81779f1cc54c6169dafd1a6d169446b8ea95202b1572",
+    "sum": "ff483c0b93089af6a5fb81779f1cc54c6169dafd1a6d169446b8ea95202b1572"
   },
   "band_outlines": {
     "top": {

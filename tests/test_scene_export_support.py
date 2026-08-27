@@ -806,15 +806,18 @@ def test_public_hexbin_honors_the_painter_group_boundary() -> None:
         range=((0.0, 1.0), (0.0, 1.0)),
         color="#3987e5",
     )
+    assert len(figure.traces[0].x.values) > 1024
     assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
-    assert try_public_svg(figure) is None
+    assert figure.to_svg()
 
 
 def test_colormap_hexbin_stays_on_compatibility() -> None:
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 4.0)
     figure.axis_options["y"]["domain"] = (0.0, 5.0)
-    figure.hexbin(_PUBLIC_HEXBIN_X, _PUBLIC_HEXBIN_Y, gridsize=(4, 4), range=((0.0, 4.0), (0.0, 5.0)))
+    figure.hexbin(
+        _PUBLIC_HEXBIN_X, _PUBLIC_HEXBIN_Y, gridsize=(4, 4), range=((0.0, 4.0), (0.0, 5.0))
+    )
     reason = scene_export_support_reason(figure)
     assert reason is not None
     assert try_public_svg(figure) is None
@@ -826,14 +829,11 @@ def test_colormap_hexbin_stays_on_compatibility() -> None:
     [
         lambda figure: setattr(figure, "coords", "polar"),
         lambda figure: setattr(figure.traces[0], "x_axis", "x2"),
-        lambda figure: figure.axis_options["x"].__setitem__("domain", None),
         lambda figure: figure.traces[0].style.__setitem__("reduce", "custom"),
-        lambda figure: figure.traces[0].style.__setitem__("fill_opacity", 0.5),
-        lambda figure: figure.traces[0].style.__setitem__("role", "hex-density"),
         lambda figure: figure.traces[0].x.values.__setitem__(0, np.nan),
     ],
 )
-def test_public_hexbin_keeps_unsupported_cases_on_compatibility(
+def test_public_hexbin_compiler_rejects_polar_custom_and_nonfinite(
     mutate: Callable[[Figure], None],
 ) -> None:
     figure = _public_hexbin()
@@ -842,6 +842,23 @@ def test_public_hexbin_keeps_unsupported_cases_on_compatibility(
     assert try_public_svg(figure) is None
     assert try_public_png(figure) is None
     assert try_public_pdf(figure) is None
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda figure: figure.axis_options["x"].__setitem__("domain", None),
+        lambda figure: figure.traces[0].style.__setitem__("fill_opacity", 0.5),
+        lambda figure: figure.traces[0].style.__setitem__("role", "hex-density"),
+    ],
+)
+def test_public_hexbin_predicate_keeps_rich_style_on_compatibility(
+    mutate: Callable[[Figure], None],
+) -> None:
+    figure = _public_hexbin()
+    mutate(figure)
+    assert scene_export_support_reason(figure) is not None
+    assert figure.to_svg()
 
 
 def test_custom_hexbin_reducer_stays_on_compatibility() -> None:
