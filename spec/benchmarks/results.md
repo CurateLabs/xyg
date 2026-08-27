@@ -195,21 +195,21 @@ uv run python scripts/verify_public_scene_export.py \
   spec/benchmarks/public-scene-export-local.json --recompute-goldens
 ```
 
-Recorded local run (Linux x86_64, CPython 3.12.3, native backend, 4 CPUs,
-software GL, 1 warmup + 7-rep median). Peak process RSS during the harness
-was 52–53 MiB; `tracemalloc` peak was 6.2 MiB. This is a Cloud Agent VM
+Recorded local run on `d10c1ac` (Linux x86_64, CPython 3.12.3, native backend,
+4 CPUs, software GL, 1 warmup + 7-rep median). Peak process RSS during the
+harness was 51 MiB; `tracemalloc` peak was 5.4 MiB. This is a Cloud Agent VM
 diagnostic, not a reference-hardware or CI (software GL) row.
 
 | route | Scene B | SVG B | PNG B | PDF B | painter B | scene ms | SVG ms | PNG ms | PDF ms |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| hexbin_count | 14,275 | 8,906 | 24,254 | 2,402 | 7,109 | 8.92 | 9.14 | 10.39 | 15.52 |
-| hexbin_mean | 2,851 | 3,776 | 19,986 | 1,834 | 1,669 | 4.43 | 4.50 | 5.20 | 7.40 |
-| hexbin_sum | 2,851 | 3,776 | 19,986 | 1,834 | 1,669 | 4.39 | 4.50 | 5.22 | 7.36 |
-| scatter | 536 | 2,517 | 12,215 | 1,466 | 498 | 3.48 | 3.62 | 4.08 | 5.67 |
-| literal_geometry | 720 | 2,703 | 14,287 | 1,505 | 626 | 3.86 | 3.97 | 4.58 | 5.97 |
-| triangle_mesh | 844 | 3,515 | 25,104 | 1,757 | 826 | 3.65 | 3.77 | 4.74 | 6.43 |
-| violin_vertical | 1,320 | 3,920 | 13,517 | 1,679 | 850 | 4.60 | 4.79 | 5.36 | 7.50 |
-| box_vertical | 1,612 | 4,544 | 16,121 | 2,006 | 1,516 | 4.76 | 4.88 | 5.46 | 7.85 |
+| hexbin_count | 14,275 | 8,906 | 24,254 | 2,402 | 7,109 | 9.07 | 9.16 | 10.42 | 15.38 |
+| hexbin_mean | 2,851 | 3,776 | 19,986 | 1,834 | 1,669 | 4.42 | 4.49 | 5.24 | 7.39 |
+| hexbin_sum | 2,851 | 3,776 | 19,986 | 1,834 | 1,669 | 4.38 | 4.52 | 5.23 | 7.29 |
+| scatter | 536 | 2,517 | 12,215 | 1,466 | 498 | 3.46 | 3.57 | 4.08 | 5.73 |
+| literal_geometry | 720 | 2,703 | 14,287 | 1,505 | 626 | 3.87 | 3.83 | 4.48 | 5.81 |
+| triangle_mesh | 844 | 3,515 | 25,104 | 1,757 | 826 | 3.66 | 3.79 | 4.73 | 6.44 |
+| violin_vertical | 1,320 | 3,920 | 13,517 | 1,679 | 850 | 4.59 | 4.84 | 5.41 | 7.49 |
+| box_vertical | 1,612 | 4,544 | 16,121 | 2,006 | 1,516 | 4.75 | 4.87 | 5.44 | 7.82 |
 
 Hexbin count is larger than mean/sum because this fixture occupies more
 cells under count. Mean and sum share Scene/SVG/PNG/PDF bytes, matching the
