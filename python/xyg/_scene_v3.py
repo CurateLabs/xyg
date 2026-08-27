@@ -417,6 +417,31 @@ _SCENE_AXIS_STYLE_KEYS = frozenset(
     }
 )
 
+_CH_HAS_CHART_BG = 1 << 0
+_CH_HAS_PLOT_BG = 1 << 1
+_CH_PAINT_AXIS = 1 << 0
+_CH_PAINT_GRID = 1 << 1
+_CH_PAINT_TICK = 1 << 2
+_CH_PAINT_MINOR_GRID = 1 << 3
+_CH_PAINT_MINOR_TICK = 1 << 4
+_CH_PAINT_LABEL = 1 << 5
+_CH_WIDTH_AXIS = 1 << 0
+_CH_WIDTH_GRID = 1 << 1
+_CH_WIDTH_TICK = 1 << 2
+_CH_WIDTH_TICK_LENGTH = 1 << 3
+_CH_WIDTH_MINOR_GRID = 1 << 4
+_CH_WIDTH_MINOR_TICK = 1 << 5
+_CH_WIDTH_MINOR_TICK_LENGTH = 1 << 6
+_CH_DEFAULT_PAINTS = (
+    "#202020",
+    "#202020",
+    "#202020",
+    "transparent",
+    "#202020",
+    "#202020",
+)
+_CH_DEFAULT_WIDTHS = (1.0, 1.0, 1.0, 4.0, 1.0, 1.0, 0.0)
+
 
 def _scene_side_mask(
     values: Any,
@@ -434,74 +459,96 @@ def _scene_side_mask(
     return sum(1 << index for index, candidate in enumerate(allowed) if candidate in values)
 
 
-def _scene_chrome_style(figure: Any) -> bytes:
-    """Pack the generated ABI's fixed Scene v12 chrome style input."""
-    result = bytearray(200)
-    figure_style = getattr(figure, "style", None) or {}
-    result[0:4] = bytes(_rgba(str(figure_style.get("background") or "transparent"), 1.0))
-    result[4:8] = bytes(_rgba(str(figure_style.get("--chart-bg") or "transparent"), 1.0))
-    result[8:12] = bytes((32, 32, 32, 217))
-    struct.pack_into("<d", result, 16, 12.0)
-    for axis_id, offset in (("x", 24), ("y", 112)):
-        options = figure.axis_options[axis_id]
-        style = dict(options.get("style") or {})
-        minor = dict(options.get("minor_style") or {})
-        for label, authored in (("style", style), ("minor_style", minor)):
-            unsupported = set(authored) - _SCENE_AXIS_STYLE_KEYS
-            if unsupported:
-                raise UnsupportedSceneV3(
-                    f"Scene v12 does not yet encode {axis_id} axis {label} keys {sorted(unsupported)!r}"
-                )
-        side = options.get("side", "bottom" if axis_id == "x" else "left")
-        allowed = ("bottom", "top") if axis_id == "x" else ("left", "right")
-        if side not in allowed:
+def _pack_chrome_axis(axis_id: str, options: dict[str, Any]) -> bytes:
+    style = dict(options.get("style") or {})
+    minor = dict(options.get("minor_style") or {})
+    for label, authored in (("style", style), ("minor_style", minor)):
+        unsupported = set(authored) - _SCENE_AXIS_STYLE_KEYS
+        if unsupported:
             raise UnsupportedSceneV3(
-                f"Scene v12 {axis_id} axis side must be one of {list(allowed)!r}"
+                f"Scene v12 does not yet encode {axis_id} axis {label} keys {sorted(unsupported)!r}"
             )
-        side_low = side in {"bottom", "left"}
-        side_code = 0 if side_low else 1
-        tick_sides = options.get("tick_sides")
-        label_sides = options.get("tick_label_sides")
+    side = options.get("side", "bottom" if axis_id == "x" else "left")
+    allowed = ("bottom", "top") if axis_id == "x" else ("left", "right")
+    if side not in allowed:
+        raise UnsupportedSceneV3(f"Scene v12 {axis_id} axis side must be one of {list(allowed)!r}")
+    side_code = 0 if side in {"bottom", "left"} else 1
+    tick_sides = options.get("tick_sides")
+    label_sides = options.get("tick_label_sides")
+    directions = {"out": 0, "in": 1, "inout": 2}
+    paint_flags = 0
+    if "axis_color" in style:
+        paint_flags |= _CH_PAINT_AXIS
+    if "grid_color" in style:
+        paint_flags |= _CH_PAINT_GRID
+    if "tick_color" in style:
+        paint_flags |= _CH_PAINT_TICK
+    if "grid_color" in minor:
+        paint_flags |= _CH_PAINT_MINOR_GRID
+    if "tick_color" in minor:
+        paint_flags |= _CH_PAINT_MINOR_TICK
+    if "tick_label_color" in style or "label_color" in style:
+        paint_flags |= _CH_PAINT_LABEL
+    width_flags = 0
+    width_keys = (
+        ("axis_width", style, _CH_WIDTH_AXIS),
+        ("grid_width", style, _CH_WIDTH_GRID),
+        ("tick_width", style, _CH_WIDTH_TICK),
+        ("tick_length", style, _CH_WIDTH_TICK_LENGTH),
+        ("grid_width", minor, _CH_WIDTH_MINOR_GRID),
+        ("tick_width", minor, _CH_WIDTH_MINOR_TICK),
+        ("tick_length", minor, _CH_WIDTH_MINOR_TICK_LENGTH),
+    )
+    widths = []
+    for key, source, flag in width_keys:
+        if key in source:
+            width_flags |= flag
+            widths.append(float(source[key]))
+        else:
+            widths.append(_CH_DEFAULT_WIDTHS[len(widths)])
+    paints = (
+        str(style.get("axis_color", _CH_DEFAULT_PAINTS[0])),
+        str(style.get("grid_color", _CH_DEFAULT_PAINTS[1])),
+        str(style.get("tick_color", _CH_DEFAULT_PAINTS[2])),
+        str(minor.get("grid_color", _CH_DEFAULT_PAINTS[3])),
+        str(minor.get("tick_color", _CH_DEFAULT_PAINTS[4])),
+        str(style.get("tick_label_color", style.get("label_color", _CH_DEFAULT_PAINTS[5]))),
+    )
+    paint_bytes = [value.encode("utf-8") for value in paints]
+    prefix = struct.pack(
+        "<8B2f7d6H",
+        side_code,
+        _scene_side_mask(tick_sides, "tick_sides", axis_id, allowed, side_code),
+        _scene_side_mask(label_sides, "tick_label_sides", axis_id, allowed, side_code),
+        directions.get(str(style.get("tick_direction", "out")), 255),
+        directions.get(str(minor.get("tick_direction", "out")), 255),
+        paint_flags,
+        width_flags,
+        0,
+        float(style.get("grid_opacity", 1.0)),
+        float(minor.get("grid_opacity", 1.0)),
+        *widths,
+        *[len(value) for value in paint_bytes],
+    )
+    return prefix + b"".join(paint_bytes)
 
-        result[offset] = side_code
-        result[offset + 1] = _scene_side_mask(tick_sides, "tick_sides", axis_id, allowed, side_code)
-        result[offset + 2] = _scene_side_mask(
-            label_sides, "tick_label_sides", axis_id, allowed, side_code
-        )
-        directions = {"out": 0, "in": 1, "inout": 2}
-        result[offset + 3] = directions.get(str(style.get("tick_direction", "out")), 255)
-        result[offset + 4] = directions.get(str(minor.get("tick_direction", "out")), 255)
-        grid_opacity = float(style.get("grid_opacity", 1.0))
-        minor_grid_opacity = float(minor.get("grid_opacity", 1.0))
-        colors = (
-            _rgba(str(style.get("axis_color", "#202020")), 1.0 if "axis_color" in style else 0.55),
-            _rgba(
-                str(style.get("grid_color", "#202020")),
-                grid_opacity * (1.0 if "grid_color" in style else 0.14),
-            ),
-            _rgba(str(style.get("tick_color", "#202020")), 1.0 if "tick_color" in style else 0.55),
-            _rgba(str(minor.get("grid_color", "transparent")), minor_grid_opacity),
-            _rgba(str(minor.get("tick_color", "#202020")), 1.0 if "tick_color" in minor else 0.55),
-            _rgba(
-                str(style.get("tick_label_color", style.get("label_color", "#202020"))),
-                1.0 if ("tick_label_color" in style or "label_color" in style) else 0.85,
-            ),
-        )
-        for index, color in enumerate(colors):
-            result[offset + 8 + index * 4 : offset + 12 + index * 4] = bytes(color)
-        struct.pack_into(
-            "<7d",
-            result,
-            offset + 32,
-            float(style.get("axis_width", 1.0)),
-            float(style.get("grid_width", 1.0)),
-            float(style.get("tick_width", 1.0)),
-            float(style.get("tick_length", 4.0)),
-            float(minor.get("grid_width", 1.0)),
-            float(minor.get("tick_width", 1.0)),
-            float(minor.get("tick_length", 0.0)),
-        )
-    return bytes(result)
+
+def _scene_chrome_style(figure: Any) -> bytes:
+    """Pack authored chrome literals; Rust owns the 200-byte Scene style."""
+    figure_style = getattr(figure, "style", None) or {}
+    flags = 2 << 8
+    chart_b = b""
+    plot_b = b""
+    if "background" in figure_style:
+        flags |= _CH_HAS_CHART_BG
+        chart_b = str(figure_style.get("background") or "transparent").encode("utf-8")
+    if "--chart-bg" in figure_style:
+        flags |= _CH_HAS_PLOT_BG
+        plot_b = str(figure_style.get("--chart-bg") or "transparent").encode("utf-8")
+    x_rec = _pack_chrome_axis("x", figure.axis_options["x"])
+    y_rec = _pack_chrome_axis("y", figure.axis_options["y"])
+    header = struct.pack("<4sIIHH", b"XYCH", 1, flags, len(chart_b), len(plot_b))
+    return _native.scene_resolve_chrome_style(header + chart_b + plot_b + x_rec + y_rec)
 
 
 def _reject_rect_extras(style: dict[str, Any], kind: str) -> None:

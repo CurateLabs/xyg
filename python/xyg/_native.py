@@ -1877,6 +1877,25 @@ def scene_resolve_mark_styles(
     return resolved
 
 
+def scene_resolve_chrome_style(payload: bytes) -> bytes:
+    """Resolve packed XYCH chrome onto the 200-byte Scene style input."""
+    if not isinstance(payload, (bytes, bytearray, memoryview)):
+        raise TypeError("chrome style envelope must be bytes")
+    array = (
+        np.frombuffer(bytes(payload), dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    )
+    array = np.ascontiguousarray(array)
+    out = np.zeros(200, dtype=np.uint8)
+    pointer = _ptr_u8(array) if len(array) else 0
+    out_ptr = _ptr_u8(out)
+    code = int(_lib.xyg_scene_resolve_chrome_style(pointer, len(array), out_ptr, len(out)))
+    if code < 0:
+        raise ValueError("invalid chrome style envelope")
+    if code != 200:
+        raise RuntimeError("native chrome style resolver returned an inconsistent length")
+    return bytes(out)
+
+
 def rect_zero_baseline_flags(base: npt.NDArray[np.float64], value: npt.NDArray[np.float64]) -> int:
     """Pack rectangle zero-baseline predicates for an XYAR trace row."""
     base_arr = np.ascontiguousarray(np.asarray(base, dtype=np.float64))

@@ -1273,6 +1273,11 @@ defaults into Rust. Hosts pack an `XYMS` v1 envelope of kind, opacities,
 authored CSS strings, and width fields; named colors, `none`, line-only
 scatter stroke, band `line_color`, default widths, and the never-invisible
 fallback are engine-owned and identical for Python and Node.
+ABI 108 moves Scene chrome default RGBA/widths and CSS overlay into Rust.
+Hosts pack an `XYCH` v1 envelope of background CSS, per-axis sides, paint
+flags, opacities, widths, and CSS strings; `grid_opacity` still scales the
+default grid color when `grid_color` is unauthored, and named chrome paints
+cannot drift.
 Constant-style Cartesian heatmap compiles a regular rows x cols lattice onto
 existing Scene Rect records; polar, colormaps, truecolor, irregular
 spacing, and LOD stay compatibility.

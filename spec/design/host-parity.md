@@ -180,7 +180,9 @@ colormaps, LOD beyond the 1,024-group painter budget, and rich style
 exceptions remain compatibility routes. ABI 107 makes Scene CSS→RGBA8 and
 per-kind mark style defaults the same way: Python and Node pack `XYMS` v1
 kind/opacity/CSS/width literals, then call `xyg_scene_resolve_mark_styles` /
-`xyg_css_color_rgba`. Polar heatmap, metric colormaps, truecolor RGBA, LOD beyond
+`xyg_css_color_rgba`. ABI 108 makes Scene chrome defaults the same way:
+Python and Node pack `XYCH` v1 background/axis CSS, sides, opacities, and
+widths, then call `xyg_scene_resolve_chrome_style`. Polar heatmap, metric colormaps, truecolor RGBA, LOD beyond
 10,000 cells, and rich style exceptions remain compatibility routes.
 ABI 99 gives both composition hosts one compact grouped box ingress. Hosts pack
 the same f64 values/offsets/centers and literal options; Rust returns typed
@@ -247,7 +249,9 @@ only pack literal figure metadata. ABI 106 `xyg_figure_autorange` owns the
 product domain/padding/polar/zero-baseline decisions from the same packed
 extents both hosts already had. ABI 107 `xyg_scene_resolve_mark_styles` /
 `xyg_css_color_rgba` own per-kind fill/stroke defaults and CSS→RGBA8 so named
-colors cannot drift. Explicit Scene diagnostics and consumers
+colors cannot drift. ABI 108 `xyg_scene_resolve_chrome_style` owns the 200-byte
+Scene chrome style input so default axis/grid/tick/label RGBA, default widths,
+and `grid_opacity` scaling of the default grid color cannot drift. Explicit Scene diagnostics and consumers
 remain available through `scene_export_support_reason` /
 `sceneExportSupportReason`, `figure_scene`, `figure_svg`, and
 `figure_raster_commands`. Python SVG/raster and pyplot automatic tick requests

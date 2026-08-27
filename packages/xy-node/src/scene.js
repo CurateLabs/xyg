@@ -7,6 +7,7 @@ import {
   xyScenePlotLayout,
   xyScenePublicExportReason,
   xySceneRasterCommands,
+  xySceneResolveChromeStyle,
   xySceneResolveMarkStyles,
   xySceneScaleMap,
   xySceneScatterSvg,
@@ -188,40 +189,129 @@ function axisDescriptor(axis, name) {
   return [asU64(id, `${name}.id`), kindCode, Number(domain[0]), Number(domain[1]), Number(constant), nonpositive === "mask" ? 1 : 0];
 }
 
-function defaultChromeStyle() {
-  const bytes = new Uint8Array(200);
-  const view = new DataView(bytes.buffer);
-  bytes.set([32, 32, 32, 217], 8);
-  view.setFloat64(16, 12, true);
-  for (const offset of [24, 112]) {
-    bytes[offset + 1] = 1; bytes[offset + 2] = 1;
-    bytes.set([32, 32, 32, 140], offset + 8);
-    bytes.set([32, 32, 32, 36], offset + 12);
-    bytes.set([32, 32, 32, 140], offset + 16);
-    bytes.set([32, 32, 32, 140], offset + 24);
-    bytes.set([32, 32, 32, 217], offset + 28);
-    [1, 1, 1, 4, 1, 1, 0].forEach((value, index) => view.setFloat64(offset + 32 + index * 8, value, true));
+const AXIS_STYLE_KEYS = new Set([
+  "grid_color", "grid_width", "grid_opacity", "axis_color", "axis_width",
+  "tick_color", "tick_width", "tick_length", "tick_direction", "tick_label_color", "label_color",
+  "gridColor", "gridWidth", "gridOpacity", "axisColor", "axisWidth",
+  "tickColor", "tickWidth", "tickLength", "tickDirection", "tickLabelColor", "labelColor",
+]);
+
+function styleHas(style, snake, camel) {
+  return Object.hasOwn(style, snake) || (camel != null && Object.hasOwn(style, camel));
+}
+
+function styleValue(style, snake, camel, fallback) {
+  if (Object.hasOwn(style, snake)) return style[snake];
+  if (camel != null && Object.hasOwn(style, camel)) return style[camel];
+  return fallback;
+}
+
+function packChromeAxis(axis, options, sides) {
+  const style = options.style ?? {};
+  const minor = options.minorStyle ?? options.minor_style ?? {};
+  for (const [label, authored] of [["style", style], ["minor_style", minor]]) {
+    const unsupported = Object.keys(authored).filter((key) => authored[key] != null && !AXIS_STYLE_KEYS.has(key));
+    if (unsupported.length) {
+      throw new RangeError(`Scene v12 does not yet encode ${axis} axis ${label} keys`);
+    }
   }
-  return bytes;
+  const side = options.side ?? sides[0];
+  if (!sides.includes(side)) throw new RangeError(`Scene ${axis} axis side is invalid`);
+  const sideCode = sides.indexOf(side);
+  const mask = (values, name) => {
+    if (values == null) return 1 << sideCode;
+    return values.reduce((sum, value) => {
+      const index = sides.indexOf(value);
+      if (index < 0) throw new RangeError(`Scene ${axis} axis ${name} are invalid`);
+      return sum | (1 << index);
+    }, 0);
+  };
+  const direction = { out: 0, in: 1, inout: 2 };
+  let paintFlags = 0;
+  if (styleHas(style, "axis_color", "axisColor")) paintFlags |= 1 << 0;
+  if (styleHas(style, "grid_color", "gridColor")) paintFlags |= 1 << 1;
+  if (styleHas(style, "tick_color", "tickColor")) paintFlags |= 1 << 2;
+  if (styleHas(minor, "grid_color", "gridColor")) paintFlags |= 1 << 3;
+  if (styleHas(minor, "tick_color", "tickColor")) paintFlags |= 1 << 4;
+  if (styleHas(style, "tick_label_color", "tickLabelColor") || styleHas(style, "label_color", "labelColor")) paintFlags |= 1 << 5;
+  const widthSpecs = [
+    [style, "axis_width", "axisWidth", 1],
+    [style, "grid_width", "gridWidth", 1],
+    [style, "tick_width", "tickWidth", 1],
+    [style, "tick_length", "tickLength", 4],
+    [minor, "grid_width", "gridWidth", 1],
+    [minor, "tick_width", "tickWidth", 1],
+    [minor, "tick_length", "tickLength", 0],
+  ];
+  let widthFlags = 0;
+  const widths = widthSpecs.map(([source, snake, camel, fallback], index) => {
+    if (styleHas(source, snake, camel)) {
+      widthFlags |= 1 << index;
+      return Number(styleValue(source, snake, camel, fallback));
+    }
+    return fallback;
+  });
+  const paints = [
+    String(styleValue(style, "axis_color", "axisColor", "#202020")),
+    String(styleValue(style, "grid_color", "gridColor", "#202020")),
+    String(styleValue(style, "tick_color", "tickColor", "#202020")),
+    String(styleValue(minor, "grid_color", "gridColor", "transparent")),
+    String(styleValue(minor, "tick_color", "tickColor", "#202020")),
+    String(styleValue(style, "tick_label_color", "tickLabelColor", styleValue(style, "label_color", "labelColor", "#202020"))),
+  ].map(encodeUtf8);
+  const prefix = new Uint8Array(84);
+  const view = new DataView(prefix.buffer);
+  prefix[0] = sideCode;
+  prefix[1] = mask(options.tickSides ?? options.tick_sides, "tick_sides");
+  prefix[2] = mask(options.tickLabelSides ?? options.tick_label_sides, "tick_label_sides");
+  prefix[3] = direction[String(styleValue(style, "tick_direction", "tickDirection", "out"))] ?? 255;
+  prefix[4] = direction[String(styleValue(minor, "tick_direction", "tickDirection", "out"))] ?? 255;
+  prefix[5] = paintFlags;
+  prefix[6] = widthFlags;
+  view.setFloat32(8, Number(styleValue(style, "grid_opacity", "gridOpacity", 1)), true);
+  view.setFloat32(12, Number(styleValue(minor, "grid_opacity", "gridOpacity", 1)), true);
+  widths.forEach((value, index) => view.setFloat64(16 + index * 8, value, true));
+  paints.forEach((bytes, index) => view.setUint16(72 + index * 2, bytes.length, true));
+  return concatBytes([prefix, ...paints]);
+}
+
+function resolveChromeStyle(envelope) {
+  const out = new Uint8Array(200);
+  const code = xySceneResolveChromeStyle(u8Ptr(envelope), BigInt(envelope.length), u8Ptr(out), BigInt(out.length));
+  if (code !== 200) throw new RangeError("invalid chrome style envelope");
+  return out;
+}
+
+function defaultChromeStyle() {
+  const envelope = new Uint8Array(16);
+  envelope.set(encodeUtf8("XYCH").slice(0, 4), 0);
+  new DataView(envelope.buffer).setUint32(4, 1, true);
+  return resolveChromeStyle(envelope);
 }
 
 function figureChromeStyle(figure) {
-  const out = defaultChromeStyle(), view = new DataView(out.buffer);
   const figureStyle = figure.style ?? {};
-  if (figureStyle.background != null) out.set(rgba8(figureStyle.background, 1, "chart background"), 0);
-  if (figureStyle["--chart-bg"] != null) out.set(rgba8(figureStyle["--chart-bg"], 1, "plot background"), 4);
-  for (const [axis, offset, sides] of [["x", 24, ["bottom", "top"]], ["y", 112, ["left", "right"]]]) {
-    const options = figure[`${axis}Axis`] ?? figure[`${axis}_axis`] ?? {}, style = options.style ?? {}, minor = options.minorStyle ?? options.minor_style ?? {};
-    const side = options.side ?? sides[0]; if (!sides.includes(side)) throw new RangeError(`Scene ${axis} axis side is invalid`);
-    const mask = (values, fallback) => values == null ? 1 << fallback : values.reduce((sum, value) => { const i = sides.indexOf(value); if (i < 0) throw new RangeError(`Scene ${axis} axis sides are invalid`); return sum | (1 << i); }, 0);
-    const direction = {out:0, in:1, inout:2};
-    out[offset] = sides.indexOf(side); out[offset + 1] = mask(options.tickSides ?? options.tick_sides, out[offset]); out[offset + 2] = mask(options.tickLabelSides ?? options.tick_label_sides, out[offset]);
-    out[offset + 3] = direction[style.tick_direction ?? style.tickDirection ?? "out"] ?? 255; out[offset + 4] = direction[minor.tick_direction ?? minor.tickDirection ?? "out"] ?? 255;
-    const paints = [[style.axis_color, .55], [style.grid_color, .14], [style.tick_color, .55], [minor.grid_color, 1], [minor.tick_color, .55], [style.tick_label_color ?? style.label_color, .85]];
-    paints.forEach(([paint], i) => { if (paint != null) out.set(rgba8(paint, 1, "axis paint"), offset + 8 + i * 4); });
-    const nums = [style.axis_width, style.grid_width, style.tick_width, style.tick_length, minor.grid_width, minor.tick_width, minor.tick_length]; nums.forEach((value, i) => { if (value != null) view.setFloat64(offset + 32 + i * 8, Number(value), true); });
+  let flags = 2 << 8;
+  let chart = new Uint8Array(0);
+  let plot = new Uint8Array(0);
+  if (figureStyle.background != null) {
+    flags |= 1;
+    chart = encodeUtf8(figureStyle.background || "transparent");
   }
-  return out;
+  if (figureStyle["--chart-bg"] != null) {
+    flags |= 2;
+    plot = encodeUtf8(figureStyle["--chart-bg"] || "transparent");
+  }
+  const x = packChromeAxis("x", figure.xAxis ?? figure.x_axis ?? {}, ["bottom", "top"]);
+  const y = packChromeAxis("y", figure.yAxis ?? figure.y_axis ?? {}, ["left", "right"]);
+  const header = new Uint8Array(16);
+  const view = new DataView(header.buffer);
+  header.set(encodeUtf8("XYCH").slice(0, 4), 0);
+  view.setUint32(4, 1, true);
+  view.setUint32(8, flags >>> 0, true);
+  view.setUint16(12, chart.length, true);
+  view.setUint16(14, plot.length, true);
+  return resolveChromeStyle(concatBytes([header, chart, plot, x, y]));
 }
 
 /** Encode the shared backend-neutral Scene v12 typed batch. */

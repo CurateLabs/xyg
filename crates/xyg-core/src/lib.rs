@@ -102,7 +102,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 107;
+pub const ABI_VERSION: u32 = 108;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -215,6 +215,53 @@ pub unsafe extern "C" fn xyg_scene_resolve_mark_styles(
                     std::slice::from_raw_parts_mut(out, out_cap)
                 };
                 match scene_style::encode_mark_styles(&styles, dest) {
+                    Ok(count) => count,
+                    Err(error) => -(error as i32),
+                }
+            }
+            Err(error) => -(error as i32),
+        }
+    })
+}
+
+/// Overlay packed `XYCH` v1 chrome onto the 200-byte Scene style input.
+///
+/// Hosts pack background CSS, per-axis sides, paint flags, opacities, widths,
+/// and CSS strings; default RGBA, default widths, `grid_opacity` scaling of
+/// the default grid color, and CSS→RGBA8 stay in Rust. Returns 200 on
+/// success. `-1` malformed, `-2` unknown version, `-3` over the axis/CSS
+/// budget, `-4` when `out` is too small.
+///
+/// # Safety
+/// `input` must address `len` readable bytes when `len` is non-zero. When
+/// `out_cap` is non-zero, `out` must address that many writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_resolve_chrome_style(
+    input: *const u8,
+    len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if (len > 0 && input.is_null()) || (out_cap > 0 && out.is_null()) {
+        return -(MarkStyleError::Length as i32);
+    }
+    ffi_guard(-(MarkStyleError::Length as i32), || {
+        let bytes = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(input, len)
+        };
+        match scene_style::resolve_chrome_style(bytes) {
+            Ok(style) => {
+                if scene::SCENE_CHROME_STYLE_INPUT_BYTES > out_cap {
+                    return -(MarkStyleError::Output as i32);
+                }
+                let dest = if out_cap == 0 {
+                    &mut []
+                } else {
+                    std::slice::from_raw_parts_mut(out, out_cap)
+                };
+                match scene_style::encode_chrome_style(&style, dest) {
                     Ok(count) => count,
                     Err(error) => -(error as i32),
                 }

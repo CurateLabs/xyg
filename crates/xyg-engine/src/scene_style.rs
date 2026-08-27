@@ -1,14 +1,18 @@
-//! Scene mark fill/stroke defaults and CSS→RGBA8 paint (M2 #271 / #283).
+//! Scene mark fill/stroke defaults, chrome style, and CSS→RGBA8 paint
+//! (M2 #271 / #283).
 //!
 //! Hosts pack a versioned `XYMS` envelope of per-trace kind, opacities,
-//! authored CSS strings, and width fields. Rust owns the per-kind fill/stroke
+//! authored CSS strings, and width fields, plus a versioned `XYCH` envelope
+//! of per-axis chrome paints and widths. Rust owns the per-kind fill/stroke
 //! defaults, line-only scatter stroke, band `line_color` vs `stroke`, default
-//! stroke widths, and the static Scene/raster CSS→RGBA8 conversion (including
+//! stroke widths, Scene chrome default RGBA/widths (title, axis, ticks, grid,
+//! labels), and the static Scene/raster CSS→RGBA8 conversion (including
 //! `none` → transparent and the never-invisible fallback). Python
 //! `figure_scene` and Node `figureSceneV3` pack literals only so the hosts
 //! cannot drift on named colors or defaults.
 
 use crate::css;
+use crate::scene::{SceneChromeStyle, SCENE_CHROME_STYLE_INPUT_BYTES};
 
 const XYMS_MAGIC: &[u8; 4] = b"XYMS";
 const XYMS_VERSION: u32 = 1;
@@ -42,8 +46,37 @@ const KIND_CONTOUR: u8 = 18;
 const DEFAULT_COLOR: &str = "#3987e5";
 const TRANSPARENT: &str = "transparent";
 
-/// Why an XYMS envelope was rejected. Discriminants are the C-ABI error
-/// codes (returned negated by `xyg_scene_resolve_mark_styles`).
+const XYCH_MAGIC: &[u8; 4] = b"XYCH";
+const XYCH_VERSION: u32 = 1;
+const XYCH_HEADER_BYTES: usize = 16;
+const XYCH_AXIS_PREFIX: usize = 84;
+const XYCH_FLAG_HAS_CHART_BG: u32 = 1 << 0;
+const XYCH_FLAG_HAS_PLOT_BG: u32 = 1 << 1;
+const XYCH_N_AXES_SHIFT: u32 = 8;
+const XYCH_N_AXES_MASK: u32 = 0xff;
+const XYCH_PAINT_AXIS: u8 = 1 << 0;
+const XYCH_PAINT_GRID: u8 = 1 << 1;
+const XYCH_PAINT_TICK: u8 = 1 << 2;
+#[allow(dead_code)] // hosts record authorship; opacity is always minor_grid_opacity
+const XYCH_PAINT_MINOR_GRID: u8 = 1 << 3;
+const XYCH_PAINT_MINOR_TICK: u8 = 1 << 4;
+const XYCH_PAINT_LABEL: u8 = 1 << 5;
+const CHROME_DEFAULT_AXIS_COLOR: &str = "#202020";
+const CHROME_DEFAULT_GRID_COLOR: &str = "#202020";
+const CHROME_DEFAULT_TICK_COLOR: &str = "#202020";
+const CHROME_DEFAULT_MINOR_GRID_COLOR: &str = "transparent";
+const CHROME_DEFAULT_MINOR_TICK_COLOR: &str = "#202020";
+const CHROME_DEFAULT_LABEL_COLOR: &str = "#202020";
+const CHROME_DEFAULT_AXIS_OPACITY: f32 = 0.55;
+const CHROME_DEFAULT_GRID_OPACITY: f32 = 0.14;
+const CHROME_DEFAULT_TICK_OPACITY: f32 = 0.55;
+const CHROME_DEFAULT_MINOR_TICK_OPACITY: f32 = 0.55;
+const CHROME_DEFAULT_LABEL_OPACITY: f32 = 0.85;
+const CHROME_AXIS_OFFSETS: [usize; 2] = [24, 112];
+
+/// Why an XYMS/XYCH envelope was rejected. Discriminants are the C-ABI error
+/// codes (returned negated by `xyg_scene_resolve_mark_styles` and
+/// `xyg_scene_resolve_chrome_style`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MarkStyleError {
     Length = 1,
@@ -352,6 +385,178 @@ pub fn encode_mark_styles(
     i32::try_from(styles.len()).map_err(|_| MarkStyleError::Limit)
 }
 
+/// Overlay authored chrome CSS/widths onto the Scene default 200-byte style.
+///
+/// Hosts pack sides, paint flags, opacities, widths, and CSS literals. Default
+/// RGBA, default widths, `grid_opacity` scaling of the default grid color, and
+/// CSS→RGBA8 stay here so Python and Node cannot drift.
+pub fn resolve_chrome_style(
+    bytes: &[u8],
+) -> Result<[u8; SCENE_CHROME_STYLE_INPUT_BYTES], MarkStyleError> {
+    if bytes.len() < XYCH_HEADER_BYTES {
+        return Err(MarkStyleError::Length);
+    }
+    let mut cur = Cursor::new(bytes);
+    let magic = cur.bytes(4)?;
+    if magic != XYCH_MAGIC {
+        return Err(MarkStyleError::Length);
+    }
+    let version = cur.u32()?;
+    if version != XYCH_VERSION {
+        return Err(MarkStyleError::Version);
+    }
+    let flags = cur.u32()?;
+    let n_axes = ((flags >> XYCH_N_AXES_SHIFT) & XYCH_N_AXES_MASK) as usize;
+    if n_axes > 2 {
+        return Err(MarkStyleError::Limit);
+    }
+    let chart_len = cur.u16()?;
+    let plot_len = cur.u16()?;
+    let chart_css = cur.css(chart_len)?;
+    let plot_css = cur.css(plot_len)?;
+
+    let defaults = SceneChromeStyle::default_style().style_input();
+    let mut out = [0u8; SCENE_CHROME_STYLE_INPUT_BYTES];
+    out.copy_from_slice(&defaults);
+
+    if flags & XYCH_FLAG_HAS_CHART_BG != 0 {
+        let value = if chart_css.is_empty() {
+            TRANSPARENT
+        } else {
+            chart_css
+        };
+        out[0..4].copy_from_slice(&css::color_rgba8(value, 1.0));
+    }
+    if flags & XYCH_FLAG_HAS_PLOT_BG != 0 {
+        let value = if plot_css.is_empty() {
+            TRANSPARENT
+        } else {
+            plot_css
+        };
+        out[4..8].copy_from_slice(&css::color_rgba8(value, 1.0));
+    }
+
+    for axis_index in 0..n_axes {
+        if cur.remaining() < XYCH_AXIS_PREFIX {
+            return Err(MarkStyleError::Length);
+        }
+        let side = cur.u8()?;
+        let tick_sides = cur.u8()?;
+        let tick_label_sides = cur.u8()?;
+        let major_dir = cur.u8()?;
+        let minor_dir = cur.u8()?;
+        let paint_flags = cur.u8()?;
+        let width_flags = cur.u8()?;
+        let _reserved = cur.u8()?;
+        let grid_opacity = cur.f32()?;
+        let minor_grid_opacity = cur.f32()?;
+        let mut widths = [0f64; 7];
+        for width in &mut widths {
+            *width = cur.f64()?;
+        }
+        let mut lens = [0u16; 6];
+        for len in &mut lens {
+            *len = cur.u16()?;
+        }
+        let axis_css = cur.css(lens[0])?;
+        let grid_css = cur.css(lens[1])?;
+        let tick_css = cur.css(lens[2])?;
+        let minor_grid_css = cur.css(lens[3])?;
+        let minor_tick_css = cur.css(lens[4])?;
+        let label_css = cur.css(lens[5])?;
+
+        let offset = CHROME_AXIS_OFFSETS[axis_index];
+        out[offset] = side;
+        out[offset + 1] = tick_sides;
+        out[offset + 2] = tick_label_sides;
+        out[offset + 3] = major_dir;
+        out[offset + 4] = minor_dir;
+
+        let paints = [
+            (
+                nonempty_css(axis_css, CHROME_DEFAULT_AXIS_COLOR),
+                if paint_flags & XYCH_PAINT_AXIS != 0 {
+                    1.0
+                } else {
+                    CHROME_DEFAULT_AXIS_OPACITY
+                },
+            ),
+            (
+                nonempty_css(grid_css, CHROME_DEFAULT_GRID_COLOR),
+                grid_opacity
+                    * if paint_flags & XYCH_PAINT_GRID != 0 {
+                        1.0
+                    } else {
+                        CHROME_DEFAULT_GRID_OPACITY
+                    },
+            ),
+            (
+                nonempty_css(tick_css, CHROME_DEFAULT_TICK_COLOR),
+                if paint_flags & XYCH_PAINT_TICK != 0 {
+                    1.0
+                } else {
+                    CHROME_DEFAULT_TICK_OPACITY
+                },
+            ),
+            (
+                nonempty_css(minor_grid_css, CHROME_DEFAULT_MINOR_GRID_COLOR),
+                minor_grid_opacity,
+            ),
+            (
+                nonempty_css(minor_tick_css, CHROME_DEFAULT_MINOR_TICK_COLOR),
+                if paint_flags & XYCH_PAINT_MINOR_TICK != 0 {
+                    1.0
+                } else {
+                    CHROME_DEFAULT_MINOR_TICK_OPACITY
+                },
+            ),
+            (
+                nonempty_css(label_css, CHROME_DEFAULT_LABEL_COLOR),
+                if paint_flags & XYCH_PAINT_LABEL != 0 {
+                    1.0
+                } else {
+                    CHROME_DEFAULT_LABEL_OPACITY
+                },
+            ),
+        ];
+        for (index, (css_value, opacity)) in paints.into_iter().enumerate() {
+            let start = offset + 8 + index * 4;
+            out[start..start + 4].copy_from_slice(&css::color_rgba8(css_value, opacity));
+        }
+        for (index, width) in widths.into_iter().enumerate() {
+            if width_flags & (1 << index) == 0 {
+                continue;
+            }
+            let start = offset + 32 + index * 8;
+            out[start..start + 8].copy_from_slice(&width.to_le_bytes());
+        }
+    }
+    if cur.remaining() != 0 {
+        return Err(MarkStyleError::Length);
+    }
+    Ok(out)
+}
+
+fn nonempty_css<'a>(value: &'a str, default: &'static str) -> &'a str {
+    if value.is_empty() {
+        default
+    } else {
+        value
+    }
+}
+
+/// Copy the resolved 200-byte chrome style into the C-ABI output buffer.
+pub fn encode_chrome_style(
+    style: &[u8; SCENE_CHROME_STYLE_INPUT_BYTES],
+    out: &mut [u8],
+) -> Result<i32, MarkStyleError> {
+    if out.len() < SCENE_CHROME_STYLE_INPUT_BYTES {
+        return Err(MarkStyleError::Output);
+    }
+    out[..SCENE_CHROME_STYLE_INPUT_BYTES].copy_from_slice(style);
+    i32::try_from(SCENE_CHROME_STYLE_INPUT_BYTES).map_err(|_| MarkStyleError::Limit)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -581,5 +786,152 @@ mod tests {
         let mut bytes = header(0);
         bytes[4..8].copy_from_slice(&2u32.to_le_bytes());
         assert_eq!(resolve_mark_styles(&bytes), Err(MarkStyleError::Version));
+    }
+
+    fn chrome_header(flags: u32, chart: &str, plot: &str) -> Vec<u8> {
+        let mut bytes = Vec::from(*XYCH_MAGIC);
+        bytes.extend_from_slice(&XYCH_VERSION.to_le_bytes());
+        bytes.extend_from_slice(&flags.to_le_bytes());
+        bytes.extend_from_slice(&(chart.len() as u16).to_le_bytes());
+        bytes.extend_from_slice(&(plot.len() as u16).to_le_bytes());
+        bytes.extend_from_slice(chart.as_bytes());
+        bytes.extend_from_slice(plot.as_bytes());
+        bytes
+    }
+
+    fn push_chrome_axis(
+        bytes: &mut Vec<u8>,
+        side: u8,
+        tick_sides: u8,
+        label_sides: u8,
+        major_dir: u8,
+        minor_dir: u8,
+        paint_flags: u8,
+        width_flags: u8,
+        grid_opacity: f32,
+        minor_grid_opacity: f32,
+        widths: [f64; 7],
+        paints: [&str; 6],
+    ) {
+        bytes.extend_from_slice(&[
+            side,
+            tick_sides,
+            label_sides,
+            major_dir,
+            minor_dir,
+            paint_flags,
+            width_flags,
+            0,
+        ]);
+        bytes.extend_from_slice(&grid_opacity.to_le_bytes());
+        bytes.extend_from_slice(&minor_grid_opacity.to_le_bytes());
+        for width in widths {
+            bytes.extend_from_slice(&width.to_le_bytes());
+        }
+        for css in paints {
+            bytes.extend_from_slice(&(css.len() as u16).to_le_bytes());
+        }
+        for css in paints {
+            bytes.extend_from_slice(css.as_bytes());
+        }
+    }
+
+    #[test]
+    fn empty_chrome_envelope_is_scene_default() {
+        let bytes = chrome_header(0, "", "");
+        let resolved = resolve_chrome_style(&bytes).unwrap();
+        assert_eq!(
+            resolved.as_slice(),
+            SceneChromeStyle::default_style().style_input()
+        );
+    }
+
+    #[test]
+    fn grid_opacity_scales_default_grid_paint() {
+        let mut bytes = chrome_header(2 << XYCH_N_AXES_SHIFT, "", "");
+        push_chrome_axis(
+            &mut bytes,
+            0,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0.0,
+            1.0,
+            [1.0, 1.0, 1.0, 4.0, 1.0, 1.0, 0.0],
+            ["", "", "", "", "", ""],
+        );
+        push_chrome_axis(
+            &mut bytes,
+            0,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1.0,
+            1.0,
+            [1.0, 1.0, 1.0, 4.0, 1.0, 1.0, 0.0],
+            ["", "", "", "", "", ""],
+        );
+        let resolved = resolve_chrome_style(&bytes).unwrap();
+        assert_eq!(&resolved[24 + 12..24 + 16], &[32, 32, 32, 0]);
+        assert_eq!(&resolved[112 + 12..112 + 16], &[32, 32, 32, 36]);
+    }
+
+    #[test]
+    fn authored_axis_color_is_opaque() {
+        let mut bytes = chrome_header(2 << XYCH_N_AXES_SHIFT, "", "");
+        push_chrome_axis(
+            &mut bytes,
+            0,
+            1,
+            1,
+            0,
+            0,
+            XYCH_PAINT_AXIS,
+            1 << 0,
+            1.0,
+            1.0,
+            [2.0, 1.0, 1.0, 4.0, 1.0, 1.0, 0.0],
+            ["#ef4444", "", "", "", "", ""],
+        );
+        push_chrome_axis(
+            &mut bytes,
+            0,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1.0,
+            1.0,
+            [1.0, 1.0, 1.0, 4.0, 1.0, 1.0, 0.0],
+            ["", "", "", "", "", ""],
+        );
+        let resolved = resolve_chrome_style(&bytes).unwrap();
+        assert_eq!(
+            &resolved[24 + 8..24 + 12],
+            &css::color_rgba8("#ef4444", 1.0)
+        );
+        assert_eq!(&resolved[24 + 32..24 + 40], &2.0f64.to_le_bytes());
+        assert_eq!(&resolved[24 + 16..24 + 20], &[32, 32, 32, 140]);
+    }
+
+    #[test]
+    fn chrome_rejects_unknown_version() {
+        let mut bytes = chrome_header(0, "", "");
+        bytes[4..8].copy_from_slice(&2u32.to_le_bytes());
+        assert_eq!(resolve_chrome_style(&bytes), Err(MarkStyleError::Version));
+    }
+
+    #[test]
+    fn chrome_rejects_too_many_axes() {
+        let bytes = chrome_header(3 << XYCH_N_AXES_SHIFT, "", "");
+        assert_eq!(resolve_chrome_style(&bytes), Err(MarkStyleError::Limit));
     }
 }

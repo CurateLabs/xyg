@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 107
-SIGNATURE_SHA256 = "f63f7dc5391750aefbfacb8d5e6417650378c55ee6569aa449d8a872eda90ef3"
+ABI_VERSION = 108
+SIGNATURE_SHA256 = "08e1ddd0bca2a2cad8ee4a53f517dc282c68809d5a60853861a7c374dc6034b5"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -486,6 +486,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_raster_commands
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_resolve_chrome_style(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap)
+    function = lib.xyg_scene_resolve_chrome_style
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_scene_resolve_mark_styles(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap)
     function = lib.xyg_scene_resolve_mark_styles
     function.restype = ctypes.c_int32

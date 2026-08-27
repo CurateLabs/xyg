@@ -559,7 +559,10 @@ and `XYG_SCENE_UNSUPPORTED_*` wording are likewise Rust-owned. ABI v106 adds
 Python and Node share one domain, padding, polar, and zero-baseline policy.
 ABI v107 adds `xyg_scene_resolve_mark_styles` / `xyg_css_color_rgba` over packed
 `XYMS` v1 mark styles so Python and Node share one CSS→RGBA8 conversion and
-per-kind fill/stroke/width defaults.
+per-kind fill/stroke/width defaults. ABI v108 adds
+`xyg_scene_resolve_chrome_style` over packed `XYCH` v1 chrome so both hosts
+share one 200-byte Scene chrome style, including default RGBA/widths and
+`grid_opacity` scaling of the default grid color.
 
 This is not yet the complete issue `#110` store: remote ranges, browser/WASM bounded
 staging, spatially unordered data, chart-lifecycle overview/refinement wiring,

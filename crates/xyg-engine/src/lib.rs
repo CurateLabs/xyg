@@ -33,7 +33,7 @@ pub mod scene;
 mod scene_export;
 pub use scene_export::scene_public_export_reason;
 pub mod scene_style;
-pub use scene_style::resolve_mark_styles;
+pub use scene_style::{resolve_chrome_style, resolve_mark_styles};
 pub mod stats;
 pub mod stream;
 pub mod svg;
