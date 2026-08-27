@@ -623,10 +623,34 @@ PR CI or a CodSpeed simulation claim.
   injects explicit `./wasm-worker.js` + `./xyg-wasm.wasm` and calls
   `attachHostWasmTicks`);
 - aggregate production paths beyond direct Scene records;
-- interpreted budgets/comparisons after collecting the SHA-keyed
-  small-through-massive CodSpeed and browser artifacts; and
-- ongoing hosted performance and visual evidence for the Rust/WASM density
-  contract, including its explicit no-refinement degradation boundary.
+- post-#259 / current-`main` SHA-keyed hosted artifacts (the interpreted
+  extract is `95adb9de`, which predates hexbin Scene); CodSpeed simulation
+  dashboard numbers for a green post-hexbin nightly; competitive budgets
+  after those artifacts exist; and
+- hosted visual evidence for the explicit no-refinement degradation
+  boundary (the product gate itself is implemented; see below).
+
+The #59-required hosted-artifact interpretation subset is recorded in
+[`spec/benchmarks/results.md`](../benchmarks/results.md). Related to #59;
+that issue stays open.
+
+## Density no-refinement gate
+
+Unsupported or kernel-less sources must retain the already-painted
+Rust-authored overview and dispatch `xy:wasm_density_no_refinement`. There is
+no JavaScript aggregator fallback.
+
+| Surface | Location | Status |
+|---|---|---|
+| Adapter policy | `js/src/49_wasm_density.ts` | shipped: missing/invalid inline artifact and unsupported sources fail closed |
+| Kernel dispatch | `js/src/54_kernel.ts` (`wasm_density_no_refinement`) | shipped |
+| Observer phase | `js/src/60_entries.ts` (`density_no_refinement`) | shipped |
+| Standalone missing WASM | `tests/test_density_pan_no_rebin.py` | green when Chromium is present |
+| Bundle / contract probes | `tests/test_static_client_security.py`, `tests/test_wasm_density_chartview_contract.py`, `tests/test_wasm_full_density_source.py` | green |
+| Hosted SHA-keyed visual evidence of this boundary | nightly `hosted-density-browser-<sha>.json` | not yet a row; current artifacts prove refinement lifecycle, not no-refinement |
+
+Stable codes: `XYG_WASM_UNAVAILABLE`, `XYG_WASM_SOURCE_UNAVAILABLE`, and
+`XYG_WASM_SOURCE_UNSUPPORTED`.
 
 Public chart ergonomics (`frameWasmChart` / `renderWasmChart`) transfer exact
 typed columns without main-thread record expansion. `FLAG_AUTO_DOMAIN` keeps

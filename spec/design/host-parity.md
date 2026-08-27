@@ -168,7 +168,6 @@ exceptions remain compatibility routes. Constant-style Cartesian heatmap
 now compiles a regular rows x cols lattice onto existing Scene v25 Rect
 records. Polar heatmap, metric colormaps, truecolor RGBA, LOD beyond
 10,000 cells, and rich style exceptions remain compatibility routes.
-Heatmap colormap Scene is later.
 ABI 99 gives both composition hosts one compact grouped box ingress. Hosts pack
 the same f64 values/offsets/centers and literal options; Rust returns typed
 active-group IDs, fixed 25-f64 group records, monotone outlier offsets, and

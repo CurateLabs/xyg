@@ -28,19 +28,215 @@ The xy-only arm also runs with no dependencies via
 
 ## Direct-browser WASM Scene evidence
 
-The changed-main nightly/manual CodSpeed workflow owns the hosted #118 and #116 browser
-evidence paths; it does not run for pull requests. Rust simulation rows cover
-100, 10k, 100k, and 1M-record XYTS v2 expansion. A separate strict-CSP Chromium
-job measures those sizes both through `renderWasmChart` and through deterministic
-public-Python-authored canonical Scenes containing chart chrome, a legend,
-colorbar ticks/minors, and a bounded callout label background. The latter records
-worker preparation, painter hydration/upload, first paint, Scene/painter bytes,
-Rust staging-copy counters, arena/WASM-memory high-water, and semantic DOM
-assertions. Each nightly or manual run uploads its unmodified validated JSON as
-`authored-scene-browser-<git-sha>.json`, tied to the exact source revision and
-runner rather than copied into an environment-free headline table. Until the
-first post-merge artifact exists, this section makes no numeric performance or
-competitive-win claim.
+The changed-main nightly/manual CodSpeed workflow owns the hosted #118 and #116
+browser evidence paths; it does not run for pull requests. Rust simulation rows
+cover 100, 10k, 100k, and 1M-record XYTS v2 expansion. A separate strict-CSP
+Chromium job measures those sizes both through `renderWasmChart` and through
+deterministic public-Python-authored canonical Scenes containing chart chrome, a
+legend, colorbar ticks/minors, and a bounded callout label background. The
+latter records worker preparation, painter hydration/upload, first paint,
+Scene/painter bytes, Rust staging-copy counters, arena/WASM-memory high-water,
+and semantic DOM assertions. Each nightly or manual run uploads its unmodified
+validated JSON as `authored-scene-browser-<git-sha>.json`, tied to the exact
+source revision and runner rather than copied into an environment-free headline
+table.
+
+Hosted artifacts now exist. The tables below interpret the latest SHA-keyed
+browser-evidence job that succeeded (`95adb9de`, 2026-08-26 nightly,
+Actions run `32945396133`). That same workflow's CodSpeed *simulation* job
+failed, so this section does **not** quote instruction counts or treat that SHA
+as a CodSpeed dashboard authority. The last workflow whose simulation job also
+succeeded is `dd1c5506` (run `32832774652`, Scene v24). Compact extracts live in
+[`hosted-evidence-95adb9de.json`](hosted-evidence-95adb9de.json). These are
+CI (software GL) wall-clock contract facts, not competitive wins.
+
+### M2 Wave B evidence ledger
+
+This is the #59-required / #58-required subset, not full #54 / M7. Parents stay
+open until they close after this evidence. Related to #58 and #59.
+
+| Required item | Status | Where |
+|---|---|---|
+| Interpret SHA-keyed CodSpeed + strict-CSP browser artifacts | Browser artifacts interpreted below. CodSpeed simulation numbers stay on the CodSpeed dashboard; no instruction-count table is invented here. | this section; `hosted-evidence-95adb9de.json` |
+| Python/Node Scene goldens for public hexbin | Checked in on `main` via #259 | `tests/fixtures/figure_scene_v3.json` `public_hexbin_sha256`; `tests/test_scene_export_support.py`; `packages/xy-node/test/scene.test.mjs` |
+| Heatmap public Scene goldens | Checked in on `main` via #261 | `tests/fixtures/figure_scene_v3.json` `public_heatmap_sha256`; `tests/test_scene_export_support.py`; `packages/xy-node/test/scene.test.mjs` |
+| Public Scene export baselines (time/memory/payload) | Local diagnostic run recorded below; harness is `scripts/bench_public_scene_routes.py` | `spec/benchmarks/public-scene-export-local.json` |
+| Density no-refinement gate | Implemented and probed; hosted visual evidence of that degradation boundary is still remaining #59 work | `js/src/49_wasm_density.ts`, `js/src/54_kernel.ts`, `tests/test_density_pan_no_rebin.py` |
+| Post-#259 hosted browser artifact | Absent at record time (`main` `14e91a3`, includes Wave A hexbin/heatmap Scene, Reflex attach, colorbar ticks). Hexbin/heatmap are not in the `95adb9de` authored-Scene workload. | produce with the commands in methodology §8 |
+
+Reproduce and re-verify the hosted artifacts (they are not committed; ~19 MiB):
+
+```bash
+gh run download 32945396133 \
+  -n authored-scene-browser-95adb9deef74a236ce3a5db30b1fd166025b7e8c \
+  -D hosted-evidence-95adb9de
+python3 scripts/verify_wasm_scene_benchmark.py \
+  hosted-evidence-95adb9de/authored-scene-browser-95adb9deef74a236ce3a5db30b1fd166025b7e8c.json \
+  --sha 95adb9deef74a236ce3a5db30b1fd166025b7e8c
+python3 scripts/verify_inline_density_benchmark.py \
+  hosted-evidence-95adb9de/hosted-density-browser-95adb9deef74a236ce3a5db30b1fd166025b7e8c.json \
+  --sha 95adb9deef74a236ce3a5db30b1fd166025b7e8c
+python3 scripts/verify_stream_density_browser_benchmark.py \
+  hosted-evidence-95adb9de/hosted-stream-density-browser-95adb9deef74a236ce3a5db30b1fd166025b7e8c.json \
+  --sha 95adb9deef74a236ce3a5db30b1fd166025b7e8c
+```
+
+Produce a new SHA-keyed set from current `main` (Playwright Chromium required):
+
+```bash
+cargo build -p xyg-wasm --release --target wasm32-unknown-unknown
+npm ci && node js/build.mjs
+node js/package-wasm.mjs target/wasm32-unknown-unknown/release/xyg_wasm.wasm
+npx playwright install chromium
+node benchmarks/bench_wasm_scene.mjs > authored-scene-browser-local.json
+python3 scripts/verify_wasm_scene_benchmark.py authored-scene-browser-local.json
+uv run python scripts/inline_density_file_benchmark.py \
+  --output hosted-density-browser-local.json
+uv run python scripts/verify_inline_density_benchmark.py \
+  hosted-density-browser-local.json
+uv run python scripts/stream_density_browser_benchmark.py \
+  --output hosted-stream-density-browser-local.json
+python3 scripts/verify_stream_density_browser_benchmark.py \
+  hosted-stream-density-browser-local.json
+```
+
+### Hosted authored-Scene / typed-series (`95adb9de`, Scene v25)
+
+Verifier `scripts/verify_wasm_scene_benchmark.py` accepted the raw artifact:
+four typed-series sizes, four authored-Scene sizes, zero main-thread record
+visits, required legend/colorbar/annotation semantics, fragmentation refusal at
+1,024 traces with `browserChildren = 0`, and visual-differential ceilings.
+Small authored-Scene `plotMeanRgbDelta` values are large because sparse plots
+differ between the Rust raster and WebGL painters; the verifier's ceilings
+allow that. This is not pixel identity and not a speedup claim.
+
+| count | typed first paint (ms) | typed copy B | typed WASM high-water B | authored Scene B | painter B | worker prepare (ms) | hydrate/upload (ms) | authored first paint (ms) | authored WASM high-water B |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 100 | 64.3 | 1,888 | 1,179,648 | 7,450 | 3,633 | 1.3 | 10.2 | 231.8 | 1,179,648 |
+| 10,000 | 56.6 | 160,288 | 3,604,480 | 561,850 | 162,033 | 1.6 | 6.7 | 242.6 | 2,359,296 |
+| 100,000 | 213.3 | 1,600,288 | 25,034,752 | 5,601,850 | 1,602,033 | 10.0 | 6.7 | 484.7 | 12,451,840 |
+| 1,000,000 | 2,000.3 | 16,000,288 | 240,517,120 | 56,001,850 | 16,002,033 | 153.2 | 13.4 | 1,933.1 | 113,246,208 |
+
+Native consumer bytes for the same authored Scenes (Python/Node byte-identical;
+`authored-scene-native-95adb9de.json`):
+
+| count | Scene SHA-256 | SVG B | raster-command B | painter B |
+|---:|---|---:|---:|---:|
+| 100 | `a5b4503e9b765706bdb723acfb72184390b75ea3479d49ebe7a8fa67e52f2213` | 20,441 | 5,431 | 3,633 |
+| 10,000 | `c2f3879c6ebf10acba45528c08b80c454f0abfc4a1f1de45b31b0c142e8e3a3f` | 1,182,003 | 262,831 | 162,033 |
+| 100,000 | `4e4948ba5803b9efaef1712d66b9d033010199e1eac5f57549ed5edb6cd25e67` | 11,741,663 | 2,602,831 | 1,602,033 |
+| 1,000,000 | `ee8147b6ff1d6a3f8880d8db361ad8ca907d57f7eae4f3caeda329658c739828` | 117,338,125 | 26,002,831 | 16,002,033 |
+
+### Hosted strict-CSP density (`95adb9de`)
+
+Verifier `scripts/verify_inline_density_benchmark.py` accepted the raw
+`hosted-density-browser-95adb9de.json`. Every size used a `file:` standalone
+document, inline Worker, `cspNoNetwork`, home-viewport raster identical to the
+initial paint, `stalePaints = 0`, and the required lifecycle set including
+malformed / resource / trap / recovered / disposed. Typed payload bytes stay
+473,712 from 100 through 1M (screen-bounded density grid + sample, not N
+points). This is lifecycle and payload-shape evidence, not a competitive TTFR.
+
+| count | HTML build (ms) | first paint (ms) | interaction (ms) | HTML B | JS heap B | initial copy B | WASM high-water B |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 100 | 37.2 | 393.1 | 31.5 | 1,488,539 | 10,600,000 | 1,664 | 2,228,224 |
+| 10,000 | 2.7 | 476.9 | 32.0 | 1,575,086 | 11,200,000 | 131,568 | 2,424,832 |
+| 100,000 | 4.2 | 356.4 | 78.1 | 1,575,173 | 10,600,000 | 131,696 | 2,424,832 |
+| 1,000,000 | 7.1 | 362.8 | 73.3 | 1,577,705 | 11,200,000 | 135,488 | 2,424,832 |
+
+### Hosted stream-density ChartView (`95adb9de`)
+
+Verifier `scripts/verify_stream_density_browser_benchmark.py` accepted the raw
+`hosted-stream-density-browser-95adb9de.json`. Source bytes scale at 16 B/point
+(retained canonical f64 x/y). Stream pushes follow the 32,768-point chunk
+ceiling (1 / 1 / 4 / 31). The painter payload stays 473,712 B. Kernel
+`density_view` did not escape the WASM route. Latest WASM high-water stayed at
+2.2–2.9 MiB through 1M points.
+
+| count | source B | stream pushes | payload B | raster B | latest copy count | WASM high-water B |
+|---:|---:|---:|---:|---:|---:|---:|
+| 100 | 1,600 | 1 | 473,712 | 6,206 | 5 | 2,228,224 |
+| 10,000 | 160,000 | 1 | 473,712 | 6,242 | 5 | 2,555,904 |
+| 100,000 | 1,600,000 | 4 | 473,712 | 6,242 | 11 | 2,949,120 |
+| 1,000,000 | 16,000,000 | 31 | 473,712 | 6,242 | 65 | 2,949,120 |
+
+### Public hexbin Scene goldens (#259)
+
+Python and Node share these Scene v25 SHA-256 values for the constant-style
+Cartesian native hexbin fixture in `tests/fixtures/figure_scene_v3.json`. Mean
+and sum share bytes because constant paint ignores the metric and both
+reducers occupy the same lattice. Polar, custom reducers, metric colormaps,
+LOD over 1,024 groups, and rich style extras stay on compatibility exporters.
+
+| reduce | Scene SHA-256 |
+|---|---|
+| count | `f39a0cdb44b31ff98813acc3a3a571b0b13ea613f642c029ed418cf815b86b84` |
+| mean | `ff483c0b93089af6a5fb81779f1cc54c6169dafd1a6d169446b8ea95202b1572` |
+| sum | `ff483c0b93089af6a5fb81779f1cc54c6169dafd1a6d169446b8ea95202b1572` |
+
+```bash
+uv run pytest tests/test_scene_export_support.py -k "hexbin or heatmap" -q
+node --test packages/xy-node/test/scene.test.mjs
+uv run python scripts/verify_public_scene_export.py
+```
+
+Constant-style Cartesian heatmap golden (Scene SHA-256):
+`91c26202347a7969029a3955299b91c570141f57967da14a577366e881c986a8`.
+
+### Public Scene export baselines (local diagnostic)
+
+`scripts/bench_public_scene_routes.py` times `figure_scene` and
+`try_public_svg` / `try_public_png` / `try_public_pdf` for the golden hexbin
+and heatmap fixtures plus already-public scatter, line+bar, triangle-mesh,
+violin, and box routes. The committed JSON is a local warmed median, not a CI
+gate and not a cross-library win.
+
+```bash
+uv run python scripts/bench_public_scene_routes.py \
+  --output spec/benchmarks/public-scene-export-local.json
+uv run python scripts/verify_public_scene_export.py \
+  spec/benchmarks/public-scene-export-local.json --recompute-goldens
+```
+
+Recorded local run on `550cfef` (Linux x86_64, CPython 3.12.3, native
+backend, 4 CPUs, software GL, 1 warmup + 7-rep median). Peak process RSS during
+the harness was 50 MiB; `tracemalloc` peak was 5.2 MiB. This is a Cloud Agent
+VM diagnostic, not a reference-hardware or CI (software GL) row.
+
+| route | Scene B | SVG B | PNG B | PDF B | painter B | scene ms | SVG ms | PNG ms | PDF ms |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| hexbin_count | 14,275 | 8,906 | 24,254 | 2,402 | 7,109 | 9.16 | 9.27 | 10.51 | 15.56 |
+| hexbin_mean | 2,851 | 3,776 | 19,986 | 1,834 | 1,669 | 4.46 | 4.54 | 5.29 | 7.41 |
+| hexbin_sum | 2,851 | 3,776 | 19,986 | 1,834 | 1,669 | 4.46 | 4.57 | 5.27 | 7.42 |
+| heatmap | 836 | 3,314 | 13,392 | 1,766 | 758 | 3.75 | 3.87 | 4.59 | 6.31 |
+| scatter | 536 | 2,517 | 12,215 | 1,466 | 498 | 3.59 | 3.57 | 4.07 | 5.59 |
+| literal_geometry | 720 | 2,703 | 14,287 | 1,505 | 626 | 3.99 | 4.07 | 4.70 | 6.14 |
+| triangle_mesh | 844 | 3,515 | 25,104 | 1,757 | 826 | 3.73 | 3.89 | 4.81 | 6.53 |
+| violin_vertical | 1,320 | 3,920 | 13,517 | 1,679 | 850 | 4.94 | 5.05 | 5.61 | 7.73 |
+| box_vertical | 1,612 | 4,544 | 16,121 | 2,006 | 1,516 | 4.93 | 5.02 | 5.62 | 8.03 |
+
+Hexbin count is larger than mean/sum because this fixture occupies more
+cells under count. Mean and sum share Scene/SVG/PNG/PDF bytes, matching the
+golden. No competitive-win claim.
+
+### Density no-refinement gate
+
+Location: `js/src/49_wasm_density.ts` (adapter policy), `js/src/54_kernel.ts`
+(dispatch `xy:wasm_density_no_refinement`), `js/src/60_entries.ts` (observer
+`density_no_refinement`). Standalone `to_html()` documents that retain a
+density overview without a usable inline WASM artifact emit one bubbling
+event and never run a JavaScript aggregator. Stable codes are
+`XYG_WASM_UNAVAILABLE`, `XYG_WASM_SOURCE_UNAVAILABLE`, and
+`XYG_WASM_SOURCE_UNSUPPORTED` (color / over-capacity / non-count streams).
+
+Status: the product gate is implemented. Browser proof is
+`tests/test_density_pan_no_rebin.py` (missing WASM keeps the overview). Source
+and contract probes are `tests/test_static_client_security.py`,
+`tests/test_wasm_density_chartview_contract.py`, and
+`tests/test_wasm_full_density_source.py`. The SHA-keyed hosted density
+artifacts above prove refinement lifecycle (attach / zoom / trap / recover),
+not this degradation boundary. Hosted visual evidence of no-refinement remains
+remaining #59 work.
 
 ## Competitive product goal
 
