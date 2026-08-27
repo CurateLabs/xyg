@@ -321,8 +321,8 @@ test("Node Scene v9 primary legend matches Python bytes and rejects unsupported 
 
 test("Node Scene v9 whole-scene consumers reject malformed and unsupported input", () => {
   assert.throws(() => sceneSvg(Uint8Array.of(1, 2, 3)), /invalid canonical scene/);
-  const figure = new Figure().heatmap([[0, 1], [1, 0]]);
-  assert.throws(() => figure.toScene(), /does not yet support heatmap/);
+  const figure = new Figure().heatmap([[0, 1], [1, 0]], { colormapStops: [0, 0, 0, 255, 255, 255] });
+  assert.throws(() => figure.toScene(), /heatmap colormap/);
 });
 
 test("Node Scene v13 compiles bounded primary annotations and fails closed", () => {
@@ -390,6 +390,26 @@ test("Node matches Python bytes for the bounded public literal geometry family",
   assert.match(svg, /<rect /);
   assert.ok(sceneRasterCommands(scene).length > 100);
   assert.ok(sceneBrowserPainter(scene).length > 300);
+});
+
+test("Node matches Python bytes for constant-style Cartesian heatmap Rects", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 4]); figure.setAxisDomain("y", [0, 5]);
+  figure.heatmap([[0, 1, 2], [3, 4, 5]], {
+    x: [1, 2, 3], y: [1, 3], color: "#3987e5", opacity: 0.75, name: "heat", id: 0,
+  });
+  const scene = figure.toScene();
+  assert.equal(
+    crypto.createHash("sha256").update(scene).digest("hex"),
+    figureSceneFixture.public_heatmap_sha256,
+  );
+  const svg = sceneSvg(scene);
+  const clip = svg.match(/<g clip-path="url\(#xy-scene-plot\)">([\s\S]*?)<\/g>/);
+  assert.equal((clip?.[1].match(/<rect /g) ?? []).length, 6);
+  assert.match(svg, />heat<\/text>/);
+  assert.ok(sceneRasterCommands(scene).length > 100);
+  const painter = sceneBrowserPainter(scene);
+  assert.equal(painter[new DataView(painter.buffer, painter.byteOffset, painter.byteLength).getUint32(12, true)], 2);
 });
 
 test("Node matches Python bytes for constant-style Cartesian hexbin PolyFill", () => {

@@ -751,7 +751,14 @@ class PayloadMixin(_Host):
             norm = kernels.normalize_f32(t.grid.values, domain, nonfinite="nan")
             buffer_index = pw.ship_scalar(norm)
             encoding = None
-        cmap = t.style.get("colormap", channels.DEFAULT_COLORMAP)
+        cmap = t.style.get("colormap")
+        if cmap is None:
+            # Constant-style Scene path: every renderer must paint the literal
+            # color, not a default viridis ramp, so exports stay aligned.
+            from ._raster import _parse_color
+
+            red, green, blue, _alpha = _parse_color(str(t.style.get("color", "#3987e5")), 1.0)
+            cmap = [[red, green, blue], [red, green, blue]]
         return {
             "id": t.id,
             "kind": "heatmap",

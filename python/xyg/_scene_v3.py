@@ -40,6 +40,8 @@ _HEXBIN_RING = (
     (-0.5, 1.0 / 6.0),
     (-0.5, -1.0 / 6.0),
 )
+# Regular Cartesian heatmap cells expand onto the same Rect records as bars.
+_HEATMAP_KINDS = frozenset({"heatmap"})
 _POINT_KINDS = frozenset({"scatter", "line"})
 _SUPPORTED_KINDS = (
     _POINT_KINDS
@@ -49,6 +51,7 @@ _SUPPORTED_KINDS = (
     | _RIBBON_KINDS
     | _POLYFILL_KINDS
     | _HEXBIN_KINDS
+    | _HEATMAP_KINDS
 )
 _STROKE_KINDS = frozenset({"line"}) | _SEGMENT_KINDS
 
@@ -57,6 +60,10 @@ _STROKE_KINDS = frozenset({"line"}) | _SEGMENT_KINDS
 # meshes and honeycombs remain on the compatibility path until Scene gains a
 # compact multi-cell painter record.
 _MAX_PUBLIC_TRIANGLE_MESHES = 1024
+# Regular heatmap cells are ordinary Rect records and share the histogram
+# 10,000-bin public ceiling. Colormap, polar, truecolor, and irregular grids
+# stay on the compatibility exporters.
+_MAX_PUBLIC_HEATMAP_CELLS = 10_000
 
 _LEGEND_LOCATIONS = {
     "upper right": 0,
@@ -271,6 +278,7 @@ _KIND_CODES = {
     "ribbon": 3,
     "triangle_mesh": 4,
     "hexbin": 4,
+    "heatmap": 2,
 }
 
 
@@ -445,6 +453,51 @@ def _hexbin_pitch(style: dict[str, Any]) -> tuple[float, float]:
     return dx, dy
 
 
+def _heatmap_uses_colormap(trace: Any) -> bool:
+    """Return whether a heatmap still needs the compatibility colormap path."""
+    style = getattr(trace, "style", None) or {}
+    return bool(
+        style.get("truecolor")
+        or style.get("colormap") is not None
+        or getattr(trace, "rgba_grid", None) is not None
+        or getattr(trace, "rgba", None) is not None
+    )
+
+
+def _heatmap_shape(trace: Any) -> tuple[int, int]:
+    """Return the finite rows x cols lattice, or fail closed."""
+    shape = getattr(trace, "grid_shape", None)
+    if shape is None or len(shape) != 2:
+        raise UnsupportedSceneV3("Scene v12 heatmap requires a rows x cols grid_shape")
+    rows, cols = int(shape[0]), int(shape[1])
+    if rows < 1 or cols < 1:
+        raise UnsupportedSceneV3("Scene v12 heatmap requires a positive grid_shape")
+    return rows, cols
+
+
+def _heatmap_grid_values(trace: Any) -> np.ndarray:
+    """Return the authored scalar grid as a flat finite-checkable column."""
+    grid = getattr(trace, "grid", None)
+    if grid is None:
+        raise ValueError("heatmap Scene v12 compilation requires a scalar grid")
+    return np.asarray(getattr(grid, "values", grid), dtype=np.float64)
+
+
+def _heatmap_extent(trace: Any) -> tuple[float, float, float, float]:
+    """Return the finite increasing cell rectangle covered by the grid."""
+    if trace.x is None or trace.y is None:
+        raise ValueError("heatmap Scene v12 compilation requires range columns")
+    xv = np.asarray(getattr(trace.x, "values", trace.x), dtype=np.float64)
+    yv = np.asarray(getattr(trace.y, "values", trace.y), dtype=np.float64)
+    if len(xv) != 2 or len(yv) != 2:
+        raise UnsupportedSceneV3("Scene v12 heatmap range columns must be two endpoints")
+    x0, x1 = float(xv[0]), float(xv[1])
+    y0, y1 = float(yv[0]), float(yv[1])
+    if not np.isfinite([x0, x1, y0, y1]).all() or x0 >= x1 or y0 >= y1:
+        raise UnsupportedSceneV3("Scene v12 heatmap requires a finite increasing cell extent")
+    return x0, x1, y0, y1
+
+
 def _band_columns(trace: Any) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     if trace.x is None or trace.y is None or trace.base is None:
         raise ValueError(f"{trace.kind} Scene v12 compilation requires x, y, and base columns")
@@ -566,6 +619,10 @@ def figure_scene(
             raise UnsupportedSceneV3("Scene v12 does not yet encode joined triangle-mesh fills")
         if trace.kind in _HEXBIN_KINDS and style.get("reduce") not in _HEXBIN_REDUCES:
             raise UnsupportedSceneV3("Scene v12 does not yet encode custom hexbin reducers")
+        if trace.kind in _HEATMAP_KINDS:
+            _reject_rect_extras(style, trace.kind)
+            if _heatmap_uses_colormap(trace):
+                raise UnsupportedSceneV3("Scene v12 does not yet encode heatmap colormap")
         opacity = float(style.get("opacity", 1.0))
         if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
             raise ValueError("trace opacity must be finite and in [0, 1]")
@@ -746,6 +803,33 @@ def figure_scene(
                     coordinates[1].append(float(cy) + ry * dy)
                     coordinates[2].append(0.0)
                     coordinates[3].append(0.0)
+            continue
+
+        if trace.kind in _HEATMAP_KINDS:
+            rows, cols = _heatmap_shape(trace)
+            values = _heatmap_grid_values(trace)
+            if values.size != rows * cols:
+                raise UnsupportedSceneV3("Scene v12 heatmap grid must match rows x cols")
+            if not np.isfinite(values).all():
+                raise UnsupportedSceneV3(
+                    "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
+                )
+            x0, x1, y0, y1 = _heatmap_extent(trace)
+            dx = (x1 - x0) / cols
+            dy = (y1 - y0) / rows
+            # Regular lattice only: reconstruct uniform cells from the stored
+            # range endpoints. Irregular/categorical spacing stays compatibility.
+            for row in range(rows):
+                for col in range(cols):
+                    kinds.append(2)
+                    stable_ids.append(int(trace.id))
+                    style_refs.append(style_ref)
+                    diameters.append(0.0)
+                    symbols.append(0)
+                    coordinates[0].append(x0 + col * dx)
+                    coordinates[1].append(y0 + row * dy)
+                    coordinates[2].append(x0 + (col + 1) * dx)
+                    coordinates[3].append(y0 + (row + 1) * dy)
             continue
 
         if trace.kind in _BAND_KINDS:
@@ -1629,7 +1713,7 @@ def scene_export_support_reason(
     Cartesian geometry subset routes all constant built-in scatter symbols,
     polylines, ordinary Rects, disconnected segment/error-bar/stem endpoint
     pairs, bounded fill-only triangle meshes, constant-style Cartesian hexbin
-    PolyFill cells, and bounded solid ribbons
+    PolyFill cells, constant-style Cartesian heatmap Rects, and bounded solid ribbons
     expanded by Rust in axis-transformed space.
     The proven literal Cartesian chrome slice also routes automatically:
     backgrounds, title, authored axes/ticks,
@@ -1769,6 +1853,7 @@ def scene_export_support_reason(
         "ribbon",
         "triangle_mesh",
         "hexbin",
+        "heatmap",
     }
     public_style_keys = {
         "scatter": {"color", "opacity", "symbol", "size", "role", "stroke", "stroke_width"},
@@ -1855,6 +1940,10 @@ def scene_export_support_reason(
         # Metric colormaps, custom reducers, and extra opacity/stroke keys stay
         # on the compatibility exporters.
         "hexbin": {"color", "opacity", "hex_dx", "hex_dy", "role", "reduce"},
+        # Constant-style Cartesian heatmap: literal fill plus the stored regular
+        # lattice extent. Metric colormaps, truecolor RGBA, and irregular
+        # spacing stay on the compatibility exporters.
+        "heatmap": {"color", "opacity", "role", "domain", "x_range", "y_range"},
     }
     has_literal_geometry = any(
         trace.kind
@@ -1875,6 +1964,7 @@ def scene_export_support_reason(
             "ribbon",
             "triangle_mesh",
             "hexbin",
+            "heatmap",
         }
         for trace in figure.traces
     )
@@ -1975,6 +2065,24 @@ def scene_export_support_reason(
             try:
                 _hexbin_pitch(hex_style)
             except UnsupportedSceneV3:
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+        if trace.kind in _HEATMAP_KINDS:
+            if _heatmap_uses_colormap(trace):
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+            try:
+                rows, cols = _heatmap_shape(trace)
+                values = _heatmap_grid_values(trace)
+                _heatmap_extent(trace)
+            except (UnsupportedSceneV3, ValueError):
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_MARK"
+            cell_count = rows * cols
+            if (
+                cell_count > _MAX_PUBLIC_HEATMAP_CELLS
+                or values.size != cell_count
+                or not np.isfinite(values).all()
+            ):
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
+            if (trace.style or {}).get("role") != "heatmap":
                 return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
         # Generated companion scatters are accepted only in their exact
         # canonical sequence: stem endpoints, or bounded Rust-positioned box

@@ -3256,6 +3256,7 @@ def heatmap(
     x: Optional[ArrayLike] = None,
     y: Optional[ArrayLike] = None,
     name: Optional[str] = None,
+    color: Any = None,
     colormap: channels.ColormapLike = channels.DEFAULT_COLORMAP,
     domain: Optional[tuple[float, float]] = None,
     opacity: float = 0.95,
@@ -3265,11 +3266,15 @@ def heatmap(
 
     `z` is shaped `(rows, columns)`. Optional `x` and `y` arrays name the
     column/row centers; string/object arrays become categorical axes.
+    A literal ``color`` keeps constant paint so regular Cartesian lattices
+    can compile onto Scene Rects; omitted ``color`` keeps the metric
+    colormap on the compatibility exporters.
     """
     css = styles.compile_mark_style("heatmap", style)
     opacity = css.get("opacity", opacity)
     name = self._optional_text(name, "heatmap name")
     opacity = self._opacity(opacity, "heatmap opacity")
+    constant_color = color if isinstance(color, str) else None
     if hasattr(z, "to_numpy"):
         z = z.to_numpy()
     arr = np.asarray(z)
@@ -3343,14 +3348,19 @@ def heatmap(
                 count=int(z_flat.size),
                 name=name,
                 style={
-                    "color": self.next_series_color(),
+                    "color": (
+                        constant_color if constant_color is not None else self.next_series_color()
+                    ),
                     "opacity": opacity,
                     "role": "heatmap",
-                    "colormap": colormap,
                     "domain": [lo, hi],
-                    "truecolor": truecolor,
                     "x_range": [float(x_edges[0]), float(x_edges[-1])],
                     "y_range": [float(y_edges[0]), float(y_edges[-1])],
+                    **(
+                        {}
+                        if constant_color is not None and not truecolor
+                        else {"colormap": colormap, "truecolor": truecolor}
+                    ),
                     **styles._opacity_channels(css),
                 },
             )

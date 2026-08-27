@@ -831,6 +831,28 @@ def test_python_scene_compiles_ribbon_and_triangle_mesh() -> None:
     hex_svg = _native.scene_svg(hexbin.to_scene())
     assert hex_svg.count('<path d="M ') == len(hexbin.traces[0].x.values)
 
+    heatmap = Figure(width=320, height=240)
+    heatmap.axis_options["x"]["domain"] = (0.0, 4.0)
+    heatmap.axis_options["y"]["domain"] = (0.0, 5.0)
+    heatmap.heatmap(
+        [[0.0, 1.0, 2.0], [3.0, 4.0, 5.0]],
+        x=[1.0, 2.0, 3.0],
+        y=[1.0, 3.0],
+        color="#3987e5",
+    )
+    heat_svg = _native.scene_svg(heatmap.to_scene())
+    rows, cols = heatmap.traces[0].grid_shape or (0, 0)
+    clip_start = heat_svg.find('<g clip-path="url(#xy-scene-plot)">')
+    clip_end = heat_svg.find("</g>", clip_start)
+    assert heat_svg[clip_start:clip_end].count("<rect ") == rows * cols
+
+    colormap = Figure(width=320, height=240)
+    colormap.axis_options["x"]["domain"] = (0.0, 4.0)
+    colormap.axis_options["y"]["domain"] = (0.0, 5.0)
+    colormap.heatmap([[0.0, 1.0], [1.0, 0.0]])
+    with pytest.raises(UnsupportedSceneV3, match="heatmap colormap"):
+        colormap.to_scene()
+
     custom = Figure(width=320, height=240)
     custom.axis_options["x"]["domain"] = (0.0, 4.0)
     custom.axis_options["y"]["domain"] = (0.0, 5.0)
