@@ -467,6 +467,12 @@ def _ptr_u8(arr: npt.NDArray[np.uint8]) -> int:
     return arr.ctypes.data
 
 
+class _PolarAbiInput(ctypes.Structure):
+    """Packed polar_input/len view so Scene encode stays at Koffi's 64-arg ceiling."""
+
+    _fields_ = (("data", ctypes.c_void_p), ("len", ctypes.c_size_t))
+
+
 def _fixed_records(values: np.ndarray) -> tuple[np.ndarray, int]:
     records = np.ascontiguousarray(values)
     if records.ndim != 1 or records.dtype.hasobject:
@@ -3106,7 +3112,8 @@ def _polar_r_scale(axis: Mapping[str, object]) -> tuple[int, float, bool]:
         code = 2
     else:
         code = 0
-    constant = float(axis.get("constant", 1.0))
+    raw_constant = axis.get("constant", 1.0)
+    constant = 1.0 if raw_constant is None else float(raw_constant)
     mask = axis.get("nonpositive", "clip") == "mask"
     return code, constant, mask
 
@@ -3526,6 +3533,7 @@ def scene_batch_encode(
     legend_input: bytes = b"",
     colorbar_input: bytes = b"",
     authored_text_annotations: bytes = b"",
+    polar_input: bytes = b"",
 ) -> bytes:
     """Encode the bounded backend-neutral Scene v16 typed batch."""
 
@@ -3627,6 +3635,14 @@ def scene_batch_encode(
     y_minor = _as_f64(np.asarray(y_minor_ticks), "scene y minor ticks")
     legend_array = np.frombuffer(legend_input, dtype=np.uint8)
     colorbar_array = np.frombuffer(colorbar_input, dtype=np.uint8)
+    if not isinstance(polar_input, (bytes, bytearray)):
+        raise TypeError("polar_input must be bytes")
+    if polar_input and len(polar_input) != 92:
+        raise ValueError("polar_input must be empty or a 92-byte XYPL v1 envelope")
+    polar_array = np.frombuffer(bytes(polar_input), dtype=np.uint8)
+    polar_view = (
+        None if not len(polar_array) else _PolarAbiInput(_ptr_u8(polar_array), len(polar_array))
+    )
 
     def tick_label_input(labels: list[str] | tuple[str, ...] | None, name: str) -> np.ndarray:
         if labels is None:
@@ -3745,6 +3761,7 @@ def scene_batch_encode(
             len(legend_array),
             _ptr_u8(colorbar_array) if len(colorbar_array) else 0,
             len(colorbar_array),
+            ctypes.addressof(polar_view) if polar_view is not None else 0,
             out,
             capacity,
         )

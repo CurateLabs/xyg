@@ -98,6 +98,17 @@ const PUBLIC_AXIS_KEYS: &[&str] = &[
     "minor_style",
     "format",
 ];
+const POLAR_AXIS_KEYS: &[&str] = &[
+    "theta_unit",
+    "theta_zero",
+    "theta_direction",
+    "sector",
+    "grid_shape",
+    "categories",
+    "hole",
+    "r_origin",
+];
+const POLAR_SCENE_KINDS: &[&str] = &["line", "scatter", "area"];
 const PUBLIC_SYMBOLS: &[&str] = &[
     "circle",
     "square",
@@ -834,9 +845,6 @@ pub fn scene_figure_support_reason(bytes: &[u8]) -> Result<String, SceneError> {
     }
 
     let mut features = 0u64;
-    if flags & OBS_POLAR != 0 {
-        features |= SCENE_FEATURE_POLAR;
-    }
     if flags & OBS_CUSTOM_FONT != 0 {
         features |= SCENE_FEATURE_CUSTOM_FONT;
     }
@@ -855,13 +863,10 @@ pub fn scene_figure_support_reason(bytes: &[u8]) -> Result<String, SceneError> {
     if flags & OBS_LABELED_ANNOTATION != 0 {
         features |= SCENE_FEATURE_LABELED_ANNOTATION;
     }
-    let feature_reason = scene_support_reason(SCENE_SUPPORT_REQUEST_VERSION, features)?;
-    if !feature_reason.is_empty() {
-        return Ok(feature_reason.to_string());
-    }
 
     let mut has_x = false;
     let mut has_y = false;
+    let mut axis_keys: Vec<Vec<&str>> = Vec::new();
     for _ in 0..n_axes {
         if cursor.remaining() < XYFS_AXIS_BYTES {
             return Err(SceneError::Length);
@@ -878,10 +883,7 @@ pub fn scene_figure_support_reason(bytes: &[u8]) -> Result<String, SceneError> {
                 return Ok(FIGURE_AXIS_SET_REASON.to_string());
             }
         }
-        let keys = cursor.keys(n_keys)?;
-        if extra_key(&keys, PUBLIC_AXIS_KEYS) {
-            return Ok(FIGURE_AXIS_KEYS_REASON.to_string());
-        }
+        axis_keys.push(cursor.keys(n_keys)?);
     }
     if n_axes != 2 || !has_x || !has_y {
         return Ok(FIGURE_AXIS_SET_REASON.to_string());
@@ -913,6 +915,36 @@ pub fn scene_figure_support_reason(bytes: &[u8]) -> Result<String, SceneError> {
     }
     if cursor.remaining() != 0 {
         return Err(SceneError::Length);
+    }
+
+    if flags & OBS_POLAR != 0 {
+        let unsupported: Vec<&str> = traces
+            .iter()
+            .map(|(_, kind)| if kind.is_empty() { "mark" } else { kind.as_str() })
+            .filter(|kind| !POLAR_SCENE_KINDS.contains(kind))
+            .collect();
+        if !unsupported.is_empty() {
+            features |= SCENE_FEATURE_POLAR;
+        }
+    }
+    let feature_reason = scene_support_reason(SCENE_SUPPORT_REQUEST_VERSION, features)?;
+    if !feature_reason.is_empty() {
+        return Ok(feature_reason.to_string());
+    }
+
+    let axis_allowed: Vec<&str> = if flags & OBS_POLAR != 0 {
+        PUBLIC_AXIS_KEYS
+            .iter()
+            .chain(POLAR_AXIS_KEYS.iter())
+            .copied()
+            .collect()
+    } else {
+        PUBLIC_AXIS_KEYS.to_vec()
+    };
+    for keys in &axis_keys {
+        if extra_key(keys.as_slice(), axis_allowed.as_slice()) {
+            return Ok(FIGURE_AXIS_KEYS_REASON.to_string());
+        }
     }
 
     if let Some((_, kind)) = traces
@@ -1104,11 +1136,34 @@ mod tests {
     #[test]
     fn figure_support_maps_polar_before_axis_keys() {
         assert_eq!(
-            scene_figure_support_reason(&xyfs(OBS_POLAR, &[(0, &["collision"]), (1, &["label"])])),
+            scene_figure_support_reason(&xyfs_v2(
+                OBS_POLAR,
+                &PRIMARY_XY,
+                &[(XYFS_TRACE_UNSUPPORTED_KIND, "heatmap")]
+            )),
             Ok(
-                "XYG_SCENE_UNSUPPORTED_POLAR: Scene v12 supports Cartesian coordinates only"
+                "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, and area only"
                     .to_string()
             )
+        );
+    }
+
+    #[test]
+    fn figure_support_accepts_polar_scatter_and_polar_axis_keys() {
+        assert_eq!(
+            scene_figure_support_reason(&xyfs_v2(
+                OBS_POLAR,
+                &[
+                    (0, &["label", "theta_unit", "theta_zero"]),
+                    (1, &["label", "hole", "r_origin"]),
+                ],
+                &[(0, "scatter")]
+            )),
+            Ok(String::new())
+        );
+        assert_eq!(
+            scene_figure_support_reason(&xyfs(OBS_POLAR, &[(0, &["collision"]), (1, &["label"])])),
+            Ok(FIGURE_AXIS_KEYS_REASON.to_string())
         );
     }
 

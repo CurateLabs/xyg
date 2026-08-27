@@ -237,6 +237,7 @@ crates/
     compat_layout.rs    # static-export padding/colorbar/polar recut (ABI 126)
     density_emit.rs     # first-paint density scatter emit policy (ABI 132) ✅
     polar.rs            # (theta, r) -> screen-pixel projection (ABI 131)
+                        #   + XYPL v1 polar Scene compile (ABI 133 / Scene v26)
                         #   + pyplot tight-layout solve (ABI 127) ✅
     textblock.rs        # newline-delimited chrome measure (ABI 125) ✅
     geom.rs             # ribbon/curve/rounded-rect tessellation (ABI 121) ✅
@@ -675,5 +676,7 @@ landed; the remainder, in order:
    `xyg_density_full_identity` / `xyg_density_pyramid_preflight` /
    `xyg_density_grid_path` / `xyg_density_format_binning` /
    `xyg_density_emit_meta` / `xyg_density_wasm_eligible` ✅; ABI 129
-   `xyg_colormap_rgba` / `xyg_colormap_rgba_canonical` ✅.
+   `xyg_colormap_rgba` / `xyg_colormap_rgba_canonical` ✅; ABI 133
+   polar Scene v26 compile via XYPL on `xyg_scene_batch_encode` (`polar.rs` +
+   `scene.rs`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

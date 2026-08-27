@@ -6,10 +6,11 @@
 
 use crate::css;
 use crate::geom;
+use crate::polar::{self, POLAR_METRICS_LEN, XYPL_MAGIC, XYPL_V1_BYTES};
 use crate::svg::push_num;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 25;
+pub const SCENE_VERSION: u32 = 26;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -101,7 +102,7 @@ pub fn scene_support_reason(version: u32, features: u64) -> Result<&'static str,
         return Err(SceneError::Version);
     }
     let reasons = [
-        (SCENE_FEATURE_POLAR, "XYG_SCENE_UNSUPPORTED_POLAR: Scene v12 supports Cartesian coordinates only"),
+        (SCENE_FEATURE_POLAR, "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, and area only"),
         (SCENE_FEATURE_CUSTOM_FONT, "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v12 does not encode custom font resources"),
         (SCENE_FEATURE_BROWSER_CSS, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS: Scene v12 does not encode browser-only CSS or class behavior"),
         (SCENE_FEATURE_GRADIENT, "XYG_SCENE_UNSUPPORTED_GRADIENT: Scene v12 supports solid literal paints only"),
@@ -1217,6 +1218,36 @@ fn push_raster_stroke(
     push_raster_f32(out, width, scale)?;
     out.extend_from_slice(&rgba);
     out.push(0);
+    out.extend_from_slice(&0u32.to_le_bytes());
+    out.push(1);
+    Ok(())
+}
+
+fn push_raster_polyline(
+    out: &mut Vec<u8>,
+    points: &[(f64, f64)],
+    width: f64,
+    rgba: [u8; 4],
+    scale: f64,
+    closed: bool,
+) -> Result<(), SceneError> {
+    if points.len() < 2 {
+        return Ok(());
+    }
+    let count = points.len() + usize::from(closed);
+    out.push(3);
+    out.extend_from_slice(&(count as u32).to_le_bytes());
+    for &(x, y) in points {
+        push_raster_f32(out, x, scale)?;
+        push_raster_f32(out, y, scale)?;
+    }
+    if closed {
+        push_raster_f32(out, points[0].0, scale)?;
+        push_raster_f32(out, points[0].1, scale)?;
+    }
+    push_raster_f32(out, width, scale)?;
+    out.extend_from_slice(&rgba);
+    out.push(u8::from(closed));
     out.extend_from_slice(&0u32.to_le_bytes());
     out.push(1);
     Ok(())
@@ -3022,7 +3053,10 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
             return Err(SceneError::Length);
         }
     }
-    if bytes.len() != total {
+    if bytes.len() != total && bytes.len() != total + XYPL_V1_BYTES {
+        return Err(SceneError::Length);
+    }
+    if bytes.len() == total + XYPL_V1_BYTES && bytes.get(total..total + 4) != Some(&XYPL_MAGIC[..]) {
         return Err(SceneError::Length);
     }
 
@@ -3045,6 +3079,17 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
         || bottom > viewport_height
     {
         return Err(SceneError::NonFinite);
+    }
+    if bytes.len() == total + XYPL_V1_BYTES {
+        let layout = PlotLayout::new(
+            viewport_width,
+            viewport_height,
+            left,
+            viewport_width - right,
+            top,
+            viewport_height - bottom,
+        )?;
+        PolarSceneState::from_xypl(&bytes[total..], layout)?;
     }
 
     for axis in [96usize, 104] {
@@ -3920,6 +3965,125 @@ pub struct SceneBatch<'a> {
     x1: &'a [f64],
     y1: &'a [f64],
     annotations_from_ids: bool,
+    polar: Option<PolarSceneState>,
+}
+
+#[derive(Clone, Debug)]
+struct PolarSceneState {
+    metrics: [f64; POLAR_METRICS_LEN],
+    grid_shape: u8,
+    xypl: Vec<u8>,
+}
+
+impl PolarSceneState {
+    fn from_xypl(bytes: &[u8], layout: PlotLayout) -> Result<Self, SceneError> {
+        let mut metrics = [0.0; POLAR_METRICS_LEN];
+        let envelope = polar::layout_from_xypl(
+            bytes,
+            layout.left,
+            layout.top,
+            layout.right - layout.left,
+            layout.bottom - layout.top,
+            &mut metrics,
+        )
+        .ok_or(SceneError::Length)?;
+        Ok(Self {
+            metrics,
+            grid_shape: envelope.grid_shape,
+            xypl: bytes.to_vec(),
+        })
+    }
+
+    fn project(&self, theta: f64, r: f64) -> Option<(f64, f64)> {
+        polar::polar_project_one(&self.metrics, theta, r)
+    }
+
+    fn visible(&self, theta: f64, r: f64) -> bool {
+        polar::polar_point_visible(&self.metrics, theta, r)
+    }
+
+    fn cx(&self) -> f64 {
+        self.metrics[polar::METRIC_CX]
+    }
+
+    fn cy(&self) -> f64 {
+        self.metrics[polar::METRIC_CY]
+    }
+
+    fn radius(&self) -> f64 {
+        self.metrics[polar::METRIC_RADIUS]
+    }
+
+    fn hole(&self) -> f64 {
+        self.metrics[polar::METRIC_HOLE]
+    }
+
+    fn full_sector(&self) -> bool {
+        self.metrics[polar::METRIC_FULL_SECTOR] >= 0.5
+    }
+
+    fn sector_a0(&self) -> f64 {
+        self.metrics[polar::METRIC_SECTOR_A0]
+    }
+
+    fn sector_a1(&self) -> f64 {
+        self.metrics[polar::METRIC_SECTOR_A1]
+    }
+
+    fn r_lo(&self) -> f64 {
+        self.metrics[polar::METRIC_R_LO]
+    }
+
+    fn r_hi(&self) -> f64 {
+        self.metrics[polar::METRIC_R_HI]
+    }
+
+    fn inner_radius(&self) -> f64 {
+        let rn = polar::polar_project_one(
+            &self.metrics,
+            self.metrics[polar::METRIC_SECTOR_START],
+            self.r_lo(),
+        )
+        .map(|(x, y)| (x - self.cx()).hypot(y - self.cy()))
+        .unwrap_or(self.hole() * self.radius());
+        rn.max(0.0)
+    }
+
+    fn radius_px(&self, r: f64) -> f64 {
+        polar::polar_project_one(&self.metrics, self.metrics[polar::METRIC_SECTOR_START], r)
+            .map(|(x, y)| (x - self.cx()).hypot(y - self.cy()))
+            .unwrap_or(0.0)
+    }
+
+    fn ring_points(&self, r: f64, steps: usize) -> Vec<(f64, f64)> {
+        let rn = self.radius_px(r);
+        if rn <= 0.0 {
+            return Vec::new();
+        }
+        let n = steps.max(2);
+        let count = if self.full_sector() { n } else { n + 1 };
+        let a0 = self.sector_a0();
+        let span = self.sector_a1() - a0;
+        (0..count)
+            .map(|i| {
+                let a = a0 + span * i as f64 / n as f64;
+                (self.cx() + rn * a.cos(), self.cy() - rn * a.sin())
+            })
+            .collect()
+    }
+
+    fn polygon_ring(&self, r: f64, thetas: &[f64]) -> Vec<(f64, f64)> {
+        thetas
+            .iter()
+            .filter_map(|theta| self.project(*theta, r))
+            .collect()
+    }
+
+    fn spoke_ends(&self, theta: f64) -> Option<((f64, f64), (f64, f64))> {
+        let inner = self.project(theta, self.r_lo())?;
+        let outer = self.project(theta, self.r_hi())?;
+        Some((inner, outer))
+    }
 }
 
 impl<'a> SceneBatch<'a> {
@@ -3927,6 +4091,9 @@ impl<'a> SceneBatch<'a> {
     pub fn with_authored_annotations(mut self, bytes: &[u8]) -> Result<Self, SceneError> {
         if bytes.is_empty() {
             return Ok(self);
+        }
+        if self.polar.is_some() {
+            return Err(SceneError::Length);
         }
         if bytes.len() < 20 || &bytes[..4] != b"XYAD" {
             return Err(SceneError::Length);
@@ -4663,7 +4830,27 @@ impl<'a> SceneBatch<'a> {
             x1,
             y1,
             annotations_from_ids,
+            polar: None,
         })
+    }
+
+    /// Attach a host-packed XYPL v1 polar envelope. Empty bytes keep Cartesian
+    /// mapping. Rect records and labeled-annotation extras fail closed.
+    pub fn with_polar(mut self, bytes: &[u8]) -> Result<Self, SceneError> {
+        if bytes.is_empty() {
+            return Ok(self);
+        }
+        if !self.arrows.is_empty()
+            || !self.callouts.is_empty()
+            || !self.labels.is_empty()
+            || self.kinds.iter().any(|kind| {
+                SceneRecordKind::from_code(*kind).ok() == Some(SceneRecordKind::Rect)
+            })
+        {
+            return Err(SceneError::Length);
+        }
+        self.polar = Some(PolarSceneState::from_xypl(bytes, self.layout)?);
+        Ok(self)
     }
 
     pub fn encode(&self) -> Vec<u8> {
@@ -4756,23 +4943,56 @@ impl<'a> SceneBatch<'a> {
 
         for index in 0..self.kinds.len() {
             let kind = SceneRecordKind::from_code(self.kinds[index]).expect("validated kind");
-            let mapped = match kind {
-                SceneRecordKind::Scatter
-                | SceneRecordKind::Polyline
-                | SceneRecordKind::PolyFill => [
-                    self.x_scale.pixel(self.x0[index]),
-                    self.y_scale.pixel(self.y0[index]),
-                    0.0,
-                    0.0,
-                ],
-                SceneRecordKind::Rect | SceneRecordKind::Band => [
-                    self.x_scale.pixel(self.x0[index]),
-                    self.y_scale.pixel(self.y0[index]),
-                    self.x_scale.pixel(self.x1[index]),
-                    self.y_scale.pixel(self.y1[index]),
-                ],
+            let mapped = if let Some(polar) = &self.polar {
+                match kind {
+                    SceneRecordKind::Rect => {
+                        [f64::NAN, f64::NAN, f64::NAN, f64::NAN]
+                    }
+                    SceneRecordKind::Scatter
+                    | SceneRecordKind::Polyline
+                    | SceneRecordKind::PolyFill => match polar.project(self.x0[index], self.y0[index])
+                    {
+                        Some((px, py)) => [px, py, 0.0, 0.0],
+                        None => [f64::NAN, f64::NAN, 0.0, 0.0],
+                    },
+                    SceneRecordKind::Band => {
+                        match (
+                            polar.project(self.x0[index], self.y0[index]),
+                            polar.project(self.x1[index], self.y1[index]),
+                        ) {
+                            (Some((x0, y0)), Some((x1, y1))) => [x0, y0, x1, y1],
+                            _ => [f64::NAN, f64::NAN, f64::NAN, f64::NAN],
+                        }
+                    }
+                }
+            } else {
+                match kind {
+                    SceneRecordKind::Scatter
+                    | SceneRecordKind::Polyline
+                    | SceneRecordKind::PolyFill => [
+                        self.x_scale.pixel(self.x0[index]),
+                        self.y_scale.pixel(self.y0[index]),
+                        0.0,
+                        0.0,
+                    ],
+                    SceneRecordKind::Rect | SceneRecordKind::Band => [
+                        self.x_scale.pixel(self.x0[index]),
+                        self.y_scale.pixel(self.y0[index]),
+                        self.x_scale.pixel(self.x1[index]),
+                        self.y_scale.pixel(self.y1[index]),
+                    ],
+                }
             };
+            let polar_visible = self.polar.as_ref().is_none_or(|polar| match kind {
+                SceneRecordKind::Band => {
+                    polar.visible(self.x0[index], self.y0[index])
+                        || polar.visible(self.x1[index], self.y1[index])
+                }
+                SceneRecordKind::Rect => false,
+                _ => polar.visible(self.x0[index], self.y0[index]),
+            });
             let visible = mapped.iter().all(|value| value.is_finite())
+                && polar_visible
                 && match kind {
                     SceneRecordKind::Polyline
                     | SceneRecordKind::Band
@@ -4790,7 +5010,8 @@ impl<'a> SceneBatch<'a> {
                             && mapped[1] - geometry.extent_y <= self.layout.bottom
                     }
                     SceneRecordKind::Rect => {
-                        mapped[0].min(mapped[2]) <= self.layout.right
+                        self.polar.is_none()
+                            && mapped[0].min(mapped[2]) <= self.layout.right
                             && mapped[0].max(mapped[2]) >= self.layout.left
                             && mapped[1].min(mapped[3]) <= self.layout.bottom
                             && mapped[1].max(mapped[3]) >= self.layout.top
@@ -4904,6 +5125,9 @@ impl<'a> SceneBatch<'a> {
             self.colorbar.as_ref(),
             &label_bytes,
         );
+        if let Some(polar) = &self.polar {
+            out.extend_from_slice(&polar.xypl);
+        }
         out
     }
 }
@@ -5760,6 +5984,128 @@ fn push_svg_line(out: &mut String, x1: f64, y1: f64, x2: f64, y2: f64, paint: &s
     out.push_str("\"/>");
 }
 
+fn push_polar_sector_path(out: &mut String, polar: &PolarSceneState, outer: f64, inner: f64) {
+    let cx = polar.cx();
+    let cy = polar.cy();
+    let a0 = polar.sector_a0();
+    let a1 = polar.sector_a1();
+    let at = |radius: f64, angle: f64| (cx + radius * angle.cos(), cy - radius * angle.sin());
+    if polar.full_sector() {
+        let (x0, y0) = at(outer, a0);
+        let (xm, ym) = at(outer, a0 + std::f64::consts::PI);
+        out.push('M');
+        push_num(out, x0);
+        out.push(' ');
+        push_num(out, y0);
+        out.push_str(" A ");
+        push_num(out, outer);
+        out.push(' ');
+        push_num(out, outer);
+        out.push_str(" 0 1 0 ");
+        push_num(out, xm);
+        out.push(' ');
+        push_num(out, ym);
+        out.push_str(" A ");
+        push_num(out, outer);
+        out.push(' ');
+        push_num(out, outer);
+        out.push_str(" 0 1 0 ");
+        push_num(out, x0);
+        out.push(' ');
+        push_num(out, y0);
+        out.push_str(" Z");
+        if inner > 1e-9 {
+            let (ix0, iy0) = at(inner, a0);
+            let (ixm, iym) = at(inner, a0 + std::f64::consts::PI);
+            out.push_str(" M ");
+            push_num(out, ix0);
+            out.push(' ');
+            push_num(out, iy0);
+            out.push_str(" A ");
+            push_num(out, inner);
+            out.push(' ');
+            push_num(out, inner);
+            out.push_str(" 0 1 1 ");
+            push_num(out, ixm);
+            out.push(' ');
+            push_num(out, iym);
+            out.push_str(" A ");
+            push_num(out, inner);
+            out.push(' ');
+            push_num(out, inner);
+            out.push_str(" 0 1 1 ");
+            push_num(out, ix0);
+            out.push(' ');
+            push_num(out, iy0);
+            out.push_str(" Z");
+        }
+        return;
+    }
+    let sweep = u8::from(a1 <= a0);
+    let large = u8::from((a1 - a0).abs() > std::f64::consts::PI);
+    let (ox0, oy0) = at(outer, a0);
+    let (ox1, oy1) = at(outer, a1);
+    if inner <= 1e-9 {
+        out.push('M');
+        push_num(out, cx);
+        out.push(' ');
+        push_num(out, cy);
+        out.push_str(" L ");
+        push_num(out, ox0);
+        out.push(' ');
+        push_num(out, oy0);
+        out.push_str(" A ");
+        push_num(out, outer);
+        out.push(' ');
+        push_num(out, outer);
+        out.push_str(" 0 ");
+        out.push(char::from(b'0' + large));
+        out.push(' ');
+        out.push(char::from(b'0' + sweep));
+        out.push(' ');
+        push_num(out, ox1);
+        out.push(' ');
+        push_num(out, oy1);
+        out.push_str(" Z");
+        return;
+    }
+    let (ix1, iy1) = at(inner, a1);
+    let (ix0, iy0) = at(inner, a0);
+    out.push('M');
+    push_num(out, ox0);
+    out.push(' ');
+    push_num(out, oy0);
+    out.push_str(" A ");
+    push_num(out, outer);
+    out.push(' ');
+    push_num(out, outer);
+    out.push_str(" 0 ");
+    out.push(char::from(b'0' + large));
+    out.push(' ');
+    out.push(char::from(b'0' + sweep));
+    out.push(' ');
+    push_num(out, ox1);
+    out.push(' ');
+    push_num(out, oy1);
+    out.push_str(" L ");
+    push_num(out, ix1);
+    out.push(' ');
+    push_num(out, iy1);
+    out.push_str(" A ");
+    push_num(out, inner);
+    out.push(' ');
+    push_num(out, inner);
+    out.push_str(" 0 ");
+    out.push(char::from(b'0' + large));
+    out.push(' ');
+    out.push(char::from(b'0' + (1 - sweep)));
+    out.push(' ');
+    push_num(out, ix0);
+    out.push(' ');
+    push_num(out, iy0);
+    out.push_str(" Z");
+}
+
 fn rgba_css(rgba: [u8; 4]) -> String {
     format!(
         "rgba({},{},{},{:.6})",
@@ -5844,6 +6190,7 @@ pub struct SceneDocument {
     styles: Vec<EncodedStyle>,
     records: Vec<EncodedRecord>,
     raster_mark_capacity: usize,
+    polar: Option<PolarSceneState>,
 }
 
 impl SceneDocument {
@@ -6213,7 +6560,7 @@ impl SceneDocument {
             .ok_or(SceneError::Limit)?;
         let (chrome, text, legend, colorbar, labels, label_backgrounds, total) =
             read_chrome_trailer(bytes, body)?;
-        if bytes.len() != total {
+        if bytes.len() != total && bytes.len() != total + XYPL_V1_BYTES {
             return Err(SceneError::Length);
         }
         let viewport_width = f64_at(32);
@@ -6230,6 +6577,11 @@ impl SceneDocument {
             top,
             viewport_height - bottom,
         )?;
+        let polar = if bytes.len() == total + XYPL_V1_BYTES {
+            Some(PolarSceneState::from_xypl(&bytes[total..], layout)?)
+        } else {
+            None
+        };
         if labels.iter().any(|label| {
             label.x < 0.0
                 || label.x > layout.viewport_width
@@ -6539,6 +6891,7 @@ impl SceneDocument {
             styles,
             records,
             raster_mark_capacity,
+            polar,
         })
     }
 
@@ -6913,7 +7266,302 @@ impl SceneDocument {
         out.push_str("</g>");
     }
 
+    fn append_svg_plot_clip(&self, out: &mut String) {
+        out.push_str("<defs><clipPath id=\"xy-scene-plot\"");
+        if let Some(polar) = &self.polar {
+            let cx = polar.cx();
+            let cy = polar.cy();
+            let radius = polar.radius();
+            let inner = polar.inner_radius();
+            if polar.full_sector() {
+                if inner > 1e-9 {
+                    out.push_str(" clip-rule=\"evenodd\"><circle cx=\"");
+                    push_num(out, cx);
+                    out.push_str("\" cy=\"");
+                    push_num(out, cy);
+                    out.push_str("\" r=\"");
+                    push_num(out, radius);
+                    out.push_str("\"/><circle cx=\"");
+                    push_num(out, cx);
+                    out.push_str("\" cy=\"");
+                    push_num(out, cy);
+                    out.push_str("\" r=\"");
+                    push_num(out, inner);
+                    out.push_str("\"/>");
+                } else {
+                    out.push_str("><circle cx=\"");
+                    push_num(out, cx);
+                    out.push_str("\" cy=\"");
+                    push_num(out, cy);
+                    out.push_str("\" r=\"");
+                    push_num(out, radius);
+                    out.push_str("\"/>");
+                }
+            } else {
+                out.push_str("><path d=\"");
+                push_polar_sector_path(out, polar, radius, inner);
+                out.push_str("\"/>");
+            }
+        } else {
+            out.push_str("><rect x=\"");
+            push_num(out, self.layout.left);
+            out.push_str("\" y=\"");
+            push_num(out, self.layout.top);
+            out.push_str("\" width=\"");
+            push_num(out, self.layout.right - self.layout.left);
+            out.push_str("\" height=\"");
+            push_num(out, self.layout.bottom - self.layout.top);
+            out.push_str("\"/>");
+        }
+        out.push_str("</clipPath></defs>");
+    }
+
+    fn append_svg_polar_grid(&self, out: &mut String, x_ticks: &AxisTicks, y_ticks: &AxisTicks) {
+        let Some(polar) = &self.polar else {
+            return;
+        };
+        let r_style = self.chrome.y_axis;
+        let t_style = self.chrome.x_axis;
+        if SceneAxisChromeStyle::visible_stroke(r_style.grid_rgba, r_style.grid_width) {
+            for value in &y_ticks.labeled {
+                let rn = polar.radius_px(*value);
+                if rn <= 0.0 {
+                    continue;
+                }
+                if polar.grid_shape == 1 {
+                    let points = polar.polygon_ring(*value, &x_ticks.labeled);
+                    if points.len() < 2 {
+                        continue;
+                    }
+                    let tag = if polar.full_sector() {
+                        "polygon"
+                    } else {
+                        "polyline"
+                    };
+                    out.push_str("<");
+                    out.push_str(tag);
+                    out.push_str(" data-xy-grid=\"ring\" points=\"");
+                    for (i, (x, y)) in points.iter().enumerate() {
+                        if i > 0 {
+                            out.push(' ');
+                        }
+                        push_num(out, *x);
+                        out.push(',');
+                        push_num(out, *y);
+                    }
+                    out.push_str("\" fill=\"none\" stroke=\"");
+                    out.push_str(&rgba_css(r_style.grid_rgba));
+                    out.push_str("\" stroke-width=\"");
+                    push_num(out, r_style.grid_width);
+                    out.push_str("\"/>");
+                } else if polar.full_sector() {
+                    out.push_str("<circle data-xy-grid=\"ring\" cx=\"");
+                    push_num(out, polar.cx());
+                    out.push_str("\" cy=\"");
+                    push_num(out, polar.cy());
+                    out.push_str("\" r=\"");
+                    push_num(out, rn);
+                    out.push_str("\" fill=\"none\" stroke=\"");
+                    out.push_str(&rgba_css(r_style.grid_rgba));
+                    out.push_str("\" stroke-width=\"");
+                    push_num(out, r_style.grid_width);
+                    out.push_str("\"/>");
+                } else {
+                    let a0 = polar.sector_a0();
+                    let a1 = polar.sector_a1();
+                    let x0 = polar.cx() + rn * a0.cos();
+                    let y0 = polar.cy() - rn * a0.sin();
+                    let x1 = polar.cx() + rn * a1.cos();
+                    let y1 = polar.cy() - rn * a1.sin();
+                    let large = u8::from((a1 - a0).abs() > std::f64::consts::PI);
+                    let sweep = u8::from(a1 <= a0);
+                    out.push_str("<path data-xy-grid=\"ring\" d=\"M ");
+                    push_num(out, x0);
+                    out.push(' ');
+                    push_num(out, y0);
+                    out.push_str(" A ");
+                    push_num(out, rn);
+                    out.push(' ');
+                    push_num(out, rn);
+                    out.push_str(" 0 ");
+                    out.push(char::from(b'0' + large));
+                    out.push(' ');
+                    out.push(char::from(b'0' + sweep));
+                    out.push(' ');
+                    push_num(out, x1);
+                    out.push(' ');
+                    push_num(out, y1);
+                    out.push_str("\" fill=\"none\" stroke=\"");
+                    out.push_str(&rgba_css(r_style.grid_rgba));
+                    out.push_str("\" stroke-width=\"");
+                    push_num(out, r_style.grid_width);
+                    out.push_str("\"/>");
+                }
+            }
+        }
+        if SceneAxisChromeStyle::visible_stroke(t_style.grid_rgba, t_style.grid_width) {
+            for value in &x_ticks.labeled {
+                if let Some(((x0, y0), (x1, y1))) = polar.spoke_ends(*value) {
+                    out.push_str("<line data-xy-grid=\"spoke\" x1=\"");
+                    push_num(out, x0);
+                    out.push_str("\" y1=\"");
+                    push_num(out, y0);
+                    out.push_str("\" x2=\"");
+                    push_num(out, x1);
+                    out.push_str("\" y2=\"");
+                    push_num(out, y1);
+                    out.push_str("\" stroke=\"");
+                    out.push_str(&rgba_css(t_style.grid_rgba));
+                    out.push_str("\" stroke-width=\"");
+                    push_num(out, t_style.grid_width);
+                    out.push_str("\"/>");
+                }
+            }
+        }
+    }
+
+    fn append_svg_polar_frame(&self, out: &mut String, x_ticks: &AxisTicks) {
+        let Some(polar) = &self.polar else {
+            return;
+        };
+        let style = self.chrome.x_axis;
+        if !SceneAxisChromeStyle::visible_stroke(style.axis_rgba, style.axis_width) {
+            return;
+        }
+        if polar.full_sector() && polar.inner_radius() <= 1e-9 && polar.grid_shape != 1 {
+            out.push_str("<circle data-xy-frame=\"polar\" cx=\"");
+            push_num(out, polar.cx());
+            out.push_str("\" cy=\"");
+            push_num(out, polar.cy());
+            out.push_str("\" r=\"");
+            push_num(out, polar.radius());
+            out.push_str("\" fill=\"none\" stroke=\"");
+            out.push_str(&rgba_css(style.axis_rgba));
+            out.push_str("\" stroke-width=\"");
+            push_num(out, style.axis_width);
+            out.push_str("\"/>");
+            return;
+        }
+        out.push_str("<path data-xy-frame=\"polar\" d=\"");
+        if polar.grid_shape == 1 {
+            let points = polar.polygon_ring(polar.r_hi(), &x_ticks.labeled);
+            if let Some((x, y)) = points.first() {
+                out.push('M');
+                push_num(out, *x);
+                out.push(' ');
+                push_num(out, *y);
+                for (x, y) in points.iter().skip(1) {
+                    out.push_str(" L ");
+                    push_num(out, *x);
+                    out.push(' ');
+                    push_num(out, *y);
+                }
+                if polar.full_sector() {
+                    out.push_str(" Z");
+                }
+            }
+        } else {
+            push_polar_sector_path(out, polar, polar.radius(), polar.inner_radius());
+        }
+        out.push_str("\" fill=\"none\" stroke=\"");
+        out.push_str(&rgba_css(style.axis_rgba));
+        out.push_str("\" stroke-width=\"");
+        push_num(out, style.axis_width);
+        out.push_str("\"/>");
+    }
+
+    fn append_svg_polar_tick_labels(
+        &self,
+        out: &mut String,
+        x_ticks: &AxisTicks,
+        y_ticks: &AxisTicks,
+    ) {
+        let Some(polar) = &self.polar else {
+            return;
+        };
+        const POLAR_TICK_GAP: f64 = 8.0;
+        const POLAR_RLABEL_DEG: f64 = 22.5;
+        let size = self.chrome.label_font_size;
+        let theta_style = self.chrome.x_axis;
+        let r_style = self.chrome.y_axis;
+        if theta_style.tick_label_sides != 0 && theta_style.label_rgba[3] != 0 {
+            for (index, value) in x_ticks.labeled.iter().enumerate() {
+                let Some((x_rim, y_rim)) = polar.project(*value, polar.r_hi()) else {
+                    continue;
+                };
+                let dx = x_rim - polar.cx();
+                let dy = polar.cy() - y_rim;
+                let angle = dy.atan2(dx);
+                let x = polar.cx() + (polar.radius() + POLAR_TICK_GAP) * angle.cos();
+                let y = polar.cy() - (polar.radius() + POLAR_TICK_GAP) * angle.sin();
+                let cos_a = angle.cos();
+                let sin_a = angle.sin();
+                let anchor = if cos_a.abs() < 0.3 {
+                    "middle"
+                } else if cos_a > 0.0 {
+                    "start"
+                } else {
+                    "end"
+                };
+                let dy_nudge = if sin_a.abs() < 0.3 {
+                    0.0
+                } else if sin_a > 0.0 {
+                    -0.1 * size
+                } else {
+                    0.8 * size
+                };
+                out.push_str("<text data-xy-tick=\"theta\" x=\"");
+                push_num(out, x);
+                out.push_str("\" y=\"");
+                push_num(out, y + dy_nudge);
+                out.push_str("\" fill=\"");
+                out.push_str(&rgba_css(theta_style.label_rgba));
+                out.push_str("\" font-size=\"");
+                push_num(out, size);
+                out.push_str("\" text-anchor=\"");
+                out.push_str(anchor);
+                out.push_str("\">");
+                push_escaped_attribute(out, &self.axis_tick_label(true, index, *value, x_ticks));
+                out.push_str("</text>");
+            }
+        }
+        if r_style.tick_label_sides != 0 && r_style.label_rgba[3] != 0 {
+            let mut angle = polar.metrics[polar::METRIC_ZERO]
+                + polar.metrics[polar::METRIC_DIR] * POLAR_RLABEL_DEG.to_radians();
+            if !polar.full_sector() {
+                let a0 = polar.sector_a0();
+                let a1 = polar.sector_a1();
+                let lo = a0.min(a1);
+                let hi = a0.max(a1);
+                if angle < lo || angle > hi {
+                    angle = (a0 + a1) / 2.0;
+                }
+            }
+            for (index, value) in y_ticks.labeled.iter().enumerate() {
+                let rn = polar.radius_px(*value);
+                if rn <= 0.0 {
+                    continue;
+                }
+                out.push_str("<text data-xy-tick=\"r\" x=\"");
+                push_num(out, polar.cx() + rn * angle.cos() + 3.0);
+                out.push_str("\" y=\"");
+                push_num(out, polar.cy() - rn * angle.sin() - 3.0);
+                out.push_str("\" fill=\"");
+                out.push_str(&rgba_css(r_style.label_rgba));
+                out.push_str("\" font-size=\"");
+                push_num(out, size);
+                out.push_str("\" text-anchor=\"start\">");
+                push_escaped_attribute(out, &self.axis_tick_label(false, index, *value, y_ticks));
+                out.push_str("</text>");
+            }
+        }
+    }
+
     fn append_svg_grid(&self, out: &mut String, x_ticks: &AxisTicks, y_ticks: &AxisTicks) {
+        if self.polar.is_some() {
+            self.append_svg_polar_grid(out, x_ticks, y_ticks);
+            return;
+        }
         for (ticks, scale, style, is_x) in [
             (x_ticks, self.x_scale, self.chrome.x_axis, true),
             (y_ticks, self.y_scale, self.chrome.y_axis, false),
@@ -6969,15 +7617,8 @@ impl SceneDocument {
         push_num(&mut out, self.layout.viewport_width);
         out.push(' ');
         push_num(&mut out, self.layout.viewport_height);
-        out.push_str("\"><defs><clipPath id=\"xy-scene-plot\"><rect x=\"");
-        push_num(&mut out, self.layout.left);
-        out.push_str("\" y=\"");
-        push_num(&mut out, self.layout.top);
-        out.push_str("\" width=\"");
-        push_num(&mut out, self.layout.right - self.layout.left);
-        out.push_str("\" height=\"");
-        push_num(&mut out, self.layout.bottom - self.layout.top);
-        out.push_str("\"/></clipPath></defs>");
+        out.push_str("\">");
+        self.append_svg_plot_clip(&mut out);
         for (kind, x, y, width, height, paint) in [
             (
                 "chart-background",
@@ -7210,7 +7851,10 @@ impl SceneDocument {
             }
         }
         out.push_str("</g>");
-        if self.chrome.x_axis.has_visible_axis() || self.chrome.y_axis.has_visible_axis() {
+        if self.polar.is_some() {
+            self.append_svg_polar_frame(&mut out, &x_ticks);
+            self.append_svg_polar_tick_labels(&mut out, &x_ticks, &y_ticks);
+        } else if self.chrome.x_axis.has_visible_axis() || self.chrome.y_axis.has_visible_axis() {
             out.push_str("<g data-xy-chrome=\"axes\">");
             for (is_x, ticks, scale, style) in [
                 (true, &x_ticks, self.x_scale, self.chrome.x_axis),
@@ -7368,6 +8012,131 @@ impl SceneDocument {
         out
     }
 
+    fn append_raster_polar_grid(
+        &self,
+        out: &mut Vec<u8>,
+        scale: f64,
+        polar: &PolarSceneState,
+        x_ticks: &AxisTicks,
+        y_ticks: &AxisTicks,
+    ) -> Result<(), SceneError> {
+        let r_style = self.chrome.y_axis;
+        let t_style = self.chrome.x_axis;
+        if SceneAxisChromeStyle::visible_stroke(r_style.grid_rgba, r_style.grid_width) {
+            for value in &y_ticks.labeled {
+                let points = if polar.grid_shape == 1 {
+                    polar.polygon_ring(*value, &x_ticks.labeled)
+                } else {
+                    polar.ring_points(*value, 64)
+                };
+                if points.len() < 2 {
+                    continue;
+                }
+                push_raster_polyline(
+                    out,
+                    &points,
+                    r_style.grid_width,
+                    r_style.grid_rgba,
+                    scale,
+                    polar.full_sector(),
+                )?;
+            }
+        }
+        if SceneAxisChromeStyle::visible_stroke(t_style.grid_rgba, t_style.grid_width) {
+            for value in &x_ticks.labeled {
+                if let Some((start, end)) = polar.spoke_ends(*value) {
+                    push_raster_stroke(out, [start, end], t_style.grid_width, t_style.grid_rgba, scale)?;
+                }
+            }
+        }
+        if SceneAxisChromeStyle::visible_stroke(t_style.axis_rgba, t_style.axis_width) {
+            let frame = if polar.grid_shape == 1 {
+                polar.polygon_ring(polar.r_hi(), &x_ticks.labeled)
+            } else {
+                polar.ring_points(polar.r_hi(), 64)
+            };
+            if frame.len() >= 2 {
+                push_raster_polyline(
+                    out,
+                    &frame,
+                    t_style.axis_width,
+                    t_style.axis_rgba,
+                    scale,
+                    polar.full_sector(),
+                )?;
+            }
+        }
+        const POLAR_TICK_GAP: f64 = 8.0;
+        const POLAR_RLABEL_DEG: f64 = 22.5;
+        let size = self.chrome.label_font_size;
+        if t_style.tick_label_sides != 0 && t_style.label_rgba[3] != 0 {
+            for (index, value) in x_ticks.labeled.iter().enumerate() {
+                let Some((x_rim, y_rim)) = polar.project(*value, polar.r_hi()) else {
+                    continue;
+                };
+                let dx = x_rim - polar.cx();
+                let dy = polar.cy() - y_rim;
+                let angle = dy.atan2(dx);
+                let x = polar.cx() + (polar.radius() + POLAR_TICK_GAP) * angle.cos();
+                let y = polar.cy() - (polar.radius() + POLAR_TICK_GAP) * angle.sin();
+                let cos_a = angle.cos();
+                let sin_a = angle.sin();
+                let anchor = if cos_a.abs() < 0.3 {
+                    1u8
+                } else if cos_a > 0.0 {
+                    0
+                } else {
+                    2
+                };
+                let dy_nudge = if sin_a.abs() < 0.3 {
+                    0.0
+                } else if sin_a > 0.0 {
+                    -0.1 * size
+                } else {
+                    0.8 * size
+                };
+                let text = self.axis_tick_label(true, index, *value, x_ticks);
+                out.push(6);
+                push_raster_f32(out, x, scale)?;
+                push_raster_f32(out, y + dy_nudge, scale)?;
+                out.push(anchor);
+                push_raster_f32(out, size, scale)?;
+                out.extend_from_slice(&t_style.label_rgba);
+                out.extend_from_slice(&(text.len() as u32).to_le_bytes());
+                out.extend_from_slice(text.as_bytes());
+            }
+        }
+        if r_style.tick_label_sides != 0 && r_style.label_rgba[3] != 0 {
+            let mut angle = polar.metrics[polar::METRIC_ZERO]
+                + polar.metrics[polar::METRIC_DIR] * POLAR_RLABEL_DEG.to_radians();
+            if !polar.full_sector() {
+                let a0 = polar.sector_a0();
+                let a1 = polar.sector_a1();
+                let lo = a0.min(a1);
+                let hi = a0.max(a1);
+                if angle < lo || angle > hi {
+                    angle = (a0 + a1) / 2.0;
+                }
+            }
+            for (index, value) in y_ticks.labeled.iter().enumerate() {
+                let rn = polar.radius_px(*value);
+                if rn <= 0.0 {
+                    continue;
+                }
+                let text = self.axis_tick_label(false, index, *value, y_ticks);
+                out.push(6);
+                push_raster_f32(out, polar.cx() + rn * angle.cos() + 3.0, scale)?;
+                push_raster_f32(out, polar.cy() - rn * angle.sin() - 3.0, scale)?;
+                out.push(0);
+                push_raster_f32(out, size, scale)?;
+                out.extend_from_slice(&r_style.label_rgba);
+                out.extend_from_slice(&(text.len() as u32).to_le_bytes());
+                out.extend_from_slice(text.as_bytes());
+            }
+        }
+        Ok(())
+    }
+
     #[inline(never)]
     fn append_raster_grid(
         &self,
@@ -7376,6 +8145,9 @@ impl SceneDocument {
         x_ticks: &AxisTicks,
         y_ticks: &AxisTicks,
     ) -> Result<(), SceneError> {
+        if let Some(polar) = &self.polar {
+            return self.append_raster_polar_grid(out, scale, polar, x_ticks, y_ticks);
+        }
         if SceneAxisChromeStyle::visible_stroke(
             self.chrome.x_axis.grid_rgba,
             self.chrome.x_axis.grid_width,
@@ -7455,6 +8227,9 @@ impl SceneDocument {
             self.layout.viewport_height,
         ] {
             push_raster_f32(out, value, scale)?;
+        }
+        if self.polar.is_some() {
+            return Ok(());
         }
         for (is_x, ticks, axis_scale, style) in [
             (true, x_ticks, self.x_scale, self.chrome.x_axis),
@@ -10085,7 +10860,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 25);
+        assert_eq!(SCENE_VERSION, 26);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
@@ -12113,6 +12888,118 @@ mod tests {
         assert!(svg.contains("data-xy-chrome=\"title\""));
         assert!(svg.contains("Cartesian title"));
         assert!(!document.to_raster_commands(1.0).unwrap().is_empty());
+    }
+
+    #[test]
+    fn polar_scatter_encodes_projected_points_and_svg_rings() {
+        let layout = PlotLayout::new(400.0, 400.0, 0.0, 0.0, 0.0, 0.0).unwrap();
+        let x = AxisScale::new(ScaleKind::Linear, 0.0, std::f64::consts::PI * 2.0, 0.0, 400.0, 1.0, false)
+            .unwrap();
+        let y = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 400.0, 0.0, 1.0, false).unwrap();
+        let envelope = polar::PolarEnvelope {
+            theta_unit: 0,
+            theta_direction: 0,
+            n_categories: 0,
+            r_scale_kind: 0,
+            grid_shape: 0,
+            r_mask_nonpositive: false,
+            theta_zero: 0.0,
+            sector_start: 0.0,
+            sector_end: std::f64::consts::PI * 2.0,
+            r_lo: 0.0,
+            r_hi: 1.0,
+            r_origin: f64::NAN,
+            hole: 0.0,
+            r_constant: 1.0,
+        };
+        let xypl = polar::encode_xypl(&envelope);
+        let kinds = [SceneRecordKind::Scatter as u8];
+        let ids = [1u64];
+        let styles = [0u32];
+        let fill = [37u8, 99, 235, 255];
+        let stroke = [0u8, 0, 0, 255];
+        let widths = [0.0f64];
+        let diameter = [8.0f64];
+        let symbols = [0u8];
+        let x0 = [0.0f64];
+        let y0 = [1.0f64];
+        let zeros = [0.0f64];
+        let encoded = SceneBatch::new(
+            layout,
+            1,
+            2,
+            x,
+            y,
+            &kinds,
+            &ids,
+            &styles,
+            &fill,
+            &stroke,
+            &widths,
+            &diameter,
+            &symbols,
+            &x0,
+            &y0,
+            &zeros,
+            &zeros,
+        )
+        .unwrap()
+        .with_polar(&xypl)
+        .unwrap()
+        .encode();
+        assert_eq!(
+            u32::from_le_bytes(encoded[4..8].try_into().unwrap()),
+            26
+        );
+        assert_eq!(&encoded[encoded.len() - polar::XYPL_V1_BYTES..encoded.len() - polar::XYPL_V1_BYTES + 4], b"XYPL");
+        let document = SceneDocument::decode(&encoded).unwrap();
+        let record = document.records[0];
+        assert!(record.visible);
+        assert!((record.coordinates[0] - 400.0).abs() < 1e-6);
+        assert!((record.coordinates[1] - 200.0).abs() < 1e-6);
+        let svg = document.to_svg();
+        assert!(svg.contains("data-xy-grid=\"ring\"") || svg.contains("<circle"));
+        assert!(svg.contains("clipPath"));
+        assert!(!svg.contains("<clipPath id=\"xy-scene-plot\"><rect"));
+        SceneDocument::decode(&encoded).unwrap();
+    }
+
+    #[test]
+    fn cartesian_scene_v26_still_decodes_without_polar_sidecar() {
+        let layout = PlotLayout::new(200.0, 120.0, 20.0, 10.0, 20.0, 20.0).unwrap();
+        let x = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.left, layout.right, 1.0, false)
+            .unwrap();
+        let y = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.bottom, layout.top, 1.0, false)
+            .unwrap();
+        let encoded = SceneBatch::new(
+            layout,
+            1,
+            2,
+            x,
+            y,
+            &[SceneRecordKind::Scatter as u8],
+            &[1],
+            &[0],
+            &[1, 2, 3, 255],
+            &[0, 0, 0, 255],
+            &[0.0],
+            &[4.0],
+            &[0],
+            &[0.5],
+            &[0.5],
+            &[0.0],
+            &[0.0],
+        )
+        .unwrap()
+        .encode();
+        assert_eq!(
+            u32::from_le_bytes(encoded[4..8].try_into().unwrap()),
+            SCENE_VERSION
+        );
+        assert_ne!(&encoded[encoded.len().saturating_sub(4)..], b"XYPL");
+        let document = SceneDocument::decode(&encoded).unwrap();
+        assert!(document.polar.is_none());
+        assert!(validate_scene_batch(&encoded).is_ok());
     }
 
     #[test]

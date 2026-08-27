@@ -7,19 +7,21 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 25 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 26 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in Scene v25, so additive emission is not safe.
+bitmap or schema negotiation in Scene v26, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
 `validate_scene_batch` is the allocation-free Rust decoder used by the #59
-WASM lifecycle foundation; it validates the current Scene v25 batch layout,
-including the shared fixed header/mark widths retained since version 4, bounds,
-reserved bytes, kinds, style references, finite coordinates, and canonical
-hidden-record zeroing rather than duplicating offsets in TypeScript.
+WASM lifecycle foundation; it validates the current Scene v26 batch layout,
+including the shared fixed 160-byte Cartesian header/mark widths retained
+since version 4 (only the version u32 at offset 4 changes for Cartesian
+scenes), bounds, reserved bytes, kinds, style references, finite coordinates,
+canonical hidden-record zeroing, and the optional polar XYPL sidecar after
+the chrome trailer rather than duplicating offsets in TypeScript.
 
 The IR is an in-process typed contract, not a JSON data path. Numeric arrays
 cross the C ABI as bounded typed buffers and remain subject to the dossier's
@@ -68,8 +70,11 @@ Python calls the scatter path from `_svg._scatter_marks`; Node exposes the same 
 through `scatterSceneSvg`. Python remains responsible for ingest coercion,
 public validation text, channel-to-RGBA resolution, and plot layout until
 those policies move in later slices. Polar (theta, r) → screen-pixel projection
-is Rust-owned (ABI 131); Scene compilation still rejects `coords="polar"` until
-a later slice records polar mode explicitly. Authored arbitrary marker paths and
+is Rust-owned (ABI 131). Scene v26 / ABI 133 compiles polar `line`, `scatter`,
+and `area` (including step-line as line) through `polar_project` when hosts
+pass an XYPL v1 envelope into `xyg_scene_batch_encode`. Polar bar/column,
+heatmap, contour, errorbar, density, and labeled-annotation extras still
+reject with `XYG_SCENE_UNSUPPORTED_POLAR`. Authored arbitrary marker paths and
 font glyph markers stay on the existing Python compatibility path because they
 need separate bounded path/text records.
 
@@ -466,8 +471,11 @@ line, tick, grid, or text independently, including `show=False` shorthands.
 Rust omits fully invisible grid/axis primitives from SVG and native raster
 lowering while retaining backgrounds, marks, titles, and legends. Paint alpha
 is never a coordinate-system discriminator: a Cartesian Scene with hidden
-chrome remains Cartesian. Polar projection and polar chrome require an explicit
-versioned Scene semantic and remain rejected by the v10 host support predicate.
+chrome remains Cartesian. Polar projection and polar chrome require explicit
+XYPL v1 input on `xyg_scene_batch_encode`; Scene v26 compiles polar
+line/scatter/area plus rings, spokes, disc/sector clip, and rim tick labels.
+Polar bar/heatmap/contour/errorbar stay rejected with
+`XYG_SCENE_UNSUPPORTED_POLAR`.
 
 Python and Node mechanically pack the same 200-byte block and tick arrays;
 their non-default fixture is exact-byte identical. Rust SVG and raster consume
@@ -699,16 +707,28 @@ Python and Node pack only those strings. Rust parses them, resolves the final
 major positions and labels, measures their gutters, and materializes the result
 as the existing explicit-major arrays plus `XYTL`; SVG, raster, and browser
 painter therefore consume identical labels without a new Scene record. This is
-why `SCENE_VERSION` remains 25. The batch ABI stays at 63 parameters: optional
-formats use the versioned `XYAF` v1 authoring envelope (`magic`, version,
-x-format length, y-format length, legacy-annotation length, then those exact
-payloads). Exact lengths are overflow-checked; malformed, trailing, invalid
-UTF-8, embedded-NUL, and oversized fields fail closed. Legacy raw `XYAD` bytes
-remain accepted byte-for-byte. This envelope deliberately avoids Koffi's
-64-parameter function ceiling.
+why `SCENE_VERSION` remained 25 at ABI 96. ABI 133 extends the batch ABI by
+adding one trailing `polar_input: *const u8` immediately before
+`out` / `out_cap`. That pointer is null for Cartesian or else a packed
+`{data: *const u8, len: usize}` view (XYPL bytes plus length) so the batch
+function stays at Koffi's 64-parameter ceiling. Empty (`null` or `len==0`)
+keeps the Cartesian mapping.
+Polar scenes append the original 92-byte XYPL envelope after the chrome
+trailer so SVG/raster/decode recover polar chrome; Cartesian trailer bytes
+stay identical except the Scene version u32 at offset 4. Hosts pack authoring
+only; Rust calls `polar_layout` with the finalized `PlotLayout` plot rect and
+does not trust host-computed cx/cy/R. This slice uses the Cartesian plot rect
+with `polar_layout`'s inscribed disc; applying `xyg_recut_polar_plot` inside
+encode remains [#275](https://github.com/CurateLabs/xyg/issues/275).
+Optional formats still use the versioned `XYAF` v1 authoring envelope (`magic`,
+version, x-format length, y-format length, legacy-annotation length, then those
+exact payloads). Exact lengths are overflow-checked; malformed, trailing,
+invalid UTF-8, embedded-NUL, and oversized fields fail closed. Legacy raw
+`XYAD` bytes remain accepted byte-for-byte.
 
 Polar/secondary Scene paths and broader numeric grammars remain on their
-documented compatibility routes. WASM ABI 23 plus `attachWasmTicks` cut
+documented compatibility routes except the bounded polar line/scatter/area
+slice above. WASM ABI 23 plus `attachWasmTicks` cut
 explicitly attached automatic, authored-value, and authored-empty primary
 Cartesian linear/log/symlog/category/UTC-time ChartView
 axes and eligible ChartView colorbars to that resolver; `js/src/30_ticks.ts`
@@ -732,7 +752,70 @@ domains and default axis sides. Area defaults to `Top`; error bands default to
 `None`. Curves, dash, gradients, polar coordinates, missing-data breaks, LOD,
 and `fill_betweenx` remain outside this increment. Ribbon expansion is a
 separate ABI 97 ingress mode and does not alter the v25 outline-topology
-contract.
+contract. Scene v26 later admits polar area (Band) by projecting both
+`(theta, r)` samples independently; polar Rect/bar stays rejected.
+
+## Version 26 polar Scene compile (ABI 133)
+
+Scene v26 keeps the Cartesian header at **160 bytes**. Only the version u32 at
+offset 4 changes (25→26) for Cartesian scenes. Polar authoring lives in a
+separate **XYPL v1** envelope. Hosts pass that envelope as trailing
+`polar_input: *const u8` immediately before `out` / `out_cap`. Null is
+Cartesian. Non-null points at a packed `{data: *const u8, len: usize}` view
+holding the 92-byte XYPL bytes (`len==0` is also Cartesian). The two logical
+fields are packed as one pointer so `xyg_scene_batch_encode` stays at Koffi's
+64-parameter ceiling.
+
+XYPL v1 is exactly 92 bytes:
+
+```
+offset  size  field
+0       4     magic "XYPL"
+4       u32   version = 1
+8       u32   theta_unit        # 0 radians, 1 degrees
+12      u32   theta_direction   # 0 ccw, 1 cw
+16      u32   n_categories
+20      u32   r_scale_kind      # 0 linear, 1 log, 2 symlog
+24      u8    grid_shape        # 0 circular, 1 linear
+25      u8    r_mask_nonpositive
+26      u16   pad = 0
+28      f64   theta_zero        # radians ccw from East
+36      f64   sector_start
+44      f64   sector_end
+52      f64   r_lo
+60      f64   r_hi
+68      f64   r_origin          # NaN means r_lo
+76      f64   hole
+84      f64   r_constant
+```
+
+Malformed XYPL (bad magic/version/enums/nonfinite required fields) fails at
+encode time. Rust then:
+
+1. calls `polar_layout` with the finalized `PlotLayout` plot rect (hosts must
+   not supply cx/cy/R);
+2. maps Scatter/Polyline/PolyFill through `polar_project` on `(x0, y0)` and
+   Band through independent `(x0,y0)` / `(x1,y1)` `(theta, r)` pairs;
+3. fails closed on Rect (no axis-aligned screen rects) and labeled-annotation
+   extras;
+4. uses `polar_position_mask` for visibility;
+5. appends the original XYPL bytes after the chrome trailer **only** for polar
+   scenes.
+
+SVG clip is a circle at `(cx, cy, R)` (evenodd annulus when `hole>0`) for a
+full sector, or the sector path (outer arc + inner + radii) for a partial
+sector. Cartesian keeps the plot-rect clip. Polar chrome draws rings at radial
+(`y`) ticks (`data-xy-grid="ring"`) and spokes at angular (`x`) ticks
+(`data-xy-grid="spoke"`), plus an outer frame at `r_hi`. Linear `grid_shape`
+uses polygon rings through angular ticks. Tick labels use
+`polar_tick_label_layout` placement (`_POLAR_TICK_GAP=8`, quadrant anchors,
+`_POLAR_RLABEL_DEG=22.5°` off the zero spoke) with Scene tick-label strings
+or `xyg_tick_format`.
+
+Eligible polar kinds: `line` (including step-line), `scatter`, `area`.
+`XYG_SCENE_UNSUPPORTED_POLAR` remains for polar bar/column, heatmap, contour,
+errorbar, density, and other kinds. Hidden Cartesian chrome is never inferred
+as polar.
 
 The older direct-browser `XYTS` v2 area descriptor has no outline-mode field.
 To preserve its pre-v25 native Scene semantics, Rust lowers a positive-width,

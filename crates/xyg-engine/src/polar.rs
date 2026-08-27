@@ -2,6 +2,8 @@
 //!
 //! Screen space grows downward (`cy - rn * sin(a)`). Full-turn radius uses
 //! `min(w, h) / 2` centred in the plot rect; partial sectors fill the bbox.
+//! Scene v26 packs host authoring as XYPL v1; Rust calls [`polar_layout`] with
+//! the finalized plot rect and never trusts host-computed cx/cy/R.
 
 use crate::scene::{AxisScale, ScaleKind};
 
@@ -31,6 +33,11 @@ pub const METRIC_R_HI: usize = 19;
 pub const METRIC_R_SCALE_KIND: usize = 20;
 pub const METRIC_R_CONSTANT: usize = 21;
 pub const METRIC_R_MASK_NONPOSITIVE: usize = 22;
+
+/// XYPL v1 host→Rust authoring envelope (ABI 133 / Scene v26).
+pub const XYPL_MAGIC: &[u8; 4] = b"XYPL";
+pub const XYPL_VERSION: u32 = 1;
+pub const XYPL_V1_BYTES: usize = 92;
 
 const THETA_ZERO_E: f64 = 0.0;
 const THETA_ZERO_N: f64 = std::f64::consts::FRAC_PI_2;
@@ -402,6 +409,189 @@ pub fn polar_visible_mask(metrics: &[f64], r: &[f64], out: &mut [u8]) -> Option<
     Some(n)
 }
 
+/// Host-packed polar authoring. Plot rect is filled in by Rust at encode time.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PolarEnvelope {
+    pub theta_unit: u32,
+    pub theta_direction: u32,
+    pub n_categories: u32,
+    pub r_scale_kind: u32,
+    pub grid_shape: u8,
+    pub r_mask_nonpositive: bool,
+    pub theta_zero: f64,
+    pub sector_start: f64,
+    pub sector_end: f64,
+    pub r_lo: f64,
+    pub r_hi: f64,
+    pub r_origin: f64,
+    pub hole: f64,
+    pub r_constant: f64,
+}
+
+impl PolarEnvelope {
+    pub fn layout_input(
+        self,
+        plot_x: f64,
+        plot_y: f64,
+        plot_w: f64,
+        plot_h: f64,
+    ) -> PolarLayoutInput {
+        PolarLayoutInput {
+            plot_x,
+            plot_y,
+            plot_w,
+            plot_h,
+            theta_unit: self.theta_unit,
+            theta_zero: self.theta_zero,
+            theta_direction: self.theta_direction,
+            sector_start: self.sector_start,
+            sector_end: self.sector_end,
+            n_categories: self.n_categories,
+            r_lo: self.r_lo,
+            r_hi: self.r_hi,
+            r_origin: self.r_origin,
+            hole: self.hole,
+            r_scale_kind: self.r_scale_kind,
+            r_constant: self.r_constant,
+            r_mask_nonpositive: self.r_mask_nonpositive,
+        }
+    }
+}
+
+fn read_u32(bytes: &[u8], offset: usize) -> Option<u32> {
+    Some(u32::from_le_bytes(bytes.get(offset..offset + 4)?.try_into().ok()?))
+}
+
+fn read_f64(bytes: &[u8], offset: usize) -> Option<f64> {
+    Some(f64::from_le_bytes(bytes.get(offset..offset + 8)?.try_into().ok()?))
+}
+
+/// Parse a bounded XYPL v1 envelope. Malformed magic/version/enums/nonfinite
+/// required fields fail closed.
+pub fn parse_xypl(bytes: &[u8]) -> Option<PolarEnvelope> {
+    if bytes.len() != XYPL_V1_BYTES || bytes.get(..4) != Some(&XYPL_MAGIC[..]) {
+        return None;
+    }
+    if read_u32(bytes, 4)? != XYPL_VERSION {
+        return None;
+    }
+    let theta_unit = read_u32(bytes, 8)?;
+    let theta_direction = read_u32(bytes, 12)?;
+    let n_categories = read_u32(bytes, 16)?;
+    let r_scale_kind = read_u32(bytes, 20)?;
+    let grid_shape = *bytes.get(24)?;
+    let r_mask = *bytes.get(25)?;
+    let pad = u16::from_le_bytes(bytes.get(26..28)?.try_into().ok()?);
+    if pad != 0
+        || !matches!(theta_unit, 0 | 1)
+        || !matches!(theta_direction, 0 | 1)
+        || !matches!(r_scale_kind, 0 | 1 | 2)
+        || !matches!(grid_shape, 0 | 1)
+        || !matches!(r_mask, 0 | 1)
+    {
+        return None;
+    }
+    let theta_zero = read_f64(bytes, 28)?;
+    let sector_start = read_f64(bytes, 36)?;
+    let sector_end = read_f64(bytes, 44)?;
+    let r_lo = read_f64(bytes, 52)?;
+    let r_hi = read_f64(bytes, 60)?;
+    let r_origin = read_f64(bytes, 68)?;
+    let hole = read_f64(bytes, 76)?;
+    let r_constant = read_f64(bytes, 84)?;
+    if !theta_zero.is_finite()
+        || !sector_start.is_finite()
+        || !sector_end.is_finite()
+        || !r_lo.is_finite()
+        || !r_hi.is_finite()
+        || !hole.is_finite()
+        || hole < 0.0
+        || hole > 1.0
+        || !(r_origin.is_finite() || r_origin.is_nan())
+        || !(r_constant.is_finite() || r_constant.is_nan())
+    {
+        return None;
+    }
+    Some(PolarEnvelope {
+        theta_unit,
+        theta_direction,
+        n_categories,
+        r_scale_kind,
+        grid_shape,
+        r_mask_nonpositive: r_mask != 0,
+        theta_zero,
+        sector_start,
+        sector_end,
+        r_lo,
+        r_hi,
+        r_origin,
+        hole,
+        r_constant,
+    })
+}
+
+/// Pack a validated XYPL v1 envelope (host tests / encode sidecar).
+pub fn encode_xypl(envelope: &PolarEnvelope) -> [u8; XYPL_V1_BYTES] {
+    let mut out = [0u8; XYPL_V1_BYTES];
+    out[..4].copy_from_slice(XYPL_MAGIC);
+    out[4..8].copy_from_slice(&XYPL_VERSION.to_le_bytes());
+    out[8..12].copy_from_slice(&envelope.theta_unit.to_le_bytes());
+    out[12..16].copy_from_slice(&envelope.theta_direction.to_le_bytes());
+    out[16..20].copy_from_slice(&envelope.n_categories.to_le_bytes());
+    out[20..24].copy_from_slice(&envelope.r_scale_kind.to_le_bytes());
+    out[24] = envelope.grid_shape;
+    out[25] = u8::from(envelope.r_mask_nonpositive);
+    out[26..28].copy_from_slice(&0u16.to_le_bytes());
+    for (offset, value) in [
+        envelope.theta_zero,
+        envelope.sector_start,
+        envelope.sector_end,
+        envelope.r_lo,
+        envelope.r_hi,
+        envelope.r_origin,
+        envelope.hole,
+        envelope.r_constant,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let at = 28 + offset * 8;
+        out[at..at + 8].copy_from_slice(&value.to_le_bytes());
+    }
+    out
+}
+
+/// Layout polar metrics from an XYPL envelope and the finalized plot rect.
+pub fn layout_from_xypl(
+    bytes: &[u8],
+    plot_x: f64,
+    plot_y: f64,
+    plot_w: f64,
+    plot_h: f64,
+    metrics: &mut [f64],
+) -> Option<PolarEnvelope> {
+    let envelope = parse_xypl(bytes)?;
+    polar_layout(
+        envelope.layout_input(plot_x, plot_y, plot_w, plot_h),
+        metrics,
+    )?;
+    Some(envelope)
+}
+
+/// Project one (theta, r) pair to screen pixels.
+pub fn polar_project_one(metrics: &[f64], theta: f64, r: f64) -> Option<(f64, f64)> {
+    let mut x = [0.0];
+    let mut y = [0.0];
+    polar_project(metrics, &[theta], &[r], &mut x, &mut y)?;
+    Some((x[0], y[0]))
+}
+
+/// Combined angular and radial visibility for one data point.
+pub fn polar_point_visible(metrics: &[f64], theta: f64, r: f64) -> bool {
+    let mut out = [0u8];
+    polar_position_mask(metrics, &[theta], &[r], &mut out) == Some(1) && out[0] != 0
+}
+
 /// Combined angular and radial visibility mask.
 pub fn polar_position_mask(
     metrics: &[f64],
@@ -500,5 +690,39 @@ mod tests {
         let (_, down) = project_point(&metrics, -FRAC_PI_2, 1.0);
         let (_, centre) = project_point(&metrics, 0.0, 0.0);
         assert!(up < centre && centre < down);
+    }
+
+    #[test]
+    fn xypl_v1_roundtrip_and_rejects_malformed() {
+        let envelope = PolarEnvelope {
+            theta_unit: 0,
+            theta_direction: 0,
+            n_categories: 0,
+            r_scale_kind: 0,
+            grid_shape: 0,
+            r_mask_nonpositive: false,
+            theta_zero: 0.0,
+            sector_start: 0.0,
+            sector_end: 2.0 * PI,
+            r_lo: 0.0,
+            r_hi: 1.0,
+            r_origin: f64::NAN,
+            hole: 0.0,
+            r_constant: 1.0,
+        };
+        let bytes = encode_xypl(&envelope);
+        let parsed = parse_xypl(&bytes).unwrap();
+        assert_eq!(parsed.theta_unit, 0);
+        assert_eq!(parsed.grid_shape, 0);
+        assert!(parsed.r_origin.is_nan());
+        let mut bad = bytes;
+        bad[0] = b'Z';
+        assert!(parse_xypl(&bad).is_none());
+        let mut version = bytes;
+        version[4..8].copy_from_slice(&2u32.to_le_bytes());
+        assert!(parse_xypl(&version).is_none());
+        let mut unit = bytes;
+        unit[8..12].copy_from_slice(&2u32.to_le_bytes());
+        assert!(parse_xypl(&unit).is_none());
     }
 }

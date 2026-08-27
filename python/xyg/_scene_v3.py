@@ -8,6 +8,7 @@ does not exist yet.
 
 from __future__ import annotations
 
+import math
 import struct
 from typing import Any
 
@@ -1901,6 +1902,7 @@ def figure_scene(
         or cartesian_callouts
         or wrapped_annotations
         else b"",
+        polar_input=_pack_polar_scene_input(figure),
     )
 
 
@@ -1971,6 +1973,46 @@ def _flatten_jpeg_background(rgba: np.ndarray) -> np.ndarray:
 
 def _significant_scene_axis_keys(options: dict[str, Any]) -> list[str]:
     return [str(key) for key, value in options.items() if value not in (None, False, [], {})]
+
+
+def _pack_polar_scene_input(figure: Any) -> bytes:
+    """Pack XYPL v1 polar authoring. Rust owns disc layout from the plot rect."""
+    if getattr(figure, "coords", "cartesian") != "polar":
+        return b""
+    xa = figure.axis_options.get("x") or {}
+    ya = figure.axis_options.get("y") or {}
+    unit = str(xa.get("theta_unit", "radians"))
+    turn = 360.0 if unit == "degrees" else 2.0 * math.pi
+    sector = xa.get("sector") or (0.0, turn)
+    sector_start, sector_end = float(sector[0]), float(sector[1])
+    categories = tuple(xa.get("categories") or ())
+    r_lo, r_hi = figure._range("y")
+    origin = ya.get("r_origin")
+    r_origin = float("nan") if origin is None else float(origin)
+    hole = float(ya.get("hole") or 0.0)
+    scale_kind, constant, mask_nonpositive = _native._polar_r_scale(ya)
+    grid = str(xa.get("grid_shape", "circular"))
+    grid_shape = 1 if grid == "linear" else 0
+    return struct.pack(
+        "<4s5I2BHdddddddd",
+        b"XYPL",
+        1,
+        _native._polar_theta_unit(unit),
+        _native._polar_theta_direction(xa.get("theta_direction")),
+        len(categories),
+        scale_kind,
+        grid_shape,
+        1 if mask_nonpositive else 0,
+        0,
+        _native._polar_theta_zero(xa.get("theta_zero", "E")),
+        sector_start,
+        sector_end,
+        float(r_lo),
+        float(r_hi),
+        r_origin,
+        hole,
+        constant,
+    )
 
 
 def _pack_figure_support(

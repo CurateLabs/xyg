@@ -22,7 +22,7 @@ from xyg import _native, _scene_v3, kernels
 from xyg._figure import Figure
 
 COUNTS = (100, 10_000, 100_000, 1_000_000)
-SCENE_VERSION = 25
+SCENE_VERSION = 26
 _FINAL_SCENE_CHUNKS = (b"XYLG", b"XYCB", b"XYLB")
 
 # One shared, declarative Cartesian chrome workload. The Node parity test reads
@@ -225,7 +225,7 @@ def _authored_annotation_input(figure: Figure) -> bytes:
 
 
 def authored_scene(count: int) -> bytes:
-    """Return a validated Scene 25 workload for one canonical evidence tier."""
+    """Return a validated Scene 26 workload for one canonical evidence tier."""
     figure = authored_scene_figure(count)
     annotation_input = _authored_annotation_input(figure)
     if not annotation_input.startswith(b"XYAD\x03\x00\x00\x00") or b"XYAW" not in annotation_input:
@@ -235,7 +235,7 @@ def authored_scene(count: int) -> bytes:
 
     scene = figure.to_scene()
     if scene[:4] != b"XYGS" or int.from_bytes(scene[4:8], "little") != SCENE_VERSION:
-        raise AssertionError("authored Scene workload must compile as Scene 25")
+        raise AssertionError("authored Scene workload must compile as Scene 26")
     missing = [chunk.decode("ascii") for chunk in _FINAL_SCENE_CHUNKS if chunk not in scene]
     if missing:
         raise AssertionError(f"authored Scene workload is missing resolved chunks: {missing}")

@@ -166,6 +166,12 @@ def _polar() -> Figure:
     return figure
 
 
+def _polar_bar() -> Figure:
+    figure = Figure(width=320, height=240, coords="polar")
+    figure.bar([0.0, 1.0], [0.5, 0.8], color="#3987e5")
+    return figure
+
+
 def _custom_font() -> Figure:
     figure = _supported()
     figure.chrome_styles = {"title": {"font-family": "Comic Sans"}}
@@ -200,7 +206,7 @@ def _authored_tick_labels() -> Figure:
 def test_authored_cartesian_tick_labels_are_a_supported_scene_v23_slice() -> None:
     figure = _authored_tick_labels()
     encoded = figure_scene(figure)
-    assert encoded[4:8] == (25).to_bytes(4, "little")
+    assert encoded[4:8] == (26).to_bytes(4, "little")
     assert b"XYTL" in encoded
 
 
@@ -221,7 +227,7 @@ def test_primary_numeric_axis_format_routes_through_rust_scene(
     figure.set_axis("y", type_=kind, domain=domain, constant=constant, format="$,.0f USD")
     assert scene_export_support_reason(figure) is None
     scene = figure_scene(figure)
-    assert scene[4:8] == (25).to_bytes(4, "little")
+    assert scene[4:8] == (26).to_bytes(4, "little")
     assert b"XYTL" in scene
     svg = _native.scene_svg(scene)
     if kind == "log":
@@ -418,7 +424,7 @@ def _public_disconnected_segments() -> Figure:
 # Each factory builds a figure that `figure_scene` rejects; the substring is the
 # stable diagnostic token the predicate must surface for the router to log.
 UNSUPPORTED: dict[str, tuple[Callable[[], Figure], str]] = {
-    "polar": (_polar, "XYG_SCENE_UNSUPPORTED_POLAR"),
+    "polar_bar": (_polar_bar, "XYG_SCENE_UNSUPPORTED_POLAR"),
     "custom_font": (_custom_font, "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT"),
     "browser_css": (_browser_css, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS"),
     "colorbar": (_colorbar, "XYG_SCENE_UNSUPPORTED_COLORBAR"),
@@ -432,6 +438,14 @@ def test_supported_figure_has_no_reason() -> None:
     # Compiler accepts it, so the predicate must report None (route via Scene).
     figure_scene(figure)
     assert scene_export_support_reason(figure) is None
+
+
+def test_polar_scatter_is_scene_supported() -> None:
+    figure = _polar()
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported.startswith(b"<svg") or b"<svg" in exported
 
 
 def test_bounded_primary_cartesian_annotation_family_is_a_supported_public_scene_slice() -> None:
@@ -1048,7 +1062,10 @@ def test_generated_stem_markers_route_every_builtin_symbol(symbol: str) -> None:
         lambda figure: figure.traces[0].style.__setitem__("marker_glyph", "A"),
         lambda figure: figure.scatter([2.5, 3.5], [2.5, 3.5], symbol=["circle", "square"]),
         lambda figure: figure.scatter([2.5, 3.5], [2.5, 3.5], color=[0.0, 1.0]),
-        lambda figure: setattr(figure, "coords", "polar"),
+        lambda figure: (
+            setattr(figure, "coords", "polar"),
+            figure.bar([0.0, 1.0], [1.0, 2.0], color="#3987e5"),
+        ),
         lambda figure: figure.scatter(range(10_001), range(10_001)),
     ],
 )

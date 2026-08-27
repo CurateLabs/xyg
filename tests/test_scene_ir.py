@@ -115,8 +115,20 @@ def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
             _native.scene_support_reason(0, request_version=invalid)  # type: ignore[arg-type]
 
     polar = Figure(coords="polar").line([0.0, 1.0], [0.0, 1.0])
+    scene = polar.to_scene()
+    assert scene[4:8] == (26).to_bytes(4, "little")
+    svg = _native.scene_svg(scene)
+    assert 'data-xy-grid="ring"' in svg or "<circle" in svg
+    assert '<clipPath id="xy-scene-plot"><rect' not in svg
+
+    polar_bar = Figure(coords="polar")
+    polar_bar.bar([0.0, 1.0], [0.5, 0.8])
     with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_POLAR"):
-        polar.to_scene()
+        polar_bar.to_scene()
+    polar_heatmap = Figure(coords="polar")
+    polar_heatmap.heatmap([[1.0, 2.0], [3.0, 4.0]])
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_POLAR"):
+        polar_heatmap.to_scene()
 
     custom_font = Figure().line([0.0, 1.0], [0.0, 1.0])
     custom_font.chrome_styles = {"title": {"font-family": "Example Sans"}}
@@ -296,7 +308,7 @@ def test_scene_v11_primary_annotations_are_canonical_and_ordered() -> None:
     figure.marker(0.75, 0.8, color="#0000ff", size=10.0, symbol="diamond")
     encoded = figure.to_scene()
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 25
+    assert int.from_bytes(encoded[4:8], "little") == 26
     svg = _native.scene_svg(encoded)
     assert svg.index("rgb(255,0,0)") < svg.index("rgb(0,255,0)") < svg.index("rgb(0,0,255)")
     assert "rgb(255,0,0)" in svg
@@ -412,7 +424,7 @@ def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
     )
     assert hashlib.sha256(encoded).hexdigest() == fixture["expected_sha256"]
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 25
+    assert int.from_bytes(encoded[4:8], "little") == 26
     records = 160 + len(fixture["styles"]) * 16
     assert encoded[records + 1] == 1  # center is outside, marker extent overlaps
     assert encoded[records + 2] == 2  # diamond
@@ -825,7 +837,7 @@ def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> No
 
 
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
-    assert _native.scene_version() == 25
+    assert _native.scene_version() == 26
 
 
 def test_scene_authored_tick_labels_keep_their_explicit_tick_pairing() -> None:

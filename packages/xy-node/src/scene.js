@@ -50,6 +50,7 @@ import {
   xyEncodePng,
   xyEncodeWebp,
   xySceneVersion,
+  polarAbiInputPointer,
 } from "./native.js";
 import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, shouldUseDensity, u32Ptr, u8Ptr } from "./encode.js";
 import { cssColorRgba8 } from "./color.js";
@@ -960,6 +961,41 @@ function polarRScale(axis = {}) {
   };
 }
 
+export function packPolarSceneInput(figure) {
+  if ((figure.coords ?? "cartesian") !== "polar") return new Uint8Array();
+  const thetaAxis = figure.xAxis ?? figure.x_axis ?? figure.axis_options?.x ?? {};
+  const rAxis = figure.yAxis ?? figure.y_axis ?? figure.axis_options?.y ?? {};
+  const unit = thetaAxis.theta_unit ?? thetaAxis.thetaUnit ?? "radians";
+  const turn = unit === "degrees" ? 360 : Math.PI * 2;
+  const sector = thetaAxis.sector ?? [0, turn];
+  const categories = thetaAxis.categories ?? [];
+  const range = typeof figure._range === "function" ? figure._range("y") : (rAxis.range ?? [0, 1]);
+  const [rLo, rHi] = range;
+  const origin = rAxis.r_origin ?? rAxis.rOrigin;
+  const scale = polarRScale(rAxis);
+  const grid = thetaAxis.grid_shape ?? thetaAxis.gridShape ?? "circular";
+  const out = new Uint8Array(92);
+  const view = new DataView(out.buffer);
+  out.set(encodeUtf8("XYPL").slice(0, 4), 0);
+  view.setUint32(4, 1, true);
+  view.setUint32(8, polarThetaUnit(unit), true);
+  view.setUint32(12, polarThetaDirection(thetaAxis.theta_direction ?? thetaAxis.thetaDirection), true);
+  view.setUint32(16, categories.length, true);
+  view.setUint32(20, scale.kind, true);
+  out[24] = grid === "linear" ? 1 : 0;
+  out[25] = scale.maskNonpositive ? 1 : 0;
+  view.setUint16(26, 0, true);
+  view.setFloat64(28, polarThetaZero(thetaAxis.theta_zero ?? thetaAxis.thetaZero ?? "E"), true);
+  view.setFloat64(36, Number(sector[0]), true);
+  view.setFloat64(44, Number(sector[1]), true);
+  view.setFloat64(52, Number(rLo), true);
+  view.setFloat64(60, Number(rHi), true);
+  view.setFloat64(68, origin == null ? Number.NaN : Number(origin), true);
+  view.setFloat64(76, Number(rAxis.hole ?? 0), true);
+  view.setFloat64(84, scale.constant, true);
+  return out;
+}
+
 export function polarLayout(thetaAxis = {}, rAxis = {}, plot = {}) {
   const unit = thetaAxis.theta_unit ?? thetaAxis.thetaUnit ?? "radians";
   const turn = unit === "degrees" ? 360 : Math.PI * 2;
@@ -1307,6 +1343,7 @@ export function sceneBatchEncode({
   xTickLabels = null, yTickLabels = null,
   xFormat = null, yFormat = null,
   legendInput = null, colorbarInput = null, authoredTextAnnotations = null,
+  polarInput = null,
 }) {
   if (!Array.isArray(viewport) || viewport.length !== 2 || !Array.isArray(margins) || margins.length !== 4) {
     throw new RangeError("viewport and margins must contain two and four values");
@@ -1376,6 +1413,12 @@ export function sceneBatchEncode({
   const yFormatBytes = frameAxisFormat(yFormat, "yFormat");
   const legend = legendInput == null ? new Uint8Array() : asUnsignedArray(legendInput, "legendInput", 255, Uint8Array);
   const colorbar = colorbarInput == null ? new Uint8Array() : asUnsignedArray(colorbarInput, "colorbarInput", 255, Uint8Array);
+  const polar = polarInput == null || polarInput.length === 0
+    ? new Uint8Array()
+    : asUnsignedArray(polarInput, "polarInput", 255, Uint8Array);
+  if (polar.length && polar.length !== 92) {
+    throw new RangeError("polarInput must be empty or a 92-byte XYPL v1 envelope");
+  }
   const authoredText = authoredTextAnnotations == null ? new Uint8Array() : asUnsignedArray(authoredTextAnnotations, "authoredTextAnnotations", 255, Uint8Array);
   const authoredInput = xFormatBytes.length || yFormatBytes.length ? (() => {
     const out = new Uint8Array(20 + xFormatBytes.length + yFormatBytes.length + authoredText.length);
@@ -1392,6 +1435,7 @@ export function sceneBatchEncode({
   })() : authoredText;
   if (colorbar.length > 4_600) throw new RangeError("scene colorbar input is limited to 4,600 bytes");
   if (tickArrays.some((value) => value != null && value.length > 200)) throw new RangeError("scene axis tick lists are limited to 200 values");
+  const polarView = polarAbiInputPointer(polar);
   let capacity = 160 + widths.length * 16 + length * 56 + 248 + titleBytes.length + xLabelBytes.length + yLabelBytes.length + xTickLabelBytes.length + yTickLabelBytes.length + authoredInput.length + legend.length + colorbar.length + tickArrays.reduce((sum, value) => sum + (value?.byteLength ?? 0), 0);
   for (;;) {
     const output = new Uint8Array(capacity);
@@ -1414,6 +1458,7 @@ export function sceneBatchEncode({
       yLabelBytes.length ? u8Ptr(yLabelBytes) : 0, BigInt(yLabelBytes.length),
       legend.length ? u8Ptr(legend) : 0, BigInt(legend.length),
       colorbar.length ? u8Ptr(colorbar) : 0, BigInt(colorbar.length),
+      polarView.ptr,
       u8Ptr(output), BigInt(capacity),
     );
     if (rawWritten === USIZE_MAX_64) throw new RangeError("invalid canonical scene batch");
@@ -2808,7 +2853,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   return sceneBatchEncode({ viewport: [figure.width, figure.height], margins: resolvedMargins,
     xAxis: xSceneAxis, yAxis: ySceneAxis,
     kinds, stableIds, styleRefs, styles, diameter, symbols, expansionModes, x0, y0, x1, y1,
-    title, xLabel, yLabel, chromeStyle: figureChromeStyle(figure), xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, xMinorTicks: (figure.xAxis ?? figure.x_axis)?.minorTickValues ?? (figure.xAxis ?? figure.x_axis)?.minor_tick_values ?? [], yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, yMinorTicks: (figure.yAxis ?? figure.y_axis)?.minorTickValues ?? (figure.yAxis ?? figure.y_axis)?.minor_tick_values ?? [], xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, xFormat: xSceneAxis.format, yFormat: ySceneAxis.format, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText,
+    title, xLabel, yLabel, chromeStyle: figureChromeStyle(figure), xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, xMinorTicks: (figure.xAxis ?? figure.x_axis)?.minorTickValues ?? (figure.xAxis ?? figure.x_axis)?.minor_tick_values ?? [], yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, yMinorTicks: (figure.yAxis ?? figure.y_axis)?.minorTickValues ?? (figure.yAxis ?? figure.y_axis)?.minor_tick_values ?? [], xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, xFormat: xSceneAxis.format, yFormat: ySceneAxis.format, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText, polarInput: packPolarSceneInput(figure),
   });
 }
 

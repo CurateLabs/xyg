@@ -120,7 +120,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 132;
+pub const ABI_VERSION: u32 = 133;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1328,13 +1328,41 @@ fn decode_scene_authoring_input(bytes: &[u8]) -> Option<(Option<&str>, Option<&s
     ))
 }
 
+/// Host view for `xyg_scene_batch_encode` polar input. Koffi's 64-parameter
+/// ceiling packs `data` + `len` as one pointer immediately before `out`.
+#[repr(C)]
+struct PolarAbiInput {
+    data: *const u8,
+    len: usize,
+}
+
+/// Read a host-packed [`PolarAbiInput`]. Null or `len == 0` is Cartesian.
+///
+/// # Safety
+/// `view` must be null or point to a [`PolarAbiInput`]. Non-empty `data` must
+/// be a valid `len`-byte region for the duration of the call.
+unsafe fn polar_abi_bytes<'a>(view: *const u8) -> Option<&'a [u8]> {
+    if view.is_null() {
+        return Some(&[]);
+    }
+    let parsed = std::ptr::read_unaligned(view.cast::<PolarAbiInput>());
+    if parsed.len == 0 {
+        return Some(&[]);
+    }
+    if parsed.len != polar::XYPL_V1_BYTES || parsed.data.is_null() {
+        return None;
+    }
+    Some(std::slice::from_raw_parts(parsed.data, parsed.len))
+}
+
 /// Encode a bounded backend-neutral Scene v12 batch. Record kinds are scatter
 /// (0), polyline vertex (1), and rectangle (2). Numeric output is little-endian
 /// typed binary, never JSON. Optional UTF-8 title/axis-label pointers may be
 /// null when the corresponding length is zero. `authored_text_annotations` may
 /// carry the ABI 96 `XYAF` envelope for bounded primary-axis numeric formats;
-/// this keeps the function below the 64-parameter host-binding ceiling without
-/// changing Scene v25. Returns required bytes or `usize::MAX` on error.
+/// ABI 133 packs polar authoring as one `polar_input` pointer so the function
+/// stays at Koffi's 64-parameter ceiling. Returns required bytes or `usize::MAX`
+/// on error.
 ///
 /// # Safety
 /// Every record input array must address `len` readable elements. The chrome
@@ -1408,6 +1436,7 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
     legend_input_len: usize,
     colorbar_input: *const u8,
     colorbar_input_len: usize,
+    polar_input: *const u8,
     out: *mut u8,
     out_cap: usize,
 ) -> usize {
@@ -1716,7 +1745,10 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             &records.y1,
         )
         .ok()?;
+        let polar_bytes = unsafe { polar_abi_bytes(polar_input) }?;
         batch
+            .with_polar(polar_bytes)
+            .ok()?
             .with_authored_annotations(authored_text_bytes)
             .ok()
             .map(|batch| batch.encode())
@@ -13629,6 +13661,46 @@ mod tests {
     use super::*;
 
     #[test]
+    fn polar_abi_bytes_reads_packed_view_or_empty() {
+        let envelope = polar::PolarEnvelope {
+            theta_unit: 0,
+            theta_direction: 0,
+            n_categories: 0,
+            r_scale_kind: 0,
+            grid_shape: 0,
+            r_mask_nonpositive: false,
+            theta_zero: 0.0,
+            sector_start: 0.0,
+            sector_end: 2.0 * std::f64::consts::PI,
+            r_lo: 0.0,
+            r_hi: 1.0,
+            r_origin: f64::NAN,
+            hole: 0.0,
+            r_constant: 1.0,
+        };
+        let bytes = polar::encode_xypl(&envelope);
+        let view = PolarAbiInput {
+            data: bytes.as_ptr(),
+            len: bytes.len(),
+        };
+        let recovered = unsafe { polar_abi_bytes((&view as *const PolarAbiInput).cast()) }.unwrap();
+        assert_eq!(recovered, bytes.as_slice());
+        assert!(unsafe { polar_abi_bytes(std::ptr::null()) }.unwrap().is_empty());
+        let empty = PolarAbiInput {
+            data: std::ptr::null(),
+            len: 0,
+        };
+        assert!(unsafe { polar_abi_bytes((&empty as *const PolarAbiInput).cast()) }
+            .unwrap()
+            .is_empty());
+        let bad_len = PolarAbiInput {
+            data: bytes.as_ptr(),
+            len: 8,
+        };
+        assert!(unsafe { polar_abi_bytes((&bad_len as *const PolarAbiInput).cast()) }.is_none());
+    }
+
+    #[test]
     fn binned_ecdf_ffi_is_compact_bounded_and_atomic() {
         let values = [-1.0, 0.25, 0.75, 2.0, f64::NAN];
         let mut x = [-9.0; 3];
@@ -14962,6 +15034,7 @@ mod tests {
                 0,
                 std::ptr::null(),
                 0,
+                std::ptr::null(),
                 output.as_mut_ptr(),
                 output.len(),
             )
@@ -15081,6 +15154,7 @@ mod tests {
                     0,
                     std::ptr::null(),
                     0,
+                    std::ptr::null(),
                     log_output.as_mut_ptr(),
                     log_output.len(),
                 )
