@@ -213,6 +213,10 @@ call `xyg_payload_tier`, `xyg_payload_visible_needed`, and
 `xyg_payload_visible_mask` so M4 vs density vs direct, polar skip,
 the strict `>` scatter thresholds, and the log/null keep mask cannot
 drift. Hosts still gather and ship the chosen rows.
+ABI 123 moves tick-label collision thinning into Rust: Python and Node
+call `xyg_scene_tick_label_layout` so auto / hide / rotate / stagger,
+the edge-anchor rotate gap, and stride downsampling cannot drift.
+Hosts still format label strings and map tick values to pixels.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call

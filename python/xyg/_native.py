@@ -20,7 +20,7 @@ import operator
 import os
 import struct
 import sys
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, ClassVar, Optional, cast
 
@@ -2323,6 +2323,96 @@ def scene_axis_ticks(
     if written == _USIZE_MAX or written > capacity or labeled_len.value > written:
         raise ValueError("invalid canonical axis tick request")
     return ticks[:written].tolist(), labeled[: labeled_len.value].tolist(), step.value
+
+
+_TICK_LAYOUT_KIND = {
+    "auto": 0,
+    "hide": 1,
+    "rotate": 2,
+    "stagger": 3,
+    "preserve": 4,
+    "none": 5,
+    "off": 6,
+}
+_TICK_LAYOUT_SIDE = {"bottom": 0, "top": 1, "left": 2, "right": 3}
+_TICK_LAYOUT_ANCHOR = {"start": 0, "center": 1, "end": 2}
+
+
+def _tick_layout_enum(value: str | int, mapping: dict[str, int], name: str) -> int:
+    if isinstance(value, str):
+        key = value.strip().lower().replace("-", "_")
+        if key not in mapping:
+            raise ValueError(f"{name} must be one of {sorted(mapping)}")
+        return mapping[key]
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, numbers.Integral):
+        raise ValueError(f"{name} must be a string or integer code")
+    return int(value)
+
+
+def scene_tick_label_layout(
+    positions: npt.ArrayLike,
+    labels: Sequence[str],
+    *,
+    kind: str | int = "auto",
+    side: str | int = "bottom",
+    anchor: str | int = "center",
+    is_x: bool = True,
+    category: bool = False,
+    font_size: float = 11.0,
+    min_gap: float = 8.0,
+    explicit_angle: float | None = None,
+) -> list[dict[str, Any]]:
+    """Tick-label collision layout via ``xyg_scene_tick_label_layout`` (ABI 123).
+
+    Hosts format label strings and map tick values to pixels. Rust owns auto /
+    hide / rotate / stagger thinning. ``explicit_angle`` is ``None`` or NaN when
+    unset.
+    """
+    pos = _as_f64(np.asarray(positions, dtype=np.float64).reshape(-1), "positions")
+    texts = [str(label) for label in labels]
+    if len(pos) != len(texts):
+        raise ValueError("positions and labels must have the same length")
+    encoded = [text.encode("utf-8") for text in texts]
+    lens = np.asarray([len(item) for item in encoded], dtype=np.uint32)
+    packed = (
+        np.frombuffer(b"".join(encoded), dtype=np.uint8).copy()
+        if encoded
+        else np.empty(0, dtype=np.uint8)
+    )
+    n = len(pos)
+    out_index = np.empty(n, dtype=np.uint32)
+    out_angle = np.empty(n, dtype=np.float64)
+    out_row = np.empty(n, dtype=np.uint32)
+    angle = float("nan") if explicit_angle is None else float(explicit_angle)
+    flags = (1 if is_x else 0) | (2 if category else 0)
+    written = _lib.xyg_scene_tick_label_layout(
+        _ptr_f64(pos) if n else 0,
+        n,
+        lens.ctypes.data if n else 0,
+        _ptr_u8(packed) if len(packed) else 0,
+        len(packed),
+        _tick_layout_enum(kind, _TICK_LAYOUT_KIND, "kind"),
+        _tick_layout_enum(side, _TICK_LAYOUT_SIDE, "side"),
+        _tick_layout_enum(anchor, _TICK_LAYOUT_ANCHOR, "anchor"),
+        flags,
+        float(font_size),
+        float(min_gap),
+        angle,
+        out_index.ctypes.data if n else 0,
+        _ptr_f64(out_angle) if n else 0,
+        out_row.ctypes.data if n else 0,
+        n,
+    )
+    if written == _USIZE_MAX or written > n:
+        raise ValueError("invalid tick-label layout request")
+    return [
+        {
+            "index": int(out_index[i]),
+            "angle": float(out_angle[i]),
+            "row": int(out_row[i]),
+        }
+        for i in range(written)
+    ]
 
 
 def scene_scale_map(

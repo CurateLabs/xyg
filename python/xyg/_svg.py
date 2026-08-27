@@ -2974,118 +2974,51 @@ def _axis_tick_label_layout(
     scale: _Scale,
     is_x: bool,
 ) -> list[dict[str, Any]]:
-    """Port ChartView._layoutTickLabels for deterministic static chrome."""
-    strategy = _axis_tick_label_strategy(axis)
-    if strategy in {"none", "off"}:
-        return []
+    """Thin packer over Rust tick-label collision layout (ABI 123).
 
+    Hosts still format ``_tick_text`` and map values to pixels. Auto / hide /
+    rotate / stagger thinning lives in ``tick_layout.rs`` so SVG, raster, and
+    Node cannot drift from ChartView ``_layoutTickLabels``.
+    """
+    strategy = _axis_tick_label_strategy(axis)
     font_size = _axis_tick_font_size(axis)
     min_gap = float(axis.get("tick_label_min_gap", 8 if is_x else 4))
     raw_angle = axis.get("tick_label_angle")
-    explicit_angle = float(raw_angle) if raw_angle is not None else None
-    base_angle = explicit_angle or 0.0
+    explicit_angle = float(raw_angle) if raw_angle is not None else float("nan")
     # y collision keeps the centered extent model: every label on an axis
     # shares one anchor+angle, so an anchored y layout shifts all boxes by
     # the same offset and pairwise gaps are unchanged.  Mirror JS exactly.
     axis_style = axis.get("style") or {}
     anchor = _tick_label_anchor(axis, axis_style, "center") if is_x else "center"
     positions = np.asarray(scale(values), dtype=np.float64)
-    labels = [
-        {
-            "value": value,
-            "pos": float(position),
-            "text": _tick_text(axis, value, step),
-            "angle": base_angle,
-            "row": 0,
-        }
-        for value, position in zip(values, positions, strict=True)
-    ]
-    if len(labels) <= 1:
-        return labels
-    # Explicit locators and categorical unit conversion in the Matplotlib shim
-    # author ``preserve`` because Matplotlib draws every located tick, even
-    # when the result is intentionally dense. Core axes remain on ``auto`` and
-    # retain their normal collision thinning.
-    if strategy == "preserve":
-        return labels
-
-    def extent(label: dict[str, Any]) -> float:
-        block = _textblock.measure(label["text"], font_size)
-        width = max(font_size * 0.7, block.width)
-        height = block.height
-        angle = abs(float(label.get("angle", 0.0))) * math.pi / 180.0
-        if is_x:
-            return abs(math.cos(angle)) * width + abs(math.sin(angle)) * height
-        return abs(math.sin(angle)) * width + abs(math.cos(angle)) * height
-
-    def collide(items: list[dict[str, Any]]) -> bool:
-        rows: dict[int, list[dict[str, Any]]] = {}
-        for item in items:
-            rows.setdefault(int(item.get("row", 0)), []).append(item)
-        for row in rows.values():
-            sorted_row = sorted(row, key=lambda candidate: float(candidate["pos"]))
-            if is_x and anchor != "center":
-                # Edge-anchored labels all run the same direction from their
-                # tick.  Rotated ones are parallel lines: they clear each other
-                # when the perpendicular gap between adjacent anchors exceeds
-                # the line height, regardless of horizontal bounding-box overlap.
-                # Mirror JS _tickLabelsCollide exactly.
-                for i in range(1, len(sorted_row)):
-                    prev = sorted_row[i - 1]
-                    curr = sorted_row[i]
-                    spacing = float(curr["pos"]) - float(prev["pos"])
-                    angle = abs(float(curr.get("angle", 0.0))) * math.pi / 180.0
-                    if angle:
-                        if spacing * math.sin(angle) < font_size * 1.2 + min_gap:
-                            return True
-                    else:
-                        lead = curr if anchor == "end" else prev
-                        w = max(
-                            font_size * 0.7,
-                            _textblock.measure(lead["text"], font_size).width,
-                        )
-                        if spacing < w + min_gap:
-                            return True
-            else:
-                last_end = -math.inf
-                for item in sorted_row:
-                    half = extent(item) / 2.0
-                    start = float(item["pos"]) - half
-                    if start < last_end + min_gap:
-                        return True
-                    last_end = float(item["pos"]) + half
-        return False
-
-    if strategy == "auto":
-        if not collide(labels):
-            return labels
-        if is_x and axis.get("kind") == "category" and len(labels) <= 16:
-            strategy = "rotate"
-        elif is_x and len(labels) <= 24:
-            strategy = "stagger"
-        else:
-            strategy = "hide"
-
-    if strategy == "rotate" and is_x:
-        angle = (
-            explicit_angle
-            if explicit_angle is not None
-            else (35.0 if axis.get("side") == "top" else -35.0)
+    texts = [_tick_text(axis, value, step) for value in values]
+    side_raw = str(axis.get("side") or "").strip().lower()
+    side = side_raw if side_raw in {"bottom", "top", "left", "right"} else "bottom"
+    kept = _native.scene_tick_label_layout(
+        positions,
+        texts,
+        kind=strategy,
+        side=side,
+        anchor=anchor,
+        is_x=is_x,
+        category=axis.get("kind") == "category",
+        font_size=font_size,
+        min_gap=min_gap,
+        explicit_angle=explicit_angle,
+    )
+    out: list[dict[str, Any]] = []
+    for item in kept:
+        index = int(item["index"])
+        out.append(
+            {
+                "value": float(values[index]),
+                "pos": float(positions[index]),
+                "text": texts[index],
+                "angle": float(item["angle"]),
+                "row": int(item["row"]),
+            }
         )
-        labels = [{**label, "angle": angle, "row": 0} for label in labels]
-    elif strategy == "stagger" and is_x:
-        labels = [{**label, "row": index % 2} for index, label in enumerate(labels)]
-
-    # "hide" is a collision-handling strategy: the stride loop engages only
-    # when the full label set actually overlaps, so relayouts that force
-    # strategy="hide" (native diagonal-angle fallback) keep fitting labels.
-    if collide(labels):
-        for stride in range(2, len(labels) + 1):
-            reduced = labels[::stride]
-            if not collide(reduced):
-                return reduced
-        return labels[:1]
-    return labels
+    return out
 
 
 def _axis_label_geometry(

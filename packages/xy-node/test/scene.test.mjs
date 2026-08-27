@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import test from "node:test";
 
-import { axisTicks, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
+import { axisTicks, tickLabelLayout, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
 import { Figure, sceneRasterCommands, sceneSvg } from "../src/index.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
@@ -1131,6 +1131,24 @@ test("Node consumes Rust-owned canonical axis ticks", () => {
     Date.UTC(2021, 6, 1),
     hi,
   ]);
+});
+
+test("Node consumes Rust-owned tick-label collision layout", () => {
+  const labels = Array.from({ length: 9 }, (_, i) => `Category_Name_${String(i).padStart(2, "0")}`);
+  const positions = Array.from({ length: 9 }, (_, i) => 100 + i * 90);
+  const kept = tickLabelLayout({
+    positions, labels, kind: "rotate", side: "bottom", anchor: "end",
+    isX: true, category: true, fontSize: 11, minGap: 8, explicitAngle: -30,
+  });
+  assert.equal(kept.length, 9);
+  assert.equal(kept[0].angle, -30);
+  assert.deepEqual(kept.map((item) => item.index), [0, 1, 2, 3, 4, 5, 6, 7, 8]);
+  const centered = tickLabelLayout({
+    positions, labels, kind: "rotate", side: "bottom", anchor: "center",
+    isX: true, category: true, fontSize: 11, minGap: 8, explicitAngle: -30,
+  });
+  assert.ok(centered.length > 0 && centered.length < 9);
+  assert.deepEqual(tickLabelLayout({ positions: [0, 10], labels: ["a", "b"], kind: "none" }), []);
 });
 
 test("Node matches every Rust-owned axis tick family in the shared cross-host fixture", () => {

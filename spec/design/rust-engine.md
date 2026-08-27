@@ -91,7 +91,7 @@ bins, capped at 10,000 bins / 10,001 edges before allocation; invalid or
 over-cap results fail without a partial write; ABI 119 `xyg_histogram_mark_edges`
 owns integer bins, empty-finite ten-bin compatibility, and `auto_domain`) ·
 contour levels (`xyg_contour_levels` ✅ ABI 119 interior auto-domain spacing
-and authored sort) · line ingest sort (`xyg_argsort_stable` ✅ ABI 119) · legend `loc="best"` (`xyg_legend_normalize` / `xyg_legend_best_loc` ✅ ABI 120) · ribbon/curve/rounded-rect tessellation (`xyg_ribbon_edge` / `xyg_ribbon_polygon` / `xyg_monotone_tangents` / `xyg_curve_flatten` / `xyg_rounded_rect_poly` ✅ ABI 121) · compile-time payload LOD (`xyg_payload_tier` / `xyg_payload_visible_needed` / `xyg_payload_visible_mask` ✅ ABI 122) · wind-rose bins (`xyg_wind_rose_bins` ✅
+and authored sort) · line ingest sort (`xyg_argsort_stable` ✅ ABI 119) · legend `loc="best"` (`xyg_legend_normalize` / `xyg_legend_best_loc` ✅ ABI 120) · ribbon/curve/rounded-rect tessellation (`xyg_ribbon_edge` / `xyg_ribbon_polygon` / `xyg_monotone_tangents` / `xyg_curve_flatten` / `xyg_rounded_rect_poly` ✅ ABI 121) · compile-time payload LOD (`xyg_payload_tier` / `xyg_payload_visible_needed` / `xyg_payload_visible_mask` ✅ ABI 122) · tick-label collision (`xyg_scene_tick_label_layout` ✅ ABI 123) · wind-rose bins (`xyg_wind_rose_bins` ✅
 sector × speed-band counts; polar bar assembly stays host-side) · contourf
 densify (`xyg_contourf_densify` ✅) + corner-mask bands (`xyg_contourf_bands` ✅
 ContourPy-style one-masked-corner clip) · bar offsets (`xyg_bar_stack` ✅
@@ -232,6 +232,7 @@ crates/
     legend_fit.rs       # composition loc="best" occupancy (ABI 120) ✅
     geom.rs             # ribbon/curve/rounded-rect tessellation (ABI 121) ✅
     lod_plan.rs         # view LOD drill/grid + compile-time payload tier (ABI 122) ✅
+    tick_layout.rs      # tick-label collision thinning (ABI 123) ✅
     stream.rs           # Rust-owned canonical append buffers (`xyg_stream_*`).
                         # Capacity-doubling f64 store; zone maps on seal
                         # (ZONE_CHUNK splice, bitwise-identical to
@@ -646,5 +647,5 @@ landed; the remainder, in order:
    `xyg_legend_best_loc` ✅; ABI 121 `xyg_ribbon_edge` / `xyg_ribbon_polygon` /
    `xyg_monotone_tangents` / `xyg_curve_flatten` / `xyg_rounded_rect_poly` ✅;
    ABI 122 `xyg_payload_tier` / `xyg_payload_visible_needed` /
-   `xyg_payload_visible_mask` ✅.
+   `xyg_payload_visible_mask` ✅; ABI 123 `xyg_scene_tick_label_layout` ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

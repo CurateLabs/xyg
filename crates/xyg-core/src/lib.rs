@@ -54,6 +54,7 @@ use xyg_engine::svg;
 use xyg_engine::temporal;
 use xyg_engine::temporal_controller;
 use xyg_engine::temporal_graph;
+use xyg_engine::tick_layout;
 #[cfg(not(target_os = "emscripten"))]
 use xyg_engine::tile_store;
 use xyg_engine::tiles;
@@ -113,7 +114,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 122;
+pub const ABI_VERSION: u32 = 123;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10136,6 +10137,123 @@ pub unsafe extern "C" fn xyg_payload_visible_mask(
     })
 }
 
+/// Tick-label collision layout (ABI 123). `kind` is 0=auto, 1=hide, 2=rotate,
+/// 3=stagger, 4=preserve, 5=none, 6=off. `side` is 0=bottom, 1=top, 2=left,
+/// 3=right. `anchor` is 0=start, 1=center, 2=end. `flags` bit0=is_x, bit1=
+/// category. `explicit_angle` is NaN when unset. Writes kept `out_index` /
+/// `out_angle` / `out_row` values. Returns the keep count, or `usize::MAX`.
+///
+/// # Safety
+/// Non-empty `positions` must be valid for `n` f64s. `label_lens` must be
+/// valid for `n` u32s when `n > 0`. `labels` must cover `labels_len` bytes.
+/// Output buffers must hold `out_cap` slots when that capacity is nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_tick_label_layout(
+    positions: *const f64,
+    n: usize,
+    label_lens: *const u32,
+    labels: *const u8,
+    labels_len: usize,
+    kind: u32,
+    side: u32,
+    anchor: u32,
+    flags: u32,
+    font_size: f64,
+    min_gap: f64,
+    explicit_angle: f64,
+    out_index: *mut u32,
+    out_angle: *mut f64,
+    out_row: *mut u32,
+    out_cap: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if flags & !3u32 != 0 {
+            return usize::MAX;
+        }
+        let positions = if n == 0 {
+            &[][..]
+        } else {
+            if positions.is_null() {
+                return usize::MAX;
+            }
+            std::slice::from_raw_parts(positions, n)
+        };
+        let lens = if n == 0 {
+            &[][..]
+        } else {
+            if label_lens.is_null() {
+                return usize::MAX;
+            }
+            std::slice::from_raw_parts(label_lens, n)
+        };
+        let bytes = if labels_len == 0 {
+            &[][..]
+        } else {
+            if labels.is_null() {
+                return usize::MAX;
+            }
+            std::slice::from_raw_parts(labels, labels_len)
+        };
+        let mut texts = Vec::with_capacity(n);
+        let mut offset = 0usize;
+        for &len in lens {
+            let len = len as usize;
+            let end = match offset.checked_add(len) {
+                Some(end) if end <= bytes.len() => end,
+                _ => return usize::MAX,
+            };
+            let Ok(text) = std::str::from_utf8(&bytes[offset..end]) else {
+                return usize::MAX;
+            };
+            texts.push(text);
+            offset = end;
+        }
+        if offset != bytes.len() {
+            return usize::MAX;
+        }
+        let explicit = if explicit_angle.is_nan() {
+            None
+        } else {
+            Some(explicit_angle)
+        };
+        let Some(kept) = tick_layout::tick_label_layout(
+            positions,
+            &texts,
+            kind,
+            side,
+            anchor,
+            flags & tick_layout::FLAG_IS_X != 0,
+            flags & tick_layout::FLAG_CATEGORY != 0,
+            font_size,
+            min_gap,
+            explicit,
+        ) else {
+            return usize::MAX;
+        };
+        if out_cap < kept.len() {
+            return usize::MAX;
+        }
+        let (out_index, out_angle, out_row) = if out_cap == 0 {
+            (&mut [][..], &mut [][..], &mut [][..])
+        } else {
+            if out_index.is_null() || out_angle.is_null() || out_row.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts_mut(out_index, out_cap),
+                std::slice::from_raw_parts_mut(out_angle, out_cap),
+                std::slice::from_raw_parts_mut(out_row, out_cap),
+            )
+        };
+        for (i, item) in kept.iter().enumerate() {
+            out_index[i] = item.index;
+            out_angle[i] = item.angle;
+            out_row[i] = item.row;
+        }
+        kept.len()
+    })
+}
+
 /// Linear (NumPy-default) quantiles for probabilities in `[0, 1]`.
 ///
 /// Writes `n_probs` f64s into `out`. Returns the finite sample count used, or
@@ -12311,6 +12429,60 @@ mod tests {
         );
         assert_eq!(mask, [1, 0, 1, 0, 1]);
         assert_eq!(unsafe { xyg_payload_tier(99, 1, 0, -1, 0, 0) }, -1);
+    }
+
+    #[test]
+    fn tick_label_layout_end_anchor_rotate_keeps_all() {
+        let positions: [f64; 9] = [
+            100.0, 190.0, 280.0, 370.0, 460.0, 550.0, 640.0, 730.0, 820.0,
+        ];
+        let labels: [&str; 9] = [
+            "Category_Name_00",
+            "Category_Name_01",
+            "Category_Name_02",
+            "Category_Name_03",
+            "Category_Name_04",
+            "Category_Name_05",
+            "Category_Name_06",
+            "Category_Name_07",
+            "Category_Name_08",
+        ];
+        let mut lens = [0u32; 9];
+        let mut packed = Vec::new();
+        for (i, label) in labels.iter().enumerate() {
+            let bytes = label.as_bytes();
+            lens[i] = bytes.len() as u32;
+            packed.extend_from_slice(bytes);
+        }
+        let mut out_index = [0u32; 9];
+        let mut out_angle = [0.0f64; 9];
+        let mut out_row = [0u32; 9];
+        let n = unsafe {
+            xyg_scene_tick_label_layout(
+                positions.as_ptr(),
+                9,
+                lens.as_ptr(),
+                packed.as_ptr(),
+                packed.len(),
+                2, // rotate
+                0, // bottom
+                2, // end
+                1, // is_x
+                11.0,
+                8.0,
+                -30.0,
+                out_index.as_mut_ptr(),
+                out_angle.as_mut_ptr(),
+                out_row.as_mut_ptr(),
+                9,
+            )
+        };
+        assert_eq!(n, 9);
+        assert!((out_angle[0] + 30.0).abs() < 1e-12);
+        for i in 0..9 {
+            assert_eq!(out_index[i], i as u32);
+            assert_eq!(out_row[i], 0);
+        }
     }
 
     #[test]

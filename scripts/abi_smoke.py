@@ -695,6 +695,25 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
     ]
+    lib.xyg_scene_tick_label_layout.restype = ctypes.c_size_t
+    lib.xyg_scene_tick_label_layout.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        U32P,
+        F64P,
+        U32P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_hexbin_groups.restype = ctypes.c_size_t
     lib.xyg_hexbin_groups.argtypes = [
         F64P,
@@ -2153,6 +2172,39 @@ def main() -> None:
         5,
     )
     ok(pn == 3 and list(pmask) == [1, 0, 1, 0, 1], "payload_visible_mask log x")
+    tick_pos = array("d", [100.0 + i * 90.0 for i in range(9)])
+    tick_labels = [f"Category_Name_{i:02d}".encode() for i in range(9)]
+    tick_packed = b"".join(tick_labels)
+    tick_lens = array("I", [len(item) for item in tick_labels])
+    tick_bytes = array("B", tick_packed)
+    tick_index = array("I", [0] * 9)
+    tick_angle = array("d", [0.0] * 9)
+    tick_row = array("I", [0] * 9)
+    tick_n = lib.xyg_scene_tick_label_layout(
+        _ptr(tick_pos, ctypes.c_double),
+        9,
+        _ptr(tick_lens, ctypes.c_uint32),
+        _ptr(tick_bytes, ctypes.c_uint8),
+        len(tick_packed),
+        2,
+        0,
+        2,
+        1,
+        11.0,
+        8.0,
+        -30.0,
+        _ptr(tick_index, ctypes.c_uint32),
+        _ptr(tick_angle, ctypes.c_double),
+        _ptr(tick_row, ctypes.c_uint32),
+        9,
+    )
+    ok(
+        tick_n == 9
+        and list(tick_index) == list(range(9))
+        and abs(tick_angle[0] + 30.0) < 1e-12
+        and list(tick_row) == [0] * 9,
+        "tick_label_layout end-anchor rotate keeps all",
+    )
     cf_x = array("d", [0.0, 1.0, 2.0, 3.0, 4.0])
     cf_y = array("d", [0.0, 1.0, 0.5, 2.0, 1.5])
     cf_m = array("d", [0.0]) * 5

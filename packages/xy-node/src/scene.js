@@ -2,6 +2,7 @@
 import {
   pointer,
   xySceneAxisTicks,
+  xySceneTickLabelLayout,
   xySceneBatchEncode,
   xySceneBrowserPainter,
   xyScenePackAnnotations,
@@ -275,6 +276,92 @@ export function axisTicks({
     throw new RangeError("canonical axis ticks exceeded host output limits");
   }
   return { ticks: Array.from(ticks.subarray(0, written)), labeled: Array.from(labeled.subarray(0, labels)), step: step[0] };
+}
+
+const TICK_LAYOUT_KIND = new Map([
+  ["auto", 0], ["hide", 1], ["rotate", 2], ["stagger", 3],
+  ["preserve", 4], ["none", 5], ["off", 6],
+]);
+const TICK_LAYOUT_SIDE = new Map([["bottom", 0], ["top", 1], ["left", 2], ["right", 3]]);
+const TICK_LAYOUT_ANCHOR = new Map([["start", 0], ["center", 1], ["end", 2]]);
+
+function tickLayoutEnum(value, mapping, name) {
+  if (typeof value === "string") {
+    const key = value.trim().toLowerCase().replaceAll("-", "_");
+    if (!mapping.has(key)) {
+      throw new RangeError(`${name} must be one of ${[...mapping.keys()].join(", ")}`);
+    }
+    return mapping.get(key);
+  }
+  const code = Number(value);
+  if (!Number.isInteger(code)) {
+    throw new RangeError(`${name} must be a string or integer code`);
+  }
+  return code;
+}
+
+export function tickLabelLayout({
+  positions,
+  labels,
+  kind = "auto",
+  side = "bottom",
+  anchor = "center",
+  isX = true,
+  category = false,
+  fontSize = 11,
+  minGap = 8,
+  explicitAngle,
+} = {}) {
+  const pos = asF64Array(positions ?? [], "positions");
+  const texts = Array.from(labels ?? [], (label) => String(label));
+  if (pos.length !== texts.length) {
+    throw new RangeError("positions and labels must have the same length");
+  }
+  const encoder = new TextEncoder();
+  const encoded = texts.map((text) => encoder.encode(text));
+  const packedLen = encoded.reduce((sum, bytes) => sum + bytes.length, 0);
+  const packed = new Uint8Array(packedLen);
+  const lens = new Uint32Array(texts.length);
+  let at = 0;
+  for (const [index, bytes] of encoded.entries()) {
+    lens[index] = bytes.length;
+    packed.set(bytes, at);
+    at += bytes.length;
+  }
+  const n = pos.length;
+  const outIndex = new Uint32Array(n);
+  const outAngle = new Float64Array(n);
+  const outRow = new Uint32Array(n);
+  const angle = explicitAngle == null ? Number.NaN : Number(explicitAngle);
+  const flags = (isX ? 1 : 0) | (category ? 2 : 0);
+  const rawWritten = xySceneTickLabelLayout(
+    f64Ptr(pos),
+    BigInt(n),
+    u32Ptr(lens),
+    packedLen ? u8Ptr(packed) : 0,
+    BigInt(packedLen),
+    tickLayoutEnum(kind, TICK_LAYOUT_KIND, "kind"),
+    tickLayoutEnum(side, TICK_LAYOUT_SIDE, "side"),
+    tickLayoutEnum(anchor, TICK_LAYOUT_ANCHOR, "anchor"),
+    flags,
+    Number(fontSize),
+    Number(minGap),
+    angle,
+    n ? u32Ptr(outIndex) : 0,
+    n ? f64Ptr(outAngle) : 0,
+    n ? u32Ptr(outRow) : 0,
+    BigInt(n),
+  );
+  if (rawWritten === USIZE_MAX_64) throw new RangeError("invalid tick-label layout request");
+  const written = Number(rawWritten);
+  if (!Number.isSafeInteger(written) || written > n) {
+    throw new RangeError("tick-label layout exceeded host output limits");
+  }
+  return Array.from({ length: written }, (_, index) => ({
+    index: outIndex[index],
+    angle: outAngle[index],
+    row: outRow[index],
+  }));
 }
 
 export function scaleMap({ values, kind = "linear", operation = "pixel", domain, range = [0, 1], constant = 1, nonpositive = "clip" }) {

@@ -1320,6 +1320,11 @@ ABI 122 moves compile-time payload LOD into Rust. Hosts call
 direct (strict `>`, per-item ceiling, polar skip), and the finite/log
 keep mask are engine-owned and identical for Python and Node. Hosts
 still gather, encode, and ship the chosen rows (#282).
+ABI 123 moves tick-label collision thinning into Rust. Hosts call
+`xyg_scene_tick_label_layout`; auto / hide / rotate / stagger, the
+edge-anchor rotate gap, and stride downsampling are engine-owned and
+identical for Python and Node. Hosts still format `_tick_text` and map
+values to pixels (#276).
 ABI 110 moves primary Scene legend framing into Rust. Hosts pass loc/flags,
 font sizes, paints, title, and per-entry meta plus labels; XYLG header
 layout, text offsets, and bounded-text rejection are engine-owned and

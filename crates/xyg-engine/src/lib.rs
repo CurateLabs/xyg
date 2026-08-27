@@ -58,6 +58,7 @@ pub mod svg;
 pub mod temporal;
 pub mod temporal_controller;
 pub mod temporal_graph;
+pub mod tick_layout;
 #[cfg(not(target_family = "wasm"))]
 pub mod tile_store;
 pub mod tiles;
