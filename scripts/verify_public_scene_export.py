@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Validate public Scene goldens and optional local export-baseline reports.
 
-Without a report this recomputes the checked-in hexbin / public-route Scene
-SHA-256 values. With a report it also requires finite non-negative timings and
-positive payload sizes, and refuses heatmap rows until that route lands.
+Without a report this recomputes the checked-in hexbin / heatmap / public-route
+Scene SHA-256 values. With a report it also requires finite non-negative
+timings and positive payload sizes for every required public route.
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ REQUIRED_ROUTES = (
     "hexbin_count",
     "hexbin_mean",
     "hexbin_sum",
+    "heatmap",
     "scatter",
     "literal_geometry",
     "triangle_mesh",
@@ -82,14 +83,15 @@ def _validate_report(report: dict[str, object], *, fixture: dict[str, object]) -
     hexbin_shas = fixture["public_hexbin_sha256"]
     if not isinstance(hexbin_shas, dict):
         raise SystemExit("fixture public_hexbin_sha256 is missing")
+    heatmap_sha = fixture.get("public_heatmap_sha256")
+    if not isinstance(heatmap_sha, str) or len(heatmap_sha) != 64:
+        raise SystemExit("fixture public_heatmap_sha256 is missing")
     for row in rows:
         if not isinstance(row, dict):
             raise SystemExit("public Scene export row must be an object")
         name = row["route"]
         if row.get("public") is not True:
             raise SystemExit(f"{name} is not marked public")
-        if any(key in str(name).lower() for key in ("heatmap", "pcolormesh")):
-            raise SystemExit("heatmap public Scene is follow-up PR 261; do not claim it here")
         for key in PAYLOAD_KEYS:
             value = row.get(key)
             if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
@@ -104,6 +106,9 @@ def _validate_report(report: dict[str, object], *, fixture: dict[str, object]) -
         if name in HEXBIN_SHA_KEYS:
             golden = hexbin_shas[HEXBIN_SHA_KEYS[name]]
             if digest != golden or expected != golden:
+                raise SystemExit(f"{name} Scene digest does not match the checked-in golden")
+        elif name == "heatmap":
+            if digest != heatmap_sha or expected != heatmap_sha:
                 raise SystemExit(f"{name} Scene digest does not match the checked-in golden")
         elif expected is not None and expected != digest:
             raise SystemExit(f"{name} Scene digest does not match its expected golden")

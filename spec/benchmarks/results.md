@@ -59,10 +59,10 @@ open until they close after this evidence. Related to #58 and #59.
 |---|---|---|
 | Interpret SHA-keyed CodSpeed + strict-CSP browser artifacts | Browser artifacts interpreted below. CodSpeed simulation numbers stay on the CodSpeed dashboard; no instruction-count table is invented here. | this section; `hosted-evidence-95adb9de.json` |
 | Python/Node Scene goldens for public hexbin | Checked in on `main` via #259 | `tests/fixtures/figure_scene_v3.json` `public_hexbin_sha256`; `tests/test_scene_export_support.py`; `packages/xy-node/test/scene.test.mjs` |
-| Heatmap public Scene goldens | Deferred. PR [261](https://github.com/CurateLabs/xyg/pull/261) (`cursor/heatmap-scene-route-9b8a`) is open and mergeable. | follow-up after that merge |
+| Heatmap public Scene goldens | Checked in on `main` via #261 | `tests/fixtures/figure_scene_v3.json` `public_heatmap_sha256`; `tests/test_scene_export_support.py`; `packages/xy-node/test/scene.test.mjs` |
 | Public Scene export baselines (time/memory/payload) | Local diagnostic run recorded below; harness is `scripts/bench_public_scene_routes.py` | `spec/benchmarks/public-scene-export-local.json` |
 | Density no-refinement gate | Implemented and probed; hosted visual evidence of that degradation boundary is still remaining #59 work | `js/src/49_wasm_density.ts`, `js/src/54_kernel.ts`, `tests/test_density_pan_no_rebin.py` |
-| Post-#259 hosted browser artifact | Absent at record time (`main` `a77e267`, includes #259 hexbin Scene and #260 Reflex tick auto-attach). Hexbin is not in the `95adb9de` authored-Scene workload. | produce with the commands in methodology §8 |
+| Post-#259 hosted browser artifact | Absent at record time (`main` `14e91a3`, includes Wave A hexbin/heatmap Scene, Reflex attach, colorbar ticks). Hexbin/heatmap are not in the `95adb9de` authored-Scene workload. | produce with the commands in methodology §8 |
 
 Reproduce and re-verify the hosted artifacts (they are not committed; ~19 MiB):
 
@@ -175,18 +175,21 @@ LOD over 1,024 groups, and rich style extras stay on compatibility exporters.
 | sum | `ff483c0b93089af6a5fb81779f1cc54c6169dafd1a6d169446b8ea95202b1572` |
 
 ```bash
-uv run pytest tests/test_scene_export_support.py -k hexbin -q
+uv run pytest tests/test_scene_export_support.py -k "hexbin or heatmap" -q
 node --test packages/xy-node/test/scene.test.mjs
 uv run python scripts/verify_public_scene_export.py
 ```
+
+Constant-style Cartesian heatmap golden (Scene SHA-256):
+`91c26202347a7969029a3955299b91c570141f57967da14a577366e881c986a8`.
 
 ### Public Scene export baselines (local diagnostic)
 
 `scripts/bench_public_scene_routes.py` times `figure_scene` and
 `try_public_svg` / `try_public_png` / `try_public_pdf` for the golden hexbin
-fixtures plus already-public scatter, line+bar, triangle-mesh, violin, and box
-routes. The committed JSON is a local warmed median, not a CI gate and not a
-cross-library win. Heatmap is omitted until PR 261 lands.
+and heatmap fixtures plus already-public scatter, line+bar, triangle-mesh,
+violin, and box routes. The committed JSON is a local warmed median, not a CI
+gate and not a cross-library win.
 
 ```bash
 uv run python scripts/bench_public_scene_routes.py \
@@ -195,21 +198,23 @@ uv run python scripts/verify_public_scene_export.py \
   spec/benchmarks/public-scene-export-local.json --recompute-goldens
 ```
 
-Recorded local run on `d10c1ac` (Linux x86_64, CPython 3.12.3, native backend,
-4 CPUs, software GL, 1 warmup + 7-rep median). Peak process RSS during the
-harness was 51 MiB; `tracemalloc` peak was 5.4 MiB. This is a Cloud Agent VM
-diagnostic, not a reference-hardware or CI (software GL) row.
+Recorded local run on `4a35d8a` tip before the heatmap-inclusive refresh
+(Linux x86_64, CPython 3.12.3, native backend, 4 CPUs, software GL, 1 warmup +
+7-rep median). Peak process RSS during the harness was 73 MiB; `tracemalloc`
+peak was 20.8 MiB. This is a Cloud Agent VM diagnostic, not a
+reference-hardware or CI (software GL) row.
 
 | route | Scene B | SVG B | PNG B | PDF B | painter B | scene ms | SVG ms | PNG ms | PDF ms |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| hexbin_count | 14,275 | 8,906 | 24,254 | 2,402 | 7,109 | 9.07 | 9.16 | 10.42 | 15.38 |
-| hexbin_mean | 2,851 | 3,776 | 19,986 | 1,834 | 1,669 | 4.42 | 4.49 | 5.24 | 7.39 |
-| hexbin_sum | 2,851 | 3,776 | 19,986 | 1,834 | 1,669 | 4.38 | 4.52 | 5.23 | 7.29 |
-| scatter | 536 | 2,517 | 12,215 | 1,466 | 498 | 3.46 | 3.57 | 4.08 | 5.73 |
-| literal_geometry | 720 | 2,703 | 14,287 | 1,505 | 626 | 3.87 | 3.83 | 4.48 | 5.81 |
-| triangle_mesh | 844 | 3,515 | 25,104 | 1,757 | 826 | 3.66 | 3.79 | 4.73 | 6.44 |
-| violin_vertical | 1,320 | 3,920 | 13,517 | 1,679 | 850 | 4.59 | 4.84 | 5.41 | 7.49 |
-| box_vertical | 1,612 | 4,544 | 16,121 | 2,006 | 1,516 | 4.75 | 4.87 | 5.44 | 7.82 |
+| hexbin_count | 14,275 | 8,906 | 24,254 | 2,402 | 7,109 | 9.13 | 9.38 | 10.56 | 15.47 |
+| hexbin_mean | 2,851 | 3,776 | 19,986 | 1,834 | 1,669 | 4.46 | 4.57 | 5.26 | 7.26 |
+| hexbin_sum | 2,851 | 3,776 | 19,986 | 1,834 | 1,669 | 4.36 | 4.43 | 5.19 | 7.27 |
+| heatmap | 836 | 3,314 | 13,392 | 1,766 | 758 | 3.75 | 3.74 | 4.46 | 6.34 |
+| scatter | 536 | 2,517 | 12,215 | 1,466 | 498 | 3.60 | 3.57 | 4.06 | 5.61 |
+| literal_geometry | 720 | 2,703 | 14,287 | 1,505 | 626 | 3.87 | 4.09 | 4.71 | 6.12 |
+| triangle_mesh | 844 | 3,515 | 25,104 | 1,757 | 826 | 3.62 | 3.77 | 4.71 | 6.43 |
+| violin_vertical | 1,320 | 3,920 | 13,517 | 1,679 | 850 | 4.81 | 4.92 | 5.44 | 7.53 |
+| box_vertical | 1,612 | 4,544 | 16,121 | 2,006 | 1,516 | 4.97 | 5.03 | 5.64 | 8.01 |
 
 Hexbin count is larger than mean/sum because this fixture occupies more
 cells under count. Mean and sum share Scene/SVG/PNG/PDF bytes, matching the

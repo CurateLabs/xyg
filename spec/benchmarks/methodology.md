@@ -353,10 +353,10 @@ uv run python scripts/verify_public_scene_export.py \
   spec/benchmarks/public-scene-export-local.json --recompute-goldens
 ```
 
-The verifier recomputes the checked-in hexbin Scene SHA-256 goldens
-(`tests/fixtures/figure_scene_v3.json` `public_hexbin_sha256`) and refuses a
-heatmap row until that public Scene route lands. Heatmap follow-up is
-https://github.com/CurateLabs/xyg/pull/261.
+The verifier recomputes the checked-in hexbin and heatmap Scene SHA-256 goldens
+(`tests/fixtures/figure_scene_v3.json` `public_hexbin_sha256` /
+`public_heatmap_sha256`) and requires every public export-baseline route,
+including heatmap after #261.
 
 The glob collects seven modules — `test_codspeed_animation.py`,
 `test_codspeed_graph_render.py`, `test_codspeed_kernels.py`, `test_codspeed_polar.py`,

@@ -24,10 +24,15 @@
     "note": "Last workflow whose CodSpeed simulation job also succeeded. Scene v24 numbers are not interchangeable with the Scene v25 extract below."
   },
   "post_hexbin_nightly": {
-    "main_sha_at_record": "a77e26707a3e980f88a823122781a80b72468af9",
-    "includes": ["#259 hexbin Scene", "#260 Reflex WASM tick auto-attach"],
+    "main_sha_at_record": "14e91a36b24c2bb0447e983c698d2e15b4b03527",
+    "includes": [
+      "#259 hexbin Scene",
+      "#260 Reflex WASM tick auto-attach",
+      "#261 heatmap Scene",
+      "#262 colorbar ChartView WASM ticks"
+    ],
     "status": "absent",
-    "note": "No authored-scene-browser-<sha> artifact exists yet for #259+#260 / current main. Hexbin Scene evidence in this campaign is goldens + local export baselines, not hosted browser timings."
+    "note": "No authored-scene-browser-<sha> artifact exists yet for Wave A / current main. Hexbin+heatmap Scene evidence in this campaign is goldens + local export baselines, not hosted browser timings."
   },
   "authored_scene_browser": {
     "schema": "xyg-wasm-scene-browser-v3",

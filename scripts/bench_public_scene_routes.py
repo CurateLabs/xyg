@@ -2,11 +2,9 @@
 """Local time/memory/payload baselines for public Scene static-export routes.
 
 This is a reproduction contract, not a CodSpeed or CI timing gate. It compiles
-the same golden public hexbin fixtures used by Python/Node Scene tests, plus a
-small set of already-public Cartesian routes, through ``try_public_*``.
-
-Heatmap is omitted until the public Scene route lands (open follow-up
-https://github.com/CurateLabs/xyg/pull/261).
+the same golden public hexbin and heatmap fixtures used by Python/Node Scene
+tests, plus a small set of already-public Cartesian routes, through
+``try_public_*``.
 """
 
 from __future__ import annotations
@@ -43,6 +41,9 @@ FIXTURE = ROOT / "tests" / "fixtures" / "figure_scene_v3.json"
 HEXBIN_X = [0.5, 1.5, 2.5, 3.5, 1.0, 2.0, 3.0]
 HEXBIN_Y = [0.5, 0.5, 0.5, 0.5, 2.0, 2.0, 2.0]
 HEXBIN_C = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]
+HEATMAP_Z = [[0.0, 1.0, 2.0], [3.0, 4.0, 5.0]]
+HEATMAP_X = [1.0, 2.0, 3.0]
+HEATMAP_Y = [1.0, 3.0]
 
 
 def _hexbin(reduce: str) -> Figure:
@@ -71,6 +72,22 @@ def _scatter() -> Figure:
     figure.axis_options["x"]["domain"] = (0.0, 4.0)
     figure.axis_options["y"]["domain"] = (0.0, 5.0)
     figure.scatter([1, 2], [2, 3], color="#3987e5", size=6, opacity=0.8)
+    return figure
+
+
+def _heatmap() -> Figure:
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 4.0)
+    figure.axis_options["y"]["domain"] = (0.0, 5.0)
+    figure.heatmap(
+        HEATMAP_Z,
+        x=HEATMAP_X,
+        y=HEATMAP_Y,
+        color="#3987e5",
+        opacity=0.75,
+        name="heat",
+    )
+    figure.traces[-1].id = 0
     return figure
 
 
@@ -142,6 +159,7 @@ ROUTES: tuple[tuple[str, Callable[[], Figure], str | None], ...] = (
     ("hexbin_count", lambda: _hexbin("count"), "public_hexbin_sha256.count"),
     ("hexbin_mean", lambda: _hexbin("mean"), "public_hexbin_sha256.mean"),
     ("hexbin_sum", lambda: _hexbin("sum"), "public_hexbin_sha256.sum"),
+    ("heatmap", _heatmap, "public_heatmap_sha256"),
     ("scatter", _scatter, None),
     ("literal_geometry", _literal_geometry, "public_literal_geometry_sha256"),
     ("triangle_mesh", _triangle_mesh, "public_triangle_mesh_sha256"),
@@ -253,7 +271,6 @@ def main() -> int:
         "measurement_scope": "public-scene-static-export-baseline",
         "warmups": args.warmups,
         "reps": args.reps,
-        "heatmap_follow_up": "https://github.com/CurateLabs/xyg/pull/261",
         "environment": collect_environment_metadata(),
         "tracemalloc_current_bytes": current,
         "tracemalloc_peak_bytes": peak,

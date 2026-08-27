@@ -16,7 +16,7 @@ def test_hosted_evidence_extract_has_the_four_size_ladders() -> None:
     assert extract["source"]["head_sha"] == "95adb9deef74a236ce3a5db30b1fd166025b7e8c"
     assert extract["post_hexbin_nightly"]["status"] == "absent"
     assert extract["post_hexbin_nightly"]["main_sha_at_record"] == (
-        "a77e26707a3e980f88a823122781a80b72468af9"
+        "14e91a36b24c2bb0447e983c698d2e15b4b03527"
     )
     for key, count_attr in (
         ("authored_scene_browser.typed_series", "count"),
@@ -38,4 +38,11 @@ def test_public_hexbin_goldens_are_checked_in_and_mean_shares_sum() -> None:
     assert hexbin["count"] == "f39a0cdb44b31ff98813acc3a3a571b0b13ea613f642c029ed418cf815b86b84"
     assert hexbin["mean"] == hexbin["sum"]
     assert hexbin["mean"] == "ff483c0b93089af6a5fb81779f1cc54c6169dafd1a6d169446b8ea95202b1572"
-    assert "public_heatmap_sha256" not in fixture
+
+
+def test_public_heatmap_golden_is_checked_in() -> None:
+    fixture = json.loads(FIXTURE.read_text())
+    assert (
+        fixture["public_heatmap_sha256"]
+        == "91c26202347a7969029a3955299b91c570141f57967da14a577366e881c986a8"
+    )
