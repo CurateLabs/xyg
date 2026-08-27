@@ -214,7 +214,7 @@ def _authored_tick_labels() -> Figure:
 def test_authored_cartesian_tick_labels_are_a_supported_scene_v23_slice() -> None:
     figure = _authored_tick_labels()
     encoded = figure_scene(figure)
-    assert encoded[4:8] == (30).to_bytes(4, "little")
+    assert encoded[4:8] == (31).to_bytes(4, "little")
     assert b"XYTL" in encoded
 
 
@@ -235,7 +235,7 @@ def test_primary_numeric_axis_format_routes_through_rust_scene(
     figure.set_axis("y", type_=kind, domain=domain, constant=constant, format="$,.0f USD")
     assert scene_export_support_reason(figure) is None
     scene = figure_scene(figure)
-    assert scene[4:8] == (30).to_bytes(4, "little")
+    assert scene[4:8] == (31).to_bytes(4, "little")
     assert b"XYTL" in scene
     svg = _native.scene_svg(scene)
     if kind == "log":
@@ -474,6 +474,22 @@ def test_smooth_line_is_public_scene_supported() -> None:
     svg = exported.decode("utf-8")
     counts = [len(points.split()) for points in re.findall(r'<polyline points="([^"]+)"', svg)]
     assert max(counts) == 1 + (3 - 1) * 16
+    assert figure.to_svg() == svg
+
+
+def test_smooth_area_is_public_scene_supported() -> None:
+    figure = _supported().area([0, 1, 2], [1, 2, 1], color="#ef4444", curve="smooth")
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    svg = exported.decode("utf-8")
+    counts = []
+    for path in re.findall(r'<path d="([^"]+)"', svg):
+        if "Z" not in path:
+            continue
+        tokens = path.replace("Z", " ").replace("M", " ").replace("L", " ").split()
+        counts.append(len(tokens) // 2)
+    assert max(counts) == (1 + (3 - 1) * 16) * 2
     assert figure.to_svg() == svg
 
 
@@ -1310,6 +1326,7 @@ def test_too_small_valid_export_viewport_is_a_documented_routing_exception() -> 
     [
         (lambda: _supported().line([0, 1], [0, 1]), None),
         (lambda: _supported().line([0, 1, 2], [1, 2, 1], curve="smooth"), None),
+        (lambda: _supported().area([0, 1, 2], [1, 2, 1], curve="smooth"), None),
         (lambda: _supported().bar([0, 1], [1, 2]), None),
         (lambda: _supported().column([0, 1], [1, 2]), None),
         (lambda: _supported().histogram([0, 1, 1, 2], bins=2), None),
@@ -1335,7 +1352,6 @@ def test_public_router_selects_only_the_proven_literal_cartesian_geometry_subset
             [0, 1], [1, 2], fill="linear-gradient(to bottom, #000000, #ffffff)"
         ),
         lambda: _supported().column([0, 1], [1, 2], corner_radius=2),
-        lambda: _supported().area([0, 1], [1, 2], curve="smooth"),
         lambda: _supported().area(
             [0, 1], [1, 2], fill="linear-gradient(to bottom, #000000, #ffffff)"
         ),

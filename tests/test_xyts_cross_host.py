@@ -32,7 +32,7 @@ def _records(scene: bytes) -> list[tuple[int, int, int, tuple[float, ...]]]:
 
 def test_native_python_consumes_exact_rust_generated_xyts_scenes() -> None:
     assert FIXTURE["authority"] == "crates/xyg-wasm/src/compile.rs"
-    assert FIXTURE["scene_version"] == 30
+    assert FIXTURE["scene_version"] == 31
     assert FIXTURE["painter_version"] == 14
     for fixture in FIXTURE["successful"]:
         scene = bytes.fromhex(fixture["scene_hex"])

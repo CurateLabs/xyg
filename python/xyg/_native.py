@@ -3669,7 +3669,7 @@ def scene_batch_encode(
     expansion_mode_codes = scene_uint(
         np.zeros(len(kind_array), dtype=np.uint8) if expansion_modes is None else expansion_modes,
         np.uint8,
-        11,
+        12,
         "scene expansion_modes",
     )
     coordinates = [

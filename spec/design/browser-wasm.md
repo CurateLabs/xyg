@@ -285,7 +285,7 @@ The temporal subprotocol is version 2: its variable tail is a bounded raw-u64
 stable-ID selection owned and canonicalized by Rust, while all temporal samples
 remain raw i64. A range/cursor/window/selection snapshot is decoded and committed as
 one Worker response; TypeScript neither sorts IDs nor applies partial state.
-`SCENE_VERSION` remains independently versioned and is 30 for this contract.
+`SCENE_VERSION` remains independently versioned and is 31 for this contract.
 `scripts/gen_wasm_abi.py --check` rejects parameter/result drift among
 the manifest, raw Rust exports, generated TypeScript declarations, and the Rust
 scene constant, including aggregate and temporal lifecycle exports. `js/package-wasm.mjs` parses the compiled module's type,
@@ -312,7 +312,7 @@ in descriptor byte 2. TypeScript therefore never interprets an authored u64 as
 an internal namespace, while pick identity round-trips unchanged.
 
 Painter contract v14 begins with `XYPB`, independent painter version 14, canonical
-Scene v30 (`SCENE_VERSION = 30`), a 300-byte header, 64-byte trace descriptors, viewport/plot f32
+Scene v31 (`SCENE_VERSION = 31`), a 300-byte header, 64-byte trace descriptors, viewport/plot f32
 bounds, bounded trace and tick counts, and absolute offsets to the tick and
 UTF-8 label tables. Header bytes 64–263 are the exact validated Scene v23
 chrome style input (backgrounds plus x/y side, masks, paints, and major/minor

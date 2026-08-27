@@ -7,16 +7,16 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 30 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 31 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in Scene v30, so additive emission is not safe.
+bitmap or schema negotiation in Scene v31, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
 `validate_scene_batch` is the allocation-free Rust decoder used by the #59
-WASM lifecycle foundation; it validates the current Scene v30 batch layout,
+WASM lifecycle foundation; it validates the current Scene v31 batch layout,
 including the shared fixed 160-byte Cartesian header/mark widths retained
 since version 4 (only the version u32 at offset 4 changes for Cartesian
 scenes), bounds, reserved bytes, kinds, style references, finite coordinates,
@@ -368,8 +368,12 @@ admits flattened `curve="smooth"` polylines: hosts pack the same compact knots
 as a linear line with pack `step_mode=4`, which Rust maps to expansion
 `CurveFlatten=11` and densifies through `geom::curve_flatten` (`SCENE_CURVE_STEPS=16`
 samples per increasing span; `n<3` stays identity). The public-export style
-allowlist includes `curve` for `KIND_LINE`. Area smooth, polar+smooth, step+smooth,
-and authored markers stay on the compatibility exporters.
+allowlist includes `curve` for `KIND_LINE`. ABI 141 / Scene v31 admits flattened
+cartesian `area(curve="smooth")` bands: hosts pack the same compact Band knots
+with pack `step_mode=4`, which Rust maps to expansion `BandFlatten=12` and
+densifies top and base through `geom::curve_flatten`. The public-export style
+allowlist includes `curve` for `KIND_AREA`. Polar+smooth, step+smooth,
+error-band smooth, and authored markers stay on the compatibility exporters.
 
 ABI 110 adds `xyg_scene_pack_legend` so both hosts pass loc/flags/paints
 and receive XYLG bytes; header layout, text offsets, and bounded-text
@@ -1199,8 +1203,9 @@ compatibility. ABI 138 / Scene v28 adds the XYDS constant-dash sidecar so
 dashed polylines compile on Scene. ABI 139 / Scene v29 adds the XYLC
 constant-linecap sidecar so butt/square caps compile on Scene. ABI 140 /
 Scene v30 adds `CurveFlatten=11` so cartesian `curve="smooth"` polylines
-compile as denser Scene polylines; area smooth and authored markers stay
-compatibility. ABI 116 does not change Scene records either;
+compile as denser Scene polylines; ABI 141 / Scene v31 adds `BandFlatten=12`
+so cartesian `area(curve="smooth")` compiles as denser Scene Bands. Polar
+smooth, error-band smooth, and authored markers stay compatibility. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;
 `xyg_scene_figure_support_reason` owns figure-compile support from packed

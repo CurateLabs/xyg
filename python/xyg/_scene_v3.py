@@ -921,7 +921,7 @@ def _figure_trace_support_flags(trace: Any, *, polar: bool = False) -> tuple[int
     if curve is not None:
         curve_name = str(curve).strip().lower()
         if curve_name == "smooth":
-            if polar or kind != "line" or style.get("step") is not None:
+            if polar or kind not in {"line", "area"} or style.get("step") is not None:
                 flags |= _XYFS_TRACE_DASHED_MARKERS
         elif curve_name != "linear":
             flags |= _XYFS_TRACE_DASHED_MARKERS
@@ -1367,6 +1367,9 @@ def figure_scene(
                 raise UnsupportedSceneV3("Scene v25 area stroke_perimeter must be a boolean")
             if stroke_perimeter:
                 flags |= _PACK_FLAG_STROKE_PERIMETER
+            curve = style.get("curve")
+            if curve is not None and str(curve).strip().lower() == "smooth":
+                step_mode = 4
         elif trace.kind == "line":
             where = style.get("step")
             curve = style.get("curve")

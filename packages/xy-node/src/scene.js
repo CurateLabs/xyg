@@ -1645,7 +1645,7 @@ export function sceneBatchEncode({
   const symbolCodes = asUnsignedArray(symbols, "symbols", 255, Uint8Array);
   const expansionModeCodes = expansionModes == null
     ? new Uint8Array(kindArray.length)
-    : asUnsignedArray(expansionModes, "expansionModes", 11, Uint8Array);
+    : asUnsignedArray(expansionModes, "expansionModes", 12, Uint8Array);
   const fills = new Uint8Array(styles.length * 4);
   const strokes = new Uint8Array(styles.length * 4);
   const widths = new Float64Array(styles.length);
@@ -2804,7 +2804,7 @@ function figureTraceSupport(figure, trace) {
     const curveName = String(curve).trim().toLowerCase();
     const polar = (figure.coords ?? "cartesian") === "polar";
     if (curveName === "smooth") {
-      if (polar || kind !== "line" || style.step != null) flags |= XYFS_TRACE_DASHED_MARKERS;
+      if (polar || (kind !== "line" && kind !== "area") || style.step != null) flags |= XYFS_TRACE_DASHED_MARKERS;
     } else if (curveName !== "linear") {
       flags |= XYFS_TRACE_DASHED_MARKERS;
     }
@@ -2934,6 +2934,10 @@ export function figureSceneV3(figure, { margins = null } = {}) {
         throw new RangeError("Scene v25 area stroke_perimeter must be a boolean");
       }
       if (strokePerimeter) flags |= FLAG_STROKE_PERIMETER;
+      const curve = style.curve;
+      if (curve != null && String(curve).trim().toLowerCase() === "smooth") {
+        stepMode = 4;
+      }
     } else if (trace.kind === "line") {
       const where = style.step;
       const curve = style.curve;

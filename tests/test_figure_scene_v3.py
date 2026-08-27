@@ -317,6 +317,8 @@ def test_python_expansion_mode_ingress_fails_closed_before_scene_encoding() -> N
     with pytest.raises(ValueError, match="equal length"):
         _native.scene_batch_encode(**base, expansion_modes=[1])
     with pytest.raises(ValueError, match="unsigned integer range"):
+        _native.scene_batch_encode(**base, expansion_modes=[13, 13])
+    with pytest.raises(ValueError, match="invalid canonical scene batch"):
         _native.scene_batch_encode(**base, expansion_modes=[12, 12])
     with pytest.raises(ValueError, match="invalid canonical scene batch"):
         _native.scene_batch_encode(**{**base, "kinds": [0, 0]}, expansion_modes=[1, 1])
@@ -741,7 +743,7 @@ def test_python_scene_v8_authors_backgrounds_axis_side_and_major_minor_ticks() -
         },
     )
     encoded = figure.to_scene()
-    assert int.from_bytes(encoded[4:8], "little") == 30
+    assert int.from_bytes(encoded[4:8], "little") == 31
     svg = _native.scene_svg(encoded)
     assert 'fill="rgba(16,32,48,1.000000)"' in svg
     assert 'fill="rgba(241,245,249,1.000000)"' in svg
@@ -791,7 +793,7 @@ def test_scene_v10_explicit_hidden_cartesian_chrome_stays_cartesian() -> None:
 
     figure.coords = "polar"
     polar = figure.to_scene()
-    assert polar[4:8] == (30).to_bytes(4, "little")
+    assert polar[4:8] == (31).to_bytes(4, "little")
     assert polar[-92:-88] == b"XYPL"
 
 
@@ -810,7 +812,7 @@ def test_python_scene_compiles_ribbon_and_triangle_mesh() -> None:
     ribbon.axis_options["y"]["domain"] = (0.0, 1.0)
     ribbon.ribbon([0.1], [0.9], [0.2], [0.5], [0.3], [0.7], color="#7c3aed")
     scene = ribbon.to_scene()
-    assert scene[4:8] == (30).to_bytes(4, "little")
+    assert scene[4:8] == (31).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     assert '<path d="M ' in svg
     assert ' Z"' in svg
@@ -908,7 +910,7 @@ def test_python_scene_compiles_area_and_error_band() -> None:
         expected = FIXTURE["band_outlines"][mode]
         assert scene == base64.b64decode(expected["scene_base64"])
         assert hashlib.sha256(scene).hexdigest() == expected["sha256"]
-        assert scene[4:8] == (30).to_bytes(4, "little")
+        assert scene[4:8] == (31).to_bytes(4, "little")
         assert scene[160:168] == bytes((57, 135, 229, 102, 17, 34, 51, 26))
         assert scene[160 + 16 + 2] == symbol
         svg = _native.scene_svg(scene)
@@ -1054,7 +1056,7 @@ def test_python_scene_attached_label_background_uses_xyal_v3_and_rust_box() -> N
     figure = representative_figure()
     figure.marker(2.0, 2.0, text="threshold", style={"label_background": "#ffffff"})
     scene = figure.to_scene()
-    assert scene[:8] == b"XYGS\x1e\x00\x00\x00"
+    assert scene[:8] == b"XYGS\x1f\x00\x00\x00"
     assert b"XYLB\x03\x00\x00\x00" in scene
     svg = _native.scene_svg(scene)
     assert "threshold" in svg
@@ -1071,7 +1073,7 @@ def test_python_scene_compiles_rect_family_aliases(kind: str) -> None:
     else:
         figure.histogram([1.0, 1.5, 2.0, 2.5, 3.0], bins=4, range=(0.0, 4.0), color="#22c55e")
     scene = figure.to_scene()
-    assert scene[4:8] == (30).to_bytes(4, "little")  # SCENE_VERSION
+    assert scene[4:8] == (31).to_bytes(4, "little")  # SCENE_VERSION
     svg = _native.scene_svg(scene)
     assert svg.count("<rect ") >= 2  # plot clip plus at least one bar
     assert 'clip-path="url(#xy-scene-plot)"' in svg
@@ -1095,7 +1097,7 @@ def test_python_scene_compiles_cartesian_density_blit() -> None:
     figure.axis_options["y"]["domain"] = (-1.0, 1.0)
     figure.scatter([0.0] * 200_000, [0.0] * 200_000, density=True, color="#3987e5")
     scene = figure.to_scene()
-    assert scene[4:8] == (30).to_bytes(4, "little")
+    assert scene[4:8] == (31).to_bytes(4, "little")
     assert b"XYIM" in scene
     svg = _native.scene_svg(scene)
     assert svg.count("<image") == 1
@@ -1168,7 +1170,7 @@ def test_python_scene_compiles_constant_dash_polylines() -> None:
     figure.axis_options["y"]["domain"] = (0.0, 2.0)
     figure.line([0.0, 1.0, 2.0], [0.0, 1.0, 0.5], color="#ef4444", width=2.0, dash="dashed")
     scene = figure.to_scene()
-    assert scene[4:8] == (30).to_bytes(4, "little")
+    assert scene[4:8] == (31).to_bytes(4, "little")
     assert b"XYDS" in scene
     svg = _native.scene_svg(scene)
     assert 'stroke-dasharray="6,4"' in svg
@@ -1192,7 +1194,7 @@ def test_python_scene_compiles_constant_linecap_polylines() -> None:
         style={"stroke-linecap": "butt"},
     )
     scene = figure.to_scene()
-    assert scene[4:8] == (30).to_bytes(4, "little")
+    assert scene[4:8] == (31).to_bytes(4, "little")
     assert b"XYLC" in scene
     svg = _native.scene_svg(scene)
     assert 'stroke-linecap="butt"' in svg
@@ -1226,7 +1228,7 @@ def test_python_scene_compiles_smooth_polylines() -> None:
         curve="smooth",
     )
     scene = figure.to_scene()
-    assert scene[4:8] == (30).to_bytes(4, "little")
+    assert scene[4:8] == (31).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     linear = Figure(width=240, height=160)
     linear.axis_options["x"]["domain"] = (0.0, 2.0)
@@ -1274,3 +1276,51 @@ def test_python_scene_compiles_smooth_polylines() -> None:
     marked.traces[-1].style["marker_path"] = "M0 0"
     with pytest.raises(UnsupportedSceneV3, match="authored markers"):
         marked.to_scene()
+
+
+def _closed_path_point_count(svg: str) -> int:
+    counts = []
+    for path in re.findall(r'<path d="([^"]+)"', svg):
+        if "Z" not in path:
+            continue
+        tokens = path.replace("Z", " ").replace("M", " ").replace("L", " ").split()
+        counts.append(len(tokens) // 2)
+    assert counts
+    return max(counts)
+
+
+def test_python_scene_compiles_smooth_areas() -> None:
+    figure = Figure(width=240, height=160)
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    figure.area(
+        [0.0, 1.0, 2.0],
+        [0.0, 1.0, 0.5],
+        color="#ef4444",
+        curve="smooth",
+    )
+    scene = figure.to_scene()
+    assert scene[4:8] == (31).to_bytes(4, "little")
+    svg = _native.scene_svg(scene)
+    linear = Figure(width=240, height=160)
+    linear.axis_options["x"]["domain"] = (0.0, 2.0)
+    linear.axis_options["y"]["domain"] = (0.0, 2.0)
+    linear.area([0.0, 1.0, 2.0], [0.0, 1.0, 0.5], color="#ef4444")
+    linear_svg = _native.scene_svg(linear.to_scene())
+    expected = 1 + (3 - 1) * 16
+    assert _closed_path_point_count(svg) == expected * 2
+    assert _closed_path_point_count(linear_svg) == 3 * 2
+    assert figure.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(figure) is None
+
+    short = Figure(width=240, height=160)
+    short.axis_options["x"]["domain"] = (0.0, 1.0)
+    short.axis_options["y"]["domain"] = (0.0, 1.0)
+    short.area([0.0, 1.0], [0.0, 1.0], curve="smooth")
+    assert _scene_v3.scene_export_support_reason(short) is None
+    short.to_scene()
+
+    polar = Figure(coords="polar")
+    polar.area([0.0, 1.0, 2.0], [0.0, 1.0, 0.5], curve="smooth")
+    with pytest.raises(UnsupportedSceneV3, match="authored markers"):
+        polar.to_scene()

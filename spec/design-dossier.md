@@ -1432,8 +1432,10 @@ polylines as an XYDS sidecar (raw XYDS extras or XYEX v2) so SVG/raster emit
 `stroke-dasharray`. ABI 139 / Scene v29 compiles constant non-round linecaps as
 an XYLC sidecar (raw XYLC, XYDS+XYLC concat, or XYEX v2) so SVG/raster emit
 `stroke-linecap`. ABI 140 / Scene v30 compiles cartesian `curve="smooth"`
-polylines as denser Scene polylines (`CurveFlatten=11`); area smooth and
-authored markers stay compatibility.
+polylines as denser Scene polylines (`CurveFlatten=11`); ABI 141 / Scene v31
+compiles cartesian `area(curve="smooth")` as denser Scene Bands
+(`BandFlatten=12`). Polar smooth, error-band smooth, and authored markers stay
+compatibility.
 Irregular
 spacing, and LOD stay compatibility.
 

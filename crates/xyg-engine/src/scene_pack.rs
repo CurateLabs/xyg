@@ -7,6 +7,7 @@
 //! doubling, rule/band/marker domain expansion, and finite-coordinate
 //! rejection so Python and Node cannot drift on the packed row contract.
 //! ABI 140 maps line `step_mode=4` onto expansion `CurveFlatten=11`.
+//! ABI 141 maps band `step_mode=4` onto expansion `BandFlatten=12`.
 
 use crate::scene::MAX_SCENE_MARKS;
 
@@ -44,6 +45,7 @@ const EXP_TRIANGLE: u8 = 8;
 const EXP_HEATMAP_PAINTED: u8 = 9;
 const EXP_DENSITY_BLIT: u8 = 10;
 const EXP_CURVE_FLATTEN: u8 = 11;
+const EXP_BAND_FLATTEN: u8 = 12;
 
 /// Why a pack request was rejected. Discriminants are the C-ABI error codes
 /// (returned negated by `xyg_scene_pack_trace`).
@@ -308,7 +310,10 @@ pub fn pack_trace(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, Pack
     if input.step_mode > 4 {
         return Err(PackError::Length);
     }
-    if input.pack_kind != PACK_LINE && input.step_mode != 0 {
+    if input.step_mode != 0 && input.pack_kind != PACK_LINE && input.pack_kind != PACK_BAND {
+        return Err(PackError::Length);
+    }
+    if input.pack_kind == PACK_BAND && input.step_mode != 0 && input.step_mode != 4 {
         return Err(PackError::Length);
     }
     match input.pack_kind {
@@ -408,6 +413,11 @@ fn pack_band(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, PackError
     } else {
         1
     };
+    let expansion = if input.step_mode == 4 {
+        EXP_BAND_FLATTEN
+    } else {
+        EXP_NONE
+    };
     let mut out = Vec::with_capacity(cols[0].len());
     for index in 0..cols[0].len() {
         let x = cols[0][index];
@@ -416,7 +426,7 @@ fn pack_band(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, PackError
             PackedSceneRow {
                 kind: KIND_BAND,
                 symbol: outline,
-                expansion_mode: EXP_NONE,
+                expansion_mode: expansion,
                 style_ref: input.style_ref,
                 stable_id: input.trace_id,
                 diameter: 0.0,
@@ -965,6 +975,48 @@ mod tests {
                 extra0: 0.0,
                 extra1: 0.0,
                 columns: &[&x, &y],
+            }),
+            Err(PackError::Length)
+        );
+    }
+
+    #[test]
+    fn smooth_area_packs_band_flatten_expansion() {
+        let x = [0.0, 1.0, 2.0];
+        let y = [0.0, 1.0, 0.5];
+        let base = [0.0, 0.0, 0.0];
+        let rows = pack_trace(TracePackInput {
+            pack_kind: PACK_BAND,
+            flags: 0,
+            step_mode: 4,
+            symbol: 0,
+            style_ref: 0,
+            trace_id: 11,
+            diameter: 0.0,
+            extra0: 0.0,
+            extra1: 0.0,
+            columns: &[&x, &y, &base],
+        })
+        .unwrap();
+        assert_eq!(rows.len(), 3);
+        assert!(rows.iter().all(|row| {
+            row.expansion_mode == EXP_BAND_FLATTEN
+                && row.kind == KIND_BAND
+                && row.x0 == row.x1
+                && row.symbol == 1
+        }));
+        assert_eq!(
+            pack_trace(TracePackInput {
+                pack_kind: PACK_BAND,
+                flags: 0,
+                step_mode: 1,
+                symbol: 0,
+                style_ref: 0,
+                trace_id: 0,
+                diameter: 0.0,
+                extra0: 0.0,
+                extra1: 0.0,
+                columns: &[&x, &y, &base],
             }),
             Err(PackError::Length)
         );

@@ -176,6 +176,8 @@ crates/
                         #   sidecar after XYDS.
                         #   ABI 140 / Scene v30 expands `curve="smooth"`
                         #   polylines through `CurveFlatten=11`.
+                        #   ABI 141 / Scene v31 expands `area(curve="smooth")`
+                        #   through `BandFlatten=12`.
     scene_pack.rs       # compact Figure→Scene row packing (ABI 109): record
                         #   kinds, stable-id splitting, expansion modes,
                         #   ribbon/triangle doubling, heatmap lattice framing,
@@ -183,7 +185,8 @@ crates/
                         #   rule/band/marker domain expansion, and ABI 136
                         #   product-kind → pack-kind mapping plus ABI 137
                         #   DensityBlit heatmap-extent packing plus ABI 140
-                        #   line `step_mode=4` → `CurveFlatten=11`.
+                        #   line `step_mode=4` → `CurveFlatten=11` plus ABI 141
+                        #   band `step_mode=4` → `BandFlatten=12`.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -700,5 +703,6 @@ landed; the remainder, in order:
    `xyg_scene_pack_product`) ✅; ABI 137 / Scene v27 `DensityBlit=10` Image
    blit + XYIM sidecar (`scene.rs`) ✅; ABI 138 / Scene v28 XYDS constant dash
    (`scene.rs`) ✅; ABI 139 / Scene v29 XYLC constant linecap (`scene.rs`) ✅;
-   ABI 140 / Scene v30 `CurveFlatten=11` smooth polylines (`scene.rs`) ✅.
+   ABI 140 / Scene v30 `CurveFlatten=11` smooth polylines (`scene.rs`) ✅;
+   ABI 141 / Scene v31 `BandFlatten=12` smooth areas (`scene.rs`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

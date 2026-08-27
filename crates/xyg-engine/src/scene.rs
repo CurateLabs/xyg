@@ -13,7 +13,7 @@ use crate::svg::push_num;
 use std::collections::HashMap;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 30;
+pub const SCENE_VERSION: u32 = 31;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -3453,8 +3453,8 @@ impl SceneRecordKind {
 /// Compact authored expansion mode accepted by the whole-Scene ABI. The enum is
 /// deliberately not serialized into Scene: Rust expands compact step,
 /// ribbon, hex-cell, heatmap-lattice, painted-heatmap, segment-pair,
-/// triangle-face, density-blit, and curve-flatten inputs to ordinary canonical
-/// records before Scene v30 encoding.
+/// triangle-face, density-blit, curve-flatten, and band-flatten inputs to
+/// ordinary canonical records before Scene v31 encoding.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(u8)]
 pub enum SceneExpansionMode {
@@ -3483,6 +3483,11 @@ pub enum SceneExpansionMode {
     /// Runs shorter than three vertices stay identity so `n<3` smooth lines
     /// match the compatibility `curve_points` fallback.
     CurveFlatten = 11,
+    /// Compact Band knots flatten top (`y0`) and base (`y1`) through
+    /// `geom::curve_flatten` into a denser Band run. Shared `x0` (`x0==x1`)
+    /// parameterization matches cartesian `area(curve="smooth")`. `n<3` stays
+    /// identity so short filled bands match the compatibility fallback.
+    BandFlatten = 12,
 }
 
 impl SceneExpansionMode {
@@ -3500,6 +3505,7 @@ impl SceneExpansionMode {
             9 => Ok(Self::HeatmapPainted),
             10 => Ok(Self::DensityBlit),
             11 => Ok(Self::CurveFlatten),
+            12 => Ok(Self::BandFlatten),
             _ => Err(SceneError::Length),
         }
     }
@@ -3510,7 +3516,7 @@ impl SceneExpansionMode {
             Self::Pre | Self::Mid | Self::Post | Self::SegmentPair | Self::CurveFlatten => {
                 Some(SceneRecordKind::Polyline as u8)
             }
-            Self::Ribbon => Some(SceneRecordKind::Band as u8),
+            Self::Ribbon | Self::BandFlatten => Some(SceneRecordKind::Band as u8),
             Self::HexCell | Self::TriangleFace => Some(SceneRecordKind::PolyFill as u8),
             Self::HeatmapLattice | Self::HeatmapPainted | Self::DensityBlit => {
                 Some(SceneRecordKind::Rect as u8)
@@ -4702,7 +4708,10 @@ pub fn expand_scene_records_painted(
                 || input.style_refs[index] != style_ref
                 || SceneExpansionMode::from_code(input.expansion_modes[index])? != mode
                 || (!mode.allows_nonzero_diameter() && input.diameter[index] != 0.0)
-                || (mode != SceneExpansionMode::Ribbon && input.symbols[index] != 0)
+                || (!matches!(
+                    mode,
+                    SceneExpansionMode::Ribbon | SceneExpansionMode::BandFlatten
+                ) && input.symbols[index] != 0)
             {
                 return Err(SceneError::Length);
             }
@@ -4720,6 +4729,13 @@ pub fn expand_scene_records_painted(
                     | SceneExpansionMode::Post
                     | SceneExpansionMode::CurveFlatten
             ) && (input.x1[index] != 0.0 || input.y1[index] != 0.0)
+            {
+                return Err(SceneError::Length);
+            }
+            if mode == SceneExpansionMode::BandFlatten
+                && (input.symbols[index] != input.symbols[cursor]
+                    || input.x0[index] != input.x1[index]
+                    || BandOutline::from_code(input.symbols[index]).is_err())
             {
                 return Err(SceneError::Length);
             }
@@ -4811,7 +4827,7 @@ pub fn expand_scene_records_painted(
                 }
                 3
             }
-            SceneExpansionMode::CurveFlatten => {
+            SceneExpansionMode::CurveFlatten | SceneExpansionMode::BandFlatten => {
                 curve_flatten_required(&input.x0[cursor..run_end])?
             }
         };
@@ -4990,6 +5006,60 @@ pub fn expand_scene_records_painted(
             cursor = run_end;
             continue;
         }
+        if mode == SceneExpansionMode::BandFlatten {
+            let compact_x = &input.x0[cursor..run_end];
+            let compact_top = &input.y0[cursor..run_end];
+            let compact_base = &input.y1[cursor..run_end];
+            let outline = input.symbols[cursor];
+            if compact_x.len() < 3 {
+                for index in cursor..run_end {
+                    output.push_source(&input, index);
+                }
+                cursor = run_end;
+                continue;
+            }
+            let required = curve_flatten_required(compact_x)?;
+            let mut flat_x = vec![0.0; required];
+            let mut flat_top = vec![0.0; required];
+            let mut flat_base = vec![0.0; required];
+            let written_top = geom::curve_flatten(
+                compact_x,
+                compact_top,
+                SCENE_CURVE_STEPS,
+                &mut flat_x,
+                &mut flat_top,
+            )
+            .ok_or(SceneError::Length)?;
+            let mut unused_x = vec![0.0; required];
+            let written_base = geom::curve_flatten(
+                compact_x,
+                compact_base,
+                SCENE_CURVE_STEPS,
+                &mut unused_x,
+                &mut flat_base,
+            )
+            .ok_or(SceneError::Length)?;
+            if written_top != required || written_base != required {
+                return Err(SceneError::Length);
+            }
+            for index in 0..written_top {
+                if !flat_x[index].is_finite()
+                    || !flat_top[index].is_finite()
+                    || !flat_base[index].is_finite()
+                {
+                    return Err(SceneError::NonFinite);
+                }
+                output.push_ribbon_sample(
+                    stable_id,
+                    style_ref,
+                    outline,
+                    [flat_x[index], flat_top[index]],
+                    [flat_x[index], flat_base[index]],
+                );
+            }
+            cursor = run_end;
+            continue;
+        }
         output.push_step(stable_id, style_ref, input.x0[cursor], input.y0[cursor]);
         for index in cursor + 1..run_end {
             let previous = index - 1;
@@ -5025,7 +5095,8 @@ pub fn expand_scene_records_painted(
                 | SceneExpansionMode::DensityBlit
                 | SceneExpansionMode::SegmentPair
                 | SceneExpansionMode::TriangleFace
-                | SceneExpansionMode::CurveFlatten => unreachable!(),
+                | SceneExpansionMode::CurveFlatten
+                | SceneExpansionMode::BandFlatten => unreachable!(),
             }
         }
         cursor = run_end;
@@ -11483,6 +11554,92 @@ mod tests {
         assert_eq!(short.y0, [0.0, 1.0]);
     }
 
+    fn compact_band_input<'a>(
+        kinds: &'a [u8],
+        ids: &'a [u64],
+        styles: &'a [u32],
+        zeros: &'a [f64],
+        symbols: &'a [u8],
+        x: &'a [f64],
+        y: &'a [f64],
+        base: &'a [f64],
+        modes: &'a [u8],
+    ) -> SceneExpansionInput<'a> {
+        SceneExpansionInput {
+            kinds,
+            stable_ids: ids,
+            style_refs: styles,
+            diameter: zeros,
+            symbols,
+            x0: x,
+            y0: y,
+            x1: x,
+            y1: base,
+            expansion_modes: modes,
+        }
+    }
+
+    #[test]
+    fn band_flatten_expansion_emits_expected_vertex_count() {
+        let kinds = [3u8; 3];
+        let ids = [42u64; 3];
+        let styles = [7u32; 3];
+        let zeros = [0.0; 3];
+        let symbols = [BandOutline::Top as u8; 3];
+        let x = [0.0, 1.0, 2.0];
+        let y = [0.0, 1.0, 0.5];
+        let base = [0.0, 0.0, 0.0];
+        let modes = [SceneExpansionMode::BandFlatten as u8; 3];
+        let expanded = expand_scene_records(
+            compact_band_input(&kinds, &ids, &styles, &zeros, &symbols, &x, &y, &base, &modes),
+            test_linear_x_scale(),
+            test_linear_y_scale(),
+        )
+        .unwrap();
+        let expected = 1 + (x.len() - 1) * SCENE_CURVE_STEPS;
+        assert_eq!(expanded.kinds.len(), expected);
+        assert_eq!(expanded.x0[0], 0.0);
+        assert_eq!(expanded.y0[0], 0.0);
+        assert_eq!(expanded.x1[0], 0.0);
+        assert_eq!(expanded.y1[0], 0.0);
+        assert_eq!(expanded.x0[SCENE_CURVE_STEPS], 1.0);
+        assert_eq!(expanded.y0[SCENE_CURVE_STEPS], 1.0);
+        assert_eq!(expanded.x0[expected - 1], 2.0);
+        assert_eq!(expanded.y0[expected - 1], 0.5);
+        assert!(expanded.kinds.iter().all(|kind| *kind == 3));
+        assert!(expanded.stable_ids.iter().all(|id| *id == 42));
+        assert!(expanded.symbols.iter().all(|symbol| *symbol == BandOutline::Top as u8));
+        assert!(expanded
+            .x0
+            .iter()
+            .zip(expanded.x1.iter())
+            .all(|(left, right)| left == right));
+
+        let short = expand_scene_records(
+            compact_band_input(
+                &[3, 3],
+                &[9, 9],
+                &[0, 0],
+                &[0.0, 0.0],
+                &[BandOutline::Top as u8, BandOutline::Top as u8],
+                &[0.0, 1.0],
+                &[0.0, 1.0],
+                &[0.0, 0.0],
+                &[
+                    SceneExpansionMode::BandFlatten as u8,
+                    SceneExpansionMode::BandFlatten as u8,
+                ],
+            ),
+            test_linear_x_scale(),
+            test_linear_y_scale(),
+        )
+        .unwrap();
+        assert_eq!(short.x0, [0.0, 1.0]);
+        assert_eq!(short.y0, [0.0, 1.0]);
+        assert_eq!(short.y1, [0.0, 0.0]);
+        assert!(short.kinds.iter().all(|kind| *kind == 3));
+    }
+
     #[test]
     fn compact_steps_preserve_empty_singleton_and_distinct_runs() {
         let empty = expand_scene_records(
@@ -11549,6 +11706,7 @@ mod tests {
         assert_eq!(base(&[0], &[0], &[1.0], &[1]), Err(SceneError::Length));
         assert_eq!(base(&[1], &[0], &[1.0], &[4]), Err(SceneError::Length));
         assert_eq!(base(&[1], &[0], &[1.0], &[12]), Err(SceneError::Length));
+        assert_eq!(base(&[1], &[0], &[1.0], &[13]), Err(SceneError::Length));
         assert_eq!(
             base(&[1, 1], &[0, 1], &[1.0, 2.0], &[1, 1]),
             Err(SceneError::Length)
@@ -12113,7 +12271,7 @@ mod tests {
         .with_dashes(&xyds)
         .unwrap()
         .encode();
-        assert_eq!(&encoded[4..8], &30u32.to_le_bytes());
+        assert_eq!(&encoded[4..8], &31u32.to_le_bytes());
         assert!(encoded.windows(4).any(|window| window == b"XYDS"));
         let document = SceneDocument::decode(&encoded).unwrap();
         let svg = document.to_svg();
@@ -12141,7 +12299,7 @@ mod tests {
         )
         .unwrap()
         .encode();
-        assert_eq!(&undashed[4..8], &30u32.to_le_bytes());
+        assert_eq!(&undashed[4..8], &31u32.to_le_bytes());
         assert!(!undashed.windows(4).any(|window| window == b"XYDS"));
     }
 
@@ -12178,7 +12336,7 @@ mod tests {
         .with_dashes(&xylc)
         .unwrap()
         .encode();
-        assert_eq!(&encoded[4..8], &30u32.to_le_bytes());
+        assert_eq!(&encoded[4..8], &31u32.to_le_bytes());
         assert!(encoded.windows(4).any(|window| window == b"XYLC"));
         let document = SceneDocument::decode(&encoded).unwrap();
         let svg = document.to_svg();
@@ -12791,7 +12949,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 30);
+        assert_eq!(SCENE_VERSION, 31);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
