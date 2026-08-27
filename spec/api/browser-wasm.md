@@ -88,8 +88,11 @@ those exact URLs. Missing or blob/data/CDN values fail closed
 (`xy:wasm_ticks_error`) and do not guess a path. The srcdoc notebook iframe
 and default offline `to_html()` string stay on the JavaScript tick path
 because they cannot load sibling module Workers. Reflex `register()` links
-the same two files beside `xy_client.js` when they are packaged; wiring
-`XYChart` to attach is follow-up. It never uses eval, Blob/data Workers,
+the same two files beside `xy_client.js` when they are packaged, and
+`XYChart` auto-attaches them via `spec.wasm_ticks` plus `attachHostWasmTicks`
+(relative `./wasm-worker.js` and `./xyg-wasm.wasm`, resolved against the
+wrapper module). Browser E2E of that attach may remain; Related to #59;
+that issue stays open. It never uses eval, Blob/data Workers,
 guessed paths, a CDN, implicit asset lookup, synchronous main-thread WASM,
 or JavaScript tick generation for a covered attached axis.
 

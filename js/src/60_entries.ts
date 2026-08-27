@@ -291,6 +291,7 @@ export {
   XygWasmError,
   XygWasmWorker,
   attachWasmTicks,
+  attachHostWasmTicks,
   decodeWasmTickBatch,
   encodeWasmTickBatch,
   resolveWasmTicks,

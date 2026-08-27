@@ -209,9 +209,9 @@ annotation input remains accepted. WASM ABI 23 adds a bounded, atomic Worker
 foundation for Rust-owned f64 linear/log/symlog/category/angular/UTC-time
 values, steps, and formatting. Attached automatic, authored-value, and
 authored-empty primary Cartesian linear/log/symlog/category/UTC-time ChartView
-axes already use that lifecycle via `attachWasmTicks`. Hosted `to_html()` and
-notebook widgets attach when they pass explicit Worker/WASM URLs; srcdoc
-notebooks, Reflex XYChart auto-attach, and secondary/polar/colorbar paths
+axes already use that lifecycle via `attachWasmTicks`. Hosted `to_html()`,
+notebook widgets, and Reflex `XYChart` attach when they pass explicit
+Worker/WASM URLs; srcdoc notebooks and secondary/polar/colorbar paths
 remain #59 work.
 
 For the migrated subset, public Python SVG and native PNG now use the Rust

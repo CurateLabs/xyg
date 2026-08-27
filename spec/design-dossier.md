@@ -585,9 +585,9 @@ F3, still pending (above).
   labels through an atomic, bounded Worker request. `attachWasmTicks` now
   schedules attached automatic, authored-value, and authored-empty primary
   Cartesian linear/log/symlog/category/UTC-time ChartView
-  axes onto that lane. Hosted `to_html()` and notebook widgets attach via
-  packaged Worker/WASM URLs; polar/secondary/colorbar families, srcdoc
-  notebooks, and Reflex XYChart auto-attach remain #59 work.
+  axes onto that lane. Hosted `to_html()`, notebook widgets, and Reflex
+  `XYChart` attach via packaged Worker/WASM URLs; polar/secondary/colorbar
+  families and srcdoc notebooks remain #59 work.
   ABI 97 generalizes the parallel step-mode column to `expansion_modes` and
   removes static ribbon tessellation from the hosts. Python and Node pack two
   adjacent endpoint rows per finite literal solid ribbon; Rust applies the

@@ -67,24 +67,57 @@ def _link_static(asset_root: Path, source: Path, dest_name: str) -> None:
     dst.symlink_to(source)
 
 
+def _wasm_tick_sources() -> dict[str, Path] | None:
+    """Packaged Worker + WASM paths, or None if either file is absent.
+
+    Fail-closed: never return a partial pair and never invent a path or CDN.
+    """
+    import xyg
+
+    static_dir = Path(xyg.__file__).resolve().parent / "static"
+    sources = {name: static_dir / name for name in _WASM_TICK_ASSETS}
+    if all(path.is_file() for path in sources.values()):
+        return sources
+    return None
+
+
+def reflex_wasm_tick_urls() -> dict[str, str] | None:
+    """Explicit sibling URLs for XYChart auto-attach.
+
+    When both packaged files exist, returns the same mapping
+    ``resolve_wasm_tick_assets`` uses for hosted ``to_html()``:
+    ``{"workerUrl": "./wasm-worker.js", "wasm": "./xyg-wasm.wasm"}``.
+    Missing assets return None — never a guessed, Blob, or CDN URL.
+    """
+    from xyg.export import WASM_TICK_WASM, WASM_TICK_WORKER, resolve_wasm_tick_assets
+
+    if _wasm_tick_sources() is None:
+        return None
+    return resolve_wasm_tick_assets(
+        {
+            "worker_url": f"./{WASM_TICK_WORKER}",
+            "wasm": f"./{WASM_TICK_WASM}",
+        }
+    )
+
+
 def _link_client(asset_root: Path) -> None:
-    """Symlink the installed client and optional WASM tick assets.
+    """Symlink the installed client and packaged WASM tick assets.
 
     Unlike rx.asset's shared files (which live at a fixed path next to their
     module), the client's location moves whenever the ``xyg`` install
     does — so an existing link pointing at the wrong target is replaced, not
-    trusted. Tick assets are linked when packaged so a Reflex host can pass
-    explicit same-origin ``./wasm-worker.js`` and ``./xyg-wasm.wasm`` URLs;
-    attaching ``attachWasmTicks`` in XYChart remains a follow-up.
+    trusted. Tick assets are linked as a pair when packaged so XYChart can
+    attach ``attachHostWasmTicks`` with explicit same-origin
+    ``./wasm-worker.js`` and ``./xyg-wasm.wasm`` URLs. A missing file leaves
+    both unlinked rather than guessing a path.
     """
     _link_static(asset_root, _client_source(), _CLIENT_NAME)
-    import xyg
-
-    static_dir = Path(xyg.__file__).resolve().parent / "static"
-    for name in _WASM_TICK_ASSETS:
-        source = static_dir / name
-        if source.is_file():
-            _link_static(asset_root, source, name)
+    sources = _wasm_tick_sources()
+    if sources is None:
+        return
+    for name, source in sources.items():
+        _link_static(asset_root, source, name)
 
 
 def register() -> str:

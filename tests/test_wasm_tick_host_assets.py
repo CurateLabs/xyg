@@ -113,7 +113,13 @@ def test_client_and_export_contract_stay_fail_closed() -> None:
     assert "resolve_wasm_tick_assets" in export_src
     assert "wasm-worker.js" in reflex
     assert "xyg-wasm.wasm" in reflex
-    assert "follow-up" in reflex
+    assert "reflex_wasm_tick_urls" in reflex
+    assert "follow-up" not in reflex
+    jsx = (ROOT / "python" / "reflex_xy" / "assets" / "XYChart.jsx").read_text(encoding="utf-8")
+    assert "attachHostWasmTicks" in jsx
+    assert 'new URL("./wasm-worker.js", import.meta.url)' in jsx
+    assert 'new URL("./xyg-wasm.wasm", import.meta.url)' in jsx
+    assert "attachHostWasmTicks(view, spec)" in jsx
 
 
 def test_exported_spec_roundtrips_wasm_tick_urls() -> None:

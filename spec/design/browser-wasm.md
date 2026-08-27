@@ -42,12 +42,12 @@ remain eligible to retry.
 
 This cutover is deliberately explicit and bounded. Angular/polar, secondary
 axes, and colorbars retain their existing compatibility paths. Self-contained
-Blob-worker HTML remains ineligible. Hosted `to_html()`, notebook widget, and
-Reflex journeys can attach when they serve the packaged `wasm-worker.js` and
+Blob-worker HTML remains ineligible. Hosted `to_html()`, notebook widgets, and
+Reflex `XYChart` auto-attach when they serve the packaged `wasm-worker.js` and
 `xyg-wasm.wasm` files at explicit same-origin URLs (`workerUrl` stays required;
 there is no path guessing or CDN). The srcdoc notebook iframe cannot load those
 siblings and stays on the JavaScript tick path. Remaining #59 work is listed
-below and stays open.
+below and stays open. Related to #59; that issue stays open.
 
 ## Tier-2 aggregate seam (`XYAG` to `XYAO`)
 
@@ -617,9 +617,9 @@ PR CI or a CodSpeed simulation claim.
 ## Remaining #59 work
 
 - angular/polar, secondary-axis, and colorbar ChartView cutovers;
-- Reflex `XYChart` auto-attach and browser E2E for the packaged tick assets
-  (the wheel/Reflex link path and `to_html()` / notebook URL contract are
-  in place);
+- browser E2E for Reflex packaged tick-asset auto-attach (`XYChart` now
+  injects explicit `./wasm-worker.js` + `./xyg-wasm.wasm` and calls
+  `attachHostWasmTicks`; Related to #59; that issue stays open);
 - aggregate production paths beyond direct Scene records;
 - interpreted budgets/comparisons after collecting the SHA-keyed
   small-through-massive CodSpeed and browser artifacts; and

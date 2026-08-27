@@ -510,10 +510,18 @@ CDN. Beside it, `register()` links `xy_client.js` **out of the installed
 of the render client at all, so client/kernel drift is structurally
 impossible — the JS that renders a payload is always the build that shipped
 with the Python that produced it. When packaged, `register()` also links
-`wasm-worker.js` and `xyg-wasm.wasm` beside that client so a host can pass
-those explicit same-origin URLs to `attachWasmTicks`. Wiring `XYChart` to
-attach automatically is follow-up. One renderer for notebooks, static
-export, and Reflex.
+`wasm-worker.js` and `xyg-wasm.wasm` beside that client as a pair (a missing
+file leaves both unlinked). `XYChart` then auto-attaches hosted Rust/WASM
+ticks: both the static `renderStandalone` path and a live `ChartView`
+construction inject `wasm_ticks: { workerUrl, wasm }` pointing at those
+same-origin siblings (`./wasm-worker.js` and `./xyg-wasm.wasm`, resolved
+against `import.meta.url` so the Worker is page-path independent).
+`attachHostWasmTicks` / `attachWasmTicks` runs from that explicit mapping.
+Missing, blob, data, or protocol-relative CDN values fail closed
+(`xy:wasm_ticks_error`) and never guess a path. The srcdoc notebook iframe
+stays on the JavaScript tick path. Browser E2E of this attach remains
+later evidence; Related to #59; that issue stays open. One renderer for
+notebooks, static export, and Reflex.
 
 The wrapper: opens/reuses the shared namespace socket, `sub`s with the
 element's measured width, builds a `ChartView` for the first `payload`, and
