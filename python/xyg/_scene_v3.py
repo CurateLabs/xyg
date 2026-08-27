@@ -14,7 +14,7 @@ from typing import Any
 
 import numpy as np
 
-from . import _native
+from . import _native, channels
 from .config import DENSITY_GRID
 from .marks import _SYMBOL_CODES
 
@@ -731,6 +731,8 @@ def _constant_color(trace: Any, fallback: str) -> str:
     if channel is None:
         return str(trace.style.get("color", fallback))
     if channel.mode != "constant" or channel.constant is None:
+        if str(getattr(trace, "kind", "") or "") == "scatter" and trace.use_density():
+            return str((getattr(trace, "style", None) or {}).get("color", fallback))
         raise UnsupportedSceneV3("Scene v12 does not yet support data-driven paint channels")
     return channel.constant
 
@@ -902,6 +904,13 @@ def _rect_extra_flags(style: dict[str, Any]) -> int:
     return flags
 
 
+def _density_aggregates_color(trace: Any) -> bool:
+    """LOD doc §2: density scatter aggregates a color channel into the blit."""
+    if str(getattr(trace, "kind", "") or "") != "scatter" or not trace.use_density():
+        return False
+    return set(trace.per_item_channel_names()) <= {"color"}
+
+
 def _figure_trace_support_flags(trace: Any, *, polar: bool = False) -> tuple[int, str]:
     """Observe per-trace Scene allowlist bits; Rust owns the diagnostic."""
     kind = str(getattr(trace, "kind", "") or "mark")
@@ -911,7 +920,9 @@ def _figure_trace_support_flags(trace: Any, *, polar: bool = False) -> tuple[int
         flags |= _XYFS_TRACE_UNSUPPORTED_KIND
     if getattr(trace, "x_axis", "x") != "x" or getattr(trace, "y_axis", "y") != "y":
         flags |= _XYFS_TRACE_NON_PRIMARY_AXIS
-    if getattr(trace, "hidden", False) or trace.has_per_item_channels():
+    if getattr(trace, "hidden", False) or (
+        trace.has_per_item_channels() and not _density_aggregates_color(trace)
+    ):
         flags |= _XYFS_TRACE_HIDDEN_OR_PER_ITEM
     if kind == "scatter" and trace.use_density() and polar:
         flags |= _XYFS_TRACE_DENSITY
@@ -1139,6 +1150,31 @@ def _density_paint_plane(
     return header + payload
 
 
+def _mean_color_paint_plane(
+    encoded: np.ndarray,
+    mean_rgba: np.ndarray,
+    rows: int,
+    cols: int,
+    maximum: float,
+    opacity: float,
+    stable_id: int,
+) -> bytes:
+    """XYHP kind 4: log-u8 counts plus a row-0-bottom mean-color RGBA8 plane."""
+    encoded_u8 = np.ascontiguousarray(np.asarray(encoded, dtype=np.uint8).reshape(-1))
+    rgba_u8 = np.ascontiguousarray(np.asarray(mean_rgba, dtype=np.uint8).reshape(-1))
+    if encoded_u8.size != rows * cols:
+        raise UnsupportedSceneV3("Scene density grid must match DENSITY_GRID")
+    if rgba_u8.size != rows * cols * 4:
+        raise UnsupportedSceneV3("Scene mean-color plane must match DENSITY_GRID")
+    payload = (
+        struct.pack("<ddII", float(maximum), float(opacity), 0, 0)
+        + encoded_u8.tobytes()
+        + rgba_u8.tobytes()
+    )
+    header = struct.pack("<QIIII", int(stable_id), int(rows), int(cols), 4, len(payload))
+    return header + payload
+
+
 def _density_blit_pack(
     figure: Any, trace: Any
 ) -> tuple[float, float, bytes, list[np.ndarray | None]] | None:
@@ -1160,7 +1196,24 @@ def _density_blit_pack(
     cols, rows = DENSITY_GRID
     grid = _native.bin_2d(xv, yv, xr0, xr1, yr0, yr1, int(cols), int(rows))
     encoded, gmax = _native.density_log_u8(grid)
-    plane = _density_paint_plane(trace, encoded, int(rows), int(cols), float(gmax), int(trace.id))
+    bin_colors = channels.resolve_bin_colors(getattr(trace, "color_ch", None), None)
+    if bin_colors is not None:
+        mean_rgba = _native.bin_2d_mean_color(
+            xv, yv, xr0, xr1, yr0, yr1, int(cols), int(rows), **bin_colors
+        )
+        plane = _mean_color_paint_plane(
+            encoded,
+            mean_rgba,
+            int(rows),
+            int(cols),
+            float(gmax),
+            _density_opacity(getattr(trace, "style", None) or {}),
+            int(trace.id),
+        )
+    else:
+        plane = _density_paint_plane(
+            trace, encoded, int(rows), int(cols), float(gmax), int(trace.id)
+        )
     columns: list[np.ndarray | None] = [
         np.asarray([xr0, xr1], dtype=np.float64),
         np.asarray([yr0, yr1], dtype=np.float64),
@@ -2210,6 +2263,7 @@ def _pack_figure_support(
         or (
             getattr(trace, "color_ch", None) is not None
             and (trace.color_ch.mode != "constant" or trace.color_ch.constant is None)
+            and not (str(getattr(trace, "kind", "") or "") == "scatter" and trace.use_density())
         )
         for trace in figure.traces
     ):

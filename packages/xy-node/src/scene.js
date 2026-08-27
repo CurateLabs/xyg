@@ -52,7 +52,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, shouldUseDensity, u32Ptr, u8Ptr, bin2d, densityLogU8, DENSITY_GRID } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, shouldUseDensity, u32Ptr, u8Ptr, bin2d, bin2dMeanColor, densityLogU8, colormapNamedStops, DENSITY_GRID } from "./encode.js";
 import { cssColorRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -1167,6 +1167,34 @@ function densityPaintPlane(trace, encoded, rows, cols, maximum, stableId) {
   return out;
 }
 
+function meanColorPaintPlane(encoded, meanRgba, rows, cols, maximum, opacity, stableId) {
+  const encodedBytes = encoded instanceof Uint8Array ? encoded : Uint8Array.from(encoded);
+  const rgbaBytes = meanRgba instanceof Uint8Array ? meanRgba : Uint8Array.from(meanRgba);
+  if (encodedBytes.length !== rows * cols) {
+    throw new RangeError("Scene density grid must match DENSITY_GRID");
+  }
+  if (rgbaBytes.length !== rows * cols * 4) {
+    throw new RangeError("Scene mean-color plane must match DENSITY_GRID");
+  }
+  const payload = new Uint8Array(24 + encodedBytes.length + rgbaBytes.length);
+  const view = new DataView(payload.buffer);
+  view.setFloat64(0, Number(maximum), true);
+  view.setFloat64(8, Number(opacity), true);
+  view.setUint32(16, 0, true);
+  view.setUint32(20, 0, true);
+  payload.set(encodedBytes, 24);
+  payload.set(rgbaBytes, 24 + encodedBytes.length);
+  const out = new Uint8Array(24 + payload.length);
+  const header = new DataView(out.buffer);
+  header.setBigUint64(0, BigInt(stableId), true);
+  header.setUint32(8, rows, true);
+  header.setUint32(12, cols, true);
+  header.setUint32(16, 4, true);
+  header.setUint32(20, payload.length, true);
+  out.set(payload, 24);
+  return out;
+}
+
 function packXyhp(planes) {
   if (!planes.length) return new Uint8Array();
   const bodyLen = planes.reduce((sum, plane) => sum + plane.length, 0);
@@ -1980,9 +2008,8 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
     trace.color_target != null
     || (trace.style?.fill != null && typeof trace.style.fill === "object")
     || (
-      trace.color != null
-      && typeof trace.color === "object"
-      && (trace.color.mode !== "constant" || trace.color.color == null)
+      scatterHasNonConstantColor(trace)
+      && !scatterUsesDensity(trace)
     )
   ))) flags |= 1 << 3;
   if (colorbarUnsupported) flags |= 1 << 4;
@@ -2760,6 +2787,74 @@ function packAnnotationEnvelope({ texts, attached, arrows, callouts, wrapped }) 
   return out.subarray(0, code);
 }
 
+function scatterHasNonConstantColor(trace) {
+  const style = trace.style ?? {};
+  if (style.color_channel != null) return true;
+  const color = trace.color_ch ?? trace.colorChannel ?? trace.color;
+  if (color == null || typeof color !== "object") return false;
+  return color.mode !== "constant" || (color.color == null && color.constant == null);
+}
+
+function scatterHasDroppedPerItem(trace) {
+  const style = trace.style ?? {};
+  return Boolean(
+    style.size_channel
+    || style.stroke_channel
+    || trace.size_ch
+    || trace.stroke_ch
+  );
+}
+
+function scatterUsesDensity(trace) {
+  if ((trace.kind ?? "scatter") !== "scatter") return false;
+  return shouldUseDensity(trace.x?.length ?? 0, {
+    forceDensity: Boolean(trace.force_density ?? trace.forceDensity),
+    forceDirect: Boolean(trace.force_direct ?? trace.forceDirect),
+    coords: "cartesian",
+    perItemChannels: scatterHasNonConstantColor(trace) || scatterHasDroppedPerItem(trace),
+  });
+}
+
+function colormapLutRgba8(name) {
+  const stopBytes = colormapNamedStops(name ?? "viridis");
+  const n = stopBytes.length / 3;
+  const lut = new Uint8Array(256 * 4);
+  for (let i = 0; i < 256; i++) {
+    const pos = n <= 1 ? 0 : (i / 255) * (n - 1);
+    const lo = Math.floor(pos);
+    const hi = Math.min(n - 1, lo + 1);
+    const frac = pos - lo;
+    for (let channel = 0; channel < 3; channel++) {
+      const start = stopBytes[lo * 3 + channel];
+      lut[i * 4 + channel] = Math.round(start + (stopBytes[hi * 3 + channel] - start) * frac);
+    }
+    lut[i * 4 + 3] = 255;
+  }
+  return lut;
+}
+
+function resolveDensityBinColors(trace) {
+  const color = trace.color_ch ?? trace.colorChannel ?? trace.color ?? trace.style?.color_channel;
+  if (color == null || typeof color !== "object") return null;
+  if (color.mode === "direct_rgba" && color.rgba != null) {
+    return { rgba: color.rgba instanceof Uint8Array ? color.rgba : Uint8Array.from(color.rgba) };
+  }
+  if (color.mode === "continuous" && color.values != null) {
+    const values = color.values;
+    const domain = color.domain ?? [0, 1];
+    const lo = Number(domain[0]);
+    const hi = Number(domain[1]);
+    const span = hi - lo;
+    const idx = new Uint8Array(values.length);
+    for (let i = 0; i < values.length; i++) {
+      const t = span === 0 ? 0 : (Number(values[i]) - lo) / span;
+      idx[i] = Math.round(Math.min(1, Math.max(0, t)) * 255);
+    }
+    return { idx, lut: colormapLutRgba8(color.colormap ?? "viridis") };
+  }
+  return null;
+}
+
 function rectExtraFlags(style) {
   let flags = 0;
   if (style.fill != null && typeof style.fill === "object") flags |= XYFS_TRACE_RECT_GRADIENT;
@@ -2781,9 +2876,8 @@ function figureTraceSupport(figure, trace) {
   if ((trace.x_axis ?? "x") !== "x" || (trace.y_axis ?? "y") !== "y") flags |= XYFS_TRACE_NON_PRIMARY_AXIS;
   if (
     trace.hidden
-    || style.color_channel != null
-    || style.size_channel != null
-    || style.stroke_channel != null
+    || scatterHasDroppedPerItem(trace)
+    || (scatterHasNonConstantColor(trace) && !scatterUsesDensity(trace))
   ) flags |= XYFS_TRACE_HIDDEN_OR_PER_ITEM;
   if (
     kind === "scatter"
@@ -2968,7 +3062,16 @@ export function figureSceneV3(figure, { margins = null } = {}) {
         const [cols, rows] = DENSITY_GRID;
         const grid = bin2d(trace.x, trace.y, xDomain[0], xDomain[1], yDomain[0], yDomain[1], cols, rows);
         const { encoded, max } = densityLogU8(grid);
-        heatmapPaintPlanes.push(densityPaintPlane(trace, encoded, rows, cols, max, id));
+        const opacity = Number(style.opacity ?? 0.85) * Number(style.fill_opacity ?? 1);
+        const binColors = resolveDensityBinColors(trace);
+        if (binColors != null) {
+          const meanRgba = bin2dMeanColor(
+            trace.x, trace.y, xDomain[0], xDomain[1], yDomain[0], yDomain[1], cols, rows, binColors,
+          );
+          heatmapPaintPlanes.push(meanColorPaintPlane(encoded, meanRgba, rows, cols, max, opacity, id));
+        } else {
+          heatmapPaintPlanes.push(densityPaintPlane(trace, encoded, rows, cols, max, id));
+        }
         extra0 = rows;
         extra1 = cols;
         flags |= FLAG_DENSITY_BLIT;

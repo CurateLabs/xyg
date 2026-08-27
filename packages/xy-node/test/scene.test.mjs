@@ -1529,6 +1529,40 @@ test("Node Scene compiles cartesian density blit as one image", () => {
   assert.match(svg, /data:image\/png;base64,/);
 });
 
+test("Node Scene compiles cartesian mean-color density blit", () => {
+  const x = new Float64Array(160);
+  const y = new Float64Array(160);
+  const rgba = new Uint8Array(160 * 4);
+  for (let i = 0; i < 160; i++) {
+    x[i] = i < 80 ? 0.25 : 0.75;
+    y[i] = 0.5;
+    const off = i * 4;
+    if (i < 80) {
+      rgba[off] = 255;
+      rgba[off + 3] = 255;
+    } else {
+      rgba[off + 2] = 255;
+      rgba[off + 3] = 255;
+    }
+  }
+  const figure = new Figure({ width: 240, height: 160 });
+  figure.setAxis("x", { domain: [0, 1] });
+  figure.setAxis("y", { domain: [0, 1] });
+  figure.scatter(x, y, { forceDensity: true, name: null });
+  figure.traces[0].color = { mode: "direct_rgba", rgba };
+  const scene = figure.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  assert.ok(Buffer.from(scene).includes("XYIM"));
+  const svg = sceneSvg(scene);
+  assert.equal((svg.match(/<image/g) || []).length, 1);
+  assert.match(svg, /data:image\/png;base64,/);
+
+  const polar = new Figure({ width: 240, height: 160, coords: "polar" });
+  polar.scatter(x, y, { forceDensity: true, name: null });
+  polar.traces[0].color = { mode: "direct_rgba", rgba };
+  assert.throws(() => polar.toScene(), /density-tier/);
+});
+
 test("Node Scene rejects hidden traces and unknown kinds", () => {
   const hidden = new Figure({ width: 200, height: 120 });
   hidden.line([0, 1], [0, 1], { name: null });

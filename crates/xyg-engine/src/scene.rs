@@ -7,7 +7,9 @@
 use crate::colormap;
 use crate::css;
 use crate::geom;
-use crate::kernels::{colormap_color, density_rgba_into, normalize_one_f32};
+use crate::kernels::{
+    colormap_color, density_mean_color_rgba_into, density_rgba_into, normalize_one_f32,
+};
 use crate::polar::{self, POLAR_METRICS_LEN, XYPL_MAGIC, XYPL_V1_BYTES};
 use crate::svg::push_num;
 use std::collections::HashMap;
@@ -3476,7 +3478,8 @@ pub enum SceneExpansionMode {
     /// keyed by stable id. Rust tessellates cells and interns unique fills.
     HeatmapPainted = 9,
     /// Two Rect rows like [`Self::HeatmapLattice`], plus an XYHP density plane
-    /// (log-u8). Rust emits one Image record and an XYIM RGBA sidecar.
+    /// (log-u8 colormap or log-u8 + mean-color RGBA). Rust emits one Image
+    /// record and an XYIM RGBA sidecar.
     DensityBlit = 10,
     /// Compact polyline knots flatten through `geom::curve_flatten` into a
     /// denser Polyline run (`SCENE_CURVE_STEPS` samples per increasing span).
@@ -3579,6 +3582,7 @@ pub const XYHP_PAINT_RGBA: u32 = 0;
 pub const XYHP_PAINT_COLORMAP: u32 = 1;
 pub const XYHP_PAINT_NAMED: u32 = 2;
 pub const XYHP_PAINT_DENSITY: u32 = 3;
+pub const XYHP_PAINT_MEAN_COLOR: u32 = 4;
 pub const XYHP_MAX_NAME_BYTES: usize = 64;
 /// XYIM v1 image-blit sidecar (ABI 137 / Scene v27). One RGBA8 plane per
 /// `DensityBlit` Image record, keyed by stable id, image-top-first.
@@ -3772,7 +3776,11 @@ fn parse_heatmap_paint(bytes: &[u8]) -> Result<Vec<HeatmapPaintPlane<'_>>, Scene
             || cols == 0
             || !matches!(
                 kind,
-                XYHP_PAINT_RGBA | XYHP_PAINT_COLORMAP | XYHP_PAINT_NAMED | XYHP_PAINT_DENSITY
+                XYHP_PAINT_RGBA
+                    | XYHP_PAINT_COLORMAP
+                    | XYHP_PAINT_NAMED
+                    | XYHP_PAINT_DENSITY
+                    | XYHP_PAINT_MEAN_COLOR
             )
         {
             return Err(SceneError::Length);
@@ -3804,6 +3812,21 @@ fn parse_heatmap_paint(bytes: &[u8]) -> Result<Vec<HeatmapPaintPlane<'_>>, Scene
             let expected = 24usize
                 .checked_add(cells)
                 .and_then(|value| value.checked_add(tail_bytes))
+                .ok_or(SceneError::Limit)?;
+            if payload_len != expected {
+                return Err(SceneError::Length);
+            }
+        } else if kind == XYHP_PAINT_MEAN_COLOR {
+            if payload_len < 24 {
+                return Err(SceneError::Length);
+            }
+            if scene_read_u32(payload, 20)? != 0 {
+                return Err(SceneError::Length);
+            }
+            let rgba_bytes = cells.checked_mul(4).ok_or(SceneError::Limit)?;
+            let expected = 24usize
+                .checked_add(cells)
+                .and_then(|value| value.checked_add(rgba_bytes))
                 .ok_or(SceneError::Limit)?;
             if payload_len != expected {
                 return Err(SceneError::Length);
@@ -3914,7 +3937,7 @@ fn heatmap_payload_values(payload: &[u8], cells: usize) -> Result<Vec<f64>, Scen
 }
 
 fn heatmap_paint_fills(plane: HeatmapPaintPlane<'_>, alpha: u8) -> Result<Vec<[u8; 4]>, SceneError> {
-    if plane.kind == XYHP_PAINT_DENSITY {
+    if plane.kind == XYHP_PAINT_DENSITY || plane.kind == XYHP_PAINT_MEAN_COLOR {
         return Err(SceneError::Length);
     }
     let cells = plane.rows.checked_mul(plane.cols).ok_or(SceneError::Limit)?;
@@ -3979,7 +4002,23 @@ fn heatmap_paint_fills(plane: HeatmapPaintPlane<'_>, alpha: u8) -> Result<Vec<[u
     Ok(fills)
 }
 
+fn density_blit_plane(plane: &HeatmapPaintPlane<'_>, rows: usize, cols: usize) -> bool {
+    matches!(plane.kind, XYHP_PAINT_DENSITY | XYHP_PAINT_MEAN_COLOR)
+        && plane.rows == rows
+        && plane.cols == cols
+}
+
 fn density_image_from_plane(plane: HeatmapPaintPlane<'_>) -> Result<SceneImage, SceneError> {
+    match plane.kind {
+        XYHP_PAINT_DENSITY => density_colormap_image_from_plane(plane),
+        XYHP_PAINT_MEAN_COLOR => density_mean_color_image_from_plane(plane),
+        _ => Err(SceneError::Length),
+    }
+}
+
+fn density_colormap_image_from_plane(
+    plane: HeatmapPaintPlane<'_>,
+) -> Result<SceneImage, SceneError> {
     if plane.kind != XYHP_PAINT_DENSITY {
         return Err(SceneError::Length);
     }
@@ -4024,6 +4063,59 @@ fn density_image_from_plane(plane: HeatmapPaintPlane<'_>) -> Result<SceneImage, 
     let mut rgba = vec![0u8; cells.checked_mul(4).ok_or(SceneError::Limit)?];
     if !density_rgba_into(encoded, plane.cols, plane.rows, maximum, &stops, opacity, &mut rgba)
     {
+        return Err(SceneError::Length);
+    }
+    Ok(SceneImage {
+        stable_id: plane.stable_id,
+        width: u32::try_from(plane.cols).map_err(|_| SceneError::Limit)?,
+        height: u32::try_from(plane.rows).map_err(|_| SceneError::Limit)?,
+        rgba,
+    })
+}
+
+fn density_mean_color_image_from_plane(
+    plane: HeatmapPaintPlane<'_>,
+) -> Result<SceneImage, SceneError> {
+    if plane.kind != XYHP_PAINT_MEAN_COLOR {
+        return Err(SceneError::Length);
+    }
+    let cells = plane.rows.checked_mul(plane.cols).ok_or(SceneError::Limit)?;
+    if cells == 0 || cells > MAX_SCENE_IMAGE_PIXELS {
+        return Err(SceneError::Limit);
+    }
+    if plane.payload.len() < 24 {
+        return Err(SceneError::Length);
+    }
+    let maximum = scene_read_f64(plane.payload, 0)?;
+    let opacity = scene_read_f64(plane.payload, 8)?;
+    if scene_read_u32(plane.payload, 20)? != 0 {
+        return Err(SceneError::Length);
+    }
+    let encoded_end = 24usize.checked_add(cells).ok_or(SceneError::Limit)?;
+    let rgba_end = encoded_end
+        .checked_add(cells.checked_mul(4).ok_or(SceneError::Limit)?)
+        .ok_or(SceneError::Limit)?;
+    if plane.payload.len() != rgba_end {
+        return Err(SceneError::Length);
+    }
+    let encoded = plane
+        .payload
+        .get(24..encoded_end)
+        .ok_or(SceneError::Length)?;
+    let mean_rgba = plane
+        .payload
+        .get(encoded_end..rgba_end)
+        .ok_or(SceneError::Length)?;
+    let mut rgba = vec![0u8; cells.checked_mul(4).ok_or(SceneError::Limit)?];
+    if !density_mean_color_rgba_into(
+        encoded,
+        mean_rgba,
+        plane.cols,
+        plane.rows,
+        maximum,
+        opacity,
+        &mut rgba,
+    ) {
         return Err(SceneError::Length);
     }
     Ok(SceneImage {
@@ -4809,8 +4901,7 @@ pub fn expand_scene_records_painted(
                     .flatten()
                     .find(|plane| plane.stable_id == input.stable_ids[cursor])
                     .ok_or(SceneError::Length)?;
-                if plane.kind != XYHP_PAINT_DENSITY || plane.rows != rows || plane.cols != cols
-                {
+                if !density_blit_plane(plane, rows, cols) {
                     return Err(SceneError::Length);
                 }
                 1
@@ -4901,7 +4992,7 @@ pub fn expand_scene_records_painted(
         if mode == SceneExpansionMode::DensityBlit {
             let (rows, cols, x0, y0, x1, y1) = heatmap_lattice_extent(&input, cursor)?;
             let plane = take_paint_plane(&mut paint_planes, stable_id)?;
-            if plane.kind != XYHP_PAINT_DENSITY || plane.rows != rows || plane.cols != cols {
+            if !density_blit_plane(&plane, rows, cols) {
                 return Err(SceneError::Length);
             }
             images.push(density_image_from_plane(plane)?);
@@ -12004,6 +12095,36 @@ mod tests {
         out
     }
 
+    fn xyhp_mean_color(
+        stable_id: u64,
+        rows: u32,
+        cols: u32,
+        maximum: f64,
+        opacity: f64,
+        encoded: &[u8],
+        mean_rgba: &[u8],
+    ) -> Vec<u8> {
+        let mut payload = Vec::new();
+        payload.extend_from_slice(&maximum.to_le_bytes());
+        payload.extend_from_slice(&opacity.to_le_bytes());
+        payload.extend_from_slice(&0u32.to_le_bytes());
+        payload.extend_from_slice(&0u32.to_le_bytes());
+        payload.extend_from_slice(encoded);
+        payload.extend_from_slice(mean_rgba);
+        let mut out = Vec::new();
+        out.extend_from_slice(b"XYHP");
+        out.extend_from_slice(&1u32.to_le_bytes());
+        out.extend_from_slice(&1u32.to_le_bytes());
+        out.extend_from_slice(&0u32.to_le_bytes());
+        out.extend_from_slice(&stable_id.to_le_bytes());
+        out.extend_from_slice(&rows.to_le_bytes());
+        out.extend_from_slice(&cols.to_le_bytes());
+        out.extend_from_slice(&XYHP_PAINT_MEAN_COLOR.to_le_bytes());
+        out.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+        out.extend_from_slice(&payload);
+        out
+    }
+
     #[test]
     fn compact_heatmap_painted_interns_image_top_rgba() {
         // Image-top-first 2x2: top row red/green, bottom blue/white.
@@ -12096,6 +12217,44 @@ mod tests {
         assert_eq!(images[0].rgba.len(), 16);
         assert_eq!(images[0].rgba[11], 0); // encoded 0 (bottom-left) is transparent
         assert!(images[0].rgba[15] > 0); // encoded 255 (bottom-right) is opaque-ish
+    }
+
+    #[test]
+    fn compact_mean_color_density_blit_emits_physical_alpha_image() {
+        let encoded = [0u8, 255, 128, 1];
+        let mean = [
+            255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 0, 10, 20, 30, 255,
+        ];
+        let paint = xyhp_mean_color(7, 2, 2, 10.0, 0.72, &encoded, &mean);
+        let (expanded, painted, images) = expand_scene_records_painted(
+            SceneExpansionInput {
+                kinds: &[2, 2],
+                stable_ids: &[7, 7],
+                style_refs: &[0, 0],
+                diameter: &[2.0, 2.0],
+                symbols: &[0, 0],
+                x0: &[0.0, 0.0],
+                y0: &[1.0, 0.0],
+                x1: &[4.0, 0.0],
+                y1: &[3.0, 0.0],
+                expansion_modes: &[10, 10],
+            },
+            test_linear_x_scale(),
+            test_linear_y_scale(),
+            &[0, 0, 0, 255],
+            &[0, 0, 0, 0],
+            &[0.0],
+            &paint,
+        )
+        .unwrap();
+        assert!(painted.is_none());
+        assert_eq!(expanded.kinds, [SceneRecordKind::Image as u8]);
+        assert_eq!(images.len(), 1);
+        assert_eq!(&images[0].rgba[8..12], &[255, 0, 0, 0]);
+        assert_eq!(images[0].rgba[12], 0);
+        assert_eq!(images[0].rgba[13], 255);
+        assert!(images[0].rgba[15] > 0);
+        assert_eq!(&images[0].rgba[0..4], &[0, 0, 255, 0]);
     }
 
     #[test]

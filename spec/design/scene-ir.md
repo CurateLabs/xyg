@@ -349,8 +349,11 @@ table, heatmap painted-vs-lattice flag, and column remapping.
 ABI 137 / Scene v27 adds `DensityBlit=10` and `SceneRecordKind::Image=5`.
 Cartesian constant-style density scatter packs the heatmap extent lattice
 plus an XYHP kind-3 log-u8 plane; Rust emits one Image record and an XYIM
-RGBA sidecar. Polar density, mean-color density, and custom-font/CSS
-exceptions stay on the compatibility exporters. The interactive browser
+RGBA sidecar. ABI 142 admits cartesian mean-color density on that same
+`DensityBlit` Image path: hosts pack XYHP kind 4 (log-u8 counts plus the
+row-0-bottom mean RGBA8 plane) and Rust owns LOD doc §2 physical-alpha
+compositing into XYIM. Polar density and custom-font/CSS exceptions stay
+on the compatibility exporters. The interactive browser
 painter skips Image groups; static SVG/raster/PDF consume the blit.
 ABI 138 / Scene v28 admits constant dash polylines: hosts pack XYDS keyed by
 host style_ref on the extras pointer (raw XYDS, or XYEX v2 when combined with
@@ -1204,7 +1207,9 @@ dashed polylines compile on Scene. ABI 139 / Scene v29 adds the XYLC
 constant-linecap sidecar so butt/square caps compile on Scene. ABI 140 /
 Scene v30 adds `CurveFlatten=11` so cartesian `curve="smooth"` polylines
 compile as denser Scene polylines; ABI 141 / Scene v31 adds `BandFlatten=12`
-so cartesian `area(curve="smooth")` compiles as denser Scene Bands. Polar
+so cartesian `area(curve="smooth")` compiles as denser Scene Bands. ABI 142
+admits cartesian mean-color density as XYHP kind 4 on the existing
+`DensityBlit` Image blit (encoded Scene v31 is unchanged). Polar density,
 smooth, error-band smooth, and authored markers stay compatibility. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;

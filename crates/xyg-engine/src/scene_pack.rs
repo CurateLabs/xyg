@@ -8,6 +8,8 @@
 //! rejection so Python and Node cannot drift on the packed row contract.
 //! ABI 140 maps line `step_mode=4` onto expansion `CurveFlatten=11`.
 //! ABI 141 maps band `step_mode=4` onto expansion `BandFlatten=12`.
+//! ABI 142 admits cartesian mean-color density as XYHP paint kind 4 on the
+//! existing `DensityBlit` Image blit (no new pack kind).
 
 use crate::scene::MAX_SCENE_MARKS;
 

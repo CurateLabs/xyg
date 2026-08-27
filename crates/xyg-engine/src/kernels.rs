@@ -3599,6 +3599,86 @@ pub(crate) fn density_rgba_lut(
     Some(lut)
 }
 
+/// Decode one log-u8 density code back to an approximate count. Matches the
+/// compatibility `_density_column` / `lodDecodeLogU8` inverse of `density_log_u8`.
+fn density_log_u8_count(code: u8, maximum: f64) -> f64 {
+    if code == 0 || !(maximum > 0.0) {
+        0.0
+    } else {
+        ((f64::from(code) / 255.0) * maximum.ln_1p()).exp_m1()
+    }
+}
+
+/// LOD doc §2 rule 1: displayed cell alpha is the physical compositing of the
+/// cell's points, `1 − (1 − a_pt)^count`, with `a_pt = channel alpha × style
+/// opacity` folded inside the exponent. Empty or all-invisible cells stay 0;
+/// `a_pt = 1` saturates any occupied cell.
+pub fn physical_density_alpha(count: f64, mean_alpha_u8: u8, opacity: f64) -> u8 {
+    if !(count > 0.0) || mean_alpha_u8 == 0 {
+        return 0;
+    }
+    if !(0.0..=1.0).contains(&opacity) {
+        return 0;
+    }
+    let a_pt = (f64::from(mean_alpha_u8) / 255.0 * opacity).clamp(0.0, 1.0);
+    if a_pt <= 0.0 {
+        return 0;
+    }
+    let coverage = if a_pt >= 1.0 {
+        1.0
+    } else {
+        -(count * (-a_pt).ln_1p()).exp_m1()
+    };
+    (coverage.clamp(0.0, 1.0) * 255.0)
+        .round_ties_even()
+        .clamp(0.0, 255.0) as u8
+}
+
+/// Map compact log-u8 counts plus a row-0-bottom mean-color RGBA8 plane to a
+/// top-row-first Image blit. RGB stays the mean point color (straight alpha);
+/// displayed alpha is [`physical_density_alpha`].
+pub fn density_mean_color_rgba_into(
+    encoded: &[u8],
+    mean_rgba: &[u8],
+    w: usize,
+    h: usize,
+    maximum: f64,
+    opacity: f64,
+    out: &mut [u8],
+) -> bool {
+    let cells = w.saturating_mul(h);
+    if w == 0
+        || h == 0
+        || encoded.len() != cells
+        || mean_rgba.len() != cells.saturating_mul(4)
+        || out.len() != cells.saturating_mul(4)
+        || !maximum.is_finite()
+        || maximum < 0.0
+        || !opacity.is_finite()
+        || !(0.0..=1.0).contains(&opacity)
+    {
+        return false;
+    }
+    for row in 0..h {
+        let destination_row = h - 1 - row;
+        for col in 0..w {
+            let cell = row * w + col;
+            let src = cell * 4;
+            let dst = (destination_row * w + col) * 4;
+            let alpha = physical_density_alpha(
+                density_log_u8_count(encoded[cell], maximum),
+                mean_rgba[src + 3],
+                opacity,
+            );
+            out[dst] = mean_rgba[src];
+            out[dst + 1] = mean_rgba[src + 1];
+            out[dst + 2] = mean_rgba[src + 2];
+            out[dst + 3] = alpha;
+        }
+    }
+    true
+}
+
 /// 2D density aggregation (§5 Tier 2): additively bin points into a `w × h`
 /// grid over `[x0, x1) × [y0, y1)`, one count per cell. Points with NaN in
 /// either coordinate, or outside the viewport, are skipped. Output is f32
@@ -7115,6 +7195,36 @@ mod tests {
         assert!(out[3] > 0);
         assert_eq!(out[11], 0);
         assert_eq!(&out[12..16], &[100, 110, 120, 216]);
+    }
+
+    #[test]
+    fn physical_density_alpha_matches_lod_doc_rule_one() {
+        let expect = |k: f64| ((1.0 - 0.28_f64.powf(k)) * 255.0).round_ties_even() as u8;
+        assert_eq!(physical_density_alpha(0.0, 255, 0.72), 0);
+        assert_eq!(physical_density_alpha(1.0, 255, 0.72), expect(1.0));
+        assert_eq!(physical_density_alpha(3.0, 255, 0.72), expect(3.0));
+        assert!(physical_density_alpha(50.0, 255, 0.72) >= 254);
+        assert_eq!(physical_density_alpha(2.0, 0, 0.72), 0);
+        assert_eq!(physical_density_alpha(1.0, 255, 1.0), 255);
+        assert_eq!(physical_density_alpha(0.0, 255, 1.0), 0);
+    }
+
+    #[test]
+    fn density_mean_color_rgba_flips_and_shapes_physical_alpha() {
+        let encoded = [0u8, 255, 128, 1];
+        let mean = [
+            255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 0, 10, 20, 30, 255,
+        ];
+        let mut out = [0u8; 16];
+        assert!(density_mean_color_rgba_into(
+            &encoded, &mean, 2, 2, 10.0, 0.72, &mut out
+        ));
+        // Source row 0 (data bottom) flips to destination row 1.
+        assert_eq!(&out[8..12], &[255, 0, 0, 0]);
+        assert_eq!(out[12], 0);
+        assert_eq!(out[13], 255);
+        assert!(out[15] > 0);
+        assert_eq!(&out[0..4], &[0, 0, 255, 0]);
     }
 
     #[test]

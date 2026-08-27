@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapStops, xyBin2d, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -1310,6 +1310,67 @@ export function densityLogU8(grid) {
     throw new Error("xy_density_log_u8 failed");
   }
   return { encoded: out, max: maxBuf[0] };
+}
+
+/**
+ * Mean-color companion grid to `bin2d` (LOD doc §2): (h*w*4) straight-alpha
+ * RGBA8, row 0 = bottom. `source` is either `{ rgba: Uint8Array }` or
+ * `{ idx: Uint8Array, lut: Uint8Array }` with lut length a multiple of 4.
+ */
+export function bin2dMeanColor(x, y, x0, x1, y0, y1, w, h, source) {
+  const xa = asF64Array(x, "x");
+  const ya = asF64Array(y, "y");
+  if (xa.length !== ya.length) {
+    throw new RangeError("bin2dMeanColor x/y length mismatch");
+  }
+  const ww = Math.max(1, Math.floor(Number(w)));
+  const hh = Math.max(1, Math.floor(Number(h)));
+  const out = new Uint8Array(ww * hh * 4);
+  let idxPtr = 0;
+  let rgbaPtr = 0;
+  let lutPtr = 0;
+  let lutLen = 0n;
+  if (source?.rgba != null) {
+    const rgba = source.rgba instanceof Uint8Array ? source.rgba : Uint8Array.from(source.rgba);
+    if (rgba.length !== xa.length * 4) {
+      throw new RangeError("bin2dMeanColor rgba length must be 4 * n");
+    }
+    rgbaPtr = xa.length ? u8Ptr(rgba) : 0;
+  } else if (source?.idx != null && source?.lut != null) {
+    const idx = source.idx instanceof Uint8Array ? source.idx : Uint8Array.from(source.idx);
+    const lut = source.lut instanceof Uint8Array ? source.lut : Uint8Array.from(source.lut);
+    if (idx.length !== xa.length) {
+      throw new RangeError("bin2dMeanColor idx length must match x/y");
+    }
+    if (lut.length < 4 || lut.length % 4 !== 0 || lut.length / 4 > 256) {
+      throw new RangeError("bin2dMeanColor lut must be 1..256 RGBA8 entries");
+    }
+    idxPtr = xa.length ? u8Ptr(idx) : 0;
+    lutPtr = u8Ptr(lut);
+    lutLen = BigInt(lut.length / 4);
+  } else {
+    throw new RangeError("bin2dMeanColor requires rgba or idx+lut");
+  }
+  const ok = xyBin2dMeanColor(
+    f64Ptr(xa),
+    f64Ptr(ya),
+    BigInt(xa.length),
+    idxPtr,
+    rgbaPtr,
+    lutPtr,
+    lutLen,
+    Number(x0),
+    Number(x1),
+    Number(y0),
+    Number(y1),
+    BigInt(ww),
+    BigInt(hh),
+    u8Ptr(out),
+  );
+  if (ok !== 1) {
+    throw new Error("xyg_bin_2d_mean_color failed");
+  }
+  return out;
 }
 
 /**

@@ -1105,6 +1105,36 @@ def test_python_scene_compiles_cartesian_density_blit() -> None:
     assert figure.to_svg() == svg
 
 
+def test_python_scene_compiles_cartesian_mean_color_density() -> None:
+    figure = Figure(width=240, height=160)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    x = [0.25] * 80 + [0.75] * 80
+    y = [0.5] * 160
+    color = [0.0] * 80 + [1.0] * 80
+    figure.scatter(x, y, color=color, density=True)
+    assert _scene_v3.scene_export_support_reason(figure) is None
+    scene = figure.to_scene()
+    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert b"XYIM" in scene
+    svg = _native.scene_svg(scene)
+    assert svg.count("<image") == 1
+    assert "data:image/png;base64," in svg
+    assert figure.to_svg() == svg
+
+    sized = Figure(width=240, height=160)
+    sized.axis_options["x"]["domain"] = (0.0, 1.0)
+    sized.axis_options["y"]["domain"] = (0.0, 1.0)
+    sized.scatter(x, y, color=color, size=[4.0] * 80 + [8.0] * 80, density=True)
+    with pytest.raises(UnsupportedSceneV3, match="hidden or per-item"):
+        sized.to_scene()
+
+    polar = Figure(width=240, height=160, coords="polar")
+    polar.scatter(x, y, color=color, density=True)
+    with pytest.raises(UnsupportedSceneV3, match="density-tier"):
+        polar.to_scene()
+
+
 def test_python_scene_rejects_hidden_and_unknown_kind() -> None:
     hidden = Figure().line([0.0, 1.0], [0.0, 1.0])
     hidden.traces[0].hidden = True
