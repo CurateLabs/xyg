@@ -98,6 +98,10 @@ test("Node packs public-export eligibility through the shared Rust predicate", (
   const lineNoDomain = new Figure({ width: 320, height: 240 });
   lineNoDomain.line([0, 1], [0, 1]);
   assert.equal(sceneExportSupportReason(lineNoDomain), "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
+
+  const heatmapNoDomain = new Figure({ width: 320, height: 240 });
+  heatmapNoDomain.heatmap([[0, 1, 2], [3, 4, 5]], { color: "#3987e5" });
+  assert.equal(sceneExportSupportReason(heatmapNoDomain), null);
 });
 
 test("Node encodes Scene PDF through the shared Rust SVG→PDF converter", () => {

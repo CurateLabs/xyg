@@ -814,7 +814,8 @@ def test_density_and_heatmap_embed_png_rasters() -> None:
 
     fig2 = Figure().heatmap(rng.random((16, 12)))
     svg2 = fig2.to_svg()
-    assert "data:image/png;base64," in svg2
+    assert "<rect" in svg2
+    assert "data:image/png;base64," not in svg2
 
 
 def test_colormap_stops_stay_in_sync_with_js_client() -> None:

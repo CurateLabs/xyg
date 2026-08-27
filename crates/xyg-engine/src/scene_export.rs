@@ -227,8 +227,12 @@ fn kind_public(kind: u8) -> bool {
     kind <= KIND_CONTOUR
 }
 
+fn kind_extent_geometry(kind: u8) -> bool {
+    matches!(kind, KIND_HEATMAP | KIND_CONTOUR)
+}
+
 fn kind_literal_geometry(kind: u8) -> bool {
-    kind_public(kind) && kind != KIND_SCATTER
+    kind_public(kind) && kind != KIND_SCATTER && !kind_extent_geometry(kind)
 }
 
 fn kind_segment(kind: u8) -> bool {
@@ -621,13 +625,25 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     }
     // Literal geometry is anchored to the primary Cartesian x/y viewport.
     // Missing x or y is the same as an empty options dict: no domain.
-    if traces.iter().any(|trace| kind_literal_geometry(trace.kind)) {
+    // Heatmap/contour lattices carry their own cell extent, so they autorange
+    // like scatter and do not require an authored axis domain.
+    let needs_authored_domain = traces
+        .iter()
+        .any(|trace| kind_literal_geometry(trace.kind));
+    let needs_primary_axes = needs_authored_domain
+        || traces
+            .iter()
+            .any(|trace| kind_extent_geometry(trace.kind));
+    if needs_primary_axes {
         for wanted in [0u8, 1u8] {
             let Some(axis) = axes.iter().find(|axis| axis.axis_id == wanted) else {
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
             };
             let default_side = if wanted == 0 { 1 } else { 2 };
-            if !axis.domain_present || (axis.side != 0 && axis.side != default_side) {
+            if axis.side != 0 && axis.side != default_side {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
+            }
+            if needs_authored_domain && !axis.domain_present {
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
             }
         }
@@ -1075,8 +1091,60 @@ mod tests {
     }
 
     #[test]
-    fn empty_envelope_is_supported() {
-        assert_eq!(scene_public_export_reason(&empty_figure()), Ok(""));
+    fn heatmap_and_contour_autorange_without_authored_axis_domain() {
+        fn put_axis(buf: &mut Vec<u8>, axis_id: u8, domain_present: bool) {
+            buf.extend_from_slice(&[
+                axis_id,
+                0,
+                0,
+                u8::from(domain_present),
+                0,
+                0,
+                0,
+                0,
+            ]);
+        }
+        fn put_heatmap(buf: &mut Vec<u8>) {
+            let role = b"heatmap";
+            buf.push(KIND_HEATMAP);
+            buf.extend_from_slice(&[0, 255, 255, 255, 0, 0, 0]);
+            let flags = TRACE_HEATMAP_SHAPE_OK | TRACE_HEATMAP_EXTENT_OK | TRACE_HEATMAP_FINITE;
+            buf.extend_from_slice(&flags.to_le_bytes());
+            buf.extend_from_slice(&[0u8; 24]);
+            buf.extend_from_slice(&2u32.to_le_bytes());
+            buf.extend_from_slice(&2u32.to_le_bytes());
+            buf.extend_from_slice(&4u32.to_le_bytes());
+            buf.extend_from_slice(&0u16.to_le_bytes());
+            buf.extend_from_slice(&(role.len() as u16).to_le_bytes());
+            buf.extend_from_slice(&0u16.to_le_bytes());
+            buf.extend_from_slice(&0u16.to_le_bytes());
+            buf.extend_from_slice(&f64::NAN.to_le_bytes());
+            buf.extend_from_slice(&f64::NAN.to_le_bytes());
+            buf.extend_from_slice(role);
+        }
+        let mut ok = header(0, 0, 0, 0, 2, 0, 1);
+        put_axis(&mut ok, 0, false);
+        put_axis(&mut ok, 1, false);
+        put_heatmap(&mut ok);
+        assert_eq!(scene_public_export_reason(&ok), Ok(""));
+
+        let mut line = header(0, 0, 0, 0, 2, 0, 1);
+        put_axis(&mut line, 0, false);
+        put_axis(&mut line, 1, false);
+        line.push(KIND_LINE);
+        line.extend_from_slice(&[0, 255, 255, 255, 0, 0, 0]);
+        line.extend_from_slice(&0u32.to_le_bytes());
+        line.extend_from_slice(&[0u8; 36]);
+        line.extend_from_slice(&0u16.to_le_bytes());
+        line.extend_from_slice(&0u16.to_le_bytes());
+        line.extend_from_slice(&0u16.to_le_bytes());
+        line.extend_from_slice(&0u16.to_le_bytes());
+        line.extend_from_slice(&f64::NAN.to_le_bytes());
+        line.extend_from_slice(&f64::NAN.to_le_bytes());
+        assert_eq!(
+            scene_public_export_reason(&line),
+            Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS")
+        );
     }
 
     #[test]

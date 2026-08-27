@@ -2003,6 +2003,8 @@ function concatBytes(parts) {
 function exportColumn(trace, name) {
   const value = trace[name];
   if (value == null) return null;
+  // TypedArrays expose a `.values()` iterator; do not treat that as a column wrapper.
+  if (ArrayBuffer.isView(value) || Array.isArray(value)) return value;
   return value.values ?? value;
 }
 

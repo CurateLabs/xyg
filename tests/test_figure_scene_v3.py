@@ -497,7 +497,7 @@ def test_supported_file_exports_match_the_canonical_rust_scene(
 def test_unsupported_public_exports_stay_on_compatibility_path(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    figure = Figure().heatmap([[0.0, 1.0], [1.0, 0.0]])
+    figure = Figure().scatter([0.0, 1.0], [0.0, 1.0], density=True)
 
     def unexpected_scene_call(*_args: object, **_kwargs: object) -> bytes:
         raise AssertionError(

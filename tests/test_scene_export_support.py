@@ -1057,7 +1057,6 @@ def test_public_heatmap_compiler_rejects_secondary_axis_and_nonfinite(
 @pytest.mark.parametrize(
     "mutate",
     [
-        lambda figure: figure.axis_options["x"].__setitem__("domain", None),
         lambda figure: figure.traces[0].style.__setitem__("fill_opacity", 0.5),
         lambda figure: figure.traces[0].style.__setitem__("role", "heat-density"),
     ],
@@ -1069,6 +1068,27 @@ def test_public_heatmap_predicate_keeps_rich_style_on_compatibility(
     mutate(figure)
     assert scene_export_support_reason(figure) is not None
     assert figure.to_svg()
+
+
+def test_public_heatmap_autoranges_without_authored_axis_domain() -> None:
+    figure = Figure(width=320, height=240)
+    figure.heatmap(_PUBLIC_HEATMAP_Z, x=_PUBLIC_HEATMAP_X, y=_PUBLIC_HEATMAP_Y, color="#3987e5")
+    assert figure.axis_options["x"].get("domain") is None
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"<rect" in exported
+    assert b"data:image/png;base64," not in exported
+
+
+def test_public_contour_autoranges_without_authored_axis_domain() -> None:
+    figure = Figure(width=320, height=240)
+    figure.contour([[1.0, 2.0], [3.0, 4.0]], levels=2, color="#3987e5")
+    assert figure.axis_options["x"].get("domain") is None
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"data:image/png;base64," not in exported
 
 
 def test_custom_hexbin_reducer_stays_on_compatibility() -> None:
