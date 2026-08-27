@@ -67,7 +67,7 @@ import { composeStep, composeStairs } from "./marks/step.js";
 import { composeTriangleMesh } from "./marks/triangle_mesh.js";
 import { composeRadar } from "./marks/radar.js";
 import { toHtml } from "./html.js";
-import { figureSceneV3, sceneRasterCommands, sceneSvg } from "./scene.js";
+import { figureSceneV3, sceneRasterCommands, sceneSvg, svgToPdf } from "./scene.js";
 
 export { PROTOCOL_VERSION };
 
@@ -1535,6 +1535,11 @@ export class Figure {
   /** Whole-scene SVG rendered from the canonical Scene v5 document. */
   toSceneSvg(opts = {}) {
     return sceneSvg(this.toScene(opts));
+  }
+
+  /** Whole-scene vector PDF from the canonical Scene SVG (Rust `xyg_svg_to_pdf`). */
+  toScenePdf(opts = {}) {
+    return svgToPdf(this.toSceneSvg(opts));
   }
 
   /** Existing native-raster display list compiled from Scene v5. */

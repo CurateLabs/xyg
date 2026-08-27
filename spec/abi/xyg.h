@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 112
-#define XYG_ABI_SIGNATURE_SHA256 "9cbf65380aa4a14eb6b62ade9ea3549b828ca538711da5853c7ed6a544ac1f10"
+#define XYG_ABI_VERSION 113
+#define XYG_ABI_SIGNATURE_SHA256 "dd6434fe438b270dc0930af76783de02bd7eb9f6938d9977b7c526d293cbfc87"
 
 #ifdef __cplusplus
 extern "C" {
@@ -159,6 +159,7 @@ int32_t xyg_stream_seal(uint64_t handle);
 size_t xyg_stream_zone_maps(uint64_t handle, double * out_min, double * out_max, uint64_t * out_count, uint64_t * out_null_count, double * out_sum, double * out_sum_sq, double * out_positive_min, double * out_positive_max);
 size_t xyg_streamlines(const double * x_coords, size_t cols, const double * y_coords, size_t rows, const double * u, const double * v, double density, size_t max_steps, double * out_x0, double * out_x1, double * out_y0, double * out_y1, size_t capacity);
 size_t xyg_svg_poly_path(const double * x, const double * y, size_t len, uint8_t * out, size_t out_cap);
+size_t xyg_svg_to_pdf(const uint8_t * svg, size_t svg_len, uint8_t * out, size_t out_cap);
 int32_t xyg_temporal_column_copy(uint64_t handle, int64_t * out_values, uint8_t * out_validity, uint64_t capacity);
 int32_t xyg_temporal_column_create(const void * descriptor, uint64_t * out_handle);
 int32_t xyg_temporal_column_destroy(uint64_t handle);

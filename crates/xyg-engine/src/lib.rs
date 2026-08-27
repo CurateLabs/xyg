@@ -25,6 +25,8 @@ pub mod graph_style;
 pub mod hexbin;
 pub mod kernels;
 pub mod lod_plan;
+#[cfg(feature = "raster")]
+pub mod pdf;
 pub mod projection;
 #[cfg(feature = "raster")]
 pub mod raster;

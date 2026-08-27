@@ -1919,9 +1919,7 @@ def public_static_export(
             max(1, int(round(h * float(scale)))),
         )
     if format == "pdf":
-        from . import _pdf
-
-        return _pdf.svg_to_pdf(figure_svg(figure, width=width, height=height))
+        return _native.svg_to_pdf(figure_svg(figure, width=width, height=height))
     raise ValueError(f"Scene public static format must be svg, png, or pdf, got {format!r}")
 
 

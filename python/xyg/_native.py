@@ -2669,6 +2669,29 @@ def scene_svg(encoded: bytes) -> str:
     return _scene_bytes_output(encoded, _lib.xyg_scene_svg, "SVG").decode("utf-8")
 
 
+def svg_to_pdf(svg: str) -> bytes:
+    """Convert an xy-generated closed-subset SVG into a single-page vector PDF.
+
+    Rust owns the converter (M2 #274). Unsupported elements, attributes, and
+    path commands raise ``ValueError("unsupported SVG feature: ...")``.
+    """
+    if not isinstance(svg, str):
+        raise TypeError("svg must be a str")
+    encoded = svg.encode("utf-8")
+    source = np.frombuffer(encoded, dtype=np.uint8)
+    n = len(source)
+    capacity = max(256, n * 2)
+    while True:
+        out = ctypes.create_string_buffer(capacity)
+        written = _lib.xyg_svg_to_pdf(_ptr_u8(source) if n else 0, n, out, capacity)
+        if written == _USIZE_MAX:
+            message = out.value.decode("utf-8", "replace") or "unsupported SVG feature"
+            raise ValueError(message)
+        if written <= capacity:
+            return out.raw[:written]
+        capacity = written
+
+
 def scene_raster_commands(encoded: bytes, scale: float = 1.0) -> bytes:
     """Compile Scene v12 into the existing native raster display list."""
     factor = float(scale)

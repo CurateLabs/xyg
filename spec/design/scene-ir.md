@@ -1056,7 +1056,9 @@ paints, title, and entry meta. ABI 111 does not change Scene records either;
 `xyg_scene_pack_colorbar` owns primary XYCB v2 framing from domain, stops,
 ticks, title, and text RGBA. ABI 112 does not change Scene records either;
 `xyg_scene_pack_annotations` owns primary XYAD framing from typed row meta
-and concatenated labels. Polar
+and concatenated labels. ABI 113 does not change Scene records either;
+`xyg_svg_to_pdf` owns closed-subset SVG→PDF so public static PDF no longer
+feeds Rust SVG through a Python converter. Polar
 hexbin, custom reducers, metric colormaps, LOD, and rich style exceptions
 fail closed and keep the compatibility exporters. Scene 25 is unchanged.
 

@@ -1,9 +1,9 @@
 {
-  "abi_version": 112,
+  "abi_version": 113,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "9cbf65380aa4a14eb6b62ade9ea3549b828ca538711da5853c7ed6a544ac1f10",
+  "signature_sha256": "dd6434fe438b270dc0930af76783de02bd7eb9f6938d9977b7c526d293cbfc87",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -21494,6 +21494,88 @@
         "nullable": false
       },
       "c_signature": "size_t xyg_svg_poly_path(const double * x, const double * y, size_t len, uint8_t * out, size_t out_cap)"
+    },
+    {
+      "name": "xyg_svg_to_pdf",
+      "node_name": "xySvgToPdf",
+      "nargs": 4,
+      "arguments": [
+        {
+          "name": "svg",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "svg_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out",
+          "type": {
+            "rust": "*mut u8",
+            "c": "uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_cap",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "usize",
+        "c": "size_t",
+        "ctypes": "ctypes.c_size_t",
+        "koffi": "size_t",
+        "kind": "scalar",
+        "bits": "pointer",
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "size_t xyg_svg_to_pdf(const uint8_t * svg, size_t svg_len, uint8_t * out, size_t out_cap)"
     },
     {
       "name": "xyg_temporal_column_copy",

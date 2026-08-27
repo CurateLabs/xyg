@@ -14,13 +14,16 @@ name = "xyg_engine"
 # adapter disables defaults so browser compute does not carry an unused PNG
 # encoder or the baked raster font atlas.
 default = ["raster"]
-raster = ["dep:png"]
+raster = ["dep:png", "dep:flate2"]
 
 # Static chart export uses the focused `png` crate's fdeflate fast path;
 # compression belongs beside rasterization so the hot path never round-trips
-# a full framebuffer through a host language.
+# a full framebuffer through a host language. PDF FlateDecode streams use the
+# already-locked `flate2` (miniz_oxide) crate so native PDF needs no crates.io
+# fetch; WASM keeps default-features off and does not carry either encoder.
 [dependencies]
 png = { version = "0.18.1", optional = true }
+flate2 = { version = "1.1.9", optional = true, default-features = false, features = ["rust_backend"] }
 
 [dev-dependencies]
 # CodSpeed's divan compatibility layer: the same `divan` API, instrumented when

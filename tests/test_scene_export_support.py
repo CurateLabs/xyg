@@ -1479,3 +1479,83 @@ def test_axis_visibility_stays_bounded_before_the_public_scene_route() -> None:
     figure.axis_options["x"]["tick_values"] = list(range(201))
     with pytest.raises(ValueError, match="axis tick lists are limited"):
         scene_export_support_reason(figure)
+
+
+def _public_mark_figures() -> list[tuple[str, Figure]]:
+    """In-scope Cartesian figures for every #272/#273 listed mark family."""
+    return [
+        ("scatter", _supported()),
+        ("line_bar", _public_literal_geometry()),
+        ("segments", _public_disconnected_segments()),
+        ("hexbin", _public_hexbin()),
+        ("ribbon", _public_ribbon("linear")),
+        ("triangle_mesh", _public_triangle_mesh()),
+        ("heatmap", _public_heatmap()),
+        ("violin", _public_violin()),
+        ("box", _public_box()),
+    ]
+
+
+def test_public_mark_figures_never_call_python_svg_mark_emitters(monkeypatch) -> None:
+    """#272: Scene-eligible to_svg must not fall back to `_svg.py` mark paths."""
+    from xyg import _svg
+
+    def boom(*_args, **_kwargs):
+        raise AssertionError("Python SVG mark emitter used for a Scene-eligible figure")
+
+    for name in (
+        "_segment_marks",
+        "_scatter_marks",
+        "_hexbin_marks",
+        "_ribbon_marks",
+        "_triangle_mesh_marks",
+        "_bar_marks",
+        "_rect_marks",
+    ):
+        monkeypatch.setattr(_svg, name, boom)
+    monkeypatch.setattr(_svg, "to_svg", boom)
+
+    for label, figure in _public_mark_figures():
+        assert scene_export_support_reason(figure) is None, label
+        svg = figure.to_svg()
+        assert svg.startswith("<svg"), label
+        assert "polyline" in svg or "path" in svg or "<rect" in svg, label
+
+
+def test_public_mark_figures_never_call_python_raster_mark_emitters(monkeypatch) -> None:
+    """#273: Scene-eligible PNG must not fall back to `_raster.py` mark emitters."""
+    from xyg import _raster
+
+    def boom(*_args, **_kwargs):
+        raise AssertionError("Python raster mark emitter used for a Scene-eligible figure")
+
+    for name in (
+        "_emit_scatter",
+        "_emit_authored_scatter",
+        "_emit_segments",
+        "_emit_hexbin",
+        "_emit_ribbon",
+        "_emit_triangle_mesh",
+        "_emit_bars",
+        "_emit_rects",
+        "to_png",
+        "to_rgba",
+        "render_raster",
+    ):
+        monkeypatch.setattr(_raster, name, boom)
+
+    for label, figure in _public_mark_figures():
+        png = figure.to_png(scale=1)
+        assert png.startswith(b"\x89PNG"), label
+
+
+def test_public_mark_figures_encode_pdf_through_rust() -> None:
+    """#274: Scene-eligible PDF uses the native closed-subset converter."""
+    from xyg import _native
+
+    for label, figure in _public_mark_figures():
+        svg = figure.to_svg()
+        pdf = figure.to_image(format="pdf")
+        assert pdf.startswith(b"%PDF-"), label
+        assert pdf == _native.svg_to_pdf(svg), label
+        assert b"/FlateDecode" in pdf, label

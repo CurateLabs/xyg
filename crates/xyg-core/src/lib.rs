@@ -32,6 +32,7 @@ use xyg_engine::hexbin;
 use xyg_engine::kernels;
 use xyg_engine::kernels::ZoneMap;
 use xyg_engine::lod_plan;
+use xyg_engine::pdf;
 use xyg_engine::projection;
 use xyg_engine::raster;
 use xyg_engine::sankey;
@@ -106,7 +107,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 112;
+pub const ABI_VERSION: u32 = 113;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1654,6 +1655,70 @@ pub unsafe extern "C" fn xyg_scene_svg(
     }
     std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(&svg);
     required
+}
+
+/// Convert an xy-generated closed-subset SVG into a single-page vector PDF.
+/// Returns required bytes, or `usize::MAX` for unsupported/malformed SVG. On
+/// error, when `out_cap > 0` and `out` is non-null, the buffer receives the
+/// UTF-8 `unsupported SVG feature: …` diagnostic (truncated, not NUL-padded).
+///
+/// # Safety
+/// `svg` addresses `svg_len` readable bytes. When capacity suffices, `out`
+/// addresses `out_cap` writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_svg_to_pdf(
+    svg: *const u8,
+    svg_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if svg.is_null() && svg_len > 0 {
+        return usize::MAX;
+    }
+    let bytes = if svg_len == 0 {
+        &[]
+    } else {
+        std::slice::from_raw_parts(svg, svg_len)
+    };
+    let Ok(text) = std::str::from_utf8(bytes) else {
+        write_pdf_error(out, out_cap, "unsupported SVG feature: unparseable XML");
+        return usize::MAX;
+    };
+    match ffi_guard(
+        Err("unsupported SVG feature: unparseable XML".into()),
+        || pdf::svg_to_pdf(text),
+    ) {
+        Ok(pdf) => {
+            let required = pdf.len();
+            if out_cap < required {
+                return required;
+            }
+            if required > 0 && out.is_null() {
+                return usize::MAX;
+            }
+            if required > 0 {
+                std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(&pdf);
+            }
+            required
+        }
+        Err(message) => {
+            write_pdf_error(out, out_cap, &message);
+            usize::MAX
+        }
+    }
+}
+
+fn write_pdf_error(out: *mut u8, out_cap: usize, message: &str) {
+    if out.is_null() || out_cap == 0 {
+        return;
+    }
+    let bytes = message.as_bytes();
+    let n = bytes.len().min(out_cap.saturating_sub(1));
+    unsafe {
+        let buf = std::slice::from_raw_parts_mut(out, out_cap);
+        buf[..n].copy_from_slice(&bytes[..n]);
+        buf[n] = 0;
+    }
 }
 
 /// Compile one validated Scene v12 document to the existing raster display-list

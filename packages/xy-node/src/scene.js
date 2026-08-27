@@ -17,6 +17,7 @@ import {
   xySceneScatterSvg,
   xySceneSupportReason,
   xySceneSvg,
+  xySvgToPdf,
   xySceneVersion,
 } from "./native.js";
 import { asF64Array, f64Ptr, shouldUseDensity, u32Ptr, u8Ptr } from "./encode.js";
@@ -522,6 +523,33 @@ function sceneOutput(encoded, call, name, extra = []) {
 
 export function sceneSvg(encoded) {
   return new TextDecoder().decode(sceneOutput(encoded, xySceneSvg, "SVG"));
+}
+
+export function svgToPdf(svg) {
+  const text = String(svg);
+  const source = new TextEncoder().encode(text);
+  let capacity = Math.max(256, source.length * 2);
+  for (;;) {
+    const output = new Uint8Array(capacity);
+    const rawWritten = xySvgToPdf(
+      source.length ? u8Ptr(source) : 0,
+      BigInt(source.length),
+      u8Ptr(output),
+      BigInt(capacity),
+    );
+    if (rawWritten === USIZE_MAX_64) {
+      const end = output.indexOf(0);
+      const message = new TextDecoder().decode(end >= 0 ? output.subarray(0, end) : output).trim()
+        || "unsupported SVG feature";
+      throw new RangeError(message);
+    }
+    const written = Number(rawWritten);
+    if (!Number.isSafeInteger(written) || written < 0) {
+      throw new RangeError("svgToPdf output exceeded host limits");
+    }
+    if (written <= capacity) return output.slice(0, written);
+    capacity = written;
+  }
 }
 
 export function sceneRasterCommands(encoded, scale = 1) {

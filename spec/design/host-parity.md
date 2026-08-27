@@ -191,7 +191,10 @@ ABI 111 makes primary colorbar framing the same way: Python and Node call
 `xyg_scene_pack_colorbar` with domain/stops/ticks/title.
 ABI 112 makes primary annotation framing the same way: Python and Node call
 `xyg_scene_pack_annotations` with typed row meta plus concatenated labels.
-Polar heatmap, metric colormaps, truecolor RGBA, LOD beyond
+ABI 113 makes closed-subset SVG→PDF the same way: Python `_pdf.svg_to_pdf` /
+`_native.svg_to_pdf` and Node `svgToPdf` call `xyg_svg_to_pdf`; Rust owns
+path lowering, Helvetica metrics, ExtGState/shading/image embedding, and
+deterministic object numbering. Polar heatmap, metric colormaps, truecolor RGBA, LOD beyond
 10,000 cells, and rich style exceptions remain compatibility routes.
 ABI 99 gives both composition hosts one compact grouped box ingress. Hosts pack
 the same f64 values/offsets/centers and literal options; Rust returns typed

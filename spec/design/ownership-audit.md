@@ -133,7 +133,10 @@ moves primary XYAD annotation framing into
 `crates/xyg-engine/src/scene_annotations.rs`. Python and Node pass typed
 row meta plus concatenated labels; XYAT/XYAL/XYAR/XYAC/XYAW table layout,
 version selection, the XYAD envelope, and bounded-text rejection cannot
-drift. Polar hexbin, custom
+drift. ABI 113 moves closed-subset SVG→PDF into
+`crates/xyg-engine/src/pdf.rs`. Python and Node pass UTF-8 SVG; path
+lowering, Helvetica metrics, ExtGState/shading/image embedding, and
+deterministic object numbering cannot drift. Polar hexbin, custom
 `reduce_C_function`, metric colormaps, LOD over the 1,024-group painter
 budget, and rich style exceptions stay on the compatibility exporters.
 Scene 25 is unchanged. Polar heatmap, metric
@@ -198,8 +201,8 @@ composition; panel backgrounds and unsupported panels deliberately select
 compatibility before compilation. `python/xyg/_scene_v3.py` is the single
 preflight/orchestration seam for that subset: `public_static_export` owns the
 Scene-format selection, while Python entry points only retain host options and
-the documented compatibility exceptions. `_svg.py`, `_raster.py`, and
-`_pdf.py` remain compatibility owners for rich text and legend variants, every
+the documented compatibility exceptions. `_svg.py` and
+`_raster.py` remain compatibility owners for rich text and legend variants, every
 annotation outside that bounded primary Cartesian family (including rotation,
 collision/layout directives, markup, CSS/classes, and custom typography), themes, custom fonts or CSS/classes,
 nonliteral/custom chrome, custom marker paths/glyphs, data-driven symbol channels, unmodeled marks or
@@ -486,6 +489,7 @@ Forbidden:
 | `crates/xyg-engine/src/kernels.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/lib.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/lod_plan.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/pdf.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/projection.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/raster.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/sankey.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
@@ -609,7 +613,7 @@ Forbidden:
 | `python/xyg/_ooc.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_paint.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xyg/_payload.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xyg/_pdf.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_pdf.py` | Python host | `python-host` | `keep-host`; ABI 113 moves closed-subset SVG→PDF into Rust; this module only coerces UTF-8 and raises the historical diagnostic wording | #274 |
 | `python/xyg/_png.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xyg/_raster.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xyg/_sankey.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |

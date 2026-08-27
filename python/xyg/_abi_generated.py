@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 112
-SIGNATURE_SHA256 = "9cbf65380aa4a14eb6b62ade9ea3549b828ca538711da5853c7ed6a544ac1f10"
+ABI_VERSION = 113
+SIGNATURE_SHA256 = "dd6434fe438b270dc0930af76783de02bd7eb9f6938d9977b7c526d293cbfc87"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -602,6 +602,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_svg_poly_path
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_svg_to_pdf(const uint8_t * svg, size_t svg_len, uint8_t * out, size_t out_cap)
+    function = lib.xyg_svg_to_pdf
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_temporal_column_copy(uint64_t handle, int64_t * out_values, uint8_t * out_validity, uint64_t capacity)
     function = lib.xyg_temporal_column_copy
     function.restype = ctypes.c_int32

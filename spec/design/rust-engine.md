@@ -176,6 +176,10 @@ crates/
     scene_annotations.rs # primary XYAD annotation framing (ABI 112): XYAT/
                         #   XYAL/XYAR/XYAC/XYAW tables, version selection,
                         #   envelope concatenation, and bounded-text rejection.
+    pdf.rs              # closed-subset SVG→PDF (ABI 113): path lowering,
+                        #   Helvetica metrics, ExtGState/shading/image
+                        #   embedding, deterministic xref. Native hosts only
+                        #   (`raster` feature); WASM keeps default-features off.
     svg.rs              # screen-space coordinate serialization for the SVG path:
                         #   `poly_path` alone, folding parallel f64 x/y arrays
                         #   into one `M`/`L` path-data string with Python-matching
