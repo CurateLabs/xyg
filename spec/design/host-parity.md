@@ -8,7 +8,8 @@ scan, bin, or select a grid/domain policy. Exact mean-color accumulation stays
 on the legacy seam until its separately bounded stream contract exists.
 Cancellation cleanup and the aggregate peak model remain Rust-owned. Native
 hosts continue to use the same `xyg-engine` binning kernels. Wiring streamed
-`XYAO` into the complete live density/LOD product path remains part of #59.
+`XYAO` into aggregate production beyond the current density/Scene vertical is
+tracked by the post-M2 follow-up **Expand direct-browser aggregate production beyond the density/Scene vertical** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)).
 
 **Status:** requirements locked and **ready for review** with
 [graph-fork-requirements.md](graph-fork-requirements.md); implementation design
@@ -51,16 +52,16 @@ treat VS Code, notebooks, or Reflex as separate engine stacks.
 |---|---|---|
 | **1. Python host** | `python/xyg/` (+ `python/reflex_xy/`) | Primary authoring host for notebooks and Python apps. Loads the Rust cdylib via **ctypes**. Surfaces: **anywidget** notebooks (`show()`), **HTML export** (`to_html()` / standalone), and **Reflex**. Embeds a **copy** of the paint client plus the packaged `wasm-worker.js` / `xyg-wasm.wasm` tick assets in the wheel (`python/xyg/static/`) so Python users need no Node. The public import is `xyg`; `reflex_xy` remains a separate integration namespace. |
 | **2. Node host** | `packages/xy-node` (`@curatelabs/xyg-node`) | Thin Node bindings (koffi) over the **same** Rust C ABI. Covers **server-side Node** and **VS Code extensions**: VS Code is a **consumer of the Node bindings**, not a fourth stack. Never publish `@xy/node`. Native loading uses the exact optional platform package (`@curatelabs/xyg-node-<platform>-<arch>`, #52), with only an explicit absolute-path `XYG_NATIVE_LIB` development override; it never searches a checkout, working directory, system path, or Python. Windows arm64 is an explicit unsupported error. `toHtml()` inlines the host-neutral standalone client, not the Python tree. Root `npm ci` does **not** install this package; CI Test and Python 3.11 jobs run `npm ci --prefix packages/xy-node` so koffi is present for Node host tests. |
-| **3. Browser surface** | `js/src/*.ts` + Rust/WASM → `@curatelabs/xyg` (`packages/xy-client/dist/{index,standalone}.js`) | Shared WebGL2 painter and browser lifecycle. Today it draws §29 buffers uploaded by Python/Node and has a bounded kernel-less fallback; #59 adds direct browser execution by compiling the same Rust engine to WebAssembly in a Worker. TypeScript keeps paint, pick, gestures, accessibility, DOM chrome, transitions, caches, and request scheduling; Rust owns canonical layout/LOD/encode decisions. |
+| **3. Browser surface** | `js/src/*.ts` + Rust/WASM → `@curatelabs/xyg` (`packages/xy-client/dist/{index,standalone}.js`) | Shared WebGL2 painter and browser lifecycle. It draws §29 buffers uploaded by Python/Node and uses the #59 foundation for direct browser execution by the same Rust engine compiled to WebAssembly in a Worker. TypeScript keeps paint, pick, gestures, accessibility, DOM chrome, transitions, caches, and request scheduling; Rust owns canonical layout/LOD/encode decisions. |
 
-The #59 foundation now adds `crates/xyg-wasm`, a generated raw-export adapter,
+The #59 foundation adds `crates/xyg-wasm`, a generated raw-export adapter,
 and an explicit static module Worker. It proves bounded JS→WASM staging,
 version/status/lifecycle behavior, exact Scene validation/paint lowering, and
 packed typed-column compile into the same canonical Scene batch native hosts
 encode. Public `frameWasmChart` / `renderWasmChart` transfer typed series while
-Rust assigns identities and expands canonical mark/default geometry; density replacement remains
-open, so the direct-browser product acceptance remains open. See
-[browser-wasm.md](browser-wasm.md).
+Rust assigns identities and expands canonical mark/default geometry. The
+current density/Scene vertical is delivered; broader aggregate production is
+tracked by the post-M2 follow-up **Expand direct-browser aggregate production beyond the density/Scene vertical** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)). See [browser-wasm.md](browser-wasm.md).
 
 Those typed series use versioned `XYTS` canonical compile ingress: exact raw
 f64 source columns move JS → Worker and undergo one bounded copy into WASM.
@@ -113,8 +114,9 @@ larger meshes remain compatibility behavior. For ribbons,
 Python and Node pack two adjacent endpoint rows and ABI 97 makes Rust apply the
 axis transforms and expand the fixed 96-interval cubic into 97 paired Scene
 Band samples. Two-ended gradients, polar projection, LOD/density, and
-direct-browser ribbon authoring remain explicit boundaries; the last is #59
-work. Every unmodeled output contract remains an explicit compatibility route.
+direct-browser ribbon authoring remain explicit boundaries; broader
+direct-browser production paths are tracked by the post-M2 follow-up **Expand direct-browser aggregate production beyond the density/Scene vertical** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)). Every
+unmodeled output contract remains an explicit compatibility route.
 ABI 98 additionally gives both composition hosts one compact grouped violin
 ingress. Hosts pack values, group offsets/centers, bins, width, orientation,
 and literal style; Rust owns finite filtering, density normalization,
@@ -217,8 +219,8 @@ authored-empty primary Cartesian linear/log/symlog/category/UTC-time ChartView
 axes and eligible ChartView colorbars already use that lifecycle via
 `attachWasmTicks`. Hosted `to_html()`, notebook widgets, and Reflex `XYChart`
 attach when they pass explicit Worker/WASM URLs; srcdoc notebooks and
-secondary/polar paths
-remain #59 work.
+secondary/polar paths remain frozen deferred compatibility keepers outside the
+claimed M2 subset.
 
 For the migrated subset, public Python SVG and native PNG now use the Rust
 Scene consumers and public PDF consumes their Rust SVG. The shared predicate
@@ -242,7 +244,8 @@ custom fonts, CSS/classes, theme-driven chrome, or arbitrary annotation text.
 - **Browser TypeScript never reimplements layout / LOD / encode** for the
   product path. The client applies Rust-produced live §29 offset-f32/u8 buffers and runs screen-bounded
   interaction; force ticks and LOD plans stay off the browser main thread’s
-  decision path (native Rust today, the same Rust compiled to WASM under #59).
+  decision path (native Rust and the same Rust compiled to WASM by the #59
+  foundation).
 - **Isolation:** the Node package MUST NOT use browser-only APIs (`window`,
   `document`, WebGL, DOM). The browser client MUST NOT import `koffi`,
   `node:fs`, or other Node-only modules.
@@ -350,7 +353,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   `GraphData`. `graph()` / `composeGraph()` accept GraphForge tables or a ready
   `GraphData` and attach `tooltip_rows` / identity meta for hover, encodings,
   and export. The browser never imports Arrow or receives UUIDs as JSON
-  numbers. Native-vs-WASM projection parity is covered with #59.
+  numbers. Native-vs-WASM projection parity is covered by the #59 foundation.
 - **REQ-HOSTPARITY-2e (MUST).** Graph node/edge `tooltip_rows` and continuous
   size/color channels ship with the same wire shape on Python and Node
   (`tooltip_rows` length-checked against geometry; Node `shipScalar` mirrors

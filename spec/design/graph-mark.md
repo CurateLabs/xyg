@@ -181,7 +181,7 @@ meta. When render LOD keeps a 1:1 edge mapping, `edge_ids` mirrors
 name projection columns. Generic graph ingest and `from_networkx()` remain
 available and
 compile to the same render pipeline. Browser/WASM identity round-trip for the
-same projection handle remains under #59.
+same projection handle is covered by the #59 foundation.
 
 **Compile target:** one logical `graph` mark expands to a Rust-emitted
 **render graph** whose leaf geometry is wire traces `segments` (edges) +
