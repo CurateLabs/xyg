@@ -31,8 +31,9 @@ import {
   resolveGraphData,
   sankeyLayout,
 } from "../src/index.js";
+import { ABI_VERSION } from "../src/native-path.js";
 
-const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? 100);
+const EXPECTED_ABI = Number(process.env.XYG_EXPECTED_ABI ?? ABI_VERSION);
 
 test("abi version matches expected", () => {
   assert.equal(abiVersion(), EXPECTED_ABI);
