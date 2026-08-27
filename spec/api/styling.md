@@ -1419,7 +1419,7 @@ an unrecognized string never failed; it landed somewhere. `"northeast"` and
 `"best"` scores each candidate box by the fraction of sampled marks inside it
 and keeps the least occupied, preferring the earlier candidate on a near-tie —
 Matplotlib's rule. It resolves **once, at payload-build time**
-(`xyg._legendfit`), so the client and the two static writers all receive a
+(`xyg._legendfit` packing `xyg_legend_normalize` / `xyg_legend_best_loc`), so the client and the two static writers all receive a
 settled location and cannot disagree about it (§28).
 
 The sampling is normative, because a different stride would place the legend

@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 119
-SIGNATURE_SHA256 = "fb1b824d8b7fae8ce5d9f88ee7bd9d93aeb9765ad1c890c92c6d33813b36d235"
+ABI_VERSION = 120
+SIGNATURE_SHA256 = "26b23bf24cf8ed684d908c6cf3d5b3bebcd6cff8e0a806f8fec7c9e4eb4fb6fb"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -338,6 +338,14 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_is_sorted
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_legend_best_loc(const double * xs, const double * ys, size_t n, const size_t * starts, size_t n_series, const uint32_t * label_lens, size_t n_labels)
+    function = lib.xyg_legend_best_loc
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_legend_normalize(const double * x, const double * y, size_t len, double xlo, double xhi, double ylo, double yhi, int32_t x_reverse, int32_t y_reverse, int32_t x_scale, int32_t y_scale, double x_constant, double y_constant, double * out_x, double * out_y, size_t capacity)
+    function = lib.xyg_legend_normalize
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_local_log_density(const double * x, const double * y, size_t len, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, float * out)
     function = lib.xyg_local_log_density
     function.restype = ctypes.c_int32

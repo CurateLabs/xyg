@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -307,6 +307,109 @@ export function contourLevels(data, nLevels = 0) {
     throw new Error("xyg_contour_levels failed");
   }
   return out.subarray(0, written);
+}
+
+const LEGEND_SCALE = Object.freeze({ linear: 0, log: 1, symlog: 2 });
+
+/** Matplotlib `loc="best"` candidates in preference order (ABI 120). */
+export const LEGEND_CANDIDATE_ORDER = Object.freeze([
+  "upper right",
+  "upper left",
+  "lower left",
+  "lower right",
+  "center right",
+  "center left",
+  "lower center",
+  "upper center",
+  "center",
+]);
+
+function legendScaleCode(scale) {
+  if (scale == null || scale === "linear") return 0;
+  const code = LEGEND_SCALE[scale];
+  return code == null ? 0 : code;
+}
+
+/** Display-space occupancy sample. Returns null when nothing is scorable. */
+export function legendNormalize(x, y, {
+  xDomain, yDomain,
+  xReverse = false, yReverse = false,
+  xScale = "linear", yScale = "linear",
+  xConstant = 1, yConstant = 1,
+} = {}) {
+  const xv = asF64Array(x);
+  const yv = asF64Array(y);
+  if (xv.length !== yv.length) {
+    throw new Error("legendNormalize x and y must have equal length");
+  }
+  const capacity = Math.min(xv.length, 512);
+  const outX = new Float64Array(capacity);
+  const outY = new Float64Array(capacity);
+  const written = Number(
+    xyLegendNormalize(
+      f64Ptr(xv),
+      f64Ptr(yv),
+      BigInt(xv.length),
+      Number(xDomain[0]),
+      Number(xDomain[1]),
+      Number(yDomain[0]),
+      Number(yDomain[1]),
+      xReverse ? 1 : 0,
+      yReverse ? 1 : 0,
+      legendScaleCode(xScale),
+      legendScaleCode(yScale),
+      Number(xConstant),
+      Number(yConstant),
+      capacity ? f64Ptr(outX) : null,
+      capacity ? f64Ptr(outY) : null,
+      BigInt(capacity),
+    ),
+  );
+  if (!Number.isFinite(written) || written < 0 || written > capacity) {
+    throw new Error("xyg_legend_normalize failed");
+  }
+  if (written === 0) return null;
+  return { x: outX.subarray(0, written), y: outY.subarray(0, written) };
+}
+
+/** Least-occupied candidate name for concatenated normalized series. */
+export function legendBestLoc(series, labelLens = []) {
+  const rows = Array.isArray(series) ? series : [];
+  const starts = new BigUint64Array(rows.length);
+  let total = 0;
+  for (let i = 0; i < rows.length; i += 1) {
+    starts[i] = BigInt(total);
+    const row = rows[i];
+    const xv = row.x ?? row[0];
+    total += xv.length;
+  }
+  const xs = new Float64Array(total);
+  const ys = new Float64Array(total);
+  let at = 0;
+  for (const row of rows) {
+    const xv = row.x ?? row[0];
+    const yv = row.y ?? row[1];
+    if (xv.length !== yv.length) {
+      throw new Error("legendBestLoc series x and y must have equal length");
+    }
+    xs.set(xv, at);
+    ys.set(yv, at);
+    at += xv.length;
+  }
+  const labels = Uint32Array.from(labelLens, (value) => Number(value) >>> 0);
+  const code = xyLegendBestLoc(
+    total ? f64Ptr(xs) : null,
+    total ? f64Ptr(ys) : null,
+    BigInt(total),
+    rows.length ? pointer(starts, "size_t *") : null,
+    BigInt(rows.length),
+    labels.length ? u32Ptr(labels) : null,
+    BigInt(labels.length),
+  );
+  if (!Number.isInteger(code) || code < 0 || code >= LEGEND_CANDIDATE_ORDER.length) {
+    throw new Error("xyg_legend_best_loc failed");
+  }
+  return LEGEND_CANDIDATE_ORDER[code];
 }
 
 const HEX_REDUCE = Object.freeze({ count: 0, mean: 1, sum: 2 });

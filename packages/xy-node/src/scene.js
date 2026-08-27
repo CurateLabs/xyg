@@ -25,7 +25,7 @@ import {
   xyEncodeWebp,
   xySceneVersion,
 } from "./native.js";
-import { asF64Array, f64Ptr, shouldUseDensity, u32Ptr, u8Ptr } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, shouldUseDensity, u32Ptr, u8Ptr } from "./encode.js";
 import { cssColorRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -1251,6 +1251,56 @@ export function sceneExportSupportReason(figure, { width = null, height = null }
 
 const LEGEND_LOCATIONS = new Map([["upper right", 0], ["upper left", 1], ["lower left", 2], ["lower right", 3], ["center right", 4], ["center left", 5], ["upper center", 6], ["lower center", 7], ["center", 8]]);
 
+function legendColumnValues(column) {
+  if (column == null) return null;
+  if (ArrayBuffer.isView(column) || Array.isArray(column)) return asF64Array(column);
+  if (column.values != null && typeof column.values !== "function") return asF64Array(column.values);
+  return null;
+}
+
+function legendAxisSpec(figure, axisId) {
+  const options = figure.axis_options?.[axisId] ?? figure[`${axisId}Axis`] ?? figure[`${axisId}_axis`] ?? {};
+  let lo, hi;
+  try {
+    [lo, hi] = figure._range(axisId);
+  } catch {
+    return null;
+  }
+  const reverse = lo > hi;
+  if (reverse) [lo, hi] = [hi, lo];
+  if (!(Number.isFinite(lo) && Number.isFinite(hi)) || hi <= lo) return null;
+  const scale = options.type ?? options.scale ?? options.kind ?? "linear";
+  const constant = options.constant == null || Number(options.constant) === 0 ? 1 : Number(options.constant);
+  return { domain: [lo, hi], reverse, scale, constant };
+}
+
+function resolveLegendBestLoc(figure) {
+  const series = [];
+  const labelLens = [];
+  for (const trace of figure.traces ?? []) {
+    if (trace.hidden) continue;
+    if (trace.name != null && String(trace.name).length > 0) labelLens.push(String(trace.name).length);
+    const xv = legendColumnValues(trace.x);
+    const yv = legendColumnValues(trace.y);
+    if (xv == null || yv == null || xv.length !== yv.length) continue;
+    const xSpec = legendAxisSpec(figure, trace.x_axis ?? "x");
+    const ySpec = legendAxisSpec(figure, trace.y_axis ?? "y");
+    if (xSpec == null || ySpec == null) continue;
+    const projected = legendNormalize(xv, yv, {
+      xDomain: xSpec.domain,
+      yDomain: ySpec.domain,
+      xReverse: xSpec.reverse,
+      yReverse: ySpec.reverse,
+      xScale: xSpec.scale,
+      yScale: ySpec.scale,
+      xConstant: xSpec.constant,
+      yConstant: ySpec.constant,
+    });
+    if (projected != null) series.push(projected);
+  }
+  return legendBestLoc(series, labelLens);
+}
+
 function legendInput(figure, entries, styles) {
   if (figure.showLegend === false || entries.length === 0) return new Uint8Array();
   const options = figure.legend ?? {};
@@ -1258,8 +1308,9 @@ function legendInput(figure, entries, styles) {
   if (Object.keys(options).some((key) => !allowed.has(key)) || Number(options.ncols ?? 1) !== 1) throw new RangeError("Scene v12 primary legends do not yet encode anchors, multiple columns, or custom content");
   if (["toggle", "highlight"].some((key) => Object.hasOwn(options, key) && options[key] !== false)) throw new RangeError("Scene v12 primary legends are static; toggle and highlight must be false");
   const authoredLoc = options.loc;
-  const loc = authoredLoc ?? "upper right";
-  if (!LEGEND_LOCATIONS.has(loc) || loc === "best") throw new RangeError(`Scene v12 does not support legend location ${JSON.stringify(loc)}`);
+  let loc = authoredLoc ?? "upper right";
+  if (loc === "best") loc = resolveLegendBestLoc(figure);
+  if (!LEGEND_LOCATIONS.has(loc)) throw new RangeError(`Scene v12 does not support legend location ${JSON.stringify(loc)}`);
   const style = options.style ?? {};
   const allowedStyle = new Set(["background", "color", "font_size", "fontSize", "title_font_size", "titleFontSize"]);
   if (Object.keys(style).some((key) => !allowedStyle.has(key))) throw new RangeError("Scene v12 legends support only background, color, font_size, and title_font_size");

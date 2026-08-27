@@ -7176,6 +7176,86 @@ def hexbin_groups(
     )
 
 
+def legend_normalize(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    x_domain: tuple[float, float],
+    y_domain: tuple[float, float],
+    *,
+    x_reverse: bool = False,
+    y_reverse: bool = False,
+    x_scale: int = 0,
+    y_scale: int = 0,
+    x_constant: float = 1.0,
+    y_constant: float = 1.0,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]] | None:
+    """Display-space occupancy sample via ``xyg_legend_normalize`` (ABI 120).
+
+    Returns ``None`` when the series has no finite visible pair. Scale codes
+    are 0=linear, 1=log, 2=symlog.
+    """
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("legend_normalize x and y must have equal length")
+    n = len(x)
+    capacity = min(n, 512) if n else 0
+    out_x = np.empty(capacity, dtype=np.float64)
+    out_y = np.empty(capacity, dtype=np.float64)
+    written = _lib.xyg_legend_normalize(
+        _ptr_f64(x),
+        _ptr_f64(y),
+        n,
+        float(x_domain[0]),
+        float(x_domain[1]),
+        float(y_domain[0]),
+        float(y_domain[1]),
+        int(bool(x_reverse)),
+        int(bool(y_reverse)),
+        int(x_scale),
+        int(y_scale),
+        float(x_constant),
+        float(y_constant),
+        _ptr_f64(out_x) if capacity else 0,
+        _ptr_f64(out_y) if capacity else 0,
+        capacity,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid legend_normalize arguments")
+    if written == 0:
+        return None
+    return out_x[: int(written)].copy(), out_y[: int(written)].copy()
+
+
+def legend_best_loc(
+    xs: npt.NDArray[np.float64],
+    ys: npt.NDArray[np.float64],
+    starts: npt.NDArray[np.uintp],
+    label_lens: npt.NDArray[np.uint32],
+) -> int:
+    """Matplotlib ``loc="best"`` candidate index via ``xyg_legend_best_loc``."""
+    xs = _as_f64(xs, "xs")
+    ys = _as_f64(ys, "ys")
+    if len(xs) != len(ys):
+        raise ValueError("legend_best_loc xs and ys must have equal length")
+    starts = np.ascontiguousarray(starts, dtype=np.uintp)
+    label_lens = np.ascontiguousarray(label_lens, dtype=np.uint32)
+    code = int(
+        _lib.xyg_legend_best_loc(
+            _ptr_f64(xs),
+            _ptr_f64(ys),
+            len(xs),
+            starts.ctypes.data if len(starts) else 0,
+            len(starts),
+            label_lens.ctypes.data if len(label_lens) else 0,
+            len(label_lens),
+        )
+    )
+    if code < 0:
+        raise ValueError("invalid legend_best_loc arguments")
+    return code
+
+
 def violin_density(
     data: npt.NDArray[np.float64],
     n_bins: int,

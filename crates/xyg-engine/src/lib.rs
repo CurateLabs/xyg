@@ -26,6 +26,7 @@ pub mod hexbin;
 #[cfg(feature = "raster")]
 pub mod jpeg;
 pub mod kernels;
+pub mod legend_fit;
 pub mod lod_plan;
 #[cfg(feature = "raster")]
 pub mod pdf;

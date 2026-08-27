@@ -192,7 +192,7 @@ listed below still exists.
 | `_scene_v3.try_public_svg`, `try_public_png`, `try_public_pdf` | Rust `SceneDocument` owns SVG/raster/painter lowering; `Figure.to_svg` and `export._native_image` use the one `public_static_export` selector, while Node uses `sceneSvg` / `sceneRasterCommands` | `tests/test_figure_scene_v3.py`, `tests/test_scene_export_support.py`, and `scripts/bench_public_scene_routes.py` exercise the product selector and exact Rust consumers | **removed** |
 | `_svg.py`, `_raster.py`, `_scene.py` compatibility rendering | No complete Rust replacement yet for polar Scene, custom fonts/CSS/classes, continuous gradients, custom marker paths/glyphs, colormap heatmaps/hexbins, density/LOD export, and the rich style/text exceptions below | Existing polar, SVG, raster, style, export, and pyplot suites | **keep loudly** |
 | `_scene_v3.py` figure-to-record assembly | Rust owns record validation, mapping, expansion modes, layout, consumers, the ABI 105 public-export allowlists, ABI 107 mark fill/stroke defaults plus CSS→RGBA8, ABI 108 chrome style defaults, ABI 109 column packing, ABI 110 XYLG legend framing, ABI 111 XYCB colorbar framing, ABI 112 XYAD annotation framing, and ABI 117–118 XYFS figure-compile support including per-trace allowlists; remaining host work is XYEP/Scene record packing and geometry column assembly | Cross-host Scene bytes, `tests/test_scene_export_support.py`, `tests/test_scene_style_native.py`, and Node `sceneExportSupportReason` pin current assembly | **keep as migration debt** |
-| `_figure.py` / `marks.py` host code | Public composition, ingest coercion, validation text, category factorization, rollback, and explicit custom-reducer callables / empty-input compatibility are host responsibilities; ABI 119 owns sort, histogram/contour edge policy, and hex lattice groups | Mark, composition, pyplot, and host-parity suites | **keep host seams** |
+| `_figure.py` / `marks.py` host code | Public composition, ingest coercion, validation text, category factorization, rollback, and explicit custom-reducer callables / empty-input compatibility are host responsibilities; ABI 119 owns sort, histogram/contour edge policy, and hex lattice groups; ABI 120 owns `loc="best"` occupancy | Mark, composition, pyplot, and host-parity suites | **keep host seams** |
 | `xyg_scene_scatter_svg` Python/Node adapters | Whole-Scene owns the bounded product route, but the version-1 Rust wrapper still serves compatibility scatter rendering and the explicit low-level Node surface | `tests/test_scene_ir.py` and `packages/xy-node/test/scene.test.mjs` | **keep compatibility ABI** |
 
 Static-export routing status (#117): `Figure.to_svg`, native `to_png`, native
@@ -506,6 +506,7 @@ Forbidden:
 | `crates/xyg-engine/src/hexbin.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/jpeg.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/kernels.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/legend_fit.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/lib.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/lod_plan.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/pdf.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
@@ -629,7 +630,7 @@ Forbidden:
 | `python/xyg/_graph.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xyg/_hosts.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_jpeg.py` | Python host | `python-host` | `keep-host`; ABI 114 moves baseline JPEG encode into Rust; this module only coerces a NumPy array and forwards `quality` | #274 |
-| `python/xyg/_legendfit.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_legendfit.py` | Python host | `python-host` | `keep-host`; ABI 120 moves occupancy scoring into Rust; this module walks traces, packs label lengths, and settles `best` before the wire | — |
 | `python/xyg/_native.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_ooc.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_paint.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |

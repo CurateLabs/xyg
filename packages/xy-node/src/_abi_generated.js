@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 119;
-export const SIGNATURE_SHA256 = "fb1b824d8b7fae8ce5d9f88ee7bd9d93aeb9765ad1c890c92c6d33813b36d235";
+export const ABI_VERSION = 120;
+export const SIGNATURE_SHA256 = "26b23bf24cf8ed684d908c6cf3d5b3bebcd6cff8e0a806f8fec7c9e4eb4fb6fb";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -87,6 +87,8 @@ export let xyHistogramMarkEdges;
 export let xyHistogramUniform;
 export let xyIndexedTriangles;
 export let xyIsSorted;
+export let xyLegendBestLoc;
+export let xyLegendNormalize;
 export let xyLocalLogDensity;
 export let xyLodGridShape;
 export let xyLodPlan;
@@ -302,6 +304,8 @@ export function bindGeneratedAbi(lib) {
   xyHistogramUniform = lib.func("size_t xyg_histogram_uniform(const double * data, size_t len, double lo, double hi, size_t n_bins, int32_t density, double * out_counts)");
   xyIndexedTriangles = lib.func("size_t xyg_indexed_triangles(const double * x, const double * y, size_t vertex_count, const int64_t * triangles, size_t face_count, const double * values, size_t value_len, uint32_t value_mode, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, double * out_values)");
   xyIsSorted = lib.func("int32_t xyg_is_sorted(const double * data, size_t len)");
+  xyLegendBestLoc = lib.func("int32_t xyg_legend_best_loc(const double * xs, const double * ys, size_t n, const size_t * starts, size_t n_series, const uint32_t * label_lens, size_t n_labels)");
+  xyLegendNormalize = lib.func("size_t xyg_legend_normalize(const double * x, const double * y, size_t len, double xlo, double xhi, double ylo, double yhi, int32_t x_reverse, int32_t y_reverse, int32_t x_scale, int32_t y_scale, double x_constant, double y_constant, double * out_x, double * out_y, size_t capacity)");
   xyLocalLogDensity = lib.func("int32_t xyg_local_log_density(const double * x, const double * y, size_t len, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, float * out)");
   xyLodGridShape = lib.func("int32_t xyg_lod_grid_shape(int32_t px_w, int32_t px_h, uint64_t visible, double target_per_cell, int32_t * out_w, int32_t * out_h)");
   xyLodPlan = lib.func("int32_t xyg_lod_plan(uint64_t visible, double budget, int32_t in_drill, double exit_factor, int32_t px_w, int32_t px_h, double target_per_cell, int32_t * out_exact, uint32_t * out_mode, int32_t * out_grid_w, int32_t * out_grid_h)");

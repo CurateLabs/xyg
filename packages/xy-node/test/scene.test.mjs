@@ -371,8 +371,10 @@ test("Node Scene v9 primary legend matches Python bytes and rejects unsupported 
   assert.throws(() => anchored.toScene(), /anchors/);
   const interactive = new Figure({ legend: { toggle: true } }); interactive.scatter([1], [1], { name: "x" });
   assert.throws(() => interactive.toScene(), /static/);
-  const automatic = new Figure({ legend: { loc: "best" } }); automatic.scatter([1], [1], { name: "x" });
-  assert.throws(() => automatic.toScene(), /location/);
+  const automatic = new Figure({ legend: { loc: "best" } }); automatic.scatter([0, 1], [0, 1], { name: "x" });
+  const resolved = automatic.toScene();
+  const locByte = resolved[Buffer.from(resolved).indexOf("XYLG") + 4];
+  assert.equal(locByte, 1); // upper left in Scene XYLG codes
 });
 
 test("Node Scene v9 whole-scene consumers reject malformed and unsupported input", () => {
@@ -951,7 +953,7 @@ test("Node public Scene chrome setters snapshot literals and retain Rust validat
   figure.setColorbar({
     domain: [0, 1], stops: [[0, [0, 0, 0, 255]], [1, [255, 255, 255, 255]]],
   });
-  assert.throws(() => figure.setLegend({ loc: "best" }).toScene(), /location/);
+  assert.doesNotThrow(() => figure.setLegend({ loc: "best" }).toScene());
   for (const [call, value] of [[() => figure.setStyle([]), /Scene style must be an object/], [() => figure.setLegend(null), /Scene legend must be an object/], [() => figure.setAxis("x", []), /Scene x axis options must be an object/]]) {
     assert.throws(call, value);
   }

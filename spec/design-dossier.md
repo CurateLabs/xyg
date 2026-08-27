@@ -1301,6 +1301,12 @@ ABI 119 moves composition mark ingress into Rust. Hosts call
 edges, contour isoline spacing, and custom-hex lattice membership are
 engine-owned and identical for Python and Node. Custom reducers stay host
 callables over those groups.
+ABI 120 moves composition `loc="best"` occupancy into Rust. Hosts call
+`xyg_legend_normalize` and `xyg_legend_best_loc`; display-space projection,
+stride/finite caps, drop-not-clamp off-plot marks, and the 0.02 tie band are
+engine-owned and identical for Python and Node. Hosts still walk traces and
+pack label lengths, then settle `best` to a concrete location before Scene
+packing.
 ABI 110 moves primary Scene legend framing into Rust. Hosts pass loc/flags,
 font sizes, paints, title, and per-entry meta plus labels; XYLG header
 layout, text offsets, and bounded-text rejection are engine-owned and

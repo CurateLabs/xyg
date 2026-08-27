@@ -200,7 +200,10 @@ Python and Node call `xyg_argsort_stable`, `xyg_histogram_mark_edges`,
 `xyg_contour_levels`, and `xyg_hexbin_groups` so line/area/error-band sort,
 integer/empty-auto histogram edges, contour isoline spacing, and custom-hex
 lattice membership cannot drift. Custom `reduce_C_function` callables stay
-host-side over those groups. ABI 110 makes primary legend framing the same way: Python
+host-side over those groups. ABI 120 moves composition `loc="best"` scoring into
+Rust: Python and Node call `xyg_legend_normalize` and `xyg_legend_best_loc` so
+display-space occupancy, the 4096/512 sample, and the 0.02 tie band cannot drift.
+ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
 `xyg_scene_pack_colorbar` with domain/stops/ticks/title.

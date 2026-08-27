@@ -122,6 +122,8 @@ box_geometry = _impl.box_geometry
 hexbin = _impl.hexbin
 hexbin_ingress = _impl.hexbin_ingress
 hexbin_groups = _impl.hexbin_groups
+legend_best_loc = _impl.legend_best_loc
+legend_normalize = _impl.legend_normalize
 violin_density = _impl.violin_density
 violin_rects = _impl.violin_rects
 histogram_edges = _impl.histogram_edges
@@ -174,6 +176,8 @@ __all__ = [
     "histogram_uniform",
     "indexed_triangles",
     "is_sorted",
+    "legend_best_loc",
+    "legend_normalize",
     "local_log_density",
     "lod_grid_shape",
     "lod_plan",

@@ -1,4 +1,4 @@
-"""Least-occupied legend placement — the engine behind ``loc="best"``.
+"""Least-occupied legend placement — the host seam behind ``loc="best"``.
 
 `best` is Matplotlib's default `loc`, so it is the spelling users reach for
 first. XYG resolves it **at payload-build time** into one of the concrete
@@ -7,15 +7,15 @@ the SVG writer and the raster writer all receive a settled `loc` and none of
 them needs its own occupancy model. §28 — the choice is recorded on the wire
 rather than made three times behind the user's back.
 
-The scoring mirrors Matplotlib's: score every candidate box by the fraction of
-sampled marks that land inside it and keep the least occupied, preferring the
-earlier candidate on a near-tie so a symmetric series lands where Matplotlib
-puts it.
+Occupancy scoring lives in Rust (ABI 120, `xyg_legend_normalize` /
+`xyg_legend_best_loc`). This module walks a figure's traces, packs columns and
+label lengths, and forwards those envelopes so Python and Node cannot drift.
 
-`xyg.pyplot._axes.Axes._best_legend_loc` carries a second copy of this scoring
-that runs against the shim's own entry arrays. The two are pinned to agree by
-`tests/test_legend_best_placement.py`; folding the shim onto this module is a
-follow-up held back only because the compat stack is rewriting that method.
+`xyg.pyplot._axes.Axes._best_legend_loc` carries a second, measured copy of
+this scoring that runs against the shim's own entry arrays. The two are pinned
+to agree by `tests/test_legend_best_placement.py`; folding the shim onto this
+module is a follow-up held back only because the compat stack is rewriting that
+method.
 """
 
 from __future__ import annotations
@@ -24,6 +24,8 @@ from collections.abc import Sequence
 from typing import Any, Optional
 
 import numpy as np
+
+from . import kernels
 
 #: Every Matplotlib candidate, in Matplotlib's own preference order (corners,
 #: then the mid-edges, then dead center) so a tie keeps the first. Each entry is
@@ -49,6 +51,8 @@ _CANDIDATE_ORDER: tuple[str, ...] = (
 _TIE_BAND = 0.02
 
 _FALLBACK = "upper right"
+
+_SCALE_CODE = {"log": 1, "symlog": 2}
 
 
 def candidate_boxes(
@@ -96,6 +100,10 @@ def display_transform(
     return values
 
 
+def _scale_code(scale: Optional[str]) -> int:
+    return _SCALE_CODE.get(str(scale) if scale is not None else "", 0)
+
+
 def normalize(
     xv: np.ndarray,
     yv: np.ndarray,
@@ -123,68 +131,40 @@ def normalize(
     except (TypeError, ValueError):
         return None
     xv, yv = xv.reshape(-1), yv.reshape(-1)
-    if len(xv) > 4096:
-        # Stride down before the finite scan: occupancy is already a sampled
-        # measure, so a full-array isfinite pass is pure O(n) build cost on a
-        # large legended series. Sparse finite points can slip between strides,
-        # so a sample with nothing finite falls back to the full array.
-        strided = np.linspace(0, len(xv) - 1, 4096, dtype=np.intp)
-        sampled_x, sampled_y = xv[strided], yv[strided]
-        if (np.isfinite(sampled_x) & np.isfinite(sampled_y)).any():
-            xv, yv = sampled_x, sampled_y
-    finite = np.flatnonzero(np.isfinite(xv) & np.isfinite(yv))
-    if len(finite) > 512:
-        finite = finite[np.linspace(0, len(finite) - 1, 512, dtype=np.intp)]
-    if not len(finite):
-        return None
-    xlo, xhi = (float(v) for v in display_transform(np.asarray(x_domain), x_scale, x_constant))
-    ylo, yhi = (float(v) for v in display_transform(np.asarray(y_domain), y_scale, y_constant))
-    if not (np.isfinite(xlo) and np.isfinite(xhi) and np.isfinite(ylo) and np.isfinite(yhi)):
-        return None
-    if xhi <= xlo or yhi <= ylo:
-        return None
-    xn = (display_transform(xv[finite], x_scale, x_constant) - xlo) / (xhi - xlo)
-    yn = (display_transform(yv[finite], y_scale, y_constant) - ylo) / (yhi - ylo)
-    # Off-plot marks are clipped by every renderer, so they must not count as
-    # occupancy. `np.clip` would pile them onto an edge and guard a corner the
-    # viewer sees as empty.
-    visible = (
-        np.isfinite(xn) & np.isfinite(yn) & (xn >= 0.0) & (xn <= 1.0) & (yn >= 0.0) & (yn <= 1.0)
+    return kernels.legend_normalize(
+        xv,
+        yv,
+        x_domain,
+        y_domain,
+        x_reverse=x_reverse,
+        y_reverse=y_reverse,
+        x_scale=_scale_code(x_scale),
+        y_scale=_scale_code(y_scale),
+        x_constant=x_constant,
+        y_constant=y_constant,
     )
-    xn, yn = xn[visible], yn[visible]
-    if not len(xn):
-        return None
-    if x_reverse:
-        xn = 1.0 - xn
-    if y_reverse:
-        yn = 1.0 - yn
-    return xn, yn
 
 
 def best_loc(series: Sequence[tuple[np.ndarray, np.ndarray]], labels: Sequence[str]) -> str:
     """The least occupied candidate location for these normalized series."""
-    if not series:
-        return _FALLBACK
-    box_w, box_h = legend_footprint(labels)
-    candidates = candidate_boxes(box_w, box_h)
-    scores: dict[str, float] = {name: 0.0 for name, *_ in candidates}
-    used = 0
+    xs_parts: list[np.ndarray] = []
+    ys_parts: list[np.ndarray] = []
+    starts: list[int] = []
+    n = 0
     for xn, yn in series:
-        count = float(len(xn))
-        if not count:
-            continue
-        used += 1
-        for name, xl, xh, yl, yh in candidates:
-            inside = (xn >= xl) & (xn <= xh) & (yn >= yl) & (yn <= yh)
-            scores[name] += float(np.count_nonzero(inside)) / count
-    if not used:
-        return _FALLBACK
-    # Normalize to a mean occupancy in [0, 1] so the tie band is independent of
-    # how many series were scored.
-    for name in scores:
-        scores[name] /= used
-    floor = min(scores.values())
-    return next(name for name, score in scores.items() if score <= floor + _TIE_BAND)
+        xv = np.asarray(xn, dtype=np.float64).reshape(-1)
+        yv = np.asarray(yn, dtype=np.float64).reshape(-1)
+        if len(xv) != len(yv):
+            raise ValueError("legend series x and y must have equal length")
+        starts.append(n)
+        xs_parts.append(xv)
+        ys_parts.append(yv)
+        n += len(xv)
+    xs = np.concatenate(xs_parts) if xs_parts else np.empty(0, dtype=np.float64)
+    ys = np.concatenate(ys_parts) if ys_parts else np.empty(0, dtype=np.float64)
+    start_arr = np.asarray(starts, dtype=np.uintp)
+    label_lens = np.asarray([len(str(text)) for text in labels], dtype=np.uint32)
+    return _CANDIDATE_ORDER[kernels.legend_best_loc(xs, ys, start_arr, label_lens)]
 
 
 def resolve_for_figure(figure: Any) -> str:

@@ -32,6 +32,7 @@ use xyg_engine::hexbin;
 use xyg_engine::jpeg;
 use xyg_engine::kernels;
 use xyg_engine::kernels::ZoneMap;
+use xyg_engine::legend_fit;
 use xyg_engine::lod_plan;
 use xyg_engine::pdf;
 use xyg_engine::png_encode;
@@ -111,7 +112,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 119;
+pub const ABI_VERSION: u32 = 120;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10766,6 +10767,148 @@ pub unsafe extern "C" fn xyg_contour_levels(
     levels.len()
 }
 
+/// Display-space occupancy sample for `loc="best"` (ABI 120). Scale is
+/// 0=linear, 1=log, 2=symlog; reverse flags are 0/1. Off-plot marks are
+/// dropped. Returns the count written (0 = nothing scorable), or `usize::MAX`.
+///
+/// # Safety
+/// Non-empty `x`/`y` must be valid for `len` readable f64s. When `capacity`
+/// is nonzero, `out_x`/`out_y` must hold that many writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_legend_normalize(
+    x: *const f64,
+    y: *const f64,
+    len: usize,
+    xlo: f64,
+    xhi: f64,
+    ylo: f64,
+    yhi: f64,
+    x_reverse: i32,
+    y_reverse: i32,
+    x_scale: i32,
+    y_scale: i32,
+    x_constant: f64,
+    y_constant: f64,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        let Some(x_scale) = legend_fit::LegendScale::from_i32(x_scale) else {
+            return usize::MAX;
+        };
+        let Some(y_scale) = legend_fit::LegendScale::from_i32(y_scale) else {
+            return usize::MAX;
+        };
+        if !matches!(x_reverse, 0 | 1) || !matches!(y_reverse, 0 | 1) {
+            return usize::MAX;
+        }
+        let (x, y) = if len == 0 {
+            (&[][..], &[][..])
+        } else {
+            if x.is_null() || y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts(x, len),
+                std::slice::from_raw_parts(y, len),
+            )
+        };
+        let Some(got) = legend_fit::normalize(
+            x,
+            y,
+            (xlo, xhi),
+            (ylo, yhi),
+            x_reverse != 0,
+            y_reverse != 0,
+            x_scale,
+            y_scale,
+            x_constant,
+            y_constant,
+        ) else {
+            return 0;
+        };
+        if got.x.len() > capacity {
+            return usize::MAX;
+        }
+        if got.x.is_empty() {
+            return 0;
+        }
+        if out_x.is_null() || out_y.is_null() {
+            return usize::MAX;
+        }
+        let ox = std::slice::from_raw_parts_mut(out_x, capacity);
+        let oy = std::slice::from_raw_parts_mut(out_y, capacity);
+        ox[..got.x.len()].copy_from_slice(&got.x);
+        oy[..got.y.len()].copy_from_slice(&got.y);
+        got.x.len()
+    })
+}
+
+/// Least-occupied Matplotlib `loc="best"` candidate (ABI 120). Returns
+/// 0..=8 in candidate order (`0` is `"upper right"` and the empty fallback),
+/// or `-1` on invalid arguments. `starts[i]` is the first concatenated index
+/// of series `i`; the last series runs to `n`.
+///
+/// # Safety
+/// Non-empty `xs`/`ys` must be valid for `n` readable f64s. Non-empty
+/// `starts` must be valid for `n_series` size_t values. Non-empty
+/// `label_lens` must be valid for `n_labels` u32 values.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_legend_best_loc(
+    xs: *const f64,
+    ys: *const f64,
+    n: usize,
+    starts: *const usize,
+    n_series: usize,
+    label_lens: *const u32,
+    n_labels: usize,
+) -> i32 {
+    ffi_guard(-1, || {
+        let (xs, ys) = if n == 0 {
+            (&[][..], &[][..])
+        } else {
+            if xs.is_null() || ys.is_null() {
+                return -1;
+            }
+            (
+                std::slice::from_raw_parts(xs, n),
+                std::slice::from_raw_parts(ys, n),
+            )
+        };
+        let starts = if n_series == 0 {
+            &[][..]
+        } else {
+            if starts.is_null() {
+                return -1;
+            }
+            std::slice::from_raw_parts(starts, n_series)
+        };
+        if n_series > 0 {
+            if starts[0] != 0 {
+                return -1;
+            }
+            for window in starts.windows(2) {
+                if window[0] > window[1] || window[1] > n {
+                    return -1;
+                }
+            }
+            if *starts.last().unwrap() > n {
+                return -1;
+            }
+        }
+        let labels = if n_labels == 0 {
+            &[][..]
+        } else {
+            if label_lens.is_null() {
+                return -1;
+            }
+            std::slice::from_raw_parts(label_lens, n_labels)
+        };
+        legend_fit::best_loc(xs, ys, starts, labels)
+    })
+}
+
 /// Wind-rose directional/speed binning. When `n_speed_edges == 0`, quartile
 /// upper edges are derived from finite speeds; otherwise `speed_edges` is
 /// uniqued/sorted and must cover the fastest observation. Writes `n_bands`
@@ -11645,6 +11788,85 @@ mod tests {
         assert_eq!(n, 4);
         assert_eq!(n_indices, 4);
         assert_eq!(lens.iter().take(4).map(|&v| v as usize).sum::<usize>(), 4);
+    }
+
+    #[test]
+    fn legend_normalize_and_best_loc_ffi() {
+        let x = [0.0, 0.5, 1.0];
+        let mut ox = vec![0.0; 8];
+        let mut oy = vec![0.0; 8];
+        let n = unsafe {
+            xyg_legend_normalize(
+                x.as_ptr(),
+                x.as_ptr(),
+                x.len(),
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                0,
+                0,
+                0,
+                0,
+                1.0,
+                1.0,
+                ox.as_mut_ptr(),
+                oy.as_mut_ptr(),
+                ox.len(),
+            )
+        };
+        assert_eq!(n, 3);
+        let starts = [0usize];
+        let labels = [1u32];
+        let loc = unsafe {
+            xyg_legend_best_loc(
+                ox.as_ptr(),
+                oy.as_ptr(),
+                n,
+                starts.as_ptr(),
+                starts.len(),
+                labels.as_ptr(),
+                labels.len(),
+            )
+        };
+        assert_eq!(loc, 1); // upper left
+        assert_eq!(
+            unsafe {
+                xyg_legend_best_loc(
+                    std::ptr::null(),
+                    std::ptr::null(),
+                    0,
+                    std::ptr::null(),
+                    0,
+                    std::ptr::null(),
+                    0,
+                )
+            },
+            0
+        );
+        assert_eq!(
+            unsafe {
+                xyg_legend_normalize(
+                    std::ptr::null(),
+                    std::ptr::null(),
+                    0,
+                    0.0,
+                    1.0,
+                    0.0,
+                    1.0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1.0,
+                    1.0,
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                    0,
+                )
+            },
+            0
+        );
     }
 
     #[test]

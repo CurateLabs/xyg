@@ -580,6 +580,35 @@ def load() -> ctypes.CDLL:
         F64P,
         ctypes.c_size_t,
     ]
+    lib.xyg_legend_normalize.restype = ctypes.c_size_t
+    lib.xyg_legend_normalize.argtypes = [
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_legend_best_loc.restype = ctypes.c_int32
+    lib.xyg_legend_best_loc.argtypes = [
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_size_t),
+        ctypes.c_size_t,
+        U32P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_hexbin_groups.restype = ctypes.c_size_t
     lib.xyg_hexbin_groups.argtypes = [
         F64P,
@@ -1967,6 +1996,40 @@ def main() -> None:
         _ptr(cl_z, ctypes.c_double), 2, 3, _ptr(cl_out, ctypes.c_double), 8
     )
     ok(cl_n == 3 and abs(cl_out[1] - 5.0) < 1e-12, "contour_levels auto")
+
+    lg_x = array("d", [0.0, 0.5, 1.0])
+    lg_ox = array("d", [0.0]) * 8
+    lg_oy = array("d", [0.0]) * 8
+    lg_n = lib.xyg_legend_normalize(
+        _ptr(lg_x, ctypes.c_double),
+        _ptr(lg_x, ctypes.c_double),
+        3,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0,
+        0,
+        0,
+        0,
+        1.0,
+        1.0,
+        _ptr(lg_ox, ctypes.c_double),
+        _ptr(lg_oy, ctypes.c_double),
+        8,
+    )
+    lg_starts = (ctypes.c_size_t * 1)(0)
+    lg_lens = (ctypes.c_uint32 * 1)(1)
+    lg_loc = lib.xyg_legend_best_loc(
+        _ptr(lg_ox, ctypes.c_double),
+        _ptr(lg_oy, ctypes.c_double),
+        lg_n,
+        lg_starts,
+        1,
+        lg_lens,
+        1,
+    )
+    ok(lg_n == 3 and lg_loc == 1, "legend_normalize/best_loc diagonal")
 
     # violin_density: constant sample expands ±0.5 and yields positive density.
     vd = array("d", [3.0, 3.0, 3.0])

@@ -597,8 +597,8 @@ pack the same bounded record, and exact legend bytes are pinned cross-host.
 
 This slice supports a single primary, one-column legend for named,
 constant-style Cartesian traces at an explicit supported location (defaulting
-to `upper right`). Automatic `loc="best"` placement remains unsupported until
-that occupancy policy moves into Rust. Anchors, extra legends,
+to `upper right`). Automatic `loc="best"` is resolved once by Rust occupancy
+scoring (ABI 120) before packing, so Scene never sees the token `"best"`. Anchors, extra legends,
 multiple columns, category rows, continuous ramps, gradients, dashes,
 interactive toggles/highlight, custom content, CSS fonts, and arbitrary style
 declarations fail closed.
@@ -1058,7 +1058,9 @@ observations plus axis ids/keys. ABI 118 does not change Scene records either;
 `XYFS` v2 adds per-trace allowlist flags so kind and mark-feature diagnostics
 are engine-owned. ABI 119 does not change Scene records either; composition
 sort, histogram/contour edge policy, and custom-hex lattice groups are
-engine-owned before Scene packing. ABI 110 does not change Scene records either;
+engine-owned before Scene packing. ABI 120 does not change Scene records either;
+`xyg_legend_normalize` / `xyg_legend_best_loc` own composition `loc="best"`
+occupancy so hosts settle a concrete location before XYLG packing. ABI 110 does not change Scene records either;
 `xyg_scene_pack_legend` owns primary XYLG legend framing from loc/flags,
 paints, title, and entry meta. ABI 111 does not change Scene records either;
 `xyg_scene_pack_colorbar` owns primary XYCB v2 framing from domain, stops,
