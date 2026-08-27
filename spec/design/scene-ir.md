@@ -49,10 +49,11 @@ linear, base-10 log, symmetric-log, category, angular, and time/calendar axes,
 plus vectorized linear, log, and symlog scale records. Each tick record carries
 all positions, the labeled subset, and the canonical step. Rust applies the
 existing 1/2/2.5/5/10 linear ladder and 1/2/5 log ladder, with a hard 200-tick
-ceiling. Node exposes every ABI family as `axisTicks`. Python's SVG and raster
-`_svg.axis_ticks` path currently consumes only symmetric-log kind 6 from this
-ABI; its linear, log, category, angular, and time branches retain their local
-compatibility helpers until their individual cutovers.
+ceiling. Node exposes every ABI family as `axisTicks`. Python's compatibility
+SVG/raster and pyplot locator paths now call `_svg.axis_ticks`, which maps each
+automatic family directly to this ABI. The retired per-family Python wrappers
+contained no fallback ladder; authored-value filtering, polar/secondary
+placement, and rich label formatting remain compatibility presentation.
 Cross-platform conformance keeps algebraic tick families bit-exact and permits
 one part in 10^15 for symmetric-log values whose final inverse transform uses
 the platform math library. Invalid domains and target counts fail closed at the
@@ -491,10 +492,11 @@ custom marker paths/glyphs, data-driven symbol channels, unmodeled marks, and LO
 preflight exceptions. Literal disconnected segments, error-bar stems/caps,
 and stems with their immediate generated constant built-in markers share the
 selected Scene with ordinary polylines and Rects; other segment-like roles and
-styles remain compatibility exceptions. ``try_public_svg`` /
-``try_public_png`` / ``try_public_pdf`` expose the same consumers to callers
-that need an optional result. Unlabeled cartesian annotations remain rejected
-rather than being approximated as marks.
+styles remain compatibility exceptions. `public_static_export` is the sole
+optional product-route selector. Explicit Scene callers use `figure_scene`,
+`figure_svg`, or `figure_raster_commands` without introducing a second support
+predicate. Unlabeled cartesian annotations remain rejected rather than being
+approximated as marks.
 
 The public router has one selection seam,
 ``_scene_v3.public_static_export``. It consults the one support predicate,
@@ -914,9 +916,8 @@ geometry/styles are Scene v8.
 The `xyg_scene_axis_ticks` ABI supports category, angular, time/calendar, and
 symmetric-log ladders as kinds 2–6 (`aux` is the positive symlog linear-region
 constant for kind 6). Node routes those families through the ABI; Python's
-`_svg.axis_ticks` currently routes only kind 6 through it and retains local
-compatibility helpers for linear, log, category, angular, and time until their
-cutovers. Scene v5 carries authored chrome
+`_svg.axis_ticks` maps all six automatic families directly to it. Scene v5
+carries authored chrome
 paints plus title/axis-label UTF-8; ABI `xyg_scene_plot_layout` owns Cartesian
 gutters, including the selected literal-colorbar outer lane, for Scene compilation. Cartesian rect-family hosts
 (`bar`, `column`, `histogram`, `violin`, `box`) share Scene Rect records;
@@ -985,13 +986,13 @@ Python reducers over Rust-resolved membership. The compact wire result remains
 the existing centers-only hexbin trace. Constant-style Cartesian native
 count/mean/sum lattices expand those centers plus `hex_dx`/`hex_dy` onto
 existing Scene v25 PolyFill records (one 6-vertex `HEX_RING` group per cell)
-for ``try_public_svg`` / ``try_public_png`` / ``try_public_pdf``. Polar
+for `public_static_export`. Polar
 hexbin, custom reducers, metric colormaps, LOD, and rich style exceptions
 fail closed and keep the compatibility exporters. Scene 25 is unchanged.
 
 Constant-style Cartesian heatmap expands a regular rows×cols lattice onto
 existing Scene v25 Rect records (one rectangle per cell) for
-``try_public_svg`` / ``try_public_png`` / ``try_public_pdf``. Hosts
+`public_static_export`. Hosts
 reconstruct uniform cells from the stored range endpoints plus
 `grid_shape`; paint uses the literal style color. Polar heatmap, metric
 colormaps, truecolor RGBA, irregular spacing, LOD over the 10,000-Rect

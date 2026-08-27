@@ -566,8 +566,8 @@ def test_constant_scatter_stroke_uses_the_public_rust_scene_contract() -> None:
     assert 'stroke-width="3.5"' in svg
     assert "outlined" in svg
     assert figure.to_svg() == svg
-    assert figure.to_png(scale=1) == _scene_v3.try_public_png(figure, scale=1)
-    assert figure.to_image(format="pdf") == _scene_v3.try_public_pdf(figure)
+    assert figure.to_png(scale=1) == _scene_v3.public_static_export(figure, "png", scale=1)
+    assert figure.to_image(format="pdf") == _scene_v3.public_static_export(figure, "pdf")
     assert _native.scene_raster_commands(scene)
     assert _native.scene_browser_painter(scene)
 
@@ -626,8 +626,8 @@ def test_supported_public_exports_match_rust_consumers_and_are_repeatable(factor
     """The public journey must not merely produce valid files beside Scene."""
     figure = factory()
     svg = _scene_v3.figure_svg(figure)
-    png = _scene_v3.try_public_png(figure, scale=1)
-    pdf = _scene_v3.try_public_pdf(figure)
+    png = _scene_v3.public_static_export(figure, "png", scale=1)
+    pdf = _scene_v3.public_static_export(figure, "pdf")
 
     assert figure.to_svg() == svg
     assert figure.to_svg() == figure.to_svg()
@@ -684,21 +684,23 @@ def test_malformed_public_literal_propagates_without_compatibility_fallback(
         figure.to_svg()
 
 
-def test_try_public_scene_helpers_select_migrated_subset() -> None:
+def test_public_static_export_selects_migrated_subset() -> None:
     from xyg import _scene_v3
 
     figure = representative_figure()
-    svg = _scene_v3.try_public_svg(figure)
-    assert svg is not None
+    svg_data = _scene_v3.public_static_export(figure, "svg")
+    assert svg_data is not None
+    svg = svg_data.decode("utf-8")
     assert 'clip-path="url(#xy-scene-plot)"' in svg
-    png = _scene_v3.try_public_png(figure, scale=1)
+    png = _scene_v3.public_static_export(figure, "png", scale=1)
     assert png is not None and png.startswith(b"\x89PNG\r\n\x1a\n")
-    pdf = _scene_v3.try_public_pdf(figure)
+    pdf = _scene_v3.public_static_export(figure, "pdf")
     assert pdf is not None and pdf.startswith(b"%PDF-")
     styled = representative_figure()
     styled.set_axis("x", style={"grid_color": "#123456"})
-    styled_svg = _scene_v3.try_public_svg(styled)
-    assert styled_svg is not None and "rgba(18,52,86,1.000000)" in styled_svg
+    styled_data = _scene_v3.public_static_export(styled, "svg")
+    assert styled_data is None
+    assert "rgba(18,52,86,1.000000)" in _scene_v3.figure_svg(styled)
 
 
 def test_python_scene_v8_authors_backgrounds_axis_side_and_major_minor_ticks() -> None:

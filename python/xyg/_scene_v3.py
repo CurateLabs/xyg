@@ -1702,8 +1702,7 @@ def scene_export_support_reason(
 
     This is the single support predicate the #117 public static-export router
     consults before selecting the Rust Scene path over the compatibility
-    ``_svg`` / ``_raster`` renderers. Unlike :func:`try_public_svg`, which only
-    signals success by returning output, this reports the stable
+    ``_svg`` / ``_raster`` renderers. It reports the stable
     ``XYG_SCENE_UNSUPPORTED_*`` diagnostic (or the compiler's own bounded
     message) so callers can log or surface an actionable reason for the fallback.
 
@@ -2157,54 +2156,3 @@ def scene_export_support_reason(
                 return "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
             raise
     return None
-
-
-def try_public_svg(figure: Any, **options: Any) -> str | None:
-    """Return Scene SVG when the figure is in the migrated subset, else ``None``.
-
-    Public exporters keep the compatibility ``_svg`` / ``_raster`` paths until
-    Scene chrome and CSS-spelling parity land; callers may opt into these
-    helpers for explicit Scene selection.
-    """
-    try:
-        return figure_svg(figure, **options)
-    except UnsupportedSceneV3:
-        return None
-
-
-def try_public_png(
-    figure: Any,
-    *,
-    scale: float = 1.0,
-    width: int | None = None,
-    height: int | None = None,
-    **options: Any,
-) -> bytes | None:
-    """Return Scene-rasterized PNG bytes when the figure is Scene-capable."""
-    from . import kernels
-
-    try:
-        scene = figure_scene(figure, width=width, height=height, **options)
-        commands = _native.scene_raster_commands(scene, scale)
-    except UnsupportedSceneV3:
-        return None
-    w = int(width if width is not None else figure.width)
-    h = int(height if height is not None else figure.height)
-    pixel_w = max(1, int(round(w * float(scale))))
-    pixel_h = max(1, int(round(h * float(scale))))
-    return kernels.rasterize_png(commands, pixel_w, pixel_h)
-
-
-def try_public_pdf(figure: Any, **options: Any) -> bytes | None:
-    """Return Scene SVG→PDF for a Scene-capable figure.
-
-    This is deliberately not a catch-all fallback boundary: a malformed Scene
-    or a failure in the Rust/PDF consumers is an export failure, not evidence
-    that the compatibility renderer should be selected.
-    """
-    from . import _pdf
-
-    svg = try_public_svg(figure, **options)
-    if svg is None:
-        return None
-    return _pdf.svg_to_pdf(svg)

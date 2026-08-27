@@ -25,14 +25,25 @@ from xyg._figure import Figure
 from xyg._scene_v3 import (
     UnsupportedSceneV3,
     figure_scene,
+    public_static_export,
     scene_export_support_reason,
-    try_public_pdf,
-    try_public_png,
-    try_public_svg,
 )
 from xyg.marks import _SYMBOL_CODES
 
 BUILTIN_SYMBOLS = tuple(_SYMBOL_CODES)
+
+
+def _public_svg(figure: Figure) -> str | None:
+    data = public_static_export(figure, "svg")
+    return None if data is None else data.decode("utf-8")
+
+
+def _public_png(figure: Figure, *, scale: float = 1.0) -> bytes | None:
+    return public_static_export(figure, "png", scale=scale)
+
+
+def _public_pdf(figure: Figure) -> bytes | None:
+    return public_static_export(figure, "pdf")
 
 
 def _supported() -> Figure:
@@ -794,14 +805,14 @@ def test_public_hexbin_matches_exact_cross_host_scene_and_consumers(reduce: str)
     assert svg.count('<path d="M ') == len(figure.traces[0].x.values)
     assert '<g clip-path="url(#xy-scene-plot)">' in svg
     assert ">hex</text>" in svg
-    assert try_public_svg(figure) == svg
+    assert _public_svg(figure) == svg
     assert figure.to_svg() == svg
-    png = try_public_png(figure, scale=1)
+    png = _public_png(figure, scale=1)
     assert png == figure.to_png(scale=1)
     assert png == kernels.rasterize_png(
         _native.scene_raster_commands(scene), figure.width, figure.height
     )
-    pdf = try_public_pdf(figure)
+    pdf = _public_pdf(figure)
     assert pdf == figure.to_image(format="pdf")
     assert pdf == _pdf.svg_to_pdf(svg)
 
@@ -842,7 +853,7 @@ def test_colormap_hexbin_stays_on_compatibility() -> None:
     )
     reason = scene_export_support_reason(figure)
     assert reason is not None
-    assert try_public_svg(figure) is None
+    assert _public_svg(figure) is None
     assert figure.to_svg()
 
 
@@ -861,9 +872,9 @@ def test_public_hexbin_compiler_rejects_polar_custom_and_nonfinite(
     figure = _public_hexbin()
     mutate(figure)
     assert scene_export_support_reason(figure) is not None
-    assert try_public_svg(figure) is None
-    assert try_public_png(figure) is None
-    assert try_public_pdf(figure) is None
+    assert _public_svg(figure) is None
+    assert _public_png(figure) is None
+    assert _public_pdf(figure) is None
 
 
 @pytest.mark.parametrize(
@@ -900,14 +911,14 @@ def test_public_heatmap_matches_exact_cross_host_scene_and_consumers() -> None:
     assert svg[clip_start:clip_end].count("<rect ") == rows * cols
     assert '<g clip-path="url(#xy-scene-plot)">' in svg
     assert ">heat</text>" in svg
-    assert try_public_svg(figure) == svg
+    assert _public_svg(figure) == svg
     assert figure.to_svg() == svg
-    png = try_public_png(figure, scale=1)
+    png = _public_png(figure, scale=1)
     assert png == figure.to_png(scale=1)
     assert png == kernels.rasterize_png(
         _native.scene_raster_commands(scene), figure.width, figure.height
     )
-    pdf = try_public_pdf(figure)
+    pdf = _public_pdf(figure)
     assert pdf == figure.to_image(format="pdf")
     assert pdf == _pdf.svg_to_pdf(svg)
 
@@ -937,7 +948,7 @@ def test_colormap_heatmap_stays_on_compatibility() -> None:
     figure.heatmap(_PUBLIC_HEATMAP_Z, x=_PUBLIC_HEATMAP_X, y=_PUBLIC_HEATMAP_Y)
     reason = scene_export_support_reason(figure)
     assert reason is not None
-    assert try_public_svg(figure) is None
+    assert _public_svg(figure) is None
     assert figure.to_svg()
 
 
@@ -956,9 +967,9 @@ def test_public_heatmap_compiler_rejects_polar_colormap_and_nonfinite(
     figure = _public_heatmap()
     mutate(figure)
     assert scene_export_support_reason(figure) is not None
-    assert try_public_svg(figure) is None
-    assert try_public_png(figure) is None
-    assert try_public_pdf(figure) is None
+    assert _public_svg(figure) is None
+    assert _public_png(figure) is None
+    assert _public_pdf(figure) is None
 
 
 @pytest.mark.parametrize(
