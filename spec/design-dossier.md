@@ -1362,6 +1362,13 @@ angular containment (including seam-crossing sectors) is engine-owned
 and identical for Python and Node. Hosts still format `_tick_text`,
 choose tick families via `xyg_scene_axis_ticks`, and map values to
 pixels (#276).
+ABI 129 moves Cartesian static-export grid colormap into Rust. Hosts
+call `xyg_colormap_rgba`, `xyg_colormap_rgba_canonical`, and existing
+`xyg_density_rgba` for log-u8 density; direct `t ∈ [0, 1]` stop
+interpolation (matching `_svg._lut`) is engine-owned and distinct from
+`xyg_heatmap_rgba`'s `((value * 255 - 1) / 254)` remap. Hosts still
+resolve colormap stop tables, CSS paint colors, truecolor RGBA buffers,
+and polar inverse-raster sampling (#283).
 ABI 110 moves primary Scene legend framing into Rust. Hosts pass loc/flags,
 font sizes, paints, title, and per-entry meta plus labels; XYLG header
 layout, text offsets, and bounded-text rejection are engine-owned and

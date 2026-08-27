@@ -3379,6 +3379,84 @@ pub fn marching_squares_into(
 /// Native counterpart of `_scene.grid_rgba`'s heatmap branch: non-finite
 /// values are missing, while finite normalized values map through the same
 /// evenly spaced color stops with ties-to-even byte rounding.
+/// Map normalized scalars `t ∈ [0, 1]` through evenly spaced color stops to a
+/// top-row-first RGBA8 image. This is the native counterpart of `_svg._lut` on
+/// Cartesian static-export grid paths: non-finite values are transparent, while
+/// finite values interpolate stops with ties-to-even byte rounding.
+pub fn colormap_rgba_into(
+    raw: &[f64],
+    w: usize,
+    h: usize,
+    stops: &[[u8; 3]],
+    alpha: u8,
+    out: &mut [u8],
+) -> bool {
+    if w == 0
+        || h == 0
+        || stops.is_empty()
+        || raw.len() != w.saturating_mul(h)
+        || out.len() != raw.len().saturating_mul(4)
+    {
+        return false;
+    }
+    for row in 0..h {
+        let destination_row = h - 1 - row;
+        for col in 0..w {
+            let value = raw[row * w + col];
+            let destination = (destination_row * w + col) * 4;
+            let color = if value.is_nan() {
+                [0, 0, 0, 0]
+            } else {
+                colormap_color(value.clamp(0.0, 1.0), stops, alpha)
+            };
+            out[destination..destination + 4].copy_from_slice(&color);
+        }
+    }
+    true
+}
+
+/// Canonical-f64 twin of [`colormap_rgba_into`]: normalize each cell with the
+/// bulk payload's f32 rounding (`normalize_one_f32`) before stop interpolation.
+pub fn colormap_rgba_canonical_into(
+    raw_f64: &[f64],
+    w: usize,
+    h: usize,
+    domain: [f64; 2],
+    stops: &[[u8; 3]],
+    alpha: u8,
+    out: &mut [u8],
+) -> bool {
+    if w == 0
+        || h == 0
+        || stops.is_empty()
+        || raw_f64.len() != w.saturating_mul(h)
+        || out.len() != raw_f64.len().saturating_mul(4)
+    {
+        return false;
+    }
+    let d0 = domain[0];
+    let d1 = domain[1];
+    for row in 0..h {
+        let destination_row = h - 1 - row;
+        for col in 0..w {
+            let value = raw_f64[row * w + col];
+            let destination = (destination_row * w + col) * 4;
+            let color = if value.is_finite() {
+                let t = f64::from(normalize_one_f32(value, d0, d1, f32::NAN));
+                if t.is_nan() {
+                    [0, 0, 0, 0]
+                } else {
+                    colormap_color(t, stops, alpha)
+                }
+            } else {
+                [0, 0, 0, 0]
+            };
+            out[destination..destination + 4].copy_from_slice(&color);
+        }
+    }
+    true
+}
+
 pub fn heatmap_rgba_into(
     raw: &[f64],
     w: usize,
@@ -7037,6 +7115,50 @@ mod tests {
         assert!(out[3] > 0);
         assert_eq!(out[11], 0);
         assert_eq!(&out[12..16], &[100, 110, 120, 216]);
+    }
+
+    #[test]
+    fn colormap_rgba_matches_lut_goldens_and_flips_rows() {
+        let raw = [0.0, 0.5, 1.0, f64::NAN];
+        let stops = [[0, 10, 20], [100, 110, 120]];
+        let mut out = [0u8; 16];
+        assert!(colormap_rgba_into(&raw, 2, 2, &stops, 200, &mut out));
+        assert_eq!(&out[0..4], &[100, 110, 120, 200]);
+        assert_eq!(&out[4..8], &[0, 0, 0, 0]);
+        assert_eq!(&out[8..12], &[0, 10, 20, 200]);
+        assert_eq!(&out[12..16], &[50, 60, 70, 200]);
+    }
+
+    #[test]
+    fn colormap_rgba_canonical_preserves_f32_rounding() {
+        let raw = [0.25, 0.75, f64::INFINITY];
+        let stops = [[0, 0, 0], [200, 0, 0]];
+        let mut out = [0u8; 12];
+        assert!(colormap_rgba_canonical_into(
+            &raw,
+            1,
+            3,
+            [0.0, 1.0],
+            &stops,
+            255,
+            &mut out,
+        ));
+        let t0 = f64::from(normalize_one_f32(0.25, 0.0, 1.0, f32::NAN));
+        let t1 = f64::from(normalize_one_f32(0.75, 0.0, 1.0, f32::NAN));
+        assert_eq!(out[8], colormap_color(t0, &stops, 255)[0]);
+        assert_eq!(out[4], colormap_color(t1, &stops, 255)[0]);
+        assert_eq!(&out[0..4], &[0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn colormap_rgba_differs_from_heatmap_at_interior_value() {
+        let stops = [[0, 0, 0], [254, 0, 0]];
+        let mut heat = [0u8; 4];
+        let mut cmap = [0u8; 4];
+        assert!(heatmap_rgba_into(&[0.5], 1, 1, &stops, 255, &mut heat));
+        assert!(colormap_rgba_into(&[0.5], 1, 1, &stops, 255, &mut cmap));
+        assert_ne!(heat[0], cmap[0]);
+        assert_eq!(cmap[0], 127);
     }
 
     /// Direct port of the per-category NumPy loop this kernel replaced

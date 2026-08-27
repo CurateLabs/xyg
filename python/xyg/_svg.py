@@ -29,7 +29,7 @@ from typing import Any, NamedTuple, Optional, cast
 
 import numpy as np
 
-from . import _fontmetrics, _native, _paint, _png, _textblock
+from . import _fontmetrics, _native, _paint, _png, _textblock, kernels
 from ._arrowgeom import arrow_shapes as _arrow_shapes
 from .config import DEFAULT_PALETTE, polar_bar_segments
 
@@ -5655,19 +5655,17 @@ def _heatmap_rgba_grid(
         return rgba.reshape(h, w, 4)
 
     meta = cols[hm["buf"]]
+    stops = np.asarray(_colormap_stops(hm.get("colormap", "viridis")), dtype=np.uint8)
+    alpha = int(255 * _fill_opacity(style, 0.95))
     if hm.get("enc") == "canonical-f64":
         values = np.asarray(borrowed[int(meta["span"]) - 1], dtype=np.float64)[: int(meta["len"])]
         d0, d1 = (float(value) for value in hm["domain"])
-        values = (values - d0) / ((d1 - d0) or 1.0)
-    else:
-        values = _column(blob, meta)
+        rgba = kernels.colormap_rgba_canonical(values.reshape(h, w), w, h, (d0, d1), stops, alpha)
+        return rgba[::-1]
+    values = _column(blob, meta)
     raw = values.reshape(h, w)
-    finite = np.isfinite(raw)
-    t = np.clip(np.where(finite, raw, 0.0), 0.0, 1.0)
-    rgb = _lut(hm.get("colormap", "viridis"), t.reshape(-1)).reshape(h, w, 3)
-    alpha = np.full((h, w), int(255 * _fill_opacity(style, 0.95)), dtype=np.uint8)
-    alpha[~finite] = 0
-    return np.dstack([rgb, alpha])
+    rgba = kernels.colormap_rgba(raw, w, h, stops, alpha)
+    return rgba[::-1]
 
 
 _POLAR_HEATMAP_MAX_DIMENSION = 4096
@@ -5732,21 +5730,14 @@ def _heatmap_rgba_samples(
         return rgba
 
     values = _heatmap_sample_column(cols[hm["buf"]], indices, blob, borrowed)
-    finite = np.isfinite(values)
+    stops = np.asarray(_colormap_stops(hm.get("colormap", "viridis")), dtype=np.uint8)
+    alpha = int(255 * _fill_opacity(style, 0.95))
     if hm.get("enc") == "canonical-f64":
         d0, d1 = (float(value) for value in hm["domain"])
-        # Browser payload normalization and the native Cartesian heatmap opcode
-        # both round each normalized canonical value to f32 before LUT lookup.
-        # Preserve that exact seam while touching only sampled source cells.
-        t = np.zeros(count, dtype=np.float64)
-        normalized = np.clip((values[finite] - d0) / ((d1 - d0) or 1.0), 0.0, 1.0)
-        t[finite] = normalized.astype(np.float32).astype(np.float64)
+        rgba = kernels.colormap_rgba_canonical(values, len(indices), 1, (d0, d1), stops, alpha)
     else:
-        t = np.clip(np.where(finite, values, 0.0), 0.0, 1.0)
-    rgb = _lut(hm.get("colormap", "viridis"), t)
-    alpha = np.full(count, int(255 * _fill_opacity(style, 0.95)), dtype=np.uint8)
-    alpha[~finite] = 0
-    return np.column_stack((rgb, alpha))
+        rgba = kernels.colormap_rgba(values, len(indices), 1, stops, alpha)
+    return rgba[:, 0, :]
 
 
 def polar_heatmap_rgba(
@@ -5900,10 +5891,10 @@ def _density_image(
     d: dict, blob: bytes, cols: list, sx: _Scale, sy: _Scale, style: dict, svg: _Svg
 ) -> str:
     w, h = int(d["w"]), int(d["h"])
-    grid = _density_column(blob, cols[d["buf"]], d).reshape(h, w)
     gmax = float(d.get("max") or 1.0) or 1.0
-    tnorm = np.clip(grid / gmax, 0.0, 1.0)
+    paint_alpha: float = 1.0
     if d.get("rgba") is not None:
+        grid = _density_column(blob, cols[d["buf"]], d).reshape(h, w)
         # Mean point color per cell (LOD doc §2): rgb from the shipped plane;
         # displayed alpha is the PHYSICAL compositing of the cell's points —
         # 1 − (1 − a_pt)^count for drawn per-point alpha a_pt = channel alpha
@@ -5918,12 +5909,30 @@ def _density_image(
         alpha = _physical_density_alpha(grid, mean[..., 3], _fill_opacity(style, 0.85))
         rgba = np.dstack([rgb, alpha])[::-1].tobytes()  # flip: PNG rows are top-first
         return _grid_image(w, h, rgba, d["x_range"], d["y_range"], sx, sy)
-    paint_alpha: float = 1.0
     if d.get("color") is not None:
         red, green, blue, alpha8 = _paint_rgba8(d["color"])
+        paint_alpha = alpha8 / 255.0
+    if d.get("enc") == "log-u8":
+        meta = cols[d["buf"]]
+        encoded = np.frombuffer(blob, dtype=np.uint8, count=meta["len"], offset=meta["byte_offset"])
+        if d.get("color") is not None:
+            stops = np.asarray([(red, green, blue), (red, green, blue)], dtype=np.uint8)
+        else:
+            stops = np.asarray(_colormap_stops(d.get("colormap", "viridis")), dtype=np.uint8)
+        rgba = kernels.density_rgba(
+            encoded,
+            w,
+            h,
+            gmax,
+            stops,
+            _fill_opacity(style, 0.85) * paint_alpha,
+        )
+        return _grid_image(w, h, rgba.tobytes(), d["x_range"], d["y_range"], sx, sy)
+    grid = _density_column(blob, cols[d["buf"]], d).reshape(h, w)
+    tnorm = np.clip(grid / gmax, 0.0, 1.0)
+    if d.get("color") is not None:
         rgb = np.empty((h, w, 3), dtype=np.uint8)
         rgb[:] = (red, green, blue)
-        paint_alpha = alpha8 / 255.0
     else:
         rgb = _lut(d.get("colormap", "viridis"), tnorm.reshape(-1)).reshape(h, w, 3)
     alpha = (np.clip(tnorm * 1.35, 0, 1) * 255 * _fill_opacity(style, 0.85) * paint_alpha).astype(

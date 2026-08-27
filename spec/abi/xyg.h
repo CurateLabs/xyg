@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 128
-#define XYG_ABI_SIGNATURE_SHA256 "9ca84a48d5589de2fa17f0456460f00b4ade31490d323c6696af1059e81d1af1"
+#define XYG_ABI_VERSION 129
+#define XYG_ABI_SIGNATURE_SHA256 "9f57dbba5a871d9cd534f0980e457bfb4788e13cf54ba58ca5832c76c06334c0"
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,6 +32,8 @@ size_t xyg_chunked_columns_overview(uint64_t store, size_t max_points, uint64_t 
 size_t xyg_chunked_columns_read(uint64_t store, double x0, double x1, double y0, double y1, int32_t use_y, uint64_t budget_bytes, uint64_t generation, double * out_x, double * out_y, size_t capacity, uint64_t * out_stats);
 size_t xyg_chunked_columns_read_page(uint64_t store, double x0, double x1, double y0, double y1, int32_t use_y, uint64_t budget_bytes, uint64_t generation, uint32_t cursor, double * out_x, double * out_y, size_t capacity, uint64_t * out_stats);
 uint64_t xyg_chunked_columns_rows(uint64_t store);
+int32_t xyg_colormap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out);
+int32_t xyg_colormap_rgba_canonical(const double * raw, size_t w, size_t h, double domain_lo, double domain_hi, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out);
 size_t xyg_compat_colorbar_extra(uint32_t kind, int32_t has_label, int32_t pad_zero, double * out_right, double * out_bottom);
 size_t xyg_compat_default_padding(int32_t compact, double * out_pad);
 int32_t xyg_compat_is_compact(double width);

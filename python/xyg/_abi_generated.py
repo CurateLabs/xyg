@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 128
-SIGNATURE_SHA256 = "9ca84a48d5589de2fa17f0456460f00b4ade31490d323c6696af1059e81d1af1"
+ABI_VERSION = 129
+SIGNATURE_SHA256 = "9f57dbba5a871d9cd534f0980e457bfb4788e13cf54ba58ca5832c76c06334c0"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -94,6 +94,14 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_chunked_columns_rows
     function.restype = ctypes.c_uint64
     function.argtypes = [ctypes.c_uint64]
+    # int32_t xyg_colormap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)
+    function = lib.xyg_colormap_rgba
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint8, ctypes.c_void_p]
+    # int32_t xyg_colormap_rgba_canonical(const double * raw, size_t w, size_t h, double domain_lo, double domain_hi, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)
+    function = lib.xyg_colormap_rgba_canonical
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint8, ctypes.c_void_p]
     # size_t xyg_compat_colorbar_extra(uint32_t kind, int32_t has_label, int32_t pad_zero, double * out_right, double * out_bottom)
     function = lib.xyg_compat_colorbar_extra
     function.restype = ctypes.c_size_t

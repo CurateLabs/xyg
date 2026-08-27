@@ -10,7 +10,7 @@ the exact same geometry the SVG shows.
 
 Ribbon/curve/rounded-rect tessellation lives in Rust (ABI 121). These wrappers
 pack host coordinates and map affine scales; they do not own the cubics.
-`grid_rgba` colormap application remains Python until #283.
+`grid_rgba` colormap application uses Rust (`xyg_colormap_rgba` / ABI 129).
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from typing import Any
 import numpy as np
 
 from . import kernels
-from ._svg import _column, _density_column, _lut
+from ._svg import _colormap_stops, _column, _density_column, _lut
 
 # Samples per smooth Bézier span when flattening to a polyline for the raster
 # filler. The curve is screen-bounded (M4-decimated), so this stays cheap and
@@ -107,7 +107,23 @@ def grid_rgba(kind: str, g: dict, blob: bytes, cols: list, style: dict) -> tuple
     """Density/heatmap grid → `(h, w, 4)` uint8 RGBA (top row first), matching
     `_svg._density_image`/`_heatmap_image`. Returns (rgba, x_range, y_range)."""
     w, h = int(g["w"]), int(g["h"])
+    stops = np.asarray(_colormap_stops(g.get("colormap", "viridis")), dtype=np.uint8)
     if kind == "density":
+        if g.get("enc") == "log-u8":
+            meta = cols[g["buf"]]
+            encoded = np.frombuffer(
+                blob, dtype=np.uint8, count=meta["len"], offset=meta["byte_offset"]
+            )
+            gmax = float(g.get("max") or 1.0) or 1.0
+            rgba = kernels.density_rgba(
+                encoded,
+                w,
+                h,
+                gmax,
+                stops,
+                float(style.get("opacity", 0.85)),
+            )
+            return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
         grid = _density_column(blob, cols[g["buf"]], g).reshape(h, w)
         gmax = float(g.get("max") or 1.0) or 1.0
         tnorm = np.clip(grid / gmax, 0.0, 1.0)
@@ -117,11 +133,16 @@ def grid_rgba(kind: str, g: dict, blob: bytes, cols: list, style: dict) -> tuple
         )
         alpha[tnorm <= 0] = 0
     else:  # heatmap
-        raw = _column(blob, cols[g["buf"]]).reshape(h, w)
-        t = np.clip(raw, 0.0, 1.0)
-        rgb = _lut(g.get("colormap", "viridis"), t.reshape(-1)).reshape(h, w, 3)
-        alpha = np.full((h, w), int(255 * float(style.get("opacity", 0.95))), dtype=np.uint8)
-        alpha[~np.isfinite(raw)] = 0
+        meta = cols[g["buf"]]
+        alpha = int(255 * float(style.get("opacity", 0.95)))
+        if g.get("enc") == "canonical-f64":
+            values = _column(blob, meta).reshape(h, w)
+            d0, d1 = (float(value) for value in g["domain"])
+            rgba = kernels.colormap_rgba_canonical(values, w, h, (d0, d1), stops, alpha)
+            return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
+        raw = _column(blob, meta).reshape(h, w)
+        rgba = kernels.colormap_rgba(raw, w, h, stops, alpha)
+        return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
     rgba = np.dstack([rgb, alpha])[::-1]  # flip: row 0 is the top of the image
     return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
 

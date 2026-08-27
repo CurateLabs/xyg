@@ -31,6 +31,8 @@ export {
   weightedEcdf,
   binnedEcdf,
   heatmapRgba,
+  colormapRgba,
+  colormapRgbaCanonical,
   windRoseBins,
   contourfDensify,
   contourfBands,

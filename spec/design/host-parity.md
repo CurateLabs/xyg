@@ -249,6 +249,13 @@ and Node call `xyg_tick_window` and `xyg_tick_window_filter` so linear
 vs modular angular containment cannot drift. Hosts still format
 `_tick_text`, choose tick families, and map values to pixels. ChartView
 JS `_polarAngularTurn` / `_axisTicks` seam filter stays until WASM.
+ABI 129 moves Cartesian static-export grid colormap into Rust: Python
+and Node call `xyg_colormap_rgba`, `xyg_colormap_rgba_canonical`, and
+`xyg_density_rgba` (log-u8 density) so `_lut` stop interpolation cannot
+drift on heatmap/density grid export. `xyg_heatmap_rgba` keeps its
+distinct normalized-scalar remap for other consumers. Hosts still
+resolve stop tables, CSS paints, truecolor RGBA buffers, and polar
+inverse-raster sampling.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call

@@ -7407,6 +7407,79 @@ def rasterize_png_spans(cmds: Any, spans, w: int, h: int) -> bytes:  # noqa: ANN
     return out[:written].tobytes()
 
 
+def colormap_rgba(
+    raw: npt.ArrayLike,
+    w: int,
+    h: int,
+    stops: npt.ArrayLike,
+    alpha: int,
+) -> npt.NDArray[np.uint8]:
+    """Map normalized scalars ``t ∈ [0, 1]`` to a vertically flipped ``(h, w, 4)`` RGBA image."""
+    w = _positive_int(w, "colormap width")
+    h = _positive_int(h, "colormap height")
+    values = np.ascontiguousarray(raw, dtype=np.float64).reshape(-1)
+    stop_array = np.ascontiguousarray(stops, dtype=np.uint8)
+    if values.size != w * h:
+        raise ValueError("colormap scalar count must match width * height")
+    if stop_array.ndim != 2 or stop_array.shape[1] != 3 or stop_array.shape[0] < 1:
+        raise ValueError("colormap stops must be a non-empty (n, 3) array")
+    alpha = operator.index(alpha)
+    if not 0 <= alpha <= 255:
+        raise ValueError("colormap alpha must be in [0, 255]")
+    out = np.empty((h, w, 4), dtype=np.uint8)
+    ok = _lib.xyg_colormap_rgba(
+        _ptr_f64(values),
+        w,
+        h,
+        _ptr_u8(stop_array),
+        stop_array.shape[0],
+        alpha,
+        _ptr_u8(out),
+    )
+    if not ok:
+        raise ValueError("native colormap rejected the inputs")
+    return out
+
+
+def colormap_rgba_canonical(
+    raw: npt.ArrayLike,
+    w: int,
+    h: int,
+    domain: tuple[float, float],
+    stops: npt.ArrayLike,
+    alpha: int,
+) -> npt.NDArray[np.uint8]:
+    """Map canonical f64 scalars through domain normalization to RGBA8."""
+    w = _positive_int(w, "colormap width")
+    h = _positive_int(h, "colormap height")
+    values = np.ascontiguousarray(raw, dtype=np.float64).reshape(-1)
+    stop_array = np.ascontiguousarray(stops, dtype=np.uint8)
+    if values.size != w * h:
+        raise ValueError("colormap scalar count must match width * height")
+    if stop_array.ndim != 2 or stop_array.shape[1] != 3 or stop_array.shape[0] < 1:
+        raise ValueError("colormap stops must be a non-empty (n, 3) array")
+    d0 = _finite_float(domain[0], "colormap domain lo")
+    d1 = _finite_float(domain[1], "colormap domain hi")
+    alpha = operator.index(alpha)
+    if not 0 <= alpha <= 255:
+        raise ValueError("colormap alpha must be in [0, 255]")
+    out = np.empty((h, w, 4), dtype=np.uint8)
+    ok = _lib.xyg_colormap_rgba_canonical(
+        _ptr_f64(values),
+        w,
+        h,
+        d0,
+        d1,
+        _ptr_u8(stop_array),
+        stop_array.shape[0],
+        alpha,
+        _ptr_u8(out),
+    )
+    if not ok:
+        raise ValueError("native canonical colormap rejected the inputs")
+    return out
+
+
 def heatmap_rgba(
     raw: npt.ArrayLike,
     w: int,

@@ -369,6 +369,28 @@ def load() -> ctypes.CDLL:
         ctypes.c_uint8,
         U8P,
     ]
+    lib.xyg_colormap_rgba.restype = ctypes.c_int32
+    lib.xyg_colormap_rgba.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_uint8,
+        U8P,
+    ]
+    lib.xyg_colormap_rgba_canonical.restype = ctypes.c_int32
+    lib.xyg_colormap_rgba_canonical.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_uint8,
+        U8P,
+    ]
     lib.xyg_density_rgba.restype = ctypes.c_int32
     lib.xyg_density_rgba.argtypes = [
         U8P,
@@ -3525,6 +3547,54 @@ def main() -> None:
         and list(heat_rgba[:4]) == [100, 110, 120, 200]
         and heat_rgba[7] == 0,
         "native heatmap colormap maps, flips, and preserves missing alpha",
+    )
+    cmap_values = array("d", [0.0, 0.5, 1.0, float("nan")])
+    cmap_stops = array("B", [0, 10, 20, 100, 110, 120])
+    cmap_rgba = array("B", [0]) * 16
+    ok(
+        lib.xyg_colormap_rgba(
+            _ptr(cmap_values, ctypes.c_double),
+            2,
+            2,
+            _ptr(cmap_stops, ctypes.c_uint8),
+            2,
+            200,
+            _ptr(cmap_rgba, ctypes.c_uint8),
+        )
+        == 1
+        and list(cmap_rgba[:4]) == [100, 110, 120, 200]
+        and cmap_rgba[7] == 0
+        and list(cmap_rgba[12:16]) == [50, 60, 70, 200],
+        "native direct colormap maps, flips, and preserves missing alpha",
+    )
+    interior = array("d", [0.5])
+    interior_stops = array("B", [0, 0, 0, 254, 0, 0])
+    colormap_pixel = array("B", [0]) * 4
+    heatmap_pixel = array("B", [0]) * 4
+    ok(
+        lib.xyg_colormap_rgba(
+            _ptr(interior, ctypes.c_double),
+            1,
+            1,
+            _ptr(interior_stops, ctypes.c_uint8),
+            2,
+            255,
+            _ptr(colormap_pixel, ctypes.c_uint8),
+        )
+        == 1
+        and lib.xyg_heatmap_rgba(
+            _ptr(interior, ctypes.c_double),
+            1,
+            1,
+            _ptr(interior_stops, ctypes.c_uint8),
+            2,
+            255,
+            _ptr(heatmap_pixel, ctypes.c_uint8),
+        )
+        == 1
+        and colormap_pixel[0] == 127
+        and heatmap_pixel[0] != colormap_pixel[0],
+        "native direct colormap differs from heatmap remap at interior values",
     )
     density_codes = array("B", [0, 255, 128, 1])
     density_rgba = array("B", [0]) * 16

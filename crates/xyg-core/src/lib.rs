@@ -118,7 +118,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 128;
+pub const ABI_VERSION: u32 = 129;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4414,6 +4414,83 @@ pub unsafe extern "C" fn xyg_rasterize_png_spans(
     let out = std::slice::from_raw_parts_mut(out, out_capacity);
     ffi_guard(usize::MAX, || {
         raster::rasterize_png_spans_into(cmds, &spans, w, h, out).unwrap_or(usize::MAX)
+    })
+}
+
+/// Native direct-colormap mapper (`_svg._lut` semantics) for Cartesian
+/// static-export grids. Returns 1 on success and 0 on invalid dimensions or
+/// pointers.
+///
+/// # Safety
+/// `raw` contains `w*h` readable f64 values, `stops` contains
+/// `stop_count*3` readable bytes, and `out` contains `w*h*4` writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_colormap_rgba(
+    raw: *const f64,
+    w: usize,
+    h: usize,
+    stops: *const u8,
+    stop_count: usize,
+    alpha: u8,
+    out: *mut u8,
+) -> i32 {
+    let Some(len) = w.checked_mul(h) else {
+        return 0;
+    };
+    if len == 0 || stop_count == 0 || raw.is_null() || stops.is_null() || out.is_null() {
+        return 0;
+    }
+    let Some(out_len) = len.checked_mul(4) else {
+        return 0;
+    };
+    let Some(stop_len) = stop_count.checked_mul(3) else {
+        return 0;
+    };
+    let raw = std::slice::from_raw_parts(raw, len);
+    let stop_bytes = std::slice::from_raw_parts(stops, stop_len);
+    let stops = std::slice::from_raw_parts(stop_bytes.as_ptr().cast::<[u8; 3]>(), stop_count);
+    let out = std::slice::from_raw_parts_mut(out, out_len);
+    ffi_guard(0, || {
+        kernels::colormap_rgba_into(raw, w, h, stops, alpha, out) as i32
+    })
+}
+
+/// Canonical-f64 twin of [`xyg_colormap_rgba`]. `domain_lo`/`domain_hi` span
+/// the authored scalar domain before f32-normalized stop lookup.
+///
+/// # Safety
+/// Same buffer contract as [`xyg_colormap_rgba`].
+#[no_mangle]
+pub unsafe extern "C" fn xyg_colormap_rgba_canonical(
+    raw: *const f64,
+    w: usize,
+    h: usize,
+    domain_lo: f64,
+    domain_hi: f64,
+    stops: *const u8,
+    stop_count: usize,
+    alpha: u8,
+    out: *mut u8,
+) -> i32 {
+    let Some(len) = w.checked_mul(h) else {
+        return 0;
+    };
+    if len == 0 || stop_count == 0 || raw.is_null() || stops.is_null() || out.is_null() {
+        return 0;
+    }
+    let Some(out_len) = len.checked_mul(4) else {
+        return 0;
+    };
+    let Some(stop_len) = stop_count.checked_mul(3) else {
+        return 0;
+    };
+    let raw = std::slice::from_raw_parts(raw, len);
+    let stop_bytes = std::slice::from_raw_parts(stops, stop_len);
+    let stops = std::slice::from_raw_parts(stop_bytes.as_ptr().cast::<[u8; 3]>(), stop_count);
+    let out = std::slice::from_raw_parts_mut(out, out_len);
+    ffi_guard(0, || {
+        kernels::colormap_rgba_canonical_into(raw, w, h, [domain_lo, domain_hi], stops, alpha, out)
+            as i32
     })
 }
 

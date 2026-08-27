@@ -33,6 +33,8 @@ CSS_NUMBER = _impl.CSS_NUMBER
 
 css_check = _impl.css_check
 css_color_rgba = _impl.css_color_rgba
+colormap_rgba = _impl.colormap_rgba
+colormap_rgba_canonical = _impl.colormap_rgba_canonical
 correlation = _impl.correlation
 density_rgba = _impl.density_rgba
 density_log_u8 = _impl.density_log_u8
@@ -158,6 +160,8 @@ __all__ = [
     "binned_ecdf",
     "box_geometry",
     "box_stats",
+    "colormap_rgba",
+    "colormap_rgba_canonical",
     "contour_levels",
     "contourf_bands",
     "contourf_densify",
