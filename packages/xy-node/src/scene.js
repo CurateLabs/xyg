@@ -2037,7 +2037,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
     let heatmapRows = 0, heatmapCols = 0, heatmapValues = 0;
     if (trace.kind === "heatmap") {
       if (style.truecolor || style.colormap != null || trace.rgba_grid != null || trace.rgba != null) {
-        if (!((figure.coords ?? "cartesian") === "polar" && polarHeatmapTessellatesColormap(trace))) {
+        if (!heatmapTessellatesCellFills(trace)) {
           flagsTr |= 1 << 11;
         }
       }
@@ -2488,13 +2488,13 @@ function figureTraceSupport(figure, trace) {
   if (
     HEATMAP_KINDS.has(kind)
     && (style.truecolor || style.colormap != null || trace.rgba_grid != null || trace.rgba != null)
-    && !((figure.coords ?? "cartesian") === "polar" && polarHeatmapTessellatesColormap(trace))
+    && !heatmapTessellatesCellFills(trace)
   ) flags |= XYFS_TRACE_HEATMAP_COLORMAP;
   if (Object.hasOwn(style, "fill") && typeof style.fill !== "string") flags |= XYFS_TRACE_NON_CSS_FILL;
   return { flags, kind };
 }
 
-function polarHeatmapTessellatesColormap(trace) {
+function heatmapTessellatesCellFills(trace) {
   const style = trace.style ?? {};
   if (style.truecolor || trace.rgba_grid != null) return false;
   return trace.rgba != null;
@@ -2523,12 +2523,16 @@ function heatmapLatticeRectangles(rows, cols, x0, x1, y0, y1) {
 function polarHeatmapCellFills(trace, rows, cols) {
   const packed = trace.rgba;
   if (packed == null) return null;
-  const bytes = packed instanceof Uint8Array ? packed : Uint8Array.from(packed);
-  if (bytes.length !== rows * cols * 4) return null;
-  const out = new Uint8Array(bytes.length);
+  const raw = packed instanceof Uint8Array
+    ? packed
+    : packed.rgba instanceof Uint8Array
+      ? packed.rgba
+      : Uint8Array.from(packed);
+  if (raw.length !== rows * cols * 4) return null;
+  const out = new Uint8Array(raw.length);
   for (let row = 0; row < rows; row += 1) {
     const src = (rows - 1 - row) * cols * 4;
-    out.set(bytes.subarray(src, src + cols * 4), row * cols * 4);
+    out.set(raw.subarray(src, src + cols * 4), row * cols * 4);
   }
   return out;
 }
@@ -2676,10 +2680,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       ) {
         throw new RangeError("Scene v12 heatmap requires a finite increasing cell extent");
       }
-      if (
-        (figure.coords ?? "cartesian") === "polar"
-        && polarHeatmapTessellatesColormap(trace)
-      ) {
+      if (heatmapTessellatesCellFills(trace)) {
         const fills = polarHeatmapCellFills(trace, rows, cols);
         if (fills == null) {
           throw new RangeError("Scene v12 does not yet encode heatmap colormap");

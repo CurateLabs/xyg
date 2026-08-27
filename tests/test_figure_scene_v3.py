@@ -797,10 +797,10 @@ def test_scene_v10_explicit_hidden_cartesian_chrome_stays_cartesian() -> None:
 def test_python_scene_rejects_malformed_and_falls_back_for_unsupported_marks() -> None:
     with pytest.raises(ValueError, match="invalid canonical scene"):
         _native.scene_svg(b"not-a-scene")
-    unsupported = Figure().heatmap([[0.0, 1.0], [1.0, 0.0]])
-    with pytest.raises(UnsupportedSceneV3, match="heatmap"):
-        unsupported.to_scene()
-    assert "<svg" in unsupported.to_svg()
+    colormap = Figure().heatmap([[0.0, 1.0], [1.0, 0.0]])
+    colormap_svg = _native.scene_svg(colormap.to_scene())
+    assert "<rect" in colormap_svg
+    assert "<svg" in colormap.to_svg()
 
 
 def test_python_scene_compiles_ribbon_and_triangle_mesh() -> None:
@@ -853,8 +853,10 @@ def test_python_scene_compiles_ribbon_and_triangle_mesh() -> None:
     colormap.axis_options["x"]["domain"] = (0.0, 4.0)
     colormap.axis_options["y"]["domain"] = (0.0, 5.0)
     colormap.heatmap([[0.0, 1.0], [1.0, 0.0]])
-    with pytest.raises(UnsupportedSceneV3, match="heatmap colormap"):
-        colormap.to_scene()
+    colormap_svg = _native.scene_svg(colormap.to_scene())
+    cmap_start = colormap_svg.find('<g clip-path="url(#xy-scene-plot)">')
+    cmap_end = colormap_svg.find("</g>", cmap_start)
+    assert colormap_svg[cmap_start:cmap_end].count("<rect ") == 4
 
     custom = Figure(width=320, height=240)
     custom.axis_options["x"]["domain"] = (0.0, 4.0)

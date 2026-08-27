@@ -1182,8 +1182,8 @@ existing Scene v25 Rect records (one rectangle per cell) for
 reconstruct uniform cells from the stored range endpoints plus
 `grid_shape`; paint uses the literal style color. Polar heatmap tessellates
 those same Rects to PolyFill annular sectors (scalar colormaps become per-cell
-literal styles). Metric
-colormaps on Cartesian, truecolor RGBA, irregular spacing, LOD over the 10,000-Rect
+literal styles). Cartesian scalar colormaps use the same per-cell Rect fills.
+Truecolor RGBA, irregular spacing, LOD over the 10,000-Rect
 histogram ceiling, and rich style exceptions fail closed and keep the
 compatibility exporters. Scene 25 is unchanged.
 

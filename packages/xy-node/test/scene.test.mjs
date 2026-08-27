@@ -396,7 +396,8 @@ test("Node Scene v9 primary legend matches Python bytes and rejects unsupported 
 test("Node Scene v9 whole-scene consumers reject malformed and unsupported input", () => {
   assert.throws(() => sceneSvg(Uint8Array.of(1, 2, 3)), /invalid canonical scene/);
   const figure = new Figure().heatmap([[0, 1], [1, 0]], { colormapStops: [0, 0, 0, 255, 255, 255] });
-  assert.throws(() => figure.toScene(), /heatmap colormap/);
+  const svg = sceneSvg(figure.toScene());
+  assert.ok(svg.includes("<rect"));
 });
 
 test("Node Scene v13 compiles bounded primary annotations and fails closed", () => {

@@ -161,12 +161,11 @@ coerce packed RGB/RGBA8 pixels and a compression level; indexed-palette
 selection, `tRNS`, and zlib IDAT cannot drift. Polar hexbin, custom
 `reduce_C_function`, metric colormaps, LOD over the 1,024-group painter
 budget, and rich style exceptions stay on the compatibility exporters.
-Scene 25 is unchanged. Polar density, metric
-colormaps on Cartesian, truecolor RGBA, LOD over the 10,000-Rect histogram ceiling,
+Scene 25 is unchanged. Polar density, truecolor RGBA, LOD over the 10,000-Rect histogram ceiling,
 and rich style exceptions stay on the compatibility exporters. Polar heatmap
 Scene tessellates lattice Rects to PolyFill wedges; inverse-sample raster stays
-compatibility. Polar contour compiles as SegmentPair polylines. Cartesian heatmap
-colormap Scene remains a later slice.
+compatibility. Polar contour compiles as SegmentPair polylines. Cartesian scalar
+colormap heatmap tessellates the same lattice to per-cell Rect fills.
 ABI 99 likewise removes grouped composition-box statistics and geometry policy
 from both hosts. Python and Node pack canonical values, offsets, centers,
 orientation, width, visibility, and literal styles; Rust owns finite filtering,

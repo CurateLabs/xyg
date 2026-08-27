@@ -70,9 +70,10 @@ _XYFS_DASH_KEYS = ("dash", "curve", "linecap", "marker_path", "marker_glyph")
 # compact multi-cell painter record.
 _MAX_PUBLIC_TRIANGLE_MESHES = 1024
 # Regular heatmap cells are ordinary Rect records and share the histogram
-# 10,000-bin public ceiling. Cartesian colormap, truecolor, and irregular
-# grids stay on the compatibility exporters. Polar scalar-colormap heatmaps
-# tessellate those Rects to PolyFill annular sectors.
+# 10,000-bin public ceiling. Truecolor and irregular grids stay on the
+# compatibility exporters. Scalar-colormap heatmaps tessellate those Rects
+# with per-cell literal styles (polar encode then maps Rects to PolyFill
+# annular sectors).
 _MAX_PUBLIC_HEATMAP_CELLS = 10_000
 
 _PUBLIC_EXPORT_KIND_CODES = {
@@ -870,7 +871,7 @@ def _rect_extra_flags(style: dict[str, Any]) -> int:
     return flags
 
 
-def _figure_trace_support_flags(trace: Any, *, polar: bool = False) -> tuple[int, str]:
+def _figure_trace_support_flags(trace: Any) -> tuple[int, str]:
     """Observe per-trace Scene allowlist bits; Rust owns the diagnostic."""
     kind = str(getattr(trace, "kind", "") or "mark")
     style = getattr(trace, "style", None) or {}
@@ -894,7 +895,7 @@ def _figure_trace_support_flags(trace: Any, *, polar: bool = False) -> tuple[int
     if (
         kind in _HEATMAP_KINDS
         and _heatmap_uses_colormap(trace)
-        and not (polar and _polar_heatmap_tessellates_colormap(trace))
+        and not _heatmap_tessellates_cell_fills(trace)
     ):
         flags |= _XYFS_TRACE_HEATMAP_COLORMAP
     if "fill" in style and not isinstance(style["fill"], str):
@@ -946,11 +947,11 @@ def _heatmap_uses_colormap(trace: Any) -> bool:
     )
 
 
-def _polar_heatmap_tessellates_colormap(trace: Any) -> bool:
-    """Return whether polar Scene can resolve this heatmap to per-cell paints.
+def _heatmap_tessellates_cell_fills(trace: Any) -> bool:
+    """Return whether Scene can resolve this heatmap to per-cell paints.
 
     Truecolor RGBA planes stay on compatibility. A scalar colormap or a packed
-    RGBA grid becomes one Rect per cell; polar encode tessellates those Rects
+    RGBA grid becomes one Rect per cell. Polar encode tessellates those Rects
     to PolyFill annular sectors. Scene has no image-blit record for inverse
     sampling.
     """
@@ -1008,10 +1009,10 @@ def _heatmap_lattice_rectangles(
     return cell_x0, cell_y0, cell_x0 + dx, cell_y0 + dy
 
 
-def _polar_heatmap_cell_fills(
+def _heatmap_cell_fills(
     trace: Any, values: np.ndarray, rows: int, cols: int, alpha: int
 ) -> np.ndarray:
-    """Map polar heatmap cells to row-major RGBA matching lattice order."""
+    """Map heatmap cells to row-major RGBA matching lattice order."""
     packed = getattr(trace, "rgba", None)
     if packed is not None:
         rgba = np.asarray(packed, dtype=np.uint8).reshape(rows, cols, 4)
@@ -1211,12 +1212,11 @@ def figure_scene(
                     "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
                 )
             x0, x1, y0, y1 = _heatmap_extent(trace)
-            polar = getattr(figure, "coords", "cartesian") == "polar"
-            if polar and _polar_heatmap_tessellates_colormap(trace):
+            if _heatmap_tessellates_cell_fills(trace):
                 cell_x0, cell_y0, cell_x1, cell_y1 = _heatmap_lattice_rectangles(
                     rows, cols, x0, x1, y0, y1
                 )
-                fills = _polar_heatmap_cell_fills(trace, values, rows, cols, fill[3])
+                fills = _heatmap_cell_fills(trace, values, rows, cols, fill[3])
                 intern: dict[tuple[int, int, int, int], int] = {}
                 cell_refs: list[int] = []
                 for rgba in fills:
@@ -2161,9 +2161,7 @@ def _pack_figure_support(
         payload.extend(len(keys).to_bytes(4, "little"))
         _xyep_put_keys(payload, keys)
     for trace in traces:
-        trace_flags, kind = _figure_trace_support_flags(
-            trace, polar=getattr(figure, "coords", "cartesian") == "polar"
-        )
+        trace_flags, kind = _figure_trace_support_flags(trace)
         encoded = str(kind).encode("utf-8")[:32]
         payload.extend(trace_flags.to_bytes(2, "little"))
         payload.extend(bytes((len(encoded), 0)))
@@ -2324,10 +2322,7 @@ def _pack_public_export_support(
             flags_tr |= 1 << 10
         heatmap_rows = heatmap_cols = heatmap_values = 0
         if trace.kind == "heatmap":
-            polar = getattr(figure, "coords", "cartesian") == "polar"
-            if _heatmap_uses_colormap(trace) and not (
-                polar and _polar_heatmap_tessellates_colormap(trace)
-            ):
+            if _heatmap_uses_colormap(trace) and not _heatmap_tessellates_cell_fills(trace):
                 flags_tr |= 1 << 11
             try:
                 heatmap_rows, heatmap_cols = _heatmap_shape(trace)

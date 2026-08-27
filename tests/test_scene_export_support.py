@@ -1005,26 +1005,41 @@ def test_public_heatmap_honors_the_rect_budget() -> None:
     assert figure.to_svg()
 
 
-def test_colormap_heatmap_stays_on_compatibility() -> None:
+def test_colormap_heatmap_is_scene_supported() -> None:
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 4.0)
     figure.axis_options["y"]["domain"] = (0.0, 5.0)
     figure.heatmap(_PUBLIC_HEATMAP_Z, x=_PUBLIC_HEATMAP_X, y=_PUBLIC_HEATMAP_Y)
-    reason = scene_export_support_reason(figure)
-    assert reason is not None
-    assert _public_svg(figure) is None
-    assert figure.to_svg()
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"<rect" in exported
+    png = public_static_export(figure, "png")
+    assert png is not None
+
+
+def test_truecolor_heatmap_stays_on_compatibility() -> None:
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    figure.heatmap(
+        [
+            [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]],
+            [[0.0, 0.0, 1.0], [1.0, 1.0, 0.0]],
+        ]
+    )
+    assert scene_export_support_reason(figure) is not None
+    assert public_static_export(figure, "svg") is None
 
 
 @pytest.mark.parametrize(
     "mutate",
     [
         lambda figure: setattr(figure.traces[0], "x_axis", "x2"),
-        lambda figure: figure.traces[0].style.__setitem__("colormap", "viridis"),
         lambda figure: figure.traces[0].grid.values.__setitem__(0, np.nan),
     ],
 )
-def test_public_heatmap_compiler_rejects_cartesian_colormap_and_nonfinite(
+def test_public_heatmap_compiler_rejects_secondary_axis_and_nonfinite(
     mutate: Callable[[Figure], None],
 ) -> None:
     figure = _public_heatmap()
