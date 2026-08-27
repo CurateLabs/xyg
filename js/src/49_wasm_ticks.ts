@@ -412,18 +412,19 @@ export interface XygWasmTicksDiagnostics {
   sequence: number;
   /** Latest admitted ChartView tick revision. */
   revision: number;
-  /** Primary Cartesian axes currently served by Rust/WASM. */
-  axisIds: readonly ("x" | "y")[];
+  /** Cartesian x/y and colorbar slots currently served by Rust/WASM. */
+  axisIds: readonly TickSlotId[];
   /** Requests cancelled by a newer viewport or explicit cancellation. */
   cancellations: number;
 }
 
 type PrimaryAxisId = "x" | "y";
+type TickSlotId = PrimaryAxisId | "colorbar";
 
 interface ChartTickFrame {
   key: string;
   axes: readonly Omit<XygWasmTickAxisRequest, "revision">[];
-  axisIds: readonly PrimaryAxisId[];
+  axisIds: readonly TickSlotId[];
 }
 
 interface ChartTickCache {
@@ -435,9 +436,11 @@ interface ChartTickCache {
   labelByValue: ReadonlyMap<number, string>;
 }
 
-const PRIMARY_AXIS_CODES: Readonly<Record<PrimaryAxisId, number>> = Object.freeze({
+/** XYTK axis ids for this adapter. Secondary/polar remain unclaimed. */
+const TICK_SLOT_CODES: Readonly<Record<TickSlotId, number>> = Object.freeze({
   x: 1,
   y: 2,
+  colorbar: 3,
 });
 
 function asTickError(cause: unknown, malformedOutput = false): XygWasmError {
@@ -453,7 +456,7 @@ function asTickError(cause: unknown, malformedOutput = false): XygWasmError {
 }
 
 /**
- * Latest-wins ChartView adapter for the bounded primary Cartesian-axis slice.
+ * Latest-wins ChartView adapter for the bounded Cartesian + colorbar slice.
  *
  * Rust owns generation and formatting. TypeScript only snapshots the viewport,
  * frames XYTK, admits a matching XYTO revision, and paints the last admitted
@@ -470,7 +473,7 @@ export class XygWasmTicksHandle {
   private active = false;
   private cancellations = 0;
   private latest: XygWasmTicksDiagnostics | null = null;
-  private readonly cache = new Map<PrimaryAxisId, ChartTickCache>();
+  private readonly cache = new Map<TickSlotId, ChartTickCache>();
 
   constructor(
     private readonly view: ChartView & any,
@@ -478,14 +481,18 @@ export class XygWasmTicksHandle {
     private readonly ownWorker: boolean,
   ) {}
 
-  /** Map a ChartView axis key/object onto the primary x/y slot this handle owns. */
-  private primarySlot(axisId: unknown): PrimaryAxisId | null {
-    if (axisId === "x" || axisId === "y") return axisId;
+  /** Map a ChartView axis or colorbar key/object onto a slot this handle owns. */
+  private ownedSlot(axisId: unknown): TickSlotId | null {
+    if (axisId === "x" || axisId === "y" || axisId === "colorbar") return axisId;
+    const colorbar = this.view.spec?.colorbar;
+    if (axisId && typeof axisId === "object" && colorbar && axisId === colorbar) {
+      return "colorbar";
+    }
     const axes = this.view.axes;
     if (axisId && typeof axisId === "object") {
       if (axisId === axes?.x) return "x";
       if (axisId === axes?.y) return "y";
-      return this.primarySlot((axisId as { id?: unknown }).id);
+      return this.ownedSlot((axisId as { id?: unknown }).id);
     }
     if (axes?.x && axisId === axes.x.id && (axes[axisId as string] == null || axes[axisId as string] === axes.x)) {
       return "x";
@@ -564,8 +571,71 @@ export class XygWasmTicksHandle {
     return { provenance: "authored_values", values, labels };
   }
 
-  private slotIdentity(slot: PrimaryAxisId): string | null {
+  private colorbarSpec(): {
+    domain?: unknown;
+    scale?: unknown;
+    format?: unknown;
+    ticks?: unknown;
+    tick_labels?: unknown;
+    orientation?: unknown;
+    shrink?: unknown;
+    placement?: unknown;
+  } | null {
+    const colorbar = this.view.spec?.colorbar;
+    return colorbar && typeof colorbar === "object" && !Array.isArray(colorbar)
+      ? colorbar
+      : null;
+  }
+
+  /**
+   * Map ChartView colorbar `ticks` onto XYTK provenance.
+   *
+   * Missing array is automatic. `[]` is authored_empty. A well-formed
+   * nonempty array is authored_values. Malformed planes stay ineligible.
+   */
+  private colorbarAuthoredPlane(colorbar: {
+    ticks?: unknown;
+    tick_labels?: unknown;
+  }): ReturnType<XygWasmTicksHandle["authoredPlane"]> {
+    return this.authoredPlane({
+      tick_values: colorbar.ticks,
+      tick_labels: colorbar.tick_labels,
+    });
+  }
+
+  private colorbarFamily(colorbar: { scale?: unknown }): XygWasmTickFamily | null {
+    const scale = colorbar.scale ?? "linear";
+    if (scale === "log" || scale === "linear") return scale;
+    return null;
+  }
+
+  private colorbarDomain(colorbar: { domain?: unknown }): [number, number] | null {
+    const domain = Array.isArray(colorbar.domain) ? colorbar.domain : [0, 1];
+    if (domain.length < 2) return null;
+    const lo = Number(domain[0]), hi = Number(domain[1]);
+    return Number.isFinite(lo) && Number.isFinite(hi) ? [lo, hi] : null;
+  }
+
+  private slotIdentity(slot: TickSlotId): string | null {
     if (!this.slotEligible(slot)) return null;
+    if (slot === "colorbar") {
+      const colorbar = this.colorbarSpec();
+      if (!colorbar) return null;
+      const family = this.colorbarFamily(colorbar);
+      if (!family) return null;
+      const authored = this.colorbarAuthoredPlane(colorbar);
+      if (authored === "invalid") return null;
+      return JSON.stringify({
+        family,
+        format: typeof colorbar.format === "string" ? colorbar.format : "",
+        categories: [],
+        constant: 0,
+        mask: false,
+        provenance: authored?.provenance ?? "automatic",
+        authoredValues: authored?.values ?? [],
+        authoredLabels: authored?.labels ?? [],
+      });
+    }
     const axis = this.view._axis(slot);
     const family = this.axisFamily(axis);
     if (!family) return null;
@@ -583,8 +653,18 @@ export class XygWasmTicksHandle {
     });
   }
 
-  private slotEligible(slot: PrimaryAxisId): boolean {
+  private slotEligible(slot: TickSlotId): boolean {
     if (this.view.spec?.coords === "polar") return false;
+    if (slot === "colorbar") {
+      const colorbar = this.colorbarSpec();
+      if (!colorbar || colorbar.placement === "scene") return false;
+      const family = this.colorbarFamily(colorbar);
+      if (family == null) return false;
+      const domain = this.colorbarDomain(colorbar);
+      if (!domain) return false;
+      if (family === "log" && !(domain[0] > 0 && domain[1] > 0)) return false;
+      return this.colorbarAuthoredPlane(colorbar) !== "invalid";
+    }
     const axis = this.view._axis(slot);
     if (!axis || typeof axis !== "object" || axis.theta_unit) {
       return false;
@@ -595,15 +675,15 @@ export class XygWasmTicksHandle {
     return family !== "category" || this.categoryTable(axis) != null;
   }
 
-  /** Policy: this slice can request this primary Cartesian axis. */
-  eligible(axisId: unknown): axisId is PrimaryAxisId {
-    const slot = this.primarySlot(axisId);
+  /** Policy: this slice can request this Cartesian axis or colorbar. */
+  eligible(axisId: unknown): axisId is TickSlotId {
+    const slot = this.ownedSlot(axisId);
     return slot !== null && this.slotEligible(slot);
   }
 
   /** Authoritative only after an admitted Rust cache matches the current slot. */
-  covers(axisId: unknown): axisId is PrimaryAxisId {
-    const slot = this.primarySlot(axisId);
+  covers(axisId: unknown): axisId is TickSlotId {
+    const slot = this.ownedSlot(axisId);
     return slot !== null && this.slotEligible(slot) && this.cache.has(slot)
       && this.cache.get(slot)?.identity === this.slotIdentity(slot);
   }
@@ -615,7 +695,7 @@ export class XygWasmTicksHandle {
     step: number;
     source: "wasm";
   } | null {
-    const slot = this.primarySlot(axisId);
+    const slot = this.ownedSlot(axisId);
     if (!slot || !this.covers(slot)) return null;
     const cached = this.cache.get(slot);
     if (!cached) return null;
@@ -629,7 +709,7 @@ export class XygWasmTicksHandle {
 
   /** Internal ChartView formatter. Missing output fails closed to no text. */
   label(axisId: unknown, value: number): string | null {
-    const slot = this.primarySlot(axisId);
+    const slot = this.ownedSlot(axisId);
     if (!slot || !this.covers(slot)) return null;
     return this.cache.get(slot)?.labelByValue.get(value) ?? "";
   }
@@ -640,7 +720,16 @@ export class XygWasmTicksHandle {
       : null;
   }
 
-  private target(axisId: PrimaryAxisId, family: XygWasmTickFamily): number {
+  private target(axisId: TickSlotId, family: XygWasmTickFamily): number {
+    if (axisId === "colorbar") {
+      const colorbar = this.colorbarSpec() ?? {};
+      const shrink = Math.max(0.01, Math.min(1, Number(colorbar.shrink) || 1));
+      const barLength = (colorbar.orientation === "horizontal"
+        ? Number(this.view.plot?.w)
+        : Number(this.view.plot?.h)) * shrink;
+      const target = Math.max(2, Math.min(8, Math.floor(Math.max(0, barLength) / 48) + 1));
+      return Math.max(1, Math.min(MAX_TICKS, target));
+    }
     const fallback = axisId === "x"
       ? Math.max(3, Number(this.view.plot?.w) / (family === "utc_time" ? 90 : 80))
       : Math.max(3, Number(this.view.plot?.h) / 45);
@@ -648,9 +737,33 @@ export class XygWasmTicksHandle {
     return Math.max(1, Math.min(MAX_TICKS, Math.floor(Number.isFinite(target) ? target : 6)));
   }
 
+  private frameColorbar(): Omit<XygWasmTickAxisRequest, "revision"> | null {
+    if (!this.slotEligible("colorbar")) return null;
+    const colorbar = this.colorbarSpec();
+    if (!colorbar) return null;
+    const domain = this.colorbarDomain(colorbar);
+    if (!domain) return null;
+    const [lo, hi] = domain;
+    const family = this.colorbarFamily(colorbar);
+    if (!family) return null;
+    const authored = this.colorbarAuthoredPlane(colorbar);
+    if (authored === "invalid") return null;
+    return {
+      axisId: TICK_SLOT_CODES.colorbar,
+      family,
+      provenance: authored?.provenance ?? "automatic",
+      lo,
+      hi,
+      target: this.target("colorbar", family),
+      ...(authored?.values.length ? { authoredValues: authored.values } : {}),
+      ...(authored?.labels.length ? { authoredLabels: authored.labels } : {}),
+      ...(typeof colorbar.format === "string" ? { format: colorbar.format } : {}),
+    };
+  }
+
   private frame(): ChartTickFrame | null {
     const axes: Omit<XygWasmTickAxisRequest, "revision">[] = [];
-    const axisIds: PrimaryAxisId[] = [];
+    const axisIds: TickSlotId[] = [];
     let eligible = 0;
     for (const axisId of ["x", "y"] as const) {
       if (!this.slotEligible(axisId)) continue;
@@ -665,7 +778,7 @@ export class XygWasmTicksHandle {
       const authored = this.authoredPlane(axis);
       if (authored === "invalid") continue;
       axes.push({
-        axisId: PRIMARY_AXIS_CODES[axisId],
+        axisId: TICK_SLOT_CODES[axisId],
         family,
         provenance: authored?.provenance ?? "automatic",
         lo,
@@ -679,6 +792,14 @@ export class XygWasmTicksHandle {
         ...(typeof axis.format === "string" ? { format: axis.format } : {}),
       });
       axisIds.push(axisId);
+    }
+    if (this.slotEligible("colorbar")) {
+      eligible += 1;
+      const colorbar = this.frameColorbar();
+      if (colorbar) {
+        axes.push(colorbar);
+        axisIds.push("colorbar");
+      }
     }
     if (!axes.length) {
       if (eligible) throw new TypeError("tick range must be finite");
@@ -762,7 +883,7 @@ export class XygWasmTicksHandle {
       if (result.sequence !== sequence || result.axes.length !== frame.axes.length) {
         throw new TypeError("Rust tick output identity does not match the current ChartView batch");
       }
-      const next = new Map<PrimaryAxisId, ChartTickCache>();
+      const next = new Map<TickSlotId, ChartTickCache>();
       for (let index = 0; index < frame.axes.length; index++) {
         const expected = frame.axes[index];
         const axisId = frame.axisIds[index];
@@ -829,7 +950,7 @@ export class XygWasmTicksHandle {
       const frame = this.frame();
       if (!frame) {
         throw new RangeError(
-          "attachWasmTicks requires a primary Cartesian linear, log, symlog, category, or UTC-time axis",
+          "attachWasmTicks requires a primary Cartesian linear, log, symlog, category, or UTC-time axis, or an eligible colorbar",
         );
       }
       if (await this.request(frame, false, true)) return;
@@ -882,9 +1003,11 @@ export class XygWasmTicksHandle {
 
 /**
  * Attach Rust-owned automatic, authored-value, and authored-empty ticks to
- * supported primary Cartesian axes.
+ * supported primary Cartesian axes and ChartView colorbars.
  *
  * Eligible families are linear, log, symlog, category, and UTC-time.
+ * Colorbar slots admit linear and log only. Polar, secondary, and angular
+ * remain frozen on the compatibility path.
  *
  * The first XYTO batch is admitted before the adapter is installed, so an
  * asset/version failure emits one stable event and rejects without a partial

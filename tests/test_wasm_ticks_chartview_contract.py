@@ -31,9 +31,14 @@ def test_chartview_wasm_ticks_are_a_lifecycle_adapter_not_a_generator() -> None:
     assert chartview.index("this._wasmTicks?.covers?.(axisId)") < chartview.index(
         "if (Array.isArray(axis.tick_values))"
     )
-    assert "primarySlot" in ticks
+    assert "ownedSlot" in ticks
     assert "slotEligible" in ticks
     assert "eligible(axisId: unknown)" in ticks
+    assert "colorbar: 3" in ticks
+    assert "frameColorbar" in ticks
+    assert "_colorbarCompatibilityTicks()" in chartview
+    assert 'this._wasmTicks?.covers?.("colorbar")' in chartview
+    assert "this._syncColorbarWasmTicks()" in chartview
     assert 'source: "wasm"' in ticks
     assert "this.cache.has(slot)" in ticks
     assert (
@@ -78,6 +83,10 @@ def test_chartview_wasm_ticks_are_latest_wins_and_destroy_safe() -> None:
     assert "authored provenance switch after attach waits for a matching Rust cache" in browser
     assert "family switch after attach waits for a matching Rust cache" in browser
     assert "failed ChartView tick snapshot retries without a second event" in browser
+    assert "ChartView colorbar ticks use Rust/WASM" in browser
+    assert "authored ChartView colorbar ticks use Rust/WASM" in browser
+    assert "newly eligible colorbar after attach does not paint empty wasm" in browser
+    assert "scene-placed ChartView colorbar stays off the XYTK lane" in browser
 
 
 def test_chartview_wasm_tick_assets_and_scope_are_explicit() -> None:
@@ -97,7 +106,7 @@ def test_chartview_wasm_tick_assets_and_scope_are_explicit() -> None:
     assert "and ChartView may admit" in api
     assert "GL lifecycle" not in api
     assert "this.view._glLost" not in ticks
-    assert "Angular/polar, secondary-axis" in api
+    assert "Angular/polar and secondary-axis" in api
     assert "authored-value, and authored-empty" in api
     assert "authored-value, and authored-empty" in design
     assert '"utc_time"' in ticks

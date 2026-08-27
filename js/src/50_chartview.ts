@@ -1310,7 +1310,10 @@ export class ChartView {
   }
 
   _wasmTickAxisId(axisOrId) {
-    if (axisOrId === "x" || axisOrId === "y") return axisOrId;
+    if (axisOrId === "x" || axisOrId === "y" || axisOrId === "colorbar") return axisOrId;
+    if (axisOrId && typeof axisOrId === "object" && axisOrId === this.spec?.colorbar) {
+      return "colorbar";
+    }
     const axes = this.axes;
     if (axisOrId && typeof axisOrId === "object") {
       if (axisOrId === axes?.x) return "x";
@@ -1326,15 +1329,48 @@ export class ChartView {
     return axisOrId;
   }
 
+  _colorbarCompatibilityTicks() {
+    const cb = this.spec?.colorbar;
+    if (!cb) return { ticks: [], labels: [], step: 1 };
+    if (cb.placement === "scene" && Array.isArray(cb.resolved?.major_ticks)) {
+      const ticks = cb.resolved.major_ticks.map((tick) => Number(tick.value)).filter(Number.isFinite);
+      return {
+        ticks,
+        labels: ticks,
+        step: ticks.length > 1 ? Math.abs(ticks[1] - ticks[0]) : 1,
+      };
+    }
+    const domain = cb.domain || [0, 1];
+    const lo = Number(domain[0]), hi = Number(domain[1]);
+    if (Array.isArray(cb.ticks)) {
+      const loBound = Math.min(lo, hi), hiBound = Math.max(lo, hi);
+      const ticks = cb.ticks.map(Number).filter((value) => (
+        Number.isFinite(value) && value >= loBound && value <= hiBound
+      ));
+      return {
+        ticks,
+        labels: ticks,
+        step: ticks.length > 1 ? Math.abs(ticks[1] - ticks[0]) : 1,
+      };
+    }
+    const shrink = Math.max(0.01, Math.min(1, Number(cb.shrink) || 1));
+    const barLength = (cb.orientation === "horizontal" ? this.plot.w : this.plot.h) * shrink;
+    const tickTarget = Math.max(2, Math.min(8, Math.floor(Math.max(0, barLength) / 48) + 1));
+    return cb.scale === "log" ? logTicks(lo, hi, tickTarget) : linearTicks(lo, hi, tickTarget);
+  }
+
   _axisTicks(axisId, target): any {
     // ABI 23 ChartView cutover: once an explicit attachment is active, covered
-    // primary Cartesian linear/log/symlog/category/UTC-time axes consume only
-    // the last admitted Rust cache that still matches that slot's identity,
-    // including automatic, authored_values, and authored_empty provenance.
-    // A pending/failed newer request never falls through to 30_ticks.ts.
+    // primary Cartesian linear/log/symlog/category/UTC-time axes and eligible
+    // colorbars consume only the last admitted Rust cache that still matches
+    // that slot's identity, including automatic, authored_values, and
+    // authored_empty provenance. A pending/failed newer request never falls
+    // through to 30_ticks.ts. Colorbar is not an `axes` key — `_axis()` would
+    // silently resolve it to x — so the compatibility path stays dedicated.
     axisId = this._wasmTickAxisId(axisId);
     const wasmTicks = this._wasmTicks?.ticks?.(axisId);
     if (wasmTicks || this._wasmTicks?.covers?.(axisId)) return wasmTicks;
+    if (axisId === "colorbar") return this._colorbarCompatibilityTicks();
     const axis = this._axis(axisId);
     let [lo, hi] = this._axisRange(axisId);
     if (this.spec?.coords === "polar" && this._axisDim(axisId) === "x") {
@@ -1397,6 +1433,15 @@ export class ChartView {
     const wasmLabel = this._wasmTicks?.label?.(axisId, Number(value));
     if (wasmLabel !== null && wasmLabel !== undefined) return wasmLabel;
     if (this._wasmTicks?.covers?.(axisId)) return "";
+    if (axisId === "colorbar") {
+      const cb = this.spec?.colorbar || {};
+      if (Array.isArray(cb.ticks) && Array.isArray(cb.tick_labels)) {
+        const index = cb.ticks.findIndex((candidate) => Number(candidate) === Number(value));
+        if (index >= 0 && index < cb.tick_labels.length) return String(cb.tick_labels[index]);
+      }
+      if (Array.isArray(cb.ticks)) return fmtGeneral(value);
+      return cb.scale === "log" ? fmtLog(value) : fmtLinear(value, step);
+    }
     if (Array.isArray(axis.tick_values) && Array.isArray(axis.tick_labels)) {
       const index = axis.tick_values.findIndex((candidate) => Number(candidate) === Number(value));
       if (index >= 0 && index < axis.tick_labels.length) return String(axis.tick_labels[index]);
@@ -3597,7 +3642,13 @@ export class ChartView {
     const shrink = Math.max(0.01, Math.min(1, Number(cb.shrink) || 1));
     const barLength = (horizontal ? this.plot.w : this.plot.h) * shrink;
     const tickTarget = Math.max(2, Math.min(8, Math.floor(Math.max(0, barLength) / 48) + 1));
-    const tickResult = logScale ? logTicks(lo, hi, tickTarget) : linearTicks(lo, hi, tickTarget);
+    const wasmCovered = !scenePlacement && this._wasmTicks?.covers?.("colorbar");
+    const wasmTicks = wasmCovered ? this._wasmTicks.ticks("colorbar") : null;
+    // Fail-closed: a covered colorbar never calls 30_ticks.ts, even when the
+    // admitted cache is empty or a later Worker request is pending/failed.
+    const tickResult = wasmCovered || scenePlacement || Array.isArray(cb.ticks)
+      ? { ticks: wasmTicks?.ticks ?? [], labels: wasmTicks?.labels ?? [], step: wasmTicks?.step ?? 1 }
+      : (logScale ? logTicks(lo, hi, tickTarget) : linearTicks(lo, hi, tickTarget));
     const sceneMajorTicks = scenePlacement && Array.isArray(cb.resolved?.major_ticks)
       ? cb.resolved.major_ticks
       : null;
@@ -3606,7 +3657,9 @@ export class ChartView {
       : null;
     const hasSceneBounds = sceneBounds?.length === 4 && sceneBounds.every(Number.isFinite);
     const hasExplicitTicks = Array.isArray(cb.ticks);
-    const tickValues = sceneMajorTicks
+    const tickValues = wasmCovered
+      ? (wasmTicks?.labels?.length ? wasmTicks.labels : wasmTicks?.ticks ?? [])
+      : sceneMajorTicks
       ? sceneMajorTicks.map((tick) => tick.value)
       : hasExplicitTicks
       ? cb.ticks
@@ -3622,7 +3675,9 @@ export class ChartView {
       // `any` because the node carries the stashed beside-the-bar cssText below
       // (same reason as the legend box's `lg`).
       const tick: any = document.createElement("span");
-      tick.textContent = sceneMajorTicks
+      tick.textContent = wasmCovered
+          ? (this._wasmTicks.label("colorbar", value) ?? "")
+          : sceneMajorTicks
           ? String(sceneMajorTicks[tickIndex].label)
           : hasExplicitTicks &&
           Array.isArray(cb.tick_labels) &&
@@ -3717,7 +3772,43 @@ export class ChartView {
     root.appendChild(box);
     this._colorbar = box;
     this._colorbarHorizontal = horizontal;
+    this._colorbarWasmPaintKey = wasmCovered
+      ? JSON.stringify({
+        ticks: wasmTicks?.ticks ?? [],
+        labels: [...(wasmTicks?.labels ?? [])].map((value) => (
+          this._wasmTicks.label("colorbar", Number(value)) ?? ""
+        )),
+        step: wasmTicks?.step ?? 1,
+      })
+      : "js";
     this._positionColorbar();
+  }
+
+  _syncColorbarWasmTicks() {
+    if (!this._colorbar || !this.spec?.colorbar) return;
+    if (this.spec.colorbar.placement === "scene") return;
+    if (!this._wasmTicks) return;
+    const covered = this._wasmTicks.covers("colorbar");
+    const wasm = covered ? this._wasmTicks.ticks("colorbar") : null;
+    const key = covered
+      ? JSON.stringify({
+        ticks: wasm?.ticks ?? [],
+        labels: [...(wasm?.labels ?? [])].map((value) => (
+          this._wasmTicks.label("colorbar", Number(value)) ?? ""
+        )),
+        step: wasm?.step ?? 1,
+      })
+      : "js";
+    if (this._colorbarWasmPaintKey === key) return;
+    const parent = this._colorbar.parentNode;
+    const next = this._colorbar.nextSibling;
+    this._colorbar.remove();
+    this._colorbar = null;
+    if (!parent) return;
+    this._buildColorbar(parent);
+    if (next && this._colorbar && this._colorbar.nextSibling !== next) {
+      parent.insertBefore(this._colorbar, next);
+    }
   }
 
   _positionColorbar() {
@@ -7012,6 +7103,7 @@ export class ChartView {
     // deduplicates identical snapshots and retains its last-good Rust result
     // while the current XYTK batch runs on the independent Worker lane.
     this._wasmTicks?.schedule?.();
+    this._syncColorbarWasmTicks();
     const s = this.spec;
     const dpr = this.dpr;
     const ctx = this.chrome.getContext("2d");

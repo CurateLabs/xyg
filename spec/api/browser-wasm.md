@@ -41,16 +41,18 @@ Each axis admits at most 200 authored/output ticks, 65,536 source categories,
 `attachWasmTicks(view, { worker, workerOwnership })` installs that seam on the
 eligible ChartView path: automatic, authored-value, and authored-empty primary
 Cartesian x/y axes whose kind is linear (scale linear, log, or symlog),
-category, or time. Polar, `theta_unit`, and empty/non-string category tables
-are excluded. It resolves one atomic batch before mounting, then intercepts
-both tick positions and label text for axes that already have an admitted Rust
-cache matching the current family, category table, format, and provenance
-(`covers`). `frame()` still requests every currently eligible axis, including
-one that became eligible after mount; that new slot stays on `30_ticks.ts`
-until its first cache arrives and is never painted as a synthetic empty WASM
-result. An admitted authored-empty cache is a real empty Rust result.
-Angular/polar, secondary-axis, and colorbar paths remain unchanged and are not
-claimed by this API.
+category, or time, plus eligible ChartView colorbar axes (linear or log,
+including authored and authored-empty `ticks`). Polar, `theta_unit`, empty
+or non-string category tables, and Scene-placed colorbars are excluded. It
+resolves one atomic batch before mounting, then intercepts both tick positions
+and label text for axes that already have an admitted Rust cache matching the
+current family, category table, format, and provenance (`covers`). `frame()`
+still requests every currently eligible axis, including one that became
+eligible after mount; that new slot stays on `30_ticks.ts` until its first
+cache arrives and is never painted as a synthetic empty WASM result. An
+admitted authored-empty cache is a real empty Rust result.
+Angular/polar and secondary-axis paths remain unchanged and are not claimed
+by this API.
 
 ```js
 import {

@@ -40,8 +40,8 @@ typed-column (`XYCC`) compile for scatter/polyline/rect/band, and packed
 progressive CoSE (`XYGL`/`XYGO`) with cancellation, revisions, pins, compounds,
 and explicit scheduler bounds. `attachWasmTicks(view, { worker })` additionally
 cuts automatic, authored-value, and authored-empty primary Cartesian
-linear/log/symlog/category/UTC-time ChartView ticks to the
-Rust-owned `XYTK`/`XYTO` lane. Polar, secondary axes, colorbars,
+linear/log/symlog/category/UTC-time ChartView ticks and eligible colorbars to
+the Rust-owned `XYTK`/`XYTO` lane. Polar, secondary axes,
 and self-contained hosts remain compatibility/follow-up paths.
 `encodeWasmCose` plus
 `XygWasmWorker.layoutCose` keep every force tick in Rust inside the Worker;

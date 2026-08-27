@@ -159,9 +159,10 @@ UTF-8 through the versioned ABI envelope. `js/src/30_ticks.ts` remains
 canonical-policy debt for uncovered dynamic browser paths under #59. WASM ABI
 23 plus `attachWasmTicks` now cut explicitly attached automatic, authored-value,
 and authored-empty primary Cartesian linear/log/symlog/category/UTC-time
-ChartView axes to the Rust resolver and independent Worker lane. Polar,
-secondary axes, colorbars, unattached charts, Blob-worker HTML, and the srcdoc
-notebook iframe remain on the frozen compatibility path. Hosted `to_html()`,
+ChartView axes and eligible ChartView colorbars to the Rust resolver and
+independent Worker lane. Polar, secondary axes, unattached charts, Blob-worker
+HTML, and the srcdoc notebook iframe remain on the frozen compatibility path.
+Hosted `to_html()`,
 notebook widgets, and Reflex can attach when they serve the packaged
 Worker/WASM files at explicit URLs; this is not the all-host ChartView cutover.
 
@@ -331,9 +332,9 @@ Allowed:
 
 - Temporary tick consumption and browser-specific label presentation during scene migration.
 - The existing TypeScript generator stays frozen for unattached charts and the
-  angular/polar/secondary/colorbar compatibility paths.
+  angular/polar/secondary compatibility paths.
   An explicitly attached automatic, authored-value, or authored-empty primary
-  Cartesian linear/log/symlog/category/UTC-time axis
+  Cartesian linear/log/symlog/category/UTC-time axis or eligible colorbar
   consumes only Rust-produced positions and labels for each view and resize.
 
 Forbidden:
