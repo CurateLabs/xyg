@@ -176,10 +176,16 @@ crates/
     scene_annotations.rs # primary XYAD annotation framing (ABI 112): XYAT/
                         #   XYAL/XYAR/XYAC/XYAW tables, version selection,
                         #   envelope concatenation, and bounded-text rejection.
+    jpeg.rs             # baseline JPEG encode (ABI 114): YCbCr 4:4:4, Annex K
+                        #   tables, libjpeg quality curve, Huffman packing.
+                        #   Native hosts only (`raster` feature).
     pdf.rs              # closed-subset SVG→PDF (ABI 113): path lowering,
                         #   Helvetica metrics, ExtGState/shading/image
                         #   embedding, deterministic xref. Native hosts only
                         #   (`raster` feature); WASM keeps default-features off.
+    webp.rs             # lossless VP8L encode (ABI 114): simple lossless,
+                        #   length-limited prefix codes, distance-1 runs.
+                        #   Native hosts only (`raster` feature).
     svg.rs              # screen-space coordinate serialization for the SVG path:
                         #   `poly_path` alone, folding parallel f64 x/y arrays
                         #   into one `M`/`L` path-data string with Python-matching

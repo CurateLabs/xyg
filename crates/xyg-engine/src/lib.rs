@@ -23,6 +23,8 @@ pub mod geo_viewport;
 pub mod graph;
 pub mod graph_style;
 pub mod hexbin;
+#[cfg(feature = "raster")]
+pub mod jpeg;
 pub mod kernels;
 pub mod lod_plan;
 #[cfg(feature = "raster")]
@@ -33,6 +35,8 @@ pub mod raster;
 pub mod sankey;
 pub mod scene;
 mod scene_export;
+#[cfg(feature = "raster")]
+pub mod webp;
 pub use scene_export::scene_public_export_reason;
 pub mod scene_pack;
 pub use scene_pack::pack_trace;

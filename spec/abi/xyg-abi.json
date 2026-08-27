@@ -1,9 +1,9 @@
 {
-  "abi_version": 113,
+  "abi_version": 114,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "dd6434fe438b270dc0930af76783de02bd7eb9f6938d9977b7c526d293cbfc87",
+  "signature_sha256": "13785dedcc901159d9dae5db29b81a71832890a76907ffd58c088d2b77c207be",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -4255,6 +4255,275 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_encode_f32(const double * data, size_t len, double offset, double scale, float * out)"
+    },
+    {
+      "name": "xyg_encode_jpeg",
+      "node_name": "xyEncodeJpeg",
+      "nargs": 8,
+      "arguments": [
+        {
+          "name": "pixels",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "n",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "width",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "height",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "channels",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "quality",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out",
+          "type": {
+            "rust": "*mut u8",
+            "c": "uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_cap",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "usize",
+        "c": "size_t",
+        "ctypes": "ctypes.c_size_t",
+        "koffi": "size_t",
+        "kind": "scalar",
+        "bits": "pointer",
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "size_t xyg_encode_jpeg(const uint8_t * pixels, size_t n, size_t width, size_t height, size_t channels, int32_t quality, uint8_t * out, size_t out_cap)"
+    },
+    {
+      "name": "xyg_encode_webp",
+      "node_name": "xyEncodeWebp",
+      "nargs": 7,
+      "arguments": [
+        {
+          "name": "pixels",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "n",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "width",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "height",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "channels",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out",
+          "type": {
+            "rust": "*mut u8",
+            "c": "uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_cap",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "usize",
+        "c": "size_t",
+        "ctypes": "ctypes.c_size_t",
+        "koffi": "size_t",
+        "kind": "scalar",
+        "bits": "pointer",
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "size_t xyg_encode_webp(const uint8_t * pixels, size_t n, size_t width, size_t height, size_t channels, uint8_t * out, size_t out_cap)"
     },
     {
       "name": "xyg_factorize_fixed",

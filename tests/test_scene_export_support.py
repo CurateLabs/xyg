@@ -1559,3 +1559,22 @@ def test_public_mark_figures_encode_pdf_through_rust() -> None:
         assert pdf.startswith(b"%PDF-"), label
         assert pdf == _native.svg_to_pdf(svg), label
         assert b"/FlateDecode" in pdf, label
+
+
+def test_public_mark_figures_encode_jpeg_and_webp_through_rust(monkeypatch) -> None:
+    """#274: Scene-eligible JPEG/WebP use native encode, not Python format modules."""
+    from xyg import _jpeg, _webp
+
+    def boom(*_args, **_kwargs):
+        raise AssertionError("Python JPEG/WebP encoder used for a Scene-eligible figure")
+
+    monkeypatch.setattr(_jpeg, "encode", boom)
+    monkeypatch.setattr(_webp, "encode", boom)
+
+    for label, figure in _public_mark_figures():
+        jpeg = figure.to_image(format="jpeg", scale=1)
+        webp = figure.to_image(format="webp", scale=1)
+        assert jpeg[:3] == b"\xff\xd8\xff", label
+        assert webp[:4] == b"RIFF" and webp[8:12] == b"WEBP", label
+        assert public_static_export(figure, "jpeg") == jpeg, label
+        assert public_static_export(figure, "webp") == webp, label

@@ -1894,10 +1894,11 @@ def public_static_export(
     width: int | None = None,
     height: int | None = None,
     scale: float = 1.0,
+    quality: int | None = None,
 ) -> bytes | None:
     """Render one supported public static format from the canonical Scene.
 
-    This is the only selection seam for the migrated public SVG/PNG/PDF
+    This is the only selection seam for the migrated public SVG/PNG/PDF/JPEG/WebP
     subset.  It returns ``None`` only after the explicit support predicate
     selects compatibility *before* Scene compilation.  Once selected, every
     compiler or consumer error propagates: it is never a request to retry a
@@ -1920,7 +1921,27 @@ def public_static_export(
         )
     if format == "pdf":
         return _native.svg_to_pdf(figure_svg(figure, width=width, height=height))
-    raise ValueError(f"Scene public static format must be svg, png, or pdf, got {format!r}")
+    if format in {"jpeg", "webp"}:
+        from . import kernels
+
+        commands = figure_raster_commands(figure, width=width, height=height, scale=scale)
+        w = max(1, int(round(int(width if width is not None else figure.width) * float(scale))))
+        h = max(1, int(round(int(height if height is not None else figure.height) * float(scale))))
+        rgba = kernels.rasterize(commands, w, h)
+        if format == "jpeg":
+            rgb = _flatten_jpeg_background(rgba)
+            return _native.encode_jpeg(rgb, quality=90 if quality is None else int(quality))
+        return _native.encode_webp(rgba)
+    raise ValueError(
+        f"Scene public static format must be svg, png, pdf, jpeg, or webp, got {format!r}"
+    )
+
+
+def _flatten_jpeg_background(rgba: np.ndarray) -> np.ndarray:
+    """Composite leftover Scene alpha over white before JPEG encode."""
+    alpha = rgba[..., 3:4].astype(np.uint16)
+    rgb = (rgba[..., :3].astype(np.uint16) * alpha + 255 * (255 - alpha) + 127) // 255
+    return rgb.astype(np.uint8)
 
 
 def _xyep_put_keys(buf: bytearray, keys: list[str]) -> None:

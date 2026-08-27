@@ -18,6 +18,8 @@ import {
   xySceneSupportReason,
   xySceneSvg,
   xySvgToPdf,
+  xyEncodeJpeg,
+  xyEncodeWebp,
   xySceneVersion,
 } from "./native.js";
 import { asF64Array, f64Ptr, shouldUseDensity, u32Ptr, u8Ptr } from "./encode.js";
@@ -550,6 +552,52 @@ export function svgToPdf(svg) {
     if (written <= capacity) return output.slice(0, written);
     capacity = written;
   }
+}
+
+function encodePixels(fn, pixels, width, height, channels, extra = [], label = "image") {
+  const source = pixels instanceof Uint8Array ? pixels : new Uint8Array(pixels);
+  const w = Number(width);
+  const h = Number(height);
+  const c = Number(channels);
+  if (!Number.isInteger(w) || !Number.isInteger(h) || !Number.isInteger(c)) {
+    throw new RangeError(`${label} dimensions must be integers`);
+  }
+  let capacity = Math.max(256, source.length);
+  for (;;) {
+    const output = new Uint8Array(capacity);
+    const rawWritten = fn(
+      source.length ? u8Ptr(source) : 0,
+      BigInt(source.length),
+      BigInt(w),
+      BigInt(h),
+      BigInt(c),
+      ...extra,
+      u8Ptr(output),
+      BigInt(capacity),
+    );
+    if (rawWritten === USIZE_MAX_64) {
+      const end = output.indexOf(0);
+      const message = new TextDecoder().decode(end >= 0 ? output.subarray(0, end) : output).trim()
+        || `invalid ${label} input`;
+      throw new RangeError(message);
+    }
+    const written = Number(rawWritten);
+    if (!Number.isSafeInteger(written) || written < 0) {
+      throw new RangeError(`${label} output exceeded host limits`);
+    }
+    if (written <= capacity) return output.slice(0, written);
+    capacity = written;
+  }
+}
+
+export function encodeJpeg(pixels, width, height, channels, quality = 90) {
+  const q = Number(quality);
+  if (!Number.isInteger(q)) throw new RangeError("quality must be an int in 1..100");
+  return encodePixels(xyEncodeJpeg, pixels, width, height, channels, [q], "JPEG");
+}
+
+export function encodeWebp(pixels, width, height, channels) {
+  return encodePixels(xyEncodeWebp, pixels, width, height, channels, [], "WebP");
 }
 
 export function sceneRasterCommands(encoded, scale = 1) {

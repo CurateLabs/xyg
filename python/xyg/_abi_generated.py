@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 113
-SIGNATURE_SHA256 = "dd6434fe438b270dc0930af76783de02bd7eb9f6938d9977b7c526d293cbfc87"
+ABI_VERSION = 114
+SIGNATURE_SHA256 = "13785dedcc901159d9dae5db29b81a71832890a76907ffd58c088d2b77c207be"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -130,6 +130,14 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_encode_f32
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_void_p]
+    # size_t xyg_encode_jpeg(const uint8_t * pixels, size_t n, size_t width, size_t height, size_t channels, int32_t quality, uint8_t * out, size_t out_cap)
+    function = lib.xyg_encode_jpeg
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_encode_webp(const uint8_t * pixels, size_t n, size_t width, size_t height, size_t channels, uint8_t * out, size_t out_cap)
+    function = lib.xyg_encode_webp
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # size_t xyg_factorize_fixed(const uint8_t * data, size_t len, size_t width, uint32_t * out_codes, uint32_t * out_unique_indices)
     function = lib.xyg_factorize_fixed
     function.restype = ctypes.c_size_t

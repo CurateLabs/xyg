@@ -1058,7 +1058,10 @@ ticks, title, and text RGBA. ABI 112 does not change Scene records either;
 `xyg_scene_pack_annotations` owns primary XYAD framing from typed row meta
 and concatenated labels. ABI 113 does not change Scene records either;
 `xyg_svg_to_pdf` owns closed-subset SVG→PDF so public static PDF no longer
-feeds Rust SVG through a Python converter. Polar
+feeds Rust SVG through a Python converter. ABI 114 does not change Scene
+records either; `xyg_encode_jpeg` and `xyg_encode_webp` own packed RGB/RGBA8
+static encode so public JPEG/WebP no longer feed Scene pixels through Python
+format modules. Polar
 hexbin, custom reducers, metric colormaps, LOD, and rich style exceptions
 fail closed and keep the compatibility exporters. Scene 25 is unchanged.
 

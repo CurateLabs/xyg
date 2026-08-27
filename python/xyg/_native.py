@@ -2692,6 +2692,65 @@ def svg_to_pdf(svg: str) -> bytes:
         capacity = written
 
 
+def _encode_pixels(
+    function: Any,
+    pixels: np.ndarray,
+    extra: tuple[Any, ...] = (),
+    *,
+    label: str,
+) -> bytes:
+    if not isinstance(pixels, np.ndarray):
+        raise ValueError(f"{label} image must be a numpy array, got {type(pixels).__name__}")
+    if pixels.dtype != np.uint8:
+        raise ValueError(f"{label} image must be uint8, got {pixels.dtype}")
+    if pixels.ndim != 3 or pixels.shape[2] not in (3, 4):
+        raise ValueError(
+            f"{label} image must be (h, w, 4) RGBA or (h, w, 3) RGB, got {pixels.shape}"
+        )
+    arr = np.ascontiguousarray(pixels)
+    height, width, channels = (int(v) for v in arr.shape)
+    n = int(arr.size)
+    capacity = max(256, n)
+    while True:
+        out = ctypes.create_string_buffer(capacity)
+        written = function(
+            _ptr_u8(arr) if n else 0,
+            n,
+            width,
+            height,
+            channels,
+            *extra,
+            out,
+            capacity,
+        )
+        if written == _USIZE_MAX:
+            message = out.value.decode("utf-8", "replace") or f"invalid {label} input"
+            raise ValueError(message)
+        if written <= capacity:
+            return out.raw[:written]
+        capacity = written
+
+
+def encode_jpeg(pixels: np.ndarray, *, quality: int = 90) -> bytes:
+    """Encode RGB/RGBA8 pixels as a baseline sequential JFIF JPEG.
+
+    Rust owns YCbCr 4:4:4, Annex K tables, the libjpeg quality curve, and
+    Huffman packing (M2 #274). Alpha is ignored.
+    """
+    if isinstance(quality, bool) or not isinstance(quality, int):
+        raise ValueError(f"quality must be an int in 1..100, got {quality!r}")
+    return _encode_pixels(_lib.xyg_encode_jpeg, pixels, (int(quality),), label="JPEG")
+
+
+def encode_webp(pixels: np.ndarray) -> bytes:
+    """Encode RGB/RGBA8 pixels as a lossless VP8L WebP.
+
+    Rust owns the simple-lossless subset, length-limited prefix codes, and
+    distance-1 run packing (M2 #274). Alpha survives bit-exact.
+    """
+    return _encode_pixels(_lib.xyg_encode_webp, pixels, label="WebP")
+
+
 def scene_raster_commands(encoded: bytes, scale: float = 1.0) -> bytes:
     """Compile Scene v12 into the existing native raster display list."""
     factor = float(scale)

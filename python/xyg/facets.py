@@ -426,13 +426,11 @@ for(const p of panels){{
                     compression_level=1,
                 )
             canvas = self._compose_rgba(scale, background)
+            from . import _native
+
             if fmt == "jpeg":
-                from . import _jpeg
-
-                return _jpeg.encode(export._flatten_alpha(canvas), quality=quality or 90)
-            from . import _webp
-
-            return _webp.encode(canvas)
+                return _native.encode_jpeg(export._flatten_alpha(canvas), quality=quality or 90)
+            return _native.encode_webp(canvas)
         # The background override must actually reach the captured document,
         # exactly as in the single-chart browser path — the CDP transparency
         # flag below only clears Chromium's default white page backdrop.

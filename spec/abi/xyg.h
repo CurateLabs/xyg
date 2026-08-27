@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 113
-#define XYG_ABI_SIGNATURE_SHA256 "dd6434fe438b270dc0930af76783de02bd7eb9f6938d9977b7c526d293cbfc87"
+#define XYG_ABI_VERSION 114
+#define XYG_ABI_SIGNATURE_SHA256 "13785dedcc901159d9dae5db29b81a71832890a76907ffd58c088d2b77c207be"
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,6 +41,8 @@ int32_t xyg_density_log_u8(const float * grid, size_t len, uint8_t * out, double
 int32_t xyg_density_rgba(const uint8_t * encoded, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out);
 int32_t xyg_drill_decision(uint64_t visible, double budget, int32_t in_drill, double exit_factor, int32_t * out_exact);
 int32_t xyg_encode_f32(const double * data, size_t len, double offset, double scale, float * out);
+size_t xyg_encode_jpeg(const uint8_t * pixels, size_t n, size_t width, size_t height, size_t channels, int32_t quality, uint8_t * out, size_t out_cap);
+size_t xyg_encode_webp(const uint8_t * pixels, size_t n, size_t width, size_t height, size_t channels, uint8_t * out, size_t out_cap);
 size_t xyg_factorize_fixed(const uint8_t * data, size_t len, size_t width, uint32_t * out_codes, uint32_t * out_unique_indices);
 size_t xyg_factorize_fixed_u8(const uint8_t * data, size_t len, size_t width, uint8_t * out_codes, uint32_t * out_unique_indices, size_t unique_capacity);
 size_t xyg_factorize_fixed_u8_counts(const uint8_t * data, size_t len, size_t width, uint8_t * out_codes, uint32_t * out_unique_indices, uint64_t * out_counts, size_t unique_capacity);

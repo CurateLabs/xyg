@@ -29,6 +29,7 @@ use xyg_engine::figure_autorange;
 use xyg_engine::geo;
 use xyg_engine::graph;
 use xyg_engine::hexbin;
+use xyg_engine::jpeg;
 use xyg_engine::kernels;
 use xyg_engine::kernels::ZoneMap;
 use xyg_engine::lod_plan;
@@ -53,6 +54,7 @@ use xyg_engine::temporal_graph;
 use xyg_engine::tile_store;
 use xyg_engine::tiles;
 use xyg_engine::transition;
+use xyg_engine::webp;
 
 fn finite_gt(lo: f64, hi: f64) -> bool {
     lo.is_finite() && hi.is_finite() && hi > lo
@@ -107,7 +109,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 113;
+pub const ABI_VERSION: u32 = 114;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1709,6 +1711,10 @@ pub unsafe extern "C" fn xyg_svg_to_pdf(
 }
 
 fn write_pdf_error(out: *mut u8, out_cap: usize, message: &str) {
+    write_utf8_error(out, out_cap, message);
+}
+
+fn write_utf8_error(out: *mut u8, out_cap: usize, message: &str) {
     if out.is_null() || out_cap == 0 {
         return;
     }
@@ -1718,6 +1724,97 @@ fn write_pdf_error(out: *mut u8, out_cap: usize, message: &str) {
         let buf = std::slice::from_raw_parts_mut(out, out_cap);
         buf[..n].copy_from_slice(&bytes[..n]);
         buf[n] = 0;
+    }
+}
+
+unsafe fn encode_image_output(
+    required: usize,
+    out: *mut u8,
+    out_cap: usize,
+    bytes: &[u8],
+) -> usize {
+    if out_cap < required {
+        return required;
+    }
+    if required > 0 && out.is_null() {
+        return usize::MAX;
+    }
+    if required > 0 {
+        std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(bytes);
+    }
+    required
+}
+
+/// Encode packed RGB or RGBA8 pixels as a baseline sequential JFIF JPEG.
+/// Returns required bytes, or `usize::MAX` on invalid input. On error, when
+/// `out_cap > 0` and `out` is non-null, the buffer receives a UTF-8 diagnostic.
+///
+/// # Safety
+/// `pixels` addresses `n` readable bytes. When capacity suffices, `out`
+/// addresses `out_cap` writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_encode_jpeg(
+    pixels: *const u8,
+    n: usize,
+    width: usize,
+    height: usize,
+    channels: usize,
+    quality: i32,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if pixels.is_null() && n > 0 {
+        return usize::MAX;
+    }
+    let bytes = if n == 0 {
+        &[]
+    } else {
+        std::slice::from_raw_parts(pixels, n)
+    };
+    match ffi_guard(Err("invalid JPEG input".into()), || {
+        jpeg::encode_jpeg(bytes, width, height, channels, quality)
+    }) {
+        Ok(jpeg) => encode_image_output(jpeg.len(), out, out_cap, &jpeg),
+        Err(message) => {
+            write_utf8_error(out, out_cap, &message);
+            usize::MAX
+        }
+    }
+}
+
+/// Encode packed RGB or RGBA8 pixels as a lossless VP8L WebP.
+/// Returns required bytes, or `usize::MAX` on invalid input. On error, when
+/// `out_cap > 0` and `out` is non-null, the buffer receives a UTF-8 diagnostic.
+///
+/// # Safety
+/// `pixels` addresses `n` readable bytes. When capacity suffices, `out`
+/// addresses `out_cap` writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_encode_webp(
+    pixels: *const u8,
+    n: usize,
+    width: usize,
+    height: usize,
+    channels: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if pixels.is_null() && n > 0 {
+        return usize::MAX;
+    }
+    let bytes = if n == 0 {
+        &[]
+    } else {
+        std::slice::from_raw_parts(pixels, n)
+    };
+    match ffi_guard(Err("invalid WebP input".into()), || {
+        webp::encode_webp(bytes, width, height, channels)
+    }) {
+        Ok(webp) => encode_image_output(webp.len(), out, out_cap, &webp),
+        Err(message) => {
+            write_utf8_error(out, out_cap, &message);
+            usize::MAX
+        }
     }
 }
 

@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import test from "node:test";
 
-import { axisTicks, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
+import { axisTicks, encodeJpeg, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
 import { Figure, sceneRasterCommands, sceneSvg } from "../src/index.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
@@ -89,6 +89,17 @@ test("Node encodes Scene PDF through the shared Rust SVG→PDF converter", () =>
   assert.equal(Buffer.compare(pdf.subarray(0, 8), Buffer.from("%PDF-1.4")), 0);
   assert.equal(Buffer.compare(pdf, svgToPdf(supported.toSceneSvg())), 0);
   assert.throws(() => svgToPdf("<svg><foreignObject/></svg>"), /unsupported SVG feature/);
+});
+
+test("Node encodes JPEG and WebP through the shared Rust image encoders", () => {
+  const rgb = Uint8Array.from([10, 20, 30, 40, 50, 60]);
+  const jpeg = encodeJpeg(rgb, 2, 1, 3, 90);
+  assert.equal(Buffer.compare(jpeg.subarray(0, 2), Buffer.from([0xff, 0xd8])), 0);
+  assert.equal(Buffer.compare(jpeg.subarray(jpeg.length - 2), Buffer.from([0xff, 0xd9])), 0);
+  const webp = encodeWebp(Uint8Array.from([10, 20, 30, 255]), 1, 1, 4);
+  assert.equal(Buffer.compare(webp.subarray(0, 4), Buffer.from("RIFF")), 0);
+  assert.equal(Buffer.compare(webp.subarray(8, 12), Buffer.from("WEBP")), 0);
+  assert.throws(() => encodeJpeg(rgb, 2, 1, 3, 0), /quality/);
 });
 
 test("Node figure compiles the exact shared scatter, line, bar Scene v4 fixture", () => {
