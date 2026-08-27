@@ -1,0 +1,33 @@
+name: M2 Wave C close
+
+# One-shot helper: the Cloud Agent token can merge PRs but cannot comment on
+# or close issues. Actions GITHUB_TOKEN with issues:write performs Wave C.
+# Idempotent — safe if re-run after issues are already closed.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/m2-wave-c-close.yml"
+      - "scripts/m2_wave_c_close.sh"
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: m2-wave-c-close
+  cancel-in-progress: false
+
+jobs:
+  close:
+    name: Comment and close #58 → #59 → #24 → M2
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Close Milestone 2 claimed-subset issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: bash scripts/m2_wave_c_close.sh
