@@ -124,7 +124,11 @@ assignment, ribbon/triangle doubling, heatmap lattice framing, and
 finite-coordinate rejection cannot drift. ABI 116 expands primary
 rule/band/marker annotations into ordinary Scene polyline/rect/scatter
 rows from packed scalars plus axis domains; hosts only coerce kind, axis,
-style ref, index, and authored numbers. ABI 110 moves primary XYLG
+style ref, index, and authored numbers. ABI 117 moves figure-compile
+support into `crates/xyg-engine/src/scene_export.rs`. Python and Node pack
+an `XYFS` v1 envelope of observations plus axis ids/keys; feature mapping,
+the primary x/y axis set, and the Scene axis-key allowlist cannot drift.
+ABI 110 moves primary XYLG
 legend framing into `crates/xyg-engine/src/scene_legend.rs`. Python and
 Node pass loc/flags, font sizes, paints, title, and per-entry meta plus
 labels; header layout, text offsets, and bounded-text rejection cannot

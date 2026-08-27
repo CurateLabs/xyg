@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 116
-SIGNATURE_SHA256 = "d751749038526248f9d05827594568e191c1e4dc2d9f5b5edf493abbd9264eb1"
+ABI_VERSION = 117
+SIGNATURE_SHA256 = "7e6c44e56bb0c359535e00471862bee7dd1b5896e9147771da9a9330c777e50a"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -486,6 +486,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_browser_painter
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_scene_figure_support_reason(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap)
+    function = lib.xyg_scene_figure_support_reason
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_scene_pack_annotation_marks(const uint8_t * rows, size_t rows_len, double x0, double x1, double y0, double y1, uint8_t * out, size_t out_cap)
     function = lib.xyg_scene_pack_annotation_marks
     function.restype = ctypes.c_int32

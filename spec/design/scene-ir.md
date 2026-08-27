@@ -1052,7 +1052,9 @@ for the same conversion. ABI 109 does not change Scene records either;
 expansion modes, ribbon/triangle doubling, heatmap lattice framing) from
 literal columns. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
-from packed scalars plus axis domains. ABI 110 does not change Scene records either;
+from packed scalars plus axis domains. ABI 117 does not change Scene records either;
+`xyg_scene_figure_support_reason` owns figure-compile support from packed
+observations plus axis ids/keys. ABI 110 does not change Scene records either;
 `xyg_scene_pack_legend` owns primary XYLG legend framing from loc/flags,
 paints, title, and entry meta. ABI 111 does not change Scene records either;
 `xyg_scene_pack_colorbar` owns primary XYCB v2 framing from domain, stops,

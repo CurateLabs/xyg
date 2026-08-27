@@ -54,6 +54,12 @@ test("Node projects Rust-owned Scene support decisions verbatim", () => {
   const constantColor = new Figure(); constantColor.scatter([0], [0]);
   constantColor.traces[0].color = { mode: "constant", color: "#3987e5" };
   assert.doesNotThrow(() => constantColor.toScene());
+  const collision = new Figure(); collision.line([0, 1], [0, 1]);
+  collision.setAxis("x", { collision: "hide" });
+  assert.throws(() => collision.toScene(), /tick formatting/);
+  const extraAxis = new Figure(); extraAxis.line([0, 1], [0, 1]);
+  extraAxis.axis_options = { x: extraAxis.xAxis ?? {}, y: extraAxis.yAxis ?? {}, z: { label: "z" } };
+  assert.throws(() => extraAxis.toScene(), /exactly x\/y/);
 });
 
 test("Node packs public-export eligibility through the shared Rust predicate", () => {

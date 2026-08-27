@@ -138,6 +138,17 @@ def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
         missing_constant.to_scene()
 
 
+def test_figure_support_axis_allowlist_is_rust_owned() -> None:
+    figure = Figure().line([0.0, 1.0], [0.0, 1.0])
+    figure.axis_options["x"]["collision"] = "hide"
+    with pytest.raises(UnsupportedSceneV3, match="tick formatting"):
+        figure.to_scene()
+    extra = Figure().line([0.0, 1.0], [0.0, 1.0])
+    extra.axis_options["z"] = {"label": "z"}
+    with pytest.raises(UnsupportedSceneV3, match="exactly x/y"):
+        extra.to_scene()
+
+
 def test_scene_v19_colorbar_python_framer_matches_literal_stop_contract() -> None:
     figure = Figure()
     figure.colorbar_options = {

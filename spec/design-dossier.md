@@ -1287,6 +1287,10 @@ ABI 116 expands primary rule/band/marker annotations into ordinary Scene
 rows. Hosts pass kind, axis, style ref, index, and authored scalars plus
 axis domains; stable-id tags, domain spanning, and finite rejection are
 engine-owned and identical for Python and Node.
+ABI 117 moves figure-compile support into Rust. Hosts pass packed
+observations plus axis ids/keys; feature mapping, the primary x/y axis
+set, and the Scene axis-key allowlist are engine-owned and identical for
+Python and Node.
 ABI 110 moves primary Scene legend framing into Rust. Hosts pass loc/flags,
 font sizes, paints, title, and per-entry meta plus labels; XYLG header
 layout, text offsets, and bounded-text rejection are engine-owned and

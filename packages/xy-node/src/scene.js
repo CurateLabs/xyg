@@ -9,6 +9,7 @@ import {
   xyScenePackLegend,
   xyScenePlotLayout,
   xyScenePublicExportReason,
+  xySceneFigureSupportReason,
   xyScenePackTrace,
   xyScenePackAnnotationMarks,
   xySceneRasterCommands,
@@ -731,6 +732,95 @@ export function sceneSupportReason(features, requestVersion = 1) {
   return new TextDecoder("utf-8", { fatal: true }).decode(output);
 }
 
+function significantSceneAxisKeys(options) {
+  return Object.entries(options ?? {})
+    .filter(([, value]) => {
+      if (value == null || value === false) return false;
+      if (Array.isArray(value) && value.length === 0) return false;
+      if (typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === 0) return false;
+      return true;
+    })
+    .map(([key]) => key);
+}
+
+function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
+  const chromeStyles = figure.chromeStyles ?? figure.chrome_styles ?? {};
+  const annotations = [...(figure.annotations ?? [])];
+  let flags = 0;
+  if (figure.coords !== "cartesian") flags |= 1 << 0;
+  if (Object.values(chromeStyles).some((style) => style?.fontFamily != null || style?.["font-family"] != null)) flags |= 1 << 1;
+  if (
+    figure.className
+    || figure.class_name
+    || Object.keys(figure.classNames ?? figure.class_names ?? {}).length
+    || Object.keys(chromeStyles).length
+    || Object.keys(figure.style ?? {}).some((key) => !["background", "--chart-bg"].includes(key))
+    || annotations.some((annotation) => annotation.className || annotation.class_name)
+  ) flags |= 1 << 2;
+  if ((figure.traces ?? []).some((trace) => (
+    trace.color_target != null
+    || (trace.style?.fill != null && typeof trace.style.fill === "object")
+    || (
+      trace.color != null
+      && typeof trace.color === "object"
+      && (trace.color.mode !== "constant" || trace.color.color == null)
+    )
+  ))) flags |= 1 << 3;
+  if (colorbarUnsupported) flags |= 1 << 4;
+  if ((figure.extraLegends ?? figure.extra_legends ?? []).length) flags |= 1 << 5;
+  if (annotations.some((annotation) => !["callout", "arrow", "text"].includes(annotation.kind) && annotation.text != null && annotation.text !== "")) flags |= 1 << 7;
+  const axisEntries = [];
+  const seenAxes = new Set();
+  const addAxis = (axisId, options) => {
+    if (seenAxes.has(axisId)) return;
+    seenAxes.add(axisId);
+    axisEntries.push([axisId, options ?? {}]);
+  };
+  if (figure.axis_options && typeof figure.axis_options === "object") {
+    for (const [axisId, options] of Object.entries(figure.axis_options)) addAxis(axisId, options);
+  }
+  addAxis("x", figure.xAxis ?? figure.x_axis ?? figure.axis_options?.x ?? {});
+  addAxis("y", figure.yAxis ?? figure.y_axis ?? figure.axis_options?.y ?? {});
+  const parts = [new Uint8Array(16)];
+  const header = new DataView(parts[0].buffer);
+  parts[0].set([88, 89, 70, 83]); // XYFS
+  header.setUint32(4, 1, true);
+  header.setUint32(8, flags, true);
+  header.setUint32(12, axisEntries.length, true);
+  for (const [axisId, options] of axisEntries) {
+    const axisCode = axisId === "x" ? 0 : axisId === "y" ? 1 : 255;
+    const keys = significantSceneAxisKeys(options);
+    const axis = new Uint8Array(8);
+    axis[0] = axisCode;
+    new DataView(axis.buffer).setUint32(4, keys.length, true);
+    parts.push(axis);
+    for (const key of keys) parts.push(encodeExportKey(key));
+  }
+  return concatBytes(parts);
+}
+
+function sceneFigureSupportReason(figure, { colorbarUnsupported = false } = {}) {
+  const envelope = packFigureSupport(figure, { colorbarUnsupported });
+  const requiredRaw = xySceneFigureSupportReason(
+    envelope.length ? u8Ptr(envelope) : 0,
+    BigInt(envelope.length),
+    0,
+    0n,
+  );
+  if (requiredRaw === USIZE_MAX_64) throw new RangeError("invalid scene figure support envelope");
+  const required = Number(requiredRaw);
+  if (required === 0) return "";
+  const output = new Uint8Array(required);
+  const written = xySceneFigureSupportReason(
+    envelope.length ? u8Ptr(envelope) : 0,
+    BigInt(envelope.length),
+    u8Ptr(output),
+    BigInt(required),
+  );
+  if (Number(written) !== required) throw new Error("native Scene figure support predicate returned an inconsistent length");
+  return new TextDecoder("utf-8", { fatal: true }).decode(output);
+}
+
 const PUBLIC_EXPORT_KIND_CODES = {
   scatter: 0, line: 1, bar: 2, column: 3, histogram: 4, violin: 5, box: 6,
   box_whisker: 7, box_median: 8, segments: 9, errorbar: 10, stem: 11, area: 12,
@@ -1397,33 +1487,9 @@ function requireEqualColumns(columns, kind, label) {
 
 /** Compile migrated cartesian marks to Scene v12. */
 export function figureSceneV3(figure, { margins = null } = {}) {
-  const chromeStyles = figure.chromeStyles ?? figure.chrome_styles ?? {};
   let encodedColorbar = new Uint8Array(), colorbarUnsupported = false;
   try { encodedColorbar = colorbarInput(figure); } catch { colorbarUnsupported = Boolean(figure.colorbarOptions ?? figure.colorbar_options); }
-  let features = 0n;
-  if (figure.coords !== "cartesian") features |= 1n << 0n;
-  if (Object.values(chromeStyles).some((style) => style?.fontFamily != null || style?.["font-family"] != null)) features |= 1n << 1n;
-  if (
-    figure.className
-    || figure.class_name
-    || Object.keys(figure.classNames ?? figure.class_names ?? {}).length
-    || Object.keys(chromeStyles).length
-    || Object.keys(figure.style ?? {}).some((key) => !["background", "--chart-bg"].includes(key))
-    || (figure.annotations ?? []).some((annotation) => annotation.className || annotation.class_name)
-  ) features |= 1n << 2n;
-  if ((figure.traces ?? []).some((trace) => (
-    trace.color_target != null
-    || (trace.style?.fill != null && typeof trace.style.fill === "object")
-    || (
-      trace.color != null
-      && typeof trace.color === "object"
-      && (trace.color.mode !== "constant" || trace.color.color == null)
-    )
-  ))) features |= 1n << 3n;
-  if (colorbarUnsupported) features |= 1n << 4n;
-  if ((figure.extraLegends ?? figure.extra_legends ?? []).length) features |= 1n << 5n;
-  if ((figure.annotations ?? []).some((annotation) => !["callout", "arrow", "text"].includes(annotation.kind) && annotation.text != null && annotation.text !== "")) features |= 1n << 7n;
-  const reason = sceneSupportReason(features);
+  const reason = sceneFigureSupportReason(figure, { colorbarUnsupported });
   if (reason) throw new RangeError(reason);
   const unsupported = figure.traces.find((trace) => !SUPPORTED_KINDS.has(trace.kind));
   if (unsupported) throw new RangeError(`Scene v12 figure compilation does not yet support ${unsupported.kind}`);

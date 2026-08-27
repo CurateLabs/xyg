@@ -597,6 +597,9 @@ finite-coordinate rejection.
 ABI v116 adds `xyg_scene_pack_annotation_marks` so Python and Node share
 one rule/band/marker expander: stable-id tags, opposite-axis domain
 spanning, and finite rejection.
+ABI v117 adds `xyg_scene_figure_support_reason` so Python and Node share
+one figure-compile support probe: observation→feature mapping, the
+primary x/y axis set, and the Scene axis-key allowlist.
 
 ABI v110 adds `xyg_scene_pack_legend` so Python and Node share one
 primary XYLG legend framer: header layout, text offsets, and

@@ -947,72 +947,17 @@ def figure_scene(
 ) -> bytes:
     """Compile migrated cartesian marks plus x/y axes to Scene v12."""
     annotations = list(getattr(figure, "annotations", None) or [])
-    features = 0
-    if figure.coords != "cartesian":
-        features |= 1 << 0
-    chrome_styles = getattr(figure, "chrome_styles", None) or {}
-    if any("font-family" in (style or {}) for style in chrome_styles.values()):
-        features |= 1 << 1
-    if (
-        getattr(figure, "class_name", None)
-        or getattr(figure, "class_names", None)
-        or chrome_styles
-        or set(getattr(figure, "style", None) or {}) - {"background", "--chart-bg"}
-        or any(annotation.get("class_name") not in (None, "") for annotation in annotations)
-    ):
-        features |= 1 << 2
-    if any(
-        isinstance((getattr(trace, "style", None) or {}).get("fill"), dict)
-        or getattr(trace, "color2_ch", None) is not None
-        or (
-            getattr(trace, "color_ch", None) is not None
-            and (trace.color_ch.mode != "constant" or trace.color_ch.constant is None)
-        )
-        for trace in figure.traces
-    ):
-        features |= 1 << 3
+    colorbar_unsupported = False
     try:
         colorbar_input = _colorbar_input(figure)
     except UnsupportedSceneV3:
         colorbar_input = b""
-        features |= 1 << 4
-    if figure.extra_legends:
-        features |= 1 << 5
-    if any(
-        annotation.get("kind") not in {"callout", "arrow", "text"}
-        and annotation.get("text") not in (None, "")
-        for annotation in annotations
-    ):
-        features |= 1 << 7
-    reason = _native.scene_support_reason(features)
+        colorbar_unsupported = True
+    reason = _native.scene_figure_support_reason(
+        _pack_figure_support(figure, annotations, colorbar_unsupported)
+    )
     if reason:
         raise UnsupportedSceneV3(reason)
-    if set(figure.axis_options) != {"x", "y"}:
-        raise UnsupportedSceneV3("Scene v12 figure compilation currently supports exactly x/y axes")
-    for options in figure.axis_options.values():
-        supported_axis_keys = {
-            "type",
-            "constant",
-            "domain",
-            "nonpositive",
-            "label",
-            "side",
-            "tick_sides",
-            "tick_label_sides",
-            "style",
-            "minor_style",
-            "tick_values",
-            "tick_labels",
-            "minor_tick_values",
-            "format",
-        }
-        if any(
-            key not in supported_axis_keys and value not in (None, False, [], {})
-            for key, value in options.items()
-        ):
-            raise UnsupportedSceneV3(
-                "Scene v12 does not yet encode tick formatting, collision policy, or advanced axis layout"
-            )
     unsupported = next(
         (trace.kind for trace in figure.traces if trace.kind not in _SUPPORTED_KINDS), None
     )
@@ -2007,6 +1952,63 @@ def _flatten_jpeg_background(rgba: np.ndarray) -> np.ndarray:
     alpha = rgba[..., 3:4].astype(np.uint16)
     rgb = (rgba[..., :3].astype(np.uint16) * alpha + 255 * (255 - alpha) + 127) // 255
     return rgb.astype(np.uint8)
+
+
+def _significant_scene_axis_keys(options: dict[str, Any]) -> list[str]:
+    return [str(key) for key, value in options.items() if value not in (None, False, [], {})]
+
+
+def _pack_figure_support(
+    figure: Any,
+    annotations: list[Any],
+    colorbar_unsupported: bool,
+) -> bytes:
+    """Pack literal figure observations and axis keys for Rust figure support."""
+    flags = 0
+    if figure.coords != "cartesian":
+        flags |= 1 << 0
+    chrome_styles = getattr(figure, "chrome_styles", None) or {}
+    if any("font-family" in (style or {}) for style in chrome_styles.values()):
+        flags |= 1 << 1
+    if (
+        getattr(figure, "class_name", None)
+        or getattr(figure, "class_names", None)
+        or chrome_styles
+        or set(getattr(figure, "style", None) or {}) - {"background", "--chart-bg"}
+        or any(annotation.get("class_name") not in (None, "") for annotation in annotations)
+    ):
+        flags |= 1 << 2
+    if any(
+        isinstance((getattr(trace, "style", None) or {}).get("fill"), dict)
+        or getattr(trace, "color2_ch", None) is not None
+        or (
+            getattr(trace, "color_ch", None) is not None
+            and (trace.color_ch.mode != "constant" or trace.color_ch.constant is None)
+        )
+        for trace in figure.traces
+    ):
+        flags |= 1 << 3
+    if colorbar_unsupported:
+        flags |= 1 << 4
+    if figure.extra_legends:
+        flags |= 1 << 5
+    if any(
+        annotation.get("kind") not in {"callout", "arrow", "text"}
+        and annotation.get("text") not in (None, "")
+        for annotation in annotations
+    ):
+        flags |= 1 << 7
+    payload = bytearray(b"XYFS")
+    payload.extend((1).to_bytes(4, "little"))
+    payload.extend(flags.to_bytes(4, "little"))
+    payload.extend(len(figure.axis_options).to_bytes(4, "little"))
+    for axis_id, options in figure.axis_options.items():
+        axis_code = 0 if axis_id == "x" else 1 if axis_id == "y" else 255
+        keys = _significant_scene_axis_keys(options)
+        payload.extend(bytes((axis_code, 0, 0, 0)))
+        payload.extend(len(keys).to_bytes(4, "little"))
+        _xyep_put_keys(payload, keys)
+    return bytes(payload)
 
 
 def _xyep_put_keys(buf: bytearray, keys: list[str]) -> None:

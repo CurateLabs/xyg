@@ -187,7 +187,9 @@ Figure→Scene row packing the same way: Python and Node call
 `xyg_scene_pack_trace` with kind/flags/columns and append the returned
 56-byte rows. ABI 116 expands primary rule/band/marker annotations the same
 way: Python and Node call `xyg_scene_pack_annotation_marks` with packed
-scalars plus axis domains. ABI 110 makes primary legend framing the same way: Python
+scalars plus axis domains. ABI 117 makes figure-compile support the same way:
+Python and Node pack `XYFS` v1 observations plus axis ids/keys, then call
+`xyg_scene_figure_support_reason`. ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
 `xyg_scene_pack_colorbar` with domain/stops/ticks/title.
@@ -276,7 +278,12 @@ Scene chrome style input so default axis/grid/tick/label RGBA, default widths,
 and `grid_opacity` scaling of the default grid color cannot drift. ABI 109
 `xyg_scene_pack_trace` owns Figure→Scene row packing so record kinds,
 stable-id splitting, expansion modes, ribbon/triangle doubling, heatmap
-lattice framing, and finite-coordinate rejection cannot drift. ABI 110
+lattice framing, and finite-coordinate rejection cannot drift. ABI 116
+`xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
+so tags and opposite-axis spanning cannot drift. ABI 117
+`xyg_scene_figure_support_reason` owns figure-compile support so feature
+mapping, the primary x/y axis set, and the Scene axis-key allowlist cannot
+drift. ABI 110
 `xyg_scene_pack_legend` owns primary XYLG legend framing so header layout,
 text offsets, and bounded-text rejection cannot drift. ABI 111
 `xyg_scene_pack_colorbar` owns primary XYCB v2 framing so header layout,

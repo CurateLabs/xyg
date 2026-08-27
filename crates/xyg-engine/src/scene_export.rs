@@ -749,6 +749,113 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     Ok("")
 }
 
+const XYFS_MAGIC: &[u8; 4] = b"XYFS";
+const XYFS_VERSION: u32 = 1;
+const XYFS_HEADER_BYTES: usize = 16;
+const XYFS_AXIS_BYTES: usize = 8;
+
+const OBS_POLAR: u32 = 1 << 0;
+const OBS_CUSTOM_FONT: u32 = 1 << 1;
+const OBS_BROWSER_CSS: u32 = 1 << 2;
+const OBS_GRADIENT: u32 = 1 << 3;
+const OBS_COLORBAR: u32 = 1 << 4;
+const OBS_EXTRA_LEGEND: u32 = 1 << 5;
+const OBS_LABELED_ANNOTATION: u32 = 1 << 7;
+const OBS_MASK: u32 = (1 << 9) - 1;
+
+const FIGURE_AXIS_SET_REASON: &str =
+    "Scene v12 figure compilation currently supports exactly x/y axes";
+const FIGURE_AXIS_KEYS_REASON: &str =
+    "Scene v12 does not yet encode tick formatting, collision policy, or advanced axis layout";
+
+/// Return Rust's figure-compile support diagnostic for a packed `XYFS`
+/// envelope. Hosts pack literal observations plus axis ids/keys; Rust maps
+/// those observations onto the Scene feature mask, enforces the primary
+/// x/y axis set, and applies the Scene axis-key allowlist.
+pub fn scene_figure_support_reason(bytes: &[u8]) -> Result<&'static str, SceneError> {
+    use crate::scene::{
+        scene_support_reason, SCENE_FEATURE_BROWSER_CSS, SCENE_FEATURE_COLORBAR,
+        SCENE_FEATURE_CUSTOM_FONT, SCENE_FEATURE_EXTRA_LEGEND, SCENE_FEATURE_GRADIENT,
+        SCENE_FEATURE_LABELED_ANNOTATION, SCENE_FEATURE_POLAR, SCENE_SUPPORT_REQUEST_VERSION,
+    };
+
+    if bytes.len() < XYFS_HEADER_BYTES || &bytes[..4] != XYFS_MAGIC {
+        return Err(SceneError::Length);
+    }
+    let mut cursor = Cursor::new(bytes);
+    let _magic = cursor.bytes(4)?;
+    let version = cursor.u32()?;
+    if version != XYFS_VERSION {
+        return Err(SceneError::Version);
+    }
+    let flags = cursor.u32()?;
+    if flags & !OBS_MASK != 0 {
+        return Err(SceneError::Version);
+    }
+    let n_axes = cursor.u32()?;
+    if n_axes as usize > MAX_XYEP_AXES {
+        return Err(SceneError::Limit);
+    }
+
+    let mut features = 0u64;
+    if flags & OBS_POLAR != 0 {
+        features |= SCENE_FEATURE_POLAR;
+    }
+    if flags & OBS_CUSTOM_FONT != 0 {
+        features |= SCENE_FEATURE_CUSTOM_FONT;
+    }
+    if flags & OBS_BROWSER_CSS != 0 {
+        features |= SCENE_FEATURE_BROWSER_CSS;
+    }
+    if flags & OBS_GRADIENT != 0 {
+        features |= SCENE_FEATURE_GRADIENT;
+    }
+    if flags & OBS_COLORBAR != 0 {
+        features |= SCENE_FEATURE_COLORBAR;
+    }
+    if flags & OBS_EXTRA_LEGEND != 0 {
+        features |= SCENE_FEATURE_EXTRA_LEGEND;
+    }
+    if flags & OBS_LABELED_ANNOTATION != 0 {
+        features |= SCENE_FEATURE_LABELED_ANNOTATION;
+    }
+    let feature_reason = scene_support_reason(SCENE_SUPPORT_REQUEST_VERSION, features)?;
+    if !feature_reason.is_empty() {
+        return Ok(feature_reason);
+    }
+
+    let mut has_x = false;
+    let mut has_y = false;
+    for _ in 0..n_axes {
+        if cursor.remaining() < XYFS_AXIS_BYTES {
+            return Err(SceneError::Length);
+        }
+        let axis_id = cursor.u8()?;
+        let _pad0 = cursor.u8()?;
+        let _pad1 = cursor.u8()?;
+        let _pad2 = cursor.u8()?;
+        let n_keys = cursor.u32()?;
+        match axis_id {
+            0 => has_x = true,
+            1 => has_y = true,
+            _ => {
+                return Ok(FIGURE_AXIS_SET_REASON);
+            }
+        }
+        let keys = cursor.keys(n_keys)?;
+        if extra_key(&keys, PUBLIC_AXIS_KEYS) {
+            return Ok(FIGURE_AXIS_KEYS_REASON);
+        }
+    }
+    if cursor.remaining() != 0 {
+        return Err(SceneError::Length);
+    }
+    if n_axes != 2 || !has_x || !has_y {
+        return Ok(FIGURE_AXIS_SET_REASON);
+    }
+    Ok("")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -821,5 +928,65 @@ mod tests {
         let mut extra = empty_figure();
         extra.push(0);
         assert_eq!(scene_public_export_reason(&extra), Err(SceneError::Length));
+    }
+
+    fn xyfs(flags: u32, axes: &[(u8, &[&str])]) -> Vec<u8> {
+        let mut buf = Vec::from(*XYFS_MAGIC);
+        buf.extend_from_slice(&XYFS_VERSION.to_le_bytes());
+        buf.extend_from_slice(&flags.to_le_bytes());
+        buf.extend_from_slice(&(axes.len() as u32).to_le_bytes());
+        for (axis_id, keys) in axes {
+            buf.push(*axis_id);
+            buf.extend_from_slice(&[0, 0, 0]);
+            buf.extend_from_slice(&(keys.len() as u32).to_le_bytes());
+            put_keys(&mut buf, keys);
+        }
+        buf
+    }
+
+    #[test]
+    fn figure_support_accepts_primary_xy_with_allowlisted_keys() {
+        assert_eq!(
+            scene_figure_support_reason(&xyfs(
+                0,
+                &[(0, &["label", "side"]), (1, &["label", "side"])]
+            )),
+            Ok("")
+        );
+    }
+
+    #[test]
+    fn figure_support_maps_polar_before_axis_keys() {
+        assert_eq!(
+            scene_figure_support_reason(&xyfs(OBS_POLAR, &[(0, &["collision"]), (1, &["label"])])),
+            Ok("XYG_SCENE_UNSUPPORTED_POLAR: Scene v12 supports Cartesian coordinates only")
+        );
+    }
+
+    #[test]
+    fn figure_support_rejects_unknown_axis_keys_and_non_primary_ids() {
+        assert_eq!(
+            scene_figure_support_reason(&xyfs(0, &[(0, &["collision"]), (1, &["label"])])),
+            Ok(FIGURE_AXIS_KEYS_REASON)
+        );
+        assert_eq!(
+            scene_figure_support_reason(&xyfs(0, &[(0, &["label"])])),
+            Ok(FIGURE_AXIS_SET_REASON)
+        );
+        assert_eq!(
+            scene_figure_support_reason(&xyfs(0, &[(0, &["label"]), (2, &["label"])])),
+            Ok(FIGURE_AXIS_SET_REASON)
+        );
+    }
+
+    #[test]
+    fn figure_support_rejects_unknown_version_and_observation_bits() {
+        let mut bad = xyfs(0, &[(0, &[]), (1, &[])]);
+        bad[4] = 2;
+        assert_eq!(scene_figure_support_reason(&bad), Err(SceneError::Version));
+        assert_eq!(
+            scene_figure_support_reason(&xyfs(1 << 20, &[(0, &[]), (1, &[])])),
+            Err(SceneError::Version)
+        );
     }
 }

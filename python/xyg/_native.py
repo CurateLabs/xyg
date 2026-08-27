@@ -1807,6 +1807,27 @@ def scene_public_export_reason(payload: bytes) -> str:
     return output.raw.decode("utf-8")
 
 
+def scene_figure_support_reason(payload: bytes) -> str:
+    """Return Rust's figure-compile diagnostic for a packed XYFS envelope."""
+    if not isinstance(payload, (bytes, bytearray, memoryview)):
+        raise TypeError("scene figure support envelope must be bytes")
+    array = (
+        np.frombuffer(bytes(payload), dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    )
+    array = np.ascontiguousarray(array)
+    pointer = _ptr_u8(array) if len(array) else 0
+    required = int(_lib.xyg_scene_figure_support_reason(pointer, len(array), None, 0))
+    if required == _USIZE_MAX:
+        raise ValueError("invalid scene figure support envelope")
+    if required == 0:
+        return ""
+    output = ctypes.create_string_buffer(required)
+    written = int(_lib.xyg_scene_figure_support_reason(pointer, len(array), output, required))
+    if written != required:
+        raise RuntimeError("native Scene figure support predicate returned an inconsistent length")
+    return output.raw.decode("utf-8")
+
+
 def figure_autorange(payload: bytes) -> tuple[float, float]:
     """Return Rust's product axis range for a packed XYAR envelope."""
     if not isinstance(payload, (bytes, bytearray, memoryview)):
