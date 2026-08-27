@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 126
-SIGNATURE_SHA256 = "030d3c73885fde9abbc9c982d7bf46b6b8723b2a1c350cfdc678a2e7a260d3b3"
+ABI_VERSION = 127
+SIGNATURE_SHA256 = "06b5db28fffaee4bb9a7deded7c306ecc1297fe9721e18b35fe28b6a1480a854"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -898,6 +898,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_text_block_rotated_extent
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p]
+    # size_t xyg_tight_layout_solve(double canvas_w, double canvas_h, uint32_t nrows, uint32_t ncols, int32_t compact, const double * in_panels, size_t n_panels, const double * extra, double pad, double w_pad, double h_pad, double point_px, const double * rect, double * out)
+    function = lib.xyg_tight_layout_solve
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p]
     # int32_t xyg_tile_budget_set(uint64_t bytes)
     function = lib.xyg_tile_budget_set
     function.restype = ctypes.c_int32

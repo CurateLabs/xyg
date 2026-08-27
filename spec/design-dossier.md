@@ -1350,6 +1350,12 @@ recut (including the too-small canvas fallback) are engine-owned and
 identical for Python and Node. Hosts still iterate axes, format ticks,
 measure rooms through ABI 125, resolve CSS visibility, and decide
 whether a polar legend gutter is reserved (#275).
+ABI 127 moves the pyplot tight-layout grid solve into Rust. Hosts call
+`xyg_tight_layout_solve` with measured per-panel chrome, figure-edge
+extras, and Matplotlib pad/rect; edge maxima, neighbor gaps, pad
+multiples, and `subplots_adjust` fractions are engine-owned. Hosts still
+measure `_panel_chrome`, suptitle, figure labels, and outside legends
+(#275).
 ABI 110 moves primary Scene legend framing into Rust. Hosts pass loc/flags,
 font sizes, paints, title, and per-entry meta plus labels; XYLG header
 layout, text offsets, and bounded-text rejection are engine-owned and

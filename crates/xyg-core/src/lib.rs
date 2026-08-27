@@ -118,7 +118,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 126;
+pub const ABI_VERSION: u32 = 127;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -11124,6 +11124,88 @@ pub unsafe extern "C" fn xyg_recut_polar_plot(
     })
 }
 
+/// Pyplot tight-layout grid solve (ABI 127).
+///
+/// `in_panels` is `n_panels` records of eight f64s: `row0, row1, col0, col1,
+/// left, top, right, bottom`. `extra` is `left, right, bottom, top` figure-edge
+/// additions. `pad` / `w_pad` / `h_pad` are NaN when omitted. `rect` is
+/// `left, bottom, right, top`. `out` is `left, right, bottom, top, wspace, hspace`.
+///
+/// # Safety
+/// When `n_panels` is nonzero, `in_panels` must address `8 * n_panels` f64s.
+/// `extra` must address 4 f64s, `rect` 4 f64s, and `out` 6 writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_tight_layout_solve(
+    canvas_w: f64,
+    canvas_h: f64,
+    nrows: u32,
+    ncols: u32,
+    compact: i32,
+    in_panels: *const f64,
+    n_panels: usize,
+    extra: *const f64,
+    pad: f64,
+    w_pad: f64,
+    h_pad: f64,
+    point_px: f64,
+    rect: *const f64,
+    out: *mut f64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if extra.is_null()
+            || rect.is_null()
+            || out.is_null()
+            || !matches!(compact, 0 | 1)
+            || (n_panels > 0 && in_panels.is_null())
+        {
+            return usize::MAX;
+        }
+        let src = if n_panels == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(in_panels, n_panels * compat_layout::TIGHT_PANEL_STRIDE)
+        };
+        let mut panels = Vec::with_capacity(n_panels);
+        for chunk in src.chunks_exact(compat_layout::TIGHT_PANEL_STRIDE) {
+            if chunk[..4].iter().any(|value| !value.is_finite()) {
+                return usize::MAX;
+            }
+            panels.push(compat_layout::TightPanel {
+                row0: chunk[0] as i32,
+                row1: chunk[1] as i32,
+                col0: chunk[2] as i32,
+                col1: chunk[3] as i32,
+                left: chunk[4],
+                top: chunk[5],
+                right: chunk[6],
+                bottom: chunk[7],
+            });
+        }
+        let extra = std::slice::from_raw_parts(extra, 4);
+        let extra = [extra[0], extra[1], extra[2], extra[3]];
+        let rect = std::slice::from_raw_parts(rect, 4);
+        let rect = [rect[0], rect[1], rect[2], rect[3]];
+        let Some(values) = compat_layout::tight_layout_solve(
+            canvas_w,
+            canvas_h,
+            nrows,
+            ncols,
+            compact == 1,
+            &panels,
+            extra,
+            if pad.is_nan() { None } else { Some(pad) },
+            if w_pad.is_nan() { None } else { Some(w_pad) },
+            if h_pad.is_nan() { None } else { Some(h_pad) },
+            point_px,
+            rect,
+        ) else {
+            return usize::MAX;
+        };
+        std::slice::from_raw_parts_mut(out, compat_layout::TIGHT_OUT_LEN).copy_from_slice(&values);
+        6
+    })
+}
+
 /// Linear (NumPy-default) quantiles for probabilities in `[0, 1]`.
 ///
 /// Writes `n_probs` f64s into `out`. Returns the finite sample count used, or
@@ -13497,6 +13579,34 @@ mod tests {
             4
         );
         assert_eq!(pad, [6.0, 8.0, 36.0, 46.0]);
+    }
+
+    #[test]
+    fn tight_layout_solve_matches_empty_wide_defaults() {
+        let extra = [0.0f64; 4];
+        let rect = [0.0, 0.0, 1.0, 1.0];
+        let mut out = [0.0f64; 6];
+        let n = unsafe {
+            xyg_tight_layout_solve(
+                800.0,
+                600.0,
+                1,
+                1,
+                0,
+                std::ptr::null(),
+                0,
+                extra.as_ptr(),
+                f64::NAN,
+                f64::NAN,
+                f64::NAN,
+                1.0,
+                rect.as_ptr(),
+                out.as_mut_ptr(),
+            )
+        };
+        assert_eq!(n, 6);
+        assert!((out[0] - 62.0 / 800.0).abs() < 1e-12);
+        assert!((out[1] - (1.0 - 26.0 / 800.0)).abs() < 1e-12);
     }
 
     #[test]

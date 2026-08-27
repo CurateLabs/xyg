@@ -17,7 +17,7 @@ from typing import Any, Literal, Optional, cast, overload
 
 import numpy as np
 
-from .. import _textblock
+from .. import _native, _textblock
 from ._artists import Legend, Text, _PatchFacade
 from ._axes import _DEFAULT_AXES_RECT, Axes, _font_size_points, _plain_text, _scale_values
 from ._colors import resolve_color, resolve_rgba
@@ -960,16 +960,7 @@ class Figure:
                     )
                 )
             chrome = resolved_chrome
-            left_px = max((item[0] for item in chrome), default=46.0 if compact else 62.0)
-            right_px = max(
-                20.0 if compact else 26.0,
-                max((item[2] for item in chrome), default=0.0),
-            )
-            bottom_px = max((item[3] for item in chrome), default=36.0 if compact else 42.0)
-            top_px = max(20.0, max((item[1] for item in chrome), default=0.0))
-
-            horizontal_gap = 58.0 if compact else 76.0
-            vertical_gap = 44.0 if compact else 56.0
+            panels: list[dict[str, float]] = []
             for index, (ax, item) in enumerate(zip(self._axes, chrome, strict=True)):
                 spec = ax._subplot_spec
                 if spec is None:
@@ -977,40 +968,29 @@ class Figure:
                     rows, cols = (row, row + 1), (col, col + 1)
                 else:
                     rows, cols = spec.rows, spec.cols
-                for other_index, other_ax in enumerate(self._axes):
-                    if index == other_index:
-                        continue
-                    other_spec = other_ax._subplot_spec
-                    if other_spec is None:
-                        other_row, other_col = divmod(other_index, max(1, self._ncols))
-                        other_rows = (other_row, other_row + 1)
-                        other_cols = (other_col, other_col + 1)
-                    else:
-                        other_rows, other_cols = other_spec.rows, other_spec.cols
-                    rows_overlap = max(rows[0], other_rows[0]) < min(rows[1], other_rows[1])
-                    cols_overlap = max(cols[0], other_cols[0]) < min(cols[1], other_cols[1])
-                    if rows_overlap and cols[1] == other_cols[0]:
-                        horizontal_gap = max(
-                            horizontal_gap,
-                            item[2] + chrome[other_index][0],
-                        )
-                    if cols_overlap and rows[1] == other_rows[0]:
-                        vertical_gap = max(
-                            vertical_gap,
-                            item[3] + chrome[other_index][1],
-                        )
-
+                panels.append(
+                    {
+                        "row0": float(rows[0]),
+                        "row1": float(rows[1]),
+                        "col0": float(cols[0]),
+                        "col1": float(cols[1]),
+                        "left": float(item[0]),
+                        "top": float(item[1]),
+                        "right": float(item[2]),
+                        "bottom": float(item[3]),
+                    }
+                )
+            extra_left = extra_right = extra_bottom = extra_top = 0.0
             if self._suptitle and not options.get("suptitle_rect_reserved"):
                 style = self._resolved_suptitle_style()
                 block = _textblock.measure(self._suptitle, float(style.get("size", 16.0)))
                 y = float(style.get("y", 0.98))
-                suptitle_bottom = max(0.0, (1.0 - y) * canvas_h) + block.height
-                top_px += suptitle_bottom + 6.0
+                extra_top += max(0.0, (1.0 - y) * canvas_h) + block.height + 6.0
             for label in self._resolved_figure_labels():
                 if label["role"] == "x":
-                    bottom_px += float(label["size"]) + 8.0
+                    extra_bottom += float(label["size"]) + 8.0
                 else:
-                    left_px += float(label["size"]) + 8.0
+                    extra_left += float(label["size"]) + 8.0
             if (
                 self._figure_legend
                 and self._figure_legend.get("items")
@@ -1023,46 +1003,32 @@ class Figure:
                     {"x": 0.0, "y": 0.0, "w": float(canvas_w), "h": float(canvas_h)},
                     {**self._figure_legend, "loc": "upper left"},
                 )
-                right_px += float(measured["box_w"]) + 12.0
-            # Explicit *_pad values are font-size multiples in Matplotlib.
+                extra_right += float(measured["box_w"]) + 12.0
             point_px = float(rcParams["font.size"]) * float(self._dpi or 100.0) / 72.0
-            base_pad = 1.08 if pad is None else float(pad)
-            if w_pad is not None:
-                horizontal_gap += (float(w_pad) - base_pad) * point_px
-            if h_pad is not None:
-                vertical_gap += (float(h_pad) - base_pad) * point_px
-            if pad is not None:
-                extra = (float(pad) - 1.08) * point_px
-                left_px += extra
-                right_px += extra
-                bottom_px += extra
-                top_px += extra
-
             frame = (0.0, 0.0, 1.0, 1.0) if rect is None else tuple(map(float, rect))
             if len(frame) != 4:
                 raise ValueError("tight_layout(rect=...) must be [left, bottom, right, top]")
-            frame_left, frame_bottom, frame_right, frame_top = frame
-            left = frame_left + max(0.0, left_px) / canvas_w
-            right = frame_right - max(0.0, right_px) / canvas_w
-            bottom = frame_bottom + max(0.0, bottom_px) / canvas_h
-            top = frame_top - max(0.0, top_px) / canvas_h
-            inner_w = max(1.0, (right - left) * canvas_w)
-            inner_h = max(1.0, (top - bottom) * canvas_h)
-            cell_w = max(
-                1.0,
-                (inner_w - horizontal_gap * max(0, self._ncols - 1)) / max(1, self._ncols),
-            )
-            cell_h = max(
-                1.0,
-                (inner_h - vertical_gap * max(0, self._nrows - 1)) / max(1, self._nrows),
+            left, right, bottom, top, wspace, hspace = _native.tight_layout_solve(
+                canvas_w,
+                canvas_h,
+                max(1, int(self._nrows)),
+                max(1, int(self._ncols)),
+                compact,
+                panels,
+                extra=(extra_left, extra_right, extra_bottom, extra_top),
+                pad=None if pad is None else float(pad),
+                w_pad=None if w_pad is None else float(w_pad),
+                h_pad=None if h_pad is None else float(h_pad),
+                point_px=point_px,
+                rect=frame,
             )
             self.subplots_adjust(
                 left=left,
                 right=right,
                 bottom=bottom,
                 top=top,
-                wspace=horizontal_gap / cell_w,
-                hspace=vertical_gap / cell_h,
+                wspace=wspace,
+                hspace=hspace,
             )
         self._layout_dirty = False
         self._html_cache = None

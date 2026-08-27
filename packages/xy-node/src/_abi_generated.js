@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 126;
-export const SIGNATURE_SHA256 = "030d3c73885fde9abbc9c982d7bf46b6b8723b2a1c350cfdc678a2e7a260d3b3";
+export const ABI_VERSION = 127;
+export const SIGNATURE_SHA256 = "06b5db28fffaee4bb9a7deded7c306ecc1297fe9721e18b35fe28b6a1480a854";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -227,6 +227,7 @@ export let xyTemporalIntervalVisibilityAt;
 export let xyTemporalSelectionLimit;
 export let xyTextBlockMeasure;
 export let xyTextBlockRotatedExtent;
+export let xyTightLayoutSolve;
 export let xyTileBudgetSet;
 export let xyTileStoreAppend;
 export let xyTileStoreCompose;
@@ -472,6 +473,7 @@ export function bindGeneratedAbi(lib) {
   xyTemporalSelectionLimit = lib.func("uint64_t xyg_temporal_selection_limit()");
   xyTextBlockMeasure = lib.func("size_t xyg_text_block_measure(const uint8_t * text, size_t text_len, double font_size, double line_height, double max_width, double * out_metrics, uint32_t * out_line_lens, size_t line_cap, uint8_t * out_lines, size_t lines_cap)");
   xyTextBlockRotatedExtent = lib.func("size_t xyg_text_block_rotated_extent(double width, double height, double angle_degrees, double * out_x, double * out_y)");
+  xyTightLayoutSolve = lib.func("size_t xyg_tight_layout_solve(double canvas_w, double canvas_h, uint32_t nrows, uint32_t ncols, int32_t compact, const double * in_panels, size_t n_panels, const double * extra, double pad, double w_pad, double h_pad, double point_px, const double * rect, double * out)");
   xyTileBudgetSet = lib.func("int32_t xyg_tile_budget_set(uint64_t bytes)");
   xyTileStoreAppend = lib.func("int32_t xyg_tile_store_append(uint64_t store, const double * x, const double * y, size_t len)");
   xyTileStoreCompose = lib.func("int32_t xyg_tile_store_compose(uint64_t store, double lo_x, double hi_x, double lo_y, double hi_y, size_t w, size_t h, size_t max_upsample, float * out)");

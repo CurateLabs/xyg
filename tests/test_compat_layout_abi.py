@@ -76,3 +76,11 @@ def test_recut_authored_padding_insets_by_label_room() -> None:
     assert host["w"] == pytest.approx(native["w"])
     assert host["h"] == pytest.approx(native["h"])
     assert host["top_axis_room"] == pytest.approx(native["top_axis_room"])
+
+
+def test_tight_layout_empty_wide_canvas_uses_default_edges() -> None:
+    native = _native.tight_layout_solve(800.0, 600.0, 1, 1, False, [])
+    assert native[0] == pytest.approx(62.0 / 800.0)
+    assert native[1] == pytest.approx(1.0 - 26.0 / 800.0)
+    assert native[2] == pytest.approx(42.0 / 600.0)
+    assert native[3] == pytest.approx(1.0 - 20.0 / 600.0)

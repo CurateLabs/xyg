@@ -22,6 +22,7 @@ import {
   xyPolarLegendReserve,
   xyPolarLabelRoom,
   xyRecutPolarPlot,
+  xyTightLayoutSolve,
   xySceneBatchEncode,
   xySceneBrowserPainter,
   xyScenePackAnnotations,
@@ -854,6 +855,62 @@ export function recutPolarPlot(plot, width, height, {
     result.legendBoxH = out[8];
   }
   return result;
+}
+
+export function tightLayoutSolve({
+  canvasW,
+  canvasH,
+  nrows,
+  ncols,
+  compact = false,
+  panels = [],
+  extra = [0, 0, 0, 0],
+  pad = null,
+  wPad = null,
+  hPad = null,
+  pointPx = 1,
+  rect = [0, 0, 1, 1],
+} = {}) {
+  if (!Array.isArray(extra) || extra.length !== 4) {
+    throw new RangeError("extra must be left, right, bottom, top");
+  }
+  if (!Array.isArray(rect) || rect.length !== 4) {
+    throw new RangeError("rect must be left, bottom, right, top");
+  }
+  const packed = new Float64Array(panels.length * 8);
+  for (let index = 0; index < panels.length; index += 1) {
+    const panel = panels[index];
+    const at = index * 8;
+    packed[at] = Number(panel.row0);
+    packed[at + 1] = Number(panel.row1);
+    packed[at + 2] = Number(panel.col0);
+    packed[at + 3] = Number(panel.col1);
+    packed[at + 4] = Number(panel.left);
+    packed[at + 5] = Number(panel.top);
+    packed[at + 6] = Number(panel.right);
+    packed[at + 7] = Number(panel.bottom);
+  }
+  const extraArr = Float64Array.from(extra, (value) => Number(value));
+  const rectArr = Float64Array.from(rect, (value) => Number(value));
+  const out = new Float64Array(6);
+  const written = xyTightLayoutSolve(
+    Number(canvasW),
+    Number(canvasH),
+    Number(nrows) >>> 0,
+    Number(ncols) >>> 0,
+    compact ? 1 : 0,
+    packed.length ? f64Ptr(packed) : 0,
+    BigInt(panels.length),
+    f64Ptr(extraArr),
+    pad == null ? Number.NaN : Number(pad),
+    wPad == null ? Number.NaN : Number(wPad),
+    hPad == null ? Number.NaN : Number(hPad),
+    Number(pointPx),
+    f64Ptr(rectArr),
+    f64Ptr(out),
+  );
+  if (written === USIZE_MAX_64) throw new RangeError("invalid tight-layout request");
+  return { left: out[0], right: out[1], bottom: out[2], top: out[3], wspace: out[4], hspace: out[5] };
 }
 
 export function scaleMap({ values, kind = "linear", operation = "pixel", domain, range = [0, 1], constant = 1, nonpositive = "clip" }) {

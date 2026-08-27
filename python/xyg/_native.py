@@ -2987,6 +2987,68 @@ def recut_polar_plot(
     return result
 
 
+def tight_layout_solve(
+    canvas_w: float,
+    canvas_h: float,
+    nrows: int,
+    ncols: int,
+    compact: bool,
+    panels: Sequence[Mapping[str, float]],
+    extra: Sequence[float] = (0.0, 0.0, 0.0, 0.0),
+    pad: float | None = None,
+    w_pad: float | None = None,
+    h_pad: float | None = None,
+    point_px: float = 1.0,
+    rect: Sequence[float] = (0.0, 0.0, 1.0, 1.0),
+) -> tuple[float, float, float, float, float, float]:
+    """Pyplot tight-layout grid solve via ``xyg_tight_layout_solve`` (ABI 127)."""
+    if len(extra) != 4:
+        raise ValueError("extra must be left, right, bottom, top")
+    if len(rect) != 4:
+        raise ValueError("rect must be left, bottom, right, top")
+    packed = np.empty((len(panels), 8), dtype=np.float64)
+    for index, panel in enumerate(panels):
+        packed[index] = (
+            float(panel["row0"]),
+            float(panel["row1"]),
+            float(panel["col0"]),
+            float(panel["col1"]),
+            float(panel["left"]),
+            float(panel["top"]),
+            float(panel["right"]),
+            float(panel["bottom"]),
+        )
+    extra_arr = np.asarray(extra, dtype=np.float64)
+    rect_arr = np.asarray(rect, dtype=np.float64)
+    out = np.empty(6, dtype=np.float64)
+    written = _lib.xyg_tight_layout_solve(
+        float(canvas_w),
+        float(canvas_h),
+        int(nrows),
+        int(ncols),
+        1 if compact else 0,
+        _ptr_f64(packed) if len(panels) else 0,
+        len(panels),
+        _ptr_f64(extra_arr),
+        float("nan") if pad is None else float(pad),
+        float("nan") if w_pad is None else float(w_pad),
+        float("nan") if h_pad is None else float(h_pad),
+        float(point_px),
+        _ptr_f64(rect_arr),
+        _ptr_f64(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid tight-layout request")
+    return (
+        float(out[0]),
+        float(out[1]),
+        float(out[2]),
+        float(out[3]),
+        float(out[4]),
+        float(out[5]),
+    )
+
+
 def scene_scale_map(
     values: npt.ArrayLike,
     kind: int,

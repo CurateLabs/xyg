@@ -889,6 +889,23 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         F64P,
     ]
+    lib.xyg_tight_layout_solve.restype = ctypes.c_size_t
+    lib.xyg_tight_layout_solve.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_int32,
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        F64P,
+    ]
     lib.xyg_hexbin_groups.restype = ctypes.c_size_t
     lib.xyg_hexbin_groups.argtypes = [
         F64P,
@@ -2507,6 +2524,29 @@ def main() -> None:
         and recut_out[3] == 140.0
         and recut_out[4] == 40.0,
         "compat default padding and authored-padding polar recut",
+    )
+    tight_extra = array("d", [0.0] * 4)
+    tight_rect = array("d", [0.0, 0.0, 1.0, 1.0])
+    tight_out = array("d", [0.0] * 6)
+    tight_n = lib.xyg_tight_layout_solve(
+        800.0,
+        600.0,
+        1,
+        1,
+        0,
+        None,
+        0,
+        _ptr(tight_extra, ctypes.c_double),
+        float("nan"),
+        float("nan"),
+        float("nan"),
+        1.0,
+        _ptr(tight_rect, ctypes.c_double),
+        _ptr(tight_out, ctypes.c_double),
+    )
+    ok(
+        tight_n == 6 and abs(tight_out[0] - 62.0 / 800.0) < 1e-12,
+        "tight_layout_solve empty wide defaults",
     )
     cf_x = array("d", [0.0, 1.0, 2.0, 3.0, 4.0])
     cf_y = array("d", [0.0, 1.0, 0.5, 2.0, 1.5])

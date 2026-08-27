@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import test from "node:test";
 
-import { axisTicks, tickLabelLayout, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yAxisLeftRoom, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatColorbarExtra, polarLegendRoom, polarLabelRoom, recutPolarPlot, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
+import { axisTicks, tickLabelLayout, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yAxisLeftRoom, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatColorbarExtra, polarLegendRoom, polarLabelRoom, recutPolarPlot, tightLayoutSolve, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
 import { Figure, sceneRasterCommands, sceneSvg } from "../src/index.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
@@ -1207,6 +1207,14 @@ test("Node consumes Rust-owned static-export layout combination", () => {
   assert.equal(recut.w, 140);
   assert.equal(recut.h, 140);
   assert.equal(recut.topAxisRoom, 40);
+});
+
+test("Node consumes Rust-owned pyplot tight-layout solve", () => {
+  const empty = tightLayoutSolve({
+    canvasW: 800, canvasH: 600, nrows: 1, ncols: 1, compact: false, panels: [],
+  });
+  assert.ok(Math.abs(empty.left - 62 / 800) < 1e-12);
+  assert.ok(Math.abs(empty.right - (1 - 26 / 800)) < 1e-12);
 });
 
 test("Node matches every Rust-owned axis tick family in the shared cross-host fixture", () => {

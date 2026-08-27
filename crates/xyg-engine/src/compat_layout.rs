@@ -319,6 +319,169 @@ pub fn recut_polar_plot(
     Some(plot)
 }
 
+/// One gridspec cell's chrome, in px, plus its integer row/col span.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct TightPanel {
+    pub row0: i32,
+    pub row1: i32,
+    pub col0: i32,
+    pub col1: i32,
+    pub left: f64,
+    pub top: f64,
+    pub right: f64,
+    pub bottom: f64,
+}
+
+/// `subplots_adjust` fractions: left, right, bottom, top, wspace, hspace.
+pub const TIGHT_OUT_LEN: usize = 6;
+pub const TIGHT_PANEL_STRIDE: usize = 8;
+pub const TIGHT_BASE_PAD: f64 = 1.08;
+
+/// Pyplot tight-layout grid solve after the host measured per-panel chrome.
+///
+/// `extra` is `(left, right, bottom, top)` figure-edge additions already
+/// measured by the host (suptitle, figure labels, outside legends). `pad`,
+/// `w_pad`, and `h_pad` are Matplotlib font-size multiples; `None` means
+/// omitted. `rect` is `[left, bottom, right, top]` in figure fractions.
+pub fn tight_layout_solve(
+    canvas_w: f64,
+    canvas_h: f64,
+    nrows: u32,
+    ncols: u32,
+    compact: bool,
+    panels: &[TightPanel],
+    extra: [f64; 4],
+    pad: Option<f64>,
+    w_pad: Option<f64>,
+    h_pad: Option<f64>,
+    point_px: f64,
+    rect: [f64; 4],
+) -> Option<[f64; 6]> {
+    if ![canvas_w, canvas_h, point_px]
+        .iter()
+        .chain(extra.iter())
+        .chain(rect.iter())
+        .all(|value| value.is_finite())
+        || canvas_w <= 0.0
+        || canvas_h <= 0.0
+        || nrows == 0
+        || ncols == 0
+        || point_px < 0.0
+        || extra.iter().any(|value| *value < 0.0)
+        || pad.is_some_and(|value| !value.is_finite())
+        || w_pad.is_some_and(|value| !value.is_finite())
+        || h_pad.is_some_and(|value| !value.is_finite())
+    {
+        return None;
+    }
+    for panel in panels {
+        if panel.row1 <= panel.row0
+            || panel.col1 <= panel.col0
+            || ![panel.left, panel.top, panel.right, panel.bottom]
+                .iter()
+                .all(|value| value.is_finite() && *value >= 0.0)
+        {
+            return None;
+        }
+    }
+    let mut left_px = if panels.is_empty() {
+        if compact {
+            PAD_LEFT_COMPACT
+        } else {
+            PAD_LEFT
+        }
+    } else {
+        panels
+            .iter()
+            .map(|panel| panel.left)
+            .fold(f64::NEG_INFINITY, f64::max)
+    };
+    let right_floor: f64 = if compact { 20.0 } else { 26.0 };
+    let mut right_px = right_floor.max(if panels.is_empty() {
+        0.0
+    } else {
+        panels
+            .iter()
+            .map(|panel| panel.right)
+            .fold(f64::NEG_INFINITY, f64::max)
+    });
+    let mut bottom_px = if panels.is_empty() {
+        if compact {
+            PAD_BOTTOM_COMPACT
+        } else {
+            PAD_BOTTOM
+        }
+    } else {
+        panels
+            .iter()
+            .map(|panel| panel.bottom)
+            .fold(f64::NEG_INFINITY, f64::max)
+    };
+    let mut top_px = 20.0_f64.max(if panels.is_empty() {
+        0.0
+    } else {
+        panels
+            .iter()
+            .map(|panel| panel.top)
+            .fold(f64::NEG_INFINITY, f64::max)
+    });
+    let mut horizontal_gap: f64 = if compact { 58.0 } else { 76.0 };
+    let mut vertical_gap: f64 = if compact { 44.0 } else { 56.0 };
+    for (index, panel) in panels.iter().enumerate() {
+        for (other_index, other) in panels.iter().enumerate() {
+            if index == other_index {
+                continue;
+            }
+            let rows_overlap = panel.row0.max(other.row0) < panel.row1.min(other.row1);
+            let cols_overlap = panel.col0.max(other.col0) < panel.col1.min(other.col1);
+            if rows_overlap && panel.col1 == other.col0 {
+                horizontal_gap = f64::max(horizontal_gap, panel.right + other.left);
+            }
+            if cols_overlap && panel.row1 == other.row0 {
+                vertical_gap = f64::max(vertical_gap, panel.bottom + other.top);
+            }
+        }
+    }
+    left_px += extra[0];
+    right_px += extra[1];
+    bottom_px += extra[2];
+    top_px += extra[3];
+    let base_pad = pad.unwrap_or(TIGHT_BASE_PAD);
+    if let Some(w_pad) = w_pad {
+        horizontal_gap += (w_pad - base_pad) * point_px;
+    }
+    if let Some(h_pad) = h_pad {
+        vertical_gap += (h_pad - base_pad) * point_px;
+    }
+    if let Some(pad) = pad {
+        let extra_pad = (pad - TIGHT_BASE_PAD) * point_px;
+        left_px += extra_pad;
+        right_px += extra_pad;
+        bottom_px += extra_pad;
+        top_px += extra_pad;
+    }
+    let left = rect[0] + left_px.max(0.0) / canvas_w;
+    let right = rect[2] - right_px.max(0.0) / canvas_w;
+    let bottom = rect[1] + bottom_px.max(0.0) / canvas_h;
+    let top = rect[3] - top_px.max(0.0) / canvas_h;
+    let inner_w = 1.0_f64.max((right - left) * canvas_w);
+    let inner_h = 1.0_f64.max((top - bottom) * canvas_h);
+    let cell_w = 1.0_f64.max(
+        (inner_w - horizontal_gap * f64::from(ncols.saturating_sub(1))) / f64::from(ncols.max(1)),
+    );
+    let cell_h = 1.0_f64.max(
+        (inner_h - vertical_gap * f64::from(nrows.saturating_sub(1))) / f64::from(nrows.max(1)),
+    );
+    Some([
+        left,
+        right,
+        bottom,
+        top,
+        horizontal_gap / cell_w,
+        vertical_gap / cell_h,
+    ])
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -372,5 +535,77 @@ mod tests {
         assert_eq!(out.w, 140.0);
         assert_eq!(out.h, 140.0);
         assert_eq!(out.top_axis_room, 40.0);
+    }
+
+    #[test]
+    fn tight_layout_empty_wide_canvas_uses_default_edges() {
+        let out = tight_layout_solve(
+            800.0,
+            600.0,
+            1,
+            1,
+            false,
+            &[],
+            [0.0, 0.0, 0.0, 0.0],
+            None,
+            None,
+            None,
+            1.0,
+            [0.0, 0.0, 1.0, 1.0],
+        )
+        .unwrap();
+        assert!((out[0] - 62.0 / 800.0).abs() < 1e-12);
+        assert!((out[1] - (1.0 - 26.0 / 800.0)).abs() < 1e-12);
+        assert!((out[2] - 42.0 / 600.0).abs() < 1e-12);
+        assert!((out[3] - (1.0 - 20.0 / 600.0)).abs() < 1e-12);
+    }
+
+    #[test]
+    fn tight_layout_neighbor_gap_uses_adjacent_chrome() {
+        let panels = [
+            TightPanel {
+                row0: 0,
+                row1: 1,
+                col0: 0,
+                col1: 1,
+                left: 10.0,
+                top: 5.0,
+                right: 40.0,
+                bottom: 8.0,
+            },
+            TightPanel {
+                row0: 0,
+                row1: 1,
+                col0: 1,
+                col1: 2,
+                left: 50.0,
+                top: 5.0,
+                right: 10.0,
+                bottom: 8.0,
+            },
+        ];
+        let out = tight_layout_solve(
+            800.0,
+            400.0,
+            1,
+            2,
+            false,
+            &panels,
+            [0.0, 0.0, 0.0, 0.0],
+            None,
+            None,
+            None,
+            1.0,
+            [0.0, 0.0, 1.0, 1.0],
+        )
+        .unwrap();
+        let horizontal_gap = 90.0_f64.max(76.0);
+        let left = 50.0 / 800.0;
+        let right = 1.0 - 40.0 / 800.0;
+        let inner_w = (right - left) * 800.0;
+        let cell_w = (inner_w - horizontal_gap) / 2.0;
+        assert!((out[0] - left).abs() < 1e-12);
+        assert!((out[1] - right).abs() < 1e-12);
+        assert!((out[4] - horizontal_gap / cell_w).abs() < 1e-12);
     }
 }
