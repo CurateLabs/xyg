@@ -1050,7 +1050,9 @@ from packed `XYCH` v1, and chrome/annotation packers call `xyg_css_color_rgba`
 for the same conversion. ABI 109 does not change Scene records either;
 `xyg_scene_pack_trace` owns Figure→Scene row packing (kinds, stable ids,
 expansion modes, ribbon/triangle doubling, heatmap lattice framing) from
-literal columns. ABI 110 does not change Scene records either;
+literal columns. ABI 116 does not change Scene records either;
+`xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
+from packed scalars plus axis domains. ABI 110 does not change Scene records either;
 `xyg_scene_pack_legend` owns primary XYLG legend framing from loc/flags,
 paints, title, and entry meta. ABI 111 does not change Scene records either;
 `xyg_scene_pack_colorbar` owns primary XYCB v2 framing from domain, stops,

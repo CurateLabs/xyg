@@ -10,6 +10,7 @@ import {
   xyScenePlotLayout,
   xyScenePublicExportReason,
   xyScenePackTrace,
+  xyScenePackAnnotationMarks,
   xySceneRasterCommands,
   xySceneResolveChromeStyle,
   xySceneResolveMarkStyles,
@@ -82,6 +83,54 @@ function packTrace({
     rows.y1.push(view.getFloat64(at + 48, true));
   }
   return rows;
+}
+
+function packAnnotationMarks(rowBytes, xDomain, yDomain) {
+  const source = rowBytes instanceof Uint8Array ? rowBytes : new Uint8Array(rowBytes ?? []);
+  const nIn = Math.floor(source.length / 40);
+  const out = new Uint8Array(Math.max(nIn * 2, 1) * 56);
+  const code = xyScenePackAnnotationMarks(
+    source.length ? u8Ptr(source) : 0,
+    BigInt(source.length),
+    Number(xDomain[0]),
+    Number(xDomain[1]),
+    Number(yDomain[0]),
+    Number(yDomain[1]),
+    u8Ptr(out),
+    BigInt(out.length),
+  );
+  if (code === -5) throw new RangeError("Scene v12 annotation geometry must be finite");
+  if (code < 0) throw new RangeError("invalid scene annotation packing");
+  const view = new DataView(out.buffer, out.byteOffset, Math.max(code, 0) * 56);
+  const rows = { kinds: [], stableIds: [], styleRefs: [], diameter: [], symbols: [], expansion: [], x0: [], y0: [], x1: [], y1: [] };
+  for (let index = 0; index < code; index += 1) {
+    const at = index * 56;
+    rows.kinds.push(out[at]);
+    rows.symbols.push(out[at + 1]);
+    rows.expansion.push(out[at + 2]);
+    rows.styleRefs.push(view.getUint32(at + 4, true));
+    rows.stableIds.push(view.getBigUint64(at + 8, true));
+    rows.diameter.push(view.getFloat64(at + 16, true));
+    rows.x0.push(view.getFloat64(at + 24, true));
+    rows.y0.push(view.getFloat64(at + 32, true));
+    rows.x1.push(view.getFloat64(at + 40, true));
+    rows.y1.push(view.getFloat64(at + 48, true));
+  }
+  return rows;
+}
+
+function annotationMarkRow(kind, axis, symbol, styleRef, index, value0, value1, size) {
+  const row = new Uint8Array(40);
+  const view = new DataView(row.buffer);
+  row[0] = kind;
+  row[1] = axis;
+  row[2] = symbol;
+  view.setUint32(4, styleRef >>> 0, true);
+  view.setUint32(8, index >>> 0, true);
+  view.setFloat64(16, Number(value0), true);
+  view.setFloat64(24, Number(value1), true);
+  view.setFloat64(32, Number(size), true);
+  return row;
 }
 
 function appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packed) {
@@ -1596,6 +1645,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   }
 
   const annotationPrefix = 0x5859000000000000n, attachedLabels = [], straightArrows = [], cartesianCallouts = [], wrappedAnnotations = [];
+  const annotationMarkRows = [];
   for (const [annotationIndex, annotation] of (figure.annotations ?? []).entries()) {
     const kind = annotation.kind;
     if (["text", "callout"].includes(kind) && Object.hasOwn(annotation, "wrap")) { wrappedAnnotations.push(annotation); continue; }
@@ -1666,26 +1716,32 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       if (labelBorder && !labelFill) throw new RangeError("Scene v23 label border requires label_background");
       attachedLabels.push({ stableId, rgba: rgba8(annotationColor(style, "label_color", "#667085", "label color"), labelOpacity, "annotation label"), labelFill, labelBorder, text });
     }
-    const append = (recordKind, a, b, c = 0, d = 0, size = 0, symbol = 0) => {
-      if (![a, b, c, d, size].every(Number.isFinite)) throw new RangeError(`Scene v12 ${kind} annotation geometry must be finite`);
-      kinds.push(recordKind); stableIds.push(stableId); styleRefs.push(styleRef); diameter.push(size); symbols.push(symbol); expansionModes.push(0); x0.push(a); y0.push(b); x1.push(c); y1.push(d);
-    };
+    const kindCode = { rule: 1, band: 2, marker: 3 }[kind];
     if (kind === "rule") {
       const value = annotationNumber(annotation, "value", undefined, `${kind} value`);
-      if (annotation.axis === "x") { append(1, value, Number(yDomain[0])); append(1, value, Number(yDomain[1])); }
-      else if (annotation.axis === "y") { append(1, Number(xDomain[0]), value); append(1, Number(xDomain[1]), value); }
-      else throw new RangeError("Scene v12 rule annotation axis must be 'x' or 'y'");
+      if (annotation.axis !== "x" && annotation.axis !== "y") throw new RangeError("Scene v12 rule annotation axis must be 'x' or 'y'");
+      annotationMarkRows.push(annotationMarkRow(kindCode, annotation.axis === "x" ? 0 : 1, 0, styleRef, annotationIndex, value, 0, 0));
     } else if (kind === "band") {
       const start = annotationNumber(annotation, "start", undefined, `${kind} start`);
       const end = annotationNumber(annotation, "end", undefined, `${kind} end`);
-      if (annotation.axis === "x") append(2, start, Number(yDomain[0]), end, Number(yDomain[1]));
-      else if (annotation.axis === "y") append(2, Number(xDomain[0]), start, Number(xDomain[1]), end);
-      else throw new RangeError("Scene v12 band annotation axis must be 'x' or 'y'");
+      if (annotation.axis !== "x" && annotation.axis !== "y") throw new RangeError("Scene v12 band annotation axis must be 'x' or 'y'");
+      annotationMarkRows.push(annotationMarkRow(kindCode, annotation.axis === "x" ? 0 : 1, 0, styleRef, annotationIndex, start, end, 0));
     } else {
       const size = annotationNumber(annotation, "size", 8, `${kind} size`);
       if (!Number.isFinite(size) || size <= 0) throw new RangeError("Scene v12 marker annotation size must be finite and positive");
-      append(0, annotationNumber(annotation, "x", undefined, `${kind} x`), annotationNumber(annotation, "y", undefined, `${kind} y`), 0, 0, size, annotationSymbolCode(annotation.symbol ?? "circle"));
+      annotationMarkRows.push(annotationMarkRow(
+        kindCode, 0, annotationSymbolCode(annotation.symbol ?? "circle"), styleRef, annotationIndex,
+        annotationNumber(annotation, "x", undefined, `${kind} x`),
+        annotationNumber(annotation, "y", undefined, `${kind} y`),
+        size,
+      ));
     }
+  }
+  if (annotationMarkRows.length) {
+    const packedMarks = new Uint8Array(annotationMarkRows.reduce((n, row) => n + row.length, 0));
+    let offset = 0;
+    for (const row of annotationMarkRows) { packedMarks.set(row, offset); offset += row.length; }
+    appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packAnnotationMarks(packedMarks, xDomain, yDomain));
   }
   const textAnnotations = (figure.annotations ?? []).filter((annotation) => annotation.kind === "text" && !Object.hasOwn(annotation, "wrap"));
   const textEncoder = new TextEncoder();

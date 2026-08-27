@@ -121,7 +121,10 @@ packing into `crates/xyg-engine/src/scene_pack.rs`. Python and Node pass
 kind, flags, step mode, style ref, trace id, diameter/symbol, extras, and
 literal f64 columns; record kinds, stable-id splitting, expansion-mode
 assignment, ribbon/triangle doubling, heatmap lattice framing, and
-finite-coordinate rejection cannot drift. ABI 110 moves primary XYLG
+finite-coordinate rejection cannot drift. ABI 116 expands primary
+rule/band/marker annotations into ordinary Scene polyline/rect/scatter
+rows from packed scalars plus axis domains; hosts only coerce kind, axis,
+style ref, index, and authored numbers. ABI 110 moves primary XYLG
 legend framing into `crates/xyg-engine/src/scene_legend.rs`. Python and
 Node pass loc/flags, font sizes, paints, title, and per-entry meta plus
 labels; header layout, text offsets, and bounded-text rejection cannot

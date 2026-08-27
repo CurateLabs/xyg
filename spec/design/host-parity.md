@@ -185,7 +185,9 @@ Python and Node pack `XYCH` v1 background/axis CSS, sides, opacities, and
 widths, then call `xyg_scene_resolve_chrome_style`. ABI 109 makes
 Figure→Scene row packing the same way: Python and Node call
 `xyg_scene_pack_trace` with kind/flags/columns and append the returned
-56-byte rows. ABI 110 makes primary legend framing the same way: Python
+56-byte rows. ABI 116 expands primary rule/band/marker annotations the same
+way: Python and Node call `xyg_scene_pack_annotation_marks` with packed
+scalars plus axis domains. ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
 `xyg_scene_pack_colorbar` with domain/stops/ticks/title.

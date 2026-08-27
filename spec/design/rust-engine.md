@@ -166,7 +166,8 @@ crates/
     scene_pack.rs       # compact Figure→Scene row packing (ABI 109): record
                         #   kinds, stable-id splitting, expansion modes,
                         #   ribbon/triangle doubling, heatmap lattice framing,
-                        #   and finite-coordinate rejection.
+                        #   finite-coordinate rejection, and ABI 116
+                        #   rule/band/marker domain expansion.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -593,6 +594,9 @@ ABI v109 adds `xyg_scene_pack_trace` so Python and Node share one
 Figure→Scene row packer: record kinds, stable-id splitting, expansion
 modes, ribbon/triangle doubling, heatmap lattice framing, and
 finite-coordinate rejection.
+ABI v116 adds `xyg_scene_pack_annotation_marks` so Python and Node share
+one rule/band/marker expander: stable-id tags, opposite-axis domain
+spanning, and finite rejection.
 
 ABI v110 adds `xyg_scene_pack_legend` so Python and Node share one
 primary XYLG legend framer: header layout, text offsets, and

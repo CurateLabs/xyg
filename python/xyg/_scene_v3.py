@@ -526,6 +526,64 @@ def _append_packed(
         coordinates[axis].extend(float(value) for value in coords[axis])
 
 
+def _pack_annotation_mark_row(
+    kind_code: int,
+    axis_code: int,
+    symbol: int,
+    style_ref: int,
+    index: int,
+    value0: float,
+    value1: float,
+    size: float,
+) -> bytes:
+    """One 40-byte authored rule/band/marker row for Rust domain expansion."""
+    return struct.pack(
+        "<BBBBIIxxxxddd",
+        int(kind_code),
+        int(axis_code),
+        int(symbol),
+        0,
+        int(style_ref),
+        int(index),
+        float(value0),
+        float(value1),
+        float(size),
+    )
+
+
+def _append_annotation_marks(
+    kinds: list[int],
+    stable_ids: list[int],
+    style_refs: list[int],
+    diameters: list[float],
+    symbols: list[int],
+    expansion_modes: list[int],
+    coordinates: list[list[float]],
+    rows: bytes,
+    x_domain: tuple[float, float],
+    y_domain: tuple[float, float],
+) -> None:
+    if not rows:
+        return
+    (
+        packed_kinds,
+        packed_ids,
+        packed_refs,
+        packed_diameters,
+        packed_symbols,
+        packed_modes,
+        coords,
+    ) = _native.scene_pack_annotation_marks(rows, x_domain=x_domain, y_domain=y_domain)
+    kinds.extend(int(value) for value in packed_kinds)
+    stable_ids.extend(int(value) for value in packed_ids)
+    style_refs.extend(int(value) for value in packed_refs)
+    diameters.extend(float(value) for value in packed_diameters)
+    symbols.extend(int(value) for value in packed_symbols)
+    expansion_modes.extend(int(value) for value in packed_modes)
+    for axis in range(4):
+        coordinates[axis].extend(float(value) for value in coords[axis])
+
+
 def _rgba(css: str, opacity: float) -> tuple[int, int, int, int]:
     return _native.css_color_rgba(css, opacity)
 
@@ -1300,6 +1358,7 @@ def figure_scene(
         ]
     ] = []
     wrapped_annotations: list[dict[str, Any]] = []
+    annotation_mark_rows = bytearray()
     for annotation_index, annotation in enumerate(annotations):
         kind = annotation.get("kind")
         if kind in {"text", "callout"} and "wrap" in annotation:
@@ -1547,52 +1606,42 @@ def figure_scene(
                 )
             )
 
-        def append_record(
-            record_kind: int,
-            a: float,
-            b: float,
-            c: float,
-            d: float,
-            *,
-            size: float = 0.0,
-            symbol: int = 0,
-            annotation_kind: str = kind,
-            annotation_stable_id: int = stable_id,
-            annotation_style_ref: int = style_ref,
-        ) -> None:
-            values = (a, b, c, d, size)
-            if not all(np.isfinite(value) for value in values):
-                raise ValueError(f"Scene v12 {annotation_kind} annotation geometry must be finite")
-            kinds.append(record_kind)
-            stable_ids.append(annotation_stable_id)
-            style_refs.append(annotation_style_ref)
-            diameters.append(size)
-            symbols.append(symbol)
-            expansion_modes.append(0)
-            for destination, value in zip(coordinates, (a, b, c, d), strict=True):
-                destination.append(float(value))
-
+        kind_code = {"rule": 1, "band": 2, "marker": 3}[kind]
         if kind == "rule":
             axis_name = annotation.get("axis")
             if axis_name not in {"x", "y"}:
                 raise ValueError("Scene v12 rule annotation axis must be 'x' or 'y'")
             value = annotation_number(annotation, "value", None, f"{kind} value")
-            if axis_name == "x":
-                append_record(1, value, y_domain[0], 0.0, 0.0)
-                append_record(1, value, y_domain[1], 0.0, 0.0)
-            else:
-                append_record(1, x_domain[0], value, 0.0, 0.0)
-                append_record(1, x_domain[1], value, 0.0, 0.0)
+            annotation_mark_rows.extend(
+                _pack_annotation_mark_row(
+                    kind_code,
+                    0 if axis_name == "x" else 1,
+                    0,
+                    style_ref,
+                    annotation_index,
+                    value,
+                    0.0,
+                    0.0,
+                )
+            )
         elif kind == "band":
             axis_name = annotation.get("axis")
             if axis_name not in {"x", "y"}:
                 raise ValueError("Scene v12 band annotation axis must be 'x' or 'y'")
             start = annotation_number(annotation, "start", None, f"{kind} start")
             end = annotation_number(annotation, "end", None, f"{kind} end")
-            if axis_name == "x":
-                append_record(2, start, y_domain[0], end, y_domain[1])
-            else:
-                append_record(2, x_domain[0], start, x_domain[1], end)
+            annotation_mark_rows.extend(
+                _pack_annotation_mark_row(
+                    kind_code,
+                    0 if axis_name == "x" else 1,
+                    0,
+                    style_ref,
+                    annotation_index,
+                    start,
+                    end,
+                    0.0,
+                )
+            )
         else:
             symbol_name = str(annotation.get("symbol", "circle"))
             if symbol_name not in _SYMBOL_CODES:
@@ -1602,15 +1651,31 @@ def figure_scene(
             size = annotation_number(annotation, "size", 8.0, f"{kind} size")
             if not np.isfinite(size) or size <= 0:
                 raise ValueError("Scene v12 marker annotation size must be finite and positive")
-            append_record(
-                0,
-                annotation_number(annotation, "x", None, f"{kind} x"),
-                annotation_number(annotation, "y", None, f"{kind} y"),
-                0.0,
-                0.0,
-                size=size,
-                symbol=_SYMBOL_CODES[symbol_name],
+            annotation_mark_rows.extend(
+                _pack_annotation_mark_row(
+                    kind_code,
+                    0,
+                    _SYMBOL_CODES[symbol_name],
+                    style_ref,
+                    annotation_index,
+                    annotation_number(annotation, "x", None, f"{kind} x"),
+                    annotation_number(annotation, "y", None, f"{kind} y"),
+                    size,
+                )
             )
+
+    _append_annotation_marks(
+        kinds,
+        stable_ids,
+        style_refs,
+        diameters,
+        symbols,
+        expansion_modes,
+        coordinates,
+        bytes(annotation_mark_rows),
+        x_domain,
+        y_domain,
+    )
 
     w = int(width if width is not None else figure.width)
     h = int(height if height is not None else figure.height)

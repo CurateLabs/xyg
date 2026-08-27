@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { cssColorRgba8, lineChart, scatterChart } from "../src/index.js";
 import { figureSceneV3 } from "../src/scene.js";
-import { xyScenePackTrace, xySceneResolveChromeStyle } from "../src/native.js";
+import { xyScenePackAnnotationMarks, xyScenePackTrace, xySceneResolveChromeStyle } from "../src/native.js";
 import { f64Ptr, u8Ptr } from "../src/encode.js";
 
 test("cssColorRgba8 matches Python named colors and none", () => {
@@ -139,4 +139,89 @@ test("pack_trace heatmap frames extent then shape", () => {
 test("pack_trace rejects nonfinite coordinates", () => {
   const { code } = packTrace(1, [[0, Number.NaN], [1, 2]]);
   assert.equal(code, -5);
+});
+
+function annotationMarkRow(kind, axis, symbol, styleRef, index, value0, value1, size) {
+  const row = new Uint8Array(40);
+  const view = new DataView(row.buffer);
+  row[0] = kind;
+  row[1] = axis;
+  row[2] = symbol;
+  view.setUint32(4, styleRef >>> 0, true);
+  view.setUint32(8, index >>> 0, true);
+  view.setFloat64(16, Number(value0), true);
+  view.setFloat64(24, Number(value1), true);
+  view.setFloat64(32, Number(size), true);
+  return row;
+}
+
+function packAnnotationMarks(rowBytes, xDomain, yDomain) {
+  const source = rowBytes instanceof Uint8Array ? rowBytes : new Uint8Array(rowBytes ?? []);
+  const nIn = Math.floor(source.length / 40);
+  const out = new Uint8Array(Math.max(nIn * 2, 1) * 56);
+  const code = xyScenePackAnnotationMarks(
+    source.length ? u8Ptr(source) : 0,
+    BigInt(source.length),
+    Number(xDomain[0]),
+    Number(xDomain[1]),
+    Number(yDomain[0]),
+    Number(yDomain[1]),
+    u8Ptr(out),
+    BigInt(out.length),
+  );
+  return { code, out };
+}
+
+test("pack_annotation_marks rule spans the opposite axis", () => {
+  const { code, out } = packAnnotationMarks(
+    annotationMarkRow(1, 0, 0, 3, 7, 1.5, 0, 0),
+    [0, 4],
+    [10, 20],
+  );
+  assert.equal(code, 2);
+  const view = new DataView(out.buffer);
+  assert.equal(out[0], 1);
+  assert.equal(view.getUint32(4, true), 3);
+  assert.equal(view.getBigUint64(8, true), 0x5859000000000000n | (1n << 40n) | 7n);
+  assert.equal(view.getFloat64(24, true), 1.5);
+  assert.equal(view.getFloat64(32, true), 10);
+  assert.equal(view.getFloat64(56 + 24, true), 1.5);
+  assert.equal(view.getFloat64(56 + 32, true), 20);
+});
+
+test("pack_annotation_marks y-band uses tag four", () => {
+  const { code, out } = packAnnotationMarks(
+    annotationMarkRow(2, 1, 0, 1, 2, 3, 5, 0),
+    [0, 10],
+    [-1, 1],
+  );
+  assert.equal(code, 1);
+  const view = new DataView(out.buffer);
+  assert.equal(out[0], 2);
+  assert.equal(view.getBigUint64(8, true), 0x5859000000000000n | (4n << 40n) | 2n);
+  assert.equal(view.getFloat64(24, true), 0);
+  assert.equal(view.getFloat64(32, true), 3);
+  assert.equal(view.getFloat64(40, true), 10);
+  assert.equal(view.getFloat64(48, true), 5);
+});
+
+test("pack_annotation_marks marker keeps point size and symbol", () => {
+  const { code, out } = packAnnotationMarks(
+    annotationMarkRow(3, 0, 4, 8, 9, 1, 2, 6),
+    [0, 1],
+    [0, 1],
+  );
+  assert.equal(code, 1);
+  const view = new DataView(out.buffer);
+  assert.equal(out[0], 0);
+  assert.equal(out[1], 4);
+  assert.equal(view.getFloat64(16, true), 6);
+  assert.equal(view.getBigUint64(8, true), 0x5859000000000000n | (3n << 40n) | 9n);
+  assert.equal(view.getFloat64(24, true), 1);
+  assert.equal(view.getFloat64(32, true), 2);
+});
+
+test("pack_annotation_marks rejects bad kind and nonfinite domain", () => {
+  assert.equal(packAnnotationMarks(annotationMarkRow(9, 0, 0, 0, 0, 0, 0, 1), [0, 1], [0, 1]).code, -1);
+  assert.equal(packAnnotationMarks(annotationMarkRow(1, 0, 0, 0, 0, 0, 0, 0), [0, Number.NaN], [0, 1]).code, -5);
 });

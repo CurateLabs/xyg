@@ -3,8 +3,9 @@
 //! Hosts validate authoring (axis keys, hidden traces, density, style
 //! allowlists) and pass literal columns plus kind/flags. Rust owns Scene
 //! record kinds, stable-id splitting, expansion-mode assignment, heatmap
-//! lattice framing, ribbon/triangle doubling, and finite-coordinate
-//! rejection so Python and Node cannot drift on the packed row contract.
+//! lattice framing, ribbon/triangle doubling, rule/band/marker domain
+//! spanning, and finite-coordinate rejection so Python and Node cannot
+//! drift on the packed row contract.
 
 use crate::scene::MAX_SCENE_MARKS;
 
@@ -425,6 +426,196 @@ fn pack_heatmap(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, PackEr
     Ok(out)
 }
 
+pub const ANN_MARK_ROW_BYTES: usize = 40;
+pub const ANN_KIND_RULE: u8 = 1;
+pub const ANN_KIND_BAND: u8 = 2;
+pub const ANN_KIND_MARKER: u8 = 3;
+const ANN_AXIS_X: u8 = 0;
+const ANN_AXIS_Y: u8 = 1;
+const ANN_ID_PREFIX: u64 = 0x5859_0000_0000_0000;
+
+/// One authored rule/band/marker before domain expansion.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct AnnotationMarkInput {
+    pub kind: u8,
+    pub axis: u8,
+    pub symbol: u8,
+    pub style_ref: u32,
+    pub index: u32,
+    pub value0: f64,
+    pub value1: f64,
+    pub size: f64,
+}
+
+fn annotation_stable_id(tag: u8, index: u32) -> u64 {
+    ANN_ID_PREFIX | (u64::from(tag) << 40) | u64::from(index)
+}
+
+fn parse_annotation_mark_row(bytes: &[u8]) -> Result<AnnotationMarkInput, PackError> {
+    if bytes.len() != ANN_MARK_ROW_BYTES {
+        return Err(PackError::Length);
+    }
+    if bytes[3] != 0 || bytes[12..16] != [0, 0, 0, 0] {
+        return Err(PackError::Length);
+    }
+    Ok(AnnotationMarkInput {
+        kind: bytes[0],
+        axis: bytes[1],
+        symbol: bytes[2],
+        style_ref: u32::from_le_bytes(bytes[4..8].try_into().unwrap()),
+        index: u32::from_le_bytes(bytes[8..12].try_into().unwrap()),
+        value0: f64::from_le_bytes(bytes[16..24].try_into().unwrap()),
+        value1: f64::from_le_bytes(bytes[24..32].try_into().unwrap()),
+        size: f64::from_le_bytes(bytes[32..40].try_into().unwrap()),
+    })
+}
+
+/// Parse a packed `ANN_MARK_ROW_BYTES` table.
+pub fn parse_annotation_mark_rows(bytes: &[u8]) -> Result<Vec<AnnotationMarkInput>, PackError> {
+    if bytes.len() % ANN_MARK_ROW_BYTES != 0 {
+        return Err(PackError::Length);
+    }
+    bytes
+        .chunks_exact(ANN_MARK_ROW_BYTES)
+        .map(parse_annotation_mark_row)
+        .collect()
+}
+
+fn push_ann_row(
+    out: &mut Vec<PackedSceneRow>,
+    kind: u8,
+    symbol: u8,
+    style_ref: u32,
+    stable_id: u64,
+    diameter: f64,
+    x0: f64,
+    y0: f64,
+    x1: f64,
+    y1: f64,
+) -> Result<(), PackError> {
+    if ![x0, y0, x1, y1, diameter]
+        .iter()
+        .all(|value| value.is_finite())
+    {
+        return Err(PackError::NonFinite);
+    }
+    push_row(
+        out,
+        PackedSceneRow {
+            kind,
+            symbol,
+            expansion_mode: EXP_NONE,
+            style_ref,
+            stable_id,
+            diameter,
+            x0,
+            y0,
+            x1,
+            y1,
+        },
+    )
+}
+
+/// Expand authored rule/band/marker scalars across the primary axis domains
+/// into ordinary Scene polyline/rect/scatter rows. Hosts pack kind, axis,
+/// style ref, index, and scalars; Rust owns tags, domain spanning, and
+/// finite rejection.
+pub fn pack_annotation_marks(
+    rows: &[AnnotationMarkInput],
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+) -> Result<Vec<PackedSceneRow>, PackError> {
+    if ![x0, x1, y0, y1].iter().all(|value| value.is_finite()) {
+        return Err(PackError::NonFinite);
+    }
+    let mut out = Vec::new();
+    for row in rows {
+        match row.kind {
+            ANN_KIND_RULE => {
+                if row.axis != ANN_AXIS_X && row.axis != ANN_AXIS_Y {
+                    return Err(PackError::Length);
+                }
+                let stable_id = annotation_stable_id(1, row.index);
+                let (ax, ay, bx, by) = if row.axis == ANN_AXIS_X {
+                    (row.value0, y0, row.value0, y1)
+                } else {
+                    (x0, row.value0, x1, row.value0)
+                };
+                push_ann_row(
+                    &mut out,
+                    KIND_POLYLINE,
+                    0,
+                    row.style_ref,
+                    stable_id,
+                    0.0,
+                    ax,
+                    ay,
+                    0.0,
+                    0.0,
+                )?;
+                push_ann_row(
+                    &mut out,
+                    KIND_POLYLINE,
+                    0,
+                    row.style_ref,
+                    stable_id,
+                    0.0,
+                    bx,
+                    by,
+                    0.0,
+                    0.0,
+                )?;
+            }
+            ANN_KIND_BAND => {
+                if row.axis != ANN_AXIS_X && row.axis != ANN_AXIS_Y {
+                    return Err(PackError::Length);
+                }
+                let tag = if row.axis == ANN_AXIS_Y { 4 } else { 2 };
+                let stable_id = annotation_stable_id(tag, row.index);
+                let (ax, ay, bx, by) = if row.axis == ANN_AXIS_X {
+                    (row.value0, y0, row.value1, y1)
+                } else {
+                    (x0, row.value0, x1, row.value1)
+                };
+                push_ann_row(
+                    &mut out,
+                    KIND_RECT,
+                    0,
+                    row.style_ref,
+                    stable_id,
+                    0.0,
+                    ax,
+                    ay,
+                    bx,
+                    by,
+                )?;
+            }
+            ANN_KIND_MARKER => {
+                if !row.size.is_finite() || row.size <= 0.0 {
+                    return Err(PackError::Length);
+                }
+                let stable_id = annotation_stable_id(3, row.index);
+                push_ann_row(
+                    &mut out,
+                    KIND_SCATTER,
+                    row.symbol,
+                    row.style_ref,
+                    stable_id,
+                    row.size,
+                    row.value0,
+                    row.value1,
+                    0.0,
+                    0.0,
+                )?;
+            }
+            _ => return Err(PackError::Length),
+        }
+    }
+    Ok(out)
+}
+
 /// Encode packed rows into the C-ABI output buffer. Returns the row count.
 pub fn encode_packed_rows(rows: &[PackedSceneRow], out: &mut [u8]) -> Result<i32, PackError> {
     let needed = rows
@@ -548,6 +739,103 @@ mod tests {
                 extra1: 0.0,
                 columns: &[&x, &y],
             }),
+            Err(PackError::NonFinite)
+        );
+    }
+
+    fn ann_row(
+        kind: u8,
+        axis: u8,
+        symbol: u8,
+        style_ref: u32,
+        index: u32,
+        value0: f64,
+        value1: f64,
+        size: f64,
+    ) -> AnnotationMarkInput {
+        AnnotationMarkInput {
+            kind,
+            axis,
+            symbol,
+            style_ref,
+            index,
+            value0,
+            value1,
+            size,
+        }
+    }
+
+    #[test]
+    fn rule_spans_the_opposite_axis_domain() {
+        let rows = pack_annotation_marks(
+            &[ann_row(ANN_KIND_RULE, ANN_AXIS_X, 0, 3, 7, 1.5, 0.0, 0.0)],
+            0.0,
+            4.0,
+            10.0,
+            20.0,
+        )
+        .unwrap();
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[0].kind, KIND_POLYLINE);
+        assert_eq!(rows[0].style_ref, 3);
+        assert_eq!(rows[0].stable_id, ANN_ID_PREFIX | (1 << 40) | 7);
+        assert_eq!(
+            (rows[0].x0, rows[0].y0, rows[1].x0, rows[1].y0),
+            (1.5, 10.0, 1.5, 20.0)
+        );
+    }
+
+    #[test]
+    fn y_band_uses_tag_four_and_spans_x_domain() {
+        let rows = pack_annotation_marks(
+            &[ann_row(ANN_KIND_BAND, ANN_AXIS_Y, 0, 1, 2, 3.0, 5.0, 0.0)],
+            0.0,
+            10.0,
+            -1.0,
+            1.0,
+        )
+        .unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].kind, KIND_RECT);
+        assert_eq!(rows[0].stable_id, ANN_ID_PREFIX | (4 << 40) | 2);
+        assert_eq!(
+            (rows[0].x0, rows[0].y0, rows[0].x1, rows[0].y1),
+            (0.0, 3.0, 10.0, 5.0)
+        );
+    }
+
+    #[test]
+    fn marker_keeps_authored_point_size_and_symbol() {
+        let rows = pack_annotation_marks(
+            &[ann_row(ANN_KIND_MARKER, 0, 4, 8, 9, 1.0, 2.0, 6.0)],
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+        )
+        .unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].kind, KIND_SCATTER);
+        assert_eq!(rows[0].symbol, 4);
+        assert_eq!(rows[0].diameter, 6.0);
+        assert_eq!(rows[0].stable_id, ANN_ID_PREFIX | (3 << 40) | 9);
+        assert_eq!((rows[0].x0, rows[0].y0), (1.0, 2.0));
+    }
+
+    #[test]
+    fn annotation_marks_reject_bad_kind_and_nonfinite_domain() {
+        assert_eq!(
+            pack_annotation_marks(&[ann_row(9, 0, 0, 0, 0, 0.0, 0.0, 1.0)], 0.0, 1.0, 0.0, 1.0),
+            Err(PackError::Length)
+        );
+        assert_eq!(
+            pack_annotation_marks(
+                &[ann_row(ANN_KIND_RULE, 0, 0, 0, 0, 0.0, 0.0, 0.0)],
+                0.0,
+                f64::NAN,
+                0.0,
+                1.0
+            ),
             Err(PackError::NonFinite)
         );
     }

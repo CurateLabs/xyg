@@ -110,7 +110,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 115;
+pub const ABI_VERSION: u32 = 116;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -386,6 +386,66 @@ pub unsafe extern "C" fn xyg_scene_pack_trace(
                     std::slice::from_raw_parts_mut(out, out_cap)
                 };
                 match scene_pack::encode_packed_rows(&rows, dest) {
+                    Ok(count) => count,
+                    Err(error) => -(error as i32),
+                }
+            }
+            Err(error) => -(error as i32),
+        }
+    })
+}
+
+/// Expand packed rule/band/marker annotation scalars into Scene rows.
+///
+/// Hosts pass a table of 40-byte rows (kind, axis, symbol, style ref, index,
+/// value0, value1, size) plus the primary x/y domains. Rust owns stable-id
+/// tags, domain spanning, and finite rejection. Returns the row count on
+/// success. `-1` malformed, `-3` over the mark budget, `-4` when `out` is too
+/// small, `-5` when a required coordinate is non-finite.
+///
+/// Output records match `xyg_scene_pack_trace` (56 bytes each).
+///
+/// # Safety
+/// `rows` addresses `rows_len` readable bytes when `rows_len` is non-zero.
+/// When `out_cap` is non-zero, `out` must address that many writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_pack_annotation_marks(
+    rows: *const u8,
+    rows_len: usize,
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if (rows_len > 0 && rows.is_null()) || (out_cap > 0 && out.is_null()) {
+        return -(PackError::Length as i32);
+    }
+    ffi_guard(-(PackError::Length as i32), || {
+        let bytes = if rows_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(rows, rows_len)
+        };
+        let parsed = match scene_pack::parse_annotation_mark_rows(bytes) {
+            Ok(value) => value,
+            Err(error) => return -(error as i32),
+        };
+        match scene_pack::pack_annotation_marks(&parsed, x0, x1, y0, y1) {
+            Ok(packed) => {
+                let needed = packed
+                    .len()
+                    .saturating_mul(scene_pack::PACKED_SCENE_ROW_BYTES);
+                if needed > out_cap {
+                    return -(PackError::Output as i32);
+                }
+                let dest = if out_cap == 0 {
+                    &mut []
+                } else {
+                    std::slice::from_raw_parts_mut(out, out_cap)
+                };
+                match scene_pack::encode_packed_rows(&packed, dest) {
                     Ok(count) => count,
                     Err(error) => -(error as i32),
                 }

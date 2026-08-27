@@ -1,4 +1,4 @@
-"""Rust-owned Scene CSS, packing, chrome, legend, colorbar, and annotations (ABI 107–112)."""
+"""Rust-owned Scene CSS, packing, chrome, legend, colorbar, and annotations (ABI 107–112, 116)."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ import pytest
 from xyg._figure import Figure
 from xyg._native import (
     css_color_rgba,
+    scene_pack_annotation_marks,
     scene_pack_annotations,
     scene_pack_colorbar,
     scene_pack_legend,
@@ -111,6 +112,87 @@ def test_pack_trace_heatmap_frames_extent_then_shape() -> None:
 def test_pack_trace_rejects_nonfinite_coordinates() -> None:
     with pytest.raises(ValueError, match="missing-data"):
         scene_pack_trace(1, [[0.0, float("nan")], [1.0, 2.0]])
+
+
+def _annotation_mark_row(
+    kind: int,
+    axis: int,
+    symbol: int,
+    style_ref: int,
+    index: int,
+    value0: float,
+    value1: float,
+    size: float,
+) -> bytes:
+    return struct.pack(
+        "<BBBBIIxxxxddd",
+        kind,
+        axis,
+        symbol,
+        0,
+        style_ref,
+        index,
+        value0,
+        value1,
+        size,
+    )
+
+
+def test_pack_annotation_marks_rule_spans_the_opposite_axis() -> None:
+    kinds, ids, refs, diameters, symbols, modes, coords = scene_pack_annotation_marks(
+        _annotation_mark_row(1, 0, 0, 3, 7, 1.5, 0.0, 0.0),
+        x_domain=(0.0, 4.0),
+        y_domain=(10.0, 20.0),
+    )
+    assert list(kinds) == [1, 1]
+    assert list(ids) == [0x5859000000000000 | (1 << 40) | 7] * 2
+    assert list(refs) == [3, 3]
+    assert list(modes) == [0, 0]
+    assert coords[0].tolist() == [1.5, 1.5]
+    assert coords[1].tolist() == [10.0, 20.0]
+
+
+def test_pack_annotation_marks_y_band_uses_tag_four() -> None:
+    kinds, ids, refs, diameters, symbols, modes, coords = scene_pack_annotation_marks(
+        _annotation_mark_row(2, 1, 0, 1, 2, 3.0, 5.0, 0.0),
+        x_domain=(0.0, 10.0),
+        y_domain=(-1.0, 1.0),
+    )
+    assert list(kinds) == [2]
+    assert list(ids) == [0x5859000000000000 | (4 << 40) | 2]
+    assert coords[0].tolist() == [0.0]
+    assert coords[1].tolist() == [3.0]
+    assert coords[2].tolist() == [10.0]
+    assert coords[3].tolist() == [5.0]
+
+
+def test_pack_annotation_marks_marker_keeps_point_size_and_symbol() -> None:
+    kinds, ids, refs, diameters, symbols, modes, coords = scene_pack_annotation_marks(
+        _annotation_mark_row(3, 0, 4, 8, 9, 1.0, 2.0, 6.0),
+        x_domain=(0.0, 1.0),
+        y_domain=(0.0, 1.0),
+    )
+    assert list(kinds) == [0]
+    assert list(symbols) == [4]
+    assert list(diameters) == [6.0]
+    assert list(ids) == [0x5859000000000000 | (3 << 40) | 9]
+    assert coords[0].tolist() == [1.0]
+    assert coords[1].tolist() == [2.0]
+
+
+def test_pack_annotation_marks_rejects_bad_kind_and_nonfinite_domain() -> None:
+    with pytest.raises(ValueError, match="invalid scene annotation packing"):
+        scene_pack_annotation_marks(
+            _annotation_mark_row(9, 0, 0, 0, 0, 0.0, 0.0, 1.0),
+            x_domain=(0.0, 1.0),
+            y_domain=(0.0, 1.0),
+        )
+    with pytest.raises(ValueError, match="must be finite"):
+        scene_pack_annotation_marks(
+            _annotation_mark_row(1, 0, 0, 0, 0, 0.0, 0.0, 0.0),
+            x_domain=(0.0, float("nan")),
+            y_domain=(0.0, 1.0),
+        )
 
 
 def test_pack_legend_frames_xylg_header_and_label() -> None:

@@ -36,9 +36,9 @@ def test_host_declarations_match_rust_symbol_set() -> None:
     assert errors == []
 
 
-def test_abi_version_is_115() -> None:
+def test_abi_version_is_116() -> None:
     manifest = gen_abi_manifest.generate_manifest()
-    assert manifest["abi_version"] == 115
+    assert manifest["abi_version"] == 116
     assert manifest["artifact"] == "xyg_core"
     assert all(item["name"].startswith("xyg_") for item in manifest["symbols"])
     assert any(item["name"] == "xyg_abi_version" for item in manifest["symbols"])
@@ -51,6 +51,7 @@ def test_abi_version_is_115() -> None:
     assert "xyg_encode_jpeg" in names
     assert "xyg_encode_webp" in names
     assert "xyg_encode_png" in names
+    assert "xyg_scene_pack_annotation_marks" in names
     assert {
         "xyg_chunked_columns_cancel_before",
         "xyg_chunked_columns_free",

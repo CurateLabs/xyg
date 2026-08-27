@@ -1984,6 +1984,47 @@ def scene_pack_trace(
         )
     if code < 0:
         raise ValueError("invalid scene trace packing")
+    return _decode_packed_scene_rows(out, code)
+
+
+def scene_pack_annotation_marks(
+    rows: bytes,
+    *,
+    x_domain: tuple[float, float],
+    y_domain: tuple[float, float],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Expand packed rule/band/marker scalars into Scene rows.
+
+    Rust owns stable-id tags, domain spanning, and finite rejection (M2 #271).
+    """
+    payload = rows if isinstance(rows, (bytes, bytearray, memoryview)) else bytes(rows)
+    n_in = len(payload) // 40
+    out = np.zeros(max(n_in * 2, 1) * 56, dtype=np.uint8)
+    source = np.frombuffer(payload, dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    x0, x1 = (float(v) for v in x_domain)
+    y0, y1 = (float(v) for v in y_domain)
+    code = int(
+        _lib.xyg_scene_pack_annotation_marks(
+            _ptr_u8(source) if source.size else 0,
+            int(source.size),
+            x0,
+            x1,
+            y0,
+            y1,
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if code == -5:
+        raise ValueError("Scene v12 annotation geometry must be finite")
+    if code < 0:
+        raise ValueError("invalid scene annotation packing")
+    return _decode_packed_scene_rows(out, code)
+
+
+def _decode_packed_scene_rows(
+    out: np.ndarray, code: int
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     empty_u8 = np.empty(0, dtype=np.uint8)
     empty_u64 = np.empty(0, dtype=np.uint64)
     empty_u32 = np.empty(0, dtype=np.uint32)
