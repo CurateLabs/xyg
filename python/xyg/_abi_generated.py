@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 135
-SIGNATURE_SHA256 = "c98de964569753217125d2f04e845f4c4d3336b55151624a92b91fed20fd90d0"
+ABI_VERSION = 136
+SIGNATURE_SHA256 = "59c977cb0c023365835435fac9bfa660911e7c49f0b6d944efc8d57b614b3ae4"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -670,6 +670,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_pack_legend
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_uint8, ctypes.c_uint8, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_pack_product(const uint8_t * kind, size_t kind_len, uint8_t flags, uint8_t step_mode, uint8_t symbol, uint32_t style_ref, uint64_t trace_id, double diameter, double extra0, double extra1, const double * col0, size_t n0, const double * col1, size_t n1, const double * col2, size_t n2, const double * col3, size_t n3, const double * col4, size_t n4, const double * col5, size_t n5, const double * col6, size_t n6, uint8_t * out, size_t out_cap)
+    function = lib.xyg_scene_pack_product
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint8, ctypes.c_uint8, ctypes.c_uint8, ctypes.c_uint32, ctypes.c_uint64, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_scene_pack_trace(uint8_t pack_kind, uint8_t flags, uint8_t step_mode, uint8_t symbol, uint32_t style_ref, uint64_t trace_id, double diameter, double extra0, double extra1, const double * col0, size_t n0, const double * col1, size_t n1, const double * col2, size_t n2, const double * col3, size_t n3, const double * col4, size_t n4, const double * col5, size_t n5, uint8_t * out, size_t out_cap)
     function = lib.xyg_scene_pack_trace
     function.restype = ctypes.c_int32
@@ -694,6 +698,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_resolve_mark_styles
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_resolve_pack_kind(const uint8_t * kind, size_t kind_len, uint8_t flags)
+    function = lib.xyg_scene_resolve_pack_kind
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint8]
     # int32_t xyg_scene_scale_map(const double * values, size_t len, uint32_t kind, uint32_t operation, double lo, double hi, double px0, double px1, double constant, int32_t mask_nonpositive, double * out)
     function = lib.xyg_scene_scale_map
     function.restype = ctypes.c_int32

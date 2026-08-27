@@ -121,7 +121,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 135;
+pub const ABI_VERSION: u32 = 136;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -421,6 +421,178 @@ pub unsafe extern "C" fn xyg_scene_pack_trace(
             extra0,
             extra1,
             columns: &columns,
+        }) {
+            Ok(rows) => {
+                let needed = rows
+                    .len()
+                    .saturating_mul(scene_pack::PACKED_SCENE_ROW_BYTES);
+                if needed > out_cap {
+                    return -(PackError::Output as i32);
+                }
+                let dest = if out_cap == 0 {
+                    &mut []
+                } else {
+                    std::slice::from_raw_parts_mut(out, out_cap)
+                };
+                match scene_pack::encode_packed_rows(&rows, dest) {
+                    Ok(count) => count,
+                    Err(error) => -(error as i32),
+                }
+            }
+            Err(error) => -(error as i32),
+        }
+    })
+}
+
+/// Map a public product kind name plus packing flags to a compact pack kind.
+///
+/// Hosts pass the authored trace kind (`scatter`, `heatmap`, `column`, …) and
+/// optional flags (`FLAG_STROKE_PERIMETER`, `FLAG_HEATMAP_PAINTED`). Rust owns
+/// the kind → pack-kind table so Python and Node cannot drift. Returns the
+/// pack kind `0..=9` on success. `-1` malformed flags or flag/kind mismatch,
+/// `-6` unknown product kind.
+///
+/// # Safety
+/// When `kind_len` is non-zero, `kind` must address that many readable UTF-8
+/// bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_resolve_pack_kind(
+    kind: *const u8,
+    kind_len: usize,
+    flags: u8,
+) -> i32 {
+    if kind_len > 0 && kind.is_null() {
+        return -(PackError::Length as i32);
+    }
+    ffi_guard(-(PackError::Length as i32), || {
+        let name = if kind_len == 0 {
+            ""
+        } else {
+            let Some(text) = read_utf8(kind, kind_len) else {
+                return -(PackError::Length as i32);
+            };
+            text
+        };
+        match scene_pack::resolve_pack_kind(name, flags) {
+            Ok(pack_kind) => i32::from(pack_kind),
+            Err(error) => -(error as i32),
+        }
+    })
+}
+
+/// Pack one Figure trace from the canonical product-kind column envelope.
+///
+/// Hosts pass the authored kind name plus unused-ok columns `x`, `y`, `x0`,
+/// `y0`, `x1`, `y1`, and `base`. Rust maps the kind onto pack-kind and column
+/// order, including heatmap extent from two-point `x`/`y` ranges. Returns the
+/// row count on success. `-1` malformed, `-3` over the mark budget, `-4` when
+/// `out` is too small, `-5` when a required coordinate is non-finite, `-6`
+/// unknown product kind.
+///
+/// Output records match `xyg_scene_pack_trace` (56 bytes each).
+///
+/// # Safety
+/// Each non-zero `nK` requires `colK` to address that many readable f64s.
+/// When `kind_len` is non-zero, `kind` must address that many readable UTF-8
+/// bytes. When `out_cap` is non-zero, `out` must address that many writable
+/// bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_pack_product(
+    kind: *const u8,
+    kind_len: usize,
+    flags: u8,
+    step_mode: u8,
+    symbol: u8,
+    style_ref: u32,
+    trace_id: u64,
+    diameter: f64,
+    extra0: f64,
+    extra1: f64,
+    col0: *const f64,
+    n0: usize,
+    col1: *const f64,
+    n1: usize,
+    col2: *const f64,
+    n2: usize,
+    col3: *const f64,
+    n3: usize,
+    col4: *const f64,
+    n4: usize,
+    col5: *const f64,
+    n5: usize,
+    col6: *const f64,
+    n6: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if (kind_len > 0 && kind.is_null()) || (out_cap > 0 && out.is_null()) {
+        return -(PackError::Length as i32);
+    }
+    ffi_guard(-(PackError::Length as i32), || {
+        let name = if kind_len == 0 {
+            ""
+        } else {
+            let Some(text) = read_utf8(kind, kind_len) else {
+                return -(PackError::Length as i32);
+            };
+            text
+        };
+        let slice = |ptr: *const f64, n: usize| -> Result<&[f64], i32> {
+            if n == 0 {
+                Ok(&[])
+            } else if ptr.is_null() {
+                Err(-(PackError::Length as i32))
+            } else {
+                Ok(std::slice::from_raw_parts(ptr, n))
+            }
+        };
+        let columns = [
+            match slice(col0, n0) {
+                Ok(value) => value,
+                Err(code) => return code,
+            },
+            match slice(col1, n1) {
+                Ok(value) => value,
+                Err(code) => return code,
+            },
+            match slice(col2, n2) {
+                Ok(value) => value,
+                Err(code) => return code,
+            },
+            match slice(col3, n3) {
+                Ok(value) => value,
+                Err(code) => return code,
+            },
+            match slice(col4, n4) {
+                Ok(value) => value,
+                Err(code) => return code,
+            },
+            match slice(col5, n5) {
+                Ok(value) => value,
+                Err(code) => return code,
+            },
+            match slice(col6, n6) {
+                Ok(value) => value,
+                Err(code) => return code,
+            },
+        ];
+        match scene_pack::pack_product(scene_pack::ProductPackInput {
+            kind: name,
+            flags,
+            step_mode,
+            symbol,
+            style_ref,
+            trace_id,
+            diameter,
+            extra0,
+            extra1,
+            x: columns[0],
+            y: columns[1],
+            x0: columns[2],
+            y0: columns[3],
+            x1: columns[4],
+            y1: columns[5],
+            base: columns[6],
         }) {
             Ok(rows) => {
                 let needed = rows
@@ -13733,6 +13905,95 @@ mod tests {
         };
         assert_eq!(unknown, viridis);
         assert!(unknown > 0);
+    }
+
+    #[test]
+    fn scene_pack_product_resolves_kind_and_heatmap_envelope() {
+        let kind = b"heatmap";
+        assert_eq!(
+            unsafe { xyg_scene_resolve_pack_kind(kind.as_ptr(), kind.len(), 0) },
+            7
+        );
+        assert_eq!(
+            unsafe { xyg_scene_resolve_pack_kind(kind.as_ptr(), kind.len(), 1 << 1) },
+            9
+        );
+        let unknown = b"density";
+        assert_eq!(
+            unsafe { xyg_scene_resolve_pack_kind(unknown.as_ptr(), unknown.len(), 0) },
+            -6
+        );
+        let x = [1.0_f64, 3.0];
+        let y = [2.0_f64, 4.0];
+        let mut out = [0u8; 112];
+        let scatter = b"scatter";
+        let sx = [0.0_f64, 1.0];
+        let sy = [2.0_f64, 3.0];
+        let code = unsafe {
+            xyg_scene_pack_product(
+                scatter.as_ptr(),
+                scatter.len(),
+                0,
+                0,
+                4,
+                1,
+                7,
+                6.0,
+                0.0,
+                0.0,
+                sx.as_ptr(),
+                sx.len(),
+                sy.as_ptr(),
+                sy.len(),
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                out.as_mut_ptr(),
+                out.len(),
+            )
+        };
+        assert_eq!(code, 2);
+        assert_eq!(out[0], 0);
+        assert_eq!(out[1], 4);
+        let heatmap_code = unsafe {
+            xyg_scene_pack_product(
+                kind.as_ptr(),
+                kind.len(),
+                1 << 1,
+                0,
+                0,
+                9,
+                11,
+                0.0,
+                2.0,
+                3.0,
+                x.as_ptr(),
+                x.len(),
+                y.as_ptr(),
+                y.len(),
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                out.as_mut_ptr(),
+                out.len(),
+            )
+        };
+        assert_eq!(heatmap_code, 2);
+        assert_eq!(out[2], 9);
     }
 
     #[test]

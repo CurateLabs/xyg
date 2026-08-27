@@ -172,8 +172,9 @@ crates/
     scene_pack.rs       # compact Figure→Scene row packing (ABI 109): record
                         #   kinds, stable-id splitting, expansion modes,
                         #   ribbon/triangle doubling, heatmap lattice framing,
-                        #   finite-coordinate rejection, and ABI 116
-                        #   rule/band/marker domain expansion.
+                        #   finite-coordinate rejection, ABI 116
+                        #   rule/band/marker domain expansion, and ABI 136
+                        #   product-kind → pack-kind mapping.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -619,6 +620,9 @@ ABI v109 adds `xyg_scene_pack_trace` so Python and Node share one
 Figure→Scene row packer: record kinds, stable-id splitting, expansion
 modes, ribbon/triangle doubling, heatmap lattice framing, and
 finite-coordinate rejection.
+ABI v136 adds `xyg_scene_resolve_pack_kind` / `xyg_scene_pack_product` so
+Python and Node share one product-kind packer: kind → pack-kind mapping,
+heatmap painted-vs-lattice flags, and canonical column remapping.
 ABI v116 adds `xyg_scene_pack_annotation_marks` so Python and Node share
 one rule/band/marker expander: stable-id tags, opposite-axis domain
 spanning, and finite rejection.
@@ -682,5 +686,7 @@ landed; the remainder, in order:
    `xyg_colormap_rgba` / `xyg_colormap_rgba_canonical` ✅; ABI 133
    polar Scene v26 compile via XYPL on `xyg_scene_batch_encode` (`polar.rs` +
    `scene.rs`) ✅; ABI 134 `HeatmapPainted=9` + XYHP paint intern (`scene.rs`) ✅;
-   ABI 135 named colormap tables (`xyg_colormap_stops`, XYHP paint kind 2) ✅.
+   ABI 135 named colormap tables (`xyg_colormap_stops`, XYHP paint kind 2) ✅;
+   ABI 136 product-kind packing (`xyg_scene_resolve_pack_kind` /
+   `xyg_scene_pack_product`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

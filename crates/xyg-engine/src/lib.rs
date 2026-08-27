@@ -49,7 +49,7 @@ mod scene_export;
 pub mod webp;
 pub use scene_export::{scene_figure_support_reason, scene_public_export_reason};
 pub mod scene_pack;
-pub use scene_pack::pack_trace;
+pub use scene_pack::{pack_product, pack_trace, resolve_pack_kind};
 pub mod scene_legend;
 pub use scene_legend::pack_legend;
 pub mod scene_colorbar;

@@ -1422,7 +1422,10 @@ existing Scene Rect records; polar Scene tessellates those Rects to PolyFill
 annular sectors. ABI 134 `HeatmapPainted` moves scalar colormap and truecolor
 tessellation plus style intern into Rust: hosts pack an XYHP plane, Rust emits
 per-cell literal Rect fills. ABI 135 named colormap tables live in Rust
-(`xyg_colormap_stops`, XYHP paint kind 2). Irregular
+(`xyg_colormap_stops`, XYHP paint kind 2). ABI 136 product-kind packing
+(`xyg_scene_resolve_pack_kind` / `xyg_scene_pack_product`) maps authored
+kinds onto compact pack kinds so hosts no longer dispatch pack-kind locally.
+Irregular
 spacing, and LOD stay compatibility.
 
 Contract-wide invariants: every tier transition is hysteresis-guarded and logged

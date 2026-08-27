@@ -506,8 +506,20 @@ _KIND_CODES = {
 }
 
 
+_PACK_FLAG_STROKE_PERIMETER = 1
+_PACK_FLAG_HEATMAP_PAINTED = 2
+
+
 class UnsupportedSceneV3(ValueError):
     """The figure uses a feature outside the currently migrated Scene subset."""
+
+
+def _trace_column(trace: Any, name: str) -> np.ndarray | None:
+    """Return one authored f64 column, or None when the host did not set it."""
+    value = getattr(trace, name, None)
+    if value is None:
+        return None
+    return np.asarray(getattr(value, "values", value), dtype=np.float64)
 
 
 def _append_packed(
@@ -518,11 +530,19 @@ def _append_packed(
     symbols: list[int],
     expansion_modes: list[int],
     coordinates: list[list[float]],
-    pack_kind: int,
-    columns: list[Any],
+    trace: Any,
     **kwargs: Any,
 ) -> None:
-    """Append Rust-packed Scene rows for one trace's geometry columns."""
+    """Append Rust-packed Scene rows for one product-kind geometry envelope."""
+    columns = [
+        _trace_column(trace, "x"),
+        _trace_column(trace, "y"),
+        _trace_column(trace, "x0"),
+        _trace_column(trace, "y0"),
+        _trace_column(trace, "x1"),
+        _trace_column(trace, "y1"),
+        _trace_column(trace, "base"),
+    ]
     try:
         (
             packed_kinds,
@@ -532,7 +552,7 @@ def _append_packed(
             packed_symbols,
             packed_modes,
             coords,
-        ) = _native.scene_pack_trace(pack_kind, columns, **kwargs)
+        ) = _native.scene_pack_product(str(trace.kind), columns, **kwargs)
     except ValueError as error:
         raise UnsupportedSceneV3(str(error)) from error
     kinds.extend(int(value) for value in packed_kinds)
@@ -903,26 +923,6 @@ def _figure_trace_support_flags(trace: Any) -> tuple[int, str]:
     return flags, kind
 
 
-def _rect_columns(trace: Any) -> list[np.ndarray]:
-    if any(value is None for value in (trace.x0, trace.y0, trace.x1, trace.y1)):
-        raise ValueError(f"{trace.kind} Scene v12 compilation requires four rectangle columns")
-    arrays = [trace.x0.values, trace.y0.values, trace.x1.values, trace.y1.values]
-    lengths = {len(column) for column in arrays}
-    if len(lengths) != 1:
-        raise UnsupportedSceneV3(f"Scene v12 {trace.kind} rectangle columns must have equal length")
-    return arrays
-
-
-def _segment_columns(trace: Any) -> list[np.ndarray]:
-    if any(value is None for value in (trace.x0, trace.y0, trace.x1, trace.y1)):
-        raise ValueError(f"{trace.kind} Scene v12 compilation requires four endpoint columns")
-    arrays = [trace.x0.values, trace.y0.values, trace.x1.values, trace.y1.values]
-    lengths = {len(column) for column in arrays}
-    if len(lengths) != 1:
-        raise UnsupportedSceneV3(f"Scene v12 {trace.kind} endpoint columns must have equal length")
-    return arrays
-
-
 def _hexbin_pitch(style: dict[str, Any]) -> tuple[float, float]:
     """Return the finite data-space hex cell pitch, or fail closed."""
     raw_dx = style.get("hex_dx", style.get("dx"))
@@ -1076,17 +1076,6 @@ def _pack_scene_extras(polar: bytes, paint: bytes) -> bytes:
     return struct.pack("<4sIII", b"XYEX", 1, len(polar), len(paint)) + polar + paint
 
 
-def _band_columns(trace: Any) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    if trace.x is None or trace.y is None or trace.base is None:
-        raise ValueError(f"{trace.kind} Scene v12 compilation requires x, y, and base columns")
-    xv = np.asarray(trace.x.values, dtype=np.float64)
-    yv = np.asarray(trace.y.values, dtype=np.float64)
-    base = np.asarray(trace.base.values, dtype=np.float64)
-    if not (len(xv) == len(yv) == len(base)):
-        raise UnsupportedSceneV3(f"Scene v12 {trace.kind} band columns must have equal length")
-    return xv, yv, base
-
-
 def figure_scene(
     figure: Any,
     *,
@@ -1158,93 +1147,11 @@ def figure_scene(
                 )
             )
 
-        if trace.kind in _RIBBON_KINDS:
-            if any(
-                value is None
-                for value in (trace.x0, trace.x1, trace.y0, trace.y1, trace.x, trace.y)
-            ):
-                raise ValueError("ribbon Scene v12 compilation requires six geometry columns")
-            columns = [
-                np.asarray(trace.x0.values, dtype=np.float64),
-                np.asarray(trace.x1.values, dtype=np.float64),
-                np.asarray(trace.y0.values, dtype=np.float64),
-                np.asarray(trace.y1.values, dtype=np.float64),
-                np.asarray(trace.x.values, dtype=np.float64),
-                np.asarray(trace.y.values, dtype=np.float64),
-            ]
-            if len({len(column) for column in columns}) != 1:
-                raise UnsupportedSceneV3("Scene v12 ribbon columns must have equal length")
-            _append_packed(
-                kinds,
-                stable_ids,
-                style_refs,
-                diameters,
-                symbols,
-                expansion_modes,
-                coordinates,
-                4,
-                columns,
-                style_ref=style_ref,
-                trace_id=int(trace.id),
-            )
-            continue
-
-        if trace.kind in _POLYFILL_KINDS:
-            if any(
-                value is None
-                for value in (trace.x0, trace.y0, trace.x1, trace.y1, trace.x, trace.y)
-            ):
-                raise ValueError("triangle_mesh Scene v12 compilation requires six vertex columns")
-            columns = [
-                np.asarray(trace.x0.values, dtype=np.float64),
-                np.asarray(trace.y0.values, dtype=np.float64),
-                np.asarray(trace.x1.values, dtype=np.float64),
-                np.asarray(trace.y1.values, dtype=np.float64),
-                np.asarray(trace.x.values, dtype=np.float64),
-                np.asarray(trace.y.values, dtype=np.float64),
-            ]
-            if len({len(column) for column in columns}) != 1:
-                raise UnsupportedSceneV3("Scene v12 triangle_mesh columns must have equal length")
-            _append_packed(
-                kinds,
-                stable_ids,
-                style_refs,
-                diameters,
-                symbols,
-                expansion_modes,
-                coordinates,
-                5,
-                columns,
-                style_ref=style_ref,
-                trace_id=int(trace.id),
-            )
-            continue
-
-        if trace.kind in _HEXBIN_KINDS:
-            if trace.x is None or trace.y is None:
-                raise ValueError("hexbin Scene v12 compilation requires center columns")
-            xv = np.asarray(trace.x.values, dtype=np.float64)
-            yv = np.asarray(trace.y.values, dtype=np.float64)
-            if len(xv) != len(yv):
-                raise UnsupportedSceneV3("Scene v12 hexbin columns must have equal length")
-            dx, dy = _hexbin_pitch(style)
-            _append_packed(
-                kinds,
-                stable_ids,
-                style_refs,
-                diameters,
-                symbols,
-                expansion_modes,
-                coordinates,
-                6,
-                [xv, yv],
-                style_ref=style_ref,
-                trace_id=int(trace.id),
-                extra0=dx,
-                extra1=dy,
-            )
-            continue
-
+        flags = 0
+        extra0 = extra1 = 0.0
+        step_mode = 0
+        pack_symbol = 0
+        pack_diameter = 0.0
         if trace.kind in _HEATMAP_KINDS:
             rows, cols = _heatmap_shape(trace)
             values = _heatmap_grid_values(trace)
@@ -1254,119 +1161,29 @@ def figure_scene(
                 raise UnsupportedSceneV3(
                     "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
                 )
-            x0, x1, y0, y1 = _heatmap_extent(trace)
+            extra0, extra1 = float(rows), float(cols)
             if _heatmap_tessellates_cell_fills(trace):
                 heatmap_paint_planes.append(
                     _heatmap_paint_plane(trace, values, rows, cols, int(trace.id))
                 )
-                _append_packed(
-                    kinds,
-                    stable_ids,
-                    style_refs,
-                    diameters,
-                    symbols,
-                    expansion_modes,
-                    coordinates,
-                    9,
-                    [
-                        np.asarray([x0], dtype=np.float64),
-                        np.asarray([y0], dtype=np.float64),
-                        np.asarray([x1], dtype=np.float64),
-                        np.asarray([y1], dtype=np.float64),
-                    ],
-                    style_ref=style_ref,
-                    trace_id=int(trace.id),
-                    extra0=float(rows),
-                    extra1=float(cols),
-                )
-                continue
-            _append_packed(
-                kinds,
-                stable_ids,
-                style_refs,
-                diameters,
-                symbols,
-                expansion_modes,
-                coordinates,
-                7,
-                [
-                    np.asarray([x0], dtype=np.float64),
-                    np.asarray([y0], dtype=np.float64),
-                    np.asarray([x1], dtype=np.float64),
-                    np.asarray([y1], dtype=np.float64),
-                ],
-                style_ref=style_ref,
-                trace_id=int(trace.id),
-                extra0=float(rows),
-                extra1=float(cols),
-            )
-            continue
-
-        if trace.kind in _BAND_KINDS:
-            xv, yv, base = _band_columns(trace)
+                flags |= _PACK_FLAG_HEATMAP_PAINTED
+        elif trace.kind in _HEXBIN_KINDS:
+            extra0, extra1 = _hexbin_pitch(style)
+        elif trace.kind in _BAND_KINDS:
             stroke_perimeter = style.get("stroke_perimeter", False)
             if not isinstance(stroke_perimeter, bool):
                 raise UnsupportedSceneV3("Scene v25 area stroke_perimeter must be a boolean")
-            _append_packed(
-                kinds,
-                stable_ids,
-                style_refs,
-                diameters,
-                symbols,
-                expansion_modes,
-                coordinates,
-                3,
-                [xv, yv, base],
-                flags=1 if stroke_perimeter else 0,
-                style_ref=style_ref,
-                trace_id=int(trace.id),
-            )
-            continue
-
-        if trace.kind in _RECT_KINDS:
-            arrays = _rect_columns(trace)
-            _append_packed(
-                kinds,
-                stable_ids,
-                style_refs,
-                diameters,
-                symbols,
-                expansion_modes,
-                coordinates,
-                2,
-                arrays,
-                style_ref=style_ref,
-                trace_id=int(trace.id),
-            )
-            continue
-
-        if trace.kind in _SEGMENT_KINDS:
-            arrays = _segment_columns(trace)
-            _append_packed(
-                kinds,
-                stable_ids,
-                style_refs,
-                diameters,
-                symbols,
-                expansion_modes,
-                coordinates,
-                8,
-                arrays,
-                style_ref=style_ref,
-                trace_id=int(trace.id),
-            )
-            continue
-
-        xv = np.asarray(trace.x.values, dtype=np.float64)
-        yv = np.asarray(trace.y.values, dtype=np.float64)
-        where = style.get("step")
-        step_mode = 0
-        if where is not None:
-            if trace.kind != "line":
-                raise UnsupportedSceneV3("Scene v12 step expansion applies only to line traces")
-            if where not in {"pre", "post", "mid"}:
-                raise UnsupportedSceneV3(f"Scene v12 does not support step mode {where!r}")
-            step_mode = {"pre": 1, "mid": 2, "post": 3}[where]
+            if stroke_perimeter:
+                flags |= _PACK_FLAG_STROKE_PERIMETER
+        elif trace.kind == "line":
+            where = style.get("step")
+            if where is not None:
+                if where not in {"pre", "post", "mid"}:
+                    raise UnsupportedSceneV3(f"Scene v12 does not support step mode {where!r}")
+                step_mode = {"pre": 1, "mid": 2, "post": 3}[where]
+        elif trace.kind == "scatter":
+            pack_symbol = _SYMBOL_CODES[symbol_name]
+            pack_diameter = diameter
         _append_packed(
             kinds,
             stable_ids,
@@ -1375,13 +1192,15 @@ def figure_scene(
             symbols,
             expansion_modes,
             coordinates,
-            0 if trace.kind == "scatter" else 1,
-            [xv, yv],
+            trace,
+            flags=flags,
             step_mode=step_mode,
-            symbol=_SYMBOL_CODES[symbol_name] if trace.kind == "scatter" else 0,
+            symbol=pack_symbol,
             style_ref=style_ref,
             trace_id=int(trace.id),
-            diameter=diameter if trace.kind == "scatter" else 0.0,
+            diameter=pack_diameter,
+            extra0=extra0,
+            extra1=extra1,
         )
 
     # Scene v12's bounded primary-annotation subset is represented by ordinary

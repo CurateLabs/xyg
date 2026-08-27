@@ -1105,7 +1105,7 @@ def test_python_scene_rejects_unequal_rect_columns() -> None:
     figure.axis_options["y"]["domain"] = (0.0, 2.0)
     figure.bar([0, 1], [1, 2])
     figure.traces[0].x1 = figure.store.ingest([0.5])  # length mismatch vs x0
-    with pytest.raises(UnsupportedSceneV3, match="equal length"):
+    with pytest.raises(UnsupportedSceneV3, match="invalid scene trace packing"):
         figure.to_scene()
 
 

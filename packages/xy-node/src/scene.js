@@ -36,7 +36,7 @@ import {
   xyScenePlotLayout,
   xyScenePublicExportReason,
   xySceneFigureSupportReason,
-  xyScenePackTrace,
+  xyScenePackProduct,
   xyScenePackAnnotationMarks,
   xySceneRasterCommands,
   xySceneResolveChromeStyle,
@@ -71,29 +71,9 @@ function columnArg(column) {
   return { ptr: f64Ptr(arr), n: arr.length, keep: arr };
 }
 
-function packTrace({
-  packKind, flags = 0, stepMode = 0, symbol = 0, styleRef = 0, traceId = 0,
-  diameter = 0, extra0 = 0, extra1 = 0, columns = [],
-}) {
-  const packedCols = [...columns];
-  while (packedCols.length < 6) packedCols.push(null);
-  const args = packedCols.slice(0, 6).map(columnArg);
-  const packedId = asU64(traceId, "stableIds value");
-  const n0 = args[0].n;
-  const nRows = packKind === 4 || packKind === 5 ? n0 * 2 : packKind === 7 || packKind === 9 ? 2 : n0;
-  const out = new Uint8Array(Math.max(nRows, 1) * 56);
-  const code = xyScenePackTrace(
-    packKind, flags, stepMode, symbol, styleRef, packedId,
-    Number(diameter), Number(extra0), Number(extra1),
-    args[0].ptr, BigInt(args[0].n),
-    args[1].ptr, BigInt(args[1].n),
-    args[2].ptr, BigInt(args[2].n),
-    args[3].ptr, BigInt(args[3].n),
-    args[4].ptr, BigInt(args[4].n),
-    args[5].ptr, BigInt(args[5].n),
-    u8Ptr(out), BigInt(out.length),
-  );
+function decodePackedRows(out, code) {
   if (code === -5) throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
+  if (code === -6) throw new RangeError("Scene v12 does not support product kind");
   if (code < 0) throw new RangeError("invalid scene trace packing");
   const view = new DataView(out.buffer, out.byteOffset, Math.max(code, 0) * 56);
   const rows = { kinds: [], stableIds: [], styleRefs: [], diameter: [], symbols: [], expansion: [], x0: [], y0: [], x1: [], y1: [] };
@@ -111,6 +91,36 @@ function packTrace({
     rows.y1.push(view.getFloat64(at + 48, true));
   }
   return rows;
+}
+
+const FLAG_STROKE_PERIMETER = 1;
+const FLAG_HEATMAP_PAINTED = 2;
+
+function packProduct({
+  kind, flags = 0, stepMode = 0, symbol = 0, styleRef = 0, traceId = 0,
+  diameter = 0, extra0 = 0, extra1 = 0, x = null, y = null, x0 = null, y0 = null,
+  x1 = null, y1 = null, base = null,
+}) {
+  const args = [x, y, x0, y0, x1, y1, base].map(columnArg);
+  const packedId = asU64(traceId, "stableIds value");
+  const nRows = Math.max(Math.max(...args.map((column) => column.n), 1) * 2, 2);
+  const out = new Uint8Array(nRows * 56);
+  const encoded = new TextEncoder().encode(String(kind));
+  const code = xyScenePackProduct(
+    encoded.length ? u8Ptr(encoded) : 0, BigInt(encoded.length),
+    flags, stepMode, symbol, styleRef, packedId,
+    Number(diameter), Number(extra0), Number(extra1),
+    args[0].ptr, BigInt(args[0].n),
+    args[1].ptr, BigInt(args[1].n),
+    args[2].ptr, BigInt(args[2].n),
+    args[3].ptr, BigInt(args[3].n),
+    args[4].ptr, BigInt(args[4].n),
+    args[5].ptr, BigInt(args[5].n),
+    args[6].ptr, BigInt(args[6].n),
+    u8Ptr(out), BigInt(out.length),
+  );
+  if (code === -6) throw new RangeError(`Scene v12 does not support product kind ${JSON.stringify(kind)}`);
+  return decodePackedRows(out, code);
 }
 
 function packAnnotationMarks(rowBytes, xDomain, yDomain) {
@@ -2640,20 +2650,6 @@ function heatmapTessellatesCellFills(trace) {
     || trace.rgba != null;
 }
 
-function requireEqualColumns(columns, kind, label) {
-  if (columns.some((column) => column == null)) {
-    throw new RangeError(`${kind} Scene v12 compilation requires four ${label} columns`);
-  }
-  const count = columns[0].length;
-  if (columns.some((column) => column.length !== count)) {
-    throw new RangeError(`Scene v12 ${kind} ${label} columns must have equal length`);
-  }
-  if (columns.some((column) => Array.from(column).some((value) => !Number.isFinite(value)))) {
-    throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
-  }
-  return count;
-}
-
 /** Compile migrated cartesian marks to Scene v12. */
 export function figureSceneV3(figure, { margins = null } = {}) {
   let encodedColorbar = new Uint8Array(), colorbarUnsupported = false;
@@ -2697,56 +2693,15 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     }
     const id = Number(trace.id);
 
-    if (RIBBON_KINDS.has(trace.kind)) {
-      if (trace.color_target != null) {
-        throw new RangeError("Scene v12 does not yet encode two-ended ribbon gradients");
-      }
-      const cols = [trace.x0, trace.x1, trace.y0, trace.y1, trace.x, trace.y];
-      if (cols.some((column) => column == null)) {
-        throw new RangeError("ribbon Scene v12 compilation requires six geometry columns");
-      }
-      const count = cols[0].length;
-      if (cols.some((column) => column.length !== count)) {
-        throw new RangeError("Scene v12 ribbon columns must have equal length");
-      }
-      appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packTrace({
-        packKind: 4, styleRef, traceId: id, columns: cols,
-      }));
-      continue;
+    if (RIBBON_KINDS.has(trace.kind) && trace.color_target != null) {
+      throw new RangeError("Scene v12 does not yet encode two-ended ribbon gradients");
     }
-
-    if (POLYFILL_KINDS.has(trace.kind)) {
-      const cols = [trace.x0, trace.y0, trace.x1, trace.y1, trace.x, trace.y];
-      if (cols.some((column) => column == null)) {
-        throw new RangeError("triangle_mesh Scene v12 compilation requires six vertex columns");
-      }
-      const count = cols[0].length;
-      if (cols.some((column) => column.length !== count)) {
-        throw new RangeError("Scene v12 triangle_mesh columns must have equal length");
-      }
-      appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packTrace({
-        packKind: 5, styleRef, traceId: id, columns: cols,
-      }));
-      continue;
-    }
-
-    if (HEXBIN_KINDS.has(trace.kind)) {
-      const xv = trace.x;
-      const yv = trace.y;
-      if (xv == null || yv == null || xv.length !== yv.length) {
-        throw new RangeError("Scene v12 hexbin columns must have equal length");
-      }
-      const dx = Number(style.hex_dx ?? style.dx);
-      const dy = Number(style.hex_dy ?? style.dy);
-      if (!Number.isFinite(dx) || !Number.isFinite(dy) || dx <= 0 || dy <= 0) {
-        throw new RangeError("Scene v12 hexbin requires finite hex_dx/hex_dy cell pitch");
-      }
-      appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packTrace({
-        packKind: 6, styleRef, traceId: id, extra0: dx, extra1: dy, columns: [xv, yv],
-      }));
-      continue;
-    }
-
+    let flags = 0;
+    let extra0 = 0;
+    let extra1 = 0;
+    let stepMode = 0;
+    let packSymbol = 0;
+    let packDiameter = 0;
     if (HEATMAP_KINDS.has(trace.kind)) {
       const shape = trace.grid_shape;
       if (shape == null || shape.length !== 2) {
@@ -2767,93 +2722,55 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       if (Array.from(grid).some((value) => !Number.isFinite(value))) {
         throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
       }
-      const xv = trace.x;
-      const yv = trace.y;
-      if (xv == null || yv == null || xv.length !== 2 || yv.length !== 2) {
-        throw new RangeError("Scene v12 heatmap range columns must be two endpoints");
-      }
-      const x0Extent = Number(xv[0]);
-      const x1Extent = Number(xv[1]);
-      const y0Extent = Number(yv[0]);
-      const y1Extent = Number(yv[1]);
-      if (
-        ![x0Extent, x1Extent, y0Extent, y1Extent].every(Number.isFinite)
-        || x0Extent >= x1Extent
-        || y0Extent >= y1Extent
-      ) {
-        throw new RangeError("Scene v12 heatmap requires a finite increasing cell extent");
-      }
+      extra0 = rows;
+      extra1 = cols;
       if (heatmapTessellatesCellFills(trace)) {
         heatmapPaintPlanes.push(heatmapPaintPlane(trace, rows, cols, id));
-        appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packTrace({
-          packKind: 9, styleRef, traceId: id, extra0: rows, extra1: cols,
-          columns: [[x0Extent], [y0Extent], [x1Extent], [y1Extent]],
-        }));
-        continue;
+        flags |= FLAG_HEATMAP_PAINTED;
       }
-      appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packTrace({
-        packKind: 7, styleRef, traceId: id, extra0: rows, extra1: cols,
-        columns: [[x0Extent], [y0Extent], [x1Extent], [y1Extent]],
-      }));
-      continue;
-    }
-
-    if (BAND_KINDS.has(trace.kind)) {
-      const xv = trace.x, yv = trace.y, base = trace.base;
-      if (xv == null || yv == null || base == null) {
-        throw new RangeError(`${trace.kind} Scene v12 compilation requires x, y, and base columns`);
+    } else if (HEXBIN_KINDS.has(trace.kind)) {
+      const dx = Number(style.hex_dx ?? style.dx);
+      const dy = Number(style.hex_dy ?? style.dy);
+      if (!Number.isFinite(dx) || !Number.isFinite(dy) || dx <= 0 || dy <= 0) {
+        throw new RangeError("Scene v12 hexbin requires finite hex_dx/hex_dy cell pitch");
       }
-      if (!(xv.length === yv.length && yv.length === base.length)) {
-        throw new RangeError(`Scene v12 ${trace.kind} band columns must have equal length`);
-      }
+      extra0 = dx;
+      extra1 = dy;
+    } else if (BAND_KINDS.has(trace.kind)) {
       const strokePerimeter = style.stroke_perimeter === undefined ? false : style.stroke_perimeter;
       if (typeof strokePerimeter !== "boolean") {
         throw new RangeError("Scene v25 area stroke_perimeter must be a boolean");
       }
-      appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packTrace({
-        packKind: 3, flags: strokePerimeter ? 1 : 0, styleRef, traceId: id, columns: [xv, yv, base],
-      }));
-      continue;
-    }
-
-    if (RECT_KINDS.has(trace.kind)) {
-      requireEqualColumns([trace.x0, trace.y0, trace.x1, trace.y1], trace.kind, "rectangle");
-      appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packTrace({
-        packKind: 2, styleRef, traceId: id, columns: [trace.x0, trace.y0, trace.x1, trace.y1],
-      }));
-      continue;
-    }
-
-    if (SEGMENT_KINDS.has(trace.kind)) {
-      requireEqualColumns([trace.x0, trace.y0, trace.x1, trace.y1], trace.kind, "endpoint");
-      appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packTrace({
-        packKind: 8, styleRef, traceId: id, columns: [trace.x0, trace.y0, trace.x1, trace.y1],
-      }));
-      continue;
-    }
-
-    let xv = trace.x;
-    let yv = trace.y;
-    const where = style.step;
-    let stepMode = 0;
-    if (where != null) {
-      if (trace.kind !== "line") throw new RangeError("Scene v12 step expansion applies only to line traces");
-      if (!["pre", "post", "mid"].includes(where)) {
-        throw new RangeError(`Scene v12 does not support step mode ${JSON.stringify(where)}`);
+      if (strokePerimeter) flags |= FLAG_STROKE_PERIMETER;
+    } else if (trace.kind === "line") {
+      const where = style.step;
+      if (where != null) {
+        if (!["pre", "post", "mid"].includes(where)) {
+          throw new RangeError(`Scene v12 does not support step mode ${JSON.stringify(where)}`);
+        }
+        stepMode = { pre: 1, mid: 2, post: 3 }[where];
       }
-      stepMode = { pre: 1, mid: 2, post: 3 }[where];
+    } else if (trace.kind === "scatter") {
+      packSymbol = sceneSymbolCode(style.symbol ?? 0);
+      packDiameter = Number(style.size ?? style.diameter ?? 4);
     }
-    if (xv == null || yv == null || xv.length !== yv.length) {
-      throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
-    }
-    appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packTrace({
-      packKind: trace.kind === "scatter" ? 0 : 1,
+    appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packProduct({
+      kind: trace.kind,
+      flags,
       stepMode,
-      symbol: trace.kind === "scatter" ? sceneSymbolCode(style.symbol ?? 0) : 0,
+      symbol: packSymbol,
       styleRef,
       traceId: id,
-      diameter: trace.kind === "scatter" ? Number(style.size ?? style.diameter ?? 4) : 0,
-      columns: [xv, yv],
+      diameter: packDiameter,
+      extra0,
+      extra1,
+      x: trace.x,
+      y: trace.y,
+      x0: trace.x0,
+      y0: trace.y0,
+      x1: trace.x1,
+      y1: trace.y1,
+      base: trace.base,
     }));
   }
 

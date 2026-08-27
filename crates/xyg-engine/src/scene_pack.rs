@@ -1,11 +1,11 @@
 //! Compact Figure→Scene row packing (M2 #271).
 //!
 //! Hosts validate authoring (axis keys, hidden traces, density, style
-//! allowlists) and pass literal columns plus kind/flags. Rust owns Scene
-//! record kinds, stable-id splitting, expansion-mode assignment, heatmap
-//! lattice framing, ribbon/triangle doubling, rule/band/marker domain
-//! spanning, and finite-coordinate rejection so Python and Node cannot
-//! drift on the packed row contract.
+//! allowlists) and pass literal columns plus product kind/flags. Rust owns
+//! product-kind → pack-kind mapping, Scene record kinds, stable-id splitting,
+//! expansion-mode assignment, heatmap lattice framing, ribbon/triangle
+//! doubling, rule/band/marker domain expansion, and finite-coordinate
+//! rejection so Python and Node cannot drift on the packed row contract.
 
 use crate::scene::MAX_SCENE_MARKS;
 
@@ -23,6 +23,8 @@ pub const PACK_SEGMENT: u8 = 8;
 pub const PACK_HEATMAP_PAINTED: u8 = 9;
 
 pub const FLAG_STROKE_PERIMETER: u8 = 1 << 0;
+pub const FLAG_HEATMAP_PAINTED: u8 = 1 << 1;
+const PACK_FLAGS: u8 = FLAG_STROKE_PERIMETER | FLAG_HEATMAP_PAINTED;
 
 const KIND_SCATTER: u8 = 0;
 const KIND_POLYLINE: u8 = 1;
@@ -48,6 +50,7 @@ pub enum PackError {
     Limit = 3,
     Output = 4,
     NonFinite = 5,
+    UnknownKind = 6,
 }
 
 /// One packed Scene row before `xyg_scene_batch_encode`.
@@ -95,6 +98,30 @@ pub struct TracePackInput<'a> {
     pub extra0: f64,
     pub extra1: f64,
     pub columns: &'a [&'a [f64]],
+}
+
+/// Canonical host envelope for one product-kind trace.
+///
+/// Column slots are `x`, `y`, `x0`, `y0`, `x1`, `y1`, `base`. Unused slots
+/// may be empty. Rust maps `kind` plus flags onto `pack_trace` column order.
+#[derive(Clone, Copy)]
+pub struct ProductPackInput<'a> {
+    pub kind: &'a str,
+    pub flags: u8,
+    pub step_mode: u8,
+    pub symbol: u8,
+    pub style_ref: u32,
+    pub trace_id: u64,
+    pub diameter: f64,
+    pub extra0: f64,
+    pub extra1: f64,
+    pub x: &'a [f64],
+    pub y: &'a [f64],
+    pub x0: &'a [f64],
+    pub y0: &'a [f64],
+    pub x1: &'a [f64],
+    pub y1: &'a [f64],
+    pub base: &'a [f64],
 }
 
 fn require_cols<'a>(columns: &'a [&'a [f64]], count: usize) -> Result<&'a [&'a [f64]], PackError> {
@@ -146,6 +173,113 @@ pub fn packed_row_count(pack_kind: u8, n: usize) -> Result<usize, PackError> {
         return Err(PackError::Limit);
     }
     Ok(count)
+}
+
+/// Map a public product kind plus packing flags to a compact pack kind.
+pub fn resolve_pack_kind(kind: &str, flags: u8) -> Result<u8, PackError> {
+    if flags & !PACK_FLAGS != 0 {
+        return Err(PackError::Length);
+    }
+    let painted = flags & FLAG_HEATMAP_PAINTED != 0;
+    let pack_kind = match kind {
+        "scatter" => PACK_SCATTER,
+        "line" => PACK_LINE,
+        "bar" | "column" | "histogram" | "violin" | "box" => PACK_RECT,
+        "area" | "error_band" => PACK_BAND,
+        "ribbon" => PACK_RIBBON,
+        "triangle_mesh" => PACK_TRIANGLE,
+        "hexbin" => PACK_HEXBIN,
+        "heatmap" => {
+            if painted {
+                PACK_HEATMAP_PAINTED
+            } else {
+                PACK_HEATMAP
+            }
+        }
+        "segments" | "errorbar" | "stem" | "contour" | "box_whisker" | "box_median" => {
+            PACK_SEGMENT
+        }
+        _ => return Err(PackError::UnknownKind),
+    };
+    if painted && pack_kind != PACK_HEATMAP_PAINTED {
+        return Err(PackError::Length);
+    }
+    Ok(pack_kind)
+}
+
+/// Pack one product-kind trace from the canonical host column envelope.
+pub fn pack_product(input: ProductPackInput<'_>) -> Result<Vec<PackedSceneRow>, PackError> {
+    let pack_kind = resolve_pack_kind(input.kind, input.flags)?;
+    let flags = input.flags & FLAG_STROKE_PERIMETER;
+    let pack = |columns: &[&[f64]]| {
+        pack_trace(TracePackInput {
+            pack_kind,
+            flags,
+            step_mode: input.step_mode,
+            symbol: input.symbol,
+            style_ref: input.style_ref,
+            trace_id: input.trace_id,
+            diameter: input.diameter,
+            extra0: input.extra0,
+            extra1: input.extra1,
+            columns,
+        })
+    };
+    match pack_kind {
+        PACK_SCATTER | PACK_LINE | PACK_HEXBIN => {
+            require_used(&[input.x, input.y])?;
+            pack(&[input.x, input.y])
+        }
+        PACK_RECT | PACK_SEGMENT => {
+            require_used(&[input.x0, input.y0, input.x1, input.y1])?;
+            pack(&[input.x0, input.y0, input.x1, input.y1])
+        }
+        PACK_BAND => {
+            require_used(&[input.x, input.y, input.base])?;
+            pack(&[input.x, input.y, input.base])
+        }
+        PACK_RIBBON => {
+            require_used(&[input.x0, input.x1, input.y0, input.y1, input.x, input.y])?;
+            pack(&[input.x0, input.x1, input.y0, input.y1, input.x, input.y])
+        }
+        PACK_TRIANGLE => {
+            require_used(&[input.x0, input.y0, input.x1, input.y1, input.x, input.y])?;
+            pack(&[input.x0, input.y0, input.x1, input.y1, input.x, input.y])
+        }
+        PACK_HEATMAP | PACK_HEATMAP_PAINTED => {
+            let extent = heatmap_extent_columns(&input)?;
+            pack(&[
+                extent[0].as_slice(),
+                extent[1].as_slice(),
+                extent[2].as_slice(),
+                extent[3].as_slice(),
+            ])
+        }
+        _ => Err(PackError::Length),
+    }
+}
+
+fn require_used<'a>(columns: &'a [&'a [f64]]) -> Result<&'a [&'a [f64]], PackError> {
+    let used = require_cols(columns, columns.len())?;
+    if used[0].is_empty() {
+        return Err(PackError::Length);
+    }
+    Ok(used)
+}
+
+fn heatmap_extent_columns(input: &ProductPackInput<'_>) -> Result<[Vec<f64>; 4], PackError> {
+    let (x0, y0, x1, y1) = if input.x.len() == 2 && input.y.len() == 2 {
+        (input.x[0], input.y[0], input.x[1], input.y[1])
+    } else if input.x0.len() == 1
+        && input.y0.len() == 1
+        && input.x1.len() == 1
+        && input.y1.len() == 1
+    {
+        (input.x0[0], input.y0[0], input.x1[0], input.y1[0])
+    } else {
+        return Err(PackError::Length);
+    };
+    Ok([vec![x0], vec![y0], vec![x1], vec![y1]])
 }
 
 /// Pack one trace's columns into Scene rows (kind, id, coords, expansion).
@@ -866,6 +1000,153 @@ mod tests {
                 1.0
             ),
             Err(PackError::NonFinite)
+        );
+    }
+
+    #[test]
+    fn product_kind_maps_heatmap_paint_flag() {
+        assert_eq!(resolve_pack_kind("scatter", 0).unwrap(), PACK_SCATTER);
+        assert_eq!(resolve_pack_kind("column", 0).unwrap(), PACK_RECT);
+        assert_eq!(resolve_pack_kind("contour", 0).unwrap(), PACK_SEGMENT);
+        assert_eq!(resolve_pack_kind("heatmap", 0).unwrap(), PACK_HEATMAP);
+        assert_eq!(
+            resolve_pack_kind("heatmap", FLAG_HEATMAP_PAINTED).unwrap(),
+            PACK_HEATMAP_PAINTED
+        );
+        assert_eq!(
+            resolve_pack_kind("line", FLAG_HEATMAP_PAINTED),
+            Err(PackError::Length)
+        );
+        assert_eq!(resolve_pack_kind("density", 0), Err(PackError::UnknownKind));
+    }
+
+    #[test]
+    fn pack_product_scatter_matches_pack_trace() {
+        let x = [0.0, 1.0];
+        let y = [2.0, 3.0];
+        let packed = pack_product(ProductPackInput {
+            kind: "scatter",
+            flags: 0,
+            step_mode: 0,
+            symbol: 4,
+            style_ref: 1,
+            trace_id: 7,
+            diameter: 6.0,
+            extra0: 0.0,
+            extra1: 0.0,
+            x: &x,
+            y: &y,
+            x0: &[],
+            y0: &[],
+            x1: &[],
+            y1: &[],
+            base: &[],
+        })
+        .unwrap();
+        let direct = pack_trace(TracePackInput {
+            pack_kind: PACK_SCATTER,
+            flags: 0,
+            step_mode: 0,
+            symbol: 4,
+            style_ref: 1,
+            trace_id: 7,
+            diameter: 6.0,
+            extra0: 0.0,
+            extra1: 0.0,
+            columns: &[&x, &y],
+        })
+        .unwrap();
+        assert_eq!(packed, direct);
+    }
+
+    #[test]
+    fn pack_product_heatmap_reads_range_endpoints() {
+        let x = [1.0, 3.0];
+        let y = [2.0, 4.0];
+        let rows = pack_product(ProductPackInput {
+            kind: "heatmap",
+            flags: FLAG_HEATMAP_PAINTED,
+            step_mode: 0,
+            symbol: 0,
+            style_ref: 9,
+            trace_id: 11,
+            diameter: 0.0,
+            extra0: 2.0,
+            extra1: 3.0,
+            x: &x,
+            y: &y,
+            x0: &[],
+            y0: &[],
+            x1: &[],
+            y1: &[],
+            base: &[],
+        })
+        .unwrap();
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[0].expansion_mode, EXP_HEATMAP_PAINTED);
+        assert_eq!(rows[0].diameter, 2.0);
+        assert_eq!(rows[1].diameter, 3.0);
+        assert_eq!(
+            (rows[0].x0, rows[0].y0, rows[0].x1, rows[0].y1),
+            (1.0, 2.0, 3.0, 4.0)
+        );
+    }
+
+    #[test]
+    fn pack_product_ribbon_remaps_canonical_envelope() {
+        let x0 = [0.0];
+        let x1 = [1.0];
+        let y0 = [2.0];
+        let y1 = [4.0];
+        let x = [3.0];
+        let y = [5.0];
+        let packed = pack_product(ProductPackInput {
+            kind: "ribbon",
+            flags: 0,
+            step_mode: 0,
+            symbol: 0,
+            style_ref: 0,
+            trace_id: 1,
+            diameter: 0.0,
+            extra0: 0.0,
+            extra1: 0.0,
+            x: &x,
+            y: &y,
+            x0: &x0,
+            y0: &y0,
+            x1: &x1,
+            y1: &y1,
+            base: &[],
+        })
+        .unwrap();
+        assert_eq!(packed.len(), 2);
+        assert_eq!(packed[0].expansion_mode, EXP_RIBBON);
+        assert_eq!((packed[0].y0, packed[0].y1), (4.0, 5.0));
+        assert_eq!((packed[1].y0, packed[1].y1), (2.0, 3.0));
+    }
+
+    #[test]
+    fn pack_product_rejects_empty_required_columns() {
+        assert_eq!(
+            pack_product(ProductPackInput {
+                kind: "bar",
+                flags: 0,
+                step_mode: 0,
+                symbol: 0,
+                style_ref: 0,
+                trace_id: 0,
+                diameter: 0.0,
+                extra0: 0.0,
+                extra1: 0.0,
+                x: &[],
+                y: &[],
+                x0: &[0.0, 1.0],
+                y0: &[0.0, 0.0],
+                x1: &[],
+                y1: &[1.0, 2.0],
+                base: &[],
+            }),
+            Err(PackError::Length)
         );
     }
 }

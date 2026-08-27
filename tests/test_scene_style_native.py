@@ -13,9 +13,11 @@ from xyg._native import (
     scene_pack_annotations,
     scene_pack_colorbar,
     scene_pack_legend,
+    scene_pack_product,
     scene_pack_trace,
     scene_resolve_chrome_style,
     scene_resolve_mark_styles,
+    scene_resolve_pack_kind,
 )
 from xyg._raster import _parse_color
 from xyg._scene_v3 import figure_scene
@@ -112,6 +114,44 @@ def test_pack_trace_heatmap_frames_extent_then_shape() -> None:
 def test_pack_trace_rejects_nonfinite_coordinates() -> None:
     with pytest.raises(ValueError, match="missing-data"):
         scene_pack_trace(1, [[0.0, float("nan")], [1.0, 2.0]])
+
+
+def test_pack_product_matches_pack_trace_for_scatter() -> None:
+    assert scene_resolve_pack_kind("scatter") == 0
+    assert scene_resolve_pack_kind("heatmap", 2) == 9
+    kinds, ids, refs, diameters, symbols, modes, coords = scene_pack_product(
+        "scatter",
+        [[0.0, 1.0], [2.0, 3.0], None, None, None, None, None],
+        symbol=4,
+        style_ref=1,
+        trace_id=7,
+        diameter=6.0,
+    )
+    assert list(kinds) == [0, 0]
+    assert list(ids) == [7, 7]
+    assert list(symbols) == [4, 4]
+    assert list(diameters) == [6.0, 6.0]
+    assert coords[0].tolist() == [0.0, 1.0]
+    assert coords[1].tolist() == [2.0, 3.0]
+
+
+def test_pack_product_heatmap_reads_range_endpoints() -> None:
+    kinds, ids, refs, diameters, symbols, modes, coords = scene_pack_product(
+        "heatmap",
+        [[1.0, 3.0], [2.0, 4.0], None, None, None, None, None],
+        flags=2,
+        style_ref=9,
+        trace_id=11,
+        extra0=2.0,
+        extra1=3.0,
+    )
+    assert list(kinds) == [2, 2]
+    assert list(modes) == [9, 9]
+    assert list(diameters) == [2.0, 3.0]
+    assert coords[0].tolist() == [1.0, 0.0]
+    assert coords[1].tolist() == [2.0, 0.0]
+    assert coords[2].tolist() == [3.0, 0.0]
+    assert coords[3].tolist() == [4.0, 0.0]
 
 
 def _annotation_mark_row(

@@ -339,6 +339,10 @@ ABI 109 adds `xyg_scene_pack_trace` so both hosts pass kind/flags/columns
 and receive 56-byte Scene rows; record kinds, stable-id splitting,
 expansion modes, ribbon/triangle doubling, heatmap lattice framing, and
 finite-coordinate rejection cannot drift.
+ABI 136 adds `xyg_scene_resolve_pack_kind` / `xyg_scene_pack_product` so
+both hosts pass the authored product kind plus a canonical
+`x`/`y`/`x0`/`y0`/`x1`/`y1`/`base` envelope; Rust owns the kind → pack-kind
+table, heatmap painted-vs-lattice flag, and column remapping.
 
 ABI 110 adds `xyg_scene_pack_legend` so both hosts pass loc/flags/paints
 and receive XYLG bytes; header layout, text offsets, and bounded-text
@@ -1158,7 +1162,10 @@ from packed `XYCH` v1, and chrome/annotation packers call `xyg_css_color_rgba`
 for the same conversion. ABI 109 does not change Scene records either;
 `xyg_scene_pack_trace` owns Figure→Scene row packing (kinds, stable ids,
 expansion modes, ribbon/triangle doubling, heatmap lattice framing) from
-literal columns. ABI 116 does not change Scene records either;
+literal columns. ABI 136 does not change Scene records either;
+`xyg_scene_resolve_pack_kind` / `xyg_scene_pack_product` own product-kind
+mapping and the canonical host column envelope so pack-kind dispatch cannot
+drift. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;
 `xyg_scene_figure_support_reason` owns figure-compile support from packed

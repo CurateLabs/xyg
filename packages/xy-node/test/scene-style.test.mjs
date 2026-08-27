@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { cssColorRgba8, lineChart, scatterChart } from "../src/index.js";
 import { figureSceneV3 } from "../src/scene.js";
-import { xyScenePackAnnotationMarks, xyScenePackTrace, xySceneResolveChromeStyle } from "../src/native.js";
+import { xyScenePackAnnotationMarks, xyScenePackProduct, xyScenePackTrace, xySceneResolveChromeStyle, xySceneResolvePackKind } from "../src/native.js";
 import { f64Ptr, u8Ptr } from "../src/encode.js";
 
 test("cssColorRgba8 matches Python named colors and none", () => {
@@ -139,6 +139,37 @@ test("pack_trace heatmap frames extent then shape", () => {
 test("pack_trace rejects nonfinite coordinates", () => {
   const { code } = packTrace(1, [[0, Number.NaN], [1, 2]]);
   assert.equal(code, -5);
+});
+
+test("pack_product maps product kinds and heatmap range columns", () => {
+  const scatter = new TextEncoder().encode("scatter");
+  assert.equal(xySceneResolvePackKind(u8Ptr(scatter), BigInt(scatter.length), 0), 0);
+  const heatmap = new TextEncoder().encode("heatmap");
+  assert.equal(xySceneResolvePackKind(u8Ptr(heatmap), BigInt(heatmap.length), 2), 9);
+  const x = Float64Array.from([1, 3]);
+  const y = Float64Array.from([2, 4]);
+  const out = new Uint8Array(112);
+  const empty = { ptr: 0, n: 0 };
+  const code = xyScenePackProduct(
+    u8Ptr(heatmap), BigInt(heatmap.length),
+    2, 0, 0, 9, 11n, 0, 2, 3,
+    f64Ptr(x), BigInt(x.length),
+    f64Ptr(y), BigInt(y.length),
+    empty.ptr, BigInt(empty.n),
+    empty.ptr, BigInt(empty.n),
+    empty.ptr, BigInt(empty.n),
+    empty.ptr, BigInt(empty.n),
+    empty.ptr, BigInt(empty.n),
+    u8Ptr(out), BigInt(out.length),
+  );
+  assert.equal(code, 2);
+  assert.equal(out[2], 9);
+  const view = new DataView(out.buffer);
+  assert.equal(view.getFloat64(16, true), 2);
+  assert.equal(view.getFloat64(24, true), 1);
+  assert.equal(view.getFloat64(32, true), 2);
+  assert.equal(view.getFloat64(40, true), 3);
+  assert.equal(view.getFloat64(48, true), 4);
 });
 
 function annotationMarkRow(kind, axis, symbol, styleRef, index, value0, value1, size) {

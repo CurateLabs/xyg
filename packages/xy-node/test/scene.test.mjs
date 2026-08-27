@@ -1430,7 +1430,7 @@ test("Node Scene rejects missing or unequal rectangle columns", () => {
     x_axis: "x",
     y_axis: "y",
   });
-  assert.throws(() => missing.toScene(), /four rectangle columns/);
+  assert.throws(() => missing.toScene(), /invalid scene trace packing/);
 
   const unequal = new Figure({ width: 200, height: 120 });
   unequal.traces.push({
@@ -1445,7 +1445,7 @@ test("Node Scene rejects missing or unequal rectangle columns", () => {
     x_axis: "x",
     y_axis: "y",
   });
-  assert.throws(() => unequal.toScene(), /equal length/);
+  assert.throws(() => unequal.toScene(), /invalid scene trace packing/);
 });
 
 test("Node Scene compiles segments, step lines, and stem", () => {

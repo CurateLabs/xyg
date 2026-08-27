@@ -173,7 +173,9 @@ center+pitch rows and a two-row extent+shape lattice. ABI 134 adds
 the existing extras pointer): hosts pack the same two-row lattice plus RGBA8 or
 scalar+stops payload; Rust tessellates cells and interns unique fills. ABI 135
 adds `xyg_colormap_stops` and XYHP paint kind 2 so named tables live in Rust;
-hosts pack a name or a custom RGB ramp. ABI 104 likewise moves
+hosts pack a name or a custom RGB ramp. ABI 136 adds
+`xyg_scene_resolve_pack_kind` / `xyg_scene_pack_product` so product-kind
+dispatch and column remapping live in Rust. ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate
 row per segment and two PolyFill rows per face. ABI 105 makes the public
@@ -193,7 +195,10 @@ Python and Node pack `XYCH` v1 background/axis CSS, sides, opacities, and
 widths, then call `xyg_scene_resolve_chrome_style`. ABI 109 makes
 Figure→Scene row packing the same way: Python and Node call
 `xyg_scene_pack_trace` with kind/flags/columns and append the returned
-56-byte rows. ABI 116 expands primary rule/band/marker annotations the same
+56-byte rows. ABI 136 makes product-kind packing the same way: Python and
+Node call `xyg_scene_pack_product` with the authored kind plus a canonical
+`x`/`y`/`x0`/`y0`/`x1`/`y1`/`base` envelope; Rust maps kind/flags onto
+pack-kind and column order. ABI 116 expands primary rule/band/marker annotations the same
 way: Python and Node call `xyg_scene_pack_annotation_marks` with packed
 scalars plus axis domains. ABI 117 makes figure-compile support the same way:
 Python and Node pack `XYFS` observations plus axis ids/keys, then call
@@ -374,7 +379,10 @@ Scene chrome style input so default axis/grid/tick/label RGBA, default widths,
 and `grid_opacity` scaling of the default grid color cannot drift. ABI 109
 `xyg_scene_pack_trace` owns Figure→Scene row packing so record kinds,
 stable-id splitting, expansion modes, ribbon/triangle doubling, heatmap
-lattice framing, and finite-coordinate rejection cannot drift. ABI 116
+lattice framing, and finite-coordinate rejection cannot drift. ABI 136
+`xyg_scene_resolve_pack_kind` / `xyg_scene_pack_product` own product-kind
+mapping and the canonical host column envelope so pack-kind dispatch cannot
+drift. ABI 116
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 so tags and opposite-axis spanning cannot drift. ABI 117
 `xyg_scene_figure_support_reason` owns figure-compile support so feature
