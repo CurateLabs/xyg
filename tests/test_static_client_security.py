@@ -838,7 +838,7 @@ def test_widget_bundle_is_valid_esm_and_standalone_is_a_window_global() -> None:
 
 def test_python_static_copy_matches_host_neutral_artifact() -> None:
     """The wheel copy is a copy — Python notebooks must not drift from @curatelabs/xyg."""
-    for name in ("index.js", "standalone.js"):
+    for name in ("index.js", "standalone.js", "wasm-worker.js"):
         host = (_HOST_NEUTRAL / name).read_bytes()
         py = (_STATIC / name).read_bytes()
         assert host == py, f"python/xyg/static/{name} drifted from packages/xy-client/dist/{name}"

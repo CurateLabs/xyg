@@ -1,8 +1,10 @@
 # `@curatelabs/xyg`
 
 Host-neutral WebGL2 **paint client** for XYG. One TypeScript source tree
-(`js/src`) builds this package; Python copies the same bundles into the
-wheel so notebooks / `to_html()` / Reflex need no Node.
+(`js/src`) builds this package; Python copies the paint bundles plus the
+`./wasm-worker` and `./xyg-wasm.wasm` tick assets into the wheel so
+notebooks / `to_html()` / Reflex can serve those explicit same-origin URLs
+without Node.
 
 ```bash
 npm install @curatelabs/xyg

@@ -2163,11 +2163,11 @@ class Figure(AnnotationsMixin, PayloadMixin):
 
     # -- output -----------------------------------------------------------
 
-    def widget(self) -> Any:
+    def widget(self, *, wasm_ticks: Optional[Mapping[str, str]] = None) -> Any:
         if self._widget is None:
             from .widget import FigureWidget
 
-            self._widget = FigureWidget(self)
+            self._widget = FigureWidget(self, wasm_ticks=wasm_ticks)
         return self._widget
 
     def show(self, display: Optional[str] = None) -> Any:
@@ -2193,16 +2193,19 @@ class Figure(AnnotationsMixin, PayloadMixin):
         *,
         custom_css: Optional[str] = None,
         animation_progress: Optional[float] = None,
+        wasm_ticks: bool | Mapping[str, object] = False,
     ) -> str:
         """Standalone interactive HTML: JS client + spec + base64 buffers in
         one self-contained file (base64 carries a ~33% size tax). `custom_css`
         injects an author stylesheet so `class_names` utility classes
-        (e.g. Tailwind) resolve in the export."""
+        (e.g. Tailwind) resolve in the export. ``wasm_ticks`` attaches
+        hosted Rust/WASM ticks when explicit Worker/WASM URLs are available."""
         return export.to_html(
             self,
             path,
             custom_css=custom_css,
             animation_progress=animation_progress,
+            wasm_ticks=wasm_ticks,
         )
 
     def html(
@@ -2211,12 +2214,14 @@ class Figure(AnnotationsMixin, PayloadMixin):
         *,
         custom_css: Optional[str] = None,
         animation_progress: Optional[float] = None,
+        wasm_ticks: bool | Mapping[str, object] = False,
     ) -> str:
         """Alias for ``to_html`` for component-style API symmetry."""
         return self.to_html(
             path,
             custom_css=custom_css,
             animation_progress=animation_progress,
+            wasm_ticks=wasm_ticks,
         )
 
     def _repr_html_(self) -> str:

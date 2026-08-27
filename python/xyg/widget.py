@@ -68,6 +68,7 @@ class FigureWidget(anywidget.AnyWidget):
         on_view_change: Any = None,
         on_animation_start: Any = None,
         on_animation_end: Any = None,
+        wasm_ticks: Any = None,
         **kwargs: Any,
     ) -> None:
         self._figure = figure
@@ -82,6 +83,10 @@ class FigureWidget(anywidget.AnyWidget):
         )
         spec, bufs = figure.build_payload_split()
         self._configure_transport(spec)
+        if wasm_ticks is not None:
+            from .export import resolve_wasm_tick_assets
+
+            spec["wasm_ticks"] = resolve_wasm_tick_assets(wasm_ticks)
         super().__init__(spec=spec, buffers=bufs, **kwargs)
         self.on_msg(self._on_custom_msg)
 

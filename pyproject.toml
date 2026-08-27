@@ -96,8 +96,10 @@ fallback-version = "0.0.0"
 artifacts = [
     "packages/xy-client/dist/index.js",
     "packages/xy-client/dist/standalone.js",
+    "packages/xy-client/dist/wasm-worker.js",
     "python/xyg/static/index.js",
     "python/xyg/static/standalone.js",
+    "python/xyg/static/wasm-worker.js",
 ]
 
 [tool.hatch.build.targets.wheel]

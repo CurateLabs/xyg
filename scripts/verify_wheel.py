@@ -65,6 +65,7 @@ REQUIRED_FILES = {
     "xyg/py.typed",
     "xyg/static/index.js",
     "xyg/static/standalone.js",
+    "xyg/static/wasm-worker.js",
     "xyg/widget.py",
 }
 

@@ -49,7 +49,7 @@ treat VS Code, notebooks, or Reflex as separate engine stacks.
 
 | Surface | Location | Role |
 |---|---|---|
-| **1. Python host** | `python/xyg/` (+ `python/reflex_xy/`) | Primary authoring host for notebooks and Python apps. Loads the Rust cdylib via **ctypes**. Surfaces: **anywidget** notebooks (`show()`), **HTML export** (`to_html()` / standalone), and **Reflex**. Embeds a **copy** of the paint client in the wheel (`python/xyg/static/`) so Python users need no Node. The public import is `xyg`; `reflex_xy` remains a separate integration namespace. |
+| **1. Python host** | `python/xyg/` (+ `python/reflex_xy/`) | Primary authoring host for notebooks and Python apps. Loads the Rust cdylib via **ctypes**. Surfaces: **anywidget** notebooks (`show()`), **HTML export** (`to_html()` / standalone), and **Reflex**. Embeds a **copy** of the paint client plus the packaged `wasm-worker.js` / `xyg-wasm.wasm` tick assets in the wheel (`python/xyg/static/`) so Python users need no Node. The public import is `xyg`; `reflex_xy` remains a separate integration namespace. |
 | **2. Node host** | `packages/xy-node` (`@curatelabs/xyg-node`) | Thin Node bindings (koffi) over the **same** Rust C ABI. Covers **server-side Node** and **VS Code extensions**: VS Code is a **consumer of the Node bindings**, not a fourth stack. Never publish `@xy/node`. Native loading uses the exact optional platform package (`@curatelabs/xyg-node-<platform>-<arch>`, #52), with only an explicit absolute-path `XYG_NATIVE_LIB` development override; it never searches a checkout, working directory, system path, or Python. Windows arm64 is an explicit unsupported error. `toHtml()` inlines the host-neutral standalone client, not the Python tree. Root `npm ci` does **not** install this package; CI Test and Python 3.11 jobs run `npm ci --prefix packages/xy-node` so koffi is present for Node host tests. |
 | **3. Browser surface** | `js/src/*.ts` + Rust/WASM → `@curatelabs/xyg` (`packages/xy-client/dist/{index,standalone}.js`) | Shared WebGL2 painter and browser lifecycle. Today it draws §29 buffers uploaded by Python/Node and has a bounded kernel-less fallback; #59 adds direct browser execution by compiling the same Rust engine to WebAssembly in a Worker. TypeScript keeps paint, pick, gestures, accessibility, DOM chrome, transitions, caches, and request scheduling; Rust owns canonical layout/LOD/encode decisions. |
 
@@ -200,8 +200,10 @@ annotation input remains accepted. WASM ABI 23 adds a bounded, atomic Worker
 foundation for Rust-owned f64 linear/log/symlog/category/angular/UTC-time
 values, steps, and formatting. Attached automatic, authored-value, and
 authored-empty primary Cartesian linear/log/symlog/category/UTC-time ChartView
-axes already use that lifecycle via `attachWasmTicks`. Notebook, Reflex, and
-secondary/polar/colorbar paths remain #59 work.
+axes already use that lifecycle via `attachWasmTicks`. Hosted `to_html()` and
+notebook widgets attach when they pass explicit Worker/WASM URLs; srcdoc
+notebooks, Reflex XYChart auto-attach, and secondary/polar/colorbar paths
+remain #59 work.
 
 For the migrated subset, public Python SVG and native PNG now use the Rust
 Scene consumers and public PDF consumes their Rust SVG. The shared predicate

@@ -103,9 +103,11 @@ def test_chartview_wasm_tick_assets_and_scope_are_explicit() -> None:
     assert 'family === "category"' in ticks
     assert "slotIdentity" in ticks
     assert "this.cache.get(slot)?.identity === this.slotIdentity(slot)" in ticks
-    assert "Notebook, `to_html()`, Reflex" in api
-    assert "Self-contained" in design
-    assert "claims nor closes that issue" in design
+    assert "Hosted `to_html(" in api
+    assert "xyg/static/" in api
+    assert "Blob-worker HTML remains" in design
+    assert "stays open" in design
+    assert "attachHostWasmTicks" in entries
     assert "axis.theta_unit" in ticks
     assert 'if (eligible) throw new TypeError("tick range must be finite")' in ticks
     assert "return null;" in ticks

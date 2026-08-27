@@ -91,9 +91,11 @@ REQUIRED_FILES = {
     "python/xyg/styling/capabilities.py",
     "python/xyg/static/index.js",
     "python/xyg/static/standalone.js",
+    "python/xyg/static/wasm-worker.js",
     "packages/xy-client/package.json",
     "packages/xy-client/dist/index.js",
     "packages/xy-client/dist/standalone.js",
+    "packages/xy-client/dist/wasm-worker.js",
     "python/xyg/widget.py",
     "crates/xyg-core/Cargo.toml",
     "crates/xyg-core/src/lib.rs",
@@ -270,7 +272,11 @@ def _require_exact_file(path: str, root: str, member: str, expected: bytes) -> N
 HOST_NEUTRAL_BUNDLES = {
     "packages/xy-client/dist/index.js",
     "packages/xy-client/dist/standalone.js",
+    "packages/xy-client/dist/wasm-worker.js",
+    "packages/xy-client/dist/xyg-wasm.wasm",
     "xyg/static/xyg-wasm-inline.js",
+    "xyg/static/wasm-worker.js",
+    "xyg/static/xyg-wasm.wasm",
 }
 
 

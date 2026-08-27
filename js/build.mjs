@@ -23,6 +23,10 @@ const root = join(here, "..");
 const clientDir = join(root, "packages", "xy-client", "dist");
 const staticDir = join(root, "python", "xyg", "static");
 const PYTHON_BUNDLES = ["index.js", "standalone.js"];
+// External Worker used by attachWasmTicks / createXygWasmWorker. Copied next
+// to the paint client so notebooks, to_html(), and Reflex can serve the same
+// explicit same-origin URL the browser package exports as `./wasm-worker`.
+const PYTHON_WASM_TICK_ASSETS = ["wasm-worker.js"];
 
 // Typecheck first: a bundle must never be built from source tsc rejects
 // (esbuild strips types without checking them, so this is the only gate).
@@ -127,8 +131,9 @@ async function buildBundles(outDir) {
 }
 
 /** Build the strict-CSP direct-browser worker as a separate static ES module.
- * It is deliberately not copied into the Python package: direct browser WASM
- * and the Pyodide/PyEmscripten wheel are distinct runtime products. */
+ * The Worker is also copied into python/xyg/static so hosted HTML / notebook /
+ * Reflex journeys can serve the same artifact at an explicit same-origin URL.
+ * The WASM module itself is packaged by js/package-wasm.mjs. */
 async function buildWasmWorker(outDir) {
   await build({
     configFile: false,
@@ -175,9 +180,9 @@ await buildBundles(clientDir);
 await buildWasmWorker(clientDir);
 await buildInlineWasmWorker(clientDir);
 mkdirSync(staticDir, { recursive: true });
-for (const name of PYTHON_BUNDLES) {
+for (const name of [...PYTHON_BUNDLES, ...PYTHON_WASM_TICK_ASSETS]) {
   copyFileSync(join(clientDir, name), join(staticDir, name));
 }
 console.log(
-  "built minified @curatelabs/xyg plus static WASM worker; copied paint bundles into python/xyg/static",
+  "built minified @curatelabs/xyg plus static WASM worker; copied paint and tick-worker bundles into python/xyg/static",
 );
