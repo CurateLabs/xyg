@@ -1429,7 +1429,9 @@ ABI 137 / Scene v27 compiles Cartesian constant-style density scatter as one
 Image blit (`DensityBlit` + XYHP kind 3 + XYIM) instead of a Rect lattice;
 polar density stays compatibility. ABI 138 / Scene v28 compiles constant dash
 polylines as an XYDS sidecar (raw XYDS extras or XYEX v2) so SVG/raster emit
-`stroke-dasharray`; curve, non-round linecap, and authored markers stay
+`stroke-dasharray`. ABI 139 / Scene v29 compiles constant non-round linecaps as
+an XYLC sidecar (raw XYLC, XYDS+XYLC concat, or XYEX v2) so SVG/raster emit
+`stroke-linecap`; curve and authored markers stay
 compatibility.
 Irregular
 spacing, and LOD stay compatibility.

@@ -214,7 +214,7 @@ def _authored_tick_labels() -> Figure:
 def test_authored_cartesian_tick_labels_are_a_supported_scene_v23_slice() -> None:
     figure = _authored_tick_labels()
     encoded = figure_scene(figure)
-    assert encoded[4:8] == (28).to_bytes(4, "little")
+    assert encoded[4:8] == (29).to_bytes(4, "little")
     assert b"XYTL" in encoded
 
 
@@ -235,7 +235,7 @@ def test_primary_numeric_axis_format_routes_through_rust_scene(
     figure.set_axis("y", type_=kind, domain=domain, constant=constant, format="$,.0f USD")
     assert scene_export_support_reason(figure) is None
     scene = figure_scene(figure)
-    assert scene[4:8] == (28).to_bytes(4, "little")
+    assert scene[4:8] == (29).to_bytes(4, "little")
     assert b"XYTL" in scene
     svg = _native.scene_svg(scene)
     if kind == "log":
@@ -454,6 +454,16 @@ def test_constant_dash_line_is_public_scene_supported() -> None:
     assert exported is not None
     assert b"stroke-dasharray" in exported
     assert b"XYDS" in figure_scene(figure)
+
+
+def test_constant_linecap_line_is_public_scene_supported() -> None:
+    figure = _supported().line([1, 2, 3], [1, 4, 2], color="#ef4444", width=2)
+    figure.traces[-1].style["linecap"] = "square"
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b'stroke-linecap="square"' in exported
+    assert b"XYLC" in figure_scene(figure)
 
 
 def test_polar_scatter_is_scene_supported() -> None:
@@ -1398,13 +1408,13 @@ def test_public_disconnected_segment_router_fails_closed(
         assert result is not None and reason in result
 
 
-def test_public_disconnected_segments_admit_constant_dash() -> None:
+def test_public_disconnected_segments_admit_constant_linecap() -> None:
     figure = _public_disconnected_segments()
-    figure.traces[0].style["dash"] = "4,2"
+    figure.traces[0].style["linecap"] = "butt"
     assert scene_export_support_reason(figure) is None
     scene = figure_scene(figure)
-    assert b"XYDS" in scene
-    assert "stroke-dasharray" in _public_svg(figure)
+    assert b"XYLC" in scene
+    assert 'stroke-linecap="butt"' in _public_svg(figure)
 
 
 @pytest.mark.parametrize(

@@ -171,6 +171,9 @@ crates/
                         #   consumed identically by Python and Node (#58).
                         #   ABI 138 / Scene v28 stores constant dash on encoded
                         #   styles and appends an XYDS sidecar after XYIM.
+                        #   ABI 139 / Scene v29 stores constant non-round
+                        #   linecap on encoded styles and appends an XYLC
+                        #   sidecar after XYDS.
     scene_pack.rs       # compact Figure→Scene row packing (ABI 109): record
                         #   kinds, stable-id splitting, expansion modes,
                         #   ribbon/triangle doubling, heatmap lattice framing,
@@ -693,5 +696,5 @@ landed; the remainder, in order:
    ABI 136 product-kind packing (`xyg_scene_resolve_pack_kind` /
    `xyg_scene_pack_product`) ✅; ABI 137 / Scene v27 `DensityBlit=10` Image
    blit + XYIM sidecar (`scene.rs`) ✅; ABI 138 / Scene v28 XYDS constant dash
-   (`scene.rs`) ✅.
+   (`scene.rs`) ✅; ABI 139 / Scene v29 XYLC constant linecap (`scene.rs`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

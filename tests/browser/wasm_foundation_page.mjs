@@ -1836,7 +1836,7 @@ async function run() {
     maxArenaBytes: 8192,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 23 || ready.sceneVersion !== 28) {
+  if (ready.abiVersion !== 23 || ready.sceneVersion !== 29) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");

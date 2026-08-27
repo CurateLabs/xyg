@@ -918,7 +918,7 @@ def _figure_trace_support_flags(trace: Any, *, polar: bool = False) -> tuple[int
     if any(style.get(key) is not None for key in _XYFS_CURVE_MARKER_KEYS):
         flags |= _XYFS_TRACE_DASHED_MARKERS
     linecap = style.get("linecap")
-    if linecap is not None and str(linecap) != "round":
+    if linecap is not None and str(linecap).strip().lower() not in {"butt", "round", "square"}:
         flags |= _XYFS_TRACE_DASHED_MARKERS
     dash = style.get("dash")
     if dash is not None and _parse_scene_dash(dash) is False:
@@ -1199,6 +1199,31 @@ def _parse_scene_dash(value: Any) -> list[float] | None | bool:
     return lengths
 
 
+def _parse_scene_linecap(value: Any) -> int | None | bool:
+    """Return 0=butt or 2=square, None for round/omitted, False if unusable."""
+    if value is None:
+        return None
+    name = str(value).strip().lower()
+    if name == "butt":
+        return 0
+    if name == "square":
+        return 2
+    if name == "round":
+        return None
+    return False
+
+
+def _pack_xylc(linecaps: list[int | None]) -> bytes:
+    """Pack constant non-round linecaps keyed by host style_ref as XYLC v1."""
+    entries = [(index, cap) for index, cap in enumerate(linecaps) if cap in (0, 2)]
+    if not entries:
+        return b""
+    out = bytearray(struct.pack("<4sIII", b"XYLC", 1, len(entries), 0))
+    for style_ref, cap in entries:
+        out.extend(struct.pack("<IBxxx", int(style_ref), int(cap)))
+    return bytes(out)
+
+
 def _pack_xyds(dashes: list[list[float] | None]) -> bytes:
     """Pack constant dash patterns keyed by host style_ref as XYDS v1."""
     entries = [(index, pattern) for index, pattern in enumerate(dashes) if pattern]
@@ -1212,7 +1237,7 @@ def _pack_xyds(dashes: list[list[float] | None]) -> bytes:
 
 
 def _pack_scene_extras(polar: bytes, paint: bytes, dash: bytes = b"") -> bytes:
-    """Pack polar XYPL, XYHP paint, and/or XYDS dash onto the extras pointer."""
+    """Pack polar XYPL, XYHP paint, and/or XYDS/XYLC style sidecars."""
     if not polar and not paint and not dash:
         return b""
     if polar and not paint and not dash:
@@ -1254,6 +1279,7 @@ def figure_scene(
     style_refs: list[int] = []
     styles: list[tuple[tuple[int, ...], tuple[int, ...], float]] = []
     dashes: list[list[float] | None] = []
+    linecaps: list[int | None] = []
     diameters: list[float] = []
     symbols: list[int] = []
     coordinates: list[list[float]] = [[], [], [], []]
@@ -1285,6 +1311,8 @@ def figure_scene(
         styles.append((fill, stroke, stroke_width))
         parsed_dash = _parse_scene_dash(style.get("dash"))
         dashes.append(None if parsed_dash is False else parsed_dash)
+        parsed_cap = _parse_scene_linecap(style.get("linecap"))
+        linecaps.append(None if parsed_cap is False else parsed_cap)
         style_ref = len(styles) - 1
         diameter = (
             float(trace.size_ch.constant)
@@ -1594,6 +1622,7 @@ def figure_scene(
         if kind == "rule":
             allowed.add("width")
             allowed.add("dash")
+            allowed.add("linecap")
         elif kind == "marker":
             allowed |= {"stroke_color", "stroke_width"}
         unsupported_style = sorted(
@@ -1625,6 +1654,10 @@ def figure_scene(
         if parsed_dash is False:
             raise UnsupportedSceneV3(f"Scene v12 {kind} annotation dash is not a constant pattern")
         dashes.append(parsed_dash)
+        parsed_cap = _parse_scene_linecap(style.get("linecap")) if kind == "rule" else None
+        if parsed_cap is False:
+            raise UnsupportedSceneV3(f"Scene v12 {kind} annotation linecap is not a Scene cap")
+        linecaps.append(None if parsed_cap is False else parsed_cap)
         style_ref = len(styles) - 1
         tag = (
             4
@@ -2023,7 +2056,7 @@ def figure_scene(
         polar_input=_pack_scene_extras(
             _pack_polar_scene_input(figure),
             _pack_xyhp(heatmap_paint_planes),
-            _pack_xyds(dashes),
+            _pack_xyds(dashes) + _pack_xylc(linecaps),
         ),
     )
 

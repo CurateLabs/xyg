@@ -740,7 +740,7 @@ def test_python_scene_v8_authors_backgrounds_axis_side_and_major_minor_ticks() -
         },
     )
     encoded = figure.to_scene()
-    assert int.from_bytes(encoded[4:8], "little") == 28
+    assert int.from_bytes(encoded[4:8], "little") == 29
     svg = _native.scene_svg(encoded)
     assert 'fill="rgba(16,32,48,1.000000)"' in svg
     assert 'fill="rgba(241,245,249,1.000000)"' in svg
@@ -790,7 +790,7 @@ def test_scene_v10_explicit_hidden_cartesian_chrome_stays_cartesian() -> None:
 
     figure.coords = "polar"
     polar = figure.to_scene()
-    assert polar[4:8] == (28).to_bytes(4, "little")
+    assert polar[4:8] == (29).to_bytes(4, "little")
     assert polar[-92:-88] == b"XYPL"
 
 
@@ -809,7 +809,7 @@ def test_python_scene_compiles_ribbon_and_triangle_mesh() -> None:
     ribbon.axis_options["y"]["domain"] = (0.0, 1.0)
     ribbon.ribbon([0.1], [0.9], [0.2], [0.5], [0.3], [0.7], color="#7c3aed")
     scene = ribbon.to_scene()
-    assert scene[4:8] == (28).to_bytes(4, "little")
+    assert scene[4:8] == (29).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     assert '<path d="M ' in svg
     assert ' Z"' in svg
@@ -907,7 +907,7 @@ def test_python_scene_compiles_area_and_error_band() -> None:
         expected = FIXTURE["band_outlines"][mode]
         assert scene == base64.b64decode(expected["scene_base64"])
         assert hashlib.sha256(scene).hexdigest() == expected["sha256"]
-        assert scene[4:8] == (28).to_bytes(4, "little")
+        assert scene[4:8] == (29).to_bytes(4, "little")
         assert scene[160:168] == bytes((57, 135, 229, 102, 17, 34, 51, 26))
         assert scene[160 + 16 + 2] == symbol
         svg = _native.scene_svg(scene)
@@ -1070,7 +1070,7 @@ def test_python_scene_compiles_rect_family_aliases(kind: str) -> None:
     else:
         figure.histogram([1.0, 1.5, 2.0, 2.5, 3.0], bins=4, range=(0.0, 4.0), color="#22c55e")
     scene = figure.to_scene()
-    assert scene[4:8] == (28).to_bytes(4, "little")  # SCENE_VERSION
+    assert scene[4:8] == (29).to_bytes(4, "little")  # SCENE_VERSION
     svg = _native.scene_svg(scene)
     assert svg.count("<rect ") >= 2  # plot clip plus at least one bar
     assert 'clip-path="url(#xy-scene-plot)"' in svg
@@ -1094,7 +1094,7 @@ def test_python_scene_compiles_cartesian_density_blit() -> None:
     figure.axis_options["y"]["domain"] = (-1.0, 1.0)
     figure.scatter([0.0] * 200_000, [0.0] * 200_000, density=True, color="#3987e5")
     scene = figure.to_scene()
-    assert scene[4:8] == (28).to_bytes(4, "little")
+    assert scene[4:8] == (29).to_bytes(4, "little")
     assert b"XYIM" in scene
     svg = _native.scene_svg(scene)
     assert svg.count("<image") == 1
@@ -1167,12 +1167,44 @@ def test_python_scene_compiles_constant_dash_polylines() -> None:
     figure.axis_options["y"]["domain"] = (0.0, 2.0)
     figure.line([0.0, 1.0, 2.0], [0.0, 1.0, 0.5], color="#ef4444", width=2.0, dash="dashed")
     scene = figure.to_scene()
-    assert scene[4:8] == (28).to_bytes(4, "little")
+    assert scene[4:8] == (29).to_bytes(4, "little")
     assert b"XYDS" in scene
     svg = _native.scene_svg(scene)
     assert 'stroke-dasharray="6,4"' in svg
     assert figure.to_svg() == svg
     assert _scene_v3.scene_export_support_reason(figure) is None
     curved = Figure().line([0.0, 1.0], [0.0, 1.0], dash="dashed", curve="smooth")
-    with pytest.raises(UnsupportedSceneV3, match="curved, non-round, or authored markers"):
+    with pytest.raises(UnsupportedSceneV3, match="curved or authored markers"):
+        curved.to_scene()
+
+
+def test_python_scene_compiles_constant_linecap_polylines() -> None:
+    figure = Figure(width=240, height=160)
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    figure.line(
+        [0.0, 1.0, 2.0],
+        [0.0, 1.0, 0.5],
+        color="#ef4444",
+        width=2.0,
+        style={"stroke-linecap": "butt"},
+    )
+    scene = figure.to_scene()
+    assert scene[4:8] == (29).to_bytes(4, "little")
+    assert b"XYLC" in scene
+    svg = _native.scene_svg(scene)
+    assert 'stroke-linecap="butt"' in svg
+    assert figure.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(figure) is None
+    unknown = Figure().line([0.0, 1.0], [0.0, 1.0])
+    unknown.traces[-1].style["linecap"] = "flat"
+    with pytest.raises(UnsupportedSceneV3, match="curved or authored markers"):
+        unknown.to_scene()
+    curved = Figure().line(
+        [0.0, 1.0],
+        [0.0, 1.0],
+        curve="smooth",
+        style={"stroke-linecap": "butt"},
+    )
+    with pytest.raises(UnsupportedSceneV3, match="curved or authored markers"):
         curved.to_scene()

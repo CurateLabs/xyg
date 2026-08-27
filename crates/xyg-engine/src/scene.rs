@@ -13,7 +13,7 @@ use crate::svg::push_num;
 use std::collections::HashMap;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 28;
+pub const SCENE_VERSION: u32 = 29;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -1212,7 +1212,7 @@ fn push_raster_stroke(
     rgba: [u8; 4],
     scale: f64,
 ) -> Result<(), SceneError> {
-    push_raster_stroke_dash(out, points, width, rgba, scale, &[])
+    push_raster_stroke_dash(out, points, width, rgba, scale, &[], LINECAP_ROUND)
 }
 
 fn push_raster_dash(out: &mut Vec<u8>, dash: &[f32], scale: f64) -> Result<(), SceneError> {
@@ -1230,6 +1230,7 @@ fn push_raster_stroke_dash(
     rgba: [u8; 4],
     scale: f64,
     dash: &[f32],
+    linecap: u8,
 ) -> Result<(), SceneError> {
     out.push(3);
     out.extend_from_slice(&2u32.to_le_bytes());
@@ -1241,7 +1242,7 @@ fn push_raster_stroke_dash(
     out.extend_from_slice(&rgba);
     out.push(0);
     push_raster_dash(out, dash, scale)?;
-    out.push(1);
+    out.push(linecap);
     Ok(())
 }
 
@@ -3109,10 +3110,13 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
         PolarSceneState::from_xypl(xypl, layout)?;
     }
     let images = parse_xyim(xyim)?;
-    let dashes = parse_xyds(xyds)?;
+    let (dash_bytes, cap_bytes) = split_style_sidecars(xyds)?;
+    let dashes = parse_xyds(dash_bytes)?;
+    let caps = parse_xylc(cap_bytes)?;
     if dashes
         .iter()
         .any(|entry| entry.style_ref as usize >= styles)
+        || caps.iter().any(|entry| entry.style_ref as usize >= styles)
     {
         return Err(SceneError::Length);
     }
@@ -3553,8 +3557,8 @@ pub const XYIM_FORMAT_RGBA8: u32 = 0;
 pub const MAX_SCENE_IMAGE_PIXELS: usize = 2_000_000;
 /// XYEX v1 wraps optional XYPL polar bytes plus optional XYHP paint so
 /// `xyg_scene_batch_encode` stays at Koffi's 64-parameter ceiling.
-/// XYEX v2 adds a dash length so constant dash patterns ride the same extras
-/// pointer as XYDS (ABI 138 / Scene v28) without a 65th ABI argument.
+/// XYEX v2 adds a dash length so constant dash and linecap sidecars ride the
+/// same extras pointer as XYDS/XYLC (ABI 138–139) without a 65th ABI argument.
 pub const XYEX_MAGIC: &[u8; 4] = b"XYEX";
 pub const XYEX_VERSION: u32 = 1;
 pub const XYEX_VERSION_DASH: u32 = 2;
@@ -3567,6 +3571,16 @@ pub const XYDS_MAGIC: &[u8; 4] = b"XYDS";
 pub const XYDS_VERSION: u32 = 1;
 pub const XYDS_V1_HEADER_BYTES: usize = 16;
 pub const XYDS_MAX_VALUES: usize = 8;
+/// XYLC v1 constant-linecap sidecar (ABI 139 / Scene v29). One entry per
+/// non-round host style_ref (`0=butt`, `2=square`); round (`1`) is omitted.
+/// Concatenated after XYDS in the extras dash slot and the encoded Scene.
+pub const XYLC_MAGIC: &[u8; 4] = b"XYLC";
+pub const XYLC_VERSION: u32 = 1;
+pub const XYLC_V1_HEADER_BYTES: usize = 16;
+pub const XYLC_ENTRY_BYTES: usize = 8;
+pub const LINECAP_BUTT: u8 = 0;
+pub const LINECAP_ROUND: u8 = 1;
+pub const LINECAP_SQUARE: u8 = 2;
 
 /// One XYHP paint plane keyed by the compact lattice's stable identity.
 #[derive(Clone, Copy, Debug)]
@@ -3626,10 +3640,11 @@ fn scene_read_f64(bytes: &[u8], offset: usize) -> Result<f64, SceneError> {
     ))
 }
 
-/// Split a host extras payload into polar XYPL, XYHP paint, and XYDS dash bytes.
-/// Empty input is Cartesian with no paint or dash. Raw XYPL (92 bytes) stays
-/// valid polar-only authoring. Raw XYHP is Cartesian painted heatmaps. Raw XYDS
-/// is dash-only. XYEX v1 wraps polar+paint; XYEX v2 adds a dash length.
+/// Split a host extras payload into polar XYPL, XYHP paint, and style-sidecar
+/// bytes. Empty input is Cartesian with no paint or dash. Raw XYPL (92 bytes)
+/// stays valid polar-only authoring. Raw XYHP is Cartesian painted heatmaps.
+/// Raw XYDS, raw XYLC, or XYDS+XYLC concat occupy the dash slot. XYEX v1 wraps
+/// polar+paint; XYEX v2 `dash_len` covers XYDS and/or XYLC.
 pub fn split_scene_extras(bytes: &[u8]) -> Option<(&[u8], &[u8], &[u8])> {
     if bytes.is_empty() {
         return Some((&[], &[], &[]));
@@ -3640,7 +3655,7 @@ pub fn split_scene_extras(bytes: &[u8]) -> Option<(&[u8], &[u8], &[u8])> {
     if bytes.get(..4) == Some(&XYHP_MAGIC[..]) {
         return Some((&[], bytes, &[]));
     }
-    if bytes.get(..4) == Some(&XYDS_MAGIC[..]) {
+    if bytes.get(..4) == Some(&XYDS_MAGIC[..]) || bytes.get(..4) == Some(&XYLC_MAGIC[..]) {
         return Some((&[], &[], bytes));
     }
     if bytes.get(..4) != Some(&XYEX_MAGIC[..]) {
@@ -3680,7 +3695,10 @@ pub fn split_scene_extras(bytes: &[u8]) -> Option<(&[u8], &[u8], &[u8])> {
     if paint_len > 0 && paint.get(..4) != Some(&XYHP_MAGIC[..]) {
         return None;
     }
-    if dash_len > 0 && dash.get(..4) != Some(&XYDS_MAGIC[..]) {
+    if dash_len > 0
+        && dash.get(..4) != Some(&XYDS_MAGIC[..])
+        && dash.get(..4) != Some(&XYLC_MAGIC[..])
+    {
         return None;
     }
     Some((polar, paint, dash))
@@ -4119,10 +4137,7 @@ fn encode_xyds(entries: &[StyleDash]) -> Result<Vec<u8>, SceneError> {
     Ok(out)
 }
 
-fn parse_xyds(bytes: &[u8]) -> Result<Vec<StyleDash>, SceneError> {
-    if bytes.is_empty() {
-        return Ok(Vec::new());
-    }
+fn parse_xyds_prefix(bytes: &[u8]) -> Result<(Vec<StyleDash>, usize), SceneError> {
     if bytes.len() < XYDS_V1_HEADER_BYTES || bytes.get(..4) != Some(&XYDS_MAGIC[..]) {
         return Err(SceneError::Length);
     }
@@ -4168,10 +4183,112 @@ fn parse_xyds(bytes: &[u8]) -> Result<Vec<StyleDash>, SceneError> {
             values,
         });
     }
+    Ok((entries, cursor))
+}
+
+fn parse_xyds(bytes: &[u8]) -> Result<Vec<StyleDash>, SceneError> {
+    if bytes.is_empty() {
+        return Ok(Vec::new());
+    }
+    let (entries, end) = parse_xyds_prefix(bytes)?;
+    if end != bytes.len() {
+        return Err(SceneError::Length);
+    }
+    Ok(entries)
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct StyleCap {
+    style_ref: u32,
+    cap: u8,
+}
+
+#[cfg(test)]
+fn encode_xylc(entries: &[StyleCap]) -> Result<Vec<u8>, SceneError> {
+    if entries.is_empty() {
+        return Ok(Vec::new());
+    }
+    if entries.len() > MAX_SCENE_STYLES {
+        return Err(SceneError::Limit);
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    let mut out = Vec::new();
+    out.extend_from_slice(XYLC_MAGIC);
+    out.extend_from_slice(&XYLC_VERSION.to_le_bytes());
+    out.extend_from_slice(&(entries.len() as u32).to_le_bytes());
+    out.extend_from_slice(&0u32.to_le_bytes());
+    for entry in entries {
+        if (entry.cap != LINECAP_BUTT && entry.cap != LINECAP_SQUARE) || !seen.insert(entry.style_ref)
+        {
+            return Err(SceneError::Length);
+        }
+        out.extend_from_slice(&entry.style_ref.to_le_bytes());
+        out.push(entry.cap);
+        out.extend_from_slice(&[0u8, 0, 0]);
+    }
+    Ok(out)
+}
+
+fn parse_xylc(bytes: &[u8]) -> Result<Vec<StyleCap>, SceneError> {
+    if bytes.is_empty() {
+        return Ok(Vec::new());
+    }
+    if bytes.len() < XYLC_V1_HEADER_BYTES || bytes.get(..4) != Some(&XYLC_MAGIC[..]) {
+        return Err(SceneError::Length);
+    }
+    if scene_read_u32(bytes, 4)? != XYLC_VERSION {
+        return Err(SceneError::Version);
+    }
+    let n_entries = scene_read_u32(bytes, 8)? as usize;
+    if scene_read_u32(bytes, 12)? != 0 || n_entries == 0 || n_entries > MAX_SCENE_STYLES {
+        return Err(SceneError::Length);
+    }
+    let mut entries = Vec::with_capacity(n_entries);
+    let mut seen = std::collections::BTreeSet::new();
+    let mut cursor = XYLC_V1_HEADER_BYTES;
+    for _ in 0..n_entries {
+        let end = cursor
+            .checked_add(XYLC_ENTRY_BYTES)
+            .ok_or(SceneError::Limit)?;
+        if end > bytes.len() {
+            return Err(SceneError::Length);
+        }
+        let style_ref = scene_read_u32(bytes, cursor)?;
+        let cap = bytes[cursor + 4];
+        if (cap != LINECAP_BUTT && cap != LINECAP_SQUARE)
+            || bytes[cursor + 5..cursor + 8] != [0, 0, 0]
+            || !seen.insert(style_ref)
+        {
+            return Err(SceneError::Length);
+        }
+        cursor = end;
+        entries.push(StyleCap { style_ref, cap });
+    }
     if cursor != bytes.len() {
         return Err(SceneError::Length);
     }
     Ok(entries)
+}
+
+fn split_style_sidecars(bytes: &[u8]) -> Result<(&[u8], &[u8]), SceneError> {
+    if bytes.is_empty() {
+        return Ok((&[], &[]));
+    }
+    if bytes.get(..4) == Some(&XYLC_MAGIC[..]) {
+        parse_xylc(bytes)?;
+        return Ok((&[], bytes));
+    }
+    if bytes.get(..4) != Some(&XYDS_MAGIC[..]) {
+        return Err(SceneError::Length);
+    }
+    let (_, end) = parse_xyds_prefix(bytes)?;
+    let dash = bytes.get(..end).ok_or(SceneError::Length)?;
+    let rest = bytes.get(end..).ok_or(SceneError::Length)?;
+    if rest.is_empty() {
+        return Ok((dash, &[]));
+    }
+    parse_xylc(rest)?;
+    Ok((dash, rest))
 }
 
 fn apply_style_dashes(styles: &mut [EncodedStyle], entries: &[StyleDash]) -> Result<(), SceneError> {
@@ -4181,6 +4298,22 @@ fn apply_style_dashes(styles: &mut [EncodedStyle], entries: &[StyleDash]) -> Res
         style.dash = entry.values;
         style.dash_count = entry.count;
     }
+    Ok(())
+}
+
+fn apply_style_caps(styles: &mut [EncodedStyle], entries: &[StyleCap]) -> Result<(), SceneError> {
+    for entry in entries {
+        let index = usize::try_from(entry.style_ref).map_err(|_| SceneError::Length)?;
+        let style = styles.get_mut(index).ok_or(SceneError::Length)?;
+        style.linecap = entry.cap;
+    }
+    Ok(())
+}
+
+fn apply_style_sidecars(styles: &mut [EncodedStyle], bytes: &[u8]) -> Result<(), SceneError> {
+    let (dash, cap) = split_style_sidecars(bytes)?;
+    apply_style_dashes(styles, &parse_xyds(dash)?)?;
+    apply_style_caps(styles, &parse_xylc(cap)?)?;
     Ok(())
 }
 
@@ -4197,8 +4330,8 @@ fn scene_sidecars_after_chrome(
     if after.is_empty() {
         return Ok((xypl, after, after));
     }
-    if after.get(..4) == Some(&XYDS_MAGIC[..]) {
-        parse_xyds(after)?;
+    if after.get(..4) == Some(&XYDS_MAGIC[..]) || after.get(..4) == Some(&XYLC_MAGIC[..]) {
+        split_style_sidecars(after)?;
         return Ok((xypl, &[][..], after));
     }
     let (images, xyim_end) = parse_xyim_envelope(after)?;
@@ -4208,7 +4341,7 @@ fn scene_sidecars_after_chrome(
     let xyim = after.get(..xyim_end).ok_or(SceneError::Length)?;
     let xyds = after.get(xyim_end..).ok_or(SceneError::Length)?;
     if !xyds.is_empty() {
-        parse_xyds(xyds)?;
+        split_style_sidecars(xyds)?;
     }
     Ok((xypl, xyim, xyds))
 }
@@ -5750,17 +5883,23 @@ impl<'a> SceneBatch<'a> {
         Ok(self)
     }
 
-    /// Attach a host-packed XYDS v1 dash table. Empty keeps every style solid.
-    /// Style refs address the host style table before arrow/callout extras.
+    /// Attach a host-packed XYDS/XYLC style sidecar. Empty keeps every style
+    /// solid and round-capped. Style refs address the host style table before
+    /// arrow/callout extras.
     pub fn with_dashes(mut self, bytes: &[u8]) -> Result<Self, SceneError> {
         if bytes.is_empty() {
             return Ok(self);
         }
-        let entries = parse_xyds(bytes)?;
+        let (dash, cap) = split_style_sidecars(bytes)?;
+        let dash_entries = parse_xyds(dash)?;
+        let cap_entries = parse_xylc(cap)?;
         let style_count = self.stroke_width.len();
-        if entries
+        if dash_entries
             .iter()
             .any(|entry| entry.style_ref as usize >= style_count)
+            || cap_entries
+                .iter()
+                .any(|entry| entry.style_ref as usize >= style_count)
         {
             return Err(SceneError::Length);
         }
@@ -6137,6 +6276,7 @@ struct EncodedStyle {
     stroke_width: f64,
     dash: [f32; 8],
     dash_count: u8,
+    linecap: u8,
 }
 
 impl EncodedStyle {
@@ -6147,6 +6287,7 @@ impl EncodedStyle {
             stroke_width,
             dash: [0.0; 8],
             dash_count: 0,
+            linecap: LINECAP_ROUND,
         }
     }
 
@@ -7036,7 +7177,15 @@ fn scene_image_by_id<'a>(images: &'a [SceneImage], stable_id: u64) -> Option<&'a
 }
 
 fn push_svg_line(out: &mut String, x1: f64, y1: f64, x2: f64, y2: f64, paint: &str, width: f64) {
-    push_svg_line_dash(out, x1, y1, x2, y2, paint, width, &[]);
+    push_svg_line_dash(out, x1, y1, x2, y2, paint, width, &[], LINECAP_ROUND);
+}
+
+fn linecap_svg_name(cap: u8) -> &'static str {
+    match cap {
+        LINECAP_BUTT => "butt",
+        LINECAP_SQUARE => "square",
+        _ => "round",
+    }
 }
 
 fn push_svg_line_dash(
@@ -7048,6 +7197,7 @@ fn push_svg_line_dash(
     paint: &str,
     width: f64,
     dash: &[f32],
+    linecap: u8,
 ) {
     out.push_str("<line x1=\"");
     push_num(out, x1);
@@ -7062,6 +7212,10 @@ fn push_svg_line_dash(
     out.push_str("\" stroke-width=\"");
     push_num(out, width);
     push_svg_dasharray(out, dash);
+    if linecap != LINECAP_ROUND {
+        out.push_str("\" stroke-linecap=\"");
+        out.push_str(linecap_svg_name(linecap));
+    }
     out.push_str("\"/>");
 }
 
@@ -7790,7 +7944,7 @@ impl SceneDocument {
             ));
             offset += SCENE_STYLE_RECORD_BYTES;
         }
-        apply_style_dashes(&mut styles, &parse_xyds(xyds)?)?;
+        apply_style_sidecars(&mut styles, xyds)?;
         if legend.as_ref().is_some_and(|value| {
             value.entries.iter().any(|entry| {
                 entry.style_ref >= styles.len()
@@ -8134,6 +8288,7 @@ impl SceneDocument {
                     &rgba_css(style.stroke),
                     style.stroke_width.max(1.0),
                     style.dash_values(),
+                    style.linecap,
                 ),
                 SceneRecordKind::Scatter => {
                     let symbol = ScatterSymbol::from_code(entry.symbol);
@@ -8986,7 +9141,9 @@ impl SceneDocument {
                     out.push_str(" stroke-width=\"");
                     push_num(&mut out, style.stroke_width);
                     push_svg_dasharray(&mut out, style.dash_values());
-                    out.push_str("\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>");
+                    out.push_str("\" stroke-linecap=\"");
+                    out.push_str(linecap_svg_name(style.linecap));
+                    out.push_str("\" stroke-linejoin=\"round\"/>");
                 }
             }
         }
@@ -9796,6 +9953,7 @@ impl SceneDocument {
                     style.stroke,
                     scale,
                     style.dash_values(),
+                    style.linecap,
                 )?,
                 SceneRecordKind::Scatter => {
                     let geometry = MarkerGeometry::new(
@@ -10114,7 +10272,7 @@ impl SceneDocument {
                         out.extend_from_slice(&style.stroke);
                         out.push(0);
                         push_raster_dash(out, style.dash_values(), scale)?;
-                        out.push(1);
+                        out.push(style.linecap);
                     }
                 }
             }
@@ -11778,6 +11936,29 @@ mod tests {
         let (polar, paint, dash) = split_scene_extras(&extras_v2).unwrap();
         assert!(polar.is_empty() && paint.is_empty());
         assert_eq!(dash, xyds.as_slice());
+        let xylc = encode_xylc(&[StyleCap {
+            style_ref: 0,
+            cap: LINECAP_BUTT,
+        }])
+        .unwrap();
+        let (polar, paint, dash) = split_scene_extras(&xylc).unwrap();
+        assert!(polar.is_empty() && paint.is_empty());
+        assert_eq!(dash, xylc.as_slice());
+        let mut combined = xyds.clone();
+        combined.extend_from_slice(&xylc);
+        let (polar, paint, dash) = split_scene_extras(&combined).unwrap();
+        assert!(polar.is_empty() && paint.is_empty());
+        assert_eq!(dash, combined.as_slice());
+        let mut extras_v2_caps = Vec::new();
+        extras_v2_caps.extend_from_slice(b"XYEX");
+        extras_v2_caps.extend_from_slice(&2u32.to_le_bytes());
+        extras_v2_caps.extend_from_slice(&0u32.to_le_bytes());
+        extras_v2_caps.extend_from_slice(&0u32.to_le_bytes());
+        extras_v2_caps.extend_from_slice(&(combined.len() as u32).to_le_bytes());
+        extras_v2_caps.extend_from_slice(&combined);
+        let (polar, paint, dash) = split_scene_extras(&extras_v2_caps).unwrap();
+        assert!(polar.is_empty() && paint.is_empty());
+        assert_eq!(dash, combined.as_slice());
         assert!(split_scene_extras(b"nope").is_none());
     }
 
@@ -11815,7 +11996,7 @@ mod tests {
         .with_dashes(&xyds)
         .unwrap()
         .encode();
-        assert_eq!(&encoded[4..8], &28u32.to_le_bytes());
+        assert_eq!(&encoded[4..8], &29u32.to_le_bytes());
         assert!(encoded.windows(4).any(|window| window == b"XYDS"));
         let document = SceneDocument::decode(&encoded).unwrap();
         let svg = document.to_svg();
@@ -11843,8 +12024,75 @@ mod tests {
         )
         .unwrap()
         .encode();
-        assert_eq!(&undashed[4..8], &28u32.to_le_bytes());
+        assert_eq!(&undashed[4..8], &29u32.to_le_bytes());
         assert!(!undashed.windows(4).any(|window| window == b"XYDS"));
+    }
+
+    #[test]
+    fn constant_linecap_sidecar_reaches_svg_and_raster() {
+        let layout = PlotLayout::new(240.0, 160.0, 20.0, 20.0, 20.0, 20.0).unwrap();
+        let x_scale = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 20.0, 220.0, 1.0, false).unwrap();
+        let y_scale = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 140.0, 20.0, 1.0, false).unwrap();
+        let xylc = encode_xylc(&[StyleCap {
+            style_ref: 0,
+            cap: LINECAP_BUTT,
+        }])
+        .unwrap();
+        let encoded = SceneBatch::new(
+            layout,
+            1,
+            2,
+            x_scale,
+            y_scale,
+            &[SceneRecordKind::Polyline as u8, SceneRecordKind::Polyline as u8],
+            &[11, 11],
+            &[0, 0],
+            &[0, 0, 0, 0],
+            &[37, 99, 235, 255],
+            &[1.5],
+            &[0.0, 0.0],
+            &[0, 0],
+            &[0.0, 1.0],
+            &[0.0, 1.0],
+            &[0.0, 0.0],
+            &[0.0, 0.0],
+        )
+        .unwrap()
+        .with_dashes(&xylc)
+        .unwrap()
+        .encode();
+        assert_eq!(&encoded[4..8], &29u32.to_le_bytes());
+        assert!(encoded.windows(4).any(|window| window == b"XYLC"));
+        let document = SceneDocument::decode(&encoded).unwrap();
+        let svg = document.to_svg();
+        assert!(svg.contains("stroke-linecap=\"butt\""));
+        let raster = document.to_raster_commands(1.0).unwrap();
+        assert!(raster.contains(&LINECAP_BUTT));
+        let round_default = SceneBatch::new(
+            layout,
+            1,
+            2,
+            x_scale,
+            y_scale,
+            &[SceneRecordKind::Polyline as u8, SceneRecordKind::Polyline as u8],
+            &[11, 11],
+            &[0, 0],
+            &[0, 0, 0, 0],
+            &[37, 99, 235, 255],
+            &[1.5],
+            &[0.0, 0.0],
+            &[0, 0],
+            &[0.0, 1.0],
+            &[0.0, 1.0],
+            &[0.0, 0.0],
+            &[0.0, 0.0],
+        )
+        .unwrap()
+        .encode();
+        assert!(!round_default.windows(4).any(|window| window == b"XYLC"));
+        let round_svg = SceneDocument::decode(&round_default).unwrap().to_svg();
+        assert!(round_svg.contains("stroke-linecap=\"round\""));
+        assert!(!round_svg.contains("stroke-linecap=\"butt\""));
     }
 
     #[test]
@@ -12426,7 +12674,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 28);
+        assert_eq!(SCENE_VERSION, 29);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"

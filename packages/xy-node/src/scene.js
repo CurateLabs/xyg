@@ -1224,6 +1224,33 @@ function packXyds(dashes) {
   return out;
 }
 
+function parseSceneLinecap(value) {
+  if (value == null) return null;
+  const name = String(value).trim().toLowerCase();
+  if (name === "butt") return 0;
+  if (name === "square") return 2;
+  if (name === "round") return null;
+  return false;
+}
+
+function packXylc(linecaps) {
+  const entries = linecaps.map((cap, index) => [index, cap]).filter(([, cap]) => cap === 0 || cap === 2);
+  if (!entries.length) return new Uint8Array();
+  const out = new Uint8Array(16 + entries.length * 8);
+  const view = new DataView(out.buffer);
+  out.set(encodeUtf8Magic("XYLC"), 0);
+  view.setUint32(4, 1, true);
+  view.setUint32(8, entries.length, true);
+  view.setUint32(12, 0, true);
+  let offset = 16;
+  for (const [styleRef, cap] of entries) {
+    view.setUint32(offset, styleRef, true);
+    out[offset + 4] = cap;
+    offset += 8;
+  }
+  return out;
+}
+
 function packSceneExtras(polar, paint, dash = new Uint8Array()) {
   if (!polar.length && !paint.length && !dash.length) return new Uint8Array();
   if (polar.length && !paint.length && !dash.length) return polar;
@@ -1675,8 +1702,8 @@ export function sceneBatchEncode({
     : asUnsignedArray(polarInput, "polarInput", 255, Uint8Array);
   if (polar.length) {
     const magic = String.fromCharCode(...polar.subarray(0, 4));
-    if (!["XYPL", "XYHP", "XYEX", "XYDS"].includes(magic)) {
-      throw new RangeError("polarInput must be empty, XYPL, XYHP, XYEX, or XYDS");
+    if (!["XYPL", "XYHP", "XYEX", "XYDS", "XYLC"].includes(magic)) {
+      throw new RangeError("polarInput must be empty, XYPL, XYHP, XYEX, XYDS, or XYLC");
     }
     if (magic === "XYPL" && polar.length !== 92) {
       throw new RangeError("polarInput must be empty or a 92-byte XYPL v1 envelope");
@@ -2772,7 +2799,9 @@ function figureTraceSupport(figure, trace) {
   ) flags |= XYFS_TRACE_DENSITY;
   if (XYFS_CURVE_MARKER_KEYS.some((key) => style[key] != null)) flags |= XYFS_TRACE_DASHED_MARKERS;
   const linecap = style.linecap ?? style.lineCap;
-  if (linecap != null && linecap !== "round") flags |= XYFS_TRACE_DASHED_MARKERS;
+  if (linecap != null && !["butt", "round", "square"].includes(String(linecap).trim().toLowerCase())) {
+    flags |= XYFS_TRACE_DASHED_MARKERS;
+  }
   if (style.dash != null && parseSceneDash(style.dash) === false) flags |= XYFS_TRACE_DASHED_MARKERS;
   if (RECT_KINDS.has(kind) || HEATMAP_KINDS.has(kind)) flags |= rectExtraFlags(style);
   if (POLYFILL_KINDS.has(kind) && style.joined_fill) flags |= XYFS_TRACE_JOINED_FILL;
@@ -2802,7 +2831,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   try { encodedColorbar = colorbarInput(figure); } catch { colorbarUnsupported = Boolean(figure.colorbarOptions ?? figure.colorbar_options); }
   const reason = sceneFigureSupportReason(figure, { colorbarUnsupported });
   if (reason) throw new RangeError(reason);
-  const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], expansionModes = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [], dashes = [], legendEntries = [], heatmapPaintPlanes = [];
+  const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], expansionModes = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [], dashes = [], linecaps = [], legendEntries = [], heatmapPaintPlanes = [];
   const xDomain = figure._range("x");
   const yDomain = figure._range("y");
   const sceneAxis = (axis, id, domain) => {
@@ -2834,6 +2863,8 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     styles.push(resolveMarkStyle(trace, opacity, fillOpacity, strokeOpacity, lineOpacity, symbolCode));
     const parsedDash = parseSceneDash(style.dash);
     dashes.push(parsedDash === false ? null : parsedDash);
+    const parsedCap = parseSceneLinecap(style.linecap ?? style.lineCap);
+    linecaps.push(parsedCap === false ? null : parsedCap);
     const styleRef = styles.length - 1;
     if (trace.name != null && String(trace.name).length > 0 && figure.showLegend !== false) {
       const legendKind = trace.kind === "scatter" ? 0 : STROKE_KINDS.has(trace.kind) ? 1 : 2;
@@ -2994,7 +3025,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     if (annotation.class_name != null && annotation.class_name !== "") throw new RangeError(sceneSupportReason(1n << 2n));
     const style = { ...(annotation.style ?? {}) };
     const hasAttachedLabel = annotation.text != null && annotation.text !== "";
-    const allowed = new Set(kind === "rule" ? ["color", "opacity", "width", "dash"] : kind === "marker" ? ["color", "opacity", "stroke_color", "stroke_width"] : ["color", "opacity"]);
+    const allowed = new Set(kind === "rule" ? ["color", "opacity", "width", "dash", "linecap"] : kind === "marker" ? ["color", "opacity", "stroke_color", "stroke_width"] : ["color", "opacity"]);
     if (hasAttachedLabel) { allowed.add("label_color"); allowed.add("label_opacity"); allowed.add("label_background"); allowed.add("label_border_color"); allowed.add("label_border_width"); }
     const unsupported = Object.keys(style).filter((key) => !allowed.has(key) && style[key] != null).sort();
     if (unsupported.length) throw new RangeError(`Scene v12 ${kind} annotation style does not encode ${JSON.stringify(unsupported)}`);
@@ -3009,6 +3040,9 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     const parsedDash = kind === "rule" ? parseSceneDash(style.dash) : null;
     if (parsedDash === false) throw new RangeError(`Scene v12 ${kind} annotation dash is not a constant pattern`);
     dashes.push(parsedDash);
+    const parsedCap = kind === "rule" ? parseSceneLinecap(style.linecap ?? style.lineCap) : null;
+    if (parsedCap === false) throw new RangeError(`Scene v12 ${kind} annotation linecap is not a Scene cap`);
+    linecaps.push(parsedCap === false ? null : parsedCap);
     const styleRef = styles.length - 1;
     const tag = kind === "band" && annotation.axis === "y" ? 4n : { rule: 1n, band: 2n, marker: 3n }[kind];
     const stableId = annotationPrefix | (tag << 40n) | BigInt(annotationIndex);
@@ -3108,7 +3142,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   return sceneBatchEncode({ viewport: [figure.width, figure.height], margins: resolvedMargins,
     xAxis: xSceneAxis, yAxis: ySceneAxis,
     kinds, stableIds, styleRefs, styles, diameter, symbols, expansionModes, x0, y0, x1, y1,
-    title, xLabel, yLabel, chromeStyle: figureChromeStyle(figure), xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, xMinorTicks: (figure.xAxis ?? figure.x_axis)?.minorTickValues ?? (figure.xAxis ?? figure.x_axis)?.minor_tick_values ?? [], yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, yMinorTicks: (figure.yAxis ?? figure.y_axis)?.minorTickValues ?? (figure.yAxis ?? figure.y_axis)?.minor_tick_values ?? [], xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, xFormat: xSceneAxis.format, yFormat: ySceneAxis.format, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText, polarInput: packSceneExtras(packPolarSceneInput(figure), packXyhp(heatmapPaintPlanes), packXyds(dashes)),
+    title, xLabel, yLabel, chromeStyle: figureChromeStyle(figure), xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, xMinorTicks: (figure.xAxis ?? figure.x_axis)?.minorTickValues ?? (figure.xAxis ?? figure.x_axis)?.minor_tick_values ?? [], yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, yMinorTicks: (figure.yAxis ?? figure.y_axis)?.minorTickValues ?? (figure.yAxis ?? figure.y_axis)?.minor_tick_values ?? [], xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, xFormat: xSceneAxis.format, yFormat: ySceneAxis.format, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText, polarInput: packSceneExtras(packPolarSceneInput(figure), packXyhp(heatmapPaintPlanes), (() => { const dash = packXyds(dashes); const cap = packXylc(linecaps); if (!dash.length) return cap; if (!cap.length) return dash; const out = new Uint8Array(dash.length + cap.length); out.set(dash, 0); out.set(cap, dash.length); return out; })()),
   });
 }
 

@@ -121,7 +121,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 138;
+pub const ABI_VERSION: u32 = 139;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1504,7 +1504,8 @@ fn decode_scene_authoring_input(bytes: &[u8]) -> Option<(Option<&str>, Option<&s
 /// Host view for `xyg_scene_batch_encode` extras input. Koffi's 64-parameter
 /// ceiling packs `data` + `len` as one pointer immediately before `out`.
 /// Bytes may be XYPL (polar), XYHP (painted heatmap or density blit), XYDS
-/// (constant dash), or XYEX (v1 polar+paint, v2 polar+paint+dash).
+/// (constant dash), XYLC (constant linecap), XYDS+XYLC concat, or XYEX
+/// (v1 polar+paint, v2 polar+paint+dash/linecap).
 #[repr(C)]
 struct PolarAbiInput {
     data: *const u8,
@@ -1543,7 +1544,9 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// expansion mode `DensityBlit=10` emits one Image record plus an XYIM
 /// RGBA sidecar. ABI 138 reuses that pointer for XYDS constant-dash tables
 /// (raw XYDS, or XYEX v2 when combined with polar/paint); Scene v28 appends
-/// an XYDS sidecar after XYIM so `scene_svg` retains dash.
+/// an XYDS sidecar after XYIM so `scene_svg` retains dash. ABI 139 reuses
+/// that pointer for XYLC constant-linecap tables (raw XYLC, XYDS+XYLC concat,
+/// or XYEX v2 `dash_len` covering both); Scene v29 appends XYLC after XYDS.
 /// Polar `HeatmapLattice`
 /// and `HeatmapPainted` inputs expand in data space, then tessellate to
 /// PolyFill wedges. Polar density and Image records stay fail-closed.

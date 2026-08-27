@@ -7,22 +7,23 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 28 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 29 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in Scene v28, so additive emission is not safe.
+bitmap or schema negotiation in Scene v29, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
 `validate_scene_batch` is the allocation-free Rust decoder used by the #59
-WASM lifecycle foundation; it validates the current Scene v28 batch layout,
+WASM lifecycle foundation; it validates the current Scene v29 batch layout,
 including the shared fixed 160-byte Cartesian header/mark widths retained
 since version 4 (only the version u32 at offset 4 changes for Cartesian
 scenes), bounds, reserved bytes, kinds, style references, finite coordinates,
 canonical hidden-record zeroing, the optional polar XYPL sidecar after
 the chrome trailer, the optional XYIM image-blit sidecar for Scene Image
-records, and the optional XYDS constant-dash sidecar after XYIM rather than
+records, the optional XYDS constant-dash sidecar after XYIM, and the optional
+XYLC constant-linecap sidecar after XYDS rather than
 duplicating offsets in TypeScript.
 
 The IR is an in-process typed contract, not a JSON data path. Numeric arrays
@@ -356,8 +357,14 @@ host style_ref on the extras pointer (raw XYDS, or XYEX v2 when combined with
 polar/paint); Rust stores dash on encoded styles and appends an XYDS sidecar
 after XYIM so SVG/raster retain `stroke-dasharray`. The public-export style
 allowlist includes `dash` for line, area, and polyline-like segment kinds so
-`to_svg()` / `public_static_export` stay on the Scene route. Curve, non-round
-linecap, and authored markers stay on the compatibility exporters.
+`to_svg()` / `public_static_export` stay on the Scene route.
+ABI 139 / Scene v29 admits constant non-round linecaps (`butt` / `square`;
+`round` remains the omitted default): hosts pack XYLC keyed by host style_ref
+on the same extras pointer (raw XYLC, XYDS+XYLC concat, or XYEX v2 `dash_len`
+covering both); Rust stores `linecap` on encoded styles and appends XYLC after
+XYDS so SVG/raster retain `stroke-linecap`. The public-export style allowlist
+includes `linecap` for the same polyline-like kinds. Curve and authored markers
+stay on the compatibility exporters.
 
 ABI 110 adds `xyg_scene_pack_legend` so both hosts pass loc/flags/paints
 and receive XYLG bytes; header layout, text offsets, and bounded-text
@@ -1184,7 +1191,9 @@ drift. ABI 137 / Scene v27 adds `DensityBlit=10`, `SceneRecordKind::Image=5`,
 and the XYIM sidecar so Cartesian constant-style density scatter compiles
 as one image blit instead of a Rect lattice; polar density stays
 compatibility. ABI 138 / Scene v28 adds the XYDS constant-dash sidecar so
-dashed polylines compile on Scene; curve/non-round/authored markers stay
+dashed polylines compile on Scene. ABI 139 / Scene v29 adds the XYLC
+constant-linecap sidecar so butt/square caps compile on Scene; curve and
+authored markers stay
 compatibility. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;
