@@ -121,7 +121,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 136;
+pub const ABI_VERSION: u32 = 137;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1503,7 +1503,7 @@ fn decode_scene_authoring_input(bytes: &[u8]) -> Option<(Option<&str>, Option<&s
 
 /// Host view for `xyg_scene_batch_encode` extras input. Koffi's 64-parameter
 /// ceiling packs `data` + `len` as one pointer immediately before `out`.
-/// Bytes may be XYPL (polar), XYHP (painted heatmap), or XYEX (both).
+/// Bytes may be XYPL (polar), XYHP (painted heatmap or density blit), or XYEX (both).
 #[repr(C)]
 struct PolarAbiInput {
     data: *const u8,
@@ -1538,14 +1538,18 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8])
 /// carry the ABI 96 `XYAF` envelope for bounded primary-axis numeric formats;
 /// ABI 133 packs polar authoring as one extras pointer so the function stays
 /// at Koffi's 64-parameter ceiling. ABI 134 reuses that pointer for XYHP
-/// painted-heatmap planes (or XYEX wrapping XYPL+XYHP). Polar `HeatmapLattice`
+/// ABI 137 reuses that pointer for XYHP density-blit planes (kind 3);
+/// expansion mode `DensityBlit=10` emits one Image record plus an XYIM
+/// RGBA sidecar. Polar `HeatmapLattice`
 /// and `HeatmapPainted` inputs expand in data space, then tessellate to
-/// PolyFill wedges. Returns required bytes or `usize::MAX` on error.
+/// PolyFill wedges. Polar density and Image records stay fail-closed.
+/// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
 /// Every record input array must address `len` readable elements. The chrome
 /// style pointer must address exactly `SCENE_CHROME_STYLE_INPUT_BYTES` bytes;
-/// `expansion_modes` must address `len` bytes, each in the bounded ABI 104 enum;
+/// `expansion_modes` must address `len` bytes, each in the bounded ABI 104 enum
+/// (ABI 137 extends it with `DensityBlit=10`);
 /// each tick pointer must address its corresponding count when non-zero. Text
 /// and bounded legend-input pointers must address `*_len` readable bytes when
 /// non-zero. If capacity is sufficient, `out` must address `out_cap` writable
@@ -1831,7 +1835,7 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         // expansion is data-space (rows×cols Rect cells, painted planes intern
         // unique fills), then `with_polar` tessellates those cells to PolyFill
         // annular sectors.
-        let (records, painted_styles) = scene::expand_scene_records_painted(
+        let (records, painted_styles, images) = scene::expand_scene_records_painted(
             scene::SceneExpansionInput {
                 kinds,
                 stable_ids,
@@ -1941,6 +1945,8 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         )
         .ok()?;
         batch
+            .with_images(images)
+            .ok()?
             .with_polar(polar_bytes)
             .ok()?
             .with_authored_annotations(authored_text_bytes)
@@ -13927,6 +13933,10 @@ mod tests {
         let y = [2.0_f64, 4.0];
         let mut out = [0u8; 112];
         let scatter = b"scatter";
+        assert_eq!(
+            unsafe { xyg_scene_resolve_pack_kind(scatter.as_ptr(), scatter.len(), 1 << 2) },
+            10
+        );
         let sx = [0.0_f64, 1.0];
         let sy = [2.0_f64, 3.0];
         let code = unsafe {

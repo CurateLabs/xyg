@@ -21,10 +21,12 @@ pub const PACK_HEXBIN: u8 = 6;
 pub const PACK_HEATMAP: u8 = 7;
 pub const PACK_SEGMENT: u8 = 8;
 pub const PACK_HEATMAP_PAINTED: u8 = 9;
+pub const PACK_DENSITY_BLIT: u8 = 10;
 
 pub const FLAG_STROKE_PERIMETER: u8 = 1 << 0;
 pub const FLAG_HEATMAP_PAINTED: u8 = 1 << 1;
-const PACK_FLAGS: u8 = FLAG_STROKE_PERIMETER | FLAG_HEATMAP_PAINTED;
+pub const FLAG_DENSITY_BLIT: u8 = 1 << 2;
+const PACK_FLAGS: u8 = FLAG_STROKE_PERIMETER | FLAG_HEATMAP_PAINTED | FLAG_DENSITY_BLIT;
 
 const KIND_SCATTER: u8 = 0;
 const KIND_POLYLINE: u8 = 1;
@@ -39,6 +41,7 @@ const EXP_HEATMAP: u8 = 6;
 const EXP_SEGMENT: u8 = 7;
 const EXP_TRIANGLE: u8 = 8;
 const EXP_HEATMAP_PAINTED: u8 = 9;
+const EXP_DENSITY_BLIT: u8 = 10;
 
 /// Why a pack request was rejected. Discriminants are the C-ABI error codes
 /// (returned negated by `xyg_scene_pack_trace`).
@@ -166,7 +169,7 @@ pub fn packed_row_count(pack_kind: u8, n: usize) -> Result<usize, PackError> {
     let count = match pack_kind {
         PACK_SCATTER | PACK_LINE | PACK_RECT | PACK_BAND | PACK_HEXBIN | PACK_SEGMENT => n,
         PACK_RIBBON | PACK_TRIANGLE => n.checked_mul(2).ok_or(PackError::Limit)?,
-        PACK_HEATMAP | PACK_HEATMAP_PAINTED => 2,
+        PACK_HEATMAP | PACK_HEATMAP_PAINTED | PACK_DENSITY_BLIT => 2,
         _ => return Err(PackError::Length),
     };
     if count > MAX_SCENE_MARKS {
@@ -181,8 +184,18 @@ pub fn resolve_pack_kind(kind: &str, flags: u8) -> Result<u8, PackError> {
         return Err(PackError::Length);
     }
     let painted = flags & FLAG_HEATMAP_PAINTED != 0;
+    let density = flags & FLAG_DENSITY_BLIT != 0;
+    if painted && density {
+        return Err(PackError::Length);
+    }
     let pack_kind = match kind {
-        "scatter" => PACK_SCATTER,
+        "scatter" => {
+            if density {
+                PACK_DENSITY_BLIT
+            } else {
+                PACK_SCATTER
+            }
+        }
         "line" => PACK_LINE,
         "bar" | "column" | "histogram" | "violin" | "box" => PACK_RECT,
         "area" | "error_band" => PACK_BAND,
@@ -202,6 +215,9 @@ pub fn resolve_pack_kind(kind: &str, flags: u8) -> Result<u8, PackError> {
         _ => return Err(PackError::UnknownKind),
     };
     if painted && pack_kind != PACK_HEATMAP_PAINTED {
+        return Err(PackError::Length);
+    }
+    if density && pack_kind != PACK_DENSITY_BLIT {
         return Err(PackError::Length);
     }
     Ok(pack_kind)
@@ -246,7 +262,7 @@ pub fn pack_product(input: ProductPackInput<'_>) -> Result<Vec<PackedSceneRow>, 
             require_used(&[input.x0, input.y0, input.x1, input.y1, input.x, input.y])?;
             pack(&[input.x0, input.y0, input.x1, input.y1, input.x, input.y])
         }
-        PACK_HEATMAP | PACK_HEATMAP_PAINTED => {
+        PACK_HEATMAP | PACK_HEATMAP_PAINTED | PACK_DENSITY_BLIT => {
             let extent = heatmap_extent_columns(&input)?;
             pack(&[
                 extent[0].as_slice(),
@@ -304,6 +320,7 @@ pub fn pack_trace(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, Pack
         PACK_HEXBIN => pack_hexbin(input),
         PACK_HEATMAP => pack_heatmap(input, EXP_HEATMAP),
         PACK_HEATMAP_PAINTED => pack_heatmap(input, EXP_HEATMAP_PAINTED),
+        PACK_DENSITY_BLIT => pack_heatmap(input, EXP_DENSITY_BLIT),
         _ => Err(PackError::Length),
     }
 }
@@ -1017,6 +1034,18 @@ mod tests {
             resolve_pack_kind("line", FLAG_HEATMAP_PAINTED),
             Err(PackError::Length)
         );
+        assert_eq!(
+            resolve_pack_kind("scatter", FLAG_DENSITY_BLIT).unwrap(),
+            PACK_DENSITY_BLIT
+        );
+        assert_eq!(
+            resolve_pack_kind("heatmap", FLAG_DENSITY_BLIT),
+            Err(PackError::Length)
+        );
+        assert_eq!(
+            resolve_pack_kind("scatter", FLAG_HEATMAP_PAINTED | FLAG_DENSITY_BLIT),
+            Err(PackError::Length)
+        );
         assert_eq!(resolve_pack_kind("density", 0), Err(PackError::UnknownKind));
     }
 
@@ -1089,6 +1118,42 @@ mod tests {
         assert_eq!(
             (rows[0].x0, rows[0].y0, rows[0].x1, rows[0].y1),
             (1.0, 2.0, 3.0, 4.0)
+        );
+    }
+
+    #[test]
+    fn pack_product_density_blit_uses_extent_envelope() {
+        let x0 = [0.0];
+        let y0 = [1.0];
+        let x1 = [2.0];
+        let y1 = [3.0];
+        let rows = pack_product(ProductPackInput {
+            kind: "scatter",
+            flags: FLAG_DENSITY_BLIT,
+            step_mode: 0,
+            symbol: 0,
+            style_ref: 0,
+            trace_id: 4,
+            diameter: 0.0,
+            extra0: 384.0,
+            extra1: 512.0,
+            x: &[],
+            y: &[],
+            x0: &x0,
+            y0: &y0,
+            x1: &x1,
+            y1: &y1,
+            base: &[],
+        })
+        .unwrap();
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[0].kind, KIND_RECT);
+        assert_eq!(rows[0].expansion_mode, EXP_DENSITY_BLIT);
+        assert_eq!(rows[0].diameter, 384.0);
+        assert_eq!(rows[1].diameter, 512.0);
+        assert_eq!(
+            (rows[0].x0, rows[0].y0, rows[0].x1, rows[0].y1),
+            (0.0, 1.0, 2.0, 3.0)
         );
     }
 

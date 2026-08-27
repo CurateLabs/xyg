@@ -59,6 +59,7 @@ const TRACE_COMPANION_XY_MATCH: u32 = 1 << 18;
 const TRACE_COMPANION_AXES_MATCH: u32 = 1 << 19;
 const TRACE_BOX_OUTLIER_FINITE: u32 = 1 << 20;
 const TRACE_SYMBOL_NON_STRING: u32 = 1 << 21;
+const TRACE_DENSITY_BLIT: u32 = 1 << 22;
 
 const KIND_SCATTER: u8 = 0;
 const KIND_LINE: u8 = 1;
@@ -656,7 +657,10 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
         } else {
             MAX_PUBLIC_POINTS
         };
-        if trace.flags & TRACE_HAS_X != 0 && trace.n_x as usize > point_limit {
+        if trace.flags & TRACE_HAS_X != 0
+            && trace.n_x as usize > point_limit
+            && (trace.kind != KIND_SCATTER || trace.flags & TRACE_DENSITY_BLIT == 0)
+        {
             return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
         }
         if kind_band(trace.kind) && (trace.flags & TRACE_HAS_X == 0 || trace.n_x < 2) {

@@ -15,6 +15,7 @@ from typing import Any
 import numpy as np
 
 from . import _native
+from .config import DENSITY_GRID
 from .marks import _SYMBOL_CODES
 
 # Host mark kinds that lower to Scene Rect (kind 2). Geometry is already
@@ -508,6 +509,7 @@ _KIND_CODES = {
 
 _PACK_FLAG_STROKE_PERIMETER = 1
 _PACK_FLAG_HEATMAP_PAINTED = 2
+_PACK_FLAG_DENSITY_BLIT = 4
 
 
 class UnsupportedSceneV3(ValueError):
@@ -531,18 +533,21 @@ def _append_packed(
     expansion_modes: list[int],
     coordinates: list[list[float]],
     trace: Any,
+    *,
+    columns: list[np.ndarray | None] | None = None,
     **kwargs: Any,
 ) -> None:
     """Append Rust-packed Scene rows for one product-kind geometry envelope."""
-    columns = [
-        _trace_column(trace, "x"),
-        _trace_column(trace, "y"),
-        _trace_column(trace, "x0"),
-        _trace_column(trace, "y0"),
-        _trace_column(trace, "x1"),
-        _trace_column(trace, "y1"),
-        _trace_column(trace, "base"),
-    ]
+    if columns is None:
+        columns = [
+            _trace_column(trace, "x"),
+            _trace_column(trace, "y"),
+            _trace_column(trace, "x0"),
+            _trace_column(trace, "y0"),
+            _trace_column(trace, "x1"),
+            _trace_column(trace, "y1"),
+            _trace_column(trace, "base"),
+        ]
     try:
         (
             packed_kinds,
@@ -891,7 +896,7 @@ def _rect_extra_flags(style: dict[str, Any]) -> int:
     return flags
 
 
-def _figure_trace_support_flags(trace: Any) -> tuple[int, str]:
+def _figure_trace_support_flags(trace: Any, *, polar: bool = False) -> tuple[int, str]:
     """Observe per-trace Scene allowlist bits; Rust owns the diagnostic."""
     kind = str(getattr(trace, "kind", "") or "mark")
     style = getattr(trace, "style", None) or {}
@@ -902,7 +907,7 @@ def _figure_trace_support_flags(trace: Any) -> tuple[int, str]:
         flags |= _XYFS_TRACE_NON_PRIMARY_AXIS
     if getattr(trace, "hidden", False) or trace.has_per_item_channels():
         flags |= _XYFS_TRACE_HIDDEN_OR_PER_ITEM
-    if kind == "scatter" and trace.use_density():
+    if kind == "scatter" and trace.use_density() and polar:
         flags |= _XYFS_TRACE_DENSITY
     if any(key in style for key in _XYFS_DASH_KEYS):
         flags |= _XYFS_TRACE_DASHED_MARKERS
@@ -1058,6 +1063,96 @@ def _heatmap_paint_plane(
     return header + payload
 
 
+def _density_opacity(style: dict[str, Any]) -> float:
+    """Match `_svg._density_image`: whole-mark opacity times fill-only opacity."""
+    return float(style.get("opacity", 0.85)) * float(style.get("fill_opacity", 1.0))
+
+
+def _density_paint_plane(
+    trace: Any,
+    encoded: np.ndarray,
+    rows: int,
+    cols: int,
+    maximum: float,
+    stable_id: int,
+) -> bytes:
+    """XYHP kind 3: log-u8 grid plus a named colormap or constant-color stops."""
+    style = getattr(trace, "style", None) or {}
+    encoded_u8 = np.ascontiguousarray(np.asarray(encoded, dtype=np.uint8).reshape(-1))
+    if encoded_u8.size != rows * cols:
+        raise UnsupportedSceneV3("Scene density grid must match DENSITY_GRID")
+    opacity = _density_opacity(style)
+    constant = None
+    channel = getattr(trace, "color_ch", None)
+    if channel is not None and channel.mode == "constant" and channel.constant is not None:
+        constant = str(channel.constant)
+    colormap = style.get("colormap")
+    if constant is None and colormap is None and style.get("color") is not None:
+        constant = str(style.get("color"))
+    if constant is not None:
+        red, green, blue, _alpha = _native.css_color_rgba(constant, 1.0)
+        payload = (
+            struct.pack("<ddII", float(maximum), float(opacity), 2, 1)
+            + encoded_u8.tobytes()
+            + bytes((int(red), int(green), int(blue), int(red), int(green), int(blue)))
+        )
+    elif isinstance(colormap, str) or colormap is None:
+        name = str(colormap or "viridis").encode("utf-8")
+        payload = (
+            struct.pack("<ddII", float(maximum), float(opacity), len(name), 0)
+            + encoded_u8.tobytes()
+            + name
+        )
+    else:
+        stops = np.ascontiguousarray(
+            [(int(r), int(g), int(b)) for r, g, b in colormap],
+            dtype=np.uint8,
+        )
+        if stops.ndim != 2 or stops.shape[1] != 3 or stops.shape[0] < 1:
+            raise UnsupportedSceneV3("Scene density colormap requires RGB stops")
+        payload = (
+            struct.pack("<ddII", float(maximum), float(opacity), int(stops.shape[0]), 1)
+            + encoded_u8.tobytes()
+            + np.ascontiguousarray(stops).tobytes()
+        )
+    header = struct.pack("<QIIII", int(stable_id), int(rows), int(cols), 3, len(payload))
+    return header + payload
+
+
+def _density_blit_pack(
+    figure: Any, trace: Any
+) -> tuple[float, float, bytes, list[np.ndarray | None]] | None:
+    """Pack Cartesian constant-style density as one compact Image lattice."""
+    if not trace.use_density():
+        return None
+    xv = _trace_column(trace, "x")
+    yv = _trace_column(trace, "y")
+    if xv is None or yv is None or len(xv) != len(yv) or len(xv) == 0:
+        return None
+    xr0, xr1 = (float(value) for value in figure._range("x"))
+    yr0, yr1 = (float(value) for value in figure._range("y"))
+    if not (
+        math.isfinite(xr0) and math.isfinite(xr1) and math.isfinite(yr0) and math.isfinite(yr1)
+    ):
+        return None
+    if xr1 <= xr0 or yr1 <= yr0:
+        return None
+    cols, rows = DENSITY_GRID
+    grid = _native.bin_2d(xv, yv, xr0, xr1, yr0, yr1, int(cols), int(rows))
+    encoded, gmax = _native.density_log_u8(grid)
+    plane = _density_paint_plane(trace, encoded, int(rows), int(cols), float(gmax), int(trace.id))
+    columns: list[np.ndarray | None] = [
+        np.asarray([xr0, xr1], dtype=np.float64),
+        np.asarray([yr0, yr1], dtype=np.float64),
+        None,
+        None,
+        None,
+        None,
+        None,
+    ]
+    return float(rows), float(cols), plane, columns
+
+
 def _pack_xyhp(planes: list[bytes]) -> bytes:
     """Wrap painted-heatmap planes in an XYHP v1 envelope."""
     if not planes:
@@ -1152,6 +1247,7 @@ def figure_scene(
         step_mode = 0
         pack_symbol = 0
         pack_diameter = 0.0
+        pack_columns = None
         if trace.kind in _HEATMAP_KINDS:
             rows, cols = _heatmap_shape(trace)
             values = _heatmap_grid_values(trace)
@@ -1184,6 +1280,13 @@ def figure_scene(
         elif trace.kind == "scatter":
             pack_symbol = _SYMBOL_CODES[symbol_name]
             pack_diameter = diameter
+            density_pack = _density_blit_pack(figure, trace)
+            if density_pack is not None:
+                extra0, extra1, plane, pack_columns = density_pack
+                flags |= _PACK_FLAG_DENSITY_BLIT
+                heatmap_paint_planes.append(plane)
+                pack_symbol = 0
+                pack_diameter = 0.0
         _append_packed(
             kinds,
             stable_ids,
@@ -1193,6 +1296,7 @@ def figure_scene(
             expansion_modes,
             coordinates,
             trace,
+            columns=pack_columns,
             flags=flags,
             step_mode=step_mode,
             symbol=pack_symbol,
@@ -2019,7 +2123,7 @@ def _pack_figure_support(
         payload.extend(len(keys).to_bytes(4, "little"))
         _xyep_put_keys(payload, keys)
     for trace in traces:
-        trace_flags, kind = _figure_trace_support_flags(trace)
+        trace_flags, kind = _figure_trace_support_flags(trace, polar=figure.coords != "cartesian")
         encoded = str(kind).encode("utf-8")[:32]
         payload.extend(trace_flags.to_bytes(2, "little"))
         payload.extend(bytes((len(encoded), 0)))
@@ -2217,6 +2321,12 @@ def _pack_public_export_support(
         if not isinstance(symbol, str):
             flags_tr |= 1 << 21
             symbol = ""
+        if (
+            trace.kind == "scatter"
+            and getattr(figure, "coords", "cartesian") == "cartesian"
+            and trace.use_density()
+        ):
+            flags_tr |= 1 << 22
         role = style.get("role")
         role_s = "" if role is None else str(role)
         reduce = style.get("reduce")

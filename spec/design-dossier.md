@@ -1425,6 +1425,9 @@ per-cell literal Rect fills. ABI 135 named colormap tables live in Rust
 (`xyg_colormap_stops`, XYHP paint kind 2). ABI 136 product-kind packing
 (`xyg_scene_resolve_pack_kind` / `xyg_scene_pack_product`) maps authored
 kinds onto compact pack kinds so hosts no longer dispatch pack-kind locally.
+ABI 137 / Scene v27 compiles Cartesian constant-style density scatter as one
+Image blit (`DensityBlit` + XYHP kind 3 + XYIM) instead of a Rect lattice;
+polar density stays compatibility.
 Irregular
 spacing, and LOD stay compatibility.
 

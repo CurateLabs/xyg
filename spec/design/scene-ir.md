@@ -7,21 +7,22 @@ This document is the version contract for that migration.
 ## Ownership and versioning
 
 `crates/xyg-engine/src/scene.rs` owns the canonical scene records.
-`SCENE_VERSION` is 26 and is exposed as `xyg_scene_version`; hosts may
+`SCENE_VERSION` is 27 and is exposed as `xyg_scene_version`; hosts may
 reject an unsupported scene version independently of the C `ABI_VERSION`.
 Changing a record's meaning, units, ordering, bounds, or adding any newly
 emitted record kind requires a scene-version bump. There is no capability
-bitmap or schema negotiation in Scene v26, so additive emission is not safe.
+bitmap or schema negotiation in Scene v27, so additive emission is not safe.
 If capability negotiation lands later, only explicitly negotiated additions
 may avoid a version bump. Consumers must reject an unsupported scene version
 and, once decoders land, fail closed on an unknown kind rather than guessing.
 `validate_scene_batch` is the allocation-free Rust decoder used by the #59
-WASM lifecycle foundation; it validates the current Scene v26 batch layout,
+WASM lifecycle foundation; it validates the current Scene v27 batch layout,
 including the shared fixed 160-byte Cartesian header/mark widths retained
 since version 4 (only the version u32 at offset 4 changes for Cartesian
 scenes), bounds, reserved bytes, kinds, style references, finite coordinates,
-canonical hidden-record zeroing, and the optional polar XYPL sidecar after
-the chrome trailer rather than duplicating offsets in TypeScript.
+canonical hidden-record zeroing, the optional polar XYPL sidecar after
+the chrome trailer, and the optional XYIM image-blit sidecar for Scene Image
+records rather than duplicating offsets in TypeScript.
 
 The IR is an in-process typed contract, not a JSON data path. Numeric arrays
 cross the C ABI as bounded typed buffers and remain subject to the dossier's
@@ -343,6 +344,12 @@ ABI 136 adds `xyg_scene_resolve_pack_kind` / `xyg_scene_pack_product` so
 both hosts pass the authored product kind plus a canonical
 `x`/`y`/`x0`/`y0`/`x1`/`y1`/`base` envelope; Rust owns the kind → pack-kind
 table, heatmap painted-vs-lattice flag, and column remapping.
+ABI 137 / Scene v27 adds `DensityBlit=10` and `SceneRecordKind::Image=5`.
+Cartesian constant-style density scatter packs the heatmap extent lattice
+plus an XYHP kind-3 log-u8 plane; Rust emits one Image record and an XYIM
+RGBA sidecar. Polar density, mean-color density, and custom-font/CSS
+exceptions stay on the compatibility exporters. The interactive browser
+painter skips Image groups; static SVG/raster/PDF consume the blit.
 
 ABI 110 adds `xyg_scene_pack_legend` so both hosts pass loc/flags/paints
 and receive XYLG bytes; header layout, text offsets, and bounded-text
@@ -1165,7 +1172,10 @@ expansion modes, ribbon/triangle doubling, heatmap lattice framing) from
 literal columns. ABI 136 does not change Scene records either;
 `xyg_scene_resolve_pack_kind` / `xyg_scene_pack_product` own product-kind
 mapping and the canonical host column envelope so pack-kind dispatch cannot
-drift. ABI 116 does not change Scene records either;
+drift. ABI 137 / Scene v27 adds `DensityBlit=10`, `SceneRecordKind::Image=5`,
+and the XYIM sidecar so Cartesian constant-style density scatter compiles
+as one image blit instead of a Rect lattice; polar density stays
+compatibility. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;
 `xyg_scene_figure_support_reason` owns figure-compile support from packed

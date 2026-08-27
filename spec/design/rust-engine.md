@@ -174,7 +174,8 @@ crates/
                         #   ribbon/triangle doubling, heatmap lattice framing,
                         #   finite-coordinate rejection, ABI 116
                         #   rule/band/marker domain expansion, and ABI 136
-                        #   product-kind → pack-kind mapping.
+                        #   product-kind → pack-kind mapping plus ABI 137
+                        #   DensityBlit heatmap-extent packing.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -688,5 +689,6 @@ landed; the remainder, in order:
    `scene.rs`) ✅; ABI 134 `HeatmapPainted=9` + XYHP paint intern (`scene.rs`) ✅;
    ABI 135 named colormap tables (`xyg_colormap_stops`, XYHP paint kind 2) ✅;
    ABI 136 product-kind packing (`xyg_scene_resolve_pack_kind` /
-   `xyg_scene_pack_product`) ✅.
+   `xyg_scene_pack_product`) ✅; ABI 137 / Scene v27 `DensityBlit=10` Image
+   blit + XYIM sidecar (`scene.rs`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

@@ -316,7 +316,7 @@ def test_python_expansion_mode_ingress_fails_closed_before_scene_encoding() -> N
     with pytest.raises(ValueError, match="equal length"):
         _native.scene_batch_encode(**base, expansion_modes=[1])
     with pytest.raises(ValueError, match="unsigned integer range"):
-        _native.scene_batch_encode(**base, expansion_modes=[10, 10])
+        _native.scene_batch_encode(**base, expansion_modes=[11, 11])
     with pytest.raises(ValueError, match="invalid canonical scene batch"):
         _native.scene_batch_encode(**{**base, "kinds": [0, 0]}, expansion_modes=[1, 1])
     with pytest.raises(ValueError, match="invalid canonical scene batch"):
@@ -497,7 +497,7 @@ def test_supported_file_exports_match_the_canonical_rust_scene(
 def test_unsupported_public_exports_stay_on_compatibility_path(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    figure = Figure().scatter([0.0, 1.0], [0.0, 1.0], density=True)
+    figure = Figure(coords="polar").scatter([0.0, 1.0], [0.0, 1.0], density=True)
 
     def unexpected_scene_call(*_args: object, **_kwargs: object) -> bytes:
         raise AssertionError(
@@ -740,7 +740,7 @@ def test_python_scene_v8_authors_backgrounds_axis_side_and_major_minor_ticks() -
         },
     )
     encoded = figure.to_scene()
-    assert int.from_bytes(encoded[4:8], "little") == 26
+    assert int.from_bytes(encoded[4:8], "little") == 27
     svg = _native.scene_svg(encoded)
     assert 'fill="rgba(16,32,48,1.000000)"' in svg
     assert 'fill="rgba(241,245,249,1.000000)"' in svg
@@ -790,7 +790,7 @@ def test_scene_v10_explicit_hidden_cartesian_chrome_stays_cartesian() -> None:
 
     figure.coords = "polar"
     polar = figure.to_scene()
-    assert polar[4:8] == (26).to_bytes(4, "little")
+    assert polar[4:8] == (27).to_bytes(4, "little")
     assert polar[-92:-88] == b"XYPL"
 
 
@@ -809,7 +809,7 @@ def test_python_scene_compiles_ribbon_and_triangle_mesh() -> None:
     ribbon.axis_options["y"]["domain"] = (0.0, 1.0)
     ribbon.ribbon([0.1], [0.9], [0.2], [0.5], [0.3], [0.7], color="#7c3aed")
     scene = ribbon.to_scene()
-    assert scene[4:8] == (26).to_bytes(4, "little")
+    assert scene[4:8] == (27).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     assert '<path d="M ' in svg
     assert ' Z"' in svg
@@ -907,7 +907,7 @@ def test_python_scene_compiles_area_and_error_band() -> None:
         expected = FIXTURE["band_outlines"][mode]
         assert scene == base64.b64decode(expected["scene_base64"])
         assert hashlib.sha256(scene).hexdigest() == expected["sha256"]
-        assert scene[4:8] == (26).to_bytes(4, "little")
+        assert scene[4:8] == (27).to_bytes(4, "little")
         assert scene[160:168] == bytes((57, 135, 229, 102, 17, 34, 51, 26))
         assert scene[160 + 16 + 2] == symbol
         svg = _native.scene_svg(scene)
@@ -1053,7 +1053,7 @@ def test_python_scene_attached_label_background_uses_xyal_v3_and_rust_box() -> N
     figure = representative_figure()
     figure.marker(2.0, 2.0, text="threshold", style={"label_background": "#ffffff"})
     scene = figure.to_scene()
-    assert scene[:8] == b"XYGS\x1a\x00\x00\x00"
+    assert scene[:8] == b"XYGS\x1b\x00\x00\x00"
     assert b"XYLB\x03\x00\x00\x00" in scene
     svg = _native.scene_svg(scene)
     assert "threshold" in svg
@@ -1070,22 +1070,36 @@ def test_python_scene_compiles_rect_family_aliases(kind: str) -> None:
     else:
         figure.histogram([1.0, 1.5, 2.0, 2.5, 3.0], bins=4, range=(0.0, 4.0), color="#22c55e")
     scene = figure.to_scene()
-    assert scene[4:8] == (26).to_bytes(4, "little")  # SCENE_VERSION
+    assert scene[4:8] == (27).to_bytes(4, "little")  # SCENE_VERSION
     svg = _native.scene_svg(scene)
     assert svg.count("<rect ") >= 2  # plot clip plus at least one bar
     assert 'clip-path="url(#xy-scene-plot)"' in svg
 
 
-def test_python_scene_rejects_rect_corner_radius_and_density() -> None:
+def test_python_scene_rejects_rect_corner_radius_and_polar_density() -> None:
     rounded = Figure()
     rounded.bar([0, 1], [1, 2], corner_radius=4.0)
     with pytest.raises(UnsupportedSceneV3, match="corner_radius"):
         rounded.to_scene()
-    density = Figure()
+    density = Figure(coords="polar")
     density.scatter([0.0] * 200_000, [0.0] * 200_000, density=True)
     with pytest.raises(UnsupportedSceneV3, match="density-tier"):
         density.to_scene()
     assert "<svg" in density.to_svg()
+
+
+def test_python_scene_compiles_cartesian_density_blit() -> None:
+    figure = Figure(width=240, height=160)
+    figure.axis_options["x"]["domain"] = (-1.0, 1.0)
+    figure.axis_options["y"]["domain"] = (-1.0, 1.0)
+    figure.scatter([0.0] * 200_000, [0.0] * 200_000, density=True, color="#3987e5")
+    scene = figure.to_scene()
+    assert scene[4:8] == (27).to_bytes(4, "little")
+    assert b"XYIM" in scene
+    svg = _native.scene_svg(scene)
+    assert svg.count("<image") == 1
+    assert "data:image/png;base64," in svg
+    assert figure.to_svg() == svg
 
 
 def test_python_scene_rejects_hidden_and_unknown_kind() -> None:

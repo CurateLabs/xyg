@@ -35,19 +35,19 @@ test("Node projects Rust-owned Scene support decisions verbatim", () => {
 
   const polar = new Figure({ coords: "polar" }); polar.line([0, 1], [0, 1]);
   const polarScene = polar.toScene();
-  assert.equal(new DataView(polarScene.buffer, polarScene.byteOffset).getUint32(4, true), 26);
+  assert.equal(new DataView(polarScene.buffer, polarScene.byteOffset).getUint32(4, true), 27);
   const polarSvg = sceneSvg(polarScene);
   assert.ok(polarSvg.includes('data-xy-grid="ring"') || polarSvg.includes("<circle"));
   const polarBar = new Figure({ coords: "polar" }); polarBar.bar([0, 1], [0.5, 0.8]);
   const polarBarScene = polarBar.toScene();
-  assert.equal(new DataView(polarBarScene.buffer, polarBarScene.byteOffset).getUint32(4, true), 26);
+  assert.equal(new DataView(polarBarScene.buffer, polarBarScene.byteOffset).getUint32(4, true), 27);
   const polarHeat = new Figure({ coords: "polar" }); polarHeat.heatmap([[1, 2], [3, 4]]);
   const polarHeatScene = polarHeat.toScene();
   assert.ok(sceneSvg(polarHeatScene).includes("<path"));
   const polarContour = new Figure({ coords: "polar" });
   polarContour.contour([[1, 2], [3, 4]], { levels: 2, color: "#3987e5" });
   const polarContourScene = polarContour.toScene();
-  assert.equal(new DataView(polarContourScene.buffer, polarContourScene.byteOffset).getUint32(4, true), 26);
+  assert.equal(new DataView(polarContourScene.buffer, polarContourScene.byteOffset).getUint32(4, true), 27);
   assert.ok(sceneSvg(polarContourScene).includes("<polyline") || sceneSvg(polarContourScene).includes("<path"));
   const customFont = new Figure(); customFont.line([0, 1], [0, 1]);
   customFont.chromeStyles = { title: { fontFamily: "Example Sans" } };
@@ -370,7 +370,7 @@ test("Node explicit hidden Cartesian chrome omits invisible groups without imply
   const polar = new Figure({ coords: "polar" });
   polar.scatter([0], [1]);
   const polarScene = polar.toScene();
-  assert.equal(new DataView(polarScene.buffer, polarScene.byteOffset).getUint32(4, true), 26);
+  assert.equal(new DataView(polarScene.buffer, polarScene.byteOffset).getUint32(4, true), 27);
   assert.deepEqual(polarScene.subarray(polarScene.length - 92, polarScene.length - 88), Uint8Array.from(Buffer.from("XYPL")));
 });
 
@@ -413,7 +413,7 @@ test("Node Scene v13 compiles bounded primary annotations and fails closed", () 
   for (const annotation of figureSceneFixture.node_public_annotations) figure.annotate(annotation);
   const scene = figure.toScene(), svg = sceneSvg(scene);
   assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), figureSceneFixture.node_public_annotations_sha256);
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 26);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 27);
   assert.ok(svg.indexOf("rgb(255,0,0)") < svg.indexOf("rgb(0,255,0)"));
   assert.ok(svg.indexOf("rgb(0,255,0)") < svg.indexOf("rgb(0,0,255)"));
   figure.annotations[2].text = "must not vanish";
@@ -653,7 +653,7 @@ test("Node Scene v16 frames bounded plain and attached text annotations and reje
   figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
   figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "<safe>" }];
   const scene = figure.toScene();
-  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 26);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 27);
   assert.match(sceneSvg(scene), /&lt;safe&gt;/);
   assert.ok(sceneRasterCommands(scene).length > 100);
   figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "boxed", style: { label_background: "#ffffff" } }];
@@ -934,7 +934,7 @@ test("Node public Figure matches the combined Python authored Scene v25 fixture"
     },
   });
   const scene = figure.toScene();
-  assert.equal(new DataView(scene.buffer, scene.byteOffset, scene.byteLength).getUint32(4, true), 26);
+  assert.equal(new DataView(scene.buffer, scene.byteOffset, scene.byteLength).getUint32(4, true), 27);
   assert.equal(crypto.createHash("sha256").update(scene).digest("hex"), authoredSceneFixture.scene_sha256);
   const svg = sceneSvg(scene), raster = sceneRasterCommands(scene);
   for (const text of ["Authored Scene evidence", "Fraction", "Signal", "Series", "observations", "reference", "Intensity", "representative callout", "wrapped annotation", "evidence", "second line"]) {
@@ -1031,7 +1031,7 @@ test("Node Scene v4 rejects malformed batches", () => {
   assert.throws(() => sceneBatchEncode({ ...base, styleRefs: [1] }), /invalid canonical scene batch/);
   assert.throws(() => sceneBatchEncode({ ...base, margins: [60, 40, 10, 10] }), /invalid canonical scene batch/);
   assert.throws(() => sceneBatchEncode({ ...base, expansionModes: [] }), /expansionModes must have length 1/);
-  assert.throws(() => sceneBatchEncode({ ...base, expansionModes: [10] }), /expansionModes values must be integers from 0 through 9/);
+  assert.throws(() => sceneBatchEncode({ ...base, expansionModes: [11] }), /expansionModes values must be integers from 0 through 10/);
   assert.throws(() => sceneBatchEncode({ ...base, expansionModes: [1] }), /invalid canonical scene batch/);
 
   const line = {
@@ -1340,7 +1340,7 @@ test("Node symlog ticks fail closed at invalid arguments and honor the 200 targe
 });
 
 test("Node consumes the versioned Rust scatter scene", () => {
-  assert.equal(sceneVersion(), 26);
+  assert.equal(sceneVersion(), 27);
   assert.equal(
     scatterSceneSvg({
       x: [10, 20],
@@ -1381,7 +1381,7 @@ test("Node Scene compiles column and histogram as Rect records", () => {
   column.setAxisDomain("y", [0, 5]);
   column.bar([1, 2], [3, 2], { kind: "column", color: "#22c55e", opacity: 0.85, name: null });
   const columnScene = column.toScene();
-  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 26);
+  assert.equal(new DataView(columnScene.buffer, columnScene.byteOffset).getUint32(4, true), 27);
   assert.match(sceneSvg(columnScene), /<rect /);
 
   const hist = new Figure({ width: 240, height: 160 });
@@ -1391,17 +1391,34 @@ test("Node Scene compiles column and histogram as Rect records", () => {
   assert.match(sceneSvg(hist.toScene()), /<rect /);
 });
 
-test("Node Scene rejects corner_radius and density-tier scatter", () => {
+test("Node Scene rejects corner_radius and polar density-tier scatter", () => {
   const rounded = new Figure({ width: 200, height: 120 });
   rounded.bar([0, 1], [1, 2], { style: { corner_radius: 4 }, name: null });
   assert.throws(() => rounded.toScene(), /corner_radius/);
 
-  const density = new Figure({ width: 200, height: 120 });
+  const density = new Figure({ width: 200, height: 120, coords: "polar" });
   density.scatter(new Float64Array(200_000), new Float64Array(200_000), {
     forceDensity: true,
     name: null,
   });
   assert.throws(() => density.toScene(), /density-tier/);
+});
+
+test("Node Scene compiles cartesian density blit as one image", () => {
+  const figure = new Figure({ width: 240, height: 160 });
+  figure.setAxis("x", { domain: [-1, 1] });
+  figure.setAxis("y", { domain: [-1, 1] });
+  figure.scatter(new Float64Array(200_000), new Float64Array(200_000), {
+    forceDensity: true,
+    color: "#3987e5",
+    name: null,
+  });
+  const scene = figure.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 27);
+  assert.ok(Buffer.from(scene).includes("XYIM"));
+  const svg = sceneSvg(scene);
+  assert.equal((svg.match(/<image/g) || []).length, 1);
+  assert.match(svg, /data:image\/png;base64,/);
 });
 
 test("Node Scene rejects hidden traces and unknown kinds", () => {

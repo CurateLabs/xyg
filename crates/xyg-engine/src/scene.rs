@@ -7,13 +7,13 @@
 use crate::colormap;
 use crate::css;
 use crate::geom;
-use crate::kernels::{colormap_color, normalize_one_f32};
+use crate::kernels::{colormap_color, density_rgba_into, normalize_one_f32};
 use crate::polar::{self, POLAR_METRICS_LEN, XYPL_MAGIC, XYPL_V1_BYTES};
 use crate::svg::push_num;
 use std::collections::HashMap;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 26;
+pub const SCENE_VERSION: u32 = 27;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -3056,12 +3056,7 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
             return Err(SceneError::Length);
         }
     }
-    if bytes.len() != total && bytes.len() != total + XYPL_V1_BYTES {
-        return Err(SceneError::Length);
-    }
-    if bytes.len() == total + XYPL_V1_BYTES && bytes.get(total..total + 4) != Some(&XYPL_MAGIC[..]) {
-        return Err(SceneError::Length);
-    }
+    let (xypl, xyim) = scene_sidecars_after_chrome(bytes, total)?;
 
     let viewport_width = batch_f64(bytes, 32)?;
     let viewport_height = batch_f64(bytes, 40)?;
@@ -3083,7 +3078,7 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
     {
         return Err(SceneError::NonFinite);
     }
-    if bytes.len() == total + XYPL_V1_BYTES {
+    if !xypl.is_empty() {
         let layout = PlotLayout::new(
             viewport_width,
             viewport_height,
@@ -3092,8 +3087,9 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
             top,
             viewport_height - bottom,
         )?;
-        PolarSceneState::from_xypl(&bytes[total..], layout)?;
+        PolarSceneState::from_xypl(xypl, layout)?;
     }
+    let images = parse_xyim(xyim)?;
 
     for axis in [96usize, 104] {
         let kind = bytes[axis];
@@ -3176,12 +3172,18 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
                     return Err(SceneError::Length);
                 }
             }
-            SceneRecordKind::Rect => {
+            SceneRecordKind::Rect | SceneRecordKind::Image => {
                 if symbol != 0
                     || diameter != 0.0
                     || (visible != 0 && (coords[0] > coords[2] || coords[1] > coords[3]))
                 {
                     return Err(SceneError::Length);
+                }
+                if kind == SceneRecordKind::Image {
+                    let stable_id = batch_u64(bytes, offset + 8)?;
+                    if !images.iter().any(|image| image.stable_id == stable_id) {
+                        return Err(SceneError::Length);
+                    }
                 }
             }
             SceneRecordKind::Band => {
@@ -3202,8 +3204,9 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
             }
         }
     }
-
-    // Keep this allocation-free seam equivalent to SceneDocument::decode for
+    if !xypl.is_empty() && !images.is_empty() {
+        return Err(SceneError::Length);
+    }
     // the reserved Scene v12 annotation namespace. A batch that validates here
     // must never fail later only because its annotation runs were malformed.
     let mut annotation_cursor = 0;
@@ -3365,6 +3368,9 @@ pub enum SceneRecordKind {
     /// at least three vertices form one closed fill (triangle mesh hosts emit
     /// one three-vertex run per triangle).
     PolyFill = 4,
+    /// One axis-aligned image blit. Coordinates are the screen rectangle;
+    /// pixels live in the trailing XYIM sidecar keyed by stable id (Scene v27).
+    Image = 5,
 }
 
 /// Rust-owned outline topology for a Scene Band run (Scene v25).
@@ -3408,6 +3414,7 @@ impl SceneRecordKind {
             2 => Ok(Self::Rect),
             3 => Ok(Self::Band),
             4 => Ok(Self::PolyFill),
+            5 => Ok(Self::Image),
             _ => Err(SceneError::Length),
         }
     }
@@ -3415,8 +3422,9 @@ impl SceneRecordKind {
 
 /// Compact authored expansion mode accepted by the whole-Scene ABI. The enum is
 /// deliberately not serialized into Scene: Rust expands compact step,
-/// ribbon, hex-cell, heatmap-lattice, painted-heatmap, segment-pair, and
-/// triangle-face inputs to ordinary canonical records before Scene v25 encoding.
+/// ribbon, hex-cell, heatmap-lattice, painted-heatmap, segment-pair,
+/// triangle-face, and density-blit inputs to ordinary canonical records before
+/// Scene v27 encoding.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(u8)]
 pub enum SceneExpansionMode {
@@ -3437,6 +3445,9 @@ pub enum SceneExpansionMode {
     /// Two Rect rows like [`Self::HeatmapLattice`], plus an XYHP paint plane
     /// keyed by stable id. Rust tessellates cells and interns unique fills.
     HeatmapPainted = 9,
+    /// Two Rect rows like [`Self::HeatmapLattice`], plus an XYHP density plane
+    /// (log-u8). Rust emits one Image record and an XYIM RGBA sidecar.
+    DensityBlit = 10,
 }
 
 impl SceneExpansionMode {
@@ -3452,6 +3463,7 @@ impl SceneExpansionMode {
             7 => Ok(Self::SegmentPair),
             8 => Ok(Self::TriangleFace),
             9 => Ok(Self::HeatmapPainted),
+            10 => Ok(Self::DensityBlit),
             _ => Err(SceneError::Length),
         }
     }
@@ -3464,12 +3476,17 @@ impl SceneExpansionMode {
             }
             Self::Ribbon => Some(SceneRecordKind::Band as u8),
             Self::HexCell | Self::TriangleFace => Some(SceneRecordKind::PolyFill as u8),
-            Self::HeatmapLattice | Self::HeatmapPainted => Some(SceneRecordKind::Rect as u8),
+            Self::HeatmapLattice | Self::HeatmapPainted | Self::DensityBlit => {
+                Some(SceneRecordKind::Rect as u8)
+            }
         }
     }
 
     fn allows_nonzero_diameter(self) -> bool {
-        matches!(self, Self::HeatmapLattice | Self::HeatmapPainted)
+        matches!(
+            self,
+            Self::HeatmapLattice | Self::HeatmapPainted | Self::DensityBlit
+        )
     }
 }
 
@@ -3498,7 +3515,16 @@ pub const XYHP_PLANE_HEADER_BYTES: usize = 24;
 pub const XYHP_PAINT_RGBA: u32 = 0;
 pub const XYHP_PAINT_COLORMAP: u32 = 1;
 pub const XYHP_PAINT_NAMED: u32 = 2;
+pub const XYHP_PAINT_DENSITY: u32 = 3;
 pub const XYHP_MAX_NAME_BYTES: usize = 64;
+/// XYIM v1 image-blit sidecar (ABI 137 / Scene v27). One RGBA8 plane per
+/// `DensityBlit` Image record, keyed by stable id, image-top-first.
+pub const XYIM_MAGIC: &[u8; 4] = b"XYIM";
+pub const XYIM_VERSION: u32 = 1;
+pub const XYIM_V1_HEADER_BYTES: usize = 16;
+pub const XYIM_PLANE_HEADER_BYTES: usize = 24;
+pub const XYIM_FORMAT_RGBA8: u32 = 0;
+pub const MAX_SCENE_IMAGE_PIXELS: usize = 2_000_000;
 /// XYEX v1 wraps optional XYPL polar bytes plus optional XYHP paint so
 /// `xyg_scene_batch_encode` stays at Koffi's 64-parameter ceiling.
 pub const XYEX_MAGIC: &[u8; 4] = b"XYEX";
@@ -3522,6 +3548,15 @@ pub struct ExpandedSceneStyles {
     pub fill_rgba: Vec<u8>,
     pub stroke_rgba: Vec<u8>,
     pub stroke_width: Vec<f64>,
+}
+
+/// One decoded density/image blit plane. RGBA8 is image-top-first, `width*height*4`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SceneImage {
+    pub stable_id: u64,
+    pub width: u32,
+    pub height: u32,
+    pub rgba: Vec<u8>,
 }
 
 fn scene_read_u32(bytes: &[u8], offset: usize) -> Result<u32, SceneError> {
@@ -3630,7 +3665,7 @@ fn parse_heatmap_paint(bytes: &[u8]) -> Result<Vec<HeatmapPaintPlane<'_>>, Scene
             || cols == 0
             || !matches!(
                 kind,
-                XYHP_PAINT_RGBA | XYHP_PAINT_COLORMAP | XYHP_PAINT_NAMED
+                XYHP_PAINT_RGBA | XYHP_PAINT_COLORMAP | XYHP_PAINT_NAMED | XYHP_PAINT_DENSITY
             )
         {
             return Err(SceneError::Length);
@@ -3640,6 +3675,30 @@ fn parse_heatmap_paint(bytes: &[u8]) -> Result<Vec<HeatmapPaintPlane<'_>>, Scene
         let cells = rows.checked_mul(cols).ok_or(SceneError::Limit)?;
         if kind == XYHP_PAINT_RGBA {
             if payload_len != cells.checked_mul(4).ok_or(SceneError::Limit)? {
+                return Err(SceneError::Length);
+            }
+        } else if kind == XYHP_PAINT_DENSITY {
+            if payload_len < 24 {
+                return Err(SceneError::Length);
+            }
+            let count = scene_read_u32(payload, 16)? as usize;
+            let subkind = scene_read_u32(payload, 20)?;
+            if count == 0 || subkind > 1 {
+                return Err(SceneError::Length);
+            }
+            let tail_bytes = if subkind == 0 {
+                if count > XYHP_MAX_NAME_BYTES {
+                    return Err(SceneError::Limit);
+                }
+                count
+            } else {
+                count.checked_mul(3).ok_or(SceneError::Limit)?
+            };
+            let expected = 24usize
+                .checked_add(cells)
+                .and_then(|value| value.checked_add(tail_bytes))
+                .ok_or(SceneError::Limit)?;
+            if payload_len != expected {
                 return Err(SceneError::Length);
             }
         } else {
@@ -3748,6 +3807,9 @@ fn heatmap_payload_values(payload: &[u8], cells: usize) -> Result<Vec<f64>, Scen
 }
 
 fn heatmap_paint_fills(plane: HeatmapPaintPlane<'_>, alpha: u8) -> Result<Vec<[u8; 4]>, SceneError> {
+    if plane.kind == XYHP_PAINT_DENSITY {
+        return Err(SceneError::Length);
+    }
     let cells = plane.rows.checked_mul(plane.cols).ok_or(SceneError::Limit)?;
     let mut fills = Vec::with_capacity(cells);
     if plane.kind == XYHP_PAINT_RGBA {
@@ -3808,6 +3870,162 @@ fn heatmap_paint_fills(plane: HeatmapPaintPlane<'_>, alpha: u8) -> Result<Vec<[u
         });
     }
     Ok(fills)
+}
+
+fn density_image_from_plane(plane: HeatmapPaintPlane<'_>) -> Result<SceneImage, SceneError> {
+    if plane.kind != XYHP_PAINT_DENSITY {
+        return Err(SceneError::Length);
+    }
+    let cells = plane.rows.checked_mul(plane.cols).ok_or(SceneError::Limit)?;
+    if cells == 0 || cells > MAX_SCENE_IMAGE_PIXELS {
+        return Err(SceneError::Limit);
+    }
+    if plane.payload.len() < 24 {
+        return Err(SceneError::Length);
+    }
+    let maximum = scene_read_f64(plane.payload, 0)?;
+    let opacity = scene_read_f64(plane.payload, 8)?;
+    let count = scene_read_u32(plane.payload, 16)? as usize;
+    let subkind = scene_read_u32(plane.payload, 20)?;
+    let encoded_end = 24usize.checked_add(cells).ok_or(SceneError::Limit)?;
+    let encoded = plane
+        .payload
+        .get(24..encoded_end)
+        .ok_or(SceneError::Length)?;
+    let tail = plane.payload.get(encoded_end..).ok_or(SceneError::Length)?;
+    let stops = if subkind == 0 {
+        let name = std::str::from_utf8(tail).map_err(|_| SceneError::Length)?;
+        if name.len() != count {
+            return Err(SceneError::Length);
+        }
+        colormap::colormap_named_stops(name)
+    } else if subkind == 1 {
+        if tail.len() != count.checked_mul(3).ok_or(SceneError::Limit)? {
+            return Err(SceneError::Length);
+        }
+        let mut stops = Vec::with_capacity(count);
+        for chunk in tail.chunks_exact(3) {
+            stops.push([chunk[0], chunk[1], chunk[2]]);
+        }
+        if stops.is_empty() {
+            return Err(SceneError::Length);
+        }
+        stops
+    } else {
+        return Err(SceneError::Length);
+    };
+    let mut rgba = vec![0u8; cells.checked_mul(4).ok_or(SceneError::Limit)?];
+    if !density_rgba_into(encoded, plane.cols, plane.rows, maximum, &stops, opacity, &mut rgba)
+    {
+        return Err(SceneError::Length);
+    }
+    Ok(SceneImage {
+        stable_id: plane.stable_id,
+        width: u32::try_from(plane.cols).map_err(|_| SceneError::Limit)?,
+        height: u32::try_from(plane.rows).map_err(|_| SceneError::Limit)?,
+        rgba,
+    })
+}
+
+fn encode_xyim(images: &[SceneImage]) -> Result<Vec<u8>, SceneError> {
+    if images.is_empty() {
+        return Ok(Vec::new());
+    }
+    let mut out = Vec::new();
+    out.extend_from_slice(XYIM_MAGIC);
+    out.extend_from_slice(&XYIM_VERSION.to_le_bytes());
+    out.extend_from_slice(&(images.len() as u32).to_le_bytes());
+    out.extend_from_slice(&0u32.to_le_bytes());
+    for image in images {
+        let pixels = (image.width as usize)
+            .checked_mul(image.height as usize)
+            .and_then(|n| n.checked_mul(4))
+            .ok_or(SceneError::Limit)?;
+        if image.rgba.len() != pixels || pixels == 0 || pixels / 4 > MAX_SCENE_IMAGE_PIXELS {
+            return Err(SceneError::Length);
+        }
+        out.extend_from_slice(&image.stable_id.to_le_bytes());
+        out.extend_from_slice(&image.width.to_le_bytes());
+        out.extend_from_slice(&image.height.to_le_bytes());
+        out.extend_from_slice(&XYIM_FORMAT_RGBA8.to_le_bytes());
+        out.extend_from_slice(&(pixels as u32).to_le_bytes());
+        out.extend_from_slice(&image.rgba);
+    }
+    Ok(out)
+}
+
+fn parse_xyim(bytes: &[u8]) -> Result<Vec<SceneImage>, SceneError> {
+    if bytes.is_empty() {
+        return Ok(Vec::new());
+    }
+    if bytes.len() < XYIM_V1_HEADER_BYTES || bytes.get(..4) != Some(&XYIM_MAGIC[..]) {
+        return Err(SceneError::Length);
+    }
+    if scene_read_u32(bytes, 4)? != XYIM_VERSION {
+        return Err(SceneError::Version);
+    }
+    let n_planes = scene_read_u32(bytes, 8)? as usize;
+    if scene_read_u32(bytes, 12)? != 0 || n_planes == 0 {
+        return Err(SceneError::Length);
+    }
+    let mut images = Vec::with_capacity(n_planes);
+    let mut cursor = XYIM_V1_HEADER_BYTES;
+    for _ in 0..n_planes {
+        let header_end = cursor
+            .checked_add(XYIM_PLANE_HEADER_BYTES)
+            .ok_or(SceneError::Limit)?;
+        if header_end > bytes.len() {
+            return Err(SceneError::Length);
+        }
+        let stable_id = scene_read_u64(bytes, cursor)?;
+        let width = scene_read_u32(bytes, cursor + 8)?;
+        let height = scene_read_u32(bytes, cursor + 12)?;
+        let format = scene_read_u32(bytes, cursor + 16)?;
+        let byte_len = scene_read_u32(bytes, cursor + 20)? as usize;
+        if format != XYIM_FORMAT_RGBA8 || width == 0 || height == 0 {
+            return Err(SceneError::Length);
+        }
+        let pixels = (width as usize)
+            .checked_mul(height as usize)
+            .and_then(|n| n.checked_mul(4))
+            .ok_or(SceneError::Limit)?;
+        if byte_len != pixels || pixels / 4 > MAX_SCENE_IMAGE_PIXELS {
+            return Err(SceneError::Length);
+        }
+        let payload_end = header_end.checked_add(byte_len).ok_or(SceneError::Limit)?;
+        let rgba = bytes
+            .get(header_end..payload_end)
+            .ok_or(SceneError::Length)?
+            .to_vec();
+        if images.iter().any(|image: &SceneImage| image.stable_id == stable_id) {
+            return Err(SceneError::Length);
+        }
+        images.push(SceneImage {
+            stable_id,
+            width,
+            height,
+            rgba,
+        });
+        cursor = payload_end;
+    }
+    if cursor != bytes.len() {
+        return Err(SceneError::Length);
+    }
+    Ok(images)
+}
+
+fn scene_sidecars_after_chrome(bytes: &[u8], total: usize) -> Result<(&[u8], &[u8]), SceneError> {
+    let rest = bytes.get(total..).unwrap_or(&[]);
+    let (xypl, after) = if rest.len() >= XYPL_V1_BYTES && rest.get(..4) == Some(&XYPL_MAGIC[..]) {
+        (&rest[..XYPL_V1_BYTES], &rest[XYPL_V1_BYTES..])
+    } else {
+        (&[][..], rest)
+    };
+    if after.is_empty() {
+        return Ok((xypl, after));
+    }
+    parse_xyim(after)?;
+    Ok((xypl, after))
 }
 
 fn heatmap_lattice_extent(
@@ -4005,6 +4223,18 @@ impl ExpandedSceneRecords {
         self.x1.push(x1);
         self.y1.push(y1);
     }
+
+    fn push_image(&mut self, stable_id: u64, style_ref: u32, x0: f64, y0: f64, x1: f64, y1: f64) {
+        self.kinds.push(SceneRecordKind::Image as u8);
+        self.stable_ids.push(stable_id);
+        self.style_refs.push(style_ref);
+        self.diameter.push(0.0);
+        self.symbols.push(0);
+        self.x0.push(x0);
+        self.y0.push(y0);
+        self.x1.push(x1);
+        self.y1.push(y1);
+    }
 }
 
 /// Expand compact step runs, two-row ribbon pairs, hex-cell centers,
@@ -4021,12 +4251,12 @@ pub fn expand_scene_records(
     y_scale: AxisScale,
 ) -> Result<ExpandedSceneRecords, SceneError> {
     expand_scene_records_painted(input, x_scale, y_scale, &[], &[], &[], &[])
-        .map(|(records, _styles)| records)
+        .map(|(records, _styles, _images)| records)
 }
 
-/// Expand compact authoring, including ABI 134 painted heatmap lattices.
-/// When any `HeatmapPainted` group is present, `paint` must be a valid XYHP
-/// envelope and the returned style table includes interned per-cell fills.
+/// Expand compact authoring, including ABI 134 painted heatmap lattices and
+/// ABI 137 density image blits. When any `HeatmapPainted` or `DensityBlit`
+/// group is present, `paint` must be a valid XYHP envelope.
 pub fn expand_scene_records_painted(
     input: SceneExpansionInput<'_>,
     x_scale: AxisScale,
@@ -4035,7 +4265,7 @@ pub fn expand_scene_records_painted(
     stroke_rgba: &[u8],
     stroke_width: &[f64],
     paint: &[u8],
-) -> Result<(ExpandedSceneRecords, Option<ExpandedSceneStyles>), SceneError> {
+) -> Result<(ExpandedSceneRecords, Option<ExpandedSceneStyles>, Vec<SceneImage>), SceneError> {
     let len = input.kinds.len();
     if [
         input.stable_ids.len(),
@@ -4055,10 +4285,12 @@ pub fn expand_scene_records_painted(
     }
 
     let mut has_painted = false;
+    let mut has_density = false;
     for mode in input.expansion_modes {
-        if SceneExpansionMode::from_code(*mode)? == SceneExpansionMode::HeatmapPainted {
-            has_painted = true;
-            break;
+        match SceneExpansionMode::from_code(*mode)? {
+            SceneExpansionMode::HeatmapPainted => has_painted = true,
+            SceneExpansionMode::DensityBlit => has_density = true,
+            _ => {}
         }
     }
     if has_painted {
@@ -4068,14 +4300,14 @@ pub fn expand_scene_records_painted(
         {
             return Err(SceneError::Length);
         }
-    } else if !paint.is_empty() {
+    } else if !has_density && !paint.is_empty() {
         return Err(SceneError::Length);
     }
     let mut paint_planes: Vec<Option<HeatmapPaintPlane<'_>>> = parse_heatmap_paint(paint)?
         .into_iter()
         .map(Some)
         .collect();
-    if has_painted && paint_planes.is_empty() {
+    if (has_painted || has_density) && paint_planes.is_empty() {
         return Err(SceneError::Length);
     }
     let mut painted_styles = has_painted.then(|| ExpandedSceneStyles {
@@ -4083,6 +4315,7 @@ pub fn expand_scene_records_painted(
         stroke_rgba: stroke_rgba.to_vec(),
         stroke_width: stroke_width.to_vec(),
     });
+    let mut images = Vec::new();
 
     // Stable identity is the canonical Polyline run boundary. Reject any
     // attempt to switch step mode inside one contiguous same-kind identity
@@ -4202,6 +4435,22 @@ pub fn expand_scene_records_painted(
                 }
                 rows.checked_mul(cols).ok_or(SceneError::Limit)?
             }
+            SceneExpansionMode::DensityBlit => {
+                if run_len != 2 {
+                    return Err(SceneError::Length);
+                }
+                let (rows, cols, _, _, _, _) = heatmap_lattice_extent(&input, cursor)?;
+                let plane = paint_planes
+                    .iter()
+                    .flatten()
+                    .find(|plane| plane.stable_id == input.stable_ids[cursor])
+                    .ok_or(SceneError::Length)?;
+                if plane.kind != XYHP_PAINT_DENSITY || plane.rows != rows || plane.cols != cols
+                {
+                    return Err(SceneError::Length);
+                }
+                1
+            }
             SceneExpansionMode::SegmentPair => {
                 if run_len != 1 {
                     return Err(SceneError::Length);
@@ -4279,6 +4528,17 @@ pub fn expand_scene_records_painted(
             for (rx, ry) in SCENE_HEXBIN_RING {
                 output.push_hex_vertex(stable_id, style_ref, cx + rx * dx, cy + ry * dy);
             }
+            cursor = run_end;
+            continue;
+        }
+        if mode == SceneExpansionMode::DensityBlit {
+            let (rows, cols, x0, y0, x1, y1) = heatmap_lattice_extent(&input, cursor)?;
+            let plane = take_paint_plane(&mut paint_planes, stable_id)?;
+            if plane.kind != XYHP_PAINT_DENSITY || plane.rows != rows || plane.cols != cols {
+                return Err(SceneError::Length);
+            }
+            images.push(density_image_from_plane(plane)?);
+            output.push_image(stable_id, style_ref, x0, y0, x1, y1);
             cursor = run_end;
             continue;
         }
@@ -4378,6 +4638,7 @@ pub fn expand_scene_records_painted(
                 | SceneExpansionMode::HexCell
                 | SceneExpansionMode::HeatmapLattice
                 | SceneExpansionMode::HeatmapPainted
+                | SceneExpansionMode::DensityBlit
                 | SceneExpansionMode::SegmentPair
                 | SceneExpansionMode::TriangleFace => unreachable!(),
             }
@@ -4388,7 +4649,7 @@ pub fn expand_scene_records_painted(
         return Err(SceneError::Length);
     }
     debug_assert_eq!(output.kinds.len(), expanded_len);
-    Ok((output, painted_styles))
+    Ok((output, painted_styles, images))
 }
 
 pub struct SceneBatch<'a> {
@@ -4419,6 +4680,7 @@ pub struct SceneBatch<'a> {
     y1: &'a [f64],
     annotations_from_ids: bool,
     polar: Option<PolarSceneState>,
+    images: Vec<SceneImage>,
 }
 
 #[derive(Clone, Debug)]
@@ -5229,7 +5491,7 @@ impl<'a> SceneBatch<'a> {
                 || !y0[index].is_finite()
                 || (matches!(
                     SceneRecordKind::from_code(*kind),
-                    Ok(SceneRecordKind::Rect | SceneRecordKind::Band)
+                    Ok(SceneRecordKind::Rect | SceneRecordKind::Band | SceneRecordKind::Image)
                 ) && (!x1[index].is_finite() || !y1[index].is_finite()))
         }) || diameter
             .iter()
@@ -5284,7 +5546,21 @@ impl<'a> SceneBatch<'a> {
             y1,
             annotations_from_ids,
             polar: None,
+            images: Vec::new(),
         })
+    }
+
+    /// Attach decoded density/image blit planes. Empty keeps the Scene without
+    /// Image records. Polar scenes reject image blits.
+    pub fn with_images(mut self, images: Vec<SceneImage>) -> Result<Self, SceneError> {
+        if images.is_empty() {
+            return Ok(self);
+        }
+        if self.polar.is_some() {
+            return Err(SceneError::Length);
+        }
+        self.images = images;
+        Ok(self)
     }
 
     /// Attach a host-packed XYPL v1 polar envelope. Empty bytes keep Cartesian
@@ -5295,6 +5571,12 @@ impl<'a> SceneBatch<'a> {
             return Ok(self);
         }
         if !self.arrows.is_empty() || !self.callouts.is_empty() || !self.labels.is_empty() {
+            return Err(SceneError::Length);
+        }
+        if self.kinds.iter().any(|kind| {
+            SceneRecordKind::from_code(*kind) == Ok(SceneRecordKind::Image)
+        }) || !self.images.is_empty()
+        {
             return Err(SceneError::Length);
         }
         self.polar = Some(PolarSceneState::from_xypl(bytes, self.layout)?);
@@ -5368,6 +5650,7 @@ impl<'a> SceneBatch<'a> {
                         }
                     }
                     SceneRecordKind::Rect => unreachable!("polar Rects tessellate before mapping"),
+                    SceneRecordKind::Image => [f64::NAN, f64::NAN, f64::NAN, f64::NAN],
                 }
             } else {
                 match kind {
@@ -5379,7 +5662,7 @@ impl<'a> SceneBatch<'a> {
                         0.0,
                         0.0,
                     ],
-                    SceneRecordKind::Rect | SceneRecordKind::Band => [
+                    SceneRecordKind::Rect | SceneRecordKind::Band | SceneRecordKind::Image => [
                         self.x_scale.pixel(self.x0[index]),
                         self.y_scale.pixel(self.y0[index]),
                         self.x_scale.pixel(self.x1[index]),
@@ -5392,7 +5675,7 @@ impl<'a> SceneBatch<'a> {
                     polar.visible(self.x0[index], self.y0[index])
                         || polar.visible(self.x1[index], self.y1[index])
                 }
-                SceneRecordKind::Rect => false,
+                SceneRecordKind::Rect | SceneRecordKind::Image => false,
                 _ => polar.visible(self.x0[index], self.y0[index]),
             });
             let visible = mapped.iter().all(|value| value.is_finite())
@@ -5413,7 +5696,7 @@ impl<'a> SceneBatch<'a> {
                             && mapped[1] + geometry.extent_y >= self.layout.top
                             && mapped[1] - geometry.extent_y <= self.layout.bottom
                     }
-                    SceneRecordKind::Rect => {
+                    SceneRecordKind::Rect | SceneRecordKind::Image => {
                         self.polar.is_none()
                             && mapped[0].min(mapped[2]) <= self.layout.right
                             && mapped[0].max(mapped[2]) >= self.layout.left
@@ -5446,7 +5729,7 @@ impl<'a> SceneBatch<'a> {
                     SceneRecordKind::Scatter
                     | SceneRecordKind::Polyline
                     | SceneRecordKind::PolyFill => [mapped[0], mapped[1], 0.0, 0.0],
-                    SceneRecordKind::Rect => [
+                    SceneRecordKind::Rect | SceneRecordKind::Image => [
                         mapped[0].min(mapped[2]),
                         mapped[1].min(mapped[3]),
                         mapped[0].max(mapped[2]),
@@ -5636,6 +5919,7 @@ impl<'a> SceneBatch<'a> {
         if let Some(polar) = &self.polar {
             out.extend_from_slice(&polar.xypl);
         }
+        out.extend_from_slice(&encode_xyim(&self.images).expect("validated Scene images"));
         out
     }
 }
@@ -6488,6 +6772,45 @@ pub fn resolve_numeric_tick_formats(
     Ok(())
 }
 
+#[cfg(feature = "raster")]
+fn encode_base64(bytes: &[u8]) -> String {
+    const TABLE: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
+    let mut index = 0usize;
+    while index + 3 <= bytes.len() {
+        let n = (u32::from(bytes[index]) << 16)
+            | (u32::from(bytes[index + 1]) << 8)
+            | u32::from(bytes[index + 2]);
+        out.push(TABLE[((n >> 18) & 63) as usize] as char);
+        out.push(TABLE[((n >> 12) & 63) as usize] as char);
+        out.push(TABLE[((n >> 6) & 63) as usize] as char);
+        out.push(TABLE[(n & 63) as usize] as char);
+        index += 3;
+    }
+    match bytes.len() - index {
+        1 => {
+            let n = u32::from(bytes[index]) << 16;
+            out.push(TABLE[((n >> 18) & 63) as usize] as char);
+            out.push(TABLE[((n >> 12) & 63) as usize] as char);
+            out.push('=');
+            out.push('=');
+        }
+        2 => {
+            let n = (u32::from(bytes[index]) << 16) | (u32::from(bytes[index + 1]) << 8);
+            out.push(TABLE[((n >> 18) & 63) as usize] as char);
+            out.push(TABLE[((n >> 12) & 63) as usize] as char);
+            out.push(TABLE[((n >> 6) & 63) as usize] as char);
+            out.push('=');
+        }
+        _ => {}
+    }
+    out
+}
+
+fn scene_image_by_id<'a>(images: &'a [SceneImage], stable_id: u64) -> Option<&'a SceneImage> {
+    images.iter().find(|image| image.stable_id == stable_id)
+}
+
 fn push_svg_line(out: &mut String, x1: f64, y1: f64, x2: f64, y2: f64, paint: &str, width: f64) {
     out.push_str("<line x1=\"");
     push_num(out, x1);
@@ -6711,6 +7034,7 @@ pub struct SceneDocument {
     records: Vec<EncodedRecord>,
     raster_mark_capacity: usize,
     polar: Option<PolarSceneState>,
+    images: Vec<SceneImage>,
 }
 
 impl SceneDocument {
@@ -7080,9 +7404,7 @@ impl SceneDocument {
             .ok_or(SceneError::Limit)?;
         let (chrome, text, legend, colorbar, labels, label_backgrounds, total) =
             read_chrome_trailer(bytes, body)?;
-        if bytes.len() != total && bytes.len() != total + XYPL_V1_BYTES {
-            return Err(SceneError::Length);
-        }
+        let (xypl, xyim) = scene_sidecars_after_chrome(bytes, total)?;
         let viewport_width = f64_at(32);
         let viewport_height = f64_at(40);
         let left = f64_at(48);
@@ -7097,11 +7419,15 @@ impl SceneDocument {
             top,
             viewport_height - bottom,
         )?;
-        let polar = if bytes.len() == total + XYPL_V1_BYTES {
-            Some(PolarSceneState::from_xypl(&bytes[total..], layout)?)
-        } else {
+        let polar = if xypl.is_empty() {
             None
+        } else {
+            Some(PolarSceneState::from_xypl(xypl, layout)?)
         };
+        let images = parse_xyim(xyim)?;
+        if polar.is_some() && !images.is_empty() {
+            return Err(SceneError::Length);
+        }
         if labels.iter().any(|label| {
             label.x < 0.0
                 || label.x > layout.viewport_width
@@ -7288,8 +7614,10 @@ impl SceneDocument {
                         | SceneRecordKind::PolyFill
                 ) && coordinates[2..] != [0.0, 0.0])
                 || (visible
-                    && kind == SceneRecordKind::Rect
+                    && matches!(kind, SceneRecordKind::Rect | SceneRecordKind::Image)
                     && (coordinates[0] > coordinates[2] || coordinates[1] > coordinates[3]))
+                || (kind == SceneRecordKind::Image
+                    && !images.iter().any(|image| image.stable_id == stable_id))
                 || (!visible && coordinates != [0.0; 4])
             {
                 return Err(SceneError::NonFinite);
@@ -7321,6 +7649,13 @@ impl SceneDocument {
                         } else {
                             0
                         }
+                    }
+                    SceneRecordKind::Image => {
+                        let image = images
+                            .iter()
+                            .find(|image| image.stable_id == stable_id)
+                            .expect("validated image plane");
+                        26usize.saturating_add(image.rgba.len())
                     }
                 };
                 raster_mark_capacity = raster_mark_capacity.saturating_add(record_capacity);
@@ -7412,6 +7747,7 @@ impl SceneDocument {
             records,
             raster_mark_capacity,
             polar,
+            images,
         })
     }
 
@@ -8238,6 +8574,38 @@ impl SceneDocument {
                         out.push('"');
                     }
                     out.push_str("/>");
+                    index += 1;
+                }
+                SceneRecordKind::Image => {
+                    #[cfg(feature = "raster")]
+                    if let Some(image) = scene_image_by_id(&self.images, record.stable_id) {
+                        if let Ok(png) = crate::png_encode::encode_png(
+                            &image.rgba,
+                            image.width as usize,
+                            image.height as usize,
+                            4,
+                            crate::png_encode::PNG_MODE_TRUECOLOR,
+                            6,
+                        ) {
+                            let x = record.coordinates[0];
+                            let y = record.coordinates[1];
+                            let width = record.coordinates[2] - record.coordinates[0];
+                            let height = record.coordinates[3] - record.coordinates[1];
+                            out.push_str("<image x=\"");
+                            push_num(&mut out, x);
+                            out.push_str("\" y=\"");
+                            push_num(&mut out, y);
+                            out.push_str("\" width=\"");
+                            push_num(&mut out, width);
+                            out.push_str("\" height=\"");
+                            push_num(&mut out, height);
+                            out.push_str(
+                                "\" preserveAspectRatio=\"none\" style=\"image-rendering:pixelated\" href=\"data:image/png;base64,",
+                            );
+                            out.push_str(&encode_base64(&png));
+                            out.push_str("\"/>");
+                        }
+                    }
                     index += 1;
                 }
                 SceneRecordKind::Band => {
@@ -9355,6 +9723,28 @@ impl SceneDocument {
                     }
                     index += 1;
                 }
+                SceneRecordKind::Image => {
+                    if let Some(image) = scene_image_by_id(&self.images, record.stable_id) {
+                        out.push(5); // OP_IMAGE
+                        push_raster_f32(out, record.coordinates[0], scale)?;
+                        push_raster_f32(out, record.coordinates[1], scale)?;
+                        push_raster_f32(
+                            out,
+                            record.coordinates[2] - record.coordinates[0],
+                            scale,
+                        )?;
+                        push_raster_f32(
+                            out,
+                            record.coordinates[3] - record.coordinates[1],
+                            scale,
+                        )?;
+                        out.extend_from_slice(&image.width.to_le_bytes());
+                        out.extend_from_slice(&image.height.to_le_bytes());
+                        out.push(1); // nearest / pixelated
+                        out.extend_from_slice(&image.rgba);
+                    }
+                    index += 1;
+                }
                 SceneRecordKind::Band => {
                     let start = index;
                     let style_ref = record.style_ref;
@@ -9656,6 +10046,7 @@ impl SceneDocument {
                         index += 1;
                     }
                 }
+                SceneRecordKind::Image => continue,
                 SceneRecordKind::Band => {
                     if record.coordinates[0] != record.coordinates[2] {
                         return Err(SceneError::Length);
@@ -10896,6 +11287,37 @@ mod tests {
         out
     }
 
+    fn xyhp_density(
+        stable_id: u64,
+        rows: u32,
+        cols: u32,
+        maximum: f64,
+        opacity: f64,
+        encoded: &[u8],
+        name: &str,
+    ) -> Vec<u8> {
+        let name_bytes = name.as_bytes();
+        let mut payload = Vec::new();
+        payload.extend_from_slice(&maximum.to_le_bytes());
+        payload.extend_from_slice(&opacity.to_le_bytes());
+        payload.extend_from_slice(&(name_bytes.len() as u32).to_le_bytes());
+        payload.extend_from_slice(&0u32.to_le_bytes());
+        payload.extend_from_slice(encoded);
+        payload.extend_from_slice(name_bytes);
+        let mut out = Vec::new();
+        out.extend_from_slice(b"XYHP");
+        out.extend_from_slice(&1u32.to_le_bytes());
+        out.extend_from_slice(&1u32.to_le_bytes());
+        out.extend_from_slice(&0u32.to_le_bytes());
+        out.extend_from_slice(&stable_id.to_le_bytes());
+        out.extend_from_slice(&rows.to_le_bytes());
+        out.extend_from_slice(&cols.to_le_bytes());
+        out.extend_from_slice(&XYHP_PAINT_DENSITY.to_le_bytes());
+        out.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+        out.extend_from_slice(&payload);
+        out
+    }
+
     #[test]
     fn compact_heatmap_painted_interns_image_top_rgba() {
         // Image-top-first 2x2: top row red/green, bottom blue/white.
@@ -10916,7 +11338,7 @@ mod tests {
         let fill = [10u8, 20, 30, 200];
         let stroke = [1u8, 2, 3, 4];
         let width = [1.5_f64];
-        let (expanded, painted) = expand_scene_records_painted(
+        let (expanded, painted, _images) = expand_scene_records_painted(
             SceneExpansionInput {
                 kinds: &kinds,
                 stable_ids: &ids,
@@ -10951,6 +11373,46 @@ mod tests {
     }
 
     #[test]
+    fn compact_density_blit_emits_one_image_record() {
+        let encoded = [0u8, 255, 128, 64];
+        let paint = xyhp_density(7, 2, 2, 10.0, 0.85, &encoded, "viridis");
+        let (expanded, painted, images) = expand_scene_records_painted(
+            SceneExpansionInput {
+                kinds: &[2, 2],
+                stable_ids: &[7, 7],
+                style_refs: &[0, 0],
+                diameter: &[2.0, 2.0],
+                symbols: &[0, 0],
+                x0: &[0.0, 0.0],
+                y0: &[1.0, 0.0],
+                x1: &[4.0, 0.0],
+                y1: &[3.0, 0.0],
+                expansion_modes: &[10, 10],
+            },
+            test_linear_x_scale(),
+            test_linear_y_scale(),
+            &[0, 0, 0, 255],
+            &[0, 0, 0, 0],
+            &[0.0],
+            &paint,
+        )
+        .unwrap();
+        assert!(painted.is_none());
+        assert_eq!(expanded.kinds, [SceneRecordKind::Image as u8]);
+        assert_eq!(expanded.x0, [0.0]);
+        assert_eq!(expanded.y0, [1.0]);
+        assert_eq!(expanded.x1, [4.0]);
+        assert_eq!(expanded.y1, [3.0]);
+        assert_eq!(images.len(), 1);
+        assert_eq!(images[0].stable_id, 7);
+        assert_eq!(images[0].width, 2);
+        assert_eq!(images[0].height, 2);
+        assert_eq!(images[0].rgba.len(), 16);
+        assert_eq!(images[0].rgba[11], 0); // encoded 0 (bottom-left) is transparent
+        assert!(images[0].rgba[15] > 0); // encoded 255 (bottom-right) is opaque-ish
+    }
+
+    #[test]
     fn compact_heatmap_painted_colormap_maps_values_row_zero_to_y0() {
         let paint = xyhp_colormap(
             4,
@@ -10961,7 +11423,7 @@ mod tests {
             &[0.0, 1.0],
             &[[0, 0, 0], [255, 255, 255]],
         );
-        let (expanded, painted) = expand_scene_records_painted(
+        let (expanded, painted, _images) = expand_scene_records_painted(
             SceneExpansionInput {
                 kinds: &[2, 2],
                 stable_ids: &[4, 4],
@@ -10999,7 +11461,7 @@ mod tests {
             &[0.0, 1.0],
             "binary",
         );
-        let (expanded, painted) = expand_scene_records_painted(
+        let (expanded, painted, _images) = expand_scene_records_painted(
             SceneExpansionInput {
                 kinds: &[2, 2],
                 stable_ids: &[5, 5],
@@ -11624,7 +12086,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 26);
+        assert_eq!(SCENE_VERSION, 27);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"
@@ -13713,7 +14175,7 @@ mod tests {
         .encode();
         assert_eq!(
             u32::from_le_bytes(encoded[4..8].try_into().unwrap()),
-            26
+            SCENE_VERSION
         );
         assert_eq!(&encoded[encoded.len() - polar::XYPL_V1_BYTES..encoded.len() - polar::XYPL_V1_BYTES + 4], b"XYPL");
         let document = SceneDocument::decode(&encoded).unwrap();

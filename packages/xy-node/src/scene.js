@@ -52,7 +52,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, shouldUseDensity, u32Ptr, u8Ptr } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, shouldUseDensity, u32Ptr, u8Ptr, bin2d, densityLogU8, DENSITY_GRID } from "./encode.js";
 import { cssColorRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -95,6 +95,7 @@ function decodePackedRows(out, code) {
 
 const FLAG_STROKE_PERIMETER = 1;
 const FLAG_HEATMAP_PAINTED = 2;
+const FLAG_DENSITY_BLIT = 4;
 
 function packProduct({
   kind, flags = 0, stepMode = 0, symbol = 0, styleRef = 0, traceId = 0,
@@ -1102,6 +1103,70 @@ function heatmapPaintPlane(trace, rows, cols, stableId) {
   return out;
 }
 
+function densityPaintPlane(trace, encoded, rows, cols, maximum, stableId) {
+  const style = trace.style ?? {};
+  const opacity = Number(style.opacity ?? 0.85) * Number(style.fill_opacity ?? 1);
+  const encodedBytes = encoded instanceof Uint8Array ? encoded : Uint8Array.from(encoded);
+  if (encodedBytes.length !== rows * cols) {
+    throw new RangeError("Scene density grid must match DENSITY_GRID");
+  }
+  const channel = trace.color_ch ?? trace.colorChannel;
+  const colormap = style.colormap ?? trace.colormap;
+  const stops = style.colormapStops ?? trace.colormapStops;
+  let constant = null;
+  if (channel != null && channel.mode === "constant" && channel.constant != null) {
+    constant = String(channel.constant);
+  } else if (colormap == null && style.color != null) {
+    constant = String(style.color);
+  }
+  let payload;
+  if (constant != null) {
+    const rgba = cssColorRgba8(constant, 1);
+    payload = new Uint8Array(24 + encodedBytes.length + 6);
+    const view = new DataView(payload.buffer);
+    view.setFloat64(0, Number(maximum), true);
+    view.setFloat64(8, Number(opacity), true);
+    view.setUint32(16, 2, true);
+    view.setUint32(20, 1, true);
+    payload.set(encodedBytes, 24);
+    payload.set([rgba[0], rgba[1], rgba[2], rgba[0], rgba[1], rgba[2]], 24 + encodedBytes.length);
+  } else if (typeof colormap === "string" || (colormap == null && stops == null)) {
+    const nameBytes = new TextEncoder().encode(String(colormap ?? "viridis"));
+    payload = new Uint8Array(24 + encodedBytes.length + nameBytes.length);
+    const view = new DataView(payload.buffer);
+    view.setFloat64(0, Number(maximum), true);
+    view.setFloat64(8, Number(opacity), true);
+    view.setUint32(16, nameBytes.length, true);
+    view.setUint32(20, 0, true);
+    payload.set(encodedBytes, 24);
+    payload.set(nameBytes, 24 + encodedBytes.length);
+  } else {
+    const stopBytes = stops == null
+      ? Uint8Array.from(colormap.flat ? colormap.flat() : colormap)
+      : Uint8Array.from(stops);
+    if (stopBytes.length < 3 || stopBytes.length % 3 !== 0) {
+      throw new RangeError("Scene density colormap requires RGB stops");
+    }
+    payload = new Uint8Array(24 + encodedBytes.length + stopBytes.length);
+    const view = new DataView(payload.buffer);
+    view.setFloat64(0, Number(maximum), true);
+    view.setFloat64(8, Number(opacity), true);
+    view.setUint32(16, stopBytes.length / 3, true);
+    view.setUint32(20, 1, true);
+    payload.set(encodedBytes, 24);
+    payload.set(stopBytes, 24 + encodedBytes.length);
+  }
+  const out = new Uint8Array(24 + payload.length);
+  const view = new DataView(out.buffer);
+  view.setBigUint64(0, BigInt(stableId), true);
+  view.setUint32(8, rows, true);
+  view.setUint32(12, cols, true);
+  view.setUint32(16, 3, true);
+  view.setUint32(20, payload.length, true);
+  out.set(payload, 24);
+  return out;
+}
+
 function packXyhp(planes) {
   if (!planes.length) return new Uint8Array();
   const bodyLen = planes.reduce((sum, plane) => sum + plane.length, 0);
@@ -1499,7 +1564,7 @@ export function sceneBatchEncode({
   const symbolCodes = asUnsignedArray(symbols, "symbols", 255, Uint8Array);
   const expansionModeCodes = expansionModes == null
     ? new Uint8Array(kindArray.length)
-    : asUnsignedArray(expansionModes, "expansionModes", 9, Uint8Array);
+    : asUnsignedArray(expansionModes, "expansionModes", 10, Uint8Array);
   const fills = new Uint8Array(styles.length * 4);
   const strokes = new Uint8Array(styles.length * 4);
   const widths = new Float64Array(styles.length);
@@ -2223,6 +2288,23 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
       flagsTr |= 1 << 21;
       symbol = "";
     }
+    if (
+      trace.kind === "scatter"
+      && (figure.coords ?? "cartesian") === "cartesian"
+      && shouldUseDensity(trace.x?.length ?? 0, {
+        forceDensity: Boolean(trace.force_density ?? trace.forceDensity),
+        forceDirect: Boolean(trace.force_direct ?? trace.forceDirect),
+        coords: "cartesian",
+        perItemChannels: style.color_channel != null
+          || style.size_channel != null
+          || style.stroke_channel != null
+          || trace.color_ch != null
+          || trace.size_ch != null
+          || trace.stroke_ch != null,
+      })
+    ) {
+      flagsTr |= 1 << 22;
+    }
     const role = style.role == null ? "" : String(style.role);
     const reduce = style.reduce == null ? "" : String(style.reduce);
     let hexDx = Number.NaN, hexDy = Number.NaN;
@@ -2618,10 +2700,11 @@ function figureTraceSupport(figure, trace) {
   ) flags |= XYFS_TRACE_HIDDEN_OR_PER_ITEM;
   if (
     kind === "scatter"
+    && (figure.coords ?? "cartesian") === "polar"
     && shouldUseDensity(trace.x?.length ?? 0, {
       forceDensity: Boolean(trace.force_density ?? trace.forceDensity),
       forceDirect: Boolean(trace.force_direct ?? trace.forceDirect),
-      coords: figure.coords ?? "cartesian",
+      coords: "cartesian",
       perItemChannels: style.color_channel != null
         || style.size_channel != null
         || style.stroke_channel != null,
@@ -2702,6 +2785,8 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     let stepMode = 0;
     let packSymbol = 0;
     let packDiameter = 0;
+    let packX = trace.x;
+    let packY = trace.y;
     if (HEATMAP_KINDS.has(trace.kind)) {
       const shape = trace.grid_shape;
       if (shape == null || shape.length !== 2) {
@@ -2753,6 +2838,31 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     } else if (trace.kind === "scatter") {
       packSymbol = sceneSymbolCode(style.symbol ?? 0);
       packDiameter = Number(style.size ?? style.diameter ?? 4);
+      const polar = (figure.coords ?? "cartesian") === "polar";
+      const perItem = style.color_channel != null
+        || style.size_channel != null
+        || style.stroke_channel != null
+        || trace.color_ch != null
+        || trace.size_ch != null
+        || trace.stroke_ch != null;
+      if (!polar && shouldUseDensity(trace.x?.length ?? 0, {
+        forceDensity: Boolean(trace.force_density ?? trace.forceDensity),
+        forceDirect: Boolean(trace.force_direct ?? trace.forceDirect),
+        coords: "cartesian",
+        perItemChannels: perItem,
+      })) {
+        const [cols, rows] = DENSITY_GRID;
+        const grid = bin2d(trace.x, trace.y, xDomain[0], xDomain[1], yDomain[0], yDomain[1], cols, rows);
+        const { encoded, max } = densityLogU8(grid);
+        heatmapPaintPlanes.push(densityPaintPlane(trace, encoded, rows, cols, max, id));
+        extra0 = rows;
+        extra1 = cols;
+        flags |= FLAG_DENSITY_BLIT;
+        packSymbol = 0;
+        packDiameter = 0;
+        packX = [xDomain[0], xDomain[1]];
+        packY = [yDomain[0], yDomain[1]];
+      }
     }
     appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packProduct({
       kind: trace.kind,
@@ -2764,8 +2874,8 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       diameter: packDiameter,
       extra0,
       extra1,
-      x: trace.x,
-      y: trace.y,
+      x: packX,
+      y: packY,
       x0: trace.x0,
       y0: trace.y0,
       x1: trace.x1,
