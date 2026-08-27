@@ -587,14 +587,18 @@ F3, still pending (above).
   Cartesian linear/log/symlog/category/UTC-time ChartView
   axes and eligible ChartView colorbars onto that lane. Hosted `to_html()`,
   notebook widgets, and Reflex `XYChart` attach via packaged Worker/WASM URLs;
-  polar/secondary families and srcdoc notebooks remain #59 work.
+  real-browser Reflex packaged-attach proof is tracked by
+  the post-M2 follow-up **Prove Reflex packaged WASM tick auto-attach in a real browser** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)). Polar/secondary families are frozen deferred
+  compatibility keepers outside the claimed M2 subset, and srcdoc notebooks
+  retain their documented JavaScript tick path.
   ABI 97 generalizes the parallel step-mode column to `expansion_modes` and
   removes static ribbon tessellation from the hosts. Python and Node pack two
   adjacent endpoint rows per finite literal solid ribbon; Rust applies the
   Cartesian axis transforms and expands the curve into 97 paired Band samples
   across `SCENE_RIBBON_STEPS=96` intervals before any consumer sees it. Scene
   stays v25. Gradient, polar, LOD/density, and direct-browser ribbon authoring
-  remain explicit boundaries; the browser cutover belongs to #59.
+  remain explicit boundaries; aggregate production beyond the current
+  density/Scene vertical is tracked by the post-M2 follow-up **Expand direct-browser aggregate production beyond the density/Scene vertical** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)).
   Unsupported marks, missing values, and customization fail closed at the
   explicit Scene boundary while records migrate. ABI 84 adds a versioned
   authored-feature presence predicate whose ordered actionable diagnostic is
@@ -609,8 +613,8 @@ F3, still pending (above).
 
 - The Rust core runs **natively inside the Python or Node host process**, loaded as a C-ABI cdylib
   through `ctypes` (`python/xyg/_native.py`; `Cargo.toml` `crate-type = ["cdylib",
-  "rlib"]`) or Koffi. The shipped core is not yet compiled to WASM. Issue #59
-  compiles the same safe engine for a Worker so direct-browser users need no
+  "rlib"]`) or Koffi. The #59 foundation also compiles the same safe engine to
+  WASM for a Worker so supported direct-browser paths need no
   Python/Node runtime; it does not run heavy compute on the browser main thread. Heavy
   work stays off the browser main thread, so the UI thread is never the bottleneck for
   big data.
@@ -627,10 +631,12 @@ F3, still pending (above).
   is unavailable, the client retains the Rust-authored overview texture and
   dispatches `xy:wasm_density_no_refinement`; it never runs a JavaScript
   aggregation fallback.
-  The first foundation now builds a static strict-CSP Worker plus a raw adapter over
-  `xyg-engine`; it validates exact Scene v9 and now compiles transferable
-  scatter/line/bar/area typed series with Rust-owned identities and defaults,
-  but does not yet replace the density fallback. Transferable ArrayBuffers
+  The foundation builds a static strict-CSP Worker plus a raw adapter over
+  `xyg-engine`; it validates the current canonical Scene and compiles
+  transferable scatter/line/bar/area typed series with Rust-owned identities
+  and defaults. The current density/Scene vertical also uses Rust/WASM;
+  broader production paths are tracked by the post-M2 follow-up **Expand direct-browser aggregate production beyond the density/Scene vertical** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)).
+  Transferable ArrayBuffers
   avoid a main↔Worker clone, followed by an explicit bounded copy into WASM linear
   memory. SharedArrayBuffer remains an optional isolated-context optimization.
 - The direct-browser product-path successor to whole-source `XYAG` is the
@@ -1360,9 +1366,10 @@ scope decision that reshapes them.*
 ## 32. Kernel-owned compute: the architecture consequence (originally "Python-only")
 
 The original binding decision was **Python only** (R/Julia/JS bindings dropped).
-The current product has thin Python and Node hosts over one C ABI, and #59 adds
-direct browser execution by compiling the same engine rather than reimplementing
-it in JavaScript. This is not just less code — it relocates the heavy tiers:
+The current product has thin Python and Node hosts over one C ABI, and the #59
+foundation adds bounded direct-browser execution by compiling the same engine
+rather than reimplementing it in JavaScript. This is not just less code — it
+relocates the heavy tiers:
 
 - **The native Rust core runs inside the Python process**, ingesting zero-copy from
   Polars/Arrow-backed pandas. Decimation (Tier 1), pyramid builds (Tier 2), Tier-3
@@ -1372,9 +1379,10 @@ it in JavaScript. This is not just less code — it relocates the heavy tiers:
   screen-bounded aggregates/decimations/tiles over the comm channel, composes them on
   the GPU, and handles local pan/zoom against its resident tile cache. It re-requests
   from the kernel only when navigation crosses the pyramid floor or a filter changes.
-- The **in-browser WASM core** (full pipeline client-side) is the tracked #59 path for
-  direct-browser applications where the data already lives client-side; it is not
-  the current shipped paint-only artifact and is not the primary path. The primary path is
+- The **in-browser WASM core** supports bounded #59 direct-browser paths where
+  the data already lives client-side. Aggregate production beyond the current
+  density/Scene vertical is tracked by the post-M2 follow-up **Expand direct-browser aggregate production beyond the density/Scene vertical** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)); the WASM core
+  is not the primary path. The primary path is
   **native-compute-where-the-data-lives → ship pixels-worth → thin GPU client**, the
   same shape the research validated in datashader/vaex, except pan/zoom stays local
   instead of round-tripping (this is exactly the VegaFusion DAG-partition idea: heavy
@@ -1389,8 +1397,9 @@ entry point), so
 this section's consequences now read "host process" where they said "Python
 process": the kernel owns decimation/pyramids/paging/filtering in whichever
 host process holds the data and hosts stay thin. Native-host browser sessions
-remain render-client-only; direct-browser sessions under #59 execute the same
-engine in a Worker and feed the same painter. Host obligations and parity status are governed by
+remain render-client-only; supported direct-browser sessions use the #59
+foundation to execute the same engine in a Worker and feed the same painter.
+Host obligations and parity status are governed by
 `spec/design/host-parity.md` and `spec/design/dual-host-parity.json`.
 
 ## 32b. Tier-3 out-of-core companions — spatial bucketing and budgeted tile residency
@@ -1483,9 +1492,9 @@ requiring a Rust toolchain — an instant adoption cliff.
    `python/xyg/static/` so the wheel and sdist embed the client — Python end
    users of a published wheel need no Node, npm, or CDN. JS/Node users consume
    `@curatelabs/xyg` (in-repo until the `@curatelabs` npm org exists; #13)
-   without a Python install. Direct browser engine execution is tracked by #59;
-   it compiles the same Rust engine to WASM and is not part of the current
-   shipped paint-only artifact.
+   without a Python install. The #59 foundation compiles the same Rust engine
+   to WASM for the bounded shipped direct-browser paths; broader aggregate
+   production is tracked by the post-M2 follow-up **Expand direct-browser aggregate production beyond the density/Scene vertical** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)).
 3. **The notebook integration via `anywidget`** — the current standard: one widget
    implementation works across Jupyter, JupyterLab, VS Code, Colab, and Marimo, and
    gives us the binary comm channel (§29's Jupyter row) without maintaining N

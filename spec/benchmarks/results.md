@@ -52,8 +52,9 @@ CI (software GL) wall-clock contract facts, not competitive wins.
 
 ### M2 Wave B evidence ledger
 
-This is the #59-required / #58-required subset, not full #54 / M7. Parents stay
-open until they close after this evidence. Related to #58 and #59.
+This records the delivered #59-required / #58-required subset, not full #54 /
+M7. Related to #58 and #59; independent follow-up issues track evidence outside
+the claimed M2 subset.
 
 | Required item | Status | Where |
 |---|---|---|
@@ -61,8 +62,8 @@ open until they close after this evidence. Related to #58 and #59.
 | Python/Node Scene goldens for public hexbin | Checked in on `main` via #259 | `tests/fixtures/figure_scene_v3.json` `public_hexbin_sha256`; `tests/test_scene_export_support.py`; `packages/xy-node/test/scene.test.mjs` |
 | Heatmap public Scene goldens | Checked in on `main` via #261 | `tests/fixtures/figure_scene_v3.json` `public_heatmap_sha256`; `tests/test_scene_export_support.py`; `packages/xy-node/test/scene.test.mjs` |
 | Public Scene export baselines (time/memory/payload) | Local diagnostic run recorded below; harness is `scripts/bench_public_scene_routes.py` | `spec/benchmarks/public-scene-export-local.json` |
-| Density no-refinement gate | Implemented and probed; hosted visual evidence of that degradation boundary is still remaining #59 work | `js/src/49_wasm_density.ts`, `js/src/54_kernel.ts`, `tests/test_density_pan_no_rebin.py` |
-| Post-#259 hosted browser artifact | Absent at record time (`main` `14e91a3`, includes Wave A hexbin/heatmap Scene, Reflex attach, colorbar ticks). Hexbin/heatmap are not in the `95adb9de` authored-Scene workload. | produce with the commands in methodology §8 |
+| Density no-refinement gate | Implemented and probed; hosted visual evidence of that degradation boundary is tracked by the post-M2 follow-up **Refresh hosted WASM evidence and prove density no-refinement degradation** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)) | `js/src/49_wasm_density.ts`, `js/src/54_kernel.ts`, `tests/test_density_pan_no_rebin.py` |
+| Post-#259 hosted browser artifact | Absent at record time (`main` `14e91a3`, includes Wave A hexbin/heatmap Scene, Reflex attach, colorbar ticks). Hexbin/heatmap are not in the `95adb9de` authored-Scene workload. Current-main refresh and interpretation are tracked by the post-M2 follow-up **Refresh hosted WASM evidence and prove density no-refinement degradation** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)). | produce with the commands in methodology §8 |
 
 Reproduce and re-verify the hosted artifacts (they are not committed; ~19 MiB):
 
@@ -235,8 +236,8 @@ and contract probes are `tests/test_static_client_security.py`,
 `tests/test_wasm_density_chartview_contract.py`, and
 `tests/test_wasm_full_density_source.py`. The SHA-keyed hosted density
 artifacts above prove refinement lifecycle (attach / zoom / trap / recover),
-not this degradation boundary. Hosted visual evidence of no-refinement remains
-remaining #59 work.
+not this degradation boundary. Hosted visual evidence of no-refinement is
+tracked by the post-M2 follow-up **Refresh hosted WASM evidence and prove density no-refinement degradation** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)), independently of the claimed M2 subset.
 
 ## Competitive product goal
 

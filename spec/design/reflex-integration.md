@@ -519,9 +519,9 @@ against `import.meta.url` so the Worker is page-path independent).
 `attachHostWasmTicks` / `attachWasmTicks` runs from that explicit mapping.
 Missing, blob, data, or protocol-relative CDN values fail closed
 (`xy:wasm_ticks_error`) and never guess a path. The srcdoc notebook iframe
-stays on the JavaScript tick path. Browser E2E of this attach remains
-later evidence; Related to #59; that issue stays open. One renderer for
-notebooks, static export, and Reflex.
+stays on the JavaScript tick path. Real-browser E2E proof of this packaged
+attach is tracked by the post-M2 follow-up **Prove Reflex packaged WASM tick auto-attach in a real browser** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)), independently of the delivered #59
+subset. One renderer serves notebooks, static export, and Reflex.
 
 The wrapper: opens/reuses the shared namespace socket, `sub`s with the
 element's measured width, builds a `ChartView` for the first `payload`, and

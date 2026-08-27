@@ -118,12 +118,16 @@ related, not the same acceptance criteria.
 | Canonical scene/export | **#58** | Move shared scene, layout, tick, geometry, and static-export construction into Rust; keep host API shells |
 | Direct browser engine | **#59** | Compile the same Rust engine to WASM in a Worker; keep TypeScript paint/pick/gesture/lifecycle |
 
-Issue `#59`'s first foundation is now concrete: a `wasm32-unknown-unknown`
+Issue `#59`'s claimed M2 subset is concrete: a `wasm32-unknown-unknown`
 `crates/xyg-wasm` raw adapter, generated TypeScript binding, and static
 strict-CSP Worker establish memory, version, status, cancellation, trap, and
-disposal semantics against exact Scene v9. This is deliberately only “part of
-Issue #59”; typed chart ingest, Rust scene production, painter integration, full
-conformance, and CodSpeed-backed budgets remain. See
+disposal semantics against the current canonical Scene. Typed chart ingest,
+Rust Scene production, painter integration, the current density vertical,
+packaged tick assets, and interpreted Wave B evidence are delivered.
+Polar/secondary ChartView tick paths are frozen deferred keepers. Real-browser
+Reflex attach proof, broader aggregate production, and refreshed hosted
+evidence are tracked by the post-M2 follow-up **Prove Reflex packaged WASM tick auto-attach in a real browser** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)),
+the post-M2 follow-up **Expand direct-browser aggregate production beyond the density/Scene vertical** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)), and the post-M2 follow-up **Refresh hosted WASM evidence and prove density no-refinement degradation** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)) respectively. See
 [browser-wasm.md](browser-wasm.md).
 | Phase-4 tile spill | **#5** → #7 (done), **#8**, **#9**, #10, #11 | Derived cache spill. Append = dirty *tiles*, not owning the f64 store |
 | Fork CI hygiene | #12, #15, #16, #21 | Not on this architecture critical path |

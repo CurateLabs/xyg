@@ -287,7 +287,7 @@ projections, and the expanded-record budget before Scene encoding. The output
 is ordinary Scene v25 Band geometry, so the Scene schema and its SVG, raster,
 and browser-painter consumers remain unchanged. Two-ended gradients, polar
 ribbons, LOD/density, and direct-browser `XYTS` authoring remain fail-closed;
-the dynamic-browser cutover is #59 work.
+broader direct-browser production is tracked by the post-M2 follow-up **Expand direct-browser aggregate production beyond the density/Scene vertical** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)).
 
 ## Version 4: default numeric Cartesian chrome
 
@@ -664,8 +664,8 @@ documented compatibility routes. WASM ABI 23 plus `attachWasmTicks` cut
 explicitly attached automatic, authored-value, and authored-empty primary
 Cartesian linear/log/symlog/category/UTC-time ChartView
 axes and eligible ChartView colorbars to that resolver; `js/src/30_ticks.ts`
-stays the compatibility generator for unattached charts and remaining
-families until #59 covers those hosts.
+stays the compatibility generator for unattached charts and the frozen
+deferred polar/secondary families.
 
 ## Version 25 Band outline topology
 

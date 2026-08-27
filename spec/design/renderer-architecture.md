@@ -442,7 +442,8 @@ than a host locale. There is no sign flag, `e`/`g`/`s` type, explicit width, or
 fill. Formats are bounded to 256 NUL-free UTF-8 bytes. Python and Node only
 frame the string; Rust owns parsing, final label selection, and gutter
 measurement. The dynamic TypeScript `fmtNumberSpec` remains a compatibility
-implementation until #59 and is intentionally not extended by this slice.
+implementation for unattached charts and frozen deferred tick families and is
+intentionally not extended by this slice.
 
 **Time axes** (`fmtTimeSpec`). A strftime *subset* substituted by
 `/%[YmdHMSbB]/g`: `%Y`, `%m`, `%d`, `%H`, `%M`, `%S`, `%b` (short month name),

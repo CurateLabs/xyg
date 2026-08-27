@@ -93,8 +93,9 @@ because they cannot load sibling module Workers. Reflex `register()` links
 the same two files beside `xy_client.js` when they are packaged, and
 `XYChart` auto-attaches them via `spec.wasm_ticks` plus `attachHostWasmTicks`
 (relative `./wasm-worker.js` and `./xyg-wasm.wasm`, resolved against the
-wrapper module). Browser E2E of that attach may remain; Related to #59;
-that issue stays open. It never uses eval, Blob/data Workers,
+wrapper module). Real-browser E2E proof of that packaged attach is tracked by
+the post-M2 follow-up **Prove Reflex packaged WASM tick auto-attach in a real browser** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)), independently of the delivered #59 subset. It never uses
+eval, Blob/data Workers,
 guessed paths, a CDN, implicit asset lookup, synchronous main-thread WASM,
 or JavaScript tick generation for a covered attached axis.
 

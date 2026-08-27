@@ -144,8 +144,8 @@ segment roles/styles, LOD inputs, export background overrides, and any other
 unmodeled output contract; #58/#117 must
 retire each exception only with cross-host differential and performance proof.
 Two-ended ribbon gradients, polar ribbons, and LOD/density ribbon policy remain
-explicit compatibility exceptions, and direct-browser ribbon authoring remains
-under #59.
+explicit compatibility exceptions. Broader direct-browser production,
+including ribbon authoring, is tracked by the post-M2 follow-up **Expand direct-browser aggregate production beyond the density/Scene vertical** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)).
 
 The ABI 96 primary numeric-format slice removes one more duplicated host
 decision from that compatibility boundary. For Scene-eligible linear, log, and
@@ -156,7 +156,8 @@ fallback, log sub-unit collapse protection, and explicit-label precedence),
 and measures gutters. `python/xyg/_scene_v3.py` and
 `packages/xy-node/src/scene.js` only retain authoring options and pack bounded
 UTF-8 through the versioned ABI envelope. `js/src/30_ticks.ts` remains
-canonical-policy debt for uncovered dynamic browser paths under #59. WASM ABI
+the compatibility path for unattached charts and frozen deferred tick families.
+WASM ABI
 23 plus `attachWasmTicks` now cut explicitly attached automatic, authored-value,
 and authored-empty primary Cartesian linear/log/symlog/category/UTC-time
 ChartView axes and eligible ChartView colorbars to the Rust resolver and

@@ -80,7 +80,7 @@ Internal architecture: how the engine is built and why.
   records and the #58 vertical-slice migration from host render policy to Rust.
 - [`browser-wasm.md`](design/browser-wasm.md) — direct-browser Rust/WASM
   taxonomy, raw adapter/toolchain, bounded copy and lifecycle contract, strict
-  CSP loading, and the explicit remaining work under #59.
+  CSP loading, plus the M2 #59 delivery and deferred/follow-up boundaries.
 - [`xyg-naming.md`](design/xyg-naming.md) — the locked XYG naming matrix, the
   XY-vs-XYG usage policy, and the identity-migration order.
 - [`host-parity.md`](design/host-parity.md) — three runtime surfaces; Rust owns
