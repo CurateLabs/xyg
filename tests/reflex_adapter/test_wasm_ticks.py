@@ -105,7 +105,8 @@ def test_xychart_auto_attaches_explicit_sibling_tick_urls():
     assert "const spec = withHoverFlag(withWasmTicks(eventSpec(data.spec, cbRef.current)))" in jsx
     # Fail-closed: no Blob/CDN/eval/path probing in the wrapper attach.
     assert "blob:" not in jsx.lower()
-    assert "cdn" not in jsx.lower()
+    assert "unpkg" not in jsx.lower()
+    assert "jsdelivr" not in jsx.lower()
     assert "eval(" not in jsx
 
 

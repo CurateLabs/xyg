@@ -305,7 +305,7 @@ def test_wrapper_sizes_static_and_live_charts_to_the_reflex_mount():
     assert 'width: "100%"' in jsx
     assert 'height: "100%"' in jsx
     # static tier: fitted spec plus the local hover flag for on_hover
-    assert "withHoverFlag(fitSpecToElement(frame.message))" in jsx
+    assert "withHoverFlag(withWasmTicks(fitSpecToElement(frame.message)))" in jsx
     # live tier: eventSpec (fits + enables click/view_change per callbacks)
     # composed with the same hover flag
     assert "const spec = withHoverFlag(withWasmTicks(eventSpec(data.spec, cbRef.current)))" in jsx

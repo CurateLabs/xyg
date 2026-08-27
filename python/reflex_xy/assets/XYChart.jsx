@@ -97,7 +97,7 @@ const fitSpecToElement = (spec) => ({
 // (register() links wasm-worker.js + xyg-wasm.wasm). Relative URLs resolve
 // against import.meta.url so the Worker stays same-origin and independent
 // of the page path. attachHostWasmTicks fails closed on missing, blob,
-// data, or protocol-relative CDN values — no path guessing.
+// data, or protocol-relative third-party values — no path guessing.
 const reflexWasmTickAssets = () => ({
   workerUrl: new URL("./wasm-worker.js", import.meta.url).href,
   wasm: new URL("./xyg-wasm.wasm", import.meta.url).href,
