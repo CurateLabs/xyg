@@ -592,6 +592,151 @@ pub fn polar_point_visible(metrics: &[f64], theta: f64, r: f64) -> bool {
     polar_position_mask(metrics, &[theta], &[r], &mut out) == Some(1) && out[0] != 0
 }
 
+/// Subdivisions across one full turn when flattening polar bar arcs.
+pub const POLAR_BAR_SEGMENTS: usize = 96;
+/// Floor on a single wedge so a hairline slice still brackets the true arc.
+pub const POLAR_BAR_SEGMENTS_MIN: usize = 2;
+
+/// Span-proportional flattening count matching `config.polar_bar_segments`.
+///
+/// `ceil(96 · |span| / turn)` clamped to `[2, 96]`. Degenerate `turn` or
+/// non-finite `span` pays the full-turn count so a wide wedge is never
+/// under-subdivided.
+pub fn polar_bar_segments(span: f64, turn: f64) -> usize {
+    if !(turn > 0.0) || !span.is_finite() {
+        return POLAR_BAR_SEGMENTS;
+    }
+    let scaled = (POLAR_BAR_SEGMENTS as f64 * span.abs() / turn).ceil();
+    if !scaled.is_finite() {
+        return POLAR_BAR_SEGMENTS;
+    }
+    (scaled as usize).clamp(POLAR_BAR_SEGMENTS_MIN, POLAR_BAR_SEGMENTS)
+}
+
+fn inner_fraction(metrics: &[f64]) -> f64 {
+    norm_radius_from_metrics(metrics, metrics[METRIC_R_LO]).clamp(0.0, 1.0)
+}
+
+/// Visible screen-angle interval for an authored angular band.
+///
+/// Full-sector charts convert both endpoints directly. Partial sectors clip
+/// the data interval onto the authored sector (searching one turn either
+/// side of the nearest wrap) before converting to screen angles.
+pub fn wedge_angles(metrics: &[f64], theta0: f64, theta1: f64) -> Option<(f64, f64)> {
+    if metrics.len() < POLAR_METRICS_LEN {
+        return None;
+    }
+    let raw0 = theta_value(metrics, theta0);
+    let raw1 = theta_value(metrics, theta1);
+    if !raw0.is_finite() || !raw1.is_finite() {
+        return None;
+    }
+    let zero = metrics[METRIC_ZERO];
+    let dir = metrics[METRIC_DIR];
+    let unit_scale = metrics[METRIC_UNIT_SCALE];
+    if metrics[METRIC_FULL_SECTOR] >= 0.5 {
+        return Some((zero + dir * unit_scale * raw0, zero + dir * unit_scale * raw1));
+    }
+    let low = raw0.min(raw1);
+    let high = raw0.max(raw1);
+    let midpoint = (low + high) / 2.0;
+    let sector_midpoint = (metrics[METRIC_SECTOR_START] + metrics[METRIC_SECTOR_END]) / 2.0;
+    let turn = metrics[METRIC_TURN];
+    if !(turn > 0.0) || !turn.is_finite() {
+        return None;
+    }
+    let nearest_turn = ((sector_midpoint - midpoint) / turn).round();
+    let mut best: Option<(f64, f64)> = None;
+    let mut best_span = -1.0;
+    for delta in [-1.0, 0.0, 1.0] {
+        let turn_index = nearest_turn + delta;
+        let shifted_low = low + turn_index * turn;
+        let shifted_high = high + turn_index * turn;
+        let clipped_low = metrics[METRIC_SECTOR_START].max(shifted_low);
+        let clipped_high = metrics[METRIC_SECTOR_END].min(shifted_high);
+        let span = clipped_high - clipped_low;
+        if span > best_span && span > 1e-12 {
+            best = Some((clipped_low, clipped_high));
+            best_span = span;
+        }
+    }
+    let (clipped0, clipped1) = if raw0 <= raw1 {
+        best?
+    } else {
+        let (lo, hi) = best?;
+        (hi, lo)
+    };
+    Some((
+        zero + dir * unit_scale * clipped0,
+        zero + dir * unit_scale * clipped1,
+    ))
+}
+
+/// Flatten an annular sector `(theta0, theta1, r0, r1)` to screen pixels.
+///
+/// Radii clamp into the visible `[inner_fraction, 1]` interval. The polygon
+/// is the outer arc then the reversed inner arc; an inner radius of zero
+/// includes the disc centre. Gap inset and rounded corners stay on the
+/// compatibility exporters (Scene passes `gap=0`, `corner=0`).
+pub fn polar_wedge_points(
+    metrics: &[f64],
+    theta0: f64,
+    theta1: f64,
+    r0: f64,
+    r1: f64,
+) -> Vec<(f64, f64)> {
+    if metrics.len() < POLAR_METRICS_LEN {
+        return Vec::new();
+    }
+    let floor = inner_fraction(metrics);
+    let lo_frac = norm_radius_from_metrics(metrics, r0);
+    let hi_frac = norm_radius_from_metrics(metrics, r1);
+    if !floor.is_finite() || !lo_frac.is_finite() || !hi_frac.is_finite() {
+        return Vec::new();
+    }
+    let (lo_frac, hi_frac) = if lo_frac <= hi_frac {
+        (lo_frac, hi_frac)
+    } else {
+        (hi_frac, lo_frac)
+    };
+    let radius = metrics[METRIC_RADIUS];
+    let outer = floor.max(hi_frac).min(1.0) * radius;
+    let inner = floor.max(lo_frac).min(1.0) * radius;
+    if !outer.is_finite() || !inner.is_finite() || outer <= 0.0 || outer <= inner {
+        return Vec::new();
+    }
+    let Some((a0, a1)) = wedge_angles(metrics, theta0, theta1) else {
+        return Vec::new();
+    };
+    if !a0.is_finite() || !a1.is_finite() {
+        return Vec::new();
+    }
+    let steps = polar_bar_segments(a1 - a0, 2.0 * std::f64::consts::PI);
+    let cx = metrics[METRIC_CX];
+    let cy = metrics[METRIC_CY];
+    let arc = |radius: f64, reverse: bool, out: &mut Vec<(f64, f64)>| {
+        let (start, end) = if reverse { (a1, a0) } else { (a0, a1) };
+        for i in 0..=steps {
+            let t = i as f64 / steps as f64;
+            let angle = start + (end - start) * t;
+            out.push((cx + radius * angle.cos(), cy - radius * angle.sin()));
+        }
+    };
+    let mut out = Vec::with_capacity(if inner <= 0.0 {
+        steps + 2
+    } else {
+        2 * (steps + 1)
+    });
+    if inner <= 0.0 {
+        out.push((cx, cy));
+        arc(outer, false, &mut out);
+    } else {
+        arc(outer, false, &mut out);
+        arc(inner, true, &mut out);
+    }
+    out
+}
+
 /// Combined angular and radial visibility mask.
 pub fn polar_position_mask(
     metrics: &[f64],
@@ -724,5 +869,27 @@ mod tests {
         let mut unit = bytes;
         unit[8..12].copy_from_slice(&2u32.to_le_bytes());
         assert!(parse_xypl(&unit).is_none());
+    }
+
+    #[test]
+    fn quarter_turn_outer_wedge_is_finite_and_uses_screen_y_down() {
+        let mut metrics = [0.0; POLAR_METRICS_LEN];
+        polar_layout(default_input(), &mut metrics).unwrap();
+        let points = polar_wedge_points(&metrics, 0.0, FRAC_PI_2, 0.0, 1.0);
+        assert!(points.len() >= 3);
+        assert!(points.iter().all(|(x, y)| x.is_finite() && y.is_finite()));
+        let cx = metrics[METRIC_CX];
+        let cy = metrics[METRIC_CY];
+        let radius = metrics[METRIC_RADIUS];
+        assert!((points[0].0 - cx).abs() < 1e-9);
+        assert!((points[0].1 - cy).abs() < 1e-9);
+        let east = points[1];
+        assert!((east.0 - (cx + radius)).abs() < 1e-6);
+        assert!((east.1 - cy).abs() < 1e-6);
+        let north = *points.last().unwrap();
+        assert!((north.0 - cx).abs() < 1e-6);
+        assert!((north.1 - (cy - radius)).abs() < 1e-6);
+        assert!(north.1 < cy);
+        assert_eq!(polar_bar_segments(FRAC_PI_2, 2.0 * PI), 24);
     }
 }

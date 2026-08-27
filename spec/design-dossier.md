@@ -568,7 +568,8 @@ F3, still pending (above).
   fully hidden Cartesian chrome is omitted by Rust lowering without changing
   coordinate semantics—polar Scene projection is explicit XYPL v1 input, never
   an inference from transparent paint. Scene v26 compiles polar line, scatter,
-  and area; polar bar/heatmap/contour/errorbar remain explicit unsupported
+  area, bar/column (PolyFill annular sectors), and errorbar; polar heatmap
+  and contour remain explicit unsupported
   boundaries.
   Rust owns the
   selected endpoint-pair order, clipping, SVG, PDF, and raster output;
@@ -1372,8 +1373,8 @@ ABI 131 moves static polar (theta, r) → screen-pixel projection into Rust.
 Hosts call `xyg_polar_layout`, `xyg_polar_project`, and the polar visibility-mask
 helpers; wedge/ring/polygon helpers remain host-side and call native projection.
 ChartView GLSL `xyPolarPos` is unchanged until WASM (#277). Scene v26 / ABI 133
-compiles polar line, scatter, and area through XYPL v1 into `xyg_scene_batch_encode`;
-polar bar, heatmap, contour, errorbar, and density stay rejected with
+compiles polar line, scatter, area, bar/column, and errorbar through XYPL v1 into `xyg_scene_batch_encode`;
+polar heatmap, contour, and density stay rejected with
 `XYG_SCENE_UNSUPPORTED_POLAR`.
 ABI 132 moves first-paint density scatter emit policy into Rust. Hosts call
 `xyg_density_emit_meta`, `xyg_density_grid_path`, `xyg_density_format_binning`,
@@ -1386,8 +1387,8 @@ interpolation (matching `_svg._lut`) is engine-owned and distinct from
 `xyg_heatmap_rgba`'s `((value * 255 - 1) / 254)` remap. Hosts still
 resolve colormap stop tables, CSS paint colors, truecolor RGBA buffers,
 and polar inverse-raster sampling (#283).
-ABI 133 compiles polar Scene v26 line/scatter/area: hosts pack XYPL v1
-authoring; Rust owns `polar_layout`, `polar_project`, clip, rings/spokes, and
+ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar: hosts pack XYPL v1
+authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Cartesian Scene bytes change only the version u32.
 ABI 110 moves primary Scene legend framing into Rust. Hosts pass loc/flags,
 font sizes, paints, title, and per-entry meta plus labels; XYLG header

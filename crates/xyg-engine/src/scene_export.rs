@@ -108,7 +108,7 @@ const POLAR_AXIS_KEYS: &[&str] = &[
     "hole",
     "r_origin",
 ];
-const POLAR_SCENE_KINDS: &[&str] = &["line", "scatter", "area"];
+const POLAR_SCENE_KINDS: &[&str] = &["line", "scatter", "area", "bar", "column", "errorbar"];
 const PUBLIC_SYMBOLS: &[&str] = &[
     "circle",
     "square",
@@ -1142,7 +1142,30 @@ mod tests {
                 &[(XYFS_TRACE_UNSUPPORTED_KIND, "heatmap")]
             )),
             Ok(
-                "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, and area only"
+                "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, area, bar, column, and errorbar only"
+                    .to_string()
+            )
+        );
+    }
+
+    #[test]
+    fn figure_support_accepts_polar_bar_and_rejects_heatmap() {
+        assert_eq!(
+            scene_figure_support_reason(&xyfs_v2(OBS_POLAR, &PRIMARY_XY, &[(0, "bar")])),
+            Ok(String::new())
+        );
+        assert_eq!(
+            scene_figure_support_reason(&xyfs_v2(OBS_POLAR, &PRIMARY_XY, &[(0, "column")])),
+            Ok(String::new())
+        );
+        assert_eq!(
+            scene_figure_support_reason(&xyfs_v2(OBS_POLAR, &PRIMARY_XY, &[(0, "errorbar")])),
+            Ok(String::new())
+        );
+        assert_eq!(
+            scene_figure_support_reason(&xyfs_v2(OBS_POLAR, &PRIMARY_XY, &[(0, "heatmap")])),
+            Ok(
+                "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, area, bar, column, and errorbar only"
                     .to_string()
             )
         );

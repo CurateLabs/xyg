@@ -123,8 +123,10 @@ def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
 
     polar_bar = Figure(coords="polar")
     polar_bar.bar([0.0, 1.0], [0.5, 0.8])
-    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_POLAR"):
-        polar_bar.to_scene()
+    bar_scene = polar_bar.to_scene()
+    assert bar_scene[4:8] == (26).to_bytes(4, "little")
+    bar_svg = _native.scene_svg(bar_scene)
+    assert "<path" in bar_svg and 'd="M' in bar_svg
     polar_heatmap = Figure(coords="polar")
     polar_heatmap.heatmap([[1.0, 2.0], [3.0, 4.0]])
     with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_POLAR"):

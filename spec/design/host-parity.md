@@ -258,11 +258,12 @@ Python and Node call `xyg_polar_layout`, `xyg_polar_project`, and the polar
 visibility-mask helpers so disc layout, projection, and cull predicates cannot
 drift on static export. ChartView GLSL `xyPolarPos` stays until WASM; hosts
 still own wedge/ring/polygon helpers that call native projection.
-ABI 133 compiles polar Scene v26 line/scatter/area: Python and Node pack
+ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar: Python and Node pack
 XYPL v1 authoring (`_pack_polar_scene_input` / `packPolarSceneInput`); Rust
-owns layout, `polar_project`, clip, rings/spokes, and rim tick labels.
+owns layout, `polar_project`, `polar_wedge_points` (annular-sector PolyFill),
+clip, rings/spokes, and rim tick labels.
 Cartesian Scene bytes change only the version u32 at offset 4. Polar
-bar/heatmap/contour/errorbar stay `XYG_SCENE_UNSUPPORTED_POLAR`.
+heatmap/contour stay `XYG_SCENE_UNSUPPORTED_POLAR`.
 ABI 132 moves first-paint density scatter emit policy into Rust: Python and
 Node call `xyg_density_emit_meta`, `xyg_density_grid_path`,
 `xyg_density_format_binning`, `xyg_density_pyramid_preflight`, and

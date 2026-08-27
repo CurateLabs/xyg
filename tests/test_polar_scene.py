@@ -1,4 +1,4 @@
-"""Scene v26 polar compile: line/scatter/area through Rust Scene."""
+"""Scene v26 polar compile: line/scatter/area/bar/column/errorbar through Rust Scene."""
 
 from __future__ import annotations
 
@@ -62,11 +62,45 @@ def test_polar_line_and_area_are_scene_eligible() -> None:
     assert 'data-xy-grid="ring"' in svg or 'data-xy-frame="polar"' in svg
 
 
-def test_polar_bar_still_unsupported() -> None:
+def test_polar_bar_and_column_are_scene_eligible() -> None:
     figure = Figure(width=400, height=400, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
     figure.bar([0.0, 1.0], [0.5, 0.8], color="#3987e5")
-    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_POLAR"):
-        figure_scene(figure)
+    scene = figure_scene(figure)
+    assert scene[:4] == b"XYGS"
+    assert scene[4:8] == (26).to_bytes(4, "little")
+    assert scene[-92:-88] == b"XYPL"
+    svg = _native.scene_svg(scene)
+    assert "<path" in svg and 'd="M' in svg
+    assert 'data-xy-grid="ring"' in svg or 'data-xy-frame="polar"' in svg
+    assert "<rect x=" not in svg
+    public_svg = public_static_export(figure, "svg")
+    assert public_svg is not None
+    assert b"<path" in public_svg
+    public_png = public_static_export(figure, "png")
+    assert public_png is not None
+    column = Figure(width=400, height=400, coords="polar")
+    column.axis_options["x"]["domain"] = (0.0, math.pi)
+    column.axis_options["y"]["domain"] = (0.0, 1.0)
+    column.column([0.0, math.pi / 2], [0.4, 0.9], color="#22c55e")
+    column_scene = figure_scene(column)
+    assert column_scene[4:8] == (26).to_bytes(4, "little")
+    column_svg = _native.scene_svg(column_scene)
+    assert "<path" in column_svg and 'd="M' in column_svg
+    assert "<rect x=" not in column_svg
+
+
+def test_polar_errorbar_is_scene_eligible() -> None:
+    figure = Figure(width=400, height=400, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, math.pi)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.errorbar([0.0, math.pi / 2], [0.5, 0.8], yerr=0.1, cap_size=0.0, color="#3987e5")
+    scene = figure_scene(figure)
+    assert scene[4:8] == (26).to_bytes(4, "little")
+    svg = _native.scene_svg(scene)
+    assert "<path" in svg or "<line" in svg
+    assert public_static_export(figure, "svg") is not None
 
 
 def test_polar_heatmap_still_unsupported() -> None:

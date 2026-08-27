@@ -71,9 +71,10 @@ through `scatterSceneSvg`. Python remains responsible for ingest coercion,
 public validation text, channel-to-RGBA resolution, and plot layout until
 those policies move in later slices. Polar (theta, r) → screen-pixel projection
 is Rust-owned (ABI 131). Scene v26 / ABI 133 compiles polar `line`, `scatter`,
-and `area` (including step-line as line) through `polar_project` when hosts
-pass an XYPL v1 envelope into `xyg_scene_batch_encode`. Polar bar/column,
-heatmap, contour, errorbar, density, and labeled-annotation extras still
+`area` (including step-line as line), `bar`/`column` (annular-sector PolyFill
+via `polar_wedge_points`), and `errorbar` (projected polylines) when hosts
+pass an XYPL v1 envelope into `xyg_scene_batch_encode`. Polar heatmap, contour,
+density, and labeled-annotation extras still
 reject with `XYG_SCENE_UNSUPPORTED_POLAR`. Authored arbitrary marker paths and
 font glyph markers stay on the existing Python compatibility path because they
 need separate bounded path/text records.
@@ -473,8 +474,8 @@ lowering while retaining backgrounds, marks, titles, and legends. Paint alpha
 is never a coordinate-system discriminator: a Cartesian Scene with hidden
 chrome remains Cartesian. Polar projection and polar chrome require explicit
 XYPL v1 input on `xyg_scene_batch_encode`; Scene v26 compiles polar
-line/scatter/area plus rings, spokes, disc/sector clip, and rim tick labels.
-Polar bar/heatmap/contour/errorbar stay rejected with
+line/scatter/area/bar/column/errorbar plus rings, spokes, disc/sector clip, and rim tick labels.
+Polar heatmap/contour stay rejected with
 `XYG_SCENE_UNSUPPORTED_POLAR`.
 
 Python and Node mechanically pack the same 200-byte block and tick arrays;
@@ -727,7 +728,8 @@ invalid UTF-8, embedded-NUL, and oversized fields fail closed. Legacy raw
 `XYAD` bytes remain accepted byte-for-byte.
 
 Polar/secondary Scene paths and broader numeric grammars remain on their
-documented compatibility routes except the bounded polar line/scatter/area
+documented compatibility routes except the bounded polar
+line/scatter/area/bar/column/errorbar
 slice above. WASM ABI 23 plus `attachWasmTicks` cut
 explicitly attached automatic, authored-value, and authored-empty primary
 Cartesian linear/log/symlog/category/UTC-time ChartView
@@ -753,7 +755,8 @@ domains and default axis sides. Area defaults to `Top`; error bands default to
 and `fill_betweenx` remain outside this increment. Ribbon expansion is a
 separate ABI 97 ingress mode and does not alter the v25 outline-topology
 contract. Scene v26 later admits polar area (Band) by projecting both
-`(theta, r)` samples independently; polar Rect/bar stays rejected.
+`(theta, r)` samples independently; polar bar/column Rects tessellate to
+PolyFill annular sectors in the same version. Polar heatmap/contour stay rejected.
 
 ## Version 26 polar Scene compile (ABI 133)
 
@@ -812,9 +815,14 @@ uses polygon rings through angular ticks. Tick labels use
 `_POLAR_RLABEL_DEG=22.5°` off the zero spoke) with Scene tick-label strings
 or `xyg_tick_format`.
 
-Eligible polar kinds: `line` (including step-line), `scatter`, `area`.
-`XYG_SCENE_UNSUPPORTED_POLAR` remains for polar bar/column, heatmap, contour,
-errorbar, density, and other kinds. Hidden Cartesian chrome is never inferred
+Eligible polar kinds: `line` (including step-line), `scatter`, `area`,
+`bar`, `column`, and `errorbar`. Polar `bar`/`column` host-pack the same
+`(x0,y0,x1,y1)` Rect columns as Cartesian bars; Rust tessellates
+`(theta0,r0,theta1,r1)` into a PolyFill vertex run via `polar_wedge_points`
+(span-proportional `polar_bar_segments`, gap=0/corner=0). Polar `errorbar`
+uses existing SegmentPair polylines through `polar_project` (chords, matching
+§5). `XYG_SCENE_UNSUPPORTED_POLAR` remains for polar heatmap, contour,
+density, and other kinds. Hidden Cartesian chrome is never inferred
 as polar.
 
 The older direct-browser `XYTS` v2 area descriptor has no outline-mode field.

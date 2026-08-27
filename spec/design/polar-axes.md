@@ -445,10 +445,11 @@ grid blits will silently project through a straight-line map.
 `python/xyg/config.py`).
 
 This public polar renderer support does not imply canonical Scene support for
-every polar mark. Scene v26 compiles polar `line`, `scatter`, and `area`
-(including step-line encoded as line) through Rust `polar_project`, polar
-rings/spokes/clip, and rim tick labels when hosts pass explicit XYPL v1.
-Polar `bar`/`column` (annular sectors), `heatmap`, `contour`, `errorbar`, and
+every polar mark. Scene v26 compiles polar `line`, `scatter`, `area`
+(including step-line encoded as line), `bar`/`column` (annular sectors
+tessellated to PolyFill), and `errorbar` (projected polylines) through Rust
+`polar_project` / `polar_wedge_points`, polar rings/spokes/clip, and rim tick
+labels when hosts pass explicit XYPL v1. Polar `heatmap`, `contour`, and
 density stay on the compatibility exporters and reject Scene compilation with
 `XYG_SCENE_UNSUPPORTED_POLAR`. Transparent Cartesian axis/grid paint
 must not be used to infer polar coordinates; it means only independently hidden

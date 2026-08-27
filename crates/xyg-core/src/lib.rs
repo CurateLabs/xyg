@@ -1648,6 +1648,14 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         } else {
             std::slice::from_raw_parts(expansion_modes, len)
         };
+        let polar_bytes = unsafe { polar_abi_bytes(polar_input) }?;
+        if !polar_bytes.is_empty()
+            && expansion_modes
+                .iter()
+                .any(|&mode| mode == scene::SceneExpansionMode::HeatmapLattice as u8)
+        {
+            return None;
+        }
         let records = scene::expand_scene_records(
             scene::SceneExpansionInput {
                 kinds,
@@ -1745,7 +1753,6 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             &records.y1,
         )
         .ok()?;
-        let polar_bytes = unsafe { polar_abi_bytes(polar_input) }?;
         batch
             .with_polar(polar_bytes)
             .ok()?

@@ -102,7 +102,7 @@ pub fn scene_support_reason(version: u32, features: u64) -> Result<&'static str,
         return Err(SceneError::Version);
     }
     let reasons = [
-        (SCENE_FEATURE_POLAR, "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, and area only"),
+        (SCENE_FEATURE_POLAR, "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, area, bar, column, and errorbar only"),
         (SCENE_FEATURE_CUSTOM_FONT, "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v12 does not encode custom font resources"),
         (SCENE_FEATURE_BROWSER_CSS, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS: Scene v12 does not encode browser-only CSS or class behavior"),
         (SCENE_FEATURE_GRADIENT, "XYG_SCENE_UNSUPPORTED_GRADIENT: Scene v12 supports solid literal paints only"),
@@ -4835,119 +4835,70 @@ impl<'a> SceneBatch<'a> {
     }
 
     /// Attach a host-packed XYPL v1 polar envelope. Empty bytes keep Cartesian
-    /// mapping. Rect records and labeled-annotation extras fail closed.
+    /// mapping. Labeled-annotation extras fail closed. Polar Rects tessellate
+    /// to PolyFill annular sectors at encode; heatmap lattices stay rejected
+    /// at expansion.
     pub fn with_polar(mut self, bytes: &[u8]) -> Result<Self, SceneError> {
         if bytes.is_empty() {
             return Ok(self);
         }
-        if !self.arrows.is_empty()
-            || !self.callouts.is_empty()
-            || !self.labels.is_empty()
-            || self.kinds.iter().any(|kind| {
-                SceneRecordKind::from_code(*kind).ok() == Some(SceneRecordKind::Rect)
-            })
-        {
+        if !self.arrows.is_empty() || !self.callouts.is_empty() || !self.labels.is_empty() {
             return Err(SceneError::Length);
         }
         self.polar = Some(PolarSceneState::from_xypl(bytes, self.layout)?);
         Ok(self)
     }
 
-    pub fn encode(&self) -> Vec<u8> {
-        let mut labels = self.labels.clone();
-        let mut label_backgrounds = self.label_backgrounds.clone();
-        for callout in &self.callouts {
-            labels.push(callout.label.clone());
-            label_backgrounds.push(callout.label_background.clone());
-        }
-        let label_bytes =
-            encode_scene_labels(&labels, &label_backgrounds).expect("validated Scene labels");
-        let mut out = Vec::with_capacity(
-            SCENE_BATCH_HEADER_BYTES
-                + (self.stroke_width.len() + self.arrows.len() + self.callouts.len())
-                    * SCENE_STYLE_RECORD_BYTES
-                + (self.kinds.len() + (self.arrows.len() + self.callouts.len()) * 5)
-                    * SCENE_BATCH_RECORD_BYTES
-                + self.text.encoded_bytes()
-                + encode_tick_labels(self.chrome.x_tick_labels.as_deref())
-                    .map_or(0, |value| value.len())
-                + encode_tick_labels(self.chrome.y_tick_labels.as_deref())
-                    .map_or(0, |value| value.len())
-                + self.legend.as_ref().map_or(0, |value| value.encode().len())
-                + label_bytes.len()
-                + [
-                    self.chrome.x_major_ticks.as_deref().unwrap_or(&[]).len(),
-                    self.chrome.x_minor_ticks.len(),
-                    self.chrome.y_major_ticks.as_deref().unwrap_or(&[]).len(),
-                    self.chrome.y_minor_ticks.len(),
-                ]
-                .into_iter()
-                .sum::<usize>()
-                    * 8,
-        );
-        out.extend_from_slice(b"XYGS");
-        out.extend_from_slice(&SCENE_VERSION.to_le_bytes());
-        out.extend_from_slice(&(SCENE_BATCH_HEADER_BYTES as u32).to_le_bytes());
-        out.extend_from_slice(&(SCENE_BATCH_RECORD_BYTES as u32).to_le_bytes());
-        out.extend_from_slice(
-            &((self.kinds.len() + (self.arrows.len() + self.callouts.len()) * 5) as u64)
-                .to_le_bytes(),
-        );
-        out.extend_from_slice(
-            &((self.stroke_width.len() + self.arrows.len() + self.callouts.len()) as u64)
-                .to_le_bytes(),
-        );
-        for value in [
-            self.layout.viewport_width,
-            self.layout.viewport_height,
-            self.layout.left,
-            self.layout.top,
-            self.layout.right,
-            self.layout.bottom,
-        ] {
-            out.extend_from_slice(&value.to_le_bytes());
-        }
-        out.extend_from_slice(&self.x_axis_id.to_le_bytes());
-        out.extend_from_slice(&self.y_axis_id.to_le_bytes());
-        // AxisScene records: kind/mask, transformed domain, and symlog constant.
-        out.push(self.x_scale.kind as u8);
-        out.push(u8::from(self.x_scale.mask_nonpositive));
-        out.extend_from_slice(&[0; 6]);
-        out.push(self.y_scale.kind as u8);
-        out.push(u8::from(self.y_scale.mask_nonpositive));
-        out.extend_from_slice(&[0; 6]);
-        out.extend_from_slice(&self.x_scale.coord_lo.to_le_bytes());
-        out.extend_from_slice(&(self.x_scale.coord_lo + self.x_scale.coord_span).to_le_bytes());
-        out.extend_from_slice(&self.y_scale.coord_lo.to_le_bytes());
-        out.extend_from_slice(&(self.y_scale.coord_lo + self.y_scale.coord_span).to_le_bytes());
-        out.extend_from_slice(&self.x_scale.constant.to_le_bytes());
-        out.extend_from_slice(&self.y_scale.constant.to_le_bytes());
-        debug_assert_eq!(out.len(), SCENE_BATCH_HEADER_BYTES);
-
-        for index in 0..self.stroke_width.len() {
-            out.extend_from_slice(&self.fill_rgba[index * 4..index * 4 + 4]);
-            out.extend_from_slice(&self.stroke_rgba[index * 4..index * 4 + 4]);
-            out.extend_from_slice(&self.stroke_width[index].to_le_bytes());
-        }
-        for arrow in &self.arrows {
-            let rgba = straight_arrow_alpha(arrow.rgba, arrow.opacity).expect("validated arrow");
-            out.extend_from_slice(&rgba);
-            out.extend_from_slice(&rgba);
-            out.extend_from_slice(&arrow.width.to_le_bytes());
-        }
-        for callout in &self.callouts {
-            out.extend_from_slice(&callout.rgba);
-            out.extend_from_slice(&callout.rgba);
-            out.extend_from_slice(&callout.width.to_le_bytes());
-        }
-
+    fn prepared_mark_records(&self) -> Vec<PreparedMarkRecord> {
+        let mut out = Vec::with_capacity(self.kinds.len());
         for index in 0..self.kinds.len() {
             let kind = SceneRecordKind::from_code(self.kinds[index]).expect("validated kind");
+            if let Some(polar) = &self.polar {
+                if kind == SceneRecordKind::Rect {
+                    let points = polar::polar_wedge_points(
+                        &polar.metrics,
+                        self.x0[index],
+                        self.x1[index],
+                        self.y0[index],
+                        self.y1[index],
+                    );
+                    if points.len() < 3
+                        || points
+                            .iter()
+                            .any(|(px, py)| !px.is_finite() || !py.is_finite())
+                        || out.len().saturating_add(points.len()) > MAX_SCENE_MARKS
+                    {
+                        continue;
+                    }
+                    let annotation_tag = if !self.annotations_from_ids {
+                        0x80
+                    } else if is_scene_annotation_id(self.stable_ids[index]) {
+                        ((self.stable_ids[index] >> 40) & 0xff) as u8
+                    } else {
+                        0
+                    };
+                    for (px, py) in points {
+                        let visible = px.is_finite() && py.is_finite();
+                        out.push(PreparedMarkRecord {
+                            kind: SceneRecordKind::PolyFill,
+                            visible,
+                            symbol: self.symbols[index],
+                            annotation_tag,
+                            style_ref: self.style_refs[index],
+                            stable_id: self.stable_ids[index],
+                            coordinates: if visible {
+                                [px, py, 0.0, 0.0]
+                            } else {
+                                [0.0; 4]
+                            },
+                            diameter: 0.0,
+                        });
+                    }
+                    continue;
+                }
+            }
             let mapped = if let Some(polar) = &self.polar {
                 match kind {
-                    SceneRecordKind::Rect => {
-                        [f64::NAN, f64::NAN, f64::NAN, f64::NAN]
-                    }
                     SceneRecordKind::Scatter
                     | SceneRecordKind::Polyline
                     | SceneRecordKind::PolyFill => match polar.project(self.x0[index], self.y0[index])
@@ -4964,6 +4915,7 @@ impl<'a> SceneBatch<'a> {
                             _ => [f64::NAN, f64::NAN, f64::NAN, f64::NAN],
                         }
                     }
+                    SceneRecordKind::Rect => unreachable!("polar Rects tessellate before mapping"),
                 }
             } else {
                 match kind {
@@ -5017,8 +4969,6 @@ impl<'a> SceneBatch<'a> {
                             && mapped[1].max(mapped[3]) >= self.layout.top
                     }
                 };
-            out.push(kind as u8);
-            out.push(u8::from(visible));
             let symbol = if kind == SceneRecordKind::Band {
                 let style = self.style_refs[index] as usize;
                 BandOutline::canonical(
@@ -5030,17 +4980,14 @@ impl<'a> SceneBatch<'a> {
             } else {
                 self.symbols[index]
             };
-            out.push(symbol);
-            out.push(if !self.annotations_from_ids {
+            let annotation_tag = if !self.annotations_from_ids {
                 0x80
             } else if is_scene_annotation_id(self.stable_ids[index]) {
                 ((self.stable_ids[index] >> 40) & 0xff) as u8
             } else {
                 0
-            });
-            out.extend_from_slice(&self.style_refs[index].to_le_bytes());
-            out.extend_from_slice(&self.stable_ids[index].to_le_bytes());
-            let record_coordinates = if !visible {
+            };
+            let coordinates = if !visible {
                 [0.0; 4]
             } else {
                 match kind {
@@ -5053,14 +5000,123 @@ impl<'a> SceneBatch<'a> {
                         mapped[0].max(mapped[2]),
                         mapped[1].max(mapped[3]),
                     ],
-                    // Keep top/base sample order — winding matters for the fill.
                     SceneRecordKind::Band => mapped,
                 }
             };
-            for value in record_coordinates {
+            out.push(PreparedMarkRecord {
+                kind,
+                visible,
+                symbol,
+                annotation_tag,
+                style_ref: self.style_refs[index],
+                stable_id: self.stable_ids[index],
+                coordinates,
+                diameter: self.diameter[index],
+            });
+        }
+        out
+    }
+
+    pub fn encode(&self) -> Vec<u8> {
+        let marks = self.prepared_mark_records();
+        let mut labels = self.labels.clone();
+        let mut label_backgrounds = self.label_backgrounds.clone();
+        for callout in &self.callouts {
+            labels.push(callout.label.clone());
+            label_backgrounds.push(callout.label_background.clone());
+        }
+        let label_bytes =
+            encode_scene_labels(&labels, &label_backgrounds).expect("validated Scene labels");
+        let mut out = Vec::with_capacity(
+            SCENE_BATCH_HEADER_BYTES
+                + (self.stroke_width.len() + self.arrows.len() + self.callouts.len())
+                    * SCENE_STYLE_RECORD_BYTES
+                + (marks.len() + (self.arrows.len() + self.callouts.len()) * 5)
+                    * SCENE_BATCH_RECORD_BYTES
+                + self.text.encoded_bytes()
+                + encode_tick_labels(self.chrome.x_tick_labels.as_deref())
+                    .map_or(0, |value| value.len())
+                + encode_tick_labels(self.chrome.y_tick_labels.as_deref())
+                    .map_or(0, |value| value.len())
+                + self.legend.as_ref().map_or(0, |value| value.encode().len())
+                + label_bytes.len()
+                + [
+                    self.chrome.x_major_ticks.as_deref().unwrap_or(&[]).len(),
+                    self.chrome.x_minor_ticks.len(),
+                    self.chrome.y_major_ticks.as_deref().unwrap_or(&[]).len(),
+                    self.chrome.y_minor_ticks.len(),
+                ]
+                .into_iter()
+                .sum::<usize>()
+                    * 8,
+        );
+        out.extend_from_slice(b"XYGS");
+        out.extend_from_slice(&SCENE_VERSION.to_le_bytes());
+        out.extend_from_slice(&(SCENE_BATCH_HEADER_BYTES as u32).to_le_bytes());
+        out.extend_from_slice(&(SCENE_BATCH_RECORD_BYTES as u32).to_le_bytes());
+        out.extend_from_slice(
+            &((marks.len() + (self.arrows.len() + self.callouts.len()) * 5) as u64)
+                .to_le_bytes(),
+        );
+        out.extend_from_slice(
+            &((self.stroke_width.len() + self.arrows.len() + self.callouts.len()) as u64)
+                .to_le_bytes(),
+        );
+        for value in [
+            self.layout.viewport_width,
+            self.layout.viewport_height,
+            self.layout.left,
+            self.layout.top,
+            self.layout.right,
+            self.layout.bottom,
+        ] {
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+        out.extend_from_slice(&self.x_axis_id.to_le_bytes());
+        out.extend_from_slice(&self.y_axis_id.to_le_bytes());
+        // AxisScene records: kind/mask, transformed domain, and symlog constant.
+        out.push(self.x_scale.kind as u8);
+        out.push(u8::from(self.x_scale.mask_nonpositive));
+        out.extend_from_slice(&[0; 6]);
+        out.push(self.y_scale.kind as u8);
+        out.push(u8::from(self.y_scale.mask_nonpositive));
+        out.extend_from_slice(&[0; 6]);
+        out.extend_from_slice(&self.x_scale.coord_lo.to_le_bytes());
+        out.extend_from_slice(&(self.x_scale.coord_lo + self.x_scale.coord_span).to_le_bytes());
+        out.extend_from_slice(&self.y_scale.coord_lo.to_le_bytes());
+        out.extend_from_slice(&(self.y_scale.coord_lo + self.y_scale.coord_span).to_le_bytes());
+        out.extend_from_slice(&self.x_scale.constant.to_le_bytes());
+        out.extend_from_slice(&self.y_scale.constant.to_le_bytes());
+        debug_assert_eq!(out.len(), SCENE_BATCH_HEADER_BYTES);
+
+        for index in 0..self.stroke_width.len() {
+            out.extend_from_slice(&self.fill_rgba[index * 4..index * 4 + 4]);
+            out.extend_from_slice(&self.stroke_rgba[index * 4..index * 4 + 4]);
+            out.extend_from_slice(&self.stroke_width[index].to_le_bytes());
+        }
+        for arrow in &self.arrows {
+            let rgba = straight_arrow_alpha(arrow.rgba, arrow.opacity).expect("validated arrow");
+            out.extend_from_slice(&rgba);
+            out.extend_from_slice(&rgba);
+            out.extend_from_slice(&arrow.width.to_le_bytes());
+        }
+        for callout in &self.callouts {
+            out.extend_from_slice(&callout.rgba);
+            out.extend_from_slice(&callout.rgba);
+            out.extend_from_slice(&callout.width.to_le_bytes());
+        }
+
+        for mark in &marks {
+            out.push(mark.kind as u8);
+            out.push(u8::from(mark.visible));
+            out.push(mark.symbol);
+            out.push(mark.annotation_tag);
+            out.extend_from_slice(&mark.style_ref.to_le_bytes());
+            out.extend_from_slice(&mark.stable_id.to_le_bytes());
+            for value in mark.coordinates {
                 out.extend_from_slice(&value.to_le_bytes());
             }
-            out.extend_from_slice(&self.diameter[index].to_le_bytes());
+            out.extend_from_slice(&mark.diameter.to_le_bytes());
         }
         for (arrow_index, arrow) in self.arrows.iter().enumerate() {
             let start_x = self.x_scale.pixel(arrow.x0);
@@ -5137,6 +5193,18 @@ struct EncodedStyle {
     fill: [u8; 4],
     stroke: [u8; 4],
     stroke_width: f64,
+}
+
+#[derive(Clone, Copy)]
+struct PreparedMarkRecord {
+    kind: SceneRecordKind,
+    visible: bool,
+    symbol: u8,
+    annotation_tag: u8,
+    style_ref: u32,
+    stable_id: u64,
+    coordinates: [f64; 4],
+    diameter: f64,
 }
 
 #[derive(Clone, Copy)]
@@ -8496,8 +8564,21 @@ impl SceneDocument {
                         .saturating_mul(35),
                 )
         });
+        let polar_ring_capacity = if self.polar.is_some() {
+            // Polar rings and the outer frame are 64-vertex closed polylines
+            // (~560 bytes), not the 35-byte two-point strokes cartesian grid
+            // capacity assumes. Spokes stay inside the existing stroke budget.
+            y_ticks
+                .labeled
+                .len()
+                .saturating_add(1)
+                .saturating_mul(560)
+        } else {
+            0
+        };
         self.raster_mark_capacity
             .saturating_add(chrome_capacity)
+            .saturating_add(polar_ring_capacity)
             .saturating_add(legend_capacity)
             .saturating_add(colorbar_capacity)
             .saturating_add(label_capacity)
@@ -12962,6 +13043,82 @@ mod tests {
         assert!(svg.contains("clipPath"));
         assert!(!svg.contains("<clipPath id=\"xy-scene-plot\"><rect"));
         SceneDocument::decode(&encoded).unwrap();
+    }
+
+    #[test]
+    fn polar_bar_tessellates_rect_to_polyfill_wedge() {
+        let layout = PlotLayout::new(400.0, 400.0, 0.0, 0.0, 0.0, 0.0).unwrap();
+        let x = AxisScale::new(ScaleKind::Linear, 0.0, std::f64::consts::PI * 2.0, 0.0, 400.0, 1.0, false)
+            .unwrap();
+        let y = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 400.0, 0.0, 1.0, false).unwrap();
+        let envelope = polar::PolarEnvelope {
+            theta_unit: 0,
+            theta_direction: 0,
+            n_categories: 0,
+            r_scale_kind: 0,
+            grid_shape: 0,
+            r_mask_nonpositive: false,
+            theta_zero: 0.0,
+            sector_start: 0.0,
+            sector_end: std::f64::consts::PI * 2.0,
+            r_lo: 0.0,
+            r_hi: 1.0,
+            r_origin: f64::NAN,
+            hole: 0.0,
+            r_constant: 1.0,
+        };
+        let xypl = polar::encode_xypl(&envelope);
+        let kinds = [SceneRecordKind::Rect as u8];
+        let ids = [1u64];
+        let styles = [0u32];
+        let fill = [37u8, 99, 235, 255];
+        let stroke = [0u8, 0, 0, 255];
+        let widths = [0.0f64];
+        let diameter = [0.0f64];
+        let symbols = [0u8];
+        let x0 = [0.0f64];
+        let y0 = [0.0f64];
+        let x1 = [std::f64::consts::FRAC_PI_2];
+        let y1 = [1.0f64];
+        let encoded = SceneBatch::new(
+            layout,
+            1,
+            2,
+            x,
+            y,
+            &kinds,
+            &ids,
+            &styles,
+            &fill,
+            &stroke,
+            &widths,
+            &diameter,
+            &symbols,
+            &x0,
+            &y0,
+            &x1,
+            &y1,
+        )
+        .unwrap()
+        .with_polar(&xypl)
+        .unwrap()
+        .encode();
+        let document = SceneDocument::decode(&encoded).unwrap();
+        assert!(document.records.len() >= 3);
+        assert!(document
+            .records
+            .iter()
+            .all(|record| record.kind == SceneRecordKind::PolyFill));
+        assert!(document.records.iter().all(|record| record.visible));
+        assert!(document
+            .records
+            .iter()
+            .all(|record| record.coordinates[0].is_finite() && record.coordinates[1].is_finite()));
+        let svg = document.to_svg();
+        assert!(svg.contains("<path d=\"M"));
+        assert!(!svg.contains("<rect x="));
+        assert!(svg.contains("data-xy-grid=\"ring\"") || svg.contains("<circle"));
+        assert!(document.to_raster_commands(1.0).unwrap().len() > 100);
     }
 
     #[test]
