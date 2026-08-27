@@ -175,6 +175,7 @@ export { composeRibbon, attachRibbon } from "./marks/ribbon.js";
 
 export {
   parseCssColor,
+  cssColorRgba8,
   cssColorsToRgba8,
   resolveColorChannel,
 } from "./color.js";

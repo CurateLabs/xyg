@@ -312,7 +312,9 @@ produced. Scene v25 bytes are unchanged.
 ABI 105 does not change Scene records. It adds the public-export support
 predicate `xyg_scene_public_export_reason` so Python `scene_export_support_reason`
 and Node `sceneExportSupportReason` share one Rust allowlist over packed `XYEP`
-v1 metadata.
+v1 metadata. ABI 107 likewise leaves Scene records unchanged and adds
+`xyg_scene_resolve_mark_styles` / `xyg_css_color_rgba` so both hosts pack
+`XYMS` v1 CSS literals instead of resolving fill/stroke defaults locally.
 
 ## Version 4: default numeric Cartesian chrome
 
@@ -1023,7 +1025,10 @@ Rust owns the public-subset allowlists, check order, and
 hosts still compile the Scene and may still report compiler or viewport
 diagnostics, including the shared PolyFill group budget. ABI 106 does not
 change Scene records; `xyg_figure_autorange` owns the domain the annotation
-and chrome packers already pass as `figure._range`. Polar
+and chrome packers already pass as `figure._range`. ABI 107 does not change
+Scene records either; `xyg_scene_resolve_mark_styles` owns per-kind fill/stroke
+defaults and CSS→RGBA8 from packed `XYMS` v1, and chrome/annotation packers
+call `xyg_css_color_rgba` for the same conversion. Polar
 hexbin, custom reducers, metric colormaps, LOD, and rich style exceptions
 fail closed and keep the compatibility exporters. Scene 25 is unchanged.
 

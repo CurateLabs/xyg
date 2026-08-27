@@ -26,7 +26,6 @@ from ._svg import (
     _AXIS,
     _AXIS_GRID_DASHES,
     _GRID,
-    _STATIC_COLOR_FALLBACK,
     _TEXT,
     COLORBAR_FONT_SIZE,
     DEFAULT_PALETTE,
@@ -140,28 +139,13 @@ _SYMBOLS = {
 
 
 def _parse_color(css: str, opacity: float = 1.0) -> tuple[int, int, int, int]:
-    """Resolve a CSS color string to RGBA8 via the native grammar
-    (crates/xyg-engine/src/css.rs) — the same parser that validates figure input, so raster
-    colors can never drift from the API contract. `none` renders transparent
-    (the SVG idiom); browser-only forms that survive `_css`'s fallback (an
-    `oklch()` a DOM would resolve) and — defensively — anything unparseable
-    use the same blue-gray fallback as the browser renderer so a static export
-    never renders an invisible or target-dependent mark."""
-    from . import kernels
+    """Resolve a CSS color string to RGBA8 via `xyg_css_color_rgba`
+    (`crates/xyg-engine/src/css.rs`). Scene packing, native raster, and Node
+    hosts share this conversion so named colors, `none`, and the never-invisible
+    fallback cannot drift."""
+    from . import _native
 
-    s = str(css).strip()
-    if s.lower() == "none":
-        return (0, 0, 0, 0)
-    _status, rgba = kernels.css_check(kernels.CSS_COLOR, s)
-    if rgba is None:
-        rgba = _STATIC_COLOR_FALLBACK
-    r, g, b, a = rgba
-    return (
-        int(round(r * 255)),
-        int(round(g * 255)),
-        int(round(b * 255)),
-        max(0, min(255, int(round(a * 255 * opacity)))),
-    )
+    return _native.css_color_rgba(css, opacity)
 
 
 def _rgba(css: Any, fallback: str, opacity: float = 1.0) -> tuple[int, int, int, int]:

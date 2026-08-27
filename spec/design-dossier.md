@@ -1268,6 +1268,11 @@ into Rust. Hosts pack an `XYAR` v1 envelope of axis options, column extents,
 and rectangle predicates; padding, log-positive extents, polar defaults,
 reverse, and the default 3% margin are engine-owned and identical for Python
 and Node.
+ABI 107 moves Scene CSS→RGBA8 conversion and per-kind mark fill/stroke/width
+defaults into Rust. Hosts pack an `XYMS` v1 envelope of kind, opacities,
+authored CSS strings, and width fields; named colors, `none`, line-only
+scatter stroke, band `line_color`, default widths, and the never-invisible
+fallback are engine-owned and identical for Python and Node.
 Constant-style Cartesian heatmap compiles a regular rows x cols lattice onto
 existing Scene Rect records; polar, colormaps, truecolor, irregular
 spacing, and LOD stay compatibility.

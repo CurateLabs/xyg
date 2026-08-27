@@ -7,6 +7,7 @@ import {
   xyScenePlotLayout,
   xyScenePublicExportReason,
   xySceneRasterCommands,
+  xySceneResolveMarkStyles,
   xySceneScaleMap,
   xySceneScatterSvg,
   xySceneSupportReason,
@@ -14,7 +15,7 @@ import {
   xySceneVersion,
 } from "./native.js";
 import { asF64Array, f64Ptr, shouldUseDensity, u32Ptr, u8Ptr } from "./encode.js";
-import { parseCssColor } from "./color.js";
+import { cssColorRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
 const MAX_SCENE_MARKS = 2_000_000;
@@ -380,10 +381,8 @@ export function sceneBrowserPainter(encoded, maxBytes = 64 * 1024 * 1024) {
   return sceneOutput(encoded, xySceneBrowserPainter, "browser painter", [BigInt(limit)]);
 }
 
-function rgba8(css, opacity, name) {
-  const parsed = parseCssColor(css);
-  if (parsed == null) throw new RangeError(`${name} must be a supported constant CSS color`);
-  return parsed.map((value, index) => Math.round(value * (index === 3 ? opacity : 1) * 255));
+function rgba8(css, opacity = 1) {
+  return cssColorRgba8(css, opacity);
 }
 
 function annotationNumber(style, key, fallback, label) {
@@ -444,6 +443,95 @@ const PUBLIC_EXPORT_KIND_CODES = {
   box_whisker: 7, box_median: 8, segments: 9, errorbar: 10, stem: 11, area: 12,
   error_band: 13, ribbon: 14, triangle_mesh: 15, hexbin: 16, heatmap: 17,
 };
+const STYLE_KIND_CODES = { ...PUBLIC_EXPORT_KIND_CODES, contour: 18 };
+const MS_LINE_ONLY = 1 << 0;
+const MS_HAS_FILL = 1 << 1;
+const MS_HAS_STROKE = 1 << 2;
+const MS_HAS_LINE_COLOR = 1 << 3;
+const MS_HAS_STROKE_WIDTH = 1 << 5;
+const MS_HAS_WIDTH = 1 << 6;
+const MS_HAS_LINE_WIDTH = 1 << 7;
+
+function encodeUtf8(value) {
+  return new TextEncoder().encode(String(value ?? ""));
+}
+
+function packMarkStyleRecord(trace, opacity, fillOpacity, strokeOpacity, lineOpacity, symbolCode) {
+  const style = trace.style ?? {};
+  let flags = 0;
+  if (trace.kind === "scatter" && symbolCode >= SYMBOL_CODES.get("plus_line")) flags |= MS_LINE_ONLY;
+  const parts = [];
+  let fill = new Uint8Array(0);
+  if (Object.hasOwn(style, "fill")) {
+    if (typeof style.fill !== "string") throw new RangeError(`Scene v12 does not yet encode ${trace.kind} non-CSS fills`);
+    flags |= MS_HAS_FILL;
+    fill = encodeUtf8(style.fill);
+  }
+  let stroke = new Uint8Array(0);
+  if (Object.hasOwn(style, "stroke")) {
+    flags |= MS_HAS_STROKE;
+    stroke = encodeUtf8(style.stroke);
+  }
+  let lineColor = new Uint8Array(0);
+  if (Object.hasOwn(style, "line_color") || Object.hasOwn(style, "lineColor")) {
+    flags |= MS_HAS_LINE_COLOR;
+    lineColor = encodeUtf8(style.line_color ?? style.lineColor);
+  }
+  const color = style.color
+    ?? (typeof trace.color === "string" ? trace.color : trace.color?.color)
+    ?? "#3987e5";
+  const colorBytes = encodeUtf8(color);
+  let strokeWidth = 0;
+  let width = 0;
+  let lineWidth = 0;
+  if (Object.hasOwn(style, "stroke_width") || Object.hasOwn(style, "strokeWidth")) {
+    flags |= MS_HAS_STROKE_WIDTH;
+    strokeWidth = Number(style.stroke_width ?? style.strokeWidth);
+  }
+  if (Object.hasOwn(style, "width")) {
+    flags |= MS_HAS_WIDTH;
+    width = Number(style.width);
+  }
+  if (Object.hasOwn(style, "line_width") || Object.hasOwn(style, "lineWidth")) {
+    flags |= MS_HAS_LINE_WIDTH;
+    lineWidth = Number(style.line_width ?? style.lineWidth);
+  }
+  const prefix = new Uint8Array(52);
+  const view = new DataView(prefix.buffer);
+  prefix[0] = STYLE_KIND_CODES[trace.kind] ?? 255;
+  prefix[1] = flags;
+  view.setFloat32(4, Number(opacity), true);
+  view.setFloat32(8, Number(fillOpacity), true);
+  view.setFloat32(12, Number(strokeOpacity), true);
+  view.setFloat32(16, Number(lineOpacity), true);
+  view.setFloat64(20, strokeWidth, true);
+  view.setFloat64(28, width, true);
+  view.setFloat64(36, lineWidth, true);
+  view.setUint16(44, fill.length, true);
+  view.setUint16(46, stroke.length, true);
+  view.setUint16(48, lineColor.length, true);
+  view.setUint16(50, colorBytes.length, true);
+  parts.push(prefix, fill, stroke, lineColor, colorBytes);
+  return concatBytes(parts);
+}
+
+function resolveMarkStyle(trace, opacity, fillOpacity, strokeOpacity, lineOpacity, symbolCode) {
+  const record = packMarkStyleRecord(trace, opacity, fillOpacity, strokeOpacity, lineOpacity, symbolCode);
+  const envelope = new Uint8Array(16 + record.length);
+  const view = new DataView(envelope.buffer);
+  envelope.set(encodeUtf8("XYMS").slice(0, 4), 0);
+  view.setUint32(4, 1, true);
+  view.setUint32(8, 1, true);
+  envelope.set(record, 16);
+  const out = new Uint8Array(16);
+  const code = xySceneResolveMarkStyles(u8Ptr(envelope), BigInt(envelope.length), u8Ptr(out), BigInt(out.length));
+  if (code !== 1) throw new RangeError("invalid mark style envelope");
+  return {
+    fillRgba: Array.from(out.subarray(0, 4)),
+    strokeRgba: Array.from(out.subarray(4, 8)),
+    strokeWidth: new DataView(out.buffer, out.byteOffset + 8, 8).getFloat64(0, true),
+  };
+}
 
 function canonicalExportKey(key) {
   return String(key).replace(/[A-Z]/g, (ch) => `_${ch.toLowerCase()}`);
@@ -924,43 +1012,17 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     }
     const opacity = Number(style.opacity ?? 1);
     if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) throw new RangeError("trace opacity must be in [0, 1]");
+    if (Object.hasOwn(style, "fill") && typeof style.fill !== "string") {
+      throw new RangeError(`Scene v12 does not yet encode ${trace.kind} non-CSS fills`);
+    }
     const fillOpacity = BAND_KINDS.has(trace.kind) || RIBBON_KINDS.has(trace.kind) ? Number(style.fill_opacity ?? 1) : 1;
     const strokeOpacity = BAND_KINDS.has(trace.kind) || RIBBON_KINDS.has(trace.kind) ? Number(style.stroke_opacity ?? 1) : 1;
     const lineOpacity = BAND_KINDS.has(trace.kind) ? Number(style.line_opacity ?? 1) : 1;
     if ((BAND_KINDS.has(trace.kind) || RIBBON_KINDS.has(trace.kind)) && [fillOpacity, strokeOpacity, lineOpacity].some((value) => !Number.isFinite(value) || value < 0 || value > 1)) {
       throw new RangeError("trace opacity channels must be in [0, 1]");
     }
-    const color = style.color
-      ?? (typeof trace.color === "string" ? trace.color : trace.color?.color)
-      ?? "#3987e5";
-    const fillDefault = SEGMENT_KINDS.has(trace.kind) ? "#00000000" : color;
-    const fillCss = style.fill ?? fillDefault;
-    if (typeof fillCss !== "string") throw new RangeError(`Scene v12 does not yet encode ${trace.kind} non-CSS fills`);
     const symbolCode = sceneSymbolCode(style.symbol ?? 0);
-    const strokeCss = BAND_KINDS.has(trace.kind)
-      ? (style.line_color ?? color)
-      : RIBBON_KINDS.has(trace.kind)
-        ? (style.stroke ?? color)
-        : (style.stroke ?? (
-            STROKE_KINDS.has(trace.kind)
-            || (
-              trace.kind === "scatter"
-              && symbolCode >= SYMBOL_CODES.get("plus_line")
-            )
-              ? color
-              : "#00000000"
-          ));
-    const width = Number(
-      style.stroke_width
-      ?? style.width
-      ?? style.line_width
-      ?? (STROKE_KINDS.has(trace.kind) ? 1.5 : 0),
-    );
-    styles.push({
-      fillRgba: rgba8(fillCss, opacity * fillOpacity, "fill"),
-      strokeRgba: rgba8(strokeCss, opacity * strokeOpacity * (BAND_KINDS.has(trace.kind) ? lineOpacity : 1), "stroke"),
-      strokeWidth: width,
-    });
+    styles.push(resolveMarkStyle(trace, opacity, fillOpacity, strokeOpacity, lineOpacity, symbolCode));
     const styleRef = styles.length - 1;
     if (trace.name != null && String(trace.name).length > 0 && figure.showLegend !== false) {
       const legendKind = trace.kind === "scatter" ? 0 : STROKE_KINDS.has(trace.kind) ? 1 : 2;

@@ -3,10 +3,37 @@
  * Ships constant CSS strings, packed RGBA8 for direct_rgba, or continuous
  * unit-f32 channels for numeric encodings (Python `_ship_channels` parity).
  */
+import { pointer, xyCssColorRgba } from "./native.js";
+
+function u8Ptr(view) {
+  return pointer(view, "uint8_t *");
+}
+
+/**
+ * Resolve a CSS color to RGBA8 via `xyg_css_color_rgba`. Named colors,
+ * `hsl()`, `none`, and the never-invisible fallback match Python Scene/raster.
+ *
+ * @param {string} css
+ * @param {number} [opacity]
+ * @returns {Uint8Array}
+ */
+export function cssColorRgba8(css, opacity = 1) {
+  const encoded = new TextEncoder().encode(String(css ?? ""));
+  const out = new Uint8Array(4);
+  const code = xyCssColorRgba(
+    encoded.length ? u8Ptr(encoded) : null,
+    BigInt(encoded.length),
+    Number(opacity),
+    u8Ptr(out),
+  );
+  if (code !== 0) throw new RangeError("native css color resolver rejected the color");
+  return out;
+}
 
 /**
  * Parse `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`, or `rgb(a)(...)` into
- * `[r,g,b,a]` in 0..1. Returns null when unrecognized.
+ * `[r,g,b,a]` in 0..1. Returns null when unrecognized. Named colors, `hsl()`,
+ * and `none` go through `cssColorRgba8` / `xyg_css_color_rgba`.
  *
  * @param {string} css
  * @returns {[number, number, number, number]|null}
@@ -64,12 +91,7 @@ export function parseCssColor(css) {
 export function cssColorsToRgba8(colors) {
   const out = new Uint8Array(colors.length * 4);
   for (let i = 0; i < colors.length; i += 1) {
-    const rgba = parseCssColor(colors[i]) ?? [0.22, 0.53, 0.9, 1];
-    const o = i * 4;
-    out[o] = Math.round(rgba[0] * 255);
-    out[o + 1] = Math.round(rgba[1] * 255);
-    out[o + 2] = Math.round(rgba[2] * 255);
-    out[o + 3] = Math.round(rgba[3] * 255);
+    out.set(cssColorRgba8(colors[i]), i * 4);
   }
   return out;
 }

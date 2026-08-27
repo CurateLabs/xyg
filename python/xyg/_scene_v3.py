@@ -301,9 +301,93 @@ class UnsupportedSceneV3(ValueError):
 
 
 def _rgba(css: str, opacity: float) -> tuple[int, int, int, int]:
-    from ._raster import _parse_color
+    return _native.css_color_rgba(css, opacity)
 
-    return _parse_color(css, opacity)
+
+_STYLE_KIND_CODES = {
+    **_PUBLIC_EXPORT_KIND_CODES,
+    "contour": 18,
+}
+_MS_LINE_ONLY = 1 << 0
+_MS_HAS_FILL = 1 << 1
+_MS_HAS_STROKE = 1 << 2
+_MS_HAS_LINE_COLOR = 1 << 3
+_MS_HAS_STROKE_WIDTH = 1 << 5
+_MS_HAS_WIDTH = 1 << 6
+_MS_HAS_LINE_WIDTH = 1 << 7
+
+
+def _pack_mark_style_record(
+    trace: Any,
+    opacity: float,
+    fill_opacity: float,
+    stroke_opacity: float,
+    line_opacity: float,
+    symbol_name: str,
+) -> bytes:
+    style = trace.style
+    flags = 0
+    if trace.kind == "scatter" and _SYMBOL_CODES[symbol_name] >= _SYMBOL_CODES["plus_line"]:
+        flags |= _MS_LINE_ONLY
+    fill_b = b""
+    if "fill" in style:
+        fill_value = style["fill"]
+        if not isinstance(fill_value, str):
+            raise UnsupportedSceneV3(f"Scene v12 does not yet encode {trace.kind} non-CSS fills")
+        flags |= _MS_HAS_FILL
+        fill_b = fill_value.encode("utf-8")
+    stroke_b = b""
+    if "stroke" in style:
+        flags |= _MS_HAS_STROKE
+        stroke_b = str(style["stroke"]).encode("utf-8")
+    line_color_b = b""
+    if "line_color" in style:
+        flags |= _MS_HAS_LINE_COLOR
+        line_color_b = str(style["line_color"]).encode("utf-8")
+    color_b = _constant_color(trace, "#3987e5").encode("utf-8")
+    stroke_width = width = line_width = 0.0
+    if "stroke_width" in style:
+        flags |= _MS_HAS_STROKE_WIDTH
+        stroke_width = float(style["stroke_width"])
+    if "width" in style:
+        flags |= _MS_HAS_WIDTH
+        width = float(style["width"])
+    if "line_width" in style:
+        flags |= _MS_HAS_LINE_WIDTH
+        line_width = float(style["line_width"])
+    prefix = struct.pack(
+        "<BBH4f3d4H",
+        _STYLE_KIND_CODES.get(trace.kind, 255),
+        flags,
+        0,
+        float(opacity),
+        float(fill_opacity),
+        float(stroke_opacity),
+        float(line_opacity),
+        float(stroke_width),
+        float(width),
+        float(line_width),
+        len(fill_b),
+        len(stroke_b),
+        len(line_color_b),
+        len(color_b),
+    )
+    return prefix + fill_b + stroke_b + line_color_b + color_b
+
+
+def _resolve_mark_style(
+    trace: Any,
+    opacity: float,
+    fill_opacity: float,
+    stroke_opacity: float,
+    line_opacity: float,
+    symbol_name: str,
+) -> tuple[tuple[int, int, int, int], tuple[int, int, int, int], float]:
+    record = _pack_mark_style_record(
+        trace, opacity, fill_opacity, stroke_opacity, line_opacity, symbol_name
+    )
+    header = struct.pack("<4sIII", b"XYMS", 1, 1, 0)
+    return _native.scene_resolve_mark_styles(header + record)[0]
 
 
 def _constant_color(trace: Any, fallback: str) -> str:
@@ -640,15 +724,7 @@ def figure_scene(
         opacity = float(style.get("opacity", 1.0))
         if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
             raise ValueError("trace opacity must be finite and in [0, 1]")
-        color = _constant_color(trace, "#3987e5")
-        if trace.kind in _SEGMENT_KINDS:
-            fill_default = "transparent"
-        elif trace.kind in _BAND_KINDS | _RIBBON_KINDS | _POLYFILL_KINDS:
-            fill_default = color
-        else:
-            fill_default = color
-        fill_value = style.get("fill", fill_default)
-        if not isinstance(fill_value, str):
+        if "fill" in style and not isinstance(style["fill"], str):
             raise UnsupportedSceneV3(f"Scene v12 does not yet encode {trace.kind} non-CSS fills")
         fill_opacity = stroke_opacity = line_opacity = 1.0
         if trace.kind in _BAND_KINDS | _RIBBON_KINDS:
@@ -661,37 +737,12 @@ def figure_scene(
             for value in (fill_opacity, stroke_opacity, line_opacity)
         ):
             raise ValueError("trace opacity channels must be finite and in [0, 1]")
-        fill = _rgba(fill_value, opacity * fill_opacity)
         symbol_name = str(style.get("symbol", "circle"))
         if symbol_name not in _SYMBOL_CODES:
             raise UnsupportedSceneV3(f"Scene v12 does not support scatter symbol {symbol_name!r}")
-        stroke_default = (
-            color
-            if trace.kind in _STROKE_KINDS
-            or (
-                trace.kind == "scatter" and _SYMBOL_CODES[symbol_name] >= _SYMBOL_CODES["plus_line"]
-            )
-            else "transparent"
+        fill, stroke, stroke_width = _resolve_mark_style(
+            trace, opacity, fill_opacity, stroke_opacity, line_opacity, symbol_name
         )
-        if trace.kind in _RIBBON_KINDS:
-            stroke_default = str(style.get("stroke", color))
-        elif trace.kind in _POLYFILL_KINDS:
-            stroke_default = str(style.get("stroke", "transparent"))
-        if trace.kind in _BAND_KINDS:
-            stroke_value = str(style.get("line_color", color))
-            stroke_alpha = opacity * stroke_opacity * line_opacity
-        else:
-            stroke_value = str(style.get("stroke", stroke_default))
-            stroke_alpha = opacity * stroke_opacity
-        stroke = _rgba(stroke_value, stroke_alpha)
-        width_value = style.get(
-            "stroke_width",
-            style.get(
-                "width",
-                style.get("line_width", 1.5 if trace.kind in _STROKE_KINDS else 0.0),
-            ),
-        )
-        stroke_width = float(width_value)
         styles.append((fill, stroke, stroke_width))
         style_ref = len(styles) - 1
         diameter = (

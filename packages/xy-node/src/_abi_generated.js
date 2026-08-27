@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 106;
-export const SIGNATURE_SHA256 = "d664c9902313d3f9051f9c279f1d746546a444a50df9391e61e3fd06cc591c97";
+export const ABI_VERSION = 107;
+export const SIGNATURE_SHA256 = "f63f7dc5391750aefbfacb8d5e6417650378c55ee6569aa449d8a872eda90ef3";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -29,6 +29,7 @@ export let xyContourfBands;
 export let xyContourfDensify;
 export let xyCorrelation;
 export let xyCssCheck;
+export let xyCssColorRgba;
 export let xyDelaunayTriangles;
 export let xyDensityLogU8;
 export let xyDensityRgba;
@@ -123,6 +124,7 @@ export let xySceneBrowserPainter;
 export let xyScenePlotLayout;
 export let xyScenePublicExportReason;
 export let xySceneRasterCommands;
+export let xySceneResolveMarkStyles;
 export let xySceneScaleMap;
 export let xySceneScatterSvg;
 export let xySceneSupportReason;
@@ -227,6 +229,7 @@ export function bindGeneratedAbi(lib) {
   xyContourfDensify = lib.func("int32_t xyg_contourf_densify(const double * z, size_t rows, size_t cols, const double * xpos, const double * ypos, double * out_z, double * out_x, double * out_y, size_t out_z_cap, size_t out_x_cap, size_t out_y_cap, size_t * out_rows, size_t * out_cols)");
   xyCorrelation = lib.func("int32_t xyg_correlation(const double * x, const double * y, size_t len, size_t max_lag, int32_t normalize, double * out_lag, double * out_correlation)");
   xyCssCheck = lib.func("int32_t xyg_css_check(uint32_t kind, const uint8_t * prop, size_t prop_len, const uint8_t * value, size_t value_len, float * out_rgba)");
+  xyCssColorRgba = lib.func("int32_t xyg_css_color_rgba(const uint8_t * css, size_t len, float opacity, uint8_t * out_rgba)");
   xyDelaunayTriangles = lib.func("size_t xyg_delaunay_triangles(const double * x, const double * y, size_t len, int64_t * out, size_t capacity)");
   xyDensityLogU8 = lib.func("int32_t xyg_density_log_u8(const float * grid, size_t len, uint8_t * out, double * out_max)");
   xyDensityRgba = lib.func("int32_t xyg_density_rgba(const uint8_t * encoded, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out)");
@@ -321,6 +324,7 @@ export function bindGeneratedAbi(lib) {
   xyScenePlotLayout = lib.func("size_t xyg_scene_plot_layout(double viewport_width, double viewport_height, const double * authored_padding, uint32_t x_kind, double x_lo, double x_hi, double x_constant, int32_t x_mask_nonpositive, uint32_t y_kind, double y_lo, double y_hi, double y_constant, int32_t y_mask_nonpositive, const uint8_t * title, size_t title_len, const uint8_t * x_label, size_t x_label_len, const uint8_t * y_label, size_t y_label_len, const uint8_t * x_format, size_t x_format_len, const uint8_t * y_format, size_t y_format_len, uint32_t colorbar_side, double * out_margins)");
   xyScenePublicExportReason = lib.func("size_t xyg_scene_public_export_reason(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap)");
   xySceneRasterCommands = lib.func("size_t xyg_scene_raster_commands(const uint8_t * encoded, size_t encoded_len, double scale, uint8_t * out, size_t out_cap)");
+  xySceneResolveMarkStyles = lib.func("int32_t xyg_scene_resolve_mark_styles(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap)");
   xySceneScaleMap = lib.func("int32_t xyg_scene_scale_map(const double * values, size_t len, uint32_t kind, uint32_t operation, double lo, double hi, double px0, double px1, double constant, int32_t mask_nonpositive, double * out)");
   xySceneScatterSvg = lib.func("size_t xyg_scene_scatter_svg(const double * x, const double * y, const double * diameter, const uint8_t * fill_rgba, const uint8_t * stroke_rgba, const double * stroke_width, const uint8_t * symbols, const uint8_t * visible, const uint8_t * fill_css, size_t fill_css_len, const uint8_t * stroke_css, size_t stroke_css_len, size_t len, uint8_t * out, size_t out_cap)");
   xySceneSupportReason = lib.func("size_t xyg_scene_support_reason(uint32_t request_version, uint64_t features, uint8_t * out, size_t out_cap)");

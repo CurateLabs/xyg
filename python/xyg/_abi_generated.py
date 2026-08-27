@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 106
-SIGNATURE_SHA256 = "d664c9902313d3f9051f9c279f1d746546a444a50df9391e61e3fd06cc591c97"
+ABI_VERSION = 107
+SIGNATURE_SHA256 = "f63f7dc5391750aefbfacb8d5e6417650378c55ee6569aa449d8a872eda90ef3"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -106,6 +106,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_css_check
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_uint32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+    # int32_t xyg_css_color_rgba(const uint8_t * css, size_t len, float opacity, uint8_t * out_rgba)
+    function = lib.xyg_css_color_rgba
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_float, ctypes.c_void_p]
     # size_t xyg_delaunay_triangles(const double * x, const double * y, size_t len, int64_t * out, size_t capacity)
     function = lib.xyg_delaunay_triangles
     function.restype = ctypes.c_size_t
@@ -482,6 +486,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_raster_commands
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_resolve_mark_styles(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap)
+    function = lib.xyg_scene_resolve_mark_styles
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_scene_scale_map(const double * values, size_t len, uint32_t kind, uint32_t operation, double lo, double hi, double px0, double px1, double constant, int32_t mask_nonpositive, double * out)
     function = lib.xyg_scene_scale_map
     function.restype = ctypes.c_int32

@@ -37,6 +37,7 @@ use xyg_engine::raster;
 use xyg_engine::sankey;
 use xyg_engine::scene;
 use xyg_engine::scene_public_export_reason;
+use xyg_engine::scene_style::{self, MarkStyleError};
 use xyg_engine::stats;
 use xyg_engine::stream;
 use xyg_engine::svg;
@@ -101,7 +102,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 106;
+pub const ABI_VERSION: u32 = 107;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -171,6 +172,55 @@ pub unsafe extern "C" fn xyg_scene_public_export_reason(
             std::ptr::copy_nonoverlapping(encoded.as_ptr(), out, encoded.len());
         }
         encoded.len()
+    })
+}
+
+/// Resolve packed `XYMS` v1 mark styles to fill/stroke RGBA8 and stroke
+/// width. Hosts pack kind, opacities, authored CSS strings, and width
+/// fields; per-kind defaults and CSS→RGBA8 stay in Rust. Returns the mark
+/// count on success. `-1` malformed, `-2` unknown version, `-3` over the
+/// mark/CSS budget, `-4` when `out` is too small.
+///
+/// Each output record is 16 bytes: fill RGBA8, stroke RGBA8, little-endian
+/// f64 width.
+///
+/// # Safety
+/// `input` must address `len` readable bytes when `len` is non-zero. When
+/// `out_cap` is non-zero, `out` must address that many writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_resolve_mark_styles(
+    input: *const u8,
+    len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if (len > 0 && input.is_null()) || (out_cap > 0 && out.is_null()) {
+        return -(MarkStyleError::Length as i32);
+    }
+    ffi_guard(-(MarkStyleError::Length as i32), || {
+        let bytes = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(input, len)
+        };
+        match scene_style::resolve_mark_styles(bytes) {
+            Ok(styles) => {
+                let needed = styles.len().saturating_mul(16);
+                if needed > out_cap {
+                    return -(MarkStyleError::Output as i32);
+                }
+                let dest = if needed == 0 {
+                    &mut []
+                } else {
+                    std::slice::from_raw_parts_mut(out, out_cap)
+                };
+                match scene_style::encode_mark_styles(&styles, dest) {
+                    Ok(count) => count,
+                    Err(error) => -(error as i32),
+                }
+            }
+            Err(error) => -(error as i32),
+        }
     })
 }
 
@@ -1619,6 +1669,40 @@ pub unsafe extern "C" fn xyg_css_check(
             Ok(css::Checked::Passthrough) => 2,
             Err(e) => -(e as i32),
         }
+    })
+}
+
+/// Resolve a CSS color to RGBA8 the way Scene and native raster paint do.
+/// `none` is transparent. Unparseable, passthrough, and `currentColor` use
+/// the static blue-gray fallback so a mark is never invisible. `opacity`
+/// multiplies the alpha channel. Returns 0 on success or `-1` when
+/// `out_rgba` is null or `css` is not UTF-8.
+///
+/// # Safety
+/// `css` must address `len` readable bytes when `len` is non-zero.
+/// `out_rgba` must address 4 writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_css_color_rgba(
+    css: *const u8,
+    len: usize,
+    opacity: f32,
+    out_rgba: *mut u8,
+) -> i32 {
+    if out_rgba.is_null() || (len > 0 && css.is_null()) {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        let bytes = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(css, len)
+        };
+        let Ok(value) = std::str::from_utf8(bytes) else {
+            return -1;
+        };
+        let rgba = css::color_rgba8(value, opacity);
+        std::slice::from_raw_parts_mut(out_rgba, 4).copy_from_slice(&rgba);
+        0
     })
 }
 

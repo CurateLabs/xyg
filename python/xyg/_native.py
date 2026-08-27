@@ -1829,6 +1829,54 @@ def auto_domain(bounds: tuple[float, float] | None) -> tuple[float, float]:
     return (float(out_lo.value), float(out_hi.value))
 
 
+def css_color_rgba(css: str, opacity: float = 1.0) -> tuple[int, int, int, int]:
+    """Resolve a CSS color to RGBA8 the way Scene and native raster paint do."""
+    encoded = str(css).encode("utf-8")
+    out = (ctypes.c_uint8 * 4)()
+    pointer = encoded if encoded else None
+    code = int(_lib.xyg_css_color_rgba(pointer, len(encoded), ctypes.c_float(opacity), out))
+    if code != 0:
+        raise ValueError("native css_color_rgba rejected the color")
+    return (int(out[0]), int(out[1]), int(out[2]), int(out[3]))
+
+
+def scene_resolve_mark_styles(
+    payload: bytes,
+) -> list[tuple[tuple[int, int, int, int], tuple[int, int, int, int], float]]:
+    """Resolve packed XYMS mark styles to fill/stroke RGBA8 and stroke width."""
+    if not isinstance(payload, (bytes, bytearray, memoryview)):
+        raise TypeError("mark style envelope must be bytes")
+    array = (
+        np.frombuffer(bytes(payload), dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    )
+    array = np.ascontiguousarray(array)
+    if len(array) < 16:
+        raise ValueError("invalid mark style envelope")
+    n_marks = int(np.frombuffer(bytes(array[8:12]), dtype="<u4")[0])
+    out = np.zeros(n_marks * 16, dtype=np.uint8)
+    pointer = _ptr_u8(array) if len(array) else 0
+    out_ptr = _ptr_u8(out) if len(out) else 0
+    code = int(_lib.xyg_scene_resolve_mark_styles(pointer, len(array), out_ptr, len(out)))
+    if code < 0:
+        raise ValueError("invalid mark style envelope")
+    if code != n_marks:
+        raise RuntimeError("native mark style resolver returned an inconsistent count")
+    resolved: list[tuple[tuple[int, int, int, int], tuple[int, int, int, int], float]] = []
+    view = memoryview(out)
+    for index in range(n_marks):
+        base = index * 16
+        fill = (int(view[base]), int(view[base + 1]), int(view[base + 2]), int(view[base + 3]))
+        stroke = (
+            int(view[base + 4]),
+            int(view[base + 5]),
+            int(view[base + 6]),
+            int(view[base + 7]),
+        )
+        width = float(np.frombuffer(bytes(view[base + 8 : base + 16]), dtype="<f8")[0])
+        resolved.append((fill, stroke, width))
+    return resolved
+
+
 def rect_zero_baseline_flags(base: npt.NDArray[np.float64], value: npt.NDArray[np.float64]) -> int:
     """Pack rectangle zero-baseline predicates for an XYAR trace row."""
     base_arr = np.ascontiguousarray(np.asarray(base, dtype=np.float64))

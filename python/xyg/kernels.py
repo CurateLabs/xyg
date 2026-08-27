@@ -32,6 +32,7 @@ CSS_LENGTH = _impl.CSS_LENGTH
 CSS_NUMBER = _impl.CSS_NUMBER
 
 css_check = _impl.css_check
+css_color_rgba = _impl.css_color_rgba
 correlation = _impl.correlation
 density_rgba = _impl.density_rgba
 density_log_u8 = _impl.density_log_u8
@@ -146,6 +147,7 @@ __all__ = [
     "contourf_densify",
     "correlation",
     "css_check",
+    "css_color_rgba",
     "delaunay_triangles",
     "density_log_u8",
     "density_rgba",
