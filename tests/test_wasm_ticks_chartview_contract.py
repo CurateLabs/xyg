@@ -116,7 +116,9 @@ def test_chartview_wasm_tick_assets_and_scope_are_explicit() -> None:
     assert "Hosted `to_html(" in api
     assert "xyg/static/" in api
     assert "Blob-worker HTML remains" in design
-    assert "stays open" in design
+    assert "M2 #59 disposition and follow-up work" in design
+    assert "frozen deferred" in design
+    assert "claimed M2 subset" in design
     assert "attachHostWasmTicks" in entries
     assert "axis.theta_unit" in ticks
     assert 'if (eligible) throw new TypeError("tick range must be finite")' in ticks
