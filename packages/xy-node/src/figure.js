@@ -18,9 +18,11 @@
 import {
   Column,
   DENSITY_GRID,
+  DENSITY_OVERLAY_STATIC_RASTER,
   PROTOCOL_VERSION,
-  PYRAMID_MIN_POINTS,
   bin2d,
+  densityEmitPlan,
+  densityFormatBinning,
   densityLogU8,
   encodeF32Values,
   geometryOffset,
@@ -1011,13 +1013,14 @@ export class Figure {
   _emitScatterDensity(t, pw, xr, yr) {
     const [w, h] = DENSITY_GRID;
     let grid;
-    let binning = "exact";
+    let binning = densityFormatBinning({ exact: true });
     let reduction = "bin2d";
     let tiles = null;
     const forceBin2d = Boolean(t.force_bin2d ?? t.style?.force_bin2d);
     const forcePyramid = Boolean(t.force_pyramid ?? t.style?.force_pyramid);
     const noRescan = Boolean(t.no_rescan ?? t.style?.no_rescan);
     const forceSpill = Boolean(t.pyramid_spill ?? t.style?.pyramid_spill);
+    let hasPyramidResource = false;
     if (
       this.coords !== "polar" &&
       !this._deferPyramidRebuild?.has(t.id) &&
@@ -1028,6 +1031,7 @@ export class Figure {
         cache = new PyramidCache();
         this._pyramids.set(t.id, cache);
       }
+      hasPyramidResource = true;
       const served = densityViewFromPyramid(cache, t.x, t.y, xr[0], xr[1], yr[0], yr[1], w, h, {
         force: forcePyramid,
         noRescan,
@@ -1044,9 +1048,29 @@ export class Figure {
     }
     if (grid == null) {
       grid = bin2d(t.x, t.y, xr[0], xr[1], yr[0], yr[1], w, h);
-      binning = "exact";
+      binning = densityFormatBinning({ exact: true });
       reduction = "bin2d";
     }
+    const plan = densityEmitPlan({
+      cartesian: this.coords === "cartesian",
+      xLinear: true,
+      yLinear: true,
+      pointOverlay: false,
+      gridFromPyramid: reduction === "pyramid-count",
+      hasPyramidResource,
+      forceBin2d,
+      forcePyramid,
+      colorMode: t.style?.color ? 1 : 0,
+      xMin: minMax(t.x)?.lo ?? xr[0],
+      xMax: minMax(t.x)?.hi ?? xr[1],
+      yMin: minMax(t.y)?.lo ?? yr[0],
+      yMax: minMax(t.y)?.hi ?? yr[1],
+      xr0: xr[0],
+      xr1: xr[1],
+      yr0: yr[0],
+      yr1: yr[1],
+      nPoints: t.x.length,
+    });
     const { encoded, max } = densityLogU8(grid);
     const density = {
       buf: pw.shipU8(encoded),
@@ -1061,8 +1085,10 @@ export class Figure {
       reduction,
       channels_dropped: false,
       dropped_channels: [],
-      overlay_omitted: "node_host_mvp",
     };
+    if (plan.overlay_omitted === DENSITY_OVERLAY_STATIC_RASTER) {
+      density.overlay_omitted = "static_raster";
+    }
     if (tiles != null) {
       density.tiles = tiles;
     }

@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyBin2d, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -1493,6 +1493,161 @@ export function payloadVisibleMask(x, y, { xLog = false, yLog = false, base = nu
     "xyg_payload_visible_mask",
   );
   return { mask: out, kept: written };
+}
+
+export const DENSITY_GRID_PATH_OVERSIZED_BIN2D = 0;
+export const DENSITY_GRID_PATH_IDENTITY_GRID_ONLY = 1;
+export const DENSITY_GRID_PATH_IDENTITY_STRATIFIED_FUSED = 2;
+export const DENSITY_GRID_PATH_IDENTITY_STRATIFIED_SPLIT = 3;
+export const DENSITY_GRID_PATH_IDENTITY_SAMPLE_FUSED = 4;
+export const DENSITY_GRID_PATH_RANGE_INDICES = 5;
+
+export const DENSITY_COLOR_MODE_NONE = 0;
+export const DENSITY_COLOR_MODE_CONSTANT = 1;
+export const DENSITY_COLOR_MODE_OTHER = 2;
+
+export const DENSITY_OVERLAY_NONE = 0;
+export const DENSITY_OVERLAY_ROWS_EXCEED_U32 = 1;
+export const DENSITY_OVERLAY_STATIC_RASTER = 2;
+
+const DENSITY_EMIT_META_BYTES = 96;
+
+function readDensityEmitMeta(buf) {
+  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  return {
+    grid_path: view.getInt32(0, true),
+    bin_window_x0: view.getFloat64(8, true),
+    bin_window_x1: view.getFloat64(16, true),
+    bin_window_y0: view.getFloat64(24, true),
+    bin_window_y1: view.getFloat64(32, true),
+    full_identity: view.getUint32(40, true) === 1,
+    oversized: view.getUint32(44, true) === 1,
+    pyramid_eligible: view.getUint32(48, true) === 1,
+    pyramid_attempt: view.getUint32(52, true) === 1,
+    pyramid_no_rescan: view.getUint32(56, true) === 1,
+    pyramid_max_upsample: view.getUint32(60, true),
+    pyramid_tile_upsample: view.getUint32(64, true),
+    wasm_eligible: view.getUint32(68, true) === 1,
+    needs_pyramid_sample: view.getUint32(72, true) === 1,
+    overlay_omitted: view.getUint32(76, true),
+    visible_is_n_points: view.getUint32(80, true) === 1,
+    use_raw_range_bin2d: view.getUint32(84, true) === 1,
+  };
+}
+
+export function densityFormatBinning({
+  exact = false,
+  level = 0,
+  tiles = false,
+  upsampled = false,
+} = {}) {
+  const out = new Uint8Array(64);
+  const written = Number(xyDensityFormatBinning(
+    exact ? 1 : 0,
+    Number(level),
+    tiles ? 1 : 0,
+    upsampled ? 1 : 0,
+    u8Ptr(out),
+    BigInt(out.length),
+  ));
+  if (!Number.isFinite(written) || written === Number.MAX_SAFE_INTEGER) {
+    throw new Error("xyg_density_format_binning failed");
+  }
+  return new TextDecoder().decode(out.subarray(0, written));
+}
+
+export function densityEmitPlan({
+  cartesian = true,
+  xLinear = true,
+  yLinear = true,
+  categorical = false,
+  compactCategorical = false,
+  stratifiedCounts = false,
+  xHasNulls = false,
+  yHasNulls = false,
+  pointOverlay = true,
+  gridFromPyramid = false,
+  xMemmapped = false,
+  yMemmapped = false,
+  hasPyramidResource = false,
+  forceBin2d = false,
+  forcePyramid = false,
+  colorMode = DENSITY_COLOR_MODE_NONE,
+  xMin = 0,
+  xMax = 1,
+  yMin = 0,
+  yMax = 1,
+  xr0 = 0,
+  xr1 = 1,
+  yr0 = 0,
+  yr1 = 1,
+  xC0 = 0,
+  xC1 = 1,
+  yC0 = 0,
+  yC1 = 1,
+  nPoints = 0,
+} = {}) {
+  const out = new Uint8Array(DENSITY_EMIT_META_BYTES);
+  const code = Number(xyDensityEmitMeta(
+    cartesian ? 1 : 0,
+    xLinear ? 1 : 0,
+    yLinear ? 1 : 0,
+    categorical ? 1 : 0,
+    compactCategorical ? 1 : 0,
+    stratifiedCounts ? 1 : 0,
+    xHasNulls ? 1 : 0,
+    yHasNulls ? 1 : 0,
+    pointOverlay ? 1 : 0,
+    gridFromPyramid ? 1 : 0,
+    xMemmapped ? 1 : 0,
+    yMemmapped ? 1 : 0,
+    hasPyramidResource ? 1 : 0,
+    forceBin2d ? 1 : 0,
+    forcePyramid ? 1 : 0,
+    Number(colorMode),
+    Number(xMin),
+    Number(xMax),
+    Number(yMin),
+    Number(yMax),
+    Number(xr0),
+    Number(xr1),
+    Number(yr0),
+    Number(yr1),
+    Number(xC0),
+    Number(xC1),
+    Number(yC0),
+    Number(yC1),
+    BigInt(nPoints),
+    u8Ptr(out),
+  ));
+  if (code !== 0) {
+    throw new Error("xyg_density_emit_meta failed");
+  }
+  return readDensityEmitMeta(out);
+}
+
+export function densityWasmEligible({
+  cartesian = true,
+  xLinear = true,
+  yLinear = true,
+  colorMode = DENSITY_COLOR_MODE_NONE,
+  xHasNulls = false,
+  yHasNulls = false,
+  nPoints = 0,
+} = {}) {
+  const code = Number(xyDensityWasmEligible(
+    cartesian ? 1 : 0,
+    xLinear ? 1 : 0,
+    yLinear ? 1 : 0,
+    Number(colorMode),
+    xHasNulls ? 1 : 0,
+    yHasNulls ? 1 : 0,
+    BigInt(nPoints),
+  ));
+  if (code < 0) {
+    throw new Error("xyg_density_wasm_eligible failed");
+  }
+  return code === 1;
 }
 
 /**

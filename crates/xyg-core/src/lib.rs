@@ -26,6 +26,7 @@ use xyg_engine::autorange::{rect_zero_baseline_flags, AutorangeError};
 use xyg_engine::chunked_columns;
 use xyg_engine::compat_layout;
 use xyg_engine::css;
+use xyg_engine::density_emit;
 use xyg_engine::figure_autorange;
 use xyg_engine::geo;
 use xyg_engine::geom;
@@ -119,7 +120,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 131;
+pub const ABI_VERSION: u32 = 132;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10216,6 +10217,392 @@ pub unsafe extern "C" fn xyg_payload_visible_mask(
         };
         lod_plan::payload_visible_mask(x, y, x_log != 0, y_log != 0, base, out)
             .unwrap_or(usize::MAX)
+    })
+}
+
+/// Bin window in axis-scale coordinates for density grids (ABI 132).
+/// Writes four f64s `[x0, x1, y0, y1]` when `out` holds at least four slots.
+/// Returns `4` on success or `usize::MAX`.
+///
+/// # Safety
+/// When writing, `out` must address four writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_density_bin_window(
+    x_linear: i32,
+    y_linear: i32,
+    xr0: f64,
+    xr1: f64,
+    yr0: f64,
+    yr1: f64,
+    x_c0: f64,
+    x_c1: f64,
+    y_c0: f64,
+    y_c1: f64,
+    out: *mut f64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if !matches!(x_linear, 0 | 1) || !matches!(y_linear, 0 | 1) || out.is_null() {
+            return usize::MAX;
+        }
+        let Some(window) = density_emit::bin_window(
+            x_linear != 0,
+            y_linear != 0,
+            xr0,
+            xr1,
+            yr0,
+            yr1,
+            x_c0,
+            x_c1,
+            y_c0,
+            y_c1,
+        ) else {
+            return usize::MAX;
+        };
+        let slots = std::slice::from_raw_parts_mut(out, 4);
+        slots[0] = window.x0;
+        slots[1] = window.x1;
+        slots[2] = window.y0;
+        slots[3] = window.y1;
+        4
+    })
+}
+
+/// Whether a density trace has identity visible rows in the view window (ABI 132).
+/// Returns 1/0, or -1 on invalid input.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_density_full_identity(
+    categorical: i32,
+    compact_categorical: i32,
+    x_has_nulls: i32,
+    y_has_nulls: i32,
+    x_min: f64,
+    x_max: f64,
+    y_min: f64,
+    y_max: f64,
+    xr0: f64,
+    xr1: f64,
+    yr0: f64,
+    yr1: f64,
+) -> i32 {
+    ffi_guard(-1, || {
+        let flags = [categorical, compact_categorical, x_has_nulls, y_has_nulls];
+        if flags.iter().any(|flag| !matches!(flag, 0 | 1)) {
+            return -1;
+        }
+        density_emit::full_identity(
+            categorical != 0,
+            compact_categorical != 0,
+            x_has_nulls != 0,
+            y_has_nulls != 0,
+            x_min,
+            x_max,
+            y_min,
+            y_max,
+            xr0,
+            xr1,
+            yr0,
+            yr1,
+        )
+        .map(i32::from)
+        .unwrap_or(-1)
+    })
+}
+
+/// Tier-3 pyramid preflight for density first paint (ABI 132). Writes six u32
+/// slots when `out` holds at least six values:
+/// `[eligible, attempt, no_rescan, max_upsample, tile_upsample, reserved]`.
+/// Returns `6` on success or `usize::MAX`.
+///
+/// # Safety
+/// When writing, `out` must address six writable u32s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_density_pyramid_preflight(
+    x_linear: i32,
+    y_linear: i32,
+    n_points: u64,
+    has_pyramid_resource: i32,
+    x_memmapped: i32,
+    y_memmapped: i32,
+    force_pyramid: i32,
+    force_bin2d: i32,
+    out: *mut u32,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        let flags = [
+            x_linear,
+            y_linear,
+            has_pyramid_resource,
+            x_memmapped,
+            y_memmapped,
+            force_pyramid,
+            force_bin2d,
+        ];
+        if flags.iter().any(|flag| !matches!(flag, 0 | 1)) || out.is_null() {
+            return usize::MAX;
+        }
+        let Some(preflight) = density_emit::pyramid_preflight(
+            x_linear != 0,
+            y_linear != 0,
+            n_points,
+            has_pyramid_resource != 0,
+            x_memmapped != 0,
+            y_memmapped != 0,
+            force_pyramid != 0,
+            force_bin2d != 0,
+        ) else {
+            return usize::MAX;
+        };
+        let slots = std::slice::from_raw_parts_mut(out, 6);
+        slots[0] = u32::from(preflight.eligible);
+        slots[1] = u32::from(preflight.attempt);
+        slots[2] = u32::from(preflight.no_rescan);
+        slots[3] = preflight.max_upsample;
+        slots[4] = preflight.tile_upsample;
+        slots[5] = 0;
+        6
+    })
+}
+
+/// Exact grid-kernel path when pyramid compose did not yield a grid (ABI 132).
+/// Returns a `DENSITY_GRID_PATH_*` code or -1.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_density_grid_path(
+    oversized: i32,
+    full_identity: i32,
+    point_overlay: i32,
+    compact_categorical: i32,
+    stratified_counts: i32,
+) -> i32 {
+    ffi_guard(-1, || {
+        let flags = [
+            oversized,
+            full_identity,
+            point_overlay,
+            compact_categorical,
+            stratified_counts,
+        ];
+        if flags.iter().any(|flag| !matches!(flag, 0 | 1)) {
+            return -1;
+        }
+        density_emit::grid_path(
+            oversized != 0,
+            full_identity != 0,
+            point_overlay != 0,
+            compact_categorical != 0,
+            stratified_counts != 0,
+        )
+    })
+}
+
+/// Format §28 density `binning` strings (ABI 132). Writes UTF-8 without a
+/// trailing NUL. Returns the byte count, or `usize::MAX`.
+///
+/// # Safety
+/// When `out_cap` is nonzero, `out` must address that many writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_density_format_binning(
+    exact: i32,
+    level: i32,
+    tiles: i32,
+    upsampled: i32,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if !matches!(exact, 0 | 1) || !matches!(tiles, 0 | 1) || !matches!(upsampled, 0 | 1) {
+            return usize::MAX;
+        }
+        if out_cap > 0 && out.is_null() {
+            return usize::MAX;
+        }
+        let mut scratch = vec![0u8; out_cap];
+        let slice = if out_cap == 0 {
+            &mut [][..]
+        } else {
+            &mut scratch[..]
+        };
+        let Some(written) =
+            density_emit::format_binning(exact != 0, level, tiles != 0, upsampled != 0, slice)
+        else {
+            return usize::MAX;
+        };
+        if out_cap >= written && written > 0 {
+            std::ptr::copy_nonoverlapping(scratch.as_ptr(), out, written);
+        }
+        written
+    })
+}
+
+/// POD first-paint density emit plan (ABI 132).
+#[repr(C)]
+pub struct XygDensityEmitMeta {
+    pub grid_path: i32,
+    pub bin_window_x0: f64,
+    pub bin_window_x1: f64,
+    pub bin_window_y0: f64,
+    pub bin_window_y1: f64,
+    pub full_identity: u32,
+    pub oversized: u32,
+    pub pyramid_eligible: u32,
+    pub pyramid_attempt: u32,
+    pub pyramid_no_rescan: u32,
+    pub pyramid_max_upsample: u32,
+    pub pyramid_tile_upsample: u32,
+    pub wasm_eligible: u32,
+    pub needs_pyramid_sample: u32,
+    pub overlay_omitted: u32,
+    pub visible_is_n_points: u32,
+    pub use_raw_range_bin2d: u32,
+    pub reserved: u32,
+}
+
+/// Fill [`XygDensityEmitMeta`] for one density trace/viewport (ABI 132).
+/// Returns `0` on success or `-1`.
+///
+/// # Safety
+/// `out` must be valid for writes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_density_emit_meta(
+    cartesian: i32,
+    x_linear: i32,
+    y_linear: i32,
+    categorical: i32,
+    compact_categorical: i32,
+    stratified_counts: i32,
+    x_has_nulls: i32,
+    y_has_nulls: i32,
+    point_overlay: i32,
+    grid_from_pyramid: i32,
+    x_memmapped: i32,
+    y_memmapped: i32,
+    has_pyramid_resource: i32,
+    force_bin2d: i32,
+    force_pyramid: i32,
+    color_mode: i32,
+    x_min: f64,
+    x_max: f64,
+    y_min: f64,
+    y_max: f64,
+    xr0: f64,
+    xr1: f64,
+    yr0: f64,
+    yr1: f64,
+    x_c0: f64,
+    x_c1: f64,
+    y_c0: f64,
+    y_c1: f64,
+    n_points: u64,
+    out: *mut XygDensityEmitMeta,
+) -> i32 {
+    if out.is_null() {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        let flags = [
+            cartesian,
+            x_linear,
+            y_linear,
+            categorical,
+            compact_categorical,
+            stratified_counts,
+            x_has_nulls,
+            y_has_nulls,
+            point_overlay,
+            grid_from_pyramid,
+            x_memmapped,
+            y_memmapped,
+            has_pyramid_resource,
+            force_bin2d,
+            force_pyramid,
+        ];
+        if flags.iter().any(|flag| !matches!(flag, 0 | 1)) {
+            return -1;
+        }
+        let Some(meta) = density_emit::emit_meta(
+            cartesian != 0,
+            x_linear != 0,
+            y_linear != 0,
+            categorical != 0,
+            compact_categorical != 0,
+            stratified_counts != 0,
+            x_has_nulls != 0,
+            y_has_nulls != 0,
+            point_overlay != 0,
+            grid_from_pyramid != 0,
+            x_memmapped != 0,
+            y_memmapped != 0,
+            has_pyramid_resource != 0,
+            force_bin2d != 0,
+            force_pyramid != 0,
+            color_mode,
+            x_min,
+            x_max,
+            y_min,
+            y_max,
+            xr0,
+            xr1,
+            yr0,
+            yr1,
+            x_c0,
+            x_c1,
+            y_c0,
+            y_c1,
+            n_points,
+        ) else {
+            return -1;
+        };
+        *out = XygDensityEmitMeta {
+            grid_path: meta.grid_path,
+            bin_window_x0: meta.bin_window.x0,
+            bin_window_x1: meta.bin_window.x1,
+            bin_window_y0: meta.bin_window.y0,
+            bin_window_y1: meta.bin_window.y1,
+            full_identity: u32::from(meta.full_identity),
+            oversized: u32::from(meta.oversized),
+            pyramid_eligible: u32::from(meta.pyramid.eligible),
+            pyramid_attempt: u32::from(meta.pyramid.attempt),
+            pyramid_no_rescan: u32::from(meta.pyramid.no_rescan),
+            pyramid_max_upsample: meta.pyramid.max_upsample,
+            pyramid_tile_upsample: meta.pyramid.tile_upsample,
+            wasm_eligible: u32::from(meta.wasm_eligible),
+            needs_pyramid_sample: u32::from(meta.needs_pyramid_sample),
+            overlay_omitted: meta.overlay_omitted,
+            visible_is_n_points: u32::from(meta.visible_is_n_points),
+            use_raw_range_bin2d: u32::from(meta.use_raw_range_bin2d),
+            reserved: 0,
+        };
+        0
+    })
+}
+
+/// Whether the split WASM aggregate replay lane is eligible (ABI 132).
+/// Returns 1/0, or -1 on invalid input.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_density_wasm_eligible(
+    cartesian: i32,
+    x_linear: i32,
+    y_linear: i32,
+    color_mode: i32,
+    x_has_nulls: i32,
+    y_has_nulls: i32,
+    n_points: u64,
+) -> i32 {
+    ffi_guard(-1, || {
+        let flags = [cartesian, x_linear, y_linear, x_has_nulls, y_has_nulls];
+        if flags.iter().any(|flag| !matches!(flag, 0 | 1)) {
+            return -1;
+        }
+        density_emit::wasm_eligible(
+            cartesian != 0,
+            x_linear != 0,
+            y_linear != 0,
+            color_mode,
+            x_has_nulls != 0,
+            y_has_nulls != 0,
+            n_points,
+        )
+        .map(i32::from)
+        .unwrap_or(-1)
     })
 }
 

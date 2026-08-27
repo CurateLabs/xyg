@@ -1370,6 +1370,10 @@ Hosts call `xyg_polar_layout`, `xyg_polar_project`, and the polar visibility-mas
 helpers; wedge/ring/polygon helpers remain host-side and call native projection.
 ChartView GLSL `xyPolarPos` is unchanged until WASM (#277). Scene compilation
 still rejects `coords="polar"` until a later slice.
+ABI 132 moves first-paint density scatter emit policy into Rust. Hosts call
+`xyg_density_emit_meta`, `xyg_density_grid_path`, `xyg_density_format_binning`,
+`xyg_density_pyramid_preflight`, and `xyg_density_wasm_eligible`; kernel
+invocation, buffer shipping, and axis-scale transforms stay host-side.
 ABI 129 moves Cartesian static-export grid colormap into Rust. Hosts
 call `xyg_colormap_rgba`, `xyg_colormap_rgba_canonical`, and existing
 `xyg_density_rgba` for log-u8 density; direct `t ∈ [0, 1]` stop

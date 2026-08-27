@@ -38,6 +38,13 @@ colormap_rgba_canonical = _impl.colormap_rgba_canonical
 correlation = _impl.correlation
 density_rgba = _impl.density_rgba
 density_log_u8 = _impl.density_log_u8
+density_bin_window = _impl.density_bin_window
+density_emit_plan = _impl.density_emit_plan
+density_format_binning = _impl.density_format_binning
+density_full_identity = _impl.density_full_identity
+density_grid_path = _impl.density_grid_path
+density_pyramid_preflight = _impl.density_pyramid_preflight
+density_wasm_eligible = _impl.density_wasm_eligible
 delaunay_triangles = _impl.delaunay_triangles
 zone_maps = _impl.zone_maps
 zone_maps_pair = _impl.zone_maps_pair
@@ -170,8 +177,15 @@ __all__ = [
     "css_color_rgba",
     "curve_flatten",
     "delaunay_triangles",
+    "density_bin_window",
+    "density_emit_plan",
+    "density_format_binning",
+    "density_full_identity",
+    "density_grid_path",
     "density_log_u8",
+    "density_pyramid_preflight",
     "density_rgba",
+    "density_wasm_eligible",
     "drill_decision",
     "encode_f32",
     "factorize_fixed",

@@ -258,6 +258,12 @@ Python and Node call `xyg_polar_layout`, `xyg_polar_project`, and the polar
 visibility-mask helpers so disc layout, projection, and cull predicates cannot
 drift on static export. ChartView GLSL `xyPolarPos` stays until WASM; hosts
 still own wedge/ring/polygon helpers that call native projection.
+ABI 132 moves first-paint density scatter emit policy into Rust: Python and
+Node call `xyg_density_emit_meta`, `xyg_density_grid_path`,
+`xyg_density_format_binning`, `xyg_density_pyramid_preflight`, and
+`xyg_density_wasm_eligible` so path/binning/WASM/overlay decisions cannot
+drift. Hosts still transform axis-scale coordinates, invoke `bin_2d` /
+pyramid compose kernels, ship buffers, and assemble the wire spec.
 ABI 129 moves Cartesian static-export grid colormap into Rust: Python
 and Node call `xyg_colormap_rgba`, `xyg_colormap_rgba_canonical`, and
 `xyg_density_rgba` (log-u8 density) so `_lut` stop interpolation cannot

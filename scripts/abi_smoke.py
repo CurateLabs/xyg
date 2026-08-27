@@ -717,6 +717,107 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
     ]
+    lib.xyg_density_bin_window.restype = ctypes.c_size_t
+    lib.xyg_density_bin_window.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+    ]
+    lib.xyg_density_full_identity.restype = ctypes.c_int32
+    lib.xyg_density_full_identity.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+    ]
+    lib.xyg_density_pyramid_preflight.restype = ctypes.c_size_t
+    lib.xyg_density_pyramid_preflight.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_uint64,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        U32P,
+    ]
+    lib.xyg_density_grid_path.restype = ctypes.c_int32
+    lib.xyg_density_grid_path.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+    ]
+    lib.xyg_density_format_binning.restype = ctypes.c_size_t
+    lib.xyg_density_format_binning.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        U8P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_density_emit_meta.restype = ctypes.c_int32
+    lib.xyg_density_emit_meta.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+    ]
+    lib.xyg_density_wasm_eligible.restype = ctypes.c_int32
+    lib.xyg_density_wasm_eligible.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_uint64,
+    ]
     lib.xyg_scene_tick_label_layout.restype = ctypes.c_size_t
     lib.xyg_scene_tick_label_layout.argtypes = [
         F64P,
@@ -2458,6 +2559,20 @@ def main() -> None:
         5,
     )
     ok(pn == 3 and list(pmask) == [1, 0, 1, 0, 1], "payload_visible_mask log x")
+    bin_out = array("d", [0.0, 0.0, 0.0, 0.0])
+    bw_n = lib.xyg_density_bin_window(
+        1, 1, 0.0, 2.0, 0.0, 3.0, 0.0, 0.0, 0.0, 0.0, _ptr(bin_out, ctypes.c_double)
+    )
+    ok(bw_n == 4 and list(bin_out) == [0.0, 2.0, 0.0, 3.0], "density_bin_window linear")
+    ok(
+        lib.xyg_density_full_identity(0, 0, 0, 0, 0.0, 1.0, 0.0, 1.0, 0.0, 2.0, 0.0, 2.0) == 1,
+        "density_full_identity",
+    )
+    ok(lib.xyg_density_grid_path(0, 1, 0, 0, 0) == 1, "density_grid_path identity grid")
+    binning_buf = array("B", [0]) * 32
+    binning_n = lib.xyg_density_format_binning(1, 0, 0, 0, _ptr(binning_buf, ctypes.c_uint8), 32)
+    ok(binning_n == 5 and bytes(binning_buf[:5]) == b"exact", "density_format_binning exact")
+    ok(lib.xyg_density_wasm_eligible(1, 1, 1, 1, 0, 0, 100) == 1, "density_wasm_eligible")
     tick_pos = array("d", [100.0 + i * 90.0 for i in range(9)])
     tick_labels = [f"Category_Name_{i:02d}".encode() for i in range(9)]
     tick_packed = b"".join(tick_labels)

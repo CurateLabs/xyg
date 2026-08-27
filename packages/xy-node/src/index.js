@@ -280,7 +280,10 @@ export {
 
 export {
   bin2d,
+  densityEmitPlan,
+  densityFormatBinning,
   densityLogU8,
+  densityWasmEligible,
   marchingSquares,
   lodPlan,
   drillDecision,
@@ -289,6 +292,7 @@ export {
   payloadVisibleMask,
   shouldUseDensity,
   DENSITY_GRID,
+  DENSITY_OVERLAY_STATIC_RASTER,
   PYRAMID_MIN_POINTS,
   PYRAMID_BASE_DIM,
   PYRAMID_NO_RESCAN_ROWS,

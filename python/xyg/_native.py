@@ -244,6 +244,29 @@ class _TemporalGraphSnapshotBuffers(ctypes.Structure):
     ]
 
 
+class _DensityEmitMeta(ctypes.Structure):
+    _fields_ = [
+        ("grid_path", ctypes.c_int32),
+        ("bin_window_x0", ctypes.c_double),
+        ("bin_window_x1", ctypes.c_double),
+        ("bin_window_y0", ctypes.c_double),
+        ("bin_window_y1", ctypes.c_double),
+        ("full_identity", ctypes.c_uint32),
+        ("oversized", ctypes.c_uint32),
+        ("pyramid_eligible", ctypes.c_uint32),
+        ("pyramid_attempt", ctypes.c_uint32),
+        ("pyramid_no_rescan", ctypes.c_uint32),
+        ("pyramid_max_upsample", ctypes.c_uint32),
+        ("pyramid_tile_upsample", ctypes.c_uint32),
+        ("wasm_eligible", ctypes.c_uint32),
+        ("needs_pyramid_sample", ctypes.c_uint32),
+        ("overlay_omitted", ctypes.c_uint32),
+        ("visible_is_n_points", ctypes.c_uint32),
+        ("use_raw_range_bin2d", ctypes.c_uint32),
+        ("reserved", ctypes.c_uint32),
+    ]
+
+
 class TemporalNativeError(ValueError):
     """Stable error returned by the Rust-owned temporal column/index seam."""
 
@@ -7988,6 +8011,305 @@ def payload_visible_mask(
     if written == _USIZE_MAX:
         raise ValueError("invalid payload_visible_mask arguments")
     return out.astype(bool, copy=False)
+
+
+DENSITY_GRID_PATH_OVERSIZED_BIN2D = 0
+DENSITY_GRID_PATH_IDENTITY_GRID_ONLY = 1
+DENSITY_GRID_PATH_IDENTITY_STRATIFIED_FUSED = 2
+DENSITY_GRID_PATH_IDENTITY_STRATIFIED_SPLIT = 3
+DENSITY_GRID_PATH_IDENTITY_SAMPLE_FUSED = 4
+DENSITY_GRID_PATH_RANGE_INDICES = 5
+
+DENSITY_COLOR_MODE_NONE = 0
+DENSITY_COLOR_MODE_CONSTANT = 1
+DENSITY_COLOR_MODE_OTHER = 2
+
+DENSITY_OVERLAY_NONE = 0
+DENSITY_OVERLAY_ROWS_EXCEED_U32 = 1
+DENSITY_OVERLAY_STATIC_RASTER = 2
+
+
+def density_bin_window(
+    *,
+    x_linear: bool,
+    y_linear: bool,
+    xr0: float,
+    xr1: float,
+    yr0: float,
+    yr1: float,
+    x_c0: float,
+    x_c1: float,
+    y_c0: float,
+    y_c1: float,
+) -> tuple[float, float, float, float]:
+    """Bin window via ``xyg_density_bin_window`` (ABI 132)."""
+    out = (ctypes.c_double * 4)()
+    written = _lib.xyg_density_bin_window(
+        int(bool(x_linear)),
+        int(bool(y_linear)),
+        float(xr0),
+        float(xr1),
+        float(yr0),
+        float(yr1),
+        float(x_c0),
+        float(x_c1),
+        float(y_c0),
+        float(y_c1),
+        out,
+    )
+    if written != 4:
+        raise ValueError("invalid density_bin_window arguments")
+    return float(out[0]), float(out[1]), float(out[2]), float(out[3])
+
+
+def density_full_identity(
+    *,
+    categorical: bool,
+    compact_categorical: bool,
+    x_has_nulls: bool,
+    y_has_nulls: bool,
+    x_min: float,
+    x_max: float,
+    y_min: float,
+    y_max: float,
+    xr0: float,
+    xr1: float,
+    yr0: float,
+    yr1: float,
+) -> bool:
+    """Identity visible-row predicate via ``xyg_density_full_identity`` (ABI 132)."""
+    code = int(
+        _lib.xyg_density_full_identity(
+            int(bool(categorical)),
+            int(bool(compact_categorical)),
+            int(bool(x_has_nulls)),
+            int(bool(y_has_nulls)),
+            float(x_min),
+            float(x_max),
+            float(y_min),
+            float(y_max),
+            float(xr0),
+            float(xr1),
+            float(yr0),
+            float(yr1),
+        )
+    )
+    if code < 0:
+        raise ValueError("invalid density_full_identity arguments")
+    return bool(code)
+
+
+def density_pyramid_preflight(
+    *,
+    x_linear: bool,
+    y_linear: bool,
+    n_points: int,
+    has_pyramid_resource: bool,
+    x_memmapped: bool,
+    y_memmapped: bool,
+    force_pyramid: bool = False,
+    force_bin2d: bool = False,
+) -> dict[str, int | bool]:
+    """Pyramid preflight via ``xyg_density_pyramid_preflight`` (ABI 132)."""
+    if isinstance(n_points, (bool, np.bool_)) or not isinstance(n_points, numbers.Integral):
+        raise ValueError("n_points must be an integer >= 0")
+    n = int(n_points)
+    if n < 0:
+        raise ValueError("n_points must be an integer >= 0")
+    out = (ctypes.c_uint32 * 6)()
+    written = _lib.xyg_density_pyramid_preflight(
+        int(bool(x_linear)),
+        int(bool(y_linear)),
+        n,
+        int(bool(has_pyramid_resource)),
+        int(bool(x_memmapped)),
+        int(bool(y_memmapped)),
+        int(bool(force_pyramid)),
+        int(bool(force_bin2d)),
+        out,
+    )
+    if written != 6:
+        raise ValueError("invalid density_pyramid_preflight arguments")
+    return {
+        "eligible": bool(out[0]),
+        "attempt": bool(out[1]),
+        "no_rescan": bool(out[2]),
+        "max_upsample": int(out[3]),
+        "tile_upsample": int(out[4]),
+    }
+
+
+def density_grid_path(
+    *,
+    oversized: bool,
+    full_identity: bool,
+    point_overlay: bool,
+    compact_categorical: bool,
+    stratified_counts: bool,
+) -> int:
+    """Exact grid-kernel path via ``xyg_density_grid_path`` (ABI 132)."""
+    code = int(
+        _lib.xyg_density_grid_path(
+            int(bool(oversized)),
+            int(bool(full_identity)),
+            int(bool(point_overlay)),
+            int(bool(compact_categorical)),
+            int(bool(stratified_counts)),
+        )
+    )
+    if code < 0:
+        raise ValueError("invalid density_grid_path arguments")
+    return code
+
+
+def density_format_binning(
+    *,
+    exact: bool,
+    level: int = 0,
+    tiles: bool = False,
+    upsampled: bool = False,
+) -> str:
+    """Format §28 density ``binning`` via ``xyg_density_format_binning`` (ABI 132)."""
+    buf = np.empty(64, dtype=np.uint8)
+    written = _lib.xyg_density_format_binning(
+        int(bool(exact)),
+        int(level),
+        int(bool(tiles)),
+        int(bool(upsampled)),
+        buf.ctypes.data,
+        len(buf),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid density_format_binning arguments")
+    return bytes(buf[:written]).decode("ascii")
+
+
+def density_wasm_eligible(
+    *,
+    cartesian: bool,
+    x_linear: bool,
+    y_linear: bool,
+    color_mode: int,
+    x_has_nulls: bool,
+    y_has_nulls: bool,
+    n_points: int,
+) -> bool:
+    """WASM aggregate replay eligibility via ``xyg_density_wasm_eligible`` (ABI 132)."""
+    if isinstance(n_points, (bool, np.bool_)) or not isinstance(n_points, numbers.Integral):
+        raise ValueError("n_points must be an integer >= 0")
+    n = int(n_points)
+    if n < 0:
+        raise ValueError("n_points must be an integer >= 0")
+    code = int(
+        _lib.xyg_density_wasm_eligible(
+            int(bool(cartesian)),
+            int(bool(x_linear)),
+            int(bool(y_linear)),
+            int(color_mode),
+            int(bool(x_has_nulls)),
+            int(bool(y_has_nulls)),
+            n,
+        )
+    )
+    if code < 0:
+        raise ValueError("invalid density_wasm_eligible arguments")
+    return bool(code)
+
+
+def density_emit_plan(
+    *,
+    cartesian: bool,
+    x_linear: bool,
+    y_linear: bool,
+    categorical: bool,
+    compact_categorical: bool,
+    stratified_counts: bool,
+    x_has_nulls: bool,
+    y_has_nulls: bool,
+    point_overlay: bool,
+    grid_from_pyramid: bool,
+    x_memmapped: bool,
+    y_memmapped: bool,
+    has_pyramid_resource: bool,
+    force_bin2d: bool = False,
+    force_pyramid: bool = False,
+    color_mode: int,
+    x_min: float,
+    x_max: float,
+    y_min: float,
+    y_max: float,
+    xr0: float,
+    xr1: float,
+    yr0: float,
+    yr1: float,
+    x_c0: float,
+    x_c1: float,
+    y_c0: float,
+    y_c1: float,
+    n_points: int,
+) -> dict[str, int | bool | float]:
+    """First-paint density emit plan via ``xyg_density_emit_meta`` (ABI 132)."""
+    if isinstance(n_points, (bool, np.bool_)) or not isinstance(n_points, numbers.Integral):
+        raise ValueError("n_points must be an integer >= 0")
+    n = int(n_points)
+    if n < 0:
+        raise ValueError("n_points must be an integer >= 0")
+    out = _DensityEmitMeta()
+    code = int(
+        _lib.xyg_density_emit_meta(
+            int(bool(cartesian)),
+            int(bool(x_linear)),
+            int(bool(y_linear)),
+            int(bool(categorical)),
+            int(bool(compact_categorical)),
+            int(bool(stratified_counts)),
+            int(bool(x_has_nulls)),
+            int(bool(y_has_nulls)),
+            int(bool(point_overlay)),
+            int(bool(grid_from_pyramid)),
+            int(bool(x_memmapped)),
+            int(bool(y_memmapped)),
+            int(bool(has_pyramid_resource)),
+            int(bool(force_bin2d)),
+            int(bool(force_pyramid)),
+            int(color_mode),
+            float(x_min),
+            float(x_max),
+            float(y_min),
+            float(y_max),
+            float(xr0),
+            float(xr1),
+            float(yr0),
+            float(yr1),
+            float(x_c0),
+            float(x_c1),
+            float(y_c0),
+            float(y_c1),
+            n,
+            ctypes.byref(out),
+        )
+    )
+    if code != 0:
+        raise ValueError("invalid density_emit_plan arguments")
+    return {
+        "grid_path": int(out.grid_path),
+        "bin_window_x0": float(out.bin_window_x0),
+        "bin_window_x1": float(out.bin_window_x1),
+        "bin_window_y0": float(out.bin_window_y0),
+        "bin_window_y1": float(out.bin_window_y1),
+        "full_identity": bool(out.full_identity),
+        "oversized": bool(out.oversized),
+        "pyramid_eligible": bool(out.pyramid_eligible),
+        "pyramid_attempt": bool(out.pyramid_attempt),
+        "pyramid_no_rescan": bool(out.pyramid_no_rescan),
+        "pyramid_max_upsample": int(out.pyramid_max_upsample),
+        "pyramid_tile_upsample": int(out.pyramid_tile_upsample),
+        "wasm_eligible": bool(out.wasm_eligible),
+        "needs_pyramid_sample": bool(out.needs_pyramid_sample),
+        "overlay_omitted": int(out.overlay_omitted),
+        "visible_is_n_points": bool(out.visible_is_n_points),
+        "use_raw_range_bin2d": bool(out.use_raw_range_bin2d),
+    }
 
 
 def quantiles(

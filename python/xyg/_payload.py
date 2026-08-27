@@ -20,8 +20,6 @@ from .config import (
     DENSITY_SAMPLE_TARGET,
     MAX_ANIMATION_MATCH_ROWS,
     PROTOCOL_VERSION,
-    PYRAMID_MIN_POINTS,
-    PYRAMID_NO_RESCAN_ROWS,
 )
 
 if TYPE_CHECKING:
@@ -30,12 +28,6 @@ if TYPE_CHECKING:
     from ._hosts import FigureHost as _Host
 else:
     _Host = object
-
-# Per-row index kernels (range_indices, bin_2d_indices, the sample-range
-# family) return u32 row ids. Traces with more rows than this ship the density
-# grid alone (bin_2d counts in size_t and stays exact) and drop the u32-limited
-# point-sample overlay / drill paths — recorded per update, never silent (§28).
-_U32_MAX = (1 << 32) - 1
 
 
 class _PayloadWriter:
@@ -1206,54 +1198,100 @@ class PayloadMixin(_Host):
         # scale coordinates.
         bx, (bx0, bx1) = self._binning_coords(t.x_axis, t.x.values, xr)
         by, (by0, by1) = self._binning_coords(t.y_axis, t.y.values, yr)
-        full_identity = (
-            (not categorical or compact_categorical)
-            and not (t.x.zone.null_count or t.y.zone.null_count)
-            and t.x.min >= xr[0]
-            and t.x.max <= xr[1]
-            and t.y.min >= yr[0]
-            and t.y.max <= yr[1]
+        x_linear = self._axis_scale(t.x_axis) == "linear"
+        y_linear = self._axis_scale(t.y_axis) == "linear"
+        if x_linear:
+            x_c0, x_c1 = float(xr[0]), float(xr[1])
+        else:
+            x_c0, x_c1 = float(bx0), float(bx1)
+        if y_linear:
+            y_c0, y_c1 = float(yr[0]), float(yr[1])
+        else:
+            y_c0, y_c1 = float(by0), float(by1)
+        if t.color_ch is None:
+            color_mode = _native.DENSITY_COLOR_MODE_NONE
+        elif t.color_ch.mode == "constant":
+            color_mode = _native.DENSITY_COLOR_MODE_CONSTANT
+        else:
+            color_mode = _native.DENSITY_COLOR_MODE_OTHER
+        from . import _ooc as ooc
+
+        x_memmapped = ooc.is_memmapped(t.x.values)
+        y_memmapped = ooc.is_memmapped(t.y.values)
+        stratified_counts = bool(
+            compact_categorical and t.color_ch is not None and t.color_ch.counts is not None
         )
+
+        def _emit_plan(
+            *, grid_from_pyramid: bool, has_pyramid_resource: bool
+        ) -> dict[str, int | bool | float]:
+            return _native.density_emit_plan(
+                cartesian=self.coords == "cartesian",
+                x_linear=x_linear,
+                y_linear=y_linear,
+                categorical=categorical,
+                compact_categorical=compact_categorical,
+                stratified_counts=stratified_counts,
+                x_has_nulls=bool(t.x.zone.null_count),
+                y_has_nulls=bool(t.y.zone.null_count),
+                point_overlay=bool(pw.point_overlay),
+                grid_from_pyramid=grid_from_pyramid,
+                x_memmapped=x_memmapped,
+                y_memmapped=y_memmapped,
+                has_pyramid_resource=has_pyramid_resource,
+                color_mode=color_mode,
+                x_min=float(t.x.min),
+                x_max=float(t.x.max),
+                y_min=float(t.y.min),
+                y_max=float(t.y.max),
+                xr0=float(xr[0]),
+                xr1=float(xr[1]),
+                yr0=float(yr[0]),
+                yr1=float(yr[1]),
+                x_c0=x_c0,
+                x_c1=x_c1,
+                y_c0=y_c0,
+                y_c1=y_c1,
+                n_points=int(t.n_points),
+            )
+
+        plan = _emit_plan(grid_from_pyramid=False, has_pyramid_resource=False)
         sample_sel = None
-        # Per-row index/sample kernels return u32 row ids, so the point-sample
-        # overlay and range-index paths top out at 2³²-1 rows. Past that the
-        # density grid itself is still exact (bin_2d counts in size_t), so we
-        # ship grid-only and record the overlay omission (§28: no silent caps).
-        oversized = int(t.n_points) > _U32_MAX
         grid = None
         visible = int(t.n_points)
         sel = np.empty(0, dtype=np.uint32)
-        binning = "exact"
+        binning = _native.density_format_binning(exact=True)
         rgba_from_pyramid = None
+        tiles_meta = None
+        has_pyramid_resource = False
         # Tier-3 first paint: when the interactive path would already build a
         # pyramid, compose the opening density surface from it instead of an
         # O(N) `bin_2d` that the next pan throws away (§28 `pyramid-L*`).
-        linear_axes = (
-            self._axis_scale(t.x_axis) == "linear" and self._axis_scale(t.y_axis) == "linear"
-        )
-        if grid is None and linear_axes and int(t.n_points) >= PYRAMID_MIN_POINTS:
+        if plan["pyramid_eligible"]:
             pyr = interaction._ensure_pyramid(t)
             store = interaction._tile_store_of(t)
-            if store is not None or pyr is not None:
-                from . import _ooc as ooc
-
-                no_rescan = (
-                    ooc.is_memmapped(t.x.values)
-                    or ooc.is_memmapped(t.y.values)
-                    or int(t.n_points) > PYRAMID_NO_RESCAN_ROWS
-                )
-                max_upsample = 1_000_000 if no_rescan else 2
-                tiles_meta = None
+            has_pyramid_resource = store is not None or pyr is not None
+            plan = _emit_plan(
+                grid_from_pyramid=False,
+                has_pyramid_resource=has_pyramid_resource,
+            )
+            if plan["pyramid_attempt"]:
+                no_rescan = bool(plan["pyramid_no_rescan"])
+                max_upsample = int(plan["pyramid_max_upsample"])
+                tile_upsample = int(plan["pyramid_tile_upsample"])
                 if store is not None:
-                    tile_upsample = 1_000_000 if (no_rescan or store) else max_upsample
                     if getattr(t, "_pyr_colored", False):
                         res_color = kernels.tile_store_compose_color(
                             store, bx0, bx1, by0, by1, w, h, tile_upsample
                         )
                         if res_color is not None:
                             grid, rgba_from_pyramid, level = res_color
-                            upsampled = no_rescan and level == 0
-                            binning = f"pyramid-L{level}-tiles{'-upsampled' if upsampled else ''}"
+                            binning = _native.density_format_binning(
+                                exact=False,
+                                level=int(level),
+                                tiles=True,
+                                upsampled=no_rescan and level == 0,
+                            )
                             tiles_meta = interaction._tiles_stats_dict(store)
                     else:
                         res = kernels.tile_store_compose(
@@ -1261,8 +1299,12 @@ class PayloadMixin(_Host):
                         )
                         if res is not None:
                             grid, level = res
-                            upsampled = no_rescan and level == 0
-                            binning = f"pyramid-L{level}-tiles{'-upsampled' if upsampled else ''}"
+                            binning = _native.density_format_binning(
+                                exact=False,
+                                level=int(level),
+                                tiles=True,
+                                upsampled=no_rescan and level == 0,
+                            )
                             tiles_meta = interaction._tiles_stats_dict(store)
                 elif pyr is not None and getattr(t, "_pyr_colored", False):
                     res_color = kernels.pyramid_compose_color(
@@ -1270,24 +1312,28 @@ class PayloadMixin(_Host):
                     )
                     if res_color is not None:
                         grid, rgba_from_pyramid, level = res_color
-                        binning = (
-                            f"pyramid-L{level}{'-upsampled' if no_rescan and level == 0 else ''}"
+                        binning = _native.density_format_binning(
+                            exact=False,
+                            level=int(level),
+                            upsampled=no_rescan and level == 0,
                         )
                 elif pyr is not None:
                     res = kernels.pyramid_compose(pyr, bx0, bx1, by0, by1, w, h, max_upsample)
                     if res is not None:
                         grid, level = res
-                        binning = (
-                            f"pyramid-L{level}{'-upsampled' if no_rescan and level == 0 else ''}"
+                        binning = _native.density_format_binning(
+                            exact=False,
+                            level=int(level),
+                            upsampled=no_rescan and level == 0,
                         )
-            else:
-                tiles_meta = None
-        else:
-            tiles_meta = None
+        plan = _emit_plan(
+            grid_from_pyramid=grid is not None,
+            has_pyramid_resource=has_pyramid_resource,
+        )
         # Pyramid compose yields the grid without a fused overlay sample.
         # Fill the public sample without re-binning so first paint still
         # ships `density["sample"]` (raster `point_overlay=False` stays empty).
-        if grid is not None and pw.point_overlay and not oversized and sample_sel is None:
+        if plan["needs_pyramid_sample"] and sample_sel is None:
             if compact_categorical:
                 assert t.color_ch is not None and t.color_ch.codes is not None
                 sample_sel = lod.stratified_sample_row_range_for_target(
@@ -1303,53 +1349,54 @@ class PayloadMixin(_Host):
                     DENSITY_SAMPLE_TARGET,
                     seed=DENSITY_SAMPLE_SEED,
                 )
-        if oversized and grid is None:
-            visible = int(t.n_points)
-            sel = np.empty(0, dtype=np.uint32)
-            sample_sel = None
-            grid = kernels.bin_2d(t.x.values, t.y.values, xr[0], xr[1], yr[0], yr[1], w, h)
-            binning = "exact"
-        elif grid is None and full_identity and not pw.point_overlay:
-            # Raster export: no overlay is drawn, so take the plain grid kernel
-            # instead of the fused grid+sample variants below. `bin_2d` is the
-            # grid half of every one of them, so the counts are identical.
-            visible = int(t.n_points)
-            sel = np.empty(0, dtype=np.uint32)
-            grid = kernels.bin_2d(bx, by, bx0, bx1, by0, by1, w, h)
-            binning = "exact"
-        elif grid is None and full_identity:
-            visible = int(t.n_points)
-            sel = np.empty(0, dtype=np.uint32)
-            if compact_categorical:
+        if grid is None:
+            path = int(plan["grid_path"])
+            if plan["use_raw_range_bin2d"]:
+                visible = int(t.n_points)
+                sel = np.empty(0, dtype=np.uint32)
+                sample_sel = None
+                grid = kernels.bin_2d(t.x.values, t.y.values, xr[0], xr[1], yr[0], yr[1], w, h)
+                binning = _native.density_format_binning(exact=True)
+            elif path == _native.DENSITY_GRID_PATH_IDENTITY_GRID_ONLY:
+                visible = int(t.n_points)
+                sel = np.empty(0, dtype=np.uint32)
+                grid = kernels.bin_2d(bx, by, bx0, bx1, by0, by1, w, h)
+                binning = _native.density_format_binning(exact=True)
+            elif path == _native.DENSITY_GRID_PATH_IDENTITY_STRATIFIED_FUSED:
                 assert t.color_ch is not None and t.color_ch.codes is not None
-                if t.color_ch.counts is not None:
-                    grid, sample_sel = lod.bin_2d_stratified_sample_row_range_for_target(
-                        bx,
-                        by,
-                        t.color_ch.codes,
-                        len(t.color_ch.categories or ()),
-                        bx0,
-                        bx1,
-                        by0,
-                        by1,
-                        w,
-                        h,
-                        DENSITY_SAMPLE_TARGET,
-                        counts=t.color_ch.counts,
-                        seed=DENSITY_SAMPLE_SEED,
-                    )
-                else:
-                    # Defensive compatibility for traces assembled outside the
-                    # normal resolver; production factorization always emits
-                    # counts and takes the fused path.
-                    grid = kernels.bin_2d(bx, by, bx0, bx1, by0, by1, w, h)
-                    sample_sel = lod.stratified_sample_row_range_for_target(
-                        t.color_ch.codes,
-                        len(t.color_ch.categories or ()),
-                        DENSITY_SAMPLE_TARGET,
-                        seed=DENSITY_SAMPLE_SEED,
-                    )
-            else:
+                visible = int(t.n_points)
+                sel = np.empty(0, dtype=np.uint32)
+                grid, sample_sel = lod.bin_2d_stratified_sample_row_range_for_target(
+                    bx,
+                    by,
+                    t.color_ch.codes,
+                    len(t.color_ch.categories or ()),
+                    bx0,
+                    bx1,
+                    by0,
+                    by1,
+                    w,
+                    h,
+                    DENSITY_SAMPLE_TARGET,
+                    counts=t.color_ch.counts,
+                    seed=DENSITY_SAMPLE_SEED,
+                )
+                binning = _native.density_format_binning(exact=True)
+            elif path == _native.DENSITY_GRID_PATH_IDENTITY_STRATIFIED_SPLIT:
+                assert t.color_ch is not None and t.color_ch.codes is not None
+                visible = int(t.n_points)
+                sel = np.empty(0, dtype=np.uint32)
+                grid = kernels.bin_2d(bx, by, bx0, bx1, by0, by1, w, h)
+                sample_sel = lod.stratified_sample_row_range_for_target(
+                    t.color_ch.codes,
+                    len(t.color_ch.categories or ()),
+                    DENSITY_SAMPLE_TARGET,
+                    seed=DENSITY_SAMPLE_SEED,
+                )
+                binning = _native.density_format_binning(exact=True)
+            elif path == _native.DENSITY_GRID_PATH_IDENTITY_SAMPLE_FUSED:
+                visible = int(t.n_points)
+                sel = np.empty(0, dtype=np.uint32)
                 grid, sample_sel = lod.bin_2d_sample_row_range_for_target(
                     bx,
                     by,
@@ -1362,13 +1409,16 @@ class PayloadMixin(_Host):
                     DENSITY_SAMPLE_TARGET,
                     seed=DENSITY_SAMPLE_SEED,
                 )
-            binning = "exact"
-        elif grid is None:
-            # Fused single pass: grid (bin_2d semantics) + visible rows
-            # (range_indices semantics) without re-reading full columns twice.
-            grid, sel = kernels.bin_2d_indices(bx, by, bx0, bx1, by0, by1, w, h)
-            visible = int(len(sel))
-            binning = "exact"
+                binning = _native.density_format_binning(exact=True)
+            elif path == _native.DENSITY_GRID_PATH_RANGE_INDICES:
+                grid, sel = kernels.bin_2d_indices(bx, by, bx0, bx1, by0, by1, w, h)
+                visible = int(len(sel))
+                binning = _native.density_format_binning(exact=True)
+            else:
+                raise RuntimeError(f"unexpected density grid path {path}")
+        elif plan["visible_is_n_points"]:
+            visible = int(t.n_points)
+            sel = np.empty(0, dtype=np.uint32)
         encoded_grid, gmax = kernels.density_log_u8(grid)
         # The density surface wears the data's own colors (LOD doc §2): count
         # is the alpha channel, and per-point color channels aggregate to a
@@ -1401,17 +1451,7 @@ class PayloadMixin(_Host):
         # 32,768-point raw chunk at a time; this source capacity is the
         # generated aggregate ABI's declared point limit.
         wasm_capacity = WASM_AGGREGATE_MAX_POINTS
-        wasm_supported = (
-            self.coords == "cartesian"
-            and self._axis_scale(t.x_axis) == "linear"
-            and self._axis_scale(t.y_axis) == "linear"
-            # A resolved constant fill remains count-only: it changes only
-            # texture tint, not the per-point aggregation algebra.
-            and (t.color_ch is None or t.color_ch.mode == "constant")
-            and not t.x.zone.null_count
-            and not t.y.zone.null_count
-            and 0 < int(t.n_points) <= wasm_capacity
-        )
+        wasm_supported = bool(plan["wasm_eligible"])
         if pw._split and wasm_supported:
             density["wasm_source"] = {
                 "kind": "cartesian-count-f64-stream-v1",
@@ -1442,7 +1482,7 @@ class PayloadMixin(_Host):
         density["dropped_channels"] = dropped_channels  # complete, actionable list (§28)
         if t.color_ch and t.color_ch.mode == "constant" and t.color_ch.constant is not None:
             density["color"] = t.color_ch.constant
-        if oversized:
+        if plan["overlay_omitted"] == _native.DENSITY_OVERLAY_ROWS_EXCEED_U32:
             # §28: exact grid, but the deterministic point overlay is dropped
             # because row ids exceed u32. Recorded so the client/legend can say so.
             density["overlay_omitted"] = "rows_exceed_u32"
@@ -1450,7 +1490,7 @@ class PayloadMixin(_Host):
             sample = self._density_sample_spec(t, sel, visible, xr, yr, pw, sample_sel=sample_sel)
             if sample is not None:
                 density["sample"] = sample
-        elif "overlay_omitted" not in density:
+        elif plan["overlay_omitted"] == _native.DENSITY_OVERLAY_STATIC_RASTER:
             # §28: no representation is dropped silently. `oversized` above may
             # have already recorded the more fundamental u32 reason; that one
             # wins, so only claim the field when nothing else has.

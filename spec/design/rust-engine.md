@@ -235,6 +235,7 @@ crates/
     legend_layout.rs    # static legend box packing (ABI 124) ✅
     layout_rooms.rs     # measured cartesian gutters (ABI 125) ✅
     compat_layout.rs    # static-export padding/colorbar/polar recut (ABI 126)
+    density_emit.rs     # first-paint density scatter emit policy (ABI 132) ✅
     polar.rs            # (theta, r) -> screen-pixel projection (ABI 131)
                         #   + pyplot tight-layout solve (ABI 127) ✅
     textblock.rs        # newline-delimited chrome measure (ABI 125) ✅
@@ -670,6 +671,9 @@ landed; the remainder, in order:
    ABI 128 `xyg_tick_window` / `xyg_tick_window_filter` ✅; ABI 130
    `xyg_tick_format` ✅; ABI 131 `xyg_polar_layout` / `xyg_polar_project` /
    `xyg_polar_theta_visible_mask` / `xyg_polar_visible_mask` /
-   `xyg_polar_position_mask` ✅; ABI 129
+   `xyg_polar_position_mask` ✅; ABI 132 `xyg_density_bin_window` /
+   `xyg_density_full_identity` / `xyg_density_pyramid_preflight` /
+   `xyg_density_grid_path` / `xyg_density_format_binning` /
+   `xyg_density_emit_meta` / `xyg_density_wasm_eligible` ✅; ABI 129
    `xyg_colormap_rgba` / `xyg_colormap_rgba_canonical` ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

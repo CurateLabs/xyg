@@ -161,7 +161,7 @@
       "python": "ready",
       "node": "ready",
       "rust": "ready",
-      "notes": "Node scatter density tier via xy_bin_2d + xy_density_log_u8 when n≥SCATTER_DENSITY_THRESHOLD (force_density / force_direct / polar); packages/xy-node test/coverage.test.mjs + encode f32 goldens"
+      "notes": "Node scatter density tier via xy_bin_2d + xy_density_log_u8 when n≥SCATTER_DENSITY_THRESHOLD (force_density / force_direct / polar); ABI 132 xyg_density_* owns first-paint path/binning/WASM/overlay policy; packages/xy-node test/coverage.test.mjs + encode f32 goldens"
     },
     {
       "kind": "line",
@@ -345,7 +345,7 @@
       "name": "density / aggregate",
       "python": "ready",
       "node": "ready",
-      "notes": "Scatter density grid; graph render-graph / cluster; hexbin aggregation; screen-bounded"
+      "notes": "Scatter density grid; ABI 132 density emit policy; graph render-graph / cluster; hexbin aggregation; screen-bounded"
     },
     {
       "tier": 3,
