@@ -404,7 +404,8 @@ test("Node matches Python bytes for constant-style Cartesian heatmap Rects", () 
     figureSceneFixture.public_heatmap_sha256,
   );
   const svg = sceneSvg(scene);
-  assert.equal((svg.match(/<rect /g) ?? []).length, 6);
+  const clip = svg.match(/<g clip-path="url\(#xy-scene-plot\)">([\s\S]*?)<\/g>/);
+  assert.equal((clip?.[1].match(/<rect /g) ?? []).length, 6);
   assert.match(svg, />heat<\/text>/);
   assert.ok(sceneRasterCommands(scene).length > 100);
   const painter = sceneBrowserPainter(scene);

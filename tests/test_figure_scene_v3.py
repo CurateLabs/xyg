@@ -842,7 +842,9 @@ def test_python_scene_compiles_ribbon_and_triangle_mesh() -> None:
     )
     heat_svg = _native.scene_svg(heatmap.to_scene())
     rows, cols = heatmap.traces[0].grid_shape or (0, 0)
-    assert heat_svg.count("<rect ") == rows * cols
+    clip_start = heat_svg.find('<g clip-path="url(#xy-scene-plot)">')
+    clip_end = heat_svg.find("</g>", clip_start)
+    assert heat_svg[clip_start:clip_end].count("<rect ") == rows * cols
 
     colormap = Figure(width=320, height=240)
     colormap.axis_options["x"]["domain"] = (0.0, 4.0)

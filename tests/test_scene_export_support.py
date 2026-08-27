@@ -895,7 +895,9 @@ def test_public_heatmap_matches_exact_cross_host_scene_and_consumers() -> None:
 
     svg = _native.scene_svg(scene)
     rows, cols = figure.traces[0].grid_shape or (0, 0)
-    assert svg.count("<rect ") == rows * cols
+    clip_start = svg.find('<g clip-path="url(#xy-scene-plot)">')
+    clip_end = svg.find("</g>", clip_start)
+    assert svg[clip_start:clip_end].count("<rect ") == rows * cols
     assert '<g clip-path="url(#xy-scene-plot)">' in svg
     assert ">heat</text>" in svg
     assert try_public_svg(figure) == svg
@@ -911,12 +913,11 @@ def test_public_heatmap_matches_exact_cross_host_scene_and_consumers() -> None:
 
     painter = _native.scene_browser_painter(scene)
     header_bytes = int.from_bytes(painter[12:16], "little")
-    descriptor_bytes = int.from_bytes(painter[16:20], "little")
     groups = int.from_bytes(painter[20:24], "little")
-    assert groups == rows * cols
-    for group in range(groups):
-        descriptor = header_bytes + group * descriptor_bytes
-        assert painter[descriptor] == 2
+    assert groups == 1
+    assert painter[header_bytes] == 2
+    assert int.from_bytes(painter[header_bytes + 4 : header_bytes + 8], "little") == rows * cols
+    assert b"XYLG" in painter
 
 
 def test_public_heatmap_honors_the_rect_budget() -> None:
