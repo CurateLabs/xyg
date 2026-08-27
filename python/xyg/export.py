@@ -460,7 +460,10 @@ def to_html(
     # do not need a module worker or sibling fetch. Ordinary charts pay none
     # of this byte cost.
     inline_wasm_js = ""
-    density = any(trace.get("tier") == "density" for trace in spec.get("traces", []))
+    density = any(
+        isinstance(trace, dict) and trace.get("tier") == "density"
+        for trace in spec.get("traces", [])
+    )
     if density:
         # A raw source checkout can build the ordinary TypeScript client
         # without a wasm32 toolchain. Preserve the existing overview rather

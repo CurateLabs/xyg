@@ -12,7 +12,19 @@ ROOT = Path(__file__).resolve().parents[1]
 STATIC = ROOT / "python" / "xyg" / "static"
 CLIENT = ROOT / "packages" / "xy-client" / "dist"
 
+# `node js/build.mjs` copies wasm-worker.js; the module itself needs
+# `node js/package-wasm.mjs` after a wasm32 build. Floor/Test CI only run
+# the ordinary client build, so packaging-identity tests stay conditional.
+_PACKAGED_WASM = (STATIC / export.WASM_TICK_WASM).is_file() and (
+    CLIENT / export.WASM_TICK_WASM
+).is_file()
+requires_packaged_wasm = pytest.mark.skipif(
+    not _PACKAGED_WASM,
+    reason="xyg-wasm.wasm not packaged (run node js/package-wasm.mjs)",
+)
 
+
+@requires_packaged_wasm
 def test_packaged_tick_assets_match_the_browser_package() -> None:
     assets = export.bundled_wasm_tick_assets()
     worker = assets["worker"]
@@ -39,6 +51,7 @@ def test_to_html_true_requires_a_destination_path() -> None:
         Figure().line([0.0, 1.0], [1.0, 2.0]).to_html(wasm_ticks=True)
 
 
+@requires_packaged_wasm
 def test_to_html_true_writes_sidecars_and_explicit_urls(tmp_path: Path) -> None:
     target = tmp_path / "chart.html"
     html = Figure().line([0.0, 1.0, 2.0], [0.0, 1.0, 0.0]).to_html(target, wasm_ticks=True)
@@ -71,10 +84,21 @@ def test_to_html_mapping_requires_explicit_urls_and_rejects_blob() -> None:
     assert "connect-src 'self'" in html
 
 
+@requires_packaged_wasm
 def test_copy_wasm_tick_assets_writes_exact_packaged_bytes(tmp_path: Path) -> None:
     written = export.copy_wasm_tick_assets(tmp_path)
     assert written["worker"].read_bytes() == (STATIC / export.WASM_TICK_WORKER).read_bytes()
     assert written["wasm"].read_bytes() == (STATIC / export.WASM_TICK_WASM).read_bytes()
+
+
+def test_bundled_wasm_tick_assets_fail_closed_when_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    empty = tmp_path / "static"
+    empty.mkdir()
+    monkeypatch.setattr(export, "_STATIC", empty)
+    with pytest.raises(FileNotFoundError, match="packaged WASM tick assets missing"):
+        export.bundled_wasm_tick_assets()
 
 
 def test_client_and_export_contract_stay_fail_closed() -> None:
