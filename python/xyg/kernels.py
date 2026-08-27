@@ -124,6 +124,11 @@ hexbin_ingress = _impl.hexbin_ingress
 hexbin_groups = _impl.hexbin_groups
 legend_best_loc = _impl.legend_best_loc
 legend_normalize = _impl.legend_normalize
+monotone_tangents = _impl.monotone_tangents
+ribbon_edge = _impl.ribbon_edge
+ribbon_polygon = _impl.ribbon_polygon
+curve_flatten = _impl.curve_flatten
+rounded_rect_poly = _impl.rounded_rect_poly
 violin_density = _impl.violin_density
 violin_rects = _impl.violin_rects
 histogram_edges = _impl.histogram_edges
@@ -156,6 +161,7 @@ __all__ = [
     "correlation",
     "css_check",
     "css_color_rgba",
+    "curve_flatten",
     "delaunay_triangles",
     "density_log_u8",
     "density_rgba",
@@ -185,6 +191,7 @@ __all__ = [
     "marching_squares",
     "marching_triangles",
     "min_max",
+    "monotone_tangents",
     "normalize_f32",
     "polygon_select",
     "polygon_triangles",
@@ -206,6 +213,9 @@ __all__ = [
     "rasterize_png",
     "remap_u8",
     "rfft",
+    "ribbon_edge",
+    "ribbon_polygon",
+    "rounded_rect_poly",
     "sample_mask",
     "sample_range_indices",
     "sector_triangles",

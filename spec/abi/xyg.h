@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 120
-#define XYG_ABI_SIGNATURE_SHA256 "26b23bf24cf8ed684d908c6cf3d5b3bebcd6cff8e0a806f8fec7c9e4eb4fb6fb"
+#define XYG_ABI_VERSION 121
+#define XYG_ABI_SIGNATURE_SHA256 "2948037060f203cb27dfaf2d9406c7a875ca4cbf7eda68b2e8b80c84a7d5ba0a"
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,6 +38,7 @@ int32_t xyg_contourf_densify(const double * z, size_t rows, size_t cols, const d
 int32_t xyg_correlation(const double * x, const double * y, size_t len, size_t max_lag, int32_t normalize, double * out_lag, double * out_correlation);
 int32_t xyg_css_check(uint32_t kind, const uint8_t * prop, size_t prop_len, const uint8_t * value, size_t value_len, float * out_rgba);
 int32_t xyg_css_color_rgba(const uint8_t * css, size_t len, float opacity, uint8_t * out_rgba);
+size_t xyg_curve_flatten(const double * x, const double * y, size_t n, size_t bezier_steps, double * out_x, double * out_y, size_t capacity);
 size_t xyg_delaunay_triangles(const double * x, const double * y, size_t len, int64_t * out, size_t capacity);
 int32_t xyg_density_log_u8(const float * grid, size_t len, uint8_t * out, double * out_max);
 int32_t xyg_density_rgba(const uint8_t * encoded, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out);
@@ -103,6 +104,7 @@ size_t xyg_m4_points(const double * x, const double * y, size_t len, double x0, 
 size_t xyg_marching_squares(const double * z, size_t rows, size_t cols, const double * x_coords, const double * y_coords, const double * levels, size_t n_levels, uint8_t corner_mask, double * out_x0, double * out_x1, double * out_y0, double * out_y1, double * out_levels, size_t capacity);
 size_t xyg_marching_triangles(const double * x, const double * y, const double * z, size_t vertex_count, const int64_t * triangles, size_t face_count, const double * levels, size_t level_count, double * out_x0, double * out_x1, double * out_y0, double * out_y1, double * out_levels, size_t capacity);
 int32_t xyg_min_max(const double * data, size_t len, double * out_min, double * out_max);
+size_t xyg_monotone_tangents(const double * x, const double * y, size_t n, double * out_m, size_t capacity);
 int32_t xyg_normalize_f32(const double * data, size_t len, double lo, double hi, int32_t nan_mode, float * out);
 size_t xyg_polygon_select(const double * x, const double * y, size_t len, const uint32_t * rows, size_t n_rows, const double * poly_x, const double * poly_y, size_t n_poly, uint32_t * out);
 size_t xyg_polygon_triangles(const double * x, const double * y, size_t len, int64_t * out, size_t capacity);
@@ -129,6 +131,9 @@ int32_t xyg_rasterize_spans(const uint8_t * cmd, size_t cmd_len, const uint8_t *
 uint8_t xyg_rect_zero_baseline_flags(const double * base, const double * value, size_t n);
 int32_t xyg_remap_u8(uint8_t * values, size_t len, const uint8_t * mapping, size_t mapping_len);
 int32_t xyg_rfft(const double * data, size_t len, size_t nfft, double sample_rate, double * out_frequency, double * out_real, double * out_imag);
+size_t xyg_ribbon_edge(double x0, double x1, double ya, double yb, size_t steps, double * out_x, double * out_y, size_t capacity);
+size_t xyg_ribbon_polygon(double x0, double x1, double src_lo, double src_hi, double dst_lo, double dst_hi, size_t steps, double * out_x, double * out_y, size_t capacity);
+size_t xyg_rounded_rect_poly(double x, double y, double w, double h, double r_tip, double r_base, int32_t tip_top, double * out_x, double * out_y, size_t capacity);
 int32_t xyg_sample_mask(const uint64_t * ids, size_t len, uint64_t seed, uint64_t threshold, uint8_t * out);
 int32_t xyg_sample_mask_u32(const uint32_t * ids, size_t len, uint64_t seed, uint64_t threshold, uint8_t * out);
 size_t xyg_sample_range_indices(size_t size, uint64_t seed, uint64_t threshold, uint32_t * out, size_t capacity);

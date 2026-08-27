@@ -203,6 +203,11 @@ lattice membership cannot drift. Custom `reduce_C_function` callables stay
 host-side over those groups. ABI 120 moves composition `loc="best"` scoring into
 Rust: Python and Node call `xyg_legend_normalize` and `xyg_legend_best_loc` so
 display-space occupancy, the 4096/512 sample, and the 0.02 tie band cannot drift.
+ABI 121 moves ribbon/curve/rounded-rect tessellation into Rust: Python and Node
+call `xyg_ribbon_edge`, `xyg_ribbon_polygon`, `xyg_monotone_tangents`,
+`xyg_curve_flatten`, and `xyg_rounded_rect_poly` so bump-X flattening,
+Fritsch–Carlson tangents, Hermite polylines, and independent tip/base radii
+cannot drift. Hosts still map affine scales.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call

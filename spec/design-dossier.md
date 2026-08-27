@@ -1307,6 +1307,12 @@ stride/finite caps, drop-not-clamp off-plot marks, and the 0.02 tie band are
 engine-owned and identical for Python and Node. Hosts still walk traces and
 pack label lengths, then settle `best` to a concrete location before Scene
 packing.
+ABI 121 moves ribbon/curve/rounded-rect tessellation into Rust. Hosts call
+`xyg_ribbon_edge`, `xyg_ribbon_polygon`, `xyg_monotone_tangents`,
+`xyg_curve_flatten`, and `xyg_rounded_rect_poly`; bump-X flattening,
+Fritsch–Carlson tangents, Hermite polylines, and independent tip/base radii
+are engine-owned and identical for Python and Node. Hosts still map affine
+scales and apply colormaps (`grid_rgba`, #283).
 ABI 110 moves primary Scene legend framing into Rust. Hosts pass loc/flags,
 font sizes, paints, title, and per-entry meta plus labels; XYLG header
 layout, text offsets, and bounded-text rejection are engine-owned and

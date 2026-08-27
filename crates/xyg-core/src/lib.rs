@@ -27,6 +27,7 @@ use xyg_engine::chunked_columns;
 use xyg_engine::css;
 use xyg_engine::figure_autorange;
 use xyg_engine::geo;
+use xyg_engine::geom;
 use xyg_engine::graph;
 use xyg_engine::hexbin;
 use xyg_engine::jpeg;
@@ -112,7 +113,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 120;
+pub const ABI_VERSION: u32 = 121;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10909,6 +10910,193 @@ pub unsafe extern "C" fn xyg_legend_best_loc(
     })
 }
 
+/// Flatten one d3 `curveBumpX` ribbon edge (ABI 121). Writes `steps + 1`
+/// samples including both ends. Returns the count written, or `usize::MAX`.
+///
+/// # Safety
+/// When `capacity` is nonzero, `out_x`/`out_y` must hold that many writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_ribbon_edge(
+    x0: f64,
+    x1: f64,
+    ya: f64,
+    yb: f64,
+    steps: usize,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        let (ox, oy) = if capacity == 0 {
+            (&mut [][..], &mut [][..])
+        } else {
+            if out_x.is_null() || out_y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts_mut(out_x, capacity),
+                std::slice::from_raw_parts_mut(out_y, capacity),
+            )
+        };
+        geom::ribbon_edge(x0, x1, ya, yb, steps, ox, oy).unwrap_or(usize::MAX)
+    })
+}
+
+/// Closed flow-band polygon: upper edge then reversed lower (ABI 121).
+/// Writes `2 * (steps + 1)` vertices. Returns the count written, or `usize::MAX`.
+///
+/// # Safety
+/// When `capacity` is nonzero, `out_x`/`out_y` must hold that many writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_ribbon_polygon(
+    x0: f64,
+    x1: f64,
+    src_lo: f64,
+    src_hi: f64,
+    dst_lo: f64,
+    dst_hi: f64,
+    steps: usize,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        let (ox, oy) = if capacity == 0 {
+            (&mut [][..], &mut [][..])
+        } else {
+            if out_x.is_null() || out_y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts_mut(out_x, capacity),
+                std::slice::from_raw_parts_mut(out_y, capacity),
+            )
+        };
+        geom::ribbon_polygon(x0, x1, src_lo, src_hi, dst_lo, dst_hi, steps, ox, oy)
+            .unwrap_or(usize::MAX)
+    })
+}
+
+/// Fritsch–Carlson monotone-cubic tangents (ABI 121). Writes `n` slopes.
+/// Returns the count written, or `usize::MAX`.
+///
+/// # Safety
+/// Non-empty `x`/`y` must be valid for `n` readable f64s. When `capacity` is
+/// nonzero, `out_m` must hold that many writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_monotone_tangents(
+    x: *const f64,
+    y: *const f64,
+    n: usize,
+    out_m: *mut f64,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        let (x, y) = if n == 0 {
+            (&[][..], &[][..])
+        } else {
+            if x.is_null() || y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts(x, n),
+                std::slice::from_raw_parts(y, n),
+            )
+        };
+        let out = if capacity == 0 {
+            &mut [][..]
+        } else {
+            if out_m.is_null() {
+                return usize::MAX;
+            }
+            std::slice::from_raw_parts_mut(out_m, capacity)
+        };
+        geom::monotone_tangents(x, y, out).unwrap_or(usize::MAX)
+    })
+}
+
+/// Data-space monotone-cubic Hermite flatten (ABI 121). `bezier_steps` is the
+/// linspace count (16 on the product path). Returns the count written, or
+/// `usize::MAX`.
+///
+/// # Safety
+/// Non-empty `x`/`y` must be valid for `n` readable f64s. When `capacity` is
+/// nonzero, `out_x`/`out_y` must hold that many writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_curve_flatten(
+    x: *const f64,
+    y: *const f64,
+    n: usize,
+    bezier_steps: usize,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        let (x, y) = if n == 0 {
+            (&[][..], &[][..])
+        } else {
+            if x.is_null() || y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts(x, n),
+                std::slice::from_raw_parts(y, n),
+            )
+        };
+        let (ox, oy) = if capacity == 0 {
+            (&mut [][..], &mut [][..])
+        } else {
+            if out_x.is_null() || out_y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts_mut(out_x, capacity),
+                std::slice::from_raw_parts_mut(out_y, capacity),
+            )
+        };
+        geom::curve_flatten(x, y, bezier_steps, ox, oy).unwrap_or(usize::MAX)
+    })
+}
+
+/// CW rounded-rect outline with independent tip/base radii (ABI 121).
+/// `tip_top` is 0/1. Returns the vertex count written, or `usize::MAX`.
+///
+/// # Safety
+/// When `capacity` is nonzero, `out_x`/`out_y` must hold that many writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_rounded_rect_poly(
+    x: f64,
+    y: f64,
+    w: f64,
+    h: f64,
+    r_tip: f64,
+    r_base: f64,
+    tip_top: i32,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if !matches!(tip_top, 0 | 1) {
+            return usize::MAX;
+        }
+        let (ox, oy) = if capacity == 0 {
+            (&mut [][..], &mut [][..])
+        } else {
+            if out_x.is_null() || out_y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts_mut(out_x, capacity),
+                std::slice::from_raw_parts_mut(out_y, capacity),
+            )
+        };
+        geom::rounded_rect_poly(x, y, w, h, r_tip, r_base, tip_top != 0, ox, oy)
+            .unwrap_or(usize::MAX)
+    })
+}
+
 /// Wind-rose directional/speed binning. When `n_speed_edges == 0`, quartile
 /// upper edges are derived from finite speeds; otherwise `speed_edges` is
 /// uniqued/sorted and must cover the fastest observation. Writes `n_bands`
@@ -11866,6 +12054,103 @@ mod tests {
                 )
             },
             0
+        );
+    }
+
+    #[test]
+    fn geom_helpers_ffi() {
+        let mut ox = vec![0.0; 16];
+        let mut oy = vec![0.0; 16];
+        let n = unsafe {
+            xyg_ribbon_edge(
+                0.0,
+                10.0,
+                1.0,
+                3.0,
+                8,
+                ox.as_mut_ptr(),
+                oy.as_mut_ptr(),
+                ox.len(),
+            )
+        };
+        assert_eq!(n, 9);
+        assert_eq!(ox[0], 0.0);
+        assert_eq!(ox[8], 10.0);
+        let n = unsafe {
+            xyg_ribbon_polygon(
+                0.0,
+                10.0,
+                0.0,
+                1.0,
+                2.0,
+                4.0,
+                4,
+                ox.as_mut_ptr(),
+                oy.as_mut_ptr(),
+                ox.len(),
+            )
+        };
+        assert_eq!(n, 10);
+        let x = [0.0, 1.0, 2.0, 3.0, 4.0];
+        let y = [0.0, 1.0, 0.5, 2.0, 1.5];
+        let mut m = vec![0.0; 8];
+        assert_eq!(
+            unsafe {
+                xyg_monotone_tangents(x.as_ptr(), y.as_ptr(), x.len(), m.as_mut_ptr(), m.len())
+            },
+            5
+        );
+        assert_eq!(m[0], 1.0);
+        assert_eq!(m[4], -0.5);
+        let mut cx = vec![0.0; 80];
+        let mut cy = vec![0.0; 80];
+        assert_eq!(
+            unsafe {
+                xyg_curve_flatten(
+                    x.as_ptr(),
+                    y.as_ptr(),
+                    x.len(),
+                    16,
+                    cx.as_mut_ptr(),
+                    cy.as_mut_ptr(),
+                    cx.len(),
+                )
+            },
+            65
+        );
+        assert_eq!((cx[0], cy[0]), (0.0, 0.0));
+        assert_eq!((cx[64], cy[64]), (4.0, 1.5));
+        assert_eq!(
+            unsafe {
+                xyg_rounded_rect_poly(
+                    0.0,
+                    0.0,
+                    4.0,
+                    3.0,
+                    0.0,
+                    0.0,
+                    1,
+                    ox.as_mut_ptr(),
+                    oy.as_mut_ptr(),
+                    ox.len(),
+                )
+            },
+            4
+        );
+        assert_eq!(
+            unsafe {
+                xyg_ribbon_edge(
+                    0.0,
+                    1.0,
+                    0.0,
+                    1.0,
+                    0,
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                    0,
+                )
+            },
+            usize::MAX
         );
     }
 

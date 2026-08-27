@@ -1495,24 +1495,9 @@ _png_rgba = _png.png_truecolor
 
 def _monotone_tangents(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """Fritsch–Carlson tangents — the same construction as xySmoothResample."""
-    n = len(x)
-    dx = np.diff(x)
-    dy = np.diff(y)
-    d = np.where(dx > 0, dy / np.where(dx > 0, dx, 1), 0.0)
-    m = np.empty(n)
-    m[0], m[-1] = d[0], d[-1]
-    m[1:-1] = np.where(d[:-1] * d[1:] <= 0, 0.0, (d[:-1] + d[1:]) * 0.5)
-    for i in range(n - 1):
-        if d[i] == 0:
-            m[i] = m[i + 1] = 0.0
-            continue
-        a, b = m[i] / d[i], m[i + 1] / d[i]
-        s = a * a + b * b
-        if s > 9:
-            t = 3 / np.sqrt(s)
-            m[i] = t * a * d[i]
-            m[i + 1] = t * b * d[i]
-    return m
+    return _native.monotone_tangents(
+        np.asarray(x, dtype=np.float64), np.asarray(y, dtype=np.float64)
+    )
 
 
 class _Svg:

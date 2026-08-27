@@ -20,6 +20,7 @@ pub mod dashboard;
 pub mod edge_route;
 pub mod geo;
 pub mod geo_viewport;
+pub mod geom;
 pub mod graph;
 pub mod graph_style;
 pub mod hexbin;

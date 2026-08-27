@@ -609,6 +609,61 @@ def load() -> ctypes.CDLL:
         U32P,
         ctypes.c_size_t,
     ]
+    lib.xyg_ribbon_edge.restype = ctypes.c_size_t
+    lib.xyg_ribbon_edge.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_ribbon_polygon.restype = ctypes.c_size_t
+    lib.xyg_ribbon_polygon.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_monotone_tangents.restype = ctypes.c_size_t
+    lib.xyg_monotone_tangents.argtypes = [
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_curve_flatten.restype = ctypes.c_size_t
+    lib.xyg_curve_flatten.argtypes = [
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_rounded_rect_poly.restype = ctypes.c_size_t
+    lib.xyg_rounded_rect_poly.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_hexbin_groups.restype = ctypes.c_size_t
     lib.xyg_hexbin_groups.argtypes = [
         F64P,
@@ -2030,6 +2085,49 @@ def main() -> None:
         1,
     )
     ok(lg_n == 3 and lg_loc == 1, "legend_normalize/best_loc diagonal")
+
+    rb_ox = array("d", [0.0]) * 9
+    rb_oy = array("d", [0.0]) * 9
+    rb_n = lib.xyg_ribbon_edge(
+        0.0,
+        10.0,
+        1.0,
+        3.0,
+        8,
+        _ptr(rb_ox, ctypes.c_double),
+        _ptr(rb_oy, ctypes.c_double),
+        9,
+    )
+    ok(
+        rb_n == 9 and abs(rb_ox[4] - 5.0) < 1e-12 and abs(rb_oy[4] - 2.0) < 1e-12,
+        "ribbon_edge midpoint",
+    )
+    cf_x = array("d", [0.0, 1.0, 2.0, 3.0, 4.0])
+    cf_y = array("d", [0.0, 1.0, 0.5, 2.0, 1.5])
+    cf_m = array("d", [0.0]) * 5
+    mt_n = lib.xyg_monotone_tangents(
+        _ptr(cf_x, ctypes.c_double),
+        _ptr(cf_y, ctypes.c_double),
+        5,
+        _ptr(cf_m, ctypes.c_double),
+        5,
+    )
+    ok(mt_n == 5 and abs(cf_m[0] - 1.0) < 1e-12 and abs(cf_m[4] + 0.5) < 1e-12, "monotone_tangents")
+    rr_ox = array("d", [0.0]) * 20
+    rr_oy = array("d", [0.0]) * 20
+    rr_n = lib.xyg_rounded_rect_poly(
+        0.0,
+        0.0,
+        4.0,
+        3.0,
+        0.0,
+        0.0,
+        1,
+        _ptr(rr_ox, ctypes.c_double),
+        _ptr(rr_oy, ctypes.c_double),
+        20,
+    )
+    ok(rr_n == 4 and rr_ox[1] == 4.0 and rr_oy[2] == 3.0, "rounded_rect_poly square")
 
     # violin_density: constant sample expands ±0.5 and yields positive density.
     vd = array("d", [3.0, 3.0, 3.0])

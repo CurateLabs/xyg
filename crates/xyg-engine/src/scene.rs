@@ -5,6 +5,7 @@
 //! stroke-inclusive sizing, validation, bounds, and SVG construction live here.
 
 use crate::css;
+use crate::geom;
 use crate::svg::push_num;
 use std::fmt::Write;
 
@@ -3418,7 +3419,7 @@ impl SceneExpansionMode {
 
 /// Fixed segments per canonical ribbon edge. The count is product policy: it
 /// is intentionally view-independent and shared by every Scene consumer.
-pub const SCENE_RIBBON_STEPS: usize = 96;
+pub const SCENE_RIBBON_STEPS: usize = geom::RIBBON_STEPS;
 
 /// Pointy-top hexagon ring as fractions of `hex_dx`/`hex_dy`. Same contract as
 /// the retired Python/Node Scene packers and `js/src/50_chartview.ts`.
@@ -3782,16 +3783,9 @@ pub fn expand_scene_records(
             }
             for sample in 0..=SCENE_RIBBON_STEPS {
                 let t = sample as f64 / SCENE_RIBBON_STEPS as f64;
-                let u = 1.0 - t;
-                let cubic = |a: f64, c0: f64, c1: f64, b: f64| {
-                    u.powi(3) * a
-                        + 3.0 * u.powi(2) * t * c0
-                        + 3.0 * u * t.powi(2) * c1
-                        + t.powi(3) * b
-                };
-                let x_coord = cubic(cx0, midpoint, midpoint, cx1);
-                let top_y_coord = cubic(upper_y0, upper_y0, upper_y1, upper_y1);
-                let base_y_coord = cubic(lower_y0, lower_y0, lower_y1, lower_y1);
+                let x_coord = geom::cubic_bezier(t, cx0, midpoint, midpoint, cx1);
+                let top_y_coord = geom::cubic_bezier(t, upper_y0, upper_y0, upper_y1, upper_y1);
+                let base_y_coord = geom::cubic_bezier(t, lower_y0, lower_y0, lower_y1, lower_y1);
                 let top = [x_scale.value(x_coord), y_scale.value(top_y_coord)];
                 let base = [x_scale.value(x_coord), y_scale.value(base_y_coord)];
                 if top.into_iter().chain(base).any(|value| !value.is_finite()) {

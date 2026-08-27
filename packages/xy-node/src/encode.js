@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -410,6 +410,134 @@ export function legendBestLoc(series, labelLens = []) {
     throw new Error("xyg_legend_best_loc failed");
   }
   return LEGEND_CANDIDATE_ORDER[code];
+}
+
+function requireWritten(written, capacity, name) {
+  if (!Number.isFinite(written) || written < 0 || written > capacity) {
+    throw new Error(`${name} failed`);
+  }
+  return written;
+}
+
+/** Flatten one d3 curveBumpX edge. Returns `{ x, y }` of length `steps + 1`. */
+export function ribbonEdge(x0, x1, ya, yb, steps = 96) {
+  const nSteps = Number(steps);
+  if (!Number.isInteger(nSteps) || nSteps <= 0) {
+    throw new Error("ribbonEdge steps must be a positive integer");
+  }
+  const capacity = nSteps + 1;
+  const outX = new Float64Array(capacity);
+  const outY = new Float64Array(capacity);
+  const written = requireWritten(
+    Number(xyRibbonEdge(Number(x0), Number(x1), Number(ya), Number(yb), BigInt(nSteps), f64Ptr(outX), f64Ptr(outY), BigInt(capacity))),
+    capacity,
+    "xyg_ribbon_edge",
+  );
+  return { x: outX.subarray(0, written), y: outY.subarray(0, written) };
+}
+
+/** Closed flow-band polygon: upper edge then reversed lower. */
+export function ribbonPolygon(x0, x1, srcLo, srcHi, dstLo, dstHi, steps = 96) {
+  const nSteps = Number(steps);
+  if (!Number.isInteger(nSteps) || nSteps <= 0) {
+    throw new Error("ribbonPolygon steps must be a positive integer");
+  }
+  const capacity = 2 * (nSteps + 1);
+  const outX = new Float64Array(capacity);
+  const outY = new Float64Array(capacity);
+  const written = requireWritten(
+    Number(xyRibbonPolygon(
+      Number(x0),
+      Number(x1),
+      Number(srcLo),
+      Number(srcHi),
+      Number(dstLo),
+      Number(dstHi),
+      BigInt(nSteps),
+      f64Ptr(outX),
+      f64Ptr(outY),
+      BigInt(capacity),
+    )),
+    capacity,
+    "xyg_ribbon_polygon",
+  );
+  return { x: outX.subarray(0, written), y: outY.subarray(0, written) };
+}
+
+/** Fritsch–Carlson monotone-cubic tangents. */
+export function monotoneTangents(x, y) {
+  const xv = asF64Array(x);
+  const yv = asF64Array(y);
+  if (xv.length !== yv.length) {
+    throw new Error("monotoneTangents x and y must have equal length");
+  }
+  const out = new Float64Array(xv.length);
+  const written = requireWritten(
+    Number(xyMonotoneTangents(
+      xv.length ? f64Ptr(xv) : null,
+      yv.length ? f64Ptr(yv) : null,
+      BigInt(xv.length),
+      xv.length ? f64Ptr(out) : null,
+      BigInt(out.length),
+    )),
+    out.length,
+    "xyg_monotone_tangents",
+  );
+  return out.subarray(0, written);
+}
+
+/** Data-space monotone-cubic Hermite flatten. */
+export function curveFlatten(x, y, bezierSteps = 16) {
+  const xv = asF64Array(x);
+  const yv = asF64Array(y);
+  if (xv.length !== yv.length) {
+    throw new Error("curveFlatten x and y must have equal length");
+  }
+  const steps = Number(bezierSteps);
+  if (!Number.isInteger(steps) || steps < 2) {
+    throw new Error("curveFlatten bezierSteps must be an integer >= 2");
+  }
+  const n = xv.length;
+  const capacity = n === 0 ? 0 : n === 1 ? 1 : 1 + (n - 1) * steps;
+  const outX = new Float64Array(capacity);
+  const outY = new Float64Array(capacity);
+  const written = requireWritten(
+    Number(xyCurveFlatten(
+      n ? f64Ptr(xv) : null,
+      n ? f64Ptr(yv) : null,
+      BigInt(n),
+      BigInt(steps),
+      capacity ? f64Ptr(outX) : null,
+      capacity ? f64Ptr(outY) : null,
+      BigInt(capacity),
+    )),
+    capacity,
+    "xyg_curve_flatten",
+  );
+  return { x: outX.subarray(0, written), y: outY.subarray(0, written) };
+}
+
+/** CW rounded-rect outline with independent tip/base radii. */
+export function roundedRectPoly(x, y, w, h, rTip, rBase, tipTop = true) {
+  const outX = new Float64Array(20);
+  const outY = new Float64Array(20);
+  const written = requireWritten(
+    Number(xyRoundedRectPoly(
+      Number(x),
+      Number(y),
+      Number(w),
+      Number(h),
+      Number(rTip),
+      Number(rBase),
+      tipTop ? 1 : 0,
+      f64Ptr(outX),
+      f64Ptr(outY),
+      20n,
+    )),
+    20,
+    "xyg_rounded_rect_poly",
+  );
+  return { x: outX.subarray(0, written), y: outY.subarray(0, written) };
 }
 
 const HEX_REDUCE = Object.freeze({ count: 0, mean: 1, sum: 2 });

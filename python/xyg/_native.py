@@ -7256,6 +7256,149 @@ def legend_best_loc(
     return code
 
 
+def ribbon_edge(
+    x0: float,
+    x1: float,
+    ya: float,
+    yb: float,
+    steps: int = 96,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Flatten one d3 ``curveBumpX`` edge via ``xyg_ribbon_edge`` (ABI 121)."""
+    steps = int(steps)
+    if steps <= 0:
+        raise ValueError("ribbon_edge steps must be positive")
+    n = steps + 1
+    out_x = np.empty(n, dtype=np.float64)
+    out_y = np.empty(n, dtype=np.float64)
+    written = _lib.xyg_ribbon_edge(
+        float(x0),
+        float(x1),
+        float(ya),
+        float(yb),
+        steps,
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        n,
+    )
+    if written == _USIZE_MAX or written > n:
+        raise ValueError("invalid ribbon_edge arguments")
+    return out_x[: int(written)].copy(), out_y[: int(written)].copy()
+
+
+def ribbon_polygon(
+    x0: float,
+    x1: float,
+    src_lo: float,
+    src_hi: float,
+    dst_lo: float,
+    dst_hi: float,
+    steps: int = 96,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Closed flow-band polygon via ``xyg_ribbon_polygon`` (ABI 121)."""
+    steps = int(steps)
+    if steps <= 0:
+        raise ValueError("ribbon_polygon steps must be positive")
+    n = 2 * (steps + 1)
+    out_x = np.empty(n, dtype=np.float64)
+    out_y = np.empty(n, dtype=np.float64)
+    written = _lib.xyg_ribbon_polygon(
+        float(x0),
+        float(x1),
+        float(src_lo),
+        float(src_hi),
+        float(dst_lo),
+        float(dst_hi),
+        steps,
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        n,
+    )
+    if written == _USIZE_MAX or written > n:
+        raise ValueError("invalid ribbon_polygon arguments")
+    return out_x[: int(written)].copy(), out_y[: int(written)].copy()
+
+
+def monotone_tangents(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+) -> npt.NDArray[np.float64]:
+    """Fritsch–Carlson tangents via ``xyg_monotone_tangents`` (ABI 121)."""
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("monotone_tangents x and y must have equal length")
+    n = len(x)
+    out = np.empty(n, dtype=np.float64)
+    written = _lib.xyg_monotone_tangents(
+        _ptr_f64(x),
+        _ptr_f64(y),
+        n,
+        _ptr_f64(out) if n else 0,
+        n,
+    )
+    if written == _USIZE_MAX or written != n:
+        raise ValueError("invalid monotone_tangents arguments")
+    return out
+
+
+def curve_flatten(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    bezier_steps: int = 16,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Data-space Hermite flatten via ``xyg_curve_flatten`` (ABI 121)."""
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("curve_flatten x and y must have equal length")
+    bezier_steps = int(bezier_steps)
+    n = len(x)
+    capacity = 0 if n == 0 else (1 if n == 1 else 1 + (n - 1) * bezier_steps)
+    out_x = np.empty(capacity, dtype=np.float64)
+    out_y = np.empty(capacity, dtype=np.float64)
+    written = _lib.xyg_curve_flatten(
+        _ptr_f64(x),
+        _ptr_f64(y),
+        n,
+        bezier_steps,
+        _ptr_f64(out_x) if capacity else 0,
+        _ptr_f64(out_y) if capacity else 0,
+        capacity,
+    )
+    if written == _USIZE_MAX or written > capacity:
+        raise ValueError("invalid curve_flatten arguments")
+    return out_x[: int(written)].copy(), out_y[: int(written)].copy()
+
+
+def rounded_rect_poly(
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    r_tip: float,
+    r_base: float,
+    tip_top: bool,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """CW rounded-rect outline via ``xyg_rounded_rect_poly`` (ABI 121)."""
+    out_x = np.empty(20, dtype=np.float64)
+    out_y = np.empty(20, dtype=np.float64)
+    written = _lib.xyg_rounded_rect_poly(
+        float(x),
+        float(y),
+        float(w),
+        float(h),
+        float(r_tip),
+        float(r_base),
+        int(bool(tip_top)),
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        20,
+    )
+    if written == _USIZE_MAX or written > 20:
+        raise ValueError("invalid rounded_rect_poly arguments")
+    return out_x[: int(written)].copy(), out_y[: int(written)].copy()
+
+
 def violin_density(
     data: npt.NDArray[np.float64],
     n_bins: int,

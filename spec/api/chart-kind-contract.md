@@ -109,8 +109,9 @@ followed by the lower endpoint row. ABI 97 marks both with
 axis scales first, then evaluates the two cubics at `SCENE_RIBBON_STEPS=96`
 (97 paired Band samples including both ends). SVG, raster, PDF-through-SVG, and
 the browser painter therefore consume the same canonical Scene geometry.
-Python `_scene.ribbon_polygon` remains compatibility-renderer code and is not
-an owner of Scene ribbon tessellation.
+Python `_scene.ribbon_polygon` remains a thin ABI 121 packer for the
+compatibility raster/SVG fallbacks and is not an owner of Scene ribbon
+tessellation.
 
 This ABI 97 route covers finite, literal, solid-color ribbons on the bounded
 primary Cartesian static contract. Two-ended gradients, polar projection,
