@@ -30,7 +30,7 @@ Scene compile is explicit XYPL v1. Scene v26 owns polar line/scatter/area/bar/co
 projection and annular-sector tessellation, polar errorbar and contour polylines, polar heatmap
 lattice tessellation, clip, rings/spokes, and rim tick labels in `scene.rs` + `polar.rs`.
 Python `_PolarProjection` remains a thin packer plus wedge/ring/polygon helpers
-for the compatibility exporters. Polar density and truecolor heatmap stay
+for the compatibility exporters. Polar density stays
 compatibility. ABI 97 also makes Rust authoritative for bounded solid-ribbon Scene geometry:
 Python and Node pack two adjacent compact endpoint rows, while Rust transforms
 the endpoints through the selected Cartesian axes and expands the fixed
@@ -597,7 +597,7 @@ Forbidden:
 | `packages/xy-node/src/marks/ecdf.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/marks/error_band.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/errorbar.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
-| `packages/xy-node/src/marks/heatmap.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust`; constant-style Cartesian Scene expands a regular lattice onto Rects; remaining debt is colormap/polar/truecolor/irregular-grid assembly | #58 |
+| `packages/xy-node/src/marks/heatmap.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust`; constant-style, scalar-colormap, and truecolor Cartesian/polar Scene expand a regular lattice onto Rects (polar encode tessellates to PolyFill); remaining debt is irregular-grid assembly | #58 |
 | `packages/xy-node/src/marks/hexbin.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust`; ABI 102 removed finite-pair/domain/aspect policy; ABI 103 moves Cartesian Scene hex-cell ring expansion into Rust; ABI 119 moves custom-reduce lattice groups into Rust; remaining debt is colormap/polar/callable reduce | #58 |
 | `packages/xy-node/src/marks/histogram.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust`; ABI 119 moves integer/empty-auto edge policy into Rust | #58 |
 | `packages/xy-node/src/marks/line.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |

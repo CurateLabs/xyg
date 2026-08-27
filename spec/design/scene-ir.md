@@ -307,8 +307,9 @@ with that cell's stable identity. A heatmap lattice is exactly two compact Rect
 rows sharing the trace identity: the first carries the finite increasing extent
 and `diameter=rows`, the second carries `diameter=cols` with zeroed coordinates.
 Rust emits the row-major `rows×cols` Rect grid the retired host packers produced.
-Scene v25 bytes are unchanged. Polar, colormap, truecolor, custom-reduce, and
-over-budget cases stay on the compatibility exporters.
+Scene v25 bytes are unchanged. Density, irregular grids, custom-reduce, and
+over-budget cases stay on the compatibility exporters. Scalar colormap and
+truecolor regular lattices now tessellate to per-cell Scene fills.
 
 ABI 104 adds `SegmentPair=7` and `TriangleFace=8` to the same authoring enum.
 A disconnected endpoint pair is one compact Polyline row whose four coordinates

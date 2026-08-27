@@ -448,12 +448,12 @@ This public polar renderer support does not imply canonical Scene support for
 every polar mark. Scene v26 compiles polar `line`, `scatter`, `area`
 (including step-line encoded as line), `bar`/`column` (annular sectors
 tessellated to PolyFill), `errorbar` (projected polylines), `heatmap`
-(the same Rect→PolyFill tessellation; scalar colormaps become per-cell
-literal styles), and `contour` (SegmentPair polylines through `polar_project`,
+(the same Rect→PolyFill tessellation; scalar colormaps and truecolor RGBA
+planes become per-cell literal styles), and `contour` (SegmentPair polylines through `polar_project`,
 matching polar errorbar) through Rust
 `polar_project` / `polar_wedge_points`, polar rings/spokes/clip, and rim tick
 labels when hosts pass explicit XYPL v1. Polar density-tier scatter stays
-rejected with a density diagnostic. Truecolor/RGBA-grid heatmap stays on the
+rejected with a density diagnostic. Inverse-sample `<image>` blit stays on the
 compatibility exporters because Scene has no image-blit record.
 Transparent Cartesian axis/grid paint
 must not be used to infer polar coordinates; it means only independently hidden
@@ -630,7 +630,7 @@ The Plotly-parity and axis-depth increments are shipped:
 
 | Feature | Shipped contract |
 |---|---|
-| Polar heatmap / contour | Heatmap uses the browser fragment-stage inverse and the shared static inverse raster; Scene compiles scalar-colormap and constant-style grids as PolyFill annular sectors (no image-blit record). Contour isolines compile as SegmentPair polylines through `polar_project`. Truecolor/RGBA-grid heatmap stays compatibility. |
+| Polar heatmap / contour | Heatmap uses the browser fragment-stage inverse and the shared static inverse raster; Scene compiles scalar-colormap, truecolor, and constant-style grids as PolyFill annular sectors (no image-blit record). Contour isolines compile as SegmentPair polylines through `polar_project`. |
 | Sector layout | `theta_axis(sector=...)` (or compatibility `domain=...`) controls clipping, tick trimming, chrome, and a sector-bounding-box layout. Pyplot `set_thetamin`/`set_thetamax` use degrees. Tick trimming is **modular**, matching mark culling: a sector spanning the 0/turn seam (`(300, 420)`, or the compass-natural `(-30, 30)`) keeps the authored ticks on the far side of the seam, because a data point at that same angle plots inside the sector. |
 | Hole / r-origin | `r_axis(hole=...)` and `r_axis(origin=...)` implement the §3 scale-coordinate formula and inverse; authored together they fail validation. |
 | Categorical θ axis | Category-index coordinates stay on the wire and are mapped evenly across the full turn or authored sector. |
