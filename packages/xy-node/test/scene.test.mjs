@@ -949,7 +949,7 @@ test("Node Scene v4 rejects malformed batches", () => {
   assert.throws(() => sceneBatchEncode({ ...base, styleRefs: [1] }), /invalid canonical scene batch/);
   assert.throws(() => sceneBatchEncode({ ...base, margins: [60, 40, 10, 10] }), /invalid canonical scene batch/);
   assert.throws(() => sceneBatchEncode({ ...base, expansionModes: [] }), /expansionModes must have length 1/);
-  assert.throws(() => sceneBatchEncode({ ...base, expansionModes: [5] }), /expansionModes values must be integers from 0 through 4/);
+  assert.throws(() => sceneBatchEncode({ ...base, expansionModes: [7] }), /expansionModes values must be integers from 0 through 6/);
   assert.throws(() => sceneBatchEncode({ ...base, expansionModes: [1] }), /invalid canonical scene batch/);
 
   const line = {

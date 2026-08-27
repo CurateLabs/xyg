@@ -290,6 +290,17 @@ and browser-painter consumers remain unchanged. Two-ended gradients, polar
 ribbons, LOD/density, and direct-browser `XYTS` authoring remain fail-closed;
 broader direct-browser production is tracked by the post-M2 follow-up **Expand direct-browser aggregate production beyond the density/Scene vertical** (related to [#54](https://github.com/CurateLabs/xyg/issues/54)).
 
+ABI 103 adds `HexCell=5` and `HeatmapLattice=6` to that same authoring enum.
+A hex cell is one compact PolyFill row whose `(x0, y0)` is the cell center and
+`(x1, y1)` is the finite positive `hex_dx`/`hex_dy` pitch; Rust expands it in
+data space onto the canonical six-vertex pointy-top ring (`SCENE_HEXBIN_RING`)
+with that cell's stable identity. A heatmap lattice is exactly two compact Rect
+rows sharing the trace identity: the first carries the finite increasing extent
+and `diameter=rows`, the second carries `diameter=cols` with zeroed coordinates.
+Rust emits the row-major `rows×cols` Rect grid the retired host packers produced.
+Scene v25 bytes are unchanged. Polar, colormap, truecolor, custom-reduce, and
+over-budget cases stay on the compatibility exporters.
+
 ## Version 4: default numeric Cartesian chrome
 
 Version 4 keeps the version-3 byte widths but changes whole-scene rendering
@@ -985,7 +996,9 @@ Hosts keep coercion, `mincnt` defaults, log-color post-processing, and custom
 Python reducers over Rust-resolved membership. The compact wire result remains
 the existing centers-only hexbin trace. Constant-style Cartesian native
 count/mean/sum lattices expand those centers plus `hex_dx`/`hex_dy` onto
-existing Scene v25 PolyFill records (one 6-vertex `HEX_RING` group per cell)
+existing Scene v25 PolyFill records (one 6-vertex `SCENE_HEXBIN_RING` group per
+cell). ABI 103 makes that ring expansion and regular heatmap lattice
+reconstruction Rust-owned compact authoring (`HexCell=5`, `HeatmapLattice=6`).
 for `public_static_export`. Polar
 hexbin, custom reducers, metric colormaps, LOD, and rich style exceptions
 fail closed and keep the compatibility exporters. Scene 25 is unchanged.

@@ -90,15 +90,15 @@ authored rectangle, and either a scalar width or an explicit `(width, height)`;
 they no longer scan finite pairs, pad degenerate extents, or choose the
 default height (`Math.round` on Node was the host drift). Custom Python
 `reduce_C_function` paths still reduce groups on the host after Rust resolves
-the lattice. Public traces remain centers-only on the wire. Constant-style
-Cartesian native count/mean/sum hexbin expands those centers plus
-`hex_dx`/`hex_dy` onto existing Scene v25 PolyFill records (one 6-vertex
-group per cell) for public SVG/PNG/PDF. Polar hexbin, custom
+the lattice. Public traces remain centers-only on the wire. ABI 103 moves
+constant-style Cartesian hex-cell ring expansion and regular heatmap lattice
+reconstruction into `expand_scene_records` (`HexCell=5`, `HeatmapLattice=6`).
+Python and Node pack one compact center+pitch row per hex cell and a two-row
+extent+shape heatmap lattice; Rust emits the same Scene v25 PolyFill rings and
+Rects the retired host packers produced. Polar hexbin, custom
 `reduce_C_function`, metric colormaps, LOD over the 1,024-group painter
 budget, and rich style exceptions stay on the compatibility exporters.
-Scene 25 is unchanged. Constant-style Cartesian heatmap now expands a
-regular rows×cols lattice onto existing Scene v25 Rect records (one
-rectangle per cell) for public SVG/PNG/PDF. Polar heatmap, metric
+Scene 25 is unchanged. Polar heatmap, metric
 colormaps, truecolor RGBA, LOD over the 10,000-Rect histogram ceiling,
 and rich style exceptions stay on the compatibility exporters. Heatmap
 colormap Scene remains a later slice.
@@ -514,7 +514,7 @@ Forbidden:
 | `packages/xy-node/src/marks/error_band.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/errorbar.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/heatmap.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust`; constant-style Cartesian Scene expands a regular lattice onto Rects; remaining debt is colormap/polar/truecolor/irregular-grid assembly | #58 |
-| `packages/xy-node/src/marks/hexbin.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust`; ABI 102 removed finite-pair/domain/aspect policy; constant-style Cartesian Scene expands centers onto PolyFill; remaining debt is colormap/polar/custom-reduce assembly | #58 |
+| `packages/xy-node/src/marks/hexbin.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust`; ABI 102 removed finite-pair/domain/aspect policy; ABI 103 moves Cartesian Scene hex-cell ring expansion into Rust; remaining debt is colormap/polar/custom-reduce assembly | #58 |
 | `packages/xy-node/src/marks/histogram.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/line.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/marks/polar.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |

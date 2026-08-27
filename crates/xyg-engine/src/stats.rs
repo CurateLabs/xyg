@@ -1273,8 +1273,8 @@ mod tests {
 
     #[test]
     fn binned_ecdf_authored_range_uses_all_finite_mass() {
-        let result = binned_ecdf(&[-1.0, 0.25, 0.75, 2.0, f64::INFINITY], 2, Some((0.0, 1.0)))
-            .unwrap();
+        let result =
+            binned_ecdf(&[-1.0, 0.25, 0.75, 2.0, f64::INFINITY], 2, Some((0.0, 1.0))).unwrap();
         assert_eq!(result.x, vec![0.0, 0.5, 1.0]);
         assert_eq!(result.cumulative, vec![0.0, 0.25, 0.5]);
 

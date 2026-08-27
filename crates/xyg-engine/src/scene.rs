@@ -3348,8 +3348,9 @@ impl SceneRecordKind {
 }
 
 /// Compact authored expansion mode accepted by the whole-Scene ABI. The enum is
-/// deliberately not serialized into Scene: Rust expands compact step and
-/// ribbon inputs to ordinary canonical records before Scene v25 encoding.
+/// deliberately not serialized into Scene: Rust expands compact step,
+/// ribbon, hex-cell, and heatmap-lattice inputs to ordinary canonical records
+/// before Scene v25 encoding.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(u8)]
 pub enum SceneExpansionMode {
@@ -3359,6 +3360,10 @@ pub enum SceneExpansionMode {
     Post = 3,
     /// Two adjacent Band rows describe upper then lower cubic edge endpoints.
     Ribbon = 4,
+    /// One PolyFill row is a hexbin center plus `hex_dx`/`hex_dy` pitch.
+    HexCell = 5,
+    /// Two Rect rows carry a regular lattice extent plus rows then cols.
+    HeatmapLattice = 6,
 }
 
 impl SceneExpansionMode {
@@ -3369,7 +3374,19 @@ impl SceneExpansionMode {
             2 => Ok(Self::Mid),
             3 => Ok(Self::Post),
             4 => Ok(Self::Ribbon),
+            5 => Ok(Self::HexCell),
+            6 => Ok(Self::HeatmapLattice),
             _ => Err(SceneError::Length),
+        }
+    }
+
+    fn expected_kind(self) -> Option<u8> {
+        match self {
+            Self::None => None,
+            Self::Pre | Self::Mid | Self::Post => Some(SceneRecordKind::Polyline as u8),
+            Self::Ribbon => Some(SceneRecordKind::Band as u8),
+            Self::HexCell => Some(SceneRecordKind::PolyFill as u8),
+            Self::HeatmapLattice => Some(SceneRecordKind::Rect as u8),
         }
     }
 }
@@ -3377,6 +3394,28 @@ impl SceneExpansionMode {
 /// Fixed segments per canonical ribbon edge. The count is product policy: it
 /// is intentionally view-independent and shared by every Scene consumer.
 pub const SCENE_RIBBON_STEPS: usize = 96;
+
+/// Pointy-top hexagon ring as fractions of `hex_dx`/`hex_dy`. Same contract as
+/// the retired Python/Node Scene packers and `js/src/50_chartview.ts`.
+pub const SCENE_HEXBIN_RING: [(f64, f64); 6] = [
+    (0.0, -1.0 / 3.0),
+    (0.5, -1.0 / 6.0),
+    (0.5, 1.0 / 6.0),
+    (0.0, 1.0 / 3.0),
+    (-0.5, 1.0 / 6.0),
+    (-0.5, -1.0 / 6.0),
+];
+
+fn exact_positive_usize(value: f64) -> Result<usize, SceneError> {
+    if !value.is_finite() || value < 1.0 || value.fract() != 0.0 {
+        return Err(SceneError::Length);
+    }
+    let count = value as usize;
+    if count as f64 != value {
+        return Err(SceneError::Limit);
+    }
+    Ok(count)
+}
 
 fn scene_expansion_run_end(stable_ids: &[u64], start: usize) -> usize {
     let stable_id = stable_ids[start];
@@ -3471,12 +3510,46 @@ impl ExpandedSceneRecords {
         self.x1.push(base[0]);
         self.y1.push(base[1]);
     }
+
+    fn push_hex_vertex(&mut self, stable_id: u64, style_ref: u32, x: f64, y: f64) {
+        self.kinds.push(SceneRecordKind::PolyFill as u8);
+        self.stable_ids.push(stable_id);
+        self.style_refs.push(style_ref);
+        self.diameter.push(0.0);
+        self.symbols.push(0);
+        self.x0.push(x);
+        self.y0.push(y);
+        self.x1.push(0.0);
+        self.y1.push(0.0);
+    }
+
+    fn push_heatmap_cell(
+        &mut self,
+        stable_id: u64,
+        style_ref: u32,
+        x0: f64,
+        y0: f64,
+        x1: f64,
+        y1: f64,
+    ) {
+        self.kinds.push(SceneRecordKind::Rect as u8);
+        self.stable_ids.push(stable_id);
+        self.style_refs.push(style_ref);
+        self.diameter.push(0.0);
+        self.symbols.push(0);
+        self.x0.push(x0);
+        self.y0.push(y0);
+        self.x1.push(x1);
+        self.y1.push(y1);
+    }
 }
 
-/// Expand compact step runs and two-row ribbon pairs into canonical Scene
-/// records. Ribbon cubics are evaluated in axis-transformed space, as required
-/// by the public ribbon contract; the inverse transform produces values that
-/// the existing Scene encoder maps to those same canonical pixels.
+/// Expand compact step runs, two-row ribbon pairs, hex-cell centers, and
+/// heatmap lattices into canonical Scene records. Ribbon cubics are evaluated
+/// in axis-transformed space, as required by the public ribbon contract; the
+/// inverse transform produces values that the existing Scene encoder maps to
+/// those same canonical pixels. Hex rings and heatmap cells expand in data
+/// space so the encoder maps the same vertices the retired host packers emitted.
 pub fn expand_scene_records(
     input: SceneExpansionInput<'_>,
     x_scale: AxisScale,
@@ -3527,16 +3600,12 @@ pub fn expand_scene_records(
         }
         let style_ref = input.style_refs[cursor];
         let run_end = scene_expansion_run_end(input.stable_ids, cursor);
+        let expected_kind = mode.expected_kind().expect("nonzero expansion mode");
         for index in cursor..run_end {
-            let expected_kind = if mode == SceneExpansionMode::Ribbon {
-                SceneRecordKind::Band as u8
-            } else {
-                SceneRecordKind::Polyline as u8
-            };
             if input.kinds[index] != expected_kind
                 || input.style_refs[index] != style_ref
                 || SceneExpansionMode::from_code(input.expansion_modes[index])? != mode
-                || input.diameter[index] != 0.0
+                || (mode != SceneExpansionMode::HeatmapLattice && input.diameter[index] != 0.0)
                 || (mode != SceneExpansionMode::Ribbon && input.symbols[index] != 0)
             {
                 return Err(SceneError::Length);
@@ -3548,8 +3617,15 @@ pub fn expand_scene_records(
             {
                 return Err(SceneError::NonFinite);
             }
-            if mode != SceneExpansionMode::Ribbon
-                && (input.x1[index] != 0.0 || input.y1[index] != 0.0)
+            if matches!(
+                mode,
+                SceneExpansionMode::Pre | SceneExpansionMode::Mid | SceneExpansionMode::Post
+            ) && (input.x1[index] != 0.0 || input.y1[index] != 0.0)
+            {
+                return Err(SceneError::Length);
+            }
+            if mode == SceneExpansionMode::HexCell
+                && (input.x1[index] <= 0.0 || input.y1[index] <= 0.0)
             {
                 return Err(SceneError::Length);
             }
@@ -3575,6 +3651,27 @@ pub fn expand_scene_records(
                     return Err(SceneError::Length);
                 }
                 SCENE_RIBBON_STEPS + 1
+            }
+            SceneExpansionMode::HexCell => {
+                if run_len != 1 {
+                    return Err(SceneError::Length);
+                }
+                SCENE_HEXBIN_RING.len()
+            }
+            SceneExpansionMode::HeatmapLattice => {
+                if run_len != 2
+                    || input.x0[cursor] >= input.x1[cursor]
+                    || input.y0[cursor] >= input.y1[cursor]
+                    || input.x0[cursor + 1] != 0.0
+                    || input.y0[cursor + 1] != 0.0
+                    || input.x1[cursor + 1] != 0.0
+                    || input.y1[cursor + 1] != 0.0
+                {
+                    return Err(SceneError::Length);
+                }
+                let rows = exact_positive_usize(input.diameter[cursor])?;
+                let cols = exact_positive_usize(input.diameter[cursor + 1])?;
+                rows.checked_mul(cols).ok_or(SceneError::Limit)?
             }
         };
         expanded_len = expanded_len
@@ -3639,6 +3736,44 @@ pub fn expand_scene_records(
             cursor = run_end;
             continue;
         }
+        if mode == SceneExpansionMode::HexCell {
+            let cx = input.x0[cursor];
+            let cy = input.y0[cursor];
+            let dx = input.x1[cursor];
+            let dy = input.y1[cursor];
+            for (rx, ry) in SCENE_HEXBIN_RING {
+                output.push_hex_vertex(stable_id, style_ref, cx + rx * dx, cy + ry * dy);
+            }
+            cursor = run_end;
+            continue;
+        }
+        if mode == SceneExpansionMode::HeatmapLattice {
+            let rows = exact_positive_usize(input.diameter[cursor])?;
+            let cols = exact_positive_usize(input.diameter[cursor + 1])?;
+            let x0 = input.x0[cursor];
+            let y0 = input.y0[cursor];
+            let x1 = input.x1[cursor];
+            let y1 = input.y1[cursor];
+            let dx = (x1 - x0) / cols as f64;
+            let dy = (y1 - y0) / rows as f64;
+            if !dx.is_finite() || !dy.is_finite() {
+                return Err(SceneError::NonFinite);
+            }
+            for row in 0..rows {
+                for col in 0..cols {
+                    output.push_heatmap_cell(
+                        stable_id,
+                        style_ref,
+                        x0 + col as f64 * dx,
+                        y0 + row as f64 * dy,
+                        x0 + (col + 1) as f64 * dx,
+                        y0 + (row + 1) as f64 * dy,
+                    );
+                }
+            }
+            cursor = run_end;
+            continue;
+        }
         output.push_step(stable_id, style_ref, input.x0[cursor], input.y0[cursor]);
         for index in cursor + 1..run_end {
             let previous = index - 1;
@@ -3666,7 +3801,10 @@ pub fn expand_scene_records(
                     output.push_step(stable_id, style_ref, current_x, previous_y);
                     output.push_step(stable_id, style_ref, current_x, current_y);
                 }
-                SceneExpansionMode::None | SceneExpansionMode::Ribbon => unreachable!(),
+                SceneExpansionMode::None
+                | SceneExpansionMode::Ribbon
+                | SceneExpansionMode::HexCell
+                | SceneExpansionMode::HeatmapLattice => unreachable!(),
             }
         }
         cursor = run_end;
@@ -9113,6 +9251,126 @@ mod tests {
             ),
             Err(SceneError::Limit)
         );
+    }
+
+    fn compact_hex_input<'a>(
+        ids: &'a [u64],
+        styles: &'a [u32],
+        x0: &'a [f64],
+        y0: &'a [f64],
+        x1: &'a [f64],
+        y1: &'a [f64],
+        modes: &'a [u8],
+    ) -> SceneExpansionInput<'a> {
+        SceneExpansionInput {
+            kinds: &[4],
+            stable_ids: ids,
+            style_refs: styles,
+            diameter: &[0.0],
+            symbols: &[0],
+            x0,
+            y0,
+            x1,
+            y1,
+            expansion_modes: modes,
+        }
+    }
+
+    #[test]
+    fn compact_hex_cell_expands_the_canonical_pointy_top_ring() {
+        let expanded = expand_scene_records(
+            compact_hex_input(&[42], &[7], &[10.0], &[20.0], &[6.0], &[12.0], &[5]),
+            test_linear_x_scale(),
+            test_linear_y_scale(),
+        )
+        .unwrap();
+        let expected: Vec<(f64, f64)> = SCENE_HEXBIN_RING
+            .iter()
+            .map(|(rx, ry)| (10.0 + rx * 6.0, 20.0 + ry * 12.0))
+            .collect();
+        assert_eq!(
+            expanded.x0.into_iter().zip(expanded.y0).collect::<Vec<_>>(),
+            expected
+        );
+        assert!(expanded.kinds.iter().all(|kind| *kind == 4));
+        assert!(expanded.stable_ids.iter().all(|id| *id == 42));
+        assert!(expanded.x1.iter().all(|value| *value == 0.0));
+        assert!(expanded.y1.iter().all(|value| *value == 0.0));
+    }
+
+    #[test]
+    fn compact_hex_cell_rejects_shared_identity_and_nonpositive_pitch() {
+        let kinds = [4u8, 4];
+        let ids = [1u64, 1];
+        let styles = [0u32, 0];
+        let zeros = [0.0, 0.0];
+        let symbols = [0u8, 0];
+        let x0 = [1.0, 2.0];
+        let y0 = [3.0, 4.0];
+        let pitch = [1.0, 1.0];
+        let modes = [5u8, 5];
+        let shared = SceneExpansionInput {
+            kinds: &kinds,
+            stable_ids: &ids,
+            style_refs: &styles,
+            diameter: &zeros,
+            symbols: &symbols,
+            x0: &x0,
+            y0: &y0,
+            x1: &pitch,
+            y1: &pitch,
+            expansion_modes: &modes,
+        };
+        assert_eq!(
+            expand_scene_records(shared, test_linear_x_scale(), test_linear_y_scale()),
+            Err(SceneError::Length)
+        );
+        assert_eq!(
+            expand_scene_records(
+                compact_hex_input(&[1], &[0], &[0.0], &[0.0], &[0.0], &[1.0], &[5]),
+                test_linear_x_scale(),
+                test_linear_y_scale(),
+            ),
+            Err(SceneError::Length)
+        );
+    }
+
+    #[test]
+    fn compact_heatmap_lattice_emits_row_major_rects() {
+        let kinds = [2u8, 2];
+        let ids = [9u64, 9];
+        let styles = [3u32, 3];
+        let diameter = [2.0, 3.0];
+        let symbols = [0u8, 0];
+        let x0 = [0.0, 0.0];
+        let y0 = [10.0, 0.0];
+        let x1 = [6.0, 0.0];
+        let y1 = [14.0, 0.0];
+        let modes = [6u8, 6];
+        let expanded = expand_scene_records(
+            SceneExpansionInput {
+                kinds: &kinds,
+                stable_ids: &ids,
+                style_refs: &styles,
+                diameter: &diameter,
+                symbols: &symbols,
+                x0: &x0,
+                y0: &y0,
+                x1: &x1,
+                y1: &y1,
+                expansion_modes: &modes,
+            },
+            test_linear_x_scale(),
+            test_linear_y_scale(),
+        )
+        .unwrap();
+        assert_eq!(expanded.kinds.len(), 6);
+        assert_eq!(expanded.x0, [0.0, 2.0, 4.0, 0.0, 2.0, 4.0]);
+        assert_eq!(expanded.y0, [10.0, 10.0, 10.0, 12.0, 12.0, 12.0]);
+        assert_eq!(expanded.x1, [2.0, 4.0, 6.0, 2.0, 4.0, 6.0]);
+        assert_eq!(expanded.y1, [12.0, 12.0, 12.0, 14.0, 14.0, 14.0]);
+        assert!(expanded.stable_ids.iter().all(|id| *id == 9));
+        assert!(expanded.style_refs.iter().all(|style| *style == 3));
     }
 
     #[allow(clippy::too_many_arguments)]

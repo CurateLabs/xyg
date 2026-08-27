@@ -164,11 +164,12 @@ count/mean/sum lattices now compile those centers plus `hex_dx`/`hex_dy`
 onto existing Scene v25 PolyFill records (one 6-vertex group per cell).
 Python and Node fixtures are byte-identical through SVG, raster, and
 browser consumers. Constant-style mean and sum share Scene bytes when they
-occupy the same lattice, because paint ignores the metric. Polar hexbin, custom `reduce_C_function`, metric
+occupy the same lattice, because paint ignores the metric. ABI 103 moves that
+hex-cell ring and the regular heatmap lattice reconstruction into Rust
+`expansion_modes` (`HexCell=5`, `HeatmapLattice=6`); hosts pack compact
+center+pitch rows and a two-row extent+shape lattice. Polar hexbin, custom `reduce_C_function`, metric
 colormaps, LOD beyond the 1,024-group painter budget, and rich style
-exceptions remain compatibility routes. Constant-style Cartesian heatmap
-now compiles a regular rows x cols lattice onto existing Scene v25 Rect
-records. Polar heatmap, metric colormaps, truecolor RGBA, LOD beyond
+exceptions remain compatibility routes. Polar heatmap, metric colormaps, truecolor RGBA, LOD beyond
 10,000 cells, and rich style exceptions remain compatibility routes.
 ABI 99 gives both composition hosts one compact grouped box ingress. Hosts pack
 the same f64 values/offsets/centers and literal options; Rust returns typed

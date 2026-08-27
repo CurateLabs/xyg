@@ -27,20 +27,13 @@ _BAND_KINDS = frozenset({"area", "error_band"})
 _RIBBON_KINDS = frozenset({"ribbon"})
 # Independent triangles lower to Scene PolyFill (kind 4) vertex runs.
 _POLYFILL_KINDS = frozenset({"triangle_mesh"})
-# Cartesian hexbin centers expand onto the same PolyFill records (6-vertex cells).
+# Cartesian hexbin centers expand onto PolyFill records (6-vertex cells) in
+# Rust (`SceneExpansionMode::HexCell`). Hosts pack one compact center+pitch
+# row per cell.
 _HEXBIN_KINDS = frozenset({"hexbin"})
 _HEXBIN_REDUCES = frozenset({"count", "mean", "sum"})
-# Pointy-top hexagon ring as fractions of hex_dx/hex_dy. Same contract as
-# python/xyg/_svg.py HEX_RING and js/src/50_chartview.ts _buildHexbinMark.
-_HEXBIN_RING = (
-    (0.0, -1.0 / 3.0),
-    (0.5, -1.0 / 6.0),
-    (0.5, 1.0 / 6.0),
-    (0.0, 1.0 / 3.0),
-    (-0.5, 1.0 / 6.0),
-    (-0.5, -1.0 / 6.0),
-)
-# Regular Cartesian heatmap cells expand onto the same Rect records as bars.
+# Regular Cartesian heatmap cells expand onto Rect records in Rust
+# (`SceneExpansionMode::HeatmapLattice`). Hosts pack extent plus rows/cols.
 _HEATMAP_KINDS = frozenset({"heatmap"})
 _POINT_KINDS = frozenset({"scatter", "line"})
 _SUPPORTED_KINDS = (
@@ -791,18 +784,18 @@ def figure_scene(
                     "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
                 )
             dx, dy = _hexbin_pitch(style)
+            run_start = len(kinds)
             for cell_index, (cx, cy) in enumerate(zip(xv, yv, strict=True)):
-                stable_id = (int(trace.id) << 32) | cell_index
-                for rx, ry in _HEXBIN_RING:
-                    kinds.append(4)
-                    stable_ids.append(stable_id)
-                    style_refs.append(style_ref)
-                    diameters.append(0.0)
-                    symbols.append(0)
-                    coordinates[0].append(float(cx) + rx * dx)
-                    coordinates[1].append(float(cy) + ry * dy)
-                    coordinates[2].append(0.0)
-                    coordinates[3].append(0.0)
+                kinds.append(4)
+                stable_ids.append((int(trace.id) << 32) | cell_index)
+                style_refs.append(style_ref)
+                diameters.append(0.0)
+                symbols.append(0)
+                coordinates[0].append(float(cx))
+                coordinates[1].append(float(cy))
+                coordinates[2].append(dx)
+                coordinates[3].append(dy)
+            expansion_runs.append((run_start, len(kinds), 5))
             continue
 
         if trace.kind in _HEATMAP_KINDS:
@@ -815,21 +808,17 @@ def figure_scene(
                     "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
                 )
             x0, x1, y0, y1 = _heatmap_extent(trace)
-            dx = (x1 - x0) / cols
-            dy = (y1 - y0) / rows
-            # Regular lattice only: reconstruct uniform cells from the stored
-            # range endpoints. Irregular/categorical spacing stays compatibility.
-            for row in range(rows):
-                for col in range(cols):
-                    kinds.append(2)
-                    stable_ids.append(int(trace.id))
-                    style_refs.append(style_ref)
-                    diameters.append(0.0)
-                    symbols.append(0)
-                    coordinates[0].append(x0 + col * dx)
-                    coordinates[1].append(y0 + row * dy)
-                    coordinates[2].append(x0 + (col + 1) * dx)
-                    coordinates[3].append(y0 + (row + 1) * dy)
+            run_start = len(kinds)
+            kinds.extend((2, 2))
+            stable_ids.extend((int(trace.id), int(trace.id)))
+            style_refs.extend((style_ref, style_ref))
+            diameters.extend((float(rows), float(cols)))
+            symbols.extend((0, 0))
+            coordinates[0].extend((x0, 0.0))
+            coordinates[1].extend((y0, 0.0))
+            coordinates[2].extend((x1, 0.0))
+            coordinates[3].extend((y1, 0.0))
+            expansion_runs.append((run_start, len(kinds), 6))
             continue
 
         if trace.kind in _BAND_KINDS:

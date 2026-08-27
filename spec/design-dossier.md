@@ -1253,6 +1253,9 @@ host after Rust resolves that domain and aspect. The compact wire result
 remains the centers-only hexbin trace. Constant-style Cartesian native
 lattices compile those centers plus cell pitch onto existing Scene PolyFill
 records; polar, custom reducers, colormaps, and LOD stay compatibility.
+ABI 103 moves that Cartesian hex-cell ring and regular heatmap lattice
+reconstruction into Rust compact authoring so Python and Node pack centers+pitch
+and extent+shape only.
 Constant-style Cartesian heatmap compiles a regular rows x cols lattice onto
 existing Scene Rect records; polar, colormaps, truecolor, irregular
 spacing, and LOD stay compatibility.

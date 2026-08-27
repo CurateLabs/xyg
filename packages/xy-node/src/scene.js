@@ -248,7 +248,7 @@ export function sceneBatchEncode({
   const symbolCodes = asUnsignedArray(symbols, "symbols", 255, Uint8Array);
   const expansionModeCodes = expansionModes == null
     ? new Uint8Array(kindArray.length)
-    : asUnsignedArray(expansionModes, "expansionModes", 4, Uint8Array);
+    : asUnsignedArray(expansionModes, "expansionModes", 6, Uint8Array);
   const fills = new Uint8Array(styles.length * 4);
   const strokes = new Uint8Array(styles.length * 4);
   const widths = new Float64Array(styles.length);
@@ -407,16 +407,6 @@ const POLYFILL_KINDS = new Set(["triangle_mesh"]);
 const HEXBIN_KINDS = new Set(["hexbin"]);
 const HEXBIN_REDUCES = new Set(["count", "mean", "sum"]);
 const HEATMAP_KINDS = new Set(["heatmap"]);
-// Pointy-top hexagon ring as fractions of hex_dx/hex_dy. Same contract as
-// python/xyg/_svg.py HEX_RING and js/src/50_chartview.ts _buildHexbinMark.
-const HEXBIN_RING = [
-  [0, -1 / 3],
-  [0.5, -1 / 6],
-  [0.5, 1 / 6],
-  [0, 1 / 3],
-  [-0.5, 1 / 6],
-  [-0.5, -1 / 6],
-];
 const STROKE_KINDS = new Set(["line", "segments", "errorbar", "stem", "contour", "box_whisker", "box_median"]);
 const SUPPORTED_KINDS = new Set([
   "scatter", "line", "bar", "column", "histogram", "violin", "box",
@@ -742,16 +732,15 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       if (!Number.isFinite(dx) || !Number.isFinite(dy) || dx <= 0 || dy <= 0) {
         throw new RangeError("Scene v12 hexbin requires finite hex_dx/hex_dy cell pitch");
       }
+      const runStart = kinds.length;
       for (let cellIndex = 0; cellIndex < xv.length; cellIndex += 1) {
         const stableId = (BigInt(id) << 32n) | BigInt(cellIndex);
-        const cx = Number(xv[cellIndex]);
-        const cy = Number(yv[cellIndex]);
-        for (const [rx, ry] of HEXBIN_RING) {
-          kinds.push(4); stableIds.push(stableId); styleRefs.push(styleRef);
-          diameter.push(0); symbols.push(0);
-          x0.push(cx + rx * dx); y0.push(cy + ry * dy); x1.push(0); y1.push(0);
-        }
+        kinds.push(4); stableIds.push(stableId); styleRefs.push(styleRef);
+        diameter.push(0); symbols.push(0);
+        x0.push(Number(xv[cellIndex])); y0.push(Number(yv[cellIndex]));
+        x1.push(dx); y1.push(dy);
       }
+      expansionRuns.push([runStart, kinds.length, 5]);
       continue;
     }
 
@@ -791,18 +780,17 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       ) {
         throw new RangeError("Scene v12 heatmap requires a finite increasing cell extent");
       }
-      const dx = (x1Extent - x0Extent) / cols;
-      const dy = (y1Extent - y0Extent) / rows;
-      for (let row = 0; row < rows; row += 1) {
-        for (let col = 0; col < cols; col += 1) {
-          kinds.push(2); stableIds.push(id); styleRefs.push(styleRef);
-          diameter.push(0); symbols.push(0);
-          x0.push(x0Extent + col * dx);
-          y0.push(y0Extent + row * dy);
-          x1.push(x0Extent + (col + 1) * dx);
-          y1.push(y0Extent + (row + 1) * dy);
-        }
-      }
+      const runStart = kinds.length;
+      kinds.push(2, 2);
+      stableIds.push(id, id);
+      styleRefs.push(styleRef, styleRef);
+      diameter.push(rows, cols);
+      symbols.push(0, 0);
+      x0.push(x0Extent, 0);
+      y0.push(y0Extent, 0);
+      x1.push(x1Extent, 0);
+      y1.push(y1Extent, 0);
+      expansionRuns.push([runStart, kinds.length, 6]);
       continue;
     }
 
