@@ -5,6 +5,7 @@ import {
   xySceneTickLabelLayout,
   xyTickWindow,
   xyTickWindowFilter,
+  xyTickFormat,
   xyLegendBoxLayout,
   xyTextBlockMeasure,
   xyTextBlockRotatedExtent,
@@ -445,6 +446,77 @@ export function tickWindowFilter({
     throw new RangeError("tick-window filter exceeded host output limits");
   }
   return Array.from(out.subarray(0, kept));
+}
+
+function tickFormatKind(kind) {
+  if (kind === "category") return 2;
+  if (kind === "time") return 1;
+  return 0;
+}
+
+export function tickFormat({
+  value,
+  step,
+  kind = "linear",
+  scale = null,
+  thetaUnit = null,
+  format = null,
+  categories = [],
+} = {}) {
+  const cats = Array.from(categories ?? [], (item) => String(item));
+  const encoder = new TextEncoder();
+  const encoded = cats.map((item) => encoder.encode(item));
+  const packed = new Uint8Array(encoded.reduce((sum, item) => sum + item.length, 0));
+  let packedOffset = 0;
+  for (const item of encoded) {
+    packed.set(item, packedOffset);
+    packedOffset += item.length;
+  }
+  const lens = new Uint32Array(encoded.map((item) => item.length));
+  const formatBytes = format == null ? new Uint8Array() : encoder.encode(String(format));
+  let out = new Uint8Array(256);
+  let written = xyTickFormat(
+    Number(value),
+    Number(step),
+    tickFormatKind(kind),
+    scale === "log" ? 1 : 0,
+    thetaUnitCode(thetaUnit),
+    formatBytes.length ? u8Ptr(formatBytes) : 0,
+    BigInt(formatBytes.length),
+    BigInt(cats.length),
+    cats.length ? u32Ptr(lens) : 0,
+    packed.length ? u8Ptr(packed) : 0,
+    BigInt(packed.length),
+    u8Ptr(out),
+    BigInt(out.length),
+  );
+  if (written === USIZE_MAX_64) throw new RangeError("invalid tick-format request");
+  let size = Number(written);
+  if (!Number.isSafeInteger(size)) throw new RangeError("tick-format exceeded host output limits");
+  if (size > out.length) {
+    out = new Uint8Array(size);
+    written = xyTickFormat(
+      Number(value),
+      Number(step),
+      tickFormatKind(kind),
+      scale === "log" ? 1 : 0,
+      thetaUnitCode(thetaUnit),
+      formatBytes.length ? u8Ptr(formatBytes) : 0,
+      BigInt(formatBytes.length),
+      BigInt(cats.length),
+      cats.length ? u32Ptr(lens) : 0,
+      packed.length ? u8Ptr(packed) : 0,
+      BigInt(packed.length),
+      u8Ptr(out),
+      BigInt(out.length),
+    );
+    if (written === USIZE_MAX_64) throw new RangeError("invalid tick-format request");
+    size = Number(written);
+    if (!Number.isSafeInteger(size) || size > out.length) {
+      throw new RangeError("tick-format exceeded host output limits");
+    }
+  }
+  return new TextDecoder().decode(out.subarray(0, size));
 }
 
 export function legendBoxLayout({

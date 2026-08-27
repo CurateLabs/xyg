@@ -118,7 +118,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 129;
+pub const ABI_VERSION: u32 = 130;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10418,6 +10418,93 @@ pub unsafe extern "C" fn xyg_tick_window_filter(
     })
 }
 
+fn read_packed_utf8_labels(lens: &[u32], texts: &[u8]) -> Option<Vec<String>> {
+    let mut labels = Vec::with_capacity(lens.len());
+    let mut offset = 0usize;
+    for &len in lens {
+        let len = len as usize;
+        let end = offset.checked_add(len)?;
+        if end > texts.len() {
+            return None;
+        }
+        labels.push(std::str::from_utf8(&texts[offset..end]).ok()?.to_owned());
+        offset = end;
+    }
+    if !lens.is_empty() && offset != texts.len() {
+        return None;
+    }
+    Some(labels)
+}
+
+/// Cartesian compatibility tick-label formatting (ABI 130). `kind` is
+/// `0`=numeric, `1`=time, `2`=category. `scale` is `0`=linear, `1`=log.
+/// `theta_unit` is `0`=none, `1`=degrees, `2`=radians. Category labels are
+/// packed UTF-8 with parallel `category_lens`. Returns the required UTF-8 byte
+/// count, or `usize::MAX` on error. When `out_cap` is sufficient, writes the
+/// label without a trailing NUL.
+///
+/// # Safety
+/// Non-zero `format_len` requires a readable `format` pointer. Category buffers
+/// must cover their declared lengths. When `out_cap` is non-zero, `out` must
+/// address that many writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_tick_format(
+    value: f64,
+    step: f64,
+    kind: u32,
+    scale: u32,
+    theta_unit: u32,
+    format: *const u8,
+    format_len: usize,
+    n_categories: u32,
+    category_lens: *const u32,
+    category_texts: *const u8,
+    category_texts_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if (format_len > 0 && format.is_null())
+        || (out_cap > 0 && out.is_null())
+        || (category_texts_len > 0 && category_texts.is_null())
+    {
+        return usize::MAX;
+    }
+    ffi_guard(usize::MAX, || {
+        let format = if format_len == 0 {
+            None
+        } else {
+            read_utf8(format, format_len)
+        };
+        let category_texts = if category_texts_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(category_texts, category_texts_len)
+        };
+        let category_lens = if n_categories == 0 {
+            &[][..]
+        } else {
+            if category_lens.is_null() {
+                return usize::MAX;
+            }
+            std::slice::from_raw_parts(category_lens, n_categories as usize)
+        };
+        let categories = match read_packed_utf8_labels(category_lens, category_texts) {
+            Some(labels) => labels,
+            None => return usize::MAX,
+        };
+        if !matches!(kind, 0..=2) || !matches!(scale, 0..=1) || !matches!(theta_unit, 0..=2) {
+            return usize::MAX;
+        }
+        let label =
+            scene::format_axis_tick(value, step, kind, scale, theta_unit, format, &categories);
+        let bytes = label.as_bytes();
+        if out_cap >= bytes.len() && !bytes.is_empty() {
+            std::ptr::copy_nonoverlapping(bytes.as_ptr(), out, bytes.len());
+        }
+        bytes.len()
+    })
+}
+
 /// Static legend box packing (ABI 124). `handlelength` / `handletextpad` are
 /// NaN for the 2.0 / 0.8 em defaults; `handleheight` is NaN when unset.
 /// `anchor_len` is 0, 2, or 4. Writes 17 metric slots, `ncols` column
@@ -13622,6 +13709,68 @@ mod tests {
         };
         assert_eq!(n, 5);
         assert_eq!(&out[..n], &[300.0, 330.0, 0.0, 30.0, 60.0]);
+    }
+
+    #[test]
+    fn tick_format_matches_engine_cartesian_labels() {
+        let mut out = [0u8; 64];
+        let n = unsafe {
+            xyg_tick_format(
+                0.25,
+                0.25,
+                0,
+                0,
+                0,
+                std::ptr::null(),
+                0,
+                0,
+                std::ptr::null(),
+                std::ptr::null(),
+                0,
+                out.as_mut_ptr(),
+                out.len(),
+            )
+        };
+        assert_eq!(&out[..n], b"0.25");
+        let format = b"$,.1f ms";
+        let n = unsafe {
+            xyg_tick_format(
+                12_345.678,
+                1.0,
+                0,
+                0,
+                0,
+                format.as_ptr(),
+                format.len(),
+                0,
+                std::ptr::null(),
+                std::ptr::null(),
+                0,
+                out.as_mut_ptr(),
+                out.len(),
+            )
+        };
+        assert_eq!(&out[..n], b"$12,345.7 ms");
+        let lens = [1u32, 1, 1];
+        let texts = b"abc";
+        let n = unsafe {
+            xyg_tick_format(
+                1.0,
+                1.0,
+                2,
+                0,
+                0,
+                std::ptr::null(),
+                0,
+                3,
+                lens.as_ptr(),
+                texts.as_ptr(),
+                texts.len(),
+                out.as_mut_ptr(),
+                out.len(),
+            )
+        };
+        assert_eq!(&out[..n], b"b");
     }
 
     #[test]

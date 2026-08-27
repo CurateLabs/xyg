@@ -22,7 +22,6 @@ import hashlib
 import math
 import re
 from collections.abc import Callable, Sequence
-from datetime import UTC, datetime
 from itertools import pairwise
 from os import PathLike
 from typing import Any, NamedTuple, Optional, cast
@@ -475,194 +474,26 @@ _AXIS_GRID_DASHES = {
 
 
 # ---------------------------------------------------------------------------
-# Compatibility tick text (§16). Rust owns every automatic tick ladder; the
-# remaining helpers format or place Rust-authored and explicitly authored ticks.
+# Compatibility tick text (§16). Rust owns automatic tick ladders (ABI 96) and
+# label formatting (ABI 130); hosts still resolve authored tick_labels.
 # ---------------------------------------------------------------------------
 
 
-_MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-_MONTHS_LONG = (
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-)
-
-
-def _fmt_time(ms: float, step: float) -> str:
-    d = datetime.fromtimestamp(ms / 1e3, tz=UTC)
-    if step >= 28 * _MS["d"]:
-        return str(d.year) if d.month == 1 else f"{_MONTHS[d.month - 1]} {d.year}"
-    if step >= _MS["d"]:
-        return f"{_MONTHS[d.month - 1]} {d.day:02d}"
-    if step >= _MS["m"]:
-        return f"{d.hour:02d}:{d.minute:02d}"
-    if step >= _MS["s"]:
-        return f"{d.hour:02d}:{d.minute:02d}:{d.second:02d}"
-    return f"{d.minute:02d}:{d.second:02d}.{d.microsecond // 1000:03d}"
-
-
-def _fmt_linear(v: float, step: float) -> str:
-    av = abs(v)
-    if av >= 1e6 or (av != 0 and av < 1e-4):
-        return f"{v:.1e}".replace("e+0", "e").replace("e-0", "e-").replace("e+", "e")
-    dec = max(0, int(np.ceil(-np.log10(abs(step))))) if step else 0
-    # A non-nice step (pi/2, 0.3333…) needs enough decimals to keep adjacent
-    # ticks distinct; widen until the step itself round-trips at that precision.
-    while dec < 8 and abs(round(step, dec) - step) > abs(step) / 1000.0:
-        dec += 1
-    # ScalarFormatter uses one precision for the whole tick set. Retaining
-    # those zeros (0.00 beside ±0.25) makes magnitude and spacing legible and
-    # matches Matplotlib's default formatter.
-    return f"{v:.{min(dec, 8)}f}"
-
-
-# `<prefix>(,).N[f|%]<suffix>` — the numeric format grammar of
-# spec/api/styling.md. Deliberately the same regex as `fmtNumberSpec` in
-# js/src/30_ticks.ts: an axis must not read "$1,000,000" in the browser and
-# "1.0e6" in the PNG someone pastes into a report.
-_NUMBER_SPEC = re.compile(r"^([^,.%]*)(,)?\.([0-9]+)(f?)(%?)([^,.%]*)$")
-
-# The client's strftime subset (`fmtTimeSpec`). Kept narrow on purpose: a token
-# Python's strftime knows and the browser's formatter does not would render one
-# way live and another way exported.
-_TIME_SPEC = re.compile(r"%[YmdHMSbB]")
-
-
-def _fmt_number_spec(v: float, spec: Any) -> Optional[str]:
-    """Apply a numeric format string, or None when it does not apply."""
-    if not isinstance(spec, str) or not np.isfinite(v):
-        return None
-    match = _NUMBER_SPEC.match(spec)
-    if match is None:
-        return None
-    prefix, group, digits_text, f, pct, suffix = match.groups()
-    # The bare `.N` core takes no affixes, so the historical grammar parses
-    # identically to how it always did.
-    if not f and not pct and (prefix or suffix):
-        return None
-    digits = int(digits_text)
-    value = v * 100.0 if pct else v
-    text = f"{value:,.{digits}f}" if group else f"{value:.{digits}f}"
-    return f"{prefix}{text}{'%' if pct else ''}{suffix}"
-
-
-def _fmt_time_spec(ms: float, spec: Any) -> Optional[str]:
-    """Apply a strftime-subset format string, or None when it does not apply."""
-    if not isinstance(spec, str) or not np.isfinite(ms):
-        return None
-    try:
-        d = datetime.fromtimestamp(ms / 1e3, tz=UTC)
-    except (OverflowError, OSError, ValueError):
-        return None
-    tokens = {
-        "%Y": str(d.year),
-        "%m": f"{d.month:02d}",
-        "%d": f"{d.day:02d}",
-        "%H": f"{d.hour:02d}",
-        "%M": f"{d.minute:02d}",
-        "%S": f"{d.second:02d}",
-        "%b": _MONTHS[d.month - 1],
-        "%B": _MONTHS_LONG[d.month - 1],
-    }
-    return _TIME_SPEC.sub(lambda m: tokens[m.group(0)], spec)
-
-
 def _fmt_log(v: float) -> str:
-    """Label a log-scale tick from its own magnitude.
-
-    Decade ticks are multiplicative, so the linear formatter's
-    step-derived precision rounds every decade under 1.0 to a bare "0" —
-    0.001 and 0.01 became two identical, wrong labels."""
-    av = abs(v)
-    if av >= 1e6 or (av != 0 and av < 1e-4):
-        return f"{v:.1e}".replace("e+0", "e").replace("e-0", "e-").replace("e+", "e")
-    dec = max(0, int(np.ceil(-np.log10(av)))) if av and av < 1 else 0
-    return f"{v:.{min(dec, 8)}f}"
-
-
-# Everything a formatted number can carry that is not part of its value:
-# the affixes the spec grammar allows ("$", "K", "%") and the group separators.
-_NON_NUMERIC = re.compile(r"[^0-9eE+.\-]")
-
-
-def _collapsed_to_zero(formatted: Optional[str]) -> bool:
-    """Whether a formatted label has lost the value it was meant to show.
-
-    Tests the numeric CORE, not the whole label: the grammar allows prefixes
-    and suffixes, so a `"$,.0f"` axis produces `"$0"` for a sub-unit decade.
-    Comparing the affixed string against zero read `float("$0")`, which raises
-    and took the entire render down with it — and `Number("$0")` on the client
-    is `NaN`, so that side shipped the collapsed label instead. Two different
-    wrong answers from the layer that exists to keep them identical."""
-    if formatted is None:
-        return True
-    core = _NON_NUMERIC.sub("", formatted)
-    if not core:
-        return True
-    try:
-        return float(core) == 0.0
-    except ValueError:
-        return False
-
-
-def _fmt_angle(value: float, unit: str, step: float = 1.0) -> str:
-    """Angular tick text. Mirrors `fmtAngle` in js/src/30_ticks.ts.
-
-    Degrees get a degree sign; radians are written as multiples of pi, because
-    "2.094" is not a readable angle and "2pi/3" is. `step` sets the degree
-    precision: the generated ladder is all integers, but authored fractional
-    tick_values (a 22.5° compass grid) mislabel under a hardcoded step of 1.
-    """
-    if unit == "degrees":
-        return f"{_fmt_linear(value, step or 1.0)}°"
-    if abs(value) < 1e-12:
-        return "0"
-    frac = value / math.pi
-    for denominator in (1, 2, 3, 4, 6, 8, 12):
-        scaled = frac * denominator
-        nearest = round(scaled)
-        # 1e-6, not 1e-9 — mirrors fmtAngle in js/src/30_ticks.ts: hover
-        # values arrive f32-decoded, and pi/2 misses its f64 self by ~2e-8.
-        if nearest and abs(scaled - nearest) < 1e-6:
-            numerator = "" if abs(nearest) == 1 else str(abs(nearest))
-            sign = "-" if nearest < 0 else ""
-            body = f"{sign}{numerator}π"
-            return body if denominator == 1 else f"{body}/{denominator}"
-    return _fmt_linear(value, 0.01)
+    """Colorbar log tick labels — same magnitude policy as axis log ticks."""
+    return _native.tick_format(float(v), 1.0, scale="log")
 
 
 def _fmt_axis(axis: dict[str, Any], v: float, step: float) -> str:
-    # Mirrors the same first branch in `fmtAxis` (js/src/30_ticks.ts).
-    kind = axis.get("kind")
-    if kind == "category":
-        cats = axis.get("categories") or []
-        i = round(v)
-        return str(cats[i]) if 0 <= i < len(cats) else ""
-    if axis.get("theta_unit"):
-        # An authored `format` wins over the angular default. It used to lose:
-        # this branch ran first, so `theta_axis(format="{:.0f} deg")` shipped, was
-        # accepted, and was then overwritten by the built-in degree/radian text in
-        # every renderer. The default only applies when nothing was authored.
-        authored = _fmt_number_spec(v, axis.get("format"))
-        return authored if authored is not None else _fmt_angle(v, axis["theta_unit"], step)
-    if kind == "time":
-        return _fmt_time_spec(v, axis.get("format")) or _fmt_time(v, step)
-    formatted = _fmt_number_spec(v, axis.get("format"))
-    # A fixed-decimal spec collapses sub-unit decades ("0.001" at `.0f`), and so
-    # does the linear fallback; the magnitude-derived label is the useful one
-    # either way. Mirrors `fmtAxis`.
-    if axis.get("scale") == "log" and 0 < v < 1 and _collapsed_to_zero(formatted):
-        return _fmt_log(v)
-    return formatted if formatted is not None else _fmt_linear(v, step)
+    return _native.tick_format(
+        float(v),
+        float(step),
+        kind=axis.get("kind"),
+        scale=axis.get("scale"),
+        theta_unit=axis.get("theta_unit"),
+        format=axis.get("format"),
+        categories=axis.get("categories"),
+    )
 
 
 def _tick_text(axis: dict[str, Any], value: float, step: float) -> str:

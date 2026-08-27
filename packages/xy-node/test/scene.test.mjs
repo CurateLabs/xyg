@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import test from "node:test";
 
-import { axisTicks, tickLabelLayout, tickWindow, tickWindowFilter, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yAxisLeftRoom, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatColorbarExtra, polarLegendRoom, polarLabelRoom, recutPolarPlot, tightLayoutSolve, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
+import { axisTicks, tickFormat, tickLabelLayout, tickWindow, tickWindowFilter, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yAxisLeftRoom, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatColorbarExtra, polarLegendRoom, polarLabelRoom, recutPolarPlot, tightLayoutSolve, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
 import { Figure, sceneRasterCommands, sceneSvg } from "../src/index.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
@@ -1177,6 +1177,15 @@ test("Node consumes Rust-owned authored tick-window filter", () => {
     tickWindow({ rangeLo: 1, rangeHi: 2, thetaUnit: "degrees", kind: "category", nCategories: 4 }),
     [0, 3],
   );
+});
+
+test("Node consumes Rust-owned tick-label formatting", () => {
+  assert.equal(tickFormat({ value: 0.25, step: 0.25 }), "0.25");
+  assert.equal(tickFormat({ value: 1234567.8, step: 1 }), "1.2e6");
+  assert.equal(tickFormat({ value: 0.001, step: 1, scale: "log" }), "0.001");
+  assert.equal(tickFormat({ value: 12345.678, step: 1, format: "$,.1f ms" }), "$12,345.7 ms");
+  assert.equal(tickFormat({ value: 1, step: 1, kind: "category", categories: ["a", "b", "c"] }), "b");
+  assert.equal(tickFormat({ value: Math.PI / 2, step: 1, thetaUnit: "radians" }), "π/2");
 });
 
 test("Node consumes Rust-owned static legend box packing", () => {

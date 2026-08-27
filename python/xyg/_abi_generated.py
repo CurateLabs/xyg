@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 129
-SIGNATURE_SHA256 = "9f57dbba5a871d9cd534f0980e457bfb4788e13cf54ba58ca5832c76c06334c0"
+ABI_VERSION = 130
+SIGNATURE_SHA256 = "9b16b82630f9b3992509632d6048d2975e77ba19b3d27f1000a7388be921fe5d"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -906,6 +906,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_text_block_rotated_extent
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p]
+    # size_t xyg_tick_format(double value, double step, uint32_t kind, uint32_t scale, uint32_t theta_unit, const uint8_t * format, size_t format_len, uint32_t n_categories, const uint32_t * category_lens, const uint8_t * category_texts, size_t category_texts_len, uint8_t * out, size_t out_cap)
+    function = lib.xyg_tick_format
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # size_t xyg_tick_window(double range_lo, double range_hi, uint32_t theta_unit, uint32_t kind, uint32_t n_categories, double sector_lo, double sector_hi, double * out_lo, double * out_hi)
     function = lib.xyg_tick_window
     function.restype = ctypes.c_size_t

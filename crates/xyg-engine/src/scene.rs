@@ -5610,6 +5610,59 @@ pub fn format_time_tick(value: f64, step: f64, format: Option<&str>) -> String {
     }
 }
 
+pub const TICK_FORMAT_KIND_NUMERIC: u32 = 0;
+pub const TICK_FORMAT_KIND_TIME: u32 = 1;
+pub const TICK_FORMAT_KIND_CATEGORY: u32 = 2;
+
+pub const TICK_FORMAT_SCALE_LINEAR: u32 = 0;
+pub const TICK_FORMAT_SCALE_LOG: u32 = 1;
+
+pub const TICK_FORMAT_THETA_NONE: u32 = 0;
+pub const TICK_FORMAT_THETA_DEGREES: u32 = 1;
+pub const TICK_FORMAT_THETA_RADIANS: u32 = 2;
+
+/// Resolve one category tick label from a rounded index.
+pub fn format_category_tick(value: f64, categories: &[String]) -> String {
+    let index = value.round() as i64;
+    if index >= 0 {
+        let index = index as usize;
+        if let Some(label) = categories.get(index) {
+            return label.clone();
+        }
+    }
+    String::new()
+}
+
+/// Format one axis tick label using the same branch order as host `_fmt_axis`
+/// / browser `fmtAxis`: category wins, then angular `theta_unit`, then time,
+/// then numeric with optional log-scale collapse.
+pub fn format_axis_tick(
+    value: f64,
+    step: f64,
+    kind: u32,
+    scale: u32,
+    theta_unit: u32,
+    format: Option<&str>,
+    categories: &[String],
+) -> String {
+    if kind == TICK_FORMAT_KIND_CATEGORY {
+        return format_category_tick(value, categories);
+    }
+    if theta_unit != TICK_FORMAT_THETA_NONE {
+        let degrees = theta_unit == TICK_FORMAT_THETA_DEGREES;
+        return format_angular_tick(value, step, degrees, format);
+    }
+    if kind == TICK_FORMAT_KIND_TIME {
+        return format_time_tick(value, step, format);
+    }
+    let scale_kind = if scale == TICK_FORMAT_SCALE_LOG {
+        ScaleKind::Log
+    } else {
+        ScaleKind::Linear
+    };
+    format_numeric_tick(value, step, scale_kind, format)
+}
+
 /// Compile bounded authored numeric formats into the existing canonical major
 /// positions and `XYTL` labels. Explicit authored labels retain precedence.
 /// Automatic minor positions are materialized too so log grids do not change
@@ -11406,6 +11459,59 @@ mod tests {
             "1970-01-01 00:00:00 Jan January"
         );
         assert_eq!(format_time_tick(-1.0, 1.0, None), "59:59.999");
+    }
+
+    #[test]
+    fn axis_tick_format_matches_host_branch_order() {
+        let cats = ["a", "b", "c"].map(str::to_owned);
+        assert_eq!(
+            format_axis_tick(
+                1.0,
+                1.0,
+                TICK_FORMAT_KIND_CATEGORY,
+                TICK_FORMAT_SCALE_LINEAR,
+                TICK_FORMAT_THETA_DEGREES,
+                None,
+                &cats,
+            ),
+            "b"
+        );
+        assert_eq!(
+            format_axis_tick(
+                std::f64::consts::FRAC_PI_2,
+                1.0,
+                TICK_FORMAT_KIND_NUMERIC,
+                TICK_FORMAT_SCALE_LINEAR,
+                TICK_FORMAT_THETA_RADIANS,
+                None,
+                &[],
+            ),
+            "π/2"
+        );
+        assert_eq!(
+            format_axis_tick(
+                0.001,
+                1.0,
+                TICK_FORMAT_KIND_NUMERIC,
+                TICK_FORMAT_SCALE_LOG,
+                TICK_FORMAT_THETA_NONE,
+                Some("$,.0f"),
+                &[],
+            ),
+            format_numeric_tick(0.001, 1.0, ScaleKind::Log, None)
+        );
+        assert_eq!(
+            format_axis_tick(
+                0.0,
+                86_400_000.0,
+                TICK_FORMAT_KIND_TIME,
+                TICK_FORMAT_SCALE_LINEAR,
+                TICK_FORMAT_THETA_NONE,
+                Some("%Y-%m-%d"),
+                &[],
+            ),
+            "1970-01-01"
+        );
     }
 
     #[test]

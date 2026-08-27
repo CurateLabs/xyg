@@ -2479,6 +2479,69 @@ def tick_window_filter(
     return out[:written].tolist()
 
 
+def _tick_format_kind(axis_kind: str | None) -> int:
+    if axis_kind == "category":
+        return 2
+    if axis_kind == "time":
+        return 1
+    return 0
+
+
+def tick_format(
+    value: float,
+    step: float,
+    *,
+    kind: str | None = "linear",
+    scale: str | None = None,
+    theta_unit: str | None = None,
+    format: str | None = None,
+    categories: Sequence[str] | None = None,
+) -> str:
+    """Cartesian compatibility tick-label formatting via ``xyg_tick_format`` (ABI 130)."""
+    cats = [str(item) for item in categories or ()]
+    lens = (ctypes.c_uint32 * len(cats))(*[len(item.encode("utf-8")) for item in cats])
+    packed = b"".join(item.encode("utf-8") for item in cats)
+    format_bytes = format.encode("utf-8") if isinstance(format, str) else b""
+    out = bytearray(256)
+    written = _lib.xyg_tick_format(
+        float(value),
+        float(step),
+        _tick_format_kind(kind),
+        1 if scale == "log" else 0,
+        _tick_window_theta_unit(theta_unit),
+        format_bytes,
+        len(format_bytes),
+        len(cats),
+        ctypes.cast(lens, ctypes.POINTER(ctypes.c_uint32)) if cats else 0,
+        packed,
+        len(packed),
+        (ctypes.c_char * len(out)).from_buffer(out),
+        len(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid tick-format request")
+    if written > len(out):
+        out = bytearray(written)
+        written = _lib.xyg_tick_format(
+            float(value),
+            float(step),
+            _tick_format_kind(kind),
+            1 if scale == "log" else 0,
+            _tick_window_theta_unit(theta_unit),
+            format_bytes,
+            len(format_bytes),
+            len(cats),
+            ctypes.cast(lens, ctypes.POINTER(ctypes.c_uint32)) if cats else 0,
+            packed,
+            len(packed),
+            (ctypes.c_char * len(out)).from_buffer(out),
+            len(out),
+        )
+        if written == _USIZE_MAX or written > len(out):
+            raise ValueError("invalid tick-format request")
+    return bytes(out[:written]).decode("utf-8")
+
+
 def scene_legend_box_layout(
     *,
     plot: Mapping[str, float],

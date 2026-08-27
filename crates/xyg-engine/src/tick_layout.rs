@@ -4,7 +4,9 @@
 //! raster, and Node cannot drift from ChartView `_layoutTickLabels`. Authored
 //! tick-window resolve/filter (ABI 128) owns linear vs modular angular
 //! containment so seam-crossing polar sectors keep the same spokes as marks.
-//! Hosts still format `_tick_text` and map values to pixels.
+//! Tick-label formatting (ABI 130) owns Cartesian linear/log/time/number-spec
+//! and angular/category defaults via `xyg_tick_format`. Hosts still map values
+//! to pixels and resolve authored `tick_labels`.
 
 use crate::scene::scene_text_advance;
 

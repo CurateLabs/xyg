@@ -952,6 +952,22 @@ def load() -> ctypes.CDLL:
         F64P,
         ctypes.c_size_t,
     ]
+    lib.xyg_tick_format.restype = ctypes.c_size_t
+    lib.xyg_tick_format.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_uint32,
+        ctypes.POINTER(ctypes.c_uint32),
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+    ]
     lib.xyg_hexbin_groups.restype = ctypes.c_size_t
     lib.xyg_hexbin_groups.argtypes = [
         F64P,
@@ -2642,6 +2658,27 @@ def main() -> None:
         6,
     )
     ok(linear_n == 3 and list(linear_out[:3]) == [0.0, 45.0, 90.0], "tick_window linear reject")
+    tick_label = (ctypes.c_char * 32)()
+    tick_fmt = b"$,.1f ms"
+    tick_fmt_n = lib.xyg_tick_format(
+        12345.678,
+        1.0,
+        0,
+        0,
+        0,
+        tick_fmt,
+        len(tick_fmt),
+        0,
+        None,
+        None,
+        0,
+        tick_label,
+        len(tick_label),
+    )
+    ok(
+        tick_fmt_n == len(b"$12,345.7 ms") and tick_label.value == b"$12,345.7 ms",
+        "tick_format number spec",
+    )
     cf_x = array("d", [0.0, 1.0, 2.0, 3.0, 4.0])
     cf_y = array("d", [0.0, 1.0, 0.5, 2.0, 1.5])
     cf_m = array("d", [0.0]) * 5

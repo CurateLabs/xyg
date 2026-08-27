@@ -246,9 +246,13 @@ multiples, and `subplots_adjust` fractions cannot drift. Hosts still
 measure per-panel chrome, suptitle, figure labels, and outside legends.
 ABI 128 moves authored tick-window resolve and filter into Rust: Python
 and Node call `xyg_tick_window` and `xyg_tick_window_filter` so linear
-vs modular angular containment cannot drift. Hosts still format
-`_tick_text`, choose tick families, and map values to pixels. ChartView
-JS `_polarAngularTurn` / `_axisTicks` seam filter stays until WASM.
+vs modular angular containment cannot drift. Hosts still choose tick
+families and map values to pixels. ChartView JS `_polarAngularTurn` /
+`_axisTicks` seam filter stays until WASM.
+ABI 130 moves Cartesian compatibility tick-label formatting into Rust:
+Python and Node call `xyg_tick_format` so linear/log/time/number-spec,
+category, and angular defaults cannot drift. Hosts still resolve
+authored `tick_labels` and polar tick drawing.
 ABI 129 moves Cartesian static-export grid colormap into Rust: Python
 and Node call `xyg_colormap_rgba`, `xyg_colormap_rgba_canonical`, and
 `xyg_density_rgba` (log-u8 density) so `_lut` stop interpolation cannot
