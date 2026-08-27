@@ -143,7 +143,8 @@ option. The compact result remains an ordinary `post` Step and exact mode
 remains `xyg_weighted_ecdf`.
 An omitted composition-histogram bin count now resolves through the existing
 Rust `xyg_histogram_edges(..., auto)` policy in both Python and Node. Explicit
-positive integer bins remain uniform and unchanged; all-nonfinite input retains
+positive integer bins and the empty-finite ten-bin compatibility case use
+`xyg_histogram_mark_edges`; all-nonfinite input retains
 the documented ten-bin `[0, 1]` (or authored-range) compatibility result.
 ABI 101 `xyg_histogram_bins` then counts those resolved or authored edges in
 Rust, applying density and left-to-right cumulative assembly. Rust caps
@@ -157,8 +158,8 @@ change. Both hosts pass raw f64 x/y (and optional C) plus either a scalar
 grid width or an explicit pair; `grid_h == 0` selects matplotlib
 `int(width / √3)` floored at 2, and `use_range == 0` applies the shared
 automatic-domain pad. Finite-pair filtering ignores nonfinite x, y, or C.
-Python custom reducers keep host group reduction after `xyg_hexbin_ingress`
-resolves the same domain and aspect. The compact wire result remains the
+Python custom reducers keep host group reduction after `xyg_hexbin_groups`
+resolves the same domain, aspect, and lattice membership. The compact wire result remains the
 existing centers-only hexbin trace. Constant-style Cartesian native
 count/mean/sum lattices now compile those centers plus `hex_dx`/`hex_dy`
 onto existing Scene v25 PolyFill records (one 6-vertex group per cell).
@@ -177,7 +178,7 @@ ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call
 `xyg_figure_autorange` / `xyg_auto_domain`. Direct-browser WASM compile uses
 the same `auto_domain` degenerate pad instead of a host-local ±0.5 fork.
-Polar hexbin, custom `reduce_C_function`, metric
+Polar hexbin, custom `reduce_C_function` callables (after Rust lattice groups), metric
 colormaps, LOD beyond the 1,024-group painter budget, and rich style
 exceptions remain compatibility routes. ABI 107 makes Scene CSS→RGBA8 and
 per-kind mark style defaults the same way: Python and Node pack `XYMS` v1
@@ -194,7 +195,12 @@ Python and Node pack `XYFS` observations plus axis ids/keys, then call
 `xyg_scene_figure_support_reason`. ABI 118 extends that envelope to v2
 per-trace allowlist flags so kind, hidden/per-item, density, dash, rect
 extras, joined fill, hex reducer, heatmap colormap, and non-CSS fill
-diagnostics cannot drift. ABI 110 makes primary legend framing the same way: Python
+diagnostics cannot drift. ABI 119 moves composition mark ingress into Rust:
+Python and Node call `xyg_argsort_stable`, `xyg_histogram_mark_edges`,
+`xyg_contour_levels`, and `xyg_hexbin_groups` so line/area/error-band sort,
+integer/empty-auto histogram edges, contour isoline spacing, and custom-hex
+lattice membership cannot drift. Custom `reduce_C_function` callables stay
+host-side over those groups. ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
 `xyg_scene_pack_colorbar` with domain/stops/ticks/title.

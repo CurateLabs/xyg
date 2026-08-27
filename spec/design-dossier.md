@@ -1295,6 +1295,12 @@ ABI 118 extends that envelope to per-trace allowlist flags so kind,
 hidden/per-item, density, dash, rect extras, joined fill, hex reducer,
 heatmap colormap, and non-CSS fill diagnostics are engine-owned and
 identical for Python and Node.
+ABI 119 moves composition mark ingress into Rust. Hosts call
+`xyg_argsort_stable`, `xyg_histogram_mark_edges`, `xyg_contour_levels`, and
+`xyg_hexbin_groups`; stable NaN-last sort, integer/empty-auto histogram
+edges, contour isoline spacing, and custom-hex lattice membership are
+engine-owned and identical for Python and Node. Custom reducers stay host
+callables over those groups.
 ABI 110 moves primary Scene legend framing into Rust. Hosts pass loc/flags,
 font sizes, paints, title, and per-entry meta plus labels; XYLG header
 layout, text offsets, and bounded-text rejection are engine-owned and

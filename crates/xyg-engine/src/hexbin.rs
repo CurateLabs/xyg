@@ -41,6 +41,23 @@ pub struct HexbinResult {
     pub dy: f64,
 }
 
+/// Occupied hex cells plus original-index memberships (ABI 119).
+///
+/// `starts[i]` / `lengths[i]` slice `indices` for cell `i`. Members keep
+/// input order within a cell; cells are keep1 then keep2 in increasing
+/// flat index, matching the previous Python `flatnonzero` custom-reduce path.
+#[derive(Clone, Debug, PartialEq)]
+pub struct HexbinGroups {
+    pub centers_x: Vec<f64>,
+    pub centers_y: Vec<f64>,
+    pub counts: Vec<f64>,
+    pub starts: Vec<u32>,
+    pub lengths: Vec<u32>,
+    pub indices: Vec<u32>,
+    pub dx: f64,
+    pub dy: f64,
+}
+
 /// Maximum grid dimension accepted by the ABI (matches the Python mark).
 pub const MAX_GRID: usize = 2048;
 
@@ -201,6 +218,32 @@ pub fn hexbin_with_policy(
     )
 }
 
+/// Resolve ingress, then group original indices by occupied lattice cell.
+#[allow(clippy::too_many_arguments)]
+pub fn hexbin_groups_with_policy(
+    x: &[f64],
+    y: &[f64],
+    c: Option<&[f64]>,
+    grid_w: usize,
+    grid_h: Option<usize>,
+    range: Option<((f64, f64), (f64, f64))>,
+    mincnt: usize,
+) -> Option<HexbinGroups> {
+    let ingress = hexbin_ingress(x, y, c, grid_w, grid_h, range)?;
+    hexbin_groups(
+        x,
+        y,
+        c,
+        ingress.grid_w,
+        ingress.grid_h,
+        ingress.x0,
+        ingress.x1,
+        ingress.y0,
+        ingress.y1,
+        mincnt,
+    )
+}
+
 /// Bin `(x, y)` into a matplotlib-style hex lattice.
 ///
 /// `mincnt` keeps cells with `count >= mincnt`. When `C` is absent the metric
@@ -279,29 +322,22 @@ pub fn hexbin(
         };
         let fx = (xv - x0) * grid_w as f64 / (x1 - x0);
         let fy = (yv - y0) * grid_h as f64 / (y1 - y0);
-        let ix1 = rint(fx);
-        let iy1 = rint(fy);
-        let ix2 = fx.floor() as i64;
-        let iy2 = fy.floor() as i64;
-        let d1 = (fx - ix1 as f64).powi(2) + 3.0 * (fy - iy1 as f64).powi(2);
-        let d2 = (fx - ix2 as f64 - 0.5).powi(2) + 3.0 * (fy - iy2 as f64 - 0.5).powi(2);
-        let use_first = d1 < d2;
-        if use_first {
-            if ix1 >= 0 && iy1 >= 0 && (ix1 as usize) <= grid_w && (iy1 as usize) <= grid_h {
-                let flat = (iy1 as usize) * (grid_w + 1) + (ix1 as usize);
+        match lattice_cell(fx, fy, grid_w, grid_h) {
+            Some((true, flat)) => {
                 count1[flat] += 1;
                 if let Some(v) = cv {
                     sum1[flat] += v;
                 }
                 assigned += 1;
             }
-        } else if ix2 >= 0 && iy2 >= 0 && (ix2 as usize) < grid_w && (iy2 as usize) < grid_h {
-            let flat = (iy2 as usize) * grid_w + (ix2 as usize);
-            count2[flat] += 1;
-            if let Some(v) = cv {
-                sum2[flat] += v;
+            Some((false, flat)) => {
+                count2[flat] += 1;
+                if let Some(v) = cv {
+                    sum2[flat] += v;
+                }
+                assigned += 1;
             }
-            assigned += 1;
+            None => {}
         }
     }
 
@@ -392,11 +428,155 @@ pub fn hexbin(
     })
 }
 
+/// Group original-row indices by occupied hex cell (custom-reduce membership).
+///
+/// Lattice assignment matches [`hexbin`]. `C` when present participates in the
+/// finite-pair filter. Returns `None` on invalid arguments; an empty group
+/// list when every finite point misses the lattice or fails `mincnt`.
+#[allow(clippy::too_many_arguments)]
+pub fn hexbin_groups(
+    x: &[f64],
+    y: &[f64],
+    c: Option<&[f64]>,
+    grid_w: usize,
+    grid_h: usize,
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+    mincnt: usize,
+) -> Option<HexbinGroups> {
+    if x.len() != y.len() || x.len() > u32::MAX as usize {
+        return None;
+    }
+    if let Some(c) = c {
+        if c.len() != x.len() {
+            return None;
+        }
+    }
+    if !(2..=MAX_GRID).contains(&grid_w) || !(2..=MAX_GRID).contains(&grid_h) {
+        return None;
+    }
+    if !(x0.is_finite() && x1.is_finite() && y0.is_finite() && y1.is_finite() && x1 > x0 && y1 > y0)
+    {
+        return None;
+    }
+
+    let dx = (x1 - x0) / grid_w as f64;
+    let dy = (y1 - y0) / grid_h as f64;
+    let n1 = (grid_w + 1) * (grid_h + 1);
+    let n2 = grid_w * grid_h;
+    let mut count1 = vec![0u64; n1];
+    let mut count2 = vec![0u64; n2];
+    let mut members: Vec<(u8, u32, u32)> = Vec::new();
+
+    for i in 0..x.len() {
+        let xv = x[i];
+        let yv = y[i];
+        if !xv.is_finite() || !yv.is_finite() {
+            continue;
+        }
+        if let Some(c) = c {
+            if !c[i].is_finite() {
+                continue;
+            }
+        }
+        let fx = (xv - x0) * grid_w as f64 / (x1 - x0);
+        let fy = (yv - y0) * grid_h as f64 / (y1 - y0);
+        if let Some((first, flat)) = lattice_cell(fx, fy, grid_w, grid_h) {
+            if first {
+                count1[flat] += 1;
+                members.push((0, flat as u32, i as u32));
+            } else {
+                count2[flat] += 1;
+                members.push((1, flat as u32, i as u32));
+            }
+        }
+    }
+
+    let threshold = mincnt as u64;
+    let mut centers_x = Vec::new();
+    let mut centers_y = Vec::new();
+    let mut counts = Vec::new();
+    let mut starts = Vec::new();
+    let mut lengths = Vec::new();
+    let mut indices = Vec::new();
+
+    members.sort_by_key(|&(lattice, flat, index)| (lattice, flat, index));
+    let mut cursor = 0usize;
+    for (lattice, n, grid_w_lat) in [(0u8, n1, grid_w + 1), (1u8, n2, grid_w)] {
+        let counts_lat = if lattice == 0 { &count1 } else { &count2 };
+        for flat in 0..n {
+            let cnt = counts_lat[flat];
+            if cnt < threshold {
+                continue;
+            }
+            let ix = flat % grid_w_lat;
+            let iy = flat / grid_w_lat;
+            if lattice == 0 {
+                centers_x.push(x0 + ix as f64 * dx);
+                centers_y.push(y0 + iy as f64 * dy);
+            } else {
+                centers_x.push(x0 + (ix as f64 + 0.5) * dx);
+                centers_y.push(y0 + (iy as f64 + 0.5) * dy);
+            }
+            counts.push(cnt as f64);
+            let start = indices.len() as u32;
+            while cursor < members.len() {
+                let (ml, mf, idx) = members[cursor];
+                if ml < lattice || (ml == lattice && (mf as usize) < flat) {
+                    cursor += 1;
+                    continue;
+                }
+                if ml != lattice || mf as usize != flat {
+                    break;
+                }
+                indices.push(idx);
+                cursor += 1;
+            }
+            starts.push(start);
+            lengths.push(indices.len() as u32 - start);
+        }
+    }
+
+    Some(HexbinGroups {
+        centers_x,
+        centers_y,
+        counts,
+        starts,
+        lengths,
+        indices,
+        dx,
+        dy,
+    })
+}
+
 /// Capacity needed to hold every cell of both lattices (mincnt = 0).
 pub fn hexbin_capacity(grid_w: usize, grid_h: usize) -> usize {
     (grid_w + 1)
         .saturating_mul(grid_h + 1)
         .saturating_add(grid_w.saturating_mul(grid_h))
+}
+
+/// First lattice (`true`) or offset lattice (`false`) plus the flat cell index.
+fn lattice_cell(fx: f64, fy: f64, grid_w: usize, grid_h: usize) -> Option<(bool, usize)> {
+    let ix1 = rint(fx);
+    let iy1 = rint(fy);
+    let ix2 = fx.floor() as i64;
+    let iy2 = fy.floor() as i64;
+    let d1 = (fx - ix1 as f64).powi(2) + 3.0 * (fy - iy1 as f64).powi(2);
+    let d2 = (fx - ix2 as f64 - 0.5).powi(2) + 3.0 * (fy - iy2 as f64 - 0.5).powi(2);
+    if d1 < d2 {
+        if ix1 >= 0 && iy1 >= 0 && (ix1 as usize) <= grid_w && (iy1 as usize) <= grid_h {
+            Some((true, (iy1 as usize) * (grid_w + 1) + (ix1 as usize)))
+        } else {
+            None
+        }
+    } else if ix2 >= 0 && iy2 >= 0 && (ix2 as usize) < grid_w && (iy2 as usize) < grid_h {
+        Some((false, (iy2 as usize) * grid_w + (ix2 as usize)))
+    } else {
+        None
+    }
 }
 
 /// NumPy/`rint` banker's rounding (ties to even).
@@ -440,6 +620,44 @@ mod tests {
         assert!((r.centers_y[2] - 0.125).abs() < 1e-12);
         assert!((r.centers_x[3] - 0.875).abs() < 1e-12); // offset flat 15 → ix=3,iy=3
         assert!((r.centers_y[3] - 0.875).abs() < 1e-12);
+    }
+
+    #[test]
+    fn groups_match_occupied_cell_order_and_membership() {
+        let x = [0.1, 0.5, 0.9, 0.2];
+        let y = [0.1, 0.5, 0.9, 0.8];
+        let c = [1.0, 2.0, 3.0, 4.0];
+        let r = hexbin(
+            &x,
+            &y,
+            Some(&c),
+            4,
+            4,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            1,
+            HexReduce::Mean,
+        )
+        .unwrap();
+        let g = hexbin_groups(&x, &y, Some(&c), 4, 4, 0.0, 1.0, 0.0, 1.0, 1).unwrap();
+        assert_eq!(g.centers_x, r.centers_x);
+        assert_eq!(g.centers_y, r.centers_y);
+        assert_eq!(g.counts, r.counts);
+        assert_eq!(g.indices.len(), 4);
+        let means: Vec<f64> = g
+            .starts
+            .iter()
+            .zip(g.lengths.iter())
+            .map(|(&start, &len)| {
+                let slice = &g.indices[start as usize..(start + len) as usize];
+                slice.iter().map(|&i| c[i as usize]).sum::<f64>() / len as f64
+            })
+            .collect();
+        for (got, exp) in means.iter().zip(r.metrics.iter()) {
+            assert!((got - exp).abs() < 1e-12);
+        }
     }
 
     #[test]

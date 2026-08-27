@@ -111,7 +111,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 118;
+pub const ABI_VERSION: u32 = 119;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4738,6 +4738,35 @@ pub unsafe extern "C" fn xyg_is_sorted(data: *const f64, len: usize) -> i32 {
     }
     let data = std::slice::from_raw_parts(data, len);
     ffi_guard(0, || i32::from(kernels::is_sorted_f64(data)))
+}
+
+/// Stable argsort for f64 (NaNs last, equal values keep input order). Writes
+/// `len` u32 indices into `out`. Returns `len` on success, or `usize::MAX`
+/// when `data`/`out` is null (for `len > 0`), `capacity < len`, or `len`
+/// exceeds `u32::MAX`. Empty input returns 0.
+///
+/// # Safety
+/// `data` must point to `len` readable f64s (may be null only when `len == 0`).
+/// `out` must hold `capacity` writable u32s when `len > 0`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_argsort_stable(
+    data: *const f64,
+    len: usize,
+    out: *mut u32,
+    capacity: usize,
+) -> usize {
+    if len == 0 {
+        return 0;
+    }
+    if data.is_null() || out.is_null() || capacity < len {
+        return usize::MAX;
+    }
+    let data = std::slice::from_raw_parts(data, len);
+    let Some(order) = ffi_guard(None, || kernels::argsort_stable_f64(data)) else {
+        return usize::MAX;
+    };
+    std::slice::from_raw_parts_mut(out, capacity)[..order.len()].copy_from_slice(&order);
+    order.len()
 }
 
 /// NaN-skipping min/max (autorange primitive). Returns 1 and writes the result,
@@ -10401,7 +10430,89 @@ pub unsafe extern "C" fn xyg_hexbin(
     n
 }
 
-/// Violin density: uniform histogram + fixed `[1,2,3,2,1]` smooth kernel with
+/// Occupied hex-cell memberships for a host custom reducer (ABI 119).
+/// Writes per-cell centers/counts/starts/lengths plus concatenated original
+/// indices. Sets `*out_n_indices` to the membership length. Returns the cell
+/// count, or `usize::MAX` on invalid args / ingress failure / undersized
+/// capacity. Empty occupied output is a successful 0.
+///
+/// # Safety
+/// Non-empty inputs and all out pointers must be valid for the given lengths.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_hexbin_groups(
+    x: *const f64,
+    y: *const f64,
+    c: *const f64,
+    len: usize,
+    grid_w: usize,
+    grid_h: usize,
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+    use_range: i32,
+    mincnt: usize,
+    out_cx: *mut f64,
+    out_cy: *mut f64,
+    out_counts: *mut f64,
+    out_starts: *mut u32,
+    out_lens: *mut u32,
+    cell_capacity: usize,
+    out_indices: *mut u32,
+    index_capacity: usize,
+    out_n_indices: *mut usize,
+    out_dx: *mut f64,
+    out_dy: *mut f64,
+) -> usize {
+    if out_cx.is_null()
+        || out_cy.is_null()
+        || out_counts.is_null()
+        || out_starts.is_null()
+        || out_lens.is_null()
+        || out_indices.is_null()
+        || out_n_indices.is_null()
+        || out_dx.is_null()
+        || out_dy.is_null()
+    {
+        return usize::MAX;
+    }
+    let Some((grid_h, range)) = hexbin_policy_args(grid_h, x0, x1, y0, y1, use_range) else {
+        return usize::MAX;
+    };
+    let Some((xs, ys, cs)) = hexbin_columns(x, y, c, len) else {
+        return usize::MAX;
+    };
+    let result = match ffi_guard(None, || {
+        hexbin::hexbin_groups_with_policy(xs, ys, cs, grid_w, grid_h, range, mincnt)
+    }) {
+        Some(r) => r,
+        None => return usize::MAX,
+    };
+    let n = result.centers_x.len();
+    if n > cell_capacity || result.indices.len() > index_capacity {
+        return usize::MAX;
+    }
+    *out_dx = result.dx;
+    *out_dy = result.dy;
+    *out_n_indices = result.indices.len();
+    if n > 0 {
+        std::slice::from_raw_parts_mut(out_cx, cell_capacity)[..n]
+            .copy_from_slice(&result.centers_x);
+        std::slice::from_raw_parts_mut(out_cy, cell_capacity)[..n]
+            .copy_from_slice(&result.centers_y);
+        std::slice::from_raw_parts_mut(out_counts, cell_capacity)[..n]
+            .copy_from_slice(&result.counts);
+        std::slice::from_raw_parts_mut(out_starts, cell_capacity)[..n]
+            .copy_from_slice(&result.starts);
+        std::slice::from_raw_parts_mut(out_lens, cell_capacity)[..n]
+            .copy_from_slice(&result.lengths);
+    }
+    if !result.indices.is_empty() {
+        std::slice::from_raw_parts_mut(out_indices, index_capacity)[..result.indices.len()]
+            .copy_from_slice(&result.indices);
+    }
+    n
+}
 /// coverage normalization. Writes `n_bins + 1` edges and `n_bins` density
 /// values. Returns 1 on success, 0 when there is no finite sample or args are
 /// invalid (`n_bins` outside `4..=1024`, null outs).
@@ -10569,6 +10680,90 @@ pub unsafe extern "C" fn xyg_histogram_edges(
     }
     std::slice::from_raw_parts_mut(out_edges, capacity)[..edges.len()].copy_from_slice(&edges);
     edges.len()
+}
+
+/// Composition histogram edges (ABI 119). `method` is 0=auto, 1=sturges,
+/// 2=uniform (`n_bins`). Empty finite auto/sturges write 10 bins over the
+/// authored range or `[0, 1]`; integer bins use `xyg_auto_domain` when
+/// `use_range` is 0. Returns the number of edges written, or `usize::MAX`.
+///
+/// # Safety
+/// `out_edges` must hold `capacity` writable f64s and be non-null. Non-empty
+/// `data` must be valid for `len` readable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_histogram_mark_edges(
+    data: *const f64,
+    len: usize,
+    lo: f64,
+    hi: f64,
+    use_range: i32,
+    method: i32,
+    n_bins: usize,
+    out_edges: *mut f64,
+    capacity: usize,
+) -> usize {
+    let Some(method) = stats::HistogramMarkMethod::from_i32(method) else {
+        return usize::MAX;
+    };
+    if out_edges.is_null() || capacity == 0 || !matches!(use_range, 0 | 1) {
+        return usize::MAX;
+    }
+    let data = if len == 0 {
+        &[][..]
+    } else {
+        if data.is_null() {
+            return usize::MAX;
+        }
+        std::slice::from_raw_parts(data, len)
+    };
+    let range = if use_range != 0 { Some((lo, hi)) } else { None };
+    let Some(edges) = ffi_guard(None, || {
+        stats::histogram_mark_edges(data, range, method, n_bins)
+    }) else {
+        return usize::MAX;
+    };
+    if edges.len() > capacity {
+        return usize::MAX;
+    }
+    std::slice::from_raw_parts_mut(out_edges, capacity)[..edges.len()].copy_from_slice(&edges);
+    edges.len()
+}
+
+/// Composition contour isolines (ABI 119). `n_levels > 0` spaces interior
+/// samples across `auto_domain` of finite `data`; `n_levels == 0` sorts the
+/// authored levels in `data` (1..=256, all finite). Returns the count written,
+/// or `usize::MAX`.
+///
+/// # Safety
+/// `out` must hold `capacity` writable f64s. Non-empty `data` must be valid
+/// for `len` readable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_contour_levels(
+    data: *const f64,
+    len: usize,
+    n_levels: usize,
+    out: *mut f64,
+    capacity: usize,
+) -> usize {
+    if out.is_null() || capacity == 0 {
+        return usize::MAX;
+    }
+    let data = if len == 0 {
+        &[][..]
+    } else {
+        if data.is_null() {
+            return usize::MAX;
+        }
+        std::slice::from_raw_parts(data, len)
+    };
+    let Some(levels) = ffi_guard(None, || stats::contour_levels(data, n_levels)) else {
+        return usize::MAX;
+    };
+    if levels.len() > capacity {
+        return usize::MAX;
+    }
+    std::slice::from_raw_parts_mut(out, capacity)[..levels.len()].copy_from_slice(&levels);
+    levels.len()
 }
 
 /// Wind-rose directional/speed binning. When `n_speed_edges == 0`, quartile
@@ -11360,6 +11555,96 @@ mod tests {
             },
             usize::MAX
         );
+    }
+
+    #[test]
+    fn argsort_histogram_contour_and_hex_groups_ffi() {
+        let data = [3.0, 1.0, f64::NAN, 1.0, 2.0];
+        let mut order = vec![99u32; 5];
+        assert_eq!(
+            unsafe {
+                xyg_argsort_stable(data.as_ptr(), data.len(), order.as_mut_ptr(), order.len())
+            },
+            5
+        );
+        assert_eq!(order, vec![1, 3, 4, 0, 2]);
+        assert_eq!(
+            unsafe { xyg_argsort_stable(std::ptr::null(), 0, std::ptr::null_mut(), 0) },
+            0
+        );
+
+        let empty: [f64; 0] = [];
+        let mut edges = vec![0.0; 16];
+        assert_eq!(
+            unsafe {
+                xyg_histogram_mark_edges(
+                    empty.as_ptr(),
+                    0,
+                    0.0,
+                    0.0,
+                    0,
+                    0,
+                    0,
+                    edges.as_mut_ptr(),
+                    edges.len(),
+                )
+            },
+            11
+        );
+        assert_eq!((edges[0], edges[10]), (0.0, 1.0));
+
+        let z = [0.0, 10.0];
+        let mut levels = vec![0.0; 8];
+        assert_eq!(
+            unsafe {
+                xyg_contour_levels(z.as_ptr(), z.len(), 3, levels.as_mut_ptr(), levels.len())
+            },
+            3
+        );
+        assert!((levels[1] - 5.0).abs() < 1e-12);
+
+        let hx_x = [0.1, 0.5, 0.9, 0.2];
+        let hx_y = [0.1, 0.5, 0.9, 0.8];
+        let cap = hexbin::hexbin_capacity(4, 4);
+        let mut cx = vec![0.0; cap];
+        let mut cy = vec![0.0; cap];
+        let mut counts = vec![0.0; cap];
+        let mut starts = vec![0u32; cap];
+        let mut lens = vec![0u32; cap];
+        let mut indices = vec![0u32; hx_x.len()];
+        let mut n_indices = 0usize;
+        let mut dx = 0.0;
+        let mut dy = 0.0;
+        let n = unsafe {
+            xyg_hexbin_groups(
+                hx_x.as_ptr(),
+                hx_y.as_ptr(),
+                std::ptr::null(),
+                hx_x.len(),
+                4,
+                4,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                1,
+                1,
+                cx.as_mut_ptr(),
+                cy.as_mut_ptr(),
+                counts.as_mut_ptr(),
+                starts.as_mut_ptr(),
+                lens.as_mut_ptr(),
+                cap,
+                indices.as_mut_ptr(),
+                indices.len(),
+                &mut n_indices,
+                &mut dx,
+                &mut dy,
+            )
+        };
+        assert_eq!(n, 4);
+        assert_eq!(n_indices, 4);
+        assert_eq!(lens.iter().take(4).map(|&v| v as usize).sum::<usize>(), 4);
     }
 
     #[test]

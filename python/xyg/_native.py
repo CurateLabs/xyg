@@ -3375,6 +3375,19 @@ def is_sorted(data: npt.NDArray[np.float64]) -> bool:
     return bool(_lib.xyg_is_sorted(_ptr_f64(data), len(data)))
 
 
+def argsort_stable(data: npt.NDArray[np.float64]) -> npt.NDArray[np.uint32]:
+    """Stable argsort (NaNs last) matching ``np.argsort(..., kind="stable")``."""
+    data = _as_f64(data, "data")
+    n = len(data)
+    if n == 0:
+        return np.empty(0, dtype=np.uint32)
+    out = np.empty(n, dtype=np.uint32)
+    written = _lib.xyg_argsort_stable(_ptr_f64(data), n, out.ctypes.data, n)
+    if written != n:
+        raise ValueError("invalid argsort_stable arguments")
+    return out
+
+
 def min_max(data: npt.NDArray[np.float64]) -> Optional[tuple[float, float]]:
     """NaN-skipping min/max; None for empty/all-NaN input."""
     data = _as_f64(data, "data")
@@ -7077,6 +7090,92 @@ def hexbin(
     )
 
 
+def hexbin_groups(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    *,
+    gridsize: int | tuple[int, int],
+    range: tuple[tuple[float, float], tuple[float, float]] | None = None,
+    mincnt: int = 0,
+    C: npt.NDArray[np.float64] | None = None,
+) -> tuple[
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.uint32],
+    npt.NDArray[np.uint32],
+    npt.NDArray[np.uint32],
+    float,
+    float,
+]:
+    """Occupied hex-cell memberships via ``xyg_hexbin_groups``.
+
+    Returns ``(centers_x, centers_y, counts, starts, lengths, indices, dx, dy)``.
+    ``indices[starts[i]:starts[i]+lengths[i]]`` are original-row ids for cell
+    ``i``. Hosts apply a custom reducer to ``C[indices[...]]``.
+    """
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("hexbin x and y must have equal length")
+    w, h, x0, x1, y0, y1, use_range = _hexbin_grid_and_range(gridsize, range)
+    if mincnt < 0:
+        raise ValueError("hexbin mincnt must be nonnegative")
+    c_arr = None if C is None else _as_f64(C, "C")
+    if c_arr is not None and len(c_arr) != len(x):
+        raise ValueError("hexbin C must have the same length as x and y")
+    h_cap = w if h == 0 else h
+    cell_capacity = (w + 1) * (h_cap + 1) + w * h_cap
+    out_cx = np.empty(cell_capacity, dtype=np.float64)
+    out_cy = np.empty(cell_capacity, dtype=np.float64)
+    out_counts = np.empty(cell_capacity, dtype=np.float64)
+    out_starts = np.empty(cell_capacity, dtype=np.uint32)
+    out_lens = np.empty(cell_capacity, dtype=np.uint32)
+    out_indices = np.empty(len(x), dtype=np.uint32)
+    n_indices = ctypes.c_size_t()
+    dx = ctypes.c_double()
+    dy = ctypes.c_double()
+    written = _lib.xyg_hexbin_groups(
+        _ptr_f64(x),
+        _ptr_f64(y),
+        0 if c_arr is None else _ptr_f64(c_arr),
+        len(x),
+        w,
+        h,
+        x0,
+        x1,
+        y0,
+        y1,
+        use_range,
+        int(mincnt),
+        _ptr_f64(out_cx),
+        _ptr_f64(out_cy),
+        _ptr_f64(out_counts),
+        out_starts.ctypes.data,
+        out_lens.ctypes.data,
+        cell_capacity,
+        out_indices.ctypes.data,
+        len(out_indices),
+        ctypes.byref(n_indices),
+        ctypes.byref(dx),
+        ctypes.byref(dy),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("hexbin x and y must contain at least one finite pair")
+    n = int(written)
+    n_idx = int(n_indices.value)
+    return (
+        out_cx[:n].copy(),
+        out_cy[:n].copy(),
+        out_counts[:n].copy(),
+        out_starts[:n].copy(),
+        out_lens[:n].copy(),
+        out_indices[:n_idx].copy(),
+        float(dx.value),
+        float(dy.value),
+    )
+
+
 def violin_density(
     data: npt.NDArray[np.float64],
     n_bins: int,
@@ -7223,6 +7322,78 @@ def histogram_edges(
     )
     if written == _USIZE_MAX:
         raise ValueError("invalid histogram_edges arguments")
+    return out[: int(written)].copy()
+
+
+def histogram_mark_edges(
+    data: npt.NDArray[np.float64],
+    *,
+    range: tuple[float, float] | None = None,
+    method: str = "auto",
+    n_bins: int = 0,
+) -> npt.NDArray[np.float64]:
+    """Composition histogram edges via ``xyg_histogram_mark_edges``.
+
+    ``method`` is ``"auto"``, ``"sturges"``, or ``"uniform"``. Empty finite
+    auto/sturges use ten bins over ``range`` or ``[0, 1]``; uniform bins use
+    the authored range or Rust ``auto_domain``.
+    """
+    data = _as_f64(data, "data")
+    key = str(method).strip().lower()
+    method_map = {"auto": 0, "sturges": 1, "uniform": 2}
+    if key not in method_map:
+        raise ValueError("histogram_mark_edges method must be 'auto', 'sturges', or 'uniform'")
+    if range is None:
+        use_range = 0
+        lo = hi = 0.0
+    else:
+        use_range = 1
+        lo, hi = _finite_increasing(range[0], range[1], "histogram range")
+    n_bins = int(n_bins)
+    if n_bins < 0:
+        raise ValueError("histogram bins must be positive")
+    capacity = 10_001
+    out = np.empty(capacity, dtype=np.float64)
+    written = _lib.xyg_histogram_mark_edges(
+        _ptr_f64(data),
+        len(data),
+        lo,
+        hi,
+        use_range,
+        method_map[key],
+        n_bins,
+        _ptr_f64(out),
+        capacity,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid histogram_mark_edges arguments")
+    return out[: int(written)].copy()
+
+
+def contour_levels(
+    data: npt.NDArray[np.float64],
+    n_levels: int = 0,
+) -> npt.NDArray[np.float64]:
+    """Composition contour isolines via ``xyg_contour_levels``.
+
+    ``n_levels > 0`` spaces interior samples across ``auto_domain`` of finite
+    ``data``. ``n_levels == 0`` sorts ``data`` as authored levels.
+    """
+    data = _as_f64(data, "data")
+    n_levels = int(n_levels)
+    if n_levels < 0:
+        raise ValueError("contour levels must be between 1 and 256")
+    capacity = 256
+    out = np.empty(capacity, dtype=np.float64)
+    written = _lib.xyg_contour_levels(
+        _ptr_f64(data),
+        len(data),
+        n_levels,
+        _ptr_f64(out),
+        capacity,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid contour_levels arguments")
     return out[: int(written)].copy()
 
 

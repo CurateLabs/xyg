@@ -11,6 +11,7 @@
 //!   first/min/max/last — provably pixel-accurate for a rasterized line (Jugel et
 //!   al., VLDB 2014). NaN-aware: buckets never span invalid values silently (§19).
 
+use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap};
 
 const MAX_ROW_THREADS: usize = 18;
@@ -5834,6 +5835,30 @@ pub fn is_sorted_f64(data: &[f64]) -> bool {
     is_sorted_f64_impl(data, par_threads(data.len()))
 }
 
+/// NumPy `argsort(..., kind="stable")` for f64: NaNs last, `-0.0 == 0.0`,
+/// equal values (including NaNs) keep input order. Returns `None` when
+/// `len > u32::MAX` so the C ABI can reject before wrapping indices.
+pub fn argsort_stable_f64(data: &[f64]) -> Option<Vec<u32>> {
+    if data.len() > u32::MAX as usize {
+        return None;
+    }
+    let mut indices: Vec<u32> = (0..data.len() as u32).collect();
+    indices.sort_by(|&i, &j| {
+        let a = data[i as usize];
+        let b = data[j as usize];
+        match (a.is_nan(), b.is_nan()) {
+            (true, true) => i.cmp(&j),
+            (true, false) => Ordering::Greater,
+            (false, true) => Ordering::Less,
+            (false, false) => match a.partial_cmp(&b) {
+                Some(Ordering::Equal) | None => i.cmp(&j),
+                Some(ord) => ord,
+            },
+        }
+    });
+    Some(indices)
+}
+
 fn is_sorted_f64_impl(data: &[f64], threads: usize) -> bool {
     let n = data.len();
     if threads <= 1 || n < threads * 2 {
@@ -8049,5 +8074,17 @@ mod fuzz {
         assert!(!is_sorted_f64(&[1.0, 2.0, f64::NAN]));
         assert!(!is_sorted_f64(&[f64::NAN, 1.0, 2.0]));
         assert!(!is_sorted_f64(&[0.0, 1.0, 5.0, 4.0, 9.0]));
+    }
+
+    #[test]
+    fn argsort_stable_places_nans_last_and_keeps_ties() {
+        assert_eq!(argsort_stable_f64(&[]), Some(Vec::new()));
+        assert_eq!(argsort_stable_f64(&[3.0]), Some(vec![0]));
+        let order = argsort_stable_f64(&[3.0, 1.0, f64::NAN, 1.0, 2.0]).unwrap();
+        assert_eq!(order, vec![1, 3, 4, 0, 2]);
+        let signed_zero = argsort_stable_f64(&[-0.0, 0.0, 1.0]).unwrap();
+        assert_eq!(signed_zero, vec![0, 1, 2]);
+        let nans = argsort_stable_f64(&[f64::NAN, 0.0, f64::NAN]).unwrap();
+        assert_eq!(nans, vec![1, 0, 2]);
     }
 }

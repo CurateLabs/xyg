@@ -1056,7 +1056,9 @@ from packed scalars plus axis domains. ABI 117 does not change Scene records eit
 `xyg_scene_figure_support_reason` owns figure-compile support from packed
 observations plus axis ids/keys. ABI 118 does not change Scene records either;
 `XYFS` v2 adds per-trace allowlist flags so kind and mark-feature diagnostics
-are engine-owned. ABI 110 does not change Scene records either;
+are engine-owned. ABI 119 does not change Scene records either; composition
+sort, histogram/contour edge policy, and custom-hex lattice groups are
+engine-owned before Scene packing. ABI 110 does not change Scene records either;
 `xyg_scene_pack_legend` owns primary XYLG legend framing from loc/flags,
 paints, title, and entry meta. ABI 111 does not change Scene records either;
 `xyg_scene_pack_colorbar` owns primary XYCB v2 framing from domain, stops,

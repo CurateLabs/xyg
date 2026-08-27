@@ -1,12 +1,13 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 118;
-export const SIGNATURE_SHA256 = "7e6c44e56bb0c359535e00471862bee7dd1b5896e9147771da9a9330c777e50a";
+export const ABI_VERSION = 119;
+export const SIGNATURE_SHA256 = "fb1b824d8b7fae8ce5d9f88ee7bd9d93aeb9765ad1c890c92c6d33813b36d235";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
 }
 
+export let xyArgsortStable;
 export let xyAutoDomain;
 export let xyBarStack;
 export let xyBin2d;
@@ -25,6 +26,7 @@ export let xyChunkedColumnsOverview;
 export let xyChunkedColumnsRead;
 export let xyChunkedColumnsReadPage;
 export let xyChunkedColumnsRows;
+export let xyContourLevels;
 export let xyContourfBands;
 export let xyContourfDensify;
 export let xyCorrelation;
@@ -76,10 +78,12 @@ export let xyGraphSemanticStyleResolve;
 export let xyGraphVisualStateResolve;
 export let xyHeatmapRgba;
 export let xyHexbin;
+export let xyHexbinGroups;
 export let xyHexbinIngress;
 export let xyHistogram2d;
 export let xyHistogramBins;
 export let xyHistogramEdges;
+export let xyHistogramMarkEdges;
 export let xyHistogramUniform;
 export let xyIndexedTriangles;
 export let xyIsSorted;
@@ -218,6 +222,7 @@ export let xyZoneMaps;
 export let xyZoneMapsPair;
 
 export function bindGeneratedAbi(lib) {
+  xyArgsortStable = lib.func("size_t xyg_argsort_stable(const double * data, size_t len, uint32_t * out, size_t capacity)");
   xyAutoDomain = lib.func("int32_t xyg_auto_domain(uint32_t has_bounds, double lo, double hi, double * out_lo, double * out_hi)");
   xyBarStack = lib.func("int32_t xyg_bar_stack(const double * pos, size_t n_items, const double * values, size_t n_series, const double * width, size_t width_len, const double * base, size_t base_len, uint32_t mode, uint32_t orientation, double * out_x0, double * out_x1, double * out_y0, double * out_y1)");
   xyBin2d = lib.func("int32_t xyg_bin_2d(const double * x, const double * y, size_t len, double x0, double x1, double y0, double y1, size_t w, size_t h, float * out)");
@@ -236,6 +241,7 @@ export function bindGeneratedAbi(lib) {
   xyChunkedColumnsRead = lib.func("size_t xyg_chunked_columns_read(uint64_t store, double x0, double x1, double y0, double y1, int32_t use_y, uint64_t budget_bytes, uint64_t generation, double * out_x, double * out_y, size_t capacity, uint64_t * out_stats)");
   xyChunkedColumnsReadPage = lib.func("size_t xyg_chunked_columns_read_page(uint64_t store, double x0, double x1, double y0, double y1, int32_t use_y, uint64_t budget_bytes, uint64_t generation, uint32_t cursor, double * out_x, double * out_y, size_t capacity, uint64_t * out_stats)");
   xyChunkedColumnsRows = lib.func("uint64_t xyg_chunked_columns_rows(uint64_t store)");
+  xyContourLevels = lib.func("size_t xyg_contour_levels(const double * data, size_t len, size_t n_levels, double * out, size_t capacity)");
   xyContourfBands = lib.func("size_t xyg_contourf_bands(const double * z, size_t rows, size_t cols, const double * xpos, const double * ypos, const double * edges, size_t n_edges, uint8_t extend_min, uint8_t extend_max, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, int64_t * out_slots, size_t capacity)");
   xyContourfDensify = lib.func("int32_t xyg_contourf_densify(const double * z, size_t rows, size_t cols, const double * xpos, const double * ypos, double * out_z, double * out_x, double * out_y, size_t out_z_cap, size_t out_x_cap, size_t out_y_cap, size_t * out_rows, size_t * out_cols)");
   xyCorrelation = lib.func("int32_t xyg_correlation(const double * x, const double * y, size_t len, size_t max_lag, int32_t normalize, double * out_lag, double * out_correlation)");
@@ -287,10 +293,12 @@ export function bindGeneratedAbi(lib) {
   xyGraphVisualStateResolve = lib.func("int32_t xyg_graph_visual_state_resolve(uint64_t n, const uint32_t * flags, uint8_t * out)");
   xyHeatmapRgba = lib.func("int32_t xyg_heatmap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)");
   xyHexbin = lib.func("size_t xyg_hexbin(const double * x, const double * y, const double * c, size_t len, size_t grid_w, size_t grid_h, double x0, double x1, double y0, double y1, int32_t use_range, size_t mincnt, int32_t reduce, double * out_cx, double * out_cy, double * out_metric, double * out_counts, size_t capacity, double * out_dx, double * out_dy)");
+  xyHexbinGroups = lib.func("size_t xyg_hexbin_groups(const double * x, const double * y, const double * c, size_t len, size_t grid_w, size_t grid_h, double x0, double x1, double y0, double y1, int32_t use_range, size_t mincnt, double * out_cx, double * out_cy, double * out_counts, uint32_t * out_starts, uint32_t * out_lens, size_t cell_capacity, uint32_t * out_indices, size_t index_capacity, size_t * out_n_indices, double * out_dx, double * out_dy)");
   xyHexbinIngress = lib.func("int32_t xyg_hexbin_ingress(const double * x, const double * y, const double * c, size_t len, size_t grid_w, size_t grid_h, double x0, double x1, double y0, double y1, int32_t use_range, double * out_x0, double * out_x1, double * out_y0, double * out_y1, size_t * out_grid_w, size_t * out_grid_h)");
   xyHistogram2d = lib.func("int32_t xyg_histogram2d(const double * x, const double * y, const double * weights, size_t len, const double * x_edges, size_t x_edge_len, const double * y_edges, size_t y_edge_len, double * out)");
   xyHistogramBins = lib.func("size_t xyg_histogram_bins(const double * values, size_t len, const double * edges, size_t edge_len, int32_t density, int32_t cumulative, double * out_counts)");
   xyHistogramEdges = lib.func("size_t xyg_histogram_edges(const double * data, size_t len, double lo, double hi, int32_t use_range, int32_t method, double * out_edges, size_t capacity)");
+  xyHistogramMarkEdges = lib.func("size_t xyg_histogram_mark_edges(const double * data, size_t len, double lo, double hi, int32_t use_range, int32_t method, size_t n_bins, double * out_edges, size_t capacity)");
   xyHistogramUniform = lib.func("size_t xyg_histogram_uniform(const double * data, size_t len, double lo, double hi, size_t n_bins, int32_t density, double * out_counts)");
   xyIndexedTriangles = lib.func("size_t xyg_indexed_triangles(const double * x, const double * y, size_t vertex_count, const int64_t * triangles, size_t face_count, const double * values, size_t value_len, uint32_t value_mode, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, double * out_values)");
   xyIsSorted = lib.func("int32_t xyg_is_sorted(const double * data, size_t len)");

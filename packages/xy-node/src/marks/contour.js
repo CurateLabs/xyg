@@ -2,7 +2,7 @@
  * Contour isolines — marching-squares segments matching Python `marks.contour`.
  */
 
-import { asF64Array, marchingSquares, minMax } from "../encode.js";
+import { asF64Array, contourLevels, marchingSquares } from "../encode.js";
 
 const MAX_CONTOUR_WORK = 4_000_000;
 
@@ -62,31 +62,14 @@ function resolveLevels(levels, finiteZ) {
     if (nLevels <= 0 || nLevels > 256) {
       throw new RangeError("contour levels must be between 1 and 256");
     }
-    const mm = minMax(finiteZ) ?? [0, 1];
-    let lo = mm[0];
-    let hi = mm[1];
-    if (lo === hi) {
-      lo -= 0.5;
-      hi += 0.5;
-    }
-    const out = new Float64Array(nLevels);
-    for (let i = 0; i < nLevels; i += 1) {
-      out[i] = lo + ((hi - lo) * (i + 1)) / (nLevels + 1);
-    }
-    return out;
+    return Float64Array.from(contourLevels(finiteZ, nLevels));
   }
   const arr = asF64Array(levels, "levels");
-  if (arr.length === 0 || arr.length > 256) {
+  try {
+    return Float64Array.from(contourLevels(arr, 0));
+  } catch {
     throw new RangeError("contour levels must contain 1 to 256 finite values");
   }
-  for (let i = 0; i < arr.length; i += 1) {
-    if (!Number.isFinite(arr[i])) {
-      throw new RangeError("contour levels must contain 1 to 256 finite values");
-    }
-  }
-  const sorted = Float64Array.from(arr);
-  sorted.sort();
-  return sorted;
 }
 
 /**

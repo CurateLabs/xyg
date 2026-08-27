@@ -1453,7 +1453,7 @@ def line(
             # a NaN fails its pairs, so a NaN-carrying x cannot skip the sort
             # and violate M4's sorted precondition.
             # argsort places NaNs last, where the m4 window excludes them.
-            order = np.argsort(xc.values, kind="stable")
+            order = kernels.argsort_stable(xc.values)
             xc = self.store.ingest(xc.values[order])
             yc = self.store.ingest(yc.values[order])
         style: dict[str, Any] = {"color": color, "width": width, "opacity": opacity}
@@ -1536,7 +1536,7 @@ def area(
         if len(bc) != len(xc):
             raise ValueError(f"area base must have length {len(xc)}, got {len(bc)}")
         if self.coords != "polar" and not kernels.is_sorted(xc.values):
-            order = np.argsort(xc.values, kind="stable")
+            order = kernels.argsort_stable(xc.values)
             xc = self.store.ingest(xc.values[order])
             yc = self.store.ingest(yc.values[order])
             bc = self.store.ingest(bc.values[order])
@@ -1613,7 +1613,7 @@ def error_band(
         if len(uc) != len(xc):
             raise ValueError(f"error_band upper must have length {len(xc)}, got {len(uc)}")
         if self.coords != "polar" and not kernels.is_sorted(xc.values):
-            order = np.argsort(xc.values, kind="stable")
+            order = kernels.argsort_stable(xc.values)
             xc = self.store.ingest(xc.values[order])
             lc = self.store.ingest(lc.values[order])
             uc = self.store.ingest(uc.values[order])
@@ -2196,15 +2196,6 @@ def scatter(
         raise
 
 
-def _uniform_histogram_edges(lo: float, hi: float, n_bins: int) -> np.ndarray:
-    """Pack the same closed-last-bin uniform edges Rust counts against."""
-    width = (hi - lo) / n_bins
-    edges = np.empty(n_bins + 1, dtype=np.float64)
-    edges[:-1] = lo + np.arange(n_bins, dtype=np.float64) * width
-    edges[-1] = hi
-    return edges
-
-
 def histogram(
     self: "Figure",
     values: ArrayLike,
@@ -2247,26 +2238,24 @@ def histogram(
         n_bins = int(bins)
         if n_bins <= 0:
             raise ValueError("histogram bins must be positive")
-        if hist_range is None:
-            lo, hi = self._auto_domain(kernels.min_max(vals))
-        else:
-            lo, hi = hist_range
-        edges = _uniform_histogram_edges(lo, hi, n_bins)
+        try:
+            edges = kernels.histogram_mark_edges(
+                vals, range=hist_range, method="uniform", n_bins=n_bins
+            )
+        except ValueError as exc:
+            raise ValueError("histogram could not produce finite bins") from exc
     elif isinstance(bins, str) and bins.lower() in {"auto", "sturges"}:
-        # Empty finite + estimator strings historically used 10 bins over the
-        # resolved range (or [0, 1]); keep that host policy. Non-empty data
-        # uses Rust edges matching NumPy `bins="auto"` / `"sturges"`.
-        finite = vals[np.isfinite(vals)]
-        if len(finite) == 0:
-            lo, hi = (0.0, 1.0) if hist_range is None else hist_range
-            edges = _uniform_histogram_edges(lo, hi, 10)
-        else:
-            edges = kernels.histogram_edges(vals, range=hist_range, method=bins.lower())
+        try:
+            edges = kernels.histogram_mark_edges(vals, range=hist_range, method=bins.lower())
+        except ValueError as exc:
+            raise ValueError("invalid histogram_edges arguments") from exc
     else:
         finite = vals[np.isfinite(vals)]
         if len(finite) == 0 and isinstance(bins, str):
-            lo, hi = (0.0, 1.0) if hist_range is None else hist_range
-            edges = _uniform_histogram_edges(lo, hi, 10)
+            try:
+                edges = kernels.histogram_mark_edges(vals, range=hist_range, method="auto")
+            except ValueError as exc:
+                raise ValueError("histogram could not produce finite bins") from exc
         else:
             edges = np.asarray(bins, dtype=np.float64)
             if edges.ndim != 1 or edges.size < 2:
@@ -2606,12 +2595,13 @@ def hexbin(
     """Add a screen-bounded hexagonal density plot.
 
     Binning is performed by the native ``xyg_hexbin`` kernel (count / mean /
-    sum). Rust owns finite-pair filtering, automatic domain, and default grid
-    aspect. Custom ``reduce_C_function`` callables fall back to a host reduce
-    over the same lattice. Only threshold-passing bins are shipped as centers
-    plus one scalar count/color channel. A literal ``color`` keeps constant
-    paint so Cartesian native lattices can compile onto Scene PolyFill;
-    omitted ``color`` keeps the metric colormap on the compatibility exporters.
+    sum). Rust owns finite-pair filtering, automatic domain, default grid
+    aspect, and lattice assignment. Custom ``reduce_C_function`` callables
+    receive host-reduced groups from ``xyg_hexbin_groups``. Only threshold-passing
+    bins are shipped as centers plus one scalar count/color channel. A literal
+    ``color`` keeps constant paint so Cartesian native lattices can compile onto
+    Scene PolyFill; omitted ``color`` keeps the metric colormap on the
+    compatibility exporters.
     """
     css = styles.compile_mark_style("hexbin", style)
     opacity = css.get("opacity", opacity)
@@ -2696,56 +2686,24 @@ def hexbin(
         if len(counts) == 0:
             raise ValueError("hexbin range contains no finite points")
     else:
-        # Custom reducers: Rust owns domain/aspect; host still reduces groups.
+        # Custom reducers: Rust owns domain/aspect/lattice; host only reduces.
         try:
-            xr, yr, w, h = kernels.hexbin_ingress(
+            centers_x, centers_y, counts, starts, lengths, indices, dx, dy = kernels.hexbin_groups(
                 x_all,
                 y_all,
                 gridsize=resolved_gridsize,
                 range=authored_range,
+                mincnt=threshold,
                 C=c_all,
             )
         except ValueError as exc:
             raise ValueError("hexbin x and y must contain at least one finite pair") from exc
-        # Custom reducers only run when C is present (native_reduce is None).
-        assert c_all is not None
-        finite = np.isfinite(x_all) & np.isfinite(y_all) & np.isfinite(c_all)
-        xv, yv = x_all[finite], y_all[finite]
-        cv = c_all[finite]
-        # Custom reducers: same lattice assignment as ``xyg_hexbin``, host reduce.
-        fx = (xv - xr[0]) * w / (xr[1] - xr[0])
-        fy = (yv - yr[0]) * h / (yr[1] - yr[0])
-        ix1 = np.rint(fx).astype(np.int64)
-        iy1 = np.rint(fy).astype(np.int64)
-        ix2 = np.floor(fx).astype(np.int64)
-        iy2 = np.floor(fy).astype(np.int64)
-        use_first = (fx - ix1) ** 2 + 3.0 * (fy - iy1) ** 2 < (
-            (fx - ix2 - 0.5) ** 2 + 3.0 * (fy - iy2 - 0.5) ** 2
-        )
-        valid_first = use_first & (ix1 >= 0) & (ix1 <= w) & (iy1 >= 0) & (iy1 <= h)
-        valid_second = ~use_first & (ix2 >= 0) & (ix2 < w) & (iy2 >= 0) & (iy2 < h)
-        if not np.any(valid_first | valid_second):
-            raise ValueError("hexbin range contains no finite points")
-        flat1 = iy1 * (w + 1) + ix1
-        flat2 = iy2 * w + ix2
-        count1 = np.bincount(flat1[valid_first], minlength=(w + 1) * (h + 1)).astype(float)
-        count2 = np.bincount(flat2[valid_second], minlength=w * h).astype(float)
-        keep1 = np.flatnonzero(count1 >= threshold)
-        keep2 = np.flatnonzero(count2 >= threshold)
-        counts = np.concatenate((count1[keep1], count2[keep2]))
         if len(counts) == 0:
             raise ValueError("hexbin range contains no finite points")
-        dx, dy = (xr[1] - xr[0]) / w, (yr[1] - yr[0]) / h
-        centers_x = np.concatenate((xr[0] + (keep1 % (w + 1)) * dx, xr[0] + (keep2 % w + 0.5) * dx))
-        centers_y = np.concatenate(
-            (yr[0] + (keep1 // (w + 1)) * dy, yr[0] + (keep2 // w + 0.5) * dy)
-        )
-        assert cv is not None
+        assert c_all is not None
         reduced: list[float] = []
-        memberships = [cv[valid_first & (flat1 == flat)] for flat in keep1] + [
-            cv[valid_second & (flat2 == flat)] for flat in keep2
-        ]
-        for values in memberships:
+        for start, length in zip(starts, lengths, strict=True):
+            values = c_all[indices[int(start) : int(start) + int(length)]]
             made = np.asarray(reduce_C_function(values))
             if made.ndim != 0 or not np.isfinite(made):
                 raise ValueError("hexbin reduce_C_function must return one finite scalar per bin")
@@ -2886,17 +2844,16 @@ def contour(
         n_levels = int(levels)
         if n_levels <= 0 or n_levels > 256:
             raise ValueError("contour levels must be between 1 and 256")
-        lo, hi = self._auto_domain(kernels.min_max(finite))
-        level_values = np.linspace(lo, hi, n_levels + 2, dtype=np.float64)[1:-1]
+        try:
+            level_values = kernels.contour_levels(finite, n_levels)
+        except ValueError as exc:
+            raise ValueError("contour z must contain at least one finite value") from exc
     else:
-        level_values = self._as_1d_float(levels, "contour levels")
-        if (
-            len(level_values) == 0
-            or len(level_values) > 256
-            or not np.all(np.isfinite(level_values))
-        ):
-            raise ValueError("contour levels must contain 1 to 256 finite values")
-        level_values = np.sort(level_values)
+        authored = self._as_1d_float(levels, "contour levels")
+        try:
+            level_values = kernels.contour_levels(authored, 0)
+        except ValueError as exc:
+            raise ValueError("contour levels must contain 1 to 256 finite values") from exc
     work = (rows - 1) * (cols - 1) * len(level_values)
     if work > MAX_CONTOUR_WORK:
         raise ValueError(

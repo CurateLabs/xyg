@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -91,6 +91,20 @@ export function isSorted(data) {
     return true;
   }
   return xyIsSorted(f64Ptr(arr), BigInt(arr.length)) === 1;
+}
+
+/** NumPy `argsort(..., kind="stable")` for f64 (NaNs last). */
+export function argsortStable(data) {
+  const arr = asF64Array(data);
+  if (arr.length === 0) {
+    return new Uint32Array(0);
+  }
+  const out = new Uint32Array(arr.length);
+  const written = Number(xyArgsortStable(f64Ptr(arr), BigInt(arr.length), u32Ptr(out), BigInt(out.length)));
+  if (written !== arr.length) {
+    throw new Error("xyg_argsort_stable failed");
+  }
+  return out;
 }
 
 export function encodeF32(data, offset, scale = 1.0) {
@@ -248,6 +262,53 @@ export function histogramEdges(data, { range = null, method = "auto" } = {}) {
   return out.subarray(0, written);
 }
 
+const HISTOGRAM_MARK_METHOD = Object.freeze({ auto: 0, sturges: 1, uniform: 2 });
+
+/** Composition histogram edges (empty auto/sturges → 10 bins; uniform uses auto_domain). */
+export function histogramMarkEdges(data, { range = null, method = "auto", nBins = 0 } = {}) {
+  const arr = asF64Array(data);
+  const methodId = HISTOGRAM_MARK_METHOD[method];
+  if (methodId == null) {
+    throw new Error("histogramMarkEdges method must be 'auto', 'sturges', or 'uniform'");
+  }
+  const useRange = range == null ? 0 : 1;
+  const lo = range == null ? 0 : Number(range[0]);
+  const hi = range == null ? 0 : Number(range[1]);
+  const capacity = 10_001;
+  const out = new Float64Array(capacity);
+  const written = Number(
+    xyHistogramMarkEdges(
+      f64Ptr(arr),
+      BigInt(arr.length),
+      lo,
+      hi,
+      useRange,
+      methodId,
+      BigInt(nBins),
+      f64Ptr(out),
+      BigInt(capacity),
+    ),
+  );
+  if (!Number.isFinite(written) || written < 0 || written > capacity) {
+    throw new Error("xyg_histogram_mark_edges failed");
+  }
+  return out.subarray(0, written);
+}
+
+/** Composition contour isolines. `nLevels > 0` auto-spaces; `nLevels === 0` sorts authored levels. */
+export function contourLevels(data, nLevels = 0) {
+  const arr = asF64Array(data);
+  const capacity = 256;
+  const out = new Float64Array(capacity);
+  const written = Number(
+    xyContourLevels(f64Ptr(arr), BigInt(arr.length), BigInt(nLevels), f64Ptr(out), BigInt(capacity)),
+  );
+  if (!Number.isFinite(written) || written < 0 || written > capacity) {
+    throw new Error("xyg_contour_levels failed");
+  }
+  return out.subarray(0, written);
+}
+
 const HEX_REDUCE = Object.freeze({ count: 0, mean: 1, sum: 2 });
 
 function hexbinGridAndRange(gridsize, range) {
@@ -380,6 +441,72 @@ export function hexbin(x, y, { gridsize, range = null, mincnt = 0, C = null, red
     centersY: outCy.subarray(0, written),
     metrics: outMetric.subarray(0, written),
     counts: outCounts.subarray(0, written),
+    dx: dx[0],
+    dy: dy[0],
+  };
+}
+
+/** Occupied hex-cell memberships for a host custom reducer. */
+export function hexbinGroups(x, y, { gridsize, range = null, mincnt = 0, C = null } = {}) {
+  const xa = asF64Array(x);
+  const ya = asF64Array(y);
+  if (xa.length !== ya.length) {
+    throw new RangeError("hexbin x/y length mismatch");
+  }
+  const { w, h, x0, x1, y0, y1, useRange } = hexbinGridAndRange(gridsize, range);
+  const ca = C == null ? null : asF64Array(C);
+  if (ca != null && ca.length !== xa.length) {
+    throw new RangeError("hexbin C length mismatch");
+  }
+  const hCap = h === 0 ? w : h;
+  const cellCapacity = (w + 1) * (hCap + 1) + w * hCap;
+  const outCx = new Float64Array(cellCapacity);
+  const outCy = new Float64Array(cellCapacity);
+  const outCounts = new Float64Array(cellCapacity);
+  const outStarts = new Uint32Array(cellCapacity);
+  const outLens = new Uint32Array(cellCapacity);
+  const outIndices = new Uint32Array(xa.length);
+  const nIndices = new BigUint64Array(1);
+  const dx = new Float64Array(1);
+  const dy = new Float64Array(1);
+  const written = Number(
+    xyHexbinGroups(
+      f64Ptr(xa),
+      f64Ptr(ya),
+      ca == null ? null : f64Ptr(ca),
+      BigInt(xa.length),
+      BigInt(w),
+      BigInt(h),
+      x0,
+      x1,
+      y0,
+      y1,
+      useRange,
+      BigInt(mincnt),
+      f64Ptr(outCx),
+      f64Ptr(outCy),
+      f64Ptr(outCounts),
+      u32Ptr(outStarts),
+      u32Ptr(outLens),
+      BigInt(cellCapacity),
+      u32Ptr(outIndices),
+      BigInt(outIndices.length),
+      pointer(nIndices, "size_t *"),
+      f64Ptr(dx),
+      f64Ptr(dy),
+    ),
+  );
+  if (!Number.isFinite(written) || written < 0 || written > cellCapacity) {
+    throw new RangeError("hexbin x and y must contain at least one finite pair");
+  }
+  const nIdx = Number(nIndices[0]);
+  return {
+    centersX: outCx.subarray(0, written),
+    centersY: outCy.subarray(0, written),
+    counts: outCounts.subarray(0, written),
+    starts: outStarts.subarray(0, written),
+    lengths: outLens.subarray(0, written),
+    indices: outIndices.subarray(0, nIdx),
     dx: dx[0],
     dy: dy[0],
   };

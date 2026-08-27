@@ -54,7 +54,7 @@ Precisely:
 | static display-list raster, row-banded polyline/point/segment paint, batched fill+stroke triangle meshes, affine scatter projection plus typed color/size resolution, density/heatmap colormap and sampling | Rust (ABI v36) | correct — commands borrow f32/u8 payload or canonical spans synchronously; compact stratified sampling reuses factorization counts; batched/banded output is byte-identical |
 | signal processing: `xyg_rfft`, `xyg_welch_spectra`, `xyg_spectrogram` | Rust (ABI v36) | correct — O(N) transforms over sample columns; Hann windowing and segment traversal are native, with Matplotlib-compatible `detrend_none` defaults; explicit pyplot detrending modes fail loudly until the kernel can select them deliberately |
 | geometry/triangulation: `xyg_delaunay_triangles`, `xyg_polygon_triangles`, `xyg_marching_squares`, `xyg_marching_triangles`, `xyg_streamlines`, `xyg_vector_segments`, `xyg_quad_mesh_triangles`, `xyg_sector_triangles`, `xyg_indexed_triangles`, `xyg_triangle_edges` | Rust (ABI v36) | correct — output is screen-bounded index/vertex buffers; level choice and styling stay in Python |
-| statistics: `xyg_correlation`, `xyg_weighted_ecdf`, `xyg_binned_ecdf`, `xyg_histogram_bins`, `xyg_hexbin`, `xyg_histogram2d`, `xyg_stacked_bounds` | Rust (ABI v102) | correct — row-scan reductions; 1D automatic histogram edge policy, uniform/irregular counting, density, and cumulative assembly are Rust-owned while labels remain host presentation. ABI 100 binned ECDF owns finite filtering, automatic/constant domain, bounded uniform counting, all-finite-mass normalization, empty-bin compaction, right edges, and the zero anchor. ABI 101 `xyg_histogram_bins` owns authored-edge validation, closed-last-bin assignment, density, and cumulative heights with a 10,000-bin ceiling. ABI 102 `xyg_hexbin` owns finite-pair filtering, automatic/constant domain, matplotlib default grid aspect, and count/mean/sum lattice assignment. Unweighted `xyg_histogram2d` fans out with per-worker u64 grids (integer merge, thread-count invariant); the weighted case stays serial because f64 accumulation order must not vary with core count (§21) |
+| statistics: `xyg_correlation`, `xyg_weighted_ecdf`, `xyg_binned_ecdf`, `xyg_histogram_bins`, `xyg_hexbin`, `xyg_histogram2d`, `xyg_stacked_bounds` | Rust (ABI v119) | correct — row-scan reductions; 1D automatic histogram edge policy, uniform/irregular counting, density, and cumulative assembly are Rust-owned while labels remain host presentation. ABI 100 binned ECDF owns finite filtering, automatic/constant domain, bounded uniform counting, all-finite-mass normalization, empty-bin compaction, right edges, and the zero anchor. ABI 101 `xyg_histogram_bins` owns authored-edge validation, closed-last-bin assignment, density, and cumulative heights with a 10,000-bin ceiling. ABI 102 `xyg_hexbin` owns finite-pair filtering, automatic/constant domain, matplotlib default grid aspect, and count/mean/sum lattice assignment. ABI 119 `xyg_argsort_stable` / `xyg_histogram_mark_edges` / `xyg_contour_levels` / `xyg_hexbin_groups` own composition sort, integer/empty-auto histogram edges, contour isolines, and custom-hex membership. Unweighted `xyg_histogram2d` fans out with per-worker u64 grids (integer merge, thread-count invariant); the weighted case stays serial because f64 accumulation order must not vary with core count (§21) |
 | style/text helpers: `xyg_css_check` (`css.rs`), `xyg_svg_poly_path` (`svg.rs`) | Rust (ABI v36) | correct by a different rule — not O(rows) but O(points)/per-value on the export and validation paths, where per-item Python object churn dominates; error *messages* still assembled in Python |
 | ohlc_decimate (when finance returns) | was NumPy-in-kernels.py | acceptable stopgap **only** because candles decimate to ≤px buckets; promote to Rust with the pyramid work |
 | tier decisions, hysteresis, drill_seq that change shipped buffers | Rust (dual-host) / thin host assembly | **promote** — hosts must not diverge; see host-parity.md |
@@ -84,10 +84,14 @@ authored-edge counting plus density/cumulative assembly with the same
 10,000-bin ceiling) · hexbin
 reducer (`xyg_hexbin` ✅ ABI 102 finite-filtered automatic domain and
 `int(width / √3)` default height, count/mean/sum; constant-style Cartesian
-lattices expand onto existing Scene PolyFill records) · histogram edges (`xyg_histogram_edges`
+lattices expand onto existing Scene PolyFill records; ABI 119
+`xyg_hexbin_groups` owns custom-reducer lattice membership) · histogram edges (`xyg_histogram_edges`
 ✅ NumPy `bins="auto"` / Sturges, used by both composition hosts for omitted
 bins, capped at 10,000 bins / 10,001 edges before allocation; invalid or
-over-cap results fail without a partial write) · wind-rose bins (`xyg_wind_rose_bins` ✅
+over-cap results fail without a partial write; ABI 119 `xyg_histogram_mark_edges`
+owns integer bins, empty-finite ten-bin compatibility, and `auto_domain`) ·
+contour levels (`xyg_contour_levels` ✅ ABI 119 interior auto-domain spacing
+and authored sort) · line ingest sort (`xyg_argsort_stable` ✅ ABI 119) · wind-rose bins (`xyg_wind_rose_bins` ✅
 sector × speed-band counts; polar bar assembly stays host-side) · contourf
 densify (`xyg_contourf_densify` ✅) + corner-mask bands (`xyg_contourf_bands` ✅
 ContourPy-style one-masked-corner clip) · bar offsets (`xyg_bar_stack` ✅
@@ -221,8 +225,10 @@ crates/
     sankey.rs           # sankey layout (`xyg_sankey_layout`), dual-host.
     transition.rs       # stable animation-key encoding (`xyg_transition_keys_fixed`).
     stats.rs            # quantiles + Tukey box/grouped geometry + violin_density +
-                        #   histogram_edges (NumPy auto) + wind_rose_bins ✅
-    hexbin.rs           # matplotlib hex lattice + ABI 102 ingress (`xyg_hexbin`) ✅
+                        #   histogram_edges (NumPy auto) + histogram_mark_edges +
+                        #   contour_levels + wind_rose_bins ✅
+    hexbin.rs           # matplotlib hex lattice + ABI 102 ingress (`xyg_hexbin`)
+                        #   + ABI 119 groups (`xyg_hexbin_groups`) ✅
     lod_plan.rs         # view LOD drill/grid decision math ✅ (`xyg_lod_plan`).
     stream.rs           # Rust-owned canonical append buffers (`xyg_stream_*`).
                         # Capacity-doubling f64 store; zone maps on seal
@@ -633,5 +639,6 @@ landed; the remainder, in order:
 4. `stats.rs`: `xyg_quantiles` + `xyg_box_stats` + `xyg_violin_density` ✅;
    `hexbin.rs`: `xyg_hexbin` (ABI 102 ingress + count/mean/sum) ✅; `xyg_histogram_edges`
    (NumPy `bins="auto"` = min of Sturges bandwidth and FD floored by
-   `sqrt/2`) ✅.
+   `sqrt/2`) ✅; ABI 119 `xyg_argsort_stable` / `xyg_histogram_mark_edges` /
+   `xyg_contour_levels` / `xyg_hexbin_groups` ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

@@ -49,6 +49,7 @@ m4_indices = _impl.m4_indices
 marching_squares = _impl.marching_squares
 marching_triangles = _impl.marching_triangles
 is_sorted = _impl.is_sorted
+argsort_stable = _impl.argsort_stable
 min_max = _impl.min_max
 bin_2d = _impl.bin_2d
 binned_ecdf = _impl.binned_ecdf
@@ -120,9 +121,12 @@ box_stats = _impl.box_stats
 box_geometry = _impl.box_geometry
 hexbin = _impl.hexbin
 hexbin_ingress = _impl.hexbin_ingress
+hexbin_groups = _impl.hexbin_groups
 violin_density = _impl.violin_density
 violin_rects = _impl.violin_rects
 histogram_edges = _impl.histogram_edges
+histogram_mark_edges = _impl.histogram_mark_edges
+contour_levels = _impl.contour_levels
 wind_rose_bins = _impl.wind_rose_bins
 contourf_densify = _impl.contourf_densify
 contourf_bands = _impl.contourf_bands
@@ -133,6 +137,7 @@ __all__ = [
     "CSS_DECLARATION",
     "CSS_LENGTH",
     "CSS_NUMBER",
+    "argsort_stable",
     "bar_stack",
     "bin_2d",
     "bin_2d_f32",
@@ -143,6 +148,7 @@ __all__ = [
     "binned_ecdf",
     "box_geometry",
     "box_stats",
+    "contour_levels",
     "contourf_bands",
     "contourf_densify",
     "correlation",
@@ -159,10 +165,12 @@ __all__ = [
     "factorize_unicode1_u8_counts",
     "heatmap_rgba",
     "hexbin",
+    "hexbin_groups",
     "hexbin_ingress",
     "histogram2d",
     "histogram_bins",
     "histogram_edges",
+    "histogram_mark_edges",
     "histogram_uniform",
     "indexed_triangles",
     "is_sorted",

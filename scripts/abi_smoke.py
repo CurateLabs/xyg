@@ -173,6 +173,8 @@ def load() -> ctypes.CDLL:
     lib.xyg_min_max.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_is_sorted.restype = ctypes.c_int32
     lib.xyg_is_sorted.argtypes = [F64P, ctypes.c_size_t]
+    lib.xyg_argsort_stable.restype = ctypes.c_size_t
+    lib.xyg_argsort_stable.argtypes = [F64P, ctypes.c_size_t, U32P, ctypes.c_size_t]
     D = ctypes.c_double
     Z = ctypes.c_size_t
     lib.xyg_bin_2d.restype = ctypes.c_int32
@@ -557,6 +559,52 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         F64P,
         ctypes.c_size_t,
+    ]
+    lib.xyg_histogram_mark_edges.restype = ctypes.c_size_t
+    lib.xyg_histogram_mark_edges.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_contour_levels.restype = ctypes.c_size_t
+    lib.xyg_contour_levels.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_hexbin_groups.restype = ctypes.c_size_t
+    lib.xyg_hexbin_groups.argtypes = [
+        F64P,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+        F64P,
+        U32P,
+        U32P,
+        ctypes.c_size_t,
+        U32P,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_size_t),
+        F64P,
+        F64P,
     ]
     lib.xyg_wind_rose_bins.restype = ctypes.c_size_t
     lib.xyg_wind_rose_bins.argtypes = [
@@ -1890,6 +1938,35 @@ def main() -> None:
         he_n == 6 and abs(he_out[0] - 1.0) < 1e-12 and abs(he_out[5] - 10.0) < 1e-12,
         "histogram_edges auto",
     )
+
+    as_data = array("d", [3.0, 1.0, 2.0])
+    as_out = (ctypes.c_uint32 * 3)()
+    as_n = lib.xyg_argsort_stable(_ptr(as_data, ctypes.c_double), 3, as_out, 3)
+    ok(as_n == 3 and list(as_out) == [1, 2, 0], "argsort_stable")
+
+    hm_out = array("d", [0.0]) * 16
+    hm_n = lib.xyg_histogram_mark_edges(
+        null_f64,
+        0,
+        0.0,
+        0.0,
+        0,
+        0,
+        0,
+        _ptr(hm_out, ctypes.c_double),
+        len(hm_out),
+    )
+    ok(
+        hm_n == 11 and abs(hm_out[0]) < 1e-12 and abs(hm_out[10] - 1.0) < 1e-12,
+        "histogram_mark_edges empty auto",
+    )
+
+    cl_z = array("d", [0.0, 10.0])
+    cl_out = array("d", [0.0]) * 8
+    cl_n = lib.xyg_contour_levels(
+        _ptr(cl_z, ctypes.c_double), 2, 3, _ptr(cl_out, ctypes.c_double), 8
+    )
+    ok(cl_n == 3 and abs(cl_out[1] - 5.0) < 1e-12, "contour_levels auto")
 
     # violin_density: constant sample expands ±0.5 and yields positive density.
     vd = array("d", [3.0, 3.0, 3.0])
