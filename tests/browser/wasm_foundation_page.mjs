@@ -28,7 +28,7 @@ import {
   XygWasmTemporalGraph,
 } from "/packages/xy-client/dist/index.js";
 
-function directDensityFixture(host, comm = null, multi = false, fullSource = false) {
+function directDensityFixture(host, comm = null, multi = false, fullSource = false, colorbar = null) {
   const width = 16, height = 16;
   const grid = new Float32Array(width * height);
   grid[0] = 1;
@@ -53,6 +53,7 @@ function directDensityFixture(host, comm = null, multi = false, fullSource = fal
     backend: "native", show_legend: false,
     wasm_density: { automatic: true },
     view: { ranges: { x: [0, 1], y: [0, 1] } },
+    ...(colorbar ? { colorbar } : {}),
   };
   if (fullSource) {
     // Cross the generated 32,768-point stream boundary twice. The source
@@ -1418,11 +1419,221 @@ async function run() {
   uncoveredTickView.destroy();
   uncoveredTickHost.remove();
 
+  foundationStage = "ChartView colorbar ticks use Rust/WASM";
+  const colorbarTickHost = document.createElement("div");
+  colorbarTickHost.style.cssText = "width:320px;height:240px";
+  document.body.append(colorbarTickHost);
+  const colorbarTickView = directDensityFixture(colorbarTickHost, null, false, false, {
+    domain: [0, 1], orientation: "vertical", colormap: "viridis", label: "z",
+  });
+  const colorbarTickWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  const colorbarTickHandle = await attachWasmTicks(colorbarTickView, {
+    worker: colorbarTickWorker,
+    workerOwnership: "own",
+  });
+  await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  const colorbarTicks = colorbarTickView._axisTicks("colorbar", 6);
+  const colorbarX = colorbarTickView._axisTicks("x", 6);
+  const colorbarDom = [...colorbarTickView.root.querySelectorAll(
+    '[data-xy-slot="colorbar_tick"]',
+  )].map((node) => node.textContent);
+  if (colorbarTicks.source !== "wasm" || colorbarX.source !== "wasm"
+      || !colorbarTickHandle.covers("colorbar") || !colorbarTickHandle.covers("x")
+      || colorbarTickHandle.diagnostics()?.axisIds.join(",") !== "x,y,colorbar"
+      || !colorbarTicks.ticks.length
+      || colorbarDom.length !== colorbarTicks.labels.length
+      || colorbarDom.some((label, index) => (
+        label !== colorbarTickHandle.label("colorbar", colorbarTicks.labels[index])
+      ))) {
+    throw new Error(`ChartView did not consume Rust colorbar ticks: ${JSON.stringify({
+      diagnostics: colorbarTickHandle.diagnostics(),
+      colorbarTicks,
+      colorbarX,
+      colorbarDom,
+    })}`);
+  }
+  colorbarTickView.spec.colorbar.scale = "log";
+  colorbarTickView.spec.colorbar.domain = [0.1, 100];
+  const immediateLogColorbar = colorbarTickView._axisTicks("colorbar", 6);
+  if (colorbarTickHandle.covers("colorbar") || immediateLogColorbar.source === "wasm") {
+    throw new Error(`log colorbar switch painted wasm before admission: ${JSON.stringify({
+      covers: colorbarTickHandle.covers("colorbar"),
+      immediateLogColorbar,
+    })}`);
+  }
+  colorbarTickHandle.schedule();
+  for (let attempt = 0; attempt < 100 && !colorbarTickHandle.covers("colorbar"); attempt++) {
+    await nextTask();
+  }
+  const logColorbarTicks = colorbarTickView._axisTicks("colorbar", 6);
+  if (!colorbarTickHandle.covers("colorbar") || logColorbarTicks.source !== "wasm"
+      || !logColorbarTicks.ticks.length) {
+    throw new Error(`log colorbar did not admit a Rust cache: ${JSON.stringify({
+      covers: colorbarTickHandle.covers("colorbar"),
+      logColorbarTicks,
+    })}`);
+  }
+  await colorbarTickHandle.dispose();
+  colorbarTickView.destroy();
+  colorbarTickHost.remove();
+
+  foundationStage = "authored ChartView colorbar ticks use Rust/WASM";
+  const authoredColorbarHost = document.createElement("div");
+  authoredColorbarHost.style.cssText = "width:320px;height:240px";
+  document.body.append(authoredColorbarHost);
+  const authoredColorbarView = directDensityFixture(authoredColorbarHost, null, false, false, {
+    domain: [0, 1],
+    orientation: "vertical",
+    ticks: [-1, 0, 0.5, 1, 3],
+    tick_labels: ["minus", "zero", "half", "one", "three"],
+  });
+  const authoredColorbarWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  const authoredColorbarHandle = await attachWasmTicks(authoredColorbarView, {
+    worker: authoredColorbarWorker,
+    workerOwnership: "own",
+  });
+  await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  const authoredColorbarTicks = authoredColorbarView._axisTicks("colorbar", 6);
+  const authoredColorbarDom = [...authoredColorbarView.root.querySelectorAll(
+    '[data-xy-slot="colorbar_tick"]',
+  )].map((node) => node.textContent);
+  if (authoredColorbarTicks.source !== "wasm"
+      || !authoredColorbarHandle.covers("colorbar")
+      || authoredColorbarTicks.ticks.join(",") !== "0,0.5,1"
+      || authoredColorbarHandle.label("colorbar", 0) !== "zero"
+      || authoredColorbarHandle.label("colorbar", 0.5) !== "half"
+      || authoredColorbarHandle.label("colorbar", 1) !== "one"
+      || authoredColorbarDom.join(",") !== "zero,half,one") {
+    throw new Error(`ChartView did not consume Rust authored colorbar ticks: ${JSON.stringify({
+      diagnostics: authoredColorbarHandle.diagnostics(),
+      authoredColorbarTicks,
+      authoredColorbarDom,
+    })}`);
+  }
+  authoredColorbarView.spec.colorbar.ticks = [];
+  delete authoredColorbarView.spec.colorbar.tick_labels;
+  const immediateEmptyColorbar = authoredColorbarView._axisTicks("colorbar", 6);
+  if (authoredColorbarHandle.covers("colorbar") || immediateEmptyColorbar.source === "wasm") {
+    throw new Error(`authored-empty colorbar painted wasm before admission: ${JSON.stringify({
+      covers: authoredColorbarHandle.covers("colorbar"),
+      immediateEmptyColorbar,
+    })}`);
+  }
+  authoredColorbarHandle.schedule();
+  for (let attempt = 0; attempt < 100 && !authoredColorbarHandle.covers("colorbar"); attempt++) {
+    await nextTask();
+  }
+  const emptyColorbarTicks = authoredColorbarView._axisTicks("colorbar", 6);
+  if (!authoredColorbarHandle.covers("colorbar") || emptyColorbarTicks.source !== "wasm"
+      || emptyColorbarTicks.ticks.length !== 0) {
+    throw new Error(`authored-empty colorbar did not admit an empty Rust cache: ${JSON.stringify({
+      covers: authoredColorbarHandle.covers("colorbar"),
+      emptyColorbarTicks,
+    })}`);
+  }
+  await authoredColorbarHandle.dispose();
+  authoredColorbarView.destroy();
+  authoredColorbarHost.remove();
+
+  foundationStage = "newly eligible colorbar after attach does not paint empty wasm";
+  const lateColorbarHost = document.createElement("div");
+  lateColorbarHost.style.cssText = "width:320px;height:240px";
+  document.body.append(lateColorbarHost);
+  const lateColorbarView = directDensityFixture(lateColorbarHost);
+  const lateColorbarWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  const lateColorbarHandle = await attachWasmTicks(lateColorbarView, {
+    worker: lateColorbarWorker,
+    workerOwnership: "own",
+  });
+  if (lateColorbarHandle.eligible("colorbar") || lateColorbarHandle.covers("colorbar")) {
+    throw new Error("colorbar was eligible before spec.colorbar existed");
+  }
+  lateColorbarView.spec.colorbar = { domain: [0, 1], orientation: "vertical" };
+  const immediateLateColorbar = lateColorbarView._axisTicks("colorbar", 6);
+  if (!lateColorbarHandle.eligible("colorbar") || lateColorbarHandle.covers("colorbar")
+      || immediateLateColorbar.source === "wasm"
+      || !immediateLateColorbar.ticks.length) {
+    throw new Error(`newly eligible colorbar painted empty wasm before admission: ${JSON.stringify({
+      eligible: lateColorbarHandle.eligible("colorbar"),
+      covers: lateColorbarHandle.covers("colorbar"),
+      immediateLateColorbar,
+    })}`);
+  }
+  lateColorbarHandle.schedule();
+  for (let attempt = 0; attempt < 100 && !lateColorbarHandle.covers("colorbar"); attempt++) {
+    await nextTask();
+  }
+  const admittedColorbarTicks = lateColorbarView._axisTicks("colorbar", 6);
+  if (!lateColorbarHandle.covers("colorbar") || admittedColorbarTicks.source !== "wasm"
+      || !admittedColorbarTicks.ticks.length) {
+    throw new Error(`newly eligible colorbar did not admit a Rust cache: ${JSON.stringify({
+      covers: lateColorbarHandle.covers("colorbar"),
+      admittedColorbarTicks,
+    })}`);
+  }
+  await lateColorbarHandle.dispose();
+  lateColorbarView.destroy();
+  lateColorbarHost.remove();
+
+  foundationStage = "scene-placed ChartView colorbar stays off the XYTK lane";
+  const sceneColorbarHost = document.createElement("div");
+  sceneColorbarHost.style.cssText = "width:320px;height:240px";
+  document.body.append(sceneColorbarHost);
+  const sceneColorbarView = directDensityFixture(sceneColorbarHost, null, false, false, {
+    domain: [0, 1],
+    placement: "scene",
+    resolved: {
+      bounds: [280, 20, 24, 180],
+      major_ticks: [
+        { value: 0, label: "0", position: 200 },
+        { value: 1, label: "1", position: 20 },
+      ],
+    },
+  });
+  const sceneColorbarWorker = createXygWasmWorker({
+    workerUrl: "/packages/xy-client/dist/wasm-worker.js",
+    wasm: wasmModule,
+    maxArenaBytes: 1024 * 1024,
+  });
+  const sceneColorbarHandle = await attachWasmTicks(sceneColorbarView, {
+    worker: sceneColorbarWorker,
+    workerOwnership: "own",
+  });
+  const sceneColorbarTicks = sceneColorbarView._axisTicks("colorbar", 6);
+  if (sceneColorbarHandle.eligible("colorbar") || sceneColorbarHandle.covers("colorbar")
+      || sceneColorbarTicks.source === "wasm"
+      || sceneColorbarHandle.diagnostics()?.axisIds.includes("colorbar")
+      || sceneColorbarTicks.ticks.join(",") !== "0,1") {
+    throw new Error(`scene-placed colorbar was claimed by XYTK: ${JSON.stringify({
+      eligible: sceneColorbarHandle.eligible("colorbar"),
+      covers: sceneColorbarHandle.covers("colorbar"),
+      diagnostics: sceneColorbarHandle.diagnostics(),
+      sceneColorbarTicks,
+    })}`);
+  }
+  await sceneColorbarHandle.dispose();
+  sceneColorbarView.destroy();
+  sceneColorbarHost.remove();
+
   foundationStage = "polar ChartView ticks reject before attachment";
   const polarTickHost = document.createElement("div");
   polarTickHost.style.cssText = "width:320px;height:240px";
   document.body.append(polarTickHost);
-  const polarTickView = directDensityFixture(polarTickHost);
+  const polarTickView = directDensityFixture(polarTickHost, null, false, false, {
+    domain: [0, 1], orientation: "vertical", colormap: "viridis",
+  });
   polarTickView.spec.coords = "polar";
   const polarTickErrors = [];
   polarTickView.root.addEventListener(
