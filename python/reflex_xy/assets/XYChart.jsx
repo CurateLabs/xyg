@@ -40,7 +40,7 @@ import io from "socket.io-client";
 import env from "$/env.json";
 import reflexEnvironment from "$/reflex.json";
 import { getBackendURL, getToken } from "$/utils/state";
-import { ChartView, decodeFrame, renderStandalone } from "./xy_client.js";
+import { ChartView, decodeFrame, renderStandalone, attachHostWasmTicks } from "./xy_client.js";
 
 // Opt-in console tracing: localStorage.setItem("xy_debug", "1")
 const DEBUG = globalThis.localStorage?.getItem?.("xy_debug") === "1";
@@ -91,6 +91,21 @@ const fitSpecToElement = (spec) => ({
   ...spec,
   width: "100%",
   height: "100%",
+});
+
+// Packaged WASM tick assets live beside this module and xy_client.js
+// (register() links wasm-worker.js + xyg-wasm.wasm). Relative URLs resolve
+// against import.meta.url so the Worker stays same-origin and independent
+// of the page path. attachHostWasmTicks fails closed on missing, blob,
+// data, or protocol-relative third-party values — no path guessing.
+const reflexWasmTickAssets = () => ({
+  workerUrl: new URL("./wasm-worker.js", import.meta.url).href,
+  wasm: new URL("./xyg-wasm.wasm", import.meta.url).href,
+});
+
+const withWasmTicks = (spec) => ({
+  ...spec,
+  wasm_ticks: reflexWasmTickAssets(),
 });
 
 const eventSpec = (spec, callbacks) => {
@@ -375,7 +390,7 @@ export function XYChart(props) {
         // Same call the static HTML export makes: spec + one packed blob
         // span, comm = null → local hover columns + worker density re-bin.
         view = renderStandalone(
-          el, withHoverFlag(fitSpecToElement(frame.message)), frame.buffers[0]);
+          el, withHoverFlag(withWasmTicks(fitSpecToElement(frame.message))), frame.buffers[0]);
         mountTooltipSlot(view);
         (window.__xy_views ||= new Map()).set(key, view);
         dbg("static payload mounted", { src, bytes: body.byteLength });
@@ -735,7 +750,7 @@ export function XYChart(props) {
         ? null
         : selectionRequest(selectionToRestore);
       payloadVersion = nextPayloadVersion;
-      const spec = withHoverFlag(eventSpec(data.spec, cbRef.current));
+      const spec = withHoverFlag(withWasmTicks(eventSpec(data.spec, cbRef.current)));
       const nextBuffers = toSpans(data.spec, data.buffers);
       const chromeChanged = Boolean(view && !sameMountedChromeSpec(view.spec, spec));
       if (!chromeChanged && view?.updatePayload?.(spec, nextBuffers)) {
@@ -763,6 +778,7 @@ export function XYChart(props) {
         nextBuffers,
         comm,
       );
+      attachHostWasmTicks(view, spec);
       mountTooltipSlot(view);
       if (viewChanged) {
         view._setView(previousView, { animate: false, source: "republish" });

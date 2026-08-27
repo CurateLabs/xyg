@@ -12,7 +12,7 @@ from reflex_xy.assets import _client_source, _link_client
 
 ADAPTER_ASSETS = pathlib.Path(reflex_xy.__file__).parent / "assets"
 # What XYChart.jsx imports from ./xy_client.js.
-WRAPPER_IMPORTS = ("ChartView", "decodeFrame", "renderStandalone")
+WRAPPER_IMPORTS = ("ChartView", "decodeFrame", "renderStandalone", "attachHostWasmTicks")
 
 
 def test_client_is_not_packaged():
@@ -236,7 +236,7 @@ def test_wrapper_speaks_the_namespace_protocol():
     assert "decodeFrame" in jsx
     assert (
         "renderStandalone(\n"
-        "          el, withHoverFlag(fitSpecToElement(frame.message)), frame.buffers[0])"
+        "          el, withHoverFlag(withWasmTicks(fitSpecToElement(frame.message))), frame.buffers[0])"
     ) in jsx
     assert "const controller = new AbortController()" in jsx
     assert "fetch(src, { signal: controller.signal })" in jsx
@@ -305,10 +305,10 @@ def test_wrapper_sizes_static_and_live_charts_to_the_reflex_mount():
     assert 'width: "100%"' in jsx
     assert 'height: "100%"' in jsx
     # static tier: fitted spec plus the local hover flag for on_hover
-    assert "withHoverFlag(fitSpecToElement(frame.message))" in jsx
+    assert "withHoverFlag(withWasmTicks(fitSpecToElement(frame.message)))" in jsx
     # live tier: eventSpec (fits + enables click/view_change per callbacks)
     # composed with the same hover flag
-    assert "const spec = withHoverFlag(eventSpec(data.spec, cbRef.current))" in jsx
+    assert "const spec = withHoverFlag(withWasmTicks(eventSpec(data.spec, cbRef.current)))" in jsx
 
 
 def test_wrapper_feeds_hover_payload_to_custom_tooltip_children():
