@@ -3300,7 +3300,7 @@ def _emit_colorbar(
     title_paint = _parse_color(slot_text_color(title_slot, text_color))
     tick_size = slot_font_size(tick_slot, COLORBAR_FONT_SIZE)
     tick_paint = _parse_color(slot_text_color(tick_slot, text_color))
-    from ._svg import _colorbar_tick_target, _fmt_log, _linear_ticks, _log_ticks, _lut
+    from ._svg import _colorbar_tick_target, _fmt_log
 
     orientation = options.get("orientation", "vertical")
     shrink = float(options.get("shrink", 1.0))
@@ -3380,9 +3380,16 @@ def _emit_colorbar(
 
     def automatic_ticks(length: float) -> list[float]:
         target = _colorbar_tick_target(length)
-        return (
-            _log_ticks(lo, hi, target)[1] if log_scale else _linear_ticks(lo, hi, target)[0]
-        ) or [lo, hi]
+        automatic = axis_ticks(
+            {
+                "kind": "log" if log_scale else "linear",
+                "range": [lo, hi],
+                "tick_count": target,
+            },
+            length,
+            orientation == "horizontal",
+        )
+        return (automatic[1] if log_scale else automatic[0]) or [lo, hi]
 
     format_tick = _fmt_log if log_scale else lambda value: f"{value:g}"
     ticks = options.get("ticks")

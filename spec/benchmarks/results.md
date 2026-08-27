@@ -186,11 +186,11 @@ Constant-style Cartesian heatmap golden (Scene SHA-256):
 
 ### Public Scene export baselines (local diagnostic)
 
-`scripts/bench_public_scene_routes.py` times `figure_scene` and
-`try_public_svg` / `try_public_png` / `try_public_pdf` for the golden hexbin
-and heatmap fixtures plus already-public scatter, line+bar, triangle-mesh,
-violin, and box routes. The committed JSON is a local warmed median, not a CI
-gate and not a cross-library win.
+`scripts/bench_public_scene_routes.py` times `figure_scene` and the
+`public_static_export` SVG/PNG/PDF product selector for the golden hexbin and
+heatmap fixtures plus already-public scatter, line+bar, triangle-mesh, violin,
+and box routes. The committed JSON is a local warmed median, not a CI gate and
+not a cross-library win.
 
 ```bash
 uv run python scripts/bench_public_scene_routes.py \

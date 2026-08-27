@@ -1699,7 +1699,8 @@ fn calendar_ticks(lo: f64, hi: f64, rough: f64) -> AxisTicks {
 /// Time-axis ticks in UTC milliseconds since Unix epoch.
 ///
 /// Sub-fortnight spans use a fixed millisecond ladder; longer spans use
-/// first-of-month calendar ticks (matching Python `_time_ticks` / JS `timeTicks`).
+/// first-of-month calendar ticks. Compatibility hosts consume this function
+/// through the shared native/WASM tick boundaries.
 pub fn time_ticks(lo: f64, hi: f64, target: usize) -> Result<AxisTicks, SceneError> {
     if !lo.is_finite() || !hi.is_finite() || target == 0 || target > MAX_AXIS_TICKS {
         return Err(SceneError::NonFinite);

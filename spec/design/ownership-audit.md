@@ -111,6 +111,31 @@ constant-style primary-Cartesian boxes now use the existing Rect, Polyline, and
 Scatter Scene consumers for public SVG/PNG/PDF; alternate-axis, polar,
 gradient, and per-item-style cases remain explicit compatibility paths.
 
+The post-M2 retirement pass removes two obsolete Python adapter layers without
+widening that compatibility boundary. `_svg.axis_ticks` now maps every
+automatic linear/log/category/angular/time/symlog family directly to
+`_native.scene_axis_ticks`; the former per-family wrappers are gone. Rust
+`scene::{linear_ticks, log_ticks, category_ticks, angular_ticks, time_ticks}`
+remains the only ladder implementation, exposed to Node by `axisTicks` and to
+Python/pyplot/SVG/raster by the generated C ABI. The duplicate
+`try_public_svg` / `try_public_png` / `try_public_pdf` selectors are also gone:
+`public_static_export` is the only optional product-route selector, while
+`figure_scene`, `figure_svg`, and `figure_raster_commands` remain explicit
+Scene consumers. `_svg.py`, `_raster.py`, and `_scene_v3.py` stay in the
+migration class because the compatibility and figure-to-record assembly debt
+listed below still exists.
+
+### Post-M2 Python retirement inventory
+
+| Candidate | Rust replacement and product call path | Coverage | Disposition |
+| --- | --- | --- | --- |
+| `_svg._linear_ticks`, `_log_ticks`, `_category_ticks`, `_angular_ticks`, `_time_ticks` | `crates/xyg-engine/src/scene.rs` owns all ladders; `xyg_scene_axis_ticks` exposes them through `crates/xyg-core/src/lib.rs`; Python SVG/raster/pyplot call `_native.scene_axis_ticks` through `_svg.axis_ticks`, and Node calls `axisTicks` in `packages/xy-node/src/scene.js` | Rust Scene tick unit tests, `tests/test_scene_ir.py`, and `packages/xy-node/test/scene.test.mjs` | **removed** |
+| `_scene_v3.try_public_svg`, `try_public_png`, `try_public_pdf` | Rust `SceneDocument` owns SVG/raster/painter lowering; `Figure.to_svg` and `export._native_image` use the one `public_static_export` selector, while Node uses `sceneSvg` / `sceneRasterCommands` | `tests/test_figure_scene_v3.py`, `tests/test_scene_export_support.py`, and `scripts/bench_public_scene_routes.py` exercise the product selector and exact Rust consumers | **removed** |
+| `_svg.py`, `_raster.py`, `_scene.py` compatibility rendering | No complete Rust replacement yet for polar Scene, custom fonts/CSS/classes, continuous gradients, custom marker paths/glyphs, colormap heatmaps/hexbins, density/LOD export, and the rich style/text exceptions below | Existing polar, SVG, raster, style, export, and pyplot suites | **keep loudly** |
+| `_scene_v3.py` figure-to-record assembly | Rust owns record validation, mapping, expansion modes, layout, and consumers, but compact Rust ingress is still absent for several host-assembled mark families such as regular heatmap cells, hex-cell rings, triangle faces, and disconnected endpoint pairs | Cross-host Scene bytes and consumer tests pin current assembly | **keep as migration debt** |
+| `_figure.py` / `marks.py` host code | Public composition, ingest coercion, validation text, category factorization, rollback, and explicit custom-reducer/empty-input compatibility are host responsibilities; remaining geometry/statistics helpers call Rust where a replacement exists | Mark, composition, pyplot, and host-parity suites | **keep host seams** |
+| `xyg_scene_scatter_svg` Python/Node adapters | Whole-Scene owns the bounded product route, but the version-1 Rust wrapper still serves compatibility scatter rendering and the explicit low-level Node surface | `tests/test_scene_ir.py` and `packages/xy-node/test/scene.test.mjs` | **keep compatibility ABI** |
+
 Static-export routing status (#117): `Figure.to_svg`, native `to_png`, native
 `to_image(..., "svg"|"png"|"pdf")`, `write_image`, and the native branch of
 `write_images` now delegate the proven

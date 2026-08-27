@@ -228,6 +228,13 @@ chooses the compatibility renderer only before Scene compilation for an
 explicit unsupported feature, an export-only background override, or a valid
 viewport too small for bounded Scene chrome. A malformed input or Rust
 consumer failure remains an error rather than a fallback signal.
+`public_static_export` is now the only optional Python product-route selector;
+the older format-specific `try_public_*` adapters have been retired. Explicit
+Scene diagnostics and consumers remain available through
+`scene_export_support_reason`, `figure_scene`, `figure_svg`, and
+`figure_raster_commands`. Python SVG/raster and pyplot automatic tick requests
+also share one `_svg.axis_ticks` adapter that calls `xyg_scene_axis_ticks`
+directly for every family; no per-family Python ladder adapter remains.
 
 The public literal `x_axis`/`y_axis` `ticks=False` and `text=False` switches
 are inside that migrated static subset: Rust preserves the independent

@@ -609,13 +609,17 @@ def test_linear_and_log_ticks_are_consumed_from_the_rust_scene(monkeypatch) -> N
     calls: list[tuple[int, float, float, int]] = []
     original = _native.scene_axis_ticks
 
-    def recording(kind: int, lo: float, hi: float, target: int):
+    def recording(kind: int, lo: float, hi: float, target: int, aux: float = 0.0):
         calls.append((kind, lo, hi, target))
-        return original(kind, lo, hi, target)
+        return original(kind, lo, hi, target, aux=aux)
 
     monkeypatch.setattr(_native, "scene_axis_ticks", recording)
-    assert _svg._linear_ticks(-0.9, 5.1, 6) == ([0.0, 1.0, 2.0, 3.0, 4.0, 5.0], 1.0)
-    assert _svg._log_ticks(0.1, 100.0, 6)[1] == [0.1, 1.0, 10.0, 100.0]
+    assert _svg.axis_ticks(
+        {"kind": "linear", "range": [-0.9, 5.1], "tick_count": 6}, 480.0, True
+    ) == ([0.0, 1.0, 2.0, 3.0, 4.0, 5.0], [0.0, 1.0, 2.0, 3.0, 4.0, 5.0], 1.0)
+    assert _svg.axis_ticks({"kind": "log", "range": [0.1, 100.0], "tick_count": 6}, 480.0, True)[
+        1
+    ] == [0.1, 1.0, 10.0, 100.0]
     assert calls == [(0, -0.9, 5.1, 6), (1, 0.1, 100.0, 6)]
 
 
@@ -629,13 +633,18 @@ def test_time_ticks_are_consumed_from_the_rust_scene(monkeypatch) -> None:
 
     monkeypatch.setattr(_native, "scene_axis_ticks", recording)
     hour = 3_600_000.0
-    assert _svg._time_ticks(0.0, 3.0 * hour, 6) == (
+    assert _svg.axis_ticks(
+        {"kind": "time", "range": [0.0, 3.0 * hour], "tick_count": 6}, 480.0, True
+    ) == (
+        [0.0, 0.5 * hour, hour, 1.5 * hour, 2.0 * hour, 2.5 * hour, 3.0 * hour],
         [0.0, 0.5 * hour, hour, 1.5 * hour, 2.0 * hour, 2.5 * hour, 3.0 * hour],
         0.5 * hour,
     )
     lo = datetime(2020, 1, 1, tzinfo=UTC).timestamp() * 1e3
     hi = datetime(2022, 1, 1, tzinfo=UTC).timestamp() * 1e3
-    ticks, step = _svg._time_ticks(lo, hi, 6)
+    ticks, labeled, step = _svg.axis_ticks(
+        {"kind": "time", "range": [lo, hi], "tick_count": 6}, 480.0, True
+    )
     assert step == 6.0 * 30.0 * 86_400_000.0
     assert ticks == [
         lo,
@@ -644,6 +653,7 @@ def test_time_ticks_are_consumed_from_the_rust_scene(monkeypatch) -> None:
         datetime(2021, 7, 1, tzinfo=UTC).timestamp() * 1e3,
         hi,
     ]
+    assert labeled == ticks
     assert calls == [(5, 0.0, 3.0 * hour, 6), (5, lo, hi, 6)]
 
 

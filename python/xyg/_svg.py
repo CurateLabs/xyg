@@ -475,67 +475,9 @@ _AXIS_GRID_DASHES = {
 
 
 # ---------------------------------------------------------------------------
-# Tick math — ports of 30_ticks.ts (f64 throughout, §16)
+# Compatibility tick text (§16). Rust owns every automatic tick ladder; the
+# remaining helpers format or place Rust-authored and explicitly authored ticks.
 # ---------------------------------------------------------------------------
-
-
-def _linear_ticks(lo: float, hi: float, target: int = 6) -> tuple[list[float], float]:
-    try:
-        ticks, _labeled, step = _native.scene_axis_ticks(0, lo, hi, target)
-        return ticks, step
-    except ValueError:
-        return [], 1.0
-
-
-# Angular tick ladders live in Rust (`scene::angular_ticks`); hosts call
-# `_native.scene_axis_ticks(3|4, ...)`.
-
-
-def _angular_ticks(lo: float, hi: float, unit: str, target: int = 6) -> tuple[list[float], float]:
-    """Ticks for an angular axis, on a ladder humans read angles on.
-
-    Mirrors `angularTicks` in js/src/30_ticks.ts via Rust scene policy.
-    """
-    kind = 3 if unit == "degrees" else 4
-    try:
-        ticks, _labeled, step = _native.scene_axis_ticks(kind, lo, hi, target)
-        return ticks, step
-    except ValueError:
-        return [], 1.0
-
-
-def _log_ticks(lo: float, hi: float, target: int = 6) -> tuple[list[float], list[float], float]:
-    """Returns (ticks, labeled_ticks, step)."""
-    try:
-        return _native.scene_axis_ticks(1, lo, hi, target)
-    except ValueError:
-        return [], [], 1.0
-
-
-def _category_ticks(lo: float, hi: float, n_categories: int, target: int = 6) -> list[int]:
-    try:
-        ticks, _labeled, _step = _native.scene_axis_ticks(
-            2, lo, hi, target, aux=float(n_categories)
-        )
-        return [int(v) for v in ticks]
-    except ValueError:
-        return []
-
-
-# Time / calendar ladders live in Rust (`scene::time_ticks`); hosts call
-# `_native.scene_axis_ticks(5, ...)`.
-
-
-def _time_ticks(lo: float, hi: float, target: int = 6) -> tuple[list[float], float]:
-    """Ticks for a time axis in UTC milliseconds since epoch.
-
-    Mirrors `timeTicks` in js/src/30_ticks.ts via Rust scene policy.
-    """
-    try:
-        ticks, _labeled, step = _native.scene_axis_ticks(5, lo, hi, target)
-        return ticks, step
-    except ValueError:
-        return [], _MS["d"]
 
 
 _MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
@@ -2675,9 +2617,9 @@ def _polar_label_room(theta_axis: dict[str, Any]) -> float:
     """
     room = _POLAR_LABEL_ROOM
     # A category axis carries its authored names in `categories` and usually has
-    # no `tick_labels` at all (`axis_ticks` hands the categories straight to
-    # `_category_ticks`), so measuring only `tick_labels` fell back to the
-    # uniform default and long names spilled over the disc.
+    # no `tick_labels` at all (`axis_ticks` hands category count to Rust), so
+    # measuring only `tick_labels` fell back to the uniform default and long
+    # names spilled over the disc.
     labels = theta_axis.get("tick_labels")
     if not labels and theta_axis.get("kind") == "category":
         labels = theta_axis.get("categories")
@@ -2887,31 +2829,31 @@ def axis_ticks(
         target = max(1, min(200, int(requested)))
     else:
         target = max(3, int(length_px / 80)) if is_x else max(3, int(length_px / 45))
-    # Category theta is category-index space, even though it also carries the
-    # angular descriptors. Its labels and tick positions must win over angle
-    # formatting/generation; the projection maps the codes into the sector.
-    # Each category is also one spoke/polygon vertex, so the default must not
-    # thin them by pixel density. An explicit tick_count remains the opt-in
-    # control for authors who want fewer spokes.
+    aux = 0.0
     if kind == "category":
         categories = axis.get("categories") or []
+        # Category theta is category-index space, even though it also carries
+        # angular descriptors. Each category is one spoke/polygon vertex, so
+        # the automatic target must not thin it by pixel density.
         if axis.get("theta_unit") is not None and requested is None:
             target = len(categories)
-        t = [float(v) for v in _category_ticks(lo, hi, len(axis.get("categories") or []), target)]
-        return t, t, 1.0
-    if axis.get("theta_unit") is not None:
-        t, step = _angular_ticks(lo, hi, axis["theta_unit"], target)
-        return t, t, step
-    if axis.get("scale") == "log" or kind == "log":
-        return _log_ticks(lo, hi, target)
-    if axis.get("scale") == "symlog":
-        constant = float(axis.get("constant", 1.0))
-        return _native.scene_axis_ticks(6, lo, hi, target, aux=constant)
-    if kind == "time":
-        t, step = _time_ticks(lo, hi, target)
-        return t, t, step
-    t, step = _linear_ticks(lo, hi, target)
-    return t, t, step
+        rust_kind = 2
+        aux = float(len(categories))
+    elif axis.get("theta_unit") is not None:
+        rust_kind = 3 if axis["theta_unit"] == "degrees" else 4
+    elif axis.get("scale") == "log" or kind == "log":
+        rust_kind = 1
+    elif axis.get("scale") == "symlog":
+        rust_kind = 6
+        aux = float(axis.get("constant", 1.0))
+    elif kind == "time":
+        rust_kind = 5
+    else:
+        rust_kind = 0
+    try:
+        return _native.scene_axis_ticks(rust_kind, lo, hi, target, aux=aux)
+    except ValueError:
+        return [], [], _MS["d"] if rust_kind == 5 else 1.0
 
 
 def minor_axis_ticks(axis: dict[str, Any]) -> list[float]:
@@ -6838,19 +6780,17 @@ def _colorbar(
             if lo <= float(value) <= hi
         ]
     else:
-        automatic_positions = (
-            _log_ticks(
-                lo,
-                hi,
-                _colorbar_tick_target(width if orientation == "horizontal" else height),
-            )[1]
-            if log_scale
-            else _linear_ticks(
-                lo,
-                hi,
-                _colorbar_tick_target(width if orientation == "horizontal" else height),
-            )[0]
-        ) or [lo, hi]
+        tick_length = width if orientation == "horizontal" else height
+        automatic = axis_ticks(
+            {
+                "kind": "log" if log_scale else "linear",
+                "range": [lo, hi],
+                "tick_count": _colorbar_tick_target(tick_length),
+            },
+            tick_length,
+            orientation == "horizontal",
+        )
+        automatic_positions = (automatic[1] if log_scale else automatic[0]) or [lo, hi]
         tick_pairs = [(float(value), None) for value in automatic_positions]
     tick_positions = [value for value, _label in tick_pairs]
     format_tick = _fmt_log if log_scale else lambda value: f"{value:g}"
