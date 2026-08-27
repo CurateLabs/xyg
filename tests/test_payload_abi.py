@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from xyg import kernels
+from xyg._figure import Figure
 from xyg.config import (
     DECIMATION_THRESHOLD,
     DIRECT_SOFT_CEILING,
@@ -57,3 +58,19 @@ def test_payload_visible_mask_y_log_and_base() -> None:
     np.testing.assert_array_equal(mask, [True, False, False])
     linear = kernels.payload_visible_mask(x, y, base=base)
     np.testing.assert_array_equal(linear, [True, True, False])
+
+
+def test_polar_line_stays_direct_over_m4_threshold() -> None:
+    n = DECIMATION_THRESHOLD + 1
+    fig = Figure(coords="polar").line(np.arange(n, dtype=float), np.ones(n))
+    spec, _blob = fig.build_payload()
+    assert spec["traces"][0]["tier"] == "direct"
+    assert spec["traces"][0]["n_marks"] == n
+
+
+def test_polar_scatter_stays_direct_even_when_density_forced() -> None:
+    fig = Figure(coords="polar").scatter(np.arange(10.0), np.arange(10.0), density=True)
+    spec, _blob = fig.build_payload()
+    assert fig.traces[0].use_density()
+    assert spec["traces"][0]["tier"] == "direct"
+    assert spec["traces"][0]["n_marks"] == 10
