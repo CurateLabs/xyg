@@ -36,6 +36,7 @@ use xyg_engine::projection;
 use xyg_engine::raster;
 use xyg_engine::sankey;
 use xyg_engine::scene;
+use xyg_engine::scene_legend::{self, LegendError};
 use xyg_engine::scene_pack::{self, PackError};
 use xyg_engine::scene_public_export_reason;
 use xyg_engine::scene_style::{self, MarkStyleError};
@@ -103,7 +104,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 109;
+pub const ABI_VERSION: u32 = 110;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -381,6 +382,123 @@ pub unsafe extern "C" fn xyg_scene_pack_trace(
                 match scene_pack::encode_packed_rows(&rows, dest) {
                     Ok(count) => count,
                     Err(error) => -(error as i32),
+                }
+            }
+            Err(error) => -(error as i32),
+        }
+    })
+}
+
+/// Frame a primary Scene legend as XYLG bytes.
+///
+/// Hosts pass loc/flags, font sizes, paints, title, 16-byte entry meta, and
+/// concatenated labels. Rust owns the XYLG header, entry table, text offsets,
+/// and bounded-text rejection. Returns the byte count on success, `0` when
+/// there are no entries, `-1` malformed, `-2` reserved, `-3` over the
+/// legend budget, `-4` when `out` is too small, `-5` for an invalid font
+/// size, or `-6` for an unknown location code.
+///
+/// Entry meta is `n_entries` records of 16 bytes: little-endian u32
+/// style_ref, kind, symbol, two pad bytes, fill RGBA8, stroke RGBA8.
+/// `label_lens` is `n_entries` little-endian u32 lengths that concatenate
+/// to `labels_len`.
+///
+/// # Safety
+/// Non-zero lengths require readable pointers. When `out_cap` is non-zero,
+/// `out` must address that many writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_pack_legend(
+    loc: u8,
+    flags: u8,
+    font_size: f64,
+    title_font_size: f64,
+    text_rgba: *const u8,
+    frame_fill_rgba: *const u8,
+    title: *const u8,
+    title_len: usize,
+    n_entries: u32,
+    entry_meta: *const u8,
+    entry_meta_len: usize,
+    label_lens: *const u32,
+    labels: *const u8,
+    labels_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if out_cap > 0 && out.is_null() {
+        return -(LegendError::Length as i32);
+    }
+    ffi_guard(-(LegendError::Length as i32), || {
+        let rgba4 = |ptr: *const u8| -> Result<[u8; 4], i32> {
+            if ptr.is_null() {
+                Ok([0; 4])
+            } else {
+                Ok(std::slice::from_raw_parts(ptr, 4).try_into().unwrap())
+            }
+        };
+        let text_rgba = match rgba4(text_rgba) {
+            Ok(value) => value,
+            Err(code) => return code,
+        };
+        let frame_fill_rgba = match rgba4(frame_fill_rgba) {
+            Ok(value) => value,
+            Err(code) => return code,
+        };
+        let title = if title_len == 0 {
+            &[][..]
+        } else if title.is_null() {
+            return -(LegendError::Length as i32);
+        } else {
+            std::slice::from_raw_parts(title, title_len)
+        };
+        let n = n_entries as usize;
+        let meta = if entry_meta_len == 0 {
+            &[][..]
+        } else if entry_meta.is_null() {
+            return -(LegendError::Length as i32);
+        } else {
+            std::slice::from_raw_parts(entry_meta, entry_meta_len)
+        };
+        let lens = if n == 0 {
+            &[][..]
+        } else if label_lens.is_null() {
+            return -(LegendError::Length as i32);
+        } else {
+            std::slice::from_raw_parts(label_lens, n)
+        };
+        let labels = if labels_len == 0 {
+            &[][..]
+        } else if labels.is_null() {
+            return -(LegendError::Length as i32);
+        } else {
+            std::slice::from_raw_parts(labels, labels_len)
+        };
+        let entries = match scene_legend::entries_from_meta(meta, lens, labels) {
+            Ok(value) => value,
+            Err(error) => return -(error as i32),
+        };
+        match scene_legend::pack_legend(scene_legend::LegendFrameInput {
+            loc,
+            flags,
+            font_size,
+            title_font_size,
+            text_rgba,
+            frame_fill_rgba,
+            title,
+            entries: &entries,
+        }) {
+            Ok(bytes) => {
+                if bytes.len() > out_cap {
+                    return -(LegendError::Output as i32);
+                }
+                if bytes.is_empty() {
+                    return 0;
+                }
+                let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                dest[..bytes.len()].copy_from_slice(&bytes);
+                match i32::try_from(bytes.len()) {
+                    Ok(count) => count,
+                    Err(_) => -(LegendError::Limit as i32),
                 }
             }
             Err(error) => -(error as i32),

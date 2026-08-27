@@ -322,6 +322,10 @@ and receive 56-byte Scene rows; record kinds, stable-id splitting,
 expansion modes, ribbon/triangle doubling, heatmap lattice framing, and
 finite-coordinate rejection cannot drift.
 
+ABI 110 adds `xyg_scene_pack_legend` so both hosts pass loc/flags/paints
+and receive XYLG bytes; header layout, text offsets, and bounded-text
+rejection cannot drift.
+
 ## Version 4: default numeric Cartesian chrome
 
 Version 4 keeps the version-3 byte widths but changes whole-scene rendering
@@ -1039,7 +1043,9 @@ from packed `XYCH` v1, and chrome/annotation packers call `xyg_css_color_rgba`
 for the same conversion. ABI 109 does not change Scene records either;
 `xyg_scene_pack_trace` owns Figure→Scene row packing (kinds, stable ids,
 expansion modes, ribbon/triangle doubling, heatmap lattice framing) from
-literal columns. Polar
+literal columns. ABI 110 does not change Scene records either;
+`xyg_scene_pack_legend` owns primary XYLG legend framing from loc/flags,
+paints, title, and entry meta. Polar
 hexbin, custom reducers, metric colormaps, LOD, and rich style exceptions
 fail closed and keep the compatibility exporters. Scene 25 is unchanged.
 

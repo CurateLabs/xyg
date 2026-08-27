@@ -1,4 +1,4 @@
-"""Rust-owned Scene CSS, mark/chrome styles, and Figure→Scene packing (ABI 107–109)."""
+"""Rust-owned Scene CSS, packing, chrome, and legend framing (ABI 107–110)."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ import pytest
 from xyg._figure import Figure
 from xyg._native import (
     css_color_rgba,
+    scene_pack_legend,
     scene_pack_trace,
     scene_resolve_chrome_style,
     scene_resolve_mark_styles,
@@ -108,3 +109,31 @@ def test_pack_trace_heatmap_frames_extent_then_shape() -> None:
 def test_pack_trace_rejects_nonfinite_coordinates() -> None:
     with pytest.raises(ValueError, match="missing-data"):
         scene_pack_trace(1, [[0.0, float("nan")], [1.0, 2.0]])
+
+
+def test_pack_legend_frames_xylg_header_and_label() -> None:
+    framed = scene_pack_legend(
+        loc=1,
+        flags=1 | (1 << 3),
+        font_size=0.0,
+        title_font_size=0.0,
+        text_rgba=bytes((32, 32, 32, 255)),
+        frame_fill_rgba=bytes(4),
+        title=b"",
+        entry_meta=struct.pack("<IBB2x4s4s", 1, 0, 3, bytes((0x39, 0x87, 0xE5, 255)), bytes(4)),
+        label_lens=[6],
+        labels=b"series",
+    )
+    assert framed[:4] == b"XYLG"
+    assert framed[4] == 1
+    assert framed[5] == 1 | (1 << 3)
+    assert framed[32:36] == bytes((32, 32, 32, 255))
+    assert framed[48:52] == (1).to_bytes(4, "little")
+    assert framed[-6:] == b"series"
+
+
+def test_named_scatter_legend_compiles_through_rust_xylg() -> None:
+    figure = Figure().scatter([0.0, 1.0], [0.0, 1.0], name="series")
+    encoded = figure_scene(figure)
+    assert b"XYLG" in encoded
+    assert b"series" in encoded

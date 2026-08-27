@@ -240,37 +240,37 @@ def _legend_input(
     text_bytes = len(title) + sum(map(len, labels))
     if text_bytes > _native.MAX_SCENE_LEGEND_INPUT_BYTES - 48 - 128 * 24 or len(title) > 4096:
         raise ValueError("Scene v12 legend text is limited to 16,384 UTF-8 bytes")
-    out = bytearray(48 + len(entries) * 24)
-    out[:4] = b"XYLG"
-    out[4] = _LEGEND_LOCATIONS[loc]
-    out[5] = (
+    flags = (
         int(authored_loc is not None)
         | (int(authored_font_size is not None) << 1)
         | (int(authored_title_font_size is not None) << 2)
         | (int("color" in style) << 3)
         | (int("background" in style) << 4)
     )
-    struct.pack_into("<II2d", out, 8, len(entries), len(title), font_size, title_font_size)
-    if "color" in style:
-        out[32:36] = bytes(_rgba(str(style["color"]), 1.0))
-    if "background" in style:
-        out[36:40] = bytes(_rgba(str(style["background"]), 1.0))
-    text_offset = len(title)
-    for index, ((style_ref, kind, symbol, _), label) in enumerate(
-        zip(entries, labels, strict=True)
-    ):
-        offset = 48 + index * 24
-        struct.pack_into(
-            "<IBBHII", out, offset, style_ref, kind, symbol, 0, text_offset, len(label)
-        )
+    text_rgba = bytes(_rgba(str(style["color"]), 1.0)) if "color" in style else bytes(4)
+    frame_fill = bytes(_rgba(str(style["background"]), 1.0)) if "background" in style else bytes(4)
+    meta = bytearray()
+    blob = bytearray()
+    label_lens: list[int] = []
+    for (style_ref, kind, symbol, _), label in zip(entries, labels, strict=True):
         fill, stroke, _ = styles[style_ref]
-        out[offset + 16 : offset + 20] = bytes(fill)
-        out[offset + 20 : offset + 24] = bytes(stroke)
-        text_offset += len(label)
-    out.extend(title)
-    for label in labels:
-        out.extend(label)
-    return bytes(out)
+        meta.extend(struct.pack("<IBB2x", int(style_ref), int(kind), int(symbol)))
+        meta.extend(bytes(fill))
+        meta.extend(bytes(stroke))
+        label_lens.append(len(label))
+        blob.extend(label)
+    return _native.scene_pack_legend(
+        loc=_LEGEND_LOCATIONS[loc],
+        flags=flags,
+        font_size=font_size,
+        title_font_size=title_font_size,
+        text_rgba=text_rgba,
+        frame_fill_rgba=frame_fill,
+        title=title,
+        entry_meta=bytes(meta),
+        label_lens=label_lens,
+        labels=bytes(blob),
+    )
 
 
 _KIND_CODES = {

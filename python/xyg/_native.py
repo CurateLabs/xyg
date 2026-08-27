@@ -1993,6 +1993,63 @@ def scene_pack_trace(
     return kinds, stable_ids, style_refs, diameters, symbols, expansion, coords
 
 
+def scene_pack_legend(
+    *,
+    loc: int,
+    flags: int,
+    font_size: float,
+    title_font_size: float,
+    text_rgba: bytes,
+    frame_fill_rgba: bytes,
+    title: bytes,
+    entry_meta: bytes,
+    label_lens: list[int],
+    labels: bytes,
+) -> bytes:
+    """Frame a primary Scene legend as XYLG bytes."""
+    title_arr = np.frombuffer(title, dtype=np.uint8) if title else np.empty(0, dtype=np.uint8)
+    meta_arr = (
+        np.frombuffer(entry_meta, dtype=np.uint8) if entry_meta else np.empty(0, dtype=np.uint8)
+    )
+    label_arr = np.frombuffer(labels, dtype=np.uint8) if labels else np.empty(0, dtype=np.uint8)
+    lens_arr = np.ascontiguousarray(np.asarray(label_lens, dtype="<u4"))
+    color_arr = np.frombuffer(bytes(text_rgba), dtype=np.uint8)
+    fill_arr = np.frombuffer(bytes(frame_fill_rgba), dtype=np.uint8)
+    if len(color_arr) != 4 or len(fill_arr) != 4:
+        raise ValueError("legend paints must be RGBA8")
+    n_entries = int(len(label_lens))
+    out = np.zeros(MAX_SCENE_LEGEND_INPUT_BYTES, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_pack_legend(
+            int(loc),
+            int(flags),
+            float(font_size),
+            float(title_font_size),
+            _ptr_u8(color_arr),
+            _ptr_u8(fill_arr),
+            _ptr_u8(title_arr) if len(title_arr) else 0,
+            len(title_arr),
+            n_entries,
+            _ptr_u8(meta_arr) if len(meta_arr) else 0,
+            len(meta_arr),
+            lens_arr.ctypes.data if n_entries else 0,
+            _ptr_u8(label_arr) if len(label_arr) else 0,
+            len(label_arr),
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if code == -5:
+        raise ValueError("legend font sizes must be finite and in [1, 1000]")
+    if code == -6:
+        raise ValueError("Scene v12 does not support legend location")
+    if code == -3:
+        raise ValueError("Scene v12 legend text is limited to 16,384 UTF-8 bytes")
+    if code < 0:
+        raise ValueError("invalid scene legend packing")
+    return bytes(out[:code])
+
+
 def rect_zero_baseline_flags(base: npt.NDArray[np.float64], value: npt.NDArray[np.float64]) -> int:
     """Pack rectangle zero-baseline predicates for an XYAR trace row."""
     base_arr = np.ascontiguousarray(np.asarray(base, dtype=np.float64))

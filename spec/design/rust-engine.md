@@ -167,6 +167,9 @@ crates/
                         #   kinds, stable-id splitting, expansion modes,
                         #   ribbon/triangle doubling, heatmap lattice framing,
                         #   and finite-coordinate rejection.
+    scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
+                        #   entry table, text offsets, and bounded-text
+                        #   rejection.
     svg.rs              # screen-space coordinate serialization for the SVG path:
                         #   `poly_path` alone, folding parallel f64 x/y arrays
                         #   into one `M`/`L` path-data string with Python-matching
@@ -571,6 +574,10 @@ ABI v109 adds `xyg_scene_pack_trace` so Python and Node share one
 Figure→Scene row packer: record kinds, stable-id splitting, expansion
 modes, ribbon/triangle doubling, heatmap lattice framing, and
 finite-coordinate rejection.
+
+ABI v110 adds `xyg_scene_pack_legend` so Python and Node share one
+primary XYLG legend framer: header layout, text offsets, and
+bounded-text rejection.
 
 This is not yet the complete issue `#110` store: remote ranges, browser/WASM bounded
 staging, spatially unordered data, chart-lifecycle overview/refinement wiring,

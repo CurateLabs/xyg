@@ -4,6 +4,7 @@ import {
   xySceneAxisTicks,
   xySceneBatchEncode,
   xySceneBrowserPainter,
+  xyScenePackLegend,
   xyScenePlotLayout,
   xyScenePublicExportReason,
   xyScenePackTrace,
@@ -1013,15 +1014,49 @@ function legendInput(figure, entries, styles) {
   const encoder = new TextEncoder(), title = encoder.encode(String(options.title ?? "")), labels = entries.map((entry) => encoder.encode(entry.label));
   const textLength = title.length + labels.reduce((sum, label) => sum + label.length, 0);
   if (entries.length > 128 || title.length > 4096 || textLength > 16384 || labels.some((label) => label.length === 0 || label.length > 4096)) throw new RangeError("Scene v12 legend text exceeds its bounded UTF-8 limits");
-  const out = new Uint8Array(48 + entries.length * 24 + textLength), view = new DataView(out.buffer);
-  out.set([88, 89, 76, 71]); out[4] = LEGEND_LOCATIONS.get(loc); out[5] = Number(authoredLoc != null) | (Number(authoredFontSize != null) << 1) | (Number(authoredTitleFontSize != null) << 2) | (Number(Object.hasOwn(style, "color")) << 3) | (Number(Object.hasOwn(style, "background")) << 4); view.setUint32(8, entries.length, true); view.setUint32(12, title.length, true); view.setFloat64(16, fontSize, true); view.setFloat64(24, titleFontSize, true);
-  if (Object.hasOwn(style, "color")) out.set(rgba8(style.color, 1, "legend color"), 32); if (Object.hasOwn(style, "background")) out.set(rgba8(style.background, 1, "legend background"), 36);
-  let textOffset = title.length; out.set(title, 48 + entries.length * 24);
+  const flags = Number(authoredLoc != null) | (Number(authoredFontSize != null) << 1) | (Number(authoredTitleFontSize != null) << 2) | (Number(Object.hasOwn(style, "color")) << 3) | (Number(Object.hasOwn(style, "background")) << 4);
+  const textRgba = Object.hasOwn(style, "color") ? rgba8(style.color, 1, "legend color") : new Uint8Array(4);
+  const frameFill = Object.hasOwn(style, "background") ? rgba8(style.background, 1, "legend background") : new Uint8Array(4);
+  const meta = new Uint8Array(entries.length * 16);
+  const metaView = new DataView(meta.buffer);
+  const concatenated = new Uint8Array(textLength - title.length);
+  const labelLens = new Uint32Array(entries.length);
+  let labelAt = 0;
   for (const [index, entry] of entries.entries()) {
-    const offset = 48 + index * 24, label = labels[index], paint = styles[entry.styleRef];
-    view.setUint32(offset, entry.styleRef, true); out[offset + 4] = entry.kind; out[offset + 5] = entry.symbol; view.setUint32(offset + 8, textOffset, true); view.setUint32(offset + 12, label.length, true); out.set(paint.fillRgba, offset + 16); out.set(paint.strokeRgba, offset + 20); out.set(label, 48 + entries.length * 24 + textOffset); textOffset += label.length;
+    const paint = styles[entry.styleRef];
+    const offset = index * 16;
+    metaView.setUint32(offset, entry.styleRef, true);
+    meta[offset + 4] = entry.kind;
+    meta[offset + 5] = entry.symbol;
+    meta.set(paint.fillRgba, offset + 8);
+    meta.set(paint.strokeRgba, offset + 12);
+    const label = labels[index];
+    labelLens[index] = label.length;
+    concatenated.set(label, labelAt);
+    labelAt += label.length;
   }
-  return out;
+  const out = new Uint8Array(48 + entries.length * 24 + textLength);
+  const code = xyScenePackLegend(
+    LEGEND_LOCATIONS.get(loc),
+    flags,
+    fontSize,
+    titleFontSize,
+    u8Ptr(textRgba),
+    u8Ptr(frameFill),
+    title.length ? u8Ptr(title) : 0,
+    BigInt(title.length),
+    entries.length,
+    meta.length ? u8Ptr(meta) : 0,
+    BigInt(meta.length),
+    u32Ptr(labelLens),
+    concatenated.length ? u8Ptr(concatenated) : 0,
+    BigInt(concatenated.length),
+    u8Ptr(out),
+    BigInt(out.length),
+  );
+  if (code === -5) throw new RangeError("legend font sizes must be finite and in [1, 1000]");
+  if (code < 0) throw new RangeError("invalid scene legend packing");
+  return out.subarray(0, code);
 }
 
 function colorbarInput(figure) {

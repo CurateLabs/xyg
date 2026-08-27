@@ -1283,6 +1283,10 @@ step mode, style ref, trace id, diameter/symbol, extras, and literal f64
 columns; record kinds, stable-id splitting, expansion-mode assignment,
 ribbon/triangle doubling, heatmap lattice framing, and finite-coordinate
 rejection are engine-owned and identical for Python and Node.
+ABI 110 moves primary Scene legend framing into Rust. Hosts pass loc/flags,
+font sizes, paints, title, and per-entry meta plus labels; XYLG header
+layout, text offsets, and bounded-text rejection are engine-owned and
+identical for Python and Node.
 Constant-style Cartesian heatmap compiles a regular rows x cols lattice onto
 existing Scene Rect records; polar, colormaps, truecolor, irregular
 spacing, and LOD stay compatibility.
