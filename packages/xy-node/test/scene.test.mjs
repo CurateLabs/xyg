@@ -392,6 +392,34 @@ test("Node matches Python bytes for the bounded public literal geometry family",
   assert.ok(sceneBrowserPainter(scene).length > 300);
 });
 
+test("Node matches Python bytes for constant-style Cartesian hexbin PolyFill", () => {
+  const x = [0.5, 1.5, 2.5, 3.5, 1, 2, 3];
+  const y = [0.5, 0.5, 0.5, 0.5, 2, 2, 2];
+  const C = [1, 2, 3, 4, 5, 6, 7];
+  const cases = {
+    count: { gridsize: [4, 4], range: [[0, 4], [0, 5]], color: "#3987e5", opacity: 0.75, name: "hex", id: 0 },
+    mean: { gridsize: [4, 4], range: [[0, 4], [0, 5]], C, reduce: "mean", color: "#3987e5", opacity: 0.75, name: "hex", id: 0 },
+    sum: { gridsize: [4, 4], range: [[0, 4], [0, 5]], C, reduce: "sum", color: "#3987e5", opacity: 0.75, name: "hex", id: 0 },
+  };
+  for (const [reduce, options] of Object.entries(cases)) {
+    const figure = new Figure({ width: 320, height: 240 });
+    figure.setAxisDomain("x", [0, 4]); figure.setAxisDomain("y", [0, 5]);
+    figure.hexbin(x, y, options);
+    const scene = figure.toScene();
+    assert.equal(
+      crypto.createHash("sha256").update(scene).digest("hex"),
+      figureSceneFixture.public_hexbin_sha256[reduce],
+    );
+    const svg = sceneSvg(scene);
+    assert.match(svg, /<path d="M /);
+    assert.match(svg, />hex<\/text>/);
+    assert.ok(sceneRasterCommands(scene).length > 100);
+    const painter = sceneBrowserPainter(scene);
+    assert.equal(painter[new DataView(painter.buffer, painter.byteOffset, painter.byteLength).getUint32(12, true)], 4);
+    assert.ok(Buffer.from(painter).includes(Buffer.from("XYLG")));
+  }
+});
+
 test("Node matches Python bytes for Rust-owned bounded violin geometry", () => {
   for (const orientation of ["vertical", "horizontal"]) {
     const figure = new Figure({ width: 320, height: 240 });

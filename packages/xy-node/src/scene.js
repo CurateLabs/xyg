@@ -404,11 +404,23 @@ const SEGMENT_KINDS = new Set(["segments", "errorbar", "stem", "contour", "box_w
 const BAND_KINDS = new Set(["area", "error_band"]);
 const RIBBON_KINDS = new Set(["ribbon"]);
 const POLYFILL_KINDS = new Set(["triangle_mesh"]);
+const HEXBIN_KINDS = new Set(["hexbin"]);
+const HEXBIN_REDUCES = new Set(["count", "mean", "sum"]);
+// Pointy-top hexagon ring as fractions of hex_dx/hex_dy. Same contract as
+// python/xyg/_svg.py HEX_RING and js/src/50_chartview.ts _buildHexbinMark.
+const HEXBIN_RING = [
+  [0, -1 / 3],
+  [0.5, -1 / 6],
+  [0.5, 1 / 6],
+  [0, 1 / 3],
+  [-0.5, 1 / 6],
+  [-0.5, -1 / 6],
+];
 const STROKE_KINDS = new Set(["line", "segments", "errorbar", "stem", "contour", "box_whisker", "box_median"]);
 const SUPPORTED_KINDS = new Set([
   "scatter", "line", "bar", "column", "histogram", "violin", "box",
   "segments", "errorbar", "stem", "contour", "box_whisker", "box_median",
-  "area", "error_band", "ribbon", "triangle_mesh",
+  "area", "error_band", "ribbon", "triangle_mesh", "hexbin",
 ]);
 
 /** Return Rust's stable diagnostic for authored Scene feature bits. */
@@ -698,6 +710,39 @@ export function figureSceneV3(figure, { margins = null } = {}) {
           kinds.push(4); stableIds.push(stableId); styleRefs.push(styleRef);
           diameter.push(0); symbols.push(0);
           x0.push(px); y0.push(py); x1.push(0); y1.push(0);
+        }
+      }
+      continue;
+    }
+
+    if (HEXBIN_KINDS.has(trace.kind)) {
+      if (!HEXBIN_REDUCES.has(style.reduce)) {
+        throw new RangeError("Scene v12 does not yet encode custom hexbin reducers");
+      }
+      const xv = trace.x;
+      const yv = trace.y;
+      if (xv == null || yv == null || xv.length !== yv.length) {
+        throw new RangeError("Scene v12 hexbin columns must have equal length");
+      }
+      if (
+        Array.from(xv).some((value) => !Number.isFinite(value))
+        || Array.from(yv).some((value) => !Number.isFinite(value))
+      ) {
+        throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
+      }
+      const dx = Number(style.hex_dx ?? style.dx);
+      const dy = Number(style.hex_dy ?? style.dy);
+      if (!Number.isFinite(dx) || !Number.isFinite(dy) || dx <= 0 || dy <= 0) {
+        throw new RangeError("Scene v12 hexbin requires finite hex_dx/hex_dy cell pitch");
+      }
+      for (let cellIndex = 0; cellIndex < xv.length; cellIndex += 1) {
+        const stableId = (BigInt(id) << 32n) | BigInt(cellIndex);
+        const cx = Number(xv[cellIndex]);
+        const cy = Number(yv[cellIndex]);
+        for (const [rx, ry] of HEXBIN_RING) {
+          kinds.push(4); stableIds.push(stableId); styleRefs.push(styleRef);
+          diameter.push(0); symbols.push(0);
+          x0.push(cx + rx * dx); y0.push(cy + ry * dy); x1.push(0); y1.push(0);
         }
       }
       continue;

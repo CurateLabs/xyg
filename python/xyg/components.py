@@ -1673,6 +1673,7 @@ def hexbin(
     reduce_C_function: Callable[[np.ndarray], Scalar] = np.mean,
     mincnt: Optional[int] = None,
     name: Optional[str] = None,
+    color: Any = None,
     colormap: channels.ColormapLike = channels.DEFAULT_COLORMAP,
     opacity: float = 0.9,
     style: Optional[dict[str, StyleValue]] = None,
@@ -1693,6 +1694,7 @@ def hexbin(
         reduce_C_function: Reduction applied to values in each hexagon.
         mincnt: Minimum observations required to render a hexagon.
         name: Series label used by legends and tooltips.
+        color: Literal constant CSS paint. When omitted, cells use ``colormap``.
         colormap: Colormap used for bin values.
         opacity: Hexagon opacity from zero to one.
         style: Mark style overrides.
@@ -1715,6 +1717,7 @@ def hexbin(
             "C": C,
             "reduce_C_function": reduce_C_function,
             "mincnt": mincnt,
+            "color": color,
             "colormap": colormap,
             "opacity": opacity,
             "x_axis": x_axis,
@@ -6105,6 +6108,7 @@ def _apply_hexbin(fig: Figure, m: Mark, data: Any) -> None:
         reduce_C_function=m.props["reduce_C_function"],
         mincnt=m.props["mincnt"],
         name=m.name,
+        color=m.props["color"],
         colormap=m.props["colormap"],
         opacity=m.props["opacity"],
         style=m.style,

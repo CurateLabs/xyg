@@ -102,7 +102,9 @@ an authored constant CSS stroke and optional finite non-negative scalar width
 polylines, ordinary area/error-band
 Bands, bar/column/histogram Rects, disconnected segment/error-bar/stem endpoint
 pairs with bounded stem markers, at most 1,024 fill-only unjoined constant-color
-triangle-mesh faces, and finite literal solid ribbons. Each accepted mesh face
+triangle-mesh faces, constant-style Cartesian hexbin PolyFill cells (one
+6-vertex group per cell, sharing that 1,024-group painter budget), and finite
+literal solid ribbons. Each accepted mesh face
 is one three-vertex PolyFill group shared by SVG, raster, and browser consumers;
 joined fills, component alpha, outlines, per-face styles, alternate axes, and
 larger meshes remain compatibility behavior. For ribbons,
@@ -152,8 +154,15 @@ grid width or an explicit pair; `grid_h == 0` selects matplotlib
 `int(width / √3)` floored at 2, and `use_range == 0` applies the shared
 automatic-domain pad. Finite-pair filtering ignores nonfinite x, y, or C.
 Python custom reducers keep host group reduction after `xyg_hexbin_ingress`
-resolves the same domain and aspect. The compact result remains the existing
-centers-only hexbin trace.
+resolves the same domain and aspect. The compact wire result remains the
+existing centers-only hexbin trace. Constant-style Cartesian native
+count/mean/sum lattices now compile those centers plus `hex_dx`/`hex_dy`
+onto existing Scene v25 PolyFill records (one 6-vertex group per cell).
+Python and Node fixtures are byte-identical through SVG, raster, and
+browser consumers. Constant-style mean and sum share Scene bytes when they
+occupy the same lattice, because paint ignores the metric. Polar hexbin, custom `reduce_C_function`, metric
+colormaps, LOD beyond the 1,024-group painter budget, and rich style
+exceptions remain compatibility routes. Heatmap colormap Scene is later.
 ABI 99 gives both composition hosts one compact grouped box ingress. Hosts pack
 the same f64 values/offsets/centers and literal options; Rust returns typed
 active-group IDs, fixed 25-f64 group records, monotone outlier offsets, and
