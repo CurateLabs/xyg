@@ -518,32 +518,84 @@ export class XygWasmTicksHandle {
     return null;
   }
 
+  /**
+   * Map ChartView `tick_values` onto XYTK provenance.
+   *
+   * A missing array is automatic. `[]` is authored_empty. A well-formed
+   * nonempty array is authored_values. Malformed planes stay ineligible so
+   * this adapter never claims a cache it cannot frame.
+   */
+  private authoredPlane(axis: {
+    tick_values?: unknown;
+    tick_labels?: unknown;
+  }): {
+    provenance: Exclude<XygWasmTickProvenance, "automatic">;
+    values: readonly number[];
+    labels: readonly string[];
+  } | "invalid" | null {
+    if (!Array.isArray(axis.tick_values)) return null;
+    if (axis.tick_values.length > MAX_TICKS) return "invalid";
+    const values: number[] = [];
+    for (const value of axis.tick_values) {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) return "invalid";
+      values.push(numeric);
+    }
+    const rawLabels = axis.tick_labels;
+    let labels: readonly string[] = [];
+    if (rawLabels != null) {
+      if (!Array.isArray(rawLabels)
+          || rawLabels.some((label) => typeof label !== "string" || label.includes("\0"))) {
+        return "invalid";
+      }
+      if (rawLabels.length === 0) {
+        labels = [];
+      } else if (rawLabels.length !== values.length) {
+        return "invalid";
+      } else {
+        labels = rawLabels;
+      }
+    }
+    if (values.length === 0) {
+      return labels.length
+        ? "invalid"
+        : { provenance: "authored_empty", values, labels };
+    }
+    return { provenance: "authored_values", values, labels };
+  }
+
   private slotIdentity(slot: PrimaryAxisId): string | null {
     if (!this.slotEligible(slot)) return null;
     const axis = this.view._axis(slot);
     const family = this.axisFamily(axis);
     if (!family) return null;
+    const authored = this.authoredPlane(axis);
+    if (authored === "invalid") return null;
     return JSON.stringify({
       family,
       format: typeof axis.format === "string" ? axis.format : "",
       categories: family === "category" ? [...(this.categoryTable(axis) ?? [])] : [],
       constant: family === "symlog" ? Number(this.view._axisConstant(slot)) : 0,
       mask: family === "log" && axis.nonpositive === "mask",
+      provenance: authored?.provenance ?? "automatic",
+      authoredValues: authored?.values ?? [],
+      authoredLabels: authored?.labels ?? [],
     });
   }
 
   private slotEligible(slot: PrimaryAxisId): boolean {
     if (this.view.spec?.coords === "polar") return false;
     const axis = this.view._axis(slot);
-    if (!axis || typeof axis !== "object" || Array.isArray(axis.tick_values) || axis.theta_unit) {
+    if (!axis || typeof axis !== "object" || axis.theta_unit) {
       return false;
     }
+    if (this.authoredPlane(axis) === "invalid") return false;
     const family = this.axisFamily(axis);
     if (family == null) return false;
     return family !== "category" || this.categoryTable(axis) != null;
   }
 
-  /** Policy: this slice can request this automatic primary Cartesian axis. */
+  /** Policy: this slice can request this primary Cartesian axis. */
   eligible(axisId: unknown): axisId is PrimaryAxisId {
     const slot = this.primarySlot(axisId);
     return slot !== null && this.slotEligible(slot);
@@ -610,16 +662,20 @@ export class XygWasmTicksHandle {
       if (!Number.isFinite(lo) || !Number.isFinite(hi)) continue;
       const family = this.axisFamily(axis);
       if (!family) continue;
+      const authored = this.authoredPlane(axis);
+      if (authored === "invalid") continue;
       axes.push({
         axisId: PRIMARY_AXIS_CODES[axisId],
         family,
-        provenance: "automatic",
+        provenance: authored?.provenance ?? "automatic",
         lo,
         hi,
         target: this.target(axisId, family),
         ...(family === "symlog" ? { constant: this.view._axisConstant(axisId) } : {}),
         ...(family === "log" ? { maskNonpositive: axis.nonpositive === "mask" } : {}),
         ...(family === "category" ? { categories: this.categoryTable(axis) ?? [] } : {}),
+        ...(authored?.values.length ? { authoredValues: authored.values } : {}),
+        ...(authored?.labels.length ? { authoredLabels: authored.labels } : {}),
         ...(typeof axis.format === "string" ? { format: axis.format } : {}),
       });
       axisIds.push(axisId);
@@ -712,7 +768,7 @@ export class XygWasmTicksHandle {
         const axisId = frame.axisIds[index];
         const actual = result.axes[index];
         if (!actual || actual.axisId !== expected.axisId || actual.revision !== revision
-            || actual.provenance !== "automatic"
+            || actual.provenance !== expected.provenance
             || actual.labeledValues.length !== actual.labels.length) {
           throw new TypeError("Rust tick output axis identity is malformed");
         }
@@ -773,7 +829,7 @@ export class XygWasmTicksHandle {
       const frame = this.frame();
       if (!frame) {
         throw new RangeError(
-          "attachWasmTicks requires an automatic primary Cartesian linear, log, symlog, category, or UTC-time axis",
+          "attachWasmTicks requires a primary Cartesian linear, log, symlog, category, or UTC-time axis",
         );
       }
       if (await this.request(frame, false, true)) return;
@@ -825,7 +881,8 @@ export class XygWasmTicksHandle {
 }
 
 /**
- * Attach Rust-owned automatic ticks to supported primary Cartesian axes.
+ * Attach Rust-owned automatic, authored-value, and authored-empty ticks to
+ * supported primary Cartesian axes.
  *
  * Eligible families are linear, log, symlog, category, and UTC-time.
  *

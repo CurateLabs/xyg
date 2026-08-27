@@ -583,9 +583,9 @@ F3, still pending (above).
   remains valid, and the envelope keeps the batch function below Koffi's
   64-parameter ceiling. WASM ABI 23 exposes the same Rust-owned f64 ladders and
   labels through an atomic, bounded Worker request. `attachWasmTicks` now
-  schedules attached automatic primary Cartesian
-  linear/log/symlog/category/UTC-time ChartView
-  axes onto that lane; polar/secondary/authored families and all-host
+  schedules attached automatic, authored-value, and authored-empty primary
+  Cartesian linear/log/symlog/category/UTC-time ChartView
+  axes onto that lane; polar/secondary/colorbar families and all-host
   external-asset delivery remain #59 work.
   ABI 97 generalizes the parallel step-mode column to `expansion_modes` and
   removes static ribbon tessellation from the hosts. Python and Node pack two

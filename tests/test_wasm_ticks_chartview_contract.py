@@ -12,7 +12,12 @@ def test_chartview_wasm_ticks_are_a_lifecycle_adapter_not_a_generator() -> None:
     assert "export async function attachWasmTicks" in ticks
     assert "resolveWasmTicks(this.worker" in ticks
     assert "family," in ticks
-    assert 'provenance: "automatic"' in ticks
+    assert 'provenance: authored?.provenance ?? "automatic"' in ticks
+    assert "authoredPlane" in ticks
+    assert "authored_values" in ticks
+    assert "authored_empty" in ticks
+    assert "actual.provenance !== expected.provenance" in ticks
+    assert "Array.isArray(axis.tick_values) || axis.theta_unit" not in ticks
     assert 'from "./30_ticks"' not in ticks
     assert "linearTicks(" not in ticks
     assert "logTicks(" not in ticks
@@ -20,6 +25,12 @@ def test_chartview_wasm_ticks_are_a_lifecycle_adapter_not_a_generator() -> None:
     assert "const wasmTicks = this._wasmTicks?.ticks?.(axisId)" in chartview
     assert "this._wasmTicks?.label?.(axisId, Number(value))" in chartview
     assert "this._wasmTicks?.covers?.(axisId)" in chartview
+    assert chartview.index("const wasmTicks = this._wasmTicks?.ticks?.(axisId)") < chartview.index(
+        "if (Array.isArray(axis.tick_values))"
+    )
+    assert chartview.index("this._wasmTicks?.covers?.(axisId)") < chartview.index(
+        "if (Array.isArray(axis.tick_values))"
+    )
     assert "primarySlot" in ticks
     assert "slotEligible" in ticks
     assert "eligible(axisId: unknown)" in ticks
@@ -62,6 +73,9 @@ def test_chartview_wasm_ticks_are_latest_wins_and_destroy_safe() -> None:
     assert "secondary ChartView axes stay on the compatibility tick path" in browser
     assert "newly eligible axis after attach does not paint empty wasm" in browser
     assert "primary Cartesian ChartView category and UTC-time ticks use Rust/WASM" in browser
+    assert "primary Cartesian ChartView authored and authored-empty ticks use Rust/WASM" in browser
+    assert "authored ChartView ticks on category and UTC-time axes use Rust/WASM" in browser
+    assert "authored provenance switch after attach waits for a matching Rust cache" in browser
     assert "family switch after attach waits for a matching Rust cache" in browser
     assert "failed ChartView tick snapshot retries without a second event" in browser
 
@@ -83,6 +97,8 @@ def test_chartview_wasm_tick_assets_and_scope_are_explicit() -> None:
     assert "GL lifecycle" not in api
     assert "this.view._glLost" not in ticks
     assert "Angular/polar, secondary-axis" in api
+    assert "authored-value, and authored-empty" in api
+    assert "authored-value, and authored-empty" in design
     assert '"utc_time"' in ticks
     assert 'family === "category"' in ticks
     assert "slotIdentity" in ticks

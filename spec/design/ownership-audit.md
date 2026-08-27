@@ -145,12 +145,12 @@ and measures gutters. `python/xyg/_scene_v3.py` and
 `packages/xy-node/src/scene.js` only retain authoring options and pack bounded
 UTF-8 through the versioned ABI envelope. `js/src/30_ticks.ts` remains
 canonical-policy debt for uncovered dynamic browser paths under #59. WASM ABI
-23 plus `attachWasmTicks` now cut explicitly attached automatic primary
-Cartesian linear/log/symlog/category/UTC-time ChartView axes to the Rust
-resolver and independent Worker lane. Polar, secondary axes, colorbars,
-authored ticks, unattached charts, and hosts without explicit external assets
-remain on the frozen compatibility path; this is not the all-host ChartView
-cutover.
+23 plus `attachWasmTicks` now cut explicitly attached automatic, authored-value,
+and authored-empty primary Cartesian linear/log/symlog/category/UTC-time
+ChartView axes to the Rust resolver and independent Worker lane. Polar,
+secondary axes, colorbars, unattached charts, and hosts without explicit
+external assets remain on the frozen compatibility path; this is not the
+all-host ChartView cutover.
 
 ## Binding seam decision
 
@@ -318,9 +318,9 @@ Allowed:
 
 - Temporary tick consumption and browser-specific label presentation during scene migration.
 - The existing TypeScript generator stays frozen for unattached charts and the
-  angular/polar/secondary/colorbar/authored compatibility paths.
-  An explicitly attached automatic primary Cartesian
-  linear/log/symlog/category/UTC-time axis
+  angular/polar/secondary/colorbar compatibility paths.
+  An explicitly attached automatic, authored-value, or authored-empty primary
+  Cartesian linear/log/symlog/category/UTC-time axis
   consumes only Rust-produced positions and labels for each view and resize.
 
 Forbidden:
@@ -348,8 +348,9 @@ Allowed:
 
 - Explicit static Worker/WASM asset loading, bounded memory copies, stable
   status transport, cancellation, trap handling, and disposal.
-- Latest-wins viewport framing and cache admission for Rust-owned automatic
-  primary Cartesian linear/log/symlog/category/UTC-time ticks; TypeScript may
+- Latest-wins viewport framing and cache admission for Rust-owned automatic,
+  authored-value, and authored-empty primary Cartesian
+  linear/log/symlog/category/UTC-time ticks; TypeScript may
   schedule and paint but may neither generate nor format a covered attached axis.
 - O(series) validation and framing for transferable typed columns. Rust owns
   per-record expansion, stable identities, and default mark/bar geometry. Exact
