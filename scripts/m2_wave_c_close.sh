@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# One-shot Wave C closer for Milestone 2 claimed subsets.
-# Idempotent: skips issues/milestones that are already closed.
-# Related to #58 / #59 / #24; does not use Fixes/Closes/Resolves keywords.
+# Wave C closer / completion-comment backfill for Milestone 2 claimed subsets.
+# Idempotent: closes open issues, and posts the completion comment when missing
+# even if the issue is already closed. Related to #58 / #59 / #24 without using
+# Fixes/Closes/Resolves keywords in PR bodies that auto-close issues.
 set -euo pipefail
 
 REPO="${GITHUB_REPOSITORY:-CurateLabs/xyg}"
@@ -15,21 +16,47 @@ issue_state() {
   gh api "repos/${REPO}/issues/$1" --jq .state
 }
 
-comment_and_close() {
+has_marker_comment() {
   local number="$1"
-  local body_file="$2"
+  local marker="$2"
+  local bodies
+  bodies="$(gh api "repos/${REPO}/issues/${number}/comments" --paginate --jq '.[].body')"
+  [[ "$bodies" == *"$marker"* ]]
+}
+
+ensure_comment() {
+  local number="$1"
+  local marker="$2"
+  local body_file="$3"
+  if has_marker_comment "$number" "$marker"; then
+    echo "issue #${number} already has completion comment"
+    return 0
+  fi
+  gh api -X POST "repos/${REPO}/issues/${number}/comments" \
+    -f body="$(cat "$body_file")" >/dev/null
+  echo "posted completion comment on #${number}"
+}
+
+ensure_closed() {
+  local number="$1"
   local state
   state="$(issue_state "$number")"
   if [[ "$state" == "closed" ]]; then
     echo "issue #${number} already closed"
     return 0
   fi
-  gh api -X POST "repos/${REPO}/issues/${number}/comments" \
-    -f body="$(cat "$body_file")" >/dev/null
   gh api -X PATCH "repos/${REPO}/issues/${number}" \
     -f state=closed \
     -f state_reason=completed >/dev/null
   echo "closed #${number}"
+}
+
+comment_and_close() {
+  local number="$1"
+  local marker="$2"
+  local body_file="$3"
+  ensure_comment "$number" "$marker" "$body_file"
+  ensure_closed "$number"
 }
 
 TMP="$(mktemp -d)"
@@ -38,7 +65,7 @@ trap 'rm -rf "$TMP"' EXIT
 cat >"$TMP/58.md" <<'EOF'
 ## M2 Wave C completion record
 
-The bounded Cartesian Scene/static-export scope for this epic is complete on `main` at `879115f`:
+The bounded Cartesian Scene/static-export scope for this epic is complete on `main` at `879115f` (plus closer #265):
 
 - Python and Node produce identical Scene v25 goldens for constant-style Cartesian hexbin (`count` / `mean` / `sum`) and heatmap (`public_hexbin_sha256`, `public_heatmap_sha256` in `tests/fixtures/figure_scene_v3.json`).
 - Eligible hexbin and heatmap route through the canonical Rust SVG, raster/PNG, PDF-via-SVG, and browser-painter consumers (`tests/test_scene_export_support.py`, `packages/xy-node/test/scene.test.mjs`).
@@ -86,9 +113,9 @@ cat >"$TMP/24.md" <<'EOF'
 Children #58 and #59 are complete for the M2 claimed subsets. Architectural context #18, #22, #23, #56, and #57 were already done. Post-M2 release-matrix work continues under #54.
 EOF
 
-comment_and_close 58 "$TMP/58.md"
-comment_and_close 59 "$TMP/59.md"
-comment_and_close 24 "$TMP/24.md"
+comment_and_close 58 "M2 Wave C completion record" "$TMP/58.md"
+comment_and_close 59 "M2 claimed-subset completion record" "$TMP/59.md"
+comment_and_close 24 "M2 complete" "$TMP/24.md"
 
 milestone_state="$(gh api "repos/${REPO}/milestones/2" --jq .state)"
 if [[ "$milestone_state" == "closed" ]]; then
