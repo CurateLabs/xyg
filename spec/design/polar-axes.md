@@ -448,8 +448,8 @@ This public polar renderer support does not imply canonical Scene support for
 every polar mark. Scene v26 compiles polar `line`, `scatter`, `area`
 (including step-line encoded as line), `bar`/`column` (annular sectors
 tessellated to PolyFill), `errorbar` (projected polylines), `heatmap`
-(the same Rect→PolyFill tessellation; scalar colormaps and truecolor RGBA
-planes become per-cell literal styles), and `contour` (SegmentPair polylines through `polar_project`,
+(the same Rect→PolyFill tessellation; ABI 134 `HeatmapPainted` interns scalar
+colormaps and truecolor RGBA planes to per-cell literal styles), and `contour` (SegmentPair polylines through `polar_project`,
 matching polar errorbar) through Rust
 `polar_project` / `polar_wedge_points`, polar rings/spokes/clip, and rim tick
 labels when hosts pass explicit XYPL v1. Polar density-tier scatter stays

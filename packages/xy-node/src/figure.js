@@ -832,6 +832,7 @@ export class Figure {
       grid: t.grid,
       grid_shape: t.grid_shape,
       rgba: t.rgba,
+      colormapStops: opts.colormapStops ?? t.colormapStops ?? null,
       style: { ...t.style },
       count: t.count,
       x_axis: t.x_axis,

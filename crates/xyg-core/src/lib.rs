@@ -120,7 +120,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 133;
+pub const ABI_VERSION: u32 = 134;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1328,31 +1328,34 @@ fn decode_scene_authoring_input(bytes: &[u8]) -> Option<(Option<&str>, Option<&s
     ))
 }
 
-/// Host view for `xyg_scene_batch_encode` polar input. Koffi's 64-parameter
+/// Host view for `xyg_scene_batch_encode` extras input. Koffi's 64-parameter
 /// ceiling packs `data` + `len` as one pointer immediately before `out`.
+/// Bytes may be XYPL (polar), XYHP (painted heatmap), or XYEX (both).
 #[repr(C)]
 struct PolarAbiInput {
     data: *const u8,
     len: usize,
 }
 
-/// Read a host-packed [`PolarAbiInput`]. Null or `len == 0` is Cartesian.
+/// Read a host-packed [`PolarAbiInput`]. Null or `len == 0` is Cartesian
+/// with no paint.
 ///
 /// # Safety
 /// `view` must be null or point to a [`PolarAbiInput`]. Non-empty `data` must
 /// be a valid `len`-byte region for the duration of the call.
-unsafe fn polar_abi_bytes<'a>(view: *const u8) -> Option<&'a [u8]> {
+unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8])> {
     if view.is_null() {
-        return Some(&[]);
+        return Some((&[], &[]));
     }
     let parsed = std::ptr::read_unaligned(view.cast::<PolarAbiInput>());
     if parsed.len == 0 {
-        return Some(&[]);
+        return Some((&[], &[]));
     }
-    if parsed.len != polar::XYPL_V1_BYTES || parsed.data.is_null() {
+    if parsed.data.is_null() {
         return None;
     }
-    Some(std::slice::from_raw_parts(parsed.data, parsed.len))
+    let bytes = std::slice::from_raw_parts(parsed.data, parsed.len);
+    scene::split_scene_extras(bytes)
 }
 
 /// Encode a bounded backend-neutral Scene v12 batch. Record kinds are scatter
@@ -1360,10 +1363,11 @@ unsafe fn polar_abi_bytes<'a>(view: *const u8) -> Option<&'a [u8]> {
 /// typed binary, never JSON. Optional UTF-8 title/axis-label pointers may be
 /// null when the corresponding length is zero. `authored_text_annotations` may
 /// carry the ABI 96 `XYAF` envelope for bounded primary-axis numeric formats;
-/// ABI 133 packs polar authoring as one `polar_input` pointer so the function
-/// stays at Koffi's 64-parameter ceiling. Polar `HeatmapLattice` inputs expand
-/// in data space, then tessellate to PolyFill wedges. Returns required bytes
-/// or `usize::MAX` on error.
+/// ABI 133 packs polar authoring as one extras pointer so the function stays
+/// at Koffi's 64-parameter ceiling. ABI 134 reuses that pointer for XYHP
+/// painted-heatmap planes (or XYEX wrapping XYPL+XYHP). Polar `HeatmapLattice`
+/// and `HeatmapPainted` inputs expand in data space, then tessellate to
+/// PolyFill wedges. Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
 /// Every record input array must address `len` readable elements. The chrome
@@ -1649,12 +1653,12 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         } else {
             std::slice::from_raw_parts(expansion_modes, len)
         };
-        let polar_bytes = unsafe { polar_abi_bytes(polar_input) }?;
-        // Polar HeatmapLattice stays compact through this ABI: expansion is
-        // data-space (rows×cols Rect cells), then `with_polar` tessellates
-        // those cells to PolyFill annular sectors. Rejecting the lattice here
-        // would force hosts to pre-expand constant-style polar heatmaps.
-        let records = scene::expand_scene_records(
+        let (polar_bytes, paint_bytes) = unsafe { scene_extras_bytes(polar_input) }?;
+        // Polar HeatmapLattice/HeatmapPainted stay compact through this ABI:
+        // expansion is data-space (rows×cols Rect cells, painted planes intern
+        // unique fills), then `with_polar` tessellates those cells to PolyFill
+        // annular sectors.
+        let (records, painted_styles) = scene::expand_scene_records_painted(
             scene::SceneExpansionInput {
                 kinds,
                 stable_ids,
@@ -1669,8 +1673,20 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             },
             x_scale,
             y_scale,
+            fill_rgba,
+            stroke_rgba,
+            stroke_width,
+            paint_bytes,
         )
         .ok()?;
+        let (fill_rgba, stroke_rgba, stroke_width) = match &painted_styles {
+            Some(styles) => (
+                styles.fill_rgba.as_slice(),
+                styles.stroke_rgba.as_slice(),
+                styles.stroke_width.as_slice(),
+            ),
+            None => (fill_rgba, stroke_rgba, stroke_width),
+        };
         let title = if title_len == 0 {
             ""
         } else {
@@ -13688,21 +13704,24 @@ mod tests {
             data: bytes.as_ptr(),
             len: bytes.len(),
         };
-        let recovered = unsafe { polar_abi_bytes((&view as *const PolarAbiInput).cast()) }.unwrap();
-        assert_eq!(recovered, bytes.as_slice());
-        assert!(unsafe { polar_abi_bytes(std::ptr::null()) }.unwrap().is_empty());
+        let (polar, paint) =
+            unsafe { scene_extras_bytes((&view as *const PolarAbiInput).cast()) }.unwrap();
+        assert_eq!(polar, bytes.as_slice());
+        assert!(paint.is_empty());
+        let (polar, paint) = unsafe { scene_extras_bytes(std::ptr::null()) }.unwrap();
+        assert!(polar.is_empty() && paint.is_empty());
         let empty = PolarAbiInput {
             data: std::ptr::null(),
             len: 0,
         };
-        assert!(unsafe { polar_abi_bytes((&empty as *const PolarAbiInput).cast()) }
-            .unwrap()
-            .is_empty());
+        let (polar, paint) =
+            unsafe { scene_extras_bytes((&empty as *const PolarAbiInput).cast()) }.unwrap();
+        assert!(polar.is_empty() && paint.is_empty());
         let bad_len = PolarAbiInput {
             data: bytes.as_ptr(),
             len: 8,
         };
-        assert!(unsafe { polar_abi_bytes((&bad_len as *const PolarAbiInput).cast()) }.is_none());
+        assert!(unsafe { scene_extras_bytes((&bad_len as *const PolarAbiInput).cast()) }.is_none());
     }
 
     #[test]

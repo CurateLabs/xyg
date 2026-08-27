@@ -239,6 +239,7 @@ crates/
     polar.rs            # (theta, r) -> screen-pixel projection (ABI 131)
                         #   + XYPL v1 polar Scene compile (ABI 133 / Scene v26)
                         #     line/scatter/area/bar/column/errorbar/heatmap/contour
+                        #   + HeatmapPainted XYHP intern (ABI 134)
                         #   + pyplot tight-layout solve (ABI 127) ✅
     textblock.rs        # newline-delimited chrome measure (ABI 125) ✅
     geom.rs             # ribbon/curve/rounded-rect tessellation (ABI 121) ✅
@@ -679,5 +680,5 @@ landed; the remainder, in order:
    `xyg_density_emit_meta` / `xyg_density_wasm_eligible` ✅; ABI 129
    `xyg_colormap_rgba` / `xyg_colormap_rgba_canonical` ✅; ABI 133
    polar Scene v26 compile via XYPL on `xyg_scene_batch_encode` (`polar.rs` +
-   `scene.rs`) ✅.
+   `scene.rs`) ✅; ABI 134 `HeatmapPainted=9` + XYHP paint intern (`scene.rs`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

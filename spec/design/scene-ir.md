@@ -308,8 +308,11 @@ rows sharing the trace identity: the first carries the finite increasing extent
 and `diameter=rows`, the second carries `diameter=cols` with zeroed coordinates.
 Rust emits the row-major `rows×cols` Rect grid the retired host packers produced.
 Scene v25 bytes are unchanged. Density, irregular grids, custom-reduce, and
-over-budget cases stay on the compatibility exporters. Scalar colormap and
-truecolor regular lattices now tessellate to per-cell Scene fills.
+over-budget cases stay on the compatibility exporters. ABI 134 adds
+`HeatmapPainted=9`: the same two-row lattice plus an XYHP paint plane (RGBA8
+image-top-first or scalar values + RGB stops + domain). Rust tessellates cells
+and interns unique fills so Python and Node no longer expand N Rects or intern
+styles in the host. Polar encode still maps those Rects to PolyFill wedges.
 
 ABI 104 adds `SegmentPair=7` and `TriangleFace=8` to the same authoring enum.
 A disconnected endpoint pair is one compact Polyline row whose four coordinates

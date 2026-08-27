@@ -101,6 +101,7 @@ export function composeHeatmap(z, opts = {}) {
         grid: flat,
         grid_shape: [rows, cols],
         rgba,
+        colormapStops: opts.colormapStops ?? null,
         style,
         count: flat.length,
         x_axis: opts.xAxis ?? "x",

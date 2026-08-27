@@ -6,8 +6,10 @@
 
 use crate::css;
 use crate::geom;
+use crate::kernels::{colormap_color, normalize_one_f32};
 use crate::polar::{self, POLAR_METRICS_LEN, XYPL_MAGIC, XYPL_V1_BYTES};
 use crate::svg::push_num;
+use std::collections::HashMap;
 use std::fmt::Write;
 
 pub const SCENE_VERSION: u32 = 26;
@@ -3412,8 +3414,8 @@ impl SceneRecordKind {
 
 /// Compact authored expansion mode accepted by the whole-Scene ABI. The enum is
 /// deliberately not serialized into Scene: Rust expands compact step,
-/// ribbon, hex-cell, heatmap-lattice, segment-pair, and triangle-face inputs
-/// to ordinary canonical records before Scene v25 encoding.
+/// ribbon, hex-cell, heatmap-lattice, painted-heatmap, segment-pair, and
+/// triangle-face inputs to ordinary canonical records before Scene v25 encoding.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(u8)]
 pub enum SceneExpansionMode {
@@ -3431,6 +3433,9 @@ pub enum SceneExpansionMode {
     SegmentPair = 7,
     /// Two PolyFill rows are one triangle face: `(x0,y0,x1,y1)` then `(x2,y2,0,0)`.
     TriangleFace = 8,
+    /// Two Rect rows like [`Self::HeatmapLattice`], plus an XYHP paint plane
+    /// keyed by stable id. Rust tessellates cells and interns unique fills.
+    HeatmapPainted = 9,
 }
 
 impl SceneExpansionMode {
@@ -3445,6 +3450,7 @@ impl SceneExpansionMode {
             6 => Ok(Self::HeatmapLattice),
             7 => Ok(Self::SegmentPair),
             8 => Ok(Self::TriangleFace),
+            9 => Ok(Self::HeatmapPainted),
             _ => Err(SceneError::Length),
         }
     }
@@ -3457,8 +3463,12 @@ impl SceneExpansionMode {
             }
             Self::Ribbon => Some(SceneRecordKind::Band as u8),
             Self::HexCell | Self::TriangleFace => Some(SceneRecordKind::PolyFill as u8),
-            Self::HeatmapLattice => Some(SceneRecordKind::Rect as u8),
+            Self::HeatmapLattice | Self::HeatmapPainted => Some(SceneRecordKind::Rect as u8),
         }
+    }
+
+    fn allows_nonzero_diameter(self) -> bool {
+        matches!(self, Self::HeatmapLattice | Self::HeatmapPainted)
     }
 }
 
@@ -3476,6 +3486,321 @@ pub const SCENE_HEXBIN_RING: [(f64, f64); 6] = [
     (-0.5, 1.0 / 6.0),
     (-0.5, -1.0 / 6.0),
 ];
+
+/// XYHP v1 painted-heatmap sidecar (ABI 134). Hosts pack one plane per
+/// `HeatmapPainted` lattice; Rust tessellates cells and interns unique fills.
+pub const XYHP_MAGIC: &[u8; 4] = b"XYHP";
+pub const XYHP_VERSION: u32 = 1;
+pub const XYHP_V1_HEADER_BYTES: usize = 16;
+pub const XYHP_PLANE_HEADER_BYTES: usize = 24;
+pub const XYHP_PAINT_RGBA: u32 = 0;
+pub const XYHP_PAINT_COLORMAP: u32 = 1;
+/// XYEX v1 wraps optional XYPL polar bytes plus optional XYHP paint so
+/// `xyg_scene_batch_encode` stays at Koffi's 64-parameter ceiling.
+pub const XYEX_MAGIC: &[u8; 4] = b"XYEX";
+pub const XYEX_VERSION: u32 = 1;
+pub const XYEX_V1_HEADER_BYTES: usize = 16;
+
+/// One XYHP paint plane keyed by the compact lattice's stable identity.
+#[derive(Clone, Copy, Debug)]
+struct HeatmapPaintPlane<'a> {
+    stable_id: u64,
+    rows: usize,
+    cols: usize,
+    kind: u32,
+    payload: &'a [u8],
+}
+
+/// Owned style table after painted-heatmap intern. `None` from expansion means
+/// the caller should keep the authored fill/stroke arrays.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ExpandedSceneStyles {
+    pub fill_rgba: Vec<u8>,
+    pub stroke_rgba: Vec<u8>,
+    pub stroke_width: Vec<f64>,
+}
+
+fn scene_read_u32(bytes: &[u8], offset: usize) -> Result<u32, SceneError> {
+    Ok(u32::from_le_bytes(
+        bytes
+            .get(offset..offset + 4)
+            .ok_or(SceneError::Length)?
+            .try_into()
+            .map_err(|_| SceneError::Length)?,
+    ))
+}
+
+fn scene_read_u64(bytes: &[u8], offset: usize) -> Result<u64, SceneError> {
+    Ok(u64::from_le_bytes(
+        bytes
+            .get(offset..offset + 8)
+            .ok_or(SceneError::Length)?
+            .try_into()
+            .map_err(|_| SceneError::Length)?,
+    ))
+}
+
+fn scene_read_f64(bytes: &[u8], offset: usize) -> Result<f64, SceneError> {
+    Ok(f64::from_le_bytes(
+        bytes
+            .get(offset..offset + 8)
+            .ok_or(SceneError::Length)?
+            .try_into()
+            .map_err(|_| SceneError::Length)?,
+    ))
+}
+
+/// Split a host extras payload into polar XYPL bytes and XYHP paint bytes.
+/// Empty input is Cartesian with no paint. Raw XYPL (92 bytes) stays valid
+/// polar-only authoring. Raw XYHP is Cartesian painted heatmaps. XYEX wraps both.
+pub fn split_scene_extras(bytes: &[u8]) -> Option<(&[u8], &[u8])> {
+    if bytes.is_empty() {
+        return Some((&[], &[]));
+    }
+    if bytes.len() == XYPL_V1_BYTES && bytes.get(..4) == Some(&XYPL_MAGIC[..]) {
+        return Some((bytes, &[]));
+    }
+    if bytes.get(..4) == Some(&XYHP_MAGIC[..]) {
+        return Some((&[], bytes));
+    }
+    if bytes.len() < XYEX_V1_HEADER_BYTES || bytes.get(..4) != Some(&XYEX_MAGIC[..]) {
+        return None;
+    }
+    let version = u32::from_le_bytes(bytes.get(4..8)?.try_into().ok()?);
+    let polar_len = u32::from_le_bytes(bytes.get(8..12)?.try_into().ok()?) as usize;
+    let paint_len = u32::from_le_bytes(bytes.get(12..16)?.try_into().ok()?) as usize;
+    if version != XYEX_VERSION {
+        return None;
+    }
+    if polar_len != 0 && polar_len != XYPL_V1_BYTES {
+        return None;
+    }
+    let polar_end = XYEX_V1_HEADER_BYTES.checked_add(polar_len)?;
+    let paint_end = polar_end.checked_add(paint_len)?;
+    if paint_end != bytes.len() {
+        return None;
+    }
+    let polar = &bytes[XYEX_V1_HEADER_BYTES..polar_end];
+    let paint = &bytes[polar_end..paint_end];
+    if polar_len == XYPL_V1_BYTES && polar.get(..4) != Some(&XYPL_MAGIC[..]) {
+        return None;
+    }
+    if paint_len > 0 && paint.get(..4) != Some(&XYHP_MAGIC[..]) {
+        return None;
+    }
+    Some((polar, paint))
+}
+
+fn parse_heatmap_paint(bytes: &[u8]) -> Result<Vec<HeatmapPaintPlane<'_>>, SceneError> {
+    if bytes.is_empty() {
+        return Ok(Vec::new());
+    }
+    if bytes.len() < XYHP_V1_HEADER_BYTES || bytes.get(..4) != Some(&XYHP_MAGIC[..]) {
+        return Err(SceneError::Length);
+    }
+    if scene_read_u32(bytes, 4)? != XYHP_VERSION {
+        return Err(SceneError::Version);
+    }
+    let n_planes = scene_read_u32(bytes, 8)? as usize;
+    if scene_read_u32(bytes, 12)? != 0 {
+        return Err(SceneError::Length);
+    }
+    if n_planes == 0 {
+        return Err(SceneError::Length);
+    }
+    let mut planes = Vec::with_capacity(n_planes);
+    let mut cursor = XYHP_V1_HEADER_BYTES;
+    for _ in 0..n_planes {
+        let header_end = cursor
+            .checked_add(XYHP_PLANE_HEADER_BYTES)
+            .ok_or(SceneError::Limit)?;
+        if header_end > bytes.len() {
+            return Err(SceneError::Length);
+        }
+        let stable_id = scene_read_u64(bytes, cursor)?;
+        let rows = scene_read_u32(bytes, cursor + 8)? as usize;
+        let cols = scene_read_u32(bytes, cursor + 12)? as usize;
+        let kind = scene_read_u32(bytes, cursor + 16)?;
+        let payload_len = scene_read_u32(bytes, cursor + 20)? as usize;
+        if rows == 0 || cols == 0 || !matches!(kind, XYHP_PAINT_RGBA | XYHP_PAINT_COLORMAP) {
+            return Err(SceneError::Length);
+        }
+        let payload_end = header_end.checked_add(payload_len).ok_or(SceneError::Limit)?;
+        let payload = bytes.get(header_end..payload_end).ok_or(SceneError::Length)?;
+        let cells = rows.checked_mul(cols).ok_or(SceneError::Limit)?;
+        if kind == XYHP_PAINT_RGBA {
+            if payload_len != cells.checked_mul(4).ok_or(SceneError::Limit)? {
+                return Err(SceneError::Length);
+            }
+        } else {
+            // lo, hi, n_stops, pad, values[cells], RGB stops
+            if payload_len < 24 {
+                return Err(SceneError::Length);
+            }
+            let n_stops = scene_read_u32(payload, 16)? as usize;
+            if n_stops == 0 || scene_read_u32(payload, 20)? != 0 {
+                return Err(SceneError::Length);
+            }
+            let values_bytes = cells.checked_mul(8).ok_or(SceneError::Limit)?;
+            let stops_bytes = n_stops.checked_mul(3).ok_or(SceneError::Limit)?;
+            let expected = 24usize
+                .checked_add(values_bytes)
+                .and_then(|value| value.checked_add(stops_bytes))
+                .ok_or(SceneError::Limit)?;
+            if payload_len != expected {
+                return Err(SceneError::Length);
+            }
+        }
+        if planes.iter().any(|plane: &HeatmapPaintPlane<'_>| plane.stable_id == stable_id) {
+            return Err(SceneError::Length);
+        }
+        planes.push(HeatmapPaintPlane {
+            stable_id,
+            rows,
+            cols,
+            kind,
+            payload,
+        });
+        cursor = payload_end;
+    }
+    if cursor != bytes.len() {
+        return Err(SceneError::Length);
+    }
+    Ok(planes)
+}
+
+fn style_rgba4(table: &[u8], index: u32) -> Result<[u8; 4], SceneError> {
+    let start = (index as usize).checked_mul(4).ok_or(SceneError::Limit)?;
+    let slice = table.get(start..start + 4).ok_or(SceneError::Length)?;
+    Ok([slice[0], slice[1], slice[2], slice[3]])
+}
+
+fn intern_heatmap_fill(
+    styles: &mut ExpandedSceneStyles,
+    intern: &mut HashMap<[u8; 4], u32>,
+    fill: [u8; 4],
+    stroke: [u8; 4],
+    stroke_width: f64,
+) -> Result<u32, SceneError> {
+    if let Some(existing) = intern.get(&fill) {
+        return Ok(*existing);
+    }
+    let index = styles.stroke_width.len();
+    if index >= MAX_SCENE_STYLES {
+        return Err(SceneError::Limit);
+    }
+    let style_ref = u32::try_from(index).map_err(|_| SceneError::Limit)?;
+    styles.fill_rgba.extend_from_slice(&fill);
+    styles.stroke_rgba.extend_from_slice(&stroke);
+    styles.stroke_width.push(stroke_width);
+    intern.insert(fill, style_ref);
+    Ok(style_ref)
+}
+
+fn padded_colormap_domain(lo: f64, hi: f64) -> [f64; 2] {
+    if lo.is_finite() && hi.is_finite() && lo != hi {
+        [lo, hi]
+    } else if lo.is_finite() {
+        [lo - 0.5, hi + 0.5]
+    } else {
+        [0.0, 1.0]
+    }
+}
+
+fn heatmap_paint_fills(plane: HeatmapPaintPlane<'_>, alpha: u8) -> Result<Vec<[u8; 4]>, SceneError> {
+    let cells = plane.rows.checked_mul(plane.cols).ok_or(SceneError::Limit)?;
+    let mut fills = Vec::with_capacity(cells);
+    if plane.kind == XYHP_PAINT_RGBA {
+        for row in 0..plane.rows {
+            let src_row = plane.rows - 1 - row;
+            for col in 0..plane.cols {
+                let start = (src_row * plane.cols + col) * 4;
+                let slice = plane.payload.get(start..start + 4).ok_or(SceneError::Length)?;
+                fills.push([slice[0], slice[1], slice[2], slice[3]]);
+            }
+        }
+        return Ok(fills);
+    }
+    let n_stops = scene_read_u32(plane.payload, 16)? as usize;
+    let values_off = 24usize;
+    let stops_off = values_off
+        .checked_add(cells.checked_mul(8).ok_or(SceneError::Limit)?)
+        .ok_or(SceneError::Limit)?;
+    let stops_end = stops_off
+        .checked_add(n_stops.checked_mul(3).ok_or(SceneError::Limit)?)
+        .ok_or(SceneError::Limit)?;
+    let stop_bytes = plane.payload.get(stops_off..stops_end).ok_or(SceneError::Length)?;
+    let mut stops = Vec::with_capacity(n_stops);
+    for chunk in stop_bytes.chunks_exact(3) {
+        stops.push([chunk[0], chunk[1], chunk[2]]);
+    }
+    if stops.is_empty() {
+        return Err(SceneError::Length);
+    }
+    let domain = padded_colormap_domain(
+        scene_read_f64(plane.payload, 0)?,
+        scene_read_f64(plane.payload, 8)?,
+    );
+    for row in 0..plane.rows {
+        for col in 0..plane.cols {
+            let value = scene_read_f64(
+                plane.payload,
+                values_off + (row * plane.cols + col) * 8,
+            )?;
+            if !value.is_finite() {
+                fills.push([0, 0, 0, 0]);
+                continue;
+            }
+            let t = f64::from(normalize_one_f32(value, domain[0], domain[1], f32::NAN));
+            fills.push(if t.is_nan() {
+                [0, 0, 0, 0]
+            } else {
+                colormap_color(t, &stops, alpha)
+            });
+        }
+    }
+    Ok(fills)
+}
+
+fn heatmap_lattice_extent(
+    input: &SceneExpansionInput<'_>,
+    cursor: usize,
+) -> Result<(usize, usize, f64, f64, f64, f64), SceneError> {
+    if input.x0[cursor] >= input.x1[cursor]
+        || input.y0[cursor] >= input.y1[cursor]
+        || input.x0[cursor + 1] != 0.0
+        || input.y0[cursor + 1] != 0.0
+        || input.x1[cursor + 1] != 0.0
+        || input.y1[cursor + 1] != 0.0
+    {
+        return Err(SceneError::Length);
+    }
+    let rows = exact_positive_usize(input.diameter[cursor])?;
+    let cols = exact_positive_usize(input.diameter[cursor + 1])?;
+    Ok((
+        rows,
+        cols,
+        input.x0[cursor],
+        input.y0[cursor],
+        input.x1[cursor],
+        input.y1[cursor],
+    ))
+}
+
+fn take_paint_plane<'a>(
+    planes: &mut [Option<HeatmapPaintPlane<'a>>],
+    stable_id: u64,
+) -> Result<HeatmapPaintPlane<'a>, SceneError> {
+    for slot in planes.iter_mut() {
+        match slot {
+            Some(plane) if plane.stable_id == stable_id => {
+                return Ok(slot.take().expect("matched paint plane"));
+            }
+            _ => {}
+        }
+    }
+    Err(SceneError::Length)
+}
 
 fn exact_positive_usize(value: f64) -> Result<usize, SceneError> {
     if !value.is_finite() || value < 1.0 || value.fract() != 0.0 {
@@ -3647,6 +3972,22 @@ pub fn expand_scene_records(
     x_scale: AxisScale,
     y_scale: AxisScale,
 ) -> Result<ExpandedSceneRecords, SceneError> {
+    expand_scene_records_painted(input, x_scale, y_scale, &[], &[], &[], &[])
+        .map(|(records, _styles)| records)
+}
+
+/// Expand compact authoring, including ABI 134 painted heatmap lattices.
+/// When any `HeatmapPainted` group is present, `paint` must be a valid XYHP
+/// envelope and the returned style table includes interned per-cell fills.
+pub fn expand_scene_records_painted(
+    input: SceneExpansionInput<'_>,
+    x_scale: AxisScale,
+    y_scale: AxisScale,
+    fill_rgba: &[u8],
+    stroke_rgba: &[u8],
+    stroke_width: &[f64],
+    paint: &[u8],
+) -> Result<(ExpandedSceneRecords, Option<ExpandedSceneStyles>), SceneError> {
     let len = input.kinds.len();
     if [
         input.stable_ids.len(),
@@ -3664,6 +4005,36 @@ pub fn expand_scene_records(
     {
         return Err(SceneError::Length);
     }
+
+    let mut has_painted = false;
+    for mode in input.expansion_modes {
+        if SceneExpansionMode::from_code(*mode)? == SceneExpansionMode::HeatmapPainted {
+            has_painted = true;
+            break;
+        }
+    }
+    if has_painted {
+        if fill_rgba.len() != stroke_width.len().saturating_mul(4)
+            || stroke_rgba.len() != fill_rgba.len()
+            || stroke_width.is_empty()
+        {
+            return Err(SceneError::Length);
+        }
+    } else if !paint.is_empty() {
+        return Err(SceneError::Length);
+    }
+    let mut paint_planes: Vec<Option<HeatmapPaintPlane<'_>>> = parse_heatmap_paint(paint)?
+        .into_iter()
+        .map(Some)
+        .collect();
+    if has_painted && paint_planes.is_empty() {
+        return Err(SceneError::Length);
+    }
+    let mut painted_styles = has_painted.then(|| ExpandedSceneStyles {
+        fill_rgba: fill_rgba.to_vec(),
+        stroke_rgba: stroke_rgba.to_vec(),
+        stroke_width: stroke_width.to_vec(),
+    });
 
     // Stable identity is the canonical Polyline run boundary. Reject any
     // attempt to switch step mode inside one contiguous same-kind identity
@@ -3704,7 +4075,7 @@ pub fn expand_scene_records(
             if input.kinds[index] != expected_kind
                 || input.style_refs[index] != style_ref
                 || SceneExpansionMode::from_code(input.expansion_modes[index])? != mode
-                || (mode != SceneExpansionMode::HeatmapLattice && input.diameter[index] != 0.0)
+                || (!mode.allows_nonzero_diameter() && input.diameter[index] != 0.0)
                 || (mode != SceneExpansionMode::Ribbon && input.symbols[index] != 0)
             {
                 return Err(SceneError::Length);
@@ -3758,18 +4129,29 @@ pub fn expand_scene_records(
                 SCENE_HEXBIN_RING.len()
             }
             SceneExpansionMode::HeatmapLattice => {
-                if run_len != 2
-                    || input.x0[cursor] >= input.x1[cursor]
-                    || input.y0[cursor] >= input.y1[cursor]
-                    || input.x0[cursor + 1] != 0.0
-                    || input.y0[cursor + 1] != 0.0
-                    || input.x1[cursor + 1] != 0.0
-                    || input.y1[cursor + 1] != 0.0
-                {
+                if run_len != 2 {
                     return Err(SceneError::Length);
                 }
-                let rows = exact_positive_usize(input.diameter[cursor])?;
-                let cols = exact_positive_usize(input.diameter[cursor + 1])?;
+                let (rows, cols, _, _, _, _) = heatmap_lattice_extent(&input, cursor)?;
+                rows.checked_mul(cols).ok_or(SceneError::Limit)?
+            }
+            SceneExpansionMode::HeatmapPainted => {
+                if run_len != 2 {
+                    return Err(SceneError::Length);
+                }
+                let (rows, cols, _, _, _, _) = heatmap_lattice_extent(&input, cursor)?;
+                let plane = paint_planes
+                    .iter()
+                    .flatten()
+                    .find(|plane| plane.stable_id == input.stable_ids[cursor])
+                    .ok_or(SceneError::Length)?;
+                if plane.rows != rows || plane.cols != cols {
+                    return Err(SceneError::Length);
+                }
+                let style_index = input.style_refs[cursor] as usize;
+                if style_index >= stroke_width.len() {
+                    return Err(SceneError::Length);
+                }
                 rows.checked_mul(cols).ok_or(SceneError::Limit)?
             }
             SceneExpansionMode::SegmentPair => {
@@ -3852,23 +4234,42 @@ pub fn expand_scene_records(
             cursor = run_end;
             continue;
         }
-        if mode == SceneExpansionMode::HeatmapLattice {
-            let rows = exact_positive_usize(input.diameter[cursor])?;
-            let cols = exact_positive_usize(input.diameter[cursor + 1])?;
-            let x0 = input.x0[cursor];
-            let y0 = input.y0[cursor];
-            let x1 = input.x1[cursor];
-            let y1 = input.y1[cursor];
+        if mode == SceneExpansionMode::HeatmapLattice
+            || mode == SceneExpansionMode::HeatmapPainted
+        {
+            let (rows, cols, x0, y0, x1, y1) = heatmap_lattice_extent(&input, cursor)?;
             let dx = (x1 - x0) / cols as f64;
             let dy = (y1 - y0) / rows as f64;
             if !dx.is_finite() || !dy.is_finite() {
                 return Err(SceneError::NonFinite);
             }
+            let fills = if mode == SceneExpansionMode::HeatmapPainted {
+                let plane = take_paint_plane(&mut paint_planes, stable_id)?;
+                if plane.rows != rows || plane.cols != cols {
+                    return Err(SceneError::Length);
+                }
+                Some(heatmap_paint_fills(plane, style_rgba4(fill_rgba, style_ref)?[3])?)
+            } else {
+                None
+            };
+            let painted = fills.as_ref().map(|values| (values, stroke_rgba, stroke_width));
+            let mut intern: HashMap<[u8; 4], u32> = HashMap::new();
             for row in 0..rows {
                 for col in 0..cols {
+                    let cell_style = if let Some((fills, stroke_table, widths)) = painted {
+                        intern_heatmap_fill(
+                            painted_styles.as_mut().ok_or(SceneError::Length)?,
+                            &mut intern,
+                            fills[row * cols + col],
+                            style_rgba4(stroke_table, style_ref)?,
+                            *widths.get(style_ref as usize).ok_or(SceneError::Length)?,
+                        )?
+                    } else {
+                        style_ref
+                    };
                     output.push_heatmap_cell(
                         stable_id,
-                        style_ref,
+                        cell_style,
                         x0 + col as f64 * dx,
                         y0 + row as f64 * dy,
                         x0 + (col + 1) as f64 * dx,
@@ -3928,14 +4329,18 @@ pub fn expand_scene_records(
                 | SceneExpansionMode::Ribbon
                 | SceneExpansionMode::HexCell
                 | SceneExpansionMode::HeatmapLattice
+                | SceneExpansionMode::HeatmapPainted
                 | SceneExpansionMode::SegmentPair
                 | SceneExpansionMode::TriangleFace => unreachable!(),
             }
         }
         cursor = run_end;
     }
+    if paint_planes.iter().any(Option::is_some) {
+        return Err(SceneError::Length);
+    }
     debug_assert_eq!(output.kinds.len(), expanded_len);
-    Ok(output)
+    Ok((output, painted_styles))
 }
 
 pub struct SceneBatch<'a> {
@@ -10359,6 +10764,166 @@ mod tests {
         assert_eq!(expanded.y1, [12.0, 12.0, 12.0, 14.0, 14.0, 14.0]);
         assert!(expanded.stable_ids.iter().all(|id| *id == 9));
         assert!(expanded.style_refs.iter().all(|style| *style == 3));
+    }
+
+    fn xyhp_rgba(stable_id: u64, rows: u32, cols: u32, rgba: &[u8]) -> Vec<u8> {
+        let mut out = Vec::new();
+        out.extend_from_slice(b"XYHP");
+        out.extend_from_slice(&1u32.to_le_bytes());
+        out.extend_from_slice(&1u32.to_le_bytes());
+        out.extend_from_slice(&0u32.to_le_bytes());
+        out.extend_from_slice(&stable_id.to_le_bytes());
+        out.extend_from_slice(&rows.to_le_bytes());
+        out.extend_from_slice(&cols.to_le_bytes());
+        out.extend_from_slice(&XYHP_PAINT_RGBA.to_le_bytes());
+        out.extend_from_slice(&(rgba.len() as u32).to_le_bytes());
+        out.extend_from_slice(rgba);
+        out
+    }
+
+    fn xyhp_colormap(
+        stable_id: u64,
+        rows: u32,
+        cols: u32,
+        lo: f64,
+        hi: f64,
+        values: &[f64],
+        stops: &[[u8; 3]],
+    ) -> Vec<u8> {
+        let mut payload = Vec::new();
+        payload.extend_from_slice(&lo.to_le_bytes());
+        payload.extend_from_slice(&hi.to_le_bytes());
+        payload.extend_from_slice(&(stops.len() as u32).to_le_bytes());
+        payload.extend_from_slice(&0u32.to_le_bytes());
+        for value in values {
+            payload.extend_from_slice(&value.to_le_bytes());
+        }
+        for stop in stops {
+            payload.extend_from_slice(stop);
+        }
+        let mut out = Vec::new();
+        out.extend_from_slice(b"XYHP");
+        out.extend_from_slice(&1u32.to_le_bytes());
+        out.extend_from_slice(&1u32.to_le_bytes());
+        out.extend_from_slice(&0u32.to_le_bytes());
+        out.extend_from_slice(&stable_id.to_le_bytes());
+        out.extend_from_slice(&rows.to_le_bytes());
+        out.extend_from_slice(&cols.to_le_bytes());
+        out.extend_from_slice(&XYHP_PAINT_COLORMAP.to_le_bytes());
+        out.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+        out.extend_from_slice(&payload);
+        out
+    }
+
+    #[test]
+    fn compact_heatmap_painted_interns_image_top_rgba() {
+        // Image-top-first 2x2: top row red/green, bottom blue/white.
+        let rgba = [
+            255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255,
+        ];
+        let paint = xyhp_rgba(9, 2, 2, &rgba);
+        let kinds = [2u8, 2];
+        let ids = [9u64, 9];
+        let styles = [0u32, 0];
+        let diameter = [2.0, 2.0];
+        let symbols = [0u8, 0];
+        let x0 = [0.0, 0.0];
+        let y0 = [0.0, 0.0];
+        let x1 = [2.0, 0.0];
+        let y1 = [2.0, 0.0];
+        let modes = [9u8, 9];
+        let fill = [10u8, 20, 30, 200];
+        let stroke = [1u8, 2, 3, 4];
+        let width = [1.5_f64];
+        let (expanded, painted) = expand_scene_records_painted(
+            SceneExpansionInput {
+                kinds: &kinds,
+                stable_ids: &ids,
+                style_refs: &styles,
+                diameter: &diameter,
+                symbols: &symbols,
+                x0: &x0,
+                y0: &y0,
+                x1: &x1,
+                y1: &y1,
+                expansion_modes: &modes,
+            },
+            test_linear_x_scale(),
+            test_linear_y_scale(),
+            &fill,
+            &stroke,
+            &width,
+            &paint,
+        )
+        .unwrap();
+        let styles = painted.unwrap();
+        assert_eq!(expanded.kinds.len(), 4);
+        assert_eq!(expanded.x0, [0.0, 1.0, 0.0, 1.0]);
+        assert_eq!(expanded.y0, [0.0, 0.0, 1.0, 1.0]);
+        // Lattice row 0 is y0 (bottom) = image bottom = blue/white.
+        assert_eq!(&styles.fill_rgba[4..8], &[0, 0, 255, 255]);
+        assert_eq!(&styles.fill_rgba[8..12], &[255, 255, 255, 255]);
+        assert_eq!(&styles.fill_rgba[12..16], &[255, 0, 0, 255]);
+        assert_eq!(&styles.fill_rgba[16..20], &[0, 255, 0, 255]);
+        assert_eq!(expanded.style_refs, [1, 2, 3, 4]);
+        assert_eq!(&styles.stroke_rgba[4..8], &[1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn compact_heatmap_painted_colormap_maps_values_row_zero_to_y0() {
+        let paint = xyhp_colormap(
+            4,
+            2,
+            1,
+            0.0,
+            1.0,
+            &[0.0, 1.0],
+            &[[0, 0, 0], [255, 255, 255]],
+        );
+        let (expanded, painted) = expand_scene_records_painted(
+            SceneExpansionInput {
+                kinds: &[2, 2],
+                stable_ids: &[4, 4],
+                style_refs: &[0, 0],
+                diameter: &[2.0, 1.0],
+                symbols: &[0, 0],
+                x0: &[0.0, 0.0],
+                y0: &[0.0, 0.0],
+                x1: &[1.0, 0.0],
+                y1: &[2.0, 0.0],
+                expansion_modes: &[9, 9],
+            },
+            test_linear_x_scale(),
+            test_linear_y_scale(),
+            &[255, 0, 0, 180],
+            &[0, 0, 0, 0],
+            &[0.0],
+            &paint,
+        )
+        .unwrap();
+        let styles = painted.unwrap();
+        assert_eq!(expanded.style_refs, [1, 2]);
+        assert_eq!(&styles.fill_rgba[4..8], &[0, 0, 0, 180]);
+        assert_eq!(&styles.fill_rgba[8..12], &[255, 255, 255, 180]);
+    }
+
+    #[test]
+    fn split_scene_extras_accepts_xypl_xyhp_and_xyex() {
+        assert_eq!(split_scene_extras(&[]), Some((&[][..], &[][..])));
+        let xyhp = xyhp_rgba(1, 1, 1, &[1, 2, 3, 4]);
+        let (polar, paint) = split_scene_extras(&xyhp).unwrap();
+        assert!(polar.is_empty());
+        assert_eq!(paint, xyhp.as_slice());
+        let mut extras = Vec::new();
+        extras.extend_from_slice(b"XYEX");
+        extras.extend_from_slice(&1u32.to_le_bytes());
+        extras.extend_from_slice(&0u32.to_le_bytes());
+        extras.extend_from_slice(&(xyhp.len() as u32).to_le_bytes());
+        extras.extend_from_slice(&xyhp);
+        let (polar, paint) = split_scene_extras(&extras).unwrap();
+        assert!(polar.is_empty());
+        assert_eq!(paint, xyhp.as_slice());
+        assert!(split_scene_extras(b"nope").is_none());
     }
 
     #[test]

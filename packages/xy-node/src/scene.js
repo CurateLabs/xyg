@@ -80,7 +80,7 @@ function packTrace({
   const args = packedCols.slice(0, 6).map(columnArg);
   const packedId = asU64(traceId, "stableIds value");
   const n0 = args[0].n;
-  const nRows = packKind === 4 || packKind === 5 ? n0 * 2 : packKind === 7 ? 2 : n0;
+  const nRows = packKind === 4 || packKind === 5 ? n0 * 2 : packKind === 7 || packKind === 9 ? 2 : n0;
   const out = new Uint8Array(Math.max(nRows, 1) * 56);
   const code = xyScenePackTrace(
     packKind, flags, stepMode, symbol, styleRef, packedId,
@@ -996,6 +996,124 @@ export function packPolarSceneInput(figure) {
   return out;
 }
 
+function encodeUtf8Magic(text) {
+  return encodeUtf8(text).slice(0, 4);
+}
+
+function heatmapPaintPlane(trace, rows, cols, stableId) {
+  const style = trace.style ?? {};
+  const packed = trace.rgba;
+  const planes = trace.rgba_grid;
+  const stops = style.colormapStops ?? trace.colormapStops;
+  const hasColormap = style.colormap != null || stops != null;
+  let kind = 0;
+  let payload;
+  if (planes != null) {
+    if (planes.length !== 4) {
+      throw new RangeError("Scene heatmap truecolor requires four RGBA planes");
+    }
+    payload = new Uint8Array(rows * cols * 4);
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < cols; col += 1) {
+        const index = (row * cols + col) * 4;
+        for (let channel = 0; channel < 4; channel += 1) {
+          const value = Number(planes[channel][row * cols + col] ?? planes[channel][row]?.[col]);
+          payload[index + channel] = Math.max(0, Math.min(255, Math.round(value * 255)));
+        }
+      }
+    }
+  } else if (hasColormap) {
+    const grid = trace.grid;
+    if (grid == null) throw new RangeError("heatmap Scene v12 compilation requires a scalar grid");
+    const stopBytes = stops == null
+      ? new Uint8Array([0, 0, 0, 255, 255, 255])
+      : Uint8Array.from(stops);
+    if (stopBytes.length < 3 || stopBytes.length % 3 !== 0) {
+      throw new RangeError("Scene heatmap colormap requires RGB stops");
+    }
+    const nStops = stopBytes.length / 3;
+    const domain = style.domain;
+    let lo;
+    let hi;
+    if (domain == null || domain.length !== 2) {
+      lo = Number.POSITIVE_INFINITY;
+      hi = Number.NEGATIVE_INFINITY;
+      for (let index = 0; index < grid.length; index += 1) {
+        const value = Number(grid[index]);
+        if (Number.isFinite(value) && value < lo) lo = value;
+        if (Number.isFinite(value) && value > hi) hi = value;
+      }
+    } else {
+      lo = Number(domain[0]);
+      hi = Number(domain[1]);
+    }
+    payload = new Uint8Array(24 + grid.length * 8 + stopBytes.length);
+    const view = new DataView(payload.buffer);
+    view.setFloat64(0, lo, true);
+    view.setFloat64(8, hi, true);
+    view.setUint32(16, nStops, true);
+    view.setUint32(20, 0, true);
+    for (let index = 0; index < grid.length; index += 1) {
+      view.setFloat64(24 + index * 8, Number(grid[index]), true);
+    }
+    payload.set(stopBytes, 24 + grid.length * 8);
+    kind = 1;
+  } else {
+    if (packed == null) throw new RangeError("Scene v12 does not yet encode heatmap colormap");
+    const raw = packed instanceof Uint8Array
+      ? packed
+      : packed.rgba instanceof Uint8Array
+        ? packed.rgba
+        : Uint8Array.from(packed);
+    if (raw.length !== rows * cols * 4) {
+      throw new RangeError("Scene heatmap RGBA plane must match rows x cols");
+    }
+    payload = raw;
+    kind = 0;
+  }
+  const out = new Uint8Array(24 + payload.length);
+  const view = new DataView(out.buffer);
+  view.setBigUint64(0, BigInt(stableId), true);
+  view.setUint32(8, rows, true);
+  view.setUint32(12, cols, true);
+  view.setUint32(16, kind, true);
+  view.setUint32(20, payload.length, true);
+  out.set(payload, 24);
+  return out;
+}
+
+function packXyhp(planes) {
+  if (!planes.length) return new Uint8Array();
+  const bodyLen = planes.reduce((sum, plane) => sum + plane.length, 0);
+  const out = new Uint8Array(16 + bodyLen);
+  const view = new DataView(out.buffer);
+  out.set(encodeUtf8Magic("XYHP"), 0);
+  view.setUint32(4, 1, true);
+  view.setUint32(8, planes.length, true);
+  view.setUint32(12, 0, true);
+  let offset = 16;
+  for (const plane of planes) {
+    out.set(plane, offset);
+    offset += plane.length;
+  }
+  return out;
+}
+
+function packSceneExtras(polar, paint) {
+  if (!polar.length && !paint.length) return new Uint8Array();
+  if (polar.length && !paint.length) return polar;
+  if (paint.length && !polar.length) return paint;
+  const out = new Uint8Array(16 + polar.length + paint.length);
+  const view = new DataView(out.buffer);
+  out.set(encodeUtf8Magic("XYEX"), 0);
+  view.setUint32(4, 1, true);
+  view.setUint32(8, polar.length, true);
+  view.setUint32(12, paint.length, true);
+  out.set(polar, 16);
+  out.set(paint, 16 + polar.length);
+  return out;
+}
+
 export function polarLayout(thetaAxis = {}, rAxis = {}, plot = {}) {
   const unit = thetaAxis.theta_unit ?? thetaAxis.thetaUnit ?? "radians";
   const turn = unit === "degrees" ? 360 : Math.PI * 2;
@@ -1361,7 +1479,7 @@ export function sceneBatchEncode({
   const symbolCodes = asUnsignedArray(symbols, "symbols", 255, Uint8Array);
   const expansionModeCodes = expansionModes == null
     ? new Uint8Array(kindArray.length)
-    : asUnsignedArray(expansionModes, "expansionModes", 8, Uint8Array);
+    : asUnsignedArray(expansionModes, "expansionModes", 9, Uint8Array);
   const fills = new Uint8Array(styles.length * 4);
   const strokes = new Uint8Array(styles.length * 4);
   const widths = new Float64Array(styles.length);
@@ -1416,8 +1534,14 @@ export function sceneBatchEncode({
   const polar = polarInput == null || polarInput.length === 0
     ? new Uint8Array()
     : asUnsignedArray(polarInput, "polarInput", 255, Uint8Array);
-  if (polar.length && polar.length !== 92) {
-    throw new RangeError("polarInput must be empty or a 92-byte XYPL v1 envelope");
+  if (polar.length) {
+    const magic = String.fromCharCode(...polar.subarray(0, 4));
+    if (!["XYPL", "XYHP", "XYEX"].includes(magic)) {
+      throw new RangeError("polarInput must be empty, XYPL, XYHP, or XYEX");
+    }
+    if (magic === "XYPL" && polar.length !== 92) {
+      throw new RangeError("polarInput must be empty or a 92-byte XYPL v1 envelope");
+    }
   }
   const authoredText = authoredTextAnnotations == null ? new Uint8Array() : asUnsignedArray(authoredTextAnnotations, "authoredTextAnnotations", 255, Uint8Array);
   const authoredInput = xFormatBytes.length || yFormatBytes.length ? (() => {
@@ -2498,44 +2622,10 @@ function heatmapTessellatesCellFills(trace) {
   const style = trace.style ?? {};
   if (trace.rgba_grid != null) return true;
   if (style.truecolor) return false;
-  return trace.rgba != null;
-}
-
-function heatmapLatticeRectangles(rows, cols, x0, x1, y0, y1) {
-  const dx = (x1 - x0) / cols;
-  const dy = (y1 - y0) / rows;
-  const cellX0 = new Float64Array(rows * cols);
-  const cellY0 = new Float64Array(rows * cols);
-  const cellX1 = new Float64Array(rows * cols);
-  const cellY1 = new Float64Array(rows * cols);
-  let index = 0;
-  for (let row = 0; row < rows; row += 1) {
-    for (let col = 0; col < cols; col += 1) {
-      cellX0[index] = x0 + col * dx;
-      cellY0[index] = y0 + row * dy;
-      cellX1[index] = cellX0[index] + dx;
-      cellY1[index] = cellY0[index] + dy;
-      index += 1;
-    }
-  }
-  return [cellX0, cellY0, cellX1, cellY1];
-}
-
-function polarHeatmapCellFills(trace, rows, cols) {
-  const packed = trace.rgba;
-  if (packed == null) return null;
-  const raw = packed instanceof Uint8Array
-    ? packed
-    : packed.rgba instanceof Uint8Array
-      ? packed.rgba
-      : Uint8Array.from(packed);
-  if (raw.length !== rows * cols * 4) return null;
-  const out = new Uint8Array(raw.length);
-  for (let row = 0; row < rows; row += 1) {
-    const src = (rows - 1 - row) * cols * 4;
-    out.set(raw.subarray(src, src + cols * 4), row * cols * 4);
-  }
-  return out;
+  return style.colormap != null
+    || style.colormapStops != null
+    || trace.colormapStops != null
+    || trace.rgba != null;
 }
 
 function requireEqualColumns(columns, kind, label) {
@@ -2558,7 +2648,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   try { encodedColorbar = colorbarInput(figure); } catch { colorbarUnsupported = Boolean(figure.colorbarOptions ?? figure.colorbar_options); }
   const reason = sceneFigureSupportReason(figure, { colorbarUnsupported });
   if (reason) throw new RangeError(reason);
-  const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], expansionModes = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [], legendEntries = [];
+  const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], expansionModes = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [], legendEntries = [], heatmapPaintPlanes = [];
   const xDomain = figure._range("x");
   const yDomain = figure._range("y");
   const sceneAxis = (axis, id, domain) => {
@@ -2682,37 +2772,11 @@ export function figureSceneV3(figure, { margins = null } = {}) {
         throw new RangeError("Scene v12 heatmap requires a finite increasing cell extent");
       }
       if (heatmapTessellatesCellFills(trace)) {
-        const fills = polarHeatmapCellFills(trace, rows, cols);
-        if (fills == null) {
-          throw new RangeError("Scene v12 does not yet encode heatmap colormap");
-        }
-        const [cellX0, cellY0, cellX1, cellY1] = heatmapLatticeRectangles(
-          rows, cols, x0Extent, x1Extent, y0Extent, y1Extent,
-        );
-        const intern = new Map();
-        const cellRefs = [];
-        const base = styles[styleRef];
-        for (let index = 0; index < rows * cols; index += 1) {
-          const fill = Array.from(fills.subarray(index * 4, index * 4 + 4));
-          const key = fill.join(",");
-          let ref = intern.get(key);
-          if (ref == null) {
-            styles.push({
-              fillRgba: fill,
-              strokeRgba: base.strokeRgba,
-              strokeWidth: base.strokeWidth,
-            });
-            ref = styles.length - 1;
-            intern.set(key, ref);
-          }
-          cellRefs.push(ref);
-        }
-        const start = styleRefs.length;
+        heatmapPaintPlanes.push(heatmapPaintPlane(trace, rows, cols, id));
         appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packTrace({
-          packKind: 2, styleRef, traceId: id,
-          columns: [cellX0, cellY0, cellX1, cellY1],
+          packKind: 9, styleRef, traceId: id, extra0: rows, extra1: cols,
+          columns: [[x0Extent], [y0Extent], [x1Extent], [y1Extent]],
         }));
-        for (let index = 0; index < cellRefs.length; index += 1) styleRefs[start + index] = cellRefs[index];
         continue;
       }
       appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packTrace({
@@ -2937,7 +3001,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   return sceneBatchEncode({ viewport: [figure.width, figure.height], margins: resolvedMargins,
     xAxis: xSceneAxis, yAxis: ySceneAxis,
     kinds, stableIds, styleRefs, styles, diameter, symbols, expansionModes, x0, y0, x1, y1,
-    title, xLabel, yLabel, chromeStyle: figureChromeStyle(figure), xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, xMinorTicks: (figure.xAxis ?? figure.x_axis)?.minorTickValues ?? (figure.xAxis ?? figure.x_axis)?.minor_tick_values ?? [], yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, yMinorTicks: (figure.yAxis ?? figure.y_axis)?.minorTickValues ?? (figure.yAxis ?? figure.y_axis)?.minor_tick_values ?? [], xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, xFormat: xSceneAxis.format, yFormat: ySceneAxis.format, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText, polarInput: packPolarSceneInput(figure),
+    title, xLabel, yLabel, chromeStyle: figureChromeStyle(figure), xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, xMinorTicks: (figure.xAxis ?? figure.x_axis)?.minorTickValues ?? (figure.xAxis ?? figure.x_axis)?.minor_tick_values ?? [], yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, yMinorTicks: (figure.yAxis ?? figure.y_axis)?.minorTickValues ?? (figure.yAxis ?? figure.y_axis)?.minor_tick_values ?? [], xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, xFormat: xSceneAxis.format, yFormat: ySceneAxis.format, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText, polarInput: packSceneExtras(packPolarSceneInput(figure), packXyhp(heatmapPaintPlanes)),
   });
 }
 

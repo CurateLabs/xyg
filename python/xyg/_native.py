@@ -468,7 +468,7 @@ def _ptr_u8(arr: npt.NDArray[np.uint8]) -> int:
 
 
 class _PolarAbiInput(ctypes.Structure):
-    """Packed polar_input/len view so Scene encode stays at Koffi's 64-arg ceiling."""
+    """Packed extras pointer/len view so Scene encode stays at Koffi's 64-arg ceiling."""
 
     _fields_ = (("data", ctypes.c_void_p), ("len", ctypes.c_size_t))
 
@@ -1998,7 +1998,7 @@ def scene_pack_trace(
     n0 = lengths[0]
     if pack_kind in {4, 5}:
         n_rows = n0 * 2
-    elif pack_kind == 7:
+    elif pack_kind in {7, 9}:
         n_rows = 2
     else:
         n_rows = n0
@@ -3578,7 +3578,7 @@ def scene_batch_encode(
     expansion_mode_codes = scene_uint(
         np.zeros(len(kind_array), dtype=np.uint8) if expansion_modes is None else expansion_modes,
         np.uint8,
-        8,
+        9,
         "scene expansion_modes",
     )
     coordinates = [
@@ -3637,8 +3637,12 @@ def scene_batch_encode(
     colorbar_array = np.frombuffer(colorbar_input, dtype=np.uint8)
     if not isinstance(polar_input, (bytes, bytearray)):
         raise TypeError("polar_input must be bytes")
-    if polar_input and len(polar_input) != 92:
-        raise ValueError("polar_input must be empty or a 92-byte XYPL v1 envelope")
+    if polar_input:
+        magic = bytes(polar_input[:4])
+        if magic not in {b"XYPL", b"XYHP", b"XYEX"}:
+            raise ValueError("polar_input must be empty, XYPL, XYHP, or XYEX")
+        if magic == b"XYPL" and len(polar_input) != 92:
+            raise ValueError("polar_input must be empty or a 92-byte XYPL v1 envelope")
     polar_array = np.frombuffer(bytes(polar_input), dtype=np.uint8)
     polar_view = (
         None if not len(polar_array) else _PolarAbiInput(_ptr_u8(polar_array), len(polar_array))

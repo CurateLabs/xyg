@@ -20,6 +20,7 @@ pub const PACK_TRIANGLE: u8 = 5;
 pub const PACK_HEXBIN: u8 = 6;
 pub const PACK_HEATMAP: u8 = 7;
 pub const PACK_SEGMENT: u8 = 8;
+pub const PACK_HEATMAP_PAINTED: u8 = 9;
 
 pub const FLAG_STROKE_PERIMETER: u8 = 1 << 0;
 
@@ -35,6 +36,7 @@ const EXP_HEX: u8 = 5;
 const EXP_HEATMAP: u8 = 6;
 const EXP_SEGMENT: u8 = 7;
 const EXP_TRIANGLE: u8 = 8;
+const EXP_HEATMAP_PAINTED: u8 = 9;
 
 /// Why a pack request was rejected. Discriminants are the C-ABI error codes
 /// (returned negated by `xyg_scene_pack_trace`).
@@ -137,7 +139,7 @@ pub fn packed_row_count(pack_kind: u8, n: usize) -> Result<usize, PackError> {
     let count = match pack_kind {
         PACK_SCATTER | PACK_LINE | PACK_RECT | PACK_BAND | PACK_HEXBIN | PACK_SEGMENT => n,
         PACK_RIBBON | PACK_TRIANGLE => n.checked_mul(2).ok_or(PackError::Limit)?,
-        PACK_HEATMAP => 2,
+        PACK_HEATMAP | PACK_HEATMAP_PAINTED => 2,
         _ => return Err(PackError::Length),
     };
     if count > MAX_SCENE_MARKS {
@@ -166,7 +168,8 @@ pub fn pack_trace(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, Pack
         PACK_RIBBON => pack_ribbon(input),
         PACK_TRIANGLE => pack_triangle(input),
         PACK_HEXBIN => pack_hexbin(input),
-        PACK_HEATMAP => pack_heatmap(input),
+        PACK_HEATMAP => pack_heatmap(input, EXP_HEATMAP),
+        PACK_HEATMAP_PAINTED => pack_heatmap(input, EXP_HEATMAP_PAINTED),
         _ => Err(PackError::Length),
     }
 }
@@ -371,7 +374,7 @@ fn pack_hexbin(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, PackErr
     Ok(out)
 }
 
-fn pack_heatmap(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, PackError> {
+fn pack_heatmap(input: TracePackInput<'_>, expansion: u8) -> Result<Vec<PackedSceneRow>, PackError> {
     let cols = require_cols(input.columns, 4)?;
     if cols[0].len() != 1 {
         return Err(PackError::Length);
@@ -398,7 +401,7 @@ fn pack_heatmap(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, PackEr
         PackedSceneRow {
             kind: KIND_RECT,
             symbol: 0,
-            expansion_mode: EXP_HEATMAP,
+            expansion_mode: expansion,
             style_ref: input.style_ref,
             stable_id: input.trace_id,
             diameter: rows,
@@ -413,7 +416,7 @@ fn pack_heatmap(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, PackEr
         PackedSceneRow {
             kind: KIND_RECT,
             symbol: 0,
-            expansion_mode: EXP_HEATMAP,
+            expansion_mode: expansion,
             style_ref: input.style_ref,
             stable_id: input.trace_id,
             diameter: cols_n,
@@ -720,6 +723,32 @@ mod tests {
             (rows[1].x0, rows[1].y0, rows[1].x1, rows[1].y1),
             (0.0, 0.0, 0.0, 0.0)
         );
+    }
+
+    #[test]
+    fn painted_heatmap_frames_extent_with_painted_mode() {
+        let x0 = [1.0];
+        let y0 = [2.0];
+        let x1 = [3.0];
+        let y1 = [4.0];
+        let rows = pack_trace(TracePackInput {
+            pack_kind: PACK_HEATMAP_PAINTED,
+            flags: 0,
+            step_mode: 0,
+            symbol: 0,
+            style_ref: 9,
+            trace_id: 11,
+            diameter: 0.0,
+            extra0: 2.0,
+            extra1: 3.0,
+            columns: &[&x0, &y0, &x1, &y1],
+        })
+        .unwrap();
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[0].expansion_mode, EXP_HEATMAP_PAINTED);
+        assert_eq!(rows[1].expansion_mode, EXP_HEATMAP_PAINTED);
+        assert_eq!(rows[0].diameter, 2.0);
+        assert_eq!(rows[1].diameter, 3.0);
     }
 
     #[test]

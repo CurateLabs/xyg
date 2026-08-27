@@ -168,7 +168,10 @@ browser consumers. Constant-style mean and sum share Scene bytes when they
 occupy the same lattice, because paint ignores the metric. ABI 103 moves that
 hex-cell ring and the regular heatmap lattice reconstruction into Rust
 `expansion_modes` (`HexCell=5`, `HeatmapLattice=6`); hosts pack compact
-center+pitch rows and a two-row extent+shape lattice. ABI 104 likewise moves
+center+pitch rows and a two-row extent+shape lattice. ABI 134 adds
+`HeatmapPainted=9` plus an XYHP paint sidecar (or XYEX wrapping XYPL+XYHP on
+the existing extras pointer): hosts pack the same two-row lattice plus RGBA8 or
+scalar+stops payload; Rust tessellates cells and interns unique fills. ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate
 row per segment and two PolyFill rows per face. ABI 105 makes the public
@@ -298,7 +301,7 @@ ABI 115 makes static PNG the same way: Python `_png.encode` /
 `xyg_encode_png`; Rust owns filter-0 scanlines, indexed-palette
 selection, `tRNS`, and zlib IDAT. Polar inverse-sample heatmap blit, LOD beyond
 10,000 cells, and rich style exceptions remain compatibility routes.
-Scalar colormap and truecolor heatmaps tessellate to per-cell Scene fills on Python and Node.
+Scalar colormap and truecolor heatmaps compile through `HeatmapPainted` on Python and Node.
 ABI 99 gives both composition hosts one compact grouped box ingress. Hosts pack
 the same f64 values/offsets/centers and literal options; Rust returns typed
 active-group IDs, fixed 25-f64 group records, monotone outlier offsets, and
