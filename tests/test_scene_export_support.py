@@ -1018,7 +1018,7 @@ def test_colormap_heatmap_is_scene_supported() -> None:
     assert png is not None
 
 
-def test_truecolor_heatmap_stays_on_compatibility() -> None:
+def test_truecolor_heatmap_is_scene_supported() -> None:
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 2.0)
     figure.axis_options["y"]["domain"] = (0.0, 2.0)
@@ -1028,8 +1028,12 @@ def test_truecolor_heatmap_stays_on_compatibility() -> None:
             [[0.0, 0.0, 1.0], [1.0, 1.0, 0.0]],
         ]
     )
-    assert scene_export_support_reason(figure) is not None
-    assert public_static_export(figure, "svg") is None
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"<rect" in exported
+    png = public_static_export(figure, "png")
+    assert png is not None
 
 
 @pytest.mark.parametrize(

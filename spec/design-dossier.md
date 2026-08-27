@@ -1419,8 +1419,8 @@ pixels plus mode/compression; indexed-palette selection, `tRNS`, and zlib
 IDAT are engine-owned and identical for Python and Node.
 Constant-style Cartesian heatmap compiles a regular rows x cols lattice onto
 existing Scene Rect records; polar Scene tessellates those Rects to PolyFill
-annular sectors. Scalar colormaps tessellate to per-cell literal Rect fills
-on both hosts. Truecolor, irregular
+annular sectors. Scalar colormaps and truecolor RGBA planes tessellate to per-cell literal Rect fills
+on both hosts. Irregular
 spacing, and LOD stay compatibility.
 
 Contract-wide invariants: every tier transition is hysteresis-guarded and logged

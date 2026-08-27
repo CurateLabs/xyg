@@ -123,6 +123,24 @@ def test_polar_heatmap_is_scene_eligible() -> None:
     assert public_png is not None
 
 
+def test_polar_truecolor_heatmap_is_scene_eligible() -> None:
+    figure = Figure(width=400, height=400, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    figure.heatmap(
+        [
+            [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]],
+            [[0.0, 0.0, 1.0], [1.0, 1.0, 0.0]],
+        ]
+    )
+    scene = figure_scene(figure)
+    assert scene[4:8] == (26).to_bytes(4, "little")
+    assert scene[-92:-88] == b"XYPL"
+    svg = _native.scene_svg(scene)
+    assert "<path" in svg and 'd="M' in svg
+    assert public_static_export(figure, "svg") is not None
+
+
 def test_polar_density_still_unsupported() -> None:
     figure = Figure(width=400, height=400, coords="polar")
     figure.scatter([0.0, math.pi / 2], [0.5, 1.0], density=True, color="#3987e5")

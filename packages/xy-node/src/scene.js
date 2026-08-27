@@ -2496,7 +2496,8 @@ function figureTraceSupport(figure, trace) {
 
 function heatmapTessellatesCellFills(trace) {
   const style = trace.style ?? {};
-  if (style.truecolor || trace.rgba_grid != null) return false;
+  if (trace.rgba_grid != null) return true;
+  if (style.truecolor) return false;
   return trace.rgba != null;
 }
 

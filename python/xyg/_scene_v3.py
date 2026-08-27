@@ -70,8 +70,8 @@ _XYFS_DASH_KEYS = ("dash", "curve", "linecap", "marker_path", "marker_glyph")
 # compact multi-cell painter record.
 _MAX_PUBLIC_TRIANGLE_MESHES = 1024
 # Regular heatmap cells are ordinary Rect records and share the histogram
-# 10,000-bin public ceiling. Truecolor and irregular grids stay on the
-# compatibility exporters. Scalar-colormap heatmaps tessellate those Rects
+# 10,000-bin public ceiling. Irregular grids stay on the compatibility
+# exporters. Scalar-colormap and truecolor heatmaps tessellate those Rects
 # with per-cell literal styles (polar encode then maps Rects to PolyFill
 # annular sectors).
 _MAX_PUBLIC_HEATMAP_CELLS = 10_000
@@ -950,13 +950,14 @@ def _heatmap_uses_colormap(trace: Any) -> bool:
 def _heatmap_tessellates_cell_fills(trace: Any) -> bool:
     """Return whether Scene can resolve this heatmap to per-cell paints.
 
-    Truecolor RGBA planes stay on compatibility. A scalar colormap or a packed
-    RGBA grid becomes one Rect per cell. Polar encode tessellates those Rects
-    to PolyFill annular sectors. Scene has no image-blit record for inverse
-    sampling.
+    Scalar colormaps, packed RGBA, and truecolor RGBA planes become one Rect
+    per cell. Polar encode tessellates those Rects to PolyFill annular sectors.
+    Scene has no image-blit record for inverse sampling.
     """
     style = getattr(trace, "style", None) or {}
-    if style.get("truecolor") or getattr(trace, "rgba_grid", None) is not None:
+    if getattr(trace, "rgba_grid", None) is not None:
+        return True
+    if style.get("truecolor"):
         return False
     return bool(style.get("colormap") is not None or getattr(trace, "rgba", None) is not None)
 
@@ -1016,6 +1017,19 @@ def _heatmap_cell_fills(
     packed = getattr(trace, "rgba", None)
     if packed is not None:
         rgba = np.asarray(packed, dtype=np.uint8).reshape(rows, cols, 4)
+        return np.ascontiguousarray(rgba[::-1].reshape(-1, 4))
+    planes = getattr(trace, "rgba_grid", None)
+    if planes is not None:
+        if len(planes) != 4:
+            raise UnsupportedSceneV3("Scene heatmap truecolor requires four RGBA planes")
+        channels = [
+            np.asarray(getattr(plane, "values", plane), dtype=np.float64).reshape(rows, cols)
+            for plane in planes
+        ]
+        rgba = np.stack(
+            [np.clip(np.rint(channel * 255.0), 0, 255).astype(np.uint8) for channel in channels],
+            axis=-1,
+        )
         return np.ascontiguousarray(rgba[::-1].reshape(-1, 4))
     from . import kernels
     from ._svg import _colormap_stops

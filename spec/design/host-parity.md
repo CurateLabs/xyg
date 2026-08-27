@@ -296,9 +296,9 @@ tables, the libjpeg quality curve, and VP8L simple-lossless packing.
 ABI 115 makes static PNG the same way: Python `_png.encode` /
 `_png.png_truecolor` / `_native.encode_png` and Node `encodePng` call
 `xyg_encode_png`; Rust owns filter-0 scanlines, indexed-palette
-selection, `tRNS`, and zlib IDAT. Polar inverse-sample heatmap blit, truecolor RGBA, LOD beyond
+selection, `tRNS`, and zlib IDAT. Polar inverse-sample heatmap blit, LOD beyond
 10,000 cells, and rich style exceptions remain compatibility routes.
-Scalar colormap heatmaps tessellate to per-cell Scene fills on Python and Node.
+Scalar colormap and truecolor heatmaps tessellate to per-cell Scene fills on Python and Node.
 ABI 99 gives both composition hosts one compact grouped box ingress. Hosts pack
 the same f64 values/offsets/centers and literal options; Rust returns typed
 active-group IDs, fixed 25-f64 group records, monotone outlier offsets, and
