@@ -188,3 +188,21 @@ notes below are the non-obvious caveats.
   /usr/bin/google-chrome-stable` use the system Chrome. Playwright's *browser
   binaries* are not preinstalled — `make check-conformance` additionally needs
   `npx playwright install chromium firefox webkit`.
+- **GitHub token is available.** Cloud agents have `GITHUB_TOKEN` / `GH_TOKEN`
+  with `repo` scope (`gh auth status` shows the human account). Use `gh` to
+  close GitHub issues, comment with evidence, and otherwise mutate repo issues
+  when the task requires it. Do not treat `gh` as read-only. Keep pull-request
+  create/update on the dedicated PR tools. Close an issue when its acceptance
+  criteria are met (Rust owns the named product path and proofs are green);
+  thin Python/Node packers are not a reason to leave a completed issue open.
+  Do not close an issue that still has remaining Python/JS product-policy
+  debt named in its body.
+- **GitHub token is available.** Cloud agents have `GITHUB_TOKEN` / `GH_TOKEN`
+  with `repo` scope (`gh auth status` shows the human account). Use `gh` to
+  close GitHub issues, comment with evidence, and otherwise mutate repo issues
+  when the task requires it. Do not treat `gh` as read-only. Keep pull-request
+  create/update on the dedicated PR tools. Close an issue when its acceptance
+  criteria are met (Rust owns the named product path and proofs are green);
+  thin Python/Node packers are not a reason to leave a completed issue open.
+  Do not close an issue that still has remaining Python/JS product-policy
+  debt named in its body.
