@@ -36,6 +36,7 @@ pub mod lod_plan;
 pub mod pdf;
 #[cfg(feature = "raster")]
 pub mod png_encode;
+pub mod polar;
 pub mod projection;
 #[cfg(feature = "raster")]
 pub mod raster;

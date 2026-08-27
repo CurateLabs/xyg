@@ -3056,6 +3056,172 @@ def polar_label_room(widest: float | None) -> float:
     return float(out.value)
 
 
+POLAR_METRICS_LEN = 23
+
+
+def _polar_theta_unit(unit: str | None) -> int:
+    return 1 if unit == "degrees" else 0
+
+
+def _polar_theta_direction(direction: str | None) -> int:
+    return 1 if direction == "clockwise" else 0
+
+
+def _polar_theta_zero(zero: object) -> float:
+    if isinstance(zero, str):
+        mapping = {"E": 0.0, "N": math.pi / 2.0, "W": math.pi, "S": -math.pi / 2.0}
+        return float(mapping[zero])
+    return float(zero) if zero is not None else 0.0
+
+
+def _polar_r_scale(axis: Mapping[str, object]) -> tuple[int, float, bool]:
+    scale = axis.get("scale")
+    kind = axis.get("kind", "linear")
+    if scale == "log" or kind == "log":
+        code = 1
+    elif scale == "symlog":
+        code = 2
+    else:
+        code = 0
+    constant = float(axis.get("constant", 1.0))
+    mask = axis.get("nonpositive", "clip") == "mask"
+    return code, constant, mask
+
+
+def polar_layout(
+    theta_axis: Mapping[str, object],
+    r_axis: Mapping[str, object],
+    plot: Mapping[str, float],
+) -> npt.NDArray[np.float64]:
+    """Polar disc layout via ``xyg_polar_layout`` (ABI 131)."""
+    unit = str(theta_axis.get("theta_unit", "radians"))
+    turn = 360.0 if unit == "degrees" else 2.0 * math.pi
+    sector = theta_axis.get("sector") or (0.0, turn)
+    sector_start, sector_end = float(sector[0]), float(sector[1])
+    categories = tuple(theta_axis.get("categories") or ())
+    r_lo, r_hi = r_axis["range"]  # type: ignore[index]
+    origin = r_axis.get("r_origin")
+    r_origin = float("nan") if origin is None else float(origin)
+    hole = float(r_axis.get("hole") or 0.0)
+    scale_kind, constant, mask_nonpositive = _polar_r_scale(r_axis)
+    metrics = np.empty(POLAR_METRICS_LEN, dtype=np.float64)
+    written = _lib.xyg_polar_layout(
+        float(plot["x"]),
+        float(plot["y"]),
+        float(plot["w"]),
+        float(plot["h"]),
+        _polar_theta_unit(unit),
+        _polar_theta_zero(theta_axis.get("theta_zero", "E")),
+        _polar_theta_direction(theta_axis.get("theta_direction")),
+        sector_start,
+        sector_end,
+        len(categories),
+        float(r_lo),
+        float(r_hi),
+        r_origin,
+        hole,
+        scale_kind,
+        constant,
+        1 if mask_nonpositive else 0,
+        _ptr_f64(metrics),
+        POLAR_METRICS_LEN,
+    )
+    if written != POLAR_METRICS_LEN:
+        raise ValueError("invalid polar-layout request")
+    return metrics
+
+
+def polar_project(
+    metrics: npt.ArrayLike,
+    theta: npt.ArrayLike,
+    r: npt.ArrayLike,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Project polar (theta, r) via ``xyg_polar_project`` (ABI 131)."""
+    packed = _as_f64(np.asarray(metrics, dtype=np.float64).reshape(-1), "metrics")
+    th = _as_f64(np.asarray(theta, dtype=np.float64).reshape(-1), "theta")
+    rv = _as_f64(np.asarray(r, dtype=np.float64).reshape(-1), "r")
+    if th.shape != rv.shape:
+        raise ValueError("theta and r must have the same shape")
+    n = len(th)
+    out_x = np.empty(n, dtype=np.float64)
+    out_y = np.empty(n, dtype=np.float64)
+    written = _lib.xyg_polar_project(
+        _ptr_f64(packed) if len(packed) else 0,
+        len(packed),
+        _ptr_f64(th) if n else 0,
+        _ptr_f64(rv) if n else 0,
+        n,
+        _ptr_f64(out_x) if n else 0,
+        _ptr_f64(out_y) if n else 0,
+    )
+    if written == _USIZE_MAX or written != n:
+        raise ValueError("invalid polar-project request")
+    if np.ndim(theta) == 0:
+        return np.float64(out_x[0]), np.float64(out_y[0])
+    return out_x.reshape(np.shape(theta)), out_y.reshape(np.shape(r))
+
+
+def _polar_mask(
+    fn: object,
+    metrics: npt.ArrayLike,
+    *arrays: npt.ArrayLike,
+) -> npt.NDArray[np.bool_]:
+    packed = _as_f64(np.asarray(metrics, dtype=np.float64).reshape(-1), "metrics")
+    inputs = [
+        _as_f64(np.asarray(value, dtype=np.float64).reshape(-1), "values") for value in arrays
+    ]
+    n = len(inputs[0])
+    if any(len(arr) != n for arr in inputs[1:]):
+        raise ValueError("polar mask inputs must have the same length")
+    out = np.empty(n, dtype=np.uint8)
+    args: list[object] = [_ptr_f64(packed) if len(packed) else 0, len(packed)]
+    for arr in inputs:
+        args.extend([_ptr_f64(arr) if n else 0])
+    args.append(n)
+    args.extend([out.ctypes.data if n else 0, n])
+    written = fn(*args)
+    if written == _USIZE_MAX or written != n:
+        raise ValueError("invalid polar-mask request")
+    return out.astype(np.bool_)
+
+
+def polar_theta_visible_mask(metrics: npt.ArrayLike, theta: npt.ArrayLike) -> npt.NDArray[np.bool_]:
+    """Angular-sector visibility via ``xyg_polar_theta_visible_mask`` (ABI 131)."""
+    return _polar_mask(_lib.xyg_polar_theta_visible_mask, metrics, theta)
+
+
+def polar_visible_mask(metrics: npt.ArrayLike, r: npt.ArrayLike) -> npt.NDArray[np.bool_]:
+    """Radial-range visibility via ``xyg_polar_visible_mask`` (ABI 131)."""
+    return _polar_mask(_lib.xyg_polar_visible_mask, metrics, r)
+
+
+def polar_position_mask(
+    metrics: npt.ArrayLike,
+    theta: npt.ArrayLike,
+    r: npt.ArrayLike,
+) -> npt.NDArray[np.bool_]:
+    """Combined polar visibility via ``xyg_polar_position_mask`` (ABI 131)."""
+    packed = _as_f64(np.asarray(metrics, dtype=np.float64).reshape(-1), "metrics")
+    th = _as_f64(np.asarray(theta, dtype=np.float64).reshape(-1), "theta")
+    rv = _as_f64(np.asarray(r, dtype=np.float64).reshape(-1), "r")
+    n = len(th)
+    if len(rv) != n:
+        raise ValueError("theta and r must have the same length")
+    out = np.empty(n, dtype=np.uint8)
+    written = _lib.xyg_polar_position_mask(
+        _ptr_f64(packed) if len(packed) else 0,
+        len(packed),
+        _ptr_f64(th) if n else 0,
+        _ptr_f64(rv) if n else 0,
+        n,
+        out.ctypes.data if n else 0,
+        n,
+    )
+    if written == _USIZE_MAX or written != n:
+        raise ValueError("invalid polar-position-mask request")
+    return out.astype(np.bool_)
+
+
 def recut_polar_plot(
     plot: Mapping[str, float],
     width: float,

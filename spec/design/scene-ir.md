@@ -66,8 +66,10 @@ the direct Rust/WASM execution boundary in #59 is available.
 
 Python calls the scatter path from `_svg._scatter_marks`; Node exposes the same record
 through `scatterSceneSvg`. Python remains responsible for ingest coercion,
-public validation text, channel-to-RGBA resolution, plot layout, and polar projection
-until those policies move in later slices. Authored arbitrary marker paths and
+public validation text, channel-to-RGBA resolution, and plot layout until
+those policies move in later slices. Polar (theta, r) → screen-pixel projection
+is Rust-owned (ABI 131); Scene compilation still rejects `coords="polar"` until
+a later slice records polar mode explicitly. Authored arbitrary marker paths and
 font glyph markers stay on the existing Python compatibility path because they
 need separate bounded path/text records.
 

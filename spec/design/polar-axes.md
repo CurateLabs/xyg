@@ -241,8 +241,10 @@ they are 2° apart.
 
 ## 4. Parity fixtures
 
-The transform above is implemented twice — once in GLSL, once in Python (shared
-by both exporters). Prose does not bind them. `tests/fixtures/polar_transform.json`
+The transform above is implemented in GLSL for the live client and in Rust for
+static export (ABI 131 `xyg_polar_*`; Python/Node are thin packers over
+`_PolarProjection` / `polarLayout`). Prose does not bind them.
+`tests/fixtures/polar_transform.json`
 does, and it is authored from the definition in §3, not generated from either
 implementation.
 
@@ -260,15 +262,17 @@ Fixture cases are chosen so a human can check them by inspection:
 
 Three consumers must agree with that file:
 
-1. **Python** — a unit test over `_PolarProjection`. Fast, always runs.
+1. **Python / Node / Rust** — `tests/test_polar_transform.py`,
+   `tests/test_polar_abi.py`, and the Node polar layout/project test replay
+   `polar_transform.json` through the native projection. Fast, always runs.
 2. **GLSL** — `scripts/polar_parity_smoke.py` renders one scatter point per
    fixture sample in headless Chrome and compares each colour's lit-pixel
    centroid to the fixture value. This binds the *actual shader* in the shipped
    bundle, not a JS mirror of it, which is the only version that can drift
    silently. It runs in the stdlib-only CI lane beside the other smokes.
-3. **Exporters** — SVG and raster inherit (1) because they share the Python
-   projection, so their obligation is a rendered-output check, not a second
-   transform test.
+3. **Exporters** — SVG and raster call native projection through
+   `_PolarProjection`, so their obligation is a rendered-output check, not a
+   second transform test.
 
 This is deliberately stronger than the existing tick-math arrangement, where
 `js/src/30_ticks.ts` and its hand port in `python/xyg/_svg.py` are bound by

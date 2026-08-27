@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import test from "node:test";
 
-import { axisTicks, tickFormat, tickLabelLayout, tickWindow, tickWindowFilter, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yAxisLeftRoom, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatColorbarExtra, polarLegendRoom, polarLabelRoom, recutPolarPlot, tightLayoutSolve, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
+import { axisTicks, tickFormat, tickLabelLayout, tickWindow, tickWindowFilter, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yAxisLeftRoom, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatColorbarExtra, polarLegendRoom, polarLabelRoom, polarLayout, polarProject, recutPolarPlot, tightLayoutSolve, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
 import { Figure, sceneRasterCommands, sceneSvg } from "../src/index.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
@@ -1244,6 +1244,19 @@ test("Node consumes Rust-owned static-export layout combination", () => {
   assert.equal(recut.w, 140);
   assert.equal(recut.h, 140);
   assert.equal(recut.topAxisRoom, 40);
+});
+
+test("Node polar layout/project matches default-cardinals fixture", () => {
+  const plot = { x: 0, y: 0, w: 400, h: 400 };
+  const thetaAxis = { theta_unit: "radians", theta_zero: "E", theta_direction: "counterclockwise" };
+  const rAxis = { range: [0, 1] };
+  const metrics = polarLayout(thetaAxis, rAxis, plot);
+  const [px0, py0] = polarProject(metrics, 0, 1);
+  assert.ok(Math.abs(px0 - 400) < 1e-6);
+  assert.ok(Math.abs(py0 - 200) < 1e-6);
+  const [px1, py1] = polarProject(metrics, Math.PI / 2, 1);
+  assert.ok(Math.abs(px1 - 200) < 1e-6);
+  assert.ok(Math.abs(py1 - 0) < 1e-6);
 });
 
 test("Node consumes Rust-owned pyplot tight-layout solve", () => {

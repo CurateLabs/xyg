@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 130
-SIGNATURE_SHA256 = "9b16b82630f9b3992509632d6048d2975e77ba19b3d27f1000a7388be921fe5d"
+ABI_VERSION = 131
+SIGNATURE_SHA256 = "9e0a5685d5d622446b4f7d2e0dec2a1de6aa0e86c3439288750defcae050258b"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -446,6 +446,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_polar_label_room
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_double, ctypes.c_void_p]
+    # size_t xyg_polar_layout(double plot_x, double plot_y, double plot_w, double plot_h, uint32_t theta_unit, double theta_zero, uint32_t theta_direction, double sector_start, double sector_end, uint32_t n_categories, double r_lo, double r_hi, double r_origin, double hole, uint32_t r_scale_kind, double r_constant, int32_t r_mask_nonpositive, double * out_metrics, size_t out_cap)
+    function = lib.xyg_polar_layout
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_uint32, ctypes.c_double, ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_uint32, ctypes.c_double, ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t]
     # size_t xyg_polar_legend_reserve(int32_t compact, int32_t loc_has_left, double width, uint32_t * out_side, double * out_room)
     function = lib.xyg_polar_legend_reserve
     function.restype = ctypes.c_size_t
@@ -454,6 +458,22 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_polar_legend_room
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_double, ctypes.c_void_p]
+    # size_t xyg_polar_position_mask(const double * metrics, size_t metrics_len, const double * theta, const double * r, size_t n, uint8_t * out, size_t out_cap)
+    function = lib.xyg_polar_position_mask
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_polar_project(const double * metrics, size_t metrics_len, const double * theta, const double * r, size_t n, double * out_x, double * out_y)
+    function = lib.xyg_polar_project
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p]
+    # size_t xyg_polar_theta_visible_mask(const double * metrics, size_t metrics_len, const double * theta, size_t n, uint8_t * out, size_t out_cap)
+    function = lib.xyg_polar_theta_visible_mask
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_polar_visible_mask(const double * metrics, size_t metrics_len, const double * r, size_t n, uint8_t * out, size_t out_cap)
+    function = lib.xyg_polar_visible_mask
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # size_t xyg_polygon_select(const double * x, const double * y, size_t len, const uint32_t * rows, size_t n_rows, const double * poly_x, const double * poly_y, size_t n_poly, uint32_t * out)
     function = lib.xyg_polygon_select
     function.restype = ctypes.c_size_t

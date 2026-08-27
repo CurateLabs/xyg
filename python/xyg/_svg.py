@@ -619,6 +619,9 @@ class _PolarProjection:
     Screen space grows downward, so the y term is a **subtraction**. The GLSL
     twin in `xyPolar` (js/src/40_gl.ts) adds instead, because clip space grows
     upward. `tests/test_polar_transform.py` binds both to the same fixtures.
+
+    Layout, projection, and visibility masks are owned by Rust (ABI 131);
+    wedge/ring/polygon helpers remain here and call native projection.
     """
 
     def __init__(
@@ -657,39 +660,10 @@ class _PolarProjection:
         self.r_origin_coord = float(self.r_scale.coord(self.r_origin))
         self.hole = float(r_axis.get("hole") or 0.0)
 
-        # Full turns retain the original normative layout exactly. A partial
-        # sector instead fills the plot with its own bounding box: a gauge must
-        # not reserve dead space for the missing part of the circle.
-        if self.full_sector:
-            self.radius = min(plot["w"], plot["h"]) / 2.0
-            self.cx = plot["x"] + plot["w"] / 2.0
-            self.cy = plot["y"] + plot["h"] / 2.0
-        else:
-            lo_angle = min(self.sector_a0, self.sector_a1)
-            hi_angle = max(self.sector_a0, self.sector_a1)
-            angles = [self.sector_a0, self.sector_a1]
-            for cardinal in (0.0, math.pi / 2.0, math.pi, 3.0 * math.pi / 2.0):
-                first = math.ceil((lo_angle - cardinal) / (2.0 * math.pi))
-                last = math.floor((hi_angle - cardinal) / (2.0 * math.pi))
-                angles.extend(
-                    cardinal + turn_index * 2.0 * math.pi for turn_index in range(first, last + 1)
-                )
-            angles_array = np.asarray(angles, dtype=np.float64)
-            inner = max(0.0, min(1.0, float(self.norm_radius(self.r_lo))))
-            xs = np.concatenate((np.cos(angles_array), inner * np.cos(angles_array)))
-            ys = np.concatenate((-np.sin(angles_array), -inner * np.sin(angles_array)))
-            if inner <= 1e-12:
-                xs = np.append(xs, 0.0)
-                ys = np.append(ys, 0.0)
-            xmin, xmax = float(np.min(xs)), float(np.max(xs))
-            ymin, ymax = float(np.min(ys)), float(np.max(ys))
-            xspan = max(xmax - xmin, 1e-12)
-            yspan = max(ymax - ymin, 1e-12)
-            self.radius = min(plot["w"] / xspan, plot["h"] / yspan)
-            left = plot["x"] + (plot["w"] - self.radius * xspan) / 2.0
-            top = plot["y"] + (plot["h"] - self.radius * yspan) / 2.0
-            self.cx = left - self.radius * xmin
-            self.cy = top - self.radius * ymin
+        self._metrics = _native.polar_layout(theta_axis, r_axis, plot)
+        self.cx = float(self._metrics[0])
+        self.cy = float(self._metrics[1])
+        self.radius = float(self._metrics[2])
 
     def theta_value(self, theta: Any) -> Any:
         """Category code or numeric theta -> angular value in declared units."""
@@ -729,8 +703,7 @@ class _PolarProjection:
 
     def theta_visible_mask(self, theta: Any) -> np.ndarray:
         """Which angular values fall in the authored sector."""
-        raw = np.asarray(self.theta_value(theta), dtype=np.float64)
-        return self._angular_value_visible_mask(raw)
+        return _native.polar_theta_visible_mask(self._metrics, theta)
 
     def _angular_value_visible_mask(self, raw: Any) -> np.ndarray:
         raw = np.asarray(raw, dtype=np.float64)
@@ -783,18 +756,13 @@ class _PolarProjection:
         (`rn < 0 || rn > 1 + 1e-6` in js/src/40_gl.ts). Same epsilon, so the
         outermost home-view point survives everywhere.
         """
-        coord = np.asarray(self.r_scale.coord(r), dtype=np.float64)
-        lo = min(self.r_lo_coord, self.r_hi_coord)
-        hi = max(self.r_lo_coord, self.r_hi_coord)
-        return np.isfinite(coord) & (coord >= lo - 1e-6) & (coord <= hi + 1e-6)
+        return _native.polar_visible_mask(self._metrics, r)
 
     def position_mask(self, theta: Any, r: Any) -> np.ndarray:
-        return self.theta_visible_mask(theta) & self.visible_mask(r)
+        return _native.polar_position_mask(self._metrics, theta, r)
 
     def __call__(self, theta: Any, r: Any) -> tuple[Any, Any]:
-        a = self.angle(theta)
-        rn = self.norm_radius(r) * self.radius
-        return self.cx + rn * np.cos(a), self.cy - rn * np.sin(a)
+        return _native.polar_project(self._metrics, theta, r)
 
     def ring(self, r: float, steps: int = 180) -> list[tuple[float, float]]:
         """A constant-r sector arc (a closed circle for a full turn).

@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 130;
-export const SIGNATURE_SHA256 = "9b16b82630f9b3992509632d6048d2975e77ba19b3d27f1000a7388be921fe5d";
+export const ABI_VERSION = 131;
+export const SIGNATURE_SHA256 = "9e0a5685d5d622446b4f7d2e0dec2a1de6aa0e86c3439288750defcae050258b";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -114,8 +114,13 @@ export let xyPayloadTier;
 export let xyPayloadVisibleMask;
 export let xyPayloadVisibleNeeded;
 export let xyPolarLabelRoom;
+export let xyPolarLayout;
 export let xyPolarLegendReserve;
 export let xyPolarLegendRoom;
+export let xyPolarPositionMask;
+export let xyPolarProject;
+export let xyPolarThetaVisibleMask;
+export let xyPolarVisibleMask;
 export let xyPolygonSelect;
 export let xyPolygonTriangles;
 export let xyPyramidAppend;
@@ -365,8 +370,13 @@ export function bindGeneratedAbi(lib) {
   xyPayloadVisibleMask = lib.func("size_t xyg_payload_visible_mask(const double * x, const double * y, size_t n, int32_t x_log, int32_t y_log, const double * base, int32_t has_base, uint8_t * out, size_t capacity)");
   xyPayloadVisibleNeeded = lib.func("int32_t xyg_payload_visible_needed(int32_t x_log, int32_t y_log, int32_t prefiltered, int32_t x_has_nulls, int32_t y_has_nulls, int32_t has_base, int32_t base_has_nulls)");
   xyPolarLabelRoom = lib.func("size_t xyg_polar_label_room(double widest, double * out_room)");
+  xyPolarLayout = lib.func("size_t xyg_polar_layout(double plot_x, double plot_y, double plot_w, double plot_h, uint32_t theta_unit, double theta_zero, uint32_t theta_direction, double sector_start, double sector_end, uint32_t n_categories, double r_lo, double r_hi, double r_origin, double hole, uint32_t r_scale_kind, double r_constant, int32_t r_mask_nonpositive, double * out_metrics, size_t out_cap)");
   xyPolarLegendReserve = lib.func("size_t xyg_polar_legend_reserve(int32_t compact, int32_t loc_has_left, double width, uint32_t * out_side, double * out_room)");
   xyPolarLegendRoom = lib.func("size_t xyg_polar_legend_room(double width, double * out_room)");
+  xyPolarPositionMask = lib.func("size_t xyg_polar_position_mask(const double * metrics, size_t metrics_len, const double * theta, const double * r, size_t n, uint8_t * out, size_t out_cap)");
+  xyPolarProject = lib.func("size_t xyg_polar_project(const double * metrics, size_t metrics_len, const double * theta, const double * r, size_t n, double * out_x, double * out_y)");
+  xyPolarThetaVisibleMask = lib.func("size_t xyg_polar_theta_visible_mask(const double * metrics, size_t metrics_len, const double * theta, size_t n, uint8_t * out, size_t out_cap)");
+  xyPolarVisibleMask = lib.func("size_t xyg_polar_visible_mask(const double * metrics, size_t metrics_len, const double * r, size_t n, uint8_t * out, size_t out_cap)");
   xyPolygonSelect = lib.func("size_t xyg_polygon_select(const double * x, const double * y, size_t len, const uint32_t * rows, size_t n_rows, const double * poly_x, const double * poly_y, size_t n_poly, uint32_t * out)");
   xyPolygonTriangles = lib.func("size_t xyg_polygon_triangles(const double * x, const double * y, size_t len, int64_t * out, size_t capacity)");
   xyPyramidAppend = lib.func("int32_t xyg_pyramid_append(uint64_t handle, const double * x, const double * y, size_t len)");

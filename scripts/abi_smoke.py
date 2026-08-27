@@ -968,6 +968,38 @@ def load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_size_t,
     ]
+    lib.xyg_polar_layout.restype = ctypes.c_size_t
+    lib.xyg_polar_layout.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_double,
+        ctypes.c_int32,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_polar_project.restype = ctypes.c_size_t
+    lib.xyg_polar_project.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+    ]
     lib.xyg_hexbin_groups.restype = ctypes.c_size_t
     lib.xyg_hexbin_groups.argtypes = [
         F64P,
@@ -2678,6 +2710,50 @@ def main() -> None:
     ok(
         tick_fmt_n == len(b"$12,345.7 ms") and tick_label.value == b"$12,345.7 ms",
         "tick_format number spec",
+    )
+    polar_metrics = array("d", [0.0]) * 23
+    polar_layout_n = lib.xyg_polar_layout(
+        0.0,
+        0.0,
+        400.0,
+        400.0,
+        0,
+        0.0,
+        0,
+        0.0,
+        6.283185307179586,
+        0,
+        0.0,
+        1.0,
+        float("nan"),
+        0.0,
+        0,
+        1.0,
+        0,
+        _ptr(polar_metrics, ctypes.c_double),
+        23,
+    )
+    polar_theta = array("d", [0.0, 1.5707963267948966])
+    polar_r = array("d", [1.0, 1.0])
+    polar_px = array("d", [0.0, 0.0])
+    polar_py = array("d", [0.0, 0.0])
+    polar_proj_n = lib.xyg_polar_project(
+        _ptr(polar_metrics, ctypes.c_double),
+        23,
+        _ptr(polar_theta, ctypes.c_double),
+        _ptr(polar_r, ctypes.c_double),
+        2,
+        _ptr(polar_px, ctypes.c_double),
+        _ptr(polar_py, ctypes.c_double),
+    )
+    ok(
+        polar_layout_n == 23
+        and polar_proj_n == 2
+        and abs(polar_px[0] - 400.0) < 1e-6
+        and abs(polar_py[0] - 200.0) < 1e-6
+        and abs(polar_px[1] - 200.0) < 1e-6
+        and abs(polar_py[1] - 0.0) < 1e-6,
+        "polar default-cardinals",
     )
     cf_x = array("d", [0.0, 1.0, 2.0, 3.0, 4.0])
     cf_y = array("d", [0.0, 1.0, 0.5, 2.0, 1.5])

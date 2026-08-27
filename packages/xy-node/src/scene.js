@@ -24,6 +24,8 @@ import {
   xyPolarLegendRoom,
   xyPolarLegendReserve,
   xyPolarLabelRoom,
+  xyPolarLayout,
+  xyPolarProject,
   xyRecutPolarPlot,
   xyTightLayoutSolve,
   xySceneBatchEncode,
@@ -921,6 +923,98 @@ export function compatRightYRoom(compact) {
   const written = xyCompatRightYRoom(compact ? 1 : 0, f64Ptr(out));
   if (written === USIZE_MAX_64) throw new RangeError("invalid right-y-room request");
   return out[0];
+}
+
+export const POLAR_METRICS_LEN = 23;
+
+const THETA_ZERO = {
+  E: 0,
+  N: Math.PI / 2,
+  W: Math.PI,
+  S: -Math.PI / 2,
+};
+
+function polarThetaUnit(unit = "radians") {
+  return unit === "degrees" ? 1 : 0;
+}
+
+function polarThetaDirection(direction = "counterclockwise") {
+  return direction === "clockwise" ? 1 : 0;
+}
+
+function polarThetaZero(zero = "E") {
+  if (typeof zero === "string") return THETA_ZERO[zero] ?? 0;
+  return Number(zero);
+}
+
+function polarRScale(axis = {}) {
+  const scale = axis.scale ?? "";
+  const kind = axis.kind ?? "linear";
+  let code = 0;
+  if (scale === "log" || kind === "log") code = 1;
+  else if (scale === "symlog") code = 2;
+  return {
+    kind: code,
+    constant: Number(axis.constant ?? 1),
+    maskNonpositive: (axis.nonpositive ?? "clip") === "mask",
+  };
+}
+
+export function polarLayout(thetaAxis = {}, rAxis = {}, plot = {}) {
+  const unit = thetaAxis.theta_unit ?? thetaAxis.thetaUnit ?? "radians";
+  const turn = unit === "degrees" ? 360 : Math.PI * 2;
+  const sector = thetaAxis.sector ?? [0, turn];
+  const categories = thetaAxis.categories ?? [];
+  const [rLo, rHi] = rAxis.range ?? [0, 1];
+  const origin = rAxis.r_origin ?? rAxis.rOrigin;
+  const scale = polarRScale(rAxis);
+  const metrics = new Float64Array(POLAR_METRICS_LEN);
+  const written = xyPolarLayout(
+    Number(plot.x ?? 0),
+    Number(plot.y ?? 0),
+    Number(plot.w ?? 0),
+    Number(plot.h ?? 0),
+    polarThetaUnit(unit),
+    polarThetaZero(thetaAxis.theta_zero ?? thetaAxis.thetaZero ?? "E"),
+    polarThetaDirection(thetaAxis.theta_direction ?? thetaAxis.thetaDirection),
+    Number(sector[0]),
+    Number(sector[1]),
+    categories.length,
+    Number(rLo),
+    Number(rHi),
+    origin == null ? Number.NaN : Number(origin),
+    Number(rAxis.hole ?? 0),
+    scale.kind,
+    scale.constant,
+    scale.maskNonpositive ? 1 : 0,
+    f64Ptr(metrics),
+    POLAR_METRICS_LEN,
+  );
+  if (written !== POLAR_METRICS_LEN) throw new RangeError("invalid polar-layout request");
+  return metrics;
+}
+
+export function polarProject(metrics, theta, r) {
+  const packed = metrics instanceof Float64Array ? metrics : Float64Array.from(metrics);
+  const th = Float64Array.from(Array.isArray(theta) ? theta : [theta]);
+  const rv = Float64Array.from(Array.isArray(r) ? r : [r]);
+  if (th.length !== rv.length) throw new RangeError("theta and r must have the same length");
+  const outX = new Float64Array(th.length);
+  const outY = new Float64Array(th.length);
+  const written = xyPolarProject(
+    f64Ptr(packed),
+    packed.length,
+    f64Ptr(th),
+    f64Ptr(rv),
+    th.length,
+    f64Ptr(outX),
+    f64Ptr(outY),
+  );
+  if (written === USIZE_MAX_64 || written !== th.length) {
+    throw new RangeError("invalid polar-project request");
+  }
+  if (!Array.isArray(theta)) return [outX[0], outY[0]];
+  return [outX, outY];
 }
 
 export function polarLegendRoom(width) {

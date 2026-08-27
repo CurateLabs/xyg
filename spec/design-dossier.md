@@ -1365,6 +1365,11 @@ ABI 130 moves Cartesian compatibility tick-label formatting into Rust.
 Hosts call `xyg_tick_format` for linear/log/time/number-spec, category,
 and angular defaults; authored `tick_labels` and polar tick drawing
 stay host-side (#276).
+ABI 131 moves static polar (theta, r) → screen-pixel projection into Rust.
+Hosts call `xyg_polar_layout`, `xyg_polar_project`, and the polar visibility-mask
+helpers; wedge/ring/polygon helpers remain host-side and call native projection.
+ChartView GLSL `xyPolarPos` is unchanged until WASM (#277). Scene compilation
+still rejects `coords="polar"` until a later slice.
 ABI 129 moves Cartesian static-export grid colormap into Rust. Hosts
 call `xyg_colormap_rgba`, `xyg_colormap_rgba_canonical`, and existing
 `xyg_density_rgba` for log-u8 density; direct `t ∈ [0, 1]` stop

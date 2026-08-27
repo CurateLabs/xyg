@@ -40,6 +40,7 @@ use xyg_engine::legend_layout;
 use xyg_engine::lod_plan;
 use xyg_engine::pdf;
 use xyg_engine::png_encode;
+use xyg_engine::polar;
 use xyg_engine::projection;
 use xyg_engine::raster;
 use xyg_engine::sankey;
@@ -118,7 +119,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 130;
+pub const ABI_VERSION: u32 = 131;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -11369,6 +11370,265 @@ pub unsafe extern "C" fn xyg_recut_polar_plot(
         }
         9
     })
+}
+
+/// Polar disc layout and projection metrics (ABI 131).
+///
+/// Writes [`polar::POLAR_METRICS_LEN`] doubles: centre, radius, angular/radial
+/// scale state, and sector bounds needed by the projection and mask helpers.
+/// `r_origin` is NaN to select `r_lo`. `r_scale_kind` is 0=linear, 1=log,
+/// 2=symlog. `theta_unit` is 0=radians, 1=degrees. `theta_direction` is
+/// 0=counterclockwise, 1=clockwise.
+///
+/// # Safety
+/// When `out_cap` is non-zero, `out_metrics` must address at least
+/// `polar::POLAR_METRICS_LEN` writable f64 values.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_polar_layout(
+    plot_x: f64,
+    plot_y: f64,
+    plot_w: f64,
+    plot_h: f64,
+    theta_unit: u32,
+    theta_zero: f64,
+    theta_direction: u32,
+    sector_start: f64,
+    sector_end: f64,
+    n_categories: u32,
+    r_lo: f64,
+    r_hi: f64,
+    r_origin: f64,
+    hole: f64,
+    r_scale_kind: u32,
+    r_constant: f64,
+    r_mask_nonpositive: i32,
+    out_metrics: *mut f64,
+    out_cap: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if !matches!(r_mask_nonpositive, 0 | 1) {
+            return usize::MAX;
+        }
+        let out = if out_cap == 0 {
+            &mut [][..]
+        } else {
+            if out_metrics.is_null() || out_cap < polar::POLAR_METRICS_LEN {
+                return usize::MAX;
+            }
+            std::slice::from_raw_parts_mut(out_metrics, out_cap)
+        };
+        polar::polar_layout(
+            polar::PolarLayoutInput {
+                plot_x,
+                plot_y,
+                plot_w,
+                plot_h,
+                theta_unit,
+                theta_zero,
+                theta_direction,
+                sector_start,
+                sector_end,
+                n_categories,
+                r_lo,
+                r_hi,
+                r_origin,
+                hole,
+                r_scale_kind,
+                r_constant,
+                r_mask_nonpositive: r_mask_nonpositive != 0,
+            },
+            out,
+        )
+        .unwrap_or(usize::MAX)
+    })
+}
+
+/// Project polar `(theta, r)` pairs to screen pixels (ABI 131).
+///
+/// # Safety
+/// `metrics` must address at least `polar::POLAR_METRICS_LEN` values. When `n`
+/// is non-zero, `theta`, `r`, `out_x`, and `out_y` must each address `n`
+/// readable/writable f64 values.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_polar_project(
+    metrics: *const f64,
+    metrics_len: usize,
+    theta: *const f64,
+    r: *const f64,
+    n: usize,
+    out_x: *mut f64,
+    out_y: *mut f64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        let metrics = if metrics_len == 0 {
+            &[][..]
+        } else {
+            if metrics.is_null() || metrics_len < polar::POLAR_METRICS_LEN {
+                return usize::MAX;
+            }
+            std::slice::from_raw_parts(metrics, metrics_len)
+        };
+        let (theta, r) = if n == 0 {
+            (&[][..], &[][..])
+        } else {
+            if theta.is_null() || r.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts(theta, n),
+                std::slice::from_raw_parts(r, n),
+            )
+        };
+        let (out_x, out_y) = if n == 0 {
+            (&mut [][..], &mut [][..])
+        } else {
+            if out_x.is_null() || out_y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts_mut(out_x, n),
+                std::slice::from_raw_parts_mut(out_y, n),
+            )
+        };
+        polar::polar_project(metrics, theta, r, out_x, out_y).unwrap_or(usize::MAX)
+    })
+}
+
+/// Angular-sector visibility mask for polar theta values (ABI 131).
+///
+/// # Safety
+/// When `n` is non-zero, `theta` and `out` must each address `n` values.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_polar_theta_visible_mask(
+    metrics: *const f64,
+    metrics_len: usize,
+    theta: *const f64,
+    n: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        polar_mask(metrics, metrics_len, theta, n, out, out_cap, |m, t, o| {
+            polar::polar_theta_visible_mask(m, t, o)
+        })
+    })
+}
+
+/// Radial-range visibility mask for polar r values (ABI 131).
+///
+/// # Safety
+/// When `n` is non-zero, `r` and `out` must each address `n` values.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_polar_visible_mask(
+    metrics: *const f64,
+    metrics_len: usize,
+    r: *const f64,
+    n: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        polar_mask(metrics, metrics_len, r, n, out, out_cap, |m, values, o| {
+            polar::polar_visible_mask(m, values, o)
+        })
+    })
+}
+
+/// Combined angular and radial visibility mask (ABI 131).
+///
+/// # Safety
+/// When `n` is non-zero, `theta`, `r`, and `out` must each address `n` values.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_polar_position_mask(
+    metrics: *const f64,
+    metrics_len: usize,
+    theta: *const f64,
+    r: *const f64,
+    n: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        let metrics = match polar_metrics_slice(metrics, metrics_len) {
+            Some(slice) => slice,
+            None => return usize::MAX,
+        };
+        let (theta, r) = match polar_input_pair(theta, r, n) {
+            Some(pair) => pair,
+            None => return usize::MAX,
+        };
+        let out = match polar_out_slice(out, out_cap, n) {
+            Some(slice) => slice,
+            None => return usize::MAX,
+        };
+        polar::polar_position_mask(metrics, theta, r, out).unwrap_or(usize::MAX)
+    })
+}
+
+fn polar_metrics_slice(metrics: *const f64, metrics_len: usize) -> Option<&'static [f64]> {
+    if metrics_len == 0 {
+        Some(&[])
+    } else if metrics.is_null() || metrics_len < polar::POLAR_METRICS_LEN {
+        None
+    } else {
+        Some(unsafe { std::slice::from_raw_parts(metrics, metrics_len) })
+    }
+}
+
+fn polar_input_pair<'a>(
+    first: *const f64,
+    second: *const f64,
+    n: usize,
+) -> Option<(&'a [f64], &'a [f64])> {
+    if n == 0 {
+        Some((&[], &[]))
+    } else if first.is_null() || second.is_null() {
+        None
+    } else {
+        Some(unsafe {
+            (
+                std::slice::from_raw_parts(first, n),
+                std::slice::from_raw_parts(second, n),
+            )
+        })
+    }
+}
+
+fn polar_out_slice<'a>(out: *mut u8, out_cap: usize, n: usize) -> Option<&'a mut [u8]> {
+    if n == 0 {
+        Some(&mut [])
+    } else if out.is_null() || out_cap < n {
+        None
+    } else {
+        Some(unsafe { std::slice::from_raw_parts_mut(out, n) })
+    }
+}
+
+fn polar_mask(
+    metrics: *const f64,
+    metrics_len: usize,
+    values: *const f64,
+    n: usize,
+    out: *mut u8,
+    out_cap: usize,
+    apply: impl FnOnce(&[f64], &[f64], &mut [u8]) -> Option<usize>,
+) -> usize {
+    let metrics = match polar_metrics_slice(metrics, metrics_len) {
+        Some(slice) => slice,
+        None => return usize::MAX,
+    };
+    let values = if n == 0 {
+        &[][..]
+    } else if values.is_null() {
+        return usize::MAX;
+    } else {
+        unsafe { std::slice::from_raw_parts(values, n) }
+    };
+    let out = match polar_out_slice(out, out_cap, n) {
+        Some(slice) => slice,
+        None => return usize::MAX,
+    };
+    apply(metrics, values, out).unwrap_or(usize::MAX)
 }
 
 /// Pyplot tight-layout grid solve (ABI 127).
