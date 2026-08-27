@@ -75,7 +75,7 @@ is Rust-owned (ABI 131). Scene v26 / ABI 133 compiles polar `line`, `scatter`,
 via `polar_wedge_points`), `errorbar` (projected polylines), and `heatmap`
 (lattice Rects tessellated to the same PolyFill wedges; scalar colormaps
 resolve to per-cell literal styles) when hosts pass an XYPL v1 envelope into
-`xyg_scene_batch_encode`. Polar contour, density, and labeled-annotation extras
+`xyg_scene_batch_encode`. Polar density and labeled-annotation extras
 still reject with `XYG_SCENE_UNSUPPORTED_POLAR`. Authored arbitrary marker paths and
 font glyph markers stay on the existing Python compatibility path because they
 need separate bounded path/text records.
@@ -475,8 +475,8 @@ lowering while retaining backgrounds, marks, titles, and legends. Paint alpha
 is never a coordinate-system discriminator: a Cartesian Scene with hidden
 chrome remains Cartesian. Polar projection and polar chrome require explicit
 XYPL v1 input on `xyg_scene_batch_encode`; Scene v26 compiles polar
-line/scatter/area/bar/column/errorbar/heatmap plus rings, spokes, disc/sector clip, and rim tick labels.
-Polar contour stays rejected with
+line/scatter/area/bar/column/errorbar/heatmap/contour plus rings, spokes, disc/sector clip, and rim tick labels.
+Polar density stays rejected with
 `XYG_SCENE_UNSUPPORTED_POLAR`.
 
 Python and Node mechanically pack the same 200-byte block and tick arrays;
@@ -758,7 +758,7 @@ separate ABI 97 ingress mode and does not alter the v25 outline-topology
 contract. Scene v26 later admits polar area (Band) by projecting both
 `(theta, r)` samples independently; polar bar/column Rects tessellate to
 PolyFill annular sectors in the same version. Polar heatmap tessellates
-the same way; polar contour stays rejected.
+the same way; polar contour uses SegmentPair polylines through `polar_project`.
 
 ## Version 26 polar Scene compile (ABI 133)
 
@@ -818,16 +818,16 @@ uses polygon rings through angular ticks. Tick labels use
 or `xyg_tick_format`.
 
 Eligible polar kinds: `line` (including step-line), `scatter`, `area`,
-`bar`, `column`, `errorbar`, and `heatmap`. Polar `bar`/`column` host-pack the same
+`bar`, `column`, `errorbar`, `heatmap`, and `contour`. Polar `bar`/`column` host-pack the same
 `(x0,y0,x1,y1)` Rect columns as Cartesian bars; Rust tessellates
 `(theta0,r0,theta1,r1)` into a PolyFill vertex run via `polar_wedge_points`
 (span-proportional `polar_bar_segments`, gap=0/corner=0). Polar `errorbar`
-uses existing SegmentPair polylines through `polar_project` (chords, matching
+and `contour` use existing SegmentPair polylines through `polar_project` (chords, matching
 §5). Polar `heatmap` uses the same Rect→PolyFill tessellation: constant-style
 lattices expand in Rust, and scalar colormaps resolve to per-cell literal
 styles before encode. Scene has no image-blit record, so this is annular-sector
 geometry rather than the compatibility inverse-sample `<image>`.
-`XYG_SCENE_UNSUPPORTED_POLAR` remains for polar contour, density, and other
+`XYG_SCENE_UNSUPPORTED_POLAR` remains for polar density and other
 kinds. Hidden Cartesian chrome is never inferred
 as polar.
 

@@ -1,4 +1,4 @@
-"""Scene v26 polar compile: line/scatter/area/bar/column/errorbar/heatmap through Rust Scene."""
+"""Scene v26 polar compile: line/scatter/area/bar/column/errorbar/heatmap/contour through Rust Scene."""
 
 from __future__ import annotations
 
@@ -130,11 +130,23 @@ def test_polar_density_still_unsupported() -> None:
         figure_scene(figure)
 
 
-def test_polar_contour_still_unsupported() -> None:
+def test_polar_contour_is_scene_eligible() -> None:
     figure = Figure(width=400, height=400, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 3.0)
     figure.contour([[1.0, 2.0], [3.0, 4.0]], levels=2, color="#3987e5")
-    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_POLAR"):
-        figure_scene(figure)
+    scene = figure_scene(figure)
+    assert scene[:4] == b"XYGS"
+    assert scene[4:8] == (26).to_bytes(4, "little")
+    assert scene[-92:-88] == b"XYPL"
+    svg = _native.scene_svg(scene)
+    assert "<polyline" in svg or "<path" in svg
+    assert 'data-xy-grid="ring"' in svg or 'data-xy-frame="polar"' in svg
+    public_svg = public_static_export(figure, "svg")
+    assert public_svg is not None
+    assert b"<polyline" in public_svg or b"<path" in public_svg
+    public_png = public_static_export(figure, "png")
+    assert public_png is not None
 
 
 def test_cartesian_hidden_chrome_is_not_inferred_as_polar() -> None:

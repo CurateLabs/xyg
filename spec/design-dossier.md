@@ -568,9 +568,9 @@ F3, still pending (above).
   fully hidden Cartesian chrome is omitted by Rust lowering without changing
   coordinate semantics—polar Scene projection is explicit XYPL v1 input, never
   an inference from transparent paint. Scene v26 compiles polar line, scatter,
-  area, bar/column (PolyFill annular sectors), errorbar, and heatmap
-  (tessellated lattice cells); polar contour remains an explicit unsupported
-  boundary.
+  area, bar/column (PolyFill annular sectors), errorbar, heatmap
+  (tessellated lattice cells), and contour (SegmentPair polylines); polar
+  density remains an explicit unsupported boundary.
   Rust owns the
   selected endpoint-pair order, clipping, SVG, PDF, and raster output;
   nonfinite/missing breaks, custom styles, and every other segment-like mark
@@ -1373,11 +1373,12 @@ ABI 131 moves static polar (theta, r) → screen-pixel projection into Rust.
 Hosts call `xyg_polar_layout`, `xyg_polar_project`, and the polar visibility-mask
 helpers; wedge/ring/polygon helpers remain host-side and call native projection.
 ChartView GLSL `xyPolarPos` is unchanged until WASM (#277). Scene v26 / ABI 133
-compiles polar line, scatter, area, bar/column, errorbar, and heatmap through XYPL v1 into `xyg_scene_batch_encode`;
-polar contour and density stay rejected with
+compiles polar line, scatter, area, bar/column, errorbar, heatmap, and contour through XYPL v1 into `xyg_scene_batch_encode`;
+polar density stays rejected with
 `XYG_SCENE_UNSUPPORTED_POLAR`. Polar heatmap tessellates lattice Rects to
 PolyFill wedges (scalar colormaps become per-cell literal styles); inverse-sample
 `<image>` blit stays on the compatibility exporters because Scene has no image record.
+Polar contour reuses SegmentPair polylines through `polar_project`.
 ABI 132 moves first-paint density scatter emit policy into Rust. Hosts call
 `xyg_density_emit_meta`, `xyg_density_grid_path`, `xyg_density_format_binning`,
 `xyg_density_pyramid_preflight`, and `xyg_density_wasm_eligible`; kernel

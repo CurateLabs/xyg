@@ -168,6 +168,8 @@ def _polar() -> Figure:
 
 def _polar_contour() -> Figure:
     figure = Figure(width=320, height=240, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 3.0)
     figure.contour([[1.0, 2.0], [3.0, 4.0]], levels=2, color="#3987e5")
     return figure
 
@@ -430,7 +432,6 @@ def _public_disconnected_segments() -> Figure:
 # Each factory builds a figure that `figure_scene` rejects; the substring is the
 # stable diagnostic token the predicate must surface for the router to log.
 UNSUPPORTED: dict[str, tuple[Callable[[], Figure], str]] = {
-    "polar_contour": (_polar_contour, "XYG_SCENE_UNSUPPORTED_POLAR"),
     "polar_density": (_polar_density, "density"),
     "custom_font": (_custom_font, "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT"),
     "browser_css": (_browser_css, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS"),
@@ -453,6 +454,16 @@ def test_polar_scatter_is_scene_supported() -> None:
     exported = public_static_export(figure, "svg")
     assert exported is not None
     assert exported.startswith(b"<svg") or b"<svg" in exported
+
+
+def test_polar_contour_is_scene_supported() -> None:
+    figure = _polar_contour()
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"<polyline" in exported or b"<path" in exported
+    png = public_static_export(figure, "png")
+    assert png is not None
 
 
 def test_polar_heatmap_is_scene_supported() -> None:
@@ -1102,7 +1113,7 @@ def test_generated_stem_markers_route_every_builtin_symbol(symbol: str) -> None:
         lambda figure: figure.scatter([2.5, 3.5], [2.5, 3.5], color=[0.0, 1.0]),
         lambda figure: (
             setattr(figure, "coords", "polar"),
-            figure.contour([[1.0, 2.0], [3.0, 4.0]], levels=2, color="#3987e5"),
+            figure.stem([1.0], [1.5], base=0.25),
         ),
         lambda figure: figure.scatter(range(10_001), range(10_001)),
     ],

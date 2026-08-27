@@ -102,7 +102,7 @@ pub fn scene_support_reason(version: u32, features: u64) -> Result<&'static str,
         return Err(SceneError::Version);
     }
     let reasons = [
-        (SCENE_FEATURE_POLAR, "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, area, bar, column, errorbar, and heatmap only"),
+        (SCENE_FEATURE_POLAR, "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, area, bar, column, errorbar, heatmap, and contour only"),
         (SCENE_FEATURE_CUSTOM_FONT, "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v12 does not encode custom font resources"),
         (SCENE_FEATURE_BROWSER_CSS, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS: Scene v12 does not encode browser-only CSS or class behavior"),
         (SCENE_FEATURE_GRADIENT, "XYG_SCENE_UNSUPPORTED_GRADIENT: Scene v12 supports solid literal paints only"),

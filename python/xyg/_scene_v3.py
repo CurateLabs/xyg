@@ -94,6 +94,7 @@ _PUBLIC_EXPORT_KIND_CODES = {
     "triangle_mesh": 15,
     "hexbin": 16,
     "heatmap": 17,
+    "contour": 18,
 }
 
 _LEGEND_LOCATIONS = {

@@ -1760,6 +1760,7 @@ const PUBLIC_EXPORT_KIND_CODES = {
   scatter: 0, line: 1, bar: 2, column: 3, histogram: 4, violin: 5, box: 6,
   box_whisker: 7, box_median: 8, segments: 9, errorbar: 10, stem: 11, area: 12,
   error_band: 13, ribbon: 14, triangle_mesh: 15, hexbin: 16, heatmap: 17,
+  contour: 18,
 };
 const STYLE_KIND_CODES = { ...PUBLIC_EXPORT_KIND_CODES, contour: 18 };
 const MS_LINE_ONLY = 1 << 0;

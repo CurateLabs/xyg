@@ -245,7 +245,7 @@
       "python": "ready",
       "node": "ready",
       "rust": "ready",
-      "notes": "Node polarChart emits coords+theta/r axis descriptors on buildPayload; pie/wind_rose ready; ABI 133 Scene v26 polar line/scatter/area/bar/column/errorbar/heatmap compile via XYPL; contour still compatibility"
+      "notes": "Node polarChart emits coords+theta/r axis descriptors on buildPayload; pie/wind_rose ready; ABI 133 Scene v26 polar line/scatter/area/bar/column/errorbar/heatmap/contour compile via XYPL; density and truecolor heatmap still compatibility"
     },
     {
       "kind": "pie",

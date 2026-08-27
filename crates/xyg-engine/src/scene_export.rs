@@ -78,6 +78,7 @@ const KIND_RIBBON: u8 = 14;
 const KIND_TRIANGLE_MESH: u8 = 15;
 const KIND_HEXBIN: u8 = 16;
 const KIND_HEATMAP: u8 = 17;
+const KIND_CONTOUR: u8 = 18;
 
 const PUBLIC_FIGURE_STYLE_KEYS: &[&str] = &["background", "--chart-bg"];
 const PUBLIC_LEGEND_KEYS: &[&str] = &["loc", "title", "highlight", "toggle"];
@@ -108,8 +109,16 @@ const POLAR_AXIS_KEYS: &[&str] = &[
     "hole",
     "r_origin",
 ];
-const POLAR_SCENE_KINDS: &[&str] =
-    &["line", "scatter", "area", "bar", "column", "errorbar", "heatmap"];
+const POLAR_SCENE_KINDS: &[&str] = &[
+    "line",
+    "scatter",
+    "area",
+    "bar",
+    "column",
+    "errorbar",
+    "heatmap",
+    "contour",
+];
 const PUBLIC_SYMBOLS: &[&str] = &[
     "circle",
     "square",
@@ -215,7 +224,7 @@ impl<'a> Cursor<'a> {
 }
 
 fn kind_public(kind: u8) -> bool {
-    kind <= KIND_HEATMAP
+    kind <= KIND_CONTOUR
 }
 
 fn kind_literal_geometry(kind: u8) -> bool {
@@ -225,7 +234,12 @@ fn kind_literal_geometry(kind: u8) -> bool {
 fn kind_segment(kind: u8) -> bool {
     matches!(
         kind,
-        KIND_SEGMENTS | KIND_ERRORBAR | KIND_STEM | KIND_BOX_WHISKER | KIND_BOX_MEDIAN
+        KIND_SEGMENTS
+            | KIND_ERRORBAR
+            | KIND_STEM
+            | KIND_BOX_WHISKER
+            | KIND_BOX_MEDIAN
+            | KIND_CONTOUR
     )
 }
 
@@ -339,9 +353,12 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "stroke_width",
             "box_orientation",
         ],
-        KIND_BOX_WHISKER | KIND_BOX_MEDIAN | KIND_SEGMENTS | KIND_ERRORBAR | KIND_STEM => {
-            &["color", "opacity", "width", "role"]
-        }
+        KIND_BOX_WHISKER
+        | KIND_BOX_MEDIAN
+        | KIND_SEGMENTS
+        | KIND_ERRORBAR
+        | KIND_STEM
+        | KIND_CONTOUR => &["color", "opacity", "width", "role"],
         KIND_AREA => &[
             "color",
             "opacity",
@@ -391,6 +408,7 @@ fn accepted_segment_role(kind: u8, role: &str) -> bool {
     match kind {
         KIND_SEGMENTS => role == "segments",
         KIND_ERRORBAR => role == "y-errorbar" || role == "x-errorbar",
+        KIND_CONTOUR => role == "contour",
         KIND_STEM => role == "stem",
         KIND_BOX_WHISKER => role == "box-whisker",
         KIND_BOX_MEDIAN => role == "box-median",
@@ -1149,17 +1167,17 @@ mod tests {
             scene_figure_support_reason(&xyfs_v2(
                 OBS_POLAR,
                 &PRIMARY_XY,
-                &[(XYFS_TRACE_UNSUPPORTED_KIND, "contour")]
+                &[(XYFS_TRACE_UNSUPPORTED_KIND, "stem")]
             )),
             Ok(
-                "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, area, bar, column, errorbar, and heatmap only"
+                "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, area, bar, column, errorbar, heatmap, and contour only"
                     .to_string()
             )
         );
     }
 
     #[test]
-    fn figure_support_accepts_polar_bar_heatmap_and_rejects_contour() {
+    fn figure_support_accepts_polar_bar_heatmap_and_contour() {
         assert_eq!(
             scene_figure_support_reason(&xyfs_v2(OBS_POLAR, &PRIMARY_XY, &[(0, "bar")])),
             Ok(String::new())
@@ -1178,10 +1196,7 @@ mod tests {
         );
         assert_eq!(
             scene_figure_support_reason(&xyfs_v2(OBS_POLAR, &PRIMARY_XY, &[(0, "contour")])),
-            Ok(
-                "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, area, bar, column, errorbar, and heatmap only"
-                    .to_string()
-            )
+            Ok(String::new())
         );
     }
 
