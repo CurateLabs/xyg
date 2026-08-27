@@ -6804,6 +6804,102 @@ def lod_plan(
     return bool(out_exact.value), int(out_mode.value), int(out_gw.value), int(out_gh.value)
 
 
+def payload_tier(
+    kind: int,
+    n_points: int,
+    *,
+    polar: bool = False,
+    force_density: int = -1,
+    force_direct: bool = False,
+    per_item: bool = False,
+) -> int:
+    """Compile-time payload tier via ``xyg_payload_tier`` (ABI 122).
+
+    ``kind`` is 0=line/area, 1=scatter. ``force_density`` is -1 auto, 0 false,
+    1 true. Returns 0=direct, 1=decimated, 2=density.
+    """
+    if isinstance(n_points, (bool, np.bool_)) or not isinstance(n_points, numbers.Integral):
+        raise ValueError("n_points must be an integer >= 0")
+    n = int(n_points)
+    if n < 0:
+        raise ValueError("n_points must be an integer >= 0")
+    code = int(
+        _lib.xyg_payload_tier(
+            int(kind),
+            n,
+            int(bool(polar)),
+            int(force_density),
+            int(bool(force_direct)),
+            int(bool(per_item)),
+        )
+    )
+    if code < 0:
+        raise ValueError("invalid payload_tier arguments")
+    return code
+
+
+def payload_visible_needed(
+    *,
+    x_log: bool,
+    y_log: bool,
+    prefiltered: bool,
+    x_has_nulls: bool,
+    y_has_nulls: bool,
+    has_base: bool = False,
+    base_has_nulls: bool = False,
+) -> bool:
+    """Whether the payload visible-row mask can drop rows (ABI 122)."""
+    code = int(
+        _lib.xyg_payload_visible_needed(
+            int(bool(x_log)),
+            int(bool(y_log)),
+            int(bool(prefiltered)),
+            int(bool(x_has_nulls)),
+            int(bool(y_has_nulls)),
+            int(bool(has_base)),
+            int(bool(base_has_nulls)),
+        )
+    )
+    if code < 0:
+        raise ValueError("invalid payload_visible_needed arguments")
+    return bool(code)
+
+
+def payload_visible_mask(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    *,
+    x_log: bool = False,
+    y_log: bool = False,
+    base: npt.NDArray[np.float64] | None = None,
+) -> npt.NDArray[np.bool_]:
+    """Finite + log-positive keep mask via ``xyg_payload_visible_mask``."""
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("payload_visible_mask x and y must have equal length")
+    n = len(x)
+    out = np.empty(n, dtype=np.uint8)
+    has_base = base is not None
+    base_arr = _as_f64(base, "base") if has_base else None
+    if has_base and base_arr is not None and len(base_arr) != n:
+        raise ValueError("payload_visible_mask base must match x/y length")
+    written = _lib.xyg_payload_visible_mask(
+        _ptr_f64(x),
+        _ptr_f64(y),
+        n,
+        int(bool(x_log)),
+        int(bool(y_log)),
+        _ptr_f64(base_arr) if has_base and base_arr is not None else 0,
+        int(has_base),
+        out.ctypes.data if n else 0,
+        n,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid payload_visible_mask arguments")
+    return out.astype(bool, copy=False)
+
+
 def quantiles(
     data: npt.NDArray[np.float64], probs: npt.NDArray[np.float64] | list[float]
 ) -> npt.NDArray[np.float64]:

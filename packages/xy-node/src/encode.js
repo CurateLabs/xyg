@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -1349,12 +1349,110 @@ export function drillDecision(visible, budget, { inDrill = false, exitFactor = D
 }
 
 /**
- * Whether a scatter should use the density tier (Python Trace.use_density).
+ * Compile-time payload tier via `xyg_payload_tier` (ABI 122).
+ * `kind` 0=line/area, 1=scatter. Returns 0=direct, 1=decimated, 2=density.
  */
-export function shouldUseDensity(nPoints, { forceDensity = false, forceDirect = false, coords = "cartesian" } = {}) {
-  if (forceDirect || coords === "polar") return false;
-  if (forceDensity) return true;
-  return Number(nPoints) >= SCATTER_DENSITY_THRESHOLD;
+export function payloadTier({
+  kind,
+  nPoints,
+  polar = false,
+  forceDensity = -1,
+  forceDirect = false,
+  perItem = false,
+} = {}) {
+  const code = xyPayloadTier(
+    Number(kind),
+    BigInt(nPoints),
+    polar ? 1 : 0,
+    Number(forceDensity),
+    forceDirect ? 1 : 0,
+    perItem ? 1 : 0,
+  );
+  if (code < 0) {
+    throw new Error("xyg_payload_tier failed");
+  }
+  return code;
+}
+
+/**
+ * Whether the payload visible-row mask can drop rows (ABI 122).
+ */
+export function payloadVisibleNeeded({
+  xLog = false,
+  yLog = false,
+  prefiltered = false,
+  xHasNulls = false,
+  yHasNulls = false,
+  hasBase = false,
+  baseHasNulls = false,
+} = {}) {
+  const code = xyPayloadVisibleNeeded(
+    xLog ? 1 : 0,
+    yLog ? 1 : 0,
+    prefiltered ? 1 : 0,
+    xHasNulls ? 1 : 0,
+    yHasNulls ? 1 : 0,
+    hasBase ? 1 : 0,
+    baseHasNulls ? 1 : 0,
+  );
+  if (code < 0) {
+    throw new Error("xyg_payload_visible_needed failed");
+  }
+  return code === 1;
+}
+
+/**
+ * Finite + log-positive keep mask via `xyg_payload_visible_mask`.
+ */
+export function payloadVisibleMask(x, y, { xLog = false, yLog = false, base = null } = {}) {
+  const xa = asF64Array(x);
+  const ya = asF64Array(y);
+  if (xa.length !== ya.length) {
+    throw new RangeError("payloadVisibleMask x/y length mismatch");
+  }
+  const n = xa.length;
+  const out = new Uint8Array(n);
+  const hasBase = base != null;
+  const ba = hasBase ? asF64Array(base) : null;
+  if (hasBase && ba.length !== n) {
+    throw new RangeError("payloadVisibleMask base length mismatch");
+  }
+  const written = requireWritten(
+    Number(xyPayloadVisibleMask(
+      n ? f64Ptr(xa) : null,
+      n ? f64Ptr(ya) : null,
+      BigInt(n),
+      xLog ? 1 : 0,
+      yLog ? 1 : 0,
+      hasBase && n ? f64Ptr(ba) : null,
+      hasBase ? 1 : 0,
+      n ? u8Ptr(out) : null,
+      BigInt(n),
+    )),
+    n,
+    "xyg_payload_visible_mask",
+  );
+  return { mask: out, kept: written };
+}
+
+/**
+ * Whether a scatter should use the density tier (Python Trace.use_density).
+ * Polar / forceDirect always ship direct; threshold is strict `>` (ABI 122).
+ */
+export function shouldUseDensity(nPoints, {
+  forceDensity = false,
+  forceDirect = false,
+  coords = "cartesian",
+  perItemChannels = false,
+} = {}) {
+  return payloadTier({
+    kind: 1,
+    nPoints,
+    polar: coords === "polar",
+    forceDensity: forceDensity ? 1 : -1,
+    forceDirect,
+    perItem: perItemChannels,
+  }) === 2;
 }
 
 export function normalizeF32(data, lo, hi, { nanMode = "nan" } = {}) {

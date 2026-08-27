@@ -208,6 +208,11 @@ call `xyg_ribbon_edge`, `xyg_ribbon_polygon`, `xyg_monotone_tangents`,
 `xyg_curve_flatten`, and `xyg_rounded_rect_poly` so bump-X flattening,
 Fritsch–Carlson tangents, Hermite polylines, and independent tip/base radii
 cannot drift. Hosts still map affine scales.
+ABI 122 moves compile-time payload LOD into Rust: Python and Node
+call `xyg_payload_tier`, `xyg_payload_visible_needed`, and
+`xyg_payload_visible_mask` so M4 vs density vs direct, polar skip,
+the strict `>` scatter thresholds, and the log/null keep mask cannot
+drift. Hosts still gather and ship the chosen rows.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call

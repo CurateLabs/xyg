@@ -4,13 +4,13 @@
  */
 
 import {
-  DECIMATION_THRESHOLD,
   asF64Array,
   argsortStable,
   isSorted,
   m4Indices,
   m4Points,
   minMax,
+  payloadTier,
 } from "../encode.js";
 
 /** Same as `np.finfo(np.float64).eps` / Python `_payload._m4_decimate`. */
@@ -48,16 +48,16 @@ export function prepareLineSeries(x, y) {
  *
  * @param {ArrayLike|TypedArray} x
  * @param {ArrayLike|TypedArray} y
- * @param {{x0?: number, x1?: number, nBuckets?: number, threshold?: number}} [opts]
+ * @param {{x0?: number, x1?: number, nBuckets?: number, polar?: boolean, coords?: string}} [opts]
  * @returns {{tier: string, x: Float64Array, y: Float64Array, indices?: Uint32Array, nBuckets: number}}
  */
 export function m4DecimateLine(x, y, opts = {}) {
   const prepared = prepareLineSeries(x, y);
   const xa = prepared.x;
   const ya = prepared.y;
-  const threshold = opts.threshold ?? DECIMATION_THRESHOLD;
   const nBuckets = opts.nBuckets ?? 640;
-  if (xa.length <= threshold) {
+  const polar = Boolean(opts.polar) || opts.coords === "polar";
+  if (payloadTier({ kind: 0, nPoints: xa.length, polar }) === 0) {
     return { tier: "direct", x: xa, y: ya, nBuckets };
   }
   const mm = minMax(xa) ?? [0, 1];

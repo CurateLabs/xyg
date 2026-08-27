@@ -1561,6 +1561,9 @@ function figureTraceSupport(figure, trace) {
       forceDensity: Boolean(trace.force_density ?? trace.forceDensity),
       forceDirect: Boolean(trace.force_direct ?? trace.forceDirect),
       coords: figure.coords ?? "cartesian",
+      perItemChannels: style.color_channel != null
+        || style.size_channel != null
+        || style.stroke_channel != null,
     })
   ) flags |= XYFS_TRACE_DENSITY;
   if (XYFS_DASH_KEYS.some((key) => style[key] != null)) flags |= XYFS_TRACE_DASHED_MARKERS;

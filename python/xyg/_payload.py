@@ -15,7 +15,6 @@ from ._trace import Trace
 from ._wasm_aggregate_generated import WASM_AGGREGATE_MAX_POINTS
 from .columns import Column
 from .config import (
-    DECIMATION_THRESHOLD,
     DENSITY_GRID,
     DENSITY_SAMPLE_SEED,
     DENSITY_SAMPLE_TARGET,
@@ -500,11 +499,15 @@ class PayloadMixin(_Host):
         non-positive values) or a baseline column outside the x/y zone maps can
         actually remove something.
         """
-        if self._axis_scale(t.x_axis) == "log" or self._axis_scale(t.y_axis) == "log":
-            return True
-        if base_column is not None and base_column.zone.null_count:
-            return True
-        return not prefiltered and bool(t.x.zone.null_count or t.y.zone.null_count)
+        return kernels.payload_visible_needed(
+            x_log=self._axis_scale(t.x_axis) == "log",
+            y_log=self._axis_scale(t.y_axis) == "log",
+            prefiltered=prefiltered,
+            x_has_nulls=bool(t.x.zone.null_count),
+            y_has_nulls=bool(t.y.zone.null_count),
+            has_base=base_column is not None,
+            base_has_nulls=bool(base_column.zone.null_count) if base_column is not None else False,
+        )
 
     def _log_visible_mask(
         self,
@@ -521,16 +524,13 @@ class PayloadMixin(_Host):
         now reject. (`tests/test_figure.py` pins one case per rule; the
         predicate going stale is otherwise silent.)
         """
-        mask = np.isfinite(xv) & np.isfinite(yv)
-        if self._axis_scale(t.x_axis) == "log":
-            mask &= xv > 0
-        if self._axis_scale(t.y_axis) == "log":
-            mask &= yv > 0
-            if base is not None:
-                mask &= np.isfinite(base) & (base > 0)
-        elif base is not None:
-            mask &= np.isfinite(base)
-        return mask
+        return kernels.payload_visible_mask(
+            xv,
+            yv,
+            x_log=self._axis_scale(t.x_axis) == "log",
+            y_log=self._axis_scale(t.y_axis) == "log",
+            base=base,
+        )
 
     def _binning_coords(
         self, axis_id: str, values: np.ndarray, bounds: tuple[float, float]
@@ -570,14 +570,7 @@ class PayloadMixin(_Host):
         each bucket covers a uniform strip of *screen*, not of raw data (§28);
         monotone transforms keep per-bucket min/max rows identical, so y stays
         raw and the gathered rows ship untransformed."""
-        if self.coords == "polar":
-            # M4 buckets on a monotonic screen-x column. Under polar the x
-            # column is an angle: a spiral revisits the same screen columns and
-            # a multi-turn series is not monotonic at all, so the buckets carry
-            # no screen meaning. Ship direct until polar-aware decimation
-            # exists (spec/design/polar-axes.md §7).
-            return "direct", arrays
-        if t.n_points <= DECIMATION_THRESHOLD:
+        if kernels.payload_tier(0, t.n_points, polar=self.coords == "polar") == 0:
             return "direct", arrays
         eps = float(np.finfo(np.float64).eps)
         mx, (m0, m1) = self._binning_coords(t.x_axis, arrays[0], xr)
@@ -646,12 +639,21 @@ class PayloadMixin(_Host):
     def _emit_scatter(
         self, t: Trace, pw: "_PayloadWriter", xr: tuple, yr: tuple, px_width: int
     ) -> dict[str, Any]:
-        if t.use_density() and self.coords != "polar":
+        if (
+            kernels.payload_tier(
+                1,
+                t.n_points,
+                polar=self.coords == "polar",
+                force_density=t.payload_force_density(),
+                per_item=t.has_per_item_channels(),
+            )
+            == 2
+        ):
             # Polar forces direct: density bins an axis-aligned (x, y) grid,
             # and equal (theta, r) bins near the origin cover far fewer pixels,
-            # so uniform data would render centre-concentrated. Trace.use_density
-            # has no Figure reference, so the chart-level flag is applied here at
-            # the call site (spec/design/polar-axes.md §7).
+            # so uniform data would render centre-concentrated. ABI 122 owns
+            # that override so Python and Node cannot drift
+            # (spec/design/polar-axes.md §7).
             t.shipped_sel = None  # no per-point marks, no pick mapping
             t.drill_mode = False  # full view: density until a zoom drills in
             entry = self._density_trace_spec(t, xr, yr, *DENSITY_GRID, pw)

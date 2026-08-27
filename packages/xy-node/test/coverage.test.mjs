@@ -31,7 +31,9 @@ function fill(n, fn) {
 
 test("shouldUseDensity mirrors Python threshold / force / polar rules", () => {
   assert.equal(shouldUseDensity(SCATTER_DENSITY_THRESHOLD - 1), false);
-  assert.equal(shouldUseDensity(SCATTER_DENSITY_THRESHOLD), true);
+  assert.equal(shouldUseDensity(SCATTER_DENSITY_THRESHOLD), false);
+  assert.equal(shouldUseDensity(SCATTER_DENSITY_THRESHOLD + 1), true);
+  assert.equal(shouldUseDensity(SCATTER_DENSITY_THRESHOLD + 1, { perItemChannels: true }), false);
   assert.equal(shouldUseDensity(10, { forceDensity: true }), true);
   assert.equal(shouldUseDensity(SCATTER_DENSITY_THRESHOLD * 2, { forceDirect: true }), false);
   assert.equal(shouldUseDensity(SCATTER_DENSITY_THRESHOLD * 2, { coords: "polar" }), false);
@@ -59,7 +61,7 @@ test("scatter force_density emits tier=density log-u8 grid", () => {
 });
 
 test("scatter above SCATTER_DENSITY_THRESHOLD auto-selects density", () => {
-  const n = SCATTER_DENSITY_THRESHOLD;
+  const n = SCATTER_DENSITY_THRESHOLD + 1;
   const x = fill(n, (i) => i / n);
   const y = fill(n, (i) => ((i * 7) % n) / n);
   const { spec } = scatterPayload(x, y);

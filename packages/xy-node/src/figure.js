@@ -5,11 +5,11 @@
  * Documented subset vs full Python `Figure.build_payload`:
  * - Emits `protocol`, width/height, axes ranges, traces, columns, graph meta.
  * - Geometry columns are offset-encoded f32 via `xyg_encode_f32` (§29).
- * - Line traces apply Rust M4 when over DECIMATION_THRESHOLD (§28).
+ * - Line traces apply Rust M4 when `xyg_payload_tier` says decimated (§28).
  * - Histogram traces ship as rectangle columns from `xyg_histogram_bins`.
  * - Polar charts emit `coords: "polar"` + theta/r axis descriptors.
  * - Ribbon / sankey ship flow-band geometry (`target_y0`/`target_y1`).
- * - Scatter uses density tier when n ≥ SCATTER_DENSITY_THRESHOLD (Rust bin_2d).
+ * - Scatter uses density tier when n > SCATTER_DENSITY_THRESHOLD (Rust payload_tier).
  * - At/above PYRAMID_MIN_POINTS, density prefers Tier-3 pyramid compose (§28).
  * - Contour / errorbar / stem / mesh / step / stairs / error_band / radar covered.
  * - Enough for mark encode / M4 / hist + graph layout goldens across hosts.
@@ -17,7 +17,6 @@
 
 import {
   Column,
-  DECIMATION_THRESHOLD,
   DENSITY_GRID,
   PROTOCOL_VERSION,
   PYRAMID_MIN_POINTS,
@@ -28,6 +27,7 @@ import {
   m4Points,
   minMax,
   normalizeF32,
+  payloadTier,
   pinsOffsetToZero,
   shouldUseDensity,
   f64Ptr,
@@ -77,6 +77,18 @@ function asF64(value) {
   if (value instanceof Float64Array) return value;
   if (value == null) return new Float64Array(0);
   return Float64Array.from(value, Number);
+}
+
+function scatterPerItemChannels(t) {
+  const style = t.style ?? {};
+  return Boolean(
+    t.color_ch
+    || t.size_ch
+    || t.stroke_ch
+    || style.color_channel
+    || style.size_channel
+    || style.stroke_channel,
+  );
 }
 
 const AUTORANGE_KIND = {
@@ -949,6 +961,7 @@ export class Figure {
         forceDensity: forceDensity || forcePyramid,
         forceDirect,
         coords: this.coords,
+        perItemChannels: scatterPerItemChannels(t),
       })
     ) {
       return this._emitScatterDensity(t, pw, xr, yr);
@@ -1083,7 +1096,11 @@ export class Figure {
     let xv = t.x;
     let yv = t.y;
     let tier = "direct";
-    const decimated = xv.length > DECIMATION_THRESHOLD;
+    const decimated = payloadTier({
+      kind: 0,
+      nPoints: xv.length,
+      polar: this.coords === "polar",
+    }) === 1;
     if (decimated) {
       const [outX, outY] = m4Points(xv, yv, xr[0], xr[1] + F64_EPS, pxWidth);
       xv = outX;

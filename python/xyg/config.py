@@ -101,7 +101,8 @@ def polar_bar_segments(span: float, turn: float) -> int:
 
 # Line traces longer than this ship M4-decimated (Tier 1, §5); the canonical
 # column stays kernel-side for re-decimation on zoom (§28: recompute for the
-# visible x-range only).
+# visible x-range only). Lockstep with `crates/xyg-engine/src/lod_plan.rs`;
+# `xyg_payload_tier` owns the compile-time decision (ABI 122).
 DECIMATION_THRESHOLD = 10_000
 
 # Scatter above this many points switches to Tier-2 density aggregation (§5):
@@ -109,14 +110,15 @@ DECIMATION_THRESHOLD = 10_000
 # cliff, §5 F3), the kernel bins the viewport into a density grid the client
 # draws with the trace's own colors, composited at the points' own alpha
 # (LOD doc §2; count-only surfaces keep the log count ramp). Screen-bounded
-# transport and VRAM regardless of point count.
+# transport and VRAM regardless of point count. Strict `>`; lockstep with
+# `lod_plan.rs` / ABI 122 `xyg_payload_tier`.
 SCATTER_DENSITY_THRESHOLD = 200_000
 
 # Absolute direct-draw ceiling; above this, density is forced even if the user
 # asked for per-point channels. The color channel survives as the surface's
 # per-cell mean point color (LOD doc §2); the rest (size, stroke, styles) have
 # no honest per-cell aggregate yet (§5 F5) — we warn and drop them, never
-# silently mislead.
+# silently mislead. Strict `>`; lockstep with `lod_plan.rs` / ABI 122.
 DIRECT_SOFT_CEILING = 2_000_000
 
 # Stable-key matching retains a browser-side identity table for only bounded

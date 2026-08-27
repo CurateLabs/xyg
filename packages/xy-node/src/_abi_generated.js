@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 121;
-export const SIGNATURE_SHA256 = "2948037060f203cb27dfaf2d9406c7a875ca4cbf7eda68b2e8b80c84a7d5ba0a";
+export const ABI_VERSION = 122;
+export const SIGNATURE_SHA256 = "f1dbb46fcd583063cdb961e3b2d6de687c22366312de286ec4d87505a8298cf4";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -100,6 +100,9 @@ export let xyMarchingTriangles;
 export let xyMinMax;
 export let xyMonotoneTangents;
 export let xyNormalizeF32;
+export let xyPayloadTier;
+export let xyPayloadVisibleMask;
+export let xyPayloadVisibleNeeded;
 export let xyPolygonSelect;
 export let xyPolygonTriangles;
 export let xyPyramidAppend;
@@ -322,6 +325,9 @@ export function bindGeneratedAbi(lib) {
   xyMinMax = lib.func("int32_t xyg_min_max(const double * data, size_t len, double * out_min, double * out_max)");
   xyMonotoneTangents = lib.func("size_t xyg_monotone_tangents(const double * x, const double * y, size_t n, double * out_m, size_t capacity)");
   xyNormalizeF32 = lib.func("int32_t xyg_normalize_f32(const double * data, size_t len, double lo, double hi, int32_t nan_mode, float * out)");
+  xyPayloadTier = lib.func("int32_t xyg_payload_tier(int32_t kind, uint64_t n_points, int32_t polar, int32_t force_density, int32_t force_direct, int32_t per_item)");
+  xyPayloadVisibleMask = lib.func("size_t xyg_payload_visible_mask(const double * x, const double * y, size_t n, int32_t x_log, int32_t y_log, const double * base, int32_t has_base, uint8_t * out, size_t capacity)");
+  xyPayloadVisibleNeeded = lib.func("int32_t xyg_payload_visible_needed(int32_t x_log, int32_t y_log, int32_t prefiltered, int32_t x_has_nulls, int32_t y_has_nulls, int32_t has_base, int32_t base_has_nulls)");
   xyPolygonSelect = lib.func("size_t xyg_polygon_select(const double * x, const double * y, size_t len, const uint32_t * rows, size_t n_rows, const double * poly_x, const double * poly_y, size_t n_poly, uint32_t * out)");
   xyPolygonTriangles = lib.func("size_t xyg_polygon_triangles(const double * x, const double * y, size_t len, int64_t * out, size_t capacity)");
   xyPyramidAppend = lib.func("int32_t xyg_pyramid_append(uint64_t handle, const double * x, const double * y, size_t len)");

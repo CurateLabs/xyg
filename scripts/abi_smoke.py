@@ -664,6 +664,37 @@ def load() -> ctypes.CDLL:
         F64P,
         ctypes.c_size_t,
     ]
+    lib.xyg_payload_tier.restype = ctypes.c_int32
+    lib.xyg_payload_tier.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_uint64,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+    ]
+    lib.xyg_payload_visible_needed.restype = ctypes.c_int32
+    lib.xyg_payload_visible_needed.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+    ]
+    lib.xyg_payload_visible_mask.restype = ctypes.c_size_t
+    lib.xyg_payload_visible_mask.argtypes = [
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        F64P,
+        ctypes.c_int32,
+        U8P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_hexbin_groups.restype = ctypes.c_size_t
     lib.xyg_hexbin_groups.argtypes = [
         F64P,
@@ -2102,6 +2133,26 @@ def main() -> None:
         rb_n == 9 and abs(rb_ox[4] - 5.0) < 1e-12 and abs(rb_oy[4] - 2.0) < 1e-12,
         "ribbon_edge midpoint",
     )
+    ok(lib.xyg_payload_tier(0, 10_001, 0, -1, 0, 0) == 1, "payload_tier line M4")
+    ok(lib.xyg_payload_tier(0, 10_001, 1, -1, 0, 0) == 0, "payload_tier polar direct")
+    ok(lib.xyg_payload_tier(1, 200_000, 0, -1, 0, 0) == 0, "payload_tier scatter eq direct")
+    ok(lib.xyg_payload_tier(1, 200_001, 0, -1, 0, 0) == 2, "payload_tier scatter density")
+    ok(lib.xyg_payload_visible_needed(1, 0, 1, 0, 0, 0, 0) == 1, "payload_visible_needed log")
+    px = array("d", [1.0, -2.0, 3.0, 0.0, 5.0])
+    py = array("d", [1.0, 2.0, 3.0, 4.0, 5.0])
+    pmask = array("B", [0]) * 5
+    pn = lib.xyg_payload_visible_mask(
+        _ptr(px, ctypes.c_double),
+        _ptr(py, ctypes.c_double),
+        5,
+        1,
+        0,
+        null_f64,
+        0,
+        _ptr(pmask, ctypes.c_uint8),
+        5,
+    )
+    ok(pn == 3 and list(pmask) == [1, 0, 1, 0, 1], "payload_visible_mask log x")
     cf_x = array("d", [0.0, 1.0, 2.0, 3.0, 4.0])
     cf_y = array("d", [0.0, 1.0, 0.5, 2.0, 1.5])
     cf_m = array("d", [0.0]) * 5

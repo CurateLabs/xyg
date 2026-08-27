@@ -116,6 +116,9 @@ weighted_ecdf = _impl.weighted_ecdf
 drill_decision = _impl.drill_decision
 lod_grid_shape = _impl.lod_grid_shape
 lod_plan = _impl.lod_plan
+payload_tier = _impl.payload_tier
+payload_visible_mask = _impl.payload_visible_mask
+payload_visible_needed = _impl.payload_visible_needed
 quantiles = _impl.quantiles
 box_stats = _impl.box_stats
 box_geometry = _impl.box_geometry
@@ -193,6 +196,9 @@ __all__ = [
     "min_max",
     "monotone_tangents",
     "normalize_f32",
+    "payload_tier",
+    "payload_visible_mask",
+    "payload_visible_needed",
     "polygon_select",
     "polygon_triangles",
     "pyramid_append",

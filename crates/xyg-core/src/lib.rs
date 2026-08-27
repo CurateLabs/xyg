@@ -113,7 +113,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 121;
+pub const ABI_VERSION: u32 = 122;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10014,6 +10014,128 @@ pub unsafe extern "C" fn xyg_lod_plan(
     }
 }
 
+/// Compile-time payload tier (ABI 122). `kind` is 0=line/area, 1=scatter.
+/// `polar`/`force_direct`/`per_item` are 0/1; `force_density` is -1/0/1.
+/// Returns 0=direct, 1=decimated, 2=density, or -1.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_tier(
+    kind: i32,
+    n_points: u64,
+    polar: i32,
+    force_density: i32,
+    force_direct: i32,
+    per_item: i32,
+) -> i32 {
+    ffi_guard(-1, || {
+        if !matches!(polar, 0 | 1) || !matches!(force_direct, 0 | 1) || !matches!(per_item, 0 | 1) {
+            return -1;
+        }
+        lod_plan::payload_tier(
+            kind,
+            n_points,
+            polar != 0,
+            force_density,
+            force_direct != 0,
+            per_item != 0,
+        )
+        .unwrap_or(-1)
+    })
+}
+
+/// Whether the payload visible-row mask can drop rows (ABI 122). Flags are 0/1.
+/// Returns 1 if the mask is needed, 0 if it is provably all-true, or -1.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_visible_needed(
+    x_log: i32,
+    y_log: i32,
+    prefiltered: i32,
+    x_has_nulls: i32,
+    y_has_nulls: i32,
+    has_base: i32,
+    base_has_nulls: i32,
+) -> i32 {
+    ffi_guard(-1, || {
+        let flags = [
+            x_log,
+            y_log,
+            prefiltered,
+            x_has_nulls,
+            y_has_nulls,
+            has_base,
+            base_has_nulls,
+        ];
+        if flags.iter().any(|flag| !matches!(flag, 0 | 1)) {
+            return -1;
+        }
+        i32::from(lod_plan::payload_visible_needed(
+            x_log != 0,
+            y_log != 0,
+            prefiltered != 0,
+            x_has_nulls != 0,
+            y_has_nulls != 0,
+            has_base != 0,
+            base_has_nulls != 0,
+        ))
+    })
+}
+
+/// Finite + log-positive + optional-baseline keep mask (ABI 122). Writes `n`
+/// u8 values (`1` keep). Returns the keep count, or `usize::MAX`.
+///
+/// # Safety
+/// Non-empty `x`/`y` must be valid for `n` readable f64s. Non-empty `base`
+/// must be valid for `n` f64s. When `capacity` is nonzero, `out` must hold
+/// that many writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_visible_mask(
+    x: *const f64,
+    y: *const f64,
+    n: usize,
+    x_log: i32,
+    y_log: i32,
+    base: *const f64,
+    has_base: i32,
+    out: *mut u8,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if !matches!(x_log, 0 | 1) || !matches!(y_log, 0 | 1) || !matches!(has_base, 0 | 1) {
+            return usize::MAX;
+        }
+        let (x, y) = if n == 0 {
+            (&[][..], &[][..])
+        } else {
+            if x.is_null() || y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts(x, n),
+                std::slice::from_raw_parts(y, n),
+            )
+        };
+        let base = if has_base == 0 {
+            None
+        } else if n == 0 {
+            Some(&[][..])
+        } else {
+            if base.is_null() {
+                return usize::MAX;
+            }
+            Some(std::slice::from_raw_parts(base, n))
+        };
+        let out = if capacity == 0 {
+            &mut [][..]
+        } else {
+            if out.is_null() {
+                return usize::MAX;
+            }
+            std::slice::from_raw_parts_mut(out, capacity)
+        };
+        lod_plan::payload_visible_mask(x, y, x_log != 0, y_log != 0, base, out)
+            .unwrap_or(usize::MAX)
+    })
+}
+
 /// Linear (NumPy-default) quantiles for probabilities in `[0, 1]`.
 ///
 /// Writes `n_probs` f64s into `out`. Returns the finite sample count used, or
@@ -12152,6 +12274,43 @@ mod tests {
             },
             usize::MAX
         );
+    }
+
+    #[test]
+    fn payload_tier_and_visible_mask_ffi() {
+        assert_eq!(unsafe { xyg_payload_tier(0, 10_001, 0, -1, 0, 0) }, 1);
+        assert_eq!(unsafe { xyg_payload_tier(0, 10_001, 1, -1, 0, 0) }, 0);
+        assert_eq!(unsafe { xyg_payload_tier(1, 200_001, 0, -1, 0, 0) }, 2);
+        assert_eq!(unsafe { xyg_payload_tier(1, 200_000, 0, -1, 0, 0) }, 0);
+        assert_eq!(
+            unsafe { xyg_payload_visible_needed(1, 0, 1, 0, 0, 0, 0) },
+            1
+        );
+        assert_eq!(
+            unsafe { xyg_payload_visible_needed(0, 0, 1, 0, 0, 0, 0) },
+            0
+        );
+        let x = [1.0, -2.0, 3.0, 0.0, 5.0];
+        let y = [1.0, 2.0, 3.0, 4.0, 5.0];
+        let mut mask = [0u8; 5];
+        assert_eq!(
+            unsafe {
+                xyg_payload_visible_mask(
+                    x.as_ptr(),
+                    y.as_ptr(),
+                    x.len(),
+                    1,
+                    0,
+                    std::ptr::null(),
+                    0,
+                    mask.as_mut_ptr(),
+                    mask.len(),
+                )
+            },
+            3
+        );
+        assert_eq!(mask, [1, 0, 1, 0, 1]);
+        assert_eq!(unsafe { xyg_payload_tier(99, 1, 0, -1, 0, 0) }, -1);
     }
 
     #[test]

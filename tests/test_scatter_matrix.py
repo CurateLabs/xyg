@@ -302,12 +302,7 @@ def test_tier_just_below_and_above_threshold():
     assert hi.traces[0].use_density()
 
 
-def test_per_item_channels_share_the_direct_density_ceiling(monkeypatch):
-    import xyg._trace as trace_module
-
-    monkeypatch.setattr(trace_module, "SCATTER_DENSITY_THRESHOLD", 2)
-    monkeypatch.setattr(trace_module, "DIRECT_SOFT_CEILING", 4)
-
+def test_per_item_channels_share_the_direct_density_ceiling():
     x = np.arange(3.0)
     plain = Figure().scatter(x, x).traces[0]
     opacity = Figure().scatter(x, x, opacity=[0.2, 0.5, 0.8]).traces[0]
@@ -323,16 +318,25 @@ def test_per_item_channels_share_the_direct_density_ceiling(monkeypatch):
     match_fill = Figure().scatter(x, x, stroke_width=1.0).traces[0]
     vector_width = Figure().scatter(x, x, stroke_width=[1.0, 2.0, 3.0]).traces[0]
 
-    assert plain.use_density()
-    assert not opacity.use_density()
-    assert not stroke.use_density()
     assert opacity.per_item_channel_names() == ("opacity",)
     assert stroke.per_item_channel_names() == ("stroke",)
     assert match_fill.per_item_channel_names() == ()
     assert vector_width.per_item_channel_names() == ("stroke_width",)
 
-    over_ceiling = Figure().scatter(np.arange(5.0), np.arange(5.0), opacity=np.ones(5)).traces[0]
-    assert over_ceiling.use_density()
+    over_plain = SCATTER_DENSITY_THRESHOLD + 1
+    plain.count = over_plain
+    opacity.count = over_plain
+    stroke.count = over_plain
+    match_fill.count = over_plain
+    vector_width.count = over_plain
+    assert plain.use_density()
+    assert not opacity.use_density()
+    assert not stroke.use_density()
+    assert match_fill.use_density()
+    assert not vector_width.use_density()
+
+    opacity.count = DIRECT_SOFT_CEILING + 1
+    assert opacity.use_density()
 
 
 def test_style_only_density_warning_and_payload_list_exact_dropped_channels(monkeypatch):
