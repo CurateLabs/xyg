@@ -29,6 +29,8 @@ pub mod kernels;
 pub mod lod_plan;
 #[cfg(feature = "raster")]
 pub mod pdf;
+#[cfg(feature = "raster")]
+pub mod png_encode;
 pub mod projection;
 #[cfg(feature = "raster")]
 pub mod raster;

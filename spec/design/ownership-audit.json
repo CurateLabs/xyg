@@ -438,6 +438,14 @@
       "rationale": "The safe engine is the single implementation of parity-affecting behavior."
     },
     {
+      "path": "crates/xyg-engine/src/png_encode.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
       "path": "crates/xyg-engine/src/projection.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
@@ -1527,11 +1535,11 @@
     },
     {
       "path": "python/xyg/_png.py",
-      "current_owner": "Python host with canonical-policy debt",
-      "policy": "python-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
       "path": "python/xyg/_raster.py",

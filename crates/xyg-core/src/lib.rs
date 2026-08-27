@@ -34,6 +34,7 @@ use xyg_engine::kernels;
 use xyg_engine::kernels::ZoneMap;
 use xyg_engine::lod_plan;
 use xyg_engine::pdf;
+use xyg_engine::png_encode;
 use xyg_engine::projection;
 use xyg_engine::raster;
 use xyg_engine::sankey;
@@ -109,7 +110,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 114;
+pub const ABI_VERSION: u32 = 115;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1811,6 +1812,46 @@ pub unsafe extern "C" fn xyg_encode_webp(
         webp::encode_webp(bytes, width, height, channels)
     }) {
         Ok(webp) => encode_image_output(webp.len(), out, out_cap, &webp),
+        Err(message) => {
+            write_utf8_error(out, out_cap, &message);
+            usize::MAX
+        }
+    }
+}
+
+/// Encode packed RGB or RGBA8 pixels as a PNG (filter-0, zlib).
+/// `mode` 0 auto-selects indexed palette when ≤256 unique colors, else
+/// truecolor. `mode` 1 forces RGBA8 truecolor. `compression` is 0..=9.
+/// Returns required bytes, or `usize::MAX` on invalid input. On error, when
+/// `out_cap > 0` and `out` is non-null, the buffer receives a UTF-8 diagnostic.
+///
+/// # Safety
+/// `pixels` addresses `n` readable bytes. When capacity suffices, `out`
+/// addresses `out_cap` writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_encode_png(
+    pixels: *const u8,
+    n: usize,
+    width: usize,
+    height: usize,
+    channels: usize,
+    mode: i32,
+    compression: i32,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if pixels.is_null() && n > 0 {
+        return usize::MAX;
+    }
+    let bytes = if n == 0 {
+        &[]
+    } else {
+        std::slice::from_raw_parts(pixels, n)
+    };
+    match ffi_guard(Err("invalid PNG input".into()), || {
+        png_encode::encode_png(bytes, width, height, channels, mode, compression)
+    }) {
+        Ok(png) => encode_image_output(png.len(), out, out_cap, &png),
         Err(message) => {
             write_utf8_error(out, out_cap, &message);
             usize::MAX

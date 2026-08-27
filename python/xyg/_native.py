@@ -2751,6 +2751,28 @@ def encode_webp(pixels: np.ndarray) -> bytes:
     return _encode_pixels(_lib.xyg_encode_webp, pixels, label="WebP")
 
 
+def encode_png(pixels: np.ndarray, *, mode: int = 0, compression: int = 6) -> bytes:
+    """Encode RGB/RGBA8 pixels as a PNG.
+
+    Rust owns filter-0 scanlines, zlib IDAT, and indexed-vs-truecolor
+    selection (M2 #274). `mode` 0 auto-selects an indexed palette when the
+    image has ≤256 unique RGBA colors; `mode` 1 forces truecolor.
+    `compression` is the zlib level in ``0..9``.
+    """
+    if isinstance(mode, bool) or not isinstance(mode, int) or mode not in (0, 1):
+        raise ValueError(f"PNG mode must be 0 (auto) or 1 (truecolor), got {mode!r}")
+    if isinstance(compression, bool) or not isinstance(compression, int):
+        raise ValueError(f"PNG compression must be an int in 0..9, got {compression!r}")
+    if not (0 <= compression <= 9):
+        raise ValueError(f"PNG compression must be an int in 0..9, got {compression!r}")
+    return _encode_pixels(
+        _lib.xyg_encode_png,
+        pixels,
+        (int(mode), int(compression)),
+        label="PNG",
+    )
+
+
 def scene_raster_commands(encoded: bytes, scale: float = 1.0) -> bytes:
     """Compile Scene v12 into the existing native raster display list."""
     factor = float(scale)

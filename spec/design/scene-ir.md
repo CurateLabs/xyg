@@ -1061,7 +1061,9 @@ and concatenated labels. ABI 113 does not change Scene records either;
 feeds Rust SVG through a Python converter. ABI 114 does not change Scene
 records either; `xyg_encode_jpeg` and `xyg_encode_webp` own packed RGB/RGBA8
 static encode so public JPEG/WebP no longer feed Scene pixels through Python
-format modules. Polar
+format modules. ABI 115 does not change Scene records either;
+`xyg_encode_png` owns filter-0 PNG encode so remaining host PNG exports no
+longer pack chunks or palettes in Python or Node. Polar
 hexbin, custom reducers, metric colormaps, LOD, and rich style exceptions
 fail closed and keep the compatibility exporters. Scene 25 is unchanged.
 

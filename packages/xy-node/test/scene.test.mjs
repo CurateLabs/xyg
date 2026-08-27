@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import test from "node:test";
 
-import { axisTicks, encodeJpeg, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
+import { axisTicks, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
 import { Figure, sceneRasterCommands, sceneSvg } from "../src/index.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
@@ -91,7 +91,7 @@ test("Node encodes Scene PDF through the shared Rust SVG→PDF converter", () =>
   assert.throws(() => svgToPdf("<svg><foreignObject/></svg>"), /unsupported SVG feature/);
 });
 
-test("Node encodes JPEG and WebP through the shared Rust image encoders", () => {
+test("Node encodes JPEG, PNG, and WebP through the shared Rust image encoders", () => {
   const rgb = Uint8Array.from([10, 20, 30, 40, 50, 60]);
   const jpeg = encodeJpeg(rgb, 2, 1, 3, 90);
   assert.equal(Buffer.compare(jpeg.subarray(0, 2), Buffer.from([0xff, 0xd8])), 0);
@@ -99,7 +99,11 @@ test("Node encodes JPEG and WebP through the shared Rust image encoders", () => 
   const webp = encodeWebp(Uint8Array.from([10, 20, 30, 255]), 1, 1, 4);
   assert.equal(Buffer.compare(webp.subarray(0, 4), Buffer.from("RIFF")), 0);
   assert.equal(Buffer.compare(webp.subarray(8, 12), Buffer.from("WEBP")), 0);
+  const png = encodePng(Uint8Array.from([255, 0, 0, 255, 0, 0, 255, 255]), 2, 1, 4, 0, 6);
+  assert.equal(Buffer.compare(png.subarray(0, 8), Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])), 0);
+  assert.equal(png[25], 3); // indexed palette for two colors
   assert.throws(() => encodeJpeg(rgb, 2, 1, 3, 0), /quality/);
+  assert.throws(() => encodePng(rgb, 2, 1, 3, 2, 6), /mode/);
 });
 
 test("Node figure compiles the exact shared scatter, line, bar Scene v4 fixture", () => {

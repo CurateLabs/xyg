@@ -199,7 +199,10 @@ Python `_jpeg.encode` / `_webp.encode` / `_native.encode_jpeg` /
 `_native.encode_webp` and Node `encodeJpeg` / `encodeWebp` call
 `xyg_encode_jpeg` / `xyg_encode_webp`; Rust owns YCbCr 4:4:4, Annex K
 tables, the libjpeg quality curve, and VP8L simple-lossless packing.
-Polar heatmap, metric colormaps, truecolor RGBA, LOD beyond
+ABI 115 makes static PNG the same way: Python `_png.encode` /
+`_png.png_truecolor` / `_native.encode_png` and Node `encodePng` call
+`xyg_encode_png`; Rust owns filter-0 scanlines, indexed-palette
+selection, `tRNS`, and zlib IDAT. Polar heatmap, metric colormaps, truecolor RGBA, LOD beyond
 10,000 cells, and rich style exceptions remain compatibility routes.
 ABI 99 gives both composition hosts one compact grouped box ingress. Hosts pack
 the same f64 values/offsets/centers and literal options; Rust returns typed

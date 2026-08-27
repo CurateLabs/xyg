@@ -1303,6 +1303,9 @@ ABI 114 moves baseline JPEG and lossless WebP encode into Rust. Hosts
 pass packed RGB/RGBA8 pixels; YCbCr 4:4:4, Annex K tables, the libjpeg
 quality curve, VP8L simple-lossless packing, and Huffman/prefix codes are
 engine-owned and identical for Python and Node.
+ABI 115 moves filter-0 PNG encode into Rust. Hosts pass packed RGB/RGBA8
+pixels plus mode/compression; indexed-palette selection, `tRNS`, and zlib
+IDAT are engine-owned and identical for Python and Node.
 Constant-style Cartesian heatmap compiles a regular rows x cols lattice onto
 existing Scene Rect records; polar, colormaps, truecolor, irregular
 spacing, and LOD stay compatibility.

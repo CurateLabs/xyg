@@ -8,7 +8,9 @@ itself has no grid container; that capability lives entirely in this shim.
 from __future__ import annotations
 
 import inspect
+import struct
 import uuid
+import zlib
 from os import PathLike
 from pathlib import Path
 from typing import Any, Literal, Optional, cast, overload
@@ -251,10 +253,14 @@ def _colorbar_tick_labels(formatter: Any, ticks: list[float]) -> list[str]:
     return labels
 
 
+def _png_chunk(tag: bytes, data: bytes) -> bytes:
+    """Assemble one PNG chunk (length + type + data + CRC)."""
+    crc = zlib.crc32(data, zlib.crc32(tag))
+    return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", crc)
+
+
 def _png_with_metadata(data: bytes, metadata: dict[Any, Any]) -> bytes:
     """Insert standards-compliant PNG text chunks before IEND."""
-    from xyg import _png
-
     chunks = []
     for raw_key, raw_value in metadata.items():
         key = str(raw_key)
@@ -267,12 +273,12 @@ def _png_with_metadata(data: bytes, metadata: dict[Any, Any]) -> bytes:
             raise ValueError("PNG metadata keys must be 1-79 Latin-1 characters")
         try:
             payload = key.encode("latin-1") + b"\0" + value.encode("latin-1")
-            chunks.append(_png._chunk(b"tEXt", payload))
+            chunks.append(_png_chunk(b"tEXt", payload))
         except UnicodeEncodeError:
             # iTXt: keyword, compression flag/method, language, translated
             # keyword, then UTF-8 text.
             payload = key.encode("latin-1") + b"\0\0\0\0\0" + value.encode("utf-8")
-            chunks.append(_png._chunk(b"iTXt", payload))
+            chunks.append(_png_chunk(b"iTXt", payload))
     marker = data.rfind(b"\x00\x00\x00\x00IEND")
     if marker < 0:
         raise ValueError("invalid PNG output")

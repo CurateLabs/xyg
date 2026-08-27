@@ -183,6 +183,9 @@ crates/
                         #   Helvetica metrics, ExtGState/shading/image
                         #   embedding, deterministic xref. Native hosts only
                         #   (`raster` feature); WASM keeps default-features off.
+    png_encode.rs       # filter-0 PNG encode (ABI 115): indexed palette
+                        #   (≤256 unique RGBA + tRNS) or RGBA8 truecolor,
+                        #   zlib IDAT. Native hosts only (`raster` feature).
     webp.rs             # lossless VP8L encode (ABI 114): simple lossless,
                         #   length-limited prefix codes, distance-1 runs.
                         #   Native hosts only (`raster` feature).

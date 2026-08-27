@@ -19,6 +19,7 @@ import {
   xySceneSvg,
   xySvgToPdf,
   xyEncodeJpeg,
+  xyEncodePng,
   xyEncodeWebp,
   xySceneVersion,
 } from "./native.js";
@@ -598,6 +599,18 @@ export function encodeJpeg(pixels, width, height, channels, quality = 90) {
 
 export function encodeWebp(pixels, width, height, channels) {
   return encodePixels(xyEncodeWebp, pixels, width, height, channels, [], "WebP");
+}
+
+export function encodePng(pixels, width, height, channels, mode = 0, compression = 6) {
+  const m = Number(mode);
+  const c = Number(compression);
+  if (!Number.isInteger(m) || (m !== 0 && m !== 1)) {
+    throw new RangeError("PNG mode must be 0 (auto) or 1 (truecolor)");
+  }
+  if (!Number.isInteger(c) || c < 0 || c > 9) {
+    throw new RangeError("PNG compression must be an int in 0..9");
+  }
+  return encodePixels(xyEncodePng, pixels, width, height, channels, [m, c], "PNG");
 }
 
 export function sceneRasterCommands(encoded, scale = 1) {

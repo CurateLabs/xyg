@@ -139,7 +139,10 @@ lowering, Helvetica metrics, ExtGState/shading/image embedding, and
 deterministic object numbering cannot drift. ABI 114 moves baseline JPEG
 and lossless WebP encode into `crates/xyg-engine/src/jpeg.rs` and
 `crates/xyg-engine/src/webp.rs`. Hosts coerce packed RGB/RGBA8 pixels;
-YCbCr 4:4:4 / VP8L simple-lossless packing cannot drift. Polar hexbin, custom
+YCbCr 4:4:4 / VP8L simple-lossless packing cannot drift. ABI 115 moves
+filter-0 PNG encode into `crates/xyg-engine/src/png_encode.rs`. Hosts
+coerce packed RGB/RGBA8 pixels and a compression level; indexed-palette
+selection, `tRNS`, and zlib IDAT cannot drift. Polar hexbin, custom
 `reduce_C_function`, metric colormaps, LOD over the 1,024-group painter
 budget, and rich style exceptions stay on the compatibility exporters.
 Scene 25 is unchanged. Polar heatmap, metric
@@ -494,6 +497,7 @@ Forbidden:
 | `crates/xyg-engine/src/lib.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/lod_plan.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/pdf.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/png_encode.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/projection.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/raster.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/sankey.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
@@ -619,7 +623,7 @@ Forbidden:
 | `python/xyg/_paint.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xyg/_payload.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xyg/_pdf.py` | Python host | `python-host` | `keep-host`; ABI 113 moves closed-subset SVG→PDF into Rust; this module only coerces UTF-8 and raises the historical diagnostic wording | #274 |
-| `python/xyg/_png.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_png.py` | Python host | `python-host` | `keep-host`; ABI 115 moves filter-0 PNG encode into Rust; this module only coerces host buffers and forwards `mode` / `compression` | #274 |
 | `python/xyg/_raster.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xyg/_sankey.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xyg/_scene.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
