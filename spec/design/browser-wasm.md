@@ -21,26 +21,27 @@ capped at 65,536 UTF-8 bytes per axis, and malformed
 or nonfinite input fails before output.
 
 `attachWasmTicks(view, { worker })` now installs the bounded ChartView
-product cutover: automatic primary Cartesian linear, log, symlog, category,
-and UTC-time axes. The attachment frames every currently eligible x/y slot,
-but Rust exclusively chooses positions and labels. Eligibility excludes polar,
-authored `tick_values`, `theta_unit` axes, and category axes without a
-non-empty NUL-free string table. An axis is *covered* only after an admitted
-Rust cache exists for that eligible slot and still matches its current family,
-category table, and format; newly eligible slots or family switches after
-mount stay on `30_ticks.ts` until that cache arrives and are never painted as
-empty WASM ticks. The first current `XYTO` result is admitted before the
-attachment becomes authoritative; later pan/zoom/resize requests cancel older
-work and retain only the last admitted Rust cache until a matching sequence and
-axis revision returns. Admission paints with `draw()` only (no `_layout()`).
-A stale, cancelled, destroyed, or replaced attachment cannot publish.
-Once attached, a covered axis never calls `30_ticks.ts`, even after a Worker
-failure. Failed snapshots emit one coalesced `xy:wasm_ticks_error` and remain
-eligible to retry.
+product cutover: automatic, authored-value, and authored-empty primary
+Cartesian linear, log, symlog, category, and UTC-time axes. The attachment
+frames every currently eligible x/y slot, but Rust exclusively chooses
+positions and labels. Eligibility excludes polar, `theta_unit` axes, and
+category axes without a non-empty NUL-free string table. An axis is *covered*
+only after an admitted Rust cache exists for that eligible slot and still
+matches its current family, category table, format, and provenance; newly
+eligible slots or family/provenance switches after mount stay on `30_ticks.ts`
+until that cache arrives and are never painted as empty WASM ticks. An
+admitted `authored_empty` cache is a real empty result, not that synthetic
+pre-admission placeholder. The first current `XYTO` result is admitted before
+the attachment becomes authoritative; later pan/zoom/resize requests cancel
+older work and retain only the last admitted Rust cache until a matching
+sequence and axis revision returns. Admission paints with `draw()` only (no
+`_layout()`). A stale, cancelled, destroyed, or replaced attachment cannot
+publish. Once attached, a covered axis never calls `30_ticks.ts`, even after a
+Worker failure. Failed snapshots emit one coalesced `xy:wasm_ticks_error` and
+remain eligible to retry.
 
 This cutover is deliberately explicit and bounded. Angular/polar, secondary
-axes, colorbars, authored values, and authored-empty provenance retain their
-existing compatibility paths. Self-contained
+axes, and colorbars retain their existing compatibility paths. Self-contained
 Blob-worker HTML is not eligible. Notebook, `to_html()`, and Reflex delivery of
 the external tick assets remains follow-up work under #59; this slice neither
 claims nor closes that issue.
@@ -611,8 +612,7 @@ PR CI or a CodSpeed simulation claim.
 
 ## Remaining #59 work
 
-- angular/polar, secondary-axis, colorbar, and authored-tick ChartView
-  cutovers;
+- angular/polar, secondary-axis, and colorbar ChartView cutovers;
 - external Worker/WASM tick-asset delivery for notebooks, `to_html()`, Reflex,
   and other self-contained hosts;
 - aggregate production paths beyond direct Scene records;

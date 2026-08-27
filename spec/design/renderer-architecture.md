@@ -335,19 +335,20 @@ subset:
 ## 6. Axis ticks and label formatting (`30_ticks.ts`)
 
 Ticks are computed on the CPU in f64 and never round-trip through the f32
-render path (§16). An explicit `attachWasmTicks` handle intercepts automatic
-primary Cartesian linear/log/symlog/category/UTC-time axes before this
-module: Rust owns those positions and labels, and a covered attached axis
-(eligible plus an admitted cache that still matches the current family,
-category table, and format) never falls through to the generators below. A
-newly eligible axis or family switch after mount is requested on the next
-frame and stays on this module until that cache arrives. Unattached charts
-and angular/polar/secondary, colorbar, and authored paths still use
-`ChartView._axisTicks`, which checks in
-this order: authored `tick_values` → `kind === "category"` → `theta_unit` →
-`kind === "time"` → `scale === "log"` / `symlog` → `linearTicks`. Every
-generator takes `(lo, hi, target)` with `target = 6` by default and returns
-`{ ticks, step }`; `logTicks` adds `labels` and `log: true`.
+render path (§16). An explicit `attachWasmTicks` handle intercepts automatic,
+authored-value, and authored-empty primary Cartesian
+linear/log/symlog/category/UTC-time axes before this module: Rust owns those
+positions and labels, and a covered attached axis (eligible plus an admitted
+cache that still matches the current family, category table, format, and
+provenance) never falls through to the generators below. A newly eligible
+axis or family/provenance switch after mount is requested on the next frame
+and stays on this module until that cache arrives. Unattached charts and
+angular/polar/secondary and colorbar paths still use `ChartView._axisTicks`,
+which checks in this order: WASM cover → authored `tick_values` →
+`kind === "category"` → `theta_unit` → `kind === "time"` → `scale === "log"` /
+`symlog` → `linearTicks`. Every generator takes `(lo, hi, target)` with
+`target = 6` by default and returns `{ ticks, step }`; `logTicks` adds
+`labels` and `log: true`.
 
 ### 6.1 Generators
 

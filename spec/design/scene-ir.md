@@ -661,8 +661,8 @@ remain accepted byte-for-byte. This envelope deliberately avoids Koffi's
 
 Polar/secondary Scene paths and broader numeric grammars remain on their
 documented compatibility routes. WASM ABI 23 plus `attachWasmTicks` cut
-explicitly attached automatic primary Cartesian
-linear/log/symlog/category/UTC-time ChartView
+explicitly attached automatic, authored-value, and authored-empty primary
+Cartesian linear/log/symlog/category/UTC-time ChartView
 axes to that resolver; `js/src/30_ticks.ts` stays the compatibility generator
 for unattached charts and remaining families until #59 covers those hosts.
 

@@ -37,10 +37,10 @@ proves bounded memory/lifecycle handling, Scene validate/paint, packed
 typed-column (`XYCC`) compile for scatter/polyline/rect/band, and packed
 progressive CoSE (`XYGL`/`XYGO`) with cancellation, revisions, pins, compounds,
 and explicit scheduler bounds. `attachWasmTicks(view, { worker })` additionally
-cuts automatic primary Cartesian linear/log/symlog/category/UTC-time ChartView
-ticks to the
+cuts automatic, authored-value, and authored-empty primary Cartesian
+linear/log/symlog/category/UTC-time ChartView ticks to the
 Rust-owned `XYTK`/`XYTO` lane. Polar, secondary axes, colorbars,
-authored ticks, and self-contained hosts remain compatibility/follow-up paths.
+and self-contained hosts remain compatibility/follow-up paths.
 `encodeWasmCose` plus
 `XygWasmWorker.layoutCose` keep every force tick in Rust inside the Worker;
 remaining all-host cutovers and hosted evidence stay tracked by
