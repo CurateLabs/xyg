@@ -94,6 +94,11 @@ def _write_sdist(
                 "packages/xy-client/dist/standalone.js",
             }:
                 data = STANDALONE_JS.encode("utf-8")
+            elif name in {
+                "python/xyg/static/wasm-worker.js",
+                "packages/xy-client/dist/wasm-worker.js",
+            }:
+                data = b"export {};"
             elif name == "js/src/60_entries.ts":
                 data = ENTRIES_JS.encode("utf-8")
             elif name == "packages/xy-client/package.json":

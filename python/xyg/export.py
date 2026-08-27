@@ -15,6 +15,7 @@ import subprocess
 import sys
 import tempfile
 import warnings
+from collections.abc import Iterator, Mapping
 from contextlib import suppress
 from enum import StrEnum
 from os import PathLike
@@ -22,8 +23,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, SupportsFloat, SupportsIndex, cast
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
-
     from ._figure import Figure
 
 
@@ -83,6 +82,9 @@ _BROWSER_FALLBACKS = (
     "/opt/pw-browsers/chromium",
 )
 _STATIC = Path(__file__).parent / "static"
+WASM_TICK_WORKER = "wasm-worker.js"
+WASM_TICK_WASM = "xyg-wasm.wasm"
+_FORBIDDEN_TICK_URL_PREFIXES = ("blob:", "data:", "javascript:")
 _STANDALONE_CSP = (
     "default-src 'none'; "
     # Inline Rust/WASM density aggregation uses WebAssembly.compile from the
@@ -103,6 +105,124 @@ _STANDALONE_CSP = (
     "base-uri 'none'; "
     "form-action 'none'"
 )
+
+
+def _standalone_csp(*, wasm_ticks: bool, density: bool) -> str:
+    """CSP for a standalone document.
+
+    Default exports stay offline (``connect-src 'none'``, ``worker-src blob:``)
+    so density can use the classic inline Worker. Hosted WASM ticks need a
+    same-origin module Worker and one WASM fetch, so those documents add
+    ``worker-src 'self'`` and ``connect-src 'self'`` without opening a CDN.
+    """
+    if not wasm_ticks:
+        return _STANDALONE_CSP
+    worker_src = ["'self'"]
+    if density:
+        worker_src.append("blob:")
+    return (
+        "default-src 'none'; "
+        "script-src 'unsafe-inline' 'wasm-unsafe-eval'; "
+        "style-src 'unsafe-inline'; "
+        "img-src data:; "
+        "font-src data:; "
+        "connect-src 'self'; "
+        f"worker-src {' '.join(worker_src)}; "
+        "object-src 'none'; "
+        "base-uri 'none'; "
+        "form-action 'none'"
+    )
+
+
+def bundled_wasm_tick_assets() -> dict[str, Path]:
+    """Return packaged ``wasm-worker.js`` and ``xyg-wasm.wasm`` paths.
+
+    Fail-closed if either file is missing. Hosts must serve these exact
+    artifacts at explicit same-origin URLs; this helper never guesses a path
+    or CDN.
+    """
+    worker = _STATIC / WASM_TICK_WORKER
+    wasm = _STATIC / WASM_TICK_WASM
+    missing = [
+        name
+        for name, path in ((WASM_TICK_WORKER, worker), (WASM_TICK_WASM, wasm))
+        if not path.is_file()
+    ]
+    if missing:
+        raise FileNotFoundError(
+            "packaged WASM tick assets missing: "
+            + ", ".join(missing)
+            + ". From a source checkout run `node js/build.mjs` and "
+            "`node js/package-wasm.mjs`; published wheels ship both files "
+            "when the wasm32 artifact was packaged."
+        )
+    return {"worker": worker, "wasm": wasm}
+
+
+def copy_wasm_tick_assets(dest: str | PathLike[str]) -> dict[str, Path]:
+    """Copy the packaged Worker and WASM module into ``dest``.
+
+    Returns the destination paths. The caller must then pass those filenames
+    as explicit ``worker_url`` / ``wasm`` values — this function does not
+    invent a URL.
+    """
+    dest_dir = Path(dest)
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    assets = bundled_wasm_tick_assets()
+    written: dict[str, Path] = {}
+    for key, name in (("worker", WASM_TICK_WORKER), ("wasm", WASM_TICK_WASM)):
+        target = dest_dir / name
+        shutil.copy2(assets[key], target)
+        written[key] = target
+    return written
+
+
+def _explicit_wasm_tick_url(value: object, label: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{label} must be a non-empty explicit URL")
+    text = value.strip()
+    lowered = text.lower()
+    if lowered.startswith(_FORBIDDEN_TICK_URL_PREFIXES) or text.startswith("//"):
+        raise ValueError(f"{label} must be an explicit same-origin URL, not blob/data/CDN")
+    return text
+
+
+def resolve_wasm_tick_assets(
+    wasm_ticks: bool | Mapping[str, object],
+    path: Optional[str | PathLike[str]] = None,
+) -> dict[str, str] | None:
+    """Normalize ``to_html(..., wasm_ticks=)`` into explicit Worker/WASM URLs.
+
+    ``False`` leaves ticks on the JavaScript path. ``True`` copies packaged
+    sidecars next to ``path`` and uses ``./wasm-worker.js`` plus
+    ``./xyg-wasm.wasm``. A mapping must supply both ``worker_url`` and
+    ``wasm``; there is no default and no path probing.
+    """
+    if wasm_ticks is False:
+        return None
+    if wasm_ticks is True:
+        if path is None:
+            raise ValueError(
+                "wasm_ticks=True writes sidecar worker/wasm files and requires "
+                "a destination path; pass wasm_ticks={'worker_url': '...', "
+                "'wasm': '...'} for an in-memory document whose host already "
+                "serves those explicit URLs"
+            )
+        copy_wasm_tick_assets(Path(path).parent)
+        return {"workerUrl": f"./{WASM_TICK_WORKER}", "wasm": f"./{WASM_TICK_WASM}"}
+    if isinstance(wasm_ticks, Mapping):
+        worker = wasm_ticks.get("worker_url", wasm_ticks.get("workerUrl"))
+        wasm = wasm_ticks.get("wasm")
+        extra = set(wasm_ticks) - {"worker_url", "workerUrl", "wasm"}
+        if extra:
+            raise ValueError(f"wasm_ticks has unknown keys: {sorted(extra)}")
+        if worker is None or wasm is None:
+            raise ValueError("wasm_ticks mapping requires worker_url and wasm")
+        return {
+            "workerUrl": _explicit_wasm_tick_url(worker, "wasm_ticks worker_url"),
+            "wasm": _explicit_wasm_tick_url(wasm, "wasm_ticks wasm"),
+        }
+    raise TypeError("wasm_ticks must be False, True, or a mapping of worker_url and wasm")
 
 
 def _bundled_js(which: str = "standalone") -> str:
@@ -297,6 +417,7 @@ def to_html(
     *,
     custom_css: Optional[str] = None,
     animation_progress: Optional[float] = None,
+    wasm_ticks: bool | Mapping[str, object] = False,
 ) -> str:
     """Render `fig` to a standalone interactive HTML string (optionally saved).
 
@@ -306,8 +427,18 @@ def to_html(
 
     `custom_css` injects an author stylesheet into the document <head> so the
     utility classes referenced by `class_names` (e.g. Tailwind) resolve in the
-    standalone export; it must not contain a `</style>` breakout sequence."""
+    standalone export; it must not contain a `</style>` breakout sequence.
+
+    ``wasm_ticks=True`` copies the packaged Worker and WASM module next to
+    ``path`` and attaches ``attachWasmTicks`` via those explicit relative
+    URLs. A mapping supplies host-served ``worker_url`` and ``wasm`` instead.
+    Default ``False`` keeps the offline Blob-worker document and does not
+    guess asset paths.
+    """
     spec, blob = fig.build_payload()
+    tick_assets = resolve_wasm_tick_assets(wasm_ticks, path)
+    if tick_assets is not None:
+        spec = {**spec, "wasm_ticks": tick_assets}
     if animation_progress is not None:
         progress = float(animation_progress)
         if not math.isfinite(progress) or not 0.0 <= progress <= 1.0:
@@ -329,7 +460,8 @@ def to_html(
     # do not need a module worker or sibling fetch. Ordinary charts pay none
     # of this byte cost.
     inline_wasm_js = ""
-    if any(trace.get("tier") == "density" for trace in spec.get("traces", [])):
+    density = any(trace.get("tier") == "density" for trace in spec.get("traces", []))
+    if density:
         # A raw source checkout can build the ordinary TypeScript client
         # without a wasm32 toolchain. Preserve the existing overview rather
         # than emitting a broken partial inline contract; runtime reports its
@@ -338,6 +470,7 @@ def to_html(
         # when it has been compiled.
         with suppress(FileNotFoundError):
             inline_wasm_js = _javascript_for_inline_script(_bundled_js("xyg-wasm-inline"))
+    csp = _standalone_csp(wasm_ticks=tick_assets is not None, density=density)
     title_html = _html.escape(fig.title or "xy")
     # One <script> block PER chunk: a script element's source is itself a V8
     # string, so folding every chunk into one block would rebuild the very
@@ -359,7 +492,7 @@ def to_html(
         f"""<!doctype html>
 <html>
 <head><meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="{_STANDALONE_CSP}">
+<meta http-equiv="Content-Security-Policy" content="{csp}">
 <title>{title_html}</title>
 <style>
 html,body{{margin:0;width:100%;min-height:100%;font-family:system-ui,sans-serif;background:#fff;}}

@@ -506,10 +506,13 @@ payload cannot paint outside the page flow.
 asset** (`$/public/external/reflex_xy/assets/XYChart.jsx`, the same
 mechanism reflex's own radix color-mode provider uses) — no npm package, no
 CDN. Beside it, `register()` links `xy_client.js` **out of the installed
-`xy` package** (`xy/static/index.js`): the adapter carries no copy
+`xyg` package** (`xyg/static/index.js`): the adapter carries no copy
 of the render client at all, so client/kernel drift is structurally
 impossible — the JS that renders a payload is always the build that shipped
-with the Python that produced it. One renderer for notebooks, static
+with the Python that produced it. When packaged, `register()` also links
+`wasm-worker.js` and `xyg-wasm.wasm` beside that client so a host can pass
+those explicit same-origin URLs to `attachWasmTicks`. Wiring `XYChart` to
+attach automatically is follow-up. One renderer for notebooks, static
 export, and Reflex.
 
 The wrapper: opens/reuses the shared namespace socket, `sub`s with the

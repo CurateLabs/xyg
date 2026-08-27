@@ -77,11 +77,21 @@ artifact from one `@curatelabs/xyg` version. Release
 Scene/painter versions for pre-deployment verification. The Worker validates
 WASM ABI 23 and the Scene version before the first attachment can mount.
 Callers using `workerOwnership: "borrow"` must dispose the Worker separately.
-Notebook, `to_html()`, Reflex, and any self-contained host that cannot provide
-these same-origin external assets are not supported by this tick attachment
-yet. It never uses eval, Blob/data Workers, guessed paths, a CDN, implicit
-asset lookup, synchronous main-thread WASM, or JavaScript tick generation for
-a covered attached axis.
+The Python wheel copies `wasm-worker.js` and `xyg-wasm.wasm` into
+`xyg/static/` from the same `@curatelabs/xyg` build. Hosted `to_html(path,
+wasm_ticks=True)` writes those sidecars next to the document and sets
+`spec.wasm_ticks` to the explicit relative URLs `./wasm-worker.js` and
+`./xyg-wasm.wasm`. A mapping `wasm_ticks={"worker_url": "...", "wasm": "..."}`
+supplies already-served URLs for notebooks, Reflex, or an in-memory
+document. `render` / `renderStandalone` then call `attachWasmTicks` with
+those exact URLs. Missing or blob/data/CDN values fail closed
+(`xy:wasm_ticks_error`) and do not guess a path. The srcdoc notebook iframe
+and default offline `to_html()` string stay on the JavaScript tick path
+because they cannot load sibling module Workers. Reflex `register()` links
+the same two files beside `xy_client.js` when they are packaged; wiring
+`XYChart` to attach is follow-up. It never uses eval, Blob/data Workers,
+guessed paths, a CDN, implicit asset lookup, synchronous main-thread WASM,
+or JavaScript tick generation for a covered attached axis.
 
 Each viewport/resize snapshot gets a monotonic axis revision and Worker tick
 sequence. New work cancels the old task; only the current sequence, revision,

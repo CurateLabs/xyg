@@ -21,6 +21,8 @@ packages/xy-client/dist/standalone.js
 python/xyg/static/index.js
 python/xyg/static/standalone.js
 python/xyg/static/xyg-wasm-inline.js
+python/xyg/static/wasm-worker.js
+python/xyg/static/xyg-wasm.wasm
 # Exact-platform Node natives (#52): staged by release packaging next to
 # packages/xyg-node-*/index.js; never commit built cdylibs from a checkout.
 packages/xyg-node-*/libxyg_core.so

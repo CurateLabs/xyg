@@ -143,6 +143,9 @@ def _cargo_target() -> Optional[str]:
 # `@curatelabs/xyg` dist, then copies into python/xyg/static for the Python wheel.
 _JS_BUNDLES = ("index.js", "standalone.js")
 _INLINE_WASM_BUNDLE = "xyg-wasm-inline.js"
+_WASM_TICK_WORKER = "wasm-worker.js"
+_WASM_TICK_WASM = "xyg-wasm.wasm"
+_OPTIONAL_STATIC_ASSETS = (_INLINE_WASM_BUNDLE, _WASM_TICK_WORKER, _WASM_TICK_WASM)
 
 
 def _static_dir(root: Path) -> Path:
@@ -161,6 +164,9 @@ def _copy_bundles(src: Path, dest: Path) -> None:
     dest.mkdir(parents=True, exist_ok=True)
     for name in _JS_BUNDLES:
         shutil.copy2(src / name, dest / name)
+    worker = src / _WASM_TICK_WORKER
+    if worker.is_file():
+        shutil.copy2(worker, dest / _WASM_TICK_WORKER)
 
 
 class CustomBuildHook(BuildHookInterface):
@@ -188,11 +194,11 @@ class CustomBuildHook(BuildHookInterface):
         # `js/package-wasm.mjs`; a docs editable build intentionally does not
         # require Rust or that target merely to build the ordinary client.
         if static_dir is not None:
-            inline_wasm = static_dir / _INLINE_WASM_BUNDLE
-            if inline_wasm.is_file():
-                build_data.setdefault("force_include", {})[str(inline_wasm)] = (
-                    f"xyg/static/{_INLINE_WASM_BUNDLE}"
-                )
+            force_include = build_data.setdefault("force_include", {})
+            for name in _OPTIONAL_STATIC_ASSETS:
+                asset = static_dir / name
+                if asset.is_file():
+                    force_include[str(asset)] = f"xyg/static/{name}"
 
         # The native core is a wheel-only, per-platform artifact.
         if self.target_name != "wheel":

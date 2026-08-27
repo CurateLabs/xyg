@@ -29,34 +29,34 @@ WRAPPER_TAG = "XYChart"
 #: imports the client by relative path.
 _EXTERNAL_SUBDIR = Path("external") / "reflex_xy" / "assets"
 _CLIENT_NAME = "xy_client.js"
+_WASM_TICK_ASSETS = ("wasm-worker.js", "xyg-wasm.wasm")
 
 
-def _client_source() -> Path:
-    """The canonical render client inside the installed xyg package."""
+def _static_source(name: str) -> Path:
+    """A generated static file inside the installed xyg package."""
     import xyg
 
-    source = Path(xyg.__file__).resolve().parent / "static" / "index.js"
+    source = Path(xyg.__file__).resolve().parent / "static" / name
     if not source.exists():
         msg = (
-            f"{source} missing — the xyg install has no bundled JS client. "
-            "Dev checkout: run `node js/build.mjs`; otherwise reinstall xyg."
+            f"{source} missing — the xyg install has no bundled {name}. "
+            "Dev checkout: run `node js/build.mjs` and `node js/package-wasm.mjs`; "
+            "otherwise reinstall xyg."
         )
         raise FileNotFoundError(msg)
     return source
 
 
-def _link_client(asset_root: Path) -> None:
-    """Symlink the installed client beside the wrapper (repairing stale links).
+def _client_source() -> Path:
+    """The canonical render client inside the installed xyg package."""
+    return _static_source("index.js")
 
-    Unlike rx.asset's shared files (which live at a fixed path next to their
-    module), the client's location moves whenever the ``xyg`` install
-    does — so an existing link pointing at the wrong target is replaced, not
-    trusted.
-    """
-    source = _client_source()
+
+def _link_static(asset_root: Path, source: Path, dest_name: str) -> None:
+    """Symlink one installed static file beside the wrapper (repairing stale links)."""
     dst_dir = asset_root / _EXTERNAL_SUBDIR
     dst_dir.mkdir(parents=True, exist_ok=True)
-    dst = dst_dir / _CLIENT_NAME
+    dst = dst_dir / dest_name
     if dst.is_symlink() or dst.exists():
         try:
             if dst.resolve() == source:
@@ -65,6 +65,26 @@ def _link_client(asset_root: Path) -> None:
             pass
         dst.unlink()
     dst.symlink_to(source)
+
+
+def _link_client(asset_root: Path) -> None:
+    """Symlink the installed client and optional WASM tick assets.
+
+    Unlike rx.asset's shared files (which live at a fixed path next to their
+    module), the client's location moves whenever the ``xyg`` install
+    does — so an existing link pointing at the wrong target is replaced, not
+    trusted. Tick assets are linked when packaged so a Reflex host can pass
+    explicit same-origin ``./wasm-worker.js`` and ``./xyg-wasm.wasm`` URLs;
+    attaching ``attachWasmTicks`` in XYChart remains a follow-up.
+    """
+    _link_static(asset_root, _client_source(), _CLIENT_NAME)
+    import xyg
+
+    static_dir = Path(xyg.__file__).resolve().parent / "static"
+    for name in _WASM_TICK_ASSETS:
+        source = static_dir / name
+        if source.is_file():
+            _link_static(asset_root, source, name)
 
 
 def register() -> str:

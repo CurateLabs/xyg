@@ -63,6 +63,45 @@ import "./58_graph";
 // Entry points
 // ---------------------------------------------------------------------------
 
+function attachHostWasmTicks(view: ChartView & { _dispatchChartEvent?: Function }, spec: { wasm_ticks?: unknown }) {
+  const assets = spec?.wasm_ticks as
+    | { workerUrl?: unknown; worker_url?: unknown; wasm?: unknown }
+    | null
+    | undefined;
+  if (assets == null) return;
+  const workerUrl = assets.workerUrl ?? assets.worker_url;
+  const wasm = assets.wasm;
+  const observer = (globalThis as { __xygStandaloneObserver?: (event: object) => void }).__xygStandaloneObserver;
+  const fail = (code: string, message: string, diagnostics: unknown = null) => {
+    view._dispatchChartEvent?.("wasm_ticks_error", { code, message, diagnostics });
+    if (typeof observer === "function") observer({ phase: "ticks_error", code, message });
+  };
+  if (typeof workerUrl !== "string" || !workerUrl || typeof wasm !== "string" || !wasm) {
+    fail("XYG_WASM_UNAVAILABLE", "wasm_ticks requires explicit workerUrl and wasm");
+    return;
+  }
+  const blocked = /^(blob:|data:|javascript:)/i;
+  if (blocked.test(workerUrl) || blocked.test(wasm) || workerUrl.startsWith("//") || wasm.startsWith("//")) {
+    fail("XYG_WASM_UNAVAILABLE", "wasm_ticks URLs must be explicit same-origin paths, not blob/data/CDN");
+    return;
+  }
+  try {
+    const worker = createXygWasmWorker({ workerUrl, wasm });
+    void attachWasmTicks(view, { worker, workerOwnership: "own" }).then((handle) => {
+      (globalThis as { __xygWasmTicks?: unknown }).__xygWasmTicks = handle;
+      if (typeof observer === "function") observer({ phase: "ticks_ready", diagnostics: handle.diagnostics() });
+    }).catch((cause) => {
+      const code = cause instanceof XygWasmError ? cause.code : "XYG_WASM_UNAVAILABLE";
+      const message = cause instanceof Error ? cause.message : "wasm tick provisioning failed";
+      if (typeof observer === "function") observer({ phase: "ticks_error", code, message });
+    });
+  } catch (cause) {
+    const code = cause instanceof XygWasmError ? cause.code : "XYG_WASM_UNAVAILABLE";
+    const message = cause instanceof Error ? cause.message : "wasm tick provisioning failed";
+    fail(code, message, cause instanceof XygWasmError ? cause.diagnostics ?? null : null);
+  }
+}
+
 export function render({ model, el }) {
   const spec = model.get("spec");
   const buffer = payloadBuffers(spec, model.get("buffers"));
@@ -78,6 +117,7 @@ export function render({ model, el }) {
     },
   };
   const view = new ChartView(el, spec, buffer, comm);
+  attachHostWasmTicks(view, spec);
   // Streaming append rides the spec+buffers trait update itself (§29): one
   // comm message per tick that doubles as notebook-reopen state. A fresh
   // render above already painted the streamed state, so only a *subsequent*
@@ -179,6 +219,7 @@ export function renderStandalone(el, spec, arrayBuffer) {
   // Test/host observability only: no runtime policy is selected from this
   // hook. It lets strict-CSP file evidence distinguish successful attachment
   // from a later density worker failure.
+  attachHostWasmTicks(view, spec);
   if (typeof observer === "function") observer({ phase: "attached", inline: !!inline, view });
   if (typeof observer === "function") (globalThis as any).__xygStandaloneDensityControl = {
     home: () => {

@@ -4134,11 +4134,12 @@ class Chart(Component):
         """Alias for `chrome_components()` for Reflex adapter/user code."""
         return self.chrome_components()
 
-    def widget(self) -> Any:
+    def widget(self, *, wasm_ticks: Optional[Mapping[str, str]] = None) -> Any:
         """The live notebook widget for this chart (built once, cached).
 
         Requires the widget extras (anywidget); event callbacks passed to
-        the chart are wired onto it.
+        the chart are wired onto it. ``wasm_ticks`` is an explicit
+        ``worker_url`` / ``wasm`` pair for hosted Rust/WASM ticks.
         """
         if self._widget is None:
             from .widget import FigureWidget
@@ -4183,6 +4184,8 @@ class Chart(Component):
                 widget_kwargs["on_animation_start"] = on_animation_start
             if on_animation_end is not None:
                 widget_kwargs["on_animation_end"] = on_animation_end
+            if wasm_ticks is not None:
+                widget_kwargs["wasm_ticks"] = wasm_ticks
             self._widget = FigureWidget(self.figure(), **widget_kwargs)
         return self._widget
 
@@ -4245,15 +4248,19 @@ class Chart(Component):
         *,
         custom_css: Optional[str] = None,
         animation_progress: Optional[float] = None,
+        wasm_ticks: bool | Mapping[str, object] = False,
     ) -> str:
         """A self-contained HTML document for the chart.
 
         Writes it to ``path`` when given; returns the HTML either way.
+        ``wasm_ticks`` attaches hosted Rust/WASM ticks when explicit
+        Worker/WASM URLs are available.
         """
         return self.figure().to_html(
             path,
             custom_css=custom_css,
             animation_progress=animation_progress,
+            wasm_ticks=wasm_ticks,
         )
 
     def html(
@@ -4262,12 +4269,14 @@ class Chart(Component):
         *,
         custom_css: Optional[str] = None,
         animation_progress: Optional[float] = None,
+        wasm_ticks: bool | Mapping[str, object] = False,
     ) -> str:
         """Alias of `to_html`."""
         return self.to_html(
             path,
             custom_css=custom_css,
             animation_progress=animation_progress,
+            wasm_ticks=wasm_ticks,
         )
 
     def _repr_html_(self) -> str:

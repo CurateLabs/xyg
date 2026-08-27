@@ -172,6 +172,8 @@ def _write_wheel(
                 data = INDEX_JS
             elif name == "xyg/static/standalone.js" and name not in replacements:
                 data = STANDALONE_JS
+            elif name == "xyg/static/wasm-worker.js" and name not in replacements:
+                data = b"export {};"
             elif name == "reflex_xy/__init__.py" and name not in replacements:
                 data = REFLEX_INIT_PY
             elif name == "reflex_xy/assets/XYChart.jsx" and name not in replacements:

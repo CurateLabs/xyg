@@ -33,7 +33,9 @@ adds one behavior the `Figure` methods do not have: omitted
 `facets.py:430`) mirror the same format matrix but expose no `width`/`height`
 and no `export_config` defaulting — grid geometry is fixed by its panels.
 
-Legacy per-format surfaces remain: `to_html` (interactive standalone document),
+Legacy per-format surfaces remain: `to_html` (interactive standalone document;
+`wasm_ticks=True` writes packaged Worker/WASM sidecars next to a destination
+path and attaches hosted Rust ticks via those explicit URLs),
 `Figure.to_png` (`engine=Engine.default` by default), `_svg.to_svg` (carries
 `id_prefix=` for composing several exports into one document). `to_png` routes
 through `_png_engine`, which has no `auto` case — it maps any `Engine` that is
