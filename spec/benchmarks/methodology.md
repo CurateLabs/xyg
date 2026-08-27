@@ -335,6 +335,29 @@ hosted-stream-density-browser-local.json`, then `python3
 scripts/verify_stream_density_browser_benchmark.py
 hosted-stream-density-browser-local.json`.
 
+The latest interpreted hosted extract is
+`spec/benchmarks/hosted-evidence-95adb9de.json` (Actions run `32945396133`,
+SHA `95adb9de`). Re-download and re-verify the unmodified artifacts with the
+commands in `spec/benchmarks/results.md`. Do not paste CodSpeed instruction
+counts into `results.md` unless a SHA-keyed simulation export exists; the
+CodSpeed dashboard remains the simulation authority, and the `95adb9de`
+nightly's simulation job failed.
+
+Public Scene static-export baselines for the #58-required subset are a local
+diagnostic, not a CodSpeed row and not a `check_regressions.py` input:
+
+```bash
+uv run python scripts/bench_public_scene_routes.py \
+  --output spec/benchmarks/public-scene-export-local.json
+uv run python scripts/verify_public_scene_export.py \
+  spec/benchmarks/public-scene-export-local.json --recompute-goldens
+```
+
+The verifier recomputes the checked-in hexbin Scene SHA-256 goldens
+(`tests/fixtures/figure_scene_v3.json` `public_hexbin_sha256`) and refuses a
+heatmap row until that public Scene route lands. Heatmap follow-up is
+https://github.com/CurateLabs/xyg/pull/261.
+
 The glob collects seven modules — `test_codspeed_animation.py`,
 `test_codspeed_graph_render.py`, `test_codspeed_kernels.py`, `test_codspeed_polar.py`,
 `test_codspeed_pyplot.py`, `test_codspeed_selection.py`, and

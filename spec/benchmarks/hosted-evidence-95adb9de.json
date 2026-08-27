@@ -1,0 +1,81 @@
+{
+  "schema": "xyg-m2-wave-b-hosted-evidence-v1",
+  "note": "Compact extract of GitHub Actions artifacts. Not a competitive-win table. Raw JSON stays on the Actions artifact; this file only records the contract facts interpreted into results.md.",
+  "source": {
+    "workflow": "CodSpeed",
+    "run_id": 32945396133,
+    "event": "schedule",
+    "head_sha": "95adb9deef74a236ce3a5db30b1fd166025b7e8c",
+    "head_subject": "Restore authored Scene artifact parity (#243)",
+    "browser_evidence_job": "success",
+    "codspeed_simulation_job": "failure",
+    "artifact_name": "authored-scene-browser-95adb9deef74a236ce3a5db30b1fd166025b7e8c",
+    "artifact_id": 9598099236,
+    "download": "gh run download 32945396133 -n authored-scene-browser-95adb9deef74a236ce3a5db30b1fd166025b7e8c"
+  },
+  "prior_full_green_workflow": {
+    "run_id": 32832774652,
+    "event": "workflow_dispatch",
+    "head_sha": "dd1c5506c06ca7ee59cf8e0660e2ea98e456bf66",
+    "browser_evidence_job": "success",
+    "codspeed_simulation_job": "success",
+    "scene_version": 24,
+    "abi_version": 21,
+    "note": "Last workflow whose CodSpeed simulation job also succeeded. Scene v24 numbers are not interchangeable with the Scene v25 extract below."
+  },
+  "post_hexbin_nightly": {
+    "main_sha_at_record": "a77e26707a3e980f88a823122781a80b72468af9",
+    "includes": ["#259 hexbin Scene", "#260 Reflex WASM tick auto-attach"],
+    "status": "absent",
+    "note": "No authored-scene-browser-<sha> artifact exists yet for #259+#260 / current main. Hexbin Scene evidence in this campaign is goldens + local export baselines, not hosted browser timings."
+  },
+  "authored_scene_browser": {
+    "schema": "xyg-wasm-scene-browser-v3",
+    "scene_version": 25,
+    "abi_version": 22,
+    "typed_series": [
+      {"count": 100, "firstPaintMs": 64.3, "sceneBytes": null, "copyBytes": 1888, "memoryHighWaterBytes": 1179648, "mainThreadRecordVisits": 0},
+      {"count": 10000, "firstPaintMs": 56.6, "sceneBytes": null, "copyBytes": 160288, "memoryHighWaterBytes": 3604480, "mainThreadRecordVisits": 0},
+      {"count": 100000, "firstPaintMs": 213.3, "sceneBytes": null, "copyBytes": 1600288, "memoryHighWaterBytes": 25034752, "mainThreadRecordVisits": 0},
+      {"count": 1000000, "firstPaintMs": 2000.3, "sceneBytes": null, "copyBytes": 16000288, "memoryHighWaterBytes": 240517120, "mainThreadRecordVisits": 0}
+    ],
+    "authored_scene": [
+      {"count": 100, "sceneBytes": 7450, "painterBytes": 3633, "workerPrepareMs": 1.3, "hydrateUploadMs": 10.2, "firstPaintMs": 231.8, "copyBytes": 7450, "memoryHighWaterBytes": 1179648, "plotMeanRgbDelta": 243.76, "plotDifferingFraction": 0.9997, "legendSemantics": true, "colorbarSemantics": true, "annotationSemantics": true},
+      {"count": 10000, "sceneBytes": 561850, "painterBytes": 162033, "workerPrepareMs": 1.6, "hydrateUploadMs": 6.7, "firstPaintMs": 242.6, "copyBytes": 561850, "memoryHighWaterBytes": 2359296, "plotMeanRgbDelta": 164.75, "plotDifferingFraction": 0.9491, "legendSemantics": true, "colorbarSemantics": true, "annotationSemantics": true},
+      {"count": 100000, "sceneBytes": 5601850, "painterBytes": 1602033, "workerPrepareMs": 10.0, "hydrateUploadMs": 6.7, "firstPaintMs": 484.7, "copyBytes": 5601850, "memoryHighWaterBytes": 12451840, "plotMeanRgbDelta": 4.98, "plotDifferingFraction": 0.0476, "legendSemantics": true, "colorbarSemantics": true, "annotationSemantics": true},
+      {"count": 1000000, "sceneBytes": 56001850, "painterBytes": 16002033, "workerPrepareMs": 153.2, "hydrateUploadMs": 13.4, "firstPaintMs": 1933.1, "copyBytes": 56001850, "memoryHighWaterBytes": 113246208, "plotMeanRgbDelta": 4.46, "plotDifferingFraction": 0.0468, "legendSemantics": true, "colorbarSemantics": true, "annotationSemantics": true}
+    ],
+    "native_consumers": [
+      {"count": 100, "sceneSha256": "a5b4503e9b765706bdb723acfb72184390b75ea3479d49ebe7a8fa67e52f2213", "svgBytes": 20441, "rasterBytes": 5431, "painterBytes": 3633},
+      {"count": 10000, "sceneSha256": "c2f3879c6ebf10acba45528c08b80c454f0abfc4a1f1de45b31b0c142e8e3a3f", "svgBytes": 1182003, "rasterBytes": 262831, "painterBytes": 162033},
+      {"count": 100000, "sceneSha256": "4e4948ba5803b9efaef1712d66b9d033010199e1eac5f57549ed5edb6cd25e67", "svgBytes": 11741663, "rasterBytes": 2602831, "painterBytes": 1602033},
+      {"count": 1000000, "sceneSha256": "ee8147b6ff1d6a3f8880d8db361ad8ca907d57f7eae4f3caeda329658c739828", "svgBytes": 117338125, "rasterBytes": 26002831, "painterBytes": 16002033}
+    ],
+    "fragmentation": {"rejectedTraceLimit": 1024, "browserChildren": 0, "rejectionMs": 11.1}
+  },
+  "hosted_density_browser": {
+    "schema": "xyg-hosted-density-browser-v2",
+    "payload_bytes_constant": 473712,
+    "canvas_pixels": 153600,
+    "stale_paints": 0,
+    "visual_tolerance_px": 0,
+    "home_raster_matches_initial": true,
+    "rows": [
+      {"count": 100, "htmlBuildMs": 37.2, "browserFirstPaintMs": 393.1, "interactionMs": 31.5, "htmlBytes": 1488539, "jsHeapBytes": 10600000, "initialCopyBytes": 1664, "memoryHighWaterBytes": 2228224},
+      {"count": 10000, "htmlBuildMs": 2.7, "browserFirstPaintMs": 476.9, "interactionMs": 32.0, "htmlBytes": 1575086, "jsHeapBytes": 11200000, "initialCopyBytes": 131568, "memoryHighWaterBytes": 2424832},
+      {"count": 100000, "htmlBuildMs": 4.2, "browserFirstPaintMs": 356.4, "interactionMs": 78.1, "htmlBytes": 1575173, "jsHeapBytes": 10600000, "initialCopyBytes": 131696, "memoryHighWaterBytes": 2424832},
+      {"count": 1000000, "htmlBuildMs": 7.1, "browserFirstPaintMs": 362.8, "interactionMs": 73.3, "htmlBytes": 1577705, "jsHeapBytes": 11200000, "initialCopyBytes": 135488, "memoryHighWaterBytes": 2424832}
+    ]
+  },
+  "hosted_stream_density_browser": {
+    "schema": "xyg-hosted-stream-density-browser-v1",
+    "payload_bytes_constant": 473712,
+    "chunk_points": 32768,
+    "rows": [
+      {"count": 100, "sourceBytes": 1600, "streamPushes": 1, "rasterBytes": 6206, "memoryHighWaterBytes": 2228224, "latestCopyCount": 5},
+      {"count": 10000, "sourceBytes": 160000, "streamPushes": 1, "rasterBytes": 6242, "memoryHighWaterBytes": 2555904, "latestCopyCount": 5},
+      {"count": 100000, "sourceBytes": 1600000, "streamPushes": 4, "rasterBytes": 6242, "memoryHighWaterBytes": 2949120, "latestCopyCount": 11},
+      {"count": 1000000, "sourceBytes": 16000000, "streamPushes": 31, "rasterBytes": 6242, "memoryHighWaterBytes": 2949120, "latestCopyCount": 65}
+    ]
+  }
+}
