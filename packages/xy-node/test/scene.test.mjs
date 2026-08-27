@@ -776,7 +776,7 @@ test("Node figure Scene v5 encodes titles and still rejects incomplete customiza
   for (const key of ["marker_path", "marker_glyph"]) {
     const figure = new Figure();
     figure.scatter([1], [1], { _composed: true, style: { [key]: "M0 0" } });
-    assert.throws(() => figure.toScene(), new RegExp(key));
+    assert.throws(() => figure.toScene(), /authored markers/);
   }
   const named = new Figure();
   named.scatter([1], [1], { _composed: true, name: "series" });
