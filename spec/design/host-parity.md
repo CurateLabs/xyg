@@ -178,7 +178,10 @@ hosts pack a name or a custom RGB ramp. ABI 136 adds
 dispatch and column remapping live in Rust. ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
-record plus XYIM. Polar density stays compatibility. ABI 104 likewise moves
+record plus XYIM. Polar density stays compatibility. ABI 138 / Scene v28
+adds XYDS constant dash on the same extras pointer (raw XYDS or XYEX v2)
+and an XYDS sidecar after XYIM; curve/non-round/authored markers stay
+compatibility. ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate
 row per segment and two PolyFill rows per face. ABI 105 makes the public

@@ -121,7 +121,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 137;
+pub const ABI_VERSION: u32 = 138;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1503,7 +1503,8 @@ fn decode_scene_authoring_input(bytes: &[u8]) -> Option<(Option<&str>, Option<&s
 
 /// Host view for `xyg_scene_batch_encode` extras input. Koffi's 64-parameter
 /// ceiling packs `data` + `len` as one pointer immediately before `out`.
-/// Bytes may be XYPL (polar), XYHP (painted heatmap or density blit), or XYEX (both).
+/// Bytes may be XYPL (polar), XYHP (painted heatmap or density blit), XYDS
+/// (constant dash), or XYEX (v1 polar+paint, v2 polar+paint+dash).
 #[repr(C)]
 struct PolarAbiInput {
     data: *const u8,
@@ -1511,18 +1512,18 @@ struct PolarAbiInput {
 }
 
 /// Read a host-packed [`PolarAbiInput`]. Null or `len == 0` is Cartesian
-/// with no paint.
+/// with no paint or dash.
 ///
 /// # Safety
 /// `view` must be null or point to a [`PolarAbiInput`]. Non-empty `data` must
 /// be a valid `len`-byte region for the duration of the call.
-unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8])> {
+unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8], &'a [u8])> {
     if view.is_null() {
-        return Some((&[], &[]));
+        return Some((&[], &[], &[]));
     }
     let parsed = std::ptr::read_unaligned(view.cast::<PolarAbiInput>());
     if parsed.len == 0 {
-        return Some((&[], &[]));
+        return Some((&[], &[], &[]));
     }
     if parsed.data.is_null() {
         return None;
@@ -1540,7 +1541,10 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8])
 /// at Koffi's 64-parameter ceiling. ABI 134 reuses that pointer for XYHP
 /// ABI 137 reuses that pointer for XYHP density-blit planes (kind 3);
 /// expansion mode `DensityBlit=10` emits one Image record plus an XYIM
-/// RGBA sidecar. Polar `HeatmapLattice`
+/// RGBA sidecar. ABI 138 reuses that pointer for XYDS constant-dash tables
+/// (raw XYDS, or XYEX v2 when combined with polar/paint); Scene v28 appends
+/// an XYDS sidecar after XYIM so `scene_svg` retains dash.
+/// Polar `HeatmapLattice`
 /// and `HeatmapPainted` inputs expand in data space, then tessellate to
 /// PolyFill wedges. Polar density and Image records stay fail-closed.
 /// Returns required bytes or `usize::MAX` on error.
@@ -1830,7 +1834,7 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         } else {
             std::slice::from_raw_parts(expansion_modes, len)
         };
-        let (polar_bytes, paint_bytes) = unsafe { scene_extras_bytes(polar_input) }?;
+        let (polar_bytes, paint_bytes, dash_bytes) = unsafe { scene_extras_bytes(polar_input) }?;
         // Polar HeatmapLattice/HeatmapPainted stay compact through this ABI:
         // expansion is data-space (rows×cols Rect cells, painted planes intern
         // unique fills), then `with_polar` tessellates those cells to PolyFill
@@ -1946,6 +1950,8 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         .ok()?;
         batch
             .with_images(images)
+            .ok()?
+            .with_dashes(dash_bytes)
             .ok()?
             .with_polar(polar_bytes)
             .ok()?
@@ -14029,19 +14035,19 @@ mod tests {
             data: bytes.as_ptr(),
             len: bytes.len(),
         };
-        let (polar, paint) =
+        let (polar, paint, dash) =
             unsafe { scene_extras_bytes((&view as *const PolarAbiInput).cast()) }.unwrap();
         assert_eq!(polar, bytes.as_slice());
-        assert!(paint.is_empty());
-        let (polar, paint) = unsafe { scene_extras_bytes(std::ptr::null()) }.unwrap();
-        assert!(polar.is_empty() && paint.is_empty());
+        assert!(paint.is_empty() && dash.is_empty());
+        let (polar, paint, dash) = unsafe { scene_extras_bytes(std::ptr::null()) }.unwrap();
+        assert!(polar.is_empty() && paint.is_empty() && dash.is_empty());
         let empty = PolarAbiInput {
             data: std::ptr::null(),
             len: 0,
         };
-        let (polar, paint) =
+        let (polar, paint, dash) =
             unsafe { scene_extras_bytes((&empty as *const PolarAbiInput).cast()) }.unwrap();
-        assert!(polar.is_empty() && paint.is_empty());
+        assert!(polar.is_empty() && paint.is_empty() && dash.is_empty());
         let bad_len = PolarAbiInput {
             data: bytes.as_ptr(),
             len: 8,

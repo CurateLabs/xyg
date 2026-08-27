@@ -13,7 +13,7 @@ use crate::svg::push_num;
 use std::collections::HashMap;
 use std::fmt::Write;
 
-pub const SCENE_VERSION: u32 = 27;
+pub const SCENE_VERSION: u32 = 28;
 pub const MAX_SCENE_MARKS: usize = 2_000_000;
 pub const MAX_AXIS_TICKS: usize = 200;
 pub const MAX_SCENE_STYLES: usize = 65_536;
@@ -1212,6 +1212,25 @@ fn push_raster_stroke(
     rgba: [u8; 4],
     scale: f64,
 ) -> Result<(), SceneError> {
+    push_raster_stroke_dash(out, points, width, rgba, scale, &[])
+}
+
+fn push_raster_dash(out: &mut Vec<u8>, dash: &[f32], scale: f64) -> Result<(), SceneError> {
+    out.extend_from_slice(&(dash.len() as u32).to_le_bytes());
+    for value in dash {
+        push_raster_f32(out, f64::from(*value), scale)?;
+    }
+    Ok(())
+}
+
+fn push_raster_stroke_dash(
+    out: &mut Vec<u8>,
+    points: [(f64, f64); 2],
+    width: f64,
+    rgba: [u8; 4],
+    scale: f64,
+    dash: &[f32],
+) -> Result<(), SceneError> {
     out.push(3);
     out.extend_from_slice(&2u32.to_le_bytes());
     for (x, y) in points {
@@ -1221,7 +1240,7 @@ fn push_raster_stroke(
     push_raster_f32(out, width, scale)?;
     out.extend_from_slice(&rgba);
     out.push(0);
-    out.extend_from_slice(&0u32.to_le_bytes());
+    push_raster_dash(out, dash, scale)?;
     out.push(1);
     Ok(())
 }
@@ -3056,7 +3075,7 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
             return Err(SceneError::Length);
         }
     }
-    let (xypl, xyim) = scene_sidecars_after_chrome(bytes, total)?;
+    let (xypl, xyim, xyds) = scene_sidecars_after_chrome(bytes, total)?;
 
     let viewport_width = batch_f64(bytes, 32)?;
     let viewport_height = batch_f64(bytes, 40)?;
@@ -3090,6 +3109,13 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
         PolarSceneState::from_xypl(xypl, layout)?;
     }
     let images = parse_xyim(xyim)?;
+    let dashes = parse_xyds(xyds)?;
+    if dashes
+        .iter()
+        .any(|entry| entry.style_ref as usize >= styles)
+    {
+        return Err(SceneError::Length);
+    }
 
     for axis in [96usize, 104] {
         let kind = bytes[axis];
@@ -3527,9 +3553,20 @@ pub const XYIM_FORMAT_RGBA8: u32 = 0;
 pub const MAX_SCENE_IMAGE_PIXELS: usize = 2_000_000;
 /// XYEX v1 wraps optional XYPL polar bytes plus optional XYHP paint so
 /// `xyg_scene_batch_encode` stays at Koffi's 64-parameter ceiling.
+/// XYEX v2 adds a dash length so constant dash patterns ride the same extras
+/// pointer as XYDS (ABI 138 / Scene v28) without a 65th ABI argument.
 pub const XYEX_MAGIC: &[u8; 4] = b"XYEX";
 pub const XYEX_VERSION: u32 = 1;
+pub const XYEX_VERSION_DASH: u32 = 2;
 pub const XYEX_V1_HEADER_BYTES: usize = 16;
+pub const XYEX_V2_HEADER_BYTES: usize = 20;
+/// XYDS v1 constant-dash sidecar (ABI 138 / Scene v28). One entry per dashed
+/// host style_ref; solid styles are omitted. Appended after XYIM so undashed
+/// Cartesian scenes only change the Scene version u32.
+pub const XYDS_MAGIC: &[u8; 4] = b"XYDS";
+pub const XYDS_VERSION: u32 = 1;
+pub const XYDS_V1_HEADER_BYTES: usize = 16;
+pub const XYDS_MAX_VALUES: usize = 8;
 
 /// One XYHP paint plane keyed by the compact lattice's stable identity.
 #[derive(Clone, Copy, Debug)]
@@ -3589,45 +3626,64 @@ fn scene_read_f64(bytes: &[u8], offset: usize) -> Result<f64, SceneError> {
     ))
 }
 
-/// Split a host extras payload into polar XYPL bytes and XYHP paint bytes.
-/// Empty input is Cartesian with no paint. Raw XYPL (92 bytes) stays valid
-/// polar-only authoring. Raw XYHP is Cartesian painted heatmaps. XYEX wraps both.
-pub fn split_scene_extras(bytes: &[u8]) -> Option<(&[u8], &[u8])> {
+/// Split a host extras payload into polar XYPL, XYHP paint, and XYDS dash bytes.
+/// Empty input is Cartesian with no paint or dash. Raw XYPL (92 bytes) stays
+/// valid polar-only authoring. Raw XYHP is Cartesian painted heatmaps. Raw XYDS
+/// is dash-only. XYEX v1 wraps polar+paint; XYEX v2 adds a dash length.
+pub fn split_scene_extras(bytes: &[u8]) -> Option<(&[u8], &[u8], &[u8])> {
     if bytes.is_empty() {
-        return Some((&[], &[]));
+        return Some((&[], &[], &[]));
     }
     if bytes.len() == XYPL_V1_BYTES && bytes.get(..4) == Some(&XYPL_MAGIC[..]) {
-        return Some((bytes, &[]));
+        return Some((bytes, &[], &[]));
     }
     if bytes.get(..4) == Some(&XYHP_MAGIC[..]) {
-        return Some((&[], bytes));
+        return Some((&[], bytes, &[]));
     }
-    if bytes.len() < XYEX_V1_HEADER_BYTES || bytes.get(..4) != Some(&XYEX_MAGIC[..]) {
+    if bytes.get(..4) == Some(&XYDS_MAGIC[..]) {
+        return Some((&[], &[], bytes));
+    }
+    if bytes.get(..4) != Some(&XYEX_MAGIC[..]) {
         return None;
     }
     let version = u32::from_le_bytes(bytes.get(4..8)?.try_into().ok()?);
     let polar_len = u32::from_le_bytes(bytes.get(8..12)?.try_into().ok()?) as usize;
     let paint_len = u32::from_le_bytes(bytes.get(12..16)?.try_into().ok()?) as usize;
-    if version != XYEX_VERSION {
+    let (header_bytes, dash_len) = if version == XYEX_VERSION {
+        (XYEX_V1_HEADER_BYTES, 0usize)
+    } else if version == XYEX_VERSION_DASH {
+        if bytes.len() < XYEX_V2_HEADER_BYTES {
+            return None;
+        }
+        (
+            XYEX_V2_HEADER_BYTES,
+            u32::from_le_bytes(bytes.get(16..20)?.try_into().ok()?) as usize,
+        )
+    } else {
         return None;
-    }
+    };
     if polar_len != 0 && polar_len != XYPL_V1_BYTES {
         return None;
     }
-    let polar_end = XYEX_V1_HEADER_BYTES.checked_add(polar_len)?;
+    let polar_end = header_bytes.checked_add(polar_len)?;
     let paint_end = polar_end.checked_add(paint_len)?;
-    if paint_end != bytes.len() {
+    let dash_end = paint_end.checked_add(dash_len)?;
+    if dash_end != bytes.len() {
         return None;
     }
-    let polar = &bytes[XYEX_V1_HEADER_BYTES..polar_end];
+    let polar = &bytes[header_bytes..polar_end];
     let paint = &bytes[polar_end..paint_end];
+    let dash = &bytes[paint_end..dash_end];
     if polar_len == XYPL_V1_BYTES && polar.get(..4) != Some(&XYPL_MAGIC[..]) {
         return None;
     }
     if paint_len > 0 && paint.get(..4) != Some(&XYHP_MAGIC[..]) {
         return None;
     }
-    Some((polar, paint))
+    if dash_len > 0 && dash.get(..4) != Some(&XYDS_MAGIC[..]) {
+        return None;
+    }
+    Some((polar, paint, dash))
 }
 
 fn parse_heatmap_paint(bytes: &[u8]) -> Result<Vec<HeatmapPaintPlane<'_>>, SceneError> {
@@ -3954,9 +4010,9 @@ fn encode_xyim(images: &[SceneImage]) -> Result<Vec<u8>, SceneError> {
     Ok(out)
 }
 
-fn parse_xyim(bytes: &[u8]) -> Result<Vec<SceneImage>, SceneError> {
+fn parse_xyim_envelope(bytes: &[u8]) -> Result<(Vec<SceneImage>, usize), SceneError> {
     if bytes.is_empty() {
-        return Ok(Vec::new());
+        return Ok((Vec::new(), 0));
     }
     if bytes.len() < XYIM_V1_HEADER_BYTES || bytes.get(..4) != Some(&XYIM_MAGIC[..]) {
         return Err(SceneError::Length);
@@ -4008,13 +4064,130 @@ fn parse_xyim(bytes: &[u8]) -> Result<Vec<SceneImage>, SceneError> {
         });
         cursor = payload_end;
     }
+    Ok((images, cursor))
+}
+
+fn parse_xyim(bytes: &[u8]) -> Result<Vec<SceneImage>, SceneError> {
+    if bytes.is_empty() {
+        return Ok(Vec::new());
+    }
+    let (images, cursor) = parse_xyim_envelope(bytes)?;
     if cursor != bytes.len() {
         return Err(SceneError::Length);
     }
     Ok(images)
 }
 
-fn scene_sidecars_after_chrome(bytes: &[u8], total: usize) -> Result<(&[u8], &[u8]), SceneError> {
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct StyleDash {
+    style_ref: u32,
+    count: u8,
+    values: [f32; 8],
+}
+
+#[cfg(test)]
+fn encode_xyds(entries: &[StyleDash]) -> Result<Vec<u8>, SceneError> {
+    if entries.is_empty() {
+        return Ok(Vec::new());
+    }
+    if entries.len() > MAX_SCENE_STYLES {
+        return Err(SceneError::Limit);
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    let mut out = Vec::new();
+    out.extend_from_slice(XYDS_MAGIC);
+    out.extend_from_slice(&XYDS_VERSION.to_le_bytes());
+    out.extend_from_slice(&(entries.len() as u32).to_le_bytes());
+    out.extend_from_slice(&0u32.to_le_bytes());
+    for entry in entries {
+        if entry.count < 2
+            || entry.count as usize > XYDS_MAX_VALUES
+            || !seen.insert(entry.style_ref)
+        {
+            return Err(SceneError::Length);
+        }
+        out.extend_from_slice(&entry.style_ref.to_le_bytes());
+        out.extend_from_slice(&(u32::from(entry.count)).to_le_bytes());
+        for index in 0..entry.count as usize {
+            let value = entry.values[index];
+            if !value.is_finite() || value <= 0.0 {
+                return Err(SceneError::NonFinite);
+            }
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+    }
+    Ok(out)
+}
+
+fn parse_xyds(bytes: &[u8]) -> Result<Vec<StyleDash>, SceneError> {
+    if bytes.is_empty() {
+        return Ok(Vec::new());
+    }
+    if bytes.len() < XYDS_V1_HEADER_BYTES || bytes.get(..4) != Some(&XYDS_MAGIC[..]) {
+        return Err(SceneError::Length);
+    }
+    if scene_read_u32(bytes, 4)? != XYDS_VERSION {
+        return Err(SceneError::Version);
+    }
+    let n_entries = scene_read_u32(bytes, 8)? as usize;
+    if scene_read_u32(bytes, 12)? != 0 || n_entries == 0 || n_entries > MAX_SCENE_STYLES {
+        return Err(SceneError::Length);
+    }
+    let mut entries = Vec::with_capacity(n_entries);
+    let mut seen = std::collections::BTreeSet::new();
+    let mut cursor = XYDS_V1_HEADER_BYTES;
+    for _ in 0..n_entries {
+        if cursor.checked_add(8).ok_or(SceneError::Limit)? > bytes.len() {
+            return Err(SceneError::Length);
+        }
+        let style_ref = scene_read_u32(bytes, cursor)?;
+        let count = scene_read_u32(bytes, cursor + 4)? as usize;
+        if count < 2 || count > XYDS_MAX_VALUES || !seen.insert(style_ref) {
+            return Err(SceneError::Length);
+        }
+        cursor += 8;
+        let values_end = cursor.checked_add(count * 4).ok_or(SceneError::Limit)?;
+        if values_end > bytes.len() {
+            return Err(SceneError::Length);
+        }
+        let mut values = [0.0f32; 8];
+        for slot in values.iter_mut().take(count) {
+            *slot = f32::from_le_bytes(
+                bytes[cursor..cursor + 4]
+                    .try_into()
+                    .map_err(|_| SceneError::Length)?,
+            );
+            if !slot.is_finite() || *slot <= 0.0 {
+                return Err(SceneError::NonFinite);
+            }
+            cursor += 4;
+        }
+        entries.push(StyleDash {
+            style_ref,
+            count: count as u8,
+            values,
+        });
+    }
+    if cursor != bytes.len() {
+        return Err(SceneError::Length);
+    }
+    Ok(entries)
+}
+
+fn apply_style_dashes(styles: &mut [EncodedStyle], entries: &[StyleDash]) -> Result<(), SceneError> {
+    for entry in entries {
+        let index = usize::try_from(entry.style_ref).map_err(|_| SceneError::Length)?;
+        let style = styles.get_mut(index).ok_or(SceneError::Length)?;
+        style.dash = entry.values;
+        style.dash_count = entry.count;
+    }
+    Ok(())
+}
+
+fn scene_sidecars_after_chrome(
+    bytes: &[u8],
+    total: usize,
+) -> Result<(&[u8], &[u8], &[u8]), SceneError> {
     let rest = bytes.get(total..).unwrap_or(&[]);
     let (xypl, after) = if rest.len() >= XYPL_V1_BYTES && rest.get(..4) == Some(&XYPL_MAGIC[..]) {
         (&rest[..XYPL_V1_BYTES], &rest[XYPL_V1_BYTES..])
@@ -4022,10 +4195,22 @@ fn scene_sidecars_after_chrome(bytes: &[u8], total: usize) -> Result<(&[u8], &[u
         (&[][..], rest)
     };
     if after.is_empty() {
-        return Ok((xypl, after));
+        return Ok((xypl, after, after));
     }
-    parse_xyim(after)?;
-    Ok((xypl, after))
+    if after.get(..4) == Some(&XYDS_MAGIC[..]) {
+        parse_xyds(after)?;
+        return Ok((xypl, &[][..], after));
+    }
+    let (images, xyim_end) = parse_xyim_envelope(after)?;
+    if images.is_empty() || xyim_end == 0 {
+        return Err(SceneError::Length);
+    }
+    let xyim = after.get(..xyim_end).ok_or(SceneError::Length)?;
+    let xyds = after.get(xyim_end..).ok_or(SceneError::Length)?;
+    if !xyds.is_empty() {
+        parse_xyds(xyds)?;
+    }
+    Ok((xypl, xyim, xyds))
 }
 
 fn heatmap_lattice_extent(
@@ -4681,6 +4866,7 @@ pub struct SceneBatch<'a> {
     annotations_from_ids: bool,
     polar: Option<PolarSceneState>,
     images: Vec<SceneImage>,
+    dashes: Vec<u8>,
 }
 
 #[derive(Clone, Debug)]
@@ -5547,6 +5733,7 @@ impl<'a> SceneBatch<'a> {
             annotations_from_ids,
             polar: None,
             images: Vec::new(),
+            dashes: Vec::new(),
         })
     }
 
@@ -5560,6 +5747,24 @@ impl<'a> SceneBatch<'a> {
             return Err(SceneError::Length);
         }
         self.images = images;
+        Ok(self)
+    }
+
+    /// Attach a host-packed XYDS v1 dash table. Empty keeps every style solid.
+    /// Style refs address the host style table before arrow/callout extras.
+    pub fn with_dashes(mut self, bytes: &[u8]) -> Result<Self, SceneError> {
+        if bytes.is_empty() {
+            return Ok(self);
+        }
+        let entries = parse_xyds(bytes)?;
+        let style_count = self.stroke_width.len();
+        if entries
+            .iter()
+            .any(|entry| entry.style_ref as usize >= style_count)
+        {
+            return Err(SceneError::Length);
+        }
+        self.dashes = bytes.to_vec();
         Ok(self)
     }
 
@@ -5920,6 +6125,7 @@ impl<'a> SceneBatch<'a> {
             out.extend_from_slice(&polar.xypl);
         }
         out.extend_from_slice(&encode_xyim(&self.images).expect("validated Scene images"));
+        out.extend_from_slice(&self.dashes);
         out
     }
 }
@@ -5929,6 +6135,24 @@ struct EncodedStyle {
     fill: [u8; 4],
     stroke: [u8; 4],
     stroke_width: f64,
+    dash: [f32; 8],
+    dash_count: u8,
+}
+
+impl EncodedStyle {
+    fn solid(fill: [u8; 4], stroke: [u8; 4], stroke_width: f64) -> Self {
+        Self {
+            fill,
+            stroke,
+            stroke_width,
+            dash: [0.0; 8],
+            dash_count: 0,
+        }
+    }
+
+    fn dash_values(&self) -> &[f32] {
+        &self.dash[..self.dash_count as usize]
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -6812,6 +7036,19 @@ fn scene_image_by_id<'a>(images: &'a [SceneImage], stable_id: u64) -> Option<&'a
 }
 
 fn push_svg_line(out: &mut String, x1: f64, y1: f64, x2: f64, y2: f64, paint: &str, width: f64) {
+    push_svg_line_dash(out, x1, y1, x2, y2, paint, width, &[]);
+}
+
+fn push_svg_line_dash(
+    out: &mut String,
+    x1: f64,
+    y1: f64,
+    x2: f64,
+    y2: f64,
+    paint: &str,
+    width: f64,
+    dash: &[f32],
+) {
     out.push_str("<line x1=\"");
     push_num(out, x1);
     out.push_str("\" y1=\"");
@@ -6824,7 +7061,21 @@ fn push_svg_line(out: &mut String, x1: f64, y1: f64, x2: f64, y2: f64, paint: &s
     out.push_str(paint);
     out.push_str("\" stroke-width=\"");
     push_num(out, width);
+    push_svg_dasharray(out, dash);
     out.push_str("\"/>");
+}
+
+fn push_svg_dasharray(out: &mut String, dash: &[f32]) {
+    if dash.is_empty() {
+        return;
+    }
+    out.push_str("\" stroke-dasharray=\"");
+    for (index, value) in dash.iter().enumerate() {
+        if index > 0 {
+            out.push(',');
+        }
+        push_num(out, f64::from(*value));
+    }
 }
 
 fn push_polar_sector_path(out: &mut String, polar: &PolarSceneState, outer: f64, inner: f64) {
@@ -7088,11 +7339,11 @@ impl SceneDocument {
                 callout.start[1],
             )?;
             let style_ref = self.styles.len();
-            self.styles.push(EncodedStyle {
-                fill: callout.rgba,
-                stroke: callout.rgba,
-                stroke_width: callout.width,
-            });
+            self.styles.push(EncodedStyle::solid(
+                callout.rgba,
+                callout.rgba,
+                callout.width,
+            ));
             let record = |kind, coordinates| EncodedRecord {
                 kind,
                 visible: true,
@@ -7173,11 +7424,7 @@ impl SceneDocument {
             if style_ref >= MAX_SCENE_STYLES {
                 return Err(SceneError::Limit);
             }
-            self.styles.push(EncodedStyle {
-                fill: rgba,
-                stroke: rgba,
-                stroke_width: arrow.width,
-            });
+            self.styles.push(EncodedStyle::solid(rgba, rgba, arrow.width));
             let record = |kind, coordinates| EncodedRecord {
                 kind,
                 visible: true,
@@ -7404,7 +7651,7 @@ impl SceneDocument {
             .ok_or(SceneError::Limit)?;
         let (chrome, text, legend, colorbar, labels, label_backgrounds, total) =
             read_chrome_trailer(bytes, body)?;
-        let (xypl, xyim) = scene_sidecars_after_chrome(bytes, total)?;
+        let (xypl, xyim, xyds) = scene_sidecars_after_chrome(bytes, total)?;
         let viewport_width = f64_at(32);
         let viewport_height = f64_at(40);
         let left = f64_at(48);
@@ -7534,15 +7781,16 @@ impl SceneDocument {
             if !stroke_width.is_finite() || stroke_width < 0.0 {
                 return Err(SceneError::NonFinite);
             }
-            styles.push(EncodedStyle {
-                fill: bytes[offset..offset + 4].try_into().expect("bounded style"),
-                stroke: bytes[offset + 4..offset + 8]
+            styles.push(EncodedStyle::solid(
+                bytes[offset..offset + 4].try_into().expect("bounded style"),
+                bytes[offset + 4..offset + 8]
                     .try_into()
                     .expect("bounded style"),
                 stroke_width,
-            });
+            ));
             offset += SCENE_STYLE_RECORD_BYTES;
         }
+        apply_style_dashes(&mut styles, &parse_xyds(xyds)?)?;
         if legend.as_ref().is_some_and(|value| {
             value.entries.iter().any(|entry| {
                 entry.style_ref >= styles.len()
@@ -7625,7 +7873,9 @@ impl SceneDocument {
             if visible {
                 let record_capacity = match kind {
                     SceneRecordKind::Scatter => 26,
-                    SceneRecordKind::Polyline => 27,
+                    SceneRecordKind::Polyline => {
+                        27 + styles[style_ref].dash_count as usize * 4
+                    }
                     SceneRecordKind::Rect => {
                         41 + if styles[style_ref].stroke_width > 0.0 {
                             51
@@ -7875,7 +8125,7 @@ impl SceneDocument {
             let style = self.styles[entry.style_ref];
             let swatch_y = row_y - legend.font_size * 0.35;
             match entry.kind {
-                SceneRecordKind::Polyline => push_svg_line(
+                SceneRecordKind::Polyline => push_svg_line_dash(
                     out,
                     x + 8.0,
                     swatch_y,
@@ -7883,6 +8133,7 @@ impl SceneDocument {
                     swatch_y,
                     &rgba_css(style.stroke),
                     style.stroke_width.max(1.0),
+                    style.dash_values(),
                 ),
                 SceneRecordKind::Scatter => {
                     let symbol = ScatterSymbol::from_code(entry.symbol);
@@ -8734,6 +8985,7 @@ impl SceneDocument {
                     push_paint(&mut out, "stroke", style.stroke, None);
                     out.push_str(" stroke-width=\"");
                     push_num(&mut out, style.stroke_width);
+                    push_svg_dasharray(&mut out, style.dash_values());
                     out.push_str("\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>");
                 }
             }
@@ -9537,12 +9789,13 @@ impl SceneDocument {
             let style = self.styles[entry.style_ref];
             let swatch_y = row_y - legend.font_size * 0.35;
             match entry.kind {
-                SceneRecordKind::Polyline => push_raster_stroke(
+                SceneRecordKind::Polyline => push_raster_stroke_dash(
                     out,
                     [(x + 8.0, swatch_y), (x + 28.0, swatch_y)],
                     style.stroke_width.max(1.0),
                     style.stroke,
                     scale,
+                    style.dash_values(),
                 )?,
                 SceneRecordKind::Scatter => {
                     let geometry = MarkerGeometry::new(
@@ -9860,7 +10113,7 @@ impl SceneDocument {
                         push_raster_f32(out, style.stroke_width, scale)?;
                         out.extend_from_slice(&style.stroke);
                         out.push(0);
-                        out.extend_from_slice(&0u32.to_le_bytes());
+                        push_raster_dash(out, style.dash_values(), scale)?;
                         out.push(1);
                     }
                 }
@@ -11489,22 +11742,109 @@ mod tests {
     }
 
     #[test]
-    fn split_scene_extras_accepts_xypl_xyhp_and_xyex() {
-        assert_eq!(split_scene_extras(&[]), Some((&[][..], &[][..])));
+    fn split_scene_extras_accepts_xypl_xyhp_xyex_and_xyds() {
+        assert_eq!(split_scene_extras(&[]), Some((&[][..], &[][..], &[][..])));
         let xyhp = xyhp_rgba(1, 1, 1, &[1, 2, 3, 4]);
-        let (polar, paint) = split_scene_extras(&xyhp).unwrap();
+        let (polar, paint, dash) = split_scene_extras(&xyhp).unwrap();
         assert!(polar.is_empty());
         assert_eq!(paint, xyhp.as_slice());
+        assert!(dash.is_empty());
         let mut extras = Vec::new();
         extras.extend_from_slice(b"XYEX");
         extras.extend_from_slice(&1u32.to_le_bytes());
         extras.extend_from_slice(&0u32.to_le_bytes());
         extras.extend_from_slice(&(xyhp.len() as u32).to_le_bytes());
         extras.extend_from_slice(&xyhp);
-        let (polar, paint) = split_scene_extras(&extras).unwrap();
+        let (polar, paint, dash) = split_scene_extras(&extras).unwrap();
         assert!(polar.is_empty());
         assert_eq!(paint, xyhp.as_slice());
+        assert!(dash.is_empty());
+        let xyds = encode_xyds(&[StyleDash {
+            style_ref: 0,
+            count: 2,
+            values: [6.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        }])
+        .unwrap();
+        let (polar, paint, dash) = split_scene_extras(&xyds).unwrap();
+        assert!(polar.is_empty() && paint.is_empty());
+        assert_eq!(dash, xyds.as_slice());
+        let mut extras_v2 = Vec::new();
+        extras_v2.extend_from_slice(b"XYEX");
+        extras_v2.extend_from_slice(&2u32.to_le_bytes());
+        extras_v2.extend_from_slice(&0u32.to_le_bytes());
+        extras_v2.extend_from_slice(&0u32.to_le_bytes());
+        extras_v2.extend_from_slice(&(xyds.len() as u32).to_le_bytes());
+        extras_v2.extend_from_slice(&xyds);
+        let (polar, paint, dash) = split_scene_extras(&extras_v2).unwrap();
+        assert!(polar.is_empty() && paint.is_empty());
+        assert_eq!(dash, xyds.as_slice());
         assert!(split_scene_extras(b"nope").is_none());
+    }
+
+    #[test]
+    fn constant_dash_sidecar_reaches_svg_and_raster() {
+        let layout = PlotLayout::new(240.0, 160.0, 20.0, 20.0, 20.0, 20.0).unwrap();
+        let x_scale = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 20.0, 220.0, 1.0, false).unwrap();
+        let y_scale = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 140.0, 20.0, 1.0, false).unwrap();
+        let xyds = encode_xyds(&[StyleDash {
+            style_ref: 0,
+            count: 2,
+            values: [6.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        }])
+        .unwrap();
+        let encoded = SceneBatch::new(
+            layout,
+            1,
+            2,
+            x_scale,
+            y_scale,
+            &[SceneRecordKind::Polyline as u8, SceneRecordKind::Polyline as u8],
+            &[11, 11],
+            &[0, 0],
+            &[0, 0, 0, 0],
+            &[37, 99, 235, 255],
+            &[1.5],
+            &[0.0, 0.0],
+            &[0, 0],
+            &[0.0, 1.0],
+            &[0.0, 1.0],
+            &[0.0, 0.0],
+            &[0.0, 0.0],
+        )
+        .unwrap()
+        .with_dashes(&xyds)
+        .unwrap()
+        .encode();
+        assert_eq!(&encoded[4..8], &28u32.to_le_bytes());
+        assert!(encoded.windows(4).any(|window| window == b"XYDS"));
+        let document = SceneDocument::decode(&encoded).unwrap();
+        let svg = document.to_svg();
+        assert!(svg.contains("stroke-dasharray=\"6,4\""));
+        let raster = document.to_raster_commands(1.0).unwrap();
+        assert!(raster.windows(4).any(|window| window == &2u32.to_le_bytes()));
+        let undashed = SceneBatch::new(
+            layout,
+            1,
+            2,
+            x_scale,
+            y_scale,
+            &[SceneRecordKind::Polyline as u8, SceneRecordKind::Polyline as u8],
+            &[11, 11],
+            &[0, 0],
+            &[0, 0, 0, 0],
+            &[37, 99, 235, 255],
+            &[1.5],
+            &[0.0, 0.0],
+            &[0, 0],
+            &[0.0, 1.0],
+            &[0.0, 1.0],
+            &[0.0, 0.0],
+            &[0.0, 0.0],
+        )
+        .unwrap()
+        .encode();
+        assert_eq!(&undashed[4..8], &28u32.to_le_bytes());
+        assert!(!undashed.windows(4).any(|window| window == b"XYDS"));
     }
 
     #[test]
@@ -12086,7 +12426,7 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(SCENE_VERSION, 27);
+        assert_eq!(SCENE_VERSION, 28);
         assert_eq!(
             scene.to_svg(),
             "<g><circle cx=\"10\" cy=\"11\" r=\"3\" fill=\"rgb(37,99,235)\" stroke=\"rgb(0,0,0)\" stroke-width=\"2\"/><path d=\"M 15.5 21 H 24.5 M 20 16.5 V 25.5\" fill=\"none\" stroke=\"rgb(17,24,39)\" stroke-opacity=\"0.25\" stroke-width=\"1\"/></g>"

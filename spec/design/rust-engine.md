@@ -169,6 +169,8 @@ crates/
                         #   built-in scatter validation, stroke-inclusive marker
                         #   geometry/symbols, visibility, and SVG construction;
                         #   consumed identically by Python and Node (#58).
+                        #   ABI 138 / Scene v28 stores constant dash on encoded
+                        #   styles and appends an XYDS sidecar after XYIM.
     scene_pack.rs       # compact Figure→Scene row packing (ABI 109): record
                         #   kinds, stable-id splitting, expansion modes,
                         #   ribbon/triangle doubling, heatmap lattice framing,
@@ -690,5 +692,6 @@ landed; the remainder, in order:
    ABI 135 named colormap tables (`xyg_colormap_stops`, XYHP paint kind 2) ✅;
    ABI 136 product-kind packing (`xyg_scene_resolve_pack_kind` /
    `xyg_scene_pack_product`) ✅; ABI 137 / Scene v27 `DensityBlit=10` Image
-   blit + XYIM sidecar (`scene.rs`) ✅.
+   blit + XYIM sidecar (`scene.rs`) ✅; ABI 138 / Scene v28 XYDS constant dash
+   (`scene.rs`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

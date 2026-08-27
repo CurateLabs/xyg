@@ -17,7 +17,7 @@ def test_polar_scatter_figure_scene_succeeds_version_26() -> None:
     figure.scatter([0.0], [1.0], color="#3987e5", size=8)
     scene = figure_scene(figure)
     assert scene[:4] == b"XYGS"
-    assert scene[4:8] == (27).to_bytes(4, "little")
+    assert scene[4:8] == (28).to_bytes(4, "little")
     assert scene[-92:-88] == b"XYPL"
 
 
@@ -52,12 +52,12 @@ def test_polar_line_and_area_are_scene_eligible() -> None:
     line = Figure(width=400, height=400, coords="polar")
     line.line([0.0, math.pi / 2], [0.5, 1.0], color="#3987e5")
     line_scene = figure_scene(line)
-    assert line_scene[4:8] == (27).to_bytes(4, "little")
+    assert line_scene[4:8] == (28).to_bytes(4, "little")
     assert line_scene[-92:-88] == b"XYPL"
     area = Figure(width=400, height=400, coords="polar")
     area.area([0.0, math.pi / 2, math.pi], [0.4, 0.8, 0.6], color="#22c55e")
     area_scene = figure_scene(area)
-    assert area_scene[4:8] == (27).to_bytes(4, "little")
+    assert area_scene[4:8] == (28).to_bytes(4, "little")
     svg = _native.scene_svg(area_scene)
     assert 'data-xy-grid="ring"' in svg or 'data-xy-frame="polar"' in svg
 
@@ -69,7 +69,7 @@ def test_polar_bar_and_column_are_scene_eligible() -> None:
     figure.bar([0.0, 1.0], [0.5, 0.8], color="#3987e5")
     scene = figure_scene(figure)
     assert scene[:4] == b"XYGS"
-    assert scene[4:8] == (27).to_bytes(4, "little")
+    assert scene[4:8] == (28).to_bytes(4, "little")
     assert scene[-92:-88] == b"XYPL"
     svg = _native.scene_svg(scene)
     assert "<path" in svg and 'd="M' in svg
@@ -85,7 +85,7 @@ def test_polar_bar_and_column_are_scene_eligible() -> None:
     column.axis_options["y"]["domain"] = (0.0, 1.0)
     column.column([0.0, math.pi / 2], [0.4, 0.9], color="#22c55e")
     column_scene = figure_scene(column)
-    assert column_scene[4:8] == (27).to_bytes(4, "little")
+    assert column_scene[4:8] == (28).to_bytes(4, "little")
     column_svg = _native.scene_svg(column_scene)
     assert "<path" in column_svg and 'd="M' in column_svg
     assert "<rect x=" not in column_svg
@@ -97,7 +97,7 @@ def test_polar_errorbar_is_scene_eligible() -> None:
     figure.axis_options["y"]["domain"] = (0.0, 1.0)
     figure.errorbar([0.0, math.pi / 2], [0.5, 0.8], yerr=0.1, cap_size=0.0, color="#3987e5")
     scene = figure_scene(figure)
-    assert scene[4:8] == (27).to_bytes(4, "little")
+    assert scene[4:8] == (28).to_bytes(4, "little")
     svg = _native.scene_svg(scene)
     assert "<path" in svg or "<line" in svg
     assert public_static_export(figure, "svg") is not None
@@ -110,7 +110,7 @@ def test_polar_heatmap_is_scene_eligible() -> None:
     figure.heatmap([[1.0, 2.0], [3.0, 4.0]])
     scene = figure_scene(figure)
     assert scene[:4] == b"XYGS"
-    assert scene[4:8] == (27).to_bytes(4, "little")
+    assert scene[4:8] == (28).to_bytes(4, "little")
     assert scene[-92:-88] == b"XYPL"
     svg = _native.scene_svg(scene)
     assert "<path" in svg and 'd="M' in svg
@@ -134,7 +134,7 @@ def test_polar_truecolor_heatmap_is_scene_eligible() -> None:
         ]
     )
     scene = figure_scene(figure)
-    assert scene[4:8] == (27).to_bytes(4, "little")
+    assert scene[4:8] == (28).to_bytes(4, "little")
     assert scene[-92:-88] == b"XYPL"
     svg = _native.scene_svg(scene)
     assert "<path" in svg and 'd="M' in svg
@@ -155,7 +155,7 @@ def test_polar_contour_is_scene_eligible() -> None:
     figure.contour([[1.0, 2.0], [3.0, 4.0]], levels=2, color="#3987e5")
     scene = figure_scene(figure)
     assert scene[:4] == b"XYGS"
-    assert scene[4:8] == (27).to_bytes(4, "little")
+    assert scene[4:8] == (28).to_bytes(4, "little")
     assert scene[-92:-88] == b"XYPL"
     svg = _native.scene_svg(scene)
     assert "<polyline" in svg or "<path" in svg
@@ -183,7 +183,7 @@ def test_cartesian_hidden_chrome_is_not_inferred_as_polar() -> None:
             "label_color": "#00000000",
         }
     scene = figure_scene(figure)
-    assert scene[4:8] == (27).to_bytes(4, "little")
+    assert scene[4:8] == (28).to_bytes(4, "little")
     assert scene[-4:] != b"XYPL"
     svg = _native.scene_svg(scene)
     assert 'data-xy-grid="ring"' not in svg

@@ -1427,7 +1427,10 @@ per-cell literal Rect fills. ABI 135 named colormap tables live in Rust
 kinds onto compact pack kinds so hosts no longer dispatch pack-kind locally.
 ABI 137 / Scene v27 compiles Cartesian constant-style density scatter as one
 Image blit (`DensityBlit` + XYHP kind 3 + XYIM) instead of a Rect lattice;
-polar density stays compatibility.
+polar density stays compatibility. ABI 138 / Scene v28 compiles constant dash
+polylines as an XYDS sidecar (raw XYDS extras or XYEX v2) so SVG/raster emit
+`stroke-dasharray`; curve, non-round linecap, and authored markers stay
+compatibility.
 Irregular
 spacing, and LOD stay compatibility.
 

@@ -22,7 +22,7 @@ from xyg import _native, _scene_v3, kernels
 from xyg._figure import Figure
 
 COUNTS = (100, 10_000, 100_000, 1_000_000)
-SCENE_VERSION = 27
+SCENE_VERSION = 28
 _FINAL_SCENE_CHUNKS = (b"XYLG", b"XYCB", b"XYLB")
 
 # One shared, declarative Cartesian chrome workload. The Node parity test reads

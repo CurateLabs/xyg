@@ -35,14 +35,14 @@ def test_hosted_evidence_extract_has_the_four_size_ladders() -> None:
 def test_public_hexbin_goldens_are_checked_in_and_mean_shares_sum() -> None:
     fixture = json.loads(FIXTURE.read_text())
     hexbin = fixture["public_hexbin_sha256"]
-    assert hexbin["count"] == "018344c76c410bcc9df0ac80d2f68a048aad29708725d7af1810cb178ef4f077"
+    assert hexbin["count"] == "e13ea9a03480bb9c578774bc041e9fe85c7c4761ab292eb8c23c7d330ea77266"
     assert hexbin["mean"] == hexbin["sum"]
-    assert hexbin["mean"] == "3486dcc37a0805de3ba53e2804facc308d9bfdd1e927a9eba80d9d71e1cf9042"
+    assert hexbin["mean"] == "c6eb4e309365643b509ab73e11bb42fa4df68a8c2bfcc784f90b55c4f7c0de7d"
 
 
 def test_public_heatmap_golden_is_checked_in() -> None:
     fixture = json.loads(FIXTURE.read_text())
     assert (
         fixture["public_heatmap_sha256"]
-        == "e5c6069f1d8ca82eeca2eb12eac60e968f0fb87467aa6492147af9e1ba9f270f"
+        == "8cfe11fab875cd58e0eaa9a8c03896310ebd2a5bc2eadcda2213f08b972ea4f3"
     )

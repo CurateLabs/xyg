@@ -214,7 +214,7 @@ def _authored_tick_labels() -> Figure:
 def test_authored_cartesian_tick_labels_are_a_supported_scene_v23_slice() -> None:
     figure = _authored_tick_labels()
     encoded = figure_scene(figure)
-    assert encoded[4:8] == (27).to_bytes(4, "little")
+    assert encoded[4:8] == (28).to_bytes(4, "little")
     assert b"XYTL" in encoded
 
 
@@ -235,7 +235,7 @@ def test_primary_numeric_axis_format_routes_through_rust_scene(
     figure.set_axis("y", type_=kind, domain=domain, constant=constant, format="$,.0f USD")
     assert scene_export_support_reason(figure) is None
     scene = figure_scene(figure)
-    assert scene[4:8] == (27).to_bytes(4, "little")
+    assert scene[4:8] == (28).to_bytes(4, "little")
     assert b"XYTL" in scene
     svg = _native.scene_svg(scene)
     if kind == "log":
@@ -437,7 +437,6 @@ UNSUPPORTED: dict[str, tuple[Callable[[], Figure], str]] = {
     "browser_css": (_browser_css, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS"),
     "colorbar": (_colorbar, "XYG_SCENE_UNSUPPORTED_COLORBAR"),
     "extra_legend": (_extra_legend, "XYG_SCENE_UNSUPPORTED_EXTRA_LEGEND"),
-    "dashed_line": (_dashed_line, "dashed"),
 }
 
 
@@ -446,6 +445,15 @@ def test_supported_figure_has_no_reason() -> None:
     # Compiler accepts it, so the predicate must report None (route via Scene).
     figure_scene(figure)
     assert scene_export_support_reason(figure) is None
+
+
+def test_constant_dash_line_is_public_scene_supported() -> None:
+    figure = _dashed_line()
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"stroke-dasharray" in exported
+    assert b"XYDS" in figure_scene(figure)
 
 
 def test_polar_scatter_is_scene_supported() -> None:
@@ -1372,7 +1380,6 @@ def test_public_router_routes_literal_disconnected_segments_through_all_static_c
 @pytest.mark.parametrize(
     "mutate,reason",
     [
-        (lambda figure: figure.traces[0].style.__setitem__("dash", "4,2"), "PUBLIC_STYLE"),
         (lambda figure: figure.traces[0].style.__setitem__("role", "custom"), "PUBLIC_STYLE"),
         (lambda figure: figure.traces[0].x0.values.__setitem__(0, np.nan), "missing-data"),
     ],
@@ -1389,6 +1396,15 @@ def test_public_disconnected_segment_router_fails_closed(
         assert result is not None
     else:
         assert result is not None and reason in result
+
+
+def test_public_disconnected_segments_admit_constant_dash() -> None:
+    figure = _public_disconnected_segments()
+    figure.traces[0].style["dash"] = "4,2"
+    assert scene_export_support_reason(figure) is None
+    scene = figure_scene(figure)
+    assert b"XYDS" in scene
+    assert "stroke-dasharray" in _public_svg(figure)
 
 
 @pytest.mark.parametrize(

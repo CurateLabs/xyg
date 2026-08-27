@@ -326,7 +326,7 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "stroke",
             "stroke_width",
         ],
-        KIND_LINE => &["color", "opacity", "width", "step"],
+        KIND_LINE => &["color", "opacity", "width", "step", "dash"],
         KIND_BAR | KIND_COLUMN => &[
             "color",
             "opacity",
@@ -363,7 +363,7 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
         | KIND_SEGMENTS
         | KIND_ERRORBAR
         | KIND_STEM
-        | KIND_CONTOUR => &["color", "opacity", "width", "role"],
+        | KIND_CONTOUR => &["color", "opacity", "width", "role", "dash"],
         KIND_AREA => &[
             "color",
             "opacity",
@@ -374,6 +374,7 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "fill",
             "fill_opacity",
             "stroke_opacity",
+            "dash",
         ],
         KIND_ERROR_BAND => &[
             "color",
@@ -834,7 +835,7 @@ const FIGURE_TRACE_AXIS_REASON: &str = "Scene v12 currently supports only the pr
 const FIGURE_HIDDEN_REASON: &str = "Scene v12 does not yet encode hidden or per-item styled marks";
 const FIGURE_DENSITY_REASON: &str = "Scene v12 does not yet encode density-tier scatter";
 const FIGURE_DASHED_REASON: &str =
-    "Scene v12 does not yet encode dashed, curved, or authored markers";
+    "Scene v12 does not yet encode curved, non-round, or authored markers";
 const FIGURE_JOINED_FILL_REASON: &str = "Scene v12 does not yet encode joined triangle-mesh fills";
 const FIGURE_HEX_REDUCE_REASON: &str = "Scene v12 does not yet encode custom hexbin reducers";
 const FIGURE_HEATMAP_REASON: &str = "Scene v12 does not yet encode heatmap colormap";

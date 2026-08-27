@@ -63,7 +63,13 @@ _XYFS_TRACE_JOINED_FILL = 1 << 8
 _XYFS_TRACE_CUSTOM_HEX_REDUCE = 1 << 9
 _XYFS_TRACE_HEATMAP_COLORMAP = 1 << 10
 _XYFS_TRACE_NON_CSS_FILL = 1 << 11
-_XYFS_DASH_KEYS = ("dash", "curve", "linecap", "marker_path", "marker_glyph")
+_XYFS_CURVE_MARKER_KEYS = ("curve", "marker_path", "marker_glyph")
+_SCENE_DASH_PRESETS: dict[str, list[float] | None] = {
+    "solid": None,
+    "dashed": [6.0, 4.0],
+    "dotted": [1.5, 3.0],
+    "dashdot": [6.0, 3.0, 1.5, 3.0],
+}
 
 # Each unjoined triangle or hex cell is one PolyFill group in the Rust browser
 # painter. Keep the public route inside its canonical group budget; larger
@@ -909,7 +915,13 @@ def _figure_trace_support_flags(trace: Any, *, polar: bool = False) -> tuple[int
         flags |= _XYFS_TRACE_HIDDEN_OR_PER_ITEM
     if kind == "scatter" and trace.use_density() and polar:
         flags |= _XYFS_TRACE_DENSITY
-    if any(key in style for key in _XYFS_DASH_KEYS):
+    if any(style.get(key) is not None for key in _XYFS_CURVE_MARKER_KEYS):
+        flags |= _XYFS_TRACE_DASHED_MARKERS
+    linecap = style.get("linecap")
+    if linecap is not None and str(linecap) != "round":
+        flags |= _XYFS_TRACE_DASHED_MARKERS
+    dash = style.get("dash")
+    if dash is not None and _parse_scene_dash(dash) is False:
         flags |= _XYFS_TRACE_DASHED_MARKERS
     if kind in _RECT_KINDS or kind in _HEATMAP_KINDS:
         flags |= _rect_extra_flags(style)
@@ -1160,15 +1172,60 @@ def _pack_xyhp(planes: list[bytes]) -> bytes:
     return struct.pack("<4sIII", b"XYHP", 1, len(planes), 0) + b"".join(planes)
 
 
-def _pack_scene_extras(polar: bytes, paint: bytes) -> bytes:
-    """Pack polar XYPL and/or XYHP paint onto the Scene extras pointer."""
-    if not polar and not paint:
+def _parse_scene_dash(value: Any) -> list[float] | None | bool:
+    """Return a 2–8 length pattern, None for solid, False if unusable on Scene."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        preset = _SCENE_DASH_PRESETS.get(value.strip().lower())
+        if value.strip().lower() in _SCENE_DASH_PRESETS:
+            return preset
+        parts = [part.strip() for part in value.split(",") if part.strip()]
+        try:
+            lengths = [float(part) for part in parts]
+        except ValueError:
+            return False
+    elif isinstance(value, (list, tuple)):
+        try:
+            lengths = [float(part) for part in value]
+        except (TypeError, ValueError):
+            return False
+    else:
+        return False
+    if not 2 <= len(lengths) <= 8:
+        return False
+    if any(not np.isfinite(length) or length <= 0.0 for length in lengths):
+        return False
+    return lengths
+
+
+def _pack_xyds(dashes: list[list[float] | None]) -> bytes:
+    """Pack constant dash patterns keyed by host style_ref as XYDS v1."""
+    entries = [(index, pattern) for index, pattern in enumerate(dashes) if pattern]
+    if not entries:
         return b""
-    if polar and not paint:
+    out = bytearray(struct.pack("<4sIII", b"XYDS", 1, len(entries), 0))
+    for style_ref, pattern in entries:
+        out.extend(struct.pack("<II", int(style_ref), len(pattern)))
+        out.extend(struct.pack(f"<{len(pattern)}f", *pattern))
+    return bytes(out)
+
+
+def _pack_scene_extras(polar: bytes, paint: bytes, dash: bytes = b"") -> bytes:
+    """Pack polar XYPL, XYHP paint, and/or XYDS dash onto the extras pointer."""
+    if not polar and not paint and not dash:
+        return b""
+    if polar and not paint and not dash:
         return polar
-    if paint and not polar:
+    if paint and not polar and not dash:
         return paint
-    return struct.pack("<4sIII", b"XYEX", 1, len(polar), len(paint)) + polar + paint
+    if dash and not polar and not paint:
+        return dash
+    if polar and paint and not dash:
+        return struct.pack("<4sIII", b"XYEX", 1, len(polar), len(paint)) + polar + paint
+    return (
+        struct.pack("<4sIIII", b"XYEX", 2, len(polar), len(paint), len(dash)) + polar + paint + dash
+    )
 
 
 def figure_scene(
@@ -1196,6 +1253,7 @@ def figure_scene(
     stable_ids: list[int] = []
     style_refs: list[int] = []
     styles: list[tuple[tuple[int, ...], tuple[int, ...], float]] = []
+    dashes: list[list[float] | None] = []
     diameters: list[float] = []
     symbols: list[int] = []
     coordinates: list[list[float]] = [[], [], [], []]
@@ -1225,6 +1283,8 @@ def figure_scene(
             trace, opacity, fill_opacity, stroke_opacity, line_opacity, symbol_name
         )
         styles.append((fill, stroke, stroke_width))
+        parsed_dash = _parse_scene_dash(style.get("dash"))
+        dashes.append(None if parsed_dash is False else parsed_dash)
         style_ref = len(styles) - 1
         diameter = (
             float(trace.size_ch.constant)
@@ -1533,6 +1593,7 @@ def figure_scene(
             }
         if kind == "rule":
             allowed.add("width")
+            allowed.add("dash")
         elif kind == "marker":
             allowed |= {"stroke_color", "stroke_width"}
         unsupported_style = sorted(
@@ -1560,6 +1621,10 @@ def figure_scene(
         if not np.isfinite(width_value) or width_value < 0 or (kind == "rule" and width_value == 0):
             raise ValueError(f"Scene v12 {kind} annotation width must be finite and nonnegative")
         styles.append((fill, stroke, width_value))
+        parsed_dash = _parse_scene_dash(style.get("dash")) if kind == "rule" else None
+        if parsed_dash is False:
+            raise UnsupportedSceneV3(f"Scene v12 {kind} annotation dash is not a constant pattern")
+        dashes.append(parsed_dash)
         style_ref = len(styles) - 1
         tag = (
             4
@@ -1956,7 +2021,9 @@ def figure_scene(
         or wrapped_annotations
         else b"",
         polar_input=_pack_scene_extras(
-            _pack_polar_scene_input(figure), _pack_xyhp(heatmap_paint_planes)
+            _pack_polar_scene_input(figure),
+            _pack_xyhp(heatmap_paint_planes),
+            _pack_xyds(dashes),
         ),
     )
 

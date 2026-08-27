@@ -3730,8 +3730,8 @@ def scene_batch_encode(
         raise TypeError("polar_input must be bytes")
     if polar_input:
         magic = bytes(polar_input[:4])
-        if magic not in {b"XYPL", b"XYHP", b"XYEX"}:
-            raise ValueError("polar_input must be empty, XYPL, XYHP, or XYEX")
+        if magic not in {b"XYPL", b"XYHP", b"XYEX", b"XYDS"}:
+            raise ValueError("polar_input must be empty, XYPL, XYHP, XYEX, or XYDS")
         if magic == b"XYPL" and len(polar_input) != 92:
             raise ValueError("polar_input must be empty or a 92-byte XYPL v1 envelope")
     polar_array = np.frombuffer(bytes(polar_input), dtype=np.uint8)
