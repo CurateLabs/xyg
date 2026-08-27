@@ -41,6 +41,23 @@ pub const MAX_SCENE_LABEL_TEXT_BYTES: usize = 8_192;
 pub const MAX_AUTHORED_TEXT_ANNOTATIONS: usize = 128;
 /// The bounded straight-arrow ingress shares the annotation resource ceiling.
 pub const MAX_AUTHORED_STRAIGHT_ARROWS: usize = 128;
+/// Worst-case XYAD envelope the ABI 112 packer may emit (v3 header plus five
+/// section headers, maximum row tables, and the shared text budgets).
+pub const MAX_SCENE_ANNOTATION_INPUT_BYTES: usize = 28
+    + 12
+    + MAX_AUTHORED_TEXT_ANNOTATIONS * 40
+    + MAX_SCENE_TEXT_BYTES
+    + 12
+    + MAX_AUTHORED_TEXT_ANNOTATIONS * 32
+    + MAX_SCENE_TEXT_BYTES
+    + 12
+    + MAX_AUTHORED_STRAIGHT_ARROWS * 60
+    + 12
+    + MAX_AUTHORED_TEXT_ANNOTATIONS * 76
+    + MAX_SCENE_LABEL_TEXT_BYTES
+    + 12
+    + MAX_AUTHORED_TEXT_ANNOTATIONS * 68
+    + MAX_SCENE_LABEL_TEXT_BYTES;
 /// Literal color tables are deliberately small so every renderer can consume
 /// exactly the same resolved Scene decoration without a host colormap registry.
 pub const MAX_SCENE_COLORBAR_STOPS: usize = 16;

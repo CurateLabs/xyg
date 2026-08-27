@@ -189,6 +189,8 @@ Figure→Scene row packing the same way: Python and Node call
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
 `xyg_scene_pack_colorbar` with domain/stops/ticks/title.
+ABI 112 makes primary annotation framing the same way: Python and Node call
+`xyg_scene_pack_annotations` with typed row meta plus concatenated labels.
 Polar heatmap, metric colormaps, truecolor RGBA, LOD beyond
 10,000 cells, and rich style exceptions remain compatibility routes.
 ABI 99 gives both composition hosts one compact grouped box ingress. Hosts pack
@@ -266,7 +268,10 @@ lattice framing, and finite-coordinate rejection cannot drift. ABI 110
 text offsets, and bounded-text rejection cannot drift. ABI 111
 `xyg_scene_pack_colorbar` owns primary XYCB v2 framing so header layout,
 stop/tick tables, domain-span checks, and bounded-text rejection cannot
-drift. Explicit Scene diagnostics and consumers
+drift. ABI 112
+`xyg_scene_pack_annotations` owns primary XYAD framing so XYAT/XYAL/XYAR/
+XYAC/XYAW table layout, version selection, the XYAD envelope, and
+bounded-text rejection cannot drift. Explicit Scene diagnostics and consumers
 remain available through `scene_export_support_reason` /
 `sceneExportSupportReason`, `figure_scene`, `figure_svg`, and
 `figure_raster_commands`. Python SVG/raster and pyplot automatic tick requests

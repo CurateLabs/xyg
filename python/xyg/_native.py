@@ -35,6 +35,23 @@ _MAX_SCENE_STYLES = 65_536
 _MAX_SCENE_TEXT_BYTES = 4_096
 MAX_SCENE_LEGEND_INPUT_BYTES = 48 + 128 * 24 + 16_384
 MAX_SCENE_COLORBAR_INPUT_BYTES = 56 + 16 * 12 + 32 * 8 + 4_096
+MAX_SCENE_ANNOTATION_INPUT_BYTES = (
+    28
+    + 12
+    + 128 * 40
+    + 4_096
+    + 12
+    + 128 * 32
+    + 4_096
+    + 12
+    + 128 * 60
+    + 12
+    + 128 * 76
+    + 8_192
+    + 12
+    + 128 * 68
+    + 8_192
+)
 
 
 class _GraphProjectionDescriptor(ctypes.Structure):
@@ -2102,6 +2119,90 @@ def scene_pack_colorbar(
         raise ValueError("Scene v19 colorbar ticks are limited to 32 finite ordered values")
     if code < 0:
         raise ValueError("invalid scene colorbar packing")
+    return bytes(out[:code])
+
+
+def scene_pack_annotations(
+    *,
+    text_meta: bytes,
+    text_lens: list[int],
+    texts: bytes,
+    attached_meta: bytes,
+    attached_lens: list[int],
+    attached_texts: bytes,
+    arrow_meta: bytes,
+    callout_meta: bytes,
+    callout_lens: list[int],
+    callout_texts: bytes,
+    wrapped_meta: bytes,
+    wrapped_lens: list[int],
+    wrapped_texts: bytes,
+) -> bytes:
+    """Frame primary Scene annotations as XYAD bytes."""
+
+    def as_u8(payload: bytes) -> npt.NDArray[np.uint8]:
+        return np.frombuffer(payload, dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+
+    def as_u32(values: list[int]) -> npt.NDArray[np.uint32]:
+        return np.ascontiguousarray(np.asarray(values, dtype="<u4"))
+
+    text_meta_arr = as_u8(text_meta)
+    texts_arr = as_u8(texts)
+    text_lens_arr = as_u32(text_lens)
+    attached_meta_arr = as_u8(attached_meta)
+    attached_texts_arr = as_u8(attached_texts)
+    attached_lens_arr = as_u32(attached_lens)
+    arrow_meta_arr = as_u8(arrow_meta)
+    callout_meta_arr = as_u8(callout_meta)
+    callout_texts_arr = as_u8(callout_texts)
+    callout_lens_arr = as_u32(callout_lens)
+    wrapped_meta_arr = as_u8(wrapped_meta)
+    wrapped_texts_arr = as_u8(wrapped_texts)
+    wrapped_lens_arr = as_u32(wrapped_lens)
+    out = np.zeros(MAX_SCENE_ANNOTATION_INPUT_BYTES, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_pack_annotations(
+            len(text_lens),
+            _ptr_u8(text_meta_arr) if len(text_meta_arr) else 0,
+            len(text_meta_arr),
+            text_lens_arr.ctypes.data if len(text_lens) else 0,
+            _ptr_u8(texts_arr) if len(texts_arr) else 0,
+            len(texts_arr),
+            len(attached_lens),
+            _ptr_u8(attached_meta_arr) if len(attached_meta_arr) else 0,
+            len(attached_meta_arr),
+            attached_lens_arr.ctypes.data if len(attached_lens) else 0,
+            _ptr_u8(attached_texts_arr) if len(attached_texts_arr) else 0,
+            len(attached_texts_arr),
+            len(arrow_meta) // 60,
+            _ptr_u8(arrow_meta_arr) if len(arrow_meta_arr) else 0,
+            len(arrow_meta_arr),
+            len(callout_lens),
+            _ptr_u8(callout_meta_arr) if len(callout_meta_arr) else 0,
+            len(callout_meta_arr),
+            callout_lens_arr.ctypes.data if len(callout_lens) else 0,
+            _ptr_u8(callout_texts_arr) if len(callout_texts_arr) else 0,
+            len(callout_texts_arr),
+            len(wrapped_lens),
+            _ptr_u8(wrapped_meta_arr) if len(wrapped_meta_arr) else 0,
+            len(wrapped_meta_arr),
+            wrapped_lens_arr.ctypes.data if len(wrapped_lens) else 0,
+            _ptr_u8(wrapped_texts_arr) if len(wrapped_texts_arr) else 0,
+            len(wrapped_texts_arr),
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if code == -5:
+        raise ValueError("Scene annotation geometry must be finite")
+    if code == -6:
+        raise ValueError("Scene annotations require nonempty NUL-free text")
+    if code == -7:
+        raise ValueError("Scene v23 label border requires label_background")
+    if code == -3:
+        raise ValueError("Scene annotations are limited to 128 entries")
+    if code < 0:
+        raise ValueError("invalid scene annotation packing")
     return bytes(out[:code])
 
 

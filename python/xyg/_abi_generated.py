@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 111
-SIGNATURE_SHA256 = "1285b288d35ef175cf79d735858cd1febea73b99eb94dfd11478b66eb4c599ac"
+ABI_VERSION = 112
+SIGNATURE_SHA256 = "9cbf65380aa4a14eb6b62ade9ea3549b828ca538711da5853c7ed6a544ac1f10"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -474,6 +474,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_browser_painter
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_pack_annotations(uint32_t n_text, const uint8_t * text_meta, size_t text_meta_len, const uint32_t * text_lens, const uint8_t * texts, size_t texts_len, uint32_t n_attached, const uint8_t * attached_meta, size_t attached_meta_len, const uint32_t * attached_lens, const uint8_t * attached_texts, size_t attached_texts_len, uint32_t n_arrows, const uint8_t * arrow_meta, size_t arrow_meta_len, uint32_t n_callouts, const uint8_t * callout_meta, size_t callout_meta_len, const uint32_t * callout_lens, const uint8_t * callout_texts, size_t callout_texts_len, uint32_t n_wrapped, const uint8_t * wrapped_meta, size_t wrapped_meta_len, const uint32_t * wrapped_lens, const uint8_t * wrapped_texts, size_t wrapped_texts_len, uint8_t * out, size_t out_cap)
+    function = lib.xyg_scene_pack_annotations
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_scene_pack_colorbar(uint8_t flags, double lo, double hi, const uint8_t * text_rgba, const uint8_t * title, size_t title_len, uint32_t n_stops, const double * stop_values, const uint8_t * stop_rgba, size_t stop_rgba_len, uint32_t n_ticks, const double * ticks, uint8_t * out, size_t out_cap)
     function = lib.xyg_scene_pack_colorbar
     function.restype = ctypes.c_int32

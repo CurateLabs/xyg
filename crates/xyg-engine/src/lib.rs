@@ -38,6 +38,8 @@ pub mod scene_legend;
 pub use scene_legend::pack_legend;
 pub mod scene_colorbar;
 pub use scene_colorbar::pack_colorbar;
+pub mod scene_annotations;
+pub use scene_annotations::pack_annotations;
 pub mod scene_style;
 pub use scene_style::{resolve_chrome_style, resolve_mark_styles};
 pub mod stats;

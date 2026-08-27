@@ -36,6 +36,7 @@ use xyg_engine::projection;
 use xyg_engine::raster;
 use xyg_engine::sankey;
 use xyg_engine::scene;
+use xyg_engine::scene_annotations::{self, AnnotationError};
 use xyg_engine::scene_colorbar::{self, ColorbarError};
 use xyg_engine::scene_legend::{self, LegendError};
 use xyg_engine::scene_pack::{self, PackError};
@@ -105,7 +106,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 111;
+pub const ABI_VERSION: u32 = 112;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -610,6 +611,195 @@ pub unsafe extern "C" fn xyg_scene_pack_colorbar(
                 match i32::try_from(bytes.len()) {
                     Ok(count) => count,
                     Err(_) => -(ColorbarError::Limit as i32),
+                }
+            }
+            Err(error) => -(error as i32),
+        }
+    })
+}
+
+/// Frame primary Scene annotations as XYAD bytes.
+///
+/// Hosts pass compact per-family row meta plus concatenated UTF-8 labels.
+/// Rust owns XYAT/XYAL/XYAR/XYAC/XYAW table layout, version selection, the
+/// XYAD envelope, and bounded-text rejection. Returns the byte count on
+/// success, `0` when every family is empty, `-1` malformed, `-2` reserved,
+/// `-3` over the annotation budget, `-4` when `out` is too small, `-5`
+/// non-finite, `-6` empty/NUL/CR/invalid text, or `-7` duplicate ids or a
+/// border without a fill.
+///
+/// Text meta is `n_text` records of 40 bytes, attached 32, arrows 60,
+/// callouts 76, wrapped 64. Label length arrays concatenate to the matching
+/// text payload. Count-zero families may pass null pointers.
+///
+/// # Safety
+/// Non-zero lengths require readable pointers. When `out_cap` is non-zero,
+/// `out` must address that many writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_pack_annotations(
+    n_text: u32,
+    text_meta: *const u8,
+    text_meta_len: usize,
+    text_lens: *const u32,
+    texts: *const u8,
+    texts_len: usize,
+    n_attached: u32,
+    attached_meta: *const u8,
+    attached_meta_len: usize,
+    attached_lens: *const u32,
+    attached_texts: *const u8,
+    attached_texts_len: usize,
+    n_arrows: u32,
+    arrow_meta: *const u8,
+    arrow_meta_len: usize,
+    n_callouts: u32,
+    callout_meta: *const u8,
+    callout_meta_len: usize,
+    callout_lens: *const u32,
+    callout_texts: *const u8,
+    callout_texts_len: usize,
+    n_wrapped: u32,
+    wrapped_meta: *const u8,
+    wrapped_meta_len: usize,
+    wrapped_lens: *const u32,
+    wrapped_texts: *const u8,
+    wrapped_texts_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if out_cap > 0 && out.is_null() {
+        return -(AnnotationError::Length as i32);
+    }
+    ffi_guard(-(AnnotationError::Length as i32), || {
+        let bytes = |ptr: *const u8, len: usize| -> Result<&[u8], i32> {
+            if len == 0 {
+                Ok(&[])
+            } else if ptr.is_null() {
+                Err(-(AnnotationError::Length as i32))
+            } else {
+                Ok(std::slice::from_raw_parts(ptr, len))
+            }
+        };
+        let lens = |ptr: *const u32, n: usize| -> Result<&[u32], i32> {
+            if n == 0 {
+                Ok(&[])
+            } else if ptr.is_null() {
+                Err(-(AnnotationError::Length as i32))
+            } else {
+                Ok(std::slice::from_raw_parts(ptr, n))
+            }
+        };
+        let text_meta = match bytes(text_meta, text_meta_len) {
+            Ok(value) => value,
+            Err(code) => return code,
+        };
+        let text_lens = match lens(text_lens, n_text as usize) {
+            Ok(value) => value,
+            Err(code) => return code,
+        };
+        let texts = match bytes(texts, texts_len) {
+            Ok(value) => value,
+            Err(code) => return code,
+        };
+        let attached_meta = match bytes(attached_meta, attached_meta_len) {
+            Ok(value) => value,
+            Err(code) => return code,
+        };
+        let attached_lens = match lens(attached_lens, n_attached as usize) {
+            Ok(value) => value,
+            Err(code) => return code,
+        };
+        let attached_texts = match bytes(attached_texts, attached_texts_len) {
+            Ok(value) => value,
+            Err(code) => return code,
+        };
+        let arrow_meta = match bytes(arrow_meta, arrow_meta_len) {
+            Ok(value) => value,
+            Err(code) => return code,
+        };
+        let callout_meta = match bytes(callout_meta, callout_meta_len) {
+            Ok(value) => value,
+            Err(code) => return code,
+        };
+        let callout_lens = match lens(callout_lens, n_callouts as usize) {
+            Ok(value) => value,
+            Err(code) => return code,
+        };
+        let callout_texts = match bytes(callout_texts, callout_texts_len) {
+            Ok(value) => value,
+            Err(code) => return code,
+        };
+        let wrapped_meta = match bytes(wrapped_meta, wrapped_meta_len) {
+            Ok(value) => value,
+            Err(code) => return code,
+        };
+        let wrapped_lens = match lens(wrapped_lens, n_wrapped as usize) {
+            Ok(value) => value,
+            Err(code) => return code,
+        };
+        let wrapped_texts = match bytes(wrapped_texts, wrapped_texts_len) {
+            Ok(value) => value,
+            Err(code) => return code,
+        };
+        let text_rows = match scene_annotations::text_rows_from_meta(text_meta, text_lens, texts) {
+            Ok(value) => value,
+            Err(error) => return -(error as i32),
+        };
+        let attached_rows = match scene_annotations::attached_rows_from_meta(
+            attached_meta,
+            attached_lens,
+            attached_texts,
+        ) {
+            Ok(value) => value,
+            Err(error) => return -(error as i32),
+        };
+        let arrow_rows = match scene_annotations::arrow_rows_from_meta(arrow_meta) {
+            Ok(value) => value,
+            Err(error) => return -(error as i32),
+        };
+        let callout_rows = match scene_annotations::callout_rows_from_meta(
+            callout_meta,
+            callout_lens,
+            callout_texts,
+        ) {
+            Ok(value) => value,
+            Err(error) => return -(error as i32),
+        };
+        let wrapped_rows = match scene_annotations::wrapped_rows_from_meta(
+            wrapped_meta,
+            wrapped_lens,
+            wrapped_texts,
+        ) {
+            Ok(value) => value,
+            Err(error) => return -(error as i32),
+        };
+        if text_rows.len() != n_text as usize
+            || attached_rows.len() != n_attached as usize
+            || arrow_rows.len() != n_arrows as usize
+            || callout_rows.len() != n_callouts as usize
+            || wrapped_rows.len() != n_wrapped as usize
+        {
+            return -(AnnotationError::Length as i32);
+        }
+        match scene_annotations::pack_annotations(scene_annotations::AnnotationFrameInput {
+            texts: &text_rows,
+            attached: &attached_rows,
+            arrows: &arrow_rows,
+            callouts: &callout_rows,
+            wrapped: &wrapped_rows,
+        }) {
+            Ok(bytes) => {
+                if bytes.len() > out_cap {
+                    return -(AnnotationError::Output as i32);
+                }
+                if bytes.is_empty() {
+                    return 0;
+                }
+                let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                dest[..bytes.len()].copy_from_slice(&bytes);
+                match i32::try_from(bytes.len()) {
+                    Ok(count) => count,
+                    Err(_) => -(AnnotationError::Limit as i32),
                 }
             }
             Err(error) => -(error as i32),

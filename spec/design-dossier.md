@@ -1291,6 +1291,10 @@ ABI 111 moves primary Scene colorbar framing into Rust. Hosts pass domain,
 stops, ticks, title, and text RGBA; XYCB v2 header layout, stop/tick
 tables, domain-span checks, and bounded-text rejection are engine-owned
 and identical for Python and Node.
+ABI 112 moves primary Scene annotation framing into Rust. Hosts pass typed
+row meta plus concatenated labels; XYAT/XYAL/XYAR/XYAC/XYAW table layout,
+version selection, the XYAD envelope, and bounded-text rejection are
+engine-owned and identical for Python and Node.
 Constant-style Cartesian heatmap compiles a regular rows x cols lattice onto
 existing Scene Rect records; polar, colormaps, truecolor, irregular
 spacing, and LOD stay compatibility.

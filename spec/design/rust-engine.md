@@ -173,6 +173,9 @@ crates/
     scene_colorbar.rs   # primary XYCB v2 colorbar framing (ABI 111): header,
                         #   stop/tick tables, domain-span checks, and
                         #   bounded-text rejection.
+    scene_annotations.rs # primary XYAD annotation framing (ABI 112): XYAT/
+                        #   XYAL/XYAR/XYAC/XYAW tables, version selection,
+                        #   envelope concatenation, and bounded-text rejection.
     svg.rs              # screen-space coordinate serialization for the SVG path:
                         #   `poly_path` alone, folding parallel f64 x/y arrays
                         #   into one `M`/`L` path-data string with Python-matching
@@ -584,6 +587,9 @@ bounded-text rejection.
 ABI v111 adds `xyg_scene_pack_colorbar` so Python and Node share one
 primary XYCB v2 colorbar framer: header layout, stop/tick tables,
 domain-span checks, and bounded-text rejection.
+ABI v112 adds `xyg_scene_pack_annotations` so Python and Node share one
+primary XYAD annotation framer: XYAT/XYAL/XYAR/XYAC/XYAW table layout,
+version selection, envelope concatenation, and bounded-text rejection.
 
 This is not yet the complete issue `#110` store: remote ranges, browser/WASM bounded
 staging, spatially unordered data, chart-lifecycle overview/refinement wiring,

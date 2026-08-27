@@ -128,7 +128,12 @@ labels; header layout, text offsets, and bounded-text rejection cannot
 drift. ABI 111 moves primary XYCB colorbar framing into
 `crates/xyg-engine/src/scene_colorbar.rs`. Python and Node pass domain,
 stops, ticks, title, and text RGBA; header layout, stop/tick tables,
-domain-span checks, and bounded-text rejection cannot drift. Polar hexbin, custom
+domain-span checks, and bounded-text rejection cannot drift. ABI 112
+moves primary XYAD annotation framing into
+`crates/xyg-engine/src/scene_annotations.rs`. Python and Node pass typed
+row meta plus concatenated labels; XYAT/XYAL/XYAR/XYAC/XYAW table layout,
+version selection, the XYAD envelope, and bounded-text rejection cannot
+drift. Polar hexbin, custom
 `reduce_C_function`, metric colormaps, LOD over the 1,024-group painter
 budget, and rich style exceptions stay on the compatibility exporters.
 Scene 25 is unchanged. Polar heatmap, metric
@@ -165,7 +170,7 @@ listed below still exists.
 | `_svg._linear_ticks`, `_log_ticks`, `_category_ticks`, `_angular_ticks`, `_time_ticks` | `crates/xyg-engine/src/scene.rs` owns all ladders; `xyg_scene_axis_ticks` exposes them through `crates/xyg-core/src/lib.rs`; Python SVG/raster/pyplot call `_native.scene_axis_ticks` through `_svg.axis_ticks`, and Node calls `axisTicks` in `packages/xy-node/src/scene.js` | Rust Scene tick unit tests, `tests/test_scene_ir.py`, and `packages/xy-node/test/scene.test.mjs` | **removed** |
 | `_scene_v3.try_public_svg`, `try_public_png`, `try_public_pdf` | Rust `SceneDocument` owns SVG/raster/painter lowering; `Figure.to_svg` and `export._native_image` use the one `public_static_export` selector, while Node uses `sceneSvg` / `sceneRasterCommands` | `tests/test_figure_scene_v3.py`, `tests/test_scene_export_support.py`, and `scripts/bench_public_scene_routes.py` exercise the product selector and exact Rust consumers | **removed** |
 | `_svg.py`, `_raster.py`, `_scene.py` compatibility rendering | No complete Rust replacement yet for polar Scene, custom fonts/CSS/classes, continuous gradients, custom marker paths/glyphs, colormap heatmaps/hexbins, density/LOD export, and the rich style/text exceptions below | Existing polar, SVG, raster, style, export, and pyplot suites | **keep loudly** |
-| `_scene_v3.py` figure-to-record assembly | Rust owns record validation, mapping, expansion modes, layout, consumers, the ABI 105 public-export allowlists, ABI 107 mark fill/stroke defaults plus CSS→RGBA8, ABI 108 chrome style defaults, ABI 109 column packing, ABI 110 XYLG legend framing, and ABI 111 XYCB colorbar framing; remaining host work is XYEP/Scene record packing for annotation framing | Cross-host Scene bytes, `tests/test_scene_export_support.py`, `tests/test_scene_style_native.py`, and Node `sceneExportSupportReason` pin current assembly | **keep as migration debt** |
+| `_scene_v3.py` figure-to-record assembly | Rust owns record validation, mapping, expansion modes, layout, consumers, the ABI 105 public-export allowlists, ABI 107 mark fill/stroke defaults plus CSS→RGBA8, ABI 108 chrome style defaults, ABI 109 column packing, ABI 110 XYLG legend framing, ABI 111 XYCB colorbar framing, and ABI 112 XYAD annotation framing; remaining host work is XYEP/Scene record packing for feature-bit assembly | Cross-host Scene bytes, `tests/test_scene_export_support.py`, `tests/test_scene_style_native.py`, and Node `sceneExportSupportReason` pin current assembly | **keep as migration debt** |
 | `_figure.py` / `marks.py` host code | Public composition, ingest coercion, validation text, category factorization, rollback, and explicit custom-reducer/empty-input compatibility are host responsibilities; remaining geometry/statistics helpers call Rust where a replacement exists | Mark, composition, pyplot, and host-parity suites | **keep host seams** |
 | `xyg_scene_scatter_svg` Python/Node adapters | Whole-Scene owns the bounded product route, but the version-1 Rust wrapper still serves compatibility scatter rendering and the explicit low-level Node surface | `tests/test_scene_ir.py` and `packages/xy-node/test/scene.test.mjs` | **keep compatibility ABI** |
 
@@ -485,6 +490,7 @@ Forbidden:
 | `crates/xyg-engine/src/raster.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/sankey.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/scene_annotations.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene_colorbar.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene_export.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene_legend.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |

@@ -176,6 +176,213 @@ def _colorbar_input(figure: Any) -> bytes:
         raise UnsupportedSceneV3(str(error)) from error
 
 
+_ANNOTATION_FLAG_FILL = 1
+_ANNOTATION_FLAG_BORDER = 2
+
+
+def _annotation_style_flags(
+    fill: tuple[int, int, int, int] | None,
+    border: tuple[tuple[int, int, int, int], float] | None,
+) -> int:
+    flags = 0
+    if fill is not None:
+        flags |= _ANNOTATION_FLAG_FILL
+    if border is not None:
+        flags |= _ANNOTATION_FLAG_BORDER
+    return flags
+
+
+def _annotation_envelope(
+    text_rows: list[
+        tuple[
+            float,
+            float,
+            tuple[int, int, int, int],
+            tuple[int, int, int, int] | None,
+            tuple[tuple[int, int, int, int], float] | None,
+            bytes,
+        ]
+    ],
+    attached_labels: list[
+        tuple[
+            int,
+            tuple[int, int, int, int],
+            tuple[int, int, int, int] | None,
+            tuple[tuple[int, int, int, int], float] | None,
+            str,
+        ]
+    ],
+    straight_arrows: list[
+        tuple[int, float, float, float, float, tuple[int, int, int, int], float, float]
+    ],
+    cartesian_callouts: list[
+        tuple[
+            float,
+            float,
+            float,
+            float,
+            tuple[int, int, int, int],
+            float,
+            float,
+            int,
+            bytes,
+            tuple[int, int, int, int] | None,
+            tuple[tuple[int, int, int, int], float] | None,
+        ]
+    ],
+    wrapped_rows: list[
+        tuple[
+            float,
+            float,
+            float,
+            float,
+            float,
+            tuple[int, int, int, int],
+            tuple[int, int, int, int],
+            tuple[int, int, int, int],
+            float,
+            int,
+            int,
+            bytes,
+        ]
+    ],
+) -> bytes:
+    """Frame collected annotation rows as XYAD bytes through Rust."""
+    if not (text_rows or attached_labels or straight_arrows or cartesian_callouts or wrapped_rows):
+        return b""
+    zeros = (0, 0, 0, 0)
+
+    def pack_fill(fill: tuple[int, int, int, int] | None) -> bytes:
+        return bytes(fill or zeros)
+
+    def pack_border(
+        border: tuple[tuple[int, int, int, int], float] | None,
+    ) -> tuple[bytes, float]:
+        if border is None:
+            return bytes(zeros), 0.0
+        return bytes(border[0]), float(border[1])
+
+    text_meta = bytearray()
+    text_lens: list[int] = []
+    texts = bytearray()
+    for x, y, rgba, fill, border, encoded in text_rows:
+        border_rgba, width = pack_border(border)
+        text_meta.extend(
+            struct.pack(
+                "<dd4s4s4sdB3x",
+                x,
+                y,
+                bytes(rgba),
+                pack_fill(fill),
+                border_rgba,
+                width,
+                _annotation_style_flags(fill, border),
+            )
+        )
+        text_lens.append(len(encoded))
+        texts.extend(encoded)
+    attached_meta = bytearray()
+    attached_lens: list[int] = []
+    attached_texts = bytearray()
+    for stable_id, rgba, fill, border, value in attached_labels:
+        encoded = value.encode("utf-8")
+        border_rgba, width = pack_border(border)
+        attached_meta.extend(
+            struct.pack(
+                "<Q4s4s4sdB3x",
+                int(stable_id),
+                bytes(rgba),
+                pack_fill(fill),
+                border_rgba,
+                width,
+                _annotation_style_flags(fill, border),
+            )
+        )
+        attached_lens.append(len(encoded))
+        attached_texts.extend(encoded)
+    arrow_meta = bytearray()
+    for stable_id, x0, y0, x1, y1, rgba, opacity, width in straight_arrows:
+        arrow_meta.extend(
+            struct.pack("<Qdddd4sdd", int(stable_id), x0, y0, x1, y1, bytes(rgba), opacity, width)
+        )
+    callout_meta = bytearray()
+    callout_lens: list[int] = []
+    callout_texts = bytearray()
+    for (
+        x,
+        y,
+        dx,
+        dy,
+        rgba,
+        opacity,
+        width,
+        anchor_code,
+        encoded,
+        fill,
+        border,
+    ) in cartesian_callouts:
+        border_rgba, border_width = pack_border(border)
+        callout_meta.extend(
+            struct.pack(
+                "<dddd4sddB3x4s4sdB3x",
+                x,
+                y,
+                dx,
+                dy,
+                bytes(rgba),
+                opacity,
+                width,
+                anchor_code,
+                pack_fill(fill),
+                border_rgba,
+                border_width,
+                _annotation_style_flags(fill, border),
+            )
+        )
+        callout_lens.append(len(encoded))
+        callout_texts.extend(encoded)
+    wrapped_meta = bytearray()
+    wrapped_lens: list[int] = []
+    wrapped_texts = bytearray()
+    for x, y, dx, dy, wrap, rgba, fill, border_rgba, border, kind, anchor, encoded in wrapped_rows:
+        wrapped_meta.extend(
+            struct.pack(
+                "<ddddd4s4s4sdBB2x",
+                x,
+                y,
+                dx,
+                dy,
+                wrap,
+                bytes(rgba),
+                bytes(fill),
+                bytes(border_rgba),
+                border,
+                kind,
+                anchor,
+            )
+        )
+        wrapped_lens.append(len(encoded))
+        wrapped_texts.extend(encoded)
+    try:
+        return _native.scene_pack_annotations(
+            text_meta=bytes(text_meta),
+            text_lens=text_lens,
+            texts=bytes(texts),
+            attached_meta=bytes(attached_meta),
+            attached_lens=attached_lens,
+            attached_texts=bytes(attached_texts),
+            arrow_meta=bytes(arrow_meta),
+            callout_meta=bytes(callout_meta),
+            callout_lens=callout_lens,
+            callout_texts=bytes(callout_texts),
+            wrapped_meta=bytes(wrapped_meta),
+            wrapped_lens=wrapped_lens,
+            wrapped_texts=bytes(wrapped_texts),
+        )
+    except ValueError as error:
+        raise UnsupportedSceneV3(str(error)) from error
+
+
 def _legend_input(
     figure: Any, entries: list[tuple[int, int, int, str]], styles: list[Any]
 ) -> bytes:
@@ -1520,89 +1727,22 @@ def figure_scene(
         if label_border is not None and label_fill is None:
             raise UnsupportedSceneV3("Scene v23 label border requires label_background")
         text_rows.append((x, y, rgba, label_fill, label_border, encoded))
-    xyat_v3 = any(label_border is not None for _, _, _, _, label_border, _ in text_rows)
-    xyat_v2 = any(label_fill is not None for _, _, _, label_fill, _, _ in text_rows)
-    xyat = bytearray(
-        b"XYAT"
-        + (3 if xyat_v3 else 2 if xyat_v2 else 1).to_bytes(4, "little")
-        + len(text_rows).to_bytes(4, "little")
-    )
-    for x, y, rgba, label_fill, label_border, encoded in text_rows:
-        xyat.extend(struct.pack("<dd4s", x, y, bytes(rgba)))
-        if xyat_v3 or xyat_v2:
-            xyat.extend(bytes(label_fill or (0, 0, 0, 0)))
-        if xyat_v3:
-            xyat.extend(bytes(label_border[0] if label_border else (0, 0, 0, 0)))
-            xyat.extend(struct.pack("<d", label_border[1] if label_border else 0.0))
-        xyat.extend(struct.pack("<I", len(encoded)))
-        xyat.extend(encoded)
-    xyal_v4 = any(label_border is not None for _, _, _, label_border, _ in attached_labels)
-    xyal_v3 = any(label_fill is not None for _, _, label_fill, _, _ in attached_labels)
-    xyal = bytearray(
-        b"XYAL"
-        + (4 if xyal_v4 else 3 if xyal_v3 else 2).to_bytes(4, "little")
-        + len(attached_labels).to_bytes(4, "little")
-    )
-    for stable_id, rgba, label_fill, label_border, value in attached_labels:
-        encoded = value.encode("utf-8")
-        xyal.extend(struct.pack("<Q4s", stable_id, bytes(rgba)))
-        if xyal_v4 or xyal_v3:
-            xyal.extend(bytes(label_fill or (0, 0, 0, 0)))
-        if xyal_v4:
-            xyal.extend(bytes(label_border[0] if label_border else (0, 0, 0, 0)))
-            xyal.extend(struct.pack("<d", label_border[1] if label_border else 0.0))
-        xyal.extend(struct.pack("<I", len(encoded)))
-        xyal.extend(encoded)
-    xyar = bytearray(
-        b"XYAR" + (1).to_bytes(4, "little") + len(straight_arrows).to_bytes(4, "little")
-    )
-    for stable_id, x0, y0, x1, y1, rgba, opacity, width_value in straight_arrows:
-        xyar.extend(
-            struct.pack("<Qdddd4sdd", stable_id, x0, y0, x1, y1, bytes(rgba), opacity, width_value)
-        )
-    xyac_v3 = any(label_border is not None for *_, label_border in cartesian_callouts)
-    xyac_v2 = any(label_fill is not None for *_, label_fill, _ in cartesian_callouts)
-    xyac = bytearray(
-        b"XYAC"
-        + (3 if xyac_v3 else 2 if xyac_v2 else 1).to_bytes(4, "little")
-        + len(cartesian_callouts).to_bytes(4, "little")
-    )
-    for (
-        x,
-        y,
-        dx,
-        dy,
-        rgba,
-        opacity,
-        width_value,
-        anchor_code,
-        encoded,
-        label_fill,
-        label_border,
-    ) in cartesian_callouts:
-        xyac.extend(
-            struct.pack(
-                "<dddd4sddB3xI",
-                x,
-                y,
-                dx,
-                dy,
-                bytes(rgba),
-                opacity,
-                width_value,
-                anchor_code,
-                len(encoded),
-            )
-        )
-        if xyac_v3 or xyac_v2:
-            xyac.extend(bytes(label_fill or (0, 0, 0, 0)))
-        if xyac_v3:
-            xyac.extend(bytes(label_border[0] if label_border else (0, 0, 0, 0)))
-            xyac.extend(struct.pack("<d", label_border[1] if label_border else 0.0))
-        xyac.extend(encoded)
-    xyaw = bytearray(
-        b"XYAW" + (1).to_bytes(4, "little") + len(wrapped_annotations).to_bytes(4, "little")
-    )
+    wrapped_rows: list[
+        tuple[
+            float,
+            float,
+            float,
+            float,
+            float,
+            tuple[int, int, int, int],
+            tuple[int, int, int, int],
+            tuple[int, int, int, int],
+            float,
+            int,
+            int,
+            bytes,
+        ]
+    ] = []
     for annotation in wrapped_annotations:
         kind = annotation["kind"]
         if annotation.get("class_name") not in (None, ""):
@@ -1674,41 +1814,29 @@ def figure_scene(
             raise ValueError("Scene wrapped label border width must be positive and finite")
         if border_color is not None and fill[3] == 0:
             raise UnsupportedSceneV3("Scene wrapped label border requires label_background")
-        xyaw.extend(
-            struct.pack(
-                "<ddddd4s4s4sdBB2xI",
+        wrapped_rows.append(
+            (
                 x,
                 y,
                 dx,
                 dy,
                 wrap,
-                bytes(rgba),
-                bytes(fill),
-                bytes(border_rgba),
+                rgba,
+                fill,
+                border_rgba,
                 border,
-                kind == "callout",
-                anchor,
-                len(encoded),
+                int(kind == "callout"),
+                int(anchor),
+                encoded,
             )
         )
-        xyaw.extend(encoded)
-    xyad_v3 = bool(wrapped_annotations)
-    framed_annotations = bytearray(
-        b"XYAD"
-        + (3 if xyad_v3 else 2).to_bytes(4, "little")
-        + len(xyat).to_bytes(4, "little")
-        + len(xyal).to_bytes(4, "little")
-        + len(xyar).to_bytes(4, "little")
-        + len(xyac).to_bytes(4, "little")
+    framed_annotations = _annotation_envelope(
+        text_rows,
+        attached_labels,
+        straight_arrows,
+        cartesian_callouts,
+        wrapped_rows,
     )
-    if xyad_v3:
-        framed_annotations.extend(len(xyaw).to_bytes(4, "little"))
-    framed_annotations.extend(xyat)
-    framed_annotations.extend(xyal)
-    framed_annotations.extend(xyar)
-    framed_annotations.extend(xyac)
-    if xyad_v3:
-        framed_annotations.extend(xyaw)
     return _native.scene_batch_encode(
         viewport=(w, h),
         margins=(left, right, top, bottom),

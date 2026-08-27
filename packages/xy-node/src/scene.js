@@ -4,6 +4,7 @@ import {
   xySceneAxisTicks,
   xySceneBatchEncode,
   xySceneBrowserPainter,
+  xyScenePackAnnotations,
   xyScenePackColorbar,
   xyScenePackLegend,
   xyScenePlotLayout,
@@ -1113,6 +1114,118 @@ function colorbarInput(figure) {
   return out.subarray(0, code);
 }
 
+const MAX_SCENE_ANNOTATION_INPUT_BYTES = 28
+  + 12 + 128 * 40 + 4096
+  + 12 + 128 * 32 + 4096
+  + 12 + 128 * 60
+  + 12 + 128 * 76 + 8192
+  + 12 + 128 * 68 + 8192;
+
+function packAnnotationEnvelope({ texts, attached, arrows, callouts, wrapped }) {
+  if (!texts.length && !attached.length && !arrows.length && !callouts.length && !wrapped.length) {
+    return new Uint8Array();
+  }
+  const textMeta = new Uint8Array(texts.length * 40);
+  const textView = new DataView(textMeta.buffer);
+  const textLens = new Uint32Array(texts.length);
+  texts.forEach((row, index) => {
+    const at = index * 40;
+    textView.setFloat64(at, row.x, true);
+    textView.setFloat64(at + 8, row.y, true);
+    textMeta.set(row.rgba, at + 16);
+    textMeta.set(row.labelFill ?? [0, 0, 0, 0], at + 20);
+    textMeta.set(row.labelBorder?.rgba ?? [0, 0, 0, 0], at + 24);
+    textView.setFloat64(at + 28, row.labelBorder?.width ?? 0, true);
+    textMeta[at + 36] = (row.labelFill ? 1 : 0) | (row.labelBorder ? 2 : 0);
+    textLens[index] = row.text.length;
+  });
+  const textBytes = concatBytes(texts.map((row) => row.text));
+  const attachedMeta = new Uint8Array(attached.length * 32);
+  const attachedView = new DataView(attachedMeta.buffer);
+  const attachedLens = new Uint32Array(attached.length);
+  attached.forEach((row, index) => {
+    const at = index * 32;
+    attachedView.setBigUint64(at, row.stableId, true);
+    attachedMeta.set(row.rgba, at + 8);
+    attachedMeta.set(row.labelFill ?? [0, 0, 0, 0], at + 12);
+    attachedMeta.set(row.labelBorder?.rgba ?? [0, 0, 0, 0], at + 16);
+    attachedView.setFloat64(at + 20, row.labelBorder?.width ?? 0, true);
+    attachedMeta[at + 28] = (row.labelFill ? 1 : 0) | (row.labelBorder ? 2 : 0);
+    attachedLens[index] = row.text.length;
+  });
+  const attachedBytes = concatBytes(attached.map((row) => row.text));
+  const arrowMeta = new Uint8Array(arrows.length * 60);
+  const arrowView = new DataView(arrowMeta.buffer);
+  arrows.forEach((row, index) => {
+    const at = index * 60;
+    arrowView.setBigUint64(at, row.stableId, true);
+    arrowView.setFloat64(at + 8, row.x0, true);
+    arrowView.setFloat64(at + 16, row.y0, true);
+    arrowView.setFloat64(at + 24, row.x1, true);
+    arrowView.setFloat64(at + 32, row.y1, true);
+    arrowMeta.set(row.rgba, at + 40);
+    arrowView.setFloat64(at + 44, row.opacity, true);
+    arrowView.setFloat64(at + 52, row.width, true);
+  });
+  const calloutMeta = new Uint8Array(callouts.length * 76);
+  const calloutView = new DataView(calloutMeta.buffer);
+  const calloutLens = new Uint32Array(callouts.length);
+  callouts.forEach((row, index) => {
+    const at = index * 76;
+    calloutView.setFloat64(at, row.x, true);
+    calloutView.setFloat64(at + 8, row.y, true);
+    calloutView.setFloat64(at + 16, row.dx, true);
+    calloutView.setFloat64(at + 24, row.dy, true);
+    calloutMeta.set(row.rgba, at + 32);
+    calloutView.setFloat64(at + 36, row.opacity, true);
+    calloutView.setFloat64(at + 44, row.width, true);
+    calloutMeta[at + 52] = row.anchorCode;
+    calloutMeta.set(row.labelFill ?? [0, 0, 0, 0], at + 56);
+    calloutMeta.set(row.labelBorder?.rgba ?? [0, 0, 0, 0], at + 60);
+    calloutView.setFloat64(at + 64, row.labelBorder?.width ?? 0, true);
+    calloutMeta[at + 72] = (row.labelFill ? 1 : 0) | (row.labelBorder ? 2 : 0);
+    calloutLens[index] = row.text.length;
+  });
+  const calloutBytes = concatBytes(callouts.map((row) => row.text));
+  const wrappedMeta = new Uint8Array(wrapped.length * 64);
+  const wrappedView = new DataView(wrappedMeta.buffer);
+  const wrappedLens = new Uint32Array(wrapped.length);
+  wrapped.forEach((row, index) => {
+    const at = index * 64;
+    wrappedView.setFloat64(at, row.x, true);
+    wrappedView.setFloat64(at + 8, row.y, true);
+    wrappedView.setFloat64(at + 16, row.dx, true);
+    wrappedView.setFloat64(at + 24, row.dy, true);
+    wrappedView.setFloat64(at + 32, row.wrap, true);
+    wrappedMeta.set(rgba8(annotationColor(row.a.style ?? {}, "color", row.a.kind === "callout" ? "#344054" : "#667085", "wrapped color"), row.opacity, "wrapped"), at + 40);
+    wrappedMeta.set(row.fill, at + 44);
+    wrappedMeta.set(row.border?.rgba ?? [0, 0, 0, 0], at + 48);
+    wrappedView.setFloat64(at + 52, row.border?.width ?? 0, true);
+    wrappedMeta[at + 60] = row.a.kind === "callout" ? 1 : 0;
+    wrappedMeta[at + 61] = row.anchor;
+    wrappedLens[index] = row.text.length;
+  });
+  const wrappedBytes = concatBytes(wrapped.map((row) => row.text));
+  const out = new Uint8Array(MAX_SCENE_ANNOTATION_INPUT_BYTES);
+  const code = xyScenePackAnnotations(
+    texts.length, textMeta.length ? u8Ptr(textMeta) : 0, BigInt(textMeta.length),
+    texts.length ? u32Ptr(textLens) : 0, textBytes.length ? u8Ptr(textBytes) : 0, BigInt(textBytes.length),
+    attached.length, attachedMeta.length ? u8Ptr(attachedMeta) : 0, BigInt(attachedMeta.length),
+    attached.length ? u32Ptr(attachedLens) : 0, attachedBytes.length ? u8Ptr(attachedBytes) : 0, BigInt(attachedBytes.length),
+    arrows.length, arrowMeta.length ? u8Ptr(arrowMeta) : 0, BigInt(arrowMeta.length),
+    callouts.length, calloutMeta.length ? u8Ptr(calloutMeta) : 0, BigInt(calloutMeta.length),
+    callouts.length ? u32Ptr(calloutLens) : 0, calloutBytes.length ? u8Ptr(calloutBytes) : 0, BigInt(calloutBytes.length),
+    wrapped.length, wrappedMeta.length ? u8Ptr(wrappedMeta) : 0, BigInt(wrappedMeta.length),
+    wrapped.length ? u32Ptr(wrappedLens) : 0, wrappedBytes.length ? u8Ptr(wrappedBytes) : 0, BigInt(wrappedBytes.length),
+    u8Ptr(out), BigInt(out.length),
+  );
+  if (code === -5) throw new RangeError("Scene annotation geometry must be finite");
+  if (code === -6) throw new RangeError("Scene annotations require nonempty NUL-free text");
+  if (code === -7) throw new RangeError("Scene v23 label border requires label_background");
+  if (code < 0) throw new RangeError("invalid scene annotation packing");
+  return out.subarray(0, code);
+}
+
 function rejectRectExtras(style, kind) {
   if (style.fill != null && typeof style.fill === "object") {
     throw new RangeError(`Scene v12 does not yet encode ${kind} gradient fills`);
@@ -1503,20 +1616,8 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       if (labelBorder && !labelFill) throw new RangeError("Scene v23 label border requires label_background");
       return { x, y, rgba: rgba8(annotationColor(style, "color", "#667085", "text color"), annotationNumber(style, "opacity", 1, "text opacity"), "text"), labelFill, labelBorder, text };
     });
-    const xyatV3 = rows.some((row) => row.labelBorder != null), xyatV2 = rows.some((row) => row.labelFill != null), xyatFixedBytes = xyatV3 ? 40 : xyatV2 ? 28 : 24;
-    const xyat = new Uint8Array(12 + rows.reduce((n, row) => n + xyatFixedBytes + row.text.length, 0)); const xyatView = new DataView(xyat.buffer); xyat.set(textEncoder.encode("XYAT")); xyatView.setUint32(4, xyatV3 ? 3 : xyatV2 ? 2 : 1, true); xyatView.setUint32(8, rows.length, true); let at = 12;
-    for (const row of rows) { xyatView.setFloat64(at, row.x, true); xyatView.setFloat64(at + 8, row.y, true); xyat.set(row.rgba, at + 16); if (xyatV3 || xyatV2) xyat.set(row.labelFill ?? [0, 0, 0, 0], at + 20); if (xyatV3) { xyat.set(row.labelBorder?.rgba ?? [0, 0, 0, 0], at + 24); xyatView.setFloat64(at + 28, row.labelBorder?.width ?? 0, true); } xyatView.setUint32(at + xyatFixedBytes - 4, row.text.length, true); xyat.set(row.text, at + xyatFixedBytes); at += xyatFixedBytes + row.text.length; }
-    const xyalV4 = attachedLabels.some((row) => row.labelBorder != null), xyalV3 = attachedLabels.some((row) => row.labelFill != null), xyalFixedBytes = xyalV4 ? 32 : xyalV3 ? 20 : 16;
-    const xyal = new Uint8Array(12 + attachedLabels.reduce((n, row) => n + xyalFixedBytes + row.text.length, 0)); const xyalView = new DataView(xyal.buffer); xyal.set(textEncoder.encode("XYAL")); xyalView.setUint32(4, xyalV4 ? 4 : xyalV3 ? 3 : 2, true); xyalView.setUint32(8, attachedLabels.length, true); at = 12;
-    for (const row of attachedLabels) { xyalView.setBigUint64(at, row.stableId, true); xyal.set(row.rgba, at + 8); if (xyalV4 || xyalV3) xyal.set(row.labelFill ?? [0, 0, 0, 0], at + 12); if (xyalV4) { xyal.set(row.labelBorder?.rgba ?? [0, 0, 0, 0], at + 16); xyalView.setFloat64(at + 20, row.labelBorder?.width ?? 0, true); } xyalView.setUint32(at + xyalFixedBytes - 4, row.text.length, true); xyal.set(row.text, at + xyalFixedBytes); at += xyalFixedBytes + row.text.length; }
-    const xyar = new Uint8Array(12 + straightArrows.length * 60), xyarView = new DataView(xyar.buffer); xyar.set(textEncoder.encode("XYAR")); xyarView.setUint32(4, 1, true); xyarView.setUint32(8, straightArrows.length, true); at = 12;
-    for (const row of straightArrows) { xyarView.setBigUint64(at, row.stableId, true); xyarView.setFloat64(at + 8, row.x0, true); xyarView.setFloat64(at + 16, row.y0, true); xyarView.setFloat64(at + 24, row.x1, true); xyarView.setFloat64(at + 32, row.y1, true); xyar.set(row.rgba, at + 40); xyarView.setFloat64(at + 44, row.opacity, true); xyarView.setFloat64(at + 52, row.width, true); at += 60; }
-    const xyacV3 = cartesianCallouts.some((row) => row.labelBorder != null), xyacV2 = cartesianCallouts.some((row) => row.labelFill != null), xyacFixedBytes = xyacV3 ? 76 : xyacV2 ? 64 : 60;
-    const xyac = new Uint8Array(12 + cartesianCallouts.reduce((n, row) => n + xyacFixedBytes + row.text.length, 0)), xyacView = new DataView(xyac.buffer); xyac.set(textEncoder.encode("XYAC")); xyacView.setUint32(4, xyacV3 ? 3 : xyacV2 ? 2 : 1, true); xyacView.setUint32(8, cartesianCallouts.length, true); at = 12;
-    for (const row of cartesianCallouts) { xyacView.setFloat64(at, row.x, true); xyacView.setFloat64(at + 8, row.y, true); xyacView.setFloat64(at + 16, row.dx, true); xyacView.setFloat64(at + 24, row.dy, true); xyac.set(row.rgba, at + 32); xyacView.setFloat64(at + 36, row.opacity, true); xyacView.setFloat64(at + 44, row.width, true); xyacView.setUint8(at + 52, row.anchorCode); xyacView.setUint32(at + 56, row.text.length, true); if (xyacV3 || xyacV2) xyac.set(row.labelFill ?? [0, 0, 0, 0], at + 60); if (xyacV3) { xyac.set(row.labelBorder?.rgba ?? [0, 0, 0, 0], at + 64); xyacView.setFloat64(at + 68, row.labelBorder?.width ?? 0, true); } xyac.set(row.text, at + xyacFixedBytes); at += xyacFixedBytes + row.text.length; }
     const wrapped = wrappedAnnotations.map((a) => { const s = { ...(a.style ?? {}) }, allowed = ["color","opacity","label_background","label_border_color","label_border_width"]; if (a.class_name != null && a.class_name !== "" || typeof a.text !== "string" || !a.text || a.text.includes("\\0") || a.text.includes("\\r") || Object.keys(s).some((k) => !allowed.includes(k) && s[k] != null)) throw new RangeError("Scene wrapped annotations do not encode class_name, custom fonts, CSS, markup, collision, or leader style"); const text=textEncoder.encode(a.text), x=annotationNumber(a,"x",undefined,"wrapped x"), y=annotationNumber(a,"y",undefined,"wrapped y"), dx=annotationNumber(a,"dx",a.kind === "callout" ? 36 : 6,"wrapped dx"), dy=annotationNumber(a,"dy",a.kind === "callout" ? -30 : -6,"wrapped dy"), wrap=annotationNumber(a,"wrap",undefined,"wrapped width"), anchor={start:0,middle:1,end:2}[a.anchor ?? "start"], opacity=annotationNumber(s,"opacity",1,"wrapped opacity"); if (text.length > 4096 || ![x,y,dx,dy,wrap,opacity].every(Number.isFinite) || wrap < 0 || opacity < 0 || opacity > 1 || anchor == null) throw new RangeError("Scene wrapped annotation values are invalid"); const fill=s.label_background == null ? [0,0,0,0] : rgba8(annotationColor(s,"label_background","","wrapped background"),1,"wrapped background"); if ((s.label_border_color == null) !== (s.label_border_width == null)) throw new RangeError("Scene wrapped label border requires color and width"); const border=s.label_border_color == null ? null : { rgba:rgba8(annotationColor(s,"label_border_color","","wrapped border"),1,"wrapped border"), width:annotationNumber(s,"label_border_width",undefined,"wrapped border width") }; if (border && (!Number.isFinite(border.width) || border.width <= 0 || fill[3] === 0)) throw new RangeError("Scene wrapped label border requires a positive width and background"); return {a,text,x,y,dx,dy,wrap,anchor,opacity,fill,border}; });
-    const xyaw = new Uint8Array(12 + wrapped.reduce((n,r)=>n+68+r.text.length,0)), xyawView = new DataView(xyaw.buffer); xyaw.set(textEncoder.encode("XYAW")); xyawView.setUint32(4,1,true); xyawView.setUint32(8,wrapped.length,true); at=12; for(const r of wrapped) { xyawView.setFloat64(at,r.x,true); xyawView.setFloat64(at+8,r.y,true); xyawView.setFloat64(at+16,r.dx,true); xyawView.setFloat64(at+24,r.dy,true); xyawView.setFloat64(at+32,r.wrap,true); xyaw.set(rgba8(annotationColor(r.a.style ?? {},"color",r.a.kind === "callout" ? "#344054":"#667085","wrapped color"),r.opacity,"wrapped"),at+40); xyaw.set(r.fill,at+44); xyaw.set(r.border?.rgba ?? [0,0,0,0],at+48); xyawView.setFloat64(at+52,r.border?.width ?? 0,true); xyawView.setUint8(at+60,r.a.kind === "callout" ? 1:0); xyawView.setUint8(at+61,r.anchor); xyawView.setUint32(at+64,r.text.length,true); xyaw.set(r.text,at+68); at+=68+r.text.length; }
-    const xyadV3 = wrapped.length > 0, header = xyadV3 ? 28 : 24, out = new Uint8Array(header + xyat.length + xyal.length + xyar.length + xyac.length + (xyadV3 ? xyaw.length : 0)), view = new DataView(out.buffer); out.set(textEncoder.encode("XYAD")); view.setUint32(4,xyadV3 ? 3 : 2,true); view.setUint32(8,xyat.length,true); view.setUint32(12,xyal.length,true); view.setUint32(16,xyar.length,true); view.setUint32(20,xyac.length,true); if (xyadV3) view.setUint32(24,xyaw.length,true); out.set(xyat,header); out.set(xyal,header+xyat.length); out.set(xyar,header+xyat.length+xyal.length); out.set(xyac,header+xyat.length+xyal.length+xyar.length); if (xyadV3) out.set(xyaw,header+xyat.length+xyal.length+xyar.length+xyac.length); return out;
+    return packAnnotationEnvelope({ texts: rows, attached: attachedLabels, arrows: straightArrows, callouts: cartesianCallouts, wrapped });
   })();
   const title = figure.title ?? "";
   // `Figure.setAxis({ label })` is the public Node authoring form, matching

@@ -328,6 +328,10 @@ rejection cannot drift.
 ABI 111 adds `xyg_scene_pack_colorbar` so both hosts pass domain/stops/ticks
 and receive XYCB v2 bytes; header layout, stop/tick tables, domain-span
 checks, and bounded-text rejection cannot drift.
+ABI 112 adds `xyg_scene_pack_annotations` so both hosts pass typed row meta
+plus concatenated labels and receive XYAD bytes; XYAT/XYAL/XYAR/XYAC/XYAW
+table layout, version selection, the XYAD envelope, and bounded-text
+rejection cannot drift.
 
 ## Version 4: default numeric Cartesian chrome
 
@@ -1050,7 +1054,9 @@ literal columns. ABI 110 does not change Scene records either;
 `xyg_scene_pack_legend` owns primary XYLG legend framing from loc/flags,
 paints, title, and entry meta. ABI 111 does not change Scene records either;
 `xyg_scene_pack_colorbar` owns primary XYCB v2 framing from domain, stops,
-ticks, title, and text RGBA. Polar
+ticks, title, and text RGBA. ABI 112 does not change Scene records either;
+`xyg_scene_pack_annotations` owns primary XYAD framing from typed row meta
+and concatenated labels. Polar
 hexbin, custom reducers, metric colormaps, LOD, and rich style exceptions
 fail closed and keep the compatibility exporters. Scene 25 is unchanged.
 

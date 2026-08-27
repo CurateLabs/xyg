@@ -1,9 +1,9 @@
 {
-  "abi_version": 111,
+  "abi_version": 112,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "1285b288d35ef175cf79d735858cd1febea73b99eb94dfd11478b66eb4c599ac",
+  "signature_sha256": "9cbf65380aa4a14eb6b62ade9ea3549b828ca538711da5853c7ed6a544ac1f10",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -16764,6 +16764,475 @@
         "nullable": false
       },
       "c_signature": "size_t xyg_scene_browser_painter(const uint8_t * encoded, size_t encoded_len, size_t max_bytes, uint8_t * out, size_t out_cap)"
+    },
+    {
+      "name": "xyg_scene_pack_annotations",
+      "node_name": "xyScenePackAnnotations",
+      "nargs": 29,
+      "arguments": [
+        {
+          "name": "n_text",
+          "type": {
+            "rust": "u32",
+            "c": "uint32_t",
+            "ctypes": "ctypes.c_uint32",
+            "koffi": "uint32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "text_meta",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "text_meta_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "text_lens",
+          "type": {
+            "rust": "*const u32",
+            "c": "const uint32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "texts",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "texts_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "n_attached",
+          "type": {
+            "rust": "u32",
+            "c": "uint32_t",
+            "ctypes": "ctypes.c_uint32",
+            "koffi": "uint32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "attached_meta",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "attached_meta_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "attached_lens",
+          "type": {
+            "rust": "*const u32",
+            "c": "const uint32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "attached_texts",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "attached_texts_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "n_arrows",
+          "type": {
+            "rust": "u32",
+            "c": "uint32_t",
+            "ctypes": "ctypes.c_uint32",
+            "koffi": "uint32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "arrow_meta",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "arrow_meta_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "n_callouts",
+          "type": {
+            "rust": "u32",
+            "c": "uint32_t",
+            "ctypes": "ctypes.c_uint32",
+            "koffi": "uint32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "callout_meta",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "callout_meta_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "callout_lens",
+          "type": {
+            "rust": "*const u32",
+            "c": "const uint32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "callout_texts",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "callout_texts_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "n_wrapped",
+          "type": {
+            "rust": "u32",
+            "c": "uint32_t",
+            "ctypes": "ctypes.c_uint32",
+            "koffi": "uint32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "wrapped_meta",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "wrapped_meta_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "wrapped_lens",
+          "type": {
+            "rust": "*const u32",
+            "c": "const uint32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "wrapped_texts",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "wrapped_texts_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out",
+          "type": {
+            "rust": "*mut u8",
+            "c": "uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_cap",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_scene_pack_annotations(uint32_t n_text, const uint8_t * text_meta, size_t text_meta_len, const uint32_t * text_lens, const uint8_t * texts, size_t texts_len, uint32_t n_attached, const uint8_t * attached_meta, size_t attached_meta_len, const uint32_t * attached_lens, const uint8_t * attached_texts, size_t attached_texts_len, uint32_t n_arrows, const uint8_t * arrow_meta, size_t arrow_meta_len, uint32_t n_callouts, const uint8_t * callout_meta, size_t callout_meta_len, const uint32_t * callout_lens, const uint8_t * callout_texts, size_t callout_texts_len, uint32_t n_wrapped, const uint8_t * wrapped_meta, size_t wrapped_meta_len, const uint32_t * wrapped_lens, const uint8_t * wrapped_texts, size_t wrapped_texts_len, uint8_t * out, size_t out_cap)"
     },
     {
       "name": "xyg_scene_pack_colorbar",

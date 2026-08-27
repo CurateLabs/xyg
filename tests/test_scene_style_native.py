@@ -1,4 +1,4 @@
-"""Rust-owned Scene CSS, packing, chrome, legend, and colorbar (ABI 107–111)."""
+"""Rust-owned Scene CSS, packing, chrome, legend, colorbar, and annotations (ABI 107–112)."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ import pytest
 from xyg._figure import Figure
 from xyg._native import (
     css_color_rgba,
+    scene_pack_annotations,
     scene_pack_colorbar,
     scene_pack_legend,
     scene_pack_trace,
@@ -173,3 +174,42 @@ def test_pack_colorbar_rejects_stops_that_miss_the_domain() -> None:
             stop_rgba=bytes((0, 0, 0, 255, 255, 255, 255, 255)),
             ticks=[],
         )
+
+
+def test_pack_annotations_frames_xyad_v2_plain_text() -> None:
+    framed = scene_pack_annotations(
+        text_meta=struct.pack(
+            "<dd4s4s4sdB3x",
+            0.5,
+            0.25,
+            bytes((102, 112, 133, 255)),
+            bytes(4),
+            bytes(4),
+            0.0,
+            0,
+        ),
+        text_lens=[2],
+        texts=b"hi",
+        attached_meta=b"",
+        attached_lens=[],
+        attached_texts=b"",
+        arrow_meta=b"",
+        callout_meta=b"",
+        callout_lens=[],
+        callout_texts=b"",
+        wrapped_meta=b"",
+        wrapped_lens=[],
+        wrapped_texts=b"",
+    )
+    assert framed[:4] == b"XYAD"
+    assert int.from_bytes(framed[4:8], "little") == 2
+    assert framed[24:28] == b"XYAT"
+    assert int.from_bytes(framed[28:32], "little") == 1
+    assert framed[24 + 12 + 24 : 24 + 12 + 26] == b"hi"
+
+
+def test_named_text_annotation_compiles_through_rust_xyad() -> None:
+    figure = Figure().text(0.5, 0.5, "note", color="#667085")
+    encoded = figure_scene(figure)
+    assert encoded
+    assert b"note" in encoded
