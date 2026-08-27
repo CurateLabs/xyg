@@ -121,7 +121,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 143;
+pub const ABI_VERSION: u32 = 144;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1555,7 +1555,10 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// and `HeatmapPainted` inputs expand in data space, then tessellate to
 /// PolyFill wedges. ABI 143 polar `DensityBlit` intern occupied cells as
 /// Rects on that same tessellation (encoded Scene v31 is unchanged);
-/// Image records plus XYPL stay fail-closed.
+/// Image records plus XYPL stay fail-closed. ABI 144 admits cartesian
+/// `error_band(curve="smooth")` on existing `BandFlatten=12` and polar
+/// `curve="smooth"` line/area/error_band as identity chords (polar-axes.md §5);
+/// encoded Scene v31 is unchanged.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety

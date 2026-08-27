@@ -99,7 +99,7 @@ test("Node Scene v30 compiles constant dash polylines and keeps authored markers
   assert.throws(() => marked.toScene(), /authored markers/);
 });
 
-test("Node Scene v30 compiles flattened smooth polylines and keeps polar curves fail-closed", () => {
+test("Node Scene v30 compiles flattened smooth polylines and polar smooth as chords", () => {
   const figure = new Figure({ width: 240, height: 160 });
   figure.setAxisDomain("x", [0, 2]);
   figure.setAxisDomain("y", [0, 2]);
@@ -130,12 +130,19 @@ test("Node Scene v30 compiles flattened smooth polylines and keeps polar curves 
   assert.match(combinedSvg, /stroke-dasharray="6,4"/);
   assert.match(combinedSvg, /stroke-linecap="butt"/);
   assert.equal(vertexCount(combinedSvg), 1 + (3 - 1) * 16);
-  const polar = new Figure({ width: 240, height: 160, coords: "polar" });
-  polar.line([0, 1, 2], [0, 1, 0.5], { style: { curve: "smooth" } });
-  assert.throws(() => polar.toScene(), /authored markers/);
+  const polar = new Figure({ width: 400, height: 400, coords: "polar" });
+  polar.setAxisDomain("x", [0, Math.PI * 2]);
+  polar.setAxisDomain("y", [0, 1]);
+  polar.line([0, Math.PI / 2, Math.PI], [0.5, 1, 0.5], { style: { curve: "smooth", color: "#ef4444" } });
+  const polarLinear = new Figure({ width: 400, height: 400, coords: "polar" });
+  polarLinear.setAxisDomain("x", [0, Math.PI * 2]);
+  polarLinear.setAxisDomain("y", [0, 1]);
+  polarLinear.line([0, Math.PI / 2, Math.PI], [0.5, 1, 0.5], { style: { color: "#ef4444" } });
+  assert.equal(sceneSvg(polar.toScene()), sceneSvg(polarLinear.toScene()));
+  assert.equal(sceneExportSupportReason(polar), null);
 });
 
-test("Node Scene v31 compiles flattened smooth areas and keeps polar area curves fail-closed", () => {
+test("Node Scene v31 compiles flattened smooth areas and polar smooth areas as chords", () => {
   const figure = new Figure({ width: 240, height: 160 });
   figure.setAxisDomain("x", [0, 2]);
   figure.setAxisDomain("y", [0, 2]);
@@ -154,9 +161,40 @@ test("Node Scene v31 compiles flattened smooth areas and keeps polar area curves
   linear.area([0, 1, 2], [0, 1, 0.5], { style: { color: "#ef4444" } });
   assert.equal(closedPointCount(svg), (1 + (3 - 1) * 16) * 2);
   assert.equal(closedPointCount(sceneSvg(linear.toScene())), 6);
-  const polar = new Figure({ width: 240, height: 160, coords: "polar" });
-  polar.area([0, 1, 2], [0, 1, 0.5], { style: { curve: "smooth" } });
-  assert.throws(() => polar.toScene(), /authored markers/);
+  const polar = new Figure({ width: 400, height: 400, coords: "polar" });
+  polar.setAxisDomain("x", [0, Math.PI * 2]);
+  polar.setAxisDomain("y", [0, 1]);
+  polar.area([0, Math.PI / 2, Math.PI], [0.4, 0.8, 0.6], { style: { curve: "smooth", color: "#22c55e" } });
+  const polarLinear = new Figure({ width: 400, height: 400, coords: "polar" });
+  polarLinear.setAxisDomain("x", [0, Math.PI * 2]);
+  polarLinear.setAxisDomain("y", [0, 1]);
+  polarLinear.area([0, Math.PI / 2, Math.PI], [0.4, 0.8, 0.6], { style: { color: "#22c55e" } });
+  assert.equal(sceneSvg(polar.toScene()), sceneSvg(polarLinear.toScene()));
+  assert.equal(sceneExportSupportReason(polar), null);
+});
+
+test("Node Scene v31 compiles flattened smooth error bands (curve=smooth)", () => {
+  const figure = new Figure({ width: 240, height: 160 });
+  figure.setAxisDomain("x", [0, 2]);
+  figure.setAxisDomain("y", [0, 2]);
+  figure.errorBand([0, 1, 2], [0.0, 0.5, 0.2], [0.5, 1.0, 0.8], {
+    style: { color: "#22c55e", curve: "smooth" },
+  });
+  const scene = figure.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  const svg = sceneSvg(scene);
+  const closedPointCount = (document) => Math.max(
+    ...[...document.matchAll(/<path d="([^"]+)"/g)]
+      .filter((match) => match[1].includes("Z"))
+      .map((match) => match[1].replaceAll(/[MLZ]/g, " ").trim().split(/\s+/).length / 2),
+  );
+  const linear = new Figure({ width: 240, height: 160 });
+  linear.setAxisDomain("x", [0, 2]);
+  linear.setAxisDomain("y", [0, 2]);
+  linear.errorBand([0, 1, 2], [0.0, 0.5, 0.2], [0.5, 1.0, 0.8], { style: { color: "#22c55e" } });
+  assert.equal(closedPointCount(svg), (1 + (3 - 1) * 16) * 2);
+  assert.equal(closedPointCount(sceneSvg(linear.toScene())), 6);
+  assert.equal(sceneExportSupportReason(figure), null);
 });
 
 test("Node Scene v30 compiles constant linecap polylines and keeps unknown caps fail-closed", () => {

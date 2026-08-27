@@ -911,7 +911,7 @@ def _density_aggregates_color(trace: Any) -> bool:
     return set(trace.per_item_channel_names()) <= {"color"}
 
 
-def _figure_trace_support_flags(trace: Any, *, polar: bool = False) -> tuple[int, str]:
+def _figure_trace_support_flags(trace: Any) -> tuple[int, str]:
     """Observe per-trace Scene allowlist bits; Rust owns the diagnostic."""
     kind = str(getattr(trace, "kind", "") or "mark")
     style = getattr(trace, "style", None) or {}
@@ -930,7 +930,7 @@ def _figure_trace_support_flags(trace: Any, *, polar: bool = False) -> tuple[int
     if curve is not None:
         curve_name = str(curve).strip().lower()
         if curve_name == "smooth":
-            if polar or kind not in {"line", "area"} or style.get("step") is not None:
+            if kind not in {"line", "area", "error_band"} or style.get("step") is not None:
                 flags |= _XYFS_TRACE_DASHED_MARKERS
         elif curve_name != "linear":
             flags |= _XYFS_TRACE_DASHED_MARKERS
@@ -1423,7 +1423,11 @@ def figure_scene(
             if stroke_perimeter:
                 flags |= _PACK_FLAG_STROKE_PERIMETER
             curve = style.get("curve")
-            if curve is not None and str(curve).strip().lower() == "smooth":
+            if (
+                curve is not None
+                and str(curve).strip().lower() == "smooth"
+                and str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
+            ):
                 step_mode = 4
         elif trace.kind == "line":
             where = style.get("step")
@@ -1432,7 +1436,11 @@ def figure_scene(
                 if where not in {"pre", "post", "mid"}:
                     raise UnsupportedSceneV3(f"Scene v12 does not support step mode {where!r}")
                 step_mode = {"pre": 1, "mid": 2, "post": 3}[where]
-            elif curve is not None and str(curve).strip().lower() == "smooth":
+            elif (
+                curve is not None
+                and str(curve).strip().lower() == "smooth"
+                and str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
+            ):
                 step_mode = 4
         elif trace.kind == "scatter":
             pack_symbol = _SYMBOL_CODES[symbol_name]
@@ -2293,7 +2301,7 @@ def _pack_figure_support(
         payload.extend(len(keys).to_bytes(4, "little"))
         _xyep_put_keys(payload, keys)
     for trace in traces:
-        trace_flags, kind = _figure_trace_support_flags(trace, polar=figure.coords != "cartesian")
+        trace_flags, kind = _figure_trace_support_flags(trace)
         encoded = str(kind).encode("utf-8")[:32]
         payload.extend(trace_flags.to_bytes(2, "little"))
         payload.extend(bytes((len(encoded), 0)))

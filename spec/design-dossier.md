@@ -1436,9 +1436,10 @@ polylines as denser Scene polylines (`CurveFlatten=11`); ABI 141 / Scene v31
 compiles cartesian `area(curve="smooth")` as denser Scene Bands
 (`BandFlatten=12`). ABI 142 compiles cartesian mean-color density as XYHP
 kind 4 on the existing `DensityBlit` Image blit. ABI 143 polar density
-tessellates occupied `DensityBlit` cells to PolyFill wedges (no XYIM). Polar
-smooth, error-band smooth, and authored markers stay compatibility.
-Irregular
+tessellates occupied `DensityBlit` cells to PolyFill wedges (no XYIM). ABI 144
+admits cartesian `error_band(curve="smooth")` on existing `BandFlatten=12` and
+polar `curve="smooth"` line/area/error_band as identity chords (polar-axes.md
+§5). Polar+step+smooth and authored markers stay compatibility. Irregular
 spacing, and LOD stay compatibility.
 
 Contract-wide invariants: every tier transition is hysteresis-guarded and logged

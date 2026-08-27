@@ -3490,8 +3490,10 @@ pub enum SceneExpansionMode {
     CurveFlatten = 11,
     /// Compact Band knots flatten top (`y0`) and base (`y1`) through
     /// `geom::curve_flatten` into a denser Band run. Shared `x0` (`x0==x1`)
-    /// parameterization matches cartesian `area(curve="smooth")`. `n<3` stays
-    /// identity so short filled bands match the compatibility fallback.
+    /// parameterization matches cartesian `area(curve="smooth")` and
+    /// `error_band(curve="smooth")`. Polar smooth stays identity chords
+    /// (polar-axes.md §5). `n<3` stays identity so short filled bands match
+    /// the compatibility fallback.
     BandFlatten = 12,
 }
 

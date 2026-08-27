@@ -378,8 +378,12 @@ allowlist includes `curve` for `KIND_LINE`. ABI 141 / Scene v31 admits flattened
 cartesian `area(curve="smooth")` bands: hosts pack the same compact Band knots
 with pack `step_mode=4`, which Rust maps to expansion `BandFlatten=12` and
 densifies top and base through `geom::curve_flatten`. The public-export style
-allowlist includes `curve` for `KIND_AREA`. Polar+smooth, step+smooth,
-error-band smooth, and authored markers stay on the compatibility exporters.
+allowlist includes `curve` for `KIND_AREA`. ABI 144 admits cartesian
+`error_band(curve="smooth")` on that same `BandFlatten=12` mapping (public
+allowlist includes `curve` for `KIND_ERROR_BAND`) and polar
+`curve="smooth"` line/area/error_band as identity chords (polar-axes.md §5;
+hosts must not pack `step_mode=4` under `coords="polar"`). Polar+step+smooth
+and authored markers stay on the compatibility exporters.
 
 ABI 110 adds `xyg_scene_pack_legend` so both hosts pass loc/flags/paints
 and receive XYLG bytes; header layout, text offsets, and bounded-text
@@ -1214,8 +1218,10 @@ so cartesian `area(curve="smooth")` compiles as denser Scene Bands. ABI 142
 admits cartesian mean-color density as XYHP kind 4 on the existing
 `DensityBlit` Image blit (encoded Scene v31 is unchanged). ABI 143 polar
 `DensityBlit` intern occupied cells as Rects that `with_polar` tessellates
-to PolyFill wedges (encoded Scene v31 is unchanged). Polar smooth,
-error-band smooth, and authored markers stay compatibility. ABI 116 does not change Scene records either;
+to PolyFill wedges (encoded Scene v31 is unchanged). ABI 144 admits cartesian
+`error_band(curve="smooth")` on existing `BandFlatten=12` and polar
+`curve="smooth"` as identity chords (encoded Scene v31 is unchanged). Polar+step+smooth
+and authored markers stay compatibility. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;
 `xyg_scene_figure_support_reason` owns figure-compile support from packed

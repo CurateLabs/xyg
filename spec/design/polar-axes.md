@@ -293,7 +293,11 @@ matplotlib arc-interpolates paths.
 | Heatmap cells | **true arc boundaries** | The fragment-stage inverse samples each screen pixel in (θ, r), so cell edges follow rings/spokes. |
 | Contour / error-bar segments | **chord** | They are independent data-space segments projected at their endpoints, with radial clipping before projection. |
 
-Chords need no subdivision, which is why line, scatter and area are cheap. Arcs
+Chords need no subdivision, which is why line, scatter and area are cheap.
+Scene polar `curve="smooth"` is the same identity-chord packing: hosts must
+not set `step_mode=4` / `CurveFlatten` / `BandFlatten` under `coords="polar"`.
+Hermite-flattening in (θ, r) then projecting would be a different visual from
+this section and from the compatibility polar `_curve_path`. Arcs
 flatten to polylines wherever the medium lacks a real arc: the raster display
 list always, and the GPU bar sweep by construction. SVG needs no count: it draws
 real `A` arcs (`_polar_wedge_path`), and `polar_wedge_points` is the flattened
@@ -453,7 +457,9 @@ colormaps and truecolor RGBA planes to per-cell literal styles), and `contour` (
 matching polar errorbar) through Rust
 `polar_project` / `polar_wedge_points`, polar rings/spokes/clip, and rim tick
 labels when hosts pass explicit XYPL v1. ABI 143 polar density-tier scatter
-tessellates occupied cells to PolyFill wedges. Inverse-sample `<image>` blit stays on the
+tessellates occupied cells to PolyFill wedges. ABI 144 polar `curve="smooth"`
+line/area pack as identity chords (§5), not flattened Hermite polylines.
+Inverse-sample `<image>` blit stays on the
 compatibility exporters for polar heatmap because polar Image+XYPL stays forbidden.
 Transparent Cartesian axis/grid paint
 must not be used to infer polar coordinates; it means only independently hidden

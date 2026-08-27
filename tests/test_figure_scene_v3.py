@@ -501,7 +501,8 @@ def test_supported_file_exports_match_the_canonical_rust_scene(
 def test_unsupported_public_exports_stay_on_compatibility_path(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    figure = Figure(coords="polar").line([0.0, 1.0], [0.5, 1.0], curve="smooth")
+    figure = Figure().line([0.0, 1.0], [0.5, 1.0])
+    figure.traces[-1].style["marker_path"] = "M0 0"
 
     def unexpected_scene_call(*_args: object, **_kwargs: object) -> bytes:
         raise AssertionError(
@@ -1318,10 +1319,25 @@ def test_python_scene_compiles_smooth_polylines() -> None:
     assert _scene_v3.scene_export_support_reason(short) is None
     short.to_scene()
 
-    polar = Figure(coords="polar")
-    polar.line([0.0, 1.0, 2.0], [0.0, 1.0, 0.5], curve="smooth")
+    polar = Figure(width=400, height=400, coords="polar")
+    polar.axis_options["x"]["domain"] = (0.0, math.tau)
+    polar.axis_options["y"]["domain"] = (0.0, 1.0)
+    polar.line([0.0, math.pi / 2, math.pi], [0.5, 1.0, 0.5], curve="smooth", color="#ef4444")
+    polar_linear = Figure(width=400, height=400, coords="polar")
+    polar_linear.axis_options["x"]["domain"] = (0.0, math.tau)
+    polar_linear.axis_options["y"]["domain"] = (0.0, 1.0)
+    polar_linear.line([0.0, math.pi / 2, math.pi], [0.5, 1.0, 0.5], color="#ef4444")
+    polar_svg = _native.scene_svg(polar.to_scene())
+    assert polar_svg == _native.scene_svg(polar_linear.to_scene())
+    assert polar.to_svg() == polar_svg
+    assert _scene_v3.scene_export_support_reason(polar) is None
+    stepped = Figure(width=400, height=400, coords="polar")
+    stepped.axis_options["x"]["domain"] = (0.0, math.tau)
+    stepped.axis_options["y"]["domain"] = (0.0, 1.0)
+    stepped.line([0.0, math.pi / 2, math.pi], [0.5, 1.0, 0.5], curve="smooth", color="#ef4444")
+    stepped.traces[-1].style["step"] = "mid"
     with pytest.raises(UnsupportedSceneV3, match="authored markers"):
-        polar.to_scene()
+        stepped.to_scene()
     marked = Figure().line([0.0, 1.0], [0.0, 1.0])
     marked.traces[-1].style["marker_path"] = "M0 0"
     with pytest.raises(UnsupportedSceneV3, match="authored markers"):
@@ -1370,7 +1386,36 @@ def test_python_scene_compiles_smooth_areas() -> None:
     assert _scene_v3.scene_export_support_reason(short) is None
     short.to_scene()
 
-    polar = Figure(coords="polar")
-    polar.area([0.0, 1.0, 2.0], [0.0, 1.0, 0.5], curve="smooth")
-    with pytest.raises(UnsupportedSceneV3, match="authored markers"):
-        polar.to_scene()
+    polar = Figure(width=400, height=400, coords="polar")
+    polar.axis_options["x"]["domain"] = (0.0, math.tau)
+    polar.axis_options["y"]["domain"] = (0.0, 1.0)
+    polar.area([0.0, math.pi / 2, math.pi], [0.4, 0.8, 0.6], curve="smooth", color="#22c55e")
+    polar_linear = Figure(width=400, height=400, coords="polar")
+    polar_linear.axis_options["x"]["domain"] = (0.0, math.tau)
+    polar_linear.axis_options["y"]["domain"] = (0.0, 1.0)
+    polar_linear.area([0.0, math.pi / 2, math.pi], [0.4, 0.8, 0.6], color="#22c55e")
+    polar_svg = _native.scene_svg(polar.to_scene())
+    assert polar_svg == _native.scene_svg(polar_linear.to_scene())
+    assert polar.to_svg() == polar_svg
+    assert _scene_v3.scene_export_support_reason(polar) is None
+
+
+def test_python_scene_compiles_smooth_error_bands() -> None:
+    figure = Figure(width=240, height=160)
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    figure.error_band([0.0, 1.0, 2.0], [0.0, 0.5, 0.2], [0.5, 1.0, 0.8], color="#22c55e")
+    figure.traces[0].style["curve"] = "smooth"
+    scene = figure.to_scene()
+    assert scene[4:8] == (31).to_bytes(4, "little")
+    svg = _native.scene_svg(scene)
+    linear = Figure(width=240, height=160)
+    linear.axis_options["x"]["domain"] = (0.0, 2.0)
+    linear.axis_options["y"]["domain"] = (0.0, 2.0)
+    linear.error_band([0.0, 1.0, 2.0], [0.0, 0.5, 0.2], [0.5, 1.0, 0.8], color="#22c55e")
+    linear_svg = _native.scene_svg(linear.to_scene())
+    expected = 1 + (3 - 1) * 16
+    assert _closed_path_point_count(svg) == expected * 2
+    assert _closed_path_point_count(linear_svg) == 3 * 2
+    assert figure.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(figure) is None

@@ -180,6 +180,12 @@ def _polar_density() -> Figure:
     return figure
 
 
+def _smooth_error_band() -> Figure:
+    figure = _supported().error_band([0, 1, 2], [1, 2, 1], [2, 3, 2], color="#22c55e")
+    figure.traces[0].style["curve"] = "smooth"
+    return figure
+
+
 def _custom_font() -> Figure:
     figure = _supported()
     figure.chrome_styles = {"title": {"font-family": "Comic Sans"}}
@@ -490,6 +496,33 @@ def test_smooth_area_is_public_scene_supported() -> None:
         counts.append(len(tokens) // 2)
     assert max(counts) == (1 + (3 - 1) * 16) * 2
     assert figure.to_svg() == svg
+
+
+def test_smooth_error_band_is_public_scene_supported() -> None:
+    figure = _smooth_error_band()
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    svg = exported.decode("utf-8")
+    counts = []
+    for path in re.findall(r'<path d="([^"]+)"', svg):
+        if "Z" not in path:
+            continue
+        tokens = path.replace("Z", " ").replace("M", " ").replace("L", " ").split()
+        counts.append(len(tokens) // 2)
+    assert max(counts) == (1 + (3 - 1) * 16) * 2
+    assert figure.to_svg() == svg
+
+
+def test_polar_smooth_line_is_scene_supported() -> None:
+    figure = Figure(width=320, height=240, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, 6.283185307179586)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.line([0.0, 1.5707963267948966, 3.141592653589793], [0.5, 1.0, 0.5], curve="smooth")
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"<polyline" in exported or b"<path" in exported
 
 
 def test_polar_scatter_is_scene_supported() -> None:
@@ -1339,6 +1372,7 @@ def test_too_small_valid_export_viewport_is_a_documented_routing_exception() -> 
         (lambda: _supported().line([0, 1], [0, 1]), None),
         (lambda: _supported().line([0, 1, 2], [1, 2, 1], curve="smooth"), None),
         (lambda: _supported().area([0, 1, 2], [1, 2, 1], curve="smooth"), None),
+        (_smooth_error_band, None),
         (lambda: _supported().bar([0, 1], [1, 2]), None),
         (lambda: _supported().column([0, 1], [1, 2]), None),
         (lambda: _supported().histogram([0, 1, 1, 2], bins=2), None),

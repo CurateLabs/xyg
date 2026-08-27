@@ -387,6 +387,7 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "fill",
             "fill_opacity",
             "stroke_opacity",
+            "curve",
         ],
         KIND_RIBBON => &[
             "opacity",

@@ -10,6 +10,9 @@
 //! ABI 141 maps band `step_mode=4` onto expansion `BandFlatten=12`.
 //! ABI 142 admits cartesian mean-color density as XYHP paint kind 4 on the
 //! existing `DensityBlit` Image blit (no new pack kind).
+//! ABI 144 admits cartesian `error_band(curve="smooth")` on that same
+//! `BandFlatten` mapping; polar `curve="smooth"` line/area/error_band pack as
+//! identity chords (no `step_mode=4`).
 
 use crate::scene::MAX_SCENE_MARKS;
 

@@ -2884,9 +2884,8 @@ function figureTraceSupport(figure, trace) {
   const curve = style.curve;
   if (curve != null) {
     const curveName = String(curve).trim().toLowerCase();
-    const polar = (figure.coords ?? "cartesian") === "polar";
     if (curveName === "smooth") {
-      if (polar || (kind !== "line" && kind !== "area") || style.step != null) flags |= XYFS_TRACE_DASHED_MARKERS;
+      if ((kind !== "line" && kind !== "area" && kind !== "error_band") || style.step != null) flags |= XYFS_TRACE_DASHED_MARKERS;
     } else if (curveName !== "linear") {
       flags |= XYFS_TRACE_DASHED_MARKERS;
     }
@@ -3017,18 +3016,20 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       }
       if (strokePerimeter) flags |= FLAG_STROKE_PERIMETER;
       const curve = style.curve;
-      if (curve != null && String(curve).trim().toLowerCase() === "smooth") {
+      const polarCoords = (figure.coords ?? "cartesian") === "polar";
+      if (curve != null && String(curve).trim().toLowerCase() === "smooth" && !polarCoords) {
         stepMode = 4;
       }
     } else if (trace.kind === "line") {
       const where = style.step;
       const curve = style.curve;
+      const polarCoords = (figure.coords ?? "cartesian") === "polar";
       if (where != null) {
         if (!["pre", "post", "mid"].includes(where)) {
           throw new RangeError(`Scene v12 does not support step mode ${JSON.stringify(where)}`);
         }
         stepMode = { pre: 1, mid: 2, post: 3 }[where];
-      } else if (curve != null && String(curve).trim().toLowerCase() === "smooth") {
+      } else if (curve != null && String(curve).trim().toLowerCase() === "smooth" && !polarCoords) {
         stepMode = 4;
       }
     } else if (trace.kind === "scatter") {
