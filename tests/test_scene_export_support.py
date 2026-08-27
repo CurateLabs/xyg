@@ -432,7 +432,6 @@ def _public_disconnected_segments() -> Figure:
 # Each factory builds a figure that `figure_scene` rejects; the substring is the
 # stable diagnostic token the predicate must surface for the router to log.
 UNSUPPORTED: dict[str, tuple[Callable[[], Figure], str]] = {
-    "polar_density": (_polar_density, "density"),
     "custom_font": (_custom_font, "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT"),
     "browser_css": (_browser_css, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS"),
     "colorbar": (_colorbar, "XYG_SCENE_UNSUPPORTED_COLORBAR"),
@@ -499,6 +498,19 @@ def test_polar_scatter_is_scene_supported() -> None:
     exported = public_static_export(figure, "svg")
     assert exported is not None
     assert exported.startswith(b"<svg") or b"<svg" in exported
+
+
+def test_polar_density_is_scene_supported() -> None:
+    figure = _polar_density()
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"<path" in exported
+    assert b"<image" not in exported
+    png = public_static_export(figure, "png")
+    assert png is not None
 
 
 def test_polar_contour_is_scene_supported() -> None:

@@ -180,6 +180,8 @@ crates/
                         #   through `BandFlatten=12`.
                         #   ABI 142 composites cartesian mean-color density
                         #   (XYHP kind 4) onto the existing DensityBlit Image.
+                        #   ABI 143 polar DensityBlit intern occupied cells as
+                        #   Rects that with_polar tessellates to PolyFill.
     scene_pack.rs       # compact Figure→Scene row packing (ABI 109): record
                         #   kinds, stable-id splitting, expansion modes,
                         #   ribbon/triangle doubling, heatmap lattice framing,
@@ -189,7 +191,8 @@ crates/
                         #   DensityBlit heatmap-extent packing plus ABI 140
                         #   line `step_mode=4` → `CurveFlatten=11` plus ABI 141
                         #   band `step_mode=4` → `BandFlatten=12` plus ABI 142
-                        #   mean-color density XYHP kind 4.
+                        #   mean-color density XYHP kind 4 plus ABI 143 polar
+                        #   DensityBlit occupied-cell Rect tessellation.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -708,5 +711,6 @@ landed; the remainder, in order:
    (`scene.rs`) ✅; ABI 139 / Scene v29 XYLC constant linecap (`scene.rs`) ✅;
    ABI 140 / Scene v30 `CurveFlatten=11` smooth polylines (`scene.rs`) ✅;
    ABI 141 / Scene v31 `BandFlatten=12` smooth areas (`scene.rs`) ✅;
-   ABI 142 cartesian mean-color density XYHP kind 4 (`scene.rs`) ✅.
+   ABI 142 cartesian mean-color density XYHP kind 4 (`scene.rs`) ✅;
+   ABI 143 polar density PolyFill tessellation (`scene.rs`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

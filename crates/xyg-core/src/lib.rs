@@ -121,7 +121,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 142;
+pub const ABI_VERSION: u32 = 143;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1553,7 +1553,9 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// knots flatten top and base through the same Hermite densify into a denser
 /// Band run. Polar `HeatmapLattice`
 /// and `HeatmapPainted` inputs expand in data space, then tessellate to
-/// PolyFill wedges. Polar density and Image records stay fail-closed.
+/// PolyFill wedges. ABI 143 polar `DensityBlit` intern occupied cells as
+/// Rects on that same tessellation (encoded Scene v31 is unchanged);
+/// Image records plus XYPL stay fail-closed.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
@@ -1846,7 +1848,8 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
         // Polar HeatmapLattice/HeatmapPainted stay compact through this ABI:
         // expansion is data-space (rows×cols Rect cells, painted planes intern
         // unique fills), then `with_polar` tessellates those cells to PolyFill
-        // annular sectors.
+        // annular sectors. Polar DensityBlit (ABI 143) intern occupied cells
+        // as Rects on that same path so Image+XYPL never share a batch.
         let (records, painted_styles, images) = scene::expand_scene_records_painted(
             scene::SceneExpansionInput {
                 kinds,
@@ -1866,6 +1869,7 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             stroke_rgba,
             stroke_width,
             paint_bytes,
+            !polar_bytes.is_empty(),
         )
         .ok()?;
         let (fill_rgba, stroke_rgba, stroke_width) = match &painted_styles {

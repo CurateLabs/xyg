@@ -1499,17 +1499,29 @@ test("Node Scene compiles column and histogram as Rect records", () => {
   assert.match(sceneSvg(hist.toScene()), /<rect /);
 });
 
-test("Node Scene rejects corner_radius and polar density-tier scatter", () => {
+test("Node Scene rejects corner_radius", () => {
   const rounded = new Figure({ width: 200, height: 120 });
   rounded.bar([0, 1], [1, 2], { style: { corner_radius: 4 }, name: null });
   assert.throws(() => rounded.toScene(), /corner_radius/);
+});
 
-  const density = new Figure({ width: 200, height: 120, coords: "polar" });
-  density.scatter(new Float64Array(200_000), new Float64Array(200_000), {
+test("Node Scene compiles polar density tessellation", () => {
+  const density = new Figure({ width: 400, height: 400, coords: "polar" });
+  density.setAxisDomain("x", [0, Math.PI * 2]);
+  density.setAxisDomain("y", [0, 1]);
+  density.scatter(new Float64Array([0, Math.PI / 2]), new Float64Array([0.5, 1]), {
     forceDensity: true,
+    color: "#3987e5",
     name: null,
   });
-  assert.throws(() => density.toScene(), /density-tier/);
+  const scene = density.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  assert.ok(Buffer.from(scene).includes("XYPL"));
+  assert.ok(!Buffer.from(scene).includes("XYIM"));
+  const svg = sceneSvg(scene);
+  assert.match(svg, /<path/);
+  assert.ok(!svg.includes("<image"));
+  assert.ok(!svg.includes("<rect x="));
 });
 
 test("Node Scene compiles cartesian density blit as one image", () => {
@@ -1558,9 +1570,16 @@ test("Node Scene compiles cartesian mean-color density blit", () => {
   assert.match(svg, /data:image\/png;base64,/);
 
   const polar = new Figure({ width: 240, height: 160, coords: "polar" });
+  polar.setAxis("x", { domain: [0, 1] });
+  polar.setAxis("y", { domain: [0, 1] });
   polar.scatter(x, y, { forceDensity: true, name: null });
   polar.traces[0].color = { mode: "direct_rgba", rgba };
-  assert.throws(() => polar.toScene(), /density-tier/);
+  const polarScene = polar.toScene();
+  assert.ok(Buffer.from(polarScene).includes("XYPL"));
+  assert.ok(!Buffer.from(polarScene).includes("XYIM"));
+  const polarSvg = sceneSvg(polarScene);
+  assert.match(polarSvg, /<path/);
+  assert.ok(!polarSvg.includes("<image"));
 });
 
 test("Node Scene rejects hidden traces and unknown kinds", () => {

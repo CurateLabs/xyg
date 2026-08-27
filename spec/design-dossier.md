@@ -1374,8 +1374,8 @@ Hosts call `xyg_polar_layout`, `xyg_polar_project`, and the polar visibility-mas
 helpers; wedge/ring/polygon helpers remain host-side and call native projection.
 ChartView GLSL `xyPolarPos` is unchanged until WASM (#277). Scene v26 / ABI 133
 compiles polar line, scatter, area, bar/column, errorbar, heatmap, and contour through XYPL v1 into `xyg_scene_batch_encode`;
-polar density stays rejected with
-`XYG_SCENE_UNSUPPORTED_POLAR`. Polar heatmap tessellates lattice Rects to
+ABI 143 polar density tessellates occupied `DensityBlit` cells to PolyFill
+wedges. Polar heatmap tessellates lattice Rects to
 PolyFill wedges (scalar colormaps become per-cell literal styles); inverse-sample
 `<image>` blit stays on the compatibility exporters because Scene has no image record.
 Polar contour reuses SegmentPair polylines through `polar_project`.
@@ -1426,8 +1426,8 @@ per-cell literal Rect fills. ABI 135 named colormap tables live in Rust
 (`xyg_scene_resolve_pack_kind` / `xyg_scene_pack_product`) maps authored
 kinds onto compact pack kinds so hosts no longer dispatch pack-kind locally.
 ABI 137 / Scene v27 compiles Cartesian constant-style density scatter as one
-Image blit (`DensityBlit` + XYHP kind 3 + XYIM) instead of a Rect lattice;
-polar density stays compatibility. ABI 138 / Scene v28 compiles constant dash
+Image blit (`DensityBlit` + XYHP kind 3 + XYIM) instead of a Rect lattice.
+ABI 138 / Scene v28 compiles constant dash
 polylines as an XYDS sidecar (raw XYDS extras or XYEX v2) so SVG/raster emit
 `stroke-dasharray`. ABI 139 / Scene v29 compiles constant non-round linecaps as
 an XYLC sidecar (raw XYLC, XYDS+XYLC concat, or XYEX v2) so SVG/raster emit
@@ -1435,7 +1435,8 @@ an XYLC sidecar (raw XYLC, XYDS+XYLC concat, or XYEX v2) so SVG/raster emit
 polylines as denser Scene polylines (`CurveFlatten=11`); ABI 141 / Scene v31
 compiles cartesian `area(curve="smooth")` as denser Scene Bands
 (`BandFlatten=12`). ABI 142 compiles cartesian mean-color density as XYHP
-kind 4 on the existing `DensityBlit` Image blit. Polar density, polar
+kind 4 on the existing `DensityBlit` Image blit. ABI 143 polar density
+tessellates occupied `DensityBlit` cells to PolyFill wedges (no XYIM). Polar
 smooth, error-band smooth, and authored markers stay compatibility.
 Irregular
 spacing, and LOD stay compatibility.

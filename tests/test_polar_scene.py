@@ -5,11 +5,9 @@ from __future__ import annotations
 import math
 import struct
 
-import pytest
-
 from xyg import _native
 from xyg._figure import Figure
-from xyg._scene_v3 import UnsupportedSceneV3, figure_scene, public_static_export
+from xyg._scene_v3 import figure_scene, public_static_export
 
 
 def test_polar_scatter_figure_scene_succeeds_version_26() -> None:
@@ -141,11 +139,25 @@ def test_polar_truecolor_heatmap_is_scene_eligible() -> None:
     assert public_static_export(figure, "svg") is not None
 
 
-def test_polar_density_still_unsupported() -> None:
+def test_polar_density_is_scene_eligible() -> None:
     figure = Figure(width=400, height=400, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, math.tau)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
     figure.scatter([0.0, math.pi / 2], [0.5, 1.0], density=True, color="#3987e5")
-    with pytest.raises(UnsupportedSceneV3, match="density"):
-        figure_scene(figure)
+    scene = figure_scene(figure)
+    assert scene[:4] == b"XYGS"
+    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert scene[-92:-88] == b"XYPL"
+    assert b"XYIM" not in scene
+    svg = _native.scene_svg(scene)
+    assert "<path" in svg and 'd="M' in svg
+    assert "<image" not in svg
+    assert "<rect x=" not in svg
+    public_svg = public_static_export(figure, "svg")
+    assert public_svg is not None
+    assert b"<path" in public_svg
+    public_png = public_static_export(figure, "png")
+    assert public_png is not None
 
 
 def test_polar_contour_is_scene_eligible() -> None:

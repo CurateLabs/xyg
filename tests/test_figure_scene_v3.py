@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import math
 import re
 import struct
 from pathlib import Path
@@ -1079,16 +1080,28 @@ def test_python_scene_compiles_rect_family_aliases(kind: str) -> None:
     assert 'clip-path="url(#xy-scene-plot)"' in svg
 
 
-def test_python_scene_rejects_rect_corner_radius_and_polar_density() -> None:
+def test_python_scene_rejects_rect_corner_radius() -> None:
     rounded = Figure()
     rounded.bar([0, 1], [1, 2], corner_radius=4.0)
     with pytest.raises(UnsupportedSceneV3, match="corner_radius"):
         rounded.to_scene()
-    density = Figure(coords="polar")
-    density.scatter([0.0] * 200_000, [0.0] * 200_000, density=True)
-    with pytest.raises(UnsupportedSceneV3, match="density-tier"):
-        density.to_scene()
-    assert "<svg" in density.to_svg()
+
+
+def test_python_scene_compiles_polar_density_tessellation() -> None:
+    figure = Figure(width=400, height=400, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, math.tau)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.scatter([0.0, math.pi / 2], [0.5, 1.0], density=True, color="#3987e5")
+    scene = figure.to_scene()
+    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert scene[-92:-88] == b"XYPL"
+    assert b"XYIM" not in scene
+    svg = _native.scene_svg(scene)
+    assert "<path" in svg and 'd="M' in svg
+    assert "<image" not in svg
+    assert "<rect x=" not in svg
+    assert 'data-xy-grid="ring"' in svg or 'data-xy-frame="polar"' in svg
+    assert figure.to_svg() == svg
 
 
 def test_python_scene_compiles_cartesian_density_blit() -> None:
@@ -1130,9 +1143,16 @@ def test_python_scene_compiles_cartesian_mean_color_density() -> None:
         sized.to_scene()
 
     polar = Figure(width=240, height=160, coords="polar")
+    polar.axis_options["x"]["domain"] = (0.0, 1.0)
+    polar.axis_options["y"]["domain"] = (0.0, 1.0)
     polar.scatter(x, y, color=color, density=True)
-    with pytest.raises(UnsupportedSceneV3, match="density-tier"):
-        polar.to_scene()
+    polar_scene = polar.to_scene()
+    assert polar_scene[-92:-88] == b"XYPL"
+    assert b"XYIM" not in polar_scene
+    polar_svg = _native.scene_svg(polar_scene)
+    assert "<path" in polar_svg
+    assert "<image" not in polar_svg
+    assert polar.to_svg() == polar_svg
 
 
 def test_python_scene_rejects_hidden_and_unknown_kind() -> None:

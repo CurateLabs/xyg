@@ -2879,18 +2879,6 @@ function figureTraceSupport(figure, trace) {
     || scatterHasDroppedPerItem(trace)
     || (scatterHasNonConstantColor(trace) && !scatterUsesDensity(trace))
   ) flags |= XYFS_TRACE_HIDDEN_OR_PER_ITEM;
-  if (
-    kind === "scatter"
-    && (figure.coords ?? "cartesian") === "polar"
-    && shouldUseDensity(trace.x?.length ?? 0, {
-      forceDensity: Boolean(trace.force_density ?? trace.forceDensity),
-      forceDirect: Boolean(trace.force_direct ?? trace.forceDirect),
-      coords: "cartesian",
-      perItemChannels: style.color_channel != null
-        || style.size_channel != null
-        || style.stroke_channel != null,
-    })
-  ) flags |= XYFS_TRACE_DENSITY;
   if (XYFS_CURVE_MARKER_KEYS.some((key) => style[key] != null)) flags |= XYFS_TRACE_DASHED_MARKERS;
   if (style.smooth != null) flags |= XYFS_TRACE_DASHED_MARKERS;
   const curve = style.curve;
@@ -3046,14 +3034,13 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     } else if (trace.kind === "scatter") {
       packSymbol = sceneSymbolCode(style.symbol ?? 0);
       packDiameter = Number(style.size ?? style.diameter ?? 4);
-      const polar = (figure.coords ?? "cartesian") === "polar";
       const perItem = style.color_channel != null
         || style.size_channel != null
         || style.stroke_channel != null
         || trace.color_ch != null
         || trace.size_ch != null
         || trace.stroke_ch != null;
-      if (!polar && shouldUseDensity(trace.x?.length ?? 0, {
+      if (shouldUseDensity(trace.x?.length ?? 0, {
         forceDensity: Boolean(trace.force_density ?? trace.forceDensity),
         forceDirect: Boolean(trace.force_direct ?? trace.forceDirect),
         coords: "cartesian",

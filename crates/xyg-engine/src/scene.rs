@@ -3478,8 +3478,10 @@ pub enum SceneExpansionMode {
     /// keyed by stable id. Rust tessellates cells and interns unique fills.
     HeatmapPainted = 9,
     /// Two Rect rows like [`Self::HeatmapLattice`], plus an XYHP density plane
-    /// (log-u8 colormap or log-u8 + mean-color RGBA). Rust emits one Image
-    /// record and an XYIM RGBA sidecar.
+    /// (log-u8 colormap or log-u8 + mean-color RGBA). Cartesian batches emit
+    /// one Image record and an XYIM RGBA sidecar. Polar batches (ABI 143)
+    /// skip empty cells and intern occupied fills as Rects so `with_polar`
+    /// tessellates annular-sector PolyFill wedges; Image+XYPL stays forbidden.
     DensityBlit = 10,
     /// Compact polyline knots flatten through `geom::curve_flatten` into a
     /// denser Polyline run (`SCENE_CURVE_STEPS` samples per increasing span).
@@ -4006,6 +4008,50 @@ fn density_blit_plane(plane: &HeatmapPaintPlane<'_>, rows: usize, cols: usize) -
     matches!(plane.kind, XYHP_PAINT_DENSITY | XYHP_PAINT_MEAN_COLOR)
         && plane.rows == rows
         && plane.cols == cols
+}
+
+fn density_occupied_cells(rgba: &[u8]) -> usize {
+    rgba.chunks_exact(4).filter(|pixel| pixel[3] != 0).count()
+}
+
+fn density_data_cell_fill(rgba: &[u8], cols: usize, rows: usize, col: usize, row: usize) -> [u8; 4] {
+    let image_row = rows - 1 - row;
+    let start = (image_row * cols + col) * 4;
+    [rgba[start], rgba[start + 1], rgba[start + 2], rgba[start + 3]]
+}
+
+fn push_polar_density_cells(
+    output: &mut ExpandedSceneRecords,
+    painted_styles: &mut ExpandedSceneStyles,
+    intern: &mut HashMap<[u8; 4], u32>,
+    stable_id: u64,
+    image: &SceneImage,
+    rows: usize,
+    cols: usize,
+    x0: f64,
+    y0: f64,
+    dx: f64,
+    dy: f64,
+) -> Result<(), SceneError> {
+    let rgba = &image.rgba;
+    for row in 0..rows {
+        for col in 0..cols {
+            let fill = density_data_cell_fill(rgba, cols, rows, col, row);
+            if fill[3] == 0 {
+                continue;
+            }
+            let cell_style = intern_heatmap_fill(painted_styles, intern, fill, [0, 0, 0, 0], 0.0)?;
+            output.push_heatmap_cell(
+                stable_id,
+                cell_style,
+                x0 + col as f64 * dx,
+                y0 + row as f64 * dy,
+                x0 + (col + 1) as f64 * dx,
+                y0 + (row + 1) as f64 * dy,
+            );
+        }
+    }
+    Ok(())
 }
 
 fn density_image_from_plane(plane: HeatmapPaintPlane<'_>) -> Result<SceneImage, SceneError> {
@@ -4693,13 +4739,14 @@ pub fn expand_scene_records(
     x_scale: AxisScale,
     y_scale: AxisScale,
 ) -> Result<ExpandedSceneRecords, SceneError> {
-    expand_scene_records_painted(input, x_scale, y_scale, &[], &[], &[], &[])
+    expand_scene_records_painted(input, x_scale, y_scale, &[], &[], &[], &[], false)
         .map(|(records, _styles, _images)| records)
 }
 
 /// Expand compact authoring, including ABI 134 painted heatmap lattices and
 /// ABI 137 density image blits. When any `HeatmapPainted` or `DensityBlit`
-/// group is present, `paint` must be a valid XYHP envelope.
+/// group is present, `paint` must be a valid XYHP envelope. `polar` selects
+/// ABI 143 occupied-cell Rect tessellation instead of a Cartesian Image blit.
 pub fn expand_scene_records_painted(
     input: SceneExpansionInput<'_>,
     x_scale: AxisScale,
@@ -4708,6 +4755,7 @@ pub fn expand_scene_records_painted(
     stroke_rgba: &[u8],
     stroke_width: &[f64],
     paint: &[u8],
+    polar: bool,
 ) -> Result<(ExpandedSceneRecords, Option<ExpandedSceneStyles>, Vec<SceneImage>), SceneError> {
     let len = input.kinds.len();
     if [
@@ -4736,7 +4784,8 @@ pub fn expand_scene_records_painted(
             _ => {}
         }
     }
-    if has_painted {
+    let intern_density = has_density && polar;
+    if has_painted || intern_density {
         if fill_rgba.len() != stroke_width.len().saturating_mul(4)
             || stroke_rgba.len() != fill_rgba.len()
             || stroke_width.is_empty()
@@ -4753,7 +4802,7 @@ pub fn expand_scene_records_painted(
     if (has_painted || has_density) && paint_planes.is_empty() {
         return Err(SceneError::Length);
     }
-    let mut painted_styles = has_painted.then(|| ExpandedSceneStyles {
+    let mut painted_styles = (has_painted || intern_density).then(|| ExpandedSceneStyles {
         fill_rgba: fill_rgba.to_vec(),
         stroke_rgba: stroke_rgba.to_vec(),
         stroke_width: stroke_width.to_vec(),
@@ -4904,7 +4953,12 @@ pub fn expand_scene_records_painted(
                 if !density_blit_plane(plane, rows, cols) {
                     return Err(SceneError::Length);
                 }
-                1
+                if polar {
+                    let image = density_image_from_plane(*plane)?;
+                    density_occupied_cells(&image.rgba)
+                } else {
+                    1
+                }
             }
             SceneExpansionMode::SegmentPair => {
                 if run_len != 1 {
@@ -4995,8 +5049,31 @@ pub fn expand_scene_records_painted(
             if !density_blit_plane(&plane, rows, cols) {
                 return Err(SceneError::Length);
             }
-            images.push(density_image_from_plane(plane)?);
-            output.push_image(stable_id, style_ref, x0, y0, x1, y1);
+            if polar {
+                let dx = (x1 - x0) / cols as f64;
+                let dy = (y1 - y0) / rows as f64;
+                if !dx.is_finite() || !dy.is_finite() {
+                    return Err(SceneError::NonFinite);
+                }
+                let image = density_image_from_plane(plane)?;
+                let mut intern: HashMap<[u8; 4], u32> = HashMap::new();
+                push_polar_density_cells(
+                    &mut output,
+                    painted_styles.as_mut().ok_or(SceneError::Length)?,
+                    &mut intern,
+                    stable_id,
+                    &image,
+                    rows,
+                    cols,
+                    x0,
+                    y0,
+                    dx,
+                    dy,
+                )?;
+            } else {
+                images.push(density_image_from_plane(plane)?);
+                output.push_image(stable_id, style_ref, x0, y0, x1, y1);
+            }
             cursor = run_end;
             continue;
         }
@@ -12164,6 +12241,7 @@ mod tests {
             &stroke,
             &width,
             &paint,
+            false,
         )
         .unwrap();
         let styles = painted.unwrap();
@@ -12202,6 +12280,7 @@ mod tests {
             &[0, 0, 0, 0],
             &[0.0],
             &paint,
+            false,
         )
         .unwrap();
         assert!(painted.is_none());
@@ -12245,6 +12324,7 @@ mod tests {
             &[0, 0, 0, 0],
             &[0.0],
             &paint,
+            false,
         )
         .unwrap();
         assert!(painted.is_none());
@@ -12255,6 +12335,106 @@ mod tests {
         assert_eq!(images[0].rgba[13], 255);
         assert!(images[0].rgba[15] > 0);
         assert_eq!(&images[0].rgba[0..4], &[0, 0, 255, 0]);
+    }
+
+    #[test]
+    fn compact_polar_density_blit_emits_occupied_rects_not_image() {
+        let encoded = [0u8, 255, 0, 128];
+        let paint = xyhp_density(7, 2, 2, 10.0, 0.85, &encoded, "viridis");
+        let (expanded, painted, images) = expand_scene_records_painted(
+            SceneExpansionInput {
+                kinds: &[2, 2],
+                stable_ids: &[7, 7],
+                style_refs: &[0, 0],
+                diameter: &[2.0, 2.0],
+                symbols: &[0, 0],
+                x0: &[0.0, 0.0],
+                y0: &[0.0, 0.0],
+                x1: &[std::f64::consts::PI, 0.0],
+                y1: &[1.0, 0.0],
+                expansion_modes: &[10, 10],
+            },
+            test_linear_x_scale(),
+            test_linear_y_scale(),
+            &[0, 0, 0, 255],
+            &[0, 0, 0, 0],
+            &[0.0],
+            &paint,
+            true,
+        )
+        .unwrap();
+        let styles = painted.unwrap();
+        assert!(images.is_empty());
+        assert_eq!(expanded.kinds.len(), 2);
+        assert!(expanded
+            .kinds
+            .iter()
+            .all(|kind| *kind == SceneRecordKind::Rect as u8));
+        assert!(styles.stroke_width.iter().skip(1).all(|width| *width == 0.0));
+
+        let layout = PlotLayout::new(400.0, 400.0, 0.0, 0.0, 0.0, 0.0).unwrap();
+        let x = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            std::f64::consts::PI,
+            0.0,
+            400.0,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 400.0, 0.0, 1.0, false).unwrap();
+        let envelope = polar::PolarEnvelope {
+            theta_unit: 0,
+            theta_direction: 0,
+            n_categories: 0,
+            r_scale_kind: 0,
+            grid_shape: 0,
+            r_mask_nonpositive: false,
+            theta_zero: 0.0,
+            sector_start: 0.0,
+            sector_end: std::f64::consts::PI,
+            r_lo: 0.0,
+            r_hi: 1.0,
+            r_origin: f64::NAN,
+            hole: 0.0,
+            r_constant: 1.0,
+        };
+        let xypl = polar::encode_xypl(&envelope);
+        let encoded_scene = SceneBatch::new(
+            layout,
+            1,
+            2,
+            x,
+            y,
+            &expanded.kinds,
+            &expanded.stable_ids,
+            &expanded.style_refs,
+            &styles.fill_rgba,
+            &styles.stroke_rgba,
+            &styles.stroke_width,
+            &expanded.diameter,
+            &expanded.symbols,
+            &expanded.x0,
+            &expanded.y0,
+            &expanded.x1,
+            &expanded.y1,
+        )
+        .unwrap()
+        .with_polar(&xypl)
+        .unwrap()
+        .encode();
+        let document = SceneDocument::decode(&encoded_scene).unwrap();
+        assert!(document.images.is_empty());
+        assert!(document
+            .records
+            .iter()
+            .all(|record| record.kind == SceneRecordKind::PolyFill));
+        assert!(document.records.len() >= 6);
+        let svg = document.to_svg();
+        assert!(svg.contains("<path d=\"M"));
+        assert!(!svg.contains("<image"));
+        assert!(!svg.contains("<rect x="));
     }
 
     #[test]
@@ -12287,6 +12467,7 @@ mod tests {
             &[0, 0, 0, 0],
             &[0.0],
             &paint,
+            false,
         )
         .unwrap();
         let styles = painted.unwrap();
@@ -12325,6 +12506,7 @@ mod tests {
             &[0, 0, 0, 0],
             &[0.0],
             &paint,
+            false,
         )
         .unwrap();
         let styles = painted.unwrap();

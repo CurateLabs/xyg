@@ -54,7 +54,7 @@ _STROKE_KINDS = frozenset({"line"}) | _SEGMENT_KINDS
 _XYFS_TRACE_UNSUPPORTED_KIND = 1 << 0
 _XYFS_TRACE_NON_PRIMARY_AXIS = 1 << 1
 _XYFS_TRACE_HIDDEN_OR_PER_ITEM = 1 << 2
-_XYFS_TRACE_DENSITY = 1 << 3
+_XYFS_TRACE_DENSITY = 1 << 3  # ABI 143 no longer sets this for polar density
 _XYFS_TRACE_DASHED_MARKERS = 1 << 4
 _XYFS_TRACE_RECT_GRADIENT = 1 << 5
 _XYFS_TRACE_CORNER_RADIUS = 1 << 6
@@ -924,8 +924,6 @@ def _figure_trace_support_flags(trace: Any, *, polar: bool = False) -> tuple[int
         trace.has_per_item_channels() and not _density_aggregates_color(trace)
     ):
         flags |= _XYFS_TRACE_HIDDEN_OR_PER_ITEM
-    if kind == "scatter" and trace.use_density() and polar:
-        flags |= _XYFS_TRACE_DENSITY
     if any(style.get(key) is not None for key in _XYFS_CURVE_MARKER_KEYS):
         flags |= _XYFS_TRACE_DASHED_MARKERS
     curve = style.get("curve")
@@ -1178,7 +1176,11 @@ def _mean_color_paint_plane(
 def _density_blit_pack(
     figure: Any, trace: Any
 ) -> tuple[float, float, bytes, list[np.ndarray | None]] | None:
-    """Pack Cartesian constant-style density as one compact Image lattice."""
+    """Pack constant-style density as one compact Image lattice.
+
+    Cartesian Scene expansion emits one Image blit. Polar Scene expansion
+    (ABI 143) tessellates occupied cells to PolyFill wedges instead.
+    """
     if not trace.use_density():
         return None
     xv = _trace_column(trace, "x")

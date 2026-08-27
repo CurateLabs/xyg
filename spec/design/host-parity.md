@@ -178,7 +178,7 @@ hosts pack a name or a custom RGB ramp. ABI 136 adds
 dispatch and column remapping live in Rust. ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
-record plus XYIM. Polar density stays compatibility. ABI 138 / Scene v28
+record plus XYIM. ABI 138 / Scene v28
 adds XYDS constant dash on the same extras pointer (raw XYDS or XYEX v2)
 and an XYDS sidecar after XYIM. ABI 139 / Scene v29 adds XYLC constant
 linecap on that same extras pointer (raw XYLC, XYDS+XYLC concat, or XYEX v2)
@@ -187,7 +187,8 @@ so cartesian `curve="smooth"` polylines flatten in Rust from compact knots
 (pack `step_mode=4`); ABI 141 / Scene v31 adds `BandFlatten=12` so cartesian
 `area(curve="smooth")` bands flatten the same way. ABI 142 admits cartesian
 mean-color density as XYHP kind 4 on the existing `DensityBlit` Image blit.
-Polar density, polar smooth, error-band smooth, and authored markers stay
+ABI 143 polar density tessellates occupied `DensityBlit` cells to PolyFill
+wedges. Polar smooth, error-band smooth, and authored markers stay
 compatibility. ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate

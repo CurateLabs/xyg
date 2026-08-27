@@ -452,9 +452,9 @@ tessellated to PolyFill), `errorbar` (projected polylines), `heatmap`
 colormaps and truecolor RGBA planes to per-cell literal styles), and `contour` (SegmentPair polylines through `polar_project`,
 matching polar errorbar) through Rust
 `polar_project` / `polar_wedge_points`, polar rings/spokes/clip, and rim tick
-labels when hosts pass explicit XYPL v1. Polar density-tier scatter stays
-rejected with a density diagnostic. Inverse-sample `<image>` blit stays on the
-compatibility exporters because Scene has no image-blit record.
+labels when hosts pass explicit XYPL v1. ABI 143 polar density-tier scatter
+tessellates occupied cells to PolyFill wedges. Inverse-sample `<image>` blit stays on the
+compatibility exporters for polar heatmap because polar Image+XYPL stays forbidden.
 Transparent Cartesian axis/grid paint
 must not be used to infer polar coordinates; it means only independently hidden
 Cartesian chrome. Polar requires explicit `coords="polar"` / XYPL input.
