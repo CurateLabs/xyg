@@ -826,6 +826,69 @@ def load() -> ctypes.CDLL:
         F64P,
         F64P,
     ]
+    lib.xyg_compat_is_compact.restype = ctypes.c_int32
+    lib.xyg_compat_is_compact.argtypes = [ctypes.c_double]
+    lib.xyg_compat_default_padding.restype = ctypes.c_size_t
+    lib.xyg_compat_default_padding.argtypes = [ctypes.c_int32, F64P]
+    lib.xyg_compat_title_wrap_width.restype = ctypes.c_size_t
+    lib.xyg_compat_title_wrap_width.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+    ]
+    lib.xyg_compat_title_room.restype = ctypes.c_size_t
+    lib.xyg_compat_title_room.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_double,
+        F64P,
+    ]
+    lib.xyg_compat_x_axis_side_room.restype = ctypes.c_size_t
+    lib.xyg_compat_x_axis_side_room.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_double,
+        F64P,
+        F64P,
+    ]
+    lib.xyg_compat_colorbar_extra.restype = ctypes.c_size_t
+    lib.xyg_compat_colorbar_extra.argtypes = [
+        ctypes.c_uint32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        F64P,
+        F64P,
+    ]
+    lib.xyg_compat_right_y_room.restype = ctypes.c_size_t
+    lib.xyg_compat_right_y_room.argtypes = [ctypes.c_int32, F64P]
+    lib.xyg_polar_legend_room.restype = ctypes.c_size_t
+    lib.xyg_polar_legend_room.argtypes = [ctypes.c_double, F64P]
+    lib.xyg_polar_legend_reserve.restype = ctypes.c_size_t
+    lib.xyg_polar_legend_reserve.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.POINTER(ctypes.c_uint32),
+        F64P,
+    ]
+    lib.xyg_polar_label_room.restype = ctypes.c_size_t
+    lib.xyg_polar_label_room.argtypes = [ctypes.c_double, F64P]
+    lib.xyg_recut_polar_plot.restype = ctypes.c_size_t
+    lib.xyg_recut_polar_plot.argtypes = [
+        F64P,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        F64P,
+    ]
     lib.xyg_hexbin_groups.restype = ctypes.c_size_t
     lib.xyg_hexbin_groups.argtypes = [
         F64P,
@@ -2414,6 +2477,36 @@ def main() -> None:
         and y_n == 1
         and y_room.value > 23.0,
         "text_block_measure CRLF and titled y room",
+    )
+    pad = array("d", [0.0] * 4)
+    pad_n = lib.xyg_compat_default_padding(1, _ptr(pad, ctypes.c_double))
+    recut_in = array("d", [0.0, 0.0, 200.0, 200.0, 10.0])
+    recut_out = array("d", [0.0] * 9)
+    recut_n = lib.xyg_recut_polar_plot(
+        _ptr(recut_in, ctypes.c_double),
+        200.0,
+        200.0,
+        0,
+        0.0,
+        30.0,
+        1,
+        0,
+        0,
+        _ptr(recut_out, ctypes.c_double),
+    )
+    ok(
+        pad_n == 4
+        and pad[0] == 6.0
+        and pad[1] == 8.0
+        and pad[2] == 36.0
+        and pad[3] == 46.0
+        and recut_n == 9
+        and recut_out[0] == 30.0
+        and recut_out[1] == 30.0
+        and recut_out[2] == 140.0
+        and recut_out[3] == 140.0
+        and recut_out[4] == 40.0,
+        "compat default padding and authored-padding polar recut",
     )
     cf_x = array("d", [0.0, 1.0, 2.0, 3.0, 4.0])
     cf_y = array("d", [0.0, 1.0, 0.5, 2.0, 1.5])

@@ -228,8 +228,18 @@ Python and Node call `xyg_text_block_measure`,
 `xyg_y_axis_left_room`, `xyg_x_axis_title_room`,
 `xyg_x_tick_label_room`, and `xyg_x_tick_label_edge_rooms` so wrap,
 rotated extent, and title/tick gutter formulas cannot drift. Hosts still
-format `_tick_text`, resolve CSS visibility / tick offsets, iterate axes,
-and run `layout()` padding/colorbar/polar recut.
+format `_tick_text`, resolve CSS visibility / tick offsets, and iterate
+axes.
+ABI 126 moves compatibility static-export padding, title-band, colorbar
+extra, right-y, and polar recut into Rust: Python and Node call
+`xyg_compat_is_compact`, `xyg_compat_default_padding`,
+`xyg_compat_title_wrap_width`, `xyg_compat_title_room`,
+`xyg_compat_x_axis_side_room`, `xyg_compat_colorbar_extra`,
+`xyg_compat_right_y_room`, `xyg_polar_legend_room`,
+`xyg_polar_legend_reserve`, `xyg_polar_label_room`, and
+`xyg_recut_polar_plot` so compact gutters, colorbar extras, and polar
+disc recut cannot drift. Hosts still iterate axes, format ticks, measure
+rooms, resolve CSS visibility, and decide polar legend reservation.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call

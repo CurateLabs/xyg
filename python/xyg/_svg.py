@@ -1942,7 +1942,7 @@ def _colorbar_right_axis_room(
         and _axis_tick_label_strategy(axis) != "none"
         for axis in axes
     ):
-        return 42.0 if compact else 54.0
+        return float(_native.compat_right_y_room(compact))
     return 0.0
 
 
@@ -2283,11 +2283,14 @@ def _x_axis_rooms(
             if side != title_side:
                 side_axis.pop("label", None)
             measured = _x_tick_label_room(side_axis, plot_w)
+            room, measured_bottom_contrib = _native.compat_x_axis_side_room(
+                compact, side == "top", measured
+            )
             if side == "top":
-                top = max(top, 26.0 if compact else 32.0, measured)
+                top = max(top, room)
             else:
-                bottom = max(bottom, 36.0 if compact else 42.0, measured)
-                measured_bottom = max(measured_bottom, measured)
+                bottom = max(bottom, room)
+                measured_bottom = max(measured_bottom, measured_bottom_contrib)
     return top, bottom, measured_bottom
 
 
@@ -2331,14 +2334,9 @@ def _decode_title_geometry(spec: dict[str, Any], blob: bytes) -> dict[str, Any]:
 def _title_wrap_width(width: float, left: float, right: float) -> float:
     """Width a chart title wraps at, in CSS px.
 
-    Deliberately derived from the *authored/default* horizontal gutters rather
-    than the final plot rect: the measured left gutter depends on the plot
-    height, which depends on the title band, so wrapping at the final width
-    would be circular. `_recut_polar_plot` and the measured gutters may narrow
-    the plot afterwards; the title keeps this width so what layout reserved is
-    what gets drawn. Mirrored by `_titleWrapWidth` in js/src/50_chartview.ts.
+    Thin packer over Rust ``xyg_compat_title_wrap_width`` (ABI 126).
     """
-    return max(40.0, float(width) - float(left) - float(right))
+    return float(_native.compat_title_wrap_width(width, left, right))
 
 
 def _title_metrics(
@@ -2357,11 +2355,18 @@ def _title_room(spec: dict[str, Any], compact: bool, wrap_width: float | None = 
     for entry in _title_entries(spec):
         _style, _size, block = _title_metrics(spec, entry, wrap_width)
         pad = float(entry.get("pad", 8.0))
-        if entry.get("automatic_y", True):
-            candidate = max(26.0 if compact else 30.0, block.height + pad)
-        else:
-            candidate = block.height + pad if float(entry.get("y", 1.0)) >= 1.0 else 0.0
-        room = max(room, max(0.0, candidate))
+        room = max(
+            room,
+            float(
+                _native.compat_title_room(
+                    compact,
+                    block.height,
+                    pad,
+                    bool(entry.get("automatic_y", True)),
+                    float(entry.get("y", 1.0)),
+                )
+            ),
+        )
     return room
 
 
@@ -2374,15 +2379,12 @@ def layout(spec: dict[str, Any]) -> tuple[int, int, bool, dict[str, float]]:
     width = 900 if not isinstance(width, (int, float)) else int(width)
     height = 420 if not isinstance(height, (int, float)) else int(height)
 
-    compact = width < 520
+    compact = _native.compat_is_compact(width)
     pad = spec.get("padding")
     if isinstance(pad, list) and len(pad) == 4:
         top, right, bottom, left = (float(v) for v in pad)
     else:
-        left = 46 if compact else 62
-        right = 8 if compact else 14
-        top = 6 if compact else 10
-        bottom = 36 if compact else 42
+        top, right, bottom, left = _native.compat_default_padding(compact)
     axes = _axes_by_id(spec)
     # The first pass uses the authored/default horizontal allocation. A second
     # pass after the measured left gutter catches an auto-collision decision
@@ -2400,15 +2402,22 @@ def layout(spec: dict[str, Any]) -> tuple[int, int, bool, dict[str, float]]:
     if measured_bottom_room:
         bottom = max(bottom, measured_bottom_room)
     colorbar = spec.get("colorbar") or {}
-    if colorbar.get("placement") == "axes":
-        if colorbar.get("orientation") == "horizontal":
-            bottom += 24 + (16 if colorbar.get("label") else 0)
+    if colorbar:
+        if colorbar.get("placement") == "axes":
+            kind = (
+                "axes_horizontal"
+                if colorbar.get("orientation") == "horizontal"
+                else "axes_vertical"
+            )
+        elif colorbar.get("orientation") == "horizontal":
+            kind = "figure_horizontal"
         else:
-            right += 44 + (18 if colorbar.get("label") else 0)
-    elif colorbar.get("orientation") == "horizontal":
-        bottom += (18 if colorbar.get("pad") == 0 else 38) + (16 if colorbar.get("label") else 0)
-    elif colorbar:
-        right += (62 if colorbar.get("pad") == 0 else 86) + (18 if colorbar.get("label") else 0)
+            kind = "figure_vertical"
+        extra_right, extra_bottom = _native.compat_colorbar_extra(
+            kind, bool(colorbar.get("label")), colorbar.get("pad") == 0
+        )
+        right += extra_right
+        bottom += extra_bottom
     if any(
         axis_id.startswith("y")
         and (
@@ -2421,7 +2430,7 @@ def layout(spec: dict[str, Any]) -> tuple[int, int, bool, dict[str, float]]:
         # Match ChartView._layout(): one shared right-side gutter contains the
         # secondary-y tick labels/title. Multiple right axes intentionally
         # overlay in both renderers until offset axes become part of the API.
-        right += 42 if compact else 54
+        right += _native.compat_right_y_room(compact)
     # Measured y-axis text room, applied last. The vertical extent is already
     # final (only top/bottom feed it), so the tick density the reservation
     # measures is the density that will be drawn. This raises a *floor*: an
@@ -2477,12 +2486,10 @@ def layout(spec: dict[str, Any]) -> tuple[int, int, bool, dict[str, float]]:
 
 # Room reserved outside the outer ring for angular tick labels. Cartesian
 # gutters are per-side because labels hug two edges; a polar chart carries them
-# all the way around, so the allowance is uniform.
+# all the way around, so the allowance is uniform. The floor/ceiling live in
+# Rust (`compat_layout::POLAR_LABEL_ROOM` / `POLAR_LABEL_ROOM_MAX`, ABI 126).
 # Mirrored by POLAR_LABEL_ROOM in js/src/50_chartview.ts.
 _POLAR_LABEL_ROOM = 30.0
-# Ceiling on the measured allowance: past this a long label shrinks the disc
-# more than it helps, so it truncates against the canvas instead.
-_POLAR_LABEL_ROOM_MAX = 90.0
 
 # Angle of the spoke the radial tick labels run along, in degrees off the theta
 # zero direction. Matplotlib's default `rlabel_position`; keeping the labels off
@@ -2513,22 +2520,17 @@ _POLAR_TICK_GAP = 8.0
 # The floor keeps a narrow chart's legend readable; the ceiling stops a wide one
 # from spending 300 px on four short rows. A label still wider than the gutter
 # ellipsizes with its full text in `title`/ARIA, exactly as the static exporters
-# already ellipsize against the plot width.
+# already ellipsize against the plot width. The fraction/clamp live in Rust
+# (`compat_layout::polar_legend_room`, ABI 126).
 # Mirrored by xyPolarLegendRoom in js/src/50_chartview.ts.
-_POLAR_LEGEND_ROOM_FRACTION = 0.22
-_POLAR_LEGEND_ROOM_MIN = 120.0
-_POLAR_LEGEND_ROOM_MAX = 200.0
 
 
 def _polar_legend_room(width: float) -> float:
     """Side-gutter width for a polar legend on a `width`-px canvas.
 
-    `floor`, not `round`: Python and JavaScript disagree about half-way cases
-    (banker's rounding versus round-half-up) and the two must land on the same
-    integer pixel.
+    Thin packer over Rust ``xyg_polar_legend_room`` (ABI 126).
     """
-    scaled = math.floor(float(width) * _POLAR_LEGEND_ROOM_FRACTION)
-    return min(_POLAR_LEGEND_ROOM_MAX, max(_POLAR_LEGEND_ROOM_MIN, float(scaled)))
+    return float(_native.polar_legend_room(width))
 
 
 _POLAR_LEGEND_BAND = 64.0
@@ -2556,10 +2558,8 @@ def _polar_legend_reserve(spec: dict[str, Any], compact: bool, width: float) -> 
     rows = options.get("items") or legend_items(spec.get("traces") or [])
     if not rows and not (spec.get("extra_legends") or []):
         return "", 0.0
-    if compact:
-        return "bottom", _POLAR_LEGEND_BAND
     loc = str(options.get("loc") or "upper right")
-    return ("left" if "left" in loc else "right"), _polar_legend_room(width)
+    return _native.polar_legend_reserve(compact, "left" in loc, width)
 
 
 def _polar_label_room(theta_axis: dict[str, Any]) -> float:
@@ -2573,19 +2573,14 @@ def _polar_label_room(theta_axis: dict[str, Any]) -> float:
 
     Mirrored by `polarLabelRoom` in js/src/50_chartview.ts.
     """
-    room = _POLAR_LABEL_ROOM
-    # A category axis carries its authored names in `categories` and usually has
-    # no `tick_labels` at all (`axis_ticks` hands category count to Rust), so
-    # measuring only `tick_labels` fell back to the uniform default and long
-    # names spilled over the disc.
     labels = theta_axis.get("tick_labels")
     if not labels and theta_axis.get("kind") == "category":
         labels = theta_axis.get("categories")
     if not labels:
-        return room
+        return float(_native.polar_label_room(None))
     size = _axis_tick_font_size(theta_axis)
     widest = max((_textblock.measure(str(text), size).width for text in labels), default=0.0)
-    return min(_POLAR_LABEL_ROOM_MAX, max(room, widest + _POLAR_TICK_GAP + _AXIS_TEXT_EDGE_PAD))
+    return float(_native.polar_label_room(widest))
 
 
 def _recut_polar_plot(
@@ -2621,119 +2616,41 @@ def _recut_polar_plot(
     Third, a legend gutter (`_polar_legend_reserve`) is taken off the rect and
     recorded as `plot["legend_box"]`, so the legend sits beside the disc instead
     of on top of it. `_legend_layout` places and bounds itself in that box.
+
+    Hosts still resolve legend reservation, measure angular labels, and decide
+    title/colorbar flags. The recut combination lives in Rust (ABI 126).
     """
     theta_axis = spec.get("x_axis") or {}
-    # Hiding the angular tick labels removes the LABEL inset, not the legend
-    # gutter. Returning here skipped `_polar_legend_reserve` outright, so the
-    # legend fell back to the plain plot rect and drew on top of the marks —
-    # and the disc kept the cartesian gutters it should have given back. Track
-    # it and skip only the inset.
     labels_hidden = theta_axis.get("tick_label_strategy") == "none"
-    # The legend gutter is taken off the canvas edge FIRST, before the disc is
-    # fitted to what is left, so the disc never occupies the gutter and the
-    # legend never occupies the disc. Recorded as four floats rather than a
-    # nested rect so `plot` stays a flat float map.
-    canvas_x0 = 0.0
     legend_side, legend_room = _polar_legend_reserve(spec, compact, width)
-    if legend_room:
-        if legend_side == "left":
-            box = (0.0, plot["y"], legend_room, plot["h"])
-            canvas_x0 = legend_room
-            plot["x"] = max(plot["x"], legend_room)
-        elif legend_side == "right":
-            width -= legend_room
-            box = (width, plot["y"], legend_room, plot["h"])
-        else:
-            height -= legend_room
-            box = (plot["x"], height, plot["w"], legend_room)
-        plot["legend_box_x"], plot["legend_box_y"] = box[0], box[1]
-        plot["legend_box_w"], plot["legend_box_h"] = box[2], box[3]
-        plot["w"] = max(40.0, min(plot["w"], width - plot["x"]))
-        plot["h"] = max(40.0, min(plot["h"], height - plot["y"]))
-    # The top gutter also holds the figure title, which emitters place at
-    # `plot.y - top_axis_room - pad`; it is a floor, never given back.
-    reserved_top = plot["y"]
-    reserved_right = width - plot["x"] - plot["w"]
-    reserved_bottom = height - plot["y"] - plot["h"]
-
     room = 0.0 if labels_hidden else _polar_label_room(theta_axis)
     authored_pad = spec.get("padding")
-    if isinstance(authored_pad, list) and len(authored_pad) == 4:
-        # An explicit `padding` states the box the author wants the plot to
-        # occupy — most often to reserve a band under the disc for a legend or
-        # caption, which is what every donut composition needs. Reclaiming the
-        # gutters below would throw that away (a chart authored with
-        # `padding=[0, 0, 140, 0]` came out with its disc filling the canvas,
-        # the reserved band gone). So an authored box is only inset by the
-        # uniform label room, and the disc centres in what is left.
-        left = plot["x"] + room
-        right = plot["x"] + plot["w"] - room
-        top = plot["y"] + room
-        bottom = plot["y"] + plot["h"] - room
-        box_w, box_h = right - left, bottom - top
-        if box_w >= 40.0 and box_h >= 40.0:
-            plot["x"], plot["y"], plot["w"], plot["h"] = left, top, box_w, box_h
-            plot["top_axis_room"] = plot["top_axis_room"] + room
-            return
-    side = max(room, reserved_right)
-    # A radial-axis title is still drawn in the left gutter — a disc gives it no
-    # natural home — and `_axis_label_geometry` positions it outward from the
-    # plot edge past the tick-label room. So when one is set, the original
-    # gutter is kept whole rather than part-reclaimed: shaving it put the title
-    # at x = -10, off the canvas. Charts with no radial title (the common case)
-    # still get the full reclaim.
     y_axis = spec.get("y_axis") or {}
     titled = bool(y_axis.get("label")) and _axis_text_paint_visible(y_axis, "label_color")
-    # `canvas_x0` is a left legend gutter; the label room still applies inside it.
-    # With no gutter it is 0 and `side >= room`, so this is the previous value.
-    left = max(max(side, plot["x"]) if titled else side, canvas_x0 + room)
-    right = width - side
-    # Vertically the title side is fixed, so only the bottom can be
-    # symmetrised — and only when the theta axis has no title of its own,
-    # because that title is drawn in the bottom gutter and reclaiming the band
-    # pushed it below the canvas edge.
     x_axis = spec.get("x_axis") or {}
     x_titled = bool(x_axis.get("label")) and _axis_text_paint_visible(x_axis, "label_color")
-    # A horizontal colorbar is placed relative to the plot's BOTTOM edge, so
-    # extending the rect downward walks it off the canvas. Its gutter is real
-    # chrome, not a tick-label gutter: keep it whole, like a theta title.
     colorbar = spec.get("colorbar") or {}
-    keeps_bottom = x_titled or colorbar.get("orientation") == "horizontal"
-    bottom_reserve = reserved_bottom if keeps_bottom else min(reserved_bottom, reserved_top)
-    bottom = height - max(room, bottom_reserve)
-    top = reserved_top + room
-
-    # Measure BEFORE clamping: clamping first made the guard below unreachable,
-    # so a chart too small for the label room silently got a 40px floor rect
-    # instead of keeping its circle. Mirrored by _recutPolarPlot's early return.
-    box_w = right - left
-    box_h = bottom - top
-    if box_w < 40.0 or box_h < 40.0:
-        # Too small for the label room. Do NOT fall back to the cartesian rect:
-        # its own 40px floor can be wider than the canvas, and a disc centred
-        # in it leaves the page (an 80x80 chart drew its circle out to x=86).
-        # Take the largest centred box the canvas itself allows instead.
-        margin = min(4.0, width / 8.0, height / 8.0)
-        plot["x"] = margin
-        plot["y"] = max(margin, min(reserved_top, height / 4.0))
-        plot["w"] = max(8.0, width - 2 * margin)
-        plot["h"] = max(8.0, height - plot["y"] - margin)
-        return
-    plot["x"] = left
-    plot["y"] = top
-    plot["w"] = box_w
-    plot["h"] = box_h
-    # The top slice is angular-label room, so it belongs to the axis
-    # reservation: without this the title would ride the rect down and the
-    # topmost angular label would land on top of it.
-    plot["top_axis_room"] = plot["top_axis_room"] + room
-    # Re-square the legend gutter against the FINAL rect so the box tracks the
-    # disc it sits beside rather than the pre-recut rect it was cut from.
-    if legend_room:
-        if legend_side in ("left", "right"):
-            plot["legend_box_y"], plot["legend_box_h"] = plot["y"], plot["h"]
+    recut = _native.recut_polar_plot(
+        plot,
+        width,
+        height,
+        legend_side=legend_side,
+        legend_room=legend_room,
+        polar_label_room=room,
+        authored_padding=isinstance(authored_pad, list) and len(authored_pad) == 4,
+        y_titled=titled,
+        keeps_bottom=x_titled or colorbar.get("orientation") == "horizontal",
+    )
+    plot["x"] = recut["x"]
+    plot["y"] = recut["y"]
+    plot["w"] = recut["w"]
+    plot["h"] = recut["h"]
+    plot["top_axis_room"] = recut["top_axis_room"]
+    for key in ("legend_box_x", "legend_box_y", "legend_box_w", "legend_box_h"):
+        if key in recut:
+            plot[key] = recut[key]
         else:
-            plot["legend_box_x"], plot["legend_box_w"] = plot["x"], plot["w"]
+            plot.pop(key, None)
 
 
 def _tick_window(axis: dict[str, Any]) -> tuple[float, float]:

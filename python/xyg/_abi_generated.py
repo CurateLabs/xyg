@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 125
-SIGNATURE_SHA256 = "fc63dadbd8275ffb7c2e5d16a01b80707ead16c4624c2ec87f15a6e8238f0742"
+ABI_VERSION = 126
+SIGNATURE_SHA256 = "030d3c73885fde9abbc9c982d7bf46b6b8723b2a1c350cfdc678a2e7a260d3b3"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -94,6 +94,34 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_chunked_columns_rows
     function.restype = ctypes.c_uint64
     function.argtypes = [ctypes.c_uint64]
+    # size_t xyg_compat_colorbar_extra(uint32_t kind, int32_t has_label, int32_t pad_zero, double * out_right, double * out_bottom)
+    function = lib.xyg_compat_colorbar_extra
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_uint32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p]
+    # size_t xyg_compat_default_padding(int32_t compact, double * out_pad)
+    function = lib.xyg_compat_default_padding
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_compat_is_compact(double width)
+    function = lib.xyg_compat_is_compact
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_double]
+    # size_t xyg_compat_right_y_room(int32_t compact, double * out_room)
+    function = lib.xyg_compat_right_y_room
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_int32, ctypes.c_void_p]
+    # size_t xyg_compat_title_room(int32_t compact, double block_height, double pad, int32_t automatic_y, double y, double * out_room)
+    function = lib.xyg_compat_title_room
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_int32, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_double, ctypes.c_void_p]
+    # size_t xyg_compat_title_wrap_width(double width, double left, double right, double * out_width)
+    function = lib.xyg_compat_title_wrap_width
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p]
+    # size_t xyg_compat_x_axis_side_room(int32_t compact, int32_t top, double measured, double * out_room, double * out_measured_bottom)
+    function = lib.xyg_compat_x_axis_side_room
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p]
     # size_t xyg_contour_levels(const double * data, size_t len, size_t n_levels, double * out, size_t capacity)
     function = lib.xyg_contour_levels
     function.restype = ctypes.c_size_t
@@ -406,6 +434,18 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_payload_visible_needed
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32]
+    # size_t xyg_polar_label_room(double widest, double * out_room)
+    function = lib.xyg_polar_label_room
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_double, ctypes.c_void_p]
+    # size_t xyg_polar_legend_reserve(int32_t compact, int32_t loc_has_left, double width, uint32_t * out_side, double * out_room)
+    function = lib.xyg_polar_legend_reserve
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p]
+    # size_t xyg_polar_legend_room(double width, double * out_room)
+    function = lib.xyg_polar_legend_room
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_double, ctypes.c_void_p]
     # size_t xyg_polygon_select(const double * x, const double * y, size_t len, const uint32_t * rows, size_t n_rows, const double * poly_x, const double * poly_y, size_t n_poly, uint32_t * out)
     function = lib.xyg_polygon_select
     function.restype = ctypes.c_size_t
@@ -498,6 +538,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_rect_zero_baseline_flags
     function.restype = ctypes.c_uint8
     function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_recut_polar_plot(const double * in_plot, double width, double height, uint32_t legend_side, double legend_room, double polar_label_room, int32_t authored_padding, int32_t y_titled, int32_t keeps_bottom, double * out_plot)
+    function = lib.xyg_recut_polar_plot
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_double, ctypes.c_double, ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p]
     # int32_t xyg_remap_u8(uint8_t * values, size_t len, const uint8_t * mapping, size_t mapping_len)
     function = lib.xyg_remap_u8
     function.restype = ctypes.c_int32

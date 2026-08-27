@@ -1337,7 +1337,19 @@ Hosts call `xyg_text_block_measure`, `xyg_text_block_rotated_extent`,
 `xyg_x_tick_label_edge_rooms`; wrap, rotated extent, and title/tick
 gutter formulas are engine-owned and identical for Python and Node.
 Hosts still format `_tick_text`, resolve CSS visibility / tick offsets,
-iterate axes, and run `layout()` padding/colorbar/polar recut (#275).
+and iterate axes (#275).
+ABI 126 moves compatibility static-export padding, title-band, colorbar
+extra, right-y, and polar-recut combination into Rust. Hosts call
+`xyg_compat_is_compact`, `xyg_compat_default_padding`,
+`xyg_compat_title_wrap_width`, `xyg_compat_title_room`,
+`xyg_compat_x_axis_side_room`, `xyg_compat_colorbar_extra`,
+`xyg_compat_right_y_room`, `xyg_polar_legend_room`,
+`xyg_polar_legend_reserve`, `xyg_polar_label_room`, and
+`xyg_recut_polar_plot`; compact gutters, colorbar extras, and polar disc
+recut (including the too-small canvas fallback) are engine-owned and
+identical for Python and Node. Hosts still iterate axes, format ticks,
+measure rooms through ABI 125, resolve CSS visibility, and decide
+whether a polar legend gutter is reserved (#275).
 ABI 110 moves primary Scene legend framing into Rust. Hosts pass loc/flags,
 font sizes, paints, title, and per-entry meta plus labels; XYLG header
 layout, text offsets, and bounded-text rejection are engine-owned and

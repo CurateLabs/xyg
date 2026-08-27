@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 125;
-export const SIGNATURE_SHA256 = "fc63dadbd8275ffb7c2e5d16a01b80707ead16c4624c2ec87f15a6e8238f0742";
+export const ABI_VERSION = 126;
+export const SIGNATURE_SHA256 = "030d3c73885fde9abbc9c982d7bf46b6b8723b2a1c350cfdc678a2e7a260d3b3";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -26,6 +26,13 @@ export let xyChunkedColumnsOverview;
 export let xyChunkedColumnsRead;
 export let xyChunkedColumnsReadPage;
 export let xyChunkedColumnsRows;
+export let xyCompatColorbarExtra;
+export let xyCompatDefaultPadding;
+export let xyCompatIsCompact;
+export let xyCompatRightYRoom;
+export let xyCompatTitleRoom;
+export let xyCompatTitleWrapWidth;
+export let xyCompatXAxisSideRoom;
 export let xyContourLevels;
 export let xyContourfBands;
 export let xyContourfDensify;
@@ -104,6 +111,9 @@ export let xyNormalizeF32;
 export let xyPayloadTier;
 export let xyPayloadVisibleMask;
 export let xyPayloadVisibleNeeded;
+export let xyPolarLabelRoom;
+export let xyPolarLegendReserve;
+export let xyPolarLegendRoom;
 export let xyPolygonSelect;
 export let xyPolygonTriangles;
 export let xyPyramidAppend;
@@ -127,6 +137,7 @@ export let xyRasterizePngData;
 export let xyRasterizePngSpans;
 export let xyRasterizeSpans;
 export let xyRectZeroBaselineFlags;
+export let xyRecutPolarPlot;
 export let xyRemapU8;
 export let xyRfft;
 export let xyRibbonEdge;
@@ -260,6 +271,13 @@ export function bindGeneratedAbi(lib) {
   xyChunkedColumnsRead = lib.func("size_t xyg_chunked_columns_read(uint64_t store, double x0, double x1, double y0, double y1, int32_t use_y, uint64_t budget_bytes, uint64_t generation, double * out_x, double * out_y, size_t capacity, uint64_t * out_stats)");
   xyChunkedColumnsReadPage = lib.func("size_t xyg_chunked_columns_read_page(uint64_t store, double x0, double x1, double y0, double y1, int32_t use_y, uint64_t budget_bytes, uint64_t generation, uint32_t cursor, double * out_x, double * out_y, size_t capacity, uint64_t * out_stats)");
   xyChunkedColumnsRows = lib.func("uint64_t xyg_chunked_columns_rows(uint64_t store)");
+  xyCompatColorbarExtra = lib.func("size_t xyg_compat_colorbar_extra(uint32_t kind, int32_t has_label, int32_t pad_zero, double * out_right, double * out_bottom)");
+  xyCompatDefaultPadding = lib.func("size_t xyg_compat_default_padding(int32_t compact, double * out_pad)");
+  xyCompatIsCompact = lib.func("int32_t xyg_compat_is_compact(double width)");
+  xyCompatRightYRoom = lib.func("size_t xyg_compat_right_y_room(int32_t compact, double * out_room)");
+  xyCompatTitleRoom = lib.func("size_t xyg_compat_title_room(int32_t compact, double block_height, double pad, int32_t automatic_y, double y, double * out_room)");
+  xyCompatTitleWrapWidth = lib.func("size_t xyg_compat_title_wrap_width(double width, double left, double right, double * out_width)");
+  xyCompatXAxisSideRoom = lib.func("size_t xyg_compat_x_axis_side_room(int32_t compact, int32_t top, double measured, double * out_room, double * out_measured_bottom)");
   xyContourLevels = lib.func("size_t xyg_contour_levels(const double * data, size_t len, size_t n_levels, double * out, size_t capacity)");
   xyContourfBands = lib.func("size_t xyg_contourf_bands(const double * z, size_t rows, size_t cols, const double * xpos, const double * ypos, const double * edges, size_t n_edges, uint8_t extend_min, uint8_t extend_max, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, int64_t * out_slots, size_t capacity)");
   xyContourfDensify = lib.func("int32_t xyg_contourf_densify(const double * z, size_t rows, size_t cols, const double * xpos, const double * ypos, double * out_z, double * out_x, double * out_y, size_t out_z_cap, size_t out_x_cap, size_t out_y_cap, size_t * out_rows, size_t * out_cols)");
@@ -338,6 +356,9 @@ export function bindGeneratedAbi(lib) {
   xyPayloadTier = lib.func("int32_t xyg_payload_tier(int32_t kind, uint64_t n_points, int32_t polar, int32_t force_density, int32_t force_direct, int32_t per_item)");
   xyPayloadVisibleMask = lib.func("size_t xyg_payload_visible_mask(const double * x, const double * y, size_t n, int32_t x_log, int32_t y_log, const double * base, int32_t has_base, uint8_t * out, size_t capacity)");
   xyPayloadVisibleNeeded = lib.func("int32_t xyg_payload_visible_needed(int32_t x_log, int32_t y_log, int32_t prefiltered, int32_t x_has_nulls, int32_t y_has_nulls, int32_t has_base, int32_t base_has_nulls)");
+  xyPolarLabelRoom = lib.func("size_t xyg_polar_label_room(double widest, double * out_room)");
+  xyPolarLegendReserve = lib.func("size_t xyg_polar_legend_reserve(int32_t compact, int32_t loc_has_left, double width, uint32_t * out_side, double * out_room)");
+  xyPolarLegendRoom = lib.func("size_t xyg_polar_legend_room(double width, double * out_room)");
   xyPolygonSelect = lib.func("size_t xyg_polygon_select(const double * x, const double * y, size_t len, const uint32_t * rows, size_t n_rows, const double * poly_x, const double * poly_y, size_t n_poly, uint32_t * out)");
   xyPolygonTriangles = lib.func("size_t xyg_polygon_triangles(const double * x, const double * y, size_t len, int64_t * out, size_t capacity)");
   xyPyramidAppend = lib.func("int32_t xyg_pyramid_append(uint64_t handle, const double * x, const double * y, size_t len)");
@@ -361,6 +382,7 @@ export function bindGeneratedAbi(lib) {
   xyRasterizePngSpans = lib.func("size_t xyg_rasterize_png_spans(const uint8_t * cmd, size_t cmd_len, const uint8_t *const * span_ptrs, const size_t * span_lens, size_t span_count, uint8_t * out, size_t out_capacity, size_t w, size_t h)");
   xyRasterizeSpans = lib.func("int32_t xyg_rasterize_spans(const uint8_t * cmd, size_t cmd_len, const uint8_t *const * span_ptrs, const size_t * span_lens, size_t span_count, uint8_t * out, size_t w, size_t h)");
   xyRectZeroBaselineFlags = lib.func("uint8_t xyg_rect_zero_baseline_flags(const double * base, const double * value, size_t n)");
+  xyRecutPolarPlot = lib.func("size_t xyg_recut_polar_plot(const double * in_plot, double width, double height, uint32_t legend_side, double legend_room, double polar_label_room, int32_t authored_padding, int32_t y_titled, int32_t keeps_bottom, double * out_plot)");
   xyRemapU8 = lib.func("int32_t xyg_remap_u8(uint8_t * values, size_t len, const uint8_t * mapping, size_t mapping_len)");
   xyRfft = lib.func("int32_t xyg_rfft(const double * data, size_t len, size_t nfft, double sample_rate, double * out_frequency, double * out_real, double * out_imag)");
   xyRibbonEdge = lib.func("size_t xyg_ribbon_edge(double x0, double x1, double ya, double yb, size_t steps, double * out_x, double * out_y, size_t capacity)");

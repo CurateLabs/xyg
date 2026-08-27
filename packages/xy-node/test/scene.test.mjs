@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import test from "node:test";
 
-import { axisTicks, tickLabelLayout, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yAxisLeftRoom, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
+import { axisTicks, tickLabelLayout, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yAxisLeftRoom, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatColorbarExtra, polarLegendRoom, polarLabelRoom, recutPolarPlot, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
 import { Figure, sceneRasterCommands, sceneSvg } from "../src/index.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
@@ -1184,6 +1184,29 @@ test("Node consumes Rust-owned text-block measure and axis rooms", () => {
   const untitled = yAxisLeftRoom(0, 0, "", 12, 0);
   assert.ok(titled > 23);
   assert.equal(untitled, 0);
+});
+
+test("Node consumes Rust-owned static-export layout combination", () => {
+  assert.equal(compatIsCompact(519), true);
+  assert.equal(compatIsCompact(520), false);
+  assert.deepEqual(compatDefaultPadding(true), [6, 8, 36, 46]);
+  assert.deepEqual(compatDefaultPadding(false), [10, 14, 42, 62]);
+  assert.equal(compatTitleWrapWidth(100, 40, 40), 40);
+  assert.deepEqual(compatColorbarExtra("figure_vertical", false, false), [86, 0]);
+  assert.equal(polarLegendRoom(400), 120);
+  assert.equal(polarLegendRoom(1000), 200);
+  assert.equal(polarLabelRoom(null), 30);
+  const recut = recutPolarPlot(
+    { x: 0, y: 0, w: 200, h: 200, topAxisRoom: 10 },
+    200,
+    200,
+    { polarLabelRoom: 30, authoredPadding: true },
+  );
+  assert.equal(recut.x, 30);
+  assert.equal(recut.y, 30);
+  assert.equal(recut.w, 140);
+  assert.equal(recut.h, 140);
+  assert.equal(recut.topAxisRoom, 40);
 });
 
 test("Node matches every Rust-owned axis tick family in the shared cross-host fixture", () => {

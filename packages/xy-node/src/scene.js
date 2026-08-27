@@ -11,6 +11,17 @@ import {
   xyXAxisTitleRoom,
   xyXTickLabelRoom,
   xyXTickLabelEdgeRooms,
+  xyCompatIsCompact,
+  xyCompatDefaultPadding,
+  xyCompatTitleWrapWidth,
+  xyCompatTitleRoom,
+  xyCompatXAxisSideRoom,
+  xyCompatColorbarExtra,
+  xyCompatRightYRoom,
+  xyPolarLegendRoom,
+  xyPolarLegendReserve,
+  xyPolarLabelRoom,
+  xyRecutPolarPlot,
   xySceneBatchEncode,
   xySceneBrowserPainter,
   xyScenePackAnnotations,
@@ -692,6 +703,157 @@ export function xTickLabelEdgeRooms(plotW, positions, labels, angles, anchors, f
   );
   if (written === USIZE_MAX_64) throw new RangeError("invalid x tick-label edge-room request");
   return [outLeft[0], outRight[0]];
+}
+
+const COLORBAR_KINDS = {
+  none: 0,
+  axes_horizontal: 1,
+  axes_vertical: 2,
+  figure_horizontal: 3,
+  figure_vertical: 4,
+};
+const POLAR_LEGEND_SIDES = { 0: "", 1: "left", 2: "right", 3: "bottom" };
+const POLAR_LEGEND_SIDE_CODES = { "": 0, left: 1, right: 2, bottom: 3 };
+
+export function compatIsCompact(width) {
+  const status = xyCompatIsCompact(Number(width));
+  if (status === 1) return true;
+  if (status === 0) return false;
+  throw new RangeError("invalid compact-width request");
+}
+
+export function compatDefaultPadding(compact) {
+  const out = new Float64Array(4);
+  const written = xyCompatDefaultPadding(compact ? 1 : 0, f64Ptr(out));
+  if (written === USIZE_MAX_64) throw new RangeError("invalid default-padding request");
+  return [out[0], out[1], out[2], out[3]];
+}
+
+export function compatTitleWrapWidth(width, left, right) {
+  const out = new Float64Array(1);
+  const written = xyCompatTitleWrapWidth(Number(width), Number(left), Number(right), f64Ptr(out));
+  if (written === USIZE_MAX_64) throw new RangeError("invalid title-wrap-width request");
+  return out[0];
+}
+
+export function compatTitleRoom(compact, blockHeight, pad, automaticY, y) {
+  const out = new Float64Array(1);
+  const written = xyCompatTitleRoom(
+    compact ? 1 : 0,
+    Number(blockHeight),
+    Number(pad),
+    automaticY ? 1 : 0,
+    Number(y),
+    f64Ptr(out),
+  );
+  if (written === USIZE_MAX_64) throw new RangeError("invalid title-room request");
+  return out[0];
+}
+
+export function compatXAxisSideRoom(compact, top, measured) {
+  const outRoom = new Float64Array(1);
+  const outMeasured = new Float64Array(1);
+  const written = xyCompatXAxisSideRoom(
+    compact ? 1 : 0,
+    top ? 1 : 0,
+    Number(measured),
+    f64Ptr(outRoom),
+    f64Ptr(outMeasured),
+  );
+  if (written === USIZE_MAX_64) throw new RangeError("invalid x-axis side-room request");
+  return [outRoom[0], outMeasured[0]];
+}
+
+export function compatColorbarExtra(kind, hasLabel, padZero) {
+  const code = COLORBAR_KINDS[kind];
+  if (code === undefined) throw new RangeError("unknown colorbar layout kind");
+  const outRight = new Float64Array(1);
+  const outBottom = new Float64Array(1);
+  const written = xyCompatColorbarExtra(
+    code,
+    hasLabel ? 1 : 0,
+    padZero ? 1 : 0,
+    f64Ptr(outRight),
+    f64Ptr(outBottom),
+  );
+  if (written === USIZE_MAX_64) throw new RangeError("invalid colorbar-extra request");
+  return [outRight[0], outBottom[0]];
+}
+
+export function compatRightYRoom(compact) {
+  const out = new Float64Array(1);
+  const written = xyCompatRightYRoom(compact ? 1 : 0, f64Ptr(out));
+  if (written === USIZE_MAX_64) throw new RangeError("invalid right-y-room request");
+  return out[0];
+}
+
+export function polarLegendRoom(width) {
+  const out = new Float64Array(1);
+  const written = xyPolarLegendRoom(Number(width), f64Ptr(out));
+  if (written === USIZE_MAX_64) throw new RangeError("invalid polar-legend-room request");
+  return out[0];
+}
+
+export function polarLegendReserve(compact, locHasLeft, width) {
+  const side = new Uint32Array(1);
+  const room = new Float64Array(1);
+  const written = xyPolarLegendReserve(
+    compact ? 1 : 0,
+    locHasLeft ? 1 : 0,
+    Number(width),
+    u32Ptr(side),
+    f64Ptr(room),
+  );
+  if (written === USIZE_MAX_64) throw new RangeError("invalid polar-legend-reserve request");
+  return [POLAR_LEGEND_SIDES[side[0]], room[0]];
+}
+
+export function polarLabelRoom(widest = null) {
+  const out = new Float64Array(1);
+  const written = xyPolarLabelRoom(widest == null ? Number.NaN : Number(widest), f64Ptr(out));
+  if (written === USIZE_MAX_64) throw new RangeError("invalid polar-label-room request");
+  return out[0];
+}
+
+export function recutPolarPlot(plot, width, height, {
+  legendSide = "",
+  legendRoom = 0,
+  polarLabelRoom: labelRoom = 0,
+  authoredPadding = false,
+  yTitled = false,
+  keepsBottom = false,
+} = {}) {
+  const side = POLAR_LEGEND_SIDE_CODES[legendSide];
+  if (side === undefined) throw new RangeError("legendSide must be '', left, right, or bottom");
+  const incoming = Float64Array.from([
+    Number(plot.x),
+    Number(plot.y),
+    Number(plot.w),
+    Number(plot.h),
+    Number(plot.top_axis_room ?? plot.topAxisRoom ?? 0),
+  ]);
+  const out = new Float64Array(9);
+  const written = xyRecutPolarPlot(
+    f64Ptr(incoming),
+    Number(width),
+    Number(height),
+    side,
+    Number(legendRoom),
+    Number(labelRoom),
+    authoredPadding ? 1 : 0,
+    yTitled ? 1 : 0,
+    keepsBottom ? 1 : 0,
+    f64Ptr(out),
+  );
+  if (written === USIZE_MAX_64) throw new RangeError("invalid polar-recut request");
+  const result = { x: out[0], y: out[1], w: out[2], h: out[3], topAxisRoom: out[4] };
+  if (Number.isFinite(out[5])) {
+    result.legendBoxX = out[5];
+    result.legendBoxY = out[6];
+    result.legendBoxW = out[7];
+    result.legendBoxH = out[8];
+  }
+  return result;
 }
 
 export function scaleMap({ values, kind = "linear", operation = "pixel", domain, range = [0, 1], constant = 1, nonpositive = "clip" }) {

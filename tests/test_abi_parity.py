@@ -36,9 +36,9 @@ def test_host_declarations_match_rust_symbol_set() -> None:
     assert errors == []
 
 
-def test_abi_version_is_125() -> None:
+def test_abi_version_is_126() -> None:
     manifest = gen_abi_manifest.generate_manifest()
-    assert manifest["abi_version"] == 125
+    assert manifest["abi_version"] == 126
     assert manifest["artifact"] == "xyg_core"
     assert all(item["name"].startswith("xyg_") for item in manifest["symbols"])
     assert any(item["name"] == "xyg_abi_version" for item in manifest["symbols"])
@@ -71,6 +71,17 @@ def test_abi_version_is_125() -> None:
     assert "xyg_x_axis_title_room" in names
     assert "xyg_x_tick_label_room" in names
     assert "xyg_x_tick_label_edge_rooms" in names
+    assert "xyg_compat_is_compact" in names
+    assert "xyg_compat_default_padding" in names
+    assert "xyg_compat_title_wrap_width" in names
+    assert "xyg_compat_title_room" in names
+    assert "xyg_compat_x_axis_side_room" in names
+    assert "xyg_compat_colorbar_extra" in names
+    assert "xyg_compat_right_y_room" in names
+    assert "xyg_polar_legend_room" in names
+    assert "xyg_polar_legend_reserve" in names
+    assert "xyg_polar_label_room" in names
+    assert "xyg_recut_polar_plot" in names
     assert "xyg_scene_figure_support_reason" in names
     assert "xyg_argsort_stable" in names
     assert "xyg_histogram_mark_edges" in names

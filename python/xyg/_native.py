@@ -2785,6 +2785,208 @@ def x_tick_label_edge_rooms(
     return float(out_left.value), float(out_right.value)
 
 
+_COLORBAR_KINDS = {
+    "none": 0,
+    "axes_horizontal": 1,
+    "axes_vertical": 2,
+    "figure_horizontal": 3,
+    "figure_vertical": 4,
+}
+_POLAR_LEGEND_SIDES = {0: "", 1: "left", 2: "right", 3: "bottom"}
+
+
+def compat_is_compact(width: float) -> bool:
+    """Whether a canvas width uses compact static gutters (ABI 126)."""
+    status = int(_lib.xyg_compat_is_compact(float(width)))
+    if status == 1:
+        return True
+    if status == 0:
+        return False
+    raise ValueError("invalid compact-width request")
+
+
+def compat_default_padding(compact: bool) -> tuple[float, float, float, float]:
+    """Default static-export padding via ``xyg_compat_default_padding`` (ABI 126)."""
+    out = np.empty(4, dtype=np.float64)
+    written = _lib.xyg_compat_default_padding(1 if compact else 0, _ptr_f64(out))
+    if written == _USIZE_MAX:
+        raise ValueError("invalid default-padding request")
+    return float(out[0]), float(out[1]), float(out[2]), float(out[3])
+
+
+def compat_title_wrap_width(width: float, left: float, right: float) -> float:
+    """Title wrap width via ``xyg_compat_title_wrap_width`` (ABI 126)."""
+    out = ctypes.c_double()
+    written = _lib.xyg_compat_title_wrap_width(
+        float(width), float(left), float(right), ctypes.byref(out)
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid title-wrap-width request")
+    return float(out.value)
+
+
+def compat_title_room(
+    compact: bool,
+    block_height: float,
+    pad: float,
+    automatic_y: bool,
+    y: float,
+) -> float:
+    """Title-band room via ``xyg_compat_title_room`` (ABI 126)."""
+    out = ctypes.c_double()
+    written = _lib.xyg_compat_title_room(
+        1 if compact else 0,
+        float(block_height),
+        float(pad),
+        1 if automatic_y else 0,
+        float(y),
+        ctypes.byref(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid title-room request")
+    return float(out.value)
+
+
+def compat_x_axis_side_room(compact: bool, top: bool, measured: float) -> tuple[float, float]:
+    """Compact floor plus measured x-axis room (ABI 126)."""
+    out_room = ctypes.c_double()
+    out_measured = ctypes.c_double()
+    written = _lib.xyg_compat_x_axis_side_room(
+        1 if compact else 0,
+        1 if top else 0,
+        float(measured),
+        ctypes.byref(out_room),
+        ctypes.byref(out_measured),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid x-axis side-room request")
+    return float(out_room.value), float(out_measured.value)
+
+
+def compat_colorbar_extra(kind: str, has_label: bool, pad_zero: bool) -> tuple[float, float]:
+    """Extra right/bottom claimed by a colorbar (ABI 126)."""
+    try:
+        code = _COLORBAR_KINDS[kind]
+    except KeyError as exc:
+        raise ValueError("unknown colorbar layout kind") from exc
+    out_right = ctypes.c_double()
+    out_bottom = ctypes.c_double()
+    written = _lib.xyg_compat_colorbar_extra(
+        code,
+        1 if has_label else 0,
+        1 if pad_zero else 0,
+        ctypes.byref(out_right),
+        ctypes.byref(out_bottom),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid colorbar-extra request")
+    return float(out_right.value), float(out_bottom.value)
+
+
+def compat_right_y_room(compact: bool) -> float:
+    """Shared right-side y-axis gutter (ABI 126)."""
+    out = ctypes.c_double()
+    written = _lib.xyg_compat_right_y_room(1 if compact else 0, ctypes.byref(out))
+    if written == _USIZE_MAX:
+        raise ValueError("invalid right-y-room request")
+    return float(out.value)
+
+
+def polar_legend_room(width: float) -> float:
+    """Polar legend side-gutter width (ABI 126)."""
+    out = ctypes.c_double()
+    written = _lib.xyg_polar_legend_room(float(width), ctypes.byref(out))
+    if written == _USIZE_MAX:
+        raise ValueError("invalid polar-legend-room request")
+    return float(out.value)
+
+
+def polar_legend_reserve(compact: bool, loc_has_left: bool, width: float) -> tuple[str, float]:
+    """Compact vs loc polar legend reserve (ABI 126)."""
+    side = ctypes.c_uint32()
+    room = ctypes.c_double()
+    written = _lib.xyg_polar_legend_reserve(
+        1 if compact else 0,
+        1 if loc_has_left else 0,
+        float(width),
+        ctypes.byref(side),
+        ctypes.byref(room),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid polar-legend-reserve request")
+    return _POLAR_LEGEND_SIDES[int(side.value)], float(room.value)
+
+
+def polar_label_room(widest: float | None) -> float:
+    """Uniform polar angular-label inset (ABI 126)."""
+    out = ctypes.c_double()
+    written = _lib.xyg_polar_label_room(
+        float("nan") if widest is None else float(widest),
+        ctypes.byref(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid polar-label-room request")
+    return float(out.value)
+
+
+def recut_polar_plot(
+    plot: Mapping[str, float],
+    width: float,
+    height: float,
+    *,
+    legend_side: str = "",
+    legend_room: float = 0.0,
+    polar_label_room: float = 0.0,
+    authored_padding: bool = False,
+    y_titled: bool = False,
+    keeps_bottom: bool = False,
+) -> dict[str, float]:
+    """Re-cut a cartesian plot rect into a polar disc (ABI 126)."""
+    side_codes = {"": 0, "left": 1, "right": 2, "bottom": 3}
+    try:
+        side = side_codes[legend_side]
+    except KeyError as exc:
+        raise ValueError("legend_side must be '', left, right, or bottom") from exc
+    incoming = np.asarray(
+        [
+            float(plot["x"]),
+            float(plot["y"]),
+            float(plot["w"]),
+            float(plot["h"]),
+            float(plot.get("top_axis_room", 0.0)),
+        ],
+        dtype=np.float64,
+    )
+    out = np.empty(9, dtype=np.float64)
+    written = _lib.xyg_recut_polar_plot(
+        _ptr_f64(incoming),
+        float(width),
+        float(height),
+        side,
+        float(legend_room),
+        float(polar_label_room),
+        1 if authored_padding else 0,
+        1 if y_titled else 0,
+        1 if keeps_bottom else 0,
+        _ptr_f64(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid polar-recut request")
+    result = {
+        "x": float(out[0]),
+        "y": float(out[1]),
+        "w": float(out[2]),
+        "h": float(out[3]),
+        "top_axis_room": float(out[4]),
+    }
+    if np.isfinite(out[5]):
+        result["legend_box_x"] = float(out[5])
+        result["legend_box_y"] = float(out[6])
+        result["legend_box_w"] = float(out[7])
+        result["legend_box_h"] = float(out[8])
+    return result
+
+
 def scene_scale_map(
     values: npt.ArrayLike,
     kind: int,

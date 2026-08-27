@@ -24,6 +24,7 @@ use xyg_engine::auto_domain;
 use xyg_engine::autorange::{rect_zero_baseline_flags, AutorangeError};
 #[cfg(not(target_os = "emscripten"))]
 use xyg_engine::chunked_columns;
+use xyg_engine::compat_layout;
 use xyg_engine::css;
 use xyg_engine::figure_autorange;
 use xyg_engine::geo;
@@ -117,7 +118,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 125;
+pub const ABI_VERSION: u32 = 126;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -10838,6 +10839,291 @@ pub unsafe extern "C" fn xyg_x_tick_label_edge_rooms(
     })
 }
 
+fn write_f64(out: *mut f64, value: f64) -> usize {
+    if out.is_null() {
+        usize::MAX
+    } else {
+        unsafe {
+            *out = value;
+        }
+        1
+    }
+}
+
+/// Whether a canvas width uses compact static gutters (ABI 126).
+/// Returns 1, 0, or `i32::MIN` on invalid width.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_compat_is_compact(width: f64) -> i32 {
+    ffi_guard(i32::MIN, || match compat_layout::is_compact(width) {
+        Some(true) => 1,
+        Some(false) => 0,
+        None => i32::MIN,
+    })
+}
+
+/// Default static-export padding (ABI 126). Writes top, right, bottom, left.
+///
+/// # Safety
+/// `out_pad` must address four writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_compat_default_padding(compact: i32, out_pad: *mut f64) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out_pad.is_null() || !matches!(compact, 0 | 1) {
+            return usize::MAX;
+        }
+        std::slice::from_raw_parts_mut(out_pad, compat_layout::DEFAULT_PADDING_LEN)
+            .copy_from_slice(&compat_layout::default_padding(compact == 1));
+        4
+    })
+}
+
+/// Title wrap width from authored/default horizontal gutters (ABI 126).
+///
+/// # Safety
+/// `out_width` must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_compat_title_wrap_width(
+    width: f64,
+    left: f64,
+    right: f64,
+    out_width: *mut f64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        let Some(value) = compat_layout::title_wrap_width(width, left, right) else {
+            return usize::MAX;
+        };
+        write_f64(out_width, value)
+    })
+}
+
+/// Title-band room for one measured entry (ABI 126). `automatic_y` is 0/1.
+///
+/// # Safety
+/// `out_room` must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_compat_title_room(
+    compact: i32,
+    block_height: f64,
+    pad: f64,
+    automatic_y: i32,
+    y: f64,
+    out_room: *mut f64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if !matches!(compact, 0 | 1) || !matches!(automatic_y, 0 | 1) {
+            return usize::MAX;
+        }
+        let Some(value) =
+            compat_layout::title_room(compact == 1, block_height, pad, automatic_y == 1, y)
+        else {
+            return usize::MAX;
+        };
+        write_f64(out_room, value)
+    })
+}
+
+/// Compact floor plus measured x-axis room for one side (ABI 126). `top` is 0/1.
+///
+/// # Safety
+/// Output pointers must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_compat_x_axis_side_room(
+    compact: i32,
+    top: i32,
+    measured: f64,
+    out_room: *mut f64,
+    out_measured_bottom: *mut f64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out_room.is_null()
+            || out_measured_bottom.is_null()
+            || !matches!(compact, 0 | 1)
+            || !matches!(top, 0 | 1)
+        {
+            return usize::MAX;
+        }
+        let Some((room, measured_bottom)) =
+            compat_layout::x_axis_side_room(compact == 1, top == 1, measured)
+        else {
+            return usize::MAX;
+        };
+        *out_room = room;
+        *out_measured_bottom = measured_bottom;
+        2
+    })
+}
+
+/// Extra right/bottom claimed by a colorbar (ABI 126).
+///
+/// # Safety
+/// Output pointers must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_compat_colorbar_extra(
+    kind: u32,
+    has_label: i32,
+    pad_zero: i32,
+    out_right: *mut f64,
+    out_bottom: *mut f64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out_right.is_null()
+            || out_bottom.is_null()
+            || !matches!(has_label, 0 | 1)
+            || !matches!(pad_zero, 0 | 1)
+        {
+            return usize::MAX;
+        }
+        let Some((right, bottom)) =
+            compat_layout::colorbar_extra(kind, has_label == 1, pad_zero == 1)
+        else {
+            return usize::MAX;
+        };
+        *out_right = right;
+        *out_bottom = bottom;
+        2
+    })
+}
+
+/// Shared right-side y-axis gutter (ABI 126).
+///
+/// # Safety
+/// `out_room` must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_compat_right_y_room(compact: i32, out_room: *mut f64) -> usize {
+    ffi_guard(usize::MAX, || {
+        if !matches!(compact, 0 | 1) {
+            return usize::MAX;
+        }
+        write_f64(out_room, compat_layout::right_y_room(compact == 1))
+    })
+}
+
+/// Polar legend side-gutter width (ABI 126).
+///
+/// # Safety
+/// `out_room` must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_polar_legend_room(width: f64, out_room: *mut f64) -> usize {
+    ffi_guard(usize::MAX, || {
+        let Some(value) = compat_layout::polar_legend_room(width) else {
+            return usize::MAX;
+        };
+        write_f64(out_room, value)
+    })
+}
+
+/// Compact vs loc polar legend reserve (ABI 126). Writes side then room.
+///
+/// # Safety
+/// Output pointers must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_polar_legend_reserve(
+    compact: i32,
+    loc_has_left: i32,
+    width: f64,
+    out_side: *mut u32,
+    out_room: *mut f64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out_side.is_null()
+            || out_room.is_null()
+            || !matches!(compact, 0 | 1)
+            || !matches!(loc_has_left, 0 | 1)
+        {
+            return usize::MAX;
+        }
+        let Some((side, room)) =
+            compat_layout::polar_legend_reserve(compact == 1, loc_has_left == 1, width)
+        else {
+            return usize::MAX;
+        };
+        *out_side = side;
+        *out_room = room;
+        2
+    })
+}
+
+/// Uniform polar angular-label inset (ABI 126). `widest` is NaN when no labels.
+///
+/// # Safety
+/// `out_room` must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_polar_label_room(widest: f64, out_room: *mut f64) -> usize {
+    ffi_guard(usize::MAX, || {
+        let widest = if widest.is_nan() { None } else { Some(widest) };
+        let Some(value) = compat_layout::polar_label_room(widest) else {
+            return usize::MAX;
+        };
+        write_f64(out_room, value)
+    })
+}
+
+/// Re-cut a cartesian plot rect into a polar disc (ABI 126).
+///
+/// `in_plot` is `x, y, w, h, top_axis_room`. `out_plot` is those five plus
+/// `legend_box_x/y/w/h` (NaN when no legend box).
+///
+/// # Safety
+/// `in_plot` must address 5 f64s; `out_plot` must address 9 writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_recut_polar_plot(
+    in_plot: *const f64,
+    width: f64,
+    height: f64,
+    legend_side: u32,
+    legend_room: f64,
+    polar_label_room: f64,
+    authored_padding: i32,
+    y_titled: i32,
+    keeps_bottom: i32,
+    out_plot: *mut f64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if in_plot.is_null()
+            || out_plot.is_null()
+            || !matches!(authored_padding, 0 | 1)
+            || !matches!(y_titled, 0 | 1)
+            || !matches!(keeps_bottom, 0 | 1)
+        {
+            return usize::MAX;
+        }
+        let src = std::slice::from_raw_parts(in_plot, 5);
+        let plot = compat_layout::PolarPlot {
+            x: src[0],
+            y: src[1],
+            w: src[2],
+            h: src[3],
+            top_axis_room: src[4],
+            legend_box: None,
+        };
+        let Some(out) = compat_layout::recut_polar_plot(
+            plot,
+            width,
+            height,
+            legend_side,
+            legend_room,
+            polar_label_room,
+            authored_padding == 1,
+            y_titled == 1,
+            keeps_bottom == 1,
+        ) else {
+            return usize::MAX;
+        };
+        let dest = std::slice::from_raw_parts_mut(out_plot, compat_layout::RECUT_OUT_LEN);
+        dest[0] = out.x;
+        dest[1] = out.y;
+        dest[2] = out.w;
+        dest[3] = out.h;
+        dest[4] = out.top_axis_room;
+        if let Some(box_rect) = out.legend_box {
+            dest[5..9].copy_from_slice(&box_rect);
+        } else {
+            dest[5..9].fill(f64::NAN);
+        }
+        9
+    })
+}
+
 /// Linear (NumPy-default) quantiles for probabilities in `[0, 1]`.
 ///
 /// Writes `n_probs` f64s into `out`. Returns the finite sample count used, or
@@ -13183,6 +13469,34 @@ mod tests {
         assert_eq!(n, 1);
         let expected = layout_rooms::y_axis_left_room(7.0, 23.0, Some("Y"), 12.0, 4.8).unwrap();
         assert!((room - expected).abs() < 1e-12);
+    }
+
+    #[test]
+    fn recut_polar_plot_insets_authored_padding() {
+        let input = [0.0, 0.0, 200.0, 200.0, 10.0];
+        let mut out = [0.0f64; 9];
+        let n = unsafe {
+            xyg_recut_polar_plot(
+                input.as_ptr(),
+                200.0,
+                200.0,
+                0,
+                0.0,
+                30.0,
+                1,
+                0,
+                0,
+                out.as_mut_ptr(),
+            )
+        };
+        assert_eq!(n, 9);
+        assert_eq!(&out[..5], &[30.0, 30.0, 140.0, 140.0, 40.0]);
+        let mut pad = [0.0f64; 4];
+        assert_eq!(
+            unsafe { xyg_compat_default_padding(1, pad.as_mut_ptr()) },
+            4
+        );
+        assert_eq!(pad, [6.0, 8.0, 36.0, 46.0]);
     }
 
     #[test]
