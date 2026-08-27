@@ -175,7 +175,9 @@ scalar+stops payload; Rust tessellates cells and interns unique fills. ABI 135
 adds `xyg_colormap_stops` and XYHP paint kind 2 so named tables live in Rust;
 hosts pack a name or a custom RGB ramp. ABI 136 adds
 `xyg_scene_resolve_pack_kind` / `xyg_scene_pack_product` so product-kind
-dispatch and column remapping live in Rust. ABI 137 / Scene v27 adds
+dispatch and column remapping live in Rust. ABI 147 adds
+`xyg_scene_pack_product_facts` so flags, `step_mode`, and extras resolve from
+packed XYPK v1. ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
 record plus XYIM. ABI 138 / Scene v28
@@ -193,7 +195,7 @@ wedges. ABI 144 admits cartesian `error_band(curve="smooth")` on existing
 chords (polar-axes.md §5). ABI 145 admits constant scatter `marker_path`
 via an XYMP extras sidecar tessellated after pixel mapping. ABI 146 admits
 constant mark `fill` linear-gradients via an XYGR extras sidecar kept on the
-encoded Scene. Polar+step+smooth
+encoded Scene. ABI 147 owns product packing facts from XYPK v1. Polar+step+smooth
 and authored marker glyphs stay
 compatibility. ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
@@ -402,7 +404,9 @@ stable-id splitting, expansion modes, ribbon/triangle doubling, heatmap
 lattice framing, and finite-coordinate rejection cannot drift. ABI 136
 `xyg_scene_resolve_pack_kind` / `xyg_scene_pack_product` own product-kind
 mapping and the canonical host column envelope so pack-kind dispatch cannot
-drift. ABI 116
+drift. ABI 147 `xyg_scene_pack_product_facts` owns flags, `step_mode`, and
+extra0/extra1 from packed XYPK v1 so cartesian-vs-polar smooth and painted
+heatmap dispatch cannot drift. ABI 116
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 so tags and opposite-axis spanning cannot drift. ABI 117
 `xyg_scene_figure_support_reason` owns figure-compile support so feature

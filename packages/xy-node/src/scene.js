@@ -37,6 +37,7 @@ import {
   xyScenePublicExportReason,
   xySceneFigureSupportReason,
   xyScenePackProduct,
+  xyScenePackProductFacts,
   xyScenePackAnnotationMarks,
   xySceneRasterCommands,
   xySceneResolveChromeStyle,
@@ -93,9 +94,10 @@ function decodePackedRows(out, code) {
   return rows;
 }
 
-const FLAG_STROKE_PERIMETER = 1;
-const FLAG_HEATMAP_PAINTED = 2;
-const FLAG_DENSITY_BLIT = 4;
+const FACT_STROKE_PERIMETER = 1;
+const FACT_CURVE_SMOOTH = 2;
+const FACT_DENSITY_PLANE = 4;
+const FACT_HEATMAP_PAINT = 8;
 
 function packProduct({
   kind, flags = 0, stepMode = 0, symbol = 0, styleRef = 0, traceId = 0,
@@ -121,6 +123,57 @@ function packProduct({
     u8Ptr(out), BigInt(out.length),
   );
   if (code === -6) throw new RangeError(`Scene v12 does not support product kind ${JSON.stringify(kind)}`);
+  return decodePackedRows(out, code);
+}
+
+function curveIsSmooth(style) {
+  const curve = style?.curve;
+  return curve != null && String(curve).trim().toLowerCase() === "smooth";
+}
+
+function packXyPk({
+  kind, styleRef = 0, coords = 0, symbol = 0, authoredStep = 0, facts = 0,
+  traceId = 0, diameter = 0, hexDx = 0, hexDy = 0, gridRows = 0, gridCols = 0,
+}) {
+  const name = new TextEncoder().encode(String(kind));
+  const out = new Uint8Array(64 + name.length);
+  const view = new DataView(out.buffer);
+  out[0] = 88; out[1] = 89; out[2] = 80; out[3] = 75; // XYPK
+  view.setUint32(4, 1, true);
+  view.setUint32(8, styleRef >>> 0, true);
+  out[12] = coords;
+  out[13] = symbol;
+  out[14] = authoredStep;
+  out[15] = facts;
+  view.setBigUint64(16, asU64(traceId, "stableIds value"), true);
+  view.setFloat64(24, Number(diameter), true);
+  view.setFloat64(32, Number(hexDx), true);
+  view.setFloat64(40, Number(hexDy), true);
+  view.setFloat64(48, Number(gridRows), true);
+  view.setFloat64(56, Number(gridCols), true);
+  out.set(name, 64);
+  return out;
+}
+
+function packProductFacts({
+  facts, x = null, y = null, x0 = null, y0 = null, x1 = null, y1 = null, base = null,
+}) {
+  const args = [x, y, x0, y0, x1, y1, base].map(columnArg);
+  const nRows = Math.max(Math.max(...args.map((column) => column.n), 1) * 2, 2);
+  const out = new Uint8Array(nRows * 56);
+  const payload = facts instanceof Uint8Array ? facts : new Uint8Array(facts ?? []);
+  const code = xyScenePackProductFacts(
+    payload.length ? u8Ptr(payload) : 0, BigInt(payload.length),
+    args[0].ptr, BigInt(args[0].n),
+    args[1].ptr, BigInt(args[1].n),
+    args[2].ptr, BigInt(args[2].n),
+    args[3].ptr, BigInt(args[3].n),
+    args[4].ptr, BigInt(args[4].n),
+    args[5].ptr, BigInt(args[5].n),
+    args[6].ptr, BigInt(args[6].n),
+    u8Ptr(out), BigInt(out.length),
+  );
+  if (code === -6) throw new RangeError("Scene v12 does not support product kind");
   return decodePackedRows(out, code);
 }
 
@@ -3230,14 +3283,16 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     if (RIBBON_KINDS.has(trace.kind) && trace.color_target != null) {
       throw new RangeError("Scene v12 does not yet encode two-ended ribbon gradients");
     }
-    let flags = 0;
-    let extra0 = 0;
-    let extra1 = 0;
-    let stepMode = 0;
     let packSymbol = 0;
     let packDiameter = 0;
     let packX = trace.x;
     let packY = trace.y;
+    let authoredStep = 0;
+    let factBits = 0;
+    let hexDx = 0;
+    let hexDy = 0;
+    let gridRows = 0;
+    let gridCols = 0;
     if (HEATMAP_KINDS.has(trace.kind)) {
       const shape = trace.grid_shape;
       if (shape == null || shape.length !== 2) {
@@ -3258,11 +3313,11 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       if (Array.from(grid).some((value) => !Number.isFinite(value))) {
         throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
       }
-      extra0 = rows;
-      extra1 = cols;
+      gridRows = rows;
+      gridCols = cols;
       if (heatmapTessellatesCellFills(trace)) {
         heatmapPaintPlanes.push(heatmapPaintPlane(trace, rows, cols, id));
-        flags |= FLAG_HEATMAP_PAINTED;
+        factBits |= FACT_HEATMAP_PAINT;
       }
     } else if (HEXBIN_KINDS.has(trace.kind)) {
       const dx = Number(style.hex_dx ?? style.dx);
@@ -3270,31 +3325,24 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       if (!Number.isFinite(dx) || !Number.isFinite(dy) || dx <= 0 || dy <= 0) {
         throw new RangeError("Scene v12 hexbin requires finite hex_dx/hex_dy cell pitch");
       }
-      extra0 = dx;
-      extra1 = dy;
+      hexDx = dx;
+      hexDy = dy;
     } else if (BAND_KINDS.has(trace.kind)) {
       const strokePerimeter = style.stroke_perimeter === undefined ? false : style.stroke_perimeter;
       if (typeof strokePerimeter !== "boolean") {
         throw new RangeError("Scene v25 area stroke_perimeter must be a boolean");
       }
-      if (strokePerimeter) flags |= FLAG_STROKE_PERIMETER;
-      const curve = style.curve;
-      const polarCoords = (figure.coords ?? "cartesian") === "polar";
-      if (curve != null && String(curve).trim().toLowerCase() === "smooth" && !polarCoords) {
-        stepMode = 4;
-      }
+      if (strokePerimeter) factBits |= FACT_STROKE_PERIMETER;
+      if (curveIsSmooth(style)) factBits |= FACT_CURVE_SMOOTH;
     } else if (trace.kind === "line") {
       const where = style.step;
-      const curve = style.curve;
-      const polarCoords = (figure.coords ?? "cartesian") === "polar";
       if (where != null) {
         if (!["pre", "post", "mid"].includes(where)) {
           throw new RangeError(`Scene v12 does not support step mode ${JSON.stringify(where)}`);
         }
-        stepMode = { pre: 1, mid: 2, post: 3 }[where];
-      } else if (curve != null && String(curve).trim().toLowerCase() === "smooth" && !polarCoords) {
-        stepMode = 4;
+        authoredStep = { pre: 1, mid: 2, post: 3 }[where];
       }
+      if (curveIsSmooth(style)) factBits |= FACT_CURVE_SMOOTH;
     } else if (trace.kind === "scatter") {
       packSymbol = sceneSymbolCode(style.symbol ?? 0);
       packDiameter = Number(style.size ?? style.diameter ?? 4);
@@ -3323,25 +3371,30 @@ export function figureSceneV3(figure, { margins = null } = {}) {
         } else {
           heatmapPaintPlanes.push(densityPaintPlane(trace, encoded, rows, cols, max, id));
         }
-        extra0 = rows;
-        extra1 = cols;
-        flags |= FLAG_DENSITY_BLIT;
+        gridRows = rows;
+        gridCols = cols;
+        factBits |= FACT_DENSITY_PLANE;
         packSymbol = 0;
         packDiameter = 0;
         packX = [xDomain[0], xDomain[1]];
         packY = [yDomain[0], yDomain[1]];
       }
     }
-    appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packProduct({
-      kind: trace.kind,
-      flags,
-      stepMode,
-      symbol: packSymbol,
-      styleRef,
-      traceId: id,
-      diameter: packDiameter,
-      extra0,
-      extra1,
+    appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packProductFacts({
+      facts: packXyPk({
+        kind: trace.kind,
+        styleRef,
+        coords: (figure.coords ?? "cartesian") === "polar" ? 1 : 0,
+        symbol: packSymbol,
+        authoredStep,
+        facts: factBits,
+        traceId: id,
+        diameter: packDiameter,
+        hexDx,
+        hexDy,
+        gridRows,
+        gridCols,
+      }),
       x: packX,
       y: packY,
       x0: trace.x0,

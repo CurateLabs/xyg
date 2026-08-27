@@ -121,7 +121,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 146;
+pub const ABI_VERSION: u32 = 147;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -594,6 +594,118 @@ pub unsafe extern "C" fn xyg_scene_pack_product(
             y1: columns[5],
             base: columns[6],
         }) {
+            Ok(rows) => {
+                let needed = rows
+                    .len()
+                    .saturating_mul(scene_pack::PACKED_SCENE_ROW_BYTES);
+                if needed > out_cap {
+                    return -(PackError::Output as i32);
+                }
+                let dest = if out_cap == 0 {
+                    &mut []
+                } else {
+                    std::slice::from_raw_parts_mut(out, out_cap)
+                };
+                match scene_pack::encode_packed_rows(&rows, dest) {
+                    Ok(count) => count,
+                    Err(error) => -(error as i32),
+                }
+            }
+            Err(error) => -(error as i32),
+        }
+    })
+}
+
+/// Pack one Figure trace from packed XYPK v1 facts plus the canonical column
+/// envelope. Hosts pass authored kind/coords/step/curve/stroke-perimeter/
+/// density-or-heatmap paint presence, hex pitch, and grid shape. Rust resolves
+/// pack flags, `step_mode` (including cartesian-only `curve="smooth"` → 4),
+/// and extra0/extra1. Returns the row count on success. Error codes match
+/// `xyg_scene_pack_product`.
+///
+/// # Safety
+/// When `facts_len` is non-zero, `facts` must address that many readable bytes.
+/// Each non-zero `nK` requires `colK` to address that many readable f64s.
+/// When `out_cap` is non-zero, `out` must address that many writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_pack_product_facts(
+    facts: *const u8,
+    facts_len: usize,
+    col0: *const f64,
+    n0: usize,
+    col1: *const f64,
+    n1: usize,
+    col2: *const f64,
+    n2: usize,
+    col3: *const f64,
+    n3: usize,
+    col4: *const f64,
+    n4: usize,
+    col5: *const f64,
+    n5: usize,
+    col6: *const f64,
+    n6: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if (facts_len > 0 && facts.is_null()) || (out_cap > 0 && out.is_null()) {
+        return -(PackError::Length as i32);
+    }
+    ffi_guard(-(PackError::Length as i32), || {
+        let facts_bytes = if facts_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(facts, facts_len)
+        };
+        let slice = |ptr: *const f64, n: usize| -> Result<&[f64], i32> {
+            if n == 0 {
+                Ok(&[])
+            } else if ptr.is_null() {
+                Err(-(PackError::Length as i32))
+            } else {
+                Ok(std::slice::from_raw_parts(ptr, n))
+            }
+        };
+        let columns = [
+            match slice(col0, n0) {
+                Ok(value) => value,
+                Err(code) => return code,
+            },
+            match slice(col1, n1) {
+                Ok(value) => value,
+                Err(code) => return code,
+            },
+            match slice(col2, n2) {
+                Ok(value) => value,
+                Err(code) => return code,
+            },
+            match slice(col3, n3) {
+                Ok(value) => value,
+                Err(code) => return code,
+            },
+            match slice(col4, n4) {
+                Ok(value) => value,
+                Err(code) => return code,
+            },
+            match slice(col5, n5) {
+                Ok(value) => value,
+                Err(code) => return code,
+            },
+            match slice(col6, n6) {
+                Ok(value) => value,
+                Err(code) => return code,
+            },
+        ];
+        match scene_pack::pack_product_facts(
+            facts_bytes,
+            columns[0],
+            columns[1],
+            columns[2],
+            columns[3],
+            columns[4],
+            columns[5],
+            columns[6],
+        ) {
             Ok(rows) => {
                 let needed = rows
                     .len()
@@ -1567,7 +1679,10 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// XYGR on the extras dash slot; Rust keeps XYGR on the encoded Scene so SVG
 /// emits `<linearGradient>` and raster emits `OP_FILL_POLY_GRAD`. Two-ended
 /// ribbon `color2_ch` and data-driven `color_ch` stay fail-closed. Encoded
-/// Scene v31 is unchanged.
+/// Scene v31 is unchanged. ABI 147 does not change Scene records;
+/// `xyg_scene_pack_product_facts` owns flags/`step_mode`/extra0/extra1 from
+/// packed XYPK v1 so cartesian-vs-polar smooth and painted heatmap dispatch
+/// cannot drift.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
@@ -14034,6 +14149,47 @@ mod tests {
         };
         assert_eq!(heatmap_code, 2);
         assert_eq!(out[2], 9);
+        let mut facts = Vec::from(*b"XYPK");
+        facts.extend_from_slice(&1u32.to_le_bytes());
+        facts.extend_from_slice(&1u32.to_le_bytes());
+        facts.push(0);
+        facts.push(0);
+        facts.push(0);
+        facts.push(2);
+        facts.extend_from_slice(&11u64.to_le_bytes());
+        facts.extend_from_slice(&0.0f64.to_le_bytes());
+        facts.extend_from_slice(&0.0f64.to_le_bytes());
+        facts.extend_from_slice(&0.0f64.to_le_bytes());
+        facts.extend_from_slice(&0.0f64.to_le_bytes());
+        facts.extend_from_slice(&0.0f64.to_le_bytes());
+        facts.extend_from_slice(b"line");
+        let lx = [0.0_f64, 1.0, 2.0];
+        let ly = [0.0_f64, 1.0, 0.0];
+        let mut line_out = [0u8; 168];
+        let facts_code = unsafe {
+            xyg_scene_pack_product_facts(
+                facts.as_ptr(),
+                facts.len(),
+                lx.as_ptr(),
+                lx.len(),
+                ly.as_ptr(),
+                ly.len(),
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                line_out.as_mut_ptr(),
+                line_out.len(),
+            )
+        };
+        assert_eq!(facts_code, 3);
+        assert_eq!(line_out[2], 11);
     }
 
     #[test]

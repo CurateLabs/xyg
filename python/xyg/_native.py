@@ -2132,6 +2132,63 @@ def scene_pack_product(
     return _decode_packed_scene_rows(out, code)
 
 
+def scene_pack_product_facts(
+    facts: bytes,
+    columns: list[npt.NDArray[np.float64] | None],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Pack one product-kind trace from XYPK v1 facts plus canonical columns."""
+    keep_alive: list[np.ndarray] = []
+    lengths: list[int] = []
+    pointers: list[int] = []
+    padded = list(columns) + [None] * 7
+    for column in padded[:7]:
+        if column is None:
+            keep_alive.append(np.empty(0, dtype=np.float64))
+            lengths.append(0)
+            pointers.append(0)
+            continue
+        arr = np.ascontiguousarray(np.asarray(column, dtype=np.float64).reshape(-1))
+        keep_alive.append(arr)
+        lengths.append(int(arr.size))
+        pointers.append(_ptr_f64(arr) if arr.size else 0)
+    n_rows = max(max(lengths), 1) * 2
+    out = np.zeros(max(n_rows, 2) * 56, dtype=np.uint8)
+    payload = bytes(facts)
+    code = int(
+        _lib.xyg_scene_pack_product_facts(
+            payload if payload else 0,
+            len(payload),
+            pointers[0],
+            lengths[0],
+            pointers[1],
+            lengths[1],
+            pointers[2],
+            lengths[2],
+            pointers[3],
+            lengths[3],
+            pointers[4],
+            lengths[4],
+            pointers[5],
+            lengths[5],
+            pointers[6],
+            lengths[6],
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if len(keep_alive) != 7:
+        raise RuntimeError("scene product columns must be seven native buffers")
+    if code == -5:
+        raise ValueError(
+            "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
+        )
+    if code == -6:
+        raise ValueError("Scene v12 does not support product kind")
+    if code < 0:
+        raise ValueError("invalid scene trace packing")
+    return _decode_packed_scene_rows(out, code)
+
+
 def scene_pack_annotation_marks(
     rows: bytes,
     *,

@@ -17,6 +17,11 @@
 //! tessellation is Scene-owned after pixel mapping (no new pack kind).
 //! ABI 146 admits constant mark `fill` linear-gradients via an XYGR extras
 //! sidecar (no new pack kind); encoded Scene keeps XYGR.
+//! ABI 147 owns product packing facts from packed XYPK v1: hosts pass authored
+//! kind, coords, step, curve-smooth, stroke-perimeter, density/heatmap paint
+//! presence, hex pitch, and grid shape; Rust resolves flags, `step_mode`, and
+//! extra0/extra1 so Python and Node cannot drift on cartesian-vs-polar smooth
+//! or painted-vs-lattice heatmap dispatch.
 
 use crate::scene::MAX_SCENE_MARKS;
 
@@ -38,6 +43,18 @@ pub const FLAG_STROKE_PERIMETER: u8 = 1 << 0;
 pub const FLAG_HEATMAP_PAINTED: u8 = 1 << 1;
 pub const FLAG_DENSITY_BLIT: u8 = 1 << 2;
 const PACK_FLAGS: u8 = FLAG_STROKE_PERIMETER | FLAG_HEATMAP_PAINTED | FLAG_DENSITY_BLIT;
+
+pub const XYPK_MAGIC: &[u8; 4] = b"XYPK";
+pub const XYPK_VERSION: u32 = 1;
+pub const XYPK_V1_HEADER_BYTES: usize = 64;
+pub const FACT_STROKE_PERIMETER: u8 = 1 << 0;
+pub const FACT_CURVE_SMOOTH: u8 = 1 << 1;
+pub const FACT_DENSITY_PLANE: u8 = 1 << 2;
+pub const FACT_HEATMAP_PAINT: u8 = 1 << 3;
+const FACT_BITS: u8 =
+    FACT_STROKE_PERIMETER | FACT_CURVE_SMOOTH | FACT_DENSITY_PLANE | FACT_HEATMAP_PAINT;
+pub const COORDS_CARTESIAN: u8 = 0;
+pub const COORDS_POLAR: u8 = 1;
 
 const KIND_SCATTER: u8 = 0;
 const KIND_POLYLINE: u8 = 1;
@@ -138,6 +155,20 @@ pub struct ProductPackInput<'a> {
     pub x1: &'a [f64],
     pub y1: &'a [f64],
     pub base: &'a [f64],
+}
+
+/// Resolved packing fields from one XYPK v1 envelope.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ProductFacts<'a> {
+    pub kind: &'a str,
+    pub flags: u8,
+    pub step_mode: u8,
+    pub symbol: u8,
+    pub style_ref: u32,
+    pub trace_id: u64,
+    pub diameter: f64,
+    pub extra0: f64,
+    pub extra1: f64,
 }
 
 fn require_cols<'a>(columns: &'a [&'a [f64]], count: usize) -> Result<&'a [&'a [f64]], PackError> {
@@ -286,6 +317,130 @@ pub fn pack_product(input: ProductPackInput<'_>) -> Result<Vec<PackedSceneRow>, 
         }
         _ => Err(PackError::Length),
     }
+}
+
+fn read_u32_at(bytes: &[u8], at: usize) -> Result<u32, PackError> {
+    let slice = bytes.get(at..at + 4).ok_or(PackError::Length)?;
+    Ok(u32::from_le_bytes(
+        slice.try_into().map_err(|_| PackError::Length)?,
+    ))
+}
+
+fn read_u64_at(bytes: &[u8], at: usize) -> Result<u64, PackError> {
+    let slice = bytes.get(at..at + 8).ok_or(PackError::Length)?;
+    Ok(u64::from_le_bytes(
+        slice.try_into().map_err(|_| PackError::Length)?,
+    ))
+}
+
+fn read_f64_at(bytes: &[u8], at: usize) -> Result<f64, PackError> {
+    let slice = bytes.get(at..at + 8).ok_or(PackError::Length)?;
+    Ok(f64::from_le_bytes(
+        slice.try_into().map_err(|_| PackError::Length)?,
+    ))
+}
+
+/// Parse XYPK v1 and resolve flags, step_mode, and extras from authored facts.
+///
+/// Header is 64 bytes; remaining UTF-8 is the product kind name.
+pub fn parse_product_facts(bytes: &[u8]) -> Result<ProductFacts<'_>, PackError> {
+    if bytes.len() < XYPK_V1_HEADER_BYTES || bytes.get(..4) != Some(&XYPK_MAGIC[..]) {
+        return Err(PackError::Length);
+    }
+    if read_u32_at(bytes, 4)? != XYPK_VERSION {
+        return Err(PackError::Version);
+    }
+    let style_ref = read_u32_at(bytes, 8)?;
+    let coords = bytes[12];
+    let mut symbol = bytes[13];
+    let authored_step = bytes[14];
+    let facts = bytes[15];
+    if coords > COORDS_POLAR || facts & !FACT_BITS != 0 || authored_step > 3 {
+        return Err(PackError::Length);
+    }
+    let trace_id = read_u64_at(bytes, 16)?;
+    let mut diameter = read_f64_at(bytes, 24)?;
+    let hex_dx = read_f64_at(bytes, 32)?;
+    let hex_dy = read_f64_at(bytes, 40)?;
+    let grid_rows = read_f64_at(bytes, 48)?;
+    let grid_cols = read_f64_at(bytes, 56)?;
+    let kind = std::str::from_utf8(&bytes[XYPK_V1_HEADER_BYTES..]).map_err(|_| PackError::Length)?;
+    if kind.is_empty() || kind.len() > 32 || kind.contains('\0') {
+        return Err(PackError::Length);
+    }
+    let density = facts & FACT_DENSITY_PLANE != 0;
+    if density {
+        symbol = 0;
+        diameter = 0.0;
+    }
+    let mut flags = 0u8;
+    if facts & FACT_STROKE_PERIMETER != 0 && matches!(kind, "area" | "error_band") {
+        flags |= FLAG_STROKE_PERIMETER;
+    }
+    if facts & FACT_HEATMAP_PAINT != 0 {
+        flags |= FLAG_HEATMAP_PAINTED;
+    }
+    if density {
+        flags |= FLAG_DENSITY_BLIT;
+    }
+    let mut step_mode = authored_step;
+    if authored_step == 0
+        && facts & FACT_CURVE_SMOOTH != 0
+        && coords == COORDS_CARTESIAN
+        && matches!(kind, "line" | "area" | "error_band")
+    {
+        step_mode = 4;
+    }
+    let (extra0, extra1) = if kind == "hexbin" {
+        (hex_dx, hex_dy)
+    } else if kind == "heatmap" || density {
+        (grid_rows, grid_cols)
+    } else {
+        (0.0, 0.0)
+    };
+    Ok(ProductFacts {
+        kind,
+        flags,
+        step_mode,
+        symbol,
+        style_ref,
+        trace_id,
+        diameter,
+        extra0,
+        extra1,
+    })
+}
+
+/// Pack one product-kind trace from packed XYPK facts plus canonical columns.
+pub fn pack_product_facts(
+    facts: &[u8],
+    x: &[f64],
+    y: &[f64],
+    x0: &[f64],
+    y0: &[f64],
+    x1: &[f64],
+    y1: &[f64],
+    base: &[f64],
+) -> Result<Vec<PackedSceneRow>, PackError> {
+    let parsed = parse_product_facts(facts)?;
+    pack_product(ProductPackInput {
+        kind: parsed.kind,
+        flags: parsed.flags,
+        step_mode: parsed.step_mode,
+        symbol: parsed.symbol,
+        style_ref: parsed.style_ref,
+        trace_id: parsed.trace_id,
+        diameter: parsed.diameter,
+        extra0: parsed.extra0,
+        extra1: parsed.extra1,
+        x,
+        y,
+        x0,
+        y0,
+        x1,
+        y1,
+        base,
+    })
 }
 
 fn require_used<'a>(columns: &'a [&'a [f64]]) -> Result<&'a [&'a [f64]], PackError> {
@@ -1321,5 +1476,170 @@ mod tests {
             }),
             Err(PackError::Length)
         );
+    }
+
+    fn xypk_bytes(
+        kind: &str,
+        style_ref: u32,
+        coords: u8,
+        symbol: u8,
+        step: u8,
+        facts: u8,
+        trace_id: u64,
+        diameter: f64,
+        hex_dx: f64,
+        hex_dy: f64,
+        grid_rows: f64,
+        grid_cols: f64,
+    ) -> Vec<u8> {
+        let mut out = Vec::with_capacity(XYPK_V1_HEADER_BYTES + kind.len());
+        out.extend_from_slice(XYPK_MAGIC);
+        out.extend_from_slice(&XYPK_VERSION.to_le_bytes());
+        out.extend_from_slice(&style_ref.to_le_bytes());
+        out.push(coords);
+        out.push(symbol);
+        out.push(step);
+        out.push(facts);
+        out.extend_from_slice(&trace_id.to_le_bytes());
+        out.extend_from_slice(&diameter.to_le_bytes());
+        out.extend_from_slice(&hex_dx.to_le_bytes());
+        out.extend_from_slice(&hex_dy.to_le_bytes());
+        out.extend_from_slice(&grid_rows.to_le_bytes());
+        out.extend_from_slice(&grid_cols.to_le_bytes());
+        out.extend_from_slice(kind.as_bytes());
+        out
+    }
+
+    #[test]
+    fn product_facts_apply_cartesian_smooth_and_ignore_polar() {
+        let cartesian_bytes = xypk_bytes(
+            "line",
+            3,
+            COORDS_CARTESIAN,
+            0,
+            0,
+            FACT_CURVE_SMOOTH,
+            9,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        );
+        let cartesian = parse_product_facts(&cartesian_bytes).unwrap();
+        assert_eq!(cartesian.step_mode, 4);
+        assert_eq!(cartesian.flags, 0);
+        let polar_bytes = xypk_bytes(
+            "line",
+            3,
+            COORDS_POLAR,
+            0,
+            0,
+            FACT_CURVE_SMOOTH,
+            9,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        );
+        let polar = parse_product_facts(&polar_bytes).unwrap();
+        assert_eq!(polar.step_mode, 0);
+        let stepped_bytes = xypk_bytes(
+            "line",
+            1,
+            COORDS_CARTESIAN,
+            0,
+            1,
+            FACT_CURVE_SMOOTH,
+            2,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        );
+        let stepped = parse_product_facts(&stepped_bytes).unwrap();
+        assert_eq!(stepped.step_mode, 1);
+    }
+
+    #[test]
+    fn product_facts_select_heatmap_paint_hex_and_density_extras() {
+        let painted_bytes = xypk_bytes(
+            "heatmap",
+            4,
+            COORDS_CARTESIAN,
+            0,
+            0,
+            FACT_HEATMAP_PAINT,
+            8,
+            0.0,
+            0.0,
+            0.0,
+            3.0,
+            5.0,
+        );
+        let painted = parse_product_facts(&painted_bytes).unwrap();
+        assert_eq!(painted.flags, FLAG_HEATMAP_PAINTED);
+        assert_eq!((painted.extra0, painted.extra1), (3.0, 5.0));
+        let hex_bytes = xypk_bytes(
+            "hexbin",
+            0,
+            COORDS_CARTESIAN,
+            0,
+            0,
+            0,
+            1,
+            0.0,
+            0.5,
+            0.25,
+            9.0,
+            9.0,
+        );
+        let hex = parse_product_facts(&hex_bytes).unwrap();
+        assert_eq!((hex.extra0, hex.extra1), (0.5, 0.25));
+        let density_bytes = xypk_bytes(
+            "scatter",
+            2,
+            COORDS_CARTESIAN,
+            4,
+            0,
+            FACT_DENSITY_PLANE,
+            7,
+            6.0,
+            0.0,
+            0.0,
+            384.0,
+            512.0,
+        );
+        let density = parse_product_facts(&density_bytes).unwrap();
+        assert_eq!(density.flags, FLAG_DENSITY_BLIT);
+        assert_eq!(density.symbol, 0);
+        assert_eq!(density.diameter, 0.0);
+        assert_eq!((density.extra0, density.extra1), (384.0, 512.0));
+    }
+
+    #[test]
+    fn pack_product_facts_flattens_cartesian_smooth_line() {
+        let x = [0.0, 1.0, 2.0];
+        let y = [0.0, 1.0, 0.0];
+        let facts = xypk_bytes(
+            "line",
+            1,
+            COORDS_CARTESIAN,
+            0,
+            0,
+            FACT_CURVE_SMOOTH,
+            11,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        );
+        let rows = pack_product_facts(&facts, &x, &y, &[], &[], &[], &[], &[]).unwrap();
+        assert_eq!(rows.len(), 3);
+        assert!(rows.iter().all(|row| row.expansion_mode == EXP_CURVE_FLATTEN));
+        assert!(rows.iter().all(|row| row.style_ref == 1 && row.stable_id == 11));
     }
 }

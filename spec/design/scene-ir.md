@@ -93,6 +93,9 @@ slot (`{space, dir, stops}` with 2–8 RGBA8 stops, axis-aligned `down|up|left|r
 `<linearGradient>` and raster emits `OP_FILL_POLY_GRAD`. Transparent stops
 rewrite to the adjacent opaque hue. Two-ended ribbon `color2_ch`, data-driven
 `color_ch`, `var()` stops, and chart/theme CSS gradients stay fail-closed.
+ABI 147 does not change Scene records; `xyg_scene_pack_product_facts` owns
+flags, `step_mode`, and extra0/extra1 from packed XYPK v1 so cartesian-vs-polar
+smooth and painted heatmap dispatch cannot drift.
 
 ## Version 3: backend-neutral core scene batch
 
@@ -392,14 +395,18 @@ match Python on the public Scene route. ABI 144 admits cartesian
 `error_band(curve="smooth")` on that same `BandFlatten=12` mapping (public
 allowlist includes `curve` for `KIND_ERROR_BAND`) and polar
 `curve="smooth"` line/area/error_band as identity chords (polar-axes.md §5;
-hosts must not pack `step_mode=4` under `coords="polar"`). Polar+step+smooth
+ABI 147 resolves `step_mode=4` from packed XYPK coords so polar smooth stays
+identity). Polar+step+smooth
 and authored marker glyphs stay on the compatibility exporters. ABI 145 admits
 constant scatter `marker_path` via an XYMP extras sidecar; Rust tessellates
 centres to existing PolyFill/Polyline after pixel mapping (public allowlist
 includes `marker_path` for `KIND_SCATTER`; encoded Scene v31 is unchanged).
 ABI 146 admits constant mark `fill` linear-gradients via an XYGR extras
 sidecar (public allowlist already includes `fill` for area/bar/column/histogram;
-encoded Scene v31 keeps XYGR).
+encoded Scene v31 keeps XYGR). ABI 147 does not change Scene records;
+`xyg_scene_pack_product_facts` owns flags, `step_mode`, and extra0/extra1 from
+packed XYPK v1 so cartesian-vs-polar smooth and painted heatmap dispatch cannot
+drift.
 
 ABI 110 adds `xyg_scene_pack_legend` so both hosts pass loc/flags/paints
 and receive XYLG bytes; header layout, text offsets, and bounded-text
@@ -1240,7 +1247,9 @@ to PolyFill wedges (encoded Scene v31 is unchanged). ABI 144 admits cartesian
 admits constant scatter `marker_path` as XYMP extras tessellated to
 PolyFill/Polyline after pixel mapping (encoded Scene v31 is unchanged). ABI 146
 admits constant mark `fill` linear-gradients as XYGR extras (encoded Scene v31
-keeps XYGR). Polar+step+smooth and authored marker glyphs stay compatibility. ABI 116 does not change Scene records either;
+keeps XYGR). ABI 147 does not change Scene records either;
+`xyg_scene_pack_product_facts` owns flags/`step_mode`/extras from packed XYPK v1.
+Polar+step+smooth and authored marker glyphs stay compatibility. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;
 `xyg_scene_figure_support_reason` owns figure-compile support from packed

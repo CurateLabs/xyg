@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { cssColorRgba8, lineChart, scatterChart } from "../src/index.js";
 import { figureSceneV3 } from "../src/scene.js";
-import { xyScenePackAnnotationMarks, xyScenePackProduct, xyScenePackTrace, xySceneResolveChromeStyle, xySceneResolvePackKind } from "../src/native.js";
+import { xyScenePackAnnotationMarks, xyScenePackProduct, xyScenePackProductFacts, xyScenePackTrace, xySceneResolveChromeStyle, xySceneResolvePackKind } from "../src/native.js";
 import { f64Ptr, u8Ptr } from "../src/encode.js";
 
 test("cssColorRgba8 matches Python named colors and none", () => {
@@ -170,6 +170,56 @@ test("pack_product maps product kinds and heatmap range columns", () => {
   assert.equal(view.getFloat64(32, true), 2);
   assert.equal(view.getFloat64(40, true), 3);
   assert.equal(view.getFloat64(48, true), 4);
+});
+
+test("xyScenePackProductFacts applies cartesian smooth and ignores polar", () => {
+  const encoder = new TextEncoder();
+  const pack = (kind, coords, facts) => {
+    const name = encoder.encode(kind);
+    const out = new Uint8Array(64 + name.length);
+    const view = new DataView(out.buffer);
+    out.set(encoder.encode("XYPK"), 0);
+    view.setUint32(4, 1, true);
+    view.setUint32(8, 1, true);
+    out[12] = coords;
+    out[15] = facts;
+    view.setBigUint64(16, 11n, true);
+    out.set(name, 64);
+    return out;
+  };
+  const x = Float64Array.from([0, 1, 2]);
+  const y = Float64Array.from([0, 1, 0]);
+  const empty = { ptr: 0, n: 0 };
+  const cartesian = pack("line", 0, 2);
+  const out = new Uint8Array(168);
+  const code = xyScenePackProductFacts(
+    u8Ptr(cartesian), BigInt(cartesian.length),
+    f64Ptr(x), BigInt(x.length),
+    f64Ptr(y), BigInt(y.length),
+    empty.ptr, BigInt(empty.n),
+    empty.ptr, BigInt(empty.n),
+    empty.ptr, BigInt(empty.n),
+    empty.ptr, BigInt(empty.n),
+    empty.ptr, BigInt(empty.n),
+    u8Ptr(out), BigInt(out.length),
+  );
+  assert.equal(code, 3);
+  assert.equal(out[2], 11);
+  const polar = pack("line", 1, 2);
+  const polarOut = new Uint8Array(112);
+  const polarCode = xyScenePackProductFacts(
+    u8Ptr(polar), BigInt(polar.length),
+    f64Ptr(x.subarray(0, 2)), 2n,
+    f64Ptr(y.subarray(0, 2)), 2n,
+    empty.ptr, BigInt(empty.n),
+    empty.ptr, BigInt(empty.n),
+    empty.ptr, BigInt(empty.n),
+    empty.ptr, BigInt(empty.n),
+    empty.ptr, BigInt(empty.n),
+    u8Ptr(polarOut), BigInt(polarOut.length),
+  );
+  assert.equal(polarCode, 2);
+  assert.equal(polarOut[2], 0);
 });
 
 function annotationMarkRow(kind, axis, symbol, styleRef, index, value0, value1, size) {

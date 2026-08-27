@@ -203,7 +203,8 @@ crates/
                         #   ABI 144 cartesian error_band BandFlatten and polar
                         #   identity-chord smooth plus ABI 145 constant
                         #   marker_path XYMP tessellation plus ABI 146
-                        #   constant linear-gradient XYGR fills.
+                        #   constant linear-gradient XYGR fills plus ABI 147
+                        #   XYPK product packing facts.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -652,6 +653,9 @@ finite-coordinate rejection.
 ABI v136 adds `xyg_scene_resolve_pack_kind` / `xyg_scene_pack_product` so
 Python and Node share one product-kind packer: kind → pack-kind mapping,
 heatmap painted-vs-lattice flags, and canonical column remapping.
+ABI v147 adds `xyg_scene_pack_product_facts` so Python and Node share one
+XYPK v1 facts packer: flags, `step_mode` (cartesian-only smooth), and
+extra0/extra1 cannot drift.
 ABI v116 adds `xyg_scene_pack_annotation_marks` so Python and Node share
 one rule/band/marker expander: stable-id tags, opposite-axis domain
 spanning, and finite rejection.
@@ -727,5 +731,6 @@ landed; the remainder, in order:
    ABI 144 cartesian `error_band(curve="smooth")` `BandFlatten=12` plus polar
    identity-chord `curve="smooth"` (`scene.rs` / host packers) ✅;
    ABI 145 constant `marker_path` XYMP tessellation (`scene.rs`) ✅;
-   ABI 146 constant mark `fill` linear-gradient XYGR (`scene.rs`) ✅.
+   ABI 146 constant mark `fill` linear-gradient XYGR (`scene.rs`) ✅;
+   ABI 147 XYPK product packing facts (`xyg_scene_pack_product_facts`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

@@ -14,6 +14,7 @@ from xyg._native import (
     scene_pack_colorbar,
     scene_pack_legend,
     scene_pack_product,
+    scene_pack_product_facts,
     scene_pack_trace,
     scene_resolve_chrome_style,
     scene_resolve_mark_styles,
@@ -133,6 +134,59 @@ def test_pack_product_matches_pack_trace_for_scatter() -> None:
     assert list(diameters) == [6.0, 6.0]
     assert coords[0].tolist() == [0.0, 1.0]
     assert coords[1].tolist() == [2.0, 3.0]
+
+
+def _xypk(
+    kind: str,
+    *,
+    style_ref: int = 0,
+    coords: int = 0,
+    symbol: int = 0,
+    step: int = 0,
+    facts: int = 0,
+    trace_id: int = 0,
+    diameter: float = 0.0,
+    hex_dx: float = 0.0,
+    hex_dy: float = 0.0,
+    grid_rows: float = 0.0,
+    grid_cols: float = 0.0,
+) -> bytes:
+    return struct.pack(
+        "<4sIIBBBBQddddd",
+        b"XYPK",
+        1,
+        style_ref,
+        coords,
+        symbol,
+        step,
+        facts,
+        trace_id,
+        diameter,
+        hex_dx,
+        hex_dy,
+        grid_rows,
+        grid_cols,
+    ) + kind.encode("utf-8")
+
+
+def test_pack_product_facts_applies_cartesian_smooth_line() -> None:
+    kinds, ids, refs, diameters, symbols, modes, coords = scene_pack_product_facts(
+        _xypk("line", style_ref=1, facts=2, trace_id=11),
+        [[0.0, 1.0, 2.0], [0.0, 1.0, 0.0], None, None, None, None, None],
+    )
+    assert list(kinds) == [1, 1, 1]
+    assert list(ids) == [11, 11, 11]
+    assert list(modes) == [11, 11, 11]
+    assert coords[0].tolist() == [0.0, 1.0, 2.0]
+
+
+def test_pack_product_facts_ignores_polar_smooth() -> None:
+    kinds, ids, refs, diameters, symbols, modes, coords = scene_pack_product_facts(
+        _xypk("line", coords=1, facts=2, trace_id=4),
+        [[0.0, 1.0], [0.0, 1.0], None, None, None, None, None],
+    )
+    assert list(modes) == [0, 0]
+    assert coords[0].tolist() == [0.0, 1.0]
 
 
 def test_pack_product_heatmap_reads_range_endpoints() -> None:

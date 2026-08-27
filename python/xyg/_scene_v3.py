@@ -512,9 +512,10 @@ _KIND_CODES = {
 }
 
 
-_PACK_FLAG_STROKE_PERIMETER = 1
-_PACK_FLAG_HEATMAP_PAINTED = 2
-_PACK_FLAG_DENSITY_BLIT = 4
+_XYPK_FACT_STROKE_PERIMETER = 1
+_XYPK_FACT_CURVE_SMOOTH = 2
+_XYPK_FACT_DENSITY_PLANE = 4
+_XYPK_FACT_HEATMAP_PAINT = 8
 
 
 class UnsupportedSceneV3(ValueError):
@@ -539,8 +540,8 @@ def _append_packed(
     coordinates: list[list[float]],
     trace: Any,
     *,
+    facts: bytes,
     columns: list[np.ndarray | None] | None = None,
-    **kwargs: Any,
 ) -> None:
     """Append Rust-packed Scene rows for one product-kind geometry envelope."""
     if columns is None:
@@ -562,7 +563,7 @@ def _append_packed(
             packed_symbols,
             packed_modes,
             coords,
-        ) = _native.scene_pack_product(str(trace.kind), columns, **kwargs)
+        ) = _native.scene_pack_product_facts(facts, columns)
     except ValueError as error:
         raise UnsupportedSceneV3(str(error)) from error
     kinds.extend(int(value) for value in packed_kinds)
@@ -992,6 +993,49 @@ def _hexbin_pitch(style: dict[str, Any]) -> tuple[float, float]:
     if not np.isfinite(dx) or not np.isfinite(dy) or dx <= 0.0 or dy <= 0.0:
         raise UnsupportedSceneV3("Scene v12 hexbin requires finite hex_dx/hex_dy cell pitch")
     return dx, dy
+
+
+def _curve_is_smooth(style: dict[str, Any]) -> bool:
+    curve = style.get("curve")
+    return curve is not None and str(curve).strip().lower() == "smooth"
+
+
+def _pack_xypk(
+    trace: Any,
+    figure: Any,
+    *,
+    style_ref: int,
+    symbol: int,
+    diameter: float,
+    authored_step: int,
+    facts: int,
+    hex_dx: float,
+    hex_dy: float,
+    grid_rows: float,
+    grid_cols: float,
+) -> bytes:
+    """Pack authored product facts; Rust resolves flags, step_mode, and extras."""
+    kind = str(trace.kind).encode("utf-8")
+    coords = 1 if str(getattr(figure, "coords", "cartesian") or "cartesian") == "polar" else 0
+    return (
+        struct.pack(
+            "<4sIIBBBBQddddd",
+            b"XYPK",
+            1,
+            int(style_ref),
+            coords,
+            int(symbol) & 0xFF,
+            int(authored_step) & 0xFF,
+            int(facts) & 0xFF,
+            int(trace.id),
+            float(diameter),
+            float(hex_dx),
+            float(hex_dy),
+            float(grid_rows),
+            float(grid_cols),
+        )
+        + kind
+    )
 
 
 def _heatmap_uses_colormap(trace: Any) -> bool:
@@ -1541,12 +1585,13 @@ def figure_scene(
                 )
             )
 
-        flags = 0
-        extra0 = extra1 = 0.0
-        step_mode = 0
         pack_symbol = 0
         pack_diameter = 0.0
         pack_columns = None
+        authored_step = 0
+        fact_bits = 0
+        hex_dx = hex_dy = 0.0
+        grid_rows = grid_cols = 0.0
         if trace.kind in _HEATMAP_KINDS:
             rows, cols = _heatmap_shape(trace)
             values = _heatmap_grid_values(trace)
@@ -1556,47 +1601,37 @@ def figure_scene(
                 raise UnsupportedSceneV3(
                     "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
                 )
-            extra0, extra1 = float(rows), float(cols)
+            grid_rows, grid_cols = float(rows), float(cols)
             if _heatmap_tessellates_cell_fills(trace):
                 heatmap_paint_planes.append(
                     _heatmap_paint_plane(trace, values, rows, cols, int(trace.id))
                 )
-                flags |= _PACK_FLAG_HEATMAP_PAINTED
+                fact_bits |= _XYPK_FACT_HEATMAP_PAINT
         elif trace.kind in _HEXBIN_KINDS:
-            extra0, extra1 = _hexbin_pitch(style)
+            hex_dx, hex_dy = _hexbin_pitch(style)
         elif trace.kind in _BAND_KINDS:
             stroke_perimeter = style.get("stroke_perimeter", False)
             if not isinstance(stroke_perimeter, bool):
                 raise UnsupportedSceneV3("Scene v25 area stroke_perimeter must be a boolean")
             if stroke_perimeter:
-                flags |= _PACK_FLAG_STROKE_PERIMETER
-            curve = style.get("curve")
-            if (
-                curve is not None
-                and str(curve).strip().lower() == "smooth"
-                and str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
-            ):
-                step_mode = 4
+                fact_bits |= _XYPK_FACT_STROKE_PERIMETER
+            if _curve_is_smooth(style):
+                fact_bits |= _XYPK_FACT_CURVE_SMOOTH
         elif trace.kind == "line":
             where = style.get("step")
-            curve = style.get("curve")
             if where is not None:
                 if where not in {"pre", "post", "mid"}:
                     raise UnsupportedSceneV3(f"Scene v12 does not support step mode {where!r}")
-                step_mode = {"pre": 1, "mid": 2, "post": 3}[where]
-            elif (
-                curve is not None
-                and str(curve).strip().lower() == "smooth"
-                and str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
-            ):
-                step_mode = 4
+                authored_step = {"pre": 1, "mid": 2, "post": 3}[where]
+            if _curve_is_smooth(style):
+                fact_bits |= _XYPK_FACT_CURVE_SMOOTH
         elif trace.kind == "scatter":
             pack_symbol = _SYMBOL_CODES[symbol_name]
             pack_diameter = diameter
             density_pack = _density_blit_pack(figure, trace)
             if density_pack is not None:
-                extra0, extra1, plane, pack_columns = density_pack
-                flags |= _PACK_FLAG_DENSITY_BLIT
+                grid_rows, grid_cols, plane, pack_columns = density_pack
+                fact_bits |= _XYPK_FACT_DENSITY_PLANE
                 heatmap_paint_planes.append(plane)
                 pack_symbol = 0
                 pack_diameter = 0.0
@@ -1610,14 +1645,19 @@ def figure_scene(
             coordinates,
             trace,
             columns=pack_columns,
-            flags=flags,
-            step_mode=step_mode,
-            symbol=pack_symbol,
-            style_ref=style_ref,
-            trace_id=int(trace.id),
-            diameter=pack_diameter,
-            extra0=extra0,
-            extra1=extra1,
+            facts=_pack_xypk(
+                trace,
+                figure,
+                style_ref=style_ref,
+                symbol=pack_symbol,
+                diameter=pack_diameter,
+                authored_step=authored_step,
+                facts=fact_bits,
+                hex_dx=hex_dx,
+                hex_dy=hex_dy,
+                grid_rows=grid_rows,
+                grid_cols=grid_cols,
+            ),
         )
 
     # Scene v12's bounded primary-annotation subset is represented by ordinary
