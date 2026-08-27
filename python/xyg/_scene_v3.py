@@ -58,6 +58,27 @@ _MAX_PUBLIC_TRIANGLE_MESHES = 1024
 # stay on the compatibility exporters.
 _MAX_PUBLIC_HEATMAP_CELLS = 10_000
 
+_PUBLIC_EXPORT_KIND_CODES = {
+    "scatter": 0,
+    "line": 1,
+    "bar": 2,
+    "column": 3,
+    "histogram": 4,
+    "violin": 5,
+    "box": 6,
+    "box_whisker": 7,
+    "box_median": 8,
+    "segments": 9,
+    "errorbar": 10,
+    "stem": 11,
+    "area": 12,
+    "error_band": 13,
+    "ribbon": 14,
+    "triangle_mesh": 15,
+    "hexbin": 16,
+    "heatmap": 17,
+}
+
 _LEGEND_LOCATIONS = {
     "upper right": 0,
     "upper left": 1,
@@ -1685,6 +1706,242 @@ def public_static_export(
     raise ValueError(f"Scene public static format must be svg, png, or pdf, got {format!r}")
 
 
+def _xyep_put_keys(buf: bytearray, keys: list[str]) -> None:
+    for key in keys:
+        encoded = str(key).encode("utf-8")
+        if len(encoded) > 256:
+            encoded = encoded[:256]
+        buf.extend(len(encoded).to_bytes(2, "little"))
+        buf.extend(encoded)
+
+
+def _xyep_column(trace: Any, name: str) -> Any:
+    return getattr(trace, name, None)
+
+
+def _xyep_len(column: Any) -> int:
+    return 0 if column is None else int(len(column.values))
+
+
+def _xyep_finite(column: Any) -> bool:
+    return column is not None and bool(np.isfinite(column.values).all())
+
+
+def _xyep_kind(kind: str) -> int:
+    return _PUBLIC_EXPORT_KIND_CODES.get(kind, 255)
+
+
+def _pack_public_export_support(
+    figure: Any,
+    *,
+    width: int | None = None,
+    height: int | None = None,
+) -> bytes:
+    """Pack literal figure metadata for Rust's public-export predicate."""
+    flags = 0
+    if width is None and not isinstance(figure.width, int):
+        flags |= 1 << 0
+    if height is None and not isinstance(figure.height, int):
+        flags |= 1 << 1
+    if getattr(figure, "chrome_styles", None):
+        flags |= 1 << 2
+    if getattr(figure, "title_options", None):
+        flags |= 1 << 3
+    style_keys = [str(key) for key in (getattr(figure, "style", None) or {})]
+    legend_keys = [str(key) for key in (getattr(figure, "legend_options", None) or {})]
+    colorbar_keys = [str(key) for key in (getattr(figure, "colorbar_options", None) or {})]
+    annotations = list(getattr(figure, "annotations", None) or [])
+    traces = list(getattr(figure, "traces", None) or [])
+    payload = bytearray(b"XYEP")
+    payload.extend((1).to_bytes(4, "little"))
+    payload.extend(flags.to_bytes(4, "little"))
+    payload.extend(len(style_keys).to_bytes(4, "little"))
+    payload.extend(len(legend_keys).to_bytes(4, "little"))
+    payload.extend(len(colorbar_keys).to_bytes(4, "little"))
+    payload.extend(len(figure.axis_options).to_bytes(4, "little"))
+    payload.extend(len(annotations).to_bytes(4, "little"))
+    payload.extend(len(traces).to_bytes(4, "little"))
+    _xyep_put_keys(payload, style_keys)
+    _xyep_put_keys(payload, legend_keys)
+    _xyep_put_keys(payload, colorbar_keys)
+    for axis_id, options in figure.axis_options.items():
+        axis_code = 0 if axis_id == "x" else 1 if axis_id == "y" else 255
+        resolved = figure._axis_kind(axis_id)
+        resolved_code = {"linear": 0, "time": 1, "category": 2}.get(resolved, 255)
+        authored = options.get("type")
+        authored_code = {None: 0, "linear": 1, "log": 2, "symlog": 3}.get(authored, 255)
+        side = options.get("side")
+        side_code = {None: 0, "bottom": 1, "left": 2, "top": 3, "right": 4}.get(side, 255)
+        keys = [str(key) for key, value in options.items() if value not in (None, False)]
+        payload.extend(
+            bytes(
+                (
+                    axis_code,
+                    resolved_code,
+                    authored_code,
+                    int(options.get("domain") is not None),
+                    side_code,
+                    0,
+                )
+            )
+        )
+        payload.extend(len(keys).to_bytes(2, "little"))
+        _xyep_put_keys(payload, keys)
+    annotation_kinds = {
+        "text": 1,
+        "rule": 2,
+        "band": 3,
+        "marker": 4,
+        "arrow": 5,
+        "callout": 6,
+    }
+    for annotation in annotations:
+        if not isinstance(annotation, dict):
+            payload.extend(bytes((0, 1 << 4)))
+            payload.extend((0).to_bytes(2, "little"))
+            continue
+        kind_code = annotation_kinds.get(str(annotation.get("kind")), 0)
+        flags_ann = 0
+        if "wrap" in annotation:
+            flags_ann |= 1 << 0
+        if "dx" in annotation:
+            flags_ann |= 1 << 1
+        if "dy" in annotation:
+            flags_ann |= 1 << 2
+        if "anchor" in annotation:
+            flags_ann |= 1 << 3
+        fields = [str(key) for key in annotation]
+        payload.extend(bytes((kind_code, flags_ann)))
+        payload.extend(len(fields).to_bytes(2, "little"))
+        _xyep_put_keys(payload, fields)
+    for trace_index, trace in enumerate(traces):
+        style = getattr(trace, "style", None) or {}
+        opacity = float(style.get("opacity", 1.0))
+        if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
+            raise ValueError("trace opacity must be finite and in [0, 1]")
+        kind_code = _xyep_kind(trace.kind)
+        step = {"pre": 1, "mid": 2, "post": 3}.get(style.get("step"), 0)
+        prev = traces[trace_index - 1] if trace_index else None
+        prev2 = traces[trace_index - 2] if trace_index >= 2 else None
+        prev3 = traces[trace_index - 3] if trace_index >= 3 else None
+        xv = _xyep_column(trace, "x")
+        yv = _xyep_column(trace, "y")
+        x0 = _xyep_column(trace, "x0")
+        y0 = _xyep_column(trace, "y0")
+        x1 = _xyep_column(trace, "x1")
+        y1 = _xyep_column(trace, "y1")
+        mesh = (x0, y0, x1, y1, xv, yv)
+        flags_tr = 0
+        if xv is not None:
+            flags_tr |= 1 << 0
+        if yv is not None:
+            flags_tr |= 1 << 1
+        if xv is not None and yv is not None and _xyep_len(xv) == _xyep_len(yv):
+            flags_tr |= 1 << 2
+        if _xyep_finite(xv):
+            flags_tr |= 1 << 3
+        if _xyep_finite(yv):
+            flags_tr |= 1 << 4
+        if None not in (x0, y0, x1, y1):
+            flags_tr |= 1 << 5
+            lengths = {_xyep_len(column) for column in (x0, y0, x1, y1)}
+            if len(lengths) == 1:
+                flags_tr |= 1 << 6
+        if all(column is not None for column in mesh):
+            flags_tr |= 1 << 7
+            mesh_lengths = {_xyep_len(column) for column in mesh}
+            if len(mesh_lengths) == 1:
+                flags_tr |= 1 << 8
+            if all(_xyep_finite(column) for column in mesh):
+                flags_tr |= 1 << 9
+        if style.get("joined_fill"):
+            flags_tr |= 1 << 10
+        heatmap_rows = heatmap_cols = heatmap_values = 0
+        if trace.kind == "heatmap":
+            if _heatmap_uses_colormap(trace):
+                flags_tr |= 1 << 11
+            try:
+                heatmap_rows, heatmap_cols = _heatmap_shape(trace)
+                values = _heatmap_grid_values(trace)
+                _heatmap_extent(trace)
+                flags_tr |= 1 << 12
+                flags_tr |= 1 << 13
+                heatmap_values = int(values.size)
+                if np.isfinite(values).all():
+                    flags_tr |= 1 << 14
+            except (UnsupportedSceneV3, ValueError, TypeError):
+                heatmap_rows = heatmap_cols = heatmap_values = 0
+        if xv is not None and yv is not None and _xyep_len(xv) == _xyep_len(yv):
+            flags_tr |= 1 << 15
+        if _xyep_finite(xv) and _xyep_finite(yv):
+            flags_tr |= 1 << 16
+        if style.get("stroke_width") is not None and style.get("stroke") is None:
+            flags_tr |= 1 << 17
+        if (
+            prev is not None
+            and xv is not None
+            and yv is not None
+            and _xyep_column(prev, "x1") is not None
+            and _xyep_column(prev, "y1") is not None
+            and np.array_equal(xv.values, prev.x1.values)
+            and np.array_equal(yv.values, prev.y1.values)
+        ):
+            flags_tr |= 1 << 18
+        if prev is not None and trace.x_axis == prev.x_axis and trace.y_axis == prev.y_axis:
+            flags_tr |= 1 << 19
+        if _xyep_finite(xv) and _xyep_finite(yv):
+            flags_tr |= 1 << 20
+        symbol = style.get("symbol", "circle")
+        if not isinstance(symbol, str):
+            flags_tr |= 1 << 21
+            symbol = ""
+        role = style.get("role")
+        role_s = "" if role is None else str(role)
+        reduce = style.get("reduce")
+        reduce_s = "" if reduce is None else str(reduce)
+        try:
+            hex_dx, hex_dy = (
+                _hexbin_pitch(style) if trace.kind == "hexbin" else (float("nan"), float("nan"))
+            )
+        except UnsupportedSceneV3:
+            hex_dx = hex_dy = float("nan")
+        style_keys = [str(key) for key, value in style.items() if value is not None]
+        n_mesh = _xyep_len(xv) if flags_tr & (1 << 7) else 0
+        payload.extend(
+            struct.pack(
+                "<BBBBBBHIIIIIIIIIIHHHHdd",
+                kind_code,
+                step,
+                255 if prev is None else _xyep_kind(prev.kind),
+                255 if prev2 is None else _xyep_kind(prev2.kind),
+                255 if prev3 is None else _xyep_kind(prev3.kind),
+                0,
+                0,
+                flags_tr,
+                _xyep_len(xv) if xv is not None else n_mesh,
+                _xyep_len(yv),
+                _xyep_len(x0),
+                _xyep_len(y0),
+                _xyep_len(x1),
+                _xyep_len(y1),
+                heatmap_rows,
+                heatmap_cols,
+                heatmap_values,
+                len(style_keys),
+                len(role_s.encode("utf-8")),
+                len(symbol.encode("utf-8")) if isinstance(symbol, str) else 0,
+                len(reduce_s.encode("utf-8")),
+                hex_dx,
+                hex_dy,
+            )
+        )
+        payload.extend(role_s.encode("utf-8"))
+        payload.extend(symbol.encode("utf-8") if isinstance(symbol, str) else b"")
+        payload.extend(reduce_s.encode("utf-8"))
+        _xyep_put_keys(payload, style_keys)
+    return bytes(payload)
+
+
 def scene_export_support_reason(
     figure: Any,
     *,
@@ -1699,449 +1956,39 @@ def scene_export_support_reason(
     ``XYG_SCENE_UNSUPPORTED_*`` diagnostic (or the compiler's own bounded
     message) so callers can log or surface an actionable reason for the fallback.
 
-    This is deliberately narrower than :func:`figure_scene`: the explicit
-    Scene API can exercise a migrating record before the public compatibility
-    renderer's complete output contract is modeled. The bounded literal
-    Cartesian geometry subset routes all constant built-in scatter symbols,
-    polylines, ordinary Rects, disconnected segment/error-bar/stem endpoint
-    pairs, bounded fill-only triangle meshes, constant-style Cartesian hexbin
-    PolyFill cells, constant-style Cartesian heatmap Rects, and bounded solid ribbons
-    expanded by Rust in axis-transformed space.
-    The proven literal Cartesian chrome slice also routes automatically:
-    backgrounds, title, authored axes/ticks,
-    primary legend, literal colorbar, and the existing bounded primary
-    Cartesian annotation family: unoffset plain text, labelled rules/bands/markers,
-    unlabeled straight arrows, ordinary callouts, and bounded wrapped text or
-    callouts. Input errors (for example a non-finite opacity) are not a
-    routing question and propagate unchanged.
+    Hosts only pack literal figure metadata. Rust owns the public-subset
+    allowlists, check order, and diagnostic wording. After that preflight the
+    predicate still compiles the Scene so it cannot disagree with the encoder,
+    and it asks the browser painter to enforce the shared PolyFill group budget.
     """
-    # The compatibility exporter resolves fluid authoring dimensions at its
-    # document boundary.  Scene records require concrete viewport dimensions;
-    # keep fluid figures on that documented path unless a static override is
-    # supplied by the caller.
-    if (width is None and not isinstance(figure.width, int)) or (
-        height is None and not isinstance(figure.height, int)
-    ):
-        return "XYG_SCENE_UNSUPPORTED_FLUID_VIEWPORT"
-    # This public slice is strictly literal. The Scene compiler owns all
-    # accepted layout/default decisions after this preflight, but themes,
-    # custom fonts, CSS/classes, and host-resolved styling remain compatibility
-    # behavior until separately proven.
-    style = getattr(figure, "style", None) or {}
-    if any(key not in {"background", "--chart-bg"} for key in style) or getattr(
-        figure, "chrome_styles", None
-    ):
-        return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-    if getattr(figure, "title_options", None):
-        return "XYG_SCENE_UNSUPPORTED_PUBLIC_TEXT"
-    annotations = list(getattr(figure, "annotations", None) or [])
-    # The core accepts these exact literal records today. Keep a host-side
-    # shape allowlist: rotation, rich content, collision/layout directives,
-    # CSS classes, and future host-only fields must keep selecting the
-    # compatibility route until Scene models them. Field values, byte limits,
-    # finite geometry, label-box rules, and all projection/paint policy remain
-    # compiler/Rust validation below.
-    annotation_fields = {
-        "text": {"kind", "x", "y", "text", "dx", "dy", "anchor", "wrap", "style", "class_name"},
-        "rule": {"kind", "axis", "value", "text", "style", "class_name"},
-        "band": {"kind", "axis", "start", "end", "text", "style", "class_name"},
-        "marker": {
-            "kind",
-            "x",
-            "y",
-            "text",
-            "dx",
-            "dy",
-            "anchor",
-            "size",
-            "symbol",
-            "style",
-            "class_name",
-        },
-        "arrow": {"kind", "x0", "y0", "x1", "y1", "text", "style", "class_name"},
-        "callout": {"kind", "x", "y", "text", "dx", "dy", "anchor", "wrap", "style", "class_name"},
-    }
-    if any(
-        not isinstance(annotation, dict)
-        or annotation.get("kind") not in annotation_fields
-        or set(annotation) - annotation_fields[annotation["kind"]]
-        for annotation in annotations
-    ):
-        return "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
-    # XYAT v1 has no unwrapped text offset/anchor fields and XYAL derives a
-    # labelled marker's placement from the marker identity. Do not silently
-    # accept host layout values merely because the current compiler can omit
-    # them. Wrapped text is different: XYAW explicitly encodes those fields.
-    if any(
-        (annotation["kind"] == "marker" and {"dx", "dy", "anchor"} & set(annotation))
-        or (
-            annotation["kind"] == "text"
-            and "wrap" not in annotation
-            and {"dx", "dy", "anchor"} & set(annotation)
-        )
-        for annotation in annotations
-    ):
-        return "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
-    legend = getattr(figure, "legend_options", None) or {}
-    if any(key not in {"loc", "title", "highlight", "toggle"} for key in legend):
-        return "XYG_SCENE_UNSUPPORTED_PUBLIC_LEGEND"
-    for _axis_id, options in figure.axis_options.items():
-        allowed_axis_keys = {
-            "type",
-            "constant",
-            "nonpositive",
-            "domain",
-            "label",
-            "side",
-            "tick_sides",
-            "tick_label_sides",
-            "tick_values",
-            "tick_labels",
-            "minor_tick_values",
-            "style",
-            "minor_style",
-            "format",
-        }
-        if figure._axis_kind(_axis_id) != "linear" or options.get("type") not in {
-            None,
-            "linear",
-            "log",
-            "symlog",
-        }:
-            return "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
-        # ``Figure`` materializes a superset of legacy axis slots with None
-        # (and ``reverse=False``) defaults. They are not authored chrome and
-        # must not make an otherwise literal canonical axis fall back.
-        if any(
-            key not in allowed_axis_keys and value not in (None, False)
-            for key, value in options.items()
-        ):
-            return "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
-    colorbar = getattr(figure, "colorbar_options", None) or {}
-    if any(key not in {"domain", "stops", "ticks", "minor_ticks", "title"} for key in colorbar):
-        return "XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR"
-    # This is the bounded literal geometry increment. Rust already owns the
-    # record semantics for ordinary polylines, rectangles, and disconnected
-    # endpoint pairs, so use those exact records for public static output too.
-    # Keep this deliberately narrower than the explicit ``to_scene`` seam: it
-    # does not bless generated palettes, density/LOD, gradients, rounded
-    # geometry, rich text, polar coordinates, or other migrating mark families
-    # merely because an internal record happens to exist.
-    public_kinds = {
-        "scatter",
-        "line",
-        "bar",
-        "column",
-        "histogram",
-        "violin",
-        "box",
-        "box_whisker",
-        "box_median",
-        "segments",
-        "errorbar",
-        "stem",
-        "area",
-        "error_band",
-        "ribbon",
-        "triangle_mesh",
-        "hexbin",
-        "heatmap",
-    }
-    public_style_keys = {
-        "scatter": {"color", "opacity", "symbol", "size", "role", "stroke", "stroke_width"},
-        # A literal ``step`` is expanded before Scene packing; Rust then owns
-        # the resulting polyline, clipping, raster, and SVG policy.
-        "line": {"color", "opacity", "width", "step"},
-        # Literal fill/stroke are represented in the batch-local style table.
-        # ``_reject_rect_extras`` below keeps gradients, non-zero radii, and
-        # wedges outside this public route.
-        "bar": {
-            "color",
-            "opacity",
-            "role",
-            "orientation",
-            "fill",
-            "stroke",
-            "stroke_width",
-            "corner_radius",
-            "wedge_gap",
-        },
-        "column": {
-            "color",
-            "opacity",
-            "role",
-            "orientation",
-            "fill",
-            "stroke",
-            "stroke_width",
-            "corner_radius",
-            "wedge_gap",
-        },
-        "histogram": {
-            "color",
-            "opacity",
-            "role",
-            "cumulative",
-            "density",
-            "fill",
-            "stroke",
-            "stroke_width",
-            "corner_radius",
-        },
-        "violin": {"color", "opacity", "role", "fill", "stroke", "stroke_width"},
-        "box": {"color", "opacity", "role", "stroke", "stroke_width", "box_orientation"},
-        "box_whisker": {"color", "opacity", "width", "role"},
-        "box_median": {"color", "opacity", "width", "role"},
-        "segments": {"color", "opacity", "width", "role"},
-        "errorbar": {"color", "opacity", "width", "role"},
-        "stem": {"color", "opacity", "width", "role"},
-        "area": {
-            "color",
-            "opacity",
-            "line_color",
-            "line_width",
-            "line_opacity",
-            "stroke_perimeter",
-            "fill",
-            "fill_opacity",
-            "stroke_opacity",
-        },
-        "error_band": {
-            "color",
-            "opacity",
-            "line_width",
-            "line_opacity",
-            "role",
-            "fill",
-            "fill_opacity",
-            "stroke_opacity",
-        },
-        "ribbon": {
-            "opacity",
-            "role",
-            "stroke",
-            "stroke_width",
-            "fill_opacity",
-            "stroke_opacity",
-        },
-        # The first public PolyFill slice is deliberately fill-only. Authored
-        # outlines and component alpha remain compatibility behavior until the
-        # Scene packing seam preserves their complete style contract.
-        "triangle_mesh": {"opacity", "role"},
-        # Constant-style Cartesian hexbin: native reduce plus the lattice pitch.
-        # Metric colormaps, custom reducers, and extra opacity/stroke keys stay
-        # on the compatibility exporters.
-        "hexbin": {"color", "opacity", "hex_dx", "hex_dy", "role", "reduce"},
-        # Constant-style Cartesian heatmap: literal fill plus the stored regular
-        # lattice extent. Metric colormaps, truecolor RGBA, and irregular
-        # spacing stay on the compatibility exporters.
-        "heatmap": {"color", "opacity", "role", "domain", "x_range", "y_range"},
-    }
-    has_literal_geometry = any(
-        trace.kind
-        in {
-            "line",
-            "bar",
-            "column",
-            "histogram",
-            "violin",
-            "box",
-            "box_whisker",
-            "box_median",
-            "segments",
-            "errorbar",
-            "stem",
-            "area",
-            "error_band",
-            "ribbon",
-            "triangle_mesh",
-            "hexbin",
-            "heatmap",
-        }
-        for trace in figure.traces
-    )
-    # The literal geometry route is intentionally anchored to an explicit
-    # Cartesian viewport. The compatibility writer's implicit domains and
-    # alternate axis-side label offsets remain separate byte/pixel contracts.
-    if has_literal_geometry:
-        for axis_id in ("x", "y"):
-            axis = figure.axis_options.get(axis_id, {})
-            default_side = "bottom" if axis_id == "x" else "left"
-            if axis.get("domain") is None or axis.get("side") not in (None, default_side):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+    envelope = _pack_public_export_support(figure, width=width, height=height)
+    reason = _native.scene_public_export_reason(envelope)
+    if reason:
+        return reason
     public_triangle_mesh_count = 0
-    for trace_index, trace in enumerate(figure.traces):
-        opacity = float((getattr(trace, "style", None) or {}).get("opacity", 1.0))
-        if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
-            raise ValueError("trace opacity must be finite and in [0, 1]")
-        x_column = getattr(trace, "x", None)
-        # ABI 100 binned ECDF can emit the zero anchor plus one occupied right
-        # edge per bin. Keep the general authored-column bound at 10,000 while
-        # admitting exactly 10,001 compact Step points; Scene expansion remains
-        # independently bounded by its canonical output budgets.
-        point_limit = (
-            10_001
-            if trace.kind == "line" and (trace.style or {}).get("step") in {"pre", "post", "mid"}
-            else 10_000
-        )
-        if x_column is not None and len(x_column.values) > point_limit:
-            return "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
-        if trace.kind in _BAND_KINDS and (x_column is None or len(x_column.values) < 2):
-            # SVG/raster/browser Band topology requires a polygon run. Keep
-            # singleton/empty compatibility semantics until Scene defines it.
-            return "XYG_SCENE_UNSUPPORTED_PUBLIC_BAND"
-        if trace.kind not in public_kinds:
-            return "XYG_SCENE_UNSUPPORTED_PUBLIC_MARK"
-        if trace.kind in _SEGMENT_KINDS:
-            # A public disconnected primitive is exactly four finite endpoint
-            # columns.  ``figure_scene`` performs the same authoritative
-            # validation; this shape check prevents a future host-only trace
-            # form from being selected merely because it reuses a kind name.
-            endpoint_columns = (trace.x0, trace.y0, trace.x1, trace.y1)
-            if any(column is None for column in endpoint_columns):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS"
-            endpoint_lengths = {len(column.values) for column in endpoint_columns}
-            if len(endpoint_lengths) != 1 or next(iter(endpoint_lengths), 0) > 10_000:
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS"
-            accepted_roles = {
-                "segments": {"segments"},
-                "errorbar": {"y-errorbar", "x-errorbar"},
-                "stem": {"stem"},
-                "box_whisker": {"box-whisker"},
-                "box_median": {"box-median"},
-            }[trace.kind]
-            if (trace.style or {}).get("role") not in accepted_roles:
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-        if trace.kind in {"violin", "box"}:
-            rect_columns = (trace.x0, trace.y0, trace.x1, trace.y1)
-            if any(column is None for column in rect_columns):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_MARK"
-            lengths = {len(column.values) for column in rect_columns}
-            if len(lengths) != 1 or next(iter(lengths), 0) > 10_000:
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
-            if (trace.style or {}).get("role") != trace.kind:
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-        if trace.kind in _RIBBON_KINDS and (trace.style or {}).get("role") != "ribbon":
-            return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+    for trace in getattr(figure, "traces", None) or []:
         if trace.kind in _POLYFILL_KINDS:
-            mesh_columns = (trace.x0, trace.y0, trace.x1, trace.y1, trace.x, trace.y)
-            if any(column is None for column in mesh_columns):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
-            mesh_lengths = {len(column.values) for column in mesh_columns}
-            mesh_count = next(iter(mesh_lengths), 0)
-            public_triangle_mesh_count += mesh_count
-            if (
-                len(mesh_lengths) != 1
-                or public_triangle_mesh_count > _MAX_PUBLIC_TRIANGLE_MESHES
-                or any(not np.isfinite(column.values).all() for column in mesh_columns)
-            ):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
-            mesh_style = trace.style or {}
-            if mesh_style.get("role") != "triangle-mesh" or mesh_style.get("joined_fill"):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-        if trace.kind in _HEXBIN_KINDS:
-            if trace.x is None or trace.y is None or len(trace.x.values) != len(trace.y.values):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_MARK"
-            cell_count = len(trace.x.values)
-            public_triangle_mesh_count += cell_count
-            if (
-                cell_count > _MAX_PUBLIC_TRIANGLE_MESHES
-                or public_triangle_mesh_count > _MAX_PUBLIC_TRIANGLE_MESHES
-                or not np.isfinite(trace.x.values).all()
-                or not np.isfinite(trace.y.values).all()
-            ):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
-            hex_style = trace.style or {}
-            if hex_style.get("role") != "hexbin" or hex_style.get("reduce") not in _HEXBIN_REDUCES:
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-            try:
-                _hexbin_pitch(hex_style)
-            except UnsupportedSceneV3:
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-        if trace.kind in _HEATMAP_KINDS:
-            if _heatmap_uses_colormap(trace):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-            try:
-                rows, cols = _heatmap_shape(trace)
-                values = _heatmap_grid_values(trace)
-                _heatmap_extent(trace)
-            except (UnsupportedSceneV3, ValueError):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_MARK"
-            cell_count = rows * cols
-            if (
-                cell_count > _MAX_PUBLIC_HEATMAP_CELLS
-                or values.size != cell_count
-                or not np.isfinite(values).all()
-            ):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
-            if (trace.style or {}).get("role") != "heatmap":
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-        # Generated companion scatters are accepted only in their exact
-        # canonical sequence: stem endpoints, or bounded Rust-positioned box
-        # outliers after whisker/body/median records.
-        if trace.kind == "scatter" and (role := (trace.style or {}).get("role")) is not None:
-            if trace.x is None or trace.y is None or len(trace.x.values) != len(trace.y.values):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-            if role == "stem-marker":
-                if (
-                    trace_index == 0
-                    or figure.traces[trace_index - 1].kind != "stem"
-                    or not np.array_equal(trace.x.values, figure.traces[trace_index - 1].x1.values)
-                    or not np.array_equal(trace.y.values, figure.traces[trace_index - 1].y1.values)
-                ):
-                    return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-            elif role == "box-outlier":
-                if (
-                    trace_index < 3
-                    or [item.kind for item in figure.traces[trace_index - 3 : trace_index]]
-                    != ["box_whisker", "box", "box_median"]
-                    or len(trace.x.values) > 10_000
-                    or not np.isfinite(trace.x.values).all()
-                    or not np.isfinite(trace.y.values).all()
-                    or trace.x_axis != figure.traces[trace_index - 1].x_axis
-                    or trace.y_axis != figure.traces[trace_index - 1].y_axis
-                ):
-                    return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-            else:
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-        if trace.kind == "scatter" and (trace.style or {}).get("symbol", "circle") not in (
-            _SYMBOL_CODES
-        ):
-            # Custom marker paths/glyphs and data-driven symbol channels remain
-            # compatibility behavior. The fixed built-in vocabulary is fully
-            # represented by the canonical Scene record.
-            return "XYG_SCENE_UNSUPPORTED_PUBLIC_SYMBOL"
-        if (
-            trace.kind == "scatter"
-            and (trace.style or {}).get("stroke_width") is not None
-            and (trace.style or {}).get("stroke") is None
-        ):
-            # Width-only scatter authoring is a match-fill channel. Keep that
-            # semantic on the compatibility renderer until Scene represents
-            # it explicitly rather than inferring paint in the host router.
-            return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-        if any(
-            value is not None and key not in public_style_keys[trace.kind]
-            for key, value in (getattr(trace, "style", None) or {}).items()
-        ):
-            return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+            mesh = (
+                getattr(trace, "x0", None),
+                getattr(trace, "y0", None),
+                getattr(trace, "x1", None),
+                getattr(trace, "y1", None),
+                getattr(trace, "x", None),
+                getattr(trace, "y", None),
+            )
+            if all(column is not None for column in mesh):
+                public_triangle_mesh_count += len(mesh[0].values)
+        elif trace.kind in _HEXBIN_KINDS and trace.x is not None:
+            public_triangle_mesh_count += len(trace.x.values)
     try:
         scene = figure_scene(figure, width=width, height=height)
     except UnsupportedSceneV3 as unsupported:
         return str(unsupported)
     except ValueError as exc:
-        # A valid public export can request a viewport smaller than the
-        # bounded Scene chrome can contain.  Treat that as an explicit routing
-        # exception before a Scene batch exists; other invalid inputs remain
-        # failures and must never select compatibility rendering.
         if str(exc) == "invalid canonical scene plot layout":
             return "XYG_SCENE_UNSUPPORTED_VIEWPORT"
         raise
     if public_triangle_mesh_count:
-        # A PolyFill face is one Rust painter group. Ask the authoritative
-        # consumer as well as enforcing the face budget so a mixed figure near
-        # the boundary cannot pass preflight and then fragment past the shared
-        # descriptor limit.
         try:
             _native.scene_browser_painter(scene)
         except ValueError as exc:

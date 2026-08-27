@@ -28,6 +28,8 @@ pub mod projection;
 pub mod raster;
 pub mod sankey;
 pub mod scene;
+mod scene_export;
+pub use scene_export::scene_public_export_reason;
 pub mod stats;
 pub mod stream;
 pub mod svg;

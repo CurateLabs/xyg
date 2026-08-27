@@ -1259,6 +1259,10 @@ and extent+shape only.
 ABI 104 moves disconnected endpoint pairs and unjoined triangle faces onto the
 same compact expansion so hosts pack one four-coordinate row per segment and
 two PolyFill rows per face.
+ABI 105 moves the public static-export support predicate into Rust. Hosts pack
+an `XYEP` v1 envelope of literal figure metadata; allowlists, check order, and
+`XYG_SCENE_UNSUPPORTED_*` wording are engine-owned and identical for Python
+and Node.
 Constant-style Cartesian heatmap compiles a regular rows x cols lattice onto
 existing Scene Rect records; polar, colormaps, truecolor, irregular
 spacing, and LOD stay compatibility.

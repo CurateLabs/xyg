@@ -1,0 +1,825 @@
+//! Public static-export support predicate (M2 #271).
+//!
+//! Hosts pack a versioned `XYEP` envelope of literal figure metadata. Rust owns
+//! the allowlists, check order, and stable `XYG_SCENE_UNSUPPORTED_*` wording.
+//! An empty reason means the public Scene route applies; hosts then compile
+//! through the existing Scene consumers and may still report compiler or
+//! viewport diagnostics.
+
+use crate::scene::SceneError;
+
+const XYEP_MAGIC: &[u8; 4] = b"XYEP";
+const XYEP_VERSION: u32 = 1;
+const XYEP_HEADER_BYTES: usize = 36;
+const XYEP_AXIS_BYTES: usize = 8;
+const XYEP_ANNOTATION_BYTES: usize = 4;
+const XYEP_TRACE_BYTES: usize = 72;
+const MAX_XYEP_KEYS: usize = 256;
+const MAX_XYEP_KEY_BYTES: usize = 256;
+const MAX_XYEP_TRACES: usize = 4_096;
+const MAX_XYEP_ANNOTATIONS: usize = 128;
+const MAX_XYEP_AXES: usize = 16;
+const MAX_PUBLIC_TRIANGLE_MESHES: usize = 1_024;
+const MAX_PUBLIC_HEATMAP_CELLS: usize = 10_000;
+const MAX_PUBLIC_POINTS: usize = 10_000;
+const MAX_PUBLIC_STEP_POINTS: usize = 10_001;
+
+const FLAG_FLUID_WIDTH: u32 = 1 << 0;
+const FLAG_FLUID_HEIGHT: u32 = 1 << 1;
+const FLAG_CHROME_STYLES: u32 = 1 << 2;
+const FLAG_TITLE_OPTIONS: u32 = 1 << 3;
+
+const ANN_WRAP: u8 = 1 << 0;
+const ANN_DX: u8 = 1 << 1;
+const ANN_DY: u8 = 1 << 2;
+const ANN_ANCHOR: u8 = 1 << 3;
+const ANN_NOT_OBJECT: u8 = 1 << 4;
+
+const TRACE_HAS_X: u32 = 1 << 0;
+const TRACE_HAS_Y: u32 = 1 << 1;
+const TRACE_XY_LEN_EQUAL: u32 = 1 << 2;
+#[allow(dead_code)]
+const TRACE_X_FINITE: u32 = 1 << 3;
+#[allow(dead_code)]
+const TRACE_Y_FINITE: u32 = 1 << 4;
+const TRACE_ENDPOINTS_PRESENT: u32 = 1 << 5;
+const TRACE_ENDPOINTS_LEN_EQUAL: u32 = 1 << 6;
+const TRACE_MESH_PRESENT: u32 = 1 << 7;
+const TRACE_MESH_LEN_EQUAL: u32 = 1 << 8;
+const TRACE_MESH_FINITE: u32 = 1 << 9;
+const TRACE_JOINED_FILL: u32 = 1 << 10;
+const TRACE_HEATMAP_COLORMAP: u32 = 1 << 11;
+const TRACE_HEATMAP_SHAPE_OK: u32 = 1 << 12;
+const TRACE_HEATMAP_EXTENT_OK: u32 = 1 << 13;
+const TRACE_HEATMAP_FINITE: u32 = 1 << 14;
+const TRACE_HEX_XY_OK: u32 = 1 << 15;
+const TRACE_HEX_FINITE: u32 = 1 << 16;
+const TRACE_STROKE_WIDTH_ONLY: u32 = 1 << 17;
+const TRACE_COMPANION_XY_MATCH: u32 = 1 << 18;
+const TRACE_COMPANION_AXES_MATCH: u32 = 1 << 19;
+const TRACE_BOX_OUTLIER_FINITE: u32 = 1 << 20;
+const TRACE_SYMBOL_NON_STRING: u32 = 1 << 21;
+
+const KIND_SCATTER: u8 = 0;
+const KIND_LINE: u8 = 1;
+const KIND_BAR: u8 = 2;
+const KIND_COLUMN: u8 = 3;
+const KIND_HISTOGRAM: u8 = 4;
+const KIND_VIOLIN: u8 = 5;
+const KIND_BOX: u8 = 6;
+const KIND_BOX_WHISKER: u8 = 7;
+const KIND_BOX_MEDIAN: u8 = 8;
+const KIND_SEGMENTS: u8 = 9;
+const KIND_ERRORBAR: u8 = 10;
+const KIND_STEM: u8 = 11;
+const KIND_AREA: u8 = 12;
+const KIND_ERROR_BAND: u8 = 13;
+const KIND_RIBBON: u8 = 14;
+const KIND_TRIANGLE_MESH: u8 = 15;
+const KIND_HEXBIN: u8 = 16;
+const KIND_HEATMAP: u8 = 17;
+
+const PUBLIC_FIGURE_STYLE_KEYS: &[&str] = &["background", "--chart-bg"];
+const PUBLIC_LEGEND_KEYS: &[&str] = &["loc", "title", "highlight", "toggle"];
+const PUBLIC_COLORBAR_KEYS: &[&str] = &["domain", "stops", "ticks", "minor_ticks", "title"];
+const PUBLIC_AXIS_KEYS: &[&str] = &[
+    "type",
+    "constant",
+    "nonpositive",
+    "domain",
+    "label",
+    "side",
+    "tick_sides",
+    "tick_label_sides",
+    "tick_values",
+    "tick_labels",
+    "minor_tick_values",
+    "style",
+    "minor_style",
+    "format",
+];
+const PUBLIC_SYMBOLS: &[&str] = &[
+    "circle",
+    "square",
+    "diamond",
+    "triangle",
+    "cross",
+    "hexagon",
+    "pentagon",
+    "star",
+    "triangle_down",
+    "triangle_left",
+    "triangle_right",
+    "x",
+    "point",
+    "pixel",
+    "thin_diamond",
+    "plus_line",
+    "x_line",
+    "horizontal_line",
+    "vertical_line",
+];
+const HEXBIN_REDUCES: &[&str] = &["count", "mean", "sum"];
+
+struct Cursor<'a> {
+    bytes: &'a [u8],
+    offset: usize,
+}
+
+impl<'a> Cursor<'a> {
+    fn new(bytes: &'a [u8]) -> Self {
+        Self { bytes, offset: 0 }
+    }
+
+    fn remaining(&self) -> usize {
+        self.bytes.len().saturating_sub(self.offset)
+    }
+
+    fn u8(&mut self) -> Result<u8, SceneError> {
+        let value = *self.bytes.get(self.offset).ok_or(SceneError::Length)?;
+        self.offset += 1;
+        Ok(value)
+    }
+
+    fn u16(&mut self) -> Result<u16, SceneError> {
+        let raw = self
+            .bytes
+            .get(self.offset..self.offset + 2)
+            .ok_or(SceneError::Length)?;
+        self.offset += 2;
+        Ok(u16::from_le_bytes(
+            raw.try_into().map_err(|_| SceneError::Length)?,
+        ))
+    }
+
+    fn u32(&mut self) -> Result<u32, SceneError> {
+        let raw = self
+            .bytes
+            .get(self.offset..self.offset + 4)
+            .ok_or(SceneError::Length)?;
+        self.offset += 4;
+        Ok(u32::from_le_bytes(
+            raw.try_into().map_err(|_| SceneError::Length)?,
+        ))
+    }
+
+    fn f64(&mut self) -> Result<f64, SceneError> {
+        let raw = self
+            .bytes
+            .get(self.offset..self.offset + 8)
+            .ok_or(SceneError::Length)?;
+        self.offset += 8;
+        Ok(f64::from_le_bytes(
+            raw.try_into().map_err(|_| SceneError::Length)?,
+        ))
+    }
+
+    fn bytes(&mut self, count: usize) -> Result<&'a [u8], SceneError> {
+        let end = self.offset.checked_add(count).ok_or(SceneError::Limit)?;
+        let slice = self.bytes.get(self.offset..end).ok_or(SceneError::Length)?;
+        self.offset = end;
+        Ok(slice)
+    }
+
+    fn key(&mut self) -> Result<&'a str, SceneError> {
+        let len = self.u16()? as usize;
+        if len > MAX_XYEP_KEY_BYTES {
+            return Err(SceneError::Limit);
+        }
+        let raw = self.bytes(len)?;
+        std::str::from_utf8(raw).map_err(|_| SceneError::Length)
+    }
+
+    fn keys(&mut self, count: u32) -> Result<Vec<&'a str>, SceneError> {
+        if count as usize > MAX_XYEP_KEYS {
+            return Err(SceneError::Limit);
+        }
+        let mut keys = Vec::with_capacity(count as usize);
+        for _ in 0..count {
+            keys.push(self.key()?);
+        }
+        Ok(keys)
+    }
+}
+
+fn kind_public(kind: u8) -> bool {
+    kind <= KIND_HEATMAP
+}
+
+fn kind_literal_geometry(kind: u8) -> bool {
+    kind_public(kind) && kind != KIND_SCATTER
+}
+
+fn kind_segment(kind: u8) -> bool {
+    matches!(
+        kind,
+        KIND_SEGMENTS | KIND_ERRORBAR | KIND_STEM | KIND_BOX_WHISKER | KIND_BOX_MEDIAN
+    )
+}
+
+fn kind_band(kind: u8) -> bool {
+    matches!(kind, KIND_AREA | KIND_ERROR_BAND)
+}
+
+fn annotation_fields(kind: u8) -> Option<&'static [&'static str]> {
+    Some(match kind {
+        1 => &[
+            "kind",
+            "x",
+            "y",
+            "text",
+            "dx",
+            "dy",
+            "anchor",
+            "wrap",
+            "style",
+            "class_name",
+        ],
+        2 => &["kind", "axis", "value", "text", "style", "class_name"],
+        3 => &[
+            "kind",
+            "axis",
+            "start",
+            "end",
+            "text",
+            "style",
+            "class_name",
+        ],
+        4 => &[
+            "kind",
+            "x",
+            "y",
+            "text",
+            "dx",
+            "dy",
+            "anchor",
+            "size",
+            "symbol",
+            "style",
+            "class_name",
+        ],
+        5 => &[
+            "kind",
+            "x0",
+            "y0",
+            "x1",
+            "y1",
+            "text",
+            "style",
+            "class_name",
+        ],
+        6 => &[
+            "kind",
+            "x",
+            "y",
+            "text",
+            "dx",
+            "dy",
+            "anchor",
+            "wrap",
+            "style",
+            "class_name",
+        ],
+        _ => return None,
+    })
+}
+
+fn public_style_keys(kind: u8) -> &'static [&'static str] {
+    match kind {
+        KIND_SCATTER => &[
+            "color",
+            "opacity",
+            "symbol",
+            "size",
+            "role",
+            "stroke",
+            "stroke_width",
+        ],
+        KIND_LINE => &["color", "opacity", "width", "step"],
+        KIND_BAR | KIND_COLUMN => &[
+            "color",
+            "opacity",
+            "role",
+            "orientation",
+            "fill",
+            "stroke",
+            "stroke_width",
+            "corner_radius",
+            "wedge_gap",
+        ],
+        KIND_HISTOGRAM => &[
+            "color",
+            "opacity",
+            "role",
+            "cumulative",
+            "density",
+            "fill",
+            "stroke",
+            "stroke_width",
+            "corner_radius",
+        ],
+        KIND_VIOLIN => &["color", "opacity", "role", "fill", "stroke", "stroke_width"],
+        KIND_BOX => &[
+            "color",
+            "opacity",
+            "role",
+            "stroke",
+            "stroke_width",
+            "box_orientation",
+        ],
+        KIND_BOX_WHISKER | KIND_BOX_MEDIAN | KIND_SEGMENTS | KIND_ERRORBAR | KIND_STEM => {
+            &["color", "opacity", "width", "role"]
+        }
+        KIND_AREA => &[
+            "color",
+            "opacity",
+            "line_color",
+            "line_width",
+            "line_opacity",
+            "stroke_perimeter",
+            "fill",
+            "fill_opacity",
+            "stroke_opacity",
+        ],
+        KIND_ERROR_BAND => &[
+            "color",
+            "opacity",
+            "line_width",
+            "line_opacity",
+            "role",
+            "fill",
+            "fill_opacity",
+            "stroke_opacity",
+        ],
+        KIND_RIBBON => &[
+            "opacity",
+            "role",
+            "stroke",
+            "stroke_width",
+            "fill_opacity",
+            "stroke_opacity",
+        ],
+        KIND_TRIANGLE_MESH => &["opacity", "role"],
+        KIND_HEXBIN => &["color", "opacity", "hex_dx", "hex_dy", "role", "reduce"],
+        KIND_HEATMAP => &["color", "opacity", "role", "domain", "x_range", "y_range"],
+        _ => &[],
+    }
+}
+
+fn accepted_segment_role(kind: u8, role: &str) -> bool {
+    match kind {
+        KIND_SEGMENTS => role == "segments",
+        KIND_ERRORBAR => role == "y-errorbar" || role == "x-errorbar",
+        KIND_STEM => role == "stem",
+        KIND_BOX_WHISKER => role == "box-whisker",
+        KIND_BOX_MEDIAN => role == "box-median",
+        _ => false,
+    }
+}
+
+fn extra_key(keys: &[&str], allowed: &[&str]) -> bool {
+    keys.iter().any(|key| !allowed.contains(key))
+}
+
+/// Return Rust's stable public-export diagnostic, or an empty slice when the
+/// bounded Scene route applies. Malformed envelopes fail closed.
+pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneError> {
+    if bytes.len() < XYEP_HEADER_BYTES || &bytes[..4] != XYEP_MAGIC {
+        return Err(SceneError::Length);
+    }
+    let mut cursor = Cursor::new(bytes);
+    let _magic = cursor.bytes(4)?;
+    let version = cursor.u32()?;
+    if version != XYEP_VERSION {
+        return Err(SceneError::Version);
+    }
+    let flags = cursor.u32()?;
+    let n_style_keys = cursor.u32()?;
+    let n_legend_keys = cursor.u32()?;
+    let n_colorbar_keys = cursor.u32()?;
+    let n_axes = cursor.u32()?;
+    let n_annotations = cursor.u32()?;
+    let n_traces = cursor.u32()?;
+    if n_axes as usize > MAX_XYEP_AXES
+        || n_annotations as usize > MAX_XYEP_ANNOTATIONS
+        || n_traces as usize > MAX_XYEP_TRACES
+    {
+        return Err(SceneError::Limit);
+    }
+
+    let style_keys = cursor.keys(n_style_keys)?;
+    let legend_keys = cursor.keys(n_legend_keys)?;
+    let colorbar_keys = cursor.keys(n_colorbar_keys)?;
+
+    struct AxisRec<'a> {
+        axis_id: u8,
+        resolved_kind: u8,
+        authored_type: u8,
+        domain_present: bool,
+        side: u8,
+        keys: Vec<&'a str>,
+    }
+    let mut axes = Vec::with_capacity(n_axes as usize);
+    for _ in 0..n_axes {
+        if cursor.remaining() < XYEP_AXIS_BYTES {
+            return Err(SceneError::Length);
+        }
+        axes.push(AxisRec {
+            axis_id: cursor.u8()?,
+            resolved_kind: cursor.u8()?,
+            authored_type: cursor.u8()?,
+            domain_present: cursor.u8()? != 0,
+            side: cursor.u8()?,
+            keys: {
+                let _reserved = cursor.u8()?;
+                let count = cursor.u16()? as u32;
+                cursor.keys(count)?
+            },
+        });
+    }
+
+    struct AnnRec<'a> {
+        kind: u8,
+        flags: u8,
+        fields: Vec<&'a str>,
+    }
+    let mut annotations = Vec::with_capacity(n_annotations as usize);
+    for _ in 0..n_annotations {
+        if cursor.remaining() < XYEP_ANNOTATION_BYTES {
+            return Err(SceneError::Length);
+        }
+        let kind = cursor.u8()?;
+        let flags = cursor.u8()?;
+        let n_fields = cursor.u16()? as u32;
+        annotations.push(AnnRec {
+            kind,
+            flags,
+            fields: cursor.keys(n_fields)?,
+        });
+    }
+
+    struct TraceRec<'a> {
+        kind: u8,
+        step: u8,
+        prev_kind: u8,
+        prev2_kind: u8,
+        prev3_kind: u8,
+        flags: u32,
+        n_x: u32,
+        n_x0: u32,
+        heatmap_rows: u32,
+        heatmap_cols: u32,
+        heatmap_values: u32,
+        role: &'a str,
+        symbol: &'a str,
+        reduce: &'a str,
+        hex_dx: f64,
+        hex_dy: f64,
+        style_keys: Vec<&'a str>,
+    }
+    let mut traces = Vec::with_capacity(n_traces as usize);
+    for _ in 0..n_traces {
+        if cursor.remaining() < XYEP_TRACE_BYTES {
+            return Err(SceneError::Length);
+        }
+        let kind = cursor.u8()?;
+        let step = cursor.u8()?;
+        let prev_kind = cursor.u8()?;
+        let prev2_kind = cursor.u8()?;
+        let prev3_kind = cursor.u8()?;
+        let _pad = cursor.u8()?;
+        let _reserved = cursor.u16()?;
+        let flags = cursor.u32()?;
+        let n_x = cursor.u32()?;
+        let _n_y = cursor.u32()?;
+        let n_x0 = cursor.u32()?;
+        let _n_y0 = cursor.u32()?;
+        let _n_x1 = cursor.u32()?;
+        let _n_y1 = cursor.u32()?;
+        let heatmap_rows = cursor.u32()?;
+        let heatmap_cols = cursor.u32()?;
+        let heatmap_values = cursor.u32()?;
+        let n_style_keys = cursor.u16()? as u32;
+        let role_len = cursor.u16()? as usize;
+        let symbol_len = cursor.u16()? as usize;
+        let reduce_len = cursor.u16()? as usize;
+        let hex_dx = cursor.f64()?;
+        let hex_dy = cursor.f64()?;
+        if role_len > MAX_XYEP_KEY_BYTES
+            || symbol_len > MAX_XYEP_KEY_BYTES
+            || reduce_len > MAX_XYEP_KEY_BYTES
+        {
+            return Err(SceneError::Limit);
+        }
+        let role = std::str::from_utf8(cursor.bytes(role_len)?).map_err(|_| SceneError::Length)?;
+        let symbol =
+            std::str::from_utf8(cursor.bytes(symbol_len)?).map_err(|_| SceneError::Length)?;
+        let reduce =
+            std::str::from_utf8(cursor.bytes(reduce_len)?).map_err(|_| SceneError::Length)?;
+        traces.push(TraceRec {
+            kind,
+            step,
+            prev_kind,
+            prev2_kind,
+            prev3_kind,
+            flags,
+            n_x,
+            n_x0,
+            heatmap_rows,
+            heatmap_cols,
+            heatmap_values,
+            role,
+            symbol,
+            reduce,
+            hex_dx,
+            hex_dy,
+            style_keys: cursor.keys(n_style_keys)?,
+        });
+    }
+    if cursor.remaining() != 0 {
+        return Err(SceneError::Length);
+    }
+
+    if flags & (FLAG_FLUID_WIDTH | FLAG_FLUID_HEIGHT) != 0 {
+        return Ok("XYG_SCENE_UNSUPPORTED_FLUID_VIEWPORT");
+    }
+    if extra_key(&style_keys, PUBLIC_FIGURE_STYLE_KEYS) || flags & FLAG_CHROME_STYLES != 0 {
+        return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
+    }
+    if flags & FLAG_TITLE_OPTIONS != 0 {
+        return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_TEXT");
+    }
+    for annotation in &annotations {
+        let allowed = annotation_fields(annotation.kind);
+        if annotation.flags & ANN_NOT_OBJECT != 0
+            || allowed.is_none()
+            || extra_key(&annotation.fields, allowed.unwrap())
+        {
+            return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION");
+        }
+    }
+    for annotation in &annotations {
+        let layout = annotation.flags & (ANN_DX | ANN_DY | ANN_ANCHOR) != 0;
+        if (annotation.kind == 4 && layout)
+            || (annotation.kind == 1 && annotation.flags & ANN_WRAP == 0 && layout)
+        {
+            return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION");
+        }
+    }
+    if extra_key(&legend_keys, PUBLIC_LEGEND_KEYS) {
+        return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LEGEND");
+    }
+    for axis in &axes {
+        if axis.resolved_kind != 0 || !matches!(axis.authored_type, 0 | 1 | 2 | 3) {
+            return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
+        }
+        if extra_key(&axis.keys, PUBLIC_AXIS_KEYS) {
+            return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
+        }
+    }
+    if extra_key(&colorbar_keys, PUBLIC_COLORBAR_KEYS) {
+        return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR");
+    }
+    // Literal geometry is anchored to the primary Cartesian x/y viewport.
+    // Missing x or y is the same as an empty options dict: no domain.
+    if traces.iter().any(|trace| kind_literal_geometry(trace.kind)) {
+        for wanted in [0u8, 1u8] {
+            let Some(axis) = axes.iter().find(|axis| axis.axis_id == wanted) else {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
+            };
+            let default_side = if wanted == 0 { 1 } else { 2 };
+            if !axis.domain_present || (axis.side != 0 && axis.side != default_side) {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
+            }
+        }
+    }
+
+    let mut public_triangle_mesh_count = 0usize;
+    for trace in &traces {
+        let point_limit = if trace.kind == KIND_LINE && matches!(trace.step, 1 | 2 | 3) {
+            MAX_PUBLIC_STEP_POINTS
+        } else {
+            MAX_PUBLIC_POINTS
+        };
+        if trace.flags & TRACE_HAS_X != 0 && trace.n_x as usize > point_limit {
+            return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
+        }
+        if kind_band(trace.kind) && (trace.flags & TRACE_HAS_X == 0 || trace.n_x < 2) {
+            return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_BAND");
+        }
+        if !kind_public(trace.kind) {
+            return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_MARK");
+        }
+        if kind_segment(trace.kind) {
+            if trace.flags & TRACE_ENDPOINTS_PRESENT == 0 {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS");
+            }
+            if trace.flags & TRACE_ENDPOINTS_LEN_EQUAL == 0
+                || trace.n_x0 as usize > MAX_PUBLIC_POINTS
+            {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS");
+            }
+            if !accepted_segment_role(trace.kind, trace.role) {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
+            }
+        }
+        if matches!(trace.kind, KIND_VIOLIN | KIND_BOX) {
+            if trace.flags & TRACE_ENDPOINTS_PRESENT == 0 {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_MARK");
+            }
+            if trace.flags & TRACE_ENDPOINTS_LEN_EQUAL == 0
+                || trace.n_x0 as usize > MAX_PUBLIC_POINTS
+            {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
+            }
+            let expected = if trace.kind == KIND_VIOLIN {
+                "violin"
+            } else {
+                "box"
+            };
+            if trace.role != expected {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
+            }
+        }
+        if trace.kind == KIND_RIBBON && trace.role != "ribbon" {
+            return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
+        }
+        if trace.kind == KIND_TRIANGLE_MESH {
+            if trace.flags & TRACE_MESH_PRESENT == 0 {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH");
+            }
+            public_triangle_mesh_count = public_triangle_mesh_count
+                .checked_add(trace.n_x as usize)
+                .ok_or(SceneError::Limit)?;
+            if trace.flags & TRACE_MESH_LEN_EQUAL == 0
+                || public_triangle_mesh_count > MAX_PUBLIC_TRIANGLE_MESHES
+                || trace.flags & TRACE_MESH_FINITE == 0
+            {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH");
+            }
+            if trace.role != "triangle-mesh" || trace.flags & TRACE_JOINED_FILL != 0 {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
+            }
+        }
+        if trace.kind == KIND_HEXBIN {
+            if trace.flags & TRACE_HEX_XY_OK == 0 {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_MARK");
+            }
+            public_triangle_mesh_count = public_triangle_mesh_count
+                .checked_add(trace.n_x as usize)
+                .ok_or(SceneError::Limit)?;
+            if trace.n_x as usize > MAX_PUBLIC_TRIANGLE_MESHES
+                || public_triangle_mesh_count > MAX_PUBLIC_TRIANGLE_MESHES
+                || trace.flags & TRACE_HEX_FINITE == 0
+            {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
+            }
+            let pitch_ok = trace.hex_dx.is_finite()
+                && trace.hex_dy.is_finite()
+                && trace.hex_dx > 0.0
+                && trace.hex_dy > 0.0;
+            if trace.role != "hexbin" || !HEXBIN_REDUCES.contains(&trace.reduce) || !pitch_ok {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
+            }
+        }
+        if trace.kind == KIND_HEATMAP {
+            if trace.flags & TRACE_HEATMAP_COLORMAP != 0 {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
+            }
+            if trace.flags & TRACE_HEATMAP_SHAPE_OK == 0
+                || trace.flags & TRACE_HEATMAP_EXTENT_OK == 0
+            {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_MARK");
+            }
+            let cells = (trace.heatmap_rows as usize)
+                .checked_mul(trace.heatmap_cols as usize)
+                .ok_or(SceneError::Limit)?;
+            if cells > MAX_PUBLIC_HEATMAP_CELLS
+                || trace.heatmap_values as usize != cells
+                || trace.flags & TRACE_HEATMAP_FINITE == 0
+            {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LOD");
+            }
+            if trace.role != "heatmap" {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
+            }
+        }
+        if trace.kind == KIND_SCATTER && !trace.role.is_empty() {
+            if trace.flags & TRACE_HAS_X == 0
+                || trace.flags & TRACE_HAS_Y == 0
+                || trace.flags & TRACE_XY_LEN_EQUAL == 0
+            {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
+            }
+            if trace.role == "stem-marker" {
+                if trace.prev_kind != KIND_STEM || trace.flags & TRACE_COMPANION_XY_MATCH == 0 {
+                    return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
+                }
+            } else if trace.role == "box-outlier" {
+                if trace.prev3_kind != KIND_BOX_WHISKER
+                    || trace.prev2_kind != KIND_BOX
+                    || trace.prev_kind != KIND_BOX_MEDIAN
+                    || trace.n_x as usize > MAX_PUBLIC_POINTS
+                    || trace.flags & TRACE_BOX_OUTLIER_FINITE == 0
+                    || trace.flags & TRACE_COMPANION_AXES_MATCH == 0
+                {
+                    return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
+                }
+            } else {
+                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
+            }
+        }
+        if trace.kind == KIND_SCATTER
+            && (trace.flags & TRACE_SYMBOL_NON_STRING != 0
+                || !PUBLIC_SYMBOLS.contains(&if trace.symbol.is_empty() {
+                    "circle"
+                } else {
+                    trace.symbol
+                }))
+        {
+            return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_SYMBOL");
+        }
+        if trace.kind == KIND_SCATTER && trace.flags & TRACE_STROKE_WIDTH_ONLY != 0 {
+            return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
+        }
+        if extra_key(&trace.style_keys, public_style_keys(trace.kind)) {
+            return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
+        }
+    }
+    Ok("")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn put_keys(buf: &mut Vec<u8>, keys: &[&str]) {
+        for key in keys {
+            let bytes = key.as_bytes();
+            buf.extend_from_slice(&(bytes.len() as u16).to_le_bytes());
+            buf.extend_from_slice(bytes);
+        }
+    }
+
+    fn header(
+        flags: u32,
+        n_style: u32,
+        n_legend: u32,
+        n_colorbar: u32,
+        n_axes: u32,
+        n_ann: u32,
+        n_traces: u32,
+    ) -> Vec<u8> {
+        let mut buf = Vec::from(*XYEP_MAGIC);
+        buf.extend_from_slice(&XYEP_VERSION.to_le_bytes());
+        buf.extend_from_slice(&flags.to_le_bytes());
+        buf.extend_from_slice(&n_style.to_le_bytes());
+        buf.extend_from_slice(&n_legend.to_le_bytes());
+        buf.extend_from_slice(&n_colorbar.to_le_bytes());
+        buf.extend_from_slice(&n_axes.to_le_bytes());
+        buf.extend_from_slice(&n_ann.to_le_bytes());
+        buf.extend_from_slice(&n_traces.to_le_bytes());
+        buf
+    }
+
+    fn empty_figure() -> Vec<u8> {
+        header(0, 0, 0, 0, 0, 0, 0)
+    }
+
+    #[test]
+    fn empty_envelope_is_supported() {
+        assert_eq!(scene_public_export_reason(&empty_figure()), Ok(""));
+    }
+
+    #[test]
+    fn fluid_viewport_is_ordered_first() {
+        let bytes = header(FLAG_FLUID_WIDTH, 0, 0, 0, 0, 0, 0);
+        assert_eq!(
+            scene_public_export_reason(&bytes),
+            Ok("XYG_SCENE_UNSUPPORTED_FLUID_VIEWPORT")
+        );
+    }
+
+    #[test]
+    fn figure_style_allowlist_is_rust_owned() {
+        let mut bytes = header(0, 1, 0, 0, 0, 0, 0);
+        put_keys(&mut bytes, &["font-family"]);
+        assert_eq!(
+            scene_public_export_reason(&bytes),
+            Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE")
+        );
+        let mut ok = header(0, 1, 0, 0, 0, 0, 0);
+        put_keys(&mut ok, &["background"]);
+        assert_eq!(scene_public_export_reason(&ok), Ok(""));
+    }
+
+    #[test]
+    fn rejects_unknown_version_and_trailing_bytes() {
+        let mut bad = empty_figure();
+        bad[4] = 2;
+        assert_eq!(scene_public_export_reason(&bad), Err(SceneError::Version));
+        let mut extra = empty_figure();
+        extra.push(0);
+        assert_eq!(scene_public_export_reason(&extra), Err(SceneError::Length));
+    }
+}

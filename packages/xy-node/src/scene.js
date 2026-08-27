@@ -5,6 +5,7 @@ import {
   xySceneBatchEncode,
   xySceneBrowserPainter,
   xyScenePlotLayout,
+  xyScenePublicExportReason,
   xySceneRasterCommands,
   xySceneScaleMap,
   xySceneScatterSvg,
@@ -437,6 +438,321 @@ export function sceneSupportReason(features, requestVersion = 1) {
   if (Number(written) !== required) throw new Error("native Scene support predicate returned an inconsistent length");
   return new TextDecoder("utf-8", { fatal: true }).decode(output);
 }
+
+const PUBLIC_EXPORT_KIND_CODES = {
+  scatter: 0, line: 1, bar: 2, column: 3, histogram: 4, violin: 5, box: 6,
+  box_whisker: 7, box_median: 8, segments: 9, errorbar: 10, stem: 11, area: 12,
+  error_band: 13, ribbon: 14, triangle_mesh: 15, hexbin: 16, heatmap: 17,
+};
+
+function canonicalExportKey(key) {
+  return String(key).replace(/[A-Z]/g, (ch) => `_${ch.toLowerCase()}`);
+}
+
+function encodeExportKey(key) {
+  const bytes = new TextEncoder().encode(canonicalExportKey(key).slice(0, 256));
+  const out = new Uint8Array(2 + bytes.length);
+  out[0] = bytes.length & 0xff;
+  out[1] = (bytes.length >> 8) & 0xff;
+  out.set(bytes, 2);
+  return out;
+}
+
+function concatBytes(parts) {
+  const total = parts.reduce((sum, part) => sum + part.length, 0);
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const part of parts) {
+    out.set(part, offset);
+    offset += part.length;
+  }
+  return out;
+}
+
+function exportColumn(trace, name) {
+  const value = trace[name];
+  if (value == null) return null;
+  return value.values ?? value;
+}
+
+function exportColumnLen(column) {
+  return column == null ? 0 : column.length;
+}
+
+function exportColumnFinite(column) {
+  if (column == null) return false;
+  for (let index = 0; index < column.length; index += 1) {
+    if (!Number.isFinite(Number(column[index]))) return false;
+  }
+  return true;
+}
+
+function exportArraysEqual(left, right) {
+  if (left == null || right == null || left.length !== right.length) return false;
+  for (let index = 0; index < left.length; index += 1) {
+    if (Number(left[index]) !== Number(right[index])) return false;
+  }
+  return true;
+}
+
+function significantExportKeys(record) {
+  return Object.entries(record ?? {})
+    .filter(([, value]) => value != null && value !== false)
+    .map(([key]) => key);
+}
+
+function packPublicExportSupport(figure, { width = null, height = null } = {}) {
+  let flags = 0;
+  if (width == null && !Number.isInteger(figure.width)) flags |= 1 << 0;
+  if (height == null && !Number.isInteger(figure.height)) flags |= 1 << 1;
+  const chrome = figure.chromeStyles ?? figure.chrome_styles;
+  if (chrome && Object.keys(chrome).length) flags |= 1 << 2;
+  const titleOptions = figure.titleOptions ?? figure.title_options;
+  if (Array.isArray(titleOptions) ? titleOptions.length : titleOptions) flags |= 1 << 3;
+  const styleKeys = Object.keys(figure.style ?? {});
+  const legend = figure.legend ?? figure.legend_options ?? {};
+  const legendKeys = Object.keys(legend);
+  const colorbar = figure.colorbarOptions ?? figure.colorbar_options ?? {};
+  const colorbarKeys = Object.keys(colorbar ?? {});
+  const annotations = [...(figure.annotations ?? [])];
+  const traces = [...(figure.traces ?? [])];
+  const axisEntries = [];
+  const seenAxes = new Set();
+  const addAxis = (axisId, options) => {
+    if (seenAxes.has(axisId)) return;
+    seenAxes.add(axisId);
+    axisEntries.push([axisId, options ?? {}]);
+  };
+  if (figure.axis_options && typeof figure.axis_options === "object") {
+    for (const [axisId, options] of Object.entries(figure.axis_options)) addAxis(axisId, options);
+  }
+  addAxis("x", figure.xAxis ?? figure.x_axis ?? figure.axis_options?.x ?? {});
+  addAxis("y", figure.yAxis ?? figure.y_axis ?? figure.axis_options?.y ?? {});
+
+  const parts = [new Uint8Array(36)];
+  const header = new DataView(parts[0].buffer);
+  parts[0].set([88, 89, 69, 80]);
+  header.setUint32(4, 1, true);
+  header.setUint32(8, flags, true);
+  header.setUint32(12, styleKeys.length, true);
+  header.setUint32(16, legendKeys.length, true);
+  header.setUint32(20, colorbarKeys.length, true);
+  header.setUint32(24, axisEntries.length, true);
+  header.setUint32(28, annotations.length, true);
+  header.setUint32(32, traces.length, true);
+  for (const key of styleKeys) parts.push(encodeExportKey(key));
+  for (const key of legendKeys) parts.push(encodeExportKey(key));
+  for (const key of colorbarKeys) parts.push(encodeExportKey(key));
+
+  for (const [axisId, options] of axisEntries) {
+    const axisCode = axisId === "x" ? 0 : axisId === "y" ? 1 : 255;
+    const authored = options.type;
+    const authoredCode = authored == null ? 0 : authored === "linear" ? 1 : authored === "log" ? 2 : authored === "symlog" ? 3 : 255;
+    const forced = options.type ?? options.kind;
+    const resolvedCode = forced === "time" ? 1 : forced === "category" ? 2 : 0;
+    const domain = options.domain ?? figure._axisRange?.[axisId];
+    const side = options.side;
+    const sideCode = side == null ? 0 : side === "bottom" ? 1 : side === "left" ? 2 : side === "top" ? 3 : side === "right" ? 4 : 255;
+    const keys = significantExportKeys(options);
+    const axis = new Uint8Array(8);
+    axis[0] = axisCode;
+    axis[1] = resolvedCode;
+    axis[2] = authoredCode;
+    axis[3] = Number(domain != null);
+    axis[4] = sideCode;
+    axis[5] = 0;
+    axis[6] = keys.length & 0xff;
+    axis[7] = (keys.length >> 8) & 0xff;
+    parts.push(axis);
+    for (const key of keys) parts.push(encodeExportKey(key));
+  }
+
+  const annotationKinds = { text: 1, rule: 2, band: 3, marker: 4, arrow: 5, callout: 6 };
+  for (const annotation of annotations) {
+    if (annotation == null || typeof annotation !== "object" || Array.isArray(annotation)) {
+      const row = new Uint8Array(4);
+      row[1] = 1 << 4;
+      parts.push(row);
+      continue;
+    }
+    const kindCode = annotationKinds[String(annotation.kind)] ?? 0;
+    let flagsAnn = 0;
+    if (Object.hasOwn(annotation, "wrap")) flagsAnn |= 1 << 0;
+    if (Object.hasOwn(annotation, "dx")) flagsAnn |= 1 << 1;
+    if (Object.hasOwn(annotation, "dy")) flagsAnn |= 1 << 2;
+    if (Object.hasOwn(annotation, "anchor")) flagsAnn |= 1 << 3;
+    const fields = Object.keys(annotation);
+    const row = new Uint8Array(4);
+    row[0] = kindCode;
+    row[1] = flagsAnn;
+    row[2] = fields.length & 0xff;
+    row[3] = (fields.length >> 8) & 0xff;
+    parts.push(row);
+    for (const key of fields) parts.push(encodeExportKey(key));
+  }
+
+  for (const [traceIndex, trace] of traces.entries()) {
+    const style = trace.style ?? {};
+    const opacity = Number(style.opacity ?? 1);
+    if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) {
+      throw new RangeError("trace opacity must be finite and in [0, 1]");
+    }
+    const kindCode = PUBLIC_EXPORT_KIND_CODES[trace.kind] ?? 255;
+    const step = { pre: 1, mid: 2, post: 3 }[style.step] ?? 0;
+    const prev = traceIndex ? traces[traceIndex - 1] : null;
+    const prev2 = traceIndex >= 2 ? traces[traceIndex - 2] : null;
+    const prev3 = traceIndex >= 3 ? traces[traceIndex - 3] : null;
+    const xv = exportColumn(trace, "x");
+    const yv = exportColumn(trace, "y");
+    const x0 = exportColumn(trace, "x0");
+    const y0 = exportColumn(trace, "y0");
+    const x1 = exportColumn(trace, "x1");
+    const y1 = exportColumn(trace, "y1");
+    const mesh = [x0, y0, x1, y1, xv, yv];
+    let flagsTr = 0;
+    if (xv != null) flagsTr |= 1 << 0;
+    if (yv != null) flagsTr |= 1 << 1;
+    if (xv != null && yv != null && exportColumnLen(xv) === exportColumnLen(yv)) flagsTr |= 1 << 2;
+    if (exportColumnFinite(xv)) flagsTr |= 1 << 3;
+    if (exportColumnFinite(yv)) flagsTr |= 1 << 4;
+    if (x0 != null && y0 != null && x1 != null && y1 != null) {
+      flagsTr |= 1 << 5;
+      const lengths = new Set([exportColumnLen(x0), exportColumnLen(y0), exportColumnLen(x1), exportColumnLen(y1)]);
+      if (lengths.size === 1) flagsTr |= 1 << 6;
+    }
+    if (mesh.every((column) => column != null)) {
+      flagsTr |= 1 << 7;
+      const meshLengths = new Set(mesh.map(exportColumnLen));
+      if (meshLengths.size === 1) flagsTr |= 1 << 8;
+      if (mesh.every(exportColumnFinite)) flagsTr |= 1 << 9;
+    }
+    if (style.joined_fill || style.joinedFill) flagsTr |= 1 << 10;
+    let heatmapRows = 0, heatmapCols = 0, heatmapValues = 0;
+    if (trace.kind === "heatmap") {
+      if (style.truecolor || style.colormap != null || trace.rgba_grid != null || trace.rgba != null) flagsTr |= 1 << 11;
+      const shape = trace.grid_shape ?? trace.gridShape;
+      const grid = exportColumn(trace, "grid");
+      const hx = xv, hy = yv;
+      if (Array.isArray(shape) && shape.length === 2) {
+        const rows = Number(shape[0]), cols = Number(shape[1]);
+        if (Number.isInteger(rows) && Number.isInteger(cols) && rows >= 1 && cols >= 1) {
+          heatmapRows = rows;
+          heatmapCols = cols;
+          flagsTr |= 1 << 12;
+          if (grid != null) heatmapValues = grid.length;
+          if (
+            hx != null && hy != null && hx.length === 2 && hy.length === 2
+            && [hx[0], hx[1], hy[0], hy[1]].every((value) => Number.isFinite(Number(value)))
+            && Number(hx[0]) < Number(hx[1]) && Number(hy[0]) < Number(hy[1])
+          ) flagsTr |= 1 << 13;
+          if (grid != null && exportColumnFinite(grid)) flagsTr |= 1 << 14;
+        }
+      }
+    }
+    if (xv != null && yv != null && exportColumnLen(xv) === exportColumnLen(yv)) flagsTr |= 1 << 15;
+    if (exportColumnFinite(xv) && exportColumnFinite(yv)) flagsTr |= 1 << 16;
+    if ((style.stroke_width ?? style.strokeWidth) != null && style.stroke == null) flagsTr |= 1 << 17;
+    const prevX1 = prev && exportColumn(prev, "x1");
+    const prevY1 = prev && exportColumn(prev, "y1");
+    if (prev != null && xv != null && yv != null && prevX1 != null && prevY1 != null && exportArraysEqual(xv, prevX1) && exportArraysEqual(yv, prevY1)) {
+      flagsTr |= 1 << 18;
+    }
+    if (prev != null && (trace.x_axis ?? "x") === (prev.x_axis ?? "x") && (trace.y_axis ?? "y") === (prev.y_axis ?? "y")) {
+      flagsTr |= 1 << 19;
+    }
+    if (exportColumnFinite(xv) && exportColumnFinite(yv)) flagsTr |= 1 << 20;
+    let symbol = style.symbol ?? "circle";
+    if (typeof symbol !== "string") {
+      flagsTr |= 1 << 21;
+      symbol = "";
+    }
+    const role = style.role == null ? "" : String(style.role);
+    const reduce = style.reduce == null ? "" : String(style.reduce);
+    let hexDx = Number.NaN, hexDy = Number.NaN;
+    if (trace.kind === "hexbin") {
+      hexDx = Number(style.hex_dx ?? style.hexDx ?? style.dx);
+      hexDy = Number(style.hex_dy ?? style.hexDy ?? style.dy);
+    }
+    const styleKeysTrace = Object.entries(style).filter(([, value]) => value != null).map(([key]) => key);
+    const roleBytes = new TextEncoder().encode(role);
+    const symbolBytes = new TextEncoder().encode(symbol);
+    const reduceBytes = new TextEncoder().encode(reduce);
+    const nMesh = (flagsTr & (1 << 7)) ? exportColumnLen(xv) : 0;
+    const row = new Uint8Array(72);
+    const view = new DataView(row.buffer);
+    row[0] = kindCode;
+    row[1] = step;
+    row[2] = prev == null ? 255 : (PUBLIC_EXPORT_KIND_CODES[prev.kind] ?? 255);
+    row[3] = prev2 == null ? 255 : (PUBLIC_EXPORT_KIND_CODES[prev2.kind] ?? 255);
+    row[4] = prev3 == null ? 255 : (PUBLIC_EXPORT_KIND_CODES[prev3.kind] ?? 255);
+    view.setUint32(8, flagsTr, true);
+    view.setUint32(12, xv != null ? exportColumnLen(xv) : nMesh, true);
+    view.setUint32(16, exportColumnLen(yv), true);
+    view.setUint32(20, exportColumnLen(x0), true);
+    view.setUint32(24, exportColumnLen(y0), true);
+    view.setUint32(28, exportColumnLen(x1), true);
+    view.setUint32(32, exportColumnLen(y1), true);
+    view.setUint32(36, heatmapRows, true);
+    view.setUint32(40, heatmapCols, true);
+    view.setUint32(44, heatmapValues, true);
+    view.setUint16(48, styleKeysTrace.length, true);
+    view.setUint16(50, roleBytes.length, true);
+    view.setUint16(52, symbolBytes.length, true);
+    view.setUint16(54, reduceBytes.length, true);
+    view.setFloat64(56, hexDx, true);
+    view.setFloat64(64, hexDy, true);
+    parts.push(row, roleBytes, symbolBytes, reduceBytes);
+    for (const key of styleKeysTrace) parts.push(encodeExportKey(key));
+  }
+  return concatBytes(parts);
+}
+
+/** Return Rust's public-export diagnostic, or null when the Scene route applies. */
+export function sceneExportSupportReason(figure, { width = null, height = null } = {}) {
+  const envelope = packPublicExportSupport(figure, { width, height });
+  const requiredRaw = xyScenePublicExportReason(u8Ptr(envelope), BigInt(envelope.length), 0, 0n);
+  if (requiredRaw === USIZE_MAX_64) throw new RangeError("invalid scene public export support envelope");
+  const required = Number(requiredRaw);
+  let reason = "";
+  if (required !== 0) {
+    const output = new Uint8Array(required);
+    const written = xyScenePublicExportReason(u8Ptr(envelope), BigInt(envelope.length), u8Ptr(output), BigInt(required));
+    if (Number(written) !== required) throw new Error("native Scene public export predicate returned an inconsistent length");
+    reason = new TextDecoder("utf-8", { fatal: true }).decode(output);
+  }
+  if (reason) return reason;
+  let publicTriangleMeshCount = 0;
+  for (const trace of figure.traces ?? []) {
+    if (POLYFILL_KINDS.has(trace.kind)) {
+      const mesh = [trace.x0, trace.y0, trace.x1, trace.y1, trace.x, trace.y];
+      if (mesh.every((column) => column != null)) publicTriangleMeshCount += mesh[0].length;
+    } else if (HEXBIN_KINDS.has(trace.kind) && trace.x != null) {
+      publicTriangleMeshCount += trace.x.length;
+    }
+  }
+  let scene;
+  try {
+    scene = figureSceneV3(figure);
+  } catch (err) {
+    if (err instanceof RangeError) {
+      if (err.message === "invalid canonical scene plot layout") return "XYG_SCENE_UNSUPPORTED_VIEWPORT";
+      return err.message;
+    }
+    throw err;
+  }
+  if (publicTriangleMeshCount) {
+    try {
+      sceneBrowserPainter(scene);
+    } catch (err) {
+      if (err instanceof RangeError && err.message === "invalid canonical scene for browser painter") {
+        return "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH";
+      }
+      throw err;
+    }
+  }
+  return null;
+}
+
 const LEGEND_LOCATIONS = new Map([["upper right", 0], ["upper left", 1], ["lower left", 2], ["lower right", 3], ["center right", 4], ["center left", 5], ["upper center", 6], ["lower center", 7], ["center", 8]]);
 
 function legendInput(figure, entries, styles) {

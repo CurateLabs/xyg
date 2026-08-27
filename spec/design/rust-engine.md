@@ -552,7 +552,9 @@ without rejecting an otherwise valid detail chunk.
 ABI v84 adds the versioned `xyg_scene_support_reason` authored-feature
 predicate. It returns Rust's stable ordered diagnostic verbatim, so Python and
 Node cannot silently diverge on polar, custom-font, browser-CSS, gradient, or
-deferred chrome support policy.
+deferred chrome support policy. ABI v105 adds `xyg_scene_public_export_reason`
+over packed `XYEP` v1 figure metadata so the public static-export allowlists
+and `XYG_SCENE_UNSUPPORTED_*` wording are likewise Rust-owned.
 
 This is not yet the complete issue `#110` store: remote ranges, browser/WASM bounded
 staging, spatially unordered data, chart-lifecycle overview/refinement wiring,

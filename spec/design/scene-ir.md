@@ -309,6 +309,11 @@ compact PolyFill rows sharing that face identity: `(x0, y0, x1, y1)` then
 `(x2, y2, 0, 0)`. Rust emits the three vertices the retired host packers
 produced. Scene v25 bytes are unchanged.
 
+ABI 105 does not change Scene records. It adds the public-export support
+predicate `xyg_scene_public_export_reason` so Python `scene_export_support_reason`
+and Node `sceneExportSupportReason` share one Rust allowlist over packed `XYEP`
+v1 metadata.
+
 ## Version 4: default numeric Cartesian chrome
 
 Version 4 keeps the version-3 byte widths but changes whole-scene rendering
@@ -519,10 +524,11 @@ approximated as marks.
 
 The public router has one selection seam,
 ``_scene_v3.public_static_export``. It consults the one support predicate,
-``_scene_v3.scene_export_support_reason``, which returns the stable
+``_scene_v3.scene_export_support_reason`` (Node: ``sceneExportSupportReason``),
+which packs an ``XYEP`` v1 envelope and returns Rust's stable
 ``XYG_SCENE_UNSUPPORTED_*`` diagnostic (or the compiler's bounded message) for a
 figure outside the migrated subset and ``None`` when the Rust Scene path
-applies. ``public_static_export`` returns ``None`` only for that explicit
+applies. Hosts do not own the allowlists or wording. ``public_static_export`` returns ``None`` only for that explicit
 pre-compilation compatibility decision; every selected Scene compiler and
 consumer error propagates. Figure methods and both legacy/unified Python export
 entry points delegate to it rather than independently selecting a Scene consumer.
@@ -1009,7 +1015,13 @@ cell). ABI 103 makes that ring expansion and regular heatmap lattice
 reconstruction Rust-owned compact authoring (`HexCell=5`, `HeatmapLattice=6`)
 for `public_static_export`. ABI 104 adds `SegmentPair=7` and `TriangleFace=8`
 so disconnected endpoint pairs and unjoined triangle faces use the same
-compact expansion. Polar
+compact expansion. ABI 105 adds `xyg_scene_public_export_reason` over a packed
+`XYEP` v1 envelope: hosts frame literal viewport flags, chrome/legend/colorbar
+keys, axis facts, annotation field names, and compact per-trace facts, while
+Rust owns the public-subset allowlists, check order, and
+`XYG_SCENE_UNSUPPORTED_*` wording. An empty reason selects the Scene route;
+hosts still compile the Scene and may still report compiler or viewport
+diagnostics, including the shared PolyFill group budget. Polar
 hexbin, custom reducers, metric colormaps, LOD, and rich style exceptions
 fail closed and keep the compatibility exporters. Scene 25 is unchanged.
 

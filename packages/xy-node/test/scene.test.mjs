@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import test from "node:test";
 
-import { axisTicks, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneSupportReason, sceneVersion } from "../src/index.js";
+import { axisTicks, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion } from "../src/index.js";
 import { Figure, sceneRasterCommands, sceneSvg } from "../src/index.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
@@ -54,6 +54,30 @@ test("Node projects Rust-owned Scene support decisions verbatim", () => {
   const constantColor = new Figure(); constantColor.scatter([0], [0]);
   constantColor.traces[0].color = { mode: "constant", color: "#3987e5" };
   assert.doesNotThrow(() => constantColor.toScene());
+});
+
+test("Node packs public-export eligibility through the shared Rust predicate", () => {
+  const supported = new Figure({ width: 320, height: 240 });
+  supported.setAxis("x", { domain: [0, 4] });
+  supported.setAxis("y", { domain: [0, 5] });
+  supported.scatter([1, 2], [2, 3], { style: { color: "#3987e5", size: 6, opacity: 0.8 } });
+  assert.equal(sceneExportSupportReason(supported), null);
+
+  const fluid = new Figure({ width: 320, height: 240 });
+  fluid.width = "100%";
+  fluid.scatter([1], [2]);
+  assert.equal(sceneExportSupportReason(fluid), "XYG_SCENE_UNSUPPORTED_FLUID_VIEWPORT");
+
+  const extraStyle = new Figure({ width: 320, height: 240 });
+  extraStyle.setAxis("x", { domain: [0, 4] });
+  extraStyle.setAxis("y", { domain: [0, 5] });
+  extraStyle.scatter([1], [2], { style: { color: "#3987e5" } });
+  extraStyle.style = { background: "#fff", "font-family": "Example Sans" };
+  assert.equal(sceneExportSupportReason(extraStyle), "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
+
+  const lineNoDomain = new Figure({ width: 320, height: 240 });
+  lineNoDomain.line([0, 1], [0, 1]);
+  assert.equal(sceneExportSupportReason(lineNoDomain), "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
 });
 
 test("Node figure compiles the exact shared scatter, line, bar Scene v4 fixture", () => {

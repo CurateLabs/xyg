@@ -1769,6 +1769,27 @@ def scene_support_reason(features: int, *, request_version: int = 1) -> str:
     return output.raw.decode("utf-8")
 
 
+def scene_public_export_reason(payload: bytes) -> str:
+    """Return Rust's public-export diagnostic for a packed XYEP envelope."""
+    if not isinstance(payload, (bytes, bytearray, memoryview)):
+        raise TypeError("scene public export envelope must be bytes")
+    array = (
+        np.frombuffer(bytes(payload), dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    )
+    array = np.ascontiguousarray(array)
+    pointer = _ptr_u8(array) if len(array) else 0
+    required = int(_lib.xyg_scene_public_export_reason(pointer, len(array), None, 0))
+    if required == _USIZE_MAX:
+        raise ValueError("invalid scene public export support envelope")
+    if required == 0:
+        return ""
+    output = ctypes.create_string_buffer(required)
+    written = int(_lib.xyg_scene_public_export_reason(pointer, len(array), output, required))
+    if written != required:
+        raise RuntimeError("native Scene public export predicate returned an inconsistent length")
+    return output.raw.decode("utf-8")
+
+
 def scene_axis_ticks(
     kind: int,
     lo: float,

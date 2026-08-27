@@ -33,6 +33,7 @@ use xyg_engine::projection;
 use xyg_engine::raster;
 use xyg_engine::sankey;
 use xyg_engine::scene;
+use xyg_engine::scene_public_export_reason;
 use xyg_engine::stats;
 use xyg_engine::stream;
 use xyg_engine::svg;
@@ -97,7 +98,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 104;
+pub const ABI_VERSION: u32 = 105;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -131,6 +132,42 @@ pub unsafe extern "C" fn xyg_scene_support_reason(
             std::ptr::copy_nonoverlapping(bytes.as_ptr(), out, bytes.len());
         }
         bytes.len()
+    })
+}
+
+/// Query Rust's public static-export support diagnostic for a packed `XYEP`
+/// envelope. Returns the required UTF-8 byte count (zero means supported), or
+/// `usize::MAX` for a malformed or version-mismatched envelope. When `out_cap`
+/// is sufficient, writes the diagnostic without a trailing NUL. Hosts only
+/// pack literal figure metadata; allowlists and wording stay in Rust.
+///
+/// # Safety
+/// `input` must address `len` readable bytes when `len` is non-zero. When
+/// `out_cap` is non-zero, `out` must address that many writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_public_export_reason(
+    input: *const u8,
+    len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if (len > 0 && input.is_null()) || (out_cap > 0 && out.is_null()) {
+        return usize::MAX;
+    }
+    ffi_guard(usize::MAX, || {
+        let bytes = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(input, len)
+        };
+        let Ok(reason) = scene_public_export_reason(bytes) else {
+            return usize::MAX;
+        };
+        let encoded = reason.as_bytes();
+        if out_cap >= encoded.len() && !encoded.is_empty() {
+            std::ptr::copy_nonoverlapping(encoded.as_ptr(), out, encoded.len());
+        }
+        encoded.len()
     })
 }
 

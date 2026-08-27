@@ -170,7 +170,10 @@ hex-cell ring and the regular heatmap lattice reconstruction into Rust
 center+pitch rows and a two-row extent+shape lattice. ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate
-row per segment and two PolyFill rows per face. Polar hexbin, custom `reduce_C_function`, metric
+row per segment and two PolyFill rows per face. ABI 105 makes the public
+static-export support predicate Rust-owned: Python and Node pack the same
+`XYEP` v1 envelope and surface `xyg_scene_public_export_reason` verbatim.
+Polar hexbin, custom `reduce_C_function`, metric
 colormaps, LOD beyond the 1,024-group painter budget, and rich style
 exceptions remain compatibility routes. Polar heatmap, metric colormaps, truecolor RGBA, LOD beyond
 10,000 cells, and rich style exceptions remain compatibility routes.
@@ -233,9 +236,11 @@ explicit unsupported feature, an export-only background override, or a valid
 viewport too small for bounded Scene chrome. A malformed input or Rust
 consumer failure remains an error rather than a fallback signal.
 `public_static_export` is now the only optional Python product-route selector;
-the older format-specific `try_public_*` adapters have been retired. Explicit
-Scene diagnostics and consumers remain available through
-`scene_export_support_reason`, `figure_scene`, `figure_svg`, and
+the older format-specific `try_public_*` adapters have been retired. The
+support predicate itself is ABI 105 `xyg_scene_public_export_reason`; hosts
+only pack literal figure metadata. Explicit Scene diagnostics and consumers
+remain available through `scene_export_support_reason` /
+`sceneExportSupportReason`, `figure_scene`, `figure_svg`, and
 `figure_raster_commands`. Python SVG/raster and pyplot automatic tick requests
 also share one `_svg.axis_ticks` adapter that calls `xyg_scene_axis_ticks`
 directly for every family; no per-family Python ladder adapter remains.
