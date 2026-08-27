@@ -1244,6 +1244,18 @@ test("Node Scene rejects corner_radius and density-tier scatter", () => {
   assert.throws(() => density.toScene(), /density-tier/);
 });
 
+test("Node Scene rejects hidden traces and unknown kinds", () => {
+  const hidden = new Figure({ width: 200, height: 120 });
+  hidden.line([0, 1], [0, 1], { name: null });
+  hidden.traces[0].hidden = true;
+  assert.throws(() => hidden.toScene(), /hidden or per-item/);
+
+  const unknown = new Figure({ width: 200, height: 120 });
+  unknown.line([0, 1], [0, 1], { name: null });
+  unknown.traces[0].kind = "text";
+  assert.throws(() => unknown.toScene(), /does not yet support text/);
+});
+
 test("Node Scene rejects missing or unequal rectangle columns", () => {
   const missing = new Figure({ width: 200, height: 120 });
   missing.traces.push({

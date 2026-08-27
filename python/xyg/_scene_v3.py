@@ -47,6 +47,19 @@ _SUPPORTED_KINDS = (
     | _HEATMAP_KINDS
 )
 _STROKE_KINDS = frozenset({"line"}) | _SEGMENT_KINDS
+_XYFS_TRACE_UNSUPPORTED_KIND = 1 << 0
+_XYFS_TRACE_NON_PRIMARY_AXIS = 1 << 1
+_XYFS_TRACE_HIDDEN_OR_PER_ITEM = 1 << 2
+_XYFS_TRACE_DENSITY = 1 << 3
+_XYFS_TRACE_DASHED_MARKERS = 1 << 4
+_XYFS_TRACE_RECT_GRADIENT = 1 << 5
+_XYFS_TRACE_CORNER_RADIUS = 1 << 6
+_XYFS_TRACE_WEDGE_GAP = 1 << 7
+_XYFS_TRACE_JOINED_FILL = 1 << 8
+_XYFS_TRACE_CUSTOM_HEX_REDUCE = 1 << 9
+_XYFS_TRACE_HEATMAP_COLORMAP = 1 << 10
+_XYFS_TRACE_NON_CSS_FILL = 1 << 11
+_XYFS_DASH_KEYS = ("dash", "curve", "linecap", "marker_path", "marker_glyph")
 
 # Each unjoined triangle or hex cell is one PolyFill group in the Rust browser
 # painter. Keep the public route inside its canonical group budget; larger
@@ -835,18 +848,49 @@ def _scene_chrome_style(figure: Any) -> bytes:
     return _native.scene_resolve_chrome_style(header + chart_b + plot_b + x_rec + y_rec)
 
 
-def _reject_rect_extras(style: dict[str, Any], kind: str) -> None:
+def _rect_extra_flags(style: dict[str, Any]) -> int:
+    """Pack Scene-unsupported rect extras as XYFS v2 trace flags."""
+    flags = 0
     fill = style.get("fill")
     if isinstance(fill, dict):
-        raise UnsupportedSceneV3(f"Scene v12 does not yet encode {kind} gradient fills")
+        flags |= _XYFS_TRACE_RECT_GRADIENT
     radius = style.get("corner_radius", 0.0)
     if isinstance(radius, (list, tuple)):
         if any(float(value) != 0.0 for value in radius):
-            raise UnsupportedSceneV3(f"Scene v12 does not yet encode {kind} corner_radius")
+            flags |= _XYFS_TRACE_CORNER_RADIUS
     elif float(radius) != 0.0:
-        raise UnsupportedSceneV3(f"Scene v12 does not yet encode {kind} corner_radius")
+        flags |= _XYFS_TRACE_CORNER_RADIUS
     if float(style.get("wedge_gap", 0.0) or 0.0) != 0.0:
-        raise UnsupportedSceneV3(f"Scene v12 does not yet encode {kind} wedge_gap")
+        flags |= _XYFS_TRACE_WEDGE_GAP
+    return flags
+
+
+def _figure_trace_support_flags(trace: Any) -> tuple[int, str]:
+    """Observe per-trace Scene allowlist bits; Rust owns the diagnostic."""
+    kind = str(getattr(trace, "kind", "") or "mark")
+    style = getattr(trace, "style", None) or {}
+    flags = 0
+    if kind not in _SUPPORTED_KINDS:
+        flags |= _XYFS_TRACE_UNSUPPORTED_KIND
+    if getattr(trace, "x_axis", "x") != "x" or getattr(trace, "y_axis", "y") != "y":
+        flags |= _XYFS_TRACE_NON_PRIMARY_AXIS
+    if getattr(trace, "hidden", False) or trace.has_per_item_channels():
+        flags |= _XYFS_TRACE_HIDDEN_OR_PER_ITEM
+    if kind == "scatter" and trace.use_density():
+        flags |= _XYFS_TRACE_DENSITY
+    if any(key in style for key in _XYFS_DASH_KEYS):
+        flags |= _XYFS_TRACE_DASHED_MARKERS
+    if kind in _RECT_KINDS or kind in _HEATMAP_KINDS:
+        flags |= _rect_extra_flags(style)
+    if kind in _POLYFILL_KINDS and style.get("joined_fill"):
+        flags |= _XYFS_TRACE_JOINED_FILL
+    if kind in _HEXBIN_KINDS and style.get("reduce") not in _HEXBIN_REDUCES:
+        flags |= _XYFS_TRACE_CUSTOM_HEX_REDUCE
+    if kind in _HEATMAP_KINDS and _heatmap_uses_colormap(trace):
+        flags |= _XYFS_TRACE_HEATMAP_COLORMAP
+    if "fill" in style and not isinstance(style["fill"], str):
+        flags |= _XYFS_TRACE_NON_CSS_FILL
+    return flags, kind
 
 
 def _rect_columns(trace: Any) -> list[np.ndarray]:
@@ -958,11 +1002,6 @@ def figure_scene(
     )
     if reason:
         raise UnsupportedSceneV3(reason)
-    unsupported = next(
-        (trace.kind for trace in figure.traces if trace.kind not in _SUPPORTED_KINDS), None
-    )
-    if unsupported is not None:
-        raise UnsupportedSceneV3(f"Scene v12 figure compilation does not yet support {unsupported}")
 
     kinds: list[int] = []
     stable_ids: list[int] = []
@@ -974,34 +1013,10 @@ def figure_scene(
     expansion_modes: list[int] = []
     legend_entries: list[tuple[int, int, int, str]] = []
     for trace in figure.traces:
-        if trace.x_axis != "x" or trace.y_axis != "y":
-            raise UnsupportedSceneV3("Scene v12 currently supports only the primary x/y axes")
-        if trace.hidden or trace.has_per_item_channels():
-            raise UnsupportedSceneV3(
-                "Scene v12 does not yet encode hidden or per-item styled marks"
-            )
-        if trace.kind == "scatter" and trace.use_density():
-            raise UnsupportedSceneV3("Scene v12 does not yet encode density-tier scatter")
         style = trace.style
-        if any(key in style for key in ("dash", "curve", "linecap", "marker_path", "marker_glyph")):
-            raise UnsupportedSceneV3(
-                "Scene v12 does not yet encode dashed, curved, or authored markers"
-            )
-        if trace.kind in _RECT_KINDS:
-            _reject_rect_extras(style, trace.kind)
-        if trace.kind in _POLYFILL_KINDS and style.get("joined_fill"):
-            raise UnsupportedSceneV3("Scene v12 does not yet encode joined triangle-mesh fills")
-        if trace.kind in _HEXBIN_KINDS and style.get("reduce") not in _HEXBIN_REDUCES:
-            raise UnsupportedSceneV3("Scene v12 does not yet encode custom hexbin reducers")
-        if trace.kind in _HEATMAP_KINDS:
-            _reject_rect_extras(style, trace.kind)
-            if _heatmap_uses_colormap(trace):
-                raise UnsupportedSceneV3("Scene v12 does not yet encode heatmap colormap")
         opacity = float(style.get("opacity", 1.0))
         if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
             raise ValueError("trace opacity must be finite and in [0, 1]")
-        if "fill" in style and not isinstance(style["fill"], str):
-            raise UnsupportedSceneV3(f"Scene v12 does not yet encode {trace.kind} non-CSS fills")
         fill_opacity = stroke_opacity = line_opacity = 1.0
         if trace.kind in _BAND_KINDS | _RIBBON_KINDS:
             fill_opacity = float(style.get("fill_opacity", 1.0))
@@ -1963,7 +1978,7 @@ def _pack_figure_support(
     annotations: list[Any],
     colorbar_unsupported: bool,
 ) -> bytes:
-    """Pack literal figure observations and axis keys for Rust figure support."""
+    """Pack literal figure observations, axis keys, and per-trace allowlist flags."""
     flags = 0
     if figure.coords != "cartesian":
         flags |= 1 << 0
@@ -1998,16 +2013,25 @@ def _pack_figure_support(
         for annotation in annotations
     ):
         flags |= 1 << 7
+    traces = list(getattr(figure, "traces", None) or [])
     payload = bytearray(b"XYFS")
-    payload.extend((1).to_bytes(4, "little"))
+    payload.extend((2).to_bytes(4, "little"))
     payload.extend(flags.to_bytes(4, "little"))
     payload.extend(len(figure.axis_options).to_bytes(4, "little"))
+    payload.extend(len(traces).to_bytes(4, "little"))
     for axis_id, options in figure.axis_options.items():
         axis_code = 0 if axis_id == "x" else 1 if axis_id == "y" else 255
         keys = _significant_scene_axis_keys(options)
         payload.extend(bytes((axis_code, 0, 0, 0)))
         payload.extend(len(keys).to_bytes(4, "little"))
         _xyep_put_keys(payload, keys)
+    for trace in traces:
+        trace_flags, kind = _figure_trace_support_flags(trace)
+        encoded = str(kind).encode("utf-8")[:32]
+        payload.extend(trace_flags.to_bytes(2, "little"))
+        payload.extend(bytes((len(encoded), 0)))
+        payload.extend((0).to_bytes(4, "little"))
+        payload.extend(encoded)
     return bytes(payload)
 
 

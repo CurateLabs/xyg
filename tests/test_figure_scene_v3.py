@@ -1085,6 +1085,17 @@ def test_python_scene_rejects_rect_corner_radius_and_density() -> None:
     assert "<svg" in density.to_svg()
 
 
+def test_python_scene_rejects_hidden_and_unknown_kind() -> None:
+    hidden = Figure().line([0.0, 1.0], [0.0, 1.0])
+    hidden.traces[0].hidden = True
+    with pytest.raises(UnsupportedSceneV3, match="hidden or per-item"):
+        hidden.to_scene()
+    unknown = Figure().line([0.0, 1.0], [0.0, 1.0])
+    unknown.traces[0].kind = "text"
+    with pytest.raises(UnsupportedSceneV3, match="does not yet support text"):
+        unknown.to_scene()
+
+
 def test_python_scene_rejects_unequal_rect_columns() -> None:
     figure = Figure(width=200, height=120)
     figure.axis_options["x"]["domain"] = (0.0, 2.0)

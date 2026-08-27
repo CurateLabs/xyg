@@ -602,6 +602,10 @@ spanning, and finite rejection.
 ABI v117 adds `xyg_scene_figure_support_reason` so Python and Node share
 one figure-compile support probe: observation→feature mapping, the
 primary x/y axis set, and the Scene axis-key allowlist.
+ABI v118 extends that probe to `XYFS` v2 per-trace allowlist flags so
+kind, hidden/per-item, density, dash/curve/markers, rect extras, joined
+fills, custom hex reducers, heatmap colormaps, and non-CSS fills share
+the same diagnostic wording and check order.
 
 ABI v110 adds `xyg_scene_pack_legend` so Python and Node share one
 primary XYLG legend framer: header layout, text offsets, and

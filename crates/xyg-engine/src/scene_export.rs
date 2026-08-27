@@ -751,8 +751,12 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
 
 const XYFS_MAGIC: &[u8; 4] = b"XYFS";
 const XYFS_VERSION: u32 = 1;
+const XYFS_VERSION_TRACES: u32 = 2;
 const XYFS_HEADER_BYTES: usize = 16;
+const XYFS_V2_HEADER_BYTES: usize = 20;
 const XYFS_AXIS_BYTES: usize = 8;
+const XYFS_TRACE_BYTES: usize = 8;
+const MAX_XYFS_KIND_BYTES: usize = 32;
 
 const OBS_POLAR: u32 = 1 << 0;
 const OBS_CUSTOM_FONT: u32 = 1 << 1;
@@ -767,12 +771,36 @@ const FIGURE_AXIS_SET_REASON: &str =
     "Scene v12 figure compilation currently supports exactly x/y axes";
 const FIGURE_AXIS_KEYS_REASON: &str =
     "Scene v12 does not yet encode tick formatting, collision policy, or advanced axis layout";
+const FIGURE_TRACE_AXIS_REASON: &str = "Scene v12 currently supports only the primary x/y axes";
+const FIGURE_HIDDEN_REASON: &str = "Scene v12 does not yet encode hidden or per-item styled marks";
+const FIGURE_DENSITY_REASON: &str = "Scene v12 does not yet encode density-tier scatter";
+const FIGURE_DASHED_REASON: &str =
+    "Scene v12 does not yet encode dashed, curved, or authored markers";
+const FIGURE_JOINED_FILL_REASON: &str = "Scene v12 does not yet encode joined triangle-mesh fills";
+const FIGURE_HEX_REDUCE_REASON: &str = "Scene v12 does not yet encode custom hexbin reducers";
+const FIGURE_HEATMAP_REASON: &str = "Scene v12 does not yet encode heatmap colormap";
+
+const XYFS_TRACE_UNSUPPORTED_KIND: u16 = 1 << 0;
+const XYFS_TRACE_NON_PRIMARY_AXIS: u16 = 1 << 1;
+const XYFS_TRACE_HIDDEN_OR_PER_ITEM: u16 = 1 << 2;
+const XYFS_TRACE_DENSITY: u16 = 1 << 3;
+const XYFS_TRACE_DASHED_MARKERS: u16 = 1 << 4;
+const XYFS_TRACE_RECT_GRADIENT: u16 = 1 << 5;
+const XYFS_TRACE_CORNER_RADIUS: u16 = 1 << 6;
+const XYFS_TRACE_WEDGE_GAP: u16 = 1 << 7;
+const XYFS_TRACE_JOINED_FILL: u16 = 1 << 8;
+const XYFS_TRACE_CUSTOM_HEX_REDUCE: u16 = 1 << 9;
+const XYFS_TRACE_HEATMAP_COLORMAP: u16 = 1 << 10;
+const XYFS_TRACE_NON_CSS_FILL: u16 = 1 << 11;
+const XYFS_TRACE_FLAG_MASK: u16 = (1 << 12) - 1;
 
 /// Return Rust's figure-compile support diagnostic for a packed `XYFS`
-/// envelope. Hosts pack literal observations plus axis ids/keys; Rust maps
-/// those observations onto the Scene feature mask, enforces the primary
-/// x/y axis set, and applies the Scene axis-key allowlist.
-pub fn scene_figure_support_reason(bytes: &[u8]) -> Result<&'static str, SceneError> {
+/// envelope. Hosts pack literal observations, axis ids/keys, and (v2)
+/// per-trace allowlist flags; Rust maps those onto the Scene feature mask,
+/// enforces the primary x/y axis set, the Scene axis-key allowlist, and the
+/// figure-compile trace allowlist. v1 envelopes remain accepted as
+/// observation-plus-axis-only probes.
+pub fn scene_figure_support_reason(bytes: &[u8]) -> Result<String, SceneError> {
     use crate::scene::{
         scene_support_reason, SCENE_FEATURE_BROWSER_CSS, SCENE_FEATURE_COLORBAR,
         SCENE_FEATURE_CUSTOM_FONT, SCENE_FEATURE_EXTRA_LEGEND, SCENE_FEATURE_GRADIENT,
@@ -785,7 +813,7 @@ pub fn scene_figure_support_reason(bytes: &[u8]) -> Result<&'static str, SceneEr
     let mut cursor = Cursor::new(bytes);
     let _magic = cursor.bytes(4)?;
     let version = cursor.u32()?;
-    if version != XYFS_VERSION {
+    if version != XYFS_VERSION && version != XYFS_VERSION_TRACES {
         return Err(SceneError::Version);
     }
     let flags = cursor.u32()?;
@@ -793,7 +821,15 @@ pub fn scene_figure_support_reason(bytes: &[u8]) -> Result<&'static str, SceneEr
         return Err(SceneError::Version);
     }
     let n_axes = cursor.u32()?;
-    if n_axes as usize > MAX_XYEP_AXES {
+    let n_traces = if version == XYFS_VERSION_TRACES {
+        if bytes.len() < XYFS_V2_HEADER_BYTES {
+            return Err(SceneError::Length);
+        }
+        cursor.u32()?
+    } else {
+        0
+    };
+    if n_axes as usize > MAX_XYEP_AXES || n_traces as usize > MAX_XYEP_TRACES {
         return Err(SceneError::Limit);
     }
 
@@ -821,7 +857,7 @@ pub fn scene_figure_support_reason(bytes: &[u8]) -> Result<&'static str, SceneEr
     }
     let feature_reason = scene_support_reason(SCENE_SUPPORT_REQUEST_VERSION, features)?;
     if !feature_reason.is_empty() {
-        return Ok(feature_reason);
+        return Ok(feature_reason.to_string());
     }
 
     let mut has_x = false;
@@ -839,21 +875,106 @@ pub fn scene_figure_support_reason(bytes: &[u8]) -> Result<&'static str, SceneEr
             0 => has_x = true,
             1 => has_y = true,
             _ => {
-                return Ok(FIGURE_AXIS_SET_REASON);
+                return Ok(FIGURE_AXIS_SET_REASON.to_string());
             }
         }
         let keys = cursor.keys(n_keys)?;
         if extra_key(&keys, PUBLIC_AXIS_KEYS) {
-            return Ok(FIGURE_AXIS_KEYS_REASON);
+            return Ok(FIGURE_AXIS_KEYS_REASON.to_string());
         }
+    }
+    if n_axes != 2 || !has_x || !has_y {
+        return Ok(FIGURE_AXIS_SET_REASON.to_string());
+    }
+
+    let mut traces = Vec::with_capacity(n_traces as usize);
+    for _ in 0..n_traces {
+        if cursor.remaining() < XYFS_TRACE_BYTES {
+            return Err(SceneError::Length);
+        }
+        let trace_flags = cursor.u16()?;
+        if trace_flags & !XYFS_TRACE_FLAG_MASK != 0 {
+            return Err(SceneError::Version);
+        }
+        let kind_len = cursor.u8()? as usize;
+        let pad = cursor.u8()?;
+        let reserved = cursor.u32()?;
+        if pad != 0 || reserved != 0 || kind_len > MAX_XYFS_KIND_BYTES {
+            return Err(SceneError::Length);
+        }
+        let kind_bytes = cursor.bytes(kind_len)?;
+        if kind_bytes.contains(&0) {
+            return Err(SceneError::Length);
+        }
+        let kind = std::str::from_utf8(kind_bytes)
+            .map_err(|_| SceneError::Length)?
+            .to_string();
+        traces.push((trace_flags, kind));
     }
     if cursor.remaining() != 0 {
         return Err(SceneError::Length);
     }
-    if n_axes != 2 || !has_x || !has_y {
-        return Ok(FIGURE_AXIS_SET_REASON);
+
+    if let Some((_, kind)) = traces
+        .iter()
+        .find(|(flags, _)| flags & XYFS_TRACE_UNSUPPORTED_KIND != 0)
+    {
+        let kind = if kind.is_empty() {
+            "mark"
+        } else {
+            kind.as_str()
+        };
+        return Ok(format!(
+            "Scene v12 figure compilation does not yet support {kind}"
+        ));
     }
-    Ok("")
+    for (trace_flags, kind) in &traces {
+        let kind = if kind.is_empty() {
+            "mark"
+        } else {
+            kind.as_str()
+        };
+        if trace_flags & XYFS_TRACE_NON_PRIMARY_AXIS != 0 {
+            return Ok(FIGURE_TRACE_AXIS_REASON.to_string());
+        }
+        if trace_flags & XYFS_TRACE_HIDDEN_OR_PER_ITEM != 0 {
+            return Ok(FIGURE_HIDDEN_REASON.to_string());
+        }
+        if trace_flags & XYFS_TRACE_DENSITY != 0 {
+            return Ok(FIGURE_DENSITY_REASON.to_string());
+        }
+        if trace_flags & XYFS_TRACE_DASHED_MARKERS != 0 {
+            return Ok(FIGURE_DASHED_REASON.to_string());
+        }
+        if trace_flags & XYFS_TRACE_RECT_GRADIENT != 0 {
+            return Ok(format!(
+                "Scene v12 does not yet encode {kind} gradient fills"
+            ));
+        }
+        if trace_flags & XYFS_TRACE_CORNER_RADIUS != 0 {
+            return Ok(format!(
+                "Scene v12 does not yet encode {kind} corner_radius"
+            ));
+        }
+        if trace_flags & XYFS_TRACE_WEDGE_GAP != 0 {
+            return Ok(format!("Scene v12 does not yet encode {kind} wedge_gap"));
+        }
+        if trace_flags & XYFS_TRACE_JOINED_FILL != 0 {
+            return Ok(FIGURE_JOINED_FILL_REASON.to_string());
+        }
+        if trace_flags & XYFS_TRACE_CUSTOM_HEX_REDUCE != 0 {
+            return Ok(FIGURE_HEX_REDUCE_REASON.to_string());
+        }
+        if trace_flags & XYFS_TRACE_HEATMAP_COLORMAP != 0 {
+            return Ok(FIGURE_HEATMAP_REASON.to_string());
+        }
+        if trace_flags & XYFS_TRACE_NON_CSS_FILL != 0 {
+            return Ok(format!(
+                "Scene v12 does not yet encode {kind} non-CSS fills"
+            ));
+        }
+    }
+    Ok(String::new())
 }
 
 #[cfg(test)]
@@ -930,28 +1051,53 @@ mod tests {
         assert_eq!(scene_public_export_reason(&extra), Err(SceneError::Length));
     }
 
+    fn put_xyfs_axes(buf: &mut Vec<u8>, axes: &[(u8, &[&str])]) {
+        for (axis_id, keys) in axes {
+            buf.push(*axis_id);
+            buf.extend_from_slice(&[0, 0, 0]);
+            buf.extend_from_slice(&(keys.len() as u32).to_le_bytes());
+            put_keys(buf, keys);
+        }
+    }
+
     fn xyfs(flags: u32, axes: &[(u8, &[&str])]) -> Vec<u8> {
         let mut buf = Vec::from(*XYFS_MAGIC);
         buf.extend_from_slice(&XYFS_VERSION.to_le_bytes());
         buf.extend_from_slice(&flags.to_le_bytes());
         buf.extend_from_slice(&(axes.len() as u32).to_le_bytes());
-        for (axis_id, keys) in axes {
-            buf.push(*axis_id);
-            buf.extend_from_slice(&[0, 0, 0]);
-            buf.extend_from_slice(&(keys.len() as u32).to_le_bytes());
-            put_keys(&mut buf, keys);
+        put_xyfs_axes(&mut buf, axes);
+        buf
+    }
+
+    fn xyfs_v2(flags: u32, axes: &[(u8, &[&str])], traces: &[(u16, &str)]) -> Vec<u8> {
+        let mut buf = Vec::from(*XYFS_MAGIC);
+        buf.extend_from_slice(&XYFS_VERSION_TRACES.to_le_bytes());
+        buf.extend_from_slice(&flags.to_le_bytes());
+        buf.extend_from_slice(&(axes.len() as u32).to_le_bytes());
+        buf.extend_from_slice(&(traces.len() as u32).to_le_bytes());
+        put_xyfs_axes(&mut buf, axes);
+        for (trace_flags, kind) in traces {
+            buf.extend_from_slice(&trace_flags.to_le_bytes());
+            buf.push(kind.len() as u8);
+            buf.push(0);
+            buf.extend_from_slice(&0u32.to_le_bytes());
+            buf.extend_from_slice(kind.as_bytes());
         }
         buf
     }
 
+    const PRIMARY_XY: [(u8, &'static [&'static str]); 2] =
+        [(0, &["label", "side"]), (1, &["label", "side"])];
+
     #[test]
     fn figure_support_accepts_primary_xy_with_allowlisted_keys() {
         assert_eq!(
-            scene_figure_support_reason(&xyfs(
-                0,
-                &[(0, &["label", "side"]), (1, &["label", "side"])]
-            )),
-            Ok("")
+            scene_figure_support_reason(&xyfs(0, &PRIMARY_XY)),
+            Ok(String::new())
+        );
+        assert_eq!(
+            scene_figure_support_reason(&xyfs_v2(0, &PRIMARY_XY, &[(0, "scatter")])),
+            Ok(String::new())
         );
     }
 
@@ -959,7 +1105,10 @@ mod tests {
     fn figure_support_maps_polar_before_axis_keys() {
         assert_eq!(
             scene_figure_support_reason(&xyfs(OBS_POLAR, &[(0, &["collision"]), (1, &["label"])])),
-            Ok("XYG_SCENE_UNSUPPORTED_POLAR: Scene v12 supports Cartesian coordinates only")
+            Ok(
+                "XYG_SCENE_UNSUPPORTED_POLAR: Scene v12 supports Cartesian coordinates only"
+                    .to_string()
+            )
         );
     }
 
@@ -967,26 +1116,86 @@ mod tests {
     fn figure_support_rejects_unknown_axis_keys_and_non_primary_ids() {
         assert_eq!(
             scene_figure_support_reason(&xyfs(0, &[(0, &["collision"]), (1, &["label"])])),
-            Ok(FIGURE_AXIS_KEYS_REASON)
+            Ok(FIGURE_AXIS_KEYS_REASON.to_string())
         );
         assert_eq!(
             scene_figure_support_reason(&xyfs(0, &[(0, &["label"])])),
-            Ok(FIGURE_AXIS_SET_REASON)
+            Ok(FIGURE_AXIS_SET_REASON.to_string())
         );
         assert_eq!(
             scene_figure_support_reason(&xyfs(0, &[(0, &["label"]), (2, &["label"])])),
-            Ok(FIGURE_AXIS_SET_REASON)
+            Ok(FIGURE_AXIS_SET_REASON.to_string())
         );
     }
 
     #[test]
     fn figure_support_rejects_unknown_version_and_observation_bits() {
         let mut bad = xyfs(0, &[(0, &[]), (1, &[])]);
-        bad[4] = 2;
+        bad[4] = 3;
         assert_eq!(scene_figure_support_reason(&bad), Err(SceneError::Version));
         assert_eq!(
             scene_figure_support_reason(&xyfs(1 << 20, &[(0, &[]), (1, &[])])),
             Err(SceneError::Version)
+        );
+    }
+
+    #[test]
+    fn figure_support_rejects_unsupported_kind_before_density() {
+        assert_eq!(
+            scene_figure_support_reason(&xyfs_v2(
+                0,
+                &PRIMARY_XY,
+                &[(XYFS_TRACE_UNSUPPORTED_KIND, "text")]
+            )),
+            Ok("Scene v12 figure compilation does not yet support text".to_string())
+        );
+        assert_eq!(
+            scene_figure_support_reason(&xyfs_v2(
+                0,
+                &PRIMARY_XY,
+                &[(XYFS_TRACE_UNSUPPORTED_KIND | XYFS_TRACE_DENSITY, "text")]
+            )),
+            Ok("Scene v12 figure compilation does not yet support text".to_string())
+        );
+    }
+
+    #[test]
+    fn figure_support_rejects_density_hidden_and_corner_radius() {
+        assert_eq!(
+            scene_figure_support_reason(&xyfs_v2(
+                0,
+                &PRIMARY_XY,
+                &[(XYFS_TRACE_DENSITY, "scatter")]
+            )),
+            Ok(FIGURE_DENSITY_REASON.to_string())
+        );
+        assert_eq!(
+            scene_figure_support_reason(&xyfs_v2(
+                0,
+                &PRIMARY_XY,
+                &[(XYFS_TRACE_HIDDEN_OR_PER_ITEM, "scatter")]
+            )),
+            Ok(FIGURE_HIDDEN_REASON.to_string())
+        );
+        assert_eq!(
+            scene_figure_support_reason(&xyfs_v2(
+                0,
+                &PRIMARY_XY,
+                &[(XYFS_TRACE_CORNER_RADIUS, "rect")]
+            )),
+            Ok("Scene v12 does not yet encode rect corner_radius".to_string())
+        );
+    }
+
+    #[test]
+    fn figure_support_rejects_extra_axis_before_trace_flags() {
+        assert_eq!(
+            scene_figure_support_reason(&xyfs_v2(
+                0,
+                &[(0, &["label"]), (1, &["label"]), (2, &["label"])],
+                &[(XYFS_TRACE_DENSITY, "scatter")]
+            )),
+            Ok(FIGURE_AXIS_SET_REASON.to_string())
         );
     }
 }

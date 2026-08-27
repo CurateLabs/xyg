@@ -707,6 +707,19 @@ const SUPPORTED_KINDS = new Set([
   "segments", "errorbar", "stem", "contour", "box_whisker", "box_median",
   "area", "error_band", "ribbon", "triangle_mesh", "hexbin", "heatmap",
 ]);
+const XYFS_TRACE_UNSUPPORTED_KIND = 1 << 0;
+const XYFS_TRACE_NON_PRIMARY_AXIS = 1 << 1;
+const XYFS_TRACE_HIDDEN_OR_PER_ITEM = 1 << 2;
+const XYFS_TRACE_DENSITY = 1 << 3;
+const XYFS_TRACE_DASHED_MARKERS = 1 << 4;
+const XYFS_TRACE_RECT_GRADIENT = 1 << 5;
+const XYFS_TRACE_CORNER_RADIUS = 1 << 6;
+const XYFS_TRACE_WEDGE_GAP = 1 << 7;
+const XYFS_TRACE_JOINED_FILL = 1 << 8;
+const XYFS_TRACE_CUSTOM_HEX_REDUCE = 1 << 9;
+const XYFS_TRACE_HEATMAP_COLORMAP = 1 << 10;
+const XYFS_TRACE_NON_CSS_FILL = 1 << 11;
+const XYFS_DASH_KEYS = ["dash", "curve", "linecap", "marker_path", "marker_glyph", "smooth"];
 
 /** Return Rust's stable diagnostic for authored Scene feature bits. */
 export function sceneSupportReason(features, requestVersion = 1) {
@@ -769,6 +782,7 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
   if (colorbarUnsupported) flags |= 1 << 4;
   if ((figure.extraLegends ?? figure.extra_legends ?? []).length) flags |= 1 << 5;
   if (annotations.some((annotation) => !["callout", "arrow", "text"].includes(annotation.kind) && annotation.text != null && annotation.text !== "")) flags |= 1 << 7;
+  const traces = [...(figure.traces ?? [])];
   const axisEntries = [];
   const seenAxes = new Set();
   const addAxis = (axisId, options) => {
@@ -781,12 +795,13 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
   }
   addAxis("x", figure.xAxis ?? figure.x_axis ?? figure.axis_options?.x ?? {});
   addAxis("y", figure.yAxis ?? figure.y_axis ?? figure.axis_options?.y ?? {});
-  const parts = [new Uint8Array(16)];
+  const parts = [new Uint8Array(20)];
   const header = new DataView(parts[0].buffer);
   parts[0].set([88, 89, 70, 83]); // XYFS
-  header.setUint32(4, 1, true);
+  header.setUint32(4, 2, true);
   header.setUint32(8, flags, true);
   header.setUint32(12, axisEntries.length, true);
+  header.setUint32(16, traces.length, true);
   for (const [axisId, options] of axisEntries) {
     const axisCode = axisId === "x" ? 0 : axisId === "y" ? 1 : 255;
     const keys = significantSceneAxisKeys(options);
@@ -795,6 +810,16 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
     new DataView(axis.buffer).setUint32(4, keys.length, true);
     parts.push(axis);
     for (const key of keys) parts.push(encodeExportKey(key));
+  }
+  for (const trace of traces) {
+    const { flags: traceFlags, kind } = figureTraceSupport(figure, trace);
+    const kindBytes = new TextEncoder().encode(kind.slice(0, 32));
+    const row = new Uint8Array(8 + kindBytes.length);
+    const view = new DataView(row.buffer);
+    view.setUint16(0, traceFlags, true);
+    row[2] = kindBytes.length;
+    row.set(kindBytes, 8);
+    parts.push(row);
   }
   return concatBytes(parts);
 }
@@ -1454,21 +1479,49 @@ function packAnnotationEnvelope({ texts, attached, arrows, callouts, wrapped }) 
   return out.subarray(0, code);
 }
 
-function rejectRectExtras(style, kind) {
-  if (style.fill != null && typeof style.fill === "object") {
-    throw new RangeError(`Scene v12 does not yet encode ${kind} gradient fills`);
-  }
+function rectExtraFlags(style) {
+  let flags = 0;
+  if (style.fill != null && typeof style.fill === "object") flags |= XYFS_TRACE_RECT_GRADIENT;
   const radius = style.corner_radius ?? 0;
   if (Array.isArray(radius)) {
-    if (radius.some((value) => Number(value) !== 0)) {
-      throw new RangeError(`Scene v12 does not yet encode ${kind} corner_radius`);
-    }
+    if (radius.some((value) => Number(value) !== 0)) flags |= XYFS_TRACE_CORNER_RADIUS;
   } else if (Number(radius) !== 0) {
-    throw new RangeError(`Scene v12 does not yet encode ${kind} corner_radius`);
+    flags |= XYFS_TRACE_CORNER_RADIUS;
   }
-  if (Number(style.wedge_gap ?? 0) !== 0) {
-    throw new RangeError(`Scene v12 does not yet encode ${kind} wedge_gap`);
-  }
+  if (Number(style.wedge_gap ?? 0) !== 0) flags |= XYFS_TRACE_WEDGE_GAP;
+  return flags;
+}
+
+function figureTraceSupport(figure, trace) {
+  const style = trace.style ?? {};
+  const kind = String(trace.kind ?? "mark");
+  let flags = 0;
+  if (!SUPPORTED_KINDS.has(kind)) flags |= XYFS_TRACE_UNSUPPORTED_KIND;
+  if ((trace.x_axis ?? "x") !== "x" || (trace.y_axis ?? "y") !== "y") flags |= XYFS_TRACE_NON_PRIMARY_AXIS;
+  if (
+    trace.hidden
+    || style.color_channel != null
+    || style.size_channel != null
+    || style.stroke_channel != null
+  ) flags |= XYFS_TRACE_HIDDEN_OR_PER_ITEM;
+  if (
+    kind === "scatter"
+    && shouldUseDensity(trace.x?.length ?? 0, {
+      forceDensity: Boolean(trace.force_density ?? trace.forceDensity),
+      forceDirect: Boolean(trace.force_direct ?? trace.forceDirect),
+      coords: figure.coords ?? "cartesian",
+    })
+  ) flags |= XYFS_TRACE_DENSITY;
+  if (XYFS_DASH_KEYS.some((key) => style[key] != null)) flags |= XYFS_TRACE_DASHED_MARKERS;
+  if (RECT_KINDS.has(kind) || HEATMAP_KINDS.has(kind)) flags |= rectExtraFlags(style);
+  if (POLYFILL_KINDS.has(kind) && style.joined_fill) flags |= XYFS_TRACE_JOINED_FILL;
+  if (HEXBIN_KINDS.has(kind) && !HEXBIN_REDUCES.has(style.reduce)) flags |= XYFS_TRACE_CUSTOM_HEX_REDUCE;
+  if (
+    HEATMAP_KINDS.has(kind)
+    && (style.truecolor || style.colormap != null || trace.rgba_grid != null || trace.rgba != null)
+  ) flags |= XYFS_TRACE_HEATMAP_COLORMAP;
+  if (Object.hasOwn(style, "fill") && typeof style.fill !== "string") flags |= XYFS_TRACE_NON_CSS_FILL;
+  return { flags, kind };
 }
 
 function requireEqualColumns(columns, kind, label) {
@@ -1491,8 +1544,6 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   try { encodedColorbar = colorbarInput(figure); } catch { colorbarUnsupported = Boolean(figure.colorbarOptions ?? figure.colorbar_options); }
   const reason = sceneFigureSupportReason(figure, { colorbarUnsupported });
   if (reason) throw new RangeError(reason);
-  const unsupported = figure.traces.find((trace) => !SUPPORTED_KINDS.has(trace.kind));
-  if (unsupported) throw new RangeError(`Scene v12 figure compilation does not yet support ${unsupported.kind}`);
   const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], expansionModes = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [], legendEntries = [];
   const xDomain = figure._range("x");
   const yDomain = figure._range("y");
@@ -1512,33 +1563,9 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   const xSceneDescriptor = axisDescriptor(xSceneAxis, "xAxis");
   const ySceneDescriptor = axisDescriptor(ySceneAxis, "yAxis");
   for (const trace of figure.traces) {
-    if (trace.x_axis !== "x" || trace.y_axis !== "y") throw new RangeError("Scene v12 currently supports only the primary x/y axes");
-    if (
-      trace.kind === "scatter" &&
-      shouldUseDensity(trace.x?.length ?? 0, {
-        forceDensity: Boolean(trace.force_density ?? trace.forceDensity),
-        forceDirect: Boolean(trace.force_direct ?? trace.forceDirect),
-        coords: figure.coords ?? "cartesian",
-      })
-    ) {
-      throw new RangeError("Scene v12 does not yet encode density-tier scatter");
-    }
     const style = trace.style ?? {};
-    for (const key of ["color_channel", "size_channel", "stroke_channel", "dash", "curve", "smooth", "linecap", "marker_path", "marker_glyph"]) {
-      if (style[key] != null) throw new RangeError(`Scene v12 figure compilation does not yet support ${key}`);
-    }
-    if (RECT_KINDS.has(trace.kind)) rejectRectExtras(style, trace.kind);
-    if (HEATMAP_KINDS.has(trace.kind)) {
-      rejectRectExtras(style, trace.kind);
-      if (style.truecolor || style.colormap != null || trace.rgba_grid != null || trace.rgba != null) {
-        throw new RangeError("Scene v12 does not yet encode heatmap colormap");
-      }
-    }
     const opacity = Number(style.opacity ?? 1);
     if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) throw new RangeError("trace opacity must be in [0, 1]");
-    if (Object.hasOwn(style, "fill") && typeof style.fill !== "string") {
-      throw new RangeError(`Scene v12 does not yet encode ${trace.kind} non-CSS fills`);
-    }
     const fillOpacity = BAND_KINDS.has(trace.kind) || RIBBON_KINDS.has(trace.kind) ? Number(style.fill_opacity ?? 1) : 1;
     const strokeOpacity = BAND_KINDS.has(trace.kind) || RIBBON_KINDS.has(trace.kind) ? Number(style.stroke_opacity ?? 1) : 1;
     const lineOpacity = BAND_KINDS.has(trace.kind) ? Number(style.line_opacity ?? 1) : 1;
@@ -1573,7 +1600,6 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     }
 
     if (POLYFILL_KINDS.has(trace.kind)) {
-      if (style.joined_fill) throw new RangeError("Scene v12 does not yet encode joined triangle-mesh fills");
       const cols = [trace.x0, trace.y0, trace.x1, trace.y1, trace.x, trace.y];
       if (cols.some((column) => column == null)) {
         throw new RangeError("triangle_mesh Scene v12 compilation requires six vertex columns");
@@ -1589,9 +1615,6 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     }
 
     if (HEXBIN_KINDS.has(trace.kind)) {
-      if (!HEXBIN_REDUCES.has(style.reduce)) {
-        throw new RangeError("Scene v12 does not yet encode custom hexbin reducers");
-      }
       const xv = trace.x;
       const yv = trace.y;
       if (xv == null || yv == null || xv.length !== yv.length) {

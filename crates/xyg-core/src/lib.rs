@@ -111,7 +111,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 117;
+pub const ABI_VERSION: u32 = 118;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -188,8 +188,9 @@ pub unsafe extern "C" fn xyg_scene_public_export_reason(
 /// envelope. Returns the required UTF-8 byte count (zero means supported), or
 /// `usize::MAX` for a malformed or version-mismatched envelope. When `out_cap`
 /// is sufficient, writes the diagnostic without a trailing NUL. Hosts pack
-/// literal observations plus axis ids/keys; feature mapping and the axis
-/// allowlist stay in Rust.
+/// literal observations, axis ids/keys, and (v2) per-trace allowlist flags;
+/// feature mapping, the axis allowlist, and the figure-compile trace
+/// allowlist stay in Rust. v1 envelopes remain accepted.
 ///
 /// # Safety
 /// `input` must address `len` readable bytes when `len` is non-zero. When

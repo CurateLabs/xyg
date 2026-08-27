@@ -1291,6 +1291,10 @@ ABI 117 moves figure-compile support into Rust. Hosts pass packed
 observations plus axis ids/keys; feature mapping, the primary x/y axis
 set, and the Scene axis-key allowlist are engine-owned and identical for
 Python and Node.
+ABI 118 extends that envelope to per-trace allowlist flags so kind,
+hidden/per-item, density, dash, rect extras, joined fill, hex reducer,
+heatmap colormap, and non-CSS fill diagnostics are engine-owned and
+identical for Python and Node.
 ABI 110 moves primary Scene legend framing into Rust. Hosts pass loc/flags,
 font sizes, paints, title, and per-entry meta plus labels; XYLG header
 layout, text offsets, and bounded-text rejection are engine-owned and

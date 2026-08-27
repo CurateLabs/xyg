@@ -1808,7 +1808,11 @@ def scene_public_export_reason(payload: bytes) -> str:
 
 
 def scene_figure_support_reason(payload: bytes) -> str:
-    """Return Rust's figure-compile diagnostic for a packed XYFS envelope."""
+    """Return Rust's figure-compile diagnostic for a packed XYFS envelope.
+
+    Hosts pack observations, axis ids/keys, and v2 per-trace allowlist flags;
+    Rust owns the diagnostic wording and check order.
+    """
     if not isinstance(payload, (bytes, bytearray, memoryview)):
         raise TypeError("scene figure support envelope must be bytes")
     array = (
