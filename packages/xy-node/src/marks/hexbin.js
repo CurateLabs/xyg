@@ -41,6 +41,8 @@ export function composeHexbin(x, y, opts = {}) {
     role: "hexbin",
     dx: result.dx,
     dy: result.dy,
+    hex_dx: result.dx,
+    hex_dy: result.dy,
     reduce,
     ...(opts.style ?? {}),
   };

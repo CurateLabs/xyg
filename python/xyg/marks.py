@@ -2598,6 +2598,7 @@ def hexbin(
     reduce_C_function: Callable[[np.ndarray], Scalar] = np.mean,
     mincnt: Optional[int] = None,
     name: Optional[str] = None,
+    color: Any = None,
     colormap: channels.ColormapLike = channels.DEFAULT_COLORMAP,
     opacity: float = 0.9,
     style: styles.StyleMapping | None = None,
@@ -2608,7 +2609,9 @@ def hexbin(
     sum). Rust owns finite-pair filtering, automatic domain, and default grid
     aspect. Custom ``reduce_C_function`` callables fall back to a host reduce
     over the same lattice. Only threshold-passing bins are shipped as centers
-    plus one scalar count/color channel.
+    plus one scalar count/color channel. A literal ``color`` keeps constant
+    paint so Cartesian native lattices can compile onto Scene PolyFill;
+    omitted ``color`` keeps the metric colormap on the compatibility exporters.
     """
     css = styles.compile_mark_style("hexbin", style)
     opacity = css.get("opacity", opacity)
@@ -2768,9 +2771,14 @@ def hexbin(
         metric = np.log(metric)
     else:
         colorbar_domain = None
+    # Constant ``color`` is the Scene-eligible paint path. Metric colormaps
+    # stay data-driven so public Scene can fail closed and keep compatibility
+    # exporters for heatmap-style coloring.
+    paint = color if color is not None else metric
     color_ch = channels.resolve_color(
-        metric, len(metric), colormap=colormap, default_constant=DEFAULT_PALETTE[0]
+        paint, len(metric), colormap=colormap, default_constant=DEFAULT_PALETTE[0]
     )
+    series_color = color if isinstance(color, str) else self.next_series_color()
     checkpoint = self._checkpoint()
     try:
         self.traces.append(
@@ -2781,10 +2789,12 @@ def hexbin(
                 y=self.store.ingest(centers_y),
                 name=name,
                 style={
-                    "color": self.next_series_color(),
+                    "color": series_color,
                     "opacity": opacity,
                     "hex_dx": dx,
                     "hex_dy": dy,
+                    "role": "hexbin",
+                    "reduce": native_reduce or "custom",
                     **styles._opacity_channels(css),
                 },
                 color_ch=color_ch,

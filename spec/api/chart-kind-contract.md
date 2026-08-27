@@ -229,6 +229,12 @@ exporters first. A triangle renderer emits six triangles
 per cell — `(center, v_k, v_(k+1 mod 6))` — replicating the cell's color across
 all six; a path renderer may emit the six vertices as one closed polygon instead
 (what `_svg.py` does). The coverage is identical.
+Constant-style Cartesian native count/mean/sum hexbin also expands that same
+`HEX_RING` onto existing Scene v25 PolyFill records (one 6-vertex group per
+cell) for public SVG/PNG/PDF. The wire stays centers-only; hosts do not add a
+Scene kind. Polar hexbin, custom `reduce_C_function`, metric colormaps, LOD
+over the 1,024-group painter budget, and rich style exceptions remain
+compatibility exporters.
 
 **Coordinate space.** The two exporters expand in data space and then apply the
 axis scale. The WebGL client instead expands in the centers' *encoded* space:

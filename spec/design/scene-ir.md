@@ -980,8 +980,13 @@ source, widens a constant nonzero automatic domain by 5% of its absolute value
 the same lattice both hosts already consumed. Invalid metadata, missing finite
 pairs, or short capacity return `size_t::MAX` without a partial honeycomb.
 Hosts keep coercion, `mincnt` defaults, log-color post-processing, and custom
-Python reducers over Rust-resolved membership. The compact result remains the
-existing centers-only hexbin trace.
+Python reducers over Rust-resolved membership. The compact wire result remains
+the existing centers-only hexbin trace. Constant-style Cartesian native
+count/mean/sum lattices expand those centers plus `hex_dx`/`hex_dy` onto
+existing Scene v25 PolyFill records (one 6-vertex `HEX_RING` group per cell)
+for ``try_public_svg`` / ``try_public_png`` / ``try_public_pdf``. Polar
+hexbin, custom reducers, metric colormaps, LOD, and rich style exceptions
+fail closed and keep the compatibility exporters. Scene 25 is unchanged.
 
 ABI 98 makes the composition violin a compact Rust-owned ingress without a
 Scene-version change. Hosts pack flat canonical f64 samples, monotone group

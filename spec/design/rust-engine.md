@@ -83,7 +83,8 @@ coordinates with a 10,000-bin ceiling; `xyg_histogram_bins` ✅ ABI 101
 authored-edge counting plus density/cumulative assembly with the same
 10,000-bin ceiling) · hexbin
 reducer (`xyg_hexbin` ✅ ABI 102 finite-filtered automatic domain and
-`int(width / √3)` default height, count/mean/sum) · histogram edges (`xyg_histogram_edges`
+`int(width / √3)` default height, count/mean/sum; constant-style Cartesian
+lattices expand onto existing Scene PolyFill records) · histogram edges (`xyg_histogram_edges`
 ✅ NumPy `bins="auto"` / Sturges, used by both composition hosts for omitted
 bins, capped at 10,000 bins / 10,001 edges before allocation; invalid or
 over-cap results fail without a partial write) · wind-rose bins (`xyg_wind_rose_bins` ✅

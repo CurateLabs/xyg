@@ -1239,8 +1239,10 @@ explicit pair. Rust filters finite pairs, pads a constant automatic domain
 (5% of absolute value, falling back to 0.5), selects matplotlib
 `int(width / √3)` when height is omitted, and assigns the existing
 count/mean/sum lattice. Custom Python reducers still reduce groups on the
-host after Rust resolves that domain and aspect. The compact result remains
-the centers-only hexbin trace.
+host after Rust resolves that domain and aspect. The compact wire result
+remains the centers-only hexbin trace. Constant-style Cartesian native
+lattices compile those centers plus cell pitch onto existing Scene PolyFill
+records; polar, custom reducers, colormaps, and LOD stay compatibility.
 
 Contract-wide invariants: every tier transition is hysteresis-guarded and logged
 (no silent quality change); every aggregated visual states its aggregation in the

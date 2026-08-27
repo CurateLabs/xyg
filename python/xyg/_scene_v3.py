@@ -27,16 +27,35 @@ _BAND_KINDS = frozenset({"area", "error_band"})
 _RIBBON_KINDS = frozenset({"ribbon"})
 # Independent triangles lower to Scene PolyFill (kind 4) vertex runs.
 _POLYFILL_KINDS = frozenset({"triangle_mesh"})
+# Cartesian hexbin centers expand onto the same PolyFill records (6-vertex cells).
+_HEXBIN_KINDS = frozenset({"hexbin"})
+_HEXBIN_REDUCES = frozenset({"count", "mean", "sum"})
+# Pointy-top hexagon ring as fractions of hex_dx/hex_dy. Same contract as
+# python/xyg/_svg.py HEX_RING and js/src/50_chartview.ts _buildHexbinMark.
+_HEXBIN_RING = (
+    (0.0, -1.0 / 3.0),
+    (0.5, -1.0 / 6.0),
+    (0.5, 1.0 / 6.0),
+    (0.0, 1.0 / 3.0),
+    (-0.5, 1.0 / 6.0),
+    (-0.5, -1.0 / 6.0),
+)
 _POINT_KINDS = frozenset({"scatter", "line"})
 _SUPPORTED_KINDS = (
-    _POINT_KINDS | _RECT_KINDS | _SEGMENT_KINDS | _BAND_KINDS | _RIBBON_KINDS | _POLYFILL_KINDS
+    _POINT_KINDS
+    | _RECT_KINDS
+    | _SEGMENT_KINDS
+    | _BAND_KINDS
+    | _RIBBON_KINDS
+    | _POLYFILL_KINDS
+    | _HEXBIN_KINDS
 )
 _STROKE_KINDS = frozenset({"line"}) | _SEGMENT_KINDS
 
-# Each unjoined triangle is one PolyFill group in the Rust browser painter.
-# Keep the public route inside its canonical group budget; larger meshes remain
-# available through the screen-bounded compatibility path until Scene gains a
-# compact multi-triangle painter record.
+# Each unjoined triangle or hex cell is one PolyFill group in the Rust browser
+# painter. Keep the public route inside its canonical group budget; larger
+# meshes and honeycombs remain on the compatibility path until Scene gains a
+# compact multi-cell painter record.
 _MAX_PUBLIC_TRIANGLE_MESHES = 1024
 
 _LEGEND_LOCATIONS = {
@@ -251,6 +270,7 @@ _KIND_CODES = {
     "error_band": 3,
     "ribbon": 3,
     "triangle_mesh": 4,
+    "hexbin": 4,
 }
 
 
@@ -412,6 +432,19 @@ def _segment_columns(trace: Any) -> list[np.ndarray]:
     return arrays
 
 
+def _hexbin_pitch(style: dict[str, Any]) -> tuple[float, float]:
+    """Return the finite data-space hex cell pitch, or fail closed."""
+    raw_dx = style.get("hex_dx", style.get("dx"))
+    raw_dy = style.get("hex_dy", style.get("dy"))
+    if raw_dx is None or raw_dy is None:
+        raise UnsupportedSceneV3("Scene v12 hexbin requires finite hex_dx/hex_dy cell pitch")
+    dx = float(raw_dx)
+    dy = float(raw_dy)
+    if not np.isfinite(dx) or not np.isfinite(dy) or dx <= 0.0 or dy <= 0.0:
+        raise UnsupportedSceneV3("Scene v12 hexbin requires finite hex_dx/hex_dy cell pitch")
+    return dx, dy
+
+
 def _band_columns(trace: Any) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     if trace.x is None or trace.y is None or trace.base is None:
         raise ValueError(f"{trace.kind} Scene v12 compilation requires x, y, and base columns")
@@ -531,6 +564,8 @@ def figure_scene(
             _reject_rect_extras(style, trace.kind)
         if trace.kind in _POLYFILL_KINDS and style.get("joined_fill"):
             raise UnsupportedSceneV3("Scene v12 does not yet encode joined triangle-mesh fills")
+        if trace.kind in _HEXBIN_KINDS and style.get("reduce") not in _HEXBIN_REDUCES:
+            raise UnsupportedSceneV3("Scene v12 does not yet encode custom hexbin reducers")
         opacity = float(style.get("opacity", 1.0))
         if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
             raise ValueError("trace opacity must be finite and in [0, 1]")
@@ -683,6 +718,32 @@ def figure_scene(
                     symbols.append(0)
                     coordinates[0].append(px)
                     coordinates[1].append(py)
+                    coordinates[2].append(0.0)
+                    coordinates[3].append(0.0)
+            continue
+
+        if trace.kind in _HEXBIN_KINDS:
+            if trace.x is None or trace.y is None:
+                raise ValueError("hexbin Scene v12 compilation requires center columns")
+            xv = np.asarray(trace.x.values, dtype=np.float64)
+            yv = np.asarray(trace.y.values, dtype=np.float64)
+            if len(xv) != len(yv):
+                raise UnsupportedSceneV3("Scene v12 hexbin columns must have equal length")
+            if not np.isfinite(xv).all() or not np.isfinite(yv).all():
+                raise UnsupportedSceneV3(
+                    "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
+                )
+            dx, dy = _hexbin_pitch(style)
+            for cell_index, (cx, cy) in enumerate(zip(xv, yv, strict=True)):
+                stable_id = (int(trace.id) << 32) | cell_index
+                for rx, ry in _HEXBIN_RING:
+                    kinds.append(4)
+                    stable_ids.append(stable_id)
+                    style_refs.append(style_ref)
+                    diameters.append(0.0)
+                    symbols.append(0)
+                    coordinates[0].append(float(cx) + rx * dx)
+                    coordinates[1].append(float(cy) + ry * dy)
                     coordinates[2].append(0.0)
                     coordinates[3].append(0.0)
             continue
@@ -1567,7 +1628,8 @@ def scene_export_support_reason(
     renderer's complete output contract is modeled. The bounded literal
     Cartesian geometry subset routes all constant built-in scatter symbols,
     polylines, ordinary Rects, disconnected segment/error-bar/stem endpoint
-    pairs, bounded fill-only triangle meshes, and bounded solid ribbons
+    pairs, bounded fill-only triangle meshes, constant-style Cartesian hexbin
+    PolyFill cells, and bounded solid ribbons
     expanded by Rust in axis-transformed space.
     The proven literal Cartesian chrome slice also routes automatically:
     backgrounds, title, authored axes/ticks,
@@ -1706,6 +1768,7 @@ def scene_export_support_reason(
         "error_band",
         "ribbon",
         "triangle_mesh",
+        "hexbin",
     }
     public_style_keys = {
         "scatter": {"color", "opacity", "symbol", "size", "role", "stroke", "stroke_width"},
@@ -1788,6 +1851,10 @@ def scene_export_support_reason(
         # outlines and component alpha remain compatibility behavior until the
         # Scene packing seam preserves their complete style contract.
         "triangle_mesh": {"opacity", "role"},
+        # Constant-style Cartesian hexbin: native reduce plus the lattice pitch.
+        # Metric colormaps, custom reducers, and extra opacity/stroke keys stay
+        # on the compatibility exporters.
+        "hexbin": {"color", "opacity", "hex_dx", "hex_dy", "role", "reduce"},
     }
     has_literal_geometry = any(
         trace.kind
@@ -1807,6 +1874,7 @@ def scene_export_support_reason(
             "error_band",
             "ribbon",
             "triangle_mesh",
+            "hexbin",
         }
         for trace in figure.traces
     )
@@ -1888,6 +1956,25 @@ def scene_export_support_reason(
                 return "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
             mesh_style = trace.style or {}
             if mesh_style.get("role") != "triangle-mesh" or mesh_style.get("joined_fill"):
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+        if trace.kind in _HEXBIN_KINDS:
+            if trace.x is None or trace.y is None or len(trace.x.values) != len(trace.y.values):
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_MARK"
+            cell_count = len(trace.x.values)
+            public_triangle_mesh_count += cell_count
+            if (
+                cell_count > _MAX_PUBLIC_TRIANGLE_MESHES
+                or public_triangle_mesh_count > _MAX_PUBLIC_TRIANGLE_MESHES
+                or not np.isfinite(trace.x.values).all()
+                or not np.isfinite(trace.y.values).all()
+            ):
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
+            hex_style = trace.style or {}
+            if hex_style.get("role") != "hexbin" or hex_style.get("reduce") not in _HEXBIN_REDUCES:
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+            try:
+                _hexbin_pitch(hex_style)
+            except UnsupportedSceneV3:
                 return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
         # Generated companion scatters are accepted only in their exact
         # canonical sequence: stem endpoints, or bounded Rust-positioned box

@@ -818,6 +818,34 @@ def test_python_scene_compiles_ribbon_and_triangle_mesh() -> None:
     mesh_svg = _native.scene_svg(mesh.to_scene())
     assert '<path d="M ' in mesh_svg
 
+    hexbin = Figure(width=320, height=240)
+    hexbin.axis_options["x"]["domain"] = (0.0, 4.0)
+    hexbin.axis_options["y"]["domain"] = (0.0, 5.0)
+    hexbin.hexbin(
+        [0.5, 1.5, 2.5],
+        [0.5, 0.5, 2.0],
+        gridsize=(4, 4),
+        range=((0.0, 4.0), (0.0, 5.0)),
+        color="#3987e5",
+    )
+    hex_svg = _native.scene_svg(hexbin.to_scene())
+    assert hex_svg.count('<path d="M ') == len(hexbin.traces[0].x.values)
+
+    custom = Figure(width=320, height=240)
+    custom.axis_options["x"]["domain"] = (0.0, 4.0)
+    custom.axis_options["y"]["domain"] = (0.0, 5.0)
+    custom.hexbin(
+        [0.5, 1.5],
+        [0.5, 0.5],
+        C=[1.0, 2.0],
+        reduce_C_function=np.median,
+        color="#3987e5",
+        gridsize=(4, 4),
+        range=((0.0, 4.0), (0.0, 5.0)),
+    )
+    with pytest.raises(UnsupportedSceneV3, match="custom hexbin reducers"):
+        custom.to_scene()
+
     gradient = Figure()
     gradient.ribbon(
         [0.0], [1.0], [0.0], [0.3], [0.2], [0.5], color="#7c3aed", color_target="#34d399"
