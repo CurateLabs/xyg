@@ -2704,6 +2704,8 @@ def hexbin(
             )
         except ValueError as exc:
             raise ValueError("hexbin x and y must contain at least one finite pair") from exc
+        # Custom reducers only run when C is present (native_reduce is None).
+        assert c_all is not None
         finite = np.isfinite(x_all) & np.isfinite(y_all) & np.isfinite(c_all)
         xv, yv = x_all[finite], y_all[finite]
         cv = c_all[finite]
