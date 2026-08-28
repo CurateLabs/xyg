@@ -1862,7 +1862,7 @@ def _pack_xyss(
             continue
         records.append(
             struct.pack(
-                "<IBBBBBBBI8f",
+                "<IBBBBBBBBI8f",
                 int(index),
                 flags,
                 dash_count,

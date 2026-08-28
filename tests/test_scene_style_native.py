@@ -521,7 +521,7 @@ def test_pack_heatmap_facts_truecolor_without_grid_skips() -> None:
 
 def test_pack_scene_extras_dash_facts_encode_xyds() -> None:
     prefix = struct.pack(
-        "<IBBBBBBBI8f",
+        "<IBBBBBBBBI8f",
         0,
         1,
         2,
