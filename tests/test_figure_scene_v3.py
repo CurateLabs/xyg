@@ -968,6 +968,44 @@ def test_python_scene_compiles_constant_ribbon_color2() -> None:
         per_item.to_scene()
 
 
+def test_python_scene_compiles_unwrapped_text_layout() -> None:
+    figure = representative_figure()
+    figure.annotations.append({"kind": "text", "x": 0.5, "y": 0.5, "text": "offset", "dx": 6})
+    xyad = _xyad_from_figure(figure)
+    assert b"XYAW" in xyad
+    scene = figure.to_scene()
+    assert b"offset" in scene
+    svg = _native.scene_svg(scene)
+    assert ">offset<" in svg
+    assert figure.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(figure) is None
+    plain = representative_figure()
+    plain.annotations.append({"kind": "text", "x": 0.5, "y": 0.5, "text": "offset"})
+    plain_svg = _native.scene_svg(plain.to_scene())
+    plain_x = float(re.search(r'x="([^"]+)"[^>]*>offset<', plain_svg).group(1))
+    offset_x = float(re.search(r'x="([^"]+)"[^>]*>offset<', svg).group(1))
+    assert offset_x == pytest.approx(plain_x + 6.0)
+    anchored = representative_figure()
+    anchored.annotations.append(
+        {"kind": "text", "x": 0.5, "y": 0.5, "text": "anchor", "anchor": "end"}
+    )
+    anchored_svg = _native.scene_svg(anchored.to_scene())
+    assert ">anchor<" in anchored_svg
+    assert 'text-anchor="end"' in anchored_svg
+    assert anchored.to_svg() == anchored_svg
+    assert _scene_v3.scene_export_support_reason(anchored) is None
+    marker = representative_figure()
+    marker.annotations.append({"kind": "marker", "x": 0.5, "y": 0.5, "text": "offset", "dy": -8})
+    assert (
+        _scene_v3.scene_export_support_reason(marker) == "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
+    )
+    authored = representative_figure()
+    authored.text(2.0, 2.5, "note")
+    assert _scene_v3.scene_export_support_reason(authored) is None
+    assert b"note" in authored.to_scene()
+    assert "note" in authored.to_svg()
+
+
 def test_python_scene_compiles_area_and_error_band() -> None:
     for mode, options, symbol in (
         ("top", {}, 1),

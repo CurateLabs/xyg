@@ -7,7 +7,9 @@
 //! envelope. ABI 148 owns family routing from packed XYAF v1 facts: wrap vs
 //! text vs arrow vs callout vs rule/band/marker, stable-id tags, mark-style
 //! defaults, domain expansion, and XYAD framing so those decisions cannot
-//! drift across hosts.
+//! drift across hosts. ABI 184 routes cartesian unwrapped text `dx`/`dy`/
+//! `anchor` through XYAW with `wrap=0` (keep explicit newlines; apply the
+//! offset and text-anchor). Marker-label offsets stay fail-closed.
 
 use crate::css::{apply_opacity_rgba8, color_rgba8};
 use crate::scene::{
@@ -638,7 +640,6 @@ const FACT_HAS_SIZE: u32 = 1 << 14;
 const FACT_HAS_AXIS: u32 = 1 << 15;
 #[allow(dead_code)]
 const FACT_HAS_SYMBOL: u32 = 1 << 16;
-#[allow(dead_code)]
 const FACT_HAS_ANCHOR: u32 = 1 << 17;
 const FACT_BITS: u32 = (1 << 18) - 1;
 
@@ -1006,7 +1007,8 @@ fn encode_style(style: &StyleOut) -> [u8; XYAO_STYLE_BYTES] {
 ///
 /// Hosts coerce authoring (numbers, CSS, dash/linecap names). Rust owns wrap
 /// vs text vs arrow vs callout vs rule/band/marker routing, stable-id tags,
-/// style defaults, mark-row expansion, and XYAD framing.
+/// style defaults, mark-row expansion, and XYAD framing. ABI 184 routes
+/// cartesian unwrapped text `dx`/`dy`/`anchor` through XYAW with `wrap=0`.
 pub fn pack_annotation_facts(
     facts: &[u8],
     style_ref_base: u32,
@@ -1033,15 +1035,25 @@ pub fn pack_annotation_facts(
         if has(row.facts, FACT_HAS_CLASS_NAME) || row.style_bits & STYLE_UNSUPPORTED != 0 {
             return Err(AnnotationError::Order);
         }
-        let wrapped_kind =
-            (row.kind == XYAF_KIND_TEXT || row.kind == XYAF_KIND_CALLOUT) && has(row.facts, FACT_HAS_WRAP);
+        let has_wrap = has(row.facts, FACT_HAS_WRAP);
+        let text_layout = row.kind == XYAF_KIND_TEXT
+            && (has(row.facts, FACT_HAS_DX)
+                || has(row.facts, FACT_HAS_DY)
+                || has(row.facts, FACT_HAS_ANCHOR));
+        let wrapped_kind = ((row.kind == XYAF_KIND_TEXT || row.kind == XYAF_KIND_CALLOUT)
+            && has_wrap)
+            || text_layout;
         let labelled = has(row.facts, FACT_HAS_TEXT) && !row.text.is_empty();
         if row.style_bits & !allowed_style(row.kind, wrapped_kind, labelled) != 0 {
             return Err(AnnotationError::Order);
         }
         if wrapped_kind {
             let opacity = unit_interval(style_num(row, STYLE_OPACITY, 13, 1.0)?)?;
-            let wrap = nonnegative(require_flag(row, FACT_HAS_WRAP, 8)?)?;
+            let wrap = if has_wrap {
+                nonnegative(require_flag(row, FACT_HAS_WRAP, 8)?)?
+            } else {
+                0.0
+            };
             let x = require_flag(row, FACT_HAS_X, 0)?;
             let y = require_flag(row, FACT_HAS_Y, 1)?;
             let (dx_default, dy_default, css) = if row.kind == XYAF_KIND_CALLOUT {
@@ -1545,5 +1557,34 @@ mod tests {
         assert!(xyad.windows(4).any(|window| window == b"XYAW"));
         assert_eq!(u32::from_le_bytes(xyad[4..8].try_into().unwrap()), 3);
         assert_eq!(&xyad[xyad.len() - 4..], b"wrap");
+    }
+
+    #[test]
+    fn annotation_facts_route_unwrapped_text_layout_through_xyaw() {
+        let mut nums = [f64::NAN; 18];
+        nums[0] = 0.5;
+        nums[1] = 0.5;
+        nums[6] = 6.0;
+        let text = pack_xyaf(
+            XYAF_KIND_TEXT,
+            0,
+            FACT_HAS_X | FACT_HAS_Y | FACT_HAS_DX | FACT_HAS_TEXT,
+            STYLE_COLOR,
+            0,
+            nums,
+            [102, 112, 133, 255],
+            b"offset",
+        );
+        let packed = pack_annotation_facts(&text, 0, 0.0, 1.0, 0.0, 1.0).unwrap();
+        let xyad_len = u32::from_le_bytes(packed[16..20].try_into().unwrap()) as usize;
+        let xyad = &packed[XYAO_V1_HEADER_BYTES..XYAO_V1_HEADER_BYTES + xyad_len];
+        assert!(xyad.windows(4).any(|window| window == b"XYAW"));
+        assert_eq!(&xyad[xyad.len() - 6..], b"offset");
+        let xyaw_at = xyad.windows(4).position(|window| window == b"XYAW").unwrap();
+        let row = &xyad[xyaw_at + 12..];
+        let wrap = f64::from_le_bytes(row[32..40].try_into().unwrap());
+        let dx = f64::from_le_bytes(row[16..24].try_into().unwrap());
+        assert_eq!(wrap, 0.0);
+        assert_eq!(dx, 6.0);
     }
 }

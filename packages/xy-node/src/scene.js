@@ -259,7 +259,9 @@ function packXyAf(annotation, index) {
   const kind = annotation.kind;
   const kindCode = XYAF_KIND_CODES[kind];
   if (kindCode == null) throw new RangeError(`Scene v12 annotations support rule, band, and unlabeled marker only; ${JSON.stringify(kind)} is deferred`);
-  const wrapped = ["text", "callout"].includes(kind) && Object.hasOwn(annotation, "wrap");
+  const authoredWrap = ["text", "callout"].includes(kind) && Object.hasOwn(annotation, "wrap");
+  const layoutText = kind === "text" && ["dx", "dy", "anchor"].some((key) => Object.hasOwn(annotation, key));
+  const wrapped = authoredWrap || layoutText;
   const labelled = annotation.text != null && annotation.text !== "";
   if (kind === "arrow" && labelled) throw new RangeError("Scene arrows do not encode text");
   let encoded = new Uint8Array();
@@ -291,7 +293,9 @@ function packXyAf(annotation, index) {
   if (labelled) facts |= XYAF_FACT_HAS_TEXT;
   if (wrapped) {
     facts |= XYAF_FACT_HAS_WRAP;
-    nums[8] = annotationNumber(annotation, "wrap", undefined, "wrapped width");
+    nums[8] = Object.hasOwn(annotation, "wrap")
+      ? annotationNumber(annotation, "wrap", undefined, "wrapped width")
+      : 0;
   }
   const required = wrapped
     ? [["x", 0, XYAF_FACT_HAS_X, "wrapped x"], ["y", 1, XYAF_FACT_HAS_Y, "wrapped y"]]

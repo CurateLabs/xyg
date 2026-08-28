@@ -258,13 +258,16 @@ def test_python_label_borders_select_v23_frames_and_reject_partial_style() -> No
     figure.callout(0.75, 0.75, "callout", dx=-20, dy=-20, style=style)
     assert scene_v3.figure_scene(figure)[:4] == b"XYGS"
     envelope = _xyad_from_figure(figure)
-    lengths = struct.unpack_from("<IIII", envelope, 8)
-    at = 24
-    assert envelope[at : at + 8] == b"XYAT\x03\x00\x00\x00"
+    assert envelope[:8] == b"XYAD\x03\x00\x00\x00"
+    lengths = struct.unpack_from("<IIIII", envelope, 8)
+    at = 28
+    assert envelope[at : at + 8] == b"XYAT\x01\x00\x00\x00"
     at += lengths[0]
     assert envelope[at : at + 8] == b"XYAL\x04\x00\x00\x00"
     at += lengths[1] + lengths[2]
     assert envelope[at : at + 8] == b"XYAC\x03\x00\x00\x00"
+    at += lengths[3]
+    assert envelope[at : at + 8] == b"XYAW\x01\x00\x00\x00"
     invalid = Figure().text(
         0.5, 0.5, "bad", style={"color": "#667085", "label_border_color": "#000"}
     )

@@ -221,7 +221,7 @@ crates/
                         #   encode from sidecars plus ABI 163 product encode
                         #   from packed facts plus ABI 164 public static-export
                         #   consumers plus ABI 165 product-path XYFS support
-                        #   plus ABI 166 cartesian corner_radius tessellation plus ABI 167 polar wedge_gap tessellation plus ABI 168 polar corner_radius tessellation plus ABI 169 polar step+smooth plus ABI 170 marker_glyph XYMG plus ABI 171 width-only scatter match-fill plus ABI 172 cartesian line step+smooth plus ABI 173 heatmap corner_radius plus ABI 174 violin/box corner_radius plus ABI 175 violin/box fill/stroke opacity plus ABI 176 bar/column/histogram fill/stroke opacity plus ABI 177 heatmap fill_opacity plus ABI 178 scatter fill/stroke opacity plus ABI 179 hexbin fill_opacity plus ABI 180 triangle_mesh fill/stroke opacity plus ABI 181 cartesian area/error_band step+smooth plus ABI 182 triangle_mesh joined_fill plus ABI 183 constant ribbon color2_ch XYGR.
+                        #   plus ABI 166 cartesian corner_radius tessellation plus ABI 167 polar wedge_gap tessellation plus ABI 168 polar corner_radius tessellation plus ABI 169 polar step+smooth plus ABI 170 marker_glyph XYMG plus ABI 171 width-only scatter match-fill plus ABI 172 cartesian line step+smooth plus ABI 173 heatmap corner_radius plus ABI 174 violin/box corner_radius plus ABI 175 violin/box fill/stroke opacity plus ABI 176 bar/column/histogram fill/stroke opacity plus ABI 177 heatmap fill_opacity plus ABI 178 scatter fill/stroke opacity plus ABI 179 hexbin fill_opacity plus ABI 180 triangle_mesh fill/stroke opacity plus ABI 181 cartesian area/error_band step+smooth plus ABI 182 triangle_mesh joined_fill plus ABI 183 constant ribbon color2_ch XYGR plus ABI 184 cartesian unwrapped text dx/dy/anchor XYAW.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -230,7 +230,9 @@ crates/
                         #   bounded-text rejection.
     scene_annotations.rs # primary XYAD annotation framing (ABI 112) plus ABI
                         #   148 XYAF annotation-fact packing: wrap/text/arrow/
-                        #   callout/rule routing, stable-id tags, and XYAO.
+                        #   callout/rule routing, stable-id tags, and XYAO
+                        #   plus ABI 184 unwrapped text dx/dy/anchor via XYAW
+                        #   wrap=0.
     scene_heatmap.rs    # ABI 149 XYHF heatmap/density paint-fact packing:
                         #   tessellation eligibility, XYHP kind routing, and
                         #   density opacity composition.
@@ -276,7 +278,7 @@ crates/
                              #   XYAS/XYCF encode from sidecars plus ABI 163
                              #   product encode from packed facts plus ABI 165
                              #   product-path XYFS figure-compile support plus
-                             #   ABI 166 cartesian corner_radius tessellation / ABI 167 polar wedge_gap / ABI 168 polar corner_radius / ABI 169 polar step+smooth / ABI 170 marker_glyph XYMG / ABI 171 width-only scatter match-fill / ABI 172 cartesian line step+smooth / ABI 173 heatmap corner_radius / ABI 174 violin/box corner_radius / ABI 175 violin/box fill/stroke opacity / ABI 176 bar/column/histogram fill/stroke opacity / ABI 177 heatmap fill_opacity / ABI 178 scatter fill/stroke opacity / ABI 179 hexbin fill_opacity / ABI 180 triangle_mesh fill/stroke opacity / ABI 181 cartesian area/error_band step+smooth / ABI 182 triangle_mesh joined_fill / ABI 183 constant ribbon color2_ch XYGR:
+                             #   ABI 166 cartesian corner_radius tessellation / ABI 167 polar wedge_gap / ABI 168 polar corner_radius / ABI 169 polar step+smooth / ABI 170 marker_glyph XYMG / ABI 171 width-only scatter match-fill / ABI 172 cartesian line step+smooth / ABI 173 heatmap corner_radius / ABI 174 violin/box corner_radius / ABI 175 violin/box fill/stroke opacity / ABI 176 bar/column/histogram fill/stroke opacity / ABI 177 heatmap fill_opacity / ABI 178 scatter fill/stroke opacity / ABI 179 hexbin fill_opacity / ABI 180 triangle_mesh fill/stroke opacity / ABI 181 cartesian area/error_band step+smooth / ABI 182 triangle_mesh joined_fill / ABI 183 constant ribbon color2_ch XYGR / ABI 184 cartesian unwrapped text dx/dy/anchor XYAW:
                              #   compile, attach, sidecars, rows, annotation,
                              #   style, splice, support probe, then sidecar
                              #   assembled encode.
@@ -855,4 +857,5 @@ landed; the remainder, in order:
    ABI 181 cartesian area/error_band `curve="smooth"` plus `step` as authored band step expansion (`scene.rs` / `scene_pack.rs`) ✅.
    ABI 182 triangle_mesh `joined_fill` as one identity PolyFill ring (`geom::triangle_mesh_boundary` / `scene_pack.rs`) ✅.
    ABI 183 constant ribbon `color2_ch` as XYGR mark-space `dir=right` (`scene_trace_compile.rs` / XYGR) ✅.
+   ABI 184 cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0` (`scene_annotations.rs` / `scene_export.rs`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

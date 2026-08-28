@@ -249,6 +249,7 @@ line `curve="smooth"` plus `step` as authored step expansion. ABI 181 admits
 cartesian area/error_band `curve="smooth"` plus `step` as authored band step
 expansion. ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill
 ring. ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`.
+ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 ABI 173 tessellates
 heatmap `corner_radius`. ABI 174 tessellates violin/box `corner_radius`.
 ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`.
@@ -261,6 +262,7 @@ ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as
 authored band step expansion.
 ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring.
 ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`.
+ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -326,6 +328,7 @@ ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as
 authored band step expansion.
 ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring.
 ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`.
+ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate
@@ -391,6 +394,8 @@ band step expansion on that same product Scene.
 ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring on that
 same product Scene.
 ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right` on that
+same product Scene.
+ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0` on that
 same product Scene.
 The explicit `xyg_scene_figure_support_reason` ABI remains for tests.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack

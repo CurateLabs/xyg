@@ -718,6 +718,8 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
 
     Annotation ``class_name`` is an XYFS observation (ABI 165), not an XYAF
     field. Product encode reports ``XYG_SCENE_UNSUPPORTED_BROWSER_CSS``.
+    ABI 184 packs cartesian unwrapped text ``dx``/``dy``/``anchor`` as XYAW
+    with ``wrap=0`` so Rust applies the offset without wrapping.
     """
     kind = annotation.get("kind")
     kind_code = _XYAF_KIND_CODES.get(str(kind) if kind is not None else "")
@@ -725,7 +727,9 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
         raise UnsupportedSceneV3(
             f"Scene v12 annotations support rule, band, and unlabeled marker only; {kind!r} is deferred"
         )
-    wrapped = kind in {"text", "callout"} and "wrap" in annotation
+    authored_wrap = kind in {"text", "callout"} and "wrap" in annotation
+    layout_text = kind == "text" and any(key in annotation for key in ("dx", "dy", "anchor"))
+    wrapped = authored_wrap or layout_text
     attached_text = annotation.get("text")
     labelled = attached_text not in (None, "")
     if kind == "arrow" and labelled:
@@ -796,7 +800,10 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
         facts |= _XYAF_FACT_HAS_TEXT
     if wrapped:
         facts |= _XYAF_FACT_HAS_WRAP
-        nums[8] = take_num(annotation, "wrap", "wrapped width")
+        if "wrap" in annotation:
+            nums[8] = take_num(annotation, "wrap", "wrapped width")
+        else:
+            nums[8] = 0.0
     required = {
         "arrow": (
             ("x0", 2, _XYAF_FACT_HAS_X0, "arrow x0"),

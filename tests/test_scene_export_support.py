@@ -1595,11 +1595,31 @@ def test_public_annotation_router_fails_closed_for_unmodeled_host_layout_and_css
     [
         {"kind": "text", "x": 0.5, "y": 0.5, "text": "offset", "dx": 6},
         {"kind": "text", "x": 0.5, "y": 0.5, "text": "anchor", "anchor": "end"},
+    ],
+)
+def test_public_unwrapped_text_layout_routes_through_scene(annotation: dict[str, object]) -> None:
+    from xyg import _native
+
+    figure = _supported()
+    figure.annotations = [annotation]
+    assert scene_export_support_reason(figure) is None
+    scene = figure_scene(figure)
+    assert str(annotation["text"]).encode() in scene
+    svg = _native.scene_svg(scene)
+    assert figure.to_svg() == svg
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert str(annotation["text"]).encode() in exported
+
+
+@pytest.mark.parametrize(
+    "annotation",
+    [
         {"kind": "marker", "x": 0.5, "y": 0.5, "text": "offset", "dy": -8},
         {"kind": "marker", "x": 0.5, "y": 0.5, "text": "anchor", "anchor": "end"},
     ],
 )
-def test_public_annotation_router_rejects_unencoded_text_and_marker_label_layout(
+def test_public_annotation_router_rejects_unencoded_marker_label_layout(
     annotation: dict[str, object],
 ) -> None:
     figure = _supported()

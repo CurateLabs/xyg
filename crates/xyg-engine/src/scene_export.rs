@@ -1066,9 +1066,9 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     }
     for annotation in &annotations {
         let layout = annotation.flags & (ANN_DX | ANN_DY | ANN_ANCHOR) != 0;
-        if (annotation.kind == 4 && layout)
-            || (annotation.kind == 1 && annotation.flags & ANN_WRAP == 0 && layout)
-        {
+        // ABI 184 admits cartesian unwrapped text dx/dy/anchor as XYAW wrap=0.
+        // Marker labels still pack AttachedRow with no offset; keep those closed.
+        if annotation.kind == 4 && layout {
             return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION");
         }
     }

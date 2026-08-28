@@ -209,6 +209,10 @@ class AnnotationsMixin(_Host):
         dy = self._finite_scalar(dy, "text annotation dy")
         if anchor not in {"start", "middle", "end"}:
             raise ValueError("text annotation anchor must be 'start', 'middle', or 'end'")
+        packed_style = dict(self._style_mapping(style or {}, "text annotation style"))
+        color_css = self._optional_css_color(color, "text annotation color")
+        if color_css is not None:
+            packed_style["color"] = color_css
         self.annotations.append(
             {
                 "kind": "text",
@@ -223,10 +227,7 @@ class AnnotationsMixin(_Host):
                     if wrap is not None
                     else {}
                 ),
-                "style": {
-                    "color": self._optional_css_color(color, "text annotation color"),
-                    **self._style_mapping(style or {}, "text annotation style"),
-                },
+                "style": packed_style,
                 "class_name": self._optional_text(class_name, "text annotation class_name"),
             }
         )
