@@ -219,7 +219,8 @@ crates/
                         #   assembled encode plus ABI 161 XYSD chrome/extras
                         #   sidecar packing plus ABI 162 XYAS/XYCF assembled
                         #   encode from sidecars plus ABI 163 product encode
-                        #   from packed facts.
+                        #   from packed facts plus ABI 164 public static-export
+                        #   consumers.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -275,6 +276,8 @@ crates/
                              #   product encode from packed facts: compile,
                              #   attach, sidecars, rows, annotation, style,
                              #   splice, then sidecar assembled encode.
+    scene_static.rs     # ABI 164 public static-export consumers from one
+                             #   encoded Scene: SVG, PNG, PDF, JPEG, WebP.
     jpeg.rs             # baseline JPEG encode (ABI 114): YCbCr 4:4:4, Annex K
                         #   tables, libjpeg quality curve, Huffman packing.
                         #   Native hosts only (`raster` feature).
@@ -828,4 +831,5 @@ landed; the remainder, in order:
    `xyg_scene_pack_scene_extras_from_sidecars`) ✅.
    ABI 162 XYAS/XYCF assembled encode from sidecars (`xyg_scene_encode_assembled_from_sidecars`) ✅.
    ABI 163 product encode from packed facts (`xyg_scene_encode_product`) ✅.
+   ABI 164 public static-export consumers (`xyg_scene_static_export`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

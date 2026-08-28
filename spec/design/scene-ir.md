@@ -142,6 +142,8 @@ ABI 163 does not change Scene records; `xyg_scene_encode_product` owns product-p
 compile, attach, sidecar, row, annotation, style-sidecar, splice, and assembled
 encode from packed XYTC plus XYTA plus XYNM plus XYCL plus XYAF plus XYCF plus
 polar.
+ABI 164 does not change Scene records; `xyg_scene_static_export` owns public
+SVG/PNG/PDF/JPEG/WebP consumers from one encoded Scene.
 
 ## Version 3: backend-neutral core scene batch
 
@@ -1366,7 +1368,8 @@ diagnostics. Rust owns the public PolyFill group budget, including companion
 traces that share the browser painter's 1,024-group ceiling; hosts do not
 count meshes or probe the painter. Python
 `public_static_export`, `FacetGrid.to_svg`, and `FacetGrid._compose_rgba`
-reuse that compiled batch rather than encoding twice. ABI 106 does not
+reuse that compiled batch rather than encoding twice. ABI 164 owns the
+SVG/PNG/PDF/JPEG/WebP consumers from that batch. ABI 106 does not
 change Scene records; `xyg_figure_autorange` owns the domain the annotation
 and chrome packers already pass as `figure._range`. ABI 107 does not change
 Scene records either; `xyg_scene_resolve_mark_styles` owns per-kind fill/stroke
@@ -1454,6 +1457,9 @@ ABI 163 does not change Scene records either;
 `xyg_scene_encode_product` owns product-path compile, attach, sidecar, row,
 annotation, style-sidecar, splice, and assembled encode from packed XYTC plus
 XYTA plus XYNM plus XYCL plus XYAF plus XYCF plus polar.
+ABI 164 does not change Scene records either;
+`xyg_scene_static_export` owns public SVG/PNG/PDF/JPEG/WebP consumers from
+one encoded Scene.
 Polar+step+smooth and authored marker glyphs stay compatibility. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;

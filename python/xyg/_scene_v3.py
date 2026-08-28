@@ -2970,47 +2970,24 @@ def public_static_export(
     compiler or consumer error propagates: it is never a request to retry a
     compatibility renderer. The router reuses the predicate's compiled batch
     rather than compiling a second Scene for SVG, raster, or PDF consumers.
-    Explicit Scene callers still use ``figure_svg`` / ``figure_raster_commands``.
+    Format dispatch is ABI 164 ``scene_static_export``. Explicit Scene callers
+    still use ``figure_svg`` / ``figure_raster_commands``.
     """
     reason, scene = _public_scene_or_reason(figure, width=width, height=height)
     if reason is not None or scene is None:
         return None
-    if format == "svg":
-        return _native.scene_svg(scene).encode("utf-8")
-    if format == "png":
-        from . import kernels
-
-        commands = _native.scene_raster_commands(scene, scale)
-        w = int(width if width is not None else figure.width)
-        h = int(height if height is not None else figure.height)
-        return kernels.rasterize_png(
-            commands,
-            max(1, int(round(w * float(scale)))),
-            max(1, int(round(h * float(scale)))),
-        )
-    if format == "pdf":
-        return _native.svg_to_pdf(_native.scene_svg(scene))
-    if format in {"jpeg", "webp"}:
-        from . import kernels
-
-        commands = _native.scene_raster_commands(scene, scale)
-        w = max(1, int(round(int(width if width is not None else figure.width) * float(scale))))
-        h = max(1, int(round(int(height if height is not None else figure.height) * float(scale))))
-        rgba = kernels.rasterize(commands, w, h)
-        if format == "jpeg":
-            rgb = _flatten_jpeg_background(rgba)
-            return _native.encode_jpeg(rgb, quality=90 if quality is None else int(quality))
-        return _native.encode_webp(rgba)
-    raise ValueError(
-        f"Scene public static format must be svg, png, pdf, jpeg, or webp, got {format!r}"
+    w = int(width if width is not None else figure.width)
+    h = int(height if height is not None else figure.height)
+    width_px = max(1, int(round(w * float(scale))))
+    height_px = max(1, int(round(h * float(scale))))
+    return _native.scene_static_export(
+        scene,
+        format,
+        scale=scale,
+        width=width_px,
+        height=height_px,
+        quality=90 if quality is None else int(quality),
     )
-
-
-def _flatten_jpeg_background(rgba: np.ndarray) -> np.ndarray:
-    """Composite leftover Scene alpha over white before JPEG encode."""
-    alpha = rgba[..., 3:4].astype(np.uint16)
-    rgb = (rgba[..., :3].astype(np.uint16) * alpha + 255 * (255 - alpha) + 127) // 255
-    return rgb.astype(np.uint8)
 
 
 def _significant_scene_axis_keys(options: dict[str, Any]) -> list[str]:

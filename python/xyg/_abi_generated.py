@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 163
-SIGNATURE_SHA256 = "fd20e4564dc4a464e5176d0788b6bbef29f24df8c5c4e16f1a02b9ec9b89280c"
+ABI_VERSION = 164
+SIGNATURE_SHA256 = "d309c55f897454dd08d6d63b4ae0a03098e4d31f369f5580887f1e7a9c0ab2e6"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -782,6 +782,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_splice_annotations
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_scene_static_export(const uint8_t * encoded, size_t encoded_len, uint32_t format, double scale, size_t width, size_t height, int32_t quality, uint8_t * out, size_t out_cap)
+    function = lib.xyg_scene_static_export
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_double, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t]
     # size_t xyg_scene_support_reason(uint32_t request_version, uint64_t features, uint8_t * out, size_t out_cap)
     function = lib.xyg_scene_support_reason
     function.restype = ctypes.c_size_t

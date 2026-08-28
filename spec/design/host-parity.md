@@ -231,6 +231,9 @@ ABI 163 adds
 `xyg_scene_encode_product` so product-path compile, attach, sidecar, row,
 annotation, style-sidecar, splice, and assembled encode resolve from packed
 XYTC plus XYTA plus XYNM plus XYCL plus XYAF plus XYCF plus polar.
+ABI 164 adds
+`xyg_scene_static_export` so public SVG/PNG/PDF/JPEG/WebP consumers resolve
+from one encoded Scene.
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -277,6 +280,7 @@ packed XYAS plus XYCF plus XYSD plus polar plus XYSS.
 ABI 163 owns product-path compile, attach, sidecar, row, annotation,
 style-sidecar, splice, and assembled encode from packed XYTC plus XYTA plus
 XYNM plus XYCL plus XYAF plus XYCF plus polar.
+ABI 164 owns public SVG/PNG/PDF/JPEG/WebP consumers from one encoded Scene.
 Polar+step+smooth
 and authored marker glyphs stay
 compatibility. ABI 104 likewise moves
@@ -314,6 +318,9 @@ and Node pass `XYAS` plus `XYCF` plus `XYSD` plus polar plus `XYSS` and call
 ABI 163 makes product-path Scene encode Rust-owned from packed facts: Python
 and Node pass `XYTC` plus `XYTA` plus `XYNM` plus `XYCL` plus `XYAF` plus
 `XYCF` plus polar and call `xyg_scene_encode_product`.
+ABI 164 makes public static-export consumers Rust-owned: Python and Node pass
+one encoded Scene plus format/scale/size/quality and call
+`xyg_scene_static_export`.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call
 `xyg_figure_autorange` / `xyg_auto_domain`. Direct-browser WASM compile uses
@@ -509,7 +516,8 @@ the older format-specific `try_public_*` adapters have been retired. The
 support predicate itself is ABI 105 `xyg_scene_public_export_reason`; hosts
 only pack literal figure metadata. The Python public router and facet SVG/
 raster paths reuse the predicate's compiled Scene instead of compiling a second
-batch for the Rust SVG/raster/PDF consumers. Explicit `figure_svg` /
+batch for the Rust SVG/raster/PDF consumers. Format dispatch is ABI 164
+`xyg_scene_static_export`. Explicit `figure_svg` /
 `figure_raster_commands` callers still compile on demand. ABI 106 `xyg_figure_autorange` owns the
 product domain/padding/polar/zero-baseline decisions from the same packed
 extents both hosts already had. ABI 107 `xyg_scene_resolve_mark_styles` /

@@ -57,6 +57,7 @@ import {
   xySceneEncodeProduct,
   xyScenePackAnnotationMarks,
   xySceneRasterCommands,
+  xySceneStaticExport,
   xySceneResolveChromeStyle,
   xySceneResolveMarkStyles,
   xySceneScaleMap,
@@ -2520,6 +2521,28 @@ export function sceneRasterCommands(encoded, scale = 1) {
   const factor = Number(scale);
   if (!Number.isFinite(factor) || factor <= 0) throw new RangeError("scene raster scale must be positive and finite");
   return sceneOutput(encoded, xySceneRasterCommands, "raster commands", [factor]);
+}
+
+const SCENE_STATIC_FORMATS = { svg: 0, png: 1, pdf: 2, jpeg: 3, webp: 4 };
+
+export function sceneStaticExport(encoded, format, { scale = 1, width = 1, height = 1, quality = 90 } = {}) {
+  const code = SCENE_STATIC_FORMATS[format];
+  if (code == null) {
+    throw new RangeError(`Scene public static format must be svg, png, pdf, jpeg, or webp, got ${String(format)}`);
+  }
+  let factor = Number(scale);
+  if (format === "png" || format === "jpeg" || format === "webp") {
+    if (!Number.isFinite(factor) || factor <= 0) throw new RangeError("scene raster scale must be positive and finite");
+  } else if (!Number.isFinite(factor)) {
+    factor = 1;
+  }
+  const w = Number(width);
+  const h = Number(height);
+  const q = Number(quality);
+  if (!Number.isInteger(w) || w <= 0) throw new RangeError("scene static width must be a positive integer");
+  if (!Number.isInteger(h) || h <= 0) throw new RangeError("scene static height must be a positive integer");
+  if (!Number.isInteger(q)) throw new RangeError("quality must be an int in 1..100");
+  return sceneOutput(encoded, xySceneStaticExport, "static export", [code, factor, BigInt(w), BigInt(h), q]);
 }
 
 export function sceneBrowserPainter(encoded, maxBytes = 64 * 1024 * 1024) {

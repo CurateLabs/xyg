@@ -4,7 +4,7 @@ import fs from "node:fs";
 import test from "node:test";
 
 import { axisTicks, tickFormat, tickLabelLayout, tickWindow, tickWindowFilter, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yAxisLeftRoom, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatColorbarExtra, polarLegendRoom, polarLabelRoom, polarLayout, polarProject, recutPolarPlot, tightLayoutSolve, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
-import { Figure, sceneRasterCommands, sceneSvg } from "../src/index.js";
+import { Figure, sceneRasterCommands, sceneStaticExport, sceneSvg } from "../src/index.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
 const figureSceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/figure_scene_v3.json", import.meta.url), "utf8"));
@@ -97,6 +97,23 @@ test("Node Scene v30 compiles constant dash polylines and keeps authored markers
   marked.setAxisDomain("y", [0, 1]);
   marked.line([0, 1], [0, 1], { style: { dash: "dashed", marker_path: "M0 0" } });
   assert.throws(() => marked.toScene(), /authored markers/);
+});
+
+test("Node public static export matches explicit Scene consumers", () => {
+  const figure = new Figure({ width: 240, height: 160 });
+  figure.setAxisDomain("x", [0, 2]);
+  figure.setAxisDomain("y", [0, 2]);
+  figure.scatter([0.5, 1.5], [0.5, 1.5], {
+    _composed: true,
+    style: { color: "#3987e5", size: 8 },
+  });
+  const scene = figure.toScene();
+  const svg = sceneStaticExport(scene, "svg", { width: 240, height: 160 });
+  assert.equal(Buffer.from(svg).toString("utf8"), sceneSvg(scene));
+  const pdf = sceneStaticExport(scene, "pdf", { width: 240, height: 160 });
+  assert.ok(Buffer.from(pdf).subarray(0, 5).equals(Buffer.from("%PDF-")));
+  const png = sceneStaticExport(scene, "png", { scale: 1, width: 240, height: 160 });
+  assert.ok(png[0] === 0x89 && png[1] === 0x50 && png[2] === 0x4e && png[3] === 0x47);
 });
 
 test("Node Scene compiles constant marker_path contours and keeps glyphs fail-closed", () => {

@@ -62,6 +62,8 @@ use xyg_engine::splice_annotations;
 use xyg_engine::encode_assembled;
 use xyg_engine::encode_assembled_from_sidecars;
 use xyg_engine::encode_product;
+use xyg_engine::scene_static_export;
+use xyg_engine::SceneStaticFormat;
 use xyg_engine::EncodeAssembledAxis;
 use xyg_engine::EncodeAssembledCode;
 use xyg_engine::EncodeAssembledError;
@@ -156,7 +158,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 163;
+pub const ABI_VERSION: u32 = 164;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -2991,6 +2993,9 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// annotation/style/splice/encode orchestration from packed XYTC plus XYTA
 /// plus XYNM plus XYCL plus XYAF plus XYCF plus polar so Python and Node
 /// cannot drift.
+/// ABI 164 does not change Scene records;
+/// `xyg_scene_static_export` owns public SVG/PNG/PDF/JPEG/WebP consumers from
+/// one encoded Scene so Python and Node cannot drift on format dispatch.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
@@ -3684,6 +3689,55 @@ pub unsafe extern "C" fn xyg_scene_raster_commands(
         return usize::MAX;
     }
     std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(&commands);
+    required
+}
+
+/// Render one validated Scene to a public static format.
+/// `format` is 0=svg, 1=png, 2=pdf, 3=jpeg, 4=webp. Raster formats honor
+/// `scale` plus pixel `width`/`height`; JPEG honors `quality` in 1..100.
+/// Returns required bytes or `usize::MAX` on error.
+///
+/// # Safety
+/// Pointer contracts match `xyg_scene_svg`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_static_export(
+    encoded: *const u8,
+    encoded_len: usize,
+    format: u32,
+    scale: f64,
+    width: usize,
+    height: usize,
+    quality: i32,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    if encoded.is_null() || encoded_len == 0 {
+        return usize::MAX;
+    }
+    let Some(kind) = SceneStaticFormat::from_code(format) else {
+        return usize::MAX;
+    };
+    let Some(bytes) = ffi_guard(None, || {
+        scene_static_export(
+            std::slice::from_raw_parts(encoded, encoded_len),
+            kind,
+            scale,
+            width,
+            height,
+            quality,
+        )
+        .ok()
+    }) else {
+        return usize::MAX;
+    };
+    let required = bytes.len();
+    if out_cap < required {
+        return required;
+    }
+    if out.is_null() {
+        return usize::MAX;
+    }
+    std::slice::from_raw_parts_mut(out, out_cap)[..required].copy_from_slice(&bytes);
     required
 }
 

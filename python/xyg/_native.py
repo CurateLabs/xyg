@@ -5204,6 +5204,46 @@ def scene_raster_commands(encoded: bytes, scale: float = 1.0) -> bytes:
     return _scene_bytes_output(encoded, _lib.xyg_scene_raster_commands, "raster commands", factor)
 
 
+_SCENE_STATIC_FORMATS = {"svg": 0, "png": 1, "pdf": 2, "jpeg": 3, "webp": 4}
+
+
+def scene_static_export(
+    encoded: bytes,
+    format: str,
+    *,
+    scale: float = 1.0,
+    width: int = 1,
+    height: int = 1,
+    quality: int = 90,
+) -> bytes:
+    """Render one encoded Scene to a public static format (ABI 164)."""
+    code = _SCENE_STATIC_FORMATS.get(format)
+    if code is None:
+        raise ValueError(
+            f"Scene public static format must be svg, png, pdf, jpeg, or webp, got {format!r}"
+        )
+    if format in {"png", "jpeg", "webp"}:
+        factor = float(scale)
+        if not math.isfinite(factor) or factor <= 0.0:
+            raise ValueError("scene raster scale must be positive and finite")
+    else:
+        factor = float(scale) if math.isfinite(float(scale)) else 1.0
+    width_px = _positive_int(width, "scene static width")
+    height_px = _positive_int(height, "scene static height")
+    if isinstance(quality, bool) or not isinstance(quality, int):
+        raise ValueError(f"quality must be an int in 1..100, got {quality!r}")
+    return _scene_bytes_output(
+        encoded,
+        _lib.xyg_scene_static_export,
+        "static export",
+        int(code),
+        factor,
+        width_px,
+        height_px,
+        int(quality),
+    )
+
+
 def scene_browser_painter(encoded: bytes, max_bytes: int = 64 * 1024 * 1024) -> bytes:
     """Lower Scene v12 through Rust to the canonical painter-v9 stream."""
     limit = int(max_bytes)

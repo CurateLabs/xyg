@@ -118,6 +118,12 @@ pub use scene_encode_assembled::{
     ProductEncodeError, PRODUCT_STAGE_ANNOTATION, PRODUCT_STAGE_ATTACH, PRODUCT_STAGE_COMPILE,
     PRODUCT_STAGE_ROWS, PRODUCT_STAGE_SIDECARS, PRODUCT_STAGE_SPLICE, PRODUCT_STAGE_STYLE,
 };
+#[cfg(feature = "raster")]
+pub mod scene_static;
+#[cfg(feature = "raster")]
+pub use scene_static::{
+    flatten_rgba_over_white, scene_static_export, SceneStaticExportError, SceneStaticFormat,
+};
 pub mod stats;
 pub mod stream;
 pub mod svg;

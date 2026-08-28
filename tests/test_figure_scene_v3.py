@@ -397,20 +397,14 @@ def test_supported_public_exports_route_through_rust_scene(
 ) -> None:
     figure = factory()
 
-    scene_svg = _native.scene_svg
-    scene_raster_commands = _native.scene_raster_commands
-    calls = {"svg": 0, "raster": 0}
+    scene_static_export = _native.scene_static_export
+    calls = {"n": 0}
 
-    def observed_scene_svg(*args: object, **kwargs: object) -> str:
-        calls["svg"] += 1
-        return scene_svg(*args, **kwargs)  # type: ignore[arg-type]
+    def observed_scene_static(*args: object, **kwargs: object) -> bytes:
+        calls["n"] += 1
+        return scene_static_export(*args, **kwargs)
 
-    def observed_scene_raster(*args: object, **kwargs: object) -> bytes:
-        calls["raster"] += 1
-        return scene_raster_commands(*args, **kwargs)  # type: ignore[arg-type]
-
-    monkeypatch.setattr(_native, "scene_svg", observed_scene_svg)
-    monkeypatch.setattr(_native, "scene_raster_commands", observed_scene_raster)
+    monkeypatch.setattr(_native, "scene_static_export", observed_scene_static)
     svg = figure.to_svg()
     assert "XYGS" not in svg  # the public string is Rust's rendered SVG, not Scene bytes
     if factory is public_callout_figure:
@@ -420,8 +414,7 @@ def test_supported_public_exports_route_through_rust_scene(
     assert figure.to_scene()[:4] == b"XYGS"
     assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
     assert figure.to_image(format="pdf").startswith(b"%PDF-")
-    assert calls["svg"] >= 2  # direct SVG plus PDF via Rust SVG
-    assert calls["raster"] >= 1
+    assert calls["n"] >= 3
 
 
 def test_public_static_export_compiles_scene_once(
@@ -477,27 +470,20 @@ def test_two_ordinary_callouts_route_all_public_static_exports_through_scene(
 ) -> None:
     """The two-callout bound is proven through every public static consumer."""
     figure = public_two_callout_figure()
-    scene_svg = _native.scene_svg
-    scene_raster_commands = _native.scene_raster_commands
-    calls = {"svg": 0, "raster": 0}
+    scene_static_export = _native.scene_static_export
+    calls = {"n": 0}
 
-    def observed_scene_svg(*args: object, **kwargs: object) -> str:
-        calls["svg"] += 1
-        return scene_svg(*args, **kwargs)  # type: ignore[arg-type]
+    def observed_scene_static(*args: object, **kwargs: object) -> bytes:
+        calls["n"] += 1
+        return scene_static_export(*args, **kwargs)
 
-    def observed_scene_raster(*args: object, **kwargs: object) -> bytes:
-        calls["raster"] += 1
-        return scene_raster_commands(*args, **kwargs)  # type: ignore[arg-type]
-
-    monkeypatch.setattr(_native, "scene_svg", observed_scene_svg)
-    monkeypatch.setattr(_native, "scene_raster_commands", observed_scene_raster)
+    monkeypatch.setattr(_native, "scene_static_export", observed_scene_static)
     svg = figure.to_svg()
     assert "Public Rust" in svg
     assert "Second public Rust callout" in svg
     assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
     assert figure.to_image(format="pdf").startswith(b"%PDF-")
-    assert calls["svg"] >= 2
-    assert calls["raster"] >= 1
+    assert calls["n"] >= 3
 
 
 @pytest.mark.parametrize("factory", [public_callout_figure, public_authored_chrome_figure])
@@ -523,20 +509,14 @@ def test_supported_file_exports_match_the_canonical_rust_scene(
     }
     expected["pdf"] = _pdf.svg_to_pdf(expected["svg"].decode("utf-8"))
 
-    scene_svg = _native.scene_svg
-    scene_raster_commands = _native.scene_raster_commands
-    calls = {"svg": 0, "raster": 0}
+    scene_static_export = _native.scene_static_export
+    calls = {"n": 0}
 
-    def observed_scene_svg(*args: object, **kwargs: object) -> str:
-        calls["svg"] += 1
-        return scene_svg(*args, **kwargs)  # type: ignore[arg-type]
+    def observed_scene_static(*args: object, **kwargs: object) -> bytes:
+        calls["n"] += 1
+        return scene_static_export(*args, **kwargs)
 
-    def observed_scene_raster_commands(*args: object, **kwargs: object) -> bytes:
-        calls["raster"] += 1
-        return scene_raster_commands(*args, **kwargs)  # type: ignore[arg-type]
-
-    monkeypatch.setattr(_native, "scene_svg", observed_scene_svg)
-    monkeypatch.setattr(_native, "scene_raster_commands", observed_scene_raster_commands)
+    monkeypatch.setattr(_native, "scene_static_export", observed_scene_static)
 
     single_paths = {fmt: tmp_path / f"single.{fmt}" for fmt in expected}
     for fmt, path in single_paths.items():
@@ -549,8 +529,7 @@ def test_supported_file_exports_match_the_canonical_rust_scene(
     for path in batch_paths:
         assert path.read_bytes() == expected[path.suffix[1:]]
 
-    # SVG and PDF both consume Rust SVG; PNG consumes Rust's display list.
-    assert calls == {"svg": 4, "raster": 2}
+    assert calls["n"] == 6
 
 
 def test_unsupported_public_exports_stay_on_compatibility_path(
@@ -564,8 +543,7 @@ def test_unsupported_public_exports_stay_on_compatibility_path(
             "unsupported export must select compatibility before Scene compilation"
         )
 
-    monkeypatch.setattr(_native, "scene_svg", unexpected_scene_call)
-    monkeypatch.setattr(_native, "scene_raster_commands", unexpected_scene_call)
+    monkeypatch.setattr(_native, "scene_static_export", unexpected_scene_call)
     assert figure.to_svg().startswith("<svg")
     assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
     assert figure.to_image(format="pdf").startswith(b"%PDF-")
@@ -669,10 +647,10 @@ def test_constant_scatter_stroke_defaults_and_compatibility_boundaries(
         assert "PUBLIC_STYLE" in (_scene_v3.scene_export_support_reason(figure) or "")
         compatibility.append(figure)
 
-    def unexpected_scene(*_args: object, **_kwargs: object) -> str:
+    def unexpected_scene(*_args: object, **_kwargs: object) -> bytes:
         raise AssertionError("per-item scatter styling must stay on compatibility")
 
-    monkeypatch.setattr(_native, "scene_svg", unexpected_scene)
+    monkeypatch.setattr(_native, "scene_static_export", unexpected_scene)
     for figure in compatibility:
         assert figure.to_svg().startswith("<svg")
 
@@ -703,7 +681,7 @@ def test_supported_public_export_failure_never_falls_back(
 ) -> None:
     figure = factory()
 
-    def broken_scene(*_args: object, **_kwargs: object) -> str:
+    def broken_scene(*_args: object, **_kwargs: object) -> bytes:
         raise ValueError("broken Scene consumer")
 
     def unexpected_compatibility(*_args: object, **_kwargs: object) -> str:
@@ -711,15 +689,13 @@ def test_supported_public_export_failure_never_falls_back(
 
     from xyg import _raster, _svg
 
-    monkeypatch.setattr(_native, "scene_svg", broken_scene)
+    monkeypatch.setattr(_native, "scene_static_export", broken_scene)
     monkeypatch.setattr(_svg, "to_svg", unexpected_compatibility)
+    monkeypatch.setattr(_raster, "to_png", unexpected_compatibility)
     with pytest.raises(ValueError, match="broken Scene consumer"):
         figure.to_svg()
     with pytest.raises(ValueError, match="broken Scene consumer"):
         figure.to_image(format="pdf")
-
-    monkeypatch.setattr(_native, "scene_raster_commands", broken_scene)
-    monkeypatch.setattr(_raster, "to_png", unexpected_compatibility)
     with pytest.raises(ValueError, match="broken Scene consumer"):
         figure.to_png(scale=1)
 

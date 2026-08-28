@@ -1605,24 +1605,18 @@ def test_axis_visibility_switches_route_all_public_static_exports_through_scene(
 
     from xyg import _native
 
-    scene_svg = _native.scene_svg
-    scene_raster_commands = _native.scene_raster_commands
-    calls = {"svg": 0, "raster": 0}
+    scene_static_export = _native.scene_static_export
+    calls = {"n": 0}
 
-    def observed_scene_svg(*args: object, **kwargs: object) -> str:
-        calls["svg"] += 1
-        return scene_svg(*args, **kwargs)  # type: ignore[arg-type]
+    def observed_scene_static(*args: object, **kwargs: object) -> bytes:
+        calls["n"] += 1
+        return scene_static_export(*args, **kwargs)
 
-    def observed_scene_raster_commands(*args: object, **kwargs: object) -> bytes:
-        calls["raster"] += 1
-        return scene_raster_commands(*args, **kwargs)  # type: ignore[arg-type]
-
-    monkeypatch.setattr(_native, "scene_svg", observed_scene_svg)
-    monkeypatch.setattr(_native, "scene_raster_commands", observed_scene_raster_commands)
+    monkeypatch.setattr(_native, "scene_static_export", observed_scene_static)
     svg = figure.to_svg()
     assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
     assert figure.to_image(format="pdf").startswith(b"%PDF-")
-    assert calls == {"svg": 2, "raster": 1}
+    assert calls["n"] == 3
 
     # Both axis labels are present by default (three per axis). The switched
     # axis owns exactly three independently visible tick marks and labels.

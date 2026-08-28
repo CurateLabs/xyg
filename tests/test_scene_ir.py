@@ -881,14 +881,14 @@ def test_scene_authored_tick_labels_keep_their_explicit_tick_pairing() -> None:
 
 
 def test_public_svg_diamond_routes_through_the_whole_scene_consumer(monkeypatch) -> None:
-    original = _native.scene_svg
+    original = _native.scene_static_export
     calls: list[bytes] = []
 
     def record(*args, **kwargs):
         calls.append(args[0][:4])
         return original(*args, **kwargs)
 
-    monkeypatch.setattr(_native, "scene_svg", record)
+    monkeypatch.setattr(_native, "scene_static_export", record)
     svg = Figure().scatter([0.0, 1.0], [1.0, 0.0], symbol="diamond").to_svg()
 
     assert calls == [b"XYGS"]

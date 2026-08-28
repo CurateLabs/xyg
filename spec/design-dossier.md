@@ -562,8 +562,9 @@ F3, still pending (above).
   call that ABI through one `_svg.axis_ticks` framing function; the obsolete
   per-family Python adapters are retired. `public_static_export` is likewise
   the only optional Python selector for the bounded product route; it reuses
-  the predicate's compiled Scene rather than encoding twice, and
-  `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
+  the predicate's compiled Scene rather than encoding twice, then ABI 164
+  `xyg_scene_static_export` owns SVG/PNG/PDF/JPEG/WebP consumers from that
+  batch. `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
   panel Scene. That predicate
   owns the public PolyFill group budget, including companion traces that share
   the browser painter's 1,024-group ceiling. Explicit
@@ -1478,6 +1479,7 @@ packed XYAS plus XYCF plus XYSD plus polar plus XYSS.
 ABI 163 owns product-path compile, attach, sidecar, row, annotation,
 style-sidecar, splice, and assembled encode from packed XYTC plus XYTA plus
 XYNM plus XYCL plus XYAF plus XYCF plus polar.
+ABI 164 owns public SVG/PNG/PDF/JPEG/WebP consumers from one encoded Scene.
 Polar+step+smooth and
 authored marker glyphs stay compatibility. Irregular
 spacing, and LOD stay compatibility.
