@@ -86,8 +86,10 @@ socket.io `/_xy`, or none for static HTML); mark paint stays identical.
 - **Coordinate-system seam, including non-vertex grids:** point/line/area/bar
   programs call the shared joint polar projection after ordinary axis decode
   and scale. Heatmap remains a fullscreen quad and performs the inverse joint
-  map in its fragment shader instead; the CPU exporter has the same bounded
-  inverse-raster contract. `SEGMENT_VS` has a polar path only for the
+  map in its fragment shader instead; Scene encode owns the matching bounded
+  inverse-raster Image blit for polar painted heatmap (ABI 192). The
+  compatibility CPU twin (`_svg.polar_heatmap_rgba`) remains until differentials
+  are green. `SEGMENT_VS` has a polar path only for the
   allowlisted `contour` and `errorbar` trace schemas. This does **not** imply
   generic segment, density-grid, rectangle, or mesh support under
   `coords="polar"`; Python's `POLAR_MARK_KINDS` remains the recorded gate.

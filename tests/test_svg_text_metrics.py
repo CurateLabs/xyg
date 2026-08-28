@@ -132,3 +132,55 @@ def test_default_layout_resolves_x_tick_room_once_when_y_gutter_does_not_grow(
     _svg.layout(spec)
 
     assert calls == 1
+
+
+def test_scene_layout_rooms_match_rust_cartesian_gutters() -> None:
+    spec = {
+        "width": 320,
+        "height": 240,
+        "x_axis": {"kind": "linear", "domain": [0.0, 4.0], "range": [0.0, 4.0]},
+        "y_axis": {"kind": "linear", "domain": [0.0, 5.0], "range": [0.0, 5.0]},
+        "title": "Hello title",
+    }
+    rooms = _svg.scene_layout_rooms(spec)
+    expected = _native.scene_plot_layout(
+        viewport=(320.0, 240.0),
+        x_axis=(0, 0.0, 4.0, 1.0, False),
+        y_axis=(0, 0.0, 5.0, 1.0, False),
+        title="Hello title",
+    )
+    assert rooms == expected
+    width, height, _compact, plot = _svg.layout(spec)
+    compat = (
+        plot["x"],
+        width - plot["x"] - plot["w"],
+        plot["y"],
+        height - plot["y"] - plot["h"],
+    )
+    assert compat != expected
+
+
+def test_scene_layout_rooms_fail_closed_for_custom_font_and_polar() -> None:
+    base = {
+        "width": 320,
+        "height": 240,
+        "x_axis": {"kind": "linear", "domain": [0.0, 1.0]},
+        "y_axis": {"kind": "linear", "domain": [0.0, 1.0]},
+    }
+    custom = {**base, "chrome_styles": {"title": {"font-family": "Comic Sans"}}}
+    polar = {**base, "coords": "polar"}
+    category = {
+        **base,
+        "x_axis": {"kind": "category", "domain": [0.0, 1.0]},
+    }
+    assert _svg.scene_layout_rooms(custom) is None
+    assert _svg.scene_layout_rooms(polar) is None
+    assert _svg.scene_layout_rooms(category) is None
+    top_x = {**base, "x_axis": {**base["x_axis"], "side": "top"}}
+    right_y = {**base, "y_axis": {**base["y_axis"], "side": "right"}}
+    outside = {**base, "show_legend": True, "legend": {"loc": "outside right"}}
+    axes_bar = {**base, "colorbar": {"placement": "axes", "orientation": "vertical"}}
+    assert _svg.scene_layout_rooms(top_x) is None
+    assert _svg.scene_layout_rooms(right_y) is None
+    assert _svg.scene_layout_rooms(outside) is None
+    assert _svg.scene_layout_rooms(axes_bar) is None

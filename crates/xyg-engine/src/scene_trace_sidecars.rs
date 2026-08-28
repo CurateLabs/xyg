@@ -251,7 +251,7 @@ fn parse_xytt(bytes: &[u8]) -> Result<Vec<AttachedSidecar>, TraceSidecarsError> 
     Ok(traces)
 }
 
-fn parse_xynm(bytes: &[u8]) -> Result<Vec<Vec<u8>>, TraceSidecarsError> {
+pub(crate) fn parse_xynm(bytes: &[u8]) -> Result<Vec<Vec<u8>>, TraceSidecarsError> {
     if bytes.len() < XYNM_HEADER_BYTES || bytes.get(..4) != Some(&XYNM_MAGIC[..]) {
         return Err(TraceSidecarsError::new(TraceSidecarsCode::Length, 0));
     }
