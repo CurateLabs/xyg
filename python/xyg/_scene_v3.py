@@ -1130,7 +1130,11 @@ def _constant_color(trace: Any, fallback: str) -> str:
     if channel.mode != "constant" or channel.constant is None:
         if str(getattr(trace, "kind", "") or "") == "scatter" and trace.use_density():
             return str((getattr(trace, "style", None) or {}).get("color", fallback))
-        if _hexbin_packs_paint_plane(trace) or _ribbon_packs_end_paints(trace) or _mesh_packs_paint_plane(trace):
+        if (
+            _hexbin_packs_paint_plane(trace)
+            or _ribbon_packs_end_paints(trace)
+            or _mesh_packs_paint_plane(trace)
+        ):
             return str((getattr(trace, "style", None) or {}).get("color", fallback))
         raise UnsupportedSceneV3("Scene v12 does not yet support data-driven paint channels")
     return channel.constant
@@ -1861,8 +1865,10 @@ def _mesh_face_fill_rgba8(trace: Any) -> bytes | None:
                 return None
             lo, hi = float(finite.min()), float(finite.max())
         span = hi - lo
-        t = np.zeros(n, dtype=np.float64) if not np.isfinite(span) or span == 0.0 else np.clip(
-            (scalars - lo) / span, 0.0, 1.0
+        t = (
+            np.zeros(n, dtype=np.float64)
+            if not np.isfinite(span) or span == 0.0
+            else np.clip((scalars - lo) / span, 0.0, 1.0)
         )
         cmap = getattr(channel, "colormap", None) or "viridis"
         try:

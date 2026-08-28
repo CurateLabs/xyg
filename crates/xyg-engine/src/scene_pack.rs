@@ -27,7 +27,9 @@
 //! two-ended ribbon `color2_ch` from packed XYHP kind 5 (`FLAG_HEATMAP_PAINTED`
 //! is allowed on `PACK_RIBBON` so the plane rides extras; Band expansion intern
 //! unique pairs onto XYGR). Polar ribbon and explicit `FLAG_COLOR2` stay
-//! fail-closed.
+//! fail-closed. ABI 195 intern triangle-mesh per-item fill/stroke/width from
+//! packed XYHP kind 6 (`FLAG_HEATMAP_PAINTED` is allowed on `PACK_TRIANGLE` so
+//! the plane rides extras; TriangleFace expansion intern unique triples).
 //! colormap hexbin as `PACK_HEXBIN` plus `FLAG_HEATMAP_PAINTED` (XYHP 1×N
 //! plane; HexCell expansion interns per-cell fills; no new pack kind).
 //! ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2
@@ -316,7 +318,7 @@ pub fn resolve_pack_kind(kind: &str, flags: u8) -> Result<u8, PackError> {
         "segments" | "errorbar" | "stem" | "contour" | "box_whisker" | "box_median" => PACK_SEGMENT,
         _ => return Err(PackError::UnknownKind),
     };
-    if painted && pack_kind != PACK_HEATMAP_PAINTED && pack_kind != PACK_HEXBIN && pack_kind != PACK_RIBBON {
+    if painted && pack_kind != PACK_HEATMAP_PAINTED && pack_kind != PACK_HEXBIN && pack_kind != PACK_RIBBON && pack_kind != PACK_TRIANGLE {
         return Err(PackError::Length);
     }
     if density && pack_kind != PACK_DENSITY_BLIT {
@@ -1394,6 +1396,10 @@ mod tests {
         assert_eq!(
             resolve_pack_kind("ribbon", FLAG_HEATMAP_PAINTED).unwrap(),
             PACK_RIBBON
+        );
+        assert_eq!(
+            resolve_pack_kind("triangle_mesh", FLAG_HEATMAP_PAINTED).unwrap(),
+            PACK_TRIANGLE
         );
         assert_eq!(
             resolve_pack_kind("line", FLAG_HEATMAP_PAINTED),
