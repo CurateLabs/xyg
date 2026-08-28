@@ -258,12 +258,20 @@ function annotationAllowedStyle(kind, wrapped, labelled) {
   return allowed;
 }
 
+function annotationHasMarkup(annotation) {
+  if (annotation == null || typeof annotation !== "object") return false;
+  if (annotation.markup != null && annotation.markup !== "") return true;
+  const style = annotation.style ?? {};
+  return style != null && typeof style === "object" && style.markup != null && style.markup !== "";
+}
+
 function packXyAf(annotation, index) {
   // ABI 184 packs cartesian unwrapped text dx/dy/anchor as XYAW wrap=0.
   // ABI 185 packs labelled cartesian marker dx/dy/anchor the same way in Rust.
   // ABI 187 packs cartesian unwrapped text rotation as XYAW wrap=0 (XYAW v2).
   // ABI 188 packs labelled cartesian marker rotation the same way (nums[8]).
   // Annotation html is XYFS OBS_ANNOTATION_HTML (#305); Scene owns literal text.
+  // Annotation markup is XYFS OBS_ANNOTATION_MARKUP (#308).
   const kind = annotation.kind;
   const kindCode = XYAF_KIND_CODES[kind];
   if (kindCode == null) throw new RangeError(`Scene v12 annotations support rule, band, and unlabeled marker only; ${JSON.stringify(kind)} is deferred`);
@@ -284,7 +292,7 @@ function packXyAf(annotation, index) {
   }
   const style = { ...(annotation.style ?? {}) };
   const allowed = annotationAllowedStyle(kind, wrapped, labelled);
-  const unsupported = Object.keys(style).filter((key) => !allowed.has(key) && style[key] != null).sort();
+  const unsupported = Object.keys(style).filter((key) => !allowed.has(key) && key !== "markup" && style[key] != null).sort();
   if (unsupported.length) {
     if (wrapped) throw new RangeError("Scene wrapped annotations do not encode class_name, custom fonts, CSS, markup, collision, or leader style");
     if (kind === "arrow") throw new RangeError(`Scene arrow style does not encode ${JSON.stringify(unsupported)}`);
@@ -2952,6 +2960,7 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
   ) flags |= 1 << 2;
   if (annotations.some((annotation) => annotation.html != null && annotation.html !== "")) flags |= 1 << 8;
   if (annotations.some((annotation) => annotation.collision != null && annotation.collision !== "")) flags |= 1 << 6;
+  if (annotations.some((annotation) => annotationHasMarkup(annotation))) flags |= 1 << 9;
   if ((figure.traces ?? []).some((trace) => (
     classifyRibbonColor2(trace) === "fail"
     || (
@@ -4948,6 +4957,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
     }
     const kindBytes = encodeUtf8(annotation.kind == null ? "" : String(annotation.kind)).slice(0, 256);
     const fields = Object.keys(annotation);
+    if (annotationHasMarkup(annotation) && !fields.includes("markup")) fields.push("markup");
     const row = new Uint8Array(8);
     const view = new DataView(row.buffer);
     view.setUint16(4, kindBytes.length, true);

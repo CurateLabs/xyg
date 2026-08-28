@@ -729,6 +729,9 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
     Annotation ``collision`` is XYFS ``OBS_ANNOTATION_COLLISION`` (#307);
     Scene does not encode annotation collision. Product encode reports
     ``XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION``.
+    Annotation ``markup`` is XYFS ``OBS_ANNOTATION_MARKUP`` (#308); Scene
+    owns literal text only. Product encode reports
+    ``XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP``.
     Annotation ``html`` is XYFS ``OBS_ANNOTATION_HTML`` (#305); Scene SVG/raster
     own literal text only. Product encode reports
     ``XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML``.
@@ -795,7 +798,9 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
     style = dict(annotation.get("style") or {})
     allowed = _annotation_allowed_style(str(kind), wrapped, labelled)
     unsupported = sorted(
-        key for key, value in style.items() if key not in allowed and value is not None
+        key
+        for key, value in style.items()
+        if key not in allowed and key != "markup" and value is not None
     )
     if unsupported:
         if wrapped:
@@ -3620,6 +3625,15 @@ def _pack_polar_scene_input(figure: Any) -> bytes:
     )
 
 
+def _annotation_has_markup(annotation: Any) -> bool:
+    if not isinstance(annotation, dict):
+        return False
+    if annotation.get("markup") not in (None, ""):
+        return True
+    style = annotation.get("style") or {}
+    return isinstance(style, dict) and style.get("markup") not in (None, "")
+
+
 def _pack_figure_support(
     figure: Any,
     annotations: list[Any],
@@ -3644,6 +3658,8 @@ def _pack_figure_support(
         flags |= 1 << 8
     if any(annotation.get("collision") not in (None, "") for annotation in annotations):
         flags |= 1 << 6
+    if any(_annotation_has_markup(annotation) for annotation in annotations):
+        flags |= 1 << 9
     if any(
         _classify_ribbon_color2(trace) == "fail"
         or (
@@ -3782,6 +3798,8 @@ def _pack_public_export_support(
             continue
         kind_b = str(annotation.get("kind") or "").encode("utf-8")[:256]
         fields = [str(key) for key in annotation]
+        if _annotation_has_markup(annotation) and "markup" not in fields:
+            fields.append("markup")
         payload.extend(struct.pack("<B3sHH", 0, b"", len(kind_b), len(fields)))
         payload.extend(kind_b)
         _xyep_put_keys(payload, fields)

@@ -1921,6 +1921,7 @@ def test_migrated_scene_packers_have_no_host_step_geometry_expander() -> None:
         {"kind": "marker", "x": 0.5, "y": 0.5, "text": "collision", "collision": "hide"},
         {"kind": "callout", "x": 0.5, "y": 0.5, "text": "rich", "html": "<b>rich</b>"},
         {"kind": "callout", "x": 0.5, "y": 0.5, "text": "css", "class_name": "custom"},
+        {"kind": "callout", "x": 0.5, "y": 0.5, "text": "rich", "style": {"markup": "<b>rich</b>"}},
     ],
 )
 def test_public_annotation_router_fails_closed_for_unmodeled_host_layout_and_css(
@@ -1936,6 +1937,9 @@ def test_public_annotation_router_fails_closed_for_unmodeled_host_layout_and_css
         assert "XYG_SCENE_UNSUPPORTED_BROWSER_CSS" in reason
     if "collision" in annotation:
         assert "XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION" in reason
+    style = annotation.get("style") or {}
+    if "markup" in annotation or (isinstance(style, dict) and "markup" in style):
+        assert "XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP" in reason
 
 
 @pytest.mark.parametrize(

@@ -1601,7 +1601,8 @@ from packed XYHP kind 5. Annotation `html` stays fail-closed
 (`XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML`). Annotation `class_name` stays
 fail-closed as `XYG_SCENE_UNSUPPORTED_BROWSER_CSS` (#306). Annotation
 `collision` stays fail-closed as `XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION`
-(#307). Polar stays
+(#307). Annotation `markup` stays fail-closed as
+`XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP` (#308). Polar stays
 fail-closed. Per-item radius
 channels stay compatibility. Irregular
 spacing, and LOD stay compatibility.
