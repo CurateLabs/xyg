@@ -13944,7 +13944,8 @@ fn scene_tick_kind(code: u8) -> Result<u32, SceneError> {
 /// Mirrors `_svg.layout()` for primary x/y, default sides, no colorbar, and
 /// no secondary axes: compact/regular pads or authored `(top, right, bottom,
 /// left)` padding, title band, measured default tick labels, and outside
-/// axis-title rooms. Hosts must not invent Scene margins once this lands.
+/// axis-title rooms. Collision gutters clamp to keep a positive plot.
+/// Hosts must not invent Scene margins once this lands.
 pub fn cartesian_scene_margins(
     request: CartesianLayoutRequest<'_>,
 ) -> Result<(f64, f64, f64, f64), SceneError> {
@@ -14158,8 +14159,23 @@ pub fn cartesian_scene_margins(
         right = next_right;
     }
 
+    (left, right) = fit_plot_gutters(viewport_width, left, right);
+    (top, bottom) = fit_plot_gutters(viewport_height, top, bottom);
     PlotLayout::new(viewport_width, viewport_height, left, right, top, bottom)?;
     Ok((left, right, top, bottom))
+}
+
+fn fit_plot_gutters(viewport: f64, lo: f64, hi: f64) -> (f64, f64) {
+    // ABI 123 collision rooms can exceed a tiny viewport (WASM 64x48).
+    if viewport > lo + hi {
+        return (lo, hi);
+    }
+    let available = (viewport - 1.0).max(0.0);
+    let total = lo + hi;
+    if total <= 0.0 {
+        return (0.0, 0.0);
+    }
+    (lo * available / total, hi * available / total)
 }
 
 #[cfg(test)]
@@ -16154,6 +16170,36 @@ mod tests {
         assert!(top >= 6.0, "top={top}");
         assert!(bottom >= 36.0, "bottom={bottom}");
         PlotLayout::new(320.0, 240.0, left, right, top, bottom).unwrap();
+    }
+
+    #[test]
+    fn cartesian_scene_margins_keep_a_positive_plot_on_tiny_viewports() {
+        let (left, right, top, bottom) = cartesian_scene_margins(CartesianLayoutRequest {
+            viewport_width: 64.0,
+            viewport_height: 48.0,
+            authored_padding: None,
+            title: "",
+            x_label: "",
+            y_label: "",
+            x_kind: ScaleKind::Linear,
+            x_lo: 1.0,
+            x_hi: 1.0,
+            x_constant: 1.0,
+            x_mask_nonpositive: false,
+            x_format: None,
+            x_tick_kind: 0,
+            y_kind: ScaleKind::Linear,
+            y_lo: 2.0,
+            y_hi: 2.0,
+            y_constant: 1.0,
+            y_mask_nonpositive: false,
+            y_format: None,
+            y_tick_kind: 0,
+            colorbar_side: ColorbarSide::None,
+            collision: TickCollisionLayout::default(),
+        })
+        .unwrap();
+        PlotLayout::new(64.0, 48.0, left, right, top, bottom).unwrap();
     }
 
     #[test]

@@ -1020,7 +1020,8 @@ through the modular sector and formats Scene polar theta labels with
 polar angular numeric formats onto `XYTL` during product encode
 (`format_axis_tick`). Hosts pack domain tick-kind in XYCF bytes 154–155.
 ABI 203 runs ABI 123 collision at Scene SVG/raster emit for cartesian
-`tick_label_strategy` / `collision`. Polar rim auto/hide/rotate/stagger/
+`tick_label_strategy` / `collision`. Collision rooms clamp so a tiny
+viewport still has a strictly positive plot. Polar rim auto/hide/rotate/stagger/
 preserve stay fail-closed. Invalid ABI 96 grammar still produces the ordinary deterministic label
 instead of an error, and a sub-unit log value that would collapse to
 formatted zero also uses its ordinary distinguishable label without affixes.
