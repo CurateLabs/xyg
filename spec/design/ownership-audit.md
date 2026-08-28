@@ -536,7 +536,10 @@ Forbidden:
 | `crates/xyg-engine/src/scene.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene_annotations.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene_colorbar.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
-| `crates/xyg-engine/src/scene_export.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/scene_density.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 151 Scene density grid packing | — |
+| `crates/xyg-engine/src/scene_export.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 152 XYEP packing from XYEF | — |
+| `crates/xyg-engine/src/scene_extras.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 150 XYSS extras packing | — |
+| `crates/xyg-engine/src/scene_heatmap.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 149 XYHF paint-fact packing | — |
 | `crates/xyg-engine/src/scene_legend.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene_pack.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene_style.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
