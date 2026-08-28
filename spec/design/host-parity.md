@@ -102,14 +102,15 @@ an authored constant CSS stroke and optional finite non-negative scalar width
 (default 1px), and constant-style
 polylines, ordinary area/error-band
 Bands, bar/column/histogram Rects, disconnected segment/error-bar/stem endpoint
-pairs with bounded stem markers, at most 1,024 fill-only unjoined constant-color
-triangle-mesh faces, constant-style Cartesian hexbin PolyFill cells (one
+pairs with bounded stem markers, at most 1,024 fill-only unjoined
+triangle-mesh faces (constant or interned per-face fill/stroke/width, ABI 195),
+constant-style Cartesian hexbin PolyFill cells (one
 6-vertex group per cell, sharing that 1,024-group painter budget), constant-style
 Cartesian heatmap Rects (one regular cell per Rect, sharing the 10,000-bin
 histogram ceiling), and finite
 literal solid ribbons. Each accepted mesh face
 is one three-vertex PolyFill group shared by SVG, raster, and browser consumers;
-joined fills, component alpha, outlines, per-face styles, alternate axes, and
+`joined_fill` plus per-face paint, polar meshes, alternate axes, and
 larger meshes remain compatibility behavior. For ribbons,
 Python and Node pack two adjacent endpoint rows and ABI 97 makes Rust apply the
 axis transforms and expand the fixed 96-interval cubic into 97 paired Scene
@@ -260,6 +261,7 @@ ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2.
 ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit.
 ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
 ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
+ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6.
 ABI 173 tessellates
 heatmap `corner_radius`. ABI 174 tessellates violin/box `corner_radius`.
 ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`.
@@ -267,6 +269,7 @@ ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`.
 ABI 177 admits heatmap `fill_opacity`.
 ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
 ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
+ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6.
 ABI 178 admits scatter `fill_opacity` / `stroke_opacity`.
 ABI 179 admits hexbin `fill_opacity`.
 ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint.
@@ -285,6 +288,7 @@ ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2.
 ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit.
 ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
 ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
+ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6.
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -345,6 +349,7 @@ ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`.
 ABI 177 admits heatmap `fill_opacity`.
 ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
 ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
+ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6.
 ABI 178 admits scatter `fill_opacity` / `stroke_opacity`.
 ABI 179 admits hexbin `fill_opacity`.
 ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint.
@@ -363,6 +368,7 @@ ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2.
 ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit.
 ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
 ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
+ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6.
 ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate
@@ -425,6 +431,7 @@ ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgb
 ABI 178 admits scatter `fill_opacity` / `stroke_opacity` on that same product Scene.
 ABI 179 admits hexbin `fill_opacity` on that same product Scene.
 ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint on that same product Scene.
+ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6 on that same product Scene.
 ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as authored
 band step expansion on that same product Scene.
 ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring on that
@@ -453,6 +460,7 @@ ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity` on th
 same product Scene.
 ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba`
 hexbin on that same product Scene.
+ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6 on that same product Scene.
 The explicit `xyg_scene_figure_support_reason` ABI remains for tests.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call
@@ -588,7 +596,7 @@ ABI 115 makes static PNG the same way: Python `_png.encode` /
 selection, `tRNS`, and zlib IDAT. Polar painted heatmap inverse-raster is
 Scene-owned (ABI 192). ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` /
 `stroke_opacity` on XYMS. ABI 194 admits polar hexbin, custom host reducers, and
-categorical / `direct_rgba` hexbin on HexCell PolyFills. LOD beyond 10,000 tessellated cells, and rich style
+categorical / `direct_rgba` hexbin on HexCell PolyFills. ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. LOD beyond 10,000 tessellated cells, and rich style
 exceptions remain compatibility routes.
 Scalar colormap and truecolor heatmaps compile through `HeatmapPainted` on Python and Node.
 ABI 99 gives both composition hosts one compact grouped box ingress. Hosts pack

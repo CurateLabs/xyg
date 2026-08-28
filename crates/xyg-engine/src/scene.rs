@@ -3766,6 +3766,10 @@ pub const XYHP_PAINT_MEAN_COLOR: u32 = 4;
 /// Payload is `cols * 8` bytes (`rows` must be 1); expansion interns unique
 /// pairs onto Band `style_ref`s plus XYGR mark-space `dir=right`.
 pub const XYHP_PAINT_RIBBON: u32 = 5;
+/// ABI 195: N triangle-mesh faces as fill RGBA8 + stroke RGBA8 + f32 width.
+/// Payload is `cols * 12` bytes (`rows` must be 1); expansion interns unique
+/// triples onto PolyFill `style_ref`s.
+pub const XYHP_PAINT_MESH: u32 = 6;
 pub const XYHP_MAX_NAME_BYTES: usize = 64;
 /// XYIM v1 image-blit sidecar (ABI 137 / Scene v27). One RGBA8 plane per
 /// `DensityBlit` Image record, keyed by stable id, image-top-first.
@@ -4016,6 +4020,7 @@ fn parse_heatmap_paint(bytes: &[u8]) -> Result<Vec<HeatmapPaintPlane<'_>>, Scene
                     | XYHP_PAINT_DENSITY
                     | XYHP_PAINT_MEAN_COLOR
                     | XYHP_PAINT_RIBBON
+                    | XYHP_PAINT_MESH
             )
         {
             return Err(SceneError::Length);
@@ -4025,6 +4030,10 @@ fn parse_heatmap_paint(bytes: &[u8]) -> Result<Vec<HeatmapPaintPlane<'_>>, Scene
         let cells = rows.checked_mul(cols).ok_or(SceneError::Limit)?;
         if kind == XYHP_PAINT_RIBBON {
             if rows != 1 || payload_len != cols.checked_mul(8).ok_or(SceneError::Limit)? {
+                return Err(SceneError::Length);
+            }
+        } else if kind == XYHP_PAINT_MESH {
+            if rows != 1 || payload_len != cols.checked_mul(12).ok_or(SceneError::Limit)? {
                 return Err(SceneError::Length);
             }
         } else if kind == XYHP_PAINT_RGBA {
@@ -4168,6 +4177,47 @@ fn ribbon_end_paints(plane: HeatmapPaintPlane<'_>) -> Result<Vec<([u8; 4], [u8; 
         ));
     }
     Ok(ends)
+}
+
+fn mesh_face_paints(plane: HeatmapPaintPlane<'_>) -> Result<Vec<([u8; 4], [u8; 4], f64)>, SceneError> {
+    if plane.kind != XYHP_PAINT_MESH || plane.rows != 1 {
+        return Err(SceneError::Length);
+    }
+    let mut faces = Vec::with_capacity(plane.cols);
+    for index in 0..plane.cols {
+        let start = index.checked_mul(12).ok_or(SceneError::Limit)?;
+        let slice = plane
+            .payload
+            .get(start..start + 12)
+            .ok_or(SceneError::Length)?;
+        let width = f32::from_le_bytes([slice[8], slice[9], slice[10], slice[11]]) as f64;
+        if !width.is_finite() || width < 0.0 {
+            return Err(SceneError::NonFinite);
+        }
+        faces.push((
+            [slice[0], slice[1], slice[2], slice[3]],
+            [slice[4], slice[5], slice[6], slice[7]],
+            width,
+        ));
+    }
+    Ok(faces)
+}
+
+fn intern_mesh_face(
+    styles: &mut ExpandedSceneStyles,
+    intern: &mut HashMap<([u8; 4], [u8; 4], u64), u32>,
+    fill: [u8; 4],
+    stroke: [u8; 4],
+    stroke_width: f64,
+) -> Result<u32, SceneError> {
+    let key = (fill, stroke, stroke_width.to_bits());
+    if let Some(existing) = intern.get(&key) {
+        return Ok(*existing);
+    }
+    let mut unused_fill_intern = HashMap::new();
+    let style_ref = intern_heatmap_fill(styles, &mut unused_fill_intern, fill, stroke, stroke_width)?;
+    intern.insert(key, style_ref);
+    Ok(style_ref)
 }
 
 fn intern_ribbon_pair(
@@ -5600,12 +5650,14 @@ pub fn expand_scene_records_painted(
     let mut has_density = false;
     let mut has_hex = false;
     let mut has_ribbon = false;
+    let mut has_triangle = false;
     for mode in input.expansion_modes {
         match SceneExpansionMode::from_code(*mode)? {
             SceneExpansionMode::HeatmapPainted => has_painted = true,
             SceneExpansionMode::DensityBlit => has_density = true,
             SceneExpansionMode::HexCell => has_hex = true,
             SceneExpansionMode::Ribbon => has_ribbon = true,
+            SceneExpansionMode::TriangleFace => has_triangle = true,
             _ => {}
         }
     }
@@ -5620,7 +5672,12 @@ pub fn expand_scene_records_painted(
             .iter()
             .flatten()
             .any(|plane| plane.kind == XYHP_PAINT_RIBBON);
-    if has_painted || intern_density || intern_hex || intern_ribbon {
+    let intern_mesh = has_triangle
+        && paint_planes
+            .iter()
+            .flatten()
+            .any(|plane| plane.kind == XYHP_PAINT_MESH);
+    if has_painted || intern_density || intern_hex || intern_ribbon || intern_mesh {
         if fill_rgba.len() != stroke_width.len().saturating_mul(4)
             || stroke_rgba.len() != fill_rgba.len()
             || stroke_width.is_empty()
@@ -5633,7 +5690,7 @@ pub fn expand_scene_records_painted(
     if (has_painted || has_density) && paint_planes.is_empty() {
         return Err(SceneError::Length);
     }
-    let mut painted_styles = (has_painted || intern_density || intern_hex || intern_ribbon).then(|| {
+    let mut painted_styles = (has_painted || intern_density || intern_hex || intern_ribbon || intern_mesh).then(|| {
         ExpandedSceneStyles {
             fill_rgba: fill_rgba.to_vec(),
             stroke_rgba: stroke_rgba.to_vec(),
@@ -5647,6 +5704,8 @@ pub fn expand_scene_records_painted(
     let mut ribbon_ends: HashMap<u64, Vec<([u8; 4], [u8; 4])>> = HashMap::new();
     let mut ribbon_intern: HashMap<([u8; 4], [u8; 4]), u32> = HashMap::new();
     let mut ribbon_gradients: Vec<StyleGradient> = Vec::new();
+    let mut mesh_paints: HashMap<u64, Vec<([u8; 4], [u8; 4], f64)>> = HashMap::new();
+    let mut mesh_intern: HashMap<([u8; 4], [u8; 4], u64), u32> = HashMap::new();
 
     // Stable identity is the canonical Polyline run boundary. Reject any
     // attempt to switch step mode inside one contiguous same-kind identity
@@ -6058,6 +6117,29 @@ pub fn expand_scene_records_painted(
             continue;
         }
         if mode == SceneExpansionMode::TriangleFace {
+            if intern_mesh {
+                let parent = stable_id >> 32;
+                let cell_index = (stable_id & 0xffff_ffff) as usize;
+                if let Entry::Vacant(slot) = mesh_paints.entry(parent) {
+                    if let Ok(plane) = take_paint_plane(&mut paint_planes, parent) {
+                        slot.insert(mesh_face_paints(plane)?);
+                    } else {
+                        slot.insert(Vec::new());
+                    }
+                }
+                if let Some(faces) = mesh_paints.get(&parent) {
+                    if let Some(&(fill, stroke, width)) = faces.get(cell_index) {
+                        let alpha = style_rgba4(fill_rgba, style_ref)?[3];
+                        style_ref = intern_mesh_face(
+                            painted_styles.as_mut().ok_or(SceneError::Length)?,
+                            &mut mesh_intern,
+                            apply_fill_alpha(fill, alpha),
+                            stroke,
+                            width,
+                        )?;
+                    }
+                }
+            }
             output.push_hex_vertex(stable_id, style_ref, input.x0[cursor], input.y0[cursor]);
             output.push_hex_vertex(stable_id, style_ref, input.x1[cursor], input.y1[cursor]);
             output.push_hex_vertex(

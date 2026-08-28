@@ -2242,7 +2242,61 @@ test("Node Scene compiles triangle_mesh joined_fill", () => {
     style: { role: "custom-mesh" },
     name: null,
   });
-  assert.equal(sceneExportSupportReason(custom), "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
+  assert.equal(sceneExportSupportReason(custom), null);
+  assert.match(sceneSvg(custom.toScene()), /<path d="M/);
+});
+
+test("Node Scene compiles triangle_mesh per-item paint", () => {
+  const painted = new Figure({ width: 240, height: 160 });
+  painted.setAxisDomain("x", [0, 2]);
+  painted.setAxisDomain("y", [0, 2]);
+  painted.triangleMesh([0, 1], [0, 0], [0.5, 1.5], [1, 1], [1, 2], [0, 0], {
+    color: "#22c55e",
+    name: null,
+  });
+  painted.traces[0].color_ch = {
+    mode: "direct_rgba",
+    rgba: Uint8Array.from([239, 68, 68, 255, 34, 197, 94, 255]),
+  };
+  painted.traces[0].colorChannel = painted.traces[0].color_ch;
+  assert.equal(sceneExportSupportReason(painted), null);
+  const paintedSvg = sceneSvg(painted.toScene());
+  assert.equal((paintedSvg.match(/<path d="M/g) || []).length, 2);
+  const fills = [...paintedSvg.matchAll(/<path d="M [^>]*>/g)]
+    .map((match) => /fill="([^"]+)"/.exec(match[0])?.[1])
+    .filter(Boolean);
+  assert.ok(new Set(fills).size > 1);
+
+  const stroked = new Figure({ width: 240, height: 160 });
+  stroked.setAxisDomain("x", [0, 2]);
+  stroked.setAxisDomain("y", [0, 2]);
+  stroked.triangleMesh([0, 1], [0, 0], [0.5, 1.5], [1, 1], [1, 2], [0, 0], {
+    color: "#22c55e",
+    name: null,
+  });
+  stroked.traces[0].stroke_ch = {
+    mode: "direct_rgba",
+    rgba: Uint8Array.from([17, 17, 17, 255, 239, 68, 68, 255]),
+  };
+  stroked.traces[0].strokeChannel = stroked.traces[0].stroke_ch;
+  stroked.traces[0].style_channels = { stroke_width: { values: [1, 2] } };
+  stroked.traces[0].styleChannels = stroked.traces[0].style_channels;
+  assert.equal(sceneExportSupportReason(stroked), null);
+  const strokedSvg = sceneSvg(stroked.toScene());
+  assert.equal((strokedSvg.match(/<path d="M/g) || []).length, 2);
+  assert.match(strokedSvg, /stroke="/);
+
+  const joined = new Figure({ width: 240, height: 160 });
+  joined.setAxisDomain("x", [0, 2]);
+  joined.setAxisDomain("y", [0, 2]);
+  joined.triangleMesh([0, 1], [0, 0], [0.5, 1.5], [1, 1], [1, 2], [0, 0], {
+    color: "#22c55e",
+    style: { joined_fill: true },
+    name: null,
+  });
+  joined.traces[0].color_ch = painted.traces[0].color_ch;
+  joined.traces[0].colorChannel = painted.traces[0].color_ch;
+  assert.notEqual(sceneExportSupportReason(joined), null);
 });
 
 test("Node Scene compiles triangle_mesh fill_opacity", () => {

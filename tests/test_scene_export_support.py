@@ -1112,10 +1112,13 @@ def test_public_triangle_mesh_honors_the_browser_group_boundary() -> None:
     assert scene_export_support_reason(mixed) == "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
 
 
-def test_public_triangle_mesh_keeps_custom_role_on_compatibility() -> None:
+def test_public_triangle_mesh_admits_custom_role() -> None:
     figure = _public_triangle_mesh()
     figure.traces[0].style["role"] = "custom-mesh"
-    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported.count(b'<path d="M') == 2
 
 
 def test_public_triangle_mesh_joined_fill_is_scene_supported() -> None:
@@ -1210,10 +1213,45 @@ def test_public_triangle_mesh_opacity_and_stroke_are_scene_supported() -> None:
         ),
     ],
 )
-def test_public_triangle_mesh_keeps_per_item_paint_on_compatibility(factory) -> None:
+def test_public_triangle_mesh_admits_per_item_paint(factory) -> None:
     figure = factory()
     figure.axis_options["x"]["domain"] = (0.0, 2.0)
     figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported.count(b"<path d=") == 2
+
+
+def test_public_triangle_mesh_per_item_color_interns_distinct_fills() -> None:
+    figure = Figure(width=360, height=260)
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    figure.triangle_mesh(
+        [0, 1],
+        [0, 0],
+        [0.5, 1.5],
+        [1, 1],
+        [1, 2],
+        [0, 0],
+        color=np.asarray([[1, 0, 0, 1], [0, 1, 0, 1]], dtype=np.float64),
+    )
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    fills = re.findall(rb'fill="([^"]+)"', exported)
+    assert len(set(fills)) > 1
+
+
+def test_public_triangle_mesh_keeps_joined_fill_per_item_fail_closed() -> None:
+    from xyg.channels import ColorChannel
+
+    figure = _public_triangle_mesh()
+    figure.traces[0].style["joined_fill"] = True
+    figure.traces[0].color_ch = ColorChannel(
+        mode="continuous",
+        values=np.asarray([0.0, 1.0], dtype=np.float64),
+        colormap="viridis",
+    )
     assert scene_export_support_reason(figure) is not None
 
 

@@ -29,7 +29,7 @@
 //! ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint the same way.
 //! ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring
 //! from the Rust boundary walk (disconnected meshes keep per-face triangles;
-//! `role` other than `triangle-mesh` stays fail-closed).
+//! ABI 195 admits custom `role` and per-item fill/stroke/width on those faces).
 //! ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`
 //! (hosts omit `FLAG_COLOR2` / `OBS_GRADIENT` on that path). ABI 190 intern
 //! per-item two-ended paint from packed XYHP kind 5. Polar ribbon, and `role` other than `ribbon` stay fail-closed.
@@ -1211,9 +1211,6 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
             {
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH");
             }
-            if trace.role != "triangle-mesh" {
-                return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
-            }
         }
         if trace.kind == KIND_HEXBIN {
             if trace.flags & TRACE_HEX_XY_OK == 0 {
@@ -1555,10 +1552,16 @@ pub fn scene_figure_support_reason_with_attach(
             kind == "heatmap" && tess != crate::scene_trace_attach::CellFillTessellation::None;
         let ribbon_ends =
             kind == "ribbon" && tess == crate::scene_trace_attach::CellFillTessellation::Ribbon;
+        let mesh_faces = kind == "triangle_mesh"
+            && tess == crate::scene_trace_attach::CellFillTessellation::TriangleMesh;
         if trace_flags & XYFS_TRACE_NON_PRIMARY_AXIS != 0 {
             return Ok(FIGURE_TRACE_AXIS_REASON.to_string());
         }
-        if trace_flags & XYFS_TRACE_HIDDEN_OR_PER_ITEM != 0 && !hexbin_cells && !ribbon_ends {
+        if trace_flags & XYFS_TRACE_HIDDEN_OR_PER_ITEM != 0
+            && !hexbin_cells
+            && !ribbon_ends
+            && !mesh_faces
+        {
             return Ok(FIGURE_HIDDEN_REASON.to_string());
         }
         if trace_flags & XYFS_TRACE_DENSITY != 0 {

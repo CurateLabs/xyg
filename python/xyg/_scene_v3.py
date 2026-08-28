@@ -1130,7 +1130,7 @@ def _constant_color(trace: Any, fallback: str) -> str:
     if channel.mode != "constant" or channel.constant is None:
         if str(getattr(trace, "kind", "") or "") == "scatter" and trace.use_density():
             return str((getattr(trace, "style", None) or {}).get("color", fallback))
-        if _hexbin_packs_paint_plane(trace) or _ribbon_packs_end_paints(trace):
+        if _hexbin_packs_paint_plane(trace) or _ribbon_packs_end_paints(trace) or _mesh_packs_paint_plane(trace):
             return str((getattr(trace, "style", None) or {}).get("color", fallback))
         raise UnsupportedSceneV3("Scene v12 does not yet support data-driven paint channels")
     return channel.constant
@@ -1819,6 +1819,102 @@ def _hexbin_packs_paint_plane(trace: Any) -> bool:
     return _hexbin_packs_colormap_plane(trace) or _hexbin_packs_rgba_plane(trace)
 
 
+def _mesh_count(trace: Any) -> int:
+    column = _trace_column(trace, "x0")
+    return 0 if column is None else int(len(column))
+
+
+def _mesh_joined_fill(trace: Any) -> bool:
+    return bool((getattr(trace, "style", None) or {}).get("joined_fill"))
+
+
+def _mesh_packs_paint_plane(trace: Any) -> bool:
+    """Return whether hosts should pack per-face mesh paint as XYTA.
+
+    Custom `role` is identity metadata. Per-item fill/stroke/width intern onto
+    TriangleFace PolyFills as XYHP kind 6 (ABI 195). `joined_fill` stays one
+    ring and cannot represent per-face paint.
+    """
+    if str(getattr(trace, "kind", "") or "") != "triangle_mesh" or _mesh_joined_fill(trace):
+        return False
+    return bool(getattr(trace, "has_per_item_channels", lambda: False)())
+
+
+def _mesh_face_fill_rgba8(trace: Any) -> bytes | None:
+    n = _mesh_count(trace)
+    fallback = str((getattr(trace, "style", None) or {}).get("color", "#3987e5"))
+    channel = getattr(trace, "color_ch", None)
+    packed = _channel_end_rgba8(channel, n, fallback)
+    if packed is None and channel is not None and getattr(channel, "mode", None) == "continuous":
+        values = getattr(channel, "values", None)
+        if values is None:
+            return None
+        scalars = np.ascontiguousarray(np.asarray(values, dtype=np.float64).reshape(-1))
+        if scalars.size != n:
+            return None
+        domain = getattr(channel, "domain", None)
+        if domain is not None and len(domain) == 2:
+            lo, hi = float(domain[0]), float(domain[1])
+        else:
+            finite = scalars[np.isfinite(scalars)]
+            if finite.size == 0:
+                return None
+            lo, hi = float(finite.min()), float(finite.max())
+        span = hi - lo
+        t = np.zeros(n, dtype=np.float64) if not np.isfinite(span) or span == 0.0 else np.clip(
+            (scalars - lo) / span, 0.0, 1.0
+        )
+        cmap = getattr(channel, "colormap", None) or "viridis"
+        try:
+            stops = _native.colormap_stops(str(cmap))
+            image = _native.colormap_rgba(t, n, 1, stops, 255)
+        except (TypeError, ValueError):
+            return None
+        packed = np.ascontiguousarray(image).reshape(-1).tobytes()
+    if packed is None:
+        return None
+    opacity_ch = (getattr(trace, "style_channels", None) or {}).get("opacity")
+    if opacity_ch is None:
+        return packed
+    values = np.asarray(getattr(opacity_ch, "values", None), dtype=np.float64).reshape(-1)
+    if values.size != n:
+        return None
+    rgba = np.frombuffer(bytearray(packed), dtype=np.uint8).reshape(n, 4).copy()
+    rgba[:, 3] = np.rint(np.clip(values, 0.0, 1.0) * rgba[:, 3]).astype(np.uint8)
+    return np.ascontiguousarray(rgba).tobytes()
+
+
+def _mesh_face_stroke_rgba8(trace: Any, fills: bytes) -> bytes | None:
+    n = _mesh_count(trace)
+    stroke_ch = getattr(trace, "stroke_ch", None)
+    if stroke_ch is not None and getattr(stroke_ch, "mode", None) == "match_fill":
+        return fills
+    fallback = str((getattr(trace, "style", None) or {}).get("stroke") or "transparent")
+    packed = _channel_end_rgba8(stroke_ch, n, fallback)
+    if packed is not None:
+        return packed
+    if stroke_ch is None:
+        return _channel_end_rgba8(None, n, fallback)
+    return None
+
+
+def _mesh_face_widths(trace: Any) -> bytes | None:
+    n = _mesh_count(trace)
+    width_ch = (getattr(trace, "style_channels", None) or {}).get("stroke_width")
+    if width_ch is not None:
+        values = np.ascontiguousarray(
+            np.asarray(getattr(width_ch, "values", None), dtype=np.float64).reshape(-1)
+        )
+        if values.size != n or not np.isfinite(values).all() or np.any(values < 0.0):
+            return None
+        return values.tobytes()
+    style = getattr(trace, "style", None) or {}
+    width = float(style.get("stroke_width", 0.0) or 0.0)
+    if not np.isfinite(width) or width < 0.0:
+        return None
+    return np.full(n, width, dtype=np.float64).tobytes()
+
+
 def _heatmap_uses_colormap(trace: Any) -> bool:
     """Return whether a heatmap still needs the compatibility colormap path."""
     style = getattr(trace, "style", None) or {}
@@ -1985,6 +2081,17 @@ def _pack_xyta(figure: Any) -> bytes:
                 rows, cols = 1, len(source) // 4
                 rgba = source
                 mean_rgba = target
+        elif _mesh_packs_paint_plane(trace):
+            fills = _mesh_face_fill_rgba8(trace)
+            strokes = _mesh_face_stroke_rgba8(trace, fills or b"")
+            widths = _mesh_face_widths(trace)
+            if fills is not None and strokes is not None and widths is not None:
+                n = len(fills) // 4
+                flags |= _XYTA_MESH_FACES | _XYTA_SHAPE | _XYTA_HAS_RGBA
+                rows, cols = 1, n
+                rgba = fills
+                mean_rgba = strokes
+                x = widths
         elif trace.kind == "scatter" and trace.use_density():
             flags |= _XYTA_DENSITY
             xv = _trace_column(trace, "x")
@@ -2476,6 +2583,7 @@ _XYTA_HAS_FILL_OPACITY = 1 << 11
 _XYTA_HAS_DOMAIN = 1 << 12
 _XYTA_SHAPE = 1 << 13
 _XYTA_RIBBON_ENDS = 1 << 14
+_XYTA_MESH_FACES = 1 << 15
 _XYTC_HAS_FILL = 1 << 0
 _XYTC_HAS_STROKE = 1 << 1
 _XYTC_HAS_LINE_COLOR = 1 << 2
@@ -3362,6 +3470,7 @@ def _pack_figure_support(
             and (trace.color_ch.mode != "constant" or trace.color_ch.constant is None)
             and not (str(getattr(trace, "kind", "") or "") == "scatter" and trace.use_density())
             and not _hexbin_packs_paint_plane(trace)
+            and not _mesh_packs_paint_plane(trace)
             and not (
                 str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
                 and _ribbon_packs_end_paints(trace)

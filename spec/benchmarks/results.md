@@ -167,7 +167,8 @@ Python and Node share these Scene v25 SHA-256 values for the constant-style
 Cartesian native hexbin fixture in `tests/fixtures/figure_scene_v3.json`. Mean
 and sum share bytes because constant paint ignores the metric and both
 reducers occupy the same lattice. ABI 194 admits polar hexbin and custom
-reducers on Scene. LOD over the 1,024-group painter budget, and rich style extras stay on compatibility exporters.
+reducers on Scene. ABI 195 admits triangle-mesh custom `role` and per-item
+face paint on Scene. LOD over the 1,024-group painter budget, and rich style extras stay on compatibility exporters.
 
 | reduce | Scene SHA-256 |
 |---|---|
