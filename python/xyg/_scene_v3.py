@@ -2885,88 +2885,27 @@ def figure_scene(
     if reason:
         raise UnsupportedSceneV3(reason)
 
-    try:
-        compiled_bytes = _native.scene_pack_trace_compile(_pack_xytc(figure))
-    except _native.SceneTraceCompileError as error:
-        _raise_trace_compile(error, figure)
-    try:
-        attached_bytes = _native.scene_pack_trace_attach(compiled_bytes, _pack_xyta(figure))
-    except _native.SceneTraceAttachError as error:
-        _raise_trace_attach(error, figure)
-    try:
-        sidecar_bytes = _native.scene_pack_trace_sidecars(attached_bytes, _pack_xynm(figure))
-    except _native.SceneTraceSidecarsError as error:
-        _raise_trace_sidecars(error)
-    try:
-        row_bytes = _native.scene_pack_trace_row_bytes(attached_bytes, _pack_xycl(figure))
-    except _native.SceneTraceRowsError as error:
-        _raise_trace_rows(error)
-
-    # Scene v12's bounded primary-annotation subset is represented by ordinary
-    # canonical records with a reserved stable-id namespace. Hosts pack XYAF
-    # authored facts; Rust owns wrap/text/arrow/callout/rule routing, tags,
-    # defaults, mark expansion, and XYAD framing (ABI 148). Hosts pack XYHF
-    # heatmap/density paint facts; Rust owns XYHP kind routing (ABI 149).
-    # Hosts pack XYSS sidecar facts plus framed XYPL/XYHP; Rust owns
-    # XYDS/XYLC/XYMP/XYGR layout, concat order, and XYEX wrapping (ABI 150).
-    # Hosts pass density columns; Rust owns bin_2d / density_log_u8 / mean-color
-    # (ABI 151). Hosts pack XYCF chrome facts; Rust owns plot layout, chrome
-    # resolve, legend/colorbar framing, and XYTL ticks (ABI 153). Hosts pack
-    # XYTC trace-compile facts; Rust owns opacity/symbol/color/dash/cap/marker/
-    # diameter/legend/step/curve/perimeter/hex/gradient and XYMS (ABI 154).
-    # Hosts pack XYTA heatmap/density attach facts; Rust owns shape/finite
-    # fail-closed checks, XYHF remainder order, density skip, density XYHF
-    # flags, fact bits, density zeroing, and domain rewrite (ABI 155). Hosts
-    # pack XYCL kind/coords/id/columns; Rust owns XYPK construction, scatter-only
-    # symbol/diameter, density rewrite, and pack_product_facts (ABI 156). Hosts
-    # pack XYNM names; Rust owns legend-name gating, heatmap-vs-density plane
-    # selection, and style/dash/marker/gradient/plane extraction (ABI 157).
-    # Hosts pass XYSD plus XYAO; Rust owns XYSS dash/linecap/marker/gradient
-    # records and omit-empty (ABI 158). Hosts pass product rows plus XYSD plus
-    # XYAO; Rust owns annotation style/row splice and XYAD extract (ABI 159).
-    # Hosts pass XYAS plus XYCC plus extras plus axis scalars; Rust owns
-    # assembled Scene encode (ABI 160). Hosts pack XYCF legend options plus
-    # XYSD; Rust owns legend paints and XYHP wrapping from sidecar planes
-    # (ABI 161). Hosts pass XYAS plus XYCF plus XYSD plus polar plus XYSS;
-    # Rust owns XYCC packing, extras packing, viewport/axis scalars, and
-    # assembled encode (ABI 162).
+    # Hosts pack XYTC, XYTA, XYNM, XYCL, XYAF, XYCF, and polar; Rust owns
+    # compile, attach, sidecars, rows, annotation facts, style sidecars,
+    # splice, XYCC/extras packing, viewport/axis scalars, and assembled
+    # encode (ABI 163). Earlier ABIs 148–162 remain available for tests.
     x_domain = tuple(float(value) for value in figure._range("x"))
     y_domain = tuple(float(value) for value in figure._range("y"))
     annotation_facts = bytearray()
     for annotation_index, annotation in enumerate(annotations):
         annotation_facts.extend(_pack_xyaf(annotation, annotation_index))
-    try:
-        annotation_output = (
-            _native.scene_pack_annotation_facts(
-                bytes(annotation_facts),
-                style_ref_base=len(figure.traces),
-                x_domain=x_domain,
-                y_domain=y_domain,
-            )
-            if annotation_facts
-            else b""
-        )
-    except ValueError as error:
-        raise UnsupportedSceneV3(str(error)) from error
-    try:
-        style_sidecars = _native.scene_pack_style_sidecars(sidecar_bytes, annotation_output)
-    except _native.SceneStyleSidecarsError as error:
-        if error.code == -2:
-            raise ValueError("invalid scene style sidecar facts version") from error
-        raise ValueError("invalid scene style sidecar packing") from error
-    try:
-        xyas = _native.scene_splice_annotations(row_bytes, sidecar_bytes, annotation_output)
-    except _native.SceneAnnotationSpliceError as error:
-        _raise_annotation_splice(error)
-
-    # Hosts pass XYAS plus XYCF plus XYSD plus polar plus XYSS; Rust owns
-    # XYCC packing, extras packing, viewport/axis scalars, and assembled
-    # Scene encode (ABI 162).
     w = int(width if width is not None else figure.width)
     h = int(height if height is not None else figure.height)
     try:
-        return _native.scene_encode_assembled_from_sidecars(
-            xyas=xyas,
+        return _native.scene_encode_product(
+            compile_facts=_pack_xytc(figure),
+            attach_facts=_pack_xyta(figure),
+            names=_pack_xynm(figure),
+            columns=_pack_xycl(figure),
+            annotation_facts=bytes(annotation_facts),
+            style_ref_base=len(figure.traces),
+            x_domain=x_domain,
+            y_domain=y_domain,
             chrome_facts=_pack_chrome_facts(
                 figure,
                 width=w,
@@ -2974,10 +2913,24 @@ def figure_scene(
                 margins=margins,
                 colorbar_ok=not colorbar_unsupported,
             ),
-            sidecars=sidecar_bytes,
             polar=_pack_polar_scene_input(figure),
-            extras_facts=style_sidecars,
         )
+    except _native.SceneTraceCompileError as error:
+        _raise_trace_compile(error, figure)
+    except _native.SceneTraceAttachError as error:
+        _raise_trace_attach(error, figure)
+    except _native.SceneTraceSidecarsError as error:
+        _raise_trace_sidecars(error)
+    except _native.SceneTraceRowsError as error:
+        _raise_trace_rows(error)
+    except _native.SceneAnnotationFactsError as error:
+        raise UnsupportedSceneV3(str(error)) from error
+    except _native.SceneStyleSidecarsError as error:
+        if error.code == -2:
+            raise ValueError("invalid scene style sidecar facts version") from error
+        raise ValueError("invalid scene style sidecar packing") from error
+    except _native.SceneAnnotationSpliceError as error:
+        _raise_annotation_splice(error)
     except _native.SceneEncodeAssembledError as error:
         raise ValueError("invalid canonical scene batch") from error
     except ValueError as error:

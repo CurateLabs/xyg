@@ -1470,6 +1470,9 @@ ABI 160 owns assembled Scene encode from packed XYAS plus XYCC plus extras.
 ABI 161 owns legend paints and XYHP wrapping from packed XYSD.
 ABI 162 owns XYCC packing, extras packing, and viewport/axis scalars from
 packed XYAS plus XYCF plus XYSD plus polar plus XYSS.
+ABI 163 owns product-path compile, attach, sidecar, row, annotation,
+style-sidecar, splice, and assembled encode from packed XYTC plus XYTA plus
+XYNM plus XYCL plus XYAF plus XYCF plus polar.
 Polar+step+smooth and
 authored marker glyphs stay compatibility. Irregular
 spacing, and LOD stay compatibility.

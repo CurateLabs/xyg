@@ -6,6 +6,9 @@
 //! from `XYCF` plus `XYSD`, extras packing from polar plus `XYSD` plus `XYSS`,
 //! and viewport/axis scalars from the `XYCF` header (axis ids 1 and 2) so
 //! hosts do not pack chrome/extras or re-derive axes on the product path.
+//! ABI 163 `encode_product` owns the remaining product-path orchestration
+//! (compile, attach, sidecars, rows, annotation facts, style sidecars, splice,
+//! then sidecar assembled encode) so hosts pack authored blobs once.
 //! Encoded Scene v31 is unchanged.
 
 use crate::scene::{
@@ -17,13 +20,21 @@ use crate::scene::{
     MAX_SCENE_LEGEND_TEXT_BYTES, MAX_SCENE_MARKS, MAX_SCENE_STYLES, MAX_SCENE_TEXT_BYTES,
     SCENE_CHROME_STYLE_INPUT_BYTES, SCENE_STYLE_RECORD_BYTES,
 };
-use crate::scene_annotation_splice::{XYAS_HEADER_BYTES, XYAS_MAGIC, XYAS_VERSION};
+use crate::scene_annotation_splice::{
+    splice_annotations, XYAS_HEADER_BYTES, XYAS_MAGIC, XYAS_VERSION,
+};
+use crate::scene_annotations::pack_annotation_facts;
 use crate::scene_chrome::{
     pack_figure_chrome_from_sidecars, ChromePackError, XYCC_HEADER_BYTES, XYCC_MAGIC, XYCC_VERSION,
     XYCF_HEADER_BYTES, XYCF_MAGIC,
 };
 use crate::scene_extras::{pack_scene_extras_from_sidecars, ExtrasError};
 use crate::scene_pack::{PackedSceneRow, PACKED_SCENE_ROW_BYTES};
+use crate::scene_style_sidecars::pack_style_sidecars;
+use crate::scene_trace_attach::pack_trace_attach;
+use crate::scene_trace_compile::pack_trace_compile;
+use crate::scene_trace_rows::pack_trace_rows;
+use crate::scene_trace_sidecars::pack_trace_sidecars;
 
 /// Why an assembled-encode request was rejected. Discriminants are the
 /// C-ABI error codes (returned negated by `xyg_scene_encode_assembled`).
@@ -138,6 +149,36 @@ fn map_encode(error: EncodeAssembledError) -> EncodeSidecarsError {
         },
         error.index,
     )
+}
+
+/// Stage offsets for ABI 163 product-encode error codes. Encode-sidecar
+/// failures keep discriminants 1–21 (including shared `Output=4` retry);
+/// other stages occupy `base + original` except `Output`, which stays 4.
+pub const PRODUCT_STAGE_COMPILE: i32 = 100;
+pub const PRODUCT_STAGE_ATTACH: i32 = 200;
+pub const PRODUCT_STAGE_SIDECARS: i32 = 300;
+pub const PRODUCT_STAGE_ROWS: i32 = 400;
+pub const PRODUCT_STAGE_ANNOTATION: i32 = 500;
+pub const PRODUCT_STAGE_STYLE: i32 = 600;
+pub const PRODUCT_STAGE_SPLICE: i32 = 700;
+
+/// Why an ABI 163 product encode was rejected. Discriminants are the C-ABI
+/// error codes (returned negated by `xyg_scene_encode_product`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ProductEncodeError {
+    pub code: i32,
+    pub index: u32,
+}
+
+fn map_stage(base: i32, code: i32, index: u32) -> ProductEncodeError {
+    ProductEncodeError {
+        code: if code == EncodeSidecarsCode::Output as i32 {
+            EncodeSidecarsCode::Output as i32
+        } else {
+            base + code
+        },
+        index,
+    }
 }
 
 /// Host axis scalars that `XYCC` does not carry. ABI 162 reads them from `XYCF`.
@@ -712,6 +753,51 @@ pub fn encode_assembled_from_sidecars(
     .map_err(map_encode)
 }
 
+/// Encode a product Scene from packed authored blobs.
+///
+/// Rust owns compile, attach, sidecar, row, annotation, style-sidecar, splice,
+/// and sidecar assembled encode so hosts pack XYTC/XYTA/XYNM/XYCL/XYAF/XYCF/
+/// polar once. Encoded Scene v31 is unchanged.
+pub fn encode_product(
+    xytc: &[u8],
+    xyta: &[u8],
+    xynm: &[u8],
+    xycl: &[u8],
+    xyaf: &[u8],
+    style_ref_base: u32,
+    x_lo: f64,
+    x_hi: f64,
+    y_lo: f64,
+    y_hi: f64,
+    xycf: &[u8],
+    polar: &[u8],
+) -> Result<Vec<u8>, ProductEncodeError> {
+    let compiled = pack_trace_compile(xytc)
+        .map_err(|error| map_stage(PRODUCT_STAGE_COMPILE, error.code as i32, error.index))?;
+    let attached = pack_trace_attach(&compiled, xyta)
+        .map_err(|error| map_stage(PRODUCT_STAGE_ATTACH, error.code as i32, error.index))?;
+    let sidecars = pack_trace_sidecars(&attached, xynm)
+        .map_err(|error| map_stage(PRODUCT_STAGE_SIDECARS, error.code as i32, error.index))?;
+    let packed_rows = pack_trace_rows(&attached, xycl)
+        .map_err(|error| map_stage(PRODUCT_STAGE_ROWS, error.code as i32, error.index))?;
+    let mut row_bytes = Vec::with_capacity(packed_rows.len() * PACKED_SCENE_ROW_BYTES);
+    for row in packed_rows {
+        row_bytes.extend_from_slice(&row.to_bytes());
+    }
+    let annotations = pack_annotation_facts(xyaf, style_ref_base, x_lo, x_hi, y_lo, y_hi)
+        .map_err(|error| map_stage(PRODUCT_STAGE_ANNOTATION, error as i32, 0))?;
+    let extras_facts = pack_style_sidecars(&sidecars, &annotations)
+        .map_err(|error| map_stage(PRODUCT_STAGE_STYLE, error.code as i32, error.index))?;
+    let xyas = splice_annotations(&row_bytes, &sidecars, &annotations)
+        .map_err(|error| map_stage(PRODUCT_STAGE_SPLICE, error.code as i32, error.index))?;
+    encode_assembled_from_sidecars(&xyas, xycf, &sidecars, polar, &extras_facts).map_err(|error| {
+        ProductEncodeError {
+            code: error.code as i32,
+            index: error.index,
+        }
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -721,6 +807,9 @@ mod tests {
         pack_figure_chrome, FLAG_X_MAJOR_AUTO, FLAG_Y_MAJOR_AUTO, XYCC_MAGIC, XYCF_HEADER_BYTES,
         XYCF_MAGIC, XYCF_VERSION,
     };
+    use crate::scene_trace_attach::{XYTA_HEADER_BYTES, XYTA_MAGIC, XYTA_VERSION};
+    use crate::scene_trace_compile::{XYTC_HEADER_BYTES, XYTC_MAGIC, XYTC_VERSION};
+    use crate::scene_trace_rows::{XYCL_HEADER_BYTES, XYCL_MAGIC, XYCL_VERSION};
     use crate::scene_trace_sidecars::{
         pack_trace_sidecars, XYNM_HEADER_BYTES, XYNM_MAGIC, XYNM_VERSION,
     };
@@ -906,5 +995,101 @@ mod tests {
             encode_assembled_from_sidecars(&xyas, &empty_chrome_facts(), &empty_xysd(), &[], &[])
                 .unwrap_err();
         assert_eq!(error.code, EncodeSidecarsCode::Encode);
+    }
+
+    fn empty_header(magic: &[u8; 4], version: u32, bytes: usize) -> Vec<u8> {
+        let mut header = vec![0u8; bytes];
+        header[..4].copy_from_slice(magic);
+        header[4..8].copy_from_slice(&version.to_le_bytes());
+        header
+    }
+
+    #[test]
+    fn product_matches_sidecar_encode() {
+        let xytc = empty_header(XYTC_MAGIC, XYTC_VERSION, XYTC_HEADER_BYTES);
+        let xyta = empty_header(XYTA_MAGIC, XYTA_VERSION, XYTA_HEADER_BYTES);
+        let xynm = empty_header(XYNM_MAGIC, XYNM_VERSION, XYNM_HEADER_BYTES);
+        let xycl = empty_header(XYCL_MAGIC, XYCL_VERSION, XYCL_HEADER_BYTES);
+        let compiled = pack_trace_compile(&xytc).unwrap();
+        let attached = pack_trace_attach(&compiled, &xyta).unwrap();
+        let sidecars = pack_trace_sidecars(&attached, &xynm).unwrap();
+        let packed_rows = pack_trace_rows(&attached, &xycl).unwrap();
+        let mut row_bytes = Vec::new();
+        for row in packed_rows {
+            row_bytes.extend_from_slice(&row.to_bytes());
+        }
+        let xyas = splice_annotations(&row_bytes, &sidecars, &[]).unwrap();
+        let packed =
+            encode_assembled_from_sidecars(&xyas, &empty_chrome_facts(), &sidecars, &[], &[])
+                .unwrap();
+        let product = encode_product(
+            &xytc,
+            &xyta,
+            &xynm,
+            &xycl,
+            &[],
+            0,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            &empty_chrome_facts(),
+            &[],
+        )
+        .unwrap();
+        assert_eq!(product, packed);
+        assert_eq!(&product[..4], b"XYGS");
+    }
+
+    #[test]
+    fn product_invalid_polar_is_extras_shape() {
+        let xytc = empty_header(XYTC_MAGIC, XYTC_VERSION, XYTC_HEADER_BYTES);
+        let xyta = empty_header(XYTA_MAGIC, XYTA_VERSION, XYTA_HEADER_BYTES);
+        let xynm = empty_header(XYNM_MAGIC, XYNM_VERSION, XYNM_HEADER_BYTES);
+        let xycl = empty_header(XYCL_MAGIC, XYCL_VERSION, XYCL_HEADER_BYTES);
+        let error = encode_product(
+            &xytc,
+            &xyta,
+            &xynm,
+            &xycl,
+            &[],
+            0,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            &empty_chrome_facts(),
+            &[0u8; 8],
+        )
+        .unwrap_err();
+        assert_eq!(error.code, EncodeSidecarsCode::ExtrasShape as i32);
+    }
+
+    #[test]
+    fn product_unknown_xytc_version_is_compile() {
+        let mut xytc = empty_header(XYTC_MAGIC, XYTC_VERSION, XYTC_HEADER_BYTES);
+        xytc[4..8].copy_from_slice(&2u32.to_le_bytes());
+        let xyta = empty_header(XYTA_MAGIC, XYTA_VERSION, XYTA_HEADER_BYTES);
+        let xynm = empty_header(XYNM_MAGIC, XYNM_VERSION, XYNM_HEADER_BYTES);
+        let xycl = empty_header(XYCL_MAGIC, XYCL_VERSION, XYCL_HEADER_BYTES);
+        let error = encode_product(
+            &xytc,
+            &xyta,
+            &xynm,
+            &xycl,
+            &[],
+            0,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            &empty_chrome_facts(),
+            &[],
+        )
+        .unwrap_err();
+        assert_eq!(
+            error.code,
+            PRODUCT_STAGE_COMPILE + crate::scene_trace_compile::TraceCompileCode::Version as i32
+        );
     }
 }

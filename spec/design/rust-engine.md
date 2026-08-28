@@ -218,7 +218,8 @@ crates/
                         #   annotation splice packing plus ABI 160 XYAS/XYCC
                         #   assembled encode plus ABI 161 XYSD chrome/extras
                         #   sidecar packing plus ABI 162 XYAS/XYCF assembled
-                        #   encode from sidecars.
+                        #   encode from sidecars plus ABI 163 product encode
+                        #   from packed facts.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -270,8 +271,10 @@ crates/
                         #   append XYAO styles and 56-byte mark rows onto
                         #   product rows plus XYSD, and extract XYAD.
     scene_encode_assembled.rs # ABI 160 XYAS/XYCC assembled encode plus ABI 162
-                        #   XYAS/XYCF encode from sidecars: pack XYCC and extras,
-                        #   read viewport/axes from XYCF, and SceneBatch encode.
+                             #   XYAS/XYCF encode from sidecars plus ABI 163
+                             #   product encode from packed facts: compile,
+                             #   attach, sidecars, rows, annotation, style,
+                             #   splice, then sidecar assembled encode.
     jpeg.rs             # baseline JPEG encode (ABI 114): YCbCr 4:4:4, Annex K
                         #   tables, libjpeg quality curve, Huffman packing.
                         #   Native hosts only (`raster` feature).
@@ -824,4 +827,5 @@ landed; the remainder, in order:
    ABI 161 XYSD chrome/extras packing (`xyg_scene_pack_figure_chrome_from_sidecars`,
    `xyg_scene_pack_scene_extras_from_sidecars`) ✅.
    ABI 162 XYAS/XYCF assembled encode from sidecars (`xyg_scene_encode_assembled_from_sidecars`) ✅.
+   ABI 163 product encode from packed facts (`xyg_scene_encode_product`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

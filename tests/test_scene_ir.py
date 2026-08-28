@@ -16,6 +16,28 @@ from xyg._figure import Figure
 from xyg._scene_v3 import UnsupportedSceneV3, _colorbar_input
 from xyg.channels import ColorChannel
 
+
+def _xyad_from_figure(figure: Figure) -> bytes:
+    compiled = _native.scene_pack_trace_compile(scene_v3._pack_xytc(figure))
+    attached = _native.scene_pack_trace_attach(compiled, scene_v3._pack_xyta(figure))
+    sidecars = _native.scene_pack_trace_sidecars(attached, scene_v3._pack_xynm(figure))
+    rows = _native.scene_pack_trace_row_bytes(attached, scene_v3._pack_xycl(figure))
+    facts = bytearray()
+    for index, annotation in enumerate(list(getattr(figure, "annotations", None) or [])):
+        facts.extend(scene_v3._pack_xyaf(annotation, index))
+    output = (
+        _native.scene_pack_annotation_facts(
+            bytes(facts),
+            style_ref_base=len(figure.traces),
+            x_domain=tuple(float(value) for value in figure._range("x")),
+            y_domain=tuple(float(value) for value in figure._range("y")),
+        )
+        if facts
+        else b""
+    )
+    return scene_v3._unpack_xyas(_native.scene_splice_annotations(rows, sidecars, output))["xyad"]
+
+
 EXPECTED_SCATTER = (
     '<g><circle cx="10" cy="11" r="3" fill="rgb(37,99,235)" '
     'stroke="rgb(0,0,0)" stroke-width="2"/><path d="M 15.5 21 H 24.5 '
@@ -197,31 +219,18 @@ def test_scene_v19_colorbar_python_framer_matches_literal_stop_contract() -> Non
         _colorbar_input(figure)
 
 
-def test_python_callout_label_background_uses_xyac_v2_only_when_requested(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    captured: list[bytes] = []
-
-    def capture_scene_encode_assembled(**kwargs: object) -> bytes:
-        xyas = kwargs["xyas"]
-        assert isinstance(xyas, (bytes, bytearray))
-        captured.append(scene_v3._unpack_xyas(bytes(xyas))["xyad"])
-        return b"scene"
-
-    monkeypatch.setattr(
-        scene_v3._native, "scene_encode_assembled_from_sidecars", capture_scene_encode_assembled
-    )
+def test_python_callout_label_background_uses_xyac_v2_only_when_requested() -> None:
     plain = Figure().callout(0.5, 0.5, "plain")
-    assert scene_v3.figure_scene(plain) == b"scene"
-    v1 = captured.pop()
+    assert scene_v3.figure_scene(plain)[:4] == b"XYGS"
+    v1 = _xyad_from_figure(plain)
     xyac_start = 24 + sum(struct.unpack_from("<IIII", v1, 8)[:3])
     assert v1[xyac_start : xyac_start + 8] == b"XYAC\x01\x00\x00\x00"
     assert len(v1) - xyac_start == 12 + 60 + len(b"plain")
 
     mixed = Figure().callout(0.25, 0.25, "clear")
     mixed.callout(0.75, 0.75, "filled", style={"label_background": "#123456"})
-    assert scene_v3.figure_scene(mixed) == b"scene"
-    v2 = captured.pop()
+    assert scene_v3.figure_scene(mixed)[:4] == b"XYGS"
+    v2 = _xyad_from_figure(mixed)
     xyac_start = 24 + sum(struct.unpack_from("<IIII", v2, 8)[:3])
     assert v2[xyac_start : xyac_start + 8] == b"XYAC\x02\x00\x00\x00"
     first = xyac_start + 12
@@ -234,20 +243,7 @@ def test_python_callout_label_background_uses_xyac_v2_only_when_requested(
         scene_v3.figure_scene(invalid)
 
 
-def test_python_label_borders_select_v23_frames_and_reject_partial_style(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    captured: list[bytes] = []
-
-    def capture_scene_encode_assembled(**kwargs: object) -> bytes:
-        xyas = kwargs["xyas"]
-        assert isinstance(xyas, (bytes, bytearray))
-        captured.append(scene_v3._unpack_xyas(bytes(xyas))["xyad"])
-        return b"scene"
-
-    monkeypatch.setattr(
-        scene_v3._native, "scene_encode_assembled_from_sidecars", capture_scene_encode_assembled
-    )
+def test_python_label_borders_select_v23_frames_and_reject_partial_style() -> None:
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 1.0)
     figure.axis_options["y"]["domain"] = (0.0, 1.0)
@@ -260,8 +256,8 @@ def test_python_label_borders_select_v23_frames_and_reject_partial_style(
     figure.text(0.25, 0.25, "text", style=style)
     figure.marker(0.5, 0.5, text="attached", style=style)
     figure.callout(0.75, 0.75, "callout", dx=-20, dy=-20, style=style)
-    assert scene_v3.figure_scene(figure) == b"scene"
-    envelope = captured.pop()
+    assert scene_v3.figure_scene(figure)[:4] == b"XYGS"
+    envelope = _xyad_from_figure(figure)
     lengths = struct.unpack_from("<IIII", envelope, 8)
     at = 24
     assert envelope[at : at + 8] == b"XYAT\x03\x00\x00\x00"

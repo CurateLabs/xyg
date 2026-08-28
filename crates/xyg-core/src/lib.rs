@@ -59,6 +59,7 @@ use xyg_engine::pack_style_sidecars;
 use xyg_engine::splice_annotations;
 use xyg_engine::encode_assembled;
 use xyg_engine::encode_assembled_from_sidecars;
+use xyg_engine::encode_product;
 use xyg_engine::EncodeAssembledAxis;
 use xyg_engine::EncodeAssembledCode;
 use xyg_engine::EncodeAssembledError;
@@ -153,7 +154,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 162;
+pub const ABI_VERSION: u32 = 163;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1000,6 +1001,131 @@ pub unsafe extern "C" fn xyg_scene_encode_assembled_from_sidecars(
                     dest[..4].copy_from_slice(&error.index.to_le_bytes());
                 }
                 -(error.code as i32)
+            }
+        }
+    })
+}
+
+/// Encode packed authored product blobs into a canonical Scene v31 batch.
+/// Rust owns compile, attach, sidecar, row, annotation, style-sidecar, splice,
+/// XYCC packing, extras packing, viewport/axis scalars, and assembled encode
+/// so Python and Node cannot drift on product-path orchestration. Returns the
+/// encoded byte count on success, or a negated `ProductEncodeError` code.
+/// Encode-sidecar failures keep codes 1–21; other stages occupy
+/// `base + original` except shared `Output=4` retry. On error, when
+/// `out_cap >= 4`, writes the failing index as a little-endian u32. Encoded
+/// Scene v31 is unchanged.
+///
+/// # Safety
+/// When a length is non-zero, the matching pointer must address that many
+/// readable bytes. When `out_cap` is non-zero, `out` must address that many
+/// writable bytes.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn xyg_scene_encode_product(
+    xytc: *const u8,
+    xytc_len: usize,
+    xyta: *const u8,
+    xyta_len: usize,
+    xynm: *const u8,
+    xynm_len: usize,
+    xycl: *const u8,
+    xycl_len: usize,
+    xyaf: *const u8,
+    xyaf_len: usize,
+    style_ref_base: u32,
+    x_lo: f64,
+    x_hi: f64,
+    y_lo: f64,
+    y_hi: f64,
+    xycf: *const u8,
+    xycf_len: usize,
+    polar: *const u8,
+    polar_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if (xytc_len > 0 && xytc.is_null())
+        || (xyta_len > 0 && xyta.is_null())
+        || (xynm_len > 0 && xynm.is_null())
+        || (xycl_len > 0 && xycl.is_null())
+        || (xyaf_len > 0 && xyaf.is_null())
+        || (xycf_len > 0 && xycf.is_null())
+        || (polar_len > 0 && polar.is_null())
+        || (out_cap > 0 && out.is_null())
+    {
+        return -(EncodeSidecarsCode::Length as i32);
+    }
+    ffi_guard(-(EncodeSidecarsCode::Length as i32), || {
+        let xytc_bytes = if xytc_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(xytc, xytc_len)
+        };
+        let xyta_bytes = if xyta_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(xyta, xyta_len)
+        };
+        let xynm_bytes = if xynm_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(xynm, xynm_len)
+        };
+        let xycl_bytes = if xycl_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(xycl, xycl_len)
+        };
+        let xyaf_bytes = if xyaf_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(xyaf, xyaf_len)
+        };
+        let xycf_bytes = if xycf_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(xycf, xycf_len)
+        };
+        let polar_bytes = if polar_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(polar, polar_len)
+        };
+        match encode_product(
+            xytc_bytes,
+            xyta_bytes,
+            xynm_bytes,
+            xycl_bytes,
+            xyaf_bytes,
+            style_ref_base,
+            x_lo,
+            x_hi,
+            y_lo,
+            y_hi,
+            xycf_bytes,
+            polar_bytes,
+        ) {
+            Ok(bytes) => {
+                if bytes.len() > out_cap {
+                    return -(EncodeSidecarsCode::Output as i32);
+                }
+                if bytes.is_empty() {
+                    return 0;
+                }
+                let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                dest[..bytes.len()].copy_from_slice(&bytes);
+                match i32::try_from(bytes.len()) {
+                    Ok(count) => count,
+                    Err(_) => -(EncodeSidecarsCode::Limit as i32),
+                }
+            }
+            Err(error) => {
+                if out_cap >= 4 {
+                    let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                    dest[..4].copy_from_slice(&error.index.to_le_bytes());
+                }
+                -error.code
             }
         }
     })
@@ -2858,6 +2984,11 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// `xyg_scene_encode_assembled_from_sidecars` owns XYCC packing, extras packing,
 /// and viewport/axis scalars from packed XYAS plus XYCF plus XYSD plus polar
 /// plus XYSS so Python and Node cannot drift.
+/// ABI 163 does not change Scene records;
+/// `xyg_scene_encode_product` owns product-path compile/attach/sidecar/row/
+/// annotation/style/splice/encode orchestration from packed XYTC plus XYTA
+/// plus XYNM plus XYCL plus XYAF plus XYCF plus polar so Python and Node
+/// cannot drift.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
@@ -15667,6 +15798,37 @@ mod tests {
         assert_eq!(sidecar_code, encoded_code);
         assert_eq!(
             sidecar_encoded[..sidecar_code as usize],
+            encoded_out[..encoded_code as usize]
+        );
+        let mut product_encoded = vec![0u8; 65536];
+        let product_code = unsafe {
+            xyg_scene_encode_product(
+                xytc.as_ptr(),
+                xytc.len(),
+                xyta.as_ptr(),
+                xyta.len(),
+                xynm.as_ptr(),
+                xynm.len(),
+                xycl.as_ptr(),
+                xycl.len(),
+                std::ptr::null(),
+                0,
+                0,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                xycf.as_ptr(),
+                xycf.len(),
+                std::ptr::null(),
+                0,
+                product_encoded.as_mut_ptr(),
+                product_encoded.len(),
+            )
+        };
+        assert_eq!(product_code, encoded_code);
+        assert_eq!(
+            product_encoded[..product_code as usize],
             encoded_out[..encoded_code as usize]
         );
     }

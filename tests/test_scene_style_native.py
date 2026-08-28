@@ -11,6 +11,7 @@ from xyg._native import (
     css_color_rgba,
     scene_encode_assembled,
     scene_encode_assembled_from_sidecars,
+    scene_encode_product,
     scene_pack_annotation_facts,
     scene_pack_annotation_marks,
     scene_pack_annotations,
@@ -29,6 +30,7 @@ from xyg._native import (
     scene_pack_trace,
     scene_pack_trace_attach,
     scene_pack_trace_compile,
+    scene_pack_trace_row_bytes,
     scene_pack_trace_rows,
     scene_pack_trace_sidecars,
     scene_resolve_chrome_style,
@@ -260,6 +262,81 @@ def test_encode_assembled_from_sidecars_maps_extras_shape() -> None:
             polar=b"\x00" * 8,
             extras_facts=b"",
         )
+
+
+def test_encode_product_matches_sidecar_encode() -> None:
+    from xyg import _scene_v3
+
+    xytc = b"XYTC" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    xyta = b"XYTA" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    xynm = b"XYNM" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    xycl = b"XYCL" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    compiled = scene_pack_trace_compile(xytc)
+    attached = scene_pack_trace_attach(compiled, xyta)
+    sidecars = scene_pack_trace_sidecars(attached, xynm)
+    xyas = scene_splice_annotations(scene_pack_trace_row_bytes(attached, xycl), sidecars, b"")
+    figure = Figure(width=400, height=300)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    facts = _scene_v3._pack_chrome_facts(
+        figure,
+        width=400,
+        height=300,
+        margins=None,
+        colorbar_ok=True,
+    )
+    packed = scene_encode_assembled_from_sidecars(
+        xyas=xyas,
+        chrome_facts=facts,
+        sidecars=sidecars,
+        polar=b"",
+        extras_facts=b"",
+    )
+    encoded = scene_encode_product(
+        compile_facts=xytc,
+        attach_facts=xyta,
+        names=xynm,
+        columns=xycl,
+        annotation_facts=b"",
+        style_ref_base=0,
+        x_domain=(0.0, 1.0),
+        y_domain=(0.0, 1.0),
+        chrome_facts=facts,
+        polar=b"",
+    )
+    assert encoded == packed
+    assert encoded[:4] == b"XYGS"
+
+
+def test_encode_product_maps_compile_version() -> None:
+    from xyg import _scene_v3
+    from xyg._native import SceneTraceCompileError
+
+    xytc = b"XYTC" + (2).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    figure = Figure(width=400, height=300)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    facts = _scene_v3._pack_chrome_facts(
+        figure,
+        width=400,
+        height=300,
+        margins=None,
+        colorbar_ok=True,
+    )
+    with pytest.raises(SceneTraceCompileError) as excinfo:
+        scene_encode_product(
+            compile_facts=xytc,
+            attach_facts=b"XYTA" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little"),
+            names=b"XYNM" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little"),
+            columns=b"XYCL" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little"),
+            annotation_facts=b"",
+            style_ref_base=0,
+            x_domain=(0.0, 1.0),
+            y_domain=(0.0, 1.0),
+            chrome_facts=facts,
+            polar=b"",
+        )
+    assert excinfo.value.code == -2
 
 
 def test_chrome_from_sidecars_fills_named_legend() -> None:

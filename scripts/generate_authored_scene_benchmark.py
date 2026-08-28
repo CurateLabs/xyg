@@ -14,7 +14,6 @@ import hashlib
 import json
 from collections.abc import Iterator
 from pathlib import Path
-from unittest.mock import patch
 
 import numpy as np
 
@@ -206,22 +205,20 @@ def authored_scene_figure(count: int) -> Figure:
 
 def _authored_annotation_input(figure: Figure) -> bytes:
     """Capture the exact XYAD boundary frame before Rust lowers it to XYLB."""
-    captured: list[bytes] = []
-    real_encode = _scene_v3._native.scene_encode_assembled_from_sidecars
-
-    def capture_encode(**kwargs: object) -> bytes:
-        xyas = kwargs["xyas"]
-        assert isinstance(xyas, (bytes, bytearray))
-        captured.append(_scene_v3._unpack_xyas(bytes(xyas))["xyad"])
-        return b"captured"
-
-    with patch.object(_scene_v3._native, "scene_encode_assembled_from_sidecars", capture_encode):
-        assert _scene_v3.figure_scene(figure) == b"captured"
-    # Keep an explicit reference so test doubles cannot accidentally hide a
-    # changed call path that skips the normal native compiler entry point.
-    assert _scene_v3._native.scene_encode_assembled_from_sidecars is real_encode
-    assert len(captured) == 1
-    return captured[0]
+    compiled = _native.scene_pack_trace_compile(_scene_v3._pack_xytc(figure))
+    attached = _native.scene_pack_trace_attach(compiled, _scene_v3._pack_xyta(figure))
+    sidecars = _native.scene_pack_trace_sidecars(attached, _scene_v3._pack_xynm(figure))
+    rows = _native.scene_pack_trace_row_bytes(attached, _scene_v3._pack_xycl(figure))
+    facts = bytearray()
+    for index, annotation in enumerate(list(getattr(figure, "annotations", None) or [])):
+        facts.extend(_scene_v3._pack_xyaf(annotation, index))
+    output = _native.scene_pack_annotation_facts(
+        bytes(facts),
+        style_ref_base=len(figure.traces),
+        x_domain=tuple(float(value) for value in figure._range("x")),
+        y_domain=tuple(float(value) for value in figure._range("y")),
+    )
+    return _scene_v3._unpack_xyas(_native.scene_splice_annotations(rows, sidecars, output))["xyad"]
 
 
 def authored_scene(count: int) -> bytes:

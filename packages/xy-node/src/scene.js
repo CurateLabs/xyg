@@ -54,6 +54,7 @@ import {
   xySceneSpliceAnnotations,
   xySceneEncodeAssembled,
   xySceneEncodeAssembledFromSidecars,
+  xySceneEncodeProduct,
   xyScenePackAnnotationMarks,
   xySceneRasterCommands,
   xySceneResolveChromeStyle,
@@ -4058,6 +4059,105 @@ function encodeAssembledFromSidecars(xyas, chromeFacts, xysd, polar, extrasFacts
   throw error;
 }
 
+function encodeProduct(
+  compileFacts,
+  attachFacts,
+  names,
+  columns,
+  annotationFacts,
+  styleRefBase,
+  xDomain,
+  yDomain,
+  chromeFacts,
+  polar,
+) {
+  const compileBytes = compileFacts instanceof Uint8Array ? compileFacts : new Uint8Array();
+  const attachBytes = attachFacts instanceof Uint8Array ? attachFacts : new Uint8Array();
+  const namesBytes = names instanceof Uint8Array ? names : new Uint8Array();
+  const columnBytes = columns instanceof Uint8Array ? columns : new Uint8Array();
+  const annotationBytes = annotationFacts instanceof Uint8Array ? annotationFacts : new Uint8Array();
+  const chromeBytes = chromeFacts instanceof Uint8Array ? chromeFacts : new Uint8Array();
+  const polarBytes = polar instanceof Uint8Array ? polar : new Uint8Array();
+  let capacity = Math.max(
+    65536,
+    compileBytes.length
+      + attachBytes.length
+      + namesBytes.length
+      + columnBytes.length
+      + annotationBytes.length
+      + chromeBytes.length
+      + polarBytes.length
+      + 32
+      + 512 * 384 * 5
+      + 4096,
+  );
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const out = new Uint8Array(capacity);
+    const code = xySceneEncodeProduct(
+      compileBytes.length ? u8Ptr(compileBytes) : 0,
+      BigInt(compileBytes.length),
+      attachBytes.length ? u8Ptr(attachBytes) : 0,
+      BigInt(attachBytes.length),
+      namesBytes.length ? u8Ptr(namesBytes) : 0,
+      BigInt(namesBytes.length),
+      columnBytes.length ? u8Ptr(columnBytes) : 0,
+      BigInt(columnBytes.length),
+      annotationBytes.length ? u8Ptr(annotationBytes) : 0,
+      BigInt(annotationBytes.length),
+      styleRefBase >>> 0,
+      Number(xDomain[0]),
+      Number(xDomain[1]),
+      Number(yDomain[0]),
+      Number(yDomain[1]),
+      chromeBytes.length ? u8Ptr(chromeBytes) : 0,
+      BigInt(chromeBytes.length),
+      polarBytes.length ? u8Ptr(polarBytes) : 0,
+      BigInt(polarBytes.length),
+      u8Ptr(out),
+      BigInt(out.length),
+    );
+    if (code === -4) {
+      capacity *= 2;
+      continue;
+    }
+    const failing = new DataView(out.buffer, out.byteOffset, 4).getUint32(0, true);
+    const magnitude = Math.abs(code);
+    if (code < 0 && magnitude >= 100) {
+      const error = new RangeError("invalid product encode");
+      error.code = -(magnitude % 100);
+      error.index = failing;
+      error.stage = Math.floor(magnitude / 100);
+      throw error;
+    }
+    if (code === -2) throw new RangeError("invalid scene chrome facts version");
+    if (code === -5) throw new RangeError("invalid canonical scene plot layout");
+    if (code === -7) throw new RangeError("Scene v12 primary legends do not yet encode anchors, multiple columns, or custom content");
+    if (code === -8) throw new RangeError("Scene v12 primary legends are static; toggle and highlight must be false");
+    if (code === -9) throw new RangeError("Scene v12 does not support legend location");
+    if (code === -10) throw new RangeError("legend font sizes must be finite and in [1, 1000]");
+    if (code === -11) throw new RangeError("Scene v12 legends support only background, color, font_size, and title_font_size");
+    if (code === -12) throw new RangeError("Scene v19 colorbars require literal bounded RGBA stops");
+    if (code === -13) throw new RangeError("Scene v19 colorbars require a two-value domain and 2–16 stops");
+    if (code === -14) throw new RangeError("Scene v19 colorbar side is right or bottom");
+    if (code === -15) throw new RangeError("scene axis tick lists are limited to 200 values");
+    if (code === -16) {
+      const error = new RangeError("invalid canonical scene batch");
+      error.code = code;
+      error.index = failing;
+      throw error;
+    }
+    if (code === -20) throw new RangeError("Scene extras polar or paint envelope is invalid");
+    if (code === -21) throw new RangeError("Scene style sidecar facts are invalid");
+    if (code === -17 || code === -18 || code === -19) throw new RangeError("invalid scene extras packing");
+    if (code < 0) throw new RangeError("invalid scene chrome packing");
+    return out.subarray(0, code);
+  }
+  const error = new RangeError("invalid canonical scene batch");
+  error.code = -4;
+  error.index = 0;
+  throw error;
+}
+
 function unpackXyAs(blob) {
   if (blob.length < 24 || blob[0] !== 88 || blob[1] !== 89 || blob[2] !== 65 || blob[3] !== 83) {
     throw new RangeError("invalid scene annotation splice packing");
@@ -4961,54 +5061,45 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   if (reason) throw new RangeError(reason);
   const xDomain = figure._range("x");
   const yDomain = figure._range("y");
-  let attachedBytes;
-  try {
-    const compiledBytes = packTraceCompile(packXyTc(figure));
-    attachedBytes = packTraceAttach(compiledBytes, packXyTa(figure, xDomain, yDomain));
-  } catch (error) {
-    if (Number.isInteger(error.code) && error.code < 0) {
-      const name = String(error.message ?? "");
-      if (name.includes("compile")) raiseTraceCompile(error.code, error.index ?? 0, figure);
-      raiseTraceAttach(error.code, error.index ?? 0, figure);
-    }
-    throw error;
-  }
-  let sidecarBytes;
-  try {
-    sidecarBytes = packTraceSidecars(attachedBytes, packXyNm(figure.traces ?? []));
-  } catch (error) {
-    if (Number.isInteger(error.code) && error.code < 0) {
-      raiseTraceSidecars(error.code, error.index ?? 0);
-    }
-    throw error;
-  }
-  let rowBytes;
-  try {
-    rowBytes = packTraceRowBytes(attachedBytes, packXyCl(figure));
-  } catch (error) {
-    if (Number.isInteger(error.code) && error.code < 0) {
-      raiseTraceRows(error.code, error.index ?? 0);
-    }
-    throw error;
-  }
-
   const annotationParts = [];
   for (const [annotationIndex, annotation] of (figure.annotations ?? []).entries()) {
     annotationParts.push(packXyAf(annotation, annotationIndex));
   }
-  const annotationFacts = concatBytes(annotationParts);
-  const annotationOutput = packAnnotationFacts(annotationFacts, (figure.traces ?? []).length, xDomain, yDomain);
-  const styleSidecars = packStyleSidecars(sidecarBytes, annotationOutput);
-  const xyas = spliceAnnotations(rowBytes, sidecarBytes, annotationOutput);
-  return encodeAssembledFromSidecars(
-    xyas,
-    packChromeFacts(figure, {
-      width: figure.width, height: figure.height, margins, colorbarOk: !colorbarUnsupported,
-    }),
-    sidecarBytes,
-    packPolarSceneInput(figure),
-    styleSidecars,
-  );
+  try {
+    return encodeProduct(
+      packXyTc(figure),
+      packXyTa(figure, xDomain, yDomain),
+      packXyNm(figure.traces ?? []),
+      packXyCl(figure),
+      concatBytes(annotationParts),
+      (figure.traces ?? []).length,
+      xDomain,
+      yDomain,
+      packChromeFacts(figure, {
+        width: figure.width, height: figure.height, margins, colorbarOk: !colorbarUnsupported,
+      }),
+      packPolarSceneInput(figure),
+    );
+  } catch (error) {
+    if (error.stage === 1) raiseTraceCompile(error.code, error.index ?? 0, figure);
+    if (error.stage === 2) raiseTraceAttach(error.code, error.index ?? 0, figure);
+    if (error.stage === 3) raiseTraceSidecars(error.code, error.index ?? 0);
+    if (error.stage === 4) raiseTraceRows(error.code, error.index ?? 0);
+    if (error.stage === 5) {
+      if (error.code === -5) throw new RangeError("Scene annotation geometry must be finite");
+      if (error.code === -6) throw new RangeError("Scene annotations require nonempty NUL-free text");
+      if (error.code === -7) throw new RangeError("Scene v23 label border requires label_background");
+      if (error.code === -3) throw new RangeError("Scene annotations are limited to 128 entries");
+      throw new RangeError("invalid scene annotation packing");
+    }
+    if (error.stage === 6) {
+      throw new RangeError(error.code === -2 ? "invalid scene style sidecar facts version" : "invalid scene style sidecar packing");
+    }
+    if (error.stage === 7) {
+      throw new RangeError(error.code === -2 ? "invalid scene annotation splice version" : "invalid scene annotation splice packing");
+    }
+    throw error;
+  }
 }
 
 /** Serialize built-in scatter marks through the shared Rust scene schema. */

@@ -18,6 +18,27 @@ from xyg._scene_v3 import UnsupportedSceneV3
 FIXTURE = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
 
 
+def _xyad_from_figure(figure: Figure) -> bytes:
+    compiled = _native.scene_pack_trace_compile(_scene_v3._pack_xytc(figure))
+    attached = _native.scene_pack_trace_attach(compiled, _scene_v3._pack_xyta(figure))
+    sidecars = _native.scene_pack_trace_sidecars(attached, _scene_v3._pack_xynm(figure))
+    rows = _native.scene_pack_trace_row_bytes(attached, _scene_v3._pack_xycl(figure))
+    facts = bytearray()
+    for index, annotation in enumerate(list(getattr(figure, "annotations", None) or [])):
+        facts.extend(_scene_v3._pack_xyaf(annotation, index))
+    output = (
+        _native.scene_pack_annotation_facts(
+            bytes(facts),
+            style_ref_base=len(figure.traces),
+            x_domain=tuple(float(value) for value in figure._range("x")),
+            y_domain=tuple(float(value) for value in figure._range("y")),
+        )
+        if facts
+        else b""
+    )
+    return _scene_v3._unpack_xyas(_native.scene_splice_annotations(rows, sidecars, output))["xyad"]
+
+
 def representative_figure() -> Figure:
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 4.0)
@@ -689,7 +710,7 @@ def test_malformed_public_literal_propagates_without_compatibility_fallback(
 
     from xyg import _svg
 
-    monkeypatch.setattr(_native, "scene_encode_assembled_from_sidecars", malformed_scene)
+    monkeypatch.setattr(_native, "scene_encode_product", malformed_scene)
     monkeypatch.setattr(_svg, "to_svg", unexpected_compatibility)
     with pytest.raises(ValueError, match="malformed canonical literal"):
         figure.to_svg()
@@ -1022,15 +1043,11 @@ def test_python_scene_frames_attached_label_rgba_in_xyal_v2(
     )
     captured: dict[str, bytes] = {}
 
-    def capture_scene_encode_assembled(**kwargs: object) -> bytes:
-        xyas = kwargs["xyas"]
-        assert isinstance(xyas, (bytes, bytearray))
-        captured["annotations"] = _scene_v3._unpack_xyas(bytes(xyas))["xyad"]
+    def capture_scene_encode_product(**kwargs: object) -> bytes:
+        captured["annotations"] = _xyad_from_figure(figure)
         return b"captured-scene"
 
-    monkeypatch.setattr(
-        _scene_v3._native, "scene_encode_assembled_from_sidecars", capture_scene_encode_assembled
-    )
+    monkeypatch.setattr(_scene_v3._native, "scene_encode_product", capture_scene_encode_product)
     assert figure.to_scene() == b"captured-scene"
 
     envelope = captured["annotations"]

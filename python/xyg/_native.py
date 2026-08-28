@@ -2513,6 +2513,226 @@ def scene_encode_assembled_from_sidecars(
     raise SceneEncodeAssembledError(-4, 0)
 
 
+class SceneAnnotationFactsError(ValueError):
+    """Native XYAF annotation-fact failure from product encode."""
+
+
+_PRODUCT_STAGE_COMPILE = 100
+_PRODUCT_STAGE_ATTACH = 200
+_PRODUCT_STAGE_SIDECARS = 300
+_PRODUCT_STAGE_ROWS = 400
+_PRODUCT_STAGE_ANNOTATION = 500
+_PRODUCT_STAGE_STYLE = 600
+_PRODUCT_STAGE_SPLICE = 700
+
+
+def _product_stage(code: int) -> tuple[int, int] | None:
+    if int(code) >= 0:
+        return None
+    magnitude = abs(int(code))
+    if magnitude < 100:
+        return None
+    return magnitude // 100, -(magnitude % 100)
+
+
+def scene_encode_product(
+    *,
+    compile_facts: bytes,
+    attach_facts: bytes,
+    names: bytes,
+    columns: bytes,
+    annotation_facts: bytes | None = None,
+    style_ref_base: int,
+    x_domain: tuple[float, float],
+    y_domain: tuple[float, float],
+    chrome_facts: bytes,
+    polar: bytes | None = None,
+) -> bytes:
+    """Encode a product Scene from packed authored blobs (M2 #271)."""
+    compile_payload = (
+        compile_facts
+        if isinstance(compile_facts, (bytes, bytearray, memoryview))
+        else bytes(compile_facts)
+    )
+    attach_payload = (
+        attach_facts
+        if isinstance(attach_facts, (bytes, bytearray, memoryview))
+        else bytes(attach_facts)
+    )
+    names_payload = names if isinstance(names, (bytes, bytearray, memoryview)) else bytes(names)
+    columns_payload = (
+        columns if isinstance(columns, (bytes, bytearray, memoryview)) else bytes(columns)
+    )
+    annotation_payload = (
+        b""
+        if annotation_facts is None
+        else (
+            annotation_facts
+            if isinstance(annotation_facts, (bytes, bytearray, memoryview))
+            else bytes(annotation_facts)
+        )
+    )
+    chrome_payload = (
+        chrome_facts
+        if isinstance(chrome_facts, (bytes, bytearray, memoryview))
+        else bytes(chrome_facts)
+    )
+    polar_payload = (
+        b""
+        if polar is None
+        else (polar if isinstance(polar, (bytes, bytearray, memoryview)) else bytes(polar))
+    )
+    x0, x1 = (float(value) for value in x_domain)
+    y0, y1 = (float(value) for value in y_domain)
+    capacity = max(
+        65536,
+        len(compile_payload)
+        + len(attach_payload)
+        + len(names_payload)
+        + len(columns_payload)
+        + len(annotation_payload)
+        + len(chrome_payload)
+        + len(polar_payload)
+        + 32
+        + 512 * 384 * 5
+        + 4096,
+    )
+    source_compile = (
+        np.frombuffer(compile_payload, dtype=np.uint8)
+        if compile_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_attach = (
+        np.frombuffer(attach_payload, dtype=np.uint8)
+        if attach_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_names = (
+        np.frombuffer(names_payload, dtype=np.uint8)
+        if names_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_columns = (
+        np.frombuffer(columns_payload, dtype=np.uint8)
+        if columns_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_annotations = (
+        np.frombuffer(annotation_payload, dtype=np.uint8)
+        if annotation_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_chrome = (
+        np.frombuffer(chrome_payload, dtype=np.uint8)
+        if chrome_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_polar = (
+        np.frombuffer(polar_payload, dtype=np.uint8)
+        if polar_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    for _ in range(4):
+        out = np.zeros(capacity, dtype=np.uint8)
+        code = int(
+            _lib.xyg_scene_encode_product(
+                _ptr_u8(source_compile) if source_compile.size else 0,
+                int(source_compile.size),
+                _ptr_u8(source_attach) if source_attach.size else 0,
+                int(source_attach.size),
+                _ptr_u8(source_names) if source_names.size else 0,
+                int(source_names.size),
+                _ptr_u8(source_columns) if source_columns.size else 0,
+                int(source_columns.size),
+                _ptr_u8(source_annotations) if source_annotations.size else 0,
+                int(source_annotations.size),
+                int(style_ref_base),
+                x0,
+                x1,
+                y0,
+                y1,
+                _ptr_u8(source_chrome) if source_chrome.size else 0,
+                int(source_chrome.size),
+                _ptr_u8(source_polar) if source_polar.size else 0,
+                int(source_polar.size),
+                _ptr_u8(out),
+                len(out),
+            )
+        )
+        if code == -4:
+            capacity *= 2
+            continue
+        index = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
+        staged = _product_stage(code)
+        if staged is not None:
+            stage, original = staged
+            if stage == _PRODUCT_STAGE_COMPILE // 100:
+                raise SceneTraceCompileError(original, index)
+            if stage == _PRODUCT_STAGE_ATTACH // 100:
+                raise SceneTraceAttachError(original, index)
+            if stage == _PRODUCT_STAGE_SIDECARS // 100:
+                raise SceneTraceSidecarsError(original, index)
+            if stage == _PRODUCT_STAGE_ROWS // 100:
+                raise SceneTraceRowsError(original, index)
+            if stage == _PRODUCT_STAGE_ANNOTATION // 100:
+                messages = {
+                    -5: "Scene annotation geometry must be finite",
+                    -6: "Scene annotations require nonempty NUL-free text",
+                    -7: "Scene v23 label border requires label_background",
+                    -3: "Scene annotations are limited to 128 entries",
+                }
+                raise SceneAnnotationFactsError(
+                    messages.get(original, "invalid scene annotation packing")
+                )
+            if stage == _PRODUCT_STAGE_STYLE // 100:
+                raise SceneStyleSidecarsError(original, index)
+            if stage == _PRODUCT_STAGE_SPLICE // 100:
+                raise SceneAnnotationSpliceError(original, index)
+            raise SceneEncodeAssembledError(code, index)
+        if code == -2:
+            raise ValueError("invalid scene chrome facts version")
+        if code == -5:
+            raise ValueError("invalid canonical scene plot layout")
+        if code == -7:
+            raise ValueError(
+                "Scene v12 primary legends do not yet encode anchors, multiple columns, or custom content"
+            )
+        if code == -8:
+            raise ValueError(
+                "Scene v12 primary legends are static; toggle and highlight must be false"
+            )
+        if code == -9:
+            raise ValueError("Scene v12 does not support legend location")
+        if code == -10:
+            raise ValueError("legend font sizes must be finite and in [1, 1000]")
+        if code == -11:
+            raise ValueError(
+                "Scene v12 legends support only background, color, font_size, and title_font_size"
+            )
+        if code == -12:
+            raise ValueError("Scene v19 colorbars require literal bounded RGBA stops")
+        if code == -13:
+            raise ValueError(
+                "Scene v19 colorbars require a two-value domain and 2-16 literal stops"
+            )
+        if code == -14:
+            raise ValueError("Scene v19 colorbars support only right or bottom placement")
+        if code == -15:
+            raise ValueError("scene axis tick lists are limited to 200 values")
+        if code == -16:
+            raise SceneEncodeAssembledError(code, index)
+        if code == -20:
+            raise ValueError("Scene extras polar or paint envelope is invalid")
+        if code == -21:
+            raise ValueError("Scene style sidecar facts are invalid")
+        if code in {-17, -18, -19}:
+            raise ValueError("invalid scene extras packing")
+        if code < 0:
+            raise ValueError("invalid scene chrome packing")
+        return bytes(out[:code])
+    raise SceneEncodeAssembledError(-4, 0)
+
+
 def scene_figure_support_reason(payload: bytes) -> str:
     """Return Rust's figure-compile diagnostic for a packed XYFS envelope.
 

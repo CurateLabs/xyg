@@ -86,8 +86,10 @@ pub use scene_annotation_splice::{
 };
 pub mod scene_encode_assembled;
 pub use scene_encode_assembled::{
-    encode_assembled, encode_assembled_from_sidecars, EncodeAssembledAxis, EncodeAssembledCode,
-    EncodeAssembledError, EncodeSidecarsCode, EncodeSidecarsError,
+    encode_assembled, encode_assembled_from_sidecars, encode_product, EncodeAssembledAxis,
+    EncodeAssembledCode, EncodeAssembledError, EncodeSidecarsCode, EncodeSidecarsError,
+    ProductEncodeError, PRODUCT_STAGE_ANNOTATION, PRODUCT_STAGE_ATTACH, PRODUCT_STAGE_COMPILE,
+    PRODUCT_STAGE_ROWS, PRODUCT_STAGE_SIDECARS, PRODUCT_STAGE_SPLICE, PRODUCT_STAGE_STYLE,
 };
 pub mod stats;
 pub mod stream;
