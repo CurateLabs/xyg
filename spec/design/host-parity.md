@@ -555,7 +555,9 @@ theta majors/minors through the modular sector and formats Scene polar
 theta labels with `format_angular_tick`. ABI 202 materializes ABI 130
 time strftime and polar angular numeric formats onto `XYTL`. Hosts pack
 domain tick-kind in XYCF 154–155. ABI 203 runs ABI 123 cartesian collision
-at Scene SVG/raster emit. Polar rim auto/hide/rotate/stagger/preserve stay
+at Scene SVG/raster emit. Collision rooms clamp only when compact/authored
+pads already fit; overflowing compact pads stay
+`XYG_SCENE_UNSUPPORTED_VIEWPORT`. Polar rim auto/hide/rotate/stagger/preserve stay
 fail-closed. Invalid ABI 96 grammar still falls
 back. Secondary axes stay fail-closed.
 Hosts still choose tick families and
