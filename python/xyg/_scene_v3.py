@@ -726,7 +726,8 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
     cartesian unwrapped text ``rotation`` as XYAW with ``wrap=0`` (nonzero
     rotation writes XYAW v2 / XYLB v6). ABI 188 packs labelled cartesian marker
     ``rotation`` the same way (nums[8]; markers never wrap, and nums[15] stays
-    ``stroke_width``).
+    ``stroke_width``). ABI 189 packs raw heatmap/hexbin XYTA observations;
+    Rust owns cell-fill tessellation eligibility on the XYFS probe.
     """
     kind = annotation.get("kind")
     kind_code = _XYAF_KIND_CODES.get(str(kind) if kind is not None else "")
@@ -1682,9 +1683,7 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
     if getattr(trace, "x_axis", "x") != "x" or getattr(trace, "y_axis", "y") != "y":
         flags |= _XYFS_TRACE_NON_PRIMARY_AXIS
     if getattr(trace, "hidden", False) or (
-        trace.has_per_item_channels()
-        and not _density_aggregates_color(trace)
-        and not (not polar and _hexbin_tessellates_cell_fills(trace))
+        trace.has_per_item_channels() and not _density_aggregates_color(trace)
     ):
         flags |= _XYFS_TRACE_HIDDEN_OR_PER_ITEM
     if style.get("marker_glyph") is not None:
@@ -1728,11 +1727,7 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
         flags |= _rect_extra_flags(style, kind, polar)
     if kind in _HEXBIN_KINDS and style.get("reduce") not in _HEXBIN_REDUCES:
         flags |= _XYFS_TRACE_CUSTOM_HEX_REDUCE
-    if (
-        kind in _HEATMAP_KINDS
-        and _heatmap_uses_colormap(trace)
-        and not _heatmap_tessellates_cell_fills(trace)
-    ):
+    if kind in _HEATMAP_KINDS and _heatmap_uses_colormap(trace):
         flags |= _XYFS_TRACE_HEATMAP_COLORMAP
     if (
         "fill" in style
@@ -1756,30 +1751,19 @@ def _hexbin_pitch(style: dict[str, Any]) -> tuple[float, float]:
     return dx, dy
 
 
-def _hexbin_tessellates_cell_fills(trace: Any) -> bool:
-    """Return whether Scene can intern this hexbin's metric colormap per cell.
+def _hexbin_packs_colormap_plane(trace: Any) -> bool:
+    """Return whether hosts should pack this hexbin's metric as an XYTA plane.
 
-    Occupied centers plus a continuous color channel become a 1×N XYHP plane
-    (ABI 186). Polar hexbin, custom reducers, and non-continuous channels stay
-    fail-closed. Constant ``color=`` keeps the existing shared-style HexCell path.
+    Polar stays off this path. Rust owns tessellation vs fail-closed from the
+    packed plane (ABI 189). Missing colormap or length mismatch fail closed in
+    XYFS/attach rather than in this packer.
     """
     if str(getattr(trace, "kind", "") or "") not in _HEXBIN_KINDS:
         return False
     channel = getattr(trace, "color_ch", None)
     if channel is None or getattr(channel, "mode", None) != "continuous":
         return False
-    values = getattr(channel, "values", None)
-    if values is None:
-        return False
-    centers = getattr(trace, "x", None)
-    if centers is None or len(values) != len(centers):
-        return False
-    colormap = getattr(channel, "colormap", None)
-    if colormap is None:
-        return False
-    if isinstance(colormap, str):
-        return bool(colormap.strip())
-    return True
+    return getattr(channel, "values", None) is not None
 
 
 def _heatmap_uses_colormap(trace: Any) -> bool:
@@ -1791,21 +1775,6 @@ def _heatmap_uses_colormap(trace: Any) -> bool:
         or getattr(trace, "rgba_grid", None) is not None
         or getattr(trace, "rgba", None) is not None
     )
-
-
-def _heatmap_tessellates_cell_fills(trace: Any) -> bool:
-    """Return whether Scene can resolve this heatmap to per-cell paints.
-
-    Scalar colormaps, packed RGBA, and truecolor RGBA planes become compact
-    `HeatmapPainted` lattices. Polar encode tessellates those Rects to PolyFill
-    annular sectors. Scene has no image-blit record for inverse sampling.
-    """
-    style = getattr(trace, "style", None) or {}
-    if getattr(trace, "rgba_grid", None) is not None:
-        return True
-    if style.get("truecolor"):
-        return False
-    return bool(style.get("colormap") is not None or getattr(trace, "rgba", None) is not None)
 
 
 def _heatmap_shape(trace: Any) -> tuple[int, int]:
@@ -1934,7 +1903,7 @@ def _pack_xyta(figure: Any) -> bytes:
         elif (
             trace.kind in _HEXBIN_KINDS
             and str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
-            and _hexbin_tessellates_cell_fills(trace)
+            and _hexbin_packs_colormap_plane(trace)
         ):
             channel = trace.color_ch
             values = np.ascontiguousarray(np.asarray(channel.values, dtype=np.float64).reshape(-1))
@@ -3250,7 +3219,7 @@ def _pack_figure_support(
             and not (str(getattr(trace, "kind", "") or "") == "scatter" and trace.use_density())
             and not (
                 str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
-                and _hexbin_tessellates_cell_fills(trace)
+                and _hexbin_packs_colormap_plane(trace)
             )
         )
         or (

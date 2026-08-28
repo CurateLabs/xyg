@@ -1239,6 +1239,19 @@ def test_colormap_hexbin_is_scene_supported() -> None:
     assert png is not None
 
 
+def test_hexbin_without_colormap_fails_closed_from_packed_xyta() -> None:
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 4.0)
+    figure.axis_options["y"]["domain"] = (0.0, 5.0)
+    figure.hexbin(
+        _PUBLIC_HEXBIN_X, _PUBLIC_HEXBIN_Y, gridsize=(4, 4), range=((0.0, 4.0), (0.0, 5.0))
+    )
+    figure.traces[0].color_ch.colormap = None
+    reason = scene_export_support_reason(figure) or ""
+    assert "hidden or per-item" in reason
+    assert _public_svg(figure) is None
+
+
 @pytest.mark.parametrize(
     "mutate",
     [
@@ -1577,6 +1590,15 @@ def test_migrated_scene_packers_have_no_host_step_geometry_expander() -> None:
     assert "ribbon_edge" not in python_packer
     assert "function ribbonEdge" not in node_packer
     assert "RIBBON_STEPS" not in node_packer
+    assert "def _hexbin_tessellates_cell_fills" not in python_packer
+    assert "def _heatmap_tessellates_cell_fills" not in python_packer
+    assert "function hexbinTessellatesCellFills" not in node_packer
+    assert "function heatmapTessellatesCellFills" not in node_packer
+    assert "def _hexbin_packs_colormap_plane" in python_packer
+    assert "function hexbinPacksColormapPlane" in node_packer
+    assert "and _hexbin_tessellates_cell_fills(trace)" not in python_packer
+    assert "and heatmapTessellatesCellFills(trace)" not in node_packer
+    assert "&& hexbinTessellatesCellFills(trace)" not in node_packer
 
 
 @pytest.mark.parametrize(

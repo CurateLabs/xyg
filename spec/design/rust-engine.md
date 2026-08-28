@@ -865,4 +865,5 @@ landed; the remainder, in order:
    ABI 186 cartesian colormap hexbin as a 1×N XYHP plane interned onto HexCell PolyFills (`scene.rs` / `scene_heatmap.rs` / `scene_pack.rs`) ✅.
    ABI 187 cartesian unwrapped text `rotation` as XYAW `wrap=0` (`scene_annotations.rs` / `scene.rs` / `scene_export.rs`) ✅.
    ABI 188 labelled cartesian marker `rotation` as XYAW `wrap=0` (`scene_annotations.rs` / `scene_export.rs`) ✅.
+   ABI 189 heatmap/hexbin cell-fill tessellation eligibility from packed XYTA (`scene_trace_attach.rs` / `scene_export.rs`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

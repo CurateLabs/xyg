@@ -1537,7 +1537,8 @@ as XYAW `wrap=0`. ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane
 interned onto HexCell PolyFills. Polar hexbin, custom reducers, and per-item
 RGBA stay fail-closed. ABI 187 admits cartesian unwrapped text `rotation` as
 XYAW `wrap=0`. ABI 188 admits labelled cartesian marker `rotation` as XYAW
-`wrap=0`. html, `class_name`, and polar stay fail-closed. Per-item radius
+`wrap=0`. ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from
+packed XYTA. html, `class_name`, and polar stay fail-closed. Per-item radius
 channels stay compatibility. Irregular
 spacing, and LOD stay compatibility.
 

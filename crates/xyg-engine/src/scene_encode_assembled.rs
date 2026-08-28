@@ -12,6 +12,8 @@
 //! ABI 165 additionally owns the figure-compile support probe from packed
 //! `XYFS` so product-path hosts do not call `scene_figure_support_reason`
 //! separately. Empty `XYFS` skips the probe (stepwise ABI 163 callers).
+//! ABI 189 consults packed XYTA during that probe so heatmap/hexbin cell-fill
+//! tessellation eligibility is Rust-owned.
 //! ABI 166 tessellates cartesian bar/column/histogram `corner_radius` from
 //! packed XYSD radius blobs after pixel mapping. ABI 167 applies polar
 //! `wedge_gap` from that same blob during `polar_wedge_points`. ABI 168
@@ -855,7 +857,7 @@ pub fn encode_product(
     xyfs: &[u8],
 ) -> Result<Vec<u8>, ProductEncodeError> {
     if !xyfs.is_empty() {
-        match crate::scene_figure_support_reason(xyfs) {
+        match crate::scene_figure_support_reason_with_attach(xyfs, xyta) {
             Ok(reason) if !reason.is_empty() => {
                 return Err(ProductEncodeError {
                     code: PRODUCT_SUPPORT_UNSUPPORTED,

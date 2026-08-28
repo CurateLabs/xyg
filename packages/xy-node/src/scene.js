@@ -2725,7 +2725,7 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
     || (
       scatterHasNonConstantColor(trace)
       && !scatterUsesDensity(trace)
-      && !(figure.coords !== "polar" && hexbinTessellatesCellFills(trace))
+      && !(figure.coords !== "polar" && hexbinPacksColormapPlane(trace))
     )
     || (
       fillIsGradientAuthoring(trace.style?.fill)
@@ -3662,7 +3662,7 @@ function packXyTa(figure, xDomain, yDomain) {
     } else if (
       HEXBIN_KINDS.has(trace.kind)
       && figure.coords !== "polar"
-      && hexbinTessellatesCellFills(trace)
+      && hexbinPacksColormapPlane(trace)
     ) {
       flags |= XYTA_HEATMAP | XYTA_SHAPE | XYTA_HAS_GRID;
       const channel = trace.color_ch ?? trace.colorChannel;
@@ -5157,7 +5157,7 @@ function figureTraceSupport(figure, trace) {
   if (
     trace.hidden
     || scatterHasDroppedPerItem(trace)
-    || (scatterHasNonConstantColor(trace) && !scatterUsesDensity(trace) && !(figure.coords !== "polar" && hexbinTessellatesCellFills(trace)))
+    || (scatterHasNonConstantColor(trace) && !scatterUsesDensity(trace))
   ) flags |= XYFS_TRACE_HIDDEN_OR_PER_ITEM;
   if (style.marker_glyph != null) {
     const glyph = String(style.marker_glyph);
@@ -5192,7 +5192,6 @@ function figureTraceSupport(figure, trace) {
   if (
     HEATMAP_KINDS.has(kind)
     && (style.truecolor || style.colormap != null || trace.rgba_grid != null || trace.rgba != null)
-    && !heatmapTessellatesCellFills(trace)
   ) flags |= XYFS_TRACE_HEATMAP_COLORMAP;
   if (Object.hasOwn(style, "fill") && typeof style.fill !== "string") {
     if (admitFillGradient(trace) == null) flags |= XYFS_TRACE_NON_CSS_FILL;
@@ -5200,28 +5199,11 @@ function figureTraceSupport(figure, trace) {
   return { flags, kind };
 }
 
-function heatmapTessellatesCellFills(trace) {
-  const style = trace.style ?? {};
-  if (trace.rgba_grid != null) return true;
-  if (style.truecolor) return false;
-  return style.colormap != null
-    || style.colormapStops != null
-    || trace.colormapStops != null
-    || trace.rgba != null;
-}
-
-function hexbinTessellatesCellFills(trace) {
+function hexbinPacksColormapPlane(trace) {
   if (!HEXBIN_KINDS.has(trace.kind)) return false;
   const channel = trace.color_ch ?? trace.colorChannel;
   if (channel == null || channel.mode !== "continuous") return false;
-  const values = channel.values ?? trace.metric;
-  if (values == null) return false;
-  const n = trace.x?.length ?? 0;
-  if (values.length !== n || n < 1) return false;
-  const colormap = channel.colormap ?? trace.style?.colormap;
-  if (colormap == null) return false;
-  if (typeof colormap === "string") return colormap.trim() !== "";
-  return true;
+  return (channel.values ?? trace.metric) != null;
 }
 
 /** Compile migrated cartesian marks to Scene v12. */

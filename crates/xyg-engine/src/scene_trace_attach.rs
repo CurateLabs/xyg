@@ -15,8 +15,8 @@ use crate::scene_heatmap::{
     pack_heatmap_facts, HeatmapFactError, XYHF_FAMILY_DENSITY, XYHF_FAMILY_HEATMAP,
     XYHF_HAS_COLOR_CH, XYHF_HAS_DOMAIN, XYHF_HAS_ENCODED, XYHF_HAS_FILL_OPACITY, XYHF_HAS_GRID,
     XYHF_HAS_MEAN_RGBA, XYHF_HAS_NAMED_CMAP, XYHF_HAS_OPACITY, XYHF_HAS_RGBA, XYHF_HAS_RGBA_GRID,
-    XYHF_HAS_STOPS, XYHF_HAS_STYLE_COLOR, XYHF_HAS_TRUECOLOR, XYHF_MAGIC, XYHF_VERSION,
-    XYHF_V1_HEADER_BYTES,
+    XYHF_HAS_STOPS, XYHF_HAS_STYLE_COLOR, XYHF_HAS_TRUECOLOR, XYHF_MAGIC, XYHF_V1_HEADER_BYTES,
+    XYHF_VERSION,
 };
 use crate::scene_pack::{FACT_DENSITY_PLANE, FACT_HEATMAP_PAINT};
 use crate::scene_trace_compile::{XYTO_HEADER_BYTES, XYTO_MAGIC, XYTO_PREFIX_BYTES, XYTO_VERSION};
@@ -645,6 +645,74 @@ fn write_attached(
     out.extend_from_slice(density);
 }
 
+/// How packed XYTA cell-fill facts tessellate on the product Scene.
+///
+/// ABI 189: hosts pack raw heatmap/hexbin attach observations; Rust decides
+/// whether those facts intern onto per-cell paints (and therefore whether
+/// XYFS `PER_ITEM` / `HEATMAP_COLORMAP` bits fail closed).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CellFillTessellation {
+    None,
+    Heatmap,
+    Hexbin,
+}
+
+fn classify_cell_fill(input: &AttachInput<'_>) -> CellFillTessellation {
+    if input.flags & FLAG_DENSITY != 0 || input.flags & FLAG_HEATMAP == 0 {
+        return CellFillTessellation::None;
+    }
+    if input.flags & FLAG_HAS_RGBA_GRID != 0 {
+        return CellFillTessellation::Heatmap;
+    }
+    if input.flags & FLAG_TRUECOLOR != 0 {
+        return CellFillTessellation::None;
+    }
+    let has_paint = input.flags & FLAG_HAS_NAMED_CMAP != 0
+        || input.flags & FLAG_HAS_STOPS != 0
+        || input.flags & FLAG_HAS_RGBA != 0;
+    if !has_paint {
+        return CellFillTessellation::None;
+    }
+    if input.flags & FLAG_SHAPE != 0
+        && input.flags & FLAG_HAS_GRID != 0
+        && input.rows == 1
+        && input.cols >= 1
+        && input.flags & FLAG_HAS_RGBA == 0
+    {
+        return CellFillTessellation::Hexbin;
+    }
+    CellFillTessellation::Heatmap
+}
+
+/// Walk packed `XYTA` v1 and report per-trace cell-fill tessellation.
+pub fn xyta_cell_fill_tessellation(
+    attach: &[u8],
+) -> Result<Vec<CellFillTessellation>, TraceAttachError> {
+    if attach.is_empty() {
+        return Ok(Vec::new());
+    }
+    if attach.len() < XYTA_HEADER_BYTES || attach.get(..4) != Some(&XYTA_MAGIC[..]) {
+        return Err(TraceAttachError::new(TraceAttachCode::Length, 0));
+    }
+    if read_u32(attach, 4)? != XYTA_VERSION {
+        return Err(TraceAttachError::new(TraceAttachCode::Version, 0));
+    }
+    let n_traces = read_u32(attach, 8)? as usize;
+    if n_traces > MAX_TRACES {
+        return Err(TraceAttachError::new(TraceAttachCode::Limit, 0));
+    }
+    let mut at = XYTA_HEADER_BYTES;
+    let mut out = Vec::with_capacity(n_traces);
+    for index in 0..n_traces {
+        let input = parse_attach(attach, &mut at, index)?;
+        out.push(classify_cell_fill(&input));
+    }
+    if at != attach.len() {
+        return Err(TraceAttachError::new(TraceAttachCode::Length, 0));
+    }
+    Ok(out)
+}
+
 /// Pack compiled `XYTO` v1 plus authored `XYTA` v1 attach facts into `XYTT` v1.
 pub fn pack_trace_attach(compiled: &[u8], attach: &[u8]) -> Result<Vec<u8>, TraceAttachError> {
     let mut traces = parse_xyto(compiled)?;
@@ -697,13 +765,7 @@ pub fn pack_trace_attach(compiled: &[u8], attach: &[u8]) -> Result<Vec<u8>, Trac
         traces.iter().zip(attached.into_iter())
     {
         write_attached(
-            &mut out,
-            compiled,
-            &heatmap,
-            &density,
-            grid_rows,
-            grid_cols,
-            rewrite,
+            &mut out, compiled, &heatmap, &density, grid_rows, grid_cols, rewrite,
         );
     }
     Ok(out)
@@ -905,5 +967,104 @@ mod tests {
                 .unwrap(),
         );
         assert_eq!((x0, x1), (0.0, 1.0));
+    }
+
+    fn xyta_one(
+        flags: u32,
+        rows: i32,
+        cols: i32,
+        grid: &[f64],
+        cmap: &[u8],
+        extra_flags: u32,
+        rgba_grid_count: u32,
+    ) -> Vec<u8> {
+        let mut attach = xyta_header(1);
+        let mut prefix = vec![0u8; XYTA_PREFIX_BYTES];
+        prefix[..4].copy_from_slice(&(flags | extra_flags).to_le_bytes());
+        prefix[8..12].copy_from_slice(&rows.to_le_bytes());
+        prefix[12..16].copy_from_slice(&cols.to_le_bytes());
+        prefix[16..20].copy_from_slice(&(grid.len() as u32).to_le_bytes());
+        prefix[24..28].copy_from_slice(&rgba_grid_count.to_le_bytes());
+        prefix[48..50].copy_from_slice(&(cmap.len() as u16).to_le_bytes());
+        attach.extend_from_slice(&prefix);
+        for value in grid {
+            attach.extend_from_slice(&value.to_le_bytes());
+        }
+        for _ in 0..rgba_grid_count {
+            attach.extend_from_slice(&0.0f64.to_le_bytes());
+        }
+        attach.extend_from_slice(cmap);
+        attach
+    }
+
+    #[test]
+    fn empty_xyta_has_no_cell_fill_tessellation() {
+        assert_eq!(
+            xyta_cell_fill_tessellation(&[]).unwrap(),
+            Vec::<CellFillTessellation>::new()
+        );
+    }
+
+    #[test]
+    fn xyta_classifies_heatmap_hexbin_and_truecolor_cell_fills() {
+        let named = FLAG_HEATMAP | FLAG_SHAPE | FLAG_HAS_GRID | FLAG_HAS_NAMED_CMAP;
+        assert_eq!(
+            xyta_cell_fill_tessellation(&xyta_one(
+                named,
+                2,
+                2,
+                &[0.0, 1.0, 2.0, 3.0],
+                b"viridis",
+                0,
+                0
+            ))
+            .unwrap(),
+            vec![CellFillTessellation::Heatmap]
+        );
+        assert_eq!(
+            xyta_cell_fill_tessellation(&xyta_one(named, 1, 3, &[0.0, 1.0, 2.0], b"viridis", 0, 0))
+                .unwrap(),
+            vec![CellFillTessellation::Hexbin]
+        );
+        assert_eq!(
+            xyta_cell_fill_tessellation(&xyta_one(
+                FLAG_HEATMAP | FLAG_SHAPE | FLAG_HAS_GRID,
+                1,
+                3,
+                &[0.0, 1.0, 2.0],
+                b"",
+                0,
+                0
+            ))
+            .unwrap(),
+            vec![CellFillTessellation::None]
+        );
+        assert_eq!(
+            xyta_cell_fill_tessellation(&xyta_one(
+                FLAG_HEATMAP | FLAG_TRUECOLOR | FLAG_SHAPE,
+                2,
+                2,
+                &[],
+                b"",
+                0,
+                0
+            ))
+            .unwrap(),
+            vec![CellFillTessellation::None]
+        );
+        assert_eq!(
+            xyta_cell_fill_tessellation(&xyta_one(
+                FLAG_HEATMAP | FLAG_TRUECOLOR | FLAG_HAS_RGBA_GRID,
+                0,
+                0,
+                &[],
+                b"",
+                0,
+                1
+            ))
+            .unwrap(),
+            vec![CellFillTessellation::Heatmap]
+        );
+        assert!(xyta_cell_fill_tessellation(b"XXXX").is_err());
     }
 }
