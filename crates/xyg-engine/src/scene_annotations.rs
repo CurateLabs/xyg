@@ -1,14 +1,22 @@
-//! Compact Figure→Scene XYAD annotation framing (M2 #271).
+//! Compact Figure→Scene XYAD annotation framing (M2 #271 / #278).
 //!
 //! Hosts validate authoring keys (kind names, style allowlists, CSS, anchors)
 //! and pass typed row meta plus concatenated UTF-8. Rust owns XYAT/XYAL/XYAR/
 //! XYAC/XYAW table layout, version selection, the XYAD envelope, and
 //! bounded-text rejection so Python and Node cannot drift on the decoration
-//! envelope.
+//! envelope. ABI 148 owns family routing from packed XYAF v1 facts: wrap vs
+//! text vs arrow vs callout vs rule/band/marker, stable-id tags, mark-style
+//! defaults, domain expansion, and XYAD framing so those decisions cannot
+//! drift across hosts.
 
+use crate::css::{apply_opacity_rgba8, color_rgba8};
 use crate::scene::{
     MAX_AUTHORED_STRAIGHT_ARROWS, MAX_AUTHORED_TEXT_ANNOTATIONS, MAX_SCENE_ANNOTATION_INPUT_BYTES,
     MAX_SCENE_LABEL_TEXT_BYTES, MAX_SCENE_TEXT_BYTES,
+};
+use crate::scene_pack::{
+    pack_annotation_marks, AnnotationMarkInput, PackError, ANN_KIND_BAND, ANN_KIND_MARKER,
+    ANN_KIND_RULE, PACKED_SCENE_ROW_BYTES,
 };
 
 pub const TEXT_META_BYTES: usize = 40;
@@ -597,6 +605,686 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
     Ok(out)
 }
 
+pub const XYAF_MAGIC: &[u8; 4] = b"XYAF";
+pub const XYAF_VERSION: u32 = 1;
+pub const XYAF_V1_HEADER_BYTES: usize = 232;
+pub const XYAO_MAGIC: &[u8; 4] = b"XYAO";
+pub const XYAO_VERSION: u32 = 1;
+pub const XYAO_V1_HEADER_BYTES: usize = 32;
+pub const XYAO_STYLE_BYTES: usize = 56;
+
+pub const XYAF_KIND_TEXT: u8 = 0;
+pub const XYAF_KIND_ARROW: u8 = 1;
+pub const XYAF_KIND_CALLOUT: u8 = 2;
+pub const XYAF_KIND_RULE: u8 = 3;
+pub const XYAF_KIND_BAND: u8 = 4;
+pub const XYAF_KIND_MARKER: u8 = 5;
+
+const FACT_HAS_WRAP: u32 = 1 << 0;
+const FACT_HAS_TEXT: u32 = 1 << 1;
+const FACT_HAS_CLASS_NAME: u32 = 1 << 2;
+const FACT_HAS_DX: u32 = 1 << 3;
+const FACT_HAS_DY: u32 = 1 << 4;
+const FACT_HAS_X: u32 = 1 << 5;
+const FACT_HAS_Y: u32 = 1 << 6;
+const FACT_HAS_X0: u32 = 1 << 7;
+const FACT_HAS_Y0: u32 = 1 << 8;
+const FACT_HAS_X1: u32 = 1 << 9;
+const FACT_HAS_Y1: u32 = 1 << 10;
+const FACT_HAS_VALUE: u32 = 1 << 11;
+const FACT_HAS_START: u32 = 1 << 12;
+const FACT_HAS_END: u32 = 1 << 13;
+const FACT_HAS_SIZE: u32 = 1 << 14;
+const FACT_HAS_AXIS: u32 = 1 << 15;
+#[allow(dead_code)]
+const FACT_HAS_SYMBOL: u32 = 1 << 16;
+#[allow(dead_code)]
+const FACT_HAS_ANCHOR: u32 = 1 << 17;
+const FACT_BITS: u32 = (1 << 18) - 1;
+
+const STYLE_COLOR: u32 = 1 << 0;
+const STYLE_OPACITY: u32 = 1 << 1;
+const STYLE_WIDTH: u32 = 1 << 2;
+const STYLE_DASH: u32 = 1 << 3;
+const STYLE_LINECAP: u32 = 1 << 4;
+const STYLE_STROKE_COLOR: u32 = 1 << 5;
+const STYLE_STROKE_WIDTH: u32 = 1 << 6;
+const STYLE_LABEL_COLOR: u32 = 1 << 7;
+const STYLE_LABEL_OPACITY: u32 = 1 << 8;
+const STYLE_LABEL_BACKGROUND: u32 = 1 << 9;
+const STYLE_LABEL_BORDER_COLOR: u32 = 1 << 10;
+const STYLE_LABEL_BORDER_WIDTH: u32 = 1 << 11;
+const STYLE_UNSUPPORTED: u32 = 1 << 31;
+const STYLE_KNOWN: u32 = (1 << 12) - 1;
+
+const ANN_ID_PREFIX: u64 = 0x5859_0000_0000_0000;
+const LINECAP_NONE: u8 = 255;
+const ANCHOR_UNSET: u8 = 255;
+const COLOR_RULE: &str = "#667085";
+const COLOR_BAND: &str = "#64748b";
+const COLOR_CALLOUT: &str = "#344054";
+
+struct AnnotationFacts<'a> {
+    index: u32,
+    kind: u8,
+    axis: u8,
+    symbol: u8,
+    anchor: u8,
+    facts: u32,
+    style_bits: u32,
+    linecap: u8,
+    dash_count: u8,
+    nums: [f64; 18],
+    color: [u8; 4],
+    stroke_color: [u8; 4],
+    label_color: [u8; 4],
+    label_fill: [u8; 4],
+    label_border: [u8; 4],
+    dash: [f32; 8],
+    text: &'a [u8],
+}
+
+struct StyleOut {
+    fill: [u8; 4],
+    stroke: [u8; 4],
+    width: f64,
+    dash_count: u8,
+    linecap: u8,
+    dash: [f32; 8],
+}
+
+fn pack_err(error: PackError) -> AnnotationError {
+    match error {
+        PackError::Length | PackError::UnknownKind => AnnotationError::Length,
+        PackError::Version => AnnotationError::Version,
+        PackError::Limit => AnnotationError::Limit,
+        PackError::Output => AnnotationError::Output,
+        PackError::NonFinite => AnnotationError::NonFinite,
+    }
+}
+
+fn read_u32(bytes: &[u8], at: usize) -> Result<u32, AnnotationError> {
+    let slice = bytes.get(at..at + 4).ok_or(AnnotationError::Length)?;
+    Ok(u32::from_le_bytes(
+        slice.try_into().map_err(|_| AnnotationError::Length)?,
+    ))
+}
+
+fn read_f64(bytes: &[u8], at: usize) -> Result<f64, AnnotationError> {
+    let slice = bytes.get(at..at + 8).ok_or(AnnotationError::Length)?;
+    Ok(f64::from_le_bytes(
+        slice.try_into().map_err(|_| AnnotationError::Length)?,
+    ))
+}
+
+fn read_f32(bytes: &[u8], at: usize) -> Result<f32, AnnotationError> {
+    let slice = bytes.get(at..at + 4).ok_or(AnnotationError::Length)?;
+    Ok(f32::from_le_bytes(
+        slice.try_into().map_err(|_| AnnotationError::Length)?,
+    ))
+}
+
+fn read_rgba(bytes: &[u8], at: usize) -> Result<[u8; 4], AnnotationError> {
+    let slice = bytes.get(at..at + 4).ok_or(AnnotationError::Length)?;
+    Ok(slice.try_into().map_err(|_| AnnotationError::Length)?)
+}
+
+fn annotation_id(tag: u8, index: u32) -> u64 {
+    ANN_ID_PREFIX | (u64::from(tag) << 40) | u64::from(index)
+}
+
+fn has(bits: u32, flag: u32) -> bool {
+    bits & flag != 0
+}
+
+fn require_finite_value(value: f64) -> Result<f64, AnnotationError> {
+    if value.is_finite() {
+        Ok(value)
+    } else {
+        Err(AnnotationError::NonFinite)
+    }
+}
+
+fn authored(row: &AnnotationFacts<'_>, flag: u32, index: usize) -> Result<Option<f64>, AnnotationError> {
+    if has(row.facts, flag) {
+        Ok(Some(require_finite_value(row.nums[index])?))
+    } else {
+        Ok(None)
+    }
+}
+
+fn or_default(
+    row: &AnnotationFacts<'_>,
+    flag: u32,
+    index: usize,
+    default: f64,
+) -> Result<f64, AnnotationError> {
+    Ok(authored(row, flag, index)?.unwrap_or(default))
+}
+
+fn style_num(
+    row: &AnnotationFacts<'_>,
+    bit: u32,
+    index: usize,
+    default: f64,
+) -> Result<f64, AnnotationError> {
+    if has(row.style_bits, bit) {
+        require_finite_value(row.nums[index])
+    } else {
+        Ok(default)
+    }
+}
+
+fn require_flag(
+    row: &AnnotationFacts<'_>,
+    flag: u32,
+    index: usize,
+) -> Result<f64, AnnotationError> {
+    authored(row, flag, index)?.ok_or(AnnotationError::Length)
+}
+
+fn unit_interval(value: f64) -> Result<f64, AnnotationError> {
+    if (0.0..=1.0).contains(&value) {
+        Ok(value)
+    } else {
+        Err(AnnotationError::Length)
+    }
+}
+
+fn positive(value: f64) -> Result<f64, AnnotationError> {
+    if value > 0.0 {
+        Ok(value)
+    } else {
+        Err(AnnotationError::Length)
+    }
+}
+
+fn nonnegative(value: f64) -> Result<f64, AnnotationError> {
+    if value >= 0.0 {
+        Ok(value)
+    } else {
+        Err(AnnotationError::Length)
+    }
+}
+
+fn paint(
+    row: &AnnotationFacts<'_>,
+    present: u32,
+    rgba: [u8; 4],
+    default_css: &str,
+    opacity: f64,
+) -> [u8; 4] {
+    if has(row.style_bits, present) {
+        apply_opacity_rgba8(rgba, opacity as f32)
+    } else {
+        color_rgba8(default_css, opacity as f32)
+    }
+}
+
+fn label_style(
+    row: &AnnotationFacts<'_>,
+) -> Result<(u8, [u8; 4], [u8; 4], [u8; 4], f64, [u8; 4]), AnnotationError> {
+    let opacity = unit_interval(style_num(row, STYLE_LABEL_OPACITY, 16, 1.0)?)?;
+    let rgba = paint(row, STYLE_LABEL_COLOR, row.label_color, COLOR_RULE, opacity);
+    let has_fill = has(row.style_bits, STYLE_LABEL_BACKGROUND);
+    let has_border_color = has(row.style_bits, STYLE_LABEL_BORDER_COLOR);
+    let has_border_width = has(row.style_bits, STYLE_LABEL_BORDER_WIDTH);
+    if has_border_color != has_border_width {
+        return Err(AnnotationError::Order);
+    }
+    if has_border_color && !has_fill {
+        return Err(AnnotationError::Order);
+    }
+    let fill = if has_fill { row.label_fill } else { [0; 4] };
+    let border_rgba = if has_border_color {
+        row.label_border
+    } else {
+        [0; 4]
+    };
+    let border_width = if has_border_width {
+        positive(require_finite_value(row.nums[17])?)?
+    } else {
+        0.0
+    };
+    let mut flags = 0u8;
+    if has_fill {
+        flags |= FLAG_FILL;
+    }
+    if has_border_color {
+        flags |= FLAG_BORDER;
+    }
+    Ok((flags, rgba, fill, border_rgba, border_width, rgba))
+}
+
+fn allowed_style(kind: u8, wrapped: bool, labelled: bool) -> u32 {
+    let mut bits = STYLE_COLOR | STYLE_OPACITY;
+    if wrapped {
+        return bits | STYLE_LABEL_BACKGROUND | STYLE_LABEL_BORDER_COLOR | STYLE_LABEL_BORDER_WIDTH;
+    }
+    match kind {
+        XYAF_KIND_ARROW => bits | STYLE_WIDTH,
+        XYAF_KIND_CALLOUT => {
+            bits | STYLE_WIDTH
+                | STYLE_LABEL_BACKGROUND
+                | STYLE_LABEL_BORDER_COLOR
+                | STYLE_LABEL_BORDER_WIDTH
+        }
+        XYAF_KIND_TEXT => {
+            bits | STYLE_LABEL_BACKGROUND | STYLE_LABEL_BORDER_COLOR | STYLE_LABEL_BORDER_WIDTH
+        }
+        XYAF_KIND_RULE => {
+            bits |= STYLE_WIDTH | STYLE_DASH | STYLE_LINECAP;
+            if labelled {
+                bits |= STYLE_LABEL_COLOR
+                    | STYLE_LABEL_OPACITY
+                    | STYLE_LABEL_BACKGROUND
+                    | STYLE_LABEL_BORDER_COLOR
+                    | STYLE_LABEL_BORDER_WIDTH;
+            }
+            bits
+        }
+        XYAF_KIND_BAND => {
+            if labelled {
+                bits |= STYLE_LABEL_COLOR
+                    | STYLE_LABEL_OPACITY
+                    | STYLE_LABEL_BACKGROUND
+                    | STYLE_LABEL_BORDER_COLOR
+                    | STYLE_LABEL_BORDER_WIDTH;
+            }
+            bits
+        }
+        XYAF_KIND_MARKER => {
+            bits |= STYLE_STROKE_COLOR | STYLE_STROKE_WIDTH;
+            if labelled {
+                bits |= STYLE_LABEL_COLOR
+                    | STYLE_LABEL_OPACITY
+                    | STYLE_LABEL_BACKGROUND
+                    | STYLE_LABEL_BORDER_COLOR
+                    | STYLE_LABEL_BORDER_WIDTH;
+            }
+            bits
+        }
+        _ => bits,
+    }
+}
+
+fn parse_annotation_facts(bytes: &[u8]) -> Result<Vec<AnnotationFacts<'_>>, AnnotationError> {
+    let mut out = Vec::new();
+    let mut at = 0usize;
+    while at < bytes.len() {
+        if bytes.len() - at < XYAF_V1_HEADER_BYTES || bytes.get(at..at + 4) != Some(&XYAF_MAGIC[..])
+        {
+            return Err(AnnotationError::Length);
+        }
+        if read_u32(bytes, at + 4)? != XYAF_VERSION {
+            return Err(AnnotationError::Version);
+        }
+        let index = read_u32(bytes, at + 8)?;
+        let kind = bytes[at + 12];
+        let axis = bytes[at + 13];
+        let symbol = bytes[at + 14];
+        let anchor = bytes[at + 15];
+        let facts = read_u32(bytes, at + 16)?;
+        let style_bits = read_u32(bytes, at + 20)?;
+        let linecap = bytes[at + 24];
+        let dash_count = bytes[at + 25];
+        if bytes[at + 26] != 0 || bytes[at + 27] != 0 || kind > XYAF_KIND_MARKER {
+            return Err(AnnotationError::Length);
+        }
+        if facts & !FACT_BITS != 0
+            || style_bits & !(STYLE_KNOWN | STYLE_UNSUPPORTED) != 0
+            || dash_count > 8
+            || (linecap != LINECAP_NONE && linecap != 0 && linecap != 2)
+            || (anchor != ANCHOR_UNSET && anchor > 2)
+            || axis > 2
+        {
+            return Err(AnnotationError::Length);
+        }
+        let text_len = read_u32(bytes, at + 28)? as usize;
+        let mut nums = [0.0f64; 18];
+        for (i, slot) in nums.iter_mut().enumerate() {
+            *slot = read_f64(bytes, at + 32 + i * 8)?;
+        }
+        let color = read_rgba(bytes, at + 176)?;
+        let stroke_color = read_rgba(bytes, at + 180)?;
+        let label_color = read_rgba(bytes, at + 184)?;
+        let label_fill = read_rgba(bytes, at + 188)?;
+        let label_border = read_rgba(bytes, at + 192)?;
+        if bytes.get(at + 196..at + 200) != Some(&[0, 0, 0, 0]) {
+            return Err(AnnotationError::Length);
+        }
+        let mut dash = [0.0f32; 8];
+        for (i, slot) in dash.iter_mut().enumerate() {
+            *slot = read_f32(bytes, at + 200 + i * 4)?;
+        }
+        let text_at = at + XYAF_V1_HEADER_BYTES;
+        let text_end = text_at
+            .checked_add(text_len)
+            .ok_or(AnnotationError::Limit)?;
+        if text_end > bytes.len() {
+            return Err(AnnotationError::Length);
+        }
+        out.push(AnnotationFacts {
+            index,
+            kind,
+            axis,
+            symbol,
+            anchor,
+            facts,
+            style_bits,
+            linecap,
+            dash_count,
+            nums,
+            color,
+            stroke_color,
+            label_color,
+            label_fill,
+            label_border,
+            dash,
+            text: &bytes[text_at..text_end],
+        });
+        at = text_end;
+    }
+    Ok(out)
+}
+
+fn encode_style(style: &StyleOut) -> [u8; XYAO_STYLE_BYTES] {
+    let mut out = [0u8; XYAO_STYLE_BYTES];
+    out[0..4].copy_from_slice(&style.fill);
+    out[4..8].copy_from_slice(&style.stroke);
+    out[8..16].copy_from_slice(&style.width.to_le_bytes());
+    out[16] = style.dash_count;
+    out[17] = style.linecap;
+    for (i, value) in style.dash.iter().enumerate() {
+        let at = 24 + i * 4;
+        out[at..at + 4].copy_from_slice(&value.to_le_bytes());
+    }
+    out
+}
+
+/// Pack concatenated XYAF v1 facts into an XYAO v1 envelope.
+///
+/// Hosts coerce authoring (numbers, CSS, dash/linecap names). Rust owns wrap
+/// vs text vs arrow vs callout vs rule/band/marker routing, stable-id tags,
+/// style defaults, mark-row expansion, and XYAD framing.
+pub fn pack_annotation_facts(
+    facts: &[u8],
+    style_ref_base: u32,
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+) -> Result<Vec<u8>, AnnotationError> {
+    if facts.is_empty() {
+        return Ok(Vec::new());
+    }
+    if ![x0, x1, y0, y1].iter().all(|value| value.is_finite()) {
+        return Err(AnnotationError::NonFinite);
+    }
+    let parsed = parse_annotation_facts(facts)?;
+    let mut texts = Vec::new();
+    let mut attached = Vec::new();
+    let mut arrows = Vec::new();
+    let mut callouts = Vec::new();
+    let mut wrapped = Vec::new();
+    let mut styles = Vec::new();
+    let mut mark_inputs = Vec::new();
+    for row in &parsed {
+        if has(row.facts, FACT_HAS_CLASS_NAME) || row.style_bits & STYLE_UNSUPPORTED != 0 {
+            return Err(AnnotationError::Order);
+        }
+        let wrapped_kind =
+            (row.kind == XYAF_KIND_TEXT || row.kind == XYAF_KIND_CALLOUT) && has(row.facts, FACT_HAS_WRAP);
+        let labelled = has(row.facts, FACT_HAS_TEXT) && !row.text.is_empty();
+        if row.style_bits & !allowed_style(row.kind, wrapped_kind, labelled) != 0 {
+            return Err(AnnotationError::Order);
+        }
+        if wrapped_kind {
+            let opacity = unit_interval(style_num(row, STYLE_OPACITY, 13, 1.0)?)?;
+            let wrap = nonnegative(require_flag(row, FACT_HAS_WRAP, 8)?)?;
+            let x = require_flag(row, FACT_HAS_X, 0)?;
+            let y = require_flag(row, FACT_HAS_Y, 1)?;
+            let (dx_default, dy_default, css) = if row.kind == XYAF_KIND_CALLOUT {
+                (36.0, -30.0, COLOR_CALLOUT)
+            } else {
+                (0.0, 0.0, COLOR_RULE)
+            };
+            let dx = or_default(row, FACT_HAS_DX, 6, dx_default)?;
+            let dy = or_default(row, FACT_HAS_DY, 7, dy_default)?;
+            if row.text.is_empty() {
+                return Err(AnnotationError::Text);
+            }
+            let anchor = if row.anchor == ANCHOR_UNSET { 0 } else { row.anchor };
+            let (_, _, fill, border_rgba, border_width, _) = label_style(row)?;
+            wrapped.push(WrappedRow {
+                x,
+                y,
+                dx,
+                dy,
+                wrap,
+                rgba: paint(row, STYLE_COLOR, row.color, css, opacity),
+                fill,
+                border_rgba,
+                border_width,
+                kind: u8::from(row.kind == XYAF_KIND_CALLOUT),
+                anchor,
+                text: row.text,
+            });
+            continue;
+        }
+        match row.kind {
+            XYAF_KIND_TEXT => {
+                let opacity = unit_interval(style_num(row, STYLE_OPACITY, 13, 1.0)?)?;
+                if row.text.is_empty() {
+                    return Err(AnnotationError::Text);
+                }
+                let (flags, _, fill, border_rgba, border_width, _) = label_style(row)?;
+                texts.push(TextRow {
+                    x: require_flag(row, FACT_HAS_X, 0)?,
+                    y: require_flag(row, FACT_HAS_Y, 1)?,
+                    rgba: paint(row, STYLE_COLOR, row.color, COLOR_RULE, opacity),
+                    fill,
+                    border_rgba,
+                    border_width,
+                    flags,
+                    text: row.text,
+                });
+            }
+            XYAF_KIND_ARROW => {
+                if labelled {
+                    return Err(AnnotationError::Order);
+                }
+                let opacity = unit_interval(style_num(row, STYLE_OPACITY, 13, 1.0)?)?;
+                let width = positive(style_num(row, STYLE_WIDTH, 14, 1.5)?)?;
+                arrows.push(ArrowRow {
+                    stable_id: annotation_id(5, row.index),
+                    x0: require_flag(row, FACT_HAS_X0, 2)?,
+                    y0: require_flag(row, FACT_HAS_Y0, 3)?,
+                    x1: require_flag(row, FACT_HAS_X1, 4)?,
+                    y1: require_flag(row, FACT_HAS_Y1, 5)?,
+                    rgba: paint(row, STYLE_COLOR, row.color, COLOR_RULE, 1.0),
+                    opacity,
+                    width,
+                });
+            }
+            XYAF_KIND_CALLOUT => {
+                if row.text.is_empty() {
+                    return Err(AnnotationError::Text);
+                }
+                let opacity = unit_interval(style_num(row, STYLE_OPACITY, 13, 1.0)?)?;
+                let width = positive(style_num(row, STYLE_WIDTH, 14, 1.5)?)?;
+                let (flags, _, fill, border_rgba, border_width, _) = label_style(row)?;
+                callouts.push(CalloutRow {
+                    x: require_flag(row, FACT_HAS_X, 0)?,
+                    y: require_flag(row, FACT_HAS_Y, 1)?,
+                    dx: or_default(row, FACT_HAS_DX, 6, 36.0)?,
+                    dy: or_default(row, FACT_HAS_DY, 7, -30.0)?,
+                    rgba: paint(row, STYLE_COLOR, row.color, COLOR_CALLOUT, 1.0),
+                    opacity,
+                    width,
+                    anchor: if row.anchor == ANCHOR_UNSET { 0 } else { row.anchor },
+                    fill,
+                    border_rgba,
+                    border_width,
+                    flags,
+                    text: row.text,
+                });
+            }
+            XYAF_KIND_RULE | XYAF_KIND_BAND | XYAF_KIND_MARKER => {
+                let default_opacity = if row.kind == XYAF_KIND_BAND { 0.14 } else { 1.0 };
+                let opacity = unit_interval(style_num(row, STYLE_OPACITY, 13, default_opacity)?)?;
+                let css = if row.kind == XYAF_KIND_BAND {
+                    COLOR_BAND
+                } else {
+                    COLOR_RULE
+                };
+                let color = paint(row, STYLE_COLOR, row.color, css, opacity);
+                let stroke = if has(row.style_bits, STYLE_STROKE_COLOR) {
+                    apply_opacity_rgba8(row.stroke_color, opacity as f32)
+                } else {
+                    color
+                };
+                let default_width = if row.kind == XYAF_KIND_BAND { 0.0 } else { 1.5 };
+                let width_flag = if row.kind == XYAF_KIND_MARKER {
+                    STYLE_STROKE_WIDTH
+                } else {
+                    STYLE_WIDTH
+                };
+                let width_index = if row.kind == XYAF_KIND_MARKER { 15 } else { 14 };
+                let width = if has(row.style_bits, width_flag) {
+                    nonnegative(require_finite_value(row.nums[width_index])?)?
+                } else {
+                    default_width
+                };
+                if row.kind == XYAF_KIND_RULE && width == 0.0 {
+                    return Err(AnnotationError::Length);
+                }
+                let fill = if row.kind == XYAF_KIND_RULE {
+                    [0, 0, 0, 0]
+                } else {
+                    color
+                };
+                let style_ref = style_ref_base
+                    .checked_add(u32::try_from(styles.len()).map_err(|_| AnnotationError::Limit)?)
+                    .ok_or(AnnotationError::Limit)?;
+                let dash_count = if row.kind == XYAF_KIND_RULE {
+                    row.dash_count
+                } else {
+                    0
+                };
+                let linecap = if row.kind == XYAF_KIND_RULE {
+                    row.linecap
+                } else {
+                    LINECAP_NONE
+                };
+                styles.push(StyleOut {
+                    fill,
+                    stroke,
+                    width,
+                    dash_count,
+                    linecap,
+                    dash: row.dash,
+                });
+                let (mark_kind, axis, symbol, value0, value1, size, tag) = match row.kind {
+                    XYAF_KIND_RULE => {
+                        if !has(row.facts, FACT_HAS_AXIS) || (row.axis != 1 && row.axis != 2) {
+                            return Err(AnnotationError::Length);
+                        }
+                        (
+                            ANN_KIND_RULE,
+                            row.axis - 1,
+                            0,
+                            require_flag(row, FACT_HAS_VALUE, 9)?,
+                            0.0,
+                            0.0,
+                            1u8,
+                        )
+                    }
+                    XYAF_KIND_BAND => {
+                        if !has(row.facts, FACT_HAS_AXIS) || (row.axis != 1 && row.axis != 2) {
+                            return Err(AnnotationError::Length);
+                        }
+                        (
+                            ANN_KIND_BAND,
+                            row.axis - 1,
+                            0,
+                            require_flag(row, FACT_HAS_START, 10)?,
+                            require_flag(row, FACT_HAS_END, 11)?,
+                            0.0,
+                            if row.axis == 2 { 4 } else { 2 },
+                        )
+                    }
+                    _ => (
+                        ANN_KIND_MARKER,
+                        0,
+                        row.symbol,
+                        require_flag(row, FACT_HAS_X, 0)?,
+                        require_flag(row, FACT_HAS_Y, 1)?,
+                        positive(or_default(row, FACT_HAS_SIZE, 12, 8.0)?)?,
+                        3u8,
+                    ),
+                };
+                mark_inputs.push(AnnotationMarkInput {
+                    kind: mark_kind,
+                    axis,
+                    symbol,
+                    style_ref,
+                    index: row.index,
+                    value0,
+                    value1,
+                    size,
+                });
+                if labelled {
+                    let (flags, rgba, fill, border_rgba, border_width, _) = label_style(row)?;
+                    attached.push(AttachedRow {
+                        stable_id: annotation_id(tag, row.index),
+                        rgba,
+                        fill,
+                        border_rgba,
+                        border_width,
+                        flags,
+                        text: row.text,
+                    });
+                }
+            }
+            _ => return Err(AnnotationError::Length),
+        }
+    }
+    let packed_marks = pack_annotation_marks(&mark_inputs, x0, x1, y0, y1).map_err(pack_err)?;
+    let xyad = pack_annotations(AnnotationFrameInput {
+        texts: &texts,
+        attached: &attached,
+        arrows: &arrows,
+        callouts: &callouts,
+        wrapped: &wrapped,
+    })?;
+    let n_styles = u32::try_from(styles.len()).map_err(|_| AnnotationError::Limit)?;
+    let n_mark_rows = u32::try_from(packed_marks.len()).map_err(|_| AnnotationError::Limit)?;
+    let xyad_len = u32::try_from(xyad.len()).map_err(|_| AnnotationError::Limit)?;
+    let total = XYAO_V1_HEADER_BYTES
+        .checked_add(styles.len().saturating_mul(XYAO_STYLE_BYTES))
+        .and_then(|value| value.checked_add(packed_marks.len().saturating_mul(PACKED_SCENE_ROW_BYTES)))
+        .and_then(|value| value.checked_add(xyad.len()))
+        .ok_or(AnnotationError::Limit)?;
+    let mut out = Vec::with_capacity(total);
+    out.extend_from_slice(XYAO_MAGIC);
+    out.extend_from_slice(&XYAO_VERSION.to_le_bytes());
+    out.extend_from_slice(&n_styles.to_le_bytes());
+    out.extend_from_slice(&n_mark_rows.to_le_bytes());
+    out.extend_from_slice(&xyad_len.to_le_bytes());
+    out.extend_from_slice(&0u32.to_le_bytes());
+    out.extend_from_slice(&style_ref_base.to_le_bytes());
+    out.extend_from_slice(&0u32.to_le_bytes());
+    for style in &styles {
+        out.extend_from_slice(&encode_style(style));
+    }
+    for row in &packed_marks {
+        out.extend_from_slice(&row.to_bytes());
+    }
+    out.extend_from_slice(&xyad);
+    Ok(out)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -739,5 +1427,123 @@ mod tests {
             }),
             Err(AnnotationError::Order)
         );
+    }
+
+    fn pack_xyaf(
+        kind: u8,
+        index: u32,
+        facts: u32,
+        style_bits: u32,
+        axis: u8,
+        nums: [f64; 18],
+        color: [u8; 4],
+        text: &[u8],
+    ) -> Vec<u8> {
+        let mut out = vec![0u8; XYAF_V1_HEADER_BYTES + text.len()];
+        out[..4].copy_from_slice(XYAF_MAGIC);
+        out[4..8].copy_from_slice(&XYAF_VERSION.to_le_bytes());
+        out[8..12].copy_from_slice(&index.to_le_bytes());
+        out[12] = kind;
+        out[13] = axis;
+        out[15] = ANCHOR_UNSET;
+        out[16..20].copy_from_slice(&facts.to_le_bytes());
+        out[20..24].copy_from_slice(&style_bits.to_le_bytes());
+        out[24] = LINECAP_NONE;
+        out[28..32].copy_from_slice(&(text.len() as u32).to_le_bytes());
+        for (i, value) in nums.iter().enumerate() {
+            let at = 32 + i * 8;
+            out[at..at + 8].copy_from_slice(&value.to_le_bytes());
+        }
+        out[176..180].copy_from_slice(&color);
+        out[XYAF_V1_HEADER_BYTES..].copy_from_slice(text);
+        out
+    }
+
+    #[test]
+    fn annotation_facts_route_text_and_arrow_into_xyao() {
+        let mut nums = [f64::NAN; 18];
+        nums[0] = 0.5;
+        nums[1] = 0.25;
+        let text = pack_xyaf(
+            XYAF_KIND_TEXT,
+            0,
+            FACT_HAS_X | FACT_HAS_Y | FACT_HAS_TEXT,
+            STYLE_COLOR,
+            0,
+            nums,
+            [102, 112, 133, 255],
+            b"hi",
+        );
+        let mut arrow_nums = [f64::NAN; 18];
+        arrow_nums[2] = 0.0;
+        arrow_nums[3] = 0.0;
+        arrow_nums[4] = 1.0;
+        arrow_nums[5] = 1.0;
+        let arrow = pack_xyaf(
+            XYAF_KIND_ARROW,
+            1,
+            FACT_HAS_X0 | FACT_HAS_Y0 | FACT_HAS_X1 | FACT_HAS_Y1,
+            STYLE_COLOR,
+            0,
+            arrow_nums,
+            [102, 112, 133, 255],
+            b"",
+        );
+        let mut facts = text;
+        facts.extend_from_slice(&arrow);
+        let packed = pack_annotation_facts(&facts, 3, 0.0, 10.0, -1.0, 1.0).unwrap();
+        assert_eq!(&packed[..4], b"XYAO");
+        assert_eq!(u32::from_le_bytes(packed[8..12].try_into().unwrap()), 0);
+        assert_eq!(u32::from_le_bytes(packed[12..16].try_into().unwrap()), 0);
+        let xyad_len = u32::from_le_bytes(packed[16..20].try_into().unwrap()) as usize;
+        let xyad = &packed[XYAO_V1_HEADER_BYTES..XYAO_V1_HEADER_BYTES + xyad_len];
+        assert_eq!(&xyad[..4], b"XYAD");
+        assert!(xyad.windows(4).any(|window| window == b"XYAT"));
+        assert!(xyad.windows(4).any(|window| window == b"XYAR"));
+        assert!(xyad.windows(2).any(|window| window == b"hi"));
+    }
+
+    #[test]
+    fn annotation_facts_expand_rule_and_default_wrapped_text_offset() {
+        let mut rule_nums = [f64::NAN; 18];
+        rule_nums[9] = 1.5;
+        let rule = pack_xyaf(
+            XYAF_KIND_RULE,
+            7,
+            FACT_HAS_VALUE | FACT_HAS_AXIS,
+            STYLE_COLOR,
+            1,
+            rule_nums,
+            [102, 112, 133, 255],
+            b"",
+        );
+        let mut wrap_nums = [f64::NAN; 18];
+        wrap_nums[0] = 0.5;
+        wrap_nums[1] = 0.5;
+        wrap_nums[8] = 96.0;
+        let wrapped = pack_xyaf(
+            XYAF_KIND_TEXT,
+            0,
+            FACT_HAS_WRAP | FACT_HAS_X | FACT_HAS_Y | FACT_HAS_TEXT,
+            STYLE_COLOR,
+            0,
+            wrap_nums,
+            [102, 112, 133, 255],
+            b"wrap",
+        );
+        let packed_rule = pack_annotation_facts(&rule, 2, 0.0, 10.0, -1.0, 1.0).unwrap();
+        assert_eq!(u32::from_le_bytes(packed_rule[8..12].try_into().unwrap()), 1);
+        assert_eq!(
+            u32::from_le_bytes(packed_rule[12..16].try_into().unwrap()),
+            2
+        );
+        let style_ref = u32::from_le_bytes(packed_rule[32 + 56 + 4..32 + 56 + 8].try_into().unwrap());
+        assert_eq!(style_ref, 2);
+        let packed_wrap = pack_annotation_facts(&wrapped, 0, 0.0, 1.0, 0.0, 1.0).unwrap();
+        let xyad_len = u32::from_le_bytes(packed_wrap[16..20].try_into().unwrap()) as usize;
+        let xyad = &packed_wrap[XYAO_V1_HEADER_BYTES..XYAO_V1_HEADER_BYTES + xyad_len];
+        assert!(xyad.windows(4).any(|window| window == b"XYAW"));
+        assert_eq!(u32::from_le_bytes(xyad[4..8].try_into().unwrap()), 3);
+        assert_eq!(&xyad[xyad.len() - 4..], b"wrap");
     }
 }

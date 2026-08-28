@@ -204,16 +204,17 @@ crates/
                         #   identity-chord smooth plus ABI 145 constant
                         #   marker_path XYMP tessellation plus ABI 146
                         #   constant linear-gradient XYGR fills plus ABI 147
-                        #   XYPK product packing facts.
+                        #   XYPK product packing facts plus ABI 148 XYAF
+                        #   annotation packing facts.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
     scene_colorbar.rs   # primary XYCB v2 colorbar framing (ABI 111): header,
                         #   stop/tick tables, domain-span checks, and
                         #   bounded-text rejection.
-    scene_annotations.rs # primary XYAD annotation framing (ABI 112): XYAT/
-                        #   XYAL/XYAR/XYAC/XYAW tables, version selection,
-                        #   envelope concatenation, and bounded-text rejection.
+    scene_annotations.rs # primary XYAD annotation framing (ABI 112) plus ABI
+                        #   148 XYAF annotation-fact packing: wrap/text/arrow/
+                        #   callout/rule routing, stable-id tags, and XYAO.
     jpeg.rs             # baseline JPEG encode (ABI 114): YCbCr 4:4:4, Annex K
                         #   tables, libjpeg quality curve, Huffman packing.
                         #   Native hosts only (`raster` feature).
@@ -656,6 +657,9 @@ heatmap painted-vs-lattice flags, and canonical column remapping.
 ABI v147 adds `xyg_scene_pack_product_facts` so Python and Node share one
 XYPK v1 facts packer: flags, `step_mode` (cartesian-only smooth), and
 extra0/extra1 cannot drift.
+ABI v148 adds `xyg_scene_pack_annotation_facts` so Python and Node share one
+XYAF v1 facts packer: wrap vs text vs arrow vs callout vs rule/band/marker
+routing, stable-id tags, mark-style defaults, and XYAD framing cannot drift.
 ABI v116 adds `xyg_scene_pack_annotation_marks` so Python and Node share
 one rule/band/marker expander: stable-id tags, opposite-axis domain
 spanning, and finite rejection.
@@ -732,5 +736,6 @@ landed; the remainder, in order:
    identity-chord `curve="smooth"` (`scene.rs` / host packers) ✅;
    ABI 145 constant `marker_path` XYMP tessellation (`scene.rs`) ✅;
    ABI 146 constant mark `fill` linear-gradient XYGR (`scene.rs`) ✅;
-   ABI 147 XYPK product packing facts (`xyg_scene_pack_product_facts`) ✅.
+   ABI 147 XYPK product packing facts (`xyg_scene_pack_product_facts`) ✅;
+   ABI 148 XYAF annotation packing facts (`xyg_scene_pack_annotation_facts`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

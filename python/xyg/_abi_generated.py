@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 147
-SIGNATURE_SHA256 = "8e916ee7cb3b9f725da59abfa8d25c8fb43600d80688e03cc409c7aafe59c94e"
+ABI_VERSION = 148
+SIGNATURE_SHA256 = "ba181bcc9da8b53b009380081ba761743af52885472b484257152ed69589718d"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -654,6 +654,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_figure_support_reason
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_pack_annotation_facts(const uint8_t * facts, size_t facts_len, uint32_t style_ref_base, double x0, double x1, double y0, double y1, uint8_t * out, size_t out_cap)
+    function = lib.xyg_scene_pack_annotation_facts
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_scene_pack_annotation_marks(const uint8_t * rows, size_t rows_len, double x0, double x1, double y0, double y1, uint8_t * out, size_t out_cap)
     function = lib.xyg_scene_pack_annotation_marks
     function.restype = ctypes.c_int32

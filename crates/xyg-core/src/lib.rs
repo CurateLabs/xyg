@@ -121,7 +121,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 147;
+pub const ABI_VERSION: u32 = 148;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1204,6 +1204,59 @@ pub unsafe extern "C" fn xyg_scene_pack_annotations(
     })
 }
 
+/// Pack concatenated XYAF v1 annotation facts into an XYAO v1 envelope.
+///
+/// Hosts pass authored kind/coords/style presence, literal RGBA, dash/linecap,
+/// and UTF-8. Rust owns wrap vs text vs arrow vs callout vs rule/band/marker
+/// routing, stable-id tags, style defaults, mark-row expansion, and XYAD
+/// framing. Returns the byte count on success. Error codes match
+/// `xyg_scene_pack_annotations`.
+///
+/// # Safety
+/// When `facts_len` is non-zero, `facts` must address that many readable bytes.
+/// When `out_cap` is non-zero, `out` must address that many writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_pack_annotation_facts(
+    facts: *const u8,
+    facts_len: usize,
+    style_ref_base: u32,
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if (facts_len > 0 && facts.is_null()) || (out_cap > 0 && out.is_null()) {
+        return -(AnnotationError::Length as i32);
+    }
+    ffi_guard(-(AnnotationError::Length as i32), || {
+        let facts_bytes = if facts_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(facts, facts_len)
+        };
+        match scene_annotations::pack_annotation_facts(facts_bytes, style_ref_base, x0, x1, y0, y1)
+        {
+            Ok(bytes) => {
+                if bytes.len() > out_cap {
+                    return -(AnnotationError::Output as i32);
+                }
+                if bytes.is_empty() {
+                    return 0;
+                }
+                let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                dest[..bytes.len()].copy_from_slice(&bytes);
+                match i32::try_from(bytes.len()) {
+                    Ok(count) => count,
+                    Err(_) => -(AnnotationError::Limit as i32),
+                }
+            }
+            Err(error) => -(error as i32),
+        }
+    })
+}
+
 /// Resolve a packed `XYAR` v1 envelope to the product axis range.
 ///
 /// Writes `(lo, hi)` on success and returns 0. Hosts pack axis options,
@@ -1682,7 +1735,9 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// Scene v31 is unchanged. ABI 147 does not change Scene records;
 /// `xyg_scene_pack_product_facts` owns flags/`step_mode`/extra0/extra1 from
 /// packed XYPK v1 so cartesian-vs-polar smooth and painted heatmap dispatch
-/// cannot drift.
+/// cannot drift. ABI 148 does not change Scene records;
+/// `xyg_scene_pack_annotation_facts` owns wrap vs text vs arrow vs callout vs
+/// rule/band/marker routing from packed XYAF v1.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
@@ -14190,6 +14245,40 @@ mod tests {
         };
         assert_eq!(facts_code, 3);
         assert_eq!(line_out[2], 11);
+        let mut xyaf = vec![0u8; 232];
+        xyaf[..4].copy_from_slice(b"XYAF");
+        xyaf[4..8].copy_from_slice(&1u32.to_le_bytes());
+        xyaf[12] = 3;
+        xyaf[13] = 1;
+        xyaf[15] = 255;
+        xyaf[16..20].copy_from_slice(&(1u32 << 11 | 1u32 << 15).to_le_bytes());
+        xyaf[24] = 255;
+        xyaf[32 + 9 * 8..32 + 10 * 8].copy_from_slice(&1.5f64.to_le_bytes());
+        xyaf[176..180].copy_from_slice(&[102, 112, 133, 255]);
+        let mut annotation_out = [0u8; 4096];
+        let annotation_code = unsafe {
+            xyg_scene_pack_annotation_facts(
+                xyaf.as_ptr(),
+                xyaf.len(),
+                4,
+                0.0,
+                10.0,
+                -1.0,
+                1.0,
+                annotation_out.as_mut_ptr(),
+                annotation_out.len(),
+            )
+        };
+        assert!(annotation_code > 32);
+        assert_eq!(&annotation_out[..4], b"XYAO");
+        assert_eq!(
+            u32::from_le_bytes(annotation_out[8..12].try_into().unwrap()),
+            1
+        );
+        assert_eq!(
+            u32::from_le_bytes(annotation_out[12..16].try_into().unwrap()),
+            2
+        );
     }
 
     #[test]

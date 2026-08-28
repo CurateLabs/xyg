@@ -2253,6 +2253,46 @@ def _decode_packed_scene_rows(
     return kinds, stable_ids, style_refs, diameters, symbols, expansion, coords
 
 
+def scene_pack_annotation_facts(
+    facts: bytes,
+    *,
+    style_ref_base: int,
+    x_domain: tuple[float, float],
+    y_domain: tuple[float, float],
+) -> bytes:
+    """Pack XYAF v1 annotation facts into an XYAO envelope (M2 #271)."""
+    payload = facts if isinstance(facts, (bytes, bytearray, memoryview)) else bytes(facts)
+    extra = 32 + 512 * 56
+    out = np.zeros(MAX_SCENE_ANNOTATION_INPUT_BYTES + extra, dtype=np.uint8)
+    source = np.frombuffer(payload, dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    x0, x1 = (float(value) for value in x_domain)
+    y0, y1 = (float(value) for value in y_domain)
+    code = int(
+        _lib.xyg_scene_pack_annotation_facts(
+            _ptr_u8(source) if source.size else 0,
+            int(source.size),
+            int(style_ref_base),
+            x0,
+            x1,
+            y0,
+            y1,
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if code == -5:
+        raise ValueError("Scene annotation geometry must be finite")
+    if code == -6:
+        raise ValueError("Scene annotations require nonempty NUL-free text")
+    if code == -7:
+        raise ValueError("Scene v23 label border requires label_background")
+    if code == -3:
+        raise ValueError("Scene annotations are limited to 128 entries")
+    if code < 0:
+        raise ValueError("invalid scene annotation packing")
+    return bytes(out[:code])
+
+
 def scene_pack_legend(
     *,
     loc: int,

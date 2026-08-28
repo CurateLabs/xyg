@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { cssColorRgba8, lineChart, scatterChart } from "../src/index.js";
 import { figureSceneV3 } from "../src/scene.js";
-import { xyScenePackAnnotationMarks, xyScenePackProduct, xyScenePackProductFacts, xyScenePackTrace, xySceneResolveChromeStyle, xySceneResolvePackKind } from "../src/native.js";
+import { xyScenePackAnnotationFacts, xyScenePackAnnotationMarks, xyScenePackProduct, xyScenePackProductFacts, xyScenePackTrace, xySceneResolveChromeStyle, xySceneResolvePackKind } from "../src/native.js";
 import { f64Ptr, u8Ptr } from "../src/encode.js";
 
 test("cssColorRgba8 matches Python named colors and none", () => {
@@ -305,4 +305,32 @@ test("pack_annotation_marks marker keeps point size and symbol", () => {
 test("pack_annotation_marks rejects bad kind and nonfinite domain", () => {
   assert.equal(packAnnotationMarks(annotationMarkRow(9, 0, 0, 0, 0, 0, 0, 1), [0, 1], [0, 1]).code, -1);
   assert.equal(packAnnotationMarks(annotationMarkRow(1, 0, 0, 0, 0, 0, 0, 0), [0, Number.NaN], [0, 1]).code, -5);
+});
+
+test("xyScenePackAnnotationFacts routes text into XYAO/XYAD", () => {
+  const facts = new Uint8Array(232 + 2);
+  const view = new DataView(facts.buffer);
+  facts.set(new TextEncoder().encode("XYAF"), 0);
+  view.setUint32(4, 1, true);
+  facts[15] = 255;
+  view.setUint32(16, (1 << 1) | (1 << 5) | (1 << 6), true);
+  view.setUint32(20, 1, true);
+  facts[24] = 255;
+  view.setUint32(28, 2, true);
+  view.setFloat64(32, 0.5, true);
+  view.setFloat64(40, 0.25, true);
+  facts.set([102, 112, 133, 255], 176);
+  facts.set(new TextEncoder().encode("hi"), 232);
+  const out = new Uint8Array(4096);
+  const code = xyScenePackAnnotationFacts(
+    u8Ptr(facts), BigInt(facts.length), 0,
+    0, 1, 0, 1,
+    u8Ptr(out), BigInt(out.length),
+  );
+  assert.ok(code > 32);
+  assert.equal(String.fromCharCode(out[0], out[1], out[2], out[3]), "XYAO");
+  const xyadLen = new DataView(out.buffer).getUint32(16, true);
+  const xyad = Buffer.from(out.subarray(32, 32 + xyadLen));
+  assert.ok(xyad.includes(Buffer.from("XYAD")));
+  assert.ok(xyad.includes(Buffer.from("hi")));
 });

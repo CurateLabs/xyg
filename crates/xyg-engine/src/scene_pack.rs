@@ -21,7 +21,9 @@
 //! kind, coords, step, curve-smooth, stroke-perimeter, density/heatmap paint
 //! presence, hex pitch, and grid shape; Rust resolves flags, `step_mode`, and
 //! extra0/extra1 so Python and Node cannot drift on cartesian-vs-polar smooth
-//! or painted-vs-lattice heatmap dispatch.
+//! or painted-vs-lattice heatmap dispatch. ABI 148 lives in
+//! `scene_annotations.rs`: XYAF v1 facts pack wrap/text/arrow/callout/rule
+//! routing so those families cannot drift.
 
 use crate::scene::MAX_SCENE_MARKS;
 

@@ -38,6 +38,7 @@ import {
   xySceneFigureSupportReason,
   xyScenePackProduct,
   xyScenePackProductFacts,
+  xyScenePackAnnotationFacts,
   xyScenePackAnnotationMarks,
   xySceneRasterCommands,
   xySceneResolveChromeStyle,
@@ -175,6 +176,263 @@ function packProductFacts({
   );
   if (code === -6) throw new RangeError("Scene v12 does not support product kind");
   return decodePackedRows(out, code);
+}
+
+const XYAF_KIND_CODES = { text: 0, arrow: 1, callout: 2, rule: 3, band: 4, marker: 5 };
+const XYAF_FACT_HAS_WRAP = 1 << 0;
+const XYAF_FACT_HAS_TEXT = 1 << 1;
+const XYAF_FACT_HAS_DX = 1 << 3;
+const XYAF_FACT_HAS_DY = 1 << 4;
+const XYAF_FACT_HAS_X = 1 << 5;
+const XYAF_FACT_HAS_Y = 1 << 6;
+const XYAF_FACT_HAS_X0 = 1 << 7;
+const XYAF_FACT_HAS_Y0 = 1 << 8;
+const XYAF_FACT_HAS_X1 = 1 << 9;
+const XYAF_FACT_HAS_Y1 = 1 << 10;
+const XYAF_FACT_HAS_VALUE = 1 << 11;
+const XYAF_FACT_HAS_START = 1 << 12;
+const XYAF_FACT_HAS_END = 1 << 13;
+const XYAF_FACT_HAS_SIZE = 1 << 14;
+const XYAF_FACT_HAS_AXIS = 1 << 15;
+const XYAF_FACT_HAS_SYMBOL = 1 << 16;
+const XYAF_FACT_HAS_ANCHOR = 1 << 17;
+const XYAF_STYLE_COLOR = 1 << 0;
+const XYAF_STYLE_OPACITY = 1 << 1;
+const XYAF_STYLE_WIDTH = 1 << 2;
+const XYAF_STYLE_DASH = 1 << 3;
+const XYAF_STYLE_LINECAP = 1 << 4;
+const XYAF_STYLE_STROKE_COLOR = 1 << 5;
+const XYAF_STYLE_STROKE_WIDTH = 1 << 6;
+const XYAF_STYLE_LABEL_COLOR = 1 << 7;
+const XYAF_STYLE_LABEL_OPACITY = 1 << 8;
+const XYAF_STYLE_LABEL_BACKGROUND = 1 << 9;
+const XYAF_STYLE_LABEL_BORDER_COLOR = 1 << 10;
+const XYAF_STYLE_LABEL_BORDER_WIDTH = 1 << 11;
+
+function annotationAllowedStyle(kind, wrapped, labelled) {
+  const allowed = new Set(["color", "opacity"]);
+  if (wrapped) return new Set(["color", "opacity", "label_background", "label_border_color", "label_border_width"]);
+  if (kind === "arrow") { allowed.add("width"); return allowed; }
+  if (kind === "callout" || kind === "text") {
+    allowed.add("label_background"); allowed.add("label_border_color"); allowed.add("label_border_width");
+    if (kind === "callout") allowed.add("width");
+    return allowed;
+  }
+  if (kind === "rule") { allowed.add("width"); allowed.add("dash"); allowed.add("linecap"); }
+  else if (kind === "marker") { allowed.add("stroke_color"); allowed.add("stroke_width"); }
+  if (labelled && ["rule", "band", "marker"].includes(kind)) {
+    allowed.add("label_color"); allowed.add("label_opacity"); allowed.add("label_background");
+    allowed.add("label_border_color"); allowed.add("label_border_width");
+  }
+  return allowed;
+}
+
+function packXyAf(annotation, index) {
+  const kind = annotation.kind;
+  const kindCode = XYAF_KIND_CODES[kind];
+  if (kindCode == null) throw new RangeError(`Scene v12 annotations support rule, band, and unlabeled marker only; ${JSON.stringify(kind)} is deferred`);
+  const wrapped = ["text", "callout"].includes(kind) && Object.hasOwn(annotation, "wrap");
+  const labelled = annotation.text != null && annotation.text !== "";
+  if (annotation.class_name != null && annotation.class_name !== "") {
+    if (kind === "arrow") throw new RangeError("Scene arrows do not encode class_name");
+    if (kind === "callout") throw new RangeError("Scene callouts do not encode class_name");
+    if (wrapped) throw new RangeError("Scene wrapped annotations do not encode class_name");
+    throw new RangeError(sceneSupportReason(1n << 2n));
+  }
+  if (kind === "arrow" && labelled) throw new RangeError("Scene arrows do not encode text");
+  let encoded = new Uint8Array();
+  if (labelled) {
+    if (typeof annotation.text !== "string" || annotation.text.includes("\0") || (wrapped && annotation.text.includes("\r"))) {
+      throw new RangeError(wrapped ? "Scene wrapped annotations require nonempty NUL-free LF text" : kind === "text" ? "Scene v16 text annotations require nonempty NUL-free text" : kind === "callout" ? "Scene callouts require nonempty NUL-free text" : "Scene v16 annotation labels require nonempty NUL-free text");
+    }
+    encoded = new TextEncoder().encode(annotation.text);
+    if (encoded.length > 4096) throw new RangeError("Scene annotations are limited to 4,096 UTF-8 bytes");
+  } else if (kind === "text" || kind === "callout") {
+    throw new RangeError(kind === "callout" ? "Scene callouts require nonempty NUL-free text" : "Scene v16 text annotations require nonempty NUL-free text");
+  }
+  const style = { ...(annotation.style ?? {}) };
+  const allowed = annotationAllowedStyle(kind, wrapped, labelled);
+  const unsupported = Object.keys(style).filter((key) => !allowed.has(key) && style[key] != null).sort();
+  if (unsupported.length) {
+    if (wrapped) throw new RangeError("Scene wrapped annotations do not encode class_name, custom fonts, CSS, markup, collision, or leader style");
+    if (kind === "arrow") throw new RangeError(`Scene arrow style does not encode ${JSON.stringify(unsupported)}`);
+    if (kind === "callout") throw new RangeError(`Scene callout style does not encode ${JSON.stringify(unsupported)}`);
+    if (kind === "text") throw new RangeError("Scene v23 text annotations support only color, opacity, label_background, and label_border_*");
+    throw new RangeError(`Scene v12 ${kind} annotation style does not encode ${JSON.stringify(unsupported)}`);
+  }
+  const nums = new Float64Array(18);
+  nums.fill(Number.NaN);
+  let facts = 0;
+  let styleBits = 0;
+  const zeros = new Uint8Array(4);
+  let color = zeros, stroke = zeros, labelColor = zeros, labelFill = zeros, labelBorder = zeros;
+  if (labelled) facts |= XYAF_FACT_HAS_TEXT;
+  if (wrapped) {
+    facts |= XYAF_FACT_HAS_WRAP;
+    nums[8] = annotationNumber(annotation, "wrap", undefined, "wrapped width");
+  }
+  const required = wrapped
+    ? [["x", 0, XYAF_FACT_HAS_X, "wrapped x"], ["y", 1, XYAF_FACT_HAS_Y, "wrapped y"]]
+    : {
+      arrow: [["x0", 2, XYAF_FACT_HAS_X0, "arrow x0"], ["y0", 3, XYAF_FACT_HAS_Y0, "arrow y0"], ["x1", 4, XYAF_FACT_HAS_X1, "arrow x1"], ["y1", 5, XYAF_FACT_HAS_Y1, "arrow y1"]],
+      callout: [["x", 0, XYAF_FACT_HAS_X, "callout x"], ["y", 1, XYAF_FACT_HAS_Y, "callout y"]],
+      text: [["x", 0, XYAF_FACT_HAS_X, "text x"], ["y", 1, XYAF_FACT_HAS_Y, "text y"]],
+      rule: [["value", 9, XYAF_FACT_HAS_VALUE, "rule value"]],
+      band: [["start", 10, XYAF_FACT_HAS_START, "band start"], ["end", 11, XYAF_FACT_HAS_END, "band end"]],
+      marker: [["x", 0, XYAF_FACT_HAS_X, "marker x"], ["y", 1, XYAF_FACT_HAS_Y, "marker y"]],
+    }[kind];
+  for (const [key, slot, flag, label] of required) {
+    nums[slot] = annotationNumber(annotation, key, undefined, label);
+    facts |= flag;
+  }
+  for (const [key, slot, flag, label] of [["dx", 6, XYAF_FACT_HAS_DX, wrapped ? "wrapped dx" : "callout dx"], ["dy", 7, XYAF_FACT_HAS_DY, wrapped ? "wrapped dy" : "callout dy"], ["size", 12, XYAF_FACT_HAS_SIZE, "marker size"]]) {
+    if (Object.hasOwn(annotation, key)) {
+      nums[slot] = annotationNumber(annotation, key, undefined, label);
+      facts |= flag;
+    }
+  }
+  let axisCode = 0;
+  if (kind === "rule" || kind === "band") {
+    if (annotation.axis !== "x" && annotation.axis !== "y") throw new RangeError(`Scene v12 ${kind} annotation axis must be 'x' or 'y'`);
+    axisCode = annotation.axis === "x" ? 1 : 2;
+    facts |= XYAF_FACT_HAS_AXIS;
+  }
+  let symbol = 0;
+  if (kind === "marker") {
+    symbol = annotationSymbolCode(annotation.symbol ?? "circle");
+    if (Object.hasOwn(annotation, "symbol")) facts |= XYAF_FACT_HAS_SYMBOL;
+    if (Object.hasOwn(annotation, "size") && (!Number.isFinite(nums[12]) || nums[12] <= 0)) throw new RangeError("Scene v12 marker annotation size must be finite and positive");
+  }
+  let anchor = 255;
+  if (Object.hasOwn(annotation, "anchor") || kind === "callout" || wrapped) {
+    const anchorCode = { start: 0, middle: 1, end: 2 }[annotation.anchor ?? "start"];
+    if (anchorCode == null) throw new RangeError(wrapped ? "Scene wrapped annotation anchor must be start, middle, or end" : "Scene callout anchor must be start, middle, or end");
+    anchor = anchorCode;
+    facts |= XYAF_FACT_HAS_ANCHOR;
+  }
+  const kindLabel = wrapped ? "wrapped" : kind;
+  if (Object.hasOwn(style, "opacity")) {
+    nums[13] = annotationNumber(style, "opacity", undefined, `${kindLabel} opacity`);
+    styleBits |= XYAF_STYLE_OPACITY;
+    if (!Number.isFinite(nums[13]) || nums[13] < 0 || nums[13] > 1) throw new RangeError(kind === "arrow" ? "Scene arrow opacity must be in [0, 1] and width must be positive" : wrapped ? "Scene wrapped annotation values are invalid" : kind === "callout" ? "Scene callout opacity must be in [0, 1] and width must be positive" : `Scene v12 ${kind} annotation opacity must be finite and in [0, 1]`);
+  }
+  if (Object.hasOwn(style, "width")) {
+    nums[14] = annotationNumber(style, "width", undefined, `${kindLabel} width`);
+    styleBits |= XYAF_STYLE_WIDTH;
+    if ((kind === "arrow" || kind === "callout") && (!Number.isFinite(nums[14]) || nums[14] <= 0)) throw new RangeError(kind === "arrow" ? "Scene arrow opacity must be in [0, 1] and width must be positive" : "Scene callout opacity must be in [0, 1] and width must be positive");
+    if (kind === "rule" && (!Number.isFinite(nums[14]) || nums[14] <= 0)) throw new RangeError("Scene v12 rule annotation width must be finite and nonnegative");
+  }
+  if (Object.hasOwn(style, "stroke_width")) {
+    nums[15] = annotationNumber(style, "stroke_width", undefined, `${kind} width`);
+    styleBits |= XYAF_STYLE_STROKE_WIDTH;
+  }
+  if (Object.hasOwn(style, "label_opacity")) {
+    nums[16] = annotationNumber(style, "label_opacity", undefined, `${kind} label opacity`);
+    styleBits |= XYAF_STYLE_LABEL_OPACITY;
+  }
+  if (Object.hasOwn(style, "label_border_width")) {
+    nums[17] = annotationNumber(style, "label_border_width", undefined, `${kindLabel} label border width`);
+    styleBits |= XYAF_STYLE_LABEL_BORDER_WIDTH;
+    if (!Number.isFinite(nums[17]) || nums[17] <= 0) throw new RangeError("Scene v23 label border width must be positive and finite");
+  }
+  for (const [key, bit] of [["color", XYAF_STYLE_COLOR], ["stroke_color", XYAF_STYLE_STROKE_COLOR], ["label_color", XYAF_STYLE_LABEL_COLOR], ["label_background", XYAF_STYLE_LABEL_BACKGROUND], ["label_border_color", XYAF_STYLE_LABEL_BORDER_COLOR]]) {
+    if (Object.hasOwn(style, key)) {
+      const packed = rgba8(annotationColor(style, key, "", `${kindLabel} ${key.replaceAll("_", " ")}`), 1, kindLabel);
+      styleBits |= bit;
+      if (key === "color") color = packed;
+      else if (key === "stroke_color") stroke = packed;
+      else if (key === "label_color") labelColor = packed;
+      else if (key === "label_background") labelFill = packed;
+      else labelBorder = packed;
+    }
+  }
+  if ((style.label_border_color == null) !== (style.label_border_width == null)) throw new RangeError(wrapped ? "Scene wrapped label border requires color and width" : "Scene v23 label border requires color and width");
+  let parsedDash = null;
+  let parsedCap = null;
+  if (kind === "rule") {
+    parsedDash = parseSceneDash(style.dash);
+    if (parsedDash === false) throw new RangeError("Scene v12 rule annotation dash is not a constant pattern");
+    if (parsedDash) styleBits |= XYAF_STYLE_DASH;
+    parsedCap = parseSceneLinecap(style.linecap ?? style.lineCap);
+    if (parsedCap === false) throw new RangeError("Scene v12 rule annotation linecap is not a Scene cap");
+    if (parsedCap != null) styleBits |= XYAF_STYLE_LINECAP;
+  }
+  const out = new Uint8Array(232 + encoded.length);
+  const view = new DataView(out.buffer);
+  out[0] = 88; out[1] = 89; out[2] = 65; out[3] = 70; // XYAF
+  view.setUint32(4, 1, true);
+  view.setUint32(8, index >>> 0, true);
+  out[12] = kindCode;
+  out[13] = axisCode;
+  out[14] = symbol;
+  out[15] = anchor;
+  view.setUint32(16, facts >>> 0, true);
+  view.setUint32(20, styleBits >>> 0, true);
+  out[24] = parsedCap == null ? 255 : parsedCap;
+  out[25] = parsedDash ? parsedDash.length : 0;
+  view.setUint32(28, encoded.length, true);
+  for (let i = 0; i < 18; i += 1) view.setFloat64(32 + i * 8, nums[i], true);
+  out.set(color, 176);
+  out.set(stroke, 180);
+  out.set(labelColor, 184);
+  out.set(labelFill, 188);
+  out.set(labelBorder, 192);
+  if (parsedDash) {
+    for (let i = 0; i < parsedDash.length; i += 1) view.setFloat32(200 + i * 4, Number(parsedDash[i]), true);
+  }
+  out.set(encoded, 232);
+  return out;
+}
+
+function packAnnotationFacts(facts, styleRefBase, xDomain, yDomain) {
+  const source = facts instanceof Uint8Array ? facts : new Uint8Array(facts ?? []);
+  if (!source.length) return new Uint8Array();
+  const out = new Uint8Array(Math.max(65536, source.length * 4));
+  const code = xyScenePackAnnotationFacts(
+    u8Ptr(source),
+    BigInt(source.length),
+    styleRefBase >>> 0,
+    Number(xDomain[0]),
+    Number(xDomain[1]),
+    Number(yDomain[0]),
+    Number(yDomain[1]),
+    u8Ptr(out),
+    BigInt(out.length),
+  );
+  if (code === -5) throw new RangeError("Scene annotation geometry must be finite");
+  if (code === -6) throw new RangeError("Scene annotations require nonempty NUL-free text");
+  if (code === -7) throw new RangeError("Scene v23 label border requires label_background");
+  if (code === -3) throw new RangeError("Scene annotations are limited to 128 entries");
+  if (code < 0) throw new RangeError("invalid scene annotation packing");
+  return out.subarray(0, code);
+}
+
+function applyXyao(payload, kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, styles, dashes, linecaps) {
+  if (!payload.length) return new Uint8Array();
+  const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
+  if (payload[0] !== 88 || payload[1] !== 89 || payload[2] !== 65 || payload[3] !== 79 || view.getUint32(4, true) !== 1) {
+    throw new RangeError("invalid scene annotation packing");
+  }
+  const nStyles = view.getUint32(8, true);
+  const nRows = view.getUint32(12, true);
+  const xyadLen = view.getUint32(16, true);
+  let at = 32;
+  for (let i = 0; i < nStyles; i += 1) {
+    const fill = [payload[at], payload[at + 1], payload[at + 2], payload[at + 3]];
+    const stroke = [payload[at + 4], payload[at + 5], payload[at + 6], payload[at + 7]];
+    const width = view.getFloat64(at + 8, true);
+    const dashCount = payload[at + 16];
+    const cap = payload[at + 17];
+    const pattern = [];
+    for (let d = 0; d < dashCount; d += 1) pattern.push(view.getFloat32(at + 24 + d * 4, true));
+    styles.push({ fillRgba: fill, strokeRgba: stroke, strokeWidth: width });
+    dashes.push(dashCount ? pattern : null);
+    linecaps.push(cap === 255 ? null : cap);
+    at += 56;
+  }
+  const packed = payload.subarray(at, at + nRows * 56);
+  if (nRows) appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, decodePackedRows(packed, nRows));
+  return payload.subarray(at + nRows * 56, at + nRows * 56 + xyadLen);
 }
 
 function packAnnotationMarks(rowBytes, xDomain, yDomain) {
@@ -3405,132 +3663,16 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     }));
   }
 
-  const annotationPrefix = 0x5859000000000000n, attachedLabels = [], straightArrows = [], cartesianCallouts = [], wrappedAnnotations = [];
-  const annotationMarkRows = [];
+  const annotationParts = [];
   for (const [annotationIndex, annotation] of (figure.annotations ?? []).entries()) {
-    const kind = annotation.kind;
-    if (["text", "callout"].includes(kind) && Object.hasOwn(annotation, "wrap")) { wrappedAnnotations.push(annotation); continue; }
-    if (kind === "text") continue;
-    if (kind === "arrow") {
-      if (annotation.text != null && annotation.text !== "") throw new RangeError("Scene arrows do not encode text");
-      if (annotation.class_name != null && annotation.class_name !== "") throw new RangeError("Scene arrows do not encode class_name");
-      const style = { ...(annotation.style ?? {}) }, bad = Object.keys(style).filter((key) => !["color", "opacity", "width"].includes(key) && style[key] != null).sort();
-      if (bad.length) throw new RangeError(`Scene arrow style does not encode ${JSON.stringify(bad)}`);
-      const opacity = annotationNumber(style, "opacity", 1, "arrow opacity"), width = annotationNumber(style, "width", 1.5, "arrow width");
-      if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1 || !Number.isFinite(width) || width <= 0) throw new RangeError("Scene arrow opacity must be in [0, 1] and width must be positive");
-      straightArrows.push({ stableId: annotationPrefix | (5n << 40n) | BigInt(annotationIndex), x0: annotationNumber(annotation, "x0", undefined, "arrow x0"), y0: annotationNumber(annotation, "y0", undefined, "arrow y0"), x1: annotationNumber(annotation, "x1", undefined, "arrow x1"), y1: annotationNumber(annotation, "y1", undefined, "arrow y1"), rgba: rgba8(annotationColor(style, "color", "#667085", "arrow color"), 1, "arrow"), opacity, width });
-      continue;
-    }
-    if (kind === "callout") {
-      if (annotation.class_name != null && annotation.class_name !== "") throw new RangeError("Scene callouts do not encode class_name");
-      if (typeof annotation.text !== "string" || !annotation.text || annotation.text.includes("\0")) throw new RangeError("Scene callouts require nonempty NUL-free text");
-      const text = new TextEncoder().encode(annotation.text);
-      if (text.length > 4096) throw new RangeError("Scene callouts are limited to 4,096 UTF-8 bytes");
-      const style = { ...(annotation.style ?? {}) }, bad = Object.keys(style).filter((key) => !["color", "opacity", "width", "label_background", "label_border_color", "label_border_width"].includes(key) && style[key] != null).sort();
-      if (bad.length) throw new RangeError(`Scene callout style does not encode ${JSON.stringify(bad)}`);
-      const opacity = annotationNumber(style, "opacity", 1, "callout opacity"), width = annotationNumber(style, "width", 1.5, "callout width");
-      if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1 || !Number.isFinite(width) || width <= 0) throw new RangeError("Scene callout opacity must be in [0, 1] and width must be positive");
-      const x = annotationNumber(annotation, "x", undefined, "callout x"), y = annotationNumber(annotation, "y", undefined, "callout y"), dx = annotationNumber(annotation, "dx", 36, "callout dx"), dy = annotationNumber(annotation, "dy", -30, "callout dy");
-      const anchorCode = { start: 0, middle: 1, end: 2 }[annotation.anchor ?? "start"];
-      if (anchorCode == null) throw new RangeError("Scene callout anchor must be start, middle, or end");
-      // XYAC v1 rows are LE dddd4sddB3xI (60 fixed bytes), followed by UTF-8
-      // text.  When any callout requests a label background, XYAC v2 retains
-      // those bytes and appends one literal label-fill RGBA8 before each text.
-      // Rust derives identity, layout, and label-box geometry from record order.
-      const labelFill = style.label_background == null ? null : rgba8(annotationColor(style, "label_background", "", "callout label background"), 1, "callout label background");
-      if ((style.label_border_color == null) !== (style.label_border_width == null)) throw new RangeError("Scene v23 label border requires color and width");
-      const labelBorder = style.label_border_color == null ? null : { rgba: rgba8(annotationColor(style, "label_border_color", "", "callout label border"), 1, "callout label border"), width: annotationNumber(style, "label_border_width", undefined, "callout label border width") };
-      if (labelBorder && (!Number.isFinite(labelBorder.width) || labelBorder.width <= 0)) throw new RangeError("Scene v23 label border width must be positive and finite");
-      if (labelBorder && !labelFill) throw new RangeError("Scene v23 label border requires label_background");
-      cartesianCallouts.push({ x, y, dx, dy, rgba: rgba8(annotationColor(style, "color", "#344054", "callout color"), 1, "callout"), opacity, width, anchorCode, text, labelFill, labelBorder });
-      continue;
-    }
-    if (!["rule", "band", "marker"].includes(kind)) throw new RangeError(`Scene v12 annotations support rule, band, and unlabeled marker only; ${JSON.stringify(kind)} is deferred`);
-    if (annotation.text != null && annotation.text !== "" && (typeof annotation.text !== "string" || annotation.text.includes("\0"))) throw new RangeError("Scene v16 annotation labels require nonempty NUL-free text");
-    if (annotation.class_name != null && annotation.class_name !== "") throw new RangeError(sceneSupportReason(1n << 2n));
-    const style = { ...(annotation.style ?? {}) };
-    const hasAttachedLabel = annotation.text != null && annotation.text !== "";
-    const allowed = new Set(kind === "rule" ? ["color", "opacity", "width", "dash", "linecap"] : kind === "marker" ? ["color", "opacity", "stroke_color", "stroke_width"] : ["color", "opacity"]);
-    if (hasAttachedLabel) { allowed.add("label_color"); allowed.add("label_opacity"); allowed.add("label_background"); allowed.add("label_border_color"); allowed.add("label_border_width"); }
-    const unsupported = Object.keys(style).filter((key) => !allowed.has(key) && style[key] != null).sort();
-    if (unsupported.length) throw new RangeError(`Scene v12 ${kind} annotation style does not encode ${JSON.stringify(unsupported)}`);
-    const opacity = annotationNumber(style, "opacity", kind === "band" ? 0.14 : 1, `${kind} opacity`);
-    if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) throw new RangeError(`Scene v12 ${kind} annotation opacity must be finite and in [0, 1]`);
-    const color = annotationColor(style, "color", kind === "band" ? "#64748b" : "#667085", `${kind} color`);
-    const strokeColor = annotationColor(style, "stroke_color", color, `${kind} stroke color`);
-    const widthKey = kind === "rule" ? "width" : "stroke_width";
-    const width = annotationNumber(style, widthKey, kind === "band" ? 0 : 1.5, `${kind} width`);
-    if (!Number.isFinite(width) || width < 0 || (kind === "rule" && width === 0)) throw new RangeError(`Scene v12 ${kind} annotation width must be finite and nonnegative`);
-    styles.push({ fillRgba: kind === "rule" ? [0, 0, 0, 0] : rgba8(color, opacity, "annotation fill"), strokeRgba: rgba8(strokeColor, opacity, "annotation stroke"), strokeWidth: width });
-    const parsedDash = kind === "rule" ? parseSceneDash(style.dash) : null;
-    if (parsedDash === false) throw new RangeError(`Scene v12 ${kind} annotation dash is not a constant pattern`);
-    dashes.push(parsedDash);
-    const parsedCap = kind === "rule" ? parseSceneLinecap(style.linecap ?? style.lineCap) : null;
-    if (parsedCap === false) throw new RangeError(`Scene v12 ${kind} annotation linecap is not a Scene cap`);
-    linecaps.push(parsedCap === false ? null : parsedCap);
-    const styleRef = styles.length - 1;
-    const tag = kind === "band" && annotation.axis === "y" ? 4n : { rule: 1n, band: 2n, marker: 3n }[kind];
-    const stableId = annotationPrefix | (tag << 40n) | BigInt(annotationIndex);
-    if (hasAttachedLabel) {
-      const text = new TextEncoder().encode(annotation.text);
-      if (text.length > 4096) throw new RangeError("Scene v16 annotation labels are limited to 4,096 UTF-8 bytes");
-      const labelOpacity = annotationNumber(style, "label_opacity", 1, "label opacity");
-      if (!Number.isFinite(labelOpacity) || labelOpacity < 0 || labelOpacity > 1) throw new RangeError("Scene v16 annotation label opacity must be finite and in [0, 1]");
-      const labelFill = style.label_background == null ? null : rgba8(annotationColor(style, "label_background", "", "annotation label background"), 1, "annotation label background");
-      if ((style.label_border_color == null) !== (style.label_border_width == null)) throw new RangeError("Scene v23 label border requires color and width");
-      const labelBorder = style.label_border_color == null ? null : { rgba: rgba8(annotationColor(style, "label_border_color", "", "annotation label border"), 1, "annotation label border"), width: annotationNumber(style, "label_border_width", undefined, "annotation label border width") };
-      if (labelBorder && (!Number.isFinite(labelBorder.width) || labelBorder.width <= 0)) throw new RangeError("Scene v23 label border width must be positive and finite");
-      if (labelBorder && !labelFill) throw new RangeError("Scene v23 label border requires label_background");
-      attachedLabels.push({ stableId, rgba: rgba8(annotationColor(style, "label_color", "#667085", "label color"), labelOpacity, "annotation label"), labelFill, labelBorder, text });
-    }
-    const kindCode = { rule: 1, band: 2, marker: 3 }[kind];
-    if (kind === "rule") {
-      const value = annotationNumber(annotation, "value", undefined, `${kind} value`);
-      if (annotation.axis !== "x" && annotation.axis !== "y") throw new RangeError("Scene v12 rule annotation axis must be 'x' or 'y'");
-      annotationMarkRows.push(annotationMarkRow(kindCode, annotation.axis === "x" ? 0 : 1, 0, styleRef, annotationIndex, value, 0, 0));
-    } else if (kind === "band") {
-      const start = annotationNumber(annotation, "start", undefined, `${kind} start`);
-      const end = annotationNumber(annotation, "end", undefined, `${kind} end`);
-      if (annotation.axis !== "x" && annotation.axis !== "y") throw new RangeError("Scene v12 band annotation axis must be 'x' or 'y'");
-      annotationMarkRows.push(annotationMarkRow(kindCode, annotation.axis === "x" ? 0 : 1, 0, styleRef, annotationIndex, start, end, 0));
-    } else {
-      const size = annotationNumber(annotation, "size", 8, `${kind} size`);
-      if (!Number.isFinite(size) || size <= 0) throw new RangeError("Scene v12 marker annotation size must be finite and positive");
-      annotationMarkRows.push(annotationMarkRow(
-        kindCode, 0, annotationSymbolCode(annotation.symbol ?? "circle"), styleRef, annotationIndex,
-        annotationNumber(annotation, "x", undefined, `${kind} x`),
-        annotationNumber(annotation, "y", undefined, `${kind} y`),
-        size,
-      ));
-    }
+    annotationParts.push(packXyAf(annotation, annotationIndex));
   }
-  if (annotationMarkRows.length) {
-    const packedMarks = new Uint8Array(annotationMarkRows.reduce((n, row) => n + row.length, 0));
-    let offset = 0;
-    for (const row of annotationMarkRows) { packedMarks.set(row, offset); offset += row.length; }
-    appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packAnnotationMarks(packedMarks, xDomain, yDomain));
-  }
-  const textAnnotations = (figure.annotations ?? []).filter((annotation) => annotation.kind === "text" && !Object.hasOwn(annotation, "wrap"));
-  const textEncoder = new TextEncoder();
-  const authoredText = (() => {
-    if (!textAnnotations.length && !attachedLabels.length && !straightArrows.length && !cartesianCallouts.length && !wrappedAnnotations.length) return new Uint8Array();
-    if (cartesianCallouts.length > 128) throw new RangeError("Scene callouts are limited to 128 entries");
-    if (textAnnotations.length > 128) throw new RangeError("Scene v16 text annotations are limited to 128 entries");
-    const rows = textAnnotations.map((annotation) => {
-      if (typeof annotation.text !== "string" || !annotation.text || annotation.text.includes("\0")) throw new RangeError("Scene v16 text annotations require nonempty NUL-free text");
-      const text = textEncoder.encode(annotation.text); if (text.length > 4096) throw new RangeError("Scene v16 text annotations are bounded");
-      const x = annotationNumber(annotation, "x", undefined, "text x"), y = annotationNumber(annotation, "y", undefined, "text y");
-      const style = { ...(annotation.style ?? {}) }; if (Object.keys(style).some((key) => !["color", "opacity", "label_background", "label_border_color", "label_border_width"].includes(key))) throw new RangeError("Scene v23 text annotations support only color, opacity, label_background, and label_border_*");
-      const labelFill = style.label_background == null ? null : rgba8(annotationColor(style, "label_background", "", "text label background"), 1, "text label background");
-      if ((style.label_border_color == null) !== (style.label_border_width == null)) throw new RangeError("Scene v23 label border requires color and width");
-      const labelBorder = style.label_border_color == null ? null : { rgba: rgba8(annotationColor(style, "label_border_color", "", "text label border"), 1, "text label border"), width: annotationNumber(style, "label_border_width", undefined, "text label border width") };
-      if (labelBorder && (!Number.isFinite(labelBorder.width) || labelBorder.width <= 0)) throw new RangeError("Scene v23 label border width must be positive and finite");
-      if (labelBorder && !labelFill) throw new RangeError("Scene v23 label border requires label_background");
-      return { x, y, rgba: rgba8(annotationColor(style, "color", "#667085", "text color"), annotationNumber(style, "opacity", 1, "text opacity"), "text"), labelFill, labelBorder, text };
-    });
-    const wrapped = wrappedAnnotations.map((a) => { const s = { ...(a.style ?? {}) }, allowed = ["color","opacity","label_background","label_border_color","label_border_width"]; if (a.class_name != null && a.class_name !== "" || typeof a.text !== "string" || !a.text || a.text.includes("\\0") || a.text.includes("\\r") || Object.keys(s).some((k) => !allowed.includes(k) && s[k] != null)) throw new RangeError("Scene wrapped annotations do not encode class_name, custom fonts, CSS, markup, collision, or leader style"); const text=textEncoder.encode(a.text), x=annotationNumber(a,"x",undefined,"wrapped x"), y=annotationNumber(a,"y",undefined,"wrapped y"), dx=annotationNumber(a,"dx",a.kind === "callout" ? 36 : 6,"wrapped dx"), dy=annotationNumber(a,"dy",a.kind === "callout" ? -30 : -6,"wrapped dy"), wrap=annotationNumber(a,"wrap",undefined,"wrapped width"), anchor={start:0,middle:1,end:2}[a.anchor ?? "start"], opacity=annotationNumber(s,"opacity",1,"wrapped opacity"); if (text.length > 4096 || ![x,y,dx,dy,wrap,opacity].every(Number.isFinite) || wrap < 0 || opacity < 0 || opacity > 1 || anchor == null) throw new RangeError("Scene wrapped annotation values are invalid"); const fill=s.label_background == null ? [0,0,0,0] : rgba8(annotationColor(s,"label_background","","wrapped background"),1,"wrapped background"); if ((s.label_border_color == null) !== (s.label_border_width == null)) throw new RangeError("Scene wrapped label border requires color and width"); const border=s.label_border_color == null ? null : { rgba:rgba8(annotationColor(s,"label_border_color","","wrapped border"),1,"wrapped border"), width:annotationNumber(s,"label_border_width",undefined,"wrapped border width") }; if (border && (!Number.isFinite(border.width) || border.width <= 0 || fill[3] === 0)) throw new RangeError("Scene wrapped label border requires a positive width and background"); return {a,text,x,y,dx,dy,wrap,anchor,opacity,fill,border}; });
-    return packAnnotationEnvelope({ texts: rows, attached: attachedLabels, arrows: straightArrows, callouts: cartesianCallouts, wrapped });
-  })();
+  const annotationFacts = concatBytes(annotationParts);
+  const authoredText = applyXyao(
+    packAnnotationFacts(annotationFacts, styles.length, xDomain, yDomain),
+    kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, styles, dashes, linecaps,
+  );
+
   const title = figure.title ?? "";
   // `Figure.setAxis({ label })` is the public Node authoring form, matching
   // Python's `axis_options`; do not silently drop those bytes before the Rust

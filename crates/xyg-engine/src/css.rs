@@ -547,6 +547,18 @@ pub fn color_rgba8(css: &str, opacity: f32) -> [u8; 4] {
     }
 }
 
+/// Multiply a literal RGBA8 by an authored opacity using the same bankers
+/// rounding as [`color_rgba8`].
+pub fn apply_opacity_rgba8(rgba: [u8; 4], opacity: f32) -> [u8; 4] {
+    let opacity = if opacity.is_finite() { opacity } else { 1.0 };
+    [
+        rgba[0],
+        rgba[1],
+        rgba[2],
+        bankers_round_to_u8(rgba[3] as f32 * opacity),
+    ]
+}
+
 /// Split on whitespace outside parentheses, so `clamp(1px, 2vw, 3px) 4px`
 /// yields two tokens. `/` separates too (border-radius shorthand).
 fn split_tokens(s: &str) -> Vec<&str> {

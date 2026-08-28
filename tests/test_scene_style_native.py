@@ -9,6 +9,7 @@ import pytest
 from xyg._figure import Figure
 from xyg._native import (
     css_color_rgba,
+    scene_pack_annotation_facts,
     scene_pack_annotation_marks,
     scene_pack_annotations,
     scene_pack_colorbar,
@@ -389,3 +390,83 @@ def test_named_text_annotation_compiles_through_rust_xyad() -> None:
     encoded = figure_scene(figure)
     assert encoded
     assert b"note" in encoded
+
+
+def test_pack_annotation_facts_frames_text_and_expands_rule() -> None:
+    text = (
+        struct.pack(
+            "<4sIIBBBBIIBBHI18d4s4s4s4s4sI8f",
+            b"XYAF",
+            1,
+            0,
+            0,
+            0,
+            0,
+            255,
+            (1 << 1) | (1 << 5) | (1 << 6),
+            1,
+            255,
+            0,
+            0,
+            2,
+            0.5,
+            0.25,
+            *[float("nan")] * 16,
+            bytes((102, 112, 133, 255)),
+            bytes(4),
+            bytes(4),
+            bytes(4),
+            bytes(4),
+            0,
+            *[0.0] * 8,
+        )
+        + b"hi"
+    )
+    framed = scene_pack_annotation_facts(
+        text,
+        style_ref_base=0,
+        x_domain=(0.0, 1.0),
+        y_domain=(0.0, 1.0),
+    )
+    assert framed[:4] == b"XYAO"
+    xyad_len = int.from_bytes(framed[16:20], "little")
+    xyad = framed[32 : 32 + xyad_len]
+    assert xyad[:4] == b"XYAD"
+    assert b"XYAT" in xyad
+    assert b"hi" in xyad
+
+    rule = struct.pack(
+        "<4sIIBBBBIIBBHI18d4s4s4s4s4sI8f",
+        b"XYAF",
+        1,
+        7,
+        3,
+        1,
+        0,
+        255,
+        (1 << 11) | (1 << 15),
+        1,
+        255,
+        0,
+        0,
+        0,
+        *[float("nan")] * 9,
+        1.5,
+        *[float("nan")] * 8,
+        bytes((102, 112, 133, 255)),
+        bytes(4),
+        bytes(4),
+        bytes(4),
+        bytes(4),
+        0,
+        *[0.0] * 8,
+    )
+    packed = scene_pack_annotation_facts(
+        rule,
+        style_ref_base=2,
+        x_domain=(0.0, 10.0),
+        y_domain=(-1.0, 1.0),
+    )
+    assert int.from_bytes(packed[8:12], "little") == 1
+    assert int.from_bytes(packed[12:16], "little") == 2
+    assert int.from_bytes(packed[32 + 56 + 4 : 32 + 56 + 8], "little") == 2

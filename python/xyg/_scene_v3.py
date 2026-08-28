@@ -517,6 +517,49 @@ _XYPK_FACT_CURVE_SMOOTH = 2
 _XYPK_FACT_DENSITY_PLANE = 4
 _XYPK_FACT_HEATMAP_PAINT = 8
 
+_XYAF_KIND_CODES = {
+    "text": 0,
+    "arrow": 1,
+    "callout": 2,
+    "rule": 3,
+    "band": 4,
+    "marker": 5,
+}
+_XYAF_FACT_HAS_WRAP = 1 << 0
+_XYAF_FACT_HAS_TEXT = 1 << 1
+_XYAF_FACT_HAS_CLASS_NAME = 1 << 2
+_XYAF_FACT_HAS_DX = 1 << 3
+_XYAF_FACT_HAS_DY = 1 << 4
+_XYAF_FACT_HAS_X = 1 << 5
+_XYAF_FACT_HAS_Y = 1 << 6
+_XYAF_FACT_HAS_X0 = 1 << 7
+_XYAF_FACT_HAS_Y0 = 1 << 8
+_XYAF_FACT_HAS_X1 = 1 << 9
+_XYAF_FACT_HAS_Y1 = 1 << 10
+_XYAF_FACT_HAS_VALUE = 1 << 11
+_XYAF_FACT_HAS_START = 1 << 12
+_XYAF_FACT_HAS_END = 1 << 13
+_XYAF_FACT_HAS_SIZE = 1 << 14
+_XYAF_FACT_HAS_AXIS = 1 << 15
+_XYAF_FACT_HAS_SYMBOL = 1 << 16
+_XYAF_FACT_HAS_ANCHOR = 1 << 17
+_XYAF_STYLE_COLOR = 1 << 0
+_XYAF_STYLE_OPACITY = 1 << 1
+_XYAF_STYLE_WIDTH = 1 << 2
+_XYAF_STYLE_DASH = 1 << 3
+_XYAF_STYLE_LINECAP = 1 << 4
+_XYAF_STYLE_STROKE_COLOR = 1 << 5
+_XYAF_STYLE_STROKE_WIDTH = 1 << 6
+_XYAF_STYLE_LABEL_COLOR = 1 << 7
+_XYAF_STYLE_LABEL_OPACITY = 1 << 8
+_XYAF_STYLE_LABEL_BACKGROUND = 1 << 9
+_XYAF_STYLE_LABEL_BORDER_COLOR = 1 << 10
+_XYAF_STYLE_LABEL_BORDER_WIDTH = 1 << 11
+_XYAF_STYLE_UNSUPPORTED = 1 << 31
+_XYAF_HEADER = struct.Struct("<4sIIBBBBIIBBHI18d4s4s4s4s4sI8f")
+_XYAO_HEADER = struct.Struct("<4sIIIIIII")
+_XYAO_STYLE = struct.Struct("<4s4sdBB6x8f")
+
 
 class UnsupportedSceneV3(ValueError):
     """The figure uses a feature outside the currently migrated Scene subset."""
@@ -636,6 +679,385 @@ def _append_annotation_marks(
 
 def _rgba(css: str, opacity: float) -> tuple[int, int, int, int]:
     return _native.css_color_rgba(css, opacity)
+
+
+def _annotation_number(values: dict[str, Any], key: str, default: Any, label: str) -> float:
+    raw = values.get(key, default)
+    if (
+        raw is None
+        or isinstance(raw, (bool, np.bool_))
+        or (isinstance(raw, str) and not raw.strip())
+    ):
+        raise ValueError(f"Scene v12 annotation {label} must be numeric")
+    try:
+        value = float(raw)
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"Scene v12 annotation {label} must be numeric") from error
+    return value
+
+
+def _annotation_color(style: dict[str, Any], key: str, default: str, label: str) -> str:
+    raw = style.get(key, default)
+    if not isinstance(raw, str) or not raw.strip():
+        raise ValueError(f"Scene v12 annotation {label} must be a nonempty CSS color")
+    return raw
+
+
+def _annotation_allowed_style(kind: str, wrapped: bool, labelled: bool) -> set[str]:
+    allowed = {"color", "opacity"}
+    if wrapped:
+        return allowed | {"label_background", "label_border_color", "label_border_width"}
+    if kind == "arrow":
+        return allowed | {"width"}
+    if kind in {"callout", "text"}:
+        allowed |= {"label_background", "label_border_color", "label_border_width"}
+        if kind == "callout":
+            allowed.add("width")
+        return allowed
+    if kind == "rule":
+        allowed |= {"width", "dash", "linecap"}
+    elif kind == "marker":
+        allowed |= {"stroke_color", "stroke_width"}
+    if labelled and kind in {"rule", "band", "marker"}:
+        allowed |= {
+            "label_color",
+            "label_opacity",
+            "label_background",
+            "label_border_color",
+            "label_border_width",
+        }
+    return allowed
+
+
+def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
+    """Pack one authored annotation as XYAF v1; Rust classifies the family."""
+    kind = annotation.get("kind")
+    kind_code = _XYAF_KIND_CODES.get(str(kind) if kind is not None else "")
+    if kind_code is None:
+        raise UnsupportedSceneV3(
+            f"Scene v12 annotations support rule, band, and unlabeled marker only; {kind!r} is deferred"
+        )
+    wrapped = kind in {"text", "callout"} and "wrap" in annotation
+    attached_text = annotation.get("text")
+    labelled = attached_text not in (None, "")
+    if annotation.get("class_name") not in (None, ""):
+        if kind == "arrow":
+            raise UnsupportedSceneV3("Scene arrows do not encode class_name")
+        if kind == "callout":
+            raise UnsupportedSceneV3("Scene callouts do not encode class_name")
+        if wrapped:
+            raise UnsupportedSceneV3("Scene wrapped annotations do not encode class_name")
+        raise UnsupportedSceneV3("Scene v12 annotations do not encode class_name")
+    if kind == "arrow" and labelled:
+        raise UnsupportedSceneV3("Scene arrows do not encode text or class_name")
+    encoded = b""
+    if labelled:
+        if not isinstance(attached_text, str) or "\0" in attached_text:
+            if wrapped:
+                raise UnsupportedSceneV3(
+                    "Scene wrapped annotations require nonempty NUL-free LF text"
+                )
+            if kind == "text":
+                raise UnsupportedSceneV3(
+                    "Scene v16 text annotations require nonempty NUL-free text"
+                )
+            if kind == "callout":
+                raise UnsupportedSceneV3("Scene callouts require nonempty NUL-free text")
+            raise UnsupportedSceneV3("Scene v16 annotation labels require nonempty NUL-free text")
+        if wrapped and "\r" in attached_text:
+            raise UnsupportedSceneV3("Scene wrapped annotations require nonempty NUL-free LF text")
+        encoded = attached_text.encode("utf-8")
+        if len(encoded) > 4096:
+            if wrapped:
+                raise UnsupportedSceneV3(
+                    "Scene wrapped annotations are limited to 4,096 UTF-8 bytes"
+                )
+            if kind == "text":
+                raise UnsupportedSceneV3(
+                    "Scene v16 text annotations are limited to 4,096 UTF-8 bytes"
+                )
+            if kind == "callout":
+                raise UnsupportedSceneV3("Scene callouts are limited to 4,096 UTF-8 bytes")
+            raise UnsupportedSceneV3("Scene v16 annotation labels are limited to 4,096 UTF-8 bytes")
+    elif kind in {"text", "callout"}:
+        raise UnsupportedSceneV3(
+            "Scene callouts require nonempty NUL-free text"
+            if kind == "callout"
+            else "Scene v16 text annotations require nonempty NUL-free text"
+        )
+    style = dict(annotation.get("style") or {})
+    allowed = _annotation_allowed_style(str(kind), wrapped, labelled)
+    unsupported = sorted(
+        key for key, value in style.items() if key not in allowed and value is not None
+    )
+    if unsupported:
+        if wrapped:
+            raise UnsupportedSceneV3(f"Scene wrapped annotations do not encode {unsupported!r}")
+        if kind == "arrow":
+            raise UnsupportedSceneV3(f"Scene arrow style does not encode {unsupported!r}")
+        if kind == "callout":
+            raise UnsupportedSceneV3(f"Scene callout style does not encode {unsupported!r}")
+        if kind == "text":
+            raise UnsupportedSceneV3(
+                "Scene v23 text annotations support only color, opacity, label_background, and label_border_*"
+            )
+        raise UnsupportedSceneV3(
+            f"Scene v12 {kind} annotation style does not encode {unsupported!r}"
+        )
+
+    def take_num(source: dict[str, Any], key: str, label: str) -> float:
+        return _annotation_number(source, key, None, label)
+
+    nums = [float("nan")] * 18
+    facts = 0
+    style_bits = 0
+    color = stroke = label_color = label_fill = label_border = bytes(4)
+    if labelled:
+        facts |= _XYAF_FACT_HAS_TEXT
+    if wrapped:
+        facts |= _XYAF_FACT_HAS_WRAP
+        nums[8] = take_num(annotation, "wrap", "wrapped width")
+    required = {
+        "arrow": (
+            ("x0", 2, _XYAF_FACT_HAS_X0, "arrow x0"),
+            ("y0", 3, _XYAF_FACT_HAS_Y0, "arrow y0"),
+            ("x1", 4, _XYAF_FACT_HAS_X1, "arrow x1"),
+            ("y1", 5, _XYAF_FACT_HAS_Y1, "arrow y1"),
+        ),
+        "callout": (
+            ("x", 0, _XYAF_FACT_HAS_X, "callout x"),
+            ("y", 1, _XYAF_FACT_HAS_Y, "callout y"),
+        ),
+        "text": (
+            ("x", 0, _XYAF_FACT_HAS_X, "text x"),
+            ("y", 1, _XYAF_FACT_HAS_Y, "text y"),
+        ),
+        "rule": (("value", 9, _XYAF_FACT_HAS_VALUE, "rule value"),),
+        "band": (
+            ("start", 10, _XYAF_FACT_HAS_START, "band start"),
+            ("end", 11, _XYAF_FACT_HAS_END, "band end"),
+        ),
+        "marker": (
+            ("x", 0, _XYAF_FACT_HAS_X, "marker x"),
+            ("y", 1, _XYAF_FACT_HAS_Y, "marker y"),
+        ),
+    }[str(kind)]
+    if wrapped:
+        required = (
+            ("x", 0, _XYAF_FACT_HAS_X, "wrapped x"),
+            ("y", 1, _XYAF_FACT_HAS_Y, "wrapped y"),
+        )
+    for key, slot, flag, label in required:
+        nums[slot] = take_num(annotation, key, label)
+        facts |= flag
+    for key, slot, flag, label in (
+        ("dx", 6, _XYAF_FACT_HAS_DX, "wrapped dx" if wrapped else "callout dx"),
+        ("dy", 7, _XYAF_FACT_HAS_DY, "wrapped dy" if wrapped else "callout dy"),
+        ("size", 12, _XYAF_FACT_HAS_SIZE, "marker size"),
+    ):
+        if key in annotation:
+            nums[slot] = take_num(annotation, key, label)
+            facts |= flag
+    axis_code = 0
+    if str(kind) in {"rule", "band"}:
+        axis_name = annotation.get("axis")
+        if axis_name not in {"x", "y"}:
+            raise ValueError(f"Scene v12 {kind} annotation axis must be 'x' or 'y'")
+        axis_code = 1 if axis_name == "x" else 2
+        facts |= _XYAF_FACT_HAS_AXIS
+    symbol = 0
+    if str(kind) == "marker":
+        symbol_name = str(annotation.get("symbol", "circle"))
+        if symbol_name not in _SYMBOL_CODES:
+            raise UnsupportedSceneV3(f"Scene v12 does not support marker symbol {symbol_name!r}")
+        symbol = _SYMBOL_CODES[symbol_name]
+        if "symbol" in annotation:
+            facts |= _XYAF_FACT_HAS_SYMBOL
+        if "size" in annotation and (not np.isfinite(nums[12]) or nums[12] <= 0):
+            raise ValueError("Scene v12 marker annotation size must be finite and positive")
+    anchor = 255
+    if "anchor" in annotation or str(kind) == "callout" or wrapped:
+        anchor_name = annotation.get("anchor", "start")
+        anchor_code = {"start": 0, "middle": 1, "end": 2}.get(anchor_name)
+        if anchor_code is None:
+            raise UnsupportedSceneV3(
+                "Scene wrapped annotation anchor must be start, middle, or end"
+                if wrapped
+                else "Scene callout anchor must be start, middle, or end"
+            )
+        anchor = int(anchor_code)
+        facts |= _XYAF_FACT_HAS_ANCHOR
+    kind_label = "wrapped" if wrapped else str(kind)
+    if "opacity" in style:
+        nums[13] = take_num(style, "opacity", f"{kind_label} opacity")
+        style_bits |= _XYAF_STYLE_OPACITY
+        if not np.isfinite(nums[13]) or not 0.0 <= nums[13] <= 1.0:
+            if kind == "arrow":
+                raise ValueError("Scene arrow opacity must be in [0, 1] and width must be positive")
+            if wrapped:
+                raise ValueError("Scene wrapped annotation opacity must be in [0, 1]")
+            if kind == "callout":
+                raise ValueError(
+                    "Scene callout opacity must be in [0, 1] and width must be positive"
+                )
+            raise ValueError(f"Scene v12 {kind} annotation opacity must be finite and in [0, 1]")
+    if "width" in style:
+        nums[14] = take_num(style, "width", f"{kind_label} width")
+        style_bits |= _XYAF_STYLE_WIDTH
+        if kind in {"arrow", "callout"} and (not np.isfinite(nums[14]) or nums[14] <= 0):
+            raise ValueError(
+                "Scene arrow opacity must be in [0, 1] and width must be positive"
+                if kind == "arrow"
+                else "Scene callout opacity must be in [0, 1] and width must be positive"
+            )
+        if kind == "rule" and (not np.isfinite(nums[14]) or nums[14] <= 0):
+            raise ValueError("Scene v12 rule annotation width must be finite and nonnegative")
+    if "stroke_width" in style:
+        nums[15] = take_num(style, "stroke_width", f"{kind} width")
+        style_bits |= _XYAF_STYLE_STROKE_WIDTH
+        if not np.isfinite(nums[15]) or nums[15] < 0:
+            raise ValueError(f"Scene v12 {kind} annotation width must be finite and nonnegative")
+    if "label_opacity" in style:
+        nums[16] = take_num(style, "label_opacity", f"{kind} label opacity")
+        style_bits |= _XYAF_STYLE_LABEL_OPACITY
+        if not np.isfinite(nums[16]) or not 0.0 <= nums[16] <= 1.0:
+            raise ValueError(
+                f"Scene v16 {kind} annotation label opacity must be finite and in [0, 1]"
+            )
+    if "label_border_width" in style:
+        nums[17] = take_num(style, "label_border_width", f"{kind_label} label border width")
+        style_bits |= _XYAF_STYLE_LABEL_BORDER_WIDTH
+        if not np.isfinite(nums[17]) or nums[17] <= 0:
+            raise ValueError("Scene v23 label border width must be positive and finite")
+    for key, bit in (
+        ("color", _XYAF_STYLE_COLOR),
+        ("stroke_color", _XYAF_STYLE_STROKE_COLOR),
+        ("label_color", _XYAF_STYLE_LABEL_COLOR),
+        ("label_background", _XYAF_STYLE_LABEL_BACKGROUND),
+        ("label_border_color", _XYAF_STYLE_LABEL_BORDER_COLOR),
+    ):
+        if key in style:
+            packed = bytes(
+                _rgba(
+                    _annotation_color(style, key, "", f"{kind_label} {key.replace('_', ' ')}"),
+                    1.0,
+                )
+            )
+            style_bits |= bit
+            if key == "color":
+                color = packed
+            elif key == "stroke_color":
+                stroke = packed
+            elif key == "label_color":
+                label_color = packed
+            elif key == "label_background":
+                label_fill = packed
+            else:
+                label_border = packed
+    border_color_present = style.get("label_border_color") is not None
+    border_width_present = style.get("label_border_width") is not None
+    if border_color_present != border_width_present:
+        raise UnsupportedSceneV3(
+            "Scene wrapped label border requires color and width"
+            if wrapped
+            else "Scene v23 label border requires color and width"
+        )
+    parsed_dash: list[float] | None = None
+    parsed_cap: int | None = None
+    if kind == "rule":
+        parsed_dash = _parse_scene_dash(style.get("dash"))
+        if parsed_dash is False:
+            raise UnsupportedSceneV3("Scene v12 rule annotation dash is not a constant pattern")
+        if parsed_dash:
+            style_bits |= _XYAF_STYLE_DASH
+        parsed_cap = _parse_scene_linecap(style.get("linecap"))
+        if parsed_cap is False:
+            raise UnsupportedSceneV3("Scene v12 rule annotation linecap is not a Scene cap")
+        if parsed_cap is not None:
+            style_bits |= _XYAF_STYLE_LINECAP
+    dash = [0.0] * 8
+    dash_count = 0
+    if parsed_dash:
+        dash_count = len(parsed_dash)
+        dash[:dash_count] = [float(value) for value in parsed_dash]
+    linecap = 255 if parsed_cap is None else int(parsed_cap)
+    return (
+        _XYAF_HEADER.pack(
+            b"XYAF",
+            1,
+            int(index),
+            int(kind_code),
+            int(axis_code),
+            int(symbol) & 0xFF,
+            int(anchor) & 0xFF,
+            int(facts),
+            int(style_bits),
+            int(linecap) & 0xFF,
+            int(dash_count) & 0xFF,
+            0,
+            len(encoded),
+            *[float(value) for value in nums],
+            color,
+            stroke,
+            label_color,
+            label_fill,
+            label_border,
+            0,
+            *[float(value) for value in dash],
+        )
+        + encoded
+    )
+
+
+def _apply_xyao(
+    payload: bytes,
+    kinds: list[int],
+    stable_ids: list[int],
+    style_refs: list[int],
+    diameters: list[float],
+    symbols: list[int],
+    expansion_modes: list[int],
+    coordinates: list[list[float]],
+    styles: list[tuple[tuple[int, ...], tuple[int, ...], float]],
+    dashes: list[list[float] | None],
+    linecaps: list[int | None],
+) -> bytes:
+    """Splice XYAO styles and mark rows into the figure Scene arrays."""
+    if not payload:
+        return b""
+    magic, version, n_styles, n_rows, xyad_len, _reserved, _base, _pad = _XYAO_HEADER.unpack_from(
+        payload, 0
+    )
+    if magic != b"XYAO" or version != 1:
+        raise ValueError("invalid scene annotation packing")
+    at = _XYAO_HEADER.size
+    for _ in range(int(n_styles)):
+        fill, stroke, width, dash_count, cap, *dash_values = _XYAO_STYLE.unpack_from(payload, at)
+        styles.append((tuple(fill), tuple(stroke), float(width)))
+        dashes.append(
+            [float(value) for value in dash_values[: int(dash_count)]] if dash_count else None
+        )
+        linecaps.append(None if cap == 255 else int(cap))
+        at += _XYAO_STYLE.size
+    mark_end = at + int(n_rows) * 56
+    mark_bytes = payload[at:mark_end]
+    xyad = payload[mark_end : mark_end + int(xyad_len)]
+    if n_rows:
+        raw = np.frombuffer(mark_bytes, dtype=np.uint8).reshape(int(n_rows), 56)
+        kinds.extend(int(value) for value in raw[:, 0])
+        symbols.extend(int(value) for value in raw[:, 1])
+        expansion_modes.extend(int(value) for value in raw[:, 2])
+        style_refs.extend(
+            int(value) for value in raw[:, 4:8].copy().view("<u4").reshape(int(n_rows))
+        )
+        stable_ids.extend(
+            int(value) for value in raw[:, 8:16].copy().view("<u8").reshape(int(n_rows))
+        )
+        nums = raw[:, 16:56].copy().view("<f8").reshape(int(n_rows), 5)
+        diameters.extend(float(value) for value in nums[:, 0])
+        for axis in range(4):
+            coordinates[axis].extend(float(value) for value in nums[:, axis + 1])
+    return bytes(xyad)
 
 
 _STYLE_KIND_CODES = {
@@ -1661,387 +2083,29 @@ def figure_scene(
         )
 
     # Scene v12's bounded primary-annotation subset is represented by ordinary
-    # canonical records with a reserved stable-id namespace. Rust therefore
-    # remains the sole owner of scale projection, clipping, painter lowering,
-    # SVG/raster order and marker geometry; hosts only coerce authored values.
-    annotation_prefix = 0x5859000000000000
+    # canonical records with a reserved stable-id namespace. Hosts pack XYAF
+    # authored facts; Rust owns wrap/text/arrow/callout/rule routing, tags,
+    # defaults, mark expansion, and XYAD framing (ABI 148).
     x_domain = tuple(float(value) for value in figure._range("x"))
     y_domain = tuple(float(value) for value in figure._range("y"))
-
-    def annotation_number(values: dict[str, Any], key: str, default: Any, label: str) -> float:
-        raw = values.get(key, default)
-        if (
-            raw is None
-            or isinstance(raw, (bool, np.bool_))
-            or (isinstance(raw, str) and not raw.strip())
-        ):
-            raise ValueError(f"Scene v12 annotation {label} must be numeric")
-        try:
-            value = float(raw)
-        except (TypeError, ValueError) as error:
-            raise ValueError(f"Scene v12 annotation {label} must be numeric") from error
-        return value
-
-    def annotation_color(style: dict[str, Any], key: str, default: str, label: str) -> str:
-        raw = style.get(key, default)
-        if not isinstance(raw, str) or not raw.strip():
-            raise ValueError(f"Scene v12 annotation {label} must be a nonempty CSS color")
-        return raw
-
-    # XYAL v2 carries only literal RGBA paint with the annotation identity and
-    # text. Rust still owns the anchor, clipping, typography, and paint order.
-    attached_labels: list[
-        tuple[
-            int,
-            tuple[int, int, int, int],
-            tuple[int, int, int, int] | None,
-            tuple[tuple[int, int, int, int], float] | None,
-            str,
-        ]
-    ] = []
-    straight_arrows: list[
-        tuple[int, float, float, float, float, tuple[int, int, int, int], float, float]
-    ] = []
-    # XYAC v1 is deliberately a compact host framing seam.  Every layout,
-    # projection, label placement, connector shape, clipping, and paint-order
-    # decision remains in Rust.  One row is little-endian
-    # ``dddd4sddB3xI`` (60 fixed bytes) followed by its UTF-8 text:
-    # data x/y, pixel dx/dy, literal RGBA, opacity, width, anchor code
-    # (start=0/middle=1/end=2), three required zero bytes, and u32 text
-    # byte length. Rust derives the callout identity from record order.
-    cartesian_callouts: list[
-        tuple[
-            float,
-            float,
-            float,
-            float,
-            tuple[int, int, int, int],
-            float,
-            float,
-            int,
-            bytes,
-            tuple[int, int, int, int] | None,
-            tuple[tuple[int, int, int, int], float] | None,
-        ]
-    ] = []
-    wrapped_annotations: list[dict[str, Any]] = []
-    annotation_mark_rows = bytearray()
+    annotation_facts = bytearray()
     for annotation_index, annotation in enumerate(annotations):
-        kind = annotation.get("kind")
-        if kind in {"text", "callout"} and "wrap" in annotation:
-            wrapped_annotations.append(annotation)
-            continue
-        if kind == "text":
-            continue
-        if kind == "arrow":
-            if annotation.get("text") not in (None, "") or annotation.get("class_name") not in (
-                None,
-                "",
-            ):
-                raise UnsupportedSceneV3("Scene arrows do not encode text or class_name")
-            style = dict(annotation.get("style") or {})
-            bad = sorted(
-                key
-                for key, value in style.items()
-                if key not in {"color", "opacity", "width"} and value is not None
+        annotation_facts.extend(_pack_xyaf(annotation, annotation_index))
+    try:
+        annotation_output = (
+            _native.scene_pack_annotation_facts(
+                bytes(annotation_facts),
+                style_ref_base=len(styles),
+                x_domain=x_domain,
+                y_domain=y_domain,
             )
-            if bad:
-                raise UnsupportedSceneV3(f"Scene arrow style does not encode {bad!r}")
-            opacity = annotation_number(style, "opacity", 1.0, "arrow opacity")
-            width_value = annotation_number(style, "width", 1.5, "arrow width")
-            if (
-                not np.isfinite(opacity)
-                or not 0 <= opacity <= 1
-                or not np.isfinite(width_value)
-                or width_value <= 0
-            ):
-                raise ValueError("Scene arrow opacity must be in [0, 1] and width must be positive")
-            straight_arrows.append(
-                (
-                    annotation_prefix | (5 << 40) | annotation_index,
-                    annotation_number(annotation, "x0", None, "arrow x0"),
-                    annotation_number(annotation, "y0", None, "arrow y0"),
-                    annotation_number(annotation, "x1", None, "arrow x1"),
-                    annotation_number(annotation, "y1", None, "arrow y1"),
-                    _rgba(annotation_color(style, "color", "#667085", "arrow color"), 1.0),
-                    opacity,
-                    width_value,
-                )
-            )
-            continue
-        if kind == "callout":
-            if annotation.get("class_name") not in (None, ""):
-                raise UnsupportedSceneV3("Scene callouts do not encode class_name")
-            value = annotation.get("text")
-            if not isinstance(value, str) or not value or "\0" in value:
-                raise UnsupportedSceneV3("Scene callouts require nonempty NUL-free text")
-            encoded = value.encode("utf-8")
-            if len(encoded) > 4096:
-                raise UnsupportedSceneV3("Scene callouts are limited to 4,096 UTF-8 bytes")
-            style = dict(annotation.get("style") or {})
-            bad = sorted(
-                key
-                for key, style_value in style.items()
-                if key
-                not in {
-                    "color",
-                    "opacity",
-                    "width",
-                    "label_background",
-                    "label_border_color",
-                    "label_border_width",
-                }
-                and style_value is not None
-            )
-            if bad:
-                raise UnsupportedSceneV3(f"Scene callout style does not encode {bad!r}")
-            opacity = annotation_number(style, "opacity", 1.0, "callout opacity")
-            width_value = annotation_number(style, "width", 1.5, "callout width")
-            if (
-                not np.isfinite(opacity)
-                or not 0 <= opacity <= 1
-                or not np.isfinite(width_value)
-                or width_value <= 0
-            ):
-                raise ValueError(
-                    "Scene callout opacity must be in [0, 1] and width must be positive"
-                )
-            anchor = annotation.get("anchor", "start")
-            anchor_code = {"start": 0, "middle": 1, "end": 2}.get(anchor)
-            if anchor_code is None:
-                raise UnsupportedSceneV3("Scene callout anchor must be start, middle, or end")
-            x = annotation_number(annotation, "x", None, "callout x")
-            y = annotation_number(annotation, "y", None, "callout y")
-            dx = annotation_number(annotation, "dx", 36.0, "callout dx")
-            dy = annotation_number(annotation, "dy", -30.0, "callout dy")
-            if not all(np.isfinite(number) for number in (x, y, dx, dy)):
-                raise ValueError("Scene callout coordinates and offsets must be finite")
-            label_background = style.get("label_background")
-            label_fill = (
-                _rgba(
-                    annotation_color(style, "label_background", "", "callout label background"), 1.0
-                )
-                if label_background is not None
-                else None
-            )
-            border_color = style.get("label_border_color")
-            border_width = style.get("label_border_width")
-            if (border_color is None) != (border_width is None):
-                raise UnsupportedSceneV3("Scene v23 label border requires color and width")
-            label_border = (
-                (
-                    _rgba(
-                        annotation_color(style, "label_border_color", "", "callout label border"),
-                        1.0,
-                    ),
-                    annotation_number(
-                        style, "label_border_width", None, "callout label border width"
-                    ),
-                )
-                if border_color is not None
-                else None
-            )
-            if label_border is not None and (
-                not np.isfinite(label_border[1]) or label_border[1] <= 0
-            ):
-                raise ValueError("Scene v23 label border width must be positive and finite")
-            if label_border is not None and label_fill is None:
-                raise UnsupportedSceneV3("Scene v23 label border requires label_background")
-            cartesian_callouts.append(
-                (
-                    x,
-                    y,
-                    dx,
-                    dy,
-                    _rgba(annotation_color(style, "color", "#344054", "callout color"), 1.0),
-                    opacity,
-                    width_value,
-                    anchor_code,
-                    encoded,
-                    label_fill,
-                    label_border,
-                )
-            )
-            continue
-        if kind not in {"rule", "band", "marker"}:
-            raise UnsupportedSceneV3(
-                f"Scene v12 annotations support rule, band, and unlabeled marker only; {kind!r} is deferred"
-            )
-        attached_text = annotation.get("text")
-        if attached_text not in (None, "") and (
-            not isinstance(attached_text, str) or "\0" in attached_text
-        ):
-            raise UnsupportedSceneV3("Scene v16 annotation labels require nonempty NUL-free text")
-        if annotation.get("class_name") not in (None, ""):
-            raise UnsupportedSceneV3("Scene v12 annotations do not encode class_name")
-        style = dict(annotation.get("style") or {})
-        allowed = {"color", "opacity"}
-        if attached_text not in (None, ""):
-            allowed |= {
-                "label_color",
-                "label_opacity",
-                "label_background",
-                "label_border_color",
-                "label_border_width",
-            }
-        if kind == "rule":
-            allowed.add("width")
-            allowed.add("dash")
-            allowed.add("linecap")
-        elif kind == "marker":
-            allowed |= {"stroke_color", "stroke_width"}
-        unsupported_style = sorted(
-            key for key, value in style.items() if key not in allowed and value is not None
+            if annotation_facts
+            else b""
         )
-        if unsupported_style:
-            raise UnsupportedSceneV3(
-                f"Scene v12 {kind} annotation style does not encode {unsupported_style!r}"
-            )
-        opacity = annotation_number(
-            style, "opacity", 0.14 if kind == "band" else 1.0, f"{kind} opacity"
-        )
-        if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
-            raise ValueError(f"Scene v12 {kind} annotation opacity must be finite and in [0, 1]")
-        color = annotation_color(
-            style, "color", "#64748b" if kind == "band" else "#667085", f"{kind} color"
-        )
-        fill = _rgba(color, opacity) if kind != "rule" else (0, 0, 0, 0)
-        stroke_color = annotation_color(style, "stroke_color", color, f"{kind} stroke color")
-        stroke = _rgba(stroke_color, opacity)
-        width_key = "width" if kind == "rule" else "stroke_width"
-        width_value = annotation_number(
-            style, width_key, 1.5 if kind != "band" else 0.0, f"{kind} width"
-        )
-        if not np.isfinite(width_value) or width_value < 0 or (kind == "rule" and width_value == 0):
-            raise ValueError(f"Scene v12 {kind} annotation width must be finite and nonnegative")
-        styles.append((fill, stroke, width_value))
-        parsed_dash = _parse_scene_dash(style.get("dash")) if kind == "rule" else None
-        if parsed_dash is False:
-            raise UnsupportedSceneV3(f"Scene v12 {kind} annotation dash is not a constant pattern")
-        dashes.append(parsed_dash)
-        parsed_cap = _parse_scene_linecap(style.get("linecap")) if kind == "rule" else None
-        if parsed_cap is False:
-            raise UnsupportedSceneV3(f"Scene v12 {kind} annotation linecap is not a Scene cap")
-        linecaps.append(None if parsed_cap is False else parsed_cap)
-        style_ref = len(styles) - 1
-        tag = (
-            4
-            if kind == "band" and annotation.get("axis") == "y"
-            else {"rule": 1, "band": 2, "marker": 3}[kind]
-        )
-        stable_id = annotation_prefix | (tag << 40) | annotation_index
-        if attached_text not in (None, ""):
-            encoded_text = attached_text.encode("utf-8")
-            if len(encoded_text) > 4096:
-                raise UnsupportedSceneV3(
-                    "Scene v16 annotation labels are limited to 4,096 UTF-8 bytes"
-                )
-            label_opacity = annotation_number(style, "label_opacity", 1.0, f"{kind} label opacity")
-            if not np.isfinite(label_opacity) or not 0.0 <= label_opacity <= 1.0:
-                raise ValueError(
-                    f"Scene v16 {kind} annotation label opacity must be finite and in [0, 1]"
-                )
-            label_color = annotation_color(style, "label_color", "#667085", f"{kind} label color")
-            label_background = style.get("label_background")
-            label_fill = (
-                _rgba(
-                    annotation_color(style, "label_background", "", f"{kind} label background"), 1.0
-                )
-                if label_background is not None
-                else None
-            )
-            border_color = style.get("label_border_color")
-            border_width = style.get("label_border_width")
-            if (border_color is None) != (border_width is None):
-                raise UnsupportedSceneV3("Scene v23 label border requires color and width")
-            label_border = (
-                (
-                    _rgba(
-                        annotation_color(style, "label_border_color", "", f"{kind} label border"),
-                        1.0,
-                    ),
-                    annotation_number(
-                        style, "label_border_width", None, f"{kind} label border width"
-                    ),
-                )
-                if border_color is not None
-                else None
-            )
-            if label_border is not None and (
-                not np.isfinite(label_border[1]) or label_border[1] <= 0
-            ):
-                raise ValueError("Scene v23 label border width must be positive and finite")
-            if label_border is not None and label_fill is None:
-                raise UnsupportedSceneV3("Scene v23 label border requires label_background")
-            attached_labels.append(
-                (
-                    stable_id,
-                    _rgba(label_color, label_opacity),
-                    label_fill,
-                    label_border,
-                    attached_text,
-                )
-            )
-
-        kind_code = {"rule": 1, "band": 2, "marker": 3}[kind]
-        if kind == "rule":
-            axis_name = annotation.get("axis")
-            if axis_name not in {"x", "y"}:
-                raise ValueError("Scene v12 rule annotation axis must be 'x' or 'y'")
-            value = annotation_number(annotation, "value", None, f"{kind} value")
-            annotation_mark_rows.extend(
-                _pack_annotation_mark_row(
-                    kind_code,
-                    0 if axis_name == "x" else 1,
-                    0,
-                    style_ref,
-                    annotation_index,
-                    value,
-                    0.0,
-                    0.0,
-                )
-            )
-        elif kind == "band":
-            axis_name = annotation.get("axis")
-            if axis_name not in {"x", "y"}:
-                raise ValueError("Scene v12 band annotation axis must be 'x' or 'y'")
-            start = annotation_number(annotation, "start", None, f"{kind} start")
-            end = annotation_number(annotation, "end", None, f"{kind} end")
-            annotation_mark_rows.extend(
-                _pack_annotation_mark_row(
-                    kind_code,
-                    0 if axis_name == "x" else 1,
-                    0,
-                    style_ref,
-                    annotation_index,
-                    start,
-                    end,
-                    0.0,
-                )
-            )
-        else:
-            symbol_name = str(annotation.get("symbol", "circle"))
-            if symbol_name not in _SYMBOL_CODES:
-                raise UnsupportedSceneV3(
-                    f"Scene v12 does not support marker symbol {symbol_name!r}"
-                )
-            size = annotation_number(annotation, "size", 8.0, f"{kind} size")
-            if not np.isfinite(size) or size <= 0:
-                raise ValueError("Scene v12 marker annotation size must be finite and positive")
-            annotation_mark_rows.extend(
-                _pack_annotation_mark_row(
-                    kind_code,
-                    0,
-                    _SYMBOL_CODES[symbol_name],
-                    style_ref,
-                    annotation_index,
-                    annotation_number(annotation, "x", None, f"{kind} x"),
-                    annotation_number(annotation, "y", None, f"{kind} y"),
-                    size,
-                )
-            )
-
-    _append_annotation_marks(
+    except ValueError as error:
+        raise UnsupportedSceneV3(str(error)) from error
+    framed_annotations = _apply_xyao(
+        annotation_output,
         kinds,
         stable_ids,
         style_refs,
@@ -2049,9 +2113,9 @@ def figure_scene(
         symbols,
         expansion_modes,
         coordinates,
-        bytes(annotation_mark_rows),
-        x_domain,
-        y_domain,
+        styles,
+        dashes,
+        linecaps,
     )
 
     w = int(width if width is not None else figure.width)
@@ -2103,182 +2167,6 @@ def figure_scene(
         )
     else:
         left, right, top, bottom = margins
-    text_annotations = [
-        annotation
-        for annotation in annotations
-        if annotation.get("kind") == "text" and "wrap" not in annotation
-    ]
-    if len(cartesian_callouts) > 128:
-        raise UnsupportedSceneV3("Scene callouts are limited to 128 entries")
-    text_rows: list[
-        tuple[
-            float,
-            float,
-            tuple[int, int, int, int],
-            tuple[int, int, int, int] | None,
-            tuple[tuple[int, int, int, int], float] | None,
-            bytes,
-        ]
-    ] = []
-    for annotation in text_annotations:
-        value = annotation.get("text")
-        if not isinstance(value, str) or not value or "\0" in value:
-            raise UnsupportedSceneV3("Scene v16 text annotations require nonempty NUL-free text")
-        encoded = value.encode("utf-8")
-        if len(encoded) > 4096:
-            raise UnsupportedSceneV3("Scene v16 text annotations are limited to 4,096 UTF-8 bytes")
-        x = annotation_number(annotation, "x", None, "text x")
-        y = annotation_number(annotation, "y", None, "text y")
-        style = dict(annotation.get("style") or {})
-        if set(style) - {
-            "color",
-            "opacity",
-            "label_background",
-            "label_border_color",
-            "label_border_width",
-        }:
-            raise UnsupportedSceneV3(
-                "Scene v23 text annotations support only color, opacity, label_background, and label_border_*"
-            )
-        rgba = _rgba(
-            annotation_color(style, "color", "#667085", "text color"),
-            annotation_number(style, "opacity", 1.0, "text opacity"),
-        )
-        label_background = style.get("label_background")
-        label_fill = (
-            _rgba(annotation_color(style, "label_background", "", "text label background"), 1.0)
-            if label_background is not None
-            else None
-        )
-        border_color, border_width = (
-            style.get("label_border_color"),
-            style.get("label_border_width"),
-        )
-        if (border_color is None) != (border_width is None):
-            raise UnsupportedSceneV3("Scene v23 label border requires color and width")
-        label_border = (
-            (
-                _rgba(annotation_color(style, "label_border_color", "", "text label border"), 1.0),
-                annotation_number(style, "label_border_width", None, "text label border width"),
-            )
-            if border_color is not None
-            else None
-        )
-        if label_border is not None and (not np.isfinite(label_border[1]) or label_border[1] <= 0):
-            raise ValueError("Scene v23 label border width must be positive and finite")
-        if label_border is not None and label_fill is None:
-            raise UnsupportedSceneV3("Scene v23 label border requires label_background")
-        text_rows.append((x, y, rgba, label_fill, label_border, encoded))
-    wrapped_rows: list[
-        tuple[
-            float,
-            float,
-            float,
-            float,
-            float,
-            tuple[int, int, int, int],
-            tuple[int, int, int, int],
-            tuple[int, int, int, int],
-            float,
-            int,
-            int,
-            bytes,
-        ]
-    ] = []
-    for annotation in wrapped_annotations:
-        kind = annotation["kind"]
-        if annotation.get("class_name") not in (None, ""):
-            raise UnsupportedSceneV3("Scene wrapped annotations do not encode class_name")
-        text = annotation.get("text")
-        if not isinstance(text, str) or not text or "\0" in text or "\r" in text:
-            raise UnsupportedSceneV3("Scene wrapped annotations require nonempty NUL-free LF text")
-        encoded = text.encode("utf-8")
-        if len(encoded) > 4096:
-            raise UnsupportedSceneV3("Scene wrapped annotations are limited to 4,096 UTF-8 bytes")
-        style = dict(annotation.get("style") or {})
-        if style.get("color") is None:
-            style.pop("color", None)
-        allowed = {
-            "color",
-            "opacity",
-            "label_background",
-            "label_border_color",
-            "label_border_width",
-        }
-        bad = sorted(
-            key for key, value in style.items() if key not in allowed and value is not None
-        )
-        if bad:
-            raise UnsupportedSceneV3(f"Scene wrapped annotations do not encode {bad!r}")
-        x, y = (
-            annotation_number(annotation, "x", None, "wrapped x"),
-            annotation_number(annotation, "y", None, "wrapped y"),
-        )
-        dx = annotation_number(annotation, "dx", 36.0 if kind == "callout" else 0.0, "wrapped dx")
-        dy = annotation_number(annotation, "dy", -30.0 if kind == "callout" else 0.0, "wrapped dy")
-        wrap = annotation_number(annotation, "wrap", None, "wrapped width")
-        if not all(np.isfinite(value) for value in (x, y, dx, dy, wrap)) or wrap < 0:
-            raise ValueError(
-                "Scene wrapped annotation coordinates and wrap must be finite; wrap must be nonnegative"
-            )
-        anchor = {"start": 0, "middle": 1, "end": 2}.get(annotation.get("anchor", "start"))
-        if anchor is None:
-            raise UnsupportedSceneV3(
-                "Scene wrapped annotation anchor must be start, middle, or end"
-            )
-        opacity = annotation_number(style, "opacity", 1.0, "wrapped opacity")
-        if not np.isfinite(opacity) or not 0 <= opacity <= 1:
-            raise ValueError("Scene wrapped annotation opacity must be in [0, 1]")
-        rgba = _rgba(
-            annotation_color(
-                style, "color", "#344054" if kind == "callout" else "#667085", "wrapped color"
-            ),
-            opacity,
-        )
-        fill = (
-            _rgba(annotation_color(style, "label_background", "", "wrapped background"), 1.0)
-            if style.get("label_background") is not None
-            else (0, 0, 0, 0)
-        )
-        border_color, border_width = (
-            style.get("label_border_color"),
-            style.get("label_border_width"),
-        )
-        if (border_color is None) != (border_width is None):
-            raise UnsupportedSceneV3("Scene wrapped label border requires color and width")
-        border_rgba = (
-            _rgba(annotation_color(style, "label_border_color", "", "wrapped border"), 1.0)
-            if border_color is not None
-            else (0, 0, 0, 0)
-        )
-        border = annotation_number(style, "label_border_width", 0.0, "wrapped border width")
-        if border_color is not None and (not np.isfinite(border) or border <= 0):
-            raise ValueError("Scene wrapped label border width must be positive and finite")
-        if border_color is not None and fill[3] == 0:
-            raise UnsupportedSceneV3("Scene wrapped label border requires label_background")
-        wrapped_rows.append(
-            (
-                x,
-                y,
-                dx,
-                dy,
-                wrap,
-                rgba,
-                fill,
-                border_rgba,
-                border,
-                int(kind == "callout"),
-                int(anchor),
-                encoded,
-            )
-        )
-    framed_annotations = _annotation_envelope(
-        text_rows,
-        attached_labels,
-        straight_arrows,
-        cartesian_callouts,
-        wrapped_rows,
-    )
     return _native.scene_batch_encode(
         viewport=(w, h),
         margins=(left, right, top, bottom),
@@ -2311,13 +2199,7 @@ def figure_scene(
         y_minor_ticks=figure.axis_options["y"].get("minor_tick_values") or (),
         legend_input=_legend_input(figure, legend_entries, styles),
         colorbar_input=colorbar_input,
-        authored_text_annotations=bytes(framed_annotations)
-        if text_annotations
-        or attached_labels
-        or straight_arrows
-        or cartesian_callouts
-        or wrapped_annotations
-        else b"",
+        authored_text_annotations=bytes(framed_annotations),
         polar_input=_pack_scene_extras(
             _pack_polar_scene_input(figure),
             _pack_xyhp(heatmap_paint_planes),
