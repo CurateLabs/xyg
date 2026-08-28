@@ -102,7 +102,8 @@ labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`. ABI 186 admits
 cartesian colormap hexbin as a 1×N XYHP plane interned onto HexCell PolyFills.
 ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba`
 hexbin on that same HexCell intern. ABI 195 admits triangle-mesh custom `role`
-and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 /
+and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern
+scatter per-item fill/stroke/width/opacity from packed XYHP kind 7. ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 /
 XYLB v6). ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0`
 (nums[8]; markers never wrap). ABI 189 owns heatmap/hexbin cell-fill
 tessellation eligibility from packed XYTA. ABI 190 intern cartesian per-item
@@ -222,7 +223,9 @@ identity PolyFill ring from the Rust boundary walk (disconnected meshes keep
 per-face `TriangleFace` rows). ABI 195 does not change Scene records; custom
 `role` is identity metadata and per-item fill/stroke/width intern from packed
 XYHP kind 6 onto those TriangleFace `style_ref`s (`joined_fill` plus per-face
-paint stays fail-closed).
+paint stays fail-closed). ABI 196 does not change Scene records; scatter
+per-item fill/stroke/width/opacity intern from packed XYHP kind 7 onto Scatter
+`style_ref`s (per-item size/symbol stay fail-closed).
 ABI 183 does not change Scene records; constant ribbon `color2_ch` packs as
 XYGR mark-space `dir=right`. ABI 190 intern per-item two-ended paint from
 packed XYHP kind 5 onto Band `style_ref`s plus XYGR.
@@ -1583,7 +1586,7 @@ is positive. ABI 169 admits polar `curve="smooth"` plus `step` as polar step
 expansion. ABI 170 admits constant scatter `marker_glyph` via XYMG. ABI 171 admits
 scatter `stroke_width` without `stroke` as match-fill. ABI 172 admits cartesian
 line `curve="smooth"` plus `step` as authored step expansion. ABI 173 tessellates
-heatmap `corner_radius`. ABI 174 tessellates violin/box `corner_radius`. ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`. ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`. ABI 177 admits heatmap `fill_opacity`. ABI 178 admits scatter `fill_opacity` / `stroke_opacity`. ABI 179 admits hexbin `fill_opacity`. ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint. ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as authored band step expansion. ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring from the Rust boundary walk. ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`. ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`. ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`. ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto HexCell PolyFills. ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 / XYLB v6). ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0`. ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from packed XYTA. ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from packed XYHP kind 5. ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2. ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit. ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`. ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin. ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 116 does not change Scene records either;
+heatmap `corner_radius`. ABI 174 tessellates violin/box `corner_radius`. ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`. ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`. ABI 177 admits heatmap `fill_opacity`. ABI 178 admits scatter `fill_opacity` / `stroke_opacity`. ABI 179 admits hexbin `fill_opacity`. ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint. ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as authored band step expansion. ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring from the Rust boundary walk. ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`. ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`. ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`. ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto HexCell PolyFills. ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 / XYLB v6). ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0`. ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from packed XYTA. ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from packed XYHP kind 5. ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2. ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit. ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`. ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin. ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;
 `xyg_scene_figure_support_reason` owns figure-compile support from packed
@@ -1608,7 +1611,7 @@ format modules. ABI 115 does not change Scene records either;
 `xyg_encode_png` owns filter-0 PNG encode so remaining host PNG exports no
 longer pack chunks or palettes in Python or Node. ABI 194 admits polar
 hexbin, custom reducers, and categorical / `direct_rgba` hexbin on Scene.
-ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6.
+ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7.
 LOD and rich style exceptions
 fail closed and keep the compatibility exporters. Scene 25 is unchanged.
 

@@ -35,7 +35,10 @@
 //! ABI 186 admits cartesian hexbin continuous `color_ch` as host series-color
 //! fill (metric colormap lives on the XYHP 1×N plane, not XYMS).
 //! ABI 195 admits triangle_mesh custom `role` and per-item fill/stroke/width
-//! the same way (face paints live on XYHP kind 6, not XYMS).
+//! as interned TriangleFace PolyFill `style_ref`s (XYHP kind 6; face paints
+//! live on XYHP, not XYMS). ABI 196 admits scatter per-item fill/stroke/width/
+//! opacity as interned Scatter `style_ref`s (XYHP kind 7); non-constant
+//! `color_ch` uses style fill.
 //! Encoded Scene v31 is unchanged.
 
 use crate::css::{self, Checked};
@@ -452,7 +455,7 @@ fn constant_color<'a>(input: &'a Input<'a>, index: usize) -> Result<&'a str, Tra
     if input.color_mode == "constant" && !input.color_const.is_empty() {
         return Ok(input.color_const);
     }
-    if input.kind == "scatter" && input.flags & FLAG_USE_DENSITY != 0 {
+    if input.kind == "scatter" {
         return Ok(if input.color_css.is_empty() {
             DEFAULT_COLOR
         } else {
@@ -1740,6 +1743,23 @@ mod tests {
     #[test]
     fn triangle_mesh_continuous_color_ch_uses_style_fill() {
         let (mut head, mut payload) = prefix("triangle_mesh", FLAG_COLOR_CH, 1.0, "");
+        head[120..122].copy_from_slice(&(b"continuous".len() as u16).to_le_bytes());
+        payload.extend_from_slice(b"continuous");
+        let mut facts = Vec::new();
+        facts.extend_from_slice(XYTC_MAGIC);
+        facts.extend_from_slice(&XYTC_VERSION.to_le_bytes());
+        facts.extend_from_slice(&1u32.to_le_bytes());
+        facts.extend_from_slice(&0u32.to_le_bytes());
+        facts.extend_from_slice(&head);
+        facts.extend_from_slice(&payload);
+        let packed = pack_trace_compile(&facts).unwrap();
+        let fill = &packed[XYTO_HEADER_BYTES + 8..XYTO_HEADER_BYTES + 12];
+        assert_eq!(fill, &css::color_rgba8("#3987e5", 1.0));
+    }
+
+    #[test]
+    fn scatter_continuous_color_ch_uses_style_fill() {
+        let (mut head, mut payload) = prefix("scatter", FLAG_COLOR_CH, 1.0, "");
         head[120..122].copy_from_slice(&(b"continuous".len() as u16).to_le_bytes());
         payload.extend_from_slice(b"continuous");
         let mut facts = Vec::new();

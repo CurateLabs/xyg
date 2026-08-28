@@ -104,6 +104,7 @@ polylines, ordinary area/error-band
 Bands, bar/column/histogram Rects, disconnected segment/error-bar/stem endpoint
 pairs with bounded stem markers, at most 1,024 fill-only unjoined
 triangle-mesh faces (constant or interned per-face fill/stroke/width, ABI 195),
+interned per-item scatter fill/stroke/width/opacity (ABI 196),
 constant-style Cartesian hexbin PolyFill cells (one
 6-vertex group per cell, sharing that 1,024-group painter budget), constant-style
 Cartesian heatmap Rects (one regular cell per Rect, sharing the 10,000-bin
@@ -261,7 +262,7 @@ ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2.
 ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit.
 ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
 ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
-ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6.
+ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7.
 ABI 173 tessellates
 heatmap `corner_radius`. ABI 174 tessellates violin/box `corner_radius`.
 ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`.
@@ -269,7 +270,7 @@ ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`.
 ABI 177 admits heatmap `fill_opacity`.
 ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
 ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
-ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6.
+ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7.
 ABI 178 admits scatter `fill_opacity` / `stroke_opacity`.
 ABI 179 admits hexbin `fill_opacity`.
 ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint.
@@ -288,7 +289,7 @@ ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2.
 ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit.
 ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
 ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
-ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6.
+ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7.
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -349,7 +350,7 @@ ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`.
 ABI 177 admits heatmap `fill_opacity`.
 ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
 ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
-ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6.
+ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7.
 ABI 178 admits scatter `fill_opacity` / `stroke_opacity`.
 ABI 179 admits hexbin `fill_opacity`.
 ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint.
@@ -368,7 +369,7 @@ ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2.
 ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit.
 ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
 ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
-ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6.
+ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7.
 ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate
@@ -596,7 +597,7 @@ ABI 115 makes static PNG the same way: Python `_png.encode` /
 selection, `tRNS`, and zlib IDAT. Polar painted heatmap inverse-raster is
 Scene-owned (ABI 192). ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` /
 `stroke_opacity` on XYMS. ABI 194 admits polar hexbin, custom host reducers, and
-categorical / `direct_rgba` hexbin on HexCell PolyFills. ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. LOD beyond 10,000 tessellated cells, and rich style
+categorical / `direct_rgba` hexbin on HexCell PolyFills. ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7. LOD beyond 10,000 tessellated cells, and rich style
 exceptions remain compatibility routes.
 Scalar colormap and truecolor heatmaps compile through `HeatmapPainted` on Python and Node.
 ABI 99 gives both composition hosts one compact grouped box ingress. Hosts pack
@@ -627,8 +628,8 @@ Extra legends, named/advanced colorbars, other deferred
   compilers route real polar, custom-font, CSS/class, and normalized gradient
   representations through it and reject non-u32 request versions before FFI
   coercion. See
-[scene-ir.md](scene-ir.md). Per-item scatter stroke/width, custom marker
-paths/glyphs, and density/LOD remain explicit compatibility exceptions. Python custom glyph/path markers and other
+[scene-ir.md](scene-ir.md).
+Per-item scatter size/symbol stay fail-closed; density/LOD remain explicit compatibility exceptions. Python custom glyph/path markers and other
 not-yet-migrated customization remain explicit compatibility exceptions until
 bounded path, text, and chrome records land.
 

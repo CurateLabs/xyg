@@ -190,8 +190,10 @@ def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
         browser_css.to_scene()
 
     data_color = Figure().scatter([0.0, 1.0], [0.0, 1.0], color=[0.0, 1.0])
-    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_GRADIENT"):
-        data_color.to_scene()
+    data_scene = data_color.to_scene()
+    assert data_scene[4:8] == (31).to_bytes(4, "little")
+    data_svg = _native.scene_svg(data_scene)
+    assert "<circle" in data_svg or "<path" in data_svg
 
     missing_constant = Figure().scatter([0.0], [0.0])
     missing_constant.traces[0].color_ch = ColorChannel(mode="constant", constant=None)

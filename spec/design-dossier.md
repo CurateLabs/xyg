@@ -548,6 +548,7 @@ F3, still pending (above).
   constant-style polyline, ordinary area/error-band Bands,
   bar/column/histogram rectangles, at most 1,024 fill-only unjoined
   triangle-mesh faces (constant or interned per-face fill/stroke/width, ABI 195),
+  interned per-item scatter fill/stroke/width/opacity (ABI 196),
   solid ribbons, and
   disconnected `segments`/error-bar/stem endpoint pairs (including the
   immediately-following generated constant built-in stem marker). Gradients,
@@ -598,6 +599,7 @@ F3, still pending (above).
   ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
   ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
   ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6 (`joined_fill` plus per-face paint stays fail-closed).
+  ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7 (per-item size/symbol stay fail-closed).
   `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
   panel Scene. That predicate
   owns the public PolyFill group budget, including companion traces that share
@@ -1546,7 +1548,8 @@ hexbin on HexCell PolyFills.
 ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint on that same
 path. ABI 195 admits custom `role` and per-item fill/stroke/width interned onto
 those TriangleFace PolyFills from packed XYHP kind 6 (`joined_fill` plus per-face
-paint stays fail-closed). ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as
+paint stays fail-closed). ABI 196 intern scatter per-item fill/stroke/width/opacity
+from packed XYHP kind 7 (per-item size/symbol stay fail-closed). ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as
 authored band step expansion (`step_mode` 1–3 wins over `BandFlatten`).
 ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring from
 the Rust boundary walk (disconnected meshes keep per-face `TriangleFace` rows).
@@ -1557,7 +1560,7 @@ stay fail-closed. ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor`
 as XYAW `wrap=0`. ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor`
 as XYAW `wrap=0`. ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane
 interned onto HexCell PolyFills. ABI 194 admits polar hexbin, custom reducers,
-and categorical / `direct_rgba` hexbin on that same HexCell intern. ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 187 admits cartesian unwrapped text `rotation` as
+and categorical / `direct_rgba` hexbin on that same HexCell intern. ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7. ABI 187 admits cartesian unwrapped text `rotation` as
 XYAW `wrap=0`. ABI 188 admits labelled cartesian marker `rotation` as XYAW
 `wrap=0`. ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from
 packed XYTA. ABI 190 intern cartesian per-item two-ended ribbon `color2_ch`

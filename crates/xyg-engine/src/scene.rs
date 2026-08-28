@@ -3770,6 +3770,10 @@ pub const XYHP_PAINT_RIBBON: u32 = 5;
 /// Payload is `cols * 12` bytes (`rows` must be 1); expansion interns unique
 /// triples onto PolyFill `style_ref`s.
 pub const XYHP_PAINT_MESH: u32 = 6;
+/// ABI 196: N scatter points as fill RGBA8 + stroke RGBA8 + f32 width.
+/// Payload is `cols * 12` bytes (`rows` must be 1); expansion interns unique
+/// triples onto Scatter `style_ref`s by record order within the trace.
+pub const XYHP_PAINT_SCATTER: u32 = 7;
 pub const XYHP_MAX_NAME_BYTES: usize = 64;
 /// XYIM v1 image-blit sidecar (ABI 137 / Scene v27). One RGBA8 plane per
 /// `DensityBlit` Image record, keyed by stable id, image-top-first.
@@ -4021,6 +4025,7 @@ fn parse_heatmap_paint(bytes: &[u8]) -> Result<Vec<HeatmapPaintPlane<'_>>, Scene
                     | XYHP_PAINT_MEAN_COLOR
                     | XYHP_PAINT_RIBBON
                     | XYHP_PAINT_MESH
+                    | XYHP_PAINT_SCATTER
             )
         {
             return Err(SceneError::Length);
@@ -4032,7 +4037,7 @@ fn parse_heatmap_paint(bytes: &[u8]) -> Result<Vec<HeatmapPaintPlane<'_>>, Scene
             if rows != 1 || payload_len != cols.checked_mul(8).ok_or(SceneError::Limit)? {
                 return Err(SceneError::Length);
             }
-        } else if kind == XYHP_PAINT_MESH {
+        } else if kind == XYHP_PAINT_MESH || kind == XYHP_PAINT_SCATTER {
             if rows != 1 || payload_len != cols.checked_mul(12).ok_or(SceneError::Limit)? {
                 return Err(SceneError::Length);
             }
@@ -4179,8 +4184,11 @@ fn ribbon_end_paints(plane: HeatmapPaintPlane<'_>) -> Result<Vec<([u8; 4], [u8; 
     Ok(ends)
 }
 
-fn mesh_face_paints(plane: HeatmapPaintPlane<'_>) -> Result<Vec<([u8; 4], [u8; 4], f64)>, SceneError> {
-    if plane.kind != XYHP_PAINT_MESH || plane.rows != 1 {
+fn paint_triples(
+    plane: HeatmapPaintPlane<'_>,
+    kind: u32,
+) -> Result<Vec<([u8; 4], [u8; 4], f64)>, SceneError> {
+    if plane.kind != kind || plane.rows != 1 {
         return Err(SceneError::Length);
     }
     let mut faces = Vec::with_capacity(plane.cols);
@@ -4201,6 +4209,16 @@ fn mesh_face_paints(plane: HeatmapPaintPlane<'_>) -> Result<Vec<([u8; 4], [u8; 4
         ));
     }
     Ok(faces)
+}
+
+fn mesh_face_paints(plane: HeatmapPaintPlane<'_>) -> Result<Vec<([u8; 4], [u8; 4], f64)>, SceneError> {
+    paint_triples(plane, XYHP_PAINT_MESH)
+}
+
+fn scatter_point_paints(
+    plane: HeatmapPaintPlane<'_>,
+) -> Result<Vec<([u8; 4], [u8; 4], f64)>, SceneError> {
+    paint_triples(plane, XYHP_PAINT_SCATTER)
 }
 
 fn intern_mesh_face(
@@ -5677,7 +5695,16 @@ pub fn expand_scene_records_painted(
             .iter()
             .flatten()
             .any(|plane| plane.kind == XYHP_PAINT_MESH);
-    if has_painted || intern_density || intern_hex || intern_ribbon || intern_mesh {
+    let intern_scatter = input
+        .kinds
+        .iter()
+        .any(|kind| *kind == SceneRecordKind::Scatter as u8)
+        && paint_planes
+            .iter()
+            .flatten()
+            .any(|plane| plane.kind == XYHP_PAINT_SCATTER);
+    if has_painted || intern_density || intern_hex || intern_ribbon || intern_mesh || intern_scatter
+    {
         if fill_rgba.len() != stroke_width.len().saturating_mul(4)
             || stroke_rgba.len() != fill_rgba.len()
             || stroke_width.is_empty()
@@ -5690,7 +5717,13 @@ pub fn expand_scene_records_painted(
     if (has_painted || has_density) && paint_planes.is_empty() {
         return Err(SceneError::Length);
     }
-    let mut painted_styles = (has_painted || intern_density || intern_hex || intern_ribbon || intern_mesh).then(|| {
+    let mut painted_styles = (has_painted
+        || intern_density
+        || intern_hex
+        || intern_ribbon
+        || intern_mesh
+        || intern_scatter)
+        .then(|| {
         ExpandedSceneStyles {
             fill_rgba: fill_rgba.to_vec(),
             stroke_rgba: stroke_rgba.to_vec(),
@@ -5706,6 +5739,9 @@ pub fn expand_scene_records_painted(
     let mut ribbon_gradients: Vec<StyleGradient> = Vec::new();
     let mut mesh_paints: HashMap<u64, Vec<([u8; 4], [u8; 4], f64)>> = HashMap::new();
     let mut mesh_intern: HashMap<([u8; 4], [u8; 4], u64), u32> = HashMap::new();
+    let mut scatter_paints: HashMap<u64, Vec<([u8; 4], [u8; 4], f64)>> = HashMap::new();
+    let mut scatter_intern: HashMap<([u8; 4], [u8; 4], u64), u32> = HashMap::new();
+    let mut scatter_cursors: HashMap<u64, usize> = HashMap::new();
 
     // Stable identity is the canonical Polyline run boundary. Reject any
     // attempt to switch step mode inside one contiguous same-kind identity
@@ -5906,7 +5942,47 @@ pub fn expand_scene_records_painted(
     while cursor < len {
         let mode = SceneExpansionMode::from_code(input.expansion_modes[cursor])?;
         if mode == SceneExpansionMode::None {
-            output.push_source(&input, cursor);
+            let mut style_ref = input.style_refs[cursor];
+            if intern_scatter && input.kinds[cursor] == SceneRecordKind::Scatter as u8 {
+                let parent = input.stable_ids[cursor];
+                if let Entry::Vacant(slot) = scatter_paints.entry(parent) {
+                    if let Ok(plane) = take_paint_plane(&mut paint_planes, parent) {
+                        slot.insert(scatter_point_paints(plane)?);
+                    } else {
+                        slot.insert(Vec::new());
+                    }
+                }
+                if let Some(points) = scatter_paints.get(&parent) {
+                    let index = {
+                        let cursor_slot = scatter_cursors.entry(parent).or_insert(0);
+                        let index = *cursor_slot;
+                        *cursor_slot += 1;
+                        index
+                    };
+                    if let Some(&(fill, stroke, width)) = points.get(index) {
+                        let fill_alpha = style_rgba4(fill_rgba, style_ref)?[3];
+                        let stroke_alpha = style_rgba4(stroke_rgba, style_ref)?[3];
+                        style_ref = intern_mesh_face(
+                            painted_styles.as_mut().ok_or(SceneError::Length)?,
+                            &mut scatter_intern,
+                            apply_fill_alpha(fill, fill_alpha),
+                            apply_fill_alpha(stroke, stroke_alpha),
+                            width,
+                        )?;
+                    }
+                }
+                output.kinds.push(input.kinds[cursor]);
+                output.stable_ids.push(input.stable_ids[cursor]);
+                output.style_refs.push(style_ref);
+                output.diameter.push(input.diameter[cursor]);
+                output.symbols.push(input.symbols[cursor]);
+                output.x0.push(input.x0[cursor]);
+                output.y0.push(input.y0[cursor]);
+                output.x1.push(input.x1[cursor]);
+                output.y1.push(input.y1[cursor]);
+            } else {
+                output.push_source(&input, cursor);
+            }
             cursor += 1;
             continue;
         }

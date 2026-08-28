@@ -30,6 +30,8 @@
 //! ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring
 //! from the Rust boundary walk (disconnected meshes keep per-face triangles;
 //! ABI 195 admits custom `role` and per-item fill/stroke/width on those faces).
+//! ABI 196 admits scatter per-item fill/stroke/width/opacity interned onto
+//! Scatter records from packed XYHP kind 7 (per-item size/symbol stay fail-closed).
 //! ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`
 //! (hosts omit `FLAG_COLOR2` / `OBS_GRADIENT` on that path). ABI 190 intern
 //! per-item two-ended paint from packed XYHP kind 5. Polar ribbon, and `role` other than `ribbon` stay fail-closed.
@@ -1554,6 +1556,8 @@ pub fn scene_figure_support_reason_with_attach(
             kind == "ribbon" && tess == crate::scene_trace_attach::CellFillTessellation::Ribbon;
         let mesh_faces = kind == "triangle_mesh"
             && tess == crate::scene_trace_attach::CellFillTessellation::TriangleMesh;
+        let scatter_paints = kind == "scatter"
+            && tess == crate::scene_trace_attach::CellFillTessellation::ScatterPaint;
         if trace_flags & XYFS_TRACE_NON_PRIMARY_AXIS != 0 {
             return Ok(FIGURE_TRACE_AXIS_REASON.to_string());
         }
@@ -1561,6 +1565,7 @@ pub fn scene_figure_support_reason_with_attach(
             && !hexbin_cells
             && !ribbon_ends
             && !mesh_faces
+            && !scatter_paints
         {
             return Ok(FIGURE_HIDDEN_REASON.to_string());
         }

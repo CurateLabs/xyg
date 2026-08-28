@@ -236,7 +236,8 @@ cell) for public SVG/PNG/PDF. The wire stays centers-only; hosts do not add a
 Scene kind. Cartesian metric colormaps intern per-cell fills through a 1×N
 XYHP plane (ABI 186). Polar hexbin, custom `reduce_C_function`, and
 categorical / `direct_rgba` cell paints intern the same way (ABI 194). ABI 195
-admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. LOD
+admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6.
+ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7. LOD
 over the 1,024-group painter budget, and rich style exceptions remain
 compatibility exporters.
 

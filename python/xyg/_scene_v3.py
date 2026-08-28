@@ -1134,6 +1134,7 @@ def _constant_color(trace: Any, fallback: str) -> str:
             _hexbin_packs_paint_plane(trace)
             or _ribbon_packs_end_paints(trace)
             or _mesh_packs_paint_plane(trace)
+            or _scatter_packs_paint_plane(trace)
         ):
             return str((getattr(trace, "style", None) or {}).get("color", fallback))
         raise UnsupportedSceneV3("Scene v12 does not yet support data-driven paint channels")
@@ -1823,6 +1824,50 @@ def _hexbin_packs_paint_plane(trace: Any) -> bool:
     return _hexbin_packs_colormap_plane(trace) or _hexbin_packs_rgba_plane(trace)
 
 
+def _scatter_count(trace: Any) -> int:
+    column = _trace_column(trace, "x")
+    return 0 if column is None else int(len(column))
+
+
+_SCATTER_PAINT_CHANNELS = frozenset({"color", "stroke", "stroke_width", "opacity", "artist_alpha"})
+
+
+def _scatter_packs_paint_plane(trace: Any) -> bool:
+    """Return whether hosts should pack per-point scatter paint as XYTA.
+
+    Per-item fill/stroke/width/opacity intern onto Scatter records as XYHP
+    kind 7 (ABI 196). Per-item size and symbol stay fail-closed. Density
+    scatter keeps the blit path.
+    """
+    if str(getattr(trace, "kind", "") or "") != "scatter":
+        return False
+    if getattr(trace, "use_density", lambda: False)():
+        return False
+    names = set(getattr(trace, "per_item_channel_names", lambda: ())())
+    if not names:
+        return False
+    return names <= _SCATTER_PAINT_CHANNELS
+
+
+def _scatter_point_fill_rgba8(trace: Any) -> bytes | None:
+    return _item_fill_rgba8(trace, _scatter_count(trace))
+
+
+def _scatter_point_stroke_rgba8(trace: Any, fills: bytes) -> bytes | None:
+    n = _scatter_count(trace)
+    packed = _item_stroke_rgba8(trace, fills, n)
+    if packed is None:
+        return None
+    stroke_ch = getattr(trace, "stroke_ch", None)
+    if stroke_ch is not None and getattr(stroke_ch, "mode", None) == "match_fill":
+        return packed
+    return _item_apply_opacity(trace, packed, n)
+
+
+def _scatter_point_widths(trace: Any) -> bytes | None:
+    return _item_widths(trace, _scatter_count(trace))
+
+
 def _mesh_count(trace: Any) -> int:
     column = _trace_column(trace, "x0")
     return 0 if column is None else int(len(column))
@@ -1844,8 +1889,29 @@ def _mesh_packs_paint_plane(trace: Any) -> bool:
     return bool(getattr(trace, "has_per_item_channels", lambda: False)())
 
 
-def _mesh_face_fill_rgba8(trace: Any) -> bytes | None:
-    n = _mesh_count(trace)
+def _item_apply_opacity(trace: Any, packed: bytes, n: int) -> bytes | None:
+    channels = getattr(trace, "style_channels", None) or {}
+    opacity_ch = channels.get("opacity")
+    artist_ch = channels.get("artist_alpha")
+    if opacity_ch is None and artist_ch is None:
+        return packed
+    rgba = np.frombuffer(bytearray(packed), dtype=np.uint8).reshape(n, 4).copy()
+    alpha = rgba[:, 3].astype(np.float64)
+    if artist_ch is not None:
+        artist = np.asarray(getattr(artist_ch, "values", None), dtype=np.float64).reshape(-1)
+        if artist.size != n:
+            return None
+        alpha = np.where(artist >= 0.0, np.clip(artist, 0.0, 1.0) * 255.0, alpha)
+    if opacity_ch is not None:
+        values = np.asarray(getattr(opacity_ch, "values", None), dtype=np.float64).reshape(-1)
+        if values.size != n:
+            return None
+        alpha = alpha * np.clip(values, 0.0, 1.0)
+    rgba[:, 3] = np.rint(np.clip(alpha, 0.0, 255.0)).astype(np.uint8)
+    return np.ascontiguousarray(rgba).tobytes()
+
+
+def _item_fill_rgba8(trace: Any, n: int) -> bytes | None:
     fallback = str((getattr(trace, "style", None) or {}).get("color", "#3987e5"))
     channel = getattr(trace, "color_ch", None)
     packed = _channel_end_rgba8(channel, n, fallback)
@@ -1879,19 +1945,10 @@ def _mesh_face_fill_rgba8(trace: Any) -> bytes | None:
         packed = np.ascontiguousarray(image).reshape(-1).tobytes()
     if packed is None:
         return None
-    opacity_ch = (getattr(trace, "style_channels", None) or {}).get("opacity")
-    if opacity_ch is None:
-        return packed
-    values = np.asarray(getattr(opacity_ch, "values", None), dtype=np.float64).reshape(-1)
-    if values.size != n:
-        return None
-    rgba = np.frombuffer(bytearray(packed), dtype=np.uint8).reshape(n, 4).copy()
-    rgba[:, 3] = np.rint(np.clip(values, 0.0, 1.0) * rgba[:, 3]).astype(np.uint8)
-    return np.ascontiguousarray(rgba).tobytes()
+    return _item_apply_opacity(trace, packed, n)
 
 
-def _mesh_face_stroke_rgba8(trace: Any, fills: bytes) -> bytes | None:
-    n = _mesh_count(trace)
+def _item_stroke_rgba8(trace: Any, fills: bytes, n: int) -> bytes | None:
     stroke_ch = getattr(trace, "stroke_ch", None)
     if stroke_ch is not None and getattr(stroke_ch, "mode", None) == "match_fill":
         return fills
@@ -1904,8 +1961,7 @@ def _mesh_face_stroke_rgba8(trace: Any, fills: bytes) -> bytes | None:
     return None
 
 
-def _mesh_face_widths(trace: Any) -> bytes | None:
-    n = _mesh_count(trace)
+def _item_widths(trace: Any, n: int) -> bytes | None:
     width_ch = (getattr(trace, "style_channels", None) or {}).get("stroke_width")
     if width_ch is not None:
         values = np.ascontiguousarray(
@@ -1919,6 +1975,18 @@ def _mesh_face_widths(trace: Any) -> bytes | None:
     if not np.isfinite(width) or width < 0.0:
         return None
     return np.full(n, width, dtype=np.float64).tobytes()
+
+
+def _mesh_face_fill_rgba8(trace: Any) -> bytes | None:
+    return _item_fill_rgba8(trace, _mesh_count(trace))
+
+
+def _mesh_face_stroke_rgba8(trace: Any, fills: bytes) -> bytes | None:
+    return _item_stroke_rgba8(trace, fills, _mesh_count(trace))
+
+
+def _mesh_face_widths(trace: Any) -> bytes | None:
+    return _item_widths(trace, _mesh_count(trace))
 
 
 def _heatmap_uses_colormap(trace: Any) -> bool:
@@ -2094,6 +2162,17 @@ def _pack_xyta(figure: Any) -> bytes:
             if fills is not None and strokes is not None and widths is not None:
                 n = len(fills) // 4
                 flags |= _XYTA_MESH_FACES | _XYTA_SHAPE | _XYTA_HAS_RGBA
+                rows, cols = 1, n
+                rgba = fills
+                mean_rgba = strokes
+                x = widths
+        elif _scatter_packs_paint_plane(trace):
+            fills = _scatter_point_fill_rgba8(trace)
+            strokes = _scatter_point_stroke_rgba8(trace, fills or b"")
+            widths = _scatter_point_widths(trace)
+            if fills is not None and strokes is not None and widths is not None:
+                n = len(fills) // 4
+                flags |= _XYTA_SCATTER_PAINT | _XYTA_SHAPE | _XYTA_HAS_RGBA
                 rows, cols = 1, n
                 rgba = fills
                 mean_rgba = strokes
@@ -2590,6 +2669,7 @@ _XYTA_HAS_DOMAIN = 1 << 12
 _XYTA_SHAPE = 1 << 13
 _XYTA_RIBBON_ENDS = 1 << 14
 _XYTA_MESH_FACES = 1 << 15
+_XYTA_SCATTER_PAINT = 1 << 16
 _XYTC_HAS_FILL = 1 << 0
 _XYTC_HAS_STROKE = 1 << 1
 _XYTC_HAS_LINE_COLOR = 1 << 2
@@ -3477,6 +3557,7 @@ def _pack_figure_support(
             and not (str(getattr(trace, "kind", "") or "") == "scatter" and trace.use_density())
             and not _hexbin_packs_paint_plane(trace)
             and not _mesh_packs_paint_plane(trace)
+            and not _scatter_packs_paint_plane(trace)
             and not (
                 str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
                 and _ribbon_packs_end_paints(trace)

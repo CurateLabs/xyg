@@ -2821,6 +2821,7 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
       && !scatterUsesDensity(trace)
       && !hexbinPacksPaintPlane(trace)
       && !meshPacksPaintPlane(trace)
+      && !scatterPacksPaintPlane(trace)
       && !(figure.coords !== "polar" && ribbonPacksEndPaints(trace))
     )
     || (
@@ -3261,6 +3262,7 @@ const XYTA_HAS_DOMAIN = 1 << 12;
 const XYTA_SHAPE = 1 << 13;
 const XYTA_RIBBON_ENDS = 1 << 14;
 const XYTA_MESH_FACES = 1 << 15;
+const XYTA_SCATTER_PAINT = 1 << 16;
 const XYMG_MAX_UTF8 = 64;
 const GRAD_DIR_FROM_CODE = { 0: "down", 1: "up", 2: "right", 3: "left" };
 
@@ -3813,6 +3815,16 @@ function packXyTa(figure, xDomain, yDomain) {
       const packed = meshFacePaints(trace);
       if (packed != null) {
         flags |= XYTA_MESH_FACES | XYTA_SHAPE | XYTA_HAS_RGBA;
+        rows = 1;
+        cols = packed.fills.length / 4;
+        rgba = packed.fills;
+        meanRgba = packed.strokes;
+        x = packed.widths;
+      }
+    } else if (scatterPacksPaintPlane(trace)) {
+      const packed = scatterPointPaints(trace);
+      if (packed != null) {
+        flags |= XYTA_SCATTER_PAINT | XYTA_SHAPE | XYTA_HAS_RGBA;
         rows = 1;
         cols = packed.fills.length / 4;
         rgba = packed.fills;
@@ -5295,6 +5307,7 @@ function figureTraceSupport(figure, trace) {
     trace.hidden
     || scatterHasDroppedPerItem(trace)
     || (scatterHasNonConstantColor(trace) && !scatterUsesDensity(trace))
+    || scatterPacksPaintPlane(trace)
   ) flags |= XYFS_TRACE_HIDDEN_OR_PER_ITEM;
   if (style.marker_glyph != null) {
     if (kind !== "scatter" || style.marker_path != null || admittedMarkerGlyph(style.marker_glyph) == null) {
@@ -5368,35 +5381,66 @@ function hexbinPacksPaintPlane(trace) {
   return hexbinPacksColormapPlane(trace) || hexbinPacksRgbaPlane(trace);
 }
 
-function meshCount(trace) {
-  return trace.x0?.length ?? trace.count ?? 0;
-}
-
-function meshJoinedFill(trace) {
-  const style = trace.style ?? {};
-  return Boolean(style.joined_fill || style.joinedFill);
-}
-
-function meshHasPerItem(trace) {
+function scatterPaintChannelNames(trace) {
+  const names = [];
   const style = trace.style ?? {};
   const channels = trace.style_channels ?? trace.styleChannels ?? {};
-  return Boolean(
-    scatterHasNonConstantColor(trace)
-    || scatterHasDroppedPerItem(trace)
-    || channels.opacity
-    || channels.stroke_width
-    || style.opacity_channel
-    || style.stroke_width_channel
-  );
+  if (scatterHasNonConstantColor(trace)) names.push("color");
+  const strokeCh = trace.stroke_ch ?? trace.strokeChannel;
+  if (strokeCh != null && strokeCh.mode !== "constant" && strokeCh.mode !== "match_fill") {
+    names.push("stroke");
+  } else if (style.stroke_channel && strokeCh == null) {
+    names.push("stroke");
+  }
+  if (channels.stroke_width || style.stroke_width_channel) names.push("stroke_width");
+  if (channels.opacity || style.opacity_channel) names.push("opacity");
+  if (channels.artist_alpha || style.artist_alpha_channel) names.push("artist_alpha");
+  if (trace.size_ch || style.size_channel) names.push("size");
+  if (channels.symbol || Array.isArray(style.symbol)) names.push("symbol");
+  return names;
 }
 
-function meshPacksPaintPlane(trace) {
-  if (String(trace.kind ?? "") !== "triangle_mesh" || meshJoinedFill(trace)) return false;
-  return meshHasPerItem(trace);
+function scatterPacksPaintPlane(trace) {
+  if ((trace.kind ?? "scatter") !== "scatter" || scatterUsesDensity(trace)) return false;
+  const names = scatterPaintChannelNames(trace);
+  if (!names.length) return false;
+  return names.every((name) => (
+    name === "color"
+    || name === "stroke"
+    || name === "stroke_width"
+    || name === "opacity"
+    || name === "artist_alpha"
+  ));
 }
 
-function meshFaceFillRgba8(trace) {
-  const n = meshCount(trace);
+function scatterCount(trace) {
+  return trace.x?.length ?? trace.count ?? 0;
+}
+
+function itemApplyOpacity(trace, packed, n) {
+  const channels = trace.style_channels ?? trace.styleChannels ?? {};
+  const opacityCh = channels.opacity;
+  const artistCh = channels.artist_alpha;
+  if (opacityCh?.values == null && artistCh?.values == null) return packed;
+  const out = Uint8Array.from(packed);
+  for (let i = 0; i < n; i += 1) {
+    let alpha = out[i * 4 + 3];
+    if (artistCh?.values != null) {
+      const artist = Number(artistCh.values[i]);
+      if (artist >= 0) alpha = Math.min(1, Math.max(0, artist)) * 255;
+    }
+    if (opacityCh?.values != null) {
+      const opacity = Math.min(1, Math.max(0, Number(opacityCh.values[i])));
+      alpha *= opacity;
+    }
+    out[i * 4 + 3] = Math.round(Math.min(255, Math.max(0, alpha)));
+  }
+  if (opacityCh?.values != null && opacityCh.values.length !== n) return null;
+  if (artistCh?.values != null && artistCh.values.length !== n) return null;
+  return out;
+}
+
+function itemFillRgba8(trace, n) {
   const fallback = sourceColorCss(trace);
   const channel = trace.color_ch ?? trace.colorChannel ?? trace.color;
   let packed = channelEndRgba8(channel, n, fallback);
@@ -5428,20 +5472,10 @@ function meshFaceFillRgba8(trace) {
     }
   }
   if (packed == null) return null;
-  const opacityCh = (trace.style_channels ?? trace.styleChannels ?? {}).opacity;
-  if (opacityCh?.values == null) return packed;
-  const values = [...opacityCh.values].map(Number);
-  if (values.length !== n) return null;
-  const out = Uint8Array.from(packed);
-  for (let i = 0; i < n; i += 1) {
-    const alpha = Math.min(1, Math.max(0, values[i]));
-    out[i * 4 + 3] = Math.round(out[i * 4 + 3] * alpha);
-  }
-  return out;
+  return itemApplyOpacity(trace, packed, n);
 }
 
-function meshFaceStrokeRgba8(trace, fills) {
-  const n = meshCount(trace);
+function itemStrokeRgba8(trace, fills, n) {
   const strokeCh = trace.stroke_ch ?? trace.strokeChannel;
   if (strokeCh != null && strokeCh.mode === "match_fill") return fills;
   const fallback = String((trace.style ?? {}).stroke ?? "transparent");
@@ -5451,8 +5485,7 @@ function meshFaceStrokeRgba8(trace, fills) {
   return null;
 }
 
-function meshFaceWidths(trace) {
-  const n = meshCount(trace);
+function itemWidths(trace, n) {
   const widthCh = (trace.style_channels ?? trace.styleChannels ?? {}).stroke_width;
   if (widthCh?.values != null) {
     const values = [...widthCh.values].map(Number);
@@ -5462,6 +5495,58 @@ function meshFaceWidths(trace) {
   const width = Number((trace.style ?? {}).stroke_width ?? 0);
   if (!Number.isFinite(width) || width < 0) return null;
   return packF64Le(new Float64Array(n).fill(width));
+}
+
+function scatterPointPaints(trace) {
+  const n = scatterCount(trace);
+  const packedFills = itemFillRgba8(trace, n);
+  const strokeCh = trace.stroke_ch ?? trace.strokeChannel;
+  let packedStrokes = itemStrokeRgba8(trace, packedFills, n);
+  if (packedStrokes != null && !(strokeCh != null && strokeCh.mode === "match_fill")) {
+    packedStrokes = itemApplyOpacity(trace, packedStrokes, n);
+  }
+  const packedWidths = itemWidths(trace, n);
+  if (packedFills == null || packedStrokes == null || packedWidths == null) return null;
+  return { fills: packedFills, strokes: packedStrokes, widths: packedWidths };
+}
+
+function meshCount(trace) {
+  return trace.x0?.length ?? trace.count ?? 0;
+}
+
+function meshJoinedFill(trace) {
+  const style = trace.style ?? {};
+  return Boolean(style.joined_fill || style.joinedFill);
+}
+
+function meshHasPerItem(trace) {
+  const style = trace.style ?? {};
+  const channels = trace.style_channels ?? trace.styleChannels ?? {};
+  return Boolean(
+    scatterHasNonConstantColor(trace)
+    || scatterHasDroppedPerItem(trace)
+    || channels.opacity
+    || channels.stroke_width
+    || style.opacity_channel
+    || style.stroke_width_channel
+  );
+}
+
+function meshPacksPaintPlane(trace) {
+  if (String(trace.kind ?? "") !== "triangle_mesh" || meshJoinedFill(trace)) return false;
+  return meshHasPerItem(trace);
+}
+
+function meshFaceFillRgba8(trace) {
+  return itemFillRgba8(trace, meshCount(trace));
+}
+
+function meshFaceStrokeRgba8(trace, fills) {
+  return itemStrokeRgba8(trace, fills, meshCount(trace));
+}
+
+function meshFaceWidths(trace) {
+  return itemWidths(trace, meshCount(trace));
 }
 
 function meshFacePaints(trace) {

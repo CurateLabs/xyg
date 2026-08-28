@@ -80,13 +80,18 @@ test("Node projects Rust-owned Scene support decisions verbatim", () => {
   assert.throws(() => gradient.toScene(), /XYG_SCENE_UNSUPPORTED_GRADIENT/);
   for (const color of [
     { mode: "continuous", values: new Float64Array([0, 1]) },
-    { mode: "direct_rgba", rgba: new Uint8Array(8) },
-    { mode: "constant" },
+    { mode: "direct_rgba", rgba: new Uint8Array([239, 68, 68, 255, 34, 197, 94, 255]) },
   ]) {
     const colorChannel = new Figure(); colorChannel.scatter([0, 1], [0, 1]);
     colorChannel.traces[0].color = color;
-    assert.throws(() => colorChannel.toScene(), /XYG_SCENE_UNSUPPORTED_GRADIENT/);
+    colorChannel.traces[0].color_ch = color;
+    colorChannel.traces[0].colorChannel = color;
+    assert.doesNotThrow(() => colorChannel.toScene());
+    assert.equal(sceneExportSupportReason(colorChannel), null);
   }
+  const incomplete = new Figure(); incomplete.scatter([0, 1], [0, 1]);
+  incomplete.traces[0].color = { mode: "constant" };
+  assert.throws(() => incomplete.toScene(), /hidden or per-item|data-driven|GRADIENT/);
   const constantColor = new Figure(); constantColor.scatter([0], [0]);
   constantColor.traces[0].color = { mode: "constant", color: "#3987e5" };
   assert.doesNotThrow(() => constantColor.toScene());
@@ -2321,6 +2326,85 @@ test("Node Scene compiles triangle_mesh fill_opacity", () => {
     name: null,
   });
   assert.notEqual(svg, sceneSvg(solid.toScene()));
+});
+
+test("Node Scene compiles scatter per-item paint", () => {
+  const stroked = new Figure({ width: 320, height: 240 });
+  stroked.setAxisDomain("x", [0, 3]);
+  stroked.setAxisDomain("y", [0, 3]);
+  stroked.scatter([1, 2], [1, 2], {
+    color: "#3987e5",
+    style: { stroke: "#111111", stroke_width: 2 },
+    name: null,
+    forceDirect: true,
+  });
+  stroked.traces[0].stroke_ch = {
+    mode: "direct_rgba",
+    rgba: Uint8Array.from([255, 0, 0, 255, 0, 255, 0, 255]),
+  };
+  stroked.traces[0].strokeChannel = stroked.traces[0].stroke_ch;
+  assert.equal(sceneExportSupportReason(stroked), null);
+  const strokedSvg = sceneSvg(stroked.toScene());
+  const strokes = [...strokedSvg.matchAll(/stroke="([^"]+)"/g)].map((match) => match[1]);
+  assert.ok(new Set(strokes).size > 1);
+
+  const widths = new Figure({ width: 320, height: 240 });
+  widths.setAxisDomain("x", [0, 3]);
+  widths.setAxisDomain("y", [0, 3]);
+  widths.scatter([1, 2], [1, 2], {
+    color: "#3987e5",
+    style: { stroke: "#111111", stroke_width: 1 },
+    name: null,
+    forceDirect: true,
+  });
+  widths.traces[0].style_channels = { stroke_width: { values: [1, 3] } };
+  widths.traces[0].styleChannels = widths.traces[0].style_channels;
+  assert.equal(sceneExportSupportReason(widths), null);
+  const widthSvg = sceneSvg(widths.toScene());
+  assert.match(widthSvg, /stroke-width="/);
+
+  const faded = new Figure({ width: 320, height: 240 });
+  faded.setAxisDomain("x", [0, 3]);
+  faded.setAxisDomain("y", [0, 3]);
+  faded.scatter([1, 2], [1, 2], {
+    color: "#3987e5",
+    name: null,
+    forceDirect: true,
+  });
+  faded.traces[0].style_channels = { opacity: { values: [0.25, 0.9] } };
+  faded.traces[0].styleChannels = faded.traces[0].style_channels;
+  assert.equal(sceneExportSupportReason(faded), null);
+  assert.match(sceneSvg(faded.toScene()), /<circle|<path/);
+
+  const colored = new Figure({ width: 320, height: 240 });
+  colored.setAxisDomain("x", [0, 3]);
+  colored.setAxisDomain("y", [0, 3]);
+  colored.scatter([1, 2], [1, 2], {
+    color: "#3987e5",
+    name: null,
+    forceDirect: true,
+  });
+  colored.traces[0].color_ch = {
+    mode: "direct_rgba",
+    rgba: Uint8Array.from([239, 68, 68, 255, 34, 197, 94, 255]),
+  };
+  colored.traces[0].colorChannel = colored.traces[0].color_ch;
+  assert.equal(sceneExportSupportReason(colored), null);
+  const coloredSvg = sceneSvg(colored.toScene());
+  const fills = [...coloredSvg.matchAll(/fill="([^"]+)"/g)].map((match) => match[1]);
+  assert.ok(new Set(fills).size > 1);
+
+  const sized = new Figure({ width: 320, height: 240 });
+  sized.setAxisDomain("x", [0, 3]);
+  sized.setAxisDomain("y", [0, 3]);
+  sized.scatter([1, 2], [1, 2], {
+    color: "#3987e5",
+    name: null,
+    forceDirect: true,
+  });
+  sized.traces[0].size_ch = { mode: "direct", values: [4, 12] };
+  sized.traces[0].sizeChannel = sized.traces[0].size_ch;
+  assert.notEqual(sceneExportSupportReason(sized), null);
 });
 
 test("Node Scene compiles polar wedge_gap and keeps cartesian fail-closed", () => {
