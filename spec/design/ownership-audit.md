@@ -545,12 +545,12 @@ Forbidden:
 | `crates/xyg-engine/src/scene_chrome.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 153 XYCF figure-chrome packing; ABI 161 XYSD legend-paint splice | — |
 | `crates/xyg-engine/src/scene_density.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 151 Scene density grid packing | — |
 | `crates/xyg-engine/src/scene_encode_assembled.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 160 XYAS/XYCC assembled encode; ABI 162 XYAS/XYCF encode from sidecars; ABI 163 product encode from packed facts; ABI 165 product-path XYFS support | — |
-| `crates/xyg-engine/src/scene_static.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 164 public static-export consumers | — |
 | `crates/xyg-engine/src/scene_export.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 152 XYEP packing from XYEF | — |
 | `crates/xyg-engine/src/scene_extras.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 150 XYSS extras packing; ABI 161 XYSD XYHP wrapping | — |
 | `crates/xyg-engine/src/scene_heatmap.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 149 XYHF paint-fact packing | — |
 | `crates/xyg-engine/src/scene_legend.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene_pack.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/scene_static.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 164 public static-export consumers | — |
 | `crates/xyg-engine/src/scene_style.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/scene_style_sidecars.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 158 XYSS style-sidecar packing | — |
 | `crates/xyg-engine/src/scene_trace_attach.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 155 XYTA heatmap/density attach packing | — |
