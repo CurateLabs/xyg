@@ -330,9 +330,7 @@ pub fn payload_visible_indices(
         return None;
     }
     let base_vals = if has_base {
-        let Some(base) = base else {
-            return None;
-        };
+        let base = base?;
         if base.len() != x.len() {
             return None;
         }
