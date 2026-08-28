@@ -2103,8 +2103,17 @@ def scatter(
         if _marker_path is not None:
             point_style["marker_path"] = _validated_marker_path(_marker_path)
         if _marker_glyph is not None:
-            if not isinstance(_marker_glyph, str) or len(_marker_glyph) != 1:
-                raise ValueError("scatter authored marker glyph must be one character")
+            if (
+                not isinstance(_marker_glyph, str)
+                or not _marker_glyph
+                or "\0" in _marker_glyph
+                or "\n" in _marker_glyph
+                or "\r" in _marker_glyph
+                or len(_marker_glyph.encode("utf-8")) > 64
+            ):
+                raise ValueError(
+                    "scatter authored marker glyph must be nonempty UTF-8 of at most 64 bytes"
+                )
             point_style["marker_glyph"] = _marker_glyph
         if _legend_trace_size:
             # Pyplot's scalar ``s=`` is an authored marker area, and its

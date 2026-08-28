@@ -1900,6 +1900,15 @@ def test_python_scene_compiles_constant_marker_glyphs() -> None:
     assert ">♣</text>" in club_svg
     assert club.to_svg() == club_svg
 
+    multi = Figure(width=240, height=160)
+    multi.axis_options["x"]["domain"] = (0.0, 2.0)
+    multi.axis_options["y"]["domain"] = (0.0, 2.0)
+    multi.scatter([1.0], [1.0], color="#336699", size=12, _marker_glyph="AB")
+    multi_svg = _native.scene_svg(multi.to_scene())
+    assert ">AB</text>" in multi_svg
+    assert multi.to_svg() == multi_svg
+    assert _scene_v3.scene_export_support_reason(multi) is None
+
     polar = Figure(width=400, height=400, coords="polar")
     polar.axis_options["x"]["domain"] = (0.0, math.tau)
     polar.axis_options["y"]["domain"] = (0.0, 1.0)
@@ -1914,7 +1923,7 @@ def test_python_scene_compiles_constant_marker_glyphs() -> None:
     with pytest.raises(UnsupportedSceneV3, match="authored markers"):
         both.to_scene()
     invalid = Figure().scatter([1.0], [1.0])
-    invalid.traces[-1].style["marker_glyph"] = "AB"
+    invalid.traces[-1].style["marker_glyph"] = "A" * 65
     with pytest.raises(UnsupportedSceneV3, match="authored markers"):
         invalid.to_scene()
 

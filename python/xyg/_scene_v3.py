@@ -75,6 +75,7 @@ _XYFS_TRACE_JOINED_FILL = 1 << 8  # reserved; ABI 182 no longer fail-closes this
 _XYFS_TRACE_CUSTOM_HEX_REDUCE = 1 << 9
 _XYFS_TRACE_HEATMAP_COLORMAP = 1 << 10
 _XYFS_TRACE_NON_CSS_FILL = 1 << 11
+_XYMG_MAX_UTF8 = 64
 _SCENE_DASH_PRESETS: dict[str, list[float] | None] = {
     "solid": None,
     "dashed": [6.0, 4.0],
@@ -1675,6 +1676,22 @@ def _density_aggregates_color(trace: Any) -> bool:
     return set(trace.per_item_channel_names()) <= {"color"}
 
 
+def _admitted_marker_glyph(glyph: Any) -> bytes | None:
+    """Pack a constant scatter marker_glyph, or None when Scene cannot own it.
+
+    ABI 191 admits multi-character UTF-8 up to 64 bytes. Combined marker_path
+    stays fail-closed at the caller. Empty, NUL, and newline stay off this path.
+    """
+    if not isinstance(glyph, str) or not glyph:
+        return None
+    if "\0" in glyph or "\n" in glyph or "\r" in glyph:
+        return None
+    encoded = glyph.encode("utf-8")
+    if len(encoded) > _XYMG_MAX_UTF8:
+        return None
+    return encoded
+
+
 def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, str]:
     """Observe per-trace Scene allowlist bits; Rust owns the diagnostic."""
     kind = str(getattr(trace, "kind", "") or "mark")
@@ -1693,8 +1710,7 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
         if (
             kind != "scatter"
             or style.get("marker_path") is not None
-            or not isinstance(glyph, str)
-            or len(glyph) != 1
+            or _admitted_marker_glyph(glyph) is None
         ):
             flags |= _XYFS_TRACE_DASHED_MARKERS
     marker_path = style.get("marker_path")
@@ -2610,13 +2626,11 @@ def _pack_xytc(figure: Any) -> bytes:
             if packed_marker:
                 flags |= _XYTC_HAS_MARKER
                 marker_blob = packed_marker
-        elif (
-            trace.kind == "scatter"
-            and isinstance(style.get("marker_glyph"), str)
-            and len(style["marker_glyph"]) == 1
-        ):
-            flags |= _XYTC_HAS_GLYPH
-            marker_blob = style["marker_glyph"].encode("utf-8")
+        elif trace.kind == "scatter":
+            packed_glyph = _admitted_marker_glyph(style.get("marker_glyph"))
+            if packed_glyph is not None:
+                flags |= _XYTC_HAS_GLYPH
+                marker_blob = packed_glyph
         if str(trace.kind) == "triangle_mesh" and style.get("joined_fill"):
             flags |= _XYTC_JOINED_FILL
         r_tip = 0.0

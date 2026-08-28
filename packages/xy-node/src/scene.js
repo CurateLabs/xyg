@@ -3243,7 +3243,17 @@ const XYTA_HAS_FILL_OPACITY = 1 << 11;
 const XYTA_HAS_DOMAIN = 1 << 12;
 const XYTA_SHAPE = 1 << 13;
 const XYTA_RIBBON_ENDS = 1 << 14;
+const XYMG_MAX_UTF8 = 64;
 const GRAD_DIR_FROM_CODE = { 0: "down", 1: "up", 2: "right", 3: "left" };
+
+function admittedMarkerGlyph(glyph) {
+  if (glyph == null) return null;
+  const text = String(glyph);
+  if (!text || text.includes("\0") || text.includes("\n") || text.includes("\r")) return null;
+  const encoded = encodeUtf8(text);
+  if (encoded.length > XYMG_MAX_UTF8) return null;
+  return encoded;
+}
 
 function packMarkerBlob(value) {
   if (value == null || typeof value !== "object" || Array.isArray(value) || !Array.isArray(value.contours)) {
@@ -3427,11 +3437,11 @@ function packXyTc(figure) {
         flags |= XYTC_HAS_MARKER;
         markerBlob = packed;
       }
-    } else if (trace.kind === "scatter" && style.marker_glyph != null) {
-      const glyph = String(style.marker_glyph);
-      if ([...glyph].length === 1) {
+    } else if (trace.kind === "scatter") {
+      const packedGlyph = admittedMarkerGlyph(style.marker_glyph);
+      if (packedGlyph != null) {
         flags |= XYTC_HAS_GLYPH;
-        markerBlob = encodeUtf8(glyph);
+        markerBlob = packedGlyph;
       }
     }
     if (trace.kind === "triangle_mesh" && (style.joined_fill || style.joinedFill)) {
@@ -5253,8 +5263,9 @@ function figureTraceSupport(figure, trace) {
     || (scatterHasNonConstantColor(trace) && !scatterUsesDensity(trace))
   ) flags |= XYFS_TRACE_HIDDEN_OR_PER_ITEM;
   if (style.marker_glyph != null) {
-    const glyph = String(style.marker_glyph);
-    if (kind !== "scatter" || style.marker_path != null || [...glyph].length !== 1) flags |= XYFS_TRACE_DASHED_MARKERS;
+    if (kind !== "scatter" || style.marker_path != null || admittedMarkerGlyph(style.marker_glyph) == null) {
+      flags |= XYFS_TRACE_DASHED_MARKERS;
+    }
   }
   if (style.marker_path != null) {
     if (kind !== "scatter") flags |= XYFS_TRACE_DASHED_MARKERS;

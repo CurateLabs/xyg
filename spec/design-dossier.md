@@ -591,7 +591,8 @@ F3, still pending (above).
   `wrap=0` (XYAW v2 / XYLB v6), then ABI 188 admits labelled cartesian marker
   `rotation` as XYAW `wrap=0`, then ABI 189 owns heatmap/hexbin cell-fill
   tessellation eligibility from packed XYTA, then ABI 190 intern cartesian
-  per-item two-ended ribbon `color2_ch` from packed XYHP kind 5.
+  per-item two-ended ribbon `color2_ch` from packed XYHP kind 5, then ABI 191
+  admits constant multi-character scatter `marker_glyph` via XYMG v2.
   `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
   panel Scene. That predicate
   owns the public PolyFill group budget, including companion traces that share
@@ -1515,8 +1516,8 @@ pixel inset during `polar_wedge_points`. ABI 168 tessellates polar
 bar/column/histogram `corner_radius` when the inner radius is positive.
 ABI 169 admits polar `curve="smooth"` plus `step` as polar step expansion.
 ABI 170 admits constant scatter `marker_glyph` via an XYMG extras sidecar
-kept on the encoded Scene. Multi-character glyphs and combined
-`marker_path` + `marker_glyph` stay compatibility. ABI 171 admits scatter
+kept on the encoded Scene. ABI 191 admits multi-character UTF-8 (XYMG v2).
+Combined `marker_path` + `marker_glyph` stays fail-closed. ABI 171 admits scatter
 `stroke_width` without an authored `stroke` as match-fill. ABI 172 admits
 cartesian line `curve="smooth"` plus `step` as authored step expansion.
 ABI 173 tessellates heatmap `corner_radius` (cartesian rounded Rects / polar

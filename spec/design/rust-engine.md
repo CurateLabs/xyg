@@ -867,4 +867,5 @@ landed; the remainder, in order:
    ABI 188 labelled cartesian marker `rotation` as XYAW `wrap=0` (`scene_annotations.rs` / `scene_export.rs`) ✅.
    ABI 189 heatmap/hexbin cell-fill tessellation eligibility from packed XYTA (`scene_trace_attach.rs` / `scene_export.rs`) ✅.
    ABI 190 cartesian per-item two-ended ribbon `color2_ch` intern from packed XYHP kind 5 (`scene.rs` / XYGR) ✅.
+   ABI 191 constant multi-character scatter `marker_glyph` via XYMG v2 (`scene.rs` / extras dash slot) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

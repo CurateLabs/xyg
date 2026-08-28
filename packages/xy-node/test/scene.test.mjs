@@ -200,8 +200,17 @@ test("Node Scene compiles constant marker_glyph text markers", () => {
   });
   assert.match(sceneSvg(polar.toScene()), />A<\/text>/);
   assert.equal(sceneExportSupportReason(polar), null);
+  const multi = new Figure({ width: 240, height: 160 });
+  multi.setAxisDomain("x", [0, 2]);
+  multi.setAxisDomain("y", [0, 2]);
+  multi.scatter([1], [1], {
+    _composed: true,
+    style: { color: "#336699", size: 12, marker_glyph: "AB" },
+  });
+  assert.match(sceneSvg(multi.toScene()), />AB<\/text>/);
+  assert.equal(sceneExportSupportReason(multi), null);
   const invalid = new Figure();
-  invalid.scatter([1], [1], { _composed: true, style: { marker_glyph: "AB" } });
+  invalid.scatter([1], [1], { _composed: true, style: { marker_glyph: "A".repeat(65) } });
   assert.throws(() => invalid.toScene(), /authored markers/);
 });
 
@@ -1251,11 +1260,12 @@ test("Node figure Scene v5 encodes titles and still rejects incomplete customiza
   const svg = titled.toSceneSvg();
   assert.match(svg, /data-xy-chrome="title"/);
   assert.match(svg, /Encoded title/);
-  for (const key of ["marker_path", "marker_glyph"]) {
-    const figure = new Figure();
-    figure.scatter([1], [1], { _composed: true, style: { [key]: "M0 0" } });
-    assert.throws(() => figure.toScene(), /authored markers/);
-  }
+  const badPath = new Figure();
+  badPath.scatter([1], [1], { _composed: true, style: { marker_path: "M0 0" } });
+  assert.throws(() => badPath.toScene(), /authored markers/);
+  const longGlyph = new Figure();
+  longGlyph.scatter([1], [1], { _composed: true, style: { marker_glyph: "A".repeat(65) } });
+  assert.throws(() => longGlyph.toScene(), /authored markers/);
   const named = new Figure();
   named.scatter([1], [1], { _composed: true, name: "series" });
   const legendSvg = named.toSceneSvg();

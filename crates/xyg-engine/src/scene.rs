@@ -3827,16 +3827,16 @@ pub const XYGR_DIR_UP: u32 = 1;
 pub const XYGR_DIR_RIGHT: u32 = 2;
 pub const XYGR_DIR_LEFT: u32 = 3;
 pub const XYGR_FLAG_PLOT_SPACE: u32 = 1 << 2;
-/// XYMG v1 authored-glyph sidecar (ABI 170). One entry per host style_ref
-/// that carries a constant single-character `marker_glyph`. Concatenated
-/// after XYGR in the extras dash slot. Encoded Scene keeps XYMG so SVG
-/// emits `<text>` and raster emits `OP_TEXT` instead of a disc. Combined
+/// XYMG v2 authored-glyph sidecar (ABI 170 / ABI 191). One entry per host
+/// `style_ref` that carries a constant `marker_glyph`. Concatenated after
+/// XYGR in the extras dash slot. Encoded Scene keeps XYMG so SVG emits
+/// `<text>` and raster emits `OP_TEXT` instead of a disc. ABI 191 admits
+/// multi-character UTF-8 (max `XYMG_MAX_UTF8` bytes, 4-byte padded). Combined
 /// `marker_path` + `marker_glyph` stays fail-closed.
 pub const XYMG_MAGIC: &[u8; 4] = b"XYMG";
-pub const XYMG_VERSION: u32 = 1;
+pub const XYMG_VERSION: u32 = 2;
 pub const XYMG_V1_HEADER_BYTES: usize = 16;
-pub const XYMG_ENTRY_BYTES: usize = 12;
-pub const XYMG_MAX_UTF8: usize = 4;
+pub const XYMG_MAX_UTF8: usize = 64;
 
 /// One XYHP paint plane keyed by the compact lattice's stable identity.
 #[derive(Clone, Copy, Debug)]
@@ -5055,14 +5055,22 @@ struct StyleMarkerGlyph {
     glyph: String,
 }
 
-fn marker_glyph_text(bytes: &[u8]) -> Option<&str> {
+pub(crate) fn marker_glyph_text(bytes: &[u8]) -> Option<&str> {
     let text = std::str::from_utf8(bytes).ok()?;
-    let mut chars = text.chars();
-    let ch = chars.next()?;
-    if chars.next().is_some() || ch == '\0' || ch == '\n' || ch == '\r' {
+    if text.is_empty()
+        || text.len() > XYMG_MAX_UTF8
+        || text
+            .as_bytes()
+            .iter()
+            .any(|&b| b == 0 || b == b'\n' || b == b'\r')
+    {
         return None;
     }
     Some(text)
+}
+
+pub(crate) fn xymg_padded_len(glyph_len: usize) -> Option<usize> {
+    glyph_len.checked_add(3).map(|n| n & !3)
 }
 
 fn parse_xymg_prefix(bytes: &[u8]) -> Result<(Vec<StyleMarkerGlyph>, usize), SceneError> {
@@ -5081,7 +5089,7 @@ fn parse_xymg_prefix(bytes: &[u8]) -> Result<(Vec<StyleMarkerGlyph>, usize), Sce
     let mut cursor = XYMG_V1_HEADER_BYTES;
     for _ in 0..n_entries {
         if cursor
-            .checked_add(XYMG_ENTRY_BYTES)
+            .checked_add(8)
             .ok_or(SceneError::Limit)?
             > bytes.len()
         {
@@ -5089,16 +5097,24 @@ fn parse_xymg_prefix(bytes: &[u8]) -> Result<(Vec<StyleMarkerGlyph>, usize), Sce
         }
         let style_ref = scene_read_u32(bytes, cursor)?;
         let glyph_len = scene_read_u32(bytes, cursor + 4)? as usize;
+        let padded = xymg_padded_len(glyph_len).ok_or(SceneError::Limit)?;
         if glyph_len == 0
             || glyph_len > XYMG_MAX_UTF8
             || !seen.insert(style_ref)
         {
             return Err(SceneError::Length);
         }
+        let entry_end = cursor
+            .checked_add(8)
+            .and_then(|start| start.checked_add(padded))
+            .ok_or(SceneError::Limit)?;
+        if entry_end > bytes.len() {
+            return Err(SceneError::Length);
+        }
         let glyph = marker_glyph_text(&bytes[cursor + 8..cursor + 8 + glyph_len])
             .ok_or(SceneError::Length)?
             .to_string();
-        cursor += XYMG_ENTRY_BYTES;
+        cursor = entry_end;
         entries.push(StyleMarkerGlyph { style_ref, glyph });
     }
     Ok((entries, cursor))
@@ -5134,11 +5150,11 @@ fn encode_xymg(entries: &[StyleMarkerGlyph]) -> Result<Vec<u8>, SceneError> {
         if marker_glyph_text(bytes).is_none() || !seen.insert(entry.style_ref) {
             return Err(SceneError::Length);
         }
+        let padded = xymg_padded_len(bytes.len()).ok_or(SceneError::Limit)?;
         out.extend_from_slice(&entry.style_ref.to_le_bytes());
         out.extend_from_slice(&(bytes.len() as u32).to_le_bytes());
-        let mut padded = [0u8; 4];
-        padded[..bytes.len()].copy_from_slice(bytes);
-        out.extend_from_slice(&padded);
+        out.extend_from_slice(bytes);
+        out.resize(out.len() + (padded - bytes.len()), 0);
     }
     Ok(out)
 }
@@ -14489,6 +14505,46 @@ mod tests {
         assert!(svg.contains("text-anchor=\"middle\""));
         assert!(svg.contains(">A</text>"));
         assert!(!svg.contains("<circle "));
+        let multi = encode_xymg(&[StyleMarkerGlyph {
+            style_ref: 0,
+            glyph: "AB".to_string(),
+        }])
+        .unwrap();
+        let multi_svg = SceneBatch::new_with_decorations_colorbar(
+            layout,
+            1,
+            2,
+            x_scale,
+            y_scale,
+            SceneChromeStyle::default(),
+            SceneChromeText::default(),
+            None,
+            None,
+            Vec::new(),
+            &[SceneRecordKind::Scatter as u8],
+            &[11],
+            &[0],
+            &[51, 102, 153, 255],
+            &[0, 0, 0, 0],
+            &[0.0],
+            &[12.0],
+            &[0],
+            &[0.5],
+            &[0.5],
+            &[0.0],
+            &[0.0],
+        )
+        .unwrap()
+        .with_dashes(&multi)
+        .unwrap()
+        .encode();
+        let multi_svg = SceneDocument::decode(&multi_svg).unwrap().to_svg();
+        assert!(multi_svg.contains(">AB</text>"));
+        assert!(encode_xymg(&[StyleMarkerGlyph {
+            style_ref: 0,
+            glyph: "A".repeat(65),
+        }])
+        .is_err());
     }
 
     #[test]

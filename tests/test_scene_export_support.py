@@ -574,8 +574,16 @@ def test_marker_glyph_scatter_is_scene_supported() -> None:
     assert b'font-family="DejaVu Sans"' in exported
     assert b'dominant-baseline="central"' in exported
     assert b">A</text>" in exported
+    multi = Figure(width=240, height=160)
+    multi.axis_options["x"]["domain"] = (0.0, 2.0)
+    multi.axis_options["y"]["domain"] = (0.0, 2.0)
+    multi.scatter([1.0], [1.0], color="#336699", size=12, _marker_glyph="AB")
+    assert scene_export_support_reason(multi) is None
+    multi_exported = public_static_export(multi, "svg")
+    assert multi_exported is not None
+    assert b">AB</text>" in multi_exported
     invalid = Figure().scatter([1.0], [1.0])
-    invalid.traces[-1].style["marker_glyph"] = "AB"
+    invalid.traces[-1].style["marker_glyph"] = "A" * 65
     assert scene_export_support_reason(invalid) is not None
 
 

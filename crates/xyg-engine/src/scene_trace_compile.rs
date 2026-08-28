@@ -30,12 +30,14 @@
 //! `FLAG_COLOR2` on that path. Explicit `FLAG_COLOR2` stays fail-closed.
 //! ABI 170 admits constant scatter `marker_glyph` as UTF-8 in the existing
 //! XYTR marker blob (`FLAG_HAS_GLYPH`); encoded Scene keeps XYMG so SVG/raster
-//! emit `<text>` / `OP_TEXT` instead of a disc.
+//! emit `<text>` / `OP_TEXT` instead of a disc. ABI 191 admits multi-character
+//! UTF-8 (XYMG v2). Combined `marker_path` + `marker_glyph` stays fail-closed.
 //! ABI 186 admits cartesian hexbin continuous `color_ch` as host series-color
 //! fill (metric colormap lives on the XYHP 1×N plane, not XYMS).
 //! Encoded Scene v31 is unchanged.
 
 use crate::css::{self, Checked};
+use crate::scene::marker_glyph_text;
 use crate::scene_style::{self, MarkStyleError, ResolvedMarkStyle};
 
 pub const XYTC_MAGIC: &[u8; 4] = b"XYTC";
@@ -767,13 +769,7 @@ fn admit_glyph(blob: &[u8], kind: &str) -> Option<Vec<u8>> {
     if kind != "scatter" {
         return None;
     }
-    let text = std::str::from_utf8(blob).ok()?;
-    let mut chars = text.chars();
-    let ch = chars.next()?;
-    if chars.next().is_some() || ch == '\0' || ch == '\n' || ch == '\r' {
-        return None;
-    }
-    Some(blob.to_vec())
+    marker_glyph_text(blob).map(|_| blob.to_vec())
 }
 
 fn admit_marker(blob: &[u8], kind: &str) -> Option<Vec<u8>> {

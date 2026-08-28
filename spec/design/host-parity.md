@@ -256,6 +256,7 @@ ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 / X
 ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0` (nums[8]).
 ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from packed XYTA.
 ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from packed XYHP kind 5.
+ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2.
 ABI 173 tessellates
 heatmap `corner_radius`. ABI 174 tessellates violin/box `corner_radius`.
 ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`.
@@ -275,6 +276,7 @@ ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 / X
 ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0` (nums[8]).
 ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from packed XYTA.
 ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from packed XYHP kind 5.
+ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2.
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -347,6 +349,7 @@ ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 / X
 ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0` (nums[8]).
 ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from packed XYTA.
 ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from packed XYHP kind 5.
+ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2.
 ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate
@@ -426,6 +429,8 @@ same product Scene.
 ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from packed XYTA on that
 same product Scene.
 ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from packed XYHP kind 5 on that
+same product Scene.
+ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2 on that
 same product Scene.
 The explicit `xyg_scene_figure_support_reason` ABI remains for tests.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
