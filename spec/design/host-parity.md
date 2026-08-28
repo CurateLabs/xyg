@@ -506,7 +506,10 @@ ABI 122 moves compile-time payload LOD into Rust: Python and Node
 call `xyg_payload_tier`, `xyg_payload_visible_needed`, and
 `xyg_payload_visible_mask` so M4 vs density vs direct, polar skip,
 the strict `>` scatter thresholds, and the log/null keep mask cannot
-drift. Hosts still gather and ship the chosen rows.
+drift. ABI 204 `xyg_payload_m4_indices` owns remaining line M4 emit
+(closed-window ulp, optional nonlinear buckets, polar skip) so Python
+and Node cannot drift on first paint or `decimate_view`. Hosts still
+map scale coordinates, gather extra columns, and ship the chosen rows.
 ABI 123 moves tick-label collision thinning into Rust: Python and Node
 call `xyg_scene_tick_label_layout` so auto / hide / rotate / stagger,
 the edge-anchor rotate gap, and stride downsampling cannot drift.
@@ -538,15 +541,39 @@ ABI 127 moves the pyplot tight-layout grid solve into Rust: Python and
 Node call `xyg_tight_layout_solve` so edge maxima, neighbor gaps, pad
 multiples, and `subplots_adjust` fractions cannot drift. Hosts still
 measure per-panel chrome, suptitle, figure labels, and outside legends.
+ABI 198 moves the remaining static-export combination and tight-layout
+figure-edge extras into Rust: Python and Node call
+`xyg_compat_combine_plot` and `xyg_tight_layout_figure_extra` so padding,
+title-band, colorbar extra, right-y, floors, polar recut, and
+suptitle/label/legend extras cannot drift. Hosts still iterate axes,
+format ticks, measure rooms, resolve CSS visibility, and decide polar
+legend reservation.
 ABI 128 moves authored tick-window resolve and filter into Rust: Python
 and Node call `xyg_tick_window` and `xyg_tick_window_filter` so linear
-vs modular angular containment cannot drift. Hosts still choose tick
-families and map values to pixels. ChartView JS `_polarAngularTurn` /
-`_axisTicks` seam filter stays until WASM.
+vs modular angular containment cannot drift. ABI 199 Scene product encode
+filters authored cartesian majors through that window and pairs
+`tick_labels` during chrome pack. ABI 200 filters authored cartesian
+minors through that same window (`require_finite`). ABI 201 filters polar
+theta majors/minors through the modular sector and formats Scene polar
+theta labels with `format_angular_tick`. ABI 202 materializes ABI 130
+time strftime and polar angular numeric formats onto `XYTL`. Hosts pack
+domain tick-kind in XYCF 154–155. ABI 203 runs ABI 123 cartesian collision
+at Scene SVG/raster emit. Collision rooms clamp only when compact/authored
+pads already fit; overflowing compact pads stay
+`XYG_SCENE_UNSUPPORTED_VIEWPORT`. Polar rim auto/hide/rotate/stagger/preserve stay
+fail-closed. Invalid ABI 96 grammar still falls
+back. Secondary axes stay fail-closed.
+Hosts still choose tick families and
+map values to pixels on the compatibility `_svg` path. ChartView JS
+`_polarAngularTurn` / `_axisTicks` seam filter stays until WASM.
 ABI 130 moves Cartesian compatibility tick-label formatting into Rust:
 Python and Node call `xyg_tick_format` so linear/log/time/number-spec,
-category, and angular defaults cannot drift. Hosts still resolve
-authored `tick_labels` and polar tick drawing.
+category, and angular defaults cannot drift. Polar tick drawing stays
+host-side. Scene product-path authored `tick_labels` pair during chrome
+pack (ABI 199). Authored cartesian minors filter during chrome pack (ABI 200).
+Scene product encode applies ABI 130 time/angular formats (ABI 202).
+Scene cartesian `tick_label_strategy` uses ABI 123 at emit (ABI 203);
+polar rim collision stays refused.
 ABI 131 moves static polar (theta, r) → screen-pixel projection into Rust:
 Python and Node call `xyg_polar_layout`, `xyg_polar_project`, and the polar
 visibility-mask helpers so disc layout, projection, and cull predicates cannot

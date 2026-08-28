@@ -47,7 +47,16 @@
 //! XYTA. ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from
 //! packed XYHP kind 5 (hosts omit `FLAG_COLOR2` / `OBS_GRADIENT` on that path).
 //! Polar ribbon, custom `role`, and explicit `FLAG_COLOR2` stay fail-closed.
-//! html, `class_name`, and polar annotations stay fail-closed.
+//! Annotation `html` is XYFS `OBS_ANNOTATION_HTML` / XYEP `html` (#305): Scene
+//! SVG/raster own literal text only. Annotation `class_name` is
+//! `SCENE_FEATURE_BROWSER_CSS` (#306). Annotation `collision` is XYFS
+//! `OBS_ANNOTATION_COLLISION` / XYEP `collision` (#307): Scene does not
+//! encode annotation collision. Annotation `markup` is XYFS
+//! `OBS_ANNOTATION_MARKUP` / XYEP `markup` (#308): Scene owns literal text
+//! only. Annotation custom typography is XYFS `OBS_CUSTOM_FONT` (#309): Scene
+//! SVG/raster use the built-in default font. Text/marker `style.rotation`
+//! lifts onto the ABI 187/188 top-level rotation field. Polar annotations
+//! stay fail-closed.
 //! Rust owns the public PolyFill group budget, including
 //! companion traces that share the browser painter's 1,024-group ceiling.
 
@@ -189,6 +198,13 @@ const PUBLIC_AXIS_KEYS: &[&str] = &[
     "style",
     "minor_style",
     "format",
+];
+const CARTESIAN_COLLISION_KEYS: &[&str] = &[
+    "tick_label_strategy",
+    "collision",
+    "tick_label_min_gap",
+    "tick_label_angle",
+    "tick_label_anchor",
 ];
 const POLAR_AXIS_KEYS: &[&str] = &[
     "theta_unit",
@@ -1088,6 +1104,15 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
         return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_TEXT");
     }
     for annotation in &annotations {
+        if annotation.fields.iter().any(|key| *key == "html") {
+            return Ok(ANNOTATION_HTML_REASON);
+        }
+        if annotation.fields.iter().any(|key| *key == "collision") {
+            return Ok(ANNOTATION_COLLISION_REASON);
+        }
+        if annotation.fields.iter().any(|key| *key == "markup") {
+            return Ok(ANNOTATION_MARKUP_REASON);
+        }
         let allowed = annotation_fields(annotation.kind);
         if annotation.flags & ANN_NOT_OBJECT != 0
             || allowed.is_none()
@@ -1101,7 +1126,11 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     // (keep the marker mark row; skip AttachedRow). Unlabelled marker layout
     // flags are unused. ABI 187 admits cartesian unwrapped text rotation the
     // same XYAW wrap=0 path. ABI 188 admits labelled cartesian marker rotation
-    // the same way (XYAW nums[8]). html, class_name, and polar stay fail-closed.
+    // the same way (XYAW nums[8]). Annotation html is OBS_ANNOTATION_HTML
+    // (#305). Annotation class_name is SCENE_FEATURE_BROWSER_CSS (#306).
+    // Annotation collision is OBS_ANNOTATION_COLLISION (#307). Annotation
+    // markup is OBS_ANNOTATION_MARKUP (#308). Annotation custom typography
+    // is OBS_CUSTOM_FONT (#309). Polar stays fail-closed.
     if extra_key(&legend_keys, PUBLIC_LEGEND_KEYS) {
         return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LEGEND");
     }
@@ -1116,7 +1145,11 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
                 .copied()
                 .collect()
         } else {
-            PUBLIC_AXIS_KEYS.to_vec()
+            PUBLIC_AXIS_KEYS
+                .iter()
+                .chain(CARTESIAN_COLLISION_KEYS.iter())
+                .copied()
+                .collect()
         };
         if extra_key(&axis.keys, axis_allowed.as_slice()) {
             return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
@@ -1333,14 +1366,23 @@ const XYFS_TRACE_BYTES: usize = 8;
 const MAX_XYFS_KIND_BYTES: usize = 32;
 
 const OBS_POLAR: u32 = 1 << 0;
-const OBS_CUSTOM_FONT: u32 = 1 << 1;
+const OBS_CUSTOM_FONT: u32 = 1 << 1; // chrome font-family and annotation typography (#309)
 const OBS_BROWSER_CSS: u32 = 1 << 2;
 const OBS_GRADIENT: u32 = 1 << 3;
 const OBS_COLORBAR: u32 = 1 << 4;
 const OBS_EXTRA_LEGEND: u32 = 1 << 5;
+const OBS_ANNOTATION_COLLISION: u32 = 1 << 6;
 const OBS_LABELED_ANNOTATION: u32 = 1 << 7;
-const OBS_MASK: u32 = (1 << 9) - 1;
+const OBS_ANNOTATION_HTML: u32 = 1 << 8;
+const OBS_ANNOTATION_MARKUP: u32 = 1 << 9;
+const OBS_MASK: u32 = (1 << 10) - 1;
 
+const ANNOTATION_HTML_REASON: &str =
+    "XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML: Scene does not encode annotation html";
+const ANNOTATION_COLLISION_REASON: &str =
+    "XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION: Scene does not encode annotation collision";
+const ANNOTATION_MARKUP_REASON: &str =
+    "XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP: Scene does not encode annotation markup";
 const FIGURE_AXIS_SET_REASON: &str =
     "Scene v12 figure compilation currently supports exactly x/y axes";
 const FIGURE_AXIS_KEYS_REASON: &str =
@@ -1508,6 +1550,15 @@ pub fn scene_figure_support_reason_with_attach(
     if !feature_reason.is_empty() {
         return Ok(feature_reason.to_string());
     }
+    if flags & OBS_ANNOTATION_HTML != 0 {
+        return Ok(ANNOTATION_HTML_REASON.to_string());
+    }
+    if flags & OBS_ANNOTATION_COLLISION != 0 {
+        return Ok(ANNOTATION_COLLISION_REASON.to_string());
+    }
+    if flags & OBS_ANNOTATION_MARKUP != 0 {
+        return Ok(ANNOTATION_MARKUP_REASON.to_string());
+    }
 
     let axis_allowed: Vec<&str> = if flags & OBS_POLAR != 0 {
         PUBLIC_AXIS_KEYS
@@ -1516,7 +1567,11 @@ pub fn scene_figure_support_reason_with_attach(
             .copied()
             .collect()
     } else {
-        PUBLIC_AXIS_KEYS.to_vec()
+        PUBLIC_AXIS_KEYS
+            .iter()
+            .chain(CARTESIAN_COLLISION_KEYS.iter())
+            .copied()
+            .collect()
     };
     for keys in &axis_keys {
         if extra_key(keys.as_slice(), axis_allowed.as_slice()) {
@@ -1774,6 +1829,30 @@ mod tests {
     }
 
     #[test]
+    fn figure_support_rejects_annotation_html() {
+        assert_eq!(
+            scene_figure_support_reason(&xyfs(OBS_ANNOTATION_HTML, &PRIMARY_XY)),
+            Ok(ANNOTATION_HTML_REASON.to_string())
+        );
+    }
+
+    #[test]
+    fn figure_support_rejects_annotation_collision() {
+        assert_eq!(
+            scene_figure_support_reason(&xyfs(OBS_ANNOTATION_COLLISION, &PRIMARY_XY)),
+            Ok(ANNOTATION_COLLISION_REASON.to_string())
+        );
+    }
+
+    #[test]
+    fn figure_support_rejects_annotation_markup() {
+        assert_eq!(
+            scene_figure_support_reason(&xyfs(OBS_ANNOTATION_MARKUP, &PRIMARY_XY)),
+            Ok(ANNOTATION_MARKUP_REASON.to_string())
+        );
+    }
+
+    #[test]
     fn figure_support_maps_polar_before_axis_keys() {
         assert_eq!(
             scene_figure_support_reason(&xyfs_v2(
@@ -1839,6 +1918,13 @@ mod tests {
     fn figure_support_rejects_unknown_axis_keys_and_non_primary_ids() {
         assert_eq!(
             scene_figure_support_reason(&xyfs(0, &[(0, &["collision"]), (1, &["label"])])),
+            Ok(String::new())
+        );
+        assert_eq!(
+            scene_figure_support_reason(&xyfs(
+                0,
+                &[(0, &["tick_label_wrapping"]), (1, &["label"])]
+            )),
             Ok(FIGURE_AXIS_KEYS_REASON.to_string())
         );
         assert_eq!(

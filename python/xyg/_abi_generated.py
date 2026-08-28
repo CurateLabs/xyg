@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 197
-SIGNATURE_SHA256 = "efb7693cde07cedfc6a73292b7902ce055c4c73486a083032561ef2e0a2014f8"
+ABI_VERSION = 204
+SIGNATURE_SHA256 = "5d627f18ed838eb9c38e74529ff190d3b5bbbbc73d091255837a78a9fcb710bf"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -110,6 +110,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_compat_colorbar_extra
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_uint32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p]
+    # size_t xyg_compat_combine_plot(double width, double height, const double * authored_padding, double title_room, double x_top_room, double x_bottom_room, double x_measured_bottom, uint32_t colorbar_kind, int32_t colorbar_has_label, int32_t colorbar_pad_zero, int32_t has_right_y, double y_left_room, double edge_left, double edge_right, const double * x_rooms_final, int32_t polar, uint32_t legend_side, double legend_room, double polar_label_room, int32_t authored_padding_flag, int32_t y_titled, int32_t keeps_bottom, double * out)
+    function = lib.xyg_compat_combine_plot
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_uint32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_int32, ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p]
     # size_t xyg_compat_default_padding(int32_t compact, double * out_pad)
     function = lib.xyg_compat_default_padding
     function.restype = ctypes.c_size_t
@@ -462,6 +466,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_normalize_f32
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_void_p]
+    # size_t xyg_payload_m4_indices(uint64_t n_points, int32_t polar, const double * x, const double * y, size_t n, double x0, double x1, size_t n_buckets, const double * bin_x, double bin_x0, double bin_x1, int32_t * out_tier, uint32_t * out, size_t capacity)
+    function = lib.xyg_payload_m4_indices
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_uint64, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_payload_tier(int32_t kind, uint64_t n_points, int32_t polar, int32_t force_density, int32_t force_direct, int32_t per_item)
     function = lib.xyg_payload_tier
     function.restype = ctypes.c_int32
@@ -1054,6 +1062,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_tick_window_filter
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_tight_layout_figure_extra(double canvas_w, double canvas_h, double suptitle_height, double suptitle_y, double xlabel_size, double ylabel_size, double legend_box_w, double * out_extra)
+    function = lib.xyg_tight_layout_figure_extra
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p]
     # size_t xyg_tight_layout_solve(double canvas_w, double canvas_h, uint32_t nrows, uint32_t ncols, int32_t compact, const double * in_panels, size_t n_panels, const double * extra, double pad, double w_pad, double h_pad, double point_px, const double * rect, double * out)
     function = lib.xyg_tight_layout_solve
     function.restype = ctypes.c_size_t

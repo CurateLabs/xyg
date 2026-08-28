@@ -4,9 +4,19 @@
 //! raster, and Node cannot drift from ChartView `_layoutTickLabels`. Authored
 //! tick-window resolve/filter (ABI 128) owns linear vs modular angular
 //! containment so seam-crossing polar sectors keep the same spokes as marks.
+//! ABI 199 Scene product encode filters authored cartesian majors through
+//! that window and pairs `tick_labels` during chrome pack. ABI 200 filters
+//! authored cartesian minors (`require_finite`). ABI 201 filters polar theta
+//! majors/minors through the modular sector window and formats Scene polar
+//! theta labels with `format_angular_tick`. ABI 202 materializes ABI 130
+//! time/angular formats onto Scene `XYTL` during product encode. ABI 203
+//! runs ABI 123 collision at Scene SVG/raster emit for cartesian
+//! `tick_label_strategy` and aliases `collision`; polar rim auto/hide/
+//! rotate/stagger/preserve stay fail-closed. Secondary axes stay fail-closed.
 //! Tick-label formatting (ABI 130) owns Cartesian linear/log/time/number-spec
 //! and angular/category defaults via `xyg_tick_format`. Hosts still map values
-//! to pixels and resolve authored `tick_labels`.
+//! to pixels on the compatibility `_svg` path; Scene product-path authored
+//! `tick_labels` pair during chrome pack.
 
 use crate::scene::scene_text_advance;
 
@@ -327,6 +337,27 @@ pub fn filter_tick_values(
         }
     }
     Some(written)
+}
+
+/// Indices of authored tick values that fall inside the window.
+pub fn filter_tick_indices(
+    values: &[f64],
+    lo: f64,
+    hi: f64,
+    theta_unit: u32,
+    kind: u32,
+    require_finite: bool,
+) -> Option<Vec<usize>> {
+    let mut indices = Vec::with_capacity(values.len());
+    for (index, &value) in values.iter().enumerate() {
+        if require_finite && !value.is_finite() {
+            continue;
+        }
+        if tick_in_window(value, lo, hi, theta_unit, kind)? {
+            indices.push(index);
+        }
+    }
+    Some(indices)
 }
 
 #[cfg(test)]
