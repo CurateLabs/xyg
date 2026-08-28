@@ -97,7 +97,26 @@ test("Node projects Rust-owned Scene support decisions verbatim", () => {
   assert.doesNotThrow(() => constantColor.toScene());
   const collision = new Figure(); collision.line([0, 1], [0, 1]);
   collision.setAxis("x", { collision: "hide" });
-  assert.throws(() => collision.toScene(), /tick formatting/);
+  assert.doesNotThrow(() => collision.toScene());
+  const ticks = Array.from({ length: 21 }, (_, index) => index / 20);
+  const preserve = new Figure({ width: 200, height: 160 });
+  preserve.line([0, 1], [0, 1]);
+  preserve.setAxis("x", { domain: [0, 1], tick_values: ticks, tick_label_strategy: "preserve" });
+  preserve.setAxis("y", { domain: [0, 1] });
+  const hidden = new Figure({ width: 200, height: 160 });
+  hidden.line([0, 1], [0, 1]);
+  hidden.setAxis("x", { domain: [0, 1], tick_values: ticks, tick_label_strategy: "hide" });
+  hidden.setAxis("y", { domain: [0, 1] });
+  assert.ok(sceneSvg(hidden.toScene()).split("<text").length < sceneSvg(preserve.toScene()).split("<text").length);
+  const polarHide = new Figure({ coords: "polar" });
+  polarHide.line([0, 1], [0, 1]);
+  polarHide.setAxis("x", { tick_label_strategy: "hide" });
+  assert.throws(() => polarHide.toScene(), /tick formatting/);
+  const polarOff = new Figure({ coords: "polar", width: 320, height: 320 });
+  polarOff.line([0, 1], [0, 1]);
+  polarOff.setAxis("x", { tick_label_strategy: "off" });
+  assert.doesNotThrow(() => polarOff.toScene());
+  assert.ok(!sceneSvg(polarOff.toScene()).includes('data-xy-tick="theta"'));
   const extraAxis = new Figure(); extraAxis.line([0, 1], [0, 1]);
   extraAxis.axis_options = { x: extraAxis.xAxis ?? {}, y: extraAxis.yAxis ?? {}, z: { label: "z" } };
   assert.throws(() => extraAxis.toScene(), /exactly x\/y/);
@@ -612,6 +631,106 @@ test("Node authored tick labels override the format envelope byte-for-byte", () 
     return figure.toScene();
   };
   assert.deepEqual(Buffer.from(build("$,.1f USD")), Buffer.from(build(null)));
+});
+
+test("Node Scene filters authored tick values and pairs labels during encode", () => {
+  const figure = new Figure();
+  figure.scatter([0, 1], [0, 1], { id: 0 });
+  figure.setAxis("x", {
+    domain: [0, 1],
+    tick_values: [-1, 0],
+    tick_labels: ["off-domain-long-label", "zero"],
+  });
+  const scene = figure.toScene();
+  assert.ok(Buffer.from(scene).includes(Buffer.from("zero")));
+  assert.equal(Buffer.from(scene).includes(Buffer.from("off-domain-long-label")), false);
+  const svg = sceneSvg(scene);
+  assert.match(svg, /zero/);
+  assert.equal(svg.includes("off-domain-long-label"), false);
+});
+
+test("Node Scene filters authored minor ticks on linear/log/symlog during encode", () => {
+  const cases = [
+    { type: "linear", domain: [0, 1], points: [[0, 1], [0, 1]], majors: [0, 1], minors: [-0.25, 0.25, 0.75, 1.25] },
+    { type: "log", domain: [1, 10], points: [[1, 10], [1, 2]], majors: [1, 10], minors: [0.5, 2, 5, 20] },
+    { type: "symlog", domain: [-10, 10], constant: 1, points: [[-1, 1], [-1, 1]], majors: [-10, 10], minors: [-20, -1, 1, 20] },
+  ];
+  for (const item of cases) {
+    const axis = {
+      type: item.type,
+      domain: item.domain,
+      tick_values: item.majors,
+      minor_tick_values: item.minors,
+      minor_style: { grid_color: "#22c55e", tick_color: "#22c55e", tick_length: 3 },
+    };
+    if (item.constant != null) axis.constant = item.constant;
+    const figure = new Figure();
+    figure.scatter(item.points[0], item.points[1], { id: 0 });
+    figure.setAxis("x", axis);
+    assert.match(sceneSvg(figure.toScene()), /rgba\(34,197,94/);
+    const off = new Figure();
+    off.scatter(item.points[0], item.points[1], { id: 0 });
+    off.setAxis("x", { ...axis, minor_tick_values: [item.minors[0], item.minors[item.minors.length - 1]] });
+    assert.equal(sceneSvg(off.toScene()).includes("rgba(34,197,94"), false);
+  }
+});
+
+test("Node Scene filters polar seam-crossing authored ticks and uses angular labels", () => {
+  const figure = new Figure({ width: 400, height: 400, coords: "polar" });
+  figure.scatter([0], [0.5], { id: 0 });
+  figure.setAxis("x", {
+    domain: [0, 360],
+    theta_unit: "degrees",
+    sector: [300, 420],
+    tick_values: [300, 330, 0, 30, 60, 180],
+    tick_labels: ["300", "330", "zero", "30", "60", "off-sector"],
+  });
+  figure.setAxis("y", { domain: [0, 1] });
+  const svg = sceneSvg(figure.toScene());
+  assert.match(svg, />zero</);
+  assert.equal(svg.includes("off-sector"), false);
+  assert.equal(svg.includes(">180<"), false);
+
+  const radians = new Figure({ width: 400, height: 400, coords: "polar" });
+  radians.scatter([0, Math.PI], [0.5, 0.8], { id: 0 });
+  radians.setAxis("x", { domain: [0, Math.PI * 2], theta_unit: "radians" });
+  radians.setAxis("y", { domain: [0, 1] });
+  const labels = [...sceneSvg(radians.toScene()).matchAll(/data-xy-tick="theta"[^>]*>([^<]+)/g)].map((row) => row[1]);
+  assert.ok(labels.some((label) => label.includes("π")));
+  assert.equal(labels.includes("2"), false);
+  assert.equal(labels.includes("4"), false);
+});
+
+test("Node Scene materializes time strftime and polar numeric tick formats", () => {
+  const figure = new Figure({ width: 420, height: 260 });
+  figure.scatter([0, 86_400_000], [0, 1], { id: 0 });
+  figure.setAxis("x", { type: "time", domain: [0, 86_400_000], format: "%Y-%m-%d" });
+  figure.setAxis("y", { domain: [0, 1] });
+  const svg = sceneSvg(figure.toScene());
+  assert.match(svg, /1970-01-01/);
+  assert.equal(svg.includes("5.0e7"), false);
+
+  const polar = new Figure({ width: 400, height: 400, coords: "polar" });
+  polar.scatter([0], [0.5], { id: 0 });
+  polar.setAxis("x", { domain: [0, 360], theta_unit: "degrees", format: ".0f" });
+  polar.setAxis("y", { domain: [0, 1], format: ".1f" });
+  const thetas = [...sceneSvg(polar.toScene()).matchAll(/data-xy-tick="theta"[^>]*>([^<]+)/g)].map((row) => row[1]);
+  assert.ok(thetas.length > 0);
+  assert.ok(thetas.every((label) => !label.includes("°")));
+  assert.ok(thetas.some((label) => ["0", "90", "180", "270"].includes(label)));
+
+  const fallback = new Figure({ width: 320, height: 240 });
+  fallback.scatter([0, 5], [0, 5], { id: 0 });
+  fallback.setAxis("x", { domain: [0, 5], format: ".2e" });
+  fallback.setAxis("y", { domain: [0, 5] });
+  const fallbackSvg = sceneSvg(fallback.toScene());
+  assert.match(fallbackSvg, />0</);
+  assert.match(fallbackSvg, />4</);
+  assert.equal(fallbackSvg.includes(".2e"), false);
+});
+
+test("Node Scene secondary axes stay fail-closed", () => {
+  assert.throws(() => new Figure().setAxis("x2", { domain: [0, 1] }), /axisId must be x or y/);
 });
 
 test("Node numeric tick precision boundary and oversize fallback are Rust-owned", () => {
@@ -1475,7 +1594,7 @@ test("Node public Scene chrome setters snapshot literals and retain Rust validat
 test("Node Scene v25 wrapped annotations reject host layout features", () => {
   for (const [field, value, reason] of [
     ["class_name", "browser-only", /BROWSER_CSS|class behavior/],
-    ["style", { font_family: "Example Sans" }, /custom fonts/],
+    ["style", { font_family: "Example Sans" }, /CUSTOM_FONT|custom font/],
     ["style", { markup: "<b>rich<\\/b>" }, /markup/],
     ["style", { collision: "avoid" }, /collision/],
   ]) {
@@ -1485,6 +1604,55 @@ test("Node Scene v25 wrapped annotations reject host layout features", () => {
     figure.annotations[0][field] = value;
     assert.throws(() => figure.toScene(), reason);
   }
+});
+
+test("Node Scene annotation html stays fail-closed", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.line([0, 1], [0, 1]);
+  figure.annotations = [{ kind: "callout", x: 0.5, y: 0.5, text: "rich", html: "<b>rich</b>" }];
+  assert.throws(() => figure.toScene(), /XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML|annotation html/);
+});
+
+test("Node Scene annotation class_name stays fail-closed as browser CSS", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.line([0, 1], [0, 1]);
+  figure.annotations = [{ kind: "callout", x: 0.5, y: 0.5, text: "css", class_name: "custom" }];
+  assert.throws(() => figure.toScene(), /XYG_SCENE_UNSUPPORTED_BROWSER_CSS/);
+});
+
+test("Node Scene annotation collision stays fail-closed", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.line([0, 1], [0, 1]);
+  figure.annotations = [{ kind: "marker", x: 0.5, y: 0.5, text: "collision", collision: "hide" }];
+  assert.throws(() => figure.toScene(), /XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION/);
+});
+
+test("Node Scene annotation markup stays fail-closed", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.line([0, 1], [0, 1]);
+  figure.annotations = [{ kind: "callout", x: 0.5, y: 0.5, text: "rich", style: { markup: "<b>rich</b>" } }];
+  assert.throws(() => figure.toScene(), /XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP/);
+});
+
+test("Node Scene annotation custom typography stays fail-closed as custom font", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.line([0, 1], [0, 1]);
+  figure.annotations = [{ kind: "callout", x: 0.5, y: 0.5, text: "type", style: { font_family: "Comic Sans" } }];
+  assert.throws(() => figure.toScene(), /XYG_SCENE_UNSUPPORTED_CUSTOM_FONT/);
+});
+
+test("Node Scene annotation style.rotation routes through Scene", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.line([0, 1], [0, 1]);
+  figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "rotated", style: { rotation: 30 } }];
+  const svg = sceneSvg(figure.toScene());
+  assert.match(svg, /transform="rotate\(-30 /);
 });
 
 test("Node Scene v9 rejects non-byte chrome style input before the ABI", () => {
