@@ -21,7 +21,9 @@
 //! same way on `PACK_BAND`: authored `step_mode` 1–3 expands both edges, and
 //! smooth does not promote to `BandFlatten`. ABI 182 admits triangle_mesh
 //! `joined_fill` as one identity PolyFill ring from `geom::triangle_mesh_boundary`
-//! (disconnected meshes and holes keep per-face `TriangleFace` rows). ABI 170 admits
+//! (disconnected meshes and holes keep per-face `TriangleFace` rows).
+//! ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`
+//! (no new pack kind; encoded Scene keeps XYGR). ABI 170 admits
 //! constant scatter `marker_glyph` via XYMG (no new pack kind).
 //! ABI 145 admits constant `marker_path` via an XYMP extras sidecar;
 //! tessellation is Scene-owned after pixel mapping (no new pack kind).

@@ -3769,7 +3769,9 @@ pub const XYMP_VERTEX_LIMIT: f64 = 0.500001;
 /// host style_ref that carries a validated mark `fill` `{space, dir, stops}`.
 /// Concatenated after XYMP in the extras dash slot. Encoded Scene keeps XYGR
 /// (paint sidecar) so SVG/raster can emit `<linearGradient>` / `OP_FILL_POLY_GRAD`.
-/// Two-ended ribbon `color2_ch` and data-driven `color_ch` stay fail-closed.
+/// ABI 183 admits constant ribbon `color2_ch` as this same XYGR mark-space
+/// `dir=right` two-stop fill. Data-driven / per-item `color2_ch` and explicit
+/// `FLAG_COLOR2` stay fail-closed.
 pub const XYGR_MAGIC: &[u8; 4] = b"XYGR";
 pub const XYGR_VERSION: u32 = 1;
 pub const XYGR_V1_HEADER_BYTES: usize = 16;

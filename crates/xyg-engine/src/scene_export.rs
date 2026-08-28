@@ -22,6 +22,9 @@
 //! ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring
 //! from the Rust boundary walk (disconnected meshes keep per-face triangles;
 //! `role` other than `triangle-mesh` stays fail-closed).
+//! ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`
+//! (hosts omit `FLAG_COLOR2` / `OBS_GRADIENT` on that path). Per-item two-ended
+//! paint, polar ribbon, and `role` other than `ribbon` stay fail-closed.
 //! Rust owns the public PolyFill group budget, including
 //! companion traces that share the browser painter's 1,024-group ceiling.
 

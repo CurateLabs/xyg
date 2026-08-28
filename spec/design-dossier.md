@@ -552,7 +552,7 @@ F3, still pending (above).
   immediately-following generated constant built-in stem marker). Gradients,
   rounded corners, dashed or data-driven segment styles, LOD/density,
   nonliteral palettes, triangle-mesh component alpha/outlines/per-face styles/
-  joined fills/larger batches, two-ended ribbon gradients, polar geometry, and
+  larger batches, per-item two-ended ribbon gradients, polar geometry, and
   unmodeled marks retain their
   compatibility renderers. Rust
   now owns chart/plot backgrounds, authored axis side/visibility and
@@ -582,7 +582,8 @@ F3, still pending (above).
   admits hexbin `fill_opacity`, then ABI 180 admits triangle_mesh `fill_opacity`
   / constant stroke paint, then ABI 181 admits cartesian area/error_band
   `curve="smooth"` plus `step` as authored band step expansion, then ABI 182
-  admits triangle_mesh `joined_fill` as one identity PolyFill ring.
+  admits triangle_mesh `joined_fill` as one identity PolyFill ring, then ABI 183
+  admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`.
   `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
   panel Scene. That predicate
   owns the public PolyFill group budget, including companion traces that share
@@ -1522,7 +1523,9 @@ path. ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as
 authored band step expansion (`step_mode` 1–3 wins over `BandFlatten`).
 ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring from
 the Rust boundary walk (disconnected meshes keep per-face `TriangleFace` rows).
-Per-item radius channels stay compatibility. Irregular
+ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`
+(hosts pack the two-stop fill, not `FLAG_COLOR2`). Per-item two-ended paint
+stays fail-closed. Per-item radius channels stay compatibility. Irregular
 spacing, and LOD stay compatibility.
 
 Contract-wide invariants: every tier transition is hysteresis-guarded and logged

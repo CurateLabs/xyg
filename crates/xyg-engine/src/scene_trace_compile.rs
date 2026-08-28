@@ -24,6 +24,9 @@
 //! packing can emit one identity PolyFill ring (or keep `TriangleFace` on a
 //! disconnected mesh). Constant `stroke_width > 0` stays per-face so Scene
 //! matches the compatibility join predicate.
+//! ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`
+//! (hosts pack `FLAG_HAS_FILL | FLAG_HAS_GRADIENT_SPEC`, not `FLAG_COLOR2`).
+//! Data-driven two-ended paint and explicit `FLAG_COLOR2` stay fail-closed.
 //! ABI 170 admits constant scatter `marker_glyph` as UTF-8 in the existing
 //! XYTR marker blob (`FLAG_HAS_GLYPH`); encoded Scene keeps XYMG so SVG/raster
 //! emit `<text>` / `OP_TEXT` instead of a disc.
@@ -696,7 +699,10 @@ fn admit_gradient(
     let Some((space, dir, stops)) = parsed else {
         return Ok(None);
     };
-    if (dir == 2 || dir == 3) && space == 0 {
+    // Mark-space left/right is bbox x. Ribbons need that axis for constant
+    // two-ended `color2_ch` (ABI 183); other kinds keep the historical reject
+    // so authored `to right` / `to left` fills stay fail-closed.
+    if (dir == 2 || dir == 3) && space == 0 && input.kind != "ribbon" {
         return Ok(None);
     }
     let mut resolved = Vec::new();
@@ -1377,6 +1383,58 @@ mod tests {
     fn two_ended_color_is_color_error() {
         let err = pack_trace_compile(&envelope("ribbon", FLAG_COLOR2, 1.0, "")).unwrap_err();
         assert_eq!(err.code, TraceCompileCode::Color);
+    }
+
+    fn gradient_spec_blob(space: u8, dir: u8, stops: &[(f64, &str)]) -> Vec<u8> {
+        let mut blob = vec![space, dir, stops.len() as u8, 0];
+        for (t, css) in stops {
+            blob.extend_from_slice(&t.to_le_bytes());
+            blob.extend_from_slice(&(css.len() as u16).to_le_bytes());
+            blob.extend_from_slice(css.as_bytes());
+        }
+        blob
+    }
+
+    #[test]
+    fn ribbon_mark_space_right_gradient_admits_xygr() {
+        let blob = gradient_spec_blob(0, 2, &[(0.0, "#7c3aed"), (1.0, "#34d399")]);
+        let (mut head, mut payload) =
+            prefix("ribbon", FLAG_HAS_FILL | FLAG_HAS_GRADIENT_SPEC, 1.0, "");
+        head[136..140].copy_from_slice(&(blob.len() as u32).to_le_bytes());
+        payload.extend_from_slice(&blob);
+        let mut facts = Vec::new();
+        facts.extend_from_slice(XYTC_MAGIC);
+        facts.extend_from_slice(&XYTC_VERSION.to_le_bytes());
+        facts.extend_from_slice(&1u32.to_le_bytes());
+        facts.extend_from_slice(&0u32.to_le_bytes());
+        facts.extend_from_slice(&head);
+        facts.extend_from_slice(&payload);
+        let packed = pack_trace_compile(&facts).unwrap();
+        assert_eq!(packed[XYTO_HEADER_BYTES + 50], 1);
+        let grad_len = u32::from_le_bytes(
+            packed[XYTO_HEADER_BYTES + 56..XYTO_HEADER_BYTES + 60]
+                .try_into()
+                .unwrap(),
+        );
+        assert_eq!(grad_len, 4 + 2 * 8);
+    }
+
+    #[test]
+    fn bar_mark_space_right_gradient_stays_fill_error() {
+        let blob = gradient_spec_blob(0, 2, &[(0.0, "#7c3aed"), (1.0, "#34d399")]);
+        let (mut head, mut payload) =
+            prefix("bar", FLAG_HAS_FILL | FLAG_HAS_GRADIENT_SPEC, 1.0, "");
+        head[136..140].copy_from_slice(&(blob.len() as u32).to_le_bytes());
+        payload.extend_from_slice(&blob);
+        let mut facts = Vec::new();
+        facts.extend_from_slice(XYTC_MAGIC);
+        facts.extend_from_slice(&XYTC_VERSION.to_le_bytes());
+        facts.extend_from_slice(&1u32.to_le_bytes());
+        facts.extend_from_slice(&0u32.to_le_bytes());
+        facts.extend_from_slice(&head);
+        facts.extend_from_slice(&payload);
+        let err = pack_trace_compile(&facts).unwrap_err();
+        assert_eq!(err.code, TraceCompileCode::Fill);
     }
 
     #[test]

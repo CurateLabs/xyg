@@ -94,12 +94,13 @@ authored `stroke` as match-fill (mark color at the authored width). ABI 172
 admits cartesian line `curve="smooth"` plus `step` as authored step expansion.
 ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as
 authored band step expansion. ABI 182 admits triangle_mesh `joined_fill` as
-one identity PolyFill ring from the Rust boundary walk. ABI 146 admits constant
+one identity PolyFill ring from the Rust boundary walk. ABI 183 admits
+constant ribbon `color2_ch` as XYGR mark-space `dir=right`. ABI 146 admits constant
 validated mark `fill` linear-gradients: hosts pack XYGR on the extras dash
 slot (`{space, dir, stops}` with 2–8 RGBA8 stops, axis-aligned `down|up|left|right`,
 `mark` or `plot` space). Encoded Scene v31 keeps XYGR so SVG emits
 `<linearGradient>` and raster emits `OP_FILL_POLY_GRAD`. Transparent stops
-rewrite to the adjacent opaque hue. Two-ended ribbon `color2_ch`, data-driven
+rewrite to the adjacent opaque hue. Per-item two-ended ribbon `color2_ch`, data-driven
 `color_ch`, `var()` stops, and chart/theme CSS gradients stay fail-closed.
 ABI 147 does not change Scene records; `xyg_scene_pack_product_facts` owns
 flags, `step_mode`, and extra0/extra1 from packed XYPK v1 so cartesian-vs-polar
@@ -173,7 +174,8 @@ does not change Scene records; cartesian area/error_band `curve="smooth"`
 plus `step` keeps authored band step expansion (`step_mode` 1–3 wins over
 `BandFlatten`). ABI 182 does not change Scene records; triangle_mesh
 `joined_fill` packs one identity PolyFill ring from the Rust boundary walk.
-ABI 173
+ABI 183 does not change Scene records; constant ribbon `color2_ch` packs as
+XYGR mark-space `dir=right`. ABI 173
 does not change Scene records; heatmap `corner_radius` tessellates cartesian
 Rects to PolyFill and polar wedges when the inner radius is positive.
 ABI 174 does not change Scene records; violin/box `corner_radius` tessellates
@@ -195,6 +197,8 @@ ABI 181 does not change Scene records; cartesian area/error_band
 ABI 182 does not change Scene records; triangle_mesh `joined_fill` packs one
 identity PolyFill ring from the Rust boundary walk (disconnected meshes keep
 per-face `TriangleFace` rows).
+ABI 183 does not change Scene records; constant ribbon `color2_ch` packs as
+XYGR mark-space `dir=right` (per-item two-ended paint stays fail-closed).
 Per-item radius channels stay fail-closed.
 
 ## Version 3: backend-neutral core scene batch
@@ -503,6 +507,7 @@ match-fill. ABI 172 admits cartesian line `curve="smooth"` plus `step` as
 authored step expansion. ABI 181 admits cartesian area/error_band
 `curve="smooth"` plus `step` as authored band step expansion.
 ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring.
+ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`.
 ABI 145 admits
 constant scatter `marker_path` via an XYMP extras sidecar; Rust tessellates
 centres to existing PolyFill/Polyline after pixel mapping (public allowlist
@@ -1286,7 +1291,7 @@ coercion: booleans, strings, fractions, negatives, unsafe JavaScript numbers,
 and values outside the matching integer width are host errors rather than
 wrapped native values. Their figure compilers project the same normalized authoring
 representations—Cartesian versus polar coordinates, kebab/camel font keys,
-root/chrome/annotation CSS classes, object-valued fills and two-ended ribbon
+root/chrome/annotation CSS classes, object-valued fills and per-item two-ended ribbon
 paint—before any older host-local unsupported branch can run. Cross-host tests
 pin the identical Rust diagnostic for each representable case.
 ## Version 12 bounded semantic graph labels
@@ -1531,7 +1536,7 @@ is positive. ABI 169 admits polar `curve="smooth"` plus `step` as polar step
 expansion. ABI 170 admits constant scatter `marker_glyph` via XYMG. ABI 171 admits
 scatter `stroke_width` without `stroke` as match-fill. ABI 172 admits cartesian
 line `curve="smooth"` plus `step` as authored step expansion. ABI 173 tessellates
-heatmap `corner_radius`. ABI 174 tessellates violin/box `corner_radius`. ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`. ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`. ABI 177 admits heatmap `fill_opacity`. ABI 178 admits scatter `fill_opacity` / `stroke_opacity`. ABI 179 admits hexbin `fill_opacity`. ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint. ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as authored band step expansion. ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring from the Rust boundary walk. ABI 116 does not change Scene records either;
+heatmap `corner_radius`. ABI 174 tessellates violin/box `corner_radius`. ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`. ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`. ABI 177 admits heatmap `fill_opacity`. ABI 178 admits scatter `fill_opacity` / `stroke_opacity`. ABI 179 admits hexbin `fill_opacity`. ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint. ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as authored band step expansion. ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring from the Rust boundary walk. ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;
 `xyg_scene_figure_support_reason` owns figure-compile support from packed

@@ -1109,6 +1109,53 @@ test("Node Scene v9 compiles ribbon and triangle_mesh", () => {
   assert.match(sceneSvg(mesh.toScene()), /<path d="M /);
 });
 
+test("Node Scene compiles constant ribbon color2 as XYGR", () => {
+  const gradient = new Figure({ width: 240, height: 160 });
+  gradient.setAxisDomain("x", [0, 1]);
+  gradient.setAxisDomain("y", [0, 1]);
+  gradient.ribbon([0], [1], [0], [0.3], [0.2], [0.5], {
+    color: "#7c3aed",
+    colorTarget: "#34d399",
+    name: null,
+  });
+  const scene = gradient.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  assert.ok(Buffer.from(scene).includes(Buffer.from("XYGR")));
+  const svg = sceneSvg(scene);
+  assert.match(svg, /<linearGradient id="xy-scene-g0"/);
+  assert.match(svg, /fill="url\(#xy-scene-g0\)"/);
+  assert.equal(sceneExportSupportReason(gradient), null);
+  const solid = new Figure({ width: 240, height: 160 });
+  solid.setAxisDomain("x", [0, 1]);
+  solid.setAxisDomain("y", [0, 1]);
+  solid.ribbon([0], [1], [0], [0.3], [0.2], [0.5], {
+    color: "#7c3aed",
+    colorTarget: "#7c3aed",
+    name: null,
+  });
+  assert.doesNotMatch(sceneSvg(solid.toScene()), /<linearGradient/);
+  assert.equal(sceneExportSupportReason(solid), null);
+  const perItem = new Figure({ width: 240, height: 160 });
+  perItem.setAxisDomain("x", [0, 1]);
+  perItem.setAxisDomain("y", [0, 1]);
+  perItem.ribbon([0, 0.2], [0.4, 0.8], [0, 0.1], [0.2, 0.3], [0.15, 0.25], [0.35, 0.45], {
+    color: ["#7c3aed", "#2563eb"],
+    colorTarget: ["#34d399", "#f59e0b"],
+    name: null,
+  });
+  assert.throws(() => perItem.toScene(), /XYG_SCENE_UNSUPPORTED_GRADIENT/);
+  const custom = new Figure({ width: 240, height: 160 });
+  custom.setAxisDomain("x", [0, 1]);
+  custom.setAxisDomain("y", [0, 1]);
+  custom.ribbon([0], [1], [0], [0.3], [0.2], [0.5], {
+    color: "#7c3aed",
+    colorTarget: "#34d399",
+    style: { role: "custom-ribbon" },
+    name: null,
+  });
+  assert.equal(sceneExportSupportReason(custom), "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
+});
+
 test("Node Scene v9 compiles area bands", () => {
   const figure = new Figure({ width: 240, height: 160 });
   figure.setAxisDomain("x", [0, 2]); figure.setAxisDomain("y", [0, 3]);

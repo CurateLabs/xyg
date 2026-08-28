@@ -29,6 +29,7 @@ from xyg._scene_v3 import (
     public_static_export,
     scene_export_support_reason,
 )
+from xyg.channels import ColorChannel
 from xyg.marks import _SYMBOL_CODES
 
 BUILTIN_SYMBOLS = tuple(_SYMBOL_CODES)
@@ -1505,7 +1506,11 @@ def test_builtin_symbol_cutover_keeps_nonliteral_scatter_fail_closed(
 @pytest.mark.parametrize(
     "mutate",
     [
-        lambda figure: setattr(figure.traces[0], "color2_ch", figure.traces[0].color_ch),
+        lambda figure: setattr(
+            figure.traces[0],
+            "color2_ch",
+            ColorChannel(mode="direct_rgba", rgba=np.array([[0.2, 0.8, 0.5, 1.0]])),
+        ),
         lambda figure: figure.traces[0].style.__setitem__("role", "custom-ribbon"),
         lambda figure: setattr(figure, "coords", "polar"),
     ],
@@ -1516,6 +1521,20 @@ def test_public_ribbon_route_fails_closed_for_unmodeled_behavior(
     figure = _public_ribbon("linear")
     mutate(figure)
     assert scene_export_support_reason(figure) is not None
+
+
+def test_public_ribbon_constant_color2_routes_through_scene() -> None:
+    from xyg import _native
+
+    figure = _public_ribbon("linear")
+    figure.traces[0].color2_ch = ColorChannel(mode="constant", constant="#34d399")
+    assert scene_export_support_reason(figure) is None
+    svg = _native.scene_svg(figure_scene(figure))
+    assert "<linearGradient" in svg
+    assert figure.to_svg() == svg
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"<linearGradient" in exported
 
 
 def test_public_ribbon_route_enforces_the_authored_band_ceiling() -> None:

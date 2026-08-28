@@ -927,12 +927,45 @@ def test_python_scene_compiles_ribbon_and_triangle_mesh() -> None:
     with pytest.raises(UnsupportedSceneV3, match="custom hexbin reducers"):
         custom.to_scene()
 
-    gradient = Figure()
+
+def test_python_scene_compiles_constant_ribbon_color2() -> None:
+    gradient = Figure(width=240, height=160)
+    gradient.axis_options["x"]["domain"] = (0.0, 1.0)
+    gradient.axis_options["y"]["domain"] = (0.0, 1.0)
     gradient.ribbon(
         [0.0], [1.0], [0.0], [0.3], [0.2], [0.5], color="#7c3aed", color_target="#34d399"
     )
+    scene = gradient.to_scene()
+    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert b"XYGR" in scene
+    svg = _native.scene_svg(scene)
+    assert '<linearGradient id="xy-scene-g0"' in svg
+    assert 'fill="url(#xy-scene-g0)"' in svg
+    assert gradient.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(gradient) is None
+    solid = Figure(width=240, height=160)
+    solid.axis_options["x"]["domain"] = (0.0, 1.0)
+    solid.axis_options["y"]["domain"] = (0.0, 1.0)
+    solid.ribbon([0.0], [1.0], [0.0], [0.3], [0.2], [0.5], color="#7c3aed", color_target="#7c3aed")
+    solid_svg = _native.scene_svg(solid.to_scene())
+    assert "<linearGradient" not in solid_svg
+    assert solid.to_svg() == solid_svg
+    assert _scene_v3.scene_export_support_reason(solid) is None
+    per_item = Figure(width=240, height=160)
+    per_item.axis_options["x"]["domain"] = (0.0, 1.0)
+    per_item.axis_options["y"]["domain"] = (0.0, 1.0)
+    per_item.ribbon(
+        [0.0, 0.2],
+        [0.4, 0.8],
+        [0.0, 0.1],
+        [0.2, 0.3],
+        [0.15, 0.25],
+        [0.35, 0.45],
+        color=["#7c3aed", "#2563eb"],
+        color_target=["#34d399", "#f59e0b"],
+    )
     with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_GRADIENT"):
-        gradient.to_scene()
+        per_item.to_scene()
 
 
 def test_python_scene_compiles_area_and_error_band() -> None:

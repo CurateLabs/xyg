@@ -1747,14 +1747,70 @@ function normalizeFillSpec(fill) {
 
 function constantMarkColor(trace) {
   const channel = trace.color_ch ?? trace.colorChannel ?? trace.color;
-  if (trace.color_target != null) return null;
+  if (classifyRibbonColor2(trace) === "fail") return null;
   if (channel == null) return String(trace.style?.color ?? "#3987e5");
   if (typeof channel === "string") return channel;
-  if (channel.mode === "constant" && channel.constant != null) return String(channel.constant);
+  if (channel.mode === "constant" && (channel.constant != null || channel.color != null)) {
+    return String(channel.constant ?? channel.color);
+  }
   if (String(trace.kind ?? "") === "scatter" && scatterUsesDensity(trace)) {
     return String(trace.style?.color ?? "#3987e5");
   }
   return null;
+}
+
+function channelConstantCss(channel) {
+  if (channel == null) return null;
+  if (typeof channel === "string") return String(channel);
+  if (typeof channel === "object" && !Array.isArray(channel) && !ArrayBuffer.isView(channel)) {
+    if (channel.mode === "constant") {
+      const css = channel.constant ?? channel.color;
+      if (css != null) return String(css);
+    }
+  }
+  return null;
+}
+
+function color2Channel(trace) {
+  return trace.color2_ch ?? trace.color_target ?? trace.colorTarget ?? null;
+}
+
+function sourceColorCss(trace) {
+  const css = channelConstantCss(trace.color_ch ?? trace.colorChannel ?? trace.color);
+  if (css != null) return css;
+  return String(trace.style?.color ?? "#3987e5");
+}
+
+function cssPaintsEqual(left, right) {
+  try {
+    const a = cssColorRgba8(left, 1);
+    const b = cssColorRgba8(right, 1);
+    return a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3];
+  } catch {
+    return false;
+  }
+}
+
+function classifyRibbonColor2(trace) {
+  const channel = color2Channel(trace);
+  if (channel == null) return "absent";
+  if (String(trace.kind ?? "") !== "ribbon") return "fail";
+  const target = channelConstantCss(channel);
+  if (target == null) return "fail";
+  if (cssPaintsEqual(sourceColorCss(trace), target)) return "solid";
+  if (Object.hasOwn(trace.style ?? {}, "fill")) return "fail";
+  return "gradient";
+}
+
+function ribbonColor2GradientSpec(trace) {
+  if (classifyRibbonColor2(trace) !== "gradient") return null;
+  const target = channelConstantCss(color2Channel(trace));
+  if (target == null) return null;
+  return {
+    space: "mark",
+    dir: "right",
+    stops: [[0, sourceColorCss(trace)], [1, target]],
+  };
 }
 
 function admitFillGradient(trace) {
@@ -2646,7 +2702,7 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
     || annotations.some((annotation) => annotation.className || annotation.class_name)
   ) flags |= 1 << 2;
   if ((figure.traces ?? []).some((trace) => (
-    trace.color_target != null
+    classifyRibbonColor2(trace) === "fail"
     || (
       scatterHasNonConstantColor(trace)
       && !scatterUsesDensity(trace)
@@ -3244,12 +3300,24 @@ function packXyTc(figure) {
     } else if (channel != null && typeof channel === "object" && !Array.isArray(channel) && !ArrayBuffer.isView(channel)) {
       flags |= XYTC_COLOR_CH;
       colorMode = encodeUtf8(String(channel.mode ?? ""));
-      if (channel.mode === "constant" && channel.constant != null) {
+      if (channel.mode === "constant" && (channel.constant != null || channel.color != null)) {
         flags |= XYTC_COLOR_CH_CONSTANT;
-        colorConst = encodeUtf8(String(channel.constant));
+        colorConst = encodeUtf8(String(channel.constant ?? channel.color));
       }
     }
-    if (trace.color_target != null || trace.color2_ch != null) flags |= XYTC_COLOR2;
+    const color2Class = classifyRibbonColor2(trace);
+    if (color2Class === "fail") flags |= XYTC_COLOR2;
+    else if (color2Class === "gradient") {
+      if (flags & (XYTC_HAS_FILL | XYTC_HAS_GRADIENT_SPEC)) flags |= XYTC_COLOR2;
+      else {
+        const spec = ribbonColor2GradientSpec(trace);
+        const packed = spec == null ? null : packGradientSpec(spec);
+        if (packed && packed.length) {
+          flags |= XYTC_HAS_FILL | XYTC_HAS_GRADIENT_SPEC;
+          gradientBlob = packed;
+        } else flags |= XYTC_COLOR2;
+      }
+    }
     if (scatterUsesDensity(trace)) flags |= XYTC_USE_DENSITY;
     if (showLegend) flags |= XYTC_SHOW_LEGEND;
     let markerBlob = new Uint8Array();

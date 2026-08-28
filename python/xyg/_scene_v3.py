@@ -1090,7 +1090,7 @@ def _resolve_mark_style(
 
 def _constant_color(trace: Any, fallback: str) -> str:
     channel = trace.color_ch
-    if getattr(trace, "color2_ch", None) is not None:
+    if _classify_ribbon_color2(trace) == "fail":
         raise UnsupportedSceneV3("Scene v12 does not yet encode two-ended ribbon gradients")
     if channel is None:
         return str(trace.style.get("color", fallback))
@@ -2200,6 +2200,62 @@ def _admitted_fill_gradient(trace: Any) -> dict[str, Any] | None:
     return _admitted_fill_gradient_from_fill(fill, mark_color)
 
 
+def _channel_constant_css(channel: Any) -> str | None:
+    if channel is None:
+        return None
+    if getattr(channel, "mode", None) != "constant":
+        return None
+    constant = getattr(channel, "constant", None)
+    if constant is None:
+        return None
+    return str(constant)
+
+
+def _trace_source_color_css(trace: Any) -> str:
+    css = _channel_constant_css(getattr(trace, "color_ch", None))
+    if css is not None:
+        return css
+    return str((getattr(trace, "style", None) or {}).get("color") or "#3987e5")
+
+
+def _css_paints_equal(left: str, right: str) -> bool:
+    try:
+        return _native.css_color_rgba(left, 1.0) == _native.css_color_rgba(right, 1.0)
+    except ValueError:
+        return False
+
+
+def _classify_ribbon_color2(trace: Any) -> str:
+    """Classify two-ended ribbon paint: absent, solid, gradient, or fail."""
+    color2 = getattr(trace, "color2_ch", None)
+    if color2 is None:
+        return "absent"
+    if str(getattr(trace, "kind", "") or "") != "ribbon":
+        return "fail"
+    target = _channel_constant_css(color2)
+    if target is None:
+        return "fail"
+    source = _trace_source_color_css(trace)
+    if _css_paints_equal(source, target):
+        return "solid"
+    if "fill" in (getattr(trace, "style", None) or {}):
+        return "fail"
+    return "gradient"
+
+
+def _ribbon_color2_gradient_spec(trace: Any) -> dict[str, Any] | None:
+    if _classify_ribbon_color2(trace) != "gradient":
+        return None
+    target = _channel_constant_css(getattr(trace, "color2_ch", None))
+    if target is None:
+        return None
+    return {
+        "space": "mark",
+        "dir": "right",
+        "stops": [(0.0, _trace_source_color_css(trace)), (1.0, target)],
+    }
+
+
 def _gradient_solid_css(gradient: dict[str, Any]) -> str:
     for _t, rgba in gradient["stops"]:
         if rgba[3] > 0:
@@ -2406,8 +2462,20 @@ def _pack_xytc(figure: Any) -> bytes:
             if getattr(channel, "constant", None) is not None:
                 flags |= _XYTC_COLOR_CH_CONSTANT
                 color_const = str(channel.constant).encode("utf-8")
-        if getattr(trace, "color2_ch", None) is not None:
+        color2_class = _classify_ribbon_color2(trace)
+        if color2_class == "fail":
             flags |= _XYTC_COLOR2
+        elif color2_class == "gradient":
+            if flags & (_XYTC_HAS_FILL | _XYTC_HAS_GRADIENT_SPEC):
+                flags |= _XYTC_COLOR2
+            else:
+                spec = _ribbon_color2_gradient_spec(trace)
+                packed_gradient = _pack_gradient_spec(spec) if spec is not None else None
+                if packed_gradient:
+                    flags |= _XYTC_HAS_FILL | _XYTC_HAS_GRADIENT_SPEC
+                    gradient_blob = packed_gradient
+                else:
+                    flags |= _XYTC_COLOR2
         if trace.kind == "scatter" and trace.use_density():
             flags |= _XYTC_USE_DENSITY
         if show_legend:
@@ -3105,7 +3173,7 @@ def _pack_figure_support(
     ):
         flags |= 1 << 2
     if any(
-        getattr(trace, "color2_ch", None) is not None
+        _classify_ribbon_color2(trace) == "fail"
         or (
             getattr(trace, "color_ch", None) is not None
             and (trace.color_ch.mode != "constant" or trace.color_ch.constant is None)
