@@ -17,6 +17,7 @@ import {
   radarChart,
   sankeyChart,
   payloadTier,
+  payloadM4Indices,
   shouldUseDensity,
   stairsChart,
   stemChart,
@@ -44,6 +45,33 @@ test("payloadTier polar line stays direct over M4 threshold", () => {
   assert.equal(payloadTier({ kind: 0, nPoints: 10_000 }), 0);
   assert.equal(payloadTier({ kind: 0, nPoints: 10_001 }), 1);
   assert.equal(payloadTier({ kind: 0, nPoints: 10_001, polar: true }), 0);
+});
+
+test("payloadM4Indices polar stays direct and cartesian matches m4 plus eps", () => {
+  const n = 10_001;
+  const x = fill(n, (i) => i);
+  const y = fill(n, () => 1);
+  const polar = payloadM4Indices({
+    nPoints: n,
+    x,
+    y,
+    x0: 0,
+    x1: n - 1,
+    nBuckets: 64,
+    polar: true,
+  });
+  assert.equal(polar.tier, 0);
+  assert.equal(polar.indices.length, 0);
+  const cartesian = payloadM4Indices({
+    nPoints: n,
+    x,
+    y,
+    x0: 0,
+    x1: n - 1,
+    nBuckets: 64,
+  });
+  assert.equal(cartesian.tier, 1);
+  assert.ok(cartesian.indices.length > 0);
 });
 
 test("polar line over DECIMATION_THRESHOLD stays direct at emit", () => {

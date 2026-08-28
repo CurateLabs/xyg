@@ -506,7 +506,10 @@ ABI 122 moves compile-time payload LOD into Rust: Python and Node
 call `xyg_payload_tier`, `xyg_payload_visible_needed`, and
 `xyg_payload_visible_mask` so M4 vs density vs direct, polar skip,
 the strict `>` scatter thresholds, and the log/null keep mask cannot
-drift. Hosts still gather and ship the chosen rows.
+drift. ABI 204 `xyg_payload_m4_indices` owns remaining line M4 emit
+(closed-window ulp, optional nonlinear buckets, polar skip) so Python
+and Node cannot drift on first paint or `decimate_view`. Hosts still
+map scale coordinates, gather extra columns, and ship the chosen rows.
 ABI 123 moves tick-label collision thinning into Rust: Python and Node
 call `xyg_scene_tick_label_layout` so auto / hide / rotate / stagger,
 the edge-anchor rotate gap, and stride downsampling cannot drift.
