@@ -894,7 +894,7 @@ mod tests {
     fn sidecars_short_chrome_is_length() {
         let xyas = splice_annotations(&[], &empty_xysd(), &[]).unwrap();
         let error =
-            encode_assembled_from_sidecars(&xyas, b"XY", &empty_xysd(), &[], &[]).unwrap_err();
+            encode_assembled_from_sidecars(&xyas, &[0u8; 2], &empty_xysd(), &[], &[]).unwrap_err();
         assert_eq!(error.code, EncodeSidecarsCode::Length);
     }
 
