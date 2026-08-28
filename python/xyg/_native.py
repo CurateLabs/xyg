@@ -2050,6 +2050,59 @@ def scene_pack_trace_rows(
     raise SceneTraceRowsError(-4, 0)
 
 
+class SceneTraceSidecarsError(ValueError):
+    """Native XYSD sidecar-pack failure carrying the ABI error code and trace index."""
+
+    def __init__(self, code: int, index: int) -> None:
+        self.code = int(code)
+        self.index = int(index)
+        messages = {
+            -2: "invalid scene sidecar facts version",
+            -5: "invalid scene sidecar packing",
+            -6: "invalid scene sidecar packing",
+        }
+        super().__init__(messages.get(self.code, "invalid scene sidecar packing"))
+
+
+def scene_pack_trace_sidecars(attached: bytes, names: bytes) -> bytes:
+    """Pack XYTT attach output plus XYNM v1 names into XYSD sidecars (M2 #271)."""
+    attached_payload = (
+        attached if isinstance(attached, (bytes, bytearray, memoryview)) else bytes(attached)
+    )
+    names_payload = names if isinstance(names, (bytes, bytearray, memoryview)) else bytes(names)
+    capacity = max(65536, len(attached_payload) + len(names_payload) + 4096)
+    source_attached = (
+        np.frombuffer(attached_payload, dtype=np.uint8)
+        if attached_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_names = (
+        np.frombuffer(names_payload, dtype=np.uint8)
+        if names_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    for _ in range(4):
+        out = np.zeros(capacity, dtype=np.uint8)
+        code = int(
+            _lib.xyg_scene_pack_trace_sidecars(
+                _ptr_u8(source_attached) if source_attached.size else 0,
+                int(source_attached.size),
+                _ptr_u8(source_names) if source_names.size else 0,
+                int(source_names.size),
+                _ptr_u8(out),
+                len(out),
+            )
+        )
+        if code == -4:
+            capacity *= 2
+            continue
+        if code < 0:
+            index = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
+            raise SceneTraceSidecarsError(code, index)
+        return bytes(out[:code])
+    raise SceneTraceSidecarsError(-4, 0)
+
+
 def scene_figure_support_reason(payload: bytes) -> str:
     """Return Rust's figure-compile diagnostic for a packed XYFS envelope.
 

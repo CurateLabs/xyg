@@ -57,6 +57,7 @@ use xyg_engine::pack_public_export;
 use xyg_engine::pack_trace_attach;
 use xyg_engine::pack_trace_compile;
 use xyg_engine::pack_trace_rows;
+use xyg_engine::pack_trace_sidecars;
 use xyg_engine::ChromePackError;
 use xyg_engine::TraceAttachCode;
 use xyg_engine::TraceAttachError;
@@ -64,6 +65,8 @@ use xyg_engine::TraceCompileCode;
 use xyg_engine::TraceCompileError;
 use xyg_engine::TraceRowsCode;
 use xyg_engine::TraceRowsError;
+use xyg_engine::TraceSidecarsCode;
+use xyg_engine::TraceSidecarsError;
 use xyg_engine::scene_figure_support_reason;
 use xyg_engine::scene_legend::{self, LegendError};
 use xyg_engine::scene_pack::{self, PackError};
@@ -137,7 +140,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 156;
+pub const ABI_VERSION: u32 = 157;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -502,6 +505,73 @@ pub unsafe extern "C" fn xyg_scene_pack_trace_rows(
                 match scene_pack::encode_packed_rows(&rows, dest) {
                     Ok(count) => count,
                     Err(error) => -(error as i32),
+                }
+            }
+            Err(error) => {
+                if out_cap >= 4 {
+                    let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                    dest[..4].copy_from_slice(&error.index.to_le_bytes());
+                }
+                -(error.code as i32)
+            }
+        }
+    })
+}
+
+/// Pack attached `XYTT` v1 plus authored `XYNM` v1 names into `XYSD` v1.
+/// Rust owns legend-name gating, heatmap-vs-density plane selection, and
+/// per-trace style/dash/marker/gradient/plane extraction. Returns the XYSD
+/// byte count on success, or a negated `TraceSidecarsCode`. On error, when
+/// `out_cap >= 4`, writes the failing trace index as a little-endian u32.
+/// Encoded Scene v31 is unchanged.
+///
+/// # Safety
+/// When a length is non-zero, the matching pointer must address that many
+/// readable bytes. When `out_cap` is non-zero, `out` must address that many
+/// writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_pack_trace_sidecars(
+    attached: *const u8,
+    attached_len: usize,
+    names: *const u8,
+    names_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if (attached_len > 0 && attached.is_null())
+        || (names_len > 0 && names.is_null())
+        || (out_cap > 0 && out.is_null())
+    {
+        return -(TraceSidecarsError {
+            code: TraceSidecarsCode::Length,
+            index: 0,
+        }
+        .code as i32);
+    }
+    ffi_guard(-(TraceSidecarsCode::Length as i32), || {
+        let attached_bytes = if attached_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(attached, attached_len)
+        };
+        let names_bytes = if names_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(names, names_len)
+        };
+        match pack_trace_sidecars(attached_bytes, names_bytes) {
+            Ok(bytes) => {
+                if bytes.len() > out_cap {
+                    return -(TraceSidecarsCode::Output as i32);
+                }
+                if bytes.is_empty() {
+                    return 0;
+                }
+                let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                dest[..bytes.len()].copy_from_slice(&bytes);
+                match i32::try_from(bytes.len()) {
+                    Ok(count) => count,
+                    Err(_) => -(TraceSidecarsCode::Limit as i32),
                 }
             }
             Err(error) => {
@@ -2279,6 +2349,10 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// symbol/diameter, density domain-endpoint column rewrite, and
 /// `pack_product_facts` from packed XYTT plus XYCL v1 so Python and Node
 /// cannot drift.
+/// ABI 157 does not change Scene records;
+/// `xyg_scene_pack_trace_sidecars` owns legend-name gating, heatmap-vs-density
+/// plane selection, and per-trace style/dash/marker/gradient/plane extraction
+/// from packed XYTT plus XYNM v1 so Python and Node cannot drift.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
@@ -14992,6 +15066,22 @@ mod tests {
             )
         };
         assert_eq!(rows_code, 0);
+        let mut xynm = vec![0u8; 16];
+        xynm[..4].copy_from_slice(b"XYNM");
+        xynm[4..8].copy_from_slice(&1u32.to_le_bytes());
+        let mut sidecars_out = vec![0u8; 4096];
+        let sidecars_code = unsafe {
+            xyg_scene_pack_trace_sidecars(
+                attach_out.as_ptr(),
+                attach_code as usize,
+                xynm.as_ptr(),
+                xynm.len(),
+                sidecars_out.as_mut_ptr(),
+                sidecars_out.len(),
+            )
+        };
+        assert_eq!(sidecars_code, 16);
+        assert_eq!(&sidecars_out[..4], b"XYSD");
     }
 
     #[test]

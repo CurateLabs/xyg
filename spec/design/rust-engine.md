@@ -212,7 +212,8 @@ crates/
                         #   plus ABI 153 XYCF figure-chrome packing plus ABI 154
                         #   XYTC per-trace compile packing plus ABI 155 XYTA
                         #   heatmap/density attach packing plus ABI 156 XYCL
-                        #   product-row packing.
+                        #   product-row packing plus ABI 157 XYSD
+                        #   trace-sidecar packing.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -252,6 +253,10 @@ crates/
                         #   construction, scatter-only symbol/diameter,
                         #   density domain-endpoint column rewrite, and
                         #   pack_product_facts.
+    scene_trace_sidecars.rs # ABI 157 XYSD trace-sidecar packing: legend-name
+                        #   gating, heatmap-vs-density plane selection, and
+                        #   per-trace style/dash/marker/gradient/plane
+                        #   extraction.
     jpeg.rs             # baseline JPEG encode (ABI 114): YCbCr 4:4:4, Annex K
                         #   tables, libjpeg quality curve, Huffman packing.
                         #   Native hosts only (`raster` feature).
@@ -797,4 +802,5 @@ landed; the remainder, in order:
    ABI 154 XYTC per-trace compile packing (`xyg_scene_pack_trace_compile`) ✅.
    ABI 155 XYTA heatmap/density attach packing (`xyg_scene_pack_trace_attach`) ✅.
    ABI 156 XYCL product-row packing (`xyg_scene_pack_trace_rows`) ✅.
+   ABI 157 XYSD trace-sidecar packing (`xyg_scene_pack_trace_sidecars`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

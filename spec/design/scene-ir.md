@@ -121,6 +121,9 @@ heatmap/density attach policy from packed XYTO plus XYTA v1.
 ABI 156 does not change Scene records; `xyg_scene_pack_trace_rows` owns
 XYPK construction, scatter-only symbol/diameter, density domain-endpoint
 column rewrite, and `pack_product_facts` from packed XYTT plus XYCL v1.
+ABI 157 does not change Scene records; `xyg_scene_pack_trace_sidecars` owns
+legend-name gating, heatmap-vs-density plane selection, and per-trace
+style/dash/marker/gradient/plane extraction from packed XYTT plus XYNM v1.
 
 ## Version 3: backend-neutral core scene batch
 
@@ -467,6 +470,11 @@ ABI 156 does not change Scene records;
 `xyg_scene_pack_trace_rows` owns XYPK construction, scatter-only
 symbol/diameter, density domain-endpoint column rewrite, and
 `pack_product_facts` from packed XYTT plus XYCL v1.
+
+ABI 157 does not change Scene records;
+`xyg_scene_pack_trace_sidecars` owns legend-name gating, heatmap-vs-density
+plane selection, and per-trace style/dash/marker/gradient/plane extraction
+from packed XYTT plus XYNM v1.
 
 ABI 110 adds `xyg_scene_pack_legend` so both hosts pass loc/flags/paints
 and receive XYLG bytes; header layout, text offsets, and bounded-text
@@ -1289,7 +1297,9 @@ so shape/finite fail-closed checks, XYHF remainder order, density skip,
 density XYHF flags, fact bits, density zeroing, and domain rewrite cannot
 drift. ABI 156 packs product rows from `XYCL` v1 so XYPK construction,
 scatter-only symbol/diameter, density rewrite, and `pack_product_facts`
-cannot drift. An empty reason selects the Scene route;
+cannot drift. ABI 157 packs trace sidecars from `XYNM` v1 so legend-name
+gating, heatmap-vs-density plane selection, and style/dash/marker/gradient
+extraction cannot drift. An empty reason selects the Scene route;
 hosts still compile the Scene and may still report compiler or viewport
 diagnostics, including the shared PolyFill group budget. ABI 106 does not
 change Scene records; `xyg_figure_autorange` owns the domain the annotation
@@ -1354,6 +1364,10 @@ ABI 156 does not change Scene records either;
 `xyg_scene_pack_trace_rows` owns XYPK construction, scatter-only
 symbol/diameter, density domain-endpoint column rewrite, and
 `pack_product_facts` from packed XYTT plus XYCL v1.
+ABI 157 does not change Scene records either;
+`xyg_scene_pack_trace_sidecars` owns legend-name gating, heatmap-vs-density
+plane selection, and per-trace style/dash/marker/gradient/plane extraction
+from packed XYTT plus XYNM v1.
 Polar+step+smooth and authored marker glyphs stay compatibility. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;

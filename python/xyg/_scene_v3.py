@@ -2034,6 +2034,18 @@ def _pack_xycl(figure: Any) -> bytes:
     return bytes(records)
 
 
+def _pack_xynm(figure: Any) -> bytes:
+    """Pack authored legend names as XYNM v1; Rust owns legend-name gating."""
+    traces = list(getattr(figure, "traces", None) or [])
+    records = bytearray(_XYNM_HEADER.pack(b"XYNM", 1, len(traces), 0))
+    for trace in traces:
+        name = getattr(trace, "name", None)
+        raw = b"" if name is None else str(name).encode("utf-8")
+        records.extend(_XYNM_PREFIX.pack(len(raw)))
+        records.extend(raw)
+    return bytes(records)
+
+
 def _pack_xyhp(planes: list[bytes]) -> bytes:
     """Wrap painted-heatmap planes in an XYHP v1 envelope."""
     if not planes:
@@ -2246,6 +2258,10 @@ _XYTT_ENVELOPE = struct.Struct("<4sIII")
 _XYTT_EXTRA = struct.Struct("<IIII4d")
 _XYCL_HEADER = struct.Struct("<4sIII")
 _XYCL_PREFIX = struct.Struct("<HBxIQ7I4x")
+_XYNM_HEADER = struct.Struct("<4sIII")
+_XYNM_PREFIX = struct.Struct("<H")
+_XYSD_HEADER = struct.Struct("<4sIII")
+_XYSD_PREFIX = struct.Struct("<4s4sdBBH6I4x")
 _XYTA_HEATMAP = 1 << 0
 _XYTA_DENSITY = 1 << 1
 _XYTA_HAS_RGBA = 1 << 2
@@ -2775,6 +2791,82 @@ def _raise_trace_rows(error: _native.SceneTraceRowsError) -> NoReturn:
     raise ValueError("invalid scene trace column packing") from error
 
 
+def _unpack_xysd(blob: bytes) -> dict[str, Any]:
+    """Split Rust-owned XYSD sidecar output into per-trace Scene fields."""
+    if len(blob) < _XYSD_HEADER.size or blob[:4] != b"XYSD":
+        raise ValueError("invalid scene sidecar packing")
+    _magic, version, n_traces, _reserved = _XYSD_HEADER.unpack_from(blob, 0)
+    if version != 1:
+        raise ValueError("invalid scene sidecar facts version")
+    at = _XYSD_HEADER.size
+    styles: list[tuple[tuple[int, ...], tuple[int, ...], float]] = []
+    dashes: list[list[float] | None] = []
+    linecaps: list[int | None] = []
+    marker_paths: list[dict[str, Any] | None] = []
+    fill_gradients: list[dict[str, Any] | None] = []
+    planes: list[bytes] = []
+    legend: list[tuple[int, int, int, str]] = []
+    for index in range(int(n_traces)):
+        if at + _XYSD_PREFIX.size > len(blob):
+            raise ValueError("invalid scene sidecar packing")
+        (
+            fill,
+            stroke,
+            stroke_width,
+            linecap,
+            legend_kind,
+            legend_symbol,
+            dash_len,
+            marker_len,
+            gradient_len,
+            plane_len,
+            name_len,
+            _reserved_len,
+        ) = _XYSD_PREFIX.unpack_from(blob, at)
+        at += _XYSD_PREFIX.size
+        need = int(dash_len) + int(marker_len) + int(gradient_len) + int(plane_len) + int(name_len)
+        if at + need > len(blob):
+            raise ValueError("invalid scene sidecar packing")
+        dash_blob = blob[at : at + dash_len]
+        at += int(dash_len)
+        marker = blob[at : at + marker_len]
+        at += int(marker_len)
+        gradient = blob[at : at + gradient_len]
+        at += int(gradient_len)
+        plane = blob[at : at + plane_len]
+        at += int(plane_len)
+        name = blob[at : at + name_len]
+        at += int(name_len)
+        styles.append((tuple(fill), tuple(stroke), float(stroke_width)))
+        dashes.append(
+            list(struct.unpack(f"<{len(dash_blob) // 8}d", dash_blob)) if dash_blob else None
+        )
+        linecaps.append(None if linecap == _XYTO_LINECAP_NONE else int(linecap))
+        marker_paths.append(_unpack_marker_blob(marker) if marker else None)
+        fill_gradients.append(_unpack_gradient_blob(gradient) if gradient else None)
+        if plane:
+            planes.append(bytes(plane))
+        if name:
+            legend.append((index, int(legend_kind), int(legend_symbol), name.decode("utf-8")))
+    if at != len(blob):
+        raise ValueError("invalid scene sidecar packing")
+    return {
+        "styles": styles,
+        "dashes": dashes,
+        "linecaps": linecaps,
+        "marker_paths": marker_paths,
+        "fill_gradients": fill_gradients,
+        "planes": planes,
+        "legend": legend,
+    }
+
+
+def _raise_trace_sidecars(error: _native.SceneTraceSidecarsError) -> NoReturn:
+    if error.code == -2:
+        raise ValueError("invalid scene sidecar facts version") from error
+    raise ValueError("invalid scene sidecar packing") from error
+
+
 def figure_scene(
     figure: Any,
     *,
@@ -2798,17 +2890,10 @@ def figure_scene(
     kinds: list[int] = []
     stable_ids: list[int] = []
     style_refs: list[int] = []
-    styles: list[tuple[tuple[int, ...], tuple[int, ...], float]] = []
-    dashes: list[list[float] | None] = []
-    linecaps: list[int | None] = []
-    marker_paths: list[dict[str, Any] | None] = []
-    fill_gradients: list[dict[str, Any] | None] = []
     diameters: list[float] = []
     symbols: list[int] = []
     coordinates: list[list[float]] = [[], [], [], []]
     expansion_modes: list[int] = []
-    legend_entries: list[tuple[int, int, int, str]] = []
-    heatmap_paint_planes: list[bytes] = []
     try:
         compiled_bytes = _native.scene_pack_trace_compile(_pack_xytc(figure))
     except _native.SceneTraceCompileError as error:
@@ -2817,28 +2902,21 @@ def figure_scene(
         attached_bytes = _native.scene_pack_trace_attach(compiled_bytes, _pack_xyta(figure))
     except _native.SceneTraceAttachError as error:
         _raise_trace_attach(error, figure)
-    attached_traces = _unpack_xytt(attached_bytes)
-    if len(attached_traces) != len(figure.traces):
-        raise ValueError("invalid scene trace attach packing")
-    for trace, compiled in zip(figure.traces, attached_traces, strict=True):
-        styles.append(compiled["style"])
-        dashes.append(compiled["dash"])
-        linecaps.append(compiled["linecap"])
-        marker_paths.append(compiled["marker_path"])
-        fill_gradients.append(compiled["fill_gradient"])
-        style_ref = len(styles) - 1
-        if compiled["legend_include"] and trace.name:
-            legend_entries.append(
-                (
-                    style_ref,
-                    compiled["legend_kind"],
-                    compiled["legend_symbol"],
-                    str(trace.name),
-                )
-            )
-        plane = compiled["heatmap"] or compiled["density"]
-        if plane:
-            heatmap_paint_planes.append(plane)
+    try:
+        sidecars = _unpack_xysd(
+            _native.scene_pack_trace_sidecars(attached_bytes, _pack_xynm(figure))
+        )
+    except _native.SceneTraceSidecarsError as error:
+        _raise_trace_sidecars(error)
+    if len(sidecars["styles"]) != len(figure.traces):
+        raise ValueError("invalid scene sidecar packing")
+    styles = list(sidecars["styles"])
+    dashes = list(sidecars["dashes"])
+    linecaps = list(sidecars["linecaps"])
+    marker_paths = list(sidecars["marker_paths"])
+    fill_gradients = list(sidecars["fill_gradients"])
+    legend_entries = list(sidecars["legend"])
+    heatmap_paint_planes = list(sidecars["planes"])
     try:
         (
             packed_kinds,
@@ -2876,7 +2954,9 @@ def figure_scene(
     # fail-closed checks, XYHF remainder order, density skip, density XYHF
     # flags, fact bits, density zeroing, and domain rewrite (ABI 155). Hosts
     # pack XYCL kind/coords/id/columns; Rust owns XYPK construction, scatter-only
-    # symbol/diameter, density rewrite, and pack_product_facts (ABI 156).
+    # symbol/diameter, density rewrite, and pack_product_facts (ABI 156). Hosts
+    # pack XYNM names; Rust owns legend-name gating, heatmap-vs-density plane
+    # selection, and style/dash/marker/gradient/plane extraction (ABI 157).
     x_domain = tuple(float(value) for value in figure._range("x"))
     y_domain = tuple(float(value) for value in figure._range("y"))
     annotation_facts = bytearray()

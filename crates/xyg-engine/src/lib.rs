@@ -58,6 +58,8 @@ pub mod scene_trace_attach;
 pub use scene_trace_attach::{pack_trace_attach, TraceAttachCode, TraceAttachError};
 pub mod scene_trace_rows;
 pub use scene_trace_rows::{pack_trace_rows, TraceRowsCode, TraceRowsError};
+pub mod scene_trace_sidecars;
+pub use scene_trace_sidecars::{pack_trace_sidecars, TraceSidecarsCode, TraceSidecarsError};
 pub mod scene_pack;
 pub use scene_pack::{
     pack_product, pack_product_facts, pack_trace, parse_product_facts, resolve_pack_kind,

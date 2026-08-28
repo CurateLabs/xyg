@@ -1459,6 +1459,9 @@ ABI 155 owns heatmap/density attach policy from packed XYTO plus XYTA v1.
 ABI 156 owns XYPK construction, scatter-only symbol/diameter, density
 domain-endpoint column rewrite, and `pack_product_facts` from packed XYTT
 plus XYCL v1.
+ABI 157 owns legend-name gating, heatmap-vs-density plane selection, and
+per-trace style/dash/marker/gradient/plane extraction from packed XYTT plus
+XYNM v1.
 Polar+step+smooth and
 authored marker glyphs stay compatibility. Irregular
 spacing, and LOD stay compatibility.

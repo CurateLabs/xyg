@@ -206,6 +206,10 @@ ABI 156 adds
 `xyg_scene_pack_trace_rows` so XYPK construction, scatter-only
 symbol/diameter, density domain-endpoint column rewrite, and
 `pack_product_facts` resolve from packed XYTT plus XYCL v1.
+ABI 157 adds
+`xyg_scene_pack_trace_sidecars` so legend-name gating, heatmap-vs-density
+plane selection, and per-trace style/dash/marker/gradient/plane extraction
+resolve from packed XYTT plus XYNM v1.
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -238,7 +242,10 @@ step, curve-smooth, stroke-perimeter, hex pitch, fill-gradient admission,
 and XYMS resolve) from packed XYTC v1. ABI 155 owns heatmap/density attach
 policy from packed XYTO plus XYTA v1. ABI 156 owns XYPK construction,
 scatter-only symbol/diameter, density domain-endpoint column rewrite, and
-`pack_product_facts` from packed XYTT plus XYCL v1. Polar+step+smooth
+`pack_product_facts` from packed XYTT plus XYCL v1. ABI 157 owns
+legend-name gating, heatmap-vs-density plane selection, and per-trace
+style/dash/marker/gradient/plane extraction from packed XYTT plus XYNM v1.
+Polar+step+smooth
 and authored marker glyphs stay
 compatibility. ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
@@ -257,6 +264,8 @@ v1 facts against compiled `XYTO` and call `xyg_scene_pack_trace_attach`.
 ABI 156 makes product-row packing Rust-owned: Python and Node pack `XYCL`
 v1 kind/coords/id/columns against attached `XYTT` and call
 `xyg_scene_pack_trace_rows`.
+ABI 157 makes trace-sidecar packing Rust-owned: Python and Node pack `XYNM`
+v1 names against attached `XYTT` and call `xyg_scene_pack_trace_sidecars`.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call
 `xyg_figure_autorange` / `xyg_auto_domain`. Direct-browser WASM compile uses
@@ -496,6 +505,10 @@ ABI 156
 symbol/diameter, density domain-endpoint column rewrite, and
 `pack_product_facts` from packed XYTT plus XYCL v1 so product rows cannot
 drift.
+ABI 157
+`xyg_scene_pack_trace_sidecars` owns legend-name gating, heatmap-vs-density
+plane selection, and per-trace style/dash/marker/gradient/plane extraction
+from packed XYTT plus XYNM v1 so sidecars cannot drift.
 ABI 116
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 so tags and opposite-axis spanning cannot drift. ABI 117

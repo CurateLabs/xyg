@@ -47,6 +47,7 @@ import {
   xyScenePackTraceCompile,
   xyScenePackTraceAttach,
   xyScenePackTraceRows,
+  xyScenePackTraceSidecars,
   xyScenePackAnnotationMarks,
   xySceneRasterCommands,
   xySceneResolveChromeStyle,
@@ -3718,6 +3719,123 @@ function packTraceRows(attached, columns) {
   raiseTraceRows(-4, 0);
 }
 
+function packXyNm(traces) {
+  const records = [new Uint8Array(16)];
+  const header = new DataView(records[0].buffer);
+  records[0][0] = 88; records[0][1] = 89; records[0][2] = 78; records[0][3] = 77; // XYNM
+  header.setUint32(4, 1, true);
+  header.setUint32(8, traces.length, true);
+  for (const trace of traces) {
+    const raw = encodeUtf8(trace.name == null ? "" : String(trace.name));
+    const prefix = new Uint8Array(2);
+    new DataView(prefix.buffer).setUint16(0, raw.length, true);
+    records.push(prefix, raw);
+  }
+  return concatBytes(records);
+}
+
+function unpackXySd(blob) {
+  if (blob.length < 16 || blob[0] !== 88 || blob[1] !== 89 || blob[2] !== 83 || blob[3] !== 68) {
+    throw new RangeError("invalid scene sidecar packing");
+  }
+  const view = new DataView(blob.buffer, blob.byteOffset, blob.byteLength);
+  if (view.getUint32(4, true) !== 1) throw new RangeError("invalid scene sidecar facts version");
+  const nTraces = view.getUint32(8, true);
+  let at = 16;
+  const styles = [];
+  const dashes = [];
+  const linecaps = [];
+  const markerPaths = [];
+  const fillGradients = [];
+  const planes = [];
+  const legend = [];
+  for (let i = 0; i < nTraces; i += 1) {
+    if (at + 48 > blob.length) throw new RangeError("invalid scene sidecar packing");
+    const fillRgba = Array.from(blob.subarray(at, at + 4));
+    const strokeRgba = Array.from(blob.subarray(at + 4, at + 8));
+    const strokeWidth = view.getFloat64(at + 8, true);
+    const linecap = blob[at + 16];
+    const legendKind = blob[at + 17];
+    const legendSymbol = view.getUint16(at + 18, true);
+    const dashLen = view.getUint32(at + 20, true);
+    const markerLen = view.getUint32(at + 24, true);
+    const gradientLen = view.getUint32(at + 28, true);
+    const planeLen = view.getUint32(at + 32, true);
+    const nameLen = view.getUint32(at + 36, true);
+    at += 48;
+    if (at + dashLen + markerLen + gradientLen + planeLen + nameLen > blob.length) {
+      throw new RangeError("invalid scene sidecar packing");
+    }
+    let dash = null;
+    if (dashLen) {
+      dash = [];
+      for (let j = 0; j < dashLen / 8; j += 1) {
+        dash.push(view.getFloat64(at + j * 8, true));
+      }
+    }
+    at += dashLen;
+    const marker = blob.subarray(at, at + markerLen);
+    at += markerLen;
+    const gradient = blob.subarray(at, at + gradientLen);
+    at += gradientLen;
+    const plane = blob.subarray(at, at + planeLen);
+    at += planeLen;
+    const name = blob.subarray(at, at + nameLen);
+    at += nameLen;
+    styles.push({ fillRgba, strokeRgba, strokeWidth });
+    dashes.push(dash);
+    linecaps.push(linecap === XYTO_LINECAP_NONE ? null : linecap);
+    markerPaths.push(marker.length ? unpackMarkerBlob(marker) : null);
+    fillGradients.push(gradient.length ? unpackGradientBlob(gradient) : null);
+    if (plane.length) planes.push(Uint8Array.from(plane));
+    if (name.length) {
+      legend.push({
+        styleRef: i,
+        kind: legendKind,
+        symbol: legendSymbol,
+        label: new TextDecoder().decode(name),
+      });
+    }
+  }
+  if (at !== blob.length) throw new RangeError("invalid scene sidecar packing");
+  return { styles, dashes, linecaps, markerPaths, fillGradients, planes, legend };
+}
+
+function raiseTraceSidecars(code, index) {
+  if (code === -2) throw new RangeError("invalid scene sidecar facts version");
+  const error = new RangeError("invalid scene sidecar packing");
+  error.code = code;
+  error.index = index;
+  throw error;
+}
+
+function packTraceSidecars(attached, names) {
+  const attachedBytes = attached instanceof Uint8Array ? attached : new Uint8Array();
+  const namesBytes = names instanceof Uint8Array ? names : new Uint8Array();
+  let capacity = Math.max(65536, attachedBytes.length + namesBytes.length + 4096);
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const out = new Uint8Array(capacity);
+    const code = xyScenePackTraceSidecars(
+      attachedBytes.length ? u8Ptr(attachedBytes) : 0,
+      BigInt(attachedBytes.length),
+      namesBytes.length ? u8Ptr(namesBytes) : 0,
+      BigInt(namesBytes.length),
+      u8Ptr(out),
+      BigInt(out.length),
+    );
+    if (code === -4) {
+      capacity *= 2;
+      continue;
+    }
+    if (code < 0) {
+      const failing = new DataView(out.buffer, out.byteOffset, 4).getUint32(0, true);
+      raiseTraceSidecars(code, failing);
+    }
+    return out.subarray(0, code);
+  }
+  raiseTraceSidecars(-4, 0);
+}
+
 function packChromeFacts(figure, legendEntries, styles, { width, height, margins = null, colorbarOk = true } = {}) {
   const FLAG_AUTHORED_MARGINS = 1 << 0, FLAG_PADDING = 1 << 1, FLAG_X_MAJOR_AUTO = 1 << 2, FLAG_Y_MAJOR_AUTO = 1 << 3;
   const FLAG_X_TICK_LABELS = 1 << 4, FLAG_Y_TICK_LABELS = 1 << 5, FLAG_HAS_CHROME = 1 << 6, FLAG_HAS_LEGEND = 1 << 7, FLAG_HAS_COLORBAR = 1 << 8;
@@ -4606,7 +4724,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   try { colorbarInput(figure); } catch { colorbarUnsupported = Boolean(figure.colorbarOptions ?? figure.colorbar_options); }
   const reason = sceneFigureSupportReason(figure, { colorbarUnsupported });
   if (reason) throw new RangeError(reason);
-  const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], expansionModes = [], x0 = [], y0 = [], x1 = [], y1 = [], styles = [], dashes = [], linecaps = [], markerPaths = [], fillGradients = [], legendEntries = [], heatmapPaintPlanes = [];
+  const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], expansionModes = [], x0 = [], y0 = [], x1 = [], y1 = [];
   const xDomain = figure._range("x");
   const yDomain = figure._range("y");
   const sceneAxis = (axis, id, domain) => {
@@ -4625,11 +4743,10 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   const xSceneDescriptor = axisDescriptor(xSceneAxis, "xAxis");
   const ySceneDescriptor = axisDescriptor(ySceneAxis, "yAxis");
   let attachedBytes;
-  let attachedTraces;
+  let sidecars;
   try {
     const compiledBytes = packTraceCompile(packXyTc(figure));
     attachedBytes = packTraceAttach(compiledBytes, packXyTa(figure, xDomain, yDomain));
-    attachedTraces = unpackXyTt(attachedBytes);
   } catch (error) {
     if (Number.isInteger(error.code) && error.code < 0) {
       const name = String(error.message ?? "");
@@ -4638,23 +4755,24 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     }
     throw error;
   }
-  if (attachedTraces.length !== (figure.traces ?? []).length) {
-    throw new RangeError("invalid scene trace attach packing");
-  }
-  for (const [traceIndex, trace] of figure.traces.entries()) {
-    const compiled = attachedTraces[traceIndex];
-    styles.push({ fillRgba: compiled.fillRgba, strokeRgba: compiled.strokeRgba, strokeWidth: compiled.strokeWidth });
-    dashes.push(compiled.dash);
-    linecaps.push(compiled.linecap);
-    markerPaths.push(compiled.markerPath);
-    fillGradients.push(compiled.fillGradient);
-    const styleRef = styles.length - 1;
-    if (compiled.legendInclude && trace.name != null && String(trace.name).length > 0) {
-      legendEntries.push({ styleRef, kind: compiled.legendKind, symbol: compiled.legendSymbol, label: String(trace.name) });
+  try {
+    sidecars = unpackXySd(packTraceSidecars(attachedBytes, packXyNm(figure.traces ?? [])));
+  } catch (error) {
+    if (Number.isInteger(error.code) && error.code < 0) {
+      raiseTraceSidecars(error.code, error.index ?? 0);
     }
-    const plane = compiled.heatmap.length ? compiled.heatmap : compiled.density;
-    if (plane.length) heatmapPaintPlanes.push(plane);
+    throw error;
   }
+  if (sidecars.styles.length !== (figure.traces ?? []).length) {
+    throw new RangeError("invalid scene sidecar packing");
+  }
+  const styles = sidecars.styles;
+  const dashes = sidecars.dashes;
+  const linecaps = sidecars.linecaps;
+  const markerPaths = sidecars.markerPaths;
+  const fillGradients = sidecars.fillGradients;
+  const legendEntries = sidecars.legend;
+  const heatmapPaintPlanes = sidecars.planes;
   let packed;
   try {
     packed = packTraceRows(attachedBytes, packXyCl(figure));
