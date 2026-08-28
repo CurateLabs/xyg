@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 201;
+pub const ABI_VERSION: u32 = 202;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -2722,12 +2722,14 @@ pub unsafe extern "C" fn xyg_scene_plot_layout(
             x_constant,
             x_mask_nonpositive: x_mask_nonpositive != 0,
             x_format,
+            x_tick_kind: 0,
             y_kind,
             y_lo,
             y_hi,
             y_constant,
             y_mask_nonpositive: y_mask_nonpositive != 0,
             y_format,
+            y_tick_kind: 0,
             colorbar_side,
         })
         .ok()
@@ -3441,6 +3443,9 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             &mut chrome,
             x_format,
             y_format,
+            0,
+            0,
+            &[],
         )
         .ok()?;
         let chrome = chrome.validated().ok()?;

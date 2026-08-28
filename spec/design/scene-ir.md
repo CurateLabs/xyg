@@ -1016,10 +1016,13 @@ precedence; ABI 199 filters those majors through the ABI 128 tick window
 and pairs labels during chrome pack. ABI 200 filters authored cartesian
 minors (`require_finite`). ABI 201 filters polar theta majors/minors
 through the modular sector and formats Scene polar theta labels with
-`format_angular_tick`. Secondary axes stay fail-closed. Invalid
-grammar deliberately produces the ordinary deterministic label instead of an
-error, and a sub-unit log value that would collapse to formatted zero also
-uses its ordinary distinguishable label without affixes.
+`format_angular_tick`. ABI 202 materializes ABI 130 time strftime and
+polar angular numeric formats onto `XYTL` during product encode
+(`format_axis_tick`). Hosts pack domain tick-kind in XYCF bytes 154–155.
+Invalid ABI 96 grammar still produces the ordinary deterministic label
+instead of an error, and a sub-unit log value that would collapse to
+formatted zero also uses its ordinary distinguishable label without affixes.
+Secondary axes stay fail-closed.
 
 Python and Node pack only those strings. Rust parses them, resolves the final
 major positions and labels, measures their gutters, and materializes the result
@@ -1048,7 +1051,10 @@ cartesian majors through the ABI 128 tick window and pairs `tick_labels`
 during chrome pack (#300). ABI 200 filters authored cartesian minors
 through that same window (`require_finite`, #301). ABI 201 filters polar
 theta majors/minors through the modular sector and formats Scene polar
-theta labels (`format_angular_tick`, #302). Secondary axes stay
+theta labels (`format_angular_tick`, #302). ABI 202 materializes ABI 130
+time strftime and polar angular numeric formats onto `XYTL` (`format_axis_tick`,
+#303). Hosts pack domain tick-kind in XYCF 154–155. Invalid ABI 96
+grammar still falls back. Secondary axes stay
 fail-closed. Remaining #275
 debt is compatibility `_svg._*room` for polar / extra-axis / CSS-font
 measurement and `_svg._legend_layout` CSS remaps.
@@ -1061,7 +1067,8 @@ invalid UTF-8, embedded-NUL, and oversized fields fail closed. Legacy raw
 Polar/secondary Scene paths and broader numeric grammars remain on their
 documented compatibility routes except the bounded polar
 line/scatter/area/bar/column/errorbar
-slice above. WASM ABI 23 plus `attachWasmTicks` cut
+slice above and ABI 202 Scene product-path time/angular formatting.
+WASM ABI 23 plus `attachWasmTicks` cut
 explicitly attached automatic, authored-value, and authored-empty primary
 Cartesian linear/log/symlog/category/UTC-time ChartView
 axes and eligible ChartView colorbars to that resolver; `js/src/30_ticks.ts`

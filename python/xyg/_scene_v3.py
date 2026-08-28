@@ -1475,6 +1475,10 @@ def _pack_chrome_facts(
     y_label = str(figure.y_label or ya.get("label") or "").encode("utf-8")
     x_format = b"" if xa.get("format") is None else str(xa.get("format")).encode("utf-8")
     y_format = b"" if ya.get("format") is None else str(ya.get("format")).encode("utf-8")
+    tick_kind_code = {"linear": 0, "time": 1, "category": 2}
+    tick_kinds = tick_kind_code.get(figure._axis_kind("x"), 0) | (
+        tick_kind_code.get(figure._axis_kind("y"), 0) << 8
+    )
     x_major: list[float] = []
     y_major: list[float] = []
     if xa.get("tick_values") is not None:
@@ -1488,6 +1492,7 @@ def _pack_chrome_facts(
     y_minor = [float(value) for value in (ya.get("minor_tick_values") or ())]
     # ABI 200: Rust pack_figure_chrome filters authored minors through the tick window.
     # ABI 201: product encode passes packed XYPL so polar theta uses the modular sector.
+    # ABI 202: hosts pack domain tick-kind (linear/time/category) in XYCF 154–155.
     x_labels = xa.get("tick_labels")
     y_labels = ya.get("tick_labels")
     if x_labels is not None:
@@ -1599,7 +1604,7 @@ def _pack_chrome_facts(
         float(ya.get("constant") or 1.0),
         1 if xa.get("nonpositive", "clip") == "mask" else 0,
         1 if ya.get("nonpositive", "clip") == "mask" else 0,
-        0,
+        tick_kinds,
         len(title),
         len(x_label),
         len(y_label),

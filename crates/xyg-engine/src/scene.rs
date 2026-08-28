@@ -6593,6 +6593,116 @@ impl PolarSceneState {
         })
     }
 
+    fn theta_ticks(
+        &self,
+        layout: PlotLayout,
+        x_scale: AxisScale,
+        authored_major: Option<&[f64]>,
+    ) -> Result<AxisTicks, SceneError> {
+        let theta_unit = self.tick_theta_unit();
+        let n_categories = self.n_categories();
+        let tick_kind = if n_categories > 0 {
+            tick_layout::KIND_CATEGORY
+        } else {
+            tick_layout::KIND_LINEAR
+        };
+        let (sector_lo, sector_hi) = self.sector();
+        let (range_lo, range_hi) = x_scale.domain();
+        let (window_lo, window_hi) = tick_layout::tick_window(
+            range_lo,
+            range_hi,
+            theta_unit,
+            tick_kind,
+            n_categories,
+            sector_lo,
+            sector_hi,
+        )
+        .ok_or(SceneError::NonFinite)?;
+        let length = layout.right - layout.left;
+        let target = ((length / 80.0) as usize).clamp(3, MAX_AXIS_TICKS);
+        let mut labeled = if let Some(values) = authored_major {
+            values.to_vec()
+        } else if n_categories > 0 {
+            category_ticks(
+                window_lo,
+                window_hi,
+                n_categories as usize,
+                n_categories.max(1) as usize,
+            )?
+            .labeled
+        } else {
+            let degrees = theta_unit == tick_layout::THETA_DEGREES;
+            angular_ticks(window_lo, window_hi, degrees, target)?.labeled
+        };
+        if let Some(indices) = tick_layout::filter_tick_indices(
+            &labeled,
+            window_lo,
+            window_hi,
+            theta_unit,
+            tick_kind,
+            false,
+        ) {
+            labeled = indices.iter().map(|&index| labeled[index]).collect();
+        }
+        let step = labeled
+            .windows(2)
+            .next()
+            .map(|pair| (pair[1] - pair[0]).abs())
+            .filter(|step| step.is_finite() && *step > 0.0)
+            .unwrap_or(1.0);
+        Ok(AxisTicks {
+            ticks: labeled.clone(),
+            labeled,
+            step,
+        })
+    }
+
+    fn radial_ticks(
+        &self,
+        layout: PlotLayout,
+        y_scale: AxisScale,
+        authored_major: Option<&[f64]>,
+        authored_minor: &[f64],
+    ) -> Result<AxisTicks, SceneError> {
+        let length = layout.bottom - layout.top;
+        let automatic = y_scale.ticks(length, false)?;
+        let mut labeled = authored_major
+            .map(ToOwned::to_owned)
+            .unwrap_or_else(|| automatic.labeled.clone());
+        labeled.retain(|value| {
+            let rn = self.radius_px(*value);
+            rn.is_finite() && rn > 0.0
+        });
+        let mut ticks = labeled.clone();
+        let minor = if authored_minor.is_empty() && authored_major.is_none() {
+            automatic
+                .ticks
+                .into_iter()
+                .filter(|value| !automatic.labeled.contains(value))
+                .collect::<Vec<_>>()
+        } else {
+            authored_minor.to_vec()
+        };
+        ticks.extend(minor.into_iter().filter(|value| {
+            let rn = self.radius_px(*value);
+            rn.is_finite() && rn > 0.0
+        }));
+        if ticks.len() > MAX_AXIS_TICKS {
+            return Err(SceneError::Limit);
+        }
+        let step = labeled
+            .windows(2)
+            .next()
+            .map(|pair| (pair[1] - pair[0]).abs())
+            .filter(|step| step.is_finite() && *step > 0.0)
+            .unwrap_or(automatic.step);
+        Ok(AxisTicks {
+            ticks,
+            labeled,
+            step,
+        })
+    }
+
     fn project(&self, theta: f64, r: f64) -> Option<(f64, f64)> {
         polar::polar_project_one(&self.metrics, theta, r)
     }
@@ -8969,10 +9079,10 @@ pub fn format_axis_tick(
     format_numeric_tick(value, step, scale_kind, format)
 }
 
-/// Compile bounded authored numeric formats into the existing canonical major
-/// positions and `XYTL` labels. Explicit authored labels retain precedence.
-/// Automatic minor positions are materialized too so log grids do not change
-/// when automatic majors become explicit canonical positions.
+/// Compile bounded ABI 96 numeric formats and ABI 130 time/angular formats
+/// into the existing canonical major positions and `XYTL` labels. Explicit
+/// authored labels retain precedence. Invalid ABI 96 grammar still falls
+/// back to the ordinary deterministic label instead of an error.
 pub fn resolve_numeric_tick_formats(
     layout: PlotLayout,
     x_scale: AxisScale,
@@ -8980,7 +9090,17 @@ pub fn resolve_numeric_tick_formats(
     chrome: &mut SceneChromeStyle,
     x_format: Option<&str>,
     y_format: Option<&str>,
+    x_tick_kind: u32,
+    y_tick_kind: u32,
+    polar_bytes: &[u8],
 ) -> Result<(), SceneError> {
+    let _ = scene_tick_kind(x_tick_kind as u8)?;
+    let _ = scene_tick_kind(y_tick_kind as u8)?;
+    let polar = if polar_bytes.is_empty() {
+        None
+    } else {
+        Some(PolarSceneState::from_xypl(polar_bytes, layout)?)
+    };
     let resolve = |scale: AxisScale,
                    length: f64,
                    is_x: bool,
@@ -8989,23 +9109,40 @@ pub fn resolve_numeric_tick_formats(
                    major: &mut Option<Vec<f64>>,
                    minor: &mut Vec<f64>,
                    labels: &mut Option<Vec<String>>,
-                   authored_format: Option<&str>|
+                   authored_format: Option<&str>,
+                   tick_kind: u32|
      -> Result<(), SceneError> {
-        let Some(format) = authored_format.and_then(NumericTickFormat::parse) else {
-            return Ok(());
-        };
         if labels.is_some() {
             return Ok(());
         }
-        let resolved = resolved_axis_ticks(
-            scale,
-            length,
-            is_x,
-            pixel_min,
-            pixel_max,
-            major.as_deref(),
-            minor,
-        )?;
+        let polar_theta = is_x
+            && polar.as_ref().is_some_and(|state| {
+                state.n_categories() == 0 && state.tick_theta_unit() != tick_layout::THETA_NONE
+            });
+        let numeric_format = authored_format.and_then(NumericTickFormat::parse);
+        let apply_time = tick_kind == TICK_FORMAT_KIND_TIME && !polar_theta;
+        if !apply_time && numeric_format.is_none() {
+            return Ok(());
+        }
+        let resolved = if polar_theta {
+            polar.as_ref().expect("polar theta").theta_ticks(
+                layout,
+                x_scale,
+                major.as_deref(),
+            )?
+        } else if let Some(state) = polar.as_ref().filter(|_| !is_x) {
+            state.radial_ticks(layout, y_scale, major.as_deref(), minor)?
+        } else {
+            resolved_axis_ticks(
+                scale,
+                length,
+                is_x,
+                pixel_min,
+                pixel_max,
+                major.as_deref(),
+                minor,
+            )?
+        };
         if major.is_none() {
             *minor = resolved
                 .ticks
@@ -9019,7 +9156,28 @@ pub fn resolve_numeric_tick_formats(
         *labels = Some(
             values
                 .iter()
-                .map(|value| format.format(*value, resolved.step, scale.kind))
+                .map(|value| {
+                    if apply_time {
+                        format_time_tick(*value, resolved.step, authored_format)
+                    } else if polar_theta {
+                        format_angular_tick(
+                            *value,
+                            resolved.step,
+                            polar
+                                .as_ref()
+                                .expect("polar theta")
+                                .tick_theta_unit()
+                                == tick_layout::THETA_DEGREES,
+                            authored_format,
+                        )
+                    } else {
+                        numeric_format.expect("numeric format").format(
+                            *value,
+                            resolved.step,
+                            scale.kind,
+                        )
+                    }
+                })
                 .collect(),
         );
         Ok(())
@@ -9034,6 +9192,7 @@ pub fn resolve_numeric_tick_formats(
         &mut chrome.x_minor_ticks,
         &mut chrome.x_tick_labels,
         x_format,
+        x_tick_kind,
     )?;
     resolve(
         y_scale,
@@ -9045,6 +9204,7 @@ pub fn resolve_numeric_tick_formats(
         &mut chrome.y_minor_ticks,
         &mut chrome.y_tick_labels,
         y_format,
+        y_tick_kind,
     )?;
     chrome.clone().validated()?;
     Ok(())
@@ -10130,103 +10290,18 @@ impl SceneDocument {
         polar: &PolarSceneState,
     ) -> Result<AxisTicks, SceneError> {
         if is_x {
-            let theta_unit = polar.tick_theta_unit();
-            let n_categories = polar.n_categories();
-            let tick_kind = if n_categories > 0 {
-                tick_layout::KIND_CATEGORY
-            } else {
-                tick_layout::KIND_LINEAR
-            };
-            let (sector_lo, sector_hi) = polar.sector();
-            let (range_lo, range_hi) = self.x_scale.domain();
-            let (window_lo, window_hi) = tick_layout::tick_window(
-                range_lo,
-                range_hi,
-                theta_unit,
-                tick_kind,
-                n_categories,
-                sector_lo,
-                sector_hi,
+            polar.theta_ticks(
+                self.layout,
+                self.x_scale,
+                self.chrome.x_major_ticks.as_deref(),
             )
-            .ok_or(SceneError::NonFinite)?;
-            let length = self.layout.right - self.layout.left;
-            let target = ((length / 80.0) as usize).clamp(3, MAX_AXIS_TICKS);
-            let authored_major = self.chrome.x_major_ticks.as_deref();
-            let mut labeled = if let Some(values) = authored_major {
-                values.to_vec()
-            } else if n_categories > 0 {
-                category_ticks(
-                    window_lo,
-                    window_hi,
-                    n_categories as usize,
-                    n_categories.max(1) as usize,
-                )?
-                .labeled
-            } else {
-                let degrees = theta_unit == tick_layout::THETA_DEGREES;
-                angular_ticks(window_lo, window_hi, degrees, target)?.labeled
-            };
-            if let Some(indices) = tick_layout::filter_tick_indices(
-                &labeled,
-                window_lo,
-                window_hi,
-                theta_unit,
-                tick_kind,
-                false,
-            ) {
-                labeled = indices.iter().map(|&index| labeled[index]).collect();
-            }
-            let step = labeled
-                .windows(2)
-                .next()
-                .map(|pair| (pair[1] - pair[0]).abs())
-                .filter(|step| step.is_finite() && *step > 0.0)
-                .unwrap_or(1.0);
-            Ok(AxisTicks {
-                ticks: labeled.clone(),
-                labeled,
-                step,
-            })
         } else {
-            let length = self.layout.bottom - self.layout.top;
-            let authored_major = self.chrome.y_major_ticks.as_deref();
-            let authored_minor = self.chrome.y_minor_ticks.as_slice();
-            let automatic = self.y_scale.ticks(length, false)?;
-            let mut labeled = authored_major
-                .map(ToOwned::to_owned)
-                .unwrap_or_else(|| automatic.labeled.clone());
-            labeled.retain(|value| {
-                let rn = polar.radius_px(*value);
-                rn.is_finite() && rn > 0.0
-            });
-            let mut ticks = labeled.clone();
-            let minor = if authored_minor.is_empty() && authored_major.is_none() {
-                automatic
-                    .ticks
-                    .into_iter()
-                    .filter(|value| !automatic.labeled.contains(value))
-                    .collect::<Vec<_>>()
-            } else {
-                authored_minor.to_vec()
-            };
-            ticks.extend(minor.into_iter().filter(|value| {
-                let rn = polar.radius_px(*value);
-                rn.is_finite() && rn > 0.0
-            }));
-            if ticks.len() > MAX_AXIS_TICKS {
-                return Err(SceneError::Limit);
-            }
-            let step = labeled
-                .windows(2)
-                .next()
-                .map(|pair| (pair[1] - pair[0]).abs())
-                .filter(|step| step.is_finite() && *step > 0.0)
-                .unwrap_or(automatic.step);
-            Ok(AxisTicks {
-                ticks,
-                labeled,
-                step,
-            })
+            polar.radial_ticks(
+                self.layout,
+                self.y_scale,
+                self.chrome.y_major_ticks.as_deref(),
+                self.chrome.y_minor_ticks.as_slice(),
+            )
         }
     }
 
@@ -13395,13 +13470,38 @@ pub struct CartesianLayoutRequest<'a> {
     pub x_constant: f64,
     pub x_mask_nonpositive: bool,
     pub x_format: Option<&'a str>,
+    pub x_tick_kind: u32,
     pub y_kind: ScaleKind,
     pub y_lo: f64,
     pub y_hi: f64,
     pub y_constant: f64,
     pub y_mask_nonpositive: bool,
     pub y_format: Option<&'a str>,
+    pub y_tick_kind: u32,
     pub colorbar_side: ColorbarSide,
+}
+
+fn layout_axis_tick_label(
+    value: f64,
+    step: f64,
+    scale_kind: ScaleKind,
+    tick_kind: u32,
+    format: Option<&str>,
+) -> String {
+    if tick_kind == TICK_FORMAT_KIND_TIME {
+        format_time_tick(value, step, format)
+    } else {
+        format_numeric_tick(value, step, scale_kind, format)
+    }
+}
+
+fn scene_tick_kind(code: u8) -> Result<u32, SceneError> {
+    match code {
+        0 => Ok(TICK_FORMAT_KIND_NUMERIC),
+        1 => Ok(TICK_FORMAT_KIND_TIME),
+        2 => Ok(TICK_FORMAT_KIND_CATEGORY),
+        _ => Err(SceneError::Length),
+    }
 }
 
 /// Cartesian default gutters for the Scene-eligible export subset.
@@ -13426,14 +13526,18 @@ pub fn cartesian_scene_margins(
         x_constant,
         x_mask_nonpositive,
         x_format,
+        x_tick_kind,
         y_kind,
         y_lo,
         y_hi,
         y_constant,
         y_mask_nonpositive,
         y_format,
+        y_tick_kind,
         colorbar_side,
     } = request;
+    let _ = scene_tick_kind(x_tick_kind as u8)?;
+    let _ = scene_tick_kind(y_tick_kind as u8)?;
     if ![viewport_width, viewport_height]
         .iter()
         .all(|value| value.is_finite() && *value > 0.0)
@@ -13495,7 +13599,7 @@ pub fn cartesian_scene_margins(
     let mut tick_label_width = 0.0_f64;
     for value in &y_ticks.labeled {
         tick_label_width = tick_label_width.max(text_advance(
-            &format_numeric_tick(*value, y_ticks.step, y_kind, y_format),
+            &layout_axis_tick_label(*value, y_ticks.step, y_kind, y_tick_kind, y_format),
             LABEL_FONT_PX,
         ));
     }
@@ -13548,11 +13652,11 @@ pub fn cartesian_scene_margins(
         let first = x_ticks.labeled[0];
         let last = *x_ticks.labeled.last().expect("non-empty");
         let first_w = text_advance(
-            &format_numeric_tick(first, x_ticks.step, x_kind, x_format),
+            &layout_axis_tick_label(first, x_ticks.step, x_kind, x_tick_kind, x_format),
             LABEL_FONT_PX,
         );
         let last_w = text_advance(
-            &format_numeric_tick(last, x_ticks.step, x_kind, x_format),
+            &layout_axis_tick_label(last, x_ticks.step, x_kind, x_tick_kind, x_format),
             LABEL_FONT_PX,
         );
         let first_x = x_scale.pixel(first);
@@ -15545,12 +15649,14 @@ mod tests {
             x_constant: 1.0,
             x_mask_nonpositive: false,
             x_format: None,
+            x_tick_kind: 0,
             y_kind: ScaleKind::Linear,
             y_lo: 0.0,
             y_hi: 5.0,
             y_constant: 1.0,
             y_mask_nonpositive: false,
             y_format: None,
+            y_tick_kind: 0,
             colorbar_side: ColorbarSide::None,
         })
         .unwrap();
@@ -15576,12 +15682,14 @@ mod tests {
             x_constant: 1.0,
             x_mask_nonpositive: false,
             x_format: None,
+            x_tick_kind: 0,
             y_kind: ScaleKind::Linear,
             y_lo: 0.0,
             y_hi: 100_000.0,
             y_constant: 1.0,
             y_mask_nonpositive: false,
             y_format: None,
+            y_tick_kind: 0,
             colorbar_side: ColorbarSide::None,
         };
         let plain = cartesian_scene_margins(request).unwrap();
@@ -15616,12 +15724,14 @@ mod tests {
             x_constant: 1.0,
             x_mask_nonpositive: false,
             x_format: None,
+            x_tick_kind: 0,
             y_kind: ScaleKind::Linear,
             y_lo: 0.0,
             y_hi: 1.0,
             y_constant: 1.0,
             y_mask_nonpositive: false,
             y_format: None,
+            y_tick_kind: 0,
             colorbar_side,
         };
         let right = cartesian_scene_margins(request(ColorbarSide::Right)).unwrap();
@@ -17098,7 +17208,17 @@ mod tests {
         )
         .unwrap();
         let mut chrome = SceneChromeStyle::default();
-        resolve_numeric_tick_formats(layout, x, y, &mut chrome, Some("$,.0f"), Some(".1f units"))
+        resolve_numeric_tick_formats(
+            layout,
+            x,
+            y,
+            &mut chrome,
+            Some("$,.0f"),
+            Some(".1f units"),
+            TICK_FORMAT_KIND_NUMERIC,
+            TICK_FORMAT_KIND_NUMERIC,
+            &[],
+        )
             .unwrap();
         assert!(chrome
             .x_major_ticks
@@ -17122,12 +17242,85 @@ mod tests {
             x_tick_labels: Some(vec!["low".into(), "high".into()]),
             ..SceneChromeStyle::default()
         };
-        resolve_numeric_tick_formats(layout, x, y, &mut authored, Some("$,.0f"), None).unwrap();
+        resolve_numeric_tick_formats(
+            layout,
+            x,
+            y,
+            &mut authored,
+            Some("$,.0f"),
+            None,
+            TICK_FORMAT_KIND_NUMERIC,
+            TICK_FORMAT_KIND_NUMERIC,
+            &[],
+        )
+            .unwrap();
         assert_eq!(authored.x_major_ticks, Some(vec![0.1, 1.0]));
         assert_eq!(
             authored.x_tick_labels,
             Some(vec!["low".into(), "high".into()])
         );
+    }
+
+    #[test]
+    fn time_tick_formats_materialize_strftime_and_keep_abi96_fallback() {
+        let layout = PlotLayout::new(420.0, 260.0, 50.0, 20.0, 20.0, 40.0).unwrap();
+        let x = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            86_400_000.0,
+            layout.left,
+            layout.right,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.bottom,
+            layout.top,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let mut chrome = SceneChromeStyle::default();
+        resolve_numeric_tick_formats(
+            layout,
+            x,
+            y,
+            &mut chrome,
+            Some("%Y-%m-%d"),
+            None,
+            TICK_FORMAT_KIND_TIME,
+            TICK_FORMAT_KIND_NUMERIC,
+            &[],
+        )
+        .unwrap();
+        let labels = chrome.x_tick_labels.expect("time labels");
+        assert!(
+            labels.iter().any(|label| label == "1970-01-01"),
+            "{labels:?}"
+        );
+        assert!(
+            labels.iter().all(|label| label.contains('-')),
+            "{labels:?}"
+        );
+
+        let mut ignored = SceneChromeStyle::default();
+        resolve_numeric_tick_formats(
+            layout,
+            x,
+            y,
+            &mut ignored,
+            Some(".2e"),
+            None,
+            TICK_FORMAT_KIND_NUMERIC,
+            TICK_FORMAT_KIND_NUMERIC,
+            &[],
+        )
+        .unwrap();
+        assert!(ignored.x_tick_labels.is_none());
     }
 
     #[test]

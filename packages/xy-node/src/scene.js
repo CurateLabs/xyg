@@ -4663,6 +4663,7 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   const yMinor = Array.from(yAxis.minorTickValues ?? yAxis.minor_tick_values ?? [], Number);
   // ABI 200: Rust pack_figure_chrome filters authored minors through the tick window.
   // ABI 201: product encode passes packed XYPL so polar theta uses the modular sector.
+  // ABI 202: hosts pack domain tick-kind (linear/time/category) in XYCF 154–155.
   const xLabels = xAxis.tickLabels ?? xAxis.tick_labels ?? null;
   const yLabels = yAxis.tickLabels ?? yAxis.tick_labels ?? null;
   if (xLabels != null) flags |= FLAG_X_TICK_LABELS;
@@ -4734,6 +4735,14 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   view.setFloat64(144, Number(yAxis.constant ?? 1), true);
   header[152] = (xAxis.nonpositive ?? "clip") === "mask" ? 1 : 0;
   header[153] = (yAxis.nonpositive ?? "clip") === "mask" ? 1 : 0;
+  const tickKind = (axis) => {
+    const kind = axis.kind ?? axis.type;
+    if (kind === "time") return 1;
+    if (kind === "category") return 2;
+    return 0;
+  };
+  header[154] = tickKind(xAxis);
+  header[155] = tickKind(yAxis);
   view.setUint32(156, title.length, true);
   view.setUint32(160, xLabel.length, true);
   view.setUint32(164, yLabel.length, true);

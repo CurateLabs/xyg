@@ -1423,7 +1423,11 @@ authored cartesian majors through that window and pairs `tick_labels`
 during chrome pack (#300). ABI 200 filters authored cartesian minors
 through that same window (`require_finite`, #301). ABI 201 filters polar
 theta majors/minors through that window's modular sector and formats
-Scene polar theta labels with `format_angular_tick` (#302). Secondary
+Scene polar theta labels with `format_angular_tick` (#302). ABI 202
+materializes ABI 130 time strftime and polar angular numeric formats
+onto `XYTL` during product encode (`format_axis_tick`, #303). Hosts pack
+domain tick-kind in XYCF 154–155. Invalid ABI 96 grammar still falls
+back. Secondary
 axes stay fail-closed (`Scene v12 figure compilation currently supports
 exactly x/y axes`). Hosts still choose tick families via
 `xyg_scene_axis_ticks` and map values to pixels on the compatibility
@@ -1435,7 +1439,8 @@ and angular defaults; polar tick drawing stays host-side (#276). Scene
 product-path authored `tick_labels` pair during chrome pack (ABI 199).
 Authored cartesian minors filter during chrome pack (ABI 200).
 Polar Scene theta ticks use the ABI 128 modular sector and angular labels
-(ABI 201); secondary axes stay fail-closed.
+(ABI 201); Scene product encode applies ABI 130 time/angular formats (ABI 202);
+secondary axes stay fail-closed.
 ABI 131 moves static polar (theta, r) → screen-pixel projection into Rust.
 Hosts call `xyg_polar_layout`, `xyg_polar_project`, and the polar visibility-mask
 helpers; wedge/ring/polygon helpers remain host-side and call native projection.

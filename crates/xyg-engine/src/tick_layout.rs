@@ -8,7 +8,9 @@
 //! that window and pairs `tick_labels` during chrome pack. ABI 200 filters
 //! authored cartesian minors (`require_finite`). ABI 201 filters polar theta
 //! majors/minors through the modular sector window and formats Scene polar
-//! theta labels with `format_angular_tick`. Secondary axes stay fail-closed.
+//! theta labels with `format_angular_tick`. ABI 202 materializes ABI 130
+//! time/angular formats onto Scene `XYTL` during product encode. Secondary
+//! axes stay fail-closed.
 //! Tick-label formatting (ABI 130) owns Cartesian linear/log/time/number-spec
 //! and angular/category defaults via `xyg_tick_format`. Hosts still map values
 //! to pixels on the compatibility `_svg` path; Scene product-path authored

@@ -16,6 +16,9 @@
 //! tessellation eligibility is Rust-owned.
 //! ABI 197 settles authored `loc="best"` from packed XYCL/XYNM plus XYCF
 //! domains so hosts do not walk traces on the product path.
+//! ABI 202 materializes ABI 130 time strftime and polar angular numeric
+//! formats onto XYTL during product encode (`format_axis_tick`). Invalid ABI 96
+//! grammar still falls back. `_svg._tick_text` stays for compatibility.
 //! ABI 194 admits polar hexbin, custom host reducers, and categorical /
 //! `direct_rgba` hexbin on that same HexCell intern.
 //! ABI 190 intern per-item two-ended ribbon `color2_ch` from packed XYHP kind 5
@@ -427,6 +430,8 @@ struct ParsedXyCc<'a> {
     y_tick_labels: Option<Vec<String>>,
     x_format: Option<&'a str>,
     y_format: Option<&'a str>,
+    x_tick_kind: u32,
+    y_tick_kind: u32,
     legend: &'a [u8],
     colorbar: &'a [u8],
 }
@@ -472,6 +477,11 @@ fn parse_xycc(bytes: &[u8]) -> Result<ParsedXyCc<'_>, EncodeAssembledError> {
     let y_format_len = read_u32(bytes, 100)? as usize;
     let legend_len = read_u32(bytes, 104)? as usize;
     let colorbar_len = read_u32(bytes, 108)? as usize;
+    let x_tick_kind = bytes[112];
+    let y_tick_kind = bytes[113];
+    if x_tick_kind > 2 || y_tick_kind > 2 {
+        return Err(EncodeAssembledError::new(EncodeAssembledCode::Payload, 0));
+    }
     if chrome_len != SCENE_CHROME_STYLE_INPUT_BYTES
         || !matches!(x_major_auto, 0 | 1)
         || !matches!(y_major_auto, 0 | 1)
@@ -532,6 +542,8 @@ fn parse_xycc(bytes: &[u8]) -> Result<ParsedXyCc<'_>, EncodeAssembledError> {
         y_tick_labels,
         x_format,
         y_format,
+        x_tick_kind: u32::from(x_tick_kind),
+        y_tick_kind: u32::from(y_tick_kind),
         legend,
         colorbar,
     })
@@ -719,6 +731,9 @@ fn encode_assembled_with_radii(
         &mut style,
         chrome.x_format,
         chrome.y_format,
+        chrome.x_tick_kind,
+        chrome.y_tick_kind,
+        polar_bytes,
     )
     .map_err(map_scene)?;
     let style = style.validated().map_err(map_scene)?;
@@ -1012,12 +1027,14 @@ mod tests {
             x_constant: 1.0,
             x_mask_nonpositive: false,
             x_format: None,
+            x_tick_kind: 0,
             y_kind: ScaleKind::Linear,
             y_lo: 0.0,
             y_hi: 1.0,
             y_constant: 1.0,
             y_mask_nonpositive: false,
             y_format: None,
+            y_tick_kind: 0,
             colorbar_side: ColorbarSide::None,
         })
         .unwrap();

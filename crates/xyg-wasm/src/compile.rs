@@ -595,12 +595,14 @@ fn compile_columns_request(bytes: &[u8], literal_ids: bool) -> Result<CompiledSc
                 x_constant,
                 x_mask_nonpositive: x_mask != 0,
                 x_format: None,
+                x_tick_kind: 0,
                 y_kind,
                 y_lo,
                 y_hi,
                 y_constant,
                 y_mask_nonpositive: y_mask != 0,
                 y_format: None,
+                y_tick_kind: 0,
                 colorbar_side: scene::ColorbarSide::None,
             })?
         } else {

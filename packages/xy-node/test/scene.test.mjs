@@ -682,6 +682,34 @@ test("Node Scene filters polar seam-crossing authored ticks and uses angular lab
   assert.equal(labels.includes("4"), false);
 });
 
+test("Node Scene materializes time strftime and polar numeric tick formats", () => {
+  const figure = new Figure({ width: 420, height: 260 });
+  figure.scatter([0, 86_400_000], [0, 1], { id: 0 });
+  figure.setAxis("x", { type: "time", domain: [0, 86_400_000], format: "%Y-%m-%d" });
+  figure.setAxis("y", { domain: [0, 1] });
+  const svg = sceneSvg(figure.toScene());
+  assert.match(svg, /1970-01-01/);
+  assert.equal(svg.includes("5.0e7"), false);
+
+  const polar = new Figure({ width: 400, height: 400, coords: "polar" });
+  polar.scatter([0], [0.5], { id: 0 });
+  polar.setAxis("x", { domain: [0, 360], theta_unit: "degrees", format: ".0f" });
+  polar.setAxis("y", { domain: [0, 1], format: ".1f" });
+  const thetas = [...sceneSvg(polar.toScene()).matchAll(/data-xy-tick="theta"[^>]*>([^<]+)/g)].map((row) => row[1]);
+  assert.ok(thetas.length > 0);
+  assert.ok(thetas.every((label) => !label.includes("°")));
+  assert.ok(thetas.some((label) => ["0", "90", "180", "270"].includes(label)));
+
+  const fallback = new Figure({ width: 320, height: 240 });
+  fallback.scatter([0, 5], [0, 5], { id: 0 });
+  fallback.setAxis("x", { domain: [0, 5], format: ".2e" });
+  fallback.setAxis("y", { domain: [0, 5] });
+  const fallbackSvg = sceneSvg(fallback.toScene());
+  assert.match(fallbackSvg, />0</);
+  assert.match(fallbackSvg, />4</);
+  assert.equal(fallbackSvg.includes(".2e"), false);
+});
+
 test("Node Scene secondary axes stay fail-closed", () => {
   assert.throws(() => new Figure().setAxis("x2", { domain: [0, 1] }), /axisId must be x or y/);
 });

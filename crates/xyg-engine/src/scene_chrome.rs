@@ -13,8 +13,12 @@
 //! `tick_labels` during chrome pack. ABI 200 filters authored cartesian
 //! minors through that same window (`require_finite`). ABI 201 filters polar
 //! theta majors/minors through that window's modular sector (`theta_unit` +
-//! sector from packed XYPL). Secondary axes stay fail-closed. Encoded Scene
-//! v31 is unchanged.
+//! sector from packed XYPL). ABI 202 packs domain tick-kind (`linear` /
+//! `time` / `category`) in XYCF bytes 154–155 and copies them onto XYCC
+//! reserved bytes 112–113 so product encode can materialize ABI 130 time and
+//! angular formats. Secondary axes stay fail-closed. Encoded Scene v31 is
+//! unchanged. Invalid grammar still falls back to the ordinary deterministic
+//! label (ABI 96).
 
 use crate::legend_fit::{self, LegendScale};
 use crate::polar;
@@ -595,6 +599,14 @@ pub fn pack_figure_chrome_with_polar(
     let y_constant = read_f64(facts, 144)?;
     let x_mask = read_u8(facts, 152)? != 0;
     let y_mask = read_u8(facts, 153)? != 0;
+    let x_tick_kind = match read_u8(facts, 154)? {
+        code @ 0..=2 => u32::from(code),
+        _ => return Err(ChromePackError::Payload),
+    };
+    let y_tick_kind = match read_u8(facts, 155)? {
+        code @ 0..=2 => u32::from(code),
+        _ => return Err(ChromePackError::Payload),
+    };
     let title_len = read_u32(facts, 156)? as usize;
     let xlabel_len = read_u32(facts, 160)? as usize;
     let ylabel_len = read_u32(facts, 164)? as usize;
@@ -821,12 +833,14 @@ pub fn pack_figure_chrome_with_polar(
             x_constant,
             x_mask_nonpositive: x_mask,
             x_format: layout_x_format,
+            x_tick_kind,
             y_kind,
             y_lo,
             y_hi,
             y_constant,
             y_mask_nonpositive: y_mask,
             y_format: layout_y_format,
+            y_tick_kind,
             colorbar_side,
         })
         .map_err(|_| ChromePackError::Layout)?;
@@ -942,6 +956,8 @@ pub fn pack_figure_chrome_with_polar(
     out[24..32].copy_from_slice(&margins[1].to_le_bytes());
     out[32..40].copy_from_slice(&margins[2].to_le_bytes());
     out[40..48].copy_from_slice(&margins[3].to_le_bytes());
+    out[112] = x_tick_kind as u8;
+    out[113] = y_tick_kind as u8;
     let lens: [u32; 16] = [
         SCENE_CHROME_STYLE_INPUT_BYTES as u32,
         title_len as u32,
@@ -1040,12 +1056,14 @@ mod tests {
             x_constant: 1.0,
             x_mask_nonpositive: false,
             x_format: None,
+            x_tick_kind: 0,
             y_kind: ScaleKind::Linear,
             y_lo: 0.0,
             y_hi: 1.0,
             y_constant: 1.0,
             y_mask_nonpositive: false,
             y_format: None,
+            y_tick_kind: 0,
             colorbar_side: ColorbarSide::None,
         })
         .unwrap();
