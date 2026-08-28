@@ -336,6 +336,8 @@ lattice membership cannot drift. Custom `reduce_C_function` callables stay
 host-side over those groups. ABI 120 moves composition `loc="best"` scoring into
 Rust: Python and Node call `xyg_legend_normalize` and `xyg_legend_best_loc` so
 display-space occupancy, the 4096/512 sample, and the 0.02 tie band cannot drift.
+Scene chrome facts packing (`_pack_chrome_facts` / `packChromeFacts`) settles
+`loc="best"` through that same occupancy walk so XYCF never carries the token.
 ABI 121 moves ribbon/curve/rounded-rect tessellation into Rust: Python and Node
 call `xyg_ribbon_edge`, `xyg_ribbon_polygon`, `xyg_monotone_tangents`,
 `xyg_curve_flatten`, and `xyg_rounded_rect_poly` so bump-X flattening,

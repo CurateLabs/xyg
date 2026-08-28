@@ -790,7 +790,9 @@ pack the same bounded record, and exact legend bytes are pinned cross-host.
 This slice supports a single primary, one-column legend for named,
 constant-style Cartesian traces at an explicit supported location (defaulting
 to `upper right`). Automatic `loc="best"` is resolved once by Rust occupancy
-scoring (ABI 120) before packing, so Scene never sees the token `"best"`. Anchors, extra legends,
+scoring (ABI 120) before packing, so Scene never sees the token `"best"`.
+Python `_pack_chrome_facts` and Node `packChromeFacts` both walk traces through
+`xyg_legend_normalize` / `xyg_legend_best_loc` and pack the settled location. Anchors, extra legends,
 multiple columns, category rows, continuous ramps, gradients, dashes,
 interactive toggles/highlight, custom content, CSS fonts, and arbitrary style
 declarations fail closed.

@@ -221,12 +221,18 @@ def test_python_scene_v9_legend_bounds_and_unsupported_variants_fail_closed() ->
     figure.legend_options = {"toggle": True}
     with pytest.raises(UnsupportedSceneV3, match="static"):
         figure.to_scene()
-    figure.legend_options = {"loc": "best"}
-    with pytest.raises(UnsupportedSceneV3, match="location"):
-        figure.to_scene()
     figure.legend_options = {"loc": ""}
     with pytest.raises(UnsupportedSceneV3, match="location"):
         figure.to_scene()
+
+
+def test_python_scene_v9_legend_best_loc_settles_before_packing() -> None:
+    figure = Figure()
+    figure.scatter([0, 1], [0, 1], name="x")
+    figure.legend_options = {"loc": "best"}
+    scene = figure.to_scene()
+    loc_byte = scene[scene.index(b"XYLG") + 4]
+    assert loc_byte == 1
 
 
 @pytest.mark.parametrize(

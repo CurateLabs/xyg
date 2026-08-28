@@ -1469,6 +1469,10 @@ def _pack_chrome_facts(
         authored_loc = options.get("loc")
         if authored_loc is not None:
             legend_flags |= _XYCF_LEGEND_AUTHORED_LOC
+            if str(authored_loc) == "best":
+                from ._legendfit import resolve_for_figure
+
+                authored_loc = resolve_for_figure(figure)
             legend_loc = str(authored_loc).encode("utf-8")
         style = dict(options.get("style") or {})
         if set(style) - {"background", "color", "font_size", "title_font_size"}:
