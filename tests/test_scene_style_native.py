@@ -24,6 +24,7 @@ from xyg._native import (
     scene_pack_trace,
     scene_pack_trace_attach,
     scene_pack_trace_compile,
+    scene_pack_trace_rows,
     scene_resolve_chrome_style,
     scene_resolve_mark_styles,
     scene_resolve_pack_kind,
@@ -73,6 +74,25 @@ def test_empty_trace_attach_facts_emit_xytt() -> None:
     )
     assert packed[:4] == b"XYTT"
     assert int.from_bytes(packed[8:12], "little") == 0
+
+
+def test_empty_trace_column_facts_emit_no_rows() -> None:
+    compiled = scene_pack_trace_compile(
+        b"XYTC" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    )
+    attached = scene_pack_trace_attach(
+        compiled, b"XYTA" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    )
+    kinds, ids, refs, diameters, symbols, modes, coords = scene_pack_trace_rows(
+        attached, b"XYCL" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    )
+    assert list(kinds) == []
+    assert list(ids) == []
+    assert list(refs) == []
+    assert list(diameters) == []
+    assert list(symbols) == []
+    assert list(modes) == []
+    assert coords.shape == (4, 0)
 
 
 def test_line_default_stroke_width_is_one_and_a_half() -> None:

@@ -1456,6 +1456,9 @@ XYCF v1. Layout errors stay plot-layout diagnostics so the public-export
 predicate can remap them to `XYG_SCENE_UNSUPPORTED_VIEWPORT`.
 ABI 154 owns per-trace Scene compile policy from packed XYTC v1.
 ABI 155 owns heatmap/density attach policy from packed XYTO plus XYTA v1.
+ABI 156 owns XYPK construction, scatter-only symbol/diameter, density
+domain-endpoint column rewrite, and `pack_product_facts` from packed XYTT
+plus XYCL v1.
 Polar+step+smooth and
 authored marker glyphs stay compatibility. Irregular
 spacing, and LOD stay compatibility.

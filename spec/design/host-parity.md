@@ -202,6 +202,10 @@ ABI 155 adds
 (shape/finite fail-closed checks, XYHF remainder order, density skip,
 density XYHF flags, fact bits, density zeroing, and domain rewrite)
 resolves from packed XYTO plus XYTA v1.
+ABI 156 adds
+`xyg_scene_pack_trace_rows` so XYPK construction, scatter-only
+symbol/diameter, density domain-endpoint column rewrite, and
+`pack_product_facts` resolve from packed XYTT plus XYCL v1.
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -232,7 +236,9 @@ from packed XYCF v1. ABI 154 owns per-trace Scene compile policy
 (opacity, symbol, color, dash, linecap, marker path, diameter, legend kind,
 step, curve-smooth, stroke-perimeter, hex pitch, fill-gradient admission,
 and XYMS resolve) from packed XYTC v1. ABI 155 owns heatmap/density attach
-policy from packed XYTO plus XYTA v1. Polar+step+smooth
+policy from packed XYTO plus XYTA v1. ABI 156 owns XYPK construction,
+scatter-only symbol/diameter, density domain-endpoint column rewrite, and
+`pack_product_facts` from packed XYTT plus XYCL v1. Polar+step+smooth
 and authored marker glyphs stay
 compatibility. ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
@@ -248,6 +254,9 @@ ABI 154 makes per-trace Scene compile Rust-owned: Python and Node pack `XYTC`
 v1 facts and call `xyg_scene_pack_trace_compile`.
 ABI 155 makes heatmap/density attach Rust-owned: Python and Node pack `XYTA`
 v1 facts against compiled `XYTO` and call `xyg_scene_pack_trace_attach`.
+ABI 156 makes product-row packing Rust-owned: Python and Node pack `XYCL`
+v1 kind/coords/id/columns against attached `XYTT` and call
+`xyg_scene_pack_trace_rows`.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call
 `xyg_figure_autorange` / `xyg_auto_domain`. Direct-browser WASM compile uses
@@ -482,6 +491,11 @@ ABI 155
 packed XYTO plus XYTA v1 so shape/finite fail-closed checks, XYHF remainder
 order, density skip, density XYHF flags, fact bits, density zeroing, and
 domain rewrite cannot drift.
+ABI 156
+`xyg_scene_pack_trace_rows` owns XYPK construction, scatter-only
+symbol/diameter, density domain-endpoint column rewrite, and
+`pack_product_facts` from packed XYTT plus XYCL v1 so product rows cannot
+drift.
 ABI 116
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 so tags and opposite-axis spanning cannot drift. ABI 117

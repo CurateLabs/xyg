@@ -46,6 +46,7 @@ import {
   xyScenePackFigureChrome,
   xyScenePackTraceCompile,
   xyScenePackTraceAttach,
+  xyScenePackTraceRows,
   xyScenePackAnnotationMarks,
   xySceneRasterCommands,
   xySceneResolveChromeStyle,
@@ -3647,6 +3648,76 @@ function packTraceAttach(compiled, attach) {
   throw error;
 }
 
+function packXyCl(figure) {
+  const traces = figure.traces ?? [];
+  const coords = (figure.coords ?? "cartesian") === "polar" ? 1 : 0;
+  const records = [new Uint8Array(16)];
+  const header = new DataView(records[0].buffer);
+  records[0][0] = 88; records[0][1] = 89; records[0][2] = 67; records[0][3] = 76; // XYCL
+  header.setUint32(4, 1, true);
+  header.setUint32(8, traces.length, true);
+  for (const trace of traces) {
+    const kind = new TextEncoder().encode(String(trace.kind ?? ""));
+    const cols = [trace.x, trace.y, trace.x0, trace.y0, trace.x1, trace.y1, trace.base].map((column) => {
+      if (column == null || column.length === 0) return new Uint8Array();
+      const arr = asF64Array(column, "trace column");
+      return new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
+    });
+    const prefix = new Uint8Array(48);
+    const view = new DataView(prefix.buffer);
+    view.setUint16(0, kind.length, true);
+    prefix[2] = coords;
+    view.setBigUint64(8, asU64(Number(trace.id), "stableIds value"), true);
+    view.setUint32(16, cols[0].length / 8, true);
+    view.setUint32(20, cols[1].length / 8, true);
+    view.setUint32(24, cols[2].length / 8, true);
+    view.setUint32(28, cols[3].length / 8, true);
+    view.setUint32(32, cols[4].length / 8, true);
+    view.setUint32(36, cols[5].length / 8, true);
+    view.setUint32(40, cols[6].length / 8, true);
+    records.push(prefix, kind, ...cols);
+  }
+  return concatBytes(records);
+}
+
+function raiseTraceRows(code, index) {
+  if (code === -5) throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
+  if (code === -6) throw new RangeError("Scene v12 does not support product kind");
+  if (code === -1) throw new RangeError("invalid scene trace packing");
+  if (code === -2) throw new RangeError("invalid scene trace column facts version");
+  const error = new RangeError("invalid scene trace column packing");
+  error.code = code;
+  error.index = index;
+  throw error;
+}
+
+function packTraceRows(attached, columns) {
+  const attachedBytes = attached instanceof Uint8Array ? attached : new Uint8Array();
+  const columnsBytes = columns instanceof Uint8Array ? columns : new Uint8Array();
+  let capacity = Math.max(65536, Math.floor(columnsBytes.length / 8) * 2 * 56 + 4096);
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const out = new Uint8Array(capacity);
+    const code = xyScenePackTraceRows(
+      attachedBytes.length ? u8Ptr(attachedBytes) : 0,
+      BigInt(attachedBytes.length),
+      columnsBytes.length ? u8Ptr(columnsBytes) : 0,
+      BigInt(columnsBytes.length),
+      u8Ptr(out),
+      BigInt(out.length),
+    );
+    if (code === -4) {
+      capacity *= 2;
+      continue;
+    }
+    if (code < 0) {
+      const failing = new DataView(out.buffer, out.byteOffset, 4).getUint32(0, true);
+      raiseTraceRows(code, failing);
+    }
+    return decodePackedRows(out, code);
+  }
+  raiseTraceRows(-4, 0);
+}
+
 function packChromeFacts(figure, legendEntries, styles, { width, height, margins = null, colorbarOk = true } = {}) {
   const FLAG_AUTHORED_MARGINS = 1 << 0, FLAG_PADDING = 1 << 1, FLAG_X_MAJOR_AUTO = 1 << 2, FLAG_Y_MAJOR_AUTO = 1 << 3;
   const FLAG_X_TICK_LABELS = 1 << 4, FLAG_Y_TICK_LABELS = 1 << 5, FLAG_HAS_CHROME = 1 << 6, FLAG_HAS_LEGEND = 1 << 7, FLAG_HAS_COLORBAR = 1 << 8;
@@ -4553,10 +4624,12 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   const ySceneAxis = sceneAxis("y", 2, yDomain);
   const xSceneDescriptor = axisDescriptor(xSceneAxis, "xAxis");
   const ySceneDescriptor = axisDescriptor(ySceneAxis, "yAxis");
+  let attachedBytes;
   let attachedTraces;
   try {
     const compiledBytes = packTraceCompile(packXyTc(figure));
-    attachedTraces = unpackXyTt(packTraceAttach(compiledBytes, packXyTa(figure, xDomain, yDomain)));
+    attachedBytes = packTraceAttach(compiledBytes, packXyTa(figure, xDomain, yDomain));
+    attachedTraces = unpackXyTt(attachedBytes);
   } catch (error) {
     if (Number.isInteger(error.code) && error.code < 0) {
       const name = String(error.message ?? "");
@@ -4579,48 +4652,19 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     if (compiled.legendInclude && trace.name != null && String(trace.name).length > 0) {
       legendEntries.push({ styleRef, kind: compiled.legendKind, symbol: compiled.legendSymbol, label: String(trace.name) });
     }
-    const id = Number(trace.id);
-
-    let packSymbol = 0;
-    let packDiameter = 0;
-    let packX = compiled.packX ?? trace.x;
-    let packY = compiled.packY ?? trace.y;
-    let authoredStep = compiled.authoredStep;
-    let factBits = compiled.factBits;
-    let hexDx = compiled.hexDx;
-    let hexDy = compiled.hexDy;
-    let gridRows = compiled.gridRows;
-    let gridCols = compiled.gridCols;
-    if ((trace.kind ?? "scatter") === "scatter") {
-      packSymbol = compiled.symbol;
-      packDiameter = compiled.diameter;
-    }
     const plane = compiled.heatmap.length ? compiled.heatmap : compiled.density;
     if (plane.length) heatmapPaintPlanes.push(plane);
-    appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packProductFacts({
-      facts: packXyPk({
-        kind: trace.kind,
-        styleRef,
-        coords: (figure.coords ?? "cartesian") === "polar" ? 1 : 0,
-        symbol: packSymbol,
-        authoredStep,
-        facts: factBits,
-        traceId: id,
-        diameter: packDiameter,
-        hexDx,
-        hexDy,
-        gridRows,
-        gridCols,
-      }),
-      x: packX,
-      y: packY,
-      x0: trace.x0,
-      y0: trace.y0,
-      x1: trace.x1,
-      y1: trace.y1,
-      base: trace.base,
-    }));
   }
+  let packed;
+  try {
+    packed = packTraceRows(attachedBytes, packXyCl(figure));
+  } catch (error) {
+    if (Number.isInteger(error.code) && error.code < 0) {
+      raiseTraceRows(error.code, error.index ?? 0);
+    }
+    throw error;
+  }
+  appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packed);
 
   const annotationParts = [];
   for (const [annotationIndex, annotation] of (figure.annotations ?? []).entries()) {

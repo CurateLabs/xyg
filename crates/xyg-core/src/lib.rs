@@ -56,11 +56,14 @@ use xyg_engine::pack_figure_chrome;
 use xyg_engine::pack_public_export;
 use xyg_engine::pack_trace_attach;
 use xyg_engine::pack_trace_compile;
+use xyg_engine::pack_trace_rows;
 use xyg_engine::ChromePackError;
 use xyg_engine::TraceAttachCode;
 use xyg_engine::TraceAttachError;
 use xyg_engine::TraceCompileCode;
 use xyg_engine::TraceCompileError;
+use xyg_engine::TraceRowsCode;
+use xyg_engine::TraceRowsError;
 use xyg_engine::scene_figure_support_reason;
 use xyg_engine::scene_legend::{self, LegendError};
 use xyg_engine::scene_pack::{self, PackError};
@@ -134,7 +137,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 155;
+pub const ABI_VERSION: u32 = 156;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -425,6 +428,80 @@ pub unsafe extern "C" fn xyg_scene_pack_trace_attach(
                 match i32::try_from(bytes.len()) {
                     Ok(count) => count,
                     Err(_) => -(TraceAttachCode::Limit as i32),
+                }
+            }
+            Err(error) => {
+                if out_cap >= 4 {
+                    let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                    dest[..4].copy_from_slice(&error.index.to_le_bytes());
+                }
+                -(error.code as i32)
+            }
+        }
+    })
+}
+
+/// Pack attached `XYTT` v1 plus authored `XYCL` v1 columns into Scene rows.
+///
+/// Hosts pass kind, polar/cartesian coords, trace id, and the canonical
+/// `x`/`y`/`x0`/`y0`/`x1`/`y1`/`base` columns. Rust owns XYPK construction,
+/// scatter-only symbol/diameter, density domain-endpoint column rewrite, and
+/// `pack_product_facts`. Returns the packed row count on success, or a negated
+/// `TraceRowsCode`. On error, when `out_cap >= 4`, writes the failing trace
+/// index as a little-endian u32. Encoded Scene v31 is unchanged.
+///
+/// Output records match `xyg_scene_pack_product_facts` (56 bytes each).
+///
+/// # Safety
+/// When a length is non-zero, the matching pointer must address that many
+/// readable bytes. When `out_cap` is non-zero, `out` must address that many
+/// writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_pack_trace_rows(
+    attached: *const u8,
+    attached_len: usize,
+    columns: *const u8,
+    columns_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if (attached_len > 0 && attached.is_null())
+        || (columns_len > 0 && columns.is_null())
+        || (out_cap > 0 && out.is_null())
+    {
+        return -(TraceRowsError {
+            code: TraceRowsCode::Length,
+            index: 0,
+        }
+        .code as i32);
+    }
+    ffi_guard(-(TraceRowsCode::Length as i32), || {
+        let attached_bytes = if attached_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(attached, attached_len)
+        };
+        let columns_bytes = if columns_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(columns, columns_len)
+        };
+        match pack_trace_rows(attached_bytes, columns_bytes) {
+            Ok(rows) => {
+                let needed = rows
+                    .len()
+                    .saturating_mul(scene_pack::PACKED_SCENE_ROW_BYTES);
+                if needed > out_cap {
+                    return -(TraceRowsCode::Output as i32);
+                }
+                let dest = if out_cap == 0 {
+                    &mut []
+                } else {
+                    std::slice::from_raw_parts_mut(out, out_cap)
+                };
+                match scene_pack::encode_packed_rows(&rows, dest) {
+                    Ok(count) => count,
+                    Err(error) => -(error as i32),
                 }
             }
             Err(error) => {
@@ -2197,6 +2274,11 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// (shape/finite fail-closed checks, XYHF remainder order, density skip,
 /// density XYHF flags, fact bits, density zeroing, and domain rewrite)
 /// from packed XYTO plus XYTA v1 so Python and Node cannot drift.
+/// ABI 156 does not change Scene records;
+/// `xyg_scene_pack_trace_rows` owns XYPK construction, scatter-only
+/// symbol/diameter, density domain-endpoint column rewrite, and
+/// `pack_product_facts` from packed XYTT plus XYCL v1 so Python and Node
+/// cannot drift.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
@@ -14895,6 +14977,21 @@ mod tests {
         };
         assert!(attach_code > 0);
         assert_eq!(&attach_out[..4], b"XYTT");
+        let mut xycl = vec![0u8; 16];
+        xycl[..4].copy_from_slice(b"XYCL");
+        xycl[4..8].copy_from_slice(&1u32.to_le_bytes());
+        let mut rows_out = vec![0u8; 4096];
+        let rows_code = unsafe {
+            xyg_scene_pack_trace_rows(
+                attach_out.as_ptr(),
+                attach_code as usize,
+                xycl.as_ptr(),
+                xycl.len(),
+                rows_out.as_mut_ptr(),
+                rows_out.len(),
+            )
+        };
+        assert_eq!(rows_code, 0);
     }
 
     #[test]

@@ -591,52 +591,6 @@ def _trace_column(trace: Any, name: str) -> np.ndarray | None:
     return np.asarray(getattr(value, "values", value), dtype=np.float64)
 
 
-def _append_packed(
-    kinds: list[int],
-    stable_ids: list[int],
-    style_refs: list[int],
-    diameters: list[float],
-    symbols: list[int],
-    expansion_modes: list[int],
-    coordinates: list[list[float]],
-    trace: Any,
-    *,
-    facts: bytes,
-    columns: list[np.ndarray | None] | None = None,
-) -> None:
-    """Append Rust-packed Scene rows for one product-kind geometry envelope."""
-    if columns is None:
-        columns = [
-            _trace_column(trace, "x"),
-            _trace_column(trace, "y"),
-            _trace_column(trace, "x0"),
-            _trace_column(trace, "y0"),
-            _trace_column(trace, "x1"),
-            _trace_column(trace, "y1"),
-            _trace_column(trace, "base"),
-        ]
-    try:
-        (
-            packed_kinds,
-            packed_ids,
-            packed_refs,
-            packed_diameters,
-            packed_symbols,
-            packed_modes,
-            coords,
-        ) = _native.scene_pack_product_facts(facts, columns)
-    except ValueError as error:
-        raise UnsupportedSceneV3(str(error)) from error
-    kinds.extend(int(value) for value in packed_kinds)
-    stable_ids.extend(int(value) for value in packed_ids)
-    style_refs.extend(int(value) for value in packed_refs)
-    diameters.extend(float(value) for value in packed_diameters)
-    symbols.extend(int(value) for value in packed_symbols)
-    expansion_modes.extend(int(value) for value in packed_modes)
-    for axis in range(4):
-        coordinates[axis].extend(float(value) for value in coords[axis])
-
-
 def _pack_annotation_mark_row(
     kind_code: int,
     axis_code: int,
@@ -1815,49 +1769,6 @@ def _hexbin_pitch(style: dict[str, Any]) -> tuple[float, float]:
     return dx, dy
 
 
-def _curve_is_smooth(style: dict[str, Any]) -> bool:
-    curve = style.get("curve")
-    return curve is not None and str(curve).strip().lower() == "smooth"
-
-
-def _pack_xypk(
-    trace: Any,
-    figure: Any,
-    *,
-    style_ref: int,
-    symbol: int,
-    diameter: float,
-    authored_step: int,
-    facts: int,
-    hex_dx: float,
-    hex_dy: float,
-    grid_rows: float,
-    grid_cols: float,
-) -> bytes:
-    """Pack authored product facts; Rust resolves flags, step_mode, and extras."""
-    kind = str(trace.kind).encode("utf-8")
-    coords = 1 if str(getattr(figure, "coords", "cartesian") or "cartesian") == "polar" else 0
-    return (
-        struct.pack(
-            "<4sIIBBBBQddddd",
-            b"XYPK",
-            1,
-            int(style_ref),
-            coords,
-            int(symbol) & 0xFF,
-            int(authored_step) & 0xFF,
-            int(facts) & 0xFF,
-            int(trace.id),
-            float(diameter),
-            float(hex_dx),
-            float(hex_dy),
-            float(grid_rows),
-            float(grid_cols),
-        )
-        + kind
-    )
-
-
 def _heatmap_uses_colormap(trace: Any) -> bool:
     """Return whether a heatmap still needs the compatibility colormap path."""
     style = getattr(trace, "style", None) or {}
@@ -2090,6 +2001,39 @@ def _pack_xyta(figure: Any) -> bytes:
     return bytes(records)
 
 
+def _pack_xycl_column(column: np.ndarray | None) -> tuple[int, bytes]:
+    if column is None or len(column) == 0:
+        return 0, b""
+    arr = np.ascontiguousarray(np.asarray(column, dtype=np.float64).reshape(-1))
+    return int(arr.size), arr.tobytes()
+
+
+def _pack_xycl(figure: Any) -> bytes:
+    """Pack authored kind/coords/id plus canonical columns as XYCL v1."""
+    traces = list(getattr(figure, "traces", None) or [])
+    coords = 1 if str(getattr(figure, "coords", "cartesian") or "cartesian") == "polar" else 0
+    records = bytearray(_XYCL_HEADER.pack(b"XYCL", 1, len(traces), 0))
+    for trace in traces:
+        kind = str(trace.kind).encode("utf-8")
+        packed = [
+            _pack_xycl_column(_trace_column(trace, name))
+            for name in ("x", "y", "x0", "y0", "x1", "y1", "base")
+        ]
+        records.extend(
+            _XYCL_PREFIX.pack(
+                len(kind),
+                coords,
+                0,
+                int(trace.id),
+                *(count for count, _payload in packed),
+            )
+        )
+        records.extend(kind)
+        for _count, payload in packed:
+            records.extend(payload)
+    return bytes(records)
+
+
 def _pack_xyhp(planes: list[bytes]) -> bytes:
     """Wrap painted-heatmap planes in an XYHP v1 envelope."""
     if not planes:
@@ -2300,6 +2244,8 @@ _XYTA_HEADER = struct.Struct("<4sIII")
 _XYTA_PREFIX = struct.Struct("<II2i8I4H6d2f16x")
 _XYTT_ENVELOPE = struct.Struct("<4sIII")
 _XYTT_EXTRA = struct.Struct("<IIII4d")
+_XYCL_HEADER = struct.Struct("<4sIII")
+_XYCL_PREFIX = struct.Struct("<HBxIQ7I4x")
 _XYTA_HEATMAP = 1 << 0
 _XYTA_DENSITY = 1 << 1
 _XYTA_HAS_RGBA = 1 << 2
@@ -2815,6 +2761,20 @@ def _raise_trace_attach(error: _native.SceneTraceAttachError, figure: Any) -> No
     raise ValueError("invalid scene trace attach packing") from error
 
 
+def _raise_trace_rows(error: _native.SceneTraceRowsError) -> NoReturn:
+    if error.code == -5:
+        raise UnsupportedSceneV3(
+            "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
+        ) from error
+    if error.code == -6:
+        raise UnsupportedSceneV3("Scene v12 does not support product kind") from error
+    if error.code == -1:
+        raise UnsupportedSceneV3("invalid scene trace packing") from error
+    if error.code == -2:
+        raise ValueError("invalid scene trace column facts version") from error
+    raise ValueError("invalid scene trace column packing") from error
+
+
 def figure_scene(
     figure: Any,
     *,
@@ -2854,11 +2814,10 @@ def figure_scene(
     except _native.SceneTraceCompileError as error:
         _raise_trace_compile(error, figure)
     try:
-        attached_traces = _unpack_xytt(
-            _native.scene_pack_trace_attach(compiled_bytes, _pack_xyta(figure))
-        )
+        attached_bytes = _native.scene_pack_trace_attach(compiled_bytes, _pack_xyta(figure))
     except _native.SceneTraceAttachError as error:
         _raise_trace_attach(error, figure)
+    attached_traces = _unpack_xytt(attached_bytes)
     if len(attached_traces) != len(figure.traces):
         raise ValueError("invalid scene trace attach packing")
     for trace, compiled in zip(figure.traces, attached_traces, strict=True):
@@ -2877,46 +2836,29 @@ def figure_scene(
                     str(trace.name),
                 )
             )
-
-        pack_symbol = 0
-        pack_diameter = 0.0
-        pack_columns = compiled["columns"]
-        authored_step = compiled["authored_step"]
-        fact_bits = compiled["fact_bits"]
-        hex_dx = compiled["hex_dx"]
-        hex_dy = compiled["hex_dy"]
-        grid_rows = compiled["grid_rows"]
-        grid_cols = compiled["grid_cols"]
-        if trace.kind == "scatter":
-            pack_symbol = compiled["symbol"]
-            pack_diameter = compiled["diameter"]
         plane = compiled["heatmap"] or compiled["density"]
         if plane:
             heatmap_paint_planes.append(plane)
-        _append_packed(
-            kinds,
-            stable_ids,
-            style_refs,
-            diameters,
-            symbols,
-            expansion_modes,
-            coordinates,
-            trace,
-            columns=pack_columns,
-            facts=_pack_xypk(
-                trace,
-                figure,
-                style_ref=style_ref,
-                symbol=pack_symbol,
-                diameter=pack_diameter,
-                authored_step=authored_step,
-                facts=fact_bits,
-                hex_dx=hex_dx,
-                hex_dy=hex_dy,
-                grid_rows=grid_rows,
-                grid_cols=grid_cols,
-            ),
-        )
+    try:
+        (
+            packed_kinds,
+            packed_ids,
+            packed_refs,
+            packed_diameters,
+            packed_symbols,
+            packed_modes,
+            packed_coords,
+        ) = _native.scene_pack_trace_rows(attached_bytes, _pack_xycl(figure))
+    except _native.SceneTraceRowsError as error:
+        _raise_trace_rows(error)
+    kinds.extend(int(value) for value in packed_kinds)
+    stable_ids.extend(int(value) for value in packed_ids)
+    style_refs.extend(int(value) for value in packed_refs)
+    diameters.extend(float(value) for value in packed_diameters)
+    symbols.extend(int(value) for value in packed_symbols)
+    expansion_modes.extend(int(value) for value in packed_modes)
+    for axis in range(4):
+        coordinates[axis].extend(float(value) for value in packed_coords[axis])
 
     # Scene v12's bounded primary-annotation subset is represented by ordinary
     # canonical records with a reserved stable-id namespace. Hosts pack XYAF
@@ -2932,7 +2874,9 @@ def figure_scene(
     # diameter/legend/step/curve/perimeter/hex/gradient and XYMS (ABI 154).
     # Hosts pack XYTA heatmap/density attach facts; Rust owns shape/finite
     # fail-closed checks, XYHF remainder order, density skip, density XYHF
-    # flags, fact bits, density zeroing, and domain rewrite (ABI 155).
+    # flags, fact bits, density zeroing, and domain rewrite (ABI 155). Hosts
+    # pack XYCL kind/coords/id/columns; Rust owns XYPK construction, scatter-only
+    # symbol/diameter, density rewrite, and pack_product_facts (ABI 156).
     x_domain = tuple(float(value) for value in figure._range("x"))
     y_domain = tuple(float(value) for value in figure._range("y"))
     annotation_facts = bytearray()
