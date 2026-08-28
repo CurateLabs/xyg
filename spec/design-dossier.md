@@ -584,7 +584,8 @@ F3, still pending (above).
   `curve="smooth"` plus `step` as authored band step expansion, then ABI 182
   admits triangle_mesh `joined_fill` as one identity PolyFill ring, then ABI 183
   admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`, then ABI 184
-  admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`.
+  admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`, then ABI 185
+  admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`.
   `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
   panel Scene. That predicate
   owns the public PolyFill group budget, including companion traces that share
@@ -1527,7 +1528,8 @@ the Rust boundary walk (disconnected meshes keep per-face `TriangleFace` rows).
 ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`
 (hosts pack the two-stop fill, not `FLAG_COLOR2`). Per-item two-ended paint
 stays fail-closed. ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor`
-as XYAW `wrap=0`. Marker-label offsets stay fail-closed. Per-item radius
+as XYAW `wrap=0`. ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor`
+as XYAW `wrap=0`. Rotation, html, `class_name`, and polar stay fail-closed. Per-item radius
 channels stay compatibility. Irregular
 spacing, and LOD stay compatibility.
 

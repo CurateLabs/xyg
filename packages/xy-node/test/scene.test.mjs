@@ -1178,8 +1178,28 @@ test("Node Scene compiles cartesian unwrapped text layout as XYAW", () => {
   marker.setAxisDomain("x", [0, 4]);
   marker.setAxisDomain("y", [0, 5]);
   marker.scatter([1, 2], [2, 3], { color: "#3987e5", size: 6, opacity: 0.8, name: null });
-  marker.annotations = [{ kind: "marker", x: 0.5, y: 0.5, text: "offset", dy: -8 }];
+  marker.annotations = [{ kind: "marker", x: 0.5, y: 0.5, text: "offset", rotation: 30 }];
   assert.equal(sceneExportSupportReason(marker), "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION");
+});
+
+test("Node Scene compiles labelled cartesian marker layout as XYAW", () => {
+  const offset = new Figure({ width: 320, height: 240 });
+  offset.setAxisDomain("x", [0, 4]);
+  offset.setAxisDomain("y", [0, 5]);
+  offset.scatter([1, 2], [2, 3], { color: "#3987e5", size: 6, opacity: 0.8, name: null });
+  offset.annotations = [{ kind: "marker", x: 0.5, y: 0.5, text: "pin", dy: -8 }];
+  const scene = offset.toScene();
+  assert.ok(Buffer.from(scene).includes(Buffer.from("pin")));
+  const svg = sceneSvg(scene);
+  assert.match(svg, />pin</);
+  assert.equal(sceneExportSupportReason(offset), null);
+  const anchored = new Figure({ width: 320, height: 240 });
+  anchored.setAxisDomain("x", [0, 4]);
+  anchored.setAxisDomain("y", [0, 5]);
+  anchored.scatter([1, 2], [2, 3], { color: "#3987e5", size: 6, opacity: 0.8, name: null });
+  anchored.annotations = [{ kind: "marker", x: 0.5, y: 0.5, text: "anchor", anchor: "end" }];
+  assert.match(sceneSvg(anchored.toScene()), /text-anchor="end"/);
+  assert.equal(sceneExportSupportReason(anchored), null);
 });
 
 test("Node Scene v9 compiles area bands", () => {

@@ -285,6 +285,18 @@ class AnnotationsMixin(_Host):
         dy = self._finite_scalar(dy, "marker dy")
         symbol = self._annotation_symbol(symbol, "marker symbol")
         anchor = self._annotation_anchor(anchor, "marker anchor")
+        packed_style = dict(self._style_mapping(style or {}, "marker style"))
+        for key in ("color", "stroke_color"):
+            if packed_style.get(key) is None:
+                packed_style.pop(key, None)
+        color_css = self._optional_css_color(color, "marker color")
+        if color_css is not None:
+            packed_style.setdefault("color", color_css)
+        stroke_css = self._optional_css_color(stroke_color, "marker stroke_color")
+        if stroke_css is not None:
+            packed_style.setdefault("stroke_color", stroke_css)
+        packed_style.setdefault("stroke_width", stroke_width)
+        packed_style.setdefault("opacity", opacity)
         self.annotations.append(
             {
                 "kind": "marker",
@@ -296,13 +308,7 @@ class AnnotationsMixin(_Host):
                 "anchor": anchor,
                 "size": size,
                 "symbol": symbol,
-                "style": {
-                    "color": self._optional_css_color(color, "marker color"),
-                    "stroke_color": self._optional_css_color(stroke_color, "marker stroke_color"),
-                    "stroke_width": stroke_width,
-                    "opacity": opacity,
-                    **self._style_mapping(style or {}, "marker style"),
-                },
+                "style": packed_style,
                 "class_name": self._optional_text(class_name, "marker class_name"),
             }
         )

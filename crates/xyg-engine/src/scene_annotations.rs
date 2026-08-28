@@ -9,7 +9,9 @@
 //! defaults, domain expansion, and XYAD framing so those decisions cannot
 //! drift across hosts. ABI 184 routes cartesian unwrapped text `dx`/`dy`/
 //! `anchor` through XYAW with `wrap=0` (keep explicit newlines; apply the
-//! offset and text-anchor). Marker-label offsets stay fail-closed.
+//! offset and text-anchor). ABI 185 routes labelled cartesian marker
+//! `dx`/`dy`/`anchor` the same way (keep the marker mark row; skip AttachedRow
+//! for that label). Rotation, html, `class_name`, and polar stay fail-closed.
 
 use crate::css::{apply_opacity_rgba8, color_rgba8};
 use crate::scene::{
@@ -1009,6 +1011,8 @@ fn encode_style(style: &StyleOut) -> [u8; XYAO_STYLE_BYTES] {
 /// vs text vs arrow vs callout vs rule/band/marker routing, stable-id tags,
 /// style defaults, mark-row expansion, and XYAD framing. ABI 184 routes
 /// cartesian unwrapped text `dx`/`dy`/`anchor` through XYAW with `wrap=0`.
+/// ABI 185 routes labelled cartesian marker `dx`/`dy`/`anchor` through XYAW
+/// with `wrap=0` while keeping the marker mark row.
 pub fn pack_annotation_facts(
     facts: &[u8],
     style_ref_base: u32,
@@ -1248,15 +1252,39 @@ pub fn pack_annotation_facts(
                 });
                 if labelled {
                     let (flags, rgba, fill, border_rgba, border_width, _) = label_style(row)?;
-                    attached.push(AttachedRow {
-                        stable_id: annotation_id(tag, row.index),
-                        rgba,
-                        fill,
-                        border_rgba,
-                        border_width,
-                        flags,
-                        text: row.text,
-                    });
+                    let layout = has(row.facts, FACT_HAS_DX)
+                        || has(row.facts, FACT_HAS_DY)
+                        || has(row.facts, FACT_HAS_ANCHOR);
+                    if layout && row.kind == XYAF_KIND_MARKER {
+                        wrapped.push(WrappedRow {
+                            x: require_flag(row, FACT_HAS_X, 0)?,
+                            y: require_flag(row, FACT_HAS_Y, 1)?,
+                            dx: or_default(row, FACT_HAS_DX, 6, 0.0)?,
+                            dy: or_default(row, FACT_HAS_DY, 7, 0.0)?,
+                            wrap: 0.0,
+                            rgba,
+                            fill,
+                            border_rgba,
+                            border_width,
+                            kind: 0,
+                            anchor: if row.anchor == ANCHOR_UNSET {
+                                0
+                            } else {
+                                row.anchor
+                            },
+                            text: row.text,
+                        });
+                    } else {
+                        attached.push(AttachedRow {
+                            stable_id: annotation_id(tag, row.index),
+                            rgba,
+                            fill,
+                            border_rgba,
+                            border_width,
+                            flags,
+                            text: row.text,
+                        });
+                    }
                 }
             }
             _ => return Err(AnnotationError::Length),
@@ -1586,5 +1614,40 @@ mod tests {
         let dx = f64::from_le_bytes(row[16..24].try_into().unwrap());
         assert_eq!(wrap, 0.0);
         assert_eq!(dx, 6.0);
+    }
+
+    #[test]
+    fn annotation_facts_route_labelled_marker_layout_through_xyaw() {
+        let mut nums = [f64::NAN; 18];
+        nums[0] = 0.5;
+        nums[1] = 0.5;
+        nums[7] = -8.0;
+        let marker = pack_xyaf(
+            XYAF_KIND_MARKER,
+            0,
+            FACT_HAS_X | FACT_HAS_Y | FACT_HAS_DY | FACT_HAS_TEXT,
+            STYLE_COLOR,
+            0,
+            nums,
+            [37, 99, 235, 255],
+            b"pin",
+        );
+        let packed = pack_annotation_facts(&marker, 0, 0.0, 1.0, 0.0, 1.0).unwrap();
+        assert_eq!(u32::from_le_bytes(packed[8..12].try_into().unwrap()), 1);
+        assert_eq!(u32::from_le_bytes(packed[12..16].try_into().unwrap()), 1);
+        let xyad_len = u32::from_le_bytes(packed[16..20].try_into().unwrap()) as usize;
+        let xyad_at = XYAO_V1_HEADER_BYTES + XYAO_STYLE_BYTES + PACKED_SCENE_ROW_BYTES;
+        let xyad = &packed[xyad_at..xyad_at + xyad_len];
+        assert!(xyad.windows(4).any(|window| window == b"XYAW"));
+        assert_eq!(&xyad[xyad.len() - 3..], b"pin");
+        let xyaw_at = xyad.windows(4).position(|window| window == b"XYAW").unwrap();
+        let row = &xyad[xyaw_at + 12..];
+        let wrap = f64::from_le_bytes(row[32..40].try_into().unwrap());
+        let dy = f64::from_le_bytes(row[24..32].try_into().unwrap());
+        assert_eq!(wrap, 0.0);
+        assert_eq!(dy, -8.0);
+        let xyal_at = xyad.windows(4).position(|window| window == b"XYAL").unwrap();
+        let xyal_count = u32::from_le_bytes(xyad[xyal_at + 8..xyal_at + 12].try_into().unwrap());
+        assert_eq!(xyal_count, 0);
     }
 }

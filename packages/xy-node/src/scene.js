@@ -256,6 +256,8 @@ function annotationAllowedStyle(kind, wrapped, labelled) {
 }
 
 function packXyAf(annotation, index) {
+  // ABI 184 packs cartesian unwrapped text dx/dy/anchor as XYAW wrap=0.
+  // ABI 185 packs labelled cartesian marker dx/dy/anchor the same way in Rust.
   const kind = annotation.kind;
   const kindCode = XYAF_KIND_CODES[kind];
   if (kindCode == null) throw new RangeError(`Scene v12 annotations support rule, band, and unlabeled marker only; ${JSON.stringify(kind)} is deferred`);

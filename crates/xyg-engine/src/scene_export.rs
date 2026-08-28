@@ -25,6 +25,9 @@
 //! ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`
 //! (hosts omit `FLAG_COLOR2` / `OBS_GRADIENT` on that path). Per-item two-ended
 //! paint, polar ribbon, and `role` other than `ribbon` stay fail-closed.
+//! ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`.
+//! ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` the same way.
+//! Rotation, html, `class_name`, and polar stay fail-closed.
 //! Rust owns the public PolyFill group budget, including
 //! companion traces that share the browser painter's 1,024-group ceiling.
 
@@ -1064,14 +1067,10 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
             return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION");
         }
     }
-    for annotation in &annotations {
-        let layout = annotation.flags & (ANN_DX | ANN_DY | ANN_ANCHOR) != 0;
-        // ABI 184 admits cartesian unwrapped text dx/dy/anchor as XYAW wrap=0.
-        // Marker labels still pack AttachedRow with no offset; keep those closed.
-        if annotation.kind == 4 && layout {
-            return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION");
-        }
-    }
+    // ABI 184 admits cartesian unwrapped text dx/dy/anchor as XYAW wrap=0.
+    // ABI 185 admits labelled cartesian marker dx/dy/anchor the same way
+    // (keep the marker mark row; skip AttachedRow). Unlabelled marker layout
+    // flags are unused. Rotation, html, and class_name stay fail-closed.
     if extra_key(&legend_keys, PUBLIC_LEGEND_KEYS) {
         return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LEGEND");
     }

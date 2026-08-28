@@ -719,7 +719,9 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
     Annotation ``class_name`` is an XYFS observation (ABI 165), not an XYAF
     field. Product encode reports ``XYG_SCENE_UNSUPPORTED_BROWSER_CSS``.
     ABI 184 packs cartesian unwrapped text ``dx``/``dy``/``anchor`` as XYAW
-    with ``wrap=0`` so Rust applies the offset without wrapping.
+    with ``wrap=0`` so Rust applies the offset without wrapping. ABI 185
+    packs labelled cartesian marker ``dx``/``dy``/``anchor`` the same way
+    (Rust keeps the marker mark row and skips AttachedRow).
     """
     kind = annotation.get("kind")
     kind_code = _XYAF_KIND_CODES.get(str(kind) if kind is not None else "")

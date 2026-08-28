@@ -263,11 +263,11 @@ def test_python_label_borders_select_v23_frames_and_reject_partial_style() -> No
     at = 28
     assert envelope[at : at + 8] == b"XYAT\x01\x00\x00\x00"
     at += lengths[0]
-    assert envelope[at : at + 8] == b"XYAL\x04\x00\x00\x00"
+    assert envelope[at : at + 8] == b"XYAL\x02\x00\x00\x00"
     at += lengths[1] + lengths[2]
     assert envelope[at : at + 8] == b"XYAC\x03\x00\x00\x00"
     at += lengths[3]
-    assert envelope[at : at + 8] == b"XYAW\x01\x00\x00\x00"
+    assert envelope[at : at + 12] == b"XYAW\x01\x00\x00\x00\x02\x00\x00\x00"
     invalid = Figure().text(
         0.5, 0.5, "bad", style={"color": "#667085", "label_border_color": "#000"}
     )

@@ -994,16 +994,54 @@ def test_python_scene_compiles_unwrapped_text_layout() -> None:
     assert 'text-anchor="end"' in anchored_svg
     assert anchored.to_svg() == anchored_svg
     assert _scene_v3.scene_export_support_reason(anchored) is None
-    marker = representative_figure()
-    marker.annotations.append({"kind": "marker", "x": 0.5, "y": 0.5, "text": "offset", "dy": -8})
+    rotated = representative_figure()
+    rotated.annotations.append(
+        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "offset", "rotation": 30}
+    )
     assert (
-        _scene_v3.scene_export_support_reason(marker) == "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
+        _scene_v3.scene_export_support_reason(rotated) == "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
     )
     authored = representative_figure()
     authored.text(2.0, 2.5, "note")
     assert _scene_v3.scene_export_support_reason(authored) is None
     assert b"note" in authored.to_scene()
     assert "note" in authored.to_svg()
+
+
+def test_python_scene_compiles_labelled_marker_layout() -> None:
+    figure = representative_figure()
+    figure.annotations.append({"kind": "marker", "x": 0.5, "y": 0.5, "text": "pin", "dy": -8})
+    xyad = _xyad_from_figure(figure)
+    assert b"XYAW" in xyad
+    scene = figure.to_scene()
+    assert b"pin" in scene
+    svg = _native.scene_svg(scene)
+    assert ">pin<" in svg
+    assert figure.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(figure) is None
+    plain = representative_figure()
+    plain.annotations.append({"kind": "marker", "x": 0.5, "y": 0.5, "text": "pin"})
+    plain_svg = _native.scene_svg(plain.to_scene())
+    plain_y = float(re.search(r'y="([^"]+)"[^>]*>pin<', plain_svg).group(1))
+    offset_y = float(re.search(r'y="([^"]+)"[^>]*>pin<', svg).group(1))
+    assert offset_y == pytest.approx(plain_y - 8.0)
+    anchored = representative_figure()
+    anchored.annotations.append(
+        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "anchor", "anchor": "end"}
+    )
+    anchored_svg = _native.scene_svg(anchored.to_scene())
+    assert ">anchor<" in anchored_svg
+    assert 'text-anchor="end"' in anchored_svg
+    assert anchored.to_svg() == anchored_svg
+    assert _scene_v3.scene_export_support_reason(anchored) is None
+    authored = representative_figure()
+    authored.marker(2.0, 2.5, text="note")
+    assert _scene_v3.scene_export_support_reason(authored) is None
+    assert b"note" in authored.to_scene()
+    assert "note" in authored.to_svg()
+    unlabelled = representative_figure()
+    unlabelled.annotations.append({"kind": "marker", "x": 0.5, "y": 0.5, "dx": 8, "dy": -8})
+    assert _scene_v3.scene_export_support_reason(unlabelled) is None
 
 
 def test_python_scene_compiles_area_and_error_band() -> None:
