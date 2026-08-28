@@ -1468,6 +1468,8 @@ ABI 159 owns annotation style/row splice and XYAD extract from packed
 product rows plus XYSD plus XYAO v1.
 ABI 160 owns assembled Scene encode from packed XYAS plus XYCC plus extras.
 ABI 161 owns legend paints and XYHP wrapping from packed XYSD.
+ABI 162 owns XYCC packing, extras packing, and viewport/axis scalars from
+packed XYAS plus XYCF plus XYSD plus polar plus XYSS.
 Polar+step+smooth and
 authored marker glyphs stay compatibility. Irregular
 spacing, and LOD stay compatibility.

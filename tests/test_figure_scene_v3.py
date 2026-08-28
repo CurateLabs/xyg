@@ -683,7 +683,7 @@ def test_malformed_public_literal_propagates_without_compatibility_fallback(
 
     from xyg import _svg
 
-    monkeypatch.setattr(_native, "scene_encode_assembled", malformed_scene)
+    monkeypatch.setattr(_native, "scene_encode_assembled_from_sidecars", malformed_scene)
     monkeypatch.setattr(_svg, "to_svg", unexpected_compatibility)
     with pytest.raises(ValueError, match="malformed canonical literal"):
         figure.to_svg()
@@ -1022,7 +1022,9 @@ def test_python_scene_frames_attached_label_rgba_in_xyal_v2(
         captured["annotations"] = _scene_v3._unpack_xyas(bytes(xyas))["xyad"]
         return b"captured-scene"
 
-    monkeypatch.setattr(_scene_v3._native, "scene_encode_assembled", capture_scene_encode_assembled)
+    monkeypatch.setattr(
+        _scene_v3._native, "scene_encode_assembled_from_sidecars", capture_scene_encode_assembled
+    )
     assert figure.to_scene() == b"captured-scene"
 
     envelope = captured["annotations"]

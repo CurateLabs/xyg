@@ -2923,7 +2923,9 @@ def figure_scene(
     # Hosts pass XYAS plus XYCC plus extras plus axis scalars; Rust owns
     # assembled Scene encode (ABI 160). Hosts pack XYCF legend options plus
     # XYSD; Rust owns legend paints and XYHP wrapping from sidecar planes
-    # (ABI 161).
+    # (ABI 161). Hosts pass XYAS plus XYCF plus XYSD plus polar plus XYSS;
+    # Rust owns XYCC packing, extras packing, viewport/axis scalars, and
+    # assembled encode (ABI 162).
     x_domain = tuple(float(value) for value in figure._range("x"))
     y_domain = tuple(float(value) for value in figure._range("y"))
     annotation_facts = bytearray()
@@ -2953,34 +2955,27 @@ def figure_scene(
     except _native.SceneAnnotationSpliceError as error:
         _raise_annotation_splice(error)
 
+    # Hosts pass XYAS plus XYCF plus XYSD plus polar plus XYSS; Rust owns
+    # XYCC packing, extras packing, viewport/axis scalars, and assembled
+    # Scene encode (ABI 162).
     w = int(width if width is not None else figure.width)
     h = int(height if height is not None else figure.height)
-    kind_codes = {"linear": 0, "log": 1, "symlog": 2}
-
-    def axis(axis_id: str, stable_id: int) -> tuple[int, int, float, float, float, bool]:
-        scale = figure._axis_scale(axis_id)
-        options = figure.axis_options[axis_id]
-        return (
-            stable_id,
-            kind_codes[scale],
-            *figure._range(axis_id),
-            float(options.get("constant") or 1.0),
-            options.get("nonpositive", "clip") == "mask",
-        )
-
-    x_axis = axis("x", 1)
-    y_axis = axis("y", 2)
     try:
-        chrome = _native.scene_pack_figure_chrome_from_sidecars(
-            _pack_chrome_facts(
+        return _native.scene_encode_assembled_from_sidecars(
+            xyas=xyas,
+            chrome_facts=_pack_chrome_facts(
                 figure,
                 width=w,
                 height=h,
                 margins=margins,
                 colorbar_ok=not colorbar_unsupported,
             ),
-            sidecar_bytes,
+            sidecars=sidecar_bytes,
+            polar=_pack_polar_scene_input(figure),
+            extras_facts=style_sidecars,
         )
+    except _native.SceneEncodeAssembledError as error:
+        raise ValueError("invalid canonical scene batch") from error
     except ValueError as error:
         message = str(error)
         if message in {
@@ -2989,25 +2984,12 @@ def figure_scene(
             "legend font sizes must be finite and in [1, 1000]",
             "invalid scene chrome packing",
             "invalid scene chrome facts version",
+            "Scene extras polar or paint envelope is invalid",
+            "Scene style sidecar facts are invalid",
+            "invalid scene extras packing",
         }:
             raise
         raise UnsupportedSceneV3(message) from error
-    extras = _native.scene_pack_scene_extras_from_sidecars(
-        _pack_polar_scene_input(figure),
-        sidecar_bytes,
-        style_sidecars,
-    )
-    try:
-        return _native.scene_encode_assembled(
-            xyas=xyas,
-            chrome=chrome,
-            extras=extras,
-            viewport=(w, h),
-            x_axis=x_axis,
-            y_axis=y_axis,
-        )
-    except _native.SceneEncodeAssembledError as error:
-        raise ValueError("invalid canonical scene batch") from error
 
 
 def figure_svg(figure: Any, **options: Any) -> str:

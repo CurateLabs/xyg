@@ -58,9 +58,11 @@ use xyg_engine::pack_public_export;
 use xyg_engine::pack_style_sidecars;
 use xyg_engine::splice_annotations;
 use xyg_engine::encode_assembled;
+use xyg_engine::encode_assembled_from_sidecars;
 use xyg_engine::EncodeAssembledAxis;
 use xyg_engine::EncodeAssembledCode;
 use xyg_engine::EncodeAssembledError;
+use xyg_engine::EncodeSidecarsCode;
 use xyg_engine::pack_trace_attach;
 use xyg_engine::pack_trace_compile;
 use xyg_engine::pack_trace_rows;
@@ -151,7 +153,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 161;
+pub const ABI_VERSION: u32 = 162;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -895,6 +897,101 @@ pub unsafe extern "C" fn xyg_scene_encode_assembled(
                 match i32::try_from(bytes.len()) {
                     Ok(count) => count,
                     Err(_) => -(EncodeAssembledCode::Limit as i32),
+                }
+            }
+            Err(error) => {
+                if out_cap >= 4 {
+                    let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                    dest[..4].copy_from_slice(&error.index.to_le_bytes());
+                }
+                -(error.code as i32)
+            }
+        }
+    })
+}
+
+/// Encode packed `XYAS` v1 from authored `XYCF` plus `XYSD` plus polar plus
+/// `XYSS` into a canonical Scene v31 batch. Rust owns XYCC packing, extras
+/// packing, viewport/axis scalars from the XYCF header (ids 1 and 2), and
+/// assembled encode so Python and Node cannot drift. Returns the encoded byte
+/// count on success, or a negated `EncodeSidecarsCode`. Chrome failures keep
+/// codes 1–15; extras failures except Output occupy 17–21; remaining encode
+/// failures are `Encode=16`. On encode error, when `out_cap >= 4`, writes the
+/// failing index as a little-endian u32. Encoded Scene v31 is unchanged.
+///
+/// # Safety
+/// When a length is non-zero, the matching pointer must address that many
+/// readable bytes. When `out_cap` is non-zero, `out` must address that many
+/// writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_encode_assembled_from_sidecars(
+    xyas: *const u8,
+    xyas_len: usize,
+    chrome_facts: *const u8,
+    chrome_facts_len: usize,
+    xysd: *const u8,
+    xysd_len: usize,
+    polar: *const u8,
+    polar_len: usize,
+    extras_facts: *const u8,
+    extras_facts_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if (xyas_len > 0 && xyas.is_null())
+        || (chrome_facts_len > 0 && chrome_facts.is_null())
+        || (xysd_len > 0 && xysd.is_null())
+        || (polar_len > 0 && polar.is_null())
+        || (extras_facts_len > 0 && extras_facts.is_null())
+        || (out_cap > 0 && out.is_null())
+    {
+        return -(EncodeSidecarsCode::Length as i32);
+    }
+    ffi_guard(-(EncodeSidecarsCode::Length as i32), || {
+        let xyas_bytes = if xyas_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(xyas, xyas_len)
+        };
+        let chrome_bytes = if chrome_facts_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(chrome_facts, chrome_facts_len)
+        };
+        let xysd_bytes = if xysd_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(xysd, xysd_len)
+        };
+        let polar_bytes = if polar_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(polar, polar_len)
+        };
+        let extras_bytes = if extras_facts_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(extras_facts, extras_facts_len)
+        };
+        match encode_assembled_from_sidecars(
+            xyas_bytes,
+            chrome_bytes,
+            xysd_bytes,
+            polar_bytes,
+            extras_bytes,
+        ) {
+            Ok(bytes) => {
+                if bytes.len() > out_cap {
+                    return -(EncodeSidecarsCode::Output as i32);
+                }
+                if bytes.is_empty() {
+                    return 0;
+                }
+                let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                dest[..bytes.len()].copy_from_slice(&bytes);
+                match i32::try_from(bytes.len()) {
+                    Ok(count) => count,
+                    Err(_) => -(EncodeSidecarsCode::Limit as i32),
                 }
             }
             Err(error) => {
@@ -2757,6 +2854,10 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// `xyg_scene_pack_figure_chrome_from_sidecars` owns legend paints from packed
 /// XYSD and `xyg_scene_pack_scene_extras_from_sidecars` owns XYHP wrapping from
 /// XYSD planes so Python and Node cannot drift.
+/// ABI 162 does not change Scene records;
+/// `xyg_scene_encode_assembled_from_sidecars` owns XYCC packing, extras packing,
+/// and viewport/axis scalars from packed XYAS plus XYCF plus XYSD plus polar
+/// plus XYSS so Python and Node cannot drift.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
@@ -15545,6 +15646,28 @@ mod tests {
         assert_eq!(
             u32::from_le_bytes(encoded_out[4..8].try_into().unwrap()),
             31
+        );
+        let mut sidecar_encoded = vec![0u8; 65536];
+        let sidecar_code = unsafe {
+            xyg_scene_encode_assembled_from_sidecars(
+                xyas_out.as_ptr(),
+                xyas_code as usize,
+                xycf.as_ptr(),
+                xycf.len(),
+                sidecars_out.as_ptr(),
+                sidecars_code as usize,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                sidecar_encoded.as_mut_ptr(),
+                sidecar_encoded.len(),
+            )
+        };
+        assert_eq!(sidecar_code, encoded_code);
+        assert_eq!(
+            sidecar_encoded[..sidecar_code as usize],
+            encoded_out[..encoded_code as usize]
         );
     }
 

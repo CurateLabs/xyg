@@ -1,12 +1,12 @@
 //! Compact Figure→Scene assembled encode (M2 #271).
 //!
 //! Hosts pass packed `XYAS` v1 (ABI 159), `XYCC` v1 chrome (ABI 153), wrapped
-//! extras bytes (ABI 150), viewport, and axis scalars. Rust owns XYAS/XYCC
-//! unpack, gutter widening from canonical tick labels, record expansion,
-//! chrome/legend/colorbar admission, and `SceneBatch` encode so Python and
-//! Node cannot drift on the product-path assembler. Encoded Scene v31 is
-//! unchanged. Axis id/kind/domain stay host scalars because `XYCC` does not
-//! carry them.
+//! extras bytes (ABI 150), viewport, and axis scalars to `encode_assembled`.
+//! ABI 162 `encode_assembled_from_sidecars` additionally owns XYCC packing
+//! from `XYCF` plus `XYSD`, extras packing from polar plus `XYSD` plus `XYSS`,
+//! and viewport/axis scalars from the `XYCF` header (axis ids 1 and 2) so
+//! hosts do not pack chrome/extras or re-derive axes on the product path.
+//! Encoded Scene v31 is unchanged.
 
 use crate::scene::{
     decode_tick_labels, expand_scene_records_painted, resolve_numeric_tick_formats,
@@ -18,7 +18,11 @@ use crate::scene::{
     SCENE_CHROME_STYLE_INPUT_BYTES, SCENE_STYLE_RECORD_BYTES,
 };
 use crate::scene_annotation_splice::{XYAS_HEADER_BYTES, XYAS_MAGIC, XYAS_VERSION};
-use crate::scene_chrome::{XYCC_HEADER_BYTES, XYCC_MAGIC, XYCC_VERSION};
+use crate::scene_chrome::{
+    pack_figure_chrome_from_sidecars, ChromePackError, XYCC_HEADER_BYTES, XYCC_MAGIC, XYCC_VERSION,
+    XYCF_HEADER_BYTES, XYCF_MAGIC,
+};
+use crate::scene_extras::{pack_scene_extras_from_sidecars, ExtrasError};
 use crate::scene_pack::{PackedSceneRow, PACKED_SCENE_ROW_BYTES};
 
 /// Why an assembled-encode request was rejected. Discriminants are the
@@ -48,7 +52,95 @@ impl EncodeAssembledError {
     }
 }
 
-/// Host axis scalars that `XYCC` does not carry.
+/// Why an ABI 162 sidecar-assembled encode was rejected. Chrome failures keep
+/// discriminants 1–15; encode failures except `Output` collapse to `Encode=16`;
+/// extras failures except `Output` occupy 17–21 so they cannot alias chrome
+/// `Version`/`Limit`/`Layout`/`Payload`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EncodeSidecarsCode {
+    Length = 1,
+    Version = 2,
+    Limit = 3,
+    Output = 4,
+    Layout = 5,
+    Payload = 6,
+    LegendKeys = 7,
+    LegendStatic = 8,
+    LegendLoc = 9,
+    LegendFont = 10,
+    LegendStyle = 11,
+    ColorbarKeys = 12,
+    ColorbarShape = 13,
+    ColorbarSide = 14,
+    Ticks = 15,
+    Encode = 16,
+    ExtrasLength = 17,
+    ExtrasVersion = 18,
+    ExtrasLimit = 19,
+    ExtrasShape = 20,
+    ExtrasPayload = 21,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EncodeSidecarsError {
+    pub code: EncodeSidecarsCode,
+    pub index: u32,
+}
+
+impl EncodeSidecarsError {
+    fn new(code: EncodeSidecarsCode, index: u32) -> Self {
+        Self { code, index }
+    }
+}
+
+fn map_chrome(error: ChromePackError) -> EncodeSidecarsError {
+    EncodeSidecarsError::new(
+        match error {
+            ChromePackError::Length => EncodeSidecarsCode::Length,
+            ChromePackError::Version => EncodeSidecarsCode::Version,
+            ChromePackError::Limit => EncodeSidecarsCode::Limit,
+            ChromePackError::Output => EncodeSidecarsCode::Output,
+            ChromePackError::Layout => EncodeSidecarsCode::Layout,
+            ChromePackError::Payload => EncodeSidecarsCode::Payload,
+            ChromePackError::LegendKeys => EncodeSidecarsCode::LegendKeys,
+            ChromePackError::LegendStatic => EncodeSidecarsCode::LegendStatic,
+            ChromePackError::LegendLoc => EncodeSidecarsCode::LegendLoc,
+            ChromePackError::LegendFont => EncodeSidecarsCode::LegendFont,
+            ChromePackError::LegendStyle => EncodeSidecarsCode::LegendStyle,
+            ChromePackError::ColorbarKeys => EncodeSidecarsCode::ColorbarKeys,
+            ChromePackError::ColorbarShape => EncodeSidecarsCode::ColorbarShape,
+            ChromePackError::ColorbarSide => EncodeSidecarsCode::ColorbarSide,
+            ChromePackError::Ticks => EncodeSidecarsCode::Ticks,
+        },
+        0,
+    )
+}
+
+fn map_extras(error: ExtrasError) -> EncodeSidecarsError {
+    EncodeSidecarsError::new(
+        match error {
+            ExtrasError::Length => EncodeSidecarsCode::ExtrasLength,
+            ExtrasError::Version => EncodeSidecarsCode::ExtrasVersion,
+            ExtrasError::Limit => EncodeSidecarsCode::ExtrasLimit,
+            ExtrasError::Output => EncodeSidecarsCode::Output,
+            ExtrasError::Shape => EncodeSidecarsCode::ExtrasShape,
+            ExtrasError::Payload => EncodeSidecarsCode::ExtrasPayload,
+        },
+        0,
+    )
+}
+
+fn map_encode(error: EncodeAssembledError) -> EncodeSidecarsError {
+    EncodeSidecarsError::new(
+        match error.code {
+            EncodeAssembledCode::Output => EncodeSidecarsCode::Output,
+            _ => EncodeSidecarsCode::Encode,
+        },
+        error.index,
+    )
+}
+
+/// Host axis scalars that `XYCC` does not carry. ABI 162 reads them from `XYCF`.
 #[derive(Clone, Copy, Debug)]
 pub struct EncodeAssembledAxis {
     pub id: u64,
@@ -563,6 +655,63 @@ pub fn encode_assembled(
         .encode())
 }
 
+fn axes_from_chrome_facts(
+    facts: &[u8],
+) -> Result<(f64, f64, EncodeAssembledAxis, EncodeAssembledAxis), EncodeSidecarsError> {
+    if facts.len() < XYCF_HEADER_BYTES || facts.get(..4) != Some(&XYCF_MAGIC[..]) {
+        return Err(EncodeSidecarsError::new(EncodeSidecarsCode::Length, 0));
+    }
+    let length = EncodeSidecarsError::new(EncodeSidecarsCode::Length, 0);
+    let viewport_width = read_f64(facts, 16).map_err(|_| length)?;
+    let viewport_height = read_f64(facts, 24).map_err(|_| length)?;
+    Ok((
+        viewport_width,
+        viewport_height,
+        EncodeAssembledAxis {
+            id: 1,
+            kind: read_u32(facts, 96).map_err(|_| length)?,
+            lo: read_f64(facts, 104).map_err(|_| length)?,
+            hi: read_f64(facts, 112).map_err(|_| length)?,
+            constant: read_f64(facts, 120).map_err(|_| length)?,
+            mask_nonpositive: i32::from(*facts.get(152).ok_or(length)? != 0),
+        },
+        EncodeAssembledAxis {
+            id: 2,
+            kind: read_u32(facts, 100).map_err(|_| length)?,
+            lo: read_f64(facts, 128).map_err(|_| length)?,
+            hi: read_f64(facts, 136).map_err(|_| length)?,
+            constant: read_f64(facts, 144).map_err(|_| length)?,
+            mask_nonpositive: i32::from(*facts.get(153).ok_or(length)? != 0),
+        },
+    ))
+}
+
+/// Encode packed XYAS from XYCF + XYSD + polar + XYSS.
+///
+/// Rust packs XYCC and extras, reads viewport/axes from XYCF (ids 1 and 2),
+/// then runs `encode_assembled` so hosts do not re-derive those scalars.
+pub fn encode_assembled_from_sidecars(
+    xyas: &[u8],
+    chrome_facts: &[u8],
+    xysd: &[u8],
+    polar: &[u8],
+    extras_facts: &[u8],
+) -> Result<Vec<u8>, EncodeSidecarsError> {
+    let chrome = pack_figure_chrome_from_sidecars(chrome_facts, xysd).map_err(map_chrome)?;
+    let extras = pack_scene_extras_from_sidecars(polar, xysd, extras_facts).map_err(map_extras)?;
+    let (viewport_width, viewport_height, x_axis, y_axis) = axes_from_chrome_facts(chrome_facts)?;
+    encode_assembled(
+        xyas,
+        &chrome,
+        &extras,
+        viewport_width,
+        viewport_height,
+        x_axis,
+        y_axis,
+    )
+    .map_err(map_encode)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -586,7 +735,7 @@ mod tests {
         pack_trace_sidecars(&xytt, &xynm).unwrap()
     }
 
-    fn empty_chrome() -> Vec<u8> {
+    fn empty_chrome_facts() -> Vec<u8> {
         let mut facts = vec![0u8; XYCF_HEADER_BYTES];
         facts[..4].copy_from_slice(XYCF_MAGIC);
         facts[4..8].copy_from_slice(&XYCF_VERSION.to_le_bytes());
@@ -598,7 +747,11 @@ mod tests {
         facts[136..144].copy_from_slice(&1.0f64.to_le_bytes());
         facts[144..152].copy_from_slice(&1.0f64.to_le_bytes());
         facts[212..216].copy_from_slice(&1u32.to_le_bytes());
-        pack_figure_chrome(&facts).unwrap()
+        facts
+    }
+
+    fn empty_chrome() -> Vec<u8> {
+        pack_figure_chrome(&empty_chrome_facts()).unwrap()
     }
 
     fn linear_axis() -> EncodeAssembledAxis {
@@ -696,5 +849,62 @@ mod tests {
             y1: 4.0,
         };
         assert_eq!(PackedSceneRow::from_bytes(&row.to_bytes()), Some(row));
+    }
+
+    #[test]
+    fn sidecars_match_packed_encode() {
+        let xyas = splice_annotations(&[], &empty_xysd(), &[]).unwrap();
+        let xysd = empty_xysd();
+        let packed = encode_assembled(
+            &xyas,
+            &empty_chrome(),
+            &[],
+            400.0,
+            300.0,
+            EncodeAssembledAxis {
+                id: 1,
+                ..linear_axis()
+            },
+            EncodeAssembledAxis {
+                id: 2,
+                ..linear_axis()
+            },
+        )
+        .unwrap();
+        let from_sidecars =
+            encode_assembled_from_sidecars(&xyas, &empty_chrome_facts(), &xysd, &[], &[]).unwrap();
+        assert_eq!(from_sidecars, packed);
+    }
+
+    #[test]
+    fn sidecars_invalid_polar_is_extras_shape() {
+        let xyas = splice_annotations(&[], &empty_xysd(), &[]).unwrap();
+        let error = encode_assembled_from_sidecars(
+            &xyas,
+            &empty_chrome_facts(),
+            &empty_xysd(),
+            &[0u8; 8],
+            &[],
+        )
+        .unwrap_err();
+        assert_eq!(error.code, EncodeSidecarsCode::ExtrasShape);
+    }
+
+    #[test]
+    fn sidecars_short_chrome_is_length() {
+        let xyas = splice_annotations(&[], &empty_xysd(), &[]).unwrap();
+        let error =
+            encode_assembled_from_sidecars(&xyas, b"XY", &empty_xysd(), &[], &[]).unwrap_err();
+        assert_eq!(error.code, EncodeSidecarsCode::Length);
+    }
+
+    #[test]
+    fn sidecars_unknown_xyas_version_is_encode() {
+        let mut xyas = splice_annotations(&[], &empty_xysd(), &[]).unwrap();
+        xyas[4..8].copy_from_slice(&2u32.to_le_bytes());
+        let error =
+            encode_assembled_from_sidecars(&xyas, &empty_chrome_facts(), &empty_xysd(), &[], &[])
+                .unwrap_err();
+        assert_eq!(error.code, EncodeSidecarsCode::Encode);
     }
 }

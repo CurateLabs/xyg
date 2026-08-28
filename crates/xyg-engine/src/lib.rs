@@ -86,7 +86,8 @@ pub use scene_annotation_splice::{
 };
 pub mod scene_encode_assembled;
 pub use scene_encode_assembled::{
-    encode_assembled, EncodeAssembledAxis, EncodeAssembledCode, EncodeAssembledError,
+    encode_assembled, encode_assembled_from_sidecars, EncodeAssembledAxis, EncodeAssembledCode,
+    EncodeAssembledError, EncodeSidecarsCode, EncodeSidecarsError,
 };
 pub mod stats;
 pub mod stream;

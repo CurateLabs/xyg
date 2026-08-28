@@ -2381,6 +2381,138 @@ def scene_encode_assembled(
     raise SceneEncodeAssembledError(-4, 0)
 
 
+def scene_encode_assembled_from_sidecars(
+    *,
+    xyas: bytes,
+    chrome_facts: bytes,
+    sidecars: bytes | None = None,
+    polar: bytes | None = None,
+    extras_facts: bytes | None = None,
+) -> bytes:
+    """Encode XYAS from XYCF plus XYSD plus polar plus XYSS (M2 #271)."""
+    xyas_payload = xyas if isinstance(xyas, (bytes, bytearray, memoryview)) else bytes(xyas)
+    chrome_payload = (
+        chrome_facts
+        if isinstance(chrome_facts, (bytes, bytearray, memoryview))
+        else bytes(chrome_facts)
+    )
+    sidecar_payload = (
+        b""
+        if sidecars is None
+        else (sidecars if isinstance(sidecars, (bytes, bytearray, memoryview)) else bytes(sidecars))
+    )
+    polar_payload = (
+        b""
+        if polar is None
+        else (polar if isinstance(polar, (bytes, bytearray, memoryview)) else bytes(polar))
+    )
+    extras_payload = (
+        b""
+        if extras_facts is None
+        else (
+            extras_facts
+            if isinstance(extras_facts, (bytes, bytearray, memoryview))
+            else bytes(extras_facts)
+        )
+    )
+    capacity = max(
+        65536,
+        len(xyas_payload)
+        + len(chrome_payload)
+        + len(sidecar_payload)
+        + len(polar_payload)
+        + len(extras_payload)
+        + 4096,
+    )
+    source_xyas = (
+        np.frombuffer(xyas_payload, dtype=np.uint8) if xyas_payload else np.empty(0, dtype=np.uint8)
+    )
+    source_chrome = (
+        np.frombuffer(chrome_payload, dtype=np.uint8)
+        if chrome_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_xysd = (
+        np.frombuffer(sidecar_payload, dtype=np.uint8)
+        if sidecar_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_polar = (
+        np.frombuffer(polar_payload, dtype=np.uint8)
+        if polar_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_extras = (
+        np.frombuffer(extras_payload, dtype=np.uint8)
+        if extras_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    for _ in range(4):
+        out = np.zeros(capacity, dtype=np.uint8)
+        code = int(
+            _lib.xyg_scene_encode_assembled_from_sidecars(
+                _ptr_u8(source_xyas) if source_xyas.size else 0,
+                int(source_xyas.size),
+                _ptr_u8(source_chrome) if source_chrome.size else 0,
+                int(source_chrome.size),
+                _ptr_u8(source_xysd) if source_xysd.size else 0,
+                int(source_xysd.size),
+                _ptr_u8(source_polar) if source_polar.size else 0,
+                int(source_polar.size),
+                _ptr_u8(source_extras) if source_extras.size else 0,
+                int(source_extras.size),
+                _ptr_u8(out),
+                len(out),
+            )
+        )
+        if code == -4:
+            capacity *= 2
+            continue
+        if code == -2:
+            raise ValueError("invalid scene chrome facts version")
+        if code == -5:
+            raise ValueError("invalid canonical scene plot layout")
+        if code == -7:
+            raise ValueError(
+                "Scene v12 primary legends do not yet encode anchors, multiple columns, or custom content"
+            )
+        if code == -8:
+            raise ValueError(
+                "Scene v12 primary legends are static; toggle and highlight must be false"
+            )
+        if code == -9:
+            raise ValueError("Scene v12 does not support legend location")
+        if code == -10:
+            raise ValueError("legend font sizes must be finite and in [1, 1000]")
+        if code == -11:
+            raise ValueError(
+                "Scene v12 legends support only background, color, font_size, and title_font_size"
+            )
+        if code == -12:
+            raise ValueError("Scene v19 colorbars require literal bounded RGBA stops")
+        if code == -13:
+            raise ValueError(
+                "Scene v19 colorbars require a two-value domain and 2-16 literal stops"
+            )
+        if code == -14:
+            raise ValueError("Scene v19 colorbars support only right or bottom placement")
+        if code == -15:
+            raise ValueError("scene axis tick lists are limited to 200 values")
+        if code == -16:
+            index = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
+            raise SceneEncodeAssembledError(code, index)
+        if code == -20:
+            raise ValueError("Scene extras polar or paint envelope is invalid")
+        if code == -21:
+            raise ValueError("Scene style sidecar facts are invalid")
+        if code in {-17, -18, -19}:
+            raise ValueError("invalid scene extras packing")
+        if code < 0:
+            raise ValueError("invalid scene chrome packing")
+        return bytes(out[:code])
+    raise SceneEncodeAssembledError(-4, 0)
+
+
 def scene_figure_support_reason(payload: bytes) -> str:
     """Return Rust's figure-compile diagnostic for a packed XYFS envelope.
 

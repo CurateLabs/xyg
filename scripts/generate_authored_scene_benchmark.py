@@ -207,7 +207,7 @@ def authored_scene_figure(count: int) -> Figure:
 def _authored_annotation_input(figure: Figure) -> bytes:
     """Capture the exact XYAD boundary frame before Rust lowers it to XYLB."""
     captured: list[bytes] = []
-    real_encode = _scene_v3._native.scene_encode_assembled
+    real_encode = _scene_v3._native.scene_encode_assembled_from_sidecars
 
     def capture_encode(**kwargs: object) -> bytes:
         xyas = kwargs["xyas"]
@@ -215,11 +215,11 @@ def _authored_annotation_input(figure: Figure) -> bytes:
         captured.append(_scene_v3._unpack_xyas(bytes(xyas))["xyad"])
         return b"captured"
 
-    with patch.object(_scene_v3._native, "scene_encode_assembled", capture_encode):
+    with patch.object(_scene_v3._native, "scene_encode_assembled_from_sidecars", capture_encode):
         assert _scene_v3.figure_scene(figure) == b"captured"
     # Keep an explicit reference so test doubles cannot accidentally hide a
     # changed call path that skips the normal native compiler entry point.
-    assert _scene_v3._native.scene_encode_assembled is real_encode
+    assert _scene_v3._native.scene_encode_assembled_from_sidecars is real_encode
     assert len(captured) == 1
     return captured[0]
 

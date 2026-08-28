@@ -53,6 +53,7 @@ import {
   xyScenePackStyleSidecars,
   xySceneSpliceAnnotations,
   xySceneEncodeAssembled,
+  xySceneEncodeAssembledFromSidecars,
   xyScenePackAnnotationMarks,
   xySceneRasterCommands,
   xySceneResolveChromeStyle,
@@ -3997,6 +3998,66 @@ function encodeAssembled(xyas, chrome, extras, { viewport, xAxis, yAxis }) {
   throw error;
 }
 
+function encodeAssembledFromSidecars(xyas, chromeFacts, xysd, polar, extrasFacts) {
+  const xyasBytes = xyas instanceof Uint8Array ? xyas : new Uint8Array();
+  const chromeBytes = chromeFacts instanceof Uint8Array ? chromeFacts : new Uint8Array();
+  const xysdBytes = xysd instanceof Uint8Array ? xysd : new Uint8Array();
+  const polarBytes = polar instanceof Uint8Array ? polar : new Uint8Array();
+  const extrasBytes = extrasFacts instanceof Uint8Array ? extrasFacts : new Uint8Array();
+  let capacity = Math.max(
+    65536,
+    xyasBytes.length + chromeBytes.length + xysdBytes.length + polarBytes.length + extrasBytes.length + 4096,
+  );
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const out = new Uint8Array(capacity);
+    const code = xySceneEncodeAssembledFromSidecars(
+      xyasBytes.length ? u8Ptr(xyasBytes) : 0,
+      BigInt(xyasBytes.length),
+      chromeBytes.length ? u8Ptr(chromeBytes) : 0,
+      BigInt(chromeBytes.length),
+      xysdBytes.length ? u8Ptr(xysdBytes) : 0,
+      BigInt(xysdBytes.length),
+      polarBytes.length ? u8Ptr(polarBytes) : 0,
+      BigInt(polarBytes.length),
+      extrasBytes.length ? u8Ptr(extrasBytes) : 0,
+      BigInt(extrasBytes.length),
+      u8Ptr(out),
+      BigInt(out.length),
+    );
+    if (code === -4) {
+      capacity *= 2;
+      continue;
+    }
+    if (code === -2) throw new RangeError("invalid scene chrome facts version");
+    if (code === -5) throw new RangeError("invalid canonical scene plot layout");
+    if (code === -7) throw new RangeError("Scene v12 primary legends do not yet encode anchors, multiple columns, or custom content");
+    if (code === -8) throw new RangeError("Scene v12 primary legends are static; toggle and highlight must be false");
+    if (code === -9) throw new RangeError("Scene v12 does not support legend location");
+    if (code === -10) throw new RangeError("legend font sizes must be finite and in [1, 1000]");
+    if (code === -11) throw new RangeError("Scene v12 legends support only background, color, font_size, and title_font_size");
+    if (code === -12) throw new RangeError("Scene v19 colorbars require literal bounded RGBA stops");
+    if (code === -13) throw new RangeError("Scene v19 colorbars require a two-value domain and 2–16 stops");
+    if (code === -14) throw new RangeError("Scene v19 colorbar side is right or bottom");
+    if (code === -15) throw new RangeError("scene axis tick lists are limited to 200 values");
+    if (code === -16) {
+      const failing = new DataView(out.buffer, out.byteOffset, 4).getUint32(0, true);
+      const error = new RangeError("invalid canonical scene batch");
+      error.code = code;
+      error.index = failing;
+      throw error;
+    }
+    if (code === -20) throw new RangeError("Scene extras polar or paint envelope is invalid");
+    if (code === -21) throw new RangeError("Scene style sidecar facts are invalid");
+    if (code === -17 || code === -18 || code === -19) throw new RangeError("invalid scene extras packing");
+    if (code < 0) throw new RangeError("invalid scene chrome packing");
+    return out.subarray(0, code);
+  }
+  const error = new RangeError("invalid canonical scene batch");
+  error.code = -4;
+  error.index = 0;
+  throw error;
+}
+
 function unpackXyAs(blob) {
   if (blob.length < 24 || blob[0] !== 88 || blob[1] !== 89 || blob[2] !== 65 || blob[3] !== 83) {
     throw new RangeError("invalid scene annotation splice packing");
@@ -4900,19 +4961,6 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   if (reason) throw new RangeError(reason);
   const xDomain = figure._range("x");
   const yDomain = figure._range("y");
-  const sceneAxis = (axis, id, domain) => {
-    const options = figure[`${axis}Axis`] ?? figure[`${axis}_axis`] ?? {};
-    return {
-      id,
-      kind: options.kind ?? options.type ?? "linear",
-      domain,
-      constant: options.constant ?? 1,
-      nonpositive: options.nonpositive ?? "clip",
-      format: options.format ?? null,
-    };
-  };
-  const xSceneAxis = sceneAxis("x", 1, xDomain);
-  const ySceneAxis = sceneAxis("y", 2, yDomain);
   let attachedBytes;
   try {
     const compiledBytes = packTraceCompile(packXyTc(figure));
@@ -4952,14 +5000,15 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   const annotationOutput = packAnnotationFacts(annotationFacts, (figure.traces ?? []).length, xDomain, yDomain);
   const styleSidecars = packStyleSidecars(sidecarBytes, annotationOutput);
   const xyas = spliceAnnotations(rowBytes, sidecarBytes, annotationOutput);
-  const chrome = packFigureChromeFromSidecars(packChromeFacts(figure, {
-    width: figure.width, height: figure.height, margins, colorbarOk: !colorbarUnsupported,
-  }), sidecarBytes);
-  return encodeAssembled(xyas, chrome, packSceneExtrasFromSidecars(packPolarSceneInput(figure), sidecarBytes, styleSidecars), {
-    viewport: [figure.width, figure.height],
-    xAxis: xSceneAxis,
-    yAxis: ySceneAxis,
-  });
+  return encodeAssembledFromSidecars(
+    xyas,
+    packChromeFacts(figure, {
+      width: figure.width, height: figure.height, margins, colorbarOk: !colorbarUnsupported,
+    }),
+    sidecarBytes,
+    packPolarSceneInput(figure),
+    styleSidecars,
+  );
 }
 
 /** Serialize built-in scatter marks through the shared Rust scene schema. */

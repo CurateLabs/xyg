@@ -1286,12 +1286,10 @@ def test_migrated_scene_packers_have_no_host_step_geometry_expander() -> None:
     node_packer = (root / "packages/xy-node/src/scene.js").read_text()
     assert "def _step_arrays" not in python_packer
     assert "function stepArrays" not in node_packer
-    assert "return _native.scene_encode_assembled(" in python_packer
-    assert "return encodeAssembled(" in node_packer
-    assert "_native.scene_pack_figure_chrome_from_sidecars(" in python_packer
-    assert "packFigureChromeFromSidecars(" in node_packer
-    assert "_native.scene_pack_scene_extras_from_sidecars(" in python_packer
-    assert "packSceneExtrasFromSidecars(" in node_packer
+    assert "return _native.scene_encode_assembled_from_sidecars(" in python_packer
+    assert "return encodeAssembledFromSidecars(" in node_packer
+    assert "viewport=(w, h)" not in python_packer
+    assert "xAxis: xSceneAxis" not in node_packer
     assert "sidecars = _unpack_xysd(" not in python_packer
     assert "sidecars = unpackXySd(" not in node_packer
     assert "_ribbon_band_samples" not in python_packer

@@ -135,6 +135,9 @@ assembled Scene encode from packed XYAS plus XYCC plus extras.
 ABI 161 does not change Scene records; `xyg_scene_pack_figure_chrome_from_sidecars`
 owns legend paints from packed XYSD and `xyg_scene_pack_scene_extras_from_sidecars`
 owns XYHP wrapping from XYSD planes.
+ABI 162 does not change Scene records; `xyg_scene_encode_assembled_from_sidecars`
+owns XYCC packing, extras packing, and viewport/axis scalars from packed XYAS
+plus XYCF plus XYSD plus polar plus XYSS.
 
 ## Version 3: backend-neutral core scene batch
 
@@ -503,6 +506,11 @@ ABI 161 does not change Scene records;
 `xyg_scene_pack_figure_chrome_from_sidecars` owns legend paints from packed
 XYSD and `xyg_scene_pack_scene_extras_from_sidecars` owns XYHP wrapping from
 XYSD planes.
+
+ABI 162 does not change Scene records;
+`xyg_scene_encode_assembled_from_sidecars` owns XYCC packing, extras packing,
+and viewport/axis scalars from packed XYAS plus XYCF plus XYSD plus polar plus
+XYSS.
 
 ABI 110 adds `xyg_scene_pack_legend` so both hosts pass loc/flags/paints
 and receive XYLG bytes; header layout, text offsets, and bounded-text
@@ -1333,7 +1341,9 @@ from product rows plus `XYSD` plus `XYAO` so annotation style/row splice
 and XYAD extract cannot drift. ABI 160 packs assembled Scene encode from
 `XYAS` plus `XYCC` plus extras so XYAS/XYCC unpack, gutter widening, and
 batch encode cannot drift. ABI 161 packs chrome legend paints and extras
-XYHP wrapping from `XYSD` so sidecar unpack cannot drift. An empty reason selects the Scene route;
+XYHP wrapping from `XYSD` so sidecar unpack cannot drift. ABI 162 packs
+assembled Scene encode from `XYAS` plus `XYCF` plus `XYSD` plus polar plus
+`XYSS` so chrome/extras packing and viewport/axis scalars cannot drift. An empty reason selects the Scene route;
 hosts still compile the Scene and may still report compiler or viewport
 diagnostics, including the shared PolyFill group budget. ABI 106 does not
 change Scene records; `xyg_figure_autorange` owns the domain the annotation
@@ -1415,6 +1425,10 @@ ABI 161 does not change Scene records either;
 `xyg_scene_pack_figure_chrome_from_sidecars` owns legend paints from packed
 XYSD and `xyg_scene_pack_scene_extras_from_sidecars` owns XYHP wrapping from
 XYSD planes.
+ABI 162 does not change Scene records either;
+`xyg_scene_encode_assembled_from_sidecars` owns XYCC packing, extras packing,
+and viewport/axis scalars from packed XYAS plus XYCF plus XYSD plus polar plus
+XYSS.
 Polar+step+smooth and authored marker glyphs stay compatibility. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;
