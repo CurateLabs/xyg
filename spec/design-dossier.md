@@ -1602,7 +1602,10 @@ from packed XYHP kind 5. Annotation `html` stays fail-closed
 fail-closed as `XYG_SCENE_UNSUPPORTED_BROWSER_CSS` (#306). Annotation
 `collision` stays fail-closed as `XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION`
 (#307). Annotation `markup` stays fail-closed as
-`XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP` (#308). Polar stays
+`XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP` (#308). Annotation custom
+typography stays fail-closed as `XYG_SCENE_UNSUPPORTED_CUSTOM_FONT` (#309).
+Text/marker `style.rotation` lifts onto the ABI 187/188 rotation field.
+Polar stays
 fail-closed. Per-item radius
 channels stay compatibility. Irregular
 spacing, and LOD stay compatibility.

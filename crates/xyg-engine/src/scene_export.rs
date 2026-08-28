@@ -53,7 +53,10 @@
 //! `OBS_ANNOTATION_COLLISION` / XYEP `collision` (#307): Scene does not
 //! encode annotation collision. Annotation `markup` is XYFS
 //! `OBS_ANNOTATION_MARKUP` / XYEP `markup` (#308): Scene owns literal text
-//! only. Polar annotations stay fail-closed.
+//! only. Annotation custom typography is XYFS `OBS_CUSTOM_FONT` (#309): Scene
+//! SVG/raster use the built-in default font. Text/marker `style.rotation`
+//! lifts onto the ABI 187/188 top-level rotation field. Polar annotations
+//! stay fail-closed.
 //! Rust owns the public PolyFill group budget, including
 //! companion traces that share the browser painter's 1,024-group ceiling.
 
@@ -1126,7 +1129,8 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     // the same way (XYAW nums[8]). Annotation html is OBS_ANNOTATION_HTML
     // (#305). Annotation class_name is SCENE_FEATURE_BROWSER_CSS (#306).
     // Annotation collision is OBS_ANNOTATION_COLLISION (#307). Annotation
-    // markup is OBS_ANNOTATION_MARKUP (#308). Polar stays fail-closed.
+    // markup is OBS_ANNOTATION_MARKUP (#308). Annotation custom typography
+    // is OBS_CUSTOM_FONT (#309). Polar stays fail-closed.
     if extra_key(&legend_keys, PUBLIC_LEGEND_KEYS) {
         return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LEGEND");
     }
@@ -1362,7 +1366,7 @@ const XYFS_TRACE_BYTES: usize = 8;
 const MAX_XYFS_KIND_BYTES: usize = 32;
 
 const OBS_POLAR: u32 = 1 << 0;
-const OBS_CUSTOM_FONT: u32 = 1 << 1;
+const OBS_CUSTOM_FONT: u32 = 1 << 1; // chrome font-family and annotation typography (#309)
 const OBS_BROWSER_CSS: u32 = 1 << 2;
 const OBS_GRADIENT: u32 = 1 << 3;
 const OBS_COLORBAR: u32 = 1 << 4;

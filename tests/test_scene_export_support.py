@@ -1922,6 +1922,13 @@ def test_migrated_scene_packers_have_no_host_step_geometry_expander() -> None:
         {"kind": "callout", "x": 0.5, "y": 0.5, "text": "rich", "html": "<b>rich</b>"},
         {"kind": "callout", "x": 0.5, "y": 0.5, "text": "css", "class_name": "custom"},
         {"kind": "callout", "x": 0.5, "y": 0.5, "text": "rich", "style": {"markup": "<b>rich</b>"}},
+        {
+            "kind": "callout",
+            "x": 0.5,
+            "y": 0.5,
+            "text": "type",
+            "style": {"font_family": "Comic Sans"},
+        },
     ],
 )
 def test_public_annotation_router_fails_closed_for_unmodeled_host_layout_and_css(
@@ -1940,6 +1947,8 @@ def test_public_annotation_router_fails_closed_for_unmodeled_host_layout_and_css
     style = annotation.get("style") or {}
     if "markup" in annotation or (isinstance(style, dict) and "markup" in style):
         assert "XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP" in reason
+    if isinstance(style, dict) and "font_family" in style:
+        assert "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT" in reason
 
 
 @pytest.mark.parametrize(
@@ -1948,6 +1957,7 @@ def test_public_annotation_router_fails_closed_for_unmodeled_host_layout_and_css
         {"kind": "text", "x": 0.5, "y": 0.5, "text": "offset", "dx": 6},
         {"kind": "text", "x": 0.5, "y": 0.5, "text": "anchor", "anchor": "end"},
         {"kind": "text", "x": 0.5, "y": 0.5, "text": "rotated", "rotation": 30},
+        {"kind": "text", "x": 0.5, "y": 0.5, "text": "rotated", "style": {"rotation": 30}},
     ],
 )
 def test_public_unwrapped_text_layout_routes_through_scene(annotation: dict[str, object]) -> None:
@@ -1966,6 +1976,10 @@ def test_public_unwrapped_text_layout_routes_through_scene(annotation: dict[str,
     if "rotation" in annotation:
         assert f'transform="rotate(-{annotation["rotation"]} ' in svg
         assert f'transform="rotate(-{annotation["rotation"]} '.encode() in exported
+    style = annotation.get("style") or {}
+    if isinstance(style, dict) and "rotation" in style:
+        assert f'transform="rotate(-{style["rotation"]} ' in svg
+        assert f'transform="rotate(-{style["rotation"]} '.encode() in exported
 
 
 @pytest.mark.parametrize(
@@ -1974,6 +1988,7 @@ def test_public_unwrapped_text_layout_routes_through_scene(annotation: dict[str,
         {"kind": "marker", "x": 0.5, "y": 0.5, "text": "offset", "dy": -8},
         {"kind": "marker", "x": 0.5, "y": 0.5, "text": "anchor", "anchor": "end"},
         {"kind": "marker", "x": 0.5, "y": 0.5, "text": "rotated", "rotation": 30},
+        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "rotated", "style": {"rotation": 30}},
     ],
 )
 def test_public_labelled_marker_layout_routes_through_scene(
@@ -1994,6 +2009,10 @@ def test_public_labelled_marker_layout_routes_through_scene(
     if "rotation" in annotation:
         assert f'transform="rotate(-{annotation["rotation"]} ' in svg
         assert f'transform="rotate(-{annotation["rotation"]} '.encode() in exported
+    style = annotation.get("style") or {}
+    if isinstance(style, dict) and "rotation" in style:
+        assert f'transform="rotate(-{style["rotation"]} ' in svg
+        assert f'transform="rotate(-{style["rotation"]} '.encode() in exported
 
 
 @pytest.mark.parametrize("name", sorted(UNSUPPORTED))

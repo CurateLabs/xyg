@@ -250,8 +250,8 @@ entry points only retain host options and the documented compatibility
 exceptions. `FacetGrid.to_svg` and `FacetGrid._compose_rgba` reuse that compiled
 panel Scene. `_svg.py` and
 `_raster.py` remain compatibility owners for rich text and legend variants, every
-annotation outside that bounded primary Cartesian family (including marker
-rotation, collision/layout directives, markup, CSS/classes, and custom typography), themes, custom fonts or CSS/classes,
+annotation outside that bounded primary Cartesian family (including
+collision/layout directives, markup, CSS/classes, and custom typography), themes, custom fonts or CSS/classes,
 nonliteral/custom chrome, combined marker_path+marker_glyph, data-driven symbol channels, unmodeled marks or
 segment roles/styles, LOD inputs, export background overrides, and any other
 unmodeled output contract; #58/#117 must
