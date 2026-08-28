@@ -22,6 +22,7 @@
 //! ABI 175 admits violin/box `fill_opacity` / `stroke_opacity` from packed XYTC.
 //! ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity` from that same packing.
 //! ABI 177 admits heatmap `fill_opacity` from that same packing.
+//! ABI 178 admits scatter `fill_opacity` / `stroke_opacity` from that same packing.
 //! Encoded Scene v31 is
 //! unchanged.
 

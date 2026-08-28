@@ -16,6 +16,7 @@
 //! Scene (XYMS already composites those channels). ABI 176 admits
 //! bar/column/histogram `fill_opacity` / `stroke_opacity` the same way.
 //! ABI 177 admits heatmap `fill_opacity` on that public Scene (XYMS fill alpha).
+//! ABI 178 admits scatter `fill_opacity` / `stroke_opacity` the same way.
 //! Rust owns the public PolyFill group budget, including
 //! companion traces that share the browser painter's 1,024-group ceiling.
 
@@ -377,6 +378,8 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "stroke_width",
             "marker_path",
             "marker_glyph",
+            "fill_opacity",
+            "stroke_opacity",
         ],
         KIND_LINE => &[
             "color", "opacity", "width", "step", "dash", "linecap", "curve",

@@ -658,10 +658,12 @@ def test_constant_scatter_stroke_defaults_and_compatibility_boundaries(
         compatibility.append(figure)
 
     for opacity_key in ("fill_opacity", "stroke_opacity"):
-        figure = Figure(width=320, height=240).scatter([0.5], [0.5])
+        figure = Figure(width=320, height=240).scatter([0.5], [0.5], color="#336699")
+        if opacity_key == "stroke_opacity":
+            figure.traces[-1].style["stroke"] = "#111111"
+            figure.traces[-1].style["stroke_width"] = 2.0
         figure.traces[-1].style[opacity_key] = 0.5
-        assert "PUBLIC_STYLE" in (_scene_v3.scene_export_support_reason(figure) or "")
-        compatibility.append(figure)
+        assert _scene_v3.scene_export_support_reason(figure) is None
 
     def unexpected_scene(*_args: object, **_kwargs: object) -> bytes:
         raise AssertionError("per-item scatter styling must stay on compatibility")
@@ -1313,6 +1315,40 @@ def test_python_scene_compiles_heatmap_fill_opacity() -> None:
     solid.axis_options["y"]["domain"] = (0.0, 5.0)
     solid.heatmap([[1.0, 2.0], [3.0, 4.0]], color="#22c55e", opacity=0.75)
     assert svg != _native.scene_svg(solid.to_scene())
+
+
+def test_python_scene_compiles_scatter_fill_opacity() -> None:
+    faded = Figure(width=240, height=160)
+    faded.axis_options["x"]["domain"] = (0.0, 2.0)
+    faded.axis_options["y"]["domain"] = (0.0, 2.0)
+    faded.scatter([0.5, 1.5], [0.5, 1.5], color="#22c55e", size=18, opacity=0.8)
+    faded.traces[-1].style["fill_opacity"] = 0.5
+    svg = _native.scene_svg(faded.to_scene())
+    assert 'fill-opacity="' in svg
+    assert faded.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(faded) is None
+    solid = Figure(width=240, height=160)
+    solid.axis_options["x"]["domain"] = (0.0, 2.0)
+    solid.axis_options["y"]["domain"] = (0.0, 2.0)
+    solid.scatter([0.5, 1.5], [0.5, 1.5], color="#22c55e", size=18, opacity=0.8)
+    assert svg != _native.scene_svg(solid.to_scene())
+    stroked = Figure(width=240, height=160)
+    stroked.axis_options["x"]["domain"] = (0.0, 2.0)
+    stroked.axis_options["y"]["domain"] = (0.0, 2.0)
+    stroked.scatter(
+        [0.5, 1.5],
+        [0.5, 1.5],
+        color="#22c55e",
+        size=18,
+        opacity=0.8,
+        stroke="#111111",
+        stroke_width=2.0,
+    )
+    stroked.traces[-1].style["stroke_opacity"] = 0.5
+    stroke_svg = _native.scene_svg(stroked.to_scene())
+    assert 'stroke-opacity="' in stroke_svg
+    assert stroked.to_svg() == stroke_svg
+    assert _scene_v3.scene_export_support_reason(stroked) is None
 
 
 def test_python_scene_compiles_polar_corner_radius() -> None:

@@ -17,6 +17,7 @@
 //! into the existing XYTR opacity slots so XYMS applies them. ABI 176 packs
 //! bar/column/histogram on that same opacity path. ABI 177 packs heatmap
 //! `fill_opacity` so lattice cells and colormap paints use XYMS fill alpha.
+//! ABI 178 packs scatter `fill_opacity` / `stroke_opacity` on that same XYMS path.
 //! ABI 170 admits constant scatter `marker_glyph` as UTF-8 in the existing
 //! XYTR marker blob (`FLAG_HAS_GLYPH`); encoded Scene keeps XYMG so SVG/raster
 //! emit `<text>` / `OP_TEXT` instead of a disc.
@@ -902,7 +903,7 @@ fn compile_one(input: Input<'_>, index: usize) -> Result<Compiled, TraceCompileE
     }
     if matches!(
         input.kind,
-        "bar" | "column" | "histogram" | "violin" | "box" | "heatmap"
+        "bar" | "column" | "histogram" | "violin" | "box" | "heatmap" | "scatter"
     ) && (!in_unit_interval(input.fill_opacity) || !in_unit_interval(input.stroke_opacity))
     {
         return Err(TraceCompileError::new(
@@ -1568,6 +1569,22 @@ mod tests {
     #[test]
     fn heatmap_applies_fill_opacity_to_resolved_fill() {
         let (mut head, payload) = prefix("heatmap", 0, 0.6, "");
+        head[24..32].copy_from_slice(&0.5f64.to_le_bytes());
+        let mut facts = Vec::new();
+        facts.extend_from_slice(XYTC_MAGIC);
+        facts.extend_from_slice(&XYTC_VERSION.to_le_bytes());
+        facts.extend_from_slice(&1u32.to_le_bytes());
+        facts.extend_from_slice(&0u32.to_le_bytes());
+        facts.extend_from_slice(&head);
+        facts.extend_from_slice(&payload);
+        let packed = pack_trace_compile(&facts).unwrap();
+        let fill = &packed[XYTO_HEADER_BYTES + 8..XYTO_HEADER_BYTES + 12];
+        assert_eq!(fill, &css::color_rgba8("#3987e5", 0.3));
+    }
+
+    #[test]
+    fn scatter_applies_fill_opacity_to_resolved_fill() {
+        let (mut head, payload) = prefix("scatter", 0, 0.6, "");
         head[24..32].copy_from_slice(&0.5f64.to_le_bytes());
         let mut facts = Vec::new();
         facts.extend_from_slice(XYTC_MAGIC);

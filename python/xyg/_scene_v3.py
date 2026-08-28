@@ -29,8 +29,11 @@ _RIBBON_KINDS = frozenset({"ribbon"})
 # ABI 175 packs fill/stroke opacity channels for violin/box (XYMS already
 # composites them). ABI 176 extends that packing to bar/column/histogram, the
 # remaining PACK_RECT kinds. ABI 177 packs heatmap `fill_opacity` so lattice
-# cells and colormap paints use the XYMS fill alpha.
-_OPACITY_CHANNEL_KINDS = _BAND_KINDS | _RIBBON_KINDS | _RECT_KINDS | frozenset({"heatmap"})
+# cells and colormap paints use the XYMS fill alpha. ABI 178 packs scatter
+# `fill_opacity` / `stroke_opacity` on that same XYMS path.
+_OPACITY_CHANNEL_KINDS = (
+    _BAND_KINDS | _RIBBON_KINDS | _RECT_KINDS | frozenset({"heatmap", "scatter"})
+)
 # Independent triangles lower to Scene PolyFill (kind 4) vertex runs.
 _POLYFILL_KINDS = frozenset({"triangle_mesh"})
 # Cartesian hexbin centers expand onto PolyFill records (6-vertex cells) in

@@ -845,6 +845,21 @@ def test_public_bar_column_histogram_opacity_channels_are_scene_supported(factor
     assert public_static_export(stroked, "svg") is not None
 
 
+def test_public_scatter_opacity_channels_are_scene_supported() -> None:
+    figure = _supported()
+    figure.traces[-1].style["fill_opacity"] = 0.5
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported != public_static_export(_supported(), "svg")
+    stroked = _supported()
+    stroked.traces[-1].style["stroke"] = "#111111"
+    stroked.traces[-1].style["stroke_width"] = 2.0
+    stroked.traces[-1].style["stroke_opacity"] = 0.5
+    assert scene_export_support_reason(stroked) is None
+    assert public_static_export(stroked, "svg") is not None
+
+
 @pytest.mark.parametrize("kind", ["step", "histogram", "column_bar"])
 def test_literal_geometry_cross_host_variants_match_exact_scene_bytes(kind: str) -> None:
     """Host transforms must converge before Rust consumes the Scene."""

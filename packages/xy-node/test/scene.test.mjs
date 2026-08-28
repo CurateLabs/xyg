@@ -1873,6 +1873,27 @@ test("Node Scene compiles heatmap fill_opacity", () => {
   assert.notEqual(svg, sceneSvg(solid.toScene()));
 });
 
+test("Node Scene compiles scatter fill_opacity", () => {
+  const faded = new Figure({ width: 240, height: 160 });
+  faded.setAxisDomain("x", [0, 2]);
+  faded.setAxisDomain("y", [0, 2]);
+  faded.scatter([0.5, 1.5], [0.5, 1.5], {
+    style: { color: "#22c55e", size: 18, opacity: 0.8, fill_opacity: 0.5 },
+    name: null,
+  });
+  const svg = sceneSvg(faded.toScene());
+  assert.match(svg, /fill-opacity="/);
+  assert.equal(sceneExportSupportReason(faded), null);
+  const solid = new Figure({ width: 240, height: 160 });
+  solid.setAxisDomain("x", [0, 2]);
+  solid.setAxisDomain("y", [0, 2]);
+  solid.scatter([0.5, 1.5], [0.5, 1.5], {
+    style: { color: "#22c55e", size: 18, opacity: 0.8 },
+    name: null,
+  });
+  assert.notEqual(svg, sceneSvg(solid.toScene()));
+});
+
 test("Node Scene compiles polar wedge_gap and keeps cartesian fail-closed", () => {
   const gapped = new Figure({ width: 400, height: 400, coords: "polar" });
   gapped.setAxisDomain("x", [0, Math.PI * 2]);
