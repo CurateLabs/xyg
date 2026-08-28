@@ -44,6 +44,7 @@ import {
   xyScenePackDensityGrid,
   xyScenePackPublicExport,
   xyScenePackFigureChrome,
+  xyScenePackTraceCompile,
   xyScenePackAnnotationMarks,
   xySceneRasterCommands,
   xySceneResolveChromeStyle,
@@ -2958,6 +2959,380 @@ function packFigureChrome(facts) {
   return out.subarray(0, code);
 }
 
+const XYTC_HAS_FILL = 1 << 0;
+const XYTC_HAS_STROKE = 1 << 1;
+const XYTC_HAS_LINE_COLOR = 1 << 2;
+const XYTC_HAS_STROKE_WIDTH = 1 << 3;
+const XYTC_HAS_WIDTH = 1 << 4;
+const XYTC_HAS_LINE_WIDTH = 1 << 5;
+const XYTC_HAS_SIZE = 1 << 6;
+const XYTC_HAS_SIZE_CH = 1 << 7;
+const XYTC_HAS_HEX = 1 << 8;
+const XYTC_PERIMETER_TRUE = 1 << 9;
+const XYTC_PERIMETER_INVALID = 1 << 10;
+const XYTC_COLOR_CH = 1 << 11;
+const XYTC_COLOR_CH_CONSTANT = 1 << 12;
+const XYTC_COLOR2 = 1 << 13;
+const XYTC_USE_DENSITY = 1 << 14;
+const XYTC_SHOW_LEGEND = 1 << 15;
+const XYTC_HAS_NAME = 1 << 16;
+const XYTC_HAS_DASH_PATTERN = 1 << 17;
+const XYTC_HAS_MARKER = 1 << 18;
+const XYTC_HAS_GRADIENT_SPEC = 1 << 19;
+const XYTC_HAS_FILL_DICT = 1 << 20;
+const XYTC_SYMBOL_INT = 1 << 21;
+const XYTO_LINECAP_NONE = 255;
+const GRAD_DIR_FROM_CODE = { 0: "down", 1: "up", 2: "right", 3: "left" };
+
+function packMarkerBlob(value) {
+  if (value == null || typeof value !== "object" || Array.isArray(value) || !Array.isArray(value.contours)) {
+    return null;
+  }
+  const contours = value.contours;
+  const parts = [new Uint8Array(8)];
+  new DataView(parts[0].buffer).setUint32(0, contours.length, true);
+  parts[0][4] = value.filled == null || value.filled ? 1 : 0;
+  for (const contour of contours) {
+    if (!Array.isArray(contour)) return null;
+    const values = contour.map(Number);
+    const header = new Uint8Array(4 + values.length * 8);
+    const view = new DataView(header.buffer);
+    view.setUint32(0, values.length, true);
+    values.forEach((item, index) => view.setFloat64(4 + index * 8, item, true));
+    parts.push(header);
+  }
+  return concatBytes(parts);
+}
+
+function packGradientSpec(fill) {
+  const space = fill.space === "plot" ? 1 : fill.space === "mark" ? 0 : 255;
+  const dir = Object.hasOwn(GRAD_DIR_CODES, fill.dir) ? GRAD_DIR_CODES[fill.dir] : 255;
+  if (!Array.isArray(fill.stops)) return null;
+  const parts = [new Uint8Array([space, dir, fill.stops.length & 0xff, 0])];
+  for (const stop of fill.stops) {
+    if (!Array.isArray(stop) || stop.length !== 2) return null;
+    const css = encodeUtf8(String(stop[1]));
+    const head = new Uint8Array(10);
+    const view = new DataView(head.buffer);
+    view.setFloat64(0, Number(stop[0]), true);
+    view.setUint16(8, css.length, true);
+    parts.push(head, css);
+  }
+  return concatBytes(parts);
+}
+
+function packXyTc(figure) {
+  const traces = figure.traces ?? [];
+  const records = [];
+  const showLegend = figure.showLegend !== false;
+  for (const trace of traces) {
+    const style = trace.style ?? {};
+    let flags = 0;
+    const kind = encodeUtf8(String(trace.kind ?? ""));
+    const name = trace.name != null && String(trace.name).length ? String(trace.name) : "";
+    if (name) flags |= XYTC_HAS_NAME;
+    const nameB = encodeUtf8(name);
+    let symbolB = new Uint8Array();
+    let symbolInt = 0;
+    if (typeof style.symbol === "number") {
+      flags |= XYTC_SYMBOL_INT;
+      symbolInt = style.symbol;
+    } else if (style.symbol != null) {
+      symbolB = encodeUtf8(String(style.symbol));
+    }
+    const opacity = Number(style.opacity ?? 1);
+    let fillOpacity = 1;
+    let strokeOpacity = 1;
+    let lineOpacity = 1;
+    if (BAND_KINDS.has(trace.kind) || RIBBON_KINDS.has(trace.kind)) {
+      fillOpacity = Number(style.fill_opacity ?? style.fillOpacity ?? 1);
+      strokeOpacity = Number(style.stroke_opacity ?? style.strokeOpacity ?? 1);
+    }
+    if (BAND_KINDS.has(trace.kind)) {
+      lineOpacity = Number(style.line_opacity ?? style.lineOpacity ?? 1);
+    }
+    let size = Number.NaN;
+    if (Object.hasOwn(style, "size") || Object.hasOwn(style, "diameter")) {
+      flags |= XYTC_HAS_SIZE;
+      size = Number(style.size ?? style.diameter);
+    }
+    let sizeCh = Number.NaN;
+    const sizeChannel = trace.size_ch ?? trace.sizeChannel;
+    if (sizeChannel != null) {
+      flags |= XYTC_HAS_SIZE_CH;
+      if (sizeChannel.constant != null) sizeCh = Number(sizeChannel.constant);
+    }
+    let strokeWidth = 0;
+    let width = 0;
+    let lineWidth = 0;
+    if (Object.hasOwn(style, "stroke_width") || Object.hasOwn(style, "strokeWidth")) {
+      flags |= XYTC_HAS_STROKE_WIDTH;
+      strokeWidth = Number(style.stroke_width ?? style.strokeWidth);
+    }
+    if (Object.hasOwn(style, "width")) {
+      flags |= XYTC_HAS_WIDTH;
+      width = Number(style.width);
+    }
+    if (Object.hasOwn(style, "line_width") || Object.hasOwn(style, "lineWidth")) {
+      flags |= XYTC_HAS_LINE_WIDTH;
+      lineWidth = Number(style.line_width ?? style.lineWidth);
+    }
+    let hexDx = Number.NaN;
+    let hexDy = Number.NaN;
+    if (HEXBIN_KINDS.has(trace.kind)) {
+      flags |= XYTC_HAS_HEX;
+      if (style.hex_dx != null || style.dx != null) hexDx = Number(style.hex_dx ?? style.dx);
+      if (style.hex_dy != null || style.dy != null) hexDy = Number(style.hex_dy ?? style.dy);
+    }
+    if (BAND_KINDS.has(trace.kind)) {
+      const hasPerimeter = Object.hasOwn(style, "stroke_perimeter") || Object.hasOwn(style, "strokePerimeter");
+      if (hasPerimeter) {
+        const perimeter = Object.hasOwn(style, "stroke_perimeter") ? style.stroke_perimeter : style.strokePerimeter;
+        if (typeof perimeter !== "boolean") flags |= XYTC_PERIMETER_INVALID;
+        else if (perimeter === true) flags |= XYTC_PERIMETER_TRUE;
+      }
+    }
+    let dashB = new Uint8Array();
+    let dashPattern = [];
+    const dash = style.dash;
+    if (typeof dash === "string") dashB = encodeUtf8(dash);
+    else if (Array.isArray(dash)) {
+      flags |= XYTC_HAS_DASH_PATTERN;
+      dashPattern = dash.map(Number);
+    }
+    const linecapB = (style.linecap ?? style.lineCap) != null ? encodeUtf8(String(style.linecap ?? style.lineCap)) : new Uint8Array();
+    const stepB = style.step != null ? encodeUtf8(String(style.step)) : new Uint8Array();
+    const curveB = style.curve != null ? encodeUtf8(String(style.curve)) : new Uint8Array();
+    let fillCss = new Uint8Array();
+    let fillSpace = new Uint8Array();
+    let gradientBlob = new Uint8Array();
+    if (Object.hasOwn(style, "fill")) {
+      flags |= XYTC_HAS_FILL;
+      const fill = style.fill;
+      if (typeof fill === "string") fillCss = encodeUtf8(fill);
+      else if (fill != null && typeof fill === "object" && fill.space != null && fill.dir != null && Array.isArray(fill.stops)) {
+        flags |= XYTC_HAS_GRADIENT_SPEC;
+        gradientBlob = packGradientSpec(fill) ?? new Uint8Array();
+      } else if (fill != null && typeof fill === "object") {
+        flags |= XYTC_HAS_FILL_DICT;
+        fillCss = encodeUtf8(String(fill.gradient ?? ""));
+        fillSpace = encodeUtf8(String(fill.space ?? "mark"));
+      }
+    }
+    let strokeCss = new Uint8Array();
+    if (Object.hasOwn(style, "stroke")) {
+      flags |= XYTC_HAS_STROKE;
+      strokeCss = encodeUtf8(style.stroke);
+    }
+    let lineColor = new Uint8Array();
+    if (Object.hasOwn(style, "line_color") || Object.hasOwn(style, "lineColor")) {
+      flags |= XYTC_HAS_LINE_COLOR;
+      lineColor = encodeUtf8(style.line_color ?? style.lineColor);
+    }
+    const colorCss = encodeUtf8(style.color ?? (typeof trace.color === "string" ? trace.color : trace.color?.color) ?? "");
+    let colorMode = new Uint8Array();
+    let colorConst = new Uint8Array();
+    const channel = trace.color_ch ?? trace.colorChannel;
+    if (typeof channel === "string") {
+      flags |= XYTC_COLOR_CH | XYTC_COLOR_CH_CONSTANT;
+      colorConst = encodeUtf8(channel);
+    } else if (channel != null && typeof channel === "object" && !Array.isArray(channel) && !ArrayBuffer.isView(channel)) {
+      flags |= XYTC_COLOR_CH;
+      colorMode = encodeUtf8(String(channel.mode ?? ""));
+      if (channel.mode === "constant" && channel.constant != null) {
+        flags |= XYTC_COLOR_CH_CONSTANT;
+        colorConst = encodeUtf8(String(channel.constant));
+      }
+    }
+    if (trace.color_target != null || trace.color2_ch != null) flags |= XYTC_COLOR2;
+    if (scatterUsesDensity(trace)) flags |= XYTC_USE_DENSITY;
+    if (showLegend) flags |= XYTC_SHOW_LEGEND;
+    let markerBlob = new Uint8Array();
+    if (trace.kind === "scatter" && style.marker_path != null) {
+      const packed = packMarkerBlob(style.marker_path);
+      if (packed) {
+        flags |= XYTC_HAS_MARKER;
+        markerBlob = packed;
+      }
+    }
+    const prefix = new Uint8Array(160);
+    const view = new DataView(prefix.buffer);
+    prefix.set(encodeUtf8("XYTR").slice(0, 4), 0);
+    view.setUint16(4, 1, true);
+    view.setUint16(6, kind.length, true);
+    view.setUint32(8, flags >>> 0, true);
+    view.setUint16(12, nameB.length, true);
+    view.setUint16(14, symbolB.length, true);
+    view.setFloat64(16, opacity, true);
+    view.setFloat64(24, fillOpacity, true);
+    view.setFloat64(32, strokeOpacity, true);
+    view.setFloat64(40, lineOpacity, true);
+    view.setFloat64(48, size, true);
+    view.setFloat64(56, sizeCh, true);
+    view.setFloat64(64, strokeWidth, true);
+    view.setFloat64(72, width, true);
+    view.setFloat64(80, lineWidth, true);
+    view.setFloat64(88, hexDx, true);
+    view.setFloat64(96, hexDy, true);
+    view.setUint16(104, dashB.length, true);
+    view.setUint16(106, linecapB.length, true);
+    view.setUint16(108, stepB.length, true);
+    view.setUint16(110, curveB.length, true);
+    view.setUint16(112, fillCss.length, true);
+    view.setUint16(114, strokeCss.length, true);
+    view.setUint16(116, lineColor.length, true);
+    view.setUint16(118, colorCss.length, true);
+    view.setUint16(120, colorMode.length, true);
+    view.setUint16(122, colorConst.length, true);
+    view.setUint16(124, fillSpace.length, true);
+    view.setUint16(126, symbolInt, true);
+    view.setUint32(128, dashPattern.length, true);
+    view.setUint32(132, markerBlob.length, true);
+    view.setUint32(136, gradientBlob.length, true);
+    const pattern = new Uint8Array(dashPattern.length * 8);
+    const patternView = new DataView(pattern.buffer);
+    dashPattern.forEach((value, index) => patternView.setFloat64(index * 8, value, true));
+    records.push(prefix, kind, nameB, symbolB, dashB, linecapB, stepB, curveB, fillCss, strokeCss, lineColor, colorCss, colorMode, colorConst, fillSpace, pattern, markerBlob, gradientBlob);
+  }
+  const header = new Uint8Array(16);
+  const headerView = new DataView(header.buffer);
+  header.set(encodeUtf8("XYTC").slice(0, 4), 0);
+  headerView.setUint32(4, 1, true);
+  headerView.setUint32(8, traces.length, true);
+  return concatBytes([header, ...records]);
+}
+
+function unpackMarkerBlob(blob) {
+  if (blob.length < 8) return null;
+  const view = new DataView(blob.buffer, blob.byteOffset, blob.byteLength);
+  const nContours = view.getUint32(0, true);
+  const filled = blob[4] !== 0;
+  let at = 8;
+  const contours = [];
+  for (let i = 0; i < nContours; i += 1) {
+    const nValues = view.getUint32(at, true);
+    at += 4;
+    const values = [];
+    for (let j = 0; j < nValues; j += 1) {
+      values.push(view.getFloat64(at, true));
+      at += 8;
+    }
+    contours.push(values);
+  }
+  return { contours, filled: Boolean(filled) };
+}
+
+function unpackGradientBlob(blob) {
+  if (blob.length < 4) return null;
+  const view = new DataView(blob.buffer, blob.byteOffset, blob.byteLength);
+  const space = blob[0];
+  const dir = blob[1];
+  const nStops = blob[2];
+  let at = 4;
+  const stops = [];
+  for (let i = 0; i < nStops; i += 1) {
+    const t = view.getFloat32(at, true);
+    stops.push([t, [blob[at + 4], blob[at + 5], blob[at + 6], blob[at + 7]]]);
+    at += 8;
+  }
+  return { space: space ? "plot" : "mark", dir: GRAD_DIR_FROM_CODE[dir] ?? "down", stops };
+}
+
+function unpackXyTo(blob) {
+  if (blob.length < 16 || blob[0] !== 88 || blob[1] !== 89 || blob[2] !== 84 || blob[3] !== 79) {
+    throw new RangeError("invalid scene trace compile packing");
+  }
+  const view = new DataView(blob.buffer, blob.byteOffset, blob.byteLength);
+  if (view.getUint32(4, true) !== 1) throw new RangeError("invalid scene trace compile facts version");
+  const nTraces = view.getUint32(8, true);
+  let at = 16;
+  const compiled = [];
+  for (let i = 0; i < nTraces; i += 1) {
+    if (blob[at] !== 88 || blob[at + 1] !== 89 || blob[at + 2] !== 84 || blob[at + 3] !== 79) {
+      throw new RangeError("invalid scene trace compile packing");
+    }
+    const fillRgba = Array.from(blob.subarray(at + 8, at + 12));
+    const strokeRgba = Array.from(blob.subarray(at + 12, at + 16));
+    const strokeWidth = view.getFloat64(at + 16, true);
+    const diameter = view.getFloat64(at + 24, true);
+    const symbol = view.getUint16(at + 32, true);
+    const legendKind = blob[at + 34];
+    const legendInclude = blob[at + 35] !== 0;
+    const legendSymbol = view.getUint16(at + 36, true);
+    const authoredStep = view.getUint16(at + 38, true);
+    const factBits = view.getUint32(at + 40, true);
+    const dashCount = view.getUint32(at + 44, true);
+    const linecap = blob[at + 48];
+    const hasMarker = blob[at + 49];
+    const hasGradient = blob[at + 50];
+    const markerLen = view.getUint32(at + 52, true);
+    const gradientLen = view.getUint32(at + 56, true);
+    const hexDx = view.getFloat64(at + 60, true);
+    const hexDy = view.getFloat64(at + 68, true);
+    at += 160;
+    let dash = null;
+    if (dashCount) {
+      dash = [];
+      for (let j = 0; j < dashCount; j += 1) {
+        dash.push(view.getFloat64(at, true));
+        at += 8;
+      }
+    }
+    const marker = blob.subarray(at, at + markerLen);
+    at += markerLen;
+    const gradient = blob.subarray(at, at + gradientLen);
+    at += gradientLen;
+    compiled.push({
+      fillRgba, strokeRgba, strokeWidth, diameter, symbol, legendKind, legendInclude, legendSymbol,
+      authoredStep, factBits, hexDx, hexDy,
+      dash,
+      linecap: linecap === XYTO_LINECAP_NONE ? null : linecap,
+      markerPath: hasMarker && marker.length ? unpackMarkerBlob(marker) : null,
+      fillGradient: hasGradient && gradient.length ? unpackGradientBlob(gradient) : null,
+    });
+  }
+  if (at !== blob.length) throw new RangeError("invalid scene trace compile packing");
+  return compiled;
+}
+
+function raiseTraceCompile(code, index, figure) {
+  const trace = figure.traces?.[index];
+  const style = trace?.style ?? {};
+  if (code === -5) throw new RangeError("trace opacity must be in [0, 1]");
+  if (code === -12) throw new RangeError("trace opacity channels must be in [0, 1]");
+  if (code === -6) {
+    const symbol = style.symbol ?? 0;
+    throw new RangeError(`Scene v12 does not support scatter symbol ${typeof symbol === "string" ? JSON.stringify(symbol) : symbol}`);
+  }
+  if (code === -7) throw new RangeError(`Scene v12 does not support step mode ${JSON.stringify(style.step)}`);
+  if (code === -8) throw new RangeError("Scene v25 area stroke_perimeter must be a boolean");
+  if (code === -9) throw new RangeError("Scene v12 hexbin requires finite hex_dx/hex_dy cell pitch");
+  if (code === -10) throw new RangeError("Scene v12 does not yet encode two-ended ribbon gradients");
+  if (code === -11) throw new RangeError(`Scene v12 does not yet encode ${trace?.kind ?? "mark"} non-CSS fills`);
+  if (code === -13) throw new RangeError("Scene v12 does not yet support data-driven paint channels");
+  if (code === -2) throw new RangeError("invalid scene trace compile facts version");
+  throw new RangeError("invalid scene trace compile packing");
+}
+
+function packTraceCompile(facts) {
+  const factsBytes = facts instanceof Uint8Array ? facts : new Uint8Array();
+  const out = new Uint8Array(Math.max(65536, factsBytes.length + 4096));
+  const code = xyScenePackTraceCompile(
+    factsBytes.length ? u8Ptr(factsBytes) : 0,
+    BigInt(factsBytes.length),
+    u8Ptr(out),
+    BigInt(out.length),
+  );
+  if (code < 0) {
+    const index = new DataView(out.buffer, out.byteOffset, 4).getUint32(0, true);
+    const error = new RangeError("invalid scene trace compile packing");
+    error.code = code;
+    error.index = index;
+    throw error;
+  }
+  return out.subarray(0, code);
+}
+
 function packChromeFacts(figure, legendEntries, styles, { width, height, margins = null, colorbarOk = true } = {}) {
   const FLAG_AUTHORED_MARGINS = 1 << 0, FLAG_PADDING = 1 << 1, FLAG_X_MAJOR_AUTO = 1 << 2, FLAG_Y_MAJOR_AUTO = 1 << 3;
   const FLAG_X_TICK_LABELS = 1 << 4, FLAG_Y_TICK_LABELS = 1 << 5, FLAG_HAS_CHROME = 1 << 6, FLAG_HAS_LEGEND = 1 << 7, FLAG_HAS_COLORBAR = 1 << 8;
@@ -3864,49 +4239,37 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   const ySceneAxis = sceneAxis("y", 2, yDomain);
   const xSceneDescriptor = axisDescriptor(xSceneAxis, "xAxis");
   const ySceneDescriptor = axisDescriptor(ySceneAxis, "yAxis");
-  for (const trace of figure.traces) {
-    const style = trace.style ?? {};
-    const opacity = Number(style.opacity ?? 1);
-    if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) throw new RangeError("trace opacity must be in [0, 1]");
-    const fillOpacity = BAND_KINDS.has(trace.kind) || RIBBON_KINDS.has(trace.kind) ? Number(style.fill_opacity ?? 1) : 1;
-    const strokeOpacity = BAND_KINDS.has(trace.kind) || RIBBON_KINDS.has(trace.kind) ? Number(style.stroke_opacity ?? 1) : 1;
-    const lineOpacity = BAND_KINDS.has(trace.kind) ? Number(style.line_opacity ?? 1) : 1;
-    if ((BAND_KINDS.has(trace.kind) || RIBBON_KINDS.has(trace.kind)) && [fillOpacity, strokeOpacity, lineOpacity].some((value) => !Number.isFinite(value) || value < 0 || value > 1)) {
-      throw new RangeError("trace opacity channels must be in [0, 1]");
-    }
-    const symbolCode = sceneSymbolCode(style.symbol ?? 0);
-    styles.push(resolveMarkStyle(trace, opacity, fillOpacity, strokeOpacity, lineOpacity, symbolCode));
-    const parsedDash = parseSceneDash(style.dash);
-    dashes.push(parsedDash === false ? null : parsedDash);
-    const parsedCap = parseSceneLinecap(style.linecap ?? style.lineCap);
-    linecaps.push(parsedCap === false ? null : parsedCap);
-    let markerPath = null;
-    if (trace.kind === "scatter" && style.marker_path != null) {
-      markerPath = validateMarkerPath(style.marker_path);
-      if (markerPath && markerPath.filled && markerPath.contours.some((contour) => contour.length < 6)) {
-        markerPath = null;
-      }
-    }
-    markerPaths.push(markerPath);
-    fillGradients.push(admitFillGradient(trace));
+  let compiledTraces;
+  try {
+    compiledTraces = unpackXyTo(packTraceCompile(packXyTc(figure)));
+  } catch (error) {
+    if (Number.isInteger(error.code) && error.code < 0) raiseTraceCompile(error.code, error.index ?? 0, figure);
+    throw error;
+  }
+  if (compiledTraces.length !== (figure.traces ?? []).length) {
+    throw new RangeError("invalid scene trace compile packing");
+  }
+  for (const [traceIndex, trace] of figure.traces.entries()) {
+    const compiled = compiledTraces[traceIndex];
+    styles.push({ fillRgba: compiled.fillRgba, strokeRgba: compiled.strokeRgba, strokeWidth: compiled.strokeWidth });
+    dashes.push(compiled.dash);
+    linecaps.push(compiled.linecap);
+    markerPaths.push(compiled.markerPath);
+    fillGradients.push(compiled.fillGradient);
     const styleRef = styles.length - 1;
-    if (trace.name != null && String(trace.name).length > 0 && figure.showLegend !== false) {
-      const legendKind = trace.kind === "scatter" ? 0 : STROKE_KINDS.has(trace.kind) ? 1 : 2;
-      legendEntries.push({ styleRef, kind: legendKind, symbol: legendKind === 0 ? sceneSymbolCode(style.symbol ?? 0) : 0, label: String(trace.name) });
+    if (compiled.legendInclude && trace.name != null && String(trace.name).length > 0) {
+      legendEntries.push({ styleRef, kind: compiled.legendKind, symbol: compiled.legendSymbol, label: String(trace.name) });
     }
     const id = Number(trace.id);
 
-    if (RIBBON_KINDS.has(trace.kind) && trace.color_target != null) {
-      throw new RangeError("Scene v12 does not yet encode two-ended ribbon gradients");
-    }
     let packSymbol = 0;
     let packDiameter = 0;
     let packX = trace.x;
     let packY = trace.y;
-    let authoredStep = 0;
-    let factBits = 0;
-    let hexDx = 0;
-    let hexDy = 0;
+    let authoredStep = compiled.authoredStep;
+    let factBits = compiled.factBits;
+    let hexDx = compiled.hexDx;
+    let hexDy = compiled.hexDy;
     let gridRows = 0;
     let gridCols = 0;
     if (HEATMAP_KINDS.has(trace.kind)) {
@@ -3936,36 +4299,12 @@ export function figureSceneV3(figure, { margins = null } = {}) {
         heatmapPaintPlanes.push(plane);
         factBits |= FACT_HEATMAP_PAINT;
       }
-    } else if (HEXBIN_KINDS.has(trace.kind)) {
-      const dx = Number(style.hex_dx ?? style.dx);
-      const dy = Number(style.hex_dy ?? style.dy);
-      if (!Number.isFinite(dx) || !Number.isFinite(dy) || dx <= 0 || dy <= 0) {
-        throw new RangeError("Scene v12 hexbin requires finite hex_dx/hex_dy cell pitch");
-      }
-      hexDx = dx;
-      hexDy = dy;
-    } else if (BAND_KINDS.has(trace.kind)) {
-      const strokePerimeter = style.stroke_perimeter === undefined ? false : style.stroke_perimeter;
-      if (typeof strokePerimeter !== "boolean") {
-        throw new RangeError("Scene v25 area stroke_perimeter must be a boolean");
-      }
-      if (strokePerimeter) factBits |= FACT_STROKE_PERIMETER;
-      if (curveIsSmooth(style)) factBits |= FACT_CURVE_SMOOTH;
-    } else if (trace.kind === "line") {
-      const where = style.step;
-      if (where != null) {
-        if (!["pre", "post", "mid"].includes(where)) {
-          throw new RangeError(`Scene v12 does not support step mode ${JSON.stringify(where)}`);
-        }
-        authoredStep = { pre: 1, mid: 2, post: 3 }[where];
-      }
-      if (curveIsSmooth(style)) factBits |= FACT_CURVE_SMOOTH;
     } else if (trace.kind === "scatter") {
-      packSymbol = sceneSymbolCode(style.symbol ?? 0);
-      packDiameter = Number(style.size ?? style.diameter ?? 4);
-      const perItem = style.color_channel != null
-        || style.size_channel != null
-        || style.stroke_channel != null
+      packSymbol = compiled.symbol;
+      packDiameter = compiled.diameter;
+      const perItem = (trace.style ?? {}).color_channel != null
+        || (trace.style ?? {}).size_channel != null
+        || (trace.style ?? {}).stroke_channel != null
         || trace.color_ch != null
         || trace.size_ch != null
         || trace.stroke_ch != null;

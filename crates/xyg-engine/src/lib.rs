@@ -52,6 +52,8 @@ pub use scene_export::{
 };
 pub mod scene_chrome;
 pub use scene_chrome::{pack_figure_chrome, ChromePackError};
+pub mod scene_trace_compile;
+pub use scene_trace_compile::{pack_trace_compile, TraceCompileCode, TraceCompileError};
 pub mod scene_pack;
 pub use scene_pack::{
     pack_product, pack_product_facts, pack_trace, parse_product_facts, resolve_pack_kind,

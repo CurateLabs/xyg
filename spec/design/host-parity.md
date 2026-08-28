@@ -193,7 +193,11 @@ loc default/allowlists (empty authored loc is fail-closed, not the
 upper-right default), colorbar flags/framing, XYTL tick-label framing, and
 the 200-tick axis bound resolve from packed XYCF v1. Layout errors stay
 plot-layout diagnostics so the public-export predicate can remap them to
-`XYG_SCENE_UNSUPPORTED_VIEWPORT`. ABI 137 / Scene v27 adds
+`XYG_SCENE_UNSUPPORTED_VIEWPORT`. ABI 154 adds
+`xyg_scene_pack_trace_compile` so opacity, symbol, color, dash, linecap,
+marker-path, diameter, legend kind, step, curve-smooth, stroke-perimeter,
+hex pitch, fill-gradient admission, and XYMS resolve from packed XYTC v1.
+ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
 record plus XYIM. ABI 138 / Scene v28
@@ -219,7 +223,10 @@ packed columns. ABI 152 owns XYEP layout, kind/step/annotation codes, and
 flag derivation from packed XYEF v1. ABI 153 owns plot layout, chrome-style
 resolve, legend loc default/allowlists (empty authored loc is fail-closed),
 colorbar flags/framing, XYTL tick-label framing, and the 200-tick axis bound
-from packed XYCF v1. Polar+step+smooth
+from packed XYCF v1. ABI 154 owns per-trace Scene compile policy
+(opacity, symbol, color, dash, linecap, marker path, diameter, legend kind,
+step, curve-smooth, stroke-perimeter, hex pitch, fill-gradient admission,
+and XYMS resolve) from packed XYTC v1. Polar+step+smooth
 and authored marker glyphs stay
 compatibility. ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
@@ -231,6 +238,8 @@ ABI 152 makes that envelope Rust-owned: Python and Node pack `XYEF` v1 facts
 and call `xyg_scene_pack_public_export`.
 ABI 153 makes figure chrome Rust-owned: Python and Node pack `XYCF` v1 facts
 and call `xyg_scene_pack_figure_chrome`.
+ABI 154 makes per-trace Scene compile Rust-owned: Python and Node pack `XYTC`
+v1 facts and call `xyg_scene_pack_trace_compile`.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call
 `xyg_figure_autorange` / `xyg_auto_domain`. Direct-browser WASM compile uses
@@ -455,6 +464,11 @@ loc default/allowlists (empty authored loc is fail-closed), colorbar
 flags/framing, XYTL tick-label framing, and the 200-tick axis bound from
 packed XYCF v1. Layout errors stay plot-layout diagnostics so the
 public-export predicate can remap them to `XYG_SCENE_UNSUPPORTED_VIEWPORT`.
+ABI 154
+`xyg_scene_pack_trace_compile` owns per-trace Scene compile policy from
+packed XYTC v1 so opacity, symbol, color, dash, linecap, marker path,
+diameter, legend kind, step, curve-smooth, stroke-perimeter, hex pitch,
+fill-gradient admission, and XYMS resolve cannot drift.
 ABI 116
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 so tags and opposite-axis spanning cannot drift. ABI 117

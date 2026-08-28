@@ -54,7 +54,10 @@ use xyg_engine::scene_density::{self, DensityGridError};
 use xyg_engine::scene_colorbar::{self, ColorbarError};
 use xyg_engine::pack_figure_chrome;
 use xyg_engine::pack_public_export;
+use xyg_engine::pack_trace_compile;
 use xyg_engine::ChromePackError;
+use xyg_engine::TraceCompileCode;
+use xyg_engine::TraceCompileError;
 use xyg_engine::scene_figure_support_reason;
 use xyg_engine::scene_legend::{self, LegendError};
 use xyg_engine::scene_pack::{self, PackError};
@@ -128,7 +131,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 153;
+pub const ABI_VERSION: u32 = 154;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -296,6 +299,68 @@ pub unsafe extern "C" fn xyg_scene_pack_figure_chrome(
                 }
             }
             Err(error) => -(error as i32),
+        }
+    })
+}
+
+/// Pack authored `XYTC` v1 per-trace compile facts into the `XYTO` v1 bundle.
+///
+/// Hosts pass kind/style literals, opacities, dash/cap/step/curve strings,
+/// fill/stroke CSS, color-channel presence, marker-path blobs, and hex pitch.
+/// Rust owns opacity applicability, symbol codes, constant-color vs channel vs
+/// density fallback, dash presets, linecap, marker-path admission, diameter,
+/// legend kind, step, curve-smooth and stroke-perimeter bits, hex pitch,
+/// fill-gradient admission, and XYMS mark-style resolve. Returns the XYTO
+/// byte count on success, or a negated `TraceCompileCode`. On error, when
+/// `out_cap >= 4`, writes the failing trace index as a little-endian u32.
+/// Encoded Scene v31 is unchanged.
+///
+/// # Safety
+/// When `facts_len` is non-zero, `facts` must address that many readable
+/// bytes. When `out_cap` is non-zero, `out` must address that many writable
+/// bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_pack_trace_compile(
+    facts: *const u8,
+    facts_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if (facts_len > 0 && facts.is_null()) || (out_cap > 0 && out.is_null()) {
+        return -(TraceCompileError {
+            code: TraceCompileCode::Length,
+            index: 0,
+        }
+        .code as i32);
+    }
+    ffi_guard(-(TraceCompileCode::Length as i32), || {
+        let facts_bytes = if facts_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(facts, facts_len)
+        };
+        match pack_trace_compile(facts_bytes) {
+            Ok(bytes) => {
+                if bytes.len() > out_cap {
+                    return -(TraceCompileCode::Output as i32);
+                }
+                if bytes.is_empty() {
+                    return 0;
+                }
+                let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                dest[..bytes.len()].copy_from_slice(&bytes);
+                match i32::try_from(bytes.len()) {
+                    Ok(count) => count,
+                    Err(_) => -(TraceCompileCode::Limit as i32),
+                }
+            }
+            Err(error) => {
+                if out_cap >= 4 {
+                    let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                    dest[..4].copy_from_slice(&error.index.to_le_bytes());
+                }
+                -(error.code as i32)
+            }
         }
     })
 }
@@ -2048,6 +2113,12 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// legend loc default/allowlists (empty authored loc is fail-closed),
 /// colorbar flags/framing, XYTL tick-label framing, and the 200-tick axis
 /// bound from packed XYCF v1 so figure chrome cannot drift.
+/// ABI 154 does not change Scene records;
+/// `xyg_scene_pack_trace_compile` owns per-trace Scene compile policy
+/// (opacity, symbol, color, dash, linecap, marker path, diameter, legend
+/// kind, step, curve-smooth, stroke-perimeter, hex pitch, fill-gradient
+/// admission, and XYMS resolve) from packed XYTC v1 so Python and Node
+/// cannot drift.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
@@ -14716,6 +14787,20 @@ mod tests {
         };
         assert!(chrome_code > 0);
         assert_eq!(&chrome_out[..4], b"XYCC");
+        let mut xytc = vec![0u8; 16];
+        xytc[..4].copy_from_slice(b"XYTC");
+        xytc[4..8].copy_from_slice(&1u32.to_le_bytes());
+        let mut compile_out = vec![0u8; 4096];
+        let compile_code = unsafe {
+            xyg_scene_pack_trace_compile(
+                xytc.as_ptr(),
+                xytc.len(),
+                compile_out.as_mut_ptr(),
+                compile_out.len(),
+            )
+        };
+        assert!(compile_code > 0);
+        assert_eq!(&compile_out[..4], b"XYTO");
     }
 
     #[test]

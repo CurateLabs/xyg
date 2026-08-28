@@ -1454,6 +1454,7 @@ ABI 153 owns plot layout, chrome-style resolve, legend loc default/allowlists
 flags/framing, XYTL tick-label framing, and the 200-tick axis bound from packed
 XYCF v1. Layout errors stay plot-layout diagnostics so the public-export
 predicate can remap them to `XYG_SCENE_UNSUPPORTED_VIEWPORT`.
+ABI 154 owns per-trace Scene compile policy from packed XYTC v1.
 Polar+step+smooth and
 authored marker glyphs stay compatibility. Irregular
 spacing, and LOD stay compatibility.

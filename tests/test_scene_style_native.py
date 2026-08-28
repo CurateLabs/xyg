@@ -22,6 +22,7 @@ from xyg._native import (
     scene_pack_public_export,
     scene_pack_scene_extras,
     scene_pack_trace,
+    scene_pack_trace_compile,
     scene_resolve_chrome_style,
     scene_resolve_mark_styles,
     scene_resolve_pack_kind,
@@ -52,6 +53,14 @@ def test_named_color_scatter_compiles() -> None:
     figure = Figure().scatter([0.0, 1.0], [0.0, 1.0], color="steelblue")
     encoded = figure_scene(figure)
     assert encoded  # native CSS named colors must not fail closed on the host
+
+
+def test_empty_trace_compile_facts_emit_xyto() -> None:
+    packed = scene_pack_trace_compile(
+        b"XYTC" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    )
+    assert packed[:4] == b"XYTO"
+    assert int.from_bytes(packed[8:12], "little") == 0
 
 
 def test_line_default_stroke_width_is_one_and_a_half() -> None:

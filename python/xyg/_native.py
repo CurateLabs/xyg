@@ -1900,6 +1900,39 @@ def scene_pack_figure_chrome(facts: bytes) -> bytes:
     return bytes(out[:code])
 
 
+class SceneTraceCompileError(ValueError):
+    """Native XYTC compile failure carrying the ABI error code and trace index."""
+
+    def __init__(self, code: int, index: int) -> None:
+        self.code = int(code)
+        self.index = int(index)
+        messages = {
+            -2: "invalid scene trace compile facts version",
+            -5: "trace opacity must be finite and in [0, 1]",
+            -12: "trace opacity channels must be finite and in [0, 1]",
+        }
+        super().__init__(messages.get(self.code, "invalid scene trace compile packing"))
+
+
+def scene_pack_trace_compile(facts: bytes) -> bytes:
+    """Pack XYTC v1 trace-compile facts into the XYTO v1 bundle (M2 #271)."""
+    payload = facts if isinstance(facts, (bytes, bytearray, memoryview)) else bytes(facts)
+    out = np.zeros(max(65536, len(payload) + 4096), dtype=np.uint8)
+    source = np.frombuffer(payload, dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_pack_trace_compile(
+            _ptr_u8(source) if source.size else 0,
+            int(source.size),
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if code < 0:
+        index = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
+        raise SceneTraceCompileError(code, index)
+    return bytes(out[:code])
+
+
 def scene_figure_support_reason(payload: bytes) -> str:
     """Return Rust's figure-compile diagnostic for a packed XYFS envelope.
 

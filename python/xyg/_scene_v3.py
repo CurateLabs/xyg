@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import math
 import struct
-from typing import Any
+from typing import Any, NoReturn
 
 import numpy as np
 
@@ -2356,6 +2356,387 @@ def _gradient_solid_css(gradient: dict[str, Any]) -> str:
     return "rgb(0,0,0)"
 
 
+_XYTC_HEADER = struct.Struct("<4sIII")
+_XYTR_PREFIX = struct.Struct("<4s2HI2H11d12H3I20x")
+_XYTO_ENVELOPE = struct.Struct("<4sIII")
+_XYTO_PREFIX = struct.Struct("<4s2H4s4s2dHBBHHII4BII2d84x")
+_XYTC_HAS_FILL = 1 << 0
+_XYTC_HAS_STROKE = 1 << 1
+_XYTC_HAS_LINE_COLOR = 1 << 2
+_XYTC_HAS_STROKE_WIDTH = 1 << 3
+_XYTC_HAS_WIDTH = 1 << 4
+_XYTC_HAS_LINE_WIDTH = 1 << 5
+_XYTC_HAS_SIZE = 1 << 6
+_XYTC_HAS_SIZE_CH = 1 << 7
+_XYTC_HAS_HEX = 1 << 8
+_XYTC_PERIMETER_TRUE = 1 << 9
+_XYTC_PERIMETER_INVALID = 1 << 10
+_XYTC_COLOR_CH = 1 << 11
+_XYTC_COLOR_CH_CONSTANT = 1 << 12
+_XYTC_COLOR2 = 1 << 13
+_XYTC_USE_DENSITY = 1 << 14
+_XYTC_SHOW_LEGEND = 1 << 15
+_XYTC_HAS_NAME = 1 << 16
+_XYTC_HAS_DASH_PATTERN = 1 << 17
+_XYTC_HAS_MARKER = 1 << 18
+_XYTC_HAS_GRADIENT_SPEC = 1 << 19
+_XYTC_HAS_FILL_DICT = 1 << 20
+_XYTO_LINECAP_NONE = 255
+_GRAD_DIR_FROM_CODE = {0: "down", 1: "up", 2: "right", 3: "left"}
+
+
+def _pack_marker_blob(value: Any) -> bytes | None:
+    if not isinstance(value, dict):
+        return None
+    contours = value.get("contours")
+    if not isinstance(contours, (list, tuple)):
+        return None
+    payload = bytearray(struct.pack("<I", len(contours)))
+    payload.append(1 if value.get("filled", True) else 0)
+    payload.extend(b"\0\0\0")
+    try:
+        for contour in contours:
+            values = [float(item) for item in contour]
+            payload.extend(struct.pack("<I", len(values)))
+            if values:
+                payload.extend(struct.pack(f"<{len(values)}d", *values))
+    except (TypeError, ValueError):
+        return None
+    return bytes(payload)
+
+
+def _pack_gradient_spec(fill: dict[str, Any]) -> bytes | None:
+    space = {"mark": 0, "plot": 1}.get(fill.get("space"), 255)
+    direction = _GRAD_DIR_CODES.get(fill.get("dir"), 255)
+    stops = fill.get("stops")
+    if not isinstance(stops, (list, tuple)):
+        return None
+    payload = bytearray(bytes((space, direction, len(stops) & 0xFF, 0)))
+    try:
+        for stop in stops:
+            if not isinstance(stop, (list, tuple)) or len(stop) != 2:
+                return None
+            css = str(stop[1]).encode("utf-8")
+            payload.extend(struct.pack("<dH", float(stop[0]), len(css)))
+            payload.extend(css)
+    except (TypeError, ValueError):
+        return None
+    return bytes(payload)
+
+
+def _pack_xytc(figure: Any) -> bytes:
+    """Pack authored per-trace style literals as XYTC v1; Rust compiles XYTO."""
+    traces = list(getattr(figure, "traces", None) or [])
+    records = bytearray(_XYTC_HEADER.pack(b"XYTC", 1, len(traces), 0))
+    show_legend = bool(getattr(figure, "show_legend", True))
+    nan = float("nan")
+    for trace in traces:
+        style = getattr(trace, "style", None) or {}
+        flags = 0
+        kind = str(trace.kind).encode("utf-8")
+        name = str(trace.name) if getattr(trace, "name", None) else ""
+        if name:
+            flags |= _XYTC_HAS_NAME
+        name_b = name.encode("utf-8")
+        symbol = str(style.get("symbol", "circle") or "")
+        symbol_b = symbol.encode("utf-8")
+        opacity = float(style.get("opacity", 1.0))
+        fill_opacity = stroke_opacity = line_opacity = 1.0
+        if trace.kind in _BAND_KINDS | _RIBBON_KINDS:
+            fill_opacity = float(style.get("fill_opacity", 1.0))
+            stroke_opacity = float(style.get("stroke_opacity", 1.0))
+        if trace.kind in _BAND_KINDS:
+            line_opacity = float(style.get("line_opacity", 1.0))
+        size = nan
+        if "size" in style:
+            flags |= _XYTC_HAS_SIZE
+            size = float(style["size"])
+        size_ch_value = nan
+        size_ch = getattr(trace, "size_ch", None)
+        if size_ch is not None:
+            flags |= _XYTC_HAS_SIZE_CH
+            if getattr(size_ch, "constant", None) is not None:
+                size_ch_value = float(size_ch.constant)
+        stroke_width = width = line_width = 0.0
+        if "stroke_width" in style:
+            flags |= _XYTC_HAS_STROKE_WIDTH
+            stroke_width = float(style["stroke_width"])
+        if "width" in style:
+            flags |= _XYTC_HAS_WIDTH
+            width = float(style["width"])
+        if "line_width" in style:
+            flags |= _XYTC_HAS_LINE_WIDTH
+            line_width = float(style["line_width"])
+        hex_dx = hex_dy = nan
+        if trace.kind in _HEXBIN_KINDS:
+            flags |= _XYTC_HAS_HEX
+            raw_dx = style.get("hex_dx", style.get("dx"))
+            raw_dy = style.get("hex_dy", style.get("dy"))
+            if raw_dx is not None:
+                hex_dx = float(raw_dx)
+            if raw_dy is not None:
+                hex_dy = float(raw_dy)
+        if trace.kind in _BAND_KINDS and "stroke_perimeter" in style:
+            perimeter = style["stroke_perimeter"]
+            if not isinstance(perimeter, bool):
+                flags |= _XYTC_PERIMETER_INVALID
+            elif perimeter:
+                flags |= _XYTC_PERIMETER_TRUE
+        dash_b = b""
+        dash_pattern: list[float] = []
+        dash = style.get("dash")
+        if isinstance(dash, str):
+            dash_b = dash.encode("utf-8")
+        elif isinstance(dash, (list, tuple)):
+            flags |= _XYTC_HAS_DASH_PATTERN
+            try:
+                dash_pattern = [float(part) for part in dash]
+            except (TypeError, ValueError):
+                dash_pattern = []
+        linecap_b = str(style["linecap"]).encode("utf-8") if "linecap" in style else b""
+        step_b = str(style["step"]).encode("utf-8") if style.get("step") is not None else b""
+        curve_b = str(style["curve"]).encode("utf-8") if style.get("curve") is not None else b""
+        fill_css = b""
+        fill_space = b""
+        gradient_blob = b""
+        if "fill" in style:
+            flags |= _XYTC_HAS_FILL
+            fill = style["fill"]
+            if isinstance(fill, str):
+                fill_css = fill.encode("utf-8")
+            elif isinstance(fill, dict) and {"space", "dir", "stops"} <= set(fill):
+                flags |= _XYTC_HAS_GRADIENT_SPEC
+                gradient_blob = _pack_gradient_spec(fill) or b""
+            elif isinstance(fill, dict):
+                flags |= _XYTC_HAS_FILL_DICT
+                fill_css = str(fill.get("gradient") or "").encode("utf-8")
+                fill_space = str(fill.get("space") or "mark").encode("utf-8")
+        stroke_css = str(style["stroke"]).encode("utf-8") if "stroke" in style else b""
+        if "stroke" in style:
+            flags |= _XYTC_HAS_STROKE
+        line_color = str(style["line_color"]).encode("utf-8") if "line_color" in style else b""
+        if "line_color" in style:
+            flags |= _XYTC_HAS_LINE_COLOR
+        color_css = str(style["color"]).encode("utf-8") if "color" in style else b""
+        color_mode = b""
+        color_const = b""
+        channel = getattr(trace, "color_ch", None)
+        if channel is not None:
+            flags |= _XYTC_COLOR_CH
+            color_mode = str(getattr(channel, "mode", "") or "").encode("utf-8")
+            if getattr(channel, "constant", None) is not None:
+                flags |= _XYTC_COLOR_CH_CONSTANT
+                color_const = str(channel.constant).encode("utf-8")
+        if getattr(trace, "color2_ch", None) is not None:
+            flags |= _XYTC_COLOR2
+        if trace.kind == "scatter" and trace.use_density():
+            flags |= _XYTC_USE_DENSITY
+        if show_legend:
+            flags |= _XYTC_SHOW_LEGEND
+        marker_blob = b""
+        if trace.kind == "scatter" and style.get("marker_path") is not None:
+            packed_marker = _pack_marker_blob(style.get("marker_path"))
+            if packed_marker:
+                flags |= _XYTC_HAS_MARKER
+                marker_blob = packed_marker
+        records.extend(
+            _XYTR_PREFIX.pack(
+                b"XYTR",
+                1,
+                len(kind),
+                flags,
+                len(name_b),
+                len(symbol_b),
+                opacity,
+                fill_opacity,
+                stroke_opacity,
+                line_opacity,
+                size,
+                size_ch_value,
+                stroke_width,
+                width,
+                line_width,
+                hex_dx,
+                hex_dy,
+                len(dash_b),
+                len(linecap_b),
+                len(step_b),
+                len(curve_b),
+                len(fill_css),
+                len(stroke_css),
+                len(line_color),
+                len(color_css),
+                len(color_mode),
+                len(color_const),
+                len(fill_space),
+                0,
+                len(dash_pattern),
+                len(marker_blob),
+                len(gradient_blob),
+            )
+        )
+        records.extend(kind)
+        records.extend(name_b)
+        records.extend(symbol_b)
+        records.extend(dash_b)
+        records.extend(linecap_b)
+        records.extend(step_b)
+        records.extend(curve_b)
+        records.extend(fill_css)
+        records.extend(stroke_css)
+        records.extend(line_color)
+        records.extend(color_css)
+        records.extend(color_mode)
+        records.extend(color_const)
+        records.extend(fill_space)
+        if dash_pattern:
+            records.extend(struct.pack(f"<{len(dash_pattern)}d", *dash_pattern))
+        records.extend(marker_blob)
+        records.extend(gradient_blob)
+    return bytes(records)
+
+
+def _unpack_marker_blob(blob: bytes) -> dict[str, Any] | None:
+    if len(blob) < 8:
+        return None
+    n_contours = struct.unpack_from("<I", blob, 0)[0]
+    filled = blob[4] != 0
+    at = 8
+    contours: list[list[float]] = []
+    for _ in range(int(n_contours)):
+        n_values = struct.unpack_from("<I", blob, at)[0]
+        at += 4
+        values = list(struct.unpack_from(f"<{n_values}d", blob, at))
+        at += int(n_values) * 8
+        contours.append(values)
+    return {"contours": contours, "filled": bool(filled)}
+
+
+def _unpack_gradient_blob(blob: bytes) -> dict[str, Any] | None:
+    if len(blob) < 4:
+        return None
+    space, direction, n_stops = blob[0], blob[1], blob[2]
+    at = 4
+    stops: list[tuple[float, tuple[int, int, int, int]]] = []
+    for _ in range(int(n_stops)):
+        t = float(struct.unpack_from("<f", blob, at)[0])
+        rgba = (int(blob[at + 4]), int(blob[at + 5]), int(blob[at + 6]), int(blob[at + 7]))
+        at += 8
+        stops.append((t, rgba))
+    return {
+        "space": "plot" if space else "mark",
+        "dir": _GRAD_DIR_FROM_CODE.get(int(direction), "down"),
+        "stops": stops,
+    }
+
+
+def _unpack_xyto(blob: bytes) -> list[dict[str, Any]]:
+    """Split Rust-owned XYTO compile output into per-trace Scene fields."""
+    if len(blob) < _XYTO_ENVELOPE.size or blob[:4] != b"XYTO":
+        raise ValueError("invalid scene trace compile packing")
+    _magic, version, n_traces, _reserved = _XYTO_ENVELOPE.unpack_from(blob, 0)
+    if version != 1:
+        raise ValueError("invalid scene trace compile facts version")
+    at = _XYTO_ENVELOPE.size
+    compiled: list[dict[str, Any]] = []
+    for _ in range(int(n_traces)):
+        (
+            magic,
+            rec_version,
+            _rec_reserved,
+            fill,
+            stroke,
+            stroke_width,
+            diameter,
+            symbol,
+            legend_kind,
+            legend_include,
+            legend_symbol,
+            authored_step,
+            fact_bits,
+            dash_count,
+            linecap,
+            has_marker,
+            has_gradient,
+            _pad,
+            marker_len,
+            gradient_len,
+            hex_dx,
+            hex_dy,
+        ) = _XYTO_PREFIX.unpack_from(blob, at)
+        if magic != b"XYTO" or rec_version != 1:
+            raise ValueError("invalid scene trace compile packing")
+        at += _XYTO_PREFIX.size
+        dash = None
+        if dash_count:
+            dash = list(struct.unpack(f"<{dash_count}d", blob[at : at + dash_count * 8]))
+            at += int(dash_count) * 8
+        marker = blob[at : at + marker_len]
+        at += int(marker_len)
+        gradient = blob[at : at + gradient_len]
+        at += int(gradient_len)
+        compiled.append(
+            {
+                "style": (tuple(fill), tuple(stroke), float(stroke_width)),
+                "dash": dash,
+                "linecap": None if linecap == _XYTO_LINECAP_NONE else int(linecap),
+                "marker_path": _unpack_marker_blob(marker) if has_marker and marker else None,
+                "fill_gradient": _unpack_gradient_blob(gradient)
+                if has_gradient and gradient
+                else None,
+                "diameter": float(diameter),
+                "symbol": int(symbol),
+                "legend_kind": int(legend_kind),
+                "legend_include": bool(legend_include),
+                "legend_symbol": int(legend_symbol),
+                "authored_step": int(authored_step),
+                "fact_bits": int(fact_bits),
+                "hex_dx": float(hex_dx),
+                "hex_dy": float(hex_dy),
+            }
+        )
+    if at != len(blob):
+        raise ValueError("invalid scene trace compile packing")
+    return compiled
+
+
+def _raise_trace_compile(error: _native.SceneTraceCompileError, figure: Any) -> NoReturn:
+    traces = list(getattr(figure, "traces", None) or [])
+    trace = traces[error.index] if 0 <= error.index < len(traces) else None
+    style = getattr(trace, "style", None) or {} if trace is not None else {}
+    if error.code == -5:
+        raise ValueError("trace opacity must be finite and in [0, 1]") from error
+    if error.code == -12:
+        raise ValueError("trace opacity channels must be finite and in [0, 1]") from error
+    if error.code == -6:
+        symbol = str(style.get("symbol", "circle"))
+        raise UnsupportedSceneV3(f"Scene v12 does not support scatter symbol {symbol!r}") from error
+    if error.code == -7:
+        raise UnsupportedSceneV3(
+            f"Scene v12 does not support step mode {style.get('step')!r}"
+        ) from error
+    if error.code == -8:
+        raise UnsupportedSceneV3("Scene v25 area stroke_perimeter must be a boolean") from error
+    if error.code == -9:
+        raise UnsupportedSceneV3(
+            "Scene v12 hexbin requires finite hex_dx/hex_dy cell pitch"
+        ) from error
+    if error.code == -10:
+        raise UnsupportedSceneV3(
+            "Scene v12 does not yet encode two-ended ribbon gradients"
+        ) from error
+    if error.code == -11:
+        kind = getattr(trace, "kind", "mark") if trace is not None else "mark"
+        raise UnsupportedSceneV3(f"Scene v12 does not yet encode {kind} non-CSS fills") from error
+    if error.code == -13:
+        raise UnsupportedSceneV3(
+            "Scene v12 does not yet support data-driven paint channels"
+        ) from error
+    if error.code == -2:
+        raise ValueError("invalid scene trace compile facts version") from error
+    raise ValueError("invalid scene trace compile packing") from error
+
+
 def figure_scene(
     figure: Any,
     *,
@@ -2390,61 +2771,25 @@ def figure_scene(
     expansion_modes: list[int] = []
     legend_entries: list[tuple[int, int, int, str]] = []
     heatmap_paint_planes: list[bytes] = []
-    for trace in figure.traces:
-        style = trace.style
-        opacity = float(style.get("opacity", 1.0))
-        if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
-            raise ValueError("trace opacity must be finite and in [0, 1]")
-        fill_opacity = stroke_opacity = line_opacity = 1.0
-        if trace.kind in _BAND_KINDS | _RIBBON_KINDS:
-            fill_opacity = float(style.get("fill_opacity", 1.0))
-            stroke_opacity = float(style.get("stroke_opacity", 1.0))
-        if trace.kind in _BAND_KINDS:
-            line_opacity = float(style.get("line_opacity", 1.0))
-        if trace.kind in _BAND_KINDS | _RIBBON_KINDS and any(
-            not np.isfinite(value) or not 0.0 <= value <= 1.0
-            for value in (fill_opacity, stroke_opacity, line_opacity)
-        ):
-            raise ValueError("trace opacity channels must be finite and in [0, 1]")
-        symbol_name = str(style.get("symbol", "circle"))
-        if symbol_name not in _SYMBOL_CODES:
-            raise UnsupportedSceneV3(f"Scene v12 does not support scatter symbol {symbol_name!r}")
-        fill, stroke, stroke_width = _resolve_mark_style(
-            trace, opacity, fill_opacity, stroke_opacity, line_opacity, symbol_name
-        )
-        styles.append((fill, stroke, stroke_width))
-        parsed_dash = _parse_scene_dash(style.get("dash"))
-        dashes.append(None if parsed_dash is False else parsed_dash)
-        parsed_cap = _parse_scene_linecap(style.get("linecap"))
-        linecaps.append(None if parsed_cap is False else parsed_cap)
-        marker_path = None
-        raw_marker_path = style.get("marker_path")
-        if trace.kind == "scatter" and raw_marker_path is not None:
-            try:
-                marker_path = _validated_marker_path(raw_marker_path)
-            except ValueError:
-                marker_path = None
-            if (
-                marker_path is not None
-                and marker_path["filled"]
-                and any(len(contour) < 6 for contour in marker_path["contours"])
-            ):
-                marker_path = None
-        marker_paths.append(marker_path)
-        fill_gradients.append(_admitted_fill_gradient(trace))
+    try:
+        compiled_traces = _unpack_xyto(_native.scene_pack_trace_compile(_pack_xytc(figure)))
+    except _native.SceneTraceCompileError as error:
+        _raise_trace_compile(error, figure)
+    if len(compiled_traces) != len(figure.traces):
+        raise ValueError("invalid scene trace compile packing")
+    for trace, compiled in zip(figure.traces, compiled_traces, strict=True):
+        styles.append(compiled["style"])
+        dashes.append(compiled["dash"])
+        linecaps.append(compiled["linecap"])
+        marker_paths.append(compiled["marker_path"])
+        fill_gradients.append(compiled["fill_gradient"])
         style_ref = len(styles) - 1
-        diameter = (
-            float(trace.size_ch.constant)
-            if trace.kind == "scatter" and trace.size_ch is not None
-            else float(style.get("size", 4.0))
-        )
-        if trace.name and figure.show_legend:
-            legend_kind = 0 if trace.kind == "scatter" else 1 if trace.kind in _STROKE_KINDS else 2
+        if compiled["legend_include"] and trace.name:
             legend_entries.append(
                 (
                     style_ref,
-                    legend_kind,
-                    _SYMBOL_CODES[symbol_name] if legend_kind == 0 else 0,
+                    compiled["legend_kind"],
+                    compiled["legend_symbol"],
                     str(trace.name),
                 )
             )
@@ -2452,9 +2797,10 @@ def figure_scene(
         pack_symbol = 0
         pack_diameter = 0.0
         pack_columns = None
-        authored_step = 0
-        fact_bits = 0
-        hex_dx = hex_dy = 0.0
+        authored_step = compiled["authored_step"]
+        fact_bits = compiled["fact_bits"]
+        hex_dx = compiled["hex_dx"]
+        hex_dy = compiled["hex_dy"]
         grid_rows = grid_cols = 0.0
         if trace.kind in _HEATMAP_KINDS:
             rows, cols = _heatmap_shape(trace)
@@ -2470,27 +2816,9 @@ def figure_scene(
             if plane:
                 heatmap_paint_planes.append(plane)
                 fact_bits |= _XYPK_FACT_HEATMAP_PAINT
-        elif trace.kind in _HEXBIN_KINDS:
-            hex_dx, hex_dy = _hexbin_pitch(style)
-        elif trace.kind in _BAND_KINDS:
-            stroke_perimeter = style.get("stroke_perimeter", False)
-            if not isinstance(stroke_perimeter, bool):
-                raise UnsupportedSceneV3("Scene v25 area stroke_perimeter must be a boolean")
-            if stroke_perimeter:
-                fact_bits |= _XYPK_FACT_STROKE_PERIMETER
-            if _curve_is_smooth(style):
-                fact_bits |= _XYPK_FACT_CURVE_SMOOTH
-        elif trace.kind == "line":
-            where = style.get("step")
-            if where is not None:
-                if where not in {"pre", "post", "mid"}:
-                    raise UnsupportedSceneV3(f"Scene v12 does not support step mode {where!r}")
-                authored_step = {"pre": 1, "mid": 2, "post": 3}[where]
-            if _curve_is_smooth(style):
-                fact_bits |= _XYPK_FACT_CURVE_SMOOTH
         elif trace.kind == "scatter":
-            pack_symbol = _SYMBOL_CODES[symbol_name]
-            pack_diameter = diameter
+            pack_symbol = compiled["symbol"]
+            pack_diameter = compiled["diameter"]
             density_pack = _density_blit_pack(figure, trace)
             if density_pack is not None:
                 grid_rows, grid_cols, plane, pack_columns = density_pack
@@ -2532,7 +2860,9 @@ def figure_scene(
     # XYDS/XYLC/XYMP/XYGR layout, concat order, and XYEX wrapping (ABI 150).
     # Hosts pass density columns; Rust owns bin_2d / density_log_u8 / mean-color
     # (ABI 151). Hosts pack XYCF chrome facts; Rust owns plot layout, chrome
-    # resolve, legend/colorbar framing, and XYTL ticks (ABI 153).
+    # resolve, legend/colorbar framing, and XYTL ticks (ABI 153). Hosts pack
+    # XYTC trace-compile facts; Rust owns opacity/symbol/color/dash/cap/marker/
+    # diameter/legend/step/curve/perimeter/hex/gradient and XYMS (ABI 154).
     x_domain = tuple(float(value) for value in figure._range("x"))
     y_domain = tuple(float(value) for value in figure._range("y"))
     annotation_facts = bytearray()
