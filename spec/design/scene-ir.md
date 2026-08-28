@@ -57,8 +57,9 @@ existing 1/2/2.5/5/10 linear ladder and 1/2/5 log ladder, with a hard 200-tick
 ceiling. Node exposes every ABI family as `axisTicks`. Python's compatibility
 SVG/raster and pyplot locator paths now call `_svg.axis_ticks`, which maps each
 automatic family directly to this ABI. The retired per-family Python wrappers
-contained no fallback ladder; authored-value filtering, polar/secondary
-placement, and rich label formatting remain compatibility presentation.
+contained no fallback ladder; polar/secondary placement and rich label
+formatting remain compatibility presentation. Scene product-path authored
+cartesian filtering and `tick_labels` pairing are ABI 199.
 Cross-platform conformance keeps algebraic tick families bit-exact and permits
 one part in 10^15 for symmetric-log values whose final inverse transform uses
 the platform math library. Invalid domains and target counts fail closed at the
@@ -1010,7 +1011,8 @@ grouping, a required decimal precision, optional `f` or percent scaling/sign,
 and a literal suffix. Precision is bounded from 0 through 100, matching the
 existing browser fixed-decimal ceiling; each authored format is at most 256
 UTF-8 bytes and must not contain NUL. Explicit authored tick labels retain
-precedence. Invalid
+precedence; ABI 199 filters those majors through the ABI 128 tick window
+and pairs labels during chrome pack. Invalid
 grammar deliberately produces the ordinary deterministic label instead of an
 error, and a sub-unit log value that would collapse to formatted zero also
 uses its ordinary distinguishable label without affixes.
@@ -1037,7 +1039,9 @@ cartesian Scene-shaped specs use `xyg_scene_plot_layout` (#297). ABI 197
 settles authored `loc="best"` from packed XYCL/XYNM during product encode
 (#298); compatibility `_legendfit.py` still packs ChartView specs. ABI 198
 owns `_svg.layout()` padding/title/colorbar/right-y/polar-recut combination
-and pyplot tight-layout figure-edge extras (#299). Remaining #275
+and pyplot tight-layout figure-edge extras (#299). ABI 199 filters authored
+cartesian majors through the ABI 128 tick window and pairs `tick_labels`
+during chrome pack (#300). Remaining #275
 debt is compatibility `_svg._*room` for polar / extra-axis / CSS-font
 measurement and `_svg._legend_layout` CSS remaps.
 Optional formats still use the versioned `XYAF` v1 authoring envelope (`magic`,

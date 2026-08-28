@@ -1479,6 +1479,7 @@ def _pack_chrome_facts(
     y_major: list[float] = []
     if xa.get("tick_values") is not None:
         flags &= ~_XYCF_FLAG_X_MAJOR_AUTO
+        # ABI 199: Rust pack_figure_chrome filters through the tick window.
         x_major = [float(value) for value in xa.get("tick_values")]
     if ya.get("tick_values") is not None:
         flags &= ~_XYCF_FLAG_Y_MAJOR_AUTO

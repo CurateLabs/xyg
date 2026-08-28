@@ -91,7 +91,7 @@ bins, capped at 10,000 bins / 10,001 edges before allocation; invalid or
 over-cap results fail without a partial write; ABI 119 `xyg_histogram_mark_edges`
 owns integer bins, empty-finite ten-bin compatibility, and `auto_domain`) ·
 contour levels (`xyg_contour_levels` ✅ ABI 119 interior auto-domain spacing
-and authored sort) · line ingest sort (`xyg_argsort_stable` ✅ ABI 119) · legend `loc="best"` (`xyg_legend_normalize` / `xyg_legend_best_loc` ✅ ABI 120) · ribbon/curve/rounded-rect tessellation (`xyg_ribbon_edge` / `xyg_ribbon_polygon` / `xyg_monotone_tangents` / `xyg_curve_flatten` / `xyg_rounded_rect_poly` ✅ ABI 121) · compile-time payload LOD (`xyg_payload_tier` / `xyg_payload_visible_needed` / `xyg_payload_visible_mask` ✅ ABI 122) · tick-label collision (`xyg_scene_tick_label_layout` ✅ ABI 123) · static legend box packing (`xyg_legend_box_layout` ✅ ABI 124) · text-block measure and cartesian axis rooms (`xyg_text_block_measure` / `xyg_text_block_rotated_extent` / `xyg_y_tick_label_extent` / `xyg_y_axis_left_room` / `xyg_x_axis_title_room` / `xyg_x_tick_label_room` / `xyg_x_tick_label_edge_rooms` ✅ ABI 125) · static-export padding, title-band, colorbar extra, right-y, and polar recut (`xyg_compat_is_compact` / `xyg_compat_default_padding` / `xyg_compat_title_wrap_width` / `xyg_compat_title_room` / `xyg_compat_x_axis_side_room` / `xyg_compat_colorbar_extra` / `xyg_compat_right_y_room` / `xyg_polar_legend_room` / `xyg_polar_legend_reserve` / `xyg_polar_label_room` / `xyg_recut_polar_plot` ✅ ABI 126) · pyplot tight-layout grid solve (`xyg_tight_layout_solve` ✅ ABI 127) · static-export plot combination and tight-layout figure extras (`xyg_compat_combine_plot` / `xyg_tight_layout_figure_extra` ✅ ABI 198) · authored tick-window resolve/filter (`xyg_tick_window` / `xyg_tick_window_filter` ✅ ABI 128) · Cartesian compatibility tick-label formatting (`xyg_tick_format` ✅ ABI 130) · polar (theta, r) → screen-pixel projection (`xyg_polar_layout` / `xyg_polar_project` / `xyg_polar_theta_visible_mask` / `xyg_polar_visible_mask` / `xyg_polar_position_mask` ✅ ABI 131) · Cartesian static-export grid colormap (`xyg_colormap_rgba` / `xyg_colormap_rgba_canonical` ✅ ABI 129) · wind-rose bins (`xyg_wind_rose_bins` ✅
+and authored sort) · line ingest sort (`xyg_argsort_stable` ✅ ABI 119) · legend `loc="best"` (`xyg_legend_normalize` / `xyg_legend_best_loc` ✅ ABI 120) · ribbon/curve/rounded-rect tessellation (`xyg_ribbon_edge` / `xyg_ribbon_polygon` / `xyg_monotone_tangents` / `xyg_curve_flatten` / `xyg_rounded_rect_poly` ✅ ABI 121) · compile-time payload LOD (`xyg_payload_tier` / `xyg_payload_visible_needed` / `xyg_payload_visible_mask` ✅ ABI 122) · tick-label collision (`xyg_scene_tick_label_layout` ✅ ABI 123) · static legend box packing (`xyg_legend_box_layout` ✅ ABI 124) · text-block measure and cartesian axis rooms (`xyg_text_block_measure` / `xyg_text_block_rotated_extent` / `xyg_y_tick_label_extent` / `xyg_y_axis_left_room` / `xyg_x_axis_title_room` / `xyg_x_tick_label_room` / `xyg_x_tick_label_edge_rooms` ✅ ABI 125) · static-export padding, title-band, colorbar extra, right-y, and polar recut (`xyg_compat_is_compact` / `xyg_compat_default_padding` / `xyg_compat_title_wrap_width` / `xyg_compat_title_room` / `xyg_compat_x_axis_side_room` / `xyg_compat_colorbar_extra` / `xyg_compat_right_y_room` / `xyg_polar_legend_room` / `xyg_polar_legend_reserve` / `xyg_polar_label_room` / `xyg_recut_polar_plot` ✅ ABI 126) · pyplot tight-layout grid solve (`xyg_tight_layout_solve` ✅ ABI 127) · static-export plot combination and tight-layout figure extras (`xyg_compat_combine_plot` / `xyg_tight_layout_figure_extra` ✅ ABI 198) · authored tick-window resolve/filter (`xyg_tick_window` / `xyg_tick_window_filter` ✅ ABI 128) · Scene product-path authored filter/pairing (`pack_figure_chrome` ✅ ABI 199) · Cartesian compatibility tick-label formatting (`xyg_tick_format` ✅ ABI 130) · polar (theta, r) → screen-pixel projection (`xyg_polar_layout` / `xyg_polar_project` / `xyg_polar_theta_visible_mask` / `xyg_polar_visible_mask` / `xyg_polar_position_mask` ✅ ABI 131) · Cartesian static-export grid colormap (`xyg_colormap_rgba` / `xyg_colormap_rgba_canonical` ✅ ABI 129) · wind-rose bins (`xyg_wind_rose_bins` ✅
 sector × speed-band counts; polar bar assembly stays host-side) · contourf
 densify (`xyg_contourf_densify` ✅) + corner-mask bands (`xyg_contourf_bands` ✅
 ContourPy-style one-masked-corner clip) · bar offsets (`xyg_bar_stack` ✅
@@ -352,6 +352,7 @@ crates/
     lod_plan.rs         # view LOD drill/grid + compile-time payload tier (ABI 122) ✅
     tick_layout.rs      # tick-label collision thinning (ABI 123) ✅
                         #   + authored tick-window resolve/filter (ABI 128) ✅
+                        #   + Scene product-path authored filter/pairing (ABI 199) ✅
     stream.rs           # Rust-owned canonical append buffers (`xyg_stream_*`).
                         # Capacity-doubling f64 store; zone maps on seal
                         # (ZONE_CHUNK splice, bitwise-identical to
@@ -802,7 +803,8 @@ landed; the remainder, in order:
    `xyg_polar_legend_reserve` / `xyg_polar_label_room` /
    `xyg_recut_polar_plot` ✅; ABI 127 `xyg_tight_layout_solve` ✅;
    ABI 198 `xyg_compat_combine_plot` / `xyg_tight_layout_figure_extra` ✅;
-   ABI 128 `xyg_tick_window` / `xyg_tick_window_filter` ✅; ABI 130
+   ABI 128 `xyg_tick_window` / `xyg_tick_window_filter` ✅;
+   ABI 199 Scene product encode filters authored cartesian majors (`scene_chrome.rs` / `tick_layout.rs`) ✅; ABI 130
    `xyg_tick_format` ✅; ABI 131 `xyg_polar_layout` / `xyg_polar_project` /
    `xyg_polar_theta_visible_mask` / `xyg_polar_visible_mask` /
    `xyg_polar_position_mask` ✅; ABI 132 `xyg_density_bin_window` /
@@ -877,4 +879,5 @@ landed; the remainder, in order:
    ABI 195 triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6 (`scene.rs` / `scene_trace_attach.rs` / `scene_export.rs`) ✅.
    ABI 196 scatter per-item fill/stroke/width/opacity interned from packed XYHP kind 7 (`scene.rs` / `scene_trace_attach.rs` / `scene_export.rs`) ✅.
    ABI 197 Scene product encode settles `loc="best"` from packed XYCL/XYNM (`legend_fit.rs` / `scene_chrome.rs`) ✅.
+   ABI 199 Scene product encode filters authored cartesian majors and pairs `tick_labels` (`tick_layout.rs` / `scene_chrome.rs`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

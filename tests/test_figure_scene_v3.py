@@ -257,6 +257,22 @@ def test_python_scene_v9_legend_best_loc_settles_during_encode() -> None:
     assert loc_byte == 1
 
 
+def test_python_scene_authored_ticks_filter_during_encode() -> None:
+    figure = Figure()
+    figure.scatter([0, 1], [0, 1])
+    figure.axis_options["x"].update(
+        domain=(0.0, 1.0),
+        tick_values=[-1.0, 0.0],
+        tick_labels=["off-domain-long-label", "zero"],
+    )
+    scene = figure.to_scene()
+    assert b"zero" in scene
+    assert b"off-domain-long-label" not in scene
+    svg = _native.scene_svg(scene)
+    assert "zero" in svg
+    assert "off-domain-long-label" not in svg
+
+
 @pytest.mark.parametrize(
     ("value", "encoded"), [(None, b""), ("", b""), (0, b"0"), (False, b"false")]
 )

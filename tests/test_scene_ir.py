@@ -881,6 +881,8 @@ def test_scene_authored_tick_labels_keep_their_explicit_tick_pairing() -> None:
         tick_labels=["off-domain-long-label", "zero"],
     )
     scene = figure.to_scene()
+    assert b"zero" in scene
+    assert b"off-domain-long-label" not in scene
     svg = _native.scene_svg(scene)
     raster = _native.scene_raster_commands(scene)
     painter = _native.scene_browser_painter(scene)

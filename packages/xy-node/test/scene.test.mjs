@@ -614,6 +614,22 @@ test("Node authored tick labels override the format envelope byte-for-byte", () 
   assert.deepEqual(Buffer.from(build("$,.1f USD")), Buffer.from(build(null)));
 });
 
+test("Node Scene filters authored tick values and pairs labels during encode", () => {
+  const figure = new Figure();
+  figure.scatter([0, 1], [0, 1], { id: 0 });
+  figure.setAxis("x", {
+    domain: [0, 1],
+    tick_values: [-1, 0],
+    tick_labels: ["off-domain-long-label", "zero"],
+  });
+  const scene = figure.toScene();
+  assert.ok(Buffer.from(scene).includes(Buffer.from("zero")));
+  assert.equal(Buffer.from(scene).includes(Buffer.from("off-domain-long-label")), false);
+  const svg = sceneSvg(scene);
+  assert.match(svg, /zero/);
+  assert.equal(svg.includes("off-domain-long-label"), false);
+});
+
 test("Node numeric tick precision boundary and oversize fallback are Rust-owned", () => {
   const build = (format, width = 320) => {
     const figure = new Figure({ width, height: 240 });

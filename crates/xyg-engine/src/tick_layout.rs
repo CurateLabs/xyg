@@ -4,9 +4,12 @@
 //! raster, and Node cannot drift from ChartView `_layoutTickLabels`. Authored
 //! tick-window resolve/filter (ABI 128) owns linear vs modular angular
 //! containment so seam-crossing polar sectors keep the same spokes as marks.
-//! Tick-label formatting (ABI 130) owns Cartesian linear/log/time/number-spec
+//! ABI 199 Scene product encode filters authored cartesian majors through
+//! that window and pairs `tick_labels` during chrome pack. Tick-label
+//! formatting (ABI 130) owns Cartesian linear/log/time/number-spec
 //! and angular/category defaults via `xyg_tick_format`. Hosts still map values
-//! to pixels and resolve authored `tick_labels`.
+//! to pixels on the compatibility `_svg` path; Scene product-path authored
+//! `tick_labels` pair during chrome pack. Polar/secondary ticks stay #302.
 
 use crate::scene::scene_text_advance;
 
@@ -327,6 +330,27 @@ pub fn filter_tick_values(
         }
     }
     Some(written)
+}
+
+/// Indices of authored tick values that fall inside the window.
+pub fn filter_tick_indices(
+    values: &[f64],
+    lo: f64,
+    hi: f64,
+    theta_unit: u32,
+    kind: u32,
+    require_finite: bool,
+) -> Option<Vec<usize>> {
+    let mut indices = Vec::with_capacity(values.len());
+    for (index, &value) in values.iter().enumerate() {
+        if require_finite && !value.is_finite() {
+            continue;
+        }
+        if tick_in_window(value, lo, hi, theta_unit, kind)? {
+            indices.push(index);
+        }
+    }
+    Some(indices)
 }
 
 #[cfg(test)]

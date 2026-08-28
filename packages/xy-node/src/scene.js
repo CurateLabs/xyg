@@ -4656,6 +4656,7 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   let xMajor = [], yMajor = [];
   const xTicks = xAxis.tickValues ?? xAxis.tick_values;
   const yTicks = yAxis.tickValues ?? yAxis.tick_values;
+  // ABI 199: Rust pack_figure_chrome filters authored majors through the tick window.
   if (xTicks != null) { flags &= ~FLAG_X_MAJOR_AUTO; xMajor = Array.from(xTicks, Number); }
   if (yTicks != null) { flags &= ~FLAG_Y_MAJOR_AUTO; yMajor = Array.from(yTicks, Number); }
   const xMinor = Array.from(xAxis.minorTickValues ?? xAxis.minor_tick_values ?? [], Number);

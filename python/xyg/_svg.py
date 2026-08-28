@@ -476,8 +476,9 @@ _AXIS_GRID_DASHES = {
 
 
 # ---------------------------------------------------------------------------
-# Compatibility tick text (§16). Rust owns automatic tick ladders (ABI 96) and
-# label formatting (ABI 130); hosts still resolve authored tick_labels.
+# Compatibility tick text (§16). Rust owns automatic tick ladders (ABI 96),
+# label formatting (ABI 130), and Scene product-path authored filter/pairing
+# (ABI 199). Hosts still resolve authored tick_labels on `_svg` drawing.
 # ---------------------------------------------------------------------------
 
 

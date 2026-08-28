@@ -8,14 +8,15 @@
 //! and Node cannot drift on the encode-ready chrome bundle. ABI 161 fills
 //! empty legend paints from packed XYSD so hosts do not unpack sidecar
 //! styles on the product path. ABI 197 settles authored `loc="best"` from
-//! packed XYCL/XYNM plus XYCF domains during product encode. Encoded Scene
-//! v31 is unchanged.
+//! packed XYCL/XYNM plus XYCF domains during product encode. ABI 199 filters
+//! authored cartesian majors through the ABI 128 tick window and pairs
+//! `tick_labels` during chrome pack. Encoded Scene v31 is unchanged.
 
 use crate::legend_fit::{self, LegendScale};
 use crate::scene::{
-    cartesian_scene_margins, encode_tick_labels, CartesianLayoutRequest, ColorbarSide, ScaleKind,
-    SceneChromeStyle, MAX_AXIS_TICKS, MAX_SCENE_LEGEND_ENTRIES, MAX_SCENE_TEXT_BYTES,
-    SCENE_CHROME_STYLE_INPUT_BYTES,
+    cartesian_scene_margins, encode_tick_labels, format_numeric_tick, CartesianLayoutRequest,
+    ColorbarSide, ScaleKind, SceneChromeStyle, MAX_AXIS_TICKS, MAX_SCENE_LEGEND_ENTRIES,
+    MAX_SCENE_TEXT_BYTES, SCENE_CHROME_STYLE_INPUT_BYTES,
 };
 use crate::scene_colorbar::{self, ColorbarError, ColorbarFrameInput, ColorbarStop};
 use crate::scene_legend::{self, LegendError, LegendFrameInput, LEGEND_META_BYTES};
@@ -24,6 +25,7 @@ use crate::scene_trace_rows::xycl_xy_series;
 use crate::scene_trace_sidecars::{
     parse_xynm, parse_xysd_records, TraceSidecarsCode, TraceSidecarsError,
 };
+use crate::tick_layout;
 
 pub const XYCF_MAGIC: &[u8; 4] = b"XYCF";
 pub const XYCF_VERSION: u32 = 1;
@@ -168,6 +170,56 @@ fn scale_kind(code: u32) -> Result<ScaleKind, ChromePackError> {
         2 => Ok(ScaleKind::SymLog),
         _ => Err(ChromePackError::Payload),
     }
+}
+
+fn filter_authored_majors(
+    values: Vec<f64>,
+    labels: Option<Vec<String>>,
+    lo: f64,
+    hi: f64,
+    kind: ScaleKind,
+    format: Option<&str>,
+) -> (Vec<f64>, Option<Vec<String>>) {
+    let Some((window_lo, window_hi)) = tick_layout::tick_window(
+        lo,
+        hi,
+        tick_layout::THETA_NONE,
+        tick_layout::KIND_LINEAR,
+        0,
+        f64::NAN,
+        f64::NAN,
+    ) else {
+        return (values, labels);
+    };
+    let Some(indices) = tick_layout::filter_tick_indices(
+        &values,
+        window_lo,
+        window_hi,
+        tick_layout::THETA_NONE,
+        tick_layout::KIND_LINEAR,
+        false,
+    ) else {
+        return (values, labels);
+    };
+    let filtered: Vec<f64> = indices.iter().map(|&index| values[index]).collect();
+    let step = filtered
+        .windows(2)
+        .next()
+        .map(|pair| (pair[1] - pair[0]).abs())
+        .filter(|step| step.is_finite() && *step > 0.0)
+        .unwrap_or(1.0);
+    let filtered_labels = labels.map(|labels| {
+        indices
+            .iter()
+            .map(|&index| {
+                labels
+                    .get(index)
+                    .cloned()
+                    .unwrap_or_else(|| format_numeric_tick(values[index], step, kind, format))
+            })
+            .collect()
+    });
+    (filtered, filtered_labels)
 }
 
 fn legend_loc(name: &[u8], authored: bool) -> Result<u8, ChromePackError> {
@@ -501,17 +553,17 @@ pub fn pack_figure_chrome_from_sidecars(
     let ylabel = take(facts, &mut at, ylabel_len)?;
     let x_format = take(facts, &mut at, x_format_len)?;
     let y_format = take(facts, &mut at, y_format_len)?;
-    let x_major = take_f64s(facts, &mut at, x_major_count)?;
+    let mut x_major = take_f64s(facts, &mut at, x_major_count)?;
     let x_minor = take_f64s(facts, &mut at, x_minor_count)?;
-    let y_major = take_f64s(facts, &mut at, y_major_count)?;
+    let mut y_major = take_f64s(facts, &mut at, y_major_count)?;
     let y_minor = take_f64s(facts, &mut at, y_minor_count)?;
-    let x_tick_labels = if flags & FLAG_X_TICK_LABELS != 0 {
+    let mut x_tick_labels = if flags & FLAG_X_TICK_LABELS != 0 {
         Some(take_labels(facts, &mut at, x_label_count)?)
     } else {
         let _ = take_labels(facts, &mut at, x_label_count)?;
         None
     };
-    let y_tick_labels = if flags & FLAG_Y_TICK_LABELS != 0 {
+    let mut y_tick_labels = if flags & FLAG_Y_TICK_LABELS != 0 {
         Some(take_labels(facts, &mut at, y_label_count)?)
     } else {
         let _ = take_labels(facts, &mut at, y_label_count)?;
@@ -594,6 +646,19 @@ pub fn pack_figure_chrome_from_sidecars(
         }
         Some(text)
     };
+
+    if flags & FLAG_X_MAJOR_AUTO == 0 {
+        let (filtered, filtered_labels) =
+            filter_authored_majors(x_major, x_tick_labels, x_lo, x_hi, x_kind, x_format_text);
+        x_major = filtered;
+        x_tick_labels = filtered_labels;
+    }
+    if flags & FLAG_Y_MAJOR_AUTO == 0 {
+        let (filtered, filtered_labels) =
+            filter_authored_majors(y_major, y_tick_labels, y_lo, y_hi, y_kind, y_format_text);
+        y_major = filtered;
+        y_tick_labels = filtered_labels;
+    }
 
     let colorbar_side = if flags & FLAG_HAS_COLORBAR != 0 {
         if colorbar_obs & CB_UNSUPPORTED != 0 {
@@ -953,6 +1018,32 @@ mod tests {
         let loc_len = u32::from_le_bytes(settled[204..208].try_into().unwrap()) as usize;
         let at = legend_loc_offset(&settled).unwrap();
         assert_eq!(&settled[at..at + loc_len], b"upper right");
+    }
+
+    #[test]
+    fn authored_majors_filter_through_the_tick_window() {
+        let mut facts = header(FLAG_X_TICK_LABELS | FLAG_Y_MAJOR_AUTO, 200.0, 120.0, 0, 0);
+        facts[176..180].copy_from_slice(&3u32.to_le_bytes());
+        facts[192..196].copy_from_slice(&3u32.to_le_bytes());
+        let mut payload = facts;
+        for value in [-1.0f64, 0.0, 1.0] {
+            payload.extend_from_slice(&value.to_le_bytes());
+        }
+        for label in [
+            b"off-domain-long-label".as_slice(),
+            b"zero".as_slice(),
+            b"one".as_slice(),
+        ] {
+            payload.extend_from_slice(&(label.len() as u32).to_le_bytes());
+            payload.extend_from_slice(label);
+        }
+        let packed = pack_figure_chrome(&payload).unwrap();
+        assert_eq!(u32::from_le_bytes(packed[64..68].try_into().unwrap()), 2);
+        assert!(packed.windows(b"zero".len()).any(|w| w == b"zero"));
+        assert!(packed.windows(b"one".len()).any(|w| w == b"one"));
+        assert!(!packed
+            .windows(b"off-domain-long-label".len())
+            .any(|w| w == b"off-domain-long-label"));
     }
 
     #[test]
