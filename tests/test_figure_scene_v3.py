@@ -1005,14 +1005,6 @@ def test_python_scene_compiles_unwrapped_text_layout() -> None:
     assert 'transform="rotate(-30 ' in rotated_svg
     assert rotated.to_svg() == rotated_svg
     assert _scene_v3.scene_export_support_reason(rotated) is None
-    marker_rotated = representative_figure()
-    marker_rotated.annotations.append(
-        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "offset", "rotation": 30}
-    )
-    assert (
-        _scene_v3.scene_export_support_reason(marker_rotated)
-        == "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
-    )
     authored = representative_figure()
     authored.text(2.0, 2.5, "note")
     assert _scene_v3.scene_export_support_reason(authored) is None
@@ -1046,6 +1038,17 @@ def test_python_scene_compiles_labelled_marker_layout() -> None:
     assert 'text-anchor="end"' in anchored_svg
     assert anchored.to_svg() == anchored_svg
     assert _scene_v3.scene_export_support_reason(anchored) is None
+    rotated = representative_figure()
+    rotated.annotations.append(
+        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "rotated", "rotation": 30}
+    )
+    rotated_xyad = _xyad_from_figure(rotated)
+    assert b"XYAW" in rotated_xyad
+    rotated_svg = _native.scene_svg(rotated.to_scene())
+    assert ">rotated<" in rotated_svg
+    assert 'transform="rotate(-30 ' in rotated_svg
+    assert rotated.to_svg() == rotated_svg
+    assert _scene_v3.scene_export_support_reason(rotated) is None
     authored = representative_figure()
     authored.marker(2.0, 2.5, text="note")
     assert _scene_v3.scene_export_support_reason(authored) is None

@@ -28,6 +28,7 @@
 //! ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 //! ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 //! ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 / XYLB v6).
+//! ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0` (nums[8]).
 //! ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` the same way.
 //! ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto
 //! HexCell PolyFills. Polar hexbin, custom reducers, and per-item RGBA stay
@@ -354,6 +355,7 @@ fn annotation_fields(kind: u8) -> Option<&'static [&'static str]> {
             "anchor",
             "size",
             "symbol",
+            "rotation",
             "style",
             "class_name",
         ],
@@ -1077,8 +1079,8 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     // ABI 185 admits labelled cartesian marker dx/dy/anchor the same way
     // (keep the marker mark row; skip AttachedRow). Unlabelled marker layout
     // flags are unused. ABI 187 admits cartesian unwrapped text rotation the
-    // same XYAW wrap=0 path. html, class_name, marker rotation, and polar stay
-    // fail-closed.
+    // same XYAW wrap=0 path. ABI 188 admits labelled cartesian marker rotation
+    // the same way (XYAW nums[8]). html, class_name, and polar stay fail-closed.
     if extra_key(&legend_keys, PUBLIC_LEGEND_KEYS) {
         return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LEGEND");
     }

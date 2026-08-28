@@ -724,7 +724,9 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
     packs labelled cartesian marker ``dx``/``dy``/``anchor`` the same way
     (Rust keeps the marker mark row and skips AttachedRow). ABI 187 packs
     cartesian unwrapped text ``rotation`` as XYAW with ``wrap=0`` (nonzero
-    rotation writes XYAW v2 / XYLB v6).
+    rotation writes XYAW v2 / XYLB v6). ABI 188 packs labelled cartesian marker
+    ``rotation`` the same way (nums[8]; markers never wrap, and nums[15] stays
+    ``stroke_width``).
     """
     kind = annotation.get("kind")
     kind_code = _XYAF_KIND_CODES.get(str(kind) if kind is not None else "")
@@ -857,6 +859,11 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
         facts |= _XYAF_FACT_HAS_ROTATION
         if not np.isfinite(nums[15]):
             raise ValueError("Scene v16 text annotation rotation must be finite")
+    if str(kind) == "marker" and "rotation" in annotation:
+        nums[8] = take_num(annotation, "rotation", "marker rotation")
+        facts |= _XYAF_FACT_HAS_ROTATION
+        if not np.isfinite(nums[8]):
+            raise ValueError("Scene v16 marker annotation rotation must be finite")
     axis_code = 0
     if str(kind) in {"rule", "band"}:
         axis_name = annotation.get("axis")

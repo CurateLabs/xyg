@@ -260,6 +260,7 @@ function packXyAf(annotation, index) {
   // ABI 184 packs cartesian unwrapped text dx/dy/anchor as XYAW wrap=0.
   // ABI 185 packs labelled cartesian marker dx/dy/anchor the same way in Rust.
   // ABI 187 packs cartesian unwrapped text rotation as XYAW wrap=0 (XYAW v2).
+  // ABI 188 packs labelled cartesian marker rotation the same way (nums[8]).
   const kind = annotation.kind;
   const kindCode = XYAF_KIND_CODES[kind];
   if (kindCode == null) throw new RangeError(`Scene v12 annotations support rule, band, and unlabeled marker only; ${JSON.stringify(kind)} is deferred`);
@@ -325,6 +326,11 @@ function packXyAf(annotation, index) {
     nums[15] = annotationNumber(annotation, "rotation", undefined, "text rotation");
     facts |= XYAF_FACT_HAS_ROTATION;
     if (!Number.isFinite(nums[15])) throw new RangeError("Scene v16 text annotation rotation must be finite");
+  }
+  if (kind === "marker" && Object.hasOwn(annotation, "rotation")) {
+    nums[8] = annotationNumber(annotation, "rotation", undefined, "marker rotation");
+    facts |= XYAF_FACT_HAS_ROTATION;
+    if (!Number.isFinite(nums[8])) throw new RangeError("Scene v16 marker annotation rotation must be finite");
   }
   let axisCode = 0;
   if (kind === "rule" || kind === "band") {

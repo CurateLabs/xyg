@@ -27,7 +27,8 @@
 //! colormap hexbin as `PACK_HEXBIN` plus `FLAG_HEATMAP_PAINTED` (XYHP 1×N
 //! plane; HexCell expansion interns per-cell fills; no new pack kind).
 //! ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2
-//! when nonzero; encoded Scene labels use XYLB v6).
+//! when nonzero; encoded Scene labels use XYLB v6). ABI 188 admits labelled
+//! cartesian marker `rotation` on that same XYAW v2 path (nums[8]).
 //! ABI 170 admits
 //! constant scatter `marker_glyph` via XYMG (no new pack kind).
 //! ABI 145 admits constant `marker_path` via an XYMP extras sidecar;

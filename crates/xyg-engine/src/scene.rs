@@ -194,7 +194,8 @@ pub struct SceneLabel {
     /// This is owned output metadata, never a host pixel placement seam.
     pub anchor: u8,
     /// Clockwise-negative authored degrees (matplotlib convention). Zero means
-    /// upright. ABI 187 admits this on cartesian unwrapped XYAW text.
+    /// upright. ABI 187 admits this on cartesian unwrapped XYAW text; ABI 188
+    /// admits it on labelled cartesian marker XYAW rows.
     pub rotation: f64,
     pub text: String,
 }
@@ -2338,8 +2339,8 @@ struct AnnotationEnvelope {
 
 /// Decode the v24 bounded wrapped-label seam.  Hosts contribute only literal
 /// text, a width constraint, and author offsets; line breaking, metrics,
-/// projection, boxes, and callout geometry remain Rust-owned. ABI 187 accepts
-/// XYAW v2 when any row carries a nonzero rotation; v1 stays 64-byte meta.
+/// projection, boxes, and callout geometry remain Rust-owned. ABI 187/188
+/// accept XYAW v2 when any row carries a nonzero rotation; v1 stays 64-byte meta.
 fn decode_xyaw(
     bytes: &[u8],
     x_scale: AxisScale,

@@ -12,8 +12,10 @@
 //! offset and text-anchor). ABI 185 routes labelled cartesian marker
 //! `dx`/`dy`/`anchor` the same way (keep the marker mark row; skip AttachedRow
 //! for that label). ABI 187 routes cartesian unwrapped text `rotation`
-//! through XYAW with `wrap=0` (nonzero rotation writes XYAW v2). html,
-//! `class_name`, marker rotation, and polar stay fail-closed.
+//! through XYAW with `wrap=0` (nonzero rotation writes XYAW v2). ABI 188
+//! routes labelled cartesian marker `rotation` the same way (nums[8]; markers
+//! never wrap, and nums[15] stays stroke_width). html, `class_name`, and
+//! polar stay fail-closed.
 
 use crate::css::{apply_opacity_rgba8, color_rgba8};
 use crate::scene::{
@@ -1031,7 +1033,8 @@ fn encode_style(style: &StyleOut) -> [u8; XYAO_STYLE_BYTES] {
 /// ABI 185 routes labelled cartesian marker `dx`/`dy`/`anchor` through XYAW
 /// with `wrap=0` while keeping the marker mark row. ABI 187 routes cartesian
 /// unwrapped text `rotation` through XYAW with `wrap=0` (nonzero rotation
-/// writes XYAW v2).
+/// writes XYAW v2). ABI 188 routes labelled cartesian marker `rotation`
+/// through that same XYAW path (nums[8]; wrap is unused on markers).
 pub fn pack_annotation_facts(
     facts: &[u8],
     style_ref_base: u32,
@@ -1276,7 +1279,8 @@ pub fn pack_annotation_facts(
                     let (flags, rgba, fill, border_rgba, border_width, _) = label_style(row)?;
                     let layout = has(row.facts, FACT_HAS_DX)
                         || has(row.facts, FACT_HAS_DY)
-                        || has(row.facts, FACT_HAS_ANCHOR);
+                        || has(row.facts, FACT_HAS_ANCHOR)
+                        || has(row.facts, FACT_HAS_ROTATION);
                     if layout && row.kind == XYAF_KIND_MARKER {
                         wrapped.push(WrappedRow {
                             x: require_flag(row, FACT_HAS_X, 0)?,
@@ -1294,7 +1298,8 @@ pub fn pack_annotation_facts(
                             } else {
                                 row.anchor
                             },
-                            rotation: 0.0,
+                            // Markers never set FACT_HAS_WRAP; nums[8] is rotation.
+                            rotation: or_default(row, FACT_HAS_ROTATION, 8, 0.0)?,
                             text: row.text,
                         });
                     } else {
@@ -1703,5 +1708,41 @@ mod tests {
         let xyal_at = xyad.windows(4).position(|window| window == b"XYAL").unwrap();
         let xyal_count = u32::from_le_bytes(xyad[xyal_at + 8..xyal_at + 12].try_into().unwrap());
         assert_eq!(xyal_count, 0);
+    }
+
+    #[test]
+    fn annotation_facts_route_labelled_marker_rotation_through_xyaw() {
+        let mut nums = [f64::NAN; 18];
+        nums[0] = 0.5;
+        nums[1] = 0.5;
+        nums[8] = 30.0;
+        nums[15] = 1.5;
+        let marker = pack_xyaf(
+            XYAF_KIND_MARKER,
+            0,
+            FACT_HAS_X | FACT_HAS_Y | FACT_HAS_ROTATION | FACT_HAS_TEXT,
+            STYLE_COLOR | STYLE_STROKE_WIDTH,
+            0,
+            nums,
+            [37, 99, 235, 255],
+            b"rotated",
+        );
+        let packed = pack_annotation_facts(&marker, 0, 0.0, 1.0, 0.0, 1.0).unwrap();
+        assert_eq!(u32::from_le_bytes(packed[12..16].try_into().unwrap()), 1);
+        let xyad_len = u32::from_le_bytes(packed[16..20].try_into().unwrap()) as usize;
+        let xyad_at = XYAO_V1_HEADER_BYTES + XYAO_STYLE_BYTES + PACKED_SCENE_ROW_BYTES;
+        let xyad = &packed[xyad_at..xyad_at + xyad_len];
+        assert!(xyad.windows(4).any(|window| window == b"XYAW"));
+        assert_eq!(&xyad[xyad.len() - 7..], b"rotated");
+        let xyaw_at = xyad.windows(4).position(|window| window == b"XYAW").unwrap();
+        assert_eq!(
+            u32::from_le_bytes(xyad[xyaw_at + 4..xyaw_at + 8].try_into().unwrap()),
+            2
+        );
+        let row = &xyad[xyaw_at + 12..];
+        let wrap = f64::from_le_bytes(row[32..40].try_into().unwrap());
+        let rotation = f64::from_le_bytes(row[64..72].try_into().unwrap());
+        assert_eq!(wrap, 0.0);
+        assert_eq!(rotation, 30.0);
     }
 }

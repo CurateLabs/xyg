@@ -1627,6 +1627,7 @@ def test_public_unwrapped_text_layout_routes_through_scene(annotation: dict[str,
     [
         {"kind": "marker", "x": 0.5, "y": 0.5, "text": "offset", "dy": -8},
         {"kind": "marker", "x": 0.5, "y": 0.5, "text": "anchor", "anchor": "end"},
+        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "rotated", "rotation": 30},
     ],
 )
 def test_public_labelled_marker_layout_routes_through_scene(
@@ -1644,6 +1645,9 @@ def test_public_labelled_marker_layout_routes_through_scene(
     exported = public_static_export(figure, "svg")
     assert exported is not None
     assert str(annotation["text"]).encode() in exported
+    if "rotation" in annotation:
+        assert f'transform="rotate(-{annotation["rotation"]} ' in svg
+        assert f'transform="rotate(-{annotation["rotation"]} '.encode() in exported
 
 
 @pytest.mark.parametrize("name", sorted(UNSUPPORTED))
