@@ -1031,10 +1031,6 @@ def test_public_triangle_mesh_honors_the_browser_group_boundary() -> None:
     ("style_key", "style_value"),
     [
         ("joined_fill", True),
-        ("fill_opacity", 0.5),
-        ("stroke_opacity", 0.5),
-        ("stroke", "#ff0000"),
-        ("stroke_width", 2.0),
         ("role", "custom-mesh"),
     ],
 )
@@ -1044,6 +1040,21 @@ def test_public_triangle_mesh_keeps_broader_styles_on_compatibility(
     figure = _public_triangle_mesh()
     figure.traces[0].style[style_key] = style_value
     assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+
+
+def test_public_triangle_mesh_opacity_and_stroke_are_scene_supported() -> None:
+    figure = _public_triangle_mesh()
+    figure.traces[0].style["fill_opacity"] = 0.5
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported != public_static_export(_public_triangle_mesh(), "svg")
+    stroked = _public_triangle_mesh()
+    stroked.traces[0].style["stroke"] = "#111111"
+    stroked.traces[0].style["stroke_width"] = 2.0
+    stroked.traces[0].style["stroke_opacity"] = 0.5
+    assert scene_export_support_reason(stroked) is None
+    assert public_static_export(stroked, "svg") is not None
 
 
 @pytest.mark.parametrize(

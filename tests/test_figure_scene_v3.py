@@ -1382,6 +1382,43 @@ def test_python_scene_compiles_hexbin_fill_opacity() -> None:
     assert svg != _native.scene_svg(solid.to_scene())
 
 
+def test_python_scene_compiles_triangle_mesh_fill_opacity() -> None:
+    faded = Figure(width=240, height=160)
+    faded.axis_options["x"]["domain"] = (0.0, 1.0)
+    faded.axis_options["y"]["domain"] = (0.0, 1.0)
+    faded.triangle_mesh([0.0], [0.0], [1.0], [0.0], [0.5], [1.0], color="#22c55e", opacity=0.75)
+    faded.traces[-1].style["fill_opacity"] = 0.5
+    svg = _native.scene_svg(faded.to_scene())
+    assert 'fill-opacity="' in svg
+    assert faded.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(faded) is None
+    solid = Figure(width=240, height=160)
+    solid.axis_options["x"]["domain"] = (0.0, 1.0)
+    solid.axis_options["y"]["domain"] = (0.0, 1.0)
+    solid.triangle_mesh([0.0], [0.0], [1.0], [0.0], [0.5], [1.0], color="#22c55e", opacity=0.75)
+    assert svg != _native.scene_svg(solid.to_scene())
+    stroked = Figure(width=240, height=160)
+    stroked.axis_options["x"]["domain"] = (0.0, 1.0)
+    stroked.axis_options["y"]["domain"] = (0.0, 1.0)
+    stroked.triangle_mesh(
+        [0.0],
+        [0.0],
+        [1.0],
+        [0.0],
+        [0.5],
+        [1.0],
+        color="#22c55e",
+        opacity=0.75,
+        stroke="#111111",
+        stroke_width=2.0,
+    )
+    stroked.traces[-1].style["stroke_opacity"] = 0.5
+    stroke_svg = _native.scene_svg(stroked.to_scene())
+    assert 'stroke-opacity="' in stroke_svg
+    assert stroked.to_svg() == stroke_svg
+    assert _scene_v3.scene_export_support_reason(stroked) is None
+
+
 def test_python_scene_compiles_polar_corner_radius() -> None:
     donut = Figure(width=400, height=400, coords="polar")
     donut.axis_options["x"]["domain"] = (0.0, 6.283185307179586)

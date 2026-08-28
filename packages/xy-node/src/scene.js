@@ -3148,7 +3148,7 @@ function packXyTc(figure) {
     let fillOpacity = 1;
     let strokeOpacity = 1;
     let lineOpacity = 1;
-    if (BAND_KINDS.has(trace.kind) || RIBBON_KINDS.has(trace.kind) || RECT_KINDS.has(trace.kind) || HEATMAP_KINDS.has(trace.kind) || HEXBIN_KINDS.has(trace.kind) || trace.kind === "scatter") {
+    if (BAND_KINDS.has(trace.kind) || RIBBON_KINDS.has(trace.kind) || RECT_KINDS.has(trace.kind) || HEATMAP_KINDS.has(trace.kind) || HEXBIN_KINDS.has(trace.kind) || POLYFILL_KINDS.has(trace.kind) || trace.kind === "scatter") {
       fillOpacity = Number(style.fill_opacity ?? style.fillOpacity ?? 1);
       strokeOpacity = Number(style.stroke_opacity ?? style.strokeOpacity ?? 1);
     }

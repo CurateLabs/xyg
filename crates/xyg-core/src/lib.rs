@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 179;
+pub const ABI_VERSION: u32 = 180;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1032,6 +1032,7 @@ pub unsafe extern "C" fn xyg_scene_encode_assembled_from_sidecars(
 /// colormap paints already multiply by it).
 /// ABI 178 admits scatter `fill_opacity` / `stroke_opacity` on that same XYMS path.
 /// ABI 179 admits hexbin `fill_opacity` on that same XYMS fill alpha.
+/// ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint on that same XYMS path.
 /// Returns the encoded byte count on success, or a negated
 /// `ProductEncodeError` code. Encode-sidecar failures keep codes 1–21; other
 /// stages occupy `base + original` except shared `Output=4` retry. Support

@@ -252,6 +252,7 @@ ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`.
 ABI 177 admits heatmap `fill_opacity`.
 ABI 178 admits scatter `fill_opacity` / `stroke_opacity`.
 ABI 179 admits hexbin `fill_opacity`.
+ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint.
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -312,6 +313,7 @@ ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`.
 ABI 177 admits heatmap `fill_opacity`.
 ABI 178 admits scatter `fill_opacity` / `stroke_opacity`.
 ABI 179 admits hexbin `fill_opacity`.
+ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint.
 ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate
@@ -371,6 +373,7 @@ bar/column/histogram `fill_opacity` / `stroke_opacity` on that same product Scen
 ABI 177 admits heatmap `fill_opacity` on that same product Scene.
 ABI 178 admits scatter `fill_opacity` / `stroke_opacity` on that same product Scene.
 ABI 179 admits hexbin `fill_opacity` on that same product Scene.
+ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint on that same product Scene.
 The explicit `xyg_scene_figure_support_reason` ABI remains for tests.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call

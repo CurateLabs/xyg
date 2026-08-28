@@ -24,6 +24,7 @@
 //! ABI 177 admits heatmap `fill_opacity` from that same packing.
 //! ABI 178 admits scatter `fill_opacity` / `stroke_opacity` from that same packing.
 //! ABI 179 admits hexbin `fill_opacity` from that same packing.
+//! ABI 180 admits triangle_mesh `fill_opacity` / constant stroke from that same packing.
 //! Encoded Scene v31 is
 //! unchanged.
 

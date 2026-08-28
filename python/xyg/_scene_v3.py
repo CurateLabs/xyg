@@ -31,9 +31,13 @@ _RIBBON_KINDS = frozenset({"ribbon"})
 # remaining PACK_RECT kinds. ABI 177 packs heatmap `fill_opacity` so lattice
 # cells and colormap paints use the XYMS fill alpha. ABI 178 packs scatter
 # `fill_opacity` / `stroke_opacity` on that same XYMS path. ABI 179 packs hexbin
-# `fill_opacity` so HexCell PolyFills use the XYMS fill alpha.
+# `fill_opacity` so HexCell PolyFills use the XYMS fill alpha. ABI 180 packs
+# triangle_mesh `fill_opacity` / constant stroke on that same XYMS path.
 _OPACITY_CHANNEL_KINDS = (
-    _BAND_KINDS | _RIBBON_KINDS | _RECT_KINDS | frozenset({"heatmap", "scatter", "hexbin"})
+    _BAND_KINDS
+    | _RIBBON_KINDS
+    | _RECT_KINDS
+    | frozenset({"heatmap", "scatter", "hexbin", "triangle_mesh"})
 )
 # Independent triangles lower to Scene PolyFill (kind 4) vertex runs.
 _POLYFILL_KINDS = frozenset({"triangle_mesh"})
