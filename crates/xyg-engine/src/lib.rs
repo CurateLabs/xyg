@@ -51,7 +51,7 @@ pub use scene_export::{
     pack_public_export, scene_figure_support_reason, scene_public_export_reason, ExportPackError,
 };
 pub mod scene_chrome;
-pub use scene_chrome::{pack_figure_chrome, ChromePackError};
+pub use scene_chrome::{pack_figure_chrome, pack_figure_chrome_from_sidecars, ChromePackError};
 pub mod scene_trace_compile;
 pub use scene_trace_compile::{pack_trace_compile, TraceCompileCode, TraceCompileError};
 pub mod scene_trace_attach;
@@ -73,7 +73,7 @@ pub use scene_annotations::pack_annotations;
 pub mod scene_heatmap;
 pub use scene_heatmap::pack_heatmap_facts;
 pub mod scene_extras;
-pub use scene_extras::pack_scene_extras;
+pub use scene_extras::{pack_scene_extras, pack_scene_extras_from_sidecars};
 pub mod scene_density;
 pub use scene_density::pack_density_grid;
 pub mod scene_style;

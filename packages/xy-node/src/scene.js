@@ -41,9 +41,11 @@ import {
   xyScenePackAnnotationFacts,
   xyScenePackHeatmapFacts,
   xyScenePackSceneExtras,
+  xyScenePackSceneExtrasFromSidecars,
   xyScenePackDensityGrid,
   xyScenePackPublicExport,
   xyScenePackFigureChrome,
+  xyScenePackFigureChromeFromSidecars,
   xyScenePackTraceCompile,
   xyScenePackTraceAttach,
   xyScenePackTraceRows,
@@ -1895,6 +1897,36 @@ function packSceneExtrasFromFacts(polar, paint, facts) {
   return out.subarray(0, code);
 }
 
+function packSceneExtrasFromSidecars(polar, xysd, facts) {
+  const polarBytes = polar instanceof Uint8Array ? polar : new Uint8Array();
+  const xysdBytes = xysd instanceof Uint8Array ? xysd : new Uint8Array();
+  const factsBytes = facts instanceof Uint8Array ? facts : new Uint8Array();
+  if (!polarBytes.length && !xysdBytes.length && !factsBytes.length) return new Uint8Array();
+  let capacity = Math.max(256, polarBytes.length + xysdBytes.length + factsBytes.length + 64);
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const out = new Uint8Array(capacity);
+    const code = xyScenePackSceneExtrasFromSidecars(
+      polarBytes.length ? u8Ptr(polarBytes) : 0,
+      BigInt(polarBytes.length),
+      xysdBytes.length ? u8Ptr(xysdBytes) : 0,
+      BigInt(xysdBytes.length),
+      factsBytes.length ? u8Ptr(factsBytes) : 0,
+      BigInt(factsBytes.length),
+      u8Ptr(out),
+      BigInt(out.length),
+    );
+    if (code === -4) {
+      capacity *= 2;
+      continue;
+    }
+    if (code === -5) throw new RangeError("Scene extras polar or paint envelope is invalid");
+    if (code === -6) throw new RangeError("Scene style sidecar facts are invalid");
+    if (code < 0) throw new RangeError("invalid scene extras packing");
+    return out.subarray(0, code);
+  }
+  throw new RangeError("invalid scene extras packing");
+}
+
 export function polarLayout(thetaAxis = {}, rAxis = {}, plot = {}) {
   const unit = thetaAxis.theta_unit ?? thetaAxis.thetaUnit ?? "radians";
   const turn = unit === "degrees" ? 360 : Math.PI * 2;
@@ -2960,6 +2992,41 @@ function packFigureChrome(facts) {
   return out.subarray(0, code);
 }
 
+function packFigureChromeFromSidecars(facts, xysd) {
+  const factsBytes = facts instanceof Uint8Array ? facts : new Uint8Array();
+  const xysdBytes = xysd instanceof Uint8Array ? xysd : new Uint8Array();
+  let capacity = Math.max(65536, factsBytes.length + xysdBytes.length + 4096);
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const out = new Uint8Array(capacity);
+    const code = xyScenePackFigureChromeFromSidecars(
+      factsBytes.length ? u8Ptr(factsBytes) : 0,
+      BigInt(factsBytes.length),
+      xysdBytes.length ? u8Ptr(xysdBytes) : 0,
+      BigInt(xysdBytes.length),
+      u8Ptr(out),
+      BigInt(out.length),
+    );
+    if (code === -4) {
+      capacity *= 2;
+      continue;
+    }
+    if (code === -2) throw new RangeError("invalid scene chrome facts version");
+    if (code === -5) throw new RangeError("invalid canonical scene plot layout");
+    if (code === -7) throw new RangeError("Scene v12 primary legends do not yet encode anchors, multiple columns, or custom content");
+    if (code === -8) throw new RangeError("Scene v12 primary legends are static; toggle and highlight must be false");
+    if (code === -9) throw new RangeError("Scene v12 does not support legend location");
+    if (code === -10) throw new RangeError("legend font sizes must be finite and in [1, 1000]");
+    if (code === -11) throw new RangeError("Scene v12 legends support only background, color, font_size, and title_font_size");
+    if (code === -12) throw new RangeError("Scene v19 colorbars require literal bounded RGBA stops");
+    if (code === -13) throw new RangeError("Scene v19 colorbars require a two-value domain and 2–16 stops");
+    if (code === -14) throw new RangeError("Scene v19 colorbar side is right or bottom");
+    if (code === -15) throw new RangeError("scene axis tick lists are limited to 200 values");
+    if (code < 0) throw new RangeError("invalid scene chrome packing");
+    return out.subarray(0, code);
+  }
+  throw new RangeError("invalid scene chrome packing");
+}
+
 const XYTC_HAS_FILL = 1 << 0;
 const XYTC_HAS_STROKE = 1 << 1;
 const XYTC_HAS_LINE_COLOR = 1 << 2;
@@ -3961,7 +4028,7 @@ function unpackXyAs(blob) {
   return { styles, xyad, ...rows };
 }
 
-function packChromeFacts(figure, legendEntries, styles, { width, height, margins = null, colorbarOk = true } = {}) {
+function packChromeFacts(figure, { width, height, margins = null, colorbarOk = true } = {}) {
   const FLAG_AUTHORED_MARGINS = 1 << 0, FLAG_PADDING = 1 << 1, FLAG_X_MAJOR_AUTO = 1 << 2, FLAG_Y_MAJOR_AUTO = 1 << 3;
   const FLAG_X_TICK_LABELS = 1 << 4, FLAG_Y_TICK_LABELS = 1 << 5, FLAG_HAS_CHROME = 1 << 6, FLAG_HAS_LEGEND = 1 << 7, FLAG_HAS_COLORBAR = 1 << 8;
   const LEGEND_AUTHORED_LOC = 1 << 0, LEGEND_AUTHORED_FONT = 1 << 1, LEGEND_AUTHORED_TITLE_FONT = 1 << 2;
@@ -4008,10 +4075,9 @@ function packChromeFacts(figure, legendEntries, styles, { width, height, margins
   let legendTextRgba = new Uint8Array(4), legendFrameRgba = new Uint8Array(4);
   let legendMeta = new Uint8Array(), legendLens = [], legendBlob = new Uint8Array();
   let legendCount = 0;
-  if (figure.showLegend !== false && legendEntries.length) {
+  if (figure.showLegend !== false) {
     flags |= FLAG_HAS_LEGEND;
     legendFlags |= LEGEND_SHOW;
-    legendCount = legendEntries.length;
     const options = figure.legend ?? {};
     const allowed = new Set(["loc", "title", "ncols", "style", "highlight", "toggle"]);
     if (Object.keys(options).some((key) => !allowed.has(key))) legendFlags |= LEGEND_UNSUPPORTED_KEYS;
@@ -4034,23 +4100,6 @@ function packChromeFacts(figure, legendEntries, styles, { width, height, margins
     legendTitle = encodeUtf8(String(options.title ?? ""));
     if (Object.hasOwn(style, "color")) { legendFlags |= LEGEND_AUTHORED_COLOR; legendTextRgba = rgba8(style.color, 1); }
     if (Object.hasOwn(style, "background")) { legendFlags |= LEGEND_AUTHORED_BACKGROUND; legendFrameRgba = rgba8(style.background, 1); }
-    legendMeta = new Uint8Array(legendEntries.length * 16);
-    const metaView = new DataView(legendMeta.buffer);
-    const labels = legendEntries.map((entry) => encodeUtf8(entry.label));
-    legendBlob = new Uint8Array(labels.reduce((sum, label) => sum + label.length, 0));
-    let labelAt = 0;
-    for (const [index, entry] of legendEntries.entries()) {
-      const paint = styles[entry.styleRef];
-      const offset = index * 16;
-      metaView.setUint32(offset, entry.styleRef, true);
-      legendMeta[offset + 4] = entry.kind;
-      legendMeta[offset + 5] = entry.symbol;
-      legendMeta.set(paint.fillRgba, offset + 8);
-      legendMeta.set(paint.strokeRgba, offset + 12);
-      legendLens.push(labels[index].length);
-      legendBlob.set(labels[index], labelAt);
-      labelAt += labels[index].length;
-    }
   }
   let colorbarObs = 0, stopCount = 0, tickCount = 0, cbTitle = new Uint8Array();
   let cbLo = 0, cbHi = 0, cbText = Uint8Array.of(32, 32, 32, 255);
@@ -4865,7 +4914,6 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   const xSceneAxis = sceneAxis("x", 1, xDomain);
   const ySceneAxis = sceneAxis("y", 2, yDomain);
   let attachedBytes;
-  let sidecars;
   try {
     const compiledBytes = packTraceCompile(packXyTc(figure));
     attachedBytes = packTraceAttach(compiledBytes, packXyTa(figure, xDomain, yDomain));
@@ -4880,18 +4928,12 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   let sidecarBytes;
   try {
     sidecarBytes = packTraceSidecars(attachedBytes, packXyNm(figure.traces ?? []));
-    sidecars = unpackXySd(sidecarBytes);
   } catch (error) {
     if (Number.isInteger(error.code) && error.code < 0) {
       raiseTraceSidecars(error.code, error.index ?? 0);
     }
     throw error;
   }
-  if (sidecars.styles.length !== (figure.traces ?? []).length) {
-    throw new RangeError("invalid scene sidecar packing");
-  }
-  const legendEntries = sidecars.legend;
-  const heatmapPaintPlanes = sidecars.planes;
   let rowBytes;
   try {
     rowBytes = packTraceRowBytes(attachedBytes, packXyCl(figure));
@@ -4907,13 +4949,13 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     annotationParts.push(packXyAf(annotation, annotationIndex));
   }
   const annotationFacts = concatBytes(annotationParts);
-  const annotationOutput = packAnnotationFacts(annotationFacts, sidecars.styles.length, xDomain, yDomain);
+  const annotationOutput = packAnnotationFacts(annotationFacts, (figure.traces ?? []).length, xDomain, yDomain);
   const styleSidecars = packStyleSidecars(sidecarBytes, annotationOutput);
   const xyas = spliceAnnotations(rowBytes, sidecarBytes, annotationOutput);
-  const chrome = packFigureChrome(packChromeFacts(figure, legendEntries, sidecars.styles, {
+  const chrome = packFigureChromeFromSidecars(packChromeFacts(figure, {
     width: figure.width, height: figure.height, margins, colorbarOk: !colorbarUnsupported,
-  }));
-  return encodeAssembled(xyas, chrome, packSceneExtrasFromFacts(packPolarSceneInput(figure), packXyhp(heatmapPaintPlanes), styleSidecars), {
+  }), sidecarBytes);
+  return encodeAssembled(xyas, chrome, packSceneExtrasFromSidecars(packPolarSceneInput(figure), sidecarBytes, styleSidecars), {
     viewport: [figure.width, figure.height],
     xAxis: xSceneAxis,
     yAxis: ySceneAxis,

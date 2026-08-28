@@ -216,7 +216,8 @@ crates/
                         #   trace-sidecar packing plus ABI 158 XYSS
                         #   style-sidecar packing plus ABI 159 XYAS
                         #   annotation splice packing plus ABI 160 XYAS/XYCC
-                        #   assembled encode.
+                        #   assembled encode plus ABI 161 XYSD chrome/extras
+                        #   sidecar packing.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -231,7 +232,8 @@ crates/
                         #   density opacity composition.
     scene_extras.rs     # ABI 150 XYSS extras packing: XYDS/XYLC/XYMP/XYGR
                         #   table layout, concat order, omit-empty, and XYEX
-                        #   wrapping from framed XYPL/XYHP plus sidecar facts.
+                        #   wrapping from framed XYPL/XYHP plus sidecar facts
+                        #   plus ABI 161 XYHP wrapping from packed XYSD planes.
     scene_density.rs    # ABI 151 Scene density grid packing: 512×384 blit
                         #   lattice, bin_2d, density_log_u8, optional
                         #   mean-color, and XYDE wrapping.
@@ -242,7 +244,8 @@ crates/
                         #   chrome-style resolve, legend loc default/allowlists
                         #   (empty authored loc is fail-closed), colorbar
                         #   flags/framing, XYTL tick-label framing, and the
-                        #   200-tick axis bound.
+                        #   200-tick axis bound plus ABI 161 XYSD legend-paint
+                        #   splice.
     scene_trace_compile.rs # ABI 154 XYTC per-trace compile packing: opacity,
                         #   symbol, color, dash, linecap, marker path,
                         #   diameter, legend kind, step, curve-smooth,
@@ -817,4 +820,6 @@ landed; the remainder, in order:
    ABI 158 XYSS style-sidecar packing (`xyg_scene_pack_style_sidecars`) ✅.
    ABI 159 XYAS annotation splice packing (`xyg_scene_splice_annotations`) ✅.
    ABI 160 XYAS/XYCC assembled encode (`xyg_scene_encode_assembled`) ✅.
+   ABI 161 XYSD chrome/extras packing (`xyg_scene_pack_figure_chrome_from_sidecars`,
+   `xyg_scene_pack_scene_extras_from_sidecars`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

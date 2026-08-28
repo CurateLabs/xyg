@@ -5,7 +5,9 @@
 //! name), heatmap-vs-density paint-plane selection, and per-trace
 //! style/dash/linecap/marker/gradient extraction so Python and Node cannot
 //! drift. Encoded Scene v31 is unchanged. ABI 158 packs XYSS from XYSD plus
-//! XYAO; ABI 159 splices annotation styles and mark rows into XYAS.
+//! XYAO; ABI 159 splices annotation styles and mark rows into XYAS. ABI 161
+//! unpacks XYSD legend paints and heatmap/density planes so hosts do not
+//! inspect sidecar contents on the product path.
 
 use crate::scene_trace_attach::{XYTT_HEADER_BYTES, XYTT_MAGIC, XYTT_PREFIX_BYTES, XYTT_VERSION};
 use crate::scene_trace_compile::XYTO_MAGIC;
@@ -221,6 +223,106 @@ fn parse_xynm(bytes: &[u8]) -> Result<Vec<Vec<u8>>, TraceSidecarsError> {
     Ok(names)
 }
 
+/// One XYSD v1 per-trace record used by ABI 161 chrome/extras packing.
+#[derive(Clone, Debug)]
+pub struct XySdRecord {
+    pub fill: [u8; 4],
+    pub stroke: [u8; 4],
+    pub stroke_width: f64,
+    pub linecap: u8,
+    pub legend_kind: u8,
+    pub legend_symbol: u16,
+    pub dash: Vec<u8>,
+    pub marker: Vec<u8>,
+    pub gradient: Vec<u8>,
+    pub plane: Vec<u8>,
+    pub name: Vec<u8>,
+}
+
+/// Parse packed `XYSD` v1 into per-trace style, plane, and legend-name records.
+pub fn parse_xysd_records(bytes: &[u8]) -> Result<Vec<XySdRecord>, TraceSidecarsError> {
+    if bytes.is_empty() {
+        return Ok(Vec::new());
+    }
+    if bytes.len() < XYSD_HEADER_BYTES || bytes.get(..4) != Some(&XYSD_MAGIC[..]) {
+        return Err(TraceSidecarsError::new(TraceSidecarsCode::Length, 0));
+    }
+    if read_u32(bytes, 4)? != XYSD_VERSION {
+        return Err(TraceSidecarsError::new(TraceSidecarsCode::Version, 0));
+    }
+    let n_traces = read_u32(bytes, 8)? as usize;
+    if n_traces > MAX_TRACES {
+        return Err(TraceSidecarsError::new(TraceSidecarsCode::Limit, 0));
+    }
+    let mut rest = bytes
+        .get(XYSD_HEADER_BYTES..)
+        .ok_or(TraceSidecarsError::new(TraceSidecarsCode::Length, 0))?;
+    let mut records = Vec::with_capacity(n_traces);
+    for index in 0..n_traces {
+        let prefix = take(&mut rest, XYSD_PREFIX_BYTES, index)?;
+        let fill: [u8; 4] = prefix[0..4]
+            .try_into()
+            .map_err(|_| TraceSidecarsError::new(TraceSidecarsCode::Length, index))?;
+        let stroke: [u8; 4] = prefix[4..8]
+            .try_into()
+            .map_err(|_| TraceSidecarsError::new(TraceSidecarsCode::Length, index))?;
+        let stroke_width = f64::from_le_bytes(
+            prefix[8..16]
+                .try_into()
+                .map_err(|_| TraceSidecarsError::new(TraceSidecarsCode::Length, index))?,
+        );
+        let linecap = prefix[16];
+        let legend_kind = prefix[17];
+        let legend_symbol = u16::from_le_bytes(
+            prefix[18..20]
+                .try_into()
+                .map_err(|_| TraceSidecarsError::new(TraceSidecarsCode::Length, index))?,
+        );
+        let dash_len = u32::from_le_bytes(
+            prefix[20..24]
+                .try_into()
+                .map_err(|_| TraceSidecarsError::new(TraceSidecarsCode::Length, index))?,
+        ) as usize;
+        let marker_len = u32::from_le_bytes(
+            prefix[24..28]
+                .try_into()
+                .map_err(|_| TraceSidecarsError::new(TraceSidecarsCode::Length, index))?,
+        ) as usize;
+        let gradient_len = u32::from_le_bytes(
+            prefix[28..32]
+                .try_into()
+                .map_err(|_| TraceSidecarsError::new(TraceSidecarsCode::Length, index))?,
+        ) as usize;
+        let plane_len = u32::from_le_bytes(
+            prefix[32..36]
+                .try_into()
+                .map_err(|_| TraceSidecarsError::new(TraceSidecarsCode::Length, index))?,
+        ) as usize;
+        let name_len = u32::from_le_bytes(
+            prefix[36..40]
+                .try_into()
+                .map_err(|_| TraceSidecarsError::new(TraceSidecarsCode::Length, index))?,
+        ) as usize;
+        records.push(XySdRecord {
+            fill,
+            stroke,
+            stroke_width,
+            linecap,
+            legend_kind,
+            legend_symbol,
+            dash: take(&mut rest, dash_len, index)?,
+            marker: take(&mut rest, marker_len, index)?,
+            gradient: take(&mut rest, gradient_len, index)?,
+            plane: take(&mut rest, plane_len, index)?,
+            name: take(&mut rest, name_len, index)?,
+        });
+    }
+    if !rest.is_empty() {
+        return Err(TraceSidecarsError::new(TraceSidecarsCode::Length, 0));
+    }
+    Ok(records)
+}
+
 fn write_sidecar(out: &mut Vec<u8>, attached: &AttachedSidecar, name: &[u8]) {
     let legend_name = if attached.legend_include && !name.is_empty() {
         name
@@ -395,6 +497,13 @@ mod tests {
         assert_eq!(name_of(&packed), b"alpha");
         let dash_len = u32::from_le_bytes(packed[36..40].try_into().unwrap());
         assert_eq!(dash_len, 16);
+        let records = parse_xysd_records(&packed).unwrap();
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].fill, [0x11, 0x22, 0x33, 0xff]);
+        assert_eq!(records[0].stroke, [0x44, 0x55, 0x66, 0xff]);
+        assert_eq!(records[0].legend_kind, 1);
+        assert_eq!(records[0].legend_symbol, 3);
+        assert_eq!(records[0].name, b"alpha");
     }
 
     #[test]

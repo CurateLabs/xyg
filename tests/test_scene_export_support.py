@@ -1288,6 +1288,12 @@ def test_migrated_scene_packers_have_no_host_step_geometry_expander() -> None:
     assert "function stepArrays" not in node_packer
     assert "return _native.scene_encode_assembled(" in python_packer
     assert "return encodeAssembled(" in node_packer
+    assert "_native.scene_pack_figure_chrome_from_sidecars(" in python_packer
+    assert "packFigureChromeFromSidecars(" in node_packer
+    assert "_native.scene_pack_scene_extras_from_sidecars(" in python_packer
+    assert "packSceneExtrasFromSidecars(" in node_packer
+    assert "sidecars = _unpack_xysd(" not in python_packer
+    assert "sidecars = unpackXySd(" not in node_packer
     assert "_ribbon_band_samples" not in python_packer
     assert "ribbon_edge" not in python_packer
     assert "function ribbonEdge" not in node_packer

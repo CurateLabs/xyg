@@ -1900,6 +1900,68 @@ def scene_pack_figure_chrome(facts: bytes) -> bytes:
     return bytes(out[:code])
 
 
+def scene_pack_figure_chrome_from_sidecars(facts: bytes, xysd: bytes) -> bytes:
+    """Pack XYCF v1 plus XYSD v1 into the XYCC v1 encode-ready bundle (M2 #271)."""
+    payload = facts if isinstance(facts, (bytes, bytearray, memoryview)) else bytes(facts)
+    sidecar_payload = xysd if isinstance(xysd, (bytes, bytearray, memoryview)) else bytes(xysd)
+    capacity = max(65536, len(payload) + len(sidecar_payload) + 4096)
+    source = np.frombuffer(payload, dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    source_xysd = (
+        np.frombuffer(sidecar_payload, dtype=np.uint8)
+        if sidecar_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    for _ in range(4):
+        out = np.zeros(capacity, dtype=np.uint8)
+        code = int(
+            _lib.xyg_scene_pack_figure_chrome_from_sidecars(
+                _ptr_u8(source) if source.size else 0,
+                int(source.size),
+                _ptr_u8(source_xysd) if source_xysd.size else 0,
+                int(source_xysd.size),
+                _ptr_u8(out),
+                len(out),
+            )
+        )
+        if code == -4:
+            capacity *= 2
+            continue
+        if code == -2:
+            raise ValueError("invalid scene chrome facts version")
+        if code == -5:
+            raise ValueError("invalid canonical scene plot layout")
+        if code == -7:
+            raise ValueError(
+                "Scene v12 primary legends do not yet encode anchors, multiple columns, or custom content"
+            )
+        if code == -8:
+            raise ValueError(
+                "Scene v12 primary legends are static; toggle and highlight must be false"
+            )
+        if code == -9:
+            raise ValueError("Scene v12 does not support legend location")
+        if code == -10:
+            raise ValueError("legend font sizes must be finite and in [1, 1000]")
+        if code == -11:
+            raise ValueError(
+                "Scene v12 legends support only background, color, font_size, and title_font_size"
+            )
+        if code == -12:
+            raise ValueError("Scene v19 colorbars require literal bounded RGBA stops")
+        if code == -13:
+            raise ValueError(
+                "Scene v19 colorbars require a two-value domain and 2-16 literal stops"
+            )
+        if code == -14:
+            raise ValueError("Scene v19 colorbars support only right or bottom placement")
+        if code == -15:
+            raise ValueError("scene axis tick lists are limited to 200 values")
+        if code < 0:
+            raise ValueError("invalid scene chrome packing")
+        return bytes(out[:code])
+    raise ValueError("invalid scene chrome packing")
+
+
 class SceneTraceCompileError(ValueError):
     """Native XYTC compile failure carrying the ABI error code and trace index."""
 
@@ -2843,6 +2905,56 @@ def scene_pack_scene_extras(polar: bytes, paint: bytes, facts: bytes) -> bytes:
     if code < 0:
         raise ValueError("invalid scene extras packing")
     return bytes(out[:code])
+
+
+def scene_pack_scene_extras_from_sidecars(polar: bytes, xysd: bytes, facts: bytes) -> bytes:
+    """Pack XYPL plus XYSD planes plus XYSS sidecar facts into extras (M2 #271)."""
+    polar_payload = polar if isinstance(polar, (bytes, bytearray, memoryview)) else bytes(polar)
+    sidecar_payload = xysd if isinstance(xysd, (bytes, bytearray, memoryview)) else bytes(xysd)
+    facts_payload = facts if isinstance(facts, (bytes, bytearray, memoryview)) else bytes(facts)
+    if not polar_payload and not sidecar_payload and not facts_payload:
+        return b""
+    capacity = max(256, len(polar_payload) + len(sidecar_payload) + len(facts_payload) + 64)
+    polar_arr = (
+        np.frombuffer(polar_payload, dtype=np.uint8)
+        if polar_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    xysd_arr = (
+        np.frombuffer(sidecar_payload, dtype=np.uint8)
+        if sidecar_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    facts_arr = (
+        np.frombuffer(facts_payload, dtype=np.uint8)
+        if facts_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    for _ in range(4):
+        out = np.zeros(capacity, dtype=np.uint8)
+        code = int(
+            _lib.xyg_scene_pack_scene_extras_from_sidecars(
+                _ptr_u8(polar_arr) if polar_arr.size else 0,
+                int(polar_arr.size),
+                _ptr_u8(xysd_arr) if xysd_arr.size else 0,
+                int(xysd_arr.size),
+                _ptr_u8(facts_arr) if facts_arr.size else 0,
+                int(facts_arr.size),
+                _ptr_u8(out),
+                len(out),
+            )
+        )
+        if code == -4:
+            capacity *= 2
+            continue
+        if code == -5:
+            raise ValueError("Scene extras polar or paint envelope is invalid")
+        if code == -6:
+            raise ValueError("Scene style sidecar facts are invalid")
+        if code < 0:
+            raise ValueError("invalid scene extras packing")
+        return bytes(out[:code])
+    raise ValueError("invalid scene extras packing")
 
 
 def scene_pack_density_grid(

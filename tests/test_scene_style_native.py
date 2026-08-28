@@ -16,12 +16,14 @@ from xyg._native import (
     scene_pack_colorbar,
     scene_pack_density_grid,
     scene_pack_figure_chrome,
+    scene_pack_figure_chrome_from_sidecars,
     scene_pack_heatmap_facts,
     scene_pack_legend,
     scene_pack_product,
     scene_pack_product_facts,
     scene_pack_public_export,
     scene_pack_scene_extras,
+    scene_pack_scene_extras_from_sidecars,
     scene_pack_style_sidecars,
     scene_pack_trace,
     scene_pack_trace_attach,
@@ -166,8 +168,6 @@ def test_empty_encode_assembled_facts_emit_xygs() -> None:
     chrome = scene_pack_figure_chrome(
         _scene_v3._pack_chrome_facts(
             figure,
-            [],
-            [],
             width=400,
             height=300,
             margins=None,
@@ -184,6 +184,44 @@ def test_empty_encode_assembled_facts_emit_xygs() -> None:
     )
     assert encoded[:4] == b"XYGS"
     assert int.from_bytes(encoded[4:8], "little") == 31
+
+
+def test_chrome_from_sidecars_fills_named_legend() -> None:
+    from xyg import _scene_v3
+
+    compiled = scene_pack_trace_compile(
+        b"XYTC" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    )
+    attached = scene_pack_trace_attach(
+        compiled, b"XYTA" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    )
+    sidecars = scene_pack_trace_sidecars(
+        attached, b"XYNM" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    )
+    figure = Figure(width=400, height=300)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    facts = _scene_v3._pack_chrome_facts(
+        figure,
+        width=400,
+        height=300,
+        margins=None,
+        colorbar_ok=True,
+    )
+    empty = scene_pack_figure_chrome(facts)
+    filled = scene_pack_figure_chrome_from_sidecars(facts, sidecars)
+    assert empty[:4] == b"XYCC"
+    assert filled[:4] == b"XYCC"
+    empty_legend = int.from_bytes(empty[104:108], "little")
+    filled_legend = int.from_bytes(filled[104:108], "little")
+    assert empty_legend == 0
+    # Empty XYNM names produce no legend paints, matching host skip.
+    assert filled_legend == 0
+    named = Figure(width=240, height=160).scatter([0.25], [0.5], name="observed")
+    encoded = figure_scene(named)
+    assert encoded[:4] == b"XYGS"
+    extras = scene_pack_scene_extras_from_sidecars(b"", sidecars, b"")
+    assert extras == b""
 
 
 def test_line_default_stroke_width_is_one_and_a_half() -> None:
@@ -746,8 +784,6 @@ def test_pack_figure_chrome_empty_facts_is_xycc() -> None:
     figure.scatter([0.0, 1.0], [0.0, 1.0])
     facts = _scene_v3._pack_chrome_facts(
         figure,
-        [],
-        [],
         width=400,
         height=300,
         margins=None,
@@ -782,8 +818,6 @@ def test_pack_figure_chrome_tick_overflow_keeps_encode_message() -> None:
     figure.scatter([0.0, 1.0], [0.0, 1.0])
     facts = _scene_v3._pack_chrome_facts(
         figure,
-        [],
-        [],
         width=400,
         height=300,
         margins=None,

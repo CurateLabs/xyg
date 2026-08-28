@@ -1,20 +1,23 @@
 //! Compact Figure→Scene chrome packing (M2 #271).
 //!
 //! Hosts pack authored title/labels, axis descriptors, ticks, XYCH, legend
-//! loc/entries, colorbar literals, viewport, and optional padding/margins as
+//! loc/options, colorbar literals, viewport, and optional padding/margins as
 //! XYCF v1. Rust owns plot-layout vs authored margins, format suppression
 //! when tick labels are present, chrome-style resolve, legend loc default and
 //! allowlists, colorbar flags/framing, and XYTL tick-label framing so Python
-//! and Node cannot drift on the encode-ready chrome bundle. Encoded Scene v31
-//! is unchanged.
+//! and Node cannot drift on the encode-ready chrome bundle. ABI 161 fills
+//! empty legend paints from packed XYSD so hosts do not unpack sidecar
+//! styles on the product path. Encoded Scene v31 is unchanged.
 
 use crate::scene::{
     cartesian_scene_margins, encode_tick_labels, CartesianLayoutRequest, ColorbarSide, ScaleKind,
-    SceneChromeStyle, MAX_AXIS_TICKS, MAX_SCENE_TEXT_BYTES, SCENE_CHROME_STYLE_INPUT_BYTES,
+    SceneChromeStyle, MAX_AXIS_TICKS, MAX_SCENE_LEGEND_ENTRIES, MAX_SCENE_TEXT_BYTES,
+    SCENE_CHROME_STYLE_INPUT_BYTES,
 };
 use crate::scene_colorbar::{self, ColorbarError, ColorbarFrameInput, ColorbarStop};
 use crate::scene_legend::{self, LegendError, LegendFrameInput, LEGEND_META_BYTES};
 use crate::scene_style::{self, MarkStyleError};
+use crate::scene_trace_sidecars::{parse_xysd_records, TraceSidecarsCode, TraceSidecarsError};
 
 pub const XYCF_MAGIC: &[u8; 4] = b"XYCF";
 pub const XYCF_VERSION: u32 = 1;
@@ -204,13 +207,56 @@ fn resolve_chrome(bytes: &[u8]) -> Result<[u8; SCENE_CHROME_STYLE_INPUT_BYTES], 
 }
 
 fn rgba4(bytes: &[u8]) -> Result<[u8; 4], ChromePackError> {
-    bytes
-        .try_into()
-        .map_err(|_| ChromePackError::Length)
+    bytes.try_into().map_err(|_| ChromePackError::Length)
+}
+
+fn map_xysd(error: TraceSidecarsError) -> ChromePackError {
+    match error.code {
+        TraceSidecarsCode::Version => ChromePackError::Version,
+        TraceSidecarsCode::Limit => ChromePackError::Limit,
+        _ => ChromePackError::Length,
+    }
+}
+
+fn legend_tables_from_xysd(xysd: &[u8]) -> Result<(Vec<u8>, Vec<u32>, Vec<u8>), ChromePackError> {
+    let records = parse_xysd_records(xysd).map_err(map_xysd)?;
+    let mut meta = Vec::new();
+    let mut lens = Vec::new();
+    let mut labels = Vec::new();
+    for (index, record) in records.iter().enumerate() {
+        if record.name.is_empty() {
+            continue;
+        }
+        if lens.len() >= MAX_SCENE_LEGEND_ENTRIES {
+            return Err(ChromePackError::Limit);
+        }
+        let mut row = [0u8; LEGEND_META_BYTES];
+        row[0..4].copy_from_slice(&(index as u32).to_le_bytes());
+        row[4] = record.legend_kind;
+        row[5] = record.legend_symbol as u8;
+        row[8..12].copy_from_slice(&record.fill);
+        row[12..16].copy_from_slice(&record.stroke);
+        meta.extend_from_slice(&row);
+        lens.push(record.name.len() as u32);
+        labels.extend_from_slice(&record.name);
+    }
+    Ok((meta, lens, labels))
 }
 
 /// Pack authored XYCF v1 chrome facts into the XYCC v1 encode-ready bundle.
 pub fn pack_figure_chrome(facts: &[u8]) -> Result<Vec<u8>, ChromePackError> {
+    pack_figure_chrome_from_sidecars(facts, &[])
+}
+
+/// Pack authored XYCF v1 plus optional XYSD v1 into the XYCC v1 bundle.
+///
+/// When `HAS_LEGEND` and `LEGEND_SHOW` are set and the host packed zero
+/// legend entries, Rust fills paints and labels from named XYSD traces so
+/// Python and Node do not unpack sidecar styles on the product path.
+pub fn pack_figure_chrome_from_sidecars(
+    facts: &[u8],
+    xysd: &[u8],
+) -> Result<Vec<u8>, ChromePackError> {
     if facts.len() < XYCF_HEADER_BYTES {
         return Err(ChromePackError::Length);
     }
@@ -315,11 +361,12 @@ pub fn pack_figure_chrome(facts: &[u8]) -> Result<Vec<u8>, ChromePackError> {
     let chrome_bytes = take(facts, &mut at, chrome_len)?;
     let legend_loc_bytes = take(facts, &mut at, legend_loc_len)?;
     let legend_title = take(facts, &mut at, legend_title_len)?;
-    let legend_meta = take(
+    let mut legend_meta = take(
         facts,
         &mut at,
         legend_entry_count.saturating_mul(LEGEND_META_BYTES),
-    )?;
+    )?
+    .to_vec();
     let mut legend_lens = Vec::with_capacity(legend_entry_count);
     let mut labels_len = 0usize;
     for _ in 0..legend_entry_count {
@@ -333,7 +380,21 @@ pub fn pack_figure_chrome(facts: &[u8]) -> Result<Vec<u8>, ChromePackError> {
             .ok_or(ChromePackError::Limit)?;
         legend_lens.push(len);
     }
-    let legend_labels = take(facts, &mut at, labels_len)?;
+    let mut legend_labels = take(facts, &mut at, labels_len)?.to_vec();
+    let mut legend_entry_count = legend_entry_count;
+    if flags & FLAG_HAS_LEGEND != 0
+        && legend_flags & LEGEND_SHOW != 0
+        && legend_entry_count == 0
+        && !xysd.is_empty()
+    {
+        let (meta, lens, labels) = legend_tables_from_xysd(xysd)?;
+        legend_meta = meta;
+        legend_lens = lens;
+        legend_labels = labels;
+        legend_entry_count = legend_lens.len();
+    } else if !xysd.is_empty() {
+        parse_xysd_records(xysd).map_err(map_xysd)?;
+    }
     let mut colorbar_stops = Vec::with_capacity(colorbar_stop_count);
     for _ in 0..colorbar_stop_count {
         let value = f64::from_le_bytes(
@@ -438,8 +499,10 @@ pub fn pack_figure_chrome(facts: &[u8]) -> Result<Vec<u8>, ChromePackError> {
     } else {
         resolve_chrome(&[])?
     };
-    let x_labels = encode_tick_labels(x_tick_labels.as_deref()).map_err(|_| ChromePackError::Limit)?;
-    let y_labels = encode_tick_labels(y_tick_labels.as_deref()).map_err(|_| ChromePackError::Limit)?;
+    let x_labels =
+        encode_tick_labels(x_tick_labels.as_deref()).map_err(|_| ChromePackError::Limit)?;
+    let y_labels =
+        encode_tick_labels(y_tick_labels.as_deref()).map_err(|_| ChromePackError::Limit)?;
 
     let legend = if flags & FLAG_HAS_LEGEND != 0
         && legend_flags & LEGEND_SHOW != 0
@@ -455,7 +518,7 @@ pub fn pack_figure_chrome(facts: &[u8]) -> Result<Vec<u8>, ChromePackError> {
             return Err(ChromePackError::LegendStyle);
         }
         let loc = legend_loc(legend_loc_bytes, legend_flags & LEGEND_AUTHORED_LOC != 0)?;
-        let entries = scene_legend::entries_from_meta(legend_meta, &legend_lens, legend_labels)
+        let entries = scene_legend::entries_from_meta(&legend_meta, &legend_lens, &legend_labels)
             .map_err(|_| ChromePackError::Length)?;
         let pack_flags = (legend_flags & 0x1f) as u8
             & (LEGEND_PACK_AUTHORED_LOC
@@ -571,7 +634,12 @@ pub fn pack_figure_chrome(facts: &[u8]) -> Result<Vec<u8>, ChromePackError> {
     write += xlabel_len;
     out[write..write + ylabel_len].copy_from_slice(ylabel);
     write += ylabel_len;
-    for value in x_major.iter().chain(&x_minor).chain(&y_major).chain(&y_minor) {
+    for value in x_major
+        .iter()
+        .chain(&x_minor)
+        .chain(&y_major)
+        .chain(&y_minor)
+    {
         out[write..write + 8].copy_from_slice(&value.to_le_bytes());
         write += 8;
     }
@@ -595,13 +663,7 @@ pub fn pack_figure_chrome(facts: &[u8]) -> Result<Vec<u8>, ChromePackError> {
 mod tests {
     use super::*;
 
-    fn header(
-        flags: u32,
-        width: f64,
-        height: f64,
-        x_kind: u32,
-        y_kind: u32,
-    ) -> Vec<u8> {
+    fn header(flags: u32, width: f64, height: f64, x_kind: u32, y_kind: u32) -> Vec<u8> {
         let mut out = vec![0u8; XYCF_HEADER_BYTES];
         out[..4].copy_from_slice(XYCF_MAGIC);
         out[4..8].copy_from_slice(&XYCF_VERSION.to_le_bytes());
@@ -648,10 +710,22 @@ mod tests {
             colorbar_side: ColorbarSide::None,
         })
         .unwrap();
-        assert_eq!(f64::from_le_bytes(packed[16..24].try_into().unwrap()), expected.0);
-        assert_eq!(f64::from_le_bytes(packed[24..32].try_into().unwrap()), expected.1);
-        assert_eq!(f64::from_le_bytes(packed[32..40].try_into().unwrap()), expected.2);
-        assert_eq!(f64::from_le_bytes(packed[40..48].try_into().unwrap()), expected.3);
+        assert_eq!(
+            f64::from_le_bytes(packed[16..24].try_into().unwrap()),
+            expected.0
+        );
+        assert_eq!(
+            f64::from_le_bytes(packed[24..32].try_into().unwrap()),
+            expected.1
+        );
+        assert_eq!(
+            f64::from_le_bytes(packed[32..40].try_into().unwrap()),
+            expected.2
+        );
+        assert_eq!(
+            f64::from_le_bytes(packed[40..48].try_into().unwrap()),
+            expected.3
+        );
         assert_eq!(
             u32::from_le_bytes(packed[48..52].try_into().unwrap()) as usize,
             SCENE_CHROME_STYLE_INPUT_BYTES
@@ -750,5 +824,42 @@ mod tests {
             pack_figure_chrome(&payload),
             Err(ChromePackError::LegendKeys)
         );
+    }
+
+    fn xysd_named(fill: [u8; 4], stroke: [u8; 4], kind: u8, symbol: u16, name: &[u8]) -> Vec<u8> {
+        let mut out = vec![0u8; 16];
+        out[..4].copy_from_slice(b"XYSD");
+        out[4..8].copy_from_slice(&1u32.to_le_bytes());
+        out[8..12].copy_from_slice(&1u32.to_le_bytes());
+        let mut prefix = vec![0u8; 48];
+        prefix[0..4].copy_from_slice(&fill);
+        prefix[4..8].copy_from_slice(&stroke);
+        prefix[8..16].copy_from_slice(&1.0f64.to_le_bytes());
+        prefix[17] = kind;
+        prefix[18..20].copy_from_slice(&symbol.to_le_bytes());
+        prefix[36..40].copy_from_slice(&(name.len() as u32).to_le_bytes());
+        out.extend_from_slice(&prefix);
+        out.extend_from_slice(name);
+        out
+    }
+
+    #[test]
+    fn sidecar_legend_fills_empty_host_entries() {
+        let mut facts = header(
+            FLAG_HAS_LEGEND | FLAG_X_MAJOR_AUTO | FLAG_Y_MAJOR_AUTO,
+            200.0,
+            120.0,
+            0,
+            0,
+        );
+        facts[232..236].copy_from_slice(&LEGEND_SHOW.to_le_bytes());
+        let xysd = xysd_named([0x39, 0x87, 0xe5, 255], [0, 0, 0, 0], 1, 3, b"alpha");
+        let packed = pack_figure_chrome_from_sidecars(&facts, &xysd).unwrap();
+        assert_eq!(&packed[..4], XYCC_MAGIC);
+        let legend_len = u32::from_le_bytes(packed[104..108].try_into().unwrap());
+        assert!(legend_len > 0);
+        let without = pack_figure_chrome(&facts).unwrap();
+        let empty_legend = u32::from_le_bytes(without[104..108].try_into().unwrap());
+        assert_eq!(empty_legend, 0);
     }
 }

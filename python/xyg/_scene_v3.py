@@ -1387,15 +1387,13 @@ def _unpack_xycc(blob: bytes) -> dict[str, Any]:
 
 def _pack_chrome_facts(
     figure: Any,
-    legend_entries: list[tuple[int, int, int, str]],
-    styles: list[Any],
     *,
     width: int,
     height: int,
     margins: tuple[float, float, float, float] | None,
     colorbar_ok: bool,
 ) -> bytes:
-    """Pack authored XYCF v1 chrome facts; Rust owns XYCC layout and policy."""
+    """Pack authored XYCF v1 chrome facts; Rust owns XYCC layout and legend paints."""
     flags = _XYCF_FLAG_HAS_CHROME | _XYCF_FLAG_X_MAJOR_AUTO | _XYCF_FLAG_Y_MAJOR_AUTO
     kind_codes = {"linear": 0, "log": 1, "symlog": 2}
     xa = figure.axis_options["x"]
@@ -1452,10 +1450,9 @@ def _pack_chrome_facts(
     legend_lens: list[int] = []
     legend_blob = b""
     legend_count = 0
-    if figure.show_legend and legend_entries:
+    if figure.show_legend:
         flags |= _XYCF_FLAG_HAS_LEGEND
         legend_flags |= _XYCF_LEGEND_SHOW
-        legend_count = len(legend_entries)
         options = dict(figure.legend_options or {})
         unsupported = {
             key
@@ -1494,21 +1491,6 @@ def _pack_chrome_facts(
         if "background" in style:
             legend_flags |= _XYCF_LEGEND_AUTHORED_BACKGROUND
             legend_frame_rgba = bytes(_rgba(str(style["background"]), 1.0))
-        meta = bytearray()
-        blob = bytearray()
-        for (style_ref, kind, symbol, _), label in zip(
-            legend_entries,
-            [str(item[3]).encode("utf-8") for item in legend_entries],
-            strict=True,
-        ):
-            fill, stroke, _ = styles[style_ref]
-            meta.extend(struct.pack("<IBB2x", int(style_ref), int(kind), int(symbol)))
-            meta.extend(bytes(fill))
-            meta.extend(bytes(stroke))
-            legend_lens.append(len(label))
-            blob.extend(label)
-        legend_meta = bytes(meta)
-        legend_blob = bytes(blob)
     colorbar_obs = 0
     colorbar_stop_count = 0
     colorbar_tick_count = 0
@@ -2909,13 +2891,8 @@ def figure_scene(
         _raise_trace_attach(error, figure)
     try:
         sidecar_bytes = _native.scene_pack_trace_sidecars(attached_bytes, _pack_xynm(figure))
-        sidecars = _unpack_xysd(sidecar_bytes)
     except _native.SceneTraceSidecarsError as error:
         _raise_trace_sidecars(error)
-    if len(sidecars["styles"]) != len(figure.traces):
-        raise ValueError("invalid scene sidecar packing")
-    legend_entries = list(sidecars["legend"])
-    heatmap_paint_planes = list(sidecars["planes"])
     try:
         row_bytes = _native.scene_pack_trace_row_bytes(attached_bytes, _pack_xycl(figure))
     except _native.SceneTraceRowsError as error:
@@ -2944,7 +2921,9 @@ def figure_scene(
     # records and omit-empty (ABI 158). Hosts pass product rows plus XYSD plus
     # XYAO; Rust owns annotation style/row splice and XYAD extract (ABI 159).
     # Hosts pass XYAS plus XYCC plus extras plus axis scalars; Rust owns
-    # assembled Scene encode (ABI 160).
+    # assembled Scene encode (ABI 160). Hosts pack XYCF legend options plus
+    # XYSD; Rust owns legend paints and XYHP wrapping from sidecar planes
+    # (ABI 161).
     x_domain = tuple(float(value) for value in figure._range("x"))
     y_domain = tuple(float(value) for value in figure._range("y"))
     annotation_facts = bytearray()
@@ -2954,7 +2933,7 @@ def figure_scene(
         annotation_output = (
             _native.scene_pack_annotation_facts(
                 bytes(annotation_facts),
-                style_ref_base=len(sidecars["styles"]),
+                style_ref_base=len(figure.traces),
                 x_domain=x_domain,
                 y_domain=y_domain,
             )
@@ -2992,16 +2971,15 @@ def figure_scene(
     x_axis = axis("x", 1)
     y_axis = axis("y", 2)
     try:
-        chrome = _native.scene_pack_figure_chrome(
+        chrome = _native.scene_pack_figure_chrome_from_sidecars(
             _pack_chrome_facts(
                 figure,
-                legend_entries,
-                sidecars["styles"],
                 width=w,
                 height=h,
                 margins=margins,
                 colorbar_ok=not colorbar_unsupported,
-            )
+            ),
+            sidecar_bytes,
         )
     except ValueError as error:
         message = str(error)
@@ -3014,9 +2992,9 @@ def figure_scene(
         }:
             raise
         raise UnsupportedSceneV3(message) from error
-    extras = _native.scene_pack_scene_extras(
+    extras = _native.scene_pack_scene_extras_from_sidecars(
         _pack_polar_scene_input(figure),
-        _pack_xyhp(heatmap_paint_planes),
+        sidecar_bytes,
         style_sidecars,
     )
     try:

@@ -1,9 +1,11 @@
 //! Compact Figure→Scene extras packing (M2 #271).
 //!
 //! Hosts pack authored dash/linecap/marker_path/gradient facts as XYSS v1 plus
-//! already-framed XYPL/XYHP bytes. Rust owns XYDS/XYLC/XYMP/XYGR table layout,
-//! concat order, omit-empty rules, and XYEX wrapping so Python and Node cannot
-//! drift on the extras pointer. Encoded Scene v31 is unchanged.
+//! already-framed XYPL bytes. ABI 150 wraps framed XYHP; ABI 161 wraps XYHP
+//! from packed XYSD planes so hosts do not unpack sidecar paint. Rust owns
+//! XYDS/XYLC/XYMP/XYGR table layout, concat order, omit-empty rules, and XYEX
+//! wrapping so Python and Node cannot drift on the extras pointer. Encoded
+//! Scene v31 is unchanged.
 
 use crate::polar::{XYPL_MAGIC, XYPL_V1_BYTES};
 use crate::scene::{
@@ -420,6 +422,48 @@ pub fn pack_scene_extras(polar: &[u8], paint: &[u8], facts: &[u8]) -> Result<Vec
     wrap_extras(polar, paint, &dash)
 }
 
+fn map_xysd(error: crate::scene_trace_sidecars::TraceSidecarsError) -> ExtrasError {
+    match error.code {
+        crate::scene_trace_sidecars::TraceSidecarsCode::Version => ExtrasError::Version,
+        crate::scene_trace_sidecars::TraceSidecarsCode::Limit => ExtrasError::Limit,
+        _ => ExtrasError::Length,
+    }
+}
+
+fn xyhp_envelope_from_xysd(xysd: &[u8]) -> Result<Vec<u8>, ExtrasError> {
+    let records = crate::scene_trace_sidecars::parse_xysd_records(xysd).map_err(map_xysd)?;
+    let mut planes = Vec::new();
+    for record in &records {
+        if !record.plane.is_empty() {
+            planes.push(record.plane.as_slice());
+        }
+    }
+    if planes.is_empty() {
+        return Ok(Vec::new());
+    }
+    let mut out = vec![0u8; 16];
+    out[..4].copy_from_slice(XYHP_MAGIC);
+    out[4..8].copy_from_slice(&1u32.to_le_bytes());
+    out[8..12].copy_from_slice(&(planes.len() as u32).to_le_bytes());
+    for plane in planes {
+        out.extend_from_slice(plane);
+    }
+    Ok(out)
+}
+
+/// Pack polar XYPL, XYSD paint planes, and XYSS facts into extras.
+///
+/// Rust wraps nonempty XYSD planes as XYHP v1 so hosts do not unpack sidecar
+/// paint on the product path.
+pub fn pack_scene_extras_from_sidecars(
+    polar: &[u8],
+    xysd: &[u8],
+    facts: &[u8],
+) -> Result<Vec<u8>, ExtrasError> {
+    let paint = xyhp_envelope_from_xysd(xysd)?;
+    pack_scene_extras(polar, &paint, facts)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -559,5 +603,47 @@ mod tests {
     fn invalid_polar_envelope_is_shape() {
         let polar = vec![0u8; 8];
         assert_eq!(pack_scene_extras(&polar, &[], &[]), Err(ExtrasError::Shape));
+    }
+
+    fn xysd_with_plane(plane: &[u8]) -> Vec<u8> {
+        let mut out = vec![0u8; 16];
+        out[..4].copy_from_slice(b"XYSD");
+        out[4..8].copy_from_slice(&1u32.to_le_bytes());
+        out[8..12].copy_from_slice(&1u32.to_le_bytes());
+        let mut prefix = vec![0u8; 48];
+        prefix[32..36].copy_from_slice(&(plane.len() as u32).to_le_bytes());
+        out.extend_from_slice(&prefix);
+        out.extend_from_slice(plane);
+        out
+    }
+
+    #[test]
+    fn sidecars_wrap_xysd_planes_as_xyhp() {
+        let mut plane = Vec::new();
+        plane.extend_from_slice(&9u64.to_le_bytes());
+        plane.extend_from_slice(&1u32.to_le_bytes());
+        plane.extend_from_slice(&1u32.to_le_bytes());
+        plane.extend_from_slice(&0u32.to_le_bytes());
+        plane.extend_from_slice(&4u32.to_le_bytes());
+        plane.extend_from_slice(&[1, 2, 3, 4]);
+        let xysd = xysd_with_plane(&plane);
+        let extras = pack_scene_extras_from_sidecars(&[], &xysd, &[]).unwrap();
+        assert_eq!(&extras[..4], XYHP_MAGIC);
+        assert_eq!(u32::from_le_bytes(extras[4..8].try_into().unwrap()), 1);
+        assert_eq!(u32::from_le_bytes(extras[8..12].try_into().unwrap()), 1);
+        assert_eq!(&extras[16..], plane.as_slice());
+        let mut paint = vec![0u8; 16];
+        paint[..4].copy_from_slice(XYHP_MAGIC);
+        paint[4..8].copy_from_slice(&1u32.to_le_bytes());
+        paint[8..12].copy_from_slice(&1u32.to_le_bytes());
+        paint.extend_from_slice(&plane);
+        assert_eq!(extras, pack_scene_extras(&[], &paint, &[]).unwrap());
+    }
+
+    #[test]
+    fn empty_sidecars_match_empty_paint() {
+        assert!(pack_scene_extras_from_sidecars(&[], &[], &[])
+            .unwrap()
+            .is_empty());
     }
 }

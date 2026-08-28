@@ -53,6 +53,7 @@ use xyg_engine::scene_extras::{self, ExtrasError};
 use xyg_engine::scene_density::{self, DensityGridError};
 use xyg_engine::scene_colorbar::{self, ColorbarError};
 use xyg_engine::pack_figure_chrome;
+use xyg_engine::pack_figure_chrome_from_sidecars;
 use xyg_engine::pack_public_export;
 use xyg_engine::pack_style_sidecars;
 use xyg_engine::splice_annotations;
@@ -150,7 +151,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 160;
+pub const ABI_VERSION: u32 = 161;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -303,6 +304,65 @@ pub unsafe extern "C" fn xyg_scene_pack_figure_chrome(
             std::slice::from_raw_parts(facts, facts_len)
         };
         match pack_figure_chrome(facts_bytes) {
+            Ok(bytes) => {
+                if bytes.len() > out_cap {
+                    return -(ChromePackError::Output as i32);
+                }
+                if bytes.is_empty() {
+                    return 0;
+                }
+                let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                dest[..bytes.len()].copy_from_slice(&bytes);
+                match i32::try_from(bytes.len()) {
+                    Ok(count) => count,
+                    Err(_) => -(ChromePackError::Limit as i32),
+                }
+            }
+            Err(error) => -(error as i32),
+        }
+    })
+}
+
+/// Pack authored `XYCF` v1 chrome facts plus optional `XYSD` v1 sidecars into
+/// the `XYCC` v1 encode-ready bundle.
+///
+/// Hosts pack title/labels, ticks, legend options, and colorbar literals.
+/// When legend show is set and the host packed zero entries, Rust fills
+/// paints and labels from named XYSD traces so Python and Node cannot drift.
+/// Returns the XYCC byte count on success, or a negated `ChromePackError`.
+/// Encoded Scene v31 is unchanged.
+///
+/// # Safety
+/// When a length is non-zero, the matching pointer must address that many
+/// readable bytes. When `out_cap` is non-zero, `out` must address that many
+/// writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_pack_figure_chrome_from_sidecars(
+    facts: *const u8,
+    facts_len: usize,
+    xysd: *const u8,
+    xysd_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if (facts_len > 0 && facts.is_null())
+        || (xysd_len > 0 && xysd.is_null())
+        || (out_cap > 0 && out.is_null())
+    {
+        return -(ChromePackError::Length as i32);
+    }
+    ffi_guard(-(ChromePackError::Length as i32), || {
+        let facts_bytes = if facts_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(facts, facts_len)
+        };
+        let xysd_bytes = if xysd_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(xysd, xysd_len)
+        };
+        match pack_figure_chrome_from_sidecars(facts_bytes, xysd_bytes) {
             Ok(bytes) => {
                 if bytes.len() > out_cap {
                     return -(ChromePackError::Output as i32);
@@ -2024,6 +2084,72 @@ pub unsafe extern "C" fn xyg_scene_pack_scene_extras(
     })
 }
 
+/// Pack polar XYPL, XYSD paint planes, and XYSS style-sidecar facts into extras.
+///
+/// Hosts pass framed polar bytes plus authored XYSS facts and packed XYSD.
+/// Rust wraps nonempty XYSD planes as XYHP v1, then owns XYDS/XYLC/XYMP/XYGR
+/// layout and XYEX wrapping so Python and Node cannot drift. Returns the
+/// extras byte count on success, or 0 when every input is empty. Encoded
+/// Scene v31 is unchanged.
+///
+/// # Safety
+/// When a length is non-zero, the matching pointer must address that many
+/// readable bytes. When `out_cap` is non-zero, `out` must address that many
+/// writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_pack_scene_extras_from_sidecars(
+    polar: *const u8,
+    polar_len: usize,
+    xysd: *const u8,
+    xysd_len: usize,
+    facts: *const u8,
+    facts_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if (polar_len > 0 && polar.is_null())
+        || (xysd_len > 0 && xysd.is_null())
+        || (facts_len > 0 && facts.is_null())
+        || (out_cap > 0 && out.is_null())
+    {
+        return -(ExtrasError::Length as i32);
+    }
+    ffi_guard(-(ExtrasError::Length as i32), || {
+        let polar_bytes = if polar_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(polar, polar_len)
+        };
+        let xysd_bytes = if xysd_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(xysd, xysd_len)
+        };
+        let facts_bytes = if facts_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(facts, facts_len)
+        };
+        match scene_extras::pack_scene_extras_from_sidecars(polar_bytes, xysd_bytes, facts_bytes) {
+            Ok(bytes) => {
+                if bytes.len() > out_cap {
+                    return -(ExtrasError::Output as i32);
+                }
+                if bytes.is_empty() {
+                    return 0;
+                }
+                let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                dest[..bytes.len()].copy_from_slice(&bytes);
+                match i32::try_from(bytes.len()) {
+                    Ok(count) => count,
+                    Err(_) => -(ExtrasError::Limit as i32),
+                }
+            }
+            Err(error) => -(error as i32),
+        }
+    })
+}
+
 /// Pack Scene density log-u8 (and optional mean RGBA) as XYDE v1.
 ///
 /// Hosts pass authored x/y columns, the product domain, and an optional
@@ -2627,6 +2753,10 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// ABI 160 does not change Scene records;
 /// `xyg_scene_encode_assembled` owns assembled Scene encode from packed XYAS
 /// plus XYCC plus extras so Python and Node cannot drift.
+/// ABI 161 does not change Scene records;
+/// `xyg_scene_pack_figure_chrome_from_sidecars` owns legend paints from packed
+/// XYSD and `xyg_scene_pack_scene_extras_from_sidecars` owns XYHP wrapping from
+/// XYSD planes so Python and Node cannot drift.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety

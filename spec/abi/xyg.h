@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 160
-#define XYG_ABI_SIGNATURE_SHA256 "a487dd4847ae089178b793dec05f6af8da9e8854d1ebeeee3c4a6506a1c51d7f"
+#define XYG_ABI_VERSION 161
+#define XYG_ABI_SIGNATURE_SHA256 "099f79a353e857bd19c0bf931287fe3f4574fb472769d118f965b21f6dca72a7"
 
 #ifdef __cplusplus
 extern "C" {
@@ -179,12 +179,14 @@ int32_t xyg_scene_pack_annotations(uint32_t n_text, const uint8_t * text_meta, s
 int32_t xyg_scene_pack_colorbar(uint8_t flags, double lo, double hi, const uint8_t * text_rgba, const uint8_t * title, size_t title_len, uint32_t n_stops, const double * stop_values, const uint8_t * stop_rgba, size_t stop_rgba_len, uint32_t n_ticks, const double * ticks, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_pack_density_grid(const double * x, const double * y, size_t len, double x0, double x1, double y0, double y1, const uint8_t * idx, const uint8_t * rgba, const uint8_t * lut, size_t lut_len, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_pack_figure_chrome(const uint8_t * facts, size_t facts_len, uint8_t * out, size_t out_cap);
+int32_t xyg_scene_pack_figure_chrome_from_sidecars(const uint8_t * facts, size_t facts_len, const uint8_t * xysd, size_t xysd_len, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_pack_heatmap_facts(const uint8_t * facts, size_t facts_len, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_pack_legend(uint8_t loc, uint8_t flags, double font_size, double title_font_size, const uint8_t * text_rgba, const uint8_t * frame_fill_rgba, const uint8_t * title, size_t title_len, uint32_t n_entries, const uint8_t * entry_meta, size_t entry_meta_len, const uint32_t * label_lens, const uint8_t * labels, size_t labels_len, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_pack_product(const uint8_t * kind, size_t kind_len, uint8_t flags, uint8_t step_mode, uint8_t symbol, uint32_t style_ref, uint64_t trace_id, double diameter, double extra0, double extra1, const double * col0, size_t n0, const double * col1, size_t n1, const double * col2, size_t n2, const double * col3, size_t n3, const double * col4, size_t n4, const double * col5, size_t n5, const double * col6, size_t n6, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_pack_product_facts(const uint8_t * facts, size_t facts_len, const double * col0, size_t n0, const double * col1, size_t n1, const double * col2, size_t n2, const double * col3, size_t n3, const double * col4, size_t n4, const double * col5, size_t n5, const double * col6, size_t n6, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_pack_public_export(const uint8_t * facts, size_t facts_len, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_pack_scene_extras(const uint8_t * polar, size_t polar_len, const uint8_t * paint, size_t paint_len, const uint8_t * facts, size_t facts_len, uint8_t * out, size_t out_cap);
+int32_t xyg_scene_pack_scene_extras_from_sidecars(const uint8_t * polar, size_t polar_len, const uint8_t * xysd, size_t xysd_len, const uint8_t * facts, size_t facts_len, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_pack_style_sidecars(const uint8_t * sidecars, size_t sidecars_len, const uint8_t * annotations, size_t annotations_len, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_pack_trace(uint8_t pack_kind, uint8_t flags, uint8_t step_mode, uint8_t symbol, uint32_t style_ref, uint64_t trace_id, double diameter, double extra0, double extra1, const double * col0, size_t n0, const double * col1, size_t n1, const double * col2, size_t n2, const double * col3, size_t n3, const double * col4, size_t n4, const double * col5, size_t n5, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_pack_trace_attach(const uint8_t * compiled, size_t compiled_len, const uint8_t * attach, size_t attach_len, uint8_t * out, size_t out_cap);
