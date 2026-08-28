@@ -717,6 +717,23 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
     ]
+    lib.xyg_payload_m4_indices.restype = ctypes.c_size_t
+    lib.xyg_payload_m4_indices.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_int32,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.POINTER(ctypes.c_int32),
+        U32P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_density_bin_window.restype = ctypes.c_size_t
     lib.xyg_density_bin_window.argtypes = [
         ctypes.c_int32,
@@ -1012,6 +1029,32 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         F64P,
     ]
+    lib.xyg_compat_combine_plot.restype = ctypes.c_size_t
+    lib.xyg_compat_combine_plot.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        ctypes.c_int32,
+        ctypes.c_uint32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        F64P,
+    ]
     lib.xyg_tight_layout_solve.restype = ctypes.c_size_t
     lib.xyg_tight_layout_solve.argtypes = [
         ctypes.c_double,
@@ -1027,6 +1070,17 @@ def load() -> ctypes.CDLL:
         ctypes.c_double,
         ctypes.c_double,
         F64P,
+        F64P,
+    ]
+    lib.xyg_tight_layout_figure_extra.restype = ctypes.c_size_t
+    lib.xyg_tight_layout_figure_extra.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
         F64P,
     ]
     lib.xyg_tick_window.restype = ctypes.c_size_t
@@ -2559,6 +2613,47 @@ def main() -> None:
         5,
     )
     ok(pn == 3 and list(pmask) == [1, 0, 1, 0, 1], "payload_visible_mask log x")
+    m4x = array("d", [float(i) for i in range(10_001)])
+    m4y = array("d", [1.0] * 10_001)
+    m4_tier = ctypes.c_int32(-1)
+    m4_out = array("I", [0]) * (64 * 4)
+    m4_n = lib.xyg_payload_m4_indices(
+        10_001,
+        1,
+        _ptr(m4x, ctypes.c_double),
+        _ptr(m4y, ctypes.c_double),
+        10_001,
+        0.0,
+        10_000.0,
+        64,
+        null_f64,
+        0.0,
+        0.0,
+        ctypes.byref(m4_tier),
+        _ptr(m4_out, ctypes.c_uint32),
+        64 * 4,
+    )
+    ok(m4_n == 0 and m4_tier.value == 0, "payload_m4_indices polar direct")
+    m4_n = lib.xyg_payload_m4_indices(
+        10_001,
+        0,
+        _ptr(m4x, ctypes.c_double),
+        _ptr(m4y, ctypes.c_double),
+        10_001,
+        0.0,
+        10_000.0,
+        64,
+        null_f64,
+        0.0,
+        0.0,
+        ctypes.byref(m4_tier),
+        _ptr(m4_out, ctypes.c_uint32),
+        64 * 4,
+    )
+    ok(
+        m4_n > 0 and m4_n != ctypes.c_size_t(-1).value and m4_tier.value == 1,
+        "payload_m4_indices cartesian",
+    )
     bin_out = array("d", [0.0, 0.0, 0.0, 0.0])
     bw_n = lib.xyg_density_bin_window(
         1, 1, 0.0, 2.0, 0.0, 3.0, 0.0, 0.0, 0.0, 0.0, _ptr(bin_out, ctypes.c_double)
@@ -2756,6 +2851,53 @@ def main() -> None:
     ok(
         tight_n == 6 and abs(tight_out[0] - 62.0 / 800.0) < 1e-12,
         "tight_layout_solve empty wide defaults",
+    )
+    combine_out = array("d", [0.0] * 12)
+    combine_n = lib.xyg_compat_combine_plot(
+        900.0,
+        420.0,
+        None,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0,
+        0,
+        0,
+        0,
+        float("nan"),
+        float("nan"),
+        float("nan"),
+        None,
+        0,
+        0,
+        0.0,
+        0.0,
+        0,
+        0,
+        0,
+        _ptr(combine_out, ctypes.c_double),
+    )
+    extra_out = array("d", [0.0] * 4)
+    extra_n = lib.xyg_tight_layout_figure_extra(
+        800.0,
+        600.0,
+        20.0,
+        0.98,
+        float("nan"),
+        12.0,
+        80.0,
+        _ptr(extra_out, ctypes.c_double),
+    )
+    ok(
+        combine_n == 12
+        and combine_out[0] == 62.0
+        and combine_out[1] == 10.0
+        and combine_out[2] == 824.0
+        and extra_n == 4
+        and extra_out[0] == 20.0
+        and extra_out[1] == 92.0,
+        "compat_combine_plot default padding and tight figure extras",
     )
     tick_lo = ctypes.c_double()
     tick_hi = ctypes.c_double()

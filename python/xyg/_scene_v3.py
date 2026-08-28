@@ -723,8 +723,22 @@ def _annotation_allowed_style(kind: str, wrapped: bool, labelled: bool) -> set[s
 def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
     """Pack one authored annotation as XYAF v1; Rust classifies the family.
 
-    Annotation ``class_name`` is an XYFS observation (ABI 165), not an XYAF
-    field. Product encode reports ``XYG_SCENE_UNSUPPORTED_BROWSER_CSS``.
+    Annotation ``class_name`` is an XYFS observation (ABI 165 / #306), not an
+    XYAF field. Scene SVG/raster do not encode CSS classes. Product encode
+    reports ``XYG_SCENE_UNSUPPORTED_BROWSER_CSS``.
+    Annotation ``collision`` is XYFS ``OBS_ANNOTATION_COLLISION`` (#307);
+    Scene does not encode annotation collision. Product encode reports
+    ``XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION``.
+    Annotation ``markup`` is XYFS ``OBS_ANNOTATION_MARKUP`` (#308); Scene
+    owns literal text only. Product encode reports
+    ``XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP``.
+    Annotation custom typography is XYFS ``OBS_CUSTOM_FONT`` (#309); Scene
+    SVG/raster use the built-in default font. Product encode reports
+    ``XYG_SCENE_UNSUPPORTED_CUSTOM_FONT``. Text/marker ``style.rotation``
+    lifts onto the ABI 187/188 top-level rotation field.
+    Annotation ``html`` is XYFS ``OBS_ANNOTATION_HTML`` (#305); Scene SVG/raster
+    own literal text only. Product encode reports
+    ``XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML``.
     ABI 184 packs cartesian unwrapped text ``dx``/``dy``/``anchor`` as XYAW
     with ``wrap=0`` so Rust applies the offset without wrapping. ABI 185
     packs labelled cartesian marker ``dx``/``dy``/``anchor`` the same way
@@ -735,12 +749,20 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
     ``stroke_width``). ABI 189 packs raw heatmap/hexbin XYTA observations;
     Rust owns cell-fill tessellation eligibility on the XYFS probe.
     """
+    annotation = dict(annotation)
     kind = annotation.get("kind")
     kind_code = _XYAF_KIND_CODES.get(str(kind) if kind is not None else "")
     if kind_code is None:
         raise UnsupportedSceneV3(
             f"Scene v12 annotations support rule, band, and unlabeled marker only; {kind!r} is deferred"
         )
+    style = dict(annotation.get("style") or {})
+    if (
+        str(kind) in {"text", "marker"}
+        and "rotation" not in annotation
+        and style.get("rotation") is not None
+    ):
+        annotation["rotation"] = style["rotation"]
     authored_wrap = kind in {"text", "callout"} and "wrap" in annotation
     layout_text = kind == "text" and any(
         key in annotation for key in ("dx", "dy", "anchor", "rotation")
@@ -785,10 +807,14 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
             if kind == "callout"
             else "Scene v16 text annotations require nonempty NUL-free text"
         )
-    style = dict(annotation.get("style") or {})
     allowed = _annotation_allowed_style(str(kind), wrapped, labelled)
+    skip_style = {"markup"} | _ANNOTATION_TYPOGRAPHY_STYLE_KEYS
+    if str(kind) in {"text", "marker"}:
+        skip_style = skip_style | {"rotation"}
     unsupported = sorted(
-        key for key, value in style.items() if key not in allowed and value is not None
+        key
+        for key, value in style.items()
+        if key not in allowed and key not in skip_style and value is not None
     )
     if unsupported:
         if wrapped:
@@ -1130,7 +1156,12 @@ def _constant_color(trace: Any, fallback: str) -> str:
     if channel.mode != "constant" or channel.constant is None:
         if str(getattr(trace, "kind", "") or "") == "scatter" and trace.use_density():
             return str((getattr(trace, "style", None) or {}).get("color", fallback))
-        if _hexbin_packs_paint_plane(trace) or _ribbon_packs_end_paints(trace):
+        if (
+            _hexbin_packs_paint_plane(trace)
+            or _ribbon_packs_end_paints(trace)
+            or _mesh_packs_paint_plane(trace)
+            or _scatter_packs_paint_plane(trace)
+        ):
             return str((getattr(trace, "style", None) or {}).get("color", fallback))
         raise UnsupportedSceneV3("Scene v12 does not yet support data-driven paint channels")
     return channel.constant
@@ -1316,6 +1347,23 @@ _XYCF_CB_HORIZONTAL = 1 << 1
 _XYCF_CB_MINOR = 1 << 2
 _XYCF_CB_UNSUPPORTED = 1 << 3
 _XYCF_CB_INVALID_SIDE = 1 << 4
+_SCENE_TICK_STRATEGIES = {
+    "auto": 0,
+    "hide": 1,
+    "rotate": 2,
+    "stagger": 3,
+    "preserve": 4,
+    "none": 5,
+    "off": 6,
+}
+_SCENE_TICK_ANCHORS = {"start": 0, "center": 1, "middle": 1, "end": 2}
+_POLAR_COLLISION_KEYS = {
+    "tick_label_strategy",
+    "collision",
+    "tick_label_min_gap",
+    "tick_label_angle",
+    "tick_label_anchor",
+}
 
 
 def _put_f64s(buf: bytearray, values: list[float]) -> None:
@@ -1434,6 +1482,62 @@ def _unpack_xycc(blob: bytes) -> dict[str, Any]:
     }
 
 
+def _scene_tick_label_strategy(options: dict[str, Any]) -> str:
+    raw = options.get("tick_label_strategy")
+    if raw is None:
+        raw = options.get("collision")
+    value = str(raw or "auto").replace("-", "_")
+    return value if value in _SCENE_TICK_STRATEGIES else "auto"
+
+
+def _scene_tick_anchor_code(options: dict[str, Any]) -> int | None:
+    raw = options.get("tick_label_anchor")
+    if raw is None:
+        return None
+    return _SCENE_TICK_ANCHORS.get(str(raw).replace("-", "_"))
+
+
+def _pack_tick_collision(xa: dict[str, Any], ya: dict[str, Any], figure: Any) -> tuple[int, bytes]:
+    """Pack XYCF bytes 12–15 plus optional 32-byte extras (ABI 203)."""
+    x_strategy = _SCENE_TICK_STRATEGIES[_scene_tick_label_strategy(xa)]
+    y_strategy = _SCENE_TICK_STRATEGIES[_scene_tick_label_strategy(ya)]
+    x_anchor = _scene_tick_anchor_code(xa)
+    y_anchor = _scene_tick_anchor_code(ya)
+    x_gap = xa.get("tick_label_min_gap")
+    y_gap = ya.get("tick_label_min_gap")
+    x_angle = xa.get("tick_label_angle")
+    y_angle = ya.get("tick_label_angle")
+    extras = x_gap is not None or y_gap is not None or x_angle is not None or y_angle is not None
+    flags = 0
+    if extras:
+        flags |= 1
+    if figure._axis_kind("x") == "category":
+        flags |= 1 << 1
+    if figure._axis_kind("y") == "category":
+        flags |= 1 << 2
+    if x_anchor is not None:
+        flags |= 1 << 3
+    if y_anchor is not None:
+        flags |= 1 << 4
+    header = (
+        x_strategy
+        | (y_strategy << 8)
+        | ((x_anchor or 0) << 16)
+        | ((y_anchor or 0) << 20)
+        | (flags << 24)
+    )
+    extra = b""
+    if extras:
+        extra = struct.pack(
+            "<4d",
+            8.0 if x_gap is None else float(x_gap),
+            4.0 if y_gap is None else float(y_gap),
+            float("nan") if x_angle is None else float(x_angle),
+            float("nan") if y_angle is None else float(y_angle),
+        )
+    return header, extra
+
+
 def _pack_chrome_facts(
     figure: Any,
     *,
@@ -1470,18 +1574,28 @@ def _pack_chrome_facts(
     y_label = str(figure.y_label or ya.get("label") or "").encode("utf-8")
     x_format = b"" if xa.get("format") is None else str(xa.get("format")).encode("utf-8")
     y_format = b"" if ya.get("format") is None else str(ya.get("format")).encode("utf-8")
+    tick_kind_code = {"linear": 0, "time": 1, "category": 2}
+    tick_kinds = tick_kind_code.get(figure._axis_kind("x"), 0) | (
+        tick_kind_code.get(figure._axis_kind("y"), 0) << 8
+    )
     x_major: list[float] = []
     y_major: list[float] = []
     if xa.get("tick_values") is not None:
         flags &= ~_XYCF_FLAG_X_MAJOR_AUTO
+        # ABI 199: Rust pack_figure_chrome filters through the tick window.
         x_major = [float(value) for value in xa.get("tick_values")]
     if ya.get("tick_values") is not None:
         flags &= ~_XYCF_FLAG_Y_MAJOR_AUTO
         y_major = [float(value) for value in ya.get("tick_values")]
     x_minor = [float(value) for value in (xa.get("minor_tick_values") or ())]
     y_minor = [float(value) for value in (ya.get("minor_tick_values") or ())]
+    # ABI 200: Rust pack_figure_chrome filters authored minors through the tick window.
+    # ABI 201: product encode passes packed XYPL so polar theta uses the modular sector.
+    # ABI 202: hosts pack domain tick-kind (linear/time/category) in XYCF 154–155.
+    # ABI 203: hosts pack ABI 123 collision strategy/anchor/gaps in XYCF 12–15.
     x_labels = xa.get("tick_labels")
     y_labels = ya.get("tick_labels")
+    collision_header, collision_extra = _pack_tick_collision(xa, ya, figure)
     if x_labels is not None:
         flags |= _XYCF_FLAG_X_TICK_LABELS
     if y_labels is not None:
@@ -1518,10 +1632,7 @@ def _pack_chrome_facts(
         authored_loc = options.get("loc")
         if authored_loc is not None:
             legend_flags |= _XYCF_LEGEND_AUTHORED_LOC
-            if str(authored_loc) == "best":
-                from ._legendfit import resolve_for_figure
-
-                authored_loc = resolve_for_figure(figure)
+            # ABI 197: Rust encode_product settles loc="best" from XYCL/XYNM.
             legend_loc = str(authored_loc).encode("utf-8")
         style = dict(options.get("style") or {})
         if set(style) - {"background", "color", "font_size", "title_font_size"}:
@@ -1579,7 +1690,7 @@ def _pack_chrome_facts(
         b"XYCF",
         1,
         flags,
-        0,
+        collision_header,
         float(width),
         float(height),
         *authored_margins,
@@ -1594,7 +1705,7 @@ def _pack_chrome_facts(
         float(ya.get("constant") or 1.0),
         1 if xa.get("nonpositive", "clip") == "mask" else 0,
         1 if ya.get("nonpositive", "clip") == "mask" else 0,
-        0,
+        tick_kinds,
         len(title),
         len(x_label),
         len(y_label),
@@ -1649,6 +1760,7 @@ def _pack_chrome_facts(
         payload.extend(rgba)
     _put_f64s(payload, colorbar_ticks)
     payload.extend(colorbar_title)
+    payload.extend(collision_extra)
     return bytes(payload)
 
 
@@ -1819,6 +1931,171 @@ def _hexbin_packs_paint_plane(trace: Any) -> bool:
     return _hexbin_packs_colormap_plane(trace) or _hexbin_packs_rgba_plane(trace)
 
 
+def _scatter_count(trace: Any) -> int:
+    column = _trace_column(trace, "x")
+    return 0 if column is None else int(len(column))
+
+
+_SCATTER_PAINT_CHANNELS = frozenset({"color", "stroke", "stroke_width", "opacity", "artist_alpha"})
+
+
+def _scatter_packs_paint_plane(trace: Any) -> bool:
+    """Return whether hosts should pack per-point scatter paint as XYTA.
+
+    Per-item fill/stroke/width/opacity intern onto Scatter records as XYHP
+    kind 7 (ABI 196). Per-item size and symbol stay fail-closed. Density
+    scatter keeps the blit path.
+    """
+    if str(getattr(trace, "kind", "") or "") != "scatter":
+        return False
+    if getattr(trace, "use_density", lambda: False)():
+        return False
+    names = set(getattr(trace, "per_item_channel_names", lambda: ())())
+    if not names:
+        return False
+    return names <= _SCATTER_PAINT_CHANNELS
+
+
+def _scatter_point_fill_rgba8(trace: Any) -> bytes | None:
+    return _item_fill_rgba8(trace, _scatter_count(trace))
+
+
+def _scatter_point_stroke_rgba8(trace: Any, fills: bytes) -> bytes | None:
+    n = _scatter_count(trace)
+    packed = _item_stroke_rgba8(trace, fills, n)
+    if packed is None:
+        return None
+    stroke_ch = getattr(trace, "stroke_ch", None)
+    if stroke_ch is not None and getattr(stroke_ch, "mode", None) == "match_fill":
+        return packed
+    return _item_apply_opacity(trace, packed, n)
+
+
+def _scatter_point_widths(trace: Any) -> bytes | None:
+    return _item_widths(trace, _scatter_count(trace))
+
+
+def _mesh_count(trace: Any) -> int:
+    column = _trace_column(trace, "x0")
+    return 0 if column is None else int(len(column))
+
+
+def _mesh_joined_fill(trace: Any) -> bool:
+    return bool((getattr(trace, "style", None) or {}).get("joined_fill"))
+
+
+def _mesh_packs_paint_plane(trace: Any) -> bool:
+    """Return whether hosts should pack per-face mesh paint as XYTA.
+
+    Custom `role` is identity metadata. Per-item fill/stroke/width intern onto
+    TriangleFace PolyFills as XYHP kind 6 (ABI 195). `joined_fill` stays one
+    ring and cannot represent per-face paint.
+    """
+    if str(getattr(trace, "kind", "") or "") != "triangle_mesh" or _mesh_joined_fill(trace):
+        return False
+    return bool(getattr(trace, "has_per_item_channels", lambda: False)())
+
+
+def _item_apply_opacity(trace: Any, packed: bytes, n: int) -> bytes | None:
+    channels = getattr(trace, "style_channels", None) or {}
+    opacity_ch = channels.get("opacity")
+    artist_ch = channels.get("artist_alpha")
+    if opacity_ch is None and artist_ch is None:
+        return packed
+    rgba = np.frombuffer(bytearray(packed), dtype=np.uint8).reshape(n, 4).copy()
+    alpha = rgba[:, 3].astype(np.float64)
+    if artist_ch is not None:
+        artist = np.asarray(getattr(artist_ch, "values", None), dtype=np.float64).reshape(-1)
+        if artist.size != n:
+            return None
+        alpha = np.where(artist >= 0.0, np.clip(artist, 0.0, 1.0) * 255.0, alpha)
+    if opacity_ch is not None:
+        values = np.asarray(getattr(opacity_ch, "values", None), dtype=np.float64).reshape(-1)
+        if values.size != n:
+            return None
+        alpha = alpha * np.clip(values, 0.0, 1.0)
+    rgba[:, 3] = np.rint(np.clip(alpha, 0.0, 255.0)).astype(np.uint8)
+    return np.ascontiguousarray(rgba).tobytes()
+
+
+def _item_fill_rgba8(trace: Any, n: int) -> bytes | None:
+    fallback = str((getattr(trace, "style", None) or {}).get("color", "#3987e5"))
+    channel = getattr(trace, "color_ch", None)
+    packed = _channel_end_rgba8(channel, n, fallback)
+    if packed is None and channel is not None and getattr(channel, "mode", None) == "continuous":
+        values = getattr(channel, "values", None)
+        if values is None:
+            return None
+        scalars = np.ascontiguousarray(np.asarray(values, dtype=np.float64).reshape(-1))
+        if scalars.size != n:
+            return None
+        domain = getattr(channel, "domain", None)
+        if domain is not None and len(domain) == 2:
+            lo, hi = float(domain[0]), float(domain[1])
+        else:
+            finite = scalars[np.isfinite(scalars)]
+            if finite.size == 0:
+                return None
+            lo, hi = float(finite.min()), float(finite.max())
+        span = hi - lo
+        t = (
+            np.zeros(n, dtype=np.float64)
+            if not np.isfinite(span) or span == 0.0
+            else np.clip((scalars - lo) / span, 0.0, 1.0)
+        )
+        cmap = getattr(channel, "colormap", None) or "viridis"
+        try:
+            stops = _native.colormap_stops(str(cmap))
+            image = _native.colormap_rgba(t, n, 1, stops, 255)
+        except (TypeError, ValueError):
+            return None
+        packed = np.ascontiguousarray(image).reshape(-1).tobytes()
+    if packed is None:
+        return None
+    return _item_apply_opacity(trace, packed, n)
+
+
+def _item_stroke_rgba8(trace: Any, fills: bytes, n: int) -> bytes | None:
+    stroke_ch = getattr(trace, "stroke_ch", None)
+    if stroke_ch is not None and getattr(stroke_ch, "mode", None) == "match_fill":
+        return fills
+    fallback = str((getattr(trace, "style", None) or {}).get("stroke") or "transparent")
+    packed = _channel_end_rgba8(stroke_ch, n, fallback)
+    if packed is not None:
+        return packed
+    if stroke_ch is None:
+        return _channel_end_rgba8(None, n, fallback)
+    return None
+
+
+def _item_widths(trace: Any, n: int) -> bytes | None:
+    width_ch = (getattr(trace, "style_channels", None) or {}).get("stroke_width")
+    if width_ch is not None:
+        values = np.ascontiguousarray(
+            np.asarray(getattr(width_ch, "values", None), dtype=np.float64).reshape(-1)
+        )
+        if values.size != n or not np.isfinite(values).all() or np.any(values < 0.0):
+            return None
+        return values.tobytes()
+    style = getattr(trace, "style", None) or {}
+    width = float(style.get("stroke_width", 0.0) or 0.0)
+    if not np.isfinite(width) or width < 0.0:
+        return None
+    return np.full(n, width, dtype=np.float64).tobytes()
+
+
+def _mesh_face_fill_rgba8(trace: Any) -> bytes | None:
+    return _item_fill_rgba8(trace, _mesh_count(trace))
+
+
+def _mesh_face_stroke_rgba8(trace: Any, fills: bytes) -> bytes | None:
+    return _item_stroke_rgba8(trace, fills, _mesh_count(trace))
+
+
+def _mesh_face_widths(trace: Any) -> bytes | None:
+    return _item_widths(trace, _mesh_count(trace))
+
+
 def _heatmap_uses_colormap(trace: Any) -> bool:
     """Return whether a heatmap still needs the compatibility colormap path."""
     style = getattr(trace, "style", None) or {}
@@ -1985,6 +2262,28 @@ def _pack_xyta(figure: Any) -> bytes:
                 rows, cols = 1, len(source) // 4
                 rgba = source
                 mean_rgba = target
+        elif _mesh_packs_paint_plane(trace):
+            fills = _mesh_face_fill_rgba8(trace)
+            strokes = _mesh_face_stroke_rgba8(trace, fills or b"")
+            widths = _mesh_face_widths(trace)
+            if fills is not None and strokes is not None and widths is not None:
+                n = len(fills) // 4
+                flags |= _XYTA_MESH_FACES | _XYTA_SHAPE | _XYTA_HAS_RGBA
+                rows, cols = 1, n
+                rgba = fills
+                mean_rgba = strokes
+                x = widths
+        elif _scatter_packs_paint_plane(trace):
+            fills = _scatter_point_fill_rgba8(trace)
+            strokes = _scatter_point_stroke_rgba8(trace, fills or b"")
+            widths = _scatter_point_widths(trace)
+            if fills is not None and strokes is not None and widths is not None:
+                n = len(fills) // 4
+                flags |= _XYTA_SCATTER_PAINT | _XYTA_SHAPE | _XYTA_HAS_RGBA
+                rows, cols = 1, n
+                rgba = fills
+                mean_rgba = strokes
+                x = widths
         elif trace.kind == "scatter" and trace.use_density():
             flags |= _XYTA_DENSITY
             xv = _trace_column(trace, "x")
@@ -2476,6 +2775,8 @@ _XYTA_HAS_FILL_OPACITY = 1 << 11
 _XYTA_HAS_DOMAIN = 1 << 12
 _XYTA_SHAPE = 1 << 13
 _XYTA_RIBBON_ENDS = 1 << 14
+_XYTA_MESH_FACES = 1 << 15
+_XYTA_SCATTER_PAINT = 1 << 16
 _XYTC_HAS_FILL = 1 << 0
 _XYTC_HAS_STROKE = 1 << 1
 _XYTC_HAS_LINE_COLOR = 1 << 2
@@ -3291,8 +3592,11 @@ def public_static_export(
     )
 
 
-def _significant_scene_axis_keys(options: dict[str, Any]) -> list[str]:
-    return [str(key) for key, value in options.items() if value not in (None, False, [], {})]
+def _significant_scene_axis_keys(options: dict[str, Any], *, polar: bool = False) -> list[str]:
+    keys = [str(key) for key, value in options.items() if value not in (None, False, [], {})]
+    if polar and _scene_tick_label_strategy(options) in {"none", "off", "auto"}:
+        keys = [key for key in keys if key not in _POLAR_COLLISION_KEYS]
+    return keys
 
 
 def _pack_polar_scene_input(figure: Any) -> bytes:
@@ -3335,6 +3639,43 @@ def _pack_polar_scene_input(figure: Any) -> bytes:
     )
 
 
+def _annotation_has_markup(annotation: Any) -> bool:
+    if not isinstance(annotation, dict):
+        return False
+    if annotation.get("markup") not in (None, ""):
+        return True
+    style = annotation.get("style") or {}
+    return isinstance(style, dict) and style.get("markup") not in (None, "")
+
+
+_ANNOTATION_TYPOGRAPHY_STYLE_KEYS = frozenset(
+    {
+        "font_family",
+        "font_size",
+        "font_weight",
+        "font_style",
+        "fontFamily",
+        "fontSize",
+        "fontWeight",
+        "fontStyle",
+    }
+)
+
+
+def _annotation_has_custom_typography(annotation: Any) -> bool:
+    if not isinstance(annotation, dict):
+        return False
+    style = annotation.get("style") or {}
+    if not isinstance(style, dict):
+        style = {}
+    for key in _ANNOTATION_TYPOGRAPHY_STYLE_KEYS:
+        if style.get(key) not in (None, "", False):
+            return True
+        if annotation.get(key) not in (None, "", False):
+            return True
+    return False
+
+
 def _pack_figure_support(
     figure: Any,
     annotations: list[Any],
@@ -3345,7 +3686,9 @@ def _pack_figure_support(
     if figure.coords != "cartesian":
         flags |= 1 << 0
     chrome_styles = getattr(figure, "chrome_styles", None) or {}
-    if any("font-family" in (style or {}) for style in chrome_styles.values()):
+    if any("font-family" in (style or {}) for style in chrome_styles.values()) or any(
+        _annotation_has_custom_typography(annotation) for annotation in annotations
+    ):
         flags |= 1 << 1
     if (
         getattr(figure, "class_name", None)
@@ -3355,6 +3698,12 @@ def _pack_figure_support(
         or any(annotation.get("class_name") not in (None, "") for annotation in annotations)
     ):
         flags |= 1 << 2
+    if any(annotation.get("html") not in (None, "") for annotation in annotations):
+        flags |= 1 << 8
+    if any(annotation.get("collision") not in (None, "") for annotation in annotations):
+        flags |= 1 << 6
+    if any(_annotation_has_markup(annotation) for annotation in annotations):
+        flags |= 1 << 9
     if any(
         _classify_ribbon_color2(trace) == "fail"
         or (
@@ -3362,6 +3711,8 @@ def _pack_figure_support(
             and (trace.color_ch.mode != "constant" or trace.color_ch.constant is None)
             and not (str(getattr(trace, "kind", "") or "") == "scatter" and trace.use_density())
             and not _hexbin_packs_paint_plane(trace)
+            and not _mesh_packs_paint_plane(trace)
+            and not _scatter_packs_paint_plane(trace)
             and not (
                 str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
                 and _ribbon_packs_end_paints(trace)
@@ -3392,7 +3743,7 @@ def _pack_figure_support(
     payload.extend(len(traces).to_bytes(4, "little"))
     for axis_id, options in figure.axis_options.items():
         axis_code = 0 if axis_id == "x" else 1 if axis_id == "y" else 255
-        keys = _significant_scene_axis_keys(options)
+        keys = _significant_scene_axis_keys(options, polar=flags & 1 != 0)
         payload.extend(bytes((axis_code, 0, 0, 0)))
         payload.extend(len(keys).to_bytes(4, "little"))
         _xyep_put_keys(payload, keys)
@@ -3491,6 +3842,8 @@ def _pack_public_export_support(
             continue
         kind_b = str(annotation.get("kind") or "").encode("utf-8")[:256]
         fields = [str(key) for key in annotation]
+        if _annotation_has_markup(annotation) and "markup" not in fields:
+            fields.append("markup")
         payload.extend(struct.pack("<B3sHH", 0, b"", len(kind_b), len(fields)))
         payload.extend(kind_b)
         _xyep_put_keys(payload, fields)
