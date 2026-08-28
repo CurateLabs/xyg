@@ -192,19 +192,16 @@ def _measured_axis_chrome(ax: Axes, width: int, height: int) -> tuple[float, flo
     """Intrinsic ``(left, top, right, bottom)`` chrome for final axes content.
 
     Tight/constrained layout needs the labels after plotting and styling have
-    finished. Build one provisional payload, remove its figure-rectangle
-    padding, and ask Rust `scene_plot_layout` for default-font cartesian
-    Scene-shaped specs (#297). Every other spec still uses `_svg.layout`.
+    finished. Pyplot static export still composes `_svg.layout()`, so chrome
+    that sizes `get_position()` uses that compositor. Default-font cartesian
+    specs can still ask `scene_layout_rooms` for Scene gutters (#297) without
+    substituting DejaVu for custom fonts.
     """
     from .. import _svg
 
     spec = _probe_axis_spec(ax, width, height)
     intrinsic = dict(spec)
     intrinsic.pop("padding", None)
-    rooms = _svg.scene_layout_rooms(intrinsic)
-    if rooms is not None:
-        left, right, top, bottom = rooms
-        return (float(left), float(top), float(right), float(bottom))
     measured_width, measured_height, _compact, plot = _svg.layout(intrinsic)
     return (
         float(plot["x"]),
