@@ -2790,6 +2790,9 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
   let flags = 0;
   if (figure.coords !== "cartesian") flags |= 1 << 0;
   if (Object.values(chromeStyles).some((style) => style?.fontFamily != null || style?.["font-family"] != null)) flags |= 1 << 1;
+  // Scene static paint/measure is DejaVu Sans (#288). Custom font-family,
+  // chart/theme CSS, and class_name are XYFS observations; Rust reports
+  // CUSTOM_FONT / BROWSER_CSS. Live browser widgets still apply CSS.
   if (
     figure.className
     || figure.class_name
