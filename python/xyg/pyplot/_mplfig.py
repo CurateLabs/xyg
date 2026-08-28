@@ -985,13 +985,35 @@ class Figure:
             if self._suptitle and not options.get("suptitle_rect_reserved"):
                 style = self._resolved_suptitle_style()
                 block = _textblock.measure(self._suptitle, float(style.get("size", 16.0)))
-                y = float(style.get("y", 0.98))
-                extra_top += max(0.0, (1.0 - y) * canvas_h) + block.height + 6.0
+                extra_left, extra_right, extra_bottom, extra_top = (
+                    _native.tight_layout_figure_extra(
+                        canvas_w,
+                        canvas_h,
+                        suptitle_height=block.height,
+                        suptitle_y=float(style.get("y", 0.98)),
+                    )
+                )
             for label in self._resolved_figure_labels():
                 if label["role"] == "x":
-                    extra_bottom += float(label["size"]) + 8.0
+                    more_left, more_right, more_bottom, more_top = (
+                        _native.tight_layout_figure_extra(
+                            canvas_w,
+                            canvas_h,
+                            xlabel_size=float(label["size"]),
+                        )
+                    )
                 else:
-                    extra_left += float(label["size"]) + 8.0
+                    more_left, more_right, more_bottom, more_top = (
+                        _native.tight_layout_figure_extra(
+                            canvas_w,
+                            canvas_h,
+                            ylabel_size=float(label["size"]),
+                        )
+                    )
+                extra_left += more_left
+                extra_right += more_right
+                extra_bottom += more_bottom
+                extra_top += more_top
             if (
                 self._figure_legend
                 and self._figure_legend.get("items")
@@ -1004,7 +1026,15 @@ class Figure:
                     {"x": 0.0, "y": 0.0, "w": float(canvas_w), "h": float(canvas_h)},
                     {**self._figure_legend, "loc": "upper left"},
                 )
-                extra_right += float(measured["box_w"]) + 12.0
+                more_left, more_right, more_bottom, more_top = _native.tight_layout_figure_extra(
+                    canvas_w,
+                    canvas_h,
+                    legend_box_w=float(measured["box_w"]),
+                )
+                extra_left += more_left
+                extra_right += more_right
+                extra_bottom += more_bottom
+                extra_top += more_top
             point_px = float(rcParams["font.size"]) * float(self._dpi or 100.0) / 72.0
             frame = (0.0, 0.0, 1.0, 1.0) if rect is None else tuple(map(float, rect))
             if len(frame) != 4:

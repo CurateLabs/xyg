@@ -57,8 +57,10 @@ existing 1/2/2.5/5/10 linear ladder and 1/2/5 log ladder, with a hard 200-tick
 ceiling. Node exposes every ABI family as `axisTicks`. Python's compatibility
 SVG/raster and pyplot locator paths now call `_svg.axis_ticks`, which maps each
 automatic family directly to this ABI. The retired per-family Python wrappers
-contained no fallback ladder; authored-value filtering, polar/secondary
-placement, and rich label formatting remain compatibility presentation.
+contained no fallback ladder; polar/secondary placement and rich label
+formatting remain compatibility presentation. Scene product-path authored
+cartesian filtering and `tick_labels` pairing are ABI 199; authored
+cartesian minor filtering is ABI 200.
 Cross-platform conformance keeps algebraic tick families bit-exact and permits
 one part in 10^15 for symmetric-log values whose final inverse transform uses
 the platform math library. Invalid domains and target counts fail closed at the
@@ -239,8 +241,17 @@ Scene records; polar hexbin, custom host reducers, and categorical / `direct_rgb
 ABI 187 does not change Scene records; cartesian unwrapped text `rotation`
 packs as XYAW with `wrap=0` (nonzero rotation writes XYAW v2; encoded labels
 use XYLB v6). ABI 188 does not change Scene records; labelled cartesian marker
-`rotation` packs as XYAW with `wrap=0` (nums[8]). html, `class_name`, and polar
-stay fail-closed.
+`rotation` packs as XYAW with `wrap=0` (nums[8]). Annotation `html` stays
+fail-closed (`XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML`, #305): Scene SVG/raster
+own literal text only. Annotation `class_name` stays fail-closed as
+`XYG_SCENE_UNSUPPORTED_BROWSER_CSS` (#306): Scene SVG/raster do not encode
+CSS classes. Annotation `collision` stays fail-closed as
+`XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION` (#307). Annotation `markup`
+stays fail-closed as `XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP` (#308): Scene
+owns literal text only. Annotation custom typography stays fail-closed as
+`XYG_SCENE_UNSUPPORTED_CUSTOM_FONT` (#309): Scene SVG/raster use the built-in
+default font. Text/marker `style.rotation` lifts onto the ABI 187/188
+top-level rotation field. Polar stays fail-closed.
 Per-item radius channels stay fail-closed.
 
 ## Version 3: backend-neutral core scene batch
@@ -1010,10 +1021,21 @@ grouping, a required decimal precision, optional `f` or percent scaling/sign,
 and a literal suffix. Precision is bounded from 0 through 100, matching the
 existing browser fixed-decimal ceiling; each authored format is at most 256
 UTF-8 bytes and must not contain NUL. Explicit authored tick labels retain
-precedence. Invalid
-grammar deliberately produces the ordinary deterministic label instead of an
-error, and a sub-unit log value that would collapse to formatted zero also
-uses its ordinary distinguishable label without affixes.
+precedence; ABI 199 filters those majors through the ABI 128 tick window
+and pairs labels during chrome pack. ABI 200 filters authored cartesian
+minors (`require_finite`). ABI 201 filters polar theta majors/minors
+through the modular sector and formats Scene polar theta labels with
+`format_angular_tick`. ABI 202 materializes ABI 130 time strftime and
+polar angular numeric formats onto `XYTL` during product encode
+(`format_axis_tick`). Hosts pack domain tick-kind in XYCF bytes 154–155.
+ABI 203 runs ABI 123 collision at Scene SVG/raster emit for cartesian
+`tick_label_strategy` / `collision`. Collision rooms clamp so a tiny
+viewport still has a strictly positive plot when the compact/authored pads
+already fit; overflowing compact pads stay `XYG_SCENE_UNSUPPORTED_VIEWPORT`.
+Polar rim auto/hide/rotate/stagger/preserve stay fail-closed. Invalid ABI 96 grammar still produces the ordinary deterministic label
+instead of an error, and a sub-unit log value that would collapse to
+formatted zero also uses its ordinary distinguishable label without affixes.
+Secondary axes stay fail-closed.
 
 Python and Node pack only those strings. Rust parses them, resolves the final
 major positions and labels, measures their gutters, and materializes the result
@@ -1033,8 +1055,31 @@ does not trust host-computed cx/cy/R. Polar encode applies `recut_polar_plot`
 (ABI 126) before `polar_layout` so the inscribed disc matches compatibility
 static-export gutters, including the polar legend box. Hosts still pack
 legend loc/entries; Rust owns the recut and gutter placement. ABI 125 default-font
-cartesian Scene-shaped specs use `xyg_scene_plot_layout` (#297). Remaining #275
-debt is compatibility `_svg.layout()` orchestration of polar / extra-axis / CSS-font rooms.
+cartesian Scene-shaped specs use `xyg_scene_plot_layout` (#297). ABI 197
+settles authored `loc="best"` from packed XYCL/XYNM during product encode
+(#298); compatibility `_legendfit.py` still packs ChartView specs. ABI 198
+owns `_svg.layout()` padding/title/colorbar/right-y/polar-recut combination
+and pyplot tight-layout figure-edge extras (#299). ABI 199 filters authored
+cartesian majors through the ABI 128 tick window and pairs `tick_labels`
+during chrome pack (#300). ABI 200 filters authored cartesian minors
+through that same window (`require_finite`, #301). ABI 201 filters polar
+theta majors/minors through the modular sector and formats Scene polar
+theta labels (`format_angular_tick`, #302). ABI 202 materializes ABI 130
+time strftime and polar angular numeric formats onto `XYTL` (`format_axis_tick`,
+#303). ABI 203 runs ABI 123 cartesian collision at Scene SVG/raster emit (#304).
+Annotation `html` stays fail-closed as `XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML`
+(#305). Annotation `class_name` stays fail-closed as
+`XYG_SCENE_UNSUPPORTED_BROWSER_CSS` (#306). Annotation `collision` stays
+fail-closed as `XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION` (#307). Annotation
+`markup` stays fail-closed as `XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP` (#308).
+Annotation custom typography stays fail-closed as
+`XYG_SCENE_UNSUPPORTED_CUSTOM_FONT` (#309). Text/marker `style.rotation`
+lifts onto the ABI 187/188 rotation field.
+Hosts pack domain tick-kind in XYCF 154–155. Invalid ABI 96
+grammar still falls back. Secondary axes stay
+fail-closed. Remaining #275
+debt is compatibility `_svg._*room` for polar / extra-axis / CSS-font
+measurement and `_svg._legend_layout` CSS remaps.
 Optional formats still use the versioned `XYAF` v1 authoring envelope (`magic`,
 version, x-format length, y-format length, legacy-annotation length, then those
 exact payloads). Exact lengths are overflow-checked; malformed, trailing,
@@ -1044,7 +1089,9 @@ invalid UTF-8, embedded-NUL, and oversized fields fail closed. Legacy raw
 Polar/secondary Scene paths and broader numeric grammars remain on their
 documented compatibility routes except the bounded polar
 line/scatter/area/bar/column/errorbar
-slice above. WASM ABI 23 plus `attachWasmTicks` cut
+slice above and ABI 202 Scene product-path time/angular formatting
+and ABI 203 Scene cartesian ABI 123 collision emit.
+WASM ABI 23 plus `attachWasmTicks` cut
 explicitly attached automatic, authored-value, and authored-empty primary
 Cartesian linear/log/symlog/category/UTC-time ChartView
 axes and eligible ChartView colorbars to that resolver; `js/src/30_ticks.ts`

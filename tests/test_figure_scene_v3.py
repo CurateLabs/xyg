@@ -248,13 +248,158 @@ def test_python_scene_v9_legend_bounds_and_unsupported_variants_fail_closed() ->
         figure.to_scene()
 
 
-def test_python_scene_v9_legend_best_loc_settles_before_packing() -> None:
+def test_python_scene_v9_legend_best_loc_settles_during_encode() -> None:
     figure = Figure()
     figure.scatter([0, 1], [0, 1], name="x")
     figure.legend_options = {"loc": "best"}
     scene = figure.to_scene()
     loc_byte = scene[scene.index(b"XYLG") + 4]
     assert loc_byte == 1
+
+
+def test_python_scene_authored_ticks_filter_during_encode() -> None:
+    figure = Figure()
+    figure.scatter([0, 1], [0, 1])
+    figure.axis_options["x"].update(
+        domain=(0.0, 1.0),
+        tick_values=[-1.0, 0.0],
+        tick_labels=["off-domain-long-label", "zero"],
+    )
+    scene = figure.to_scene()
+    assert b"zero" in scene
+    assert b"off-domain-long-label" not in scene
+    svg = _native.scene_svg(scene)
+    assert "zero" in svg
+    assert "off-domain-long-label" not in svg
+
+
+@pytest.mark.parametrize(
+    ("scale", "domain", "constant", "points", "majors", "minors"),
+    [
+        (
+            "linear",
+            (0.0, 1.0),
+            None,
+            ([0.0, 1.0], [0.0, 1.0]),
+            [0.0, 1.0],
+            [-0.25, 0.25, 0.75, 1.25],
+        ),
+        ("log", (1.0, 10.0), None, ([1.0, 10.0], [1.0, 2.0]), [1.0, 10.0], [0.5, 2.0, 5.0, 20.0]),
+        (
+            "symlog",
+            (-10.0, 10.0),
+            1.0,
+            ([-1.0, 1.0], [-1.0, 1.0]),
+            [-10.0, 10.0],
+            [-20.0, -1.0, 1.0, 20.0],
+        ),
+    ],
+)
+def test_python_scene_authored_minors_filter_during_encode(
+    scale: str,
+    domain: tuple[float, float],
+    constant: float | None,
+    points: tuple[list[float], list[float]],
+    majors: list[float],
+    minors: list[float],
+) -> None:
+    figure = Figure()
+    figure.scatter(points[0], points[1])
+    options = {
+        "type_": scale,
+        "domain": domain,
+        "tick_values": majors,
+        "minor_tick_values": minors,
+        "minor_style": {
+            "grid_color": "#22c55e",
+            "tick_color": "#22c55e",
+            "tick_length": 3,
+        },
+    }
+    if constant is not None:
+        options["constant"] = constant
+    figure.set_axis("x", **options)
+    svg = _native.scene_svg(figure.to_scene())
+    assert "rgba(34,197,94" in svg
+    off_only = Figure()
+    off_only.scatter(points[0], points[1])
+    off_options = dict(options)
+    off_options["minor_tick_values"] = [minors[0], minors[-1]]
+    off_only.set_axis("x", **off_options)
+    off_svg = _native.scene_svg(off_only.to_scene())
+    assert "rgba(34,197,94" not in off_svg
+
+
+def test_python_scene_polar_seam_authored_ticks_filter_during_encode() -> None:
+    figure = Figure(width=400, height=400, coords="polar")
+    figure.scatter([0.0], [0.5])
+    figure.set_axis(
+        "x",
+        domain=(0.0, 360.0),
+        theta_unit="degrees",
+        sector=(300.0, 420.0),
+        tick_values=[300.0, 330.0, 0.0, 30.0, 60.0, 180.0],
+        tick_labels=["300", "330", "zero", "30", "60", "off-sector"],
+    )
+    figure.set_axis("y", domain=(0.0, 1.0))
+    svg = _native.scene_svg(figure.to_scene())
+    assert ">zero<" in svg
+    assert "off-sector" not in svg
+    assert ">180<" not in svg
+
+
+def test_python_scene_polar_theta_uses_angular_labels() -> None:
+    figure = Figure(width=400, height=400, coords="polar")
+    figure.scatter([0.0, math.pi], [0.5, 0.8])
+    figure.set_axis("x", domain=(0.0, math.tau), theta_unit="radians")
+    figure.set_axis("y", domain=(0.0, 1.0))
+    svg = _native.scene_svg(figure.to_scene())
+    thetas = re.findall(r'data-xy-tick="theta"[^>]*>([^<]+)', svg)
+    assert any("π" in label for label in thetas)
+    assert "2" not in thetas
+    assert "4" not in thetas
+    assert "6" not in thetas
+
+
+def test_python_scene_time_strftime_and_polar_numeric_format() -> None:
+    figure = Figure(width=420, height=260)
+    figure.scatter([0.0, 86_400_000.0], [0.0, 1.0])
+    figure.set_axis("x", type_="time", domain=(0.0, 86_400_000.0), format="%Y-%m-%d")
+    figure.set_axis("y", domain=(0.0, 1.0))
+    svg = _native.scene_svg(figure.to_scene())
+    assert "1970-01-01" in svg
+    assert "5.0e7" not in svg
+    assert _scene_v3.scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+
+    polar = Figure(width=400, height=400, coords="polar")
+    polar.scatter([0.0], [0.5])
+    polar.set_axis("x", domain=(0.0, 360.0), theta_unit="degrees", format=".0f")
+    polar.set_axis("y", domain=(0.0, 1.0), format=".1f")
+    polar_svg = _native.scene_svg(polar.to_scene())
+    thetas = re.findall(r'data-xy-tick="theta"[^>]*>([^<]+)', polar_svg)
+    assert thetas
+    assert all("°" not in label for label in thetas)
+    assert any(label in {"0", "90", "180", "270"} for label in thetas)
+
+    fallback = Figure(width=320, height=240)
+    fallback.scatter([0.0, 5.0], [0.0, 5.0])
+    fallback.axis_options["x"].update(domain=(0.0, 5.0), format=".2e")
+    fallback.axis_options["y"].update(domain=(0.0, 5.0))
+    fallback_svg = _native.scene_svg(fallback.to_scene())
+    assert ">0<" in fallback_svg
+    assert ">4<" in fallback_svg
+    assert ".2e" not in fallback_svg
+
+
+def test_python_scene_secondary_axis_stays_fail_closed() -> None:
+    figure = Figure()
+    figure.scatter([0.0, 1.0], [0.0, 1.0])
+    figure.set_axis("x2", side="top", domain=(0.0, 1.0), tick_values=[0.25])
+    with pytest.raises(UnsupportedSceneV3, match="exactly x/y axes"):
+        figure.to_scene()
+    assert _scene_v3.scene_export_support_reason(figure) == (
+        "Scene v12 figure compilation currently supports exactly x/y axes"
+    )
 
 
 @pytest.mark.parametrize(
@@ -1007,11 +1152,17 @@ def test_python_scene_compiles_unwrapped_text_layout() -> None:
     assert 'transform="rotate(-30 ' in rotated_svg
     assert rotated.to_svg() == rotated_svg
     assert _scene_v3.scene_export_support_reason(rotated) is None
+    styled = representative_figure()
+    styled.annotations.append(
+        {"kind": "text", "x": 0.5, "y": 0.5, "text": "rotated", "style": {"rotation": 30}}
+    )
+    styled_svg = _native.scene_svg(styled.to_scene())
+    assert 'transform="rotate(-30 ' in styled_svg
+    assert _scene_v3.scene_export_support_reason(styled) is None
     authored = representative_figure()
-    authored.text(2.0, 2.5, "note")
+    authored.text(2.0, 2.5, "note", rotation=30)
     assert _scene_v3.scene_export_support_reason(authored) is None
-    assert b"note" in authored.to_scene()
-    assert "note" in authored.to_svg()
+    assert 'transform="rotate(-30 ' in authored.to_svg()
 
 
 def test_python_scene_compiles_labelled_marker_layout() -> None:
@@ -1051,11 +1202,17 @@ def test_python_scene_compiles_labelled_marker_layout() -> None:
     assert 'transform="rotate(-30 ' in rotated_svg
     assert rotated.to_svg() == rotated_svg
     assert _scene_v3.scene_export_support_reason(rotated) is None
+    styled = representative_figure()
+    styled.annotations.append(
+        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "rotated", "style": {"rotation": 30}}
+    )
+    styled_svg = _native.scene_svg(styled.to_scene())
+    assert 'transform="rotate(-30 ' in styled_svg
+    assert _scene_v3.scene_export_support_reason(styled) is None
     authored = representative_figure()
-    authored.marker(2.0, 2.5, text="note")
+    authored.marker(2.0, 2.5, text="note", rotation=30)
     assert _scene_v3.scene_export_support_reason(authored) is None
-    assert b"note" in authored.to_scene()
-    assert "note" in authored.to_svg()
+    assert 'transform="rotate(-30 ' in authored.to_svg()
     unlabelled = representative_figure()
     unlabelled.annotations.append({"kind": "marker", "x": 0.5, "y": 0.5, "dx": 8, "dy": -8})
     assert _scene_v3.scene_export_support_reason(unlabelled) is None
