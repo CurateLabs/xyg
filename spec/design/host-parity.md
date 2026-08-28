@@ -180,7 +180,10 @@ dispatch and column remapping live in Rust. ABI 147 adds
 packed XYPK v1. ABI 148 adds `xyg_scene_pack_annotation_facts` so wrap vs
 text vs arrow vs callout vs rule/band/marker routing resolves from packed
 XYAF v1. ABI 149 adds `xyg_scene_pack_heatmap_facts` so heatmap/density
-XYHP kind routing resolves from packed XYHF v1. ABI 137 / Scene v27 adds
+XYHP kind routing resolves from packed XYHF v1. ABI 150 adds
+`xyg_scene_pack_scene_extras` so XYDS/XYLC/XYMP/XYGR layout, concat order,
+omit-empty, and XYEX wrapping resolve from packed XYSS v1 plus framed
+XYPL/XYHP. ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
 record plus XYIM. ABI 138 / Scene v28
@@ -200,7 +203,8 @@ via an XYMP extras sidecar tessellated after pixel mapping. ABI 146 admits
 constant mark `fill` linear-gradients via an XYGR extras sidecar kept on the
 encoded Scene. ABI 147 owns product packing facts from XYPK v1. ABI 148 owns
 annotation family routing from XYAF v1. ABI 149 owns heatmap/density XYHP
-kind routing from XYHF v1. Polar+step+smooth
+kind routing from XYHF v1. ABI 150 owns style-sidecar layout and extras wrapping
+from XYSS v1. Polar+step+smooth
 and authored marker glyphs stay
 compatibility. ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
@@ -415,6 +419,9 @@ heatmap dispatch cannot drift. ABI 148
 `xyg_scene_pack_annotation_facts` owns wrap vs text vs arrow vs callout vs
 rule/band/marker routing from packed XYAF v1. ABI 149
 `xyg_scene_pack_heatmap_facts` owns XYHP kind routing from packed XYHF v1.
+ABI 150
+`xyg_scene_pack_scene_extras` owns XYDS/XYLC/XYMP/XYGR layout, concat order,
+omit-empty, and XYEX wrapping from packed XYSS v1 plus framed XYPL/XYHP.
 ABI 116
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 so tags and opposite-axis spanning cannot drift. ABI 117

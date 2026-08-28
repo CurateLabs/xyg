@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { cssColorRgba8, lineChart, scatterChart } from "../src/index.js";
 import { figureSceneV3 } from "../src/scene.js";
-import { xyScenePackAnnotationFacts, xyScenePackAnnotationMarks, xyScenePackHeatmapFacts, xyScenePackProduct, xyScenePackProductFacts, xyScenePackTrace, xySceneResolveChromeStyle, xySceneResolvePackKind } from "../src/native.js";
+import { xyScenePackAnnotationFacts, xyScenePackAnnotationMarks, xyScenePackHeatmapFacts, xyScenePackProduct, xyScenePackProductFacts, xyScenePackSceneExtras, xyScenePackTrace, xySceneResolveChromeStyle, xySceneResolvePackKind } from "../src/native.js";
 import { f64Ptr, u8Ptr } from "../src/encode.js";
 
 test("cssColorRgba8 matches Python named colors and none", () => {
@@ -358,4 +358,27 @@ test("xyScenePackHeatmapFacts routes named colormap to XYHP kind 2", () => {
   );
   assert.ok(code > 24);
   assert.equal(new DataView(out.buffer).getUint32(16, true), 2);
+});
+
+test("xyScenePackSceneExtras encodes dash facts as raw XYDS", () => {
+  const facts = new Uint8Array(16 + 48);
+  const view = new DataView(facts.buffer);
+  facts.set(new TextEncoder().encode("XYSS"), 0);
+  view.setUint32(4, 1, true);
+  view.setUint32(8, 1, true);
+  facts[16 + 4] = 1;
+  facts[16 + 5] = 2;
+  facts[16 + 6] = 255;
+  view.setFloat32(16 + 16, 4, true);
+  view.setFloat32(16 + 20, 2, true);
+  const out = new Uint8Array(256);
+  const code = xyScenePackSceneExtras(
+    0, 0n,
+    0, 0n,
+    u8Ptr(facts), BigInt(facts.length),
+    u8Ptr(out), BigInt(out.length),
+  );
+  assert.ok(code > 16);
+  assert.equal(String.fromCharCode(out[0], out[1], out[2], out[3]), "XYDS");
+  assert.equal(new DataView(out.buffer).getUint32(8, true), 1);
 });

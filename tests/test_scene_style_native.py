@@ -17,6 +17,7 @@ from xyg._native import (
     scene_pack_legend,
     scene_pack_product,
     scene_pack_product_facts,
+    scene_pack_scene_extras,
     scene_pack_trace,
     scene_resolve_chrome_style,
     scene_resolve_mark_styles,
@@ -516,3 +517,46 @@ def test_pack_heatmap_facts_truecolor_without_grid_skips() -> None:
         float("nan"),
     )
     assert scene_pack_heatmap_facts(facts) == b""
+
+
+def test_pack_scene_extras_dash_facts_encode_xyds() -> None:
+    prefix = struct.pack(
+        "<IBBBBBBBI8f",
+        0,
+        1,
+        2,
+        255,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        4.0,
+        2.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+    )
+    facts = struct.pack("<4sIII", b"XYSS", 1, 1, 0) + prefix
+    extras = scene_pack_scene_extras(b"", b"", facts)
+    assert extras[:4] == b"XYDS"
+    assert int.from_bytes(extras[8:12], "little") == 1
+
+
+def test_pack_scene_extras_empty_inputs_are_empty() -> None:
+    assert scene_pack_scene_extras(b"", b"", b"") == b""
+
+
+def test_pack_scene_extras_polar_and_paint_wrap_xyex() -> None:
+    polar = bytearray(92)
+    polar[:4] = b"XYPL"
+    paint = bytearray(16)
+    paint[:4] = b"XYHP"
+    extras = scene_pack_scene_extras(bytes(polar), bytes(paint), b"")
+    assert extras[:4] == b"XYEX"
+    assert int.from_bytes(extras[4:8], "little") == 1
+    assert int.from_bytes(extras[8:12], "little") == 92

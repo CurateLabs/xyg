@@ -49,6 +49,7 @@ use xyg_engine::sankey;
 use xyg_engine::scene;
 use xyg_engine::scene_annotations::{self, AnnotationError};
 use xyg_engine::scene_heatmap::{self, HeatmapFactError};
+use xyg_engine::scene_extras::{self, ExtrasError};
 use xyg_engine::scene_colorbar::{self, ColorbarError};
 use xyg_engine::scene_figure_support_reason;
 use xyg_engine::scene_legend::{self, LegendError};
@@ -122,7 +123,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 149;
+pub const ABI_VERSION: u32 = 150;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1305,6 +1306,72 @@ pub unsafe extern "C" fn xyg_scene_pack_heatmap_facts(
     })
 }
 
+/// Pack polar XYPL, XYHP paint, and XYSS style-sidecar facts into extras.
+///
+/// Hosts pass already-framed polar/paint bytes plus authored dash/linecap/
+/// marker_path/gradient facts. Rust owns XYDS/XYLC/XYMP/XYGR table layout,
+/// concat order, omit-empty, and XYEX wrapping. Returns the extras byte
+/// count on success, or 0 when every input is empty. Encoded Scene v31 is
+/// unchanged.
+///
+/// # Safety
+/// When a length is non-zero, the matching pointer must address that many
+/// readable bytes. When `out_cap` is non-zero, `out` must address that many
+/// writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_pack_scene_extras(
+    polar: *const u8,
+    polar_len: usize,
+    paint: *const u8,
+    paint_len: usize,
+    facts: *const u8,
+    facts_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if (polar_len > 0 && polar.is_null())
+        || (paint_len > 0 && paint.is_null())
+        || (facts_len > 0 && facts.is_null())
+        || (out_cap > 0 && out.is_null())
+    {
+        return -(ExtrasError::Length as i32);
+    }
+    ffi_guard(-(ExtrasError::Length as i32), || {
+        let polar_bytes = if polar_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(polar, polar_len)
+        };
+        let paint_bytes = if paint_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(paint, paint_len)
+        };
+        let facts_bytes = if facts_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(facts, facts_len)
+        };
+        match scene_extras::pack_scene_extras(polar_bytes, paint_bytes, facts_bytes) {
+            Ok(bytes) => {
+                if bytes.len() > out_cap {
+                    return -(ExtrasError::Output as i32);
+                }
+                if bytes.is_empty() {
+                    return 0;
+                }
+                let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                dest[..bytes.len()].copy_from_slice(&bytes);
+                match i32::try_from(bytes.len()) {
+                    Ok(count) => count,
+                    Err(_) => -(ExtrasError::Limit as i32),
+                }
+            }
+            Err(error) => -(error as i32),
+        }
+    })
+}
+
 /// Resolve a packed `XYAR` v1 envelope to the product axis range.
 ///
 /// Writes `(lo, hi)` on success and returns 0. Hosts pack axis options,
@@ -1719,7 +1786,8 @@ fn decode_scene_authoring_input(bytes: &[u8]) -> Option<(Option<&str>, Option<&s
 /// Bytes may be XYPL (polar), XYHP (painted heatmap or density blit), XYDS
 /// (constant dash), XYLC (constant linecap), XYMP (authored marker paths),
 /// XYGR (constant linear-gradient fills), XYDS+XYLC+XYMP+XYGR concat, or XYEX
-/// (v1 polar+paint, v2 polar+paint+style sidecars).
+/// (v1 polar+paint, v2 polar+paint+style sidecars). ABI 150 packs those
+/// envelopes from XYSS v1 plus framed XYPL/XYHP.
 #[repr(C)]
 struct PolarAbiInput {
     data: *const u8,
@@ -1788,6 +1856,10 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// rule/band/marker routing from packed XYAF v1. ABI 149 does not change
 /// Scene records; `xyg_scene_pack_heatmap_facts` owns XYHP kind routing from
 /// packed XYHF v1 so heatmap/density paint planes cannot drift.
+/// ABI 150 does not change Scene records;
+/// `xyg_scene_pack_scene_extras` owns XYDS/XYLC/XYMP/XYGR layout, concat
+/// order, omit-empty, and XYEX wrapping from packed XYSS v1 plus framed
+/// XYPL/XYHP so extras cannot drift.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
@@ -14353,6 +14425,36 @@ mod tests {
         assert_eq!(
             u32::from_le_bytes(heatmap_out[16..20].try_into().unwrap()),
             2
+        );
+        let mut xyss = Vec::from(*b"XYSS");
+        xyss.extend_from_slice(&1u32.to_le_bytes());
+        xyss.extend_from_slice(&1u32.to_le_bytes());
+        xyss.extend_from_slice(&0u32.to_le_bytes());
+        let mut prefix = [0u8; 48];
+        prefix[4] = 1;
+        prefix[5] = 2;
+        prefix[6] = 255;
+        prefix[16..20].copy_from_slice(&4.0f32.to_le_bytes());
+        prefix[20..24].copy_from_slice(&2.0f32.to_le_bytes());
+        xyss.extend_from_slice(&prefix);
+        let mut extras_out = [0u8; 256];
+        let extras_code = unsafe {
+            xyg_scene_pack_scene_extras(
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                0,
+                xyss.as_ptr(),
+                xyss.len(),
+                extras_out.as_mut_ptr(),
+                extras_out.len(),
+            )
+        };
+        assert!(extras_code > 16);
+        assert_eq!(&extras_out[..4], b"XYDS");
+        assert_eq!(
+            u32::from_le_bytes(extras_out[8..12].try_into().unwrap()),
+            1
         );
     }
 

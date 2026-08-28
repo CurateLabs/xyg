@@ -2315,6 +2315,53 @@ def scene_pack_heatmap_facts(facts: bytes) -> bytes:
     return bytes(out[:code])
 
 
+def scene_pack_scene_extras(polar: bytes, paint: bytes, facts: bytes) -> bytes:
+    """Pack XYPL/XYHP plus XYSS sidecar facts into extras (M2 #271)."""
+    polar_payload = polar if isinstance(polar, (bytes, bytearray, memoryview)) else bytes(polar)
+    paint_payload = paint if isinstance(paint, (bytes, bytearray, memoryview)) else bytes(paint)
+    facts_payload = facts if isinstance(facts, (bytes, bytearray, memoryview)) else bytes(facts)
+    if not polar_payload and not paint_payload and not facts_payload:
+        return b""
+    out = np.zeros(
+        max(256, len(polar_payload) + len(paint_payload) + len(facts_payload) + 64),
+        dtype=np.uint8,
+    )
+    polar_arr = (
+        np.frombuffer(polar_payload, dtype=np.uint8)
+        if polar_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    paint_arr = (
+        np.frombuffer(paint_payload, dtype=np.uint8)
+        if paint_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    facts_arr = (
+        np.frombuffer(facts_payload, dtype=np.uint8)
+        if facts_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    code = int(
+        _lib.xyg_scene_pack_scene_extras(
+            _ptr_u8(polar_arr) if polar_arr.size else 0,
+            int(polar_arr.size),
+            _ptr_u8(paint_arr) if paint_arr.size else 0,
+            int(paint_arr.size),
+            _ptr_u8(facts_arr) if facts_arr.size else 0,
+            int(facts_arr.size),
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if code == -5:
+        raise ValueError("Scene extras polar or paint envelope is invalid")
+    if code == -6:
+        raise ValueError("Scene style sidecar facts are invalid")
+    if code < 0:
+        raise ValueError("invalid scene extras packing")
+    return bytes(out[:code])
+
+
 def scene_pack_legend(
     *,
     loc: int,

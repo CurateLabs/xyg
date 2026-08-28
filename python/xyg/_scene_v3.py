@@ -1803,6 +1803,88 @@ def _parse_scene_linecap(value: Any) -> int | None | bool:
     return False
 
 
+_XYSS_HAS_DASH = 1 << 0
+_XYSS_HAS_CAP = 1 << 1
+_XYSS_HAS_MARKER = 1 << 2
+_XYSS_HAS_GRAD = 1 << 3
+
+
+def _pack_xyss(
+    dashes: list[list[float] | None],
+    linecaps: list[int | None],
+    marker_paths: list[dict[str, Any] | None],
+    fill_gradients: list[dict[str, Any] | None],
+) -> bytes:
+    """Pack authored dash/linecap/marker_path/gradient facts as XYSS v1."""
+    n_records = max(len(dashes), len(linecaps), len(marker_paths), len(fill_gradients), 0)
+    records: list[bytes] = []
+    for index in range(n_records):
+        pattern = dashes[index] if index < len(dashes) else None
+        cap = linecaps[index] if index < len(linecaps) else None
+        path = marker_paths[index] if index < len(marker_paths) else None
+        gradient = fill_gradients[index] if index < len(fill_gradients) else None
+        flags = 0
+        dash_count = 0
+        dash_values = [0.0] * 8
+        linecap = 255
+        n_contours = 0
+        n_stops = 0
+        grad_dir = 0
+        plot_space = 0
+        filled = 0
+        remainder = bytearray()
+        if pattern:
+            flags |= _XYSS_HAS_DASH
+            dash_count = len(pattern)
+            for offset, value in enumerate(pattern):
+                dash_values[offset] = float(value)
+        if cap in (0, 2):
+            flags |= _XYSS_HAS_CAP
+            linecap = int(cap)
+        if path:
+            flags |= _XYSS_HAS_MARKER
+            contours = path["contours"]
+            n_contours = len(contours)
+            filled = 1 if path.get("filled", True) else 0
+            for contour in contours:
+                values = [float(value) for value in contour]
+                remainder.extend(struct.pack("<II", len(values) // 2, 0))
+                remainder.extend(struct.pack(f"<{len(values)}d", *values))
+        if gradient:
+            flags |= _XYSS_HAS_GRAD
+            stops = gradient["stops"]
+            n_stops = len(stops)
+            grad_dir = _GRAD_DIR_CODES[gradient["dir"]]
+            plot_space = 1 if gradient.get("space") == "plot" else 0
+            for t, rgba in stops:
+                remainder.extend(struct.pack("<f4B", float(t), rgba[0], rgba[1], rgba[2], rgba[3]))
+        if not flags:
+            continue
+        records.append(
+            struct.pack(
+                "<IBBBBBBBI8f",
+                int(index),
+                flags,
+                dash_count,
+                linecap,
+                n_contours,
+                n_stops,
+                grad_dir,
+                plot_space,
+                filled,
+                0,
+                *dash_values,
+            )
+            + bytes(remainder)
+        )
+    if not records:
+        return b""
+    out = bytearray(struct.pack("<4sIII", b"XYSS", 1, len(records), 0))
+    for record in records:
+        out.extend(record)
+    return bytes(out)
+
+
 def _pack_xylc(linecaps: list[int | None]) -> bytes:
     """Pack constant non-round linecaps keyed by host style_ref as XYLC v1."""
     entries = [(index, cap) for index, cap in enumerate(linecaps) if cap in (0, 2)]
@@ -2123,6 +2205,8 @@ def figure_scene(
     # authored facts; Rust owns wrap/text/arrow/callout/rule routing, tags,
     # defaults, mark expansion, and XYAD framing (ABI 148). Hosts pack XYHF
     # heatmap/density paint facts; Rust owns XYHP kind routing (ABI 149).
+    # Hosts pack XYSS sidecar facts plus framed XYPL/XYHP; Rust owns
+    # XYDS/XYLC/XYMP/XYGR layout, concat order, and XYEX wrapping (ABI 150).
     x_domain = tuple(float(value) for value in figure._range("x"))
     y_domain = tuple(float(value) for value in figure._range("y"))
     annotation_facts = bytearray()
@@ -2237,13 +2321,10 @@ def figure_scene(
         legend_input=_legend_input(figure, legend_entries, styles),
         colorbar_input=colorbar_input,
         authored_text_annotations=bytes(framed_annotations),
-        polar_input=_pack_scene_extras(
+        polar_input=_native.scene_pack_scene_extras(
             _pack_polar_scene_input(figure),
             _pack_xyhp(heatmap_paint_planes),
-            _pack_xyds(dashes)
-            + _pack_xylc(linecaps)
-            + _pack_xymp(marker_paths)
-            + _pack_xygr(fill_gradients),
+            _pack_xyss(dashes, linecaps, marker_paths, fill_gradients),
         ),
     )
 

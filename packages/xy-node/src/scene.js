@@ -40,6 +40,7 @@ import {
   xyScenePackProductFacts,
   xyScenePackAnnotationFacts,
   xyScenePackHeatmapFacts,
+  xyScenePackSceneExtras,
   xyScenePackAnnotationMarks,
   xySceneRasterCommands,
   xySceneResolveChromeStyle,
@@ -1832,6 +1833,111 @@ function packXygr(gradients) {
     }
   }
   return out;
+}
+
+const XYSS_HAS_DASH = 1 << 0;
+const XYSS_HAS_CAP = 1 << 1;
+const XYSS_HAS_MARKER = 1 << 2;
+const XYSS_HAS_GRAD = 1 << 3;
+
+function packXySs(dashes, linecaps, markerPaths, gradients = []) {
+  const nRecords = Math.max(dashes.length, linecaps.length, markerPaths.length, gradients.length);
+  const records = [];
+  for (let index = 0; index < nRecords; index += 1) {
+    const pattern = dashes[index];
+    const cap = linecaps[index];
+    const path = markerPaths[index];
+    const gradient = gradients[index];
+    let flags = 0;
+    let remainderLen = 0;
+    if (pattern && pattern.length) {
+      flags |= XYSS_HAS_DASH;
+    }
+    if (cap === 0 || cap === 2) flags |= XYSS_HAS_CAP;
+    if (path) {
+      flags |= XYSS_HAS_MARKER;
+      remainderLen += path.contours.reduce((sum, contour) => sum + 8 + contour.length * 8, 0);
+    }
+    if (gradient) {
+      flags |= XYSS_HAS_GRAD;
+      remainderLen += gradient.stops.length * 8;
+    }
+    if (!flags) continue;
+    const record = new Uint8Array(48 + remainderLen);
+    const view = new DataView(record.buffer);
+    view.setUint32(0, index, true);
+    record[4] = flags;
+    record[5] = pattern && pattern.length ? pattern.length : 0;
+    record[6] = (cap === 0 || cap === 2) ? cap : 255;
+    record[7] = path ? path.contours.length : 0;
+    record[8] = gradient ? gradient.stops.length : 0;
+    record[9] = gradient ? GRAD_DIR_CODES[gradient.dir] : 0;
+    record[10] = gradient && gradient.space === "plot" ? 1 : 0;
+    record[11] = path && path.filled === false ? 0 : (path ? 1 : 0);
+    if (pattern && pattern.length) {
+      for (let offset = 0; offset < pattern.length; offset += 1) {
+        view.setFloat32(16 + offset * 4, pattern[offset], true);
+      }
+    }
+    let cursor = 48;
+    if (path) {
+      for (const contour of path.contours) {
+        view.setUint32(cursor, contour.length / 2, true);
+        view.setUint32(cursor + 4, 0, true);
+        cursor += 8;
+        for (let vertex = 0; vertex < contour.length; vertex += 1) {
+          view.setFloat64(cursor, contour[vertex], true);
+          cursor += 8;
+        }
+      }
+    }
+    if (gradient) {
+      for (const [t, rgba] of gradient.stops) {
+        view.setFloat32(cursor, t, true);
+        record[cursor + 4] = rgba[0];
+        record[cursor + 5] = rgba[1];
+        record[cursor + 6] = rgba[2];
+        record[cursor + 7] = rgba[3];
+        cursor += 8;
+      }
+    }
+    records.push(record);
+  }
+  if (!records.length) return new Uint8Array();
+  const out = new Uint8Array(16 + records.reduce((sum, record) => sum + record.length, 0));
+  const view = new DataView(out.buffer);
+  out.set(encodeUtf8Magic("XYSS"), 0);
+  view.setUint32(4, 1, true);
+  view.setUint32(8, records.length, true);
+  view.setUint32(12, 0, true);
+  let offset = 16;
+  for (const record of records) {
+    out.set(record, offset);
+    offset += record.length;
+  }
+  return out;
+}
+
+function packSceneExtrasFromFacts(polar, paint, facts) {
+  const polarBytes = polar instanceof Uint8Array ? polar : new Uint8Array();
+  const paintBytes = paint instanceof Uint8Array ? paint : new Uint8Array();
+  const factsBytes = facts instanceof Uint8Array ? facts : new Uint8Array();
+  if (!polarBytes.length && !paintBytes.length && !factsBytes.length) return new Uint8Array();
+  const out = new Uint8Array(Math.max(256, polarBytes.length + paintBytes.length + factsBytes.length + 64));
+  const code = xyScenePackSceneExtras(
+    polarBytes.length ? u8Ptr(polarBytes) : 0,
+    BigInt(polarBytes.length),
+    paintBytes.length ? u8Ptr(paintBytes) : 0,
+    BigInt(paintBytes.length),
+    factsBytes.length ? u8Ptr(factsBytes) : 0,
+    BigInt(factsBytes.length),
+    u8Ptr(out),
+    BigInt(out.length),
+  );
+  if (code === -5) throw new RangeError("Scene extras polar or paint envelope is invalid");
+  if (code === -6) throw new RangeError("Scene style sidecar facts are invalid");
+  if (code < 0) throw new RangeError("invalid scene extras packing");
+  return out.subarray(0, code);
 }
 
 function concatStyleSidecars(dashes, linecaps, markerPaths, gradients = []) {
@@ -3729,7 +3835,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   return sceneBatchEncode({ viewport: [figure.width, figure.height], margins: resolvedMargins,
     xAxis: xSceneAxis, yAxis: ySceneAxis,
     kinds, stableIds, styleRefs, styles, diameter, symbols, expansionModes, x0, y0, x1, y1,
-    title, xLabel, yLabel, chromeStyle: figureChromeStyle(figure), xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, xMinorTicks: (figure.xAxis ?? figure.x_axis)?.minorTickValues ?? (figure.xAxis ?? figure.x_axis)?.minor_tick_values ?? [], yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, yMinorTicks: (figure.yAxis ?? figure.y_axis)?.minorTickValues ?? (figure.yAxis ?? figure.y_axis)?.minor_tick_values ?? [], xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, xFormat: xSceneAxis.format, yFormat: ySceneAxis.format, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText, polarInput: packSceneExtras(packPolarSceneInput(figure), packXyhp(heatmapPaintPlanes), concatStyleSidecars(dashes, linecaps, markerPaths, fillGradients)),
+    title, xLabel, yLabel, chromeStyle: figureChromeStyle(figure), xMajorTicks: (figure.xAxis ?? figure.x_axis)?.tickValues ?? (figure.xAxis ?? figure.x_axis)?.tick_values ?? null, xMinorTicks: (figure.xAxis ?? figure.x_axis)?.minorTickValues ?? (figure.xAxis ?? figure.x_axis)?.minor_tick_values ?? [], yMajorTicks: (figure.yAxis ?? figure.y_axis)?.tickValues ?? (figure.yAxis ?? figure.y_axis)?.tick_values ?? null, yMinorTicks: (figure.yAxis ?? figure.y_axis)?.minorTickValues ?? (figure.yAxis ?? figure.y_axis)?.minor_tick_values ?? [], xTickLabels: (figure.xAxis ?? figure.x_axis)?.tickLabels ?? (figure.xAxis ?? figure.x_axis)?.tick_labels ?? null, yTickLabels: (figure.yAxis ?? figure.y_axis)?.tickLabels ?? (figure.yAxis ?? figure.y_axis)?.tick_labels ?? null, xFormat: xSceneAxis.format, yFormat: ySceneAxis.format, legendInput: legendInput(figure, legendEntries, styles), colorbarInput: encodedColorbar, authoredTextAnnotations: authoredText, polarInput: packSceneExtrasFromFacts(packPolarSceneInput(figure), packXyhp(heatmapPaintPlanes), packXySs(dashes, linecaps, markerPaths, fillGradients)),
   });
 }
 

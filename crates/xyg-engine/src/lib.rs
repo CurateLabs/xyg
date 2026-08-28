@@ -15,8 +15,8 @@ pub mod autorange;
 pub use autorange::{auto_domain, figure_autorange, rect_zero_baseline_flags};
 #[cfg(not(target_family = "wasm"))]
 pub mod chunked_columns;
-pub mod compat_layout;
 pub mod colormap;
+pub mod compat_layout;
 pub mod css;
 pub mod dashboard;
 pub mod density_emit;
@@ -60,6 +60,8 @@ pub mod scene_annotations;
 pub use scene_annotations::pack_annotations;
 pub mod scene_heatmap;
 pub use scene_heatmap::pack_heatmap_facts;
+pub mod scene_extras;
+pub use scene_extras::pack_scene_extras;
 pub mod scene_style;
 pub use scene_style::{resolve_chrome_style, resolve_mark_styles};
 pub mod stats;

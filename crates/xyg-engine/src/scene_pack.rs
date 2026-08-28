@@ -25,7 +25,9 @@
 //! `scene_annotations.rs`: XYAF v1 facts pack wrap/text/arrow/callout/rule
 //! routing so those families cannot drift. ABI 149 lives in
 //! `scene_heatmap.rs`: XYHF v1 facts pack heatmap/density XYHP kind routing
-//! so painted-lattice sidecars cannot drift.
+//! so painted-lattice sidecars cannot drift. ABI 150 lives in
+//! `scene_extras.rs`: XYSS v1 facts pack XYDS/XYLC/XYMP/XYGR layout, concat
+//! order, omit-empty, and XYEX wrapping so extras cannot drift.
 
 use crate::scene::MAX_SCENE_MARKS;
 
@@ -257,9 +259,7 @@ pub fn resolve_pack_kind(kind: &str, flags: u8) -> Result<u8, PackError> {
                 PACK_HEATMAP
             }
         }
-        "segments" | "errorbar" | "stem" | "contour" | "box_whisker" | "box_median" => {
-            PACK_SEGMENT
-        }
+        "segments" | "errorbar" | "stem" | "contour" | "box_whisker" | "box_median" => PACK_SEGMENT,
         _ => return Err(PackError::UnknownKind),
     };
     if painted && pack_kind != PACK_HEATMAP_PAINTED {
@@ -368,7 +368,8 @@ pub fn parse_product_facts(bytes: &[u8]) -> Result<ProductFacts<'_>, PackError> 
     let hex_dy = read_f64_at(bytes, 40)?;
     let grid_rows = read_f64_at(bytes, 48)?;
     let grid_cols = read_f64_at(bytes, 56)?;
-    let kind = std::str::from_utf8(&bytes[XYPK_V1_HEADER_BYTES..]).map_err(|_| PackError::Length)?;
+    let kind =
+        std::str::from_utf8(&bytes[XYPK_V1_HEADER_BYTES..]).map_err(|_| PackError::Length)?;
     if kind.is_empty() || kind.len() > 32 || kind.contains('\0') {
         return Err(PackError::Length);
     }
@@ -712,7 +713,10 @@ fn pack_hexbin(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, PackErr
     Ok(out)
 }
 
-fn pack_heatmap(input: TracePackInput<'_>, expansion: u8) -> Result<Vec<PackedSceneRow>, PackError> {
+fn pack_heatmap(
+    input: TracePackInput<'_>,
+    expansion: u8,
+) -> Result<Vec<PackedSceneRow>, PackError> {
     let cols = require_cols(input.columns, 4)?;
     if cols[0].len() != 1 {
         return Err(PackError::Length);
@@ -1643,7 +1647,11 @@ mod tests {
         );
         let rows = pack_product_facts(&facts, &x, &y, &[], &[], &[], &[], &[]).unwrap();
         assert_eq!(rows.len(), 3);
-        assert!(rows.iter().all(|row| row.expansion_mode == EXP_CURVE_FLATTEN));
-        assert!(rows.iter().all(|row| row.style_ref == 1 && row.stable_id == 11));
+        assert!(rows
+            .iter()
+            .all(|row| row.expansion_mode == EXP_CURVE_FLATTEN));
+        assert!(rows
+            .iter()
+            .all(|row| row.style_ref == 1 && row.stable_id == 11));
     }
 }
