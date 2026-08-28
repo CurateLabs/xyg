@@ -1418,7 +1418,8 @@ ABI 143 polar density tessellates occupied `DensityBlit` cells to PolyFill
 wedges. Polar heatmap constant-style lattices tessellate Rects to
 PolyFill wedges; polar painted heatmap (ABI 192) inverse-rasters to one
 plot-covering Image blit (Image+XYPL). Polar density still tessellates
-occupied cells (no XYIM).
+occupied cells (no XYIM). ABI 194 admits polar hexbin as HexCell PolyFills
+through the same XYPL path.
 Polar contour reuses SegmentPair polylines through `polar_project`.
 ABI 132 moves first-paint density scatter emit policy into Rust. Hosts call
 `xyg_density_emit_meta`, `xyg_density_grid_path`, `xyg_density_format_binning`,
