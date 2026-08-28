@@ -121,7 +121,7 @@ xyg.bar(
 | box | `fill`, `fill-opacity`, `stroke`, `stroke-width`, `stroke-opacity`, `opacity` |
 | violin | `fill`, `fill-opacity`, `opacity` |
 | triangle mesh | `fill`, `fill-opacity`, `stroke`, `stroke-width`, `stroke-opacity`, `opacity` |
-| heatmap, hexbin | `fill-opacity`, `opacity` |
+| heatmap, hexbin | `fill-opacity`, `stroke`, `stroke-width`, `stroke-opacity`, `opacity` |
 
 Canonical GraphForge numeric semantic planes additionally have a versioned
 Rust-owned resolved-paint contract (graph-mark §7.1.1). The low-level Python
