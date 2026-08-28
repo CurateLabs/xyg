@@ -116,8 +116,11 @@ slot (`{space, dir, stops}` with 2–8 RGBA8 stops, axis-aligned `down|up|left|r
 `mark` or `plot` space). Encoded Scene v31 keeps XYGR so SVG emits
 `<linearGradient>` and raster emits `OP_FILL_POLY_GRAD`. Transparent stops
 rewrite to the adjacent opaque hue. Per-item two-ended ribbon `color2_ch` is
-ABI 190 intern from packed source/target RGBA8. data-driven scatter `color_ch`,
+ABI 190 intern from packed source/target RGBA8. Data-driven scatter `color_ch`,
 `var()` stops, and chart/theme CSS gradients stay fail-closed.
+Those `var()` / theme CSS stops are the bounded Scene-static product contract
+(#289): `XYG_SCENE_UNSUPPORTED_GRADIENT`. Live browser widgets still resolve
+`var()`.
 ABI 147 does not change Scene records; `xyg_scene_pack_product_facts` owns
 flags, `step_mode`, and extra0/extra1 from packed XYPK v1 so cartesian-vs-polar
 smooth and painted heatmap dispatch cannot drift. ABI 148 does not change
@@ -1379,7 +1382,13 @@ authored tick-label strings, labeled annotations, and callout/arrow behavior.
 Rust owns both the ordered support decision and the stable actionable UTF-8
 diagnostic (`XYG_SCENE_UNSUPPORTED_*`); Python and Node only project literal
 feature-presence bits and relay the returned text. Zero required bytes means
-the request uses none of those deferred features. Unknown request versions or
+the request uses none of those authored features. Custom `font-family` and
+browser-only CSS/classes are the bounded Scene-static fail-closed contract
+(`XYG_SCENE_UNSUPPORTED_CUSTOM_FONT` / `XYG_SCENE_UNSUPPORTED_BROWSER_CSS`;
+#288): Scene SVG/PNG/PDF measure and paint DejaVu Sans, and default-font
+figures without those observations must not fall back to `_svg.to_svg` /
+`_raster`. Live browser widgets still apply `class_name` / CSS outside this
+encoder. CSS-room measurement of a second face stays #297. Unknown request versions or
 bits fail closed rather than being treated as supported. This predicate does
 not make a partial Scene: callers must reject the authoring request before
 encoding any records.
