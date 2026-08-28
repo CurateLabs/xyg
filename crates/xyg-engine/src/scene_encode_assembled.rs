@@ -19,6 +19,7 @@
 //! packed radii when the inner radius is positive. ABI 173 tessellates heatmap
 //! `corner_radius` from that same blob (cartesian rounded Rects / polar wedges).
 //! ABI 174 tessellates violin/box `corner_radius` from that same blob.
+//! ABI 175 admits violin/box `fill_opacity` / `stroke_opacity` from packed XYTC.
 //! Encoded Scene v31 is
 //! unchanged.
 

@@ -12,6 +12,8 @@
 //! match-fill (mark color at the authored width). ABI 173 admits heatmap
 //! `corner_radius` on the public Scene (cartesian rounded Rects / polar wedges).
 //! ABI 174 admits violin/box `corner_radius` on that same Rect tessellation.
+//! ABI 175 admits violin/box `fill_opacity` / `stroke_opacity` on that public
+//! Scene (XYMS already composites those channels).
 //! Rust owns the public PolyFill group budget, including
 //! companion traces that share the browser painter's 1,024-group ceiling.
 
@@ -407,6 +409,8 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "stroke",
             "stroke_width",
             "corner_radius",
+            "fill_opacity",
+            "stroke_opacity",
         ],
         KIND_BOX => &[
             "color",
@@ -416,6 +420,8 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "stroke_width",
             "box_orientation",
             "corner_radius",
+            "fill_opacity",
+            "stroke_opacity",
         ],
         KIND_BOX_WHISKER | KIND_BOX_MEDIAN | KIND_SEGMENTS | KIND_ERRORBAR | KIND_STEM
         | KIND_CONTOUR => &["color", "opacity", "width", "role", "dash", "linecap"],

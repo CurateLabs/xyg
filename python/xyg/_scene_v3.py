@@ -26,6 +26,9 @@ _SEGMENT_KINDS = frozenset({"segments", "errorbar", "stem", "contour", "box_whis
 _BAND_KINDS = frozenset({"area", "error_band"})
 # Host-tessellated flow bands also lower to Scene Band samples.
 _RIBBON_KINDS = frozenset({"ribbon"})
+# ABI 175 packs fill/stroke opacity channels for these kinds (XYMS already
+# composites them; hosts previously left violin/box at the 1.0 defaults).
+_OPACITY_CHANNEL_KINDS = _BAND_KINDS | _RIBBON_KINDS | frozenset({"violin", "box"})
 # Independent triangles lower to Scene PolyFill (kind 4) vertex runs.
 _POLYFILL_KINDS = frozenset({"triangle_mesh"})
 # Cartesian hexbin centers expand onto PolyFill records (6-vertex cells) in
@@ -2311,7 +2314,7 @@ def _pack_xytc(figure: Any) -> bytes:
         symbol_b = symbol.encode("utf-8")
         opacity = float(style.get("opacity", 1.0))
         fill_opacity = stroke_opacity = line_opacity = 1.0
-        if trace.kind in _BAND_KINDS | _RIBBON_KINDS:
+        if trace.kind in _OPACITY_CHANNEL_KINDS:
             fill_opacity = float(style.get("fill_opacity", 1.0))
             stroke_opacity = float(style.get("stroke_opacity", 1.0))
         if trace.kind in _BAND_KINDS:

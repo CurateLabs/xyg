@@ -791,10 +791,35 @@ def test_public_box_is_rust_owned_and_routes_every_static_consumer(orientation: 
 
 
 @pytest.mark.parametrize("key", ["fill_opacity", "stroke_opacity"])
-def test_public_violin_unrepresented_opacity_channels_fail_closed(key: str) -> None:
+def test_public_violin_opacity_channels_are_scene_supported(key: str) -> None:
     figure = _public_violin()
+    if key == "stroke_opacity":
+        figure.traces[0].style["stroke"] = "#111111"
+        figure.traces[0].style["stroke_width"] = 2.0
     figure.traces[0].style[key] = 0.5
-    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    baseline = _public_violin()
+    if key == "stroke_opacity":
+        baseline.traces[0].style["stroke"] = "#111111"
+        baseline.traces[0].style["stroke_width"] = 2.0
+    assert exported != public_static_export(baseline, "svg")
+    rounded_box = _public_box()
+    next(trace for trace in rounded_box.traces if trace.kind == "box").style[key] = 0.5
+    if key == "stroke_opacity":
+        next(trace for trace in rounded_box.traces if trace.kind == "box").style["stroke"] = (
+            "#111111"
+        )
+    assert scene_export_support_reason(rounded_box) is None
+    exported_box = public_static_export(rounded_box, "svg")
+    assert exported_box is not None
+    square_box = _public_box()
+    if key == "stroke_opacity":
+        next(trace for trace in square_box.traces if trace.kind == "box").style["stroke"] = (
+            "#111111"
+        )
+    assert exported_box != public_static_export(square_box, "svg")
 
 
 @pytest.mark.parametrize("kind", ["step", "histogram", "column_bar"])

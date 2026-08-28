@@ -1797,6 +1797,46 @@ test("Node Scene compiles cartesian corner_radius and polar donut rounding", () 
   assert.notEqual(boxSvg, sceneSvg(squareBox.toScene()));
 });
 
+test("Node Scene compiles violin and box fill_opacity", () => {
+  const violin = new Figure({ width: 320, height: 240 });
+  violin.setAxisDomain("x", [-1, 5]);
+  violin.setAxisDomain("y", [-1, 5]);
+  violin.violin([[1, 2, 2, 3, 4], [2, 2.5, 3.5]], {
+    bins: 8, width: 0.7, color: "#7c3aed", opacity: 0.6, style: { fill: "#22c55e" },
+  });
+  const violinTrace = violin.traces[violin.traces.length - 1];
+  delete violinTrace.style.orientation;
+  violinTrace.style.fill_opacity = 0.5;
+  const violinSvg = sceneSvg(violin.toScene());
+  assert.match(violinSvg, /fill-opacity="/);
+  assert.equal(sceneExportSupportReason(violin), null);
+  const squareViolin = new Figure({ width: 320, height: 240 });
+  squareViolin.setAxisDomain("x", [-1, 5]);
+  squareViolin.setAxisDomain("y", [-1, 5]);
+  squareViolin.violin([[1, 2, 2, 3, 4], [2, 2.5, 3.5]], {
+    bins: 8, width: 0.7, color: "#7c3aed", opacity: 0.6, style: { fill: "#22c55e" },
+  });
+  delete squareViolin.traces[squareViolin.traces.length - 1].style.orientation;
+  assert.notEqual(violinSvg, sceneSvg(squareViolin.toScene()));
+  const roundedBox = new Figure({ width: 320, height: 240 });
+  roundedBox.setAxisDomain("x", [-2, 102]);
+  roundedBox.setAxisDomain("y", [-2, 102]);
+  roundedBox.box([[1, 2, 3, 100], [2, 3, 4, 5]], {
+    width: 0.7, color: "#7c3aed", opacity: 0.6, name: "dist",
+  });
+  roundedBox.traces.find((trace) => trace.kind === "box").style.fill_opacity = 0.5;
+  const boxSvg = sceneSvg(roundedBox.toScene());
+  assert.match(boxSvg, /fill-opacity="/);
+  assert.equal(sceneExportSupportReason(roundedBox), null);
+  const squareBox = new Figure({ width: 320, height: 240 });
+  squareBox.setAxisDomain("x", [-2, 102]);
+  squareBox.setAxisDomain("y", [-2, 102]);
+  squareBox.box([[1, 2, 3, 100], [2, 3, 4, 5]], {
+    width: 0.7, color: "#7c3aed", opacity: 0.6, name: "dist",
+  });
+  assert.notEqual(boxSvg, sceneSvg(squareBox.toScene()));
+});
+
 test("Node Scene compiles polar wedge_gap and keeps cartesian fail-closed", () => {
   const gapped = new Figure({ width: 400, height: 400, coords: "polar" });
   gapped.setAxisDomain("x", [0, Math.PI * 2]);
