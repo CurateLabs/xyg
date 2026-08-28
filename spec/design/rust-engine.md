@@ -208,7 +208,7 @@ crates/
                         #   annotation packing facts plus ABI 149 XYHF
                         #   heatmap/density paint-fact packing plus ABI 150
                         #   XYSS extras packing plus ABI 151 Scene density
-                        #   grid packing.
+                        #   grid packing plus ABI 152 XYEP packing from XYEF.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -227,6 +227,9 @@ crates/
     scene_density.rs    # ABI 151 Scene density grid packing: 512×384 blit
                         #   lattice, bin_2d, density_log_u8, optional
                         #   mean-color, and XYDE wrapping.
+    scene_export.rs     # ABI 105 public-export predicate plus ABI 152 XYEP
+                        #   packing from XYEF v1: kind/step/annotation codes
+                        #   and flag derivation.
     jpeg.rs             # baseline JPEG encode (ABI 114): YCbCr 4:4:4, Annex K
                         #   tables, libjpeg quality curve, Huffman packing.
                         #   Native hosts only (`raster` feature).
@@ -648,7 +651,9 @@ predicate. It returns Rust's stable ordered diagnostic verbatim, so Python and
 Node cannot silently diverge on polar, custom-font, browser-CSS, gradient, or
 deferred chrome support policy. ABI v105 adds `xyg_scene_public_export_reason`
 over packed `XYEP` v1 figure metadata so the public static-export allowlists
-and `XYG_SCENE_UNSUPPORTED_*` wording are likewise Rust-owned. ABI v106 adds
+and `XYG_SCENE_UNSUPPORTED_*` wording are likewise Rust-owned. ABI v152 adds
+`xyg_scene_pack_public_export` so that envelope's layout, kind/step/annotation
+codes, and flag derivation resolve from packed `XYEF` v1. ABI v106 adds
 `xyg_figure_autorange` / `xyg_auto_domain` over packed `XYAR` v1 extents so
 Python and Node share one domain, padding, polar, and zero-baseline policy.
 Direct-browser WASM compile calls the same `auto_domain` for degenerate
@@ -675,6 +680,15 @@ routing, stable-id tags, mark-style defaults, and XYAD framing cannot drift.
 ABI v149 adds `xyg_scene_pack_heatmap_facts` so Python and Node share one
 XYHF v1 facts packer: heatmap tessellation eligibility, XYHP kind routing,
 and density opacity composition cannot drift.
+ABI v150 adds `xyg_scene_pack_scene_extras` so Python and Node share one
+XYSS v1 extras packer: XYDS/XYLC/XYMP/XYGR layout, concat order, omit-empty,
+and XYEX wrapping cannot drift.
+ABI v151 adds `xyg_scene_pack_density_grid` so Python and Node share one
+Scene density grid packer: 512×384 blit lattice, `bin_2d`, `density_log_u8`,
+and optional mean-color cannot drift.
+ABI v152 adds `xyg_scene_pack_public_export` so Python and Node share one
+XYEF v1 facts packer: XYEP layout, kind/step/annotation codes, and flag
+derivation cannot drift.
 ABI v116 adds `xyg_scene_pack_annotation_marks` so Python and Node share
 one rule/band/marker expander: stable-id tags, opposite-axis domain
 spanning, and finite rejection.
@@ -755,5 +769,6 @@ landed; the remainder, in order:
    ABI 148 XYAF annotation packing facts (`xyg_scene_pack_annotation_facts`) ✅;
    ABI 149 XYHF heatmap/density paint-fact packing (`xyg_scene_pack_heatmap_facts`) ✅;
    ABI 150 XYSS extras packing (`xyg_scene_pack_scene_extras`) ✅;
-   ABI 151 Scene density grid packing (`xyg_scene_pack_density_grid`) ✅.
+   ABI 151 Scene density grid packing (`xyg_scene_pack_density_grid`) ✅;
+   ABI 152 XYEP packing from XYEF (`xyg_scene_pack_public_export`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

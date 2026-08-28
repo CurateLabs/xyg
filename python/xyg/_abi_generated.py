@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 151
-SIGNATURE_SHA256 = "1f3b653d71809c1e05dc6d8827c5899cf22d84f549e8a69d7f7212555d3f36cd"
+ABI_VERSION = 152
+SIGNATURE_SHA256 = "2f1088b6d092c9b7a682a4b0056aa79ee5494903e35c7626bba97b5f8e11aa4d"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -690,6 +690,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_pack_product_facts
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_pack_public_export(const uint8_t * facts, size_t facts_len, uint8_t * out, size_t out_cap)
+    function = lib.xyg_scene_pack_public_export
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_scene_pack_scene_extras(const uint8_t * polar, size_t polar_len, const uint8_t * paint, size_t paint_len, const uint8_t * facts, size_t facts_len, uint8_t * out, size_t out_cap)
     function = lib.xyg_scene_pack_scene_extras
     function.restype = ctypes.c_int32

@@ -103,6 +103,30 @@ _PUBLIC_EXPORT_KIND_CODES = {
     "contour": 18,
 }
 
+_XYEF_OBS_HAS_X = 1 << 0
+_XYEF_OBS_HAS_Y = 1 << 1
+_XYEF_OBS_X_FINITE = 1 << 2
+_XYEF_OBS_Y_FINITE = 1 << 3
+_XYEF_OBS_HAS_X0 = 1 << 4
+_XYEF_OBS_HAS_Y0 = 1 << 5
+_XYEF_OBS_HAS_X1 = 1 << 6
+_XYEF_OBS_HAS_Y1 = 1 << 7
+_XYEF_OBS_X0_FINITE = 1 << 8
+_XYEF_OBS_Y0_FINITE = 1 << 9
+_XYEF_OBS_X1_FINITE = 1 << 10
+_XYEF_OBS_Y1_FINITE = 1 << 11
+_XYEF_OBS_JOINED_FILL = 1 << 12
+_XYEF_OBS_HEATMAP_TRUECOLOR = 1 << 13
+_XYEF_OBS_HEATMAP_RGBA_GRID = 1 << 16
+_XYEF_OBS_HEATMAP_SHAPE_OK = 1 << 17
+_XYEF_OBS_HEATMAP_EXTENT_OK = 1 << 18
+_XYEF_OBS_HEATMAP_FINITE = 1 << 19
+_XYEF_OBS_STROKE_WIDTH_ONLY = 1 << 20
+_XYEF_OBS_COMPANION_XY_MATCH = 1 << 21
+_XYEF_OBS_COMPANION_AXES_MATCH = 1 << 22
+_XYEF_OBS_SYMBOL_NON_STRING = 1 << 23
+_XYEF_OBS_DENSITY_BLIT = 1 << 24
+
 _LEGEND_LOCATIONS = {
     "upper right": 0,
     "upper left": 1,
@@ -2447,17 +2471,13 @@ def _xyep_finite(column: Any) -> bool:
     return column is not None and bool(np.isfinite(column.values).all())
 
 
-def _xyep_kind(kind: str) -> int:
-    return _PUBLIC_EXPORT_KIND_CODES.get(kind, 255)
-
-
 def _pack_public_export_support(
     figure: Any,
     *,
     width: int | None = None,
     height: int | None = None,
 ) -> bytes:
-    """Pack literal figure metadata for Rust's public-export predicate."""
+    """Pack authored XYEF facts; Rust owns the XYEP envelope (ABI 152)."""
     flags = 0
     if width is None and not isinstance(figure.width, int):
         flags |= 1 << 0
@@ -2472,7 +2492,7 @@ def _pack_public_export_support(
     colorbar_keys = [str(key) for key in (getattr(figure, "colorbar_options", None) or {})]
     annotations = list(getattr(figure, "annotations", None) or [])
     traces = list(getattr(figure, "traces", None) or [])
-    payload = bytearray(b"XYEP")
+    payload = bytearray(b"XYEF")
     payload.extend((1).to_bytes(4, "little"))
     payload.extend(flags.to_bytes(4, "little"))
     payload.extend(len(style_keys).to_bytes(4, "little"))
@@ -2507,40 +2527,20 @@ def _pack_public_export_support(
         )
         payload.extend(len(keys).to_bytes(2, "little"))
         _xyep_put_keys(payload, keys)
-    annotation_kinds = {
-        "text": 1,
-        "rule": 2,
-        "band": 3,
-        "marker": 4,
-        "arrow": 5,
-        "callout": 6,
-    }
     for annotation in annotations:
         if not isinstance(annotation, dict):
-            payload.extend(bytes((0, 1 << 4)))
-            payload.extend((0).to_bytes(2, "little"))
+            payload.extend(struct.pack("<B3sHH", 1, b"", 0, 0))
             continue
-        kind_code = annotation_kinds.get(str(annotation.get("kind")), 0)
-        flags_ann = 0
-        if "wrap" in annotation:
-            flags_ann |= 1 << 0
-        if "dx" in annotation:
-            flags_ann |= 1 << 1
-        if "dy" in annotation:
-            flags_ann |= 1 << 2
-        if "anchor" in annotation:
-            flags_ann |= 1 << 3
+        kind_b = str(annotation.get("kind") or "").encode("utf-8")[:256]
         fields = [str(key) for key in annotation]
-        payload.extend(bytes((kind_code, flags_ann)))
-        payload.extend(len(fields).to_bytes(2, "little"))
+        payload.extend(struct.pack("<B3sHH", 0, b"", len(kind_b), len(fields)))
+        payload.extend(kind_b)
         _xyep_put_keys(payload, fields)
     for trace_index, trace in enumerate(traces):
         style = getattr(trace, "style", None) or {}
         opacity = float(style.get("opacity", 1.0))
         if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
             raise ValueError("trace opacity must be finite and in [0, 1]")
-        kind_code = _xyep_kind(trace.kind)
-        step = {"pre": 1, "mid": 2, "post": 3}.get(style.get("step"), 0)
         prev = traces[trace_index - 1] if trace_index else None
         prev2 = traces[trace_index - 2] if trace_index >= 2 else None
         prev3 = traces[trace_index - 3] if trace_index >= 3 else None
@@ -2550,53 +2550,53 @@ def _pack_public_export_support(
         y0 = _xyep_column(trace, "y0")
         x1 = _xyep_column(trace, "x1")
         y1 = _xyep_column(trace, "y1")
-        mesh = (x0, y0, x1, y1, xv, yv)
-        flags_tr = 0
+        obs = 0
         if xv is not None:
-            flags_tr |= 1 << 0
+            obs |= _XYEF_OBS_HAS_X
         if yv is not None:
-            flags_tr |= 1 << 1
-        if xv is not None and yv is not None and _xyep_len(xv) == _xyep_len(yv):
-            flags_tr |= 1 << 2
+            obs |= _XYEF_OBS_HAS_Y
         if _xyep_finite(xv):
-            flags_tr |= 1 << 3
+            obs |= _XYEF_OBS_X_FINITE
         if _xyep_finite(yv):
-            flags_tr |= 1 << 4
-        if None not in (x0, y0, x1, y1):
-            flags_tr |= 1 << 5
-            lengths = {_xyep_len(column) for column in (x0, y0, x1, y1)}
-            if len(lengths) == 1:
-                flags_tr |= 1 << 6
-        if all(column is not None for column in mesh):
-            flags_tr |= 1 << 7
-            mesh_lengths = {_xyep_len(column) for column in mesh}
-            if len(mesh_lengths) == 1:
-                flags_tr |= 1 << 8
-            if all(_xyep_finite(column) for column in mesh):
-                flags_tr |= 1 << 9
+            obs |= _XYEF_OBS_Y_FINITE
+        if x0 is not None:
+            obs |= _XYEF_OBS_HAS_X0
+        if y0 is not None:
+            obs |= _XYEF_OBS_HAS_Y0
+        if x1 is not None:
+            obs |= _XYEF_OBS_HAS_X1
+        if y1 is not None:
+            obs |= _XYEF_OBS_HAS_Y1
+        if _xyep_finite(x0):
+            obs |= _XYEF_OBS_X0_FINITE
+        if _xyep_finite(y0):
+            obs |= _XYEF_OBS_Y0_FINITE
+        if _xyep_finite(x1):
+            obs |= _XYEF_OBS_X1_FINITE
+        if _xyep_finite(y1):
+            obs |= _XYEF_OBS_Y1_FINITE
         if style.get("joined_fill"):
-            flags_tr |= 1 << 10
+            obs |= _XYEF_OBS_JOINED_FILL
         heatmap_rows = heatmap_cols = heatmap_values = 0
         if trace.kind == "heatmap":
-            if _heatmap_uses_colormap(trace) and not _heatmap_tessellates_cell_fills(trace):
-                flags_tr |= 1 << 11
+            style_truecolor = bool(style.get("truecolor"))
+            if style_truecolor:
+                obs |= _XYEF_OBS_HEATMAP_TRUECOLOR
+            if getattr(trace, "rgba_grid", None) is not None:
+                obs |= _XYEF_OBS_HEATMAP_RGBA_GRID
             try:
                 heatmap_rows, heatmap_cols = _heatmap_shape(trace)
                 values = _heatmap_grid_values(trace)
                 _heatmap_extent(trace)
-                flags_tr |= 1 << 12
-                flags_tr |= 1 << 13
+                obs |= _XYEF_OBS_HEATMAP_SHAPE_OK
+                obs |= _XYEF_OBS_HEATMAP_EXTENT_OK
                 heatmap_values = int(values.size)
                 if np.isfinite(values).all():
-                    flags_tr |= 1 << 14
+                    obs |= _XYEF_OBS_HEATMAP_FINITE
             except (UnsupportedSceneV3, ValueError, TypeError):
                 heatmap_rows = heatmap_cols = heatmap_values = 0
-        if xv is not None and yv is not None and _xyep_len(xv) == _xyep_len(yv):
-            flags_tr |= 1 << 15
-        if _xyep_finite(xv) and _xyep_finite(yv):
-            flags_tr |= 1 << 16
         if style.get("stroke_width") is not None and style.get("stroke") is None:
-            flags_tr |= 1 << 17
+            obs |= _XYEF_OBS_STROKE_WIDTH_ONLY
         if (
             prev is not None
             and xv is not None
@@ -2606,21 +2606,19 @@ def _pack_public_export_support(
             and np.array_equal(xv.values, prev.x1.values)
             and np.array_equal(yv.values, prev.y1.values)
         ):
-            flags_tr |= 1 << 18
+            obs |= _XYEF_OBS_COMPANION_XY_MATCH
         if prev is not None and trace.x_axis == prev.x_axis and trace.y_axis == prev.y_axis:
-            flags_tr |= 1 << 19
-        if _xyep_finite(xv) and _xyep_finite(yv):
-            flags_tr |= 1 << 20
+            obs |= _XYEF_OBS_COMPANION_AXES_MATCH
         symbol = style.get("symbol", "circle")
         if not isinstance(symbol, str):
-            flags_tr |= 1 << 21
+            obs |= _XYEF_OBS_SYMBOL_NON_STRING
             symbol = ""
         if (
             trace.kind == "scatter"
             and getattr(figure, "coords", "cartesian") == "cartesian"
             and trace.use_density()
         ):
-            flags_tr |= 1 << 22
+            obs |= _XYEF_OBS_DENSITY_BLIT
         role = style.get("role")
         role_s = "" if role is None else str(role)
         reduce = style.get("reduce")
@@ -2631,20 +2629,20 @@ def _pack_public_export_support(
             )
         except UnsupportedSceneV3:
             hex_dx = hex_dy = float("nan")
-        style_keys = [str(key) for key, value in style.items() if value is not None]
-        n_mesh = _xyep_len(xv) if flags_tr & (1 << 7) else 0
+        style_keys_tr = [str(key) for key, value in style.items() if value is not None]
+        kind_b = str(trace.kind).encode("utf-8")[:256]
+        step_b = str(style.get("step") or "").encode("utf-8")[:256]
+        role_b = role_s.encode("utf-8")[:256]
+        symbol_b = (symbol.encode("utf-8") if isinstance(symbol, str) else b"")[:256]
+        reduce_b = reduce_s.encode("utf-8")[:256]
+        prev_b = (str(prev.kind).encode("utf-8") if prev is not None else b"")[:256]
+        prev2_b = (str(prev2.kind).encode("utf-8") if prev2 is not None else b"")[:256]
+        prev3_b = (str(prev3.kind).encode("utf-8") if prev3 is not None else b"")[:256]
         payload.extend(
             struct.pack(
-                "<BBBBBBHIIIIIIIIIIHHHHdd",
-                kind_code,
-                step,
-                255 if prev is None else _xyep_kind(prev.kind),
-                255 if prev2 is None else _xyep_kind(prev2.kind),
-                255 if prev3 is None else _xyep_kind(prev3.kind),
-                0,
-                0,
-                flags_tr,
-                _xyep_len(xv) if xv is not None else n_mesh,
+                "<I6I3I10H4x2d",
+                obs,
+                _xyep_len(xv),
                 _xyep_len(yv),
                 _xyep_len(x0),
                 _xyep_len(y0),
@@ -2653,19 +2651,30 @@ def _pack_public_export_support(
                 heatmap_rows,
                 heatmap_cols,
                 heatmap_values,
-                len(style_keys),
-                len(role_s.encode("utf-8")),
-                len(symbol.encode("utf-8")) if isinstance(symbol, str) else 0,
-                len(reduce_s.encode("utf-8")),
+                len(style_keys_tr),
+                len(kind_b),
+                len(step_b),
+                len(role_b),
+                len(symbol_b),
+                len(reduce_b),
+                len(prev_b),
+                len(prev2_b),
+                len(prev3_b),
+                0,
                 hex_dx,
                 hex_dy,
             )
         )
-        payload.extend(role_s.encode("utf-8"))
-        payload.extend(symbol.encode("utf-8") if isinstance(symbol, str) else b"")
-        payload.extend(reduce_s.encode("utf-8"))
-        _xyep_put_keys(payload, style_keys)
-    return bytes(payload)
+        payload.extend(kind_b)
+        payload.extend(step_b)
+        payload.extend(role_b)
+        payload.extend(symbol_b)
+        payload.extend(reduce_b)
+        payload.extend(prev_b)
+        payload.extend(prev2_b)
+        payload.extend(prev3_b)
+        _xyep_put_keys(payload, style_keys_tr)
+    return _native.scene_pack_public_export(bytes(payload))
 
 
 def scene_export_support_reason(
@@ -2682,10 +2691,12 @@ def scene_export_support_reason(
     ``XYG_SCENE_UNSUPPORTED_*`` diagnostic (or the compiler's own bounded
     message) so callers can log or surface an actionable reason for the fallback.
 
-    Hosts only pack literal figure metadata. Rust owns the public-subset
-    allowlists, check order, and diagnostic wording. After that preflight the
-    predicate still compiles the Scene so it cannot disagree with the encoder,
-    and it asks the browser painter to enforce the shared PolyFill group budget.
+    Hosts pack authored XYEF facts (viewport flags, keys, axis codes, and
+    column observations). Rust owns XYEP layout, kind/step/annotation codes,
+    flag derivation, allowlists, check order, and diagnostic wording. After
+    that preflight the predicate still compiles the Scene so it cannot
+    disagree with the encoder, and it asks the browser painter to enforce the
+    shared PolyFill group budget.
     """
     envelope = _pack_public_export_support(figure, width=width, height=height)
     reason = _native.scene_public_export_reason(envelope)

@@ -18,6 +18,7 @@ from xyg._native import (
     scene_pack_legend,
     scene_pack_product,
     scene_pack_product_facts,
+    scene_pack_public_export,
     scene_pack_scene_extras,
     scene_pack_trace,
     scene_resolve_chrome_style,
@@ -593,3 +594,11 @@ def test_pack_density_grid_skips_empty_columns() -> None:
         )
         is None
     )
+
+
+def test_pack_public_export_empty_figure_is_xyep() -> None:
+    facts = struct.pack("<4sIIIIIIII", b"XYEF", 1, 0, 0, 0, 0, 0, 0, 0)
+    envelope = scene_pack_public_export(facts)
+    assert envelope[:4] == b"XYEP"
+    assert int.from_bytes(envelope[4:8], "little") == 1
+    assert len(envelope) == 36

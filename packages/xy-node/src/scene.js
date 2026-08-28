@@ -42,6 +42,7 @@ import {
   xyScenePackHeatmapFacts,
   xyScenePackSceneExtras,
   xyScenePackDensityGrid,
+  xyScenePackPublicExport,
   xyScenePackAnnotationMarks,
   xySceneRasterCommands,
   xySceneResolveChromeStyle,
@@ -2823,7 +2824,44 @@ function significantExportKeys(record) {
     .map(([key]) => key);
 }
 
+function packPublicExportFromFacts(facts) {
+  const factsBytes = facts instanceof Uint8Array ? facts : new Uint8Array();
+  const out = new Uint8Array(Math.max(256, factsBytes.length + 64));
+  const code = xyScenePackPublicExport(
+    factsBytes.length ? u8Ptr(factsBytes) : 0,
+    BigInt(factsBytes.length),
+    u8Ptr(out),
+    BigInt(out.length),
+  );
+  if (code === -2) throw new RangeError("invalid scene public export facts version");
+  if (code < 0) throw new RangeError("invalid scene public export packing");
+  return out.subarray(0, code);
+}
+
 function packPublicExportSupport(figure, { width = null, height = null } = {}) {
+  const OBS_HAS_X = 1 << 0;
+  const OBS_HAS_Y = 1 << 1;
+  const OBS_X_FINITE = 1 << 2;
+  const OBS_Y_FINITE = 1 << 3;
+  const OBS_HAS_X0 = 1 << 4;
+  const OBS_HAS_Y0 = 1 << 5;
+  const OBS_HAS_X1 = 1 << 6;
+  const OBS_HAS_Y1 = 1 << 7;
+  const OBS_X0_FINITE = 1 << 8;
+  const OBS_Y0_FINITE = 1 << 9;
+  const OBS_X1_FINITE = 1 << 10;
+  const OBS_Y1_FINITE = 1 << 11;
+  const OBS_JOINED_FILL = 1 << 12;
+  const OBS_HEATMAP_TRUECOLOR = 1 << 13;
+  const OBS_HEATMAP_RGBA_GRID = 1 << 16;
+  const OBS_HEATMAP_SHAPE_OK = 1 << 17;
+  const OBS_HEATMAP_EXTENT_OK = 1 << 18;
+  const OBS_HEATMAP_FINITE = 1 << 19;
+  const OBS_STROKE_WIDTH_ONLY = 1 << 20;
+  const OBS_COMPANION_XY_MATCH = 1 << 21;
+  const OBS_COMPANION_AXES_MATCH = 1 << 22;
+  const OBS_SYMBOL_NON_STRING = 1 << 23;
+  const OBS_DENSITY_BLIT = 1 << 24;
   let flags = 0;
   if (width == null && !Number.isInteger(figure.width)) flags |= 1 << 0;
   if (height == null && !Number.isInteger(figure.height)) flags |= 1 << 1;
@@ -2853,7 +2891,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
 
   const parts = [new Uint8Array(36)];
   const header = new DataView(parts[0].buffer);
-  parts[0].set([88, 89, 69, 80]);
+  parts[0].set([88, 89, 69, 70]);
   header.setUint32(4, 1, true);
   header.setUint32(8, flags, true);
   header.setUint32(12, styleKeys.length, true);
@@ -2889,27 +2927,19 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
     for (const key of keys) parts.push(encodeExportKey(key));
   }
 
-  const annotationKinds = { text: 1, rule: 2, band: 3, marker: 4, arrow: 5, callout: 6 };
   for (const annotation of annotations) {
     if (annotation == null || typeof annotation !== "object" || Array.isArray(annotation)) {
-      const row = new Uint8Array(4);
-      row[1] = 1 << 4;
-      parts.push(row);
+      parts.push(new Uint8Array(8));
+      parts[parts.length - 1][0] = 1;
       continue;
     }
-    const kindCode = annotationKinds[String(annotation.kind)] ?? 0;
-    let flagsAnn = 0;
-    if (Object.hasOwn(annotation, "wrap")) flagsAnn |= 1 << 0;
-    if (Object.hasOwn(annotation, "dx")) flagsAnn |= 1 << 1;
-    if (Object.hasOwn(annotation, "dy")) flagsAnn |= 1 << 2;
-    if (Object.hasOwn(annotation, "anchor")) flagsAnn |= 1 << 3;
+    const kindBytes = encodeUtf8(annotation.kind == null ? "" : String(annotation.kind)).slice(0, 256);
     const fields = Object.keys(annotation);
-    const row = new Uint8Array(4);
-    row[0] = kindCode;
-    row[1] = flagsAnn;
-    row[2] = fields.length & 0xff;
-    row[3] = (fields.length >> 8) & 0xff;
-    parts.push(row);
+    const row = new Uint8Array(8);
+    const view = new DataView(row.buffer);
+    view.setUint16(4, kindBytes.length, true);
+    view.setUint16(6, fields.length, true);
+    parts.push(row, kindBytes);
     for (const key of fields) parts.push(encodeExportKey(key));
   }
 
@@ -2919,8 +2949,6 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
     if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) {
       throw new RangeError("trace opacity must be finite and in [0, 1]");
     }
-    const kindCode = PUBLIC_EXPORT_KIND_CODES[trace.kind] ?? 255;
-    const step = { pre: 1, mid: 2, post: 3 }[style.step] ?? 0;
     const prev = traceIndex ? traces[traceIndex - 1] : null;
     const prev2 = traceIndex >= 2 ? traces[traceIndex - 2] : null;
     const prev3 = traceIndex >= 3 ? traces[traceIndex - 3] : null;
@@ -2930,32 +2958,24 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
     const y0 = exportColumn(trace, "y0");
     const x1 = exportColumn(trace, "x1");
     const y1 = exportColumn(trace, "y1");
-    const mesh = [x0, y0, x1, y1, xv, yv];
-    let flagsTr = 0;
-    if (xv != null) flagsTr |= 1 << 0;
-    if (yv != null) flagsTr |= 1 << 1;
-    if (xv != null && yv != null && exportColumnLen(xv) === exportColumnLen(yv)) flagsTr |= 1 << 2;
-    if (exportColumnFinite(xv)) flagsTr |= 1 << 3;
-    if (exportColumnFinite(yv)) flagsTr |= 1 << 4;
-    if (x0 != null && y0 != null && x1 != null && y1 != null) {
-      flagsTr |= 1 << 5;
-      const lengths = new Set([exportColumnLen(x0), exportColumnLen(y0), exportColumnLen(x1), exportColumnLen(y1)]);
-      if (lengths.size === 1) flagsTr |= 1 << 6;
-    }
-    if (mesh.every((column) => column != null)) {
-      flagsTr |= 1 << 7;
-      const meshLengths = new Set(mesh.map(exportColumnLen));
-      if (meshLengths.size === 1) flagsTr |= 1 << 8;
-      if (mesh.every(exportColumnFinite)) flagsTr |= 1 << 9;
-    }
-    if (style.joined_fill || style.joinedFill) flagsTr |= 1 << 10;
+    let obs = 0;
+    if (xv != null) obs |= OBS_HAS_X;
+    if (yv != null) obs |= OBS_HAS_Y;
+    if (exportColumnFinite(xv)) obs |= OBS_X_FINITE;
+    if (exportColumnFinite(yv)) obs |= OBS_Y_FINITE;
+    if (x0 != null) obs |= OBS_HAS_X0;
+    if (y0 != null) obs |= OBS_HAS_Y0;
+    if (x1 != null) obs |= OBS_HAS_X1;
+    if (y1 != null) obs |= OBS_HAS_Y1;
+    if (exportColumnFinite(x0)) obs |= OBS_X0_FINITE;
+    if (exportColumnFinite(y0)) obs |= OBS_Y0_FINITE;
+    if (exportColumnFinite(x1)) obs |= OBS_X1_FINITE;
+    if (exportColumnFinite(y1)) obs |= OBS_Y1_FINITE;
+    if (style.joined_fill || style.joinedFill) obs |= OBS_JOINED_FILL;
     let heatmapRows = 0, heatmapCols = 0, heatmapValues = 0;
     if (trace.kind === "heatmap") {
-      if (style.truecolor || style.colormap != null || trace.rgba_grid != null || trace.rgba != null) {
-        if (!heatmapTessellatesCellFills(trace)) {
-          flagsTr |= 1 << 11;
-        }
-      }
+      if (style.truecolor) obs |= OBS_HEATMAP_TRUECOLOR;
+      if (trace.rgba_grid != null) obs |= OBS_HEATMAP_RGBA_GRID;
       const shape = trace.grid_shape ?? trace.gridShape;
       const grid = exportColumn(trace, "grid");
       const hx = xv, hy = yv;
@@ -2964,32 +2984,29 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
         if (Number.isInteger(rows) && Number.isInteger(cols) && rows >= 1 && cols >= 1) {
           heatmapRows = rows;
           heatmapCols = cols;
-          flagsTr |= 1 << 12;
+          obs |= OBS_HEATMAP_SHAPE_OK;
           if (grid != null) heatmapValues = grid.length;
           if (
             hx != null && hy != null && hx.length === 2 && hy.length === 2
             && [hx[0], hx[1], hy[0], hy[1]].every((value) => Number.isFinite(Number(value)))
             && Number(hx[0]) < Number(hx[1]) && Number(hy[0]) < Number(hy[1])
-          ) flagsTr |= 1 << 13;
-          if (grid != null && exportColumnFinite(grid)) flagsTr |= 1 << 14;
+          ) obs |= OBS_HEATMAP_EXTENT_OK;
+          if (grid != null && exportColumnFinite(grid)) obs |= OBS_HEATMAP_FINITE;
         }
       }
     }
-    if (xv != null && yv != null && exportColumnLen(xv) === exportColumnLen(yv)) flagsTr |= 1 << 15;
-    if (exportColumnFinite(xv) && exportColumnFinite(yv)) flagsTr |= 1 << 16;
-    if ((style.stroke_width ?? style.strokeWidth) != null && style.stroke == null) flagsTr |= 1 << 17;
+    if ((style.stroke_width ?? style.strokeWidth) != null && style.stroke == null) obs |= OBS_STROKE_WIDTH_ONLY;
     const prevX1 = prev && exportColumn(prev, "x1");
     const prevY1 = prev && exportColumn(prev, "y1");
     if (prev != null && xv != null && yv != null && prevX1 != null && prevY1 != null && exportArraysEqual(xv, prevX1) && exportArraysEqual(yv, prevY1)) {
-      flagsTr |= 1 << 18;
+      obs |= OBS_COMPANION_XY_MATCH;
     }
     if (prev != null && (trace.x_axis ?? "x") === (prev.x_axis ?? "x") && (trace.y_axis ?? "y") === (prev.y_axis ?? "y")) {
-      flagsTr |= 1 << 19;
+      obs |= OBS_COMPANION_AXES_MATCH;
     }
-    if (exportColumnFinite(xv) && exportColumnFinite(yv)) flagsTr |= 1 << 20;
     let symbol = style.symbol ?? "circle";
     if (typeof symbol !== "string") {
-      flagsTr |= 1 << 21;
+      obs |= OBS_SYMBOL_NON_STRING;
       symbol = "";
     }
     if (
@@ -3007,7 +3024,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
           || trace.stroke_ch != null,
       })
     ) {
-      flagsTr |= 1 << 22;
+      obs |= OBS_DENSITY_BLIT;
     }
     const role = style.role == null ? "" : String(style.role);
     const reduce = style.reduce == null ? "" : String(style.reduce);
@@ -3016,38 +3033,42 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
       hexDx = Number(style.hex_dx ?? style.hexDx ?? style.dx);
       hexDy = Number(style.hex_dy ?? style.hexDy ?? style.dy);
     }
-    const styleKeysTrace = Object.entries(style).filter(([, value]) => value != null).map(([key]) => key);
-    const roleBytes = new TextEncoder().encode(role);
-    const symbolBytes = new TextEncoder().encode(symbol);
-    const reduceBytes = new TextEncoder().encode(reduce);
-    const nMesh = (flagsTr & (1 << 7)) ? exportColumnLen(xv) : 0;
-    const row = new Uint8Array(72);
+    const styleKeysTrace = Object.entries(style).filter(([, value]) => value != null).map(([key]) => canonicalExportKey(key));
+    const kindBytes = encodeUtf8(trace.kind == null ? "" : String(trace.kind)).slice(0, 256);
+    const stepBytes = encodeUtf8(style.step == null ? "" : String(style.step)).slice(0, 256);
+    const roleBytes = encodeUtf8(role).slice(0, 256);
+    const symbolBytes = encodeUtf8(symbol).slice(0, 256);
+    const reduceBytes = encodeUtf8(reduce).slice(0, 256);
+    const prevBytes = encodeUtf8(prev == null ? "" : String(prev.kind ?? "")).slice(0, 256);
+    const prev2Bytes = encodeUtf8(prev2 == null ? "" : String(prev2.kind ?? "")).slice(0, 256);
+    const prev3Bytes = encodeUtf8(prev3 == null ? "" : String(prev3.kind ?? "")).slice(0, 256);
+    const row = new Uint8Array(80);
     const view = new DataView(row.buffer);
-    row[0] = kindCode;
-    row[1] = step;
-    row[2] = prev == null ? 255 : (PUBLIC_EXPORT_KIND_CODES[prev.kind] ?? 255);
-    row[3] = prev2 == null ? 255 : (PUBLIC_EXPORT_KIND_CODES[prev2.kind] ?? 255);
-    row[4] = prev3 == null ? 255 : (PUBLIC_EXPORT_KIND_CODES[prev3.kind] ?? 255);
-    view.setUint32(8, flagsTr, true);
-    view.setUint32(12, xv != null ? exportColumnLen(xv) : nMesh, true);
-    view.setUint32(16, exportColumnLen(yv), true);
-    view.setUint32(20, exportColumnLen(x0), true);
-    view.setUint32(24, exportColumnLen(y0), true);
-    view.setUint32(28, exportColumnLen(x1), true);
-    view.setUint32(32, exportColumnLen(y1), true);
-    view.setUint32(36, heatmapRows, true);
-    view.setUint32(40, heatmapCols, true);
-    view.setUint32(44, heatmapValues, true);
-    view.setUint16(48, styleKeysTrace.length, true);
-    view.setUint16(50, roleBytes.length, true);
-    view.setUint16(52, symbolBytes.length, true);
-    view.setUint16(54, reduceBytes.length, true);
-    view.setFloat64(56, hexDx, true);
-    view.setFloat64(64, hexDy, true);
-    parts.push(row, roleBytes, symbolBytes, reduceBytes);
+    view.setUint32(0, obs, true);
+    view.setUint32(4, exportColumnLen(xv), true);
+    view.setUint32(8, exportColumnLen(yv), true);
+    view.setUint32(12, exportColumnLen(x0), true);
+    view.setUint32(16, exportColumnLen(y0), true);
+    view.setUint32(20, exportColumnLen(x1), true);
+    view.setUint32(24, exportColumnLen(y1), true);
+    view.setUint32(28, heatmapRows, true);
+    view.setUint32(32, heatmapCols, true);
+    view.setUint32(36, heatmapValues, true);
+    view.setUint16(40, styleKeysTrace.length, true);
+    view.setUint16(42, kindBytes.length, true);
+    view.setUint16(44, stepBytes.length, true);
+    view.setUint16(46, roleBytes.length, true);
+    view.setUint16(48, symbolBytes.length, true);
+    view.setUint16(50, reduceBytes.length, true);
+    view.setUint16(52, prevBytes.length, true);
+    view.setUint16(54, prev2Bytes.length, true);
+    view.setUint16(56, prev3Bytes.length, true);
+    view.setFloat64(64, hexDx, true);
+    view.setFloat64(72, hexDy, true);
+    parts.push(row, kindBytes, stepBytes, roleBytes, symbolBytes, reduceBytes, prevBytes, prev2Bytes, prev3Bytes);
     for (const key of styleKeysTrace) parts.push(encodeExportKey(key));
   }
-  return concatBytes(parts);
+  return packPublicExportFromFacts(concatBytes(parts));
 }
 
 /** Return Rust's public-export diagnostic, or null when the Scene route applies. */

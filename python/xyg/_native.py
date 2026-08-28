@@ -1836,6 +1836,26 @@ def scene_public_export_reason(payload: bytes) -> str:
     return output.raw.decode("utf-8")
 
 
+def scene_pack_public_export(facts: bytes) -> bytes:
+    """Pack XYEF v1 public-export facts into the XYEP v1 envelope (M2 #271)."""
+    payload = facts if isinstance(facts, (bytes, bytearray, memoryview)) else bytes(facts)
+    out = np.zeros(max(256, len(payload) + 64), dtype=np.uint8)
+    source = np.frombuffer(payload, dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_pack_public_export(
+            _ptr_u8(source) if source.size else 0,
+            int(source.size),
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene public export facts version")
+    if code < 0:
+        raise ValueError("invalid scene public export packing")
+    return bytes(out[:code])
+
+
 def scene_figure_support_reason(payload: bytes) -> str:
     """Return Rust's figure-compile diagnostic for a packed XYFS envelope.
 

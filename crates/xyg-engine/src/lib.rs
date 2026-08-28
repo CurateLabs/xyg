@@ -47,7 +47,9 @@ pub mod scene;
 mod scene_export;
 #[cfg(feature = "raster")]
 pub mod webp;
-pub use scene_export::{scene_figure_support_reason, scene_public_export_reason};
+pub use scene_export::{
+    pack_public_export, scene_figure_support_reason, scene_public_export_reason, ExportPackError,
+};
 pub mod scene_pack;
 pub use scene_pack::{
     pack_product, pack_product_facts, pack_trace, parse_product_facts, resolve_pack_kind,

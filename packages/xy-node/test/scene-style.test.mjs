@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { cssColorRgba8, lineChart, scatterChart } from "../src/index.js";
 import { figureSceneV3 } from "../src/scene.js";
-import { xyScenePackAnnotationFacts, xyScenePackAnnotationMarks, xyScenePackDensityGrid, xyScenePackHeatmapFacts, xyScenePackProduct, xyScenePackProductFacts, xyScenePackSceneExtras, xyScenePackTrace, xySceneResolveChromeStyle, xySceneResolvePackKind } from "../src/native.js";
+import { xyScenePackAnnotationFacts, xyScenePackAnnotationMarks, xyScenePackDensityGrid, xyScenePackHeatmapFacts, xyScenePackProduct, xyScenePackProductFacts, xyScenePackPublicExport, xyScenePackSceneExtras, xyScenePackTrace, xySceneResolveChromeStyle, xySceneResolvePackKind } from "../src/native.js";
 import { f64Ptr, u8Ptr } from "../src/encode.js";
 
 test("cssColorRgba8 matches Python named colors and none", () => {
@@ -397,4 +397,19 @@ test("xyScenePackDensityGrid encodes a 512x384 log-u8 lattice", () => {
   assert.equal(String.fromCharCode(out[0], out[1], out[2], out[3]), "XYDE");
   assert.equal(new DataView(out.buffer).getUint32(8, true), 512);
   assert.equal(new DataView(out.buffer).getUint32(12, true), 384);
+});
+
+test("xyScenePackPublicExport encodes empty XYEF as XYEP", () => {
+  const facts = new Uint8Array(36);
+  const view = new DataView(facts.buffer);
+  facts.set(new TextEncoder().encode("XYEF"), 0);
+  view.setUint32(4, 1, true);
+  const out = new Uint8Array(64);
+  const code = xyScenePackPublicExport(
+    u8Ptr(facts), BigInt(facts.length),
+    u8Ptr(out), BigInt(out.length),
+  );
+  assert.equal(code, 36);
+  assert.equal(String.fromCharCode(out[0], out[1], out[2], out[3]), "XYEP");
+  assert.equal(new DataView(out.buffer).getUint32(4, true), 1);
 });

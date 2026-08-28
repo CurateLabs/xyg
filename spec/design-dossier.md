@@ -1265,7 +1265,8 @@ ABI 104 moves disconnected endpoint pairs and unjoined triangle faces onto the
 same compact expansion so hosts pack one four-coordinate row per segment and
 two PolyFill rows per face.
 ABI 105 moves the public static-export support predicate into Rust. Hosts pack
-an `XYEP` v1 envelope of literal figure metadata; allowlists, check order, and
+an `XYEF` v1 facts envelope; ABI 152 owns `XYEP` layout, kind/step/annotation
+codes, and flag derivation. Allowlists, check order, and
 `XYG_SCENE_UNSUPPORTED_*` wording are engine-owned and identical for Python
 and Node.
 ABI 106 moves Figure autorange, `_auto_domain`, and zero-baseline pinning
@@ -1446,7 +1447,9 @@ ABI 147 owns product packing facts from packed XYPK v1. ABI 148 owns
 annotation family routing from packed XYAF v1. ABI 149 owns heatmap/density
 XYHP kind routing from packed XYHF v1. ABI 150 owns style-sidecar layout and
 extras wrapping from packed XYSS v1. ABI 151 owns Scene density binning and
-log-u8 encoding from packed columns. Polar+step+smooth and
+log-u8 encoding from packed columns. ABI 152 owns XYEP layout,
+kind/step/annotation codes, and flag derivation from packed XYEF v1.
+Polar+step+smooth and
 authored marker glyphs stay compatibility. Irregular
 spacing, and LOD stay compatibility.
 

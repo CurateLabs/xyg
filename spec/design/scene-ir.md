@@ -105,6 +105,9 @@ layout, concat order, omit-empty, and XYEX wrapping from packed XYSS v1 plus
 framed XYPL/XYHP. ABI 151 does not
 change Scene records; `xyg_scene_pack_density_grid` owns Scene density
 `bin_2d` / `density_log_u8` / optional mean-color from packed columns.
+ABI 152 does not change Scene records; `xyg_scene_pack_public_export` owns
+XYEP layout, kind/step/annotation codes, and flag derivation from packed
+XYEF v1.
 
 ## Version 3: backend-neutral core scene batch
 
@@ -426,6 +429,9 @@ omit-empty, and XYEX wrapping from packed XYSS v1 plus framed XYPL/XYHP.
 ABI 151 does not change Scene records;
 `xyg_scene_pack_density_grid` owns Scene density `bin_2d` / `density_log_u8`
 / optional mean-color from packed columns.
+ABI 152 does not change Scene records;
+`xyg_scene_pack_public_export` owns XYEP layout, kind/step/annotation codes,
+and flag derivation from packed XYEF v1.
 
 ABI 110 adds `xyg_scene_pack_legend` so both hosts pass loc/flags/paints
 and receive XYLG bytes; header layout, text offsets, and bounded-text
@@ -1233,7 +1239,8 @@ compact expansion. ABI 105 adds `xyg_scene_public_export_reason` over a packed
 `XYEP` v1 envelope: hosts frame literal viewport flags, chrome/legend/colorbar
 keys, axis facts, annotation field names, and compact per-trace facts, while
 Rust owns the public-subset allowlists, check order, and
-`XYG_SCENE_UNSUPPORTED_*` wording. An empty reason selects the Scene route;
+`XYG_SCENE_UNSUPPORTED_*` wording. ABI 152 packs that envelope from `XYEF` v1
+so kind/step/annotation codes and flag derivation cannot drift. An empty reason selects the Scene route;
 hosts still compile the Scene and may still report compiler or viewport
 diagnostics, including the shared PolyFill group budget. ABI 106 does not
 change Scene records; `xyg_figure_autorange` owns the domain the annotation
@@ -1280,6 +1287,9 @@ and XYEX wrapping from packed XYSS v1 plus framed XYPL/XYHP.
 ABI 151 does not change Scene records either;
 `xyg_scene_pack_density_grid` owns Scene density `bin_2d` / `density_log_u8`
 / optional mean-color from packed columns.
+ABI 152 does not change Scene records either;
+`xyg_scene_pack_public_export` owns XYEP layout, kind/step/annotation codes,
+and flag derivation from packed XYEF v1.
 Polar+step+smooth and authored marker glyphs stay compatibility. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;

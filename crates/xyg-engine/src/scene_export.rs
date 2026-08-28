@@ -1,10 +1,14 @@
 //! Public static-export support predicate (M2 #271).
 //!
-//! Hosts pack a versioned `XYEP` envelope of literal figure metadata. Rust owns
-//! the allowlists, check order, and stable `XYG_SCENE_UNSUPPORTED_*` wording.
-//! An empty reason means the public Scene route applies; hosts then compile
-//! through the existing Scene consumers and may still report compiler or
-//! viewport diagnostics.
+//! Hosts pack authored `XYEF` v1 facts (viewport flags, key lists, axis
+//! codes, annotation field names, and per-trace column observations). ABI 152
+//! owns `XYEP` v1 layout, kind/step/annotation code tables, and flag
+//! derivation so Python and Node cannot drift on the public-export envelope.
+//! Rust then owns the allowlists, check order, and stable
+//! `XYG_SCENE_UNSUPPORTED_*` wording over that envelope. An empty reason
+//! means the public Scene route applies; hosts then compile through the
+//! existing Scene consumers and may still report compiler or viewport
+//! diagnostics.
 
 use crate::scene::SceneError;
 
@@ -14,6 +18,12 @@ const XYEP_HEADER_BYTES: usize = 36;
 const XYEP_AXIS_BYTES: usize = 8;
 const XYEP_ANNOTATION_BYTES: usize = 4;
 const XYEP_TRACE_BYTES: usize = 72;
+const XYEF_MAGIC: &[u8; 4] = b"XYEF";
+const XYEF_VERSION: u32 = 1;
+const XYEF_HEADER_BYTES: usize = 36;
+const XYEF_AXIS_BYTES: usize = 8;
+const XYEF_ANNOTATION_BYTES: usize = 8;
+const XYEF_TRACE_PREFIX_BYTES: usize = 80;
 const MAX_XYEP_KEYS: usize = 256;
 const MAX_XYEP_KEY_BYTES: usize = 256;
 const MAX_XYEP_TRACES: usize = 4_096;
@@ -60,6 +70,44 @@ const TRACE_COMPANION_AXES_MATCH: u32 = 1 << 19;
 const TRACE_BOX_OUTLIER_FINITE: u32 = 1 << 20;
 const TRACE_SYMBOL_NON_STRING: u32 = 1 << 21;
 const TRACE_DENSITY_BLIT: u32 = 1 << 22;
+
+const OBS_HAS_X: u32 = 1 << 0;
+const OBS_HAS_Y: u32 = 1 << 1;
+const OBS_X_FINITE: u32 = 1 << 2;
+const OBS_Y_FINITE: u32 = 1 << 3;
+const OBS_HAS_X0: u32 = 1 << 4;
+const OBS_HAS_Y0: u32 = 1 << 5;
+const OBS_HAS_X1: u32 = 1 << 6;
+const OBS_HAS_Y1: u32 = 1 << 7;
+const OBS_X0_FINITE: u32 = 1 << 8;
+const OBS_Y0_FINITE: u32 = 1 << 9;
+const OBS_X1_FINITE: u32 = 1 << 10;
+const OBS_Y1_FINITE: u32 = 1 << 11;
+const OBS_JOINED_FILL: u32 = 1 << 12;
+const OBS_HEATMAP_TRUECOLOR: u32 = 1 << 13;
+const OBS_HEATMAP_RGBA_GRID: u32 = 1 << 16;
+const OBS_HEATMAP_SHAPE_OK: u32 = 1 << 17;
+const OBS_HEATMAP_EXTENT_OK: u32 = 1 << 18;
+const OBS_HEATMAP_FINITE: u32 = 1 << 19;
+const OBS_STROKE_WIDTH_ONLY: u32 = 1 << 20;
+const OBS_COMPANION_XY_MATCH: u32 = 1 << 21;
+const OBS_COMPANION_AXES_MATCH: u32 = 1 << 22;
+const OBS_SYMBOL_NON_STRING: u32 = 1 << 23;
+const OBS_DENSITY_BLIT: u32 = 1 << 24;
+
+/// Why an XYEF packing request was rejected. Discriminants are the C-ABI
+/// error codes (returned negated by `xyg_scene_pack_public_export`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExportPackError {
+    Length = 1,
+    Version = 2,
+    Limit = 3,
+    #[allow(dead_code)]
+    Output = 4,
+    #[allow(dead_code)]
+    Shape = 5,
+    Payload = 6,
+}
 
 const KIND_SCATTER: u8 = 0;
 const KIND_LINE: u8 = 1;
@@ -111,14 +159,7 @@ const POLAR_AXIS_KEYS: &[&str] = &[
     "r_origin",
 ];
 const POLAR_SCENE_KINDS: &[&str] = &[
-    "line",
-    "scatter",
-    "area",
-    "bar",
-    "column",
-    "errorbar",
-    "heatmap",
-    "contour",
+    "line", "scatter", "area", "bar", "column", "errorbar", "heatmap", "contour",
 ];
 const PUBLIC_SYMBOLS: &[&str] = &[
     "circle",
@@ -327,7 +368,9 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "stroke_width",
             "marker_path",
         ],
-        KIND_LINE => &["color", "opacity", "width", "step", "dash", "linecap", "curve"],
+        KIND_LINE => &[
+            "color", "opacity", "width", "step", "dash", "linecap", "curve",
+        ],
         KIND_BAR | KIND_COLUMN => &[
             "color",
             "opacity",
@@ -359,11 +402,7 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "stroke_width",
             "box_orientation",
         ],
-        KIND_BOX_WHISKER
-        | KIND_BOX_MEDIAN
-        | KIND_SEGMENTS
-        | KIND_ERRORBAR
-        | KIND_STEM
+        KIND_BOX_WHISKER | KIND_BOX_MEDIAN | KIND_SEGMENTS | KIND_ERRORBAR | KIND_STEM
         | KIND_CONTOUR => &["color", "opacity", "width", "role", "dash", "linecap"],
         KIND_AREA => &[
             "color",
@@ -429,6 +468,364 @@ fn accepted_segment_role(kind: u8, role: &str) -> bool {
 
 fn extra_key(keys: &[&str], allowed: &[&str]) -> bool {
     keys.iter().any(|key| !allowed.contains(key))
+}
+
+fn put_key(buf: &mut Vec<u8>, key: &str) -> Result<(), ExportPackError> {
+    let bytes = key.as_bytes();
+    if bytes.len() > MAX_XYEP_KEY_BYTES {
+        return Err(ExportPackError::Limit);
+    }
+    buf.extend_from_slice(&(bytes.len() as u16).to_le_bytes());
+    buf.extend_from_slice(bytes);
+    Ok(())
+}
+
+fn put_keys(buf: &mut Vec<u8>, keys: &[&str]) -> Result<(), ExportPackError> {
+    if keys.len() > MAX_XYEP_KEYS {
+        return Err(ExportPackError::Limit);
+    }
+    for key in keys {
+        put_key(buf, key)?;
+    }
+    Ok(())
+}
+
+fn take_utf8<'a>(cursor: &mut Cursor<'a>, len: usize) -> Result<&'a str, ExportPackError> {
+    if len > MAX_XYEP_KEY_BYTES {
+        return Err(ExportPackError::Limit);
+    }
+    let raw = cursor.bytes(len).map_err(|_| ExportPackError::Length)?;
+    std::str::from_utf8(raw).map_err(|_| ExportPackError::Payload)
+}
+
+fn export_kind_code(name: &str) -> u8 {
+    match name {
+        "scatter" => KIND_SCATTER,
+        "line" => KIND_LINE,
+        "bar" => KIND_BAR,
+        "column" => KIND_COLUMN,
+        "histogram" => KIND_HISTOGRAM,
+        "violin" => KIND_VIOLIN,
+        "box" => KIND_BOX,
+        "box_whisker" => KIND_BOX_WHISKER,
+        "box_median" => KIND_BOX_MEDIAN,
+        "segments" => KIND_SEGMENTS,
+        "errorbar" => KIND_ERRORBAR,
+        "stem" => KIND_STEM,
+        "area" => KIND_AREA,
+        "error_band" => KIND_ERROR_BAND,
+        "ribbon" => KIND_RIBBON,
+        "triangle_mesh" => KIND_TRIANGLE_MESH,
+        "hexbin" => KIND_HEXBIN,
+        "heatmap" => KIND_HEATMAP,
+        "contour" => KIND_CONTOUR,
+        _ => 255,
+    }
+}
+
+fn export_step_code(name: &str) -> u8 {
+    match name {
+        "pre" => 1,
+        "mid" => 2,
+        "post" => 3,
+        _ => 0,
+    }
+}
+
+fn export_annotation_kind(name: &str) -> u8 {
+    match name {
+        "text" => 1,
+        "rule" => 2,
+        "band" => 3,
+        "marker" => 4,
+        "arrow" => 5,
+        "callout" => 6,
+        _ => 0,
+    }
+}
+
+fn annotation_flags(not_object: bool, fields: &[&str]) -> u8 {
+    let mut flags = 0u8;
+    if not_object {
+        flags |= ANN_NOT_OBJECT;
+    }
+    if fields.iter().any(|key| *key == "wrap") {
+        flags |= ANN_WRAP;
+    }
+    if fields.iter().any(|key| *key == "dx") {
+        flags |= ANN_DX;
+    }
+    if fields.iter().any(|key| *key == "dy") {
+        flags |= ANN_DY;
+    }
+    if fields.iter().any(|key| *key == "anchor") {
+        flags |= ANN_ANCHOR;
+    }
+    flags
+}
+
+fn derive_trace_flags(
+    obs: u32,
+    n_x: u32,
+    n_y: u32,
+    n_x0: u32,
+    n_y0: u32,
+    n_x1: u32,
+    n_y1: u32,
+) -> u32 {
+    let mut flags = 0u32;
+    let has_x = obs & OBS_HAS_X != 0;
+    let has_y = obs & OBS_HAS_Y != 0;
+    let has_x0 = obs & OBS_HAS_X0 != 0;
+    let has_y0 = obs & OBS_HAS_Y0 != 0;
+    let has_x1 = obs & OBS_HAS_X1 != 0;
+    let has_y1 = obs & OBS_HAS_Y1 != 0;
+    let x_finite = obs & OBS_X_FINITE != 0;
+    let y_finite = obs & OBS_Y_FINITE != 0;
+    let x0_finite = obs & OBS_X0_FINITE != 0;
+    let y0_finite = obs & OBS_Y0_FINITE != 0;
+    let x1_finite = obs & OBS_X1_FINITE != 0;
+    let y1_finite = obs & OBS_Y1_FINITE != 0;
+    if has_x {
+        flags |= TRACE_HAS_X;
+    }
+    if has_y {
+        flags |= TRACE_HAS_Y;
+    }
+    if has_x && has_y && n_x == n_y {
+        flags |= TRACE_XY_LEN_EQUAL | TRACE_HEX_XY_OK;
+    }
+    if x_finite {
+        flags |= TRACE_X_FINITE;
+    }
+    if y_finite {
+        flags |= TRACE_Y_FINITE;
+    }
+    if x_finite && y_finite {
+        flags |= TRACE_HEX_FINITE | TRACE_BOX_OUTLIER_FINITE;
+    }
+    if has_x0 && has_y0 && has_x1 && has_y1 {
+        flags |= TRACE_ENDPOINTS_PRESENT;
+        if n_x0 == n_y0 && n_x0 == n_x1 && n_x0 == n_y1 {
+            flags |= TRACE_ENDPOINTS_LEN_EQUAL;
+        }
+    }
+    if has_x && has_y && has_x0 && has_y0 && has_x1 && has_y1 {
+        flags |= TRACE_MESH_PRESENT;
+        if n_x == n_y && n_x == n_x0 && n_x == n_y0 && n_x == n_x1 && n_x == n_y1 {
+            flags |= TRACE_MESH_LEN_EQUAL;
+        }
+        if x_finite && y_finite && x0_finite && y0_finite && x1_finite && y1_finite {
+            flags |= TRACE_MESH_FINITE;
+        }
+    }
+    if obs & OBS_JOINED_FILL != 0 {
+        flags |= TRACE_JOINED_FILL;
+    }
+    if obs & OBS_HEATMAP_TRUECOLOR != 0 && obs & OBS_HEATMAP_RGBA_GRID == 0 {
+        flags |= TRACE_HEATMAP_COLORMAP;
+    }
+    if obs & OBS_HEATMAP_SHAPE_OK != 0 {
+        flags |= TRACE_HEATMAP_SHAPE_OK;
+    }
+    if obs & OBS_HEATMAP_EXTENT_OK != 0 {
+        flags |= TRACE_HEATMAP_EXTENT_OK;
+    }
+    if obs & OBS_HEATMAP_FINITE != 0 {
+        flags |= TRACE_HEATMAP_FINITE;
+    }
+    if obs & OBS_STROKE_WIDTH_ONLY != 0 {
+        flags |= TRACE_STROKE_WIDTH_ONLY;
+    }
+    if obs & OBS_COMPANION_XY_MATCH != 0 {
+        flags |= TRACE_COMPANION_XY_MATCH;
+    }
+    if obs & OBS_COMPANION_AXES_MATCH != 0 {
+        flags |= TRACE_COMPANION_AXES_MATCH;
+    }
+    if obs & OBS_SYMBOL_NON_STRING != 0 {
+        flags |= TRACE_SYMBOL_NON_STRING;
+    }
+    if obs & OBS_DENSITY_BLIT != 0 {
+        flags |= TRACE_DENSITY_BLIT;
+    }
+    flags
+}
+
+/// Pack authored XYEF v1 facts into the public-export `XYEP` v1 envelope.
+///
+/// Hosts pass viewport flags, key lists, axis codes, annotation field names,
+/// and per-trace column observations. Rust owns kind/step/annotation codes,
+/// flag derivation, and XYEP record layout.
+pub fn pack_public_export(bytes: &[u8]) -> Result<Vec<u8>, ExportPackError> {
+    if bytes.len() < XYEF_HEADER_BYTES || bytes.get(..4) != Some(&XYEF_MAGIC[..]) {
+        return Err(ExportPackError::Length);
+    }
+    let mut cursor = Cursor::new(bytes);
+    let _magic = cursor.bytes(4).map_err(|_| ExportPackError::Length)?;
+    let version = cursor.u32().map_err(|_| ExportPackError::Length)?;
+    if version != XYEF_VERSION {
+        return Err(ExportPackError::Version);
+    }
+    let flags = cursor.u32().map_err(|_| ExportPackError::Length)?;
+    let n_style_keys = cursor.u32().map_err(|_| ExportPackError::Length)?;
+    let n_legend_keys = cursor.u32().map_err(|_| ExportPackError::Length)?;
+    let n_colorbar_keys = cursor.u32().map_err(|_| ExportPackError::Length)?;
+    let n_axes = cursor.u32().map_err(|_| ExportPackError::Length)?;
+    let n_annotations = cursor.u32().map_err(|_| ExportPackError::Length)?;
+    let n_traces = cursor.u32().map_err(|_| ExportPackError::Length)?;
+    if n_axes as usize > MAX_XYEP_AXES
+        || n_annotations as usize > MAX_XYEP_ANNOTATIONS
+        || n_traces as usize > MAX_XYEP_TRACES
+    {
+        return Err(ExportPackError::Limit);
+    }
+
+    let style_keys = cursor
+        .keys(n_style_keys)
+        .map_err(|_| ExportPackError::Length)?;
+    let legend_keys = cursor
+        .keys(n_legend_keys)
+        .map_err(|_| ExportPackError::Length)?;
+    let colorbar_keys = cursor
+        .keys(n_colorbar_keys)
+        .map_err(|_| ExportPackError::Length)?;
+
+    let mut out = Vec::from(*XYEP_MAGIC);
+    out.extend_from_slice(&XYEP_VERSION.to_le_bytes());
+    out.extend_from_slice(&flags.to_le_bytes());
+    out.extend_from_slice(&n_style_keys.to_le_bytes());
+    out.extend_from_slice(&n_legend_keys.to_le_bytes());
+    out.extend_from_slice(&n_colorbar_keys.to_le_bytes());
+    out.extend_from_slice(&n_axes.to_le_bytes());
+    out.extend_from_slice(&n_annotations.to_le_bytes());
+    out.extend_from_slice(&n_traces.to_le_bytes());
+    put_keys(&mut out, &style_keys)?;
+    put_keys(&mut out, &legend_keys)?;
+    put_keys(&mut out, &colorbar_keys)?;
+
+    for _ in 0..n_axes {
+        if cursor.remaining() < XYEF_AXIS_BYTES {
+            return Err(ExportPackError::Length);
+        }
+        let axis = cursor
+            .bytes(XYEF_AXIS_BYTES)
+            .map_err(|_| ExportPackError::Length)?;
+        out.extend_from_slice(axis);
+        let n_keys =
+            u16::from_le_bytes(axis[6..8].try_into().map_err(|_| ExportPackError::Length)?) as u32;
+        let keys = cursor.keys(n_keys).map_err(|_| ExportPackError::Length)?;
+        put_keys(&mut out, &keys)?;
+    }
+
+    for _ in 0..n_annotations {
+        if cursor.remaining() < XYEF_ANNOTATION_BYTES {
+            return Err(ExportPackError::Length);
+        }
+        let not_object = cursor.u8().map_err(|_| ExportPackError::Length)? != 0;
+        let _reserved0 = cursor.u8().map_err(|_| ExportPackError::Length)?;
+        let _reserved1 = cursor.u8().map_err(|_| ExportPackError::Length)?;
+        let _reserved2 = cursor.u8().map_err(|_| ExportPackError::Length)?;
+        let kind_len = cursor.u16().map_err(|_| ExportPackError::Length)? as usize;
+        let n_fields = cursor.u16().map_err(|_| ExportPackError::Length)? as u32;
+        let kind_name = take_utf8(&mut cursor, kind_len)?;
+        let fields = cursor.keys(n_fields).map_err(|_| ExportPackError::Length)?;
+        let kind = if not_object {
+            0
+        } else {
+            export_annotation_kind(kind_name)
+        };
+        let flags_ann = annotation_flags(not_object, &fields);
+        out.push(kind);
+        out.push(flags_ann);
+        out.extend_from_slice(&(fields.len() as u16).to_le_bytes());
+        put_keys(&mut out, &fields)?;
+    }
+
+    for _ in 0..n_traces {
+        if cursor.remaining() < XYEF_TRACE_PREFIX_BYTES {
+            return Err(ExportPackError::Length);
+        }
+        let obs = cursor.u32().map_err(|_| ExportPackError::Length)?;
+        let n_x = cursor.u32().map_err(|_| ExportPackError::Length)?;
+        let n_y = cursor.u32().map_err(|_| ExportPackError::Length)?;
+        let n_x0 = cursor.u32().map_err(|_| ExportPackError::Length)?;
+        let n_y0 = cursor.u32().map_err(|_| ExportPackError::Length)?;
+        let n_x1 = cursor.u32().map_err(|_| ExportPackError::Length)?;
+        let n_y1 = cursor.u32().map_err(|_| ExportPackError::Length)?;
+        let heatmap_rows = cursor.u32().map_err(|_| ExportPackError::Length)?;
+        let heatmap_cols = cursor.u32().map_err(|_| ExportPackError::Length)?;
+        let heatmap_values = cursor.u32().map_err(|_| ExportPackError::Length)?;
+        let n_style = cursor.u16().map_err(|_| ExportPackError::Length)? as u32;
+        let kind_len = cursor.u16().map_err(|_| ExportPackError::Length)? as usize;
+        let step_len = cursor.u16().map_err(|_| ExportPackError::Length)? as usize;
+        let role_len = cursor.u16().map_err(|_| ExportPackError::Length)? as usize;
+        let symbol_len = cursor.u16().map_err(|_| ExportPackError::Length)? as usize;
+        let reduce_len = cursor.u16().map_err(|_| ExportPackError::Length)? as usize;
+        let prev_len = cursor.u16().map_err(|_| ExportPackError::Length)? as usize;
+        let prev2_len = cursor.u16().map_err(|_| ExportPackError::Length)? as usize;
+        let prev3_len = cursor.u16().map_err(|_| ExportPackError::Length)? as usize;
+        let _reserved = cursor.u16().map_err(|_| ExportPackError::Length)?;
+        let _pad = cursor.u32().map_err(|_| ExportPackError::Length)?;
+        let hex_dx = cursor.f64().map_err(|_| ExportPackError::Length)?;
+        let hex_dy = cursor.f64().map_err(|_| ExportPackError::Length)?;
+        let kind_name = take_utf8(&mut cursor, kind_len)?;
+        let step_name = take_utf8(&mut cursor, step_len)?;
+        let role = take_utf8(&mut cursor, role_len)?;
+        let symbol = take_utf8(&mut cursor, symbol_len)?;
+        let reduce = take_utf8(&mut cursor, reduce_len)?;
+        let prev_name = take_utf8(&mut cursor, prev_len)?;
+        let prev2_name = take_utf8(&mut cursor, prev2_len)?;
+        let prev3_name = take_utf8(&mut cursor, prev3_len)?;
+        let style_keys = cursor.keys(n_style).map_err(|_| ExportPackError::Length)?;
+        let flags_tr = derive_trace_flags(obs, n_x, n_y, n_x0, n_y0, n_x1, n_y1);
+        let prev_kind = if prev_name.is_empty() {
+            255
+        } else {
+            export_kind_code(prev_name)
+        };
+        let prev2_kind = if prev2_name.is_empty() {
+            255
+        } else {
+            export_kind_code(prev2_name)
+        };
+        let prev3_kind = if prev3_name.is_empty() {
+            255
+        } else {
+            export_kind_code(prev3_name)
+        };
+        out.push(export_kind_code(kind_name));
+        out.push(export_step_code(step_name));
+        out.push(prev_kind);
+        out.push(prev2_kind);
+        out.push(prev3_kind);
+        out.push(0);
+        out.extend_from_slice(&0u16.to_le_bytes());
+        out.extend_from_slice(&flags_tr.to_le_bytes());
+        out.extend_from_slice(&n_x.to_le_bytes());
+        out.extend_from_slice(&n_y.to_le_bytes());
+        out.extend_from_slice(&n_x0.to_le_bytes());
+        out.extend_from_slice(&n_y0.to_le_bytes());
+        out.extend_from_slice(&n_x1.to_le_bytes());
+        out.extend_from_slice(&n_y1.to_le_bytes());
+        out.extend_from_slice(&heatmap_rows.to_le_bytes());
+        out.extend_from_slice(&heatmap_cols.to_le_bytes());
+        out.extend_from_slice(&heatmap_values.to_le_bytes());
+        out.extend_from_slice(&(style_keys.len() as u16).to_le_bytes());
+        out.extend_from_slice(&(role.len() as u16).to_le_bytes());
+        out.extend_from_slice(&(symbol.len() as u16).to_le_bytes());
+        out.extend_from_slice(&(reduce.len() as u16).to_le_bytes());
+        out.extend_from_slice(&hex_dx.to_le_bytes());
+        out.extend_from_slice(&hex_dy.to_le_bytes());
+        out.extend_from_slice(role.as_bytes());
+        out.extend_from_slice(symbol.as_bytes());
+        out.extend_from_slice(reduce.as_bytes());
+        put_keys(&mut out, &style_keys)?;
+    }
+    if cursor.remaining() != 0 {
+        return Err(ExportPackError::Length);
+    }
+    Ok(out)
 }
 
 /// Return Rust's stable public-export diagnostic, or an empty slice when the
@@ -634,13 +1031,9 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     // Missing x or y is the same as an empty options dict: no domain.
     // Heatmap/contour lattices carry their own cell extent, so they autorange
     // like scatter and do not require an authored axis domain.
-    let needs_authored_domain = traces
-        .iter()
-        .any(|trace| kind_literal_geometry(trace.kind));
-    let needs_primary_axes = needs_authored_domain
-        || traces
-            .iter()
-            .any(|trace| kind_extent_geometry(trace.kind));
+    let needs_authored_domain = traces.iter().any(|trace| kind_literal_geometry(trace.kind));
+    let needs_primary_axes =
+        needs_authored_domain || traces.iter().any(|trace| kind_extent_geometry(trace.kind));
     if needs_primary_axes {
         for wanted in [0u8, 1u8] {
             let Some(axis) = axes.iter().find(|axis| axis.axis_id == wanted) else {
@@ -973,7 +1366,13 @@ pub fn scene_figure_support_reason(bytes: &[u8]) -> Result<String, SceneError> {
     if flags & OBS_POLAR != 0 {
         let unsupported: Vec<&str> = traces
             .iter()
-            .map(|(_, kind)| if kind.is_empty() { "mark" } else { kind.as_str() })
+            .map(|(_, kind)| {
+                if kind.is_empty() {
+                    "mark"
+                } else {
+                    kind.as_str()
+                }
+            })
             .filter(|kind| !POLAR_SCENE_KINDS.contains(kind))
             .collect();
         if !unsupported.is_empty() {
@@ -1102,16 +1501,7 @@ mod tests {
     #[test]
     fn heatmap_and_contour_autorange_without_authored_axis_domain() {
         fn put_axis(buf: &mut Vec<u8>, axis_id: u8, domain_present: bool) {
-            buf.extend_from_slice(&[
-                axis_id,
-                0,
-                0,
-                u8::from(domain_present),
-                0,
-                0,
-                0,
-                0,
-            ]);
+            buf.extend_from_slice(&[axis_id, 0, 0, u8::from(domain_present), 0, 0, 0, 0]);
         }
         fn put_heatmap(buf: &mut Vec<u8>) {
             let role = b"heatmap";
@@ -1381,5 +1771,148 @@ mod tests {
             )),
             Ok(FIGURE_AXIS_SET_REASON.to_string())
         );
+    }
+
+    fn xyef_header(
+        flags: u32,
+        n_style: u32,
+        n_legend: u32,
+        n_colorbar: u32,
+        n_axes: u32,
+        n_ann: u32,
+        n_traces: u32,
+    ) -> Vec<u8> {
+        let mut buf = Vec::from(*XYEF_MAGIC);
+        buf.extend_from_slice(&XYEF_VERSION.to_le_bytes());
+        buf.extend_from_slice(&flags.to_le_bytes());
+        buf.extend_from_slice(&n_style.to_le_bytes());
+        buf.extend_from_slice(&n_legend.to_le_bytes());
+        buf.extend_from_slice(&n_colorbar.to_le_bytes());
+        buf.extend_from_slice(&n_axes.to_le_bytes());
+        buf.extend_from_slice(&n_ann.to_le_bytes());
+        buf.extend_from_slice(&n_traces.to_le_bytes());
+        buf
+    }
+
+    fn xyef_axis(axis_id: u8, domain_present: bool) -> [u8; 8] {
+        [axis_id, 0, 0, u8::from(domain_present), 0, 0, 0, 0]
+    }
+
+    fn xyef_trace(
+        kind: &str,
+        obs: u32,
+        n_x: u32,
+        heatmap_rows: u32,
+        heatmap_cols: u32,
+        heatmap_values: u32,
+        role: &str,
+    ) -> Vec<u8> {
+        let kind_b = kind.as_bytes();
+        let role_b = role.as_bytes();
+        let mut prefix = [0u8; XYEF_TRACE_PREFIX_BYTES];
+        prefix[0..4].copy_from_slice(&obs.to_le_bytes());
+        prefix[4..8].copy_from_slice(&n_x.to_le_bytes());
+        prefix[8..12].copy_from_slice(&n_x.to_le_bytes());
+        prefix[28..32].copy_from_slice(&heatmap_rows.to_le_bytes());
+        prefix[32..36].copy_from_slice(&heatmap_cols.to_le_bytes());
+        prefix[36..40].copy_from_slice(&heatmap_values.to_le_bytes());
+        prefix[42..44].copy_from_slice(&(kind_b.len() as u16).to_le_bytes());
+        prefix[46..48].copy_from_slice(&(role_b.len() as u16).to_le_bytes());
+        prefix[64..72].copy_from_slice(&f64::NAN.to_le_bytes());
+        prefix[72..80].copy_from_slice(&f64::NAN.to_le_bytes());
+        let mut out = prefix.to_vec();
+        out.extend_from_slice(kind_b);
+        out.extend_from_slice(role_b);
+        out
+    }
+
+    #[test]
+    fn pack_public_export_empty_figure_is_supported() {
+        let facts = xyef_header(0, 0, 0, 0, 0, 0, 0);
+        let envelope = pack_public_export(&facts).unwrap();
+        assert_eq!(&envelope[..4], b"XYEP");
+        assert_eq!(scene_public_export_reason(&envelope), Ok(""));
+    }
+
+    #[test]
+    fn pack_public_export_maps_kind_and_rejects_line_without_domain() {
+        let mut facts = xyef_header(0, 0, 0, 0, 2, 0, 1);
+        facts.extend_from_slice(&xyef_axis(0, false));
+        facts.extend_from_slice(&xyef_axis(1, false));
+        facts.extend_from_slice(&xyef_trace(
+            "line",
+            OBS_HAS_X | OBS_HAS_Y | OBS_X_FINITE | OBS_Y_FINITE,
+            2,
+            0,
+            0,
+            0,
+            "",
+        ));
+        let envelope = pack_public_export(&facts).unwrap();
+        assert_eq!(envelope[XYEP_HEADER_BYTES + 16], KIND_LINE);
+        assert_eq!(
+            scene_public_export_reason(&envelope),
+            Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS")
+        );
+    }
+
+    #[test]
+    fn pack_public_export_heatmap_autorange_without_authored_domain() {
+        let mut facts = xyef_header(0, 0, 0, 0, 2, 0, 1);
+        facts.extend_from_slice(&xyef_axis(0, false));
+        facts.extend_from_slice(&xyef_axis(1, false));
+        facts.extend_from_slice(&xyef_trace(
+            "heatmap",
+            OBS_HEATMAP_SHAPE_OK | OBS_HEATMAP_EXTENT_OK | OBS_HEATMAP_FINITE,
+            0,
+            2,
+            2,
+            4,
+            "heatmap",
+        ));
+        let envelope = pack_public_export(&facts).unwrap();
+        assert_eq!(envelope[XYEP_HEADER_BYTES + 16], KIND_HEATMAP);
+        assert_eq!(scene_public_export_reason(&envelope), Ok(""));
+    }
+
+    #[test]
+    fn pack_public_export_annotation_wrap_from_field_keys() {
+        let mut facts = xyef_header(0, 0, 0, 0, 0, 1, 0);
+        facts.extend_from_slice(&[0u8, 0, 0, 0]);
+        facts.extend_from_slice(&(4u16).to_le_bytes());
+        facts.extend_from_slice(&(2u16).to_le_bytes());
+        facts.extend_from_slice(b"text");
+        put_keys(&mut facts, &["kind", "wrap"]);
+        let envelope = pack_public_export(&facts).unwrap();
+        let ann = XYEP_HEADER_BYTES;
+        assert_eq!(envelope[ann], 1);
+        assert_eq!(envelope[ann + 1] & ANN_WRAP, ANN_WRAP);
+        assert_eq!(envelope[ann + 1] & ANN_NOT_OBJECT, 0);
+    }
+
+    #[test]
+    fn pack_public_export_truecolor_heatmap_sets_colormap_flag() {
+        let mut facts = xyef_header(0, 0, 0, 0, 2, 0, 1);
+        facts.extend_from_slice(&xyef_axis(0, true));
+        facts.extend_from_slice(&xyef_axis(1, true));
+        facts.extend_from_slice(&xyef_trace(
+            "heatmap",
+            OBS_HEATMAP_TRUECOLOR
+                | OBS_HEATMAP_SHAPE_OK
+                | OBS_HEATMAP_EXTENT_OK
+                | OBS_HEATMAP_FINITE,
+            0,
+            2,
+            2,
+            4,
+            "heatmap",
+        ));
+        let envelope = pack_public_export(&facts).unwrap();
+        let flags = u32::from_le_bytes(
+            envelope[XYEP_HEADER_BYTES + 16 + 8..XYEP_HEADER_BYTES + 16 + 12]
+                .try_into()
+                .unwrap(),
+        );
+        assert_eq!(flags & TRACE_HEATMAP_COLORMAP, TRACE_HEATMAP_COLORMAP);
     }
 }

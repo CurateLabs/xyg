@@ -29,7 +29,9 @@
 //! `scene_extras.rs`: XYSS v1 facts pack XYDS/XYLC/XYMP/XYGR layout, concat
 //! order, omit-empty, and XYEX wrapping so extras cannot drift. ABI 151 lives
 //! in `scene_density.rs`: Scene density blit owns `bin_2d`, `density_log_u8`,
-//! optional mean-color, and XYDE wrapping so the Image lattice cannot drift.
+//! optional mean-color, and XYDE wrapping. ABI 152 owns public-export
+//! XYEP layout, kind/step/annotation codes, and flag derivation from packed
+//! XYEF v1.
 
 use crate::scene::MAX_SCENE_MARKS;
 

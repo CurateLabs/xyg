@@ -52,10 +52,12 @@ use xyg_engine::scene_heatmap::{self, HeatmapFactError};
 use xyg_engine::scene_extras::{self, ExtrasError};
 use xyg_engine::scene_density::{self, DensityGridError};
 use xyg_engine::scene_colorbar::{self, ColorbarError};
+use xyg_engine::pack_public_export;
 use xyg_engine::scene_figure_support_reason;
 use xyg_engine::scene_legend::{self, LegendError};
 use xyg_engine::scene_pack::{self, PackError};
 use xyg_engine::scene_public_export_reason;
+use xyg_engine::ExportPackError;
 use xyg_engine::scene_style::{self, MarkStyleError};
 use xyg_engine::stats;
 use xyg_engine::stream;
@@ -124,7 +126,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 151;
+pub const ABI_VERSION: u32 = 152;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -194,6 +196,53 @@ pub unsafe extern "C" fn xyg_scene_public_export_reason(
             std::ptr::copy_nonoverlapping(encoded.as_ptr(), out, encoded.len());
         }
         encoded.len()
+    })
+}
+
+/// Pack authored `XYEF` v1 public-export facts into the `XYEP` v1 envelope.
+///
+/// Hosts pass viewport flags, key lists, axis codes, annotation field names,
+/// and per-trace column observations. Rust owns kind/step/annotation codes,
+/// flag derivation, and XYEP record layout. Returns the XYEP byte count on
+/// success. Encoded Scene v31 is unchanged.
+///
+/// # Safety
+/// When `facts_len` is non-zero, `facts` must address that many readable
+/// bytes. When `out_cap` is non-zero, `out` must address that many writable
+/// bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_pack_public_export(
+    facts: *const u8,
+    facts_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if (facts_len > 0 && facts.is_null()) || (out_cap > 0 && out.is_null()) {
+        return -(ExportPackError::Length as i32);
+    }
+    ffi_guard(-(ExportPackError::Length as i32), || {
+        let facts_bytes = if facts_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(facts, facts_len)
+        };
+        match pack_public_export(facts_bytes) {
+            Ok(bytes) => {
+                if bytes.len() > out_cap {
+                    return -(ExportPackError::Output as i32);
+                }
+                if bytes.is_empty() {
+                    return 0;
+                }
+                let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                dest[..bytes.len()].copy_from_slice(&bytes);
+                match i32::try_from(bytes.len()) {
+                    Ok(count) => count,
+                    Err(_) => -(ExportPackError::Limit as i32),
+                }
+            }
+            Err(error) => -(error as i32),
+        }
     })
 }
 
@@ -1936,6 +1985,10 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// `xyg_scene_pack_density_grid` owns Scene density `bin_2d` /
 /// `density_log_u8` / optional mean-color from packed columns so the Image
 /// lattice cannot drift.
+/// ABI 152 does not change Scene records;
+/// `xyg_scene_pack_public_export` owns XYEP layout, kind/step/annotation
+/// codes, and flag derivation from packed XYEF v1 so public-export envelopes
+/// cannot drift.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
@@ -14558,6 +14611,30 @@ mod tests {
             u32::from_le_bytes(density_out[8..12].try_into().unwrap()),
             512
         );
+        assert_eq!(
+            u32::from_le_bytes(density_out[12..16].try_into().unwrap()),
+            384
+        );
+        let mut xyef = Vec::from(*b"XYEF");
+        xyef.extend_from_slice(&1u32.to_le_bytes());
+        xyef.extend_from_slice(&0u32.to_le_bytes());
+        xyef.extend_from_slice(&0u32.to_le_bytes());
+        xyef.extend_from_slice(&0u32.to_le_bytes());
+        xyef.extend_from_slice(&0u32.to_le_bytes());
+        xyef.extend_from_slice(&0u32.to_le_bytes());
+        xyef.extend_from_slice(&0u32.to_le_bytes());
+        xyef.extend_from_slice(&0u32.to_le_bytes());
+        let mut export_out = [0u8; 64];
+        let export_code = unsafe {
+            xyg_scene_pack_public_export(
+                xyef.as_ptr(),
+                xyef.len(),
+                export_out.as_mut_ptr(),
+                export_out.len(),
+            )
+        };
+        assert_eq!(export_code, 36);
+        assert_eq!(&export_out[..4], b"XYEP");
     }
 
     #[test]
