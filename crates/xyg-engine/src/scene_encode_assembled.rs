@@ -13,8 +13,9 @@
 //! `XYFS` so product-path hosts do not call `scene_figure_support_reason`
 //! separately. Empty `XYFS` skips the probe (stepwise ABI 163 callers).
 //! ABI 166 tessellates cartesian bar/column/histogram `corner_radius` from
-//! packed XYSD radius blobs after pixel mapping. Encoded Scene v31 is
-//! unchanged.
+//! packed XYSD radius blobs after pixel mapping. ABI 167 applies polar
+//! `wedge_gap` from that same blob during `polar_wedge_points`. Encoded Scene
+//! v31 is unchanged.
 
 use crate::scene::{
     decode_tick_labels, expand_scene_records_painted, resolve_numeric_tick_formats,
@@ -804,13 +805,14 @@ fn corner_radii_from_xysd(
     Ok(records
         .into_iter()
         .map(|record| {
-            if record.r_tip == 0.0 && record.r_base == 0.0 {
+            if record.r_tip == 0.0 && record.r_base == 0.0 && record.wedge_gap == 0.0 {
                 None
             } else {
                 Some(SceneCornerRadius {
                     r_tip: record.r_tip,
                     r_base: record.r_base,
                     force_tip_top: record.tip_policy != 0,
+                    wedge_gap: record.wedge_gap,
                 })
             }
         })

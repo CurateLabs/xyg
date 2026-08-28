@@ -1671,6 +1671,22 @@ test("Node Scene compiles cartesian corner_radius and keeps polar fail-closed", 
   assert.throws(() => polar.toScene(), /corner_radius/);
 });
 
+test("Node Scene compiles polar wedge_gap and keeps cartesian fail-closed", () => {
+  const gapped = new Figure({ width: 400, height: 400, coords: "polar" });
+  gapped.setAxisDomain("x", [0, Math.PI * 2]);
+  gapped.setAxisDomain("y", [0, 1]);
+  gapped.bar([0, 1.5], [1, 0.8], { style: { color: "#2563eb", wedge_gap: 12 }, name: null });
+  const scene = gapped.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  assert.equal((sceneSvg(scene).match(/<path d="M/g) || []).length, 2);
+  assert.equal(sceneExportSupportReason(gapped), null);
+  const cartesian = new Figure({ width: 240, height: 160 });
+  cartesian.setAxisDomain("x", [0, 2]);
+  cartesian.setAxisDomain("y", [0, 3]);
+  cartesian.bar([0, 1], [1, 2], { style: { wedge_gap: 12 }, name: null });
+  assert.throws(() => cartesian.toScene(), /wedge_gap/);
+});
+
 test("Node Scene compiles polar density tessellation", () => {
   const density = new Figure({ width: 400, height: 400, coords: "polar" });
   density.setAxisDomain("x", [0, Math.PI * 2]);

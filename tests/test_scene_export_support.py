@@ -589,6 +589,19 @@ def test_polar_bar_is_scene_supported() -> None:
     assert b'data-xy-grid="ring"' in exported or b"circle" in exported
 
 
+def test_polar_bar_wedge_gap_is_scene_supported() -> None:
+    figure = Figure(width=320, height=240, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, 4.0)
+    figure.axis_options["y"]["domain"] = (0.0, 5.0)
+    figure.bar([0.0, 1.0], [0.5, 0.8], color="#3987e5", wedge_gap=8.0)
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported.count(b'<path d="M') == 2
+    cartesian = _supported().bar([0, 1], [1, 2], wedge_gap=8.0)
+    assert scene_export_support_reason(cartesian) is not None
+
+
 def test_bounded_primary_cartesian_annotation_family_is_a_supported_public_scene_slice() -> None:
     figure = _callout()
     assert scene_export_support_reason(figure) is None

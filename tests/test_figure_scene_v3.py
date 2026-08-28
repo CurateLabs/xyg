@@ -1144,6 +1144,25 @@ def test_python_scene_compiles_rect_corner_radius() -> None:
         polar.to_scene()
 
 
+def test_python_scene_compiles_polar_wedge_gap() -> None:
+    gapped = Figure(width=400, height=400, coords="polar")
+    gapped.axis_options["x"]["domain"] = (0.0, 6.283185307179586)
+    gapped.axis_options["y"]["domain"] = (0.0, 1.0)
+    gapped.bar([0.0, 1.5], [1.0, 0.8], wedge_gap=12.0, color="#2563eb")
+    scene = gapped.to_scene()
+    assert scene[4:8] == (31).to_bytes(4, "little")
+    svg = _native.scene_svg(scene)
+    assert svg.count('<path d="M') == 2
+    assert gapped.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(gapped) is None
+    cartesian = Figure(width=240, height=160)
+    cartesian.axis_options["x"]["domain"] = (0.0, 2.0)
+    cartesian.axis_options["y"]["domain"] = (0.0, 3.0)
+    cartesian.bar([0, 1], [1, 2], wedge_gap=12.0)
+    with pytest.raises(UnsupportedSceneV3, match="wedge_gap"):
+        cartesian.to_scene()
+
+
 def test_python_scene_compiles_polar_density_tessellation() -> None:
     figure = Figure(width=400, height=400, coords="polar")
     figure.axis_options["x"]["domain"] = (0.0, math.tau)

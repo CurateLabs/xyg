@@ -676,14 +676,17 @@ pub fn wedge_angles(metrics: &[f64], theta0: f64, theta1: f64) -> Option<(f64, f
 ///
 /// Radii clamp into the visible `[inner_fraction, 1]` interval. The polygon
 /// is the outer arc then the reversed inner arc; an inner radius of zero
-/// includes the disc centre. Gap inset and rounded corners stay on the
-/// compatibility exporters (Scene passes `gap=0`, `corner=0`).
+/// includes the disc centre. `wedge_gap` is a constant pixel gap (ABI 167):
+/// each radial edge insets by `gap / (2 r)` radians so neighbouring slices
+/// stay a fixed screen distance apart from hole to rim. Polar `corner_radius`
+/// stays on the compatibility exporters.
 pub fn polar_wedge_points(
     metrics: &[f64],
     theta0: f64,
     theta1: f64,
     r0: f64,
     r1: f64,
+    wedge_gap: f64,
 ) -> Vec<(f64, f64)> {
     if metrics.len() < POLAR_METRICS_LEN {
         return Vec::new();
@@ -711,15 +714,30 @@ pub fn polar_wedge_points(
     if !a0.is_finite() || !a1.is_finite() {
         return Vec::new();
     }
+    let half = wedge_gap.max(0.0) / 2.0;
+    let sign = if a1 >= a0 { 1.0 } else { -1.0 };
+    let span = (a1 - a0).abs();
+    let inset = |at_radius: f64| -> f64 {
+        if half <= 0.0 || at_radius <= 1e-9 {
+            0.0
+        } else {
+            sign * (half / at_radius).min(span / 2.0)
+        }
+    };
     let steps = polar_bar_segments(a1 - a0, 2.0 * std::f64::consts::PI);
     let cx = metrics[METRIC_CX];
     let cy = metrics[METRIC_CY];
-    let arc = |radius: f64, reverse: bool, out: &mut Vec<(f64, f64)>| {
-        let (start, end) = if reverse { (a1, a0) } else { (a0, a1) };
+    let arc = |at_radius: f64, reverse: bool, out: &mut Vec<(f64, f64)>| {
+        let delta = inset(at_radius);
+        let (start, end) = if reverse {
+            (a1 - delta, a0 + delta)
+        } else {
+            (a0 + delta, a1 - delta)
+        };
         for i in 0..=steps {
             let t = i as f64 / steps as f64;
             let angle = start + (end - start) * t;
-            out.push((cx + radius * angle.cos(), cy - radius * angle.sin()));
+            out.push((cx + at_radius * angle.cos(), cy - at_radius * angle.sin()));
         }
     };
     let mut out = Vec::with_capacity(if inner <= 0.0 {
@@ -875,7 +893,7 @@ mod tests {
     fn quarter_turn_outer_wedge_is_finite_and_uses_screen_y_down() {
         let mut metrics = [0.0; POLAR_METRICS_LEN];
         polar_layout(default_input(), &mut metrics).unwrap();
-        let points = polar_wedge_points(&metrics, 0.0, FRAC_PI_2, 0.0, 1.0);
+        let points = polar_wedge_points(&metrics, 0.0, FRAC_PI_2, 0.0, 1.0, 0.0);
         assert!(points.len() >= 3);
         assert!(points.iter().all(|(x, y)| x.is_finite() && y.is_finite()));
         let cx = metrics[METRIC_CX];
@@ -891,5 +909,25 @@ mod tests {
         assert!((north.1 - (cy - radius)).abs() < 1e-6);
         assert!(north.1 < cy);
         assert_eq!(polar_bar_segments(FRAC_PI_2, 2.0 * PI), 24);
+    }
+
+    #[test]
+    fn wedge_gap_insets_outer_arc_by_constant_pixels() {
+        let mut metrics = [0.0; POLAR_METRICS_LEN];
+        polar_layout(default_input(), &mut metrics).unwrap();
+        let plain = polar_wedge_points(&metrics, 0.0, FRAC_PI_2, 0.25, 1.0, 0.0);
+        let gapped = polar_wedge_points(&metrics, 0.0, FRAC_PI_2, 0.25, 1.0, 12.0);
+        assert_eq!(plain.len(), gapped.len());
+        assert!(gapped.len() >= 6);
+        let radius = metrics[METRIC_RADIUS];
+        let cx = metrics[METRIC_CX];
+        let cy = metrics[METRIC_CY];
+        let outer_start = gapped[0];
+        let dx = outer_start.0 - cx;
+        let dy = cy - outer_start.1;
+        let angle = dy.atan2(dx);
+        let expected = 12.0 / 2.0 / radius;
+        assert!((angle - expected).abs() < 1e-6);
+        assert!(plain[0].0 > gapped[0].0);
     }
 }

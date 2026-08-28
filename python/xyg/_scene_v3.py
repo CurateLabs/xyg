@@ -1619,7 +1619,9 @@ def _rect_extra_flags(style: dict[str, Any], kind: str, polar: bool) -> int:
             flags |= _XYFS_TRACE_CORNER_RADIUS
     elif not admitted and float(radius) != 0.0:
         flags |= _XYFS_TRACE_CORNER_RADIUS
-    if float(style.get("wedge_gap", 0.0) or 0.0) != 0.0:
+    if float(style.get("wedge_gap", 0.0) or 0.0) != 0.0 and not (
+        polar and kind in {"bar", "column", "histogram"}
+    ):
         flags |= _XYFS_TRACE_WEDGE_GAP
     return flags
 
@@ -2188,7 +2190,7 @@ def _gradient_solid_css(gradient: dict[str, Any]) -> str:
 
 
 _XYTC_HEADER = struct.Struct("<4sIII")
-_XYTR_PREFIX = struct.Struct("<4s2HI2H11d12H3I2d4x")
+_XYTR_PREFIX = struct.Struct("<4s2HI2H11d12H3I2df")
 _XYTO_ENVELOPE = struct.Struct("<4sIII")
 _XYTO_PREFIX = struct.Struct("<4s2H4s4s2dHBBHHII4BII2d84x")
 _XYTA_HEADER = struct.Struct("<4sIII")
@@ -2237,6 +2239,7 @@ _XYTC_HAS_MARKER = 1 << 18
 _XYTC_HAS_GRADIENT_SPEC = 1 << 19
 _XYTC_HAS_FILL_DICT = 1 << 20
 _XYTC_HAS_CORNER_RADIUS = 1 << 22
+_XYTC_HAS_WEDGE_GAP = 1 << 23
 _XYTO_LINECAP_NONE = 255
 _GRAD_DIR_FROM_CODE = {0: "down", 1: "up", 2: "right", 3: "left"}
 
@@ -2397,6 +2400,7 @@ def _pack_xytc(figure: Any) -> bytes:
                 marker_blob = packed_marker
         r_tip = 0.0
         r_base = 0.0
+        wedge_gap = 0.0
         if str(trace.kind) in {"bar", "column", "histogram"}:
             radius = style.get("corner_radius", 0.0)
             if isinstance(radius, (list, tuple)) and len(radius) == 2:
@@ -2406,6 +2410,9 @@ def _pack_xytc(figure: Any) -> bytes:
                 r_tip = r_base = float(radius or 0.0)
             if r_tip or r_base:
                 flags |= _XYTC_HAS_CORNER_RADIUS
+            wedge_gap = float(style.get("wedge_gap", 0.0) or 0.0)
+            if wedge_gap:
+                flags |= _XYTC_HAS_WEDGE_GAP
         records.extend(
             _XYTR_PREFIX.pack(
                 b"XYTR",
@@ -2442,6 +2449,7 @@ def _pack_xytc(figure: Any) -> bytes:
                 len(gradient_blob),
                 r_tip,
                 r_base,
+                wedge_gap,
             )
         )
         records.extend(kind)

@@ -6,8 +6,8 @@
 //! curve-smooth and stroke-perimeter bits, hex pitch, fill-gradient admission,
 //! and XYMS mark-style resolve so Python and Node cannot drift. ABI 166 packs
 //! cartesian bar/column/histogram `corner_radius` into the XYTO reserved
-//! trailer so encode can tessellate rounded Rects. Encoded Scene v31 is
-//! unchanged.
+//! trailer so encode can tessellate rounded Rects. ABI 167 packs polar
+//! `wedge_gap` into that same trailer. Encoded Scene v31 is unchanged.
 
 use crate::css::{self, Checked};
 use crate::scene_style::{self, MarkStyleError, ResolvedMarkStyle};
@@ -46,6 +46,7 @@ pub const FLAG_HAS_GRADIENT_SPEC: u32 = 1 << 19;
 pub const FLAG_HAS_FILL_DICT: u32 = 1 << 20;
 pub const FLAG_SYMBOL_INT: u32 = 1 << 21;
 pub const FLAG_HAS_CORNER_RADIUS: u32 = 1 << 22;
+pub const FLAG_HAS_WEDGE_GAP: u32 = 1 << 23;
 
 pub const FACT_STROKE_PERIMETER: u32 = 1;
 pub const FACT_CURVE_SMOOTH: u32 = 2;
@@ -154,6 +155,7 @@ struct Input<'a> {
     gradient_blob: &'a [u8],
     r_tip: f64,
     r_base: f64,
+    wedge_gap: f64,
 }
 
 struct Compiled {
@@ -176,6 +178,7 @@ struct Compiled {
     r_tip: f64,
     r_base: f64,
     tip_policy: u8,
+    wedge_gap: f64,
 }
 
 fn read_u16(bytes: &[u8], offset: usize) -> Result<u16, TraceCompileError> {
@@ -202,6 +205,16 @@ fn read_f64(bytes: &[u8], offset: usize) -> Result<f64, TraceCompileError> {
     Ok(f64::from_le_bytes(
         bytes
             .get(offset..offset + 8)
+            .ok_or(TraceCompileError::new(TraceCompileCode::Length, 0))?
+            .try_into()
+            .map_err(|_| TraceCompileError::new(TraceCompileCode::Length, 0))?,
+    ))
+}
+
+fn read_f32(bytes: &[u8], offset: usize) -> Result<f32, TraceCompileError> {
+    Ok(f32::from_le_bytes(
+        bytes
+            .get(offset..offset + 4)
             .ok_or(TraceCompileError::new(TraceCompileCode::Length, 0))?
             .try_into()
             .map_err(|_| TraceCompileError::new(TraceCompileCode::Length, 0))?,
@@ -919,6 +932,7 @@ fn compile_one(input: Input<'_>, index: usize) -> Result<Compiled, TraceCompileE
     );
     let legend_symbol = if legend_kind == 0 { symbol } else { 0 };
     let (r_tip, r_base, tip_policy) = admit_corner_radius(&input, index)?;
+    let wedge_gap = admit_wedge_gap(&input, index)?;
     Ok(Compiled {
         fill: style.fill,
         stroke: style.stroke,
@@ -943,6 +957,7 @@ fn compile_one(input: Input<'_>, index: usize) -> Result<Compiled, TraceCompileE
         r_tip,
         r_base,
         tip_policy,
+        wedge_gap,
     })
 }
 
@@ -1047,6 +1062,7 @@ fn parse_trace<'a>(
         gradient_blob,
         r_tip,
         r_base,
+        wedge_gap: f64::from(read_f32(prefix, 156)?),
     })
 }
 
@@ -1067,6 +1083,20 @@ fn admit_corner_radius(
     }
     let tip_policy = u8::from(input.kind == "bar");
     Ok((r_tip, r_base, tip_policy))
+}
+
+fn admit_wedge_gap(input: &Input<'_>, index: usize) -> Result<f64, TraceCompileError> {
+    let gap = input.wedge_gap;
+    if gap == 0.0 {
+        return Ok(0.0);
+    }
+    if !matches!(input.kind, "bar" | "column" | "histogram") {
+        return Ok(0.0);
+    }
+    if !gap.is_finite() || gap < 0.0 {
+        return Err(TraceCompileError::new(TraceCompileCode::Length, index));
+    }
+    Ok(gap)
 }
 
 fn write_compiled(out: &mut Vec<u8>, compiled: &Compiled) {
@@ -1097,6 +1127,7 @@ fn write_compiled(out: &mut Vec<u8>, compiled: &Compiled) {
     prefix[76..84].copy_from_slice(&compiled.r_tip.to_le_bytes());
     prefix[84..92].copy_from_slice(&compiled.r_base.to_le_bytes());
     prefix[92] = compiled.tip_policy;
+    prefix[96..104].copy_from_slice(&compiled.wedge_gap.to_le_bytes());
     out.extend_from_slice(&prefix);
     for value in dash {
         out.extend_from_slice(&value.to_le_bytes());
@@ -1347,5 +1378,25 @@ mod tests {
         assert_eq!(r_tip, 4.0);
         assert_eq!(r_base, 1.0);
         assert_eq!(packed[XYTO_HEADER_BYTES + 92], 1);
+    }
+
+    #[test]
+    fn polar_bar_packs_wedge_gap_into_xyto_trailer() {
+        let (mut head, payload) = prefix("bar", FLAG_HAS_WEDGE_GAP, 1.0, "");
+        head[156..160].copy_from_slice(&12.0f32.to_le_bytes());
+        let mut facts = Vec::new();
+        facts.extend_from_slice(XYTC_MAGIC);
+        facts.extend_from_slice(&XYTC_VERSION.to_le_bytes());
+        facts.extend_from_slice(&1u32.to_le_bytes());
+        facts.extend_from_slice(&0u32.to_le_bytes());
+        facts.extend_from_slice(&head);
+        facts.extend_from_slice(&payload);
+        let packed = pack_trace_compile(&facts).unwrap();
+        let gap = f64::from_le_bytes(
+            packed[XYTO_HEADER_BYTES + 96..XYTO_HEADER_BYTES + 104]
+                .try_into()
+                .unwrap(),
+        );
+        assert_eq!(gap, 12.0);
     }
 }

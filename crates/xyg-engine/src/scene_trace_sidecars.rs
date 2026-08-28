@@ -9,7 +9,8 @@
 //! unpacks XYSD legend paints and heatmap/density planes so hosts do not
 //! inspect sidecar contents on the product path. ABI 166 copies cartesian
 //! bar/column/histogram `corner_radius` from the XYTO reserved trailer into
-//! an optional XYSD radius blob so encode can tessellate rounded Rects.
+//! an optional XYSD radius blob so encode can tessellate rounded Rects. ABI
+//! 167 copies polar `wedge_gap` into that same blob.
 
 use crate::scene_trace_attach::{XYTT_HEADER_BYTES, XYTT_MAGIC, XYTT_PREFIX_BYTES, XYTT_VERSION};
 use crate::scene_trace_compile::XYTO_MAGIC;
@@ -68,6 +69,7 @@ struct AttachedSidecar {
     r_tip: f64,
     r_base: f64,
     tip_policy: u8,
+    wedge_gap: f64,
 }
 
 fn read_u16(bytes: &[u8], offset: usize) -> Result<u16, TraceSidecarsError> {
@@ -117,20 +119,24 @@ fn take(rest: &mut &[u8], n: usize, index: usize) -> Result<Vec<u8>, TraceSideca
     Ok(head.to_vec())
 }
 
-fn encode_radius_blob(r_tip: f64, r_base: f64, tip_policy: u8) -> Vec<u8> {
-    if r_tip == 0.0 && r_base == 0.0 {
+fn encode_radius_blob(r_tip: f64, r_base: f64, tip_policy: u8, wedge_gap: f64) -> Vec<u8> {
+    if r_tip == 0.0 && r_base == 0.0 && wedge_gap == 0.0 {
         return Vec::new();
     }
     let mut out = vec![0u8; XYSD_RADIUS_BYTES];
     out[0..8].copy_from_slice(&r_tip.to_le_bytes());
     out[8..16].copy_from_slice(&r_base.to_le_bytes());
     out[16] = tip_policy;
+    out[20..24].copy_from_slice(&(wedge_gap as f32).to_le_bytes());
     out
 }
 
-fn parse_radius_blob(blob: &[u8], index: usize) -> Result<(f64, f64, u8), TraceSidecarsError> {
+fn parse_radius_blob(
+    blob: &[u8],
+    index: usize,
+) -> Result<(f64, f64, u8, f64), TraceSidecarsError> {
     if blob.is_empty() {
-        return Ok((0.0, 0.0, 0));
+        return Ok((0.0, 0.0, 0, 0.0));
     }
     if blob.len() != XYSD_RADIUS_BYTES {
         return Err(TraceSidecarsError::new(TraceSidecarsCode::Length, index));
@@ -145,10 +151,21 @@ fn parse_radius_blob(blob: &[u8], index: usize) -> Result<(f64, f64, u8), TraceS
             .try_into()
             .map_err(|_| TraceSidecarsError::new(TraceSidecarsCode::Length, index))?,
     );
-    if !r_tip.is_finite() || !r_base.is_finite() || r_tip < 0.0 || r_base < 0.0 {
+    let wedge_gap = f64::from(f32::from_le_bytes(
+        blob[20..24]
+            .try_into()
+            .map_err(|_| TraceSidecarsError::new(TraceSidecarsCode::Length, index))?,
+    ));
+    if !r_tip.is_finite()
+        || !r_base.is_finite()
+        || !wedge_gap.is_finite()
+        || r_tip < 0.0
+        || r_base < 0.0
+        || wedge_gap < 0.0
+    {
         return Err(TraceSidecarsError::new(TraceSidecarsCode::Length, index));
     }
-    Ok((r_tip, r_base, blob[16]))
+    Ok((r_tip, r_base, blob[16], wedge_gap))
 }
 
 fn parse_xytt(bytes: &[u8]) -> Result<Vec<AttachedSidecar>, TraceSidecarsError> {
@@ -190,6 +207,7 @@ fn parse_xytt(bytes: &[u8]) -> Result<Vec<AttachedSidecar>, TraceSidecarsError> 
         let r_tip = read_f64(rest, 76)?;
         let r_base = read_f64(rest, 84)?;
         let tip_policy = rest[92];
+        let wedge_gap = read_f64(rest, 96)?;
         rest = &rest[XYTT_PREFIX_BYTES..];
         let dash_bytes = dash_count
             .checked_mul(8)
@@ -225,6 +243,7 @@ fn parse_xytt(bytes: &[u8]) -> Result<Vec<AttachedSidecar>, TraceSidecarsError> 
             r_tip,
             r_base,
             tip_policy,
+            wedge_gap,
         });
     }
     if !rest.is_empty() {
@@ -286,6 +305,7 @@ pub struct XySdRecord {
     pub r_tip: f64,
     pub r_base: f64,
     pub tip_policy: u8,
+    pub wedge_gap: f64,
 }
 
 /// Parse packed `XYSD` v1 into per-trace style, plane, and legend-name records.
@@ -363,7 +383,7 @@ pub fn parse_xysd_records(bytes: &[u8]) -> Result<Vec<XySdRecord>, TraceSidecars
         let plane = take(&mut rest, plane_len, index)?;
         let name = take(&mut rest, name_len, index)?;
         let radius = take(&mut rest, radius_len, index)?;
-        let (r_tip, r_base, tip_policy) = parse_radius_blob(&radius, index)?;
+        let (r_tip, r_base, tip_policy, wedge_gap) = parse_radius_blob(&radius, index)?;
         records.push(XySdRecord {
             fill,
             stroke,
@@ -379,6 +399,7 @@ pub fn parse_xysd_records(bytes: &[u8]) -> Result<Vec<XySdRecord>, TraceSidecars
             r_tip,
             r_base,
             tip_policy,
+            wedge_gap,
         });
     }
     if !rest.is_empty() {
@@ -405,7 +426,12 @@ fn write_sidecar(out: &mut Vec<u8>, attached: &AttachedSidecar, name: &[u8]) {
     prefix[28..32].copy_from_slice(&(attached.gradient.len() as u32).to_le_bytes());
     prefix[32..36].copy_from_slice(&(attached.plane.len() as u32).to_le_bytes());
     prefix[36..40].copy_from_slice(&(legend_name.len() as u32).to_le_bytes());
-    let radius = encode_radius_blob(attached.r_tip, attached.r_base, attached.tip_policy);
+    let radius = encode_radius_blob(
+        attached.r_tip,
+        attached.r_base,
+        attached.tip_policy,
+        attached.wedge_gap,
+    );
     prefix[40..44].copy_from_slice(&(radius.len() as u32).to_le_bytes());
     out.extend_from_slice(&prefix);
     out.extend_from_slice(&attached.dash);

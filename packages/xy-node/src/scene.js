@@ -3069,6 +3069,7 @@ const XYTC_HAS_GRADIENT_SPEC = 1 << 19;
 const XYTC_HAS_FILL_DICT = 1 << 20;
 const XYTC_SYMBOL_INT = 1 << 21;
 const XYTC_HAS_CORNER_RADIUS = 1 << 22;
+const XYTC_HAS_WEDGE_GAP = 1 << 23;
 const XYTO_LINECAP_NONE = 255;
 const XYTA_HEATMAP = 1 << 0;
 const XYTA_DENSITY = 1 << 1;
@@ -3293,6 +3294,7 @@ function packXyTc(figure) {
     view.setUint32(136, gradientBlob.length, true);
     let rTip = 0;
     let rBase = 0;
+    let wedgeGap = 0;
     if (trace.kind === "bar" || trace.kind === "column" || trace.kind === "histogram") {
       const radius = style.corner_radius ?? 0;
       if (Array.isArray(radius) && radius.length === 2) {
@@ -3302,10 +3304,13 @@ function packXyTc(figure) {
         rTip = rBase = Number(radius || 0);
       }
       if (rTip || rBase) flags |= XYTC_HAS_CORNER_RADIUS;
+      wedgeGap = Number(style.wedge_gap ?? 0);
+      if (wedgeGap) flags |= XYTC_HAS_WEDGE_GAP;
     }
     view.setUint32(8, flags >>> 0, true);
     view.setFloat64(140, rTip, true);
     view.setFloat64(148, rBase, true);
+    view.setFloat32(156, wedgeGap, true);
     const pattern = new Uint8Array(dashPattern.length * 8);
     const patternView = new DataView(pattern.buffer);
     dashPattern.forEach((value, index) => patternView.setFloat64(index * 8, value, true));
@@ -5013,7 +5018,8 @@ function rectExtraFlags(style, kind, polar) {
   } else if (!admitted && Number(radius) !== 0) {
     flags |= XYFS_TRACE_CORNER_RADIUS;
   }
-  if (Number(style.wedge_gap ?? 0) !== 0) flags |= XYFS_TRACE_WEDGE_GAP;
+  const gap = Number(style.wedge_gap ?? 0);
+  if (gap !== 0 && !(polar && (kind === "bar" || kind === "column" || kind === "histogram"))) flags |= XYFS_TRACE_WEDGE_GAP;
   return flags;
 }
 
