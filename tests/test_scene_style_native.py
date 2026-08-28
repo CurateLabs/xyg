@@ -30,6 +30,7 @@ from xyg._native import (
     scene_resolve_chrome_style,
     scene_resolve_mark_styles,
     scene_resolve_pack_kind,
+    scene_splice_annotations,
 )
 from xyg._raster import _parse_color
 from xyg._scene_v3 import UnsupportedSceneV3, figure_scene
@@ -124,6 +125,25 @@ def test_empty_style_sidecar_facts_emit_no_xyss() -> None:
     )
     packed = scene_pack_style_sidecars(sidecars, b"")
     assert packed == b""
+
+
+def test_empty_annotation_splice_facts_emit_xyas() -> None:
+    compiled = scene_pack_trace_compile(
+        b"XYTC" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    )
+    attached = scene_pack_trace_attach(
+        compiled, b"XYTA" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    )
+    sidecars = scene_pack_trace_sidecars(
+        attached, b"XYNM" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    )
+    packed = scene_splice_annotations(b"", sidecars, b"")
+    assert packed[:4] == b"XYAS"
+    assert int.from_bytes(packed[4:8], "little") == 1
+    assert int.from_bytes(packed[8:12], "little") == 0
+    assert int.from_bytes(packed[12:16], "little") == 0
+    assert int.from_bytes(packed[16:20], "little") == 0
+    assert packed[20:] == b"\x00\x00\x00\x00"
 
 
 def test_line_default_stroke_width_is_one_and_a_half() -> None:

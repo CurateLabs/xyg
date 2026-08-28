@@ -80,6 +80,10 @@ pub mod scene_style;
 pub use scene_style::{resolve_chrome_style, resolve_mark_styles};
 pub mod scene_style_sidecars;
 pub use scene_style_sidecars::{pack_style_sidecars, StyleSidecarsCode, StyleSidecarsError};
+pub mod scene_annotation_splice;
+pub use scene_annotation_splice::{
+    splice_annotations, AnnotationSpliceCode, AnnotationSpliceError,
+};
 pub mod stats;
 pub mod stream;
 pub mod svg;

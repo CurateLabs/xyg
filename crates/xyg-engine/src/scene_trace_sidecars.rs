@@ -4,9 +4,8 @@
 //! bundle. Rust owns legend-name gating (`legend_include` and a nonempty
 //! name), heatmap-vs-density paint-plane selection, and per-trace
 //! style/dash/linecap/marker/gradient extraction so Python and Node cannot
-//! drift. Encoded Scene v31 is unchanged. Hosts still pack XYSS after the
-//! annotation splice (ABI 148) because annotation dashes and caps append
-//! after this table.
+//! drift. Encoded Scene v31 is unchanged. ABI 158 packs XYSS from XYSD plus
+//! XYAO; ABI 159 splices annotation styles and mark rows into XYAS.
 
 use crate::scene_trace_attach::{XYTT_HEADER_BYTES, XYTT_MAGIC, XYTT_PREFIX_BYTES, XYTT_VERSION};
 use crate::scene_trace_compile::XYTO_MAGIC;

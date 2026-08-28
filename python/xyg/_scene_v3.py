@@ -575,8 +575,8 @@ _XYAF_STYLE_LABEL_BORDER_COLOR = 1 << 10
 _XYAF_STYLE_LABEL_BORDER_WIDTH = 1 << 11
 _XYAF_STYLE_UNSUPPORTED = 1 << 31
 _XYAF_HEADER = struct.Struct("<4sIIBBBBIIBBHI18d4s4s4s4s4sI8f")
-_XYAO_HEADER = struct.Struct("<4sIIIIIII")
-_XYAO_STYLE = struct.Struct("<4s4sdBB6x8f")
+_XYAS_HEADER = struct.Struct("<4sIIIII")
+_XYAS_STYLE = struct.Struct("<4s4sd")
 
 
 class UnsupportedSceneV3(ValueError):
@@ -979,57 +979,6 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
         )
         + encoded
     )
-
-
-def _apply_xyao(
-    payload: bytes,
-    kinds: list[int],
-    stable_ids: list[int],
-    style_refs: list[int],
-    diameters: list[float],
-    symbols: list[int],
-    expansion_modes: list[int],
-    coordinates: list[list[float]],
-    styles: list[tuple[tuple[int, ...], tuple[int, ...], float]],
-    dashes: list[list[float] | None],
-    linecaps: list[int | None],
-) -> bytes:
-    """Splice XYAO styles and mark rows into the figure Scene arrays."""
-    if not payload:
-        return b""
-    magic, version, n_styles, n_rows, xyad_len, _reserved, _base, _pad = _XYAO_HEADER.unpack_from(
-        payload, 0
-    )
-    if magic != b"XYAO" or version != 1:
-        raise ValueError("invalid scene annotation packing")
-    at = _XYAO_HEADER.size
-    for _ in range(int(n_styles)):
-        fill, stroke, width, dash_count, cap, *dash_values = _XYAO_STYLE.unpack_from(payload, at)
-        styles.append((tuple(fill), tuple(stroke), float(width)))
-        dashes.append(
-            [float(value) for value in dash_values[: int(dash_count)]] if dash_count else None
-        )
-        linecaps.append(None if cap == 255 else int(cap))
-        at += _XYAO_STYLE.size
-    mark_end = at + int(n_rows) * 56
-    mark_bytes = payload[at:mark_end]
-    xyad = payload[mark_end : mark_end + int(xyad_len)]
-    if n_rows:
-        raw = np.frombuffer(mark_bytes, dtype=np.uint8).reshape(int(n_rows), 56)
-        kinds.extend(int(value) for value in raw[:, 0])
-        symbols.extend(int(value) for value in raw[:, 1])
-        expansion_modes.extend(int(value) for value in raw[:, 2])
-        style_refs.extend(
-            int(value) for value in raw[:, 4:8].copy().view("<u4").reshape(int(n_rows))
-        )
-        stable_ids.extend(
-            int(value) for value in raw[:, 8:16].copy().view("<u8").reshape(int(n_rows))
-        )
-        nums = raw[:, 16:56].copy().view("<f8").reshape(int(n_rows), 5)
-        diameters.extend(float(value) for value in nums[:, 0])
-        for axis in range(4):
-            coordinates[axis].extend(float(value) for value in nums[:, axis + 1])
-    return bytes(xyad)
 
 
 _STYLE_KIND_CODES = {
@@ -2867,6 +2816,69 @@ def _raise_trace_sidecars(error: _native.SceneTraceSidecarsError) -> NoReturn:
     raise ValueError("invalid scene sidecar packing") from error
 
 
+def _raise_annotation_splice(error: _native.SceneAnnotationSpliceError) -> NoReturn:
+    if error.code == -2:
+        raise ValueError("invalid scene annotation splice version") from error
+    raise ValueError("invalid scene annotation splice packing") from error
+
+
+def _unpack_xyas(blob: bytes) -> dict[str, Any]:
+    """Split Rust-owned XYAS splice output into Scene styles, rows, and XYAD."""
+    if len(blob) < _XYAS_HEADER.size or blob[:4] != b"XYAS":
+        raise ValueError("invalid scene annotation splice packing")
+    _magic, version, n_styles, n_rows, xyad_len, _reserved = _XYAS_HEADER.unpack_from(blob, 0)
+    if version != 1:
+        raise ValueError("invalid scene annotation splice version")
+    at = _XYAS_HEADER.size
+    need = int(n_styles) * _XYAS_STYLE.size + int(n_rows) * 56 + int(xyad_len)
+    if at + need > len(blob):
+        raise ValueError("invalid scene annotation splice packing")
+    styles: list[tuple[tuple[int, ...], tuple[int, ...], float]] = []
+    for _ in range(int(n_styles)):
+        fill, stroke, width = _XYAS_STYLE.unpack_from(blob, at)
+        styles.append((tuple(fill), tuple(stroke), float(width)))
+        at += _XYAS_STYLE.size
+    kinds: list[int] = []
+    stable_ids: list[int] = []
+    style_refs: list[int] = []
+    diameters: list[float] = []
+    symbols: list[int] = []
+    expansion_modes: list[int] = []
+    coordinates: list[list[float]] = [[], [], [], []]
+    if n_rows:
+        raw = np.frombuffer(blob[at : at + int(n_rows) * 56], dtype=np.uint8).reshape(
+            int(n_rows), 56
+        )
+        kinds.extend(int(value) for value in raw[:, 0])
+        symbols.extend(int(value) for value in raw[:, 1])
+        expansion_modes.extend(int(value) for value in raw[:, 2])
+        style_refs.extend(
+            int(value) for value in raw[:, 4:8].copy().view("<u4").reshape(int(n_rows))
+        )
+        stable_ids.extend(
+            int(value) for value in raw[:, 8:16].copy().view("<u8").reshape(int(n_rows))
+        )
+        nums = raw[:, 16:56].copy().view("<f8").reshape(int(n_rows), 5)
+        diameters.extend(float(value) for value in nums[:, 0])
+        for axis in range(4):
+            coordinates[axis].extend(float(value) for value in nums[:, axis + 1])
+        at += int(n_rows) * 56
+    xyad = bytes(blob[at : at + int(xyad_len)])
+    if at + int(xyad_len) != len(blob):
+        raise ValueError("invalid scene annotation splice packing")
+    return {
+        "styles": styles,
+        "kinds": kinds,
+        "stable_ids": stable_ids,
+        "style_refs": style_refs,
+        "diameters": diameters,
+        "symbols": symbols,
+        "expansion_modes": expansion_modes,
+        "coordinates": coordinates,
+        "xyad": xyad,
+    }
+
+
 def figure_scene(
     figure: Any,
     *,
@@ -2887,13 +2899,6 @@ def figure_scene(
     if reason:
         raise UnsupportedSceneV3(reason)
 
-    kinds: list[int] = []
-    stable_ids: list[int] = []
-    style_refs: list[int] = []
-    diameters: list[float] = []
-    symbols: list[int] = []
-    coordinates: list[list[float]] = [[], [], [], []]
-    expansion_modes: list[int] = []
     try:
         compiled_bytes = _native.scene_pack_trace_compile(_pack_xytc(figure))
     except _native.SceneTraceCompileError as error:
@@ -2909,31 +2914,12 @@ def figure_scene(
         _raise_trace_sidecars(error)
     if len(sidecars["styles"]) != len(figure.traces):
         raise ValueError("invalid scene sidecar packing")
-    styles = list(sidecars["styles"])
-    dashes = list(sidecars["dashes"])
-    linecaps = list(sidecars["linecaps"])
     legend_entries = list(sidecars["legend"])
     heatmap_paint_planes = list(sidecars["planes"])
     try:
-        (
-            packed_kinds,
-            packed_ids,
-            packed_refs,
-            packed_diameters,
-            packed_symbols,
-            packed_modes,
-            packed_coords,
-        ) = _native.scene_pack_trace_rows(attached_bytes, _pack_xycl(figure))
+        row_bytes = _native.scene_pack_trace_row_bytes(attached_bytes, _pack_xycl(figure))
     except _native.SceneTraceRowsError as error:
         _raise_trace_rows(error)
-    kinds.extend(int(value) for value in packed_kinds)
-    stable_ids.extend(int(value) for value in packed_ids)
-    style_refs.extend(int(value) for value in packed_refs)
-    diameters.extend(float(value) for value in packed_diameters)
-    symbols.extend(int(value) for value in packed_symbols)
-    expansion_modes.extend(int(value) for value in packed_modes)
-    for axis in range(4):
-        coordinates[axis].extend(float(value) for value in packed_coords[axis])
 
     # Scene v12's bounded primary-annotation subset is represented by ordinary
     # canonical records with a reserved stable-id namespace. Hosts pack XYAF
@@ -2955,7 +2941,8 @@ def figure_scene(
     # pack XYNM names; Rust owns legend-name gating, heatmap-vs-density plane
     # selection, and style/dash/marker/gradient/plane extraction (ABI 157).
     # Hosts pass XYSD plus XYAO; Rust owns XYSS dash/linecap/marker/gradient
-    # records and omit-empty (ABI 158).
+    # records and omit-empty (ABI 158). Hosts pass product rows plus XYSD plus
+    # XYAO; Rust owns annotation style/row splice and XYAD extract (ABI 159).
     x_domain = tuple(float(value) for value in figure._range("x"))
     y_domain = tuple(float(value) for value in figure._range("y"))
     annotation_facts = bytearray()
@@ -2965,7 +2952,7 @@ def figure_scene(
         annotation_output = (
             _native.scene_pack_annotation_facts(
                 bytes(annotation_facts),
-                style_ref_base=len(styles),
+                style_ref_base=len(sidecars["styles"]),
                 x_domain=x_domain,
                 y_domain=y_domain,
             )
@@ -2980,19 +2967,21 @@ def figure_scene(
         if error.code == -2:
             raise ValueError("invalid scene style sidecar facts version") from error
         raise ValueError("invalid scene style sidecar packing") from error
-    framed_annotations = _apply_xyao(
-        annotation_output,
-        kinds,
-        stable_ids,
-        style_refs,
-        diameters,
-        symbols,
-        expansion_modes,
-        coordinates,
-        styles,
-        dashes,
-        linecaps,
-    )
+    try:
+        spliced = _unpack_xyas(
+            _native.scene_splice_annotations(row_bytes, sidecar_bytes, annotation_output)
+        )
+    except _native.SceneAnnotationSpliceError as error:
+        _raise_annotation_splice(error)
+    styles = list(spliced["styles"])
+    kinds = list(spliced["kinds"])
+    stable_ids = list(spliced["stable_ids"])
+    style_refs = list(spliced["style_refs"])
+    diameters = list(spliced["diameters"])
+    symbols = list(spliced["symbols"])
+    expansion_modes = list(spliced["expansion_modes"])
+    coordinates = [list(axis) for axis in spliced["coordinates"]]
+    framed_annotations = spliced["xyad"]
 
     w = int(width if width is not None else figure.width)
     h = int(height if height is not None else figure.height)

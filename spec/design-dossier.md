@@ -1464,6 +1464,8 @@ per-trace style/dash/marker/gradient/plane extraction from packed XYTT plus
 XYNM v1.
 ABI 158 owns XYSS dash/linecap/marker/gradient record construction from
 packed XYSD plus XYAO v1.
+ABI 159 owns annotation style/row splice and XYAD extract from packed
+product rows plus XYSD plus XYAO v1.
 Polar+step+smooth and
 authored marker glyphs stay compatibility. Irregular
 spacing, and LOD stay compatibility.

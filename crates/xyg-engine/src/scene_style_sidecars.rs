@@ -3,8 +3,8 @@
 //! Hosts pass XYSD v1 trace sidecars plus an optional XYAO v1 annotation
 //! envelope. Rust owns dash/linecap/marker/gradient XYSS record construction,
 //! including annotation style_ref bases and omit-empty records, so Python and
-//! Node cannot drift. Encoded Scene v31 is unchanged. Hosts still splice
-//! annotation mark rows and styles for batch encode.
+//! Node cannot drift. Encoded Scene v31 is unchanged. Hosts splice annotation
+//! styles and mark rows through ABI 159 (`XYAS`) for batch encode.
 
 use crate::scene::XYDS_MAX_VALUES;
 use crate::scene_annotations::{XYAO_MAGIC, XYAO_STYLE_BYTES, XYAO_V1_HEADER_BYTES, XYAO_VERSION};

@@ -2006,11 +2006,8 @@ class SceneTraceRowsError(ValueError):
         super().__init__(messages.get(self.code, "invalid scene trace column packing"))
 
 
-def scene_pack_trace_rows(
-    attached: bytes,
-    columns: bytes,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Pack XYTT attach output plus XYCL v1 columns into Scene rows (M2 #271)."""
+def scene_pack_trace_row_bytes(attached: bytes, columns: bytes) -> bytes:
+    """Pack XYTT attach output plus XYCL v1 columns into 56-byte Scene rows."""
     attached_payload = (
         attached if isinstance(attached, (bytes, bytearray, memoryview)) else bytes(attached)
     )
@@ -2046,8 +2043,19 @@ def scene_pack_trace_rows(
         if code < 0:
             index = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
             raise SceneTraceRowsError(code, index)
-        return _decode_packed_scene_rows(out, code)
+        return bytes(out[: code * 56])
     raise SceneTraceRowsError(-4, 0)
+
+
+def scene_pack_trace_rows(
+    attached: bytes,
+    columns: bytes,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Pack XYTT attach output plus XYCL v1 columns into Scene rows (M2 #271)."""
+    payload = scene_pack_trace_row_bytes(attached, columns)
+    n_rows = len(payload) // 56
+    array = np.frombuffer(payload, dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    return _decode_packed_scene_rows(array, n_rows)
 
 
 class SceneTraceSidecarsError(ValueError):
@@ -2156,6 +2164,67 @@ def scene_pack_style_sidecars(sidecars: bytes, annotations: bytes) -> bytes:
             raise SceneStyleSidecarsError(code, index)
         return bytes(out[:code])
     raise SceneStyleSidecarsError(-4, 0)
+
+
+class SceneAnnotationSpliceError(ValueError):
+    """Native XYAS annotation-splice failure carrying the ABI error code and index."""
+
+    def __init__(self, code: int, index: int) -> None:
+        self.code = int(code)
+        self.index = int(index)
+        messages = {
+            -2: "invalid scene annotation splice version",
+        }
+        super().__init__(messages.get(self.code, "invalid scene annotation splice packing"))
+
+
+def scene_splice_annotations(rows: bytes, sidecars: bytes, annotations: bytes) -> bytes:
+    """Pack product rows plus XYSD plus optional XYAO into XYAS v1 (M2 #271)."""
+    row_payload = rows if isinstance(rows, (bytes, bytearray, memoryview)) else bytes(rows)
+    sidecar_payload = (
+        sidecars if isinstance(sidecars, (bytes, bytearray, memoryview)) else bytes(sidecars)
+    )
+    annotation_payload = (
+        annotations
+        if isinstance(annotations, (bytes, bytearray, memoryview))
+        else bytes(annotations)
+    )
+    capacity = max(65536, len(row_payload) + len(sidecar_payload) + len(annotation_payload) + 4096)
+    source_rows = (
+        np.frombuffer(row_payload, dtype=np.uint8) if row_payload else np.empty(0, dtype=np.uint8)
+    )
+    source_sidecars = (
+        np.frombuffer(sidecar_payload, dtype=np.uint8)
+        if sidecar_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_annotations = (
+        np.frombuffer(annotation_payload, dtype=np.uint8)
+        if annotation_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    for _ in range(4):
+        out = np.zeros(capacity, dtype=np.uint8)
+        code = int(
+            _lib.xyg_scene_splice_annotations(
+                _ptr_u8(source_rows) if source_rows.size else 0,
+                int(source_rows.size),
+                _ptr_u8(source_sidecars) if source_sidecars.size else 0,
+                int(source_sidecars.size),
+                _ptr_u8(source_annotations) if source_annotations.size else 0,
+                int(source_annotations.size),
+                _ptr_u8(out),
+                len(out),
+            )
+        )
+        if code == -4:
+            capacity *= 2
+            continue
+        if code < 0:
+            index = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
+            raise SceneAnnotationSpliceError(code, index)
+        return bytes(out[:code])
+    raise SceneAnnotationSpliceError(-4, 0)
 
 
 def scene_figure_support_reason(payload: bytes) -> str:

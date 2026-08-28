@@ -55,11 +55,14 @@ use xyg_engine::scene_colorbar::{self, ColorbarError};
 use xyg_engine::pack_figure_chrome;
 use xyg_engine::pack_public_export;
 use xyg_engine::pack_style_sidecars;
+use xyg_engine::splice_annotations;
 use xyg_engine::pack_trace_attach;
 use xyg_engine::pack_trace_compile;
 use xyg_engine::pack_trace_rows;
 use xyg_engine::pack_trace_sidecars;
 use xyg_engine::ChromePackError;
+use xyg_engine::AnnotationSpliceCode;
+use xyg_engine::AnnotationSpliceError;
 use xyg_engine::StyleSidecarsCode;
 use xyg_engine::StyleSidecarsError;
 use xyg_engine::TraceAttachCode;
@@ -143,7 +146,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 158;
+pub const ABI_VERSION: u32 = 159;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -642,6 +645,80 @@ pub unsafe extern "C" fn xyg_scene_pack_style_sidecars(
                 match i32::try_from(bytes.len()) {
                     Ok(count) => count,
                     Err(_) => -(StyleSidecarsCode::Limit as i32),
+                }
+            }
+            Err(error) => {
+                if out_cap >= 4 {
+                    let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                    dest[..4].copy_from_slice(&error.index.to_le_bytes());
+                }
+                -(error.code as i32)
+            }
+        }
+    })
+}
+
+/// Pack product rows plus `XYSD` v1 plus optional `XYAO` v1 into `XYAS` v1.
+/// Rust owns appending annotation styles and 56-byte mark rows and extracting
+/// `XYAD`. Returns the XYAS byte count on success, or a negated
+/// `AnnotationSpliceCode`. On error, when `out_cap >= 4`, writes the failing
+/// style index as a little-endian u32. Encoded Scene v31 is unchanged.
+///
+/// # Safety
+/// When a length is non-zero, the matching pointer must address that many
+/// readable bytes. When `out_cap` is non-zero, `out` must address that many
+/// writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_splice_annotations(
+    rows: *const u8,
+    rows_len: usize,
+    sidecars: *const u8,
+    sidecars_len: usize,
+    annotations: *const u8,
+    annotations_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if (rows_len > 0 && rows.is_null())
+        || (sidecars_len > 0 && sidecars.is_null())
+        || (annotations_len > 0 && annotations.is_null())
+        || (out_cap > 0 && out.is_null())
+    {
+        return -(AnnotationSpliceError {
+            code: AnnotationSpliceCode::Length,
+            index: 0,
+        }
+        .code as i32);
+    }
+    ffi_guard(-(AnnotationSpliceCode::Length as i32), || {
+        let row_bytes = if rows_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(rows, rows_len)
+        };
+        let sidecar_bytes = if sidecars_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(sidecars, sidecars_len)
+        };
+        let annotation_bytes = if annotations_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(annotations, annotations_len)
+        };
+        match splice_annotations(row_bytes, sidecar_bytes, annotation_bytes) {
+            Ok(bytes) => {
+                if bytes.len() > out_cap {
+                    return -(AnnotationSpliceCode::Output as i32);
+                }
+                if bytes.is_empty() {
+                    return 0;
+                }
+                let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                dest[..bytes.len()].copy_from_slice(&bytes);
+                match i32::try_from(bytes.len()) {
+                    Ok(count) => count,
+                    Err(_) => -(AnnotationSpliceCode::Limit as i32),
                 }
             }
             Err(error) => {
@@ -2427,6 +2504,10 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// `xyg_scene_pack_style_sidecars` owns XYSS dash/linecap/marker/gradient
 /// record construction from packed XYSD plus XYAO v1 so Python and Node
 /// cannot drift.
+/// ABI 159 does not change Scene records;
+/// `xyg_scene_splice_annotations` owns annotation style/row splice and XYAD
+/// extract from packed product rows plus XYSD plus XYAO v1 so Python and
+/// Node cannot drift.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
@@ -15168,6 +15249,21 @@ mod tests {
             )
         };
         assert_eq!(xyss_code, 0);
+        let mut xyas_out = vec![0u8; 4096];
+        let xyas_code = unsafe {
+            xyg_scene_splice_annotations(
+                std::ptr::null(),
+                0,
+                sidecars_out.as_ptr(),
+                sidecars_code as usize,
+                std::ptr::null(),
+                0,
+                xyas_out.as_mut_ptr(),
+                xyas_out.len(),
+            )
+        };
+        assert_eq!(xyas_code, 24);
+        assert_eq!(&xyas_out[..4], b"XYAS");
     }
 
     #[test]

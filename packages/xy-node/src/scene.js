@@ -49,6 +49,7 @@ import {
   xyScenePackTraceRows,
   xyScenePackTraceSidecars,
   xyScenePackStyleSidecars,
+  xySceneSpliceAnnotations,
   xyScenePackAnnotationMarks,
   xySceneRasterCommands,
   xySceneResolveChromeStyle,
@@ -428,32 +429,31 @@ function packAnnotationFacts(facts, styleRefBase, xDomain, yDomain) {
   return out.subarray(0, code);
 }
 
-function applyXyao(payload, kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, styles, dashes, linecaps) {
-  if (!payload.length) return new Uint8Array();
-  const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
-  if (payload[0] !== 88 || payload[1] !== 89 || payload[2] !== 65 || payload[3] !== 79 || view.getUint32(4, true) !== 1) {
-    throw new RangeError("invalid scene annotation packing");
+function packTraceRowBytes(attached, columns) {
+  const attachedBytes = attached instanceof Uint8Array ? attached : new Uint8Array();
+  const columnsBytes = columns instanceof Uint8Array ? columns : new Uint8Array();
+  let capacity = Math.max(65536, Math.floor(columnsBytes.length / 8) * 2 * 56 + 4096);
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const out = new Uint8Array(capacity);
+    const code = xyScenePackTraceRows(
+      attachedBytes.length ? u8Ptr(attachedBytes) : 0,
+      BigInt(attachedBytes.length),
+      columnsBytes.length ? u8Ptr(columnsBytes) : 0,
+      BigInt(columnsBytes.length),
+      u8Ptr(out),
+      BigInt(out.length),
+    );
+    if (code === -4) {
+      capacity *= 2;
+      continue;
+    }
+    if (code < 0) {
+      const failing = new DataView(out.buffer, out.byteOffset, 4).getUint32(0, true);
+      raiseTraceRows(code, failing);
+    }
+    return out.subarray(0, code * 56);
   }
-  const nStyles = view.getUint32(8, true);
-  const nRows = view.getUint32(12, true);
-  const xyadLen = view.getUint32(16, true);
-  let at = 32;
-  for (let i = 0; i < nStyles; i += 1) {
-    const fill = [payload[at], payload[at + 1], payload[at + 2], payload[at + 3]];
-    const stroke = [payload[at + 4], payload[at + 5], payload[at + 6], payload[at + 7]];
-    const width = view.getFloat64(at + 8, true);
-    const dashCount = payload[at + 16];
-    const cap = payload[at + 17];
-    const pattern = [];
-    for (let d = 0; d < dashCount; d += 1) pattern.push(view.getFloat32(at + 24 + d * 4, true));
-    styles.push({ fillRgba: fill, strokeRgba: stroke, strokeWidth: width });
-    dashes.push(dashCount ? pattern : null);
-    linecaps.push(cap === 255 ? null : cap);
-    at += 56;
-  }
-  const packed = payload.subarray(at, at + nRows * 56);
-  if (nRows) appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, decodePackedRows(packed, nRows));
-  return payload.subarray(at + nRows * 56, at + nRows * 56 + xyadLen);
+  raiseTraceRows(-4, 0);
 }
 
 function packAnnotationMarks(rowBytes, xDomain, yDomain) {
@@ -3694,30 +3694,8 @@ function raiseTraceRows(code, index) {
 }
 
 function packTraceRows(attached, columns) {
-  const attachedBytes = attached instanceof Uint8Array ? attached : new Uint8Array();
-  const columnsBytes = columns instanceof Uint8Array ? columns : new Uint8Array();
-  let capacity = Math.max(65536, Math.floor(columnsBytes.length / 8) * 2 * 56 + 4096);
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    const out = new Uint8Array(capacity);
-    const code = xyScenePackTraceRows(
-      attachedBytes.length ? u8Ptr(attachedBytes) : 0,
-      BigInt(attachedBytes.length),
-      columnsBytes.length ? u8Ptr(columnsBytes) : 0,
-      BigInt(columnsBytes.length),
-      u8Ptr(out),
-      BigInt(out.length),
-    );
-    if (code === -4) {
-      capacity *= 2;
-      continue;
-    }
-    if (code < 0) {
-      const failing = new DataView(out.buffer, out.byteOffset, 4).getUint32(0, true);
-      raiseTraceRows(code, failing);
-    }
-    return decodePackedRows(out, code);
-  }
-  raiseTraceRows(-4, 0);
+  const packed = packTraceRowBytes(attached, columns);
+  return decodePackedRows(packed, packed.length / 56);
 }
 
 function packXyNm(traces) {
@@ -3868,6 +3846,73 @@ function packStyleSidecars(sidecars, annotations) {
   error.code = -4;
   error.index = 0;
   throw error;
+}
+
+function spliceAnnotations(rows, sidecars, annotations) {
+  const rowBytes = rows instanceof Uint8Array ? rows : new Uint8Array();
+  const sidecarBytes = sidecars instanceof Uint8Array ? sidecars : new Uint8Array();
+  const annotationBytes = annotations instanceof Uint8Array ? annotations : new Uint8Array();
+  let capacity = Math.max(65536, rowBytes.length + sidecarBytes.length + annotationBytes.length + 4096);
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const out = new Uint8Array(capacity);
+    const code = xySceneSpliceAnnotations(
+      rowBytes.length ? u8Ptr(rowBytes) : 0,
+      BigInt(rowBytes.length),
+      sidecarBytes.length ? u8Ptr(sidecarBytes) : 0,
+      BigInt(sidecarBytes.length),
+      annotationBytes.length ? u8Ptr(annotationBytes) : 0,
+      BigInt(annotationBytes.length),
+      u8Ptr(out),
+      BigInt(out.length),
+    );
+    if (code === -4) {
+      capacity *= 2;
+      continue;
+    }
+    if (code < 0) {
+      const failing = new DataView(out.buffer, out.byteOffset, 4).getUint32(0, true);
+      const error = new RangeError(code === -2 ? "invalid scene annotation splice version" : "invalid scene annotation splice packing");
+      error.code = code;
+      error.index = failing;
+      throw error;
+    }
+    return out.subarray(0, code);
+  }
+  const error = new RangeError("invalid scene annotation splice packing");
+  error.code = -4;
+  error.index = 0;
+  throw error;
+}
+
+function unpackXyAs(blob) {
+  if (blob.length < 24 || blob[0] !== 88 || blob[1] !== 89 || blob[2] !== 65 || blob[3] !== 83) {
+    throw new RangeError("invalid scene annotation splice packing");
+  }
+  const view = new DataView(blob.buffer, blob.byteOffset, blob.byteLength);
+  if (view.getUint32(4, true) !== 1) throw new RangeError("invalid scene annotation splice version");
+  const nStyles = view.getUint32(8, true);
+  const nRows = view.getUint32(12, true);
+  const xyadLen = view.getUint32(16, true);
+  let at = 24;
+  const need = nStyles * 16 + nRows * 56 + xyadLen;
+  if (at + need > blob.length) throw new RangeError("invalid scene annotation splice packing");
+  const styles = [];
+  for (let i = 0; i < nStyles; i += 1) {
+    styles.push({
+      fillRgba: Array.from(blob.subarray(at, at + 4)),
+      strokeRgba: Array.from(blob.subarray(at + 4, at + 8)),
+      strokeWidth: view.getFloat64(at + 8, true),
+    });
+    at += 16;
+  }
+  const packed = blob.subarray(at, at + nRows * 56);
+  at += nRows * 56;
+  const xyad = blob.subarray(at, at + xyadLen);
+  if (at + xyadLen !== blob.length) throw new RangeError("invalid scene annotation splice packing");
+  const rows = nRows
+    ? decodePackedRows(packed, nRows)
+    : { kinds: [], stableIds: [], styleRefs: [], diameter: [], symbols: [], expansion: [], x0: [], y0: [], x1: [], y1: [] };
+  return { styles, xyad, ...rows };
 }
 
 function packChromeFacts(figure, legendEntries, styles, { width, height, margins = null, colorbarOk = true } = {}) {
@@ -4758,7 +4803,6 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   try { colorbarInput(figure); } catch { colorbarUnsupported = Boolean(figure.colorbarOptions ?? figure.colorbar_options); }
   const reason = sceneFigureSupportReason(figure, { colorbarUnsupported });
   if (reason) throw new RangeError(reason);
-  const kinds = [], stableIds = [], styleRefs = [], diameter = [], symbols = [], expansionModes = [], x0 = [], y0 = [], x1 = [], y1 = [];
   const xDomain = figure._range("x");
   const yDomain = figure._range("y");
   const sceneAxis = (axis, id, domain) => {
@@ -4802,33 +4846,38 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   if (sidecars.styles.length !== (figure.traces ?? []).length) {
     throw new RangeError("invalid scene sidecar packing");
   }
-  const styles = sidecars.styles;
-  const dashes = sidecars.dashes;
-  const linecaps = sidecars.linecaps;
   const legendEntries = sidecars.legend;
   const heatmapPaintPlanes = sidecars.planes;
-  let packed;
+  let rowBytes;
   try {
-    packed = packTraceRows(attachedBytes, packXyCl(figure));
+    rowBytes = packTraceRowBytes(attachedBytes, packXyCl(figure));
   } catch (error) {
     if (Number.isInteger(error.code) && error.code < 0) {
       raiseTraceRows(error.code, error.index ?? 0);
     }
     throw error;
   }
-  appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packed);
 
   const annotationParts = [];
   for (const [annotationIndex, annotation] of (figure.annotations ?? []).entries()) {
     annotationParts.push(packXyAf(annotation, annotationIndex));
   }
   const annotationFacts = concatBytes(annotationParts);
-  const annotationOutput = packAnnotationFacts(annotationFacts, styles.length, xDomain, yDomain);
+  const annotationOutput = packAnnotationFacts(annotationFacts, sidecars.styles.length, xDomain, yDomain);
   const styleSidecars = packStyleSidecars(sidecarBytes, annotationOutput);
-  const authoredText = applyXyao(
-    annotationOutput,
-    kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, styles, dashes, linecaps,
-  );
+  const spliced = unpackXyAs(spliceAnnotations(rowBytes, sidecarBytes, annotationOutput));
+  const styles = spliced.styles;
+  const kinds = spliced.kinds;
+  const stableIds = spliced.stableIds;
+  const styleRefs = spliced.styleRefs;
+  const diameter = spliced.diameter;
+  const symbols = spliced.symbols;
+  const expansionModes = spliced.expansion;
+  const x0 = spliced.x0;
+  const y0 = spliced.y0;
+  const x1 = spliced.x1;
+  const y1 = spliced.y1;
+  const authoredText = spliced.xyad;
 
   const chrome = unpackXyCc(packFigureChrome(packChromeFacts(figure, legendEntries, styles, {
     width: figure.width, height: figure.height, margins, colorbarOk: !colorbarUnsupported,
