@@ -248,7 +248,10 @@ own literal text only. Annotation `class_name` stays fail-closed as
 CSS classes. Annotation `collision` stays fail-closed as
 `XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION` (#307). Annotation `markup`
 stays fail-closed as `XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP` (#308): Scene
-owns literal text only. Polar stays fail-closed.
+owns literal text only. Annotation custom typography stays fail-closed as
+`XYG_SCENE_UNSUPPORTED_CUSTOM_FONT` (#309): Scene SVG/raster use the built-in
+default font. Text/marker `style.rotation` lifts onto the ABI 187/188
+top-level rotation field. Polar stays fail-closed.
 Per-item radius channels stay fail-closed.
 
 ## Version 3: backend-neutral core scene batch
@@ -1069,6 +1072,9 @@ Annotation `html` stays fail-closed as `XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML`
 `XYG_SCENE_UNSUPPORTED_BROWSER_CSS` (#306). Annotation `collision` stays
 fail-closed as `XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION` (#307). Annotation
 `markup` stays fail-closed as `XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP` (#308).
+Annotation custom typography stays fail-closed as
+`XYG_SCENE_UNSUPPORTED_CUSTOM_FONT` (#309). Text/marker `style.rotation`
+lifts onto the ABI 187/188 rotation field.
 Hosts pack domain tick-kind in XYCF 154–155. Invalid ABI 96
 grammar still falls back. Secondary axes stay
 fail-closed. Remaining #275

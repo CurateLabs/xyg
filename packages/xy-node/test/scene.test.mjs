@@ -1594,7 +1594,7 @@ test("Node public Scene chrome setters snapshot literals and retain Rust validat
 test("Node Scene v25 wrapped annotations reject host layout features", () => {
   for (const [field, value, reason] of [
     ["class_name", "browser-only", /BROWSER_CSS|class behavior/],
-    ["style", { font_family: "Example Sans" }, /custom fonts/],
+    ["style", { font_family: "Example Sans" }, /CUSTOM_FONT|custom font/],
     ["style", { markup: "<b>rich<\\/b>" }, /markup/],
     ["style", { collision: "avoid" }, /collision/],
   ]) {
@@ -1636,6 +1636,23 @@ test("Node Scene annotation markup stays fail-closed", () => {
   figure.line([0, 1], [0, 1]);
   figure.annotations = [{ kind: "callout", x: 0.5, y: 0.5, text: "rich", style: { markup: "<b>rich</b>" } }];
   assert.throws(() => figure.toScene(), /XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP/);
+});
+
+test("Node Scene annotation custom typography stays fail-closed as custom font", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.line([0, 1], [0, 1]);
+  figure.annotations = [{ kind: "callout", x: 0.5, y: 0.5, text: "type", style: { font_family: "Comic Sans" } }];
+  assert.throws(() => figure.toScene(), /XYG_SCENE_UNSUPPORTED_CUSTOM_FONT/);
+});
+
+test("Node Scene annotation style.rotation routes through Scene", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.line([0, 1], [0, 1]);
+  figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "rotated", style: { rotation: 30 } }];
+  const svg = sceneSvg(figure.toScene());
+  assert.match(svg, /transform="rotate\(-30 /);
 });
 
 test("Node Scene v9 rejects non-byte chrome style input before the ABI", () => {

@@ -265,6 +265,21 @@ function annotationHasMarkup(annotation) {
   return style != null && typeof style === "object" && style.markup != null && style.markup !== "";
 }
 
+const ANNOTATION_TYPOGRAPHY_STYLE_KEYS = new Set([
+  "font_family", "font_size", "font_weight", "font_style",
+  "fontFamily", "fontSize", "fontWeight", "fontStyle",
+]);
+
+function annotationHasCustomTypography(annotation) {
+  if (annotation == null || typeof annotation !== "object") return false;
+  const style = annotation.style != null && typeof annotation.style === "object" ? annotation.style : {};
+  for (const key of ANNOTATION_TYPOGRAPHY_STYLE_KEYS) {
+    if (style[key] != null && style[key] !== "" && style[key] !== false) return true;
+    if (annotation[key] != null && annotation[key] !== "" && annotation[key] !== false) return true;
+  }
+  return false;
+}
+
 function packXyAf(annotation, index) {
   // ABI 184 packs cartesian unwrapped text dx/dy/anchor as XYAW wrap=0.
   // ABI 185 packs labelled cartesian marker dx/dy/anchor the same way in Rust.
@@ -272,9 +287,16 @@ function packXyAf(annotation, index) {
   // ABI 188 packs labelled cartesian marker rotation the same way (nums[8]).
   // Annotation html is XYFS OBS_ANNOTATION_HTML (#305); Scene owns literal text.
   // Annotation markup is XYFS OBS_ANNOTATION_MARKUP (#308).
+  // Annotation custom typography is XYFS OBS_CUSTOM_FONT (#309).
+  // Text/marker style.rotation lifts onto ABI 187/188 top-level rotation.
+  annotation = { ...annotation };
   const kind = annotation.kind;
   const kindCode = XYAF_KIND_CODES[kind];
   if (kindCode == null) throw new RangeError(`Scene v12 annotations support rule, band, and unlabeled marker only; ${JSON.stringify(kind)} is deferred`);
+  const style = { ...(annotation.style ?? {}) };
+  if (["text", "marker"].includes(kind) && !Object.hasOwn(annotation, "rotation") && style.rotation != null) {
+    annotation.rotation = style.rotation;
+  }
   const authoredWrap = ["text", "callout"].includes(kind) && Object.hasOwn(annotation, "wrap");
   const layoutText = kind === "text" && ["dx", "dy", "anchor", "rotation"].some((key) => Object.hasOwn(annotation, key));
   const wrapped = authoredWrap || layoutText;
@@ -290,9 +312,10 @@ function packXyAf(annotation, index) {
   } else if (kind === "text" || kind === "callout") {
     throw new RangeError(kind === "callout" ? "Scene callouts require nonempty NUL-free text" : "Scene v16 text annotations require nonempty NUL-free text");
   }
-  const style = { ...(annotation.style ?? {}) };
   const allowed = annotationAllowedStyle(kind, wrapped, labelled);
-  const unsupported = Object.keys(style).filter((key) => !allowed.has(key) && key !== "markup" && style[key] != null).sort();
+  const skipStyle = new Set(["markup", ...ANNOTATION_TYPOGRAPHY_STYLE_KEYS]);
+  if (["text", "marker"].includes(kind)) skipStyle.add("rotation");
+  const unsupported = Object.keys(style).filter((key) => !allowed.has(key) && !skipStyle.has(key) && style[key] != null).sort();
   if (unsupported.length) {
     if (wrapped) throw new RangeError("Scene wrapped annotations do not encode class_name, custom fonts, CSS, markup, collision, or leader style");
     if (kind === "arrow") throw new RangeError(`Scene arrow style does not encode ${JSON.stringify(unsupported)}`);
@@ -2949,7 +2972,10 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
   const annotations = [...(figure.annotations ?? [])];
   let flags = 0;
   if (figure.coords !== "cartesian") flags |= 1 << 0;
-  if (Object.values(chromeStyles).some((style) => style?.fontFamily != null || style?.["font-family"] != null)) flags |= 1 << 1;
+  if (
+    Object.values(chromeStyles).some((style) => style?.fontFamily != null || style?.["font-family"] != null)
+    || annotations.some((annotation) => annotationHasCustomTypography(annotation))
+  ) flags |= 1 << 1;
   if (
     figure.className
     || figure.class_name
