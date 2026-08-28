@@ -1562,29 +1562,6 @@ function parseSceneDash(value) {
   return lengths;
 }
 
-function packXyds(dashes) {
-  const entries = dashes.map((pattern, index) => [index, pattern]).filter(([, pattern]) => pattern && pattern.length);
-  if (!entries.length) return new Uint8Array();
-  const bodyLen = entries.reduce((sum, [, pattern]) => sum + 8 + pattern.length * 4, 0);
-  const out = new Uint8Array(16 + bodyLen);
-  const view = new DataView(out.buffer);
-  out.set(encodeUtf8Magic("XYDS"), 0);
-  view.setUint32(4, 1, true);
-  view.setUint32(8, entries.length, true);
-  view.setUint32(12, 0, true);
-  let offset = 16;
-  for (const [styleRef, pattern] of entries) {
-    view.setUint32(offset, styleRef, true);
-    view.setUint32(offset + 4, pattern.length, true);
-    offset += 8;
-    for (const value of pattern) {
-      view.setFloat32(offset, value, true);
-      offset += 4;
-    }
-  }
-  return out;
-}
-
 function parseSceneLinecap(value) {
   if (value == null) return null;
   const name = String(value).trim().toLowerCase();
@@ -1592,24 +1569,6 @@ function parseSceneLinecap(value) {
   if (name === "square") return 2;
   if (name === "round") return null;
   return false;
-}
-
-function packXylc(linecaps) {
-  const entries = linecaps.map((cap, index) => [index, cap]).filter(([, cap]) => cap === 0 || cap === 2);
-  if (!entries.length) return new Uint8Array();
-  const out = new Uint8Array(16 + entries.length * 8);
-  const view = new DataView(out.buffer);
-  out.set(encodeUtf8Magic("XYLC"), 0);
-  view.setUint32(4, 1, true);
-  view.setUint32(8, entries.length, true);
-  view.setUint32(12, 0, true);
-  let offset = 16;
-  for (const [styleRef, cap] of entries) {
-    view.setUint32(offset, styleRef, true);
-    out[offset + 4] = cap;
-    offset += 8;
-  }
-  return out;
 }
 
 function validateMarkerPath(value) {
@@ -1628,40 +1587,6 @@ function validateMarkerPath(value) {
   }
   if (totalVertices > 96) return null;
   return { contours: result, filled: value.filled == null ? true : Boolean(value.filled) };
-}
-
-function packXymp(paths) {
-  const entries = paths.map((path, index) => [index, path]).filter(([, path]) => path);
-  if (!entries.length) return new Uint8Array();
-  const bodyLen = entries.reduce((sum, [, path]) => {
-    const nVertices = path.contours.reduce((count, contour) => count + contour.length / 2, 0);
-    return sum + 16 + path.contours.length * 8 + nVertices * 16;
-  }, 0);
-  const out = new Uint8Array(16 + bodyLen);
-  const view = new DataView(out.buffer);
-  out.set(encodeUtf8Magic("XYMP"), 0);
-  view.setUint32(4, 1, true);
-  view.setUint32(8, entries.length, true);
-  view.setUint32(12, 0, true);
-  let offset = 16;
-  for (const [styleRef, path] of entries) {
-    const nVertices = path.contours.reduce((count, contour) => count + contour.length / 2, 0);
-    view.setUint32(offset, styleRef, true);
-    view.setUint32(offset + 4, path.filled ? 1 : 0, true);
-    view.setUint32(offset + 8, path.contours.length, true);
-    view.setUint32(offset + 12, nVertices, true);
-    offset += 16;
-    for (const contour of path.contours) {
-      view.setUint32(offset, contour.length / 2, true);
-      view.setUint32(offset + 4, 0, true);
-      offset += 8;
-      for (let index = 0; index < contour.length; index += 1) {
-        view.setFloat64(offset, contour[index], true);
-        offset += 8;
-      }
-    }
-  }
-  return out;
 }
 
 const GRAD_DIR_CODES = { down: 0, up: 1, right: 2, left: 3 };
@@ -1804,37 +1729,6 @@ function gradientSolidCss(gradient) {
   return "rgb(0,0,0)";
 }
 
-function packXygr(gradients) {
-  const entries = gradients.map((gradient, index) => [index, gradient]).filter(([, gradient]) => gradient);
-  if (!entries.length) return new Uint8Array();
-  const bodyLen = entries.reduce((sum, [, gradient]) => sum + 16 + gradient.stops.length * 8, 0);
-  const out = new Uint8Array(16 + bodyLen);
-  const view = new DataView(out.buffer);
-  out.set(encodeUtf8Magic("XYGR"), 0);
-  view.setUint32(4, 1, true);
-  view.setUint32(8, entries.length, true);
-  view.setUint32(12, 0, true);
-  let offset = 16;
-  for (const [styleRef, gradient] of entries) {
-    let flags = GRAD_DIR_CODES[gradient.dir];
-    if (gradient.space === "plot") flags |= 1 << 2;
-    view.setUint32(offset, styleRef, true);
-    view.setUint32(offset + 4, flags, true);
-    view.setUint32(offset + 8, gradient.stops.length, true);
-    view.setUint32(offset + 12, 0, true);
-    offset += 16;
-    for (const [t, rgba] of gradient.stops) {
-      view.setFloat32(offset, t, true);
-      out[offset + 4] = rgba[0];
-      out[offset + 5] = rgba[1];
-      out[offset + 6] = rgba[2];
-      out[offset + 7] = rgba[3];
-      offset += 8;
-    }
-  }
-  return out;
-}
-
 const XYSS_HAS_DASH = 1 << 0;
 const XYSS_HAS_CAP = 1 << 1;
 const XYSS_HAS_MARKER = 1 << 2;
@@ -1938,48 +1832,6 @@ function packSceneExtrasFromFacts(polar, paint, facts) {
   if (code === -6) throw new RangeError("Scene style sidecar facts are invalid");
   if (code < 0) throw new RangeError("invalid scene extras packing");
   return out.subarray(0, code);
-}
-
-function concatStyleSidecars(dashes, linecaps, markerPaths, gradients = []) {
-  const parts = [packXyds(dashes), packXylc(linecaps), packXymp(markerPaths), packXygr(gradients)].filter((part) => part.length);
-  if (!parts.length) return new Uint8Array();
-  if (parts.length === 1) return parts[0];
-  const out = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
-  let offset = 0;
-  for (const part of parts) {
-    out.set(part, offset);
-    offset += part.length;
-  }
-  return out;
-}
-
-function packSceneExtras(polar, paint, dash = new Uint8Array()) {
-  if (!polar.length && !paint.length && !dash.length) return new Uint8Array();
-  if (polar.length && !paint.length && !dash.length) return polar;
-  if (paint.length && !polar.length && !dash.length) return paint;
-  if (dash.length && !polar.length && !paint.length) return dash;
-  if (polar.length && paint.length && !dash.length) {
-    const out = new Uint8Array(16 + polar.length + paint.length);
-    const view = new DataView(out.buffer);
-    out.set(encodeUtf8Magic("XYEX"), 0);
-    view.setUint32(4, 1, true);
-    view.setUint32(8, polar.length, true);
-    view.setUint32(12, paint.length, true);
-    out.set(polar, 16);
-    out.set(paint, 16 + polar.length);
-    return out;
-  }
-  const out = new Uint8Array(20 + polar.length + paint.length + dash.length);
-  const view = new DataView(out.buffer);
-  out.set(encodeUtf8Magic("XYEX"), 0);
-  view.setUint32(4, 2, true);
-  view.setUint32(8, polar.length, true);
-  view.setUint32(12, paint.length, true);
-  view.setUint32(16, dash.length, true);
-  out.set(polar, 20);
-  out.set(paint, 20 + polar.length);
-  out.set(dash, 20 + polar.length + paint.length);
-  return out;
 }
 
 export function polarLayout(thetaAxis = {}, rAxis = {}, plot = {}) {

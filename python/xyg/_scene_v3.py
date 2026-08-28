@@ -1885,29 +1885,6 @@ def _pack_xyss(
     return bytes(out)
 
 
-def _pack_xylc(linecaps: list[int | None]) -> bytes:
-    """Pack constant non-round linecaps keyed by host style_ref as XYLC v1."""
-    entries = [(index, cap) for index, cap in enumerate(linecaps) if cap in (0, 2)]
-    if not entries:
-        return b""
-    out = bytearray(struct.pack("<4sIII", b"XYLC", 1, len(entries), 0))
-    for style_ref, cap in entries:
-        out.extend(struct.pack("<IBxxx", int(style_ref), int(cap)))
-    return bytes(out)
-
-
-def _pack_xyds(dashes: list[list[float] | None]) -> bytes:
-    """Pack constant dash patterns keyed by host style_ref as XYDS v1."""
-    entries = [(index, pattern) for index, pattern in enumerate(dashes) if pattern]
-    if not entries:
-        return b""
-    out = bytearray(struct.pack("<4sIII", b"XYDS", 1, len(entries), 0))
-    for style_ref, pattern in entries:
-        out.extend(struct.pack("<II", int(style_ref), len(pattern)))
-        out.extend(struct.pack(f"<{len(pattern)}f", *pattern))
-    return bytes(out)
-
-
 def _fill_is_gradient_authoring(fill: Any) -> bool:
     if isinstance(fill, dict):
         return True
@@ -1978,58 +1955,6 @@ def _gradient_solid_css(gradient: dict[str, Any]) -> str:
         if rgba[3] > 0:
             return f"rgb({rgba[0]},{rgba[1]},{rgba[2]})"
     return "rgb(0,0,0)"
-
-
-def _pack_xygr(gradients: list[dict[str, Any] | None]) -> bytes:
-    """Pack constant linear-gradient fills keyed by host style_ref as XYGR v1."""
-    entries = [(index, gradient) for index, gradient in enumerate(gradients) if gradient]
-    if not entries:
-        return b""
-    out = bytearray(struct.pack("<4sIII", b"XYGR", 1, len(entries), 0))
-    for style_ref, gradient in entries:
-        flags = _GRAD_DIR_CODES[gradient["dir"]]
-        if gradient.get("space") == "plot":
-            flags |= 1 << 2
-        stops = gradient["stops"]
-        out.extend(struct.pack("<IIII", int(style_ref), flags, len(stops), 0))
-        for t, rgba in stops:
-            out.extend(struct.pack("<f4B", float(t), rgba[0], rgba[1], rgba[2], rgba[3]))
-    return bytes(out)
-
-
-def _pack_xymp(paths: list[dict[str, Any] | None]) -> bytes:
-    """Pack constant authored marker paths keyed by host style_ref as XYMP v1."""
-    entries = [(index, path) for index, path in enumerate(paths) if path]
-    if not entries:
-        return b""
-    out = bytearray(struct.pack("<4sIII", b"XYMP", 1, len(entries), 0))
-    for style_ref, path in entries:
-        contours = path["contours"]
-        n_vertices = sum(len(contour) // 2 for contour in contours)
-        flags = 1 if path.get("filled", True) else 0
-        out.extend(struct.pack("<IIII", int(style_ref), flags, len(contours), int(n_vertices)))
-        for contour in contours:
-            values = [float(value) for value in contour]
-            out.extend(struct.pack("<II", len(values) // 2, 0))
-            out.extend(struct.pack(f"<{len(values)}d", *values))
-    return bytes(out)
-
-
-def _pack_scene_extras(polar: bytes, paint: bytes, dash: bytes = b"") -> bytes:
-    """Pack polar XYPL, XYHP paint, and/or XYDS/XYLC/XYMP/XYGR style sidecars."""
-    if not polar and not paint and not dash:
-        return b""
-    if polar and not paint and not dash:
-        return polar
-    if paint and not polar and not dash:
-        return paint
-    if dash and not polar and not paint:
-        return dash
-    if polar and paint and not dash:
-        return struct.pack("<4sIII", b"XYEX", 1, len(polar), len(paint)) + polar + paint
-    return (
-        struct.pack("<4sIIII", b"XYEX", 2, len(polar), len(paint), len(dash)) + polar + paint + dash
-    )
 
 
 def figure_scene(
