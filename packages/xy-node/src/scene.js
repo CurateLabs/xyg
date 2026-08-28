@@ -45,6 +45,7 @@ import {
   xyScenePackPublicExport,
   xyScenePackFigureChrome,
   xyScenePackTraceCompile,
+  xyScenePackTraceAttach,
   xyScenePackAnnotationMarks,
   xySceneRasterCommands,
   xySceneResolveChromeStyle,
@@ -101,10 +102,6 @@ function decodePackedRows(out, code) {
   return rows;
 }
 
-const FACT_STROKE_PERIMETER = 1;
-const FACT_CURVE_SMOOTH = 2;
-const FACT_DENSITY_PLANE = 4;
-const FACT_HEATMAP_PAINT = 8;
 const XYHF_FAMILY_HEATMAP = 0;
 const XYHF_FAMILY_DENSITY = 1;
 const XYHF_HAS_RGBA = 1 << 0;
@@ -2982,6 +2979,20 @@ const XYTC_HAS_GRADIENT_SPEC = 1 << 19;
 const XYTC_HAS_FILL_DICT = 1 << 20;
 const XYTC_SYMBOL_INT = 1 << 21;
 const XYTO_LINECAP_NONE = 255;
+const XYTA_HEATMAP = 1 << 0;
+const XYTA_DENSITY = 1 << 1;
+const XYTA_HAS_RGBA = 1 << 2;
+const XYTA_HAS_RGBA_GRID = 1 << 3;
+const XYTA_HAS_GRID = 1 << 4;
+const XYTA_TRUECOLOR = 1 << 5;
+const XYTA_HAS_NAMED_CMAP = 1 << 6;
+const XYTA_HAS_STOPS = 1 << 7;
+const XYTA_HAS_COLOR_CH = 1 << 8;
+const XYTA_HAS_STYLE_COLOR = 1 << 9;
+const XYTA_HAS_OPACITY = 1 << 10;
+const XYTA_HAS_FILL_OPACITY = 1 << 11;
+const XYTA_HAS_DOMAIN = 1 << 12;
+const XYTA_SHAPE = 1 << 13;
 const GRAD_DIR_FROM_CODE = { 0: "down", 1: "up", 2: "right", 3: "left" };
 
 function packMarkerBlob(value) {
@@ -3331,6 +3342,309 @@ function packTraceCompile(facts) {
     throw error;
   }
   return out.subarray(0, code);
+}
+
+function packXyTaColormap(trace) {
+  const style = trace.style ?? {};
+  const colormap = style.colormap ?? trace.colormap;
+  const stopSource = style.colormapStops ?? trace.colormapStops;
+  let flags = 0;
+  let cmap = new Uint8Array();
+  let stops = new Uint8Array();
+  if (typeof colormap === "string") {
+    flags |= XYTA_HAS_NAMED_CMAP;
+    cmap = new TextEncoder().encode(colormap);
+  } else if (colormap != null || stopSource != null) {
+    flags |= XYTA_HAS_STOPS;
+    stops = stopSource == null
+      ? Uint8Array.from(colormap.flat ? colormap.flat() : colormap)
+      : Uint8Array.from(stopSource);
+  }
+  return { flags, cmap, stops };
+}
+
+function packXyTa(figure, xDomain, yDomain) {
+  const traces = figure.traces ?? [];
+  const records = [new Uint8Array(16)];
+  const header = new DataView(records[0].buffer);
+  records[0].set(new TextEncoder().encode("XYTA"), 0);
+  header.setUint32(4, 1, true);
+  header.setUint32(8, traces.length, true);
+  for (const [traceIndex, trace] of traces.entries()) {
+    const style = trace.style ?? {};
+    let flags = 0;
+    let rows = 0;
+    let cols = 0;
+    let grid = new Uint8Array();
+    let rgba = new Uint8Array();
+    let rgbaGrid = new Uint8Array();
+    let x = new Uint8Array();
+    let y = new Uint8Array();
+    let meanRgba = new Uint8Array();
+    let idx = new Uint8Array();
+    let lut = new Uint8Array();
+    let cmap = new Uint8Array();
+    let stops = new Uint8Array();
+    let colorCh = new Uint8Array();
+    let styleColor = new Uint8Array();
+    let domainX0 = Number.NaN;
+    let domainX1 = Number.NaN;
+    let domainY0 = Number.NaN;
+    let domainY1 = Number.NaN;
+    let cmapLo = Number.NaN;
+    let cmapHi = Number.NaN;
+    let opacity = Number.NaN;
+    let fillOpacity = Number.NaN;
+    if (HEATMAP_KINDS.has(trace.kind)) {
+      flags |= XYTA_HEATMAP;
+      const shape = trace.grid_shape;
+      if (shape != null && shape.length === 2) {
+        flags |= XYTA_SHAPE;
+        const rawRows = Number(shape[0]);
+        const rawCols = Number(shape[1]);
+        if (Number.isInteger(rawRows) && Number.isInteger(rawCols)) {
+          rows = rawRows;
+          cols = rawCols;
+        }
+      }
+      if (trace.grid != null) {
+        flags |= XYTA_HAS_GRID;
+        grid = packF64Le(trace.grid);
+      }
+      if (trace.rgba != null) {
+        flags |= XYTA_HAS_RGBA;
+        const packed = trace.rgba;
+        rgba = packed instanceof Uint8Array
+          ? packed
+          : packed.rgba instanceof Uint8Array
+            ? packed.rgba
+            : Uint8Array.from(packed);
+      }
+      if (trace.rgba_grid != null) {
+        flags |= XYTA_HAS_RGBA_GRID;
+        const planes = trace.rgba_grid;
+        if (planes.length === 4 && rows > 0 && cols > 0) {
+          const interleaved = new Float64Array(rows * cols * 4);
+          for (let row = 0; row < rows; row += 1) {
+            for (let col = 0; col < cols; col += 1) {
+              const index = (row * cols + col) * 4;
+              for (let channel = 0; channel < 4; channel += 1) {
+                interleaved[index + channel] = Number(planes[channel][row * cols + col] ?? planes[channel][row]?.[col]);
+              }
+            }
+          }
+          rgbaGrid = new Uint8Array(interleaved.buffer);
+        }
+      }
+      const packedCmap = packXyTaColormap(trace);
+      flags |= packedCmap.flags;
+      cmap = packedCmap.cmap;
+      stops = packedCmap.stops;
+      if (style.truecolor) flags |= XYTA_TRUECOLOR;
+      const domain = style.domain;
+      if (domain != null && domain.length === 2) {
+        flags |= XYTA_HAS_DOMAIN;
+        cmapLo = Number(domain[0]);
+        cmapHi = Number(domain[1]);
+      }
+    } else if ((trace.kind ?? "scatter") === "scatter" && scatterUsesDensity(trace)) {
+      flags |= XYTA_DENSITY;
+      if (trace.x != null) x = packF64Le(asF64Array(trace.x, "x"));
+      if (trace.y != null) y = packF64Le(asF64Array(trace.y, "y"));
+      domainX0 = Number(xDomain[0]);
+      domainX1 = Number(xDomain[1]);
+      domainY0 = Number(yDomain[0]);
+      domainY1 = Number(yDomain[1]);
+      const packedCmap = packXyTaColormap(trace);
+      flags |= packedCmap.flags;
+      cmap = packedCmap.cmap;
+      stops = packedCmap.stops;
+      const channel = trace.color_ch ?? trace.colorChannel;
+      if (channel != null && channel.mode === "constant" && channel.constant != null) {
+        flags |= XYTA_HAS_COLOR_CH;
+        colorCh = new TextEncoder().encode(String(channel.constant));
+      }
+      if (style.color != null) {
+        flags |= XYTA_HAS_STYLE_COLOR;
+        styleColor = new TextEncoder().encode(String(style.color));
+      }
+      if (Object.hasOwn(style, "opacity")) {
+        flags |= XYTA_HAS_OPACITY;
+        opacity = Number(style.opacity);
+      }
+      if (Object.hasOwn(style, "fill_opacity") || Object.hasOwn(style, "fillOpacity")) {
+        flags |= XYTA_HAS_FILL_OPACITY;
+        fillOpacity = Number(style.fill_opacity ?? style.fillOpacity);
+      }
+      const source = resolveDensityBinColors(trace);
+      if (source?.rgba != null) {
+        meanRgba = source.rgba instanceof Uint8Array ? source.rgba : Uint8Array.from(source.rgba);
+      } else if (source?.idx != null && source?.lut != null) {
+        idx = source.idx instanceof Uint8Array ? source.idx : Uint8Array.from(source.idx);
+        lut = source.lut instanceof Uint8Array ? source.lut : Uint8Array.from(source.lut);
+      }
+    }
+    const prefix = new Uint8Array(128);
+    const view = new DataView(prefix.buffer);
+    view.setUint32(0, flags, true);
+    view.setUint32(4, Number(trace.id ?? traceIndex) >>> 0, true);
+    view.setInt32(8, rows, true);
+    view.setInt32(12, cols, true);
+    view.setUint32(16, grid.length / 8, true);
+    view.setUint32(20, rgba.length, true);
+    view.setUint32(24, rgbaGrid.length / 8, true);
+    view.setUint32(28, x.length / 8, true);
+    view.setUint32(32, y.length / 8, true);
+    view.setUint32(36, meanRgba.length, true);
+    view.setUint32(40, idx.length, true);
+    view.setUint32(44, lut.length, true);
+    view.setUint16(48, Math.min(cmap.length, 65535), true);
+    view.setUint16(50, Math.min(stops.length, 65535), true);
+    view.setUint16(52, Math.min(colorCh.length, 65535), true);
+    view.setUint16(54, Math.min(styleColor.length, 65535), true);
+    view.setFloat64(56, domainX0, true);
+    view.setFloat64(64, domainX1, true);
+    view.setFloat64(72, domainY0, true);
+    view.setFloat64(80, domainY1, true);
+    view.setFloat64(88, cmapLo, true);
+    view.setFloat64(96, cmapHi, true);
+    view.setFloat32(104, opacity, true);
+    view.setFloat32(108, fillOpacity, true);
+    records.push(
+      prefix, grid, rgba, rgbaGrid,
+      cmap.subarray(0, 65535), stops.subarray(0, 65535),
+      colorCh.subarray(0, 65535), styleColor.subarray(0, 65535),
+      x, y, meanRgba, idx, lut,
+    );
+  }
+  return concatBytes(records);
+}
+
+function unpackXyTt(blob) {
+  if (blob.length < 16 || blob[0] !== 88 || blob[1] !== 89 || blob[2] !== 84 || blob[3] !== 84) {
+    throw new RangeError("invalid scene trace attach packing");
+  }
+  const view = new DataView(blob.buffer, blob.byteOffset, blob.byteLength);
+  if (view.getUint32(4, true) !== 1) throw new RangeError("invalid scene trace attach facts version");
+  const nTraces = view.getUint32(8, true);
+  let at = 16;
+  const attached = [];
+  for (let i = 0; i < nTraces; i += 1) {
+    if (blob[at] !== 88 || blob[at + 1] !== 89 || blob[at + 2] !== 84 || blob[at + 3] !== 79) {
+      throw new RangeError("invalid scene trace attach packing");
+    }
+    const fillRgba = Array.from(blob.subarray(at + 8, at + 12));
+    const strokeRgba = Array.from(blob.subarray(at + 12, at + 16));
+    const strokeWidth = view.getFloat64(at + 16, true);
+    const diameter = view.getFloat64(at + 24, true);
+    const symbol = view.getUint16(at + 32, true);
+    const legendKind = blob[at + 34];
+    const legendInclude = blob[at + 35] !== 0;
+    const legendSymbol = view.getUint16(at + 36, true);
+    const authoredStep = view.getUint16(at + 38, true);
+    const factBits = view.getUint32(at + 40, true);
+    const dashCount = view.getUint32(at + 44, true);
+    const linecap = blob[at + 48];
+    const hasMarker = blob[at + 49];
+    const hasGradient = blob[at + 50];
+    const markerLen = view.getUint32(at + 52, true);
+    const gradientLen = view.getUint32(at + 56, true);
+    const hexDx = view.getFloat64(at + 60, true);
+    const hexDy = view.getFloat64(at + 68, true);
+    const heatmapLen = view.getUint32(at + 160, true);
+    const densityLen = view.getUint32(at + 164, true);
+    const gridRows = view.getUint32(at + 168, true);
+    const gridCols = view.getUint32(at + 172, true);
+    const rewriteX0 = view.getFloat64(at + 176, true);
+    const rewriteX1 = view.getFloat64(at + 184, true);
+    const rewriteY0 = view.getFloat64(at + 192, true);
+    const rewriteY1 = view.getFloat64(at + 200, true);
+    at += 208;
+    let dash = null;
+    if (dashCount) {
+      dash = [];
+      for (let j = 0; j < dashCount; j += 1) {
+        dash.push(view.getFloat64(at, true));
+        at += 8;
+      }
+    }
+    const marker = blob.subarray(at, at + markerLen);
+    at += markerLen;
+    const gradient = blob.subarray(at, at + gradientLen);
+    at += gradientLen;
+    const heatmap = blob.subarray(at, at + heatmapLen);
+    at += heatmapLen;
+    const density = blob.subarray(at, at + densityLen);
+    at += densityLen;
+    attached.push({
+      fillRgba, strokeRgba, strokeWidth, diameter, symbol, legendKind, legendInclude, legendSymbol,
+      authoredStep, factBits, hexDx, hexDy,
+      dash,
+      linecap: linecap === XYTO_LINECAP_NONE ? null : linecap,
+      markerPath: hasMarker && marker.length ? unpackMarkerBlob(marker) : null,
+      fillGradient: hasGradient && gradient.length ? unpackGradientBlob(gradient) : null,
+      heatmap: heatmapLen ? heatmap : new Uint8Array(),
+      density: densityLen ? density : new Uint8Array(),
+      gridRows,
+      gridCols,
+      packX: densityLen ? [rewriteX0, rewriteX1] : null,
+      packY: densityLen ? [rewriteY0, rewriteY1] : null,
+    });
+  }
+  if (at !== blob.length) throw new RangeError("invalid scene trace attach packing");
+  return attached;
+}
+
+function raiseTraceAttach(code, index, figure) {
+  const trace = figure.traces?.[index];
+  if (code === -5) throw new RangeError("Scene v12 heatmap requires a rows x cols grid_shape");
+  if (code === -6) throw new RangeError("Scene v12 heatmap requires a positive grid_shape");
+  if (code === -7) throw new RangeError("heatmap Scene v12 compilation requires a scalar grid");
+  if (code === -8) throw new RangeError("Scene v12 heatmap grid must match rows x cols");
+  if (code === -9) throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
+  if (code === -10) throw new RangeError("Scene heatmap RGBA plane must match rows x cols");
+  if (code === -11) throw new RangeError("Scene heatmap truecolor requires four RGBA planes");
+  if (code === -12) {
+    const label = trace?.kind === "scatter" ? "density" : "heatmap";
+    throw new RangeError(`Scene ${label} colormap requires RGB stops`);
+  }
+  if (code === -13) throw new RangeError("Scene density columns must have equal length");
+  if (code === -14) throw new RangeError("Scene density mean-color source is invalid");
+  if (code === -2) throw new RangeError("invalid scene trace attach facts version");
+  throw new RangeError("invalid scene trace attach packing");
+}
+
+function packTraceAttach(compiled, attach) {
+  const compiledBytes = compiled instanceof Uint8Array ? compiled : new Uint8Array();
+  const attachBytes = attach instanceof Uint8Array ? attach : new Uint8Array();
+  let capacity = Math.max(65536, compiledBytes.length + attachBytes.length + 32 + 512 * 384 * 5 + 4096);
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const out = new Uint8Array(capacity);
+    const code = xyScenePackTraceAttach(
+      compiledBytes.length ? u8Ptr(compiledBytes) : 0,
+      BigInt(compiledBytes.length),
+      attachBytes.length ? u8Ptr(attachBytes) : 0,
+      BigInt(attachBytes.length),
+      u8Ptr(out),
+      BigInt(out.length),
+    );
+    if (code === -4) {
+      capacity *= 2;
+      continue;
+    }
+    if (code < 0) {
+      const index = new DataView(out.buffer, out.byteOffset, 4).getUint32(0, true);
+      const error = new RangeError("invalid scene trace attach packing");
+      error.code = code;
+      error.index = index;
+      throw error;
+    }
+    return out.subarray(0, code);
+  }
+  const error = new RangeError("invalid scene trace attach packing");
+  error.code = -4;
+  error.index = 0;
+  throw error;
 }
 
 function packChromeFacts(figure, legendEntries, styles, { width, height, margins = null, colorbarOk = true } = {}) {
@@ -4239,18 +4553,23 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   const ySceneAxis = sceneAxis("y", 2, yDomain);
   const xSceneDescriptor = axisDescriptor(xSceneAxis, "xAxis");
   const ySceneDescriptor = axisDescriptor(ySceneAxis, "yAxis");
-  let compiledTraces;
+  let attachedTraces;
   try {
-    compiledTraces = unpackXyTo(packTraceCompile(packXyTc(figure)));
+    const compiledBytes = packTraceCompile(packXyTc(figure));
+    attachedTraces = unpackXyTt(packTraceAttach(compiledBytes, packXyTa(figure, xDomain, yDomain)));
   } catch (error) {
-    if (Number.isInteger(error.code) && error.code < 0) raiseTraceCompile(error.code, error.index ?? 0, figure);
+    if (Number.isInteger(error.code) && error.code < 0) {
+      const name = String(error.message ?? "");
+      if (name.includes("compile")) raiseTraceCompile(error.code, error.index ?? 0, figure);
+      raiseTraceAttach(error.code, error.index ?? 0, figure);
+    }
     throw error;
   }
-  if (compiledTraces.length !== (figure.traces ?? []).length) {
-    throw new RangeError("invalid scene trace compile packing");
+  if (attachedTraces.length !== (figure.traces ?? []).length) {
+    throw new RangeError("invalid scene trace attach packing");
   }
   for (const [traceIndex, trace] of figure.traces.entries()) {
-    const compiled = compiledTraces[traceIndex];
+    const compiled = attachedTraces[traceIndex];
     styles.push({ fillRgba: compiled.fillRgba, strokeRgba: compiled.strokeRgba, strokeWidth: compiled.strokeWidth });
     dashes.push(compiled.dash);
     linecaps.push(compiled.linecap);
@@ -4264,73 +4583,20 @@ export function figureSceneV3(figure, { margins = null } = {}) {
 
     let packSymbol = 0;
     let packDiameter = 0;
-    let packX = trace.x;
-    let packY = trace.y;
+    let packX = compiled.packX ?? trace.x;
+    let packY = compiled.packY ?? trace.y;
     let authoredStep = compiled.authoredStep;
     let factBits = compiled.factBits;
     let hexDx = compiled.hexDx;
     let hexDy = compiled.hexDy;
-    let gridRows = 0;
-    let gridCols = 0;
-    if (HEATMAP_KINDS.has(trace.kind)) {
-      const shape = trace.grid_shape;
-      if (shape == null || shape.length !== 2) {
-        throw new RangeError("Scene v12 heatmap requires a rows x cols grid_shape");
-      }
-      const rows = Number(shape[0]);
-      const cols = Number(shape[1]);
-      if (!Number.isInteger(rows) || !Number.isInteger(cols) || rows < 1 || cols < 1) {
-        throw new RangeError("Scene v12 heatmap requires a positive grid_shape");
-      }
-      const grid = trace.grid;
-      if (grid == null) {
-        throw new RangeError("heatmap Scene v12 compilation requires a scalar grid");
-      }
-      if (grid.length !== rows * cols) {
-        throw new RangeError("Scene v12 heatmap grid must match rows x cols");
-      }
-      if (Array.from(grid).some((value) => !Number.isFinite(value))) {
-        throw new RangeError("Scene v12 does not yet encode missing-data breaks or nonfinite coordinates");
-      }
-      gridRows = rows;
-      gridCols = cols;
-      const plane = heatmapPaintPlane(trace, rows, cols, id);
-      if (plane.length) {
-        heatmapPaintPlanes.push(plane);
-        factBits |= FACT_HEATMAP_PAINT;
-      }
-    } else if (trace.kind === "scatter") {
+    let gridRows = compiled.gridRows;
+    let gridCols = compiled.gridCols;
+    if ((trace.kind ?? "scatter") === "scatter") {
       packSymbol = compiled.symbol;
       packDiameter = compiled.diameter;
-      const perItem = (trace.style ?? {}).color_channel != null
-        || (trace.style ?? {}).size_channel != null
-        || (trace.style ?? {}).stroke_channel != null
-        || trace.color_ch != null
-        || trace.size_ch != null
-        || trace.stroke_ch != null;
-      if (shouldUseDensity(trace.x?.length ?? 0, {
-        forceDensity: Boolean(trace.force_density ?? trace.forceDensity),
-        forceDirect: Boolean(trace.force_direct ?? trace.forceDirect),
-        coords: "cartesian",
-        perItemChannels: perItem,
-      })) {
-        const packed = packDensityGrid(
-          trace.x, trace.y, xDomain[0], xDomain[1], yDomain[0], yDomain[1], resolveDensityBinColors(trace),
-        );
-        if (packed) {
-          heatmapPaintPlanes.push(densityPaintPlane(
-            trace, packed.encoded, packed.rows, packed.cols, packed.max, id, packed.meanRgba,
-          ));
-          gridRows = packed.rows;
-          gridCols = packed.cols;
-          factBits |= FACT_DENSITY_PLANE;
-          packSymbol = 0;
-          packDiameter = 0;
-          packX = [xDomain[0], xDomain[1]];
-          packY = [yDomain[0], yDomain[1]];
-        }
-      }
     }
+    const plane = compiled.heatmap.length ? compiled.heatmap : compiled.density;
+    if (plane.length) heatmapPaintPlanes.push(plane);
     appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packProductFacts({
       facts: packXyPk({
         kind: trace.kind,

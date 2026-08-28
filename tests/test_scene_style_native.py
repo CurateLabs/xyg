@@ -22,6 +22,7 @@ from xyg._native import (
     scene_pack_public_export,
     scene_pack_scene_extras,
     scene_pack_trace,
+    scene_pack_trace_attach,
     scene_pack_trace_compile,
     scene_resolve_chrome_style,
     scene_resolve_mark_styles,
@@ -60,6 +61,17 @@ def test_empty_trace_compile_facts_emit_xyto() -> None:
         b"XYTC" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
     )
     assert packed[:4] == b"XYTO"
+    assert int.from_bytes(packed[8:12], "little") == 0
+
+
+def test_empty_trace_attach_facts_emit_xytt() -> None:
+    compiled = scene_pack_trace_compile(
+        b"XYTC" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    )
+    packed = scene_pack_trace_attach(
+        compiled, b"XYTA" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    )
+    assert packed[:4] == b"XYTT"
     assert int.from_bytes(packed[8:12], "little") == 0
 
 

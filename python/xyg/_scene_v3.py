@@ -535,28 +535,6 @@ _KIND_CODES = {
 }
 
 
-_XYPK_FACT_STROKE_PERIMETER = 1
-_XYPK_FACT_CURVE_SMOOTH = 2
-_XYPK_FACT_DENSITY_PLANE = 4
-_XYPK_FACT_HEATMAP_PAINT = 8
-
-_XYHF_HEADER = struct.Struct("<4sIQIIIB3x4d")
-_XYHF_FAMILY_HEATMAP = 0
-_XYHF_FAMILY_DENSITY = 1
-_XYHF_HAS_RGBA = 1 << 0
-_XYHF_HAS_RGBA_GRID = 1 << 1
-_XYHF_HAS_GRID = 1 << 2
-_XYHF_HAS_ENCODED = 1 << 3
-_XYHF_HAS_MEAN_RGBA = 1 << 4
-_XYHF_HAS_NAMED_CMAP = 1 << 5
-_XYHF_HAS_STOPS = 1 << 6
-_XYHF_HAS_TRUECOLOR = 1 << 7
-_XYHF_HAS_COLOR_CH = 1 << 8
-_XYHF_HAS_STYLE_COLOR = 1 << 9
-_XYHF_HAS_OPACITY = 1 << 10
-_XYHF_HAS_FILL_OPACITY = 1 << 11
-_XYHF_HAS_DOMAIN = 1 << 12
-
 _XYAF_KIND_CODES = {
     "text": 0,
     "arrow": 1,
@@ -1940,42 +1918,6 @@ def _heatmap_extent(trace: Any) -> tuple[float, float, float, float]:
     return x0, x1, y0, y1
 
 
-def _pack_xyhf(
-    *,
-    family: int,
-    flags: int,
-    stable_id: int,
-    rows: int,
-    cols: int,
-    lo: float,
-    hi: float,
-    opacity: float,
-    fill_opacity: float,
-    remainder: bytes,
-) -> bytes:
-    """Pack authored heatmap/density paint facts; Rust owns XYHP kind routing."""
-    return (
-        _XYHF_HEADER.pack(
-            b"XYHF",
-            1,
-            int(stable_id),
-            int(rows),
-            int(cols),
-            int(flags),
-            int(family),
-            float(lo),
-            float(hi),
-            float(opacity),
-            float(fill_opacity),
-        )
-        + remainder
-    )
-
-
-def _pack_xyhf_prefixed(payload: bytes) -> bytes:
-    return struct.pack("<I", len(payload)) + payload
-
-
 def _colormap_stop_bytes(colormap: Any, label: str) -> bytes:
     stops = np.ascontiguousarray(
         [(int(red), int(green), int(blue)) for red, green, blue in colormap],
@@ -1986,172 +1928,166 @@ def _colormap_stop_bytes(colormap: Any, label: str) -> bytes:
     return np.ascontiguousarray(stops).tobytes()
 
 
-def _heatmap_paint_plane(
-    trace: Any,
-    values: np.ndarray,
-    rows: int,
-    cols: int,
-    stable_id: int,
-) -> bytes:
-    """Pack one XYHF v1 heatmap record. Rust emits the XYHP plane or skips."""
-    style = getattr(trace, "style", None) or {}
-    flags = _XYHF_HAS_GRID
-    remainder = bytearray(np.ascontiguousarray(values.reshape(-1), dtype=np.float64).tobytes())
-    packed = getattr(trace, "rgba", None)
-    planes = getattr(trace, "rgba_grid", None)
-    if packed is not None:
-        flags |= _XYHF_HAS_RGBA
-        remainder[0:0] = np.ascontiguousarray(
-            np.asarray(packed, dtype=np.uint8).reshape(rows, cols, 4)
-        ).tobytes()
-    if planes is not None:
-        if len(planes) != 4:
-            raise UnsupportedSceneV3("Scene heatmap truecolor requires four RGBA planes")
-        flags |= _XYHF_HAS_RGBA_GRID
-        channels_f64 = [
-            np.asarray(getattr(plane, "values", plane), dtype=np.float64).reshape(rows, cols)
-            for plane in planes
-        ]
-        grid_rgba = np.ascontiguousarray(np.stack(channels_f64, axis=-1))
-        rgba_offset = rows * cols * 4 if packed is not None else 0
-        remainder[rgba_offset:rgba_offset] = grid_rgba.tobytes()
+def _pack_xyta_colormap(style: dict[str, Any]) -> tuple[int, bytes, bytes]:
+    flags = 0
+    cmap = b""
+    stops = b""
     colormap = style.get("colormap")
     if isinstance(colormap, str):
-        flags |= _XYHF_HAS_NAMED_CMAP
-        remainder.extend(_pack_xyhf_prefixed(colormap.encode("utf-8")))
+        flags |= _XYTA_HAS_NAMED_CMAP
+        cmap = colormap.encode("utf-8")
     elif colormap is not None:
-        flags |= _XYHF_HAS_STOPS
-        remainder.extend(_pack_xyhf_prefixed(_colormap_stop_bytes(colormap, "heatmap")))
-    if style.get("truecolor"):
-        flags |= _XYHF_HAS_TRUECOLOR
-    domain = style.get("domain")
-    if domain is None or len(domain) != 2:
-        lo, hi = float("nan"), float("nan")
-    else:
-        flags |= _XYHF_HAS_DOMAIN
-        lo, hi = float(domain[0]), float(domain[1])
-    try:
-        return _native.scene_pack_heatmap_facts(
-            _pack_xyhf(
-                family=_XYHF_FAMILY_HEATMAP,
-                flags=flags,
-                stable_id=stable_id,
-                rows=rows,
-                cols=cols,
-                lo=lo,
-                hi=hi,
-                opacity=float("nan"),
-                fill_opacity=float("nan"),
-                remainder=bytes(remainder),
+        flags |= _XYTA_HAS_STOPS
+        try:
+            stops = _colormap_stop_bytes(colormap, "heatmap")
+        except (TypeError, ValueError, UnsupportedSceneV3):
+            stops = b""
+    return flags, cmap, stops
+
+
+def _pack_xyta(figure: Any) -> bytes:
+    """Pack authored heatmap/density attach facts as XYTA v1; Rust emits XYTT."""
+    traces = list(getattr(figure, "traces", None) or [])
+    records = bytearray(_XYTA_HEADER.pack(b"XYTA", 1, len(traces), 0))
+    nan = float("nan")
+    for trace in traces:
+        style = getattr(trace, "style", None) or {}
+        flags = 0
+        rows = cols = 0
+        grid = b""
+        rgba = b""
+        rgba_grid = b""
+        x = b""
+        y = b""
+        mean_rgba = b""
+        idx = b""
+        lut = b""
+        cmap = b""
+        stops = b""
+        color_ch_b = b""
+        style_color = b""
+        domain_x0 = domain_x1 = domain_y0 = domain_y1 = nan
+        cmap_lo = cmap_hi = nan
+        opacity = fill_opacity = nan
+        if trace.kind in _HEATMAP_KINDS:
+            flags |= _XYTA_HEATMAP
+            shape = getattr(trace, "grid_shape", None)
+            if shape is not None and len(shape) == 2:
+                flags |= _XYTA_SHAPE
+                try:
+                    rows, cols = int(shape[0]), int(shape[1])
+                except (TypeError, ValueError):
+                    rows = cols = 0
+            raw_grid = getattr(trace, "grid", None)
+            if raw_grid is not None:
+                flags |= _XYTA_HAS_GRID
+                grid = np.ascontiguousarray(
+                    np.asarray(getattr(raw_grid, "values", raw_grid), dtype=np.float64).reshape(-1)
+                ).tobytes()
+            packed = getattr(trace, "rgba", None)
+            if packed is not None:
+                flags |= _XYTA_HAS_RGBA
+                rgba = np.ascontiguousarray(
+                    np.asarray(packed, dtype=np.uint8).reshape(-1)
+                ).tobytes()
+            planes = getattr(trace, "rgba_grid", None)
+            if planes is not None:
+                flags |= _XYTA_HAS_RGBA_GRID
+                if len(planes) == 4:
+                    channels_f64 = [
+                        np.asarray(getattr(plane, "values", plane), dtype=np.float64).reshape(-1)
+                        for plane in planes
+                    ]
+                    rgba_grid = np.ascontiguousarray(np.stack(channels_f64, axis=-1)).tobytes()
+            cmap_flags, cmap, stops = _pack_xyta_colormap(style)
+            flags |= cmap_flags
+            if style.get("truecolor"):
+                flags |= _XYTA_TRUECOLOR
+            domain = style.get("domain")
+            if domain is not None and len(domain) == 2:
+                flags |= _XYTA_HAS_DOMAIN
+                cmap_lo, cmap_hi = float(domain[0]), float(domain[1])
+        elif trace.kind == "scatter" and trace.use_density():
+            flags |= _XYTA_DENSITY
+            xv = _trace_column(trace, "x")
+            yv = _trace_column(trace, "y")
+            if xv is not None:
+                x = np.ascontiguousarray(xv, dtype=np.float64).tobytes()
+            if yv is not None:
+                y = np.ascontiguousarray(yv, dtype=np.float64).tobytes()
+            xr0, xr1 = (float(value) for value in figure._range("x"))
+            yr0, yr1 = (float(value) for value in figure._range("y"))
+            domain_x0, domain_x1, domain_y0, domain_y1 = xr0, xr1, yr0, yr1
+            cmap_flags, cmap, stops = _pack_xyta_colormap(style)
+            flags |= cmap_flags
+            channel = getattr(trace, "color_ch", None)
+            if channel is not None and channel.mode == "constant" and channel.constant is not None:
+                flags |= _XYTA_HAS_COLOR_CH
+                color_ch_b = str(channel.constant).encode("utf-8")
+            if style.get("color") is not None:
+                flags |= _XYTA_HAS_STYLE_COLOR
+                style_color = str(style.get("color")).encode("utf-8")
+            if "opacity" in style:
+                flags |= _XYTA_HAS_OPACITY
+                opacity = float(style["opacity"])
+            if "fill_opacity" in style:
+                flags |= _XYTA_HAS_FILL_OPACITY
+                fill_opacity = float(style["fill_opacity"])
+            bin_colors = channels.resolve_bin_colors(channel, None)
+            if bin_colors:
+                if "rgba" in bin_colors:
+                    mean_rgba = np.ascontiguousarray(
+                        np.asarray(bin_colors["rgba"], dtype=np.uint8).reshape(-1)
+                    ).tobytes()
+                if "idx" in bin_colors:
+                    idx = np.ascontiguousarray(
+                        np.asarray(bin_colors["idx"], dtype=np.uint8).reshape(-1)
+                    ).tobytes()
+                if "lut" in bin_colors:
+                    lut = np.ascontiguousarray(
+                        np.asarray(bin_colors["lut"], dtype=np.uint8).reshape(-1)
+                    ).tobytes()
+        records.extend(
+            _XYTA_PREFIX.pack(
+                flags,
+                int(getattr(trace, "id", 0)) & 0xFFFFFFFF,
+                int(rows),
+                int(cols),
+                len(grid) // 8,
+                len(rgba),
+                len(rgba_grid) // 8,
+                len(x) // 8,
+                len(y) // 8,
+                len(mean_rgba),
+                len(idx),
+                len(lut),
+                min(len(cmap), 65535),
+                min(len(stops), 65535),
+                min(len(color_ch_b), 65535),
+                min(len(style_color), 65535),
+                float(domain_x0),
+                float(domain_x1),
+                float(domain_y0),
+                float(domain_y1),
+                float(cmap_lo),
+                float(cmap_hi),
+                float(opacity),
+                float(fill_opacity),
             )
         )
-    except ValueError as error:
-        raise UnsupportedSceneV3(str(error)) from error
-
-
-def _density_paint_plane(
-    trace: Any,
-    encoded: np.ndarray,
-    rows: int,
-    cols: int,
-    maximum: float,
-    stable_id: int,
-    mean_rgba: np.ndarray | None = None,
-) -> bytes:
-    """Pack one XYHF v1 density record. Rust owns kind/opacity/colormap routing."""
-    style = getattr(trace, "style", None) or {}
-    encoded_u8 = np.ascontiguousarray(np.asarray(encoded, dtype=np.uint8).reshape(-1))
-    if encoded_u8.size != rows * cols:
-        raise UnsupportedSceneV3("Scene density grid must match DENSITY_GRID")
-    flags = _XYHF_HAS_ENCODED
-    remainder = bytearray(encoded_u8.tobytes())
-    if mean_rgba is not None:
-        rgba_u8 = np.ascontiguousarray(np.asarray(mean_rgba, dtype=np.uint8).reshape(-1))
-        if rgba_u8.size != rows * cols * 4:
-            raise UnsupportedSceneV3("Scene mean-color plane must match DENSITY_GRID")
-        flags |= _XYHF_HAS_MEAN_RGBA
-        remainder.extend(rgba_u8.tobytes())
-    colormap = style.get("colormap")
-    if isinstance(colormap, str):
-        flags |= _XYHF_HAS_NAMED_CMAP
-        remainder.extend(_pack_xyhf_prefixed(colormap.encode("utf-8")))
-    elif colormap is not None:
-        flags |= _XYHF_HAS_STOPS
-        remainder.extend(_pack_xyhf_prefixed(_colormap_stop_bytes(colormap, "density")))
-    channel = getattr(trace, "color_ch", None)
-    if channel is not None and channel.mode == "constant" and channel.constant is not None:
-        flags |= _XYHF_HAS_COLOR_CH
-        remainder.extend(_pack_xyhf_prefixed(str(channel.constant).encode("utf-8")))
-    if style.get("color") is not None:
-        flags |= _XYHF_HAS_STYLE_COLOR
-        remainder.extend(_pack_xyhf_prefixed(str(style.get("color")).encode("utf-8")))
-    opacity = float("nan")
-    fill_opacity = float("nan")
-    if "opacity" in style:
-        flags |= _XYHF_HAS_OPACITY
-        opacity = float(style["opacity"])
-    if "fill_opacity" in style:
-        flags |= _XYHF_HAS_FILL_OPACITY
-        fill_opacity = float(style["fill_opacity"])
-    try:
-        return _native.scene_pack_heatmap_facts(
-            _pack_xyhf(
-                family=_XYHF_FAMILY_DENSITY,
-                flags=flags,
-                stable_id=stable_id,
-                rows=rows,
-                cols=cols,
-                lo=float(maximum),
-                hi=float("nan"),
-                opacity=opacity,
-                fill_opacity=fill_opacity,
-                remainder=bytes(remainder),
-            )
-        )
-    except ValueError as error:
-        raise UnsupportedSceneV3(str(error)) from error
-
-
-def _density_blit_pack(
-    figure: Any, trace: Any
-) -> tuple[float, float, bytes, list[np.ndarray | None]] | None:
-    """Pack constant-style density as one compact Image lattice.
-
-    Cartesian Scene expansion emits one Image blit. Polar Scene expansion
-    (ABI 143) tessellates occupied cells to PolyFill wedges instead.
-    """
-    if not trace.use_density():
-        return None
-    xv = _trace_column(trace, "x")
-    yv = _trace_column(trace, "y")
-    if xv is None or yv is None or len(xv) != len(yv) or len(xv) == 0:
-        return None
-    xr0, xr1 = (float(value) for value in figure._range("x"))
-    yr0, yr1 = (float(value) for value in figure._range("y"))
-    if not (
-        math.isfinite(xr0) and math.isfinite(xr1) and math.isfinite(yr0) and math.isfinite(yr1)
-    ):
-        return None
-    if xr1 <= xr0 or yr1 <= yr0:
-        return None
-    bin_colors = channels.resolve_bin_colors(getattr(trace, "color_ch", None), None)
-    packed = _native.scene_pack_density_grid(xv, yv, xr0, xr1, yr0, yr1, **(bin_colors or {}))
-    if packed is None:
-        return None
-    encoded, gmax, mean_rgba, rows, cols = packed
-    plane = _density_paint_plane(
-        trace, encoded, int(rows), int(cols), float(gmax), int(trace.id), mean_rgba
-    )
-    columns: list[np.ndarray | None] = [
-        np.asarray([xr0, xr1], dtype=np.float64),
-        np.asarray([yr0, yr1], dtype=np.float64),
-        None,
-        None,
-        None,
-        None,
-        None,
-    ]
-    return float(rows), float(cols), plane, columns
+        records.extend(grid)
+        records.extend(rgba)
+        records.extend(rgba_grid)
+        records.extend(cmap[:65535])
+        records.extend(stops[:65535])
+        records.extend(color_ch_b[:65535])
+        records.extend(style_color[:65535])
+        records.extend(x)
+        records.extend(y)
+        records.extend(mean_rgba)
+        records.extend(idx)
+        records.extend(lut)
+    return bytes(records)
 
 
 def _pack_xyhp(planes: list[bytes]) -> bytes:
@@ -2360,6 +2296,24 @@ _XYTC_HEADER = struct.Struct("<4sIII")
 _XYTR_PREFIX = struct.Struct("<4s2HI2H11d12H3I20x")
 _XYTO_ENVELOPE = struct.Struct("<4sIII")
 _XYTO_PREFIX = struct.Struct("<4s2H4s4s2dHBBHHII4BII2d84x")
+_XYTA_HEADER = struct.Struct("<4sIII")
+_XYTA_PREFIX = struct.Struct("<II2i8I4H6d2f16x")
+_XYTT_ENVELOPE = struct.Struct("<4sIII")
+_XYTT_EXTRA = struct.Struct("<IIII4d")
+_XYTA_HEATMAP = 1 << 0
+_XYTA_DENSITY = 1 << 1
+_XYTA_HAS_RGBA = 1 << 2
+_XYTA_HAS_RGBA_GRID = 1 << 3
+_XYTA_HAS_GRID = 1 << 4
+_XYTA_TRUECOLOR = 1 << 5
+_XYTA_HAS_NAMED_CMAP = 1 << 6
+_XYTA_HAS_STOPS = 1 << 7
+_XYTA_HAS_COLOR_CH = 1 << 8
+_XYTA_HAS_STYLE_COLOR = 1 << 9
+_XYTA_HAS_OPACITY = 1 << 10
+_XYTA_HAS_FILL_OPACITY = 1 << 11
+_XYTA_HAS_DOMAIN = 1 << 12
+_XYTA_SHAPE = 1 << 13
 _XYTC_HAS_FILL = 1 << 0
 _XYTC_HAS_STROKE = 1 << 1
 _XYTC_HAS_LINE_COLOR = 1 << 2
@@ -2737,6 +2691,130 @@ def _raise_trace_compile(error: _native.SceneTraceCompileError, figure: Any) -> 
     raise ValueError("invalid scene trace compile packing") from error
 
 
+def _unpack_xytt(blob: bytes) -> list[dict[str, Any]]:
+    """Split Rust-owned XYTT attach output into per-trace Scene fields."""
+    if len(blob) < _XYTT_ENVELOPE.size or blob[:4] != b"XYTT":
+        raise ValueError("invalid scene trace attach packing")
+    _magic, version, n_traces, _reserved = _XYTT_ENVELOPE.unpack_from(blob, 0)
+    if version != 1:
+        raise ValueError("invalid scene trace attach facts version")
+    at = _XYTT_ENVELOPE.size
+    attached: list[dict[str, Any]] = []
+    for _ in range(int(n_traces)):
+        (
+            magic,
+            rec_version,
+            _rec_reserved,
+            fill,
+            stroke,
+            stroke_width,
+            diameter,
+            symbol,
+            legend_kind,
+            legend_include,
+            legend_symbol,
+            authored_step,
+            fact_bits,
+            dash_count,
+            linecap,
+            has_marker,
+            has_gradient,
+            _pad,
+            marker_len,
+            gradient_len,
+            hex_dx,
+            hex_dy,
+        ) = _XYTO_PREFIX.unpack_from(blob, at)
+        if magic != b"XYTO" or rec_version != 1:
+            raise ValueError("invalid scene trace attach packing")
+        heatmap_len, density_len, grid_rows, grid_cols, x0, x1, y0, y1 = _XYTT_EXTRA.unpack_from(
+            blob, at + _XYTO_PREFIX.size
+        )
+        at += _XYTO_PREFIX.size + _XYTT_EXTRA.size
+        dash = None
+        if dash_count:
+            dash = list(struct.unpack(f"<{dash_count}d", blob[at : at + dash_count * 8]))
+            at += int(dash_count) * 8
+        marker = blob[at : at + marker_len]
+        at += int(marker_len)
+        gradient = blob[at : at + gradient_len]
+        at += int(gradient_len)
+        heatmap = blob[at : at + heatmap_len]
+        at += int(heatmap_len)
+        density = blob[at : at + density_len]
+        at += int(density_len)
+        columns = None
+        if density_len:
+            columns = [
+                np.asarray([x0, x1], dtype=np.float64),
+                np.asarray([y0, y1], dtype=np.float64),
+                None,
+                None,
+                None,
+                None,
+                None,
+            ]
+        attached.append(
+            {
+                "style": (tuple(fill), tuple(stroke), float(stroke_width)),
+                "dash": dash,
+                "linecap": None if linecap == _XYTO_LINECAP_NONE else int(linecap),
+                "marker_path": _unpack_marker_blob(marker) if has_marker and marker else None,
+                "fill_gradient": _unpack_gradient_blob(gradient)
+                if has_gradient and gradient
+                else None,
+                "diameter": float(diameter),
+                "symbol": int(symbol),
+                "legend_kind": int(legend_kind),
+                "legend_include": bool(legend_include),
+                "legend_symbol": int(legend_symbol),
+                "authored_step": int(authored_step),
+                "fact_bits": int(fact_bits),
+                "hex_dx": float(hex_dx),
+                "hex_dy": float(hex_dy),
+                "heatmap": bytes(heatmap) if heatmap_len else b"",
+                "density": bytes(density) if density_len else b"",
+                "grid_rows": float(grid_rows),
+                "grid_cols": float(grid_cols),
+                "columns": columns,
+            }
+        )
+    if at != len(blob):
+        raise ValueError("invalid scene trace attach packing")
+    return attached
+
+
+def _raise_trace_attach(error: _native.SceneTraceAttachError, figure: Any) -> NoReturn:
+    if error.code == -5:
+        raise UnsupportedSceneV3("Scene v12 heatmap requires a rows x cols grid_shape") from error
+    if error.code == -6:
+        raise UnsupportedSceneV3("Scene v12 heatmap requires a positive grid_shape") from error
+    if error.code == -7:
+        raise ValueError("heatmap Scene v12 compilation requires a scalar grid") from error
+    if error.code == -8:
+        raise UnsupportedSceneV3("Scene v12 heatmap grid must match rows x cols") from error
+    if error.code == -9:
+        raise UnsupportedSceneV3(
+            "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
+        ) from error
+    if error.code == -10:
+        raise UnsupportedSceneV3("Scene heatmap RGBA plane must match rows x cols") from error
+    if error.code == -11:
+        raise UnsupportedSceneV3("Scene heatmap truecolor requires four RGBA planes") from error
+    if error.code == -12:
+        traces = list(getattr(figure, "traces", None) or [])
+        trace = traces[error.index] if 0 <= error.index < len(traces) else None
+        label = "density" if getattr(trace, "kind", None) == "scatter" else "heatmap"
+        raise UnsupportedSceneV3(f"Scene {label} colormap requires RGB stops") from error
+    if error.code == -13:
+        raise ValueError("Scene density columns must have equal length") from error
+    if error.code == -14:
+        raise ValueError("Scene density mean-color source is invalid") from error
+    if error.code == -2:
+        raise ValueError("invalid scene trace attach facts version") from error
+    raise ValueError("invalid scene trace attach packing") from error
+
+
 def figure_scene(
     figure: Any,
     *,
@@ -2772,12 +2850,18 @@ def figure_scene(
     legend_entries: list[tuple[int, int, int, str]] = []
     heatmap_paint_planes: list[bytes] = []
     try:
-        compiled_traces = _unpack_xyto(_native.scene_pack_trace_compile(_pack_xytc(figure)))
+        compiled_bytes = _native.scene_pack_trace_compile(_pack_xytc(figure))
     except _native.SceneTraceCompileError as error:
         _raise_trace_compile(error, figure)
-    if len(compiled_traces) != len(figure.traces):
-        raise ValueError("invalid scene trace compile packing")
-    for trace, compiled in zip(figure.traces, compiled_traces, strict=True):
+    try:
+        attached_traces = _unpack_xytt(
+            _native.scene_pack_trace_attach(compiled_bytes, _pack_xyta(figure))
+        )
+    except _native.SceneTraceAttachError as error:
+        _raise_trace_attach(error, figure)
+    if len(attached_traces) != len(figure.traces):
+        raise ValueError("invalid scene trace attach packing")
+    for trace, compiled in zip(figure.traces, attached_traces, strict=True):
         styles.append(compiled["style"])
         dashes.append(compiled["dash"])
         linecaps.append(compiled["linecap"])
@@ -2796,36 +2880,19 @@ def figure_scene(
 
         pack_symbol = 0
         pack_diameter = 0.0
-        pack_columns = None
+        pack_columns = compiled["columns"]
         authored_step = compiled["authored_step"]
         fact_bits = compiled["fact_bits"]
         hex_dx = compiled["hex_dx"]
         hex_dy = compiled["hex_dy"]
-        grid_rows = grid_cols = 0.0
-        if trace.kind in _HEATMAP_KINDS:
-            rows, cols = _heatmap_shape(trace)
-            values = _heatmap_grid_values(trace)
-            if values.size != rows * cols:
-                raise UnsupportedSceneV3("Scene v12 heatmap grid must match rows x cols")
-            if not np.isfinite(values).all():
-                raise UnsupportedSceneV3(
-                    "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
-                )
-            grid_rows, grid_cols = float(rows), float(cols)
-            plane = _heatmap_paint_plane(trace, values, rows, cols, int(trace.id))
-            if plane:
-                heatmap_paint_planes.append(plane)
-                fact_bits |= _XYPK_FACT_HEATMAP_PAINT
-        elif trace.kind == "scatter":
+        grid_rows = compiled["grid_rows"]
+        grid_cols = compiled["grid_cols"]
+        if trace.kind == "scatter":
             pack_symbol = compiled["symbol"]
             pack_diameter = compiled["diameter"]
-            density_pack = _density_blit_pack(figure, trace)
-            if density_pack is not None:
-                grid_rows, grid_cols, plane, pack_columns = density_pack
-                fact_bits |= _XYPK_FACT_DENSITY_PLANE
-                heatmap_paint_planes.append(plane)
-                pack_symbol = 0
-                pack_diameter = 0.0
+        plane = compiled["heatmap"] or compiled["density"]
+        if plane:
+            heatmap_paint_planes.append(plane)
         _append_packed(
             kinds,
             stable_ids,
@@ -2863,6 +2930,9 @@ def figure_scene(
     # resolve, legend/colorbar framing, and XYTL ticks (ABI 153). Hosts pack
     # XYTC trace-compile facts; Rust owns opacity/symbol/color/dash/cap/marker/
     # diameter/legend/step/curve/perimeter/hex/gradient and XYMS (ABI 154).
+    # Hosts pack XYTA heatmap/density attach facts; Rust owns shape/finite
+    # fail-closed checks, XYHF remainder order, density skip, density XYHF
+    # flags, fact bits, density zeroing, and domain rewrite (ABI 155).
     x_domain = tuple(float(value) for value in figure._range("x"))
     y_domain = tuple(float(value) for value in figure._range("y"))
     annotation_facts = bytearray()

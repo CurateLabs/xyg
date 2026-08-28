@@ -116,6 +116,8 @@ plot-layout diagnostics so the public-export predicate can remap them to
 `XYG_SCENE_UNSUPPORTED_VIEWPORT`.
 ABI 154 does not change Scene records; `xyg_scene_pack_trace_compile` owns
 per-trace Scene compile policy from packed XYTC v1.
+ABI 155 does not change Scene records; `xyg_scene_pack_trace_attach` owns
+heatmap/density attach policy from packed XYTO plus XYTA v1.
 
 ## Version 3: backend-neutral core scene batch
 
@@ -451,6 +453,12 @@ ABI 154 does not change Scene records;
 (opacity, symbol, color, dash, linecap, marker path, diameter, legend kind,
 step, curve-smooth, stroke-perimeter, hex pitch, fill-gradient admission,
 and XYMS resolve) from packed XYTC v1.
+
+ABI 155 does not change Scene records;
+`xyg_scene_pack_trace_attach` owns heatmap/density attach policy
+(shape/finite fail-closed checks, XYHF remainder order, density skip,
+density XYHF flags, fact bits, density zeroing, and domain rewrite)
+from packed XYTO plus XYTA v1.
 
 ABI 110 adds `xyg_scene_pack_legend` so both hosts pass loc/flags/paints
 and receive XYLG bytes; header layout, text offsets, and bounded-text
@@ -1268,7 +1276,10 @@ XYTL ticks, and the 200-tick axis bound cannot drift. ABI 154 packs
 per-trace compile policy from `XYTC` v1 so opacity, symbol, color, dash,
 linecap, marker path, diameter, legend kind, step, curve-smooth,
 stroke-perimeter, hex pitch, fill-gradient admission, and XYMS resolve
-cannot drift. An empty reason selects the Scene route;
+cannot drift. ABI 155 packs heatmap/density attach policy from `XYTA` v1
+so shape/finite fail-closed checks, XYHF remainder order, density skip,
+density XYHF flags, fact bits, density zeroing, and domain rewrite cannot
+drift. An empty reason selects the Scene route;
 hosts still compile the Scene and may still report compiler or viewport
 diagnostics, including the shared PolyFill group budget. ABI 106 does not
 change Scene records; `xyg_figure_autorange` owns the domain the annotation
@@ -1326,6 +1337,9 @@ packed XYCF v1.
 ABI 154 does not change Scene records either;
 `xyg_scene_pack_trace_compile` owns per-trace Scene compile policy from
 packed XYTC v1.
+ABI 155 does not change Scene records either;
+`xyg_scene_pack_trace_attach` owns heatmap/density attach policy from
+packed XYTO plus XYTA v1.
 Polar+step+smooth and authored marker glyphs stay compatibility. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;

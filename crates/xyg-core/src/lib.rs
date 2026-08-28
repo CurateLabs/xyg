@@ -54,8 +54,11 @@ use xyg_engine::scene_density::{self, DensityGridError};
 use xyg_engine::scene_colorbar::{self, ColorbarError};
 use xyg_engine::pack_figure_chrome;
 use xyg_engine::pack_public_export;
+use xyg_engine::pack_trace_attach;
 use xyg_engine::pack_trace_compile;
 use xyg_engine::ChromePackError;
+use xyg_engine::TraceAttachCode;
+use xyg_engine::TraceAttachError;
 use xyg_engine::TraceCompileCode;
 use xyg_engine::TraceCompileError;
 use xyg_engine::scene_figure_support_reason;
@@ -131,7 +134,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 154;
+pub const ABI_VERSION: u32 = 155;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -352,6 +355,76 @@ pub unsafe extern "C" fn xyg_scene_pack_trace_compile(
                 match i32::try_from(bytes.len()) {
                     Ok(count) => count,
                     Err(_) => -(TraceCompileCode::Limit as i32),
+                }
+            }
+            Err(error) => {
+                if out_cap >= 4 {
+                    let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                    dest[..4].copy_from_slice(&error.index.to_le_bytes());
+                }
+                -(error.code as i32)
+            }
+        }
+    })
+}
+
+/// Pack compiled `XYTO` v1 plus authored `XYTA` v1 attach facts into `XYTT`.
+///
+/// Hosts pass heatmap grids, density columns, colormaps, and paint-plane
+/// literals. Rust owns heatmap shape/finite fail-closed checks, XYHF remainder
+/// concat order, density skip, density XYHF flag packing, heatmap/density
+/// fact bits, density symbol/diameter zeroing, and domain-endpoint column
+/// rewrite. Returns the XYTT byte count on success, or a negated
+/// `TraceAttachCode`. On error, when `out_cap >= 4`, writes the failing
+/// trace index as a little-endian u32. Encoded Scene v31 is unchanged.
+///
+/// # Safety
+/// When a length is non-zero, the matching pointer must address that many
+/// readable bytes. When `out_cap` is non-zero, `out` must address that many
+/// writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_pack_trace_attach(
+    compiled: *const u8,
+    compiled_len: usize,
+    attach: *const u8,
+    attach_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if (compiled_len > 0 && compiled.is_null())
+        || (attach_len > 0 && attach.is_null())
+        || (out_cap > 0 && out.is_null())
+    {
+        return -(TraceAttachError {
+            code: TraceAttachCode::Length,
+            index: 0,
+        }
+        .code as i32);
+    }
+    ffi_guard(-(TraceAttachCode::Length as i32), || {
+        let compiled_bytes = if compiled_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(compiled, compiled_len)
+        };
+        let attach_bytes = if attach_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(attach, attach_len)
+        };
+        match pack_trace_attach(compiled_bytes, attach_bytes) {
+            Ok(bytes) => {
+                if bytes.len() > out_cap {
+                    return -(TraceAttachCode::Output as i32);
+                }
+                if bytes.is_empty() {
+                    return 0;
+                }
+                let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                dest[..bytes.len()].copy_from_slice(&bytes);
+                match i32::try_from(bytes.len()) {
+                    Ok(count) => count,
+                    Err(_) => -(TraceAttachCode::Limit as i32),
                 }
             }
             Err(error) => {
@@ -2119,6 +2192,11 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// kind, step, curve-smooth, stroke-perimeter, hex pitch, fill-gradient
 /// admission, and XYMS resolve) from packed XYTC v1 so Python and Node
 /// cannot drift.
+/// ABI 155 does not change Scene records;
+/// `xyg_scene_pack_trace_attach` owns heatmap/density attach policy
+/// (shape/finite fail-closed checks, XYHF remainder order, density skip,
+/// density XYHF flags, fact bits, density zeroing, and domain rewrite)
+/// from packed XYTO plus XYTA v1 so Python and Node cannot drift.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
@@ -14801,6 +14879,22 @@ mod tests {
         };
         assert!(compile_code > 0);
         assert_eq!(&compile_out[..4], b"XYTO");
+        let mut xyta = vec![0u8; 16];
+        xyta[..4].copy_from_slice(b"XYTA");
+        xyta[4..8].copy_from_slice(&1u32.to_le_bytes());
+        let mut attach_out = vec![0u8; 4096];
+        let attach_code = unsafe {
+            xyg_scene_pack_trace_attach(
+                compile_out.as_ptr(),
+                compile_code as usize,
+                xyta.as_ptr(),
+                xyta.len(),
+                attach_out.as_mut_ptr(),
+                attach_out.len(),
+            )
+        };
+        assert!(attach_code > 0);
+        assert_eq!(&attach_out[..4], b"XYTT");
     }
 
     #[test]

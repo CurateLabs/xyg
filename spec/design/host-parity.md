@@ -197,6 +197,11 @@ plot-layout diagnostics so the public-export predicate can remap them to
 `xyg_scene_pack_trace_compile` so opacity, symbol, color, dash, linecap,
 marker-path, diameter, legend kind, step, curve-smooth, stroke-perimeter,
 hex pitch, fill-gradient admission, and XYMS resolve from packed XYTC v1.
+ABI 155 adds
+`xyg_scene_pack_trace_attach` so heatmap/density attach policy
+(shape/finite fail-closed checks, XYHF remainder order, density skip,
+density XYHF flags, fact bits, density zeroing, and domain rewrite)
+resolves from packed XYTO plus XYTA v1.
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -226,7 +231,8 @@ colorbar flags/framing, XYTL tick-label framing, and the 200-tick axis bound
 from packed XYCF v1. ABI 154 owns per-trace Scene compile policy
 (opacity, symbol, color, dash, linecap, marker path, diameter, legend kind,
 step, curve-smooth, stroke-perimeter, hex pitch, fill-gradient admission,
-and XYMS resolve) from packed XYTC v1. Polar+step+smooth
+and XYMS resolve) from packed XYTC v1. ABI 155 owns heatmap/density attach
+policy from packed XYTO plus XYTA v1. Polar+step+smooth
 and authored marker glyphs stay
 compatibility. ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
@@ -240,6 +246,8 @@ ABI 153 makes figure chrome Rust-owned: Python and Node pack `XYCF` v1 facts
 and call `xyg_scene_pack_figure_chrome`.
 ABI 154 makes per-trace Scene compile Rust-owned: Python and Node pack `XYTC`
 v1 facts and call `xyg_scene_pack_trace_compile`.
+ABI 155 makes heatmap/density attach Rust-owned: Python and Node pack `XYTA`
+v1 facts against compiled `XYTO` and call `xyg_scene_pack_trace_attach`.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call
 `xyg_figure_autorange` / `xyg_auto_domain`. Direct-browser WASM compile uses
@@ -469,6 +477,11 @@ ABI 154
 packed XYTC v1 so opacity, symbol, color, dash, linecap, marker path,
 diameter, legend kind, step, curve-smooth, stroke-perimeter, hex pitch,
 fill-gradient admission, and XYMS resolve cannot drift.
+ABI 155
+`xyg_scene_pack_trace_attach` owns heatmap/density attach policy from
+packed XYTO plus XYTA v1 so shape/finite fail-closed checks, XYHF remainder
+order, density skip, density XYHF flags, fact bits, density zeroing, and
+domain rewrite cannot drift.
 ABI 116
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 so tags and opposite-axis spanning cannot drift. ABI 117

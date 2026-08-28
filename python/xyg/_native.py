@@ -1933,6 +1933,64 @@ def scene_pack_trace_compile(facts: bytes) -> bytes:
     return bytes(out[:code])
 
 
+class SceneTraceAttachError(ValueError):
+    """Native XYTA attach failure carrying the ABI error code and trace index."""
+
+    def __init__(self, code: int, index: int) -> None:
+        self.code = int(code)
+        self.index = int(index)
+        messages = {
+            -2: "invalid scene trace attach facts version",
+            -7: "heatmap Scene v12 compilation requires a scalar grid",
+            -13: "Scene density columns must have equal length",
+            -14: "Scene density mean-color source is invalid",
+        }
+        super().__init__(messages.get(self.code, "invalid scene trace attach packing"))
+
+
+def scene_pack_trace_attach(compiled: bytes, attach: bytes) -> bytes:
+    """Pack XYTO compile output plus XYTA v1 attach facts into XYTT (M2 #271)."""
+    compiled_payload = (
+        compiled if isinstance(compiled, (bytes, bytearray, memoryview)) else bytes(compiled)
+    )
+    attach_payload = attach if isinstance(attach, (bytes, bytearray, memoryview)) else bytes(attach)
+    density_plane = 32 + 512 * 384 * 5
+    capacity = max(
+        65536,
+        len(compiled_payload) + len(attach_payload) + density_plane + 4096,
+    )
+    source_compiled = (
+        np.frombuffer(compiled_payload, dtype=np.uint8)
+        if compiled_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_attach = (
+        np.frombuffer(attach_payload, dtype=np.uint8)
+        if attach_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    for _ in range(4):
+        out = np.zeros(capacity, dtype=np.uint8)
+        code = int(
+            _lib.xyg_scene_pack_trace_attach(
+                _ptr_u8(source_compiled) if source_compiled.size else 0,
+                int(source_compiled.size),
+                _ptr_u8(source_attach) if source_attach.size else 0,
+                int(source_attach.size),
+                _ptr_u8(out),
+                len(out),
+            )
+        )
+        if code == -4:
+            capacity *= 2
+            continue
+        if code < 0:
+            index = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
+            raise SceneTraceAttachError(code, index)
+        return bytes(out[:code])
+    raise SceneTraceAttachError(-4, 0)
+
+
 def scene_figure_support_reason(payload: bytes) -> str:
     """Return Rust's figure-compile diagnostic for a packed XYFS envelope.
 
