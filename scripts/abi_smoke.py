@@ -734,6 +734,42 @@ def load() -> ctypes.CDLL:
         U32P,
         ctypes.c_size_t,
     ]
+    lib.xyg_payload_visible_indices.restype = ctypes.c_size_t
+    lib.xyg_payload_visible_indices.argtypes = [
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        F64P,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.POINTER(ctypes.c_int32),
+        U32P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_payload_even_indices.restype = ctypes.c_size_t
+    lib.xyg_payload_even_indices.argtypes = [
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_int32),
+        U32P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_payload_sample_target_indices.restype = ctypes.c_size_t
+    lib.xyg_payload_sample_target_indices.argtypes = [
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_uint64,
+        ctypes.c_uint32,
+        ctypes.c_double,
+        ctypes.POINTER(ctypes.c_int32),
+        U32P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_density_bin_window.restype = ctypes.c_size_t
     lib.xyg_density_bin_window.argtypes = [
         ctypes.c_int32,
@@ -2654,6 +2690,54 @@ def main() -> None:
         m4_n > 0 and m4_n != ctypes.c_size_t(-1).value and m4_tier.value == 1,
         "payload_m4_indices cartesian",
     )
+    vis_keep = ctypes.c_int32(-1)
+    vis_out = array("I", [0]) * 5
+    vis_n = lib.xyg_payload_visible_indices(
+        _ptr(px, ctypes.c_double),
+        _ptr(py, ctypes.c_double),
+        5,
+        1,
+        0,
+        null_f64,
+        0,
+        1,
+        0,
+        0,
+        0,
+        ctypes.byref(vis_keep),
+        _ptr(vis_out, ctypes.c_uint32),
+        5,
+    )
+    ok(
+        vis_keep.value == 0 and vis_n == 3 and list(vis_out[:3]) == [0, 2, 4],
+        "payload_visible_indices log x",
+    )
+    even_keep = ctypes.c_int32(-1)
+    even_out = array("I", [0]) * 4
+    even_n = lib.xyg_payload_even_indices(
+        11, 4, ctypes.byref(even_keep), _ptr(even_out, ctypes.c_uint32), 4
+    )
+    ok(
+        even_keep.value == 0 and even_n == 4 and list(even_out) == [0, 3, 6, 10],
+        "payload_even_indices linspace",
+    )
+    even_all = ctypes.c_int32(-1)
+    even_n = lib.xyg_payload_even_indices(
+        4, 10, ctypes.byref(even_all), _ptr(even_out, ctypes.c_uint32), 4
+    )
+    ok(even_all.value == 1 and even_n == 0, "payload_even_indices keep-all")
+    sample_keep = ctypes.c_int32(-1)
+    sample_n = lib.xyg_payload_sample_target_indices(
+        100,
+        8192,
+        0,
+        0,
+        2.0,
+        ctypes.byref(sample_keep),
+        _ptr(even_out, ctypes.c_uint32),
+        4,
+    )
+    ok(sample_keep.value == 1 and sample_n == 0, "payload_sample_target_indices keep-all")
     bin_out = array("d", [0.0, 0.0, 0.0, 0.0])
     bw_n = lib.xyg_density_bin_window(
         1, 1, 0.0, 2.0, 0.0, 3.0, 0.0, 0.0, 0.0, 0.0, _ptr(bin_out, ctypes.c_double)

@@ -9607,6 +9607,178 @@ def payload_m4_indices(
     return int(out_tier.value), out[:written].copy()
 
 
+def payload_visible_indices(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    *,
+    x_log: bool = False,
+    y_log: bool = False,
+    base: npt.NDArray[np.float64] | None = None,
+    prefiltered: bool = False,
+    x_has_nulls: bool = False,
+    y_has_nulls: bool = False,
+    has_base: bool = False,
+    base_has_nulls: bool = False,
+) -> tuple[bool, npt.NDArray[np.uint32]]:
+    """Fused keep-all vs keep-indices via ``xyg_payload_visible_indices`` (ABI 205).
+
+    Returns ``(keep_all, indices)``. ``keep_all`` means ship every row without
+    an N-index allocation. Indices are positions in the passed ``x``/``y``.
+    """
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("payload_visible_indices x and y must have equal length")
+    n = len(x)
+    has_base_flag = bool(has_base) or base is not None
+    base_arr = _as_f64(base, "base") if base is not None else None
+    if has_base_flag and base_arr is None:
+        raise ValueError("payload_visible_indices base is required when has_base is set")
+    if base_arr is not None and len(base_arr) != n:
+        raise ValueError("payload_visible_indices base must match x/y length")
+    if not payload_visible_needed(
+        x_log=x_log,
+        y_log=y_log,
+        prefiltered=prefiltered,
+        x_has_nulls=x_has_nulls,
+        y_has_nulls=y_has_nulls,
+        has_base=has_base_flag,
+        base_has_nulls=base_has_nulls,
+    ):
+        return True, np.empty(0, dtype=np.uint32)
+    out = np.empty(n, dtype=np.uint32) if n else np.empty(0, dtype=np.uint32)
+    keep_all = ctypes.c_int32(-1)
+    written = _lib.xyg_payload_visible_indices(
+        _ptr_f64(x) if n else 0,
+        _ptr_f64(y) if n else 0,
+        n,
+        int(bool(x_log)),
+        int(bool(y_log)),
+        _ptr_f64(base_arr) if base_arr is not None and n else 0,
+        int(has_base_flag),
+        int(bool(prefiltered)),
+        int(bool(x_has_nulls)),
+        int(bool(y_has_nulls)),
+        int(bool(base_has_nulls)),
+        ctypes.byref(keep_all),
+        out.ctypes.data if n else 0,
+        n,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid payload_visible_indices arguments")
+    if int(keep_all.value) == 1:
+        return True, np.empty(0, dtype=np.uint32)
+    if written > n:
+        out = np.empty(written, dtype=np.uint32)
+        keep_all = ctypes.c_int32(-1)
+        repeated = _lib.xyg_payload_visible_indices(
+            _ptr_f64(x) if n else 0,
+            _ptr_f64(y) if n else 0,
+            n,
+            int(bool(x_log)),
+            int(bool(y_log)),
+            _ptr_f64(base_arr) if base_arr is not None and n else 0,
+            int(has_base_flag),
+            int(bool(prefiltered)),
+            int(bool(x_has_nulls)),
+            int(bool(y_has_nulls)),
+            int(bool(base_has_nulls)),
+            ctypes.byref(keep_all),
+            out.ctypes.data,
+            written,
+        )
+        if repeated != written or int(keep_all.value) == 1:
+            raise RuntimeError("native payload_visible_indices returned an inconsistent count")
+    return False, out[:written].copy()
+
+
+def payload_even_indices(n: int, count: int) -> tuple[bool, npt.NDArray[np.uint32]]:
+    """Even keep indices via ``xyg_payload_even_indices`` (ABI 205).
+
+    Matches NumPy ``linspace(0, n-1, count, dtype=np.int64)``. Returns
+    ``(keep_all, indices)``; ``keep_all`` when ``n <= count``.
+    """
+    n_i = _bounded_nonnegative_int(n, "n", max_value=np.iinfo(np.uint32).max)
+    count_i = _bounded_nonnegative_int(count, "count", max_value=np.iinfo(np.uint32).max)
+    if count_i == 0:
+        raise ValueError("count must be a positive integer")
+    keep_all = ctypes.c_int32(-1)
+    out = np.empty(count_i, dtype=np.uint32)
+    written = _lib.xyg_payload_even_indices(
+        n_i,
+        count_i,
+        ctypes.byref(keep_all),
+        out.ctypes.data,
+        count_i,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid payload_even_indices arguments")
+    if int(keep_all.value) == 1:
+        return True, np.empty(0, dtype=np.uint32)
+    if written > count_i:
+        raise RuntimeError("native payload_even_indices returned an inconsistent count")
+    return False, out[:written].copy()
+
+
+def payload_sample_target_indices(
+    n: int,
+    target: int,
+    seed: int = 0,
+    level: int = 0,
+    growth: float = 2.0,
+) -> tuple[bool, npt.NDArray[np.uint32]]:
+    """Density-overlay sample of implicit ids via ``xyg_payload_sample_target_indices``.
+
+    Owns ``min(1, target/n)``, level/growth fraction, threshold, and range
+    sampling (ABI 205). Returns ``(keep_all, indices)``.
+    """
+    n_i = _bounded_nonnegative_int(n, "n", max_value=np.iinfo(np.uint32).max)
+    target_i = _bounded_nonnegative_int(target, "target", max_value=np.iinfo(np.uint32).max)
+    if target_i == 0:
+        raise ValueError("target must be a positive integer")
+    level_i = _bounded_nonnegative_int(level, "level", max_value=np.iinfo(np.uint32).max)
+    seed_i = _bounded_nonnegative_int(seed, "seed", max_value=np.iinfo(np.uint64).max)
+    growth_f = _finite_float(growth, "growth")
+    if growth_f < 1.0:
+        raise ValueError("growth must be >= 1")
+    keep_all = ctypes.c_int32(-1)
+    cap = min(n_i, max(64, target_i * 2)) if n_i else 0
+    out = np.empty(cap, dtype=np.uint32) if cap else np.empty(0, dtype=np.uint32)
+    written = _lib.xyg_payload_sample_target_indices(
+        n_i,
+        target_i,
+        ctypes.c_uint64(seed_i),
+        ctypes.c_uint32(level_i),
+        growth_f,
+        ctypes.byref(keep_all),
+        out.ctypes.data if cap else 0,
+        cap,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid payload_sample_target_indices arguments")
+    if int(keep_all.value) == 1:
+        return True, np.empty(0, dtype=np.uint32)
+    if written > cap:
+        out = np.empty(written, dtype=np.uint32)
+        keep_all = ctypes.c_int32(-1)
+        repeated = _lib.xyg_payload_sample_target_indices(
+            n_i,
+            target_i,
+            ctypes.c_uint64(seed_i),
+            ctypes.c_uint32(level_i),
+            growth_f,
+            ctypes.byref(keep_all),
+            out.ctypes.data,
+            written,
+        )
+        if repeated != written or int(keep_all.value) == 1:
+            raise RuntimeError(
+                "native payload_sample_target_indices returned an inconsistent count"
+            )
+        cap = written
+    return False, out[:written].copy()
+
+
 DENSITY_GRID_PATH_OVERSIZED_BIN2D = 0
 DENSITY_GRID_PATH_IDENTITY_GRID_ONLY = 1
 DENSITY_GRID_PATH_IDENTITY_STRATIFIED_FUSED = 2

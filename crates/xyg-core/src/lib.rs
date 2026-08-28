@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 204;
+pub const ABI_VERSION: u32 = 205;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -12154,6 +12154,186 @@ pub unsafe extern "C" fn xyg_payload_m4_indices(
     })
 }
 
+unsafe fn write_payload_index_sel(
+    sel: lod_plan::PayloadIndexSel,
+    out_keep_all: *mut i32,
+    out: *mut u32,
+    capacity: usize,
+) -> usize {
+    match sel {
+        lod_plan::PayloadIndexSel::KeepAll => {
+            *out_keep_all = 1;
+            0
+        }
+        lod_plan::PayloadIndexSel::Indices(idx) => {
+            *out_keep_all = 0;
+            if idx.is_empty() {
+                return 0;
+            }
+            if capacity < idx.len() {
+                return idx.len();
+            }
+            if out.is_null() {
+                return usize::MAX;
+            }
+            let dest = std::slice::from_raw_parts_mut(out, capacity);
+            dest[..idx.len()].copy_from_slice(&idx);
+            idx.len()
+        }
+    }
+}
+
+/// Fuse ABI 122 needed+mask into keep indices (ABI 205). `out_keep_all` is 1
+/// when the host ships every row (no N-index alloc) and 0 for a filtered
+/// subset (including empty). Returns the count written, the required count
+/// when `capacity` is short, or `usize::MAX`.
+///
+/// # Safety
+/// When a scan can drop rows and `n > 0`, `x`/`y` must be valid for `n`
+/// readable f64s. Non-empty `base` must be valid for `n` f64s. `out_keep_all`
+/// must be writable. When `capacity` is nonzero, `out` must hold that many
+/// writable u32s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_visible_indices(
+    x: *const f64,
+    y: *const f64,
+    n: usize,
+    x_log: i32,
+    y_log: i32,
+    base: *const f64,
+    has_base: i32,
+    prefiltered: i32,
+    x_has_nulls: i32,
+    y_has_nulls: i32,
+    base_has_nulls: i32,
+    out_keep_all: *mut i32,
+    out: *mut u32,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        let flags = [
+            x_log,
+            y_log,
+            has_base,
+            prefiltered,
+            x_has_nulls,
+            y_has_nulls,
+            base_has_nulls,
+        ];
+        if flags.iter().any(|flag| !matches!(flag, 0 | 1)) || out_keep_all.is_null() {
+            return usize::MAX;
+        }
+        if capacity > 0 && out.is_null() {
+            return usize::MAX;
+        }
+        let needed = lod_plan::payload_visible_needed(
+            x_log != 0,
+            y_log != 0,
+            prefiltered != 0,
+            x_has_nulls != 0,
+            y_has_nulls != 0,
+            has_base != 0,
+            base_has_nulls != 0,
+        );
+        if !needed {
+            *out_keep_all = 1;
+            return 0;
+        }
+        let (x, y) = if n == 0 {
+            (&[][..], &[][..])
+        } else {
+            if x.is_null() || y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts(x, n),
+                std::slice::from_raw_parts(y, n),
+            )
+        };
+        let base = if has_base == 0 {
+            None
+        } else if n == 0 {
+            Some(&[][..])
+        } else if base.is_null() {
+            return usize::MAX;
+        } else {
+            Some(std::slice::from_raw_parts(base, n))
+        };
+        let Some(sel) = lod_plan::payload_visible_indices(
+            x,
+            y,
+            x_log != 0,
+            y_log != 0,
+            base,
+            prefiltered != 0,
+            x_has_nulls != 0,
+            y_has_nulls != 0,
+            has_base != 0,
+            base_has_nulls != 0,
+        ) else {
+            return usize::MAX;
+        };
+        write_payload_index_sel(sel, out_keep_all, out, capacity)
+    })
+}
+
+/// Evenly spaced keep indices matching NumPy `linspace(0, n-1, count,
+/// dtype=np.int64)` (ABI 205). `out_keep_all` is 1 when `n <= count`.
+/// Returns the count written, or `usize::MAX`.
+///
+/// # Safety
+/// `out_keep_all` must be writable. When `capacity` is nonzero, `out` must
+/// hold that many writable u32s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_even_indices(
+    n: usize,
+    count: usize,
+    out_keep_all: *mut i32,
+    out: *mut u32,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out_keep_all.is_null() || (capacity > 0 && out.is_null()) {
+            return usize::MAX;
+        }
+        let Some(sel) = lod_plan::payload_even_indices(n, count) else {
+            return usize::MAX;
+        };
+        write_payload_index_sel(sel, out_keep_all, out, capacity)
+    })
+}
+
+/// Density-overlay sample of implicit ids `0..n` (ABI 205). Owns
+/// `min(1, target/n)`, level/growth fraction, threshold, and range sampling.
+/// `out_keep_all` is 1 when every row ships. Returns the count written, the
+/// required count when `capacity` is short, or `usize::MAX`.
+///
+/// # Safety
+/// `out_keep_all` must be writable. When `capacity` is nonzero, `out` must
+/// hold that many writable u32s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_sample_target_indices(
+    n: usize,
+    target: usize,
+    seed: u64,
+    level: u32,
+    growth: f64,
+    out_keep_all: *mut i32,
+    out: *mut u32,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out_keep_all.is_null() || (capacity > 0 && out.is_null()) {
+            return usize::MAX;
+        }
+        let Some(sel) = lod_plan::payload_sample_target_indices(n, target, seed, level, growth)
+        else {
+            return usize::MAX;
+        };
+        write_payload_index_sel(sel, out_keep_all, out, capacity)
+    })
+}
+
 /// Bin window in axis-scale coordinates for density grids (ABI 132).
 /// Writes four f64s `[x0, x1, y0, y1]` when `out` holds at least four slots.
 /// Returns `4` on success or `usize::MAX`.
@@ -16966,6 +17146,54 @@ mod tests {
         };
         assert!(cartesian > 0 && cartesian != usize::MAX);
         assert_eq!(tier, 1);
+        let mut keep_all = -1i32;
+        let mut vis_out = [0u32; 5];
+        let vis_n = unsafe {
+            xyg_payload_visible_indices(
+                x.as_ptr(),
+                y.as_ptr(),
+                x.len(),
+                1,
+                0,
+                std::ptr::null(),
+                0,
+                1,
+                0,
+                0,
+                0,
+                &mut keep_all,
+                vis_out.as_mut_ptr(),
+                vis_out.len(),
+            )
+        };
+        assert_eq!(keep_all, 0);
+        assert_eq!(vis_n, 3);
+        assert_eq!(&vis_out[..3], &[0, 2, 4]);
+        let even_n = unsafe {
+            xyg_payload_even_indices(11, 4, &mut keep_all, vis_out.as_mut_ptr(), vis_out.len())
+        };
+        assert_eq!(keep_all, 0);
+        assert_eq!(even_n, 4);
+        assert_eq!(&vis_out[..4], &[0, 3, 6, 10]);
+        let all_n = unsafe {
+            xyg_payload_even_indices(4, 10, &mut keep_all, vis_out.as_mut_ptr(), vis_out.len())
+        };
+        assert_eq!(keep_all, 1);
+        assert_eq!(all_n, 0);
+        let sample_n = unsafe {
+            xyg_payload_sample_target_indices(
+                100,
+                8_192,
+                0,
+                0,
+                2.0,
+                &mut keep_all,
+                vis_out.as_mut_ptr(),
+                vis_out.len(),
+            )
+        };
+        assert_eq!(keep_all, 1);
+        assert_eq!(sample_n, 0);
     }
 
     #[test]

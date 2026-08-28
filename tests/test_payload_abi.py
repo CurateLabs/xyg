@@ -82,6 +82,37 @@ def test_payload_m4_indices_closed_window_matches_m4_plus_eps() -> None:
     assert len(empty_idx) == 0
 
 
+def test_payload_visible_indices_keep_all_and_log_drop() -> None:
+    x = np.array([1.0, -2.0, 3.0, 0.0, 5.0])
+    y = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+    keep_all, idx = kernels.payload_visible_indices(
+        x, y, x_log=False, prefiltered=True, x_has_nulls=False, y_has_nulls=False
+    )
+    assert keep_all
+    assert len(idx) == 0
+    keep_all, idx = kernels.payload_visible_indices(
+        x, y, x_log=True, prefiltered=True, x_has_nulls=False, y_has_nulls=False
+    )
+    assert not keep_all
+    np.testing.assert_array_equal(idx, [0, 2, 4])
+
+
+def test_payload_even_indices_matches_numpy_int64_linspace() -> None:
+    keep_all, idx = kernels.payload_even_indices(4, 10)
+    assert keep_all
+    keep_all, idx = kernels.payload_even_indices(11, 4)
+    assert not keep_all
+    np.testing.assert_array_equal(idx, np.linspace(0, 10, 4, dtype=np.int64))
+
+
+def test_payload_sample_target_indices_keep_all() -> None:
+    keep_all, idx = kernels.payload_sample_target_indices(100, 8_192)
+    assert keep_all
+    keep_all, idx = kernels.payload_sample_target_indices(10_000, 8_192)
+    assert not keep_all
+    assert 0 < len(idx) < 10_000
+
+
 def test_polar_line_stays_direct_over_m4_threshold() -> None:
     n = DECIMATION_THRESHOLD + 1
     fig = Figure(coords="polar").line(np.arange(n, dtype=float), np.ones(n))

@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 204
-#define XYG_ABI_SIGNATURE_SHA256 "5d627f18ed838eb9c38e74529ff190d3b5bbbbc73d091255837a78a9fcb710bf"
+#define XYG_ABI_VERSION 205
+#define XYG_ABI_SIGNATURE_SHA256 "8b5d7deabe7b4189dfb237a6c94bb9b6c4b65e24e7989f922c7c70179c7519a2"
 
 #ifdef __cplusplus
 extern "C" {
@@ -125,8 +125,11 @@ size_t xyg_marching_triangles(const double * x, const double * y, const double *
 int32_t xyg_min_max(const double * data, size_t len, double * out_min, double * out_max);
 size_t xyg_monotone_tangents(const double * x, const double * y, size_t n, double * out_m, size_t capacity);
 int32_t xyg_normalize_f32(const double * data, size_t len, double lo, double hi, int32_t nan_mode, float * out);
+size_t xyg_payload_even_indices(size_t n, size_t count, int32_t * out_keep_all, uint32_t * out, size_t capacity);
 size_t xyg_payload_m4_indices(uint64_t n_points, int32_t polar, const double * x, const double * y, size_t n, double x0, double x1, size_t n_buckets, const double * bin_x, double bin_x0, double bin_x1, int32_t * out_tier, uint32_t * out, size_t capacity);
+size_t xyg_payload_sample_target_indices(size_t n, size_t target, uint64_t seed, uint32_t level, double growth, int32_t * out_keep_all, uint32_t * out, size_t capacity);
 int32_t xyg_payload_tier(int32_t kind, uint64_t n_points, int32_t polar, int32_t force_density, int32_t force_direct, int32_t per_item);
+size_t xyg_payload_visible_indices(const double * x, const double * y, size_t n, int32_t x_log, int32_t y_log, const double * base, int32_t has_base, int32_t prefiltered, int32_t x_has_nulls, int32_t y_has_nulls, int32_t base_has_nulls, int32_t * out_keep_all, uint32_t * out, size_t capacity);
 size_t xyg_payload_visible_mask(const double * x, const double * y, size_t n, int32_t x_log, int32_t y_log, const double * base, int32_t has_base, uint8_t * out, size_t capacity);
 int32_t xyg_payload_visible_needed(int32_t x_log, int32_t y_log, int32_t prefiltered, int32_t x_has_nulls, int32_t y_has_nulls, int32_t has_base, int32_t base_has_nulls);
 size_t xyg_polar_label_room(double widest, double * out_room);

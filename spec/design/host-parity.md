@@ -510,6 +510,13 @@ drift. ABI 204 `xyg_payload_m4_indices` owns remaining line M4 emit
 (closed-window ulp, optional nonlinear buckets, polar skip) so Python
 and Node cannot drift on first paint or `decimate_view`. Hosts still
 map scale coordinates, gather extra columns, and ship the chosen rows.
+ABI 205 moves remaining `_emit_*` sampling into Rust: Python and Node
+call `xyg_payload_visible_indices`, `xyg_payload_even_indices`, and
+`xyg_payload_sample_target_indices` so fused finite/log keep indices,
+NumPy int64 linspace stem/errorbar sampling, and density-overlay
+`min(1, target/n)` selection cannot drift. Hosts still choose the
+stem/errorbar count budget, expand errorbar role blocks, gather extra
+columns, and ship the chosen rows.
 ABI 123 moves tick-label collision thinning into Rust: Python and Node
 call `xyg_scene_tick_label_layout` so auto / hide / rotate / stagger,
 the edge-anchor rotate gap, and stride downsampling cannot drift.

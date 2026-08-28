@@ -1373,6 +1373,14 @@ keep mask are engine-owned and identical for Python and Node. ABI 204
 ulp, optional nonlinear `bin_x` buckets, and polar skip on first paint
 and `decimate_view`. Hosts still map scale coordinates, gather extra
 columns, encode, and ship the chosen rows (#282 / #311).
+ABI 205 moves remaining `_emit_*` sampling into Rust. Hosts call
+`xyg_payload_visible_indices`, `xyg_payload_even_indices`, and
+`xyg_payload_sample_target_indices`; fused finite/log keep indices,
+NumPy int64 linspace stem/errorbar sampling, and density-overlay
+`min(1, target/n)` SplitMix selection are engine-owned and identical
+for Python and Node. Hosts still choose the stem/errorbar count budget
+(`max(1024, px_width*4)`), expand errorbar role blocks, gather extra
+columns, and ship the chosen rows (#282 / #312).
 ABI 123 moves tick-label collision thinning into Rust. Hosts call
 `xyg_scene_tick_label_layout`; auto / hide / rotate / stagger, the
 edge-anchor rotate gap, and stride downsampling are engine-owned and

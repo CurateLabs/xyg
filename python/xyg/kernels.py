@@ -129,6 +129,9 @@ payload_tier = _impl.payload_tier
 payload_m4_indices = _impl.payload_m4_indices
 payload_visible_mask = _impl.payload_visible_mask
 payload_visible_needed = _impl.payload_visible_needed
+payload_visible_indices = _impl.payload_visible_indices
+payload_even_indices = _impl.payload_even_indices
+payload_sample_target_indices = _impl.payload_sample_target_indices
 quantiles = _impl.quantiles
 box_stats = _impl.box_stats
 box_geometry = _impl.box_geometry
@@ -215,8 +218,11 @@ __all__ = [
     "min_max",
     "monotone_tangents",
     "normalize_f32",
+    "payload_even_indices",
     "payload_m4_indices",
+    "payload_sample_target_indices",
     "payload_tier",
+    "payload_visible_indices",
     "payload_visible_mask",
     "payload_visible_needed",
     "polygon_select",
