@@ -75,7 +75,8 @@ mod scene_export;
 #[cfg(feature = "raster")]
 pub mod webp;
 pub use scene_export::{
-    pack_public_export, scene_figure_support_reason, scene_public_export_reason, ExportPackError,
+    pack_public_export, scene_figure_support_reason, scene_figure_support_reason_with_attach,
+    scene_public_export_reason, ExportPackError,
 };
 pub mod scene_chrome;
 pub use scene_chrome::{pack_figure_chrome, pack_figure_chrome_from_sidecars, ChromePackError};

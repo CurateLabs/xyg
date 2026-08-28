@@ -27,12 +27,13 @@
 //! paint, polar ribbon, and `role` other than `ribbon` stay fail-closed.
 //! ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 //! ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`.
-//! ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 / XYLB v6).
-//! ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0` (nums[8]).
-//! ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` the same way.
 //! ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto
 //! HexCell PolyFills. Polar hexbin, custom reducers, and per-item RGBA stay
 //! fail-closed.
+//! ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 / XYLB v6).
+//! ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0` (nums[8]).
+//! ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from packed
+//! XYTA so hosts no longer decide Scene vs compatibility for those predicates.
 //! Rotation, html, `class_name`, and polar stay fail-closed.
 //! Rust owns the public PolyFill group budget, including
 //! companion traces that share the browser painter's 1,024-group ceiling.
@@ -1336,6 +1337,15 @@ const XYFS_TRACE_FLAG_MASK: u16 = (1 << 12) - 1;
 /// figure-compile trace allowlist. v1 envelopes remain accepted as
 /// observation-plus-axis-only probes.
 pub fn scene_figure_support_reason(bytes: &[u8]) -> Result<String, SceneError> {
+    scene_figure_support_reason_with_attach(bytes, &[])
+}
+
+/// ABI 189: same XYFS probe, relaxing per-item / heatmap-colormap fail-closed
+/// bits when packed XYTA tessellates those traces onto cell fills.
+pub fn scene_figure_support_reason_with_attach(
+    bytes: &[u8],
+    xyta: &[u8],
+) -> Result<String, SceneError> {
     use crate::scene::{
         scene_support_reason, SCENE_FEATURE_BROWSER_CSS, SCENE_FEATURE_COLORBAR,
         SCENE_FEATURE_CUSTOM_FONT, SCENE_FEATURE_EXTRA_LEGEND, SCENE_FEATURE_GRADIENT,
@@ -1490,16 +1500,25 @@ pub fn scene_figure_support_reason(bytes: &[u8]) -> Result<String, SceneError> {
             "Scene v12 figure compilation does not yet support {kind}"
         ));
     }
-    for (trace_flags, kind) in &traces {
+    let tessellation = crate::scene_trace_attach::xyta_cell_fill_tessellation(xyta).ok();
+    for (index, (trace_flags, kind)) in traces.iter().enumerate() {
         let kind = if kind.is_empty() {
             "mark"
         } else {
             kind.as_str()
         };
+        let tess = tessellation
+            .as_ref()
+            .and_then(|all| all.get(index).copied())
+            .unwrap_or(crate::scene_trace_attach::CellFillTessellation::None);
+        let hexbin_cells =
+            kind == "hexbin" && tess != crate::scene_trace_attach::CellFillTessellation::None;
+        let heatmap_cells =
+            kind == "heatmap" && tess != crate::scene_trace_attach::CellFillTessellation::None;
         if trace_flags & XYFS_TRACE_NON_PRIMARY_AXIS != 0 {
             return Ok(FIGURE_TRACE_AXIS_REASON.to_string());
         }
-        if trace_flags & XYFS_TRACE_HIDDEN_OR_PER_ITEM != 0 {
+        if trace_flags & XYFS_TRACE_HIDDEN_OR_PER_ITEM != 0 && !hexbin_cells {
             return Ok(FIGURE_HIDDEN_REASON.to_string());
         }
         if trace_flags & XYFS_TRACE_DENSITY != 0 {
@@ -1527,7 +1546,7 @@ pub fn scene_figure_support_reason(bytes: &[u8]) -> Result<String, SceneError> {
         if trace_flags & XYFS_TRACE_CUSTOM_HEX_REDUCE != 0 {
             return Ok(FIGURE_HEX_REDUCE_REASON.to_string());
         }
-        if trace_flags & XYFS_TRACE_HEATMAP_COLORMAP != 0 {
+        if trace_flags & XYFS_TRACE_HEATMAP_COLORMAP != 0 && !heatmap_cells {
             return Ok(FIGURE_HEATMAP_REASON.to_string());
         }
         if trace_flags & XYFS_TRACE_NON_CSS_FILL != 0 {
@@ -1848,6 +1867,85 @@ mod tests {
                 &[(XYFS_TRACE_DENSITY, "scatter")]
             )),
             Ok(FIGURE_AXIS_SET_REASON.to_string())
+        );
+    }
+
+    fn xyta_one(flags: u32, rows: i32, cols: i32, grid: &[f64], cmap: &[u8]) -> Vec<u8> {
+        use crate::scene_trace_attach::{
+            XYTA_HEADER_BYTES, XYTA_MAGIC, XYTA_PREFIX_BYTES, XYTA_VERSION,
+        };
+        let mut attach = vec![0u8; XYTA_HEADER_BYTES];
+        attach[..4].copy_from_slice(XYTA_MAGIC);
+        attach[4..8].copy_from_slice(&XYTA_VERSION.to_le_bytes());
+        attach[8..12].copy_from_slice(&1u32.to_le_bytes());
+        let mut prefix = vec![0u8; XYTA_PREFIX_BYTES];
+        prefix[..4].copy_from_slice(&flags.to_le_bytes());
+        prefix[8..12].copy_from_slice(&rows.to_le_bytes());
+        prefix[12..16].copy_from_slice(&cols.to_le_bytes());
+        prefix[16..20].copy_from_slice(&(grid.len() as u32).to_le_bytes());
+        prefix[48..50].copy_from_slice(&(cmap.len() as u16).to_le_bytes());
+        attach.extend_from_slice(&prefix);
+        for value in grid {
+            attach.extend_from_slice(&value.to_le_bytes());
+        }
+        attach.extend_from_slice(cmap);
+        attach
+    }
+
+    #[test]
+    fn figure_support_relaxes_hexbin_and_heatmap_from_packed_xyta() {
+        use crate::scene_trace_attach::{
+            FLAG_HAS_GRID, FLAG_HAS_NAMED_CMAP, FLAG_HEATMAP, FLAG_SHAPE, FLAG_TRUECOLOR,
+        };
+        let named = FLAG_HEATMAP | FLAG_SHAPE | FLAG_HAS_GRID | FLAG_HAS_NAMED_CMAP;
+        let hexbin_xyta = xyta_one(named, 1, 2, &[0.0, 1.0], b"viridis");
+        let heatmap_xyta = xyta_one(named, 2, 2, &[0.0, 1.0, 2.0, 3.0], b"viridis");
+        let truecolor_xyta = xyta_one(FLAG_HEATMAP | FLAG_TRUECOLOR | FLAG_SHAPE, 2, 2, &[], b"");
+        assert_eq!(
+            scene_figure_support_reason_with_attach(
+                &xyfs_v2(0, &PRIMARY_XY, &[(XYFS_TRACE_HIDDEN_OR_PER_ITEM, "hexbin")]),
+                &hexbin_xyta,
+            ),
+            Ok(String::new())
+        );
+        assert_eq!(
+            scene_figure_support_reason_with_attach(
+                &xyfs_v2(0, &PRIMARY_XY, &[(XYFS_TRACE_HIDDEN_OR_PER_ITEM, "hexbin")]),
+                &[],
+            ),
+            Ok(FIGURE_HIDDEN_REASON.to_string())
+        );
+        assert_eq!(
+            scene_figure_support_reason_with_attach(
+                &xyfs_v2(
+                    0,
+                    &PRIMARY_XY,
+                    &[(XYFS_TRACE_HIDDEN_OR_PER_ITEM, "scatter")]
+                ),
+                &hexbin_xyta,
+            ),
+            Ok(FIGURE_HIDDEN_REASON.to_string())
+        );
+        assert_eq!(
+            scene_figure_support_reason_with_attach(
+                &xyfs_v2(0, &PRIMARY_XY, &[(XYFS_TRACE_HEATMAP_COLORMAP, "heatmap")]),
+                &heatmap_xyta,
+            ),
+            Ok(String::new())
+        );
+        assert_eq!(
+            scene_figure_support_reason_with_attach(
+                &xyfs_v2(0, &PRIMARY_XY, &[(XYFS_TRACE_HEATMAP_COLORMAP, "heatmap")]),
+                &truecolor_xyta,
+            ),
+            Ok(FIGURE_HEATMAP_REASON.to_string())
+        );
+        assert_eq!(
+            scene_figure_support_reason_with_attach(
+                &xyfs_v2(0, &PRIMARY_XY, &[(XYFS_TRACE_HIDDEN_OR_PER_ITEM, "hexbin")]),
+                b"XXXX",
+            ),
+            Ok(FIGURE_HIDDEN_REASON.to_string())
         );
     }
 
