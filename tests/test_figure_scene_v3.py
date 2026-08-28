@@ -1901,8 +1901,38 @@ def test_python_scene_compiles_smooth_polylines() -> None:
     cartesian_area_both.axis_options["y"]["domain"] = (0.0, 2.0)
     cartesian_area_both.area([0.0, 1.0, 2.0], [0.0, 1.0, 0.5], curve="smooth")
     cartesian_area_both.traces[-1].style["step"] = "mid"
-    with pytest.raises(UnsupportedSceneV3, match="authored markers"):
-        cartesian_area_both.to_scene()
+    cartesian_area_step = Figure(width=240, height=160)
+    cartesian_area_step.axis_options["x"]["domain"] = (0.0, 2.0)
+    cartesian_area_step.axis_options["y"]["domain"] = (0.0, 2.0)
+    cartesian_area_step.area([0.0, 1.0, 2.0], [0.0, 1.0, 0.5])
+    cartesian_area_step.traces[-1].style["step"] = "mid"
+    cartesian_area_both_svg = _native.scene_svg(cartesian_area_both.to_scene())
+    cartesian_area_step_svg = _native.scene_svg(cartesian_area_step.to_scene())
+    cartesian_area_linear = Figure(width=240, height=160)
+    cartesian_area_linear.axis_options["x"]["domain"] = (0.0, 2.0)
+    cartesian_area_linear.axis_options["y"]["domain"] = (0.0, 2.0)
+    cartesian_area_linear.area([0.0, 1.0, 2.0], [0.0, 1.0, 0.5])
+    cartesian_area_linear_svg = _native.scene_svg(cartesian_area_linear.to_scene())
+    assert cartesian_area_both_svg == cartesian_area_step_svg
+    assert cartesian_area_both_svg != cartesian_area_linear_svg
+    assert cartesian_area_both.to_svg() == cartesian_area_both_svg
+    assert _scene_v3.scene_export_support_reason(cartesian_area_both) is None
+    cartesian_band_both = Figure(width=240, height=160)
+    cartesian_band_both.axis_options["x"]["domain"] = (0.0, 2.0)
+    cartesian_band_both.axis_options["y"]["domain"] = (0.0, 2.0)
+    cartesian_band_both.error_band([0.0, 1.0, 2.0], [0.0, 0.5, 0.2], [0.5, 1.0, 0.8])
+    cartesian_band_both.traces[-1].style["curve"] = "smooth"
+    cartesian_band_both.traces[-1].style["step"] = "mid"
+    cartesian_band_step = Figure(width=240, height=160)
+    cartesian_band_step.axis_options["x"]["domain"] = (0.0, 2.0)
+    cartesian_band_step.axis_options["y"]["domain"] = (0.0, 2.0)
+    cartesian_band_step.error_band([0.0, 1.0, 2.0], [0.0, 0.5, 0.2], [0.5, 1.0, 0.8])
+    cartesian_band_step.traces[-1].style["step"] = "mid"
+    cartesian_band_both_svg = _native.scene_svg(cartesian_band_both.to_scene())
+    cartesian_band_step_svg = _native.scene_svg(cartesian_band_step.to_scene())
+    assert cartesian_band_both_svg == cartesian_band_step_svg
+    assert cartesian_band_both.to_svg() == cartesian_band_both_svg
+    assert _scene_v3.scene_export_support_reason(cartesian_band_both) is None
     marked = Figure().line([0.0, 1.0], [0.0, 1.0])
     marked.traces[-1].style["marker_path"] = "M0 0"
     with pytest.raises(UnsupportedSceneV3, match="authored markers"):

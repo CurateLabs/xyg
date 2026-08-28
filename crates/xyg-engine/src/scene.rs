@@ -3590,8 +3590,11 @@ impl SceneRecordKind {
 #[repr(u8)]
 pub enum SceneExpansionMode {
     None = 0,
+    /// Compact polyline or band step-before vertices.
     Pre = 1,
+    /// Compact polyline or band step-mid vertices.
     Mid = 2,
+    /// Compact polyline or band step-after vertices.
     Post = 3,
     /// Two adjacent Band rows describe upper then lower cubic edge endpoints.
     Ribbon = 4,
@@ -5482,7 +5485,15 @@ pub fn expand_scene_records_painted(
         let style_ref = input.style_refs[cursor];
         let run_end =
             scene_expansion_group_end(input.stable_ids, input.kinds, input.expansion_modes, cursor);
-        let expected_kind = mode.expected_kind().expect("nonzero expansion mode");
+        let band_step = matches!(
+            mode,
+            SceneExpansionMode::Pre | SceneExpansionMode::Mid | SceneExpansionMode::Post
+        ) && input.kinds[cursor] == SceneRecordKind::Band as u8;
+        let expected_kind = if band_step {
+            SceneRecordKind::Band as u8
+        } else {
+            mode.expected_kind().expect("nonzero expansion mode")
+        };
         for index in cursor..run_end {
             if input.kinds[index] != expected_kind
                 || input.style_refs[index] != style_ref
@@ -5491,7 +5502,8 @@ pub fn expand_scene_records_painted(
                 || (!matches!(
                     mode,
                     SceneExpansionMode::Ribbon | SceneExpansionMode::BandFlatten
-                ) && input.symbols[index] != 0)
+                ) && !band_step
+                    && input.symbols[index] != 0)
             {
                 return Err(SceneError::Length);
             }
@@ -5508,11 +5520,12 @@ pub fn expand_scene_records_painted(
                     | SceneExpansionMode::Mid
                     | SceneExpansionMode::Post
                     | SceneExpansionMode::CurveFlatten
-            ) && (input.x1[index] != 0.0 || input.y1[index] != 0.0)
+            ) && !band_step
+                && (input.x1[index] != 0.0 || input.y1[index] != 0.0)
             {
                 return Err(SceneError::Length);
             }
-            if mode == SceneExpansionMode::BandFlatten
+            if (mode == SceneExpansionMode::BandFlatten || band_step)
                 && (input.symbols[index] != input.symbols[cursor]
                     || input.x0[index] != input.x1[index]
                     || BandOutline::from_code(input.symbols[index]).is_err())
@@ -5863,6 +5876,102 @@ pub fn expand_scene_records_painted(
                     [flat_x[index], flat_top[index]],
                     [flat_x[index], flat_base[index]],
                 );
+            }
+            cursor = run_end;
+            continue;
+        }
+        if matches!(
+            mode,
+            SceneExpansionMode::Pre | SceneExpansionMode::Mid | SceneExpansionMode::Post
+        ) && input.kinds[cursor] == SceneRecordKind::Band as u8
+        {
+            let outline = input.symbols[cursor];
+            output.push_ribbon_sample(
+                stable_id,
+                style_ref,
+                outline,
+                [input.x0[cursor], input.y0[cursor]],
+                [input.x1[cursor], input.y1[cursor]],
+            );
+            for index in cursor + 1..run_end {
+                let previous = index - 1;
+                let previous_x = input.x0[previous];
+                let previous_top = input.y0[previous];
+                let previous_base = input.y1[previous];
+                let current_x = input.x0[index];
+                let current_top = input.y0[index];
+                let current_base = input.y1[index];
+                match mode {
+                    SceneExpansionMode::Pre => {
+                        output.push_ribbon_sample(
+                            stable_id,
+                            style_ref,
+                            outline,
+                            [previous_x, current_top],
+                            [previous_x, current_base],
+                        );
+                        output.push_ribbon_sample(
+                            stable_id,
+                            style_ref,
+                            outline,
+                            [current_x, current_top],
+                            [current_x, current_base],
+                        );
+                    }
+                    SceneExpansionMode::Mid => {
+                        let midpoint = (previous_x + current_x) * 0.5;
+                        if !midpoint.is_finite() {
+                            return Err(SceneError::NonFinite);
+                        }
+                        output.push_ribbon_sample(
+                            stable_id,
+                            style_ref,
+                            outline,
+                            [midpoint, previous_top],
+                            [midpoint, previous_base],
+                        );
+                        output.push_ribbon_sample(
+                            stable_id,
+                            style_ref,
+                            outline,
+                            [midpoint, current_top],
+                            [midpoint, current_base],
+                        );
+                        output.push_ribbon_sample(
+                            stable_id,
+                            style_ref,
+                            outline,
+                            [current_x, current_top],
+                            [current_x, current_base],
+                        );
+                    }
+                    SceneExpansionMode::Post => {
+                        output.push_ribbon_sample(
+                            stable_id,
+                            style_ref,
+                            outline,
+                            [current_x, previous_top],
+                            [current_x, previous_base],
+                        );
+                        output.push_ribbon_sample(
+                            stable_id,
+                            style_ref,
+                            outline,
+                            [current_x, current_top],
+                            [current_x, current_base],
+                        );
+                    }
+                    SceneExpansionMode::None
+                    | SceneExpansionMode::Ribbon
+                    | SceneExpansionMode::HexCell
+                    | SceneExpansionMode::HeatmapLattice
+                    | SceneExpansionMode::HeatmapPainted
+                    | SceneExpansionMode::DensityBlit
+                    | SceneExpansionMode::SegmentPair
+                    | SceneExpansionMode::TriangleFace
+                    | SceneExpansionMode::CurveFlatten
+                    | SceneExpansionMode::BandFlatten => unreachable!(),
+                }
             }
             cursor = run_end;
             continue;
@@ -13014,6 +13123,39 @@ mod tests {
         assert_eq!(short.y0, [0.0, 1.0]);
         assert_eq!(short.y1, [0.0, 0.0]);
         assert!(short.kinds.iter().all(|kind| *kind == 3));
+    }
+
+    #[test]
+    fn band_step_mid_expansion_emits_expected_vertices() {
+        let kinds = [3u8; 3];
+        let ids = [42u64; 3];
+        let styles = [7u32; 3];
+        let zeros = [0.0; 3];
+        let symbols = [BandOutline::Top as u8; 3];
+        let x = [0.0, 1.0, 2.0];
+        let y = [0.0, 1.0, 0.5];
+        let base = [0.0, 0.0, 0.0];
+        let modes = [SceneExpansionMode::Mid as u8; 3];
+        let expanded = expand_scene_records(
+            compact_band_input(&kinds, &ids, &styles, &zeros, &symbols, &x, &y, &base, &modes),
+            test_linear_x_scale(),
+            test_linear_y_scale(),
+        )
+        .unwrap();
+        assert_eq!(expanded.kinds.len(), 7);
+        assert_eq!(expanded.x0, [0.0, 0.5, 0.5, 1.0, 1.5, 1.5, 2.0]);
+        assert_eq!(expanded.y0, [0.0, 0.0, 1.0, 1.0, 1.0, 0.5, 0.5]);
+        assert_eq!(expanded.y1, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
+        assert!(expanded.kinds.iter().all(|kind| *kind == 3));
+        assert!(expanded
+            .x0
+            .iter()
+            .zip(expanded.x1.iter())
+            .all(|(left, right)| left == right));
+        assert!(expanded
+            .symbols
+            .iter()
+            .all(|symbol| *symbol == BandOutline::Top as u8));
     }
 
     #[test]

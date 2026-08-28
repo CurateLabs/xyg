@@ -245,7 +245,9 @@ is positive. ABI 169 admits polar `curve="smooth"` plus `step` as polar step
 expansion (identity chords). ABI 170 admits constant scatter `marker_glyph`
 via an XYMG extras sidecar kept on the encoded Scene. ABI 171 admits
 width-only scatter `stroke_width` as match-fill. ABI 172 admits cartesian
-line `curve="smooth"` plus `step` as authored step expansion. ABI 173 tessellates
+line `curve="smooth"` plus `step` as authored step expansion. ABI 181 admits
+cartesian area/error_band `curve="smooth"` plus `step` as authored band step
+expansion. ABI 173 tessellates
 heatmap `corner_radius`. ABI 174 tessellates violin/box `corner_radius`.
 ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`.
 ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`.
@@ -253,6 +255,8 @@ ABI 177 admits heatmap `fill_opacity`.
 ABI 178 admits scatter `fill_opacity` / `stroke_opacity`.
 ABI 179 admits hexbin `fill_opacity`.
 ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint.
+ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as
+authored band step expansion.
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -314,6 +318,8 @@ ABI 177 admits heatmap `fill_opacity`.
 ABI 178 admits scatter `fill_opacity` / `stroke_opacity`.
 ABI 179 admits hexbin `fill_opacity`.
 ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint.
+ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as
+authored band step expansion.
 ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate
@@ -374,6 +380,8 @@ ABI 177 admits heatmap `fill_opacity` on that same product Scene.
 ABI 178 admits scatter `fill_opacity` / `stroke_opacity` on that same product Scene.
 ABI 179 admits hexbin `fill_opacity` on that same product Scene.
 ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint on that same product Scene.
+ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as authored
+band step expansion on that same product Scene.
 The explicit `xyg_scene_figure_support_reason` ABI remains for tests.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call

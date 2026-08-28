@@ -449,6 +449,7 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "dash",
             "linecap",
             "curve",
+            "step",
             "role",
         ],
         KIND_ERROR_BAND => &[
@@ -461,6 +462,7 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "fill_opacity",
             "stroke_opacity",
             "curve",
+            "step",
         ],
         KIND_RIBBON => &[
             "opacity",

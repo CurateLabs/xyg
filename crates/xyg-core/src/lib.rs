@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 180;
+pub const ABI_VERSION: u32 = 181;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1033,6 +1033,8 @@ pub unsafe extern "C" fn xyg_scene_encode_assembled_from_sidecars(
 /// ABI 178 admits scatter `fill_opacity` / `stroke_opacity` on that same XYMS path.
 /// ABI 179 admits hexbin `fill_opacity` on that same XYMS fill alpha.
 /// ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint on that same XYMS path.
+/// ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as authored
+/// band step expansion (`step_mode` 1–3 wins over `BandFlatten`).
 /// Returns the encoded byte count on success, or a negated
 /// `ProductEncodeError` code. Encode-sidecar failures keep codes 1–21; other
 /// stages occupy `base + original` except shared `Output=4` retry. Support
@@ -3057,7 +3059,9 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// polar `curve="smooth"` plus `step` keeps authored step expansion (identity
 /// chords; polar-axes.md §5). ABI 172 admits cartesian line `curve="smooth"`
 /// plus `step` as that same authored step expansion (`step_mode` 1–3 wins
-/// over `CurveFlatten`). Cartesian area/error_band step+smooth stays fail-closed.
+/// over `CurveFlatten`). ABI 181 admits cartesian area/error_band
+/// `curve="smooth"` plus `step` as that same authored step expansion
+/// (`step_mode` 1–3 wins over `BandFlatten`).
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety

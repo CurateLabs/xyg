@@ -92,7 +92,8 @@ raster emits `OP_TEXT`. Combined `marker_path` + `marker_glyph` and multi-charac
 glyphs stay fail-closed. ABI 171 admits scatter `stroke_width` without an
 authored `stroke` as match-fill (mark color at the authored width). ABI 172
 admits cartesian line `curve="smooth"` plus `step` as authored step expansion.
-ABI 146 admits constant
+ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as
+authored band step expansion. ABI 146 admits constant
 validated mark `fill` linear-gradients: hosts pack XYGR on the extras dash
 slot (`{space, dir, stops}` with 2–8 RGBA8 stops, axis-aligned `down|up|left|right`,
 `mark` or `plot` space). Encoded Scene v31 keeps XYGR so SVG emits
@@ -166,7 +167,10 @@ as an XYMG extras sidecar so SVG/raster emit text markers. ABI 171 does not
 change Scene records; width-only scatter `stroke_width` paints the mark color
 at the authored width (matplotlib `edgecolors='face'`). ABI 172 does not
 change Scene records; cartesian line `curve="smooth"` plus `step` keeps
-authored step expansion (`step_mode` 1–3 wins over `CurveFlatten`). ABI 173
+authored step expansion (`step_mode` 1–3 wins over `CurveFlatten`). ABI 181
+does not change Scene records; cartesian area/error_band `curve="smooth"`
+plus `step` keeps authored band step expansion (`step_mode` 1–3 wins over
+`BandFlatten`). ABI 173
 does not change Scene records; heatmap `corner_radius` tessellates cartesian
 Rects to PolyFill and polar wedges when the inner radius is positive.
 ABI 174 does not change Scene records; violin/box `corner_radius` tessellates
@@ -182,6 +186,9 @@ ABI 179 does not change Scene records; hexbin `fill_opacity` composites through
 XYMS fill alpha on HexCell PolyFills.
 ABI 180 does not change Scene records; triangle_mesh `fill_opacity` / constant
 stroke paint composite through that same XYMS path.
+ABI 181 does not change Scene records; cartesian area/error_band
+`curve="smooth"` plus `step` keeps authored band step expansion (`step_mode`
+1–3 wins over `BandFlatten`).
 Per-item radius channels stay fail-closed.
 
 ## Version 3: backend-neutral core scene batch
@@ -487,7 +494,8 @@ identity). ABI 169 admits polar `curve="smooth"` plus `step` as authored
 step expansion on those identity chords. ABI 170 admits constant scatter
 `marker_glyph` via XYMG. ABI 171 admits width-only scatter `stroke_width` as
 match-fill. ABI 172 admits cartesian line `curve="smooth"` plus `step` as
-authored step expansion.
+authored step expansion. ABI 181 admits cartesian area/error_band
+`curve="smooth"` plus `step` as authored band step expansion.
 ABI 145 admits
 constant scatter `marker_path` via an XYMP extras sidecar; Rust tessellates
 centres to existing PolyFill/Polyline after pixel mapping (public allowlist
@@ -1516,7 +1524,7 @@ is positive. ABI 169 admits polar `curve="smooth"` plus `step` as polar step
 expansion. ABI 170 admits constant scatter `marker_glyph` via XYMG. ABI 171 admits
 scatter `stroke_width` without `stroke` as match-fill. ABI 172 admits cartesian
 line `curve="smooth"` plus `step` as authored step expansion. ABI 173 tessellates
-heatmap `corner_radius`. ABI 174 tessellates violin/box `corner_radius`. ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`. ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`. ABI 177 admits heatmap `fill_opacity`. ABI 178 admits scatter `fill_opacity` / `stroke_opacity`. ABI 179 admits hexbin `fill_opacity`. ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint. ABI 116 does not change Scene records either;
+heatmap `corner_radius`. ABI 174 tessellates violin/box `corner_radius`. ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`. ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`. ABI 177 admits heatmap `fill_opacity`. ABI 178 admits scatter `fill_opacity` / `stroke_opacity`. ABI 179 admits hexbin `fill_opacity`. ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint. ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as authored band step expansion. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;
 `xyg_scene_figure_support_reason` owns figure-compile support from packed

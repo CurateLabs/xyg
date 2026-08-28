@@ -17,8 +17,9 @@
 //! expands, and smooth does not promote to `CurveFlatten`. ABI 172 admits
 //! cartesian line `curve="smooth"` plus `step` the same way: authored
 //! `step_mode` 1–3 expands, and smooth does not promote to `CurveFlatten`.
-//! Cartesian area/error_band cannot step-expand (`PACK_BAND` accepts only
-//! `step_mode` 0 or 4). ABI 170 admits
+//! ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` the
+//! same way on `PACK_BAND`: authored `step_mode` 1–3 expands both edges, and
+//! smooth does not promote to `BandFlatten`. ABI 170 admits
 //! constant scatter `marker_glyph` via XYMG (no new pack kind).
 //! ABI 145 admits constant `marker_path` via an XYMP extras sidecar;
 //! tessellation is Scene-owned after pixel mapping (no new pack kind).
@@ -511,9 +512,6 @@ pub fn pack_trace(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, Pack
     if input.step_mode != 0 && input.pack_kind != PACK_LINE && input.pack_kind != PACK_BAND {
         return Err(PackError::Length);
     }
-    if input.pack_kind == PACK_BAND && input.step_mode != 0 && input.step_mode != 4 {
-        return Err(PackError::Length);
-    }
     match input.pack_kind {
         PACK_SCATTER => pack_xy(input, KIND_SCATTER, input.symbol, input.diameter, EXP_NONE),
         PACK_LINE => {
@@ -614,7 +612,7 @@ fn pack_band(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, PackError
     let expansion = if input.step_mode == 4 {
         EXP_BAND_FLATTEN
     } else {
-        EXP_NONE
+        input.step_mode
     };
     let mut out = Vec::with_capacity(cols[0].len());
     for index in 0..cols[0].len() {
@@ -1206,21 +1204,23 @@ mod tests {
                 && row.x0 == row.x1
                 && row.symbol == 1
         }));
-        assert_eq!(
-            pack_trace(TracePackInput {
-                pack_kind: PACK_BAND,
-                flags: 0,
-                step_mode: 1,
-                symbol: 0,
-                style_ref: 0,
-                trace_id: 0,
-                diameter: 0.0,
-                extra0: 0.0,
-                extra1: 0.0,
-                columns: &[&x, &y, &base],
-            }),
-            Err(PackError::Length)
-        );
+        let stepped = pack_trace(TracePackInput {
+            pack_kind: PACK_BAND,
+            flags: 0,
+            step_mode: 1,
+            symbol: 0,
+            style_ref: 0,
+            trace_id: 0,
+            diameter: 0.0,
+            extra0: 0.0,
+            extra1: 0.0,
+            columns: &[&x, &y, &base],
+        })
+        .unwrap();
+        assert_eq!(stepped.len(), 3);
+        assert!(stepped.iter().all(|row| {
+            row.expansion_mode == 1 && row.kind == KIND_BAND && row.x0 == row.x1 && row.symbol == 1
+        }));
     }
 
     fn ann_row(
@@ -1598,6 +1598,38 @@ mod tests {
         );
         let stepped = parse_product_facts(&stepped_bytes).unwrap();
         assert_eq!(stepped.step_mode, 1);
+        let area_stepped_bytes = xypk_bytes(
+            "area",
+            1,
+            COORDS_CARTESIAN,
+            0,
+            2,
+            FACT_CURVE_SMOOTH,
+            2,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        );
+        let area_stepped = parse_product_facts(&area_stepped_bytes).unwrap();
+        assert_eq!(area_stepped.step_mode, 2);
+        let band_stepped_bytes = xypk_bytes(
+            "error_band",
+            1,
+            COORDS_CARTESIAN,
+            0,
+            3,
+            FACT_CURVE_SMOOTH,
+            2,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        );
+        let band_stepped = parse_product_facts(&band_stepped_bytes).unwrap();
+        assert_eq!(band_stepped.step_mode, 3);
     }
 
     #[test]

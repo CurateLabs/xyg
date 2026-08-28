@@ -392,7 +392,7 @@ fn parse_linecap(text: &str) -> Option<u8> {
 }
 
 fn parse_step(kind: &str, text: &str, index: usize) -> Result<u16, TraceCompileError> {
-    if kind != "line" || text.is_empty() {
+    if !(kind == "line" || is_band(kind)) || text.is_empty() {
         return Ok(0);
     }
     Ok(match text.trim() {

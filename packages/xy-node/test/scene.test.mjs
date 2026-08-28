@@ -313,7 +313,22 @@ test("Node Scene v30 compiles flattened smooth polylines and polar smooth as cho
   cartesianAreaBoth.setAxisDomain("x", [0, 2]);
   cartesianAreaBoth.setAxisDomain("y", [0, 2]);
   cartesianAreaBoth.area([0, 1, 2], [0, 1, 0.5], { style: { curve: "smooth", step: "mid" } });
-  assert.throws(() => cartesianAreaBoth.toScene(), /authored markers/);
+  const cartesianAreaStep = new Figure({ width: 240, height: 160 });
+  cartesianAreaStep.setAxisDomain("x", [0, 2]);
+  cartesianAreaStep.setAxisDomain("y", [0, 2]);
+  cartesianAreaStep.area([0, 1, 2], [0, 1, 0.5], { style: { step: "mid" } });
+  assert.equal(sceneSvg(cartesianAreaBoth.toScene()), sceneSvg(cartesianAreaStep.toScene()));
+  assert.equal(sceneExportSupportReason(cartesianAreaBoth), null);
+  const cartesianBandBoth = new Figure({ width: 240, height: 160 });
+  cartesianBandBoth.setAxisDomain("x", [0, 2]);
+  cartesianBandBoth.setAxisDomain("y", [0, 2]);
+  cartesianBandBoth.errorBand([0, 1, 2], [0, 0.5, 0.2], [0.5, 1, 0.8], { style: { curve: "smooth", step: "mid" } });
+  const cartesianBandStep = new Figure({ width: 240, height: 160 });
+  cartesianBandStep.setAxisDomain("x", [0, 2]);
+  cartesianBandStep.setAxisDomain("y", [0, 2]);
+  cartesianBandStep.errorBand([0, 1, 2], [0, 0.5, 0.2], [0.5, 1, 0.8], { style: { step: "mid" } });
+  assert.equal(sceneSvg(cartesianBandBoth.toScene()), sceneSvg(cartesianBandStep.toScene()));
+  assert.equal(sceneExportSupportReason(cartesianBandBoth), null);
 });
 
 test("Node Scene v31 compiles flattened smooth areas and polar smooth areas as chords", () => {
