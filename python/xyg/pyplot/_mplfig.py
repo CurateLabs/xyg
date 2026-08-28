@@ -133,17 +133,18 @@ def _panel_chrome(
 
 
 def _measured_left_gutter(ax: Axes, width: int, height: int) -> float:
-    """The left gutter `_svg.layout()` will reserve for `ax`'s y-axis text.
+    """The left gutter Scene or `_svg.layout()` will reserve for `ax`'s y-axis text.
 
-    Probes the real spec because the reservation is measured from the tick
-    labels the resolved range produces, which only exist after the payload is
-    built. The probe costs one extra payload build on the notebook display path;
-    the browser needs the number *before* the chart it renders is built, and a
-    second implementation of the measurement is the thing this must not become.
+    Default-font cartesian Scene-shaped specs use `xyg_scene_plot_layout`
+    (#297). Compatibility `_svg._*room` stays for polar, extra axes, and custom
+    fonts so those figures are not measured as a silent DejaVu substitute.
     """
     from .. import _svg
 
     spec = _probe_axis_spec(ax, width, height)
+    rooms = _svg.scene_layout_rooms(spec)
+    if rooms is not None:
+        return float(rooms[0])
     return float(_svg.layout(spec)[3]["x"])
 
 
@@ -191,10 +192,10 @@ def _measured_axis_chrome(ax: Axes, width: int, height: int) -> tuple[float, flo
     """Intrinsic ``(left, top, right, bottom)`` chrome for final axes content.
 
     Tight/constrained layout needs the labels after plotting and styling have
-    finished. Build one provisional payload, remove its figure-rectangle
-    padding, and ask the same layout resolver used by PNG/SVG for the actual
-    text reservation. The later layout adjustment invalidates this provisional
-    chart before any output consumes it.
+    finished. Pyplot static export still composes `_svg.layout()`, so chrome
+    that sizes `get_position()` uses that compositor. Default-font cartesian
+    specs can still ask `scene_layout_rooms` for Scene gutters (#297) without
+    substituting DejaVu for custom fonts.
     """
     from .. import _svg
 
@@ -984,13 +985,35 @@ class Figure:
             if self._suptitle and not options.get("suptitle_rect_reserved"):
                 style = self._resolved_suptitle_style()
                 block = _textblock.measure(self._suptitle, float(style.get("size", 16.0)))
-                y = float(style.get("y", 0.98))
-                extra_top += max(0.0, (1.0 - y) * canvas_h) + block.height + 6.0
+                extra_left, extra_right, extra_bottom, extra_top = (
+                    _native.tight_layout_figure_extra(
+                        canvas_w,
+                        canvas_h,
+                        suptitle_height=block.height,
+                        suptitle_y=float(style.get("y", 0.98)),
+                    )
+                )
             for label in self._resolved_figure_labels():
                 if label["role"] == "x":
-                    extra_bottom += float(label["size"]) + 8.0
+                    more_left, more_right, more_bottom, more_top = (
+                        _native.tight_layout_figure_extra(
+                            canvas_w,
+                            canvas_h,
+                            xlabel_size=float(label["size"]),
+                        )
+                    )
                 else:
-                    extra_left += float(label["size"]) + 8.0
+                    more_left, more_right, more_bottom, more_top = (
+                        _native.tight_layout_figure_extra(
+                            canvas_w,
+                            canvas_h,
+                            ylabel_size=float(label["size"]),
+                        )
+                    )
+                extra_left += more_left
+                extra_right += more_right
+                extra_bottom += more_bottom
+                extra_top += more_top
             if (
                 self._figure_legend
                 and self._figure_legend.get("items")
@@ -1003,7 +1026,15 @@ class Figure:
                     {"x": 0.0, "y": 0.0, "w": float(canvas_w), "h": float(canvas_h)},
                     {**self._figure_legend, "loc": "upper left"},
                 )
-                extra_right += float(measured["box_w"]) + 12.0
+                more_left, more_right, more_bottom, more_top = _native.tight_layout_figure_extra(
+                    canvas_w,
+                    canvas_h,
+                    legend_box_w=float(measured["box_w"]),
+                )
+                extra_left += more_left
+                extra_right += more_right
+                extra_bottom += more_bottom
+                extra_top += more_top
             point_px = float(rcParams["font.size"]) * float(self._dpi or 100.0) / 72.0
             frame = (0.0, 0.0, 1.0, 1.0) if rect is None else tuple(map(float, rect))
             if len(frame) != 4:

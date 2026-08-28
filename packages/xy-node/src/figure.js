@@ -5,7 +5,7 @@
  * Documented subset vs full Python `Figure.build_payload`:
  * - Emits `protocol`, width/height, axes ranges, traces, columns, graph meta.
  * - Geometry columns are offset-encoded f32 via `xyg_encode_f32` (§29).
- * - Line traces apply Rust M4 when `xyg_payload_tier` says decimated (§28).
+ * - Line traces apply Rust M4 when `xyg_payload_m4_indices` says decimated (§28).
  * - Histogram traces ship as rectangle columns from `xyg_histogram_bins`.
  * - Polar charts emit `coords: "polar"` + theta/r axis descriptors.
  * - Ribbon / sankey ship flow-band geometry (`target_y0`/`target_y1`).
@@ -26,7 +26,7 @@ import {
   densityLogU8,
   encodeF32Values,
   geometryOffset,
-  m4Points,
+  payloadM4Indices,
   minMax,
   normalizeF32,
   payloadTier,
@@ -50,7 +50,7 @@ import {
 import { composeGraph } from "./graph.js";
 import { composeSankey } from "./sankey.js";
 import { composeScatter, normalizeScatterStyle } from "./marks/scatter.js";
-import { composeLine, F64_EPS } from "./marks/line.js";
+import { composeLine } from "./marks/line.js";
 import { composeHistogram } from "./marks/histogram.js";
 import { composeArea } from "./marks/area.js";
 import { composeBar } from "./marks/bar.js";
@@ -79,6 +79,13 @@ function asF64(value) {
   if (value instanceof Float64Array) return value;
   if (value == null) return new Float64Array(0);
   return Float64Array.from(value, Number);
+}
+
+function gatherF64(arr, idx) {
+  const src = asF64(arr);
+  const out = new Float64Array(idx.length);
+  for (let i = 0; i < idx.length; i += 1) out[i] = src[idx[i]];
+  return out;
 }
 
 function scatterPerItemChannels(t) {
@@ -1129,16 +1136,20 @@ export class Figure {
   _emitLine(t, pw, xr, pxWidth) {
     let xv = t.x;
     let yv = t.y;
-    let tier = "direct";
-    const decimated = payloadTier({
-      kind: 0,
+    const { tier: tierCode, indices } = payloadM4Indices({
       nPoints: xv.length,
+      x: xv,
+      y: yv,
+      x0: xr[0],
+      x1: xr[1],
+      nBuckets: pxWidth,
       polar: this.coords === "polar",
-    }) === 1;
+    });
+    const decimated = tierCode === 1;
+    let tier = "direct";
     if (decimated) {
-      const [outX, outY] = m4Points(xv, yv, xr[0], xr[1] + F64_EPS, pxWidth);
-      xv = outX;
-      yv = outY;
+      xv = gatherF64(xv, indices);
+      yv = gatherF64(yv, indices);
       tier = "decimated";
     }
     const xCol = !decimated && t._xCol instanceof Column ? t._xCol : new Column(xv);
@@ -1263,18 +1274,50 @@ export class Figure {
   }
 
   _emitArea(t, pw, xr, pxWidth) {
-    const line = this._emitLine(
-      { ...t, kind: "line" },
-      pw,
-      xr,
-      pxWidth,
-    );
-    const baseCol = new Column(t.base);
-    return {
-      ...line,
+    const { tier: tierCode, indices } = payloadM4Indices({
+      nPoints: t.x.length,
+      x: t.x,
+      y: t.y,
+      x0: xr[0],
+      x1: xr[1],
+      nBuckets: pxWidth,
+      polar: this.coords === "polar",
+    });
+    let xv = t.x;
+    let yv = t.y;
+    let bv = t.base;
+    let tier = "direct";
+    if (tierCode === 1) {
+      xv = gatherF64(xv, indices);
+      yv = gatherF64(yv, indices);
+      bv = gatherF64(bv, indices);
+      tier = "decimated";
+    }
+    const xCol = tier === "direct" && t._xCol instanceof Column ? t._xCol : new Column(xv);
+    const yCol = tier === "direct" && t._yCol instanceof Column ? t._yCol : new Column(yv);
+    if (tier === "direct") {
+      t._xCol = xCol;
+      t._yCol = yCol;
+    }
+    const baseCol = new Column(bv);
+    const entry = {
+      id: t.id,
       kind: t.kind === "error_band" ? "error_band" : "area",
-      base: pw.ship(t.base, baseCol),
+      name: t.name,
+      style: { ...t.style },
+      tier,
+      n_points: t.x.length,
+      n_marks: xv.length,
+      x: pw.ship(xv, xCol),
+      y: pw.ship(yv, yCol),
+      base: pw.ship(bv, baseCol),
+      x_axis: t.x_axis ?? "x",
+      y_axis: t.y_axis ?? "y",
     };
+    if (tier === "decimated") {
+      entry.decimation_px = pxWidth;
+    }
+    return entry;
   }
 
   _emitHeatmap(t, pw) {

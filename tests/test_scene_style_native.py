@@ -370,7 +370,7 @@ def test_encode_product_xyfs_unsupported_is_figure_support() -> None:
             polar=b"",
             figure_support=support,
         )
-    assert "polar line, scatter, area, bar, column, errorbar, heatmap, and contour" in str(
+    assert "polar line, scatter, area, bar, column, errorbar, heatmap, contour, and hexbin" in str(
         excinfo.value
     )
 

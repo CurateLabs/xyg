@@ -476,8 +476,9 @@ _AXIS_GRID_DASHES = {
 
 
 # ---------------------------------------------------------------------------
-# Compatibility tick text (§16). Rust owns automatic tick ladders (ABI 96) and
-# label formatting (ABI 130); hosts still resolve authored tick_labels.
+# Compatibility tick text (§16). Rust owns automatic tick ladders (ABI 96),
+# label formatting (ABI 130), and Scene product-path authored filter/pairing
+# (ABI 199). Hosts still resolve authored tick_labels on `_svg` drawing.
 # ---------------------------------------------------------------------------
 
 
@@ -2169,9 +2170,118 @@ def _title_room(spec: dict[str, Any], compact: bool, wrap_width: float | None = 
     return room
 
 
+_SCENE_SCALE_KINDS = {"linear": 0, "log": 1, "symlog": 2}
+
+
+def _spec_has_custom_font(spec: dict[str, Any]) -> bool:
+    """Whether chrome CSS asks for a face Scene cannot encode.
+
+    Custom `font-family` stays fail-closed on Scene (#288 / #297). Measuring
+    those figures with DejaVu would be a silent substitute.
+    """
+    for style in slot_styles(spec).values():
+        family = style.get("font-family")
+        if family not in (None, "", "DejaVu Sans"):
+            return True
+    for style in (spec.get("chrome_styles") or {}).values():
+        if not isinstance(style, dict):
+            continue
+        family = style.get("font-family") or style.get("font_family")
+        if family not in (None, "", "DejaVu Sans"):
+            return True
+    return False
+
+
+def _scene_axis_pack(axis: dict[str, Any]) -> tuple[int, float, float, float, bool] | None:
+    """Pack one primary cartesian axis for `xyg_scene_plot_layout`, or None."""
+    kind = str(axis.get("scale") or axis.get("kind") or "linear")
+    code = _SCENE_SCALE_KINDS.get(kind)
+    if code is None:
+        return None
+    domain = axis.get("domain") or axis.get("range")
+    if domain is None or len(domain) != 2:
+        return None
+    lo, hi = float(domain[0]), float(domain[1])
+    constant = float(axis.get("linthresh") or axis.get("constant") or 1.0)
+    mask = str(axis.get("nonpositive") or "") == "mask"
+    return code, lo, hi, constant, mask
+
+
+def scene_layout_rooms(
+    spec: dict[str, Any],
+) -> tuple[float, float, float, float] | None:
+    """Rust cartesian gutters for default-font Scene-shaped specs (#297).
+
+    Returns ``(left, right, top, bottom)`` from `xyg_scene_plot_layout` when the
+    spec is primary cartesian linear/log/symlog with the default face.
+    Polar, extra axes, top/right primary sides, outside legends, in-axes
+    colorbars, category scales, and custom `font-family` return None so
+    callers keep compatibility `_svg._*room` instead of a DejaVu substitute.
+    """
+    if spec.get("coords") not in (None, "cartesian"):
+        return None
+    if _spec_has_custom_font(spec):
+        return None
+    axes = _axes_by_id(spec)
+    extra = [axis_id for axis_id in axes if axis_id not in {"x", "y"}]
+    if extra:
+        return None
+    if axes["x"].get("side", "bottom") == "top" or axes["y"].get("side", "left") == "right":
+        return None
+    legend = spec.get("legend") or {}
+    loc = str(legend.get("loc") or "")
+    if spec.get("show_legend") and "outside" in loc:
+        return None
+    x_pack = _scene_axis_pack(axes["x"])
+    y_pack = _scene_axis_pack(axes["y"])
+    if x_pack is None or y_pack is None:
+        return None
+    width = spec.get("width")
+    height = spec.get("height")
+    width = 900 if not isinstance(width, (int, float)) else float(width)
+    height = 420 if not isinstance(height, (int, float)) else float(height)
+    pad = spec.get("padding")
+    padding = None
+    if isinstance(pad, list) and len(pad) == 4:
+        padding = (float(pad[0]), float(pad[1]), float(pad[2]), float(pad[3]))
+    entries = _title_entries(spec)
+    title = str(entries[0]["text"]) if len(entries) == 1 else ""
+    if len(entries) > 1:
+        return None
+    colorbar = spec.get("colorbar") or {}
+    if colorbar.get("placement") == "axes":
+        return None
+    side = None
+    if colorbar:
+        side = "bottom" if colorbar.get("orientation") == "horizontal" else "right"
+    x_format = axes["x"].get("format") or axes["x"].get("tick_format")
+    y_format = axes["y"].get("format") or axes["y"].get("tick_format")
+    try:
+        return _native.scene_plot_layout(
+            viewport=(width, height),
+            x_axis=x_pack,
+            y_axis=y_pack,
+            title=title,
+            x_label=str(axes["x"].get("label") or ""),
+            y_label=str(axes["y"].get("label") or ""),
+            x_format=str(x_format) if x_format else None,
+            y_format=str(y_format) if y_format else None,
+            padding=padding,
+            colorbar_side=side,
+        )
+    except (TypeError, ValueError):
+        return None
+
+
 def layout(spec: dict[str, Any]) -> tuple[int, int, bool, dict[str, float]]:
     """Concrete pixel dimensions + plot rect from a spec — shared by the SVG and
-    native-PNG exporters so their chrome/plot geometry stays identical."""
+    native-PNG exporters so their chrome/plot geometry stays identical.
+
+    Hosts still iterate axes, format ticks, measure ABI 125 rooms, resolve CSS
+    visibility, and decide polar legend reservation. Padding, title-band,
+    colorbar extra, right-y, floors, and polar recut combination live in Rust
+    (ABI 198).
+    """
     width = spec.get("width")
     height = spec.get("height")
     # Fluid ("100%") figures need concrete export dimensions.
@@ -2180,44 +2290,33 @@ def layout(spec: dict[str, Any]) -> tuple[int, int, bool, dict[str, float]]:
 
     compact = _native.compat_is_compact(width)
     pad = spec.get("padding")
+    authored: tuple[float, float, float, float] | None
     if isinstance(pad, list) and len(pad) == 4:
-        top, right, bottom, left = (float(v) for v in pad)
+        authored = (float(pad[0]), float(pad[1]), float(pad[2]), float(pad[3]))
+        right, left = authored[1], authored[3]
     else:
-        top, right, bottom, left = _native.compat_default_padding(compact)
+        authored = None
+        _, right, _, left = _native.compat_default_padding(compact)
     axes = _axes_by_id(spec)
-    # The first pass uses the authored/default horizontal allocation. A second
-    # pass after the measured left gutter catches an auto-collision decision
-    # whose final plot width changes the chosen label set.
     provisional_w = max(40.0, width - left - right)
-    # Resolved before the title band, because the band's height now depends on
-    # how many lines the title wraps into at this width.
     title_wrap_width = _title_wrap_width(width, left, right)
     title_room = _title_room(spec, compact, title_wrap_width)
-    top_axis_room, bottom_axis_room, measured_bottom_room = _x_axis_rooms(
-        axes, provisional_w, compact
-    )
-    top += title_room
-    top += top_axis_room
-    if measured_bottom_room:
-        bottom = max(bottom, measured_bottom_room)
+    x_top_room, x_bottom_room, measured_bottom_room = _x_axis_rooms(axes, provisional_w, compact)
     colorbar = spec.get("colorbar") or {}
     if colorbar:
         if colorbar.get("placement") == "axes":
-            kind = (
+            colorbar_kind = (
                 "axes_horizontal"
                 if colorbar.get("orientation") == "horizontal"
                 else "axes_vertical"
             )
         elif colorbar.get("orientation") == "horizontal":
-            kind = "figure_horizontal"
+            colorbar_kind = "figure_horizontal"
         else:
-            kind = "figure_vertical"
-        extra_right, extra_bottom = _native.compat_colorbar_extra(
-            kind, bool(colorbar.get("label")), colorbar.get("pad") == 0
-        )
-        right += extra_right
-        bottom += extra_bottom
-    if any(
+            colorbar_kind = "figure_vertical"
+    else:
+        colorbar_kind = "none"
+    has_right_y = any(
         axis_id.startswith("y")
         and (
             axis.get("side", "right") == "right"
@@ -2225,21 +2324,23 @@ def layout(spec: dict[str, Any]) -> tuple[int, int, bool, dict[str, float]]:
         )
         and _axis_tick_label_strategy(axis) != "none"
         for axis_id, axis in axes.items()
-    ):
-        # Match ChartView._layout(): one shared right-side gutter contains the
-        # secondary-y tick labels/title. Multiple right axes intentionally
-        # overlay in both renderers until offset axes become part of the API.
-        right += _native.compat_right_y_room(compact)
-    # Measured y-axis text room, applied last. The vertical extent is already
-    # final (only top/bottom feed it), so the tick density the reservation
-    # measures is the density that will be drawn. This raises a *floor*: an
-    # authored `padding` and the 46/62 default both stand whenever they already
-    # fit, exactly as the colorbar/right-axis room above is additive rather
-    # than authoritative. Reserving less than the ink is not an option — a
-    # static export has no ellipsis to fall back on the way the DOM does.
-    left = max(left, _y_axis_left_room(spec, max(40, height - top - bottom)))
-    # Include terminal x tick-label ink that overhangs either end of the
-    # spine. Two passes cover a tick-density change caused by the new room.
+    )
+    combine_kw: dict[str, Any] = {
+        "authored_padding": authored,
+        "title_room": title_room,
+        "x_top_room": x_top_room,
+        "x_bottom_room": x_bottom_room,
+        "x_measured_bottom": measured_bottom_room,
+        "colorbar_kind": colorbar_kind,
+        "colorbar_has_label": bool(colorbar.get("label")),
+        "colorbar_pad_zero": colorbar.get("pad") == 0,
+        "has_right_y": has_right_y,
+    }
+    preview = _native.compat_combine_plot(width, height, **combine_kw)
+    y_left = _y_axis_left_room(spec, preview["h"])
+    mid = _native.compat_combine_plot(width, height, y_left_room=y_left, **combine_kw)
+    left = mid["x"]
+    right = width - mid["x"] - mid["w"]
     for _pass in range(2):
         edge_left, edge_right = _x_tick_label_edge_rooms(
             axes,
@@ -2252,35 +2353,45 @@ def layout(spec: dict[str, Any]) -> tuple[int, int, bool, dict[str, float]]:
         left, right = widened_left, widened_right
     final_w = max(40.0, width - left - right)
     if final_w == provisional_w:
-        measured_top = top_axis_room
-        measured_bottom = bottom_axis_room
-        final_measured_bottom = measured_bottom_room
+        x_final = (x_top_room, x_bottom_room, measured_bottom_room)
     else:
-        measured_top, measured_bottom, final_measured_bottom = _x_axis_rooms(axes, final_w, compact)
-    if measured_top > top_axis_room:
-        top += measured_top - top_axis_room
-        top_axis_room = measured_top
-    if final_measured_bottom > measured_bottom_room:
-        bottom = max(bottom, final_measured_bottom)
-        measured_bottom_room = final_measured_bottom
-    bottom_axis_room = max(bottom_axis_room, measured_bottom)
-    plot = {
-        "x": left,
-        "y": top,
-        "w": max(40, width - left - right),
-        "h": max(40, height - top - bottom),
-        # Emitters place the figure title above this gutter; recording it here
-        # keeps layout() the single source of the top-axis reservation.
-        "title_room": title_room,
-        # The width the title band was measured at. Emitters must wrap at the
-        # same width or they draw more lines than `title_room` reserved.
-        "title_wrap_width": title_wrap_width,
-        "top_axis_room": top_axis_room,
-        "bottom_axis_room": bottom_axis_room,
-    }
+        x_final = _x_axis_rooms(axes, final_w, compact)
+    polar_kw = None
     if spec.get("coords") == "polar":
-        _recut_polar_plot(spec, plot, width, height, compact)
+        polar_kw = _polar_combine_args(spec, width, compact)
+    plot = _native.compat_combine_plot(
+        width,
+        height,
+        y_left_room=y_left,
+        edge_left=left,
+        edge_right=right,
+        x_rooms_final=x_final,
+        polar=polar_kw,
+        **combine_kw,
+    )
     return width, height, compact, plot
+
+
+def _polar_combine_args(spec: dict[str, Any], width: float, compact: bool) -> dict[str, Any]:
+    """Host polar-recut observations for ``compat_combine_plot``."""
+    theta_axis = spec.get("x_axis") or {}
+    labels_hidden = theta_axis.get("tick_label_strategy") == "none"
+    legend_side, legend_room = _polar_legend_reserve(spec, compact, width)
+    room = 0.0 if labels_hidden else _polar_label_room(theta_axis)
+    authored_pad = spec.get("padding")
+    y_axis = spec.get("y_axis") or {}
+    titled = bool(y_axis.get("label")) and _axis_text_paint_visible(y_axis, "label_color")
+    x_axis = spec.get("x_axis") or {}
+    x_titled = bool(x_axis.get("label")) and _axis_text_paint_visible(x_axis, "label_color")
+    colorbar = spec.get("colorbar") or {}
+    return {
+        "legend_side": legend_side,
+        "legend_room": legend_room,
+        "polar_label_room": room,
+        "authored_padding": isinstance(authored_pad, list) and len(authored_pad) == 4,
+        "y_titled": titled,
+        "keeps_bottom": x_titled or colorbar.get("orientation") == "horizontal",
+    }
 
 
 # Room reserved outside the outer ring for angular tick labels. Cartesian

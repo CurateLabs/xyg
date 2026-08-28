@@ -1,9 +1,9 @@
-//! Compatibility static-export plot layout (M2 #275 / ABI 126).
+//! Compatibility static-export plot layout (M2 #275 / ABI 126 / ABI 198).
 //!
 //! SVG, raster, and pyplot share these padding, title-band, colorbar, right-y,
-//! and polar-recut formulas. Hosts still iterate axes, format `_tick_text`,
-//! measure rooms through ABI 125, resolve CSS visibility, and decide whether
-//! a polar legend gutter is reserved.
+//! polar-recut, and `_svg.layout()` combination formulas. Hosts still iterate
+//! axes, format `_tick_text`, measure rooms through ABI 125, resolve CSS
+//! visibility, and decide whether a polar legend gutter is reserved.
 
 use crate::layout_rooms::AXIS_TEXT_EDGE_PAD;
 
@@ -319,6 +319,260 @@ pub fn recut_polar_plot(
     Some(plot)
 }
 
+pub const COMBINE_OUT_LEN: usize = 12;
+
+/// Optional polar recut applied after cartesian gutters converge.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PolarCombine {
+    pub legend_side: u32,
+    pub legend_room: f64,
+    pub polar_label_room: f64,
+    pub authored_padding: bool,
+    pub y_titled: bool,
+    pub keeps_bottom: bool,
+}
+
+/// Host-measured rooms plus flags for [`combine_plot`].
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct CombinePlotRequest {
+    pub width: f64,
+    pub height: f64,
+    pub authored_padding: Option<[f64; 4]>,
+    pub title_room: f64,
+    pub x_top_room: f64,
+    pub x_bottom_room: f64,
+    pub x_measured_bottom: f64,
+    pub colorbar_kind: u32,
+    pub colorbar_has_label: bool,
+    pub colorbar_pad_zero: bool,
+    pub has_right_y: bool,
+    /// `None` skips the y-left floor (preview height after title/x/colorbar).
+    pub y_left_room: Option<f64>,
+    /// Additional left/right floors (tick overhang, or accumulated gutters).
+    pub edge_left: Option<f64>,
+    pub edge_right: Option<f64>,
+    /// Second-pass x rooms when plot width changed. `(top, bottom, measured_bottom)`.
+    pub x_rooms_final: Option<(f64, f64, f64)>,
+    pub polar: Option<PolarCombine>,
+}
+
+/// Cartesian plot rect plus title/axis metadata after combination.
+#[derive(Clone, Debug, PartialEq)]
+pub struct CombinedPlot {
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub h: f64,
+    pub title_room: f64,
+    pub title_wrap_width: f64,
+    pub top_axis_room: f64,
+    pub bottom_axis_room: f64,
+    pub legend_box: Option<[f64; 4]>,
+}
+
+/// Combine padding, title, axis rooms, colorbar extra, right-y, floors, and polar recut.
+///
+/// Hosts still iterate axes, format ticks, measure ABI 125 rooms, resolve CSS
+/// visibility, and decide polar legend reservation. The combination itself
+/// (ABI 198 / #299) lives here so `_svg.layout()` cannot drift from Node.
+pub fn combine_plot(request: CombinePlotRequest) -> Option<CombinedPlot> {
+    let CombinePlotRequest {
+        width,
+        height,
+        authored_padding,
+        title_room,
+        x_top_room,
+        x_bottom_room,
+        x_measured_bottom,
+        colorbar_kind,
+        colorbar_has_label,
+        colorbar_pad_zero,
+        has_right_y,
+        y_left_room,
+        edge_left,
+        edge_right,
+        x_rooms_final,
+        polar,
+    } = request;
+    if ![
+        width,
+        height,
+        title_room,
+        x_top_room,
+        x_bottom_room,
+        x_measured_bottom,
+    ]
+    .iter()
+    .all(|value| value.is_finite())
+        || width <= 0.0
+        || height <= 0.0
+        || title_room < 0.0
+        || x_top_room < 0.0
+        || x_bottom_room < 0.0
+        || x_measured_bottom < 0.0
+    {
+        return None;
+    }
+    if let Some(room) = y_left_room {
+        if !room.is_finite() || room < 0.0 {
+            return None;
+        }
+    }
+    if let Some(room) = edge_left {
+        if !room.is_finite() || room < 0.0 {
+            return None;
+        }
+    }
+    if let Some(room) = edge_right {
+        if !room.is_finite() || room < 0.0 {
+            return None;
+        }
+    }
+    if let Some((top_room, bottom_room, measured_bottom)) = x_rooms_final {
+        if ![top_room, bottom_room, measured_bottom]
+            .iter()
+            .all(|value| value.is_finite() && *value >= 0.0)
+        {
+            return None;
+        }
+    }
+    let compact = is_compact(width)?;
+    let (mut top, mut right, mut bottom, mut left) = match authored_padding {
+        Some([pad_top, pad_right, pad_bottom, pad_left]) => {
+            if [pad_top, pad_right, pad_bottom, pad_left]
+                .iter()
+                .any(|value| !value.is_finite() || *value < 0.0)
+            {
+                return None;
+            }
+            (pad_top, pad_right, pad_bottom, pad_left)
+        }
+        None => {
+            let pad = default_padding(compact);
+            (pad[0], pad[1], pad[2], pad[3])
+        }
+    };
+    let wrap = title_wrap_width(width, left, right)?;
+    let mut top_axis_room = x_top_room;
+    let mut bottom_axis_room = x_bottom_room;
+    let measured_bottom_room = x_measured_bottom;
+    top += title_room;
+    top += top_axis_room;
+    if measured_bottom_room != 0.0 {
+        bottom = bottom.max(measured_bottom_room);
+    }
+    let (extra_right, extra_bottom) =
+        colorbar_extra(colorbar_kind, colorbar_has_label, colorbar_pad_zero)?;
+    right += extra_right;
+    bottom += extra_bottom;
+    if has_right_y {
+        right += right_y_room(compact);
+    }
+    if let Some(room) = y_left_room {
+        left = left.max(room);
+    }
+    if let Some(room) = edge_left {
+        left = left.max(room);
+    }
+    if let Some(room) = edge_right {
+        right = right.max(room);
+    }
+    if let Some((measured_top, measured_bottom, final_measured_bottom)) = x_rooms_final {
+        if measured_top > top_axis_room {
+            top += measured_top - top_axis_room;
+            top_axis_room = measured_top;
+        }
+        if final_measured_bottom > measured_bottom_room {
+            bottom = bottom.max(final_measured_bottom);
+        }
+        bottom_axis_room = bottom_axis_room.max(measured_bottom);
+    }
+    let mut plot = CombinedPlot {
+        x: left,
+        y: top,
+        w: PLOT_MIN.max(width - left - right),
+        h: PLOT_MIN.max(height - top - bottom),
+        title_room,
+        title_wrap_width: wrap,
+        top_axis_room,
+        bottom_axis_room,
+        legend_box: None,
+    };
+    if let Some(polar) = polar {
+        let recut = recut_polar_plot(
+            PolarPlot {
+                x: plot.x,
+                y: plot.y,
+                w: plot.w,
+                h: plot.h,
+                top_axis_room: plot.top_axis_room,
+                legend_box: None,
+            },
+            width,
+            height,
+            polar.legend_side,
+            polar.legend_room,
+            polar.polar_label_room,
+            polar.authored_padding,
+            polar.y_titled,
+            polar.keeps_bottom,
+        )?;
+        plot.x = recut.x;
+        plot.y = recut.y;
+        plot.w = recut.w;
+        plot.h = recut.h;
+        plot.top_axis_room = recut.top_axis_room;
+        plot.legend_box = recut.legend_box;
+    }
+    Some(plot)
+}
+
+/// Figure-edge extras for [`tight_layout_solve`] after the host measured chrome.
+///
+/// Returns `(left, right, bottom, top)`. `suptitle_height`, `xlabel_size`,
+/// `ylabel_size`, and `legend_box_w` are `None` when that decoration is absent.
+pub fn tight_figure_extra(
+    canvas_w: f64,
+    canvas_h: f64,
+    suptitle_height: Option<f64>,
+    suptitle_y: f64,
+    xlabel_size: Option<f64>,
+    ylabel_size: Option<f64>,
+    legend_box_w: Option<f64>,
+) -> Option<[f64; 4]> {
+    if ![canvas_w, canvas_h, suptitle_y]
+        .iter()
+        .all(|value| value.is_finite())
+        || canvas_w <= 0.0
+        || canvas_h <= 0.0
+    {
+        return None;
+    }
+    let extra_top = match suptitle_height {
+        Some(height) if height.is_finite() && height >= 0.0 => {
+            (1.0 - suptitle_y).max(0.0) * canvas_h + height + 6.0
+        }
+        None => 0.0,
+        Some(_) => return None,
+    };
+    let extra_bottom = match xlabel_size {
+        Some(size) if size.is_finite() && size >= 0.0 => size + 8.0,
+        None => 0.0,
+        Some(_) => return None,
+    };
+    let extra_left = match ylabel_size {
+        Some(size) if size.is_finite() && size >= 0.0 => size + 8.0,
+        None => 0.0,
+        Some(_) => return None,
+    };
+    let extra_right = match legend_box_w {
+        Some(width) if width.is_finite() && width >= 0.0 => width + 12.0,
+        None => 0.0,
+        Some(_) => return None,
+    };
+    Some([extra_left, extra_right, extra_bottom, extra_top])
+}
+
 /// One gridspec cell's chrome, in px, plus its integer row/col span.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TightPanel {
@@ -607,5 +861,81 @@ mod tests {
         assert!((out[0] - left).abs() < 1e-12);
         assert!((out[1] - right).abs() < 1e-12);
         assert!((out[4] - horizontal_gap / cell_w).abs() < 1e-12);
+    }
+
+    fn blank_combine(width: f64, height: f64) -> CombinePlotRequest {
+        CombinePlotRequest {
+            width,
+            height,
+            authored_padding: None,
+            title_room: 0.0,
+            x_top_room: 0.0,
+            x_bottom_room: 0.0,
+            x_measured_bottom: 0.0,
+            colorbar_kind: COLORBAR_NONE,
+            colorbar_has_label: false,
+            colorbar_pad_zero: false,
+            has_right_y: false,
+            y_left_room: None,
+            edge_left: None,
+            edge_right: None,
+            x_rooms_final: None,
+            polar: None,
+        }
+    }
+
+    #[test]
+    fn combine_plot_default_padding_is_the_plot_rect() {
+        let out = combine_plot(blank_combine(900.0, 420.0)).unwrap();
+        assert_eq!(out.x, PAD_LEFT);
+        assert_eq!(out.y, PAD_TOP);
+        assert_eq!(out.w, 900.0 - PAD_LEFT - PAD_RIGHT);
+        assert_eq!(out.h, 420.0 - PAD_TOP - PAD_BOTTOM);
+        assert_eq!(out.title_wrap_width, 900.0 - PAD_LEFT - PAD_RIGHT);
+        assert_eq!(out.legend_box, None);
+    }
+
+    #[test]
+    fn combine_plot_title_and_colorbar_are_additive() {
+        let mut request = blank_combine(900.0, 420.0);
+        request.title_room = 30.0;
+        request.colorbar_kind = COLORBAR_FIGURE_VERTICAL;
+        let out = combine_plot(request).unwrap();
+        assert_eq!(out.y, PAD_TOP + 30.0);
+        assert_eq!(out.x, PAD_LEFT);
+        let extra = colorbar_extra(COLORBAR_FIGURE_VERTICAL, false, false).unwrap();
+        assert_eq!(out.w, 900.0 - PAD_LEFT - (PAD_RIGHT + extra.0));
+        assert_eq!(out.title_room, 30.0);
+    }
+
+    #[test]
+    fn combine_plot_polar_recut_insets_authored_padding() {
+        let mut request = blank_combine(200.0, 200.0);
+        request.authored_padding = Some([0.0, 0.0, 0.0, 0.0]);
+        request.polar = Some(PolarCombine {
+            legend_side: LEGEND_SIDE_NONE,
+            legend_room: 0.0,
+            polar_label_room: 30.0,
+            authored_padding: true,
+            y_titled: false,
+            keeps_bottom: false,
+        });
+        let out = combine_plot(request).unwrap();
+        assert_eq!(out.x, 30.0);
+        assert_eq!(out.y, 30.0);
+        assert_eq!(out.w, 140.0);
+        assert_eq!(out.h, 140.0);
+        assert_eq!(out.top_axis_room, 30.0);
+    }
+
+    #[test]
+    fn tight_figure_extra_suptitle_and_outside_legend() {
+        let extra =
+            tight_figure_extra(800.0, 600.0, Some(20.0), 0.98, None, Some(12.0), Some(80.0))
+                .unwrap();
+        assert_eq!(extra[0], 20.0);
+        assert_eq!(extra[1], 92.0);
+        assert_eq!(extra[2], 0.0);
+        assert!((extra[3] - ((1.0 - 0.98) * 600.0 + 20.0 + 6.0)).abs() < 1e-12);
     }
 }

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 
 from xyg import _scene, kernels
@@ -60,3 +62,17 @@ def test_rounded_rect_zero_and_radii() -> None:
     assert len(pts) == 20
     np.testing.assert_allclose(pts[0], (1.0, 4.0), atol=1e-12)
     np.testing.assert_allclose(pts[-1], (1.0, 7.0), atol=1e-12)
+
+
+def test_compatibility_raster_calls_abi_121_kernels_not_scene_wrappers() -> None:
+    """#310: PNG compatibility emits through kernels; product Scene never imports `_scene.py`."""
+    root = Path(__file__).resolve().parents[1]
+    raster = (root / "python/xyg/_raster.py").read_text()
+    scene_v3 = (root / "python/xyg/_scene_v3.py").read_text()
+    svg = (root / "python/xyg/_svg.py").read_text()
+    assert "from . import _scene" not in raster
+    assert "from . import _scene" not in scene_v3
+    assert "from . import _scene" not in svg
+    assert "kernels.ribbon_polygon" in raster
+    assert "kernels.rounded_rect_poly" in raster
+    assert "kernels.curve_flatten" in raster
