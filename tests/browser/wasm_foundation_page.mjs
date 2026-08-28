@@ -386,7 +386,7 @@ async function fixtureModule({
   ];
   const highBit = 0x80000000;
   const values = [
-    23, 25, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
+    23, CANONICAL_SCENE_VERSION, 64 * 1024 * 1024, 1, 0, 0, 1024, 0, 0, 0, 0, 0, 0, 0,
     aggregateStepTrap || aggregateOutputOutOfRange || cancelTrap ? 8 : 0,
     cancelTrap ? 8 : 0,
     0, 0, 0,
@@ -1839,7 +1839,7 @@ async function run() {
     maxArenaBytes: 8192,
   });
   const ready = await worker.ready;
-  if (ready.abiVersion !== 23 || ready.sceneVersion !== 31) {
+  if (ready.abiVersion !== 23 || ready.sceneVersion !== CANONICAL_SCENE_VERSION) {
     throw new Error(`unexpected versions ${JSON.stringify(ready)}`);
   }
   if (ready.memoryBytes < 64 * 1024) throw new Error("WASM reserved-memory diagnostics are missing");
