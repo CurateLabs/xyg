@@ -13,6 +13,7 @@ use crate::kernels::{
 };
 use crate::polar::{self, POLAR_METRICS_LEN, XYPL_MAGIC, XYPL_V1_BYTES};
 use crate::svg::push_num;
+use crate::tick_layout;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::Write;
@@ -6653,6 +6654,26 @@ impl PolarSceneState {
             .unwrap_or(0.0)
     }
 
+    fn tick_theta_unit(&self) -> u32 {
+        match polar::parse_xypl(&self.xypl).map(|envelope| envelope.theta_unit) {
+            Some(1) => tick_layout::THETA_DEGREES,
+            Some(0) => tick_layout::THETA_RADIANS,
+            _ => tick_layout::THETA_NONE,
+        }
+    }
+
+    fn n_categories(&self) -> u32 {
+        polar::parse_xypl(&self.xypl)
+            .map(|envelope| envelope.n_categories)
+            .unwrap_or(0)
+    }
+
+    fn sector(&self) -> (f64, f64) {
+        polar::parse_xypl(&self.xypl)
+            .map(|envelope| (envelope.sector_start, envelope.sector_end))
+            .unwrap_or((f64::NAN, f64::NAN))
+    }
+
     fn ring_points(&self, r: f64, steps: usize) -> Vec<(f64, f64)> {
         let rn = self.radius_px(r);
         if rn <= 0.0 {
@@ -10103,7 +10124,116 @@ impl SceneDocument {
         (labels, backgrounds)
     }
 
+    fn resolved_polar_axis_ticks(
+        &self,
+        is_x: bool,
+        polar: &PolarSceneState,
+    ) -> Result<AxisTicks, SceneError> {
+        if is_x {
+            let theta_unit = polar.tick_theta_unit();
+            let n_categories = polar.n_categories();
+            let tick_kind = if n_categories > 0 {
+                tick_layout::KIND_CATEGORY
+            } else {
+                tick_layout::KIND_LINEAR
+            };
+            let (sector_lo, sector_hi) = polar.sector();
+            let (range_lo, range_hi) = self.x_scale.domain();
+            let (window_lo, window_hi) = tick_layout::tick_window(
+                range_lo,
+                range_hi,
+                theta_unit,
+                tick_kind,
+                n_categories,
+                sector_lo,
+                sector_hi,
+            )
+            .ok_or(SceneError::NonFinite)?;
+            let length = self.layout.right - self.layout.left;
+            let target = ((length / 80.0) as usize).clamp(3, MAX_AXIS_TICKS);
+            let authored_major = self.chrome.x_major_ticks.as_deref();
+            let mut labeled = if let Some(values) = authored_major {
+                values.to_vec()
+            } else if n_categories > 0 {
+                category_ticks(
+                    window_lo,
+                    window_hi,
+                    n_categories as usize,
+                    n_categories.max(1) as usize,
+                )?
+                .labeled
+            } else {
+                let degrees = theta_unit == tick_layout::THETA_DEGREES;
+                angular_ticks(window_lo, window_hi, degrees, target)?.labeled
+            };
+            if let Some(indices) = tick_layout::filter_tick_indices(
+                &labeled,
+                window_lo,
+                window_hi,
+                theta_unit,
+                tick_kind,
+                false,
+            ) {
+                labeled = indices.iter().map(|&index| labeled[index]).collect();
+            }
+            let step = labeled
+                .windows(2)
+                .next()
+                .map(|pair| (pair[1] - pair[0]).abs())
+                .filter(|step| step.is_finite() && *step > 0.0)
+                .unwrap_or(1.0);
+            Ok(AxisTicks {
+                ticks: labeled.clone(),
+                labeled,
+                step,
+            })
+        } else {
+            let length = self.layout.bottom - self.layout.top;
+            let authored_major = self.chrome.y_major_ticks.as_deref();
+            let authored_minor = self.chrome.y_minor_ticks.as_slice();
+            let automatic = self.y_scale.ticks(length, false)?;
+            let mut labeled = authored_major
+                .map(ToOwned::to_owned)
+                .unwrap_or_else(|| automatic.labeled.clone());
+            labeled.retain(|value| {
+                let rn = polar.radius_px(*value);
+                rn.is_finite() && rn > 0.0
+            });
+            let mut ticks = labeled.clone();
+            let minor = if authored_minor.is_empty() && authored_major.is_none() {
+                automatic
+                    .ticks
+                    .into_iter()
+                    .filter(|value| !automatic.labeled.contains(value))
+                    .collect::<Vec<_>>()
+            } else {
+                authored_minor.to_vec()
+            };
+            ticks.extend(minor.into_iter().filter(|value| {
+                let rn = polar.radius_px(*value);
+                rn.is_finite() && rn > 0.0
+            }));
+            if ticks.len() > MAX_AXIS_TICKS {
+                return Err(SceneError::Limit);
+            }
+            let step = labeled
+                .windows(2)
+                .next()
+                .map(|pair| (pair[1] - pair[0]).abs())
+                .filter(|step| step.is_finite() && *step > 0.0)
+                .unwrap_or(automatic.step);
+            Ok(AxisTicks {
+                ticks,
+                labeled,
+                step,
+            })
+        }
+    }
+
     fn resolved_axis_ticks(&self, is_x: bool) -> Result<AxisTicks, SceneError> {
+        if let Some(polar) = &self.polar {
+            return self.resolved_polar_axis_ticks(is_x, polar);
+        }
         let (scale, length, pixel_min, pixel_max, authored_major, authored_minor) = if is_x {
             (
                 self.x_scale,
@@ -10165,6 +10295,19 @@ impl SceneDocument {
                 .unwrap_or_default();
         }
         let _ = index;
+        if is_x {
+            if let Some(polar) = &self.polar {
+                let theta_unit = polar.tick_theta_unit();
+                if polar.n_categories() == 0 && theta_unit != tick_layout::THETA_NONE {
+                    return format_angular_tick(
+                        value,
+                        ticks.step,
+                        theta_unit == tick_layout::THETA_DEGREES,
+                        None,
+                    );
+                }
+            }
+        }
         format_tick(
             value,
             ticks.step,

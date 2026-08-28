@@ -1014,7 +1014,9 @@ existing browser fixed-decimal ceiling; each authored format is at most 256
 UTF-8 bytes and must not contain NUL. Explicit authored tick labels retain
 precedence; ABI 199 filters those majors through the ABI 128 tick window
 and pairs labels during chrome pack. ABI 200 filters authored cartesian
-minors (`require_finite`). Invalid
+minors (`require_finite`). ABI 201 filters polar theta majors/minors
+through the modular sector and formats Scene polar theta labels with
+`format_angular_tick`. Secondary axes stay fail-closed. Invalid
 grammar deliberately produces the ordinary deterministic label instead of an
 error, and a sub-unit log value that would collapse to formatted zero also
 uses its ordinary distinguishable label without affixes.
@@ -1044,7 +1046,10 @@ owns `_svg.layout()` padding/title/colorbar/right-y/polar-recut combination
 and pyplot tight-layout figure-edge extras (#299). ABI 199 filters authored
 cartesian majors through the ABI 128 tick window and pairs `tick_labels`
 during chrome pack (#300). ABI 200 filters authored cartesian minors
-through that same window (`require_finite`, #301). Remaining #275
+through that same window (`require_finite`, #301). ABI 201 filters polar
+theta majors/minors through the modular sector and formats Scene polar
+theta labels (`format_angular_tick`, #302). Secondary axes stay
+fail-closed. Remaining #275
 debt is compatibility `_svg._*room` for polar / extra-axis / CSS-font
 measurement and `_svg._legend_layout` CSS remaps.
 Optional formats still use the versioned `XYAF` v1 authoring envelope (`magic`,

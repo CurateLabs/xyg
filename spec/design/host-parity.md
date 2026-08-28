@@ -550,7 +550,10 @@ and Node call `xyg_tick_window` and `xyg_tick_window_filter` so linear
 vs modular angular containment cannot drift. ABI 199 Scene product encode
 filters authored cartesian majors through that window and pairs
 `tick_labels` during chrome pack. ABI 200 filters authored cartesian
-minors through that same window (`require_finite`). Hosts still choose tick families and
+minors through that same window (`require_finite`). ABI 201 filters polar
+theta majors/minors through the modular sector and formats Scene polar
+theta labels with `format_angular_tick`. Secondary axes stay fail-closed.
+Hosts still choose tick families and
 map values to pixels on the compatibility `_svg` path. ChartView JS
 `_polarAngularTurn` / `_axisTicks` seam filter stays until WASM.
 ABI 130 moves Cartesian compatibility tick-label formatting into Rust:

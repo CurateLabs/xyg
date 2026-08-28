@@ -656,6 +656,36 @@ test("Node Scene filters authored minor ticks on linear/log/symlog during encode
   }
 });
 
+test("Node Scene filters polar seam-crossing authored ticks and uses angular labels", () => {
+  const figure = new Figure({ width: 400, height: 400, coords: "polar" });
+  figure.scatter([0], [0.5], { id: 0 });
+  figure.setAxis("x", {
+    domain: [0, 360],
+    theta_unit: "degrees",
+    sector: [300, 420],
+    tick_values: [300, 330, 0, 30, 60, 180],
+    tick_labels: ["300", "330", "zero", "30", "60", "off-sector"],
+  });
+  figure.setAxis("y", { domain: [0, 1] });
+  const svg = sceneSvg(figure.toScene());
+  assert.match(svg, />zero</);
+  assert.equal(svg.includes("off-sector"), false);
+  assert.equal(svg.includes(">180<"), false);
+
+  const radians = new Figure({ width: 400, height: 400, coords: "polar" });
+  radians.scatter([0, Math.PI], [0.5, 0.8], { id: 0 });
+  radians.setAxis("x", { domain: [0, Math.PI * 2], theta_unit: "radians" });
+  radians.setAxis("y", { domain: [0, 1] });
+  const labels = [...sceneSvg(radians.toScene()).matchAll(/data-xy-tick="theta"[^>]*>([^<]+)/g)].map((row) => row[1]);
+  assert.ok(labels.some((label) => label.includes("π")));
+  assert.equal(labels.includes("2"), false);
+  assert.equal(labels.includes("4"), false);
+});
+
+test("Node Scene secondary axes stay fail-closed", () => {
+  assert.throws(() => new Figure().setAxis("x2", { domain: [0, 1] }), /axisId must be x or y/);
+});
+
 test("Node numeric tick precision boundary and oversize fallback are Rust-owned", () => {
   const build = (format, width = 320) => {
     const figure = new Figure({ width, height: 240 });

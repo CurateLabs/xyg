@@ -11,9 +11,13 @@
 //! packed XYCL/XYNM plus XYCF domains during product encode. ABI 199 filters
 //! authored cartesian majors through the ABI 128 tick window and pairs
 //! `tick_labels` during chrome pack. ABI 200 filters authored cartesian
-//! minors through that same window (`require_finite`). Encoded Scene v31 is unchanged.
+//! minors through that same window (`require_finite`). ABI 201 filters polar
+//! theta majors/minors through that window's modular sector (`theta_unit` +
+//! sector from packed XYPL). Secondary axes stay fail-closed. Encoded Scene
+//! v31 is unchanged.
 
 use crate::legend_fit::{self, LegendScale};
+use crate::polar;
 use crate::scene::{
     cartesian_scene_margins, encode_tick_labels, format_numeric_tick, CartesianLayoutRequest,
     ColorbarSide, ScaleKind, SceneChromeStyle, MAX_AXIS_TICKS, MAX_SCENE_LEGEND_ENTRIES,
@@ -173,6 +177,48 @@ fn scale_kind(code: u32) -> Result<ScaleKind, ChromePackError> {
     }
 }
 
+#[derive(Clone, Copy)]
+struct AuthoredTickWindow {
+    theta_unit: u32,
+    kind: u32,
+    n_categories: u32,
+    sector_lo: f64,
+    sector_hi: f64,
+}
+
+impl AuthoredTickWindow {
+    fn cartesian() -> Self {
+        Self {
+            theta_unit: tick_layout::THETA_NONE,
+            kind: tick_layout::KIND_LINEAR,
+            n_categories: 0,
+            sector_lo: f64::NAN,
+            sector_hi: f64::NAN,
+        }
+    }
+
+    fn theta_from_polar(polar: &[u8]) -> Self {
+        let Some(envelope) = polar::parse_xypl(polar) else {
+            return Self::cartesian();
+        };
+        Self {
+            theta_unit: match envelope.theta_unit {
+                0 => tick_layout::THETA_RADIANS,
+                1 => tick_layout::THETA_DEGREES,
+                _ => tick_layout::THETA_NONE,
+            },
+            kind: if envelope.n_categories > 0 {
+                tick_layout::KIND_CATEGORY
+            } else {
+                tick_layout::KIND_LINEAR
+            },
+            n_categories: envelope.n_categories,
+            sector_lo: envelope.sector_start,
+            sector_hi: envelope.sector_end,
+        }
+    }
+}
+
 fn filter_authored_majors(
     values: Vec<f64>,
     labels: Option<Vec<String>>,
@@ -180,15 +226,16 @@ fn filter_authored_majors(
     hi: f64,
     kind: ScaleKind,
     format: Option<&str>,
+    window: AuthoredTickWindow,
 ) -> (Vec<f64>, Option<Vec<String>>) {
     let Some((window_lo, window_hi)) = tick_layout::tick_window(
         lo,
         hi,
-        tick_layout::THETA_NONE,
-        tick_layout::KIND_LINEAR,
-        0,
-        f64::NAN,
-        f64::NAN,
+        window.theta_unit,
+        window.kind,
+        window.n_categories,
+        window.sector_lo,
+        window.sector_hi,
     ) else {
         return (values, labels);
     };
@@ -196,8 +243,8 @@ fn filter_authored_majors(
         &values,
         window_lo,
         window_hi,
-        tick_layout::THETA_NONE,
-        tick_layout::KIND_LINEAR,
+        window.theta_unit,
+        window.kind,
         false,
     ) else {
         return (values, labels);
@@ -223,18 +270,23 @@ fn filter_authored_majors(
     (filtered, filtered_labels)
 }
 
-fn filter_authored_minors(values: Vec<f64>, lo: f64, hi: f64) -> Vec<f64> {
+fn filter_authored_minors(
+    values: Vec<f64>,
+    lo: f64,
+    hi: f64,
+    window: AuthoredTickWindow,
+) -> Vec<f64> {
     if values.is_empty() {
         return values;
     }
     let Some((window_lo, window_hi)) = tick_layout::tick_window(
         lo,
         hi,
-        tick_layout::THETA_NONE,
-        tick_layout::KIND_LINEAR,
-        0,
-        f64::NAN,
-        f64::NAN,
+        window.theta_unit,
+        window.kind,
+        window.n_categories,
+        window.sector_lo,
+        window.sector_hi,
     ) else {
         return values;
     };
@@ -242,8 +294,8 @@ fn filter_authored_minors(values: Vec<f64>, lo: f64, hi: f64) -> Vec<f64> {
         &values,
         window_lo,
         window_hi,
-        tick_layout::THETA_NONE,
-        tick_layout::KIND_LINEAR,
+        window.theta_unit,
+        window.kind,
         true,
     ) else {
         return values;
@@ -485,7 +537,7 @@ fn rewrite_legend_loc(
 
 /// Pack authored XYCF v1 chrome facts into the XYCC v1 encode-ready bundle.
 pub fn pack_figure_chrome(facts: &[u8]) -> Result<Vec<u8>, ChromePackError> {
-    pack_figure_chrome_from_sidecars(facts, &[])
+    pack_figure_chrome_with_polar(facts, &[], &[])
 }
 
 /// Pack authored XYCF v1 plus optional XYSD v1 into the XYCC v1 bundle.
@@ -496,6 +548,18 @@ pub fn pack_figure_chrome(facts: &[u8]) -> Result<Vec<u8>, ChromePackError> {
 pub fn pack_figure_chrome_from_sidecars(
     facts: &[u8],
     xysd: &[u8],
+) -> Result<Vec<u8>, ChromePackError> {
+    pack_figure_chrome_with_polar(facts, xysd, &[])
+}
+
+/// Pack authored XYCF v1 plus optional XYSD and XYPL into the XYCC v1 bundle.
+///
+/// ABI 201 uses packed XYPL so polar theta majors/minors filter through the
+/// ABI 128 modular sector window. Empty polar keeps the cartesian window.
+pub fn pack_figure_chrome_with_polar(
+    facts: &[u8],
+    xysd: &[u8],
+    polar: &[u8],
 ) -> Result<Vec<u8>, ChromePackError> {
     if facts.len() < XYCF_HEADER_BYTES {
         return Err(ChromePackError::Length);
@@ -676,20 +740,40 @@ pub fn pack_figure_chrome_from_sidecars(
         Some(text)
     };
 
+    let x_window = if polar.is_empty() {
+        AuthoredTickWindow::cartesian()
+    } else {
+        AuthoredTickWindow::theta_from_polar(polar)
+    };
+    let y_window = AuthoredTickWindow::cartesian();
     if flags & FLAG_X_MAJOR_AUTO == 0 {
-        let (filtered, filtered_labels) =
-            filter_authored_majors(x_major, x_tick_labels, x_lo, x_hi, x_kind, x_format_text);
+        let (filtered, filtered_labels) = filter_authored_majors(
+            x_major,
+            x_tick_labels,
+            x_lo,
+            x_hi,
+            x_kind,
+            x_format_text,
+            x_window,
+        );
         x_major = filtered;
         x_tick_labels = filtered_labels;
     }
     if flags & FLAG_Y_MAJOR_AUTO == 0 {
-        let (filtered, filtered_labels) =
-            filter_authored_majors(y_major, y_tick_labels, y_lo, y_hi, y_kind, y_format_text);
+        let (filtered, filtered_labels) = filter_authored_majors(
+            y_major,
+            y_tick_labels,
+            y_lo,
+            y_hi,
+            y_kind,
+            y_format_text,
+            y_window,
+        );
         y_major = filtered;
         y_tick_labels = filtered_labels;
     }
-    x_minor = filter_authored_minors(x_minor, x_lo, x_hi);
-    y_minor = filter_authored_minors(y_minor, y_lo, y_hi);
+    x_minor = filter_authored_minors(x_minor, x_lo, x_hi, x_window);
+    y_minor = filter_authored_minors(y_minor, y_lo, y_hi, y_window);
 
     let colorbar_side = if flags & FLAG_HAS_COLORBAR != 0 {
         if colorbar_obs & CB_UNSUPPORTED != 0 {
@@ -1093,6 +1177,51 @@ mod tests {
         let second = f64::from_le_bytes(packed[at + 8..at + 16].try_into().unwrap());
         assert_eq!(first, 0.25);
         assert_eq!(second, 0.75);
+    }
+
+    #[test]
+    fn polar_authored_majors_filter_through_the_modular_sector() {
+        let mut facts = header(FLAG_X_TICK_LABELS | FLAG_Y_MAJOR_AUTO, 200.0, 120.0, 0, 0);
+        facts[112..120].copy_from_slice(&360.0f64.to_le_bytes());
+        facts[176..180].copy_from_slice(&6u32.to_le_bytes());
+        facts[192..196].copy_from_slice(&6u32.to_le_bytes());
+        let mut payload = facts;
+        for value in [300.0f64, 330.0, 0.0, 30.0, 60.0, 180.0] {
+            payload.extend_from_slice(&value.to_le_bytes());
+        }
+        for label in [
+            b"300".as_slice(),
+            b"330".as_slice(),
+            b"zero".as_slice(),
+            b"30".as_slice(),
+            b"60".as_slice(),
+            b"off-sector".as_slice(),
+        ] {
+            payload.extend_from_slice(&(label.len() as u32).to_le_bytes());
+            payload.extend_from_slice(label);
+        }
+        let polar = crate::polar::encode_xypl(&crate::polar::PolarEnvelope {
+            theta_unit: 1,
+            theta_direction: 0,
+            n_categories: 0,
+            r_scale_kind: 0,
+            grid_shape: 0,
+            r_mask_nonpositive: false,
+            theta_zero: 0.0,
+            sector_start: 300.0,
+            sector_end: 420.0,
+            r_lo: 0.0,
+            r_hi: 1.0,
+            r_origin: f64::NAN,
+            hole: 0.0,
+            r_constant: 1.0,
+        });
+        let packed = pack_figure_chrome_with_polar(&payload, &[], &polar).unwrap();
+        assert_eq!(u32::from_le_bytes(packed[64..68].try_into().unwrap()), 5);
+        assert!(packed.windows(b"zero".len()).any(|w| w == b"zero"));
+        assert!(!packed
+            .windows(b"off-sector".len())
+            .any(|w| w == b"off-sector"));
     }
 
     #[test]

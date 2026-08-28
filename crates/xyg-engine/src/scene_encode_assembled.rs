@@ -52,7 +52,7 @@ use crate::scene_annotation_splice::{
 };
 use crate::scene_annotations::pack_annotation_facts;
 use crate::scene_chrome::{
-    pack_figure_chrome_from_sidecars, settle_legend_best_loc, ChromePackError, XYCC_HEADER_BYTES,
+    pack_figure_chrome_with_polar, settle_legend_best_loc, ChromePackError, XYCC_HEADER_BYTES,
     XYCC_MAGIC, XYCC_VERSION, XYCF_HEADER_BYTES, XYCF_MAGIC,
 };
 use crate::scene_extras::{pack_scene_extras_from_sidecars, ExtrasError};
@@ -803,7 +803,7 @@ pub fn encode_assembled_from_sidecars(
     polar: &[u8],
     extras_facts: &[u8],
 ) -> Result<Vec<u8>, EncodeSidecarsError> {
-    let chrome = pack_figure_chrome_from_sidecars(chrome_facts, xysd).map_err(map_chrome)?;
+    let chrome = pack_figure_chrome_with_polar(chrome_facts, xysd, polar).map_err(map_chrome)?;
     let extras = pack_scene_extras_from_sidecars(polar, xysd, extras_facts).map_err(map_extras)?;
     let (viewport_width, viewport_height, x_axis, y_axis) = axes_from_chrome_facts(chrome_facts)?;
     let corner_radii = corner_radii_from_xysd(xysd).map_err(map_encode)?;

@@ -354,6 +354,7 @@ crates/
                         #   + authored tick-window resolve/filter (ABI 128) ✅
                         #   + Scene product-path authored filter/pairing (ABI 199) ✅
                         #   + Scene product-path authored minor filter (ABI 200) ✅
+                        #   + Scene polar modular theta window / angular labels (ABI 201) ✅
     stream.rs           # Rust-owned canonical append buffers (`xyg_stream_*`).
                         # Capacity-doubling f64 store; zone maps on seal
                         # (ZONE_CHUNK splice, bitwise-identical to
@@ -806,7 +807,8 @@ landed; the remainder, in order:
    ABI 198 `xyg_compat_combine_plot` / `xyg_tight_layout_figure_extra` ✅;
    ABI 128 `xyg_tick_window` / `xyg_tick_window_filter` ✅;
    ABI 199 Scene product encode filters authored cartesian majors (`scene_chrome.rs` / `tick_layout.rs`) ✅;
-   ABI 200 Scene product encode filters authored cartesian minors (`scene_chrome.rs` / `tick_layout.rs`) ✅; ABI 130
+   ABI 200 Scene product encode filters authored cartesian minors (`scene_chrome.rs` / `tick_layout.rs`) ✅;
+   ABI 201 Scene polar modular theta window / angular labels (`scene_chrome.rs` / `scene.rs` / `tick_layout.rs`) ✅; ABI 130
    `xyg_tick_format` ✅; ABI 131 `xyg_polar_layout` / `xyg_polar_project` /
    `xyg_polar_theta_visible_mask` / `xyg_polar_visible_mask` /
    `xyg_polar_position_mask` ✅; ABI 132 `xyg_density_bin_window` /
@@ -883,4 +885,5 @@ landed; the remainder, in order:
    ABI 197 Scene product encode settles `loc="best"` from packed XYCL/XYNM (`legend_fit.rs` / `scene_chrome.rs`) ✅.
    ABI 199 Scene product encode filters authored cartesian majors and pairs `tick_labels` (`tick_layout.rs` / `scene_chrome.rs`) ✅.
    ABI 200 Scene product encode filters authored cartesian minors (`tick_layout.rs` / `scene_chrome.rs`) ✅.
+   ABI 201 Scene polar modular theta window / angular labels (`tick_layout.rs` / `scene_chrome.rs` / `scene.rs`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

@@ -4662,6 +4662,7 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   const xMinor = Array.from(xAxis.minorTickValues ?? xAxis.minor_tick_values ?? [], Number);
   const yMinor = Array.from(yAxis.minorTickValues ?? yAxis.minor_tick_values ?? [], Number);
   // ABI 200: Rust pack_figure_chrome filters authored minors through the tick window.
+  // ABI 201: product encode passes packed XYPL so polar theta uses the modular sector.
   const xLabels = xAxis.tickLabels ?? xAxis.tick_labels ?? null;
   const yLabels = yAxis.tickLabels ?? yAxis.tick_labels ?? null;
   if (xLabels != null) flags |= FLAG_X_TICK_LABELS;

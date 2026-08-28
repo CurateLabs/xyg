@@ -1421,14 +1421,21 @@ angular containment (including seam-crossing sectors) is engine-owned
 and identical for Python and Node. ABI 199 Scene product encode filters
 authored cartesian majors through that window and pairs `tick_labels`
 during chrome pack (#300). ABI 200 filters authored cartesian minors
-through that same window (`require_finite`, #301). Hosts still choose tick families via
+through that same window (`require_finite`, #301). ABI 201 filters polar
+theta majors/minors through that window's modular sector and formats
+Scene polar theta labels with `format_angular_tick` (#302). Secondary
+axes stay fail-closed (`Scene v12 figure compilation currently supports
+exactly x/y axes`). Hosts still choose tick families via
 `xyg_scene_axis_ticks` and map values to pixels on the compatibility
-`_svg` path (#276). Polar/secondary authored ticks stay #302.
+`_svg` path (#276). Polar rim collision strategies stay refused
+(`polar-axes.md`).
 ABI 130 moves Cartesian compatibility tick-label formatting into Rust.
 Hosts call `xyg_tick_format` for linear/log/time/number-spec, category,
 and angular defaults; polar tick drawing stays host-side (#276). Scene
 product-path authored `tick_labels` pair during chrome pack (ABI 199).
 Authored cartesian minors filter during chrome pack (ABI 200).
+Polar Scene theta ticks use the ABI 128 modular sector and angular labels
+(ABI 201); secondary axes stay fail-closed.
 ABI 131 moves static polar (theta, r) → screen-pixel projection into Rust.
 Hosts call `xyg_polar_layout`, `xyg_polar_project`, and the polar visibility-mask
 helpers; wedge/ring/polygon helpers remain host-side and call native projection.

@@ -1487,6 +1487,7 @@ def _pack_chrome_facts(
     x_minor = [float(value) for value in (xa.get("minor_tick_values") or ())]
     y_minor = [float(value) for value in (ya.get("minor_tick_values") or ())]
     # ABI 200: Rust pack_figure_chrome filters authored minors through the tick window.
+    # ABI 201: product encode passes packed XYPL so polar theta uses the modular sector.
     x_labels = xa.get("tick_labels")
     y_labels = ya.get("tick_labels")
     if x_labels is not None:

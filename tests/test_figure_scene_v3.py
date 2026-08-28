@@ -330,6 +330,48 @@ def test_python_scene_authored_minors_filter_during_encode(
     assert "rgba(34,197,94" not in off_svg
 
 
+def test_python_scene_polar_seam_authored_ticks_filter_during_encode() -> None:
+    figure = Figure(width=400, height=400, coords="polar")
+    figure.scatter([0.0], [0.5])
+    figure.set_axis(
+        "x",
+        domain=(0.0, 360.0),
+        theta_unit="degrees",
+        sector=(300.0, 420.0),
+        tick_values=[300.0, 330.0, 0.0, 30.0, 60.0, 180.0],
+        tick_labels=["300", "330", "zero", "30", "60", "off-sector"],
+    )
+    figure.set_axis("y", domain=(0.0, 1.0))
+    svg = _native.scene_svg(figure.to_scene())
+    assert ">zero<" in svg
+    assert "off-sector" not in svg
+    assert ">180<" not in svg
+
+
+def test_python_scene_polar_theta_uses_angular_labels() -> None:
+    figure = Figure(width=400, height=400, coords="polar")
+    figure.scatter([0.0, math.pi], [0.5, 0.8])
+    figure.set_axis("x", domain=(0.0, math.tau), theta_unit="radians")
+    figure.set_axis("y", domain=(0.0, 1.0))
+    svg = _native.scene_svg(figure.to_scene())
+    thetas = re.findall(r'data-xy-tick="theta"[^>]*>([^<]+)', svg)
+    assert any("π" in label for label in thetas)
+    assert "2" not in thetas
+    assert "4" not in thetas
+    assert "6" not in thetas
+
+
+def test_python_scene_secondary_axis_stays_fail_closed() -> None:
+    figure = Figure()
+    figure.scatter([0.0, 1.0], [0.0, 1.0])
+    figure.set_axis("x2", side="top", domain=(0.0, 1.0), tick_values=[0.25])
+    with pytest.raises(UnsupportedSceneV3, match="exactly x/y axes"):
+        figure.to_scene()
+    assert _scene_v3.scene_export_support_reason(figure) == (
+        "Scene v12 figure compilation currently supports exactly x/y axes"
+    )
+
+
 @pytest.mark.parametrize(
     ("value", "encoded"), [(None, b""), ("", b""), (0, b"0"), (False, b"false")]
 )
