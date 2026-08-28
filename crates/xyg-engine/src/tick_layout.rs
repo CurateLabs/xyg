@@ -5,11 +5,18 @@
 //! tick-window resolve/filter (ABI 128) owns linear vs modular angular
 //! containment so seam-crossing polar sectors keep the same spokes as marks.
 //! ABI 199 Scene product encode filters authored cartesian majors through
-//! that window and pairs `tick_labels` during chrome pack. Tick-label
-//! formatting (ABI 130) owns Cartesian linear/log/time/number-spec
+//! that window and pairs `tick_labels` during chrome pack. ABI 200 filters
+//! authored cartesian minors (`require_finite`). ABI 201 filters polar theta
+//! majors/minors through the modular sector window and formats Scene polar
+//! theta labels with `format_angular_tick`. ABI 202 materializes ABI 130
+//! time/angular formats onto Scene `XYTL` during product encode. ABI 203
+//! runs ABI 123 collision at Scene SVG/raster emit for cartesian
+//! `tick_label_strategy` and aliases `collision`; polar rim auto/hide/
+//! rotate/stagger/preserve stay fail-closed. Secondary axes stay fail-closed.
+//! Tick-label formatting (ABI 130) owns Cartesian linear/log/time/number-spec
 //! and angular/category defaults via `xyg_tick_format`. Hosts still map values
 //! to pixels on the compatibility `_svg` path; Scene product-path authored
-//! `tick_labels` pair during chrome pack. Polar/secondary ticks stay #302.
+//! `tick_labels` pair during chrome pack.
 
 use crate::scene::scene_text_advance;
 

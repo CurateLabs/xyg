@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 199;
+pub const ABI_VERSION: u32 = 204;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -2722,13 +2722,16 @@ pub unsafe extern "C" fn xyg_scene_plot_layout(
             x_constant,
             x_mask_nonpositive: x_mask_nonpositive != 0,
             x_format,
+            x_tick_kind: 0,
             y_kind,
             y_lo,
             y_hi,
             y_constant,
             y_mask_nonpositive: y_mask_nonpositive != 0,
             y_format,
+            y_tick_kind: 0,
             colorbar_side,
+            collision: scene::TickCollisionLayout::default(),
         })
         .ok()
     }) else {
@@ -3441,6 +3444,9 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             &mut chrome,
             x_format,
             y_format,
+            0,
+            0,
+            &[],
         )
         .ok()?;
         let chrome = chrome.validated().ok()?;
@@ -12058,6 +12064,96 @@ pub unsafe extern "C" fn xyg_payload_visible_mask(
     })
 }
 
+/// Compile-time line M4 indices (ABI 204). Owns `payload_tier` (polar →
+/// direct), closed-window ulp, and optional nonlinear `bin_x` buckets.
+/// Writes `out_tier` (0=direct, 1=decimated). Direct returns 0 indices
+/// without reading columns. `out` must hold `4 * n_buckets` u32s when
+/// decimated. Returns the count written, or `usize::MAX`.
+///
+/// # Safety
+/// Non-empty `x`/`y` must be valid for `n` readable f64s. Non-empty `bin_x`
+/// must be valid for `n` f64s. When `capacity` is nonzero, `out` must hold
+/// that many writable u32s. `out_tier` must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_m4_indices(
+    n_points: u64,
+    polar: i32,
+    x: *const f64,
+    y: *const f64,
+    n: usize,
+    x0: f64,
+    x1: f64,
+    n_buckets: usize,
+    bin_x: *const f64,
+    bin_x0: f64,
+    bin_x1: f64,
+    out_tier: *mut i32,
+    out: *mut u32,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if !matches!(polar, 0 | 1) || out_tier.is_null() {
+            return usize::MAX;
+        }
+        let Some(tier) = lod_plan::payload_tier(
+            lod_plan::PAYLOAD_KIND_LINE,
+            n_points,
+            polar != 0,
+            -1,
+            false,
+            false,
+        ) else {
+            return usize::MAX;
+        };
+        if tier == lod_plan::PAYLOAD_TIER_DIRECT {
+            *out_tier = lod_plan::PAYLOAD_TIER_DIRECT;
+            return 0;
+        }
+        let (x, y) = if n == 0 {
+            (&[][..], &[][..])
+        } else {
+            if x.is_null() || y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts(x, n),
+                std::slice::from_raw_parts(y, n),
+            )
+        };
+        let bin_x = if bin_x.is_null() {
+            None
+        } else if n == 0 {
+            Some(&[][..])
+        } else {
+            Some(std::slice::from_raw_parts(bin_x, n))
+        };
+        let Some((tier, idx)) = lod_plan::payload_m4_indices(
+            n_points,
+            polar != 0,
+            x,
+            y,
+            x0,
+            x1,
+            n_buckets,
+            bin_x,
+            bin_x0,
+            bin_x1,
+        ) else {
+            return usize::MAX;
+        };
+        *out_tier = tier;
+        if idx.is_empty() {
+            return 0;
+        }
+        if out.is_null() || capacity < idx.len() {
+            return usize::MAX;
+        }
+        let out = std::slice::from_raw_parts_mut(out, capacity);
+        out[..idx.len()].copy_from_slice(&idx);
+        idx.len()
+    })
+}
+
 /// Bin window in axis-scale coordinates for density grids (ABI 132).
 /// Writes four f64s `[x0, x1, y0, y1]` when `out` holds at least four slots.
 /// Returns `4` on success or `usize::MAX`.
@@ -16826,6 +16922,50 @@ mod tests {
         );
         assert_eq!(mask, [1, 0, 1, 0, 1]);
         assert_eq!(unsafe { xyg_payload_tier(99, 1, 0, -1, 0, 0) }, -1);
+        let mx: Vec<f64> = (0..10_001).map(|i| i as f64).collect();
+        let my = vec![1.0; 10_001];
+        let mut tier = -1i32;
+        let mut m4_out = vec![0u32; 64 * 4];
+        let written = unsafe {
+            xyg_payload_m4_indices(
+                10_001,
+                1,
+                mx.as_ptr(),
+                my.as_ptr(),
+                mx.len(),
+                0.0,
+                10_000.0,
+                64,
+                std::ptr::null(),
+                0.0,
+                0.0,
+                &mut tier,
+                m4_out.as_mut_ptr(),
+                m4_out.len(),
+            )
+        };
+        assert_eq!(written, 0);
+        assert_eq!(tier, 0);
+        let cartesian = unsafe {
+            xyg_payload_m4_indices(
+                10_001,
+                0,
+                mx.as_ptr(),
+                my.as_ptr(),
+                mx.len(),
+                0.0,
+                10_000.0,
+                64,
+                std::ptr::null(),
+                0.0,
+                0.0,
+                &mut tier,
+                m4_out.as_mut_ptr(),
+                m4_out.len(),
+            )
+        };
+        assert!(cartesian > 0 && cartesian != usize::MAX);
+        assert_eq!(tier, 1);
     }
 
     #[test]
