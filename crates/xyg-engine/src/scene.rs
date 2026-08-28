@@ -13944,7 +13944,8 @@ fn scene_tick_kind(code: u8) -> Result<u32, SceneError> {
 /// Mirrors `_svg.layout()` for primary x/y, default sides, no colorbar, and
 /// no secondary axes: compact/regular pads or authored `(top, right, bottom,
 /// left)` padding, title band, measured default tick labels, and outside
-/// axis-title rooms. Collision gutters clamp to keep a positive plot.
+/// axis-title rooms. Collision gutters clamp only when those compact/authored
+/// pads already fit `PlotLayout`; overflowing compact pads stay fail-closed.
 /// Hosts must not invent Scene margins once this lands.
 pub fn cartesian_scene_margins(
     request: CartesianLayoutRequest<'_>,
@@ -13995,6 +13996,15 @@ pub fn cartesian_scene_margins(
         None if compact => (6.0, 8.0, 36.0, 46.0),
         None => (10.0, 14.0, 42.0, 62.0),
     };
+    let compact_pads_fit = PlotLayout::new(
+        viewport_width,
+        viewport_height,
+        left,
+        right,
+        top,
+        bottom,
+    )
+    .is_ok();
     let title_wrap = (viewport_width - left - right).max(40.0);
     if !title.is_empty() {
         let width = text_advance(title, 14.0);
@@ -14159,14 +14169,18 @@ pub fn cartesian_scene_margins(
         right = next_right;
     }
 
-    (left, right) = fit_plot_gutters(viewport_width, left, right);
-    (top, bottom) = fit_plot_gutters(viewport_height, top, bottom);
+    if compact_pads_fit {
+        (left, right) = fit_plot_gutters(viewport_width, left, right);
+        (top, bottom) = fit_plot_gutters(viewport_height, top, bottom);
+    }
     PlotLayout::new(viewport_width, viewport_height, left, right, top, bottom)?;
     Ok((left, right, top, bottom))
 }
 
 fn fit_plot_gutters(viewport: f64, lo: f64, hi: f64) -> (f64, f64) {
-    // ABI 123 collision rooms can exceed a tiny viewport (WASM 64x48).
+    // ABI 123 collision rooms can exceed a tiny viewport (WASM 64x48) whose
+    // compact/authored pads already fit. Callers skip this when those pads
+    // already overflow (public export 64x32).
     if viewport > lo + hi {
         return (lo, hi);
     }
@@ -16200,6 +16214,36 @@ mod tests {
         })
         .unwrap();
         PlotLayout::new(64.0, 48.0, left, right, top, bottom).unwrap();
+    }
+
+    #[test]
+    fn cartesian_scene_margins_keep_overflowing_compact_pads_fail_closed() {
+        let err = cartesian_scene_margins(CartesianLayoutRequest {
+            viewport_width: 64.0,
+            viewport_height: 32.0,
+            authored_padding: None,
+            title: "",
+            x_label: "",
+            y_label: "",
+            x_kind: ScaleKind::Linear,
+            x_lo: 1.0,
+            x_hi: 1.0,
+            x_constant: 1.0,
+            x_mask_nonpositive: false,
+            x_format: None,
+            x_tick_kind: 0,
+            y_kind: ScaleKind::Linear,
+            y_lo: 2.0,
+            y_hi: 2.0,
+            y_constant: 1.0,
+            y_mask_nonpositive: false,
+            y_format: None,
+            y_tick_kind: 0,
+            colorbar_side: ColorbarSide::None,
+            collision: TickCollisionLayout::default(),
+        })
+        .unwrap_err();
+        assert_eq!(err, SceneError::NonFinite);
     }
 
     #[test]

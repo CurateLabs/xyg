@@ -1428,7 +1428,9 @@ materializes ABI 130 time strftime and polar angular numeric formats
 onto `XYTL` during product encode (`format_axis_tick`, #303). Hosts pack
 domain tick-kind in XYCF 154–155. Invalid ABI 96 grammar still falls
 back. ABI 203 runs ABI 123 collision at Scene SVG/raster emit for
-cartesian `tick_label_strategy` / `collision` (#304). Polar rim
+cartesian `tick_label_strategy` / `collision` (#304). Collision rooms
+clamp only when compact/authored pads already fit `PlotLayout`;
+overflowing compact pads stay `XYG_SCENE_UNSUPPORTED_VIEWPORT`. Polar rim
 auto/hide/rotate/stagger/preserve stay refused (`polar-axes.md`).
 Secondary
 axes stay fail-closed (`Scene v12 figure compilation currently supports

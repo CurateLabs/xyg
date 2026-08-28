@@ -1805,6 +1805,15 @@ mod tests {
     }
 
     #[test]
+    fn typed_series_auto_margins_compile_on_the_wasm_foundation_tiny_viewport() {
+        let mut request = pack_typed_series();
+        request[HEADER_WIDTH..HEADER_WIDTH + 8].copy_from_slice(&64.0f64.to_le_bytes());
+        request[HEADER_HEIGHT..HEADER_HEIGHT + 8].copy_from_slice(&48.0f64.to_le_bytes());
+        let compiled = compile_scene_request(&request, usize::MAX).unwrap();
+        scene::validate_scene_batch(&compiled.bytes).unwrap();
+    }
+
+    #[test]
     fn typed_series_preserves_transferred_per_record_stable_ids() {
         let mut request = pack_typed_series();
         let descriptor = COMPILE_HEADER_BYTES;
