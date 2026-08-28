@@ -109,6 +109,9 @@ slot (`{space, dir, stops}` with 2–8 RGBA8 stops, axis-aligned `down|up|left|r
 `<linearGradient>` and raster emits `OP_FILL_POLY_GRAD`. Transparent stops
 rewrite to the adjacent opaque hue. Per-item two-ended ribbon `color2_ch`, data-driven
 `color_ch`, `var()` stops, and chart/theme CSS gradients stay fail-closed.
+Those `var()` / theme CSS stops are the bounded Scene-static product contract
+(#289): `XYG_SCENE_UNSUPPORTED_GRADIENT`. Live browser widgets still resolve
+`var()`. Per-item two-ended ribbon `color2_ch` stays #290.
 ABI 147 does not change Scene records; `xyg_scene_pack_product_facts` owns
 flags, `step_mode`, and extra0/extra1 from packed XYPK v1 so cartesian-vs-polar
 smooth and painted heatmap dispatch cannot drift. ABI 148 does not change

@@ -732,6 +732,10 @@ bounded fail-closed product contract (#288): `XYG_SCENE_UNSUPPORTED_CUSTOM_FONT`
 and `XYG_SCENE_UNSUPPORTED_BROWSER_CSS`. Default-font figures without those
 observations use Scene consumers, not `_svg.to_svg` / `_raster`. Live browser
 widgets still apply CSS. CSS-room measurement of a second face stays #297.
+Unresolved mark-fill `var()` / theme CSS gradients are the bounded fail-closed
+Scene-static contract (#289): `XYG_SCENE_UNSUPPORTED_GRADIENT`. Literal
+`linear-gradient(...)` with resolvable CSS colors stays ABI 146 Scene XYGR.
+Live browser widgets still resolve `var()`.
 
 ### Contracts (MUST)
 
