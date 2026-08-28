@@ -3397,6 +3397,7 @@ def scene_export_support_reason(
     flag derivation, allowlists, check order, the public PolyFill group budget,
     and diagnostic wording. After that preflight the predicate still compiles
     the Scene so it cannot disagree with the encoder. ``public_static_export``
-    and facet SVG reuse that compiled batch rather than compiling a second Scene.
+    and facet SVG/raster reuse that compiled batch rather than compiling a second
+    Scene.
     """
     return _public_scene_or_reason(figure, width=width, height=height)[0]

@@ -228,12 +228,15 @@ to the Rust Scene
 SVG and raster consumers (PDF consumes Rust SVG). `FacetGrid.to_svg` and native grid
 PDF independently route each supported panel through that same Rust SVG
 consumer, namespacing its closed clip-id vocabulary only for nested-document
-composition; panel backgrounds and unsupported panels deliberately select
-compatibility before compilation. `python/xyg/_scene_v3.py` is the single
+composition; native grid PNG/JPEG/WebP independently route each supported
+no-background-override panel through the compiled Scene raster display list and
+compose the RGBA frames. Panel backgrounds and unsupported panels deliberately
+select compatibility before compilation. `python/xyg/_scene_v3.py` is the single
 preflight/orchestration seam for that subset: `public_static_export` owns the
 Scene-format selection and reuses the predicate's compiled batch, while Python
 entry points only retain host options and the documented compatibility
-exceptions. `FacetGrid.to_svg` uses the same compiled panel Scene. `_svg.py` and
+exceptions. `FacetGrid.to_svg` and `FacetGrid._compose_rgba` reuse that compiled
+panel Scene. `_svg.py` and
 `_raster.py` remain compatibility owners for rich text and legend variants, every
 annotation outside that bounded primary Cartesian family (including rotation,
 collision/layout directives, markup, CSS/classes, and custom typography), themes, custom fonts or CSS/classes,

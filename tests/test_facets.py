@@ -246,6 +246,86 @@ def test_supported_facet_scene_failure_never_falls_back(
         grid.to_svg()
 
 
+def test_supported_facet_png_routes_each_panel_through_the_canonical_scene(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Grid placement must not bypass an otherwise supported public raster export."""
+    from xyg import _native, _raster, _scene_v3
+
+    figures = [
+        Figure(width=240, height=160).scatter([1, 2], [2, 3], color="#3987e5"),
+        Figure(width=240, height=160).scatter([1, 2], [3, 2], color="#ef4444"),
+    ]
+    grid = FacetGrid(figures, labels=("left", "right"), cols=2, width=480, height=160)
+    scene_raster = _native.scene_raster_commands
+    calls = 0
+
+    def observed_scene_raster(*args: object, **kwargs: object) -> bytes:
+        nonlocal calls
+        calls += 1
+        return scene_raster(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(_native, "scene_raster_commands", observed_scene_raster)
+
+    def unexpected_compatibility(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("supported facet must not fall back")
+
+    monkeypatch.setattr(_raster, "_export_payload", unexpected_compatibility)
+    real_scene = _scene_v3.figure_scene
+    compile_calls = {"n": 0}
+
+    def counted_scene(*args: object, **kwargs: object) -> bytes:
+        compile_calls["n"] += 1
+        return real_scene(*args, **kwargs)
+
+    monkeypatch.setattr(_scene_v3, "figure_scene", counted_scene)
+    png = grid.to_png(scale=1.0)
+
+    assert calls == 2
+    assert compile_calls["n"] == 2
+    assert png[:8] == b"\x89PNG\r\n\x1a\n"
+    assert _png_size(png) == (480, grid.grid_height)
+    assert grid.to_image("jpeg")[:3] == b"\xff\xd8\xff"
+    assert grid.to_image("webp")[:4] == b"RIFF"
+
+
+def test_supported_facet_scene_raster_failure_never_falls_back(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from xyg import _native, _raster
+
+    figure = Figure(width=240, height=160).scatter([1, 2], [2, 3], color="#3987e5")
+    grid = FacetGrid([figure], labels=("only",), cols=1, width=240, height=160)
+
+    def broken_scene(*_args: object, **_kwargs: object) -> bytes:
+        raise ValueError("broken Scene raster consumer")
+
+    def unexpected_compatibility(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("supported facet must not fall back")
+
+    monkeypatch.setattr(_native, "scene_raster_commands", broken_scene)
+    monkeypatch.setattr(_raster, "_export_payload", unexpected_compatibility)
+    with pytest.raises(ValueError, match="broken Scene raster consumer"):
+        grid.to_png(scale=1.0)
+
+
+def test_facet_raster_background_override_stays_on_compatibility(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from xyg import _native
+
+    figure = Figure(width=240, height=160).scatter([1, 2], [2, 3], color="#3987e5")
+    grid = FacetGrid([figure], labels=("only",), cols=1, width=240, height=160)
+
+    def unexpected_scene(*_args: object, **_kwargs: object) -> bytes:
+        raise AssertionError("background override must not use Scene raster")
+
+    monkeypatch.setattr(_native, "scene_raster_commands", unexpected_scene)
+    canvas = grid._compose_rgba(1.0, "#112233")
+    assert canvas.shape == (grid.grid_height, grid.width, 4)
+    assert canvas.dtype == np.uint8
+
+
 def test_facet_labels_and_grid_title_render_once() -> None:
     grid = xyg.facet_chart(xyg.line(x="x", y="y"), by="g", data=_table(), title="My grid").figure()
     svg = grid.to_svg()
