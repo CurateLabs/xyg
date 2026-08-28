@@ -1,16 +1,10 @@
-"""Compatibility geometry producers shared by the legacy static paths.
-
-The SVG exporter (`_svg.py`) bakes coordinates into SVG `d`/arc/`<image>` strings
-that its string-marker tests pin, so it stays the home of the pure math
-(`_Scale`, `_column`, `_lut`, tick functions, `_corner_radii`, …). This module
-reuses those and adds the *tessellated* forms the Rust rasterizer needs —
-polylines instead of Bézier `d` strings, corner polygons instead of arcs, and
-RGBA grid arrays instead of embedded `<image>` PNGs — so `_raster.py` paints
-the exact same geometry the SVG shows.
+"""Compatibility geometry producers shared by tests and leftover helpers.
 
 Ribbon/curve/rounded-rect tessellation lives in Rust (ABI 121). These wrappers
 pack host coordinates and map affine scales; they do not own the cubics.
-`grid_rgba` colormap application uses Rust (`xyg_colormap_rgba` / ABI 129).
+Compatibility PNG (`_raster.py`) calls those kernels directly (#310) and no
+longer imports this module. `grid_rgba` colormap application uses Rust
+(`xyg_colormap_rgba` / ABI 129) with a remaining `_lut` density path (#313).
 """
 
 from __future__ import annotations
@@ -20,7 +14,6 @@ from typing import Any
 import numpy as np
 
 from . import kernels
-from ._svg import _colormap_stops, _column, _density_column, _lut
 
 # Samples per smooth Bézier span when flattening to a polyline for the raster
 # filler. The curve is screen-bounded (M4-decimated), so this stays cheap and
@@ -106,50 +99,14 @@ def rounded_rect_poly(
 def grid_rgba(kind: str, g: dict, blob: bytes, cols: list, style: dict) -> tuple:
     """Density/heatmap grid → `(h, w, 4)` uint8 RGBA (top row first), matching
     `_svg._density_image`/`_heatmap_image`. Returns (rgba, x_range, y_range)."""
-    w, h = int(g["w"]), int(g["h"])
-    stops = np.asarray(_colormap_stops(g.get("colormap", "viridis")), dtype=np.uint8)
-    if kind == "density":
-        if g.get("enc") == "log-u8":
-            meta = cols[g["buf"]]
-            encoded = np.frombuffer(
-                blob, dtype=np.uint8, count=meta["len"], offset=meta["byte_offset"]
-            )
-            gmax = float(g.get("max") or 1.0) or 1.0
-            rgba = kernels.density_rgba(
-                encoded,
-                w,
-                h,
-                gmax,
-                stops,
-                float(style.get("opacity", 0.85)),
-            )
-            return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
-        grid = _density_column(blob, cols[g["buf"]], g).reshape(h, w)
-        gmax = float(g.get("max") or 1.0) or 1.0
-        tnorm = np.clip(grid / gmax, 0.0, 1.0)
-        rgb = _lut(g.get("colormap", "viridis"), tnorm.reshape(-1)).reshape(h, w, 3)
-        alpha = (np.clip(tnorm * 1.35, 0, 1) * 255 * float(style.get("opacity", 0.85))).astype(
-            np.uint8
-        )
-        alpha[tnorm <= 0] = 0
-    else:  # heatmap
-        meta = cols[g["buf"]]
-        alpha = int(255 * float(style.get("opacity", 0.95)))
-        if g.get("enc") == "canonical-f64":
-            values = _column(blob, meta).reshape(h, w)
-            d0, d1 = (float(value) for value in g["domain"])
-            rgba = kernels.colormap_rgba_canonical(values, w, h, (d0, d1), stops, alpha)
-            return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
-        raw = _column(blob, meta).reshape(h, w)
-        rgba = kernels.colormap_rgba(raw, w, h, stops, alpha)
-        return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
-    rgba = np.dstack([rgb, alpha])[::-1]  # flip: row 0 is the top of the image
-    return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
+    from . import _raster
+
+    return _raster._compat_grid_rgba(kind, g, blob, cols, style)
 
 
 def grid_dest_rect(x_range: list, y_range: list, sx: Any, sy: Any) -> tuple:
     """Pixel destination rect (x, y, w, h) for a grid image, matching
     `_svg._grid_image`."""
-    px0, px1 = float(sx(x_range[0])), float(sx(x_range[1]))
-    py0, py1 = float(sy(y_range[1])), float(sy(y_range[0]))
-    return min(px0, px1), min(py0, py1), abs(px1 - px0), abs(py1 - py0)
+    from . import _raster
+
+    return _raster._grid_dest_rect(x_range, y_range, sx, sy)

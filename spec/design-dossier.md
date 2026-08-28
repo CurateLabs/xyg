@@ -1360,8 +1360,10 @@ ABI 121 moves ribbon/curve/rounded-rect tessellation into Rust. Hosts call
 `xyg_ribbon_edge`, `xyg_ribbon_polygon`, `xyg_monotone_tangents`,
 `xyg_curve_flatten`, and `xyg_rounded_rect_poly`; bump-X flattening,
 Fritsch–Carlson tangents, Hermite polylines, and independent tip/base radii
-are engine-owned and identical for Python and Node. Hosts still map affine
-scales and apply colormaps (`grid_rgba`, #283).
+are engine-owned and identical for Python and Node. Compatibility PNG
+(`_raster.py`) calls those kernels directly (#310); `_scene.py` wrappers
+remain for tests. Hosts still map affine
+scales and apply colormaps (`grid_rgba`, #283 / #313).
 ABI 122 moves compile-time payload LOD into Rust. Hosts call
 `xyg_payload_tier`, `xyg_payload_visible_needed`, and
 `xyg_payload_visible_mask`; line M4 vs direct, scatter density vs
