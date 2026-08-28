@@ -3227,7 +3227,14 @@ def _pack_figure_support(
     annotations: list[Any],
     colorbar_unsupported: bool,
 ) -> bytes:
-    """Pack literal figure observations, axis keys, and per-trace allowlist flags."""
+    """Pack literal figure observations, axis keys, and per-trace allowlist flags.
+
+    Scene static SVG/PNG/PDF measure and paint DejaVu Sans (#288). Custom
+    ``font-family`` sets ``CUSTOM_FONT``; chart ``class_name`` / ``class_names``,
+    ``chrome_styles``, extra ``style`` keys, and annotation ``class_name`` set
+    ``BROWSER_CSS``. Rust reports the stable fail-closed diagnostics. Live
+    browser widgets still apply CSS outside this encoder.
+    """
     flags = 0
     if figure.coords != "cartesian":
         flags |= 1 << 0
