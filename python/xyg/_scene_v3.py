@@ -73,7 +73,6 @@ _SCENE_DASH_PRESETS: dict[str, list[float] | None] = {
 # painter. Keep the public route inside its canonical group budget; larger
 # meshes and honeycombs remain on the compatibility path until Scene gains a
 # compact multi-cell painter record.
-_MAX_PUBLIC_TRIANGLE_MESHES = 1024
 # Regular heatmap cells are ordinary Rect records and share the histogram
 # 10,000-bin public ceiling. Irregular grids stay on the compatibility
 # exporters. Scalar-colormap and truecolor heatmaps tessellate those Rects
@@ -3366,26 +3365,6 @@ def _public_scene_or_reason(
     reason = _native.scene_public_export_reason(envelope)
     if reason:
         return reason, None
-    public_triangle_mesh_count = 0
-    for trace in getattr(figure, "traces", None) or []:
-        if trace.kind in _POLYFILL_KINDS:
-            x0 = getattr(trace, "x0", None)
-            y0 = getattr(trace, "y0", None)
-            x1 = getattr(trace, "x1", None)
-            y1 = getattr(trace, "y1", None)
-            xs = getattr(trace, "x", None)
-            ys = getattr(trace, "y", None)
-            if (
-                x0 is not None
-                and y0 is not None
-                and x1 is not None
-                and y1 is not None
-                and xs is not None
-                and ys is not None
-            ):
-                public_triangle_mesh_count += len(x0.values)
-        elif trace.kind in _HEXBIN_KINDS and trace.x is not None:
-            public_triangle_mesh_count += len(trace.x.values)
     try:
         scene = figure_scene(figure, width=width, height=height)
     except UnsupportedSceneV3 as unsupported:
@@ -3396,13 +3375,6 @@ def _public_scene_or_reason(
         if str(exc) == "invalid canonical scene plot layout":
             return "XYG_SCENE_UNSUPPORTED_VIEWPORT", None
         raise
-    if public_triangle_mesh_count:
-        try:
-            _native.scene_browser_painter(scene)
-        except ValueError as exc:
-            if str(exc) == "invalid canonical scene for browser painter":
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH", None
-            raise
     return None, scene
 
 
@@ -3422,10 +3394,9 @@ def scene_export_support_reason(
 
     Hosts pack authored XYEF facts (viewport flags, keys, axis codes, and
     column observations). Rust owns XYEP layout, kind/step/annotation codes,
-    flag derivation, allowlists, check order, and diagnostic wording. After
-    that preflight the predicate still compiles the Scene so it cannot
-    disagree with the encoder, and it asks the browser painter to enforce the
-    shared PolyFill group budget. ``public_static_export`` and facet SVG reuse
-    that compiled batch rather than compiling a second Scene.
+    flag derivation, allowlists, check order, the public PolyFill group budget,
+    and diagnostic wording. After that preflight the predicate still compiles
+    the Scene so it cannot disagree with the encoder. ``public_static_export``
+    and facet SVG reuse that compiled batch rather than compiling a second Scene.
     """
     return _public_scene_or_reason(figure, width=width, height=height)[0]

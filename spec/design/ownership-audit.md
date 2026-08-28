@@ -46,7 +46,8 @@ custom paths/glyphs, and density/LOD scatter remain compatibility routes.
 The public literal triangle-mesh slice admits at most 1,024 unjoined faces with
 one constant fill and scalar overall opacity. Python and Node pack six authored
 vertex columns as three-row PolyFill runs; Rust owns their stable-run grouping,
-plot clipping, legend swatch, and SVG/raster/browser lowering. Joined fills,
+plot clipping, legend swatch, SVG/raster/browser lowering, and the public
+PolyFill group budget (companion traces share the 1,024-group ceiling). Joined fills,
 component alpha, authored outlines, per-face paint/style, alternate axes, and
 larger meshes remain compatibility behavior.
 

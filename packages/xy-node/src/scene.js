@@ -4591,18 +4591,8 @@ export function sceneExportSupportReason(figure, { width = null, height = null }
     reason = new TextDecoder("utf-8", { fatal: true }).decode(output);
   }
   if (reason) return reason;
-  let publicTriangleMeshCount = 0;
-  for (const trace of figure.traces ?? []) {
-    if (POLYFILL_KINDS.has(trace.kind)) {
-      const mesh = [trace.x0, trace.y0, trace.x1, trace.y1, trace.x, trace.y];
-      if (mesh.every((column) => column != null)) publicTriangleMeshCount += mesh[0].length;
-    } else if (HEXBIN_KINDS.has(trace.kind) && trace.x != null) {
-      publicTriangleMeshCount += trace.x.length;
-    }
-  }
-  let scene;
   try {
-    scene = figureSceneV3(figure);
+    figureSceneV3(figure);
   } catch (err) {
     if (err instanceof RangeError) {
       if (err.message === "invalid canonical scene plot layout") return "XYG_SCENE_UNSUPPORTED_VIEWPORT";
@@ -4617,16 +4607,6 @@ export function sceneExportSupportReason(figure, { width = null, height = null }
       return err.message;
     }
     throw err;
-  }
-  if (publicTriangleMeshCount) {
-    try {
-      sceneBrowserPainter(scene);
-    } catch (err) {
-      if (err instanceof RangeError && err.message === "invalid canonical scene for browser painter") {
-        return "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH";
-      }
-      throw err;
-    }
   }
   return null;
 }

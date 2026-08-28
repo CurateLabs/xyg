@@ -1361,7 +1361,9 @@ ABI 163 packs product-path Scene encode from `XYTC` plus `XYTA` plus `XYNM`
 plus `XYCL` plus `XYAF` plus `XYCF` plus polar so compile/attach/sidecar/row/
 annotation/style/splice/encode orchestration cannot drift. An empty reason selects the Scene route;
 hosts still compile the Scene and may still report compiler or viewport
-diagnostics, including the shared PolyFill group budget. Python
+diagnostics. Rust owns the public PolyFill group budget, including companion
+traces that share the browser painter's 1,024-group ceiling; hosts do not
+count meshes or probe the painter. Python
 `public_static_export` and `FacetGrid.to_svg` reuse that compiled batch
 rather than encoding twice. ABI 106 does not
 change Scene records; `xyg_figure_autorange` owns the domain the annotation

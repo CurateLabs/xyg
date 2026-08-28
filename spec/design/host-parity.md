@@ -536,7 +536,9 @@ ABI 151
 / optional mean-color from packed columns.
 ABI 152
 `xyg_scene_pack_public_export` owns XYEP layout, kind/step/annotation codes,
-and flag derivation from packed XYEF v1.
+and flag derivation from packed XYEF v1. The public-export predicate also
+owns the PolyFill group budget, including companion traces that share the
+browser painter's 1,024-group ceiling.
 ABI 153
 `xyg_scene_pack_figure_chrome` owns plot layout, chrome-style resolve, legend
 loc default/allowlists (empty authored loc is fail-closed), colorbar

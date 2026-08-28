@@ -562,7 +562,9 @@ F3, still pending (above).
   call that ABI through one `_svg.axis_ticks` framing function; the obsolete
   per-family Python adapters are retired. `public_static_export` is likewise
   the only optional Python selector for the bounded product route; it reuses
-  the predicate's compiled Scene rather than encoding twice. Explicit
+  the predicate's compiled Scene rather than encoding twice. That predicate
+  owns the public PolyFill group budget, including companion traces that share
+  the browser painter's 1,024-group ceiling. Explicit
   Scene APIs retain no second fallback predicate. Rust also owns
   chrome ordering, plus bounded primary static legend entry ordering,
   placement, frame, text, and swatch policy;

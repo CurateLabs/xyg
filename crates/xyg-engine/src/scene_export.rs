@@ -8,7 +8,8 @@
 //! `XYG_SCENE_UNSUPPORTED_*` wording over that envelope. An empty reason
 //! means the public Scene route applies; hosts then compile through the
 //! existing Scene consumers and may still report compiler or viewport
-//! diagnostics.
+//! diagnostics. Rust owns the public PolyFill group budget, including
+//! companion traces that share the browser painter's 1,024-group ceiling.
 
 use crate::scene::SceneError;
 
@@ -1204,6 +1205,19 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
             return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
         }
     }
+    if public_triangle_mesh_count > 0 {
+        let extra_groups = traces
+            .iter()
+            .filter(|trace| trace.kind != KIND_TRIANGLE_MESH && trace.kind != KIND_HEXBIN)
+            .count();
+        if public_triangle_mesh_count
+            .checked_add(extra_groups)
+            .ok_or(SceneError::Limit)?
+            > MAX_PUBLIC_TRIANGLE_MESHES
+        {
+            return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH");
+        }
+    }
     Ok("")
 }
 
@@ -1813,6 +1827,10 @@ mod tests {
         prefix[0..4].copy_from_slice(&obs.to_le_bytes());
         prefix[4..8].copy_from_slice(&n_x.to_le_bytes());
         prefix[8..12].copy_from_slice(&n_x.to_le_bytes());
+        prefix[12..16].copy_from_slice(&n_x.to_le_bytes());
+        prefix[16..20].copy_from_slice(&n_x.to_le_bytes());
+        prefix[20..24].copy_from_slice(&n_x.to_le_bytes());
+        prefix[24..28].copy_from_slice(&n_x.to_le_bytes());
         prefix[28..32].copy_from_slice(&heatmap_rows.to_le_bytes());
         prefix[32..36].copy_from_slice(&heatmap_cols.to_le_bytes());
         prefix[36..40].copy_from_slice(&heatmap_values.to_le_bytes());
@@ -1914,5 +1932,55 @@ mod tests {
                 .unwrap(),
         );
         assert_eq!(flags & TRACE_HEATMAP_COLORMAP, TRACE_HEATMAP_COLORMAP);
+    }
+
+    #[test]
+    fn public_export_triangle_mesh_counts_companion_traces_toward_group_budget() {
+        let mesh_obs = OBS_HAS_X
+            | OBS_HAS_Y
+            | OBS_X_FINITE
+            | OBS_Y_FINITE
+            | OBS_HAS_X0
+            | OBS_HAS_Y0
+            | OBS_HAS_X1
+            | OBS_HAS_Y1
+            | OBS_X0_FINITE
+            | OBS_Y0_FINITE
+            | OBS_X1_FINITE
+            | OBS_Y1_FINITE;
+        let scatter_obs = OBS_HAS_X | OBS_HAS_Y | OBS_X_FINITE | OBS_Y_FINITE;
+        let mut boundary = xyef_header(0, 0, 0, 0, 2, 0, 1);
+        boundary.extend_from_slice(&xyef_axis(0, true));
+        boundary.extend_from_slice(&xyef_axis(1, true));
+        boundary.extend_from_slice(&xyef_trace(
+            "triangle_mesh",
+            mesh_obs,
+            1024,
+            0,
+            0,
+            0,
+            "triangle-mesh",
+        ));
+        let envelope = pack_public_export(&boundary).unwrap();
+        assert_eq!(scene_public_export_reason(&envelope), Ok(""));
+
+        let mut mixed = xyef_header(0, 0, 0, 0, 2, 0, 2);
+        mixed.extend_from_slice(&xyef_axis(0, true));
+        mixed.extend_from_slice(&xyef_axis(1, true));
+        mixed.extend_from_slice(&xyef_trace(
+            "triangle_mesh",
+            mesh_obs,
+            1024,
+            0,
+            0,
+            0,
+            "triangle-mesh",
+        ));
+        mixed.extend_from_slice(&xyef_trace("scatter", scatter_obs, 1, 0, 0, 0, ""));
+        let mixed_envelope = pack_public_export(&mixed).unwrap();
+        assert_eq!(
+            scene_public_export_reason(&mixed_envelope),
+            Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH")
+        );
     }
 }
