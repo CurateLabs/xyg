@@ -5102,7 +5102,7 @@ fn sample_mask_impl<T: Copy + Sync + Into<u64>>(
 /// otherwise `fraction * (2^64 - 1)` in f64 (the constant rounds to 2^64),
 /// truncated with the same saturating clamp as Python's
 /// `max(0, min(u64_max, int(...)))`.
-fn sample_threshold(fraction: f64) -> u64 {
+pub(crate) fn sample_threshold(fraction: f64) -> u64 {
     if fraction >= 1.0 {
         u64::MAX
     } else {

@@ -509,17 +509,15 @@ def sample_row_range_for_target(
     target_i = _integer_param(target, "sample target", min_value=1)
     if size_i == 0:
         return np.empty(0, dtype=np.uint32)
-    base_fraction = min(1.0, target_i / size_i)
-    fraction = _sample_fraction(level, base_fraction, growth)
-    if fraction >= 1.0:
-        return np.arange(size_i, dtype=np.uint32)
+    level_i = _integer_param(level, "sample level")
+    growth_f = _float_param(growth, "sample growth", min_inclusive=1.0)
     seed_i = _integer_param(seed, "sample seed", max_value=_UINT64_MAX_INT)
-    threshold = int(_sample_threshold(fraction))
-    # A two-times expectation leaves overwhelming headroom for the Bernoulli
-    # count while keeping the ABI allocation bounded. The native wrapper
-    # retries with the exact required count in the vanishingly rare overflow.
-    capacity = min(size_i, max(64, target_i * 2))
-    return kernels.sample_range_indices(size_i, seed_i, threshold, capacity)
+    keep_all, idx = kernels.payload_sample_target_indices(
+        size_i, target_i, seed_i, level_i, growth_f
+    )
+    if keep_all:
+        return np.arange(size_i, dtype=np.uint32)
+    return idx
 
 
 def bin_2d_sample_row_range_for_target(

@@ -524,6 +524,35 @@ class PayloadMixin(_Host):
             base=base,
         )
 
+    def _visible_sel(
+        self,
+        t: Trace,
+        xv: np.ndarray,
+        yv: np.ndarray,
+        *,
+        base: Optional[np.ndarray] = None,
+        prefiltered: bool = False,
+        base_column: Optional[Column] = None,
+    ) -> np.ndarray | None:
+        """Keep-all (`None`) vs original-row keep indices (ABI 205)."""
+        keep_all, idx = kernels.payload_visible_indices(
+            xv,
+            yv,
+            x_log=self._axis_scale(t.x_axis) == "log",
+            y_log=self._axis_scale(t.y_axis) == "log",
+            base=base,
+            prefiltered=prefiltered,
+            x_has_nulls=bool(t.x.zone.null_count),
+            y_has_nulls=bool(t.y.zone.null_count),
+            has_base=base is not None or base_column is not None,
+            base_has_nulls=(
+                bool(base_column.zone.null_count) if base_column is not None else False
+            ),
+        )
+        if keep_all:
+            return None
+        return idx
+
     def _binning_coords(
         self, axis_id: str, values: np.ndarray, bounds: tuple[float, float]
     ) -> tuple[np.ndarray, tuple[float, float]]:
@@ -586,16 +615,9 @@ class PayloadMixin(_Host):
         self, t: Trace, pw: "_PayloadWriter", xr: tuple, yr: tuple, px_width: int
     ) -> dict[str, Any]:
         tier, (xv, yv) = self._m4_decimate(t, xr, px_width, t.x.values, t.y.values)
-        sel = None
-        if tier == "direct":
-            sel = self._finite_sel(t, xv, yv)
-            if sel is not None:
-                xv, yv = xv[sel], yv[sel]
-        if len(xv) and self._visible_mask_needed(t, prefiltered=sel is not None):
-            finite = self._log_visible_mask(t, xv, yv)
-            if not bool(np.all(finite)):
-                sel = np.flatnonzero(finite) if sel is None else sel[finite]
-                xv, yv = xv[finite], yv[finite]
+        sel = self._visible_sel(t, xv, yv, prefiltered=tier != "direct")
+        if sel is not None:
+            xv, yv = xv[sel], yv[sel]
         entry = self._base_entry(t, pw, xv, yv, tier, self._default_styled(t))
         if tier == "decimated":
             # Record the px width this M4 pass was computed for (§28): the
@@ -615,11 +637,9 @@ class PayloadMixin(_Host):
         tier, (xv, yv, bv) = self._m4_decimate(
             t, xr, px_width, t.x.values, t.y.values, t.base.values
         )
-        sel = None
-        if self._visible_mask_needed(t, prefiltered=False, base_column=t.base):
-            sel = np.flatnonzero(self._log_visible_mask(t, xv, yv, bv))
-            if len(sel) != len(xv):
-                xv, yv, bv = xv[sel], yv[sel], bv[sel]
+        sel = self._visible_sel(t, xv, yv, base=bv, base_column=t.base)
+        if sel is not None:
+            xv, yv, bv = xv[sel], yv[sel], bv[sel]
         entry = self._base_entry(t, pw, xv, yv, tier, self._default_styled(t))
         if tier == "decimated":
             entry["decimation_px"] = int(px_width)
@@ -656,14 +676,9 @@ class PayloadMixin(_Host):
             entry = self._density_trace_spec(t, xr, yr, *DENSITY_GRID, pw)
             return self._transition_entry(entry, t, pw)
         xv, yv = t.x.values, t.y.values
-        sel = self._finite_sel(t, xv, yv)
+        sel = self._visible_sel(t, xv, yv)
         if sel is not None:
             xv, yv = xv[sel], yv[sel]
-        if len(xv) and self._visible_mask_needed(t, prefiltered=sel is not None):
-            visible = self._log_visible_mask(t, xv, yv)
-            if not bool(np.all(visible)):
-                sel = np.flatnonzero(visible) if sel is None else sel[visible]
-                xv, yv = xv[visible], yv[visible]
         entry = self._base_entry(t, pw, xv, yv, "direct", dict(t.style))
         if t.transition_keys is not None:
             self._transition_entry(entry, t, pw, sel)
@@ -678,7 +693,7 @@ class PayloadMixin(_Host):
     ) -> dict[str, Any]:
         del xr, yr, px_width
         xv, yv = t.x.values, t.y.values
-        sel = self._finite_sel(t, xv, yv)
+        sel = self._visible_sel(t, xv, yv)
         if sel is not None:
             xv, yv = xv[sel], yv[sel]
         # Cells ship as centers plus one scalar color value. Every hexagon
@@ -812,19 +827,22 @@ class PayloadMixin(_Host):
                 segment_roles = np.repeat(np.arange(seg_per, dtype=np.uint32), t.count)
             max_groups = max(1024, int(px_width) * 4)
             if remainder == 0 and seg_per >= 1 and t.count > max_groups:
-                chosen = np.linspace(0, t.count - 1, max_groups, dtype=np.int64)
-                indices = np.concatenate([chosen + k * t.count for k in range(seg_per)])
-                x0v, x1v, y0v, y1v = x0v[indices], x1v[indices], y0v[indices], y1v[indices]
-                source_sel = indices
-                if segment_sources is not None and segment_roles is not None:
-                    segment_sources = segment_sources[indices]
-                    segment_roles = segment_roles[indices]
-                tier = "decimated"
+                keep_all, chosen = kernels.payload_even_indices(t.count, max_groups)
+                if not keep_all:
+                    chosen64 = chosen.astype(np.int64, copy=False)
+                    indices = np.concatenate([chosen64 + k * t.count for k in range(seg_per)])
+                    x0v, x1v, y0v, y1v = x0v[indices], x1v[indices], y0v[indices], y1v[indices]
+                    source_sel = indices
+                    if segment_sources is not None and segment_roles is not None:
+                        segment_sources = segment_sources[indices]
+                        segment_roles = segment_roles[indices]
+                    tier = "decimated"
         elif t.kind == "stem" and len(x0v) > max(1024, int(px_width) * 4):
-            chosen = np.linspace(0, len(x0v) - 1, max(1024, int(px_width) * 4), dtype=np.int64)
-            x0v, x1v, y0v, y1v = x0v[chosen], x1v[chosen], y0v[chosen], y1v[chosen]
-            source_sel = chosen
-            tier = "decimated"
+            keep_all, chosen = kernels.payload_even_indices(len(x0v), max(1024, int(px_width) * 4))
+            if not keep_all:
+                x0v, x1v, y0v, y1v = x0v[chosen], x1v[chosen], y0v[chosen], y1v[chosen]
+                source_sel = chosen.astype(np.int64, copy=False)
+                tier = "decimated"
         finite_sel = self._rect_finite_sel(t, x0v, x1v, y0v, y1v)
         if finite_sel is not None:
             x0v, x1v, y0v, y1v = (

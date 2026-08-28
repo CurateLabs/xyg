@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 204
-SIGNATURE_SHA256 = "5d627f18ed838eb9c38e74529ff190d3b5bbbbc73d091255837a78a9fcb710bf"
+ABI_VERSION = 205
+SIGNATURE_SHA256 = "8b5d7deabe7b4189dfb237a6c94bb9b6c4b65e24e7989f922c7c70179c7519a2"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -466,14 +466,26 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_normalize_f32
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_void_p]
+    # size_t xyg_payload_even_indices(size_t n, size_t count, int32_t * out_keep_all, uint32_t * out, size_t capacity)
+    function = lib.xyg_payload_even_indices
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
     # size_t xyg_payload_m4_indices(uint64_t n_points, int32_t polar, const double * x, const double * y, size_t n, double x0, double x1, size_t n_buckets, const double * bin_x, double bin_x0, double bin_x1, int32_t * out_tier, uint32_t * out, size_t capacity)
     function = lib.xyg_payload_m4_indices
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_uint64, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_payload_sample_target_indices(size_t n, size_t target, uint64_t seed, uint32_t level, double growth, int32_t * out_keep_all, uint32_t * out, size_t capacity)
+    function = lib.xyg_payload_sample_target_indices
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_size_t, ctypes.c_size_t, ctypes.c_uint64, ctypes.c_uint32, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_payload_tier(int32_t kind, uint64_t n_points, int32_t polar, int32_t force_density, int32_t force_direct, int32_t per_item)
     function = lib.xyg_payload_tier
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_uint64, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32]
+    # size_t xyg_payload_visible_indices(const double * x, const double * y, size_t n, int32_t x_log, int32_t y_log, const double * base, int32_t has_base, int32_t prefiltered, int32_t x_has_nulls, int32_t y_has_nulls, int32_t base_has_nulls, int32_t * out_keep_all, uint32_t * out, size_t capacity)
+    function = lib.xyg_payload_visible_indices
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
     # size_t xyg_payload_visible_mask(const double * x, const double * y, size_t n, int32_t x_log, int32_t y_log, const double * base, int32_t has_base, uint8_t * out, size_t capacity)
     function = lib.xyg_payload_visible_mask
     function.restype = ctypes.c_size_t

@@ -20,7 +20,9 @@ what ships is count-only, `tier = f(visible_count)`, hysteresis-guarded (§5).
 `drill_decision` / `plan_view_lod` in `python/xyg/lod.py` call Rust
 (`xyg_drill_decision` / `xyg_lod_plan` in `lod_plan.rs`); compile-time
 payload M4/density/direct is `xyg_payload_tier` (ABI 122). Line M4 emit
-indices are `xyg_payload_m4_indices` (ABI 204). Hosts only
+indices are `xyg_payload_m4_indices` (ABI 204). Remaining emit sampling
+is `xyg_payload_visible_indices` / `xyg_payload_even_indices` /
+`xyg_payload_sample_target_indices` (ABI 205). Hosts only
 validate and map mode ids to wire strings. `js/src/45_lod.ts` still mirrors the numeric rule
 for client-side hints. Implemented today for scatter (drill-in/out with hysteresis); this
 doc extends the same rule to every kind. Folding `mark_pixel_area × overdraw`

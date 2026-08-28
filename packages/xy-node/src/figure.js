@@ -19,6 +19,9 @@ import {
   Column,
   DENSITY_GRID,
   DENSITY_OVERLAY_STATIC_RASTER,
+  DENSITY_OVERLAY_ROWS_EXCEED_U32,
+  DENSITY_SAMPLE_SEED,
+  DENSITY_SAMPLE_TARGET,
   PROTOCOL_VERSION,
   bin2d,
   densityEmitPlan,
@@ -26,7 +29,10 @@ import {
   densityLogU8,
   encodeF32Values,
   geometryOffset,
+  payloadEvenIndices,
   payloadM4Indices,
+  payloadSampleTargetIndices,
+  payloadVisibleIndices,
   minMax,
   normalizeF32,
   payloadTier,
@@ -85,6 +91,13 @@ function gatherF64(arr, idx) {
   const src = asF64(arr);
   const out = new Float64Array(idx.length);
   for (let i = 0; i < idx.length; i += 1) out[i] = src[idx[i]];
+  return out;
+}
+
+function gatherItems(arr, idx) {
+  if (arr == null) return arr;
+  const out = new Array(idx.length);
+  for (let i = 0; i < idx.length; i += 1) out[i] = arr[idx[i]];
   return out;
 }
 
@@ -969,6 +982,34 @@ export class Figure {
     return [lo[0], hi[0]];
   }
 
+  _axisIsLog(axisId) {
+    const opts = this[`${axisId}Axis`] ?? {};
+    const scale = opts.type ?? opts.scale;
+    return scale === "log";
+  }
+
+  _visibleSel(t, x, y, {
+    base = null,
+    prefiltered = false,
+    xCol = null,
+    yCol = null,
+    baseCol = null,
+  } = {}) {
+    const xc = xCol ?? (t._xCol instanceof Column ? t._xCol : new Column(x));
+    const yc = yCol ?? (t._yCol instanceof Column ? t._yCol : new Column(y));
+    const { keepAll, indices } = payloadVisibleIndices(x, y, {
+      xLog: this._axisIsLog(t.x_axis ?? "x"),
+      yLog: this._axisIsLog(t.y_axis ?? "y"),
+      base,
+      prefiltered,
+      xHasNulls: xc.nullCount > 0,
+      yHasNulls: yc.nullCount > 0,
+      hasBase: base != null,
+      baseHasNulls: baseCol != null ? baseCol.nullCount > 0 : false,
+    });
+    return keepAll ? null : indices;
+  }
+
   _emitScatter(t, pw, xr, yr) {
     const forceDensity = Boolean(t.force_density ?? t.style?.force_density);
     const forceDirect = Boolean(t.force_direct ?? t.style?.force_direct);
@@ -987,6 +1028,13 @@ export class Figure {
     const yCol = t._yCol instanceof Column ? t._yCol : new Column(t.y);
     t._xCol = xCol;
     t._yCol = yCol;
+    let xv = t.x;
+    let yv = t.y;
+    const sel = this._visibleSel(t, xv, yv, { xCol, yCol });
+    if (sel != null) {
+      xv = gatherF64(xv, sel);
+      yv = gatherF64(yv, sel);
+    }
     const entry = {
       id: t.id,
       kind: "scatter",
@@ -994,18 +1042,19 @@ export class Figure {
       style: { ...t.style },
       tier: "direct",
       n_points: t.x.length,
-      n_marks: t.x.length,
-      x: pw.ship(t.x, xCol),
-      y: pw.ship(t.y, yCol),
+      n_marks: xv.length,
+      x: pw.ship(xv, sel == null ? xCol : new Column(xv)),
+      y: pw.ship(yv, sel == null ? yCol : new Column(yv)),
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
     };
-    const color = this._shipColor(t.color, pw);
+    const color = this._shipColor(t.color, pw, sel);
     if (color != null) entry.color = color;
     if (t.sizeValues != null) {
-      const values = t.sizeValues instanceof Float64Array
+      let values = t.sizeValues instanceof Float64Array
         ? t.sizeValues
         : Float64Array.from(t.sizeValues, Number);
+      if (sel != null) values = gatherF64(values, sel);
       const mm = minMax(values) ?? [0, 1];
       const lo = mm[0];
       const hi = mm[0] === mm[1] ? mm[0] + 1 : mm[1];
@@ -1017,7 +1066,9 @@ export class Figure {
         buf: pw.shipScalar(norm),
       };
     }
-    if (t.tooltip_rows != null) entry.tooltip_rows = t.tooltip_rows;
+    if (t.tooltip_rows != null) {
+      entry.tooltip_rows = sel == null ? t.tooltip_rows : gatherItems(t.tooltip_rows, sel);
+    }
     return entry;
   }
 
@@ -1066,20 +1117,22 @@ export class Figure {
       binning = densityFormatBinning({ exact: true });
       reduction = "bin2d";
     }
+    const xmm = minMax(t.x) ?? xr;
+    const ymm = minMax(t.y) ?? yr;
     const plan = densityEmitPlan({
       cartesian: this.coords === "cartesian",
       xLinear: true,
       yLinear: true,
-      pointOverlay: false,
+      pointOverlay: true,
       gridFromPyramid: reduction === "pyramid-count",
       hasPyramidResource,
       forceBin2d,
       forcePyramid,
       colorMode: t.style?.color ? 1 : 0,
-      xMin: minMax(t.x)?.lo ?? xr[0],
-      xMax: minMax(t.x)?.hi ?? xr[1],
-      yMin: minMax(t.y)?.lo ?? yr[0],
-      yMax: minMax(t.y)?.hi ?? yr[1],
+      xMin: xmm[0],
+      xMax: xmm[1],
+      yMin: ymm[0],
+      yMax: ymm[1],
       xr0: xr[0],
       xr1: xr[1],
       yr0: yr[0],
@@ -1103,6 +1156,40 @@ export class Figure {
     };
     if (plan.overlay_omitted === DENSITY_OVERLAY_STATIC_RASTER) {
       density.overlay_omitted = "static_raster";
+    } else if (plan.overlay_omitted === DENSITY_OVERLAY_ROWS_EXCEED_U32) {
+      density.overlay_omitted = "rows_exceed_u32";
+    } else {
+      const n = t.x.length;
+      const { keepAll, indices } = payloadSampleTargetIndices({
+        n,
+        target: DENSITY_SAMPLE_TARGET,
+        seed: DENSITY_SAMPLE_SEED,
+      });
+      const sx = keepAll ? t.x : gatherF64(t.x, indices);
+      const sy = keepAll ? t.y : gatherF64(t.y, indices);
+      if (sx.length > 0) {
+        const sampleX = new Column(sx);
+        const sampleY = new Column(sy);
+        const xCol = pw.ship(sx, sampleX);
+        const yCol = pw.ship(sy, sampleY);
+        const opacityRaw = Number(t.style?.opacity ?? 0.8);
+        density.sample = {
+          mode: "sampled",
+          n: sx.length,
+          visible: n,
+          target: DENSITY_SAMPLE_TARGET,
+          level: 0,
+          seed: DENSITY_SAMPLE_SEED,
+          x: { col: xCol, ...pw.columns[xCol] },
+          y: { col: yCol, ...pw.columns[yCol] },
+          x_range: [...xr],
+          y_range: [...yr],
+          style: {
+            ...t.style,
+            opacity: Number.isFinite(opacityRaw) ? Math.min(opacityRaw, 0.55) : 0.55,
+          },
+        };
+      }
     }
     if (tiles != null) {
       density.tiles = tiles;
@@ -1158,6 +1245,15 @@ export class Figure {
       t._xCol = xCol;
       t._yCol = yCol;
     }
+    const vis = this._visibleSel(t, xv, yv, {
+      prefiltered: decimated,
+    });
+    if (vis != null) {
+      xv = gatherF64(xv, vis);
+      yv = gatherF64(yv, vis);
+    }
+    const shipX = vis == null ? xCol : new Column(xv);
+    const shipY = vis == null ? yCol : new Column(yv);
     const entry = {
       id: t.id,
       kind: "line",
@@ -1166,8 +1262,8 @@ export class Figure {
       tier,
       n_points: t.x.length,
       n_marks: xv.length,
-      x: pw.ship(xv, xCol),
-      y: pw.ship(yv, yCol),
+      x: pw.ship(xv, shipX),
+      y: pw.ship(yv, shipY),
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
     };
@@ -1199,23 +1295,62 @@ export class Figure {
     };
   }
 
-  _emitSegments(t, pw) {
-    const x0 = new Column(t.x0);
-    const x1 = new Column(t.x1);
-    const y0 = new Column(t.y0);
-    const y1 = new Column(t.y1);
+  _emitSegments(t, pw, pxWidth) {
+    let x0v = t.x0;
+    let x1v = t.x1;
+    let y0v = t.y0;
+    let y1v = t.y1;
+    let tier = "direct";
+    const maxGroups = Math.max(1024, Math.floor(Number(pxWidth)) * 4);
+    if (t.kind === "errorbar" && t.count) {
+      const n = x0v.length;
+      const count = t.count;
+      const remainder = n % count;
+      const segPer = remainder === 0 ? n / count : 0;
+      if (remainder === 0 && segPer >= 1 && count > maxGroups) {
+        const { keepAll, indices: chosen } = payloadEvenIndices(count, maxGroups);
+        if (!keepAll) {
+          const indices = new Uint32Array(chosen.length * segPer);
+          let w = 0;
+          for (let k = 0; k < segPer; k += 1) {
+            for (let i = 0; i < chosen.length; i += 1) {
+              indices[w] = chosen[i] + k * count;
+              w += 1;
+            }
+          }
+          x0v = gatherF64(x0v, indices);
+          x1v = gatherF64(x1v, indices);
+          y0v = gatherF64(y0v, indices);
+          y1v = gatherF64(y1v, indices);
+          tier = "decimated";
+        }
+      }
+    } else if (t.kind === "stem" && x0v.length > maxGroups) {
+      const { keepAll, indices } = payloadEvenIndices(x0v.length, maxGroups);
+      if (!keepAll) {
+        x0v = gatherF64(x0v, indices);
+        x1v = gatherF64(x1v, indices);
+        y0v = gatherF64(y0v, indices);
+        y1v = gatherF64(y1v, indices);
+        tier = "decimated";
+      }
+    }
+    const x0 = new Column(x0v);
+    const x1 = new Column(x1v);
+    const y0 = new Column(y0v);
+    const y1 = new Column(y1v);
     const entry = {
       id: t.id,
       kind: t.kind ?? "segments",
       name: t.name,
       style: { ...t.style },
-      tier: "direct",
+      tier,
       n_points: t.count ?? t.x0.length,
-      n_marks: t.x0.length,
-      x0: pw.ship(t.x0, x0),
-      x1: pw.ship(t.x1, x1),
-      y0: pw.ship(t.y0, y0),
-      y1: pw.ship(t.y1, y1),
+      n_marks: x0v.length,
+      x0: pw.ship(x0v, x0),
+      x1: pw.ship(x1v, x1),
+      y0: pw.ship(y0v, y0),
+      y1: pw.ship(y1v, y1),
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
     };
@@ -1300,6 +1435,18 @@ export class Figure {
       t._yCol = yCol;
     }
     const baseCol = new Column(bv);
+    const vis = this._visibleSel(t, xv, yv, {
+      base: bv,
+      baseCol: new Column(t.base),
+    });
+    if (vis != null) {
+      xv = gatherF64(xv, vis);
+      yv = gatherF64(yv, vis);
+      bv = gatherF64(bv, vis);
+    }
+    const shipX = vis == null ? xCol : new Column(xv);
+    const shipY = vis == null ? yCol : new Column(yv);
+    const shipB = vis == null ? baseCol : new Column(bv);
     const entry = {
       id: t.id,
       kind: t.kind === "error_band" ? "error_band" : "area",
@@ -1308,9 +1455,9 @@ export class Figure {
       tier,
       n_points: t.x.length,
       n_marks: xv.length,
-      x: pw.ship(xv, xCol),
-      y: pw.ship(yv, yCol),
-      base: pw.ship(bv, baseCol),
+      x: pw.ship(xv, shipX),
+      y: pw.ship(yv, shipY),
+      base: pw.ship(bv, shipB),
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
     };
@@ -1348,7 +1495,18 @@ export class Figure {
   _emitHexbin(t, pw) {
     const xCol = new Column(t.x);
     const yCol = new Column(t.y);
-    const mCol = new Column(t.metric);
+    let xv = t.x;
+    let yv = t.y;
+    let mv = t.metric;
+    const sel = this._visibleSel(t, xv, yv, { xCol, yCol });
+    if (sel != null) {
+      xv = gatherF64(xv, sel);
+      yv = gatherF64(yv, sel);
+      if (mv != null) mv = gatherF64(mv, sel);
+    }
+    const shipX = sel == null ? xCol : new Column(xv);
+    const shipY = sel == null ? yCol : new Column(yv);
+    const mCol = new Column(mv);
     return {
       id: t.id,
       kind: "hexbin",
@@ -1356,33 +1514,47 @@ export class Figure {
       style: { ...t.style },
       tier: "direct",
       n_points: t.n_points ?? t.x.length,
-      n_marks: t.x.length,
-      x: pw.ship(t.x, xCol),
-      y: pw.ship(t.y, yCol),
-      metric: pw.ship(t.metric, mCol),
+      n_marks: xv.length,
+      x: pw.ship(xv, shipX),
+      y: pw.ship(yv, shipY),
+      metric: pw.ship(mv, mCol),
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
     };
   }
 
-  _shipColor(channel, pw) {
+  _shipColor(channel, pw, sel = null) {
     if (channel == null) return undefined;
     if (channel.mode === "direct_rgba" && channel.rgba != null) {
+      let rgba = channel.rgba;
+      if (sel != null) {
+        const out = new Uint8Array(sel.length * 4);
+        for (let i = 0; i < sel.length; i += 1) {
+          const src = sel[i] * 4;
+          const dst = i * 4;
+          out[dst] = rgba[src];
+          out[dst + 1] = rgba[src + 1];
+          out[dst + 2] = rgba[src + 2];
+          out[dst + 3] = rgba[src + 3];
+        }
+        rgba = out;
+      }
       return {
         mode: "direct_rgba",
-        buf: pw.shipU8(channel.rgba),
-        n: Math.floor(channel.rgba.length / 4),
+        buf: pw.shipU8(rgba),
+        n: Math.floor(rgba.length / 4),
       };
     }
     if (channel.mode === "continuous" && channel.values != null) {
-      const domain = channel.domain ?? minMax(channel.values) ?? [0, 1];
+      const values = sel == null ? channel.values : gatherF64(channel.values, sel);
+      const domain = channel.domain ?? minMax(values) ?? [0, 1];
       const lo = domain[0];
       const hi = domain[0] === domain[1] ? domain[0] + 1 : domain[1];
       return {
         mode: "continuous",
         colormap: channel.colormap ?? "viridis",
         domain: [lo, hi],
-        buf: pw.shipScalar(normalizeF32(channel.values, lo, hi)),
+        buf: pw.shipScalar(normalizeF32(values, lo, hi)),
       };
     }
     if (channel.mode === "constant") {
@@ -1563,7 +1735,7 @@ export class Figure {
         t.kind === "box_whisker" ||
         t.kind === "box_median"
       ) {
-        specTraces.push(this._emitSegments(t, pw));
+        specTraces.push(this._emitSegments(t, pw, widthPx));
       } else if (t.kind === "area" || t.kind === "error_band") {
         specTraces.push(this._emitArea(t, pw, xr, widthPx));
       } else if (t.kind === "bar" || t.kind === "violin" || t.kind === "box") {

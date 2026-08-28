@@ -227,25 +227,8 @@ pub fn payload_visible_mask(
     }
     let mut kept = 0usize;
     for i in 0..n {
-        let xv = x[i];
-        let yv = y[i];
-        let mut keep = xv.is_finite() && yv.is_finite();
-        if keep && x_log {
-            keep = xv > 0.0;
-        }
-        if keep && y_log {
-            keep = yv > 0.0;
-        }
-        if keep {
-            if let Some(base) = base {
-                let bv = base[i];
-                keep = if y_log {
-                    bv.is_finite() && bv > 0.0
-                } else {
-                    bv.is_finite()
-                };
-            }
-        }
+        let bv = base.map(|b| b[i]);
+        let keep = row_visible(x[i], y[i], x_log, y_log, bv);
         out[i] = u8::from(keep);
         kept += usize::from(keep);
     }
@@ -295,6 +278,175 @@ pub fn payload_m4_indices(
         PAYLOAD_TIER_DECIMATED,
         crate::kernels::m4_indices(bx, y, b0, b1, n_buckets),
     ))
+}
+
+/// Keep-all vs explicit keep indices (ABI 205).
+///
+/// `KeepAll` means the host ships every row without an N-index allocation.
+/// `Indices` is the filtered/sampled/even subset, including the empty set.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PayloadIndexSel {
+    KeepAll,
+    Indices(Vec<u32>),
+}
+
+fn row_visible(xv: f64, yv: f64, x_log: bool, y_log: bool, base: Option<f64>) -> bool {
+    let mut keep = xv.is_finite() && yv.is_finite();
+    if keep && x_log {
+        keep = xv > 0.0;
+    }
+    if keep && y_log {
+        keep = yv > 0.0;
+    }
+    if keep {
+        if let Some(bv) = base {
+            keep = if y_log {
+                bv.is_finite() && bv > 0.0
+            } else {
+                bv.is_finite()
+            };
+        }
+    }
+    keep
+}
+
+/// Fuse ABI 122 needed + mask into keep indices (ABI 205).
+///
+/// `KeepAll` (`out_keep_all = 1`) means the host must not allocate N indices.
+/// When a scan can drop rows, indices are original positions in `x`/`y`.
+pub fn payload_visible_indices(
+    x: &[f64],
+    y: &[f64],
+    x_log: bool,
+    y_log: bool,
+    base: Option<&[f64]>,
+    prefiltered: bool,
+    x_has_nulls: bool,
+    y_has_nulls: bool,
+    has_base: bool,
+    base_has_nulls: bool,
+) -> Option<PayloadIndexSel> {
+    if x.len() != y.len() || x.len() > u32::MAX as usize {
+        return None;
+    }
+    let base_vals = if has_base {
+        let Some(base) = base else {
+            return None;
+        };
+        if base.len() != x.len() {
+            return None;
+        }
+        Some(base)
+    } else if base.is_some() {
+        return None;
+    } else {
+        None
+    };
+    if !payload_visible_needed(
+        x_log,
+        y_log,
+        prefiltered,
+        x_has_nulls,
+        y_has_nulls,
+        has_base,
+        base_has_nulls,
+    ) {
+        return Some(PayloadIndexSel::KeepAll);
+    }
+    let n = x.len();
+    let mut idx = Vec::new();
+    for i in 0..n {
+        let bv = base_vals.map(|b| b[i]);
+        if row_visible(x[i], y[i], x_log, y_log, bv) {
+            idx.push(i as u32);
+        }
+    }
+    if idx.len() == n {
+        Some(PayloadIndexSel::KeepAll)
+    } else {
+        Some(PayloadIndexSel::Indices(idx))
+    }
+}
+
+/// NumPy `linspace(0, n-1, count, dtype=np.int64)` as u32 (ABI 205).
+///
+/// Truncates toward 0 and pins the last element to `n-1`. When `n <= count`
+/// the host keeps every row (`KeepAll`) instead of materializing 0..n-1.
+pub fn payload_even_indices(n: usize, count: usize) -> Option<PayloadIndexSel> {
+    if n > u32::MAX as usize || count > u32::MAX as usize || count == 0 {
+        return None;
+    }
+    if n <= count {
+        return Some(PayloadIndexSel::KeepAll);
+    }
+    let mut idx = vec![0u32; count];
+    if count == 1 {
+        return Some(PayloadIndexSel::Indices(idx));
+    }
+    let stop = (n - 1) as f64;
+    let step = stop / (count - 1) as f64;
+    for (i, slot) in idx.iter_mut().enumerate() {
+        *slot = (i as f64 * step) as u32;
+    }
+    idx[count - 1] = (n - 1) as u32;
+    Some(PayloadIndexSel::Indices(idx))
+}
+
+fn sample_fraction(level: u32, base: f64, growth: f64) -> Option<f64> {
+    if !(base > 0.0 && base <= 1.0 && base.is_finite()) {
+        return None;
+    }
+    if !(growth >= 1.0 && growth.is_finite()) {
+        return None;
+    }
+    if base >= 1.0 || (growth - 1.0).abs() == 0.0 {
+        return Some(base.min(1.0));
+    }
+    let Ok(level_i) = i32::try_from(level) else {
+        return Some(1.0);
+    };
+    let frac = base * growth.powi(level_i);
+    if !frac.is_finite() {
+        return Some(1.0);
+    }
+    Some(frac.min(1.0))
+}
+
+/// Density-overlay sample of implicit ids `0..n` (ABI 205).
+///
+/// Owns `min(1, target/n)`, `_sample_fraction(level, base, growth)`,
+/// `sample_threshold`, and `sample_range_indices`. `KeepAll` means every
+/// implicit id ships (n <= target at level 0).
+pub fn payload_sample_target_indices(
+    n: usize,
+    target: usize,
+    seed: u64,
+    level: u32,
+    growth: f64,
+) -> Option<PayloadIndexSel> {
+    if n > u32::MAX as usize || target == 0 {
+        return None;
+    }
+    if n == 0 {
+        return Some(PayloadIndexSel::Indices(Vec::new()));
+    }
+    let base = (target as f64 / n as f64).min(1.0);
+    let fraction = sample_fraction(level, base, growth)?;
+    if fraction >= 1.0 {
+        return Some(PayloadIndexSel::KeepAll);
+    }
+    let threshold = crate::kernels::sample_threshold(fraction);
+    let cap = n.min((target * 2).max(64));
+    let mut out = vec![0u32; cap];
+    let written = crate::kernels::sample_range_indices_into(n, seed, threshold, &mut out);
+    if written > out.len() {
+        out.resize(written, 0);
+        let written = crate::kernels::sample_range_indices_into(n, seed, threshold, &mut out);
+        out.truncate(written);
+    } else {
+        out.truncate(written);
+    }
+    Some(PayloadIndexSel::Indices(out))
 }
 
 #[cfg(test)]
@@ -479,6 +631,66 @@ mod tests {
         assert_eq!(tier, PAYLOAD_TIER_DECIMATED);
         let expected =
             crate::kernels::m4_indices(&bx, &y, bx[0], bx[bx.len() - 1] + f64::EPSILON, 32);
+        assert_eq!(idx, expected);
+    }
+
+    #[test]
+    fn payload_visible_indices_keep_all_and_log_drop() {
+        let x = [1.0, -2.0, 3.0, 0.0, 5.0];
+        let y = [1.0, 2.0, 3.0, 4.0, 5.0];
+        assert_eq!(
+            payload_visible_indices(&x, &y, false, false, None, true, false, false, false, false),
+            Some(PayloadIndexSel::KeepAll)
+        );
+        assert_eq!(
+            payload_visible_indices(&x, &y, true, false, None, true, false, false, false, false),
+            Some(PayloadIndexSel::Indices(vec![0, 2, 4]))
+        );
+        let all_pos = [1.0, 2.0, 3.0];
+        assert_eq!(
+            payload_visible_indices(
+                &all_pos, &all_pos, true, false, None, true, false, false, false, false
+            ),
+            Some(PayloadIndexSel::KeepAll)
+        );
+    }
+
+    #[test]
+    fn payload_even_indices_matches_numpy_int64_linspace() {
+        assert_eq!(payload_even_indices(4, 10), Some(PayloadIndexSel::KeepAll));
+        assert_eq!(
+            payload_even_indices(11, 4),
+            Some(PayloadIndexSel::Indices(vec![0, 3, 6, 10]))
+        );
+        let n = 10_000usize;
+        let count = 1024usize;
+        let PayloadIndexSel::Indices(idx) = payload_even_indices(n, count).unwrap() else {
+            panic!("expected indices");
+        };
+        assert_eq!(idx[0], 0);
+        assert_eq!(*idx.last().unwrap(), (n - 1) as u32);
+        assert_eq!(idx.len(), count);
+    }
+
+    #[test]
+    fn payload_sample_target_indices_keep_all_and_seed() {
+        assert_eq!(
+            payload_sample_target_indices(100, 8_192, 0, 0, 2.0),
+            Some(PayloadIndexSel::KeepAll)
+        );
+        let PayloadIndexSel::Indices(idx) =
+            payload_sample_target_indices(10_000, 8_192, 0, 0, 2.0).unwrap()
+        else {
+            panic!("expected sample");
+        };
+        assert!(!idx.is_empty());
+        assert!(idx.len() < 10_000);
+        assert!(idx.windows(2).all(|w| w[0] < w[1]));
+        let expected = crate::kernels::sample_range_indices(
+            10_000,
+            0,
+            crate::kernels::sample_threshold(8_192.0 / 10_000.0),
+        );
         assert_eq!(idx, expected);
     }
 }

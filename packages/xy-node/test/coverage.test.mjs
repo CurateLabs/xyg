@@ -18,6 +18,9 @@ import {
   sankeyChart,
   payloadTier,
   payloadM4Indices,
+  payloadEvenIndices,
+  payloadSampleTargetIndices,
+  payloadVisibleIndices,
   shouldUseDensity,
   stairsChart,
   stemChart,
@@ -72,6 +75,41 @@ test("payloadM4Indices polar stays direct and cartesian matches m4 plus eps", ()
   });
   assert.equal(cartesian.tier, 1);
   assert.ok(cartesian.indices.length > 0);
+});
+
+test("payloadVisibleIndices keep-all vs log drop", () => {
+  const x = new Float64Array([1, -2, 3, 0, 5]);
+  const y = new Float64Array([1, 2, 3, 4, 5]);
+  const linear = payloadVisibleIndices(x, y, { prefiltered: true });
+  assert.equal(linear.keepAll, true);
+  const logX = payloadVisibleIndices(x, y, { xLog: true, prefiltered: true });
+  assert.equal(logX.keepAll, false);
+  assert.deepEqual([...logX.indices], [0, 2, 4]);
+});
+
+test("payloadEvenIndices matches numpy int64 linspace", () => {
+  const keep = payloadEvenIndices(4, 10);
+  assert.equal(keep.keepAll, true);
+  const even = payloadEvenIndices(11, 4);
+  assert.equal(even.keepAll, false);
+  assert.deepEqual([...even.indices], [0, 3, 6, 10]);
+});
+
+test("payloadSampleTargetIndices keep-all under target", () => {
+  const small = payloadSampleTargetIndices({ n: 100, target: 8192 });
+  assert.equal(small.keepAll, true);
+  const sampled = payloadSampleTargetIndices({ n: 10_000, target: 8192 });
+  assert.equal(sampled.keepAll, false);
+  assert.ok(sampled.indices.length > 0 && sampled.indices.length < 10_000);
+});
+
+test("log scatter drops non-positive rows at emit", () => {
+  const fig = figure({ width: 320, height: 240 });
+  fig.setAxis("x", { type: "log" });
+  fig.scatter([1, -2, 3, 0, 5], [1, 2, 3, 4, 5]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "direct");
+  assert.equal(spec.traces[0].n_marks, 3);
 });
 
 test("polar line over DECIMATION_THRESHOLD stays direct at emit", () => {

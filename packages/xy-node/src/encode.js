@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyPayloadVisibleIndices, xyPayloadEvenIndices, xyPayloadSampleTargetIndices, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -10,6 +10,10 @@ export const SCATTER_DENSITY_THRESHOLD = 200_000;
 export const DIRECT_SOFT_CEILING = 2_000_000;
 /** Default density grid (w, h) matching Python `config.DENSITY_GRID`. */
 export const DENSITY_GRID = Object.freeze([512, 384]);
+/** Default density overlay sample size matching Python `DENSITY_SAMPLE_TARGET`. */
+export const DENSITY_SAMPLE_TARGET = 8_192;
+/** Default density overlay seed matching Python `DENSITY_SAMPLE_SEED`. */
+export const DENSITY_SAMPLE_SEED = 0;
 export const DENSITY_TARGET_POINTS_PER_CELL = 16;
 export const DRILL_EXIT_FACTOR = 1.15;
 /** Tier-3 pyramid thresholds — lockstep with `python/xyg/config.py`. */
@@ -1623,6 +1627,152 @@ export function payloadM4Indices({
     "xyg_payload_m4_indices",
   );
   return { tier: tier[0], indices: out.subarray(0, written) };
+}
+
+function readKeepAllIndices(written, keepAll, out, name) {
+  if (!Number.isFinite(written) || written < 0 || written === Number.MAX_SAFE_INTEGER) {
+    throw new Error(`${name} failed`);
+  }
+  if (keepAll[0] === 1) {
+    return { keepAll: true, indices: new Uint32Array(0) };
+  }
+  if (written > out.length) {
+    return { keepAll: false, required: written, indices: out };
+  }
+  return { keepAll: false, indices: out.subarray(0, written) };
+}
+
+/**
+ * Fused keep-all vs keep-indices via `xyg_payload_visible_indices` (ABI 205).
+ * `keepAll` means ship every row without an N-index allocation.
+ */
+export function payloadVisibleIndices(x, y, {
+  xLog = false,
+  yLog = false,
+  base = null,
+  prefiltered = false,
+  xHasNulls = false,
+  yHasNulls = false,
+  hasBase = false,
+  baseHasNulls = false,
+} = {}) {
+  const xa = asF64Array(x);
+  const ya = asF64Array(y);
+  if (xa.length !== ya.length) {
+    throw new RangeError("payloadVisibleIndices x/y length mismatch");
+  }
+  const n = xa.length;
+  const hasBaseFlag = Boolean(hasBase) || base != null;
+  const ba = hasBaseFlag ? asF64Array(base) : null;
+  if (hasBaseFlag && ba != null && ba.length !== n) {
+    throw new RangeError("payloadVisibleIndices base length mismatch");
+  }
+  const cap = n;
+  const out = new Uint32Array(cap);
+  const keepAll = new Int32Array([-1]);
+  const written = Number(xyPayloadVisibleIndices(
+    n ? f64Ptr(xa) : 0,
+    n ? f64Ptr(ya) : 0,
+    BigInt(n),
+    xLog ? 1 : 0,
+    yLog ? 1 : 0,
+    hasBaseFlag && n ? f64Ptr(ba) : 0,
+    hasBaseFlag ? 1 : 0,
+    prefiltered ? 1 : 0,
+    xHasNulls ? 1 : 0,
+    yHasNulls ? 1 : 0,
+    baseHasNulls ? 1 : 0,
+    pointer(keepAll, "int32_t *"),
+    cap ? u32Ptr(out) : 0,
+    BigInt(cap),
+  ));
+  const result = readKeepAllIndices(written, keepAll, out, "xyg_payload_visible_indices");
+  if (result.required != null) {
+    throw new Error("xyg_payload_visible_indices failed");
+  }
+  return result;
+}
+
+/**
+ * Even keep indices via `xyg_payload_even_indices` (ABI 205).
+ * Matches NumPy `linspace(0, n-1, count, dtype=np.int64)`.
+ */
+export function payloadEvenIndices(n, count) {
+  const nI = Math.floor(Number(n));
+  const countI = Math.floor(Number(count));
+  if (!Number.isFinite(nI) || nI < 0 || !Number.isFinite(countI) || countI <= 0) {
+    throw new RangeError("payloadEvenIndices n/count must be n>=0 and count>=1");
+  }
+  const out = new Uint32Array(countI);
+  const keepAll = new Int32Array([-1]);
+  const written = Number(xyPayloadEvenIndices(
+    BigInt(nI),
+    BigInt(countI),
+    pointer(keepAll, "int32_t *"),
+    u32Ptr(out),
+    BigInt(countI),
+  ));
+  const result = readKeepAllIndices(written, keepAll, out, "xyg_payload_even_indices");
+  if (result.required != null) {
+    throw new Error("xyg_payload_even_indices failed");
+  }
+  return result;
+}
+
+/**
+ * Density-overlay sample of implicit ids via `xyg_payload_sample_target_indices`.
+ */
+export function payloadSampleTargetIndices({
+  n,
+  target,
+  seed = 0,
+  level = 0,
+  growth = 2.0,
+} = {}) {
+  const nI = Math.floor(Number(n));
+  const targetI = Math.floor(Number(target));
+  const seedI = Math.floor(Number(seed));
+  const levelI = Math.floor(Number(level));
+  const growthF = Number(growth);
+  if (!Number.isFinite(nI) || nI < 0 || !Number.isFinite(targetI) || targetI <= 0) {
+    throw new RangeError("payloadSampleTargetIndices n>=0 and target>=1");
+  }
+  if (!Number.isFinite(growthF) || growthF < 1) {
+    throw new RangeError("payloadSampleTargetIndices growth must be >= 1");
+  }
+  const cap = nI ? Math.min(nI, Math.max(64, targetI * 2)) : 0;
+  let out = new Uint32Array(cap);
+  const keepAll = new Int32Array([-1]);
+  let written = Number(xyPayloadSampleTargetIndices(
+    BigInt(nI),
+    BigInt(targetI),
+    BigInt(seedI),
+    levelI >>> 0,
+    growthF,
+    pointer(keepAll, "int32_t *"),
+    cap ? u32Ptr(out) : 0,
+    BigInt(cap),
+  ));
+  let result = readKeepAllIndices(written, keepAll, out, "xyg_payload_sample_target_indices");
+  if (result.required != null) {
+    out = new Uint32Array(result.required);
+    keepAll[0] = -1;
+    written = Number(xyPayloadSampleTargetIndices(
+      BigInt(nI),
+      BigInt(targetI),
+      BigInt(seedI),
+      levelI >>> 0,
+      growthF,
+      pointer(keepAll, "int32_t *"),
+      u32Ptr(out),
+      BigInt(result.required),
+    ));
+    result = readKeepAllIndices(written, keepAll, out, "xyg_payload_sample_target_indices");
+    if (result.required != null || result.keepAll) {
+      throw new Error("xyg_payload_sample_target_indices returned an inconsistent count");
+    }
+  }
+  return result;
 }
 
 export const DENSITY_GRID_PATH_OVERSIZED_BIN2D = 0;
