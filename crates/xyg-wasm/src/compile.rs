@@ -604,6 +604,7 @@ fn compile_columns_request(bytes: &[u8], literal_ids: bool) -> Result<CompiledSc
                 y_format: None,
                 y_tick_kind: 0,
                 colorbar_side: scene::ColorbarSide::None,
+                collision: scene::TickCollisionLayout::default(),
             })?
         } else {
             (margin_left, margin_right, margin_top, margin_bottom)

@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 202;
+pub const ABI_VERSION: u32 = 203;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -2731,6 +2731,7 @@ pub unsafe extern "C" fn xyg_scene_plot_layout(
             y_format,
             y_tick_kind: 0,
             colorbar_side,
+            collision: scene::TickCollisionLayout::default(),
         })
         .ok()
     }) else {

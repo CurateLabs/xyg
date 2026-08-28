@@ -1321,6 +1321,23 @@ _XYCF_CB_HORIZONTAL = 1 << 1
 _XYCF_CB_MINOR = 1 << 2
 _XYCF_CB_UNSUPPORTED = 1 << 3
 _XYCF_CB_INVALID_SIDE = 1 << 4
+_SCENE_TICK_STRATEGIES = {
+    "auto": 0,
+    "hide": 1,
+    "rotate": 2,
+    "stagger": 3,
+    "preserve": 4,
+    "none": 5,
+    "off": 6,
+}
+_SCENE_TICK_ANCHORS = {"start": 0, "center": 1, "middle": 1, "end": 2}
+_POLAR_COLLISION_KEYS = {
+    "tick_label_strategy",
+    "collision",
+    "tick_label_min_gap",
+    "tick_label_angle",
+    "tick_label_anchor",
+}
 
 
 def _put_f64s(buf: bytearray, values: list[float]) -> None:
@@ -1439,6 +1456,62 @@ def _unpack_xycc(blob: bytes) -> dict[str, Any]:
     }
 
 
+def _scene_tick_label_strategy(options: dict[str, Any]) -> str:
+    raw = options.get("tick_label_strategy")
+    if raw is None:
+        raw = options.get("collision")
+    value = str(raw or "auto").replace("-", "_")
+    return value if value in _SCENE_TICK_STRATEGIES else "auto"
+
+
+def _scene_tick_anchor_code(options: dict[str, Any]) -> int | None:
+    raw = options.get("tick_label_anchor")
+    if raw is None:
+        return None
+    return _SCENE_TICK_ANCHORS.get(str(raw).replace("-", "_"))
+
+
+def _pack_tick_collision(xa: dict[str, Any], ya: dict[str, Any], figure: Any) -> tuple[int, bytes]:
+    """Pack XYCF bytes 12–15 plus optional 32-byte extras (ABI 203)."""
+    x_strategy = _SCENE_TICK_STRATEGIES[_scene_tick_label_strategy(xa)]
+    y_strategy = _SCENE_TICK_STRATEGIES[_scene_tick_label_strategy(ya)]
+    x_anchor = _scene_tick_anchor_code(xa)
+    y_anchor = _scene_tick_anchor_code(ya)
+    x_gap = xa.get("tick_label_min_gap")
+    y_gap = ya.get("tick_label_min_gap")
+    x_angle = xa.get("tick_label_angle")
+    y_angle = ya.get("tick_label_angle")
+    extras = x_gap is not None or y_gap is not None or x_angle is not None or y_angle is not None
+    flags = 0
+    if extras:
+        flags |= 1
+    if figure._axis_kind("x") == "category":
+        flags |= 1 << 1
+    if figure._axis_kind("y") == "category":
+        flags |= 1 << 2
+    if x_anchor is not None:
+        flags |= 1 << 3
+    if y_anchor is not None:
+        flags |= 1 << 4
+    header = (
+        x_strategy
+        | (y_strategy << 8)
+        | ((x_anchor or 0) << 16)
+        | ((y_anchor or 0) << 20)
+        | (flags << 24)
+    )
+    extra = b""
+    if extras:
+        extra = struct.pack(
+            "<4d",
+            8.0 if x_gap is None else float(x_gap),
+            4.0 if y_gap is None else float(y_gap),
+            float("nan") if x_angle is None else float(x_angle),
+            float("nan") if y_angle is None else float(y_angle),
+        )
+    return header, extra
+
+
 def _pack_chrome_facts(
     figure: Any,
     *,
@@ -1493,8 +1566,10 @@ def _pack_chrome_facts(
     # ABI 200: Rust pack_figure_chrome filters authored minors through the tick window.
     # ABI 201: product encode passes packed XYPL so polar theta uses the modular sector.
     # ABI 202: hosts pack domain tick-kind (linear/time/category) in XYCF 154–155.
+    # ABI 203: hosts pack ABI 123 collision strategy/anchor/gaps in XYCF 12–15.
     x_labels = xa.get("tick_labels")
     y_labels = ya.get("tick_labels")
+    collision_header, collision_extra = _pack_tick_collision(xa, ya, figure)
     if x_labels is not None:
         flags |= _XYCF_FLAG_X_TICK_LABELS
     if y_labels is not None:
@@ -1589,7 +1664,7 @@ def _pack_chrome_facts(
         b"XYCF",
         1,
         flags,
-        0,
+        collision_header,
         float(width),
         float(height),
         *authored_margins,
@@ -1659,6 +1734,7 @@ def _pack_chrome_facts(
         payload.extend(rgba)
     _put_f64s(payload, colorbar_ticks)
     payload.extend(colorbar_title)
+    payload.extend(collision_extra)
     return bytes(payload)
 
 
@@ -3490,8 +3566,11 @@ def public_static_export(
     )
 
 
-def _significant_scene_axis_keys(options: dict[str, Any]) -> list[str]:
-    return [str(key) for key, value in options.items() if value not in (None, False, [], {})]
+def _significant_scene_axis_keys(options: dict[str, Any], *, polar: bool = False) -> list[str]:
+    keys = [str(key) for key, value in options.items() if value not in (None, False, [], {})]
+    if polar and _scene_tick_label_strategy(options) in {"none", "off", "auto"}:
+        keys = [key for key in keys if key not in _POLAR_COLLISION_KEYS]
+    return keys
 
 
 def _pack_polar_scene_input(figure: Any) -> bytes:
@@ -3593,7 +3672,7 @@ def _pack_figure_support(
     payload.extend(len(traces).to_bytes(4, "little"))
     for axis_id, options in figure.axis_options.items():
         axis_code = 0 if axis_id == "x" else 1 if axis_id == "y" else 255
-        keys = _significant_scene_axis_keys(options)
+        keys = _significant_scene_axis_keys(options, polar=flags & 1 != 0)
         payload.extend(bytes((axis_code, 0, 0, 0)))
         payload.extend(len(keys).to_bytes(4, "little"))
         _xyep_put_keys(payload, keys)

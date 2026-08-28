@@ -577,7 +577,7 @@ Forbidden:
 | `crates/xyg-engine/src/temporal_controller.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/temporal_graph.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/textblock.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 125 newline-delimited chrome measure | — |
-| `crates/xyg-engine/src/tick_layout.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 123 tick-label collision thinning; ABI 128 authored tick-window; ABI 199 Scene product-path authored filter/pairing; ABI 200 Scene product-path authored minor filter; ABI 201 Scene polar modular theta window / angular labels; ABI 202 Scene product-path ABI 130 time/angular formats; ABI 130 tick-label formatting (`format_axis_tick` in `scene.rs`) | — |
+| `crates/xyg-engine/src/tick_layout.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 123 tick-label collision thinning; ABI 128 authored tick-window; ABI 199 Scene product-path authored filter/pairing; ABI 200 Scene product-path authored minor filter; ABI 201 Scene polar modular theta window / angular labels; ABI 202 Scene product-path ABI 130 time/angular formats; ABI 203 Scene cartesian ABI 123 collision emit; ABI 130 tick-label formatting (`format_axis_tick` in `scene.rs`) | — |
 | `crates/xyg-engine/src/tile_store.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/tiles.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/transition.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |

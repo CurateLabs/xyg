@@ -204,12 +204,53 @@ def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
 def test_figure_support_axis_allowlist_is_rust_owned() -> None:
     figure = Figure().line([0.0, 1.0], [0.0, 1.0])
     figure.axis_options["x"]["collision"] = "hide"
-    with pytest.raises(UnsupportedSceneV3, match="tick formatting"):
-        figure.to_scene()
+    scene = figure.to_scene()
+    svg = _native.scene_svg(scene)
+    assert "<text" in svg
     extra = Figure().line([0.0, 1.0], [0.0, 1.0])
     extra.axis_options["z"] = {"label": "z"}
     with pytest.raises(UnsupportedSceneV3, match="exactly x/y"):
         extra.to_scene()
+
+
+def test_scene_cartesian_tick_label_hide_thins_labels() -> None:
+    ticks = [i / 20.0 for i in range(21)]
+    preserve = Figure(width=200, height=160).line([0.0, 1.0], [0.0, 1.0])
+    preserve.axis_options["x"]["domain"] = (0.0, 1.0)
+    preserve.axis_options["y"]["domain"] = (0.0, 1.0)
+    preserve.axis_options["x"]["tick_values"] = ticks
+    preserve.axis_options["x"]["tick_label_strategy"] = "preserve"
+    hidden = Figure(width=200, height=160).line([0.0, 1.0], [0.0, 1.0])
+    hidden.axis_options["x"]["domain"] = (0.0, 1.0)
+    hidden.axis_options["y"]["domain"] = (0.0, 1.0)
+    hidden.axis_options["x"]["tick_values"] = ticks
+    hidden.axis_options["x"]["tick_label_strategy"] = "hide"
+    preserve_svg = _native.scene_svg(preserve.to_scene())
+    hidden_svg = _native.scene_svg(hidden.to_scene())
+    assert hidden_svg.count("<text") < preserve_svg.count("<text")
+
+
+def test_scene_cartesian_tick_label_rotate_emits_svg_transform() -> None:
+    figure = Figure(width=240, height=160).line([0.0, 1.0], [0.0, 1.0])
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.axis_options["x"]["tick_label_strategy"] = "rotate"
+    svg = _native.scene_svg(figure.to_scene())
+    assert "rotate(" in svg
+
+
+def test_scene_polar_tick_label_off_compiles_and_omits_theta_labels() -> None:
+    figure = Figure(coords="polar", width=320, height=320).line([0.0, 1.0], [0.0, 1.0])
+    figure.axis_options["x"]["tick_label_strategy"] = "off"
+    svg = _native.scene_svg(figure.to_scene())
+    assert 'data-xy-tick="theta"' not in svg
+
+
+def test_scene_polar_tick_label_hide_stays_fail_closed() -> None:
+    figure = Figure(coords="polar").line([0.0, 1.0], [0.0, 1.0])
+    figure.axis_options["x"]["tick_label_strategy"] = "hide"
+    with pytest.raises(UnsupportedSceneV3, match="tick formatting"):
+        figure.to_scene()
 
 
 def test_scene_v19_colorbar_python_framer_matches_literal_stop_contract() -> None:

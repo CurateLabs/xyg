@@ -1427,7 +1427,10 @@ Scene polar theta labels with `format_angular_tick` (#302). ABI 202
 materializes ABI 130 time strftime and polar angular numeric formats
 onto `XYTL` during product encode (`format_axis_tick`, #303). Hosts pack
 domain tick-kind in XYCF 154–155. Invalid ABI 96 grammar still falls
-back. Secondary
+back. ABI 203 runs ABI 123 collision at Scene SVG/raster emit for
+cartesian `tick_label_strategy` / `collision` (#304). Polar rim
+auto/hide/rotate/stagger/preserve stay refused (`polar-axes.md`).
+Secondary
 axes stay fail-closed (`Scene v12 figure compilation currently supports
 exactly x/y axes`). Hosts still choose tick families via
 `xyg_scene_axis_ticks` and map values to pixels on the compatibility

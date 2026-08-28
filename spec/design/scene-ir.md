@@ -1019,7 +1019,9 @@ through the modular sector and formats Scene polar theta labels with
 `format_angular_tick`. ABI 202 materializes ABI 130 time strftime and
 polar angular numeric formats onto `XYTL` during product encode
 (`format_axis_tick`). Hosts pack domain tick-kind in XYCF bytes 154–155.
-Invalid ABI 96 grammar still produces the ordinary deterministic label
+ABI 203 runs ABI 123 collision at Scene SVG/raster emit for cartesian
+`tick_label_strategy` / `collision`. Polar rim auto/hide/rotate/stagger/
+preserve stay fail-closed. Invalid ABI 96 grammar still produces the ordinary deterministic label
 instead of an error, and a sub-unit log value that would collapse to
 formatted zero also uses its ordinary distinguishable label without affixes.
 Secondary axes stay fail-closed.
@@ -1053,6 +1055,7 @@ through that same window (`require_finite`, #301). ABI 201 filters polar
 theta majors/minors through the modular sector and formats Scene polar
 theta labels (`format_angular_tick`, #302). ABI 202 materializes ABI 130
 time strftime and polar angular numeric formats onto `XYTL` (`format_axis_tick`,
+#303). ABI 203 runs ABI 123 cartesian collision at Scene SVG/raster emit (#304).
 #303). Hosts pack domain tick-kind in XYCF 154–155. Invalid ABI 96
 grammar still falls back. Secondary axes stay
 fail-closed. Remaining #275
@@ -1067,7 +1070,8 @@ invalid UTF-8, embedded-NUL, and oversized fields fail closed. Legacy raw
 Polar/secondary Scene paths and broader numeric grammars remain on their
 documented compatibility routes except the bounded polar
 line/scatter/area/bar/column/errorbar
-slice above and ABI 202 Scene product-path time/angular formatting.
+slice above and ABI 202 Scene product-path time/angular formatting
+and ABI 203 Scene cartesian ABI 123 collision emit.
 WASM ABI 23 plus `attachWasmTicks` cut
 explicitly attached automatic, authored-value, and authored-empty primary
 Cartesian linear/log/symlog/category/UTC-time ChartView

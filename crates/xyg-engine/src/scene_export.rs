@@ -190,6 +190,13 @@ const PUBLIC_AXIS_KEYS: &[&str] = &[
     "minor_style",
     "format",
 ];
+const CARTESIAN_COLLISION_KEYS: &[&str] = &[
+    "tick_label_strategy",
+    "collision",
+    "tick_label_min_gap",
+    "tick_label_angle",
+    "tick_label_anchor",
+];
 const POLAR_AXIS_KEYS: &[&str] = &[
     "theta_unit",
     "theta_zero",
@@ -1116,7 +1123,11 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
                 .copied()
                 .collect()
         } else {
-            PUBLIC_AXIS_KEYS.to_vec()
+            PUBLIC_AXIS_KEYS
+                .iter()
+                .chain(CARTESIAN_COLLISION_KEYS.iter())
+                .copied()
+                .collect()
         };
         if extra_key(&axis.keys, axis_allowed.as_slice()) {
             return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
@@ -1516,7 +1527,11 @@ pub fn scene_figure_support_reason_with_attach(
             .copied()
             .collect()
     } else {
-        PUBLIC_AXIS_KEYS.to_vec()
+        PUBLIC_AXIS_KEYS
+            .iter()
+            .chain(CARTESIAN_COLLISION_KEYS.iter())
+            .copied()
+            .collect()
     };
     for keys in &axis_keys {
         if extra_key(keys.as_slice(), axis_allowed.as_slice()) {
@@ -1839,6 +1854,13 @@ mod tests {
     fn figure_support_rejects_unknown_axis_keys_and_non_primary_ids() {
         assert_eq!(
             scene_figure_support_reason(&xyfs(0, &[(0, &["collision"]), (1, &["label"])])),
+            Ok(String::new())
+        );
+        assert_eq!(
+            scene_figure_support_reason(&xyfs(
+                0,
+                &[(0, &["tick_label_wrapping"]), (1, &["label"])]
+            )),
             Ok(FIGURE_AXIS_KEYS_REASON.to_string())
         );
         assert_eq!(
