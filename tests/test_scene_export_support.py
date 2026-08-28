@@ -1286,8 +1286,8 @@ def test_migrated_scene_packers_have_no_host_step_geometry_expander() -> None:
     node_packer = (root / "packages/xy-node/src/scene.js").read_text()
     assert "def _step_arrays" not in python_packer
     assert "function stepArrays" not in node_packer
-    assert "expansion_modes=expansion_modes" in python_packer
-    assert "expansionModes, x0, y0" in node_packer
+    assert "return _native.scene_encode_assembled(" in python_packer
+    assert "return encodeAssembled(" in node_packer
     assert "_ribbon_band_samples" not in python_packer
     assert "ribbon_edge" not in python_packer
     assert "function ribbonEdge" not in node_packer
