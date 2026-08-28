@@ -14,6 +14,8 @@
 //! separately. Empty `XYFS` skips the probe (stepwise ABI 163 callers).
 //! ABI 189 consults packed XYTA during that probe so heatmap/hexbin cell-fill
 //! tessellation eligibility is Rust-owned.
+//! ABI 197 settles authored `loc="best"` from packed XYCL/XYNM plus XYCF
+//! domains so hosts do not walk traces on the product path.
 //! ABI 194 admits polar hexbin, custom host reducers, and categorical /
 //! `direct_rgba` hexbin on that same HexCell intern.
 //! ABI 190 intern per-item two-ended ribbon `color2_ch` from packed XYHP kind 5
@@ -50,8 +52,8 @@ use crate::scene_annotation_splice::{
 };
 use crate::scene_annotations::pack_annotation_facts;
 use crate::scene_chrome::{
-    pack_figure_chrome_from_sidecars, ChromePackError, XYCC_HEADER_BYTES, XYCC_MAGIC, XYCC_VERSION,
-    XYCF_HEADER_BYTES, XYCF_MAGIC,
+    pack_figure_chrome_from_sidecars, settle_legend_best_loc, ChromePackError, XYCC_HEADER_BYTES,
+    XYCC_MAGIC, XYCC_VERSION, XYCF_HEADER_BYTES, XYCF_MAGIC,
 };
 use crate::scene_extras::{pack_scene_extras_from_sidecars, ExtrasError};
 use crate::scene_pack::{PackedSceneRow, PACKED_SCENE_ROW_BYTES};
@@ -903,7 +905,12 @@ pub fn encode_product(
         .map_err(|error| map_stage(PRODUCT_STAGE_STYLE, error.code as i32, error.index))?;
     let xyas = splice_annotations(&row_bytes, &sidecars, &annotations)
         .map_err(|error| map_stage(PRODUCT_STAGE_SPLICE, error.code as i32, error.index))?;
-    encode_assembled_from_sidecars(&xyas, xycf, &sidecars, polar, &extras_facts).map_err(|error| {
+    let xycf = settle_legend_best_loc(xycf, xycl, xynm).map_err(|error| ProductEncodeError {
+        code: map_chrome(error).code as i32,
+        index: 0,
+        reason: Vec::new(),
+    })?;
+    encode_assembled_from_sidecars(&xyas, &xycf, &sidecars, polar, &extras_facts).map_err(|error| {
         ProductEncodeError {
             code: error.code as i32,
             index: error.index,

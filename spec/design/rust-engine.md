@@ -874,4 +874,5 @@ landed; the remainder, in order:
    ABI 194 polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin as interned HexCell PolyFills (`scene_export.rs` / `scene_trace_attach.rs`) ✅.
    ABI 195 triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6 (`scene.rs` / `scene_trace_attach.rs` / `scene_export.rs`) ✅.
    ABI 196 scatter per-item fill/stroke/width/opacity interned from packed XYHP kind 7 (`scene.rs` / `scene_trace_attach.rs` / `scene_export.rs`) ✅.
+   ABI 197 Scene product encode settles `loc="best"` from packed XYCL/XYNM (`legend_fit.rs` / `scene_chrome.rs`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

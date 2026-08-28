@@ -680,7 +680,7 @@ Forbidden:
 | `python/xyg/_graph.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xyg/_hosts.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_jpeg.py` | Python host | `python-host` | `keep-host`; ABI 114 moves baseline JPEG encode into Rust; this module only coerces a NumPy array and forwards `quality` | #274 |
-| `python/xyg/_legendfit.py` | Python host | `python-host` | `keep-host`; ABI 120 moves occupancy scoring into Rust; this module walks traces, packs label lengths, and settles `best` before the wire | — |
+| `python/xyg/_legendfit.py` | Python host | `python-host` | `keep-host`; ABI 120 occupancy scoring; ABI 197 Scene product encode settles `loc="best"` from XYCL/XYNM. This module still packs ChartView compatibility specs | — |
 | `python/xyg/_native.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_ooc.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_paint.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |

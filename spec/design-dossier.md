@@ -1353,9 +1353,9 @@ callables over those groups.
 ABI 120 moves composition `loc="best"` occupancy into Rust. Hosts call
 `xyg_legend_normalize` and `xyg_legend_best_loc`; display-space projection,
 stride/finite caps, drop-not-clamp off-plot marks, and the 0.02 tie band are
-engine-owned and identical for Python and Node. Hosts still walk traces and
-pack label lengths, then settle `best` to a concrete location before Scene
-packing.
+engine-owned and identical for Python and Node. ABI 197 Scene product encode
+settles authored `loc="best"` from packed XYCL/XYNM plus XYCF domains
+(#298). Compatibility `_legendfit.py` still packs ChartView specs.
 ABI 121 moves ribbon/curve/rounded-rect tessellation into Rust. Hosts call
 `xyg_ribbon_edge`, `xyg_ribbon_polygon`, `xyg_monotone_tangents`,
 `xyg_curve_flatten`, and `xyg_rounded_rect_poly`; bump-X flattening,

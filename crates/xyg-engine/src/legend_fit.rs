@@ -1,10 +1,11 @@
 //! Composition `loc="best"` occupancy scoring (M2 #275 / ABI 120).
 //!
-//! Hosts walk traces, pack columns and label lengths, and resolve `best` once
-//! before Scene packing so Python, Node, and the three renderers share one
-//! placement. The algorithm matches `python/xyg/_legendfit.py`: Matplotlib
-//! candidate order, display-space projection, drop-not-clamp off-plot marks,
-//! 4096/512 sampling, and a 0.02 mean-occupancy tie band.
+//! Scene product encode settles `loc="best"` from packed XYCL/XYNM plus XYCF
+//! domains (ABI 197) so Python and Node do not walk traces on that path.
+//! Compatibility `_legendfit.py` still packs columns for ChartView specs.
+//! The algorithm matches Matplotlib candidate order, display-space projection,
+//! drop-not-clamp off-plot marks, 4096/512 sampling, and a 0.02 mean-occupancy
+//! tie band.
 
 /// Matplotlib candidate names in preference order (corners, mid-edges, center).
 pub const CANDIDATE_ORDER: [&str; 9] = [
@@ -294,6 +295,39 @@ pub fn best_loc(xs: &[f64], ys: &[f64], starts: &[usize], label_lens: &[u32]) ->
 
 pub fn candidate_name(index: i32) -> Option<&'static str> {
     CANDIDATE_ORDER.get(index as usize).copied()
+}
+
+/// Least-occupied candidate name for raw value-space series.
+pub fn resolve_best_name(
+    series: &[(Vec<f64>, Vec<f64>)],
+    label_lens: &[u32],
+    x_domain: (f64, f64),
+    y_domain: (f64, f64),
+    x_reverse: bool,
+    y_reverse: bool,
+    x_scale: LegendScale,
+    y_scale: LegendScale,
+    x_constant: f64,
+    y_constant: f64,
+) -> &'static str {
+    let mut xs_parts: Vec<f64> = Vec::new();
+    let mut ys_parts: Vec<f64> = Vec::new();
+    let mut starts: Vec<usize> = Vec::new();
+    for (x, y) in series {
+        if x.len() != y.len() || x.is_empty() {
+            continue;
+        }
+        let Some(projected) = normalize(
+            x, y, x_domain, y_domain, x_reverse, y_reverse, x_scale, y_scale, x_constant,
+            y_constant,
+        ) else {
+            continue;
+        };
+        starts.push(xs_parts.len());
+        xs_parts.extend_from_slice(&projected.x);
+        ys_parts.extend_from_slice(&projected.y);
+    }
+    candidate_name(best_loc(&xs_parts, &ys_parts, &starts, label_lens)).unwrap_or("upper right")
 }
 
 #[cfg(test)]

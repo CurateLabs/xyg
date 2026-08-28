@@ -248,7 +248,7 @@ def test_python_scene_v9_legend_bounds_and_unsupported_variants_fail_closed() ->
         figure.to_scene()
 
 
-def test_python_scene_v9_legend_best_loc_settles_before_packing() -> None:
+def test_python_scene_v9_legend_best_loc_settles_during_encode() -> None:
     figure = Figure()
     figure.scatter([0, 1], [0, 1], name="x")
     figure.legend_options = {"loc": "best"}

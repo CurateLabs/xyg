@@ -4569,7 +4569,6 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
     let loc = options.loc;
     if (loc != null) {
       legendFlags |= LEGEND_AUTHORED_LOC;
-      if (loc === "best") loc = resolveLegendBestLoc(figure);
       legendLoc = encodeUtf8(String(loc));
     }
     const style = options.style ?? {};

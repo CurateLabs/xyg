@@ -7,8 +7,11 @@
 //! allowlists, colorbar flags/framing, and XYTL tick-label framing so Python
 //! and Node cannot drift on the encode-ready chrome bundle. ABI 161 fills
 //! empty legend paints from packed XYSD so hosts do not unpack sidecar
-//! styles on the product path. Encoded Scene v31 is unchanged.
+//! styles on the product path. ABI 197 settles authored `loc="best"` from
+//! packed XYCL/XYNM plus XYCF domains during product encode. Encoded Scene
+//! v31 is unchanged.
 
+use crate::legend_fit::{self, LegendScale};
 use crate::scene::{
     cartesian_scene_margins, encode_tick_labels, CartesianLayoutRequest, ColorbarSide, ScaleKind,
     SceneChromeStyle, MAX_AXIS_TICKS, MAX_SCENE_LEGEND_ENTRIES, MAX_SCENE_TEXT_BYTES,
@@ -17,7 +20,10 @@ use crate::scene::{
 use crate::scene_colorbar::{self, ColorbarError, ColorbarFrameInput, ColorbarStop};
 use crate::scene_legend::{self, LegendError, LegendFrameInput, LEGEND_META_BYTES};
 use crate::scene_style::{self, MarkStyleError};
-use crate::scene_trace_sidecars::{parse_xysd_records, TraceSidecarsCode, TraceSidecarsError};
+use crate::scene_trace_rows::xycl_xy_series;
+use crate::scene_trace_sidecars::{
+    parse_xynm, parse_xysd_records, TraceSidecarsCode, TraceSidecarsError,
+};
 
 pub const XYCF_MAGIC: &[u8; 4] = b"XYCF";
 pub const XYCF_VERSION: u32 = 1;
@@ -241,6 +247,159 @@ fn legend_tables_from_xysd(xysd: &[u8]) -> Result<(Vec<u8>, Vec<u32>, Vec<u8>), 
         labels.extend_from_slice(&record.name);
     }
     Ok((meta, lens, labels))
+}
+
+fn occupancy_domain(lo: f64, hi: f64) -> Option<((f64, f64), bool)> {
+    let reverse = lo > hi;
+    let (lo, hi) = if reverse { (hi, lo) } else { (lo, hi) };
+    if !(lo.is_finite() && hi.is_finite()) || hi <= lo {
+        return None;
+    }
+    Some(((lo, hi), reverse))
+}
+
+fn legend_scale(kind: ScaleKind) -> LegendScale {
+    match kind {
+        ScaleKind::Linear => LegendScale::Linear,
+        ScaleKind::Log => LegendScale::Log,
+        ScaleKind::SymLog => LegendScale::Symlog,
+    }
+}
+
+fn map_xycl(error: crate::scene_trace_rows::TraceRowsError) -> ChromePackError {
+    match error.code {
+        crate::scene_trace_rows::TraceRowsCode::Version => ChromePackError::Version,
+        crate::scene_trace_rows::TraceRowsCode::Limit => ChromePackError::Limit,
+        _ => ChromePackError::Length,
+    }
+}
+
+fn map_xynm(error: TraceSidecarsError) -> ChromePackError {
+    match error.code {
+        TraceSidecarsCode::Version => ChromePackError::Version,
+        TraceSidecarsCode::Limit => ChromePackError::Limit,
+        _ => ChromePackError::Length,
+    }
+}
+
+fn legend_loc_offset(facts: &[u8]) -> Result<usize, ChromePackError> {
+    let title_len = read_u32(facts, 156)? as usize;
+    let xlabel_len = read_u32(facts, 160)? as usize;
+    let ylabel_len = read_u32(facts, 164)? as usize;
+    let x_format_len = read_u32(facts, 168)? as usize;
+    let y_format_len = read_u32(facts, 172)? as usize;
+    let x_major_count = read_u32(facts, 176)? as usize;
+    let x_minor_count = read_u32(facts, 180)? as usize;
+    let y_major_count = read_u32(facts, 184)? as usize;
+    let y_minor_count = read_u32(facts, 188)? as usize;
+    let x_label_count = read_u32(facts, 192)? as usize;
+    let y_label_count = read_u32(facts, 196)? as usize;
+    let chrome_len = read_u32(facts, 200)? as usize;
+    let mut at = XYCF_HEADER_BYTES;
+    let _ = take(facts, &mut at, title_len)?;
+    let _ = take(facts, &mut at, xlabel_len)?;
+    let _ = take(facts, &mut at, ylabel_len)?;
+    let _ = take(facts, &mut at, x_format_len)?;
+    let _ = take(facts, &mut at, y_format_len)?;
+    let _ = take_f64s(facts, &mut at, x_major_count)?;
+    let _ = take_f64s(facts, &mut at, x_minor_count)?;
+    let _ = take_f64s(facts, &mut at, y_major_count)?;
+    let _ = take_f64s(facts, &mut at, y_minor_count)?;
+    let _ = take_labels(facts, &mut at, x_label_count)?;
+    let _ = take_labels(facts, &mut at, y_label_count)?;
+    let _ = take(facts, &mut at, chrome_len)?;
+    Ok(at)
+}
+
+/// Rewrite authored `loc="best"` to a concrete candidate before XYCC packing.
+///
+/// Occupancy uses packed XYCL `x`/`y` and XYNM label lengths against XYCF
+/// primary domains. Encoded XYLG still stores a settled 0..=8 location.
+pub fn settle_legend_best_loc(
+    facts: &[u8],
+    xycl: &[u8],
+    xynm: &[u8],
+) -> Result<Vec<u8>, ChromePackError> {
+    if facts.len() < XYCF_HEADER_BYTES {
+        return Err(ChromePackError::Length);
+    }
+    if facts.get(..4) != Some(&XYCF_MAGIC[..]) {
+        return Err(ChromePackError::Length);
+    }
+    if read_u32(facts, 4)? != XYCF_VERSION {
+        return Err(ChromePackError::Version);
+    }
+    let legend_loc_len = read_u32(facts, 204)? as usize;
+    if legend_loc_len == 0 {
+        return Ok(facts.to_vec());
+    }
+    let loc_at = legend_loc_offset(facts)?;
+    let loc_end = loc_at
+        .checked_add(legend_loc_len)
+        .ok_or(ChromePackError::Limit)?;
+    let loc_bytes = facts.get(loc_at..loc_end).ok_or(ChromePackError::Length)?;
+    if loc_bytes != b"best" {
+        return Ok(facts.to_vec());
+    }
+    let x_kind = legend_scale(scale_kind(read_u32(facts, 96)?)?);
+    let y_kind = legend_scale(scale_kind(read_u32(facts, 100)?)?);
+    let x_lo = read_f64(facts, 104)?;
+    let x_hi = read_f64(facts, 112)?;
+    let x_constant = read_f64(facts, 120)?;
+    let y_lo = read_f64(facts, 128)?;
+    let y_hi = read_f64(facts, 136)?;
+    let y_constant = read_f64(facts, 144)?;
+    let Some((x_domain, x_reverse)) = occupancy_domain(x_lo, x_hi) else {
+        return rewrite_legend_loc(facts, loc_at, legend_loc_len, b"upper right");
+    };
+    let Some((y_domain, y_reverse)) = occupancy_domain(y_lo, y_hi) else {
+        return rewrite_legend_loc(facts, loc_at, legend_loc_len, b"upper right");
+    };
+    let series = xycl_xy_series(xycl).map_err(map_xycl)?;
+    let names = if xynm.is_empty() {
+        Vec::new()
+    } else {
+        parse_xynm(xynm).map_err(map_xynm)?
+    };
+    let label_lens: Vec<u32> = names
+        .iter()
+        .filter(|name| !name.is_empty())
+        .map(|name| name.len() as u32)
+        .collect();
+    let settled = legend_fit::resolve_best_name(
+        &series,
+        &label_lens,
+        x_domain,
+        y_domain,
+        x_reverse,
+        y_reverse,
+        x_kind,
+        y_kind,
+        x_constant,
+        y_constant,
+    );
+    rewrite_legend_loc(facts, loc_at, legend_loc_len, settled.as_bytes())
+}
+
+fn rewrite_legend_loc(
+    facts: &[u8],
+    loc_at: usize,
+    legend_loc_len: usize,
+    loc: &[u8],
+) -> Result<Vec<u8>, ChromePackError> {
+    let loc_end = loc_at
+        .checked_add(legend_loc_len)
+        .ok_or(ChromePackError::Limit)?;
+    if loc_end > facts.len() {
+        return Err(ChromePackError::Length);
+    }
+    let mut out = Vec::with_capacity(facts.len() - legend_loc_len + loc.len());
+    out.extend_from_slice(&facts[..204]);
+    out.extend_from_slice(&(loc.len() as u32).to_le_bytes());
+    out.extend_from_slice(&facts[208..loc_at]);
+    out.extend_from_slice(loc);
+    out.extend_from_slice(&facts[loc_end..]);
+    Ok(out)
 }
 
 /// Pack authored XYCF v1 chrome facts into the XYCC v1 encode-ready bundle.
@@ -775,6 +934,25 @@ mod tests {
             pack_figure_chrome(&payload),
             Err(ChromePackError::LegendLoc)
         );
+    }
+
+    #[test]
+    fn loc_best_without_series_falls_back_to_upper_right() {
+        let mut facts = header(
+            FLAG_HAS_LEGEND | FLAG_X_MAJOR_AUTO | FLAG_Y_MAJOR_AUTO,
+            200.0,
+            120.0,
+            0,
+            0,
+        );
+        facts[204..208].copy_from_slice(&4u32.to_le_bytes());
+        facts[232..236].copy_from_slice(&(LEGEND_SHOW | LEGEND_AUTHORED_LOC).to_le_bytes());
+        let mut payload = facts;
+        payload.extend_from_slice(b"best");
+        let settled = settle_legend_best_loc(&payload, &[], &[]).unwrap();
+        let loc_len = u32::from_le_bytes(settled[204..208].try_into().unwrap()) as usize;
+        let at = legend_loc_offset(&settled).unwrap();
+        assert_eq!(&settled[at..at + loc_len], b"upper right");
     }
 
     #[test]
