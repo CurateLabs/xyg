@@ -45,7 +45,7 @@
 //! XYTA. ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from
 //! packed XYHP kind 5 (hosts omit `FLAG_COLOR2` / `OBS_GRADIENT` on that path).
 //! Polar ribbon, custom `role`, and explicit `FLAG_COLOR2` stay fail-closed.
-//! Rotation, html, `class_name`, and polar stay fail-closed.
+//! html, `class_name`, and polar annotations stay fail-closed.
 //! Rust owns the public PolyFill group budget, including
 //! companion traces that share the browser painter's 1,024-group ceiling.
 
