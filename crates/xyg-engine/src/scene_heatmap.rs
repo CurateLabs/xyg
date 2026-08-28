@@ -5,7 +5,9 @@
 //! routing (RGBA vs named colormap vs custom stops vs density vs mean-color),
 //! density opacity composition, constant-color stop expansion, and the 24-byte
 //! plane header so Python and Node cannot drift on painted-lattice sidecars.
-//! Encoded Scene v31 is unchanged.
+//! ABI 186 reuses the heatmap family as a 1×N named/stop plane for cartesian
+//! colormap hexbin; HexCell expansion interns those fills. Encoded Scene v31
+//! is unchanged.
 
 use crate::css::color_rgba8;
 use crate::scene::{

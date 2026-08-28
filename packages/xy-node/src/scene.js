@@ -2712,6 +2712,7 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
     || (
       scatterHasNonConstantColor(trace)
       && !scatterUsesDensity(trace)
+      && !(figure.coords !== "polar" && hexbinTessellatesCellFills(trace))
     )
     || (
       fillIsGradientAuthoring(trace.style?.fill)
@@ -3640,6 +3641,30 @@ function packXyTa(figure, xDomain, yDomain) {
       stops = packedCmap.stops;
       if (style.truecolor) flags |= XYTA_TRUECOLOR;
       const domain = style.domain;
+      if (domain != null && domain.length === 2) {
+        flags |= XYTA_HAS_DOMAIN;
+        cmapLo = Number(domain[0]);
+        cmapHi = Number(domain[1]);
+      }
+    } else if (
+      HEXBIN_KINDS.has(trace.kind)
+      && figure.coords !== "polar"
+      && hexbinTessellatesCellFills(trace)
+    ) {
+      flags |= XYTA_HEATMAP | XYTA_SHAPE | XYTA_HAS_GRID;
+      const channel = trace.color_ch ?? trace.colorChannel;
+      const values = channel?.values ?? trace.metric;
+      grid = packF64Le(values);
+      rows = 1;
+      cols = values.length;
+      const packedCmap = packXyTaColormap({
+        ...trace,
+        style: { ...style, colormap: channel?.colormap ?? style.colormap },
+      });
+      flags |= packedCmap.flags;
+      cmap = packedCmap.cmap;
+      stops = packedCmap.stops;
+      const domain = channel?.domain;
       if (domain != null && domain.length === 2) {
         flags |= XYTA_HAS_DOMAIN;
         cmapLo = Number(domain[0]);
@@ -5119,7 +5144,7 @@ function figureTraceSupport(figure, trace) {
   if (
     trace.hidden
     || scatterHasDroppedPerItem(trace)
-    || (scatterHasNonConstantColor(trace) && !scatterUsesDensity(trace))
+    || (scatterHasNonConstantColor(trace) && !scatterUsesDensity(trace) && !(figure.coords !== "polar" && hexbinTessellatesCellFills(trace)))
   ) flags |= XYFS_TRACE_HIDDEN_OR_PER_ITEM;
   if (style.marker_glyph != null) {
     const glyph = String(style.marker_glyph);
@@ -5170,6 +5195,20 @@ function heatmapTessellatesCellFills(trace) {
     || style.colormapStops != null
     || trace.colormapStops != null
     || trace.rgba != null;
+}
+
+function hexbinTessellatesCellFills(trace) {
+  if (!HEXBIN_KINDS.has(trace.kind)) return false;
+  const channel = trace.color_ch ?? trace.colorChannel;
+  if (channel == null || channel.mode !== "continuous") return false;
+  const values = channel.values ?? trace.metric;
+  if (values == null) return false;
+  const n = trace.x?.length ?? 0;
+  if (values.length !== n || n < 1) return false;
+  const colormap = channel.colormap ?? trace.style?.colormap;
+  if (colormap == null) return false;
+  if (typeof colormap === "string") return colormap.trim() !== "";
+  return true;
 }
 
 /** Compile migrated cartesian marks to Scene v12. */

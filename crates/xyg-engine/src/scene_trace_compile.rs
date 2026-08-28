@@ -30,6 +30,8 @@
 //! ABI 170 admits constant scatter `marker_glyph` as UTF-8 in the existing
 //! XYTR marker blob (`FLAG_HAS_GLYPH`); encoded Scene keeps XYMG so SVG/raster
 //! emit `<text>` / `OP_TEXT` instead of a disc.
+//! ABI 186 admits cartesian hexbin continuous `color_ch` as host series-color
+//! fill (metric colormap lives on the XYHP 1×N plane, not XYMS).
 //! Encoded Scene v31 is unchanged.
 
 use crate::css::{self, Checked};
@@ -446,6 +448,13 @@ fn constant_color<'a>(input: &'a Input<'a>, index: usize) -> Result<&'a str, Tra
         return Ok(input.color_const);
     }
     if input.kind == "scatter" && input.flags & FLAG_USE_DENSITY != 0 {
+        return Ok(if input.color_css.is_empty() {
+            DEFAULT_COLOR
+        } else {
+            input.color_css
+        });
+    }
+    if input.kind == "hexbin" {
         return Ok(if input.color_css.is_empty() {
             DEFAULT_COLOR
         } else {
@@ -1694,6 +1703,25 @@ mod tests {
         let packed = pack_trace_compile(&facts).unwrap();
         let fill = &packed[XYTO_HEADER_BYTES + 8..XYTO_HEADER_BYTES + 12];
         assert_eq!(fill, &css::color_rgba8("#3987e5", 0.3));
+    }
+
+    #[test]
+    fn hexbin_continuous_color_ch_uses_style_fill() {
+        let (mut head, mut payload) = prefix("hexbin", FLAG_COLOR_CH, 1.0, "");
+        head[88..96].copy_from_slice(&1.0f64.to_le_bytes());
+        head[96..104].copy_from_slice(&1.0f64.to_le_bytes());
+        head[120..122].copy_from_slice(&(b"continuous".len() as u16).to_le_bytes());
+        payload.extend_from_slice(b"continuous");
+        let mut facts = Vec::new();
+        facts.extend_from_slice(XYTC_MAGIC);
+        facts.extend_from_slice(&XYTC_VERSION.to_le_bytes());
+        facts.extend_from_slice(&1u32.to_le_bytes());
+        facts.extend_from_slice(&0u32.to_le_bytes());
+        facts.extend_from_slice(&head);
+        facts.extend_from_slice(&payload);
+        let packed = pack_trace_compile(&facts).unwrap();
+        let fill = &packed[XYTO_HEADER_BYTES + 8..XYTO_HEADER_BYTES + 12];
+        assert_eq!(fill, &css::color_rgba8("#3987e5", 1.0));
     }
 
     #[test]

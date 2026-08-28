@@ -2599,9 +2599,9 @@ def hexbin(
     aspect, and lattice assignment. Custom ``reduce_C_function`` callables
     receive host-reduced groups from ``xyg_hexbin_groups``. Only threshold-passing
     bins are shipped as centers plus one scalar count/color channel. A literal
-    ``color`` keeps constant paint so Cartesian native lattices can compile onto
-    Scene PolyFill; omitted ``color`` keeps the metric colormap on the
-    compatibility exporters.
+    ``color`` keeps constant paint so Cartesian native lattices compile onto
+    shared-style Scene PolyFill; omitted ``color`` keeps the metric colormap
+    and ABI 186 interns those fills through a 1×N XYHP plane.
     """
     css = styles.compile_mark_style("hexbin", style)
     opacity = css.get("opacity", opacity)
@@ -2729,9 +2729,9 @@ def hexbin(
         metric = np.log(metric)
     else:
         colorbar_domain = None
-    # Constant ``color`` is the Scene-eligible paint path. Metric colormaps
-    # stay data-driven so public Scene can fail closed and keep compatibility
-    # exporters for heatmap-style coloring.
+    # Constant ``color`` is the Scene-eligible shared-style paint path. Omitted
+    # ``color`` keeps the metric colormap; ABI 186 interned those fills onto
+    # HexCell PolyFills through a 1×N XYHP plane.
     paint = color if color is not None else metric
     color_ch = channels.resolve_color(
         paint, len(metric), colormap=colormap, default_constant=DEFAULT_PALETTE[0]

@@ -1219,17 +1219,24 @@ def test_public_hexbin_honors_the_painter_group_boundary() -> None:
     assert figure.to_svg()
 
 
-def test_colormap_hexbin_stays_on_compatibility() -> None:
+def test_colormap_hexbin_is_scene_supported() -> None:
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 4.0)
     figure.axis_options["y"]["domain"] = (0.0, 5.0)
     figure.hexbin(
         _PUBLIC_HEXBIN_X, _PUBLIC_HEXBIN_Y, gridsize=(4, 4), range=((0.0, 4.0), (0.0, 5.0))
     )
-    reason = scene_export_support_reason(figure)
-    assert reason is not None
-    assert _public_svg(figure) is None
-    assert figure.to_svg()
+    assert figure.traces[0].color_ch.mode == "continuous"
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    svg = exported.decode()
+    assert svg.count('<path d="M ') == len(figure.traces[0].x.values)
+    fills = {part.split('fill="', 1)[1].split('"', 1)[0] for part in svg.split("<path ")[1:]}
+    assert len(fills) > 1
+    assert figure.to_svg() == svg
+    png = public_static_export(figure, "png")
+    assert png is not None
 
 
 @pytest.mark.parametrize(

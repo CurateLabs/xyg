@@ -27,6 +27,9 @@
 //! paint, polar ribbon, and `role` other than `ribbon` stay fail-closed.
 //! ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 //! ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` the same way.
+//! ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto
+//! HexCell PolyFills. Polar hexbin, custom reducers, and per-item RGBA stay
+//! fail-closed.
 //! Rotation, html, `class_name`, and polar stay fail-closed.
 //! Rust owns the public PolyFill group budget, including
 //! companion traces that share the browser painter's 1,024-group ceiling.

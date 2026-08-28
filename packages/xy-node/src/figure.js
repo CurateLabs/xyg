@@ -858,6 +858,7 @@ export class Figure {
       y: t.y,
       metric: t.metric,
       counts: t.counts,
+      color_ch: t.color_ch,
       style: { ...t.style },
       n_points: t.n_points,
       x_axis: t.x_axis,

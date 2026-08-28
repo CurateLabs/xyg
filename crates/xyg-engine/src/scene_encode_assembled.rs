@@ -25,6 +25,8 @@
 //! ABI 178 admits scatter `fill_opacity` / `stroke_opacity` from that same packing.
 //! ABI 179 admits hexbin `fill_opacity` from that same packing.
 //! ABI 180 admits triangle_mesh `fill_opacity` / constant stroke from that same packing.
+//! ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto
+//! HexCell PolyFills during expansion.
 //! Encoded Scene v31 is
 //! unchanged.
 

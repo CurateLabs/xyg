@@ -13,6 +13,7 @@ use crate::kernels::{
 };
 use crate::polar::{self, POLAR_METRICS_LEN, XYPL_MAGIC, XYPL_V1_BYTES};
 use crate::svg::push_num;
+use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt::Write;
 
@@ -5387,10 +5388,11 @@ pub fn expand_scene_records(
         .map(|(records, _styles, _images)| records)
 }
 
-/// Expand compact authoring, including ABI 134 painted heatmap lattices and
-/// ABI 137 density image blits. When any `HeatmapPainted` or `DensityBlit`
-/// group is present, `paint` must be a valid XYHP envelope. `polar` selects
-/// ABI 143 occupied-cell Rect tessellation instead of a Cartesian Image blit.
+/// Expand compact authoring, including ABI 134 painted heatmap lattices,
+/// ABI 137 density image blits, and ABI 186 colormap hexbin HexCell fills.
+/// When any `HeatmapPainted`, `DensityBlit`, or painted `HexCell` group is
+/// present, `paint` must be a valid XYHP envelope. `polar` selects ABI 143
+/// occupied-cell Rect tessellation instead of a Cartesian Image blit.
 pub fn expand_scene_records_painted(
     input: SceneExpansionInput<'_>,
     x_scale: AxisScale,
@@ -5421,15 +5423,18 @@ pub fn expand_scene_records_painted(
 
     let mut has_painted = false;
     let mut has_density = false;
+    let mut has_hex = false;
     for mode in input.expansion_modes {
         match SceneExpansionMode::from_code(*mode)? {
             SceneExpansionMode::HeatmapPainted => has_painted = true,
             SceneExpansionMode::DensityBlit => has_density = true,
+            SceneExpansionMode::HexCell => has_hex = true,
             _ => {}
         }
     }
     let intern_density = has_density && polar;
-    if has_painted || intern_density {
+    let intern_hex = has_hex && !paint.is_empty();
+    if has_painted || intern_density || intern_hex {
         if fill_rgba.len() != stroke_width.len().saturating_mul(4)
             || stroke_rgba.len() != fill_rgba.len()
             || stroke_width.is_empty()
@@ -5446,12 +5451,14 @@ pub fn expand_scene_records_painted(
     if (has_painted || has_density) && paint_planes.is_empty() {
         return Err(SceneError::Length);
     }
-    let mut painted_styles = (has_painted || intern_density).then(|| ExpandedSceneStyles {
+    let mut painted_styles = (has_painted || intern_density || intern_hex).then(|| ExpandedSceneStyles {
         fill_rgba: fill_rgba.to_vec(),
         stroke_rgba: stroke_rgba.to_vec(),
         stroke_width: stroke_width.to_vec(),
     });
     let mut images = Vec::new();
+    let mut hex_fills: HashMap<u64, Vec<[u8; 4]>> = HashMap::new();
+    let mut hex_intern: HashMap<[u8; 4], u32> = HashMap::new();
 
     // Stable identity is the canonical Polyline run boundary. Reject any
     // attempt to switch step mode inside one contiguous same-kind identity
@@ -5691,8 +5698,31 @@ pub fn expand_scene_records_painted(
             let cy = input.y0[cursor];
             let dx = input.x1[cursor];
             let dy = input.y1[cursor];
+            let mut cell_style = style_ref;
+            if intern_hex {
+                let parent = stable_id >> 32;
+                let cell_index = (stable_id & 0xffff_ffff) as usize;
+                if let Entry::Vacant(slot) = hex_fills.entry(parent) {
+                    if let Ok(plane) = take_paint_plane(&mut paint_planes, parent) {
+                        let alpha = style_rgba4(fill_rgba, style_ref)?[3];
+                        slot.insert(heatmap_paint_fills(plane, alpha)?);
+                    }
+                }
+                if let Some(fills) = hex_fills.get(&parent) {
+                    let fill = *fills.get(cell_index).ok_or(SceneError::Length)?;
+                    cell_style = intern_heatmap_fill(
+                        painted_styles.as_mut().ok_or(SceneError::Length)?,
+                        &mut hex_intern,
+                        fill,
+                        style_rgba4(stroke_rgba, style_ref)?,
+                        *stroke_width
+                            .get(style_ref as usize)
+                            .ok_or(SceneError::Length)?,
+                    )?;
+                }
+            }
             for (rx, ry) in SCENE_HEXBIN_RING {
-                output.push_hex_vertex(stable_id, style_ref, cx + rx * dx, cy + ry * dy);
+                output.push_hex_vertex(stable_id, cell_style, cx + rx * dx, cy + ry * dy);
             }
             cursor = run_end;
             continue;
@@ -13371,6 +13401,55 @@ mod tests {
             ),
             Err(SceneError::Length)
         );
+    }
+
+    #[test]
+    fn compact_hex_cell_interns_named_colormap_fills() {
+        let paint = xyhp_named(
+            0,
+            1,
+            2,
+            f64::NAN,
+            f64::NAN,
+            &[0.0, 1.0],
+            "binary",
+        );
+        let kinds = [4u8, 4];
+        let ids = [0u64, 1];
+        let styles = [0u32, 0];
+        let zeros = [0.0, 0.0];
+        let symbols = [0u8, 0];
+        let x0 = [10.0, 20.0];
+        let y0 = [30.0, 40.0];
+        let pitch = [1.0, 1.0];
+        let modes = [5u8, 5];
+        let (expanded, painted, _images) = expand_scene_records_painted(
+            SceneExpansionInput {
+                kinds: &kinds,
+                stable_ids: &ids,
+                style_refs: &styles,
+                diameter: &zeros,
+                symbols: &symbols,
+                x0: &x0,
+                y0: &y0,
+                x1: &pitch,
+                y1: &pitch,
+                expansion_modes: &modes,
+            },
+            test_linear_x_scale(),
+            test_linear_y_scale(),
+            &[255, 0, 0, 200],
+            &[0, 0, 0, 0],
+            &[0.0],
+            &paint,
+            false,
+        )
+        .unwrap();
+        let styles = painted.unwrap();
+        assert_eq!(expanded.style_refs, [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2]);
+        assert_eq!(&styles.fill_rgba[4..8], &[255, 255, 255, 200]);
+        assert_eq!(&styles.fill_rgba[8..12], &[0, 0, 0, 200]);
+        assert!(expanded.kinds.iter().all(|kind| *kind == 4));
     }
 
     #[test]

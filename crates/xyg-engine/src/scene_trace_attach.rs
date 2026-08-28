@@ -6,7 +6,8 @@
 //! order, density skip (empty/non-increasing domain), density XYHF flag
 //! packing, `FACT_HEATMAP_PAINT` / `FACT_DENSITY_PLANE`, density
 //! symbol/diameter zeroing, and domain-endpoint column rewrite so Python and
-//! Node cannot drift. Encoded Scene v31 is unchanged.
+//! Node cannot drift. ABI 186 reuses `FLAG_HEATMAP` / `FACT_HEATMAP_PAINT` for
+//! cartesian colormap hexbin as a 1×N XYHP plane. Encoded Scene v31 is unchanged.
 
 use crate::kernels::BinColorSource;
 use crate::scene_density::{self, pack_density_grid, DensityGridError, XYDE_HAS_MEAN_RGBA};

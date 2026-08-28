@@ -1665,7 +1665,9 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
     if getattr(trace, "x_axis", "x") != "x" or getattr(trace, "y_axis", "y") != "y":
         flags |= _XYFS_TRACE_NON_PRIMARY_AXIS
     if getattr(trace, "hidden", False) or (
-        trace.has_per_item_channels() and not _density_aggregates_color(trace)
+        trace.has_per_item_channels()
+        and not _density_aggregates_color(trace)
+        and not (not polar and _hexbin_tessellates_cell_fills(trace))
     ):
         flags |= _XYFS_TRACE_HIDDEN_OR_PER_ITEM
     if style.get("marker_glyph") is not None:
@@ -1735,6 +1737,32 @@ def _hexbin_pitch(style: dict[str, Any]) -> tuple[float, float]:
     if not np.isfinite(dx) or not np.isfinite(dy) or dx <= 0.0 or dy <= 0.0:
         raise UnsupportedSceneV3("Scene v12 hexbin requires finite hex_dx/hex_dy cell pitch")
     return dx, dy
+
+
+def _hexbin_tessellates_cell_fills(trace: Any) -> bool:
+    """Return whether Scene can intern this hexbin's metric colormap per cell.
+
+    Occupied centers plus a continuous color channel become a 1×N XYHP plane
+    (ABI 186). Polar hexbin, custom reducers, and non-continuous channels stay
+    fail-closed. Constant ``color=`` keeps the existing shared-style HexCell path.
+    """
+    if str(getattr(trace, "kind", "") or "") not in _HEXBIN_KINDS:
+        return False
+    channel = getattr(trace, "color_ch", None)
+    if channel is None or getattr(channel, "mode", None) != "continuous":
+        return False
+    values = getattr(channel, "values", None)
+    if values is None:
+        return False
+    centers = getattr(trace, "x", None)
+    if centers is None or len(values) != len(centers):
+        return False
+    colormap = getattr(channel, "colormap", None)
+    if colormap is None:
+        return False
+    if isinstance(colormap, str):
+        return bool(colormap.strip())
+    return True
 
 
 def _heatmap_uses_colormap(trace: Any) -> bool:
@@ -1883,6 +1911,22 @@ def _pack_xyta(figure: Any) -> bytes:
             if style.get("truecolor"):
                 flags |= _XYTA_TRUECOLOR
             domain = style.get("domain")
+            if domain is not None and len(domain) == 2:
+                flags |= _XYTA_HAS_DOMAIN
+                cmap_lo, cmap_hi = float(domain[0]), float(domain[1])
+        elif (
+            trace.kind in _HEXBIN_KINDS
+            and str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
+            and _hexbin_tessellates_cell_fills(trace)
+        ):
+            channel = trace.color_ch
+            values = np.ascontiguousarray(np.asarray(channel.values, dtype=np.float64).reshape(-1))
+            flags |= _XYTA_HEATMAP | _XYTA_SHAPE | _XYTA_HAS_GRID
+            rows, cols = 1, int(values.size)
+            grid = values.tobytes()
+            cmap_flags, cmap, stops = _pack_xyta_colormap({"colormap": channel.colormap})
+            flags |= cmap_flags
+            domain = getattr(channel, "domain", None)
             if domain is not None and len(domain) == 2:
                 flags |= _XYTA_HAS_DOMAIN
                 cmap_lo, cmap_hi = float(domain[0]), float(domain[1])
@@ -3187,6 +3231,10 @@ def _pack_figure_support(
             getattr(trace, "color_ch", None) is not None
             and (trace.color_ch.mode != "constant" or trace.color_ch.constant is None)
             and not (str(getattr(trace, "kind", "") or "") == "scatter" and trace.use_density())
+            and not (
+                str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
+                and _hexbin_tessellates_cell_fills(trace)
+            )
         )
         or (
             _fill_is_gradient_authoring((getattr(trace, "style", None) or {}).get("fill"))

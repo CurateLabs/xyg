@@ -585,7 +585,9 @@ F3, still pending (above).
   admits triangle_mesh `joined_fill` as one identity PolyFill ring, then ABI 183
   admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`, then ABI 184
   admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`, then ABI 185
-  admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`.
+  admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`, then ABI 186
+  admits cartesian colormap hexbin as a 1×N XYHP plane interned onto HexCell
+  PolyFills.
   `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
   panel Scene. That predicate
   owns the public PolyFill group budget, including companion traces that share
@@ -1529,7 +1531,9 @@ ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`
 (hosts pack the two-stop fill, not `FLAG_COLOR2`). Per-item two-ended paint
 stays fail-closed. ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor`
 as XYAW `wrap=0`. ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor`
-as XYAW `wrap=0`. Rotation, html, `class_name`, and polar stay fail-closed. Per-item radius
+as XYAW `wrap=0`. ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane
+interned onto HexCell PolyFills. Polar hexbin, custom reducers, and per-item
+RGBA stay fail-closed. Rotation, html, `class_name`, and polar stay fail-closed. Per-item radius
 channels stay compatibility. Irregular
 spacing, and LOD stay compatibility.
 

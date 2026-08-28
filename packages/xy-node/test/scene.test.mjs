@@ -2034,6 +2034,31 @@ test("Node Scene compiles hexbin fill_opacity", () => {
   assert.notEqual(svg, sceneSvg(solid.toScene()));
 });
 
+test("Node Scene compiles colormap hexbin", () => {
+  const x = [0.5, 1.5, 2.5, 3.5, 1, 2, 3];
+  const y = [0.5, 0.5, 0.5, 0.5, 2, 2, 2];
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 4]);
+  figure.setAxisDomain("y", [0, 5]);
+  figure.hexbin(x, y, {
+    gridsize: [4, 4],
+    range: [[0, 4], [0, 5]],
+    colormap: "viridis",
+    name: "hex",
+    id: 0,
+  });
+  delete figure.traces[0].style.dx;
+  delete figure.traces[0].style.dy;
+  assert.equal(sceneExportSupportReason(figure), null);
+  const svg = sceneSvg(figure.toScene());
+  assert.equal((svg.match(/<path d="M /g) ?? []).length, figure.traces[0].x.length);
+  const fills = [...svg.matchAll(/<path d="M [^>]*>/g)]
+    .map((match) => /fill="([^"]+)"/.exec(match[0])?.[1])
+    .filter(Boolean);
+  assert.ok(new Set(fills).size > 1);
+  assert.match(svg, />hex<\/text>/);
+});
+
 test("Node Scene compiles triangle_mesh joined_fill", () => {
   const joined = new Figure({ width: 240, height: 160 });
   joined.setAxisDomain("x", [0, 1]);

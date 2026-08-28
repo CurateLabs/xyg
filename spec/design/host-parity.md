@@ -251,6 +251,7 @@ expansion. ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill
 ring. ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`.
 ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`.
+ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto HexCell PolyFills.
 ABI 173 tessellates
 heatmap `corner_radius`. ABI 174 tessellates violin/box `corner_radius`.
 ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`.
@@ -265,6 +266,7 @@ ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring.
 ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`.
 ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`.
+ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto HexCell PolyFills.
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -332,6 +334,7 @@ ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring.
 ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`.
 ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`.
+ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto HexCell PolyFills.
 ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate
@@ -402,13 +405,15 @@ ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0` on t
 same product Scene.
 ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0` on that
 same product Scene.
+ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto
+HexCell PolyFills on that same product Scene.
 The explicit `xyg_scene_figure_support_reason` ABI remains for tests.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call
 `xyg_figure_autorange` / `xyg_auto_domain`. Direct-browser WASM compile uses
 the same `auto_domain` degenerate pad instead of a host-local ±0.5 fork.
-Polar hexbin, custom `reduce_C_function` callables (after Rust lattice groups), metric
-colormaps, LOD beyond the 1,024-group painter budget, and rich style
+Polar hexbin, custom `reduce_C_function` callables (after Rust lattice groups),
+LOD beyond the 1,024-group painter budget, and rich style
 exceptions remain compatibility routes. ABI 107 makes Scene CSS→RGBA8 and
 per-kind mark style defaults the same way: Python and Node pack `XYMS` v1
 kind/opacity/CSS/width literals, then call `xyg_scene_resolve_mark_styles` /
