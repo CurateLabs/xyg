@@ -2213,8 +2213,9 @@ def scene_layout_rooms(
 
     Returns ``(left, right, top, bottom)`` from `xyg_scene_plot_layout` when the
     spec is primary cartesian linear/log/symlog with the default face.
-    Polar, extra axes, category scales, and custom `font-family` return None
-    so callers keep compatibility `_svg._*room` instead of a DejaVu substitute.
+    Polar, extra axes, top/right primary sides, outside legends, in-axes
+    colorbars, category scales, and custom `font-family` return None so
+    callers keep compatibility `_svg._*room` instead of a DejaVu substitute.
     """
     if spec.get("coords") not in (None, "cartesian"):
         return None
@@ -2223,6 +2224,12 @@ def scene_layout_rooms(
     axes = _axes_by_id(spec)
     extra = [axis_id for axis_id in axes if axis_id not in {"x", "y"}]
     if extra:
+        return None
+    if axes["x"].get("side", "bottom") == "top" or axes["y"].get("side", "left") == "right":
+        return None
+    legend = spec.get("legend") or {}
+    loc = str(legend.get("loc") or "")
+    if spec.get("show_legend") and "outside" in loc:
         return None
     x_pack = _scene_axis_pack(axes["x"])
     y_pack = _scene_axis_pack(axes["y"])
@@ -2241,6 +2248,8 @@ def scene_layout_rooms(
     if len(entries) > 1:
         return None
     colorbar = spec.get("colorbar") or {}
+    if colorbar.get("placement") == "axes":
+        return None
     side = None
     if colorbar:
         side = "bottom" if colorbar.get("orientation") == "horizontal" else "right"

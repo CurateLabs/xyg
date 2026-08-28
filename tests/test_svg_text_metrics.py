@@ -176,3 +176,11 @@ def test_scene_layout_rooms_fail_closed_for_custom_font_and_polar() -> None:
     assert _svg.scene_layout_rooms(custom) is None
     assert _svg.scene_layout_rooms(polar) is None
     assert _svg.scene_layout_rooms(category) is None
+    top_x = {**base, "x_axis": {**base["x_axis"], "side": "top"}}
+    right_y = {**base, "y_axis": {**base["y_axis"], "side": "right"}}
+    outside = {**base, "show_legend": True, "legend": {"loc": "outside right"}}
+    axes_bar = {**base, "colorbar": {"placement": "axes", "orientation": "vertical"}}
+    assert _svg.scene_layout_rooms(top_x) is None
+    assert _svg.scene_layout_rooms(right_y) is None
+    assert _svg.scene_layout_rooms(outside) is None
+    assert _svg.scene_layout_rooms(axes_bar) is None
