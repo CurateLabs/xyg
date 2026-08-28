@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 203;
-export const SIGNATURE_SHA256 = "5ee93b5d17075bc5e90f19832855e9b581fb308913d3d1e263d51fb1467cbea5";
+export const ABI_VERSION = 204;
+export const SIGNATURE_SHA256 = "5d627f18ed838eb9c38e74529ff190d3b5bbbbc73d091255837a78a9fcb710bf";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -119,6 +119,7 @@ export let xyMarchingTriangles;
 export let xyMinMax;
 export let xyMonotoneTangents;
 export let xyNormalizeF32;
+export let xyPayloadM4Indices;
 export let xyPayloadTier;
 export let xyPayloadVisibleMask;
 export let xyPayloadVisibleNeeded;
@@ -406,6 +407,7 @@ export function bindGeneratedAbi(lib) {
   xyMinMax = lib.func("int32_t xyg_min_max(const double * data, size_t len, double * out_min, double * out_max)");
   xyMonotoneTangents = lib.func("size_t xyg_monotone_tangents(const double * x, const double * y, size_t n, double * out_m, size_t capacity)");
   xyNormalizeF32 = lib.func("int32_t xyg_normalize_f32(const double * data, size_t len, double lo, double hi, int32_t nan_mode, float * out)");
+  xyPayloadM4Indices = lib.func("size_t xyg_payload_m4_indices(uint64_t n_points, int32_t polar, const double * x, const double * y, size_t n, double x0, double x1, size_t n_buckets, const double * bin_x, double bin_x0, double bin_x1, int32_t * out_tier, uint32_t * out, size_t capacity)");
   xyPayloadTier = lib.func("int32_t xyg_payload_tier(int32_t kind, uint64_t n_points, int32_t polar, int32_t force_density, int32_t force_direct, int32_t per_item)");
   xyPayloadVisibleMask = lib.func("size_t xyg_payload_visible_mask(const double * x, const double * y, size_t n, int32_t x_log, int32_t y_log, const double * base, int32_t has_base, uint8_t * out, size_t capacity)");
   xyPayloadVisibleNeeded = lib.func("int32_t xyg_payload_visible_needed(int32_t x_log, int32_t y_log, int32_t prefiltered, int32_t x_has_nulls, int32_t y_has_nulls, int32_t has_base, int32_t base_has_nulls)");

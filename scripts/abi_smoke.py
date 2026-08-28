@@ -717,6 +717,23 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
     ]
+    lib.xyg_payload_m4_indices.restype = ctypes.c_size_t
+    lib.xyg_payload_m4_indices.argtypes = [
+        ctypes.c_uint64,
+        ctypes.c_int32,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.POINTER(ctypes.c_int32),
+        U32P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_density_bin_window.restype = ctypes.c_size_t
     lib.xyg_density_bin_window.argtypes = [
         ctypes.c_int32,
@@ -2596,6 +2613,47 @@ def main() -> None:
         5,
     )
     ok(pn == 3 and list(pmask) == [1, 0, 1, 0, 1], "payload_visible_mask log x")
+    m4x = array("d", [float(i) for i in range(10_001)])
+    m4y = array("d", [1.0] * 10_001)
+    m4_tier = ctypes.c_int32(-1)
+    m4_out = array("I", [0]) * (64 * 4)
+    m4_n = lib.xyg_payload_m4_indices(
+        10_001,
+        1,
+        _ptr(m4x, ctypes.c_double),
+        _ptr(m4y, ctypes.c_double),
+        10_001,
+        0.0,
+        10_000.0,
+        64,
+        null_f64,
+        0.0,
+        0.0,
+        ctypes.byref(m4_tier),
+        _ptr(m4_out, ctypes.c_uint32),
+        64 * 4,
+    )
+    ok(m4_n == 0 and m4_tier.value == 0, "payload_m4_indices polar direct")
+    m4_n = lib.xyg_payload_m4_indices(
+        10_001,
+        0,
+        _ptr(m4x, ctypes.c_double),
+        _ptr(m4y, ctypes.c_double),
+        10_001,
+        0.0,
+        10_000.0,
+        64,
+        null_f64,
+        0.0,
+        0.0,
+        ctypes.byref(m4_tier),
+        _ptr(m4_out, ctypes.c_uint32),
+        64 * 4,
+    )
+    ok(
+        m4_n > 0 and m4_n != ctypes.c_size_t(-1).value and m4_tier.value == 1,
+        "payload_m4_indices cartesian",
+    )
     bin_out = array("d", [0.0, 0.0, 0.0, 0.0])
     bw_n = lib.xyg_density_bin_window(
         1, 1, 0.0, 2.0, 0.0, 3.0, 0.0, 0.0, 0.0, 0.0, _ptr(bin_out, ctypes.c_double)
