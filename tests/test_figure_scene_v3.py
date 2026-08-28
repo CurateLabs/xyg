@@ -624,9 +624,7 @@ def test_constant_scatter_stroke_uses_the_public_rust_scene_contract() -> None:
     assert _native.scene_browser_painter(scene)
 
 
-def test_constant_scatter_stroke_defaults_and_compatibility_boundaries(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_constant_scatter_stroke_defaults_and_compatibility_boundaries() -> None:
     stroke_only = Figure(width=320, height=240).scatter(
         [0.5], [0.5], color="#336699", stroke="#ff8800"
     )
@@ -649,14 +647,17 @@ def test_constant_scatter_stroke_defaults_and_compatibility_boundaries(
     assert 'stroke="rgb(51,102,153)" stroke-opacity="0.8"' in plain_svg
     assert 'stroke-width="1"' in plain_svg
 
-    compatibility = []
     for kwargs in (
         {"stroke": ["#111111", "#222222"]},
         {"stroke_width": [1.0, 2.0]},
     ):
         figure = Figure(width=320, height=240).scatter([0.5, 1.0], [0.5, 1.0], **kwargs)
-        assert _scene_v3.scene_export_support_reason(figure) is not None
-        compatibility.append(figure)
+        assert _scene_v3.scene_export_support_reason(figure) is None
+        svg = _native.scene_svg(figure.to_scene())
+        assert figure.to_svg() == svg
+
+    sized = Figure(width=320, height=240).scatter([0.5, 1.0], [0.5, 1.0], size=[4.0, 12.0])
+    assert _scene_v3.scene_export_support_reason(sized) is not None
 
     for opacity_key in ("fill_opacity", "stroke_opacity"):
         figure = Figure(width=320, height=240).scatter([0.5], [0.5], color="#336699")
@@ -665,13 +666,6 @@ def test_constant_scatter_stroke_defaults_and_compatibility_boundaries(
             figure.traces[-1].style["stroke_width"] = 2.0
         figure.traces[-1].style[opacity_key] = 0.5
         assert _scene_v3.scene_export_support_reason(figure) is None
-
-    def unexpected_scene(*_args: object, **_kwargs: object) -> bytes:
-        raise AssertionError("per-item scatter styling must stay on compatibility")
-
-    monkeypatch.setattr(_native, "scene_static_export", unexpected_scene)
-    for figure in compatibility:
-        assert figure.to_svg().startswith("<svg")
 
     for invalid_width in (-1.0, float("nan"), float("inf")):
         with pytest.raises(ValueError, match="scatter stroke_width"):
