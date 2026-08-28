@@ -1204,7 +1204,6 @@ def test_public_hexbin_compiler_rejects_polar_custom_and_nonfinite(
     "mutate",
     [
         lambda figure: figure.axis_options["x"].__setitem__("domain", None),
-        lambda figure: figure.traces[0].style.__setitem__("fill_opacity", 0.5),
         lambda figure: figure.traces[0].style.__setitem__("role", "hex-density"),
     ],
 )
@@ -1215,6 +1214,15 @@ def test_public_hexbin_predicate_keeps_rich_style_on_compatibility(
     mutate(figure)
     assert scene_export_support_reason(figure) is not None
     assert figure.to_svg()
+
+
+def test_public_hexbin_fill_opacity_is_scene_supported() -> None:
+    figure = _public_hexbin()
+    figure.traces[0].style["fill_opacity"] = 0.5
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported != public_static_export(_public_hexbin(), "svg")
 
 
 def test_public_heatmap_matches_exact_cross_host_scene_and_consumers() -> None:

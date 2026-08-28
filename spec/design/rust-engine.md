@@ -221,7 +221,7 @@ crates/
                         #   encode from sidecars plus ABI 163 product encode
                         #   from packed facts plus ABI 164 public static-export
                         #   consumers plus ABI 165 product-path XYFS support
-                        #   plus ABI 166 cartesian corner_radius tessellation plus ABI 167 polar wedge_gap tessellation plus ABI 168 polar corner_radius tessellation plus ABI 169 polar step+smooth plus ABI 170 marker_glyph XYMG plus ABI 171 width-only scatter match-fill plus ABI 172 cartesian line step+smooth plus ABI 173 heatmap corner_radius plus ABI 174 violin/box corner_radius plus ABI 175 violin/box fill/stroke opacity plus ABI 176 bar/column/histogram fill/stroke opacity plus ABI 177 heatmap fill_opacity plus ABI 178 scatter fill/stroke opacity.
+                        #   plus ABI 166 cartesian corner_radius tessellation plus ABI 167 polar wedge_gap tessellation plus ABI 168 polar corner_radius tessellation plus ABI 169 polar step+smooth plus ABI 170 marker_glyph XYMG plus ABI 171 width-only scatter match-fill plus ABI 172 cartesian line step+smooth plus ABI 173 heatmap corner_radius plus ABI 174 violin/box corner_radius plus ABI 175 violin/box fill/stroke opacity plus ABI 176 bar/column/histogram fill/stroke opacity plus ABI 177 heatmap fill_opacity plus ABI 178 scatter fill/stroke opacity plus ABI 179 hexbin fill_opacity.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -276,7 +276,7 @@ crates/
                              #   XYAS/XYCF encode from sidecars plus ABI 163
                              #   product encode from packed facts plus ABI 165
                              #   product-path XYFS figure-compile support plus
-                             #   ABI 166 cartesian corner_radius tessellation / ABI 167 polar wedge_gap / ABI 168 polar corner_radius / ABI 169 polar step+smooth / ABI 170 marker_glyph XYMG / ABI 171 width-only scatter match-fill / ABI 172 cartesian line step+smooth / ABI 173 heatmap corner_radius / ABI 174 violin/box corner_radius / ABI 175 violin/box fill/stroke opacity / ABI 176 bar/column/histogram fill/stroke opacity / ABI 177 heatmap fill_opacity / ABI 178 scatter fill/stroke opacity:
+                             #   ABI 166 cartesian corner_radius tessellation / ABI 167 polar wedge_gap / ABI 168 polar corner_radius / ABI 169 polar step+smooth / ABI 170 marker_glyph XYMG / ABI 171 width-only scatter match-fill / ABI 172 cartesian line step+smooth / ABI 173 heatmap corner_radius / ABI 174 violin/box corner_radius / ABI 175 violin/box fill/stroke opacity / ABI 176 bar/column/histogram fill/stroke opacity / ABI 177 heatmap fill_opacity / ABI 178 scatter fill/stroke opacity / ABI 179 hexbin fill_opacity:
                              #   compile, attach, sidecars, rows, annotation,
                              #   style, splice, support probe, then sidecar
                              #   assembled encode.
@@ -850,4 +850,5 @@ landed; the remainder, in order:
    ABI 176 bar/column/histogram `fill_opacity` / `stroke_opacity` (`scene_style.rs` / XYMS) ✅.
    ABI 177 heatmap `fill_opacity` (`scene_style.rs` / XYMS) ✅.
    ABI 178 scatter `fill_opacity` / `stroke_opacity` (`scene_style.rs` / XYMS) ✅.
+   ABI 179 hexbin `fill_opacity` (`scene_style.rs` / XYMS) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

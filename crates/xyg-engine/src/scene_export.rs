@@ -17,6 +17,7 @@
 //! bar/column/histogram `fill_opacity` / `stroke_opacity` the same way.
 //! ABI 177 admits heatmap `fill_opacity` on that public Scene (XYMS fill alpha).
 //! ABI 178 admits scatter `fill_opacity` / `stroke_opacity` the same way.
+//! ABI 179 admits hexbin `fill_opacity` on that public Scene (XYMS fill alpha).
 //! Rust owns the public PolyFill group budget, including
 //! companion traces that share the browser painter's 1,024-group ceiling.
 
@@ -469,7 +470,15 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "stroke_opacity",
         ],
         KIND_TRIANGLE_MESH => &["opacity", "role"],
-        KIND_HEXBIN => &["color", "opacity", "hex_dx", "hex_dy", "role", "reduce"],
+        KIND_HEXBIN => &[
+            "color",
+            "opacity",
+            "hex_dx",
+            "hex_dy",
+            "role",
+            "reduce",
+            "fill_opacity",
+        ],
         KIND_HEATMAP => &[
             "color",
             "opacity",

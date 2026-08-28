@@ -578,7 +578,8 @@ F3, still pending (above).
   tessellates violin/box `corner_radius`, then ABI 175 admits violin/box
   `fill_opacity` / `stroke_opacity`, then ABI 176 admits bar/column/histogram
   `fill_opacity` / `stroke_opacity`, then ABI 177 admits heatmap `fill_opacity`,
-  then ABI 178 admits scatter `fill_opacity` / `stroke_opacity`.
+  then ABI 178 admits scatter `fill_opacity` / `stroke_opacity`, then ABI 179
+  admits hexbin `fill_opacity`.
   `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
   panel Scene. That predicate
   owns the public PolyFill group budget, including companion traces that share
@@ -1511,7 +1512,8 @@ wedges). ABI 174 tessellates violin/box `corner_radius` on that same Rect
 path. ABI 175 admits violin/box `fill_opacity` / `stroke_opacity` on XYMS.
 ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity` on that
 same path. ABI 177 admits heatmap `fill_opacity` on XYMS fill alpha.
-ABI 178 admits scatter `fill_opacity` / `stroke_opacity` on that same path. Per-item radius channels stay compatibility. Irregular
+ABI 178 admits scatter `fill_opacity` / `stroke_opacity` on that same path.
+ABI 179 admits hexbin `fill_opacity` on XYMS fill alpha. Per-item radius channels stay compatibility. Irregular
 spacing, and LOD stay compatibility.
 
 Contract-wide invariants: every tier transition is hysteresis-guarded and logged
