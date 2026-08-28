@@ -220,7 +220,7 @@ crates/
                         #   sidecar packing plus ABI 162 XYAS/XYCF assembled
                         #   encode from sidecars plus ABI 163 product encode
                         #   from packed facts plus ABI 164 public static-export
-                        #   consumers.
+                        #   consumers plus ABI 165 product-path XYFS support.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -273,9 +273,11 @@ crates/
                         #   product rows plus XYSD, and extract XYAD.
     scene_encode_assembled.rs # ABI 160 XYAS/XYCC assembled encode plus ABI 162
                              #   XYAS/XYCF encode from sidecars plus ABI 163
-                             #   product encode from packed facts: compile,
-                             #   attach, sidecars, rows, annotation, style,
-                             #   splice, then sidecar assembled encode.
+                             #   product encode from packed facts plus ABI 165
+                             #   product-path XYFS figure-compile support:
+                             #   compile, attach, sidecars, rows, annotation,
+                             #   style, splice, support probe, then sidecar
+                             #   assembled encode.
     scene_static.rs     # ABI 164 public static-export consumers from one
                              #   encoded Scene: SVG, PNG, PDF, JPEG, WebP.
     jpeg.rs             # baseline JPEG encode (ABI 114): YCbCr 4:4:4, Annex K
@@ -832,4 +834,5 @@ landed; the remainder, in order:
    ABI 162 XYAS/XYCF assembled encode from sidecars (`xyg_scene_encode_assembled_from_sidecars`) ✅.
    ABI 163 product encode from packed facts (`xyg_scene_encode_product`) ✅.
    ABI 164 public static-export consumers (`xyg_scene_static_export`) ✅.
+   ABI 165 product-path XYFS figure-compile support (`xyg_scene_encode_product`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

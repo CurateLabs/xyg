@@ -234,6 +234,9 @@ XYTC plus XYTA plus XYNM plus XYCL plus XYAF plus XYCF plus polar.
 ABI 164 adds
 `xyg_scene_static_export` so public SVG/PNG/PDF/JPEG/WebP consumers resolve
 from one encoded Scene.
+ABI 165 extends
+`xyg_scene_encode_product` so the figure-compile support probe resolves from
+packed XYFS on the same product call.
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -281,6 +284,7 @@ ABI 163 owns product-path compile, attach, sidecar, row, annotation,
 style-sidecar, splice, and assembled encode from packed XYTC plus XYTA plus
 XYNM plus XYCL plus XYAF plus XYCF plus polar.
 ABI 164 owns public SVG/PNG/PDF/JPEG/WebP consumers from one encoded Scene.
+ABI 165 owns the figure-compile support probe from packed XYFS on product encode.
 Polar+step+smooth
 and authored marker glyphs stay
 compatibility. ABI 104 likewise moves
@@ -321,6 +325,10 @@ and Node pass `XYTC` plus `XYTA` plus `XYNM` plus `XYCL` plus `XYAF` plus
 ABI 164 makes public static-export consumers Rust-owned: Python and Node pass
 one encoded Scene plus format/scale/size/quality and call
 `xyg_scene_static_export`.
+ABI 165 folds figure-compile support into that product call: Python and Node
+pass packed `XYFS` on `xyg_scene_encode_product` instead of probing
+`xyg_scene_figure_support_reason` separately. Empty `XYFS` skips the probe.
+The explicit `xyg_scene_figure_support_reason` ABI remains for tests.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call
 `xyg_figure_autorange` / `xyg_auto_domain`. Direct-browser WASM compile uses
@@ -597,6 +605,8 @@ ABI 163
 annotation, style-sidecar, splice, and assembled encode from packed XYTC plus
 XYTA plus XYNM plus XYCL plus XYAF plus XYCF plus polar so orchestration
 cannot drift.
+ABI 165 extends that same entry so packed XYFS figure-compile support cannot
+drift either; empty XYFS skips the probe.
 ABI 116
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 so tags and opposite-axis spanning cannot drift. ABI 117

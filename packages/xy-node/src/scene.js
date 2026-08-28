@@ -261,12 +261,6 @@ function packXyAf(annotation, index) {
   if (kindCode == null) throw new RangeError(`Scene v12 annotations support rule, band, and unlabeled marker only; ${JSON.stringify(kind)} is deferred`);
   const wrapped = ["text", "callout"].includes(kind) && Object.hasOwn(annotation, "wrap");
   const labelled = annotation.text != null && annotation.text !== "";
-  if (annotation.class_name != null && annotation.class_name !== "") {
-    if (kind === "arrow") throw new RangeError("Scene arrows do not encode class_name");
-    if (kind === "callout") throw new RangeError("Scene callouts do not encode class_name");
-    if (wrapped) throw new RangeError("Scene wrapped annotations do not encode class_name");
-    throw new RangeError(sceneSupportReason(1n << 2n));
-  }
   if (kind === "arrow" && labelled) throw new RangeError("Scene arrows do not encode text");
   let encoded = new Uint8Array();
   if (labelled) {
@@ -4093,6 +4087,7 @@ function encodeProduct(
   yDomain,
   chromeFacts,
   polar,
+  figureSupport,
 ) {
   const compileBytes = compileFacts instanceof Uint8Array ? compileFacts : new Uint8Array();
   const attachBytes = attachFacts instanceof Uint8Array ? attachFacts : new Uint8Array();
@@ -4101,6 +4096,7 @@ function encodeProduct(
   const annotationBytes = annotationFacts instanceof Uint8Array ? annotationFacts : new Uint8Array();
   const chromeBytes = chromeFacts instanceof Uint8Array ? chromeFacts : new Uint8Array();
   const polarBytes = polar instanceof Uint8Array ? polar : new Uint8Array();
+  const supportBytes = figureSupport instanceof Uint8Array ? figureSupport : new Uint8Array();
   let capacity = Math.max(
     65536,
     compileBytes.length
@@ -4110,6 +4106,7 @@ function encodeProduct(
       + annotationBytes.length
       + chromeBytes.length
       + polarBytes.length
+      + supportBytes.length
       + 32
       + 512 * 384 * 5
       + 4096,
@@ -4136,6 +4133,8 @@ function encodeProduct(
       BigInt(chromeBytes.length),
       polarBytes.length ? u8Ptr(polarBytes) : 0,
       BigInt(polarBytes.length),
+      supportBytes.length ? u8Ptr(supportBytes) : 0,
+      BigInt(supportBytes.length),
       u8Ptr(out),
       BigInt(out.length),
     );
@@ -4143,6 +4142,11 @@ function encodeProduct(
       capacity *= 2;
       continue;
     }
+    if (code === -801) {
+      const n = new DataView(out.buffer, out.byteOffset, 4).getUint32(0, true);
+      throw new RangeError(new TextDecoder("utf-8", { fatal: true }).decode(out.subarray(4, 4 + n)));
+    }
+    if (code === -802) throw new RangeError("invalid scene figure support envelope");
     const failing = new DataView(out.buffer, out.byteOffset, 4).getUint32(0, true);
     const magnitude = Math.abs(code);
     if (code < 0 && magnitude >= 100) {
@@ -5060,8 +5064,6 @@ function heatmapTessellatesCellFills(trace) {
 export function figureSceneV3(figure, { margins = null } = {}) {
   let colorbarUnsupported = false;
   try { colorbarInput(figure); } catch { colorbarUnsupported = Boolean(figure.colorbarOptions ?? figure.colorbar_options); }
-  const reason = sceneFigureSupportReason(figure, { colorbarUnsupported });
-  if (reason) throw new RangeError(reason);
   const xDomain = figure._range("x");
   const yDomain = figure._range("y");
   const annotationParts = [];
@@ -5082,6 +5084,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
         width: figure.width, height: figure.height, margins, colorbarOk: !colorbarUnsupported,
       }),
       packPolarSceneInput(figure),
+      packFigureSupport(figure, { colorbarUnsupported }),
     );
   } catch (error) {
     if (error.stage === 1) raiseTraceCompile(error.code, error.index ?? 0, figure);

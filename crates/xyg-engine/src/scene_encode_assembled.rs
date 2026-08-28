@@ -9,6 +9,9 @@
 //! ABI 163 `encode_product` owns the remaining product-path orchestration
 //! (compile, attach, sidecars, rows, annotation facts, style sidecars, splice,
 //! then sidecar assembled encode) so hosts pack authored blobs once.
+//! ABI 165 additionally owns the figure-compile support probe from packed
+//! `XYFS` so product-path hosts do not call `scene_figure_support_reason`
+//! separately. Empty `XYFS` skips the probe (stepwise ABI 163 callers).
 //! Encoded Scene v31 is unchanged.
 
 use crate::scene::{
@@ -161,13 +164,19 @@ pub const PRODUCT_STAGE_ROWS: i32 = 400;
 pub const PRODUCT_STAGE_ANNOTATION: i32 = 500;
 pub const PRODUCT_STAGE_STYLE: i32 = 600;
 pub const PRODUCT_STAGE_SPLICE: i32 = 700;
+pub const PRODUCT_STAGE_SUPPORT: i32 = 800;
+/// Non-empty figure-compile diagnostic; UTF-8 reason follows a u32 length in `out`.
+pub const PRODUCT_SUPPORT_UNSUPPORTED: i32 = 801;
+/// Malformed or version-mismatched XYFS envelope.
+pub const PRODUCT_SUPPORT_ENVELOPE: i32 = 802;
 
 /// Why an ABI 163 product encode was rejected. Discriminants are the C-ABI
 /// error codes (returned negated by `xyg_scene_encode_product`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProductEncodeError {
     pub code: i32,
     pub index: u32,
+    pub reason: Vec<u8>,
 }
 
 fn map_stage(base: i32, code: i32, index: u32) -> ProductEncodeError {
@@ -178,6 +187,7 @@ fn map_stage(base: i32, code: i32, index: u32) -> ProductEncodeError {
             base + code
         },
         index,
+        reason: Vec::new(),
     }
 }
 
@@ -757,8 +767,9 @@ pub fn encode_assembled_from_sidecars(
 ///
 /// Rust owns compile, attach, sidecar, row, annotation, style-sidecar, splice,
 /// and sidecar assembled encode so hosts pack XYTC/XYTA/XYNM/XYCL/XYAF/XYCF/
-/// polar once. Encoded Scene v31 is unchanged.
-#[allow(clippy::too_many_arguments)] // authored blob list is the ABI 163 contract
+/// polar once. ABI 165 also owns the figure-compile support probe from packed
+/// XYFS; empty XYFS skips that probe. Encoded Scene v31 is unchanged.
+#[allow(clippy::too_many_arguments)] // authored blob list is the ABI 165 contract
 pub fn encode_product(
     xytc: &[u8],
     xyta: &[u8],
@@ -772,7 +783,27 @@ pub fn encode_product(
     y_hi: f64,
     xycf: &[u8],
     polar: &[u8],
+    xyfs: &[u8],
 ) -> Result<Vec<u8>, ProductEncodeError> {
+    if !xyfs.is_empty() {
+        match crate::scene_figure_support_reason(xyfs) {
+            Ok(reason) if !reason.is_empty() => {
+                return Err(ProductEncodeError {
+                    code: PRODUCT_SUPPORT_UNSUPPORTED,
+                    index: 0,
+                    reason: reason.into_bytes(),
+                });
+            }
+            Ok(_) => {}
+            Err(_) => {
+                return Err(ProductEncodeError {
+                    code: PRODUCT_SUPPORT_ENVELOPE,
+                    index: 0,
+                    reason: Vec::new(),
+                });
+            }
+        }
+    }
     let compiled = pack_trace_compile(xytc)
         .map_err(|error| map_stage(PRODUCT_STAGE_COMPILE, error.code as i32, error.index))?;
     let attached = pack_trace_attach(&compiled, xyta)
@@ -795,6 +826,7 @@ pub fn encode_product(
         ProductEncodeError {
             code: error.code as i32,
             index: error.index,
+            reason: Vec::new(),
         }
     })
 }
@@ -1036,6 +1068,7 @@ mod tests {
             1.0,
             &empty_chrome_facts(),
             &[],
+            &[],
         )
         .unwrap();
         assert_eq!(product, packed);
@@ -1061,6 +1094,7 @@ mod tests {
             1.0,
             &empty_chrome_facts(),
             &[0u8; 8],
+            &[],
         )
         .unwrap_err();
         assert_eq!(error.code, EncodeSidecarsCode::ExtrasShape as i32);
@@ -1086,11 +1120,133 @@ mod tests {
             1.0,
             &empty_chrome_facts(),
             &[],
+            &[],
         )
         .unwrap_err();
         assert_eq!(
             error.code,
             PRODUCT_STAGE_COMPILE + crate::scene_trace_compile::TraceCompileCode::Version as i32
         );
+    }
+
+    fn xyfs_v2(flags: u32, traces: &[(u16, &str)]) -> Vec<u8> {
+        let mut buf = Vec::from(*b"XYFS");
+        buf.extend_from_slice(&2u32.to_le_bytes());
+        buf.extend_from_slice(&flags.to_le_bytes());
+        buf.extend_from_slice(&2u32.to_le_bytes());
+        buf.extend_from_slice(&(traces.len() as u32).to_le_bytes());
+        buf.extend_from_slice(&[0, 0, 0, 0]);
+        buf.extend_from_slice(&0u32.to_le_bytes());
+        buf.extend_from_slice(&[1, 0, 0, 0]);
+        buf.extend_from_slice(&0u32.to_le_bytes());
+        for (trace_flags, kind) in traces {
+            buf.extend_from_slice(&trace_flags.to_le_bytes());
+            buf.push(kind.len() as u8);
+            buf.push(0);
+            buf.extend_from_slice(&0u32.to_le_bytes());
+            buf.extend_from_slice(kind.as_bytes());
+        }
+        buf
+    }
+
+    fn empty_product_blobs() -> (Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>) {
+        (
+            empty_header(XYTC_MAGIC, XYTC_VERSION, XYTC_HEADER_BYTES),
+            empty_header(XYTA_MAGIC, XYTA_VERSION, XYTA_HEADER_BYTES),
+            empty_header(XYNM_MAGIC, XYNM_VERSION, XYNM_HEADER_BYTES),
+            empty_header(XYCL_MAGIC, XYCL_VERSION, XYCL_HEADER_BYTES),
+            empty_chrome_facts(),
+        )
+    }
+
+    #[test]
+    fn product_empty_xyfs_skips_support_probe() {
+        let (xytc, xyta, xynm, xycl, xycf) = empty_product_blobs();
+        let encoded = encode_product(
+            &xytc,
+            &xyta,
+            &xynm,
+            &xycl,
+            &[],
+            0,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            &xycf,
+            &[],
+            &[],
+        )
+        .unwrap();
+        assert_eq!(&encoded[..4], b"XYGS");
+    }
+
+    #[test]
+    fn product_supported_xyfs_encodes() {
+        let (xytc, xyta, xynm, xycl, xycf) = empty_product_blobs();
+        let encoded = encode_product(
+            &xytc,
+            &xyta,
+            &xynm,
+            &xycl,
+            &[],
+            0,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            &xycf,
+            &[],
+            &xyfs_v2(0, &[(0, "scatter")]),
+        )
+        .unwrap();
+        assert_eq!(&encoded[..4], b"XYGS");
+    }
+
+    #[test]
+    fn product_unsupported_xyfs_is_support_stage() {
+        let (xytc, xyta, xynm, xycl, xycf) = empty_product_blobs();
+        let error = encode_product(
+            &xytc,
+            &xyta,
+            &xynm,
+            &xycl,
+            &[],
+            0,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            &xycf,
+            &[],
+            &xyfs_v2(1, &[(1, "stem")]),
+        )
+        .unwrap_err();
+        assert_eq!(error.code, PRODUCT_SUPPORT_UNSUPPORTED);
+        let reason = std::str::from_utf8(&error.reason).unwrap();
+        assert!(reason.contains("XYG_SCENE_UNSUPPORTED_POLAR"));
+    }
+
+    #[test]
+    fn product_malformed_xyfs_is_support_envelope() {
+        let (xytc, xyta, xynm, xycl, xycf) = empty_product_blobs();
+        let error = encode_product(
+            &xytc,
+            &xyta,
+            &xynm,
+            &xycl,
+            &[],
+            0,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            &xycf,
+            &[],
+            b"XYFS",
+        )
+        .unwrap_err();
+        assert_eq!(error.code, PRODUCT_SUPPORT_ENVELOPE);
+        assert!(error.reason.is_empty());
     }
 }

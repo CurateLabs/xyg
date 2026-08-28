@@ -144,6 +144,9 @@ encode from packed XYTC plus XYTA plus XYNM plus XYCL plus XYAF plus XYCF plus
 polar.
 ABI 164 does not change Scene records; `xyg_scene_static_export` owns public
 SVG/PNG/PDF/JPEG/WebP consumers from one encoded Scene.
+ABI 165 does not change Scene records; `xyg_scene_encode_product` additionally
+owns the figure-compile support probe from packed XYFS. Empty XYFS skips the
+probe so stepwise ABI 163 callers keep working.
 
 ## Version 3: backend-neutral core scene batch
 
@@ -1362,7 +1365,9 @@ assembled Scene encode from `XYAS` plus `XYCF` plus `XYSD` plus polar plus
 `XYSS` so chrome/extras packing and viewport/axis scalars cannot drift.
 ABI 163 packs product-path Scene encode from `XYTC` plus `XYTA` plus `XYNM`
 plus `XYCL` plus `XYAF` plus `XYCF` plus polar so compile/attach/sidecar/row/
-annotation/style/splice/encode orchestration cannot drift. An empty reason selects the Scene route;
+annotation/style/splice/encode orchestration cannot drift. ABI 165 additionally
+packs `XYFS` on that same product call so figure-compile support cannot drift
+either; empty `XYFS` skips the probe. An empty reason selects the Scene route;
 hosts still compile the Scene and may still report compiler or viewport
 diagnostics. Rust owns the public PolyFill group budget, including companion
 traces that share the browser painter's 1,024-group ceiling; hosts do not
@@ -1460,6 +1465,9 @@ XYTA plus XYNM plus XYCL plus XYAF plus XYCF plus polar.
 ABI 164 does not change Scene records either;
 `xyg_scene_static_export` owns public SVG/PNG/PDF/JPEG/WebP consumers from
 one encoded Scene.
+ABI 165 does not change Scene records either;
+`xyg_scene_encode_product` additionally owns the figure-compile support probe
+from packed XYFS.
 Polar+step+smooth and authored marker glyphs stay compatibility. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;

@@ -701,7 +701,11 @@ def _annotation_allowed_style(kind: str, wrapped: bool, labelled: bool) -> set[s
 
 
 def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
-    """Pack one authored annotation as XYAF v1; Rust classifies the family."""
+    """Pack one authored annotation as XYAF v1; Rust classifies the family.
+
+    Annotation ``class_name`` is an XYFS observation (ABI 165), not an XYAF
+    field. Product encode reports ``XYG_SCENE_UNSUPPORTED_BROWSER_CSS``.
+    """
     kind = annotation.get("kind")
     kind_code = _XYAF_KIND_CODES.get(str(kind) if kind is not None else "")
     if kind_code is None:
@@ -711,14 +715,6 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
     wrapped = kind in {"text", "callout"} and "wrap" in annotation
     attached_text = annotation.get("text")
     labelled = attached_text not in (None, "")
-    if annotation.get("class_name") not in (None, ""):
-        if kind == "arrow":
-            raise UnsupportedSceneV3("Scene arrows do not encode class_name")
-        if kind == "callout":
-            raise UnsupportedSceneV3("Scene callouts do not encode class_name")
-        if wrapped:
-            raise UnsupportedSceneV3("Scene wrapped annotations do not encode class_name")
-        raise UnsupportedSceneV3("Scene v12 annotations do not encode class_name")
     if kind == "arrow" and labelled:
         raise UnsupportedSceneV3("Scene arrows do not encode text or class_name")
     encoded = b""
@@ -2882,16 +2878,12 @@ def figure_scene(
         _colorbar_input(figure)
     except UnsupportedSceneV3:
         colorbar_unsupported = True
-    reason = _native.scene_figure_support_reason(
-        _pack_figure_support(figure, annotations, colorbar_unsupported)
-    )
-    if reason:
-        raise UnsupportedSceneV3(reason)
 
-    # Hosts pack XYTC, XYTA, XYNM, XYCL, XYAF, XYCF, and polar; Rust owns
+    # Hosts pack XYTC, XYTA, XYNM, XYCL, XYAF, XYCF, polar, and XYFS; Rust owns
     # compile, attach, sidecars, rows, annotation facts, style sidecars,
-    # splice, XYCC/extras packing, viewport/axis scalars, and assembled
-    # encode (ABI 163). Earlier ABIs 148–162 remain available for tests.
+    # splice, XYCC/extras packing, viewport/axis scalars, assembled encode,
+    # and the figure-compile support probe (ABI 165). Earlier ABIs 148–164
+    # remain available for tests. Empty XYFS skips the probe.
     x_span = tuple(float(value) for value in figure._range("x"))
     y_span = tuple(float(value) for value in figure._range("y"))
     x_domain = (x_span[0], x_span[1])
@@ -2919,7 +2911,10 @@ def figure_scene(
                 colorbar_ok=not colorbar_unsupported,
             ),
             polar=_pack_polar_scene_input(figure),
+            figure_support=_pack_figure_support(figure, annotations, colorbar_unsupported),
         )
+    except _native.SceneFigureSupportError as error:
+        raise UnsupportedSceneV3(str(error)) from error
     except _native.SceneTraceCompileError as error:
         _raise_trace_compile(error, figure)
     except _native.SceneTraceAttachError as error:

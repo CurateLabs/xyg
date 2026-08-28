@@ -1,9 +1,9 @@
 {
-  "abi_version": 164,
+  "abi_version": 165,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "d309c55f897454dd08d6d63b4ae0a03098e4d31f369f5580887f1e7a9c0ab2e6",
+  "signature_sha256": "efb7693cde07cedfc6a73292b7902ce055c4c73486a083032561ef2e0a2014f8",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -23892,7 +23892,7 @@
     {
       "name": "xyg_scene_encode_product",
       "node_name": "xySceneEncodeProduct",
-      "nargs": 21,
+      "nargs": 23,
       "arguments": [
         {
           "name": "xytc",
@@ -24187,6 +24187,37 @@
           }
         },
         {
+          "name": "xyfs",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "xyfs_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
           "name": "out",
           "type": {
             "rust": "*mut u8",
@@ -24230,7 +24261,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_scene_encode_product(const uint8_t * xytc, size_t xytc_len, const uint8_t * xyta, size_t xyta_len, const uint8_t * xynm, size_t xynm_len, const uint8_t * xycl, size_t xycl_len, const uint8_t * xyaf, size_t xyaf_len, uint32_t style_ref_base, double x_lo, double x_hi, double y_lo, double y_hi, const uint8_t * xycf, size_t xycf_len, const uint8_t * polar, size_t polar_len, uint8_t * out, size_t out_cap)"
+      "c_signature": "int32_t xyg_scene_encode_product(const uint8_t * xytc, size_t xytc_len, const uint8_t * xyta, size_t xyta_len, const uint8_t * xynm, size_t xynm_len, const uint8_t * xycl, size_t xycl_len, const uint8_t * xyaf, size_t xyaf_len, uint32_t style_ref_base, double x_lo, double x_hi, double y_lo, double y_hi, const uint8_t * xycf, size_t xycf_len, const uint8_t * polar, size_t polar_len, const uint8_t * xyfs, size_t xyfs_len, uint8_t * out, size_t out_cap)"
     },
     {
       "name": "xyg_scene_figure_support_reason",

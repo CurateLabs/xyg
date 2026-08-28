@@ -339,6 +339,71 @@ def test_encode_product_maps_compile_version() -> None:
     assert excinfo.value.code == -2
 
 
+def test_encode_product_xyfs_unsupported_is_figure_support() -> None:
+    from xyg import _scene_v3
+    from xyg._native import SceneFigureSupportError
+
+    xytc = b"XYTC" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    figure = Figure(width=400, height=400, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, 6.283185307179586)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.stem([0.0], [1.0])
+    facts = _scene_v3._pack_chrome_facts(
+        figure,
+        width=400,
+        height=400,
+        margins=None,
+        colorbar_ok=True,
+    )
+    support = _scene_v3._pack_figure_support(figure, [], False)
+    with pytest.raises(SceneFigureSupportError, match="XYG_SCENE_UNSUPPORTED_POLAR") as excinfo:
+        scene_encode_product(
+            compile_facts=xytc,
+            attach_facts=b"XYTA" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little"),
+            names=b"XYNM" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little"),
+            columns=b"XYCL" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little"),
+            annotation_facts=b"",
+            style_ref_base=0,
+            x_domain=(0.0, 1.0),
+            y_domain=(0.0, 1.0),
+            chrome_facts=facts,
+            polar=b"",
+            figure_support=support,
+        )
+    assert "polar line, scatter, area, bar, column, errorbar, heatmap, and contour" in str(
+        excinfo.value
+    )
+
+
+def test_encode_product_malformed_xyfs_is_envelope() -> None:
+    from xyg import _scene_v3
+
+    figure = Figure(width=400, height=300)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    facts = _scene_v3._pack_chrome_facts(
+        figure,
+        width=400,
+        height=300,
+        margins=None,
+        colorbar_ok=True,
+    )
+    with pytest.raises(ValueError, match="invalid scene figure support envelope"):
+        scene_encode_product(
+            compile_facts=b"XYTC" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little"),
+            attach_facts=b"XYTA" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little"),
+            names=b"XYNM" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little"),
+            columns=b"XYCL" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little"),
+            annotation_facts=b"",
+            style_ref_base=0,
+            x_domain=(0.0, 1.0),
+            y_domain=(0.0, 1.0),
+            chrome_facts=facts,
+            polar=b"",
+            figure_support=b"XYFS",
+        )
+
+
 def test_chrome_from_sidecars_fills_named_legend() -> None:
     from xyg import _scene_v3
 

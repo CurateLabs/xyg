@@ -2517,6 +2517,10 @@ class SceneAnnotationFactsError(ValueError):
     """Native XYAF annotation-fact failure from product encode."""
 
 
+class SceneFigureSupportError(ValueError):
+    """Figure-compile support rejection from product encode (ABI 165)."""
+
+
 _PRODUCT_STAGE_COMPILE = 100
 _PRODUCT_STAGE_ATTACH = 200
 _PRODUCT_STAGE_SIDECARS = 300
@@ -2547,6 +2551,7 @@ def scene_encode_product(
     y_domain: tuple[float, float],
     chrome_facts: bytes,
     polar: bytes | None = None,
+    figure_support: bytes | None = None,
 ) -> bytes:
     """Encode a product Scene from packed authored blobs (M2 #271)."""
     compile_payload = (
@@ -2582,6 +2587,15 @@ def scene_encode_product(
         if polar is None
         else (polar if isinstance(polar, (bytes, bytearray, memoryview)) else bytes(polar))
     )
+    support_payload = (
+        b""
+        if figure_support is None
+        else (
+            figure_support
+            if isinstance(figure_support, (bytes, bytearray, memoryview))
+            else bytes(figure_support)
+        )
+    )
     x0, x1 = (float(value) for value in x_domain)
     y0, y1 = (float(value) for value in y_domain)
     capacity = max(
@@ -2593,6 +2607,7 @@ def scene_encode_product(
         + len(annotation_payload)
         + len(chrome_payload)
         + len(polar_payload)
+        + len(support_payload)
         + 32
         + 512 * 384 * 5
         + 4096,
@@ -2632,6 +2647,11 @@ def scene_encode_product(
         if polar_payload
         else np.empty(0, dtype=np.uint8)
     )
+    source_support = (
+        np.frombuffer(support_payload, dtype=np.uint8)
+        if support_payload
+        else np.empty(0, dtype=np.uint8)
+    )
     for _ in range(4):
         out = np.zeros(capacity, dtype=np.uint8)
         code = int(
@@ -2655,6 +2675,8 @@ def scene_encode_product(
                 int(source_chrome.size),
                 _ptr_u8(source_polar) if source_polar.size else 0,
                 int(source_polar.size),
+                _ptr_u8(source_support) if source_support.size else 0,
+                int(source_support.size),
                 _ptr_u8(out),
                 len(out),
             )
@@ -2662,6 +2684,12 @@ def scene_encode_product(
         if code == -4:
             capacity *= 2
             continue
+        if code == -801:
+            n = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
+            reason = bytes(out[4 : 4 + n]).decode("utf-8")
+            raise SceneFigureSupportError(reason)
+        if code == -802:
+            raise ValueError("invalid scene figure support envelope")
         index = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
         staged = _product_stage(code)
         if staged is not None:

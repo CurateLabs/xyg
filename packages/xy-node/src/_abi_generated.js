@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 164;
-export const SIGNATURE_SHA256 = "d309c55f897454dd08d6d63b4ae0a03098e4d31f369f5580887f1e7a9c0ab2e6";
+export const ABI_VERSION = 165;
+export const SIGNATURE_SHA256 = "efb7693cde07cedfc6a73292b7902ce055c4c73486a083032561ef2e0a2014f8";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -452,7 +452,7 @@ export function bindGeneratedAbi(lib) {
   xySceneBrowserPainter = lib.func("size_t xyg_scene_browser_painter(const uint8_t * encoded, size_t encoded_len, size_t max_bytes, uint8_t * out, size_t out_cap)");
   xySceneEncodeAssembled = lib.func("int32_t xyg_scene_encode_assembled(const uint8_t * xyas, size_t xyas_len, const uint8_t * chrome, size_t chrome_len, const uint8_t * extras, size_t extras_len, double viewport_width, double viewport_height, uint64_t x_axis_id, uint32_t x_kind, double x_lo, double x_hi, double x_constant, int32_t x_mask_nonpositive, uint64_t y_axis_id, uint32_t y_kind, double y_lo, double y_hi, double y_constant, int32_t y_mask_nonpositive, uint8_t * out, size_t out_cap)");
   xySceneEncodeAssembledFromSidecars = lib.func("int32_t xyg_scene_encode_assembled_from_sidecars(const uint8_t * xyas, size_t xyas_len, const uint8_t * chrome_facts, size_t chrome_facts_len, const uint8_t * xysd, size_t xysd_len, const uint8_t * polar, size_t polar_len, const uint8_t * extras_facts, size_t extras_facts_len, uint8_t * out, size_t out_cap)");
-  xySceneEncodeProduct = lib.func("int32_t xyg_scene_encode_product(const uint8_t * xytc, size_t xytc_len, const uint8_t * xyta, size_t xyta_len, const uint8_t * xynm, size_t xynm_len, const uint8_t * xycl, size_t xycl_len, const uint8_t * xyaf, size_t xyaf_len, uint32_t style_ref_base, double x_lo, double x_hi, double y_lo, double y_hi, const uint8_t * xycf, size_t xycf_len, const uint8_t * polar, size_t polar_len, uint8_t * out, size_t out_cap)");
+  xySceneEncodeProduct = lib.func("int32_t xyg_scene_encode_product(const uint8_t * xytc, size_t xytc_len, const uint8_t * xyta, size_t xyta_len, const uint8_t * xynm, size_t xynm_len, const uint8_t * xycl, size_t xycl_len, const uint8_t * xyaf, size_t xyaf_len, uint32_t style_ref_base, double x_lo, double x_hi, double y_lo, double y_hi, const uint8_t * xycf, size_t xycf_len, const uint8_t * polar, size_t polar_len, const uint8_t * xyfs, size_t xyfs_len, uint8_t * out, size_t out_cap)");
   xySceneFigureSupportReason = lib.func("size_t xyg_scene_figure_support_reason(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap)");
   xyScenePackAnnotationFacts = lib.func("int32_t xyg_scene_pack_annotation_facts(const uint8_t * facts, size_t facts_len, uint32_t style_ref_base, double x0, double x1, double y0, double y1, uint8_t * out, size_t out_cap)");
   xyScenePackAnnotationMarks = lib.func("int32_t xyg_scene_pack_annotation_marks(const uint8_t * rows, size_t rows_len, double x0, double x1, double y0, double y1, uint8_t * out, size_t out_cap)");

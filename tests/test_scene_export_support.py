@@ -1289,6 +1289,13 @@ def test_migrated_scene_packers_have_no_host_step_geometry_expander() -> None:
     assert "function stepArrays" not in node_packer
     assert "return _native.scene_encode_product(" in python_packer
     assert "return encodeProduct(" in node_packer
+    assert "figure_support=_pack_figure_support(" in python_packer
+    assert "packFigureSupport(figure, { colorbarUnsupported })" in node_packer
+    assert "reason = _native.scene_figure_support_reason(" not in python_packer
+    assert (
+        "const reason = sceneFigureSupportReason(figure, { colorbarUnsupported });"
+        not in node_packer
+    )
     assert "reason, scene = _public_scene_or_reason(" in python_packer
     assert "viewport=(w, h)" not in python_packer
     assert "xAxis: xSceneAxis" not in node_packer

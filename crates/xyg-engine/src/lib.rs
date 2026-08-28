@@ -117,6 +117,7 @@ pub use scene_encode_assembled::{
     EncodeAssembledCode, EncodeAssembledError, EncodeSidecarsCode, EncodeSidecarsError,
     ProductEncodeError, PRODUCT_STAGE_ANNOTATION, PRODUCT_STAGE_ATTACH, PRODUCT_STAGE_COMPILE,
     PRODUCT_STAGE_ROWS, PRODUCT_STAGE_SIDECARS, PRODUCT_STAGE_SPLICE, PRODUCT_STAGE_STYLE,
+    PRODUCT_STAGE_SUPPORT, PRODUCT_SUPPORT_ENVELOPE, PRODUCT_SUPPORT_UNSUPPORTED,
 };
 #[cfg(feature = "raster")]
 pub mod scene_static;

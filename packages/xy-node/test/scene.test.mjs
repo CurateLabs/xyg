@@ -99,6 +99,22 @@ test("Node Scene v30 compiles constant dash polylines and keeps authored markers
   assert.throws(() => marked.toScene(), /authored markers/);
 });
 
+test("Node product encode owns figure-compile support from packed XYFS", () => {
+  const polar = new Figure({ width: 400, height: 400, coords: "polar" });
+  polar.setAxisDomain("x", [0, Math.PI * 2]);
+  polar.setAxisDomain("y", [0, 1]);
+  polar.stem([0], [1]);
+  assert.throws(() => polar.toScene(), /XYG_SCENE_UNSUPPORTED_POLAR/);
+  const figure = new Figure({ width: 240, height: 160 });
+  figure.setAxisDomain("x", [0, 2]);
+  figure.setAxisDomain("y", [0, 2]);
+  figure.scatter([0.5, 1.5], [0.5, 1.5], {
+    _composed: true,
+    style: { color: "#3987e5", size: 8 },
+  });
+  assert.equal(Buffer.from(figure.toScene().subarray(0, 4)).toString(), "XYGS");
+});
+
 test("Node public static export matches explicit Scene consumers", () => {
   const figure = new Figure({ width: 240, height: 160 });
   figure.setAxisDomain("x", [0, 2]);

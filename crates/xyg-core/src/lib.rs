@@ -62,6 +62,7 @@ use xyg_engine::splice_annotations;
 use xyg_engine::encode_assembled;
 use xyg_engine::encode_assembled_from_sidecars;
 use xyg_engine::encode_product;
+use xyg_engine::PRODUCT_SUPPORT_UNSUPPORTED;
 use xyg_engine::scene_static_export;
 use xyg_engine::SceneStaticFormat;
 use xyg_engine::EncodeAssembledAxis;
@@ -158,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 164;
+pub const ABI_VERSION: u32 = 165;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1012,13 +1013,15 @@ pub unsafe extern "C" fn xyg_scene_encode_assembled_from_sidecars(
 
 /// Encode packed authored product blobs into a canonical Scene v31 batch.
 /// Rust owns compile, attach, sidecar, row, annotation, style-sidecar, splice,
-/// XYCC packing, extras packing, viewport/axis scalars, and assembled encode
-/// so Python and Node cannot drift on product-path orchestration. Returns the
-/// encoded byte count on success, or a negated `ProductEncodeError` code.
-/// Encode-sidecar failures keep codes 1–21; other stages occupy
-/// `base + original` except shared `Output=4` retry. On error, when
-/// `out_cap >= 4`, writes the failing index as a little-endian u32. Encoded
-/// Scene v31 is unchanged.
+/// XYCC packing, extras packing, viewport/axis scalars, assembled encode, and
+/// (ABI 165) the figure-compile support probe from packed XYFS so Python and
+/// Node cannot drift on product-path orchestration. Empty XYFS skips the
+/// probe. Returns the encoded byte count on success, or a negated
+/// `ProductEncodeError` code. Encode-sidecar failures keep codes 1–21; other
+/// stages occupy `base + original` except shared `Output=4` retry. Support
+/// rejection (`-801`) writes a little-endian u32 reason length then UTF-8;
+/// other errors write the failing index as a little-endian u32 when
+/// `out_cap >= 4`. Encoded Scene v31 is unchanged.
 ///
 /// # Safety
 /// When a length is non-zero, the matching pointer must address that many
@@ -1046,6 +1049,8 @@ pub unsafe extern "C" fn xyg_scene_encode_product(
     xycf_len: usize,
     polar: *const u8,
     polar_len: usize,
+    xyfs: *const u8,
+    xyfs_len: usize,
     out: *mut u8,
     out_cap: usize,
 ) -> i32 {
@@ -1056,6 +1061,7 @@ pub unsafe extern "C" fn xyg_scene_encode_product(
         || (xyaf_len > 0 && xyaf.is_null())
         || (xycf_len > 0 && xycf.is_null())
         || (polar_len > 0 && polar.is_null())
+        || (xyfs_len > 0 && xyfs.is_null())
         || (out_cap > 0 && out.is_null())
     {
         return -(EncodeSidecarsCode::Length as i32);
@@ -1096,6 +1102,11 @@ pub unsafe extern "C" fn xyg_scene_encode_product(
         } else {
             std::slice::from_raw_parts(polar, polar_len)
         };
+        let xyfs_bytes = if xyfs_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(xyfs, xyfs_len)
+        };
         match encode_product(
             xytc_bytes,
             xyta_bytes,
@@ -1109,6 +1120,7 @@ pub unsafe extern "C" fn xyg_scene_encode_product(
             y_hi,
             xycf_bytes,
             polar_bytes,
+            xyfs_bytes,
         ) {
             Ok(bytes) => {
                 if bytes.len() > out_cap {
@@ -1125,6 +1137,17 @@ pub unsafe extern "C" fn xyg_scene_encode_product(
                 }
             }
             Err(error) => {
+                if error.code == PRODUCT_SUPPORT_UNSUPPORTED {
+                    let n = error.reason.len();
+                    let need = 4usize.saturating_add(n);
+                    if need > out_cap {
+                        return -(EncodeSidecarsCode::Output as i32);
+                    }
+                    let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                    dest[..4].copy_from_slice(&(n as u32).to_le_bytes());
+                    dest[4..need].copy_from_slice(&error.reason);
+                    return -error.code;
+                }
                 if out_cap >= 4 {
                     let dest = std::slice::from_raw_parts_mut(out, out_cap);
                     dest[..4].copy_from_slice(&error.index.to_le_bytes());
@@ -2996,6 +3019,10 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// ABI 164 does not change Scene records;
 /// `xyg_scene_static_export` owns public SVG/PNG/PDF/JPEG/WebP consumers from
 /// one encoded Scene so Python and Node cannot drift on format dispatch.
+/// ABI 165 does not change Scene records;
+/// `xyg_scene_encode_product` additionally owns the figure-compile support
+/// probe from packed XYFS so product-path hosts do not call
+/// `xyg_scene_figure_support_reason` separately.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
@@ -15875,6 +15902,8 @@ mod tests {
                 1.0,
                 xycf.as_ptr(),
                 xycf.len(),
+                std::ptr::null(),
+                0,
                 std::ptr::null(),
                 0,
                 product_encoded.as_mut_ptr(),

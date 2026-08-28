@@ -445,6 +445,19 @@ def test_public_static_export_compiles_scene_once(
     assert calls["n"] == 1
 
 
+def test_figure_scene_does_not_call_figure_support_predicate_separately(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    figure = public_callout_figure()
+
+    def boom(_payload: bytes) -> str:
+        raise AssertionError("product path must not probe XYFS separately")
+
+    monkeypatch.setattr(_scene_v3._native, "scene_figure_support_reason", boom)
+    encoded = _scene_v3.figure_scene(figure)
+    assert encoded[:4] == b"XYGS"
+
+
 def test_public_exporters_share_one_scene_selection_seam(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
