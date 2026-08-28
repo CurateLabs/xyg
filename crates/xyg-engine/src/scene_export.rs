@@ -8,7 +8,8 @@
 //! `XYG_SCENE_UNSUPPORTED_*` wording over that envelope. An empty reason
 //! means the public Scene route applies; hosts then compile through the
 //! existing Scene consumers and may still report compiler or viewport
-//! diagnostics. Rust owns the public PolyFill group budget, including
+//! diagnostics. ABI 171 admits scatter `stroke_width` without `stroke` as
+//! match-fill (mark color at the authored width). Rust owns the public PolyFill group budget, including
 //! companion traces that share the browser painter's 1,024-group ceiling.
 
 use crate::scene::SceneError;
@@ -1198,9 +1199,6 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
                 }))
         {
             return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_SYMBOL");
-        }
-        if trace.kind == KIND_SCATTER && trace.flags & TRACE_STROKE_WIDTH_ONLY != 0 {
-            return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
         }
         if extra_key(&trace.style_keys, public_style_keys(trace.kind)) {
             return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");

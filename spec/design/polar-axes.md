@@ -464,7 +464,9 @@ line/area pack as identity chords (§5), not flattened Hermite polylines.
 ABI 169 admits polar `curve="smooth"` plus `step` as that same identity-chord
 step expansion. ABI 145 tessellates constant polar `marker_path` contours in pixel space
 around each projected centre. ABI 170 admits constant polar `marker_glyph`
-as Scene `<text>` at those same projected centres. ABI 146 paints polar PolyFill wedges (and
+as Scene `<text>` at those same projected centres. ABI 171 admits polar
+width-only scatter `stroke_width` as match-fill at those same centres.
+ABI 146 paints polar PolyFill wedges (and
 cartesian Rects) with constant mark `fill` linear-gradients from XYGR.
 Inverse-sample `<image>` blit stays on the
 compatibility exporters for polar heatmap because polar Image+XYPL stays forbidden.

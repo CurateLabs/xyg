@@ -1279,12 +1279,17 @@ def test_authored_constant_scatter_stroke_uses_public_scene(stroke: str) -> None
     assert scene_export_support_reason(figure) is None
 
 
-def test_width_only_scatter_stroke_stays_on_compatibility_route() -> None:
+def test_width_only_scatter_stroke_uses_public_scene() -> None:
+    from xyg import _native
+
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 2.0)
     figure.axis_options["y"]["domain"] = (0.0, 2.0)
     figure.scatter([1.0], [1.0], symbol="plus_line", color="#3987e5", stroke_width=2.0)
-    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+    assert scene_export_support_reason(figure) is None
+    svg = _native.scene_svg(figure.to_scene())
+    assert 'stroke-width="2"' in svg
+    assert figure.to_svg() == svg
 
 
 @pytest.mark.parametrize("symbol", BUILTIN_SYMBOLS)

@@ -89,7 +89,8 @@ not keep XYMP. ABI 170 admits constant single-character `marker_glyph` markers:
 hosts pack UTF-8 in the XYTR marker blob (`FLAG_HAS_GLYPH`) and Rust keeps XYMG
 on the encoded Scene so SVG emits `<text font-family="DejaVu Sans" …>` and
 raster emits `OP_TEXT`. Combined `marker_path` + `marker_glyph` and multi-character
-glyphs stay fail-closed. ABI 146 admits constant
+glyphs stay fail-closed. ABI 171 admits scatter `stroke_width` without an
+authored `stroke` as match-fill (mark color at the authored width). ABI 146 admits constant
 validated mark `fill` linear-gradients: hosts pack XYGR on the extras dash
 slot (`{space, dir, stops}` with 2–8 RGBA8 stops, axis-aligned `down|up|left|right`,
 `mark` or `plot` space). Encoded Scene v31 keeps XYGR so SVG emits
@@ -159,7 +160,9 @@ bar/column/histogram `corner_radius` tessellates those PolyFill wedges when
 the inner radius is positive. ABI 169 does not change Scene records; polar
 `curve="smooth"` plus `step` keeps authored step expansion on identity chords.
 ABI 170 does not change Scene records; constant scatter `marker_glyph` is kept
-as an XYMG extras sidecar so SVG/raster emit text markers.
+as an XYMG extras sidecar so SVG/raster emit text markers. ABI 171 does not
+change Scene records; width-only scatter `stroke_width` paints the mark color
+at the authored width (matplotlib `edgecolors='face'`).
 Violin/box/heatmap radii and per-item radius channels stay fail-closed.
 
 ## Version 3: backend-neutral core scene batch
@@ -463,7 +466,8 @@ allowlist includes `curve` for `KIND_ERROR_BAND`) and polar
 ABI 147 resolves `step_mode=4` from packed XYPK coords so polar smooth stays
 identity). ABI 169 admits polar `curve="smooth"` plus `step` as authored
 step expansion on those identity chords. ABI 170 admits constant scatter
-`marker_glyph` via XYMG.
+`marker_glyph` via XYMG. ABI 171 admits width-only scatter `stroke_width` as
+match-fill.
 ABI 145 admits
 constant scatter `marker_path` via an XYMP extras sidecar; Rust tessellates
 centres to existing PolyFill/Polyline after pixel mapping (public allowlist
@@ -1489,7 +1493,8 @@ cartesian bar/column/histogram `corner_radius` tessellates to PolyFill after
 pixel mapping. ABI 167 insets polar bar/column/histogram `wedge_gap`. ABI 168
 tessellates polar bar/column/histogram `corner_radius` when the inner radius
 is positive. ABI 169 admits polar `curve="smooth"` plus `step` as polar step
-expansion. ABI 170 admits constant scatter `marker_glyph` via XYMG. ABI 116 does not change Scene records either;
+expansion. ABI 170 admits constant scatter `marker_glyph` via XYMG. ABI 171 admits
+scatter `stroke_width` without `stroke` as match-fill. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;
 `xyg_scene_figure_support_reason` owns figure-compile support from packed

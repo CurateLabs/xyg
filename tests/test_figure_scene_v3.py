@@ -635,7 +635,11 @@ def test_constant_scatter_stroke_defaults_and_compatibility_boundaries(
     width_only = Figure(width=320, height=240).scatter(
         [0.5], [0.5], color="#336699", stroke_width=2.0
     )
-    assert "PUBLIC_STYLE" in (_scene_v3.scene_export_support_reason(width_only) or "")
+    assert _scene_v3.scene_export_support_reason(width_only) is None
+    width_svg = _native.scene_svg(width_only.to_scene())
+    assert 'stroke="rgb(51,102,153)"' in width_svg
+    assert 'stroke-width="2"' in width_svg
+    assert width_only.to_svg() == width_svg
 
     plain_line_symbol = Figure(width=320, height=240).scatter(
         [0.5], [0.5], color="#336699", symbol="plus_line"
@@ -652,7 +656,6 @@ def test_constant_scatter_stroke_defaults_and_compatibility_boundaries(
         figure = Figure(width=320, height=240).scatter([0.5, 1.0], [0.5, 1.0], **kwargs)
         assert _scene_v3.scene_export_support_reason(figure) is not None
         compatibility.append(figure)
-    compatibility.append(width_only)
 
     for opacity_key in ("fill_opacity", "stroke_opacity"):
         figure = Figure(width=320, height=240).scatter([0.5], [0.5])

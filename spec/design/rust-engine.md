@@ -221,7 +221,7 @@ crates/
                         #   encode from sidecars plus ABI 163 product encode
                         #   from packed facts plus ABI 164 public static-export
                         #   consumers plus ABI 165 product-path XYFS support
-                        #   plus ABI 166 cartesian corner_radius tessellation plus ABI 167 polar wedge_gap tessellation plus ABI 168 polar corner_radius tessellation plus ABI 169 polar step+smooth plus ABI 170 marker_glyph XYMG.
+                        #   plus ABI 166 cartesian corner_radius tessellation plus ABI 167 polar wedge_gap tessellation plus ABI 168 polar corner_radius tessellation plus ABI 169 polar step+smooth plus ABI 170 marker_glyph XYMG plus ABI 171 width-only scatter match-fill.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -276,7 +276,7 @@ crates/
                              #   XYAS/XYCF encode from sidecars plus ABI 163
                              #   product encode from packed facts plus ABI 165
                              #   product-path XYFS figure-compile support plus
-                             #   ABI 166 cartesian corner_radius tessellation / ABI 167 polar wedge_gap / ABI 168 polar corner_radius / ABI 169 polar step+smooth / ABI 170 marker_glyph XYMG:
+                             #   ABI 166 cartesian corner_radius tessellation / ABI 167 polar wedge_gap / ABI 168 polar corner_radius / ABI 169 polar step+smooth / ABI 170 marker_glyph XYMG / ABI 171 width-only scatter match-fill:
                              #   compile, attach, sidecars, rows, annotation,
                              #   style, splice, support probe, then sidecar
                              #   assembled encode.
@@ -842,4 +842,5 @@ landed; the remainder, in order:
    ABI 168 polar bar/column/histogram `corner_radius` tessellation (`polar_wedge_points` rounded wedges / XYSD radius blob) ✅.
    ABI 169 polar `curve="smooth"` plus `step` as polar step expansion (identity chords) ✅.
    ABI 170 constant scatter `marker_glyph` XYMG text markers (`scene.rs` / extras dash slot) ✅.
+   ABI 171 width-only scatter `stroke_width` as match-fill (`scene_style.rs` / `scene_export.rs`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

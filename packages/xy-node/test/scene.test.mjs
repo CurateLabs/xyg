@@ -620,6 +620,17 @@ test("Node constant scatter stroke matches Python bytes and public defaults", ()
   assert.equal(strokeOnly.traces[0].style.stroke_width, 1);
   assert.equal(new DataView(strokeOnly.toScene().buffer).getFloat64(168, true), 1);
 
+  const widthOnly = new Figure({ width: 320, height: 240 });
+  widthOnly.setAxisDomain("x", [0, 2]); widthOnly.setAxisDomain("y", [0, 2]);
+  widthOnly.scatter([0.5], [0.5], { style: { color: "#336699", stroke_width: 2 } });
+  assert.equal(sceneExportSupportReason(widthOnly), null);
+  assert.match(sceneSvg(widthOnly.toScene()), /stroke-width="2"/);
+  const plusWidth = new Figure({ width: 320, height: 240 });
+  plusWidth.setAxisDomain("x", [0, 2]); plusWidth.setAxisDomain("y", [0, 2]);
+  plusWidth.scatter([1], [1], { style: { color: "#3987e5", symbol: "plus_line", stroke_width: 2 } });
+  assert.equal(sceneExportSupportReason(plusWidth), null);
+  assert.match(sceneSvg(plusWidth.toScene()), /stroke-width="2"/);
+
   for (const strokeWidth of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
     const invalid = new Figure({ width: 320, height: 240 });
     invalid.scatter([0.5], [0.5], { style: { stroke: "#ff8800", stroke_width: strokeWidth } });

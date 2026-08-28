@@ -571,7 +571,8 @@ F3, still pending (above).
   then ABI 167 applies polar bar/column/histogram `wedge_gap`, then ABI 168
   tessellates polar bar/column/histogram `corner_radius`, then ABI 169 admits
   polar `curve="smooth"` plus `step` as polar step expansion, then ABI 170
-  admits constant scatter `marker_glyph` as Scene `<text>` / `OP_TEXT`.
+  admits constant scatter `marker_glyph` as Scene `<text>` / `OP_TEXT`, then
+  ABI 171 admits scatter `stroke_width` without `stroke` as match-fill.
   `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
   panel Scene. That predicate
   owns the public PolyFill group budget, including companion traces that share
@@ -1496,7 +1497,8 @@ bar/column/histogram `corner_radius` when the inner radius is positive.
 ABI 169 admits polar `curve="smooth"` plus `step` as polar step expansion.
 ABI 170 admits constant scatter `marker_glyph` via an XYMG extras sidecar
 kept on the encoded Scene. Multi-character glyphs and combined
-`marker_path` + `marker_glyph` stay compatibility. Irregular
+`marker_path` + `marker_glyph` stay compatibility. ABI 171 admits scatter
+`stroke_width` without an authored `stroke` as match-fill. Irregular
 spacing, and LOD stay compatibility.
 
 Contract-wide invariants: every tier transition is hysteresis-guarded and logged

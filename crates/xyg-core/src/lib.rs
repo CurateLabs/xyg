@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 170;
+pub const ABI_VERSION: u32 = 171;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -2950,7 +2950,9 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// (stroke-only) after pixel mapping. ABI 170 admits constant scatter
 /// `marker_glyph` via an XYMG extras sidecar kept on the encoded Scene so
 /// SVG emits `<text>` and raster emits `OP_TEXT`. Encoded Scene v31 is
-/// unchanged. ABI 146 admits constant validated mark `fill` linear-gradients: hosts pack
+/// unchanged. ABI 171 admits scatter `stroke_width` without an authored
+/// `stroke` as match-fill (matplotlib `edgecolors='face'`): Rust paints the
+/// mark color at the authored width. Encoded Scene v31 is unchanged. ABI 146 admits constant validated mark `fill` linear-gradients: hosts pack
 /// XYGR on the extras dash slot; Rust keeps XYGR on the encoded Scene so SVG
 /// emits `<linearGradient>` and raster emits `OP_FILL_POLY_GRAD`. Two-ended
 /// ribbon `color2_ch` and data-driven `color_ch` stay fail-closed. Encoded

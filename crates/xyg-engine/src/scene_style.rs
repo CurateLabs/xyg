@@ -4,7 +4,8 @@
 //! Hosts pack a versioned `XYMS` envelope of per-trace kind, opacities,
 //! authored CSS strings, and width fields, plus a versioned `XYCH` envelope
 //! of per-axis chrome paints and widths. Rust owns the per-kind fill/stroke
-//! defaults, line-only scatter stroke, band `line_color` vs `stroke`, default
+//! defaults, line-only scatter stroke, width-only scatter match-fill stroke,
+//! band `line_color` vs `stroke`, default
 //! stroke widths, Scene chrome default RGBA/widths (title, axis, ticks, grid,
 //! labels), and the static Scene/raster CSS→RGBA8 conversion (including
 //! `none` → transparent and the never-invisible fallback). Python
@@ -249,12 +250,14 @@ fn resolve_one(
     } else {
         fill_default
     };
-    let mut stroke_default =
-        if is_stroke_kind(kind) || (kind == KIND_SCATTER && flags & FLAG_LINE_ONLY_SYMBOL != 0) {
-            color
-        } else {
-            TRANSPARENT
-        };
+    let mut stroke_default = if is_stroke_kind(kind)
+        || (kind == KIND_SCATTER
+            && (flags & FLAG_LINE_ONLY_SYMBOL != 0 || flags & FLAG_HAS_STROKE_WIDTH != 0))
+    {
+        color
+    } else {
+        TRANSPARENT
+    };
     if kind == KIND_RIBBON {
         stroke_default = if flags & FLAG_HAS_STROKE != 0 {
             stroke_css
@@ -701,6 +704,31 @@ mod tests {
         assert_eq!(styles[0].fill, css::color_rgba8("#ff0000", 1.0));
         assert_eq!(styles[0].stroke, css::color_rgba8("#ff0000", 1.0));
         assert_eq!(styles[0].stroke_width, 0.0);
+    }
+
+    #[test]
+    fn width_only_scatter_strokes_in_the_fill_color() {
+        let mut bytes = header(1);
+        push_record(
+            &mut bytes,
+            KIND_SCATTER,
+            FLAG_HAS_STROKE_WIDTH,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            2.0,
+            0.0,
+            0.0,
+            "",
+            "",
+            "",
+            "#336699",
+        );
+        let styles = resolve_mark_styles(&bytes).unwrap();
+        assert_eq!(styles[0].fill, css::color_rgba8("#336699", 1.0));
+        assert_eq!(styles[0].stroke, css::color_rgba8("#336699", 1.0));
+        assert_eq!(styles[0].stroke_width, 2.0);
     }
 
     #[test]
