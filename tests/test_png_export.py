@@ -328,21 +328,35 @@ def test_png_encoder_selects_indexed_for_few_colors() -> None:
 
 
 def test_png_encoder_uses_balanced_compression_level(monkeypatch) -> None:
-    levels: list[int] = []
-    compress = _png.zlib.compress
+    from xyg import _native
 
-    def recording_compress(data: bytes, level: int) -> bytes:
-        levels.append(level)
-        return compress(data, level)
+    seen: list[tuple[int, int]] = []
+    real = _native.encode_png
 
-    monkeypatch.setattr(_png.zlib, "compress", recording_compress)
+    def recording(pixels, *, mode: int = 0, compression: int = 6) -> bytes:
+        seen.append((mode, compression))
+        return real(pixels, mode=mode, compression=compression)
+
+    monkeypatch.setattr(_native, "encode_png", recording)
     few = np.zeros((10, 10, 4), np.uint8)
     many = (np.random.default_rng(4).random((20, 20, 4)) * 255).astype(np.uint8)
 
     _png.encode(few)
     _png.encode(many)
+    _png.png_truecolor(2, 2, np.zeros((2, 2, 4), np.uint8), compression_level=1)
 
-    assert levels == [6, 6]
+    assert seen == [(0, 6), (0, 6), (1, 1)]
+
+
+def test_png_encode_is_the_native_converter() -> None:
+    from xyg import _native
+
+    few = np.zeros((8, 8, 4), np.uint8)
+    few[:4] = [255, 0, 0, 255]
+    few[4:] = [0, 0, 255, 128]
+    assert _png.encode(few) == _native.encode_png(few, mode=0, compression=6)
+    raw = np.ascontiguousarray(few)
+    assert _png.png_truecolor(8, 8, raw) == _native.encode_png(raw, mode=1, compression=6)
 
 
 def test_fast_native_png_is_valid_and_matches_dimensions() -> None:
@@ -1316,26 +1330,34 @@ def test_zero_width_characters_still_draw_nothing() -> None:
     assert _title_png("X\u200b") == _title_png("X")
 
 
-def test_chunk_parts_join_to_the_canonical_chunk():
-    """Parts assembly must equal the naive `tag + data` construction.
+def test_native_png_chunks_use_canonical_crc() -> None:
+    """Rust PNG output must be a well-formed chunk stream with zlib CRCs.
 
-    PNG chunks are built as join-ready parts so the compressed IDAT — the whole
-    image — is copied once into the file instead of once per `+`. The CRC is
-    accumulated over the tag and then the data, which is exactly
-    `crc32(tag + data)` without materializing the concatenation.
+    Hosts no longer assemble `tag + data` parts in Python (M2 #274); the
+    encoder still emits length+type+crc chunks that a stdlib decoder can
+    walk, including indexed `PLTE`/`tRNS` and truecolor `IDAT`.
     """
-    import struct
     import zlib
 
-    from xyg import _png
+    few = np.zeros((6, 8, 4), np.uint8)
+    few[:3] = [255, 0, 0, 180]
+    few[3:] = [0, 0, 255, 255]
+    many = (np.random.default_rng(5).random((12, 12, 4)) * 255).astype(np.uint8)
 
-    for tag, data in (
-        (b"IHDR", b"\x00" * 13),
-        (b"IEND", b""),
-        (b"IDAT", bytes(range(256)) * 40),
-        (b"tRNS", b"\xff\x00\x7f"),
-    ):
-        body = tag + data
-        canonical = struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body))
-        assert b"".join(_png._chunk_parts(tag, data)) == canonical
-        assert _png._chunk(tag, data) == canonical
+    for payload in (_png.encode(few), _png.png_truecolor(12, 12, many, compression_level=1)):
+        assert payload[:8] == b"\x89PNG\r\n\x1a\n"
+        position = 8
+        kinds: list[bytes] = []
+        while position + 8 <= len(payload):
+            (length,) = struct.unpack(">I", payload[position : position + 4])
+            kind = payload[position + 4 : position + 8]
+            start = position + 8
+            chunk = payload[start : start + length]
+            crc = payload[start + length : start + length + 4]
+            assert crc == struct.pack(">I", zlib.crc32(kind + chunk))
+            kinds.append(kind)
+            position = start + length + 4
+            if kind == b"IEND":
+                break
+        assert kinds[0] == b"IHDR" and kinds[-1] == b"IEND"
+        assert b"IDAT" in kinds

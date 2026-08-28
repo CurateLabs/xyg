@@ -11,6 +11,7 @@
 //!   first/min/max/last — provably pixel-accurate for a rasterized line (Jugel et
 //!   al., VLDB 2014). NaN-aware: buckets never span invalid values silently (§19).
 
+use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap};
 
 const MAX_ROW_THREADS: usize = 18;
@@ -3378,6 +3379,84 @@ pub fn marching_squares_into(
 /// Native counterpart of `_scene.grid_rgba`'s heatmap branch: non-finite
 /// values are missing, while finite normalized values map through the same
 /// evenly spaced color stops with ties-to-even byte rounding.
+/// Map normalized scalars `t ∈ [0, 1]` through evenly spaced color stops to a
+/// top-row-first RGBA8 image. This is the native counterpart of `_svg._lut` on
+/// Cartesian static-export grid paths: non-finite values are transparent, while
+/// finite values interpolate stops with ties-to-even byte rounding.
+pub fn colormap_rgba_into(
+    raw: &[f64],
+    w: usize,
+    h: usize,
+    stops: &[[u8; 3]],
+    alpha: u8,
+    out: &mut [u8],
+) -> bool {
+    if w == 0
+        || h == 0
+        || stops.is_empty()
+        || raw.len() != w.saturating_mul(h)
+        || out.len() != raw.len().saturating_mul(4)
+    {
+        return false;
+    }
+    for row in 0..h {
+        let destination_row = h - 1 - row;
+        for col in 0..w {
+            let value = raw[row * w + col];
+            let destination = (destination_row * w + col) * 4;
+            let color = if value.is_nan() {
+                [0, 0, 0, 0]
+            } else {
+                colormap_color(value.clamp(0.0, 1.0), stops, alpha)
+            };
+            out[destination..destination + 4].copy_from_slice(&color);
+        }
+    }
+    true
+}
+
+/// Canonical-f64 twin of [`colormap_rgba_into`]: normalize each cell with the
+/// bulk payload's f32 rounding (`normalize_one_f32`) before stop interpolation.
+pub fn colormap_rgba_canonical_into(
+    raw_f64: &[f64],
+    w: usize,
+    h: usize,
+    domain: [f64; 2],
+    stops: &[[u8; 3]],
+    alpha: u8,
+    out: &mut [u8],
+) -> bool {
+    if w == 0
+        || h == 0
+        || stops.is_empty()
+        || raw_f64.len() != w.saturating_mul(h)
+        || out.len() != raw_f64.len().saturating_mul(4)
+    {
+        return false;
+    }
+    let d0 = domain[0];
+    let d1 = domain[1];
+    for row in 0..h {
+        let destination_row = h - 1 - row;
+        for col in 0..w {
+            let value = raw_f64[row * w + col];
+            let destination = (destination_row * w + col) * 4;
+            let color = if value.is_finite() {
+                let t = f64::from(normalize_one_f32(value, d0, d1, f32::NAN));
+                if t.is_nan() {
+                    [0, 0, 0, 0]
+                } else {
+                    colormap_color(t, stops, alpha)
+                }
+            } else {
+                [0, 0, 0, 0]
+            };
+            out[destination..destination + 4].copy_from_slice(&color);
+        }
+    }
+    true
+}
+
 pub fn heatmap_rgba_into(
     raw: &[f64],
     w: usize,
@@ -3518,6 +3597,86 @@ pub(crate) fn density_rgba_lut(
         };
     }
     Some(lut)
+}
+
+/// Decode one log-u8 density code back to an approximate count. Matches the
+/// compatibility `_density_column` / `lodDecodeLogU8` inverse of `density_log_u8`.
+fn density_log_u8_count(code: u8, maximum: f64) -> f64 {
+    if code == 0 || !(maximum > 0.0) {
+        0.0
+    } else {
+        ((f64::from(code) / 255.0) * maximum.ln_1p()).exp_m1()
+    }
+}
+
+/// LOD doc §2 rule 1: displayed cell alpha is the physical compositing of the
+/// cell's points, `1 − (1 − a_pt)^count`, with `a_pt = channel alpha × style
+/// opacity` folded inside the exponent. Empty or all-invisible cells stay 0;
+/// `a_pt = 1` saturates any occupied cell.
+pub fn physical_density_alpha(count: f64, mean_alpha_u8: u8, opacity: f64) -> u8 {
+    if !(count > 0.0) || mean_alpha_u8 == 0 {
+        return 0;
+    }
+    if !(0.0..=1.0).contains(&opacity) {
+        return 0;
+    }
+    let a_pt = (f64::from(mean_alpha_u8) / 255.0 * opacity).clamp(0.0, 1.0);
+    if a_pt <= 0.0 {
+        return 0;
+    }
+    let coverage = if a_pt >= 1.0 {
+        1.0
+    } else {
+        -(count * (-a_pt).ln_1p()).exp_m1()
+    };
+    (coverage.clamp(0.0, 1.0) * 255.0)
+        .round_ties_even()
+        .clamp(0.0, 255.0) as u8
+}
+
+/// Map compact log-u8 counts plus a row-0-bottom mean-color RGBA8 plane to a
+/// top-row-first Image blit. RGB stays the mean point color (straight alpha);
+/// displayed alpha is [`physical_density_alpha`].
+pub fn density_mean_color_rgba_into(
+    encoded: &[u8],
+    mean_rgba: &[u8],
+    w: usize,
+    h: usize,
+    maximum: f64,
+    opacity: f64,
+    out: &mut [u8],
+) -> bool {
+    let cells = w.saturating_mul(h);
+    if w == 0
+        || h == 0
+        || encoded.len() != cells
+        || mean_rgba.len() != cells.saturating_mul(4)
+        || out.len() != cells.saturating_mul(4)
+        || !maximum.is_finite()
+        || maximum < 0.0
+        || !opacity.is_finite()
+        || !(0.0..=1.0).contains(&opacity)
+    {
+        return false;
+    }
+    for row in 0..h {
+        let destination_row = h - 1 - row;
+        for col in 0..w {
+            let cell = row * w + col;
+            let src = cell * 4;
+            let dst = (destination_row * w + col) * 4;
+            let alpha = physical_density_alpha(
+                density_log_u8_count(encoded[cell], maximum),
+                mean_rgba[src + 3],
+                opacity,
+            );
+            out[dst] = mean_rgba[src];
+            out[dst + 1] = mean_rgba[src + 1];
+            out[dst + 2] = mean_rgba[src + 2];
+            out[dst + 3] = alpha;
+        }
+    }
+    true
 }
 
 /// 2D density aggregation (§5 Tier 2): additively bin points into a `w × h`
@@ -5834,6 +5993,30 @@ pub fn is_sorted_f64(data: &[f64]) -> bool {
     is_sorted_f64_impl(data, par_threads(data.len()))
 }
 
+/// NumPy `argsort(..., kind="stable")` for f64: NaNs last, `-0.0 == 0.0`,
+/// equal values (including NaNs) keep input order. Returns `None` when
+/// `len > u32::MAX` so the C ABI can reject before wrapping indices.
+pub fn argsort_stable_f64(data: &[f64]) -> Option<Vec<u32>> {
+    if data.len() > u32::MAX as usize {
+        return None;
+    }
+    let mut indices: Vec<u32> = (0..data.len() as u32).collect();
+    indices.sort_by(|&i, &j| {
+        let a = data[i as usize];
+        let b = data[j as usize];
+        match (a.is_nan(), b.is_nan()) {
+            (true, true) => i.cmp(&j),
+            (true, false) => Ordering::Greater,
+            (false, true) => Ordering::Less,
+            (false, false) => match a.partial_cmp(&b) {
+                Some(Ordering::Equal) | None => i.cmp(&j),
+                Some(ord) => ord,
+            },
+        }
+    });
+    Some(indices)
+}
+
 fn is_sorted_f64_impl(data: &[f64], threads: usize) -> bool {
     let n = data.len();
     if threads <= 1 || n < threads * 2 {
@@ -7014,6 +7197,80 @@ mod tests {
         assert_eq!(&out[12..16], &[100, 110, 120, 216]);
     }
 
+    #[test]
+    fn physical_density_alpha_matches_lod_doc_rule_one() {
+        let expect = |k: f64| ((1.0 - 0.28_f64.powf(k)) * 255.0).round_ties_even() as u8;
+        assert_eq!(physical_density_alpha(0.0, 255, 0.72), 0);
+        assert_eq!(physical_density_alpha(1.0, 255, 0.72), expect(1.0));
+        assert_eq!(physical_density_alpha(3.0, 255, 0.72), expect(3.0));
+        assert!(physical_density_alpha(50.0, 255, 0.72) >= 254);
+        assert_eq!(physical_density_alpha(2.0, 0, 0.72), 0);
+        assert_eq!(physical_density_alpha(1.0, 255, 1.0), 255);
+        assert_eq!(physical_density_alpha(0.0, 255, 1.0), 0);
+    }
+
+    #[test]
+    fn density_mean_color_rgba_flips_and_shapes_physical_alpha() {
+        let encoded = [0u8, 255, 128, 1];
+        let mean = [
+            255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 0, 10, 20, 30, 255,
+        ];
+        let mut out = [0u8; 16];
+        assert!(density_mean_color_rgba_into(
+            &encoded, &mean, 2, 2, 10.0, 0.72, &mut out
+        ));
+        // Source row 0 (data bottom) flips to destination row 1.
+        assert_eq!(&out[8..12], &[255, 0, 0, 0]);
+        assert_eq!(out[12], 0);
+        assert_eq!(out[13], 255);
+        assert!(out[15] > 0);
+        assert_eq!(&out[0..4], &[0, 0, 255, 0]);
+    }
+
+    #[test]
+    fn colormap_rgba_matches_lut_goldens_and_flips_rows() {
+        let raw = [0.0, 0.5, 1.0, f64::NAN];
+        let stops = [[0, 10, 20], [100, 110, 120]];
+        let mut out = [0u8; 16];
+        assert!(colormap_rgba_into(&raw, 2, 2, &stops, 200, &mut out));
+        assert_eq!(&out[0..4], &[100, 110, 120, 200]);
+        assert_eq!(&out[4..8], &[0, 0, 0, 0]);
+        assert_eq!(&out[8..12], &[0, 10, 20, 200]);
+        assert_eq!(&out[12..16], &[50, 60, 70, 200]);
+    }
+
+    #[test]
+    fn colormap_rgba_canonical_preserves_f32_rounding() {
+        let raw = [0.25, 0.75, f64::INFINITY];
+        let stops = [[0, 0, 0], [200, 0, 0]];
+        let mut out = [0u8; 12];
+        assert!(colormap_rgba_canonical_into(
+            &raw,
+            1,
+            3,
+            [0.0, 1.0],
+            &stops,
+            255,
+            &mut out,
+        ));
+        let t0 = f64::from(normalize_one_f32(0.25, 0.0, 1.0, f32::NAN));
+        let t1 = f64::from(normalize_one_f32(0.75, 0.0, 1.0, f32::NAN));
+        assert_eq!(out[8], colormap_color(t0, &stops, 255)[0]);
+        assert_eq!(out[4], colormap_color(t1, &stops, 255)[0]);
+        assert_eq!(&out[0..4], &[0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn colormap_rgba_differs_from_heatmap_at_interior_value() {
+        let stops = [[0, 0, 0], [254, 0, 0]];
+        let mut heat = [0u8; 4];
+        let mut cmap = [0u8; 4];
+        assert!(heatmap_rgba_into(&[0.5], 1, 1, &stops, 255, &mut heat));
+        assert!(colormap_rgba_into(&[0.5], 1, 1, &stops, 255, &mut cmap));
+        assert_ne!(heat[0], cmap[0]);
+        assert_eq!(cmap[0], 127);
+    }
+
     /// Direct port of the per-category NumPy loop this kernel replaced
     /// (`lod.stratified_sample_keep_mask` before the fused pass) — the
     /// oracle for the parity test.
@@ -8049,5 +8306,17 @@ mod fuzz {
         assert!(!is_sorted_f64(&[1.0, 2.0, f64::NAN]));
         assert!(!is_sorted_f64(&[f64::NAN, 1.0, 2.0]));
         assert!(!is_sorted_f64(&[0.0, 1.0, 5.0, 4.0, 9.0]));
+    }
+
+    #[test]
+    fn argsort_stable_places_nans_last_and_keeps_ties() {
+        assert_eq!(argsort_stable_f64(&[]), Some(Vec::new()));
+        assert_eq!(argsort_stable_f64(&[3.0]), Some(vec![0]));
+        let order = argsort_stable_f64(&[3.0, 1.0, f64::NAN, 1.0, 2.0]).unwrap();
+        assert_eq!(order, vec![1, 3, 4, 0, 2]);
+        let signed_zero = argsort_stable_f64(&[-0.0, 0.0, 1.0]).unwrap();
+        assert_eq!(signed_zero, vec![0, 1, 2]);
+        let nans = argsort_stable_f64(&[f64::NAN, 0.0, f64::NAN]).unwrap();
+        assert_eq!(nans, vec![1, 0, 2]);
     }
 }

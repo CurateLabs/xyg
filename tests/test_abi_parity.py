@@ -36,9 +36,9 @@ def test_host_declarations_match_rust_symbol_set() -> None:
     assert errors == []
 
 
-def test_abi_version_is_102() -> None:
+def test_abi_version_is_188() -> None:
     manifest = gen_abi_manifest.generate_manifest()
-    assert manifest["abi_version"] == 102
+    assert manifest["abi_version"] == 188
     assert manifest["artifact"] == "xyg_core"
     assert all(item["name"].startswith("xyg_") for item in manifest["symbols"])
     assert any(item["name"] == "xyg_abi_version" for item in manifest["symbols"])
@@ -47,6 +47,84 @@ def test_abi_version_is_102() -> None:
     assert "xyg_hexbin_ingress" in names
     assert "xyg_graph_force_create_cose" in names
     assert "xyg_graph_compound_transition" in names
+    assert "xyg_svg_to_pdf" in names
+    assert "xyg_encode_jpeg" in names
+    assert "xyg_encode_webp" in names
+    assert "xyg_encode_png" in names
+    assert "xyg_scene_pack_product" in names
+    assert "xyg_scene_pack_product_facts" in names
+    assert "xyg_scene_pack_annotation_facts" in names
+    assert "xyg_scene_pack_annotation_marks" in names
+    assert "xyg_scene_pack_heatmap_facts" in names
+    assert "xyg_scene_pack_scene_extras" in names
+    assert "xyg_scene_pack_density_grid" in names
+    assert "xyg_scene_pack_public_export" in names
+    assert "xyg_scene_pack_figure_chrome" in names
+    assert "xyg_scene_pack_trace_compile" in names
+    assert "xyg_scene_pack_trace_attach" in names
+    assert "xyg_scene_pack_trace_rows" in names
+    assert "xyg_scene_pack_trace_sidecars" in names
+    assert "xyg_scene_pack_style_sidecars" in names
+    assert "xyg_scene_splice_annotations" in names
+    assert "xyg_scene_encode_assembled" in names
+    assert "xyg_scene_encode_assembled_from_sidecars" in names
+    assert "xyg_scene_encode_product" in names
+    assert "xyg_scene_static_export" in names
+    assert "xyg_scene_pack_figure_chrome_from_sidecars" in names
+    assert "xyg_scene_pack_scene_extras_from_sidecars" in names
+    assert "xyg_legend_normalize" in names
+    assert "xyg_legend_best_loc" in names
+    assert "xyg_ribbon_edge" in names
+    assert "xyg_ribbon_polygon" in names
+    assert "xyg_monotone_tangents" in names
+    assert "xyg_curve_flatten" in names
+    assert "xyg_rounded_rect_poly" in names
+    assert "xyg_payload_tier" in names
+    assert "xyg_payload_visible_needed" in names
+    assert "xyg_payload_visible_mask" in names
+    assert "xyg_scene_tick_label_layout" in names
+    assert "xyg_legend_box_layout" in names
+    assert "xyg_text_block_measure" in names
+    assert "xyg_text_block_rotated_extent" in names
+    assert "xyg_y_tick_label_extent" in names
+    assert "xyg_y_axis_left_room" in names
+    assert "xyg_x_axis_title_room" in names
+    assert "xyg_x_tick_label_room" in names
+    assert "xyg_x_tick_label_edge_rooms" in names
+    assert "xyg_compat_is_compact" in names
+    assert "xyg_compat_default_padding" in names
+    assert "xyg_compat_title_wrap_width" in names
+    assert "xyg_compat_title_room" in names
+    assert "xyg_compat_x_axis_side_room" in names
+    assert "xyg_compat_colorbar_extra" in names
+    assert "xyg_compat_right_y_room" in names
+    assert "xyg_polar_legend_room" in names
+    assert "xyg_polar_legend_reserve" in names
+    assert "xyg_polar_label_room" in names
+    assert "xyg_recut_polar_plot" in names
+    assert "xyg_tight_layout_solve" in names
+    assert "xyg_tick_window" in names
+    assert "xyg_tick_window_filter" in names
+    assert "xyg_tick_format" in names
+    assert "xyg_polar_layout" in names
+    assert "xyg_polar_project" in names
+    assert "xyg_polar_theta_visible_mask" in names
+    assert "xyg_polar_visible_mask" in names
+    assert "xyg_polar_position_mask" in names
+    assert "xyg_density_bin_window" in names
+    assert "xyg_density_emit_meta" in names
+    assert "xyg_density_format_binning" in names
+    assert "xyg_density_full_identity" in names
+    assert "xyg_density_grid_path" in names
+    assert "xyg_density_pyramid_preflight" in names
+    assert "xyg_density_wasm_eligible" in names
+    assert "xyg_colormap_rgba" in names
+    assert "xyg_colormap_rgba_canonical" in names
+    assert "xyg_scene_figure_support_reason" in names
+    assert "xyg_argsort_stable" in names
+    assert "xyg_histogram_mark_edges" in names
+    assert "xyg_contour_levels" in names
+    assert "xyg_hexbin_groups" in names
     assert {
         "xyg_chunked_columns_cancel_before",
         "xyg_chunked_columns_free",

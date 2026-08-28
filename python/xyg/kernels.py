@@ -32,9 +32,19 @@ CSS_LENGTH = _impl.CSS_LENGTH
 CSS_NUMBER = _impl.CSS_NUMBER
 
 css_check = _impl.css_check
+css_color_rgba = _impl.css_color_rgba
+colormap_rgba = _impl.colormap_rgba
+colormap_rgba_canonical = _impl.colormap_rgba_canonical
 correlation = _impl.correlation
 density_rgba = _impl.density_rgba
 density_log_u8 = _impl.density_log_u8
+density_bin_window = _impl.density_bin_window
+density_emit_plan = _impl.density_emit_plan
+density_format_binning = _impl.density_format_binning
+density_full_identity = _impl.density_full_identity
+density_grid_path = _impl.density_grid_path
+density_pyramid_preflight = _impl.density_pyramid_preflight
+density_wasm_eligible = _impl.density_wasm_eligible
 delaunay_triangles = _impl.delaunay_triangles
 zone_maps = _impl.zone_maps
 zone_maps_pair = _impl.zone_maps_pair
@@ -48,6 +58,7 @@ m4_indices = _impl.m4_indices
 marching_squares = _impl.marching_squares
 marching_triangles = _impl.marching_triangles
 is_sorted = _impl.is_sorted
+argsort_stable = _impl.argsort_stable
 min_max = _impl.min_max
 bin_2d = _impl.bin_2d
 binned_ecdf = _impl.binned_ecdf
@@ -114,14 +125,27 @@ weighted_ecdf = _impl.weighted_ecdf
 drill_decision = _impl.drill_decision
 lod_grid_shape = _impl.lod_grid_shape
 lod_plan = _impl.lod_plan
+payload_tier = _impl.payload_tier
+payload_visible_mask = _impl.payload_visible_mask
+payload_visible_needed = _impl.payload_visible_needed
 quantiles = _impl.quantiles
 box_stats = _impl.box_stats
 box_geometry = _impl.box_geometry
 hexbin = _impl.hexbin
 hexbin_ingress = _impl.hexbin_ingress
+hexbin_groups = _impl.hexbin_groups
+legend_best_loc = _impl.legend_best_loc
+legend_normalize = _impl.legend_normalize
+monotone_tangents = _impl.monotone_tangents
+ribbon_edge = _impl.ribbon_edge
+ribbon_polygon = _impl.ribbon_polygon
+curve_flatten = _impl.curve_flatten
+rounded_rect_poly = _impl.rounded_rect_poly
 violin_density = _impl.violin_density
 violin_rects = _impl.violin_rects
 histogram_edges = _impl.histogram_edges
+histogram_mark_edges = _impl.histogram_mark_edges
+contour_levels = _impl.contour_levels
 wind_rose_bins = _impl.wind_rose_bins
 contourf_densify = _impl.contourf_densify
 contourf_bands = _impl.contourf_bands
@@ -132,6 +156,7 @@ __all__ = [
     "CSS_DECLARATION",
     "CSS_LENGTH",
     "CSS_NUMBER",
+    "argsort_stable",
     "bar_stack",
     "bin_2d",
     "bin_2d_f32",
@@ -142,13 +167,25 @@ __all__ = [
     "binned_ecdf",
     "box_geometry",
     "box_stats",
+    "colormap_rgba",
+    "colormap_rgba_canonical",
+    "contour_levels",
     "contourf_bands",
     "contourf_densify",
     "correlation",
     "css_check",
+    "css_color_rgba",
+    "curve_flatten",
     "delaunay_triangles",
+    "density_bin_window",
+    "density_emit_plan",
+    "density_format_binning",
+    "density_full_identity",
+    "density_grid_path",
     "density_log_u8",
+    "density_pyramid_preflight",
     "density_rgba",
+    "density_wasm_eligible",
     "drill_decision",
     "encode_f32",
     "factorize_fixed",
@@ -157,13 +194,17 @@ __all__ = [
     "factorize_unicode1_u8_counts",
     "heatmap_rgba",
     "hexbin",
+    "hexbin_groups",
     "hexbin_ingress",
     "histogram2d",
     "histogram_bins",
     "histogram_edges",
+    "histogram_mark_edges",
     "histogram_uniform",
     "indexed_triangles",
     "is_sorted",
+    "legend_best_loc",
+    "legend_normalize",
     "local_log_density",
     "lod_grid_shape",
     "lod_plan",
@@ -171,7 +212,11 @@ __all__ = [
     "marching_squares",
     "marching_triangles",
     "min_max",
+    "monotone_tangents",
     "normalize_f32",
+    "payload_tier",
+    "payload_visible_mask",
+    "payload_visible_needed",
     "polygon_select",
     "polygon_triangles",
     "pyramid_append",
@@ -192,6 +237,9 @@ __all__ = [
     "rasterize_png",
     "remap_u8",
     "rfft",
+    "ribbon_edge",
+    "ribbon_polygon",
+    "rounded_rect_poly",
     "sample_mask",
     "sample_range_indices",
     "sector_triangles",

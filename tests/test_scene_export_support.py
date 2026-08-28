@@ -5,7 +5,8 @@ decide whether a figure routes through the canonical Rust Scene or the
 compatibility renderers. It is intentionally narrower than `figure_scene`:
 explicit Scene APIs may exercise a migrating record before the public output
 contract is complete. These tests pin both compiler rejection and public
-preflight so the router cannot silently select a partial consumer.
+preflight so the router cannot silently select a partial consumer. The public
+router reuses that compiled Scene instead of encoding a second batch.
 """
 
 from __future__ import annotations
@@ -28,6 +29,7 @@ from xyg._scene_v3 import (
     public_static_export,
     scene_export_support_reason,
 )
+from xyg.channels import ColorChannel
 from xyg.marks import _SYMBOL_CODES
 
 BUILTIN_SYMBOLS = tuple(_SYMBOL_CODES)
@@ -166,6 +168,26 @@ def _polar() -> Figure:
     return figure
 
 
+def _polar_contour() -> Figure:
+    figure = Figure(width=320, height=240, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 3.0)
+    figure.contour([[1.0, 2.0], [3.0, 4.0]], levels=2, color="#3987e5")
+    return figure
+
+
+def _polar_density() -> Figure:
+    figure = Figure(width=320, height=240, coords="polar")
+    figure.scatter([0.0, 1.0], [0.5, 0.8], density=True, color="#3987e5")
+    return figure
+
+
+def _smooth_error_band() -> Figure:
+    figure = _supported().error_band([0, 1, 2], [1, 2, 1], [2, 3, 2], color="#22c55e")
+    figure.traces[-1].style["curve"] = "smooth"
+    return figure
+
+
 def _custom_font() -> Figure:
     figure = _supported()
     figure.chrome_styles = {"title": {"font-family": "Comic Sans"}}
@@ -200,7 +222,7 @@ def _authored_tick_labels() -> Figure:
 def test_authored_cartesian_tick_labels_are_a_supported_scene_v23_slice() -> None:
     figure = _authored_tick_labels()
     encoded = figure_scene(figure)
-    assert encoded[4:8] == (25).to_bytes(4, "little")
+    assert encoded[4:8] == (31).to_bytes(4, "little")
     assert b"XYTL" in encoded
 
 
@@ -221,7 +243,7 @@ def test_primary_numeric_axis_format_routes_through_rust_scene(
     figure.set_axis("y", type_=kind, domain=domain, constant=constant, format="$,.0f USD")
     assert scene_export_support_reason(figure) is None
     scene = figure_scene(figure)
-    assert scene[4:8] == (25).to_bytes(4, "little")
+    assert scene[4:8] == (31).to_bytes(4, "little")
     assert b"XYTL" in scene
     svg = _native.scene_svg(scene)
     if kind == "log":
@@ -418,12 +440,10 @@ def _public_disconnected_segments() -> Figure:
 # Each factory builds a figure that `figure_scene` rejects; the substring is the
 # stable diagnostic token the predicate must surface for the router to log.
 UNSUPPORTED: dict[str, tuple[Callable[[], Figure], str]] = {
-    "polar": (_polar, "XYG_SCENE_UNSUPPORTED_POLAR"),
     "custom_font": (_custom_font, "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT"),
     "browser_css": (_browser_css, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS"),
     "colorbar": (_colorbar, "XYG_SCENE_UNSUPPORTED_COLORBAR"),
     "extra_legend": (_extra_legend, "XYG_SCENE_UNSUPPORTED_EXTRA_LEGEND"),
-    "dashed_line": (_dashed_line, "dashed"),
 }
 
 
@@ -432,6 +452,257 @@ def test_supported_figure_has_no_reason() -> None:
     # Compiler accepts it, so the predicate must report None (route via Scene).
     figure_scene(figure)
     assert scene_export_support_reason(figure) is None
+
+
+def test_constant_dash_line_is_public_scene_supported() -> None:
+    figure = _dashed_line()
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"stroke-dasharray" in exported
+    assert b"XYDS" in figure_scene(figure)
+
+
+def test_constant_linecap_line_is_public_scene_supported() -> None:
+    figure = _supported().line([1, 2, 3], [1, 4, 2], color="#ef4444", width=2)
+    figure.traces[-1].style["linecap"] = "square"
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b'stroke-linecap="square"' in exported
+    assert b"XYLC" in figure_scene(figure)
+
+
+def test_smooth_line_is_public_scene_supported() -> None:
+    figure = _supported().line([1, 2, 3], [1, 4, 2], color="#ef4444", width=2, curve="smooth")
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    svg = exported.decode("utf-8")
+    counts = [len(points.split()) for points in re.findall(r'<polyline points="([^"]+)"', svg)]
+    assert max(counts) == 1 + (3 - 1) * 16
+    assert figure.to_svg() == svg
+
+
+def test_smooth_area_is_public_scene_supported() -> None:
+    figure = _supported().area([0, 1, 2], [1, 2, 1], color="#ef4444", curve="smooth")
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    svg = exported.decode("utf-8")
+    counts = []
+    for path in re.findall(r'<path d="([^"]+)"', svg):
+        if "Z" not in path:
+            continue
+        tokens = path.replace("Z", " ").replace("M", " ").replace("L", " ").split()
+        counts.append(len(tokens) // 2)
+    assert max(counts) == (1 + (3 - 1) * 16) * 2
+    assert figure.to_svg() == svg
+
+
+def test_smooth_error_band_is_public_scene_supported() -> None:
+    figure = _smooth_error_band()
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    svg = exported.decode("utf-8")
+    counts = []
+    for path in re.findall(r'<path d="([^"]+)"', svg):
+        if "Z" not in path:
+            continue
+        tokens = path.replace("Z", " ").replace("M", " ").replace("L", " ").split()
+        counts.append(len(tokens) // 2)
+    assert max(counts) == (1 + (3 - 1) * 16) * 2
+    assert figure.to_svg() == svg
+
+
+def test_polar_smooth_line_is_scene_supported() -> None:
+    figure = Figure(width=320, height=240, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, 6.283185307179586)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.line([0.0, 1.5707963267948966, 3.141592653589793], [0.5, 1.0, 0.5], curve="smooth")
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"<polyline" in exported or b"<path" in exported
+
+
+def test_polar_smooth_step_line_is_scene_supported() -> None:
+    figure = Figure(width=320, height=240, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, 6.283185307179586)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.line(
+        [0.0, 1.5707963267948966, 3.141592653589793],
+        [0.5, 1.0, 0.5],
+        curve="smooth",
+        color="#ef4444",
+    )
+    figure.traces[-1].style["step"] = "mid"
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"<polyline" in exported
+    cartesian = _supported().line([0, 1, 2], [1, 2, 1], curve="smooth")
+    cartesian.traces[-1].style["step"] = "mid"
+    assert scene_export_support_reason(cartesian) is None
+    cartesian_exported = public_static_export(cartesian, "svg")
+    assert cartesian_exported is not None
+    assert b"<polyline" in cartesian_exported
+    cartesian_area = _supported().area([0, 1, 2], [1, 2, 1], curve="smooth")
+    cartesian_area.traces[-1].style["step"] = "mid"
+    assert scene_export_support_reason(cartesian_area) is None
+    cartesian_area_exported = public_static_export(cartesian_area, "svg")
+    assert cartesian_area_exported is not None
+    assert b"<path d=" in cartesian_area_exported
+    cartesian_band = _supported().error_band([0, 1, 2], [0, 1, 0], [1, 2, 1])
+    cartesian_band.traces[-1].style["curve"] = "smooth"
+    cartesian_band.traces[-1].style["step"] = "mid"
+    assert scene_export_support_reason(cartesian_band) is None
+    cartesian_band_exported = public_static_export(cartesian_band, "svg")
+    assert cartesian_band_exported is not None
+    assert b"<path d=" in cartesian_band_exported
+
+
+def test_marker_glyph_scatter_is_scene_supported() -> None:
+    figure = Figure(width=240, height=160)
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    figure.scatter([1.0], [1.0], color="#336699", size=12, _marker_glyph="A")
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b'font-family="DejaVu Sans"' in exported
+    assert b'dominant-baseline="central"' in exported
+    assert b">A</text>" in exported
+    invalid = Figure().scatter([1.0], [1.0])
+    invalid.traces[-1].style["marker_glyph"] = "AB"
+    assert scene_export_support_reason(invalid) is not None
+
+
+def test_polar_scatter_is_scene_supported() -> None:
+    figure = _polar()
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported.startswith(b"<svg") or b"<svg" in exported
+
+
+def test_polar_density_is_scene_supported() -> None:
+    figure = _polar_density()
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"<path" in exported
+    assert b"<image" not in exported
+    png = public_static_export(figure, "png")
+    assert png is not None
+
+
+def test_polar_contour_is_scene_supported() -> None:
+    figure = _polar_contour()
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"<polyline" in exported or b"<path" in exported
+    png = public_static_export(figure, "png")
+    assert png is not None
+
+
+def test_polar_heatmap_is_scene_supported() -> None:
+    figure = Figure(width=320, height=240, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    figure.heatmap([[1.0, 2.0], [3.0, 4.0]])
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"<path" in exported
+    assert b"<rect x=" not in exported
+    constant = Figure(width=320, height=240, coords="polar")
+    constant.axis_options["x"]["domain"] = (0.0, 2.0)
+    constant.axis_options["y"]["domain"] = (0.0, 2.0)
+    constant.heatmap([[1.0, 2.0], [3.0, 4.0]], color="#3987e5")
+    assert scene_export_support_reason(constant) is None
+    constant_svg = public_static_export(constant, "svg")
+    assert constant_svg is not None
+    assert b"<path" in constant_svg
+
+
+def test_polar_bar_is_scene_supported() -> None:
+    figure = Figure(width=320, height=240, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, 4.0)
+    figure.axis_options["y"]["domain"] = (0.0, 5.0)
+    figure.bar([0.0, 1.0], [0.5, 0.8], color="#3987e5")
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"<path" in exported
+    assert b'data-xy-grid="ring"' in exported or b"circle" in exported
+
+
+def test_polar_bar_wedge_gap_is_scene_supported() -> None:
+    figure = Figure(width=320, height=240, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, 4.0)
+    figure.axis_options["y"]["domain"] = (0.0, 5.0)
+    figure.bar([0.0, 1.0], [0.5, 0.8], color="#3987e5", wedge_gap=8.0)
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported.count(b'<path d="M') == 2
+    cartesian = _supported().bar([0, 1], [1, 2], wedge_gap=8.0)
+    assert scene_export_support_reason(cartesian) is not None
+
+
+def test_polar_bar_corner_radius_is_scene_supported() -> None:
+    figure = Figure(width=320, height=240, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, 4.0)
+    figure.axis_options["y"]["domain"] = (0.0, 5.0)
+    figure.bar([0.0, 1.0], [0.5, 0.8], color="#3987e5", corner_radius=8.0, base=0.15)
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported.count(b'<path d="M') == 2
+    heatmap = Figure(width=320, height=240, coords="polar")
+    heatmap.axis_options["x"]["domain"] = (0.0, 4.0)
+    heatmap.axis_options["y"]["domain"] = (0.0, 5.0)
+    heatmap.heatmap([[1.0, 2.0], [3.0, 4.0]], color="#3987e5")
+    heatmap.traces[-1].style["corner_radius"] = 8.0
+    assert scene_export_support_reason(heatmap) is None
+    exported_heatmap = public_static_export(heatmap, "svg")
+    assert exported_heatmap is not None
+    assert exported_heatmap.count(b'<path d="M') == 4
+    cartesian = Figure(width=320, height=240)
+    cartesian.axis_options["x"]["domain"] = (0.0, 4.0)
+    cartesian.axis_options["y"]["domain"] = (0.0, 5.0)
+    cartesian.heatmap([[1.0, 2.0], [3.0, 4.0]], color="#3987e5")
+    cartesian.traces[-1].style["corner_radius"] = 6.0
+    assert scene_export_support_reason(cartesian) is None
+    exported_cartesian = public_static_export(cartesian, "svg")
+    assert exported_cartesian is not None
+    assert exported_cartesian.count(b'<path d="M') == 4
+
+
+def test_violin_box_corner_radius_is_scene_supported() -> None:
+    violin = _public_violin()
+    violin.traces[-1].style["corner_radius"] = 6.0
+    assert scene_export_support_reason(violin) is None
+    exported_violin = public_static_export(violin, "svg")
+    assert exported_violin is not None
+    assert b'<path d="M' in exported_violin
+    square_violin = public_static_export(_public_violin(), "svg")
+    assert square_violin is not None
+    assert exported_violin != square_violin
+    rounded_box = _public_box()
+    next(trace for trace in rounded_box.traces if trace.kind == "box").style["corner_radius"] = 6.0
+    assert scene_export_support_reason(rounded_box) is None
+    exported_box = public_static_export(rounded_box, "svg")
+    assert exported_box is not None
+    assert b'<path d="M' in exported_box
+    square_box = public_static_export(_public_box(), "svg")
+    assert square_box is not None
+    assert exported_box != square_box
 
 
 def test_bounded_primary_cartesian_annotation_family_is_a_supported_public_scene_slice() -> None:
@@ -531,10 +802,73 @@ def test_public_box_is_rust_owned_and_routes_every_static_consumer(orientation: 
 
 
 @pytest.mark.parametrize("key", ["fill_opacity", "stroke_opacity"])
-def test_public_violin_unrepresented_opacity_channels_fail_closed(key: str) -> None:
+def test_public_violin_opacity_channels_are_scene_supported(key: str) -> None:
     figure = _public_violin()
+    if key == "stroke_opacity":
+        figure.traces[0].style["stroke"] = "#111111"
+        figure.traces[0].style["stroke_width"] = 2.0
     figure.traces[0].style[key] = 0.5
-    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    baseline = _public_violin()
+    if key == "stroke_opacity":
+        baseline.traces[0].style["stroke"] = "#111111"
+        baseline.traces[0].style["stroke_width"] = 2.0
+    assert exported != public_static_export(baseline, "svg")
+    rounded_box = _public_box()
+    next(trace for trace in rounded_box.traces if trace.kind == "box").style[key] = 0.5
+    if key == "stroke_opacity":
+        next(trace for trace in rounded_box.traces if trace.kind == "box").style["stroke"] = (
+            "#111111"
+        )
+    assert scene_export_support_reason(rounded_box) is None
+    exported_box = public_static_export(rounded_box, "svg")
+    assert exported_box is not None
+    square_box = _public_box()
+    if key == "stroke_opacity":
+        next(trace for trace in square_box.traces if trace.kind == "box").style["stroke"] = (
+            "#111111"
+        )
+    assert exported_box != public_static_export(square_box, "svg")
+
+
+@pytest.mark.parametrize(
+    "factory",
+    [
+        lambda: _supported().bar([0, 1], [1, 2], color="#22c55e"),
+        lambda: _supported().column([0, 1], [1, 2], color="#22c55e"),
+        lambda: _supported().histogram([0, 1, 1, 2], bins=2, color="#22c55e"),
+    ],
+)
+def test_public_bar_column_histogram_opacity_channels_are_scene_supported(factory) -> None:
+    figure = factory()
+    figure.traces[-1].style["fill_opacity"] = 0.5
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported != public_static_export(factory(), "svg")
+    stroked = factory()
+    stroked.traces[-1].style["stroke"] = "#111111"
+    stroked.traces[-1].style["stroke_width"] = 2.0
+    stroked.traces[-1].style["stroke_opacity"] = 0.5
+    assert scene_export_support_reason(stroked) is None
+    assert public_static_export(stroked, "svg") is not None
+
+
+def test_public_scatter_opacity_channels_are_scene_supported() -> None:
+    figure = _supported()
+    figure.traces[-1].style["fill_opacity"] = 0.5
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported != public_static_export(_supported(), "svg")
+    stroked = _supported()
+    stroked.traces[-1].style["stroke"] = "#111111"
+    stroked.traces[-1].style["stroke_width"] = 2.0
+    stroked.traces[-1].style["stroke_opacity"] = 0.5
+    assert scene_export_support_reason(stroked) is None
+    assert public_static_export(stroked, "svg") is not None
 
 
 @pytest.mark.parametrize("kind", ["step", "histogram", "column_bar"])
@@ -704,23 +1038,64 @@ def test_public_triangle_mesh_honors_the_browser_group_boundary() -> None:
     assert scene_export_support_reason(mixed) == "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
 
 
-@pytest.mark.parametrize(
-    ("style_key", "style_value"),
-    [
-        ("joined_fill", True),
-        ("fill_opacity", 0.5),
-        ("stroke_opacity", 0.5),
-        ("stroke", "#ff0000"),
-        ("stroke_width", 2.0),
-        ("role", "custom-mesh"),
-    ],
-)
-def test_public_triangle_mesh_keeps_broader_styles_on_compatibility(
-    style_key: str, style_value: object
-) -> None:
+def test_public_triangle_mesh_keeps_custom_role_on_compatibility() -> None:
     figure = _public_triangle_mesh()
-    figure.traces[0].style[style_key] = style_value
+    figure.traces[0].style["role"] = "custom-mesh"
     assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+
+
+def test_public_triangle_mesh_joined_fill_is_scene_supported() -> None:
+    disconnected = _public_triangle_mesh()
+    disconnected.traces[0].style["joined_fill"] = True
+    assert scene_export_support_reason(disconnected) is None
+    exported = public_static_export(disconnected, "svg")
+    assert exported is not None
+    assert exported.count(b'<path d="M') == 2
+    figure = Figure(width=360, height=260)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.triangle_mesh(
+        [0.0, 1.0],
+        [0.0, 0.0],
+        [1.0, 1.0],
+        [0.0, 1.0],
+        [0.0, 0.0],
+        [1.0, 1.0],
+        color="#22c55e",
+    )
+    figure.traces[0].style["joined_fill"] = True
+    assert scene_export_support_reason(figure) is None
+    joined = public_static_export(figure, "svg")
+    assert joined is not None
+    assert joined.count(b'<path d="M') == 1
+    unjoined = Figure(width=360, height=260)
+    unjoined.axis_options["x"]["domain"] = (0.0, 1.0)
+    unjoined.axis_options["y"]["domain"] = (0.0, 1.0)
+    unjoined.triangle_mesh(
+        [0.0, 1.0],
+        [0.0, 0.0],
+        [1.0, 1.0],
+        [0.0, 1.0],
+        [0.0, 0.0],
+        [1.0, 1.0],
+        color="#22c55e",
+    )
+    assert public_static_export(unjoined, "svg") != joined
+
+
+def test_public_triangle_mesh_opacity_and_stroke_are_scene_supported() -> None:
+    figure = _public_triangle_mesh()
+    figure.traces[0].style["fill_opacity"] = 0.5
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported != public_static_export(_public_triangle_mesh(), "svg")
+    stroked = _public_triangle_mesh()
+    stroked.traces[0].style["stroke"] = "#111111"
+    stroked.traces[0].style["stroke_width"] = 2.0
+    stroked.traces[0].style["stroke_opacity"] = 0.5
+    assert scene_export_support_reason(stroked) is None
+    assert public_static_export(stroked, "svg") is not None
 
 
 @pytest.mark.parametrize(
@@ -844,17 +1219,24 @@ def test_public_hexbin_honors_the_painter_group_boundary() -> None:
     assert figure.to_svg()
 
 
-def test_colormap_hexbin_stays_on_compatibility() -> None:
+def test_colormap_hexbin_is_scene_supported() -> None:
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 4.0)
     figure.axis_options["y"]["domain"] = (0.0, 5.0)
     figure.hexbin(
         _PUBLIC_HEXBIN_X, _PUBLIC_HEXBIN_Y, gridsize=(4, 4), range=((0.0, 4.0), (0.0, 5.0))
     )
-    reason = scene_export_support_reason(figure)
-    assert reason is not None
-    assert _public_svg(figure) is None
-    assert figure.to_svg()
+    assert figure.traces[0].color_ch.mode == "continuous"
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    svg = exported.decode()
+    assert svg.count('<path d="M ') == len(figure.traces[0].x.values)
+    fills = {part.split('fill="', 1)[1].split('"', 1)[0] for part in svg.split("<path ")[1:]}
+    assert len(fills) > 1
+    assert figure.to_svg() == svg
+    png = public_static_export(figure, "png")
+    assert png is not None
 
 
 @pytest.mark.parametrize(
@@ -881,7 +1263,6 @@ def test_public_hexbin_compiler_rejects_polar_custom_and_nonfinite(
     "mutate",
     [
         lambda figure: figure.axis_options["x"].__setitem__("domain", None),
-        lambda figure: figure.traces[0].style.__setitem__("fill_opacity", 0.5),
         lambda figure: figure.traces[0].style.__setitem__("role", "hex-density"),
     ],
 )
@@ -892,6 +1273,15 @@ def test_public_hexbin_predicate_keeps_rich_style_on_compatibility(
     mutate(figure)
     assert scene_export_support_reason(figure) is not None
     assert figure.to_svg()
+
+
+def test_public_hexbin_fill_opacity_is_scene_supported() -> None:
+    figure = _public_hexbin()
+    figure.traces[0].style["fill_opacity"] = 0.5
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported != public_static_export(_public_hexbin(), "svg")
 
 
 def test_public_heatmap_matches_exact_cross_host_scene_and_consumers() -> None:
@@ -941,27 +1331,45 @@ def test_public_heatmap_honors_the_rect_budget() -> None:
     assert figure.to_svg()
 
 
-def test_colormap_heatmap_stays_on_compatibility() -> None:
+def test_colormap_heatmap_is_scene_supported() -> None:
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 4.0)
     figure.axis_options["y"]["domain"] = (0.0, 5.0)
     figure.heatmap(_PUBLIC_HEATMAP_Z, x=_PUBLIC_HEATMAP_X, y=_PUBLIC_HEATMAP_Y)
-    reason = scene_export_support_reason(figure)
-    assert reason is not None
-    assert _public_svg(figure) is None
-    assert figure.to_svg()
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"<rect" in exported
+    png = public_static_export(figure, "png")
+    assert png is not None
+
+
+def test_truecolor_heatmap_is_scene_supported() -> None:
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    figure.heatmap(
+        [
+            [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]],
+            [[0.0, 0.0, 1.0], [1.0, 1.0, 0.0]],
+        ]
+    )
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"<rect" in exported
+    png = public_static_export(figure, "png")
+    assert png is not None
 
 
 @pytest.mark.parametrize(
     "mutate",
     [
-        lambda figure: setattr(figure, "coords", "polar"),
         lambda figure: setattr(figure.traces[0], "x_axis", "x2"),
-        lambda figure: figure.traces[0].style.__setitem__("colormap", "viridis"),
         lambda figure: figure.traces[0].grid.values.__setitem__(0, np.nan),
     ],
 )
-def test_public_heatmap_compiler_rejects_polar_colormap_and_nonfinite(
+def test_public_heatmap_compiler_rejects_secondary_axis_and_nonfinite(
     mutate: Callable[[Figure], None],
 ) -> None:
     figure = _public_heatmap()
@@ -972,11 +1380,25 @@ def test_public_heatmap_compiler_rejects_polar_colormap_and_nonfinite(
     assert _public_pdf(figure) is None
 
 
+def test_public_heatmap_fill_opacity_is_scene_supported() -> None:
+    figure = _public_heatmap()
+    figure.traces[0].style["fill_opacity"] = 0.5
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported != public_static_export(_public_heatmap(), "svg")
+    colormap = Figure(width=320, height=240)
+    colormap.axis_options["x"]["domain"] = (0.0, 4.0)
+    colormap.axis_options["y"]["domain"] = (0.0, 5.0)
+    colormap.heatmap(_PUBLIC_HEATMAP_Z, x=_PUBLIC_HEATMAP_X, y=_PUBLIC_HEATMAP_Y)
+    colormap.traces[0].style["fill_opacity"] = 0.5
+    assert scene_export_support_reason(colormap) is None
+    assert public_static_export(colormap, "svg") is not None
+
+
 @pytest.mark.parametrize(
     "mutate",
     [
-        lambda figure: figure.axis_options["x"].__setitem__("domain", None),
-        lambda figure: figure.traces[0].style.__setitem__("fill_opacity", 0.5),
         lambda figure: figure.traces[0].style.__setitem__("role", "heat-density"),
     ],
 )
@@ -987,6 +1409,27 @@ def test_public_heatmap_predicate_keeps_rich_style_on_compatibility(
     mutate(figure)
     assert scene_export_support_reason(figure) is not None
     assert figure.to_svg()
+
+
+def test_public_heatmap_autoranges_without_authored_axis_domain() -> None:
+    figure = Figure(width=320, height=240)
+    figure.heatmap(_PUBLIC_HEATMAP_Z, x=_PUBLIC_HEATMAP_X, y=_PUBLIC_HEATMAP_Y, color="#3987e5")
+    assert figure.axis_options["x"].get("domain") is None
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"<rect" in exported
+    assert b"data:image/png;base64," not in exported
+
+
+def test_public_contour_autoranges_without_authored_axis_domain() -> None:
+    figure = Figure(width=320, height=240)
+    figure.contour([[1.0, 2.0], [3.0, 4.0]], levels=2, color="#3987e5")
+    assert figure.axis_options["x"].get("domain") is None
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"data:image/png;base64," not in exported
 
 
 def test_custom_hexbin_reducer_stays_on_compatibility() -> None:
@@ -1020,12 +1463,17 @@ def test_authored_constant_scatter_stroke_uses_public_scene(stroke: str) -> None
     assert scene_export_support_reason(figure) is None
 
 
-def test_width_only_scatter_stroke_stays_on_compatibility_route() -> None:
+def test_width_only_scatter_stroke_uses_public_scene() -> None:
+    from xyg import _native
+
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 2.0)
     figure.axis_options["y"]["domain"] = (0.0, 2.0)
     figure.scatter([1.0], [1.0], symbol="plus_line", color="#3987e5", stroke_width=2.0)
-    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+    assert scene_export_support_reason(figure) is None
+    svg = _native.scene_svg(figure.to_scene())
+    assert 'stroke-width="2"' in svg
+    assert figure.to_svg() == svg
 
 
 @pytest.mark.parametrize("symbol", BUILTIN_SYMBOLS)
@@ -1045,10 +1493,12 @@ def test_generated_stem_markers_route_every_builtin_symbol(symbol: str) -> None:
     "mutate",
     [
         lambda figure: figure.traces[0].style.__setitem__("marker_path", {"contours": []}),
-        lambda figure: figure.traces[0].style.__setitem__("marker_glyph", "A"),
         lambda figure: figure.scatter([2.5, 3.5], [2.5, 3.5], symbol=["circle", "square"]),
         lambda figure: figure.scatter([2.5, 3.5], [2.5, 3.5], color=[0.0, 1.0]),
-        lambda figure: setattr(figure, "coords", "polar"),
+        lambda figure: (
+            setattr(figure, "coords", "polar"),
+            figure.stem([1.0], [1.5], base=0.25),
+        ),
         lambda figure: figure.scatter(range(10_001), range(10_001)),
     ],
 )
@@ -1063,7 +1513,11 @@ def test_builtin_symbol_cutover_keeps_nonliteral_scatter_fail_closed(
 @pytest.mark.parametrize(
     "mutate",
     [
-        lambda figure: setattr(figure.traces[0], "color2_ch", figure.traces[0].color_ch),
+        lambda figure: setattr(
+            figure.traces[0],
+            "color2_ch",
+            ColorChannel(mode="direct_rgba", rgba=np.array([[0.2, 0.8, 0.5, 1.0]])),
+        ),
         lambda figure: figure.traces[0].style.__setitem__("role", "custom-ribbon"),
         lambda figure: setattr(figure, "coords", "polar"),
     ],
@@ -1074,6 +1528,20 @@ def test_public_ribbon_route_fails_closed_for_unmodeled_behavior(
     figure = _public_ribbon("linear")
     mutate(figure)
     assert scene_export_support_reason(figure) is not None
+
+
+def test_public_ribbon_constant_color2_routes_through_scene() -> None:
+    from xyg import _native
+
+    figure = _public_ribbon("linear")
+    figure.traces[0].color2_ch = ColorChannel(mode="constant", constant="#34d399")
+    assert scene_export_support_reason(figure) is None
+    svg = _native.scene_svg(figure_scene(figure))
+    assert "<linearGradient" in svg
+    assert figure.to_svg() == svg
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"<linearGradient" in exported
 
 
 def test_public_ribbon_route_enforces_the_authored_band_ceiling() -> None:
@@ -1091,8 +1559,20 @@ def test_migrated_scene_packers_have_no_host_step_geometry_expander() -> None:
     node_packer = (root / "packages/xy-node/src/scene.js").read_text()
     assert "def _step_arrays" not in python_packer
     assert "function stepArrays" not in node_packer
-    assert "expansion_modes=expansion_modes" in python_packer
-    assert "expansionModes, x0, y0" in node_packer
+    assert "return _native.scene_encode_product(" in python_packer
+    assert "return encodeProduct(" in node_packer
+    assert "figure_support=_pack_figure_support(" in python_packer
+    assert "packFigureSupport(figure, { colorbarUnsupported })" in node_packer
+    assert "reason = _native.scene_figure_support_reason(" not in python_packer
+    assert (
+        "const reason = sceneFigureSupportReason(figure, { colorbarUnsupported });"
+        not in node_packer
+    )
+    assert "reason, scene = _public_scene_or_reason(" in python_packer
+    assert "viewport=(w, h)" not in python_packer
+    assert "xAxis: xSceneAxis" not in node_packer
+    assert "sidecars = _unpack_xysd(" not in python_packer
+    assert "sidecars = unpackXySd(" not in node_packer
     assert "_ribbon_band_samples" not in python_packer
     assert "ribbon_edge" not in python_packer
     assert "function ribbonEdge" not in node_packer
@@ -1102,7 +1582,6 @@ def test_migrated_scene_packers_have_no_host_step_geometry_expander() -> None:
 @pytest.mark.parametrize(
     "annotation",
     [
-        {"kind": "text", "x": 0.5, "y": 0.5, "text": "rotated", "rotation": 30},
         {"kind": "marker", "x": 0.5, "y": 0.5, "text": "collision", "collision": "hide"},
         {"kind": "callout", "x": 0.5, "y": 0.5, "text": "rich", "html": "<b>rich</b>"},
         {"kind": "callout", "x": 0.5, "y": 0.5, "text": "css", "class_name": "custom"},
@@ -1122,16 +1601,53 @@ def test_public_annotation_router_fails_closed_for_unmodeled_host_layout_and_css
     [
         {"kind": "text", "x": 0.5, "y": 0.5, "text": "offset", "dx": 6},
         {"kind": "text", "x": 0.5, "y": 0.5, "text": "anchor", "anchor": "end"},
-        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "offset", "dy": -8},
-        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "anchor", "anchor": "end"},
+        {"kind": "text", "x": 0.5, "y": 0.5, "text": "rotated", "rotation": 30},
     ],
 )
-def test_public_annotation_router_rejects_unencoded_text_and_marker_label_layout(
-    annotation: dict[str, object],
-) -> None:
+def test_public_unwrapped_text_layout_routes_through_scene(annotation: dict[str, object]) -> None:
+    from xyg import _native
+
     figure = _supported()
     figure.annotations = [annotation]
-    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
+    assert scene_export_support_reason(figure) is None
+    scene = figure_scene(figure)
+    assert str(annotation["text"]).encode() in scene
+    svg = _native.scene_svg(scene)
+    assert figure.to_svg() == svg
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert str(annotation["text"]).encode() in exported
+    if "rotation" in annotation:
+        assert f'transform="rotate(-{annotation["rotation"]} ' in svg
+        assert f'transform="rotate(-{annotation["rotation"]} '.encode() in exported
+
+
+@pytest.mark.parametrize(
+    "annotation",
+    [
+        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "offset", "dy": -8},
+        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "anchor", "anchor": "end"},
+        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "rotated", "rotation": 30},
+    ],
+)
+def test_public_labelled_marker_layout_routes_through_scene(
+    annotation: dict[str, object],
+) -> None:
+    from xyg import _native
+
+    figure = _supported()
+    figure.annotations = [annotation]
+    assert scene_export_support_reason(figure) is None
+    scene = figure_scene(figure)
+    assert str(annotation["text"]).encode() in scene
+    svg = _native.scene_svg(scene)
+    assert figure.to_svg() == svg
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert str(annotation["text"]).encode() in exported
+    if "rotation" in annotation:
+        assert f'transform="rotate(-{annotation["rotation"]} ' in svg
+        assert f'transform="rotate(-{annotation["rotation"]} '.encode() in exported
 
 
 @pytest.mark.parametrize("name", sorted(UNSUPPORTED))
@@ -1175,8 +1691,12 @@ def test_too_small_valid_export_viewport_is_a_documented_routing_exception() -> 
     "factory,reason",
     [
         (lambda: _supported().line([0, 1], [0, 1]), None),
+        (lambda: _supported().line([0, 1, 2], [1, 2, 1], curve="smooth"), None),
+        (lambda: _supported().area([0, 1, 2], [1, 2, 1], curve="smooth"), None),
+        (_smooth_error_band, None),
         (lambda: _supported().bar([0, 1], [1, 2]), None),
         (lambda: _supported().column([0, 1], [1, 2]), None),
+        (lambda: _supported().column([0, 1], [1, 2], corner_radius=2), None),
         (lambda: _supported().histogram([0, 1, 1, 2], bins=2), None),
         (lambda: _supported().area([0, 1], [1, 2]), None),
         (lambda: _supported().error_band([0, 1], [0, 1], [1, 2]), None),
@@ -1196,14 +1716,6 @@ def test_public_router_selects_only_the_proven_literal_cartesian_geometry_subset
 @pytest.mark.parametrize(
     "factory",
     [
-        lambda: _supported().bar(
-            [0, 1], [1, 2], fill="linear-gradient(to bottom, #000000, #ffffff)"
-        ),
-        lambda: _supported().column([0, 1], [1, 2], corner_radius=2),
-        lambda: _supported().area([0, 1], [1, 2], curve="smooth"),
-        lambda: _supported().area(
-            [0, 1], [1, 2], fill="linear-gradient(to bottom, #000000, #ffffff)"
-        ),
         lambda: _supported().scatter(range(10_001), range(10_001)),
     ],
 )
@@ -1211,6 +1723,25 @@ def test_public_literal_geometry_boundary_fails_closed_for_unmodeled_behavior(fa
     """A successful internal record must not silently widen static routing."""
     reason = scene_export_support_reason(factory()) or ""
     assert reason
+
+
+@pytest.mark.parametrize(
+    "factory",
+    [
+        lambda: _supported().bar(
+            [0, 1], [1, 2], fill="linear-gradient(to bottom, #000000, #ffffff)"
+        ),
+        lambda: _supported().area(
+            [0, 1], [1, 2], fill="linear-gradient(to bottom, #000000, #ffffff)"
+        ),
+    ],
+)
+def test_public_literal_linear_gradient_fills_route_through_scene(factory) -> None:
+    figure = factory()
+    assert scene_export_support_reason(figure) is None
+    svg = figure.to_svg()
+    assert "<linearGradient" in svg
+    assert 'fill="url(#xy-scene-g' in svg
 
 
 @pytest.mark.parametrize(
@@ -1267,7 +1798,6 @@ def test_public_router_routes_literal_disconnected_segments_through_all_static_c
 @pytest.mark.parametrize(
     "mutate,reason",
     [
-        (lambda figure: figure.traces[0].style.__setitem__("dash", "4,2"), "PUBLIC_STYLE"),
         (lambda figure: figure.traces[0].style.__setitem__("role", "custom"), "PUBLIC_STYLE"),
         (lambda figure: figure.traces[0].x0.values.__setitem__(0, np.nan), "missing-data"),
     ],
@@ -1284,6 +1814,15 @@ def test_public_disconnected_segment_router_fails_closed(
         assert result is not None
     else:
         assert result is not None and reason in result
+
+
+def test_public_disconnected_segments_admit_constant_linecap() -> None:
+    figure = _public_disconnected_segments()
+    figure.traces[0].style["linecap"] = "butt"
+    assert scene_export_support_reason(figure) is None
+    scene = figure_scene(figure)
+    assert b"XYLC" in scene
+    assert 'stroke-linecap="butt"' in _public_svg(figure)
 
 
 @pytest.mark.parametrize(
@@ -1381,24 +1920,18 @@ def test_axis_visibility_switches_route_all_public_static_exports_through_scene(
 
     from xyg import _native
 
-    scene_svg = _native.scene_svg
-    scene_raster_commands = _native.scene_raster_commands
-    calls = {"svg": 0, "raster": 0}
+    scene_static_export = _native.scene_static_export
+    calls = {"n": 0}
 
-    def observed_scene_svg(*args: object, **kwargs: object) -> str:
-        calls["svg"] += 1
-        return scene_svg(*args, **kwargs)  # type: ignore[arg-type]
+    def observed_scene_static(*args: object, **kwargs: object) -> bytes:
+        calls["n"] += 1
+        return scene_static_export(*args, **kwargs)
 
-    def observed_scene_raster_commands(*args: object, **kwargs: object) -> bytes:
-        calls["raster"] += 1
-        return scene_raster_commands(*args, **kwargs)  # type: ignore[arg-type]
-
-    monkeypatch.setattr(_native, "scene_svg", observed_scene_svg)
-    monkeypatch.setattr(_native, "scene_raster_commands", observed_scene_raster_commands)
+    monkeypatch.setattr(_native, "scene_static_export", observed_scene_static)
     svg = figure.to_svg()
     assert figure.to_png(scale=1).startswith(b"\x89PNG\r\n\x1a\n")
     assert figure.to_image(format="pdf").startswith(b"%PDF-")
-    assert calls == {"svg": 2, "raster": 1}
+    assert calls["n"] == 3
 
     # Both axis labels are present by default (three per axis). The switched
     # axis owns exactly three independently visible tick marks and labels.
@@ -1479,3 +2012,102 @@ def test_axis_visibility_stays_bounded_before_the_public_scene_route() -> None:
     figure.axis_options["x"]["tick_values"] = list(range(201))
     with pytest.raises(ValueError, match="axis tick lists are limited"):
         scene_export_support_reason(figure)
+
+
+def _public_mark_figures() -> list[tuple[str, Figure]]:
+    """In-scope Cartesian figures for every #272/#273 listed mark family."""
+    return [
+        ("scatter", _supported()),
+        ("line_bar", _public_literal_geometry()),
+        ("segments", _public_disconnected_segments()),
+        ("hexbin", _public_hexbin()),
+        ("ribbon", _public_ribbon("linear")),
+        ("triangle_mesh", _public_triangle_mesh()),
+        ("heatmap", _public_heatmap()),
+        ("violin", _public_violin()),
+        ("box", _public_box()),
+    ]
+
+
+def test_public_mark_figures_never_call_python_svg_mark_emitters(monkeypatch) -> None:
+    """#272: Scene-eligible to_svg must not fall back to `_svg.py` mark paths."""
+    from xyg import _svg
+
+    def boom(*_args, **_kwargs):
+        raise AssertionError("Python SVG mark emitter used for a Scene-eligible figure")
+
+    for name in (
+        "_segment_marks",
+        "_scatter_marks",
+        "_hexbin_marks",
+        "_ribbon_marks",
+        "_triangle_mesh_marks",
+        "_bar_marks",
+        "_rect_marks",
+    ):
+        monkeypatch.setattr(_svg, name, boom)
+    monkeypatch.setattr(_svg, "to_svg", boom)
+
+    for label, figure in _public_mark_figures():
+        assert scene_export_support_reason(figure) is None, label
+        svg = figure.to_svg()
+        assert svg.startswith("<svg"), label
+        assert "polyline" in svg or "path" in svg or "<rect" in svg, label
+
+
+def test_public_mark_figures_never_call_python_raster_mark_emitters(monkeypatch) -> None:
+    """#273: Scene-eligible PNG must not fall back to `_raster.py` mark emitters."""
+    from xyg import _raster
+
+    def boom(*_args, **_kwargs):
+        raise AssertionError("Python raster mark emitter used for a Scene-eligible figure")
+
+    for name in (
+        "_emit_scatter",
+        "_emit_authored_scatter",
+        "_emit_segments",
+        "_emit_hexbin",
+        "_emit_ribbon",
+        "_emit_triangle_mesh",
+        "_emit_bars",
+        "_emit_rects",
+        "to_png",
+        "to_rgba",
+        "render_raster",
+    ):
+        monkeypatch.setattr(_raster, name, boom)
+
+    for label, figure in _public_mark_figures():
+        png = figure.to_png(scale=1)
+        assert png.startswith(b"\x89PNG"), label
+
+
+def test_public_mark_figures_encode_pdf_through_rust() -> None:
+    """#274: Scene-eligible PDF uses the native closed-subset converter."""
+    from xyg import _native
+
+    for label, figure in _public_mark_figures():
+        svg = figure.to_svg()
+        pdf = figure.to_image(format="pdf")
+        assert pdf.startswith(b"%PDF-"), label
+        assert pdf == _native.svg_to_pdf(svg), label
+        assert b"/FlateDecode" in pdf, label
+
+
+def test_public_mark_figures_encode_jpeg_and_webp_through_rust(monkeypatch) -> None:
+    """#274: Scene-eligible JPEG/WebP use native encode, not Python format modules."""
+    from xyg import _jpeg, _webp
+
+    def boom(*_args, **_kwargs):
+        raise AssertionError("Python JPEG/WebP encoder used for a Scene-eligible figure")
+
+    monkeypatch.setattr(_jpeg, "encode", boom)
+    monkeypatch.setattr(_webp, "encode", boom)
+
+    for label, figure in _public_mark_figures():
+        jpeg = figure.to_image(format="jpeg", scale=1)
+        webp = figure.to_image(format="webp", scale=1)
+        assert jpeg[:3] == b"\xff\xd8\xff", label
+        assert webp[:4] == b"RIFF" and webp[8:12] == b"WEBP", label
+        assert public_static_export(figure, "jpeg") == jpeg, label
+        assert public_static_export(figure, "webp") == webp, label

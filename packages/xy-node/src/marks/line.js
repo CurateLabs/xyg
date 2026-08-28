@@ -4,38 +4,17 @@
  */
 
 import {
-  DECIMATION_THRESHOLD,
   asF64Array,
+  argsortStable,
   isSorted,
   m4Indices,
   m4Points,
   minMax,
+  payloadTier,
 } from "../encode.js";
 
 /** Same as `np.finfo(np.float64).eps` / Python `_payload._m4_decimate`. */
 export const F64_EPS = Number.EPSILON;
-
-/**
- * Stable argsort for f64 (NaNs last), matching NumPy `argsort(..., kind="stable")`
- * for the line ingest path.
- */
-function stableArgsort(arr) {
-  const idx = new Uint32Array(arr.length);
-  for (let i = 0; i < arr.length; i += 1) idx[i] = i;
-  idx.sort((a, b) => {
-    const va = arr[a];
-    const vb = arr[b];
-    const aNan = !(va === va);
-    const bNan = !(vb === vb);
-    if (aNan && bNan) return a - b;
-    if (aNan) return 1;
-    if (bNan) return -1;
-    if (va < vb) return -1;
-    if (va > vb) return 1;
-    return a - b;
-  });
-  return idx;
-}
 
 function gather(arr, idx) {
   const out = new Float64Array(idx.length);
@@ -55,7 +34,7 @@ export function prepareLineSeries(x, y) {
   }
   let sorted = false;
   if (xa.length > 1 && !isSorted(xa)) {
-    const order = stableArgsort(xa);
+    const order = argsortStable(xa);
     xa = gather(xa, order);
     ya = gather(ya, order);
     sorted = true;
@@ -69,16 +48,16 @@ export function prepareLineSeries(x, y) {
  *
  * @param {ArrayLike|TypedArray} x
  * @param {ArrayLike|TypedArray} y
- * @param {{x0?: number, x1?: number, nBuckets?: number, threshold?: number}} [opts]
+ * @param {{x0?: number, x1?: number, nBuckets?: number, polar?: boolean, coords?: string}} [opts]
  * @returns {{tier: string, x: Float64Array, y: Float64Array, indices?: Uint32Array, nBuckets: number}}
  */
 export function m4DecimateLine(x, y, opts = {}) {
   const prepared = prepareLineSeries(x, y);
   const xa = prepared.x;
   const ya = prepared.y;
-  const threshold = opts.threshold ?? DECIMATION_THRESHOLD;
   const nBuckets = opts.nBuckets ?? 640;
-  if (xa.length <= threshold) {
+  const polar = Boolean(opts.polar) || opts.coords === "polar";
+  if (payloadTier({ kind: 0, nPoints: xa.length, polar }) === 0) {
     return { tier: "direct", x: xa, y: ya, nBuckets };
   }
   const mm = minMax(xa) ?? [0, 1];

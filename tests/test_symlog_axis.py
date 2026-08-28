@@ -158,18 +158,23 @@ def test_static_symlog_heatmap_resamples_internal_cells() -> None:
 
 
 def test_svg_symlog_heatmap_embeds_warped_image() -> None:
-    import base64
     import re
-    import struct
 
     fig = Figure().heatmap([[0.0, 1.0], [0.5, 0.75]])
     fig.set_axis("x", type_="symlog", constant=1.0)
     svg = fig.to_svg()
-    match = re.search(r'href="data:image/png;base64,([^"]+)"', svg)
-    assert match is not None
-    png = base64.b64decode(match.group(1))
-    width = struct.unpack(">I", png[16:20])[0]
-    assert width > 2  # resampled beyond the 2 source columns
+    assert "data:image/png;base64," not in svg
+    widths = [
+        float(width)
+        for width in re.findall(
+            r'<rect x="[^"]+" y="[^"]+" width="([^"]+)" height="[^"]+" fill="rgb',
+            svg,
+        )
+    ]
+    assert len(widths) == 4
+    left = min(widths)
+    right = max(widths)
+    assert right / left > 1.2  # symlog stretches the low-side cells
 
 
 def test_symlog_wire_protocol_is_bumped_in_lockstep() -> None:

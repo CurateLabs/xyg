@@ -300,12 +300,13 @@ allocation cliff is structurally unreachable. Both remain the intended design; n
 exists in `js/src/` today.
 
 **Tier 0 — Direct.** Upload raw columns, draw with instancing. Simple, exact. The
-budget is channel-dependent: `Trace.use_density()` (`python/xyg/_trace.py`) picks
+budget is channel-dependent: `Trace.use_density()` (`python/xyg/_trace.py`) is a
+thin packer over `xyg_payload_tier` (ABI 122). Rust picks
 `DIRECT_SOFT_CEILING = 2_000_000` when the trace carries a per-point color or size
-channel, and `SCATTER_DENSITY_THRESHOLD = 200_000` otherwise (both in
-`python/xyg/config.py`). A plain scatter therefore aggregates at 200k — its whole win is
+channel, and `SCATTER_DENSITY_THRESHOLD = 200_000` otherwise (both lockstep in
+`python/xyg/config.py` and `crates/xyg-engine/src/lod_plan.rs`; strict `>`). A plain scatter therefore aggregates at 200k — its whole win is
 not drawing 10M dots — while a scatter whose per-point color/size aggregation would
-destroy stays direct up to 2M. `js/src/45_lod.ts` carries the matching 200k client
+destroy stays direct up to 2M. Polar charts always ship direct. `js/src/45_lod.ts` carries the matching 200k client
 budget.
 
 **Tier 1 — Decimated lines (LTTB / min-max per pixel column):** for line/area traces
@@ -458,9 +459,9 @@ re-exports several of them as a historic import path and is not listed for those
 | Constant | Value | What it gates | Read by |
 | --- | --- | --- | --- |
 | `PROTOCOL_VERSION` | `3` | Wire-spec version stamped on every payload; the client refuses a mismatch loudly (§33). | `_payload.py` |
-| `DECIMATION_THRESHOLD` | `10_000` | Line/area traces with more points than this ship M4-decimated (Tier 1); at or below, raw columns go over the wire. Also gates re-decimation on the interaction path. | `_payload.py`, `interaction.py` |
-| `SCATTER_DENSITY_THRESHOLD` | `200_000` | Tier-0 → Tier-2 count budget for a scatter with **no** per-point channel (`Trace.use_density()`), and the visible-count budget for view-LOD planning and drill decisions. | `_trace.py`, `interaction.py`; mirrored client-side as `LOD_DIRECT_POINT_BUDGET` in `js/src/45_lod.ts` |
-| `DIRECT_SOFT_CEILING` | `2_000_000` | Tier-0 → Tier-2 count budget for a scatter that **does** carry a per-point color or size channel; above it density is forced and warned about — the color channel aggregates to the surface's per-cell mean point color (LOD doc §2), every other per-item channel is dropped and named, never silently (§5 F5). | `_trace.py`, `marks.py` |
+| `DECIMATION_THRESHOLD` | `10_000` | Line/area traces with more points than this ship M4-decimated (Tier 1); at or below, raw columns go over the wire. Also gates re-decimation on the interaction path. Strict `>`; `xyg_payload_tier` owns the compile-time choice (ABI 122). | `_payload.py`, `interaction.py`; lockstep `lod_plan.rs` |
+| `SCATTER_DENSITY_THRESHOLD` | `200_000` | Tier-0 → Tier-2 count budget for a scatter with **no** per-point channel (`Trace.use_density()` via `xyg_payload_tier`), and the visible-count budget for view-LOD planning and drill decisions. Strict `>`. | `_trace.py`, `interaction.py`; lockstep `lod_plan.rs`; mirrored client-side as `LOD_DIRECT_POINT_BUDGET` in `js/src/45_lod.ts` |
+| `DIRECT_SOFT_CEILING` | `2_000_000` | Tier-0 → Tier-2 count budget for a scatter that **does** carry a per-point color or size channel; above it density is forced and warned about — the color channel aggregates to the surface's per-cell mean point color (LOD doc §2), every other per-item channel is dropped and named, never silently (§5 F5). Strict `>`; `xyg_payload_tier` owns the compile-time choice (ABI 122). | `_trace.py`, `marks.py`; lockstep `lod_plan.rs` |
 | `DENSITY_GRID` | `(512, 384)` | Default density-grid cell dimensions for the initial spec, before the client requests a viewport-matched size via `density_view`. | `_payload.py` |
 | `MAX_SCREEN_DIM` | `4096` | Upper clamp on any browser-supplied pixel dimension, so untrusted widget/comm input cannot inflate decimation buckets or density grids. | `lod.py`, `_native.py` |
 | `MAX_CONTOUR_WORK` | `4_000_000` | Ceiling on contour `cells × levels`; a request over it raises instead of allocating an unbounded segment buffer. | `marks.py`, `_native.py` |
@@ -551,7 +552,7 @@ F3, still pending (above).
   immediately-following generated constant built-in stem marker). Gradients,
   rounded corners, dashed or data-driven segment styles, LOD/density,
   nonliteral palettes, triangle-mesh component alpha/outlines/per-face styles/
-  joined fills/larger batches, two-ended ribbon gradients, polar geometry, and
+  larger batches, per-item two-ended ribbon gradients, polar geometry, and
   unmodeled marks retain their
   compatibility renderers. Rust
   now owns chart/plot backgrounds, authored axis side/visibility and
@@ -560,13 +561,49 @@ F3, still pending (above).
   both native hosts through one ABI. Python compatibility SVG/raster and pyplot
   call that ABI through one `_svg.axis_ticks` framing function; the obsolete
   per-family Python adapters are retired. `public_static_export` is likewise
-  the only optional Python selector for the bounded product route; explicit
+  the only optional Python selector for the bounded product route; it reuses
+  the predicate's compiled Scene rather than encoding twice, then ABI 164
+  `xyg_scene_static_export` owns SVG/PNG/PDF/JPEG/WebP consumers from that
+  batch, then ABI 165 folds the figure-compile `XYFS` probe into
+  `xyg_scene_encode_product` so product-path hosts do not call
+  `xyg_scene_figure_support_reason` separately, then ABI 166 tessellates
+  cartesian bar/column/histogram `corner_radius` on that same product Scene,
+  then ABI 167 applies polar bar/column/histogram `wedge_gap`, then ABI 168
+  tessellates polar bar/column/histogram `corner_radius`, then ABI 169 admits
+  polar `curve="smooth"` plus `step` as polar step expansion, then ABI 170
+  admits constant scatter `marker_glyph` as Scene `<text>` / `OP_TEXT`, then
+  ABI 171 admits scatter `stroke_width` without `stroke` as match-fill, then
+  ABI 172 admits cartesian line `curve="smooth"` plus `step` as authored
+  step expansion, then ABI 173 tessellates heatmap `corner_radius`, then ABI 174
+  tessellates violin/box `corner_radius`, then ABI 175 admits violin/box
+  `fill_opacity` / `stroke_opacity`, then ABI 176 admits bar/column/histogram
+  `fill_opacity` / `stroke_opacity`, then ABI 177 admits heatmap `fill_opacity`,
+  then ABI 178 admits scatter `fill_opacity` / `stroke_opacity`, then ABI 179
+  admits hexbin `fill_opacity`, then ABI 180 admits triangle_mesh `fill_opacity`
+  / constant stroke paint, then ABI 181 admits cartesian area/error_band
+  `curve="smooth"` plus `step` as authored band step expansion, then ABI 182
+  admits triangle_mesh `joined_fill` as one identity PolyFill ring, then ABI 183
+  admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`, then ABI 184
+  admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`, then ABI 185
+  admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`, then ABI 186
+  admits cartesian colormap hexbin as a 1×N XYHP plane interned onto HexCell
+  PolyFills, then ABI 187 admits cartesian unwrapped text `rotation` as XYAW
+  `wrap=0` (XYAW v2 / XYLB v6), then ABI 188 admits labelled cartesian marker
+  `rotation` as XYAW `wrap=0`.
+  `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
+  panel Scene. That predicate
+  owns the public PolyFill group budget, including companion traces that share
+  the browser painter's 1,024-group ceiling. Explicit
   Scene APIs retain no second fallback predicate. Rust also owns
   chrome ordering, plus bounded primary static legend entry ordering,
   placement, frame, text, and swatch policy;
   fully hidden Cartesian chrome is omitted by Rust lowering without changing
-  coordinate semantics—polar Scene projection remains an explicit unsupported
-  boundary rather than an inference from transparent paint. Rust owns the
+  coordinate semantics—polar Scene projection is explicit XYPL v1 input, never
+  an inference from transparent paint. Scene v26 compiles polar line, scatter,
+  area, bar/column (PolyFill annular sectors), errorbar, heatmap
+  (tessellated lattice cells), and contour (SegmentPair polylines); polar
+  density remains an explicit unsupported boundary.
+  Rust owns the
   selected endpoint-pair order, clipping, SVG, PDF, and raster output;
   nonfinite/missing breaks, custom styles, and every other segment-like mark
   remain explicit compatibility boundaries.
@@ -1253,8 +1290,255 @@ host after Rust resolves that domain and aspect. The compact wire result
 remains the centers-only hexbin trace. Constant-style Cartesian native
 lattices compile those centers plus cell pitch onto existing Scene PolyFill
 records; polar, custom reducers, colormaps, and LOD stay compatibility.
+ABI 103 moves that Cartesian hex-cell ring and regular heatmap lattice
+reconstruction into Rust compact authoring so Python and Node pack centers+pitch
+and extent+shape only.
+ABI 104 moves disconnected endpoint pairs and unjoined triangle faces onto the
+same compact expansion so hosts pack one four-coordinate row per segment and
+two PolyFill rows per face.
+ABI 105 moves the public static-export support predicate into Rust. Hosts pack
+an `XYEF` v1 facts envelope; ABI 152 owns `XYEP` layout, kind/step/annotation
+codes, and flag derivation. Allowlists, check order, and
+`XYG_SCENE_UNSUPPORTED_*` wording are engine-owned and identical for Python
+and Node.
+ABI 106 moves Figure autorange, `_auto_domain`, and zero-baseline pinning
+into Rust. Hosts pack an `XYAR` v1 envelope of axis options, column extents,
+and rectangle predicates; padding, log-positive extents, polar defaults,
+reverse, and the default 3% margin are engine-owned and identical for Python
+and Node.
+ABI 107 moves Scene CSS→RGBA8 conversion and per-kind mark fill/stroke/width
+defaults into Rust. Hosts pack an `XYMS` v1 envelope of kind, opacities,
+authored CSS strings, and width fields; named colors, `none`, line-only
+scatter stroke, band `line_color`, default widths, and the never-invisible
+fallback are engine-owned and identical for Python and Node.
+ABI 108 moves Scene chrome default RGBA/widths and CSS overlay into Rust.
+Hosts pack an `XYCH` v1 envelope of background CSS, per-axis sides, paint
+flags, opacities, widths, and CSS strings; `grid_opacity` still scales the
+default grid color when `grid_color` is unauthored, and named chrome paints
+cannot drift.
+ABI 109 moves Figure→Scene row packing into Rust. Hosts pass kind, flags,
+step mode, style ref, trace id, diameter/symbol, extras, and literal f64
+columns; record kinds, stable-id splitting, expansion-mode assignment,
+ribbon/triangle doubling, heatmap lattice framing, and finite-coordinate
+rejection are engine-owned and identical for Python and Node.
+ABI 116 expands primary rule/band/marker annotations into ordinary Scene
+rows. Hosts pass kind, axis, style ref, index, and authored scalars plus
+axis domains; stable-id tags, domain spanning, and finite rejection are
+engine-owned and identical for Python and Node.
+ABI 117 moves figure-compile support into Rust. Hosts pass packed
+observations plus axis ids/keys; feature mapping, the primary x/y axis
+set, and the Scene axis-key allowlist are engine-owned and identical for
+Python and Node.
+ABI 118 extends that envelope to per-trace allowlist flags so kind,
+hidden/per-item, density, dash, rect extras, joined fill, hex reducer,
+heatmap colormap, and non-CSS fill diagnostics are engine-owned and
+identical for Python and Node.
+ABI 119 moves composition mark ingress into Rust. Hosts call
+`xyg_argsort_stable`, `xyg_histogram_mark_edges`, `xyg_contour_levels`, and
+`xyg_hexbin_groups`; stable NaN-last sort, integer/empty-auto histogram
+edges, contour isoline spacing, and custom-hex lattice membership are
+engine-owned and identical for Python and Node. Custom reducers stay host
+callables over those groups.
+ABI 120 moves composition `loc="best"` occupancy into Rust. Hosts call
+`xyg_legend_normalize` and `xyg_legend_best_loc`; display-space projection,
+stride/finite caps, drop-not-clamp off-plot marks, and the 0.02 tie band are
+engine-owned and identical for Python and Node. Hosts still walk traces and
+pack label lengths, then settle `best` to a concrete location before Scene
+packing.
+ABI 121 moves ribbon/curve/rounded-rect tessellation into Rust. Hosts call
+`xyg_ribbon_edge`, `xyg_ribbon_polygon`, `xyg_monotone_tangents`,
+`xyg_curve_flatten`, and `xyg_rounded_rect_poly`; bump-X flattening,
+Fritsch–Carlson tangents, Hermite polylines, and independent tip/base radii
+are engine-owned and identical for Python and Node. Hosts still map affine
+scales and apply colormaps (`grid_rgba`, #283).
+ABI 122 moves compile-time payload LOD into Rust. Hosts call
+`xyg_payload_tier`, `xyg_payload_visible_needed`, and
+`xyg_payload_visible_mask`; line M4 vs direct, scatter density vs
+direct (strict `>`, per-item ceiling, polar skip), and the finite/log
+keep mask are engine-owned and identical for Python and Node. Hosts
+still gather, encode, and ship the chosen rows (#282).
+ABI 123 moves tick-label collision thinning into Rust. Hosts call
+`xyg_scene_tick_label_layout`; auto / hide / rotate / stagger, the
+edge-anchor rotate gap, and stride downsampling are engine-owned and
+identical for Python and Node. Hosts still format `_tick_text` and map
+values to pixels (#276).
+ABI 124 moves static legend box packing into Rust. Hosts call
+`xyg_legend_box_layout`; column fit, measured ellipsis, and loc /
+bbox-to-anchor placement are engine-owned and identical for Python and
+Node. Hosts still resolve CSS font-size / em paddings, pack entry
+strings, and remap polar `legend_box_*` gutters (#275).
+ABI 125 moves text-block measure and cartesian axis rooms into Rust.
+Hosts call `xyg_text_block_measure`, `xyg_text_block_rotated_extent`,
+`xyg_y_tick_label_extent`, `xyg_y_axis_left_room`,
+`xyg_x_axis_title_room`, `xyg_x_tick_label_room`, and
+`xyg_x_tick_label_edge_rooms`; wrap, rotated extent, and title/tick
+gutter formulas are engine-owned and identical for Python and Node.
+Hosts still format `_tick_text`, resolve CSS visibility / tick offsets,
+and iterate axes (#275).
+ABI 126 moves compatibility static-export padding, title-band, colorbar
+extra, right-y, and polar-recut combination into Rust. Hosts call
+`xyg_compat_is_compact`, `xyg_compat_default_padding`,
+`xyg_compat_title_wrap_width`, `xyg_compat_title_room`,
+`xyg_compat_x_axis_side_room`, `xyg_compat_colorbar_extra`,
+`xyg_compat_right_y_room`, `xyg_polar_legend_room`,
+`xyg_polar_legend_reserve`, `xyg_polar_label_room`, and
+`xyg_recut_polar_plot`; compact gutters, colorbar extras, and polar disc
+recut (including the too-small canvas fallback) are engine-owned and
+identical for Python and Node. Hosts still iterate axes, format ticks,
+measure rooms through ABI 125, resolve CSS visibility, and decide
+whether a polar legend gutter is reserved (#275).
+ABI 127 moves the pyplot tight-layout grid solve into Rust. Hosts call
+`xyg_tight_layout_solve` with measured per-panel chrome, figure-edge
+extras, and Matplotlib pad/rect; edge maxima, neighbor gaps, pad
+multiples, and `subplots_adjust` fractions are engine-owned. Hosts still
+measure `_panel_chrome`, suptitle, figure labels, and outside legends
+(#275).
+ABI 128 moves authored tick-window resolve and filter into Rust. Hosts
+call `xyg_tick_window` and `xyg_tick_window_filter`; linear vs modular
+angular containment (including seam-crossing sectors) is engine-owned
+and identical for Python and Node. Hosts still choose tick families via
+`xyg_scene_axis_ticks` and map values to pixels (#276).
+ABI 130 moves Cartesian compatibility tick-label formatting into Rust.
+Hosts call `xyg_tick_format` for linear/log/time/number-spec, category,
+and angular defaults; authored `tick_labels` and polar tick drawing
+stay host-side (#276).
+ABI 131 moves static polar (theta, r) → screen-pixel projection into Rust.
+Hosts call `xyg_polar_layout`, `xyg_polar_project`, and the polar visibility-mask
+helpers; wedge/ring/polygon helpers remain host-side and call native projection.
+ChartView GLSL `xyPolarPos` is unchanged until WASM (#277). Scene v26 / ABI 133
+compiles polar line, scatter, area, bar/column, errorbar, heatmap, and contour through XYPL v1 into `xyg_scene_batch_encode`;
+ABI 143 polar density tessellates occupied `DensityBlit` cells to PolyFill
+wedges. Polar heatmap tessellates lattice Rects to
+PolyFill wedges (scalar colormaps become per-cell literal styles); inverse-sample
+`<image>` blit stays on the compatibility exporters because Scene has no image record.
+Polar contour reuses SegmentPair polylines through `polar_project`.
+ABI 132 moves first-paint density scatter emit policy into Rust. Hosts call
+`xyg_density_emit_meta`, `xyg_density_grid_path`, `xyg_density_format_binning`,
+`xyg_density_pyramid_preflight`, and `xyg_density_wasm_eligible`; kernel
+invocation, buffer shipping, and axis-scale transforms stay host-side.
+ABI 129 moves Cartesian static-export grid colormap into Rust. Hosts
+call `xyg_colormap_rgba`, `xyg_colormap_rgba_canonical`, and existing
+`xyg_density_rgba` for log-u8 density; direct `t ∈ [0, 1]` stop
+interpolation (matching `_svg._lut`) is engine-owned and distinct from
+`xyg_heatmap_rgba`'s `((value * 255 - 1) / 254)` remap. Hosts still
+resolve colormap stop tables, CSS paint colors, truecolor RGBA buffers,
+and polar inverse-raster sampling (#283).
+ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
+authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
+rim tick-label placement. Polar heatmap uses the same Rect tessellation (per-cell
+literal styles for scalar colormaps). Cartesian Scene bytes change only the version u32.
+ABI 110 moves primary Scene legend framing into Rust. Hosts pass loc/flags,
+font sizes, paints, title, and per-entry meta plus labels; XYLG header
+layout, text offsets, and bounded-text rejection are engine-owned and
+identical for Python and Node.
+ABI 111 moves primary Scene colorbar framing into Rust. Hosts pass domain,
+stops, ticks, title, and text RGBA; XYCB v2 header layout, stop/tick
+tables, domain-span checks, and bounded-text rejection are engine-owned
+and identical for Python and Node.
+ABI 112 moves primary Scene annotation framing into Rust. Hosts pass typed
+row meta plus concatenated labels; XYAT/XYAL/XYAR/XYAC/XYAW table layout,
+version selection, the XYAD envelope, and bounded-text rejection are
+engine-owned and identical for Python and Node.
+ABI 113 moves closed-subset SVG→PDF into Rust. Hosts pass UTF-8 SVG;
+path lowering, Helvetica metrics, ExtGState/shading/image embedding, and
+deterministic object numbering are engine-owned and identical for Python
+and Node.
+ABI 114 moves baseline JPEG and lossless WebP encode into Rust. Hosts
+pass packed RGB/RGBA8 pixels; YCbCr 4:4:4, Annex K tables, the libjpeg
+quality curve, VP8L simple-lossless packing, and Huffman/prefix codes are
+engine-owned and identical for Python and Node.
+ABI 115 moves filter-0 PNG encode into Rust. Hosts pass packed RGB/RGBA8
+pixels plus mode/compression; indexed-palette selection, `tRNS`, and zlib
+IDAT are engine-owned and identical for Python and Node.
 Constant-style Cartesian heatmap compiles a regular rows x cols lattice onto
-existing Scene Rect records; polar, colormaps, truecolor, irregular
+existing Scene Rect records; polar Scene tessellates those Rects to PolyFill
+annular sectors. ABI 134 `HeatmapPainted` moves scalar colormap and truecolor
+tessellation plus style intern into Rust: hosts pack an XYHP plane, Rust emits
+per-cell literal Rect fills. ABI 135 named colormap tables live in Rust
+(`xyg_colormap_stops`, XYHP paint kind 2). ABI 136 product-kind packing
+(`xyg_scene_resolve_pack_kind` / `xyg_scene_pack_product`) maps authored
+kinds onto compact pack kinds so hosts no longer dispatch pack-kind locally.
+ABI 137 / Scene v27 compiles Cartesian constant-style density scatter as one
+Image blit (`DensityBlit` + XYHP kind 3 + XYIM) instead of a Rect lattice.
+ABI 138 / Scene v28 compiles constant dash
+polylines as an XYDS sidecar (raw XYDS extras or XYEX v2) so SVG/raster emit
+`stroke-dasharray`. ABI 139 / Scene v29 compiles constant non-round linecaps as
+an XYLC sidecar (raw XYLC, XYDS+XYLC concat, or XYEX v2) so SVG/raster emit
+`stroke-linecap`. ABI 140 / Scene v30 compiles cartesian `curve="smooth"`
+polylines as denser Scene polylines (`CurveFlatten=11`); ABI 141 / Scene v31
+compiles cartesian `area(curve="smooth")` as denser Scene Bands
+(`BandFlatten=12`). ABI 142 compiles cartesian mean-color density as XYHP
+kind 4 on the existing `DensityBlit` Image blit. ABI 143 polar density
+tessellates occupied `DensityBlit` cells to PolyFill wedges (no XYIM). ABI 144
+admits cartesian `error_band(curve="smooth")` on existing `BandFlatten=12` and
+polar `curve="smooth"` line/area/error_band as identity chords (polar-axes.md
+§5). ABI 145 admits constant scatter `marker_path` via an XYMP extras sidecar
+tessellated to PolyFill/Polyline after pixel mapping. ABI 146 admits constant
+mark `fill` linear-gradients via an XYGR extras sidecar kept on encoded Scene.
+ABI 147 owns product packing facts from packed XYPK v1. ABI 148 owns
+annotation family routing from packed XYAF v1. ABI 149 owns heatmap/density
+XYHP kind routing from packed XYHF v1. ABI 150 owns style-sidecar layout and
+extras wrapping from packed XYSS v1. ABI 151 owns Scene density binning and
+log-u8 encoding from packed columns. ABI 152 owns XYEP layout,
+kind/step/annotation codes, and flag derivation from packed XYEF v1.
+ABI 153 owns plot layout, chrome-style resolve, legend loc default/allowlists
+(empty authored loc is fail-closed, not the upper-right default), colorbar
+flags/framing, XYTL tick-label framing, and the 200-tick axis bound from packed
+XYCF v1. Layout errors stay plot-layout diagnostics so the public-export
+predicate can remap them to `XYG_SCENE_UNSUPPORTED_VIEWPORT`.
+ABI 154 owns per-trace Scene compile policy from packed XYTC v1.
+ABI 155 owns heatmap/density attach policy from packed XYTO plus XYTA v1.
+ABI 156 owns XYPK construction, scatter-only symbol/diameter, density
+domain-endpoint column rewrite, and `pack_product_facts` from packed XYTT
+plus XYCL v1.
+ABI 157 owns legend-name gating, heatmap-vs-density plane selection, and
+per-trace style/dash/marker/gradient/plane extraction from packed XYTT plus
+XYNM v1.
+ABI 158 owns XYSS dash/linecap/marker/gradient record construction from
+packed XYSD plus XYAO v1.
+ABI 159 owns annotation style/row splice and XYAD extract from packed
+product rows plus XYSD plus XYAO v1.
+ABI 160 owns assembled Scene encode from packed XYAS plus XYCC plus extras.
+ABI 161 owns legend paints and XYHP wrapping from packed XYSD.
+ABI 162 owns XYCC packing, extras packing, and viewport/axis scalars from
+packed XYAS plus XYCF plus XYSD plus polar plus XYSS.
+ABI 163 owns product-path compile, attach, sidecar, row, annotation,
+style-sidecar, splice, and assembled encode from packed XYTC plus XYTA plus
+XYNM plus XYCL plus XYAF plus XYCF plus polar.
+ABI 164 owns public SVG/PNG/PDF/JPEG/WebP consumers from one encoded Scene.
+ABI 165 owns the figure-compile support probe from packed XYFS on product encode.
+ABI 166 tessellates cartesian bar/column/histogram `corner_radius` after pixel
+mapping. ABI 167 applies polar bar/column/histogram `wedge_gap` as a constant
+pixel inset during `polar_wedge_points`. ABI 168 tessellates polar
+bar/column/histogram `corner_radius` when the inner radius is positive.
+ABI 169 admits polar `curve="smooth"` plus `step` as polar step expansion.
+ABI 170 admits constant scatter `marker_glyph` via an XYMG extras sidecar
+kept on the encoded Scene. Multi-character glyphs and combined
+`marker_path` + `marker_glyph` stay compatibility. ABI 171 admits scatter
+`stroke_width` without an authored `stroke` as match-fill. ABI 172 admits
+cartesian line `curve="smooth"` plus `step` as authored step expansion.
+ABI 173 tessellates heatmap `corner_radius` (cartesian rounded Rects / polar
+wedges). ABI 174 tessellates violin/box `corner_radius` on that same Rect
+path. ABI 175 admits violin/box `fill_opacity` / `stroke_opacity` on XYMS.
+ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity` on that
+same path. ABI 177 admits heatmap `fill_opacity` on XYMS fill alpha.
+ABI 178 admits scatter `fill_opacity` / `stroke_opacity` on that same path.
+ABI 179 admits hexbin `fill_opacity` on XYMS fill alpha.
+ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint on that same
+path. ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as
+authored band step expansion (`step_mode` 1–3 wins over `BandFlatten`).
+ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring from
+the Rust boundary walk (disconnected meshes keep per-face `TriangleFace` rows).
+ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`
+(hosts pack the two-stop fill, not `FLAG_COLOR2`). Per-item two-ended paint
+stays fail-closed. ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor`
+as XYAW `wrap=0`. ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor`
+as XYAW `wrap=0`. ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane
+interned onto HexCell PolyFills. Polar hexbin, custom reducers, and per-item
+RGBA stay fail-closed. ABI 187 admits cartesian unwrapped text `rotation` as
+XYAW `wrap=0`. ABI 188 admits labelled cartesian marker `rotation` as XYAW
+`wrap=0`. html, `class_name`, and polar stay fail-closed. Per-item radius
+channels stay compatibility. Irregular
 spacing, and LOD stay compatibility.
 
 Contract-wide invariants: every tier transition is hysteresis-guarded and logged

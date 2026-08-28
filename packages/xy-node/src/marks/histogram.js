@@ -3,17 +3,7 @@
  * → rectangle columns attached as a histogram trace (Python common path).
  */
 
-import { asF64Array, histogramBins, histogramEdges, minMax } from "../encode.js";
-
-function uniformEdges(lo, hi, nBins) {
-  const edges = new Float64Array(nBins + 1);
-  const width = (hi - lo) / nBins;
-  for (let i = 0; i < nBins; i += 1) {
-    edges[i] = lo + i * width;
-  }
-  edges[nBins] = hi;
-  return edges;
-}
+import { asF64Array, histogramBins, histogramMarkEdges } from "../encode.js";
 
 function isAuthoredEdges(bins) {
   return Array.isArray(bins) || ArrayBuffer.isView(bins);
@@ -41,45 +31,33 @@ export function composeHistogram(values, opts = {}) {
   const vals = asF64Array(values, "values");
   const density = Boolean(opts.density);
   const cumulative = Boolean(opts.cumulative);
-  let lo;
-  let hi;
   if (opts.range != null) {
-    lo = Number(opts.range[0]);
-    hi = Number(opts.range[1]);
+    const lo = Number(opts.range[0]);
+    const hi = Number(opts.range[1]);
     if (!(Number.isFinite(lo) && Number.isFinite(hi) && hi > lo)) {
       throw new RangeError("histogram range must be a finite increasing pair");
     }
   }
-  const mm = minMax(vals);
   let edges;
   if (isAuthoredEdges(opts.bins)) {
     edges = asF64Array(opts.bins, "bins");
     if (edges.length < 2) {
       throw new RangeError("histogram bins must contain at least two edges");
     }
+  } else if (opts.bins == null || typeof opts.bins === "string") {
+    const method = opts.bins == null ? "auto" : String(opts.bins).toLowerCase();
+    if (method !== "auto" && method !== "sturges") {
+      throw new RangeError("histogram bins must be a positive integer");
+    }
+    edges = Float64Array.from(histogramMarkEdges(vals, { range: opts.range, method }));
   } else {
-    let nBins = opts.bins ?? 10;
+    const nBins = opts.bins;
     if (!Number.isInteger(nBins) || nBins <= 0) {
       throw new RangeError("histogram bins must be a positive integer");
     }
-    if (opts.bins == null && mm != null) {
-      edges = Float64Array.from(histogramEdges(vals, { range: opts.range, method: "auto" }));
-    } else {
-      // Empty/all-nonfinite input keeps the host-owned ten-bin [0, 1]
-      // (or authored-range) compatibility result; Rust only counts.
-      if (opts.range == null) {
-        if (mm == null) {
-          lo = 0;
-          hi = 1;
-        } else if (mm[0] === mm[1]) {
-          lo = mm[0] - 0.5;
-          hi = mm[1] + 0.5;
-        } else {
-          [lo, hi] = mm;
-        }
-      }
-      edges = uniformEdges(lo, hi, nBins);
-    }
+    edges = Float64Array.from(
+      histogramMarkEdges(vals, { range: opts.range, method: "uniform", nBins }),
+    );
   }
   const counts = histogramBins(vals, edges, { density, cumulative });
   const nBins = counts.length;

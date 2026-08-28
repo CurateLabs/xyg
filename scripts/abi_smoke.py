@@ -173,6 +173,8 @@ def load() -> ctypes.CDLL:
     lib.xyg_min_max.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_is_sorted.restype = ctypes.c_int32
     lib.xyg_is_sorted.argtypes = [F64P, ctypes.c_size_t]
+    lib.xyg_argsort_stable.restype = ctypes.c_size_t
+    lib.xyg_argsort_stable.argtypes = [F64P, ctypes.c_size_t, U32P, ctypes.c_size_t]
     D = ctypes.c_double
     Z = ctypes.c_size_t
     lib.xyg_bin_2d.restype = ctypes.c_int32
@@ -362,6 +364,28 @@ def load() -> ctypes.CDLL:
         F64P,
         ctypes.c_size_t,
         ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_uint8,
+        U8P,
+    ]
+    lib.xyg_colormap_rgba.restype = ctypes.c_int32
+    lib.xyg_colormap_rgba.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_uint8,
+        U8P,
+    ]
+    lib.xyg_colormap_rgba_canonical.restype = ctypes.c_int32
+    lib.xyg_colormap_rgba_canonical.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
         U8P,
         ctypes.c_size_t,
         ctypes.c_uint8,
@@ -557,6 +581,551 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         F64P,
         ctypes.c_size_t,
+    ]
+    lib.xyg_histogram_mark_edges.restype = ctypes.c_size_t
+    lib.xyg_histogram_mark_edges.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_contour_levels.restype = ctypes.c_size_t
+    lib.xyg_contour_levels.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_legend_normalize.restype = ctypes.c_size_t
+    lib.xyg_legend_normalize.argtypes = [
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_legend_best_loc.restype = ctypes.c_int32
+    lib.xyg_legend_best_loc.argtypes = [
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_size_t),
+        ctypes.c_size_t,
+        U32P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_ribbon_edge.restype = ctypes.c_size_t
+    lib.xyg_ribbon_edge.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_ribbon_polygon.restype = ctypes.c_size_t
+    lib.xyg_ribbon_polygon.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_monotone_tangents.restype = ctypes.c_size_t
+    lib.xyg_monotone_tangents.argtypes = [
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_curve_flatten.restype = ctypes.c_size_t
+    lib.xyg_curve_flatten.argtypes = [
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_rounded_rect_poly.restype = ctypes.c_size_t
+    lib.xyg_rounded_rect_poly.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_payload_tier.restype = ctypes.c_int32
+    lib.xyg_payload_tier.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_uint64,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+    ]
+    lib.xyg_payload_visible_needed.restype = ctypes.c_int32
+    lib.xyg_payload_visible_needed.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+    ]
+    lib.xyg_payload_visible_mask.restype = ctypes.c_size_t
+    lib.xyg_payload_visible_mask.argtypes = [
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        F64P,
+        ctypes.c_int32,
+        U8P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_density_bin_window.restype = ctypes.c_size_t
+    lib.xyg_density_bin_window.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+    ]
+    lib.xyg_density_full_identity.restype = ctypes.c_int32
+    lib.xyg_density_full_identity.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+    ]
+    lib.xyg_density_pyramid_preflight.restype = ctypes.c_size_t
+    lib.xyg_density_pyramid_preflight.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_uint64,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        U32P,
+    ]
+    lib.xyg_density_grid_path.restype = ctypes.c_int32
+    lib.xyg_density_grid_path.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+    ]
+    lib.xyg_density_format_binning.restype = ctypes.c_size_t
+    lib.xyg_density_format_binning.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        U8P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_density_emit_meta.restype = ctypes.c_int32
+    lib.xyg_density_emit_meta.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+    ]
+    lib.xyg_density_wasm_eligible.restype = ctypes.c_int32
+    lib.xyg_density_wasm_eligible.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_uint64,
+    ]
+    lib.xyg_scene_tick_label_layout.restype = ctypes.c_size_t
+    lib.xyg_scene_tick_label_layout.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        U32P,
+        F64P,
+        U32P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_legend_box_layout.restype = ctypes.c_size_t
+    lib.xyg_legend_box_layout.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        F64P,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_size_t),
+    ]
+    lib.xyg_text_block_measure.restype = ctypes.c_size_t
+    lib.xyg_text_block_measure.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        U32P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_text_block_rotated_extent.restype = ctypes.c_size_t
+    lib.xyg_text_block_rotated_extent.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        F64P,
+    ]
+    lib.xyg_y_tick_label_extent.restype = ctypes.c_size_t
+    lib.xyg_y_tick_label_extent.argtypes = [
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+    ]
+    lib.xyg_y_axis_left_room.restype = ctypes.c_size_t
+    lib.xyg_y_axis_left_room.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+    ]
+    lib.xyg_x_axis_title_room.restype = ctypes.c_size_t
+    lib.xyg_x_axis_title_room.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        F64P,
+    ]
+    lib.xyg_x_tick_label_room.restype = ctypes.c_size_t
+    lib.xyg_x_tick_label_room.argtypes = [
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        F64P,
+        U32P,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+    ]
+    lib.xyg_x_tick_label_edge_rooms.restype = ctypes.c_size_t
+    lib.xyg_x_tick_label_edge_rooms.argtypes = [
+        ctypes.c_double,
+        F64P,
+        ctypes.c_size_t,
+        U32P,
+        U8P,
+        ctypes.c_size_t,
+        F64P,
+        U32P,
+        ctypes.c_double,
+        F64P,
+        F64P,
+    ]
+    lib.xyg_compat_is_compact.restype = ctypes.c_int32
+    lib.xyg_compat_is_compact.argtypes = [ctypes.c_double]
+    lib.xyg_compat_default_padding.restype = ctypes.c_size_t
+    lib.xyg_compat_default_padding.argtypes = [ctypes.c_int32, F64P]
+    lib.xyg_compat_title_wrap_width.restype = ctypes.c_size_t
+    lib.xyg_compat_title_wrap_width.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+    ]
+    lib.xyg_compat_title_room.restype = ctypes.c_size_t
+    lib.xyg_compat_title_room.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_double,
+        F64P,
+    ]
+    lib.xyg_compat_x_axis_side_room.restype = ctypes.c_size_t
+    lib.xyg_compat_x_axis_side_room.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_double,
+        F64P,
+        F64P,
+    ]
+    lib.xyg_compat_colorbar_extra.restype = ctypes.c_size_t
+    lib.xyg_compat_colorbar_extra.argtypes = [
+        ctypes.c_uint32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        F64P,
+        F64P,
+    ]
+    lib.xyg_compat_right_y_room.restype = ctypes.c_size_t
+    lib.xyg_compat_right_y_room.argtypes = [ctypes.c_int32, F64P]
+    lib.xyg_polar_legend_room.restype = ctypes.c_size_t
+    lib.xyg_polar_legend_room.argtypes = [ctypes.c_double, F64P]
+    lib.xyg_polar_legend_reserve.restype = ctypes.c_size_t
+    lib.xyg_polar_legend_reserve.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.POINTER(ctypes.c_uint32),
+        F64P,
+    ]
+    lib.xyg_polar_label_room.restype = ctypes.c_size_t
+    lib.xyg_polar_label_room.argtypes = [ctypes.c_double, F64P]
+    lib.xyg_recut_polar_plot.restype = ctypes.c_size_t
+    lib.xyg_recut_polar_plot.argtypes = [
+        F64P,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        F64P,
+    ]
+    lib.xyg_tight_layout_solve.restype = ctypes.c_size_t
+    lib.xyg_tight_layout_solve.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_int32,
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        F64P,
+    ]
+    lib.xyg_tick_window.restype = ctypes.c_size_t
+    lib.xyg_tick_window.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        F64P,
+    ]
+    lib.xyg_tick_window_filter.restype = ctypes.c_size_t
+    lib.xyg_tick_window_filter.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_int32,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_tick_format.restype = ctypes.c_size_t
+    lib.xyg_tick_format.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_uint32,
+        ctypes.POINTER(ctypes.c_uint32),
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_polar_layout.restype = ctypes.c_size_t
+    lib.xyg_polar_layout.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_double,
+        ctypes.c_int32,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_polar_project.restype = ctypes.c_size_t
+    lib.xyg_polar_project.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+    ]
+    lib.xyg_hexbin_groups.restype = ctypes.c_size_t
+    lib.xyg_hexbin_groups.argtypes = [
+        F64P,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+        F64P,
+        U32P,
+        U32P,
+        ctypes.c_size_t,
+        U32P,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_size_t),
+        F64P,
+        F64P,
     ]
     lib.xyg_wind_rose_bins.restype = ctypes.c_size_t
     lib.xyg_wind_rose_bins.argtypes = [
@@ -1891,6 +2460,443 @@ def main() -> None:
         "histogram_edges auto",
     )
 
+    as_data = array("d", [3.0, 1.0, 2.0])
+    as_out = (ctypes.c_uint32 * 3)()
+    as_n = lib.xyg_argsort_stable(_ptr(as_data, ctypes.c_double), 3, as_out, 3)
+    ok(as_n == 3 and list(as_out) == [1, 2, 0], "argsort_stable")
+
+    hm_out = array("d", [0.0]) * 16
+    hm_n = lib.xyg_histogram_mark_edges(
+        null_f64,
+        0,
+        0.0,
+        0.0,
+        0,
+        0,
+        0,
+        _ptr(hm_out, ctypes.c_double),
+        len(hm_out),
+    )
+    ok(
+        hm_n == 11 and abs(hm_out[0]) < 1e-12 and abs(hm_out[10] - 1.0) < 1e-12,
+        "histogram_mark_edges empty auto",
+    )
+
+    cl_z = array("d", [0.0, 10.0])
+    cl_out = array("d", [0.0]) * 8
+    cl_n = lib.xyg_contour_levels(
+        _ptr(cl_z, ctypes.c_double), 2, 3, _ptr(cl_out, ctypes.c_double), 8
+    )
+    ok(cl_n == 3 and abs(cl_out[1] - 5.0) < 1e-12, "contour_levels auto")
+
+    lg_x = array("d", [0.0, 0.5, 1.0])
+    lg_ox = array("d", [0.0]) * 8
+    lg_oy = array("d", [0.0]) * 8
+    lg_n = lib.xyg_legend_normalize(
+        _ptr(lg_x, ctypes.c_double),
+        _ptr(lg_x, ctypes.c_double),
+        3,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0,
+        0,
+        0,
+        0,
+        1.0,
+        1.0,
+        _ptr(lg_ox, ctypes.c_double),
+        _ptr(lg_oy, ctypes.c_double),
+        8,
+    )
+    lg_starts = (ctypes.c_size_t * 1)(0)
+    lg_lens = (ctypes.c_uint32 * 1)(1)
+    lg_loc = lib.xyg_legend_best_loc(
+        _ptr(lg_ox, ctypes.c_double),
+        _ptr(lg_oy, ctypes.c_double),
+        lg_n,
+        lg_starts,
+        1,
+        lg_lens,
+        1,
+    )
+    ok(lg_n == 3 and lg_loc == 1, "legend_normalize/best_loc diagonal")
+
+    rb_ox = array("d", [0.0]) * 9
+    rb_oy = array("d", [0.0]) * 9
+    rb_n = lib.xyg_ribbon_edge(
+        0.0,
+        10.0,
+        1.0,
+        3.0,
+        8,
+        _ptr(rb_ox, ctypes.c_double),
+        _ptr(rb_oy, ctypes.c_double),
+        9,
+    )
+    ok(
+        rb_n == 9 and abs(rb_ox[4] - 5.0) < 1e-12 and abs(rb_oy[4] - 2.0) < 1e-12,
+        "ribbon_edge midpoint",
+    )
+    ok(lib.xyg_payload_tier(0, 10_001, 0, -1, 0, 0) == 1, "payload_tier line M4")
+    ok(lib.xyg_payload_tier(0, 10_001, 1, -1, 0, 0) == 0, "payload_tier polar direct")
+    ok(lib.xyg_payload_tier(1, 200_000, 0, -1, 0, 0) == 0, "payload_tier scatter eq direct")
+    ok(lib.xyg_payload_tier(1, 200_001, 0, -1, 0, 0) == 2, "payload_tier scatter density")
+    ok(lib.xyg_payload_visible_needed(1, 0, 1, 0, 0, 0, 0) == 1, "payload_visible_needed log")
+    px = array("d", [1.0, -2.0, 3.0, 0.0, 5.0])
+    py = array("d", [1.0, 2.0, 3.0, 4.0, 5.0])
+    pmask = array("B", [0]) * 5
+    pn = lib.xyg_payload_visible_mask(
+        _ptr(px, ctypes.c_double),
+        _ptr(py, ctypes.c_double),
+        5,
+        1,
+        0,
+        null_f64,
+        0,
+        _ptr(pmask, ctypes.c_uint8),
+        5,
+    )
+    ok(pn == 3 and list(pmask) == [1, 0, 1, 0, 1], "payload_visible_mask log x")
+    bin_out = array("d", [0.0, 0.0, 0.0, 0.0])
+    bw_n = lib.xyg_density_bin_window(
+        1, 1, 0.0, 2.0, 0.0, 3.0, 0.0, 0.0, 0.0, 0.0, _ptr(bin_out, ctypes.c_double)
+    )
+    ok(bw_n == 4 and list(bin_out) == [0.0, 2.0, 0.0, 3.0], "density_bin_window linear")
+    ok(
+        lib.xyg_density_full_identity(0, 0, 0, 0, 0.0, 1.0, 0.0, 1.0, 0.0, 2.0, 0.0, 2.0) == 1,
+        "density_full_identity",
+    )
+    ok(lib.xyg_density_grid_path(0, 1, 0, 0, 0) == 1, "density_grid_path identity grid")
+    binning_buf = array("B", [0]) * 32
+    binning_n = lib.xyg_density_format_binning(1, 0, 0, 0, _ptr(binning_buf, ctypes.c_uint8), 32)
+    ok(binning_n == 5 and bytes(binning_buf[:5]) == b"exact", "density_format_binning exact")
+    ok(lib.xyg_density_wasm_eligible(1, 1, 1, 1, 0, 0, 100) == 1, "density_wasm_eligible")
+    tick_pos = array("d", [100.0 + i * 90.0 for i in range(9)])
+    tick_labels = [f"Category_Name_{i:02d}".encode() for i in range(9)]
+    tick_packed = b"".join(tick_labels)
+    tick_lens = array("I", [len(item) for item in tick_labels])
+    tick_bytes = array("B", tick_packed)
+    tick_index = array("I", [0] * 9)
+    tick_angle = array("d", [0.0] * 9)
+    tick_row = array("I", [0] * 9)
+    tick_n = lib.xyg_scene_tick_label_layout(
+        _ptr(tick_pos, ctypes.c_double),
+        9,
+        _ptr(tick_lens, ctypes.c_uint32),
+        _ptr(tick_bytes, ctypes.c_uint8),
+        len(tick_packed),
+        2,
+        0,
+        2,
+        1,
+        11.0,
+        8.0,
+        -30.0,
+        _ptr(tick_index, ctypes.c_uint32),
+        _ptr(tick_angle, ctypes.c_double),
+        _ptr(tick_row, ctypes.c_uint32),
+        9,
+    )
+    ok(
+        tick_n == 9
+        and list(tick_index) == list(range(9))
+        and abs(tick_angle[0] + 30.0) < 1e-12
+        and list(tick_row) == [0] * 9,
+        "tick_label_layout end-anchor rotate keeps all",
+    )
+    lg_labels = [b"1", b"2", b"3", b"4"]
+    lg_packed = b"".join(lg_labels)
+    lg_lens = array("I", [len(item) for item in lg_labels])
+    lg_bytes = array("B", lg_packed)
+    lg_title = array("B", b"Classes")
+    lg_loc = array("B", b"lower left")
+    lg_metrics = array("d", [0.0] * 17)
+    lg_widths = array("d", [0.0] * 4)
+    lg_offsets = array("d", [0.0] * 4)
+    lg_name_lens = array("I", [0] * 4)
+    lg_names = array("B", [0] * 64)
+    lg_title_out = array("B", [0] * 32)
+    lg_title_len = ctypes.c_size_t(0)
+    lg_n = lib.xyg_legend_box_layout(
+        0.0,
+        0.0,
+        560.0,
+        400.0,
+        _ptr(lg_lens, ctypes.c_uint32),
+        _ptr(lg_bytes, ctypes.c_uint8),
+        len(lg_packed),
+        4,
+        _ptr(lg_title, ctypes.c_uint8),
+        len(lg_title),
+        _ptr(lg_loc, ctypes.c_uint8),
+        len(lg_loc),
+        11.0,
+        float("nan"),
+        float("nan"),
+        float("nan"),
+        1,
+        0.4,
+        0.5,
+        null_f64,
+        0,
+        0.0,
+        _ptr(lg_metrics, ctypes.c_double),
+        _ptr(lg_widths, ctypes.c_double),
+        _ptr(lg_offsets, ctypes.c_double),
+        4,
+        _ptr(lg_name_lens, ctypes.c_uint32),
+        _ptr(lg_names, ctypes.c_uint8),
+        len(lg_names),
+        _ptr(lg_title_out, ctypes.c_uint8),
+        len(lg_title_out),
+        ctypes.byref(lg_title_len),
+    )
+    lg_title_text = bytes(lg_title_out[: lg_title_len.value]).decode()
+    ok(
+        lg_n == 4 and lg_title_text.startswith("Clas") and lg_metrics[12] > 0.0,
+        "legend_box_layout keeps Classes title prefix",
+    )
+    tb_text = array("B", b"first\r\nsecond")
+    tb_metrics = array("d", [0.0] * 6)
+    tb_lens = array("I", [0, 0, 0, 0])
+    tb_packed = array("B", [0] * 64)
+    tb_n = lib.xyg_text_block_measure(
+        _ptr(tb_text, ctypes.c_uint8),
+        len(tb_text),
+        12.0,
+        float("nan"),
+        float("nan"),
+        _ptr(tb_metrics, ctypes.c_double),
+        _ptr(tb_lens, ctypes.c_uint32),
+        4,
+        _ptr(tb_packed, ctypes.c_uint8),
+        len(tb_packed),
+    )
+    tb_rot_x = ctypes.c_double()
+    tb_rot_y = ctypes.c_double()
+    tb_rot = lib.xyg_text_block_rotated_extent(
+        10.0,
+        4.0,
+        90.0,
+        ctypes.byref(tb_rot_x),
+        ctypes.byref(tb_rot_y),
+    )
+    y_title = array("B", b"Y")
+    y_room = ctypes.c_double()
+    y_n = lib.xyg_y_axis_left_room(
+        7.0,
+        23.0,
+        _ptr(y_title, ctypes.c_uint8),
+        len(y_title),
+        12.0,
+        4.8,
+        ctypes.byref(y_room),
+    )
+    ok(
+        tb_n == 2
+        and tb_metrics[5] == 2.0
+        and bytes(tb_packed[:5]) == b"first"
+        and tb_rot == 2
+        and abs(tb_rot_x.value - 4.0) < 1e-12
+        and y_n == 1
+        and y_room.value > 23.0,
+        "text_block_measure CRLF and titled y room",
+    )
+    pad = array("d", [0.0] * 4)
+    pad_n = lib.xyg_compat_default_padding(1, _ptr(pad, ctypes.c_double))
+    recut_in = array("d", [0.0, 0.0, 200.0, 200.0, 10.0])
+    recut_out = array("d", [0.0] * 9)
+    recut_n = lib.xyg_recut_polar_plot(
+        _ptr(recut_in, ctypes.c_double),
+        200.0,
+        200.0,
+        0,
+        0.0,
+        30.0,
+        1,
+        0,
+        0,
+        _ptr(recut_out, ctypes.c_double),
+    )
+    ok(
+        pad_n == 4
+        and pad[0] == 6.0
+        and pad[1] == 8.0
+        and pad[2] == 36.0
+        and pad[3] == 46.0
+        and recut_n == 9
+        and recut_out[0] == 30.0
+        and recut_out[1] == 30.0
+        and recut_out[2] == 140.0
+        and recut_out[3] == 140.0
+        and recut_out[4] == 40.0,
+        "compat default padding and authored-padding polar recut",
+    )
+    tight_extra = array("d", [0.0] * 4)
+    tight_rect = array("d", [0.0, 0.0, 1.0, 1.0])
+    tight_out = array("d", [0.0] * 6)
+    tight_n = lib.xyg_tight_layout_solve(
+        800.0,
+        600.0,
+        1,
+        1,
+        0,
+        None,
+        0,
+        _ptr(tight_extra, ctypes.c_double),
+        float("nan"),
+        float("nan"),
+        float("nan"),
+        1.0,
+        _ptr(tight_rect, ctypes.c_double),
+        _ptr(tight_out, ctypes.c_double),
+    )
+    ok(
+        tight_n == 6 and abs(tight_out[0] - 62.0 / 800.0) < 1e-12,
+        "tight_layout_solve empty wide defaults",
+    )
+    tick_lo = ctypes.c_double()
+    tick_hi = ctypes.c_double()
+    tick_window_n = lib.xyg_tick_window(
+        0.0,
+        360.0,
+        1,
+        0,
+        0,
+        300.0,
+        420.0,
+        ctypes.byref(tick_lo),
+        ctypes.byref(tick_hi),
+    )
+    tick_values = array("d", [300.0, 330.0, 0.0, 30.0, 60.0, 200.0])
+    tick_out = array("d", [0.0] * 6)
+    tick_n = lib.xyg_tick_window_filter(
+        _ptr(tick_values, ctypes.c_double),
+        6,
+        tick_lo.value,
+        tick_hi.value,
+        1,
+        0,
+        0,
+        _ptr(tick_out, ctypes.c_double),
+        6,
+    )
+    ok(
+        tick_window_n == 2
+        and tick_lo.value == 300.0
+        and tick_hi.value == 420.0
+        and tick_n == 5
+        and list(tick_out[:5]) == [300.0, 330.0, 0.0, 30.0, 60.0],
+        "tick_window seam-crossing degree sector",
+    )
+    linear_values = array("d", [0.0, 45.0, 90.0, 200.0, -10.0, float("nan")])
+    linear_out = array("d", [0.0] * 6)
+    linear_n = lib.xyg_tick_window_filter(
+        _ptr(linear_values, ctypes.c_double),
+        6,
+        0.0,
+        180.0,
+        0,
+        0,
+        0,
+        _ptr(linear_out, ctypes.c_double),
+        6,
+    )
+    ok(linear_n == 3 and list(linear_out[:3]) == [0.0, 45.0, 90.0], "tick_window linear reject")
+    tick_label = (ctypes.c_char * 32)()
+    tick_fmt = b"$,.1f ms"
+    tick_fmt_n = lib.xyg_tick_format(
+        12345.678,
+        1.0,
+        0,
+        0,
+        0,
+        tick_fmt,
+        len(tick_fmt),
+        0,
+        None,
+        None,
+        0,
+        tick_label,
+        len(tick_label),
+    )
+    ok(
+        tick_fmt_n == len(b"$12,345.7 ms") and tick_label.value == b"$12,345.7 ms",
+        "tick_format number spec",
+    )
+    polar_metrics = array("d", [0.0]) * 23
+    polar_layout_n = lib.xyg_polar_layout(
+        0.0,
+        0.0,
+        400.0,
+        400.0,
+        0,
+        0.0,
+        0,
+        0.0,
+        6.283185307179586,
+        0,
+        0.0,
+        1.0,
+        float("nan"),
+        0.0,
+        0,
+        1.0,
+        0,
+        _ptr(polar_metrics, ctypes.c_double),
+        23,
+    )
+    polar_theta = array("d", [0.0, 1.5707963267948966])
+    polar_r = array("d", [1.0, 1.0])
+    polar_px = array("d", [0.0, 0.0])
+    polar_py = array("d", [0.0, 0.0])
+    polar_proj_n = lib.xyg_polar_project(
+        _ptr(polar_metrics, ctypes.c_double),
+        23,
+        _ptr(polar_theta, ctypes.c_double),
+        _ptr(polar_r, ctypes.c_double),
+        2,
+        _ptr(polar_px, ctypes.c_double),
+        _ptr(polar_py, ctypes.c_double),
+    )
+    ok(
+        polar_layout_n == 23
+        and polar_proj_n == 2
+        and abs(polar_px[0] - 400.0) < 1e-6
+        and abs(polar_py[0] - 200.0) < 1e-6
+        and abs(polar_px[1] - 200.0) < 1e-6
+        and abs(polar_py[1] - 0.0) < 1e-6,
+        "polar default-cardinals",
+    )
+    cf_x = array("d", [0.0, 1.0, 2.0, 3.0, 4.0])
+    cf_y = array("d", [0.0, 1.0, 0.5, 2.0, 1.5])
+    cf_m = array("d", [0.0]) * 5
+    mt_n = lib.xyg_monotone_tangents(
+        _ptr(cf_x, ctypes.c_double),
+        _ptr(cf_y, ctypes.c_double),
+        5,
+        _ptr(cf_m, ctypes.c_double),
+        5,
+    )
+    ok(mt_n == 5 and abs(cf_m[0] - 1.0) < 1e-12 and abs(cf_m[4] + 0.5) < 1e-12, "monotone_tangents")
+    rr_ox = array("d", [0.0]) * 20
+    rr_oy = array("d", [0.0]) * 20
+    rr_n = lib.xyg_rounded_rect_poly(
+        0.0,
+        0.0,
+        4.0,
+        3.0,
+        0.0,
+        0.0,
+        1,
+        _ptr(rr_ox, ctypes.c_double),
+        _ptr(rr_oy, ctypes.c_double),
+        20,
+    )
+    ok(rr_n == 4 and rr_ox[1] == 4.0 and rr_oy[2] == 3.0, "rounded_rect_poly square")
+
     # violin_density: constant sample expands ±0.5 and yields positive density.
     vd = array("d", [3.0, 3.0, 3.0])
     vd_edges = array("d", [0.0]) * 5
@@ -2769,6 +3775,54 @@ def main() -> None:
         and list(heat_rgba[:4]) == [100, 110, 120, 200]
         and heat_rgba[7] == 0,
         "native heatmap colormap maps, flips, and preserves missing alpha",
+    )
+    cmap_values = array("d", [0.0, 0.5, 1.0, float("nan")])
+    cmap_stops = array("B", [0, 10, 20, 100, 110, 120])
+    cmap_rgba = array("B", [0]) * 16
+    ok(
+        lib.xyg_colormap_rgba(
+            _ptr(cmap_values, ctypes.c_double),
+            2,
+            2,
+            _ptr(cmap_stops, ctypes.c_uint8),
+            2,
+            200,
+            _ptr(cmap_rgba, ctypes.c_uint8),
+        )
+        == 1
+        and list(cmap_rgba[:4]) == [100, 110, 120, 200]
+        and cmap_rgba[7] == 0
+        and list(cmap_rgba[12:16]) == [50, 60, 70, 200],
+        "native direct colormap maps, flips, and preserves missing alpha",
+    )
+    interior = array("d", [0.5])
+    interior_stops = array("B", [0, 0, 0, 254, 0, 0])
+    colormap_pixel = array("B", [0]) * 4
+    heatmap_pixel = array("B", [0]) * 4
+    ok(
+        lib.xyg_colormap_rgba(
+            _ptr(interior, ctypes.c_double),
+            1,
+            1,
+            _ptr(interior_stops, ctypes.c_uint8),
+            2,
+            255,
+            _ptr(colormap_pixel, ctypes.c_uint8),
+        )
+        == 1
+        and lib.xyg_heatmap_rgba(
+            _ptr(interior, ctypes.c_double),
+            1,
+            1,
+            _ptr(interior_stops, ctypes.c_uint8),
+            2,
+            255,
+            _ptr(heatmap_pixel, ctypes.c_uint8),
+        )
+        == 1
+        and colormap_pixel[0] == 127
+        and heatmap_pixel[0] != colormap_pixel[0],
+        "native direct colormap differs from heatmap remap at interior values",
     )
     density_codes = array("B", [0, 255, 128, 1])
     density_rgba = array("B", [0]) * 16

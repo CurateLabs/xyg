@@ -16,6 +16,7 @@ import {
   lodPlan,
   radarChart,
   sankeyChart,
+  payloadTier,
   shouldUseDensity,
   stairsChart,
   stemChart,
@@ -31,10 +32,29 @@ function fill(n, fn) {
 
 test("shouldUseDensity mirrors Python threshold / force / polar rules", () => {
   assert.equal(shouldUseDensity(SCATTER_DENSITY_THRESHOLD - 1), false);
-  assert.equal(shouldUseDensity(SCATTER_DENSITY_THRESHOLD), true);
+  assert.equal(shouldUseDensity(SCATTER_DENSITY_THRESHOLD), false);
+  assert.equal(shouldUseDensity(SCATTER_DENSITY_THRESHOLD + 1), true);
+  assert.equal(shouldUseDensity(SCATTER_DENSITY_THRESHOLD + 1, { perItemChannels: true }), false);
   assert.equal(shouldUseDensity(10, { forceDensity: true }), true);
   assert.equal(shouldUseDensity(SCATTER_DENSITY_THRESHOLD * 2, { forceDirect: true }), false);
   assert.equal(shouldUseDensity(SCATTER_DENSITY_THRESHOLD * 2, { coords: "polar" }), false);
+});
+
+test("payloadTier polar line stays direct over M4 threshold", () => {
+  assert.equal(payloadTier({ kind: 0, nPoints: 10_000 }), 0);
+  assert.equal(payloadTier({ kind: 0, nPoints: 10_001 }), 1);
+  assert.equal(payloadTier({ kind: 0, nPoints: 10_001, polar: true }), 0);
+});
+
+test("polar line over DECIMATION_THRESHOLD stays direct at emit", () => {
+  const n = 10_001;
+  const x = fill(n, (i) => i);
+  const y = fill(n, () => 1);
+  const fig = figure({ coords: "polar", width: 640, height: 360 });
+  fig.line(x, y);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "direct");
+  assert.equal(spec.traces[0].n_marks, n);
 });
 
 test("scatter force_density emits tier=density log-u8 grid", () => {
@@ -59,7 +79,7 @@ test("scatter force_density emits tier=density log-u8 grid", () => {
 });
 
 test("scatter above SCATTER_DENSITY_THRESHOLD auto-selects density", () => {
-  const n = SCATTER_DENSITY_THRESHOLD;
+  const n = SCATTER_DENSITY_THRESHOLD + 1;
   const x = fill(n, (i) => i / n);
   const y = fill(n, (i) => ((i * 7) % n) / n);
   const { spec } = scatterPayload(x, y);

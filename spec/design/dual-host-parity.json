@@ -161,7 +161,7 @@
       "python": "ready",
       "node": "ready",
       "rust": "ready",
-      "notes": "Node scatter density tier via xy_bin_2d + xy_density_log_u8 when n≥SCATTER_DENSITY_THRESHOLD (force_density / force_direct / polar); packages/xy-node test/coverage.test.mjs + encode f32 goldens"
+      "notes": "Node scatter density tier via xy_bin_2d + xy_density_log_u8 when n≥SCATTER_DENSITY_THRESHOLD (force_density / force_direct / polar); ABI 132 xyg_density_* owns first-paint path/binning/WASM/overlay policy; packages/xy-node test/coverage.test.mjs + encode f32 goldens"
     },
     {
       "kind": "line",
@@ -224,7 +224,7 @@
       "python": "ready",
       "node": "partial",
       "rust": "ready",
-      "notes": "packages/xy-node marks/heatmap grid + xy_heatmap_rgba; constant-style Cartesian Scene Rects; categorical axes follow-up"
+      "notes": "packages/xy-node marks/heatmap grid + xy_colormap_rgba / xy_heatmap_rgba; constant-style Cartesian Scene Rects; categorical axes follow-up"
     },
     {
       "kind": "hexbin",
@@ -245,7 +245,7 @@
       "python": "ready",
       "node": "ready",
       "rust": "ready",
-      "notes": "Node polarChart emits coords+theta/r axis descriptors on buildPayload; pie/wind_rose ready"
+      "notes": "Node polarChart emits coords+theta/r axis descriptors on buildPayload; pie/wind_rose ready; ABI 133 Scene v26 polar line/scatter/area/bar/column/errorbar/heatmap/contour compile via XYPL; ABI 134 HeatmapPainted intern; ABI 135 named colormap tables; ABI 136 product-kind packing; ABI 137 Cartesian density Image blit; ABI 138 constant dash XYDS; ABI 139 constant linecap XYLC; ABI 140 cartesian smooth-polyline flatten; ABI 141 cartesian smooth-area Band flatten; ABI 142 cartesian mean-color density; ABI 143 polar density PolyFill tessellation; ABI 144 cartesian error_band smooth BandFlatten plus polar identity-chord smooth; ABI 145 constant marker_path XYMP tessellation; ABI 146 constant mark-fill linear-gradient XYGR; ABI 147 XYPK product packing facts"
     },
     {
       "kind": "pie",
@@ -345,7 +345,7 @@
       "name": "density / aggregate",
       "python": "ready",
       "node": "ready",
-      "notes": "Scatter density grid; graph render-graph / cluster; hexbin aggregation; screen-bounded"
+      "notes": "Scatter density grid; ABI 132 density emit policy; graph render-graph / cluster; hexbin aggregation; screen-bounded"
     },
     {
       "tier": 3,

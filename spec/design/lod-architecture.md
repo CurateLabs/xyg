@@ -18,8 +18,9 @@ Interactive means: pan/zoom stays inside the §17 frame budget at any N.
 A **tier is a property of a (trace, viewport) pair**, never of a dataset:
 what ships is count-only, `tier = f(visible_count)`, hysteresis-guarded (§5).
 `drill_decision` / `plan_view_lod` in `python/xyg/lod.py` call Rust
-(`xy_drill_decision` / `xy_lod_plan` in `lod_plan.rs`); hosts only validate and
-map mode ids to wire strings. `js/src/45_lod.ts` still mirrors the numeric rule
+(`xyg_drill_decision` / `xyg_lod_plan` in `lod_plan.rs`); compile-time
+payload M4/density/direct is `xyg_payload_tier` (ABI 122). Hosts only
+validate and map mode ids to wire strings. `js/src/45_lod.ts` still mirrors the numeric rule
 for client-side hints. Implemented today for scatter (drill-in/out with hysteresis); this
 doc extends the same rule to every kind. Folding `mark_pixel_area × overdraw`
 into the decision is dossier F3 — *specified, pending, not implemented*; no

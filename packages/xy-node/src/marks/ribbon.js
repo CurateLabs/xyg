@@ -43,8 +43,9 @@ export function composeRibbon(x0, x1, sourceLo, sourceHi, targetLo, targetHi, op
     throw new RangeError("ribbon opacity must be in [0, 1]");
   }
   const color = resolveColorChannel(opts.color, n);
+  const colorTargetRaw = opts.colorTarget ?? opts.color_target;
   const colorTarget =
-    opts.colorTarget == null ? null : resolveColorChannel(opts.colorTarget, n, color.color);
+    colorTargetRaw == null ? null : resolveColorChannel(colorTargetRaw, n, color.color);
   const style = {
     opacity,
     role: "ribbon",

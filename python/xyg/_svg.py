@@ -22,14 +22,13 @@ import hashlib
 import math
 import re
 from collections.abc import Callable, Sequence
-from datetime import UTC, datetime
 from itertools import pairwise
 from os import PathLike
 from typing import Any, NamedTuple, Optional, cast
 
 import numpy as np
 
-from . import _fontmetrics, _native, _paint, _png, _textblock
+from . import _fontmetrics, _native, _paint, _png, _textblock, kernels
 from ._arrowgeom import arrow_shapes as _arrow_shapes
 from .config import DEFAULT_PALETTE, polar_bar_segments
 
@@ -89,7 +88,9 @@ def _flag_stops() -> list[tuple[int, int, int]]:
     return [(int(row[0]), int(row[1]), int(row[2])) for row in rgb]
 
 
-# Mirrors js/src/10_colormaps.ts COLORMAP_STOPS (§36) — test-guarded.
+# Built-in tables mirrored from `crates/xyg-engine/src/colormap.rs` and
+# `js/src/10_colormaps.ts` (§36) — native ABI 135 is authoritative for hosts;
+# this copy stays for JS-sync tests and gallery goldens.
 COLORMAP_STOPS: dict[str, list[tuple[int, int, int]]] = {
     "binary": [(255, 255, 255), (0, 0, 0)],
     "flag": _flag_stops(),
@@ -475,194 +476,26 @@ _AXIS_GRID_DASHES = {
 
 
 # ---------------------------------------------------------------------------
-# Compatibility tick text (§16). Rust owns every automatic tick ladder; the
-# remaining helpers format or place Rust-authored and explicitly authored ticks.
+# Compatibility tick text (§16). Rust owns automatic tick ladders (ABI 96) and
+# label formatting (ABI 130); hosts still resolve authored tick_labels.
 # ---------------------------------------------------------------------------
 
 
-_MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-_MONTHS_LONG = (
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-)
-
-
-def _fmt_time(ms: float, step: float) -> str:
-    d = datetime.fromtimestamp(ms / 1e3, tz=UTC)
-    if step >= 28 * _MS["d"]:
-        return str(d.year) if d.month == 1 else f"{_MONTHS[d.month - 1]} {d.year}"
-    if step >= _MS["d"]:
-        return f"{_MONTHS[d.month - 1]} {d.day:02d}"
-    if step >= _MS["m"]:
-        return f"{d.hour:02d}:{d.minute:02d}"
-    if step >= _MS["s"]:
-        return f"{d.hour:02d}:{d.minute:02d}:{d.second:02d}"
-    return f"{d.minute:02d}:{d.second:02d}.{d.microsecond // 1000:03d}"
-
-
-def _fmt_linear(v: float, step: float) -> str:
-    av = abs(v)
-    if av >= 1e6 or (av != 0 and av < 1e-4):
-        return f"{v:.1e}".replace("e+0", "e").replace("e-0", "e-").replace("e+", "e")
-    dec = max(0, int(np.ceil(-np.log10(abs(step))))) if step else 0
-    # A non-nice step (pi/2, 0.3333…) needs enough decimals to keep adjacent
-    # ticks distinct; widen until the step itself round-trips at that precision.
-    while dec < 8 and abs(round(step, dec) - step) > abs(step) / 1000.0:
-        dec += 1
-    # ScalarFormatter uses one precision for the whole tick set. Retaining
-    # those zeros (0.00 beside ±0.25) makes magnitude and spacing legible and
-    # matches Matplotlib's default formatter.
-    return f"{v:.{min(dec, 8)}f}"
-
-
-# `<prefix>(,).N[f|%]<suffix>` — the numeric format grammar of
-# spec/api/styling.md. Deliberately the same regex as `fmtNumberSpec` in
-# js/src/30_ticks.ts: an axis must not read "$1,000,000" in the browser and
-# "1.0e6" in the PNG someone pastes into a report.
-_NUMBER_SPEC = re.compile(r"^([^,.%]*)(,)?\.([0-9]+)(f?)(%?)([^,.%]*)$")
-
-# The client's strftime subset (`fmtTimeSpec`). Kept narrow on purpose: a token
-# Python's strftime knows and the browser's formatter does not would render one
-# way live and another way exported.
-_TIME_SPEC = re.compile(r"%[YmdHMSbB]")
-
-
-def _fmt_number_spec(v: float, spec: Any) -> Optional[str]:
-    """Apply a numeric format string, or None when it does not apply."""
-    if not isinstance(spec, str) or not np.isfinite(v):
-        return None
-    match = _NUMBER_SPEC.match(spec)
-    if match is None:
-        return None
-    prefix, group, digits_text, f, pct, suffix = match.groups()
-    # The bare `.N` core takes no affixes, so the historical grammar parses
-    # identically to how it always did.
-    if not f and not pct and (prefix or suffix):
-        return None
-    digits = int(digits_text)
-    value = v * 100.0 if pct else v
-    text = f"{value:,.{digits}f}" if group else f"{value:.{digits}f}"
-    return f"{prefix}{text}{'%' if pct else ''}{suffix}"
-
-
-def _fmt_time_spec(ms: float, spec: Any) -> Optional[str]:
-    """Apply a strftime-subset format string, or None when it does not apply."""
-    if not isinstance(spec, str) or not np.isfinite(ms):
-        return None
-    try:
-        d = datetime.fromtimestamp(ms / 1e3, tz=UTC)
-    except (OverflowError, OSError, ValueError):
-        return None
-    tokens = {
-        "%Y": str(d.year),
-        "%m": f"{d.month:02d}",
-        "%d": f"{d.day:02d}",
-        "%H": f"{d.hour:02d}",
-        "%M": f"{d.minute:02d}",
-        "%S": f"{d.second:02d}",
-        "%b": _MONTHS[d.month - 1],
-        "%B": _MONTHS_LONG[d.month - 1],
-    }
-    return _TIME_SPEC.sub(lambda m: tokens[m.group(0)], spec)
-
-
 def _fmt_log(v: float) -> str:
-    """Label a log-scale tick from its own magnitude.
-
-    Decade ticks are multiplicative, so the linear formatter's
-    step-derived precision rounds every decade under 1.0 to a bare "0" —
-    0.001 and 0.01 became two identical, wrong labels."""
-    av = abs(v)
-    if av >= 1e6 or (av != 0 and av < 1e-4):
-        return f"{v:.1e}".replace("e+0", "e").replace("e-0", "e-").replace("e+", "e")
-    dec = max(0, int(np.ceil(-np.log10(av)))) if av and av < 1 else 0
-    return f"{v:.{min(dec, 8)}f}"
-
-
-# Everything a formatted number can carry that is not part of its value:
-# the affixes the spec grammar allows ("$", "K", "%") and the group separators.
-_NON_NUMERIC = re.compile(r"[^0-9eE+.\-]")
-
-
-def _collapsed_to_zero(formatted: Optional[str]) -> bool:
-    """Whether a formatted label has lost the value it was meant to show.
-
-    Tests the numeric CORE, not the whole label: the grammar allows prefixes
-    and suffixes, so a `"$,.0f"` axis produces `"$0"` for a sub-unit decade.
-    Comparing the affixed string against zero read `float("$0")`, which raises
-    and took the entire render down with it — and `Number("$0")` on the client
-    is `NaN`, so that side shipped the collapsed label instead. Two different
-    wrong answers from the layer that exists to keep them identical."""
-    if formatted is None:
-        return True
-    core = _NON_NUMERIC.sub("", formatted)
-    if not core:
-        return True
-    try:
-        return float(core) == 0.0
-    except ValueError:
-        return False
-
-
-def _fmt_angle(value: float, unit: str, step: float = 1.0) -> str:
-    """Angular tick text. Mirrors `fmtAngle` in js/src/30_ticks.ts.
-
-    Degrees get a degree sign; radians are written as multiples of pi, because
-    "2.094" is not a readable angle and "2pi/3" is. `step` sets the degree
-    precision: the generated ladder is all integers, but authored fractional
-    tick_values (a 22.5° compass grid) mislabel under a hardcoded step of 1.
-    """
-    if unit == "degrees":
-        return f"{_fmt_linear(value, step or 1.0)}°"
-    if abs(value) < 1e-12:
-        return "0"
-    frac = value / math.pi
-    for denominator in (1, 2, 3, 4, 6, 8, 12):
-        scaled = frac * denominator
-        nearest = round(scaled)
-        # 1e-6, not 1e-9 — mirrors fmtAngle in js/src/30_ticks.ts: hover
-        # values arrive f32-decoded, and pi/2 misses its f64 self by ~2e-8.
-        if nearest and abs(scaled - nearest) < 1e-6:
-            numerator = "" if abs(nearest) == 1 else str(abs(nearest))
-            sign = "-" if nearest < 0 else ""
-            body = f"{sign}{numerator}π"
-            return body if denominator == 1 else f"{body}/{denominator}"
-    return _fmt_linear(value, 0.01)
+    """Colorbar log tick labels — same magnitude policy as axis log ticks."""
+    return _native.tick_format(float(v), 1.0, scale="log")
 
 
 def _fmt_axis(axis: dict[str, Any], v: float, step: float) -> str:
-    # Mirrors the same first branch in `fmtAxis` (js/src/30_ticks.ts).
-    kind = axis.get("kind")
-    if kind == "category":
-        cats = axis.get("categories") or []
-        i = round(v)
-        return str(cats[i]) if 0 <= i < len(cats) else ""
-    if axis.get("theta_unit"):
-        # An authored `format` wins over the angular default. It used to lose:
-        # this branch ran first, so `theta_axis(format="{:.0f} deg")` shipped, was
-        # accepted, and was then overwritten by the built-in degree/radian text in
-        # every renderer. The default only applies when nothing was authored.
-        authored = _fmt_number_spec(v, axis.get("format"))
-        return authored if authored is not None else _fmt_angle(v, axis["theta_unit"], step)
-    if kind == "time":
-        return _fmt_time_spec(v, axis.get("format")) or _fmt_time(v, step)
-    formatted = _fmt_number_spec(v, axis.get("format"))
-    # A fixed-decimal spec collapses sub-unit decades ("0.001" at `.0f`), and so
-    # does the linear fallback; the magnitude-derived label is the useful one
-    # either way. Mirrors `fmtAxis`.
-    if axis.get("scale") == "log" and 0 < v < 1 and _collapsed_to_zero(formatted):
-        return _fmt_log(v)
-    return formatted if formatted is not None else _fmt_linear(v, step)
+    return _native.tick_format(
+        float(v),
+        float(step),
+        kind=axis.get("kind"),
+        scale=axis.get("scale"),
+        theta_unit=axis.get("theta_unit"),
+        format=axis.get("format"),
+        categories=axis.get("categories"),
+    )
 
 
 def _tick_text(axis: dict[str, Any], value: float, step: float) -> str:
@@ -788,6 +621,9 @@ class _PolarProjection:
     Screen space grows downward, so the y term is a **subtraction**. The GLSL
     twin in `xyPolar` (js/src/40_gl.ts) adds instead, because clip space grows
     upward. `tests/test_polar_transform.py` binds both to the same fixtures.
+
+    Layout, projection, and visibility masks are owned by Rust (ABI 131);
+    wedge/ring/polygon helpers remain here and call native projection.
     """
 
     def __init__(
@@ -826,39 +662,10 @@ class _PolarProjection:
         self.r_origin_coord = float(self.r_scale.coord(self.r_origin))
         self.hole = float(r_axis.get("hole") or 0.0)
 
-        # Full turns retain the original normative layout exactly. A partial
-        # sector instead fills the plot with its own bounding box: a gauge must
-        # not reserve dead space for the missing part of the circle.
-        if self.full_sector:
-            self.radius = min(plot["w"], plot["h"]) / 2.0
-            self.cx = plot["x"] + plot["w"] / 2.0
-            self.cy = plot["y"] + plot["h"] / 2.0
-        else:
-            lo_angle = min(self.sector_a0, self.sector_a1)
-            hi_angle = max(self.sector_a0, self.sector_a1)
-            angles = [self.sector_a0, self.sector_a1]
-            for cardinal in (0.0, math.pi / 2.0, math.pi, 3.0 * math.pi / 2.0):
-                first = math.ceil((lo_angle - cardinal) / (2.0 * math.pi))
-                last = math.floor((hi_angle - cardinal) / (2.0 * math.pi))
-                angles.extend(
-                    cardinal + turn_index * 2.0 * math.pi for turn_index in range(first, last + 1)
-                )
-            angles_array = np.asarray(angles, dtype=np.float64)
-            inner = max(0.0, min(1.0, float(self.norm_radius(self.r_lo))))
-            xs = np.concatenate((np.cos(angles_array), inner * np.cos(angles_array)))
-            ys = np.concatenate((-np.sin(angles_array), -inner * np.sin(angles_array)))
-            if inner <= 1e-12:
-                xs = np.append(xs, 0.0)
-                ys = np.append(ys, 0.0)
-            xmin, xmax = float(np.min(xs)), float(np.max(xs))
-            ymin, ymax = float(np.min(ys)), float(np.max(ys))
-            xspan = max(xmax - xmin, 1e-12)
-            yspan = max(ymax - ymin, 1e-12)
-            self.radius = min(plot["w"] / xspan, plot["h"] / yspan)
-            left = plot["x"] + (plot["w"] - self.radius * xspan) / 2.0
-            top = plot["y"] + (plot["h"] - self.radius * yspan) / 2.0
-            self.cx = left - self.radius * xmin
-            self.cy = top - self.radius * ymin
+        self._metrics = _native.polar_layout(theta_axis, r_axis, plot)
+        self.cx = float(self._metrics[0])
+        self.cy = float(self._metrics[1])
+        self.radius = float(self._metrics[2])
 
     def theta_value(self, theta: Any) -> Any:
         """Category code or numeric theta -> angular value in declared units."""
@@ -898,8 +705,7 @@ class _PolarProjection:
 
     def theta_visible_mask(self, theta: Any) -> np.ndarray:
         """Which angular values fall in the authored sector."""
-        raw = np.asarray(self.theta_value(theta), dtype=np.float64)
-        return self._angular_value_visible_mask(raw)
+        return _native.polar_theta_visible_mask(self._metrics, theta)
 
     def _angular_value_visible_mask(self, raw: Any) -> np.ndarray:
         raw = np.asarray(raw, dtype=np.float64)
@@ -952,18 +758,13 @@ class _PolarProjection:
         (`rn < 0 || rn > 1 + 1e-6` in js/src/40_gl.ts). Same epsilon, so the
         outermost home-view point survives everywhere.
         """
-        coord = np.asarray(self.r_scale.coord(r), dtype=np.float64)
-        lo = min(self.r_lo_coord, self.r_hi_coord)
-        hi = max(self.r_lo_coord, self.r_hi_coord)
-        return np.isfinite(coord) & (coord >= lo - 1e-6) & (coord <= hi + 1e-6)
+        return _native.polar_visible_mask(self._metrics, r)
 
     def position_mask(self, theta: Any, r: Any) -> np.ndarray:
-        return self.theta_visible_mask(theta) & self.visible_mask(r)
+        return _native.polar_position_mask(self._metrics, theta, r)
 
     def __call__(self, theta: Any, r: Any) -> tuple[Any, Any]:
-        a = self.angle(theta)
-        rn = self.norm_radius(r) * self.radius
-        return self.cx + rn * np.cos(a), self.cy - rn * np.sin(a)
+        return _native.polar_project(self._metrics, theta, r)
 
     def ring(self, r: float, steps: int = 180) -> list[tuple[float, float]]:
         """A constant-r sector arc (a closed circle for a full turn).
@@ -1107,15 +908,13 @@ def _colormap_key(colormap: Any) -> str:
 def _colormap_stops(colormap: Any) -> list[tuple[int, int, int]]:
     """Evenly spaced RGB stops for a shipped colormap.
 
-    Mirrors `colormapStops` in js/src/10_colormaps.ts: a string names a
-    built-in table (`_r` reverses it), while a sequence is an already-resolved
-    custom ramp (`channels.resolve_colormap`) and is used verbatim."""
+    Named maps resolve through ``xyg_colormap_stops`` (ABI 135). A sequence is
+    an already-resolved custom ramp (`channels.resolve_colormap`) and is used
+    verbatim.
+    """
     if not isinstance(colormap, str):
         return [(int(r), int(g), int(b)) for r, g, b in colormap]
-    reversed_map = colormap.endswith("_r")
-    base = colormap[:-2] if reversed_map else colormap
-    stops = COLORMAP_STOPS.get(base) or COLORMAP_STOPS["viridis"]
-    return list(reversed(stops)) if reversed_map else stops
+    return [(int(row[0]), int(row[1]), int(row[2])) for row in _native.colormap_stops(colormap)]
 
 
 def _lut(colormap: Any, t: np.ndarray) -> np.ndarray:
@@ -1495,24 +1294,9 @@ _png_rgba = _png.png_truecolor
 
 def _monotone_tangents(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """Fritsch–Carlson tangents — the same construction as xySmoothResample."""
-    n = len(x)
-    dx = np.diff(x)
-    dy = np.diff(y)
-    d = np.where(dx > 0, dy / np.where(dx > 0, dx, 1), 0.0)
-    m = np.empty(n)
-    m[0], m[-1] = d[0], d[-1]
-    m[1:-1] = np.where(d[:-1] * d[1:] <= 0, 0.0, (d[:-1] + d[1:]) * 0.5)
-    for i in range(n - 1):
-        if d[i] == 0:
-            m[i] = m[i + 1] = 0.0
-            continue
-        a, b = m[i] / d[i], m[i + 1] / d[i]
-        s = a * a + b * b
-        if s > 9:
-            t = 3 / np.sqrt(s)
-            m[i] = t * a * d[i]
-            m[i + 1] = t * b * d[i]
-    return m
+    return _native.monotone_tangents(
+        np.asarray(x, dtype=np.float64), np.asarray(y, dtype=np.float64)
+    )
 
 
 class _Svg:
@@ -1957,7 +1741,7 @@ def _colorbar_right_axis_room(
         and _axis_tick_label_strategy(axis) != "none"
         for axis in axes
     ):
-        return 42.0 if compact else 54.0
+        return float(_native.compat_right_y_room(compact))
     return 0.0
 
 
@@ -2063,10 +1847,8 @@ def _y_title_baseline(
 def _y_tick_label_room(axis: dict[str, Any], plot_h: float) -> tuple[float, float]:
     """(offset from the spine, widest tick-label extent) for a y axis, in px.
 
-    Measured from the advance widths of the strings that will actually be drawn,
-    using the same DejaVu metrics the Rust rasterizer blits (`crates/xyg-engine/src/font.rs`) —
-    which is also Matplotlib's default face, so an advance measured here is the
-    advance Matplotlib lays out.
+    Hosts still skip none/off/invisible axes, format `_tick_text`, and resolve
+    the spine offset. The rotated DejaVu extent lives in Rust (ABI 125).
     """
     if _axis_tick_label_strategy(axis) in {"none", "off"} or not _axis_text_paint_visible(
         axis, "tick_label_color", "tick_color"
@@ -2076,16 +1858,10 @@ def _y_tick_label_room(axis: dict[str, Any], plot_h: float) -> tuple[float, floa
     raw_angle = axis.get("tick_label_angle")
     angle = float(raw_angle or 0.0)
     _values, labels, step = axis_ticks(axis, plot_h, False)
-    room = 0.0
-    for value in labels:
-        block = _textblock.measure(_tick_text(axis, value, step), font_size)
-        # A rotated block trades its measured width for its full line-box
-        # height about the pinned edge.
-        room = max(room, _textblock.rotated_extent(block, angle)[0])
-    # Match the SVG y-label placement below.  A y label's anchored edge is
-    # already the glyph-side edge, so unlike an x-label baseline it needs no
-    # extra font-room term.
-    return _axis_tick_label_offset(axis, 8.0), room
+    texts = [_tick_text(axis, value, step) for value in labels]
+    return _axis_tick_label_offset(axis, 8.0), float(
+        _native.y_tick_label_extent(texts, font_size, angle)
+    )
 
 
 def _y_axis_left_room(spec: dict[str, Any], plot_h: float) -> float:
@@ -2102,6 +1878,11 @@ def _y_axis_left_room(spec: dict[str, Any], plot_h: float) -> float:
     a canvas inset, so widening only the static exporters' right gutter would
     move their title away from the browser's. That asymmetry is recorded in
     `spec/api/styling.md`, not silently fixed here.
+
+    Hosts still iterate axes, skip sides, and resolve CSS visibility. Column
+    combination of title + tick ink lives in Rust (ABI 125) so SVG, raster, and
+    pyplot cannot drift. `_y_tick_label_room` stays a host seam so tests can
+    pin the once-per-axis tick measure.
     """
     room = 0.0
     for axis_id, axis in _axes_by_id(spec).items():
@@ -2117,23 +1898,12 @@ def _y_axis_left_room(spec: dict[str, Any], plot_h: float) -> float:
             and _has_outside_y_title(axis)
             and _axis_text_paint_visible(axis, "label_color")
         )
-        if not title_visible:
-            if tick_offset == 0.0 and tick_room == 0.0:
-                continue
-            room = max(room, _AXIS_TEXT_EDGE_PAD + tick_offset + tick_room)
-            continue
+        title = str(axis.get("label") or "") if title_visible else ""
         label_size = float((axis.get("style") or {}).get("label_size", 12))
-        block = _textblock.measure(axis["label"], label_size)
         gap = float(axis.get("label_offset", _Y_TITLE_TICK_GAP * label_size))
         room = max(
             room,
-            _AXIS_TEXT_EDGE_PAD
-            + block.ascent
-            + block.descent
-            + (block.line_count - 1) * block.line_step
-            + gap
-            + tick_offset
-            + tick_room,
+            float(_native.y_axis_left_room(tick_offset, tick_room, title, label_size, gap)),
         )
     return room
 
@@ -2141,10 +1911,9 @@ def _y_axis_left_room(spec: dict[str, Any], plot_h: float) -> float:
 def _x_axis_title_room(axis: dict[str, Any]) -> float:
     """Outward room needed by an outside x-axis title.
 
-    ``_axis_label_geometry()`` positions x titles from their line-box top and
-    converts that top to a static-text baseline.  Measure the corresponding
-    outer glyph edge here so tight/constrained layout does not stop at the
-    historical 36/42 px band while the title itself extends past the canvas.
+    Hosts still skip inside/invisible titles. The baseline-conversion formula
+    lives in Rust (ABI 125) so tight layout cannot stop at the historical
+    36/42 px band while the title itself extends past the canvas.
     """
     if not axis.get("label") or not _axis_text_paint_visible(axis, "label_color"):
         return 0.0
@@ -2154,31 +1923,23 @@ def _x_axis_title_room(axis: dict[str, Any]) -> float:
         return 0.0
     style = axis.get("style") or {}
     font_size = float(style.get("label_size", 12))
-    block = _textblock.measure(axis["label"], font_size)
     offset = float(axis.get("label_offset", 0.0))
-    if axis.get("side", "bottom") == "top":
-        # outside_top = plot-top - 34; the baseline conversion then moves
-        # 0.82em back toward the plot.
-        return _AXIS_TEXT_EDGE_PAD + 34.0 + offset - font_size * 0.82 + block.ascent
-    # outside_bottom = plot-bottom + 24; later lines move farther outward.
-    return (
-        _AXIS_TEXT_EDGE_PAD
-        + 24.0
-        + offset
-        + font_size * 0.82
-        + (block.line_count - 1) * block.line_step
-        + block.descent
+    return float(
+        _native.x_axis_title_room(
+            str(axis["label"]),
+            font_size,
+            offset,
+            axis.get("side", "bottom") == "top",
+        )
     )
 
 
 def _x_tick_label_room(axis: dict[str, Any], plot_w: float) -> float:
     """Outward room needed by the x axis's final tick-label set and title.
 
-    The old 32/42 px bands only fit horizontal labels. Measure the strings and
-    project their DejaVu advance plus line box through the authored angle; this
-    is deliberately evaluated *after* collision policy, so ``auto`` reserves
-    only labels it will draw while pyplot's ``preserve`` reserves all fixed
-    locations. The same value is used by SVG and native PNG layout.
+    The old 32/42 px bands only fit horizontal labels. Hosts still keep the
+    none/off/auto-horizontal shortcuts and call collision layout. The measured
+    band combination lives in Rust (ABI 125).
     """
     strategy = _axis_tick_label_strategy(axis)
     if strategy == "none":
@@ -2216,28 +1977,29 @@ def _x_tick_label_room(axis: dict[str, Any], plot_w: float) -> float:
         # Measured bands are reserved for rotation, staggering, or multiline
         # chrome; ordinary auto ticks retain their historical geometry.
         return title_room
-    extent = 0.0
-    for item in items:
-        block = _textblock.measure(item["text"], font_size)
-        extent = max(extent, _textblock.rotated_extent(block, float(item["angle"]))[1])
     side = axis.get("side", "bottom")
     label_offset = (
         _axis_tick_label_offset(axis, 7.0, 0.2)
         if side == "top"
         else _axis_tick_label_offset(axis, 16.0, 0.8)
     )
-    rows = max(int(item.get("row", 0)) for item in items)
-    tick_room = _AXIS_TEXT_EDGE_PAD + label_offset + rows * (font_size + 4.0) + extent
-    return max(title_room, tick_room)
+    return float(
+        _native.x_tick_label_room(
+            [item["text"] for item in items],
+            [float(item["angle"]) for item in items],
+            [int(item.get("row", 0)) for item in items],
+            font_size,
+            float(label_offset),
+            title_room,
+        )
+    )
 
 
 def _x_tick_label_edge_rooms(axes: dict[str, dict[str, Any]], plot_w: float) -> tuple[float, float]:
     """Canvas-edge room needed by x tick labels that overhang the plot.
 
-    A terminal tick label is centered on the end of the spine by default, so
-    half its ink lives outside the plot rectangle. Matplotlib includes every
-    visible tick-label bbox in ``Axes.get_tightbbox``; mirror that horizontal
-    union here instead of relying on the compact layout's flat right gutter.
+    Hosts still skip none/off/invisible axes, format labels, and choose
+    anchors. Per-axis rotated overhang lives in Rust (ABI 125).
     """
     left = right = 0.0
     for axis_id, axis in axes.items():
@@ -2249,9 +2011,8 @@ def _x_tick_label_edge_rooms(axes: dict[str, dict[str, Any]], plot_w: float) -> 
             continue
         _ticks, values, step = axis_ticks(axis, plot_w, True)
         scale = _Scale(axis, 0.0, max(1.0, plot_w))
-        style = axis.get("style") or {}
         font_size = _axis_tick_font_size(axis)
-        explicit_anchor = _tick_label_anchor(axis, style, "")
+        explicit_anchor = _tick_label_anchor(axis, axis.get("style") or {}, "")
         for side in _axis_tick_label_sides(axis, is_x=True):
             side_axis = {**axis, "side": side}
             if (
@@ -2270,6 +2031,9 @@ def _x_tick_label_edge_rooms(axes: dict[str, dict[str, Any]], plot_w: float) -> 
                 ]
             else:
                 items = _axis_tick_label_layout(side_axis, values, step, scale, True)
+            if not items:
+                continue
+            anchors: list[str] = []
             for item in items:
                 angle = float(item["angle"])
                 anchor = explicit_anchor
@@ -2280,25 +2044,18 @@ def _x_tick_label_edge_rooms(axes: dict[str, dict[str, Any]], plot_w: float) -> 
                         anchor = "end"
                     else:
                         anchor = "start"
-                block = _textblock.measure(item["text"], font_size)
-                if anchor == "end":
-                    x0, x1 = -block.width, 0.0
-                elif anchor == "center":
-                    x0, x1 = -block.width / 2, block.width / 2
-                else:
-                    x0, x1 = 0.0, block.width
-                y0 = -block.ascent
-                y1 = block.descent + (block.line_count - 1) * block.line_step
-                radians = math.radians(angle)
-                cosine, sine = math.cos(radians), math.sin(radians)
-                rotated_x = [x * cosine - y * sine for x in (x0, x1) for y in (y0, y1)]
-                position = float(item["pos"])
-                left = max(left, _AXIS_TEXT_EDGE_PAD - position - min(rotated_x))
-                right = max(
-                    right,
-                    _AXIS_TEXT_EDGE_PAD + position + max(rotated_x) - plot_w,
-                )
-    return float(math.ceil(max(0.0, left))), float(math.ceil(max(0.0, right)))
+                anchors.append(str(anchor))
+            left_i, right_i = _native.x_tick_label_edge_rooms(
+                plot_w,
+                [float(item["pos"]) for item in items],
+                [str(item["text"]) for item in items],
+                [float(item["angle"]) for item in items],
+                anchors,
+                font_size,
+            )
+            left = max(left, left_i)
+            right = max(right, right_i)
+    return float(left), float(right)
 
 
 def _x_axis_rooms(
@@ -2325,11 +2082,14 @@ def _x_axis_rooms(
             if side != title_side:
                 side_axis.pop("label", None)
             measured = _x_tick_label_room(side_axis, plot_w)
+            room, measured_bottom_contrib = _native.compat_x_axis_side_room(
+                compact, side == "top", measured
+            )
             if side == "top":
-                top = max(top, 26.0 if compact else 32.0, measured)
+                top = max(top, room)
             else:
-                bottom = max(bottom, 36.0 if compact else 42.0, measured)
-                measured_bottom = max(measured_bottom, measured)
+                bottom = max(bottom, room)
+                measured_bottom = max(measured_bottom, measured_bottom_contrib)
     return top, bottom, measured_bottom
 
 
@@ -2373,14 +2133,9 @@ def _decode_title_geometry(spec: dict[str, Any], blob: bytes) -> dict[str, Any]:
 def _title_wrap_width(width: float, left: float, right: float) -> float:
     """Width a chart title wraps at, in CSS px.
 
-    Deliberately derived from the *authored/default* horizontal gutters rather
-    than the final plot rect: the measured left gutter depends on the plot
-    height, which depends on the title band, so wrapping at the final width
-    would be circular. `_recut_polar_plot` and the measured gutters may narrow
-    the plot afterwards; the title keeps this width so what layout reserved is
-    what gets drawn. Mirrored by `_titleWrapWidth` in js/src/50_chartview.ts.
+    Thin packer over Rust ``xyg_compat_title_wrap_width`` (ABI 126).
     """
-    return max(40.0, float(width) - float(left) - float(right))
+    return float(_native.compat_title_wrap_width(width, left, right))
 
 
 def _title_metrics(
@@ -2399,11 +2154,18 @@ def _title_room(spec: dict[str, Any], compact: bool, wrap_width: float | None = 
     for entry in _title_entries(spec):
         _style, _size, block = _title_metrics(spec, entry, wrap_width)
         pad = float(entry.get("pad", 8.0))
-        if entry.get("automatic_y", True):
-            candidate = max(26.0 if compact else 30.0, block.height + pad)
-        else:
-            candidate = block.height + pad if float(entry.get("y", 1.0)) >= 1.0 else 0.0
-        room = max(room, max(0.0, candidate))
+        room = max(
+            room,
+            float(
+                _native.compat_title_room(
+                    compact,
+                    block.height,
+                    pad,
+                    bool(entry.get("automatic_y", True)),
+                    float(entry.get("y", 1.0)),
+                )
+            ),
+        )
     return room
 
 
@@ -2416,15 +2178,12 @@ def layout(spec: dict[str, Any]) -> tuple[int, int, bool, dict[str, float]]:
     width = 900 if not isinstance(width, (int, float)) else int(width)
     height = 420 if not isinstance(height, (int, float)) else int(height)
 
-    compact = width < 520
+    compact = _native.compat_is_compact(width)
     pad = spec.get("padding")
     if isinstance(pad, list) and len(pad) == 4:
         top, right, bottom, left = (float(v) for v in pad)
     else:
-        left = 46 if compact else 62
-        right = 8 if compact else 14
-        top = 6 if compact else 10
-        bottom = 36 if compact else 42
+        top, right, bottom, left = _native.compat_default_padding(compact)
     axes = _axes_by_id(spec)
     # The first pass uses the authored/default horizontal allocation. A second
     # pass after the measured left gutter catches an auto-collision decision
@@ -2442,15 +2201,22 @@ def layout(spec: dict[str, Any]) -> tuple[int, int, bool, dict[str, float]]:
     if measured_bottom_room:
         bottom = max(bottom, measured_bottom_room)
     colorbar = spec.get("colorbar") or {}
-    if colorbar.get("placement") == "axes":
-        if colorbar.get("orientation") == "horizontal":
-            bottom += 24 + (16 if colorbar.get("label") else 0)
+    if colorbar:
+        if colorbar.get("placement") == "axes":
+            kind = (
+                "axes_horizontal"
+                if colorbar.get("orientation") == "horizontal"
+                else "axes_vertical"
+            )
+        elif colorbar.get("orientation") == "horizontal":
+            kind = "figure_horizontal"
         else:
-            right += 44 + (18 if colorbar.get("label") else 0)
-    elif colorbar.get("orientation") == "horizontal":
-        bottom += (18 if colorbar.get("pad") == 0 else 38) + (16 if colorbar.get("label") else 0)
-    elif colorbar:
-        right += (62 if colorbar.get("pad") == 0 else 86) + (18 if colorbar.get("label") else 0)
+            kind = "figure_vertical"
+        extra_right, extra_bottom = _native.compat_colorbar_extra(
+            kind, bool(colorbar.get("label")), colorbar.get("pad") == 0
+        )
+        right += extra_right
+        bottom += extra_bottom
     if any(
         axis_id.startswith("y")
         and (
@@ -2463,7 +2229,7 @@ def layout(spec: dict[str, Any]) -> tuple[int, int, bool, dict[str, float]]:
         # Match ChartView._layout(): one shared right-side gutter contains the
         # secondary-y tick labels/title. Multiple right axes intentionally
         # overlay in both renderers until offset axes become part of the API.
-        right += 42 if compact else 54
+        right += _native.compat_right_y_room(compact)
     # Measured y-axis text room, applied last. The vertical extent is already
     # final (only top/bottom feed it), so the tick density the reservation
     # measures is the density that will be drawn. This raises a *floor*: an
@@ -2519,12 +2285,10 @@ def layout(spec: dict[str, Any]) -> tuple[int, int, bool, dict[str, float]]:
 
 # Room reserved outside the outer ring for angular tick labels. Cartesian
 # gutters are per-side because labels hug two edges; a polar chart carries them
-# all the way around, so the allowance is uniform.
+# all the way around, so the allowance is uniform. The floor/ceiling live in
+# Rust (`compat_layout::POLAR_LABEL_ROOM` / `POLAR_LABEL_ROOM_MAX`, ABI 126).
 # Mirrored by POLAR_LABEL_ROOM in js/src/50_chartview.ts.
 _POLAR_LABEL_ROOM = 30.0
-# Ceiling on the measured allowance: past this a long label shrinks the disc
-# more than it helps, so it truncates against the canvas instead.
-_POLAR_LABEL_ROOM_MAX = 90.0
 
 # Angle of the spoke the radial tick labels run along, in degrees off the theta
 # zero direction. Matplotlib's default `rlabel_position`; keeping the labels off
@@ -2555,22 +2319,17 @@ _POLAR_TICK_GAP = 8.0
 # The floor keeps a narrow chart's legend readable; the ceiling stops a wide one
 # from spending 300 px on four short rows. A label still wider than the gutter
 # ellipsizes with its full text in `title`/ARIA, exactly as the static exporters
-# already ellipsize against the plot width.
+# already ellipsize against the plot width. The fraction/clamp live in Rust
+# (`compat_layout::polar_legend_room`, ABI 126).
 # Mirrored by xyPolarLegendRoom in js/src/50_chartview.ts.
-_POLAR_LEGEND_ROOM_FRACTION = 0.22
-_POLAR_LEGEND_ROOM_MIN = 120.0
-_POLAR_LEGEND_ROOM_MAX = 200.0
 
 
 def _polar_legend_room(width: float) -> float:
     """Side-gutter width for a polar legend on a `width`-px canvas.
 
-    `floor`, not `round`: Python and JavaScript disagree about half-way cases
-    (banker's rounding versus round-half-up) and the two must land on the same
-    integer pixel.
+    Thin packer over Rust ``xyg_polar_legend_room`` (ABI 126).
     """
-    scaled = math.floor(float(width) * _POLAR_LEGEND_ROOM_FRACTION)
-    return min(_POLAR_LEGEND_ROOM_MAX, max(_POLAR_LEGEND_ROOM_MIN, float(scaled)))
+    return float(_native.polar_legend_room(width))
 
 
 _POLAR_LEGEND_BAND = 64.0
@@ -2598,10 +2357,8 @@ def _polar_legend_reserve(spec: dict[str, Any], compact: bool, width: float) -> 
     rows = options.get("items") or legend_items(spec.get("traces") or [])
     if not rows and not (spec.get("extra_legends") or []):
         return "", 0.0
-    if compact:
-        return "bottom", _POLAR_LEGEND_BAND
     loc = str(options.get("loc") or "upper right")
-    return ("left" if "left" in loc else "right"), _polar_legend_room(width)
+    return _native.polar_legend_reserve(compact, "left" in loc, width)
 
 
 def _polar_label_room(theta_axis: dict[str, Any]) -> float:
@@ -2615,19 +2372,14 @@ def _polar_label_room(theta_axis: dict[str, Any]) -> float:
 
     Mirrored by `polarLabelRoom` in js/src/50_chartview.ts.
     """
-    room = _POLAR_LABEL_ROOM
-    # A category axis carries its authored names in `categories` and usually has
-    # no `tick_labels` at all (`axis_ticks` hands category count to Rust), so
-    # measuring only `tick_labels` fell back to the uniform default and long
-    # names spilled over the disc.
     labels = theta_axis.get("tick_labels")
     if not labels and theta_axis.get("kind") == "category":
         labels = theta_axis.get("categories")
     if not labels:
-        return room
+        return float(_native.polar_label_room(None))
     size = _axis_tick_font_size(theta_axis)
     widest = max((_textblock.measure(str(text), size).width for text in labels), default=0.0)
-    return min(_POLAR_LABEL_ROOM_MAX, max(room, widest + _POLAR_TICK_GAP + _AXIS_TEXT_EDGE_PAD))
+    return float(_native.polar_label_room(widest))
 
 
 def _recut_polar_plot(
@@ -2663,134 +2415,71 @@ def _recut_polar_plot(
     Third, a legend gutter (`_polar_legend_reserve`) is taken off the rect and
     recorded as `plot["legend_box"]`, so the legend sits beside the disc instead
     of on top of it. `_legend_layout` places and bounds itself in that box.
+
+    Hosts still resolve legend reservation, measure angular labels, and decide
+    title/colorbar flags. The recut combination lives in Rust (ABI 126).
     """
     theta_axis = spec.get("x_axis") or {}
-    # Hiding the angular tick labels removes the LABEL inset, not the legend
-    # gutter. Returning here skipped `_polar_legend_reserve` outright, so the
-    # legend fell back to the plain plot rect and drew on top of the marks —
-    # and the disc kept the cartesian gutters it should have given back. Track
-    # it and skip only the inset.
     labels_hidden = theta_axis.get("tick_label_strategy") == "none"
-    # The legend gutter is taken off the canvas edge FIRST, before the disc is
-    # fitted to what is left, so the disc never occupies the gutter and the
-    # legend never occupies the disc. Recorded as four floats rather than a
-    # nested rect so `plot` stays a flat float map.
-    canvas_x0 = 0.0
     legend_side, legend_room = _polar_legend_reserve(spec, compact, width)
-    if legend_room:
-        if legend_side == "left":
-            box = (0.0, plot["y"], legend_room, plot["h"])
-            canvas_x0 = legend_room
-            plot["x"] = max(plot["x"], legend_room)
-        elif legend_side == "right":
-            width -= legend_room
-            box = (width, plot["y"], legend_room, plot["h"])
-        else:
-            height -= legend_room
-            box = (plot["x"], height, plot["w"], legend_room)
-        plot["legend_box_x"], plot["legend_box_y"] = box[0], box[1]
-        plot["legend_box_w"], plot["legend_box_h"] = box[2], box[3]
-        plot["w"] = max(40.0, min(plot["w"], width - plot["x"]))
-        plot["h"] = max(40.0, min(plot["h"], height - plot["y"]))
-    # The top gutter also holds the figure title, which emitters place at
-    # `plot.y - top_axis_room - pad`; it is a floor, never given back.
-    reserved_top = plot["y"]
-    reserved_right = width - plot["x"] - plot["w"]
-    reserved_bottom = height - plot["y"] - plot["h"]
-
     room = 0.0 if labels_hidden else _polar_label_room(theta_axis)
     authored_pad = spec.get("padding")
-    if isinstance(authored_pad, list) and len(authored_pad) == 4:
-        # An explicit `padding` states the box the author wants the plot to
-        # occupy — most often to reserve a band under the disc for a legend or
-        # caption, which is what every donut composition needs. Reclaiming the
-        # gutters below would throw that away (a chart authored with
-        # `padding=[0, 0, 140, 0]` came out with its disc filling the canvas,
-        # the reserved band gone). So an authored box is only inset by the
-        # uniform label room, and the disc centres in what is left.
-        left = plot["x"] + room
-        right = plot["x"] + plot["w"] - room
-        top = plot["y"] + room
-        bottom = plot["y"] + plot["h"] - room
-        box_w, box_h = right - left, bottom - top
-        if box_w >= 40.0 and box_h >= 40.0:
-            plot["x"], plot["y"], plot["w"], plot["h"] = left, top, box_w, box_h
-            plot["top_axis_room"] = plot["top_axis_room"] + room
-            return
-    side = max(room, reserved_right)
-    # A radial-axis title is still drawn in the left gutter — a disc gives it no
-    # natural home — and `_axis_label_geometry` positions it outward from the
-    # plot edge past the tick-label room. So when one is set, the original
-    # gutter is kept whole rather than part-reclaimed: shaving it put the title
-    # at x = -10, off the canvas. Charts with no radial title (the common case)
-    # still get the full reclaim.
     y_axis = spec.get("y_axis") or {}
     titled = bool(y_axis.get("label")) and _axis_text_paint_visible(y_axis, "label_color")
-    # `canvas_x0` is a left legend gutter; the label room still applies inside it.
-    # With no gutter it is 0 and `side >= room`, so this is the previous value.
-    left = max(max(side, plot["x"]) if titled else side, canvas_x0 + room)
-    right = width - side
-    # Vertically the title side is fixed, so only the bottom can be
-    # symmetrised — and only when the theta axis has no title of its own,
-    # because that title is drawn in the bottom gutter and reclaiming the band
-    # pushed it below the canvas edge.
     x_axis = spec.get("x_axis") or {}
     x_titled = bool(x_axis.get("label")) and _axis_text_paint_visible(x_axis, "label_color")
-    # A horizontal colorbar is placed relative to the plot's BOTTOM edge, so
-    # extending the rect downward walks it off the canvas. Its gutter is real
-    # chrome, not a tick-label gutter: keep it whole, like a theta title.
     colorbar = spec.get("colorbar") or {}
-    keeps_bottom = x_titled or colorbar.get("orientation") == "horizontal"
-    bottom_reserve = reserved_bottom if keeps_bottom else min(reserved_bottom, reserved_top)
-    bottom = height - max(room, bottom_reserve)
-    top = reserved_top + room
-
-    # Measure BEFORE clamping: clamping first made the guard below unreachable,
-    # so a chart too small for the label room silently got a 40px floor rect
-    # instead of keeping its circle. Mirrored by _recutPolarPlot's early return.
-    box_w = right - left
-    box_h = bottom - top
-    if box_w < 40.0 or box_h < 40.0:
-        # Too small for the label room. Do NOT fall back to the cartesian rect:
-        # its own 40px floor can be wider than the canvas, and a disc centred
-        # in it leaves the page (an 80x80 chart drew its circle out to x=86).
-        # Take the largest centred box the canvas itself allows instead.
-        margin = min(4.0, width / 8.0, height / 8.0)
-        plot["x"] = margin
-        plot["y"] = max(margin, min(reserved_top, height / 4.0))
-        plot["w"] = max(8.0, width - 2 * margin)
-        plot["h"] = max(8.0, height - plot["y"] - margin)
-        return
-    plot["x"] = left
-    plot["y"] = top
-    plot["w"] = box_w
-    plot["h"] = box_h
-    # The top slice is angular-label room, so it belongs to the axis
-    # reservation: without this the title would ride the rect down and the
-    # topmost angular label would land on top of it.
-    plot["top_axis_room"] = plot["top_axis_room"] + room
-    # Re-square the legend gutter against the FINAL rect so the box tracks the
-    # disc it sits beside rather than the pre-recut rect it was cut from.
-    if legend_room:
-        if legend_side in ("left", "right"):
-            plot["legend_box_y"], plot["legend_box_h"] = plot["y"], plot["h"]
+    recut = _native.recut_polar_plot(
+        plot,
+        width,
+        height,
+        legend_side=legend_side,
+        legend_room=legend_room,
+        polar_label_room=room,
+        authored_padding=isinstance(authored_pad, list) and len(authored_pad) == 4,
+        y_titled=titled,
+        keeps_bottom=x_titled or colorbar.get("orientation") == "horizontal",
+    )
+    plot["x"] = recut["x"]
+    plot["y"] = recut["y"]
+    plot["w"] = recut["w"]
+    plot["h"] = recut["h"]
+    plot["top_axis_room"] = recut["top_axis_room"]
+    for key in ("legend_box_x", "legend_box_y", "legend_box_w", "legend_box_h"):
+        if key in recut:
+            plot[key] = recut[key]
         else:
-            plot["legend_box_x"], plot["legend_box_w"] = plot["x"], plot["w"]
+            plot.pop(key, None)
 
 
 def _tick_window(axis: dict[str, Any]) -> tuple[float, float]:
     """The value window ticks are drawn in — the sector for an angular axis."""
-    lo, hi = axis["range"]
-    if axis.get("theta_unit") is not None:
-        if axis.get("kind") == "category":
-            lo, hi = 0.0, float(max(0, len(axis.get("categories") or []) - 1))
-        else:
-            lo, hi = axis.get("sector") or (lo, hi)
-    return float(lo), float(hi)
+    lo, hi = (float(v) for v in axis["range"])
+    sector = axis.get("sector")
+    if sector:
+        sector_lo, sector_hi = float(sector[0]), float(sector[1])
+    else:
+        sector_lo = sector_hi = float("nan")
+    return _native.tick_window(
+        lo,
+        hi,
+        theta_unit=axis.get("theta_unit"),
+        kind="category" if axis.get("kind") == "category" else "linear",
+        n_categories=len(axis.get("categories") or []),
+        sector_lo=sector_lo,
+        sector_hi=sector_hi,
+    )
 
 
-def _tick_window_filter(axis: dict[str, Any], lo: float, hi: float) -> Callable[[float], bool]:
-    """Predicate keeping the tick values that fall inside the axis window.
+def _tick_window_filter(
+    axis: dict[str, Any],
+    lo: float,
+    hi: float,
+    values: Sequence[Any],
+    *,
+    require_finite: bool = False,
+) -> list[float]:
+    """Compact ``values`` that fall inside the axis window.
 
     An angular window may cross the 0/turn seam — ``sector=(300, 420)``, or the
     compass-natural ``(-30, 30)``. The plain ``low <= v <= high`` test throws
@@ -2801,15 +2490,14 @@ def _tick_window_filter(axis: dict[str, Any], lo: float, hi: float) -> Callable[
     `_PolarProjection._angular_value_visible_mask`, so the spokes and the marks
     agree about what the sector contains.
     """
-    low, high = min(lo, hi), max(lo, hi)
-    unit = axis.get("theta_unit")
-    if unit is None or axis.get("kind") == "category":
-        return lambda value: low <= value <= high
-    turn = 360.0 if unit == "degrees" else 2.0 * math.pi
-    span = high - low
-    # NaN falls out of both branches: np.mod propagates it and the comparison
-    # is False, matching the linear test it replaces.
-    return lambda value: bool(np.mod(value - low, turn) <= span + turn * 1e-9)
+    return _native.tick_window_filter(
+        [float(v) for v in values],
+        lo,
+        hi,
+        theta_unit=axis.get("theta_unit"),
+        kind="category" if axis.get("kind") == "category" else "linear",
+        require_finite=require_finite,
+    )
 
 
 def axis_ticks(
@@ -2820,8 +2508,7 @@ def axis_ticks(
     kind = axis.get("kind")
     lo, hi = _tick_window(axis)
     if axis.get("tick_values") is not None:
-        keep = _tick_window_filter(axis, lo, hi)
-        ticks = [float(v) for v in axis["tick_values"] if keep(float(v))]
+        ticks = _tick_window_filter(axis, lo, hi, axis["tick_values"])
         step = abs(ticks[1] - ticks[0]) if len(ticks) > 1 else 1.0
         return ticks, ticks, step
     requested = axis.get("tick_count")
@@ -2860,8 +2547,8 @@ def minor_axis_ticks(axis: dict[str, Any]) -> list[float]:
     values = axis.get("minor_tick_values")
     if values is None:
         return []
-    keep = _tick_window_filter(axis, *_tick_window(axis))
-    return [float(value) for value in values if np.isfinite(float(value)) and keep(float(value))]
+    lo, hi = _tick_window(axis)
+    return _tick_window_filter(axis, lo, hi, values, require_finite=True)
 
 
 def _axis_tick_label_strategy(axis: dict[str, Any]) -> str:
@@ -2989,118 +2676,51 @@ def _axis_tick_label_layout(
     scale: _Scale,
     is_x: bool,
 ) -> list[dict[str, Any]]:
-    """Port ChartView._layoutTickLabels for deterministic static chrome."""
-    strategy = _axis_tick_label_strategy(axis)
-    if strategy in {"none", "off"}:
-        return []
+    """Thin packer over Rust tick-label collision layout (ABI 123).
 
+    Hosts still format ``_tick_text`` and map values to pixels. Auto / hide /
+    rotate / stagger thinning lives in ``tick_layout.rs`` so SVG, raster, and
+    Node cannot drift from ChartView ``_layoutTickLabels``.
+    """
+    strategy = _axis_tick_label_strategy(axis)
     font_size = _axis_tick_font_size(axis)
     min_gap = float(axis.get("tick_label_min_gap", 8 if is_x else 4))
     raw_angle = axis.get("tick_label_angle")
-    explicit_angle = float(raw_angle) if raw_angle is not None else None
-    base_angle = explicit_angle or 0.0
+    explicit_angle = float(raw_angle) if raw_angle is not None else float("nan")
     # y collision keeps the centered extent model: every label on an axis
     # shares one anchor+angle, so an anchored y layout shifts all boxes by
     # the same offset and pairwise gaps are unchanged.  Mirror JS exactly.
     axis_style = axis.get("style") or {}
     anchor = _tick_label_anchor(axis, axis_style, "center") if is_x else "center"
     positions = np.asarray(scale(values), dtype=np.float64)
-    labels = [
-        {
-            "value": value,
-            "pos": float(position),
-            "text": _tick_text(axis, value, step),
-            "angle": base_angle,
-            "row": 0,
-        }
-        for value, position in zip(values, positions, strict=True)
-    ]
-    if len(labels) <= 1:
-        return labels
-    # Explicit locators and categorical unit conversion in the Matplotlib shim
-    # author ``preserve`` because Matplotlib draws every located tick, even
-    # when the result is intentionally dense. Core axes remain on ``auto`` and
-    # retain their normal collision thinning.
-    if strategy == "preserve":
-        return labels
-
-    def extent(label: dict[str, Any]) -> float:
-        block = _textblock.measure(label["text"], font_size)
-        width = max(font_size * 0.7, block.width)
-        height = block.height
-        angle = abs(float(label.get("angle", 0.0))) * math.pi / 180.0
-        if is_x:
-            return abs(math.cos(angle)) * width + abs(math.sin(angle)) * height
-        return abs(math.sin(angle)) * width + abs(math.cos(angle)) * height
-
-    def collide(items: list[dict[str, Any]]) -> bool:
-        rows: dict[int, list[dict[str, Any]]] = {}
-        for item in items:
-            rows.setdefault(int(item.get("row", 0)), []).append(item)
-        for row in rows.values():
-            sorted_row = sorted(row, key=lambda candidate: float(candidate["pos"]))
-            if is_x and anchor != "center":
-                # Edge-anchored labels all run the same direction from their
-                # tick.  Rotated ones are parallel lines: they clear each other
-                # when the perpendicular gap between adjacent anchors exceeds
-                # the line height, regardless of horizontal bounding-box overlap.
-                # Mirror JS _tickLabelsCollide exactly.
-                for i in range(1, len(sorted_row)):
-                    prev = sorted_row[i - 1]
-                    curr = sorted_row[i]
-                    spacing = float(curr["pos"]) - float(prev["pos"])
-                    angle = abs(float(curr.get("angle", 0.0))) * math.pi / 180.0
-                    if angle:
-                        if spacing * math.sin(angle) < font_size * 1.2 + min_gap:
-                            return True
-                    else:
-                        lead = curr if anchor == "end" else prev
-                        w = max(
-                            font_size * 0.7,
-                            _textblock.measure(lead["text"], font_size).width,
-                        )
-                        if spacing < w + min_gap:
-                            return True
-            else:
-                last_end = -math.inf
-                for item in sorted_row:
-                    half = extent(item) / 2.0
-                    start = float(item["pos"]) - half
-                    if start < last_end + min_gap:
-                        return True
-                    last_end = float(item["pos"]) + half
-        return False
-
-    if strategy == "auto":
-        if not collide(labels):
-            return labels
-        if is_x and axis.get("kind") == "category" and len(labels) <= 16:
-            strategy = "rotate"
-        elif is_x and len(labels) <= 24:
-            strategy = "stagger"
-        else:
-            strategy = "hide"
-
-    if strategy == "rotate" and is_x:
-        angle = (
-            explicit_angle
-            if explicit_angle is not None
-            else (35.0 if axis.get("side") == "top" else -35.0)
+    texts = [_tick_text(axis, value, step) for value in values]
+    side_raw = str(axis.get("side") or "").strip().lower()
+    side = side_raw if side_raw in {"bottom", "top", "left", "right"} else "bottom"
+    kept = _native.scene_tick_label_layout(
+        positions,
+        texts,
+        kind=strategy,
+        side=side,
+        anchor=anchor,
+        is_x=is_x,
+        category=axis.get("kind") == "category",
+        font_size=font_size,
+        min_gap=min_gap,
+        explicit_angle=explicit_angle,
+    )
+    out: list[dict[str, Any]] = []
+    for item in kept:
+        index = int(item["index"])
+        out.append(
+            {
+                "value": float(values[index]),
+                "pos": float(positions[index]),
+                "text": texts[index],
+                "angle": float(item["angle"]),
+                "row": int(item["row"]),
+            }
         )
-        labels = [{**label, "angle": angle, "row": 0} for label in labels]
-    elif strategy == "stagger" and is_x:
-        labels = [{**label, "row": index % 2} for index, label in enumerate(labels)]
-
-    # "hide" is a collision-handling strategy: the stride loop engages only
-    # when the full label set actually overlaps, so relayouts that force
-    # strategy="hide" (native diagonal-angle fallback) keep fitting labels.
-    if collide(labels):
-        for stride in range(2, len(labels) + 1):
-            reduced = labels[::stride]
-            if not collide(reduced):
-                return reduced
-        return labels[:1]
-    return labels
+    return out
 
 
 def _axis_label_geometry(
@@ -5834,19 +5454,17 @@ def _heatmap_rgba_grid(
         return rgba.reshape(h, w, 4)
 
     meta = cols[hm["buf"]]
+    stops = np.asarray(_colormap_stops(hm.get("colormap", "viridis")), dtype=np.uint8)
+    alpha = int(255 * _fill_opacity(style, 0.95))
     if hm.get("enc") == "canonical-f64":
         values = np.asarray(borrowed[int(meta["span"]) - 1], dtype=np.float64)[: int(meta["len"])]
         d0, d1 = (float(value) for value in hm["domain"])
-        values = (values - d0) / ((d1 - d0) or 1.0)
-    else:
-        values = _column(blob, meta)
+        rgba = kernels.colormap_rgba_canonical(values.reshape(h, w), w, h, (d0, d1), stops, alpha)
+        return rgba[::-1]
+    values = _column(blob, meta)
     raw = values.reshape(h, w)
-    finite = np.isfinite(raw)
-    t = np.clip(np.where(finite, raw, 0.0), 0.0, 1.0)
-    rgb = _lut(hm.get("colormap", "viridis"), t.reshape(-1)).reshape(h, w, 3)
-    alpha = np.full((h, w), int(255 * _fill_opacity(style, 0.95)), dtype=np.uint8)
-    alpha[~finite] = 0
-    return np.dstack([rgb, alpha])
+    rgba = kernels.colormap_rgba(raw, w, h, stops, alpha)
+    return rgba[::-1]
 
 
 _POLAR_HEATMAP_MAX_DIMENSION = 4096
@@ -5911,21 +5529,14 @@ def _heatmap_rgba_samples(
         return rgba
 
     values = _heatmap_sample_column(cols[hm["buf"]], indices, blob, borrowed)
-    finite = np.isfinite(values)
+    stops = np.asarray(_colormap_stops(hm.get("colormap", "viridis")), dtype=np.uint8)
+    alpha = int(255 * _fill_opacity(style, 0.95))
     if hm.get("enc") == "canonical-f64":
         d0, d1 = (float(value) for value in hm["domain"])
-        # Browser payload normalization and the native Cartesian heatmap opcode
-        # both round each normalized canonical value to f32 before LUT lookup.
-        # Preserve that exact seam while touching only sampled source cells.
-        t = np.zeros(count, dtype=np.float64)
-        normalized = np.clip((values[finite] - d0) / ((d1 - d0) or 1.0), 0.0, 1.0)
-        t[finite] = normalized.astype(np.float32).astype(np.float64)
+        rgba = kernels.colormap_rgba_canonical(values, len(indices), 1, (d0, d1), stops, alpha)
     else:
-        t = np.clip(np.where(finite, values, 0.0), 0.0, 1.0)
-    rgb = _lut(hm.get("colormap", "viridis"), t)
-    alpha = np.full(count, int(255 * _fill_opacity(style, 0.95)), dtype=np.uint8)
-    alpha[~finite] = 0
-    return np.column_stack((rgb, alpha))
+        rgba = kernels.colormap_rgba(values, len(indices), 1, stops, alpha)
+    return rgba[:, 0, :]
 
 
 def polar_heatmap_rgba(
@@ -6079,10 +5690,10 @@ def _density_image(
     d: dict, blob: bytes, cols: list, sx: _Scale, sy: _Scale, style: dict, svg: _Svg
 ) -> str:
     w, h = int(d["w"]), int(d["h"])
-    grid = _density_column(blob, cols[d["buf"]], d).reshape(h, w)
     gmax = float(d.get("max") or 1.0) or 1.0
-    tnorm = np.clip(grid / gmax, 0.0, 1.0)
+    paint_alpha: float = 1.0
     if d.get("rgba") is not None:
+        grid = _density_column(blob, cols[d["buf"]], d).reshape(h, w)
         # Mean point color per cell (LOD doc §2): rgb from the shipped plane;
         # displayed alpha is the PHYSICAL compositing of the cell's points —
         # 1 − (1 − a_pt)^count for drawn per-point alpha a_pt = channel alpha
@@ -6097,12 +5708,30 @@ def _density_image(
         alpha = _physical_density_alpha(grid, mean[..., 3], _fill_opacity(style, 0.85))
         rgba = np.dstack([rgb, alpha])[::-1].tobytes()  # flip: PNG rows are top-first
         return _grid_image(w, h, rgba, d["x_range"], d["y_range"], sx, sy)
-    paint_alpha: float = 1.0
     if d.get("color") is not None:
         red, green, blue, alpha8 = _paint_rgba8(d["color"])
+        paint_alpha = alpha8 / 255.0
+    if d.get("enc") == "log-u8":
+        meta = cols[d["buf"]]
+        encoded = np.frombuffer(blob, dtype=np.uint8, count=meta["len"], offset=meta["byte_offset"])
+        if d.get("color") is not None:
+            stops = np.asarray([(red, green, blue), (red, green, blue)], dtype=np.uint8)
+        else:
+            stops = np.asarray(_colormap_stops(d.get("colormap", "viridis")), dtype=np.uint8)
+        rgba = kernels.density_rgba(
+            encoded,
+            w,
+            h,
+            gmax,
+            stops,
+            _fill_opacity(style, 0.85) * paint_alpha,
+        )
+        return _grid_image(w, h, rgba.tobytes(), d["x_range"], d["y_range"], sx, sy)
+    grid = _density_column(blob, cols[d["buf"]], d).reshape(h, w)
+    tnorm = np.clip(grid / gmax, 0.0, 1.0)
+    if d.get("color") is not None:
         rgb = np.empty((h, w, 3), dtype=np.uint8)
         rgb[:] = (red, green, blue)
-        paint_alpha = alpha8 / 255.0
     else:
         rgb = _lut(d.get("colormap", "viridis"), tnorm.reshape(-1)).reshape(h, w, 3)
     alpha = (np.clip(tnorm * 1.35, 0, 1) * 255 * _fill_opacity(style, 0.85) * paint_alpha).astype(
@@ -6279,16 +5908,11 @@ def legend_clip_rect(plot: dict) -> tuple[float, float, float, float]:
 
 
 def _legend_layout(named: list[dict], plot: dict, options: dict) -> dict[str, Any]:
-    """Shared bounded legend geometry for SVG and native raster exports.
+    """Thin packer over Rust static legend box packing (ABI 124).
 
-    Static files cannot offer the browser legend's scrollbar, so an oversized
-    legend is kept inside the plot and its labels are visibly ellipsized. A
-    Columns follow Matplotlib's handle/text/column spacing and size to their
-    own labels rather than inheriting the width of the longest label.
-
-    A polar chart hands over a `legend_box_*` gutter beside the disc
-    (`_recut_polar_plot`); everything below then bounds and places the legend in
-    that box instead of over the marks, and `loc` chooses where within it.
+    Hosts still resolve CSS font-size / em paddings and pack entry strings.
+    Column sizing, measured ellipsis, and loc / bbox-to-anchor placement live
+    in ``legend_layout.rs`` so SVG, raster, and Node cannot drift.
     """
     if "legend_box_w" in plot:
         plot = {
@@ -6300,176 +5924,25 @@ def _legend_layout(named: list[dict], plot: dict, options: dict) -> dict[str, An
         }
     style_opts = options.get("style") or {}
     font_size = _legend_font_size(style_opts)
-    char_width = font_size * (_LEGEND_CHAR_WIDTH / 11.0)
-    text_h = font_size * 1.03
-    borderpad = _legend_em(style_opts, "padding", 0.4)
-    labelspacing = _legend_em(style_opts, "rowGap", 0.5)
-    # Matplotlib's legend dimensions are expressed in font-size units:
-    # borderpad is applied on both sides, handlelength=2, handletextpad=.8,
-    # columnspacing=2, and labelspacing=.5 by default.
-    pad = 2.0 * borderpad * font_size
-    handle = max(0.0, float(options.get("handlelength", 2.0))) * font_size
-    gap = max(0.0, float(options.get("handletextpad", 0.8))) * font_size
-    column_gap = 2.0 * font_size
-    row_gap = labelspacing * font_size
-    line_h = text_h + row_gap
-    requested_handleheight = options.get("handleheight")
-    swatch_h = 8.0
-    if requested_handleheight is not None:
-        swatch_h = max(8.0, 11.0 * float(requested_handleheight))
-        line_h = max(line_h, swatch_h + 2.0)
-
-    requested_cols = min(len(named), max(1, int(options.get("ncols", 1))))
-    title = options.get("title")
-    title_h = line_h if title else 0.0
-    inset = 6.0
-    anchor = options.get("anchor")
-    # An anchored legend is positioned from ``bbox_to_anchor`` rather than
-    # inset from both plot edges.  Charging it the unanchored 6 px inset on
-    # both sides unnecessarily shortened otherwise fitting labels.  The
-    # Matplotlib survey-gallery legend is the boundary case: its measured
-    # five-column box fits the axes width, but not ``axes width - 12 px``.
-    # Keep the plot-width cap so genuinely oversized static legends still
-    # ellipsize instead of escaping the bounded export.
-    available_w = max(
-        1.0,
-        float(plot["w"]) if anchor and len(anchor) in (2, 4) else float(plot["w"]) - 2 * inset,
+    raw_title = options.get("title")
+    raw_anchor = options.get("anchor")
+    laid = _native.scene_legend_box_layout(
+        plot=plot,
+        names=[str(item.get("name", "")) for item in named],
+        title=str(raw_title) if raw_title else None,
+        loc=str(options.get("loc") or "upper right"),
+        font_size=font_size,
+        handlelength=options.get("handlelength"),
+        handletextpad=options.get("handletextpad"),
+        handleheight=options.get("handleheight"),
+        ncols=max(1, int(options.get("ncols", 1))),
+        padding_em=_legend_em(style_opts, "padding", 0.4),
+        row_gap_em=_legend_em(style_opts, "rowGap", 0.5),
+        anchor=raw_anchor if raw_anchor is not None and len(raw_anchor) in (2, 4) else None,
+        border_axes_pad=max(0.0, float(options.get("border_pad", 0.0) or 0.0)),
     )
-    ncols = requested_cols
-    min_column_w = handle + gap + 4 * char_width
-    if ncols * min_column_w + (ncols - 1) * column_gap + pad > available_w:
-        # A column must at least retain its handle and a visible ellipsis.
-        max_fit_cols = max(
-            1,
-            int(max(0.0, available_w - pad + column_gap) // (min_column_w + column_gap)),
-        )
-        ncols = min(ncols, max_fit_cols)
-
-    natural_text_widths = [
-        max(
-            _legend_text_width(named[index].get("name", ""), char_width)
-            for index in range(column, len(named), ncols)
-        )
-        for column in range(ncols)
-    ]
-    available_text_w = max(
-        0.0,
-        available_w - pad - ncols * (handle + gap) - (ncols - 1) * column_gap,
-    )
-    minimum_text_w = 4 * char_width
-    text_widths = [min(width, minimum_text_w) for width in natural_text_widths]
-    remaining = max(0.0, available_text_w - sum(text_widths))
-    needs = [
-        max(0.0, width - current)
-        for width, current in zip(natural_text_widths, text_widths, strict=True)
-    ]
-    needed = sum(needs)
-    if needed:
-        scale = min(1.0, remaining / needed)
-        text_widths = [
-            current + need * scale for current, need in zip(text_widths, needs, strict=True)
-        ]
-    column_widths = [handle + gap + width for width in text_widths]
-    box_w = min(available_w, sum(column_widths) + (ncols - 1) * column_gap + pad)
-    if title:
-        # ``pad`` is the sum of the two side pads. The previous one-sided
-        # calculation expanded the box to the title's glyph width but then
-        # ellipsized against ``box_w - 2 * pad`` (e.g. "Classes" -> "Cl...").
-        title_w = _legend_text_width(title, char_width) + pad
-        if title_w > box_w:
-            extra = min(available_w - box_w, title_w - box_w)
-            column_widths = [width + extra / ncols for width in column_widths]
-            text_widths = [width + extra / ncols for width in text_widths]
-            box_w += extra
-    column_offsets = []
-    cursor = pad / 2
-    for width in column_widths:
-        column_offsets.append(cursor)
-        cursor += width + column_gap
-
-    nrows = (len(named) + ncols - 1) // ncols
-    available_h = max(1.0, float(plot["h"]) - 2 * inset)
-    visible_rows = nrows
-    content_rows = nrows + (1 if title else 0)
-    natural_box_h = content_rows * text_h + max(0, content_rows - 1) * row_gap + pad
-    if natural_box_h > available_h:
-        title_room = text_h + row_gap if title else 0.0
-        available_entries_h = max(0.0, available_h - pad - title_room)
-        visible_rows = max(0, int((available_entries_h + row_gap) // line_h))
-    visible_count = min(len(named), visible_rows * ncols)
-    visible_content_rows = visible_rows + (1 if title else 0)
-    box_h = min(
-        available_h,
-        visible_content_rows * text_h + max(0, visible_content_rows - 1) * row_gap + pad,
-    )
-
-    loc = options.get("loc") or "upper right"
-    loc_tokens = set(re.split(r"[\s_-]+", loc))
-    loc_is_upper = "upper" in loc or "top" in loc_tokens
-    loc_is_lower = "lower" in loc or "bottom" in loc_tokens
-    if anchor and len(anchor) in (2, 4):
-        ax, ay = float(anchor[0]), float(anchor[1])
-        aw, ah = (0.0, 0.0) if len(anchor) == 2 else (float(anchor[2]), float(anchor[3]))
-        hx = 0.0 if "left" in loc else 1.0 if "right" in loc else 0.5
-        vy = 0.0 if loc_is_lower else 1.0 if loc_is_upper else 0.5
-        target_x = float(plot["x"]) + (ax + hx * aw) * float(plot["w"])
-        target_y = float(plot["y"]) + (1.0 - ay - vy * ah) * float(plot["h"])
-        x = target_x - hx * box_w
-        y = target_y - (1.0 - vy) * box_h
-        border_axes_pad = max(0.0, float(options.get("border_pad", 0.0)))
-        x += border_axes_pad if hx == 0.0 else -border_axes_pad if hx == 1.0 else 0.0
-        # SVG/raster coordinates increase downward, so a "lower" legend is
-        # moved upward from its anchor and an "upper" legend moves downward.
-        y += border_axes_pad if vy == 1.0 else -border_axes_pad if vy == 0.0 else 0.0
-    else:
-        if "left" in loc:
-            x = float(plot["x"]) + inset
-        elif "right" in loc:
-            x = float(plot["x"]) + float(plot["w"]) - box_w - inset
-        else:
-            x = float(plot["x"]) + (float(plot["w"]) - box_w) / 2
-        if loc_is_upper:
-            y = float(plot["y"]) + inset
-        elif loc_is_lower:
-            y = float(plot["y"]) + float(plot["h"]) - box_h - inset
-        else:
-            y = float(plot["y"]) + (float(plot["h"]) - box_h) / 2
-        x = min(
-            max(x, float(plot["x"]) + inset),
-            float(plot["x"]) + float(plot["w"]) - box_w - inset,
-        )
-        y = min(
-            max(y, float(plot["y"]) + inset),
-            float(plot["y"]) + float(plot["h"]) - box_h - inset,
-        )
-
-    return {
-        "style": style_opts,
-        "pad": pad,
-        "handle": handle,
-        "gap": gap,
-        "column_gap": column_gap,
-        "row_gap": row_gap,
-        "font_size": font_size,
-        "text_h": text_h,
-        "line_h": line_h,
-        "swatch_h": swatch_h,
-        "ncols": ncols,
-        "title": _legend_text(title, max(0.0, box_w - pad), char_width) if title else None,
-        "title_h": title_h,
-        "cell_w": max(column_widths),
-        "column_widths": column_widths,
-        "column_offsets": column_offsets,
-        "box_w": box_w,
-        "box_h": box_h,
-        "x": x,
-        "y": y,
-        "visible_count": visible_count,
-        "names": [
-            _legend_text(t.get("name", ""), text_widths[index % ncols], char_width)
-            for index, t in enumerate(named[:visible_count])
-        ],
-    }
+    laid["style"] = style_opts
+    return laid
 
 
 def _legend(

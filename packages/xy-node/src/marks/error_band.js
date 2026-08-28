@@ -2,25 +2,7 @@
  * Error / confidence band — filled strip between lower and upper (area geometry).
  */
 
-import { asF64Array, isSorted } from "../encode.js";
-
-function stableArgsort(arr) {
-  const idx = new Uint32Array(arr.length);
-  for (let i = 0; i < arr.length; i += 1) idx[i] = i;
-  idx.sort((a, b) => {
-    const va = arr[a];
-    const vb = arr[b];
-    const aNan = !(va === va);
-    const bNan = !(vb === vb);
-    if (aNan && bNan) return a - b;
-    if (aNan) return 1;
-    if (bNan) return -1;
-    if (va < vb) return -1;
-    if (va > vb) return 1;
-    return a - b;
-  });
-  return idx;
-}
+import { asF64Array, argsortStable, isSorted } from "../encode.js";
 
 function gather(arr, idx) {
   const out = new Float64Array(idx.length);
@@ -52,7 +34,7 @@ export function composeErrorBand(x, lower, upper, opts = {}) {
     throw new RangeError(`error_band upper must have length ${xa.length}, got ${hi.length}`);
   }
   if (xa.length > 1 && !isSorted(xa)) {
-    const order = stableArgsort(xa);
+    const order = argsortStable(xa);
     xa = gather(xa, order);
     lo = gather(lo, order);
     hi = gather(hi, order);

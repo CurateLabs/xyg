@@ -14,7 +14,6 @@ import hashlib
 import json
 from collections.abc import Iterator
 from pathlib import Path
-from unittest.mock import patch
 
 import numpy as np
 
@@ -22,7 +21,7 @@ from xyg import _native, _scene_v3, kernels
 from xyg._figure import Figure
 
 COUNTS = (100, 10_000, 100_000, 1_000_000)
-SCENE_VERSION = 25
+SCENE_VERSION = 31
 _FINAL_SCENE_CHUNKS = (b"XYLG", b"XYCB", b"XYLB")
 
 # One shared, declarative Cartesian chrome workload. The Node parity test reads
@@ -206,26 +205,24 @@ def authored_scene_figure(count: int) -> Figure:
 
 def _authored_annotation_input(figure: Figure) -> bytes:
     """Capture the exact XYAD boundary frame before Rust lowers it to XYLB."""
-    captured: list[bytes] = []
-    real_encode = _scene_v3._native.scene_batch_encode
-
-    def capture_encode(**kwargs: object) -> bytes:
-        annotation_input = kwargs["authored_text_annotations"]
-        assert isinstance(annotation_input, bytes)
-        captured.append(annotation_input)
-        return b"captured"
-
-    with patch.object(_scene_v3._native, "scene_batch_encode", capture_encode):
-        assert _scene_v3.figure_scene(figure) == b"captured"
-    # Keep an explicit reference so test doubles cannot accidentally hide a
-    # changed call path that skips the normal native compiler entry point.
-    assert _scene_v3._native.scene_batch_encode is real_encode
-    assert len(captured) == 1
-    return captured[0]
+    compiled = _native.scene_pack_trace_compile(_scene_v3._pack_xytc(figure))
+    attached = _native.scene_pack_trace_attach(compiled, _scene_v3._pack_xyta(figure))
+    sidecars = _native.scene_pack_trace_sidecars(attached, _scene_v3._pack_xynm(figure))
+    rows = _native.scene_pack_trace_row_bytes(attached, _scene_v3._pack_xycl(figure))
+    facts = bytearray()
+    for index, annotation in enumerate(list(getattr(figure, "annotations", None) or [])):
+        facts.extend(_scene_v3._pack_xyaf(annotation, index))
+    output = _native.scene_pack_annotation_facts(
+        bytes(facts),
+        style_ref_base=len(figure.traces),
+        x_domain=tuple(float(value) for value in figure._range("x")),
+        y_domain=tuple(float(value) for value in figure._range("y")),
+    )
+    return _scene_v3._unpack_xyas(_native.scene_splice_annotations(rows, sidecars, output))["xyad"]
 
 
 def authored_scene(count: int) -> bytes:
-    """Return a validated Scene 25 workload for one canonical evidence tier."""
+    """Return a validated Scene 27 workload for one canonical evidence tier."""
     figure = authored_scene_figure(count)
     annotation_input = _authored_annotation_input(figure)
     if not annotation_input.startswith(b"XYAD\x03\x00\x00\x00") or b"XYAW" not in annotation_input:
@@ -235,7 +232,7 @@ def authored_scene(count: int) -> bytes:
 
     scene = figure.to_scene()
     if scene[:4] != b"XYGS" or int.from_bytes(scene[4:8], "little") != SCENE_VERSION:
-        raise AssertionError("authored Scene workload must compile as Scene 25")
+        raise AssertionError("authored Scene workload must compile as Scene 27")
     missing = [chunk.decode("ascii") for chunk in _FINAL_SCENE_CHUNKS if chunk not in scene]
     if missing:
         raise AssertionError(f"authored Scene workload is missing resolved chunks: {missing}")
