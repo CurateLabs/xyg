@@ -234,7 +234,8 @@ Constant-style Cartesian native count/mean/sum hexbin also expands that same
 `HEX_RING` onto existing Scene v25 PolyFill records (one 6-vertex group per
 cell) for public SVG/PNG/PDF. The wire stays centers-only; hosts do not add a
 Scene kind. Cartesian metric colormaps intern per-cell fills through a 1×N
-XYHP plane (ABI 186). Polar hexbin, custom `reduce_C_function`, LOD
+XYHP plane (ABI 186). Polar hexbin, custom `reduce_C_function`, and
+categorical / `direct_rgba` cell paints intern the same way (ABI 194). LOD
 over the 1,024-group painter budget, and rich style exceptions remain
 compatibility exporters.
 

@@ -1329,13 +1329,11 @@ def test_hexbin_without_colormap_fails_closed_from_packed_xyta() -> None:
 @pytest.mark.parametrize(
     "mutate",
     [
-        lambda figure: setattr(figure, "coords", "polar"),
         lambda figure: setattr(figure.traces[0], "x_axis", "x2"),
-        lambda figure: figure.traces[0].style.__setitem__("reduce", "custom"),
         lambda figure: figure.traces[0].x.values.__setitem__(0, np.nan),
     ],
 )
-def test_public_hexbin_compiler_rejects_polar_custom_and_nonfinite(
+def test_public_hexbin_compiler_rejects_secondary_axis_and_nonfinite(
     mutate: Callable[[Figure], None],
 ) -> None:
     figure = _public_hexbin()
@@ -1554,7 +1552,7 @@ def test_public_contour_autoranges_without_authored_axis_domain() -> None:
     assert b"data:image/png;base64," not in exported
 
 
-def test_custom_hexbin_reducer_stays_on_compatibility() -> None:
+def test_custom_hexbin_reducer_is_scene_supported() -> None:
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 4.0)
     figure.axis_options["y"]["domain"] = (0.0, 5.0)
@@ -1568,8 +1566,63 @@ def test_custom_hexbin_reducer_stays_on_compatibility() -> None:
         range=((0.0, 4.0), (0.0, 5.0)),
     )
     assert figure.traces[0].style["reduce"] == "custom"
-    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-    assert figure.to_svg()
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported.count(b'<path d="M ') == len(figure.traces[0].x.values)
+    assert figure.to_svg() == exported.decode()
+
+
+def test_polar_hexbin_is_scene_supported() -> None:
+    figure = Figure(width=400, height=400, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, np.pi * 2)
+    figure.axis_options["y"]["domain"] = (0.0, 4.0)
+    figure.hexbin(
+        [0.5, 1.5, 2.5],
+        [1.0, 2.0, 3.0],
+        gridsize=(4, 4),
+        range=((0.0, np.pi * 2), (0.0, 4.0)),
+        color="#3987e5",
+        mincnt=1,
+    )
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported.count(b'<path d="M ') == len(figure.traces[0].x.values)
+    painted = Figure(width=400, height=400, coords="polar")
+    painted.axis_options["x"]["domain"] = (0.0, np.pi * 2)
+    painted.axis_options["y"]["domain"] = (0.0, 4.0)
+    painted.hexbin(
+        _PUBLIC_HEXBIN_X,
+        [1.0, 1.0, 1.0, 1.0, 3.0, 3.0, 3.0],
+        gridsize=(4, 4),
+        range=((0.0, np.pi * 2), (0.0, 4.0)),
+        colormap="viridis",
+        mincnt=1,
+    )
+    assert scene_export_support_reason(painted) is None
+    painted_svg = public_static_export(painted, "svg")
+    assert painted_svg is not None
+    assert painted_svg.count(b'<path d="M ') == len(painted.traces[0].x.values)
+
+
+def test_hexbin_direct_rgba_is_scene_supported() -> None:
+    figure = _public_hexbin()
+    n = len(figure.traces[0].x.values)
+    rgba = np.zeros((n, 4), dtype=np.float64)
+    rgba[:, 3] = 1.0
+    rgba[0] = (0.875, 0.227, 0.267, 1.0)
+    rgba[1 % n] = (0.133, 0.773, 0.369, 1.0)
+    figure.traces[0].color_ch = ColorChannel(mode="direct_rgba", rgba=rgba)
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    fills = {
+        part.split(b'fill="', 1)[1].split(b'"', 1)[0]
+        for part in exported.split(b"<path ")[1:]
+        if b'fill="' in part
+    }
+    assert len(fills) > 1
 
 
 @pytest.mark.parametrize(

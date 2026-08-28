@@ -595,6 +595,7 @@ F3, still pending (above).
   admits constant multi-character scatter `marker_glyph` via XYMG v2, then
   ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit.
   ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
+  ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
   `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
   panel Scene. That predicate
   owns the public PolyFill group budget, including companion traces that share
@@ -606,7 +607,8 @@ F3, still pending (above).
   coordinate semantics—polar Scene projection is explicit XYPL v1 input, never
   an inference from transparent paint. Scene v26 compiles polar line, scatter,
   area, bar/column (PolyFill annular sectors), errorbar, heatmap
-  (tessellated lattice cells), and contour (SegmentPair polylines); polar
+  (tessellated lattice cells), contour (SegmentPair polylines), and hexbin
+  (HexCell PolyFills); polar
   density remains an explicit unsupported boundary.
   Rust owns the
   selected endpoint-pair order, clipping, SVG, PDF, and raster output;
@@ -1536,6 +1538,8 @@ ABI 178 admits scatter `fill_opacity` / `stroke_opacity` on that same path.
 ABI 179 admits hexbin `fill_opacity` on XYMS fill alpha.
 ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity` on that
 same path. Polar painted Image blit tessellates when stroke is visible.
+ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba`
+hexbin on HexCell PolyFills.
 ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint on that same
 path. ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as
 authored band step expansion (`step_mode` 1–3 wins over `BandFlatten`).
@@ -1547,8 +1551,8 @@ two-ended paint from packed XYHP kind 5. Polar ribbon and explicit `FLAG_COLOR2`
 stay fail-closed. ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor`
 as XYAW `wrap=0`. ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor`
 as XYAW `wrap=0`. ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane
-interned onto HexCell PolyFills. Polar hexbin, custom reducers, and per-item
-RGBA stay fail-closed. ABI 187 admits cartesian unwrapped text `rotation` as
+interned onto HexCell PolyFills. ABI 194 admits polar hexbin, custom reducers,
+and categorical / `direct_rgba` hexbin on that same HexCell intern. ABI 187 admits cartesian unwrapped text `rotation` as
 XYAW `wrap=0`. ABI 188 admits labelled cartesian marker `rotation` as XYAW
 `wrap=0`. ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from
 packed XYTA. ABI 190 intern cartesian per-item two-ended ribbon `color2_ch`

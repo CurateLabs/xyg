@@ -163,6 +163,21 @@ def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
     assert contour_scene[4:8] == (31).to_bytes(4, "little")
     contour_svg = _native.scene_svg(contour_scene)
     assert "<polyline" in contour_svg or "<path" in contour_svg
+    polar_hexbin = Figure(width=400, height=400, coords="polar")
+    polar_hexbin.axis_options["x"]["domain"] = (0.0, 6.283185307179586)
+    polar_hexbin.axis_options["y"]["domain"] = (0.0, 4.0)
+    polar_hexbin.hexbin(
+        [0.5, 1.5, 2.5],
+        [1.0, 2.0, 3.0],
+        gridsize=(4, 4),
+        range=((0.0, 6.283185307179586), (0.0, 4.0)),
+        color="#3987e5",
+        mincnt=1,
+    )
+    hex_scene = polar_hexbin.to_scene()
+    assert hex_scene[4:8] == (31).to_bytes(4, "little")
+    hex_svg = _native.scene_svg(hex_scene)
+    assert hex_svg.count('<path d="M ') == len(polar_hexbin.traces[0].x.values)
 
     custom_font = Figure().line([0.0, 1.0], [0.0, 1.0])
     custom_font.chrome_styles = {"title": {"font-family": "Example Sans"}}

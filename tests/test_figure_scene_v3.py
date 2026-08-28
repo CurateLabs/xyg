@@ -14,6 +14,7 @@ import pytest
 from xyg import _native, _scene_v3, kernels
 from xyg._figure import Figure
 from xyg._scene_v3 import UnsupportedSceneV3
+from xyg.channels import ColorChannel
 
 FIXTURE = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
 
@@ -924,8 +925,10 @@ def test_python_scene_compiles_ribbon_and_triangle_mesh() -> None:
         gridsize=(4, 4),
         range=((0.0, 4.0), (0.0, 5.0)),
     )
-    with pytest.raises(UnsupportedSceneV3, match="custom hexbin reducers"):
-        custom.to_scene()
+    custom_svg = _native.scene_svg(custom.to_scene())
+    assert custom_svg.count('<path d="M ') == len(custom.traces[0].x.values)
+    assert custom.to_svg() == custom_svg
+    assert _scene_v3.scene_export_support_reason(custom) is None
 
 
 def test_python_scene_compiles_constant_ribbon_color2() -> None:
@@ -1565,6 +1568,104 @@ def test_python_scene_compiles_hexbin_stroke_opacity() -> None:
     solid.traces[-1].style["stroke"] = "#111111"
     solid.traces[-1].style["stroke_width"] = 2.0
     assert svg != _native.scene_svg(solid.to_scene())
+
+
+def test_python_scene_compiles_polar_hexbin() -> None:
+    figure = Figure(width=400, height=400, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, math.tau)
+    figure.axis_options["y"]["domain"] = (0.0, 4.0)
+    figure.hexbin(
+        [0.5, 1.5, 2.5],
+        [1.0, 2.0, 3.0],
+        gridsize=(4, 4),
+        range=((0.0, math.tau), (0.0, 4.0)),
+        color="#3987e5",
+        mincnt=1,
+    )
+    scene = figure.to_scene()
+    assert scene[4:8] == (31).to_bytes(4, "little")
+    svg = _native.scene_svg(scene)
+    assert svg.count('<path d="M ') == len(figure.traces[0].x.values)
+    assert figure.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(figure) is None
+    painted = Figure(width=400, height=400, coords="polar")
+    painted.axis_options["x"]["domain"] = (0.0, math.tau)
+    painted.axis_options["y"]["domain"] = (0.0, 4.0)
+    painted.hexbin(
+        [0.5, 1.5, 2.5, 3.5, 1.0, 2.0, 3.0],
+        [1.0, 1.0, 1.0, 1.0, 3.0, 3.0, 3.0],
+        gridsize=(4, 4),
+        range=((0.0, math.tau), (0.0, 4.0)),
+        colormap="viridis",
+        mincnt=1,
+    )
+    painted_svg = _native.scene_svg(painted.to_scene())
+    assert painted_svg.count('<path d="M ') == len(painted.traces[0].x.values)
+    fills = {
+        part.split('fill="', 1)[1].split('"', 1)[0]
+        for part in painted_svg.split("<path ")[1:]
+        if 'fill="' in part
+    }
+    assert len(fills) > 1
+    assert painted.to_svg() == painted_svg
+    assert _scene_v3.scene_export_support_reason(painted) is None
+
+
+def test_python_scene_compiles_hexbin_direct_rgba_and_categorical() -> None:
+    direct = Figure(width=320, height=240)
+    direct.axis_options["x"]["domain"] = (0.0, 4.0)
+    direct.axis_options["y"]["domain"] = (0.0, 5.0)
+    direct.hexbin(
+        [0.5, 1.5, 2.5, 3.5, 1.0, 2.0, 3.0],
+        [0.5, 0.5, 0.5, 0.5, 2.0, 2.0, 2.0],
+        gridsize=(4, 4),
+        range=((0.0, 4.0), (0.0, 5.0)),
+        color="#3987e5",
+    )
+    n = len(direct.traces[0].x.values)
+    assert n >= 2
+    rgba = np.zeros((n, 4), dtype=np.float64)
+    rgba[:, 3] = 1.0
+    rgba[0] = (1.0, 0.0, 0.0, 1.0)
+    rgba[1] = (0.0, 1.0, 0.0, 1.0)
+    direct.traces[0].color_ch = ColorChannel(mode="direct_rgba", rgba=rgba)
+    direct_svg = _native.scene_svg(direct.to_scene())
+    assert direct_svg.count('<path d="M ') == n
+    fills = {
+        part.split('fill="', 1)[1].split('"', 1)[0]
+        for part in direct_svg.split("<path ")[1:]
+        if 'fill="' in part
+    }
+    assert len(fills) > 1
+    assert direct.to_svg() == direct_svg
+    assert _scene_v3.scene_export_support_reason(direct) is None
+    categorical = Figure(width=320, height=240)
+    categorical.axis_options["x"]["domain"] = (0.0, 4.0)
+    categorical.axis_options["y"]["domain"] = (0.0, 5.0)
+    categorical.hexbin(
+        [0.5, 1.5, 2.5, 3.5, 1.0, 2.0, 3.0],
+        [0.5, 0.5, 0.5, 0.5, 2.0, 2.0, 2.0],
+        gridsize=(4, 4),
+        range=((0.0, 4.0), (0.0, 5.0)),
+        color="#3987e5",
+    )
+    n = len(categorical.traces[0].x.values)
+    categorical.traces[0].color_ch = ColorChannel(
+        mode="categorical",
+        codes=np.arange(n, dtype=np.int64) % 2,
+        categories=["a", "b"],
+        palette=["#ef4444", "#22c55e"],
+    )
+    cat_svg = _native.scene_svg(categorical.to_scene())
+    assert cat_svg.count('<path d="M ') == n
+    cat_fills = {
+        part.split('fill="', 1)[1].split('"', 1)[0]
+        for part in cat_svg.split("<path ")[1:]
+        if 'fill="' in part
+    }
+    assert len(cat_fills) > 1
+    assert categorical.to_svg() == cat_svg
+    assert _scene_v3.scene_export_support_reason(categorical) is None
 
 
 def test_python_scene_compiles_triangle_mesh_fill_opacity() -> None:

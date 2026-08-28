@@ -36,8 +36,9 @@
 //! ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 //! ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 //! ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto
-//! HexCell PolyFills. Polar hexbin, custom reducers, and per-item RGBA stay
-//! fail-closed.
+//! HexCell PolyFills. ABI 194 admits polar hexbin on that same HexCell
+//! expansion, custom host reducers (`reduce="custom"` after `xyg_hexbin_groups`),
+//! and categorical / `direct_rgba` 1×N XYHP RGBA planes.
 //! ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 / XYLB v6).
 //! ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0` (nums[8]).
 //! ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from packed
@@ -198,7 +199,7 @@ const POLAR_AXIS_KEYS: &[&str] = &[
     "r_origin",
 ];
 const POLAR_SCENE_KINDS: &[&str] = &[
-    "line", "scatter", "area", "bar", "column", "errorbar", "heatmap", "contour",
+    "line", "scatter", "area", "bar", "column", "errorbar", "heatmap", "contour", "hexbin",
 ];
 const PUBLIC_SYMBOLS: &[&str] = &[
     "circle",
@@ -221,7 +222,7 @@ const PUBLIC_SYMBOLS: &[&str] = &[
     "horizontal_line",
     "vertical_line",
 ];
-const HEXBIN_REDUCES: &[&str] = &["count", "mean", "sum"];
+const HEXBIN_REDUCES: &[&str] = &["count", "mean", "sum", "custom"];
 
 struct Cursor<'a> {
     bytes: &'a [u8],
@@ -1773,7 +1774,7 @@ mod tests {
                 &[(XYFS_TRACE_UNSUPPORTED_KIND, "stem")]
             )),
             Ok(
-                "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, area, bar, column, errorbar, heatmap, and contour only"
+                "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, area, bar, column, errorbar, heatmap, contour, and hexbin only"
                     .to_string()
             )
         );
@@ -1799,6 +1800,10 @@ mod tests {
         );
         assert_eq!(
             scene_figure_support_reason(&xyfs_v2(OBS_POLAR, &PRIMARY_XY, &[(0, "contour")])),
+            Ok(String::new())
+        );
+        assert_eq!(
+            scene_figure_support_reason(&xyfs_v2(OBS_POLAR, &PRIMARY_XY, &[(0, "hexbin")])),
             Ok(String::new())
         );
     }

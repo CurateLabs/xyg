@@ -57,6 +57,20 @@ test("Node projects Rust-owned Scene support decisions verbatim", () => {
   const polarContourScene = polarContour.toScene();
   assert.equal(new DataView(polarContourScene.buffer, polarContourScene.byteOffset).getUint32(4, true), 31);
   assert.ok(sceneSvg(polarContourScene).includes("<polyline") || sceneSvg(polarContourScene).includes("<path"));
+  const polarHex = new Figure({ width: 400, height: 400, coords: "polar" });
+  polarHex.setAxisDomain("x", [0, Math.PI * 2]);
+  polarHex.setAxisDomain("y", [0, 4]);
+  polarHex.hexbin([0.5, 1.5, 2.5], [1, 2, 3], {
+    gridsize: [4, 4],
+    range: [[0, Math.PI * 2], [0, 4]],
+    color: "#3987e5",
+    mincnt: 1,
+  });
+  delete polarHex.traces[0].style.dx;
+  delete polarHex.traces[0].style.dy;
+  const polarHexSvg = sceneSvg(polarHex.toScene());
+  assert.equal((polarHexSvg.match(/<path d="M /g) ?? []).length, polarHex.traces[0].x.length);
+  assert.equal(sceneExportSupportReason(polarHex), null);
   const customFont = new Figure(); customFont.line([0, 1], [0, 1]);
   customFont.chromeStyles = { title: { fontFamily: "Example Sans" } };
   assert.throws(() => customFont.toScene(), /XYG_SCENE_UNSUPPORTED_CUSTOM_FONT/);
@@ -2130,6 +2144,73 @@ test("Node Scene compiles colormap hexbin", () => {
     .filter(Boolean);
   assert.ok(new Set(fills).size > 1);
   assert.match(svg, />hex<\/text>/);
+});
+
+test("Node Scene compiles polar hexbin, custom reduce, and direct_rgba cells", () => {
+  const x = [0.5, 1.5, 2.5, 3.5, 1, 2, 3];
+  const y = [0.5, 0.5, 0.5, 0.5, 2, 2, 2];
+  const polar = new Figure({ width: 400, height: 400, coords: "polar" });
+  polar.setAxisDomain("x", [0, Math.PI * 2]);
+  polar.setAxisDomain("y", [0, 4]);
+  polar.hexbin([0.5, 1.5, 2.5], [1, 2, 3], {
+    gridsize: [4, 4],
+    range: [[0, Math.PI * 2], [0, 4]],
+    color: "#3987e5",
+    name: "hex",
+    id: 0,
+    mincnt: 1,
+  });
+  delete polar.traces[0].style.dx;
+  delete polar.traces[0].style.dy;
+  assert.equal(sceneExportSupportReason(polar), null);
+  const polarSvg = sceneSvg(polar.toScene());
+  assert.equal((polarSvg.match(/<path d="M /g) ?? []).length, polar.traces[0].x.length);
+
+  const custom = new Figure({ width: 320, height: 240 });
+  custom.setAxisDomain("x", [0, 4]);
+  custom.setAxisDomain("y", [0, 5]);
+  custom.hexbin(x, y, {
+    gridsize: [4, 4],
+    range: [[0, 4], [0, 5]],
+    color: "#3987e5",
+    name: "hex",
+    id: 0,
+  });
+  custom.traces[0].style.reduce = "custom";
+  delete custom.traces[0].style.dx;
+  delete custom.traces[0].style.dy;
+  assert.equal(sceneExportSupportReason(custom), null);
+  assert.equal(
+    (sceneSvg(custom.toScene()).match(/<path d="M /g) ?? []).length,
+    custom.traces[0].x.length,
+  );
+
+  const painted = new Figure({ width: 320, height: 240 });
+  painted.setAxisDomain("x", [0, 4]);
+  painted.setAxisDomain("y", [0, 5]);
+  painted.hexbin(x, y, {
+    gridsize: [4, 4],
+    range: [[0, 4], [0, 5]],
+    color: "#3987e5",
+    name: "hex",
+    id: 0,
+  });
+  delete painted.traces[0].style.dx;
+  delete painted.traces[0].style.dy;
+  const n = painted.traces[0].x.length;
+  const rgba = new Uint8Array(n * 4);
+  for (let i = 0; i < n; i += 1) rgba[i * 4 + 3] = 255;
+  rgba.set([239, 68, 68, 255], 0);
+  rgba.set([34, 197, 94, 255], 4);
+  painted.traces[0].color_ch = { mode: "direct_rgba", rgba };
+  painted.traces[0].colorChannel = painted.traces[0].color_ch;
+  assert.equal(sceneExportSupportReason(painted), null);
+  const paintedSvg = sceneSvg(painted.toScene());
+  assert.equal((paintedSvg.match(/<path d="M /g) ?? []).length, n);
+  const fills = [...paintedSvg.matchAll(/<path d="M [^>]*>/g)]
+    .map((match) => /fill="([^"]+)"/.exec(match[0])?.[1])
+    .filter(Boolean);
+  assert.ok(new Set(fills).size > 1);
 });
 
 test("Node Scene compiles triangle_mesh joined_fill", () => {

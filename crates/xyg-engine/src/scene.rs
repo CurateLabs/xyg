@@ -110,7 +110,7 @@ pub fn scene_support_reason(version: u32, features: u64) -> Result<&'static str,
         return Err(SceneError::Version);
     }
     let reasons = [
-        (SCENE_FEATURE_POLAR, "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, area, bar, column, errorbar, heatmap, and contour only"),
+        (SCENE_FEATURE_POLAR, "XYG_SCENE_UNSUPPORTED_POLAR: Scene v26 supports polar line, scatter, area, bar, column, errorbar, heatmap, contour, and hexbin only"),
         (SCENE_FEATURE_CUSTOM_FONT, "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT: Scene v12 does not encode custom font resources"),
         (SCENE_FEATURE_BROWSER_CSS, "XYG_SCENE_UNSUPPORTED_BROWSER_CSS: Scene v12 does not encode browser-only CSS or class behavior"),
         (SCENE_FEATURE_GRADIENT, "XYG_SCENE_UNSUPPORTED_GRADIENT: Scene v12 supports solid literal paints only"),
@@ -5563,7 +5563,8 @@ pub fn expand_scene_records(
 }
 
 /// Expand compact authoring, including ABI 134 painted heatmap lattices,
-/// ABI 137 density image blits, and ABI 186 colormap hexbin HexCell fills.
+/// ABI 137 density image blits, ABI 186 colormap hexbin HexCell fills, and
+/// ABI 194 polar / custom-reduce / categorical / `direct_rgba` hexbin fills.
 /// When any `HeatmapPainted`, `DensityBlit`, or painted `HexCell` group is
 /// present, `paint` must be a valid XYHP envelope. `polar` selects ABI 143
 /// occupied-cell Rect tessellation instead of a Cartesian Image blit.

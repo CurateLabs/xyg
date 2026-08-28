@@ -14,6 +14,8 @@
 //! separately. Empty `XYFS` skips the probe (stepwise ABI 163 callers).
 //! ABI 189 consults packed XYTA during that probe so heatmap/hexbin cell-fill
 //! tessellation eligibility is Rust-owned.
+//! ABI 194 admits polar hexbin, custom host reducers, and categorical /
+//! `direct_rgba` hexbin on that same HexCell intern.
 //! ABI 190 intern per-item two-ended ribbon `color2_ch` from packed XYHP kind 5
 //! onto Band `style_ref`s plus XYGR mark-space `dir=right`.
 //! ABI 166 tessellates cartesian bar/column/histogram `corner_radius` from

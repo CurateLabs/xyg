@@ -259,12 +259,14 @@ ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from packed XYHP 
 ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2.
 ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit.
 ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
+ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
 ABI 173 tessellates
 heatmap `corner_radius`. ABI 174 tessellates violin/box `corner_radius`.
 ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`.
 ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`.
 ABI 177 admits heatmap `fill_opacity`.
 ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
+ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
 ABI 178 admits scatter `fill_opacity` / `stroke_opacity`.
 ABI 179 admits hexbin `fill_opacity`.
 ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint.
@@ -282,6 +284,7 @@ ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from packed XYHP 
 ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2.
 ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit.
 ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
+ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -341,6 +344,7 @@ ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`.
 ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`.
 ABI 177 admits heatmap `fill_opacity`.
 ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
+ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
 ABI 178 admits scatter `fill_opacity` / `stroke_opacity`.
 ABI 179 admits hexbin `fill_opacity`.
 ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint.
@@ -358,6 +362,7 @@ ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from packed XYHP 
 ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2.
 ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit.
 ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
+ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
 ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate
@@ -416,6 +421,7 @@ step expansion on that same product Scene. ABI 173 tessellates heatmap
 bar/column/histogram `fill_opacity` / `stroke_opacity` on that same product Scene.
 ABI 177 admits heatmap `fill_opacity` on that same product Scene.
 ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity` on that same product Scene.
+ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin on that same product Scene.
 ABI 178 admits scatter `fill_opacity` / `stroke_opacity` on that same product Scene.
 ABI 179 admits hexbin `fill_opacity` on that same product Scene.
 ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint on that same product Scene.
@@ -445,12 +451,13 @@ ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit on t
 same product Scene.
 ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity` on that
 same product Scene.
+ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba`
+hexbin on that same product Scene.
 The explicit `xyg_scene_figure_support_reason` ABI remains for tests.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call
 `xyg_figure_autorange` / `xyg_auto_domain`. Direct-browser WASM compile uses
 the same `auto_domain` degenerate pad instead of a host-local ±0.5 fork.
-Polar hexbin, custom `reduce_C_function` callables (after Rust lattice groups),
 LOD beyond the 1,024-group painter budget, and rich style
 exceptions remain compatibility routes. ABI 107 makes Scene CSS→RGBA8 and
 per-kind mark style defaults the same way: Python and Node pack `XYMS` v1
@@ -580,7 +587,8 @@ ABI 115 makes static PNG the same way: Python `_png.encode` /
 `xyg_encode_png`; Rust owns filter-0 scanlines, indexed-palette
 selection, `tRNS`, and zlib IDAT. Polar painted heatmap inverse-raster is
 Scene-owned (ABI 192). ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` /
-`stroke_opacity` on XYMS. LOD beyond 10,000 tessellated cells, and rich style
+`stroke_opacity` on XYMS. ABI 194 admits polar hexbin, custom host reducers, and
+categorical / `direct_rgba` hexbin on HexCell PolyFills. LOD beyond 10,000 tessellated cells, and rich style
 exceptions remain compatibility routes.
 Scalar colormap and truecolor heatmaps compile through `HeatmapPainted` on Python and Node.
 ABI 99 gives both composition hosts one compact grouped box ingress. Hosts pack

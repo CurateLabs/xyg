@@ -1880,6 +1880,22 @@ function channelEndRgba8(channel, n, fallback) {
       }
       if (ArrayBuffer.isView(raw) && raw.length === n * 4) return Uint8Array.from(raw);
     }
+    if (channel.mode === "categorical" && channel.codes != null) {
+      const codes = channel.codes;
+      if (codes.length !== n) return null;
+      const palette = [...(channel.palette ?? [])];
+      const css = [];
+      for (let i = 0; i < n; i += 1) {
+        const code = Number(codes[i]);
+        const slot = palette.length > 0 ? palette[((code % palette.length) + palette.length) % palette.length] : null;
+        css.push(slot ?? fallback);
+      }
+      try {
+        return cssColorsToRgba8(css);
+      } catch {
+        return null;
+      }
+    }
   }
   return null;
 }
@@ -2722,7 +2738,7 @@ const BAND_KINDS = new Set(["area", "error_band"]);
 const RIBBON_KINDS = new Set(["ribbon"]);
 const POLYFILL_KINDS = new Set(["triangle_mesh"]);
 const HEXBIN_KINDS = new Set(["hexbin"]);
-const HEXBIN_REDUCES = new Set(["count", "mean", "sum"]);
+const HEXBIN_REDUCES = new Set(["count", "mean", "sum", "custom"]);
 const HEATMAP_KINDS = new Set(["heatmap"]);
 const STROKE_KINDS = new Set(["line", "segments", "errorbar", "stem", "contour", "box_whisker", "box_median"]);
 const SUPPORTED_KINDS = new Set([
@@ -2803,7 +2819,7 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
     || (
       scatterHasNonConstantColor(trace)
       && !scatterUsesDensity(trace)
-      && !(figure.coords !== "polar" && hexbinPacksColormapPlane(trace))
+      && !hexbinPacksPaintPlane(trace)
       && !(figure.coords !== "polar" && ribbonPacksEndPaints(trace))
     )
     || (
@@ -3749,11 +3765,7 @@ function packXyTa(figure, xDomain, yDomain) {
         cmapLo = Number(domain[0]);
         cmapHi = Number(domain[1]);
       }
-    } else if (
-      HEXBIN_KINDS.has(trace.kind)
-      && figure.coords !== "polar"
-      && hexbinPacksColormapPlane(trace)
-    ) {
+    } else if (HEXBIN_KINDS.has(trace.kind) && hexbinPacksColormapPlane(trace)) {
       flags |= XYTA_HEATMAP | XYTA_SHAPE | XYTA_HAS_GRID;
       const channel = trace.color_ch ?? trace.colorChannel;
       const values = channel?.values ?? trace.metric;
@@ -3772,6 +3784,15 @@ function packXyTa(figure, xDomain, yDomain) {
         flags |= XYTA_HAS_DOMAIN;
         cmapLo = Number(domain[0]);
         cmapHi = Number(domain[1]);
+      }
+    } else if (HEXBIN_KINDS.has(trace.kind) && hexbinPacksRgbaPlane(trace)) {
+      const packed = hexbinCellRgba8(trace);
+      if (packed != null) {
+        flags |= XYTA_HEATMAP | XYTA_SHAPE | XYTA_HAS_GRID | XYTA_HAS_RGBA;
+        rows = 1;
+        cols = packed.length / 4;
+        grid = packF64Le(new Float64Array(cols));
+        rgba = packed;
       }
     } else if (
       RIBBON_KINDS.has(trace.kind)
@@ -5309,6 +5330,30 @@ function hexbinPacksColormapPlane(trace) {
   const channel = trace.color_ch ?? trace.colorChannel;
   if (channel == null || channel.mode !== "continuous") return false;
   return (channel.values ?? trace.metric) != null;
+}
+
+function hexbinCount(trace) {
+  return trace.x?.length ?? 0;
+}
+
+function hexbinCellRgba8(trace) {
+  return channelEndRgba8(
+    trace.color_ch ?? trace.colorChannel,
+    hexbinCount(trace),
+    sourceColorCss(trace),
+  );
+}
+
+function hexbinPacksRgbaPlane(trace) {
+  if (!HEXBIN_KINDS.has(trace.kind)) return false;
+  const channel = trace.color_ch ?? trace.colorChannel;
+  if (channel == null) return false;
+  if (channel.mode !== "direct_rgba" && channel.mode !== "categorical") return false;
+  return hexbinCellRgba8(trace) != null;
+}
+
+function hexbinPacksPaintPlane(trace) {
+  return hexbinPacksColormapPlane(trace) || hexbinPacksRgbaPlane(trace);
 }
 
 /** Compile migrated cartesian marks to Scene v12. */

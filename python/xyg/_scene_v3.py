@@ -47,7 +47,7 @@ _POLYFILL_KINDS = frozenset({"triangle_mesh"})
 # Rust (`SceneExpansionMode::HexCell`). Hosts pack one compact center+pitch
 # row per cell.
 _HEXBIN_KINDS = frozenset({"hexbin"})
-_HEXBIN_REDUCES = frozenset({"count", "mean", "sum"})
+_HEXBIN_REDUCES = frozenset({"count", "mean", "sum", "custom"})
 # Regular Cartesian heatmap cells expand onto Rect records in Rust
 # (`SceneExpansionMode::HeatmapLattice`). Hosts pack extent plus rows/cols.
 # Painted lattices (`HeatmapPainted`) add an XYHP sidecar. Cartesian
@@ -1130,7 +1130,7 @@ def _constant_color(trace: Any, fallback: str) -> str:
     if channel.mode != "constant" or channel.constant is None:
         if str(getattr(trace, "kind", "") or "") == "scatter" and trace.use_density():
             return str((getattr(trace, "style", None) or {}).get("color", fallback))
-        if _hexbin_packs_colormap_plane(trace) or _ribbon_packs_end_paints(trace):
+        if _hexbin_packs_paint_plane(trace) or _ribbon_packs_end_paints(trace):
             return str((getattr(trace, "style", None) or {}).get("color", fallback))
         raise UnsupportedSceneV3("Scene v12 does not yet support data-driven paint channels")
     return channel.constant
@@ -1777,9 +1777,9 @@ def _hexbin_pitch(style: dict[str, Any]) -> tuple[float, float]:
 def _hexbin_packs_colormap_plane(trace: Any) -> bool:
     """Return whether hosts should pack this hexbin's metric as an XYTA plane.
 
-    Polar stays off this path. Rust owns tessellation vs fail-closed from the
-    packed plane (ABI 189). Missing colormap or length mismatch fail closed in
-    XYFS/attach rather than in this packer.
+    Rust owns tessellation vs fail-closed from the packed plane (ABI 189).
+    Missing colormap or length mismatch fail closed in XYFS/attach rather than
+    in this packer. Polar uses the same 1×N plane (ABI 194).
     """
     if str(getattr(trace, "kind", "") or "") not in _HEXBIN_KINDS:
         return False
@@ -1787,6 +1787,36 @@ def _hexbin_packs_colormap_plane(trace: Any) -> bool:
     if channel is None or getattr(channel, "mode", None) != "continuous":
         return False
     return getattr(channel, "values", None) is not None
+
+
+def _hexbin_count(trace: Any) -> int:
+    column = _trace_column(trace, "x")
+    return 0 if column is None else int(len(column))
+
+
+def _hexbin_cell_rgba8(trace: Any) -> bytes | None:
+    """Pack one RGBA8 pixel per occupied hex cell."""
+    n = _hexbin_count(trace)
+    fallback = str((getattr(trace, "style", None) or {}).get("color", "#3987e5"))
+    return _channel_end_rgba8(getattr(trace, "color_ch", None), n, fallback)
+
+
+def _hexbin_packs_rgba_plane(trace: Any) -> bool:
+    """Return whether hosts should pack this hexbin's per-cell RGBA as XYTA.
+
+    Categorical and `direct_rgba` channels intern onto HexCell PolyFills as a
+    1×N XYHP RGBA plane (ABI 194). Constant paint stays on the shared style.
+    """
+    if str(getattr(trace, "kind", "") or "") not in _HEXBIN_KINDS:
+        return False
+    channel = getattr(trace, "color_ch", None)
+    if channel is None or getattr(channel, "mode", None) not in {"categorical", "direct_rgba"}:
+        return False
+    return _hexbin_cell_rgba8(trace) is not None
+
+
+def _hexbin_packs_paint_plane(trace: Any) -> bool:
+    return _hexbin_packs_colormap_plane(trace) or _hexbin_packs_rgba_plane(trace)
 
 
 def _heatmap_uses_colormap(trace: Any) -> bool:
@@ -1923,11 +1953,7 @@ def _pack_xyta(figure: Any) -> bytes:
             if domain is not None and len(domain) == 2:
                 flags |= _XYTA_HAS_DOMAIN
                 cmap_lo, cmap_hi = float(domain[0]), float(domain[1])
-        elif (
-            trace.kind in _HEXBIN_KINDS
-            and str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
-            and _hexbin_packs_colormap_plane(trace)
-        ):
+        elif trace.kind in _HEXBIN_KINDS and _hexbin_packs_colormap_plane(trace):
             channel = trace.color_ch
             values = np.ascontiguousarray(np.asarray(channel.values, dtype=np.float64).reshape(-1))
             flags |= _XYTA_HEATMAP | _XYTA_SHAPE | _XYTA_HAS_GRID
@@ -1939,6 +1965,14 @@ def _pack_xyta(figure: Any) -> bytes:
             if domain is not None and len(domain) == 2:
                 flags |= _XYTA_HAS_DOMAIN
                 cmap_lo, cmap_hi = float(domain[0]), float(domain[1])
+        elif trace.kind in _HEXBIN_KINDS and _hexbin_packs_rgba_plane(trace):
+            packed = _hexbin_cell_rgba8(trace)
+            if packed is not None:
+                n = len(packed) // 4
+                flags |= _XYTA_HEATMAP | _XYTA_SHAPE | _XYTA_HAS_GRID | _XYTA_HAS_RGBA
+                rows, cols = 1, n
+                grid = np.zeros(n, dtype=np.float64).tobytes()
+                rgba = packed
         elif (
             trace.kind in _RIBBON_KINDS
             and str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
@@ -2362,6 +2396,12 @@ def _channel_end_rgba8(channel: Any, n: int, fallback: str) -> bytes | None:
         if values.dtype == np.uint8:
             return np.ascontiguousarray(values).tobytes()
         return np.ascontiguousarray(channels._quantized_rgba8(values.astype(np.float64))).tobytes()
+    if mode == "categorical":
+        try:
+            resolved = channels.resolve_direct_rgba(channel)
+        except (TypeError, ValueError):
+            return None
+        return _channel_end_rgba8(resolved, n, fallback)
     return None
 
 
@@ -3321,10 +3361,7 @@ def _pack_figure_support(
             getattr(trace, "color_ch", None) is not None
             and (trace.color_ch.mode != "constant" or trace.color_ch.constant is None)
             and not (str(getattr(trace, "kind", "") or "") == "scatter" and trace.use_density())
-            and not (
-                str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
-                and _hexbin_packs_colormap_plane(trace)
-            )
+            and not _hexbin_packs_paint_plane(trace)
             and not (
                 str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
                 and _ribbon_packs_end_paints(trace)

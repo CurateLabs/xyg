@@ -7,11 +7,14 @@
 //! packing, `FACT_HEATMAP_PAINT` / `FACT_DENSITY_PLANE`, density
 //! symbol/diameter zeroing, and domain-endpoint column rewrite so Python and
 //! Node cannot drift. ABI 186 reuses `FLAG_HEATMAP` / `FACT_HEATMAP_PAINT` for
-//! cartesian colormap hexbin as a 1×N XYHP plane. ABI 190 intern cartesian
+//! cartesian colormap hexbin as a 1×N XYHP plane. ABI 194 classifies 1×N
+//! `FLAG_HAS_RGBA` the same way so categorical / `direct_rgba` hexbin intern
+//! onto HexCell PolyFills, including polar. ABI 190 intern cartesian
 //! per-item ribbon source/target RGBA8 as XYHP kind 5 (`FLAG_RIBBON_ENDS`).
 //! Encoded Scene v31 is unchanged.
 
 use crate::kernels::BinColorSource;
+use crate::scene::{XYHP_PAINT_RIBBON, XYHP_PLANE_HEADER_BYTES};
 use crate::scene_density::{self, pack_density_grid, DensityGridError, XYDE_HAS_MEAN_RGBA};
 use crate::scene_heatmap::{
     pack_heatmap_facts, HeatmapFactError, XYHF_FAMILY_DENSITY, XYHF_FAMILY_HEATMAP,
@@ -20,7 +23,6 @@ use crate::scene_heatmap::{
     XYHF_HAS_STOPS, XYHF_HAS_STYLE_COLOR, XYHF_HAS_TRUECOLOR, XYHF_MAGIC, XYHF_V1_HEADER_BYTES,
     XYHF_VERSION,
 };
-use crate::scene::{XYHP_PAINT_RIBBON, XYHP_PLANE_HEADER_BYTES};
 use crate::scene_pack::{FACT_DENSITY_PLANE, FACT_HEATMAP_PAINT};
 use crate::scene_trace_compile::{XYTO_HEADER_BYTES, XYTO_MAGIC, XYTO_PREFIX_BYTES, XYTO_VERSION};
 
@@ -725,7 +727,6 @@ fn classify_cell_fill(input: &AttachInput<'_>) -> CellFillTessellation {
         && input.flags & FLAG_HAS_GRID != 0
         && input.rows == 1
         && input.cols >= 1
-        && input.flags & FLAG_HAS_RGBA == 0
     {
         return CellFillTessellation::Hexbin;
     }
@@ -1077,6 +1078,26 @@ mod tests {
         assert_eq!(
             xyta_cell_fill_tessellation(&xyta_one(named, 1, 3, &[0.0, 1.0, 2.0], b"viridis", 0, 0))
                 .unwrap(),
+            vec![CellFillTessellation::Hexbin]
+        );
+        let mut rgba_hex = xyta_header(1);
+        let mut prefix = vec![0u8; XYTA_PREFIX_BYTES];
+        prefix[..4].copy_from_slice(
+            &(FLAG_HEATMAP | FLAG_SHAPE | FLAG_HAS_GRID | FLAG_HAS_RGBA).to_le_bytes(),
+        );
+        prefix[8..12].copy_from_slice(&1i32.to_le_bytes());
+        prefix[12..16].copy_from_slice(&3i32.to_le_bytes());
+        prefix[16..20].copy_from_slice(&3u32.to_le_bytes());
+        prefix[20..24].copy_from_slice(&12u32.to_le_bytes());
+        rgba_hex.extend_from_slice(&prefix);
+        for value in [0.0f64, 1.0, 2.0] {
+            rgba_hex.extend_from_slice(&value.to_le_bytes());
+        }
+        rgba_hex.extend_from_slice(&[
+            0x7c, 0x3a, 0xed, 0xff, 0x25, 0x63, 0xeb, 0xff, 0x22, 0xc5, 0x5e, 0xff,
+        ]);
+        assert_eq!(
+            xyta_cell_fill_tessellation(&rgba_hex).unwrap(),
             vec![CellFillTessellation::Hexbin]
         );
         assert_eq!(
