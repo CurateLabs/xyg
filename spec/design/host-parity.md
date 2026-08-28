@@ -608,7 +608,10 @@ pyramid compose kernels, ship buffers, and assemble the wire spec.
 ABI 129 moves Cartesian static-export grid colormap into Rust: Python
 and Node call `xyg_colormap_rgba`, `xyg_colormap_rgba_canonical`, and
 `xyg_density_rgba` (log-u8 density) so `_lut` stop interpolation cannot
-drift on heatmap/density grid export. `xyg_heatmap_rgba` keeps its
+drift on heatmap/density grid export. ABI 206 adds `xyg_colormap_lut`,
+`xyg_density_rgba_linear`, and `xyg_paint_effective_rgba` so remaining
+compatibility 1D LUT samples, legacy count-grid density, and artist-alpha
+compositing cannot drift (#313). `xyg_heatmap_rgba` keeps its
 distinct normalized-scalar remap for other consumers. Hosts still
 resolve stop tables, CSS paints, truecolor RGBA buffers, and polar
 inverse-raster sampling.

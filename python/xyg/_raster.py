@@ -139,24 +139,24 @@ def _compat_grid_rgba(kind: str, g: dict, blob: bytes, cols: list, style: dict) 
             return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
         grid = _density_column(blob, cols[g["buf"]], g).reshape(h, w)
         gmax = float(g.get("max") or 1.0) or 1.0
-        tnorm = np.clip(grid / gmax, 0.0, 1.0)
-        rgb = _lut(g.get("colormap", "viridis"), tnorm.reshape(-1)).reshape(h, w, 3)
-        alpha = (np.clip(tnorm * 1.35, 0, 1) * 255 * float(style.get("opacity", 0.85))).astype(
-            np.uint8
+        rgba = kernels.density_rgba_linear(
+            grid,
+            w,
+            h,
+            gmax,
+            stops,
+            float(style.get("opacity", 0.85)),
         )
-        alpha[tnorm <= 0] = 0
-    else:
-        meta = cols[g["buf"]]
-        alpha = int(255 * float(style.get("opacity", 0.95)))
-        if g.get("enc") == "canonical-f64":
-            values = _column(blob, meta).reshape(h, w)
-            d0, d1 = (float(value) for value in g["domain"])
-            rgba = kernels.colormap_rgba_canonical(values, w, h, (d0, d1), stops, alpha)
-            return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
-        raw = _column(blob, meta).reshape(h, w)
-        rgba = kernels.colormap_rgba(raw, w, h, stops, alpha)
         return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
-    rgba = np.dstack([rgb, alpha])[::-1]
+    meta = cols[g["buf"]]
+    alpha = int(255 * float(style.get("opacity", 0.95)))
+    if g.get("enc") == "canonical-f64":
+        values = _column(blob, meta).reshape(h, w)
+        d0, d1 = (float(value) for value in g["domain"])
+        rgba = kernels.colormap_rgba_canonical(values, w, h, (d0, d1), stops, alpha)
+        return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
+    raw = _column(blob, meta).reshape(h, w)
+    rgba = kernels.colormap_rgba(raw, w, h, stops, alpha)
     return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
 
 

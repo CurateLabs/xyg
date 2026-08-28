@@ -35,8 +35,10 @@ css_check = _impl.css_check
 css_color_rgba = _impl.css_color_rgba
 colormap_rgba = _impl.colormap_rgba
 colormap_rgba_canonical = _impl.colormap_rgba_canonical
+colormap_lut = _impl.colormap_lut
 correlation = _impl.correlation
 density_rgba = _impl.density_rgba
+density_rgba_linear = _impl.density_rgba_linear
 density_log_u8 = _impl.density_log_u8
 density_bin_window = _impl.density_bin_window
 density_emit_plan = _impl.density_emit_plan
@@ -132,6 +134,7 @@ payload_visible_needed = _impl.payload_visible_needed
 payload_visible_indices = _impl.payload_visible_indices
 payload_even_indices = _impl.payload_even_indices
 payload_sample_target_indices = _impl.payload_sample_target_indices
+paint_effective_rgba = _impl.paint_effective_rgba
 quantiles = _impl.quantiles
 box_stats = _impl.box_stats
 box_geometry = _impl.box_geometry
@@ -171,6 +174,7 @@ __all__ = [
     "binned_ecdf",
     "box_geometry",
     "box_stats",
+    "colormap_lut",
     "colormap_rgba",
     "colormap_rgba_canonical",
     "contour_levels",
@@ -189,6 +193,7 @@ __all__ = [
     "density_log_u8",
     "density_pyramid_preflight",
     "density_rgba",
+    "density_rgba_linear",
     "density_wasm_eligible",
     "drill_decision",
     "encode_f32",
@@ -218,6 +223,7 @@ __all__ = [
     "min_max",
     "monotone_tangents",
     "normalize_f32",
+    "paint_effective_rgba",
     "payload_even_indices",
     "payload_m4_indices",
     "payload_sample_target_indices",

@@ -69,3 +69,28 @@ def test_colormap_rgba_differs_from_heatmap_at_interior() -> None:
     cmap = kernels.colormap_rgba(value, 1, 1, stops, 255)
     assert heat[0, 0, 0] != cmap[0, 0, 0]
     assert cmap[0, 0, 0] == 127
+
+
+def test_colormap_lut_matches_finite_samples() -> None:
+    t = np.array([0.0, 0.5, 1.0], dtype=np.float64)
+    stops = np.array([[0, 10, 20], [100, 110, 120]], dtype=np.uint8)
+    rgb = kernels.colormap_lut(t, stops)
+    grid = kernels.colormap_rgba(t, 3, 1, stops, 255)
+    np.testing.assert_array_equal(rgb, grid[0, :, :3])
+
+
+def test_density_rgba_linear_empty_cell_is_transparent() -> None:
+    counts = np.array([[0.0, 100.0], [50.0, np.nan]], dtype=np.float64)
+    stops = np.array([[0, 10, 20], [100, 110, 120]], dtype=np.uint8)
+    rgba = kernels.density_rgba_linear(counts, 2, 2, 100.0, stops, 0.85)
+    assert rgba[1, 0, 3] == 0
+    np.testing.assert_array_equal(rgba[1, 1], [100, 110, 120, 216])
+
+
+def test_paint_effective_rgba_replaces_then_multiplies() -> None:
+    intrinsic = np.array([[0.1, 0.2, 0.3, 0.8], [0.4, 0.5, 0.6, 0.9]])
+    artist = np.array([-1.0, 0.5])
+    opacity = np.array([0.5, 1.0])
+    out = kernels.paint_effective_rgba(intrinsic, artist, opacity, 0.5)
+    np.testing.assert_allclose(out[0, 3], 0.8 * 0.5 * 0.5)
+    np.testing.assert_allclose(out[1, 3], 0.5 * 1.0 * 0.5)

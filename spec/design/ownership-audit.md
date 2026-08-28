@@ -683,11 +683,11 @@ Forbidden:
 | `python/xyg/_legendfit.py` | Python host | `python-host` | `keep-host`; ABI 120 occupancy scoring; ABI 197 Scene product encode settles `loc="best"` from XYCL/XYNM. This module still packs ChartView compatibility specs | — |
 | `python/xyg/_native.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_ooc.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xyg/_paint.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_paint.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 206 owns `effective_rgba`; `triangle_mesh_boundary` stays host joined-fill geometry | #58 |
 | `python/xyg/_payload.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 122 owns compile-time payload LOD and the visible-row mask; ABI 204 owns line M4 emit indices; ABI 205 owns remaining emit visible/even/sample indices; emitters still pack and ship columns | #58 |
 | `python/xyg/_pdf.py` | Python host | `python-host` | `keep-host`; ABI 113 moves closed-subset SVG→PDF into Rust; this module only coerces UTF-8 and raises the historical diagnostic wording | #274 |
 | `python/xyg/_png.py` | Python host | `python-host` | `keep-host`; ABI 115 moves filter-0 PNG encode into Rust; this module only coerces host buffers and forwards `mode` / `compression` | #274 |
-| `python/xyg/_raster.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 121 tessellation via `kernels` directly (#310); remaining `_lut` density path is #313 | #58 |
+| `python/xyg/_raster.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 121 tessellation via `kernels` directly (#310); ABI 206 owns remaining `_lut` / linear density / effective rgba (#313); `triangle_mesh_boundary` stays host geometry | #58 |
 | `python/xyg/_sankey.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xyg/_scene.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 121 owns ribbon/curve/rounded-rect tessellation; compatibility PNG calls those kernels directly (#310); wrappers remain for tests; `grid_rgba` colormap remains #283/#313 | #58 |
 | `python/xyg/_scene_v3.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |

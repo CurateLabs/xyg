@@ -4,7 +4,8 @@ Ribbon/curve/rounded-rect tessellation lives in Rust (ABI 121). These wrappers
 pack host coordinates and map affine scales; they do not own the cubics.
 Compatibility PNG (`_raster.py`) calls those kernels directly (#310) and no
 longer imports this module. `grid_rgba` colormap application uses Rust
-(`xyg_colormap_rgba` / ABI 129) with a remaining `_lut` density path (#313).
+(`xyg_colormap_rgba` / ABI 129; ABI 206 `xyg_density_rgba_linear` for
+legacy count grids).
 """
 
 from __future__ import annotations

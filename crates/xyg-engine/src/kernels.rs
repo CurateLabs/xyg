@@ -3555,6 +3555,113 @@ pub fn density_rgba_into(
     true
 }
 
+/// 1D colormap sample matching `_svg._lut`: `t ∈ [0, 1]` → packed RGB.
+///
+/// Non-finite samples write black. Used by compatibility `_trace_paint_rgba`
+/// continuous channels and colorbar bands (#313).
+pub fn colormap_lut_into(t: &[f64], stops: &[[u8; 3]], out_rgb: &mut [u8]) -> bool {
+    if stops.is_empty() || out_rgb.len() != t.len().saturating_mul(3) {
+        return false;
+    }
+    for (i, value) in t.iter().enumerate() {
+        let rgb = if value.is_finite() {
+            let color = colormap_color(*value, stops, 255);
+            [color[0], color[1], color[2]]
+        } else {
+            [0, 0, 0]
+        };
+        let dest = i * 3;
+        out_rgb[dest..dest + 3].copy_from_slice(&rgb);
+    }
+    true
+}
+
+/// Legacy f64 count-grid density colormap (the remaining `_lut` density path).
+///
+/// Same stop interpolation and `t * 1.35` alpha law as [`density_rgba_into`],
+/// including the vertical flip. `t <= 0` (empty cells) stay transparent.
+pub fn density_rgba_linear_into(
+    counts: &[f64],
+    w: usize,
+    h: usize,
+    maximum: f64,
+    stops: &[[u8; 3]],
+    opacity: f64,
+    out: &mut [u8],
+) -> bool {
+    if w == 0
+        || h == 0
+        || stops.is_empty()
+        || !maximum.is_finite()
+        || maximum < 0.0
+        || !opacity.is_finite()
+        || !(0.0..=1.0).contains(&opacity)
+        || counts.len() != w.saturating_mul(h)
+        || out.len() != counts.len().saturating_mul(4)
+    {
+        return false;
+    }
+    let denom = if maximum > 0.0 { maximum } else { 1.0 };
+    for row in 0..h {
+        let destination_row = h - 1 - row;
+        for col in 0..w {
+            let count = counts[row * w + col];
+            let destination = (destination_row * w + col) * 4;
+            let color = if count.is_finite() {
+                let t = (count / denom).clamp(0.0, 1.0);
+                let mut rgba = colormap_color(t, stops, 0);
+                rgba[3] = if t <= 0.0 {
+                    0
+                } else {
+                    ((t * 1.35).clamp(0.0, 1.0) * 255.0 * opacity) as u8
+                };
+                rgba
+            } else {
+                [0, 0, 0, 0]
+            };
+            out[destination..destination + 4].copy_from_slice(&color);
+        }
+    }
+    true
+}
+
+/// Matplotlib artist-alpha replace then xy opacity multiply (#313).
+///
+/// `artist_alpha[i] >= 0` replaces intrinsic alpha; otherwise intrinsic alpha
+/// is kept. Core opacity and `component_opacity` stay multiplicative. All
+/// channels clip to `[0, 1]`.
+pub fn paint_effective_rgba_into(
+    intrinsic: &[f64],
+    artist_alpha: &[f64],
+    opacity: &[f64],
+    component_opacity: f64,
+    out: &mut [f64],
+) -> bool {
+    if intrinsic.len() % 4 != 0
+        || out.len() != intrinsic.len()
+        || artist_alpha.len() * 4 != intrinsic.len()
+        || opacity.len() != artist_alpha.len()
+        || !component_opacity.is_finite()
+    {
+        return false;
+    }
+    let n = artist_alpha.len();
+    for i in 0..n {
+        let src = i * 4;
+        let base_alpha = if artist_alpha[i] >= 0.0 {
+            artist_alpha[i]
+        } else {
+            intrinsic[src + 3]
+        };
+        let alpha = (base_alpha * opacity[i] * component_opacity).clamp(0.0, 1.0);
+        out[src] = intrinsic[src].clamp(0.0, 1.0);
+        out[src + 1] = intrinsic[src + 1].clamp(0.0, 1.0);
+        out[src + 2] = intrinsic[src + 2].clamp(0.0, 1.0);
+        out[src + 3] = alpha;
+    }
+    true
+}
+
 /// Precompute the exact log-u8 density colors once. The display-list
 /// rasterizer uses this table to sample compact density bytes directly,
 /// without expanding the full grid to a temporary RGBA image.
@@ -7237,6 +7344,47 @@ mod tests {
         assert_eq!(&out[4..8], &[0, 0, 0, 0]);
         assert_eq!(&out[8..12], &[0, 10, 20, 200]);
         assert_eq!(&out[12..16], &[50, 60, 70, 200]);
+    }
+
+    #[test]
+    fn colormap_lut_matches_colormap_color() {
+        let t = [0.0, 0.5, 1.0, f64::NAN];
+        let stops = [[0u8, 10, 20], [100, 110, 120]];
+        let mut out = [0u8; 12];
+        assert!(colormap_lut_into(&t, &stops, &mut out));
+        assert_eq!(&out[0..3], &colormap_color(0.0, &stops, 255)[..3]);
+        assert_eq!(&out[3..6], &colormap_color(0.5, &stops, 255)[..3]);
+        assert_eq!(&out[6..9], &colormap_color(1.0, &stops, 255)[..3]);
+        assert_eq!(&out[9..12], &[0, 0, 0]);
+    }
+
+    #[test]
+    fn density_rgba_linear_matches_log_u8_full_cell_alpha() {
+        let counts = [0.0, 100.0, 50.0, f64::NAN];
+        let stops = [[0u8, 10, 20], [100, 110, 120]];
+        let mut out = [0u8; 16];
+        assert!(density_rgba_linear_into(
+            &counts, 2, 2, 100.0, &stops, 0.85, &mut out
+        ));
+        // Input row 1 (50, NaN) flips to the top output row.
+        assert_eq!(out[3], 146);
+        assert_eq!(out[7], 0);
+        assert_eq!(out[11], 0);
+        assert_eq!(&out[12..16], &[100, 110, 120, 216]);
+    }
+
+    #[test]
+    fn paint_effective_rgba_replaces_then_multiplies() {
+        let intrinsic = [0.1, 0.2, 0.3, 0.8, 0.4, 0.5, 0.6, 0.9];
+        let artist = [-1.0, 0.5];
+        let opacity = [0.5, 1.0];
+        let mut out = [0.0; 8];
+        assert!(paint_effective_rgba_into(
+            &intrinsic, &artist, &opacity, 0.5, &mut out
+        ));
+        assert!((out[3] - 0.8 * 0.5 * 0.5).abs() < 1e-12);
+        assert!((out[7] - 0.5 * 1.0 * 0.5).abs() < 1e-12);
+        assert_eq!(&out[0..3], &[0.1, 0.2, 0.3]);
     }
 
     #[test]

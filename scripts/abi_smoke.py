@@ -402,6 +402,34 @@ def load() -> ctypes.CDLL:
         ctypes.c_double,
         U8P,
     ]
+    lib.xyg_colormap_lut.restype = ctypes.c_int32
+    lib.xyg_colormap_lut.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+    ]
+    lib.xyg_density_rgba_linear.restype = ctypes.c_int32
+    lib.xyg_density_rgba_linear.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        U8P,
+    ]
+    lib.xyg_paint_effective_rgba.restype = ctypes.c_int32
+    lib.xyg_paint_effective_rgba.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+        ctypes.c_double,
+        F64P,
+    ]
     lib.xyg_density_log_u8.restype = ctypes.c_int32
     lib.xyg_density_log_u8.argtypes = [F32P, ctypes.c_size_t, U8P, F64P]
     lib.xyg_local_log_density.restype = ctypes.c_int32
@@ -4068,6 +4096,56 @@ def main() -> None:
         and density_rgba[11] == 0
         and density_rgba[12:16] == array("B", [100, 110, 120, 216]),
         "native density colormap maps, flips, and preserves empty alpha",
+    )
+    lut_t = array("d", [0.0, 1.0])
+    lut_rgb = array("B", [0]) * 6
+    ok(
+        lib.xyg_colormap_lut(
+            _ptr(lut_t, ctypes.c_double),
+            2,
+            _ptr(heat_stops, ctypes.c_uint8),
+            2,
+            _ptr(lut_rgb, ctypes.c_uint8),
+        )
+        == 1
+        and lut_rgb[:3] == array("B", [0, 10, 20])
+        and lut_rgb[3:] == array("B", [100, 110, 120]),
+        "colormap_lut 1d samples",
+    )
+    lin_counts = array("d", [0.0, 100.0, 50.0, 0.0])
+    lin_rgba = array("B", [0]) * 16
+    ok(
+        lib.xyg_density_rgba_linear(
+            _ptr(lin_counts, ctypes.c_double),
+            2,
+            2,
+            100.0,
+            _ptr(heat_stops, ctypes.c_uint8),
+            2,
+            0.85,
+            _ptr(lin_rgba, ctypes.c_uint8),
+        )
+        == 1
+        and lin_rgba[11] == 0
+        and lin_rgba[12:16] == array("B", [100, 110, 120, 216]),
+        "density_rgba_linear maps, flips, and preserves empty alpha",
+    )
+    paint_in = array("d", [0.2, 0.3, 0.4, 0.8])
+    paint_artist = array("d", [-1.0])
+    paint_op = array("d", [0.5])
+    paint_out = array("d", [0.0]) * 4
+    ok(
+        lib.xyg_paint_effective_rgba(
+            _ptr(paint_in, ctypes.c_double),
+            1,
+            _ptr(paint_artist, ctypes.c_double),
+            _ptr(paint_op, ctypes.c_double),
+            1.0,
+            _ptr(paint_out, ctypes.c_double),
+        )
+        == 1
+        and abs(paint_out[3] - 0.4) < 1e-12,
+        "paint_effective_rgba replace-then-multiply",
     )
     density = array("f", [0.0, 1.0, 10.0, 100.0])
     encoded = array("B", [0]) * len(density)
