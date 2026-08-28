@@ -1035,6 +1035,21 @@ pub struct SceneChromeStyle {
     /// deterministic numeric formatter; strings are never a host paint policy.
     pub x_tick_labels: Option<Vec<String>>,
     pub y_tick_labels: Option<Vec<String>>,
+    /// ABI 123 strategy (0=auto … 6=off). Encoded in chrome style bytes 12–13.
+    pub x_tick_strategy: u8,
+    pub y_tick_strategy: u8,
+    /// ABI 123 anchor (0=start, 1=center, 2=end).
+    pub x_tick_anchor: u8,
+    pub y_tick_anchor: u8,
+    pub x_tick_min_gap: f64,
+    pub y_tick_min_gap: f64,
+    pub x_tick_angle: Option<f64>,
+    pub y_tick_angle: Option<f64>,
+    pub x_tick_category: bool,
+    pub y_tick_category: bool,
+    /// True when the host authored `tick_label_anchor` (vs derived display).
+    pub x_tick_anchor_authored: bool,
+    pub y_tick_anchor_authored: bool,
 }
 
 impl SceneChromeStyle {
@@ -1052,6 +1067,18 @@ impl SceneChromeStyle {
             y_minor_ticks: Vec::new(),
             x_tick_labels: None,
             y_tick_labels: None,
+            x_tick_strategy: tick_layout::STRATEGY_AUTO as u8,
+            y_tick_strategy: tick_layout::STRATEGY_AUTO as u8,
+            x_tick_anchor: tick_layout::ANCHOR_CENTER as u8,
+            y_tick_anchor: tick_layout::ANCHOR_CENTER as u8,
+            x_tick_min_gap: 8.0,
+            y_tick_min_gap: 4.0,
+            x_tick_angle: None,
+            y_tick_angle: None,
+            x_tick_category: false,
+            y_tick_category: false,
+            x_tick_anchor_authored: false,
+            y_tick_anchor_authored: false,
         }
     }
 
@@ -1061,6 +1088,25 @@ impl SceneChromeStyle {
             || self.label_font_size > MAX_SCENE_CHROME_LENGTH
         {
             return Err(SceneError::NonFinite);
+        }
+        if self.x_tick_strategy > tick_layout::STRATEGY_OFF as u8
+            || self.y_tick_strategy > tick_layout::STRATEGY_OFF as u8
+            || self.x_tick_anchor > tick_layout::ANCHOR_END as u8
+            || self.y_tick_anchor > tick_layout::ANCHOR_END as u8
+        {
+            return Err(SceneError::Length);
+        }
+        for gap in [self.x_tick_min_gap, self.y_tick_min_gap] {
+            if !gap.is_finite() || gap < 0.0 {
+                return Err(SceneError::NonFinite);
+            }
+        }
+        for angle in [self.x_tick_angle, self.y_tick_angle] {
+            if let Some(value) = angle {
+                if !value.is_finite() {
+                    return Err(SceneError::NonFinite);
+                }
+            }
         }
         self.x_axis.validated()?;
         self.y_axis.validated()?;
@@ -1115,9 +1161,23 @@ impl SceneChromeStyle {
         y_major_ticks: Option<Vec<f64>>,
         y_minor_ticks: Vec<f64>,
     ) -> Result<Self, SceneError> {
-        if bytes.len() != SCENE_CHROME_STYLE_INPUT_BYTES || bytes[12..16] != [0; 4] {
+        if bytes.len() != SCENE_CHROME_STYLE_INPUT_BYTES {
             return Err(SceneError::Length);
         }
+        let x_tick_strategy = bytes[12];
+        let y_tick_strategy = bytes[13];
+        let x_tick_anchor = bytes[14] & 0x0f;
+        let y_tick_anchor = bytes[14] >> 4;
+        if bytes[15] & !0b11111 != 0
+            || x_tick_strategy > tick_layout::STRATEGY_OFF as u8
+            || y_tick_strategy > tick_layout::STRATEGY_OFF as u8
+            || x_tick_anchor > tick_layout::ANCHOR_END as u8
+            || y_tick_anchor > tick_layout::ANCHOR_END as u8
+        {
+            return Err(SceneError::Length);
+        }
+        let x_tick_anchor_authored = bytes[15] & (1 << 3) != 0;
+        let y_tick_anchor_authored = bytes[15] & (1 << 4) != 0;
         let label_font_size = f64::from_le_bytes(bytes[16..24].try_into().unwrap());
         Self {
             chart_background_rgba: bytes[0..4].try_into().unwrap(),
@@ -1132,6 +1192,26 @@ impl SceneChromeStyle {
             y_minor_ticks,
             x_tick_labels: None,
             y_tick_labels: None,
+            x_tick_strategy,
+            y_tick_strategy,
+            x_tick_anchor: if x_tick_anchor_authored {
+                x_tick_anchor
+            } else {
+                tick_layout::ANCHOR_CENTER as u8
+            },
+            y_tick_anchor: if y_tick_anchor_authored {
+                y_tick_anchor
+            } else {
+                tick_layout::ANCHOR_CENTER as u8
+            },
+            x_tick_min_gap: 8.0,
+            y_tick_min_gap: 4.0,
+            x_tick_angle: None,
+            y_tick_angle: None,
+            x_tick_category: bytes[15] & (1 << 1) != 0,
+            y_tick_category: bytes[15] & (1 << 2) != 0,
+            x_tick_anchor_authored,
+            y_tick_anchor_authored,
         }
         .validated()
     }
@@ -2651,7 +2731,19 @@ fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrail
     let trailer = bytes
         .get(body_end..body_end + SCENE_CHROME_TRAILER_BYTES)
         .ok_or(SceneError::Length)?;
-    if trailer[12..16] != [0; 4] {
+    if trailer[15] & !0b11111 != 0 {
+        return Err(SceneError::Length);
+    }
+    let extras_len = if trailer[15] & 1 != 0 { 32 } else { 0 };
+    let x_tick_strategy = trailer[12];
+    let y_tick_strategy = trailer[13];
+    let x_tick_anchor = trailer[14] & 0x0f;
+    let y_tick_anchor = trailer[14] >> 4;
+    if x_tick_strategy > tick_layout::STRATEGY_OFF as u8
+        || y_tick_strategy > tick_layout::STRATEGY_OFF as u8
+        || x_tick_anchor > tick_layout::ANCHOR_END as u8
+        || y_tick_anchor > tick_layout::ANCHOR_END as u8
+    {
         return Err(SceneError::Length);
     }
     let label_font_size = f64::from_le_bytes(trailer[16..24].try_into().unwrap());
@@ -2698,6 +2790,23 @@ fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrail
     let colorbar_len = u32::from_le_bytes(trailer[236..240].try_into().unwrap()) as usize;
     let x_tick_label_len = u32::from_le_bytes(trailer[240..244].try_into().unwrap()) as usize;
     let y_tick_label_len = u32::from_le_bytes(trailer[244..248].try_into().unwrap()) as usize;
+    let (x_tick_min_gap, y_tick_min_gap, x_tick_angle, y_tick_angle) = if extras_len == 32 {
+        let extra_at = body_end + SCENE_CHROME_TRAILER_BYTES;
+        let extra = bytes
+            .get(extra_at..extra_at + extras_len)
+            .ok_or(SceneError::Length)?;
+        let read_f64 = |offset| f64::from_le_bytes(extra[offset..offset + 8].try_into().unwrap());
+        let x_angle = read_f64(16);
+        let y_angle = read_f64(24);
+        (
+            read_f64(0),
+            read_f64(8),
+            x_angle.is_finite().then_some(x_angle),
+            y_angle.is_finite().then_some(y_angle),
+        )
+    } else {
+        (8.0, 4.0, None, None)
+    };
     if legend_len > MAX_SCENE_LEGEND_INPUT_BYTES || colorbar_len > MAX_SCENE_COLORBAR_INPUT_BYTES {
         return Err(SceneError::Limit);
     }
@@ -2715,7 +2824,7 @@ fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrail
     {
         return Err(SceneError::Limit);
     }
-    let text_start = body_end + SCENE_CHROME_TRAILER_BYTES;
+    let text_start = body_end + SCENE_CHROME_TRAILER_BYTES + extras_len;
     let tick_count = counts
         .into_iter()
         .filter(|count| *count != u32::MAX)
@@ -2794,6 +2903,31 @@ fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrail
         y_minor_ticks,
         x_tick_labels,
         y_tick_labels,
+        x_tick_strategy,
+        y_tick_strategy,
+        x_tick_anchor,
+        y_tick_anchor,
+        x_tick_min_gap,
+        y_tick_min_gap,
+        x_tick_angle,
+        y_tick_angle,
+        x_tick_category: trailer[15] & (1 << 1) != 0,
+        y_tick_category: trailer[15] & (1 << 2) != 0,
+        x_tick_anchor_authored: trailer[15] & (1 << 3) != 0,
+        y_tick_anchor_authored: trailer[15] & (1 << 4) != 0,
+    };
+    let chrome = SceneChromeStyle {
+        x_tick_anchor: if chrome.x_tick_anchor_authored {
+            chrome.x_tick_anchor
+        } else {
+            tick_layout::ANCHOR_CENTER as u8
+        },
+        y_tick_anchor: if chrome.y_tick_anchor_authored {
+            chrome.y_tick_anchor
+        } else {
+            tick_layout::ANCHOR_CENTER as u8
+        },
+        ..chrome
     }
     .validated()?;
     let legend = SceneLegend::from_canonical(&bytes[content_end..colorbar_start], usize::MAX)?;
@@ -2810,11 +2944,90 @@ fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrail
     ))
 }
 
+fn chrome_collision_header(chrome: &SceneChromeStyle) -> [u8; 4] {
+    let mut flags = u8::from(chrome_collision_has_extras(chrome));
+    if chrome.x_tick_category {
+        flags |= 1 << 1;
+    }
+    if chrome.y_tick_category {
+        flags |= 1 << 2;
+    }
+    if chrome.x_tick_anchor_authored {
+        flags |= 1 << 3;
+    }
+    if chrome.y_tick_anchor_authored {
+        flags |= 1 << 4;
+    }
+    let x_anchor = if chrome.x_tick_anchor_authored {
+        chrome.x_tick_anchor
+    } else {
+        0
+    };
+    let y_anchor = if chrome.y_tick_anchor_authored {
+        chrome.y_tick_anchor
+    } else {
+        0
+    };
+    [
+        chrome.x_tick_strategy,
+        chrome.y_tick_strategy,
+        x_anchor | (y_anchor << 4),
+        flags,
+    ]
+}
+
+fn collision_layout_anchor(authored: bool, code: u8) -> u32 {
+    if authored && code <= tick_layout::ANCHOR_END as u8 {
+        u32::from(code)
+    } else {
+        tick_layout::ANCHOR_CENTER
+    }
+}
+
+fn display_tick_anchor(authored: bool, code: u8, is_x: bool, side_code: u8, angle: f64) -> u8 {
+    if authored && code <= tick_layout::ANCHOR_END as u8 {
+        return code;
+    }
+    if !is_x {
+        return if side_code == 0 { 2 } else { 0 };
+    }
+    if angle == 0.0 {
+        1
+    } else if (side_code == 0 && angle < 0.0) || (side_code == 1 && angle > 0.0) {
+        2
+    } else {
+        0
+    }
+}
+
+fn svg_text_anchor(code: u8) -> &'static str {
+    match code {
+        0 => "start",
+        2 => "end",
+        _ => "middle",
+    }
+}
+
+struct AxisTickLabelItem {
+    value: f64,
+    text: String,
+    angle: f64,
+    row: u32,
+    anchor: u8,
+}
+
+fn chrome_collision_has_extras(chrome: &SceneChromeStyle) -> bool {
+    chrome.x_tick_min_gap != 8.0
+        || chrome.y_tick_min_gap != 4.0
+        || chrome.x_tick_angle.is_some()
+        || chrome.y_tick_angle.is_some()
+}
+
 fn write_chrome_style_input(out: &mut Vec<u8>, chrome: &SceneChromeStyle) {
     out.extend_from_slice(&chrome.chart_background_rgba);
     out.extend_from_slice(&chrome.plot_background_rgba);
     out.extend_from_slice(&chrome.label_rgba);
-    out.extend_from_slice(&[0; 4]);
+    out.extend_from_slice(&chrome_collision_header(chrome));
     out.extend_from_slice(&chrome.label_font_size.to_le_bytes());
     let write_axis = |out: &mut Vec<u8>, axis: &SceneAxisChromeStyle| {
         out.extend_from_slice(&[
@@ -2897,6 +3110,16 @@ fn write_chrome_trailer(
     out.extend_from_slice(&(colorbar_bytes.len() as u32).to_le_bytes());
     out.extend_from_slice(&(x_tick_label_bytes.len() as u32).to_le_bytes());
     out.extend_from_slice(&(y_tick_label_bytes.len() as u32).to_le_bytes());
+    if chrome_collision_has_extras(chrome) {
+        for value in [
+            chrome.x_tick_min_gap,
+            chrome.y_tick_min_gap,
+            chrome.x_tick_angle.unwrap_or(f64::NAN),
+            chrome.y_tick_angle.unwrap_or(f64::NAN),
+        ] {
+            out.extend_from_slice(&value.to_le_bytes());
+        }
+    }
     out.extend_from_slice(text.title.as_bytes());
     out.extend_from_slice(text.x_label.as_bytes());
     out.extend_from_slice(text.y_label.as_bytes());
@@ -10394,6 +10617,123 @@ impl SceneDocument {
         )
     }
 
+    fn axis_hides_chrome(&self, is_x: bool) -> bool {
+        let strategy = if is_x {
+            self.chrome.x_tick_strategy
+        } else {
+            self.chrome.y_tick_strategy
+        };
+        strategy == tick_layout::STRATEGY_NONE as u8
+    }
+
+    fn axis_hides_labels(&self, is_x: bool) -> bool {
+        let strategy = if is_x {
+            self.chrome.x_tick_strategy
+        } else {
+            self.chrome.y_tick_strategy
+        };
+        strategy == tick_layout::STRATEGY_NONE as u8
+            || strategy == tick_layout::STRATEGY_OFF as u8
+    }
+
+    fn axis_tick_collision_items(
+        &self,
+        is_x: bool,
+        ticks: &AxisTicks,
+        scale: AxisScale,
+        side_code: u8,
+    ) -> Vec<AxisTickLabelItem> {
+        if self.axis_hides_labels(is_x) {
+            return Vec::new();
+        }
+        let font_size = self.chrome.label_font_size;
+        let (
+            strategy,
+            min_gap,
+            explicit_angle,
+            category,
+            authored,
+            anchor_code,
+        ) = if is_x {
+            (
+                self.chrome.x_tick_strategy,
+                self.chrome.x_tick_min_gap,
+                self.chrome.x_tick_angle,
+                self.chrome.x_tick_category,
+                self.chrome.x_tick_anchor_authored,
+                self.chrome.x_tick_anchor,
+            )
+        } else {
+            (
+                self.chrome.y_tick_strategy,
+                self.chrome.y_tick_min_gap,
+                self.chrome.y_tick_angle,
+                self.chrome.y_tick_category,
+                self.chrome.y_tick_anchor_authored,
+                self.chrome.y_tick_anchor,
+            )
+        };
+        let side = if is_x {
+            if side_code == 0 {
+                tick_layout::SIDE_BOTTOM
+            } else {
+                tick_layout::SIDE_TOP
+            }
+        } else if side_code == 0 {
+            tick_layout::SIDE_LEFT
+        } else {
+            tick_layout::SIDE_RIGHT
+        };
+        let layout_anchor = if is_x {
+            collision_layout_anchor(authored, anchor_code)
+        } else {
+            tick_layout::ANCHOR_CENTER
+        };
+        let values = ticks.labeled.clone();
+        let texts: Vec<String> = values
+            .iter()
+            .enumerate()
+            .map(|(index, value)| self.axis_tick_label(is_x, index, *value, ticks))
+            .collect();
+        let positions: Vec<f64> = values.iter().map(|value| scale.pixel(*value)).collect();
+        let labels: Vec<&str> = texts.iter().map(String::as_str).collect();
+        let kept = tick_layout::tick_label_layout(
+            &positions,
+            &labels,
+            u32::from(strategy),
+            side,
+            layout_anchor,
+            is_x,
+            category,
+            font_size,
+            min_gap,
+            explicit_angle,
+        )
+        .unwrap_or_else(|| {
+            (0..values.len() as u32)
+                .map(|index| tick_layout::TickLabelItem {
+                    index,
+                    angle: 0.0,
+                    row: 0,
+                })
+                .collect()
+        });
+        kept.into_iter()
+            .filter_map(|item| {
+                let index = item.index as usize;
+                let value = *values.get(index)?;
+                let text = texts.get(index)?.clone();
+                Some(AxisTickLabelItem {
+                    value,
+                    text,
+                    angle: item.angle,
+                    row: item.row,
+                    anchor: display_tick_anchor(authored, anchor_code, is_x, side_code, item.angle),
+                })
+            })
+            .collect()
+    }
+
     fn legend_bounds(&self, legend: &SceneLegend) -> Result<(f64, f64, f64, f64), SceneError> {
         resolved_legend_bounds(
             self.layout,
@@ -10864,7 +11204,9 @@ impl SceneDocument {
         };
         let r_style = self.chrome.y_axis;
         let t_style = self.chrome.x_axis;
-        if SceneAxisChromeStyle::visible_stroke(r_style.grid_rgba, r_style.grid_width) {
+        if !self.axis_hides_chrome(false)
+            && SceneAxisChromeStyle::visible_stroke(r_style.grid_rgba, r_style.grid_width)
+        {
             for value in &y_ticks.labeled {
                 let rn = polar.radius_px(*value);
                 if rn <= 0.0 {
@@ -10941,7 +11283,9 @@ impl SceneDocument {
                 }
             }
         }
-        if SceneAxisChromeStyle::visible_stroke(t_style.grid_rgba, t_style.grid_width) {
+        if !self.axis_hides_chrome(true)
+            && SceneAxisChromeStyle::visible_stroke(t_style.grid_rgba, t_style.grid_width)
+        {
             for value in &x_ticks.labeled {
                 if let Some(((x0, y0), (x1, y1))) = polar.spoke_ends(*value) {
                     out.push_str("<line data-xy-grid=\"spoke\" x1=\"");
@@ -11026,7 +11370,10 @@ impl SceneDocument {
         let size = self.chrome.label_font_size;
         let theta_style = self.chrome.x_axis;
         let r_style = self.chrome.y_axis;
-        if theta_style.tick_label_sides != 0 && theta_style.label_rgba[3] != 0 {
+        if theta_style.tick_label_sides != 0
+            && theta_style.label_rgba[3] != 0
+            && !self.axis_hides_labels(true)
+        {
             for (index, value) in x_ticks.labeled.iter().enumerate() {
                 let Some((x_rim, y_rim)) = polar.project(*value, polar.r_hi()) else {
                     continue;
@@ -11067,7 +11414,10 @@ impl SceneDocument {
                 out.push_str("</text>");
             }
         }
-        if r_style.tick_label_sides != 0 && r_style.label_rgba[3] != 0 {
+        if r_style.tick_label_sides != 0
+            && r_style.label_rgba[3] != 0
+            && !self.axis_hides_labels(false)
+        {
             let mut angle = polar.metrics[polar::METRIC_ZERO]
                 + polar.metrics[polar::METRIC_DIR] * POLAR_RLABEL_DEG.to_radians();
             if !polar.full_sector() {
@@ -11108,7 +11458,9 @@ impl SceneDocument {
             (x_ticks, self.x_scale, self.chrome.x_axis, true),
             (y_ticks, self.y_scale, self.chrome.y_axis, false),
         ] {
-            if SceneAxisChromeStyle::visible_stroke(style.grid_rgba, style.grid_width) {
+            if !self.axis_hides_chrome(is_x)
+                && SceneAxisChromeStyle::visible_stroke(style.grid_rgba, style.grid_width)
+            {
                 for value in &ticks.labeled {
                     let p = scale.pixel(*value);
                     let (x1, y1, x2, y2) = if is_x {
@@ -11127,7 +11479,9 @@ impl SceneDocument {
                     );
                 }
             }
-            if SceneAxisChromeStyle::visible_stroke(style.minor_grid_rgba, style.minor_grid_width) {
+            if !self.axis_hides_chrome(is_x)
+                && SceneAxisChromeStyle::visible_stroke(style.minor_grid_rgba, style.minor_grid_width)
+            {
                 for value in Self::minor_ticks(ticks) {
                     let p = scale.pixel(value);
                     let (x1, y1, x2, y2) = if is_x {
@@ -11458,7 +11812,8 @@ impl SceneDocument {
                 let (minor_in, minor_out) =
                     tick_span(style.minor_direction, style.minor_tick_length);
                 for side_code in 0..2 {
-                    if style.tick_sides & (1 << side_code) != 0
+                    if !self.axis_hides_chrome(is_x)
+                        && style.tick_sides & (1 << side_code) != 0
                         && style.tick_length > 0.0
                         && SceneAxisChromeStyle::visible_stroke(style.tick_rgba, style.tick_width)
                     {
@@ -11493,46 +11848,58 @@ impl SceneDocument {
                         }
                     }
                     if style.tick_label_sides & (1 << side_code) != 0 && style.label_rgba[3] != 0 {
-                        for (label_index, value) in ticks.labeled.iter().enumerate() {
-                            let p = scale.pixel(*value);
-                            let edge = if is_x {
-                                if side_code == 0 {
-                                    self.layout.bottom + 16.0
-                                } else {
-                                    self.layout.top - 7.0
-                                }
-                            } else if side_code == 0 {
-                                self.layout.left - 8.0
+                        for item in self.axis_tick_collision_items(is_x, ticks, scale, side_code)
+                        {
+                            let p = scale.pixel(item.value);
+                            let font_size = self.chrome.label_font_size;
+                            let row_offset = f64::from(item.row) * (font_size + 4.0);
+                            let (x, y) = if is_x {
+                                (
+                                    p,
+                                    if side_code == 0 {
+                                        self.layout.bottom + 16.0 + row_offset
+                                    } else {
+                                        self.layout.top - 7.0 - row_offset
+                                    },
+                                )
                             } else {
-                                self.layout.right + 8.0
+                                (
+                                    if side_code == 0 {
+                                        self.layout.left - 8.0
+                                    } else {
+                                        self.layout.right + 8.0
+                                    },
+                                    p + 4.0,
+                                )
                             };
                             out.push_str("<text x=\"");
-                            push_num(&mut out, if is_x { p } else { edge });
+                            push_num(&mut out, x);
                             out.push_str("\" y=\"");
-                            push_num(&mut out, if is_x { edge } else { p + 4.0 });
+                            push_num(&mut out, y);
                             out.push_str("\" fill=\"");
                             out.push_str(&rgba_css(style.label_rgba));
                             out.push_str("\" font-size=\"");
-                            push_num(&mut out, self.chrome.label_font_size);
+                            push_num(&mut out, font_size);
                             out.push_str("\" text-anchor=\"");
-                            out.push_str(if is_x {
-                                "middle"
-                            } else if side_code == 0 {
-                                "end"
-                            } else {
-                                "start"
-                            });
+                            out.push_str(svg_text_anchor(item.anchor));
+                            if item.angle != 0.0 {
+                                out.push_str("\" transform=\"rotate(");
+                                push_num(&mut out, item.angle);
+                                out.push(' ');
+                                push_num(&mut out, x);
+                                out.push(' ');
+                                push_num(&mut out, y);
+                                out.push(')');
+                            }
                             out.push_str("\">");
-                            push_escaped_attribute(
-                                &mut out,
-                                &self.axis_tick_label(is_x, label_index, *value, ticks),
-                            );
+                            push_escaped_attribute(&mut out, &item.text);
                             out.push_str("</text>");
                         }
                     }
                 }
                 let side_code = style.side as u8;
-                if style.minor_tick_length > 0.0
+                if !self.axis_hides_chrome(is_x)
+                    && style.minor_tick_length > 0.0
                     && SceneAxisChromeStyle::visible_stroke(
                         style.minor_tick_rgba,
                         style.minor_tick_width,
@@ -11616,7 +11983,9 @@ impl SceneDocument {
     ) -> Result<(), SceneError> {
         let r_style = self.chrome.y_axis;
         let t_style = self.chrome.x_axis;
-        if SceneAxisChromeStyle::visible_stroke(r_style.grid_rgba, r_style.grid_width) {
+        if !self.axis_hides_chrome(false)
+            && SceneAxisChromeStyle::visible_stroke(r_style.grid_rgba, r_style.grid_width)
+        {
             for value in &y_ticks.labeled {
                 let points = if polar.grid_shape == 1 {
                     polar.polygon_ring(*value, &x_ticks.labeled)
@@ -11636,7 +12005,9 @@ impl SceneDocument {
                 )?;
             }
         }
-        if SceneAxisChromeStyle::visible_stroke(t_style.grid_rgba, t_style.grid_width) {
+        if !self.axis_hides_chrome(true)
+            && SceneAxisChromeStyle::visible_stroke(t_style.grid_rgba, t_style.grid_width)
+        {
             for value in &x_ticks.labeled {
                 if let Some((start, end)) = polar.spoke_ends(*value) {
                     push_raster_stroke(out, [start, end], t_style.grid_width, t_style.grid_rgba, scale)?;
@@ -11663,7 +12034,10 @@ impl SceneDocument {
         const POLAR_TICK_GAP: f64 = 8.0;
         const POLAR_RLABEL_DEG: f64 = 22.5;
         let size = self.chrome.label_font_size;
-        if t_style.tick_label_sides != 0 && t_style.label_rgba[3] != 0 {
+        if t_style.tick_label_sides != 0
+            && t_style.label_rgba[3] != 0
+            && !self.axis_hides_labels(true)
+        {
             for (index, value) in x_ticks.labeled.iter().enumerate() {
                 let Some((x_rim, y_rim)) = polar.project(*value, polar.r_hi()) else {
                     continue;
@@ -11700,7 +12074,10 @@ impl SceneDocument {
                 out.extend_from_slice(text.as_bytes());
             }
         }
-        if r_style.tick_label_sides != 0 && r_style.label_rgba[3] != 0 {
+        if r_style.tick_label_sides != 0
+            && r_style.label_rgba[3] != 0
+            && !self.axis_hides_labels(false)
+        {
             let mut angle = polar.metrics[polar::METRIC_ZERO]
                 + polar.metrics[polar::METRIC_DIR] * POLAR_RLABEL_DEG.to_radians();
             if !polar.full_sector() {
@@ -11742,7 +12119,8 @@ impl SceneDocument {
         if let Some(polar) = &self.polar {
             return self.append_raster_polar_grid(out, scale, polar, x_ticks, y_ticks);
         }
-        if SceneAxisChromeStyle::visible_stroke(
+        if !self.axis_hides_chrome(true)
+            && SceneAxisChromeStyle::visible_stroke(
             self.chrome.x_axis.grid_rgba,
             self.chrome.x_axis.grid_width,
         ) {
@@ -11757,7 +12135,8 @@ impl SceneDocument {
                 )?;
             }
         }
-        if SceneAxisChromeStyle::visible_stroke(
+        if !self.axis_hides_chrome(true)
+            && SceneAxisChromeStyle::visible_stroke(
             self.chrome.x_axis.minor_grid_rgba,
             self.chrome.x_axis.minor_grid_width,
         ) {
@@ -11772,7 +12151,8 @@ impl SceneDocument {
                 )?;
             }
         }
-        if SceneAxisChromeStyle::visible_stroke(
+        if !self.axis_hides_chrome(false)
+            && SceneAxisChromeStyle::visible_stroke(
             self.chrome.y_axis.grid_rgba,
             self.chrome.y_axis.grid_width,
         ) {
@@ -11787,7 +12167,8 @@ impl SceneDocument {
                 )?;
             }
         }
-        if SceneAxisChromeStyle::visible_stroke(
+        if !self.axis_hides_chrome(false)
+            && SceneAxisChromeStyle::visible_stroke(
             self.chrome.y_axis.minor_grid_rgba,
             self.chrome.y_axis.minor_grid_width,
         ) {
@@ -11850,7 +12231,8 @@ impl SceneDocument {
             }
             let (major_in, major_out) = tick_span(style.major_direction, style.tick_length);
             for side_code in 0..2 {
-                if style.tick_sides & (1 << side_code) != 0
+                if !self.axis_hides_chrome(is_x)
+                    && style.tick_sides & (1 << side_code) != 0
                     && style.tick_length > 0.0
                     && SceneAxisChromeStyle::visible_stroke(style.tick_rgba, style.tick_width)
                 {
@@ -11889,7 +12271,8 @@ impl SceneDocument {
             } else {
                 -1.0
             };
-            if style.minor_tick_length > 0.0
+            if !self.axis_hides_chrome(is_x)
+                && style.minor_tick_length > 0.0
                 && SceneAxisChromeStyle::visible_stroke(
                     style.minor_tick_rgba,
                     style.minor_tick_width,
@@ -11915,32 +12298,51 @@ impl SceneDocument {
                 if style.tick_label_sides & (1 << side_code) == 0 || style.label_rgba[3] == 0 {
                     continue;
                 }
-                for (label_index, value) in ticks.labeled.iter().enumerate() {
-                    let p = axis_scale.pixel(*value);
-                    let (x, y, anchor) = if is_x {
+                for item in self.axis_tick_collision_items(is_x, ticks, axis_scale, side_code)
+                {
+                    let p = axis_scale.pixel(item.value);
+                    let font_size = self.chrome.label_font_size;
+                    let row_offset = f64::from(item.row) * (font_size + 4.0);
+                    let (x, y) = if is_x {
                         (
                             p,
                             if side_code == 0 {
-                                self.layout.bottom + 16.0
+                                self.layout.bottom + 16.0 + row_offset
                             } else {
-                                self.layout.top - 7.0
+                                self.layout.top - 7.0 - row_offset
                             },
-                            1,
                         )
                     } else if side_code == 0 {
-                        (self.layout.left - 8.0, p + 4.0, 2)
+                        (self.layout.left - 8.0, p + 4.0)
                     } else {
-                        (self.layout.right + 8.0, p + 4.0, 0)
+                        (self.layout.right + 8.0, p + 4.0)
                     };
-                    let text = self.axis_tick_label(is_x, label_index, *value, ticks);
-                    out.push(6);
-                    push_raster_f32(out, x, scale)?;
-                    push_raster_f32(out, y, scale)?;
-                    out.push(anchor);
-                    push_raster_f32(out, self.chrome.label_font_size, scale)?;
-                    out.extend_from_slice(&style.label_rgba);
-                    out.extend_from_slice(&(text.len() as u32).to_le_bytes());
-                    out.extend_from_slice(text.as_bytes());
+                    if item.angle != 0.0 {
+                        out.push(17);
+                        push_raster_f32(out, x, scale)?;
+                        push_raster_f32(out, y, scale)?;
+                        out.push(item.anchor);
+                        push_raster_f32(out, font_size, scale)?;
+                        let angle = item.angle as f32;
+                        if !angle.is_finite() {
+                            return Err(SceneError::NonFinite);
+                        }
+                        out.extend_from_slice(&angle.to_le_bytes());
+                        out.push(0);
+                        out.extend_from_slice(&0u32.to_le_bytes());
+                        out.extend_from_slice(&style.label_rgba);
+                        out.extend_from_slice(&(item.text.len() as u32).to_le_bytes());
+                        out.extend_from_slice(item.text.as_bytes());
+                    } else {
+                        out.push(6);
+                        push_raster_f32(out, x, scale)?;
+                        push_raster_f32(out, y, scale)?;
+                        out.push(item.anchor);
+                        push_raster_f32(out, font_size, scale)?;
+                        out.extend_from_slice(&style.label_rgba);
+                        out.extend_from_slice(&(item.text.len() as u32).to_le_bytes());
+                        out.extend_from_slice(item.text.as_bytes());
+                    }
                 }
             }
         }
@@ -12006,7 +12408,7 @@ impl SceneDocument {
         let label_capacity = |ticks: &AxisTicks, kind: ScaleKind| {
             ticks.labeled.iter().fold(0usize, |capacity, value| {
                 capacity.saturating_add(
-                    57usize.saturating_add(format_tick(*value, ticks.step, kind).len()),
+                    70usize.saturating_add(format_tick(*value, ticks.step, kind).len()),
                 )
             })
         };
@@ -13479,6 +13881,39 @@ pub struct CartesianLayoutRequest<'a> {
     pub y_format: Option<&'a str>,
     pub y_tick_kind: u32,
     pub colorbar_side: ColorbarSide,
+    pub collision: TickCollisionLayout,
+}
+
+/// ABI 123 collision parameters that reshape cartesian Scene gutters.
+#[derive(Clone, Copy, Debug)]
+pub struct TickCollisionLayout {
+    pub x_strategy: u8,
+    pub y_strategy: u8,
+    pub x_anchor: u32,
+    pub y_anchor: u32,
+    pub x_min_gap: f64,
+    pub y_min_gap: f64,
+    pub x_angle: Option<f64>,
+    pub y_angle: Option<f64>,
+    pub x_category: bool,
+    pub y_category: bool,
+}
+
+impl Default for TickCollisionLayout {
+    fn default() -> Self {
+        Self {
+            x_strategy: tick_layout::STRATEGY_AUTO as u8,
+            y_strategy: tick_layout::STRATEGY_AUTO as u8,
+            x_anchor: tick_layout::ANCHOR_CENTER,
+            y_anchor: tick_layout::ANCHOR_CENTER,
+            x_min_gap: 8.0,
+            y_min_gap: 4.0,
+            x_angle: None,
+            y_angle: None,
+            x_category: false,
+            y_category: false,
+        }
+    }
 }
 
 fn layout_axis_tick_label(
@@ -13509,7 +13944,9 @@ fn scene_tick_kind(code: u8) -> Result<u32, SceneError> {
 /// Mirrors `_svg.layout()` for primary x/y, default sides, no colorbar, and
 /// no secondary axes: compact/regular pads or authored `(top, right, bottom,
 /// left)` padding, title band, measured default tick labels, and outside
-/// axis-title rooms. Hosts must not invent Scene margins once this lands.
+/// axis-title rooms. Collision gutters clamp only when those compact/authored
+/// pads already fit `PlotLayout`; overflowing compact pads stay fail-closed.
+/// Hosts must not invent Scene margins once this lands.
 pub fn cartesian_scene_margins(
     request: CartesianLayoutRequest<'_>,
 ) -> Result<(f64, f64, f64, f64), SceneError> {
@@ -13535,6 +13972,7 @@ pub fn cartesian_scene_margins(
         y_format,
         y_tick_kind,
         colorbar_side,
+        collision,
     } = request;
     let _ = scene_tick_kind(x_tick_kind as u8)?;
     let _ = scene_tick_kind(y_tick_kind as u8)?;
@@ -13558,6 +13996,15 @@ pub fn cartesian_scene_margins(
         None if compact => (6.0, 8.0, 36.0, 46.0),
         None => (10.0, 14.0, 42.0, 62.0),
     };
+    let compact_pads_fit = PlotLayout::new(
+        viewport_width,
+        viewport_height,
+        left,
+        right,
+        top,
+        bottom,
+    )
+    .is_ok();
     let title_wrap = (viewport_width - left - right).max(40.0);
     if !title.is_empty() {
         let width = text_advance(title, 14.0);
@@ -13603,7 +14050,9 @@ pub fn cartesian_scene_margins(
             LABEL_FONT_PX,
         ));
     }
-    let y_tick_room = if y_ticks.labeled.is_empty() {
+    let y_hides_labels = collision.y_strategy == tick_layout::STRATEGY_NONE as u8
+        || collision.y_strategy == tick_layout::STRATEGY_OFF as u8;
+    let y_tick_room = if y_hides_labels || y_ticks.labeled.is_empty() {
         0.0
     } else {
         AXIS_TEXT_EDGE_PAD + 8.0 + tick_label_width
@@ -13615,11 +14064,61 @@ pub fn cartesian_scene_margins(
     };
     left = left.max(left_needed);
 
-    let x_tick_room = if x_ticks.labeled.is_empty() {
+    let x_hides_labels = collision.x_strategy == tick_layout::STRATEGY_NONE as u8
+        || collision.x_strategy == tick_layout::STRATEGY_OFF as u8;
+    let mut x_tick_room = if x_hides_labels || x_ticks.labeled.is_empty() {
         0.0
     } else {
         AXIS_TEXT_EDGE_PAD + 8.0 + LABEL_FONT_PX
     };
+    if !x_hides_labels && !x_ticks.labeled.is_empty() {
+        let x_texts: Vec<String> = x_ticks
+            .labeled
+            .iter()
+            .map(|value| {
+                layout_axis_tick_label(*value, x_ticks.step, x_kind, x_tick_kind, x_format)
+            })
+            .collect();
+        let x_positions: Vec<f64> = x_ticks
+            .labeled
+            .iter()
+            .map(|value| x_scale.pixel(*value))
+            .collect();
+        let x_label_refs: Vec<&str> = x_texts.iter().map(String::as_str).collect();
+        if let Some(kept) = tick_layout::tick_label_layout(
+            &x_positions,
+            &x_label_refs,
+            u32::from(collision.x_strategy),
+            tick_layout::SIDE_BOTTOM,
+            collision.x_anchor,
+            true,
+            collision.x_category,
+            LABEL_FONT_PX,
+            collision.x_min_gap,
+            collision.x_angle,
+        ) {
+            if kept.iter().any(|item| item.angle != 0.0 || item.row != 0) {
+                let labels: Vec<&str> = kept
+                    .iter()
+                    .filter_map(|item| x_texts.get(item.index as usize).map(String::as_str))
+                    .collect();
+                let angles: Vec<f64> = kept.iter().map(|item| item.angle).collect();
+                let rows: Vec<u32> = kept.iter().map(|item| item.row).collect();
+                if labels.len() == kept.len() {
+                    if let Some(room) = crate::layout_rooms::x_tick_label_room(
+                        &labels,
+                        &angles,
+                        &rows,
+                        LABEL_FONT_PX,
+                        8.0,
+                        x_tick_room,
+                    ) {
+                        x_tick_room = room;
+                    }
+                }
+            }
+        }
+    }
     let bottom_needed = if x_label.is_empty() {
         x_tick_room
     } else {
@@ -13670,8 +14169,27 @@ pub fn cartesian_scene_margins(
         right = next_right;
     }
 
+    if compact_pads_fit {
+        (left, right) = fit_plot_gutters(viewport_width, left, right);
+        (top, bottom) = fit_plot_gutters(viewport_height, top, bottom);
+    }
     PlotLayout::new(viewport_width, viewport_height, left, right, top, bottom)?;
     Ok((left, right, top, bottom))
+}
+
+fn fit_plot_gutters(viewport: f64, lo: f64, hi: f64) -> (f64, f64) {
+    // ABI 123 collision rooms can exceed a tiny viewport (WASM 64x48) whose
+    // compact/authored pads already fit. Callers skip this when those pads
+    // already overflow (public export 64x32).
+    if viewport > lo + hi {
+        return (lo, hi);
+    }
+    let available = (viewport - 1.0).max(0.0);
+    let total = lo + hi;
+    if total <= 0.0 {
+        return (0.0, 0.0);
+    }
+    (lo * available / total, hi * available / total)
 }
 
 #[cfg(test)]
@@ -15658,6 +16176,7 @@ mod tests {
             y_format: None,
             y_tick_kind: 0,
             colorbar_side: ColorbarSide::None,
+            collision: TickCollisionLayout::default(),
         })
         .unwrap();
         assert!(left >= 46.0, "left={left}");
@@ -15665,6 +16184,66 @@ mod tests {
         assert!(top >= 6.0, "top={top}");
         assert!(bottom >= 36.0, "bottom={bottom}");
         PlotLayout::new(320.0, 240.0, left, right, top, bottom).unwrap();
+    }
+
+    #[test]
+    fn cartesian_scene_margins_keep_a_positive_plot_on_tiny_viewports() {
+        let (left, right, top, bottom) = cartesian_scene_margins(CartesianLayoutRequest {
+            viewport_width: 64.0,
+            viewport_height: 48.0,
+            authored_padding: None,
+            title: "",
+            x_label: "",
+            y_label: "",
+            x_kind: ScaleKind::Linear,
+            x_lo: 1.0,
+            x_hi: 1.0,
+            x_constant: 1.0,
+            x_mask_nonpositive: false,
+            x_format: None,
+            x_tick_kind: 0,
+            y_kind: ScaleKind::Linear,
+            y_lo: 2.0,
+            y_hi: 2.0,
+            y_constant: 1.0,
+            y_mask_nonpositive: false,
+            y_format: None,
+            y_tick_kind: 0,
+            colorbar_side: ColorbarSide::None,
+            collision: TickCollisionLayout::default(),
+        })
+        .unwrap();
+        PlotLayout::new(64.0, 48.0, left, right, top, bottom).unwrap();
+    }
+
+    #[test]
+    fn cartesian_scene_margins_keep_overflowing_compact_pads_fail_closed() {
+        let err = cartesian_scene_margins(CartesianLayoutRequest {
+            viewport_width: 64.0,
+            viewport_height: 32.0,
+            authored_padding: None,
+            title: "",
+            x_label: "",
+            y_label: "",
+            x_kind: ScaleKind::Linear,
+            x_lo: 1.0,
+            x_hi: 1.0,
+            x_constant: 1.0,
+            x_mask_nonpositive: false,
+            x_format: None,
+            x_tick_kind: 0,
+            y_kind: ScaleKind::Linear,
+            y_lo: 2.0,
+            y_hi: 2.0,
+            y_constant: 1.0,
+            y_mask_nonpositive: false,
+            y_format: None,
+            y_tick_kind: 0,
+            colorbar_side: ColorbarSide::None,
+            collision: TickCollisionLayout::default(),
+        })
+        .unwrap_err();
+        assert_eq!(err, SceneError::NonFinite);
     }
 
     #[test]
@@ -15691,6 +16270,7 @@ mod tests {
             y_format: None,
             y_tick_kind: 0,
             colorbar_side: ColorbarSide::None,
+            collision: TickCollisionLayout::default(),
         };
         let plain = cartesian_scene_margins(request).unwrap();
         let formatted = cartesian_scene_margins(CartesianLayoutRequest {
@@ -15733,11 +16313,29 @@ mod tests {
             y_format: None,
             y_tick_kind: 0,
             colorbar_side,
+            collision: TickCollisionLayout::default(),
         };
         let right = cartesian_scene_margins(request(ColorbarSide::Right)).unwrap();
         let bottom = cartesian_scene_margins(request(ColorbarSide::Bottom)).unwrap();
         assert!(right.1 >= COLORBAR_OUTER_GUTTER + COLORBAR_THICKNESS);
         assert!(bottom.3 >= COLORBAR_OUTER_GUTTER + COLORBAR_THICKNESS);
+        let none = cartesian_scene_margins(CartesianLayoutRequest {
+            authored_padding: Some([8.0, 8.0, 8.0, 8.0]),
+            collision: TickCollisionLayout {
+                x_strategy: tick_layout::STRATEGY_NONE as u8,
+                y_strategy: tick_layout::STRATEGY_NONE as u8,
+                ..TickCollisionLayout::default()
+            },
+            ..request(ColorbarSide::None)
+        })
+        .unwrap();
+        let auto = cartesian_scene_margins(CartesianLayoutRequest {
+            authored_padding: Some([8.0, 8.0, 8.0, 8.0]),
+            ..request(ColorbarSide::None)
+        })
+        .unwrap();
+        assert!(none.0 < auto.0, "none={none:?} auto={auto:?}");
+        assert!(none.3 <= auto.3, "none={none:?} auto={auto:?}");
     }
 
     #[test]

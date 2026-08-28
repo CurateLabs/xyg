@@ -258,14 +258,45 @@ function annotationAllowedStyle(kind, wrapped, labelled) {
   return allowed;
 }
 
+function annotationHasMarkup(annotation) {
+  if (annotation == null || typeof annotation !== "object") return false;
+  if (annotation.markup != null && annotation.markup !== "") return true;
+  const style = annotation.style ?? {};
+  return style != null && typeof style === "object" && style.markup != null && style.markup !== "";
+}
+
+const ANNOTATION_TYPOGRAPHY_STYLE_KEYS = new Set([
+  "font_family", "font_size", "font_weight", "font_style",
+  "fontFamily", "fontSize", "fontWeight", "fontStyle",
+]);
+
+function annotationHasCustomTypography(annotation) {
+  if (annotation == null || typeof annotation !== "object") return false;
+  const style = annotation.style != null && typeof annotation.style === "object" ? annotation.style : {};
+  for (const key of ANNOTATION_TYPOGRAPHY_STYLE_KEYS) {
+    if (style[key] != null && style[key] !== "" && style[key] !== false) return true;
+    if (annotation[key] != null && annotation[key] !== "" && annotation[key] !== false) return true;
+  }
+  return false;
+}
+
 function packXyAf(annotation, index) {
   // ABI 184 packs cartesian unwrapped text dx/dy/anchor as XYAW wrap=0.
   // ABI 185 packs labelled cartesian marker dx/dy/anchor the same way in Rust.
   // ABI 187 packs cartesian unwrapped text rotation as XYAW wrap=0 (XYAW v2).
   // ABI 188 packs labelled cartesian marker rotation the same way (nums[8]).
+  // Annotation html is XYFS OBS_ANNOTATION_HTML (#305); Scene owns literal text.
+  // Annotation markup is XYFS OBS_ANNOTATION_MARKUP (#308).
+  // Annotation custom typography is XYFS OBS_CUSTOM_FONT (#309).
+  // Text/marker style.rotation lifts onto ABI 187/188 top-level rotation.
+  annotation = { ...annotation };
   const kind = annotation.kind;
   const kindCode = XYAF_KIND_CODES[kind];
   if (kindCode == null) throw new RangeError(`Scene v12 annotations support rule, band, and unlabeled marker only; ${JSON.stringify(kind)} is deferred`);
+  const style = { ...(annotation.style ?? {}) };
+  if (["text", "marker"].includes(kind) && !Object.hasOwn(annotation, "rotation") && style.rotation != null) {
+    annotation.rotation = style.rotation;
+  }
   const authoredWrap = ["text", "callout"].includes(kind) && Object.hasOwn(annotation, "wrap");
   const layoutText = kind === "text" && ["dx", "dy", "anchor", "rotation"].some((key) => Object.hasOwn(annotation, key));
   const wrapped = authoredWrap || layoutText;
@@ -281,9 +312,10 @@ function packXyAf(annotation, index) {
   } else if (kind === "text" || kind === "callout") {
     throw new RangeError(kind === "callout" ? "Scene callouts require nonempty NUL-free text" : "Scene v16 text annotations require nonempty NUL-free text");
   }
-  const style = { ...(annotation.style ?? {}) };
   const allowed = annotationAllowedStyle(kind, wrapped, labelled);
-  const unsupported = Object.keys(style).filter((key) => !allowed.has(key) && style[key] != null).sort();
+  const skipStyle = new Set(["markup", ...ANNOTATION_TYPOGRAPHY_STYLE_KEYS]);
+  if (["text", "marker"].includes(kind)) skipStyle.add("rotation");
+  const unsupported = Object.keys(style).filter((key) => !allowed.has(key) && !skipStyle.has(key) && style[key] != null).sort();
   if (unsupported.length) {
     if (wrapped) throw new RangeError("Scene wrapped annotations do not encode class_name, custom fonts, CSS, markup, collision, or leader style");
     if (kind === "arrow") throw new RangeError(`Scene arrow style does not encode ${JSON.stringify(unsupported)}`);
@@ -2902,8 +2934,26 @@ export function sceneSupportReason(features, requestVersion = 1) {
   return new TextDecoder("utf-8", { fatal: true }).decode(output);
 }
 
-function significantSceneAxisKeys(options) {
-  return Object.entries(options ?? {})
+function sceneTickStrategy(options) {
+  const raw = options?.tick_label_strategy ?? options?.tickLabelStrategy ?? options?.collision;
+  const value = String(raw ?? "auto").replaceAll("-", "_");
+  return ["auto", "hide", "rotate", "stagger", "preserve", "none", "off"].includes(value) ? value : "auto";
+}
+
+const POLAR_COLLISION_KEYS = new Set([
+  "tick_label_strategy",
+  "tickLabelStrategy",
+  "collision",
+  "tick_label_min_gap",
+  "tickLabelMinGap",
+  "tick_label_angle",
+  "tickLabelAngle",
+  "tick_label_anchor",
+  "tickLabelAnchor",
+]);
+
+function significantSceneAxisKeys(options, polar = false) {
+  let keys = Object.entries(options ?? {})
     .filter(([, value]) => {
       if (value == null || value === false) return false;
       if (Array.isArray(value) && value.length === 0) return false;
@@ -2911,6 +2961,10 @@ function significantSceneAxisKeys(options) {
       return true;
     })
     .map(([key]) => key);
+  if (polar && ["none", "off", "auto"].includes(sceneTickStrategy(options))) {
+    keys = keys.filter((key) => !POLAR_COLLISION_KEYS.has(key));
+  }
+  return keys;
 }
 
 function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
@@ -2918,7 +2972,10 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
   const annotations = [...(figure.annotations ?? [])];
   let flags = 0;
   if (figure.coords !== "cartesian") flags |= 1 << 0;
-  if (Object.values(chromeStyles).some((style) => style?.fontFamily != null || style?.["font-family"] != null)) flags |= 1 << 1;
+  if (
+    Object.values(chromeStyles).some((style) => style?.fontFamily != null || style?.["font-family"] != null)
+    || annotations.some((annotation) => annotationHasCustomTypography(annotation))
+  ) flags |= 1 << 1;
   if (
     figure.className
     || figure.class_name
@@ -2927,6 +2984,9 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
     || Object.keys(figure.style ?? {}).some((key) => !["background", "--chart-bg"].includes(key))
     || annotations.some((annotation) => annotation.className || annotation.class_name)
   ) flags |= 1 << 2;
+  if (annotations.some((annotation) => annotation.html != null && annotation.html !== "")) flags |= 1 << 8;
+  if (annotations.some((annotation) => annotation.collision != null && annotation.collision !== "")) flags |= 1 << 6;
+  if (annotations.some((annotation) => annotationHasMarkup(annotation))) flags |= 1 << 9;
   if ((figure.traces ?? []).some((trace) => (
     classifyRibbonColor2(trace) === "fail"
     || (
@@ -2967,7 +3027,7 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
   header.setUint32(16, traces.length, true);
   for (const [axisId, options] of axisEntries) {
     const axisCode = axisId === "x" ? 0 : axisId === "y" ? 1 : 255;
-    const keys = significantSceneAxisKeys(options);
+    const keys = significantSceneAxisKeys(options, (flags & 1) !== 0);
     const axis = new Uint8Array(8);
     axis[0] = axisCode;
     new DataView(axis.buffer).setUint32(4, keys.length, true);
@@ -4664,6 +4724,7 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   // ABI 200: Rust pack_figure_chrome filters authored minors through the tick window.
   // ABI 201: product encode passes packed XYPL so polar theta uses the modular sector.
   // ABI 202: hosts pack domain tick-kind (linear/time/category) in XYCF 154–155.
+  // ABI 203: hosts pack ABI 123 collision strategy/anchor/gaps in XYCF 12–15.
   const xLabels = xAxis.tickLabels ?? xAxis.tick_labels ?? null;
   const yLabels = yAxis.tickLabels ?? yAxis.tick_labels ?? null;
   if (xLabels != null) flags |= FLAG_X_TICK_LABELS;
@@ -4743,6 +4804,41 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   };
   header[154] = tickKind(xAxis);
   header[155] = tickKind(yAxis);
+  const strategyCode = (options) => ({ auto: 0, hide: 1, rotate: 2, stagger: 3, preserve: 4, none: 5, off: 6 }[sceneTickStrategy(options)] ?? 0);
+  const anchorCode = (options) => {
+    const raw = options.tick_label_anchor ?? options.tickLabelAnchor;
+    if (raw == null) return null;
+    const value = String(raw).replaceAll("-", "_");
+    if (value === "start") return 0;
+    if (value === "end") return 2;
+    if (value === "center" || value === "middle") return 1;
+    return null;
+  };
+  const xAnchor = anchorCode(xAxis);
+  const yAnchor = anchorCode(yAxis);
+  const xGap = xAxis.tick_label_min_gap ?? xAxis.tickLabelMinGap;
+  const yGap = yAxis.tick_label_min_gap ?? yAxis.tickLabelMinGap;
+  const xAngle = xAxis.tick_label_angle ?? xAxis.tickLabelAngle;
+  const yAngle = yAxis.tick_label_angle ?? yAxis.tickLabelAngle;
+  const extras = xGap != null || yGap != null || xAngle != null || yAngle != null;
+  let collisionFlags = extras ? 1 : 0;
+  if ((xAxis.kind ?? xAxis.type) === "category") collisionFlags |= 1 << 1;
+  if ((yAxis.kind ?? yAxis.type) === "category") collisionFlags |= 1 << 2;
+  if (xAnchor != null) collisionFlags |= 1 << 3;
+  if (yAnchor != null) collisionFlags |= 1 << 4;
+  header[12] = strategyCode(xAxis);
+  header[13] = strategyCode(yAxis);
+  header[14] = (xAnchor ?? 0) | ((yAnchor ?? 0) << 4);
+  header[15] = collisionFlags;
+  const collisionExtra = extras ? (() => {
+    const extra = new Uint8Array(32);
+    const extraView = new DataView(extra.buffer);
+    extraView.setFloat64(0, xGap == null ? 8 : Number(xGap), true);
+    extraView.setFloat64(8, yGap == null ? 4 : Number(yGap), true);
+    extraView.setFloat64(16, xAngle == null ? Number.NaN : Number(xAngle), true);
+    extraView.setFloat64(24, yAngle == null ? Number.NaN : Number(yAngle), true);
+    return extra;
+  })() : new Uint8Array();
   view.setUint32(156, title.length, true);
   view.setUint32(160, xLabel.length, true);
   view.setUint32(164, yLabel.length, true);
@@ -4785,7 +4881,7 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
     packF64s(xMajor), packF64s(xMinor), packF64s(yMajor), packF64s(yMinor),
     packTickLabels(xLabels), packTickLabels(yLabels),
     chrome, legendLoc, legendTitle, legendMeta, legendLensBytes, legendBlob,
-    stopBytes, packF64s(cbTicks), cbTitle,
+    stopBytes, packF64s(cbTicks), cbTitle, collisionExtra,
   ]);
 }
 
@@ -4887,6 +4983,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
     }
     const kindBytes = encodeUtf8(annotation.kind == null ? "" : String(annotation.kind)).slice(0, 256);
     const fields = Object.keys(annotation);
+    if (annotationHasMarkup(annotation) && !fields.includes("markup")) fields.push("markup");
     const row = new Uint8Array(8);
     const view = new DataView(row.buffer);
     view.setUint16(4, kindBytes.length, true);

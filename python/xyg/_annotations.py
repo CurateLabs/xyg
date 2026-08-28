@@ -200,6 +200,7 @@ class AnnotationsMixin(_Host):
         wrap: float | None = None,
         color: Optional[str] = None,
         anchor: str = "start",
+        rotation: float | None = None,
         class_name: Optional[str] = None,
         style: Optional[dict[str, Any]] = None,
     ) -> "Figure":
@@ -227,6 +228,11 @@ class AnnotationsMixin(_Host):
                     if wrap is not None
                     else {}
                 ),
+                **(
+                    {"rotation": self._finite_scalar(rotation, "text annotation rotation")}
+                    if rotation is not None
+                    else {}
+                ),
                 "style": packed_style,
                 "class_name": self._optional_text(class_name, "text annotation class_name"),
             }
@@ -243,6 +249,7 @@ class AnnotationsMixin(_Host):
         dy: float = -6.0,
         color: Optional[str] = None,
         anchor: str = "start",
+        rotation: float | None = None,
         class_name: Optional[str] = None,
         style: Optional[dict[str, Any]] = None,
     ) -> "Figure":
@@ -255,6 +262,7 @@ class AnnotationsMixin(_Host):
             dy=dy,
             color=color,
             anchor=anchor,
+            rotation=rotation,
             class_name=class_name,
             style=style,
         )
@@ -274,6 +282,7 @@ class AnnotationsMixin(_Host):
         dx: float = 8.0,
         dy: float = -8.0,
         anchor: str = "start",
+        rotation: float | None = None,
         class_name: Optional[str] = None,
         style: Optional[dict[str, Any]] = None,
     ) -> "Figure":
@@ -308,6 +317,11 @@ class AnnotationsMixin(_Host):
                 "anchor": anchor,
                 "size": size,
                 "symbol": symbol,
+                **(
+                    {"rotation": self._finite_scalar(rotation, "marker annotation rotation")}
+                    if rotation is not None
+                    else {}
+                ),
                 "style": packed_style,
                 "class_name": self._optional_text(class_name, "marker class_name"),
             }

@@ -19,6 +19,8 @@
 //! ABI 202 materializes ABI 130 time strftime and polar angular numeric
 //! formats onto XYTL during product encode (`format_axis_tick`). Invalid ABI 96
 //! grammar still falls back. `_svg._tick_text` stays for compatibility.
+//! ABI 203 overlays ABI 123 cartesian collision from XYCC reserved 114–149
+//! onto Scene chrome so SVG/raster emit thins, rotates, and staggers labels.
 //! ABI 194 admits polar hexbin, custom host reducers, and categorical /
 //! `direct_rgba` hexbin on that same HexCell intern.
 //! ABI 190 intern per-item two-ended ribbon `color2_ch` from packed XYHP kind 5
@@ -65,6 +67,7 @@ use crate::scene_trace_attach::pack_trace_attach;
 use crate::scene_trace_compile::pack_trace_compile;
 use crate::scene_trace_rows::pack_trace_rows;
 use crate::scene_trace_sidecars::{pack_trace_sidecars, parse_xysd_records};
+use crate::tick_layout;
 
 /// Why an assembled-encode request was rejected. Discriminants are the
 /// C-ABI error codes (returned negated by `xyg_scene_encode_assembled`).
@@ -432,6 +435,8 @@ struct ParsedXyCc<'a> {
     y_format: Option<&'a str>,
     x_tick_kind: u32,
     y_tick_kind: u32,
+    collision_header: [u8; 4],
+    collision_extras: Option<[f64; 4]>,
     legend: &'a [u8],
     colorbar: &'a [u8],
 }
@@ -482,6 +487,32 @@ fn parse_xycc(bytes: &[u8]) -> Result<ParsedXyCc<'_>, EncodeAssembledError> {
     if x_tick_kind > 2 || y_tick_kind > 2 {
         return Err(EncodeAssembledError::new(EncodeAssembledCode::Payload, 0));
     }
+    let collision_header = [bytes[114], bytes[115], bytes[116], bytes[117]];
+    if collision_header[3] & !0b11111 != 0
+        || collision_header[0] > tick_layout::STRATEGY_OFF as u8
+        || collision_header[1] > tick_layout::STRATEGY_OFF as u8
+        || (collision_header[2] & 0x0f) > tick_layout::ANCHOR_END as u8
+        || (collision_header[2] >> 4) > tick_layout::ANCHOR_END as u8
+    {
+        return Err(EncodeAssembledError::new(EncodeAssembledCode::Payload, 0));
+    }
+    let collision_extras = if collision_header[3] & 1 != 0 {
+        let read_f64 = |offset: usize| -> Result<f64, EncodeAssembledError> {
+            Ok(f64::from_le_bytes(
+                bytes[offset..offset + 8]
+                    .try_into()
+                    .map_err(|_| EncodeAssembledError::new(EncodeAssembledCode::Length, 0))?,
+            ))
+        };
+        Some([
+            read_f64(118)?,
+            read_f64(126)?,
+            read_f64(134)?,
+            read_f64(142)?,
+        ])
+    } else {
+        None
+    };
     if chrome_len != SCENE_CHROME_STYLE_INPUT_BYTES
         || !matches!(x_major_auto, 0 | 1)
         || !matches!(y_major_auto, 0 | 1)
@@ -544,6 +575,8 @@ fn parse_xycc(bytes: &[u8]) -> Result<ParsedXyCc<'_>, EncodeAssembledError> {
         y_format,
         x_tick_kind: u32::from(x_tick_kind),
         y_tick_kind: u32::from(y_tick_kind),
+        collision_header,
+        collision_extras,
         legend,
         colorbar,
     })
@@ -724,6 +757,31 @@ fn encode_assembled_with_radii(
     .map_err(map_scene)?;
     style.x_tick_labels = chrome.x_tick_labels.clone();
     style.y_tick_labels = chrome.y_tick_labels.clone();
+    style.x_tick_strategy = chrome.collision_header[0];
+    style.y_tick_strategy = chrome.collision_header[1];
+    style.x_tick_anchor_authored = chrome.collision_header[3] & (1 << 3) != 0;
+    style.y_tick_anchor_authored = chrome.collision_header[3] & (1 << 4) != 0;
+    style.x_tick_anchor = if style.x_tick_anchor_authored {
+        chrome.collision_header[2] & 0x0f
+    } else {
+        tick_layout::ANCHOR_CENTER as u8
+    };
+    style.y_tick_anchor = if style.y_tick_anchor_authored {
+        chrome.collision_header[2] >> 4
+    } else {
+        tick_layout::ANCHOR_CENTER as u8
+    };
+    style.x_tick_category = chrome.collision_header[3] & (1 << 1) != 0;
+    style.y_tick_category = chrome.collision_header[3] & (1 << 2) != 0;
+    if let Some([x_gap, y_gap, x_ang, y_ang]) = chrome.collision_extras {
+        if !x_gap.is_finite() || x_gap < 0.0 || !y_gap.is_finite() || y_gap < 0.0 {
+            return Err(EncodeAssembledError::new(EncodeAssembledCode::Payload, 0));
+        }
+        style.x_tick_min_gap = x_gap;
+        style.y_tick_min_gap = y_gap;
+        style.x_tick_angle = x_ang.is_finite().then_some(x_ang);
+        style.y_tick_angle = y_ang.is_finite().then_some(y_ang);
+    }
     resolve_numeric_tick_formats(
         layout,
         x_scale,
@@ -937,7 +995,9 @@ pub fn encode_product(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::scene::{cartesian_scene_margins, CartesianLayoutRequest, ColorbarSide};
+    use crate::scene::{
+        cartesian_scene_margins, CartesianLayoutRequest, ColorbarSide, TickCollisionLayout,
+    };
     use crate::scene_annotation_splice::{splice_annotations, XYAS_HEADER_BYTES};
     use crate::scene_chrome::{
         pack_figure_chrome, FLAG_X_MAJOR_AUTO, FLAG_Y_MAJOR_AUTO, XYCC_MAGIC, XYCF_HEADER_BYTES,
@@ -1036,6 +1096,7 @@ mod tests {
             y_format: None,
             y_tick_kind: 0,
             colorbar_side: ColorbarSide::None,
+            collision: TickCollisionLayout::default(),
         })
         .unwrap();
         assert!(expected.0 >= 0.0 && expected.1 >= 0.0);

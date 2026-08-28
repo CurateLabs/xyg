@@ -506,7 +506,10 @@ ABI 122 moves compile-time payload LOD into Rust: Python and Node
 call `xyg_payload_tier`, `xyg_payload_visible_needed`, and
 `xyg_payload_visible_mask` so M4 vs density vs direct, polar skip,
 the strict `>` scatter thresholds, and the log/null keep mask cannot
-drift. Hosts still gather and ship the chosen rows.
+drift. ABI 204 `xyg_payload_m4_indices` owns remaining line M4 emit
+(closed-window ulp, optional nonlinear buckets, polar skip) so Python
+and Node cannot drift on first paint or `decimate_view`. Hosts still
+map scale coordinates, gather extra columns, and ship the chosen rows.
 ABI 123 moves tick-label collision thinning into Rust: Python and Node
 call `xyg_scene_tick_label_layout` so auto / hide / rotate / stagger,
 the edge-anchor rotate gap, and stride downsampling cannot drift.
@@ -554,7 +557,11 @@ minors through that same window (`require_finite`). ABI 201 filters polar
 theta majors/minors through the modular sector and formats Scene polar
 theta labels with `format_angular_tick`. ABI 202 materializes ABI 130
 time strftime and polar angular numeric formats onto `XYTL`. Hosts pack
-domain tick-kind in XYCF 154–155. Invalid ABI 96 grammar still falls
+domain tick-kind in XYCF 154–155. ABI 203 runs ABI 123 cartesian collision
+at Scene SVG/raster emit. Collision rooms clamp only when compact/authored
+pads already fit; overflowing compact pads stay
+`XYG_SCENE_UNSUPPORTED_VIEWPORT`. Polar rim auto/hide/rotate/stagger/preserve stay
+fail-closed. Invalid ABI 96 grammar still falls
 back. Secondary axes stay fail-closed.
 Hosts still choose tick families and
 map values to pixels on the compatibility `_svg` path. ChartView JS
@@ -565,6 +572,8 @@ category, and angular defaults cannot drift. Polar tick drawing stays
 host-side. Scene product-path authored `tick_labels` pair during chrome
 pack (ABI 199). Authored cartesian minors filter during chrome pack (ABI 200).
 Scene product encode applies ABI 130 time/angular formats (ABI 202).
+Scene cartesian `tick_label_strategy` uses ABI 123 at emit (ABI 203);
+polar rim collision stays refused.
 ABI 131 moves static polar (theta, r) → screen-pixel projection into Rust:
 Python and Node call `xyg_polar_layout`, `xyg_polar_project`, and the polar
 visibility-mask helpers so disc layout, projection, and cull predicates cannot

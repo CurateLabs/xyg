@@ -97,7 +97,26 @@ test("Node projects Rust-owned Scene support decisions verbatim", () => {
   assert.doesNotThrow(() => constantColor.toScene());
   const collision = new Figure(); collision.line([0, 1], [0, 1]);
   collision.setAxis("x", { collision: "hide" });
-  assert.throws(() => collision.toScene(), /tick formatting/);
+  assert.doesNotThrow(() => collision.toScene());
+  const ticks = Array.from({ length: 21 }, (_, index) => index / 20);
+  const preserve = new Figure({ width: 200, height: 160 });
+  preserve.line([0, 1], [0, 1]);
+  preserve.setAxis("x", { domain: [0, 1], tick_values: ticks, tick_label_strategy: "preserve" });
+  preserve.setAxis("y", { domain: [0, 1] });
+  const hidden = new Figure({ width: 200, height: 160 });
+  hidden.line([0, 1], [0, 1]);
+  hidden.setAxis("x", { domain: [0, 1], tick_values: ticks, tick_label_strategy: "hide" });
+  hidden.setAxis("y", { domain: [0, 1] });
+  assert.ok(sceneSvg(hidden.toScene()).split("<text").length < sceneSvg(preserve.toScene()).split("<text").length);
+  const polarHide = new Figure({ coords: "polar" });
+  polarHide.line([0, 1], [0, 1]);
+  polarHide.setAxis("x", { tick_label_strategy: "hide" });
+  assert.throws(() => polarHide.toScene(), /tick formatting/);
+  const polarOff = new Figure({ coords: "polar", width: 320, height: 320 });
+  polarOff.line([0, 1], [0, 1]);
+  polarOff.setAxis("x", { tick_label_strategy: "off" });
+  assert.doesNotThrow(() => polarOff.toScene());
+  assert.ok(!sceneSvg(polarOff.toScene()).includes('data-xy-tick="theta"'));
   const extraAxis = new Figure(); extraAxis.line([0, 1], [0, 1]);
   extraAxis.axis_options = { x: extraAxis.xAxis ?? {}, y: extraAxis.yAxis ?? {}, z: { label: "z" } };
   assert.throws(() => extraAxis.toScene(), /exactly x\/y/);
@@ -1575,7 +1594,7 @@ test("Node public Scene chrome setters snapshot literals and retain Rust validat
 test("Node Scene v25 wrapped annotations reject host layout features", () => {
   for (const [field, value, reason] of [
     ["class_name", "browser-only", /BROWSER_CSS|class behavior/],
-    ["style", { font_family: "Example Sans" }, /custom fonts/],
+    ["style", { font_family: "Example Sans" }, /CUSTOM_FONT|custom font/],
     ["style", { markup: "<b>rich<\\/b>" }, /markup/],
     ["style", { collision: "avoid" }, /collision/],
   ]) {
@@ -1585,6 +1604,55 @@ test("Node Scene v25 wrapped annotations reject host layout features", () => {
     figure.annotations[0][field] = value;
     assert.throws(() => figure.toScene(), reason);
   }
+});
+
+test("Node Scene annotation html stays fail-closed", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.line([0, 1], [0, 1]);
+  figure.annotations = [{ kind: "callout", x: 0.5, y: 0.5, text: "rich", html: "<b>rich</b>" }];
+  assert.throws(() => figure.toScene(), /XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML|annotation html/);
+});
+
+test("Node Scene annotation class_name stays fail-closed as browser CSS", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.line([0, 1], [0, 1]);
+  figure.annotations = [{ kind: "callout", x: 0.5, y: 0.5, text: "css", class_name: "custom" }];
+  assert.throws(() => figure.toScene(), /XYG_SCENE_UNSUPPORTED_BROWSER_CSS/);
+});
+
+test("Node Scene annotation collision stays fail-closed", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.line([0, 1], [0, 1]);
+  figure.annotations = [{ kind: "marker", x: 0.5, y: 0.5, text: "collision", collision: "hide" }];
+  assert.throws(() => figure.toScene(), /XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION/);
+});
+
+test("Node Scene annotation markup stays fail-closed", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.line([0, 1], [0, 1]);
+  figure.annotations = [{ kind: "callout", x: 0.5, y: 0.5, text: "rich", style: { markup: "<b>rich</b>" } }];
+  assert.throws(() => figure.toScene(), /XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP/);
+});
+
+test("Node Scene annotation custom typography stays fail-closed as custom font", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.line([0, 1], [0, 1]);
+  figure.annotations = [{ kind: "callout", x: 0.5, y: 0.5, text: "type", style: { font_family: "Comic Sans" } }];
+  assert.throws(() => figure.toScene(), /XYG_SCENE_UNSUPPORTED_CUSTOM_FONT/);
+});
+
+test("Node Scene annotation style.rotation routes through Scene", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.line([0, 1], [0, 1]);
+  figure.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "rotated", style: { rotation: 30 } }];
+  const svg = sceneSvg(figure.toScene());
+  assert.match(svg, /transform="rotate\(-30 /);
 });
 
 test("Node Scene v9 rejects non-byte chrome style input before the ABI", () => {

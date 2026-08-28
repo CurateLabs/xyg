@@ -604,6 +604,7 @@ fn compile_columns_request(bytes: &[u8], literal_ids: bool) -> Result<CompiledSc
                 y_format: None,
                 y_tick_kind: 0,
                 colorbar_side: scene::ColorbarSide::None,
+                collision: scene::TickCollisionLayout::default(),
             })?
         } else {
             (margin_left, margin_right, margin_top, margin_bottom)
@@ -1801,6 +1802,15 @@ mod tests {
             compile_scene_request(&wrong_header, usize::MAX),
             Err(SceneError::Length)
         ));
+    }
+
+    #[test]
+    fn typed_series_auto_margins_compile_on_the_wasm_foundation_tiny_viewport() {
+        let mut request = pack_typed_series();
+        request[HEADER_WIDTH..HEADER_WIDTH + 8].copy_from_slice(&64.0f64.to_le_bytes());
+        request[HEADER_HEIGHT..HEADER_HEIGHT + 8].copy_from_slice(&48.0f64.to_le_bytes());
+        let compiled = compile_scene_request(&request, usize::MAX).unwrap();
+        scene::validate_scene_batch(&compiled.bytes).unwrap();
     }
 
     #[test]
