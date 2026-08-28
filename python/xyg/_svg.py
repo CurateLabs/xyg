@@ -2169,6 +2169,100 @@ def _title_room(spec: dict[str, Any], compact: bool, wrap_width: float | None = 
     return room
 
 
+_SCENE_SCALE_KINDS = {"linear": 0, "log": 1, "symlog": 2}
+
+
+def _spec_has_custom_font(spec: dict[str, Any]) -> bool:
+    """Whether chrome CSS asks for a face Scene cannot encode.
+
+    Custom `font-family` stays fail-closed on Scene (#288 / #297). Measuring
+    those figures with DejaVu would be a silent substitute.
+    """
+    for style in slot_styles(spec).values():
+        family = style.get("font-family")
+        if family not in (None, "", "DejaVu Sans"):
+            return True
+    for style in (spec.get("chrome_styles") or {}).values():
+        if not isinstance(style, dict):
+            continue
+        family = style.get("font-family") or style.get("font_family")
+        if family not in (None, "", "DejaVu Sans"):
+            return True
+    return False
+
+
+def _scene_axis_pack(axis: dict[str, Any]) -> tuple[int, float, float, float, bool] | None:
+    """Pack one primary cartesian axis for `xyg_scene_plot_layout`, or None."""
+    kind = str(axis.get("scale") or axis.get("kind") or "linear")
+    code = _SCENE_SCALE_KINDS.get(kind)
+    if code is None:
+        return None
+    domain = axis.get("domain") or axis.get("range")
+    if domain is None or len(domain) != 2:
+        return None
+    lo, hi = float(domain[0]), float(domain[1])
+    constant = float(axis.get("linthresh") or axis.get("constant") or 1.0)
+    mask = str(axis.get("nonpositive") or "") == "mask"
+    return code, lo, hi, constant, mask
+
+
+def scene_layout_rooms(
+    spec: dict[str, Any],
+) -> tuple[float, float, float, float] | None:
+    """Rust cartesian gutters for default-font Scene-shaped specs (#297).
+
+    Returns ``(left, right, top, bottom)`` from `xyg_scene_plot_layout` when the
+    spec is primary cartesian linear/log/symlog with the default face.
+    Polar, extra axes, category scales, and custom `font-family` return None
+    so callers keep compatibility `_svg._*room` instead of a DejaVu substitute.
+    """
+    if spec.get("coords") not in (None, "cartesian"):
+        return None
+    if _spec_has_custom_font(spec):
+        return None
+    axes = _axes_by_id(spec)
+    extra = [axis_id for axis_id in axes if axis_id not in {"x", "y"}]
+    if extra:
+        return None
+    x_pack = _scene_axis_pack(axes["x"])
+    y_pack = _scene_axis_pack(axes["y"])
+    if x_pack is None or y_pack is None:
+        return None
+    width = spec.get("width")
+    height = spec.get("height")
+    width = 900 if not isinstance(width, (int, float)) else float(width)
+    height = 420 if not isinstance(height, (int, float)) else float(height)
+    pad = spec.get("padding")
+    padding = None
+    if isinstance(pad, list) and len(pad) == 4:
+        padding = (float(pad[0]), float(pad[1]), float(pad[2]), float(pad[3]))
+    entries = _title_entries(spec)
+    title = str(entries[0]["text"]) if len(entries) == 1 else ""
+    if len(entries) > 1:
+        return None
+    colorbar = spec.get("colorbar") or {}
+    side = None
+    if colorbar:
+        side = "bottom" if colorbar.get("orientation") == "horizontal" else "right"
+    x_format = axes["x"].get("format") or axes["x"].get("tick_format")
+    y_format = axes["y"].get("format") or axes["y"].get("tick_format")
+    try:
+        return _native.scene_plot_layout(
+            viewport=(width, height),
+            x_axis=x_pack,
+            y_axis=y_pack,
+            title=title,
+            x_label=str(axes["x"].get("label") or ""),
+            y_label=str(axes["y"].get("label") or ""),
+            x_format=str(x_format) if x_format else None,
+            y_format=str(y_format) if y_format else None,
+            padding=padding,
+            colorbar_side=side,
+        )
+    except (TypeError, ValueError):
+        return None
+
+
 def layout(spec: dict[str, Any]) -> tuple[int, int, bool, dict[str, float]]:
     """Concrete pixel dimensions + plot rect from a spec — shared by the SVG and
     native-PNG exporters so their chrome/plot geometry stays identical."""

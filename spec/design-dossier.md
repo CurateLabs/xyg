@@ -1385,7 +1385,10 @@ Hosts call `xyg_text_block_measure`, `xyg_text_block_rotated_extent`,
 `xyg_x_tick_label_edge_rooms`; wrap, rotated extent, and title/tick
 gutter formulas are engine-owned and identical for Python and Node.
 Hosts still format `_tick_text`, resolve CSS visibility / tick offsets,
-and iterate axes (#275).
+and iterate axes on the compatibility `_svg.layout` path (#275). Default-font
+cartesian Scene-shaped specs pack those observations into `xyg_scene_plot_layout`
+(#297); custom `font-family` stays fail-closed instead of a silent DejaVu
+substitute.
 ABI 126 moves compatibility static-export padding, title-band, colorbar
 extra, right-y, and polar-recut combination into Rust. Hosts call
 `xyg_compat_is_compact`, `xyg_compat_default_padding`,

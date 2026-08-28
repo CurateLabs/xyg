@@ -133,17 +133,18 @@ def _panel_chrome(
 
 
 def _measured_left_gutter(ax: Axes, width: int, height: int) -> float:
-    """The left gutter `_svg.layout()` will reserve for `ax`'s y-axis text.
+    """The left gutter Scene or `_svg.layout()` will reserve for `ax`'s y-axis text.
 
-    Probes the real spec because the reservation is measured from the tick
-    labels the resolved range produces, which only exist after the payload is
-    built. The probe costs one extra payload build on the notebook display path;
-    the browser needs the number *before* the chart it renders is built, and a
-    second implementation of the measurement is the thing this must not become.
+    Default-font cartesian Scene-shaped specs use `xyg_scene_plot_layout`
+    (#297). Compatibility `_svg._*room` stays for polar, extra axes, and custom
+    fonts so those figures are not measured as a silent DejaVu substitute.
     """
     from .. import _svg
 
     spec = _probe_axis_spec(ax, width, height)
+    rooms = _svg.scene_layout_rooms(spec)
+    if rooms is not None:
+        return float(rooms[0])
     return float(_svg.layout(spec)[3]["x"])
 
 
@@ -192,15 +193,18 @@ def _measured_axis_chrome(ax: Axes, width: int, height: int) -> tuple[float, flo
 
     Tight/constrained layout needs the labels after plotting and styling have
     finished. Build one provisional payload, remove its figure-rectangle
-    padding, and ask the same layout resolver used by PNG/SVG for the actual
-    text reservation. The later layout adjustment invalidates this provisional
-    chart before any output consumes it.
+    padding, and ask Rust `scene_plot_layout` for default-font cartesian
+    Scene-shaped specs (#297). Every other spec still uses `_svg.layout`.
     """
     from .. import _svg
 
     spec = _probe_axis_spec(ax, width, height)
     intrinsic = dict(spec)
     intrinsic.pop("padding", None)
+    rooms = _svg.scene_layout_rooms(intrinsic)
+    if rooms is not None:
+        left, right, top, bottom = rooms
+        return (float(left), float(top), float(right), float(bottom))
     measured_width, measured_height, _compact, plot = _svg.layout(intrinsic)
     return (
         float(plot["x"]),

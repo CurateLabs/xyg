@@ -792,7 +792,8 @@ landed; the remainder, in order:
    ABI 124 `xyg_legend_box_layout` ✅; ABI 125 `xyg_text_block_measure` /
    `xyg_text_block_rotated_extent` / `xyg_y_tick_label_extent` /
    `xyg_y_axis_left_room` / `xyg_x_axis_title_room` /
-   `xyg_x_tick_label_room` / `xyg_x_tick_label_edge_rooms` ✅; ABI 126
+   `xyg_x_tick_label_room` / `xyg_x_tick_label_edge_rooms` ✅
+   (#297 default-font Scene-shaped Python chrome uses `xyg_scene_plot_layout`); ABI 126
    `xyg_compat_is_compact` / `xyg_compat_default_padding` /
    `xyg_compat_title_wrap_width` / `xyg_compat_title_room` /
    `xyg_compat_x_axis_side_room` / `xyg_compat_colorbar_extra` /

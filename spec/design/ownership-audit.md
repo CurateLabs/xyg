@@ -538,7 +538,7 @@ Forbidden:
 | `crates/xyg-engine/src/jpeg.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/colormap.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 135 named colormap tables (`xyg_colormap_stops`, XYHP paint kind 2) | — |
 | `crates/xyg-engine/src/kernels.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 129 Cartesian static-export grid colormap (`colormap_rgba_into` / `colormap_rgba_canonical_into`) | — |
-| `crates/xyg-engine/src/layout_rooms.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 125 measured cartesian gutters | — |
+| `crates/xyg-engine/src/layout_rooms.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 125 measured cartesian gutters. #297 routes default-font Scene-shaped specs through `xyg_scene_plot_layout` | — |
 | `crates/xyg-engine/src/legend_fit.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/legend_layout.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 124 static legend box packing | — |
 | `crates/xyg-engine/src/lib.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
