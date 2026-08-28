@@ -587,7 +587,8 @@ F3, still pending (above).
   admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`, then ABI 185
   admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`, then ABI 186
   admits cartesian colormap hexbin as a 1×N XYHP plane interned onto HexCell
-  PolyFills.
+  PolyFills, then ABI 187 admits cartesian unwrapped text `rotation` as XYAW
+  `wrap=0` (XYAW v2 / XYLB v6).
   `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
   panel Scene. That predicate
   owns the public PolyFill group budget, including companion traces that share
@@ -1533,7 +1534,8 @@ stays fail-closed. ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor`
 as XYAW `wrap=0`. ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor`
 as XYAW `wrap=0`. ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane
 interned onto HexCell PolyFills. Polar hexbin, custom reducers, and per-item
-RGBA stay fail-closed. Rotation, html, `class_name`, and polar stay fail-closed. Per-item radius
+RGBA stay fail-closed. ABI 187 admits cartesian unwrapped text `rotation` as
+XYAW `wrap=0`. html, `class_name`, marker rotation, and polar stay fail-closed. Per-item radius
 channels stay compatibility. Irregular
 spacing, and LOD stay compatibility.
 

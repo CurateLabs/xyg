@@ -252,6 +252,7 @@ ring. ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`.
 ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto HexCell PolyFills.
+ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 / XYLB v6).
 ABI 173 tessellates
 heatmap `corner_radius`. ABI 174 tessellates violin/box `corner_radius`.
 ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`.
@@ -267,6 +268,7 @@ ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`.
 ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto HexCell PolyFills.
+ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 / XYLB v6).
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -335,6 +337,7 @@ ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`.
 ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto HexCell PolyFills.
+ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 / XYLB v6).
 ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate
@@ -407,6 +410,8 @@ ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0` on 
 same product Scene.
 ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto
 HexCell PolyFills on that same product Scene.
+ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 /
+XYLB v6) on that same product Scene.
 The explicit `xyg_scene_figure_support_reason` ABI remains for tests.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call

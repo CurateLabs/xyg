@@ -573,6 +573,7 @@ _XYAF_FACT_HAS_SIZE = 1 << 14
 _XYAF_FACT_HAS_AXIS = 1 << 15
 _XYAF_FACT_HAS_SYMBOL = 1 << 16
 _XYAF_FACT_HAS_ANCHOR = 1 << 17
+_XYAF_FACT_HAS_ROTATION = 1 << 18
 _XYAF_STYLE_COLOR = 1 << 0
 _XYAF_STYLE_OPACITY = 1 << 1
 _XYAF_STYLE_WIDTH = 1 << 2
@@ -721,7 +722,9 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
     ABI 184 packs cartesian unwrapped text ``dx``/``dy``/``anchor`` as XYAW
     with ``wrap=0`` so Rust applies the offset without wrapping. ABI 185
     packs labelled cartesian marker ``dx``/``dy``/``anchor`` the same way
-    (Rust keeps the marker mark row and skips AttachedRow).
+    (Rust keeps the marker mark row and skips AttachedRow). ABI 187 packs
+    cartesian unwrapped text ``rotation`` as XYAW with ``wrap=0`` (nonzero
+    rotation writes XYAW v2 / XYLB v6).
     """
     kind = annotation.get("kind")
     kind_code = _XYAF_KIND_CODES.get(str(kind) if kind is not None else "")
@@ -730,7 +733,9 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
             f"Scene v12 annotations support rule, band, and unlabeled marker only; {kind!r} is deferred"
         )
     authored_wrap = kind in {"text", "callout"} and "wrap" in annotation
-    layout_text = kind == "text" and any(key in annotation for key in ("dx", "dy", "anchor"))
+    layout_text = kind == "text" and any(
+        key in annotation for key in ("dx", "dy", "anchor", "rotation")
+    )
     wrapped = authored_wrap or layout_text
     attached_text = annotation.get("text")
     labelled = attached_text not in (None, "")
@@ -847,6 +852,11 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
         if key in annotation:
             nums[slot] = take_num(annotation, key, label)
             facts |= flag
+    if str(kind) == "text" and "rotation" in annotation:
+        nums[15] = take_num(annotation, "rotation", "text rotation")
+        facts |= _XYAF_FACT_HAS_ROTATION
+        if not np.isfinite(nums[15]):
+            raise ValueError("Scene v16 text annotation rotation must be finite")
     axis_code = 0
     if str(kind) in {"rule", "band"}:
         axis_name = annotation.get("axis")

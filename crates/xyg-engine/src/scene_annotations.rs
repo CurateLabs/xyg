@@ -11,7 +11,9 @@
 //! `anchor` through XYAW with `wrap=0` (keep explicit newlines; apply the
 //! offset and text-anchor). ABI 185 routes labelled cartesian marker
 //! `dx`/`dy`/`anchor` the same way (keep the marker mark row; skip AttachedRow
-//! for that label). Rotation, html, `class_name`, and polar stay fail-closed.
+//! for that label). ABI 187 routes cartesian unwrapped text `rotation`
+//! through XYAW with `wrap=0` (nonzero rotation writes XYAW v2). html,
+//! `class_name`, marker rotation, and polar stay fail-closed.
 
 use crate::css::{apply_opacity_rgba8, color_rgba8};
 use crate::scene::{
@@ -117,6 +119,7 @@ pub struct WrappedRow<'a> {
     pub border_width: f64,
     pub kind: u8,
     pub anchor: u8,
+    pub rotation: f64,
     pub text: &'a [u8],
 }
 
@@ -348,6 +351,7 @@ pub fn wrapped_rows_from_meta<'a>(
             border_width: f64_at(chunk, 52),
             kind: chunk[60],
             anchor: chunk[61],
+            rotation: 0.0,
             text: parts[index],
         });
     }
@@ -504,8 +508,17 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
 
     let mut wrapped_budget = 0usize;
     let mut xyaw = Vec::new();
+    let xyaw_v2 = input.wrapped.iter().any(|row| row.rotation != 0.0);
     for row in input.wrapped {
-        require_finite(&[row.x, row.y, row.dx, row.dy, row.wrap, row.border_width])?;
+        require_finite(&[
+            row.x,
+            row.y,
+            row.dx,
+            row.dy,
+            row.wrap,
+            row.border_width,
+            row.rotation,
+        ])?;
         require_text(row.text, false, &mut wrapped_budget)?;
         if row.wrap < 0.0 || row.kind > 1 || row.anchor > 2 {
             return Err(AnnotationError::NonFinite);
@@ -530,6 +543,9 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
         xyaw.push(row.kind);
         xyaw.push(row.anchor);
         xyaw.extend_from_slice(&[0, 0]);
+        if xyaw_v2 {
+            xyaw.extend_from_slice(&row.rotation.to_le_bytes());
+        }
         xyaw.extend_from_slice(&(row.text.len() as u32).to_le_bytes());
         xyaw.extend_from_slice(row.text);
     }
@@ -575,7 +591,7 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
         push_section(
             &mut xyaw_section,
             b"XYAW",
-            1,
+            if xyaw_v2 { 2 } else { 1 },
             input.wrapped.len() as u32,
             &xyaw,
         );
@@ -643,7 +659,8 @@ const FACT_HAS_AXIS: u32 = 1 << 15;
 #[allow(dead_code)]
 const FACT_HAS_SYMBOL: u32 = 1 << 16;
 const FACT_HAS_ANCHOR: u32 = 1 << 17;
-const FACT_BITS: u32 = (1 << 18) - 1;
+const FACT_HAS_ROTATION: u32 = 1 << 18;
+const FACT_BITS: u32 = (1 << 19) - 1;
 
 const STYLE_COLOR: u32 = 1 << 0;
 const STYLE_OPACITY: u32 = 1 << 1;
@@ -1012,7 +1029,9 @@ fn encode_style(style: &StyleOut) -> [u8; XYAO_STYLE_BYTES] {
 /// style defaults, mark-row expansion, and XYAD framing. ABI 184 routes
 /// cartesian unwrapped text `dx`/`dy`/`anchor` through XYAW with `wrap=0`.
 /// ABI 185 routes labelled cartesian marker `dx`/`dy`/`anchor` through XYAW
-/// with `wrap=0` while keeping the marker mark row.
+/// with `wrap=0` while keeping the marker mark row. ABI 187 routes cartesian
+/// unwrapped text `rotation` through XYAW with `wrap=0` (nonzero rotation
+/// writes XYAW v2).
 pub fn pack_annotation_facts(
     facts: &[u8],
     style_ref_base: u32,
@@ -1043,7 +1062,8 @@ pub fn pack_annotation_facts(
         let text_layout = row.kind == XYAF_KIND_TEXT
             && (has(row.facts, FACT_HAS_DX)
                 || has(row.facts, FACT_HAS_DY)
-                || has(row.facts, FACT_HAS_ANCHOR));
+                || has(row.facts, FACT_HAS_ANCHOR)
+                || has(row.facts, FACT_HAS_ROTATION));
         let wrapped_kind = ((row.kind == XYAF_KIND_TEXT || row.kind == XYAF_KIND_CALLOUT)
             && has_wrap)
             || text_layout;
@@ -1072,6 +1092,7 @@ pub fn pack_annotation_facts(
             }
             let anchor = if row.anchor == ANCHOR_UNSET { 0 } else { row.anchor };
             let (_, _, fill, border_rgba, border_width, _) = label_style(row)?;
+            let rotation = or_default(row, FACT_HAS_ROTATION, 15, 0.0)?;
             wrapped.push(WrappedRow {
                 x,
                 y,
@@ -1084,6 +1105,7 @@ pub fn pack_annotation_facts(
                 border_width,
                 kind: u8::from(row.kind == XYAF_KIND_CALLOUT),
                 anchor,
+                rotation,
                 text: row.text,
             });
             continue;
@@ -1272,6 +1294,7 @@ pub fn pack_annotation_facts(
                             } else {
                                 row.anchor
                             },
+                            rotation: 0.0,
                             text: row.text,
                         });
                     } else {
@@ -1436,6 +1459,7 @@ mod tests {
             border_width: 0.0,
             kind: 0,
             anchor: 0,
+            rotation: 0.0,
             text: b"wrap",
         };
         let framed = pack_annotations(AnnotationFrameInput {
@@ -1614,6 +1638,36 @@ mod tests {
         let dx = f64::from_le_bytes(row[16..24].try_into().unwrap());
         assert_eq!(wrap, 0.0);
         assert_eq!(dx, 6.0);
+    }
+
+    #[test]
+    fn annotation_facts_route_unwrapped_text_rotation_through_xyaw() {
+        let mut nums = [f64::NAN; 18];
+        nums[0] = 0.5;
+        nums[1] = 0.5;
+        nums[15] = 30.0;
+        let text = pack_xyaf(
+            XYAF_KIND_TEXT,
+            0,
+            FACT_HAS_X | FACT_HAS_Y | FACT_HAS_ROTATION | FACT_HAS_TEXT,
+            STYLE_COLOR,
+            0,
+            nums,
+            [102, 112, 133, 255],
+            b"rotated",
+        );
+        let packed = pack_annotation_facts(&text, 0, 0.0, 1.0, 0.0, 1.0).unwrap();
+        let xyad_len = u32::from_le_bytes(packed[16..20].try_into().unwrap()) as usize;
+        let xyad = &packed[XYAO_V1_HEADER_BYTES..XYAO_V1_HEADER_BYTES + xyad_len];
+        assert!(xyad.windows(4).any(|window| window == b"XYAW"));
+        assert_eq!(&xyad[xyad.len() - 7..], b"rotated");
+        let xyaw_at = xyad.windows(4).position(|window| window == b"XYAW").unwrap();
+        assert_eq!(u32::from_le_bytes(xyad[xyaw_at + 4..xyaw_at + 8].try_into().unwrap()), 2);
+        let row = &xyad[xyaw_at + 12..];
+        let wrap = f64::from_le_bytes(row[32..40].try_into().unwrap());
+        let rotation = f64::from_le_bytes(row[64..72].try_into().unwrap());
+        assert_eq!(wrap, 0.0);
+        assert_eq!(rotation, 30.0);
     }
 
     #[test]

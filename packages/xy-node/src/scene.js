@@ -224,6 +224,7 @@ const XYAF_FACT_HAS_SIZE = 1 << 14;
 const XYAF_FACT_HAS_AXIS = 1 << 15;
 const XYAF_FACT_HAS_SYMBOL = 1 << 16;
 const XYAF_FACT_HAS_ANCHOR = 1 << 17;
+const XYAF_FACT_HAS_ROTATION = 1 << 18;
 const XYAF_STYLE_COLOR = 1 << 0;
 const XYAF_STYLE_OPACITY = 1 << 1;
 const XYAF_STYLE_WIDTH = 1 << 2;
@@ -258,11 +259,12 @@ function annotationAllowedStyle(kind, wrapped, labelled) {
 function packXyAf(annotation, index) {
   // ABI 184 packs cartesian unwrapped text dx/dy/anchor as XYAW wrap=0.
   // ABI 185 packs labelled cartesian marker dx/dy/anchor the same way in Rust.
+  // ABI 187 packs cartesian unwrapped text rotation as XYAW wrap=0 (XYAW v2).
   const kind = annotation.kind;
   const kindCode = XYAF_KIND_CODES[kind];
   if (kindCode == null) throw new RangeError(`Scene v12 annotations support rule, band, and unlabeled marker only; ${JSON.stringify(kind)} is deferred`);
   const authoredWrap = ["text", "callout"].includes(kind) && Object.hasOwn(annotation, "wrap");
-  const layoutText = kind === "text" && ["dx", "dy", "anchor"].some((key) => Object.hasOwn(annotation, key));
+  const layoutText = kind === "text" && ["dx", "dy", "anchor", "rotation"].some((key) => Object.hasOwn(annotation, key));
   const wrapped = authoredWrap || layoutText;
   const labelled = annotation.text != null && annotation.text !== "";
   if (kind === "arrow" && labelled) throw new RangeError("Scene arrows do not encode text");
@@ -318,6 +320,11 @@ function packXyAf(annotation, index) {
       nums[slot] = annotationNumber(annotation, key, undefined, label);
       facts |= flag;
     }
+  }
+  if (kind === "text" && Object.hasOwn(annotation, "rotation")) {
+    nums[15] = annotationNumber(annotation, "rotation", undefined, "text rotation");
+    facts |= XYAF_FACT_HAS_ROTATION;
+    if (!Number.isFinite(nums[15])) throw new RangeError("Scene v16 text annotation rotation must be finite");
   }
   let axisCode = 0;
   if (kind === "rule" || kind === "band") {

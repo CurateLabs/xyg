@@ -1174,6 +1174,15 @@ test("Node Scene compiles cartesian unwrapped text layout as XYAW", () => {
   anchored.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "anchor", anchor: "end" }];
   assert.match(sceneSvg(anchored.toScene()), /text-anchor="end"/);
   assert.equal(sceneExportSupportReason(anchored), null);
+  const rotated = new Figure({ width: 320, height: 240 });
+  rotated.setAxisDomain("x", [0, 4]);
+  rotated.setAxisDomain("y", [0, 5]);
+  rotated.scatter([1, 2], [2, 3], { color: "#3987e5", size: 6, opacity: 0.8, name: null });
+  rotated.annotations = [{ kind: "text", x: 0.5, y: 0.5, text: "rotated", rotation: 30 }];
+  const rotatedSvg = sceneSvg(rotated.toScene());
+  assert.match(rotatedSvg, />rotated</);
+  assert.match(rotatedSvg, /transform="rotate\(-30 /);
+  assert.equal(sceneExportSupportReason(rotated), null);
   const marker = new Figure({ width: 320, height: 240 });
   marker.setAxisDomain("x", [0, 4]);
   marker.setAxisDomain("y", [0, 5]);

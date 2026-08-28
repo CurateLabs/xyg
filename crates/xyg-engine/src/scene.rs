@@ -85,6 +85,7 @@ const SCENE_LABEL_HEADER_BYTES: usize = 16;
 const SCENE_LABEL_RECORD_BYTES: usize = 40;
 const SCENE_LABEL_BOX_RECORD_BYTES: usize = 84;
 const SCENE_LABEL_WRAPPED_RECORD_BYTES: usize = 104;
+const SCENE_LABEL_ROTATED_RECORD_BYTES: usize = 112;
 const CALLOUT_LABEL_BOX_INSET: f64 = 3.0;
 const WRAPPED_LABEL_LINE_HEIGHT: f64 = 1.2;
 const MAX_WRAPPED_LABEL_LINES: usize = 16;
@@ -192,6 +193,9 @@ pub struct SceneLabel {
     /// SVG/CSS text-anchor code: start (0), middle (1), or end (2).
     /// This is owned output metadata, never a host pixel placement seam.
     pub anchor: u8,
+    /// Clockwise-negative authored degrees (matplotlib convention). Zero means
+    /// upright. ABI 187 admits this on cartesian unwrapped XYAW text.
+    pub rotation: f64,
     pub text: String,
 }
 
@@ -211,7 +215,9 @@ fn encode_scene_labels(
     if labels.len() > MAX_SCENE_LABELS || text_bytes > MAX_SCENE_LABEL_TEXT_BYTES {
         return Err(SceneError::Limit);
     }
-    let version = if labels.iter().any(|label| label.text.contains('\n')) {
+    let version = if labels.iter().any(|label| label.rotation != 0.0) {
+        6
+    } else if labels.iter().any(|label| label.text.contains('\n')) {
         5
     } else if backgrounds
         .iter()
@@ -232,6 +238,7 @@ fn encode_scene_labels(
         3 => SCENE_LABEL_BOX_RECORD_BYTES,
         4 => SCENE_LABEL_BOX_RECORD_BYTES + 16,
         5 => SCENE_LABEL_WRAPPED_RECORD_BYTES,
+        6 => SCENE_LABEL_ROTATED_RECORD_BYTES,
         _ => unreachable!(),
     };
     let mut out =
@@ -246,6 +253,7 @@ fn encode_scene_labels(
             || !label.x.is_finite()
             || !label.y.is_finite()
             || !label.font_size.is_finite()
+            || !label.rotation.is_finite()
             || !(1.0..=MAX_SCENE_CHROME_LENGTH).contains(&label.font_size)
             || label.anchor > 2
             || background.as_ref().is_some_and(|background| {
@@ -303,7 +311,7 @@ fn encode_scene_labels(
                 }
             }
         }
-        if version == 5 {
+        if version >= 5 {
             let lines = label.text.split('\n').count();
             if lines == 0
                 || lines > MAX_WRAPPED_LABEL_LINES
@@ -312,6 +320,9 @@ fn encode_scene_labels(
                 return Err(SceneError::Limit);
             }
             out.extend_from_slice(&(lines as u32).to_le_bytes());
+        }
+        if version >= 6 {
+            out.extend_from_slice(&label.rotation.to_le_bytes());
         }
     }
     for label in labels {
@@ -330,7 +341,7 @@ fn decode_scene_labels(
         return Err(SceneError::Length);
     }
     let version = batch_u32(bytes, 4)?;
-    if !(1..=5).contains(&version) {
+    if !(1..=6).contains(&version) {
         return Err(SceneError::Length);
     }
     let record_bytes = match version {
@@ -339,6 +350,7 @@ fn decode_scene_labels(
         3 => SCENE_LABEL_BOX_RECORD_BYTES,
         4 => SCENE_LABEL_BOX_RECORD_BYTES + 16,
         5 => SCENE_LABEL_WRAPPED_RECORD_BYTES,
+        6 => SCENE_LABEL_ROTATED_RECORD_BYTES,
         _ => unreachable!(),
     };
     let count = batch_u32(bytes, 8)? as usize;
@@ -427,16 +439,25 @@ fn decode_scene_labels(
         } else {
             None
         };
-        let lines = if version == 5 {
+        let lines = if version >= 5 {
             batch_u32(bytes, at + 100)? as usize
         } else {
             1
+        };
+        let rotation = if version >= 6 {
+            let value = batch_f64(bytes, at + 104)?;
+            if !value.is_finite() {
+                return Err(SceneError::NonFinite);
+            }
+            value
+        } else {
+            0.0
         };
         let end = text_at.checked_add(len).ok_or(SceneError::Limit)?;
         let text = std::str::from_utf8(bytes.get(text_at..end).ok_or(SceneError::Length)?)
             .map_err(|_| SceneError::Length)?
             .to_owned();
-        if version == 5
+        if version >= 5
             && (lines == 0
                 || lines > MAX_WRAPPED_LABEL_LINES
                 || text.split('\n').count() != lines
@@ -451,6 +472,7 @@ fn decode_scene_labels(
             font_size: batch_f64(bytes, at + 24)?,
             rgba: bytes[at + 32..at + 36].try_into().unwrap(),
             anchor,
+            rotation,
             text,
         });
         backgrounds.push(background);
@@ -2117,6 +2139,7 @@ fn decode_xyat(
             font_size: 12.0,
             rgba: fixed[16..20].try_into().unwrap(),
             anchor: 0,
+            rotation: 0.0,
             text: text.to_owned(),
         };
         backgrounds.push(match (background, border) {
@@ -2283,6 +2306,7 @@ fn decode_xyal(
             font_size: 12.0,
             rgba,
             anchor: 0,
+            rotation: 0.0,
             text,
         };
         backgrounds.push(match background {
@@ -2314,7 +2338,8 @@ struct AnnotationEnvelope {
 
 /// Decode the v24 bounded wrapped-label seam.  Hosts contribute only literal
 /// text, a width constraint, and author offsets; line breaking, metrics,
-/// projection, boxes, and callout geometry remain Rust-owned.
+/// projection, boxes, and callout geometry remain Rust-owned. ABI 187 accepts
+/// XYAW v2 when any row carries a nonzero rotation; v1 stays 64-byte meta.
 fn decode_xyaw(
     bytes: &[u8],
     x_scale: AxisScale,
@@ -2324,9 +2349,15 @@ fn decode_xyaw(
     if bytes.is_empty() {
         return Ok((Vec::new(), Vec::new(), Vec::new()));
     }
-    if bytes.len() < 12 || &bytes[..4] != b"XYAW" || batch_u32(bytes, 4)? != 1 {
+    if bytes.len() < 12 || &bytes[..4] != b"XYAW" {
         return Err(SceneError::Length);
     }
+    let version = batch_u32(bytes, 4)?;
+    if version != 1 && version != 2 {
+        return Err(SceneError::Length);
+    }
+    let meta_bytes = if version == 1 { 64 } else { 72 };
+    let row_prefix = meta_bytes + 4;
     let count = batch_u32(bytes, 8)? as usize;
     if count > MAX_AUTHORED_TEXT_ANNOTATIONS {
         return Err(SceneError::Limit);
@@ -2338,7 +2369,7 @@ fn decode_xyaw(
     let mut callouts = Vec::new();
     for index in 0..count {
         let fixed = bytes
-            .get(at..at.checked_add(68).ok_or(SceneError::Limit)?)
+            .get(at..at.checked_add(row_prefix).ok_or(SceneError::Limit)?)
             .ok_or(SceneError::Length)?;
         let x = batch_f64(fixed, 0)?;
         let y = batch_f64(fixed, 8)?;
@@ -2351,22 +2382,27 @@ fn decode_xyaw(
         let border_width = batch_f64(fixed, 52)?;
         let kind = fixed[60];
         let anchor = fixed[61];
+        let rotation = if version == 2 {
+            batch_f64(fixed, 64)?
+        } else {
+            0.0
+        };
         if fixed[62..64] != [0; 2]
             || kind > 1
             || anchor > 2
-            || ![x, y, dx, dy, wrap, border_width]
+            || ![x, y, dx, dy, wrap, border_width, rotation]
                 .into_iter()
                 .all(f64::is_finite)
             || wrap < 0.0
         {
             return Err(SceneError::Length);
         }
-        let len = batch_u32(fixed, 64)? as usize;
+        let len = batch_u32(fixed, meta_bytes)? as usize;
         let end = at
-            .checked_add(68)
+            .checked_add(row_prefix)
             .and_then(|v| v.checked_add(len))
             .ok_or(SceneError::Limit)?;
-        let authored = std::str::from_utf8(bytes.get(at + 68..end).ok_or(SceneError::Length)?)
+        let authored = std::str::from_utf8(bytes.get(at + row_prefix..end).ok_or(SceneError::Length)?)
             .map_err(|_| SceneError::Length)?;
         total = total.checked_add(len).ok_or(SceneError::Limit)?;
         if authored.is_empty()
@@ -2450,6 +2486,7 @@ fn decode_xyaw(
             font_size: 12.0,
             rgba,
             anchor,
+            rotation,
             text,
         };
         let background = resolved_callout_label_background(
@@ -6398,6 +6435,7 @@ impl<'a> SceneBatch<'a> {
                     font_size: 12.0,
                     rgba,
                     anchor: 0,
+                    rotation: 0.0,
                     text,
                 };
                 label_backgrounds.push(match background {
@@ -8030,6 +8068,7 @@ fn decode_xyac(
                 font_size: 12.0,
                 rgba: label_rgba,
                 anchor,
+                rotation: 0.0,
                 text: text.to_owned(),
             },
             label_background: resolved_callout_label_background(
@@ -9629,6 +9668,7 @@ impl SceneDocument {
                 font_size: geometry.radius * 2.0,
                 rgba: style.fill,
                 anchor: 1,
+                rotation: 0.0,
                 text: glyph.to_string(),
             });
             backgrounds.push(None);
@@ -9994,6 +10034,15 @@ impl SceneDocument {
                     2 => "end",
                     _ => unreachable!(),
                 });
+            }
+            if label.rotation != 0.0 {
+                out.push_str("\" transform=\"rotate(");
+                push_num(out, -label.rotation);
+                out.push(' ');
+                push_num(out, label.x);
+                out.push(' ');
+                push_num(out, label.y);
+                out.push(')');
             }
             out.push_str("\">");
             if label.text.contains('\n') {
@@ -11456,18 +11505,42 @@ impl SceneDocument {
                 }
             }
             for (index, line) in label.text.split('\n').enumerate() {
-                out.push(6);
-                push_raster_f32(out, label.x, scale)?;
-                push_raster_f32(
-                    out,
-                    label.y + index as f64 * label.font_size * WRAPPED_LABEL_LINE_HEIGHT,
-                    scale,
-                )?;
-                out.push(label.anchor);
-                push_raster_f32(out, label.font_size, scale)?;
-                out.extend_from_slice(&label.rgba);
-                out.extend_from_slice(&(line.len() as u32).to_le_bytes());
-                out.extend_from_slice(line.as_bytes());
+                let line_dy = index as f64 * label.font_size * WRAPPED_LABEL_LINE_HEIGHT;
+                let (x, y) = if label.rotation != 0.0 && index != 0 {
+                    let phi = (-label.rotation).to_radians();
+                    (
+                        label.x - line_dy * phi.sin(),
+                        label.y + line_dy * phi.cos(),
+                    )
+                } else {
+                    (label.x, label.y + line_dy)
+                };
+                if label.rotation != 0.0 {
+                    out.push(17);
+                    push_raster_f32(out, x, scale)?;
+                    push_raster_f32(out, y, scale)?;
+                    out.push(label.anchor);
+                    push_raster_f32(out, label.font_size, scale)?;
+                    let angle = -label.rotation as f32;
+                    if !angle.is_finite() {
+                        return Err(SceneError::NonFinite);
+                    }
+                    out.extend_from_slice(&angle.to_le_bytes());
+                    out.push(0);
+                    out.extend_from_slice(&0u32.to_le_bytes());
+                    out.extend_from_slice(&label.rgba);
+                    out.extend_from_slice(&(line.len() as u32).to_le_bytes());
+                    out.extend_from_slice(line.as_bytes());
+                } else {
+                    out.push(6);
+                    push_raster_f32(out, x, scale)?;
+                    push_raster_f32(out, y, scale)?;
+                    out.push(label.anchor);
+                    push_raster_f32(out, label.font_size, scale)?;
+                    out.extend_from_slice(&label.rgba);
+                    out.extend_from_slice(&(line.len() as u32).to_le_bytes());
+                    out.extend_from_slice(line.as_bytes());
+                }
             }
         }
         Ok(())
@@ -18181,5 +18254,33 @@ mod tests {
         assert!(callouts.is_empty());
         frame[12 + 32..12 + 40].copy_from_slice(&1.0f64.to_le_bytes());
         assert!(decode_xyaw(&frame, x, y, layout).is_err());
+    }
+
+    #[test]
+    fn xyaw_v2_resolves_unwrapped_text_rotation() {
+        let layout = PlotLayout::new(240.0, 160.0, 20.0, 20.0, 20.0, 20.0).unwrap();
+        let x = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 20.0, 220.0, 1.0, false).unwrap();
+        let y = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 140.0, 20.0, 1.0, false).unwrap();
+        let text = b"rotated";
+        let mut frame = b"XYAW\x02\0\0\0\x01\0\0\0".to_vec();
+        for value in [0.5f64, 0.5, 0.0, 0.0, 0.0] {
+            frame.extend_from_slice(&value.to_le_bytes());
+        }
+        frame.extend_from_slice(&[102, 112, 133, 255, 0, 0, 0, 0, 0, 0, 0, 0]);
+        frame.extend_from_slice(&0.0f64.to_le_bytes());
+        frame.extend_from_slice(&[0, 0, 0, 0]);
+        frame.extend_from_slice(&30.0f64.to_le_bytes());
+        frame.extend_from_slice(&(text.len() as u32).to_le_bytes());
+        frame.extend_from_slice(text);
+        let (labels, boxes, callouts) = decode_xyaw(&frame, x, y, layout).unwrap();
+        assert_eq!(labels[0].text, "rotated");
+        assert_eq!(labels[0].rotation, 30.0);
+        assert!(boxes[0].is_none());
+        assert!(callouts.is_empty());
+        let encoded = encode_scene_labels(&labels, &boxes).unwrap();
+        assert_eq!(u32::from_le_bytes(encoded[4..8].try_into().unwrap()), 6);
+        let (roundtrip, _) = decode_scene_labels(&encoded).unwrap();
+        assert_eq!(roundtrip[0].rotation, 30.0);
+        assert_eq!(roundtrip[0].text, "rotated");
     }
 }

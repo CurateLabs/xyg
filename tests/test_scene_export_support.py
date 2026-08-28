@@ -1582,7 +1582,6 @@ def test_migrated_scene_packers_have_no_host_step_geometry_expander() -> None:
 @pytest.mark.parametrize(
     "annotation",
     [
-        {"kind": "text", "x": 0.5, "y": 0.5, "text": "rotated", "rotation": 30},
         {"kind": "marker", "x": 0.5, "y": 0.5, "text": "collision", "collision": "hide"},
         {"kind": "callout", "x": 0.5, "y": 0.5, "text": "rich", "html": "<b>rich</b>"},
         {"kind": "callout", "x": 0.5, "y": 0.5, "text": "css", "class_name": "custom"},
@@ -1602,6 +1601,7 @@ def test_public_annotation_router_fails_closed_for_unmodeled_host_layout_and_css
     [
         {"kind": "text", "x": 0.5, "y": 0.5, "text": "offset", "dx": 6},
         {"kind": "text", "x": 0.5, "y": 0.5, "text": "anchor", "anchor": "end"},
+        {"kind": "text", "x": 0.5, "y": 0.5, "text": "rotated", "rotation": 30},
     ],
 )
 def test_public_unwrapped_text_layout_routes_through_scene(annotation: dict[str, object]) -> None:
@@ -1617,6 +1617,9 @@ def test_public_unwrapped_text_layout_routes_through_scene(annotation: dict[str,
     exported = public_static_export(figure, "svg")
     assert exported is not None
     assert str(annotation["text"]).encode() in exported
+    if "rotation" in annotation:
+        assert f'transform="rotate(-{annotation["rotation"]} ' in svg
+        assert f'transform="rotate(-{annotation["rotation"]} '.encode() in exported
 
 
 @pytest.mark.parametrize(
