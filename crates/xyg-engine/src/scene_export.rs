@@ -13,7 +13,8 @@
 //! `corner_radius` on the public Scene (cartesian rounded Rects / polar wedges).
 //! ABI 174 admits violin/box `corner_radius` on that same Rect tessellation.
 //! ABI 175 admits violin/box `fill_opacity` / `stroke_opacity` on that public
-//! Scene (XYMS already composites those channels).
+//! Scene (XYMS already composites those channels). ABI 176 admits
+//! bar/column/histogram `fill_opacity` / `stroke_opacity` the same way.
 //! Rust owns the public PolyFill group budget, including
 //! companion traces that share the browser painter's 1,024-group ceiling.
 
@@ -389,6 +390,8 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "stroke_width",
             "corner_radius",
             "wedge_gap",
+            "fill_opacity",
+            "stroke_opacity",
         ],
         KIND_HISTOGRAM => &[
             "color",
@@ -400,6 +403,8 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "stroke",
             "stroke_width",
             "corner_radius",
+            "fill_opacity",
+            "stroke_opacity",
         ],
         KIND_VIOLIN => &[
             "color",

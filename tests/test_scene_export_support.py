@@ -822,6 +822,29 @@ def test_public_violin_opacity_channels_are_scene_supported(key: str) -> None:
     assert exported_box != public_static_export(square_box, "svg")
 
 
+@pytest.mark.parametrize(
+    "factory",
+    [
+        lambda: _supported().bar([0, 1], [1, 2], color="#22c55e"),
+        lambda: _supported().column([0, 1], [1, 2], color="#22c55e"),
+        lambda: _supported().histogram([0, 1, 1, 2], bins=2, color="#22c55e"),
+    ],
+)
+def test_public_bar_column_histogram_opacity_channels_are_scene_supported(factory) -> None:
+    figure = factory()
+    figure.traces[-1].style["fill_opacity"] = 0.5
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported != public_static_export(factory(), "svg")
+    stroked = factory()
+    stroked.traces[-1].style["stroke"] = "#111111"
+    stroked.traces[-1].style["stroke_width"] = 2.0
+    stroked.traces[-1].style["stroke_opacity"] = 0.5
+    assert scene_export_support_reason(stroked) is None
+    assert public_static_export(stroked, "svg") is not None
+
+
 @pytest.mark.parametrize("kind", ["step", "histogram", "column_bar"])
 def test_literal_geometry_cross_host_variants_match_exact_scene_bytes(kind: str) -> None:
     """Host transforms must converge before Rust consumes the Scene."""

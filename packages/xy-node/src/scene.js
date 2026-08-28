@@ -3148,7 +3148,7 @@ function packXyTc(figure) {
     let fillOpacity = 1;
     let strokeOpacity = 1;
     let lineOpacity = 1;
-    if (BAND_KINDS.has(trace.kind) || RIBBON_KINDS.has(trace.kind) || trace.kind === "violin" || trace.kind === "box") {
+    if (BAND_KINDS.has(trace.kind) || RIBBON_KINDS.has(trace.kind) || RECT_KINDS.has(trace.kind)) {
       fillOpacity = Number(style.fill_opacity ?? style.fillOpacity ?? 1);
       strokeOpacity = Number(style.stroke_opacity ?? style.strokeOpacity ?? 1);
     }

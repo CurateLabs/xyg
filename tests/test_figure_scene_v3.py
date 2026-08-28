@@ -1281,6 +1281,23 @@ def test_python_scene_compiles_violin_box_opacity_channels() -> None:
     assert box_svg != _native.scene_svg(square_box.to_scene())
 
 
+def test_python_scene_compiles_bar_fill_opacity() -> None:
+    faded = Figure(width=240, height=160)
+    faded.axis_options["x"]["domain"] = (0.0, 2.0)
+    faded.axis_options["y"]["domain"] = (0.0, 3.0)
+    faded.bar([0, 1], [1, 2], color="#22c55e")
+    faded.traces[-1].style["fill_opacity"] = 0.5
+    svg = _native.scene_svg(faded.to_scene())
+    assert 'fill-opacity="' in svg
+    assert faded.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(faded) is None
+    solid = Figure(width=240, height=160)
+    solid.axis_options["x"]["domain"] = (0.0, 2.0)
+    solid.axis_options["y"]["domain"] = (0.0, 3.0)
+    solid.bar([0, 1], [1, 2], color="#22c55e")
+    assert svg != _native.scene_svg(solid.to_scene())
+
+
 def test_python_scene_compiles_polar_corner_radius() -> None:
     donut = Figure(width=400, height=400, coords="polar")
     donut.axis_options["x"]["domain"] = (0.0, 6.283185307179586)

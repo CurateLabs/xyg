@@ -1837,6 +1837,21 @@ test("Node Scene compiles violin and box fill_opacity", () => {
   assert.notEqual(boxSvg, sceneSvg(squareBox.toScene()));
 });
 
+test("Node Scene compiles bar fill_opacity", () => {
+  const faded = new Figure({ width: 240, height: 160 });
+  faded.setAxisDomain("x", [0, 2]);
+  faded.setAxisDomain("y", [0, 3]);
+  faded.bar([0, 1], [1, 2], { style: { color: "#22c55e", fill_opacity: 0.5 }, name: null });
+  const svg = sceneSvg(faded.toScene());
+  assert.match(svg, /fill-opacity="/);
+  assert.equal(sceneExportSupportReason(faded), null);
+  const solid = new Figure({ width: 240, height: 160 });
+  solid.setAxisDomain("x", [0, 2]);
+  solid.setAxisDomain("y", [0, 3]);
+  solid.bar([0, 1], [1, 2], { style: { color: "#22c55e" }, name: null });
+  assert.notEqual(svg, sceneSvg(solid.toScene()));
+});
+
 test("Node Scene compiles polar wedge_gap and keeps cartesian fail-closed", () => {
   const gapped = new Figure({ width: 400, height: 400, coords: "polar" });
   gapped.setAxisDomain("x", [0, Math.PI * 2]);
