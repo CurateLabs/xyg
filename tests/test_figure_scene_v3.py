@@ -1409,11 +1409,52 @@ def test_python_scene_compiles_constant_marker_paths() -> None:
     assert polar.to_svg() == polar_svg
     assert _scene_v3.scene_export_support_reason(polar) is None
 
-    glyph = Figure().scatter([1.0], [1.0], _marker_glyph="A")
-    with pytest.raises(UnsupportedSceneV3, match="authored markers"):
-        glyph.to_scene()
     invalid = Figure().scatter([1.0], [1.0])
     invalid.traces[-1].style["marker_path"] = "M0 0"
+    with pytest.raises(UnsupportedSceneV3, match="authored markers"):
+        invalid.to_scene()
+
+
+def test_python_scene_compiles_constant_marker_glyphs() -> None:
+    figure = Figure(width=240, height=160)
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    figure.scatter([1.0], [1.0], color="#336699", size=12, _marker_glyph="A")
+    scene = figure.to_scene()
+    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert b"XYMG" in scene
+    svg = _native.scene_svg(scene)
+    assert 'font-family="DejaVu Sans"' in svg
+    assert 'dominant-baseline="central"' in svg
+    assert 'text-anchor="middle"' in svg
+    assert ">A</text>" in svg
+    assert "<circle " not in svg
+    assert figure.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(figure) is None
+
+    club = Figure(width=240, height=160)
+    club.axis_options["x"]["domain"] = (0.0, 2.0)
+    club.axis_options["y"]["domain"] = (0.0, 2.0)
+    club.scatter([1.0], [1.0], color="#336699", size=12, _marker_glyph="♣")
+    club_svg = _native.scene_svg(club.to_scene())
+    assert ">♣</text>" in club_svg
+    assert club.to_svg() == club_svg
+
+    polar = Figure(width=400, height=400, coords="polar")
+    polar.axis_options["x"]["domain"] = (0.0, math.tau)
+    polar.axis_options["y"]["domain"] = (0.0, 1.0)
+    polar.scatter([0.0], [0.5], color="#336699", size=12, _marker_glyph="A")
+    polar_svg = _native.scene_svg(polar.to_scene())
+    assert ">A</text>" in polar_svg
+    assert polar.to_svg() == polar_svg
+    assert _scene_v3.scene_export_support_reason(polar) is None
+
+    both = Figure().scatter([1.0], [1.0], _marker_glyph="A")
+    both.traces[-1].style["marker_path"] = _DIAMOND_MARKER_PATH
+    with pytest.raises(UnsupportedSceneV3, match="authored markers"):
+        both.to_scene()
+    invalid = Figure().scatter([1.0], [1.0])
+    invalid.traces[-1].style["marker_glyph"] = "AB"
     with pytest.raises(UnsupportedSceneV3, match="authored markers"):
         invalid.to_scene()
 

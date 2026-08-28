@@ -221,7 +221,7 @@ crates/
                         #   encode from sidecars plus ABI 163 product encode
                         #   from packed facts plus ABI 164 public static-export
                         #   consumers plus ABI 165 product-path XYFS support
-                        #   plus ABI 166 cartesian corner_radius tessellation plus ABI 167 polar wedge_gap tessellation plus ABI 168 polar corner_radius tessellation plus ABI 169 polar step+smooth.
+                        #   plus ABI 166 cartesian corner_radius tessellation plus ABI 167 polar wedge_gap tessellation plus ABI 168 polar corner_radius tessellation plus ABI 169 polar step+smooth plus ABI 170 marker_glyph XYMG.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -234,7 +234,7 @@ crates/
     scene_heatmap.rs    # ABI 149 XYHF heatmap/density paint-fact packing:
                         #   tessellation eligibility, XYHP kind routing, and
                         #   density opacity composition.
-    scene_extras.rs     # ABI 150 XYSS extras packing: XYDS/XYLC/XYMP/XYGR
+    scene_extras.rs     # ABI 150 XYSS extras packing: XYDS/XYLC/XYMP/XYGR/XYMG
                         #   table layout, concat order, omit-empty, and XYEX
                         #   wrapping from framed XYPL/XYHP plus sidecar facts
                         #   plus ABI 161 XYHP wrapping from packed XYSD planes.
@@ -276,7 +276,7 @@ crates/
                              #   XYAS/XYCF encode from sidecars plus ABI 163
                              #   product encode from packed facts plus ABI 165
                              #   product-path XYFS figure-compile support plus
-                             #   ABI 166 cartesian corner_radius tessellation / ABI 167 polar wedge_gap / ABI 168 polar corner_radius / ABI 169 polar step+smooth:
+                             #   ABI 166 cartesian corner_radius tessellation / ABI 167 polar wedge_gap / ABI 168 polar corner_radius / ABI 169 polar step+smooth / ABI 170 marker_glyph XYMG:
                              #   compile, attach, sidecars, rows, annotation,
                              #   style, splice, support probe, then sidecar
                              #   assembled encode.
@@ -733,7 +733,7 @@ ABI v149 adds `xyg_scene_pack_heatmap_facts` so Python and Node share one
 XYHF v1 facts packer: heatmap tessellation eligibility, XYHP kind routing,
 and density opacity composition cannot drift.
 ABI v150 adds `xyg_scene_pack_scene_extras` so Python and Node share one
-XYSS v1 extras packer: XYDS/XYLC/XYMP/XYGR layout, concat order, omit-empty,
+XYSS v1 extras packer: XYDS/XYLC/XYMP/XYGR/XYMG layout, concat order, omit-empty,
 and XYEX wrapping cannot drift.
 ABI v151 adds `xyg_scene_pack_density_grid` so Python and Node share one
 Scene density grid packer: 512×384 blit lattice, `bin_2d`, `density_log_u8`,
@@ -841,4 +841,5 @@ landed; the remainder, in order:
    ABI 167 polar bar/column/histogram `wedge_gap` tessellation (`polar_wedge_points` / XYSD radius blob) ✅.
    ABI 168 polar bar/column/histogram `corner_radius` tessellation (`polar_wedge_points` rounded wedges / XYSD radius blob) ✅.
    ABI 169 polar `curve="smooth"` plus `step` as polar step expansion (identity chords) ✅.
+   ABI 170 constant scatter `marker_glyph` XYMG text markers (`scene.rs` / extras dash slot) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

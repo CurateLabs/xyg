@@ -1647,7 +1647,14 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
     ):
         flags |= _XYFS_TRACE_HIDDEN_OR_PER_ITEM
     if style.get("marker_glyph") is not None:
-        flags |= _XYFS_TRACE_DASHED_MARKERS
+        glyph = style.get("marker_glyph")
+        if (
+            kind != "scatter"
+            or style.get("marker_path") is not None
+            or not isinstance(glyph, str)
+            or len(glyph) != 1
+        ):
+            flags |= _XYFS_TRACE_DASHED_MARKERS
     marker_path = style.get("marker_path")
     if marker_path is not None:
         if kind != "scatter":
@@ -2242,6 +2249,7 @@ _XYTC_HAS_GRADIENT_SPEC = 1 << 19
 _XYTC_HAS_FILL_DICT = 1 << 20
 _XYTC_HAS_CORNER_RADIUS = 1 << 22
 _XYTC_HAS_WEDGE_GAP = 1 << 23
+_XYTC_HAS_GLYPH = 1 << 24
 _XYTO_LINECAP_NONE = 255
 _GRAD_DIR_FROM_CODE = {0: "down", 1: "up", 2: "right", 3: "left"}
 
@@ -2400,6 +2408,13 @@ def _pack_xytc(figure: Any) -> bytes:
             if packed_marker:
                 flags |= _XYTC_HAS_MARKER
                 marker_blob = packed_marker
+        elif (
+            trace.kind == "scatter"
+            and isinstance(style.get("marker_glyph"), str)
+            and len(style["marker_glyph"]) == 1
+        ):
+            flags |= _XYTC_HAS_GLYPH
+            marker_blob = style["marker_glyph"].encode("utf-8")
         r_tip = 0.0
         r_base = 0.0
         wedge_gap = 0.0

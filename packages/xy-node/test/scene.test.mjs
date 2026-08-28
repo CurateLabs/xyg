@@ -132,7 +132,7 @@ test("Node public static export matches explicit Scene consumers", () => {
   assert.ok(png[0] === 0x89 && png[1] === 0x50 && png[2] === 0x4e && png[3] === 0x47);
 });
 
-test("Node Scene compiles constant marker_path contours and keeps glyphs fail-closed", () => {
+test("Node Scene compiles constant marker_path contours", () => {
   const diamond = { contours: [[-0.5, 0, 0, 0.5, 0.5, 0, 0, -0.5]], filled: true };
   const plus = { contours: [[-0.5, 0, 0.5, 0], [0, -0.5, 0, 0.5]], filled: false };
   const figure = new Figure({ width: 240, height: 160 });
@@ -168,12 +168,40 @@ test("Node Scene compiles constant marker_path contours and keeps glyphs fail-cl
     style: { color: "#336699", size: 12, marker_path: diamond },
   });
   assert.match(sceneSvg(polar.toScene()), /<path d="M /);
-  assert.equal(sceneExportSupportReason(polar), null);
-  const glyph = new Figure();
-  glyph.scatter([1], [1], { _composed: true, style: { marker_glyph: "A" } });
-  assert.throws(() => glyph.toScene(), /authored markers/);
+    assert.equal(sceneExportSupportReason(polar), null);
   const invalid = new Figure();
   invalid.scatter([1], [1], { _composed: true, style: { marker_path: "M0 0" } });
+  assert.throws(() => invalid.toScene(), /authored markers/);
+});
+
+test("Node Scene compiles constant marker_glyph text markers", () => {
+  const figure = new Figure({ width: 240, height: 160 });
+  figure.setAxisDomain("x", [0, 2]);
+  figure.setAxisDomain("y", [0, 2]);
+  figure.scatter([1], [1], {
+    _composed: true,
+    style: { color: "#336699", size: 12, marker_glyph: "A" },
+  });
+  const scene = figure.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  assert.ok(Buffer.from(scene).includes(Buffer.from("XYMG")));
+  const svg = sceneSvg(scene);
+  assert.match(svg, /font-family="DejaVu Sans"/);
+  assert.match(svg, /dominant-baseline="central"/);
+  assert.match(svg, />A<\/text>/);
+  assert.doesNotMatch(svg, /<circle /);
+  assert.equal(sceneExportSupportReason(figure), null);
+  const polar = new Figure({ width: 400, height: 400, coords: "polar" });
+  polar.setAxisDomain("x", [0, Math.PI * 2]);
+  polar.setAxisDomain("y", [0, 1]);
+  polar.scatter([0], [0.5], {
+    _composed: true,
+    style: { color: "#336699", size: 12, marker_glyph: "A" },
+  });
+  assert.match(sceneSvg(polar.toScene()), />A<\/text>/);
+  assert.equal(sceneExportSupportReason(polar), null);
+  const invalid = new Figure();
+  invalid.scatter([1], [1], { _composed: true, style: { marker_glyph: "AB" } });
   assert.throws(() => invalid.toScene(), /authored markers/);
 });
 

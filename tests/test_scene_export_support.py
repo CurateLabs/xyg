@@ -546,6 +546,22 @@ def test_polar_smooth_step_line_is_scene_supported() -> None:
     assert scene_export_support_reason(cartesian) is not None
 
 
+def test_marker_glyph_scatter_is_scene_supported() -> None:
+    figure = Figure(width=240, height=160)
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    figure.scatter([1.0], [1.0], color="#336699", size=12, _marker_glyph="A")
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b'font-family="DejaVu Sans"' in exported
+    assert b'dominant-baseline="central"' in exported
+    assert b">A</text>" in exported
+    invalid = Figure().scatter([1.0], [1.0])
+    invalid.traces[-1].style["marker_glyph"] = "AB"
+    assert scene_export_support_reason(invalid) is not None
+
+
 def test_polar_scatter_is_scene_supported() -> None:
     figure = _polar()
     assert scene_export_support_reason(figure) is None
@@ -1288,7 +1304,6 @@ def test_generated_stem_markers_route_every_builtin_symbol(symbol: str) -> None:
     "mutate",
     [
         lambda figure: figure.traces[0].style.__setitem__("marker_path", {"contours": []}),
-        lambda figure: figure.traces[0].style.__setitem__("marker_glyph", "A"),
         lambda figure: figure.scatter([2.5, 3.5], [2.5, 3.5], symbol=["circle", "square"]),
         lambda figure: figure.scatter([2.5, 3.5], [2.5, 3.5], color=[0.0, 1.0]),
         lambda figure: (

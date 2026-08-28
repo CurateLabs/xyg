@@ -85,8 +85,11 @@ still reject with `XYG_SCENE_UNSUPPORTED_POLAR`. ABI 145 admits constant
 validated `marker_path` contours: hosts pack XYMP on the extras dash slot and
 Rust tessellates each scatter centre to PolyFill (filled) or Polyline
 (stroke-only) after pixel mapping. Encoded Scene v31 is unchanged and does
-not keep XYMP. Font glyph markers (`marker_glyph`) stay on the compatibility
-path because they need custom-font/text records. ABI 146 admits constant
+not keep XYMP. ABI 170 admits constant single-character `marker_glyph` markers:
+hosts pack UTF-8 in the XYTR marker blob (`FLAG_HAS_GLYPH`) and Rust keeps XYMG
+on the encoded Scene so SVG emits `<text font-family="DejaVu Sans" …>` and
+raster emits `OP_TEXT`. Combined `marker_path` + `marker_glyph` and multi-character
+glyphs stay fail-closed. ABI 146 admits constant
 validated mark `fill` linear-gradients: hosts pack XYGR on the extras dash
 slot (`{space, dir, stops}` with 2–8 RGBA8 stops, axis-aligned `down|up|left|right`,
 `mark` or `plot` space). Encoded Scene v31 keeps XYGR so SVG emits
@@ -100,7 +103,7 @@ Scene records; `xyg_scene_pack_annotation_facts` owns wrap vs text vs arrow
 vs callout vs rule/band/marker routing from packed XYAF v1. ABI 149 does not
 change Scene records; `xyg_scene_pack_heatmap_facts` owns heatmap/density
 XYHP kind routing from packed XYHF v1. ABI 150 does not
-change Scene records; `xyg_scene_pack_scene_extras` owns XYDS/XYLC/XYMP/XYGR
+change Scene records; `xyg_scene_pack_scene_extras` owns XYDS/XYLC/XYMP/XYGR/XYMG
 layout, concat order, omit-empty, and XYEX wrapping from packed XYSS v1 plus
 framed XYPL/XYHP. ABI 151 does not
 change Scene records; `xyg_scene_pack_density_grid` owns Scene density
@@ -155,6 +158,8 @@ constant pixel gap. ABI 168 does not change Scene records; polar
 bar/column/histogram `corner_radius` tessellates those PolyFill wedges when
 the inner radius is positive. ABI 169 does not change Scene records; polar
 `curve="smooth"` plus `step` keeps authored step expansion on identity chords.
+ABI 170 does not change Scene records; constant scatter `marker_glyph` is kept
+as an XYMG extras sidecar so SVG/raster emit text markers.
 Violin/box/heatmap radii and per-item radius channels stay fail-closed.
 
 ## Version 3: backend-neutral core scene batch
@@ -457,11 +462,12 @@ allowlist includes `curve` for `KIND_ERROR_BAND`) and polar
 `curve="smooth"` line/area/error_band as identity chords (polar-axes.md §5;
 ABI 147 resolves `step_mode=4` from packed XYPK coords so polar smooth stays
 identity). ABI 169 admits polar `curve="smooth"` plus `step` as authored
-step expansion on those identity chords. Authored marker glyphs stay on the
-compatibility exporters. ABI 145 admits
+step expansion on those identity chords. ABI 170 admits constant scatter
+`marker_glyph` via XYMG.
+ABI 145 admits
 constant scatter `marker_path` via an XYMP extras sidecar; Rust tessellates
 centres to existing PolyFill/Polyline after pixel mapping (public allowlist
-includes `marker_path` for `KIND_SCATTER`; encoded Scene v31 is unchanged).
+includes `marker_path` and `marker_glyph` for `KIND_SCATTER`; encoded Scene v31 is unchanged).
 ABI 146 admits constant mark `fill` linear-gradients via an XYGR extras
 sidecar (public allowlist already includes `fill` for area/bar/column/histogram;
 encoded Scene v31 keeps XYGR). ABI 147 does not change Scene records;
@@ -473,7 +479,7 @@ rule/band/marker routing from packed XYAF v1. ABI 149 does not change Scene
 records; `xyg_scene_pack_heatmap_facts` owns heatmap/density XYHP kind routing
 from packed XYHF v1.
 ABI 150 does not change Scene records;
-`xyg_scene_pack_scene_extras` owns XYDS/XYLC/XYMP/XYGR layout, concat order,
+`xyg_scene_pack_scene_extras` owns XYDS/XYLC/XYMP/XYGR/XYMG layout, concat order,
 omit-empty, and XYEX wrapping from packed XYSS v1 plus framed XYPL/XYHP.
 ABI 151 does not change Scene records;
 `xyg_scene_pack_density_grid` owns Scene density `bin_2d` / `density_log_u8`
@@ -1424,7 +1430,7 @@ ABI 149 does not change Scene records either;
 `xyg_scene_pack_heatmap_facts` owns heatmap/density XYHP kind routing from
 packed XYHF v1.
 ABI 150 does not change Scene records either;
-`xyg_scene_pack_scene_extras` owns XYDS/XYLC/XYMP/XYGR layout, concat order,
+`xyg_scene_pack_scene_extras` owns XYDS/XYLC/XYMP/XYGR/XYMG layout, concat order,
 and XYEX wrapping from packed XYSS v1 plus framed XYPL/XYHP.
 ABI 151 does not change Scene records either;
 `xyg_scene_pack_density_grid` owns Scene density `bin_2d` / `density_log_u8`
@@ -1483,7 +1489,7 @@ cartesian bar/column/histogram `corner_radius` tessellates to PolyFill after
 pixel mapping. ABI 167 insets polar bar/column/histogram `wedge_gap`. ABI 168
 tessellates polar bar/column/histogram `corner_radius` when the inner radius
 is positive. ABI 169 admits polar `curve="smooth"` plus `step` as polar step
-expansion. Authored marker glyphs stay compatibility. ABI 116 does not change Scene records either;
+expansion. ABI 170 admits constant scatter `marker_glyph` via XYMG. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;
 `xyg_scene_figure_support_reason` owns figure-compile support from packed

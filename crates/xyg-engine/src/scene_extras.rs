@@ -3,16 +3,17 @@
 //! Hosts pack authored dash/linecap/marker_path/gradient facts as XYSS v1 plus
 //! already-framed XYPL bytes. ABI 150 wraps framed XYHP; ABI 161 wraps XYHP
 //! from packed XYSD planes so hosts do not unpack sidecar paint. Rust owns
-//! XYDS/XYLC/XYMP/XYGR table layout, concat order, omit-empty rules, and XYEX
+//! XYDS/XYLC/XYMP/XYGR/XYMG table layout, concat order, omit-empty rules, and XYEX
 //! wrapping so Python and Node cannot drift on the extras pointer. Encoded
-//! Scene v31 is unchanged.
+//! Scene v31 keeps XYMG (glyph sidecar) like XYGR so SVG/raster can emit text
+//! markers. ABI 170 admits constant scatter `marker_glyph`.
 
 use crate::polar::{XYPL_MAGIC, XYPL_V1_BYTES};
 use crate::scene::{
     MAX_SCENE_STYLES, XYDS_MAGIC, XYDS_MAX_VALUES, XYDS_VERSION, XYEX_MAGIC, XYEX_VERSION,
     XYEX_VERSION_DASH, XYGR_DIR_LEFT, XYGR_FLAG_PLOT_SPACE, XYGR_MAGIC, XYGR_MAX_STOPS,
-    XYGR_VERSION, XYHP_MAGIC, XYLC_MAGIC, XYLC_VERSION, XYMP_MAGIC, XYMP_MAX_CONTOURS,
-    XYMP_MAX_VERTICES, XYMP_VERSION, XYMP_VERTEX_LIMIT,
+    XYGR_VERSION, XYHP_MAGIC, XYLC_MAGIC, XYLC_VERSION, XYMG_MAGIC, XYMG_VERSION, XYMP_MAGIC,
+    XYMP_MAX_CONTOURS, XYMP_MAX_VERTICES, XYMP_VERSION, XYMP_VERTEX_LIMIT,
 };
 
 pub const XYSS_MAGIC: &[u8; 4] = b"XYSS";
@@ -24,6 +25,7 @@ pub const XYSS_HAS_DASH: u8 = 1 << 0;
 pub const XYSS_HAS_CAP: u8 = 1 << 1;
 pub const XYSS_HAS_MARKER: u8 = 1 << 2;
 pub const XYSS_HAS_GRAD: u8 = 1 << 3;
+pub const XYSS_HAS_GLYPH: u8 = 1 << 4;
 
 const LINECAP_BUTT: u8 = 0;
 const LINECAP_SQUARE: u8 = 2;
@@ -81,6 +83,11 @@ struct GradEntry {
     plot_space: bool,
     dir: u8,
     stops: Vec<(f32, [u8; 4])>,
+}
+
+struct GlyphEntry {
+    style_ref: u32,
+    glyph: Vec<u8>,
 }
 
 fn encode_xyds(entries: &[DashEntry]) -> Result<Vec<u8>, ExtrasError> {
@@ -229,6 +236,42 @@ fn encode_xygr(entries: &[GradEntry]) -> Result<Vec<u8>, ExtrasError> {
     Ok(out)
 }
 
+fn encode_xymg(entries: &[GlyphEntry]) -> Result<Vec<u8>, ExtrasError> {
+    if entries.is_empty() {
+        return Ok(Vec::new());
+    }
+    if entries.len() > MAX_SCENE_STYLES {
+        return Err(ExtrasError::Limit);
+    }
+    let mut out = Vec::from(*XYMG_MAGIC);
+    out.extend_from_slice(&XYMG_VERSION.to_le_bytes());
+    out.extend_from_slice(&(entries.len() as u32).to_le_bytes());
+    out.extend_from_slice(&0u32.to_le_bytes());
+    let mut seen = std::collections::BTreeSet::new();
+    for entry in entries {
+        if entry.glyph.is_empty()
+            || entry.glyph.len() > crate::scene::XYMG_MAX_UTF8
+            || std::str::from_utf8(&entry.glyph)
+                .ok()
+                .and_then(|text| {
+                    let mut chars = text.chars();
+                    let ch = chars.next()?;
+                    (chars.next().is_none() && ch != '\0' && ch != '\n' && ch != '\r').then_some(())
+                })
+                .is_none()
+            || !seen.insert(entry.style_ref)
+        {
+            return Err(ExtrasError::Payload);
+        }
+        out.extend_from_slice(&entry.style_ref.to_le_bytes());
+        out.extend_from_slice(&(entry.glyph.len() as u32).to_le_bytes());
+        let mut padded = [0u8; 4];
+        padded[..entry.glyph.len()].copy_from_slice(&entry.glyph);
+        out.extend_from_slice(&padded);
+    }
+    Ok(out)
+}
+
 fn wrap_extras(polar: &[u8], paint: &[u8], dash: &[u8]) -> Result<Vec<u8>, ExtrasError> {
     if polar.is_empty() && paint.is_empty() && dash.is_empty() {
         return Ok(Vec::new());
@@ -280,11 +323,12 @@ fn parse_xyss(
         Vec<CapEntry>,
         Vec<MarkerEntry>,
         Vec<GradEntry>,
+        Vec<GlyphEntry>,
     ),
     ExtrasError,
 > {
     if bytes.is_empty() {
-        return Ok((Vec::new(), Vec::new(), Vec::new(), Vec::new()));
+        return Ok((Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()));
     }
     if bytes.len() < XYSS_V1_HEADER_BYTES || bytes.get(..4) != Some(&XYSS_MAGIC[..]) {
         return Err(ExtrasError::Length);
@@ -301,6 +345,7 @@ fn parse_xyss(
     let mut caps = Vec::new();
     let mut markers = Vec::new();
     let mut grads = Vec::new();
+    let mut glyphs = Vec::new();
     let mut seen = std::collections::BTreeSet::new();
     for _ in 0..n_records {
         let prefix = take(&mut rest, XYSS_RECORD_PREFIX_BYTES)?;
@@ -316,11 +361,15 @@ fn parse_xyss(
         let grad_dir = prefix[9];
         let plot_space = prefix[10];
         let filled = prefix[11] != 0;
-        if flags & !(XYSS_HAS_DASH | XYSS_HAS_CAP | XYSS_HAS_MARKER | XYSS_HAS_GRAD) != 0
+        if flags
+            & !(XYSS_HAS_DASH | XYSS_HAS_CAP | XYSS_HAS_MARKER | XYSS_HAS_GRAD | XYSS_HAS_GLYPH)
+            != 0
             || flags == 0
-            || (flags & XYSS_HAS_MARKER == 0 && n_contours != 0)
+            || (flags & XYSS_HAS_MARKER != 0 && flags & XYSS_HAS_GLYPH != 0)
+            || (flags & XYSS_HAS_MARKER == 0 && flags & XYSS_HAS_GLYPH == 0 && n_contours != 0)
             || (flags & XYSS_HAS_GRAD == 0 && n_stops != 0)
             || (flags & XYSS_HAS_MARKER != 0 && n_contours == 0)
+            || (flags & XYSS_HAS_GLYPH != 0 && !(1..=4).contains(&n_contours))
             || (flags & XYSS_HAS_GRAD != 0 && n_stops == 0)
         {
             return Err(ExtrasError::Payload);
@@ -385,6 +434,24 @@ fn parse_xyss(
                 contours,
             });
         }
+        if flags & XYSS_HAS_GLYPH != 0 {
+            let raw = take(&mut rest, n_contours)?;
+            if std::str::from_utf8(raw)
+                .ok()
+                .and_then(|text| {
+                    let mut chars = text.chars();
+                    let ch = chars.next()?;
+                    (chars.next().is_none() && ch != '\0' && ch != '\n' && ch != '\r').then_some(())
+                })
+                .is_none()
+            {
+                return Err(ExtrasError::Payload);
+            }
+            glyphs.push(GlyphEntry {
+                style_ref,
+                glyph: raw.to_vec(),
+            });
+        }
         if flags & XYSS_HAS_GRAD != 0 {
             let raw = take(&mut rest, n_stops.checked_mul(8).ok_or(ExtrasError::Limit)?)?;
             let mut stops = Vec::with_capacity(n_stops);
@@ -408,17 +475,18 @@ fn parse_xyss(
     if !rest.is_empty() {
         return Err(ExtrasError::Length);
     }
-    Ok((dashes, caps, markers, grads))
+    Ok((dashes, caps, markers, grads, glyphs))
 }
 
 /// Pack polar XYPL, XYHP paint, and XYSS style-sidecar facts into the extras
 /// pointer payload (`XYEX` or a raw single sidecar).
 pub fn pack_scene_extras(polar: &[u8], paint: &[u8], facts: &[u8]) -> Result<Vec<u8>, ExtrasError> {
-    let (dashes, caps, markers, grads) = parse_xyss(facts)?;
+    let (dashes, caps, markers, grads, glyphs) = parse_xyss(facts)?;
     let mut dash = encode_xyds(&dashes)?;
     dash.extend_from_slice(&encode_xylc(&caps)?);
     dash.extend_from_slice(&encode_xymp(&markers)?);
     dash.extend_from_slice(&encode_xygr(&grads)?);
+    dash.extend_from_slice(&encode_xymg(&glyphs)?);
     wrap_extras(polar, paint, &dash)
 }
 
@@ -586,6 +654,25 @@ mod tests {
         let extras = pack_scene_extras(&[], &[], &facts).unwrap();
         assert_eq!(&extras[..4], XYMP_MAGIC);
         assert!(extras.windows(4).any(|window| window == XYGR_MAGIC));
+    }
+
+    fn glyph_record(style_ref: u32, glyph: &str) -> Vec<u8> {
+        let mut prefix = vec![0u8; XYSS_RECORD_PREFIX_BYTES];
+        prefix[..4].copy_from_slice(&style_ref.to_le_bytes());
+        prefix[4] = XYSS_HAS_GLYPH;
+        prefix[7] = glyph.len() as u8;
+        let mut out = prefix;
+        out.extend_from_slice(glyph.as_bytes());
+        out
+    }
+
+    #[test]
+    fn glyph_facts_encode_xymg() {
+        let mut facts = xyss_header(1);
+        facts.extend_from_slice(&glyph_record(0, "A"));
+        let extras = pack_scene_extras(&[], &[], &facts).unwrap();
+        assert_eq!(&extras[..4], XYMG_MAGIC);
+        assert_eq!(u32::from_le_bytes(extras[8..12].try_into().unwrap()), 1);
     }
 
     #[test]

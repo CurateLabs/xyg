@@ -3070,6 +3070,7 @@ const XYTC_HAS_FILL_DICT = 1 << 20;
 const XYTC_SYMBOL_INT = 1 << 21;
 const XYTC_HAS_CORNER_RADIUS = 1 << 22;
 const XYTC_HAS_WEDGE_GAP = 1 << 23;
+const XYTC_HAS_GLYPH = 1 << 24;
 const XYTO_LINECAP_NONE = 255;
 const XYTA_HEATMAP = 1 << 0;
 const XYTA_DENSITY = 1 << 1;
@@ -3256,6 +3257,12 @@ function packXyTc(figure) {
       if (packed) {
         flags |= XYTC_HAS_MARKER;
         markerBlob = packed;
+      }
+    } else if (trace.kind === "scatter" && style.marker_glyph != null) {
+      const glyph = String(style.marker_glyph);
+      if ([...glyph].length === 1) {
+        flags |= XYTC_HAS_GLYPH;
+        markerBlob = encodeUtf8(glyph);
       }
     }
     const prefix = new Uint8Array(160);
@@ -5034,7 +5041,10 @@ function figureTraceSupport(figure, trace) {
     || scatterHasDroppedPerItem(trace)
     || (scatterHasNonConstantColor(trace) && !scatterUsesDensity(trace))
   ) flags |= XYFS_TRACE_HIDDEN_OR_PER_ITEM;
-  if (style.marker_glyph != null) flags |= XYFS_TRACE_DASHED_MARKERS;
+  if (style.marker_glyph != null) {
+    const glyph = String(style.marker_glyph);
+    if (kind !== "scatter" || style.marker_path != null || [...glyph].length !== 1) flags |= XYFS_TRACE_DASHED_MARKERS;
+  }
   if (style.marker_path != null) {
     if (kind !== "scatter") flags |= XYFS_TRACE_DASHED_MARKERS;
     else {

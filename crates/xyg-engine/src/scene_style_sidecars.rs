@@ -9,7 +9,7 @@
 use crate::scene::XYDS_MAX_VALUES;
 use crate::scene_annotations::{XYAO_MAGIC, XYAO_STYLE_BYTES, XYAO_V1_HEADER_BYTES, XYAO_VERSION};
 use crate::scene_extras::{
-    XYSS_HAS_CAP, XYSS_HAS_DASH, XYSS_HAS_GRAD, XYSS_HAS_MARKER, XYSS_MAGIC,
+    XYSS_HAS_CAP, XYSS_HAS_DASH, XYSS_HAS_GLYPH, XYSS_HAS_GRAD, XYSS_HAS_MARKER, XYSS_MAGIC,
     XYSS_RECORD_PREFIX_BYTES, XYSS_VERSION,
 };
 use crate::scene_trace_sidecars::{XYSD_HEADER_BYTES, XYSD_MAGIC, XYSD_PREFIX_BYTES, XYSD_VERSION};
@@ -100,8 +100,24 @@ fn push_cap(record: &mut Record, linecap: u8) {
     }
 }
 
+fn single_glyph(bytes: &[u8]) -> Option<&str> {
+    let text = std::str::from_utf8(bytes).ok()?;
+    let mut chars = text.chars();
+    let ch = chars.next()?;
+    if chars.next().is_some() || ch == '\0' || ch == '\n' || ch == '\r' {
+        return None;
+    }
+    Some(text)
+}
+
 fn parse_marker(blob: &[u8], record: &mut Record, index: usize) -> Result<(), StyleSidecarsError> {
     if blob.is_empty() {
+        return Ok(());
+    }
+    if let Some(glyph) = single_glyph(blob) {
+        record.flags |= XYSS_HAS_GLYPH;
+        record.n_contours = glyph.len() as u8;
+        record.remainder.extend_from_slice(glyph.as_bytes());
         return Ok(());
     }
     if blob.len() < 8 {

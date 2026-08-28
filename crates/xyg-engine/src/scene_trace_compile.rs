@@ -9,6 +9,9 @@
 //! trailer so encode can tessellate rounded Rects. ABI 167 packs polar
 //! `wedge_gap` into that same trailer. ABI 168 tessellates polar
 //! bar/column/histogram `corner_radius` from those same packed radii.
+//! ABI 170 admits constant scatter `marker_glyph` as UTF-8 in the existing
+//! XYTR marker blob (`FLAG_HAS_GLYPH`); encoded Scene keeps XYMG so SVG/raster
+//! emit `<text>` / `OP_TEXT` instead of a disc.
 //! Encoded Scene v31 is unchanged.
 
 use crate::css::{self, Checked};
@@ -49,6 +52,7 @@ pub const FLAG_HAS_FILL_DICT: u32 = 1 << 20;
 pub const FLAG_SYMBOL_INT: u32 = 1 << 21;
 pub const FLAG_HAS_CORNER_RADIUS: u32 = 1 << 22;
 pub const FLAG_HAS_WEDGE_GAP: u32 = 1 << 23;
+pub const FLAG_HAS_GLYPH: u32 = 1 << 24;
 
 pub const FACT_STROKE_PERIMETER: u32 = 1;
 pub const FACT_CURVE_SMOOTH: u32 = 2;
@@ -719,6 +723,19 @@ fn gradient_solid_css(blob: &[u8]) -> String {
     "rgb(0,0,0)".to_string()
 }
 
+fn admit_glyph(blob: &[u8], kind: &str) -> Option<Vec<u8>> {
+    if kind != "scatter" {
+        return None;
+    }
+    let text = std::str::from_utf8(blob).ok()?;
+    let mut chars = text.chars();
+    let ch = chars.next()?;
+    if chars.next().is_some() || ch == '\0' || ch == '\n' || ch == '\r' {
+        return None;
+    }
+    Some(blob.to_vec())
+}
+
 fn admit_marker(blob: &[u8], kind: &str) -> Option<Vec<u8>> {
     if kind != "scatter" || blob.len() < 8 {
         return None;
@@ -948,7 +965,15 @@ fn compile_one(input: Input<'_>, index: usize) -> Result<Compiled, TraceCompileE
         fact_bits,
         dash: parse_dash(input.dash, &input.dash_pattern, input.flags),
         linecap: parse_linecap(input.linecap),
-        marker: if input.flags & FLAG_HAS_MARKER != 0 {
+        marker: if input.flags & FLAG_HAS_GLYPH != 0 {
+            if input.flags & FLAG_HAS_MARKER != 0 {
+                return Err(TraceCompileError::new(TraceCompileCode::Symbol, index));
+            }
+            Some(
+                admit_glyph(input.marker_blob, input.kind)
+                    .ok_or(TraceCompileError::new(TraceCompileCode::Symbol, index))?,
+            )
+        } else if input.flags & FLAG_HAS_MARKER != 0 {
             admit_marker(input.marker_blob, input.kind)
         } else {
             None

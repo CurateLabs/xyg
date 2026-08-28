@@ -181,7 +181,7 @@ packed XYPK v1. ABI 148 adds `xyg_scene_pack_annotation_facts` so wrap vs
 text vs arrow vs callout vs rule/band/marker routing resolves from packed
 XYAF v1. ABI 149 adds `xyg_scene_pack_heatmap_facts` so heatmap/density
 XYHP kind routing resolves from packed XYHF v1. ABI 150 adds
-`xyg_scene_pack_scene_extras` so XYDS/XYLC/XYMP/XYGR layout, concat order,
+`xyg_scene_pack_scene_extras` so XYDS/XYLC/XYMP/XYGR/XYMG layout, concat order,
 omit-empty, and XYEX wrapping resolve from packed XYSS v1 plus framed
 XYPL/XYHP. ABI 151 adds
 `xyg_scene_pack_density_grid` so Scene density `bin_2d` / `density_log_u8` /
@@ -242,7 +242,8 @@ mapping through `geom::rounded_rect_poly`; ABI 167 applies polar
 bar/column/histogram `wedge_gap` as a constant pixel inset. ABI 168
 tessellates polar bar/column/histogram `corner_radius` when the inner radius
 is positive. ABI 169 admits polar `curve="smooth"` plus `step` as polar step
-expansion (identity chords).
+expansion (identity chords). ABI 170 admits constant scatter `marker_glyph`
+via an XYMG extras sidecar kept on the encoded Scene.
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -292,8 +293,8 @@ XYNM plus XYCL plus XYAF plus XYCF plus polar.
 ABI 164 owns public SVG/PNG/PDF/JPEG/WebP consumers from one encoded Scene.
 ABI 165 owns the figure-compile support probe from packed XYFS on product encode.
 ABI 169 admits polar `curve="smooth"` plus `step` as polar step expansion
-(identity chords). Authored marker glyphs stay
-compatibility. ABI 104 likewise moves
+(identity chords). ABI 170 admits constant scatter `marker_glyph` via XYMG.
+ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate
 row per segment and two PolyFill rows per face. ABI 105 makes the public
@@ -340,7 +341,8 @@ same product Scene so public `to_svg` / PNG do not fall back to `_svg.py` /
 bar/column/histogram `wedge_gap` on that same product Scene. ABI 168
 tessellates polar bar/column/histogram `corner_radius` on that same product
 Scene when the inner radius is positive. ABI 169 admits polar `curve="smooth"`
-plus `step` on that same product Scene as polar step expansion.
+plus `step` on that same product Scene as polar step expansion. ABI 170 admits
+constant scatter `marker_glyph` on that same product Scene.
 The explicit `xyg_scene_figure_support_reason` ABI remains for tests.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call
@@ -558,7 +560,7 @@ heatmap dispatch cannot drift. ABI 148
 rule/band/marker routing from packed XYAF v1. ABI 149
 `xyg_scene_pack_heatmap_facts` owns XYHP kind routing from packed XYHF v1.
 ABI 150
-`xyg_scene_pack_scene_extras` owns XYDS/XYLC/XYMP/XYGR layout, concat order,
+`xyg_scene_pack_scene_extras` owns XYDS/XYLC/XYMP/XYGR/XYMG layout, concat order,
 omit-empty, and XYEX wrapping from packed XYSS v1 plus framed XYPL/XYHP.
 ABI 151
 `xyg_scene_pack_density_grid` owns Scene density `bin_2d` / `density_log_u8`

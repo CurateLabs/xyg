@@ -14,7 +14,8 @@
 //! `BandFlatten` mapping; polar `curve="smooth"` line/area/error_band pack as
 //! identity chords (no `step_mode=4`). ABI 169 admits polar `curve="smooth"`
 //! plus `step` on that same identity-chord packing: authored `step_mode` 1–3
-//! expands, and smooth does not promote to `CurveFlatten`.
+//! expands, and smooth does not promote to `CurveFlatten`. ABI 170 admits
+//! constant scatter `marker_glyph` via XYMG (no new pack kind).
 //! ABI 145 admits constant `marker_path` via an XYMP extras sidecar;
 //! tessellation is Scene-owned after pixel mapping (no new pack kind).
 //! ABI 146 admits constant mark `fill` linear-gradients via an XYGR extras
@@ -28,7 +29,7 @@
 //! routing so those families cannot drift. ABI 149 lives in
 //! `scene_heatmap.rs`: XYHF v1 facts pack heatmap/density XYHP kind routing
 //! so painted-lattice sidecars cannot drift. ABI 150 lives in
-//! `scene_extras.rs`: XYSS v1 facts pack XYDS/XYLC/XYMP/XYGR layout, concat
+//! `scene_extras.rs`: XYSS v1 facts pack XYDS/XYLC/XYMP/XYGR/XYMG layout, concat
 //! order, omit-empty, and XYEX wrapping so extras cannot drift. ABI 151 lives
 //! in `scene_density.rs`: Scene density blit owns `bin_2d`, `density_log_u8`,
 //! optional mean-color, and XYDE wrapping. ABI 152 owns public-export

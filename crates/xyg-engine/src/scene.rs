@@ -3231,11 +3231,12 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
         PolarSceneState::from_xypl(xypl, layout)?;
     }
     let images = parse_xyim(xyim)?;
-    let (dash_bytes, cap_bytes, marker_bytes, grad_bytes) = split_style_sidecars(xyds)?;
+    let (dash_bytes, cap_bytes, marker_bytes, grad_bytes, glyph_bytes) = split_style_sidecars(xyds)?;
     let dashes = parse_xyds(dash_bytes)?;
     let caps = parse_xylc(cap_bytes)?;
     let markers = parse_xymp(marker_bytes)?;
     let gradients = parse_xygr(grad_bytes)?;
+    let glyphs = parse_xymg(glyph_bytes)?;
     if dashes
         .iter()
         .any(|entry| entry.style_ref as usize >= styles)
@@ -3246,6 +3247,7 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
         || gradients
             .iter()
             .any(|entry| entry.style_ref as usize >= styles)
+        || glyphs.iter().any(|entry| entry.style_ref as usize >= styles)
     {
         return Err(SceneError::Length);
     }
@@ -3776,6 +3778,16 @@ pub const XYGR_DIR_UP: u32 = 1;
 pub const XYGR_DIR_RIGHT: u32 = 2;
 pub const XYGR_DIR_LEFT: u32 = 3;
 pub const XYGR_FLAG_PLOT_SPACE: u32 = 1 << 2;
+/// XYMG v1 authored-glyph sidecar (ABI 170). One entry per host style_ref
+/// that carries a constant single-character `marker_glyph`. Concatenated
+/// after XYGR in the extras dash slot. Encoded Scene keeps XYMG so SVG
+/// emits `<text>` and raster emits `OP_TEXT` instead of a disc. Combined
+/// `marker_path` + `marker_glyph` stays fail-closed.
+pub const XYMG_MAGIC: &[u8; 4] = b"XYMG";
+pub const XYMG_VERSION: u32 = 1;
+pub const XYMG_V1_HEADER_BYTES: usize = 16;
+pub const XYMG_ENTRY_BYTES: usize = 12;
+pub const XYMG_MAX_UTF8: usize = 4;
 
 /// One XYHP paint plane keyed by the compact lattice's stable identity.
 #[derive(Clone, Copy, Debug)]
@@ -3838,7 +3850,7 @@ fn scene_read_f64(bytes: &[u8], offset: usize) -> Result<f64, SceneError> {
 /// Split a host extras payload into polar XYPL, XYHP paint, and style-sidecar
 /// bytes. Empty input is Cartesian with no paint or dash. Raw XYPL (92 bytes)
 /// stays valid polar-only authoring. Raw XYHP is Cartesian painted heatmaps.
-/// Raw XYDS, raw XYLC, raw XYMP, raw XYGR, or XYDS+XYLC+XYMP+XYGR concat occupy
+/// Raw XYDS, raw XYLC, raw XYMP, raw XYGR, raw XYMG, or XYDS+XYLC+XYMP+XYGR+XYMG concat occupy
 /// the dash slot. XYEX v1 wraps polar+paint; XYEX v2 `dash_len` covers those
 /// style sidecars.
 pub fn split_scene_extras(bytes: &[u8]) -> Option<(&[u8], &[u8], &[u8])> {
@@ -3855,6 +3867,7 @@ pub fn split_scene_extras(bytes: &[u8]) -> Option<(&[u8], &[u8], &[u8])> {
         || bytes.get(..4) == Some(&XYLC_MAGIC[..])
         || bytes.get(..4) == Some(&XYMP_MAGIC[..])
         || bytes.get(..4) == Some(&XYGR_MAGIC[..])
+        || bytes.get(..4) == Some(&XYMG_MAGIC[..])
     {
         return Some((&[], &[], bytes));
     }
@@ -3900,6 +3913,7 @@ pub fn split_scene_extras(bytes: &[u8]) -> Option<(&[u8], &[u8], &[u8])> {
         && dash.get(..4) != Some(&XYLC_MAGIC[..])
         && dash.get(..4) != Some(&XYMP_MAGIC[..])
         && dash.get(..4) != Some(&XYGR_MAGIC[..])
+        && dash.get(..4) != Some(&XYMG_MAGIC[..])
     {
         return None;
     }
@@ -4902,9 +4916,104 @@ fn encode_xygr(entries: &[StyleGradient]) -> Result<Vec<u8>, SceneError> {
     Ok(out)
 }
 
-fn split_style_sidecars(bytes: &[u8]) -> Result<(&[u8], &[u8], &[u8], &[u8]), SceneError> {
+struct StyleMarkerGlyph {
+    style_ref: u32,
+    glyph: String,
+}
+
+fn marker_glyph_text(bytes: &[u8]) -> Option<&str> {
+    let text = std::str::from_utf8(bytes).ok()?;
+    let mut chars = text.chars();
+    let ch = chars.next()?;
+    if chars.next().is_some() || ch == '\0' || ch == '\n' || ch == '\r' {
+        return None;
+    }
+    Some(text)
+}
+
+fn parse_xymg_prefix(bytes: &[u8]) -> Result<(Vec<StyleMarkerGlyph>, usize), SceneError> {
+    if bytes.len() < XYMG_V1_HEADER_BYTES || bytes.get(..4) != Some(&XYMG_MAGIC[..]) {
+        return Err(SceneError::Length);
+    }
+    if scene_read_u32(bytes, 4)? != XYMG_VERSION {
+        return Err(SceneError::Version);
+    }
+    let n_entries = scene_read_u32(bytes, 8)? as usize;
+    if scene_read_u32(bytes, 12)? != 0 || n_entries == 0 || n_entries > MAX_SCENE_STYLES {
+        return Err(SceneError::Length);
+    }
+    let mut entries = Vec::with_capacity(n_entries);
+    let mut seen = std::collections::BTreeSet::new();
+    let mut cursor = XYMG_V1_HEADER_BYTES;
+    for _ in 0..n_entries {
+        if cursor
+            .checked_add(XYMG_ENTRY_BYTES)
+            .ok_or(SceneError::Limit)?
+            > bytes.len()
+        {
+            return Err(SceneError::Length);
+        }
+        let style_ref = scene_read_u32(bytes, cursor)?;
+        let glyph_len = scene_read_u32(bytes, cursor + 4)? as usize;
+        if glyph_len == 0
+            || glyph_len > XYMG_MAX_UTF8
+            || !seen.insert(style_ref)
+        {
+            return Err(SceneError::Length);
+        }
+        let glyph = marker_glyph_text(&bytes[cursor + 8..cursor + 8 + glyph_len])
+            .ok_or(SceneError::Length)?
+            .to_string();
+        cursor += XYMG_ENTRY_BYTES;
+        entries.push(StyleMarkerGlyph { style_ref, glyph });
+    }
+    Ok((entries, cursor))
+}
+
+fn parse_xymg(bytes: &[u8]) -> Result<Vec<StyleMarkerGlyph>, SceneError> {
     if bytes.is_empty() {
-        return Ok((&[], &[], &[], &[]));
+        return Ok(Vec::new());
+    }
+    let (entries, end) = parse_xymg_prefix(bytes)?;
+    if end != bytes.len() {
+        return Err(SceneError::Length);
+    }
+    Ok(entries)
+}
+
+#[cfg(test)]
+fn encode_xymg(entries: &[StyleMarkerGlyph]) -> Result<Vec<u8>, SceneError> {
+    if entries.is_empty() {
+        return Ok(Vec::new());
+    }
+    if entries.len() > MAX_SCENE_STYLES {
+        return Err(SceneError::Limit);
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    let mut out = Vec::new();
+    out.extend_from_slice(XYMG_MAGIC);
+    out.extend_from_slice(&XYMG_VERSION.to_le_bytes());
+    out.extend_from_slice(&(entries.len() as u32).to_le_bytes());
+    out.extend_from_slice(&0u32.to_le_bytes());
+    for entry in entries {
+        let bytes = entry.glyph.as_bytes();
+        if marker_glyph_text(bytes).is_none() || !seen.insert(entry.style_ref) {
+            return Err(SceneError::Length);
+        }
+        out.extend_from_slice(&entry.style_ref.to_le_bytes());
+        out.extend_from_slice(&(bytes.len() as u32).to_le_bytes());
+        let mut padded = [0u8; 4];
+        padded[..bytes.len()].copy_from_slice(bytes);
+        out.extend_from_slice(&padded);
+    }
+    Ok(out)
+}
+
+fn split_style_sidecars(
+    bytes: &[u8],
+) -> Result<(&[u8], &[u8], &[u8], &[u8], &[u8]), SceneError> {
+    if bytes.is_empty() {
+        return Ok((&[], &[], &[], &[], &[]));
     }
     let mut offset = 0usize;
     let dash = if bytes.get(..4) == Some(&XYDS_MAGIC[..]) {
@@ -4938,10 +5047,18 @@ fn split_style_sidecars(bytes: &[u8]) -> Result<(&[u8], &[u8], &[u8], &[u8]), Sc
     } else {
         &[][..]
     };
+    let glyphs = if bytes.get(offset..offset.saturating_add(4)) == Some(&XYMG_MAGIC[..]) {
+        let (_, end) = parse_xymg_prefix(&bytes[offset..])?;
+        let glyphs = bytes.get(offset..offset + end).ok_or(SceneError::Length)?;
+        offset += end;
+        glyphs
+    } else {
+        &[][..]
+    };
     if offset != bytes.len() {
         return Err(SceneError::Length);
     }
-    Ok((dash, cap, markers, gradients))
+    Ok((dash, cap, markers, gradients, glyphs))
 }
 
 fn apply_style_dashes(styles: &mut [EncodedStyle], entries: &[StyleDash]) -> Result<(), SceneError> {
@@ -4966,16 +5083,20 @@ fn apply_style_caps(styles: &mut [EncodedStyle], entries: &[StyleCap]) -> Result
 fn apply_style_sidecars(
     styles: &mut [EncodedStyle],
     bytes: &[u8],
-) -> Result<Vec<Option<AuthoredGradient>>, SceneError> {
-    let (dash, cap, markers, grads) = split_style_sidecars(bytes)?;
+) -> Result<(Vec<Option<AuthoredGradient>>, Vec<Option<String>>), SceneError> {
+    let (dash, cap, markers, grads, glyphs) = split_style_sidecars(bytes)?;
     apply_style_dashes(styles, &parse_xyds(dash)?)?;
     apply_style_caps(styles, &parse_xylc(cap)?)?;
     let marker_entries = parse_xymp(markers)?;
     let gradient_entries = parse_xygr(grads)?;
+    let glyph_entries = parse_xymg(glyphs)?;
     if marker_entries
         .iter()
         .any(|entry| entry.style_ref as usize >= styles.len())
         || gradient_entries
+            .iter()
+            .any(|entry| entry.style_ref as usize >= styles.len())
+        || glyph_entries
             .iter()
             .any(|entry| entry.style_ref as usize >= styles.len())
     {
@@ -4994,7 +5115,11 @@ fn apply_style_sidecars(
     for entry in gradient_entries {
         gradients[entry.style_ref as usize] = Some(entry.gradient);
     }
-    Ok(gradients)
+    let mut marker_glyphs = vec![None; styles.len()];
+    for entry in glyph_entries {
+        marker_glyphs[entry.style_ref as usize] = Some(entry.glyph);
+    }
+    Ok((gradients, marker_glyphs))
 }
 
 fn scene_sidecars_after_chrome(
@@ -5014,6 +5139,7 @@ fn scene_sidecars_after_chrome(
         || after.get(..4) == Some(&XYLC_MAGIC[..])
         || after.get(..4) == Some(&XYMP_MAGIC[..])
         || after.get(..4) == Some(&XYGR_MAGIC[..])
+        || after.get(..4) == Some(&XYMG_MAGIC[..])
     {
         split_style_sidecars(after)?;
         return Ok((xypl, &[][..], after));
@@ -6777,20 +6903,22 @@ impl<'a> SceneBatch<'a> {
         Ok(self)
     }
 
-    /// Attach a host-packed XYDS/XYLC/XYMP/XYGR style sidecar. Empty keeps every
-    /// style solid, round-capped, built-in-symbol, and ungraded. Style refs
+    /// Attach a host-packed XYDS/XYLC/XYMP/XYGR/XYMG style sidecar. Empty keeps every
+    /// style solid, round-capped, built-in-symbol, ungraded, and disc-marked. Style refs
     /// address the host style table before arrow/callout extras. XYMP is
     /// consumed at encode (tessellate scatter) and stripped from the encoded
-    /// sidecar; XYGR is kept so SVG/raster can paint linear-gradient fills.
+    /// sidecar; XYGR and XYMG are kept so SVG/raster can paint linear-gradient
+    /// fills and glyph markers.
     pub fn with_dashes(mut self, bytes: &[u8]) -> Result<Self, SceneError> {
         if bytes.is_empty() {
             return Ok(self);
         }
-        let (dash, cap, markers, grads) = split_style_sidecars(bytes)?;
+        let (dash, cap, markers, grads, glyphs) = split_style_sidecars(bytes)?;
         let dash_entries = parse_xyds(dash)?;
         let cap_entries = parse_xylc(cap)?;
         let marker_entries = parse_xymp(markers)?;
         let gradient_entries = parse_xygr(grads)?;
+        let glyph_entries = parse_xymg(glyphs)?;
         let style_count = self.stroke_width.len();
         if dash_entries
             .iter()
@@ -6804,13 +6932,17 @@ impl<'a> SceneBatch<'a> {
             || gradient_entries
                 .iter()
                 .any(|entry| entry.style_ref as usize >= style_count)
+            || glyph_entries
+                .iter()
+                .any(|entry| entry.style_ref as usize >= style_count)
         {
             return Err(SceneError::Length);
         }
-        let mut kept = Vec::with_capacity(dash.len() + cap.len() + grads.len());
+        let mut kept = Vec::with_capacity(dash.len() + cap.len() + grads.len() + glyphs.len());
         kept.extend_from_slice(dash);
         kept.extend_from_slice(cap);
         kept.extend_from_slice(grads);
+        kept.extend_from_slice(glyphs);
         self.dashes = kept;
         let mut paths = vec![None; style_count];
         for entry in marker_entries {
@@ -8594,6 +8726,7 @@ pub struct SceneDocument {
     polar: Option<PolarSceneState>,
     images: Vec<SceneImage>,
     gradients: Vec<Option<AuthoredGradient>>,
+    marker_glyphs: Vec<Option<String>>,
 }
 
 impl SceneDocument {
@@ -9105,7 +9238,7 @@ impl SceneDocument {
             ));
             offset += SCENE_STYLE_RECORD_BYTES;
         }
-        let gradients = apply_style_sidecars(&mut styles, xyds)?;
+        let (gradients, marker_glyphs) = apply_style_sidecars(&mut styles, xyds)?;
         if legend.as_ref().is_some_and(|value| {
             value.entries.iter().any(|entry| {
                 entry.style_ref >= styles.len()
@@ -9314,6 +9447,7 @@ impl SceneDocument {
             polar,
             images,
             gradients,
+            marker_glyphs,
         })
     }
 
@@ -9323,6 +9457,42 @@ impl SceneDocument {
 
     pub fn style_count(&self) -> usize {
         self.styles.len()
+    }
+
+    fn style_glyph(&self, style_ref: usize) -> Option<&str> {
+        self.marker_glyphs
+            .get(style_ref)
+            .and_then(|value| value.as_deref())
+    }
+
+    fn painter_glyph_labels(&self) -> (Vec<SceneLabel>, Vec<Option<SceneLabelBox>>) {
+        let mut labels = self.labels.clone();
+        let mut backgrounds = self.label_backgrounds.clone();
+        for record in &self.records {
+            if !record.visible || record.kind != SceneRecordKind::Scatter {
+                continue;
+            }
+            let Some(glyph) = self.style_glyph(record.style_ref) else {
+                continue;
+            };
+            let style = self.styles[record.style_ref];
+            let geometry = MarkerGeometry::new(
+                ScatterSymbol::from_code(record.symbol),
+                record.diameter,
+                style.stroke_width,
+            );
+            labels.push(SceneLabel {
+                stable_id: record.stable_id,
+                x: record.coordinates[0],
+                y: record.coordinates[1],
+                font_size: geometry.radius * 2.0,
+                rgba: style.fill,
+                anchor: 1,
+                text: glyph.to_string(),
+            });
+            backgrounds.push(None);
+        }
+        (labels, backgrounds)
     }
 
     fn resolved_axis_ticks(&self, is_x: bool) -> Result<AxisTicks, SceneError> {
@@ -9459,19 +9629,32 @@ impl SceneDocument {
                 SceneRecordKind::Scatter => {
                     let symbol = ScatterSymbol::from_code(entry.symbol);
                     let geometry = MarkerGeometry::new(symbol, 8.0, style.stroke_width);
-                    push_symbol(out, symbol, x + 18.0, swatch_y, geometry.radius);
-                    if symbol.is_line() {
-                        out.push_str(" fill=\"none\"");
+                    if let Some(glyph) = self.style_glyph(entry.style_ref) {
+                        push_marker_glyph_svg(
+                            out,
+                            x + 18.0,
+                            swatch_y,
+                            geometry.radius * 2.0,
+                            legend_swatch_rgba(style.fill),
+                            style.stroke,
+                            geometry.stroke_width,
+                            glyph,
+                        );
                     } else {
-                        push_paint(out, "fill", legend_swatch_rgba(style.fill), None);
+                        push_symbol(out, symbol, x + 18.0, swatch_y, geometry.radius);
+                        if symbol.is_line() {
+                            out.push_str(" fill=\"none\"");
+                        } else {
+                            push_paint(out, "fill", legend_swatch_rgba(style.fill), None);
+                        }
+                        if geometry.stroke_width > 0.0 || symbol.is_line() {
+                            push_paint(out, "stroke", style.stroke, None);
+                            out.push_str(" stroke-width=\"");
+                            push_num(out, geometry.stroke_width);
+                            out.push('"');
+                        }
+                        out.push_str("/>");
                     }
-                    if geometry.stroke_width > 0.0 || symbol.is_line() {
-                        push_paint(out, "stroke", style.stroke, None);
-                        out.push_str(" stroke-width=\"");
-                        push_num(out, geometry.stroke_width);
-                        out.push('"');
-                    }
-                    out.push_str("/>");
                 }
                 _ => {
                     out.push_str("<rect x=\"");
@@ -10203,25 +10386,38 @@ impl SceneDocument {
                 SceneRecordKind::Scatter => {
                     let symbol = ScatterSymbol::from_code(record.symbol);
                     let geometry = MarkerGeometry::new(symbol, record.diameter, style.stroke_width);
-                    push_symbol(
-                        &mut out,
-                        symbol,
-                        record.coordinates[0],
-                        record.coordinates[1],
-                        geometry.radius,
-                    );
-                    if symbol.is_line() {
-                        out.push_str(" fill=\"none\"");
+                    if let Some(glyph) = self.style_glyph(record.style_ref) {
+                        push_marker_glyph_svg(
+                            &mut out,
+                            record.coordinates[0],
+                            record.coordinates[1],
+                            geometry.radius * 2.0,
+                            style.fill,
+                            style.stroke,
+                            geometry.stroke_width,
+                            glyph,
+                        );
                     } else {
-                        push_paint(&mut out, "fill", style.fill, None);
+                        push_symbol(
+                            &mut out,
+                            symbol,
+                            record.coordinates[0],
+                            record.coordinates[1],
+                            geometry.radius,
+                        );
+                        if symbol.is_line() {
+                            out.push_str(" fill=\"none\"");
+                        } else {
+                            push_paint(&mut out, "fill", style.fill, None);
+                        }
+                        if geometry.stroke_width > 0.0 || symbol.is_line() {
+                            push_paint(&mut out, "stroke", style.stroke, None);
+                            out.push_str(" stroke-width=\"");
+                            push_num(&mut out, geometry.stroke_width);
+                            out.push('"');
+                        }
+                        out.push_str("/>");
                     }
-                    if geometry.stroke_width > 0.0 || symbol.is_line() {
-                        push_paint(&mut out, "stroke", style.stroke, None);
-                        out.push_str(" stroke-width=\"");
-                        push_num(&mut out, geometry.stroke_width);
-                        out.push('"');
-                    }
-                    out.push_str("/>");
                     index += 1;
                 }
                 SceneRecordKind::Rect => {
@@ -11223,14 +11419,26 @@ impl SceneDocument {
                         8.0,
                         style.stroke_width,
                     );
-                    out.push(4);
-                    push_raster_f32(out, x + 18.0, scale)?;
-                    push_raster_f32(out, swatch_y, scale)?;
-                    push_raster_f32(out, geometry.radius, scale)?;
-                    out.push(entry.symbol);
-                    out.extend_from_slice(&legend_swatch_rgba(style.fill));
-                    push_raster_f32(out, geometry.stroke_width, scale)?;
-                    out.extend_from_slice(&style.stroke);
+                    if let Some(glyph) = self.style_glyph(entry.style_ref) {
+                        let font_size = geometry.radius * 2.0;
+                        out.push(6);
+                        push_raster_f32(out, x + 18.0, scale)?;
+                        push_raster_f32(out, swatch_y + font_size * 0.34, scale)?;
+                        out.push(1);
+                        push_raster_f32(out, font_size, scale)?;
+                        out.extend_from_slice(&legend_swatch_rgba(style.fill));
+                        out.extend_from_slice(&(glyph.len() as u32).to_le_bytes());
+                        out.extend_from_slice(glyph.as_bytes());
+                    } else {
+                        out.push(4);
+                        push_raster_f32(out, x + 18.0, scale)?;
+                        push_raster_f32(out, swatch_y, scale)?;
+                        push_raster_f32(out, geometry.radius, scale)?;
+                        out.push(entry.symbol);
+                        out.extend_from_slice(&legend_swatch_rgba(style.fill));
+                        push_raster_f32(out, geometry.stroke_width, scale)?;
+                        out.extend_from_slice(&style.stroke);
+                    }
                 }
                 _ => {
                     out.push(1);
@@ -11357,14 +11565,30 @@ impl SceneDocument {
                         record.diameter,
                         style.stroke_width,
                     );
-                    out.push(4);
-                    push_raster_f32(out, record.coordinates[0], scale)?;
-                    push_raster_f32(out, record.coordinates[1], scale)?;
-                    push_raster_f32(out, geometry.radius, scale)?;
-                    out.push(record.symbol);
-                    out.extend_from_slice(&style.fill);
-                    push_raster_f32(out, geometry.stroke_width, scale)?;
-                    out.extend_from_slice(&style.stroke);
+                    if let Some(glyph) = self.style_glyph(record.style_ref) {
+                        let font_size = geometry.radius * 2.0;
+                        out.push(6);
+                        push_raster_f32(out, record.coordinates[0], scale)?;
+                        push_raster_f32(
+                            out,
+                            record.coordinates[1] + font_size * 0.34,
+                            scale,
+                        )?;
+                        out.push(1);
+                        push_raster_f32(out, font_size, scale)?;
+                        out.extend_from_slice(&style.fill);
+                        out.extend_from_slice(&(glyph.len() as u32).to_le_bytes());
+                        out.extend_from_slice(glyph.as_bytes());
+                    } else {
+                        out.push(4);
+                        push_raster_f32(out, record.coordinates[0], scale)?;
+                        push_raster_f32(out, record.coordinates[1], scale)?;
+                        push_raster_f32(out, geometry.radius, scale)?;
+                        out.push(record.symbol);
+                        out.extend_from_slice(&style.fill);
+                        push_raster_f32(out, geometry.stroke_width, scale)?;
+                        out.extend_from_slice(&style.stroke);
+                    }
                     index += 1;
                 }
                 SceneRecordKind::Rect => {
@@ -11687,6 +11911,9 @@ impl SceneDocument {
                     }
                 }
                 SceneRecordKind::Scatter => {
+                    if self.style_glyph(record.style_ref).is_some() {
+                        continue;
+                    }
                     while index < self.records.len() {
                         let next = self.records[index];
                         if !next.visible
@@ -11809,7 +12036,8 @@ impl SceneDocument {
             .ok_or(SceneError::Limit)?;
         let legend_bytes = self.painter_legend_bytes()?;
         let colorbar_bytes = self.painter_colorbar_bytes()?;
-        let label_bytes = encode_scene_labels(&self.labels, &self.label_backgrounds)?;
+        let (paint_labels, paint_backgrounds) = self.painter_glyph_labels();
+        let label_bytes = encode_scene_labels(&paint_labels, &paint_backgrounds)?;
         required = required
             .checked_add(legend_bytes.len())
             .and_then(|value| value.checked_add(colorbar_bytes.len()))
@@ -12098,6 +12326,35 @@ fn point(out: &mut String, x: f64, y: f64) {
     push_num(out, x);
     out.push(' ');
     push_num(out, y);
+}
+
+fn push_marker_glyph_svg(
+    out: &mut String,
+    cx: f64,
+    cy: f64,
+    font_size: f64,
+    fill: [u8; 4],
+    stroke: [u8; 4],
+    stroke_width: f64,
+    glyph: &str,
+) {
+    out.push_str("<text x=\"");
+    push_num(out, cx);
+    out.push_str("\" y=\"");
+    push_num(out, cy);
+    out.push_str("\" font-family=\"DejaVu Sans\" font-size=\"");
+    push_num(out, font_size);
+    out.push_str("\" text-anchor=\"middle\" dominant-baseline=\"central\"");
+    push_paint(out, "fill", fill, None);
+    if stroke_width > 0.0 {
+        push_paint(out, "stroke", stroke, None);
+        out.push_str(" stroke-width=\"");
+        push_num(out, stroke_width);
+        out.push('"');
+    }
+    out.push('>');
+    push_escaped_attribute(out, glyph);
+    out.push_str("</text>");
 }
 
 fn push_symbol(out: &mut String, symbol: ScatterSymbol, cx: f64, cy: f64, radius: f64) {
@@ -13754,6 +14011,54 @@ mod tests {
         assert_eq!(plus_svg.matches("<polyline ").count(), 2);
         assert!(plus_svg.contains("stroke-width=\"1\""));
         assert!(plus_svg.contains("fill=\"none\""));
+    }
+
+    #[test]
+    fn constant_marker_glyph_keeps_xymg_and_emits_text() {
+        let layout = PlotLayout::new(240.0, 160.0, 20.0, 20.0, 20.0, 20.0).unwrap();
+        let x_scale = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 20.0, 220.0, 1.0, false).unwrap();
+        let y_scale = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 140.0, 20.0, 1.0, false).unwrap();
+        let xymg = encode_xymg(&[StyleMarkerGlyph {
+            style_ref: 0,
+            glyph: "A".to_string(),
+        }])
+        .unwrap();
+        let encoded = SceneBatch::new_with_decorations_colorbar(
+            layout,
+            1,
+            2,
+            x_scale,
+            y_scale,
+            SceneChromeStyle::default(),
+            SceneChromeText::default(),
+            None,
+            None,
+            Vec::new(),
+            &[SceneRecordKind::Scatter as u8],
+            &[11],
+            &[0],
+            &[51, 102, 153, 255],
+            &[0, 0, 0, 0],
+            &[0.0],
+            &[12.0],
+            &[0],
+            &[0.5],
+            &[0.5],
+            &[0.0],
+            &[0.0],
+        )
+        .unwrap()
+        .with_dashes(&xymg)
+        .unwrap()
+        .encode();
+        assert_eq!(&encoded[4..8], &31u32.to_le_bytes());
+        assert!(encoded.windows(4).any(|window| window == b"XYMG"));
+        let svg = SceneDocument::decode(&encoded).unwrap().to_svg();
+        assert!(svg.contains("font-family=\"DejaVu Sans\""));
+        assert!(svg.contains("dominant-baseline=\"central\""));
+        assert!(svg.contains("text-anchor=\"middle\""));
+        assert!(svg.contains(">A</text>"));
+        assert!(!svg.contains("<circle "));
     }
 
     #[test]

@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 169;
+pub const ABI_VERSION: u32 = 170;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -2276,7 +2276,7 @@ pub unsafe extern "C" fn xyg_scene_pack_heatmap_facts(
 /// Pack polar XYPL, XYHP paint, and XYSS style-sidecar facts into extras.
 ///
 /// Hosts pass already-framed polar/paint bytes plus authored dash/linecap/
-/// marker_path/gradient facts. Rust owns XYDS/XYLC/XYMP/XYGR table layout,
+/// marker_path/glyph/gradient facts. Rust owns XYDS/XYLC/XYMP/XYGR/XYMG table layout,
 /// concat order, omit-empty, and XYEX wrapping. Returns the extras byte
 /// count on success, or 0 when every input is empty. Encoded Scene v31 is
 /// unchanged.
@@ -2947,8 +2947,10 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// encoded Scene v31 is unchanged. ABI 145 admits constant validated
 /// `marker_path` contours: hosts pack XYMP on the extras dash slot; Rust
 /// tessellates each scatter centre to PolyFill (filled) or Polyline
-/// (stroke-only) after pixel mapping. `marker_glyph` stays fail-closed.
-/// ABI 146 admits constant validated mark `fill` linear-gradients: hosts pack
+/// (stroke-only) after pixel mapping. ABI 170 admits constant scatter
+/// `marker_glyph` via an XYMG extras sidecar kept on the encoded Scene so
+/// SVG emits `<text>` and raster emits `OP_TEXT`. Encoded Scene v31 is
+/// unchanged. ABI 146 admits constant validated mark `fill` linear-gradients: hosts pack
 /// XYGR on the extras dash slot; Rust keeps XYGR on the encoded Scene so SVG
 /// emits `<linearGradient>` and raster emits `OP_FILL_POLY_GRAD`. Two-ended
 /// ribbon `color2_ch` and data-driven `color_ch` stay fail-closed. Encoded
@@ -2961,7 +2963,7 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// Scene records; `xyg_scene_pack_heatmap_facts` owns XYHP kind routing from
 /// packed XYHF v1 so heatmap/density paint planes cannot drift.
 /// ABI 150 does not change Scene records;
-/// `xyg_scene_pack_scene_extras` owns XYDS/XYLC/XYMP/XYGR layout, concat
+/// `xyg_scene_pack_scene_extras` owns XYDS/XYLC/XYMP/XYGR/XYMG layout, concat
 /// order, omit-empty, and XYEX wrapping from packed XYSS v1 plus framed
 /// XYPL/XYHP so extras cannot drift.
 /// ABI 151 does not change Scene records;

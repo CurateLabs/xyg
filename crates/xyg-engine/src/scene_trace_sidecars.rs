@@ -12,6 +12,8 @@
 //! an optional XYSD radius blob so encode can tessellate rounded Rects. ABI
 //! 167 copies polar `wedge_gap` into that same blob. ABI 168 tessellates
 //! polar bar/column/histogram `corner_radius` from those same packed radii.
+//! ABI 170 copies scatter `marker_glyph` UTF-8 through the existing XYSD
+//! marker slot so extras can emit XYMG.
 
 use crate::scene_trace_attach::{XYTT_HEADER_BYTES, XYTT_MAGIC, XYTT_PREFIX_BYTES, XYTT_VERSION};
 use crate::scene_trace_compile::XYTO_MAGIC;
@@ -132,10 +134,7 @@ fn encode_radius_blob(r_tip: f64, r_base: f64, tip_policy: u8, wedge_gap: f64) -
     out
 }
 
-fn parse_radius_blob(
-    blob: &[u8],
-    index: usize,
-) -> Result<(f64, f64, u8, f64), TraceSidecarsError> {
+fn parse_radius_blob(blob: &[u8], index: usize) -> Result<(f64, f64, u8, f64), TraceSidecarsError> {
     if blob.is_empty() {
         return Ok((0.0, 0.0, 0, 0.0));
     }
@@ -152,11 +151,10 @@ fn parse_radius_blob(
             .try_into()
             .map_err(|_| TraceSidecarsError::new(TraceSidecarsCode::Length, index))?,
     );
-    let wedge_gap = f64::from(f32::from_le_bytes(
-        blob[20..24]
-            .try_into()
-            .map_err(|_| TraceSidecarsError::new(TraceSidecarsCode::Length, index))?,
-    ));
+    let wedge_gap =
+        f64::from(f32::from_le_bytes(blob[20..24].try_into().map_err(
+            |_| TraceSidecarsError::new(TraceSidecarsCode::Length, index),
+        )?));
     if !r_tip.is_finite()
         || !r_base.is_finite()
         || !wedge_gap.is_finite()
