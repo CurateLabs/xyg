@@ -57,8 +57,10 @@ existing 1/2/2.5/5/10 linear ladder and 1/2/5 log ladder, with a hard 200-tick
 ceiling. Node exposes every ABI family as `axisTicks`. Python's compatibility
 SVG/raster and pyplot locator paths now call `_svg.axis_ticks`, which maps each
 automatic family directly to this ABI. The retired per-family Python wrappers
-contained no fallback ladder; authored-value filtering, polar/secondary
-placement, and rich label formatting remain compatibility presentation.
+contained no fallback ladder; polar/secondary placement and rich label
+formatting remain compatibility presentation. Scene product-path authored
+cartesian filtering and `tick_labels` pairing are ABI 199; authored
+cartesian minor filtering is ABI 200.
 Cross-platform conformance keeps algebraic tick families bit-exact and permits
 one part in 10^15 for symmetric-log values whose final inverse transform uses
 the platform math library. Invalid domains and target counts fail closed at the
@@ -100,7 +102,10 @@ constant ribbon `color2_ch` as XYGR mark-space `dir=right`. ABI 184 admits
 cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`. ABI 185 admits
 labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`. ABI 186 admits
 cartesian colormap hexbin as a 1×N XYHP plane interned onto HexCell PolyFills.
-ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 /
+ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba`
+hexbin on that same HexCell intern. ABI 195 admits triangle-mesh custom `role`
+and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern
+scatter per-item fill/stroke/width/opacity from packed XYHP kind 7. ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 /
 XYLB v6). ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0`
 (nums[8]; markers never wrap). ABI 189 owns heatmap/hexbin cell-fill
 tessellation eligibility from packed XYTA. ABI 190 intern cartesian per-item
@@ -207,6 +212,9 @@ ABI 178 does not change Scene records; scatter `fill_opacity` / `stroke_opacity`
 composite through that same XYMS path.
 ABI 179 does not change Scene records; hexbin `fill_opacity` composites through
 XYMS fill alpha on HexCell PolyFills.
+ABI 193 does not change Scene records; heatmap/hexbin `stroke` / `stroke_width` /
+`stroke_opacity` composite through that same XYMS path. Polar painted Image blit
+tessellates when stroke is visible so cell outlines are representable.
 ABI 180 does not change Scene records; triangle_mesh `fill_opacity` / constant
 stroke paint composite through that same XYMS path.
 ABI 181 does not change Scene records; cartesian area/error_band
@@ -214,7 +222,12 @@ ABI 181 does not change Scene records; cartesian area/error_band
 1–3 wins over `BandFlatten`).
 ABI 182 does not change Scene records; triangle_mesh `joined_fill` packs one
 identity PolyFill ring from the Rust boundary walk (disconnected meshes keep
-per-face `TriangleFace` rows).
+per-face `TriangleFace` rows). ABI 195 does not change Scene records; custom
+`role` is identity metadata and per-item fill/stroke/width intern from packed
+XYHP kind 6 onto those TriangleFace `style_ref`s (`joined_fill` plus per-face
+paint stays fail-closed). ABI 196 does not change Scene records; scatter
+per-item fill/stroke/width/opacity intern from packed XYHP kind 7 onto Scatter
+`style_ref`s (per-item size/symbol stay fail-closed).
 ABI 183 does not change Scene records; constant ribbon `color2_ch` packs as
 XYGR mark-space `dir=right`. ABI 190 intern per-item two-ended paint from
 packed XYHP kind 5 onto Band `style_ref`s plus XYGR.
@@ -222,12 +235,23 @@ ABI 184 does not change Scene records; cartesian unwrapped text `dx`/`dy`/
 `anchor` packs as XYAW with `wrap=0`. ABI 185 does not change Scene records;
 labelled cartesian marker `dx`/`dy`/`anchor` packs as XYAW with `wrap=0`.
 ABI 186 does not change Scene records; cartesian colormap hexbin packs a 1×N
-XYHP named/stop plane interned onto HexCell PolyFills.
+XYHP named/stop plane interned onto HexCell PolyFills. ABI 194 does not change
+Scene records; polar hexbin, custom host reducers, and categorical / `direct_rgba`
+1×N XYHP RGBA intern onto those same HexCell PolyFills.
 ABI 187 does not change Scene records; cartesian unwrapped text `rotation`
 packs as XYAW with `wrap=0` (nonzero rotation writes XYAW v2; encoded labels
 use XYLB v6). ABI 188 does not change Scene records; labelled cartesian marker
-`rotation` packs as XYAW with `wrap=0` (nums[8]). html, `class_name`, and polar
-stay fail-closed.
+`rotation` packs as XYAW with `wrap=0` (nums[8]). Annotation `html` stays
+fail-closed (`XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML`, #305): Scene SVG/raster
+own literal text only. Annotation `class_name` stays fail-closed as
+`XYG_SCENE_UNSUPPORTED_BROWSER_CSS` (#306): Scene SVG/raster do not encode
+CSS classes. Annotation `collision` stays fail-closed as
+`XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION` (#307). Annotation `markup`
+stays fail-closed as `XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP` (#308): Scene
+owns literal text only. Annotation custom typography stays fail-closed as
+`XYG_SCENE_UNSUPPORTED_CUSTOM_FONT` (#309): Scene SVG/raster use the built-in
+default font. Text/marker `style.rotation` lifts onto the ABI 187/188
+top-level rotation field. Polar stays fail-closed.
 Per-item radius channels stay fail-closed.
 
 ## Version 3: backend-neutral core scene batch
@@ -541,6 +565,8 @@ ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 ABI 186 does not change Scene records; cartesian colormap hexbin packs a 1×N
 XYHP named/stop plane and HexCell expansion interns per-cell fills.
+ABI 194 does not change Scene records; polar hexbin, custom host reducers, and
+categorical / `direct_rgba` 1×N XYHP RGBA intern onto those same HexCell PolyFills.
 ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 /
 XYLB v6). ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0`
 (nums[8]).
@@ -995,10 +1021,21 @@ grouping, a required decimal precision, optional `f` or percent scaling/sign,
 and a literal suffix. Precision is bounded from 0 through 100, matching the
 existing browser fixed-decimal ceiling; each authored format is at most 256
 UTF-8 bytes and must not contain NUL. Explicit authored tick labels retain
-precedence. Invalid
-grammar deliberately produces the ordinary deterministic label instead of an
-error, and a sub-unit log value that would collapse to formatted zero also
-uses its ordinary distinguishable label without affixes.
+precedence; ABI 199 filters those majors through the ABI 128 tick window
+and pairs labels during chrome pack. ABI 200 filters authored cartesian
+minors (`require_finite`). ABI 201 filters polar theta majors/minors
+through the modular sector and formats Scene polar theta labels with
+`format_angular_tick`. ABI 202 materializes ABI 130 time strftime and
+polar angular numeric formats onto `XYTL` during product encode
+(`format_axis_tick`). Hosts pack domain tick-kind in XYCF bytes 154–155.
+ABI 203 runs ABI 123 collision at Scene SVG/raster emit for cartesian
+`tick_label_strategy` / `collision`. Collision rooms clamp so a tiny
+viewport still has a strictly positive plot when the compact/authored pads
+already fit; overflowing compact pads stay `XYG_SCENE_UNSUPPORTED_VIEWPORT`.
+Polar rim auto/hide/rotate/stagger/preserve stay fail-closed. Invalid ABI 96 grammar still produces the ordinary deterministic label
+instead of an error, and a sub-unit log value that would collapse to
+formatted zero also uses its ordinary distinguishable label without affixes.
+Secondary axes stay fail-closed.
 
 Python and Node pack only those strings. Rust parses them, resolves the final
 major positions and labels, measures their gutters, and materializes the result
@@ -1017,8 +1054,32 @@ only; Rust calls `polar_layout` with the finalized `PlotLayout` plot rect and
 does not trust host-computed cx/cy/R. Polar encode applies `recut_polar_plot`
 (ABI 126) before `polar_layout` so the inscribed disc matches compatibility
 static-export gutters, including the polar legend box. Hosts still pack
-legend loc/entries; Rust owns the recut and gutter placement. Remaining #275
-debt is compatibility `_svg.layout()` orchestration of CSS rooms.
+legend loc/entries; Rust owns the recut and gutter placement. ABI 125 default-font
+cartesian Scene-shaped specs use `xyg_scene_plot_layout` (#297). ABI 197
+settles authored `loc="best"` from packed XYCL/XYNM during product encode
+(#298); compatibility `_legendfit.py` still packs ChartView specs. ABI 198
+owns `_svg.layout()` padding/title/colorbar/right-y/polar-recut combination
+and pyplot tight-layout figure-edge extras (#299). ABI 199 filters authored
+cartesian majors through the ABI 128 tick window and pairs `tick_labels`
+during chrome pack (#300). ABI 200 filters authored cartesian minors
+through that same window (`require_finite`, #301). ABI 201 filters polar
+theta majors/minors through the modular sector and formats Scene polar
+theta labels (`format_angular_tick`, #302). ABI 202 materializes ABI 130
+time strftime and polar angular numeric formats onto `XYTL` (`format_axis_tick`,
+#303). ABI 203 runs ABI 123 cartesian collision at Scene SVG/raster emit (#304).
+Annotation `html` stays fail-closed as `XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML`
+(#305). Annotation `class_name` stays fail-closed as
+`XYG_SCENE_UNSUPPORTED_BROWSER_CSS` (#306). Annotation `collision` stays
+fail-closed as `XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION` (#307). Annotation
+`markup` stays fail-closed as `XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP` (#308).
+Annotation custom typography stays fail-closed as
+`XYG_SCENE_UNSUPPORTED_CUSTOM_FONT` (#309). Text/marker `style.rotation`
+lifts onto the ABI 187/188 rotation field.
+Hosts pack domain tick-kind in XYCF 154–155. Invalid ABI 96
+grammar still falls back. Secondary axes stay
+fail-closed. Remaining #275
+debt is compatibility `_svg._*room` for polar / extra-axis / CSS-font
+measurement and `_svg._legend_layout` CSS remaps.
 Optional formats still use the versioned `XYAF` v1 authoring envelope (`magic`,
 version, x-format length, y-format length, legacy-annotation length, then those
 exact payloads). Exact lengths are overflow-checked; malformed, trailing,
@@ -1028,7 +1089,9 @@ invalid UTF-8, embedded-NUL, and oversized fields fail closed. Legacy raw
 Polar/secondary Scene paths and broader numeric grammars remain on their
 documented compatibility routes except the bounded polar
 line/scatter/area/bar/column/errorbar
-slice above. WASM ABI 23 plus `attachWasmTicks` cut
+slice above and ABI 202 Scene product-path time/angular formatting
+and ABI 203 Scene cartesian ABI 123 collision emit.
+WASM ABI 23 plus `attachWasmTicks` cut
 explicitly attached automatic, authored-value, and authored-empty primary
 Cartesian linear/log/symlog/category/UTC-time ChartView
 axes and eligible ChartView colorbars to that resolver; `js/src/30_ticks.ts`
@@ -1571,7 +1634,7 @@ is positive. ABI 169 admits polar `curve="smooth"` plus `step` as polar step
 expansion. ABI 170 admits constant scatter `marker_glyph` via XYMG. ABI 171 admits
 scatter `stroke_width` without `stroke` as match-fill. ABI 172 admits cartesian
 line `curve="smooth"` plus `step` as authored step expansion. ABI 173 tessellates
-heatmap `corner_radius`. ABI 174 tessellates violin/box `corner_radius`. ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`. ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`. ABI 177 admits heatmap `fill_opacity`. ABI 178 admits scatter `fill_opacity` / `stroke_opacity`. ABI 179 admits hexbin `fill_opacity`. ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint. ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as authored band step expansion. ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring from the Rust boundary walk. ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`. ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`. ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`. ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto HexCell PolyFills. ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 / XYLB v6). ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0`. ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from packed XYTA. ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from packed XYHP kind 5. ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2. ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit. ABI 116 does not change Scene records either;
+heatmap `corner_radius`. ABI 174 tessellates violin/box `corner_radius`. ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`. ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`. ABI 177 admits heatmap `fill_opacity`. ABI 178 admits scatter `fill_opacity` / `stroke_opacity`. ABI 179 admits hexbin `fill_opacity`. ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint. ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as authored band step expansion. ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring from the Rust boundary walk. ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`. ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`. ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`. ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto HexCell PolyFills. ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 / XYLB v6). ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0`. ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from packed XYTA. ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from packed XYHP kind 5. ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2. ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit. ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`. ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin. ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;
 `xyg_scene_figure_support_reason` owns figure-compile support from packed
@@ -1594,8 +1657,10 @@ records either; `xyg_encode_jpeg` and `xyg_encode_webp` own packed RGB/RGBA8
 static encode so public JPEG/WebP no longer feed Scene pixels through Python
 format modules. ABI 115 does not change Scene records either;
 `xyg_encode_png` owns filter-0 PNG encode so remaining host PNG exports no
-longer pack chunks or palettes in Python or Node. Polar
-hexbin, custom reducers, LOD, and rich style exceptions
+longer pack chunks or palettes in Python or Node. ABI 194 admits polar
+hexbin, custom reducers, and categorical / `direct_rgba` hexbin on Scene.
+ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7.
+LOD and rich style exceptions
 fail closed and keep the compatibility exporters. Scene 25 is unchanged.
 
 Constant-style Cartesian heatmap expands a regular rows×cols lattice onto

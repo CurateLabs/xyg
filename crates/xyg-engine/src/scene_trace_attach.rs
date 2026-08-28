@@ -7,11 +7,20 @@
 //! packing, `FACT_HEATMAP_PAINT` / `FACT_DENSITY_PLANE`, density
 //! symbol/diameter zeroing, and domain-endpoint column rewrite so Python and
 //! Node cannot drift. ABI 186 reuses `FLAG_HEATMAP` / `FACT_HEATMAP_PAINT` for
-//! cartesian colormap hexbin as a 1×N XYHP plane. ABI 190 intern cartesian
+//! cartesian colormap hexbin as a 1×N XYHP plane. ABI 194 classifies 1×N
+//! `FLAG_HAS_RGBA` the same way so categorical / `direct_rgba` hexbin intern
+//! onto HexCell PolyFills, including polar. ABI 190 intern cartesian
 //! per-item ribbon source/target RGBA8 as XYHP kind 5 (`FLAG_RIBBON_ENDS`).
-//! Encoded Scene v31 is unchanged.
+//! ABI 195 intern triangle_mesh custom `role` and per-item fill/stroke/width
+//! as XYHP kind 6 (`FLAG_MESH_FACES`) onto TriangleFace PolyFill `style_ref`s.
+//! ABI 196 intern scatter per-item fill/stroke/width/opacity as XYHP kind 7
+//! (`FLAG_SCATTER_PAINT`) onto Scatter `style_ref`s. Encoded Scene v31 is
+//! unchanged.
 
 use crate::kernels::BinColorSource;
+use crate::scene::{
+    XYHP_PAINT_MESH, XYHP_PAINT_RIBBON, XYHP_PAINT_SCATTER, XYHP_PLANE_HEADER_BYTES,
+};
 use crate::scene_density::{self, pack_density_grid, DensityGridError, XYDE_HAS_MEAN_RGBA};
 use crate::scene_heatmap::{
     pack_heatmap_facts, HeatmapFactError, XYHF_FAMILY_DENSITY, XYHF_FAMILY_HEATMAP,
@@ -20,7 +29,6 @@ use crate::scene_heatmap::{
     XYHF_HAS_STOPS, XYHF_HAS_STYLE_COLOR, XYHF_HAS_TRUECOLOR, XYHF_MAGIC, XYHF_V1_HEADER_BYTES,
     XYHF_VERSION,
 };
-use crate::scene::{XYHP_PAINT_RIBBON, XYHP_PLANE_HEADER_BYTES};
 use crate::scene_pack::{FACT_DENSITY_PLANE, FACT_HEATMAP_PAINT};
 use crate::scene_trace_compile::{XYTO_HEADER_BYTES, XYTO_MAGIC, XYTO_PREFIX_BYTES, XYTO_VERSION};
 
@@ -49,6 +57,10 @@ pub const FLAG_HAS_DOMAIN: u32 = 1 << 12;
 pub const FLAG_SHAPE: u32 = 1 << 13;
 /// ABI 190: cartesian ribbon source/target RGBA8 ends (`rgba` + `mean_rgba`).
 pub const FLAG_RIBBON_ENDS: u32 = 1 << 14;
+/// ABI 195: triangle-mesh per-face fill/stroke/width (`rgba` + `mean_rgba` + `x`).
+pub const FLAG_MESH_FACES: u32 = 1 << 15;
+/// ABI 196: scatter per-item fill/stroke/width (`rgba` + `mean_rgba` + `x`).
+pub const FLAG_SCATTER_PAINT: u32 = 1 << 16;
 
 const MAX_TRACES: usize = 4_096;
 const NAN: f64 = f64::NAN;
@@ -508,6 +520,63 @@ fn attach_ribbon_ends(
     Ok((plane, 1, n as u32))
 }
 
+fn attach_paint_triples(
+    input: &AttachInput<'_>,
+    compiled: &mut CompiledTrace,
+    index: usize,
+    kind: u32,
+) -> Result<(Vec<u8>, u32, u32), TraceAttachError> {
+    if input.rows != 1 || input.cols < 1 {
+        return Err(TraceAttachError::new(TraceAttachCode::HeatmapShape, index));
+    }
+    let n = input.cols as usize;
+    if input.rgba.len() != n.saturating_mul(4) || input.mean_rgba.len() != n.saturating_mul(4) {
+        return Err(TraceAttachError::new(TraceAttachCode::HeatmapRgba, index));
+    }
+    let widths = as_f64s(input.x, index)?;
+    if widths.len() != n {
+        return Err(TraceAttachError::new(TraceAttachCode::HeatmapGrid, index));
+    }
+    if widths
+        .iter()
+        .any(|width| !width.is_finite() || *width < 0.0)
+    {
+        return Err(TraceAttachError::new(TraceAttachCode::HeatmapGrid, index));
+    }
+    let payload_len = n.saturating_mul(12);
+    let mut plane = vec![0u8; XYHP_PLANE_HEADER_BYTES];
+    plane[..8].copy_from_slice(&u64::from(input.stable_id).to_le_bytes());
+    plane[8..12].copy_from_slice(&1u32.to_le_bytes());
+    plane[12..16].copy_from_slice(&(n as u32).to_le_bytes());
+    plane[16..20].copy_from_slice(&kind.to_le_bytes());
+    plane[20..24].copy_from_slice(&(payload_len as u32).to_le_bytes());
+    plane.reserve(payload_len);
+    for cell in 0..n {
+        let src = cell * 4;
+        plane.extend_from_slice(&input.rgba[src..src + 4]);
+        plane.extend_from_slice(&input.mean_rgba[src..src + 4]);
+        plane.extend_from_slice(&(widths[cell] as f32).to_le_bytes());
+    }
+    or_fact(&mut compiled.prefix, FACT_HEATMAP_PAINT);
+    Ok((plane, 1, n as u32))
+}
+
+fn attach_mesh_faces(
+    input: &AttachInput<'_>,
+    compiled: &mut CompiledTrace,
+    index: usize,
+) -> Result<(Vec<u8>, u32, u32), TraceAttachError> {
+    attach_paint_triples(input, compiled, index, XYHP_PAINT_MESH)
+}
+
+fn attach_scatter_paints(
+    input: &AttachInput<'_>,
+    compiled: &mut CompiledTrace,
+    index: usize,
+) -> Result<(Vec<u8>, u32, u32), TraceAttachError> {
+    attach_paint_triples(input, compiled, index, XYHP_PAINT_SCATTER)
+}
+
 fn attach_density(
     input: &AttachInput<'_>,
     compiled: &mut CompiledTrace,
@@ -685,15 +754,44 @@ fn write_attached(
 /// whether those facts intern onto per-cell paints (and therefore whether
 /// XYFS `PER_ITEM` / `HEATMAP_COLORMAP` bits fail closed). ABI 190 intern
 /// cartesian ribbon source/target RGBA8 as `Ribbon` so `PER_ITEM` relaxes.
+/// ABI 195 intern triangle-mesh per-face paint as `TriangleMesh`.
+/// ABI 196 intern scatter per-item fill/stroke/width/opacity as `ScatterPaint`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CellFillTessellation {
     None,
     Heatmap,
     Hexbin,
     Ribbon,
+    TriangleMesh,
+    ScatterPaint,
+}
+
+fn classify_paint_triples(input: &AttachInput<'_>) -> bool {
+    input.flags & FLAG_DENSITY == 0
+        && input.rows == 1
+        && input.cols >= 1
+        && input.rgba.len() == (input.cols as usize).saturating_mul(4)
+        && input.mean_rgba.len() == (input.cols as usize).saturating_mul(4)
+        && input.x.len() == (input.cols as usize).saturating_mul(8)
 }
 
 fn classify_cell_fill(input: &AttachInput<'_>) -> CellFillTessellation {
+    if input.flags & FLAG_SCATTER_PAINT != 0 {
+        if input.flags & FLAG_MESH_FACES != 0
+            || input.flags & FLAG_RIBBON_ENDS != 0
+            || input.flags & FLAG_HEATMAP != 0
+            || !classify_paint_triples(input)
+        {
+            return CellFillTessellation::None;
+        }
+        return CellFillTessellation::ScatterPaint;
+    }
+    if input.flags & FLAG_MESH_FACES != 0 {
+        if input.flags & FLAG_RIBBON_ENDS != 0 || !classify_paint_triples(input) {
+            return CellFillTessellation::None;
+        }
+        return CellFillTessellation::TriangleMesh;
+    }
     if input.flags & FLAG_RIBBON_ENDS != 0 {
         if input.flags & FLAG_HEATMAP != 0
             || input.flags & FLAG_DENSITY != 0
@@ -725,7 +823,6 @@ fn classify_cell_fill(input: &AttachInput<'_>) -> CellFillTessellation {
         && input.flags & FLAG_HAS_GRID != 0
         && input.rows == 1
         && input.cols >= 1
-        && input.flags & FLAG_HAS_RGBA == 0
     {
         return CellFillTessellation::Hexbin;
     }
@@ -787,7 +884,17 @@ pub fn pack_trace_attach(compiled: &[u8], attach: &[u8]) -> Result<Vec<u8>, Trac
         let mut grid_rows = 0u32;
         let mut grid_cols = 0u32;
         let mut rewrite = None;
-        if input.flags & FLAG_RIBBON_ENDS != 0 {
+        if input.flags & FLAG_SCATTER_PAINT != 0 {
+            let (plane, rows, cols) = attach_scatter_paints(&input, compiled, index)?;
+            heatmap = plane;
+            grid_rows = rows;
+            grid_cols = cols;
+        } else if input.flags & FLAG_MESH_FACES != 0 {
+            let (plane, rows, cols) = attach_mesh_faces(&input, compiled, index)?;
+            heatmap = plane;
+            grid_rows = rows;
+            grid_cols = cols;
+        } else if input.flags & FLAG_RIBBON_ENDS != 0 {
             let (plane, rows, cols) = attach_ribbon_ends(&input, compiled, index)?;
             heatmap = plane;
             grid_rows = rows;
@@ -1079,6 +1186,26 @@ mod tests {
                 .unwrap(),
             vec![CellFillTessellation::Hexbin]
         );
+        let mut rgba_hex = xyta_header(1);
+        let mut prefix = vec![0u8; XYTA_PREFIX_BYTES];
+        prefix[..4].copy_from_slice(
+            &(FLAG_HEATMAP | FLAG_SHAPE | FLAG_HAS_GRID | FLAG_HAS_RGBA).to_le_bytes(),
+        );
+        prefix[8..12].copy_from_slice(&1i32.to_le_bytes());
+        prefix[12..16].copy_from_slice(&3i32.to_le_bytes());
+        prefix[16..20].copy_from_slice(&3u32.to_le_bytes());
+        prefix[20..24].copy_from_slice(&12u32.to_le_bytes());
+        rgba_hex.extend_from_slice(&prefix);
+        for value in [0.0f64, 1.0, 2.0] {
+            rgba_hex.extend_from_slice(&value.to_le_bytes());
+        }
+        rgba_hex.extend_from_slice(&[
+            0x7c, 0x3a, 0xed, 0xff, 0x25, 0x63, 0xeb, 0xff, 0x22, 0xc5, 0x5e, 0xff,
+        ]);
+        assert_eq!(
+            xyta_cell_fill_tessellation(&rgba_hex).unwrap(),
+            vec![CellFillTessellation::Hexbin]
+        );
         assert_eq!(
             xyta_cell_fill_tessellation(&xyta_one(
                 FLAG_HEATMAP | FLAG_SHAPE | FLAG_HAS_GRID,
@@ -1142,6 +1269,67 @@ mod tests {
         let mut mixed = xyta_header(1);
         mixed.extend_from_slice(&prefix);
         mixed.extend_from_slice(&[0u8; 16]);
+        assert_eq!(
+            xyta_cell_fill_tessellation(&mixed).unwrap(),
+            vec![CellFillTessellation::None]
+        );
+    }
+
+    #[test]
+    fn xyta_classifies_mesh_face_paints() {
+        let n = 2usize;
+        let mut attach = xyta_header(1);
+        let mut prefix = vec![0u8; XYTA_PREFIX_BYTES];
+        prefix[..4].copy_from_slice(&(FLAG_MESH_FACES | FLAG_SHAPE | FLAG_HAS_RGBA).to_le_bytes());
+        prefix[8..12].copy_from_slice(&1i32.to_le_bytes());
+        prefix[12..16].copy_from_slice(&2i32.to_le_bytes());
+        prefix[20..24].copy_from_slice(&((n * 4) as u32).to_le_bytes());
+        prefix[28..32].copy_from_slice(&(n as u32).to_le_bytes());
+        prefix[36..40].copy_from_slice(&((n * 4) as u32).to_le_bytes());
+        attach.extend_from_slice(&prefix);
+        attach.extend_from_slice(&[0xef, 0x44, 0x44, 0xff, 0x22, 0xc5, 0x5e, 0xff]);
+        attach.extend_from_slice(&1.0f64.to_le_bytes());
+        attach.extend_from_slice(&2.0f64.to_le_bytes());
+        attach.extend_from_slice(&[0x11, 0x11, 0x11, 0xff, 0x22, 0x22, 0x22, 0xff]);
+        assert_eq!(
+            xyta_cell_fill_tessellation(&attach).unwrap(),
+            vec![CellFillTessellation::TriangleMesh]
+        );
+        prefix[..4].copy_from_slice(&(FLAG_MESH_FACES | FLAG_RIBBON_ENDS).to_le_bytes());
+        let mut mixed = xyta_header(1);
+        mixed.extend_from_slice(&prefix);
+        mixed.extend_from_slice(&[0u8; 32]);
+        assert_eq!(
+            xyta_cell_fill_tessellation(&mixed).unwrap(),
+            vec![CellFillTessellation::None]
+        );
+    }
+
+    #[test]
+    fn xyta_classifies_scatter_point_paints() {
+        let n = 2usize;
+        let mut attach = xyta_header(1);
+        let mut prefix = vec![0u8; XYTA_PREFIX_BYTES];
+        prefix[..4]
+            .copy_from_slice(&(FLAG_SCATTER_PAINT | FLAG_SHAPE | FLAG_HAS_RGBA).to_le_bytes());
+        prefix[8..12].copy_from_slice(&1i32.to_le_bytes());
+        prefix[12..16].copy_from_slice(&2i32.to_le_bytes());
+        prefix[20..24].copy_from_slice(&((n * 4) as u32).to_le_bytes());
+        prefix[28..32].copy_from_slice(&(n as u32).to_le_bytes());
+        prefix[36..40].copy_from_slice(&((n * 4) as u32).to_le_bytes());
+        attach.extend_from_slice(&prefix);
+        attach.extend_from_slice(&[0xef, 0x44, 0x44, 0xff, 0x22, 0xc5, 0x5e, 0xff]);
+        attach.extend_from_slice(&1.0f64.to_le_bytes());
+        attach.extend_from_slice(&2.0f64.to_le_bytes());
+        attach.extend_from_slice(&[0x11, 0x11, 0x11, 0xff, 0x22, 0x22, 0x22, 0xff]);
+        assert_eq!(
+            xyta_cell_fill_tessellation(&attach).unwrap(),
+            vec![CellFillTessellation::ScatterPaint]
+        );
+        prefix[..4].copy_from_slice(&(FLAG_SCATTER_PAINT | FLAG_MESH_FACES).to_le_bytes());
+        let mut mixed = xyta_header(1);
+        mixed.extend_from_slice(&prefix);
+        mixed.extend_from_slice(&[0u8; 32]);
         assert_eq!(
             xyta_cell_fill_tessellation(&mixed).unwrap(),
             vec![CellFillTessellation::None]

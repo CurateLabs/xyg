@@ -2610,7 +2610,9 @@ def hexbin(
     bins are shipped as centers plus one scalar count/color channel. A literal
     ``color`` keeps constant paint so Cartesian native lattices compile onto
     shared-style Scene PolyFill; omitted ``color`` keeps the metric colormap
-    and ABI 186 interns those fills through a 1×N XYHP plane.
+    and ABI 186 interns those fills through a 1×N XYHP plane. Polar hexbin,
+    custom `reduce_C_function` (after Rust lattice groups), and categorical /
+    `direct_rgba` cell paints intern the same way (ABI 194).
     """
     css = styles.compile_mark_style("hexbin", style)
     opacity = css.get("opacity", opacity)

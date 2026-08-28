@@ -60,12 +60,36 @@ def test_payload_visible_mask_y_log_and_base() -> None:
     np.testing.assert_array_equal(linear, [True, True, False])
 
 
+def test_payload_m4_indices_polar_stays_direct() -> None:
+    n = DECIMATION_THRESHOLD + 1
+    x = np.arange(n, dtype=float)
+    y = np.ones(n)
+    tier, idx = kernels.payload_m4_indices(n, x, y, 0.0, float(n - 1), 64, polar=True)
+    assert tier == 0
+    assert len(idx) == 0
+
+
+def test_payload_m4_indices_closed_window_matches_m4_plus_eps() -> None:
+    n = DECIMATION_THRESHOLD + 1
+    x = np.arange(n, dtype=float)
+    y = np.sin(x)
+    tier, idx = kernels.payload_m4_indices(n, x, y, 0.0, float(n - 1), 64)
+    assert tier == 1
+    expected = kernels.m4_indices(x, y, 0.0, float(n - 1) + np.finfo(np.float64).eps, 64)
+    np.testing.assert_array_equal(idx, expected)
+    empty_tier, empty_idx = kernels.payload_m4_indices(n, x, y, float(n + 10), float(n + 100), 64)
+    assert empty_tier == 1
+    assert len(empty_idx) == 0
+
+
 def test_polar_line_stays_direct_over_m4_threshold() -> None:
     n = DECIMATION_THRESHOLD + 1
     fig = Figure(coords="polar").line(np.arange(n, dtype=float), np.ones(n))
     spec, _blob = fig.build_payload()
     assert spec["traces"][0]["tier"] == "direct"
     assert spec["traces"][0]["n_marks"] == n
+    update, _buffers = fig.decimate_view(0.0, float(n), 512)
+    assert update["traces"] == []
 
 
 def test_polar_scatter_stays_direct_even_when_density_forced() -> None:
