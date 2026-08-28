@@ -1689,6 +1689,92 @@ def test_width_only_scatter_stroke_uses_public_scene() -> None:
     assert figure.to_svg() == svg
 
 
+@pytest.mark.parametrize(
+    "factory",
+    [
+        lambda: Figure(width=320, height=240).scatter(
+            [1.0, 2.0],
+            [1.0, 2.0],
+            color="#3987e5",
+            stroke=["#ff0000", "#00ff00"],
+            stroke_width=2.0,
+            density=False,
+        ),
+        lambda: Figure(width=320, height=240).scatter(
+            [1.0, 2.0],
+            [1.0, 2.0],
+            color="#3987e5",
+            stroke="#111111",
+            stroke_width=[1.0, 3.0],
+            density=False,
+        ),
+        lambda: Figure(width=320, height=240).scatter(
+            [1.0, 2.0],
+            [1.0, 2.0],
+            color="#3987e5",
+            opacity=[0.25, 0.9],
+            density=False,
+        ),
+        lambda: Figure(width=320, height=240).scatter(
+            [1.0, 2.0],
+            [1.0, 2.0],
+            color=["#ef4444", "#22c55e"],
+            density=False,
+        ),
+    ],
+)
+def test_public_scatter_admits_per_item_paint(factory) -> None:
+    from xyg import _native
+
+    figure = factory()
+    figure.axis_options["x"]["domain"] = (0.0, 3.0)
+    figure.axis_options["y"]["domain"] = (0.0, 3.0)
+    assert scene_export_support_reason(figure) is None
+    svg = _native.scene_svg(figure_scene(figure))
+    assert "<circle" in svg or "<path" in svg
+    assert figure.to_svg() == svg
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported.decode() == svg
+    png = public_static_export(figure, "png")
+    assert png is not None
+    assert png[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+def test_public_scatter_per_item_stroke_interns_distinct_paints() -> None:
+    from xyg import _native
+
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 3.0)
+    figure.axis_options["y"]["domain"] = (0.0, 3.0)
+    figure.scatter(
+        [1.0, 2.0],
+        [1.0, 2.0],
+        color="#3987e5",
+        stroke=["#ff0000", "#00ff00"],
+        stroke_width=2.0,
+        density=False,
+    )
+    svg = _native.scene_svg(figure_scene(figure))
+    strokes = re.findall(r'stroke="([^"]+)"', svg)
+    assert len(set(strokes)) > 1
+    assert figure.to_svg() == svg
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported.decode() == svg
+    png = public_static_export(figure, "png")
+    assert png is not None
+    assert png[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+def test_public_scatter_keeps_per_item_size_fail_closed() -> None:
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 3.0)
+    figure.axis_options["y"]["domain"] = (0.0, 3.0)
+    figure.scatter([1.0, 2.0], [1.0, 2.0], color="#3987e5", size=[4.0, 12.0], density=False)
+    assert scene_export_support_reason(figure) is not None
+
+
 @pytest.mark.parametrize("symbol", BUILTIN_SYMBOLS)
 def test_generated_stem_markers_route_every_builtin_symbol(symbol: str) -> None:
     from xyg import _native
@@ -1707,7 +1793,6 @@ def test_generated_stem_markers_route_every_builtin_symbol(symbol: str) -> None:
     [
         lambda figure: figure.traces[0].style.__setitem__("marker_path", {"contours": []}),
         lambda figure: figure.scatter([2.5, 3.5], [2.5, 3.5], symbol=["circle", "square"]),
-        lambda figure: figure.scatter([2.5, 3.5], [2.5, 3.5], color=[0.0, 1.0]),
         lambda figure: (
             setattr(figure, "coords", "polar"),
             figure.stem([1.0], [1.5], base=0.25),
@@ -1836,6 +1921,14 @@ def test_migrated_scene_packers_have_no_host_step_geometry_expander() -> None:
         {"kind": "marker", "x": 0.5, "y": 0.5, "text": "collision", "collision": "hide"},
         {"kind": "callout", "x": 0.5, "y": 0.5, "text": "rich", "html": "<b>rich</b>"},
         {"kind": "callout", "x": 0.5, "y": 0.5, "text": "css", "class_name": "custom"},
+        {"kind": "callout", "x": 0.5, "y": 0.5, "text": "rich", "style": {"markup": "<b>rich</b>"}},
+        {
+            "kind": "callout",
+            "x": 0.5,
+            "y": 0.5,
+            "text": "type",
+            "style": {"font_family": "Comic Sans"},
+        },
     ],
 )
 def test_public_annotation_router_fails_closed_for_unmodeled_host_layout_and_css(
@@ -1845,6 +1938,17 @@ def test_public_annotation_router_fails_closed_for_unmodeled_host_layout_and_css
     figure.annotations = [annotation]
     reason = scene_export_support_reason(figure) or ""
     assert "UNSUPPORTED" in reason
+    if "html" in annotation:
+        assert "XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML" in reason
+    if "class_name" in annotation:
+        assert "XYG_SCENE_UNSUPPORTED_BROWSER_CSS" in reason
+    if "collision" in annotation:
+        assert "XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION" in reason
+    style = annotation.get("style") or {}
+    if "markup" in annotation or (isinstance(style, dict) and "markup" in style):
+        assert "XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP" in reason
+    if isinstance(style, dict) and "font_family" in style:
+        assert "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT" in reason
 
 
 @pytest.mark.parametrize(
@@ -1853,6 +1957,7 @@ def test_public_annotation_router_fails_closed_for_unmodeled_host_layout_and_css
         {"kind": "text", "x": 0.5, "y": 0.5, "text": "offset", "dx": 6},
         {"kind": "text", "x": 0.5, "y": 0.5, "text": "anchor", "anchor": "end"},
         {"kind": "text", "x": 0.5, "y": 0.5, "text": "rotated", "rotation": 30},
+        {"kind": "text", "x": 0.5, "y": 0.5, "text": "rotated", "style": {"rotation": 30}},
     ],
 )
 def test_public_unwrapped_text_layout_routes_through_scene(annotation: dict[str, object]) -> None:
@@ -1871,6 +1976,10 @@ def test_public_unwrapped_text_layout_routes_through_scene(annotation: dict[str,
     if "rotation" in annotation:
         assert f'transform="rotate(-{annotation["rotation"]} ' in svg
         assert f'transform="rotate(-{annotation["rotation"]} '.encode() in exported
+    style = annotation.get("style") or {}
+    if isinstance(style, dict) and "rotation" in style:
+        assert f'transform="rotate(-{style["rotation"]} ' in svg
+        assert f'transform="rotate(-{style["rotation"]} '.encode() in exported
 
 
 @pytest.mark.parametrize(
@@ -1879,6 +1988,7 @@ def test_public_unwrapped_text_layout_routes_through_scene(annotation: dict[str,
         {"kind": "marker", "x": 0.5, "y": 0.5, "text": "offset", "dy": -8},
         {"kind": "marker", "x": 0.5, "y": 0.5, "text": "anchor", "anchor": "end"},
         {"kind": "marker", "x": 0.5, "y": 0.5, "text": "rotated", "rotation": 30},
+        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "rotated", "style": {"rotation": 30}},
     ],
 )
 def test_public_labelled_marker_layout_routes_through_scene(
@@ -1899,6 +2009,10 @@ def test_public_labelled_marker_layout_routes_through_scene(
     if "rotation" in annotation:
         assert f'transform="rotate(-{annotation["rotation"]} ' in svg
         assert f'transform="rotate(-{annotation["rotation"]} '.encode() in exported
+    style = annotation.get("style") or {}
+    if isinstance(style, dict) and "rotation" in style:
+        assert f'transform="rotate(-{style["rotation"]} ' in svg
+        assert f'transform="rotate(-{style["rotation"]} '.encode() in exported
 
 
 @pytest.mark.parametrize("name", sorted(UNSUPPORTED))
