@@ -16,6 +16,28 @@ from xyg._figure import Figure
 from xyg._scene_v3 import UnsupportedSceneV3, _colorbar_input
 from xyg.channels import ColorChannel
 
+
+def _xyad_from_figure(figure: Figure) -> bytes:
+    compiled = _native.scene_pack_trace_compile(scene_v3._pack_xytc(figure))
+    attached = _native.scene_pack_trace_attach(compiled, scene_v3._pack_xyta(figure))
+    sidecars = _native.scene_pack_trace_sidecars(attached, scene_v3._pack_xynm(figure))
+    rows = _native.scene_pack_trace_row_bytes(attached, scene_v3._pack_xycl(figure))
+    facts = bytearray()
+    for index, annotation in enumerate(list(getattr(figure, "annotations", None) or [])):
+        facts.extend(scene_v3._pack_xyaf(annotation, index))
+    output = (
+        _native.scene_pack_annotation_facts(
+            bytes(facts),
+            style_ref_base=len(figure.traces),
+            x_domain=tuple(float(value) for value in figure._range("x")),
+            y_domain=tuple(float(value) for value in figure._range("y")),
+        )
+        if facts
+        else b""
+    )
+    return scene_v3._unpack_xyas(_native.scene_splice_annotations(rows, sidecars, output))["xyad"]
+
+
 EXPECTED_SCATTER = (
     '<g><circle cx="10" cy="11" r="3" fill="rgb(37,99,235)" '
     'stroke="rgb(0,0,0)" stroke-width="2"/><path d="M 15.5 21 H 24.5 '
@@ -115,8 +137,31 @@ def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
             _native.scene_support_reason(0, request_version=invalid)  # type: ignore[arg-type]
 
     polar = Figure(coords="polar").line([0.0, 1.0], [0.0, 1.0])
-    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_POLAR"):
-        polar.to_scene()
+    scene = polar.to_scene()
+    assert scene[4:8] == (31).to_bytes(4, "little")
+    svg = _native.scene_svg(scene)
+    assert 'data-xy-grid="ring"' in svg or "<circle" in svg
+    assert '<clipPath id="xy-scene-plot"><rect' not in svg
+
+    polar_bar = Figure(coords="polar")
+    polar_bar.bar([0.0, 1.0], [0.5, 0.8])
+    bar_scene = polar_bar.to_scene()
+    assert bar_scene[4:8] == (31).to_bytes(4, "little")
+    bar_svg = _native.scene_svg(bar_scene)
+    assert "<path" in bar_svg and 'd="M' in bar_svg
+    polar_heatmap = Figure(coords="polar")
+    polar_heatmap.heatmap([[1.0, 2.0], [3.0, 4.0]])
+    heat_scene = polar_heatmap.to_scene()
+    assert heat_scene[4:8] == (31).to_bytes(4, "little")
+    heat_svg = _native.scene_svg(heat_scene)
+    assert "<path" in heat_svg and 'd="M' in heat_svg
+    assert "<rect x=" not in heat_svg
+    polar_contour = Figure(coords="polar")
+    polar_contour.contour([[1.0, 2.0], [3.0, 4.0]], levels=2, color="#3987e5")
+    contour_scene = polar_contour.to_scene()
+    assert contour_scene[4:8] == (31).to_bytes(4, "little")
+    contour_svg = _native.scene_svg(contour_scene)
+    assert "<polyline" in contour_svg or "<path" in contour_svg
 
     custom_font = Figure().line([0.0, 1.0], [0.0, 1.0])
     custom_font.chrome_styles = {"title": {"font-family": "Example Sans"}}
@@ -136,6 +181,17 @@ def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
     missing_constant.traces[0].color_ch = ColorChannel(mode="constant", constant=None)
     with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_GRADIENT"):
         missing_constant.to_scene()
+
+
+def test_figure_support_axis_allowlist_is_rust_owned() -> None:
+    figure = Figure().line([0.0, 1.0], [0.0, 1.0])
+    figure.axis_options["x"]["collision"] = "hide"
+    with pytest.raises(UnsupportedSceneV3, match="tick formatting"):
+        figure.to_scene()
+    extra = Figure().line([0.0, 1.0], [0.0, 1.0])
+    extra.axis_options["z"] = {"label": "z"}
+    with pytest.raises(UnsupportedSceneV3, match="exactly x/y"):
+        extra.to_scene()
 
 
 def test_scene_v19_colorbar_python_framer_matches_literal_stop_contract() -> None:
@@ -163,29 +219,18 @@ def test_scene_v19_colorbar_python_framer_matches_literal_stop_contract() -> Non
         _colorbar_input(figure)
 
 
-def test_python_callout_label_background_uses_xyac_v2_only_when_requested(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    captured: list[bytes] = []
-
-    def capture_scene_batch_encode(**kwargs: object) -> bytes:
-        value = kwargs["authored_text_annotations"]
-        assert isinstance(value, bytes)
-        captured.append(value)
-        return b"scene"
-
-    monkeypatch.setattr(scene_v3._native, "scene_batch_encode", capture_scene_batch_encode)
+def test_python_callout_label_background_uses_xyac_v2_only_when_requested() -> None:
     plain = Figure().callout(0.5, 0.5, "plain")
-    assert scene_v3.figure_scene(plain) == b"scene"
-    v1 = captured.pop()
+    assert scene_v3.figure_scene(plain)[:4] == b"XYGS"
+    v1 = _xyad_from_figure(plain)
     xyac_start = 24 + sum(struct.unpack_from("<IIII", v1, 8)[:3])
     assert v1[xyac_start : xyac_start + 8] == b"XYAC\x01\x00\x00\x00"
     assert len(v1) - xyac_start == 12 + 60 + len(b"plain")
 
     mixed = Figure().callout(0.25, 0.25, "clear")
     mixed.callout(0.75, 0.75, "filled", style={"label_background": "#123456"})
-    assert scene_v3.figure_scene(mixed) == b"scene"
-    v2 = captured.pop()
+    assert scene_v3.figure_scene(mixed)[:4] == b"XYGS"
+    v2 = _xyad_from_figure(mixed)
     xyac_start = 24 + sum(struct.unpack_from("<IIII", v2, 8)[:3])
     assert v2[xyac_start : xyac_start + 8] == b"XYAC\x02\x00\x00\x00"
     first = xyac_start + 12
@@ -198,18 +243,7 @@ def test_python_callout_label_background_uses_xyac_v2_only_when_requested(
         scene_v3.figure_scene(invalid)
 
 
-def test_python_label_borders_select_v23_frames_and_reject_partial_style(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    captured: list[bytes] = []
-
-    def capture_scene_batch_encode(**kwargs: object) -> bytes:
-        value = kwargs["authored_text_annotations"]
-        assert isinstance(value, bytes)
-        captured.append(value)
-        return b"scene"
-
-    monkeypatch.setattr(scene_v3._native, "scene_batch_encode", capture_scene_batch_encode)
+def test_python_label_borders_select_v23_frames_and_reject_partial_style() -> None:
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 1.0)
     figure.axis_options["y"]["domain"] = (0.0, 1.0)
@@ -222,15 +256,18 @@ def test_python_label_borders_select_v23_frames_and_reject_partial_style(
     figure.text(0.25, 0.25, "text", style=style)
     figure.marker(0.5, 0.5, text="attached", style=style)
     figure.callout(0.75, 0.75, "callout", dx=-20, dy=-20, style=style)
-    assert scene_v3.figure_scene(figure) == b"scene"
-    envelope = captured.pop()
-    lengths = struct.unpack_from("<IIII", envelope, 8)
-    at = 24
-    assert envelope[at : at + 8] == b"XYAT\x03\x00\x00\x00"
+    assert scene_v3.figure_scene(figure)[:4] == b"XYGS"
+    envelope = _xyad_from_figure(figure)
+    assert envelope[:8] == b"XYAD\x03\x00\x00\x00"
+    lengths = struct.unpack_from("<IIIII", envelope, 8)
+    at = 28
+    assert envelope[at : at + 8] == b"XYAT\x01\x00\x00\x00"
     at += lengths[0]
-    assert envelope[at : at + 8] == b"XYAL\x04\x00\x00\x00"
+    assert envelope[at : at + 8] == b"XYAL\x02\x00\x00\x00"
     at += lengths[1] + lengths[2]
     assert envelope[at : at + 8] == b"XYAC\x03\x00\x00\x00"
+    at += lengths[3]
+    assert envelope[at : at + 12] == b"XYAW\x01\x00\x00\x00\x02\x00\x00\x00"
     invalid = Figure().text(
         0.5, 0.5, "bad", style={"color": "#667085", "label_border_color": "#000"}
     )
@@ -285,7 +322,7 @@ def test_scene_v11_primary_annotations_are_canonical_and_ordered() -> None:
     figure.marker(0.75, 0.8, color="#0000ff", size=10.0, symbol="diamond")
     encoded = figure.to_scene()
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 25
+    assert int.from_bytes(encoded[4:8], "little") == 31
     svg = _native.scene_svg(encoded)
     assert svg.index("rgb(255,0,0)") < svg.index("rgb(0,255,0)") < svg.index("rgb(0,0,255)")
     assert "rgb(255,0,0)" in svg
@@ -333,8 +370,9 @@ def test_scene_v17_native_boundary_accepts_two_bounded_text_frames_and_straight_
     callout_svg = _native.scene_svg(callout_scene)
     assert "label" in callout_svg
     assert 'data-xy-stable-id="6366126145334673408"' in callout_svg
-    with pytest.raises(UnsupportedSceneV3, match="does not encode"):
-        Figure().vline(1.0, style={"dash": "2,2"}).to_scene()
+    dashed_rule = Figure().vline(1.0, style={"dash": "2,2"}).to_scene()
+    assert b"XYDS" in dashed_rule
+    assert 'stroke-dasharray="2,2"' in _native.scene_svg(dashed_rule)
 
 
 @pytest.mark.parametrize(
@@ -401,7 +439,7 @@ def test_python_scene_v3_matches_shared_scatter_line_bar_axis_bytes() -> None:
     )
     assert hashlib.sha256(encoded).hexdigest() == fixture["expected_sha256"]
     assert encoded[:4] == b"XYGS"
-    assert int.from_bytes(encoded[4:8], "little") == 25
+    assert int.from_bytes(encoded[4:8], "little") == 31
     records = 160 + len(fixture["styles"]) * 16
     assert encoded[records + 1] == 1  # center is outside, marker extent overlaps
     assert encoded[records + 2] == 2  # diamond
@@ -814,7 +852,7 @@ def test_static_scale_vector_cache_never_exceeds_its_per_operation_bound() -> No
 
 
 def test_python_consumes_the_versioned_rust_scatter_scene() -> None:
-    assert _native.scene_version() == 25
+    assert _native.scene_version() == 31
 
 
 def test_scene_authored_tick_labels_keep_their_explicit_tick_pairing() -> None:
@@ -846,14 +884,14 @@ def test_scene_authored_tick_labels_keep_their_explicit_tick_pairing() -> None:
 
 
 def test_public_svg_diamond_routes_through_the_whole_scene_consumer(monkeypatch) -> None:
-    original = _native.scene_svg
+    original = _native.scene_static_export
     calls: list[bytes] = []
 
     def record(*args, **kwargs):
         calls.append(args[0][:4])
         return original(*args, **kwargs)
 
-    monkeypatch.setattr(_native, "scene_svg", record)
+    monkeypatch.setattr(_native, "scene_static_export", record)
     svg = Figure().scatter([0.0, 1.0], [1.0, 0.0], symbol="diamond").to_svg()
 
     assert calls == [b"XYGS"]

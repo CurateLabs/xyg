@@ -47,6 +47,38 @@ impl HistogramEdgesMethod {
     }
 }
 
+/// Composition-histogram edge policy (ABI 119). Distinct from NumPy auto:
+/// empty finite samples historically used ten uniform bins, and integer bin
+/// counts use [`crate::autorange::auto_domain`] rather than the ±0.5-only
+/// empty/constant expansion inside [`histogram_edges`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(i32)]
+pub enum HistogramMarkMethod {
+    /// NumPy `bins="auto"`, except empty finite → 10 bins over range or `[0, 1]`.
+    Auto = 0,
+    /// NumPy `bins="sturges"`, with the same empty-finite ten-bin host policy.
+    Sturges = 1,
+    /// `n` uniform bins over an authored range or [`crate::autorange::auto_domain`].
+    Uniform = 2,
+}
+
+impl HistogramMarkMethod {
+    pub fn from_i32(v: i32) -> Option<Self> {
+        match v {
+            0 => Some(Self::Auto),
+            1 => Some(Self::Sturges),
+            2 => Some(Self::Uniform),
+            _ => None,
+        }
+    }
+}
+
+/// Maximum isoline count accepted by composition contour marks.
+pub const MAX_CONTOUR_LEVELS: usize = 256;
+
+/// Historical empty-finite composition histogram bin count.
+pub const EMPTY_HISTOGRAM_MARK_BINS: usize = 10;
+
 /// Tukey box-plot summary: quartiles, observation-clipped whiskers, outliers.
 #[derive(Clone, Debug, PartialEq)]
 pub struct BoxStats {
@@ -520,16 +552,103 @@ pub fn histogram_edges(
             1
         }
     };
-    if n_bins > MAX_HISTOGRAM_BINS {
+    histogram_uniform_edges(first_edge, last_edge, n_bins)
+}
+
+/// Closed-last-bin uniform edges: `lo + i * (hi - lo) / n` for `i < n`, last
+/// edge forced to `hi`. Matches the previous Python/Node composition packer.
+pub fn histogram_uniform_edges(lo: f64, hi: f64, n_bins: usize) -> Option<Vec<f64>> {
+    if n_bins == 0 || n_bins > MAX_HISTOGRAM_BINS {
+        return None;
+    }
+    if !(lo.is_finite() && hi.is_finite() && hi > lo && (hi - lo).is_finite()) {
+        return None;
+    }
+    let width = (hi - lo) / n_bins as f64;
+    if !(width.is_finite() && width > 0.0) {
         return None;
     }
     let mut edges = Vec::with_capacity(n_bins + 1);
-    let width = (last_edge - first_edge) / n_bins as f64;
-    for i in 0..=n_bins {
-        edges.push(first_edge + i as f64 * width);
+    for i in 0..n_bins {
+        edges.push(lo + i as f64 * width);
     }
-    edges[n_bins] = last_edge;
+    edges.push(hi);
     Some(edges)
+}
+
+/// Composition histogram edges: integer bins, auto/sturges, and the empty
+/// finite ten-bin compatibility case. Authored edge arrays stay host-packed.
+pub fn histogram_mark_edges(
+    data: &[f64],
+    range: Option<(f64, f64)>,
+    method: HistogramMarkMethod,
+    n_bins: usize,
+) -> Option<Vec<f64>> {
+    match method {
+        HistogramMarkMethod::Auto | HistogramMarkMethod::Sturges => {
+            if !data.iter().any(|v| v.is_finite()) {
+                let (lo, hi) = match range {
+                    Some((lo, hi)) => {
+                        if !(lo.is_finite() && hi.is_finite() && hi > lo) {
+                            return None;
+                        }
+                        (lo, hi)
+                    }
+                    None => (0.0, 1.0),
+                };
+                return histogram_uniform_edges(lo, hi, EMPTY_HISTOGRAM_MARK_BINS);
+            }
+            let estimator = match method {
+                HistogramMarkMethod::Sturges => HistogramEdgesMethod::Sturges,
+                HistogramMarkMethod::Auto | HistogramMarkMethod::Uniform => {
+                    HistogramEdgesMethod::Auto
+                }
+            };
+            histogram_edges(data, range, estimator)
+        }
+        HistogramMarkMethod::Uniform => {
+            let (lo, hi) = match range {
+                Some((lo, hi)) => {
+                    if !(lo.is_finite() && hi.is_finite() && hi > lo) {
+                        return None;
+                    }
+                    (lo, hi)
+                }
+                None => crate::autorange::auto_domain(kernels::min_max(data)),
+            };
+            histogram_uniform_edges(lo, hi, n_bins)
+        }
+    }
+}
+
+/// Composition contour isolines. `n_levels > 0` spaces interior samples
+/// across [`crate::autorange::auto_domain`] of finite `z`; `n_levels == 0`
+/// sorts the authored finite levels (1..=256, all finite).
+pub fn contour_levels(data: &[f64], n_levels: usize) -> Option<Vec<f64>> {
+    if n_levels == 0 {
+        if data.is_empty() || data.len() > MAX_CONTOUR_LEVELS || data.iter().any(|v| !v.is_finite())
+        {
+            return None;
+        }
+        let mut out = data.to_vec();
+        out.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        return Some(out);
+    }
+    if n_levels > MAX_CONTOUR_LEVELS {
+        return None;
+    }
+    let finite: Vec<f64> = data.iter().copied().filter(|v| v.is_finite()).collect();
+    if finite.is_empty() {
+        return None;
+    }
+    let (lo, hi) = crate::autorange::auto_domain(kernels::min_max(&finite));
+    let span = hi - lo;
+    let denom = (n_levels + 1) as f64;
+    Some(
+        (0..n_levels)
+            .map(|i| lo + span * ((i + 1) as f64) / denom)
+            .collect(),
+    )
 }
 
 fn uniform_histogram_domain(edges: &[f64]) -> Option<(f64, f64)> {
@@ -1252,6 +1371,46 @@ mod tests {
     }
 
     #[test]
+    fn histogram_mark_edges_empty_auto_uses_ten_bins() {
+        let empty = histogram_mark_edges(&[], None, HistogramMarkMethod::Auto, 0).unwrap();
+        assert_eq!(empty.len(), 11);
+        assert_eq!(empty[0], 0.0);
+        assert_eq!(empty[10], 1.0);
+        let ranged = histogram_mark_edges(
+            &[f64::NAN],
+            Some((2.0, 4.0)),
+            HistogramMarkMethod::Sturges,
+            0,
+        )
+        .unwrap();
+        assert_eq!(ranged.len(), 11);
+        assert_eq!(ranged[0], 2.0);
+        assert_eq!(ranged[10], 4.0);
+        let uniform =
+            histogram_mark_edges(&[10.0, 10.0], None, HistogramMarkMethod::Uniform, 4).unwrap();
+        // auto_domain constant 10 → ±5%
+        assert!((uniform[0] - 9.5).abs() < 1e-12);
+        assert!((uniform[4] - 10.5).abs() < 1e-12);
+        assert_eq!(uniform.len(), 5);
+    }
+
+    #[test]
+    fn contour_levels_auto_and_authored() {
+        let auto = contour_levels(&[0.0, 10.0], 3).unwrap();
+        assert_eq!(auto.len(), 3);
+        assert!((auto[0] - 2.5).abs() < 1e-12);
+        assert!((auto[1] - 5.0).abs() < 1e-12);
+        assert!((auto[2] - 7.5).abs() < 1e-12);
+        let constant = contour_levels(&[4.0, 4.0], 1).unwrap();
+        // auto_domain ±5% of 4.0 → (3.8, 4.2); one interior at midpoint
+        assert!((constant[0] - 4.0).abs() < 1e-12);
+        let authored = contour_levels(&[3.0, 1.0, 2.0], 0).unwrap();
+        assert_eq!(authored, vec![1.0, 2.0, 3.0]);
+        assert!(contour_levels(&[1.0, f64::NAN], 0).is_none());
+        assert!(contour_levels(&[], 4).is_none());
+    }
+
+    #[test]
     fn binned_ecdf_filters_compacts_and_anchors_right_edges() {
         let result = binned_ecdf(&[0.0, 0.2, f64::NAN, 0.2, 0.9], 4, None).unwrap();
         assert_eq!(result.x, vec![0.0, 0.225, 0.9]);
@@ -1273,8 +1432,8 @@ mod tests {
 
     #[test]
     fn binned_ecdf_authored_range_uses_all_finite_mass() {
-        let result = binned_ecdf(&[-1.0, 0.25, 0.75, 2.0, f64::INFINITY], 2, Some((0.0, 1.0)))
-            .unwrap();
+        let result =
+            binned_ecdf(&[-1.0, 0.25, 0.75, 2.0, f64::INFINITY], 2, Some((0.0, 1.0))).unwrap();
         assert_eq!(result.x, vec![0.0, 0.5, 1.0]);
         assert_eq!(result.cumulative, vec![0.0, 0.25, 0.5]);
 

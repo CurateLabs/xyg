@@ -8,13 +8,14 @@ does not exist yet.
 
 from __future__ import annotations
 
+import math
 import struct
-from typing import Any
+from typing import Any, NoReturn
 
 import numpy as np
 
-from . import _native
-from .marks import _SYMBOL_CODES
+from . import _native, _validate, channels
+from .marks import _SYMBOL_CODES, _validated_marker_path
 
 # Host mark kinds that lower to Scene Rect (kind 2). Geometry is already
 # x0/y0/x1/y1 columns on the Trace; Scene does not recompute bar stacking.
@@ -25,22 +26,30 @@ _SEGMENT_KINDS = frozenset({"segments", "errorbar", "stem", "contour", "box_whis
 _BAND_KINDS = frozenset({"area", "error_band"})
 # Host-tessellated flow bands also lower to Scene Band samples.
 _RIBBON_KINDS = frozenset({"ribbon"})
+# ABI 175 packs fill/stroke opacity channels for violin/box (XYMS already
+# composites them). ABI 176 extends that packing to bar/column/histogram, the
+# remaining PACK_RECT kinds. ABI 177 packs heatmap `fill_opacity` so lattice
+# cells and colormap paints use the XYMS fill alpha. ABI 178 packs scatter
+# `fill_opacity` / `stroke_opacity` on that same XYMS path. ABI 179 packs hexbin
+# `fill_opacity` so HexCell PolyFills use the XYMS fill alpha. ABI 180 packs
+# triangle_mesh `fill_opacity` / constant stroke on that same XYMS path.
+_OPACITY_CHANNEL_KINDS = (
+    _BAND_KINDS
+    | _RIBBON_KINDS
+    | _RECT_KINDS
+    | frozenset({"heatmap", "scatter", "hexbin", "triangle_mesh"})
+)
 # Independent triangles lower to Scene PolyFill (kind 4) vertex runs.
 _POLYFILL_KINDS = frozenset({"triangle_mesh"})
-# Cartesian hexbin centers expand onto the same PolyFill records (6-vertex cells).
+# Cartesian hexbin centers expand onto PolyFill records (6-vertex cells) in
+# Rust (`SceneExpansionMode::HexCell`). Hosts pack one compact center+pitch
+# row per cell.
 _HEXBIN_KINDS = frozenset({"hexbin"})
 _HEXBIN_REDUCES = frozenset({"count", "mean", "sum"})
-# Pointy-top hexagon ring as fractions of hex_dx/hex_dy. Same contract as
-# python/xyg/_svg.py HEX_RING and js/src/50_chartview.ts _buildHexbinMark.
-_HEXBIN_RING = (
-    (0.0, -1.0 / 3.0),
-    (0.5, -1.0 / 6.0),
-    (0.5, 1.0 / 6.0),
-    (0.0, 1.0 / 3.0),
-    (-0.5, 1.0 / 6.0),
-    (-0.5, -1.0 / 6.0),
-)
-# Regular Cartesian heatmap cells expand onto the same Rect records as bars.
+# Regular Cartesian heatmap cells expand onto Rect records in Rust
+# (`SceneExpansionMode::HeatmapLattice`). Hosts pack extent plus rows/cols.
+# Painted lattices (`HeatmapPainted`) add an XYHP sidecar; Rust tessellates
+# cells and interns unique fills. Polar encode maps those Rects to PolyFill.
 _HEATMAP_KINDS = frozenset({"heatmap"})
 _POINT_KINDS = frozenset({"scatter", "line"})
 _SUPPORTED_KINDS = (
@@ -54,16 +63,81 @@ _SUPPORTED_KINDS = (
     | _HEATMAP_KINDS
 )
 _STROKE_KINDS = frozenset({"line"}) | _SEGMENT_KINDS
+_XYFS_TRACE_UNSUPPORTED_KIND = 1 << 0
+_XYFS_TRACE_NON_PRIMARY_AXIS = 1 << 1
+_XYFS_TRACE_HIDDEN_OR_PER_ITEM = 1 << 2
+_XYFS_TRACE_DENSITY = 1 << 3  # ABI 143 no longer sets this for polar density
+_XYFS_TRACE_DASHED_MARKERS = 1 << 4
+_XYFS_TRACE_RECT_GRADIENT = 1 << 5
+_XYFS_TRACE_CORNER_RADIUS = 1 << 6
+_XYFS_TRACE_WEDGE_GAP = 1 << 7
+_XYFS_TRACE_JOINED_FILL = 1 << 8  # reserved; ABI 182 no longer fail-closes this bit
+_XYFS_TRACE_CUSTOM_HEX_REDUCE = 1 << 9
+_XYFS_TRACE_HEATMAP_COLORMAP = 1 << 10
+_XYFS_TRACE_NON_CSS_FILL = 1 << 11
+_SCENE_DASH_PRESETS: dict[str, list[float] | None] = {
+    "solid": None,
+    "dashed": [6.0, 4.0],
+    "dotted": [1.5, 3.0],
+    "dashdot": [6.0, 3.0, 1.5, 3.0],
+}
 
 # Each unjoined triangle or hex cell is one PolyFill group in the Rust browser
 # painter. Keep the public route inside its canonical group budget; larger
 # meshes and honeycombs remain on the compatibility path until Scene gains a
 # compact multi-cell painter record.
-_MAX_PUBLIC_TRIANGLE_MESHES = 1024
 # Regular heatmap cells are ordinary Rect records and share the histogram
-# 10,000-bin public ceiling. Colormap, polar, truecolor, and irregular grids
-# stay on the compatibility exporters.
+# 10,000-bin public ceiling. Irregular grids stay on the compatibility
+# exporters. Scalar-colormap and truecolor heatmaps tessellate those Rects
+# with per-cell literal styles (polar encode then maps Rects to PolyFill
+# annular sectors).
 _MAX_PUBLIC_HEATMAP_CELLS = 10_000
+
+_PUBLIC_EXPORT_KIND_CODES = {
+    "scatter": 0,
+    "line": 1,
+    "bar": 2,
+    "column": 3,
+    "histogram": 4,
+    "violin": 5,
+    "box": 6,
+    "box_whisker": 7,
+    "box_median": 8,
+    "segments": 9,
+    "errorbar": 10,
+    "stem": 11,
+    "area": 12,
+    "error_band": 13,
+    "ribbon": 14,
+    "triangle_mesh": 15,
+    "hexbin": 16,
+    "heatmap": 17,
+    "contour": 18,
+}
+
+_XYEF_OBS_HAS_X = 1 << 0
+_XYEF_OBS_HAS_Y = 1 << 1
+_XYEF_OBS_X_FINITE = 1 << 2
+_XYEF_OBS_Y_FINITE = 1 << 3
+_XYEF_OBS_HAS_X0 = 1 << 4
+_XYEF_OBS_HAS_Y0 = 1 << 5
+_XYEF_OBS_HAS_X1 = 1 << 6
+_XYEF_OBS_HAS_Y1 = 1 << 7
+_XYEF_OBS_X0_FINITE = 1 << 8
+_XYEF_OBS_Y0_FINITE = 1 << 9
+_XYEF_OBS_X1_FINITE = 1 << 10
+_XYEF_OBS_Y1_FINITE = 1 << 11
+_XYEF_OBS_JOINED_FILL = 1 << 12
+_XYEF_OBS_HEATMAP_TRUECOLOR = 1 << 13
+_XYEF_OBS_HEATMAP_RGBA_GRID = 1 << 16
+_XYEF_OBS_HEATMAP_SHAPE_OK = 1 << 17
+_XYEF_OBS_HEATMAP_EXTENT_OK = 1 << 18
+_XYEF_OBS_HEATMAP_FINITE = 1 << 19
+_XYEF_OBS_STROKE_WIDTH_ONLY = 1 << 20
+_XYEF_OBS_COMPANION_XY_MATCH = 1 << 21
+_XYEF_OBS_COMPANION_AXES_MATCH = 1 << 22
+_XYEF_OBS_SYMBOL_NON_STRING = 1 << 23
+_XYEF_OBS_DENSITY_BLIT = 1 << 24
 
 _LEGEND_LOCATIONS = {
     "upper right": 0,
@@ -111,17 +185,9 @@ def _colorbar_input(figure: Any) -> bytes:
         raise UnsupportedSceneV3(
             "Scene v19 colorbar stops are (finite value, RGBA[4]) pairs"
         ) from None
-    if not np.isfinite([lo, hi]).all() or lo >= hi or any(len(rgba) != 4 for _, rgba in parsed):
+    if any(len(rgba) != 4 for _, rgba in parsed):
         raise UnsupportedSceneV3(
             "Scene v19 colorbar values must be finite and RGBA literals exactly four bytes"
-        )
-    if (
-        parsed[0][0] != lo
-        or parsed[-1][0] != hi
-        or any(value <= parsed[index - 1][0] for index, (value, _) in enumerate(parsed) if index)
-    ):
-        raise UnsupportedSceneV3(
-            "Scene v19 colorbar stops must be strictly increasing and match the domain endpoints"
         )
     horizontal = options.get("side", "right") == "bottom"
     if options.get("side", "right") not in {"right", "bottom"}:
@@ -150,32 +216,231 @@ def _colorbar_input(figure: Any) -> bytes:
             raise UnsupportedSceneV3(
                 "Scene v19 colorbar ticks are limited to 32 finite ordered values"
             ) from None
-        if (
-            not np.isfinite(ticks).all()
-            or any(value < lo or value > hi for value in ticks)
-            or any(value <= ticks[index - 1] for index, value in enumerate(ticks) if index)
-        ):
-            raise UnsupportedSceneV3(
-                "Scene v19 colorbar ticks are limited to 32 finite ordered values"
-            )
     minor_ticks = options.get("minor_ticks", False)
     if not isinstance(minor_ticks, bool):
         raise UnsupportedSceneV3("Scene v19 colorbar minor_ticks must be a boolean")
-    authored_ticks = bool(ticks)
-    out = bytearray(56 + len(parsed) * 12 + len(ticks) * 8 + len(title_b))
-    out[:4] = b"XYCB"
-    struct.pack_into("<I", out, 4, 2)
-    out[8] = int(horizontal) | 2 | (int(minor_ticks) << 2) | (int(authored_ticks) << 3)
-    struct.pack_into("<III2d", out, 12, len(parsed), len(ticks), len(title_b), lo, hi)
-    out[40:44] = text_rgba
-    for index, (value, rgba) in enumerate(parsed):
-        struct.pack_into("<d", out, 56 + index * 12, value)
-        out[64 + index * 12 : 68 + index * 12] = rgba
-    ticks_start = 56 + len(parsed) * 12
-    for index, value in enumerate(ticks):
-        struct.pack_into("<d", out, ticks_start + index * 8, value)
-    out[ticks_start + len(ticks) * 8 :] = title_b
-    return bytes(out)
+    flags = int(horizontal) | (int(minor_ticks) << 2)
+    stop_rgba = b"".join(rgba for _, rgba in parsed)
+    try:
+        return _native.scene_pack_colorbar(
+            flags=flags,
+            lo=lo,
+            hi=hi,
+            text_rgba=text_rgba,
+            title=title_b,
+            stop_values=[value for value, _ in parsed],
+            stop_rgba=stop_rgba,
+            ticks=ticks,
+        )
+    except ValueError as error:
+        raise UnsupportedSceneV3(str(error)) from error
+
+
+_ANNOTATION_FLAG_FILL = 1
+_ANNOTATION_FLAG_BORDER = 2
+
+
+def _annotation_style_flags(
+    fill: tuple[int, int, int, int] | None,
+    border: tuple[tuple[int, int, int, int], float] | None,
+) -> int:
+    flags = 0
+    if fill is not None:
+        flags |= _ANNOTATION_FLAG_FILL
+    if border is not None:
+        flags |= _ANNOTATION_FLAG_BORDER
+    return flags
+
+
+def _annotation_envelope(
+    text_rows: list[
+        tuple[
+            float,
+            float,
+            tuple[int, int, int, int],
+            tuple[int, int, int, int] | None,
+            tuple[tuple[int, int, int, int], float] | None,
+            bytes,
+        ]
+    ],
+    attached_labels: list[
+        tuple[
+            int,
+            tuple[int, int, int, int],
+            tuple[int, int, int, int] | None,
+            tuple[tuple[int, int, int, int], float] | None,
+            str,
+        ]
+    ],
+    straight_arrows: list[
+        tuple[int, float, float, float, float, tuple[int, int, int, int], float, float]
+    ],
+    cartesian_callouts: list[
+        tuple[
+            float,
+            float,
+            float,
+            float,
+            tuple[int, int, int, int],
+            float,
+            float,
+            int,
+            bytes,
+            tuple[int, int, int, int] | None,
+            tuple[tuple[int, int, int, int], float] | None,
+        ]
+    ],
+    wrapped_rows: list[
+        tuple[
+            float,
+            float,
+            float,
+            float,
+            float,
+            tuple[int, int, int, int],
+            tuple[int, int, int, int],
+            tuple[int, int, int, int],
+            float,
+            int,
+            int,
+            bytes,
+        ]
+    ],
+) -> bytes:
+    """Frame collected annotation rows as XYAD bytes through Rust."""
+    if not (text_rows or attached_labels or straight_arrows or cartesian_callouts or wrapped_rows):
+        return b""
+    zeros = (0, 0, 0, 0)
+
+    def pack_fill(fill: tuple[int, int, int, int] | None) -> bytes:
+        return bytes(fill or zeros)
+
+    def pack_border(
+        border: tuple[tuple[int, int, int, int], float] | None,
+    ) -> tuple[bytes, float]:
+        if border is None:
+            return bytes(zeros), 0.0
+        return bytes(border[0]), float(border[1])
+
+    text_meta = bytearray()
+    text_lens: list[int] = []
+    texts = bytearray()
+    for x, y, rgba, fill, border, encoded in text_rows:
+        border_rgba, width = pack_border(border)
+        text_meta.extend(
+            struct.pack(
+                "<dd4s4s4sdB3x",
+                x,
+                y,
+                bytes(rgba),
+                pack_fill(fill),
+                border_rgba,
+                width,
+                _annotation_style_flags(fill, border),
+            )
+        )
+        text_lens.append(len(encoded))
+        texts.extend(encoded)
+    attached_meta = bytearray()
+    attached_lens: list[int] = []
+    attached_texts = bytearray()
+    for stable_id, rgba, fill, border, value in attached_labels:
+        encoded = value.encode("utf-8")
+        border_rgba, width = pack_border(border)
+        attached_meta.extend(
+            struct.pack(
+                "<Q4s4s4sdB3x",
+                int(stable_id),
+                bytes(rgba),
+                pack_fill(fill),
+                border_rgba,
+                width,
+                _annotation_style_flags(fill, border),
+            )
+        )
+        attached_lens.append(len(encoded))
+        attached_texts.extend(encoded)
+    arrow_meta = bytearray()
+    for stable_id, x0, y0, x1, y1, rgba, opacity, width in straight_arrows:
+        arrow_meta.extend(
+            struct.pack("<Qdddd4sdd", int(stable_id), x0, y0, x1, y1, bytes(rgba), opacity, width)
+        )
+    callout_meta = bytearray()
+    callout_lens: list[int] = []
+    callout_texts = bytearray()
+    for (
+        x,
+        y,
+        dx,
+        dy,
+        rgba,
+        opacity,
+        width,
+        anchor_code,
+        encoded,
+        fill,
+        border,
+    ) in cartesian_callouts:
+        border_rgba, border_width = pack_border(border)
+        callout_meta.extend(
+            struct.pack(
+                "<dddd4sddB3x4s4sdB3x",
+                x,
+                y,
+                dx,
+                dy,
+                bytes(rgba),
+                opacity,
+                width,
+                anchor_code,
+                pack_fill(fill),
+                border_rgba,
+                border_width,
+                _annotation_style_flags(fill, border),
+            )
+        )
+        callout_lens.append(len(encoded))
+        callout_texts.extend(encoded)
+    wrapped_meta = bytearray()
+    wrapped_lens: list[int] = []
+    wrapped_texts = bytearray()
+    for x, y, dx, dy, wrap, rgba, fill, border_rgba, border, kind, anchor, encoded in wrapped_rows:
+        wrapped_meta.extend(
+            struct.pack(
+                "<ddddd4s4s4sdBB2x",
+                x,
+                y,
+                dx,
+                dy,
+                wrap,
+                bytes(rgba),
+                bytes(fill),
+                bytes(border_rgba),
+                border,
+                kind,
+                anchor,
+            )
+        )
+        wrapped_lens.append(len(encoded))
+        wrapped_texts.extend(encoded)
+    try:
+        return _native.scene_pack_annotations(
+            text_meta=bytes(text_meta),
+            text_lens=text_lens,
+            texts=bytes(texts),
+            attached_meta=bytes(attached_meta),
+            attached_lens=attached_lens,
+            attached_texts=bytes(attached_texts),
+            arrow_meta=bytes(arrow_meta),
+            callout_meta=bytes(callout_meta),
+            callout_lens=callout_lens,
+            callout_texts=bytes(callout_texts),
+            wrapped_meta=bytes(wrapped_meta),
+            wrapped_lens=wrapped_lens,
+            wrapped_texts=bytes(wrapped_texts),
+        )
+    except ValueError as error:
+        raise UnsupportedSceneV3(str(error)) from error
 
 
 def _legend_input(
@@ -226,37 +491,37 @@ def _legend_input(
     text_bytes = len(title) + sum(map(len, labels))
     if text_bytes > _native.MAX_SCENE_LEGEND_INPUT_BYTES - 48 - 128 * 24 or len(title) > 4096:
         raise ValueError("Scene v12 legend text is limited to 16,384 UTF-8 bytes")
-    out = bytearray(48 + len(entries) * 24)
-    out[:4] = b"XYLG"
-    out[4] = _LEGEND_LOCATIONS[loc]
-    out[5] = (
+    flags = (
         int(authored_loc is not None)
         | (int(authored_font_size is not None) << 1)
         | (int(authored_title_font_size is not None) << 2)
         | (int("color" in style) << 3)
         | (int("background" in style) << 4)
     )
-    struct.pack_into("<II2d", out, 8, len(entries), len(title), font_size, title_font_size)
-    if "color" in style:
-        out[32:36] = bytes(_rgba(str(style["color"]), 1.0))
-    if "background" in style:
-        out[36:40] = bytes(_rgba(str(style["background"]), 1.0))
-    text_offset = len(title)
-    for index, ((style_ref, kind, symbol, _), label) in enumerate(
-        zip(entries, labels, strict=True)
-    ):
-        offset = 48 + index * 24
-        struct.pack_into(
-            "<IBBHII", out, offset, style_ref, kind, symbol, 0, text_offset, len(label)
-        )
+    text_rgba = bytes(_rgba(str(style["color"]), 1.0)) if "color" in style else bytes(4)
+    frame_fill = bytes(_rgba(str(style["background"]), 1.0)) if "background" in style else bytes(4)
+    meta = bytearray()
+    blob = bytearray()
+    label_lens: list[int] = []
+    for (style_ref, kind, symbol, _), label in zip(entries, labels, strict=True):
         fill, stroke, _ = styles[style_ref]
-        out[offset + 16 : offset + 20] = bytes(fill)
-        out[offset + 20 : offset + 24] = bytes(stroke)
-        text_offset += len(label)
-    out.extend(title)
-    for label in labels:
-        out.extend(label)
-    return bytes(out)
+        meta.extend(struct.pack("<IBB2x", int(style_ref), int(kind), int(symbol)))
+        meta.extend(bytes(fill))
+        meta.extend(bytes(stroke))
+        label_lens.append(len(label))
+        blob.extend(label)
+    return _native.scene_pack_legend(
+        loc=_LEGEND_LOCATIONS[loc],
+        flags=flags,
+        font_size=font_size,
+        title_font_size=title_font_size,
+        text_rgba=text_rgba,
+        frame_fill_rgba=frame_fill,
+        title=title,
+        entry_meta=bytes(meta),
+        label_lens=label_lens,
+        labels=bytes(blob),
+    )
 
 
 _KIND_CODES = {
@@ -282,23 +547,582 @@ _KIND_CODES = {
 }
 
 
+_XYAF_KIND_CODES = {
+    "text": 0,
+    "arrow": 1,
+    "callout": 2,
+    "rule": 3,
+    "band": 4,
+    "marker": 5,
+}
+_XYAF_FACT_HAS_WRAP = 1 << 0
+_XYAF_FACT_HAS_TEXT = 1 << 1
+_XYAF_FACT_HAS_CLASS_NAME = 1 << 2
+_XYAF_FACT_HAS_DX = 1 << 3
+_XYAF_FACT_HAS_DY = 1 << 4
+_XYAF_FACT_HAS_X = 1 << 5
+_XYAF_FACT_HAS_Y = 1 << 6
+_XYAF_FACT_HAS_X0 = 1 << 7
+_XYAF_FACT_HAS_Y0 = 1 << 8
+_XYAF_FACT_HAS_X1 = 1 << 9
+_XYAF_FACT_HAS_Y1 = 1 << 10
+_XYAF_FACT_HAS_VALUE = 1 << 11
+_XYAF_FACT_HAS_START = 1 << 12
+_XYAF_FACT_HAS_END = 1 << 13
+_XYAF_FACT_HAS_SIZE = 1 << 14
+_XYAF_FACT_HAS_AXIS = 1 << 15
+_XYAF_FACT_HAS_SYMBOL = 1 << 16
+_XYAF_FACT_HAS_ANCHOR = 1 << 17
+_XYAF_FACT_HAS_ROTATION = 1 << 18
+_XYAF_STYLE_COLOR = 1 << 0
+_XYAF_STYLE_OPACITY = 1 << 1
+_XYAF_STYLE_WIDTH = 1 << 2
+_XYAF_STYLE_DASH = 1 << 3
+_XYAF_STYLE_LINECAP = 1 << 4
+_XYAF_STYLE_STROKE_COLOR = 1 << 5
+_XYAF_STYLE_STROKE_WIDTH = 1 << 6
+_XYAF_STYLE_LABEL_COLOR = 1 << 7
+_XYAF_STYLE_LABEL_OPACITY = 1 << 8
+_XYAF_STYLE_LABEL_BACKGROUND = 1 << 9
+_XYAF_STYLE_LABEL_BORDER_COLOR = 1 << 10
+_XYAF_STYLE_LABEL_BORDER_WIDTH = 1 << 11
+_XYAF_STYLE_UNSUPPORTED = 1 << 31
+_XYAF_HEADER = struct.Struct("<4sIIBBBBIIBBHI18d4s4s4s4s4sI8f")
+_XYAS_HEADER = struct.Struct("<4sIIIII")
+_XYAS_STYLE = struct.Struct("<4s4sd")
+
+
 class UnsupportedSceneV3(ValueError):
     """The figure uses a feature outside the currently migrated Scene subset."""
 
 
-def _rgba(css: str, opacity: float) -> tuple[int, int, int, int]:
-    from ._raster import _parse_color
+def _trace_column(trace: Any, name: str) -> np.ndarray | None:
+    """Return one authored f64 column, or None when the host did not set it."""
+    value = getattr(trace, name, None)
+    if value is None:
+        return None
+    return np.asarray(getattr(value, "values", value), dtype=np.float64)
 
-    return _parse_color(css, opacity)
+
+def _pack_annotation_mark_row(
+    kind_code: int,
+    axis_code: int,
+    symbol: int,
+    style_ref: int,
+    index: int,
+    value0: float,
+    value1: float,
+    size: float,
+) -> bytes:
+    """One 40-byte authored rule/band/marker row for Rust domain expansion."""
+    return struct.pack(
+        "<BBBBIIxxxxddd",
+        int(kind_code),
+        int(axis_code),
+        int(symbol),
+        0,
+        int(style_ref),
+        int(index),
+        float(value0),
+        float(value1),
+        float(size),
+    )
+
+
+def _append_annotation_marks(
+    kinds: list[int],
+    stable_ids: list[int],
+    style_refs: list[int],
+    diameters: list[float],
+    symbols: list[int],
+    expansion_modes: list[int],
+    coordinates: list[list[float]],
+    rows: bytes,
+    x_domain: tuple[float, float],
+    y_domain: tuple[float, float],
+) -> None:
+    if not rows:
+        return
+    (
+        packed_kinds,
+        packed_ids,
+        packed_refs,
+        packed_diameters,
+        packed_symbols,
+        packed_modes,
+        coords,
+    ) = _native.scene_pack_annotation_marks(rows, x_domain=x_domain, y_domain=y_domain)
+    kinds.extend(int(value) for value in packed_kinds)
+    stable_ids.extend(int(value) for value in packed_ids)
+    style_refs.extend(int(value) for value in packed_refs)
+    diameters.extend(float(value) for value in packed_diameters)
+    symbols.extend(int(value) for value in packed_symbols)
+    expansion_modes.extend(int(value) for value in packed_modes)
+    for axis in range(4):
+        coordinates[axis].extend(float(value) for value in coords[axis])
+
+
+def _rgba(css: str, opacity: float) -> tuple[int, int, int, int]:
+    return _native.css_color_rgba(css, opacity)
+
+
+def _annotation_number(values: dict[str, Any], key: str, default: Any, label: str) -> float:
+    raw = values.get(key, default)
+    if (
+        raw is None
+        or isinstance(raw, (bool, np.bool_))
+        or (isinstance(raw, str) and not raw.strip())
+    ):
+        raise ValueError(f"Scene v12 annotation {label} must be numeric")
+    try:
+        value = float(raw)
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"Scene v12 annotation {label} must be numeric") from error
+    return value
+
+
+def _annotation_color(style: dict[str, Any], key: str, default: str, label: str) -> str:
+    raw = style.get(key, default)
+    if not isinstance(raw, str) or not raw.strip():
+        raise ValueError(f"Scene v12 annotation {label} must be a nonempty CSS color")
+    return raw
+
+
+def _annotation_allowed_style(kind: str, wrapped: bool, labelled: bool) -> set[str]:
+    allowed = {"color", "opacity"}
+    if wrapped:
+        return allowed | {"label_background", "label_border_color", "label_border_width"}
+    if kind == "arrow":
+        return allowed | {"width"}
+    if kind in {"callout", "text"}:
+        allowed |= {"label_background", "label_border_color", "label_border_width"}
+        if kind == "callout":
+            allowed.add("width")
+        return allowed
+    if kind == "rule":
+        allowed |= {"width", "dash", "linecap"}
+    elif kind == "marker":
+        allowed |= {"stroke_color", "stroke_width"}
+    if labelled and kind in {"rule", "band", "marker"}:
+        allowed |= {
+            "label_color",
+            "label_opacity",
+            "label_background",
+            "label_border_color",
+            "label_border_width",
+        }
+    return allowed
+
+
+def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
+    """Pack one authored annotation as XYAF v1; Rust classifies the family.
+
+    Annotation ``class_name`` is an XYFS observation (ABI 165), not an XYAF
+    field. Product encode reports ``XYG_SCENE_UNSUPPORTED_BROWSER_CSS``.
+    ABI 184 packs cartesian unwrapped text ``dx``/``dy``/``anchor`` as XYAW
+    with ``wrap=0`` so Rust applies the offset without wrapping. ABI 185
+    packs labelled cartesian marker ``dx``/``dy``/``anchor`` the same way
+    (Rust keeps the marker mark row and skips AttachedRow). ABI 187 packs
+    cartesian unwrapped text ``rotation`` as XYAW with ``wrap=0`` (nonzero
+    rotation writes XYAW v2 / XYLB v6). ABI 188 packs labelled cartesian marker
+    ``rotation`` the same way (nums[8]; markers never wrap, and nums[15] stays
+    ``stroke_width``).
+    """
+    kind = annotation.get("kind")
+    kind_code = _XYAF_KIND_CODES.get(str(kind) if kind is not None else "")
+    if kind_code is None:
+        raise UnsupportedSceneV3(
+            f"Scene v12 annotations support rule, band, and unlabeled marker only; {kind!r} is deferred"
+        )
+    authored_wrap = kind in {"text", "callout"} and "wrap" in annotation
+    layout_text = kind == "text" and any(
+        key in annotation for key in ("dx", "dy", "anchor", "rotation")
+    )
+    wrapped = authored_wrap or layout_text
+    attached_text = annotation.get("text")
+    labelled = attached_text not in (None, "")
+    if kind == "arrow" and labelled:
+        raise UnsupportedSceneV3("Scene arrows do not encode text or class_name")
+    encoded = b""
+    if labelled:
+        if not isinstance(attached_text, str) or "\0" in attached_text:
+            if wrapped:
+                raise UnsupportedSceneV3(
+                    "Scene wrapped annotations require nonempty NUL-free LF text"
+                )
+            if kind == "text":
+                raise UnsupportedSceneV3(
+                    "Scene v16 text annotations require nonempty NUL-free text"
+                )
+            if kind == "callout":
+                raise UnsupportedSceneV3("Scene callouts require nonempty NUL-free text")
+            raise UnsupportedSceneV3("Scene v16 annotation labels require nonempty NUL-free text")
+        if wrapped and "\r" in attached_text:
+            raise UnsupportedSceneV3("Scene wrapped annotations require nonempty NUL-free LF text")
+        encoded = attached_text.encode("utf-8")
+        if len(encoded) > 4096:
+            if wrapped:
+                raise UnsupportedSceneV3(
+                    "Scene wrapped annotations are limited to 4,096 UTF-8 bytes"
+                )
+            if kind == "text":
+                raise UnsupportedSceneV3(
+                    "Scene v16 text annotations are limited to 4,096 UTF-8 bytes"
+                )
+            if kind == "callout":
+                raise UnsupportedSceneV3("Scene callouts are limited to 4,096 UTF-8 bytes")
+            raise UnsupportedSceneV3("Scene v16 annotation labels are limited to 4,096 UTF-8 bytes")
+    elif kind in {"text", "callout"}:
+        raise UnsupportedSceneV3(
+            "Scene callouts require nonempty NUL-free text"
+            if kind == "callout"
+            else "Scene v16 text annotations require nonempty NUL-free text"
+        )
+    style = dict(annotation.get("style") or {})
+    allowed = _annotation_allowed_style(str(kind), wrapped, labelled)
+    unsupported = sorted(
+        key for key, value in style.items() if key not in allowed and value is not None
+    )
+    if unsupported:
+        if wrapped:
+            raise UnsupportedSceneV3(f"Scene wrapped annotations do not encode {unsupported!r}")
+        if kind == "arrow":
+            raise UnsupportedSceneV3(f"Scene arrow style does not encode {unsupported!r}")
+        if kind == "callout":
+            raise UnsupportedSceneV3(f"Scene callout style does not encode {unsupported!r}")
+        if kind == "text":
+            raise UnsupportedSceneV3(
+                "Scene v23 text annotations support only color, opacity, label_background, and label_border_*"
+            )
+        raise UnsupportedSceneV3(
+            f"Scene v12 {kind} annotation style does not encode {unsupported!r}"
+        )
+
+    def take_num(source: dict[str, Any], key: str, label: str) -> float:
+        return _annotation_number(source, key, None, label)
+
+    nums = [float("nan")] * 18
+    facts = 0
+    style_bits = 0
+    color = stroke = label_color = label_fill = label_border = bytes(4)
+    if labelled:
+        facts |= _XYAF_FACT_HAS_TEXT
+    if wrapped:
+        facts |= _XYAF_FACT_HAS_WRAP
+        if "wrap" in annotation:
+            nums[8] = take_num(annotation, "wrap", "wrapped width")
+        else:
+            nums[8] = 0.0
+    required = {
+        "arrow": (
+            ("x0", 2, _XYAF_FACT_HAS_X0, "arrow x0"),
+            ("y0", 3, _XYAF_FACT_HAS_Y0, "arrow y0"),
+            ("x1", 4, _XYAF_FACT_HAS_X1, "arrow x1"),
+            ("y1", 5, _XYAF_FACT_HAS_Y1, "arrow y1"),
+        ),
+        "callout": (
+            ("x", 0, _XYAF_FACT_HAS_X, "callout x"),
+            ("y", 1, _XYAF_FACT_HAS_Y, "callout y"),
+        ),
+        "text": (
+            ("x", 0, _XYAF_FACT_HAS_X, "text x"),
+            ("y", 1, _XYAF_FACT_HAS_Y, "text y"),
+        ),
+        "rule": (("value", 9, _XYAF_FACT_HAS_VALUE, "rule value"),),
+        "band": (
+            ("start", 10, _XYAF_FACT_HAS_START, "band start"),
+            ("end", 11, _XYAF_FACT_HAS_END, "band end"),
+        ),
+        "marker": (
+            ("x", 0, _XYAF_FACT_HAS_X, "marker x"),
+            ("y", 1, _XYAF_FACT_HAS_Y, "marker y"),
+        ),
+    }[str(kind)]
+    if wrapped:
+        required = (
+            ("x", 0, _XYAF_FACT_HAS_X, "wrapped x"),
+            ("y", 1, _XYAF_FACT_HAS_Y, "wrapped y"),
+        )
+    for key, slot, flag, label in required:
+        nums[slot] = take_num(annotation, key, label)
+        facts |= flag
+    for key, slot, flag, label in (
+        ("dx", 6, _XYAF_FACT_HAS_DX, "wrapped dx" if wrapped else "callout dx"),
+        ("dy", 7, _XYAF_FACT_HAS_DY, "wrapped dy" if wrapped else "callout dy"),
+        ("size", 12, _XYAF_FACT_HAS_SIZE, "marker size"),
+    ):
+        if key in annotation:
+            nums[slot] = take_num(annotation, key, label)
+            facts |= flag
+    if str(kind) == "text" and "rotation" in annotation:
+        nums[15] = take_num(annotation, "rotation", "text rotation")
+        facts |= _XYAF_FACT_HAS_ROTATION
+        if not np.isfinite(nums[15]):
+            raise ValueError("Scene v16 text annotation rotation must be finite")
+    if str(kind) == "marker" and "rotation" in annotation:
+        nums[8] = take_num(annotation, "rotation", "marker rotation")
+        facts |= _XYAF_FACT_HAS_ROTATION
+        if not np.isfinite(nums[8]):
+            raise ValueError("Scene v16 marker annotation rotation must be finite")
+    axis_code = 0
+    if str(kind) in {"rule", "band"}:
+        axis_name = annotation.get("axis")
+        if axis_name not in {"x", "y"}:
+            raise ValueError(f"Scene v12 {kind} annotation axis must be 'x' or 'y'")
+        axis_code = 1 if axis_name == "x" else 2
+        facts |= _XYAF_FACT_HAS_AXIS
+    symbol = 0
+    if str(kind) == "marker":
+        symbol_name = str(annotation.get("symbol", "circle"))
+        if symbol_name not in _SYMBOL_CODES:
+            raise UnsupportedSceneV3(f"Scene v12 does not support marker symbol {symbol_name!r}")
+        symbol = _SYMBOL_CODES[symbol_name]
+        if "symbol" in annotation:
+            facts |= _XYAF_FACT_HAS_SYMBOL
+        if "size" in annotation and (not np.isfinite(nums[12]) or nums[12] <= 0):
+            raise ValueError("Scene v12 marker annotation size must be finite and positive")
+    anchor = 255
+    if "anchor" in annotation or str(kind) == "callout" or wrapped:
+        anchor_name = annotation.get("anchor", "start")
+        anchor_code = {"start": 0, "middle": 1, "end": 2}.get(anchor_name)
+        if anchor_code is None:
+            raise UnsupportedSceneV3(
+                "Scene wrapped annotation anchor must be start, middle, or end"
+                if wrapped
+                else "Scene callout anchor must be start, middle, or end"
+            )
+        anchor = int(anchor_code)
+        facts |= _XYAF_FACT_HAS_ANCHOR
+    kind_label = "wrapped" if wrapped else str(kind)
+    if "opacity" in style:
+        nums[13] = take_num(style, "opacity", f"{kind_label} opacity")
+        style_bits |= _XYAF_STYLE_OPACITY
+        if not np.isfinite(nums[13]) or not 0.0 <= nums[13] <= 1.0:
+            if kind == "arrow":
+                raise ValueError("Scene arrow opacity must be in [0, 1] and width must be positive")
+            if wrapped:
+                raise ValueError("Scene wrapped annotation opacity must be in [0, 1]")
+            if kind == "callout":
+                raise ValueError(
+                    "Scene callout opacity must be in [0, 1] and width must be positive"
+                )
+            raise ValueError(f"Scene v12 {kind} annotation opacity must be finite and in [0, 1]")
+    if "width" in style:
+        nums[14] = take_num(style, "width", f"{kind_label} width")
+        style_bits |= _XYAF_STYLE_WIDTH
+        if kind in {"arrow", "callout"} and (not np.isfinite(nums[14]) or nums[14] <= 0):
+            raise ValueError(
+                "Scene arrow opacity must be in [0, 1] and width must be positive"
+                if kind == "arrow"
+                else "Scene callout opacity must be in [0, 1] and width must be positive"
+            )
+        if kind == "rule" and (not np.isfinite(nums[14]) or nums[14] <= 0):
+            raise ValueError("Scene v12 rule annotation width must be finite and nonnegative")
+    if "stroke_width" in style:
+        nums[15] = take_num(style, "stroke_width", f"{kind} width")
+        style_bits |= _XYAF_STYLE_STROKE_WIDTH
+        if not np.isfinite(nums[15]) or nums[15] < 0:
+            raise ValueError(f"Scene v12 {kind} annotation width must be finite and nonnegative")
+    if "label_opacity" in style:
+        nums[16] = take_num(style, "label_opacity", f"{kind} label opacity")
+        style_bits |= _XYAF_STYLE_LABEL_OPACITY
+        if not np.isfinite(nums[16]) or not 0.0 <= nums[16] <= 1.0:
+            raise ValueError(
+                f"Scene v16 {kind} annotation label opacity must be finite and in [0, 1]"
+            )
+    if "label_border_width" in style:
+        nums[17] = take_num(style, "label_border_width", f"{kind_label} label border width")
+        style_bits |= _XYAF_STYLE_LABEL_BORDER_WIDTH
+        if not np.isfinite(nums[17]) or nums[17] <= 0:
+            raise ValueError("Scene v23 label border width must be positive and finite")
+    for key, bit in (
+        ("color", _XYAF_STYLE_COLOR),
+        ("stroke_color", _XYAF_STYLE_STROKE_COLOR),
+        ("label_color", _XYAF_STYLE_LABEL_COLOR),
+        ("label_background", _XYAF_STYLE_LABEL_BACKGROUND),
+        ("label_border_color", _XYAF_STYLE_LABEL_BORDER_COLOR),
+    ):
+        if key in style:
+            packed = bytes(
+                _rgba(
+                    _annotation_color(style, key, "", f"{kind_label} {key.replace('_', ' ')}"),
+                    1.0,
+                )
+            )
+            style_bits |= bit
+            if key == "color":
+                color = packed
+            elif key == "stroke_color":
+                stroke = packed
+            elif key == "label_color":
+                label_color = packed
+            elif key == "label_background":
+                label_fill = packed
+            else:
+                label_border = packed
+    border_color_present = style.get("label_border_color") is not None
+    border_width_present = style.get("label_border_width") is not None
+    if border_color_present != border_width_present:
+        raise UnsupportedSceneV3(
+            "Scene wrapped label border requires color and width"
+            if wrapped
+            else "Scene v23 label border requires color and width"
+        )
+    parsed_dash: list[float] | None = None
+    parsed_cap: int | None = None
+    if kind == "rule":
+        dash_or_reject = _parse_scene_dash(style.get("dash"))
+        if isinstance(dash_or_reject, list):
+            parsed_dash = [float(value) for value in dash_or_reject]
+            style_bits |= _XYAF_STYLE_DASH
+        elif dash_or_reject is None:
+            parsed_dash = None
+        else:
+            raise UnsupportedSceneV3("Scene v12 rule annotation dash is not a constant pattern")
+        cap_or_reject = _parse_scene_linecap(style.get("linecap"))
+        if cap_or_reject is None:
+            parsed_cap = None
+        elif isinstance(cap_or_reject, int) and not isinstance(cap_or_reject, bool):
+            parsed_cap = cap_or_reject
+            style_bits |= _XYAF_STYLE_LINECAP
+        else:
+            raise UnsupportedSceneV3("Scene v12 rule annotation linecap is not a Scene cap")
+    dash = [0.0] * 8
+    dash_count = 0
+    if parsed_dash:
+        dash_count = len(parsed_dash)
+        dash[:dash_count] = [float(value) for value in parsed_dash]
+    linecap = 255 if parsed_cap is None else int(parsed_cap)
+    return (
+        _XYAF_HEADER.pack(
+            b"XYAF",
+            1,
+            int(index),
+            int(kind_code),
+            int(axis_code),
+            int(symbol) & 0xFF,
+            int(anchor) & 0xFF,
+            int(facts),
+            int(style_bits),
+            int(linecap) & 0xFF,
+            int(dash_count) & 0xFF,
+            0,
+            len(encoded),
+            *[float(value) for value in nums],
+            color,
+            stroke,
+            label_color,
+            label_fill,
+            label_border,
+            0,
+            *[float(value) for value in dash],
+        )
+        + encoded
+    )
+
+
+_STYLE_KIND_CODES = {
+    **_PUBLIC_EXPORT_KIND_CODES,
+    "contour": 18,
+}
+_MS_LINE_ONLY = 1 << 0
+_MS_HAS_FILL = 1 << 1
+_MS_HAS_STROKE = 1 << 2
+_MS_HAS_LINE_COLOR = 1 << 3
+_MS_HAS_STROKE_WIDTH = 1 << 5
+_MS_HAS_WIDTH = 1 << 6
+_MS_HAS_LINE_WIDTH = 1 << 7
+
+
+def _pack_mark_style_record(
+    trace: Any,
+    opacity: float,
+    fill_opacity: float,
+    stroke_opacity: float,
+    line_opacity: float,
+    symbol_name: str,
+) -> bytes:
+    style = trace.style
+    flags = 0
+    if trace.kind == "scatter" and _SYMBOL_CODES[symbol_name] >= _SYMBOL_CODES["plus_line"]:
+        flags |= _MS_LINE_ONLY
+    fill_b = b""
+    if "fill" in style:
+        fill_value = style["fill"]
+        if not isinstance(fill_value, str) or str(fill_value).strip().lower().startswith(
+            "linear-gradient("
+        ):
+            admitted = _admitted_fill_gradient(trace)
+            if admitted is None:
+                raise UnsupportedSceneV3(
+                    f"Scene v12 does not yet encode {trace.kind} non-CSS fills"
+                )
+            fill_value = _gradient_solid_css(admitted)
+        flags |= _MS_HAS_FILL
+        fill_b = str(fill_value).encode("utf-8")
+    stroke_b = b""
+    if "stroke" in style:
+        flags |= _MS_HAS_STROKE
+        stroke_b = str(style["stroke"]).encode("utf-8")
+    line_color_b = b""
+    if "line_color" in style:
+        flags |= _MS_HAS_LINE_COLOR
+        line_color_b = str(style["line_color"]).encode("utf-8")
+    color_b = _constant_color(trace, "#3987e5").encode("utf-8")
+    stroke_width = width = line_width = 0.0
+    if "stroke_width" in style:
+        flags |= _MS_HAS_STROKE_WIDTH
+        stroke_width = float(style["stroke_width"])
+    if "width" in style:
+        flags |= _MS_HAS_WIDTH
+        width = float(style["width"])
+    if "line_width" in style:
+        flags |= _MS_HAS_LINE_WIDTH
+        line_width = float(style["line_width"])
+    prefix = struct.pack(
+        "<BBH4f3d4H",
+        _STYLE_KIND_CODES.get(trace.kind, 255),
+        flags,
+        0,
+        float(opacity),
+        float(fill_opacity),
+        float(stroke_opacity),
+        float(line_opacity),
+        float(stroke_width),
+        float(width),
+        float(line_width),
+        len(fill_b),
+        len(stroke_b),
+        len(line_color_b),
+        len(color_b),
+    )
+    return prefix + fill_b + stroke_b + line_color_b + color_b
+
+
+def _resolve_mark_style(
+    trace: Any,
+    opacity: float,
+    fill_opacity: float,
+    stroke_opacity: float,
+    line_opacity: float,
+    symbol_name: str,
+) -> tuple[tuple[int, int, int, int], tuple[int, int, int, int], float]:
+    record = _pack_mark_style_record(
+        trace, opacity, fill_opacity, stroke_opacity, line_opacity, symbol_name
+    )
+    header = struct.pack("<4sIII", b"XYMS", 1, 1, 0)
+    return _native.scene_resolve_mark_styles(header + record)[0]
 
 
 def _constant_color(trace: Any, fallback: str) -> str:
     channel = trace.color_ch
-    if getattr(trace, "color2_ch", None) is not None:
+    if _classify_ribbon_color2(trace) == "fail":
         raise UnsupportedSceneV3("Scene v12 does not yet encode two-ended ribbon gradients")
     if channel is None:
         return str(trace.style.get("color", fallback))
     if channel.mode != "constant" or channel.constant is None:
+        if str(getattr(trace, "kind", "") or "") == "scatter" and trace.use_density():
+            return str((getattr(trace, "style", None) or {}).get("color", fallback))
         raise UnsupportedSceneV3("Scene v12 does not yet support data-driven paint channels")
     return channel.constant
 
@@ -319,6 +1143,31 @@ _SCENE_AXIS_STYLE_KEYS = frozenset(
     }
 )
 
+_CH_HAS_CHART_BG = 1 << 0
+_CH_HAS_PLOT_BG = 1 << 1
+_CH_PAINT_AXIS = 1 << 0
+_CH_PAINT_GRID = 1 << 1
+_CH_PAINT_TICK = 1 << 2
+_CH_PAINT_MINOR_GRID = 1 << 3
+_CH_PAINT_MINOR_TICK = 1 << 4
+_CH_PAINT_LABEL = 1 << 5
+_CH_WIDTH_AXIS = 1 << 0
+_CH_WIDTH_GRID = 1 << 1
+_CH_WIDTH_TICK = 1 << 2
+_CH_WIDTH_TICK_LENGTH = 1 << 3
+_CH_WIDTH_MINOR_GRID = 1 << 4
+_CH_WIDTH_MINOR_TICK = 1 << 5
+_CH_WIDTH_MINOR_TICK_LENGTH = 1 << 6
+_CH_DEFAULT_PAINTS = (
+    "#202020",
+    "#202020",
+    "#202020",
+    "transparent",
+    "#202020",
+    "#202020",
+)
+_CH_DEFAULT_WIDTHS = (1.0, 1.0, 1.0, 4.0, 1.0, 1.0, 0.0)
+
 
 def _scene_side_mask(
     values: Any,
@@ -336,108 +1185,562 @@ def _scene_side_mask(
     return sum(1 << index for index, candidate in enumerate(allowed) if candidate in values)
 
 
-def _scene_chrome_style(figure: Any) -> bytes:
-    """Pack the generated ABI's fixed Scene v12 chrome style input."""
-    result = bytearray(200)
-    figure_style = getattr(figure, "style", None) or {}
-    result[0:4] = bytes(_rgba(str(figure_style.get("background") or "transparent"), 1.0))
-    result[4:8] = bytes(_rgba(str(figure_style.get("--chart-bg") or "transparent"), 1.0))
-    result[8:12] = bytes((32, 32, 32, 217))
-    struct.pack_into("<d", result, 16, 12.0)
-    for axis_id, offset in (("x", 24), ("y", 112)):
-        options = figure.axis_options[axis_id]
-        style = dict(options.get("style") or {})
-        minor = dict(options.get("minor_style") or {})
-        for label, authored in (("style", style), ("minor_style", minor)):
-            unsupported = set(authored) - _SCENE_AXIS_STYLE_KEYS
-            if unsupported:
-                raise UnsupportedSceneV3(
-                    f"Scene v12 does not yet encode {axis_id} axis {label} keys {sorted(unsupported)!r}"
-                )
-        side = options.get("side", "bottom" if axis_id == "x" else "left")
-        allowed = ("bottom", "top") if axis_id == "x" else ("left", "right")
-        if side not in allowed:
+def _pack_chrome_axis(axis_id: str, options: dict[str, Any]) -> bytes:
+    style = dict(options.get("style") or {})
+    minor = dict(options.get("minor_style") or {})
+    for label, authored in (("style", style), ("minor_style", minor)):
+        unsupported = set(authored) - _SCENE_AXIS_STYLE_KEYS
+        if unsupported:
             raise UnsupportedSceneV3(
-                f"Scene v12 {axis_id} axis side must be one of {list(allowed)!r}"
+                f"Scene v12 does not yet encode {axis_id} axis {label} keys {sorted(unsupported)!r}"
             )
-        side_low = side in {"bottom", "left"}
-        side_code = 0 if side_low else 1
-        tick_sides = options.get("tick_sides")
-        label_sides = options.get("tick_label_sides")
+    side = options.get("side", "bottom" if axis_id == "x" else "left")
+    allowed = ("bottom", "top") if axis_id == "x" else ("left", "right")
+    if side not in allowed:
+        raise UnsupportedSceneV3(f"Scene v12 {axis_id} axis side must be one of {list(allowed)!r}")
+    side_code = 0 if side in {"bottom", "left"} else 1
+    tick_sides = options.get("tick_sides")
+    label_sides = options.get("tick_label_sides")
+    directions = {"out": 0, "in": 1, "inout": 2}
+    paint_flags = 0
+    if "axis_color" in style:
+        paint_flags |= _CH_PAINT_AXIS
+    if "grid_color" in style:
+        paint_flags |= _CH_PAINT_GRID
+    if "tick_color" in style:
+        paint_flags |= _CH_PAINT_TICK
+    if "grid_color" in minor:
+        paint_flags |= _CH_PAINT_MINOR_GRID
+    if "tick_color" in minor:
+        paint_flags |= _CH_PAINT_MINOR_TICK
+    if "tick_label_color" in style or "label_color" in style:
+        paint_flags |= _CH_PAINT_LABEL
+    width_flags = 0
+    width_keys = (
+        ("axis_width", style, _CH_WIDTH_AXIS),
+        ("grid_width", style, _CH_WIDTH_GRID),
+        ("tick_width", style, _CH_WIDTH_TICK),
+        ("tick_length", style, _CH_WIDTH_TICK_LENGTH),
+        ("grid_width", minor, _CH_WIDTH_MINOR_GRID),
+        ("tick_width", minor, _CH_WIDTH_MINOR_TICK),
+        ("tick_length", minor, _CH_WIDTH_MINOR_TICK_LENGTH),
+    )
+    widths = []
+    for key, source, flag in width_keys:
+        if key in source:
+            width_flags |= flag
+            widths.append(float(source[key]))
+        else:
+            widths.append(_CH_DEFAULT_WIDTHS[len(widths)])
+    paints = (
+        str(style.get("axis_color", _CH_DEFAULT_PAINTS[0])),
+        str(style.get("grid_color", _CH_DEFAULT_PAINTS[1])),
+        str(style.get("tick_color", _CH_DEFAULT_PAINTS[2])),
+        str(minor.get("grid_color", _CH_DEFAULT_PAINTS[3])),
+        str(minor.get("tick_color", _CH_DEFAULT_PAINTS[4])),
+        str(style.get("tick_label_color", style.get("label_color", _CH_DEFAULT_PAINTS[5]))),
+    )
+    paint_bytes = [value.encode("utf-8") for value in paints]
+    prefix = struct.pack(
+        "<8B2f7d6H",
+        side_code,
+        _scene_side_mask(tick_sides, "tick_sides", axis_id, allowed, side_code),
+        _scene_side_mask(label_sides, "tick_label_sides", axis_id, allowed, side_code),
+        directions.get(str(style.get("tick_direction", "out")), 255),
+        directions.get(str(minor.get("tick_direction", "out")), 255),
+        paint_flags,
+        width_flags,
+        0,
+        float(style.get("grid_opacity", 1.0)),
+        float(minor.get("grid_opacity", 1.0)),
+        *widths,
+        *[len(value) for value in paint_bytes],
+    )
+    return prefix + b"".join(paint_bytes)
 
-        result[offset] = side_code
-        result[offset + 1] = _scene_side_mask(tick_sides, "tick_sides", axis_id, allowed, side_code)
-        result[offset + 2] = _scene_side_mask(
-            label_sides, "tick_label_sides", axis_id, allowed, side_code
-        )
-        directions = {"out": 0, "in": 1, "inout": 2}
-        result[offset + 3] = directions.get(str(style.get("tick_direction", "out")), 255)
-        result[offset + 4] = directions.get(str(minor.get("tick_direction", "out")), 255)
-        grid_opacity = float(style.get("grid_opacity", 1.0))
-        minor_grid_opacity = float(minor.get("grid_opacity", 1.0))
-        colors = (
-            _rgba(str(style.get("axis_color", "#202020")), 1.0 if "axis_color" in style else 0.55),
-            _rgba(
-                str(style.get("grid_color", "#202020")),
-                grid_opacity * (1.0 if "grid_color" in style else 0.14),
-            ),
-            _rgba(str(style.get("tick_color", "#202020")), 1.0 if "tick_color" in style else 0.55),
-            _rgba(str(minor.get("grid_color", "transparent")), minor_grid_opacity),
-            _rgba(str(minor.get("tick_color", "#202020")), 1.0 if "tick_color" in minor else 0.55),
-            _rgba(
-                str(style.get("tick_label_color", style.get("label_color", "#202020"))),
-                1.0 if ("tick_label_color" in style or "label_color" in style) else 0.85,
-            ),
-        )
-        for index, color in enumerate(colors):
-            result[offset + 8 + index * 4 : offset + 12 + index * 4] = bytes(color)
-        struct.pack_into(
-            "<7d",
-            result,
-            offset + 32,
-            float(style.get("axis_width", 1.0)),
-            float(style.get("grid_width", 1.0)),
-            float(style.get("tick_width", 1.0)),
-            float(style.get("tick_length", 4.0)),
-            float(minor.get("grid_width", 1.0)),
-            float(minor.get("tick_width", 1.0)),
-            float(minor.get("tick_length", 0.0)),
-        )
-    return bytes(result)
+
+def _pack_xych(figure: Any) -> bytes:
+    """Pack authored XYCH v1 chrome literals; Rust owns the 200-byte Scene style."""
+    figure_style = getattr(figure, "style", None) or {}
+    flags = 2 << 8
+    chart_b = b""
+    plot_b = b""
+    if "background" in figure_style:
+        flags |= _CH_HAS_CHART_BG
+        chart_b = str(figure_style.get("background") or "transparent").encode("utf-8")
+    if "--chart-bg" in figure_style:
+        flags |= _CH_HAS_PLOT_BG
+        plot_b = str(figure_style.get("--chart-bg") or "transparent").encode("utf-8")
+    x_rec = _pack_chrome_axis("x", figure.axis_options["x"])
+    y_rec = _pack_chrome_axis("y", figure.axis_options["y"])
+    header = struct.pack("<4sIIHH", b"XYCH", 1, flags, len(chart_b), len(plot_b))
+    return header + chart_b + plot_b + x_rec + y_rec
 
 
-def _reject_rect_extras(style: dict[str, Any], kind: str) -> None:
+def _scene_chrome_style(figure: Any) -> bytes:
+    """Pack authored chrome literals; Rust owns the 200-byte Scene style."""
+    return _native.scene_resolve_chrome_style(_pack_xych(figure))
+
+
+_XYCF_HEADER = struct.Struct("<4sIII10d2I6dBBH15I2dII4s4sIIII2d4sI")
+_XYCC_HEADER = struct.Struct("<4sIII4d16I48x")
+_XYCF_FLAG_AUTHORED_MARGINS = 1 << 0
+_XYCF_FLAG_PADDING = 1 << 1
+_XYCF_FLAG_X_MAJOR_AUTO = 1 << 2
+_XYCF_FLAG_Y_MAJOR_AUTO = 1 << 3
+_XYCF_FLAG_X_TICK_LABELS = 1 << 4
+_XYCF_FLAG_Y_TICK_LABELS = 1 << 5
+_XYCF_FLAG_HAS_CHROME = 1 << 6
+_XYCF_FLAG_HAS_LEGEND = 1 << 7
+_XYCF_FLAG_HAS_COLORBAR = 1 << 8
+_XYCF_LEGEND_AUTHORED_LOC = 1 << 0
+_XYCF_LEGEND_AUTHORED_FONT = 1 << 1
+_XYCF_LEGEND_AUTHORED_TITLE_FONT = 1 << 2
+_XYCF_LEGEND_AUTHORED_COLOR = 1 << 3
+_XYCF_LEGEND_AUTHORED_BACKGROUND = 1 << 4
+_XYCF_LEGEND_UNSUPPORTED_KEYS = 1 << 5
+_XYCF_LEGEND_TOGGLE = 1 << 6
+_XYCF_LEGEND_HIGHLIGHT = 1 << 7
+_XYCF_LEGEND_SHOW = 1 << 8
+_XYCF_LEGEND_UNSUPPORTED_STYLE = 1 << 9
+_XYCF_CB_HORIZONTAL = 1 << 1
+_XYCF_CB_MINOR = 1 << 2
+_XYCF_CB_UNSUPPORTED = 1 << 3
+_XYCF_CB_INVALID_SIDE = 1 << 4
+
+
+def _put_f64s(buf: bytearray, values: list[float]) -> None:
+    for value in values:
+        buf.extend(struct.pack("<d", float(value)))
+
+
+def _put_tick_labels(buf: bytearray, labels: list[str] | tuple[str, ...] | None) -> int:
+    if not labels:
+        return 0
+    for label in labels:
+        encoded = str(label).encode("utf-8")
+        buf.extend(len(encoded).to_bytes(4, "little"))
+        buf.extend(encoded)
+    return len(labels)
+
+
+def _xycc_tick_labels(blob: bytes) -> list[str] | None:
+    if not blob:
+        return None
+    if len(blob) < 12 or blob[:4] != b"XYTL":
+        raise ValueError("invalid scene chrome packing")
+    count = int.from_bytes(blob[8:12], "little")
+    at = 12
+    labels: list[str] = []
+    for _ in range(count):
+        length = int.from_bytes(blob[at : at + 4], "little")
+        at += 4
+        labels.append(blob[at : at + length].decode("utf-8"))
+        at += length
+    if at != len(blob):
+        raise ValueError("invalid scene chrome packing")
+    return labels
+
+
+def _unpack_xycc(blob: bytes) -> dict[str, Any]:
+    """Split Rust-owned XYCC chrome into encode-ready chrome fields."""
+    if len(blob) < _XYCC_HEADER.size or blob[:4] != b"XYCC":
+        raise ValueError("invalid scene chrome packing")
+    (
+        _magic,
+        version,
+        _flags,
+        _reserved,
+        margin_left,
+        margin_right,
+        margin_top,
+        margin_bottom,
+        chrome_len,
+        title_len,
+        xlabel_len,
+        ylabel_len,
+        x_major_count,
+        x_major_auto,
+        x_minor_count,
+        y_major_count,
+        y_major_auto,
+        y_minor_count,
+        x_labels_len,
+        y_labels_len,
+        x_format_len,
+        y_format_len,
+        legend_len,
+        colorbar_len,
+    ) = _XYCC_HEADER.unpack_from(blob)
+    if version != 1:
+        raise ValueError("invalid scene chrome facts version")
+    at = _XYCC_HEADER.size
+
+    def take(length: int) -> bytes:
+        nonlocal at
+        chunk = blob[at : at + length]
+        at += length
+        return chunk
+
+    chrome_style = take(chrome_len)
+    title = take(title_len).decode("utf-8")
+    x_label = take(xlabel_len).decode("utf-8")
+    y_label = take(ylabel_len).decode("utf-8")
+    x_major = (
+        list(struct.unpack(f"<{x_major_count}d", take(x_major_count * 8))) if x_major_count else []
+    )
+    x_minor = (
+        list(struct.unpack(f"<{x_minor_count}d", take(x_minor_count * 8))) if x_minor_count else []
+    )
+    y_major = (
+        list(struct.unpack(f"<{y_major_count}d", take(y_major_count * 8))) if y_major_count else []
+    )
+    y_minor = (
+        list(struct.unpack(f"<{y_minor_count}d", take(y_minor_count * 8))) if y_minor_count else []
+    )
+    x_tick_labels = _xycc_tick_labels(take(x_labels_len))
+    y_tick_labels = _xycc_tick_labels(take(y_labels_len))
+    x_format_b = take(x_format_len)
+    y_format_b = take(y_format_len)
+    legend_input = take(legend_len)
+    colorbar_input = take(colorbar_len)
+    if at != len(blob):
+        raise ValueError("invalid scene chrome packing")
+    return {
+        "margins": (margin_left, margin_right, margin_top, margin_bottom),
+        "chrome_style": chrome_style,
+        "title": title,
+        "x_label": x_label,
+        "y_label": y_label,
+        "x_major_ticks": None if x_major_auto else x_major,
+        "x_minor_ticks": x_minor,
+        "y_major_ticks": None if y_major_auto else y_major,
+        "y_minor_ticks": y_minor,
+        "x_tick_labels": x_tick_labels,
+        "y_tick_labels": y_tick_labels,
+        "x_format": None if not x_format_b else x_format_b.decode("utf-8"),
+        "y_format": None if not y_format_b else y_format_b.decode("utf-8"),
+        "legend_input": legend_input,
+        "colorbar_input": colorbar_input,
+    }
+
+
+def _pack_chrome_facts(
+    figure: Any,
+    *,
+    width: int,
+    height: int,
+    margins: tuple[float, float, float, float] | None,
+    colorbar_ok: bool,
+) -> bytes:
+    """Pack authored XYCF v1 chrome facts; Rust owns XYCC layout and legend paints."""
+    flags = _XYCF_FLAG_HAS_CHROME | _XYCF_FLAG_X_MAJOR_AUTO | _XYCF_FLAG_Y_MAJOR_AUTO
+    kind_codes = {"linear": 0, "log": 1, "symlog": 2}
+    xa = figure.axis_options["x"]
+    ya = figure.axis_options["y"]
+    x_scale = figure._axis_scale("x")
+    y_scale = figure._axis_scale("y")
+    x_lo, x_hi = (float(value) for value in figure._range("x"))
+    y_lo, y_hi = (float(value) for value in figure._range("y"))
+    authored_margins = (0.0, 0.0, 0.0, 0.0)
+    if margins is not None:
+        flags |= _XYCF_FLAG_AUTHORED_MARGINS
+        authored_margins = (
+            float(margins[0]),
+            float(margins[1]),
+            float(margins[2]),
+            float(margins[3]),
+        )
+    padding = (0.0, 0.0, 0.0, 0.0)
+    pad = getattr(figure, "padding", None)
+    if isinstance(pad, (list, tuple)) and len(pad) == 4:
+        flags |= _XYCF_FLAG_PADDING
+        padding = (float(pad[0]), float(pad[1]), float(pad[2]), float(pad[3]))
+    title = str(figure.title or "").encode("utf-8")
+    x_label = str(figure.x_label or xa.get("label") or "").encode("utf-8")
+    y_label = str(figure.y_label or ya.get("label") or "").encode("utf-8")
+    x_format = b"" if xa.get("format") is None else str(xa.get("format")).encode("utf-8")
+    y_format = b"" if ya.get("format") is None else str(ya.get("format")).encode("utf-8")
+    x_major: list[float] = []
+    y_major: list[float] = []
+    if xa.get("tick_values") is not None:
+        flags &= ~_XYCF_FLAG_X_MAJOR_AUTO
+        x_major = [float(value) for value in xa.get("tick_values")]
+    if ya.get("tick_values") is not None:
+        flags &= ~_XYCF_FLAG_Y_MAJOR_AUTO
+        y_major = [float(value) for value in ya.get("tick_values")]
+    x_minor = [float(value) for value in (xa.get("minor_tick_values") or ())]
+    y_minor = [float(value) for value in (ya.get("minor_tick_values") or ())]
+    x_labels = xa.get("tick_labels")
+    y_labels = ya.get("tick_labels")
+    if x_labels is not None:
+        flags |= _XYCF_FLAG_X_TICK_LABELS
+    if y_labels is not None:
+        flags |= _XYCF_FLAG_Y_TICK_LABELS
+    chrome = _pack_xych(figure)
+    legend_loc = b""
+    legend_title = b""
+    legend_ncols = 1
+    legend_font_size = 0.0
+    legend_title_font_size = 0.0
+    legend_flags = 0
+    legend_text_rgba = b"\x00\x00\x00\x00"
+    legend_frame_rgba = b"\x00\x00\x00\x00"
+    legend_meta = b""
+    legend_lens: list[int] = []
+    legend_blob = b""
+    legend_count = 0
+    if figure.show_legend:
+        flags |= _XYCF_FLAG_HAS_LEGEND
+        legend_flags |= _XYCF_LEGEND_SHOW
+        options = dict(figure.legend_options or {})
+        unsupported = {
+            key
+            for key in options
+            if key not in {"loc", "title", "ncols", "style", "highlight", "toggle"}
+        }
+        if unsupported:
+            legend_flags |= _XYCF_LEGEND_UNSUPPORTED_KEYS
+        legend_ncols = int(options.get("ncols") or 1)
+        if "toggle" in options and options["toggle"] is not False:
+            legend_flags |= _XYCF_LEGEND_TOGGLE
+        if "highlight" in options and options["highlight"] is not False:
+            legend_flags |= _XYCF_LEGEND_HIGHLIGHT
+        authored_loc = options.get("loc")
+        if authored_loc is not None:
+            legend_flags |= _XYCF_LEGEND_AUTHORED_LOC
+            if str(authored_loc) == "best":
+                from ._legendfit import resolve_for_figure
+
+                authored_loc = resolve_for_figure(figure)
+            legend_loc = str(authored_loc).encode("utf-8")
+        style = dict(options.get("style") or {})
+        if set(style) - {"background", "color", "font_size", "title_font_size"}:
+            legend_flags |= _XYCF_LEGEND_UNSUPPORTED_STYLE
+        authored_font_size = style.get("font_size")
+        authored_title_font_size = style.get("title_font_size")
+        if authored_font_size is not None:
+            legend_flags |= _XYCF_LEGEND_AUTHORED_FONT
+            legend_font_size = float(authored_font_size)
+        if authored_title_font_size is not None:
+            legend_flags |= _XYCF_LEGEND_AUTHORED_TITLE_FONT
+            legend_title_font_size = float(authored_title_font_size)
+        title_value = options.get("title")
+        if isinstance(title_value, bool):
+            title_value = str(title_value).lower()
+        legend_title = str("" if title_value is None else title_value).encode("utf-8")
+        if "color" in style:
+            legend_flags |= _XYCF_LEGEND_AUTHORED_COLOR
+            legend_text_rgba = bytes(_rgba(str(style["color"]), 1.0))
+        if "background" in style:
+            legend_flags |= _XYCF_LEGEND_AUTHORED_BACKGROUND
+            legend_frame_rgba = bytes(_rgba(str(style["background"]), 1.0))
+    colorbar_obs = 0
+    colorbar_stop_count = 0
+    colorbar_tick_count = 0
+    colorbar_title = b""
+    colorbar_lo = 0.0
+    colorbar_hi = 0.0
+    colorbar_text_rgba = bytes((32, 32, 32, 255))
+    colorbar_stops: list[tuple[float, bytes]] = []
+    colorbar_ticks: list[float] = []
+    options = getattr(figure, "colorbar_options", None)
+    if colorbar_ok and options:
+        flags |= _XYCF_FLAG_HAS_COLORBAR
+        domain = options.get("domain")
+        stops = options.get("stops")
+        colorbar_lo, colorbar_hi = (float(domain[0]), float(domain[1]))
+        parsed = [(float(item[0]), bytes(item[1])) for item in stops]
+        colorbar_stops = parsed
+        colorbar_stop_count = len(parsed)
+        side = options.get("side", "right")
+        if side == "bottom":
+            colorbar_obs |= _XYCF_CB_HORIZONTAL
+        elif side not in {"right", "bottom"}:
+            colorbar_obs |= _XYCF_CB_INVALID_SIDE
+        if options.get("minor_ticks"):
+            colorbar_obs |= _XYCF_CB_MINOR
+        colorbar_title = str(options.get("title", "")).encode("utf-8")
+        colorbar_text_rgba = bytes(options.get("text_rgba", (32, 32, 32, 255)))
+        raw_ticks = options.get("ticks")
+        if raw_ticks is not None:
+            colorbar_ticks = [float(value) for value in raw_ticks]
+            colorbar_tick_count = len(colorbar_ticks)
+    header = _XYCF_HEADER.pack(
+        b"XYCF",
+        1,
+        flags,
+        0,
+        float(width),
+        float(height),
+        *authored_margins,
+        *padding,
+        kind_codes[x_scale],
+        kind_codes[y_scale],
+        x_lo,
+        x_hi,
+        float(xa.get("constant") or 1.0),
+        y_lo,
+        y_hi,
+        float(ya.get("constant") or 1.0),
+        1 if xa.get("nonpositive", "clip") == "mask" else 0,
+        1 if ya.get("nonpositive", "clip") == "mask" else 0,
+        0,
+        len(title),
+        len(x_label),
+        len(y_label),
+        len(x_format),
+        len(y_format),
+        len(x_major),
+        len(x_minor),
+        len(y_major),
+        len(y_minor),
+        0 if x_labels is None else len(x_labels),
+        0 if y_labels is None else len(y_labels),
+        len(chrome),
+        len(legend_loc),
+        len(legend_title),
+        legend_ncols,
+        legend_font_size,
+        legend_title_font_size,
+        legend_flags,
+        legend_count,
+        legend_text_rgba,
+        legend_frame_rgba,
+        colorbar_obs,
+        colorbar_stop_count,
+        colorbar_tick_count,
+        len(colorbar_title),
+        colorbar_lo,
+        colorbar_hi,
+        colorbar_text_rgba,
+        0,
+    )
+    payload = bytearray(header)
+    payload.extend(title)
+    payload.extend(x_label)
+    payload.extend(y_label)
+    payload.extend(x_format)
+    payload.extend(y_format)
+    _put_f64s(payload, x_major)
+    _put_f64s(payload, x_minor)
+    _put_f64s(payload, y_major)
+    _put_f64s(payload, y_minor)
+    _put_tick_labels(payload, None if x_labels is None else list(x_labels))
+    _put_tick_labels(payload, None if y_labels is None else list(y_labels))
+    payload.extend(chrome)
+    payload.extend(legend_loc)
+    payload.extend(legend_title)
+    payload.extend(legend_meta)
+    for length in legend_lens:
+        payload.extend(int(length).to_bytes(4, "little"))
+    payload.extend(legend_blob)
+    for value, rgba in colorbar_stops:
+        payload.extend(struct.pack("<d", value))
+        payload.extend(rgba)
+    _put_f64s(payload, colorbar_ticks)
+    payload.extend(colorbar_title)
+    return bytes(payload)
+
+
+def _rect_extra_flags(style: dict[str, Any], kind: str, polar: bool) -> int:
+    """Pack Scene-unsupported rect extras as XYFS v2 trace flags."""
+    flags = 0
     fill = style.get("fill")
-    if isinstance(fill, dict):
-        raise UnsupportedSceneV3(f"Scene v12 does not yet encode {kind} gradient fills")
+    if isinstance(fill, dict) and _admitted_fill_gradient_from_fill(fill, "#3987e5") is None:
+        flags |= _XYFS_TRACE_RECT_GRADIENT
     radius = style.get("corner_radius", 0.0)
+    admitted = kind in {"bar", "column", "histogram", "heatmap", "violin", "box"}
     if isinstance(radius, (list, tuple)):
-        if any(float(value) != 0.0 for value in radius):
-            raise UnsupportedSceneV3(f"Scene v12 does not yet encode {kind} corner_radius")
-    elif float(radius) != 0.0:
-        raise UnsupportedSceneV3(f"Scene v12 does not yet encode {kind} corner_radius")
-    if float(style.get("wedge_gap", 0.0) or 0.0) != 0.0:
-        raise UnsupportedSceneV3(f"Scene v12 does not yet encode {kind} wedge_gap")
+        if admitted and len(radius) == 2:
+            pass
+        elif any(float(value) != 0.0 for value in radius):
+            flags |= _XYFS_TRACE_CORNER_RADIUS
+    elif not admitted and float(radius) != 0.0:
+        flags |= _XYFS_TRACE_CORNER_RADIUS
+    if float(style.get("wedge_gap", 0.0) or 0.0) != 0.0 and not (
+        polar and kind in {"bar", "column", "histogram"}
+    ):
+        flags |= _XYFS_TRACE_WEDGE_GAP
+    return flags
 
 
-def _rect_columns(trace: Any) -> list[np.ndarray]:
-    if any(value is None for value in (trace.x0, trace.y0, trace.x1, trace.y1)):
-        raise ValueError(f"{trace.kind} Scene v12 compilation requires four rectangle columns")
-    arrays = [trace.x0.values, trace.y0.values, trace.x1.values, trace.y1.values]
-    lengths = {len(column) for column in arrays}
-    if len(lengths) != 1:
-        raise UnsupportedSceneV3(f"Scene v12 {trace.kind} rectangle columns must have equal length")
-    return arrays
+def _density_aggregates_color(trace: Any) -> bool:
+    """LOD doc §2: density scatter aggregates a color channel into the blit."""
+    if str(getattr(trace, "kind", "") or "") != "scatter" or not trace.use_density():
+        return False
+    return set(trace.per_item_channel_names()) <= {"color"}
 
 
-def _segment_columns(trace: Any) -> list[np.ndarray]:
-    if any(value is None for value in (trace.x0, trace.y0, trace.x1, trace.y1)):
-        raise ValueError(f"{trace.kind} Scene v12 compilation requires four endpoint columns")
-    arrays = [trace.x0.values, trace.y0.values, trace.x1.values, trace.y1.values]
-    lengths = {len(column) for column in arrays}
-    if len(lengths) != 1:
-        raise UnsupportedSceneV3(f"Scene v12 {trace.kind} endpoint columns must have equal length")
-    return arrays
+def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, str]:
+    """Observe per-trace Scene allowlist bits; Rust owns the diagnostic."""
+    kind = str(getattr(trace, "kind", "") or "mark")
+    style = getattr(trace, "style", None) or {}
+    flags = 0
+    if kind not in _SUPPORTED_KINDS:
+        flags |= _XYFS_TRACE_UNSUPPORTED_KIND
+    if getattr(trace, "x_axis", "x") != "x" or getattr(trace, "y_axis", "y") != "y":
+        flags |= _XYFS_TRACE_NON_PRIMARY_AXIS
+    if getattr(trace, "hidden", False) or (
+        trace.has_per_item_channels()
+        and not _density_aggregates_color(trace)
+        and not (not polar and _hexbin_tessellates_cell_fills(trace))
+    ):
+        flags |= _XYFS_TRACE_HIDDEN_OR_PER_ITEM
+    if style.get("marker_glyph") is not None:
+        glyph = style.get("marker_glyph")
+        if (
+            kind != "scatter"
+            or style.get("marker_path") is not None
+            or not isinstance(glyph, str)
+            or len(glyph) != 1
+        ):
+            flags |= _XYFS_TRACE_DASHED_MARKERS
+    marker_path = style.get("marker_path")
+    if marker_path is not None:
+        if kind != "scatter":
+            flags |= _XYFS_TRACE_DASHED_MARKERS
+        else:
+            try:
+                validated = _validated_marker_path(marker_path)
+            except ValueError:
+                flags |= _XYFS_TRACE_DASHED_MARKERS
+            else:
+                if validated["filled"] and any(
+                    len(contour) < 6 for contour in validated["contours"]
+                ):
+                    flags |= _XYFS_TRACE_DASHED_MARKERS
+    curve = style.get("curve")
+    if curve is not None:
+        curve_name = str(curve).strip().lower()
+        if curve_name == "smooth":
+            if kind not in {"line", "area", "error_band"}:
+                flags |= _XYFS_TRACE_DASHED_MARKERS
+        elif curve_name != "linear":
+            flags |= _XYFS_TRACE_DASHED_MARKERS
+    linecap = style.get("linecap")
+    if linecap is not None and str(linecap).strip().lower() not in {"butt", "round", "square"}:
+        flags |= _XYFS_TRACE_DASHED_MARKERS
+    dash = style.get("dash")
+    if dash is not None and _parse_scene_dash(dash) is False:
+        flags |= _XYFS_TRACE_DASHED_MARKERS
+    if kind in _RECT_KINDS or kind in _HEATMAP_KINDS:
+        flags |= _rect_extra_flags(style, kind, polar)
+    if kind in _HEXBIN_KINDS and style.get("reduce") not in _HEXBIN_REDUCES:
+        flags |= _XYFS_TRACE_CUSTOM_HEX_REDUCE
+    if (
+        kind in _HEATMAP_KINDS
+        and _heatmap_uses_colormap(trace)
+        and not _heatmap_tessellates_cell_fills(trace)
+    ):
+        flags |= _XYFS_TRACE_HEATMAP_COLORMAP
+    if (
+        "fill" in style
+        and not isinstance(style["fill"], str)
+        and _admitted_fill_gradient(trace) is None
+    ):
+        flags |= _XYFS_TRACE_NON_CSS_FILL
+    return flags, kind
 
 
 def _hexbin_pitch(style: dict[str, Any]) -> tuple[float, float]:
@@ -453,6 +1756,32 @@ def _hexbin_pitch(style: dict[str, Any]) -> tuple[float, float]:
     return dx, dy
 
 
+def _hexbin_tessellates_cell_fills(trace: Any) -> bool:
+    """Return whether Scene can intern this hexbin's metric colormap per cell.
+
+    Occupied centers plus a continuous color channel become a 1×N XYHP plane
+    (ABI 186). Polar hexbin, custom reducers, and non-continuous channels stay
+    fail-closed. Constant ``color=`` keeps the existing shared-style HexCell path.
+    """
+    if str(getattr(trace, "kind", "") or "") not in _HEXBIN_KINDS:
+        return False
+    channel = getattr(trace, "color_ch", None)
+    if channel is None or getattr(channel, "mode", None) != "continuous":
+        return False
+    values = getattr(channel, "values", None)
+    if values is None:
+        return False
+    centers = getattr(trace, "x", None)
+    if centers is None or len(values) != len(centers):
+        return False
+    colormap = getattr(channel, "colormap", None)
+    if colormap is None:
+        return False
+    if isinstance(colormap, str):
+        return bool(colormap.strip())
+    return True
+
+
 def _heatmap_uses_colormap(trace: Any) -> bool:
     """Return whether a heatmap still needs the compatibility colormap path."""
     style = getattr(trace, "style", None) or {}
@@ -462,6 +1791,21 @@ def _heatmap_uses_colormap(trace: Any) -> bool:
         or getattr(trace, "rgba_grid", None) is not None
         or getattr(trace, "rgba", None) is not None
     )
+
+
+def _heatmap_tessellates_cell_fills(trace: Any) -> bool:
+    """Return whether Scene can resolve this heatmap to per-cell paints.
+
+    Scalar colormaps, packed RGBA, and truecolor RGBA planes become compact
+    `HeatmapPainted` lattices. Polar encode tessellates those Rects to PolyFill
+    annular sectors. Scene has no image-blit record for inverse sampling.
+    """
+    style = getattr(trace, "style", None) or {}
+    if getattr(trace, "rgba_grid", None) is not None:
+        return True
+    if style.get("truecolor"):
+        return False
+    return bool(style.get("colormap") is not None or getattr(trace, "rgba", None) is not None)
 
 
 def _heatmap_shape(trace: Any) -> tuple[int, int]:
@@ -498,15 +1842,1219 @@ def _heatmap_extent(trace: Any) -> tuple[float, float, float, float]:
     return x0, x1, y0, y1
 
 
-def _band_columns(trace: Any) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    if trace.x is None or trace.y is None or trace.base is None:
-        raise ValueError(f"{trace.kind} Scene v12 compilation requires x, y, and base columns")
-    xv = np.asarray(trace.x.values, dtype=np.float64)
-    yv = np.asarray(trace.y.values, dtype=np.float64)
-    base = np.asarray(trace.base.values, dtype=np.float64)
-    if not (len(xv) == len(yv) == len(base)):
-        raise UnsupportedSceneV3(f"Scene v12 {trace.kind} band columns must have equal length")
-    return xv, yv, base
+def _colormap_stop_bytes(colormap: Any, label: str) -> bytes:
+    stops = np.ascontiguousarray(
+        [(int(red), int(green), int(blue)) for red, green, blue in colormap],
+        dtype=np.uint8,
+    )
+    if stops.ndim != 2 or stops.shape[1] != 3 or stops.shape[0] < 1:
+        raise UnsupportedSceneV3(f"Scene {label} colormap requires RGB stops")
+    return np.ascontiguousarray(stops).tobytes()
+
+
+def _pack_xyta_colormap(style: dict[str, Any]) -> tuple[int, bytes, bytes]:
+    flags = 0
+    cmap = b""
+    stops = b""
+    colormap = style.get("colormap")
+    if isinstance(colormap, str):
+        flags |= _XYTA_HAS_NAMED_CMAP
+        cmap = colormap.encode("utf-8")
+    elif colormap is not None:
+        flags |= _XYTA_HAS_STOPS
+        try:
+            stops = _colormap_stop_bytes(colormap, "heatmap")
+        except (TypeError, ValueError, UnsupportedSceneV3):
+            stops = b""
+    return flags, cmap, stops
+
+
+def _pack_xyta(figure: Any) -> bytes:
+    """Pack authored heatmap/density attach facts as XYTA v1; Rust emits XYTT."""
+    traces = list(getattr(figure, "traces", None) or [])
+    records = bytearray(_XYTA_HEADER.pack(b"XYTA", 1, len(traces), 0))
+    nan = float("nan")
+    for trace in traces:
+        style = getattr(trace, "style", None) or {}
+        flags = 0
+        rows = cols = 0
+        grid = b""
+        rgba = b""
+        rgba_grid = b""
+        x = b""
+        y = b""
+        mean_rgba = b""
+        idx = b""
+        lut = b""
+        cmap = b""
+        stops = b""
+        color_ch_b = b""
+        style_color = b""
+        domain_x0 = domain_x1 = domain_y0 = domain_y1 = nan
+        cmap_lo = cmap_hi = nan
+        opacity = fill_opacity = nan
+        if trace.kind in _HEATMAP_KINDS:
+            flags |= _XYTA_HEATMAP
+            shape = getattr(trace, "grid_shape", None)
+            if shape is not None and len(shape) == 2:
+                flags |= _XYTA_SHAPE
+                try:
+                    rows, cols = int(shape[0]), int(shape[1])
+                except (TypeError, ValueError):
+                    rows = cols = 0
+            raw_grid = getattr(trace, "grid", None)
+            if raw_grid is not None:
+                flags |= _XYTA_HAS_GRID
+                grid = np.ascontiguousarray(
+                    np.asarray(getattr(raw_grid, "values", raw_grid), dtype=np.float64).reshape(-1)
+                ).tobytes()
+            packed = getattr(trace, "rgba", None)
+            if packed is not None:
+                flags |= _XYTA_HAS_RGBA
+                rgba = np.ascontiguousarray(
+                    np.asarray(packed, dtype=np.uint8).reshape(-1)
+                ).tobytes()
+            planes = getattr(trace, "rgba_grid", None)
+            if planes is not None:
+                flags |= _XYTA_HAS_RGBA_GRID
+                if len(planes) == 4:
+                    channels_f64 = [
+                        np.asarray(getattr(plane, "values", plane), dtype=np.float64).reshape(-1)
+                        for plane in planes
+                    ]
+                    rgba_grid = np.ascontiguousarray(np.stack(channels_f64, axis=-1)).tobytes()
+            cmap_flags, cmap, stops = _pack_xyta_colormap(style)
+            flags |= cmap_flags
+            if style.get("truecolor"):
+                flags |= _XYTA_TRUECOLOR
+            domain = style.get("domain")
+            if domain is not None and len(domain) == 2:
+                flags |= _XYTA_HAS_DOMAIN
+                cmap_lo, cmap_hi = float(domain[0]), float(domain[1])
+        elif (
+            trace.kind in _HEXBIN_KINDS
+            and str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
+            and _hexbin_tessellates_cell_fills(trace)
+        ):
+            channel = trace.color_ch
+            values = np.ascontiguousarray(np.asarray(channel.values, dtype=np.float64).reshape(-1))
+            flags |= _XYTA_HEATMAP | _XYTA_SHAPE | _XYTA_HAS_GRID
+            rows, cols = 1, int(values.size)
+            grid = values.tobytes()
+            cmap_flags, cmap, stops = _pack_xyta_colormap({"colormap": channel.colormap})
+            flags |= cmap_flags
+            domain = getattr(channel, "domain", None)
+            if domain is not None and len(domain) == 2:
+                flags |= _XYTA_HAS_DOMAIN
+                cmap_lo, cmap_hi = float(domain[0]), float(domain[1])
+        elif trace.kind == "scatter" and trace.use_density():
+            flags |= _XYTA_DENSITY
+            xv = _trace_column(trace, "x")
+            yv = _trace_column(trace, "y")
+            if xv is not None:
+                x = np.ascontiguousarray(xv, dtype=np.float64).tobytes()
+            if yv is not None:
+                y = np.ascontiguousarray(yv, dtype=np.float64).tobytes()
+            xr0, xr1 = (float(value) for value in figure._range("x"))
+            yr0, yr1 = (float(value) for value in figure._range("y"))
+            domain_x0, domain_x1, domain_y0, domain_y1 = xr0, xr1, yr0, yr1
+            cmap_flags, cmap, stops = _pack_xyta_colormap(style)
+            flags |= cmap_flags
+            channel = getattr(trace, "color_ch", None)
+            if channel is not None and channel.mode == "constant" and channel.constant is not None:
+                flags |= _XYTA_HAS_COLOR_CH
+                color_ch_b = str(channel.constant).encode("utf-8")
+            if style.get("color") is not None:
+                flags |= _XYTA_HAS_STYLE_COLOR
+                style_color = str(style.get("color")).encode("utf-8")
+            if "opacity" in style:
+                flags |= _XYTA_HAS_OPACITY
+                opacity = float(style["opacity"])
+            if "fill_opacity" in style:
+                flags |= _XYTA_HAS_FILL_OPACITY
+                fill_opacity = float(style["fill_opacity"])
+            bin_colors = channels.resolve_bin_colors(channel, None)
+            if bin_colors:
+                if "rgba" in bin_colors:
+                    mean_rgba = np.ascontiguousarray(
+                        np.asarray(bin_colors["rgba"], dtype=np.uint8).reshape(-1)
+                    ).tobytes()
+                if "idx" in bin_colors:
+                    idx = np.ascontiguousarray(
+                        np.asarray(bin_colors["idx"], dtype=np.uint8).reshape(-1)
+                    ).tobytes()
+                if "lut" in bin_colors:
+                    lut = np.ascontiguousarray(
+                        np.asarray(bin_colors["lut"], dtype=np.uint8).reshape(-1)
+                    ).tobytes()
+        records.extend(
+            _XYTA_PREFIX.pack(
+                flags,
+                int(getattr(trace, "id", 0)) & 0xFFFFFFFF,
+                int(rows),
+                int(cols),
+                len(grid) // 8,
+                len(rgba),
+                len(rgba_grid) // 8,
+                len(x) // 8,
+                len(y) // 8,
+                len(mean_rgba),
+                len(idx),
+                len(lut),
+                min(len(cmap), 65535),
+                min(len(stops), 65535),
+                min(len(color_ch_b), 65535),
+                min(len(style_color), 65535),
+                float(domain_x0),
+                float(domain_x1),
+                float(domain_y0),
+                float(domain_y1),
+                float(cmap_lo),
+                float(cmap_hi),
+                float(opacity),
+                float(fill_opacity),
+            )
+        )
+        records.extend(grid)
+        records.extend(rgba)
+        records.extend(rgba_grid)
+        records.extend(cmap[:65535])
+        records.extend(stops[:65535])
+        records.extend(color_ch_b[:65535])
+        records.extend(style_color[:65535])
+        records.extend(x)
+        records.extend(y)
+        records.extend(mean_rgba)
+        records.extend(idx)
+        records.extend(lut)
+    return bytes(records)
+
+
+def _pack_xycl_column(column: np.ndarray | None) -> tuple[int, bytes]:
+    if column is None or len(column) == 0:
+        return 0, b""
+    arr = np.ascontiguousarray(np.asarray(column, dtype=np.float64).reshape(-1))
+    return int(arr.size), arr.tobytes()
+
+
+def _pack_xycl(figure: Any) -> bytes:
+    """Pack authored kind/coords/id plus canonical columns as XYCL v1."""
+    traces = list(getattr(figure, "traces", None) or [])
+    coords = 1 if str(getattr(figure, "coords", "cartesian") or "cartesian") == "polar" else 0
+    records = bytearray(_XYCL_HEADER.pack(b"XYCL", 1, len(traces), 0))
+    for trace in traces:
+        kind = str(trace.kind).encode("utf-8")
+        packed = [
+            _pack_xycl_column(_trace_column(trace, name))
+            for name in ("x", "y", "x0", "y0", "x1", "y1", "base")
+        ]
+        records.extend(
+            _XYCL_PREFIX.pack(
+                len(kind),
+                coords,
+                0,
+                int(trace.id),
+                *(count for count, _payload in packed),
+            )
+        )
+        records.extend(kind)
+        for _count, payload in packed:
+            records.extend(payload)
+    return bytes(records)
+
+
+def _pack_xynm(figure: Any) -> bytes:
+    """Pack authored legend names as XYNM v1; Rust owns legend-name gating."""
+    traces = list(getattr(figure, "traces", None) or [])
+    records = bytearray(_XYNM_HEADER.pack(b"XYNM", 1, len(traces), 0))
+    for trace in traces:
+        name = getattr(trace, "name", None)
+        raw = b"" if name is None else str(name).encode("utf-8")
+        records.extend(_XYNM_PREFIX.pack(len(raw)))
+        records.extend(raw)
+    return bytes(records)
+
+
+def _pack_xyhp(planes: list[bytes]) -> bytes:
+    """Wrap painted-heatmap planes in an XYHP v1 envelope."""
+    if not planes:
+        return b""
+    return struct.pack("<4sIII", b"XYHP", 1, len(planes), 0) + b"".join(planes)
+
+
+def _parse_scene_dash(value: Any) -> list[float] | None | bool:
+    """Return a 2–8 length pattern, None for solid, False if unusable on Scene."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        preset = _SCENE_DASH_PRESETS.get(value.strip().lower())
+        if value.strip().lower() in _SCENE_DASH_PRESETS:
+            return preset
+        parts = [part.strip() for part in value.split(",") if part.strip()]
+        try:
+            lengths = [float(part) for part in parts]
+        except ValueError:
+            return False
+    elif isinstance(value, (list, tuple)):
+        try:
+            lengths = [float(part) for part in value]
+        except (TypeError, ValueError):
+            return False
+    else:
+        return False
+    if not 2 <= len(lengths) <= 8:
+        return False
+    if any(not np.isfinite(length) or length <= 0.0 for length in lengths):
+        return False
+    return lengths
+
+
+def _parse_scene_linecap(value: Any) -> int | None | bool:
+    """Return 0=butt or 2=square, None for round/omitted, False if unusable."""
+    if value is None:
+        return None
+    name = str(value).strip().lower()
+    if name == "butt":
+        return 0
+    if name == "square":
+        return 2
+    if name == "round":
+        return None
+    return False
+
+
+_XYSS_HAS_DASH = 1 << 0
+_XYSS_HAS_CAP = 1 << 1
+_XYSS_HAS_MARKER = 1 << 2
+_XYSS_HAS_GRAD = 1 << 3
+
+
+def _pack_xyss(
+    dashes: list[list[float] | None],
+    linecaps: list[int | None],
+    marker_paths: list[dict[str, Any] | None],
+    fill_gradients: list[dict[str, Any] | None],
+) -> bytes:
+    """Pack authored dash/linecap/marker_path/gradient facts as XYSS v1."""
+    n_records = max(len(dashes), len(linecaps), len(marker_paths), len(fill_gradients), 0)
+    records: list[bytes] = []
+    for index in range(n_records):
+        pattern = dashes[index] if index < len(dashes) else None
+        cap = linecaps[index] if index < len(linecaps) else None
+        path = marker_paths[index] if index < len(marker_paths) else None
+        gradient = fill_gradients[index] if index < len(fill_gradients) else None
+        flags = 0
+        dash_count = 0
+        dash_values = [0.0] * 8
+        linecap = 255
+        n_contours = 0
+        n_stops = 0
+        grad_dir = 0
+        plot_space = 0
+        filled = 0
+        remainder = bytearray()
+        if pattern:
+            flags |= _XYSS_HAS_DASH
+            dash_count = len(pattern)
+            for offset, value in enumerate(pattern):
+                dash_values[offset] = float(value)
+        if cap in (0, 2):
+            flags |= _XYSS_HAS_CAP
+            linecap = int(cap)
+        if path:
+            flags |= _XYSS_HAS_MARKER
+            contours = path["contours"]
+            n_contours = len(contours)
+            filled = 1 if path.get("filled", True) else 0
+            for contour in contours:
+                values = [float(value) for value in contour]
+                remainder.extend(struct.pack("<II", len(values) // 2, 0))
+                remainder.extend(struct.pack(f"<{len(values)}d", *values))
+        if gradient:
+            flags |= _XYSS_HAS_GRAD
+            stops = gradient["stops"]
+            n_stops = len(stops)
+            grad_dir = _GRAD_DIR_CODES[gradient["dir"]]
+            plot_space = 1 if gradient.get("space") == "plot" else 0
+            for t, rgba in stops:
+                remainder.extend(struct.pack("<f4B", float(t), rgba[0], rgba[1], rgba[2], rgba[3]))
+        if not flags:
+            continue
+        records.append(
+            struct.pack(
+                "<IBBBBBBBBI8f",
+                int(index),
+                flags,
+                dash_count,
+                linecap,
+                n_contours,
+                n_stops,
+                grad_dir,
+                plot_space,
+                filled,
+                0,
+                *dash_values,
+            )
+            + bytes(remainder)
+        )
+    if not records:
+        return b""
+    out = bytearray(struct.pack("<4sIII", b"XYSS", 1, len(records), 0))
+    for record in records:
+        out.extend(record)
+    return bytes(out)
+
+
+def _fill_is_gradient_authoring(fill: Any) -> bool:
+    if isinstance(fill, dict):
+        return True
+    return isinstance(fill, str) and fill.strip().lower().startswith("linear-gradient(")
+
+
+_GRAD_DIR_CODES = {"down": 0, "up": 1, "right": 2, "left": 3}
+
+
+def _admitted_fill_gradient_from_fill(fill: Any, mark_color: str) -> dict[str, Any] | None:
+    """Return a resolved XYGR payload, or None to keep the fill fail-closed."""
+    spec: dict[str, Any] | None
+    if isinstance(fill, dict) and {"space", "dir", "stops"} <= set(fill):
+        spec = fill
+    else:
+        try:
+            spec = _validate.mark_fill(fill, "fill")
+        except (TypeError, ValueError):
+            return None
+    if not spec:
+        return None
+    space = spec.get("space")
+    direction = spec.get("dir")
+    stops = spec.get("stops")
+    if space not in {"mark", "plot"} or direction not in _GRAD_DIR_CODES:
+        return None
+    if not isinstance(stops, (list, tuple)) or not 2 <= len(stops) <= 8:
+        return None
+    resolved: list[tuple[float, tuple[int, int, int, int]]] = []
+    prev_t = -1.0
+    for stop in stops:
+        if not isinstance(stop, (list, tuple)) or len(stop) != 2:
+            return None
+        try:
+            t = float(stop[0])
+        except (TypeError, ValueError):
+            return None
+        if not math.isfinite(t) or t < 0.0 or t > 1.0 or t < prev_t:
+            return None
+        css = str(stop[1]).strip()
+        lowered = css.lower()
+        if "var(" in lowered:
+            return None
+        if lowered in {"currentcolor", ""}:
+            css = mark_color
+        try:
+            rgba = _native.css_color_rgba(css, 1.0)
+        except ValueError:
+            return None
+        resolved.append((t, rgba))
+        prev_t = t
+    return {"space": space, "dir": direction, "stops": resolved}
+
+
+def _admitted_fill_gradient(trace: Any) -> dict[str, Any] | None:
+    fill = (getattr(trace, "style", None) or {}).get("fill")
+    if fill is None or not _fill_is_gradient_authoring(fill):
+        return None
+    try:
+        mark_color = _constant_color(trace, "#3987e5")
+    except UnsupportedSceneV3:
+        return None
+    return _admitted_fill_gradient_from_fill(fill, mark_color)
+
+
+def _channel_constant_css(channel: Any) -> str | None:
+    if channel is None:
+        return None
+    if getattr(channel, "mode", None) != "constant":
+        return None
+    constant = getattr(channel, "constant", None)
+    if constant is None:
+        return None
+    return str(constant)
+
+
+def _trace_source_color_css(trace: Any) -> str:
+    css = _channel_constant_css(getattr(trace, "color_ch", None))
+    if css is not None:
+        return css
+    return str((getattr(trace, "style", None) or {}).get("color") or "#3987e5")
+
+
+def _css_paints_equal(left: str, right: str) -> bool:
+    try:
+        return _native.css_color_rgba(left, 1.0) == _native.css_color_rgba(right, 1.0)
+    except ValueError:
+        return False
+
+
+def _classify_ribbon_color2(trace: Any) -> str:
+    """Classify two-ended ribbon paint: absent, solid, gradient, or fail."""
+    color2 = getattr(trace, "color2_ch", None)
+    if color2 is None:
+        return "absent"
+    if str(getattr(trace, "kind", "") or "") != "ribbon":
+        return "fail"
+    target = _channel_constant_css(color2)
+    if target is None:
+        return "fail"
+    source = _trace_source_color_css(trace)
+    if _css_paints_equal(source, target):
+        return "solid"
+    if "fill" in (getattr(trace, "style", None) or {}):
+        return "fail"
+    return "gradient"
+
+
+def _ribbon_color2_gradient_spec(trace: Any) -> dict[str, Any] | None:
+    if _classify_ribbon_color2(trace) != "gradient":
+        return None
+    target = _channel_constant_css(getattr(trace, "color2_ch", None))
+    if target is None:
+        return None
+    return {
+        "space": "mark",
+        "dir": "right",
+        "stops": [(0.0, _trace_source_color_css(trace)), (1.0, target)],
+    }
+
+
+def _gradient_solid_css(gradient: dict[str, Any]) -> str:
+    for _t, rgba in gradient["stops"]:
+        if rgba[3] > 0:
+            return f"rgb({rgba[0]},{rgba[1]},{rgba[2]})"
+    return "rgb(0,0,0)"
+
+
+_XYTC_HEADER = struct.Struct("<4sIII")
+_XYTR_PREFIX = struct.Struct("<4s2HI2H11d12H3I2df")
+_XYTO_ENVELOPE = struct.Struct("<4sIII")
+_XYTO_PREFIX = struct.Struct("<4s2H4s4s2dHBBHHII4BII2d84x")
+_XYTA_HEADER = struct.Struct("<4sIII")
+_XYTA_PREFIX = struct.Struct("<II2i8I4H6d2f16x")
+_XYTT_ENVELOPE = struct.Struct("<4sIII")
+_XYTT_EXTRA = struct.Struct("<IIII4d")
+_XYCL_HEADER = struct.Struct("<4sIII")
+_XYCL_PREFIX = struct.Struct("<HBxIQ7I4x")
+_XYNM_HEADER = struct.Struct("<4sIII")
+_XYNM_PREFIX = struct.Struct("<H")
+_XYSD_HEADER = struct.Struct("<4sIII")
+_XYSD_PREFIX = struct.Struct("<4s4sdBBH6I4x")
+_XYTA_HEATMAP = 1 << 0
+_XYTA_DENSITY = 1 << 1
+_XYTA_HAS_RGBA = 1 << 2
+_XYTA_HAS_RGBA_GRID = 1 << 3
+_XYTA_HAS_GRID = 1 << 4
+_XYTA_TRUECOLOR = 1 << 5
+_XYTA_HAS_NAMED_CMAP = 1 << 6
+_XYTA_HAS_STOPS = 1 << 7
+_XYTA_HAS_COLOR_CH = 1 << 8
+_XYTA_HAS_STYLE_COLOR = 1 << 9
+_XYTA_HAS_OPACITY = 1 << 10
+_XYTA_HAS_FILL_OPACITY = 1 << 11
+_XYTA_HAS_DOMAIN = 1 << 12
+_XYTA_SHAPE = 1 << 13
+_XYTC_HAS_FILL = 1 << 0
+_XYTC_HAS_STROKE = 1 << 1
+_XYTC_HAS_LINE_COLOR = 1 << 2
+_XYTC_HAS_STROKE_WIDTH = 1 << 3
+_XYTC_HAS_WIDTH = 1 << 4
+_XYTC_HAS_LINE_WIDTH = 1 << 5
+_XYTC_HAS_SIZE = 1 << 6
+_XYTC_HAS_SIZE_CH = 1 << 7
+_XYTC_HAS_HEX = 1 << 8
+_XYTC_PERIMETER_TRUE = 1 << 9
+_XYTC_PERIMETER_INVALID = 1 << 10
+_XYTC_COLOR_CH = 1 << 11
+_XYTC_COLOR_CH_CONSTANT = 1 << 12
+_XYTC_COLOR2 = 1 << 13
+_XYTC_USE_DENSITY = 1 << 14
+_XYTC_SHOW_LEGEND = 1 << 15
+_XYTC_HAS_NAME = 1 << 16
+_XYTC_HAS_DASH_PATTERN = 1 << 17
+_XYTC_HAS_MARKER = 1 << 18
+_XYTC_HAS_GRADIENT_SPEC = 1 << 19
+_XYTC_HAS_FILL_DICT = 1 << 20
+_XYTC_HAS_CORNER_RADIUS = 1 << 22
+_XYTC_HAS_WEDGE_GAP = 1 << 23
+_XYTC_HAS_GLYPH = 1 << 24
+_XYTC_JOINED_FILL = 1 << 25
+_XYTO_LINECAP_NONE = 255
+_GRAD_DIR_FROM_CODE = {0: "down", 1: "up", 2: "right", 3: "left"}
+
+
+def _pack_marker_blob(value: Any) -> bytes | None:
+    if not isinstance(value, dict):
+        return None
+    contours = value.get("contours")
+    if not isinstance(contours, (list, tuple)):
+        return None
+    payload = bytearray(struct.pack("<I", len(contours)))
+    payload.append(1 if value.get("filled", True) else 0)
+    payload.extend(b"\0\0\0")
+    try:
+        for contour in contours:
+            values = [float(item) for item in contour]
+            payload.extend(struct.pack("<I", len(values)))
+            if values:
+                payload.extend(struct.pack(f"<{len(values)}d", *values))
+    except (TypeError, ValueError):
+        return None
+    return bytes(payload)
+
+
+def _pack_gradient_spec(fill: dict[str, Any]) -> bytes | None:
+    space = {"mark": 0, "plot": 1}.get(fill.get("space"), 255)
+    direction = _GRAD_DIR_CODES.get(fill.get("dir"), 255)
+    stops = fill.get("stops")
+    if not isinstance(stops, (list, tuple)):
+        return None
+    payload = bytearray(bytes((space, direction, len(stops) & 0xFF, 0)))
+    try:
+        for stop in stops:
+            if not isinstance(stop, (list, tuple)) or len(stop) != 2:
+                return None
+            css = str(stop[1]).encode("utf-8")
+            payload.extend(struct.pack("<dH", float(stop[0]), len(css)))
+            payload.extend(css)
+    except (TypeError, ValueError):
+        return None
+    return bytes(payload)
+
+
+def _pack_xytc(figure: Any) -> bytes:
+    """Pack authored per-trace style literals as XYTC v1; Rust compiles XYTO."""
+    traces = list(getattr(figure, "traces", None) or [])
+    records = bytearray(_XYTC_HEADER.pack(b"XYTC", 1, len(traces), 0))
+    show_legend = bool(getattr(figure, "show_legend", True))
+    nan = float("nan")
+    for trace in traces:
+        style = getattr(trace, "style", None) or {}
+        flags = 0
+        kind = str(trace.kind).encode("utf-8")
+        name = str(trace.name) if getattr(trace, "name", None) else ""
+        if name:
+            flags |= _XYTC_HAS_NAME
+        name_b = name.encode("utf-8")
+        symbol = str(style.get("symbol", "circle") or "")
+        symbol_b = symbol.encode("utf-8")
+        opacity = float(style.get("opacity", 1.0))
+        fill_opacity = stroke_opacity = line_opacity = 1.0
+        if trace.kind in _OPACITY_CHANNEL_KINDS:
+            fill_opacity = float(style.get("fill_opacity", 1.0))
+            stroke_opacity = float(style.get("stroke_opacity", 1.0))
+        if trace.kind in _BAND_KINDS:
+            line_opacity = float(style.get("line_opacity", 1.0))
+        size = nan
+        if "size" in style:
+            flags |= _XYTC_HAS_SIZE
+            size = float(style["size"])
+        size_ch_value = nan
+        size_ch = getattr(trace, "size_ch", None)
+        if size_ch is not None:
+            flags |= _XYTC_HAS_SIZE_CH
+            if getattr(size_ch, "constant", None) is not None:
+                size_ch_value = float(size_ch.constant)
+        stroke_width = width = line_width = 0.0
+        if "stroke_width" in style:
+            flags |= _XYTC_HAS_STROKE_WIDTH
+            stroke_width = float(style["stroke_width"])
+        if "width" in style:
+            flags |= _XYTC_HAS_WIDTH
+            width = float(style["width"])
+        if "line_width" in style:
+            flags |= _XYTC_HAS_LINE_WIDTH
+            line_width = float(style["line_width"])
+        hex_dx = hex_dy = nan
+        if trace.kind in _HEXBIN_KINDS:
+            flags |= _XYTC_HAS_HEX
+            raw_dx = style.get("hex_dx", style.get("dx"))
+            raw_dy = style.get("hex_dy", style.get("dy"))
+            if raw_dx is not None:
+                hex_dx = float(raw_dx)
+            if raw_dy is not None:
+                hex_dy = float(raw_dy)
+        if trace.kind in _BAND_KINDS and "stroke_perimeter" in style:
+            perimeter = style["stroke_perimeter"]
+            if not isinstance(perimeter, bool):
+                flags |= _XYTC_PERIMETER_INVALID
+            elif perimeter:
+                flags |= _XYTC_PERIMETER_TRUE
+        dash_b = b""
+        dash_pattern: list[float] = []
+        dash = style.get("dash")
+        if isinstance(dash, str):
+            dash_b = dash.encode("utf-8")
+        elif isinstance(dash, (list, tuple)):
+            flags |= _XYTC_HAS_DASH_PATTERN
+            try:
+                dash_pattern = [float(part) for part in dash]
+            except (TypeError, ValueError):
+                dash_pattern = []
+        linecap_b = str(style["linecap"]).encode("utf-8") if "linecap" in style else b""
+        step_b = str(style["step"]).encode("utf-8") if style.get("step") is not None else b""
+        curve_b = str(style["curve"]).encode("utf-8") if style.get("curve") is not None else b""
+        fill_css = b""
+        fill_space = b""
+        gradient_blob = b""
+        if "fill" in style:
+            flags |= _XYTC_HAS_FILL
+            fill = style["fill"]
+            if isinstance(fill, str):
+                fill_css = fill.encode("utf-8")
+            elif isinstance(fill, dict) and {"space", "dir", "stops"} <= set(fill):
+                flags |= _XYTC_HAS_GRADIENT_SPEC
+                gradient_blob = _pack_gradient_spec(fill) or b""
+            elif isinstance(fill, dict):
+                flags |= _XYTC_HAS_FILL_DICT
+                fill_css = str(fill.get("gradient") or "").encode("utf-8")
+                fill_space = str(fill.get("space") or "mark").encode("utf-8")
+        stroke_css = str(style["stroke"]).encode("utf-8") if "stroke" in style else b""
+        if "stroke" in style:
+            flags |= _XYTC_HAS_STROKE
+        line_color = str(style["line_color"]).encode("utf-8") if "line_color" in style else b""
+        if "line_color" in style:
+            flags |= _XYTC_HAS_LINE_COLOR
+        color_css = str(style["color"]).encode("utf-8") if "color" in style else b""
+        color_mode = b""
+        color_const = b""
+        channel = getattr(trace, "color_ch", None)
+        if channel is not None:
+            flags |= _XYTC_COLOR_CH
+            color_mode = str(getattr(channel, "mode", "") or "").encode("utf-8")
+            if getattr(channel, "constant", None) is not None:
+                flags |= _XYTC_COLOR_CH_CONSTANT
+                color_const = str(channel.constant).encode("utf-8")
+        color2_class = _classify_ribbon_color2(trace)
+        if color2_class == "fail":
+            flags |= _XYTC_COLOR2
+        elif color2_class == "gradient":
+            if flags & (_XYTC_HAS_FILL | _XYTC_HAS_GRADIENT_SPEC):
+                flags |= _XYTC_COLOR2
+            else:
+                spec = _ribbon_color2_gradient_spec(trace)
+                packed_gradient = _pack_gradient_spec(spec) if spec is not None else None
+                if packed_gradient:
+                    flags |= _XYTC_HAS_FILL | _XYTC_HAS_GRADIENT_SPEC
+                    gradient_blob = packed_gradient
+                else:
+                    flags |= _XYTC_COLOR2
+        if trace.kind == "scatter" and trace.use_density():
+            flags |= _XYTC_USE_DENSITY
+        if show_legend:
+            flags |= _XYTC_SHOW_LEGEND
+        marker_blob = b""
+        if trace.kind == "scatter" and style.get("marker_path") is not None:
+            packed_marker = _pack_marker_blob(style.get("marker_path"))
+            if packed_marker:
+                flags |= _XYTC_HAS_MARKER
+                marker_blob = packed_marker
+        elif (
+            trace.kind == "scatter"
+            and isinstance(style.get("marker_glyph"), str)
+            and len(style["marker_glyph"]) == 1
+        ):
+            flags |= _XYTC_HAS_GLYPH
+            marker_blob = style["marker_glyph"].encode("utf-8")
+        if str(trace.kind) == "triangle_mesh" and style.get("joined_fill"):
+            flags |= _XYTC_JOINED_FILL
+        r_tip = 0.0
+        r_base = 0.0
+        wedge_gap = 0.0
+        if str(trace.kind) in {"bar", "column", "histogram", "heatmap", "violin", "box"}:
+            radius = style.get("corner_radius", 0.0)
+            if isinstance(radius, (list, tuple)) and len(radius) == 2:
+                r_tip = float(radius[0])
+                r_base = float(radius[1])
+            else:
+                r_tip = r_base = float(radius or 0.0)
+            if r_tip or r_base:
+                flags |= _XYTC_HAS_CORNER_RADIUS
+            if str(trace.kind) in {"bar", "column", "histogram"}:
+                wedge_gap = float(style.get("wedge_gap", 0.0) or 0.0)
+                if wedge_gap:
+                    flags |= _XYTC_HAS_WEDGE_GAP
+        records.extend(
+            _XYTR_PREFIX.pack(
+                b"XYTR",
+                1,
+                len(kind),
+                flags,
+                len(name_b),
+                len(symbol_b),
+                opacity,
+                fill_opacity,
+                stroke_opacity,
+                line_opacity,
+                size,
+                size_ch_value,
+                stroke_width,
+                width,
+                line_width,
+                hex_dx,
+                hex_dy,
+                len(dash_b),
+                len(linecap_b),
+                len(step_b),
+                len(curve_b),
+                len(fill_css),
+                len(stroke_css),
+                len(line_color),
+                len(color_css),
+                len(color_mode),
+                len(color_const),
+                len(fill_space),
+                0,
+                len(dash_pattern),
+                len(marker_blob),
+                len(gradient_blob),
+                r_tip,
+                r_base,
+                wedge_gap,
+            )
+        )
+        records.extend(kind)
+        records.extend(name_b)
+        records.extend(symbol_b)
+        records.extend(dash_b)
+        records.extend(linecap_b)
+        records.extend(step_b)
+        records.extend(curve_b)
+        records.extend(fill_css)
+        records.extend(stroke_css)
+        records.extend(line_color)
+        records.extend(color_css)
+        records.extend(color_mode)
+        records.extend(color_const)
+        records.extend(fill_space)
+        if dash_pattern:
+            records.extend(struct.pack(f"<{len(dash_pattern)}d", *dash_pattern))
+        records.extend(marker_blob)
+        records.extend(gradient_blob)
+    return bytes(records)
+
+
+def _unpack_marker_blob(blob: bytes) -> dict[str, Any] | None:
+    if len(blob) < 8:
+        return None
+    n_contours = struct.unpack_from("<I", blob, 0)[0]
+    filled = blob[4] != 0
+    at = 8
+    contours: list[list[float]] = []
+    for _ in range(int(n_contours)):
+        n_values = struct.unpack_from("<I", blob, at)[0]
+        at += 4
+        values = list(struct.unpack_from(f"<{n_values}d", blob, at))
+        at += int(n_values) * 8
+        contours.append(values)
+    return {"contours": contours, "filled": bool(filled)}
+
+
+def _unpack_gradient_blob(blob: bytes) -> dict[str, Any] | None:
+    if len(blob) < 4:
+        return None
+    space, direction, n_stops = blob[0], blob[1], blob[2]
+    at = 4
+    stops: list[tuple[float, tuple[int, int, int, int]]] = []
+    for _ in range(int(n_stops)):
+        t = float(struct.unpack_from("<f", blob, at)[0])
+        rgba = (int(blob[at + 4]), int(blob[at + 5]), int(blob[at + 6]), int(blob[at + 7]))
+        at += 8
+        stops.append((t, rgba))
+    return {
+        "space": "plot" if space else "mark",
+        "dir": _GRAD_DIR_FROM_CODE.get(int(direction), "down"),
+        "stops": stops,
+    }
+
+
+def _unpack_xyto(blob: bytes) -> list[dict[str, Any]]:
+    """Split Rust-owned XYTO compile output into per-trace Scene fields."""
+    if len(blob) < _XYTO_ENVELOPE.size or blob[:4] != b"XYTO":
+        raise ValueError("invalid scene trace compile packing")
+    _magic, version, n_traces, _reserved = _XYTO_ENVELOPE.unpack_from(blob, 0)
+    if version != 1:
+        raise ValueError("invalid scene trace compile facts version")
+    at = _XYTO_ENVELOPE.size
+    compiled: list[dict[str, Any]] = []
+    for _ in range(int(n_traces)):
+        (
+            magic,
+            rec_version,
+            _rec_reserved,
+            fill,
+            stroke,
+            stroke_width,
+            diameter,
+            symbol,
+            legend_kind,
+            legend_include,
+            legend_symbol,
+            authored_step,
+            fact_bits,
+            dash_count,
+            linecap,
+            has_marker,
+            has_gradient,
+            _pad,
+            marker_len,
+            gradient_len,
+            hex_dx,
+            hex_dy,
+        ) = _XYTO_PREFIX.unpack_from(blob, at)
+        if magic != b"XYTO" or rec_version != 1:
+            raise ValueError("invalid scene trace compile packing")
+        at += _XYTO_PREFIX.size
+        dash = None
+        if dash_count:
+            dash = list(struct.unpack(f"<{dash_count}d", blob[at : at + dash_count * 8]))
+            at += int(dash_count) * 8
+        marker = blob[at : at + marker_len]
+        at += int(marker_len)
+        gradient = blob[at : at + gradient_len]
+        at += int(gradient_len)
+        compiled.append(
+            {
+                "style": (tuple(fill), tuple(stroke), float(stroke_width)),
+                "dash": dash,
+                "linecap": None if linecap == _XYTO_LINECAP_NONE else int(linecap),
+                "marker_path": _unpack_marker_blob(marker) if has_marker and marker else None,
+                "fill_gradient": _unpack_gradient_blob(gradient)
+                if has_gradient and gradient
+                else None,
+                "diameter": float(diameter),
+                "symbol": int(symbol),
+                "legend_kind": int(legend_kind),
+                "legend_include": bool(legend_include),
+                "legend_symbol": int(legend_symbol),
+                "authored_step": int(authored_step),
+                "fact_bits": int(fact_bits),
+                "hex_dx": float(hex_dx),
+                "hex_dy": float(hex_dy),
+            }
+        )
+    if at != len(blob):
+        raise ValueError("invalid scene trace compile packing")
+    return compiled
+
+
+def _raise_trace_compile(error: _native.SceneTraceCompileError, figure: Any) -> NoReturn:
+    traces = list(getattr(figure, "traces", None) or [])
+    trace = traces[error.index] if 0 <= error.index < len(traces) else None
+    style = getattr(trace, "style", None) or {} if trace is not None else {}
+    if error.code == -5:
+        raise ValueError("trace opacity must be finite and in [0, 1]") from error
+    if error.code == -12:
+        raise ValueError("trace opacity channels must be finite and in [0, 1]") from error
+    if error.code == -6:
+        symbol = str(style.get("symbol", "circle"))
+        raise UnsupportedSceneV3(f"Scene v12 does not support scatter symbol {symbol!r}") from error
+    if error.code == -7:
+        raise UnsupportedSceneV3(
+            f"Scene v12 does not support step mode {style.get('step')!r}"
+        ) from error
+    if error.code == -8:
+        raise UnsupportedSceneV3("Scene v25 area stroke_perimeter must be a boolean") from error
+    if error.code == -9:
+        raise UnsupportedSceneV3(
+            "Scene v12 hexbin requires finite hex_dx/hex_dy cell pitch"
+        ) from error
+    if error.code == -10:
+        raise UnsupportedSceneV3(
+            "Scene v12 does not yet encode two-ended ribbon gradients"
+        ) from error
+    if error.code == -11:
+        kind = getattr(trace, "kind", "mark") if trace is not None else "mark"
+        raise UnsupportedSceneV3(f"Scene v12 does not yet encode {kind} non-CSS fills") from error
+    if error.code == -13:
+        raise UnsupportedSceneV3(
+            "Scene v12 does not yet support data-driven paint channels"
+        ) from error
+    if error.code == -2:
+        raise ValueError("invalid scene trace compile facts version") from error
+    raise ValueError("invalid scene trace compile packing") from error
+
+
+def _unpack_xytt(blob: bytes) -> list[dict[str, Any]]:
+    """Split Rust-owned XYTT attach output into per-trace Scene fields."""
+    if len(blob) < _XYTT_ENVELOPE.size or blob[:4] != b"XYTT":
+        raise ValueError("invalid scene trace attach packing")
+    _magic, version, n_traces, _reserved = _XYTT_ENVELOPE.unpack_from(blob, 0)
+    if version != 1:
+        raise ValueError("invalid scene trace attach facts version")
+    at = _XYTT_ENVELOPE.size
+    attached: list[dict[str, Any]] = []
+    for _ in range(int(n_traces)):
+        (
+            magic,
+            rec_version,
+            _rec_reserved,
+            fill,
+            stroke,
+            stroke_width,
+            diameter,
+            symbol,
+            legend_kind,
+            legend_include,
+            legend_symbol,
+            authored_step,
+            fact_bits,
+            dash_count,
+            linecap,
+            has_marker,
+            has_gradient,
+            _pad,
+            marker_len,
+            gradient_len,
+            hex_dx,
+            hex_dy,
+        ) = _XYTO_PREFIX.unpack_from(blob, at)
+        if magic != b"XYTO" or rec_version != 1:
+            raise ValueError("invalid scene trace attach packing")
+        heatmap_len, density_len, grid_rows, grid_cols, x0, x1, y0, y1 = _XYTT_EXTRA.unpack_from(
+            blob, at + _XYTO_PREFIX.size
+        )
+        at += _XYTO_PREFIX.size + _XYTT_EXTRA.size
+        dash = None
+        if dash_count:
+            dash = list(struct.unpack(f"<{dash_count}d", blob[at : at + dash_count * 8]))
+            at += int(dash_count) * 8
+        marker = blob[at : at + marker_len]
+        at += int(marker_len)
+        gradient = blob[at : at + gradient_len]
+        at += int(gradient_len)
+        heatmap = blob[at : at + heatmap_len]
+        at += int(heatmap_len)
+        density = blob[at : at + density_len]
+        at += int(density_len)
+        columns = None
+        if density_len:
+            columns = [
+                np.asarray([x0, x1], dtype=np.float64),
+                np.asarray([y0, y1], dtype=np.float64),
+                None,
+                None,
+                None,
+                None,
+                None,
+            ]
+        attached.append(
+            {
+                "style": (tuple(fill), tuple(stroke), float(stroke_width)),
+                "dash": dash,
+                "linecap": None if linecap == _XYTO_LINECAP_NONE else int(linecap),
+                "marker_path": _unpack_marker_blob(marker) if has_marker and marker else None,
+                "fill_gradient": _unpack_gradient_blob(gradient)
+                if has_gradient and gradient
+                else None,
+                "diameter": float(diameter),
+                "symbol": int(symbol),
+                "legend_kind": int(legend_kind),
+                "legend_include": bool(legend_include),
+                "legend_symbol": int(legend_symbol),
+                "authored_step": int(authored_step),
+                "fact_bits": int(fact_bits),
+                "hex_dx": float(hex_dx),
+                "hex_dy": float(hex_dy),
+                "heatmap": bytes(heatmap) if heatmap_len else b"",
+                "density": bytes(density) if density_len else b"",
+                "grid_rows": float(grid_rows),
+                "grid_cols": float(grid_cols),
+                "columns": columns,
+            }
+        )
+    if at != len(blob):
+        raise ValueError("invalid scene trace attach packing")
+    return attached
+
+
+def _raise_trace_attach(error: _native.SceneTraceAttachError, figure: Any) -> NoReturn:
+    if error.code == -5:
+        raise UnsupportedSceneV3("Scene v12 heatmap requires a rows x cols grid_shape") from error
+    if error.code == -6:
+        raise UnsupportedSceneV3("Scene v12 heatmap requires a positive grid_shape") from error
+    if error.code == -7:
+        raise ValueError("heatmap Scene v12 compilation requires a scalar grid") from error
+    if error.code == -8:
+        raise UnsupportedSceneV3("Scene v12 heatmap grid must match rows x cols") from error
+    if error.code == -9:
+        raise UnsupportedSceneV3(
+            "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
+        ) from error
+    if error.code == -10:
+        raise UnsupportedSceneV3("Scene heatmap RGBA plane must match rows x cols") from error
+    if error.code == -11:
+        raise UnsupportedSceneV3("Scene heatmap truecolor requires four RGBA planes") from error
+    if error.code == -12:
+        traces = list(getattr(figure, "traces", None) or [])
+        trace = traces[error.index] if 0 <= error.index < len(traces) else None
+        label = "density" if getattr(trace, "kind", None) == "scatter" else "heatmap"
+        raise UnsupportedSceneV3(f"Scene {label} colormap requires RGB stops") from error
+    if error.code == -13:
+        raise ValueError("Scene density columns must have equal length") from error
+    if error.code == -14:
+        raise ValueError("Scene density mean-color source is invalid") from error
+    if error.code == -2:
+        raise ValueError("invalid scene trace attach facts version") from error
+    raise ValueError("invalid scene trace attach packing") from error
+
+
+def _raise_trace_rows(error: _native.SceneTraceRowsError) -> NoReturn:
+    if error.code == -5:
+        raise UnsupportedSceneV3(
+            "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
+        ) from error
+    if error.code == -6:
+        raise UnsupportedSceneV3("Scene v12 does not support product kind") from error
+    if error.code == -1:
+        raise UnsupportedSceneV3("invalid scene trace packing") from error
+    if error.code == -2:
+        raise ValueError("invalid scene trace column facts version") from error
+    raise ValueError("invalid scene trace column packing") from error
+
+
+def _unpack_xysd(blob: bytes) -> dict[str, Any]:
+    """Split Rust-owned XYSD sidecar output into per-trace Scene fields."""
+    if len(blob) < _XYSD_HEADER.size or blob[:4] != b"XYSD":
+        raise ValueError("invalid scene sidecar packing")
+    _magic, version, n_traces, _reserved = _XYSD_HEADER.unpack_from(blob, 0)
+    if version != 1:
+        raise ValueError("invalid scene sidecar facts version")
+    at = _XYSD_HEADER.size
+    styles: list[tuple[tuple[int, ...], tuple[int, ...], float]] = []
+    dashes: list[list[float] | None] = []
+    linecaps: list[int | None] = []
+    marker_paths: list[dict[str, Any] | None] = []
+    fill_gradients: list[dict[str, Any] | None] = []
+    planes: list[bytes] = []
+    legend: list[tuple[int, int, int, str]] = []
+    for index in range(int(n_traces)):
+        if at + _XYSD_PREFIX.size > len(blob):
+            raise ValueError("invalid scene sidecar packing")
+        (
+            fill,
+            stroke,
+            stroke_width,
+            linecap,
+            legend_kind,
+            legend_symbol,
+            dash_len,
+            marker_len,
+            gradient_len,
+            plane_len,
+            name_len,
+            _reserved_len,
+        ) = _XYSD_PREFIX.unpack_from(blob, at)
+        at += _XYSD_PREFIX.size
+        need = int(dash_len) + int(marker_len) + int(gradient_len) + int(plane_len) + int(name_len)
+        if at + need > len(blob):
+            raise ValueError("invalid scene sidecar packing")
+        dash_blob = blob[at : at + dash_len]
+        at += int(dash_len)
+        marker = blob[at : at + marker_len]
+        at += int(marker_len)
+        gradient = blob[at : at + gradient_len]
+        at += int(gradient_len)
+        plane = blob[at : at + plane_len]
+        at += int(plane_len)
+        name = blob[at : at + name_len]
+        at += int(name_len)
+        styles.append((tuple(fill), tuple(stroke), float(stroke_width)))
+        dashes.append(
+            list(struct.unpack(f"<{len(dash_blob) // 8}d", dash_blob)) if dash_blob else None
+        )
+        linecaps.append(None if linecap == _XYTO_LINECAP_NONE else int(linecap))
+        marker_paths.append(_unpack_marker_blob(marker) if marker else None)
+        fill_gradients.append(_unpack_gradient_blob(gradient) if gradient else None)
+        if plane:
+            planes.append(bytes(plane))
+        if name:
+            legend.append((index, int(legend_kind), int(legend_symbol), name.decode("utf-8")))
+    if at != len(blob):
+        raise ValueError("invalid scene sidecar packing")
+    return {
+        "styles": styles,
+        "dashes": dashes,
+        "linecaps": linecaps,
+        "marker_paths": marker_paths,
+        "fill_gradients": fill_gradients,
+        "planes": planes,
+        "legend": legend,
+    }
+
+
+def _raise_trace_sidecars(error: _native.SceneTraceSidecarsError) -> NoReturn:
+    if error.code == -2:
+        raise ValueError("invalid scene sidecar facts version") from error
+    raise ValueError("invalid scene sidecar packing") from error
+
+
+def _raise_annotation_splice(error: _native.SceneAnnotationSpliceError) -> NoReturn:
+    if error.code == -2:
+        raise ValueError("invalid scene annotation splice version") from error
+    raise ValueError("invalid scene annotation splice packing") from error
+
+
+def _unpack_xyas(blob: bytes) -> dict[str, Any]:
+    """Split Rust-owned XYAS splice output into Scene styles, rows, and XYAD."""
+    if len(blob) < _XYAS_HEADER.size or blob[:4] != b"XYAS":
+        raise ValueError("invalid scene annotation splice packing")
+    _magic, version, n_styles, n_rows, xyad_len, _reserved = _XYAS_HEADER.unpack_from(blob, 0)
+    if version != 1:
+        raise ValueError("invalid scene annotation splice version")
+    at = _XYAS_HEADER.size
+    need = int(n_styles) * _XYAS_STYLE.size + int(n_rows) * 56 + int(xyad_len)
+    if at + need > len(blob):
+        raise ValueError("invalid scene annotation splice packing")
+    styles: list[tuple[tuple[int, ...], tuple[int, ...], float]] = []
+    for _ in range(int(n_styles)):
+        fill, stroke, width = _XYAS_STYLE.unpack_from(blob, at)
+        styles.append((tuple(fill), tuple(stroke), float(width)))
+        at += _XYAS_STYLE.size
+    kinds: list[int] = []
+    stable_ids: list[int] = []
+    style_refs: list[int] = []
+    diameters: list[float] = []
+    symbols: list[int] = []
+    expansion_modes: list[int] = []
+    coordinates: list[list[float]] = [[], [], [], []]
+    if n_rows:
+        raw = np.frombuffer(blob[at : at + int(n_rows) * 56], dtype=np.uint8).reshape(
+            int(n_rows), 56
+        )
+        kinds.extend(int(value) for value in raw[:, 0])
+        symbols.extend(int(value) for value in raw[:, 1])
+        expansion_modes.extend(int(value) for value in raw[:, 2])
+        style_refs.extend(int(value) for value in np.frombuffer(raw[:, 4:8].tobytes(), dtype="<u4"))
+        stable_ids.extend(
+            int(value) for value in np.frombuffer(raw[:, 8:16].tobytes(), dtype="<u8")
+        )
+        nums = np.frombuffer(raw[:, 16:56].tobytes(), dtype="<f8").reshape(-1, 5)
+        diameters.extend(float(value) for value in nums[:, 0])
+        for axis in range(4):
+            coordinates[axis].extend(float(value) for value in nums[:, axis + 1])
+        at += int(n_rows) * 56
+    xyad = bytes(blob[at : at + int(xyad_len)])
+    if at + int(xyad_len) != len(blob):
+        raise ValueError("invalid scene annotation splice packing")
+    return {
+        "styles": styles,
+        "kinds": kinds,
+        "stable_ids": stable_ids,
+        "style_refs": style_refs,
+        "diameters": diameters,
+        "symbols": symbols,
+        "expansion_modes": expansion_modes,
+        "coordinates": coordinates,
+        "xyad": xyad,
+    }
 
 
 def figure_scene(
@@ -518,1132 +3066,71 @@ def figure_scene(
 ) -> bytes:
     """Compile migrated cartesian marks plus x/y axes to Scene v12."""
     annotations = list(getattr(figure, "annotations", None) or [])
-    features = 0
-    if figure.coords != "cartesian":
-        features |= 1 << 0
-    chrome_styles = getattr(figure, "chrome_styles", None) or {}
-    if any("font-family" in (style or {}) for style in chrome_styles.values()):
-        features |= 1 << 1
-    if (
-        getattr(figure, "class_name", None)
-        or getattr(figure, "class_names", None)
-        or chrome_styles
-        or set(getattr(figure, "style", None) or {}) - {"background", "--chart-bg"}
-        or any(annotation.get("class_name") not in (None, "") for annotation in annotations)
-    ):
-        features |= 1 << 2
-    if any(
-        isinstance((getattr(trace, "style", None) or {}).get("fill"), dict)
-        or getattr(trace, "color2_ch", None) is not None
-        or (
-            getattr(trace, "color_ch", None) is not None
-            and (trace.color_ch.mode != "constant" or trace.color_ch.constant is None)
-        )
-        for trace in figure.traces
-    ):
-        features |= 1 << 3
+    colorbar_unsupported = False
     try:
-        colorbar_input = _colorbar_input(figure)
+        _colorbar_input(figure)
     except UnsupportedSceneV3:
-        colorbar_input = b""
-        features |= 1 << 4
-    if figure.extra_legends:
-        features |= 1 << 5
-    if any(
-        annotation.get("kind") not in {"callout", "arrow", "text"}
-        and annotation.get("text") not in (None, "")
-        for annotation in annotations
-    ):
-        features |= 1 << 7
-    reason = _native.scene_support_reason(features)
-    if reason:
-        raise UnsupportedSceneV3(reason)
-    if set(figure.axis_options) != {"x", "y"}:
-        raise UnsupportedSceneV3("Scene v12 figure compilation currently supports exactly x/y axes")
-    for options in figure.axis_options.values():
-        supported_axis_keys = {
-            "type",
-            "constant",
-            "domain",
-            "nonpositive",
-            "label",
-            "side",
-            "tick_sides",
-            "tick_label_sides",
-            "style",
-            "minor_style",
-            "tick_values",
-            "tick_labels",
-            "minor_tick_values",
-            "format",
-        }
-        if any(
-            key not in supported_axis_keys and value not in (None, False, [], {})
-            for key, value in options.items()
-        ):
-            raise UnsupportedSceneV3(
-                "Scene v12 does not yet encode tick formatting, collision policy, or advanced axis layout"
-            )
-    unsupported = next(
-        (trace.kind for trace in figure.traces if trace.kind not in _SUPPORTED_KINDS), None
-    )
-    if unsupported is not None:
-        raise UnsupportedSceneV3(f"Scene v12 figure compilation does not yet support {unsupported}")
+        colorbar_unsupported = True
 
-    kinds: list[int] = []
-    stable_ids: list[int] = []
-    style_refs: list[int] = []
-    styles: list[tuple[tuple[int, ...], tuple[int, ...], float]] = []
-    diameters: list[float] = []
-    symbols: list[int] = []
-    coordinates: list[list[float]] = [[], [], [], []]
-    expansion_runs: list[tuple[int, int, int]] = []
-    legend_entries: list[tuple[int, int, int, str]] = []
-    for trace in figure.traces:
-        if trace.x_axis != "x" or trace.y_axis != "y":
-            raise UnsupportedSceneV3("Scene v12 currently supports only the primary x/y axes")
-        if trace.hidden or trace.has_per_item_channels():
-            raise UnsupportedSceneV3(
-                "Scene v12 does not yet encode hidden or per-item styled marks"
-            )
-        if trace.kind == "scatter" and trace.use_density():
-            raise UnsupportedSceneV3("Scene v12 does not yet encode density-tier scatter")
-        style = trace.style
-        if any(key in style for key in ("dash", "curve", "linecap", "marker_path", "marker_glyph")):
-            raise UnsupportedSceneV3(
-                "Scene v12 does not yet encode dashed, curved, or authored markers"
-            )
-        if trace.kind in _RECT_KINDS:
-            _reject_rect_extras(style, trace.kind)
-        if trace.kind in _POLYFILL_KINDS and style.get("joined_fill"):
-            raise UnsupportedSceneV3("Scene v12 does not yet encode joined triangle-mesh fills")
-        if trace.kind in _HEXBIN_KINDS and style.get("reduce") not in _HEXBIN_REDUCES:
-            raise UnsupportedSceneV3("Scene v12 does not yet encode custom hexbin reducers")
-        if trace.kind in _HEATMAP_KINDS:
-            _reject_rect_extras(style, trace.kind)
-            if _heatmap_uses_colormap(trace):
-                raise UnsupportedSceneV3("Scene v12 does not yet encode heatmap colormap")
-        opacity = float(style.get("opacity", 1.0))
-        if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
-            raise ValueError("trace opacity must be finite and in [0, 1]")
-        color = _constant_color(trace, "#3987e5")
-        if trace.kind in _SEGMENT_KINDS:
-            fill_default = "transparent"
-        elif trace.kind in _BAND_KINDS | _RIBBON_KINDS | _POLYFILL_KINDS:
-            fill_default = color
-        else:
-            fill_default = color
-        fill_value = style.get("fill", fill_default)
-        if not isinstance(fill_value, str):
-            raise UnsupportedSceneV3(f"Scene v12 does not yet encode {trace.kind} non-CSS fills")
-        fill_opacity = stroke_opacity = line_opacity = 1.0
-        if trace.kind in _BAND_KINDS | _RIBBON_KINDS:
-            fill_opacity = float(style.get("fill_opacity", 1.0))
-            stroke_opacity = float(style.get("stroke_opacity", 1.0))
-        if trace.kind in _BAND_KINDS:
-            line_opacity = float(style.get("line_opacity", 1.0))
-        if trace.kind in _BAND_KINDS | _RIBBON_KINDS and any(
-            not np.isfinite(value) or not 0.0 <= value <= 1.0
-            for value in (fill_opacity, stroke_opacity, line_opacity)
-        ):
-            raise ValueError("trace opacity channels must be finite and in [0, 1]")
-        fill = _rgba(fill_value, opacity * fill_opacity)
-        symbol_name = str(style.get("symbol", "circle"))
-        if symbol_name not in _SYMBOL_CODES:
-            raise UnsupportedSceneV3(f"Scene v12 does not support scatter symbol {symbol_name!r}")
-        stroke_default = (
-            color
-            if trace.kind in _STROKE_KINDS
-            or (
-                trace.kind == "scatter" and _SYMBOL_CODES[symbol_name] >= _SYMBOL_CODES["plus_line"]
-            )
-            else "transparent"
-        )
-        if trace.kind in _RIBBON_KINDS:
-            stroke_default = str(style.get("stroke", color))
-        elif trace.kind in _POLYFILL_KINDS:
-            stroke_default = str(style.get("stroke", "transparent"))
-        if trace.kind in _BAND_KINDS:
-            stroke_value = str(style.get("line_color", color))
-            stroke_alpha = opacity * stroke_opacity * line_opacity
-        else:
-            stroke_value = str(style.get("stroke", stroke_default))
-            stroke_alpha = opacity * stroke_opacity
-        stroke = _rgba(stroke_value, stroke_alpha)
-        width_value = style.get(
-            "stroke_width",
-            style.get(
-                "width",
-                style.get("line_width", 1.5 if trace.kind in _STROKE_KINDS else 0.0),
-            ),
-        )
-        stroke_width = float(width_value)
-        styles.append((fill, stroke, stroke_width))
-        style_ref = len(styles) - 1
-        diameter = (
-            float(trace.size_ch.constant)
-            if trace.kind == "scatter" and trace.size_ch is not None
-            else float(style.get("size", 4.0))
-        )
-        kind_code = _KIND_CODES[trace.kind]
-        if trace.name and figure.show_legend:
-            legend_kind = 0 if trace.kind == "scatter" else 1 if trace.kind in _STROKE_KINDS else 2
-            legend_entries.append(
-                (
-                    style_ref,
-                    legend_kind,
-                    _SYMBOL_CODES[symbol_name] if legend_kind == 0 else 0,
-                    str(trace.name),
-                )
-            )
-
-        if trace.kind in _RIBBON_KINDS:
-            if any(
-                value is None
-                for value in (trace.x0, trace.x1, trace.y0, trace.y1, trace.x, trace.y)
-            ):
-                raise ValueError("ribbon Scene v12 compilation requires six geometry columns")
-            x0s = np.asarray(trace.x0.values, dtype=np.float64)
-            x1s = np.asarray(trace.x1.values, dtype=np.float64)
-            source_lo = np.asarray(trace.y0.values, dtype=np.float64)
-            source_hi = np.asarray(trace.y1.values, dtype=np.float64)
-            target_lo = np.asarray(trace.x.values, dtype=np.float64)
-            target_hi = np.asarray(trace.y.values, dtype=np.float64)
-            if not (
-                len(x0s)
-                == len(x1s)
-                == len(source_lo)
-                == len(source_hi)
-                == len(target_lo)
-                == len(target_hi)
-            ):
-                raise UnsupportedSceneV3("Scene v12 ribbon columns must have equal length")
-            arrays = (x0s, x1s, source_lo, source_hi, target_lo, target_hi)
-            if any(not np.isfinite(column).all() for column in arrays):
-                raise UnsupportedSceneV3(
-                    "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
-                )
-            for band_index in range(len(x0s)):
-                stable_id = (int(trace.id) << 32) | band_index
-                run_start = len(kinds)
-                for start_y, end_y in (
-                    (source_hi[band_index], target_hi[band_index]),
-                    (source_lo[band_index], target_lo[band_index]),
-                ):
-                    kinds.append(3)
-                    stable_ids.append(stable_id)
-                    style_refs.append(style_ref)
-                    diameters.append(0.0)
-                    symbols.append(2)
-                    coordinates[0].append(float(x0s[band_index]))
-                    coordinates[1].append(float(start_y))
-                    coordinates[2].append(float(x1s[band_index]))
-                    coordinates[3].append(float(end_y))
-                expansion_runs.append((run_start, len(kinds), 4))
-            continue
-
-        if trace.kind in _POLYFILL_KINDS:
-            if any(
-                value is None
-                for value in (trace.x0, trace.y0, trace.x1, trace.y1, trace.x, trace.y)
-            ):
-                raise ValueError("triangle_mesh Scene v12 compilation requires six vertex columns")
-            x0s = np.asarray(trace.x0.values, dtype=np.float64)
-            y0s = np.asarray(trace.y0.values, dtype=np.float64)
-            x1s = np.asarray(trace.x1.values, dtype=np.float64)
-            y1s = np.asarray(trace.y1.values, dtype=np.float64)
-            x2s = np.asarray(trace.x.values, dtype=np.float64)
-            y2s = np.asarray(trace.y.values, dtype=np.float64)
-            if not (len(x0s) == len(y0s) == len(x1s) == len(y1s) == len(x2s) == len(y2s)):
-                raise UnsupportedSceneV3("Scene v12 triangle_mesh columns must have equal length")
-            arrays = (x0s, y0s, x1s, y1s, x2s, y2s)
-            if any(not np.isfinite(column).all() for column in arrays):
-                raise UnsupportedSceneV3(
-                    "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
-                )
-            for tri_index in range(len(x0s)):
-                stable_id = (int(trace.id) << 32) | tri_index
-                for px, py in (
-                    (float(x0s[tri_index]), float(y0s[tri_index])),
-                    (float(x1s[tri_index]), float(y1s[tri_index])),
-                    (float(x2s[tri_index]), float(y2s[tri_index])),
-                ):
-                    kinds.append(4)
-                    stable_ids.append(stable_id)
-                    style_refs.append(style_ref)
-                    diameters.append(0.0)
-                    symbols.append(0)
-                    coordinates[0].append(px)
-                    coordinates[1].append(py)
-                    coordinates[2].append(0.0)
-                    coordinates[3].append(0.0)
-            continue
-
-        if trace.kind in _HEXBIN_KINDS:
-            if trace.x is None or trace.y is None:
-                raise ValueError("hexbin Scene v12 compilation requires center columns")
-            xv = np.asarray(trace.x.values, dtype=np.float64)
-            yv = np.asarray(trace.y.values, dtype=np.float64)
-            if len(xv) != len(yv):
-                raise UnsupportedSceneV3("Scene v12 hexbin columns must have equal length")
-            if not np.isfinite(xv).all() or not np.isfinite(yv).all():
-                raise UnsupportedSceneV3(
-                    "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
-                )
-            dx, dy = _hexbin_pitch(style)
-            for cell_index, (cx, cy) in enumerate(zip(xv, yv, strict=True)):
-                stable_id = (int(trace.id) << 32) | cell_index
-                for rx, ry in _HEXBIN_RING:
-                    kinds.append(4)
-                    stable_ids.append(stable_id)
-                    style_refs.append(style_ref)
-                    diameters.append(0.0)
-                    symbols.append(0)
-                    coordinates[0].append(float(cx) + rx * dx)
-                    coordinates[1].append(float(cy) + ry * dy)
-                    coordinates[2].append(0.0)
-                    coordinates[3].append(0.0)
-            continue
-
-        if trace.kind in _HEATMAP_KINDS:
-            rows, cols = _heatmap_shape(trace)
-            values = _heatmap_grid_values(trace)
-            if values.size != rows * cols:
-                raise UnsupportedSceneV3("Scene v12 heatmap grid must match rows x cols")
-            if not np.isfinite(values).all():
-                raise UnsupportedSceneV3(
-                    "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
-                )
-            x0, x1, y0, y1 = _heatmap_extent(trace)
-            dx = (x1 - x0) / cols
-            dy = (y1 - y0) / rows
-            # Regular lattice only: reconstruct uniform cells from the stored
-            # range endpoints. Irregular/categorical spacing stays compatibility.
-            for row in range(rows):
-                for col in range(cols):
-                    kinds.append(2)
-                    stable_ids.append(int(trace.id))
-                    style_refs.append(style_ref)
-                    diameters.append(0.0)
-                    symbols.append(0)
-                    coordinates[0].append(x0 + col * dx)
-                    coordinates[1].append(y0 + row * dy)
-                    coordinates[2].append(x0 + (col + 1) * dx)
-                    coordinates[3].append(y0 + (row + 1) * dy)
-            continue
-
-        if trace.kind in _BAND_KINDS:
-            xv, yv, base = _band_columns(trace)
-            if not (np.isfinite(xv).all() and np.isfinite(yv).all() and np.isfinite(base).all()):
-                raise UnsupportedSceneV3(
-                    "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
-                )
-            stroke_perimeter = style.get("stroke_perimeter", False)
-            if not isinstance(stroke_perimeter, bool):
-                raise UnsupportedSceneV3("Scene v25 area stroke_perimeter must be a boolean")
-            outline = 2 if stroke_perimeter else 1
-            for index in range(len(xv)):
-                kinds.append(3)
-                stable_ids.append(int(trace.id))
-                style_refs.append(style_ref)
-                diameters.append(0.0)
-                symbols.append(outline)
-                coordinates[0].append(float(xv[index]))
-                coordinates[1].append(float(yv[index]))
-                coordinates[2].append(float(xv[index]))
-                coordinates[3].append(float(base[index]))
-            continue
-
-        if trace.kind in _RECT_KINDS:
-            arrays = _rect_columns(trace)
-            if any(not np.isfinite(source).all() for source in arrays):
-                raise UnsupportedSceneV3(
-                    "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
-                )
-            for index in range(len(arrays[0])):
-                kinds.append(kind_code)
-                stable_ids.append(int(trace.id))
-                style_refs.append(style_ref)
-                diameters.append(0.0)
-                symbols.append(0)
-                for destination, source in zip(coordinates, arrays, strict=True):
-                    destination.append(float(source[index]))
-            continue
-
-        if trace.kind in _SEGMENT_KINDS:
-            arrays = _segment_columns(trace)
-            if any(not np.isfinite(source).all() for source in arrays):
-                raise UnsupportedSceneV3(
-                    "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
-                )
-            x0s, y0s, x1s, y1s = arrays
-            for index in range(len(x0s)):
-                # Unique stable id per segment so polyline runs stay disconnected.
-                stable_id = (int(trace.id) << 32) | index
-                for x_value, y_value in (
-                    (float(x0s[index]), float(y0s[index])),
-                    (float(x1s[index]), float(y1s[index])),
-                ):
-                    kinds.append(1)
-                    stable_ids.append(stable_id)
-                    style_refs.append(style_ref)
-                    diameters.append(0.0)
-                    symbols.append(0)
-                    coordinates[0].append(x_value)
-                    coordinates[1].append(y_value)
-                    coordinates[2].append(0.0)
-                    coordinates[3].append(0.0)
-            continue
-
-        xv = np.asarray(trace.x.values, dtype=np.float64)
-        yv = np.asarray(trace.y.values, dtype=np.float64)
-        where = style.get("step")
-        if where is not None:
-            if trace.kind != "line":
-                raise UnsupportedSceneV3("Scene v12 step expansion applies only to line traces")
-            if where not in {"pre", "post", "mid"}:
-                raise UnsupportedSceneV3(f"Scene v12 does not support step mode {where!r}")
-        if not np.isfinite(xv).all() or not np.isfinite(yv).all():
-            raise UnsupportedSceneV3(
-                "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
-            )
-        run_start = len(kinds)
-        for index in range(len(xv)):
-            kinds.append(kind_code)
-            stable_ids.append(int(trace.id))
-            style_refs.append(style_ref)
-            diameters.append(diameter if trace.kind == "scatter" else 0.0)
-            symbols.append(_SYMBOL_CODES[symbol_name] if trace.kind == "scatter" else 0)
-            coordinates[0].append(float(xv[index]))
-            coordinates[1].append(float(yv[index]))
-            coordinates[2].append(0.0)
-            coordinates[3].append(0.0)
-        if where is not None:
-            expansion_runs.append((run_start, len(kinds), {"pre": 1, "mid": 2, "post": 3}[where]))
-
-    # Scene v12's bounded primary-annotation subset is represented by ordinary
-    # canonical records with a reserved stable-id namespace. Rust therefore
-    # remains the sole owner of scale projection, clipping, painter lowering,
-    # SVG/raster order and marker geometry; hosts only coerce authored values.
-    annotation_prefix = 0x5859000000000000
-    x_domain = tuple(float(value) for value in figure._range("x"))
-    y_domain = tuple(float(value) for value in figure._range("y"))
-
-    def annotation_number(values: dict[str, Any], key: str, default: Any, label: str) -> float:
-        raw = values.get(key, default)
-        if (
-            raw is None
-            or isinstance(raw, (bool, np.bool_))
-            or (isinstance(raw, str) and not raw.strip())
-        ):
-            raise ValueError(f"Scene v12 annotation {label} must be numeric")
-        try:
-            value = float(raw)
-        except (TypeError, ValueError) as error:
-            raise ValueError(f"Scene v12 annotation {label} must be numeric") from error
-        return value
-
-    def annotation_color(style: dict[str, Any], key: str, default: str, label: str) -> str:
-        raw = style.get(key, default)
-        if not isinstance(raw, str) or not raw.strip():
-            raise ValueError(f"Scene v12 annotation {label} must be a nonempty CSS color")
-        return raw
-
-    # XYAL v2 carries only literal RGBA paint with the annotation identity and
-    # text. Rust still owns the anchor, clipping, typography, and paint order.
-    attached_labels: list[
-        tuple[
-            int,
-            tuple[int, int, int, int],
-            tuple[int, int, int, int] | None,
-            tuple[tuple[int, int, int, int], float] | None,
-            str,
-        ]
-    ] = []
-    straight_arrows: list[
-        tuple[int, float, float, float, float, tuple[int, int, int, int], float, float]
-    ] = []
-    # XYAC v1 is deliberately a compact host framing seam.  Every layout,
-    # projection, label placement, connector shape, clipping, and paint-order
-    # decision remains in Rust.  One row is little-endian
-    # ``dddd4sddB3xI`` (60 fixed bytes) followed by its UTF-8 text:
-    # data x/y, pixel dx/dy, literal RGBA, opacity, width, anchor code
-    # (start=0/middle=1/end=2), three required zero bytes, and u32 text
-    # byte length. Rust derives the callout identity from record order.
-    cartesian_callouts: list[
-        tuple[
-            float,
-            float,
-            float,
-            float,
-            tuple[int, int, int, int],
-            float,
-            float,
-            int,
-            bytes,
-            tuple[int, int, int, int] | None,
-            tuple[tuple[int, int, int, int], float] | None,
-        ]
-    ] = []
-    wrapped_annotations: list[dict[str, Any]] = []
+    # Hosts pack XYTC, XYTA, XYNM, XYCL, XYAF, XYCF, polar, and XYFS; Rust owns
+    # compile, attach, sidecars, rows, annotation facts, style sidecars,
+    # splice, XYCC/extras packing, viewport/axis scalars, assembled encode,
+    # and the figure-compile support probe (ABI 165). Earlier ABIs 148–164
+    # remain available for tests. Empty XYFS skips the probe.
+    x_span = tuple(float(value) for value in figure._range("x"))
+    y_span = tuple(float(value) for value in figure._range("y"))
+    x_domain = (x_span[0], x_span[1])
+    y_domain = (y_span[0], y_span[1])
+    annotation_facts = bytearray()
     for annotation_index, annotation in enumerate(annotations):
-        kind = annotation.get("kind")
-        if kind in {"text", "callout"} and "wrap" in annotation:
-            wrapped_annotations.append(annotation)
-            continue
-        if kind == "text":
-            continue
-        if kind == "arrow":
-            if annotation.get("text") not in (None, "") or annotation.get("class_name") not in (
-                None,
-                "",
-            ):
-                raise UnsupportedSceneV3("Scene arrows do not encode text or class_name")
-            style = dict(annotation.get("style") or {})
-            bad = sorted(
-                key
-                for key, value in style.items()
-                if key not in {"color", "opacity", "width"} and value is not None
-            )
-            if bad:
-                raise UnsupportedSceneV3(f"Scene arrow style does not encode {bad!r}")
-            opacity = annotation_number(style, "opacity", 1.0, "arrow opacity")
-            width_value = annotation_number(style, "width", 1.5, "arrow width")
-            if (
-                not np.isfinite(opacity)
-                or not 0 <= opacity <= 1
-                or not np.isfinite(width_value)
-                or width_value <= 0
-            ):
-                raise ValueError("Scene arrow opacity must be in [0, 1] and width must be positive")
-            straight_arrows.append(
-                (
-                    annotation_prefix | (5 << 40) | annotation_index,
-                    annotation_number(annotation, "x0", None, "arrow x0"),
-                    annotation_number(annotation, "y0", None, "arrow y0"),
-                    annotation_number(annotation, "x1", None, "arrow x1"),
-                    annotation_number(annotation, "y1", None, "arrow y1"),
-                    _rgba(annotation_color(style, "color", "#667085", "arrow color"), 1.0),
-                    opacity,
-                    width_value,
-                )
-            )
-            continue
-        if kind == "callout":
-            if annotation.get("class_name") not in (None, ""):
-                raise UnsupportedSceneV3("Scene callouts do not encode class_name")
-            value = annotation.get("text")
-            if not isinstance(value, str) or not value or "\0" in value:
-                raise UnsupportedSceneV3("Scene callouts require nonempty NUL-free text")
-            encoded = value.encode("utf-8")
-            if len(encoded) > 4096:
-                raise UnsupportedSceneV3("Scene callouts are limited to 4,096 UTF-8 bytes")
-            style = dict(annotation.get("style") or {})
-            bad = sorted(
-                key
-                for key, style_value in style.items()
-                if key
-                not in {
-                    "color",
-                    "opacity",
-                    "width",
-                    "label_background",
-                    "label_border_color",
-                    "label_border_width",
-                }
-                and style_value is not None
-            )
-            if bad:
-                raise UnsupportedSceneV3(f"Scene callout style does not encode {bad!r}")
-            opacity = annotation_number(style, "opacity", 1.0, "callout opacity")
-            width_value = annotation_number(style, "width", 1.5, "callout width")
-            if (
-                not np.isfinite(opacity)
-                or not 0 <= opacity <= 1
-                or not np.isfinite(width_value)
-                or width_value <= 0
-            ):
-                raise ValueError(
-                    "Scene callout opacity must be in [0, 1] and width must be positive"
-                )
-            anchor = annotation.get("anchor", "start")
-            anchor_code = {"start": 0, "middle": 1, "end": 2}.get(anchor)
-            if anchor_code is None:
-                raise UnsupportedSceneV3("Scene callout anchor must be start, middle, or end")
-            x = annotation_number(annotation, "x", None, "callout x")
-            y = annotation_number(annotation, "y", None, "callout y")
-            dx = annotation_number(annotation, "dx", 36.0, "callout dx")
-            dy = annotation_number(annotation, "dy", -30.0, "callout dy")
-            if not all(np.isfinite(number) for number in (x, y, dx, dy)):
-                raise ValueError("Scene callout coordinates and offsets must be finite")
-            label_background = style.get("label_background")
-            label_fill = (
-                _rgba(
-                    annotation_color(style, "label_background", "", "callout label background"), 1.0
-                )
-                if label_background is not None
-                else None
-            )
-            border_color = style.get("label_border_color")
-            border_width = style.get("label_border_width")
-            if (border_color is None) != (border_width is None):
-                raise UnsupportedSceneV3("Scene v23 label border requires color and width")
-            label_border = (
-                (
-                    _rgba(
-                        annotation_color(style, "label_border_color", "", "callout label border"),
-                        1.0,
-                    ),
-                    annotation_number(
-                        style, "label_border_width", None, "callout label border width"
-                    ),
-                )
-                if border_color is not None
-                else None
-            )
-            if label_border is not None and (
-                not np.isfinite(label_border[1]) or label_border[1] <= 0
-            ):
-                raise ValueError("Scene v23 label border width must be positive and finite")
-            if label_border is not None and label_fill is None:
-                raise UnsupportedSceneV3("Scene v23 label border requires label_background")
-            cartesian_callouts.append(
-                (
-                    x,
-                    y,
-                    dx,
-                    dy,
-                    _rgba(annotation_color(style, "color", "#344054", "callout color"), 1.0),
-                    opacity,
-                    width_value,
-                    anchor_code,
-                    encoded,
-                    label_fill,
-                    label_border,
-                )
-            )
-            continue
-        if kind not in {"rule", "band", "marker"}:
-            raise UnsupportedSceneV3(
-                f"Scene v12 annotations support rule, band, and unlabeled marker only; {kind!r} is deferred"
-            )
-        attached_text = annotation.get("text")
-        if attached_text not in (None, "") and (
-            not isinstance(attached_text, str) or "\0" in attached_text
-        ):
-            raise UnsupportedSceneV3("Scene v16 annotation labels require nonempty NUL-free text")
-        if annotation.get("class_name") not in (None, ""):
-            raise UnsupportedSceneV3("Scene v12 annotations do not encode class_name")
-        style = dict(annotation.get("style") or {})
-        allowed = {"color", "opacity"}
-        if attached_text not in (None, ""):
-            allowed |= {
-                "label_color",
-                "label_opacity",
-                "label_background",
-                "label_border_color",
-                "label_border_width",
-            }
-        if kind == "rule":
-            allowed.add("width")
-        elif kind == "marker":
-            allowed |= {"stroke_color", "stroke_width"}
-        unsupported_style = sorted(
-            key for key, value in style.items() if key not in allowed and value is not None
-        )
-        if unsupported_style:
-            raise UnsupportedSceneV3(
-                f"Scene v12 {kind} annotation style does not encode {unsupported_style!r}"
-            )
-        opacity = annotation_number(
-            style, "opacity", 0.14 if kind == "band" else 1.0, f"{kind} opacity"
-        )
-        if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
-            raise ValueError(f"Scene v12 {kind} annotation opacity must be finite and in [0, 1]")
-        color = annotation_color(
-            style, "color", "#64748b" if kind == "band" else "#667085", f"{kind} color"
-        )
-        fill = _rgba(color, opacity) if kind != "rule" else (0, 0, 0, 0)
-        stroke_color = annotation_color(style, "stroke_color", color, f"{kind} stroke color")
-        stroke = _rgba(stroke_color, opacity)
-        width_key = "width" if kind == "rule" else "stroke_width"
-        width_value = annotation_number(
-            style, width_key, 1.5 if kind != "band" else 0.0, f"{kind} width"
-        )
-        if not np.isfinite(width_value) or width_value < 0 or (kind == "rule" and width_value == 0):
-            raise ValueError(f"Scene v12 {kind} annotation width must be finite and nonnegative")
-        styles.append((fill, stroke, width_value))
-        style_ref = len(styles) - 1
-        tag = (
-            4
-            if kind == "band" and annotation.get("axis") == "y"
-            else {"rule": 1, "band": 2, "marker": 3}[kind]
-        )
-        stable_id = annotation_prefix | (tag << 40) | annotation_index
-        if attached_text not in (None, ""):
-            encoded_text = attached_text.encode("utf-8")
-            if len(encoded_text) > 4096:
-                raise UnsupportedSceneV3(
-                    "Scene v16 annotation labels are limited to 4,096 UTF-8 bytes"
-                )
-            label_opacity = annotation_number(style, "label_opacity", 1.0, f"{kind} label opacity")
-            if not np.isfinite(label_opacity) or not 0.0 <= label_opacity <= 1.0:
-                raise ValueError(
-                    f"Scene v16 {kind} annotation label opacity must be finite and in [0, 1]"
-                )
-            label_color = annotation_color(style, "label_color", "#667085", f"{kind} label color")
-            label_background = style.get("label_background")
-            label_fill = (
-                _rgba(
-                    annotation_color(style, "label_background", "", f"{kind} label background"), 1.0
-                )
-                if label_background is not None
-                else None
-            )
-            border_color = style.get("label_border_color")
-            border_width = style.get("label_border_width")
-            if (border_color is None) != (border_width is None):
-                raise UnsupportedSceneV3("Scene v23 label border requires color and width")
-            label_border = (
-                (
-                    _rgba(
-                        annotation_color(style, "label_border_color", "", f"{kind} label border"),
-                        1.0,
-                    ),
-                    annotation_number(
-                        style, "label_border_width", None, f"{kind} label border width"
-                    ),
-                )
-                if border_color is not None
-                else None
-            )
-            if label_border is not None and (
-                not np.isfinite(label_border[1]) or label_border[1] <= 0
-            ):
-                raise ValueError("Scene v23 label border width must be positive and finite")
-            if label_border is not None and label_fill is None:
-                raise UnsupportedSceneV3("Scene v23 label border requires label_background")
-            attached_labels.append(
-                (
-                    stable_id,
-                    _rgba(label_color, label_opacity),
-                    label_fill,
-                    label_border,
-                    attached_text,
-                )
-            )
-
-        def append_record(
-            record_kind: int,
-            a: float,
-            b: float,
-            c: float,
-            d: float,
-            *,
-            size: float = 0.0,
-            symbol: int = 0,
-            annotation_kind: str = kind,
-            annotation_stable_id: int = stable_id,
-            annotation_style_ref: int = style_ref,
-        ) -> None:
-            values = (a, b, c, d, size)
-            if not all(np.isfinite(value) for value in values):
-                raise ValueError(f"Scene v12 {annotation_kind} annotation geometry must be finite")
-            kinds.append(record_kind)
-            stable_ids.append(annotation_stable_id)
-            style_refs.append(annotation_style_ref)
-            diameters.append(size)
-            symbols.append(symbol)
-            for destination, value in zip(coordinates, (a, b, c, d), strict=True):
-                destination.append(float(value))
-
-        if kind == "rule":
-            axis_name = annotation.get("axis")
-            if axis_name not in {"x", "y"}:
-                raise ValueError("Scene v12 rule annotation axis must be 'x' or 'y'")
-            value = annotation_number(annotation, "value", None, f"{kind} value")
-            if axis_name == "x":
-                append_record(1, value, y_domain[0], 0.0, 0.0)
-                append_record(1, value, y_domain[1], 0.0, 0.0)
-            else:
-                append_record(1, x_domain[0], value, 0.0, 0.0)
-                append_record(1, x_domain[1], value, 0.0, 0.0)
-        elif kind == "band":
-            axis_name = annotation.get("axis")
-            if axis_name not in {"x", "y"}:
-                raise ValueError("Scene v12 band annotation axis must be 'x' or 'y'")
-            start = annotation_number(annotation, "start", None, f"{kind} start")
-            end = annotation_number(annotation, "end", None, f"{kind} end")
-            if axis_name == "x":
-                append_record(2, start, y_domain[0], end, y_domain[1])
-            else:
-                append_record(2, x_domain[0], start, x_domain[1], end)
-        else:
-            symbol_name = str(annotation.get("symbol", "circle"))
-            if symbol_name not in _SYMBOL_CODES:
-                raise UnsupportedSceneV3(
-                    f"Scene v12 does not support marker symbol {symbol_name!r}"
-                )
-            size = annotation_number(annotation, "size", 8.0, f"{kind} size")
-            if not np.isfinite(size) or size <= 0:
-                raise ValueError("Scene v12 marker annotation size must be finite and positive")
-            append_record(
-                0,
-                annotation_number(annotation, "x", None, f"{kind} x"),
-                annotation_number(annotation, "y", None, f"{kind} y"),
-                0.0,
-                0.0,
-                size=size,
-                symbol=_SYMBOL_CODES[symbol_name],
-            )
-
+        annotation_facts.extend(_pack_xyaf(annotation, annotation_index))
     w = int(width if width is not None else figure.width)
     h = int(height if height is not None else figure.height)
-    fill_rgba = [channel for fill, _, _ in styles for channel in fill]
-    stroke_rgba = [channel for _, stroke, _ in styles for channel in stroke]
-    stroke_width = [value for _, _, value in styles]
-    expansion_modes = [0] * len(kinds)
-    for start, end, mode in expansion_runs:
-        expansion_modes[start:end] = [mode] * (end - start)
-    kind_codes = {"linear": 0, "log": 1, "symlog": 2}
-
-    def axis(axis_id: str, stable_id: int) -> tuple[int, int, float, float, float, bool]:
-        scale = figure._axis_scale(axis_id)
-        options = figure.axis_options[axis_id]
-        return (
-            stable_id,
-            kind_codes[scale],
-            *figure._range(axis_id),
-            float(options.get("constant") or 1.0),
-            options.get("nonpositive", "clip") == "mask",
-        )
-
-    x_axis = axis("x", 1)
-    y_axis = axis("y", 2)
-    title = str(figure.title or "")
-    x_label = str(figure.x_label or figure.axis_options.get("x", {}).get("label") or "")
-    y_label = str(figure.y_label or figure.axis_options.get("y", {}).get("label") or "")
-    if margins is None:
-        authored = None
-        if getattr(figure, "padding", None) is not None:
-            pad = figure.padding
-            if isinstance(pad, (list, tuple)) and len(pad) == 4:
-                authored = (float(pad[0]), float(pad[1]), float(pad[2]), float(pad[3]))
-        left, right, top, bottom = _native.scene_plot_layout(
-            viewport=(w, h),
-            x_axis=x_axis[1:],
-            y_axis=y_axis[1:],
-            title=title,
-            x_label=x_label,
-            y_label=y_label,
-            padding=authored,
-            colorbar_side=("bottom" if colorbar_input[8] & 1 else "right")
-            if colorbar_input
-            else None,
-            x_format=None
-            if figure.axis_options["x"].get("tick_labels") is not None
-            else figure.axis_options["x"].get("format"),
-            y_format=None
-            if figure.axis_options["y"].get("tick_labels") is not None
-            else figure.axis_options["y"].get("format"),
-        )
-    else:
-        left, right, top, bottom = margins
-    text_annotations = [
-        annotation
-        for annotation in annotations
-        if annotation.get("kind") == "text" and "wrap" not in annotation
-    ]
-    if len(cartesian_callouts) > 128:
-        raise UnsupportedSceneV3("Scene callouts are limited to 128 entries")
-    text_rows: list[
-        tuple[
-            float,
-            float,
-            tuple[int, int, int, int],
-            tuple[int, int, int, int] | None,
-            tuple[tuple[int, int, int, int], float] | None,
-            bytes,
-        ]
-    ] = []
-    for annotation in text_annotations:
-        value = annotation.get("text")
-        if not isinstance(value, str) or not value or "\0" in value:
-            raise UnsupportedSceneV3("Scene v16 text annotations require nonempty NUL-free text")
-        encoded = value.encode("utf-8")
-        if len(encoded) > 4096:
-            raise UnsupportedSceneV3("Scene v16 text annotations are limited to 4,096 UTF-8 bytes")
-        x = annotation_number(annotation, "x", None, "text x")
-        y = annotation_number(annotation, "y", None, "text y")
-        style = dict(annotation.get("style") or {})
-        if set(style) - {
-            "color",
-            "opacity",
-            "label_background",
-            "label_border_color",
-            "label_border_width",
-        }:
-            raise UnsupportedSceneV3(
-                "Scene v23 text annotations support only color, opacity, label_background, and label_border_*"
-            )
-        rgba = _rgba(
-            annotation_color(style, "color", "#667085", "text color"),
-            annotation_number(style, "opacity", 1.0, "text opacity"),
-        )
-        label_background = style.get("label_background")
-        label_fill = (
-            _rgba(annotation_color(style, "label_background", "", "text label background"), 1.0)
-            if label_background is not None
-            else None
-        )
-        border_color, border_width = (
-            style.get("label_border_color"),
-            style.get("label_border_width"),
-        )
-        if (border_color is None) != (border_width is None):
-            raise UnsupportedSceneV3("Scene v23 label border requires color and width")
-        label_border = (
-            (
-                _rgba(annotation_color(style, "label_border_color", "", "text label border"), 1.0),
-                annotation_number(style, "label_border_width", None, "text label border width"),
-            )
-            if border_color is not None
-            else None
-        )
-        if label_border is not None and (not np.isfinite(label_border[1]) or label_border[1] <= 0):
-            raise ValueError("Scene v23 label border width must be positive and finite")
-        if label_border is not None and label_fill is None:
-            raise UnsupportedSceneV3("Scene v23 label border requires label_background")
-        text_rows.append((x, y, rgba, label_fill, label_border, encoded))
-    xyat_v3 = any(label_border is not None for _, _, _, _, label_border, _ in text_rows)
-    xyat_v2 = any(label_fill is not None for _, _, _, label_fill, _, _ in text_rows)
-    xyat = bytearray(
-        b"XYAT"
-        + (3 if xyat_v3 else 2 if xyat_v2 else 1).to_bytes(4, "little")
-        + len(text_rows).to_bytes(4, "little")
-    )
-    for x, y, rgba, label_fill, label_border, encoded in text_rows:
-        xyat.extend(struct.pack("<dd4s", x, y, bytes(rgba)))
-        if xyat_v3 or xyat_v2:
-            xyat.extend(bytes(label_fill or (0, 0, 0, 0)))
-        if xyat_v3:
-            xyat.extend(bytes(label_border[0] if label_border else (0, 0, 0, 0)))
-            xyat.extend(struct.pack("<d", label_border[1] if label_border else 0.0))
-        xyat.extend(struct.pack("<I", len(encoded)))
-        xyat.extend(encoded)
-    xyal_v4 = any(label_border is not None for _, _, _, label_border, _ in attached_labels)
-    xyal_v3 = any(label_fill is not None for _, _, label_fill, _, _ in attached_labels)
-    xyal = bytearray(
-        b"XYAL"
-        + (4 if xyal_v4 else 3 if xyal_v3 else 2).to_bytes(4, "little")
-        + len(attached_labels).to_bytes(4, "little")
-    )
-    for stable_id, rgba, label_fill, label_border, value in attached_labels:
-        encoded = value.encode("utf-8")
-        xyal.extend(struct.pack("<Q4s", stable_id, bytes(rgba)))
-        if xyal_v4 or xyal_v3:
-            xyal.extend(bytes(label_fill or (0, 0, 0, 0)))
-        if xyal_v4:
-            xyal.extend(bytes(label_border[0] if label_border else (0, 0, 0, 0)))
-            xyal.extend(struct.pack("<d", label_border[1] if label_border else 0.0))
-        xyal.extend(struct.pack("<I", len(encoded)))
-        xyal.extend(encoded)
-    xyar = bytearray(
-        b"XYAR" + (1).to_bytes(4, "little") + len(straight_arrows).to_bytes(4, "little")
-    )
-    for stable_id, x0, y0, x1, y1, rgba, opacity, width_value in straight_arrows:
-        xyar.extend(
-            struct.pack("<Qdddd4sdd", stable_id, x0, y0, x1, y1, bytes(rgba), opacity, width_value)
-        )
-    xyac_v3 = any(label_border is not None for *_, label_border in cartesian_callouts)
-    xyac_v2 = any(label_fill is not None for *_, label_fill, _ in cartesian_callouts)
-    xyac = bytearray(
-        b"XYAC"
-        + (3 if xyac_v3 else 2 if xyac_v2 else 1).to_bytes(4, "little")
-        + len(cartesian_callouts).to_bytes(4, "little")
-    )
-    for (
-        x,
-        y,
-        dx,
-        dy,
-        rgba,
-        opacity,
-        width_value,
-        anchor_code,
-        encoded,
-        label_fill,
-        label_border,
-    ) in cartesian_callouts:
-        xyac.extend(
-            struct.pack(
-                "<dddd4sddB3xI",
-                x,
-                y,
-                dx,
-                dy,
-                bytes(rgba),
-                opacity,
-                width_value,
-                anchor_code,
-                len(encoded),
-            )
-        )
-        if xyac_v3 or xyac_v2:
-            xyac.extend(bytes(label_fill or (0, 0, 0, 0)))
-        if xyac_v3:
-            xyac.extend(bytes(label_border[0] if label_border else (0, 0, 0, 0)))
-            xyac.extend(struct.pack("<d", label_border[1] if label_border else 0.0))
-        xyac.extend(encoded)
-    xyaw = bytearray(
-        b"XYAW" + (1).to_bytes(4, "little") + len(wrapped_annotations).to_bytes(4, "little")
-    )
-    for annotation in wrapped_annotations:
-        kind = annotation["kind"]
-        if annotation.get("class_name") not in (None, ""):
-            raise UnsupportedSceneV3("Scene wrapped annotations do not encode class_name")
-        text = annotation.get("text")
-        if not isinstance(text, str) or not text or "\0" in text or "\r" in text:
-            raise UnsupportedSceneV3("Scene wrapped annotations require nonempty NUL-free LF text")
-        encoded = text.encode("utf-8")
-        if len(encoded) > 4096:
-            raise UnsupportedSceneV3("Scene wrapped annotations are limited to 4,096 UTF-8 bytes")
-        style = dict(annotation.get("style") or {})
-        if style.get("color") is None:
-            style.pop("color", None)
-        allowed = {
-            "color",
-            "opacity",
-            "label_background",
-            "label_border_color",
-            "label_border_width",
-        }
-        bad = sorted(
-            key for key, value in style.items() if key not in allowed and value is not None
-        )
-        if bad:
-            raise UnsupportedSceneV3(f"Scene wrapped annotations do not encode {bad!r}")
-        x, y = (
-            annotation_number(annotation, "x", None, "wrapped x"),
-            annotation_number(annotation, "y", None, "wrapped y"),
-        )
-        dx = annotation_number(annotation, "dx", 36.0 if kind == "callout" else 0.0, "wrapped dx")
-        dy = annotation_number(annotation, "dy", -30.0 if kind == "callout" else 0.0, "wrapped dy")
-        wrap = annotation_number(annotation, "wrap", None, "wrapped width")
-        if not all(np.isfinite(value) for value in (x, y, dx, dy, wrap)) or wrap < 0:
-            raise ValueError(
-                "Scene wrapped annotation coordinates and wrap must be finite; wrap must be nonnegative"
-            )
-        anchor = {"start": 0, "middle": 1, "end": 2}.get(annotation.get("anchor", "start"))
-        if anchor is None:
-            raise UnsupportedSceneV3(
-                "Scene wrapped annotation anchor must be start, middle, or end"
-            )
-        opacity = annotation_number(style, "opacity", 1.0, "wrapped opacity")
-        if not np.isfinite(opacity) or not 0 <= opacity <= 1:
-            raise ValueError("Scene wrapped annotation opacity must be in [0, 1]")
-        rgba = _rgba(
-            annotation_color(
-                style, "color", "#344054" if kind == "callout" else "#667085", "wrapped color"
+    try:
+        return _native.scene_encode_product(
+            compile_facts=_pack_xytc(figure),
+            attach_facts=_pack_xyta(figure),
+            names=_pack_xynm(figure),
+            columns=_pack_xycl(figure),
+            annotation_facts=bytes(annotation_facts),
+            style_ref_base=len(figure.traces),
+            x_domain=x_domain,
+            y_domain=y_domain,
+            chrome_facts=_pack_chrome_facts(
+                figure,
+                width=w,
+                height=h,
+                margins=margins,
+                colorbar_ok=not colorbar_unsupported,
             ),
-            opacity,
+            polar=_pack_polar_scene_input(figure),
+            figure_support=_pack_figure_support(figure, annotations, colorbar_unsupported),
         )
-        fill = (
-            _rgba(annotation_color(style, "label_background", "", "wrapped background"), 1.0)
-            if style.get("label_background") is not None
-            else (0, 0, 0, 0)
-        )
-        border_color, border_width = (
-            style.get("label_border_color"),
-            style.get("label_border_width"),
-        )
-        if (border_color is None) != (border_width is None):
-            raise UnsupportedSceneV3("Scene wrapped label border requires color and width")
-        border_rgba = (
-            _rgba(annotation_color(style, "label_border_color", "", "wrapped border"), 1.0)
-            if border_color is not None
-            else (0, 0, 0, 0)
-        )
-        border = annotation_number(style, "label_border_width", 0.0, "wrapped border width")
-        if border_color is not None and (not np.isfinite(border) or border <= 0):
-            raise ValueError("Scene wrapped label border width must be positive and finite")
-        if border_color is not None and fill[3] == 0:
-            raise UnsupportedSceneV3("Scene wrapped label border requires label_background")
-        xyaw.extend(
-            struct.pack(
-                "<ddddd4s4s4sdBB2xI",
-                x,
-                y,
-                dx,
-                dy,
-                wrap,
-                bytes(rgba),
-                bytes(fill),
-                bytes(border_rgba),
-                border,
-                kind == "callout",
-                anchor,
-                len(encoded),
-            )
-        )
-        xyaw.extend(encoded)
-    xyad_v3 = bool(wrapped_annotations)
-    framed_annotations = bytearray(
-        b"XYAD"
-        + (3 if xyad_v3 else 2).to_bytes(4, "little")
-        + len(xyat).to_bytes(4, "little")
-        + len(xyal).to_bytes(4, "little")
-        + len(xyar).to_bytes(4, "little")
-        + len(xyac).to_bytes(4, "little")
-    )
-    if xyad_v3:
-        framed_annotations.extend(len(xyaw).to_bytes(4, "little"))
-    framed_annotations.extend(xyat)
-    framed_annotations.extend(xyal)
-    framed_annotations.extend(xyar)
-    framed_annotations.extend(xyac)
-    if xyad_v3:
-        framed_annotations.extend(xyaw)
-    return _native.scene_batch_encode(
-        viewport=(w, h),
-        margins=(left, right, top, bottom),
-        x_axis=x_axis,
-        y_axis=y_axis,
-        kinds=kinds,
-        stable_ids=stable_ids,
-        style_refs=style_refs,
-        fill_rgba=fill_rgba,
-        stroke_rgba=stroke_rgba,
-        stroke_width=stroke_width,
-        diameter=diameters,
-        symbols=symbols,
-        expansion_modes=expansion_modes,
-        x0=coordinates[0],
-        y0=coordinates[1],
-        x1=coordinates[2],
-        y1=coordinates[3],
-        title=title,
-        x_label=x_label,
-        y_label=y_label,
-        chrome_style=_scene_chrome_style(figure),
-        x_major_ticks=figure.axis_options["x"].get("tick_values"),
-        x_tick_labels=figure.axis_options["x"].get("tick_labels"),
-        x_format=figure.axis_options["x"].get("format"),
-        x_minor_ticks=figure.axis_options["x"].get("minor_tick_values") or (),
-        y_major_ticks=figure.axis_options["y"].get("tick_values"),
-        y_tick_labels=figure.axis_options["y"].get("tick_labels"),
-        y_format=figure.axis_options["y"].get("format"),
-        y_minor_ticks=figure.axis_options["y"].get("minor_tick_values") or (),
-        legend_input=_legend_input(figure, legend_entries, styles),
-        colorbar_input=colorbar_input,
-        authored_text_annotations=bytes(framed_annotations)
-        if text_annotations
-        or attached_labels
-        or straight_arrows
-        or cartesian_callouts
-        or wrapped_annotations
-        else b"",
-    )
+    except _native.SceneFigureSupportError as error:
+        raise UnsupportedSceneV3(str(error)) from error
+    except _native.SceneTraceCompileError as error:
+        _raise_trace_compile(error, figure)
+    except _native.SceneTraceAttachError as error:
+        _raise_trace_attach(error, figure)
+    except _native.SceneTraceSidecarsError as error:
+        _raise_trace_sidecars(error)
+    except _native.SceneTraceRowsError as error:
+        _raise_trace_rows(error)
+    except _native.SceneAnnotationFactsError as error:
+        raise UnsupportedSceneV3(str(error)) from error
+    except _native.SceneStyleSidecarsError as error:
+        if error.code == -2:
+            raise ValueError("invalid scene style sidecar facts version") from error
+        raise ValueError("invalid scene style sidecar packing") from error
+    except _native.SceneAnnotationSpliceError as error:
+        _raise_annotation_splice(error)
+    except _native.SceneEncodeAssembledError as error:
+        raise ValueError("invalid canonical scene batch") from error
+    except ValueError as error:
+        message = str(error)
+        if message.startswith(("Scene v12 ", "Scene v19 ")):
+            raise UnsupportedSceneV3(message) from error
+        raise
 
 
 def figure_svg(figure: Any, **options: Any) -> str:
@@ -1661,35 +3148,410 @@ def public_static_export(
     width: int | None = None,
     height: int | None = None,
     scale: float = 1.0,
+    quality: int | None = None,
 ) -> bytes | None:
     """Render one supported public static format from the canonical Scene.
 
-    This is the only selection seam for the migrated public SVG/PNG/PDF
+    This is the only selection seam for the migrated public SVG/PNG/PDF/JPEG/WebP
     subset.  It returns ``None`` only after the explicit support predicate
     selects compatibility *before* Scene compilation.  Once selected, every
     compiler or consumer error propagates: it is never a request to retry a
-    compatibility renderer.
+    compatibility renderer. The router reuses the predicate's compiled batch
+    rather than compiling a second Scene for SVG, raster, or PDF consumers.
+    Format dispatch is ABI 164 ``scene_static_export``. Explicit Scene callers
+    still use ``figure_svg`` / ``figure_raster_commands``.
     """
-    if scene_export_support_reason(figure, width=width, height=height) is not None:
+    reason, scene = _public_scene_or_reason(figure, width=width, height=height)
+    if reason is not None or scene is None:
         return None
-    if format == "svg":
-        return figure_svg(figure, width=width, height=height).encode("utf-8")
-    if format == "png":
-        from . import kernels
+    w = int(width if width is not None else figure.width)
+    h = int(height if height is not None else figure.height)
+    width_px = max(1, int(round(w * float(scale))))
+    height_px = max(1, int(round(h * float(scale))))
+    return _native.scene_static_export(
+        scene,
+        format,
+        scale=scale,
+        width=width_px,
+        height=height_px,
+        quality=90 if quality is None else int(quality),
+    )
 
-        commands = figure_raster_commands(figure, width=width, height=height, scale=scale)
-        w = int(width if width is not None else figure.width)
-        h = int(height if height is not None else figure.height)
-        return kernels.rasterize_png(
-            commands,
-            max(1, int(round(w * float(scale)))),
-            max(1, int(round(h * float(scale)))),
+
+def _significant_scene_axis_keys(options: dict[str, Any]) -> list[str]:
+    return [str(key) for key, value in options.items() if value not in (None, False, [], {})]
+
+
+def _pack_polar_scene_input(figure: Any) -> bytes:
+    """Pack XYPL v1 polar authoring. Rust owns disc layout from the plot rect."""
+    if getattr(figure, "coords", "cartesian") != "polar":
+        return b""
+    xa = figure.axis_options.get("x") or {}
+    ya = figure.axis_options.get("y") or {}
+    unit = str(xa.get("theta_unit", "radians"))
+    turn = 360.0 if unit == "degrees" else 2.0 * math.pi
+    sector = xa.get("sector") or (0.0, turn)
+    sector_start, sector_end = float(sector[0]), float(sector[1])
+    categories = tuple(xa.get("categories") or ())
+    r_lo, r_hi = figure._range("y")
+    origin = ya.get("r_origin")
+    r_origin = float("nan") if origin is None else float(origin)
+    hole = float(ya.get("hole") or 0.0)
+    scale_kind, constant, mask_nonpositive = _native._polar_r_scale(ya)
+    grid = str(xa.get("grid_shape", "circular"))
+    grid_shape = 1 if grid == "linear" else 0
+    return struct.pack(
+        "<4s5I2BHdddddddd",
+        b"XYPL",
+        1,
+        _native._polar_theta_unit(unit),
+        _native._polar_theta_direction(xa.get("theta_direction")),
+        len(categories),
+        scale_kind,
+        grid_shape,
+        1 if mask_nonpositive else 0,
+        0,
+        _native._polar_theta_zero(xa.get("theta_zero", "E")),
+        sector_start,
+        sector_end,
+        float(r_lo),
+        float(r_hi),
+        r_origin,
+        hole,
+        constant,
+    )
+
+
+def _pack_figure_support(
+    figure: Any,
+    annotations: list[Any],
+    colorbar_unsupported: bool,
+) -> bytes:
+    """Pack literal figure observations, axis keys, and per-trace allowlist flags.
+
+    Scene static SVG/PNG/PDF measure and paint DejaVu Sans (#288). Custom
+    ``font-family`` sets ``CUSTOM_FONT``; chart ``class_name`` / ``class_names``,
+    ``chrome_styles``, extra ``style`` keys, and annotation ``class_name`` set
+    ``BROWSER_CSS``. Rust reports the stable fail-closed diagnostics. Live
+    browser widgets still apply CSS outside this encoder.
+    """
+    flags = 0
+    if figure.coords != "cartesian":
+        flags |= 1 << 0
+    chrome_styles = getattr(figure, "chrome_styles", None) or {}
+    if any("font-family" in (style or {}) for style in chrome_styles.values()):
+        flags |= 1 << 1
+    if (
+        getattr(figure, "class_name", None)
+        or getattr(figure, "class_names", None)
+        or chrome_styles
+        or set(getattr(figure, "style", None) or {}) - {"background", "--chart-bg"}
+        or any(annotation.get("class_name") not in (None, "") for annotation in annotations)
+    ):
+        flags |= 1 << 2
+    if any(
+        _classify_ribbon_color2(trace) == "fail"
+        or (
+            getattr(trace, "color_ch", None) is not None
+            and (trace.color_ch.mode != "constant" or trace.color_ch.constant is None)
+            and not (str(getattr(trace, "kind", "") or "") == "scatter" and trace.use_density())
+            and not (
+                str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
+                and _hexbin_tessellates_cell_fills(trace)
+            )
         )
-    if format == "pdf":
-        from . import _pdf
+        or (
+            _fill_is_gradient_authoring((getattr(trace, "style", None) or {}).get("fill"))
+            and _admitted_fill_gradient(trace) is None
+        )
+        for trace in figure.traces
+    ):
+        flags |= 1 << 3
+    if colorbar_unsupported:
+        flags |= 1 << 4
+    if figure.extra_legends:
+        flags |= 1 << 5
+    if any(
+        annotation.get("kind") not in {"callout", "arrow", "text"}
+        and annotation.get("text") not in (None, "")
+        for annotation in annotations
+    ):
+        flags |= 1 << 7
+    traces = list(getattr(figure, "traces", None) or [])
+    payload = bytearray(b"XYFS")
+    payload.extend((2).to_bytes(4, "little"))
+    payload.extend(flags.to_bytes(4, "little"))
+    payload.extend(len(figure.axis_options).to_bytes(4, "little"))
+    payload.extend(len(traces).to_bytes(4, "little"))
+    for axis_id, options in figure.axis_options.items():
+        axis_code = 0 if axis_id == "x" else 1 if axis_id == "y" else 255
+        keys = _significant_scene_axis_keys(options)
+        payload.extend(bytes((axis_code, 0, 0, 0)))
+        payload.extend(len(keys).to_bytes(4, "little"))
+        _xyep_put_keys(payload, keys)
+    for trace in traces:
+        trace_flags, kind = _figure_trace_support_flags(trace, flags & 1 != 0)
+        encoded = str(kind).encode("utf-8")[:32]
+        payload.extend(trace_flags.to_bytes(2, "little"))
+        payload.extend(bytes((len(encoded), 0)))
+        payload.extend((0).to_bytes(4, "little"))
+        payload.extend(encoded)
+    return bytes(payload)
 
-        return _pdf.svg_to_pdf(figure_svg(figure, width=width, height=height))
-    raise ValueError(f"Scene public static format must be svg, png, or pdf, got {format!r}")
+
+def _xyep_put_keys(buf: bytearray, keys: list[str]) -> None:
+    for key in keys:
+        encoded = str(key).encode("utf-8")
+        if len(encoded) > 256:
+            encoded = encoded[:256]
+        buf.extend(len(encoded).to_bytes(2, "little"))
+        buf.extend(encoded)
+
+
+def _xyep_column(trace: Any, name: str) -> Any:
+    return getattr(trace, name, None)
+
+
+def _xyep_len(column: Any) -> int:
+    return 0 if column is None else int(len(column.values))
+
+
+def _xyep_finite(column: Any) -> bool:
+    return column is not None and bool(np.isfinite(column.values).all())
+
+
+def _pack_public_export_support(
+    figure: Any,
+    *,
+    width: int | None = None,
+    height: int | None = None,
+) -> bytes:
+    """Pack authored XYEF facts; Rust owns the XYEP envelope (ABI 152)."""
+    flags = 0
+    if width is None and not isinstance(figure.width, int):
+        flags |= 1 << 0
+    if height is None and not isinstance(figure.height, int):
+        flags |= 1 << 1
+    if getattr(figure, "chrome_styles", None):
+        flags |= 1 << 2
+    if getattr(figure, "title_options", None):
+        flags |= 1 << 3
+    style_keys = [str(key) for key in (getattr(figure, "style", None) or {})]
+    legend_keys = [str(key) for key in (getattr(figure, "legend_options", None) or {})]
+    colorbar_keys = [str(key) for key in (getattr(figure, "colorbar_options", None) or {})]
+    annotations = list(getattr(figure, "annotations", None) or [])
+    traces = list(getattr(figure, "traces", None) or [])
+    payload = bytearray(b"XYEF")
+    payload.extend((1).to_bytes(4, "little"))
+    payload.extend(flags.to_bytes(4, "little"))
+    payload.extend(len(style_keys).to_bytes(4, "little"))
+    payload.extend(len(legend_keys).to_bytes(4, "little"))
+    payload.extend(len(colorbar_keys).to_bytes(4, "little"))
+    payload.extend(len(figure.axis_options).to_bytes(4, "little"))
+    payload.extend(len(annotations).to_bytes(4, "little"))
+    payload.extend(len(traces).to_bytes(4, "little"))
+    _xyep_put_keys(payload, style_keys)
+    _xyep_put_keys(payload, legend_keys)
+    _xyep_put_keys(payload, colorbar_keys)
+    for axis_id, options in figure.axis_options.items():
+        axis_code = 0 if axis_id == "x" else 1 if axis_id == "y" else 255
+        resolved = figure._axis_kind(axis_id)
+        resolved_code = {"linear": 0, "time": 1, "category": 2}.get(resolved, 255)
+        authored = options.get("type")
+        authored_code = {None: 0, "linear": 1, "log": 2, "symlog": 3}.get(authored, 255)
+        side = options.get("side")
+        side_code = {None: 0, "bottom": 1, "left": 2, "top": 3, "right": 4}.get(side, 255)
+        keys = [str(key) for key, value in options.items() if value not in (None, False)]
+        payload.extend(
+            bytes(
+                (
+                    axis_code,
+                    resolved_code,
+                    authored_code,
+                    int(options.get("domain") is not None),
+                    side_code,
+                    0,
+                )
+            )
+        )
+        payload.extend(len(keys).to_bytes(2, "little"))
+        _xyep_put_keys(payload, keys)
+    for annotation in annotations:
+        if not isinstance(annotation, dict):
+            payload.extend(struct.pack("<B3sHH", 1, b"", 0, 0))
+            continue
+        kind_b = str(annotation.get("kind") or "").encode("utf-8")[:256]
+        fields = [str(key) for key in annotation]
+        payload.extend(struct.pack("<B3sHH", 0, b"", len(kind_b), len(fields)))
+        payload.extend(kind_b)
+        _xyep_put_keys(payload, fields)
+    for trace_index, trace in enumerate(traces):
+        style = getattr(trace, "style", None) or {}
+        opacity = float(style.get("opacity", 1.0))
+        if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
+            raise ValueError("trace opacity must be finite and in [0, 1]")
+        prev = traces[trace_index - 1] if trace_index else None
+        prev2 = traces[trace_index - 2] if trace_index >= 2 else None
+        prev3 = traces[trace_index - 3] if trace_index >= 3 else None
+        xv = _xyep_column(trace, "x")
+        yv = _xyep_column(trace, "y")
+        x0 = _xyep_column(trace, "x0")
+        y0 = _xyep_column(trace, "y0")
+        x1 = _xyep_column(trace, "x1")
+        y1 = _xyep_column(trace, "y1")
+        obs = 0
+        if xv is not None:
+            obs |= _XYEF_OBS_HAS_X
+        if yv is not None:
+            obs |= _XYEF_OBS_HAS_Y
+        if _xyep_finite(xv):
+            obs |= _XYEF_OBS_X_FINITE
+        if _xyep_finite(yv):
+            obs |= _XYEF_OBS_Y_FINITE
+        if x0 is not None:
+            obs |= _XYEF_OBS_HAS_X0
+        if y0 is not None:
+            obs |= _XYEF_OBS_HAS_Y0
+        if x1 is not None:
+            obs |= _XYEF_OBS_HAS_X1
+        if y1 is not None:
+            obs |= _XYEF_OBS_HAS_Y1
+        if _xyep_finite(x0):
+            obs |= _XYEF_OBS_X0_FINITE
+        if _xyep_finite(y0):
+            obs |= _XYEF_OBS_Y0_FINITE
+        if _xyep_finite(x1):
+            obs |= _XYEF_OBS_X1_FINITE
+        if _xyep_finite(y1):
+            obs |= _XYEF_OBS_Y1_FINITE
+        if style.get("joined_fill"):
+            obs |= _XYEF_OBS_JOINED_FILL
+        heatmap_rows = heatmap_cols = heatmap_values = 0
+        if trace.kind == "heatmap":
+            style_truecolor = bool(style.get("truecolor"))
+            if style_truecolor:
+                obs |= _XYEF_OBS_HEATMAP_TRUECOLOR
+            if getattr(trace, "rgba_grid", None) is not None:
+                obs |= _XYEF_OBS_HEATMAP_RGBA_GRID
+            try:
+                heatmap_rows, heatmap_cols = _heatmap_shape(trace)
+                values = _heatmap_grid_values(trace)
+                _heatmap_extent(trace)
+                obs |= _XYEF_OBS_HEATMAP_SHAPE_OK
+                obs |= _XYEF_OBS_HEATMAP_EXTENT_OK
+                heatmap_values = int(values.size)
+                if np.isfinite(values).all():
+                    obs |= _XYEF_OBS_HEATMAP_FINITE
+            except (UnsupportedSceneV3, ValueError, TypeError):
+                heatmap_rows = heatmap_cols = heatmap_values = 0
+        if style.get("stroke_width") is not None and style.get("stroke") is None:
+            obs |= _XYEF_OBS_STROKE_WIDTH_ONLY
+        if (
+            prev is not None
+            and xv is not None
+            and yv is not None
+            and _xyep_column(prev, "x1") is not None
+            and _xyep_column(prev, "y1") is not None
+            and np.array_equal(xv.values, prev.x1.values)
+            and np.array_equal(yv.values, prev.y1.values)
+        ):
+            obs |= _XYEF_OBS_COMPANION_XY_MATCH
+        if prev is not None and trace.x_axis == prev.x_axis and trace.y_axis == prev.y_axis:
+            obs |= _XYEF_OBS_COMPANION_AXES_MATCH
+        symbol = style.get("symbol", "circle")
+        if not isinstance(symbol, str):
+            obs |= _XYEF_OBS_SYMBOL_NON_STRING
+            symbol = ""
+        if (
+            trace.kind == "scatter"
+            and getattr(figure, "coords", "cartesian") == "cartesian"
+            and trace.use_density()
+        ):
+            obs |= _XYEF_OBS_DENSITY_BLIT
+        role = style.get("role")
+        role_s = "" if role is None else str(role)
+        reduce = style.get("reduce")
+        reduce_s = "" if reduce is None else str(reduce)
+        try:
+            hex_dx, hex_dy = (
+                _hexbin_pitch(style) if trace.kind == "hexbin" else (float("nan"), float("nan"))
+            )
+        except UnsupportedSceneV3:
+            hex_dx = hex_dy = float("nan")
+        style_keys_tr = [str(key) for key, value in style.items() if value is not None]
+        kind_b = str(trace.kind).encode("utf-8")[:256]
+        step_b = str(style.get("step") or "").encode("utf-8")[:256]
+        role_b = role_s.encode("utf-8")[:256]
+        symbol_b = (symbol.encode("utf-8") if isinstance(symbol, str) else b"")[:256]
+        reduce_b = reduce_s.encode("utf-8")[:256]
+        prev_b = (str(prev.kind).encode("utf-8") if prev is not None else b"")[:256]
+        prev2_b = (str(prev2.kind).encode("utf-8") if prev2 is not None else b"")[:256]
+        prev3_b = (str(prev3.kind).encode("utf-8") if prev3 is not None else b"")[:256]
+        payload.extend(
+            struct.pack(
+                "<I6I3I10H4x2d",
+                obs,
+                _xyep_len(xv),
+                _xyep_len(yv),
+                _xyep_len(x0),
+                _xyep_len(y0),
+                _xyep_len(x1),
+                _xyep_len(y1),
+                heatmap_rows,
+                heatmap_cols,
+                heatmap_values,
+                len(style_keys_tr),
+                len(kind_b),
+                len(step_b),
+                len(role_b),
+                len(symbol_b),
+                len(reduce_b),
+                len(prev_b),
+                len(prev2_b),
+                len(prev3_b),
+                0,
+                hex_dx,
+                hex_dy,
+            )
+        )
+        payload.extend(kind_b)
+        payload.extend(step_b)
+        payload.extend(role_b)
+        payload.extend(symbol_b)
+        payload.extend(reduce_b)
+        payload.extend(prev_b)
+        payload.extend(prev2_b)
+        payload.extend(prev3_b)
+        _xyep_put_keys(payload, style_keys_tr)
+    return _native.scene_pack_public_export(bytes(payload))
+
+
+def _public_scene_or_reason(
+    figure: Any,
+    *,
+    width: int | None = None,
+    height: int | None = None,
+) -> tuple[str | None, bytes | None]:
+    """Compile the public Scene once, or return the support diagnostic.
+
+    The predicate must still compile so it cannot disagree with the encoder.
+    Product routers reuse the compiled batch instead of encoding a second time.
+    """
+    envelope = _pack_public_export_support(figure, width=width, height=height)
+    reason = _native.scene_public_export_reason(envelope)
+    if reason:
+        return reason, None
+    try:
+        scene = figure_scene(figure, width=width, height=height)
+    except UnsupportedSceneV3 as unsupported:
+        if str(unsupported) == "invalid canonical scene plot layout":
+            return "XYG_SCENE_UNSUPPORTED_VIEWPORT", None
+        return str(unsupported), None
+    except ValueError as exc:
+        if str(exc) == "invalid canonical scene plot layout":
+            return "XYG_SCENE_UNSUPPORTED_VIEWPORT", None
+        raise
+    return None, scene
 
 
 def scene_export_support_reason(
@@ -1706,453 +3568,12 @@ def scene_export_support_reason(
     ``XYG_SCENE_UNSUPPORTED_*`` diagnostic (or the compiler's own bounded
     message) so callers can log or surface an actionable reason for the fallback.
 
-    This is deliberately narrower than :func:`figure_scene`: the explicit
-    Scene API can exercise a migrating record before the public compatibility
-    renderer's complete output contract is modeled. The bounded literal
-    Cartesian geometry subset routes all constant built-in scatter symbols,
-    polylines, ordinary Rects, disconnected segment/error-bar/stem endpoint
-    pairs, bounded fill-only triangle meshes, constant-style Cartesian hexbin
-    PolyFill cells, constant-style Cartesian heatmap Rects, and bounded solid ribbons
-    expanded by Rust in axis-transformed space.
-    The proven literal Cartesian chrome slice also routes automatically:
-    backgrounds, title, authored axes/ticks,
-    primary legend, literal colorbar, and the existing bounded primary
-    Cartesian annotation family: unoffset plain text, labelled rules/bands/markers,
-    unlabeled straight arrows, ordinary callouts, and bounded wrapped text or
-    callouts. Input errors (for example a non-finite opacity) are not a
-    routing question and propagate unchanged.
+    Hosts pack authored XYEF facts (viewport flags, keys, axis codes, and
+    column observations). Rust owns XYEP layout, kind/step/annotation codes,
+    flag derivation, allowlists, check order, the public PolyFill group budget,
+    and diagnostic wording. After that preflight the predicate still compiles
+    the Scene so it cannot disagree with the encoder. ``public_static_export``
+    and facet SVG/raster reuse that compiled batch rather than compiling a second
+    Scene.
     """
-    # The compatibility exporter resolves fluid authoring dimensions at its
-    # document boundary.  Scene records require concrete viewport dimensions;
-    # keep fluid figures on that documented path unless a static override is
-    # supplied by the caller.
-    if (width is None and not isinstance(figure.width, int)) or (
-        height is None and not isinstance(figure.height, int)
-    ):
-        return "XYG_SCENE_UNSUPPORTED_FLUID_VIEWPORT"
-    # This public slice is strictly literal. The Scene compiler owns all
-    # accepted layout/default decisions after this preflight, but themes,
-    # custom fonts, CSS/classes, and host-resolved styling remain compatibility
-    # behavior until separately proven.
-    style = getattr(figure, "style", None) or {}
-    if any(key not in {"background", "--chart-bg"} for key in style) or getattr(
-        figure, "chrome_styles", None
-    ):
-        return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-    if getattr(figure, "title_options", None):
-        return "XYG_SCENE_UNSUPPORTED_PUBLIC_TEXT"
-    annotations = list(getattr(figure, "annotations", None) or [])
-    # The core accepts these exact literal records today. Keep a host-side
-    # shape allowlist: rotation, rich content, collision/layout directives,
-    # CSS classes, and future host-only fields must keep selecting the
-    # compatibility route until Scene models them. Field values, byte limits,
-    # finite geometry, label-box rules, and all projection/paint policy remain
-    # compiler/Rust validation below.
-    annotation_fields = {
-        "text": {"kind", "x", "y", "text", "dx", "dy", "anchor", "wrap", "style", "class_name"},
-        "rule": {"kind", "axis", "value", "text", "style", "class_name"},
-        "band": {"kind", "axis", "start", "end", "text", "style", "class_name"},
-        "marker": {
-            "kind",
-            "x",
-            "y",
-            "text",
-            "dx",
-            "dy",
-            "anchor",
-            "size",
-            "symbol",
-            "style",
-            "class_name",
-        },
-        "arrow": {"kind", "x0", "y0", "x1", "y1", "text", "style", "class_name"},
-        "callout": {"kind", "x", "y", "text", "dx", "dy", "anchor", "wrap", "style", "class_name"},
-    }
-    if any(
-        not isinstance(annotation, dict)
-        or annotation.get("kind") not in annotation_fields
-        or set(annotation) - annotation_fields[annotation["kind"]]
-        for annotation in annotations
-    ):
-        return "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
-    # XYAT v1 has no unwrapped text offset/anchor fields and XYAL derives a
-    # labelled marker's placement from the marker identity. Do not silently
-    # accept host layout values merely because the current compiler can omit
-    # them. Wrapped text is different: XYAW explicitly encodes those fields.
-    if any(
-        (annotation["kind"] == "marker" and {"dx", "dy", "anchor"} & set(annotation))
-        or (
-            annotation["kind"] == "text"
-            and "wrap" not in annotation
-            and {"dx", "dy", "anchor"} & set(annotation)
-        )
-        for annotation in annotations
-    ):
-        return "XYG_SCENE_UNSUPPORTED_PUBLIC_ANNOTATION"
-    legend = getattr(figure, "legend_options", None) or {}
-    if any(key not in {"loc", "title", "highlight", "toggle"} for key in legend):
-        return "XYG_SCENE_UNSUPPORTED_PUBLIC_LEGEND"
-    for _axis_id, options in figure.axis_options.items():
-        allowed_axis_keys = {
-            "type",
-            "constant",
-            "nonpositive",
-            "domain",
-            "label",
-            "side",
-            "tick_sides",
-            "tick_label_sides",
-            "tick_values",
-            "tick_labels",
-            "minor_tick_values",
-            "style",
-            "minor_style",
-            "format",
-        }
-        if figure._axis_kind(_axis_id) != "linear" or options.get("type") not in {
-            None,
-            "linear",
-            "log",
-            "symlog",
-        }:
-            return "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
-        # ``Figure`` materializes a superset of legacy axis slots with None
-        # (and ``reverse=False``) defaults. They are not authored chrome and
-        # must not make an otherwise literal canonical axis fall back.
-        if any(
-            key not in allowed_axis_keys and value not in (None, False)
-            for key, value in options.items()
-        ):
-            return "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
-    colorbar = getattr(figure, "colorbar_options", None) or {}
-    if any(key not in {"domain", "stops", "ticks", "minor_ticks", "title"} for key in colorbar):
-        return "XYG_SCENE_UNSUPPORTED_PUBLIC_COLORBAR"
-    # This is the bounded literal geometry increment. Rust already owns the
-    # record semantics for ordinary polylines, rectangles, and disconnected
-    # endpoint pairs, so use those exact records for public static output too.
-    # Keep this deliberately narrower than the explicit ``to_scene`` seam: it
-    # does not bless generated palettes, density/LOD, gradients, rounded
-    # geometry, rich text, polar coordinates, or other migrating mark families
-    # merely because an internal record happens to exist.
-    public_kinds = {
-        "scatter",
-        "line",
-        "bar",
-        "column",
-        "histogram",
-        "violin",
-        "box",
-        "box_whisker",
-        "box_median",
-        "segments",
-        "errorbar",
-        "stem",
-        "area",
-        "error_band",
-        "ribbon",
-        "triangle_mesh",
-        "hexbin",
-        "heatmap",
-    }
-    public_style_keys = {
-        "scatter": {"color", "opacity", "symbol", "size", "role", "stroke", "stroke_width"},
-        # A literal ``step`` is expanded before Scene packing; Rust then owns
-        # the resulting polyline, clipping, raster, and SVG policy.
-        "line": {"color", "opacity", "width", "step"},
-        # Literal fill/stroke are represented in the batch-local style table.
-        # ``_reject_rect_extras`` below keeps gradients, non-zero radii, and
-        # wedges outside this public route.
-        "bar": {
-            "color",
-            "opacity",
-            "role",
-            "orientation",
-            "fill",
-            "stroke",
-            "stroke_width",
-            "corner_radius",
-            "wedge_gap",
-        },
-        "column": {
-            "color",
-            "opacity",
-            "role",
-            "orientation",
-            "fill",
-            "stroke",
-            "stroke_width",
-            "corner_radius",
-            "wedge_gap",
-        },
-        "histogram": {
-            "color",
-            "opacity",
-            "role",
-            "cumulative",
-            "density",
-            "fill",
-            "stroke",
-            "stroke_width",
-            "corner_radius",
-        },
-        "violin": {"color", "opacity", "role", "fill", "stroke", "stroke_width"},
-        "box": {"color", "opacity", "role", "stroke", "stroke_width", "box_orientation"},
-        "box_whisker": {"color", "opacity", "width", "role"},
-        "box_median": {"color", "opacity", "width", "role"},
-        "segments": {"color", "opacity", "width", "role"},
-        "errorbar": {"color", "opacity", "width", "role"},
-        "stem": {"color", "opacity", "width", "role"},
-        "area": {
-            "color",
-            "opacity",
-            "line_color",
-            "line_width",
-            "line_opacity",
-            "stroke_perimeter",
-            "fill",
-            "fill_opacity",
-            "stroke_opacity",
-        },
-        "error_band": {
-            "color",
-            "opacity",
-            "line_width",
-            "line_opacity",
-            "role",
-            "fill",
-            "fill_opacity",
-            "stroke_opacity",
-        },
-        "ribbon": {
-            "opacity",
-            "role",
-            "stroke",
-            "stroke_width",
-            "fill_opacity",
-            "stroke_opacity",
-        },
-        # The first public PolyFill slice is deliberately fill-only. Authored
-        # outlines and component alpha remain compatibility behavior until the
-        # Scene packing seam preserves their complete style contract.
-        "triangle_mesh": {"opacity", "role"},
-        # Constant-style Cartesian hexbin: native reduce plus the lattice pitch.
-        # Metric colormaps, custom reducers, and extra opacity/stroke keys stay
-        # on the compatibility exporters.
-        "hexbin": {"color", "opacity", "hex_dx", "hex_dy", "role", "reduce"},
-        # Constant-style Cartesian heatmap: literal fill plus the stored regular
-        # lattice extent. Metric colormaps, truecolor RGBA, and irregular
-        # spacing stay on the compatibility exporters.
-        "heatmap": {"color", "opacity", "role", "domain", "x_range", "y_range"},
-    }
-    has_literal_geometry = any(
-        trace.kind
-        in {
-            "line",
-            "bar",
-            "column",
-            "histogram",
-            "violin",
-            "box",
-            "box_whisker",
-            "box_median",
-            "segments",
-            "errorbar",
-            "stem",
-            "area",
-            "error_band",
-            "ribbon",
-            "triangle_mesh",
-            "hexbin",
-            "heatmap",
-        }
-        for trace in figure.traces
-    )
-    # The literal geometry route is intentionally anchored to an explicit
-    # Cartesian viewport. The compatibility writer's implicit domains and
-    # alternate axis-side label offsets remain separate byte/pixel contracts.
-    if has_literal_geometry:
-        for axis_id in ("x", "y"):
-            axis = figure.axis_options.get(axis_id, {})
-            default_side = "bottom" if axis_id == "x" else "left"
-            if axis.get("domain") is None or axis.get("side") not in (None, default_side):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
-    public_triangle_mesh_count = 0
-    for trace_index, trace in enumerate(figure.traces):
-        opacity = float((getattr(trace, "style", None) or {}).get("opacity", 1.0))
-        if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
-            raise ValueError("trace opacity must be finite and in [0, 1]")
-        x_column = getattr(trace, "x", None)
-        # ABI 100 binned ECDF can emit the zero anchor plus one occupied right
-        # edge per bin. Keep the general authored-column bound at 10,000 while
-        # admitting exactly 10,001 compact Step points; Scene expansion remains
-        # independently bounded by its canonical output budgets.
-        point_limit = (
-            10_001
-            if trace.kind == "line" and (trace.style or {}).get("step") in {"pre", "post", "mid"}
-            else 10_000
-        )
-        if x_column is not None and len(x_column.values) > point_limit:
-            return "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
-        if trace.kind in _BAND_KINDS and (x_column is None or len(x_column.values) < 2):
-            # SVG/raster/browser Band topology requires a polygon run. Keep
-            # singleton/empty compatibility semantics until Scene defines it.
-            return "XYG_SCENE_UNSUPPORTED_PUBLIC_BAND"
-        if trace.kind not in public_kinds:
-            return "XYG_SCENE_UNSUPPORTED_PUBLIC_MARK"
-        if trace.kind in _SEGMENT_KINDS:
-            # A public disconnected primitive is exactly four finite endpoint
-            # columns.  ``figure_scene`` performs the same authoritative
-            # validation; this shape check prevents a future host-only trace
-            # form from being selected merely because it reuses a kind name.
-            endpoint_columns = (trace.x0, trace.y0, trace.x1, trace.y1)
-            if any(column is None for column in endpoint_columns):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS"
-            endpoint_lengths = {len(column.values) for column in endpoint_columns}
-            if len(endpoint_lengths) != 1 or next(iter(endpoint_lengths), 0) > 10_000:
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_SEGMENTS"
-            accepted_roles = {
-                "segments": {"segments"},
-                "errorbar": {"y-errorbar", "x-errorbar"},
-                "stem": {"stem"},
-                "box_whisker": {"box-whisker"},
-                "box_median": {"box-median"},
-            }[trace.kind]
-            if (trace.style or {}).get("role") not in accepted_roles:
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-        if trace.kind in {"violin", "box"}:
-            rect_columns = (trace.x0, trace.y0, trace.x1, trace.y1)
-            if any(column is None for column in rect_columns):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_MARK"
-            lengths = {len(column.values) for column in rect_columns}
-            if len(lengths) != 1 or next(iter(lengths), 0) > 10_000:
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
-            if (trace.style or {}).get("role") != trace.kind:
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-        if trace.kind in _RIBBON_KINDS and (trace.style or {}).get("role") != "ribbon":
-            return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-        if trace.kind in _POLYFILL_KINDS:
-            mesh_columns = (trace.x0, trace.y0, trace.x1, trace.y1, trace.x, trace.y)
-            if any(column is None for column in mesh_columns):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
-            mesh_lengths = {len(column.values) for column in mesh_columns}
-            mesh_count = next(iter(mesh_lengths), 0)
-            public_triangle_mesh_count += mesh_count
-            if (
-                len(mesh_lengths) != 1
-                or public_triangle_mesh_count > _MAX_PUBLIC_TRIANGLE_MESHES
-                or any(not np.isfinite(column.values).all() for column in mesh_columns)
-            ):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
-            mesh_style = trace.style or {}
-            if mesh_style.get("role") != "triangle-mesh" or mesh_style.get("joined_fill"):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-        if trace.kind in _HEXBIN_KINDS:
-            if trace.x is None or trace.y is None or len(trace.x.values) != len(trace.y.values):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_MARK"
-            cell_count = len(trace.x.values)
-            public_triangle_mesh_count += cell_count
-            if (
-                cell_count > _MAX_PUBLIC_TRIANGLE_MESHES
-                or public_triangle_mesh_count > _MAX_PUBLIC_TRIANGLE_MESHES
-                or not np.isfinite(trace.x.values).all()
-                or not np.isfinite(trace.y.values).all()
-            ):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
-            hex_style = trace.style or {}
-            if hex_style.get("role") != "hexbin" or hex_style.get("reduce") not in _HEXBIN_REDUCES:
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-            try:
-                _hexbin_pitch(hex_style)
-            except UnsupportedSceneV3:
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-        if trace.kind in _HEATMAP_KINDS:
-            if _heatmap_uses_colormap(trace):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-            try:
-                rows, cols = _heatmap_shape(trace)
-                values = _heatmap_grid_values(trace)
-                _heatmap_extent(trace)
-            except (UnsupportedSceneV3, ValueError):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_MARK"
-            cell_count = rows * cols
-            if (
-                cell_count > _MAX_PUBLIC_HEATMAP_CELLS
-                or values.size != cell_count
-                or not np.isfinite(values).all()
-            ):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
-            if (trace.style or {}).get("role") != "heatmap":
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-        # Generated companion scatters are accepted only in their exact
-        # canonical sequence: stem endpoints, or bounded Rust-positioned box
-        # outliers after whisker/body/median records.
-        if trace.kind == "scatter" and (role := (trace.style or {}).get("role")) is not None:
-            if trace.x is None or trace.y is None or len(trace.x.values) != len(trace.y.values):
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-            if role == "stem-marker":
-                if (
-                    trace_index == 0
-                    or figure.traces[trace_index - 1].kind != "stem"
-                    or not np.array_equal(trace.x.values, figure.traces[trace_index - 1].x1.values)
-                    or not np.array_equal(trace.y.values, figure.traces[trace_index - 1].y1.values)
-                ):
-                    return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-            elif role == "box-outlier":
-                if (
-                    trace_index < 3
-                    or [item.kind for item in figure.traces[trace_index - 3 : trace_index]]
-                    != ["box_whisker", "box", "box_median"]
-                    or len(trace.x.values) > 10_000
-                    or not np.isfinite(trace.x.values).all()
-                    or not np.isfinite(trace.y.values).all()
-                    or trace.x_axis != figure.traces[trace_index - 1].x_axis
-                    or trace.y_axis != figure.traces[trace_index - 1].y_axis
-                ):
-                    return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-            else:
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-        if trace.kind == "scatter" and (trace.style or {}).get("symbol", "circle") not in (
-            _SYMBOL_CODES
-        ):
-            # Custom marker paths/glyphs and data-driven symbol channels remain
-            # compatibility behavior. The fixed built-in vocabulary is fully
-            # represented by the canonical Scene record.
-            return "XYG_SCENE_UNSUPPORTED_PUBLIC_SYMBOL"
-        if (
-            trace.kind == "scatter"
-            and (trace.style or {}).get("stroke_width") is not None
-            and (trace.style or {}).get("stroke") is None
-        ):
-            # Width-only scatter authoring is a match-fill channel. Keep that
-            # semantic on the compatibility renderer until Scene represents
-            # it explicitly rather than inferring paint in the host router.
-            return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-        if any(
-            value is not None and key not in public_style_keys[trace.kind]
-            for key, value in (getattr(trace, "style", None) or {}).items()
-        ):
-            return "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
-    try:
-        scene = figure_scene(figure, width=width, height=height)
-    except UnsupportedSceneV3 as unsupported:
-        return str(unsupported)
-    except ValueError as exc:
-        # A valid public export can request a viewport smaller than the
-        # bounded Scene chrome can contain.  Treat that as an explicit routing
-        # exception before a Scene batch exists; other invalid inputs remain
-        # failures and must never select compatibility rendering.
-        if str(exc) == "invalid canonical scene plot layout":
-            return "XYG_SCENE_UNSUPPORTED_VIEWPORT"
-        raise
-    if public_triangle_mesh_count:
-        # A PolyFill face is one Rust painter group. Ask the authoritative
-        # consumer as well as enforcing the face budget so a mixed figure near
-        # the boundary cannot pass preflight and then fragment past the shared
-        # descriptor limit.
-        try:
-            _native.scene_browser_painter(scene)
-        except ValueError as exc:
-            if str(exc) == "invalid canonical scene for browser painter":
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
-            raise
-    return None
+    return _public_scene_or_reason(figure, width=width, height=height)[0]

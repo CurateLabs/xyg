@@ -141,26 +141,108 @@
     9,
     7
   ],
-  "expected_sha256": "de027c84f3d547c9aebec166e401c6e88393521977f6ba2ed25db3f731a489d6",
+  "expected_sha256": "32c7a344a465c721be49e8cf977e6ad6b7215e64231f2a61ad4b5d3297c31019",
   "authored_chrome_style_hex": "0a141eff28323c80010203ff000000000000000000002a4001030202010000000b0c0dff0e0f10c8111213ff14151664171819ff1a1b1cff0000000000000040000000000000f83f000000000000f43f0000000000002040000000000000e83f000000000000e03f000000000000084000030102010000000b0c0dff0e0f10c8111213ff14151664171819ff1a1b1cff0000000000000040000000000000f83f000000000000f43f0000000000002040000000000000e83f000000000000e03f0000000000000840",
-  "authored_chrome_sha256": "3c1a359dff6583cbfade44c2aee733247c9ae552a16ecad3da928d3b16102125",
+  "authored_chrome_sha256": "40ac3ab4d1235bc5931b56bb4d3514f7e522e55e37b5dc6f9921ee4c0192aee7",
   "figure_authored_chrome": {
-    "viewport": [100, 80],
-    "margins": [10, 10, 10, 10],
-    "style": {"background": "#0a141e", "--chart-bg": "#28323c"},
+    "viewport": [
+      100,
+      80
+    ],
+    "margins": [
+      10,
+      10,
+      10,
+      10
+    ],
+    "style": {
+      "background": "#0a141e",
+      "--chart-bg": "#28323c"
+    },
     "x_axis": {
-      "domain": [0, 1], "side": "top", "tick_sides": ["bottom", "top"], "tick_label_sides": ["top"],
-      "tick_values": [0, 0.5, 1], "minor_tick_values": [0.25, 0.75],
-      "style": {"axis_color": "#0b0c0d", "grid_color": "#0e0f10", "tick_color": "#111213", "axis_width": 2, "grid_width": 1.25, "tick_width": 2.5, "tick_length": 7},
-      "minor_style": {"grid_color": "#141516", "tick_color": "#171819", "grid_width": 0.5, "tick_width": 1.25, "tick_length": 3, "tick_direction": "in"}
+      "domain": [
+        0,
+        1
+      ],
+      "side": "top",
+      "tick_sides": [
+        "bottom",
+        "top"
+      ],
+      "tick_label_sides": [
+        "top"
+      ],
+      "tick_values": [
+        0,
+        0.5,
+        1
+      ],
+      "minor_tick_values": [
+        0.25,
+        0.75
+      ],
+      "style": {
+        "axis_color": "#0b0c0d",
+        "grid_color": "#0e0f10",
+        "tick_color": "#111213",
+        "axis_width": 2,
+        "grid_width": 1.25,
+        "tick_width": 2.5,
+        "tick_length": 7
+      },
+      "minor_style": {
+        "grid_color": "#141516",
+        "tick_color": "#171819",
+        "grid_width": 0.5,
+        "tick_width": 1.25,
+        "tick_length": 3,
+        "tick_direction": "in"
+      }
     },
     "y_axis": {
-      "domain": [0, 1], "side": "right", "tick_sides": ["left", "right"], "tick_label_sides": ["right"],
-      "tick_values": [], "minor_tick_values": [0.5],
-      "style": {"axis_color": "#0b0c0d", "grid_color": "#0e0f10", "tick_color": "#111213", "axis_width": 2, "grid_width": 1.25, "tick_width": 2.5, "tick_length": 7},
-      "minor_style": {"grid_color": "#141516", "tick_color": "#171819", "grid_width": 0.5, "tick_width": 1.25, "tick_length": 3, "tick_direction": "in"}
+      "domain": [
+        0,
+        1
+      ],
+      "side": "right",
+      "tick_sides": [
+        "left",
+        "right"
+      ],
+      "tick_label_sides": [
+        "right"
+      ],
+      "tick_values": [],
+      "minor_tick_values": [
+        0.5
+      ],
+      "style": {
+        "axis_color": "#0b0c0d",
+        "grid_color": "#0e0f10",
+        "tick_color": "#111213",
+        "axis_width": 2,
+        "grid_width": 1.25,
+        "tick_width": 2.5,
+        "tick_length": 7
+      },
+      "minor_style": {
+        "grid_color": "#141516",
+        "tick_color": "#171819",
+        "grid_width": 0.5,
+        "tick_width": 1.25,
+        "tick_length": 3,
+        "tick_direction": "in"
+      }
     },
-    "scatter": {"x": [0.5], "y": [0.5], "id": 0},
-    "sha256": "55b4eb00b508f47b1dee1862e9486036b53f8b97c1e4d1d102a2276380541e2e"
+    "scatter": {
+      "x": [
+        0.5
+      ],
+      "y": [
+        0.5
+      ],
+      "id": 0
+    },
+    "sha256": "11f0ceb1118181de9e537812be3ecf494b4a98d5919fa134de8ea572e59e9f90"
   }
 }

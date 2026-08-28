@@ -226,6 +226,53 @@ def test_histogram_edges_wide_range_and_resource_bound() -> None:
         kernels.histogram_edges(data, range=(0.0, 5_000.5), method="auto")
 
 
+def test_histogram_mark_edges_empty_auto_and_uniform_domain() -> None:
+    empty = kernels.histogram_mark_edges(np.array([], dtype=np.float64), method="auto")
+    assert len(empty) == 11
+    np.testing.assert_allclose(empty[0], 0.0)
+    np.testing.assert_allclose(empty[-1], 1.0)
+    ranged = kernels.histogram_mark_edges(np.array([np.nan]), range=(2.0, 4.0), method="sturges")
+    assert len(ranged) == 11
+    np.testing.assert_allclose(ranged[[0, -1]], [2.0, 4.0])
+    uniform = kernels.histogram_mark_edges(np.array([10.0, 10.0]), method="uniform", n_bins=4)
+    np.testing.assert_allclose(uniform[[0, -1]], [9.5, 10.5], atol=1e-12)
+
+
+def test_contour_levels_auto_and_authored() -> None:
+    auto = kernels.contour_levels(np.array([0.0, 10.0]), 3)
+    np.testing.assert_allclose(auto, [2.5, 5.0, 7.5], atol=1e-12)
+    authored = kernels.contour_levels(np.array([3.0, 1.0, 2.0]), 0)
+    np.testing.assert_array_equal(authored, [1.0, 2.0, 3.0])
+    with pytest.raises(ValueError, match="invalid contour_levels arguments"):
+        kernels.contour_levels(np.array([1.0, np.nan]), 0)
+
+
+def test_hexbin_groups_match_mean_reduce() -> None:
+    rng = np.random.default_rng(4)
+    x = rng.uniform(0, 1, 30)
+    y = rng.uniform(0, 1, 30)
+    c = rng.uniform(1, 5, 30)
+    cx, cy, metric, counts, dx, dy = kernels.hexbin(
+        x, y, gridsize=(6, 6), range=((0.0, 1.0), (0.0, 1.0)), mincnt=1, C=c, reduce="mean"
+    )
+    gcx, gcy, gcounts, starts, lengths, indices, gdx, gdy = kernels.hexbin_groups(
+        x, y, gridsize=(6, 6), range=((0.0, 1.0), (0.0, 1.0)), mincnt=1, C=c
+    )
+    np.testing.assert_allclose(gcx, cx, atol=1e-12)
+    np.testing.assert_allclose(gcy, cy, atol=1e-12)
+    np.testing.assert_allclose(gcounts, counts, atol=1e-12)
+    reduced = np.array(
+        [
+            float(np.mean(c[indices[int(s) : int(s) + int(n)]]))
+            for s, n in zip(starts, lengths, strict=True)
+        ],
+        dtype=np.float64,
+    )
+    np.testing.assert_allclose(reduced, metric, atol=1e-12)
+    assert dx == pytest.approx(gdx)
+    assert dy == pytest.approx(gdy)
+
+
 def test_binned_ecdf_native_contract() -> None:
     x, cumulative = kernels.binned_ecdf(np.array([0.0, 0.2, np.nan, 0.2, 0.9]), 4)
     np.testing.assert_allclose(x, [0.0, 0.225, 0.9], atol=1e-15)

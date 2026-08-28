@@ -855,6 +855,7 @@ fn encode_semantic_graph_scene_internal(
             font_size: GRAPH_LABEL_FONT_SIZE,
             rgba: candidate.rgba,
             anchor: 0,
+            rotation: 0.0,
             text: candidate.text,
         });
     }

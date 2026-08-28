@@ -251,18 +251,18 @@ for(const p of panels){{
             # overrides remain on the documented compatibility path: the
             # Scene public subset has not yet modeled that whole-grid contract.
             if background is None:
-                from . import _scene_v3
+                from . import _native, _scene_v3
 
-                if _scene_v3.scene_export_support_reason(fig) is None:
-                    svg = _scene_v3.figure_svg(fig)
-                    scene_clip = "xy-scene-plot"
-                    panel_clip = f"xy{i}-{scene_clip}"
-                    svg = svg.replace(f'id="{scene_clip}"', f'id="{panel_clip}"')
-                    svg = svg.replace(f"url(#{scene_clip})", f"url(#{panel_clip})")
-                    # This is an invariant of the Scene consumer vocabulary,
-                    # not a fallback boundary.  If it changes, fail instead
-                    # of emitting a composed document with cross-panel ids.
-                    if f'id="{scene_clip}"' in svg or f"url(#{scene_clip})" in svg:
+                reason, scene = _scene_v3._public_scene_or_reason(fig)
+                if reason is None and scene is not None:
+                    svg = _native.scene_svg(scene)
+                    # Scene SVG owns a closed id vocabulary (`xy-scene-plot`
+                    # clips plus `xy-scene-gN` linearGradient ids). Prefix the
+                    # whole vocabulary so sibling panels cannot cross-clip or
+                    # share gradient paints.
+                    svg = svg.replace('id="xy-scene-', f'id="xy{i}-xy-scene-')
+                    svg = svg.replace("url(#xy-scene-", f"url(#xy{i}-xy-scene-")
+                    if 'id="xy-scene-' in svg or "url(#xy-scene-" in svg:
                         raise RuntimeError("unexpected un-namespaced Scene SVG id")
                     panel_svgs.append(svg)
                     continue
@@ -298,13 +298,33 @@ for(const p of panels){{
 
         The shared pixel source for the raster formats. No grid title strip:
         the native rasterizer has no free-standing text path, so the composed
-        canvas is exactly panels + gaps."""
+        canvas is exactly panels + gaps. Independently supported panels with
+        no export-background override reuse the compiled public Scene raster
+        display list; background overrides and unsupported panels stay on the
+        compatibility payload path. Scene consumer errors never fall back.
+        """
         from . import _raster
 
         if scale <= 0 or not np.isfinite(scale):
             raise ValueError("facet export scale must be finite and positive")
         panel_images: list[np.ndarray] = []
         for fig in self.figures:
+            # A facet's public raster output is still a public static-export
+            # journey. Route an independently supported panel through its
+            # canonical Scene consumer rather than bypassing it merely because
+            # the outer grid owns placement. Background overrides remain on
+            # the documented compatibility path: the Scene public subset has
+            # not yet modeled that whole-grid contract.
+            if background is None:
+                from . import _native, _scene_v3
+
+                reason, scene = _scene_v3._public_scene_or_reason(fig)
+                if reason is None and scene is not None:
+                    commands = _native.scene_raster_commands(scene, scale)
+                    width_px = max(1, int(round(int(fig.width) * float(scale))))
+                    height_px = max(1, int(round(int(fig.height) * float(scale))))
+                    panel_images.append(_native.rasterize(commands, width_px, height_px))
+                    continue
             spec, blob, borrowed = _raster._export_payload(fig, None, None, background)
             image = render_raster(spec, blob, scale=scale, borrowed=borrowed)
             if isinstance(image, bytes):
@@ -426,13 +446,11 @@ for(const p of panels){{
                     compression_level=1,
                 )
             canvas = self._compose_rgba(scale, background)
+            from . import _native
+
             if fmt == "jpeg":
-                from . import _jpeg
-
-                return _jpeg.encode(export._flatten_alpha(canvas), quality=quality or 90)
-            from . import _webp
-
-            return _webp.encode(canvas)
+                return _native.encode_jpeg(export._flatten_alpha(canvas), quality=quality or 90)
+            return _native.encode_webp(canvas)
         # The background override must actually reach the captured document,
         # exactly as in the single-chart browser path — the CDP transparency
         # flag below only clears Chromium's default white page backdrop.

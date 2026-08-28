@@ -8,17 +8,32 @@ export {
   m4Indices,
   minMax,
   isSorted,
+  argsortStable,
   histogramUniform,
   histogramBins,
   histogramEdges,
+  histogramMarkEdges,
   hexbin,
   hexbinIngress,
+  hexbinGroups,
+  contourLevels,
+  legendNormalize,
+  legendBestLoc,
+  LEGEND_CANDIDATE_ORDER,
+  ribbonEdge,
+  ribbonPolygon,
+  monotoneTangents,
+  curveFlatten,
+  roundedRectPoly,
   violinDensity,
   boxStats,
   quantiles,
   weightedEcdf,
   binnedEcdf,
   heatmapRgba,
+  colormapRgba,
+  colormapRgbaCanonical,
+  colormapNamedStops,
   windRoseBins,
   contourfDensify,
   contourfBands,
@@ -155,7 +170,7 @@ export {
   composeGraph,
 } from "./graph.js";
 
-import { Figure, PayloadWriter, figure } from "./figure.js";
+import { Figure, PayloadWriter, figure, autoDomain } from "./figure.js";
 import { toHtml } from "./html.js";
 
 /** Stable engine entry — alias of {@link figure} for Node servers / VS Code hosts. */
@@ -163,9 +178,9 @@ export function createEngine(opts = {}) {
   return figure(opts);
 }
 
-export { Figure, PayloadWriter, figure, toHtml };
+export { Figure, PayloadWriter, figure, toHtml, autoDomain };
 
-export { axisTicks, figureSceneV3, scaleMap, sceneBatchEncode, sceneBrowserPainter, sceneRasterCommands, sceneSupportReason, sceneSvg, sceneVersion, scatterSceneSvg } from "./scene.js";
+export { axisTicks, tickFormat, tickLabelLayout, tickWindow, tickWindowFilter, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yTickLabelExtent, yAxisLeftRoom, xAxisTitleRoom, xTickLabelRoom, xTickLabelEdgeRooms, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatTitleRoom, compatXAxisSideRoom, compatColorbarExtra, compatRightYRoom, polarLegendRoom, polarLegendReserve, polarLabelRoom, polarLayout, polarProject, recutPolarPlot, tightLayoutSolve, encodeJpeg, encodePng, encodeWebp, figureSceneV3, scaleMap, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneRasterCommands, sceneStaticExport, sceneSupportReason, sceneSvg, sceneVersion, scatterSceneSvg, svgToPdf } from "./scene.js";
 
 export { runForceTicks, runForceTicks as runForceAnimation } from "./force_scheduler.js";
 
@@ -175,6 +190,7 @@ export { composeRibbon, attachRibbon } from "./marks/ribbon.js";
 
 export {
   parseCssColor,
+  cssColorRgba8,
   cssColorsToRgba8,
   resolveColorChannel,
 } from "./color.js";
@@ -265,12 +281,19 @@ export {
 
 export {
   bin2d,
+  densityEmitPlan,
+  densityFormatBinning,
   densityLogU8,
+  densityWasmEligible,
   marchingSquares,
   lodPlan,
   drillDecision,
+  payloadTier,
+  payloadVisibleNeeded,
+  payloadVisibleMask,
   shouldUseDensity,
   DENSITY_GRID,
+  DENSITY_OVERLAY_STATIC_RASTER,
   PYRAMID_MIN_POINTS,
   PYRAMID_BASE_DIM,
   PYRAMID_NO_RESCAN_ROWS,

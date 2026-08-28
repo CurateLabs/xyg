@@ -166,8 +166,8 @@ ceiling (1 / 1 / 4 / 31). The painter payload stays 473,712 B. Kernel
 Python and Node share these Scene v25 SHA-256 values for the constant-style
 Cartesian native hexbin fixture in `tests/fixtures/figure_scene_v3.json`. Mean
 and sum share bytes because constant paint ignores the metric and both
-reducers occupy the same lattice. Polar, custom reducers, metric colormaps,
-LOD over 1,024 groups, and rich style extras stay on compatibility exporters.
+reducers occupy the same lattice. Polar, custom reducers,
+LOD over the 1,024-group painter budget, and rich style extras stay on compatibility exporters.
 
 | reduce | Scene SHA-256 |
 |---|---|

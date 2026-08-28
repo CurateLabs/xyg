@@ -5,6 +5,7 @@
 //! Scene batch that native hosts encode through `xyg_scene_batch_encode`.
 
 pub use crate::typed_series_abi_generated::*;
+use xyg_engine::auto_domain;
 use xyg_engine::graph_style::{
     encode_compound_graph_scene, CompoundGraphSceneInput, SemanticGraphSceneInput,
     MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES, SEMANTIC_GRAPH_SCENE_VERSION,
@@ -450,8 +451,9 @@ fn consider_finite(value: f64, lo: &mut f64, hi: &mut f64, any: &mut bool) {
 }
 
 /// Derive axis domains from finite geometry columns. Scatter/polyline use
-/// `(x0, y0)`; rect/band also include `(x1, y1)`. Returns `None` when either
-/// axis has no finite coordinate.
+/// `(x0, y0)`; rect/band also include `(x1, y1)`. Degenerate spans use the
+/// shared engine `auto_domain` pad so WASM cannot fork Python/Node widening.
+/// Returns `None` when either axis has no finite coordinate.
 fn auto_domain_from_columns(
     kinds: &[u8],
     x0: &[f64],
@@ -477,14 +479,8 @@ fn auto_domain_from_columns(
     if !any_x || !any_y {
         return None;
     }
-    if x_lo == x_hi {
-        x_lo -= 0.5;
-        x_hi += 0.5;
-    }
-    if y_lo == y_hi {
-        y_lo -= 0.5;
-        y_hi += 0.5;
-    }
+    let (x_lo, x_hi) = auto_domain(Some((x_lo, x_hi)));
+    let (y_lo, y_hi) = auto_domain(Some((y_lo, y_hi)));
     Some((x_lo, x_hi, y_lo, y_hi))
 }
 
@@ -1720,6 +1716,20 @@ mod tests {
         packed[152..160].copy_from_slice(&(-9.0f64).to_le_bytes());
         let compiled = compile_scene_request(&packed, usize::MAX).unwrap();
         scene::validate_scene_batch(&compiled.bytes).unwrap();
+    }
+
+    #[test]
+    fn auto_domain_from_columns_uses_engine_pad() {
+        let kinds = [0u8];
+        let x0 = [0.5];
+        let y0 = [0.5];
+        let x1 = [0.0];
+        let y1 = [0.0];
+        let (lo, hi) = auto_domain(Some((0.5, 0.5)));
+        assert_eq!(
+            auto_domain_from_columns(&kinds, &x0, &y0, &x1, &y1),
+            Some((lo, hi, lo, hi))
+        );
     }
 
     #[test]

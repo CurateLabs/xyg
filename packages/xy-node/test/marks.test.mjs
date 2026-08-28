@@ -174,7 +174,7 @@ test("histogram auto edges support wide ranges and enforce the Rust cap", () => 
   assert.equal(boundary.edges.length, 10_001);
   assert.throws(
     () => composeHistogram(new Float64Array([0, 1]), { range: [0, 5_000.5] }),
-    /xyg_histogram_edges failed/,
+    /xyg_histogram_mark_edges failed/,
   );
 });
 

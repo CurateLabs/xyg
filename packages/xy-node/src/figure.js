@@ -5,11 +5,11 @@
  * Documented subset vs full Python `Figure.build_payload`:
  * - Emits `protocol`, width/height, axes ranges, traces, columns, graph meta.
  * - Geometry columns are offset-encoded f32 via `xyg_encode_f32` (§29).
- * - Line traces apply Rust M4 when over DECIMATION_THRESHOLD (§28).
+ * - Line traces apply Rust M4 when `xyg_payload_tier` says decimated (§28).
  * - Histogram traces ship as rectangle columns from `xyg_histogram_bins`.
  * - Polar charts emit `coords: "polar"` + theta/r axis descriptors.
  * - Ribbon / sankey ship flow-band geometry (`target_y0`/`target_y1`).
- * - Scatter uses density tier when n ≥ SCATTER_DENSITY_THRESHOLD (Rust bin_2d).
+ * - Scatter uses density tier when n > SCATTER_DENSITY_THRESHOLD (Rust payload_tier).
  * - At/above PYRAMID_MIN_POINTS, density prefers Tier-3 pyramid compose (§28).
  * - Contour / errorbar / stem / mesh / step / stairs / error_band / radar covered.
  * - Enough for mark encode / M4 / hist + graph layout goldens across hosts.
@@ -17,20 +17,29 @@
 
 import {
   Column,
-  DECIMATION_THRESHOLD,
   DENSITY_GRID,
+  DENSITY_OVERLAY_STATIC_RASTER,
   PROTOCOL_VERSION,
-  PYRAMID_MIN_POINTS,
   bin2d,
+  densityEmitPlan,
+  densityFormatBinning,
   densityLogU8,
   encodeF32Values,
   geometryOffset,
   m4Points,
   minMax,
   normalizeF32,
+  payloadTier,
   pinsOffsetToZero,
   shouldUseDensity,
+  f64Ptr,
+  u8Ptr,
 } from "./encode.js";
+import {
+  xyAutoDomain,
+  xyFigureAutorange,
+  xyRectZeroBaselineFlags,
+} from "./native.js";
 import {
   PyramidCache,
   densityViewFromPyramid,
@@ -60,7 +69,7 @@ import { composeStep, composeStairs } from "./marks/step.js";
 import { composeTriangleMesh } from "./marks/triangle_mesh.js";
 import { composeRadar } from "./marks/radar.js";
 import { toHtml } from "./html.js";
-import { figureSceneV3, sceneRasterCommands, sceneSvg } from "./scene.js";
+import { figureSceneV3, sceneRasterCommands, sceneSvg, svgToPdf } from "./scene.js";
 
 export { PROTOCOL_VERSION };
 
@@ -70,6 +79,190 @@ function asF64(value) {
   if (value instanceof Float64Array) return value;
   if (value == null) return new Float64Array(0);
   return Float64Array.from(value, Number);
+}
+
+function scatterPerItemChannels(t) {
+  const style = t.style ?? {};
+  return Boolean(
+    t.color_ch
+    || t.size_ch
+    || t.stroke_ch
+    || style.color_channel
+    || style.size_channel
+    || style.stroke_channel,
+  );
+}
+
+const AUTORANGE_KIND = {
+  scatter: 0,
+  line: 1,
+  bar: 2,
+  column: 3,
+  histogram: 4,
+  violin: 5,
+  box: 6,
+  box_whisker: 7,
+  box_median: 8,
+  segments: 9,
+  errorbar: 10,
+  stem: 11,
+  area: 12,
+  error_band: 13,
+  ribbon: 14,
+  triangle_mesh: 15,
+  hexbin: 16,
+  heatmap: 17,
+};
+const AUTORANGE_ROLES = [
+  ["x", 0],
+  ["y", 1],
+  ["x0", 2],
+  ["x1", 3],
+  ["y0", 4],
+  ["y1", 5],
+  ["base", 6],
+];
+
+function axisOptions(figure, axisId) {
+  return figure.axis_options?.[axisId] ?? figure[`${axisId}Axis`] ?? {};
+}
+
+function columnValues(col) {
+  if (col == null) return null;
+  if (col instanceof Column) return col.values;
+  if (col instanceof Float64Array) return col;
+  if (ArrayBuffer.isView(col) || Array.isArray(col)) return asF64(col);
+  if (col.values != null) return asF64(col.values);
+  return asF64(col);
+}
+
+function columnExtent(col) {
+  const values = columnValues(col);
+  if (values == null) return null;
+  let min = Number.POSITIVE_INFINITY;
+  let max = Number.NEGATIVE_INFINITY;
+  let posMin = Number.POSITIVE_INFINITY;
+  let posMax = Number.NEGATIVE_INFINITY;
+  for (let i = 0; i < values.length; i += 1) {
+    const value = values[i];
+    if (!Number.isFinite(value)) continue;
+    if (value < min) min = value;
+    if (value > max) max = value;
+    if (value > 0) {
+      if (value < posMin) posMin = value;
+      if (value > posMax) posMax = value;
+    }
+  }
+  return {
+    min: Number.isFinite(min) ? min : Number.NaN,
+    max: Number.isFinite(max) ? max : Number.NaN,
+    posMin: Number.isFinite(posMin) ? posMin : Number.NaN,
+    posMax: Number.isFinite(posMax) ? posMax : Number.NaN,
+  };
+}
+
+function packColumnExtent(role, extent) {
+  const row = new Uint8Array(40);
+  const view = new DataView(row.buffer);
+  row[0] = role;
+  view.setFloat64(8, extent.min, true);
+  view.setFloat64(16, extent.max, true);
+  view.setFloat64(24, extent.posMin, true);
+  view.setFloat64(32, extent.posMax, true);
+  return row;
+}
+
+function rectZeroBaselineFlags(base, value) {
+  const baseArr = columnValues(base);
+  const valueArr = columnValues(value);
+  if (baseArr == null || valueArr == null || baseArr.length !== valueArr.length) return 0xff;
+  return xyRectZeroBaselineFlags(f64Ptr(baseArr), f64Ptr(valueArr), BigInt(baseArr.length));
+}
+
+/** Expand a possibly-degenerate scalar domain in Rust (`Figure._auto_domain`). */
+export function autoDomain(bounds) {
+  const lo = new Float64Array(1);
+  const hi = new Float64Array(1);
+  const code = bounds == null
+    ? xyAutoDomain(0, 0, 0, f64Ptr(lo), f64Ptr(hi))
+    : xyAutoDomain(1, Number(bounds[0]), Number(bounds[1]), f64Ptr(lo), f64Ptr(hi));
+  if (code !== 0) throw new RangeError("native auto_domain rejected the bounds");
+  return [lo[0], hi[0]];
+}
+
+function packFigureAutorange(figure, axisId, { useDomain = true } = {}) {
+  const options = axisOptions(figure, axisId);
+  const explicit = figure._axisRange?.[axisId];
+  const domain = options.domain ?? explicit;
+  let flags = 0;
+  if (useDomain) flags |= 1 << 0;
+  if (options.reverse) flags |= 1 << 1;
+  if (domain != null) flags |= 1 << 2;
+  if (options.margin != null) flags |= 1 << 3;
+  if (figure.coords === "polar") flags |= 1 << 4;
+  const axisDimX = typeof axisId === "string" ? axisId.startsWith("x") : axisId === "x";
+  if (axisDimX) flags |= 1 << 5;
+  const authoredType = options.type ?? options.kind;
+  const scaleCode = authoredType === "log" ? 1 : authoredType === "symlog" ? 2 : 0;
+  const categories = options.categories ?? figure._axis_categories?.[axisId];
+  const kindCode = authoredType === "time" ? 1 : categories?.length ? 2 : 0;
+  const thetaUnit = (options.theta_unit ?? options.thetaUnit ?? figure._polarMeta?.thetaUnit ?? "radians") === "degrees" ? 1 : 0;
+  const nCategories = figure.coords === "polar" && categories?.length ? categories.length : 0;
+  const traces = figure.traces ?? [];
+  if (traces.length > 0xffff) throw new RangeError("figure autorange trace budget exceeded");
+  const header = new Uint8Array(48);
+  const view = new DataView(header.buffer);
+  header.set([88, 89, 65, 82]);
+  view.setUint32(4, 1, true);
+  view.setUint32(8, flags, true);
+  header[12] = scaleCode;
+  header[13] = kindCode;
+  header[14] = thetaUnit;
+  header[15] = 0;
+  view.setUint16(16, traces.length, true);
+  view.setUint16(18, nCategories, true);
+  view.setUint32(20, 0, true);
+  view.setFloat64(24, domain != null ? Number(domain[0]) : 0, true);
+  view.setFloat64(32, domain != null ? Number(domain[1]) : 0, true);
+  view.setFloat64(40, options.margin == null ? 0 : Number(options.margin), true);
+  const parts = [header];
+  for (const trace of traces) {
+    if (
+      trace.kind === "ribbon"
+      && (trace.x0 == null || trace.x1 == null || trace.y0 == null || trace.y1 == null)
+    ) {
+      throw new RangeError("ribbon trace missing geometry columns");
+    }
+    let traceFlags = 0;
+    if ((trace.x_axis ?? "x") === axisId) traceFlags |= 1 << 0;
+    if ((trace.y_axis ?? "y") === axisId) traceFlags |= 1 << 1;
+    const hasEndpoints = trace.x0 != null && trace.x1 != null && trace.y0 != null && trace.y1 != null;
+    if (hasEndpoints) traceFlags |= 1 << 2;
+    if (trace.base != null) traceFlags |= 1 << 3;
+    const columns = [];
+    for (const [name, role] of AUTORANGE_ROLES) {
+      const extent = columnExtent(trace[name]);
+      if (extent == null) continue;
+      columns.push(packColumnExtent(role, extent));
+    }
+    let zb = 0xff;
+    if ((trace.kind === "bar" || trace.kind === "column" || trace.kind === "histogram") && hasEndpoints) {
+      zb = rectZeroBaselineFlags(axisDimX ? trace.x0 : trace.y0, axisDimX ? trace.x1 : trace.y1);
+    }
+    const row = new Uint8Array(4);
+    row[0] = AUTORANGE_KIND[trace.kind] ?? 255;
+    row[1] = traceFlags;
+    row[2] = columns.length;
+    row[3] = zb;
+    parts.push(row, ...columns);
+  }
+  const out = new Uint8Array(parts.reduce((n, part) => n + part.length, 0));
+  let offset = 0;
+  for (const part of parts) {
+    out.set(part, offset);
+    offset += part.length;
+  }
+  return out;
 }
 
 function optionalBoolean(value, name) {
@@ -645,6 +838,7 @@ export class Figure {
       grid: t.grid,
       grid_shape: t.grid_shape,
       rgba: t.rgba,
+      colormapStops: opts.colormapStops ?? t.colormapStops ?? null,
       style: { ...t.style },
       count: t.count,
       x_axis: t.x_axis,
@@ -664,6 +858,7 @@ export class Figure {
       y: t.y,
       metric: t.metric,
       counts: t.counts,
+      color_ch: t.color_ch,
       style: { ...t.style },
       n_points: t.n_points,
       x_axis: t.x_axis,
@@ -755,66 +950,16 @@ export class Figure {
     return this;
   }
 
-  _range(axisId) {
-    if (this._axisRange[axisId] != null) {
-      return this._axisRange[axisId];
+  _range(axisId, { useDomain = true } = {}) {
+    const packed = packFigureAutorange(this, axisId, { useDomain });
+    const lo = new Float64Array(1);
+    const hi = new Float64Array(1);
+    const code = xyFigureAutorange(u8Ptr(packed), BigInt(packed.length), f64Ptr(lo), f64Ptr(hi));
+    if (code === -4) {
+      throw new RangeError(`${axisId} log axis requires at least one positive value`);
     }
-    let lo = Number.POSITIVE_INFINITY;
-    let hi = Number.NEGATIVE_INFINITY;
-    for (const t of this.traces) {
-      let cols;
-      if (t.kind === "ribbon") {
-        // x: faces; y: all four span edges (incl. target y in x/y slots).
-        cols =
-          axisId === "x" || axisId === (t.x_axis ?? "x")
-            ? [t.x0, t.x1]
-            : [t.y0, t.y1, t.x, t.y];
-      } else if (t.kind === "triangle_mesh") {
-        cols =
-          axisId === "x" || axisId === (t.x_axis ?? "x")
-            ? [t.x0, t.x1, t.x]
-            : [t.y0, t.y1, t.y];
-      } else if (
-        t.kind === "segments" ||
-        t.kind === "histogram" ||
-        t.kind === "bar" ||
-        t.kind === "box" ||
-        t.kind === "violin" ||
-        t.kind === "contour" ||
-        t.kind === "errorbar" ||
-        t.kind === "stem" ||
-        t.kind === "box_whisker" ||
-        t.kind === "box_median"
-      ) {
-        cols =
-          axisId === "x" || axisId === (t.x_axis ?? "x") ? [t.x0, t.x1] : [t.y0, t.y1];
-      } else if (t.kind === "area" || t.kind === "error_band") {
-        cols =
-          axisId === "x" || axisId === (t.x_axis ?? "x")
-            ? [t.x]
-            : [t.y, t.base];
-      } else {
-        cols = axisId === "x" || axisId === (t.x_axis ?? "x") ? [t.x] : [t.y];
-      }
-      for (const col of cols) {
-        if (col == null) continue;
-        const mm = minMax(col);
-        if (mm == null) continue;
-        lo = Math.min(lo, mm[0]);
-        hi = Math.max(hi, mm[1]);
-      }
-    }
-    if (!Number.isFinite(lo) || !Number.isFinite(hi)) {
-      lo = 0;
-      hi = 1;
-    }
-    if (lo === hi) {
-      hi = lo + 1;
-    }
-    const pad = (hi - lo) * 0.05;
-    const range = [lo - pad, hi + pad];
-    this._axisRange[axisId] = range;
-    return range;
+    if (code !== 0) throw new RangeError("invalid figure autorange envelope");
+    return [lo[0], hi[0]];
   }
 
   _emitScatter(t, pw, xr, yr) {
@@ -826,6 +971,7 @@ export class Figure {
         forceDensity: forceDensity || forcePyramid,
         forceDirect,
         coords: this.coords,
+        perItemChannels: scatterPerItemChannels(t),
       })
     ) {
       return this._emitScatterDensity(t, pw, xr, yr);
@@ -875,13 +1021,14 @@ export class Figure {
   _emitScatterDensity(t, pw, xr, yr) {
     const [w, h] = DENSITY_GRID;
     let grid;
-    let binning = "exact";
+    let binning = densityFormatBinning({ exact: true });
     let reduction = "bin2d";
     let tiles = null;
     const forceBin2d = Boolean(t.force_bin2d ?? t.style?.force_bin2d);
     const forcePyramid = Boolean(t.force_pyramid ?? t.style?.force_pyramid);
     const noRescan = Boolean(t.no_rescan ?? t.style?.no_rescan);
     const forceSpill = Boolean(t.pyramid_spill ?? t.style?.pyramid_spill);
+    let hasPyramidResource = false;
     if (
       this.coords !== "polar" &&
       !this._deferPyramidRebuild?.has(t.id) &&
@@ -892,6 +1039,7 @@ export class Figure {
         cache = new PyramidCache();
         this._pyramids.set(t.id, cache);
       }
+      hasPyramidResource = true;
       const served = densityViewFromPyramid(cache, t.x, t.y, xr[0], xr[1], yr[0], yr[1], w, h, {
         force: forcePyramid,
         noRescan,
@@ -908,9 +1056,29 @@ export class Figure {
     }
     if (grid == null) {
       grid = bin2d(t.x, t.y, xr[0], xr[1], yr[0], yr[1], w, h);
-      binning = "exact";
+      binning = densityFormatBinning({ exact: true });
       reduction = "bin2d";
     }
+    const plan = densityEmitPlan({
+      cartesian: this.coords === "cartesian",
+      xLinear: true,
+      yLinear: true,
+      pointOverlay: false,
+      gridFromPyramid: reduction === "pyramid-count",
+      hasPyramidResource,
+      forceBin2d,
+      forcePyramid,
+      colorMode: t.style?.color ? 1 : 0,
+      xMin: minMax(t.x)?.lo ?? xr[0],
+      xMax: minMax(t.x)?.hi ?? xr[1],
+      yMin: minMax(t.y)?.lo ?? yr[0],
+      yMax: minMax(t.y)?.hi ?? yr[1],
+      xr0: xr[0],
+      xr1: xr[1],
+      yr0: yr[0],
+      yr1: yr[1],
+      nPoints: t.x.length,
+    });
     const { encoded, max } = densityLogU8(grid);
     const density = {
       buf: pw.shipU8(encoded),
@@ -925,8 +1093,10 @@ export class Figure {
       reduction,
       channels_dropped: false,
       dropped_channels: [],
-      overlay_omitted: "node_host_mvp",
     };
+    if (plan.overlay_omitted === DENSITY_OVERLAY_STATIC_RASTER) {
+      density.overlay_omitted = "static_raster";
+    }
     if (tiles != null) {
       density.tiles = tiles;
     }
@@ -960,7 +1130,11 @@ export class Figure {
     let xv = t.x;
     let yv = t.y;
     let tier = "direct";
-    const decimated = xv.length > DECIMATION_THRESHOLD;
+    const decimated = payloadTier({
+      kind: 0,
+      nPoints: xv.length,
+      polar: this.coords === "polar",
+    }) === 1;
     if (decimated) {
       const [outX, outY] = m4Points(xv, yv, xr[0], xr[1] + F64_EPS, pxWidth);
       xv = outX;
@@ -1412,6 +1586,11 @@ export class Figure {
   /** Whole-scene SVG rendered from the canonical Scene v5 document. */
   toSceneSvg(opts = {}) {
     return sceneSvg(this.toScene(opts));
+  }
+
+  /** Whole-scene vector PDF from the canonical Scene SVG (Rust `xyg_svg_to_pdf`). */
+  toScenePdf(opts = {}) {
+    return svgToPdf(this.toSceneSvg(opts));
   }
 
   /** Existing native-raster display list compiled from Scene v5. */

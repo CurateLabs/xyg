@@ -113,7 +113,9 @@ def test_pdf_content_is_vector_text_and_paths() -> None:
 def test_heatmap_embeds_matching_image_xobject() -> None:
     rng = np.random.default_rng(2)
     fig = Figure()
-    fig.heatmap(rng.random((8, 6)))
+    # Public colormap heatmaps compile to Scene Rects. Density blit is the
+    # remaining public Scene Image, so PDF still sees a pixelated XObject.
+    fig.scatter(rng.random(400), rng.random(400), density=True, color="#3987e5")
     svg = fig.to_svg()
     pdf = svg_to_pdf(svg)
 

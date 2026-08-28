@@ -14,6 +14,25 @@ pub const DEFAULT_TARGET_PER_CELL: f64 = 16.0;
 /// Default drill-exit hysteresis (`DRILL_EXIT_FACTOR`).
 pub const DEFAULT_EXIT_FACTOR: f64 = 1.15;
 
+/// Line/area M4 threshold (`python/xyg/config.py` `DECIMATION_THRESHOLD`).
+pub const DECIMATION_THRESHOLD: u64 = 10_000;
+/// Scatter density threshold (`SCATTER_DENSITY_THRESHOLD`). Strict `>` .
+pub const SCATTER_DENSITY_THRESHOLD: u64 = 200_000;
+/// Per-item-channel direct ceiling (`DIRECT_SOFT_CEILING`). Strict `>` .
+pub const DIRECT_SOFT_CEILING: u64 = 2_000_000;
+
+/// Compile-time payload kind: line/area/error-band (M4 vs direct).
+pub const PAYLOAD_KIND_LINE: i32 = 0;
+/// Compile-time payload kind: scatter (density vs direct).
+pub const PAYLOAD_KIND_SCATTER: i32 = 1;
+
+/// Ship every finite row.
+pub const PAYLOAD_TIER_DIRECT: i32 = 0;
+/// Ship M4-decimated windows (lines/areas over the threshold).
+pub const PAYLOAD_TIER_DECIMATED: i32 = 1;
+/// Ship a density grid (scatter over the threshold).
+pub const PAYLOAD_TIER_DENSITY: i32 = 2;
+
 /// Wire/tier mode: ship direct marks (points, candles, …).
 pub const MODE_DIRECT: u32 = 0;
 /// Wire/tier mode: ship an aggregate (density, buckets, …).
@@ -109,6 +128,130 @@ pub fn plan(
     })
 }
 
+/// Compile-time payload tier for one trace (§5/§28, ABI 122).
+///
+/// `force_density` is tri-state: `-1` auto, `0` false, `1` true. Polar
+/// always ships direct (M4 buckets and density cells are not polar-aware).
+/// Scatter uses `>` against `SCATTER_DENSITY_THRESHOLD`, or
+/// `DIRECT_SOFT_CEILING` when `per_item_channels` is set.
+pub fn payload_tier(
+    kind: i32,
+    n_points: u64,
+    polar: bool,
+    force_density: i32,
+    force_direct: bool,
+    per_item_channels: bool,
+) -> Option<i32> {
+    if !matches!(kind, PAYLOAD_KIND_LINE | PAYLOAD_KIND_SCATTER) {
+        return None;
+    }
+    if !matches!(force_density, -1 | 0 | 1) {
+        return None;
+    }
+    if polar || force_direct {
+        return Some(PAYLOAD_TIER_DIRECT);
+    }
+    match kind {
+        PAYLOAD_KIND_LINE => Some(if n_points > DECIMATION_THRESHOLD {
+            PAYLOAD_TIER_DECIMATED
+        } else {
+            PAYLOAD_TIER_DIRECT
+        }),
+        PAYLOAD_KIND_SCATTER => {
+            let density = match force_density {
+                0 => false,
+                1 => true,
+                _ => {
+                    let threshold = if per_item_channels {
+                        DIRECT_SOFT_CEILING
+                    } else {
+                        SCATTER_DENSITY_THRESHOLD
+                    };
+                    n_points > threshold
+                }
+            };
+            Some(if density {
+                PAYLOAD_TIER_DENSITY
+            } else {
+                PAYLOAD_TIER_DIRECT
+            })
+        }
+        _ => None,
+    }
+}
+
+/// Whether the payload visible-row mask can drop anything for this trace.
+///
+/// Matches `_payload._visible_mask_needed`: log axes, a baseline with nulls,
+/// or unfiltered columns whose zone maps recorded NaN/±inf.
+pub fn payload_visible_needed(
+    x_log: bool,
+    y_log: bool,
+    prefiltered: bool,
+    x_has_nulls: bool,
+    y_has_nulls: bool,
+    has_base: bool,
+    base_has_nulls: bool,
+) -> bool {
+    if x_log || y_log {
+        return true;
+    }
+    if has_base && base_has_nulls {
+        return true;
+    }
+    !prefiltered && (x_has_nulls || y_has_nulls)
+}
+
+/// Finite + log-positive + optional-baseline keep mask (§19).
+///
+/// Writes `n` bytes (`1` keep / `0` drop). Returns the keep count.
+pub fn payload_visible_mask(
+    x: &[f64],
+    y: &[f64],
+    x_log: bool,
+    y_log: bool,
+    base: Option<&[f64]>,
+    out: &mut [u8],
+) -> Option<usize> {
+    if x.len() != y.len() {
+        return None;
+    }
+    let n = x.len();
+    if let Some(base) = base {
+        if base.len() != n {
+            return None;
+        }
+    }
+    if out.len() < n {
+        return None;
+    }
+    let mut kept = 0usize;
+    for i in 0..n {
+        let xv = x[i];
+        let yv = y[i];
+        let mut keep = xv.is_finite() && yv.is_finite();
+        if keep && x_log {
+            keep = xv > 0.0;
+        }
+        if keep && y_log {
+            keep = yv > 0.0;
+        }
+        if keep {
+            if let Some(base) = base {
+                let bv = base[i];
+                keep = if y_log {
+                    bv.is_finite() && bv > 0.0
+                } else {
+                    bv.is_finite()
+                };
+            }
+        }
+        out[i] = u8::from(keep);
+        kept += usize::from(keep);
+    }
+    Some(kept)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -155,5 +298,89 @@ mod tests {
     fn rejects_non_finite_policy() {
         assert!(drill_decision(10, f64::NAN, false, 1.15).is_none());
         assert!(grid_shape(64, 48, 10, 0.0).is_none());
+    }
+
+    #[test]
+    fn payload_tier_line_polar_and_threshold() {
+        assert_eq!(
+            payload_tier(PAYLOAD_KIND_LINE, 10_000, false, -1, false, false),
+            Some(PAYLOAD_TIER_DIRECT)
+        );
+        assert_eq!(
+            payload_tier(PAYLOAD_KIND_LINE, 10_001, false, -1, false, false),
+            Some(PAYLOAD_TIER_DECIMATED)
+        );
+        assert_eq!(
+            payload_tier(PAYLOAD_KIND_LINE, 50_000, true, -1, false, false),
+            Some(PAYLOAD_TIER_DIRECT)
+        );
+    }
+
+    #[test]
+    fn payload_tier_scatter_strict_gt_and_per_item_ceiling() {
+        assert_eq!(
+            payload_tier(
+                PAYLOAD_KIND_SCATTER,
+                SCATTER_DENSITY_THRESHOLD,
+                false,
+                -1,
+                false,
+                false
+            ),
+            Some(PAYLOAD_TIER_DIRECT)
+        );
+        assert_eq!(
+            payload_tier(
+                PAYLOAD_KIND_SCATTER,
+                SCATTER_DENSITY_THRESHOLD + 1,
+                false,
+                -1,
+                false,
+                false
+            ),
+            Some(PAYLOAD_TIER_DENSITY)
+        );
+        assert_eq!(
+            payload_tier(
+                PAYLOAD_KIND_SCATTER,
+                SCATTER_DENSITY_THRESHOLD + 1,
+                false,
+                -1,
+                false,
+                true
+            ),
+            Some(PAYLOAD_TIER_DIRECT)
+        );
+        assert_eq!(
+            payload_tier(PAYLOAD_KIND_SCATTER, 10, false, 1, false, false),
+            Some(PAYLOAD_TIER_DENSITY)
+        );
+        assert_eq!(
+            payload_tier(PAYLOAD_KIND_SCATTER, 10, true, 1, false, false),
+            Some(PAYLOAD_TIER_DIRECT)
+        );
+        assert_eq!(
+            payload_tier(PAYLOAD_KIND_SCATTER, 1_000_000, false, 0, false, false),
+            Some(PAYLOAD_TIER_DIRECT)
+        );
+        assert!(payload_tier(99, 1, false, -1, false, false).is_none());
+    }
+
+    #[test]
+    fn payload_visible_mask_drops_nonpositive_on_log() {
+        let x = [1.0, -2.0, 3.0, 0.0, 5.0];
+        let y = [1.0, 2.0, 3.0, 4.0, 5.0];
+        let mut out = [0u8; 5];
+        assert_eq!(
+            payload_visible_mask(&x, &y, true, false, None, &mut out),
+            Some(3)
+        );
+        assert_eq!(&out, &[1, 0, 1, 0, 1]);
+        assert!(!payload_visible_needed(
+            false, false, true, false, false, false, false
+        ));
+        assert!(payload_visible_needed(
+            true, false, true, false, false, false, false
+        ));
     }
 }

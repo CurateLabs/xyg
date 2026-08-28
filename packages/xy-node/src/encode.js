@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyBin2d, xyDensityLogU8, xyMarchingSquares, xyLodPlan, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -91,6 +91,20 @@ export function isSorted(data) {
     return true;
   }
   return xyIsSorted(f64Ptr(arr), BigInt(arr.length)) === 1;
+}
+
+/** NumPy `argsort(..., kind="stable")` for f64 (NaNs last). */
+export function argsortStable(data) {
+  const arr = asF64Array(data);
+  if (arr.length === 0) {
+    return new Uint32Array(0);
+  }
+  const out = new Uint32Array(arr.length);
+  const written = Number(xyArgsortStable(f64Ptr(arr), BigInt(arr.length), u32Ptr(out), BigInt(out.length)));
+  if (written !== arr.length) {
+    throw new Error("xyg_argsort_stable failed");
+  }
+  return out;
 }
 
 export function encodeF32(data, offset, scale = 1.0) {
@@ -248,6 +262,284 @@ export function histogramEdges(data, { range = null, method = "auto" } = {}) {
   return out.subarray(0, written);
 }
 
+const HISTOGRAM_MARK_METHOD = Object.freeze({ auto: 0, sturges: 1, uniform: 2 });
+
+/** Composition histogram edges (empty auto/sturges → 10 bins; uniform uses auto_domain). */
+export function histogramMarkEdges(data, { range = null, method = "auto", nBins = 0 } = {}) {
+  const arr = asF64Array(data);
+  const methodId = HISTOGRAM_MARK_METHOD[method];
+  if (methodId == null) {
+    throw new Error("histogramMarkEdges method must be 'auto', 'sturges', or 'uniform'");
+  }
+  const useRange = range == null ? 0 : 1;
+  const lo = range == null ? 0 : Number(range[0]);
+  const hi = range == null ? 0 : Number(range[1]);
+  const capacity = 10_001;
+  const out = new Float64Array(capacity);
+  const written = Number(
+    xyHistogramMarkEdges(
+      f64Ptr(arr),
+      BigInt(arr.length),
+      lo,
+      hi,
+      useRange,
+      methodId,
+      BigInt(nBins),
+      f64Ptr(out),
+      BigInt(capacity),
+    ),
+  );
+  if (!Number.isFinite(written) || written < 0 || written > capacity) {
+    throw new Error("xyg_histogram_mark_edges failed");
+  }
+  return out.subarray(0, written);
+}
+
+/** Composition contour isolines. `nLevels > 0` auto-spaces; `nLevels === 0` sorts authored levels. */
+export function contourLevels(data, nLevels = 0) {
+  const arr = asF64Array(data);
+  const capacity = 256;
+  const out = new Float64Array(capacity);
+  const written = Number(
+    xyContourLevels(f64Ptr(arr), BigInt(arr.length), BigInt(nLevels), f64Ptr(out), BigInt(capacity)),
+  );
+  if (!Number.isFinite(written) || written < 0 || written > capacity) {
+    throw new Error("xyg_contour_levels failed");
+  }
+  return out.subarray(0, written);
+}
+
+const LEGEND_SCALE = Object.freeze({ linear: 0, log: 1, symlog: 2 });
+
+/** Matplotlib `loc="best"` candidates in preference order (ABI 120). */
+export const LEGEND_CANDIDATE_ORDER = Object.freeze([
+  "upper right",
+  "upper left",
+  "lower left",
+  "lower right",
+  "center right",
+  "center left",
+  "lower center",
+  "upper center",
+  "center",
+]);
+
+function legendScaleCode(scale) {
+  if (scale == null || scale === "linear") return 0;
+  const code = LEGEND_SCALE[scale];
+  return code == null ? 0 : code;
+}
+
+/** Display-space occupancy sample. Returns null when nothing is scorable. */
+export function legendNormalize(x, y, {
+  xDomain, yDomain,
+  xReverse = false, yReverse = false,
+  xScale = "linear", yScale = "linear",
+  xConstant = 1, yConstant = 1,
+} = {}) {
+  const xv = asF64Array(x);
+  const yv = asF64Array(y);
+  if (xv.length !== yv.length) {
+    throw new Error("legendNormalize x and y must have equal length");
+  }
+  const capacity = Math.min(xv.length, 512);
+  const outX = new Float64Array(capacity);
+  const outY = new Float64Array(capacity);
+  const written = Number(
+    xyLegendNormalize(
+      f64Ptr(xv),
+      f64Ptr(yv),
+      BigInt(xv.length),
+      Number(xDomain[0]),
+      Number(xDomain[1]),
+      Number(yDomain[0]),
+      Number(yDomain[1]),
+      xReverse ? 1 : 0,
+      yReverse ? 1 : 0,
+      legendScaleCode(xScale),
+      legendScaleCode(yScale),
+      Number(xConstant),
+      Number(yConstant),
+      capacity ? f64Ptr(outX) : null,
+      capacity ? f64Ptr(outY) : null,
+      BigInt(capacity),
+    ),
+  );
+  if (!Number.isFinite(written) || written < 0 || written > capacity) {
+    throw new Error("xyg_legend_normalize failed");
+  }
+  if (written === 0) return null;
+  return { x: outX.subarray(0, written), y: outY.subarray(0, written) };
+}
+
+/** Least-occupied candidate name for concatenated normalized series. */
+export function legendBestLoc(series, labelLens = []) {
+  const rows = Array.isArray(series) ? series : [];
+  const starts = new BigUint64Array(rows.length);
+  let total = 0;
+  for (let i = 0; i < rows.length; i += 1) {
+    starts[i] = BigInt(total);
+    const row = rows[i];
+    const xv = row.x ?? row[0];
+    total += xv.length;
+  }
+  const xs = new Float64Array(total);
+  const ys = new Float64Array(total);
+  let at = 0;
+  for (const row of rows) {
+    const xv = row.x ?? row[0];
+    const yv = row.y ?? row[1];
+    if (xv.length !== yv.length) {
+      throw new Error("legendBestLoc series x and y must have equal length");
+    }
+    xs.set(xv, at);
+    ys.set(yv, at);
+    at += xv.length;
+  }
+  const labels = Uint32Array.from(labelLens, (value) => Number(value) >>> 0);
+  const code = xyLegendBestLoc(
+    total ? f64Ptr(xs) : null,
+    total ? f64Ptr(ys) : null,
+    BigInt(total),
+    rows.length ? pointer(starts, "size_t *") : null,
+    BigInt(rows.length),
+    labels.length ? u32Ptr(labels) : null,
+    BigInt(labels.length),
+  );
+  if (!Number.isInteger(code) || code < 0 || code >= LEGEND_CANDIDATE_ORDER.length) {
+    throw new Error("xyg_legend_best_loc failed");
+  }
+  return LEGEND_CANDIDATE_ORDER[code];
+}
+
+function requireWritten(written, capacity, name) {
+  if (!Number.isFinite(written) || written < 0 || written > capacity) {
+    throw new Error(`${name} failed`);
+  }
+  return written;
+}
+
+/** Flatten one d3 curveBumpX edge. Returns `{ x, y }` of length `steps + 1`. */
+export function ribbonEdge(x0, x1, ya, yb, steps = 96) {
+  const nSteps = Number(steps);
+  if (!Number.isInteger(nSteps) || nSteps <= 0) {
+    throw new Error("ribbonEdge steps must be a positive integer");
+  }
+  const capacity = nSteps + 1;
+  const outX = new Float64Array(capacity);
+  const outY = new Float64Array(capacity);
+  const written = requireWritten(
+    Number(xyRibbonEdge(Number(x0), Number(x1), Number(ya), Number(yb), BigInt(nSteps), f64Ptr(outX), f64Ptr(outY), BigInt(capacity))),
+    capacity,
+    "xyg_ribbon_edge",
+  );
+  return { x: outX.subarray(0, written), y: outY.subarray(0, written) };
+}
+
+/** Closed flow-band polygon: upper edge then reversed lower. */
+export function ribbonPolygon(x0, x1, srcLo, srcHi, dstLo, dstHi, steps = 96) {
+  const nSteps = Number(steps);
+  if (!Number.isInteger(nSteps) || nSteps <= 0) {
+    throw new Error("ribbonPolygon steps must be a positive integer");
+  }
+  const capacity = 2 * (nSteps + 1);
+  const outX = new Float64Array(capacity);
+  const outY = new Float64Array(capacity);
+  const written = requireWritten(
+    Number(xyRibbonPolygon(
+      Number(x0),
+      Number(x1),
+      Number(srcLo),
+      Number(srcHi),
+      Number(dstLo),
+      Number(dstHi),
+      BigInt(nSteps),
+      f64Ptr(outX),
+      f64Ptr(outY),
+      BigInt(capacity),
+    )),
+    capacity,
+    "xyg_ribbon_polygon",
+  );
+  return { x: outX.subarray(0, written), y: outY.subarray(0, written) };
+}
+
+/** Fritsch–Carlson monotone-cubic tangents. */
+export function monotoneTangents(x, y) {
+  const xv = asF64Array(x);
+  const yv = asF64Array(y);
+  if (xv.length !== yv.length) {
+    throw new Error("monotoneTangents x and y must have equal length");
+  }
+  const out = new Float64Array(xv.length);
+  const written = requireWritten(
+    Number(xyMonotoneTangents(
+      xv.length ? f64Ptr(xv) : null,
+      yv.length ? f64Ptr(yv) : null,
+      BigInt(xv.length),
+      xv.length ? f64Ptr(out) : null,
+      BigInt(out.length),
+    )),
+    out.length,
+    "xyg_monotone_tangents",
+  );
+  return out.subarray(0, written);
+}
+
+/** Data-space monotone-cubic Hermite flatten. */
+export function curveFlatten(x, y, bezierSteps = 16) {
+  const xv = asF64Array(x);
+  const yv = asF64Array(y);
+  if (xv.length !== yv.length) {
+    throw new Error("curveFlatten x and y must have equal length");
+  }
+  const steps = Number(bezierSteps);
+  if (!Number.isInteger(steps) || steps < 2) {
+    throw new Error("curveFlatten bezierSteps must be an integer >= 2");
+  }
+  const n = xv.length;
+  const capacity = n === 0 ? 0 : n === 1 ? 1 : 1 + (n - 1) * steps;
+  const outX = new Float64Array(capacity);
+  const outY = new Float64Array(capacity);
+  const written = requireWritten(
+    Number(xyCurveFlatten(
+      n ? f64Ptr(xv) : null,
+      n ? f64Ptr(yv) : null,
+      BigInt(n),
+      BigInt(steps),
+      capacity ? f64Ptr(outX) : null,
+      capacity ? f64Ptr(outY) : null,
+      BigInt(capacity),
+    )),
+    capacity,
+    "xyg_curve_flatten",
+  );
+  return { x: outX.subarray(0, written), y: outY.subarray(0, written) };
+}
+
+/** CW rounded-rect outline with independent tip/base radii. */
+export function roundedRectPoly(x, y, w, h, rTip, rBase, tipTop = true) {
+  const outX = new Float64Array(20);
+  const outY = new Float64Array(20);
+  const written = requireWritten(
+    Number(xyRoundedRectPoly(
+      Number(x),
+      Number(y),
+      Number(w),
+      Number(h),
+      Number(rTip),
+      Number(rBase),
+      tipTop ? 1 : 0,
+      f64Ptr(outX),
+      f64Ptr(outY),
+      20n,
+    )),
+    20,
+    "xyg_rounded_rect_poly",
+  );
+  return { x: outX.subarray(0, written), y: outY.subarray(0, written) };
+}
+
 const HEX_REDUCE = Object.freeze({ count: 0, mean: 1, sum: 2 });
 
 function hexbinGridAndRange(gridsize, range) {
@@ -380,6 +672,72 @@ export function hexbin(x, y, { gridsize, range = null, mincnt = 0, C = null, red
     centersY: outCy.subarray(0, written),
     metrics: outMetric.subarray(0, written),
     counts: outCounts.subarray(0, written),
+    dx: dx[0],
+    dy: dy[0],
+  };
+}
+
+/** Occupied hex-cell memberships for a host custom reducer. */
+export function hexbinGroups(x, y, { gridsize, range = null, mincnt = 0, C = null } = {}) {
+  const xa = asF64Array(x);
+  const ya = asF64Array(y);
+  if (xa.length !== ya.length) {
+    throw new RangeError("hexbin x/y length mismatch");
+  }
+  const { w, h, x0, x1, y0, y1, useRange } = hexbinGridAndRange(gridsize, range);
+  const ca = C == null ? null : asF64Array(C);
+  if (ca != null && ca.length !== xa.length) {
+    throw new RangeError("hexbin C length mismatch");
+  }
+  const hCap = h === 0 ? w : h;
+  const cellCapacity = (w + 1) * (hCap + 1) + w * hCap;
+  const outCx = new Float64Array(cellCapacity);
+  const outCy = new Float64Array(cellCapacity);
+  const outCounts = new Float64Array(cellCapacity);
+  const outStarts = new Uint32Array(cellCapacity);
+  const outLens = new Uint32Array(cellCapacity);
+  const outIndices = new Uint32Array(xa.length);
+  const nIndices = new BigUint64Array(1);
+  const dx = new Float64Array(1);
+  const dy = new Float64Array(1);
+  const written = Number(
+    xyHexbinGroups(
+      f64Ptr(xa),
+      f64Ptr(ya),
+      ca == null ? null : f64Ptr(ca),
+      BigInt(xa.length),
+      BigInt(w),
+      BigInt(h),
+      x0,
+      x1,
+      y0,
+      y1,
+      useRange,
+      BigInt(mincnt),
+      f64Ptr(outCx),
+      f64Ptr(outCy),
+      f64Ptr(outCounts),
+      u32Ptr(outStarts),
+      u32Ptr(outLens),
+      BigInt(cellCapacity),
+      u32Ptr(outIndices),
+      BigInt(outIndices.length),
+      pointer(nIndices, "size_t *"),
+      f64Ptr(dx),
+      f64Ptr(dy),
+    ),
+  );
+  if (!Number.isFinite(written) || written < 0 || written > cellCapacity) {
+    throw new RangeError("hexbin x and y must contain at least one finite pair");
+  }
+  const nIdx = Number(nIndices[0]);
+  return {
+    centersX: outCx.subarray(0, written),
+    centersY: outCy.subarray(0, written),
+    counts: outCounts.subarray(0, written),
+    starts: outStarts.subarray(0, written),
+    lengths: outLens.subarray(0, written),
+    indices: outIndices.subarray(0, nIdx),
     dx: dx[0],
     dy: dy[0],
   };
@@ -518,6 +876,82 @@ export function heatmapRgba(raw, w, h, stops, alpha = 255) {
     throw new Error("xy_heatmap_rgba failed");
   }
   return { rgba: out, width: ww, height: hh };
+}
+
+/** Map normalized scalars t ∈ [0, 1] to vertically flipped RGBA bytes (h, w, 4). */
+export function colormapRgba(raw, w, h, stops, alpha = 255) {
+  const ww = Number(w);
+  const hh = Number(h);
+  const values = asF64Array(raw);
+  if (values.length !== ww * hh) {
+    throw new RangeError("colormapRgba scalar count must match width * height");
+  }
+  const stopArr = stops instanceof Uint8Array ? stops : Uint8Array.from(stops);
+  if (stopArr.length % 3 !== 0 || stopArr.length < 3) {
+    throw new RangeError("colormapRgba stops must be a non-empty multiple of 3");
+  }
+  const stopCount = stopArr.length / 3;
+  const out = new Uint8Array(hh * ww * 4);
+  const ok = xyColormapRgba(
+    f64Ptr(values),
+    BigInt(ww),
+    BigInt(hh),
+    u8Ptr(stopArr),
+    BigInt(stopCount),
+    Number(alpha),
+    u8Ptr(out),
+  );
+  if (ok !== 1) {
+    throw new Error("xy_colormap_rgba failed");
+  }
+  return { rgba: out, width: ww, height: hh };
+}
+
+/** Map canonical f64 scalars through domain normalization to RGBA bytes. */
+export function colormapRgbaCanonical(raw, w, h, domain, stops, alpha = 255) {
+  const ww = Number(w);
+  const hh = Number(h);
+  const values = asF64Array(raw);
+  if (values.length !== ww * hh) {
+    throw new RangeError("colormapRgbaCanonical scalar count must match width * height");
+  }
+  const stopArr = stops instanceof Uint8Array ? stops : Uint8Array.from(stops);
+  if (stopArr.length % 3 !== 0 || stopArr.length < 3) {
+    throw new RangeError("colormapRgbaCanonical stops must be a non-empty multiple of 3");
+  }
+  const stopCount = stopArr.length / 3;
+  const out = new Uint8Array(hh * ww * 4);
+  const ok = xyColormapRgbaCanonical(
+    f64Ptr(values),
+    BigInt(ww),
+    BigInt(hh),
+    Number(domain[0]),
+    Number(domain[1]),
+    u8Ptr(stopArr),
+    BigInt(stopCount),
+    Number(alpha),
+    u8Ptr(out),
+  );
+  if (ok !== 1) {
+    throw new Error("xy_colormap_rgba_canonical failed");
+  }
+  return { rgba: out, width: ww, height: hh };
+}
+
+/** Resolve a named colormap to packed RGB triples (`n * 3` bytes). */
+export function colormapNamedStops(name) {
+  const encoded = new TextEncoder().encode(String(name ?? ""));
+  const out = new Uint8Array(256 * 3);
+  const count = Number(xyColormapStops(
+    encoded.length ? u8Ptr(encoded) : null,
+    BigInt(encoded.length),
+    u8Ptr(out),
+    BigInt(out.length),
+  ));
+  if (count <= 0) {
+    throw new Error("xy_colormap_stops failed");
+  }
+  return out.subarray(0, count * 3);
 }
 
 export function boxStats(data) {
@@ -879,6 +1313,67 @@ export function densityLogU8(grid) {
 }
 
 /**
+ * Mean-color companion grid to `bin2d` (LOD doc §2): (h*w*4) straight-alpha
+ * RGBA8, row 0 = bottom. `source` is either `{ rgba: Uint8Array }` or
+ * `{ idx: Uint8Array, lut: Uint8Array }` with lut length a multiple of 4.
+ */
+export function bin2dMeanColor(x, y, x0, x1, y0, y1, w, h, source) {
+  const xa = asF64Array(x, "x");
+  const ya = asF64Array(y, "y");
+  if (xa.length !== ya.length) {
+    throw new RangeError("bin2dMeanColor x/y length mismatch");
+  }
+  const ww = Math.max(1, Math.floor(Number(w)));
+  const hh = Math.max(1, Math.floor(Number(h)));
+  const out = new Uint8Array(ww * hh * 4);
+  let idxPtr = 0;
+  let rgbaPtr = 0;
+  let lutPtr = 0;
+  let lutLen = 0n;
+  if (source?.rgba != null) {
+    const rgba = source.rgba instanceof Uint8Array ? source.rgba : Uint8Array.from(source.rgba);
+    if (rgba.length !== xa.length * 4) {
+      throw new RangeError("bin2dMeanColor rgba length must be 4 * n");
+    }
+    rgbaPtr = xa.length ? u8Ptr(rgba) : 0;
+  } else if (source?.idx != null && source?.lut != null) {
+    const idx = source.idx instanceof Uint8Array ? source.idx : Uint8Array.from(source.idx);
+    const lut = source.lut instanceof Uint8Array ? source.lut : Uint8Array.from(source.lut);
+    if (idx.length !== xa.length) {
+      throw new RangeError("bin2dMeanColor idx length must match x/y");
+    }
+    if (lut.length < 4 || lut.length % 4 !== 0 || lut.length / 4 > 256) {
+      throw new RangeError("bin2dMeanColor lut must be 1..256 RGBA8 entries");
+    }
+    idxPtr = xa.length ? u8Ptr(idx) : 0;
+    lutPtr = u8Ptr(lut);
+    lutLen = BigInt(lut.length / 4);
+  } else {
+    throw new RangeError("bin2dMeanColor requires rgba or idx+lut");
+  }
+  const ok = xyBin2dMeanColor(
+    f64Ptr(xa),
+    f64Ptr(ya),
+    BigInt(xa.length),
+    idxPtr,
+    rgbaPtr,
+    lutPtr,
+    lutLen,
+    Number(x0),
+    Number(x1),
+    Number(y0),
+    Number(y1),
+    BigInt(ww),
+    BigInt(hh),
+    u8Ptr(out),
+  );
+  if (ok !== 1) {
+    throw new Error("xyg_bin_2d_mean_color failed");
+  }
+  return out;
+}
+
+/**
  * Regular-grid contour isolines via `xy_marching_squares`.
  * @returns {{x0: Float64Array, x1: Float64Array, y0: Float64Array, y1: Float64Array, levels: Float64Array}}
  */
@@ -991,12 +1486,265 @@ export function drillDecision(visible, budget, { inDrill = false, exitFactor = D
 }
 
 /**
- * Whether a scatter should use the density tier (Python Trace.use_density).
+ * Compile-time payload tier via `xyg_payload_tier` (ABI 122).
+ * `kind` 0=line/area, 1=scatter. Returns 0=direct, 1=decimated, 2=density.
  */
-export function shouldUseDensity(nPoints, { forceDensity = false, forceDirect = false, coords = "cartesian" } = {}) {
-  if (forceDirect || coords === "polar") return false;
-  if (forceDensity) return true;
-  return Number(nPoints) >= SCATTER_DENSITY_THRESHOLD;
+export function payloadTier({
+  kind,
+  nPoints,
+  polar = false,
+  forceDensity = -1,
+  forceDirect = false,
+  perItem = false,
+} = {}) {
+  const code = xyPayloadTier(
+    Number(kind),
+    BigInt(nPoints),
+    polar ? 1 : 0,
+    Number(forceDensity),
+    forceDirect ? 1 : 0,
+    perItem ? 1 : 0,
+  );
+  if (code < 0) {
+    throw new Error("xyg_payload_tier failed");
+  }
+  return code;
+}
+
+/**
+ * Whether the payload visible-row mask can drop rows (ABI 122).
+ */
+export function payloadVisibleNeeded({
+  xLog = false,
+  yLog = false,
+  prefiltered = false,
+  xHasNulls = false,
+  yHasNulls = false,
+  hasBase = false,
+  baseHasNulls = false,
+} = {}) {
+  const code = xyPayloadVisibleNeeded(
+    xLog ? 1 : 0,
+    yLog ? 1 : 0,
+    prefiltered ? 1 : 0,
+    xHasNulls ? 1 : 0,
+    yHasNulls ? 1 : 0,
+    hasBase ? 1 : 0,
+    baseHasNulls ? 1 : 0,
+  );
+  if (code < 0) {
+    throw new Error("xyg_payload_visible_needed failed");
+  }
+  return code === 1;
+}
+
+/**
+ * Finite + log-positive keep mask via `xyg_payload_visible_mask`.
+ */
+export function payloadVisibleMask(x, y, { xLog = false, yLog = false, base = null } = {}) {
+  const xa = asF64Array(x);
+  const ya = asF64Array(y);
+  if (xa.length !== ya.length) {
+    throw new RangeError("payloadVisibleMask x/y length mismatch");
+  }
+  const n = xa.length;
+  const out = new Uint8Array(n);
+  const hasBase = base != null;
+  const ba = hasBase ? asF64Array(base) : null;
+  if (hasBase && ba.length !== n) {
+    throw new RangeError("payloadVisibleMask base length mismatch");
+  }
+  const written = requireWritten(
+    Number(xyPayloadVisibleMask(
+      n ? f64Ptr(xa) : null,
+      n ? f64Ptr(ya) : null,
+      BigInt(n),
+      xLog ? 1 : 0,
+      yLog ? 1 : 0,
+      hasBase && n ? f64Ptr(ba) : null,
+      hasBase ? 1 : 0,
+      n ? u8Ptr(out) : null,
+      BigInt(n),
+    )),
+    n,
+    "xyg_payload_visible_mask",
+  );
+  return { mask: out, kept: written };
+}
+
+export const DENSITY_GRID_PATH_OVERSIZED_BIN2D = 0;
+export const DENSITY_GRID_PATH_IDENTITY_GRID_ONLY = 1;
+export const DENSITY_GRID_PATH_IDENTITY_STRATIFIED_FUSED = 2;
+export const DENSITY_GRID_PATH_IDENTITY_STRATIFIED_SPLIT = 3;
+export const DENSITY_GRID_PATH_IDENTITY_SAMPLE_FUSED = 4;
+export const DENSITY_GRID_PATH_RANGE_INDICES = 5;
+
+export const DENSITY_COLOR_MODE_NONE = 0;
+export const DENSITY_COLOR_MODE_CONSTANT = 1;
+export const DENSITY_COLOR_MODE_OTHER = 2;
+
+export const DENSITY_OVERLAY_NONE = 0;
+export const DENSITY_OVERLAY_ROWS_EXCEED_U32 = 1;
+export const DENSITY_OVERLAY_STATIC_RASTER = 2;
+
+const DENSITY_EMIT_META_BYTES = 96;
+
+function readDensityEmitMeta(buf) {
+  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  return {
+    grid_path: view.getInt32(0, true),
+    bin_window_x0: view.getFloat64(8, true),
+    bin_window_x1: view.getFloat64(16, true),
+    bin_window_y0: view.getFloat64(24, true),
+    bin_window_y1: view.getFloat64(32, true),
+    full_identity: view.getUint32(40, true) === 1,
+    oversized: view.getUint32(44, true) === 1,
+    pyramid_eligible: view.getUint32(48, true) === 1,
+    pyramid_attempt: view.getUint32(52, true) === 1,
+    pyramid_no_rescan: view.getUint32(56, true) === 1,
+    pyramid_max_upsample: view.getUint32(60, true),
+    pyramid_tile_upsample: view.getUint32(64, true),
+    wasm_eligible: view.getUint32(68, true) === 1,
+    needs_pyramid_sample: view.getUint32(72, true) === 1,
+    overlay_omitted: view.getUint32(76, true),
+    visible_is_n_points: view.getUint32(80, true) === 1,
+    use_raw_range_bin2d: view.getUint32(84, true) === 1,
+  };
+}
+
+export function densityFormatBinning({
+  exact = false,
+  level = 0,
+  tiles = false,
+  upsampled = false,
+} = {}) {
+  const out = new Uint8Array(64);
+  const written = Number(xyDensityFormatBinning(
+    exact ? 1 : 0,
+    Number(level),
+    tiles ? 1 : 0,
+    upsampled ? 1 : 0,
+    u8Ptr(out),
+    BigInt(out.length),
+  ));
+  if (!Number.isFinite(written) || written === Number.MAX_SAFE_INTEGER) {
+    throw new Error("xyg_density_format_binning failed");
+  }
+  return new TextDecoder().decode(out.subarray(0, written));
+}
+
+export function densityEmitPlan({
+  cartesian = true,
+  xLinear = true,
+  yLinear = true,
+  categorical = false,
+  compactCategorical = false,
+  stratifiedCounts = false,
+  xHasNulls = false,
+  yHasNulls = false,
+  pointOverlay = true,
+  gridFromPyramid = false,
+  xMemmapped = false,
+  yMemmapped = false,
+  hasPyramidResource = false,
+  forceBin2d = false,
+  forcePyramid = false,
+  colorMode = DENSITY_COLOR_MODE_NONE,
+  xMin = 0,
+  xMax = 1,
+  yMin = 0,
+  yMax = 1,
+  xr0 = 0,
+  xr1 = 1,
+  yr0 = 0,
+  yr1 = 1,
+  xC0 = 0,
+  xC1 = 1,
+  yC0 = 0,
+  yC1 = 1,
+  nPoints = 0,
+} = {}) {
+  const out = new Uint8Array(DENSITY_EMIT_META_BYTES);
+  const code = Number(xyDensityEmitMeta(
+    cartesian ? 1 : 0,
+    xLinear ? 1 : 0,
+    yLinear ? 1 : 0,
+    categorical ? 1 : 0,
+    compactCategorical ? 1 : 0,
+    stratifiedCounts ? 1 : 0,
+    xHasNulls ? 1 : 0,
+    yHasNulls ? 1 : 0,
+    pointOverlay ? 1 : 0,
+    gridFromPyramid ? 1 : 0,
+    xMemmapped ? 1 : 0,
+    yMemmapped ? 1 : 0,
+    hasPyramidResource ? 1 : 0,
+    forceBin2d ? 1 : 0,
+    forcePyramid ? 1 : 0,
+    Number(colorMode),
+    Number(xMin),
+    Number(xMax),
+    Number(yMin),
+    Number(yMax),
+    Number(xr0),
+    Number(xr1),
+    Number(yr0),
+    Number(yr1),
+    Number(xC0),
+    Number(xC1),
+    Number(yC0),
+    Number(yC1),
+    BigInt(nPoints),
+    u8Ptr(out),
+  ));
+  if (code !== 0) {
+    throw new Error("xyg_density_emit_meta failed");
+  }
+  return readDensityEmitMeta(out);
+}
+
+export function densityWasmEligible({
+  cartesian = true,
+  xLinear = true,
+  yLinear = true,
+  colorMode = DENSITY_COLOR_MODE_NONE,
+  xHasNulls = false,
+  yHasNulls = false,
+  nPoints = 0,
+} = {}) {
+  const code = Number(xyDensityWasmEligible(
+    cartesian ? 1 : 0,
+    xLinear ? 1 : 0,
+    yLinear ? 1 : 0,
+    Number(colorMode),
+    xHasNulls ? 1 : 0,
+    yHasNulls ? 1 : 0,
+    BigInt(nPoints),
+  ));
+  if (code < 0) {
+    throw new Error("xyg_density_wasm_eligible failed");
+  }
+  return code === 1;
+}
+
+/**
+ * Whether a scatter should use the density tier (Python Trace.use_density).
+ * Polar / forceDirect always ship direct; threshold is strict `>` (ABI 122).
+ */
+export function shouldUseDensity(nPoints, {
+  forceDensity = false,
+  forceDirect = false,
+  coords = "cartesian",
+  perItemChannels = false,
+} = {}) {
+  return payloadTier({
+    kind: 1,
+    nPoints,
+    polar: coords === "polar",
+    forceDensity: forceDensity ? 1 : -1,
+    forceDirect,
+    perItem: perItemChannels,
+  }) === 2;
 }
 
 export function normalizeF32(data, lo, hi, { nanMode = "nan" } = {}) {

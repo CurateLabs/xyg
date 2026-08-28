@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
-from xyg import _fontmetrics, _svg, _textblock
+from xyg import _fontmetrics, _native, _svg, _textblock
 
 
 def test_text_box_width_uses_embedded_advances_with_unknown_glyph_fallback() -> None:
@@ -76,24 +76,29 @@ def test_measurements_are_reused_only_within_one_layout_pass(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls = 0
-    original = _fontmetrics.advance
+    original = _native.text_block_measure
 
-    def measured(text: str, font_size: float) -> float:
+    def measured(
+        text: object,
+        font_size: float,
+        line_height: float = 1.2,
+        max_width: float | None = None,
+    ) -> dict[str, object]:
         nonlocal calls
         calls += 1
-        return original(text, font_size)
+        return original(text, font_size, line_height=line_height, max_width=max_width)
 
-    monkeypatch.setattr(_fontmetrics, "advance", measured)
+    monkeypatch.setattr(_native, "text_block_measure", measured)
     with _textblock.measurement_cache():
         first = _textblock.measure("first\r\nsecond", 12.0)
         second = _textblock.measure("first\nsecond", 12.0)
 
     assert second is first
-    assert calls == 2
+    assert calls == 1
 
     with _textblock.measurement_cache():
         _textblock.measure("first\nsecond", 12.0)
-    assert calls == 4
+    assert calls == 2
 
 
 def test_default_layout_resolves_x_tick_room_once_when_y_gutter_does_not_grow(
