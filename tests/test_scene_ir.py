@@ -100,7 +100,7 @@ def test_authored_scene_evidence_tiers_keep_rust_chrome_consumers(count: int) ->
     ("field", "value", "message"),
     [
         ("class_name", "browser-only", "BROWSER_CSS|class_name"),
-        ("style", {"font_family": "Example Sans"}, "font_family"),
+        ("style", {"font_family": "Example Sans"}, "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT"),
         ("style", {"markup": "<b>rich</b>"}, "markup"),
         ("style", {"collision": "avoid"}, "collision"),
     ],
@@ -118,6 +118,102 @@ def test_scene_v25_wrapped_annotations_fail_closed_for_host_layout_features(
     figure.annotations[0][field] = value
     with pytest.raises(UnsupportedSceneV3, match=message):
         figure.to_scene()
+
+
+def test_scene_annotation_html_stays_fail_closed() -> None:
+    figure = Figure(width=320, height=240).line([0.0, 1.0], [0.0, 1.0])
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.annotations = [
+        {"kind": "callout", "x": 0.5, "y": 0.5, "text": "rich", "html": "<b>rich</b>"}
+    ]
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML"):
+        figure.to_scene()
+    reason = scene_v3.scene_export_support_reason(figure) or ""
+    assert "XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML" in reason
+
+
+def test_scene_annotation_class_name_stays_fail_closed() -> None:
+    figure = Figure(width=320, height=240).line([0.0, 1.0], [0.0, 1.0])
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.annotations = [
+        {"kind": "callout", "x": 0.5, "y": 0.5, "text": "css", "class_name": "custom"}
+    ]
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_BROWSER_CSS"):
+        figure.to_scene()
+    reason = scene_v3.scene_export_support_reason(figure) or ""
+    assert "XYG_SCENE_UNSUPPORTED_BROWSER_CSS" in reason
+
+
+def test_scene_annotation_collision_stays_fail_closed() -> None:
+    figure = Figure(width=320, height=240).line([0.0, 1.0], [0.0, 1.0])
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.annotations = [
+        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "collision", "collision": "hide"}
+    ]
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION"):
+        figure.to_scene()
+    reason = scene_v3.scene_export_support_reason(figure) or ""
+    assert "XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION" in reason
+
+
+def test_scene_annotation_markup_stays_fail_closed() -> None:
+    figure = Figure(width=320, height=240).line([0.0, 1.0], [0.0, 1.0])
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.annotations = [
+        {
+            "kind": "callout",
+            "x": 0.5,
+            "y": 0.5,
+            "text": "rich",
+            "style": {"markup": "<b>rich</b>"},
+        }
+    ]
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP"):
+        figure.to_scene()
+    reason = scene_v3.scene_export_support_reason(figure) or ""
+    assert "XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP" in reason
+
+
+def test_scene_annotation_custom_typography_stays_fail_closed() -> None:
+    figure = Figure(width=320, height=240).line([0.0, 1.0], [0.0, 1.0])
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.annotations = [
+        {
+            "kind": "callout",
+            "x": 0.5,
+            "y": 0.5,
+            "text": "type",
+            "style": {"font_family": "Comic Sans"},
+        }
+    ]
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_CUSTOM_FONT"):
+        figure.to_scene()
+    reason = scene_v3.scene_export_support_reason(figure) or ""
+    assert "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT" in reason
+
+
+def test_scene_annotation_style_rotation_routes_through_scene() -> None:
+    figure = Figure(width=320, height=240).line([0.0, 1.0], [0.0, 1.0])
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.annotations = [
+        {
+            "kind": "text",
+            "x": 0.5,
+            "y": 0.5,
+            "text": "rotated",
+            "style": {"rotation": 30},
+        }
+    ]
+    scene = figure.to_scene()
+    svg = _native.scene_svg(scene)
+    assert 'transform="rotate(-30 ' in svg
+    assert scene_v3.scene_export_support_reason(figure) is None
 
 
 def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
@@ -204,12 +300,53 @@ def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
 def test_figure_support_axis_allowlist_is_rust_owned() -> None:
     figure = Figure().line([0.0, 1.0], [0.0, 1.0])
     figure.axis_options["x"]["collision"] = "hide"
-    with pytest.raises(UnsupportedSceneV3, match="tick formatting"):
-        figure.to_scene()
+    scene = figure.to_scene()
+    svg = _native.scene_svg(scene)
+    assert "<text" in svg
     extra = Figure().line([0.0, 1.0], [0.0, 1.0])
     extra.axis_options["z"] = {"label": "z"}
     with pytest.raises(UnsupportedSceneV3, match="exactly x/y"):
         extra.to_scene()
+
+
+def test_scene_cartesian_tick_label_hide_thins_labels() -> None:
+    ticks = [i / 20.0 for i in range(21)]
+    preserve = Figure(width=200, height=160).line([0.0, 1.0], [0.0, 1.0])
+    preserve.axis_options["x"]["domain"] = (0.0, 1.0)
+    preserve.axis_options["y"]["domain"] = (0.0, 1.0)
+    preserve.axis_options["x"]["tick_values"] = ticks
+    preserve.axis_options["x"]["tick_label_strategy"] = "preserve"
+    hidden = Figure(width=200, height=160).line([0.0, 1.0], [0.0, 1.0])
+    hidden.axis_options["x"]["domain"] = (0.0, 1.0)
+    hidden.axis_options["y"]["domain"] = (0.0, 1.0)
+    hidden.axis_options["x"]["tick_values"] = ticks
+    hidden.axis_options["x"]["tick_label_strategy"] = "hide"
+    preserve_svg = _native.scene_svg(preserve.to_scene())
+    hidden_svg = _native.scene_svg(hidden.to_scene())
+    assert hidden_svg.count("<text") < preserve_svg.count("<text")
+
+
+def test_scene_cartesian_tick_label_rotate_emits_svg_transform() -> None:
+    figure = Figure(width=240, height=160).line([0.0, 1.0], [0.0, 1.0])
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.axis_options["x"]["tick_label_strategy"] = "rotate"
+    svg = _native.scene_svg(figure.to_scene())
+    assert "rotate(" in svg
+
+
+def test_scene_polar_tick_label_off_compiles_and_omits_theta_labels() -> None:
+    figure = Figure(coords="polar", width=320, height=320).line([0.0, 1.0], [0.0, 1.0])
+    figure.axis_options["x"]["tick_label_strategy"] = "off"
+    svg = _native.scene_svg(figure.to_scene())
+    assert 'data-xy-tick="theta"' not in svg
+
+
+def test_scene_polar_tick_label_hide_stays_fail_closed() -> None:
+    figure = Figure(coords="polar").line([0.0, 1.0], [0.0, 1.0])
+    figure.axis_options["x"]["tick_label_strategy"] = "hide"
+    with pytest.raises(UnsupportedSceneV3, match="tick formatting"):
+        figure.to_scene()
 
 
 def test_scene_v19_colorbar_python_framer_matches_literal_stop_contract() -> None:
@@ -881,6 +1018,8 @@ def test_scene_authored_tick_labels_keep_their_explicit_tick_pairing() -> None:
         tick_labels=["off-domain-long-label", "zero"],
     )
     scene = figure.to_scene()
+    assert b"zero" in scene
+    assert b"off-domain-long-label" not in scene
     svg = _native.scene_svg(scene)
     raster = _native.scene_raster_commands(scene)
     painter = _native.scene_browser_painter(scene)

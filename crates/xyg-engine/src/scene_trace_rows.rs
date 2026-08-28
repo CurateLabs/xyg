@@ -381,6 +381,33 @@ pub fn pack_trace_rows(
     Ok(rows)
 }
 
+/// Canonical `x`/`y` columns from packed `XYCL` v1, for `loc="best"` occupancy.
+pub(crate) fn xycl_xy_series(columns: &[u8]) -> Result<Vec<(Vec<f64>, Vec<f64>)>, TraceRowsError> {
+    if columns.is_empty() {
+        return Ok(Vec::new());
+    }
+    if columns.len() < XYCL_HEADER_BYTES || columns.get(..4) != Some(&XYCL_MAGIC[..]) {
+        return Err(TraceRowsError::new(TraceRowsCode::Length, 0));
+    }
+    if read_u32(columns, 4)? != XYCL_VERSION {
+        return Err(TraceRowsError::new(TraceRowsCode::Version, 0));
+    }
+    let n_traces = read_u32(columns, 8)? as usize;
+    if n_traces > MAX_TRACES {
+        return Err(TraceRowsError::new(TraceRowsCode::Limit, 0));
+    }
+    let mut at = XYCL_HEADER_BYTES;
+    let mut series = Vec::with_capacity(n_traces);
+    for index in 0..n_traces {
+        let input = parse_column(columns, &mut at, index)?;
+        series.push((input.x, input.y));
+    }
+    if at != columns.len() {
+        return Err(TraceRowsError::new(TraceRowsCode::Length, 0));
+    }
+    Ok(series)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
