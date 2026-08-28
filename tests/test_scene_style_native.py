@@ -9,6 +9,7 @@ import pytest
 from xyg._figure import Figure
 from xyg._native import (
     css_color_rgba,
+    scene_encode_assembled,
     scene_pack_annotation_facts,
     scene_pack_annotation_marks,
     scene_pack_annotations,
@@ -144,6 +145,45 @@ def test_empty_annotation_splice_facts_emit_xyas() -> None:
     assert int.from_bytes(packed[12:16], "little") == 0
     assert int.from_bytes(packed[16:20], "little") == 0
     assert packed[20:] == b"\x00\x00\x00\x00"
+
+
+def test_empty_encode_assembled_facts_emit_xygs() -> None:
+    from xyg import _scene_v3
+
+    compiled = scene_pack_trace_compile(
+        b"XYTC" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    )
+    attached = scene_pack_trace_attach(
+        compiled, b"XYTA" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    )
+    sidecars = scene_pack_trace_sidecars(
+        attached, b"XYNM" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    )
+    xyas = scene_splice_annotations(b"", sidecars, b"")
+    figure = Figure(width=400, height=300)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    chrome = scene_pack_figure_chrome(
+        _scene_v3._pack_chrome_facts(
+            figure,
+            [],
+            [],
+            width=400,
+            height=300,
+            margins=None,
+            colorbar_ok=True,
+        )
+    )
+    encoded = scene_encode_assembled(
+        xyas,
+        chrome,
+        b"",
+        viewport=(400.0, 300.0),
+        x_axis=(1, 0, 0.0, 1.0, 1.0, False),
+        y_axis=(2, 0, 0.0, 1.0, 1.0, False),
+    )
+    assert encoded[:4] == b"XYGS"
+    assert int.from_bytes(encoded[4:8], "little") == 31
 
 
 def test_line_default_stroke_width_is_one_and_a_half() -> None:

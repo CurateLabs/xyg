@@ -4,7 +4,7 @@
 //! envelope. Rust owns dash/linecap/marker/gradient XYSS record construction,
 //! including annotation style_ref bases and omit-empty records, so Python and
 //! Node cannot drift. Encoded Scene v31 is unchanged. Hosts splice annotation
-//! styles and mark rows through ABI 159 (`XYAS`) for batch encode.
+//! styles and mark rows through ABI 159 (`XYAS`) and encode through ABI 160.
 
 use crate::scene::XYDS_MAX_VALUES;
 use crate::scene_annotations::{XYAO_MAGIC, XYAO_STYLE_BYTES, XYAO_V1_HEADER_BYTES, XYAO_VERSION};

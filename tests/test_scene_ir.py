@@ -202,13 +202,13 @@ def test_python_callout_label_background_uses_xyac_v2_only_when_requested(
 ) -> None:
     captured: list[bytes] = []
 
-    def capture_scene_batch_encode(**kwargs: object) -> bytes:
-        value = kwargs["authored_text_annotations"]
-        assert isinstance(value, bytes)
-        captured.append(value)
+    def capture_scene_encode_assembled(**kwargs: object) -> bytes:
+        xyas = kwargs["xyas"]
+        assert isinstance(xyas, (bytes, bytearray))
+        captured.append(scene_v3._unpack_xyas(bytes(xyas))["xyad"])
         return b"scene"
 
-    monkeypatch.setattr(scene_v3._native, "scene_batch_encode", capture_scene_batch_encode)
+    monkeypatch.setattr(scene_v3._native, "scene_encode_assembled", capture_scene_encode_assembled)
     plain = Figure().callout(0.5, 0.5, "plain")
     assert scene_v3.figure_scene(plain) == b"scene"
     v1 = captured.pop()
@@ -237,13 +237,13 @@ def test_python_label_borders_select_v23_frames_and_reject_partial_style(
 ) -> None:
     captured: list[bytes] = []
 
-    def capture_scene_batch_encode(**kwargs: object) -> bytes:
-        value = kwargs["authored_text_annotations"]
-        assert isinstance(value, bytes)
-        captured.append(value)
+    def capture_scene_encode_assembled(**kwargs: object) -> bytes:
+        xyas = kwargs["xyas"]
+        assert isinstance(xyas, (bytes, bytearray))
+        captured.append(scene_v3._unpack_xyas(bytes(xyas))["xyad"])
         return b"scene"
 
-    monkeypatch.setattr(scene_v3._native, "scene_batch_encode", capture_scene_batch_encode)
+    monkeypatch.setattr(scene_v3._native, "scene_encode_assembled", capture_scene_encode_assembled)
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 1.0)
     figure.axis_options["y"]["domain"] = (0.0, 1.0)

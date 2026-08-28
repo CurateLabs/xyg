@@ -216,6 +216,9 @@ records resolve from packed XYSD plus XYAO v1.
 ABI 159 adds
 `xyg_scene_splice_annotations` so annotation style/row splice and XYAD
 extract resolve from packed product rows plus XYSD plus XYAO v1.
+ABI 160 adds
+`xyg_scene_encode_assembled` so assembled Scene encode resolves from packed
+XYAS plus XYCC plus extras.
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -255,6 +258,7 @@ ABI 158 owns XYSS dash/linecap/marker/gradient record construction from
 packed XYSD plus XYAO v1.
 ABI 159 owns annotation style/row splice and XYAD extract from packed
 product rows plus XYSD plus XYAO v1.
+ABI 160 owns assembled Scene encode from packed XYAS plus XYCC plus extras.
 Polar+step+smooth
 and authored marker glyphs stay
 compatibility. ABI 104 likewise moves
@@ -280,6 +284,9 @@ ABI 158 makes XYSS packing Rust-owned: Python and Node pass `XYSD` plus
 `XYAO` and call `xyg_scene_pack_style_sidecars`.
 ABI 159 makes annotation splice Rust-owned: Python and Node pass product
 rows plus `XYSD` plus `XYAO` and call `xyg_scene_splice_annotations`.
+ABI 160 makes assembled Scene encode Rust-owned: Python and Node pass
+`XYAS` plus `XYCC` plus extras plus axis scalars and call
+`xyg_scene_encode_assembled`.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call
 `xyg_figure_autorange` / `xyg_auto_domain`. Direct-browser WASM compile uses
@@ -531,6 +538,10 @@ ABI 159
 `xyg_scene_splice_annotations` owns annotation style/row splice and XYAD
 extract from packed product rows plus XYSD plus XYAO v1 so batch-encode
 arrays cannot drift.
+ABI 160
+`xyg_scene_encode_assembled` owns assembled Scene encode from packed XYAS
+plus XYCC plus extras so XYAS/XYCC unpack, gutter widening, and SceneBatch
+encode cannot drift.
 ABI 116
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 so tags and opposite-axis spanning cannot drift. ABI 117

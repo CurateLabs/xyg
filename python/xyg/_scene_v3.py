@@ -1303,7 +1303,7 @@ def _xycc_tick_labels(blob: bytes) -> list[str] | None:
 
 
 def _unpack_xycc(blob: bytes) -> dict[str, Any]:
-    """Split Rust-owned XYCC chrome into scene_batch_encode kwargs."""
+    """Split Rust-owned XYCC chrome into encode-ready chrome fields."""
     if len(blob) < _XYCC_HEADER.size or blob[:4] != b"XYCC":
         raise ValueError("invalid scene chrome packing")
     (
@@ -2943,6 +2943,8 @@ def figure_scene(
     # Hosts pass XYSD plus XYAO; Rust owns XYSS dash/linecap/marker/gradient
     # records and omit-empty (ABI 158). Hosts pass product rows plus XYSD plus
     # XYAO; Rust owns annotation style/row splice and XYAD extract (ABI 159).
+    # Hosts pass XYAS plus XYCC plus extras plus axis scalars; Rust owns
+    # assembled Scene encode (ABI 160).
     x_domain = tuple(float(value) for value in figure._range("x"))
     y_domain = tuple(float(value) for value in figure._range("y"))
     annotation_facts = bytearray()
@@ -2968,26 +2970,12 @@ def figure_scene(
             raise ValueError("invalid scene style sidecar facts version") from error
         raise ValueError("invalid scene style sidecar packing") from error
     try:
-        spliced = _unpack_xyas(
-            _native.scene_splice_annotations(row_bytes, sidecar_bytes, annotation_output)
-        )
+        xyas = _native.scene_splice_annotations(row_bytes, sidecar_bytes, annotation_output)
     except _native.SceneAnnotationSpliceError as error:
         _raise_annotation_splice(error)
-    styles = list(spliced["styles"])
-    kinds = list(spliced["kinds"])
-    stable_ids = list(spliced["stable_ids"])
-    style_refs = list(spliced["style_refs"])
-    diameters = list(spliced["diameters"])
-    symbols = list(spliced["symbols"])
-    expansion_modes = list(spliced["expansion_modes"])
-    coordinates = [list(axis) for axis in spliced["coordinates"]]
-    framed_annotations = spliced["xyad"]
 
     w = int(width if width is not None else figure.width)
     h = int(height if height is not None else figure.height)
-    fill_rgba = [channel for fill, _, _ in styles for channel in fill]
-    stroke_rgba = [channel for _, stroke, _ in styles for channel in stroke]
-    stroke_width = [value for _, _, value in styles]
     kind_codes = {"linear": 0, "log": 1, "symlog": 2}
 
     def axis(axis_id: str, stable_id: int) -> tuple[int, int, float, float, float, bool]:
@@ -3004,17 +2992,15 @@ def figure_scene(
     x_axis = axis("x", 1)
     y_axis = axis("y", 2)
     try:
-        chrome = _unpack_xycc(
-            _native.scene_pack_figure_chrome(
-                _pack_chrome_facts(
-                    figure,
-                    legend_entries,
-                    styles,
-                    width=w,
-                    height=h,
-                    margins=margins,
-                    colorbar_ok=not colorbar_unsupported,
-                )
+        chrome = _native.scene_pack_figure_chrome(
+            _pack_chrome_facts(
+                figure,
+                legend_entries,
+                sidecars["styles"],
+                width=w,
+                height=h,
+                margins=margins,
+                colorbar_ok=not colorbar_unsupported,
             )
         )
     except ValueError as error:
@@ -3028,45 +3014,22 @@ def figure_scene(
         }:
             raise
         raise UnsupportedSceneV3(message) from error
-    return _native.scene_batch_encode(
-        viewport=(w, h),
-        margins=chrome["margins"],
-        x_axis=x_axis,
-        y_axis=y_axis,
-        kinds=kinds,
-        stable_ids=stable_ids,
-        style_refs=style_refs,
-        fill_rgba=fill_rgba,
-        stroke_rgba=stroke_rgba,
-        stroke_width=stroke_width,
-        diameter=diameters,
-        symbols=symbols,
-        expansion_modes=expansion_modes,
-        x0=coordinates[0],
-        y0=coordinates[1],
-        x1=coordinates[2],
-        y1=coordinates[3],
-        title=chrome["title"],
-        x_label=chrome["x_label"],
-        y_label=chrome["y_label"],
-        chrome_style=chrome["chrome_style"],
-        x_major_ticks=chrome["x_major_ticks"],
-        x_tick_labels=chrome["x_tick_labels"],
-        x_format=chrome["x_format"],
-        x_minor_ticks=chrome["x_minor_ticks"],
-        y_major_ticks=chrome["y_major_ticks"],
-        y_tick_labels=chrome["y_tick_labels"],
-        y_format=chrome["y_format"],
-        y_minor_ticks=chrome["y_minor_ticks"],
-        legend_input=chrome["legend_input"],
-        colorbar_input=chrome["colorbar_input"],
-        authored_text_annotations=bytes(framed_annotations),
-        polar_input=_native.scene_pack_scene_extras(
-            _pack_polar_scene_input(figure),
-            _pack_xyhp(heatmap_paint_planes),
-            style_sidecars,
-        ),
+    extras = _native.scene_pack_scene_extras(
+        _pack_polar_scene_input(figure),
+        _pack_xyhp(heatmap_paint_planes),
+        style_sidecars,
     )
+    try:
+        return _native.scene_encode_assembled(
+            xyas=xyas,
+            chrome=chrome,
+            extras=extras,
+            viewport=(w, h),
+            x_axis=x_axis,
+            y_axis=y_axis,
+        )
+    except _native.SceneEncodeAssembledError as error:
+        raise ValueError("invalid canonical scene batch") from error
 
 
 def figure_svg(figure: Any, **options: Any) -> str:

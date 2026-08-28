@@ -3,8 +3,8 @@
 //! Hosts pass packed product rows (ABI 156), `XYSD` v1 trace styles (ABI 157),
 //! and an optional `XYAO` v1 envelope (ABI 148). Rust owns appending
 //! annotation styles and 56-byte mark rows and extracting `XYAD`, so Python
-//! and Node cannot drift. Encoded Scene v31 is unchanged. Hosts unpack `XYAS`
-//! once for batch encode; chrome/legend still read original-trace `XYSD`.
+//! and Node cannot drift. Encoded Scene v31 is unchanged. Hosts pass `XYAS` to
+//! ABI 160 assembled encode; chrome/legend still read original-trace `XYSD`.
 
 use crate::scene::{MAX_SCENE_MARKS, MAX_SCENE_STYLES, SCENE_STYLE_RECORD_BYTES};
 use crate::scene_annotations::{XYAO_MAGIC, XYAO_STYLE_BYTES, XYAO_V1_HEADER_BYTES, XYAO_VERSION};

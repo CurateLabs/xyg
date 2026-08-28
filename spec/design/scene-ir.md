@@ -130,6 +130,8 @@ XYAO v1.
 ABI 159 does not change Scene records; `xyg_scene_splice_annotations` owns
 annotation style/row splice and XYAD extract from packed product rows plus
 XYSD plus XYAO v1.
+ABI 160 does not change Scene records; `xyg_scene_encode_assembled` owns
+assembled Scene encode from packed XYAS plus XYCC plus extras.
 
 ## Version 3: backend-neutral core scene batch
 
@@ -489,6 +491,10 @@ record construction from packed XYSD plus XYAO v1.
 ABI 159 does not change Scene records;
 `xyg_scene_splice_annotations` owns annotation style/row splice and XYAD
 extract from packed product rows plus XYSD plus XYAO v1.
+
+ABI 160 does not change Scene records;
+`xyg_scene_encode_assembled` owns assembled Scene encode from packed XYAS
+plus XYCC plus extras.
 
 ABI 110 adds `xyg_scene_pack_legend` so both hosts pass loc/flags/paints
 and receive XYLG bytes; header layout, text offsets, and bounded-text
@@ -1316,7 +1322,9 @@ gating, heatmap-vs-density plane selection, and style/dash/marker/gradient
 extraction cannot drift. ABI 158 packs XYSS from `XYSD` plus `XYAO` so
 dash/linecap/marker/gradient records cannot drift. ABI 159 packs `XYAS`
 from product rows plus `XYSD` plus `XYAO` so annotation style/row splice
-and XYAD extract cannot drift. An empty reason selects the Scene route;
+and XYAD extract cannot drift. ABI 160 packs assembled Scene encode from
+`XYAS` plus `XYCC` plus extras so XYAS/XYCC unpack, gutter widening, and
+batch encode cannot drift. An empty reason selects the Scene route;
 hosts still compile the Scene and may still report compiler or viewport
 diagnostics, including the shared PolyFill group budget. ABI 106 does not
 change Scene records; `xyg_figure_autorange` owns the domain the annotation
@@ -1391,6 +1399,9 @@ record construction from packed XYSD plus XYAO v1.
 ABI 159 does not change Scene records either;
 `xyg_scene_splice_annotations` owns annotation style/row splice and XYAD
 extract from packed product rows plus XYSD plus XYAO v1.
+ABI 160 does not change Scene records either;
+`xyg_scene_encode_assembled` owns assembled Scene encode from packed XYAS
+plus XYCC plus extras.
 Polar+step+smooth and authored marker glyphs stay compatibility. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;

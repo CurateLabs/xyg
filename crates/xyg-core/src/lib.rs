@@ -56,6 +56,10 @@ use xyg_engine::pack_figure_chrome;
 use xyg_engine::pack_public_export;
 use xyg_engine::pack_style_sidecars;
 use xyg_engine::splice_annotations;
+use xyg_engine::encode_assembled;
+use xyg_engine::EncodeAssembledAxis;
+use xyg_engine::EncodeAssembledCode;
+use xyg_engine::EncodeAssembledError;
 use xyg_engine::pack_trace_attach;
 use xyg_engine::pack_trace_compile;
 use xyg_engine::pack_trace_rows;
@@ -146,7 +150,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 159;
+pub const ABI_VERSION: u32 = 160;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -719,6 +723,118 @@ pub unsafe extern "C" fn xyg_scene_splice_annotations(
                 match i32::try_from(bytes.len()) {
                     Ok(count) => count,
                     Err(_) => -(AnnotationSpliceCode::Limit as i32),
+                }
+            }
+            Err(error) => {
+                if out_cap >= 4 {
+                    let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                    dest[..4].copy_from_slice(&error.index.to_le_bytes());
+                }
+                -(error.code as i32)
+            }
+        }
+    })
+}
+
+/// Encode packed `XYAS` v1 plus `XYCC` v1 plus extras into a canonical Scene
+/// v31 batch. Hosts pass viewport and axis scalars; Rust owns XYAS/XYCC unpack,
+/// gutter widening, record expansion, chrome/legend/colorbar admission, and
+/// `SceneBatch` encode so Python and Node cannot drift. Returns the encoded
+/// byte count on success, or a negated `EncodeAssembledCode`. On error, when
+/// `out_cap >= 4`, writes the failing index as a little-endian u32. Encoded
+/// Scene v31 is unchanged.
+///
+/// # Safety
+/// When a length is non-zero, the matching pointer must address that many
+/// readable bytes. When `out_cap` is non-zero, `out` must address that many
+/// writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_encode_assembled(
+    xyas: *const u8,
+    xyas_len: usize,
+    chrome: *const u8,
+    chrome_len: usize,
+    extras: *const u8,
+    extras_len: usize,
+    viewport_width: f64,
+    viewport_height: f64,
+    x_axis_id: u64,
+    x_kind: u32,
+    x_lo: f64,
+    x_hi: f64,
+    x_constant: f64,
+    x_mask_nonpositive: i32,
+    y_axis_id: u64,
+    y_kind: u32,
+    y_lo: f64,
+    y_hi: f64,
+    y_constant: f64,
+    y_mask_nonpositive: i32,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if (xyas_len > 0 && xyas.is_null())
+        || (chrome_len > 0 && chrome.is_null())
+        || (extras_len > 0 && extras.is_null())
+        || (out_cap > 0 && out.is_null())
+    {
+        return -(EncodeAssembledError {
+            code: EncodeAssembledCode::Length,
+            index: 0,
+        }
+        .code as i32);
+    }
+    ffi_guard(-(EncodeAssembledCode::Length as i32), || {
+        let xyas_bytes = if xyas_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(xyas, xyas_len)
+        };
+        let chrome_bytes = if chrome_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(chrome, chrome_len)
+        };
+        let extras_bytes = if extras_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(extras, extras_len)
+        };
+        match encode_assembled(
+            xyas_bytes,
+            chrome_bytes,
+            extras_bytes,
+            viewport_width,
+            viewport_height,
+            EncodeAssembledAxis {
+                id: x_axis_id,
+                kind: x_kind,
+                lo: x_lo,
+                hi: x_hi,
+                constant: x_constant,
+                mask_nonpositive: x_mask_nonpositive,
+            },
+            EncodeAssembledAxis {
+                id: y_axis_id,
+                kind: y_kind,
+                lo: y_lo,
+                hi: y_hi,
+                constant: y_constant,
+                mask_nonpositive: y_mask_nonpositive,
+            },
+        ) {
+            Ok(bytes) => {
+                if bytes.len() > out_cap {
+                    return -(EncodeAssembledCode::Output as i32);
+                }
+                if bytes.is_empty() {
+                    return 0;
+                }
+                let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                dest[..bytes.len()].copy_from_slice(&bytes);
+                match i32::try_from(bytes.len()) {
+                    Ok(count) => count,
+                    Err(_) => -(EncodeAssembledCode::Limit as i32),
                 }
             }
             Err(error) => {
@@ -2508,6 +2624,9 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// `xyg_scene_splice_annotations` owns annotation style/row splice and XYAD
 /// extract from packed product rows plus XYSD plus XYAO v1 so Python and
 /// Node cannot drift.
+/// ABI 160 does not change Scene records;
+/// `xyg_scene_encode_assembled` owns assembled Scene encode from packed XYAS
+/// plus XYCC plus extras so Python and Node cannot drift.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
@@ -15264,6 +15383,39 @@ mod tests {
         };
         assert_eq!(xyas_code, 24);
         assert_eq!(&xyas_out[..4], b"XYAS");
+        let mut encoded_out = vec![0u8; 65536];
+        let encoded_code = unsafe {
+            xyg_scene_encode_assembled(
+                xyas_out.as_ptr(),
+                xyas_code as usize,
+                chrome_out.as_ptr(),
+                chrome_code as usize,
+                std::ptr::null(),
+                0,
+                400.0,
+                300.0,
+                1,
+                0,
+                0.0,
+                1.0,
+                1.0,
+                0,
+                2,
+                0,
+                0.0,
+                1.0,
+                1.0,
+                0,
+                encoded_out.as_mut_ptr(),
+                encoded_out.len(),
+            )
+        };
+        assert!(encoded_code > 0);
+        assert_eq!(&encoded_out[..4], b"XYGS");
+        assert_eq!(
+            u32::from_le_bytes(encoded_out[4..8].try_into().unwrap()),
+            31
+        );
     }
 
     #[test]

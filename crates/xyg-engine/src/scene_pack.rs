@@ -126,6 +126,24 @@ impl PackedSceneRow {
         out[48..56].copy_from_slice(&self.y1.to_le_bytes());
         out
     }
+
+    pub fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() != PACKED_SCENE_ROW_BYTES {
+            return None;
+        }
+        Some(Self {
+            kind: bytes[0],
+            symbol: bytes[1],
+            expansion_mode: bytes[2],
+            style_ref: u32::from_le_bytes(bytes[4..8].try_into().ok()?),
+            stable_id: u64::from_le_bytes(bytes[8..16].try_into().ok()?),
+            diameter: f64::from_le_bytes(bytes[16..24].try_into().ok()?),
+            x0: f64::from_le_bytes(bytes[24..32].try_into().ok()?),
+            y0: f64::from_le_bytes(bytes[32..40].try_into().ok()?),
+            x1: f64::from_le_bytes(bytes[40..48].try_into().ok()?),
+            y1: f64::from_le_bytes(bytes[48..56].try_into().ok()?),
+        })
+    }
 }
 
 /// Authoring literals for one trace's geometry columns.

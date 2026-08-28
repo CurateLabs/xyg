@@ -2227,6 +2227,98 @@ def scene_splice_annotations(rows: bytes, sidecars: bytes, annotations: bytes) -
     raise SceneAnnotationSpliceError(-4, 0)
 
 
+class SceneEncodeAssembledError(ValueError):
+    """Native assembled-encode failure carrying the ABI error code and index."""
+
+    def __init__(self, code: int, index: int) -> None:
+        self.code = int(code)
+        self.index = int(index)
+        messages = {
+            -2: "invalid scene encode assembled version",
+        }
+        super().__init__(messages.get(self.code, "invalid canonical scene batch"))
+
+
+def scene_encode_assembled(
+    xyas: bytes,
+    chrome: bytes,
+    extras: bytes,
+    *,
+    viewport: tuple[float, float],
+    x_axis: tuple[int, int, float, float, float, bool],
+    y_axis: tuple[int, int, float, float, float, bool],
+) -> bytes:
+    """Encode packed XYAS plus XYCC plus extras into a Scene v31 batch (M2 #271)."""
+    xyas_payload = xyas if isinstance(xyas, (bytes, bytearray, memoryview)) else bytes(xyas)
+    chrome_payload = chrome if isinstance(chrome, (bytes, bytearray, memoryview)) else bytes(chrome)
+    extras_payload = extras if isinstance(extras, (bytes, bytearray, memoryview)) else bytes(extras)
+    if len(viewport) != 2:
+        raise ValueError("viewport must contain two values")
+
+    def axis_args(
+        axis: tuple[int, int, float, float, float, bool], name: str
+    ) -> tuple[int, int, float, float, float, int]:
+        if len(axis) != 6:
+            raise ValueError(f"{name} must contain six values")
+        axis_id, kind, lo, hi, constant, mask = axis
+        if isinstance(axis_id, (bool, np.bool_)) or not isinstance(axis_id, (int, np.integer)):
+            raise ValueError(f"{name} id must be an unsigned 64-bit integer")
+        converted = int(axis_id)
+        if converted < 0:
+            raise ValueError(f"{name} id must be an unsigned 64-bit integer")
+        return (
+            converted,
+            int(kind),
+            float(lo),
+            float(hi),
+            float(constant),
+            1 if mask else 0,
+        )
+
+    x_args = axis_args(x_axis, "scene x_axis")
+    y_args = axis_args(y_axis, "scene y_axis")
+    capacity = max(65536, len(xyas_payload) + len(chrome_payload) + len(extras_payload) + 4096)
+    source_xyas = (
+        np.frombuffer(xyas_payload, dtype=np.uint8) if xyas_payload else np.empty(0, dtype=np.uint8)
+    )
+    source_chrome = (
+        np.frombuffer(chrome_payload, dtype=np.uint8)
+        if chrome_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    source_extras = (
+        np.frombuffer(extras_payload, dtype=np.uint8)
+        if extras_payload
+        else np.empty(0, dtype=np.uint8)
+    )
+    for _ in range(4):
+        out = np.zeros(capacity, dtype=np.uint8)
+        code = int(
+            _lib.xyg_scene_encode_assembled(
+                _ptr_u8(source_xyas) if source_xyas.size else 0,
+                int(source_xyas.size),
+                _ptr_u8(source_chrome) if source_chrome.size else 0,
+                int(source_chrome.size),
+                _ptr_u8(source_extras) if source_extras.size else 0,
+                int(source_extras.size),
+                float(viewport[0]),
+                float(viewport[1]),
+                *x_args,
+                *y_args,
+                _ptr_u8(out),
+                len(out),
+            )
+        )
+        if code == -4:
+            capacity *= 2
+            continue
+        if code < 0:
+            index = int(np.frombuffer(bytes(out[:4]), dtype="<u4")[0]) if len(out) >= 4 else 0
+            raise SceneEncodeAssembledError(code, index)
+        return bytes(out[:code])
+    raise SceneEncodeAssembledError(-4, 0)
+
+
 def scene_figure_support_reason(payload: bytes) -> str:
     """Return Rust's figure-compile diagnostic for a packed XYFS envelope.
 

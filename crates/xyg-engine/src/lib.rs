@@ -84,6 +84,10 @@ pub mod scene_annotation_splice;
 pub use scene_annotation_splice::{
     splice_annotations, AnnotationSpliceCode, AnnotationSpliceError,
 };
+pub mod scene_encode_assembled;
+pub use scene_encode_assembled::{
+    encode_assembled, EncodeAssembledAxis, EncodeAssembledCode, EncodeAssembledError,
+};
 pub mod stats;
 pub mod stream;
 pub mod svg;

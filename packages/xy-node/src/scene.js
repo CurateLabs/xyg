@@ -50,6 +50,7 @@ import {
   xyScenePackTraceSidecars,
   xyScenePackStyleSidecars,
   xySceneSpliceAnnotations,
+  xySceneEncodeAssembled,
   xyScenePackAnnotationMarks,
   xySceneRasterCommands,
   xySceneResolveChromeStyle,
@@ -3884,6 +3885,51 @@ function spliceAnnotations(rows, sidecars, annotations) {
   throw error;
 }
 
+function encodeAssembled(xyas, chrome, extras, { viewport, xAxis, yAxis }) {
+  if (!Array.isArray(viewport) || viewport.length !== 2) {
+    throw new RangeError("viewport must contain two values");
+  }
+  const xyasBytes = xyas instanceof Uint8Array ? xyas : new Uint8Array();
+  const chromeBytes = chrome instanceof Uint8Array ? chrome : new Uint8Array();
+  const extrasBytes = extras instanceof Uint8Array ? extras : new Uint8Array();
+  const xd = axisDescriptor(xAxis, "xAxis");
+  const yd = axisDescriptor(yAxis, "yAxis");
+  let capacity = Math.max(65536, xyasBytes.length + chromeBytes.length + extrasBytes.length + 4096);
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const out = new Uint8Array(capacity);
+    const code = xySceneEncodeAssembled(
+      xyasBytes.length ? u8Ptr(xyasBytes) : 0,
+      BigInt(xyasBytes.length),
+      chromeBytes.length ? u8Ptr(chromeBytes) : 0,
+      BigInt(chromeBytes.length),
+      extrasBytes.length ? u8Ptr(extrasBytes) : 0,
+      BigInt(extrasBytes.length),
+      Number(viewport[0]),
+      Number(viewport[1]),
+      ...xd,
+      ...yd,
+      u8Ptr(out),
+      BigInt(out.length),
+    );
+    if (code === -4) {
+      capacity *= 2;
+      continue;
+    }
+    if (code < 0) {
+      const failing = new DataView(out.buffer, out.byteOffset, 4).getUint32(0, true);
+      const error = new RangeError(code === -2 ? "invalid scene encode assembled version" : "invalid canonical scene batch");
+      error.code = code;
+      error.index = failing;
+      throw error;
+    }
+    return out.subarray(0, code);
+  }
+  const error = new RangeError("invalid canonical scene batch");
+  error.code = -4;
+  error.index = 0;
+  throw error;
+}
+
 function unpackXyAs(blob) {
   if (blob.length < 24 || blob[0] !== 88 || blob[1] !== 89 || blob[2] !== 65 || blob[3] !== 83) {
     throw new RangeError("invalid scene annotation splice packing");
@@ -4818,8 +4864,6 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   };
   const xSceneAxis = sceneAxis("x", 1, xDomain);
   const ySceneAxis = sceneAxis("y", 2, yDomain);
-  const xSceneDescriptor = axisDescriptor(xSceneAxis, "xAxis");
-  const ySceneDescriptor = axisDescriptor(ySceneAxis, "yAxis");
   let attachedBytes;
   let sidecars;
   try {
@@ -4865,32 +4909,14 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   const annotationFacts = concatBytes(annotationParts);
   const annotationOutput = packAnnotationFacts(annotationFacts, sidecars.styles.length, xDomain, yDomain);
   const styleSidecars = packStyleSidecars(sidecarBytes, annotationOutput);
-  const spliced = unpackXyAs(spliceAnnotations(rowBytes, sidecarBytes, annotationOutput));
-  const styles = spliced.styles;
-  const kinds = spliced.kinds;
-  const stableIds = spliced.stableIds;
-  const styleRefs = spliced.styleRefs;
-  const diameter = spliced.diameter;
-  const symbols = spliced.symbols;
-  const expansionModes = spliced.expansion;
-  const x0 = spliced.x0;
-  const y0 = spliced.y0;
-  const x1 = spliced.x1;
-  const y1 = spliced.y1;
-  const authoredText = spliced.xyad;
-
-  const chrome = unpackXyCc(packFigureChrome(packChromeFacts(figure, legendEntries, styles, {
+  const xyas = spliceAnnotations(rowBytes, sidecarBytes, annotationOutput);
+  const chrome = packFigureChrome(packChromeFacts(figure, legendEntries, sidecars.styles, {
     width: figure.width, height: figure.height, margins, colorbarOk: !colorbarUnsupported,
-  })));
-  return sceneBatchEncode({ viewport: [figure.width, figure.height], margins: chrome.margins,
-    xAxis: xSceneAxis, yAxis: ySceneAxis,
-    kinds, stableIds, styleRefs, styles, diameter, symbols, expansionModes, x0, y0, x1, y1,
-    title: chrome.title, xLabel: chrome.xLabel, yLabel: chrome.yLabel,
-    chromeStyle: chrome.chromeStyle, xMajorTicks: chrome.xMajorTicks, xMinorTicks: chrome.xMinorTicks,
-    yMajorTicks: chrome.yMajorTicks, yMinorTicks: chrome.yMinorTicks, xTickLabels: chrome.xTickLabels,
-    yTickLabels: chrome.yTickLabels, xFormat: chrome.xFormat, yFormat: chrome.yFormat,
-    legendInput: chrome.legendInput, colorbarInput: chrome.colorbarInput,
-    authoredTextAnnotations: authoredText, polarInput: packSceneExtrasFromFacts(packPolarSceneInput(figure), packXyhp(heatmapPaintPlanes), styleSidecars),
+  }));
+  return encodeAssembled(xyas, chrome, packSceneExtrasFromFacts(packPolarSceneInput(figure), packXyhp(heatmapPaintPlanes), styleSidecars), {
+    viewport: [figure.width, figure.height],
+    xAxis: xSceneAxis,
+    yAxis: ySceneAxis,
   });
 }
 
