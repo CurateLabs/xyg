@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 192;
+pub const ABI_VERSION: u32 = 193;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1030,6 +1030,8 @@ pub unsafe extern "C" fn xyg_scene_encode_assembled_from_sidecars(
 /// ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity` on that same XYMS path.
 /// ABI 177 admits heatmap `fill_opacity` on that same XYMS fill alpha (lattice style fill;
 /// colormap paints already multiply by it).
+/// ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity` on that
+/// same XYMS path (polar painted Image blit tessellates when stroke is visible).
 /// ABI 178 admits scatter `fill_opacity` / `stroke_opacity` on that same XYMS path.
 /// ABI 179 admits hexbin `fill_opacity` on that same XYMS fill alpha.
 /// ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint on that same XYMS path.

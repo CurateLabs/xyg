@@ -638,6 +638,26 @@ def test_polar_heatmap_is_scene_supported() -> None:
     assert constant_svg is not None
     assert b"<path" in constant_svg
     assert b'data-xy-polar-heatmap="true"' not in constant_svg
+    constant.traces[0].style["stroke"] = "#111111"
+    constant.traces[0].style["stroke_width"] = 2.0
+    constant.traces[0].style["stroke_opacity"] = 0.5
+    assert scene_export_support_reason(constant) is None
+    stroked_lattice = public_static_export(constant, "svg")
+    assert stroked_lattice is not None
+    assert b'stroke-opacity="' in stroked_lattice
+    painted = Figure(width=320, height=240, coords="polar")
+    painted.axis_options["x"]["domain"] = (0.0, 2.0)
+    painted.axis_options["y"]["domain"] = (0.0, 2.0)
+    painted.heatmap([[1.0, 2.0], [3.0, 4.0]])
+    painted.traces[0].style["stroke"] = "#111111"
+    painted.traces[0].style["stroke_width"] = 2.0
+    painted.traces[0].style["stroke_opacity"] = 0.5
+    assert scene_export_support_reason(painted) is None
+    painted_svg = public_static_export(painted, "svg")
+    assert painted_svg is not None
+    assert b'stroke-opacity="' in painted_svg
+    assert b'data-xy-polar-heatmap="true"' not in painted_svg
+    assert b"<path" in painted_svg
 
 
 def test_polar_painted_heatmap_over_ten_thousand_cells_is_scene_supported() -> None:
@@ -650,6 +670,10 @@ def test_polar_painted_heatmap_over_ten_thousand_cells_is_scene_supported() -> N
     exported = public_static_export(figure, "svg")
     assert exported is not None
     assert b'data-xy-polar-heatmap="true"' in exported
+    figure.traces[0].style["stroke"] = "#111111"
+    figure.traces[0].style["stroke_width"] = 2.0
+    figure.traces[0].style["stroke_opacity"] = 0.5
+    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
 
 
 def test_polar_lattice_heatmap_over_ten_thousand_cells_stays_public_lod() -> None:
@@ -1347,6 +1371,18 @@ def test_public_hexbin_fill_opacity_is_scene_supported() -> None:
     assert exported != public_static_export(_public_hexbin(), "svg")
 
 
+def test_public_hexbin_stroke_opacity_is_scene_supported() -> None:
+    figure = _public_hexbin()
+    figure.traces[0].style["stroke"] = "#111111"
+    figure.traces[0].style["stroke_width"] = 2.0
+    figure.traces[0].style["stroke_opacity"] = 0.5
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b'stroke-opacity="' in exported
+    assert exported != public_static_export(_public_hexbin(), "svg")
+
+
 def test_public_heatmap_matches_exact_cross_host_scene_and_consumers() -> None:
     from xyg import _native, _pdf, kernels
 
@@ -1457,6 +1493,29 @@ def test_public_heatmap_fill_opacity_is_scene_supported() -> None:
     colormap.traces[0].style["fill_opacity"] = 0.5
     assert scene_export_support_reason(colormap) is None
     assert public_static_export(colormap, "svg") is not None
+
+
+def test_public_heatmap_stroke_opacity_is_scene_supported() -> None:
+    figure = _public_heatmap()
+    figure.traces[0].style["stroke"] = "#111111"
+    figure.traces[0].style["stroke_width"] = 2.0
+    figure.traces[0].style["stroke_opacity"] = 0.5
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b'stroke-opacity="' in exported
+    assert exported != public_static_export(_public_heatmap(), "svg")
+    colormap = Figure(width=320, height=240)
+    colormap.axis_options["x"]["domain"] = (0.0, 4.0)
+    colormap.axis_options["y"]["domain"] = (0.0, 5.0)
+    colormap.heatmap(_PUBLIC_HEATMAP_Z, x=_PUBLIC_HEATMAP_X, y=_PUBLIC_HEATMAP_Y)
+    colormap.traces[0].style["stroke"] = "#111111"
+    colormap.traces[0].style["stroke_width"] = 2.0
+    colormap.traces[0].style["stroke_opacity"] = 0.5
+    assert scene_export_support_reason(colormap) is None
+    colormap_svg = public_static_export(colormap, "svg")
+    assert colormap_svg is not None
+    assert b'stroke-opacity="' in colormap_svg
 
 
 @pytest.mark.parametrize(

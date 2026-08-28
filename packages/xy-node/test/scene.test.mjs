@@ -2014,6 +2014,25 @@ test("Node Scene compiles heatmap fill_opacity", () => {
   assert.notEqual(svg, sceneSvg(solid.toScene()));
 });
 
+test("Node Scene compiles heatmap stroke_opacity", () => {
+  const stroked = new Figure({ width: 320, height: 240 });
+  stroked.setAxisDomain("x", [0, 4]);
+  stroked.setAxisDomain("y", [0, 5]);
+  stroked.heatmap([[1, 2], [3, 4]], {
+    style: {
+      color: "#22c55e",
+      opacity: 0.75,
+      stroke: "#111111",
+      stroke_width: 2,
+      stroke_opacity: 0.5,
+    },
+    name: null,
+  });
+  const svg = sceneSvg(stroked.toScene());
+  assert.match(svg, /stroke-opacity="/);
+  assert.equal(sceneExportSupportReason(stroked), null);
+});
+
 test("Node Scene compiles scatter fill_opacity", () => {
   const faded = new Figure({ width: 240, height: 160 });
   faded.setAxisDomain("x", [0, 2]);
@@ -2065,6 +2084,27 @@ test("Node Scene compiles hexbin fill_opacity", () => {
     name: null,
   });
   assert.notEqual(svg, sceneSvg(solid.toScene()));
+});
+
+test("Node Scene compiles hexbin stroke_opacity", () => {
+  const x = [0.5, 1.5, 2.5];
+  const y = [0.5, 0.5, 2.0];
+  const stroked = new Figure({ width: 320, height: 240 });
+  stroked.setAxisDomain("x", [0, 4]);
+  stroked.setAxisDomain("y", [0, 5]);
+  stroked.hexbin(x, y, {
+    gridsize: [4, 4],
+    range: [[0, 4], [0, 5]],
+    color: "#22c55e",
+    opacity: 0.75,
+    style: { stroke: "#111111", stroke_width: 2, stroke_opacity: 0.5 },
+    name: null,
+  });
+  delete stroked.traces[0].style.dx;
+  delete stroked.traces[0].style.dy;
+  const svg = sceneSvg(stroked.toScene());
+  assert.match(svg, /stroke-opacity="/);
+  assert.equal(sceneExportSupportReason(stroked), null);
 });
 
 test("Node Scene compiles colormap hexbin", () => {

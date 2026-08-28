@@ -594,6 +594,7 @@ F3, still pending (above).
   per-item two-ended ribbon `color2_ch` from packed XYHP kind 5, then ABI 191
   admits constant multi-character scatter `marker_glyph` via XYMG v2, then
   ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit.
+  ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
   `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
   panel Scene. That predicate
   owns the public PolyFill group budget, including companion traces that share
@@ -1533,6 +1534,8 @@ ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity` on that
 same path. ABI 177 admits heatmap `fill_opacity` on XYMS fill alpha.
 ABI 178 admits scatter `fill_opacity` / `stroke_opacity` on that same path.
 ABI 179 admits hexbin `fill_opacity` on XYMS fill alpha.
+ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity` on that
+same path. Polar painted Image blit tessellates when stroke is visible.
 ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint on that same
 path. ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as
 authored band step expansion (`step_mode` 1–3 wins over `BandFlatten`).

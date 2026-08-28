@@ -258,11 +258,13 @@ ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from packed XYTA.
 ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from packed XYHP kind 5.
 ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2.
 ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit.
+ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
 ABI 173 tessellates
 heatmap `corner_radius`. ABI 174 tessellates violin/box `corner_radius`.
 ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`.
 ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`.
 ABI 177 admits heatmap `fill_opacity`.
+ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
 ABI 178 admits scatter `fill_opacity` / `stroke_opacity`.
 ABI 179 admits hexbin `fill_opacity`.
 ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint.
@@ -279,6 +281,7 @@ ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from packed XYTA.
 ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from packed XYHP kind 5.
 ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2.
 ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit.
+ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -337,6 +340,7 @@ ABI 174 tessellates violin/box `corner_radius`.
 ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`.
 ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`.
 ABI 177 admits heatmap `fill_opacity`.
+ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
 ABI 178 admits scatter `fill_opacity` / `stroke_opacity`.
 ABI 179 admits hexbin `fill_opacity`.
 ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint.
@@ -353,6 +357,7 @@ ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from packed XYTA.
 ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from packed XYHP kind 5.
 ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2.
 ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit.
+ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
 ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate
@@ -410,6 +415,7 @@ step expansion on that same product Scene. ABI 173 tessellates heatmap
 `fill_opacity` / `stroke_opacity` on that same product Scene. ABI 176 admits
 bar/column/histogram `fill_opacity` / `stroke_opacity` on that same product Scene.
 ABI 177 admits heatmap `fill_opacity` on that same product Scene.
+ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity` on that same product Scene.
 ABI 178 admits scatter `fill_opacity` / `stroke_opacity` on that same product Scene.
 ABI 179 admits hexbin `fill_opacity` on that same product Scene.
 ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint on that same product Scene.
@@ -436,6 +442,8 @@ same product Scene.
 ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2 on that
 same product Scene.
 ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit on that
+same product Scene.
+ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity` on that
 same product Scene.
 The explicit `xyg_scene_figure_support_reason` ABI remains for tests.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
@@ -536,7 +544,9 @@ inscribed disc and polar legend gutter match compatibility static export.
 Cartesian Scene bytes change only the version u32 at offset 4. Polar
 density stays `XYG_SCENE_UNSUPPORTED_POLAR`. Polar heatmap constant-style
 lattices tessellate Rects; ABI 192 polar painted heatmap inverse-rasters to
-one plot-covering Image. Polar contour
+one plot-covering Image. Authored heatmap/hexbin stroke (ABI 193) tessellates
+polar painted cells instead of Image blit so cell outlines are representable.
+Polar contour
 reuses SegmentPair polylines through `polar_project`.
 ABI 132 moves first-paint density scatter emit policy into Rust: Python and
 Node call `xyg_density_emit_meta`, `xyg_density_grid_path`,
@@ -569,7 +579,8 @@ ABI 115 makes static PNG the same way: Python `_png.encode` /
 `_png.png_truecolor` / `_native.encode_png` and Node `encodePng` call
 `xyg_encode_png`; Rust owns filter-0 scanlines, indexed-palette
 selection, `tRNS`, and zlib IDAT. Polar painted heatmap inverse-raster is
-Scene-owned (ABI 192). LOD beyond 10,000 tessellated cells, and rich style
+Scene-owned (ABI 192). ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` /
+`stroke_opacity` on XYMS. LOD beyond 10,000 tessellated cells, and rich style
 exceptions remain compatibility routes.
 Scalar colormap and truecolor heatmaps compile through `HeatmapPainted` on Python and Node.
 ABI 99 gives both composition hosts one compact grouped box ingress. Hosts pack

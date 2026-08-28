@@ -66,6 +66,31 @@ def test_css_opacity_channels_remain_independent_in_svg() -> None:
     assert 'stroke-opacity="0.4"' in svg
 
 
+def test_heatmap_hexbin_css_stroke_compiles_to_the_mark_contract() -> None:
+    compiled = compile_mark_style(
+        "heatmap",
+        {
+            "stroke": "#111111",
+            "stroke-width": "2px",
+            "stroke-opacity": 0.5,
+        },
+    )
+    assert compiled == {
+        "stroke": "#111111",
+        "stroke_width": 2.0,
+        "stroke_opacity": 0.5,
+    }
+    hex_compiled = compile_mark_style(
+        "hexbin",
+        {
+            "stroke": "#111111",
+            "stroke-width": "2px",
+            "stroke-opacity": 0.5,
+        },
+    )
+    assert hex_compiled == compiled
+
+
 def test_css_style_wins_over_legacy_appearance_aliases() -> None:
     fig = xyg.chart(
         xyg.line(

@@ -16,6 +16,9 @@
 //! Scene (XYMS already composites those channels). ABI 176 admits
 //! bar/column/histogram `fill_opacity` / `stroke_opacity` the same way.
 //! ABI 177 admits heatmap `fill_opacity` on that public Scene (XYMS fill alpha).
+//! ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity` on
+//! that public Scene (XYMS stroke alpha). Polar painted Image blit tessellates
+//! when stroke is visible and then uses the 10k tessellation cell ceiling.
 //! ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2.
 //! ABI 192 admits polar painted heatmap as one inverse-raster Image blit
 //! (`FLAG_POLAR` allowlists polar axis keys; painted polar heatmaps use the
@@ -516,6 +519,9 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "role",
             "reduce",
             "fill_opacity",
+            "stroke",
+            "stroke_width",
+            "stroke_opacity",
         ],
         KIND_HEATMAP => &[
             "color",
@@ -528,6 +534,9 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "truecolor",
             "corner_radius",
             "fill_opacity",
+            "stroke",
+            "stroke_width",
+            "stroke_opacity",
         ],
         _ => &[],
     }
@@ -1241,7 +1250,10 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
             let polar_painted = flags & FLAG_POLAR != 0
                 && (trace.style_keys.contains(&"colormap")
                     || trace.style_keys.contains(&"truecolor"));
-            let cell_cap = if polar_painted {
+            let polar_painted_stroke = polar_painted
+                && trace.style_keys.contains(&"stroke")
+                && trace.style_keys.contains(&"stroke_width");
+            let cell_cap = if polar_painted && !polar_painted_stroke {
                 MAX_SCENE_IMAGE_PIXELS
             } else {
                 MAX_PUBLIC_HEATMAP_CELLS

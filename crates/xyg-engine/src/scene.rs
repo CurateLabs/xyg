@@ -5993,16 +5993,25 @@ pub fn expand_scene_records_painted(
                 return Err(SceneError::NonFinite);
             }
             if polar && mode == SceneExpansionMode::HeatmapPainted {
-                let plane = take_paint_plane(&mut paint_planes, stable_id)?;
-                if plane.rows != rows || plane.cols != cols {
-                    return Err(SceneError::Length);
+                let stroke = style_rgba4(stroke_rgba, style_ref)?;
+                let width = *stroke_width
+                    .get(style_ref as usize)
+                    .ok_or(SceneError::Length)?;
+                // Image blit cannot represent per-cell outlines. Authored
+                // visible stroke tessellates polar wedges like the lattice
+                // path so XYMS stroke_opacity reaches SVG/raster.
+                if width <= 0.0 || stroke[3] == 0 {
+                    let plane = take_paint_plane(&mut paint_planes, stable_id)?;
+                    if plane.rows != rows || plane.cols != cols {
+                        return Err(SceneError::Length);
+                    }
+                    let fills =
+                        heatmap_paint_fills(plane, style_rgba4(fill_rgba, style_ref)?[3])?;
+                    images.push(heatmap_grid_image(stable_id, rows, cols, &fills)?);
+                    output.push_image(stable_id, style_ref, x0, y0, x1, y1);
+                    cursor = run_end;
+                    continue;
                 }
-                let fills =
-                    heatmap_paint_fills(plane, style_rgba4(fill_rgba, style_ref)?[3])?;
-                images.push(heatmap_grid_image(stable_id, rows, cols, &fills)?);
-                output.push_image(stable_id, style_ref, x0, y0, x1, y1);
-                cursor = run_end;
-                continue;
             }
             let fills = if mode == SceneExpansionMode::HeatmapPainted {
                 let plane = take_paint_plane(&mut paint_planes, stable_id)?;

@@ -1446,6 +1446,27 @@ def test_python_scene_compiles_heatmap_fill_opacity() -> None:
     assert svg != _native.scene_svg(solid.to_scene())
 
 
+def test_python_scene_compiles_heatmap_stroke_opacity() -> None:
+    stroked = Figure(width=320, height=240)
+    stroked.axis_options["x"]["domain"] = (0.0, 4.0)
+    stroked.axis_options["y"]["domain"] = (0.0, 5.0)
+    stroked.heatmap([[1.0, 2.0], [3.0, 4.0]], color="#22c55e", opacity=0.75)
+    stroked.traces[-1].style["stroke"] = "#111111"
+    stroked.traces[-1].style["stroke_width"] = 2.0
+    stroked.traces[-1].style["stroke_opacity"] = 0.5
+    svg = _native.scene_svg(stroked.to_scene())
+    assert 'stroke-opacity="' in svg
+    assert stroked.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(stroked) is None
+    solid = Figure(width=320, height=240)
+    solid.axis_options["x"]["domain"] = (0.0, 4.0)
+    solid.axis_options["y"]["domain"] = (0.0, 5.0)
+    solid.heatmap([[1.0, 2.0], [3.0, 4.0]], color="#22c55e", opacity=0.75)
+    solid.traces[-1].style["stroke"] = "#111111"
+    solid.traces[-1].style["stroke_width"] = 2.0
+    assert svg != _native.scene_svg(solid.to_scene())
+
+
 def test_python_scene_compiles_scatter_fill_opacity() -> None:
     faded = Figure(width=240, height=160)
     faded.axis_options["x"]["domain"] = (0.0, 2.0)
@@ -1508,6 +1529,41 @@ def test_python_scene_compiles_hexbin_fill_opacity() -> None:
         color="#22c55e",
         opacity=0.75,
     )
+    assert svg != _native.scene_svg(solid.to_scene())
+
+
+def test_python_scene_compiles_hexbin_stroke_opacity() -> None:
+    stroked = Figure(width=320, height=240)
+    stroked.axis_options["x"]["domain"] = (0.0, 4.0)
+    stroked.axis_options["y"]["domain"] = (0.0, 5.0)
+    stroked.hexbin(
+        [0.5, 1.5, 2.5],
+        [0.5, 0.5, 2.0],
+        gridsize=(4, 4),
+        range=((0.0, 4.0), (0.0, 5.0)),
+        color="#22c55e",
+        opacity=0.75,
+    )
+    stroked.traces[-1].style["stroke"] = "#111111"
+    stroked.traces[-1].style["stroke_width"] = 2.0
+    stroked.traces[-1].style["stroke_opacity"] = 0.5
+    svg = _native.scene_svg(stroked.to_scene())
+    assert 'stroke-opacity="' in svg
+    assert stroked.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(stroked) is None
+    solid = Figure(width=320, height=240)
+    solid.axis_options["x"]["domain"] = (0.0, 4.0)
+    solid.axis_options["y"]["domain"] = (0.0, 5.0)
+    solid.hexbin(
+        [0.5, 1.5, 2.5],
+        [0.5, 0.5, 2.0],
+        gridsize=(4, 4),
+        range=((0.0, 4.0), (0.0, 5.0)),
+        color="#22c55e",
+        opacity=0.75,
+    )
+    solid.traces[-1].style["stroke"] = "#111111"
+    solid.traces[-1].style["stroke_width"] = 2.0
     assert svg != _native.scene_svg(solid.to_scene())
 
 
