@@ -459,11 +459,15 @@ impl PolarEnvelope {
 }
 
 fn read_u32(bytes: &[u8], offset: usize) -> Option<u32> {
-    Some(u32::from_le_bytes(bytes.get(offset..offset + 4)?.try_into().ok()?))
+    Some(u32::from_le_bytes(
+        bytes.get(offset..offset + 4)?.try_into().ok()?,
+    ))
 }
 
 fn read_f64(bytes: &[u8], offset: usize) -> Option<f64> {
-    Some(f64::from_le_bytes(bytes.get(offset..offset + 8)?.try_into().ok()?))
+    Some(f64::from_le_bytes(
+        bytes.get(offset..offset + 8)?.try_into().ok()?,
+    ))
 }
 
 /// Parse a bounded XYPL v1 envelope. Malformed magic/version/enums/nonfinite
@@ -635,7 +639,10 @@ pub fn wedge_angles(metrics: &[f64], theta0: f64, theta1: f64) -> Option<(f64, f
     let dir = metrics[METRIC_DIR];
     let unit_scale = metrics[METRIC_UNIT_SCALE];
     if metrics[METRIC_FULL_SECTOR] >= 0.5 {
-        return Some((zero + dir * unit_scale * raw0, zero + dir * unit_scale * raw1));
+        return Some((
+            zero + dir * unit_scale * raw0,
+            zero + dir * unit_scale * raw1,
+        ));
     }
     let low = raw0.min(raw1);
     let high = raw0.max(raw1);
@@ -722,10 +729,7 @@ fn rounded_wedge_points(
     let inner_ha = half_angle(-hr);
     for i in 1..=steps {
         let t = i as f64 / steps as f64;
-        out.push(at(
-            inner,
-            mid + sign * inner_ha - sign * inner_ha * 2.0 * t,
-        ));
+        out.push(at(inner, mid + sign * inner_ha - sign * inner_ha * 2.0 * t));
     }
     for i in 1..steps {
         let lr = -hr + 2.0 * hr * (i as f64 / steps as f64);
@@ -783,7 +787,17 @@ pub fn polar_wedge_points(
     let cx = metrics[METRIC_CX];
     let cy = metrics[METRIC_CY];
     if corner_radius > 0.0 && inner > 0.0 {
-        return rounded_wedge_points(cx, cy, inner, outer, a0, a1, corner_radius, steps, wedge_gap);
+        return rounded_wedge_points(
+            cx,
+            cy,
+            inner,
+            outer,
+            a0,
+            a1,
+            corner_radius,
+            steps,
+            wedge_gap,
+        );
     }
     let half = wedge_gap.max(0.0) / 2.0;
     let sign = if a1 >= a0 { 1.0 } else { -1.0 };
@@ -842,6 +856,143 @@ pub fn polar_position_mask(
         out[index] = theta_mask[index] & radius_mask[index];
     }
     Some(n)
+}
+
+/// Cap matching the compatibility polar inverse-raster exporters.
+pub const POLAR_HEATMAP_MAX_DIMENSION: u32 = 4096;
+
+fn theta_from_angle(metrics: &[f64], angle: f64, near: f64) -> f64 {
+    let dir = metrics[METRIC_DIR];
+    let unit = metrics[METRIC_UNIT_SCALE];
+    let turn = metrics[METRIC_TURN];
+    let raw = (angle - metrics[METRIC_ZERO]) / (dir * unit);
+    let wrapped = near + (raw - near).rem_euclid(turn);
+    let n_categories = metrics[METRIC_N_CATEGORIES] as u32;
+    if n_categories == 0 {
+        return wrapped;
+    }
+    let sector_start = metrics[METRIC_SECTOR_START];
+    let sector_span = metrics[METRIC_SECTOR_SPAN];
+    let divisor = if metrics[METRIC_FULL_SECTOR] >= 0.5 {
+        f64::from(n_categories)
+    } else {
+        f64::from(n_categories.saturating_sub(1).max(1))
+    };
+    (wrapped - sector_start) * divisor / if sector_span == 0.0 { 1.0 } else { sector_span }
+}
+
+fn radius_value(metrics: &[f64], normalized: f64) -> Option<f64> {
+    let r_scale = build_r_scale(metrics)?;
+    let hole = metrics[METRIC_HOLE];
+    let base = (normalized - hole) / (1.0 - hole).max(1e-30);
+    let coord = metrics[METRIC_R_ORIGIN_COORD]
+        + base * (metrics[METRIC_R_HI_COORD] - metrics[METRIC_R_ORIGIN_COORD]);
+    Some(r_scale.value(coord))
+}
+
+/// Screen-bounded inverse-raster of a polar heatmap grid (polar-axes.md §3.2).
+///
+/// `grid` is image-top-first RGBA8 (`width*height*4`). Source row 0 of the
+/// canonical heatmap is the radial-range bottom, so this samples
+/// `image_row = height - 1 - source_y`. Output covers the plot rect at
+/// `output_scale` samples per logical pixel, capped at
+/// [`POLAR_HEATMAP_MAX_DIMENSION`]. Work is bounded by output pixels.
+pub fn polar_heatmap_inverse_raster(
+    metrics: &[f64],
+    plot_x: f64,
+    plot_y: f64,
+    plot_w: f64,
+    plot_h: f64,
+    grid: &[u8],
+    grid_w: u32,
+    grid_h: u32,
+    x0: f64,
+    y0: f64,
+    x1: f64,
+    y1: f64,
+    output_scale: f64,
+) -> Option<(u32, u32, Vec<u8>)> {
+    if metrics.len() < POLAR_METRICS_LEN {
+        return None;
+    }
+    if grid_w == 0 || grid_h == 0 {
+        return None;
+    }
+    let cells = (grid_w as usize).checked_mul(grid_h as usize)?;
+    if grid.len() != cells.checked_mul(4)? {
+        return None;
+    }
+    if !plot_w.is_finite()
+        || !plot_h.is_finite()
+        || plot_w <= 0.0
+        || plot_h <= 0.0
+        || !output_scale.is_finite()
+        || output_scale <= 0.0
+        || !x0.is_finite()
+        || !x1.is_finite()
+        || !y0.is_finite()
+        || !y1.is_finite()
+    {
+        return None;
+    }
+    let out_w = (plot_w * output_scale)
+        .ceil()
+        .clamp(1.0, f64::from(POLAR_HEATMAP_MAX_DIMENSION)) as u32;
+    let out_h = (plot_h * output_scale)
+        .ceil()
+        .clamp(1.0, f64::from(POLAR_HEATMAP_MAX_DIMENSION)) as u32;
+    let cx = metrics[METRIC_CX];
+    let cy = metrics[METRIC_CY];
+    let radius = metrics[METRIC_RADIUS].max(1e-30);
+    let inner = inner_fraction(metrics);
+    let x_span = if x1 > x0 { x1 - x0 } else { 1.0 };
+    let y_span = if y1 > y0 { y1 - y0 } else { 1.0 };
+    let near = theta_value(metrics, x0);
+    let mut out = vec![
+        0u8;
+        (out_w as usize)
+            .checked_mul(out_h as usize)?
+            .checked_mul(4)?
+    ];
+    let dx_step = plot_w / f64::from(out_w);
+    let dy_step = plot_h / f64::from(out_h);
+    for row in 0..out_h {
+        let y = plot_y + (f64::from(row) + 0.5) * dy_step;
+        let dy = cy - y;
+        for col in 0..out_w {
+            let x = plot_x + (f64::from(col) + 0.5) * dx_step;
+            let dx = x - cx;
+            let normalized = dy.hypot(dx) / radius;
+            if !(normalized >= inner - 1e-9 && normalized <= 1.0 + 1e-9) {
+                continue;
+            }
+            let angle = dy.atan2(dx);
+            let theta = theta_from_angle(metrics, angle, near);
+            let Some(radial) = radius_value(metrics, normalized) else {
+                continue;
+            };
+            let fx = (theta - x0) / x_span;
+            let fy = (radial - y0) / y_span;
+            let raw_theta = theta_value(metrics, theta);
+            if !fx.is_finite()
+                || !fy.is_finite()
+                || !angular_value_visible(metrics, raw_theta)
+                || !(0.0..=1.0).contains(&fx)
+                || !(0.0..=1.0).contains(&fy)
+            {
+                continue;
+            }
+            let source_x =
+                ((fx * f64::from(grid_w)).floor() as i64).clamp(0, i64::from(grid_w) - 1) as usize;
+            let source_y =
+                ((fy * f64::from(grid_h)).floor() as i64).clamp(0, i64::from(grid_h) - 1) as usize;
+            let image_row = (grid_h as usize) - 1 - source_y;
+            let src = (image_row * grid_w as usize + source_x) * 4;
+            let dst = (row as usize * out_w as usize + col as usize) * 4;
+            out[dst..dst + 4].copy_from_slice(&grid[src..src + 4]);
+        }
+    }
+    Some((out_w, out_h, out))
 }
 
 #[cfg(test)]
@@ -1042,5 +1193,36 @@ mod tests {
             assert!(angle >= -1e-6);
             assert!(angle <= FRAC_PI_2 + 1e-6);
         }
+    }
+
+    #[test]
+    fn polar_heatmap_inverse_raster_fills_sector_and_masks_hole() {
+        let mut input = default_input();
+        input.hole = 0.4;
+        input.sector_start = 0.0;
+        input.sector_end = PI;
+        let mut metrics = [0.0; POLAR_METRICS_LEN];
+        polar_layout(input, &mut metrics).unwrap();
+        // image-top-first 2×2: bottom-left red, bottom-right green, top-left blue, top-right white
+        let grid = [
+            0u8, 0, 255, 255, 255, 255, 255, 255, 255, 0, 0, 255, 0, 255, 0, 255,
+        ];
+        let (out_w, out_h, rgba) = polar_heatmap_inverse_raster(
+            &metrics, 0.0, 0.0, 400.0, 400.0, &grid, 2, 2, 0.0, 0.0, PI, 1.0, 1.0,
+        )
+        .unwrap();
+        assert_eq!(out_w, 400);
+        assert_eq!(out_h, 400);
+        let cx = metrics[METRIC_CX] as usize;
+        let cy = metrics[METRIC_CY] as usize;
+        let hole = (cy * out_w as usize + cx) * 4;
+        assert_eq!(&rgba[hole..hole + 4], &[0, 0, 0, 0]);
+        let (px, py) = project_point(&metrics, PI / 2.0, 0.7);
+        let ix = px.round().clamp(0.0, f64::from(out_w - 1)) as usize;
+        let iy = py.round().clamp(0.0, f64::from(out_h - 1)) as usize;
+        let painted = (iy * out_w as usize + ix) * 4;
+        assert_ne!(&rgba[painted..painted + 4], &[0, 0, 0, 0]);
+        let south = ((out_h as usize - 1) * out_w as usize + out_w as usize / 2) * 4;
+        assert_eq!(&rgba[south..south + 4], &[0, 0, 0, 0]);
     }
 }

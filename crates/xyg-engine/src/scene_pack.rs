@@ -23,7 +23,16 @@
 //! `joined_fill` as one identity PolyFill ring from `geom::triangle_mesh_boundary`
 //! (disconnected meshes and holes keep per-face `TriangleFace` rows).
 //! ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`
-//! (no new pack kind; encoded Scene keeps XYGR). ABI 186 admits cartesian
+//! (no new pack kind; encoded Scene keeps XYGR). ABI 190 intern per-item
+//! two-ended ribbon `color2_ch` from packed XYHP kind 5 (`FLAG_HEATMAP_PAINTED`
+//! is allowed on `PACK_RIBBON` so the plane rides extras; Band expansion intern
+//! unique pairs onto XYGR). Polar ribbon and explicit `FLAG_COLOR2` stay
+//! fail-closed. ABI 195 intern triangle-mesh per-item fill/stroke/width from
+//! packed XYHP kind 6 (`FLAG_HEATMAP_PAINTED` is allowed on `PACK_TRIANGLE` so
+//! the plane rides extras; TriangleFace expansion intern unique triples).
+//! ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP
+//! kind 7 (`FLAG_HEATMAP_PAINTED` is allowed on `PACK_SCATTER` so the plane
+//! rides extras; identity Scatter records intern unique triples by order).
 //! colormap hexbin as `PACK_HEXBIN` plus `FLAG_HEATMAP_PAINTED` (XYHP 1×N
 //! plane; HexCell expansion interns per-cell fills; no new pack kind).
 //! ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2
@@ -71,10 +80,8 @@ pub const FLAG_STROKE_PERIMETER: u8 = 1 << 0;
 pub const FLAG_HEATMAP_PAINTED: u8 = 1 << 1;
 pub const FLAG_DENSITY_BLIT: u8 = 1 << 2;
 pub const FLAG_JOINED_FILL: u8 = 1 << 3;
-const PACK_FLAGS: u8 = FLAG_STROKE_PERIMETER
-    | FLAG_HEATMAP_PAINTED
-    | FLAG_DENSITY_BLIT
-    | FLAG_JOINED_FILL;
+const PACK_FLAGS: u8 =
+    FLAG_STROKE_PERIMETER | FLAG_HEATMAP_PAINTED | FLAG_DENSITY_BLIT | FLAG_JOINED_FILL;
 
 pub const XYPK_MAGIC: &[u8; 4] = b"XYPK";
 pub const XYPK_VERSION: u32 = 1;
@@ -312,7 +319,13 @@ pub fn resolve_pack_kind(kind: &str, flags: u8) -> Result<u8, PackError> {
         "segments" | "errorbar" | "stem" | "contour" | "box_whisker" | "box_median" => PACK_SEGMENT,
         _ => return Err(PackError::UnknownKind),
     };
-    if painted && pack_kind != PACK_HEATMAP_PAINTED && pack_kind != PACK_HEXBIN {
+    if painted
+        && pack_kind != PACK_HEATMAP_PAINTED
+        && pack_kind != PACK_HEXBIN
+        && pack_kind != PACK_RIBBON
+        && pack_kind != PACK_TRIANGLE
+        && pack_kind != PACK_SCATTER
+    {
         return Err(PackError::Length);
     }
     if density && pack_kind != PACK_DENSITY_BLIT {
@@ -1388,6 +1401,18 @@ mod tests {
             PACK_HEXBIN
         );
         assert_eq!(
+            resolve_pack_kind("ribbon", FLAG_HEATMAP_PAINTED).unwrap(),
+            PACK_RIBBON
+        );
+        assert_eq!(
+            resolve_pack_kind("triangle_mesh", FLAG_HEATMAP_PAINTED).unwrap(),
+            PACK_TRIANGLE
+        );
+        assert_eq!(
+            resolve_pack_kind("scatter", FLAG_HEATMAP_PAINTED).unwrap(),
+            PACK_SCATTER
+        );
+        assert_eq!(
             resolve_pack_kind("line", FLAG_HEATMAP_PAINTED),
             Err(PackError::Length)
         );
@@ -1843,9 +1868,7 @@ mod tests {
         })
         .unwrap();
         assert_eq!(rows.len(), 4);
-        assert!(rows
-            .iter()
-            .all(|row| row.expansion_mode == EXP_TRIANGLE));
+        assert!(rows.iter().all(|row| row.expansion_mode == EXP_TRIANGLE));
     }
 
     #[test]

@@ -654,7 +654,7 @@ def scatter(
         stroke_width: Marker outline width in pixels.
         _artist_alpha: Internal Matplotlib alpha override, scalar or per marker.
         _marker_path: Internal authored marker-path payload for Matplotlib adapters.
-        _marker_glyph: Internal single-glyph marker payload for Matplotlib adapters.
+        _marker_glyph: Internal marker-glyph payload for Matplotlib adapters.
         _legend_trace_size: Whether a Matplotlib legend derives marker size from this trace.
         style: Mark style overrides.
         class_name: Adapter-only trace metadata; it does not style canvas geometry.
@@ -2279,6 +2279,7 @@ def text(
     dy: float = -6.0,
     color: Optional[str] = None,
     anchor: str = "start",
+    rotation: float | None = None,
     class_name: Optional[str] = None,
     style: Optional[dict[str, StyleValue]] = None,
 ) -> Annotation:
@@ -2292,6 +2293,7 @@ def text(
         dy: Vertical pixel offset from the anchor.
         color: Text color.
         anchor: Text alignment relative to the anchor point.
+        rotation: Label rotation in degrees.
         class_name: DOM class applied to the text label.
         style: Annotation style overrides.
     """
@@ -2304,7 +2306,13 @@ def text(
         text=value,
         class_name=_optional_string(class_name, "text class_name"),
         style=_style_dict(style, "text style"),
-        props={"dx": dx, "dy": dy, "color": color, "anchor": anchor},
+        props={
+            "dx": dx,
+            "dy": dy,
+            "color": color,
+            "anchor": anchor,
+            **({} if rotation is None else {"rotation": rotation}),
+        },
     )
 
 
@@ -2317,6 +2325,7 @@ def label(
     dy: float = -6.0,
     color: Optional[str] = None,
     anchor: str = "start",
+    rotation: float | None = None,
     class_name: Optional[str] = None,
     style: Optional[dict[str, StyleValue]] = None,
 ) -> Annotation:
@@ -2330,6 +2339,7 @@ def label(
         dy: Vertical pixel offset from the anchor.
         color: Text color.
         anchor: Text alignment relative to the anchor point.
+        rotation: Label rotation in degrees.
         class_name: DOM class applied to the text label.
         style: Annotation style overrides.
     """
@@ -2341,6 +2351,7 @@ def label(
         dy=dy,
         color=color,
         anchor=anchor,
+        rotation=rotation,
         class_name=class_name,
         style=style,
     )
@@ -2360,6 +2371,7 @@ def marker(
     dx: float = 8.0,
     dy: float = -8.0,
     anchor: str = "start",
+    rotation: float | None = None,
     class_name: Optional[str] = None,
     style: Optional[dict[str, StyleValue]] = None,
 ) -> Annotation:
@@ -2378,6 +2390,7 @@ def marker(
         dx: Horizontal label offset in pixels.
         dy: Vertical label offset in pixels.
         anchor: Label alignment relative to the marker.
+        rotation: Label rotation in degrees.
         class_name: DOM class applied to the optional text label. The marker is
             canvas-painted and is styled through its marker arguments.
         style: Annotation style overrides.
@@ -2399,6 +2412,7 @@ def marker(
             "dx": dx,
             "dy": dy,
             "anchor": anchor,
+            **({} if rotation is None else {"rotation": rotation}),
         },
     )
 
@@ -6282,6 +6296,7 @@ def _apply_text_annotation(fig: Figure, annotation: Annotation) -> None:
         dy=annotation.props["dy"],
         color=annotation.props.get("color"),
         anchor=annotation.props["anchor"],
+        rotation=annotation.props.get("rotation"),
         class_name=annotation.class_name,
         style=annotation.style,
     )
@@ -6301,6 +6316,7 @@ def _apply_marker_annotation(fig: Figure, annotation: Annotation) -> None:
         dx=annotation.props["dx"],
         dy=annotation.props["dy"],
         anchor=annotation.props["anchor"],
+        rotation=annotation.props.get("rotation"),
         class_name=annotation.class_name,
         style=annotation.style,
     )

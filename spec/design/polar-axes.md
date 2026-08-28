@@ -468,8 +468,8 @@ as Scene `<text>` at those same projected centres. ABI 171 admits polar
 width-only scatter `stroke_width` as match-fill at those same centres.
 ABI 146 paints polar PolyFill wedges (and
 cartesian Rects) with constant mark `fill` linear-gradients from XYGR.
-Inverse-sample `<image>` blit stays on the
-compatibility exporters for polar heatmap because polar Image+XYPL stays forbidden.
+ABI 192 polar painted heatmap inverse-rasters to one plot-covering Image blit
+(Image+XYPL); constant-style polar lattices still tessellate to PolyFill wedges.
 ABI 173 tessellates polar heatmap `corner_radius` on those PolyFill wedges
 when the inner radius is positive.
 Transparent Cartesian axis/grid paint

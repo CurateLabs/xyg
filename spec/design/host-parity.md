@@ -102,14 +102,16 @@ an authored constant CSS stroke and optional finite non-negative scalar width
 (default 1px), and constant-style
 polylines, ordinary area/error-band
 Bands, bar/column/histogram Rects, disconnected segment/error-bar/stem endpoint
-pairs with bounded stem markers, at most 1,024 fill-only unjoined constant-color
-triangle-mesh faces, constant-style Cartesian hexbin PolyFill cells (one
+pairs with bounded stem markers, at most 1,024 fill-only unjoined
+triangle-mesh faces (constant or interned per-face fill/stroke/width, ABI 195),
+interned per-item scatter fill/stroke/width/opacity (ABI 196),
+constant-style Cartesian hexbin PolyFill cells (one
 6-vertex group per cell, sharing that 1,024-group painter budget), constant-style
 Cartesian heatmap Rects (one regular cell per Rect, sharing the 10,000-bin
 histogram ceiling), and finite
 literal solid ribbons. Each accepted mesh face
 is one three-vertex PolyFill group shared by SVG, raster, and browser consumers;
-joined fills, component alpha, outlines, per-face styles, alternate axes, and
+`joined_fill` plus per-face paint, polar meshes, alternate axes, and
 larger meshes remain compatibility behavior. For ribbons,
 Python and Node pack two adjacent endpoint rows and ABI 97 makes Rust apply the
 axis transforms and expand the fixed 96-interval cubic into 97 paired Scene
@@ -255,11 +257,20 @@ ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto HexC
 ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 / XYLB v6).
 ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0` (nums[8]).
 ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from packed XYTA.
+ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from packed XYHP kind 5.
+ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2.
+ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit.
+ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
+ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
+ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7.
 ABI 173 tessellates
 heatmap `corner_radius`. ABI 174 tessellates violin/box `corner_radius`.
 ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`.
 ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`.
 ABI 177 admits heatmap `fill_opacity`.
+ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
+ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
+ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7.
 ABI 178 admits scatter `fill_opacity` / `stroke_opacity`.
 ABI 179 admits hexbin `fill_opacity`.
 ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint.
@@ -273,6 +284,12 @@ ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto HexC
 ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 / XYLB v6).
 ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0` (nums[8]).
 ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from packed XYTA.
+ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from packed XYHP kind 5.
+ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2.
+ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit.
+ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
+ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
+ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7.
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -331,6 +348,9 @@ ABI 174 tessellates violin/box `corner_radius`.
 ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`.
 ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`.
 ABI 177 admits heatmap `fill_opacity`.
+ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
+ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
+ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7.
 ABI 178 admits scatter `fill_opacity` / `stroke_opacity`.
 ABI 179 admits hexbin `fill_opacity`.
 ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint.
@@ -344,6 +364,12 @@ ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto HexC
 ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 / XYLB v6).
 ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0` (nums[8]).
 ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from packed XYTA.
+ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from packed XYHP kind 5.
+ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2.
+ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit.
+ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity`.
+ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin.
+ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7.
 ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate
@@ -401,9 +427,12 @@ step expansion on that same product Scene. ABI 173 tessellates heatmap
 `fill_opacity` / `stroke_opacity` on that same product Scene. ABI 176 admits
 bar/column/histogram `fill_opacity` / `stroke_opacity` on that same product Scene.
 ABI 177 admits heatmap `fill_opacity` on that same product Scene.
+ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity` on that same product Scene.
+ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba` hexbin on that same product Scene.
 ABI 178 admits scatter `fill_opacity` / `stroke_opacity` on that same product Scene.
 ABI 179 admits hexbin `fill_opacity` on that same product Scene.
 ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint on that same product Scene.
+ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6 on that same product Scene.
 ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as authored
 band step expansion on that same product Scene.
 ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring on that
@@ -422,12 +451,22 @@ ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0` on that
 same product Scene.
 ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from packed XYTA on that
 same product Scene.
+ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from packed XYHP kind 5 on that
+same product Scene.
+ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2 on that
+same product Scene.
+ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit on that
+same product Scene.
+ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` / `stroke_opacity` on that
+same product Scene.
+ABI 194 admits polar hexbin, custom host reducers, and categorical / `direct_rgba`
+hexbin on that same product Scene.
+ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6 on that same product Scene.
 The explicit `xyg_scene_figure_support_reason` ABI remains for tests.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call
 `xyg_figure_autorange` / `xyg_auto_domain`. Direct-browser WASM compile uses
 the same `auto_domain` degenerate pad instead of a host-local ±0.5 fork.
-Polar hexbin, custom `reduce_C_function` callables (after Rust lattice groups),
 LOD beyond the 1,024-group painter budget, and rich style
 exceptions remain compatibility routes. ABI 107 makes Scene CSS→RGBA8 and
 per-kind mark style defaults the same way: Python and Node pack `XYMS` v1
@@ -455,8 +494,9 @@ lattice membership cannot drift. Custom `reduce_C_function` callables stay
 host-side over those groups. ABI 120 moves composition `loc="best"` scoring into
 Rust: Python and Node call `xyg_legend_normalize` and `xyg_legend_best_loc` so
 display-space occupancy, the 4096/512 sample, and the 0.02 tie band cannot drift.
-Scene chrome facts packing (`_pack_chrome_facts` / `packChromeFacts`) settles
-`loc="best"` through that same occupancy walk so XYCF never carries the token.
+ABI 197 Scene product encode settles authored `loc="best"` from packed XYCL/XYNM
+plus XYCF domains; hosts pack the token and encoded XYLG still stores 0..=8.
+Compatibility `_legendfit.py` / `resolveLegendBestLoc` still pack ChartView specs.
 ABI 121 moves ribbon/curve/rounded-rect tessellation into Rust: Python and Node
 call `xyg_ribbon_edge`, `xyg_ribbon_polygon`, `xyg_monotone_tangents`,
 `xyg_curve_flatten`, and `xyg_rounded_rect_poly` so bump-X flattening,
@@ -466,7 +506,10 @@ ABI 122 moves compile-time payload LOD into Rust: Python and Node
 call `xyg_payload_tier`, `xyg_payload_visible_needed`, and
 `xyg_payload_visible_mask` so M4 vs density vs direct, polar skip,
 the strict `>` scatter thresholds, and the log/null keep mask cannot
-drift. Hosts still gather and ship the chosen rows.
+drift. ABI 204 `xyg_payload_m4_indices` owns remaining line M4 emit
+(closed-window ulp, optional nonlinear buckets, polar skip) so Python
+and Node cannot drift on first paint or `decimate_view`. Hosts still
+map scale coordinates, gather extra columns, and ship the chosen rows.
 ABI 123 moves tick-label collision thinning into Rust: Python and Node
 call `xyg_scene_tick_label_layout` so auto / hide / rotate / stagger,
 the edge-anchor rotate gap, and stride downsampling cannot drift.
@@ -498,15 +541,39 @@ ABI 127 moves the pyplot tight-layout grid solve into Rust: Python and
 Node call `xyg_tight_layout_solve` so edge maxima, neighbor gaps, pad
 multiples, and `subplots_adjust` fractions cannot drift. Hosts still
 measure per-panel chrome, suptitle, figure labels, and outside legends.
+ABI 198 moves the remaining static-export combination and tight-layout
+figure-edge extras into Rust: Python and Node call
+`xyg_compat_combine_plot` and `xyg_tight_layout_figure_extra` so padding,
+title-band, colorbar extra, right-y, floors, polar recut, and
+suptitle/label/legend extras cannot drift. Hosts still iterate axes,
+format ticks, measure rooms, resolve CSS visibility, and decide polar
+legend reservation.
 ABI 128 moves authored tick-window resolve and filter into Rust: Python
 and Node call `xyg_tick_window` and `xyg_tick_window_filter` so linear
-vs modular angular containment cannot drift. Hosts still choose tick
-families and map values to pixels. ChartView JS `_polarAngularTurn` /
-`_axisTicks` seam filter stays until WASM.
+vs modular angular containment cannot drift. ABI 199 Scene product encode
+filters authored cartesian majors through that window and pairs
+`tick_labels` during chrome pack. ABI 200 filters authored cartesian
+minors through that same window (`require_finite`). ABI 201 filters polar
+theta majors/minors through the modular sector and formats Scene polar
+theta labels with `format_angular_tick`. ABI 202 materializes ABI 130
+time strftime and polar angular numeric formats onto `XYTL`. Hosts pack
+domain tick-kind in XYCF 154–155. ABI 203 runs ABI 123 cartesian collision
+at Scene SVG/raster emit. Collision rooms clamp only when compact/authored
+pads already fit; overflowing compact pads stay
+`XYG_SCENE_UNSUPPORTED_VIEWPORT`. Polar rim auto/hide/rotate/stagger/preserve stay
+fail-closed. Invalid ABI 96 grammar still falls
+back. Secondary axes stay fail-closed.
+Hosts still choose tick families and
+map values to pixels on the compatibility `_svg` path. ChartView JS
+`_polarAngularTurn` / `_axisTicks` seam filter stays until WASM.
 ABI 130 moves Cartesian compatibility tick-label formatting into Rust:
 Python and Node call `xyg_tick_format` so linear/log/time/number-spec,
-category, and angular defaults cannot drift. Hosts still resolve
-authored `tick_labels` and polar tick drawing.
+category, and angular defaults cannot drift. Polar tick drawing stays
+host-side. Scene product-path authored `tick_labels` pair during chrome
+pack (ABI 199). Authored cartesian minors filter during chrome pack (ABI 200).
+Scene product encode applies ABI 130 time/angular formats (ABI 202).
+Scene cartesian `tick_label_strategy` uses ABI 123 at emit (ABI 203);
+polar rim collision stays refused.
 ABI 131 moves static polar (theta, r) → screen-pixel projection into Rust:
 Python and Node call `xyg_polar_layout`, `xyg_polar_project`, and the polar
 visibility-mask helpers so disc layout, projection, and cull predicates cannot
@@ -519,8 +586,11 @@ clip, rings/spokes, and rim tick labels.
 Polar encode applies ABI 126 `recut_polar_plot` before `polar_layout` so the
 inscribed disc and polar legend gutter match compatibility static export.
 Cartesian Scene bytes change only the version u32 at offset 4. Polar
-density stays `XYG_SCENE_UNSUPPORTED_POLAR`. Polar heatmap tessellates lattice
-Rects; inverse-sample `<image>` remains a compatibility exporter. Polar contour
+density stays `XYG_SCENE_UNSUPPORTED_POLAR`. Polar heatmap constant-style
+lattices tessellate Rects; ABI 192 polar painted heatmap inverse-rasters to
+one plot-covering Image. Authored heatmap/hexbin stroke (ABI 193) tessellates
+polar painted cells instead of Image blit so cell outlines are representable.
+Polar contour
 reuses SegmentPair polylines through `polar_project`.
 ABI 132 moves first-paint density scatter emit policy into Rust: Python and
 Node call `xyg_density_emit_meta`, `xyg_density_grid_path`,
@@ -552,8 +622,11 @@ tables, the libjpeg quality curve, and VP8L simple-lossless packing.
 ABI 115 makes static PNG the same way: Python `_png.encode` /
 `_png.png_truecolor` / `_native.encode_png` and Node `encodePng` call
 `xyg_encode_png`; Rust owns filter-0 scanlines, indexed-palette
-selection, `tRNS`, and zlib IDAT. Polar inverse-sample heatmap blit, LOD beyond
-10,000 cells, and rich style exceptions remain compatibility routes.
+selection, `tRNS`, and zlib IDAT. Polar painted heatmap inverse-raster is
+Scene-owned (ABI 192). ABI 193 admits heatmap/hexbin `stroke` / `stroke_width` /
+`stroke_opacity` on XYMS. ABI 194 admits polar hexbin, custom host reducers, and
+categorical / `direct_rgba` hexbin on HexCell PolyFills. ABI 195 admits triangle-mesh custom `role` and per-item fill/stroke/width interned from packed XYHP kind 6. ABI 196 intern scatter per-item fill/stroke/width/opacity from packed XYHP kind 7. LOD beyond 10,000 tessellated cells, and rich style
+exceptions remain compatibility routes.
 Scalar colormap and truecolor heatmaps compile through `HeatmapPainted` on Python and Node.
 ABI 99 gives both composition hosts one compact grouped box ingress. Hosts pack
 the same f64 values/offsets/centers and literal options; Rust returns typed
@@ -583,8 +656,8 @@ Extra legends, named/advanced colorbars, other deferred
   compilers route real polar, custom-font, CSS/class, and normalized gradient
   representations through it and reject non-u32 request versions before FFI
   coercion. See
-[scene-ir.md](scene-ir.md). Per-item scatter stroke/width, custom marker
-paths/glyphs, and density/LOD remain explicit compatibility exceptions. Python custom glyph/path markers and other
+[scene-ir.md](scene-ir.md).
+Per-item scatter size/symbol stay fail-closed; density/LOD remain explicit compatibility exceptions. Python custom glyph/path markers and other
 not-yet-migrated customization remain explicit compatibility exceptions until
 bounded path, text, and chrome records land.
 

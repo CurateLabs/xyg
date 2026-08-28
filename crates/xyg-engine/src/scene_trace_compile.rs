@@ -26,15 +26,23 @@
 //! matches the compatibility join predicate.
 //! ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`
 //! (hosts pack `FLAG_HAS_FILL | FLAG_HAS_GRADIENT_SPEC`, not `FLAG_COLOR2`).
-//! Data-driven two-ended paint and explicit `FLAG_COLOR2` stay fail-closed.
+//! ABI 190 intern per-item two-ended paint from packed XYHP kind 5; hosts omit
+//! `FLAG_COLOR2` on that path. Explicit `FLAG_COLOR2` stays fail-closed.
 //! ABI 170 admits constant scatter `marker_glyph` as UTF-8 in the existing
 //! XYTR marker blob (`FLAG_HAS_GLYPH`); encoded Scene keeps XYMG so SVG/raster
-//! emit `<text>` / `OP_TEXT` instead of a disc.
+//! emit `<text>` / `OP_TEXT` instead of a disc. ABI 191 admits multi-character
+//! UTF-8 (XYMG v2). Combined `marker_path` + `marker_glyph` stays fail-closed.
 //! ABI 186 admits cartesian hexbin continuous `color_ch` as host series-color
 //! fill (metric colormap lives on the XYHP 1×N plane, not XYMS).
+//! ABI 195 admits triangle_mesh custom `role` and per-item fill/stroke/width
+//! as interned TriangleFace PolyFill `style_ref`s (XYHP kind 6; face paints
+//! live on XYHP, not XYMS). ABI 196 admits scatter per-item fill/stroke/width/
+//! opacity as interned Scatter `style_ref`s (XYHP kind 7); non-constant
+//! `color_ch` uses style fill.
 //! Encoded Scene v31 is unchanged.
 
 use crate::css::{self, Checked};
+use crate::scene::marker_glyph_text;
 use crate::scene_style::{self, MarkStyleError, ResolvedMarkStyle};
 
 pub const XYTC_MAGIC: &[u8; 4] = b"XYTC";
@@ -447,7 +455,7 @@ fn constant_color<'a>(input: &'a Input<'a>, index: usize) -> Result<&'a str, Tra
     if input.color_mode == "constant" && !input.color_const.is_empty() {
         return Ok(input.color_const);
     }
-    if input.kind == "scatter" && input.flags & FLAG_USE_DENSITY != 0 {
+    if input.kind == "scatter" {
         return Ok(if input.color_css.is_empty() {
             DEFAULT_COLOR
         } else {
@@ -455,6 +463,20 @@ fn constant_color<'a>(input: &'a Input<'a>, index: usize) -> Result<&'a str, Tra
         });
     }
     if input.kind == "hexbin" {
+        return Ok(if input.color_css.is_empty() {
+            DEFAULT_COLOR
+        } else {
+            input.color_css
+        });
+    }
+    if input.kind == "ribbon" {
+        return Ok(if input.color_css.is_empty() {
+            DEFAULT_COLOR
+        } else {
+            input.color_css
+        });
+    }
+    if input.kind == "triangle_mesh" {
         return Ok(if input.color_css.is_empty() {
             DEFAULT_COLOR
         } else {
@@ -759,13 +781,7 @@ fn admit_glyph(blob: &[u8], kind: &str) -> Option<Vec<u8>> {
     if kind != "scatter" {
         return None;
     }
-    let text = std::str::from_utf8(blob).ok()?;
-    let mut chars = text.chars();
-    let ch = chars.next()?;
-    if chars.next().is_some() || ch == '\0' || ch == '\n' || ch == '\r' {
-        return None;
-    }
-    Some(blob.to_vec())
+    marker_glyph_text(blob).map(|_| blob.to_vec())
 }
 
 fn admit_marker(blob: &[u8], kind: &str) -> Option<Vec<u8>> {
@@ -1710,6 +1726,40 @@ mod tests {
         let (mut head, mut payload) = prefix("hexbin", FLAG_COLOR_CH, 1.0, "");
         head[88..96].copy_from_slice(&1.0f64.to_le_bytes());
         head[96..104].copy_from_slice(&1.0f64.to_le_bytes());
+        head[120..122].copy_from_slice(&(b"continuous".len() as u16).to_le_bytes());
+        payload.extend_from_slice(b"continuous");
+        let mut facts = Vec::new();
+        facts.extend_from_slice(XYTC_MAGIC);
+        facts.extend_from_slice(&XYTC_VERSION.to_le_bytes());
+        facts.extend_from_slice(&1u32.to_le_bytes());
+        facts.extend_from_slice(&0u32.to_le_bytes());
+        facts.extend_from_slice(&head);
+        facts.extend_from_slice(&payload);
+        let packed = pack_trace_compile(&facts).unwrap();
+        let fill = &packed[XYTO_HEADER_BYTES + 8..XYTO_HEADER_BYTES + 12];
+        assert_eq!(fill, &css::color_rgba8("#3987e5", 1.0));
+    }
+
+    #[test]
+    fn triangle_mesh_continuous_color_ch_uses_style_fill() {
+        let (mut head, mut payload) = prefix("triangle_mesh", FLAG_COLOR_CH, 1.0, "");
+        head[120..122].copy_from_slice(&(b"continuous".len() as u16).to_le_bytes());
+        payload.extend_from_slice(b"continuous");
+        let mut facts = Vec::new();
+        facts.extend_from_slice(XYTC_MAGIC);
+        facts.extend_from_slice(&XYTC_VERSION.to_le_bytes());
+        facts.extend_from_slice(&1u32.to_le_bytes());
+        facts.extend_from_slice(&0u32.to_le_bytes());
+        facts.extend_from_slice(&head);
+        facts.extend_from_slice(&payload);
+        let packed = pack_trace_compile(&facts).unwrap();
+        let fill = &packed[XYTO_HEADER_BYTES + 8..XYTO_HEADER_BYTES + 12];
+        assert_eq!(fill, &css::color_rgba8("#3987e5", 1.0));
+    }
+
+    #[test]
+    fn scatter_continuous_color_ch_uses_style_fill() {
+        let (mut head, mut payload) = prefix("scatter", FLAG_COLOR_CH, 1.0, "");
         head[120..122].copy_from_slice(&(b"continuous".len() as u16).to_le_bytes());
         payload.extend_from_slice(b"continuous");
         let mut facts = Vec::new();

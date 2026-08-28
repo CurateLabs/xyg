@@ -6,14 +6,16 @@
 //! XYDS/XYLC/XYMP/XYGR/XYMG table layout, concat order, omit-empty rules, and XYEX
 //! wrapping so Python and Node cannot drift on the extras pointer. Encoded
 //! Scene v31 keeps XYMG (glyph sidecar) like XYGR so SVG/raster can emit text
-//! markers. ABI 170 admits constant scatter `marker_glyph`.
+//! markers. ABI 170 admits constant scatter `marker_glyph`. ABI 191 admits
+//! multi-character UTF-8 (XYMG v2, max 64 bytes). Combined `marker_path` +
+//! `marker_glyph` stays fail-closed.
 
 use crate::polar::{XYPL_MAGIC, XYPL_V1_BYTES};
 use crate::scene::{
-    MAX_SCENE_STYLES, XYDS_MAGIC, XYDS_MAX_VALUES, XYDS_VERSION, XYEX_MAGIC, XYEX_VERSION,
-    XYEX_VERSION_DASH, XYGR_DIR_LEFT, XYGR_FLAG_PLOT_SPACE, XYGR_MAGIC, XYGR_MAX_STOPS,
-    XYGR_VERSION, XYHP_MAGIC, XYLC_MAGIC, XYLC_VERSION, XYMG_MAGIC, XYMG_VERSION, XYMP_MAGIC,
-    XYMP_MAX_CONTOURS, XYMP_MAX_VERTICES, XYMP_VERSION, XYMP_VERTEX_LIMIT,
+    marker_glyph_text, xymg_padded_len, MAX_SCENE_STYLES, XYDS_MAGIC, XYDS_MAX_VALUES, XYDS_VERSION,
+    XYEX_MAGIC, XYEX_VERSION, XYEX_VERSION_DASH, XYGR_DIR_LEFT, XYGR_FLAG_PLOT_SPACE, XYGR_MAGIC,
+    XYGR_MAX_STOPS, XYGR_VERSION, XYHP_MAGIC, XYLC_MAGIC, XYLC_VERSION, XYMG_MAGIC, XYMG_MAX_UTF8,
+    XYMG_VERSION, XYMP_MAGIC, XYMP_MAX_CONTOURS, XYMP_MAX_VERTICES, XYMP_VERSION, XYMP_VERTEX_LIMIT,
 };
 
 pub const XYSS_MAGIC: &[u8; 4] = b"XYSS";
@@ -249,25 +251,14 @@ fn encode_xymg(entries: &[GlyphEntry]) -> Result<Vec<u8>, ExtrasError> {
     out.extend_from_slice(&0u32.to_le_bytes());
     let mut seen = std::collections::BTreeSet::new();
     for entry in entries {
-        if entry.glyph.is_empty()
-            || entry.glyph.len() > crate::scene::XYMG_MAX_UTF8
-            || std::str::from_utf8(&entry.glyph)
-                .ok()
-                .and_then(|text| {
-                    let mut chars = text.chars();
-                    let ch = chars.next()?;
-                    (chars.next().is_none() && ch != '\0' && ch != '\n' && ch != '\r').then_some(())
-                })
-                .is_none()
-            || !seen.insert(entry.style_ref)
-        {
+        if marker_glyph_text(&entry.glyph).is_none() || !seen.insert(entry.style_ref) {
             return Err(ExtrasError::Payload);
         }
+        let padded = xymg_padded_len(entry.glyph.len()).ok_or(ExtrasError::Limit)?;
         out.extend_from_slice(&entry.style_ref.to_le_bytes());
         out.extend_from_slice(&(entry.glyph.len() as u32).to_le_bytes());
-        let mut padded = [0u8; 4];
-        padded[..entry.glyph.len()].copy_from_slice(&entry.glyph);
-        out.extend_from_slice(&padded);
+        out.extend_from_slice(&entry.glyph);
+        out.resize(out.len() + (padded - entry.glyph.len()), 0);
     }
     Ok(out)
 }
@@ -369,7 +360,7 @@ fn parse_xyss(
             || (flags & XYSS_HAS_MARKER == 0 && flags & XYSS_HAS_GLYPH == 0 && n_contours != 0)
             || (flags & XYSS_HAS_GRAD == 0 && n_stops != 0)
             || (flags & XYSS_HAS_MARKER != 0 && n_contours == 0)
-            || (flags & XYSS_HAS_GLYPH != 0 && !(1..=4).contains(&n_contours))
+            || (flags & XYSS_HAS_GLYPH != 0 && !(1..=XYMG_MAX_UTF8).contains(&n_contours))
             || (flags & XYSS_HAS_GRAD != 0 && n_stops == 0)
         {
             return Err(ExtrasError::Payload);
@@ -436,15 +427,7 @@ fn parse_xyss(
         }
         if flags & XYSS_HAS_GLYPH != 0 {
             let raw = take(&mut rest, n_contours)?;
-            if std::str::from_utf8(raw)
-                .ok()
-                .and_then(|text| {
-                    let mut chars = text.chars();
-                    let ch = chars.next()?;
-                    (chars.next().is_none() && ch != '\0' && ch != '\n' && ch != '\r').then_some(())
-                })
-                .is_none()
-            {
+            if marker_glyph_text(raw).is_none() {
                 return Err(ExtrasError::Payload);
             }
             glyphs.push(GlyphEntry {
@@ -673,6 +656,14 @@ mod tests {
         let extras = pack_scene_extras(&[], &[], &facts).unwrap();
         assert_eq!(&extras[..4], XYMG_MAGIC);
         assert_eq!(u32::from_le_bytes(extras[8..12].try_into().unwrap()), 1);
+        let mut multi = xyss_header(1);
+        multi.extend_from_slice(&glyph_record(0, "AB"));
+        let multi_extras = pack_scene_extras(&[], &[], &multi).unwrap();
+        assert_eq!(&multi_extras[..4], XYMG_MAGIC);
+        assert_eq!(
+            u32::from_le_bytes(multi_extras[20..24].try_into().unwrap()),
+            2
+        );
     }
 
     #[test]

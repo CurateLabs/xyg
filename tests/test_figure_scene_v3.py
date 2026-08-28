@@ -14,6 +14,7 @@ import pytest
 from xyg import _native, _scene_v3, kernels
 from xyg._figure import Figure
 from xyg._scene_v3 import UnsupportedSceneV3
+from xyg.channels import ColorChannel
 
 FIXTURE = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
 
@@ -247,13 +248,158 @@ def test_python_scene_v9_legend_bounds_and_unsupported_variants_fail_closed() ->
         figure.to_scene()
 
 
-def test_python_scene_v9_legend_best_loc_settles_before_packing() -> None:
+def test_python_scene_v9_legend_best_loc_settles_during_encode() -> None:
     figure = Figure()
     figure.scatter([0, 1], [0, 1], name="x")
     figure.legend_options = {"loc": "best"}
     scene = figure.to_scene()
     loc_byte = scene[scene.index(b"XYLG") + 4]
     assert loc_byte == 1
+
+
+def test_python_scene_authored_ticks_filter_during_encode() -> None:
+    figure = Figure()
+    figure.scatter([0, 1], [0, 1])
+    figure.axis_options["x"].update(
+        domain=(0.0, 1.0),
+        tick_values=[-1.0, 0.0],
+        tick_labels=["off-domain-long-label", "zero"],
+    )
+    scene = figure.to_scene()
+    assert b"zero" in scene
+    assert b"off-domain-long-label" not in scene
+    svg = _native.scene_svg(scene)
+    assert "zero" in svg
+    assert "off-domain-long-label" not in svg
+
+
+@pytest.mark.parametrize(
+    ("scale", "domain", "constant", "points", "majors", "minors"),
+    [
+        (
+            "linear",
+            (0.0, 1.0),
+            None,
+            ([0.0, 1.0], [0.0, 1.0]),
+            [0.0, 1.0],
+            [-0.25, 0.25, 0.75, 1.25],
+        ),
+        ("log", (1.0, 10.0), None, ([1.0, 10.0], [1.0, 2.0]), [1.0, 10.0], [0.5, 2.0, 5.0, 20.0]),
+        (
+            "symlog",
+            (-10.0, 10.0),
+            1.0,
+            ([-1.0, 1.0], [-1.0, 1.0]),
+            [-10.0, 10.0],
+            [-20.0, -1.0, 1.0, 20.0],
+        ),
+    ],
+)
+def test_python_scene_authored_minors_filter_during_encode(
+    scale: str,
+    domain: tuple[float, float],
+    constant: float | None,
+    points: tuple[list[float], list[float]],
+    majors: list[float],
+    minors: list[float],
+) -> None:
+    figure = Figure()
+    figure.scatter(points[0], points[1])
+    options = {
+        "type_": scale,
+        "domain": domain,
+        "tick_values": majors,
+        "minor_tick_values": minors,
+        "minor_style": {
+            "grid_color": "#22c55e",
+            "tick_color": "#22c55e",
+            "tick_length": 3,
+        },
+    }
+    if constant is not None:
+        options["constant"] = constant
+    figure.set_axis("x", **options)
+    svg = _native.scene_svg(figure.to_scene())
+    assert "rgba(34,197,94" in svg
+    off_only = Figure()
+    off_only.scatter(points[0], points[1])
+    off_options = dict(options)
+    off_options["minor_tick_values"] = [minors[0], minors[-1]]
+    off_only.set_axis("x", **off_options)
+    off_svg = _native.scene_svg(off_only.to_scene())
+    assert "rgba(34,197,94" not in off_svg
+
+
+def test_python_scene_polar_seam_authored_ticks_filter_during_encode() -> None:
+    figure = Figure(width=400, height=400, coords="polar")
+    figure.scatter([0.0], [0.5])
+    figure.set_axis(
+        "x",
+        domain=(0.0, 360.0),
+        theta_unit="degrees",
+        sector=(300.0, 420.0),
+        tick_values=[300.0, 330.0, 0.0, 30.0, 60.0, 180.0],
+        tick_labels=["300", "330", "zero", "30", "60", "off-sector"],
+    )
+    figure.set_axis("y", domain=(0.0, 1.0))
+    svg = _native.scene_svg(figure.to_scene())
+    assert ">zero<" in svg
+    assert "off-sector" not in svg
+    assert ">180<" not in svg
+
+
+def test_python_scene_polar_theta_uses_angular_labels() -> None:
+    figure = Figure(width=400, height=400, coords="polar")
+    figure.scatter([0.0, math.pi], [0.5, 0.8])
+    figure.set_axis("x", domain=(0.0, math.tau), theta_unit="radians")
+    figure.set_axis("y", domain=(0.0, 1.0))
+    svg = _native.scene_svg(figure.to_scene())
+    thetas = re.findall(r'data-xy-tick="theta"[^>]*>([^<]+)', svg)
+    assert any("π" in label for label in thetas)
+    assert "2" not in thetas
+    assert "4" not in thetas
+    assert "6" not in thetas
+
+
+def test_python_scene_time_strftime_and_polar_numeric_format() -> None:
+    figure = Figure(width=420, height=260)
+    figure.scatter([0.0, 86_400_000.0], [0.0, 1.0])
+    figure.set_axis("x", type_="time", domain=(0.0, 86_400_000.0), format="%Y-%m-%d")
+    figure.set_axis("y", domain=(0.0, 1.0))
+    svg = _native.scene_svg(figure.to_scene())
+    assert "1970-01-01" in svg
+    assert "5.0e7" not in svg
+    assert _scene_v3.scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+
+    polar = Figure(width=400, height=400, coords="polar")
+    polar.scatter([0.0], [0.5])
+    polar.set_axis("x", domain=(0.0, 360.0), theta_unit="degrees", format=".0f")
+    polar.set_axis("y", domain=(0.0, 1.0), format=".1f")
+    polar_svg = _native.scene_svg(polar.to_scene())
+    thetas = re.findall(r'data-xy-tick="theta"[^>]*>([^<]+)', polar_svg)
+    assert thetas
+    assert all("°" not in label for label in thetas)
+    assert any(label in {"0", "90", "180", "270"} for label in thetas)
+
+    fallback = Figure(width=320, height=240)
+    fallback.scatter([0.0, 5.0], [0.0, 5.0])
+    fallback.axis_options["x"].update(domain=(0.0, 5.0), format=".2e")
+    fallback.axis_options["y"].update(domain=(0.0, 5.0))
+    fallback_svg = _native.scene_svg(fallback.to_scene())
+    assert ">0<" in fallback_svg
+    assert ">4<" in fallback_svg
+    assert ".2e" not in fallback_svg
+
+
+def test_python_scene_secondary_axis_stays_fail_closed() -> None:
+    figure = Figure()
+    figure.scatter([0.0, 1.0], [0.0, 1.0])
+    figure.set_axis("x2", side="top", domain=(0.0, 1.0), tick_values=[0.25])
+    with pytest.raises(UnsupportedSceneV3, match="exactly x/y axes"):
+        figure.to_scene()
+    assert _scene_v3.scene_export_support_reason(figure) == (
+        "Scene v12 figure compilation currently supports exactly x/y axes"
+    )
 
 
 @pytest.mark.parametrize(
@@ -623,9 +769,7 @@ def test_constant_scatter_stroke_uses_the_public_rust_scene_contract() -> None:
     assert _native.scene_browser_painter(scene)
 
 
-def test_constant_scatter_stroke_defaults_and_compatibility_boundaries(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_constant_scatter_stroke_defaults_and_compatibility_boundaries() -> None:
     stroke_only = Figure(width=320, height=240).scatter(
         [0.5], [0.5], color="#336699", stroke="#ff8800"
     )
@@ -648,14 +792,17 @@ def test_constant_scatter_stroke_defaults_and_compatibility_boundaries(
     assert 'stroke="rgb(51,102,153)" stroke-opacity="0.8"' in plain_svg
     assert 'stroke-width="1"' in plain_svg
 
-    compatibility = []
     for kwargs in (
         {"stroke": ["#111111", "#222222"]},
         {"stroke_width": [1.0, 2.0]},
     ):
         figure = Figure(width=320, height=240).scatter([0.5, 1.0], [0.5, 1.0], **kwargs)
-        assert _scene_v3.scene_export_support_reason(figure) is not None
-        compatibility.append(figure)
+        assert _scene_v3.scene_export_support_reason(figure) is None
+        svg = _native.scene_svg(figure.to_scene())
+        assert figure.to_svg() == svg
+
+    sized = Figure(width=320, height=240).scatter([0.5, 1.0], [0.5, 1.0], size=[4.0, 12.0])
+    assert _scene_v3.scene_export_support_reason(sized) is not None
 
     for opacity_key in ("fill_opacity", "stroke_opacity"):
         figure = Figure(width=320, height=240).scatter([0.5], [0.5], color="#336699")
@@ -664,13 +811,6 @@ def test_constant_scatter_stroke_defaults_and_compatibility_boundaries(
             figure.traces[-1].style["stroke_width"] = 2.0
         figure.traces[-1].style[opacity_key] = 0.5
         assert _scene_v3.scene_export_support_reason(figure) is None
-
-    def unexpected_scene(*_args: object, **_kwargs: object) -> bytes:
-        raise AssertionError("per-item scatter styling must stay on compatibility")
-
-    monkeypatch.setattr(_native, "scene_static_export", unexpected_scene)
-    for figure in compatibility:
-        assert figure.to_svg().startswith("<svg")
 
     for invalid_width in (-1.0, float("nan"), float("inf")):
         with pytest.raises(ValueError, match="scatter stroke_width"):
@@ -924,8 +1064,10 @@ def test_python_scene_compiles_ribbon_and_triangle_mesh() -> None:
         gridsize=(4, 4),
         range=((0.0, 4.0), (0.0, 5.0)),
     )
-    with pytest.raises(UnsupportedSceneV3, match="custom hexbin reducers"):
-        custom.to_scene()
+    custom_svg = _native.scene_svg(custom.to_scene())
+    assert custom_svg.count('<path d="M ') == len(custom.traces[0].x.values)
+    assert custom.to_svg() == custom_svg
+    assert _scene_v3.scene_export_support_reason(custom) is None
 
 
 def test_python_scene_compiles_constant_ribbon_color2() -> None:
@@ -964,8 +1106,13 @@ def test_python_scene_compiles_constant_ribbon_color2() -> None:
         color=["#7c3aed", "#2563eb"],
         color_target=["#34d399", "#f59e0b"],
     )
-    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_GRADIENT"):
-        per_item.to_scene()
+    scene = per_item.to_scene()
+    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert b"XYGR" in scene
+    svg = _native.scene_svg(scene)
+    assert svg.count("<linearGradient") == 2
+    assert per_item.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(per_item) is None
 
 
 def test_python_scene_compiles_unwrapped_text_layout() -> None:
@@ -1005,11 +1152,17 @@ def test_python_scene_compiles_unwrapped_text_layout() -> None:
     assert 'transform="rotate(-30 ' in rotated_svg
     assert rotated.to_svg() == rotated_svg
     assert _scene_v3.scene_export_support_reason(rotated) is None
+    styled = representative_figure()
+    styled.annotations.append(
+        {"kind": "text", "x": 0.5, "y": 0.5, "text": "rotated", "style": {"rotation": 30}}
+    )
+    styled_svg = _native.scene_svg(styled.to_scene())
+    assert 'transform="rotate(-30 ' in styled_svg
+    assert _scene_v3.scene_export_support_reason(styled) is None
     authored = representative_figure()
-    authored.text(2.0, 2.5, "note")
+    authored.text(2.0, 2.5, "note", rotation=30)
     assert _scene_v3.scene_export_support_reason(authored) is None
-    assert b"note" in authored.to_scene()
-    assert "note" in authored.to_svg()
+    assert 'transform="rotate(-30 ' in authored.to_svg()
 
 
 def test_python_scene_compiles_labelled_marker_layout() -> None:
@@ -1049,11 +1202,17 @@ def test_python_scene_compiles_labelled_marker_layout() -> None:
     assert 'transform="rotate(-30 ' in rotated_svg
     assert rotated.to_svg() == rotated_svg
     assert _scene_v3.scene_export_support_reason(rotated) is None
+    styled = representative_figure()
+    styled.annotations.append(
+        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "rotated", "style": {"rotation": 30}}
+    )
+    styled_svg = _native.scene_svg(styled.to_scene())
+    assert 'transform="rotate(-30 ' in styled_svg
+    assert _scene_v3.scene_export_support_reason(styled) is None
     authored = representative_figure()
-    authored.marker(2.0, 2.5, text="note")
+    authored.marker(2.0, 2.5, text="note", rotation=30)
     assert _scene_v3.scene_export_support_reason(authored) is None
-    assert b"note" in authored.to_scene()
-    assert "note" in authored.to_svg()
+    assert 'transform="rotate(-30 ' in authored.to_svg()
     unlabelled = representative_figure()
     unlabelled.annotations.append({"kind": "marker", "x": 0.5, "y": 0.5, "dx": 8, "dy": -8})
     assert _scene_v3.scene_export_support_reason(unlabelled) is None
@@ -1441,6 +1600,27 @@ def test_python_scene_compiles_heatmap_fill_opacity() -> None:
     assert svg != _native.scene_svg(solid.to_scene())
 
 
+def test_python_scene_compiles_heatmap_stroke_opacity() -> None:
+    stroked = Figure(width=320, height=240)
+    stroked.axis_options["x"]["domain"] = (0.0, 4.0)
+    stroked.axis_options["y"]["domain"] = (0.0, 5.0)
+    stroked.heatmap([[1.0, 2.0], [3.0, 4.0]], color="#22c55e", opacity=0.75)
+    stroked.traces[-1].style["stroke"] = "#111111"
+    stroked.traces[-1].style["stroke_width"] = 2.0
+    stroked.traces[-1].style["stroke_opacity"] = 0.5
+    svg = _native.scene_svg(stroked.to_scene())
+    assert 'stroke-opacity="' in svg
+    assert stroked.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(stroked) is None
+    solid = Figure(width=320, height=240)
+    solid.axis_options["x"]["domain"] = (0.0, 4.0)
+    solid.axis_options["y"]["domain"] = (0.0, 5.0)
+    solid.heatmap([[1.0, 2.0], [3.0, 4.0]], color="#22c55e", opacity=0.75)
+    solid.traces[-1].style["stroke"] = "#111111"
+    solid.traces[-1].style["stroke_width"] = 2.0
+    assert svg != _native.scene_svg(solid.to_scene())
+
+
 def test_python_scene_compiles_scatter_fill_opacity() -> None:
     faded = Figure(width=240, height=160)
     faded.axis_options["x"]["domain"] = (0.0, 2.0)
@@ -1504,6 +1684,139 @@ def test_python_scene_compiles_hexbin_fill_opacity() -> None:
         opacity=0.75,
     )
     assert svg != _native.scene_svg(solid.to_scene())
+
+
+def test_python_scene_compiles_hexbin_stroke_opacity() -> None:
+    stroked = Figure(width=320, height=240)
+    stroked.axis_options["x"]["domain"] = (0.0, 4.0)
+    stroked.axis_options["y"]["domain"] = (0.0, 5.0)
+    stroked.hexbin(
+        [0.5, 1.5, 2.5],
+        [0.5, 0.5, 2.0],
+        gridsize=(4, 4),
+        range=((0.0, 4.0), (0.0, 5.0)),
+        color="#22c55e",
+        opacity=0.75,
+    )
+    stroked.traces[-1].style["stroke"] = "#111111"
+    stroked.traces[-1].style["stroke_width"] = 2.0
+    stroked.traces[-1].style["stroke_opacity"] = 0.5
+    svg = _native.scene_svg(stroked.to_scene())
+    assert 'stroke-opacity="' in svg
+    assert stroked.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(stroked) is None
+    solid = Figure(width=320, height=240)
+    solid.axis_options["x"]["domain"] = (0.0, 4.0)
+    solid.axis_options["y"]["domain"] = (0.0, 5.0)
+    solid.hexbin(
+        [0.5, 1.5, 2.5],
+        [0.5, 0.5, 2.0],
+        gridsize=(4, 4),
+        range=((0.0, 4.0), (0.0, 5.0)),
+        color="#22c55e",
+        opacity=0.75,
+    )
+    solid.traces[-1].style["stroke"] = "#111111"
+    solid.traces[-1].style["stroke_width"] = 2.0
+    assert svg != _native.scene_svg(solid.to_scene())
+
+
+def test_python_scene_compiles_polar_hexbin() -> None:
+    figure = Figure(width=400, height=400, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, math.tau)
+    figure.axis_options["y"]["domain"] = (0.0, 4.0)
+    figure.hexbin(
+        [0.5, 1.5, 2.5],
+        [1.0, 2.0, 3.0],
+        gridsize=(4, 4),
+        range=((0.0, math.tau), (0.0, 4.0)),
+        color="#3987e5",
+        mincnt=1,
+    )
+    scene = figure.to_scene()
+    assert scene[4:8] == (31).to_bytes(4, "little")
+    svg = _native.scene_svg(scene)
+    assert svg.count('<path d="M ') == len(figure.traces[0].x.values)
+    assert figure.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(figure) is None
+    painted = Figure(width=400, height=400, coords="polar")
+    painted.axis_options["x"]["domain"] = (0.0, math.tau)
+    painted.axis_options["y"]["domain"] = (0.0, 4.0)
+    painted.hexbin(
+        [0.5, 1.5, 2.5, 3.5, 1.0, 2.0, 3.0],
+        [1.0, 1.0, 1.0, 1.0, 3.0, 3.0, 3.0],
+        gridsize=(4, 4),
+        range=((0.0, math.tau), (0.0, 4.0)),
+        colormap="viridis",
+        mincnt=1,
+    )
+    painted_svg = _native.scene_svg(painted.to_scene())
+    assert painted_svg.count('<path d="M ') == len(painted.traces[0].x.values)
+    fills = {
+        part.split('fill="', 1)[1].split('"', 1)[0]
+        for part in painted_svg.split("<path ")[1:]
+        if 'fill="' in part
+    }
+    assert len(fills) > 1
+    assert painted.to_svg() == painted_svg
+    assert _scene_v3.scene_export_support_reason(painted) is None
+
+
+def test_python_scene_compiles_hexbin_direct_rgba_and_categorical() -> None:
+    direct = Figure(width=320, height=240)
+    direct.axis_options["x"]["domain"] = (0.0, 4.0)
+    direct.axis_options["y"]["domain"] = (0.0, 5.0)
+    direct.hexbin(
+        [0.5, 1.5, 2.5, 3.5, 1.0, 2.0, 3.0],
+        [0.5, 0.5, 0.5, 0.5, 2.0, 2.0, 2.0],
+        gridsize=(4, 4),
+        range=((0.0, 4.0), (0.0, 5.0)),
+        color="#3987e5",
+    )
+    n = len(direct.traces[0].x.values)
+    assert n >= 2
+    rgba = np.zeros((n, 4), dtype=np.float64)
+    rgba[:, 3] = 1.0
+    rgba[0] = (1.0, 0.0, 0.0, 1.0)
+    rgba[1] = (0.0, 1.0, 0.0, 1.0)
+    direct.traces[0].color_ch = ColorChannel(mode="direct_rgba", rgba=rgba)
+    direct_svg = _native.scene_svg(direct.to_scene())
+    assert direct_svg.count('<path d="M ') == n
+    fills = {
+        part.split('fill="', 1)[1].split('"', 1)[0]
+        for part in direct_svg.split("<path ")[1:]
+        if 'fill="' in part
+    }
+    assert len(fills) > 1
+    assert direct.to_svg() == direct_svg
+    assert _scene_v3.scene_export_support_reason(direct) is None
+    categorical = Figure(width=320, height=240)
+    categorical.axis_options["x"]["domain"] = (0.0, 4.0)
+    categorical.axis_options["y"]["domain"] = (0.0, 5.0)
+    categorical.hexbin(
+        [0.5, 1.5, 2.5, 3.5, 1.0, 2.0, 3.0],
+        [0.5, 0.5, 0.5, 0.5, 2.0, 2.0, 2.0],
+        gridsize=(4, 4),
+        range=((0.0, 4.0), (0.0, 5.0)),
+        color="#3987e5",
+    )
+    n = len(categorical.traces[0].x.values)
+    categorical.traces[0].color_ch = ColorChannel(
+        mode="categorical",
+        codes=np.arange(n, dtype=np.int64) % 2,
+        categories=["a", "b"],
+        palette=["#ef4444", "#22c55e"],
+    )
+    cat_svg = _native.scene_svg(categorical.to_scene())
+    assert cat_svg.count('<path d="M ') == n
+    cat_fills = {
+        part.split('fill="', 1)[1].split('"', 1)[0]
+        for part in cat_svg.split("<path ")[1:]
+        if 'fill="' in part
+    }
+    assert len(cat_fills) > 1
+    assert categorical.to_svg() == cat_svg
+    assert _scene_v3.scene_export_support_reason(categorical) is None
 
 
 def test_python_scene_compiles_triangle_mesh_fill_opacity() -> None:
@@ -1895,6 +2208,15 @@ def test_python_scene_compiles_constant_marker_glyphs() -> None:
     assert ">♣</text>" in club_svg
     assert club.to_svg() == club_svg
 
+    multi = Figure(width=240, height=160)
+    multi.axis_options["x"]["domain"] = (0.0, 2.0)
+    multi.axis_options["y"]["domain"] = (0.0, 2.0)
+    multi.scatter([1.0], [1.0], color="#336699", size=12, _marker_glyph="AB")
+    multi_svg = _native.scene_svg(multi.to_scene())
+    assert ">AB</text>" in multi_svg
+    assert multi.to_svg() == multi_svg
+    assert _scene_v3.scene_export_support_reason(multi) is None
+
     polar = Figure(width=400, height=400, coords="polar")
     polar.axis_options["x"]["domain"] = (0.0, math.tau)
     polar.axis_options["y"]["domain"] = (0.0, 1.0)
@@ -1909,7 +2231,7 @@ def test_python_scene_compiles_constant_marker_glyphs() -> None:
     with pytest.raises(UnsupportedSceneV3, match="authored markers"):
         both.to_scene()
     invalid = Figure().scatter([1.0], [1.0])
-    invalid.traces[-1].style["marker_glyph"] = "AB"
+    invalid.traces[-1].style["marker_glyph"] = "A" * 65
     with pytest.raises(UnsupportedSceneV3, match="authored markers"):
         invalid.to_scene()
 

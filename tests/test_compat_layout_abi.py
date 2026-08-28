@@ -84,3 +84,70 @@ def test_tight_layout_empty_wide_canvas_uses_default_edges() -> None:
     assert native[1] == pytest.approx(1.0 - 26.0 / 800.0)
     assert native[2] == pytest.approx(42.0 / 600.0)
     assert native[3] == pytest.approx(1.0 - 20.0 / 600.0)
+
+
+def test_combine_plot_default_padding_is_the_plot_rect() -> None:
+    native = _native.compat_combine_plot(900.0, 420.0)
+    assert native["x"] == pytest.approx(62.0)
+    assert native["y"] == pytest.approx(10.0)
+    assert native["w"] == pytest.approx(824.0)
+    assert native["h"] == pytest.approx(368.0)
+    spec = {
+        "width": 900,
+        "height": 420,
+        "traces": [],
+        "x_axis": {
+            "scale": "linear",
+            "domain": [0.0, 1.0],
+            "tick_label_strategy": "none",
+        },
+        "y_axis": {
+            "scale": "linear",
+            "domain": [0.0, 1.0],
+            "tick_label_strategy": "none",
+        },
+    }
+    _width, _height, _compact, plot = _svg.layout(spec)
+    assert plot["x"] == pytest.approx(native["x"])
+    assert plot["y"] == pytest.approx(native["y"])
+    assert plot["w"] == pytest.approx(native["w"])
+    assert plot["h"] == pytest.approx(native["h"])
+    assert plot["title_wrap_width"] == pytest.approx(native["title_wrap_width"])
+
+
+def test_combine_plot_polar_recut_matches_recut_helper() -> None:
+    native = _native.compat_combine_plot(
+        200.0,
+        200.0,
+        authored_padding=(0.0, 0.0, 0.0, 0.0),
+        polar={
+            "polar_label_room": 30.0,
+            "authored_padding": True,
+        },
+    )
+    recut = _native.recut_polar_plot(
+        {"x": 0.0, "y": 0.0, "w": 200.0, "h": 200.0, "top_axis_room": 0.0},
+        200.0,
+        200.0,
+        polar_label_room=30.0,
+        authored_padding=True,
+    )
+    assert native["x"] == pytest.approx(recut["x"])
+    assert native["y"] == pytest.approx(recut["y"])
+    assert native["w"] == pytest.approx(recut["w"])
+    assert native["h"] == pytest.approx(recut["h"])
+
+
+def test_tight_layout_figure_extra_suptitle_and_legend() -> None:
+    extra = _native.tight_layout_figure_extra(
+        800.0,
+        600.0,
+        suptitle_height=20.0,
+        suptitle_y=0.98,
+        ylabel_size=12.0,
+        legend_box_w=80.0,
+    )
+    assert extra[0] == pytest.approx(20.0)
+    assert extra[1] == pytest.approx(92.0)
+    assert extra[2] == pytest.approx(0.0)
+    assert extra[3] == pytest.approx((1.0 - 0.98) * 600.0 + 20.0 + 6.0)
