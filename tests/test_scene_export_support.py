@@ -2036,6 +2036,48 @@ def test_predicate_never_claims_public_support_when_the_compiler_rejects(name: s
     assert str(excinfo.value)
 
 
+def test_scene_static_css_and_custom_font_are_fail_closed_product_contract() -> None:
+    """#288: custom fonts / chart CSS / classes stay compatibility with stable diagnostics.
+
+    Default-font Scene figures must not need `_svg.to_svg` / `_raster`. Scene
+    static measure and paint are DejaVu Sans; live browser widgets still apply
+    CSS outside this encoder.
+    """
+    from xyg import _native, _svg
+
+    default = _supported()
+    assert scene_export_support_reason(default) is None
+    scene = figure_scene(default)
+    svg = default.to_svg()
+    assert svg == _native.scene_svg(scene)
+    assert public_static_export(default, "svg") == svg.encode()
+    png = public_static_export(default, "png")
+    assert png is not None
+    assert png.startswith(b"\x89PNG")
+    assert png == default.to_png(scale=1)
+
+    font = _custom_font()
+    reason = scene_export_support_reason(font) or ""
+    assert (
+        "XYG_SCENE_UNSUPPORTED_CUSTOM_FONT" in reason
+        or "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE" in reason
+    )
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_CUSTOM_FONT"):
+        figure_scene(font)
+    assert public_static_export(font, "svg") is None
+    assert public_static_export(font, "png") is None
+    assert font.to_svg() == _svg.to_svg(font)
+
+    css = _browser_css()
+    reason = scene_export_support_reason(css) or ""
+    assert "XYG_SCENE_UNSUPPORTED_BROWSER_CSS" in reason
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_BROWSER_CSS"):
+        figure_scene(css)
+    assert public_static_export(css, "svg") is None
+    assert public_static_export(css, "png") is None
+    assert css.to_svg().startswith("<svg")
+
+
 def test_input_errors_are_not_support_decisions() -> None:
     figure = _supported()
     figure.traces[0].style["opacity"] = float("nan")
@@ -2107,6 +2149,28 @@ def test_public_literal_linear_gradient_fills_route_through_scene(factory) -> No
     svg = figure.to_svg()
     assert "<linearGradient" in svg
     assert 'fill="url(#xy-scene-g' in svg
+
+
+def test_var_and_theme_css_gradients_are_fail_closed_product_contract() -> None:
+    """#289: unresolved `var()` / theme CSS stay compatibility; literal gradients stay Scene."""
+    from xyg import _svg
+
+    literal = _supported().bar([0, 1], [1, 2], fill="linear-gradient(to bottom, #000000, #ffffff)")
+    assert scene_export_support_reason(literal) is None
+    assert "<linearGradient" in literal.to_svg()
+
+    unresolved = _supported().bar(
+        [0, 1], [1, 2], fill="linear-gradient(to bottom, var(--accent), #ffffff)"
+    )
+    reason = scene_export_support_reason(unresolved) or ""
+    assert "XYG_SCENE_UNSUPPORTED_GRADIENT" in reason or "gradient" in reason.lower()
+    with pytest.raises(UnsupportedSceneV3, match=r"solid literal paints|gradient fills|non-CSS"):
+        figure_scene(unresolved)
+    assert public_static_export(unresolved, "svg") is None
+    compat = unresolved.to_svg()
+    assert compat.startswith("<svg")
+    assert compat == _svg.to_svg(unresolved)
+    assert "xy-scene-g" not in compat
 
 
 @pytest.mark.parametrize(

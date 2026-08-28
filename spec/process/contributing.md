@@ -280,6 +280,15 @@ Start with the smallest reusable primitive surface:
 - Example app card with normal-size data, not only a stress demo.
 - Benchmark row only when the comparison methodology is honest.
 
+## M2 leftover clusters
+
+Open Milestone 2 follow-on parents (#271-#283) stay as umbrellas. Land **one
+leftover cluster per pull request** from
+[`spec/process/m2-leftover-clusters.md`](m2-leftover-clusters.md). Wait until
+the exact PR head's three required checks are green before the next push on
+that ref — CI cancels superseded runs. Do not stack further slices onto an
+already-large leftover PR.
+
 ## Pull-request gates and final review
 
 Every pull request runs three required, authoritative lanes: the complete
