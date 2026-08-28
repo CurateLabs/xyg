@@ -1611,7 +1611,7 @@ def _rect_extra_flags(style: dict[str, Any], kind: str, polar: bool) -> int:
     if isinstance(fill, dict) and _admitted_fill_gradient_from_fill(fill, "#3987e5") is None:
         flags |= _XYFS_TRACE_RECT_GRADIENT
     radius = style.get("corner_radius", 0.0)
-    admitted = (not polar) and kind in {"bar", "column", "histogram"}
+    admitted = kind in {"bar", "column", "histogram"}
     if isinstance(radius, (list, tuple)):
         if admitted and len(radius) == 2:
             pass

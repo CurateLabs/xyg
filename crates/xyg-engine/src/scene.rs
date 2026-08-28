@@ -5789,9 +5789,10 @@ pub fn expand_scene_records_painted(
     Ok((output, painted_styles, images))
 }
 
-/// Cartesian bar/column/histogram corner radii and polar `wedge_gap` in pixels
-/// (ABI 166 / ABI 167). `force_tip_top` matches compatibility horizontal bars
-/// (`tip_top or horizontal`). Polar Rects ignore radii and apply `wedge_gap`.
+/// Cartesian bar/column/histogram corner radii and polar `wedge_gap` /
+/// `corner_radius` in pixels (ABI 166 / ABI 167 / ABI 168). `force_tip_top`
+/// matches compatibility horizontal bars (`tip_top or horizontal`). Polar
+/// Rects apply `wedge_gap` and, when inner radius is positive, `r_tip.max(r_base)`.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SceneCornerRadius {
     pub r_tip: f64,
@@ -6819,11 +6820,12 @@ impl<'a> SceneBatch<'a> {
         Ok(self)
     }
 
-    /// Attach per-style cartesian `corner_radius` and polar `wedge_gap` in
-    /// pixels. Empty keeps every cartesian Rect axis-aligned and every polar
-    /// wedge ungapped. Encoded Scene does not keep a radius sidecar: rounded
-    /// bars become PolyFill vertices after pixel mapping; gapped polar wedges
-    /// inset during `polar_wedge_points`.
+    /// Attach per-style cartesian `corner_radius` and polar `wedge_gap` /
+    /// `corner_radius` in pixels. Empty keeps every cartesian Rect axis-aligned
+    /// and every polar wedge ungapped and unrounded. Encoded Scene does not
+    /// keep a radius sidecar: rounded bars become PolyFill vertices after
+    /// pixel mapping; gapped or rounded polar wedges tessellate during
+    /// `polar_wedge_points`.
     pub fn with_corner_radii(
         mut self,
         radii: Vec<Option<SceneCornerRadius>>,
@@ -6896,11 +6898,13 @@ impl<'a> SceneBatch<'a> {
             let kind = SceneRecordKind::from_code(self.kinds[index]).expect("validated kind");
             if let Some(polar) = &self.polar {
                 if kind == SceneRecordKind::Rect {
-                    let wedge_gap = self
+                    let extra = self
                         .corner_radii
                         .get(self.style_refs[index] as usize)
-                        .and_then(|value| value.as_ref())
-                        .map(|value| value.wedge_gap)
+                        .and_then(|value| value.as_ref());
+                    let wedge_gap = extra.map(|value| value.wedge_gap).unwrap_or(0.0);
+                    let corner_radius = extra
+                        .map(|value| value.r_tip.max(value.r_base))
                         .unwrap_or(0.0);
                     let points = polar::polar_wedge_points(
                         &polar.metrics,
@@ -6909,6 +6913,7 @@ impl<'a> SceneBatch<'a> {
                         self.y0[index],
                         self.y1[index],
                         wedge_gap,
+                        corner_radius,
                     );
                     if points.len() < 3
                         || points
@@ -16760,6 +16765,89 @@ mod tests {
             .all(|record| record.kind == SceneRecordKind::PolyFill));
         let svg = document.to_svg();
         assert_eq!(svg.matches("<path d=\"M").count(), 2);
+    }
+
+    #[test]
+    fn polar_bar_corner_radius_keeps_adjacent_slices_separate() {
+        let layout = PlotLayout::new(400.0, 400.0, 0.0, 0.0, 0.0, 0.0).unwrap();
+        let x = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            std::f64::consts::PI * 2.0,
+            0.0,
+            400.0,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 400.0, 0.0, 1.0, false).unwrap();
+        let envelope = polar::PolarEnvelope {
+            theta_unit: 0,
+            theta_direction: 0,
+            n_categories: 0,
+            r_scale_kind: 0,
+            grid_shape: 0,
+            r_mask_nonpositive: false,
+            theta_zero: 0.0,
+            sector_start: 0.0,
+            sector_end: std::f64::consts::PI * 2.0,
+            r_lo: 0.0,
+            r_hi: 1.0,
+            r_origin: f64::NAN,
+            hole: 0.25,
+            r_constant: 1.0,
+        };
+        let xypl = polar::encode_xypl(&envelope);
+        let kinds = [SceneRecordKind::Rect as u8, SceneRecordKind::Rect as u8];
+        let ids = [1u64, 1];
+        let styles = [0u32, 0];
+        let fill = [37u8, 99, 235, 255];
+        let stroke = [0u8, 0, 0, 255];
+        let widths = [0.0f64];
+        let diameter = [0.0f64, 0.0];
+        let symbols = [0u8, 0];
+        let x0 = [0.0f64, std::f64::consts::FRAC_PI_2];
+        let y0 = [0.0f64, 0.0];
+        let x1 = [std::f64::consts::FRAC_PI_2, std::f64::consts::PI];
+        let y1 = [1.0f64, 1.0];
+        let encoded = SceneBatch::new(
+            layout,
+            1,
+            2,
+            x,
+            y,
+            &kinds,
+            &ids,
+            &styles,
+            &fill,
+            &stroke,
+            &widths,
+            &diameter,
+            &symbols,
+            &x0,
+            &y0,
+            &x1,
+            &y1,
+        )
+        .unwrap()
+        .with_polar(&xypl)
+        .unwrap()
+        .with_corner_radii(vec![Some(SceneCornerRadius {
+            r_tip: 14.0,
+            r_base: 14.0,
+            force_tip_top: false,
+            wedge_gap: 0.0,
+        })])
+        .unwrap()
+        .encode();
+        let document = SceneDocument::decode(&encoded).unwrap();
+        assert!(document
+            .records
+            .iter()
+            .all(|record| record.kind == SceneRecordKind::PolyFill));
+        let svg = document.to_svg();
+        assert_eq!(svg.matches("<path d=\"M").count(), 2);
+        assert!(!svg.contains("<rect x="));
     }
 
     #[test]

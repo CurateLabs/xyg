@@ -1655,7 +1655,7 @@ test("Node Scene compiles column and histogram as Rect records", () => {
   assert.match(sceneSvg(hist.toScene()), /<rect /);
 });
 
-test("Node Scene compiles cartesian corner_radius and keeps polar fail-closed", () => {
+test("Node Scene compiles cartesian corner_radius and polar donut rounding", () => {
   const rounded = new Figure({ width: 240, height: 160 });
   rounded.setAxisDomain("x", [0, 2]);
   rounded.setAxisDomain("y", [0, 3]);
@@ -1664,11 +1664,21 @@ test("Node Scene compiles cartesian corner_radius and keeps polar fail-closed", 
   assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
   assert.equal((sceneSvg(scene).match(/<path d="M/g) || []).length, 2);
   assert.equal(sceneExportSupportReason(rounded), null);
-  const polar = new Figure({ width: 400, height: 400, coords: "polar" });
-  polar.setAxisDomain("x", [0, Math.PI * 2]);
-  polar.setAxisDomain("y", [0, 1]);
-  polar.bar([0], [1], { style: { corner_radius: 4 }, name: null });
-  assert.throws(() => polar.toScene(), /corner_radius/);
+  const pie = new Figure({ width: 400, height: 400, coords: "polar" });
+  pie.setAxisDomain("x", [0, Math.PI * 2]);
+  pie.setAxisDomain("y", [0, 1]);
+  pie.bar([0], [1], { style: { corner_radius: 4 }, name: null });
+  const pieScene = pie.toScene();
+  assert.equal((sceneSvg(pieScene).match(/<path d="M/g) || []).length, 1);
+  assert.equal(sceneExportSupportReason(pie), null);
+  const donut = new Figure({ width: 400, height: 400, coords: "polar" });
+  donut.setAxisDomain("x", [0, Math.PI * 2]);
+  donut.setAxisDomain("y", [0, 1]);
+  donut.bar([0, 1.5], [1, 0.8], { base: 0.25, style: { color: "#2563eb", corner_radius: 14 }, name: null });
+  const donutScene = donut.toScene();
+  assert.equal(new DataView(donutScene.buffer, donutScene.byteOffset).getUint32(4, true), 31);
+  assert.equal((sceneSvg(donutScene).match(/<path d="M/g) || []).length, 2);
+  assert.equal(sceneExportSupportReason(donut), null);
 });
 
 test("Node Scene compiles polar wedge_gap and keeps cartesian fail-closed", () => {

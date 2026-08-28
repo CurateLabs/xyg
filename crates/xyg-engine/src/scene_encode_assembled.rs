@@ -14,8 +14,10 @@
 //! separately. Empty `XYFS` skips the probe (stepwise ABI 163 callers).
 //! ABI 166 tessellates cartesian bar/column/histogram `corner_radius` from
 //! packed XYSD radius blobs after pixel mapping. ABI 167 applies polar
-//! `wedge_gap` from that same blob during `polar_wedge_points`. Encoded Scene
-//! v31 is unchanged.
+//! `wedge_gap` from that same blob during `polar_wedge_points`. ABI 168
+//! tessellates polar bar/column/histogram `corner_radius` from those same
+//! packed radii when the inner radius is positive. Encoded Scene v31 is
+//! unchanged.
 
 use crate::scene::{
     decode_tick_labels, expand_scene_records_painted, resolve_numeric_tick_formats,

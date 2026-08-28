@@ -7,7 +7,9 @@
 //! and XYMS mark-style resolve so Python and Node cannot drift. ABI 166 packs
 //! cartesian bar/column/histogram `corner_radius` into the XYTO reserved
 //! trailer so encode can tessellate rounded Rects. ABI 167 packs polar
-//! `wedge_gap` into that same trailer. Encoded Scene v31 is unchanged.
+//! `wedge_gap` into that same trailer. ABI 168 tessellates polar
+//! bar/column/histogram `corner_radius` from those same packed radii.
+//! Encoded Scene v31 is unchanged.
 
 use crate::css::{self, Checked};
 use crate::scene_style::{self, MarkStyleError, ResolvedMarkStyle};

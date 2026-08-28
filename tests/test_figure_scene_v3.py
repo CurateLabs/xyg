@@ -1140,8 +1140,32 @@ def test_python_scene_compiles_rect_corner_radius() -> None:
     polar.axis_options["x"]["domain"] = (0.0, 6.283185307179586)
     polar.axis_options["y"]["domain"] = (0.0, 1.0)
     polar.bar([0.0], [1.0], corner_radius=4.0)
+    pie = polar.to_scene()
+    assert pie[4:8] == (31).to_bytes(4, "little")
+    pie_svg = _native.scene_svg(pie)
+    assert pie_svg.count('<path d="M') == 1
+    assert polar.to_svg() == pie_svg
+    assert _scene_v3.scene_export_support_reason(polar) is None
+
+
+def test_python_scene_compiles_polar_corner_radius() -> None:
+    donut = Figure(width=400, height=400, coords="polar")
+    donut.axis_options["x"]["domain"] = (0.0, 6.283185307179586)
+    donut.axis_options["y"]["domain"] = (0.0, 1.0)
+    donut.bar([0.0, 1.5], [1.0, 0.8], base=0.25, corner_radius=14.0, color="#2563eb")
+    scene = donut.to_scene()
+    assert scene[4:8] == (31).to_bytes(4, "little")
+    svg = _native.scene_svg(scene)
+    assert svg.count('<path d="M') == 2
+    assert donut.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(donut) is None
+    heatmap = Figure(width=400, height=400, coords="polar")
+    heatmap.axis_options["x"]["domain"] = (0.0, 6.283185307179586)
+    heatmap.axis_options["y"]["domain"] = (0.0, 1.0)
+    heatmap.heatmap([[1.0, 2.0], [3.0, 4.0]], color="#3987e5")
+    heatmap.traces[-1].style["corner_radius"] = 4.0
     with pytest.raises(UnsupportedSceneV3, match="corner_radius"):
-        polar.to_scene()
+        heatmap.to_scene()
 
 
 def test_python_scene_compiles_polar_wedge_gap() -> None:

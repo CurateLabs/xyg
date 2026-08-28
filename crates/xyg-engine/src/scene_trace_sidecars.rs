@@ -10,7 +10,8 @@
 //! inspect sidecar contents on the product path. ABI 166 copies cartesian
 //! bar/column/histogram `corner_radius` from the XYTO reserved trailer into
 //! an optional XYSD radius blob so encode can tessellate rounded Rects. ABI
-//! 167 copies polar `wedge_gap` into that same blob.
+//! 167 copies polar `wedge_gap` into that same blob. ABI 168 tessellates
+//! polar bar/column/histogram `corner_radius` from those same packed radii.
 
 use crate::scene_trace_attach::{XYTT_HEADER_BYTES, XYTT_MAGIC, XYTT_PREFIX_BYTES, XYTT_VERSION};
 use crate::scene_trace_compile::XYTO_MAGIC;

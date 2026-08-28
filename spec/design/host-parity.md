@@ -239,8 +239,9 @@ ABI 165 extends
 packed XYFS on the same product call.
 ABI 166 tessellates cartesian bar/column/histogram `corner_radius` after pixel
 mapping through `geom::rounded_rect_poly`; ABI 167 applies polar
-bar/column/histogram `wedge_gap` as a constant pixel inset. Polar
-`corner_radius` stays fail-closed.
+bar/column/histogram `wedge_gap` as a constant pixel inset. ABI 168
+tessellates polar bar/column/histogram `corner_radius` when the inner radius
+is positive.
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -335,8 +336,9 @@ pass packed `XYFS` on `xyg_scene_encode_product` instead of probing
 ABI 166 tessellates cartesian bar/column/histogram `corner_radius` on that
 same product Scene so public `to_svg` / PNG do not fall back to `_svg.py` /
 `_raster.py` for constant radii. ABI 167 applies polar
-bar/column/histogram `wedge_gap` on that same product Scene. Polar
-`corner_radius` stays fail-closed.
+bar/column/histogram `wedge_gap` on that same product Scene. ABI 168
+tessellates polar bar/column/histogram `corner_radius` on that same product
+Scene when the inner radius is positive.
 The explicit `xyg_scene_figure_support_reason` ABI remains for tests.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call

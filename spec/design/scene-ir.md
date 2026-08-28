@@ -151,8 +151,10 @@ ABI 166 does not change Scene records; cartesian bar/column/histogram
 `corner_radius` tessellates to PolyFill after pixel mapping through
 `geom::rounded_rect_poly` (ABI 121). ABI 167 does not change Scene records;
 polar bar/column/histogram `wedge_gap` insets those PolyFill wedges by a
-constant pixel gap. Polar `corner_radius`, violin/box/heatmap radii, and
-per-item radius channels stay fail-closed.
+constant pixel gap. ABI 168 does not change Scene records; polar
+bar/column/histogram `corner_radius` tessellates those PolyFill wedges when
+the inner radius is positive. Violin/box/heatmap radii and per-item radius
+channels stay fail-closed.
 
 ## Version 3: backend-neutral core scene batch
 
@@ -1476,8 +1478,9 @@ ABI 165 does not change Scene records either;
 from packed XYFS.
 ABI 166 does not change Scene records either;
 cartesian bar/column/histogram `corner_radius` tessellates to PolyFill after
-pixel mapping. ABI 167 insets polar bar/column/histogram `wedge_gap`. Polar
-`corner_radius` and authored marker glyphs stay compatibility. ABI 116 does not change Scene records either;
+pixel mapping. ABI 167 insets polar bar/column/histogram `wedge_gap`. ABI 168
+tessellates polar bar/column/histogram `corner_radius` when the inner radius
+is positive. Polar+step+smooth and authored marker glyphs stay compatibility. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;
 `xyg_scene_figure_support_reason` owns figure-compile support from packed
