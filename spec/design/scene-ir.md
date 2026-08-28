@@ -108,6 +108,12 @@ change Scene records; `xyg_scene_pack_density_grid` owns Scene density
 ABI 152 does not change Scene records; `xyg_scene_pack_public_export` owns
 XYEP layout, kind/step/annotation codes, and flag derivation from packed
 XYEF v1.
+ABI 153 does not change Scene records; `xyg_scene_pack_figure_chrome` owns
+plot layout, chrome-style resolve, legend loc default/allowlists (empty
+authored loc is fail-closed), colorbar flags/framing, XYTL tick-label
+framing, and the 200-tick axis bound from packed XYCF v1. Layout errors stay
+plot-layout diagnostics so the public-export predicate can remap them to
+`XYG_SCENE_UNSUPPORTED_VIEWPORT`.
 
 ## Version 3: backend-neutral core scene batch
 
@@ -432,6 +438,11 @@ ABI 151 does not change Scene records;
 ABI 152 does not change Scene records;
 `xyg_scene_pack_public_export` owns XYEP layout, kind/step/annotation codes,
 and flag derivation from packed XYEF v1.
+ABI 153 does not change Scene records;
+`xyg_scene_pack_figure_chrome` owns plot layout, chrome-style resolve, legend
+loc default/allowlists (empty authored loc is fail-closed), colorbar
+flags/framing, XYTL tick-label framing, and the 200-tick axis bound from
+packed XYCF v1.
 
 ABI 110 adds `xyg_scene_pack_legend` so both hosts pass loc/flags/paints
 and receive XYLG bytes; header layout, text offsets, and bounded-text
@@ -1242,7 +1253,10 @@ compact expansion. ABI 105 adds `xyg_scene_public_export_reason` over a packed
 keys, axis facts, annotation field names, and compact per-trace facts, while
 Rust owns the public-subset allowlists, check order, and
 `XYG_SCENE_UNSUPPORTED_*` wording. ABI 152 packs that envelope from `XYEF` v1
-so kind/step/annotation codes and flag derivation cannot drift. An empty reason selects the Scene route;
+so kind/step/annotation codes and flag derivation cannot drift. ABI 153 packs
+figure chrome from `XYCF` v1 so plot layout, chrome-style resolve, legend loc
+default/allowlists (empty authored loc is fail-closed), colorbar flags/framing,
+XYTL ticks, and the 200-tick axis bound cannot drift. An empty reason selects the Scene route;
 hosts still compile the Scene and may still report compiler or viewport
 diagnostics, including the shared PolyFill group budget. ABI 106 does not
 change Scene records; `xyg_figure_autorange` owns the domain the annotation
@@ -1292,6 +1306,11 @@ ABI 151 does not change Scene records either;
 ABI 152 does not change Scene records either;
 `xyg_scene_pack_public_export` owns XYEP layout, kind/step/annotation codes,
 and flag derivation from packed XYEF v1.
+ABI 153 does not change Scene records either;
+`xyg_scene_pack_figure_chrome` owns plot layout, chrome-style resolve, legend
+loc default/allowlists (empty authored loc is fail-closed), colorbar
+flags/framing, XYTL tick-label framing, and the 200-tick axis bound from
+packed XYCF v1.
 Polar+step+smooth and authored marker glyphs stay compatibility. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;

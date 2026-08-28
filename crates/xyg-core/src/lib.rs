@@ -52,7 +52,9 @@ use xyg_engine::scene_heatmap::{self, HeatmapFactError};
 use xyg_engine::scene_extras::{self, ExtrasError};
 use xyg_engine::scene_density::{self, DensityGridError};
 use xyg_engine::scene_colorbar::{self, ColorbarError};
+use xyg_engine::pack_figure_chrome;
 use xyg_engine::pack_public_export;
+use xyg_engine::ChromePackError;
 use xyg_engine::scene_figure_support_reason;
 use xyg_engine::scene_legend::{self, LegendError};
 use xyg_engine::scene_pack::{self, PackError};
@@ -126,7 +128,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 152;
+pub const ABI_VERSION: u32 = 153;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -239,6 +241,58 @@ pub unsafe extern "C" fn xyg_scene_pack_public_export(
                 match i32::try_from(bytes.len()) {
                     Ok(count) => count,
                     Err(_) => -(ExportPackError::Limit as i32),
+                }
+            }
+            Err(error) => -(error as i32),
+        }
+    })
+}
+
+/// Pack authored `XYCF` v1 chrome facts into the `XYCC` v1 encode-ready bundle.
+///
+/// Hosts pass title/labels, axis descriptors, ticks, XYCH, legend loc/entries,
+/// colorbar literals, viewport, and optional padding/margins. Rust owns plot
+/// layout vs authored margins, format suppression when tick labels are
+/// present, chrome-style resolve, legend loc default and allowlists (empty
+/// authored loc is `LegendLoc`, not the upper-right default), colorbar
+/// flags/framing, XYTL tick-label framing, and the 200-tick axis bound.
+/// Returns the XYCC byte count on success, or a negated `ChromePackError`
+/// (`Ticks = -15` keeps the encode-path tick-limit diagnostic). Encoded
+/// Scene v31 is unchanged.
+///
+/// # Safety
+/// When `facts_len` is non-zero, `facts` must address that many readable
+/// bytes. When `out_cap` is non-zero, `out` must address that many writable
+/// bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_pack_figure_chrome(
+    facts: *const u8,
+    facts_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if (facts_len > 0 && facts.is_null()) || (out_cap > 0 && out.is_null()) {
+        return -(ChromePackError::Length as i32);
+    }
+    ffi_guard(-(ChromePackError::Length as i32), || {
+        let facts_bytes = if facts_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(facts, facts_len)
+        };
+        match pack_figure_chrome(facts_bytes) {
+            Ok(bytes) => {
+                if bytes.len() > out_cap {
+                    return -(ChromePackError::Output as i32);
+                }
+                if bytes.is_empty() {
+                    return 0;
+                }
+                let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                dest[..bytes.len()].copy_from_slice(&bytes);
+                match i32::try_from(bytes.len()) {
+                    Ok(count) => count,
+                    Err(_) => -(ChromePackError::Limit as i32),
                 }
             }
             Err(error) => -(error as i32),
@@ -1989,6 +2043,11 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// `xyg_scene_pack_public_export` owns XYEP layout, kind/step/annotation
 /// codes, and flag derivation from packed XYEF v1 so public-export envelopes
 /// cannot drift.
+/// ABI 153 does not change Scene records;
+/// `xyg_scene_pack_figure_chrome` owns plot layout, chrome-style resolve,
+/// legend loc default/allowlists (empty authored loc is fail-closed),
+/// colorbar flags/framing, XYTL tick-label framing, and the 200-tick axis
+/// bound from packed XYCF v1 so figure chrome cannot drift.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
@@ -14635,6 +14694,28 @@ mod tests {
         };
         assert_eq!(export_code, 36);
         assert_eq!(&export_out[..4], b"XYEP");
+        let mut xycf = vec![0u8; 288];
+        xycf[..4].copy_from_slice(b"XYCF");
+        xycf[4..8].copy_from_slice(&1u32.to_le_bytes());
+        xycf[8..12].copy_from_slice(&((1u32 << 2) | (1u32 << 3)).to_le_bytes());
+        xycf[16..24].copy_from_slice(&400.0f64.to_le_bytes());
+        xycf[24..32].copy_from_slice(&300.0f64.to_le_bytes());
+        xycf[112..120].copy_from_slice(&1.0f64.to_le_bytes());
+        xycf[120..128].copy_from_slice(&1.0f64.to_le_bytes());
+        xycf[136..144].copy_from_slice(&1.0f64.to_le_bytes());
+        xycf[144..152].copy_from_slice(&1.0f64.to_le_bytes());
+        xycf[212..216].copy_from_slice(&1u32.to_le_bytes());
+        let mut chrome_out = vec![0u8; 4096];
+        let chrome_code = unsafe {
+            xyg_scene_pack_figure_chrome(
+                xycf.as_ptr(),
+                xycf.len(),
+                chrome_out.as_mut_ptr(),
+                chrome_out.len(),
+            )
+        };
+        assert!(chrome_code > 0);
+        assert_eq!(&chrome_out[..4], b"XYCC");
     }
 
     #[test]

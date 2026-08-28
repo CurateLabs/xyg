@@ -14,6 +14,7 @@ from xyg._native import (
     scene_pack_annotations,
     scene_pack_colorbar,
     scene_pack_density_grid,
+    scene_pack_figure_chrome,
     scene_pack_heatmap_facts,
     scene_pack_legend,
     scene_pack_product,
@@ -26,7 +27,7 @@ from xyg._native import (
     scene_resolve_pack_kind,
 )
 from xyg._raster import _parse_color
-from xyg._scene_v3 import figure_scene
+from xyg._scene_v3 import UnsupportedSceneV3, figure_scene
 
 
 def test_css_color_rgba_matches_parse_color() -> None:
@@ -602,3 +603,59 @@ def test_pack_public_export_empty_figure_is_xyep() -> None:
     assert envelope[:4] == b"XYEP"
     assert int.from_bytes(envelope[4:8], "little") == 1
     assert len(envelope) == 36
+
+
+def test_pack_figure_chrome_empty_facts_is_xycc() -> None:
+    from xyg import _scene_v3
+
+    figure = Figure(width=400, height=300)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.scatter([0.0, 1.0], [0.0, 1.0])
+    facts = _scene_v3._pack_chrome_facts(
+        figure,
+        [],
+        [],
+        width=400,
+        height=300,
+        margins=None,
+        colorbar_ok=True,
+    )
+    envelope = scene_pack_figure_chrome(facts)
+    assert envelope[:4] == b"XYCC"
+    assert int.from_bytes(envelope[4:8], "little") == 1
+    chrome = _scene_v3._unpack_xycc(envelope)
+    assert len(chrome["chrome_style"]) == 200
+    assert chrome["x_major_ticks"] is None
+    assert chrome["legend_input"] == b""
+    scene = figure_scene(figure)
+    assert int.from_bytes(scene[4:8], "little") == 31
+
+
+def test_pack_figure_chrome_rejects_empty_authored_legend_loc() -> None:
+    figure = Figure(width=240, height=160)
+    figure.scatter([0.25], [0.5], name="observed")
+    figure.legend_options = {"loc": ""}
+    with pytest.raises(UnsupportedSceneV3, match="location"):
+        figure_scene(figure)
+
+
+def test_pack_figure_chrome_tick_overflow_keeps_encode_message() -> None:
+    from xyg import _scene_v3
+
+    figure = Figure(width=400, height=300)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.axis_options["x"]["tick_values"] = list(range(201))
+    figure.scatter([0.0, 1.0], [0.0, 1.0])
+    facts = _scene_v3._pack_chrome_facts(
+        figure,
+        [],
+        [],
+        width=400,
+        height=300,
+        margins=None,
+        colorbar_ok=True,
+    )
+    with pytest.raises(ValueError, match="axis tick lists are limited"):
+        scene_pack_figure_chrome(facts)

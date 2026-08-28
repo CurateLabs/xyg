@@ -1338,8 +1338,8 @@ def _pack_chrome_axis(axis_id: str, options: dict[str, Any]) -> bytes:
     return prefix + b"".join(paint_bytes)
 
 
-def _scene_chrome_style(figure: Any) -> bytes:
-    """Pack authored chrome literals; Rust owns the 200-byte Scene style."""
+def _pack_xych(figure: Any) -> bytes:
+    """Pack authored XYCH v1 chrome literals; Rust owns the 200-byte Scene style."""
     figure_style = getattr(figure, "style", None) or {}
     flags = 2 << 8
     chart_b = b""
@@ -1353,7 +1353,387 @@ def _scene_chrome_style(figure: Any) -> bytes:
     x_rec = _pack_chrome_axis("x", figure.axis_options["x"])
     y_rec = _pack_chrome_axis("y", figure.axis_options["y"])
     header = struct.pack("<4sIIHH", b"XYCH", 1, flags, len(chart_b), len(plot_b))
-    return _native.scene_resolve_chrome_style(header + chart_b + plot_b + x_rec + y_rec)
+    return header + chart_b + plot_b + x_rec + y_rec
+
+
+def _scene_chrome_style(figure: Any) -> bytes:
+    """Pack authored chrome literals; Rust owns the 200-byte Scene style."""
+    return _native.scene_resolve_chrome_style(_pack_xych(figure))
+
+
+_XYCF_HEADER = struct.Struct("<4sIII10d2I6dBBH15I2dII4s4sIIII2d4sI")
+_XYCC_HEADER = struct.Struct("<4sIII4d16I48x")
+_XYCF_FLAG_AUTHORED_MARGINS = 1 << 0
+_XYCF_FLAG_PADDING = 1 << 1
+_XYCF_FLAG_X_MAJOR_AUTO = 1 << 2
+_XYCF_FLAG_Y_MAJOR_AUTO = 1 << 3
+_XYCF_FLAG_X_TICK_LABELS = 1 << 4
+_XYCF_FLAG_Y_TICK_LABELS = 1 << 5
+_XYCF_FLAG_HAS_CHROME = 1 << 6
+_XYCF_FLAG_HAS_LEGEND = 1 << 7
+_XYCF_FLAG_HAS_COLORBAR = 1 << 8
+_XYCF_LEGEND_AUTHORED_LOC = 1 << 0
+_XYCF_LEGEND_AUTHORED_FONT = 1 << 1
+_XYCF_LEGEND_AUTHORED_TITLE_FONT = 1 << 2
+_XYCF_LEGEND_AUTHORED_COLOR = 1 << 3
+_XYCF_LEGEND_AUTHORED_BACKGROUND = 1 << 4
+_XYCF_LEGEND_UNSUPPORTED_KEYS = 1 << 5
+_XYCF_LEGEND_TOGGLE = 1 << 6
+_XYCF_LEGEND_HIGHLIGHT = 1 << 7
+_XYCF_LEGEND_SHOW = 1 << 8
+_XYCF_LEGEND_UNSUPPORTED_STYLE = 1 << 9
+_XYCF_CB_HORIZONTAL = 1 << 1
+_XYCF_CB_MINOR = 1 << 2
+_XYCF_CB_UNSUPPORTED = 1 << 3
+_XYCF_CB_INVALID_SIDE = 1 << 4
+
+
+def _put_f64s(buf: bytearray, values: list[float]) -> None:
+    for value in values:
+        buf.extend(struct.pack("<d", float(value)))
+
+
+def _put_tick_labels(buf: bytearray, labels: list[str] | tuple[str, ...] | None) -> int:
+    if not labels:
+        return 0
+    for label in labels:
+        encoded = str(label).encode("utf-8")
+        buf.extend(len(encoded).to_bytes(4, "little"))
+        buf.extend(encoded)
+    return len(labels)
+
+
+def _xycc_tick_labels(blob: bytes) -> list[str] | None:
+    if not blob:
+        return None
+    if len(blob) < 12 or blob[:4] != b"XYTL":
+        raise ValueError("invalid scene chrome packing")
+    count = int.from_bytes(blob[8:12], "little")
+    at = 12
+    labels: list[str] = []
+    for _ in range(count):
+        length = int.from_bytes(blob[at : at + 4], "little")
+        at += 4
+        labels.append(blob[at : at + length].decode("utf-8"))
+        at += length
+    if at != len(blob):
+        raise ValueError("invalid scene chrome packing")
+    return labels
+
+
+def _unpack_xycc(blob: bytes) -> dict[str, Any]:
+    """Split Rust-owned XYCC chrome into scene_batch_encode kwargs."""
+    if len(blob) < _XYCC_HEADER.size or blob[:4] != b"XYCC":
+        raise ValueError("invalid scene chrome packing")
+    (
+        _magic,
+        version,
+        _flags,
+        _reserved,
+        margin_left,
+        margin_right,
+        margin_top,
+        margin_bottom,
+        chrome_len,
+        title_len,
+        xlabel_len,
+        ylabel_len,
+        x_major_count,
+        x_major_auto,
+        x_minor_count,
+        y_major_count,
+        y_major_auto,
+        y_minor_count,
+        x_labels_len,
+        y_labels_len,
+        x_format_len,
+        y_format_len,
+        legend_len,
+        colorbar_len,
+    ) = _XYCC_HEADER.unpack_from(blob)
+    if version != 1:
+        raise ValueError("invalid scene chrome facts version")
+    at = _XYCC_HEADER.size
+
+    def take(length: int) -> bytes:
+        nonlocal at
+        chunk = blob[at : at + length]
+        at += length
+        return chunk
+
+    chrome_style = take(chrome_len)
+    title = take(title_len).decode("utf-8")
+    x_label = take(xlabel_len).decode("utf-8")
+    y_label = take(ylabel_len).decode("utf-8")
+    x_major = (
+        list(struct.unpack(f"<{x_major_count}d", take(x_major_count * 8))) if x_major_count else []
+    )
+    x_minor = (
+        list(struct.unpack(f"<{x_minor_count}d", take(x_minor_count * 8))) if x_minor_count else []
+    )
+    y_major = (
+        list(struct.unpack(f"<{y_major_count}d", take(y_major_count * 8))) if y_major_count else []
+    )
+    y_minor = (
+        list(struct.unpack(f"<{y_minor_count}d", take(y_minor_count * 8))) if y_minor_count else []
+    )
+    x_tick_labels = _xycc_tick_labels(take(x_labels_len))
+    y_tick_labels = _xycc_tick_labels(take(y_labels_len))
+    x_format_b = take(x_format_len)
+    y_format_b = take(y_format_len)
+    legend_input = take(legend_len)
+    colorbar_input = take(colorbar_len)
+    if at != len(blob):
+        raise ValueError("invalid scene chrome packing")
+    return {
+        "margins": (margin_left, margin_right, margin_top, margin_bottom),
+        "chrome_style": chrome_style,
+        "title": title,
+        "x_label": x_label,
+        "y_label": y_label,
+        "x_major_ticks": None if x_major_auto else x_major,
+        "x_minor_ticks": x_minor,
+        "y_major_ticks": None if y_major_auto else y_major,
+        "y_minor_ticks": y_minor,
+        "x_tick_labels": x_tick_labels,
+        "y_tick_labels": y_tick_labels,
+        "x_format": None if not x_format_b else x_format_b.decode("utf-8"),
+        "y_format": None if not y_format_b else y_format_b.decode("utf-8"),
+        "legend_input": legend_input,
+        "colorbar_input": colorbar_input,
+    }
+
+
+def _pack_chrome_facts(
+    figure: Any,
+    legend_entries: list[tuple[int, int, int, str]],
+    styles: list[Any],
+    *,
+    width: int,
+    height: int,
+    margins: tuple[float, float, float, float] | None,
+    colorbar_ok: bool,
+) -> bytes:
+    """Pack authored XYCF v1 chrome facts; Rust owns XYCC layout and policy."""
+    flags = _XYCF_FLAG_HAS_CHROME | _XYCF_FLAG_X_MAJOR_AUTO | _XYCF_FLAG_Y_MAJOR_AUTO
+    kind_codes = {"linear": 0, "log": 1, "symlog": 2}
+    xa = figure.axis_options["x"]
+    ya = figure.axis_options["y"]
+    x_scale = figure._axis_scale("x")
+    y_scale = figure._axis_scale("y")
+    x_lo, x_hi = (float(value) for value in figure._range("x"))
+    y_lo, y_hi = (float(value) for value in figure._range("y"))
+    authored_margins = (0.0, 0.0, 0.0, 0.0)
+    if margins is not None:
+        flags |= _XYCF_FLAG_AUTHORED_MARGINS
+        authored_margins = (
+            float(margins[0]),
+            float(margins[1]),
+            float(margins[2]),
+            float(margins[3]),
+        )
+    padding = (0.0, 0.0, 0.0, 0.0)
+    pad = getattr(figure, "padding", None)
+    if isinstance(pad, (list, tuple)) and len(pad) == 4:
+        flags |= _XYCF_FLAG_PADDING
+        padding = (float(pad[0]), float(pad[1]), float(pad[2]), float(pad[3]))
+    title = str(figure.title or "").encode("utf-8")
+    x_label = str(figure.x_label or xa.get("label") or "").encode("utf-8")
+    y_label = str(figure.y_label or ya.get("label") or "").encode("utf-8")
+    x_format = b"" if xa.get("format") is None else str(xa.get("format")).encode("utf-8")
+    y_format = b"" if ya.get("format") is None else str(ya.get("format")).encode("utf-8")
+    x_major: list[float] = []
+    y_major: list[float] = []
+    if xa.get("tick_values") is not None:
+        flags &= ~_XYCF_FLAG_X_MAJOR_AUTO
+        x_major = [float(value) for value in xa.get("tick_values")]
+    if ya.get("tick_values") is not None:
+        flags &= ~_XYCF_FLAG_Y_MAJOR_AUTO
+        y_major = [float(value) for value in ya.get("tick_values")]
+    x_minor = [float(value) for value in (xa.get("minor_tick_values") or ())]
+    y_minor = [float(value) for value in (ya.get("minor_tick_values") or ())]
+    x_labels = xa.get("tick_labels")
+    y_labels = ya.get("tick_labels")
+    if x_labels is not None:
+        flags |= _XYCF_FLAG_X_TICK_LABELS
+    if y_labels is not None:
+        flags |= _XYCF_FLAG_Y_TICK_LABELS
+    chrome = _pack_xych(figure)
+    legend_loc = b""
+    legend_title = b""
+    legend_ncols = 1
+    legend_font_size = 0.0
+    legend_title_font_size = 0.0
+    legend_flags = 0
+    legend_text_rgba = b"\x00\x00\x00\x00"
+    legend_frame_rgba = b"\x00\x00\x00\x00"
+    legend_meta = b""
+    legend_lens: list[int] = []
+    legend_blob = b""
+    legend_count = 0
+    if figure.show_legend and legend_entries:
+        flags |= _XYCF_FLAG_HAS_LEGEND
+        legend_flags |= _XYCF_LEGEND_SHOW
+        legend_count = len(legend_entries)
+        options = dict(figure.legend_options or {})
+        unsupported = {
+            key
+            for key in options
+            if key not in {"loc", "title", "ncols", "style", "highlight", "toggle"}
+        }
+        if unsupported:
+            legend_flags |= _XYCF_LEGEND_UNSUPPORTED_KEYS
+        legend_ncols = int(options.get("ncols") or 1)
+        if "toggle" in options and options["toggle"] is not False:
+            legend_flags |= _XYCF_LEGEND_TOGGLE
+        if "highlight" in options and options["highlight"] is not False:
+            legend_flags |= _XYCF_LEGEND_HIGHLIGHT
+        authored_loc = options.get("loc")
+        if authored_loc is not None:
+            legend_flags |= _XYCF_LEGEND_AUTHORED_LOC
+            legend_loc = str(authored_loc).encode("utf-8")
+        style = dict(options.get("style") or {})
+        if set(style) - {"background", "color", "font_size", "title_font_size"}:
+            legend_flags |= _XYCF_LEGEND_UNSUPPORTED_STYLE
+        authored_font_size = style.get("font_size")
+        authored_title_font_size = style.get("title_font_size")
+        if authored_font_size is not None:
+            legend_flags |= _XYCF_LEGEND_AUTHORED_FONT
+            legend_font_size = float(authored_font_size)
+        if authored_title_font_size is not None:
+            legend_flags |= _XYCF_LEGEND_AUTHORED_TITLE_FONT
+            legend_title_font_size = float(authored_title_font_size)
+        title_value = options.get("title")
+        if isinstance(title_value, bool):
+            title_value = str(title_value).lower()
+        legend_title = str("" if title_value is None else title_value).encode("utf-8")
+        if "color" in style:
+            legend_flags |= _XYCF_LEGEND_AUTHORED_COLOR
+            legend_text_rgba = bytes(_rgba(str(style["color"]), 1.0))
+        if "background" in style:
+            legend_flags |= _XYCF_LEGEND_AUTHORED_BACKGROUND
+            legend_frame_rgba = bytes(_rgba(str(style["background"]), 1.0))
+        meta = bytearray()
+        blob = bytearray()
+        for (style_ref, kind, symbol, _), label in zip(
+            legend_entries,
+            [str(item[3]).encode("utf-8") for item in legend_entries],
+            strict=True,
+        ):
+            fill, stroke, _ = styles[style_ref]
+            meta.extend(struct.pack("<IBB2x", int(style_ref), int(kind), int(symbol)))
+            meta.extend(bytes(fill))
+            meta.extend(bytes(stroke))
+            legend_lens.append(len(label))
+            blob.extend(label)
+        legend_meta = bytes(meta)
+        legend_blob = bytes(blob)
+    colorbar_obs = 0
+    colorbar_stop_count = 0
+    colorbar_tick_count = 0
+    colorbar_title = b""
+    colorbar_lo = 0.0
+    colorbar_hi = 0.0
+    colorbar_text_rgba = bytes((32, 32, 32, 255))
+    colorbar_stops: list[tuple[float, bytes]] = []
+    colorbar_ticks: list[float] = []
+    options = getattr(figure, "colorbar_options", None)
+    if colorbar_ok and options:
+        flags |= _XYCF_FLAG_HAS_COLORBAR
+        domain = options.get("domain")
+        stops = options.get("stops")
+        colorbar_lo, colorbar_hi = (float(domain[0]), float(domain[1]))
+        parsed = [(float(item[0]), bytes(item[1])) for item in stops]
+        colorbar_stops = parsed
+        colorbar_stop_count = len(parsed)
+        side = options.get("side", "right")
+        if side == "bottom":
+            colorbar_obs |= _XYCF_CB_HORIZONTAL
+        elif side not in {"right", "bottom"}:
+            colorbar_obs |= _XYCF_CB_INVALID_SIDE
+        if options.get("minor_ticks"):
+            colorbar_obs |= _XYCF_CB_MINOR
+        colorbar_title = str(options.get("title", "")).encode("utf-8")
+        colorbar_text_rgba = bytes(options.get("text_rgba", (32, 32, 32, 255)))
+        raw_ticks = options.get("ticks")
+        if raw_ticks is not None:
+            colorbar_ticks = [float(value) for value in raw_ticks]
+            colorbar_tick_count = len(colorbar_ticks)
+    header = _XYCF_HEADER.pack(
+        b"XYCF",
+        1,
+        flags,
+        0,
+        float(width),
+        float(height),
+        *authored_margins,
+        *padding,
+        kind_codes[x_scale],
+        kind_codes[y_scale],
+        x_lo,
+        x_hi,
+        float(xa.get("constant") or 1.0),
+        y_lo,
+        y_hi,
+        float(ya.get("constant") or 1.0),
+        1 if xa.get("nonpositive", "clip") == "mask" else 0,
+        1 if ya.get("nonpositive", "clip") == "mask" else 0,
+        0,
+        len(title),
+        len(x_label),
+        len(y_label),
+        len(x_format),
+        len(y_format),
+        len(x_major),
+        len(x_minor),
+        len(y_major),
+        len(y_minor),
+        0 if x_labels is None else len(x_labels),
+        0 if y_labels is None else len(y_labels),
+        len(chrome),
+        len(legend_loc),
+        len(legend_title),
+        legend_ncols,
+        legend_font_size,
+        legend_title_font_size,
+        legend_flags,
+        legend_count,
+        legend_text_rgba,
+        legend_frame_rgba,
+        colorbar_obs,
+        colorbar_stop_count,
+        colorbar_tick_count,
+        len(colorbar_title),
+        colorbar_lo,
+        colorbar_hi,
+        colorbar_text_rgba,
+        0,
+    )
+    payload = bytearray(header)
+    payload.extend(title)
+    payload.extend(x_label)
+    payload.extend(y_label)
+    payload.extend(x_format)
+    payload.extend(y_format)
+    _put_f64s(payload, x_major)
+    _put_f64s(payload, x_minor)
+    _put_f64s(payload, y_major)
+    _put_f64s(payload, y_minor)
+    _put_tick_labels(payload, None if x_labels is None else list(x_labels))
+    _put_tick_labels(payload, None if y_labels is None else list(y_labels))
+    payload.extend(chrome)
+    payload.extend(legend_loc)
+    payload.extend(legend_title)
+    payload.extend(legend_meta)
+    for length in legend_lens:
+        payload.extend(int(length).to_bytes(4, "little"))
+    payload.extend(legend_blob)
+    for value, rgba in colorbar_stops:
+        payload.extend(struct.pack("<d", value))
+        payload.extend(rgba)
+    _put_f64s(payload, colorbar_ticks)
+    payload.extend(colorbar_title)
+    return bytes(payload)
 
 
 def _rect_extra_flags(style: dict[str, Any]) -> int:
@@ -1987,9 +2367,8 @@ def figure_scene(
     annotations = list(getattr(figure, "annotations", None) or [])
     colorbar_unsupported = False
     try:
-        colorbar_input = _colorbar_input(figure)
+        _colorbar_input(figure)
     except UnsupportedSceneV3:
-        colorbar_input = b""
         colorbar_unsupported = True
     reason = _native.scene_figure_support_reason(
         _pack_figure_support(figure, annotations, colorbar_unsupported)
@@ -2152,7 +2531,8 @@ def figure_scene(
     # Hosts pack XYSS sidecar facts plus framed XYPL/XYHP; Rust owns
     # XYDS/XYLC/XYMP/XYGR layout, concat order, and XYEX wrapping (ABI 150).
     # Hosts pass density columns; Rust owns bin_2d / density_log_u8 / mean-color
-    # (ABI 151).
+    # (ABI 151). Hosts pack XYCF chrome facts; Rust owns plot layout, chrome
+    # resolve, legend/colorbar framing, and XYTL ticks (ABI 153).
     x_domain = tuple(float(value) for value in figure._range("x"))
     y_domain = tuple(float(value) for value in figure._range("y"))
     annotation_facts = bytearray()
@@ -2205,38 +2585,34 @@ def figure_scene(
 
     x_axis = axis("x", 1)
     y_axis = axis("y", 2)
-    title = str(figure.title or "")
-    x_label = str(figure.x_label or figure.axis_options.get("x", {}).get("label") or "")
-    y_label = str(figure.y_label or figure.axis_options.get("y", {}).get("label") or "")
-    if margins is None:
-        authored = None
-        if getattr(figure, "padding", None) is not None:
-            pad = figure.padding
-            if isinstance(pad, (list, tuple)) and len(pad) == 4:
-                authored = (float(pad[0]), float(pad[1]), float(pad[2]), float(pad[3]))
-        left, right, top, bottom = _native.scene_plot_layout(
-            viewport=(w, h),
-            x_axis=x_axis[1:],
-            y_axis=y_axis[1:],
-            title=title,
-            x_label=x_label,
-            y_label=y_label,
-            padding=authored,
-            colorbar_side=("bottom" if colorbar_input[8] & 1 else "right")
-            if colorbar_input
-            else None,
-            x_format=None
-            if figure.axis_options["x"].get("tick_labels") is not None
-            else figure.axis_options["x"].get("format"),
-            y_format=None
-            if figure.axis_options["y"].get("tick_labels") is not None
-            else figure.axis_options["y"].get("format"),
+    try:
+        chrome = _unpack_xycc(
+            _native.scene_pack_figure_chrome(
+                _pack_chrome_facts(
+                    figure,
+                    legend_entries,
+                    styles,
+                    width=w,
+                    height=h,
+                    margins=margins,
+                    colorbar_ok=not colorbar_unsupported,
+                )
+            )
         )
-    else:
-        left, right, top, bottom = margins
+    except ValueError as error:
+        message = str(error)
+        if message in {
+            "invalid canonical scene plot layout",
+            "scene axis tick lists are limited to 200 values",
+            "legend font sizes must be finite and in [1, 1000]",
+            "invalid scene chrome packing",
+            "invalid scene chrome facts version",
+        }:
+            raise
+        raise UnsupportedSceneV3(message) from error
     return _native.scene_batch_encode(
         viewport=(w, h),
-        margins=(left, right, top, bottom),
+        margins=chrome["margins"],
         x_axis=x_axis,
         y_axis=y_axis,
         kinds=kinds,
@@ -2252,20 +2628,20 @@ def figure_scene(
         y0=coordinates[1],
         x1=coordinates[2],
         y1=coordinates[3],
-        title=title,
-        x_label=x_label,
-        y_label=y_label,
-        chrome_style=_scene_chrome_style(figure),
-        x_major_ticks=figure.axis_options["x"].get("tick_values"),
-        x_tick_labels=figure.axis_options["x"].get("tick_labels"),
-        x_format=figure.axis_options["x"].get("format"),
-        x_minor_ticks=figure.axis_options["x"].get("minor_tick_values") or (),
-        y_major_ticks=figure.axis_options["y"].get("tick_values"),
-        y_tick_labels=figure.axis_options["y"].get("tick_labels"),
-        y_format=figure.axis_options["y"].get("format"),
-        y_minor_ticks=figure.axis_options["y"].get("minor_tick_values") or (),
-        legend_input=_legend_input(figure, legend_entries, styles),
-        colorbar_input=colorbar_input,
+        title=chrome["title"],
+        x_label=chrome["x_label"],
+        y_label=chrome["y_label"],
+        chrome_style=chrome["chrome_style"],
+        x_major_ticks=chrome["x_major_ticks"],
+        x_tick_labels=chrome["x_tick_labels"],
+        x_format=chrome["x_format"],
+        x_minor_ticks=chrome["x_minor_ticks"],
+        y_major_ticks=chrome["y_major_ticks"],
+        y_tick_labels=chrome["y_tick_labels"],
+        y_format=chrome["y_format"],
+        y_minor_ticks=chrome["y_minor_ticks"],
+        legend_input=chrome["legend_input"],
+        colorbar_input=chrome["colorbar_input"],
         authored_text_annotations=bytes(framed_annotations),
         polar_input=_native.scene_pack_scene_extras(
             _pack_polar_scene_input(figure),
@@ -2720,6 +3096,8 @@ def scene_export_support_reason(
     try:
         scene = figure_scene(figure, width=width, height=height)
     except UnsupportedSceneV3 as unsupported:
+        if str(unsupported) == "invalid canonical scene plot layout":
+            return "XYG_SCENE_UNSUPPORTED_VIEWPORT"
         return str(unsupported)
     except ValueError as exc:
         if str(exc) == "invalid canonical scene plot layout":

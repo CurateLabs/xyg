@@ -1856,6 +1856,50 @@ def scene_pack_public_export(facts: bytes) -> bytes:
     return bytes(out[:code])
 
 
+def scene_pack_figure_chrome(facts: bytes) -> bytes:
+    """Pack XYCF v1 chrome facts into the XYCC v1 encode-ready bundle (M2 #271)."""
+    payload = facts if isinstance(facts, (bytes, bytearray, memoryview)) else bytes(facts)
+    out = np.zeros(max(65536, len(payload) + 4096), dtype=np.uint8)
+    source = np.frombuffer(payload, dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_pack_figure_chrome(
+            _ptr_u8(source) if source.size else 0,
+            int(source.size),
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene chrome facts version")
+    if code == -5:
+        raise ValueError("invalid canonical scene plot layout")
+    if code == -7:
+        raise ValueError(
+            "Scene v12 primary legends do not yet encode anchors, multiple columns, or custom content"
+        )
+    if code == -8:
+        raise ValueError("Scene v12 primary legends are static; toggle and highlight must be false")
+    if code == -9:
+        raise ValueError("Scene v12 does not support legend location")
+    if code == -10:
+        raise ValueError("legend font sizes must be finite and in [1, 1000]")
+    if code == -11:
+        raise ValueError(
+            "Scene v12 legends support only background, color, font_size, and title_font_size"
+        )
+    if code == -12:
+        raise ValueError("Scene v19 colorbars require literal bounded RGBA stops")
+    if code == -13:
+        raise ValueError("Scene v19 colorbars require a two-value domain and 2-16 literal stops")
+    if code == -14:
+        raise ValueError("Scene v19 colorbars support only right or bottom placement")
+    if code == -15:
+        raise ValueError("scene axis tick lists are limited to 200 values")
+    if code < 0:
+        raise ValueError("invalid scene chrome packing")
+    return bytes(out[:code])
+
+
 def scene_figure_support_reason(payload: bytes) -> str:
     """Return Rust's figure-compile diagnostic for a packed XYFS envelope.
 

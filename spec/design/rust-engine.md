@@ -208,7 +208,8 @@ crates/
                         #   annotation packing facts plus ABI 149 XYHF
                         #   heatmap/density paint-fact packing plus ABI 150
                         #   XYSS extras packing plus ABI 151 Scene density
-                        #   grid packing plus ABI 152 XYEP packing from XYEF.
+                        #   grid packing plus ABI 152 XYEP packing from XYEF
+                        #   plus ABI 153 XYCF figure-chrome packing.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -230,6 +231,11 @@ crates/
     scene_export.rs     # ABI 105 public-export predicate plus ABI 152 XYEP
                         #   packing from XYEF v1: kind/step/annotation codes
                         #   and flag derivation.
+    scene_chrome.rs     # ABI 153 XYCF figure-chrome packing: plot layout,
+                        #   chrome-style resolve, legend loc default/allowlists
+                        #   (empty authored loc is fail-closed), colorbar
+                        #   flags/framing, XYTL tick-label framing, and the
+                        #   200-tick axis bound.
     jpeg.rs             # baseline JPEG encode (ABI 114): YCbCr 4:4:4, Annex K
                         #   tables, libjpeg quality curve, Huffman packing.
                         #   Native hosts only (`raster` feature).
@@ -771,4 +777,5 @@ landed; the remainder, in order:
    ABI 150 XYSS extras packing (`xyg_scene_pack_scene_extras`) ✅;
    ABI 151 Scene density grid packing (`xyg_scene_pack_density_grid`) ✅;
    ABI 152 XYEP packing from XYEF (`xyg_scene_pack_public_export`) ✅.
+   ABI 153 XYCF figure-chrome packing (`xyg_scene_pack_figure_chrome`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

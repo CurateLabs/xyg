@@ -1449,6 +1449,11 @@ XYHP kind routing from packed XYHF v1. ABI 150 owns style-sidecar layout and
 extras wrapping from packed XYSS v1. ABI 151 owns Scene density binning and
 log-u8 encoding from packed columns. ABI 152 owns XYEP layout,
 kind/step/annotation codes, and flag derivation from packed XYEF v1.
+ABI 153 owns plot layout, chrome-style resolve, legend loc default/allowlists
+(empty authored loc is fail-closed, not the upper-right default), colorbar
+flags/framing, XYTL tick-label framing, and the 200-tick axis bound from packed
+XYCF v1. Layout errors stay plot-layout diagnostics so the public-export
+predicate can remap them to `XYG_SCENE_UNSUPPORTED_VIEWPORT`.
 Polar+step+smooth and
 authored marker glyphs stay compatibility. Irregular
 spacing, and LOD stay compatibility.

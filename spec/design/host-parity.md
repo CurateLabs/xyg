@@ -187,7 +187,13 @@ XYPL/XYHP. ABI 151 adds
 `xyg_scene_pack_density_grid` so Scene density `bin_2d` / `density_log_u8` /
 optional mean-color resolve from packed columns. ABI 152 adds
 `xyg_scene_pack_public_export` so XYEP layout, kind/step/annotation codes,
-and flag derivation resolve from packed XYEF v1. ABI 137 / Scene v27 adds
+and flag derivation resolve from packed XYEF v1. ABI 153 adds
+`xyg_scene_pack_figure_chrome` so plot layout, chrome-style resolve, legend
+loc default/allowlists (empty authored loc is fail-closed, not the
+upper-right default), colorbar flags/framing, XYTL tick-label framing, and
+the 200-tick axis bound resolve from packed XYCF v1. Layout errors stay
+plot-layout diagnostics so the public-export predicate can remap them to
+`XYG_SCENE_UNSUPPORTED_VIEWPORT`. ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
 record plus XYIM. ABI 138 / Scene v28
@@ -210,7 +216,10 @@ annotation family routing from XYAF v1. ABI 149 owns heatmap/density XYHP
 kind routing from XYHF v1. ABI 150 owns style-sidecar layout and extras wrapping
 from XYSS v1. ABI 151 owns Scene density binning and log-u8 encoding from
 packed columns. ABI 152 owns XYEP layout, kind/step/annotation codes, and
-flag derivation from packed XYEF v1. Polar+step+smooth
+flag derivation from packed XYEF v1. ABI 153 owns plot layout, chrome-style
+resolve, legend loc default/allowlists (empty authored loc is fail-closed),
+colorbar flags/framing, XYTL tick-label framing, and the 200-tick axis bound
+from packed XYCF v1. Polar+step+smooth
 and authored marker glyphs stay
 compatibility. ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
@@ -220,6 +229,8 @@ static-export support predicate Rust-owned: Python and Node pack the same
 `XYEP` v1 envelope and surface `xyg_scene_public_export_reason` verbatim.
 ABI 152 makes that envelope Rust-owned: Python and Node pack `XYEF` v1 facts
 and call `xyg_scene_pack_public_export`.
+ABI 153 makes figure chrome Rust-owned: Python and Node pack `XYCF` v1 facts
+and call `xyg_scene_pack_figure_chrome`.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call
 `xyg_figure_autorange` / `xyg_auto_domain`. Direct-browser WASM compile uses
@@ -438,6 +449,12 @@ ABI 151
 ABI 152
 `xyg_scene_pack_public_export` owns XYEP layout, kind/step/annotation codes,
 and flag derivation from packed XYEF v1.
+ABI 153
+`xyg_scene_pack_figure_chrome` owns plot layout, chrome-style resolve, legend
+loc default/allowlists (empty authored loc is fail-closed), colorbar
+flags/framing, XYTL tick-label framing, and the 200-tick axis bound from
+packed XYCF v1. Layout errors stay plot-layout diagnostics so the
+public-export predicate can remap them to `XYG_SCENE_UNSUPPORTED_VIEWPORT`.
 ABI 116
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 so tags and opposite-axis spanning cannot drift. ABI 117
