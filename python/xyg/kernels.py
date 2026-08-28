@@ -126,6 +126,7 @@ drill_decision = _impl.drill_decision
 lod_grid_shape = _impl.lod_grid_shape
 lod_plan = _impl.lod_plan
 payload_tier = _impl.payload_tier
+payload_m4_indices = _impl.payload_m4_indices
 payload_visible_mask = _impl.payload_visible_mask
 payload_visible_needed = _impl.payload_visible_needed
 quantiles = _impl.quantiles
@@ -214,6 +215,7 @@ __all__ = [
     "min_max",
     "monotone_tangents",
     "normalize_f32",
+    "payload_m4_indices",
     "payload_tier",
     "payload_visible_mask",
     "payload_visible_needed",

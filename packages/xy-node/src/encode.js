@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -1570,6 +1570,59 @@ export function payloadVisibleMask(x, y, { xLog = false, yLog = false, base = nu
     "xyg_payload_visible_mask",
   );
   return { mask: out, kept: written };
+}
+
+/**
+ * Line M4 indices via `xyg_payload_m4_indices` (ABI 204).
+ * Returns `{ tier, indices }`. `tier` is 0=direct (empty indices) or 1=decimated.
+ * Rust owns the threshold, polar skip, and closed-window ulp.
+ */
+export function payloadM4Indices({
+  nPoints,
+  x,
+  y,
+  x0,
+  x1,
+  nBuckets,
+  polar = false,
+  binX = null,
+  binX0 = 0,
+  binX1 = 0,
+} = {}) {
+  const xa = asF64Array(x);
+  const ya = asF64Array(y);
+  if (xa.length !== ya.length) {
+    throw new RangeError("payloadM4Indices x/y length mismatch");
+  }
+  const n = xa.length;
+  const ba = binX == null ? null : asF64Array(binX);
+  if (ba != null && ba.length !== n) {
+    throw new RangeError("payloadM4Indices binX length mismatch");
+  }
+  const cap = Math.max(0, Math.floor(Number(nBuckets))) * 4;
+  const out = new Uint32Array(cap);
+  const tier = new Int32Array([-1]);
+  const written = requireWritten(
+    Number(xyPayloadM4Indices(
+      BigInt(nPoints),
+      polar ? 1 : 0,
+      n ? f64Ptr(xa) : 0,
+      n ? f64Ptr(ya) : 0,
+      BigInt(n),
+      Number(x0),
+      Number(x1),
+      BigInt(Math.max(0, Math.floor(Number(nBuckets)))),
+      ba != null && n ? f64Ptr(ba) : 0,
+      Number(binX0),
+      Number(binX1),
+      pointer(tier, "int32_t *"),
+      cap ? u32Ptr(out) : 0,
+      BigInt(cap),
+    )),
+    cap,
+    "xyg_payload_m4_indices",
+  );
+  return { tier: tier[0], indices: out.subarray(0, written) };
 }
 
 export const DENSITY_GRID_PATH_OVERSIZED_BIN2D = 0;

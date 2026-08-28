@@ -562,17 +562,22 @@ class PayloadMixin(_Host):
         each bucket covers a uniform strip of *screen*, not of raw data (§28);
         monotone transforms keep per-bucket min/max rows identical, so y stays
         raw and the gathered rows ship untransformed."""
-        if kernels.payload_tier(0, t.n_points, polar=self.coords == "polar") == 0:
-            return "direct", arrays
-        eps = float(np.finfo(np.float64).eps)
         mx, (m0, m1) = self._binning_coords(t.x_axis, arrays[0], xr)
-        if mx is not arrays[0]:
-            idx = kernels.m4_indices(mx, arrays[1], m0, m1 + eps, px_width)
-            return "decimated", tuple(a[idx] for a in arrays)
-        if len(arrays) == 2:
-            selected = _native.m4_points(arrays[0], arrays[1], xr[0], xr[1] + eps, px_width)
-            return "decimated", selected
-        idx = kernels.m4_indices(arrays[0], arrays[1], xr[0], xr[1] + eps, px_width)
+        use_bin = mx is not arrays[0]
+        tier_code, idx = kernels.payload_m4_indices(
+            t.n_points,
+            arrays[0],
+            arrays[1],
+            float(xr[0]),
+            float(xr[1]),
+            int(px_width),
+            polar=self.coords == "polar",
+            bin_x=mx if use_bin else None,
+            bin_x0=m0 if use_bin else 0.0,
+            bin_x1=m1 if use_bin else 0.0,
+        )
+        if tier_code == 0:
+            return "direct", arrays
         if len(idx):
             return "decimated", tuple(a[idx] for a in arrays)
         return "decimated", tuple(a[:0] for a in arrays)

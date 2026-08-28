@@ -252,6 +252,51 @@ pub fn payload_visible_mask(
     Some(kept)
 }
 
+/// Compile-time line M4 indices (ABI 204).
+///
+/// Owns the line `payload_tier` decision (including polar → direct), the
+/// closed-window ulp (`hi + f64::EPSILON` so `[lo, hi]` includes the right
+/// endpoint of a half-open M4 window), and optional nonlinear `bin_x`
+/// buckets. Direct traces return an empty index list. Hosts still map scale
+/// coordinates and gather extra columns.
+pub fn payload_m4_indices(
+    n_points: u64,
+    polar: bool,
+    x: &[f64],
+    y: &[f64],
+    x0: f64,
+    x1: f64,
+    n_buckets: usize,
+    bin_x: Option<&[f64]>,
+    bin_x0: f64,
+    bin_x1: f64,
+) -> Option<(i32, Vec<u32>)> {
+    let tier = payload_tier(PAYLOAD_KIND_LINE, n_points, polar, -1, false, false)?;
+    if tier == PAYLOAD_TIER_DIRECT {
+        return Some((PAYLOAD_TIER_DIRECT, Vec::new()));
+    }
+    if x.len() != y.len() || x.len() > u32::MAX as usize || n_buckets == 0 {
+        return None;
+    }
+    let (bx, b0, b1) = match bin_x {
+        Some(bx) => {
+            if bx.len() != x.len() {
+                return None;
+            }
+            (bx, bin_x0, bin_x1)
+        }
+        None => (x, x0, x1),
+    };
+    let b1 = b1 + f64::EPSILON;
+    if !(b0.is_finite() && b1.is_finite() && b1 > b0) {
+        return None;
+    }
+    Some((
+        PAYLOAD_TIER_DECIMATED,
+        crate::kernels::m4_indices(bx, y, b0, b1, n_buckets),
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -382,5 +427,58 @@ mod tests {
         assert!(payload_visible_needed(
             true, false, true, false, false, false, false
         ));
+    }
+
+    #[test]
+    fn payload_m4_indices_polar_stays_direct() {
+        let x: Vec<f64> = (0..10_001).map(|i| i as f64).collect();
+        let y = vec![1.0; 10_001];
+        let (tier, idx) =
+            payload_m4_indices(10_001, true, &x, &y, 0.0, 10_000.0, 64, None, 0.0, 0.0).unwrap();
+        assert_eq!(tier, PAYLOAD_TIER_DIRECT);
+        assert!(idx.is_empty());
+    }
+
+    #[test]
+    fn payload_m4_indices_closed_window_matches_m4_plus_eps() {
+        let x: Vec<f64> = (0..10_001).map(|i| i as f64).collect();
+        let y: Vec<f64> = x.iter().map(|v| v.sin()).collect();
+        let (tier, idx) =
+            payload_m4_indices(10_001, false, &x, &y, 0.0, 10_000.0, 64, None, 0.0, 0.0).unwrap();
+        assert_eq!(tier, PAYLOAD_TIER_DECIMATED);
+        let expected = crate::kernels::m4_indices(&x, &y, 0.0, 10_000.0 + f64::EPSILON, 64);
+        assert_eq!(idx, expected);
+        let (empty_tier, empty_idx) = payload_m4_indices(
+            10_001, false, &x, &y, 20_000.0, 21_000.0, 64, None, 0.0, 0.0,
+        )
+        .unwrap();
+        assert_eq!(empty_tier, PAYLOAD_TIER_DECIMATED);
+        assert!(empty_idx.is_empty());
+    }
+
+    #[test]
+    fn payload_m4_indices_uses_bin_x_window() {
+        let x: Vec<f64> = (0..10_001)
+            .map(|i| 10.0_f64.powf(i as f64 / 5_000.0))
+            .collect();
+        let y = vec![1.0; 10_001];
+        let bx: Vec<f64> = x.iter().map(|v| v.log10()).collect();
+        let (tier, idx) = payload_m4_indices(
+            10_001,
+            false,
+            &x,
+            &y,
+            x[0],
+            x[x.len() - 1],
+            32,
+            Some(&bx),
+            bx[0],
+            bx[bx.len() - 1],
+        )
+        .unwrap();
+        assert_eq!(tier, PAYLOAD_TIER_DECIMATED);
+        let expected =
+            crate::kernels::m4_indices(&bx, &y, bx[0], bx[bx.len() - 1] + f64::EPSILON, 32);
+        assert_eq!(idx, expected);
     }
 }
