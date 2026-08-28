@@ -108,11 +108,13 @@ fn parse_xysd_styles(
         let gradient_len = u32::from_le_bytes(prefix[28..32].try_into().unwrap()) as usize;
         let plane_len = u32::from_le_bytes(prefix[32..36].try_into().unwrap()) as usize;
         let name_len = u32::from_le_bytes(prefix[36..40].try_into().unwrap()) as usize;
+        let radius_len = u32::from_le_bytes(prefix[40..44].try_into().unwrap()) as usize;
         let _ = take(&mut rest, dash_len, index)?;
         let _ = take(&mut rest, marker_len, index)?;
         let _ = take(&mut rest, gradient_len, index)?;
         let _ = take(&mut rest, plane_len, index)?;
         let _ = take(&mut rest, name_len, index)?;
+        let _ = take(&mut rest, radius_len, index)?;
     }
     if !rest.is_empty() {
         return Err(AnnotationSpliceError::new(AnnotationSpliceCode::Length, 0));

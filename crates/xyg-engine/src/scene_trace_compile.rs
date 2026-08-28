@@ -4,8 +4,10 @@
 //! applicability, symbol codes, constant-color vs channel vs density fallback,
 //! dash presets, linecap, marker-path admission, diameter, legend kind, step,
 //! curve-smooth and stroke-perimeter bits, hex pitch, fill-gradient admission,
-//! and XYMS mark-style resolve so Python and Node cannot drift. Encoded Scene
-//! v31 is unchanged.
+//! and XYMS mark-style resolve so Python and Node cannot drift. ABI 166 packs
+//! cartesian bar/column/histogram `corner_radius` into the XYTO reserved
+//! trailer so encode can tessellate rounded Rects. Encoded Scene v31 is
+//! unchanged.
 
 use crate::css::{self, Checked};
 use crate::scene_style::{self, MarkStyleError, ResolvedMarkStyle};
@@ -43,6 +45,7 @@ pub const FLAG_HAS_MARKER: u32 = 1 << 18;
 pub const FLAG_HAS_GRADIENT_SPEC: u32 = 1 << 19;
 pub const FLAG_HAS_FILL_DICT: u32 = 1 << 20;
 pub const FLAG_SYMBOL_INT: u32 = 1 << 21;
+pub const FLAG_HAS_CORNER_RADIUS: u32 = 1 << 22;
 
 pub const FACT_STROKE_PERIMETER: u32 = 1;
 pub const FACT_CURVE_SMOOTH: u32 = 2;
@@ -149,6 +152,8 @@ struct Input<'a> {
     dash_pattern: Vec<f64>,
     marker_blob: &'a [u8],
     gradient_blob: &'a [u8],
+    r_tip: f64,
+    r_base: f64,
 }
 
 struct Compiled {
@@ -168,6 +173,9 @@ struct Compiled {
     gradient: Option<Vec<u8>>,
     hex_dx: f64,
     hex_dy: f64,
+    r_tip: f64,
+    r_base: f64,
+    tip_policy: u8,
 }
 
 fn read_u16(bytes: &[u8], offset: usize) -> Result<u16, TraceCompileError> {
@@ -910,6 +918,7 @@ fn compile_one(input: Input<'_>, index: usize) -> Result<Compiled, TraceCompileE
             && !input.name.is_empty(),
     );
     let legend_symbol = if legend_kind == 0 { symbol } else { 0 };
+    let (r_tip, r_base, tip_policy) = admit_corner_radius(&input, index)?;
     Ok(Compiled {
         fill: style.fill,
         stroke: style.stroke,
@@ -931,6 +940,9 @@ fn compile_one(input: Input<'_>, index: usize) -> Result<Compiled, TraceCompileE
         gradient: admitted,
         hex_dx,
         hex_dy,
+        r_tip,
+        r_base,
+        tip_policy,
     })
 }
 
@@ -1000,6 +1012,8 @@ fn parse_trace<'a>(
     }
     let marker_blob = take(bytes, at, marker_len, index)?;
     let gradient_blob = take(bytes, at, gradient_len, index)?;
+    let r_tip = read_f64(prefix, 140)?;
+    let r_base = read_f64(prefix, 148)?;
     Ok(Input {
         kind,
         flags,
@@ -1031,7 +1045,28 @@ fn parse_trace<'a>(
         dash_pattern,
         marker_blob,
         gradient_blob,
+        r_tip,
+        r_base,
     })
+}
+
+fn admit_corner_radius(
+    input: &Input<'_>,
+    index: usize,
+) -> Result<(f64, f64, u8), TraceCompileError> {
+    let r_tip = input.r_tip;
+    let r_base = input.r_base;
+    if r_tip == 0.0 && r_base == 0.0 {
+        return Ok((0.0, 0.0, 0));
+    }
+    if !matches!(input.kind, "bar" | "column" | "histogram") {
+        return Ok((0.0, 0.0, 0));
+    }
+    if !r_tip.is_finite() || !r_base.is_finite() || r_tip < 0.0 || r_base < 0.0 {
+        return Err(TraceCompileError::new(TraceCompileCode::Length, index));
+    }
+    let tip_policy = u8::from(input.kind == "bar");
+    Ok((r_tip, r_base, tip_policy))
 }
 
 fn write_compiled(out: &mut Vec<u8>, compiled: &Compiled) {
@@ -1059,6 +1094,9 @@ fn write_compiled(out: &mut Vec<u8>, compiled: &Compiled) {
     prefix[56..60].copy_from_slice(&(gradient.len() as u32).to_le_bytes());
     prefix[60..68].copy_from_slice(&compiled.hex_dx.to_le_bytes());
     prefix[68..76].copy_from_slice(&compiled.hex_dy.to_le_bytes());
+    prefix[76..84].copy_from_slice(&compiled.r_tip.to_le_bytes());
+    prefix[84..92].copy_from_slice(&compiled.r_base.to_le_bytes());
+    prefix[92] = compiled.tip_policy;
     out.extend_from_slice(&prefix);
     for value in dash {
         out.extend_from_slice(&value.to_le_bytes());
@@ -1281,5 +1319,33 @@ mod tests {
                 .unwrap(),
         );
         assert_eq!(grad_len, 4 + 2 * 8);
+    }
+
+    #[test]
+    fn cartesian_bar_packs_corner_radius_into_xyto_trailer() {
+        let (mut head, payload) = prefix("bar", FLAG_HAS_CORNER_RADIUS, 1.0, "");
+        head[140..148].copy_from_slice(&4.0f64.to_le_bytes());
+        head[148..156].copy_from_slice(&1.0f64.to_le_bytes());
+        let mut facts = Vec::new();
+        facts.extend_from_slice(XYTC_MAGIC);
+        facts.extend_from_slice(&XYTC_VERSION.to_le_bytes());
+        facts.extend_from_slice(&1u32.to_le_bytes());
+        facts.extend_from_slice(&0u32.to_le_bytes());
+        facts.extend_from_slice(&head);
+        facts.extend_from_slice(&payload);
+        let packed = pack_trace_compile(&facts).unwrap();
+        let r_tip = f64::from_le_bytes(
+            packed[XYTO_HEADER_BYTES + 76..XYTO_HEADER_BYTES + 84]
+                .try_into()
+                .unwrap(),
+        );
+        let r_base = f64::from_le_bytes(
+            packed[XYTO_HEADER_BYTES + 84..XYTO_HEADER_BYTES + 92]
+                .try_into()
+                .unwrap(),
+        );
+        assert_eq!(r_tip, 4.0);
+        assert_eq!(r_base, 1.0);
+        assert_eq!(packed[XYTO_HEADER_BYTES + 92], 1);
     }
 }

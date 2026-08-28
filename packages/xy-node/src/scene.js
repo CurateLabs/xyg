@@ -3068,6 +3068,7 @@ const XYTC_HAS_MARKER = 1 << 18;
 const XYTC_HAS_GRADIENT_SPEC = 1 << 19;
 const XYTC_HAS_FILL_DICT = 1 << 20;
 const XYTC_SYMBOL_INT = 1 << 21;
+const XYTC_HAS_CORNER_RADIUS = 1 << 22;
 const XYTO_LINECAP_NONE = 255;
 const XYTA_HEATMAP = 1 << 0;
 const XYTA_DENSITY = 1 << 1;
@@ -3290,6 +3291,21 @@ function packXyTc(figure) {
     view.setUint32(128, dashPattern.length, true);
     view.setUint32(132, markerBlob.length, true);
     view.setUint32(136, gradientBlob.length, true);
+    let rTip = 0;
+    let rBase = 0;
+    if (trace.kind === "bar" || trace.kind === "column" || trace.kind === "histogram") {
+      const radius = style.corner_radius ?? 0;
+      if (Array.isArray(radius) && radius.length === 2) {
+        rTip = Number(radius[0]);
+        rBase = Number(radius[1]);
+      } else {
+        rTip = rBase = Number(radius || 0);
+      }
+      if (rTip || rBase) flags |= XYTC_HAS_CORNER_RADIUS;
+    }
+    view.setUint32(8, flags >>> 0, true);
+    view.setFloat64(140, rTip, true);
+    view.setFloat64(148, rBase, true);
     const pattern = new Uint8Array(dashPattern.length * 8);
     const patternView = new DataView(pattern.buffer);
     dashPattern.forEach((value, index) => patternView.setFloat64(index * 8, value, true));
@@ -4987,13 +5003,14 @@ function resolveDensityBinColors(trace) {
   return null;
 }
 
-function rectExtraFlags(style) {
+function rectExtraFlags(style, kind, polar) {
   let flags = 0;
   if (style.fill != null && typeof style.fill === "object" && admitFillGradient({ style }) == null) flags |= XYFS_TRACE_RECT_GRADIENT;
   const radius = style.corner_radius ?? 0;
+  const admitted = !polar && (kind === "bar" || kind === "column" || kind === "histogram");
   if (Array.isArray(radius)) {
-    if (radius.some((value) => Number(value) !== 0)) flags |= XYFS_TRACE_CORNER_RADIUS;
-  } else if (Number(radius) !== 0) {
+    if (!(admitted && radius.length === 2) && radius.some((value) => Number(value) !== 0)) flags |= XYFS_TRACE_CORNER_RADIUS;
+  } else if (!admitted && Number(radius) !== 0) {
     flags |= XYFS_TRACE_CORNER_RADIUS;
   }
   if (Number(style.wedge_gap ?? 0) !== 0) flags |= XYFS_TRACE_WEDGE_GAP;
@@ -5036,7 +5053,7 @@ function figureTraceSupport(figure, trace) {
     flags |= XYFS_TRACE_DASHED_MARKERS;
   }
   if (style.dash != null && parseSceneDash(style.dash) === false) flags |= XYFS_TRACE_DASHED_MARKERS;
-  if (RECT_KINDS.has(kind) || HEATMAP_KINDS.has(kind)) flags |= rectExtraFlags(style);
+  if (RECT_KINDS.has(kind) || HEATMAP_KINDS.has(kind)) flags |= rectExtraFlags(style, kind, figure.coords === "polar");
   if (POLYFILL_KINDS.has(kind) && style.joined_fill) flags |= XYFS_TRACE_JOINED_FILL;
   if (HEXBIN_KINDS.has(kind) && !HEXBIN_REDUCES.has(style.reduce)) flags |= XYFS_TRACE_CUSTOM_HEX_REDUCE;
   if (

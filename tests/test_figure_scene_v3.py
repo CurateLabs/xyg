@@ -1125,11 +1125,23 @@ def test_python_scene_compiles_rect_family_aliases(kind: str) -> None:
     assert 'clip-path="url(#xy-scene-plot)"' in svg
 
 
-def test_python_scene_rejects_rect_corner_radius() -> None:
-    rounded = Figure()
+def test_python_scene_compiles_rect_corner_radius() -> None:
+    rounded = Figure(width=240, height=160)
+    rounded.axis_options["x"]["domain"] = (0.0, 2.0)
+    rounded.axis_options["y"]["domain"] = (0.0, 3.0)
     rounded.bar([0, 1], [1, 2], corner_radius=4.0)
+    scene = rounded.to_scene()
+    assert scene[4:8] == (31).to_bytes(4, "little")
+    svg = _native.scene_svg(scene)
+    assert svg.count('<path d="M') == 2
+    assert rounded.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(rounded) is None
+    polar = Figure(width=400, height=400, coords="polar")
+    polar.axis_options["x"]["domain"] = (0.0, 6.283185307179586)
+    polar.axis_options["y"]["domain"] = (0.0, 1.0)
+    polar.bar([0.0], [1.0], corner_radius=4.0)
     with pytest.raises(UnsupportedSceneV3, match="corner_radius"):
-        rounded.to_scene()
+        polar.to_scene()
 
 
 def test_python_scene_compiles_polar_density_tessellation() -> None:

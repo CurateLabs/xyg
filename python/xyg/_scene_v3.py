@@ -1604,17 +1604,20 @@ def _pack_chrome_facts(
     return bytes(payload)
 
 
-def _rect_extra_flags(style: dict[str, Any]) -> int:
+def _rect_extra_flags(style: dict[str, Any], kind: str, polar: bool) -> int:
     """Pack Scene-unsupported rect extras as XYFS v2 trace flags."""
     flags = 0
     fill = style.get("fill")
     if isinstance(fill, dict) and _admitted_fill_gradient_from_fill(fill, "#3987e5") is None:
         flags |= _XYFS_TRACE_RECT_GRADIENT
     radius = style.get("corner_radius", 0.0)
+    admitted = (not polar) and kind in {"bar", "column", "histogram"}
     if isinstance(radius, (list, tuple)):
-        if any(float(value) != 0.0 for value in radius):
+        if admitted and len(radius) == 2:
+            pass
+        elif any(float(value) != 0.0 for value in radius):
             flags |= _XYFS_TRACE_CORNER_RADIUS
-    elif float(radius) != 0.0:
+    elif not admitted and float(radius) != 0.0:
         flags |= _XYFS_TRACE_CORNER_RADIUS
     if float(style.get("wedge_gap", 0.0) or 0.0) != 0.0:
         flags |= _XYFS_TRACE_WEDGE_GAP
@@ -1628,7 +1631,7 @@ def _density_aggregates_color(trace: Any) -> bool:
     return set(trace.per_item_channel_names()) <= {"color"}
 
 
-def _figure_trace_support_flags(trace: Any) -> tuple[int, str]:
+def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, str]:
     """Observe per-trace Scene allowlist bits; Rust owns the diagnostic."""
     kind = str(getattr(trace, "kind", "") or "mark")
     style = getattr(trace, "style", None) or {}
@@ -1672,7 +1675,7 @@ def _figure_trace_support_flags(trace: Any) -> tuple[int, str]:
     if dash is not None and _parse_scene_dash(dash) is False:
         flags |= _XYFS_TRACE_DASHED_MARKERS
     if kind in _RECT_KINDS or kind in _HEATMAP_KINDS:
-        flags |= _rect_extra_flags(style)
+        flags |= _rect_extra_flags(style, kind, polar)
     if kind in _POLYFILL_KINDS and style.get("joined_fill"):
         flags |= _XYFS_TRACE_JOINED_FILL
     if kind in _HEXBIN_KINDS and style.get("reduce") not in _HEXBIN_REDUCES:
@@ -2185,7 +2188,7 @@ def _gradient_solid_css(gradient: dict[str, Any]) -> str:
 
 
 _XYTC_HEADER = struct.Struct("<4sIII")
-_XYTR_PREFIX = struct.Struct("<4s2HI2H11d12H3I20x")
+_XYTR_PREFIX = struct.Struct("<4s2HI2H11d12H3I2d4x")
 _XYTO_ENVELOPE = struct.Struct("<4sIII")
 _XYTO_PREFIX = struct.Struct("<4s2H4s4s2dHBBHHII4BII2d84x")
 _XYTA_HEADER = struct.Struct("<4sIII")
@@ -2233,6 +2236,7 @@ _XYTC_HAS_DASH_PATTERN = 1 << 17
 _XYTC_HAS_MARKER = 1 << 18
 _XYTC_HAS_GRADIENT_SPEC = 1 << 19
 _XYTC_HAS_FILL_DICT = 1 << 20
+_XYTC_HAS_CORNER_RADIUS = 1 << 22
 _XYTO_LINECAP_NONE = 255
 _GRAD_DIR_FROM_CODE = {0: "down", 1: "up", 2: "right", 3: "left"}
 
@@ -2391,6 +2395,17 @@ def _pack_xytc(figure: Any) -> bytes:
             if packed_marker:
                 flags |= _XYTC_HAS_MARKER
                 marker_blob = packed_marker
+        r_tip = 0.0
+        r_base = 0.0
+        if str(trace.kind) in {"bar", "column", "histogram"}:
+            radius = style.get("corner_radius", 0.0)
+            if isinstance(radius, (list, tuple)) and len(radius) == 2:
+                r_tip = float(radius[0])
+                r_base = float(radius[1])
+            else:
+                r_tip = r_base = float(radius or 0.0)
+            if r_tip or r_base:
+                flags |= _XYTC_HAS_CORNER_RADIUS
         records.extend(
             _XYTR_PREFIX.pack(
                 b"XYTR",
@@ -2425,6 +2440,8 @@ def _pack_xytc(figure: Any) -> bytes:
                 len(dash_pattern),
                 len(marker_blob),
                 len(gradient_blob),
+                r_tip,
+                r_base,
             )
         )
         records.extend(kind)
@@ -3086,7 +3103,7 @@ def _pack_figure_support(
         payload.extend(len(keys).to_bytes(4, "little"))
         _xyep_put_keys(payload, keys)
     for trace in traces:
-        trace_flags, kind = _figure_trace_support_flags(trace)
+        trace_flags, kind = _figure_trace_support_flags(trace, flags & 1 != 0)
         encoded = str(kind).encode("utf-8")[:32]
         payload.extend(trace_flags.to_bytes(2, "little"))
         payload.extend(bytes((len(encoded), 0)))

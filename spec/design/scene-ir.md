@@ -147,6 +147,10 @@ SVG/PNG/PDF/JPEG/WebP consumers from one encoded Scene.
 ABI 165 does not change Scene records; `xyg_scene_encode_product` additionally
 owns the figure-compile support probe from packed XYFS. Empty XYFS skips the
 probe so stepwise ABI 163 callers keep working.
+ABI 166 does not change Scene records; cartesian bar/column/histogram
+`corner_radius` tessellates to PolyFill after pixel mapping through
+`geom::rounded_rect_poly` (ABI 121). Polar `corner_radius`, `wedge_gap`,
+violin/box/heatmap radii, and per-item radius channels stay fail-closed.
 
 ## Version 3: backend-neutral core scene batch
 
@@ -1468,7 +1472,10 @@ one encoded Scene.
 ABI 165 does not change Scene records either;
 `xyg_scene_encode_product` additionally owns the figure-compile support probe
 from packed XYFS.
-Polar+step+smooth and authored marker glyphs stay compatibility. ABI 116 does not change Scene records either;
+ABI 166 does not change Scene records either;
+cartesian bar/column/histogram `corner_radius` tessellates to PolyFill after
+pixel mapping. Polar `corner_radius`, `wedge_gap`, and authored marker glyphs
+stay compatibility. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;
 `xyg_scene_figure_support_reason` owns figure-compile support from packed

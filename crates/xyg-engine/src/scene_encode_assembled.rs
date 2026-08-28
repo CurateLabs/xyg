@@ -12,16 +12,18 @@
 //! ABI 165 additionally owns the figure-compile support probe from packed
 //! `XYFS` so product-path hosts do not call `scene_figure_support_reason`
 //! separately. Empty `XYFS` skips the probe (stepwise ABI 163 callers).
-//! Encoded Scene v31 is unchanged.
+//! ABI 166 tessellates cartesian bar/column/histogram `corner_radius` from
+//! packed XYSD radius blobs after pixel mapping. Encoded Scene v31 is
+//! unchanged.
 
 use crate::scene::{
     decode_tick_labels, expand_scene_records_painted, resolve_numeric_tick_formats,
     scene_text_advance, split_scene_extras, AxisScale, PlotLayout, ScaleKind, SceneBatch,
-    SceneChromeStyle, SceneChromeText, SceneColorbar, SceneError, SceneExpansionInput, SceneLegend,
-    MAX_AUTHORED_TEXT_ANNOTATIONS, MAX_AXIS_TICKS, MAX_SCENE_AXIS_FORMAT_BYTES,
-    MAX_SCENE_COLORBAR_INPUT_BYTES, MAX_SCENE_LABEL_TEXT_BYTES, MAX_SCENE_LEGEND_ENTRIES,
-    MAX_SCENE_LEGEND_TEXT_BYTES, MAX_SCENE_MARKS, MAX_SCENE_STYLES, MAX_SCENE_TEXT_BYTES,
-    SCENE_CHROME_STYLE_INPUT_BYTES, SCENE_STYLE_RECORD_BYTES,
+    SceneChromeStyle, SceneChromeText, SceneColorbar, SceneCornerRadius, SceneError,
+    SceneExpansionInput, SceneLegend, MAX_AUTHORED_TEXT_ANNOTATIONS, MAX_AXIS_TICKS,
+    MAX_SCENE_AXIS_FORMAT_BYTES, MAX_SCENE_COLORBAR_INPUT_BYTES, MAX_SCENE_LABEL_TEXT_BYTES,
+    MAX_SCENE_LEGEND_ENTRIES, MAX_SCENE_LEGEND_TEXT_BYTES, MAX_SCENE_MARKS, MAX_SCENE_STYLES,
+    MAX_SCENE_TEXT_BYTES, SCENE_CHROME_STYLE_INPUT_BYTES, SCENE_STYLE_RECORD_BYTES,
 };
 use crate::scene_annotation_splice::{
     splice_annotations, XYAS_HEADER_BYTES, XYAS_MAGIC, XYAS_VERSION,
@@ -37,7 +39,7 @@ use crate::scene_style_sidecars::pack_style_sidecars;
 use crate::scene_trace_attach::pack_trace_attach;
 use crate::scene_trace_compile::pack_trace_compile;
 use crate::scene_trace_rows::pack_trace_rows;
-use crate::scene_trace_sidecars::pack_trace_sidecars;
+use crate::scene_trace_sidecars::{pack_trace_sidecars, parse_xysd_records};
 
 /// Why an assembled-encode request was rejected. Discriminants are the
 /// C-ABI error codes (returned negated by `xyg_scene_encode_assembled`).
@@ -571,6 +573,29 @@ pub fn encode_assembled(
     x_axis: EncodeAssembledAxis,
     y_axis: EncodeAssembledAxis,
 ) -> Result<Vec<u8>, EncodeAssembledError> {
+    encode_assembled_with_radii(
+        xyas,
+        chrome,
+        extras,
+        viewport_width,
+        viewport_height,
+        x_axis,
+        y_axis,
+        Vec::new(),
+    )
+}
+
+#[allow(clippy::too_many_arguments)] // assembled encode plus optional radii
+fn encode_assembled_with_radii(
+    xyas: &[u8],
+    chrome: &[u8],
+    extras: &[u8],
+    viewport_width: f64,
+    viewport_height: f64,
+    x_axis: EncodeAssembledAxis,
+    y_axis: EncodeAssembledAxis,
+    corner_radii: Vec<Option<SceneCornerRadius>>,
+) -> Result<Vec<u8>, EncodeAssembledError> {
     if !matches!(x_axis.mask_nonpositive, 0 | 1) || !matches!(y_axis.mask_nonpositive, 0 | 1) {
         return Err(EncodeAssembledError::new(EncodeAssembledCode::Length, 0));
     }
@@ -703,6 +728,8 @@ pub fn encode_assembled(
         .map_err(map_scene)?
         .with_authored_annotations(&parsed.xyad)
         .map_err(map_scene)?
+        .with_corner_radii(corner_radii)
+        .map_err(map_scene)?
         .encode())
 }
 
@@ -751,7 +778,8 @@ pub fn encode_assembled_from_sidecars(
     let chrome = pack_figure_chrome_from_sidecars(chrome_facts, xysd).map_err(map_chrome)?;
     let extras = pack_scene_extras_from_sidecars(polar, xysd, extras_facts).map_err(map_extras)?;
     let (viewport_width, viewport_height, x_axis, y_axis) = axes_from_chrome_facts(chrome_facts)?;
-    encode_assembled(
+    let corner_radii = corner_radii_from_xysd(xysd).map_err(map_encode)?;
+    encode_assembled_with_radii(
         xyas,
         &chrome,
         &extras,
@@ -759,8 +787,34 @@ pub fn encode_assembled_from_sidecars(
         viewport_height,
         x_axis,
         y_axis,
+        corner_radii,
     )
     .map_err(map_encode)
+}
+
+fn corner_radii_from_xysd(
+    xysd: &[u8],
+) -> Result<Vec<Option<SceneCornerRadius>>, EncodeAssembledError> {
+    if xysd.is_empty() {
+        return Ok(Vec::new());
+    }
+    let records = parse_xysd_records(xysd).map_err(|error| {
+        EncodeAssembledError::new(EncodeAssembledCode::Payload, error.index as usize)
+    })?;
+    Ok(records
+        .into_iter()
+        .map(|record| {
+            if record.r_tip == 0.0 && record.r_base == 0.0 {
+                None
+            } else {
+                Some(SceneCornerRadius {
+                    r_tip: record.r_tip,
+                    r_base: record.r_base,
+                    force_tip_top: record.tip_policy != 0,
+                })
+            }
+        })
+        .collect())
 }
 
 /// Encode a product Scene from packed authored blobs.

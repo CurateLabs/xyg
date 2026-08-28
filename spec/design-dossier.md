@@ -566,7 +566,9 @@ F3, still pending (above).
   `xyg_scene_static_export` owns SVG/PNG/PDF/JPEG/WebP consumers from that
   batch, then ABI 165 folds the figure-compile `XYFS` probe into
   `xyg_scene_encode_product` so product-path hosts do not call
-  `xyg_scene_figure_support_reason` separately. `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
+  `xyg_scene_figure_support_reason` separately, then ABI 166 tessellates
+  cartesian bar/column/histogram `corner_radius` on that same product Scene.
+  `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
   panel Scene. That predicate
   owns the public PolyFill group budget, including companion traces that share
   the browser painter's 1,024-group ceiling. Explicit
@@ -1483,7 +1485,8 @@ style-sidecar, splice, and assembled encode from packed XYTC plus XYTA plus
 XYNM plus XYCL plus XYAF plus XYCF plus polar.
 ABI 164 owns public SVG/PNG/PDF/JPEG/WebP consumers from one encoded Scene.
 ABI 165 owns the figure-compile support probe from packed XYFS on product encode.
-Polar+step+smooth and
+ABI 166 tessellates cartesian bar/column/histogram `corner_radius` after pixel
+mapping. Polar+step+smooth, polar `corner_radius`/`wedge_gap`, and
 authored marker glyphs stay compatibility. Irregular
 spacing, and LOD stay compatibility.
 

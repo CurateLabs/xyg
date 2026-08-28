@@ -1388,6 +1388,7 @@ def test_too_small_valid_export_viewport_is_a_documented_routing_exception() -> 
         (_smooth_error_band, None),
         (lambda: _supported().bar([0, 1], [1, 2]), None),
         (lambda: _supported().column([0, 1], [1, 2]), None),
+        (lambda: _supported().column([0, 1], [1, 2], corner_radius=2), None),
         (lambda: _supported().histogram([0, 1, 1, 2], bins=2), None),
         (lambda: _supported().area([0, 1], [1, 2]), None),
         (lambda: _supported().error_band([0, 1], [0, 1], [1, 2]), None),
@@ -1407,7 +1408,6 @@ def test_public_router_selects_only_the_proven_literal_cartesian_geometry_subset
 @pytest.mark.parametrize(
     "factory",
     [
-        lambda: _supported().column([0, 1], [1, 2], corner_radius=2),
         lambda: _supported().scatter(range(10_001), range(10_001)),
     ],
 )

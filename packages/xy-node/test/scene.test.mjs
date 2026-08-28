@@ -1655,10 +1655,20 @@ test("Node Scene compiles column and histogram as Rect records", () => {
   assert.match(sceneSvg(hist.toScene()), /<rect /);
 });
 
-test("Node Scene rejects corner_radius", () => {
-  const rounded = new Figure({ width: 200, height: 120 });
-  rounded.bar([0, 1], [1, 2], { style: { corner_radius: 4 }, name: null });
-  assert.throws(() => rounded.toScene(), /corner_radius/);
+test("Node Scene compiles cartesian corner_radius and keeps polar fail-closed", () => {
+  const rounded = new Figure({ width: 240, height: 160 });
+  rounded.setAxisDomain("x", [0, 2]);
+  rounded.setAxisDomain("y", [0, 3]);
+  rounded.bar([0, 1], [1, 2], { style: { color: "#22c55e", corner_radius: 4 }, name: null });
+  const scene = rounded.toScene();
+  assert.equal(new DataView(scene.buffer, scene.byteOffset).getUint32(4, true), 31);
+  assert.equal((sceneSvg(scene).match(/<path d="M/g) || []).length, 2);
+  assert.equal(sceneExportSupportReason(rounded), null);
+  const polar = new Figure({ width: 400, height: 400, coords: "polar" });
+  polar.setAxisDomain("x", [0, Math.PI * 2]);
+  polar.setAxisDomain("y", [0, 1]);
+  polar.bar([0], [1], { style: { corner_radius: 4 }, name: null });
+  assert.throws(() => polar.toScene(), /corner_radius/);
 });
 
 test("Node Scene compiles polar density tessellation", () => {

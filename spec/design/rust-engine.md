@@ -220,7 +220,8 @@ crates/
                         #   sidecar packing plus ABI 162 XYAS/XYCF assembled
                         #   encode from sidecars plus ABI 163 product encode
                         #   from packed facts plus ABI 164 public static-export
-                        #   consumers plus ABI 165 product-path XYFS support.
+                        #   consumers plus ABI 165 product-path XYFS support
+                        #   plus ABI 166 cartesian corner_radius tessellation.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -274,7 +275,8 @@ crates/
     scene_encode_assembled.rs # ABI 160 XYAS/XYCC assembled encode plus ABI 162
                              #   XYAS/XYCF encode from sidecars plus ABI 163
                              #   product encode from packed facts plus ABI 165
-                             #   product-path XYFS figure-compile support:
+                             #   product-path XYFS figure-compile support plus
+                             #   ABI 166 cartesian corner_radius tessellation:
                              #   compile, attach, sidecars, rows, annotation,
                              #   style, splice, support probe, then sidecar
                              #   assembled encode.
@@ -835,4 +837,5 @@ landed; the remainder, in order:
    ABI 163 product encode from packed facts (`xyg_scene_encode_product`) ✅.
    ABI 164 public static-export consumers (`xyg_scene_static_export`) ✅.
    ABI 165 product-path XYFS figure-compile support (`xyg_scene_encode_product`) ✅.
+   ABI 166 cartesian bar/column/histogram `corner_radius` tessellation (`scene.rs` / XYSD radius blob) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

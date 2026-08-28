@@ -228,11 +228,13 @@ fn parse_xysd(bytes: &[u8]) -> Result<Vec<Option<Record>>, StyleSidecarsError> {
         let gradient_len = u32::from_le_bytes(prefix[28..32].try_into().unwrap()) as usize;
         let plane_len = u32::from_le_bytes(prefix[32..36].try_into().unwrap()) as usize;
         let name_len = u32::from_le_bytes(prefix[36..40].try_into().unwrap()) as usize;
+        let radius_len = u32::from_le_bytes(prefix[40..44].try_into().unwrap()) as usize;
         let dash = take(&mut rest, dash_len, index)?;
         let marker = take(&mut rest, marker_len, index)?;
         let gradient = take(&mut rest, gradient_len, index)?;
         let _plane = take(&mut rest, plane_len, index)?;
         let _name = take(&mut rest, name_len, index)?;
+        let _radius = take(&mut rest, radius_len, index)?;
         records.push(record_from_xysd(
             prefix,
             dash,

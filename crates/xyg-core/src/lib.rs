@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 165;
+pub const ABI_VERSION: u32 = 166;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1016,7 +1016,8 @@ pub unsafe extern "C" fn xyg_scene_encode_assembled_from_sidecars(
 /// XYCC packing, extras packing, viewport/axis scalars, assembled encode, and
 /// (ABI 165) the figure-compile support probe from packed XYFS so Python and
 /// Node cannot drift on product-path orchestration. Empty XYFS skips the
-/// probe. Returns the encoded byte count on success, or a negated
+/// probe. ABI 166 tessellates cartesian bar/column/histogram `corner_radius`
+/// from packed XYSD radius blobs. Returns the encoded byte count on success, or a negated
 /// `ProductEncodeError` code. Encode-sidecar failures keep codes 1–21; other
 /// stages occupy `base + original` except shared `Output=4` retry. Support
 /// rejection (`-801`) writes a little-endian u32 reason length then UTF-8;
@@ -3023,6 +3024,9 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// `xyg_scene_encode_product` additionally owns the figure-compile support
 /// probe from packed XYFS so product-path hosts do not call
 /// `xyg_scene_figure_support_reason` separately.
+/// ABI 166 does not change Scene records;
+/// cartesian bar/column/histogram `corner_radius` tessellates to PolyFill
+/// after pixel mapping.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety

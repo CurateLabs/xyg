@@ -7,7 +7,9 @@
 //! drift. Encoded Scene v31 is unchanged. ABI 158 packs XYSS from XYSD plus
 //! XYAO; ABI 159 splices annotation styles and mark rows into XYAS. ABI 161
 //! unpacks XYSD legend paints and heatmap/density planes so hosts do not
-//! inspect sidecar contents on the product path.
+//! inspect sidecar contents on the product path. ABI 166 copies cartesian
+//! bar/column/histogram `corner_radius` from the XYTO reserved trailer into
+//! an optional XYSD radius blob so encode can tessellate rounded Rects.
 
 use crate::scene_trace_attach::{XYTT_HEADER_BYTES, XYTT_MAGIC, XYTT_PREFIX_BYTES, XYTT_VERSION};
 use crate::scene_trace_compile::XYTO_MAGIC;
@@ -19,6 +21,7 @@ pub const XYSD_MAGIC: &[u8; 4] = b"XYSD";
 pub const XYSD_VERSION: u32 = 1;
 pub const XYSD_HEADER_BYTES: usize = 16;
 pub const XYSD_PREFIX_BYTES: usize = 48;
+pub const XYSD_RADIUS_BYTES: usize = 24;
 
 const MAX_TRACES: usize = 4_096;
 const MAX_NAME: usize = 4_096;
@@ -62,6 +65,9 @@ struct AttachedSidecar {
     marker: Vec<u8>,
     gradient: Vec<u8>,
     plane: Vec<u8>,
+    r_tip: f64,
+    r_base: f64,
+    tip_policy: u8,
 }
 
 fn read_u16(bytes: &[u8], offset: usize) -> Result<u16, TraceSidecarsError> {
@@ -111,6 +117,40 @@ fn take(rest: &mut &[u8], n: usize, index: usize) -> Result<Vec<u8>, TraceSideca
     Ok(head.to_vec())
 }
 
+fn encode_radius_blob(r_tip: f64, r_base: f64, tip_policy: u8) -> Vec<u8> {
+    if r_tip == 0.0 && r_base == 0.0 {
+        return Vec::new();
+    }
+    let mut out = vec![0u8; XYSD_RADIUS_BYTES];
+    out[0..8].copy_from_slice(&r_tip.to_le_bytes());
+    out[8..16].copy_from_slice(&r_base.to_le_bytes());
+    out[16] = tip_policy;
+    out
+}
+
+fn parse_radius_blob(blob: &[u8], index: usize) -> Result<(f64, f64, u8), TraceSidecarsError> {
+    if blob.is_empty() {
+        return Ok((0.0, 0.0, 0));
+    }
+    if blob.len() != XYSD_RADIUS_BYTES {
+        return Err(TraceSidecarsError::new(TraceSidecarsCode::Length, index));
+    }
+    let r_tip = f64::from_le_bytes(
+        blob[0..8]
+            .try_into()
+            .map_err(|_| TraceSidecarsError::new(TraceSidecarsCode::Length, index))?,
+    );
+    let r_base = f64::from_le_bytes(
+        blob[8..16]
+            .try_into()
+            .map_err(|_| TraceSidecarsError::new(TraceSidecarsCode::Length, index))?,
+    );
+    if !r_tip.is_finite() || !r_base.is_finite() || r_tip < 0.0 || r_base < 0.0 {
+        return Err(TraceSidecarsError::new(TraceSidecarsCode::Length, index));
+    }
+    Ok((r_tip, r_base, blob[16]))
+}
+
 fn parse_xytt(bytes: &[u8]) -> Result<Vec<AttachedSidecar>, TraceSidecarsError> {
     if bytes.len() < XYTT_HEADER_BYTES || bytes.get(..4) != Some(&XYTT_MAGIC[..]) {
         return Err(TraceSidecarsError::new(TraceSidecarsCode::Length, 0));
@@ -147,6 +187,9 @@ fn parse_xytt(bytes: &[u8]) -> Result<Vec<AttachedSidecar>, TraceSidecarsError> 
         let gradient_len = read_u32(rest, 56)? as usize;
         let heatmap_len = read_u32(rest, 160)? as usize;
         let density_len = read_u32(rest, 164)? as usize;
+        let r_tip = read_f64(rest, 76)?;
+        let r_base = read_f64(rest, 84)?;
+        let tip_policy = rest[92];
         rest = &rest[XYTT_PREFIX_BYTES..];
         let dash_bytes = dash_count
             .checked_mul(8)
@@ -179,6 +222,9 @@ fn parse_xytt(bytes: &[u8]) -> Result<Vec<AttachedSidecar>, TraceSidecarsError> 
             marker,
             gradient,
             plane,
+            r_tip,
+            r_base,
+            tip_policy,
         });
     }
     if !rest.is_empty() {
@@ -237,6 +283,9 @@ pub struct XySdRecord {
     pub gradient: Vec<u8>,
     pub plane: Vec<u8>,
     pub name: Vec<u8>,
+    pub r_tip: f64,
+    pub r_base: f64,
+    pub tip_policy: u8,
 }
 
 /// Parse packed `XYSD` v1 into per-trace style, plane, and legend-name records.
@@ -303,6 +352,18 @@ pub fn parse_xysd_records(bytes: &[u8]) -> Result<Vec<XySdRecord>, TraceSidecars
                 .try_into()
                 .map_err(|_| TraceSidecarsError::new(TraceSidecarsCode::Length, index))?,
         ) as usize;
+        let radius_len = u32::from_le_bytes(
+            prefix[40..44]
+                .try_into()
+                .map_err(|_| TraceSidecarsError::new(TraceSidecarsCode::Length, index))?,
+        ) as usize;
+        let dash = take(&mut rest, dash_len, index)?;
+        let marker = take(&mut rest, marker_len, index)?;
+        let gradient = take(&mut rest, gradient_len, index)?;
+        let plane = take(&mut rest, plane_len, index)?;
+        let name = take(&mut rest, name_len, index)?;
+        let radius = take(&mut rest, radius_len, index)?;
+        let (r_tip, r_base, tip_policy) = parse_radius_blob(&radius, index)?;
         records.push(XySdRecord {
             fill,
             stroke,
@@ -310,11 +371,14 @@ pub fn parse_xysd_records(bytes: &[u8]) -> Result<Vec<XySdRecord>, TraceSidecars
             linecap,
             legend_kind,
             legend_symbol,
-            dash: take(&mut rest, dash_len, index)?,
-            marker: take(&mut rest, marker_len, index)?,
-            gradient: take(&mut rest, gradient_len, index)?,
-            plane: take(&mut rest, plane_len, index)?,
-            name: take(&mut rest, name_len, index)?,
+            dash,
+            marker,
+            gradient,
+            plane,
+            name,
+            r_tip,
+            r_base,
+            tip_policy,
         });
     }
     if !rest.is_empty() {
@@ -341,12 +405,15 @@ fn write_sidecar(out: &mut Vec<u8>, attached: &AttachedSidecar, name: &[u8]) {
     prefix[28..32].copy_from_slice(&(attached.gradient.len() as u32).to_le_bytes());
     prefix[32..36].copy_from_slice(&(attached.plane.len() as u32).to_le_bytes());
     prefix[36..40].copy_from_slice(&(legend_name.len() as u32).to_le_bytes());
+    let radius = encode_radius_blob(attached.r_tip, attached.r_base, attached.tip_policy);
+    prefix[40..44].copy_from_slice(&(radius.len() as u32).to_le_bytes());
     out.extend_from_slice(&prefix);
     out.extend_from_slice(&attached.dash);
     out.extend_from_slice(&attached.marker);
     out.extend_from_slice(&attached.gradient);
     out.extend_from_slice(&attached.plane);
     out.extend_from_slice(legend_name);
+    out.extend_from_slice(&radius);
 }
 
 /// Pack attached `XYTT` v1 plus authored `XYNM` v1 names into `XYSD` v1.
