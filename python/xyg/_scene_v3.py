@@ -1674,7 +1674,7 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
         curve_name = str(curve).strip().lower()
         if curve_name == "smooth":
             if kind not in {"line", "area", "error_band"} or (
-                style.get("step") is not None and not polar
+                style.get("step") is not None and kind != "line" and not polar
             ):
                 flags |= _XYFS_TRACE_DASHED_MARKERS
         elif curve_name != "linear":

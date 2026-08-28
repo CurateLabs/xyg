@@ -14,7 +14,11 @@
 //! `BandFlatten` mapping; polar `curve="smooth"` line/area/error_band pack as
 //! identity chords (no `step_mode=4`). ABI 169 admits polar `curve="smooth"`
 //! plus `step` on that same identity-chord packing: authored `step_mode` 1–3
-//! expands, and smooth does not promote to `CurveFlatten`. ABI 170 admits
+//! expands, and smooth does not promote to `CurveFlatten`. ABI 172 admits
+//! cartesian line `curve="smooth"` plus `step` the same way: authored
+//! `step_mode` 1–3 expands, and smooth does not promote to `CurveFlatten`.
+//! Cartesian area/error_band cannot step-expand (`PACK_BAND` accepts only
+//! `step_mode` 0 or 4). ABI 170 admits
 //! constant scatter `marker_glyph` via XYMG (no new pack kind).
 //! ABI 145 admits constant `marker_path` via an XYMP extras sidecar;
 //! tessellation is Scene-owned after pixel mapping (no new pack kind).

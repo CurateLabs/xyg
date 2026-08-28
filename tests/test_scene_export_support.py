@@ -543,7 +543,13 @@ def test_polar_smooth_step_line_is_scene_supported() -> None:
     assert b"<polyline" in exported
     cartesian = _supported().line([0, 1, 2], [1, 2, 1], curve="smooth")
     cartesian.traces[-1].style["step"] = "mid"
-    assert scene_export_support_reason(cartesian) is not None
+    assert scene_export_support_reason(cartesian) is None
+    cartesian_exported = public_static_export(cartesian, "svg")
+    assert cartesian_exported is not None
+    assert b"<polyline" in cartesian_exported
+    cartesian_area = _supported().area([0, 1, 2], [1, 2, 1], curve="smooth")
+    cartesian_area.traces[-1].style["step"] = "mid"
+    assert scene_export_support_reason(cartesian_area) is not None
 
 
 def test_marker_glyph_scatter_is_scene_supported() -> None:

@@ -1609,8 +1609,24 @@ def test_python_scene_compiles_smooth_polylines() -> None:
     cartesian_both.axis_options["y"]["domain"] = (0.0, 2.0)
     cartesian_both.line([0.0, 1.0, 2.0], [0.0, 1.0, 0.5], curve="smooth")
     cartesian_both.traces[-1].style["step"] = "mid"
+    cartesian_step = Figure(width=240, height=160)
+    cartesian_step.axis_options["x"]["domain"] = (0.0, 2.0)
+    cartesian_step.axis_options["y"]["domain"] = (0.0, 2.0)
+    cartesian_step.line([0.0, 1.0, 2.0], [0.0, 1.0, 0.5])
+    cartesian_step.traces[-1].style["step"] = "mid"
+    cartesian_both_svg = _native.scene_svg(cartesian_both.to_scene())
+    cartesian_step_svg = _native.scene_svg(cartesian_step.to_scene())
+    assert cartesian_both_svg == cartesian_step_svg
+    assert cartesian_both_svg != svg
+    assert cartesian_both.to_svg() == cartesian_both_svg
+    assert _scene_v3.scene_export_support_reason(cartesian_both) is None
+    cartesian_area_both = Figure(width=240, height=160)
+    cartesian_area_both.axis_options["x"]["domain"] = (0.0, 2.0)
+    cartesian_area_both.axis_options["y"]["domain"] = (0.0, 2.0)
+    cartesian_area_both.area([0.0, 1.0, 2.0], [0.0, 1.0, 0.5], curve="smooth")
+    cartesian_area_both.traces[-1].style["step"] = "mid"
     with pytest.raises(UnsupportedSceneV3, match="authored markers"):
-        cartesian_both.to_scene()
+        cartesian_area_both.to_scene()
     marked = Figure().line([0.0, 1.0], [0.0, 1.0])
     marked.traces[-1].style["marker_path"] = "M0 0"
     with pytest.raises(UnsupportedSceneV3, match="authored markers"):

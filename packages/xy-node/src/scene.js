@@ -5060,7 +5060,7 @@ function figureTraceSupport(figure, trace) {
     const curveName = String(curve).trim().toLowerCase();
     if (curveName === "smooth") {
       if (kind !== "line" && kind !== "area" && kind !== "error_band") flags |= XYFS_TRACE_DASHED_MARKERS;
-      else if (style.step != null && figure.coords !== "polar") flags |= XYFS_TRACE_DASHED_MARKERS;
+      else if (style.step != null && kind !== "line" && figure.coords !== "polar") flags |= XYFS_TRACE_DASHED_MARKERS;
     } else if (curveName !== "linear") {
       flags |= XYFS_TRACE_DASHED_MARKERS;
     }

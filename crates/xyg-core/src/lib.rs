@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 171;
+pub const ABI_VERSION: u32 = 172;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1021,6 +1021,8 @@ pub unsafe extern "C" fn xyg_scene_encode_assembled_from_sidecars(
 /// same blob. ABI 168 tessellates polar bar/column/histogram `corner_radius`
 /// from that same blob when the inner radius is positive. ABI 169 admits polar
 /// `curve="smooth"` plus `step` as polar step expansion (identity chords).
+/// ABI 172 admits cartesian line `curve="smooth"` plus `step` as authored
+/// step expansion (`step_mode` 1–3 wins over `CurveFlatten`).
 /// Returns the encoded byte count on success, or a negated
 /// `ProductEncodeError` code. Encode-sidecar failures keep codes 1–21; other
 /// stages occupy `base + original` except shared `Output=4` retry. Support
@@ -3043,7 +3045,9 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// PolyFill wedges when the inner radius is positive.
 /// ABI 169 does not change Scene records;
 /// polar `curve="smooth"` plus `step` keeps authored step expansion (identity
-/// chords; polar-axes.md §5). Cartesian step+smooth stays fail-closed.
+/// chords; polar-axes.md §5). ABI 172 admits cartesian line `curve="smooth"`
+/// plus `step` as that same authored step expansion (`step_mode` 1–3 wins
+/// over `CurveFlatten`). Cartesian area/error_band step+smooth stays fail-closed.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
