@@ -1310,7 +1310,13 @@ authored tick-label strings, labeled annotations, and callout/arrow behavior.
 Rust owns both the ordered support decision and the stable actionable UTF-8
 diagnostic (`XYG_SCENE_UNSUPPORTED_*`); Python and Node only project literal
 feature-presence bits and relay the returned text. Zero required bytes means
-the request uses none of those deferred features. Unknown request versions or
+the request uses none of those authored features. Custom `font-family` and
+browser-only CSS/classes are the bounded Scene-static fail-closed contract
+(`XYG_SCENE_UNSUPPORTED_CUSTOM_FONT` / `XYG_SCENE_UNSUPPORTED_BROWSER_CSS`;
+#288): Scene SVG/PNG/PDF measure and paint DejaVu Sans, and default-font
+figures without those observations must not fall back to `_svg.to_svg` /
+`_raster`. Live browser widgets still apply `class_name` / CSS outside this
+encoder. CSS-room measurement of a second face stays #297. Unknown request versions or
 bits fail closed rather than being treated as supported. This predicate does
 not make a partial Scene: callers must reject the authoring request before
 encoding any records.
