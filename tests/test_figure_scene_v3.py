@@ -361,6 +361,36 @@ def test_python_scene_polar_theta_uses_angular_labels() -> None:
     assert "6" not in thetas
 
 
+def test_python_scene_time_strftime_and_polar_numeric_format() -> None:
+    figure = Figure(width=420, height=260)
+    figure.scatter([0.0, 86_400_000.0], [0.0, 1.0])
+    figure.set_axis("x", type_="time", domain=(0.0, 86_400_000.0), format="%Y-%m-%d")
+    figure.set_axis("y", domain=(0.0, 1.0))
+    svg = _native.scene_svg(figure.to_scene())
+    assert "1970-01-01" in svg
+    assert "5.0e7" not in svg
+    assert _scene_v3.scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+
+    polar = Figure(width=400, height=400, coords="polar")
+    polar.scatter([0.0], [0.5])
+    polar.set_axis("x", domain=(0.0, 360.0), theta_unit="degrees", format=".0f")
+    polar.set_axis("y", domain=(0.0, 1.0), format=".1f")
+    polar_svg = _native.scene_svg(polar.to_scene())
+    thetas = re.findall(r'data-xy-tick="theta"[^>]*>([^<]+)', polar_svg)
+    assert thetas
+    assert all("°" not in label for label in thetas)
+    assert any(label in {"0", "90", "180", "270"} for label in thetas)
+
+    fallback = Figure(width=320, height=240)
+    fallback.scatter([0.0, 5.0], [0.0, 5.0])
+    fallback.axis_options["x"].update(domain=(0.0, 5.0), format=".2e")
+    fallback.axis_options["y"].update(domain=(0.0, 5.0))
+    fallback_svg = _native.scene_svg(fallback.to_scene())
+    assert ">0<" in fallback_svg
+    assert ">4<" in fallback_svg
+    assert ".2e" not in fallback_svg
+
+
 def test_python_scene_secondary_axis_stays_fail_closed() -> None:
     figure = Figure()
     figure.scatter([0.0, 1.0], [0.0, 1.0])
@@ -1122,11 +1152,17 @@ def test_python_scene_compiles_unwrapped_text_layout() -> None:
     assert 'transform="rotate(-30 ' in rotated_svg
     assert rotated.to_svg() == rotated_svg
     assert _scene_v3.scene_export_support_reason(rotated) is None
+    styled = representative_figure()
+    styled.annotations.append(
+        {"kind": "text", "x": 0.5, "y": 0.5, "text": "rotated", "style": {"rotation": 30}}
+    )
+    styled_svg = _native.scene_svg(styled.to_scene())
+    assert 'transform="rotate(-30 ' in styled_svg
+    assert _scene_v3.scene_export_support_reason(styled) is None
     authored = representative_figure()
-    authored.text(2.0, 2.5, "note")
+    authored.text(2.0, 2.5, "note", rotation=30)
     assert _scene_v3.scene_export_support_reason(authored) is None
-    assert b"note" in authored.to_scene()
-    assert "note" in authored.to_svg()
+    assert 'transform="rotate(-30 ' in authored.to_svg()
 
 
 def test_python_scene_compiles_labelled_marker_layout() -> None:
@@ -1166,11 +1202,17 @@ def test_python_scene_compiles_labelled_marker_layout() -> None:
     assert 'transform="rotate(-30 ' in rotated_svg
     assert rotated.to_svg() == rotated_svg
     assert _scene_v3.scene_export_support_reason(rotated) is None
+    styled = representative_figure()
+    styled.annotations.append(
+        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "rotated", "style": {"rotation": 30}}
+    )
+    styled_svg = _native.scene_svg(styled.to_scene())
+    assert 'transform="rotate(-30 ' in styled_svg
+    assert _scene_v3.scene_export_support_reason(styled) is None
     authored = representative_figure()
-    authored.marker(2.0, 2.5, text="note")
+    authored.marker(2.0, 2.5, text="note", rotation=30)
     assert _scene_v3.scene_export_support_reason(authored) is None
-    assert b"note" in authored.to_scene()
-    assert "note" in authored.to_svg()
+    assert 'transform="rotate(-30 ' in authored.to_svg()
     unlabelled = representative_figure()
     unlabelled.annotations.append({"kind": "marker", "x": 0.5, "y": 0.5, "dx": 8, "dy": -8})
     assert _scene_v3.scene_export_support_reason(unlabelled) is None

@@ -723,8 +723,22 @@ def _annotation_allowed_style(kind: str, wrapped: bool, labelled: bool) -> set[s
 def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
     """Pack one authored annotation as XYAF v1; Rust classifies the family.
 
-    Annotation ``class_name`` is an XYFS observation (ABI 165), not an XYAF
-    field. Product encode reports ``XYG_SCENE_UNSUPPORTED_BROWSER_CSS``.
+    Annotation ``class_name`` is an XYFS observation (ABI 165 / #306), not an
+    XYAF field. Scene SVG/raster do not encode CSS classes. Product encode
+    reports ``XYG_SCENE_UNSUPPORTED_BROWSER_CSS``.
+    Annotation ``collision`` is XYFS ``OBS_ANNOTATION_COLLISION`` (#307);
+    Scene does not encode annotation collision. Product encode reports
+    ``XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION``.
+    Annotation ``markup`` is XYFS ``OBS_ANNOTATION_MARKUP`` (#308); Scene
+    owns literal text only. Product encode reports
+    ``XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP``.
+    Annotation custom typography is XYFS ``OBS_CUSTOM_FONT`` (#309); Scene
+    SVG/raster use the built-in default font. Product encode reports
+    ``XYG_SCENE_UNSUPPORTED_CUSTOM_FONT``. Text/marker ``style.rotation``
+    lifts onto the ABI 187/188 top-level rotation field.
+    Annotation ``html`` is XYFS ``OBS_ANNOTATION_HTML`` (#305); Scene SVG/raster
+    own literal text only. Product encode reports
+    ``XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML``.
     ABI 184 packs cartesian unwrapped text ``dx``/``dy``/``anchor`` as XYAW
     with ``wrap=0`` so Rust applies the offset without wrapping. ABI 185
     packs labelled cartesian marker ``dx``/``dy``/``anchor`` the same way
@@ -735,12 +749,20 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
     ``stroke_width``). ABI 189 packs raw heatmap/hexbin XYTA observations;
     Rust owns cell-fill tessellation eligibility on the XYFS probe.
     """
+    annotation = dict(annotation)
     kind = annotation.get("kind")
     kind_code = _XYAF_KIND_CODES.get(str(kind) if kind is not None else "")
     if kind_code is None:
         raise UnsupportedSceneV3(
             f"Scene v12 annotations support rule, band, and unlabeled marker only; {kind!r} is deferred"
         )
+    style = dict(annotation.get("style") or {})
+    if (
+        str(kind) in {"text", "marker"}
+        and "rotation" not in annotation
+        and style.get("rotation") is not None
+    ):
+        annotation["rotation"] = style["rotation"]
     authored_wrap = kind in {"text", "callout"} and "wrap" in annotation
     layout_text = kind == "text" and any(
         key in annotation for key in ("dx", "dy", "anchor", "rotation")
@@ -785,10 +807,14 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
             if kind == "callout"
             else "Scene v16 text annotations require nonempty NUL-free text"
         )
-    style = dict(annotation.get("style") or {})
     allowed = _annotation_allowed_style(str(kind), wrapped, labelled)
+    skip_style = {"markup"} | _ANNOTATION_TYPOGRAPHY_STYLE_KEYS
+    if str(kind) in {"text", "marker"}:
+        skip_style = skip_style | {"rotation"}
     unsupported = sorted(
-        key for key, value in style.items() if key not in allowed and value is not None
+        key
+        for key, value in style.items()
+        if key not in allowed and key not in skip_style and value is not None
     )
     if unsupported:
         if wrapped:
@@ -1321,6 +1347,23 @@ _XYCF_CB_HORIZONTAL = 1 << 1
 _XYCF_CB_MINOR = 1 << 2
 _XYCF_CB_UNSUPPORTED = 1 << 3
 _XYCF_CB_INVALID_SIDE = 1 << 4
+_SCENE_TICK_STRATEGIES = {
+    "auto": 0,
+    "hide": 1,
+    "rotate": 2,
+    "stagger": 3,
+    "preserve": 4,
+    "none": 5,
+    "off": 6,
+}
+_SCENE_TICK_ANCHORS = {"start": 0, "center": 1, "middle": 1, "end": 2}
+_POLAR_COLLISION_KEYS = {
+    "tick_label_strategy",
+    "collision",
+    "tick_label_min_gap",
+    "tick_label_angle",
+    "tick_label_anchor",
+}
 
 
 def _put_f64s(buf: bytearray, values: list[float]) -> None:
@@ -1439,6 +1482,62 @@ def _unpack_xycc(blob: bytes) -> dict[str, Any]:
     }
 
 
+def _scene_tick_label_strategy(options: dict[str, Any]) -> str:
+    raw = options.get("tick_label_strategy")
+    if raw is None:
+        raw = options.get("collision")
+    value = str(raw or "auto").replace("-", "_")
+    return value if value in _SCENE_TICK_STRATEGIES else "auto"
+
+
+def _scene_tick_anchor_code(options: dict[str, Any]) -> int | None:
+    raw = options.get("tick_label_anchor")
+    if raw is None:
+        return None
+    return _SCENE_TICK_ANCHORS.get(str(raw).replace("-", "_"))
+
+
+def _pack_tick_collision(xa: dict[str, Any], ya: dict[str, Any], figure: Any) -> tuple[int, bytes]:
+    """Pack XYCF bytes 12–15 plus optional 32-byte extras (ABI 203)."""
+    x_strategy = _SCENE_TICK_STRATEGIES[_scene_tick_label_strategy(xa)]
+    y_strategy = _SCENE_TICK_STRATEGIES[_scene_tick_label_strategy(ya)]
+    x_anchor = _scene_tick_anchor_code(xa)
+    y_anchor = _scene_tick_anchor_code(ya)
+    x_gap = xa.get("tick_label_min_gap")
+    y_gap = ya.get("tick_label_min_gap")
+    x_angle = xa.get("tick_label_angle")
+    y_angle = ya.get("tick_label_angle")
+    extras = x_gap is not None or y_gap is not None or x_angle is not None or y_angle is not None
+    flags = 0
+    if extras:
+        flags |= 1
+    if figure._axis_kind("x") == "category":
+        flags |= 1 << 1
+    if figure._axis_kind("y") == "category":
+        flags |= 1 << 2
+    if x_anchor is not None:
+        flags |= 1 << 3
+    if y_anchor is not None:
+        flags |= 1 << 4
+    header = (
+        x_strategy
+        | (y_strategy << 8)
+        | ((x_anchor or 0) << 16)
+        | ((y_anchor or 0) << 20)
+        | (flags << 24)
+    )
+    extra = b""
+    if extras:
+        extra = struct.pack(
+            "<4d",
+            8.0 if x_gap is None else float(x_gap),
+            4.0 if y_gap is None else float(y_gap),
+            float("nan") if x_angle is None else float(x_angle),
+            float("nan") if y_angle is None else float(y_angle),
+        )
+    return header, extra
+
+
 def _pack_chrome_facts(
     figure: Any,
     *,
@@ -1475,6 +1574,10 @@ def _pack_chrome_facts(
     y_label = str(figure.y_label or ya.get("label") or "").encode("utf-8")
     x_format = b"" if xa.get("format") is None else str(xa.get("format")).encode("utf-8")
     y_format = b"" if ya.get("format") is None else str(ya.get("format")).encode("utf-8")
+    tick_kind_code = {"linear": 0, "time": 1, "category": 2}
+    tick_kinds = tick_kind_code.get(figure._axis_kind("x"), 0) | (
+        tick_kind_code.get(figure._axis_kind("y"), 0) << 8
+    )
     x_major: list[float] = []
     y_major: list[float] = []
     if xa.get("tick_values") is not None:
@@ -1488,8 +1591,11 @@ def _pack_chrome_facts(
     y_minor = [float(value) for value in (ya.get("minor_tick_values") or ())]
     # ABI 200: Rust pack_figure_chrome filters authored minors through the tick window.
     # ABI 201: product encode passes packed XYPL so polar theta uses the modular sector.
+    # ABI 202: hosts pack domain tick-kind (linear/time/category) in XYCF 154–155.
+    # ABI 203: hosts pack ABI 123 collision strategy/anchor/gaps in XYCF 12–15.
     x_labels = xa.get("tick_labels")
     y_labels = ya.get("tick_labels")
+    collision_header, collision_extra = _pack_tick_collision(xa, ya, figure)
     if x_labels is not None:
         flags |= _XYCF_FLAG_X_TICK_LABELS
     if y_labels is not None:
@@ -1584,7 +1690,7 @@ def _pack_chrome_facts(
         b"XYCF",
         1,
         flags,
-        0,
+        collision_header,
         float(width),
         float(height),
         *authored_margins,
@@ -1599,7 +1705,7 @@ def _pack_chrome_facts(
         float(ya.get("constant") or 1.0),
         1 if xa.get("nonpositive", "clip") == "mask" else 0,
         1 if ya.get("nonpositive", "clip") == "mask" else 0,
-        0,
+        tick_kinds,
         len(title),
         len(x_label),
         len(y_label),
@@ -1654,6 +1760,7 @@ def _pack_chrome_facts(
         payload.extend(rgba)
     _put_f64s(payload, colorbar_ticks)
     payload.extend(colorbar_title)
+    payload.extend(collision_extra)
     return bytes(payload)
 
 
@@ -3485,8 +3592,11 @@ def public_static_export(
     )
 
 
-def _significant_scene_axis_keys(options: dict[str, Any]) -> list[str]:
-    return [str(key) for key, value in options.items() if value not in (None, False, [], {})]
+def _significant_scene_axis_keys(options: dict[str, Any], *, polar: bool = False) -> list[str]:
+    keys = [str(key) for key, value in options.items() if value not in (None, False, [], {})]
+    if polar and _scene_tick_label_strategy(options) in {"none", "off", "auto"}:
+        keys = [key for key in keys if key not in _POLAR_COLLISION_KEYS]
+    return keys
 
 
 def _pack_polar_scene_input(figure: Any) -> bytes:
@@ -3529,6 +3639,43 @@ def _pack_polar_scene_input(figure: Any) -> bytes:
     )
 
 
+def _annotation_has_markup(annotation: Any) -> bool:
+    if not isinstance(annotation, dict):
+        return False
+    if annotation.get("markup") not in (None, ""):
+        return True
+    style = annotation.get("style") or {}
+    return isinstance(style, dict) and style.get("markup") not in (None, "")
+
+
+_ANNOTATION_TYPOGRAPHY_STYLE_KEYS = frozenset(
+    {
+        "font_family",
+        "font_size",
+        "font_weight",
+        "font_style",
+        "fontFamily",
+        "fontSize",
+        "fontWeight",
+        "fontStyle",
+    }
+)
+
+
+def _annotation_has_custom_typography(annotation: Any) -> bool:
+    if not isinstance(annotation, dict):
+        return False
+    style = annotation.get("style") or {}
+    if not isinstance(style, dict):
+        style = {}
+    for key in _ANNOTATION_TYPOGRAPHY_STYLE_KEYS:
+        if style.get(key) not in (None, "", False):
+            return True
+        if annotation.get(key) not in (None, "", False):
+            return True
+    return False
+
+
 def _pack_figure_support(
     figure: Any,
     annotations: list[Any],
@@ -3539,7 +3686,9 @@ def _pack_figure_support(
     if figure.coords != "cartesian":
         flags |= 1 << 0
     chrome_styles = getattr(figure, "chrome_styles", None) or {}
-    if any("font-family" in (style or {}) for style in chrome_styles.values()):
+    if any("font-family" in (style or {}) for style in chrome_styles.values()) or any(
+        _annotation_has_custom_typography(annotation) for annotation in annotations
+    ):
         flags |= 1 << 1
     if (
         getattr(figure, "class_name", None)
@@ -3549,6 +3698,12 @@ def _pack_figure_support(
         or any(annotation.get("class_name") not in (None, "") for annotation in annotations)
     ):
         flags |= 1 << 2
+    if any(annotation.get("html") not in (None, "") for annotation in annotations):
+        flags |= 1 << 8
+    if any(annotation.get("collision") not in (None, "") for annotation in annotations):
+        flags |= 1 << 6
+    if any(_annotation_has_markup(annotation) for annotation in annotations):
+        flags |= 1 << 9
     if any(
         _classify_ribbon_color2(trace) == "fail"
         or (
@@ -3588,7 +3743,7 @@ def _pack_figure_support(
     payload.extend(len(traces).to_bytes(4, "little"))
     for axis_id, options in figure.axis_options.items():
         axis_code = 0 if axis_id == "x" else 1 if axis_id == "y" else 255
-        keys = _significant_scene_axis_keys(options)
+        keys = _significant_scene_axis_keys(options, polar=flags & 1 != 0)
         payload.extend(bytes((axis_code, 0, 0, 0)))
         payload.extend(len(keys).to_bytes(4, "little"))
         _xyep_put_keys(payload, keys)
@@ -3687,6 +3842,8 @@ def _pack_public_export_support(
             continue
         kind_b = str(annotation.get("kind") or "").encode("utf-8")[:256]
         fields = [str(key) for key in annotation]
+        if _annotation_has_markup(annotation) and "markup" not in fields:
+            fields.append("markup")
         payload.extend(struct.pack("<B3sHH", 0, b"", len(kind_b), len(fields)))
         payload.extend(kind_b)
         _xyep_put_keys(payload, fields)

@@ -13,15 +13,22 @@
 //! `tick_labels` during chrome pack. ABI 200 filters authored cartesian
 //! minors through that same window (`require_finite`). ABI 201 filters polar
 //! theta majors/minors through that window's modular sector (`theta_unit` +
-//! sector from packed XYPL). Secondary axes stay fail-closed. Encoded Scene
-//! v31 is unchanged.
+//! sector from packed XYPL). ABI 202 packs domain tick-kind (`linear` /
+//! `time` / `category`) in XYCF bytes 154–155 and copies them onto XYCC
+//! reserved bytes 112–113 so product encode can materialize ABI 130 time and
+//! angular formats. ABI 203 packs ABI 123 collision strategy/anchor/gaps in
+//! XYCF bytes 12–15 (optional 32-byte extras after the colorbar) and copies
+//! them onto XYCC reserved 114–149. Polar hide/rotate/stagger/preserve stay
+//! fail-closed. Secondary axes stay fail-closed. Encoded Scene v31 is
+//! unchanged. Invalid grammar still falls back to the ordinary deterministic
+//! label (ABI 96).
 
 use crate::legend_fit::{self, LegendScale};
 use crate::polar;
 use crate::scene::{
     cartesian_scene_margins, encode_tick_labels, format_numeric_tick, CartesianLayoutRequest,
-    ColorbarSide, ScaleKind, SceneChromeStyle, MAX_AXIS_TICKS, MAX_SCENE_LEGEND_ENTRIES,
-    MAX_SCENE_TEXT_BYTES, SCENE_CHROME_STYLE_INPUT_BYTES,
+    ColorbarSide, ScaleKind, SceneChromeStyle, TickCollisionLayout, MAX_AXIS_TICKS,
+    MAX_SCENE_LEGEND_ENTRIES, MAX_SCENE_TEXT_BYTES, SCENE_CHROME_STYLE_INPUT_BYTES,
 };
 use crate::scene_colorbar::{self, ColorbarError, ColorbarFrameInput, ColorbarStop};
 use crate::scene_legend::{self, LegendError, LegendFrameInput, LEGEND_META_BYTES};
@@ -571,6 +578,30 @@ pub fn pack_figure_chrome_with_polar(
         return Err(ChromePackError::Version);
     }
     let flags = read_u32(facts, 8)?;
+    let x_tick_strategy = facts[12];
+    let y_tick_strategy = facts[13];
+    let x_tick_anchor = facts[14] & 0x0f;
+    let y_tick_anchor = facts[14] >> 4;
+    let collision_flags = facts[15];
+    if collision_flags & !0b11111 != 0
+        || x_tick_strategy > tick_layout::STRATEGY_OFF as u8
+        || y_tick_strategy > tick_layout::STRATEGY_OFF as u8
+        || x_tick_anchor > tick_layout::ANCHOR_END as u8
+        || y_tick_anchor > tick_layout::ANCHOR_END as u8
+    {
+        return Err(ChromePackError::Payload);
+    }
+    let x_anchor_authored = collision_flags & (1 << 3) != 0;
+    let y_anchor_authored = collision_flags & (1 << 4) != 0;
+    if !polar.is_empty() {
+        for strategy in [x_tick_strategy, y_tick_strategy] {
+            if (tick_layout::STRATEGY_HIDE..=tick_layout::STRATEGY_PRESERVE)
+                .contains(&(u32::from(strategy)))
+            {
+                return Err(ChromePackError::Payload);
+            }
+        }
+    }
     let viewport_width = read_f64(facts, 16)?;
     let viewport_height = read_f64(facts, 24)?;
     let authored_margins = [
@@ -595,6 +626,14 @@ pub fn pack_figure_chrome_with_polar(
     let y_constant = read_f64(facts, 144)?;
     let x_mask = read_u8(facts, 152)? != 0;
     let y_mask = read_u8(facts, 153)? != 0;
+    let x_tick_kind = match read_u8(facts, 154)? {
+        code @ 0..=2 => u32::from(code),
+        _ => return Err(ChromePackError::Payload),
+    };
+    let y_tick_kind = match read_u8(facts, 155)? {
+        code @ 0..=2 => u32::from(code),
+        _ => return Err(ChromePackError::Payload),
+    };
     let title_len = read_u32(facts, 156)? as usize;
     let xlabel_len = read_u32(facts, 160)? as usize;
     let ylabel_len = read_u32(facts, 164)? as usize;
@@ -711,6 +750,19 @@ pub fn pack_figure_chrome_with_polar(
     }
     let colorbar_ticks = take_f64s(facts, &mut at, colorbar_tick_count)?;
     let colorbar_title = take(facts, &mut at, colorbar_title_len)?;
+    let collision_extras = if collision_flags & 1 != 0 {
+        let extra = take(facts, &mut at, 32)?;
+        let read_f64 = |offset: usize| -> Result<f64, ChromePackError> {
+            Ok(f64::from_le_bytes(
+                extra[offset..offset + 8]
+                    .try_into()
+                    .map_err(|_| ChromePackError::Length)?,
+            ))
+        };
+        Some((read_f64(0)?, read_f64(8)?, read_f64(16)?, read_f64(24)?))
+    } else {
+        None
+    };
     if at != facts.len() {
         return Err(ChromePackError::Length);
     }
@@ -791,6 +843,39 @@ pub fn pack_figure_chrome_with_polar(
         ColorbarSide::None
     };
 
+    let (x_min_gap, y_min_gap, x_angle, y_angle) = match collision_extras {
+        Some((x_gap, y_gap, x_ang, y_ang)) => (
+            x_gap,
+            y_gap,
+            x_ang.is_finite().then_some(x_ang),
+            y_ang.is_finite().then_some(y_ang),
+        ),
+        None => (8.0, 4.0, None, None),
+    };
+    if !x_min_gap.is_finite() || x_min_gap < 0.0 || !y_min_gap.is_finite() || y_min_gap < 0.0 {
+        return Err(ChromePackError::Payload);
+    }
+    let collision = TickCollisionLayout {
+        x_strategy: x_tick_strategy,
+        y_strategy: y_tick_strategy,
+        x_anchor: if x_anchor_authored {
+            u32::from(x_tick_anchor)
+        } else {
+            tick_layout::ANCHOR_CENTER
+        },
+        y_anchor: if y_anchor_authored {
+            u32::from(y_tick_anchor)
+        } else {
+            tick_layout::ANCHOR_CENTER
+        },
+        x_min_gap,
+        y_min_gap,
+        x_angle,
+        y_angle,
+        x_category: collision_flags & (1 << 1) != 0,
+        y_category: collision_flags & (1 << 2) != 0,
+    };
+
     let margins = if flags & FLAG_AUTHORED_MARGINS != 0 {
         authored_margins
     } else {
@@ -821,13 +906,16 @@ pub fn pack_figure_chrome_with_polar(
             x_constant,
             x_mask_nonpositive: x_mask,
             x_format: layout_x_format,
+            x_tick_kind,
             y_kind,
             y_lo,
             y_hi,
             y_constant,
             y_mask_nonpositive: y_mask,
             y_format: layout_y_format,
+            y_tick_kind,
             colorbar_side,
+            collision,
         })
         .map_err(|_| ChromePackError::Layout)?;
         [layout.0, layout.1, layout.2, layout.3]
@@ -942,6 +1030,18 @@ pub fn pack_figure_chrome_with_polar(
     out[24..32].copy_from_slice(&margins[1].to_le_bytes());
     out[32..40].copy_from_slice(&margins[2].to_le_bytes());
     out[40..48].copy_from_slice(&margins[3].to_le_bytes());
+    out[112] = x_tick_kind as u8;
+    out[113] = y_tick_kind as u8;
+    out[114] = x_tick_strategy;
+    out[115] = y_tick_strategy;
+    out[116] = facts[14];
+    out[117] = collision_flags;
+    if let Some((x_gap, y_gap, x_ang, y_ang)) = collision_extras {
+        out[118..126].copy_from_slice(&x_gap.to_le_bytes());
+        out[126..134].copy_from_slice(&y_gap.to_le_bytes());
+        out[134..142].copy_from_slice(&x_ang.to_le_bytes());
+        out[142..150].copy_from_slice(&y_ang.to_le_bytes());
+    }
     let lens: [u32; 16] = [
         SCENE_CHROME_STYLE_INPUT_BYTES as u32,
         title_len as u32,
@@ -1040,13 +1140,16 @@ mod tests {
             x_constant: 1.0,
             x_mask_nonpositive: false,
             x_format: None,
+            x_tick_kind: 0,
             y_kind: ScaleKind::Linear,
             y_lo: 0.0,
             y_hi: 1.0,
             y_constant: 1.0,
             y_mask_nonpositive: false,
             y_format: None,
+            y_tick_kind: 0,
             colorbar_side: ColorbarSide::None,
+            collision: TickCollisionLayout::default(),
         })
         .unwrap();
         assert_eq!(

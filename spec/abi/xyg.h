@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 201
-#define XYG_ABI_SIGNATURE_SHA256 "5ee93b5d17075bc5e90f19832855e9b581fb308913d3d1e263d51fb1467cbea5"
+#define XYG_ABI_VERSION 204
+#define XYG_ABI_SIGNATURE_SHA256 "5d627f18ed838eb9c38e74529ff190d3b5bbbbc73d091255837a78a9fcb710bf"
 
 #ifdef __cplusplus
 extern "C" {
@@ -125,6 +125,7 @@ size_t xyg_marching_triangles(const double * x, const double * y, const double *
 int32_t xyg_min_max(const double * data, size_t len, double * out_min, double * out_max);
 size_t xyg_monotone_tangents(const double * x, const double * y, size_t n, double * out_m, size_t capacity);
 int32_t xyg_normalize_f32(const double * data, size_t len, double lo, double hi, int32_t nan_mode, float * out);
+size_t xyg_payload_m4_indices(uint64_t n_points, int32_t polar, const double * x, const double * y, size_t n, double x0, double x1, size_t n_buckets, const double * bin_x, double bin_x0, double bin_x1, int32_t * out_tier, uint32_t * out, size_t capacity);
 int32_t xyg_payload_tier(int32_t kind, uint64_t n_points, int32_t polar, int32_t force_density, int32_t force_direct, int32_t per_item);
 size_t xyg_payload_visible_mask(const double * x, const double * y, size_t n, int32_t x_log, int32_t y_log, const double * base, int32_t has_base, uint8_t * out, size_t capacity);
 int32_t xyg_payload_visible_needed(int32_t x_log, int32_t y_log, int32_t prefiltered, int32_t x_has_nulls, int32_t y_has_nulls, int32_t has_base, int32_t base_has_nulls);

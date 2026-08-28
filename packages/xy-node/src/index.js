@@ -289,6 +289,7 @@ export {
   lodPlan,
   drillDecision,
   payloadTier,
+  payloadM4Indices,
   payloadVisibleNeeded,
   payloadVisibleMask,
   shouldUseDensity,
