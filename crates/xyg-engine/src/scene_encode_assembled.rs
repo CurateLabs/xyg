@@ -16,7 +16,9 @@
 //! packed XYSD radius blobs after pixel mapping. ABI 167 applies polar
 //! `wedge_gap` from that same blob during `polar_wedge_points`. ABI 168
 //! tessellates polar bar/column/histogram `corner_radius` from those same
-//! packed radii when the inner radius is positive. Encoded Scene v31 is
+//! packed radii when the inner radius is positive. ABI 173 tessellates heatmap
+//! `corner_radius` from that same blob (cartesian rounded Rects / polar wedges).
+//! Encoded Scene v31 is
 //! unchanged.
 
 use crate::scene::{

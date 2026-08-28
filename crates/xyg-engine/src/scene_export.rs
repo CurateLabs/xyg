@@ -9,7 +9,9 @@
 //! means the public Scene route applies; hosts then compile through the
 //! existing Scene consumers and may still report compiler or viewport
 //! diagnostics. ABI 171 admits scatter `stroke_width` without `stroke` as
-//! match-fill (mark color at the authored width). Rust owns the public PolyFill group budget, including
+//! match-fill (mark color at the authored width). ABI 173 admits heatmap
+//! `corner_radius` on the public Scene (cartesian rounded Rects / polar wedges).
+//! Rust owns the public PolyFill group budget, including
 //! companion traces that share the browser painter's 1,024-group ceiling.
 
 use crate::scene::SceneError;
@@ -452,6 +454,7 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "y_range",
             "colormap",
             "truecolor",
+            "corner_radius",
         ],
         _ => &[],
     }

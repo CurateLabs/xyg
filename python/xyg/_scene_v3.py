@@ -1611,7 +1611,7 @@ def _rect_extra_flags(style: dict[str, Any], kind: str, polar: bool) -> int:
     if isinstance(fill, dict) and _admitted_fill_gradient_from_fill(fill, "#3987e5") is None:
         flags |= _XYFS_TRACE_RECT_GRADIENT
     radius = style.get("corner_radius", 0.0)
-    admitted = kind in {"bar", "column", "histogram"}
+    admitted = kind in {"bar", "column", "histogram", "heatmap"}
     if isinstance(radius, (list, tuple)):
         if admitted and len(radius) == 2:
             pass
@@ -2418,7 +2418,7 @@ def _pack_xytc(figure: Any) -> bytes:
         r_tip = 0.0
         r_base = 0.0
         wedge_gap = 0.0
-        if str(trace.kind) in {"bar", "column", "histogram"}:
+        if str(trace.kind) in {"bar", "column", "histogram", "heatmap"}:
             radius = style.get("corner_radius", 0.0)
             if isinstance(radius, (list, tuple)) and len(radius) == 2:
                 r_tip = float(radius[0])
@@ -2427,9 +2427,10 @@ def _pack_xytc(figure: Any) -> bytes:
                 r_tip = r_base = float(radius or 0.0)
             if r_tip or r_base:
                 flags |= _XYTC_HAS_CORNER_RADIUS
-            wedge_gap = float(style.get("wedge_gap", 0.0) or 0.0)
-            if wedge_gap:
-                flags |= _XYTC_HAS_WEDGE_GAP
+            if str(trace.kind) in {"bar", "column", "histogram"}:
+                wedge_gap = float(style.get("wedge_gap", 0.0) or 0.0)
+                if wedge_gap:
+                    flags |= _XYTC_HAS_WEDGE_GAP
         records.extend(
             _XYTR_PREFIX.pack(
                 b"XYTR",

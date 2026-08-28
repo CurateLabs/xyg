@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 172;
+pub const ABI_VERSION: u32 = 173;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1023,6 +1023,8 @@ pub unsafe extern "C" fn xyg_scene_encode_assembled_from_sidecars(
 /// `curve="smooth"` plus `step` as polar step expansion (identity chords).
 /// ABI 172 admits cartesian line `curve="smooth"` plus `step` as authored
 /// step expansion (`step_mode` 1–3 wins over `CurveFlatten`).
+/// ABI 173 tessellates heatmap `corner_radius` on that same product Scene
+/// (cartesian rounded Rects / polar wedges).
 /// Returns the encoded byte count on success, or a negated
 /// `ProductEncodeError` code. Encode-sidecar failures keep codes 1–21; other
 /// stages occupy `base + original` except shared `Output=4` retry. Support

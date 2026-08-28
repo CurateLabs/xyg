@@ -470,6 +470,8 @@ ABI 146 paints polar PolyFill wedges (and
 cartesian Rects) with constant mark `fill` linear-gradients from XYGR.
 Inverse-sample `<image>` blit stays on the
 compatibility exporters for polar heatmap because polar Image+XYPL stays forbidden.
+ABI 173 tessellates polar heatmap `corner_radius` on those PolyFill wedges
+when the inner radius is positive.
 Transparent Cartesian axis/grid paint
 must not be used to infer polar coordinates; it means only independently hidden
 Cartesian chrome. Polar requires explicit `coords="polar"` / XYPL input.

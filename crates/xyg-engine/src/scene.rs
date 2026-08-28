@@ -5915,8 +5915,8 @@ pub fn expand_scene_records_painted(
     Ok((output, painted_styles, images))
 }
 
-/// Cartesian bar/column/histogram corner radii and polar `wedge_gap` /
-/// `corner_radius` in pixels (ABI 166 / ABI 167 / ABI 168). `force_tip_top`
+/// Cartesian bar/column/histogram/heatmap corner radii and polar `wedge_gap` /
+/// `corner_radius` in pixels (ABI 166 / ABI 167 / ABI 168 / ABI 173). `force_tip_top`
 /// matches compatibility horizontal bars (`tip_top or horizontal`). Polar
 /// Rects apply `wedge_gap` and, when inner radius is positive, `r_tip.max(r_base)`.
 #[derive(Clone, Copy, Debug, PartialEq)]

@@ -3302,7 +3302,7 @@ function packXyTc(figure) {
     let rTip = 0;
     let rBase = 0;
     let wedgeGap = 0;
-    if (trace.kind === "bar" || trace.kind === "column" || trace.kind === "histogram") {
+    if (trace.kind === "bar" || trace.kind === "column" || trace.kind === "histogram" || trace.kind === "heatmap") {
       const radius = style.corner_radius ?? 0;
       if (Array.isArray(radius) && radius.length === 2) {
         rTip = Number(radius[0]);
@@ -3311,8 +3311,10 @@ function packXyTc(figure) {
         rTip = rBase = Number(radius || 0);
       }
       if (rTip || rBase) flags |= XYTC_HAS_CORNER_RADIUS;
-      wedgeGap = Number(style.wedge_gap ?? 0);
-      if (wedgeGap) flags |= XYTC_HAS_WEDGE_GAP;
+      if (trace.kind === "bar" || trace.kind === "column" || trace.kind === "histogram") {
+        wedgeGap = Number(style.wedge_gap ?? 0);
+        if (wedgeGap) flags |= XYTC_HAS_WEDGE_GAP;
+      }
     }
     view.setUint32(8, flags >>> 0, true);
     view.setFloat64(140, rTip, true);
@@ -5019,7 +5021,7 @@ function rectExtraFlags(style, kind, polar) {
   let flags = 0;
   if (style.fill != null && typeof style.fill === "object" && admitFillGradient({ style }) == null) flags |= XYFS_TRACE_RECT_GRADIENT;
   const radius = style.corner_radius ?? 0;
-  const admitted = kind === "bar" || kind === "column" || kind === "histogram";
+  const admitted = kind === "bar" || kind === "column" || kind === "histogram" || kind === "heatmap";
   if (Array.isArray(radius)) {
     if (!(admitted && radius.length === 2) && radius.some((value) => Number(value) !== 0)) flags |= XYFS_TRACE_CORNER_RADIUS;
   } else if (!admitted && Number(radius) !== 0) {

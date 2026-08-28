@@ -9,6 +9,9 @@
 //! trailer so encode can tessellate rounded Rects. ABI 167 packs polar
 //! `wedge_gap` into that same trailer. ABI 168 tessellates polar
 //! bar/column/histogram `corner_radius` from those same packed radii.
+//! ABI 173 packs heatmap `corner_radius` into that same trailer so cartesian
+//! heatmap Rects tessellate through `rounded_rect_poly` and polar heatmap
+//! wedges reuse `polar_wedge_points`. Violin/box radii stay fail-closed.
 //! ABI 170 admits constant scatter `marker_glyph` as UTF-8 in the existing
 //! XYTR marker blob (`FLAG_HAS_GLYPH`); encoded Scene keeps XYMG so SVG/raster
 //! emit `<text>` / `OP_TEXT` instead of a disc.
@@ -1102,7 +1105,7 @@ fn admit_corner_radius(
     if r_tip == 0.0 && r_base == 0.0 {
         return Ok((0.0, 0.0, 0));
     }
-    if !matches!(input.kind, "bar" | "column" | "histogram") {
+    if !matches!(input.kind, "bar" | "column" | "histogram" | "heatmap") {
         return Ok((0.0, 0.0, 0));
     }
     if !r_tip.is_finite() || !r_base.is_finite() || r_tip < 0.0 || r_base < 0.0 {
@@ -1405,6 +1408,34 @@ mod tests {
         assert_eq!(r_tip, 4.0);
         assert_eq!(r_base, 1.0);
         assert_eq!(packed[XYTO_HEADER_BYTES + 92], 1);
+    }
+
+    #[test]
+    fn heatmap_packs_corner_radius_into_xyto_trailer() {
+        let (mut head, payload) = prefix("heatmap", FLAG_HAS_CORNER_RADIUS, 1.0, "");
+        head[140..148].copy_from_slice(&6.0f64.to_le_bytes());
+        head[148..156].copy_from_slice(&6.0f64.to_le_bytes());
+        let mut facts = Vec::new();
+        facts.extend_from_slice(XYTC_MAGIC);
+        facts.extend_from_slice(&XYTC_VERSION.to_le_bytes());
+        facts.extend_from_slice(&1u32.to_le_bytes());
+        facts.extend_from_slice(&0u32.to_le_bytes());
+        facts.extend_from_slice(&head);
+        facts.extend_from_slice(&payload);
+        let packed = pack_trace_compile(&facts).unwrap();
+        let r_tip = f64::from_le_bytes(
+            packed[XYTO_HEADER_BYTES + 76..XYTO_HEADER_BYTES + 84]
+                .try_into()
+                .unwrap(),
+        );
+        let r_base = f64::from_le_bytes(
+            packed[XYTO_HEADER_BYTES + 84..XYTO_HEADER_BYTES + 92]
+                .try_into()
+                .unwrap(),
+        );
+        assert_eq!(r_tip, 6.0);
+        assert_eq!(r_base, 6.0);
+        assert_eq!(packed[XYTO_HEADER_BYTES + 92], 0);
     }
 
     #[test]

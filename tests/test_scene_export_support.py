@@ -658,7 +658,19 @@ def test_polar_bar_corner_radius_is_scene_supported() -> None:
     heatmap.axis_options["y"]["domain"] = (0.0, 5.0)
     heatmap.heatmap([[1.0, 2.0], [3.0, 4.0]], color="#3987e5")
     heatmap.traces[-1].style["corner_radius"] = 8.0
-    assert scene_export_support_reason(heatmap) is not None
+    assert scene_export_support_reason(heatmap) is None
+    exported_heatmap = public_static_export(heatmap, "svg")
+    assert exported_heatmap is not None
+    assert exported_heatmap.count(b'<path d="M') == 4
+    cartesian = Figure(width=320, height=240)
+    cartesian.axis_options["x"]["domain"] = (0.0, 4.0)
+    cartesian.axis_options["y"]["domain"] = (0.0, 5.0)
+    cartesian.heatmap([[1.0, 2.0], [3.0, 4.0]], color="#3987e5")
+    cartesian.traces[-1].style["corner_radius"] = 6.0
+    assert scene_export_support_reason(cartesian) is None
+    exported_cartesian = public_static_export(cartesian, "svg")
+    assert exported_cartesian is not None
+    assert exported_cartesian.count(b'<path d="M') == 4
 
 
 def test_bounded_primary_cartesian_annotation_family_is_a_supported_public_scene_slice() -> None:

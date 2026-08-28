@@ -1149,6 +1149,20 @@ def test_python_scene_compiles_rect_corner_radius() -> None:
     assert pie_svg.count('<path d="M') == 1
     assert polar.to_svg() == pie_svg
     assert _scene_v3.scene_export_support_reason(polar) is None
+    cells = Figure(width=240, height=160)
+    cells.axis_options["x"]["domain"] = (0.0, 2.0)
+    cells.axis_options["y"]["domain"] = (0.0, 2.0)
+    cells.heatmap([[1.0, 2.0], [3.0, 4.0]], color="#3987e5")
+    cells.traces[-1].style["corner_radius"] = 6.0
+    cell_svg = _native.scene_svg(cells.to_scene())
+    assert cell_svg.count('<path d="M') == 4
+    assert cells.to_svg() == cell_svg
+    assert _scene_v3.scene_export_support_reason(cells) is None
+    square_cells = Figure(width=240, height=160)
+    square_cells.axis_options["x"]["domain"] = (0.0, 2.0)
+    square_cells.axis_options["y"]["domain"] = (0.0, 2.0)
+    square_cells.heatmap([[1.0, 2.0], [3.0, 4.0]], color="#3987e5")
+    assert cell_svg != _native.scene_svg(square_cells.to_scene())
 
 
 def test_python_scene_compiles_polar_corner_radius() -> None:
@@ -1167,8 +1181,16 @@ def test_python_scene_compiles_polar_corner_radius() -> None:
     heatmap.axis_options["y"]["domain"] = (0.0, 1.0)
     heatmap.heatmap([[1.0, 2.0], [3.0, 4.0]], color="#3987e5")
     heatmap.traces[-1].style["corner_radius"] = 4.0
-    with pytest.raises(UnsupportedSceneV3, match="corner_radius"):
-        heatmap.to_scene()
+    scene = heatmap.to_scene()
+    svg = _native.scene_svg(scene)
+    assert svg.count('<path d="M') == 4
+    assert heatmap.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(heatmap) is None
+    square = Figure(width=400, height=400, coords="polar")
+    square.axis_options["x"]["domain"] = (0.0, 6.283185307179586)
+    square.axis_options["y"]["domain"] = (0.0, 1.0)
+    square.heatmap([[1.0, 2.0], [3.0, 4.0]], color="#3987e5")
+    assert svg != _native.scene_svg(square.to_scene())
 
 
 def test_python_scene_compiles_polar_wedge_gap() -> None:

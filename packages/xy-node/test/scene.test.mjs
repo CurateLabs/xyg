@@ -1746,6 +1746,19 @@ test("Node Scene compiles cartesian corner_radius and polar donut rounding", () 
   assert.equal(new DataView(donutScene.buffer, donutScene.byteOffset).getUint32(4, true), 31);
   assert.equal((sceneSvg(donutScene).match(/<path d="M/g) || []).length, 2);
   assert.equal(sceneExportSupportReason(donut), null);
+  const cells = new Figure({ width: 240, height: 160 });
+  cells.setAxisDomain("x", [0, 2]);
+  cells.setAxisDomain("y", [0, 2]);
+  cells.heatmap([[1, 2], [3, 4]], { style: { color: "#3987e5", corner_radius: 6 }, name: null });
+  const cellSvg = sceneSvg(cells.toScene());
+  assert.equal((cellSvg.match(/<path d="M/g) || []).length, 4);
+  assert.equal(sceneExportSupportReason(cells), null);
+  const polarCells = new Figure({ width: 400, height: 400, coords: "polar" });
+  polarCells.setAxisDomain("x", [0, Math.PI * 2]);
+  polarCells.setAxisDomain("y", [0, 1]);
+  polarCells.heatmap([[1, 2], [3, 4]], { style: { color: "#3987e5", corner_radius: 4 }, name: null });
+  assert.equal((sceneSvg(polarCells.toScene()).match(/<path d="M/g) || []).length, 4);
+  assert.equal(sceneExportSupportReason(polarCells), null);
 });
 
 test("Node Scene compiles polar wedge_gap and keeps cartesian fail-closed", () => {

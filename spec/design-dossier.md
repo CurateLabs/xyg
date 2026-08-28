@@ -574,7 +574,7 @@ F3, still pending (above).
   admits constant scatter `marker_glyph` as Scene `<text>` / `OP_TEXT`, then
   ABI 171 admits scatter `stroke_width` without `stroke` as match-fill, then
   ABI 172 admits cartesian line `curve="smooth"` plus `step` as authored
-  step expansion.
+  step expansion, then ABI 173 tessellates heatmap `corner_radius`.
   `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
   panel Scene. That predicate
   owns the public PolyFill group budget, including companion traces that share
@@ -1502,7 +1502,8 @@ kept on the encoded Scene. Multi-character glyphs and combined
 `marker_path` + `marker_glyph` stay compatibility. ABI 171 admits scatter
 `stroke_width` without an authored `stroke` as match-fill. ABI 172 admits
 cartesian line `curve="smooth"` plus `step` as authored step expansion.
-Irregular
+ABI 173 tessellates heatmap `corner_radius` (cartesian rounded Rects / polar
+wedges). Violin/box radii stay compatibility. Irregular
 spacing, and LOD stay compatibility.
 
 Contract-wide invariants: every tier transition is hysteresis-guarded and logged

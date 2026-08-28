@@ -245,7 +245,8 @@ is positive. ABI 169 admits polar `curve="smooth"` plus `step` as polar step
 expansion (identity chords). ABI 170 admits constant scatter `marker_glyph`
 via an XYMG extras sidecar kept on the encoded Scene. ABI 171 admits
 width-only scatter `stroke_width` as match-fill. ABI 172 admits cartesian
-line `curve="smooth"` plus `step` as authored step expansion.
+line `curve="smooth"` plus `step` as authored step expansion. ABI 173 tessellates
+heatmap `corner_radius`.
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -299,6 +300,7 @@ ABI 169 admits polar `curve="smooth"` plus `step` as polar step expansion
 ABI 171 admits width-only scatter `stroke_width` as match-fill.
 ABI 172 admits cartesian line `curve="smooth"` plus `step` as authored
 step expansion.
+ABI 173 tessellates heatmap `corner_radius`.
 ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate
@@ -350,7 +352,8 @@ plus `step` on that same product Scene as polar step expansion. ABI 170 admits
 constant scatter `marker_glyph` on that same product Scene. ABI 171 admits
 width-only scatter `stroke_width` as match-fill on that same product Scene.
 ABI 172 admits cartesian line `curve="smooth"` plus `step` as authored
-step expansion on that same product Scene.
+step expansion on that same product Scene. ABI 173 tessellates heatmap
+`corner_radius` on that same product Scene.
 The explicit `xyg_scene_figure_support_reason` ABI remains for tests.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call
