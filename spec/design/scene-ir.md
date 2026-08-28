@@ -97,7 +97,9 @@ ABI 147 does not change Scene records; `xyg_scene_pack_product_facts` owns
 flags, `step_mode`, and extra0/extra1 from packed XYPK v1 so cartesian-vs-polar
 smooth and painted heatmap dispatch cannot drift. ABI 148 does not change
 Scene records; `xyg_scene_pack_annotation_facts` owns wrap vs text vs arrow
-vs callout vs rule/band/marker routing from packed XYAF v1.
+vs callout vs rule/band/marker routing from packed XYAF v1. ABI 149 does not
+change Scene records; `xyg_scene_pack_heatmap_facts` owns heatmap/density
+XYHP kind routing from packed XYHF v1.
 
 ## Version 3: backend-neutral core scene batch
 
@@ -410,7 +412,9 @@ encoded Scene v31 keeps XYGR). ABI 147 does not change Scene records;
 packed XYPK v1 so cartesian-vs-polar smooth and painted heatmap dispatch cannot
 drift. ABI 148 does not change Scene records;
 `xyg_scene_pack_annotation_facts` owns wrap vs text vs arrow vs callout vs
-rule/band/marker routing from packed XYAF v1.
+rule/band/marker routing from packed XYAF v1. ABI 149 does not change Scene
+records; `xyg_scene_pack_heatmap_facts` owns heatmap/density XYHP kind routing
+from packed XYHF v1.
 
 ABI 110 adds `xyg_scene_pack_legend` so both hosts pass loc/flags/paints
 and receive XYLG bytes; header layout, text offsets, and bounded-text
@@ -1256,6 +1260,9 @@ keeps XYGR). ABI 147 does not change Scene records either;
 ABI 148 does not change Scene records either;
 `xyg_scene_pack_annotation_facts` owns wrap/text/arrow/callout/rule routing
 from packed XYAF v1.
+ABI 149 does not change Scene records either;
+`xyg_scene_pack_heatmap_facts` owns heatmap/density XYHP kind routing from
+packed XYHF v1.
 Polar+step+smooth and authored marker glyphs stay compatibility. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;

@@ -205,7 +205,8 @@ crates/
                         #   marker_path XYMP tessellation plus ABI 146
                         #   constant linear-gradient XYGR fills plus ABI 147
                         #   XYPK product packing facts plus ABI 148 XYAF
-                        #   annotation packing facts.
+                        #   annotation packing facts plus ABI 149 XYHF
+                        #   heatmap/density paint-fact packing.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -215,6 +216,9 @@ crates/
     scene_annotations.rs # primary XYAD annotation framing (ABI 112) plus ABI
                         #   148 XYAF annotation-fact packing: wrap/text/arrow/
                         #   callout/rule routing, stable-id tags, and XYAO.
+    scene_heatmap.rs    # ABI 149 XYHF heatmap/density paint-fact packing:
+                        #   tessellation eligibility, XYHP kind routing, and
+                        #   density opacity composition.
     jpeg.rs             # baseline JPEG encode (ABI 114): YCbCr 4:4:4, Annex K
                         #   tables, libjpeg quality curve, Huffman packing.
                         #   Native hosts only (`raster` feature).
@@ -660,6 +664,9 @@ extra0/extra1 cannot drift.
 ABI v148 adds `xyg_scene_pack_annotation_facts` so Python and Node share one
 XYAF v1 facts packer: wrap vs text vs arrow vs callout vs rule/band/marker
 routing, stable-id tags, mark-style defaults, and XYAD framing cannot drift.
+ABI v149 adds `xyg_scene_pack_heatmap_facts` so Python and Node share one
+XYHF v1 facts packer: heatmap tessellation eligibility, XYHP kind routing,
+and density opacity composition cannot drift.
 ABI v116 adds `xyg_scene_pack_annotation_marks` so Python and Node share
 one rule/band/marker expander: stable-id tags, opposite-axis domain
 spanning, and finite rejection.
@@ -737,5 +744,6 @@ landed; the remainder, in order:
    ABI 145 constant `marker_path` XYMP tessellation (`scene.rs`) ✅;
    ABI 146 constant mark `fill` linear-gradient XYGR (`scene.rs`) ✅;
    ABI 147 XYPK product packing facts (`xyg_scene_pack_product_facts`) ✅;
-   ABI 148 XYAF annotation packing facts (`xyg_scene_pack_annotation_facts`) ✅.
+   ABI 148 XYAF annotation packing facts (`xyg_scene_pack_annotation_facts`) ✅;
+   ABI 149 XYHF heatmap/density paint-fact packing (`xyg_scene_pack_heatmap_facts`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

@@ -13,6 +13,7 @@ from xyg._native import (
     scene_pack_annotation_marks,
     scene_pack_annotations,
     scene_pack_colorbar,
+    scene_pack_heatmap_facts,
     scene_pack_legend,
     scene_pack_product,
     scene_pack_product_facts,
@@ -470,3 +471,48 @@ def test_pack_annotation_facts_frames_text_and_expands_rule() -> None:
     assert int.from_bytes(packed[8:12], "little") == 1
     assert int.from_bytes(packed[12:16], "little") == 2
     assert int.from_bytes(packed[32 + 56 + 4 : 32 + 56 + 8], "little") == 2
+
+
+def test_pack_heatmap_facts_named_plane_kind() -> None:
+    grid = struct.pack("<2d", 0.25, 0.75)
+    name = b"viridis"
+    facts = (
+        struct.pack(
+            "<4sIQIIIB3x4d",
+            b"XYHF",
+            1,
+            9,
+            1,
+            2,
+            (1 << 2) | (1 << 5) | (1 << 12),
+            0,
+            0.0,
+            1.0,
+            float("nan"),
+            float("nan"),
+        )
+        + grid
+        + struct.pack("<I", len(name))
+        + name
+    )
+    plane = scene_pack_heatmap_facts(facts)
+    assert int.from_bytes(plane[16:20], "little") == 2
+    assert plane.endswith(name)
+
+
+def test_pack_heatmap_facts_truecolor_without_grid_skips() -> None:
+    facts = struct.pack(
+        "<4sIQIIIB3x4d",
+        b"XYHF",
+        1,
+        1,
+        1,
+        1,
+        1 << 7,
+        0,
+        float("nan"),
+        float("nan"),
+        float("nan"),
+        float("nan"),
+    )
+    assert scene_pack_heatmap_facts(facts) == b""

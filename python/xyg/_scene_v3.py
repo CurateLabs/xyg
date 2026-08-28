@@ -517,6 +517,23 @@ _XYPK_FACT_CURVE_SMOOTH = 2
 _XYPK_FACT_DENSITY_PLANE = 4
 _XYPK_FACT_HEATMAP_PAINT = 8
 
+_XYHF_HEADER = struct.Struct("<4sIQIIIB3x4d")
+_XYHF_FAMILY_HEATMAP = 0
+_XYHF_FAMILY_DENSITY = 1
+_XYHF_HAS_RGBA = 1 << 0
+_XYHF_HAS_RGBA_GRID = 1 << 1
+_XYHF_HAS_GRID = 1 << 2
+_XYHF_HAS_ENCODED = 1 << 3
+_XYHF_HAS_MEAN_RGBA = 1 << 4
+_XYHF_HAS_NAMED_CMAP = 1 << 5
+_XYHF_HAS_STOPS = 1 << 6
+_XYHF_HAS_TRUECOLOR = 1 << 7
+_XYHF_HAS_COLOR_CH = 1 << 8
+_XYHF_HAS_STYLE_COLOR = 1 << 9
+_XYHF_HAS_OPACITY = 1 << 10
+_XYHF_HAS_FILL_OPACITY = 1 << 11
+_XYHF_HAS_DOMAIN = 1 << 12
+
 _XYAF_KIND_CODES = {
     "text": 0,
     "arrow": 1,
@@ -1520,6 +1537,52 @@ def _heatmap_extent(trace: Any) -> tuple[float, float, float, float]:
     return x0, x1, y0, y1
 
 
+def _pack_xyhf(
+    *,
+    family: int,
+    flags: int,
+    stable_id: int,
+    rows: int,
+    cols: int,
+    lo: float,
+    hi: float,
+    opacity: float,
+    fill_opacity: float,
+    remainder: bytes,
+) -> bytes:
+    """Pack authored heatmap/density paint facts; Rust owns XYHP kind routing."""
+    return (
+        _XYHF_HEADER.pack(
+            b"XYHF",
+            1,
+            int(stable_id),
+            int(rows),
+            int(cols),
+            int(flags),
+            int(family),
+            float(lo),
+            float(hi),
+            float(opacity),
+            float(fill_opacity),
+        )
+        + remainder
+    )
+
+
+def _pack_xyhf_prefixed(payload: bytes) -> bytes:
+    return struct.pack("<I", len(payload)) + payload
+
+
+def _colormap_stop_bytes(colormap: Any, label: str) -> bytes:
+    stops = np.ascontiguousarray(
+        [(int(red), int(green), int(blue)) for red, green, blue in colormap],
+        dtype=np.uint8,
+    )
+    if stops.ndim != 2 or stops.shape[1] != 3 or stops.shape[0] < 1:
+        raise UnsupportedSceneV3(f"Scene {label} colormap requires RGB stops")
+    return np.ascontiguousarray(stops).tobytes()
+
+
 def _heatmap_paint_plane(
     trace: Any,
     values: np.ndarray,
@@ -1527,64 +1590,60 @@ def _heatmap_paint_plane(
     cols: int,
     stable_id: int,
 ) -> bytes:
-    """Pack one XYHP v1 plane. Rust tessellates cells and interns unique fills."""
+    """Pack one XYHF v1 heatmap record. Rust emits the XYHP plane or skips."""
+    style = getattr(trace, "style", None) or {}
+    flags = _XYHF_HAS_GRID
+    remainder = bytearray(np.ascontiguousarray(values.reshape(-1), dtype=np.float64).tobytes())
     packed = getattr(trace, "rgba", None)
     planes = getattr(trace, "rgba_grid", None)
     if packed is not None:
-        rgba = np.ascontiguousarray(np.asarray(packed, dtype=np.uint8).reshape(rows, cols, 4))
-        payload = rgba.tobytes()
-        kind = 0
-    elif planes is not None:
+        flags |= _XYHF_HAS_RGBA
+        remainder[0:0] = np.ascontiguousarray(
+            np.asarray(packed, dtype=np.uint8).reshape(rows, cols, 4)
+        ).tobytes()
+    if planes is not None:
         if len(planes) != 4:
             raise UnsupportedSceneV3("Scene heatmap truecolor requires four RGBA planes")
-        channels = [
-            np.clip(
-                np.rint(
-                    np.asarray(getattr(plane, "values", plane), dtype=np.float64).reshape(
-                        rows, cols
-                    )
-                    * 255.0
-                ),
-                0,
-                255,
-            ).astype(np.uint8)
+        flags |= _XYHF_HAS_RGBA_GRID
+        channels_f64 = [
+            np.asarray(getattr(plane, "values", plane), dtype=np.float64).reshape(rows, cols)
             for plane in planes
         ]
-        payload = np.ascontiguousarray(np.stack(channels, axis=-1)).tobytes()
-        kind = 0
+        grid_rgba = np.ascontiguousarray(np.stack(channels_f64, axis=-1))
+        rgba_offset = rows * cols * 4 if packed is not None else 0
+        remainder[rgba_offset:rgba_offset] = grid_rgba.tobytes()
+    colormap = style.get("colormap")
+    if isinstance(colormap, str):
+        flags |= _XYHF_HAS_NAMED_CMAP
+        remainder.extend(_pack_xyhf_prefixed(colormap.encode("utf-8")))
+    elif colormap is not None:
+        flags |= _XYHF_HAS_STOPS
+        remainder.extend(_pack_xyhf_prefixed(_colormap_stop_bytes(colormap, "heatmap")))
+    if style.get("truecolor"):
+        flags |= _XYHF_HAS_TRUECOLOR
+    domain = style.get("domain")
+    if domain is None or len(domain) != 2:
+        lo, hi = float("nan"), float("nan")
     else:
-        style = getattr(trace, "style", None) or {}
-        colormap = style.get("colormap", "viridis")
-        domain = style.get("domain")
-        if domain is None or len(domain) != 2:
-            lo, hi = float("nan"), float("nan")
-        else:
-            lo, hi = float(domain[0]), float(domain[1])
-        grid = np.ascontiguousarray(values.reshape(-1), dtype=np.float64)
-        if isinstance(colormap, str):
-            name = colormap.encode("utf-8")
-            payload = struct.pack("<ddII", lo, hi, len(name), 0) + grid.tobytes() + name
-            kind = 2
-        else:
-            stops = np.ascontiguousarray(
-                [(int(r), int(g), int(b)) for r, g, b in colormap],
-                dtype=np.uint8,
+        flags |= _XYHF_HAS_DOMAIN
+        lo, hi = float(domain[0]), float(domain[1])
+    try:
+        return _native.scene_pack_heatmap_facts(
+            _pack_xyhf(
+                family=_XYHF_FAMILY_HEATMAP,
+                flags=flags,
+                stable_id=stable_id,
+                rows=rows,
+                cols=cols,
+                lo=lo,
+                hi=hi,
+                opacity=float("nan"),
+                fill_opacity=float("nan"),
+                remainder=bytes(remainder),
             )
-            if stops.ndim != 2 or stops.shape[1] != 3 or stops.shape[0] < 1:
-                raise UnsupportedSceneV3("Scene heatmap colormap requires RGB stops")
-            payload = (
-                struct.pack("<ddII", lo, hi, int(stops.shape[0]), 0)
-                + grid.tobytes()
-                + np.ascontiguousarray(stops).tobytes()
-            )
-            kind = 1
-    header = struct.pack("<QIIII", int(stable_id), int(rows), int(cols), int(kind), len(payload))
-    return header + payload
-
-
-def _density_opacity(style: dict[str, Any]) -> float:
-    """Match `_svg._density_image`: whole-mark opacity times fill-only opacity."""
-    return float(style.get("opacity", 0.85)) * float(style.get("fill_opacity", 1.0))
+        )
+    except ValueError as error:
+        raise UnsupportedSceneV3(str(error)) from error
 
 
 def _density_paint_plane(
@@ -1594,73 +1653,60 @@ def _density_paint_plane(
     cols: int,
     maximum: float,
     stable_id: int,
+    mean_rgba: np.ndarray | None = None,
 ) -> bytes:
-    """XYHP kind 3: log-u8 grid plus a named colormap or constant-color stops."""
+    """Pack one XYHF v1 density record. Rust owns kind/opacity/colormap routing."""
     style = getattr(trace, "style", None) or {}
     encoded_u8 = np.ascontiguousarray(np.asarray(encoded, dtype=np.uint8).reshape(-1))
     if encoded_u8.size != rows * cols:
         raise UnsupportedSceneV3("Scene density grid must match DENSITY_GRID")
-    opacity = _density_opacity(style)
-    constant = None
+    flags = _XYHF_HAS_ENCODED
+    remainder = bytearray(encoded_u8.tobytes())
+    if mean_rgba is not None:
+        rgba_u8 = np.ascontiguousarray(np.asarray(mean_rgba, dtype=np.uint8).reshape(-1))
+        if rgba_u8.size != rows * cols * 4:
+            raise UnsupportedSceneV3("Scene mean-color plane must match DENSITY_GRID")
+        flags |= _XYHF_HAS_MEAN_RGBA
+        remainder.extend(rgba_u8.tobytes())
+    colormap = style.get("colormap")
+    if isinstance(colormap, str):
+        flags |= _XYHF_HAS_NAMED_CMAP
+        remainder.extend(_pack_xyhf_prefixed(colormap.encode("utf-8")))
+    elif colormap is not None:
+        flags |= _XYHF_HAS_STOPS
+        remainder.extend(_pack_xyhf_prefixed(_colormap_stop_bytes(colormap, "density")))
     channel = getattr(trace, "color_ch", None)
     if channel is not None and channel.mode == "constant" and channel.constant is not None:
-        constant = str(channel.constant)
-    colormap = style.get("colormap")
-    if constant is None and colormap is None and style.get("color") is not None:
-        constant = str(style.get("color"))
-    if constant is not None:
-        red, green, blue, _alpha = _native.css_color_rgba(constant, 1.0)
-        payload = (
-            struct.pack("<ddII", float(maximum), float(opacity), 2, 1)
-            + encoded_u8.tobytes()
-            + bytes((int(red), int(green), int(blue), int(red), int(green), int(blue)))
+        flags |= _XYHF_HAS_COLOR_CH
+        remainder.extend(_pack_xyhf_prefixed(str(channel.constant).encode("utf-8")))
+    if style.get("color") is not None:
+        flags |= _XYHF_HAS_STYLE_COLOR
+        remainder.extend(_pack_xyhf_prefixed(str(style.get("color")).encode("utf-8")))
+    opacity = float("nan")
+    fill_opacity = float("nan")
+    if "opacity" in style:
+        flags |= _XYHF_HAS_OPACITY
+        opacity = float(style["opacity"])
+    if "fill_opacity" in style:
+        flags |= _XYHF_HAS_FILL_OPACITY
+        fill_opacity = float(style["fill_opacity"])
+    try:
+        return _native.scene_pack_heatmap_facts(
+            _pack_xyhf(
+                family=_XYHF_FAMILY_DENSITY,
+                flags=flags,
+                stable_id=stable_id,
+                rows=rows,
+                cols=cols,
+                lo=float(maximum),
+                hi=float("nan"),
+                opacity=opacity,
+                fill_opacity=fill_opacity,
+                remainder=bytes(remainder),
+            )
         )
-    elif isinstance(colormap, str) or colormap is None:
-        name = str(colormap or "viridis").encode("utf-8")
-        payload = (
-            struct.pack("<ddII", float(maximum), float(opacity), len(name), 0)
-            + encoded_u8.tobytes()
-            + name
-        )
-    else:
-        stops = np.ascontiguousarray(
-            [(int(r), int(g), int(b)) for r, g, b in colormap],
-            dtype=np.uint8,
-        )
-        if stops.ndim != 2 or stops.shape[1] != 3 or stops.shape[0] < 1:
-            raise UnsupportedSceneV3("Scene density colormap requires RGB stops")
-        payload = (
-            struct.pack("<ddII", float(maximum), float(opacity), int(stops.shape[0]), 1)
-            + encoded_u8.tobytes()
-            + np.ascontiguousarray(stops).tobytes()
-        )
-    header = struct.pack("<QIIII", int(stable_id), int(rows), int(cols), 3, len(payload))
-    return header + payload
-
-
-def _mean_color_paint_plane(
-    encoded: np.ndarray,
-    mean_rgba: np.ndarray,
-    rows: int,
-    cols: int,
-    maximum: float,
-    opacity: float,
-    stable_id: int,
-) -> bytes:
-    """XYHP kind 4: log-u8 counts plus a row-0-bottom mean-color RGBA8 plane."""
-    encoded_u8 = np.ascontiguousarray(np.asarray(encoded, dtype=np.uint8).reshape(-1))
-    rgba_u8 = np.ascontiguousarray(np.asarray(mean_rgba, dtype=np.uint8).reshape(-1))
-    if encoded_u8.size != rows * cols:
-        raise UnsupportedSceneV3("Scene density grid must match DENSITY_GRID")
-    if rgba_u8.size != rows * cols * 4:
-        raise UnsupportedSceneV3("Scene mean-color plane must match DENSITY_GRID")
-    payload = (
-        struct.pack("<ddII", float(maximum), float(opacity), 0, 0)
-        + encoded_u8.tobytes()
-        + rgba_u8.tobytes()
-    )
-    header = struct.pack("<QIIII", int(stable_id), int(rows), int(cols), 4, len(payload))
-    return header + payload
+    except ValueError as error:
+        raise UnsupportedSceneV3(str(error)) from error
 
 
 def _density_blit_pack(
@@ -1689,23 +1735,14 @@ def _density_blit_pack(
     grid = _native.bin_2d(xv, yv, xr0, xr1, yr0, yr1, int(cols), int(rows))
     encoded, gmax = _native.density_log_u8(grid)
     bin_colors = channels.resolve_bin_colors(getattr(trace, "color_ch", None), None)
+    mean_rgba = None
     if bin_colors is not None:
         mean_rgba = _native.bin_2d_mean_color(
             xv, yv, xr0, xr1, yr0, yr1, int(cols), int(rows), **bin_colors
         )
-        plane = _mean_color_paint_plane(
-            encoded,
-            mean_rgba,
-            int(rows),
-            int(cols),
-            float(gmax),
-            _density_opacity(getattr(trace, "style", None) or {}),
-            int(trace.id),
-        )
-    else:
-        plane = _density_paint_plane(
-            trace, encoded, int(rows), int(cols), float(gmax), int(trace.id)
-        )
+    plane = _density_paint_plane(
+        trace, encoded, int(rows), int(cols), float(gmax), int(trace.id), mean_rgba
+    )
     columns: list[np.ndarray | None] = [
         np.asarray([xr0, xr1], dtype=np.float64),
         np.asarray([yr0, yr1], dtype=np.float64),
@@ -2024,10 +2061,9 @@ def figure_scene(
                     "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
                 )
             grid_rows, grid_cols = float(rows), float(cols)
-            if _heatmap_tessellates_cell_fills(trace):
-                heatmap_paint_planes.append(
-                    _heatmap_paint_plane(trace, values, rows, cols, int(trace.id))
-                )
+            plane = _heatmap_paint_plane(trace, values, rows, cols, int(trace.id))
+            if plane:
+                heatmap_paint_planes.append(plane)
                 fact_bits |= _XYPK_FACT_HEATMAP_PAINT
         elif trace.kind in _HEXBIN_KINDS:
             hex_dx, hex_dy = _hexbin_pitch(style)
@@ -2085,7 +2121,8 @@ def figure_scene(
     # Scene v12's bounded primary-annotation subset is represented by ordinary
     # canonical records with a reserved stable-id namespace. Hosts pack XYAF
     # authored facts; Rust owns wrap/text/arrow/callout/rule routing, tags,
-    # defaults, mark expansion, and XYAD framing (ABI 148).
+    # defaults, mark expansion, and XYAD framing (ABI 148). Hosts pack XYHF
+    # heatmap/density paint facts; Rust owns XYHP kind routing (ABI 149).
     x_domain = tuple(float(value) for value in figure._range("x"))
     y_domain = tuple(float(value) for value in figure._range("y"))
     annotation_facts = bytearray()

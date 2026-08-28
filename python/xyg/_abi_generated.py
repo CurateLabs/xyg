@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 148
-SIGNATURE_SHA256 = "ba181bcc9da8b53b009380081ba761743af52885472b484257152ed69589718d"
+ABI_VERSION = 149
+SIGNATURE_SHA256 = "11aa79001eaca3a048e377442e00203ee11c0ff5ebb8c7837df64f6df3788315"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -670,6 +670,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_pack_colorbar
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_uint8, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_pack_heatmap_facts(const uint8_t * facts, size_t facts_len, uint8_t * out, size_t out_cap)
+    function = lib.xyg_scene_pack_heatmap_facts
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_scene_pack_legend(uint8_t loc, uint8_t flags, double font_size, double title_font_size, const uint8_t * text_rgba, const uint8_t * frame_fill_rgba, const uint8_t * title, size_t title_len, uint32_t n_entries, const uint8_t * entry_meta, size_t entry_meta_len, const uint32_t * label_lens, const uint8_t * labels, size_t labels_len, uint8_t * out, size_t out_cap)
     function = lib.xyg_scene_pack_legend
     function.restype = ctypes.c_int32

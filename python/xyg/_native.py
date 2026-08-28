@@ -2293,6 +2293,28 @@ def scene_pack_annotation_facts(
     return bytes(out[:code])
 
 
+def scene_pack_heatmap_facts(facts: bytes) -> bytes:
+    """Pack XYHF v1 heatmap/density facts into one XYHP plane (M2 #271)."""
+    payload = facts if isinstance(facts, (bytes, bytearray, memoryview)) else bytes(facts)
+    out = np.zeros(max(256, len(payload) + 64), dtype=np.uint8)
+    source = np.frombuffer(payload, dtype=np.uint8) if payload else np.empty(0, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_pack_heatmap_facts(
+            _ptr_u8(source) if source.size else 0,
+            int(source.size),
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    if code == -5:
+        raise ValueError("Scene heatmap or density plane shape is invalid")
+    if code == -6:
+        raise ValueError("Scene heatmap colormap requires RGB stops")
+    if code < 0:
+        raise ValueError("invalid scene heatmap packing")
+    return bytes(out[:code])
+
+
 def scene_pack_legend(
     *,
     loc: int,

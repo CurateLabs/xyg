@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { cssColorRgba8, lineChart, scatterChart } from "../src/index.js";
 import { figureSceneV3 } from "../src/scene.js";
-import { xyScenePackAnnotationFacts, xyScenePackAnnotationMarks, xyScenePackProduct, xyScenePackProductFacts, xyScenePackTrace, xySceneResolveChromeStyle, xySceneResolvePackKind } from "../src/native.js";
+import { xyScenePackAnnotationFacts, xyScenePackAnnotationMarks, xyScenePackHeatmapFacts, xyScenePackProduct, xyScenePackProductFacts, xyScenePackTrace, xySceneResolveChromeStyle, xySceneResolvePackKind } from "../src/native.js";
 import { f64Ptr, u8Ptr } from "../src/encode.js";
 
 test("cssColorRgba8 matches Python named colors and none", () => {
@@ -333,4 +333,29 @@ test("xyScenePackAnnotationFacts routes text into XYAO/XYAD", () => {
   const xyad = Buffer.from(out.subarray(32, 32 + xyadLen));
   assert.ok(xyad.includes(Buffer.from("XYAD")));
   assert.ok(xyad.includes(Buffer.from("hi")));
+});
+
+test("xyScenePackHeatmapFacts routes named colormap to XYHP kind 2", () => {
+  const name = new TextEncoder().encode("viridis");
+  const facts = new Uint8Array(64 + 16 + 4 + name.length);
+  const view = new DataView(facts.buffer);
+  facts.set(new TextEncoder().encode("XYHF"), 0);
+  view.setUint32(4, 1, true);
+  view.setBigUint64(8, 9n, true);
+  view.setUint32(16, 1, true);
+  view.setUint32(20, 2, true);
+  view.setUint32(24, (1 << 2) | (1 << 5) | (1 << 12), true);
+  view.setFloat64(32, 0, true);
+  view.setFloat64(40, 1, true);
+  view.setFloat64(64, 0.25, true);
+  view.setFloat64(72, 0.75, true);
+  view.setUint32(80, name.length, true);
+  facts.set(name, 84);
+  const out = new Uint8Array(256);
+  const code = xyScenePackHeatmapFacts(
+    u8Ptr(facts), BigInt(facts.length),
+    u8Ptr(out), BigInt(out.length),
+  );
+  assert.ok(code > 24);
+  assert.equal(new DataView(out.buffer).getUint32(16, true), 2);
 });

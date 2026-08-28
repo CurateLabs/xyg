@@ -39,6 +39,7 @@ import {
   xyScenePackProduct,
   xyScenePackProductFacts,
   xyScenePackAnnotationFacts,
+  xyScenePackHeatmapFacts,
   xyScenePackAnnotationMarks,
   xySceneRasterCommands,
   xySceneResolveChromeStyle,
@@ -99,6 +100,21 @@ const FACT_STROKE_PERIMETER = 1;
 const FACT_CURVE_SMOOTH = 2;
 const FACT_DENSITY_PLANE = 4;
 const FACT_HEATMAP_PAINT = 8;
+const XYHF_FAMILY_HEATMAP = 0;
+const XYHF_FAMILY_DENSITY = 1;
+const XYHF_HAS_RGBA = 1 << 0;
+const XYHF_HAS_RGBA_GRID = 1 << 1;
+const XYHF_HAS_GRID = 1 << 2;
+const XYHF_HAS_ENCODED = 1 << 3;
+const XYHF_HAS_MEAN_RGBA = 1 << 4;
+const XYHF_HAS_NAMED_CMAP = 1 << 5;
+const XYHF_HAS_STOPS = 1 << 6;
+const XYHF_HAS_TRUECOLOR = 1 << 7;
+const XYHF_HAS_COLOR_CH = 1 << 8;
+const XYHF_HAS_STYLE_COLOR = 1 << 9;
+const XYHF_HAS_OPACITY = 1 << 10;
+const XYHF_HAS_FILL_OPACITY = 1 << 11;
+const XYHF_HAS_DOMAIN = 1 << 12;
 
 function packProduct({
   kind, flags = 0, stepMode = 0, symbol = 0, styleRef = 0, traceId = 0,
@@ -1322,76 +1338,72 @@ function encodeUtf8Magic(text) {
   return encodeUtf8(text).slice(0, 4);
 }
 
+function packXyHf({
+  family, flags, stableId, rows, cols, lo, hi, opacity, fillOpacity, remainder,
+}) {
+  const extra = remainder ?? new Uint8Array();
+  const out = new Uint8Array(64 + extra.length);
+  const view = new DataView(out.buffer);
+  out.set(encodeUtf8Magic("XYHF"), 0);
+  view.setUint32(4, 1, true);
+  view.setBigUint64(8, BigInt(stableId), true);
+  view.setUint32(16, rows >>> 0, true);
+  view.setUint32(20, cols >>> 0, true);
+  view.setUint32(24, flags >>> 0, true);
+  out[28] = family & 0xff;
+  view.setFloat64(32, Number(lo), true);
+  view.setFloat64(40, Number(hi), true);
+  view.setFloat64(48, Number(opacity), true);
+  view.setFloat64(56, Number(fillOpacity), true);
+  out.set(extra, 64);
+  return out;
+}
+
+function packXyHfPrefixed(payload) {
+  const body = payload instanceof Uint8Array ? payload : new Uint8Array(payload ?? []);
+  const out = new Uint8Array(4 + body.length);
+  new DataView(out.buffer).setUint32(0, body.length, true);
+  out.set(body, 4);
+  return out;
+}
+
+function packF64Le(values) {
+  const out = new Uint8Array(values.length * 8);
+  const view = new DataView(out.buffer);
+  for (let index = 0; index < values.length; index += 1) {
+    view.setFloat64(index * 8, Number(values[index]), true);
+  }
+  return out;
+}
+
+function packHeatmapFacts(facts) {
+  const source = facts instanceof Uint8Array ? facts : new Uint8Array(facts ?? []);
+  if (!source.length) return new Uint8Array();
+  const out = new Uint8Array(Math.max(256, source.length + 64));
+  const code = xyScenePackHeatmapFacts(
+    u8Ptr(source),
+    BigInt(source.length),
+    u8Ptr(out),
+    BigInt(out.length),
+  );
+  if (code === -5) throw new RangeError("Scene heatmap or density plane shape is invalid");
+  if (code === -6) throw new RangeError("Scene heatmap colormap requires RGB stops");
+  if (code < 0) throw new RangeError("invalid scene heatmap packing");
+  return out.subarray(0, code);
+}
+
 function heatmapPaintPlane(trace, rows, cols, stableId) {
   const style = trace.style ?? {};
   const packed = trace.rgba;
   const planes = trace.rgba_grid;
   const stops = style.colormapStops ?? trace.colormapStops;
-  const hasColormap = style.colormap != null || stops != null;
-  let kind = 0;
-  let payload;
-  if (planes != null) {
-    if (planes.length !== 4) {
-      throw new RangeError("Scene heatmap truecolor requires four RGBA planes");
-    }
-    payload = new Uint8Array(rows * cols * 4);
-    for (let row = 0; row < rows; row += 1) {
-      for (let col = 0; col < cols; col += 1) {
-        const index = (row * cols + col) * 4;
-        for (let channel = 0; channel < 4; channel += 1) {
-          const value = Number(planes[channel][row * cols + col] ?? planes[channel][row]?.[col]);
-          payload[index + channel] = Math.max(0, Math.min(255, Math.round(value * 255)));
-        }
-      }
-    }
-  } else if (typeof (style.colormap ?? trace.colormap) === "string") {
-    const name = String(style.colormap ?? trace.colormap ?? "viridis");
-    const nameBytes = new TextEncoder().encode(name);
-    if (nameBytes.length < 1 || nameBytes.length > 64) {
-      throw new RangeError("Scene heatmap colormap name must be 1-64 UTF-8 bytes");
-    }
-    const grid = trace.grid;
-    if (grid == null) throw new RangeError("heatmap Scene v12 compilation requires a scalar grid");
-    const domain = style.domain;
-    const lo = domain == null || domain.length !== 2 ? Number.NaN : Number(domain[0]);
-    const hi = domain == null || domain.length !== 2 ? Number.NaN : Number(domain[1]);
-    payload = new Uint8Array(24 + grid.length * 8 + nameBytes.length);
-    const view = new DataView(payload.buffer);
-    view.setFloat64(0, lo, true);
-    view.setFloat64(8, hi, true);
-    view.setUint32(16, nameBytes.length, true);
-    view.setUint32(20, 0, true);
-    for (let index = 0; index < grid.length; index += 1) {
-      view.setFloat64(24 + index * 8, Number(grid[index]), true);
-    }
-    payload.set(nameBytes, 24 + grid.length * 8);
-    kind = 2;
-  } else if (hasColormap) {
-    const grid = trace.grid;
-    if (grid == null) throw new RangeError("heatmap Scene v12 compilation requires a scalar grid");
-    const stopBytes = stops == null
-      ? new Uint8Array([0, 0, 0, 255, 255, 255])
-      : Uint8Array.from(stops);
-    if (stopBytes.length < 3 || stopBytes.length % 3 !== 0) {
-      throw new RangeError("Scene heatmap colormap requires RGB stops");
-    }
-    const nStops = stopBytes.length / 3;
-    const domain = style.domain;
-    const lo = domain == null || domain.length !== 2 ? Number.NaN : Number(domain[0]);
-    const hi = domain == null || domain.length !== 2 ? Number.NaN : Number(domain[1]);
-    payload = new Uint8Array(24 + grid.length * 8 + stopBytes.length);
-    const view = new DataView(payload.buffer);
-    view.setFloat64(0, lo, true);
-    view.setFloat64(8, hi, true);
-    view.setUint32(16, nStops, true);
-    view.setUint32(20, 0, true);
-    for (let index = 0; index < grid.length; index += 1) {
-      view.setFloat64(24 + index * 8, Number(grid[index]), true);
-    }
-    payload.set(stopBytes, 24 + grid.length * 8);
-    kind = 1;
-  } else {
-    if (packed == null) throw new RangeError("Scene v12 does not yet encode heatmap colormap");
+  const colormap = style.colormap ?? trace.colormap;
+  const grid = trace.grid;
+  if (grid == null) throw new RangeError("heatmap Scene v12 compilation requires a scalar grid");
+  let flags = XYHF_HAS_GRID;
+  const parts = [packF64Le(grid)];
+  if (packed != null) {
+    flags |= XYHF_HAS_RGBA;
     const raw = packed instanceof Uint8Array
       ? packed
       : packed.rgba instanceof Uint8Array
@@ -1400,110 +1412,119 @@ function heatmapPaintPlane(trace, rows, cols, stableId) {
     if (raw.length !== rows * cols * 4) {
       throw new RangeError("Scene heatmap RGBA plane must match rows x cols");
     }
-    payload = raw;
-    kind = 0;
+    parts.unshift(raw);
   }
-  const out = new Uint8Array(24 + payload.length);
-  const view = new DataView(out.buffer);
-  view.setBigUint64(0, BigInt(stableId), true);
-  view.setUint32(8, rows, true);
-  view.setUint32(12, cols, true);
-  view.setUint32(16, kind, true);
-  view.setUint32(20, payload.length, true);
-  out.set(payload, 24);
-  return out;
+  if (planes != null) {
+    if (planes.length !== 4) {
+      throw new RangeError("Scene heatmap truecolor requires four RGBA planes");
+    }
+    flags |= XYHF_HAS_RGBA_GRID;
+    const interleaved = new Float64Array(rows * cols * 4);
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < cols; col += 1) {
+        const index = (row * cols + col) * 4;
+        for (let channel = 0; channel < 4; channel += 1) {
+          interleaved[index + channel] = Number(planes[channel][row * cols + col] ?? planes[channel][row]?.[col]);
+        }
+      }
+    }
+    const rgbaOffset = packed != null ? 1 : 0;
+    parts.splice(rgbaOffset, 0, new Uint8Array(interleaved.buffer));
+  }
+  if (typeof colormap === "string") {
+    flags |= XYHF_HAS_NAMED_CMAP;
+    parts.push(packXyHfPrefixed(new TextEncoder().encode(colormap)));
+  } else if (colormap != null || stops != null) {
+    flags |= XYHF_HAS_STOPS;
+    const stopBytes = stops == null
+      ? Uint8Array.from(colormap.flat ? colormap.flat() : colormap)
+      : Uint8Array.from(stops);
+    if (stopBytes.length < 3 || stopBytes.length % 3 !== 0) {
+      throw new RangeError("Scene heatmap colormap requires RGB stops");
+    }
+    parts.push(packXyHfPrefixed(stopBytes));
+  }
+  if (style.truecolor) flags |= XYHF_HAS_TRUECOLOR;
+  const domain = style.domain;
+  const lo = domain == null || domain.length !== 2 ? Number.NaN : Number(domain[0]);
+  const hi = domain == null || domain.length !== 2 ? Number.NaN : Number(domain[1]);
+  if (domain != null && domain.length === 2) flags |= XYHF_HAS_DOMAIN;
+  return packHeatmapFacts(packXyHf({
+    family: XYHF_FAMILY_HEATMAP,
+    flags,
+    stableId,
+    rows,
+    cols,
+    lo,
+    hi,
+    opacity: Number.NaN,
+    fillOpacity: Number.NaN,
+    remainder: concatBytes(parts),
+  }));
 }
 
-function densityPaintPlane(trace, encoded, rows, cols, maximum, stableId) {
+function densityPaintPlane(trace, encoded, rows, cols, maximum, stableId, meanRgba = null) {
   const style = trace.style ?? {};
-  const opacity = Number(style.opacity ?? 0.85) * Number(style.fill_opacity ?? 1);
   const encodedBytes = encoded instanceof Uint8Array ? encoded : Uint8Array.from(encoded);
   if (encodedBytes.length !== rows * cols) {
     throw new RangeError("Scene density grid must match DENSITY_GRID");
   }
-  const channel = trace.color_ch ?? trace.colorChannel;
+  let flags = XYHF_HAS_ENCODED;
+  const parts = [encodedBytes];
+  if (meanRgba != null) {
+    const rgbaBytes = meanRgba instanceof Uint8Array ? meanRgba : Uint8Array.from(meanRgba);
+    if (rgbaBytes.length !== rows * cols * 4) {
+      throw new RangeError("Scene mean-color plane must match DENSITY_GRID");
+    }
+    flags |= XYHF_HAS_MEAN_RGBA;
+    parts.push(rgbaBytes);
+  }
   const colormap = style.colormap ?? trace.colormap;
   const stops = style.colormapStops ?? trace.colormapStops;
-  let constant = null;
-  if (channel != null && channel.mode === "constant" && channel.constant != null) {
-    constant = String(channel.constant);
-  } else if (colormap == null && style.color != null) {
-    constant = String(style.color);
-  }
-  let payload;
-  if (constant != null) {
-    const rgba = cssColorRgba8(constant, 1);
-    payload = new Uint8Array(24 + encodedBytes.length + 6);
-    const view = new DataView(payload.buffer);
-    view.setFloat64(0, Number(maximum), true);
-    view.setFloat64(8, Number(opacity), true);
-    view.setUint32(16, 2, true);
-    view.setUint32(20, 1, true);
-    payload.set(encodedBytes, 24);
-    payload.set([rgba[0], rgba[1], rgba[2], rgba[0], rgba[1], rgba[2]], 24 + encodedBytes.length);
-  } else if (typeof colormap === "string" || (colormap == null && stops == null)) {
-    const nameBytes = new TextEncoder().encode(String(colormap ?? "viridis"));
-    payload = new Uint8Array(24 + encodedBytes.length + nameBytes.length);
-    const view = new DataView(payload.buffer);
-    view.setFloat64(0, Number(maximum), true);
-    view.setFloat64(8, Number(opacity), true);
-    view.setUint32(16, nameBytes.length, true);
-    view.setUint32(20, 0, true);
-    payload.set(encodedBytes, 24);
-    payload.set(nameBytes, 24 + encodedBytes.length);
-  } else {
+  if (typeof colormap === "string") {
+    flags |= XYHF_HAS_NAMED_CMAP;
+    parts.push(packXyHfPrefixed(new TextEncoder().encode(colormap)));
+  } else if (colormap != null || stops != null) {
+    flags |= XYHF_HAS_STOPS;
     const stopBytes = stops == null
       ? Uint8Array.from(colormap.flat ? colormap.flat() : colormap)
       : Uint8Array.from(stops);
     if (stopBytes.length < 3 || stopBytes.length % 3 !== 0) {
       throw new RangeError("Scene density colormap requires RGB stops");
     }
-    payload = new Uint8Array(24 + encodedBytes.length + stopBytes.length);
-    const view = new DataView(payload.buffer);
-    view.setFloat64(0, Number(maximum), true);
-    view.setFloat64(8, Number(opacity), true);
-    view.setUint32(16, stopBytes.length / 3, true);
-    view.setUint32(20, 1, true);
-    payload.set(encodedBytes, 24);
-    payload.set(stopBytes, 24 + encodedBytes.length);
+    parts.push(packXyHfPrefixed(stopBytes));
   }
-  const out = new Uint8Array(24 + payload.length);
-  const view = new DataView(out.buffer);
-  view.setBigUint64(0, BigInt(stableId), true);
-  view.setUint32(8, rows, true);
-  view.setUint32(12, cols, true);
-  view.setUint32(16, 3, true);
-  view.setUint32(20, payload.length, true);
-  out.set(payload, 24);
-  return out;
-}
-
-function meanColorPaintPlane(encoded, meanRgba, rows, cols, maximum, opacity, stableId) {
-  const encodedBytes = encoded instanceof Uint8Array ? encoded : Uint8Array.from(encoded);
-  const rgbaBytes = meanRgba instanceof Uint8Array ? meanRgba : Uint8Array.from(meanRgba);
-  if (encodedBytes.length !== rows * cols) {
-    throw new RangeError("Scene density grid must match DENSITY_GRID");
+  const channel = trace.color_ch ?? trace.colorChannel;
+  if (channel != null && channel.mode === "constant" && channel.constant != null) {
+    flags |= XYHF_HAS_COLOR_CH;
+    parts.push(packXyHfPrefixed(new TextEncoder().encode(String(channel.constant))));
   }
-  if (rgbaBytes.length !== rows * cols * 4) {
-    throw new RangeError("Scene mean-color plane must match DENSITY_GRID");
+  if (style.color != null) {
+    flags |= XYHF_HAS_STYLE_COLOR;
+    parts.push(packXyHfPrefixed(new TextEncoder().encode(String(style.color))));
   }
-  const payload = new Uint8Array(24 + encodedBytes.length + rgbaBytes.length);
-  const view = new DataView(payload.buffer);
-  view.setFloat64(0, Number(maximum), true);
-  view.setFloat64(8, Number(opacity), true);
-  view.setUint32(16, 0, true);
-  view.setUint32(20, 0, true);
-  payload.set(encodedBytes, 24);
-  payload.set(rgbaBytes, 24 + encodedBytes.length);
-  const out = new Uint8Array(24 + payload.length);
-  const header = new DataView(out.buffer);
-  header.setBigUint64(0, BigInt(stableId), true);
-  header.setUint32(8, rows, true);
-  header.setUint32(12, cols, true);
-  header.setUint32(16, 4, true);
-  header.setUint32(20, payload.length, true);
-  out.set(payload, 24);
-  return out;
+  let opacity = Number.NaN;
+  let fillOpacity = Number.NaN;
+  if (Object.hasOwn(style, "opacity")) {
+    flags |= XYHF_HAS_OPACITY;
+    opacity = Number(style.opacity);
+  }
+  if (Object.hasOwn(style, "fill_opacity") || Object.hasOwn(style, "fillOpacity")) {
+    flags |= XYHF_HAS_FILL_OPACITY;
+    fillOpacity = Number(style.fill_opacity ?? style.fillOpacity);
+  }
+  return packHeatmapFacts(packXyHf({
+    family: XYHF_FAMILY_DENSITY,
+    flags,
+    stableId,
+    rows,
+    cols,
+    lo: Number(maximum),
+    hi: Number.NaN,
+    opacity,
+    fillOpacity,
+    remainder: concatBytes(parts),
+  }));
 }
 
 function packXyhp(planes) {
@@ -3573,8 +3594,9 @@ export function figureSceneV3(figure, { margins = null } = {}) {
       }
       gridRows = rows;
       gridCols = cols;
-      if (heatmapTessellatesCellFills(trace)) {
-        heatmapPaintPlanes.push(heatmapPaintPlane(trace, rows, cols, id));
+      const plane = heatmapPaintPlane(trace, rows, cols, id);
+      if (plane.length) {
+        heatmapPaintPlanes.push(plane);
         factBits |= FACT_HEATMAP_PAINT;
       }
     } else if (HEXBIN_KINDS.has(trace.kind)) {
@@ -3619,16 +3641,14 @@ export function figureSceneV3(figure, { margins = null } = {}) {
         const [cols, rows] = DENSITY_GRID;
         const grid = bin2d(trace.x, trace.y, xDomain[0], xDomain[1], yDomain[0], yDomain[1], cols, rows);
         const { encoded, max } = densityLogU8(grid);
-        const opacity = Number(style.opacity ?? 0.85) * Number(style.fill_opacity ?? 1);
         const binColors = resolveDensityBinColors(trace);
+        let meanRgba = null;
         if (binColors != null) {
-          const meanRgba = bin2dMeanColor(
+          meanRgba = bin2dMeanColor(
             trace.x, trace.y, xDomain[0], xDomain[1], yDomain[0], yDomain[1], cols, rows, binColors,
           );
-          heatmapPaintPlanes.push(meanColorPaintPlane(encoded, meanRgba, rows, cols, max, opacity, id));
-        } else {
-          heatmapPaintPlanes.push(densityPaintPlane(trace, encoded, rows, cols, max, id));
         }
+        heatmapPaintPlanes.push(densityPaintPlane(trace, encoded, rows, cols, max, id, meanRgba));
         gridRows = rows;
         gridCols = cols;
         factBits |= FACT_DENSITY_PLANE;

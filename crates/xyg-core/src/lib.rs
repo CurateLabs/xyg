@@ -48,6 +48,7 @@ use xyg_engine::raster;
 use xyg_engine::sankey;
 use xyg_engine::scene;
 use xyg_engine::scene_annotations::{self, AnnotationError};
+use xyg_engine::scene_heatmap::{self, HeatmapFactError};
 use xyg_engine::scene_colorbar::{self, ColorbarError};
 use xyg_engine::scene_figure_support_reason;
 use xyg_engine::scene_legend::{self, LegendError};
@@ -121,7 +122,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 148;
+pub const ABI_VERSION: u32 = 149;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1257,6 +1258,53 @@ pub unsafe extern "C" fn xyg_scene_pack_annotation_facts(
     })
 }
 
+/// Pack one XYHF v1 heatmap/density paint-fact record into one XYHP plane.
+///
+/// Hosts pass authored RGBA/grid/colormap/density literals. Rust owns
+/// truecolor inverse-raster skip, XYHP kind routing, density opacity
+/// composition, and the 24-byte plane header. Returns the plane byte count
+/// on success, or 0 when the facts are empty or ineligible. Encoded Scene
+/// v31 is unchanged.
+///
+/// # Safety
+/// When `facts_len` is non-zero, `facts` must address that many readable bytes.
+/// When `out_cap` is non-zero, `out` must address that many writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_pack_heatmap_facts(
+    facts: *const u8,
+    facts_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if (facts_len > 0 && facts.is_null()) || (out_cap > 0 && out.is_null()) {
+        return -(HeatmapFactError::Length as i32);
+    }
+    ffi_guard(-(HeatmapFactError::Length as i32), || {
+        let facts_bytes = if facts_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(facts, facts_len)
+        };
+        match scene_heatmap::pack_heatmap_facts(facts_bytes) {
+            Ok(bytes) => {
+                if bytes.len() > out_cap {
+                    return -(HeatmapFactError::Output as i32);
+                }
+                if bytes.is_empty() {
+                    return 0;
+                }
+                let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                dest[..bytes.len()].copy_from_slice(&bytes);
+                match i32::try_from(bytes.len()) {
+                    Ok(count) => count,
+                    Err(_) => -(HeatmapFactError::Limit as i32),
+                }
+            }
+            Err(error) => -(error as i32),
+        }
+    })
+}
+
 /// Resolve a packed `XYAR` v1 envelope to the product axis range.
 ///
 /// Writes `(lo, hi)` on success and returns 0. Hosts pack axis options,
@@ -1737,7 +1785,9 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// packed XYPK v1 so cartesian-vs-polar smooth and painted heatmap dispatch
 /// cannot drift. ABI 148 does not change Scene records;
 /// `xyg_scene_pack_annotation_facts` owns wrap vs text vs arrow vs callout vs
-/// rule/band/marker routing from packed XYAF v1.
+/// rule/band/marker routing from packed XYAF v1. ABI 149 does not change
+/// Scene records; `xyg_scene_pack_heatmap_facts` owns XYHP kind routing from
+/// packed XYHF v1 so heatmap/density paint planes cannot drift.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
@@ -14277,6 +14327,31 @@ mod tests {
         );
         assert_eq!(
             u32::from_le_bytes(annotation_out[12..16].try_into().unwrap()),
+            2
+        );
+        let mut xyhf = vec![0u8; 64 + 16 + 4 + 7];
+        xyhf[..4].copy_from_slice(b"XYHF");
+        xyhf[4..8].copy_from_slice(&1u32.to_le_bytes());
+        xyhf[8..16].copy_from_slice(&9u64.to_le_bytes());
+        xyhf[16..20].copy_from_slice(&1u32.to_le_bytes());
+        xyhf[20..24].copy_from_slice(&2u32.to_le_bytes());
+        xyhf[24..28].copy_from_slice(&(4u32 | 32u32).to_le_bytes());
+        xyhf[64..72].copy_from_slice(&0.25f64.to_le_bytes());
+        xyhf[72..80].copy_from_slice(&0.75f64.to_le_bytes());
+        xyhf[80..84].copy_from_slice(&7u32.to_le_bytes());
+        xyhf[84..].copy_from_slice(b"viridis");
+        let mut heatmap_out = [0u8; 256];
+        let heatmap_code = unsafe {
+            xyg_scene_pack_heatmap_facts(
+                xyhf.as_ptr(),
+                xyhf.len(),
+                heatmap_out.as_mut_ptr(),
+                heatmap_out.len(),
+            )
+        };
+        assert!(heatmap_code > 24);
+        assert_eq!(
+            u32::from_le_bytes(heatmap_out[16..20].try_into().unwrap()),
             2
         );
     }
