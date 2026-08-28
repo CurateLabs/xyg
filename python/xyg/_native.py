@@ -20,7 +20,7 @@ import operator
 import os
 import struct
 import sys
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any, ClassVar, Optional, cast
 
@@ -3142,9 +3142,9 @@ def _decode_packed_scene_rows(
     kinds = np.ascontiguousarray(raw[:, 0])
     symbols = np.ascontiguousarray(raw[:, 1])
     expansion = np.ascontiguousarray(raw[:, 2])
-    style_refs = np.ascontiguousarray(raw[:, 4:8].copy().view("<u4").reshape(code))
-    stable_ids = np.ascontiguousarray(raw[:, 8:16].copy().view("<u8").reshape(code))
-    nums = raw[:, 16:56].copy().view("<f8").reshape(code, 5)
+    style_refs = np.ascontiguousarray(np.frombuffer(raw[:, 4:8].tobytes(), dtype="<u4"))
+    stable_ids = np.ascontiguousarray(np.frombuffer(raw[:, 8:16].tobytes(), dtype="<u8"))
+    nums = np.frombuffer(raw[:, 16:56].tobytes(), dtype="<f8").reshape(-1, 5)
     diameters = np.ascontiguousarray(nums[:, 0])
     coords = np.ascontiguousarray(nums[:, 1:5].T)
     return kinds, stable_ids, style_refs, diameters, symbols, expansion, coords
@@ -4367,11 +4367,27 @@ def _polar_theta_direction(direction: str | None) -> int:
     return 1 if direction == "clockwise" else 0
 
 
+def _polar_as_float(value: object, default: float) -> float:
+    if value is None:
+        return default
+    if isinstance(value, (int, float, np.integer, np.floating, str)):
+        return float(value)
+    return float(cast(Any, value))
+
+
+def _polar_pair(value: object, default: tuple[float, float]) -> tuple[float, float]:
+    if isinstance(value, (tuple, list)) and len(value) >= 2:
+        return _polar_as_float(value[0], default[0]), _polar_as_float(value[1], default[1])
+    return default
+
+
 def _polar_theta_zero(zero: object) -> float:
     if isinstance(zero, str):
-        mapping = {"E": 0.0, "N": math.pi / 2.0, "W": math.pi, "S": -math.pi / 2.0}
-        return float(mapping[zero])
-    return float(zero) if zero is not None else 0.0
+        named = {"E": 0.0, "N": math.pi / 2.0, "W": math.pi, "S": -math.pi / 2.0}
+        if zero in named:
+            return named[zero]
+        return float(zero)
+    return _polar_as_float(zero, 0.0)
 
 
 def _polar_r_scale(axis: Mapping[str, object]) -> tuple[int, float, bool]:
@@ -4383,8 +4399,7 @@ def _polar_r_scale(axis: Mapping[str, object]) -> tuple[int, float, bool]:
         code = 2
     else:
         code = 0
-    raw_constant = axis.get("constant", 1.0)
-    constant = 1.0 if raw_constant is None else float(raw_constant)
+    constant = _polar_as_float(axis.get("constant", 1.0), 1.0)
     mask = axis.get("nonpositive", "clip") == "mask"
     return code, constant, mask
 
@@ -4397,15 +4412,23 @@ def polar_layout(
     """Polar disc layout via ``xyg_polar_layout`` (ABI 131)."""
     unit = str(theta_axis.get("theta_unit", "radians"))
     turn = 360.0 if unit == "degrees" else 2.0 * math.pi
-    sector = theta_axis.get("sector") or (0.0, turn)
-    sector_start, sector_end = float(sector[0]), float(sector[1])
-    categories = tuple(theta_axis.get("categories") or ())
-    r_lo, r_hi = r_axis["range"]  # type: ignore[index]
+    sector_start, sector_end = _polar_pair(theta_axis.get("sector"), (0.0, turn))
+    categories = theta_axis.get("categories")
+    n_categories = len(categories) if isinstance(categories, (list, tuple)) else 0
+    raw_range = r_axis.get("range")
+    if not isinstance(raw_range, (tuple, list)) or len(raw_range) < 2:
+        raise (
+            KeyError("range")
+            if raw_range is None
+            else TypeError("polar r-axis range must be a pair")
+        )
+    r_lo, r_hi = _polar_as_float(raw_range[0], 0.0), _polar_as_float(raw_range[1], 1.0)
     origin = r_axis.get("r_origin")
-    r_origin = float("nan") if origin is None else float(origin)
-    hole = float(r_axis.get("hole") or 0.0)
+    r_origin = float("nan") if origin is None else _polar_as_float(origin, float("nan"))
+    hole = _polar_as_float(r_axis.get("hole"), 0.0)
     scale_kind, constant, mask_nonpositive = _polar_r_scale(r_axis)
     metrics = np.empty(POLAR_METRICS_LEN, dtype=np.float64)
+    raw_direction = theta_axis.get("theta_direction")
     written = _lib.xyg_polar_layout(
         float(plot["x"]),
         float(plot["y"]),
@@ -4413,10 +4436,10 @@ def polar_layout(
         float(plot["h"]),
         _polar_theta_unit(unit),
         _polar_theta_zero(theta_axis.get("theta_zero", "E")),
-        _polar_theta_direction(theta_axis.get("theta_direction")),
+        _polar_theta_direction(raw_direction if isinstance(raw_direction, str) else None),
         sector_start,
         sector_end,
-        len(categories),
+        n_categories,
         float(r_lo),
         float(r_hi),
         r_origin,
@@ -4458,12 +4481,12 @@ def polar_project(
     if written == _USIZE_MAX or written != n:
         raise ValueError("invalid polar-project request")
     if np.ndim(theta) == 0:
-        return np.float64(out_x[0]), np.float64(out_y[0])
+        return out_x.reshape(()), out_y.reshape(())
     return out_x.reshape(np.shape(theta)), out_y.reshape(np.shape(r))
 
 
 def _polar_mask(
-    fn: object,
+    fn: Callable[..., int],
     metrics: npt.ArrayLike,
     *arrays: npt.ArrayLike,
 ) -> npt.NDArray[np.bool_]:

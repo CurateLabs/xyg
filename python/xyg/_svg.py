@@ -2048,7 +2048,7 @@ def _x_tick_label_edge_rooms(axes: dict[str, dict[str, Any]], plot_w: float) -> 
             left_i, right_i = _native.x_tick_label_edge_rooms(
                 plot_w,
                 [float(item["pos"]) for item in items],
-                [item["text"] for item in items],
+                [str(item["text"]) for item in items],
                 [float(item["angle"]) for item in items],
                 anchors,
                 font_size,

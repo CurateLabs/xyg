@@ -496,7 +496,7 @@ function rawInit(requestId, source) {
     source,
     maxArenaBytes: 1024,
     expectedAbiVersion: 23,
-    expectedSceneVersion: 25,
+    expectedSceneVersion: CANONICAL_SCENE_VERSION,
   };
 }
 

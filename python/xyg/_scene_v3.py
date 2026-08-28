@@ -937,16 +937,22 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
     parsed_dash: list[float] | None = None
     parsed_cap: int | None = None
     if kind == "rule":
-        parsed_dash = _parse_scene_dash(style.get("dash"))
-        if parsed_dash is False:
-            raise UnsupportedSceneV3("Scene v12 rule annotation dash is not a constant pattern")
-        if parsed_dash:
+        dash_or_reject = _parse_scene_dash(style.get("dash"))
+        if isinstance(dash_or_reject, list):
+            parsed_dash = [float(value) for value in dash_or_reject]
             style_bits |= _XYAF_STYLE_DASH
-        parsed_cap = _parse_scene_linecap(style.get("linecap"))
-        if parsed_cap is False:
-            raise UnsupportedSceneV3("Scene v12 rule annotation linecap is not a Scene cap")
-        if parsed_cap is not None:
+        elif dash_or_reject is None:
+            parsed_dash = None
+        else:
+            raise UnsupportedSceneV3("Scene v12 rule annotation dash is not a constant pattern")
+        cap_or_reject = _parse_scene_linecap(style.get("linecap"))
+        if cap_or_reject is None:
+            parsed_cap = None
+        elif isinstance(cap_or_reject, int) and not isinstance(cap_or_reject, bool):
+            parsed_cap = cap_or_reject
             style_bits |= _XYAF_STYLE_LINECAP
+        else:
+            raise UnsupportedSceneV3("Scene v12 rule annotation linecap is not a Scene cap")
     dash = [0.0] * 8
     dash_count = 0
     if parsed_dash:
@@ -2838,13 +2844,11 @@ def _unpack_xyas(blob: bytes) -> dict[str, Any]:
         kinds.extend(int(value) for value in raw[:, 0])
         symbols.extend(int(value) for value in raw[:, 1])
         expansion_modes.extend(int(value) for value in raw[:, 2])
-        style_refs.extend(
-            int(value) for value in raw[:, 4:8].copy().view("<u4").reshape(int(n_rows))
-        )
+        style_refs.extend(int(value) for value in np.frombuffer(raw[:, 4:8].tobytes(), dtype="<u4"))
         stable_ids.extend(
-            int(value) for value in raw[:, 8:16].copy().view("<u8").reshape(int(n_rows))
+            int(value) for value in np.frombuffer(raw[:, 8:16].tobytes(), dtype="<u8")
         )
-        nums = raw[:, 16:56].copy().view("<f8").reshape(int(n_rows), 5)
+        nums = np.frombuffer(raw[:, 16:56].tobytes(), dtype="<f8").reshape(-1, 5)
         diameters.extend(float(value) for value in nums[:, 0])
         for axis in range(4):
             coordinates[axis].extend(float(value) for value in nums[:, axis + 1])
@@ -2889,8 +2893,10 @@ def figure_scene(
     # compile, attach, sidecars, rows, annotation facts, style sidecars,
     # splice, XYCC/extras packing, viewport/axis scalars, and assembled
     # encode (ABI 163). Earlier ABIs 148–162 remain available for tests.
-    x_domain = tuple(float(value) for value in figure._range("x"))
-    y_domain = tuple(float(value) for value in figure._range("y"))
+    x_span = tuple(float(value) for value in figure._range("x"))
+    y_span = tuple(float(value) for value in figure._range("y"))
+    x_domain = (x_span[0], x_span[1])
+    y_domain = (y_span[0], y_span[1])
     annotation_facts = bytearray()
     for annotation_index, annotation in enumerate(annotations):
         annotation_facts.extend(_pack_xyaf(annotation, annotation_index))
@@ -3363,16 +3369,21 @@ def _public_scene_or_reason(
     public_triangle_mesh_count = 0
     for trace in getattr(figure, "traces", None) or []:
         if trace.kind in _POLYFILL_KINDS:
-            mesh = (
-                getattr(trace, "x0", None),
-                getattr(trace, "y0", None),
-                getattr(trace, "x1", None),
-                getattr(trace, "y1", None),
-                getattr(trace, "x", None),
-                getattr(trace, "y", None),
-            )
-            if all(column is not None for column in mesh):
-                public_triangle_mesh_count += len(mesh[0].values)
+            x0 = getattr(trace, "x0", None)
+            y0 = getattr(trace, "y0", None)
+            x1 = getattr(trace, "x1", None)
+            y1 = getattr(trace, "y1", None)
+            xs = getattr(trace, "x", None)
+            ys = getattr(trace, "y", None)
+            if (
+                x0 is not None
+                and y0 is not None
+                and x1 is not None
+                and y1 is not None
+                and xs is not None
+                and ys is not None
+            ):
+                public_triangle_mesh_count += len(x0.values)
         elif trace.kind in _HEXBIN_KINDS and trace.x is not None:
             public_triangle_mesh_count += len(trace.x.values)
     try:
