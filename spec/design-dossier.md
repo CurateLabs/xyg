@@ -581,7 +581,8 @@ F3, still pending (above).
   then ABI 178 admits scatter `fill_opacity` / `stroke_opacity`, then ABI 179
   admits hexbin `fill_opacity`, then ABI 180 admits triangle_mesh `fill_opacity`
   / constant stroke paint, then ABI 181 admits cartesian area/error_band
-  `curve="smooth"` plus `step` as authored band step expansion.
+  `curve="smooth"` plus `step` as authored band step expansion, then ABI 182
+  admits triangle_mesh `joined_fill` as one identity PolyFill ring.
   `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
   panel Scene. That predicate
   owns the public PolyFill group budget, including companion traces that share
@@ -1519,6 +1520,8 @@ ABI 179 admits hexbin `fill_opacity` on XYMS fill alpha.
 ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint on that same
 path. ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as
 authored band step expansion (`step_mode` 1–3 wins over `BandFlatten`).
+ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring from
+the Rust boundary walk (disconnected meshes keep per-face `TriangleFace` rows).
 Per-item radius channels stay compatibility. Irregular
 spacing, and LOD stay compatibility.
 

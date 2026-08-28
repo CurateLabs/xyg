@@ -2585,7 +2585,7 @@ const XYFS_TRACE_DASHED_MARKERS = 1 << 4;
 const XYFS_TRACE_RECT_GRADIENT = 1 << 5;
 const XYFS_TRACE_CORNER_RADIUS = 1 << 6;
 const XYFS_TRACE_WEDGE_GAP = 1 << 7;
-const XYFS_TRACE_JOINED_FILL = 1 << 8;
+const XYFS_TRACE_JOINED_FILL = 1 << 8; // reserved; ABI 182 no longer fail-closes this bit
 const XYFS_TRACE_CUSTOM_HEX_REDUCE = 1 << 9;
 const XYFS_TRACE_HEATMAP_COLORMAP = 1 << 10;
 const XYFS_TRACE_NON_CSS_FILL = 1 << 11;
@@ -3071,6 +3071,7 @@ const XYTC_SYMBOL_INT = 1 << 21;
 const XYTC_HAS_CORNER_RADIUS = 1 << 22;
 const XYTC_HAS_WEDGE_GAP = 1 << 23;
 const XYTC_HAS_GLYPH = 1 << 24;
+const XYTC_JOINED_FILL = 1 << 25;
 const XYTO_LINECAP_NONE = 255;
 const XYTA_HEATMAP = 1 << 0;
 const XYTA_DENSITY = 1 << 1;
@@ -3264,6 +3265,9 @@ function packXyTc(figure) {
         flags |= XYTC_HAS_GLYPH;
         markerBlob = encodeUtf8(glyph);
       }
+    }
+    if (trace.kind === "triangle_mesh" && (style.joined_fill || style.joinedFill)) {
+      flags |= XYTC_JOINED_FILL;
     }
     const prefix = new Uint8Array(160);
     const view = new DataView(prefix.buffer);
@@ -5072,7 +5076,6 @@ function figureTraceSupport(figure, trace) {
   }
   if (style.dash != null && parseSceneDash(style.dash) === false) flags |= XYFS_TRACE_DASHED_MARKERS;
   if (RECT_KINDS.has(kind) || HEATMAP_KINDS.has(kind)) flags |= rectExtraFlags(style, kind, figure.coords === "polar");
-  if (POLYFILL_KINDS.has(kind) && style.joined_fill) flags |= XYFS_TRACE_JOINED_FILL;
   if (HEXBIN_KINDS.has(kind) && !HEXBIN_REDUCES.has(style.reduce)) flags |= XYFS_TRACE_CUSTOM_HEX_REDUCE;
   if (
     HEATMAP_KINDS.has(kind)

@@ -19,6 +19,9 @@
 //! ABI 178 admits scatter `fill_opacity` / `stroke_opacity` the same way.
 //! ABI 179 admits hexbin `fill_opacity` on that public Scene (XYMS fill alpha).
 //! ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint the same way.
+//! ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring
+//! from the Rust boundary walk (disconnected meshes keep per-face triangles;
+//! `role` other than `triangle-mesh` stays fail-closed).
 //! Rust owns the public PolyFill group budget, including
 //! companion traces that share the browser painter's 1,024-group ceiling.
 
@@ -480,6 +483,7 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "stroke",
             "stroke_width",
             "stroke_opacity",
+            "joined_fill",
         ],
         KIND_HEXBIN => &[
             "color",
@@ -1167,7 +1171,7 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
             {
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH");
             }
-            if trace.role != "triangle-mesh" || trace.flags & TRACE_JOINED_FILL != 0 {
+            if trace.role != "triangle-mesh" {
                 return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
             }
         }

@@ -1419,6 +1419,58 @@ def test_python_scene_compiles_triangle_mesh_fill_opacity() -> None:
     assert _scene_v3.scene_export_support_reason(stroked) is None
 
 
+def test_python_scene_compiles_triangle_mesh_joined_fill() -> None:
+    joined = Figure(width=240, height=160)
+    joined.axis_options["x"]["domain"] = (0.0, 1.0)
+    joined.axis_options["y"]["domain"] = (0.0, 1.0)
+    joined.triangle_mesh(
+        [0.0, 1.0],
+        [0.0, 0.0],
+        [1.0, 1.0],
+        [0.0, 1.0],
+        [0.0, 0.0],
+        [1.0, 1.0],
+        color="#22c55e",
+    )
+    joined.traces[-1].style["joined_fill"] = True
+    svg = _native.scene_svg(joined.to_scene())
+    assert svg.count('<path d="M') == 1
+    assert joined.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(joined) is None
+    unjoined = Figure(width=240, height=160)
+    unjoined.axis_options["x"]["domain"] = (0.0, 1.0)
+    unjoined.axis_options["y"]["domain"] = (0.0, 1.0)
+    unjoined.triangle_mesh(
+        [0.0, 1.0],
+        [0.0, 0.0],
+        [1.0, 1.0],
+        [0.0, 1.0],
+        [0.0, 0.0],
+        [1.0, 1.0],
+        color="#22c55e",
+    )
+    unjoined_svg = _native.scene_svg(unjoined.to_scene())
+    assert unjoined_svg.count('<path d="M') == 2
+    assert svg != unjoined_svg
+    disconnected = Figure(width=240, height=160)
+    disconnected.axis_options["x"]["domain"] = (0.0, 2.0)
+    disconnected.axis_options["y"]["domain"] = (0.0, 2.0)
+    disconnected.triangle_mesh(
+        [0.0, 1.5],
+        [0.0, 1.0],
+        [1.0, 2.0],
+        [0.0, 1.0],
+        [0.5, 1.75],
+        [1.0, 1.75],
+        color="#22c55e",
+    )
+    disconnected.traces[-1].style["joined_fill"] = True
+    disconnected_svg = _native.scene_svg(disconnected.to_scene())
+    assert disconnected_svg.count('<path d="M') == 2
+    assert disconnected.to_svg() == disconnected_svg
+    assert _scene_v3.scene_export_support_reason(disconnected) is None
+
+
 def test_python_scene_compiles_polar_corner_radius() -> None:
     donut = Figure(width=400, height=400, coords="polar")
     donut.axis_options["x"]["domain"] = (0.0, 6.283185307179586)

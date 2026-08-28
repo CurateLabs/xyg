@@ -71,7 +71,7 @@ _XYFS_TRACE_DASHED_MARKERS = 1 << 4
 _XYFS_TRACE_RECT_GRADIENT = 1 << 5
 _XYFS_TRACE_CORNER_RADIUS = 1 << 6
 _XYFS_TRACE_WEDGE_GAP = 1 << 7
-_XYFS_TRACE_JOINED_FILL = 1 << 8
+_XYFS_TRACE_JOINED_FILL = 1 << 8  # reserved; ABI 182 no longer fail-closes this bit
 _XYFS_TRACE_CUSTOM_HEX_REDUCE = 1 << 9
 _XYFS_TRACE_HEATMAP_COLORMAP = 1 << 10
 _XYFS_TRACE_NON_CSS_FILL = 1 << 11
@@ -1698,8 +1698,6 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
         flags |= _XYFS_TRACE_DASHED_MARKERS
     if kind in _RECT_KINDS or kind in _HEATMAP_KINDS:
         flags |= _rect_extra_flags(style, kind, polar)
-    if kind in _POLYFILL_KINDS and style.get("joined_fill"):
-        flags |= _XYFS_TRACE_JOINED_FILL
     if kind in _HEXBIN_KINDS and style.get("reduce") not in _HEXBIN_REDUCES:
         flags |= _XYFS_TRACE_CUSTOM_HEX_REDUCE
     if (
@@ -2261,6 +2259,7 @@ _XYTC_HAS_FILL_DICT = 1 << 20
 _XYTC_HAS_CORNER_RADIUS = 1 << 22
 _XYTC_HAS_WEDGE_GAP = 1 << 23
 _XYTC_HAS_GLYPH = 1 << 24
+_XYTC_JOINED_FILL = 1 << 25
 _XYTO_LINECAP_NONE = 255
 _GRAD_DIR_FROM_CODE = {0: "down", 1: "up", 2: "right", 3: "left"}
 
@@ -2426,6 +2425,8 @@ def _pack_xytc(figure: Any) -> bytes:
         ):
             flags |= _XYTC_HAS_GLYPH
             marker_blob = style["marker_glyph"].encode("utf-8")
+        if str(trace.kind) == "triangle_mesh" and style.get("joined_fill"):
+            flags |= _XYTC_JOINED_FILL
         r_tip = 0.0
         r_base = 0.0
         wedge_gap = 0.0

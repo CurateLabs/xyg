@@ -5,6 +5,8 @@
 //! fallbacks. Hosts still map through their scale objects; this module owns
 //! the coordinate-free flattening so Python and Node cannot drift.
 
+use std::collections::{BTreeSet, HashMap};
+
 /// Segments per ribbon edge. Product policy, not view-adaptive: a flow
 /// diagram has tens of links, so the ceiling is free, and a view-dependent
 /// count would have to be recorded per §28 rather than chosen silently.
@@ -324,6 +326,157 @@ pub fn rounded_rect_poly(
     Some(written)
 }
 
+/// Recover one exterior walk from a connected tessellated polygon.
+///
+/// Compatibility `_paint.triangle_mesh_boundary`: internal edges occur an even
+/// number of times; odd-count edges form the boundary. A disconnected mesh or
+/// a hole returns `None` so the packer keeps per-triangle `TriangleFace` rows.
+pub fn triangle_mesh_boundary(
+    x0: &[f64],
+    y0: &[f64],
+    x1: &[f64],
+    y1: &[f64],
+    x2: &[f64],
+    y2: &[f64],
+) -> Option<Vec<(f64, f64)>> {
+    let n = x0
+        .len()
+        .min(y0.len())
+        .min(x1.len())
+        .min(y1.len())
+        .min(x2.len())
+        .min(y2.len());
+    if n == 0 {
+        return None;
+    }
+    let mut min = f64::INFINITY;
+    let mut max = f64::NEG_INFINITY;
+    let mut coords: Vec<(f64, f64)> = Vec::with_capacity(n.saturating_mul(3));
+    for index in 0..n {
+        let points = [
+            (x0[index], y0[index]),
+            (x1[index], y1[index]),
+            (x2[index], y2[index]),
+        ];
+        for (x, y) in points {
+            if !x.is_finite() || !y.is_finite() {
+                return None;
+            }
+            min = min.min(x).min(y);
+            max = max.max(x).max(y);
+            coords.push((x, y));
+        }
+    }
+    let span = max - min;
+    let tolerance = (span * 2e-5).max(1e-12);
+    let mut buckets: HashMap<(i64, i64), Vec<usize>> = HashMap::new();
+    let mut points_by_key: Vec<(f64, f64)> = Vec::new();
+    let vertex_key = |point: (f64, f64),
+                      buckets: &mut HashMap<(i64, i64), Vec<usize>>,
+                      points_by_key: &mut Vec<(f64, f64)>|
+     -> usize {
+        let cell = (
+            (point.0 / tolerance).floor() as i64,
+            (point.1 / tolerance).floor() as i64,
+        );
+        let mut best: Option<usize> = None;
+        let mut best_distance = f64::INFINITY;
+        for dx in -1..=1 {
+            for dy in -1..=1 {
+                if let Some(candidates) = buckets.get(&(cell.0 + dx, cell.1 + dy)) {
+                    for &candidate in candidates {
+                        let other = points_by_key[candidate];
+                        let delta_x = (point.0 - other.0).abs();
+                        let delta_y = (point.1 - other.1).abs();
+                        if delta_x <= tolerance && delta_y <= tolerance {
+                            let distance = delta_x * delta_x + delta_y * delta_y;
+                            if distance < best_distance {
+                                best = Some(candidate);
+                                best_distance = distance;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if let Some(key) = best {
+            return key;
+        }
+        let key = points_by_key.len();
+        points_by_key.push(point);
+        buckets.entry(cell).or_default().push(key);
+        key
+    };
+    let mut edge_counts: HashMap<(usize, usize), usize> = HashMap::new();
+    let mut edge_order: Vec<(usize, usize)> = Vec::new();
+    for index in 0..n {
+        let points = [
+            coords[index * 3],
+            coords[index * 3 + 1],
+            coords[index * 3 + 2],
+        ];
+        let keys = [
+            vertex_key(points[0], &mut buckets, &mut points_by_key),
+            vertex_key(points[1], &mut buckets, &mut points_by_key),
+            vertex_key(points[2], &mut buckets, &mut points_by_key),
+        ];
+        for edge_i in 0..3 {
+            let start = keys[edge_i];
+            let end = keys[(edge_i + 1) % 3];
+            let edge = if start <= end {
+                (start, end)
+            } else {
+                (end, start)
+            };
+            if !edge_counts.contains_key(&edge) {
+                edge_order.push(edge);
+            }
+            *edge_counts.entry(edge).or_insert(0) += 1;
+        }
+    }
+    let boundary: Vec<(usize, usize)> = edge_order
+        .into_iter()
+        .filter(|edge| edge.0 != edge.1 && edge_counts.get(edge).copied().unwrap_or(0) % 2 == 1)
+        .collect();
+    if boundary.len() < 3 {
+        return None;
+    }
+    let mut adjacency: HashMap<usize, BTreeSet<usize>> = HashMap::new();
+    for &(start, end) in &boundary {
+        adjacency.entry(start).or_default().insert(end);
+        adjacency.entry(end).or_default().insert(start);
+    }
+    if adjacency.values().any(|neighbors| neighbors.len() % 2 == 1) {
+        return None;
+    }
+    let first = boundary[0].0;
+    let mut stack = vec![first];
+    let mut walk: Vec<usize> = Vec::new();
+    while let Some(&current) = stack.last() {
+        if let Some(neighbors) = adjacency.get_mut(&current) {
+            if let Some(following) = neighbors.iter().copied().next() {
+                neighbors.remove(&following);
+                if let Some(back) = adjacency.get_mut(&following) {
+                    back.remove(&current);
+                }
+                stack.push(following);
+                continue;
+            }
+        }
+        walk.push(stack.pop().expect("stack occupied"));
+    }
+    if walk.len() != boundary.len() + 1 || walk.first() != walk.last() {
+        return None;
+    }
+    walk.reverse();
+    Some(
+        walk[..walk.len() - 1]
+            .iter()
+            .map(|&key| points_by_key[key])
+            .collect(),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -456,5 +609,46 @@ mod tests {
         assert!(ribbon_edge(0.0, 1.0, 0.0, 1.0, 8, &mut xs, &mut ys).is_none());
         assert!(monotone_tangents(&[0.0], &[0.0], &mut [0.0]).is_none());
         assert!(curve_flatten(&[0.0, 1.0], &[0.0], 16, &mut xs, &mut ys).is_none());
+    }
+
+    #[test]
+    fn triangle_mesh_boundary_rejects_nonfinite() {
+        assert!(
+            triangle_mesh_boundary(&[0.0], &[0.0], &[1.0], &[0.0], &[f64::NAN], &[1.0],).is_none()
+        );
+        assert!(
+            triangle_mesh_boundary(&[0.0], &[0.0], &[1.0], &[0.0], &[f64::INFINITY], &[1.0],)
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn triangle_mesh_boundary_merges_vertices_across_bucket_edges() {
+        let lower = 0.9999e-5;
+        let upper = 1.0001e-5;
+        let boundary = triangle_mesh_boundary(
+            &[lower, upper],
+            &[lower, upper],
+            &[1.0, 1.0],
+            &[0.0, 1.0],
+            &[1.0, 0.0],
+            &[1.0, 1.0],
+        )
+        .unwrap();
+        assert_eq!(boundary.len(), 4);
+    }
+
+    #[test]
+    fn triangle_mesh_boundary_joins_a_quad() {
+        let boundary = triangle_mesh_boundary(
+            &[0.0, 1.0],
+            &[0.0, 0.0],
+            &[1.0, 1.0],
+            &[0.0, 1.0],
+            &[0.0, 0.0],
+            &[1.0, 1.0],
+        )
+        .unwrap();
+        assert_eq!(boundary.len(), 4);
     }
 }

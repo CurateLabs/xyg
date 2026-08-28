@@ -1037,19 +1037,49 @@ def test_public_triangle_mesh_honors_the_browser_group_boundary() -> None:
     assert scene_export_support_reason(mixed) == "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
 
 
-@pytest.mark.parametrize(
-    ("style_key", "style_value"),
-    [
-        ("joined_fill", True),
-        ("role", "custom-mesh"),
-    ],
-)
-def test_public_triangle_mesh_keeps_broader_styles_on_compatibility(
-    style_key: str, style_value: object
-) -> None:
+def test_public_triangle_mesh_keeps_custom_role_on_compatibility() -> None:
     figure = _public_triangle_mesh()
-    figure.traces[0].style[style_key] = style_value
+    figure.traces[0].style["role"] = "custom-mesh"
     assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE"
+
+
+def test_public_triangle_mesh_joined_fill_is_scene_supported() -> None:
+    disconnected = _public_triangle_mesh()
+    disconnected.traces[0].style["joined_fill"] = True
+    assert scene_export_support_reason(disconnected) is None
+    exported = public_static_export(disconnected, "svg")
+    assert exported is not None
+    assert exported.count(b'<path d="M') == 2
+    figure = Figure(width=360, height=260)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.triangle_mesh(
+        [0.0, 1.0],
+        [0.0, 0.0],
+        [1.0, 1.0],
+        [0.0, 1.0],
+        [0.0, 0.0],
+        [1.0, 1.0],
+        color="#22c55e",
+    )
+    figure.traces[0].style["joined_fill"] = True
+    assert scene_export_support_reason(figure) is None
+    joined = public_static_export(figure, "svg")
+    assert joined is not None
+    assert joined.count(b'<path d="M') == 1
+    unjoined = Figure(width=360, height=260)
+    unjoined.axis_options["x"]["domain"] = (0.0, 1.0)
+    unjoined.axis_options["y"]["domain"] = (0.0, 1.0)
+    unjoined.triangle_mesh(
+        [0.0, 1.0],
+        [0.0, 0.0],
+        [1.0, 1.0],
+        [0.0, 1.0],
+        [0.0, 0.0],
+        [1.0, 1.0],
+        color="#22c55e",
+    )
+    assert public_static_export(unjoined, "svg") != joined
 
 
 def test_public_triangle_mesh_opacity_and_stroke_are_scene_supported() -> None:

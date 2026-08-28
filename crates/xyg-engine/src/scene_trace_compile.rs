@@ -20,6 +20,10 @@
 //! ABI 178 packs scatter `fill_opacity` / `stroke_opacity` on that same XYMS path.
 //! ABI 179 packs hexbin `fill_opacity` so HexCell PolyFills use XYMS fill alpha.
 //! ABI 180 packs triangle_mesh `fill_opacity` / constant stroke on that same XYMS path.
+//! ABI 182 packs triangle_mesh `joined_fill` as `FACT_JOINED_FILL` so product
+//! packing can emit one identity PolyFill ring (or keep `TriangleFace` on a
+//! disconnected mesh). Constant `stroke_width > 0` stays per-face so Scene
+//! matches the compatibility join predicate.
 //! ABI 170 admits constant scatter `marker_glyph` as UTF-8 in the existing
 //! XYTR marker blob (`FLAG_HAS_GLYPH`); encoded Scene keeps XYMG so SVG/raster
 //! emit `<text>` / `OP_TEXT` instead of a disc.
@@ -64,9 +68,11 @@ pub const FLAG_SYMBOL_INT: u32 = 1 << 21;
 pub const FLAG_HAS_CORNER_RADIUS: u32 = 1 << 22;
 pub const FLAG_HAS_WEDGE_GAP: u32 = 1 << 23;
 pub const FLAG_HAS_GLYPH: u32 = 1 << 24;
+pub const FLAG_JOINED_FILL: u32 = 1 << 25;
 
 pub const FACT_STROKE_PERIMETER: u32 = 1;
 pub const FACT_CURVE_SMOOTH: u32 = 2;
+pub const FACT_JOINED_FILL: u32 = 1 << 4;
 
 const MAX_TRACES: usize = 4_096;
 const MAX_TEXT: usize = 4_096;
@@ -951,6 +957,12 @@ fn compile_one(input: Input<'_>, index: usize) -> Result<Compiled, TraceCompileE
     }
     if curve_smooth(input.kind, input.curve) {
         fact_bits |= FACT_CURVE_SMOOTH;
+    }
+    if input.kind == "triangle_mesh"
+        && input.flags & FLAG_JOINED_FILL != 0
+        && style.stroke_width == 0.0
+    {
+        fact_bits |= FACT_JOINED_FILL;
     }
     let authored_step = parse_step(input.kind, input.step, index)?;
     let (hex_dx, hex_dy) = hex_pitch(input.kind, input.hex_dx, input.hex_dy, index)?;

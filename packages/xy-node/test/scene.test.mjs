@@ -1941,6 +1941,38 @@ test("Node Scene compiles hexbin fill_opacity", () => {
   assert.notEqual(svg, sceneSvg(solid.toScene()));
 });
 
+test("Node Scene compiles triangle_mesh joined_fill", () => {
+  const joined = new Figure({ width: 240, height: 160 });
+  joined.setAxisDomain("x", [0, 1]);
+  joined.setAxisDomain("y", [0, 1]);
+  joined.triangleMesh([0, 1], [0, 0], [1, 1], [0, 1], [0, 0], [1, 1], {
+    color: "#22c55e",
+    style: { joined_fill: true },
+    name: null,
+  });
+  const svg = sceneSvg(joined.toScene());
+  assert.equal((svg.match(/<path d="M/g) || []).length, 1);
+  assert.equal(sceneExportSupportReason(joined), null);
+  const unjoined = new Figure({ width: 240, height: 160 });
+  unjoined.setAxisDomain("x", [0, 1]);
+  unjoined.setAxisDomain("y", [0, 1]);
+  unjoined.triangleMesh([0, 1], [0, 0], [1, 1], [0, 1], [0, 0], [1, 1], {
+    color: "#22c55e",
+    name: null,
+  });
+  assert.equal((sceneSvg(unjoined.toScene()).match(/<path d="M/g) || []).length, 2);
+  assert.notEqual(svg, sceneSvg(unjoined.toScene()));
+  const custom = new Figure({ width: 240, height: 160 });
+  custom.setAxisDomain("x", [0, 1]);
+  custom.setAxisDomain("y", [0, 1]);
+  custom.triangleMesh([0], [0], [1], [0], [0.5], [1], {
+    color: "#22c55e",
+    style: { role: "custom-mesh" },
+    name: null,
+  });
+  assert.equal(sceneExportSupportReason(custom), "XYG_SCENE_UNSUPPORTED_PUBLIC_STYLE");
+});
+
 test("Node Scene compiles triangle_mesh fill_opacity", () => {
   const faded = new Figure({ width: 240, height: 160 });
   faded.setAxisDomain("x", [0, 1]);

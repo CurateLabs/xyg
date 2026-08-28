@@ -19,7 +19,9 @@
 //! `step_mode` 1–3 expands, and smooth does not promote to `CurveFlatten`.
 //! ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` the
 //! same way on `PACK_BAND`: authored `step_mode` 1–3 expands both edges, and
-//! smooth does not promote to `BandFlatten`. ABI 170 admits
+//! smooth does not promote to `BandFlatten`. ABI 182 admits triangle_mesh
+//! `joined_fill` as one identity PolyFill ring from `geom::triangle_mesh_boundary`
+//! (disconnected meshes and holes keep per-face `TriangleFace` rows). ABI 170 admits
 //! constant scatter `marker_glyph` via XYMG (no new pack kind).
 //! ABI 145 admits constant `marker_path` via an XYMP extras sidecar;
 //! tessellation is Scene-owned after pixel mapping (no new pack kind).
@@ -60,7 +62,11 @@ pub const PACK_DENSITY_BLIT: u8 = 10;
 pub const FLAG_STROKE_PERIMETER: u8 = 1 << 0;
 pub const FLAG_HEATMAP_PAINTED: u8 = 1 << 1;
 pub const FLAG_DENSITY_BLIT: u8 = 1 << 2;
-const PACK_FLAGS: u8 = FLAG_STROKE_PERIMETER | FLAG_HEATMAP_PAINTED | FLAG_DENSITY_BLIT;
+pub const FLAG_JOINED_FILL: u8 = 1 << 3;
+const PACK_FLAGS: u8 = FLAG_STROKE_PERIMETER
+    | FLAG_HEATMAP_PAINTED
+    | FLAG_DENSITY_BLIT
+    | FLAG_JOINED_FILL;
 
 pub const XYPK_MAGIC: &[u8; 4] = b"XYPK";
 pub const XYPK_VERSION: u32 = 1;
@@ -69,8 +75,12 @@ pub const FACT_STROKE_PERIMETER: u8 = 1 << 0;
 pub const FACT_CURVE_SMOOTH: u8 = 1 << 1;
 pub const FACT_DENSITY_PLANE: u8 = 1 << 2;
 pub const FACT_HEATMAP_PAINT: u8 = 1 << 3;
-const FACT_BITS: u8 =
-    FACT_STROKE_PERIMETER | FACT_CURVE_SMOOTH | FACT_DENSITY_PLANE | FACT_HEATMAP_PAINT;
+pub const FACT_JOINED_FILL: u8 = 1 << 4;
+const FACT_BITS: u8 = FACT_STROKE_PERIMETER
+    | FACT_CURVE_SMOOTH
+    | FACT_DENSITY_PLANE
+    | FACT_HEATMAP_PAINT
+    | FACT_JOINED_FILL;
 pub const COORDS_CARTESIAN: u8 = 0;
 pub const COORDS_POLAR: u8 = 1;
 
@@ -248,7 +258,9 @@ fn push_row(out: &mut Vec<PackedSceneRow>, row: PackedSceneRow) -> Result<(), Pa
 pub fn packed_row_count(pack_kind: u8, n: usize) -> Result<usize, PackError> {
     let count = match pack_kind {
         PACK_SCATTER | PACK_LINE | PACK_RECT | PACK_BAND | PACK_HEXBIN | PACK_SEGMENT => n,
-        PACK_RIBBON | PACK_TRIANGLE => n.checked_mul(2).ok_or(PackError::Limit)?,
+        PACK_RIBBON => n.checked_mul(2).ok_or(PackError::Limit)?,
+        // Unjoined faces emit 2 rows; a joined ring can emit 3 vertices per face.
+        PACK_TRIANGLE => n.checked_mul(3).ok_or(PackError::Limit)?,
         PACK_HEATMAP | PACK_HEATMAP_PAINTED | PACK_DENSITY_BLIT => 2,
         _ => return Err(PackError::Length),
     };
@@ -304,7 +316,7 @@ pub fn resolve_pack_kind(kind: &str, flags: u8) -> Result<u8, PackError> {
 /// Pack one product-kind trace from the canonical host column envelope.
 pub fn pack_product(input: ProductPackInput<'_>) -> Result<Vec<PackedSceneRow>, PackError> {
     let pack_kind = resolve_pack_kind(input.kind, input.flags)?;
-    let flags = input.flags & FLAG_STROKE_PERIMETER;
+    let flags = input.flags & (FLAG_STROKE_PERIMETER | FLAG_JOINED_FILL);
     let pack = |columns: &[&[f64]]| {
         pack_trace(TracePackInput {
             pack_kind,
@@ -418,6 +430,9 @@ pub fn parse_product_facts(bytes: &[u8]) -> Result<ProductFacts<'_>, PackError> 
     if density {
         flags |= FLAG_DENSITY_BLIT;
     }
+    if facts & FACT_JOINED_FILL != 0 && kind == "triangle_mesh" {
+        flags |= FLAG_JOINED_FILL;
+    }
     let mut step_mode = authored_step;
     if authored_step == 0
         && facts & FACT_CURVE_SMOOTH != 0
@@ -503,7 +518,10 @@ fn heatmap_extent_columns(input: &ProductPackInput<'_>) -> Result<[Vec<f64>; 4],
 
 /// Pack one trace's columns into Scene rows (kind, id, coords, expansion).
 pub fn pack_trace(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, PackError> {
-    if input.flags & !FLAG_STROKE_PERIMETER != 0 {
+    if input.flags & !(FLAG_STROKE_PERIMETER | FLAG_JOINED_FILL) != 0 {
+        return Err(PackError::Length);
+    }
+    if input.flags & FLAG_JOINED_FILL != 0 && input.pack_kind != PACK_TRIANGLE {
         return Err(PackError::Length);
     }
     if input.step_mode > 4 {
@@ -672,6 +690,33 @@ fn pack_ribbon(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, PackErr
 fn pack_triangle(input: TracePackInput<'_>) -> Result<Vec<PackedSceneRow>, PackError> {
     let cols = require_cols(input.columns, 6)?;
     require_finite(cols)?;
+    if input.flags & FLAG_JOINED_FILL != 0 {
+        if let Some(boundary) = crate::geom::triangle_mesh_boundary(
+            cols[0], cols[1], cols[2], cols[3], cols[4], cols[5],
+        ) {
+            if boundary.len() >= 3 {
+                let mut out = Vec::with_capacity(boundary.len());
+                for &(x, y) in &boundary {
+                    push_row(
+                        &mut out,
+                        PackedSceneRow {
+                            kind: KIND_POLYFILL,
+                            symbol: 0,
+                            expansion_mode: EXP_NONE,
+                            style_ref: input.style_ref,
+                            stable_id: input.trace_id,
+                            diameter: 0.0,
+                            x0: x,
+                            y0: y,
+                            x1: 0.0,
+                            y1: 0.0,
+                        },
+                    )?;
+                }
+                return Ok(out);
+            }
+        }
+    }
     let mut out = Vec::with_capacity(cols[0].len().saturating_mul(2));
     for index in 0..cols[0].len() {
         let stable_id = split_id(input.trace_id, index)?;
@@ -1714,5 +1759,131 @@ mod tests {
         assert!(rows
             .iter()
             .all(|row| row.style_ref == 1 && row.stable_id == 11));
+    }
+
+    #[test]
+    fn joined_fill_packs_one_identity_polyfill_ring() {
+        let x0 = [0.0, 1.0];
+        let y0 = [0.0, 0.0];
+        let x1 = [1.0, 1.0];
+        let y1 = [0.0, 1.0];
+        let x2 = [0.0, 0.0];
+        let y2 = [1.0, 1.0];
+        let rows = pack_trace(TracePackInput {
+            pack_kind: PACK_TRIANGLE,
+            flags: FLAG_JOINED_FILL,
+            step_mode: 0,
+            symbol: 0,
+            style_ref: 4,
+            trace_id: 11,
+            diameter: 0.0,
+            extra0: 0.0,
+            extra1: 0.0,
+            columns: &[&x0, &y0, &x1, &y1, &x2, &y2],
+        })
+        .unwrap();
+        assert_eq!(rows.len(), 4);
+        assert!(rows.iter().all(|row| {
+            row.kind == KIND_POLYFILL
+                && row.expansion_mode == EXP_NONE
+                && row.stable_id == 11
+                && row.x1 == 0.0
+                && row.y1 == 0.0
+        }));
+        let unjoined = pack_trace(TracePackInput {
+            pack_kind: PACK_TRIANGLE,
+            flags: 0,
+            step_mode: 0,
+            symbol: 0,
+            style_ref: 4,
+            trace_id: 11,
+            diameter: 0.0,
+            extra0: 0.0,
+            extra1: 0.0,
+            columns: &[&x0, &y0, &x1, &y1, &x2, &y2],
+        })
+        .unwrap();
+        assert_eq!(unjoined.len(), 4);
+        assert!(unjoined
+            .iter()
+            .all(|row| row.expansion_mode == EXP_TRIANGLE && row.stable_id != 11));
+    }
+
+    #[test]
+    fn joined_fill_falls_back_when_the_mesh_is_disconnected() {
+        let x0 = [0.0, 2.0];
+        let y0 = [0.0, 2.0];
+        let x1 = [1.0, 3.0];
+        let y1 = [0.0, 2.0];
+        let x2 = [0.5, 2.5];
+        let y2 = [1.0, 3.0];
+        let rows = pack_trace(TracePackInput {
+            pack_kind: PACK_TRIANGLE,
+            flags: FLAG_JOINED_FILL,
+            step_mode: 0,
+            symbol: 0,
+            style_ref: 1,
+            trace_id: 7,
+            diameter: 0.0,
+            extra0: 0.0,
+            extra1: 0.0,
+            columns: &[&x0, &y0, &x1, &y1, &x2, &y2],
+        })
+        .unwrap();
+        assert_eq!(rows.len(), 4);
+        assert!(rows
+            .iter()
+            .all(|row| row.expansion_mode == EXP_TRIANGLE));
+    }
+
+    #[test]
+    fn product_facts_map_joined_fill_only_for_triangle_mesh() {
+        let mesh_bytes = xypk_bytes(
+            "triangle_mesh",
+            0,
+            COORDS_CARTESIAN,
+            0,
+            0,
+            FACT_JOINED_FILL,
+            9,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        );
+        let mesh = parse_product_facts(&mesh_bytes).unwrap();
+        assert_eq!(mesh.flags, FLAG_JOINED_FILL);
+        let line_bytes = xypk_bytes(
+            "line",
+            0,
+            COORDS_CARTESIAN,
+            0,
+            0,
+            FACT_JOINED_FILL,
+            9,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        );
+        let line = parse_product_facts(&line_bytes).unwrap();
+        assert_eq!(line.flags, 0);
+        assert_eq!(
+            pack_trace(TracePackInput {
+                pack_kind: PACK_LINE,
+                flags: FLAG_JOINED_FILL,
+                step_mode: 0,
+                symbol: 0,
+                style_ref: 0,
+                trace_id: 0,
+                diameter: 0.0,
+                extra0: 0.0,
+                extra1: 0.0,
+                columns: &[&[0.0, 1.0], &[0.0, 1.0]],
+            }),
+            Err(PackError::Length)
+        );
     }
 }
