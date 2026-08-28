@@ -1462,6 +1462,8 @@ plus XYCL v1.
 ABI 157 owns legend-name gating, heatmap-vs-density plane selection, and
 per-trace style/dash/marker/gradient/plane extraction from packed XYTT plus
 XYNM v1.
+ABI 158 owns XYSS dash/linecap/marker/gradient record construction from
+packed XYSD plus XYAO v1.
 Polar+step+smooth and
 authored marker glyphs stay compatibility. Irregular
 spacing, and LOD stay compatibility.

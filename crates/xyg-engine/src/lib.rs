@@ -78,6 +78,8 @@ pub mod scene_density;
 pub use scene_density::pack_density_grid;
 pub mod scene_style;
 pub use scene_style::{resolve_chrome_style, resolve_mark_styles};
+pub mod scene_style_sidecars;
+pub use scene_style_sidecars::{pack_style_sidecars, StyleSidecarsCode, StyleSidecarsError};
 pub mod stats;
 pub mod stream;
 pub mod svg;

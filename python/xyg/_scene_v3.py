@@ -2903,9 +2903,8 @@ def figure_scene(
     except _native.SceneTraceAttachError as error:
         _raise_trace_attach(error, figure)
     try:
-        sidecars = _unpack_xysd(
-            _native.scene_pack_trace_sidecars(attached_bytes, _pack_xynm(figure))
-        )
+        sidecar_bytes = _native.scene_pack_trace_sidecars(attached_bytes, _pack_xynm(figure))
+        sidecars = _unpack_xysd(sidecar_bytes)
     except _native.SceneTraceSidecarsError as error:
         _raise_trace_sidecars(error)
     if len(sidecars["styles"]) != len(figure.traces):
@@ -2913,8 +2912,6 @@ def figure_scene(
     styles = list(sidecars["styles"])
     dashes = list(sidecars["dashes"])
     linecaps = list(sidecars["linecaps"])
-    marker_paths = list(sidecars["marker_paths"])
-    fill_gradients = list(sidecars["fill_gradients"])
     legend_entries = list(sidecars["legend"])
     heatmap_paint_planes = list(sidecars["planes"])
     try:
@@ -2957,6 +2954,8 @@ def figure_scene(
     # symbol/diameter, density rewrite, and pack_product_facts (ABI 156). Hosts
     # pack XYNM names; Rust owns legend-name gating, heatmap-vs-density plane
     # selection, and style/dash/marker/gradient/plane extraction (ABI 157).
+    # Hosts pass XYSD plus XYAO; Rust owns XYSS dash/linecap/marker/gradient
+    # records and omit-empty (ABI 158).
     x_domain = tuple(float(value) for value in figure._range("x"))
     y_domain = tuple(float(value) for value in figure._range("y"))
     annotation_facts = bytearray()
@@ -2975,6 +2974,12 @@ def figure_scene(
         )
     except ValueError as error:
         raise UnsupportedSceneV3(str(error)) from error
+    try:
+        style_sidecars = _native.scene_pack_style_sidecars(sidecar_bytes, annotation_output)
+    except _native.SceneStyleSidecarsError as error:
+        if error.code == -2:
+            raise ValueError("invalid scene style sidecar facts version") from error
+        raise ValueError("invalid scene style sidecar packing") from error
     framed_annotations = _apply_xyao(
         annotation_output,
         kinds,
@@ -3070,7 +3075,7 @@ def figure_scene(
         polar_input=_native.scene_pack_scene_extras(
             _pack_polar_scene_input(figure),
             _pack_xyhp(heatmap_paint_planes),
-            _pack_xyss(dashes, linecaps, marker_paths, fill_gradients),
+            style_sidecars,
         ),
     )
 

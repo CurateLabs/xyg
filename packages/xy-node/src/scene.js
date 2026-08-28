@@ -48,6 +48,7 @@ import {
   xyScenePackTraceAttach,
   xyScenePackTraceRows,
   xyScenePackTraceSidecars,
+  xyScenePackStyleSidecars,
   xyScenePackAnnotationMarks,
   xySceneRasterCommands,
   xySceneResolveChromeStyle,
@@ -3836,6 +3837,39 @@ function packTraceSidecars(attached, names) {
   raiseTraceSidecars(-4, 0);
 }
 
+function packStyleSidecars(sidecars, annotations) {
+  const sidecarBytes = sidecars instanceof Uint8Array ? sidecars : new Uint8Array();
+  const annotationBytes = annotations instanceof Uint8Array ? annotations : new Uint8Array();
+  let capacity = Math.max(65536, sidecarBytes.length + annotationBytes.length + 4096);
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const out = new Uint8Array(capacity);
+    const code = xyScenePackStyleSidecars(
+      sidecarBytes.length ? u8Ptr(sidecarBytes) : 0,
+      BigInt(sidecarBytes.length),
+      annotationBytes.length ? u8Ptr(annotationBytes) : 0,
+      BigInt(annotationBytes.length),
+      u8Ptr(out),
+      BigInt(out.length),
+    );
+    if (code === -4) {
+      capacity *= 2;
+      continue;
+    }
+    if (code < 0) {
+      const failing = new DataView(out.buffer, out.byteOffset, 4).getUint32(0, true);
+      const error = new RangeError(code === -2 ? "invalid scene style sidecar facts version" : "invalid scene style sidecar packing");
+      error.code = code;
+      error.index = failing;
+      throw error;
+    }
+    return out.subarray(0, code);
+  }
+  const error = new RangeError("invalid scene style sidecar packing");
+  error.code = -4;
+  error.index = 0;
+  throw error;
+}
+
 function packChromeFacts(figure, legendEntries, styles, { width, height, margins = null, colorbarOk = true } = {}) {
   const FLAG_AUTHORED_MARGINS = 1 << 0, FLAG_PADDING = 1 << 1, FLAG_X_MAJOR_AUTO = 1 << 2, FLAG_Y_MAJOR_AUTO = 1 << 3;
   const FLAG_X_TICK_LABELS = 1 << 4, FLAG_Y_TICK_LABELS = 1 << 5, FLAG_HAS_CHROME = 1 << 6, FLAG_HAS_LEGEND = 1 << 7, FLAG_HAS_COLORBAR = 1 << 8;
@@ -4755,8 +4789,10 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     }
     throw error;
   }
+  let sidecarBytes;
   try {
-    sidecars = unpackXySd(packTraceSidecars(attachedBytes, packXyNm(figure.traces ?? [])));
+    sidecarBytes = packTraceSidecars(attachedBytes, packXyNm(figure.traces ?? []));
+    sidecars = unpackXySd(sidecarBytes);
   } catch (error) {
     if (Number.isInteger(error.code) && error.code < 0) {
       raiseTraceSidecars(error.code, error.index ?? 0);
@@ -4769,8 +4805,6 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   const styles = sidecars.styles;
   const dashes = sidecars.dashes;
   const linecaps = sidecars.linecaps;
-  const markerPaths = sidecars.markerPaths;
-  const fillGradients = sidecars.fillGradients;
   const legendEntries = sidecars.legend;
   const heatmapPaintPlanes = sidecars.planes;
   let packed;
@@ -4789,8 +4823,10 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     annotationParts.push(packXyAf(annotation, annotationIndex));
   }
   const annotationFacts = concatBytes(annotationParts);
+  const annotationOutput = packAnnotationFacts(annotationFacts, styles.length, xDomain, yDomain);
+  const styleSidecars = packStyleSidecars(sidecarBytes, annotationOutput);
   const authoredText = applyXyao(
-    packAnnotationFacts(annotationFacts, styles.length, xDomain, yDomain),
+    annotationOutput,
     kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, styles, dashes, linecaps,
   );
 
@@ -4805,7 +4841,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     yMajorTicks: chrome.yMajorTicks, yMinorTicks: chrome.yMinorTicks, xTickLabels: chrome.xTickLabels,
     yTickLabels: chrome.yTickLabels, xFormat: chrome.xFormat, yFormat: chrome.yFormat,
     legendInput: chrome.legendInput, colorbarInput: chrome.colorbarInput,
-    authoredTextAnnotations: authoredText, polarInput: packSceneExtrasFromFacts(packPolarSceneInput(figure), packXyhp(heatmapPaintPlanes), packXySs(dashes, linecaps, markerPaths, fillGradients)),
+    authoredTextAnnotations: authoredText, polarInput: packSceneExtrasFromFacts(packPolarSceneInput(figure), packXyhp(heatmapPaintPlanes), styleSidecars),
   });
 }
 

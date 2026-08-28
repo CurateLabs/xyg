@@ -21,6 +21,7 @@ from xyg._native import (
     scene_pack_product_facts,
     scene_pack_public_export,
     scene_pack_scene_extras,
+    scene_pack_style_sidecars,
     scene_pack_trace,
     scene_pack_trace_attach,
     scene_pack_trace_compile,
@@ -109,6 +110,20 @@ def test_empty_trace_sidecar_facts_emit_empty_xysd() -> None:
     assert packed[:4] == b"XYSD"
     assert int.from_bytes(packed[8:12], "little") == 0
     assert packed[4:8] == (1).to_bytes(4, "little")
+
+
+def test_empty_style_sidecar_facts_emit_no_xyss() -> None:
+    compiled = scene_pack_trace_compile(
+        b"XYTC" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    )
+    attached = scene_pack_trace_attach(
+        compiled, b"XYTA" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    )
+    sidecars = scene_pack_trace_sidecars(
+        attached, b"XYNM" + (1).to_bytes(4, "little") + (0).to_bytes(8, "little")
+    )
+    packed = scene_pack_style_sidecars(sidecars, b"")
+    assert packed == b""
 
 
 def test_line_default_stroke_width_is_one_and_a_half() -> None:
