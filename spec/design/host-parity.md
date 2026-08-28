@@ -249,6 +249,7 @@ line `curve="smooth"` plus `step` as authored step expansion. ABI 173 tessellate
 heatmap `corner_radius`. ABI 174 tessellates violin/box `corner_radius`.
 ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`.
 ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`.
+ABI 177 admits heatmap `fill_opacity`.
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -306,6 +307,7 @@ ABI 173 tessellates heatmap `corner_radius`.
 ABI 174 tessellates violin/box `corner_radius`.
 ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`.
 ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`.
+ABI 177 admits heatmap `fill_opacity`.
 ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate
@@ -362,6 +364,7 @@ step expansion on that same product Scene. ABI 173 tessellates heatmap
 `corner_radius` on that same product Scene. ABI 175 admits violin/box
 `fill_opacity` / `stroke_opacity` on that same product Scene. ABI 176 admits
 bar/column/histogram `fill_opacity` / `stroke_opacity` on that same product Scene.
+ABI 177 admits heatmap `fill_opacity` on that same product Scene.
 The explicit `xyg_scene_figure_support_reason` ABI remains for tests.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call

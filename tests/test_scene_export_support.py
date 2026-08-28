@@ -1298,10 +1298,25 @@ def test_public_heatmap_compiler_rejects_secondary_axis_and_nonfinite(
     assert _public_pdf(figure) is None
 
 
+def test_public_heatmap_fill_opacity_is_scene_supported() -> None:
+    figure = _public_heatmap()
+    figure.traces[0].style["fill_opacity"] = 0.5
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported != public_static_export(_public_heatmap(), "svg")
+    colormap = Figure(width=320, height=240)
+    colormap.axis_options["x"]["domain"] = (0.0, 4.0)
+    colormap.axis_options["y"]["domain"] = (0.0, 5.0)
+    colormap.heatmap(_PUBLIC_HEATMAP_Z, x=_PUBLIC_HEATMAP_X, y=_PUBLIC_HEATMAP_Y)
+    colormap.traces[0].style["fill_opacity"] = 0.5
+    assert scene_export_support_reason(colormap) is None
+    assert public_static_export(colormap, "svg") is not None
+
+
 @pytest.mark.parametrize(
     "mutate",
     [
-        lambda figure: figure.traces[0].style.__setitem__("fill_opacity", 0.5),
         lambda figure: figure.traces[0].style.__setitem__("role", "heat-density"),
     ],
 )

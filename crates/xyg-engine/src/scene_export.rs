@@ -15,6 +15,7 @@
 //! ABI 175 admits violin/box `fill_opacity` / `stroke_opacity` on that public
 //! Scene (XYMS already composites those channels). ABI 176 admits
 //! bar/column/histogram `fill_opacity` / `stroke_opacity` the same way.
+//! ABI 177 admits heatmap `fill_opacity` on that public Scene (XYMS fill alpha).
 //! Rust owns the public PolyFill group budget, including
 //! companion traces that share the browser painter's 1,024-group ceiling.
 
@@ -476,6 +477,7 @@ fn public_style_keys(kind: u8) -> &'static [&'static str] {
             "colormap",
             "truecolor",
             "corner_radius",
+            "fill_opacity",
         ],
         _ => &[],
     }
