@@ -1486,6 +1486,7 @@ def _pack_chrome_facts(
         y_major = [float(value) for value in ya.get("tick_values")]
     x_minor = [float(value) for value in (xa.get("minor_tick_values") or ())]
     y_minor = [float(value) for value in (ya.get("minor_tick_values") or ())]
+    # ABI 200: Rust pack_figure_chrome filters authored minors through the tick window.
     x_labels = xa.get("tick_labels")
     y_labels = ya.get("tick_labels")
     if x_labels is not None:

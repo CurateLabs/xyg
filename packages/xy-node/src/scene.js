@@ -4661,6 +4661,7 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   if (yTicks != null) { flags &= ~FLAG_Y_MAJOR_AUTO; yMajor = Array.from(yTicks, Number); }
   const xMinor = Array.from(xAxis.minorTickValues ?? xAxis.minor_tick_values ?? [], Number);
   const yMinor = Array.from(yAxis.minorTickValues ?? yAxis.minor_tick_values ?? [], Number);
+  // ABI 200: Rust pack_figure_chrome filters authored minors through the tick window.
   const xLabels = xAxis.tickLabels ?? xAxis.tick_labels ?? null;
   const yLabels = yAxis.tickLabels ?? yAxis.tick_labels ?? null;
   if (xLabels != null) flags |= FLAG_X_TICK_LABELS;

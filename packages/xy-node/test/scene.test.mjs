@@ -630,6 +630,32 @@ test("Node Scene filters authored tick values and pairs labels during encode", (
   assert.equal(svg.includes("off-domain-long-label"), false);
 });
 
+test("Node Scene filters authored minor ticks on linear/log/symlog during encode", () => {
+  const cases = [
+    { type: "linear", domain: [0, 1], points: [[0, 1], [0, 1]], majors: [0, 1], minors: [-0.25, 0.25, 0.75, 1.25] },
+    { type: "log", domain: [1, 10], points: [[1, 10], [1, 2]], majors: [1, 10], minors: [0.5, 2, 5, 20] },
+    { type: "symlog", domain: [-10, 10], constant: 1, points: [[-1, 1], [-1, 1]], majors: [-10, 10], minors: [-20, -1, 1, 20] },
+  ];
+  for (const item of cases) {
+    const axis = {
+      type: item.type,
+      domain: item.domain,
+      tick_values: item.majors,
+      minor_tick_values: item.minors,
+      minor_style: { grid_color: "#22c55e", tick_color: "#22c55e", tick_length: 3 },
+    };
+    if (item.constant != null) axis.constant = item.constant;
+    const figure = new Figure();
+    figure.scatter(item.points[0], item.points[1], { id: 0 });
+    figure.setAxis("x", axis);
+    assert.match(sceneSvg(figure.toScene()), /rgba\(34,197,94/);
+    const off = new Figure();
+    off.scatter(item.points[0], item.points[1], { id: 0 });
+    off.setAxis("x", { ...axis, minor_tick_values: [item.minors[0], item.minors[item.minors.length - 1]] });
+    assert.equal(sceneSvg(off.toScene()).includes("rgba(34,197,94"), false);
+  }
+});
+
 test("Node numeric tick precision boundary and oversize fallback are Rust-owned", () => {
   const build = (format, width = 320) => {
     const figure = new Figure({ width, height: 240 });

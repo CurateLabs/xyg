@@ -274,6 +274,63 @@ def test_python_scene_authored_ticks_filter_during_encode() -> None:
 
 
 @pytest.mark.parametrize(
+    ("scale", "domain", "constant", "points", "majors", "minors"),
+    [
+        (
+            "linear",
+            (0.0, 1.0),
+            None,
+            ([0.0, 1.0], [0.0, 1.0]),
+            [0.0, 1.0],
+            [-0.25, 0.25, 0.75, 1.25],
+        ),
+        ("log", (1.0, 10.0), None, ([1.0, 10.0], [1.0, 2.0]), [1.0, 10.0], [0.5, 2.0, 5.0, 20.0]),
+        (
+            "symlog",
+            (-10.0, 10.0),
+            1.0,
+            ([-1.0, 1.0], [-1.0, 1.0]),
+            [-10.0, 10.0],
+            [-20.0, -1.0, 1.0, 20.0],
+        ),
+    ],
+)
+def test_python_scene_authored_minors_filter_during_encode(
+    scale: str,
+    domain: tuple[float, float],
+    constant: float | None,
+    points: tuple[list[float], list[float]],
+    majors: list[float],
+    minors: list[float],
+) -> None:
+    figure = Figure()
+    figure.scatter(points[0], points[1])
+    options = {
+        "type_": scale,
+        "domain": domain,
+        "tick_values": majors,
+        "minor_tick_values": minors,
+        "minor_style": {
+            "grid_color": "#22c55e",
+            "tick_color": "#22c55e",
+            "tick_length": 3,
+        },
+    }
+    if constant is not None:
+        options["constant"] = constant
+    figure.set_axis("x", **options)
+    svg = _native.scene_svg(figure.to_scene())
+    assert "rgba(34,197,94" in svg
+    off_only = Figure()
+    off_only.scatter(points[0], points[1])
+    off_options = dict(options)
+    off_options["minor_tick_values"] = [minors[0], minors[-1]]
+    off_only.set_axis("x", **off_options)
+    off_svg = _native.scene_svg(off_only.to_scene())
+    assert "rgba(34,197,94" not in off_svg
+
+
+@pytest.mark.parametrize(
     ("value", "encoded"), [(None, b""), ("", b""), (0, b"0"), (False, b"false")]
 )
 def test_python_scene_v9_legend_title_defaults_only_for_none(value: object, encoded: bytes) -> None:

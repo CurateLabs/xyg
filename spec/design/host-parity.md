@@ -549,14 +549,15 @@ ABI 128 moves authored tick-window resolve and filter into Rust: Python
 and Node call `xyg_tick_window` and `xyg_tick_window_filter` so linear
 vs modular angular containment cannot drift. ABI 199 Scene product encode
 filters authored cartesian majors through that window and pairs
-`tick_labels` during chrome pack. Hosts still choose tick families and
+`tick_labels` during chrome pack. ABI 200 filters authored cartesian
+minors through that same window (`require_finite`). Hosts still choose tick families and
 map values to pixels on the compatibility `_svg` path. ChartView JS
 `_polarAngularTurn` / `_axisTicks` seam filter stays until WASM.
 ABI 130 moves Cartesian compatibility tick-label formatting into Rust:
 Python and Node call `xyg_tick_format` so linear/log/time/number-spec,
 category, and angular defaults cannot drift. Polar tick drawing stays
 host-side. Scene product-path authored `tick_labels` pair during chrome
-pack (ABI 199).
+pack (ABI 199). Authored cartesian minors filter during chrome pack (ABI 200).
 ABI 131 moves static polar (theta, r) → screen-pixel projection into Rust:
 Python and Node call `xyg_polar_layout`, `xyg_polar_project`, and the polar
 visibility-mask helpers so disc layout, projection, and cull predicates cannot

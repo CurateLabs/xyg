@@ -59,7 +59,8 @@ SVG/raster and pyplot locator paths now call `_svg.axis_ticks`, which maps each
 automatic family directly to this ABI. The retired per-family Python wrappers
 contained no fallback ladder; polar/secondary placement and rich label
 formatting remain compatibility presentation. Scene product-path authored
-cartesian filtering and `tick_labels` pairing are ABI 199.
+cartesian filtering and `tick_labels` pairing are ABI 199; authored
+cartesian minor filtering is ABI 200.
 Cross-platform conformance keeps algebraic tick families bit-exact and permits
 one part in 10^15 for symmetric-log values whose final inverse transform uses
 the platform math library. Invalid domains and target counts fail closed at the
@@ -1012,7 +1013,8 @@ and a literal suffix. Precision is bounded from 0 through 100, matching the
 existing browser fixed-decimal ceiling; each authored format is at most 256
 UTF-8 bytes and must not contain NUL. Explicit authored tick labels retain
 precedence; ABI 199 filters those majors through the ABI 128 tick window
-and pairs labels during chrome pack. Invalid
+and pairs labels during chrome pack. ABI 200 filters authored cartesian
+minors (`require_finite`). Invalid
 grammar deliberately produces the ordinary deterministic label instead of an
 error, and a sub-unit log value that would collapse to formatted zero also
 uses its ordinary distinguishable label without affixes.
@@ -1041,7 +1043,8 @@ settles authored `loc="best"` from packed XYCL/XYNM during product encode
 owns `_svg.layout()` padding/title/colorbar/right-y/polar-recut combination
 and pyplot tight-layout figure-edge extras (#299). ABI 199 filters authored
 cartesian majors through the ABI 128 tick window and pairs `tick_labels`
-during chrome pack (#300). Remaining #275
+during chrome pack (#300). ABI 200 filters authored cartesian minors
+through that same window (`require_finite`, #301). Remaining #275
 debt is compatibility `_svg._*room` for polar / extra-axis / CSS-font
 measurement and `_svg._legend_layout` CSS remaps.
 Optional formats still use the versioned `XYAF` v1 authoring envelope (`magic`,

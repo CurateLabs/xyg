@@ -1420,13 +1420,15 @@ call `xyg_tick_window` and `xyg_tick_window_filter`; linear vs modular
 angular containment (including seam-crossing sectors) is engine-owned
 and identical for Python and Node. ABI 199 Scene product encode filters
 authored cartesian majors through that window and pairs `tick_labels`
-during chrome pack (#300). Hosts still choose tick families via
+during chrome pack (#300). ABI 200 filters authored cartesian minors
+through that same window (`require_finite`, #301). Hosts still choose tick families via
 `xyg_scene_axis_ticks` and map values to pixels on the compatibility
 `_svg` path (#276). Polar/secondary authored ticks stay #302.
 ABI 130 moves Cartesian compatibility tick-label formatting into Rust.
 Hosts call `xyg_tick_format` for linear/log/time/number-spec, category,
 and angular defaults; polar tick drawing stays host-side (#276). Scene
 product-path authored `tick_labels` pair during chrome pack (ABI 199).
+Authored cartesian minors filter during chrome pack (ABI 200).
 ABI 131 moves static polar (theta, r) → screen-pixel projection into Rust.
 Hosts call `xyg_polar_layout`, `xyg_polar_project`, and the polar visibility-mask
 helpers; wedge/ring/polygon helpers remain host-side and call native projection.

@@ -10,7 +10,8 @@
 //! styles on the product path. ABI 197 settles authored `loc="best"` from
 //! packed XYCL/XYNM plus XYCF domains during product encode. ABI 199 filters
 //! authored cartesian majors through the ABI 128 tick window and pairs
-//! `tick_labels` during chrome pack. Encoded Scene v31 is unchanged.
+//! `tick_labels` during chrome pack. ABI 200 filters authored cartesian
+//! minors through that same window (`require_finite`). Encoded Scene v31 is unchanged.
 
 use crate::legend_fit::{self, LegendScale};
 use crate::scene::{
@@ -220,6 +221,34 @@ fn filter_authored_majors(
             .collect()
     });
     (filtered, filtered_labels)
+}
+
+fn filter_authored_minors(values: Vec<f64>, lo: f64, hi: f64) -> Vec<f64> {
+    if values.is_empty() {
+        return values;
+    }
+    let Some((window_lo, window_hi)) = tick_layout::tick_window(
+        lo,
+        hi,
+        tick_layout::THETA_NONE,
+        tick_layout::KIND_LINEAR,
+        0,
+        f64::NAN,
+        f64::NAN,
+    ) else {
+        return values;
+    };
+    let Some(indices) = tick_layout::filter_tick_indices(
+        &values,
+        window_lo,
+        window_hi,
+        tick_layout::THETA_NONE,
+        tick_layout::KIND_LINEAR,
+        true,
+    ) else {
+        return values;
+    };
+    indices.iter().map(|&index| values[index]).collect()
 }
 
 fn legend_loc(name: &[u8], authored: bool) -> Result<u8, ChromePackError> {
@@ -554,9 +583,9 @@ pub fn pack_figure_chrome_from_sidecars(
     let x_format = take(facts, &mut at, x_format_len)?;
     let y_format = take(facts, &mut at, y_format_len)?;
     let mut x_major = take_f64s(facts, &mut at, x_major_count)?;
-    let x_minor = take_f64s(facts, &mut at, x_minor_count)?;
+    let mut x_minor = take_f64s(facts, &mut at, x_minor_count)?;
     let mut y_major = take_f64s(facts, &mut at, y_major_count)?;
-    let y_minor = take_f64s(facts, &mut at, y_minor_count)?;
+    let mut y_minor = take_f64s(facts, &mut at, y_minor_count)?;
     let mut x_tick_labels = if flags & FLAG_X_TICK_LABELS != 0 {
         Some(take_labels(facts, &mut at, x_label_count)?)
     } else {
@@ -659,6 +688,8 @@ pub fn pack_figure_chrome_from_sidecars(
         y_major = filtered;
         y_tick_labels = filtered_labels;
     }
+    x_minor = filter_authored_minors(x_minor, x_lo, x_hi);
+    y_minor = filter_authored_minors(y_minor, y_lo, y_hi);
 
     let colorbar_side = if flags & FLAG_HAS_COLORBAR != 0 {
         if colorbar_obs & CB_UNSUPPORTED != 0 {
@@ -1044,6 +1075,24 @@ mod tests {
         assert!(!packed
             .windows(b"off-domain-long-label".len())
             .any(|w| w == b"off-domain-long-label"));
+    }
+
+    #[test]
+    fn authored_minors_filter_through_the_tick_window() {
+        let mut facts = header(FLAG_X_MAJOR_AUTO | FLAG_Y_MAJOR_AUTO, 200.0, 120.0, 0, 0);
+        facts[180..184].copy_from_slice(&4u32.to_le_bytes());
+        let mut payload = facts;
+        for value in [-0.25f64, 0.25, 0.75, 1.25] {
+            payload.extend_from_slice(&value.to_le_bytes());
+        }
+        let packed = pack_figure_chrome(&payload).unwrap();
+        assert_eq!(u32::from_le_bytes(packed[72..76].try_into().unwrap()), 2);
+        let style_len = u32::from_le_bytes(packed[48..52].try_into().unwrap()) as usize;
+        let at = XYCC_HEADER_BYTES + style_len;
+        let first = f64::from_le_bytes(packed[at..at + 8].try_into().unwrap());
+        let second = f64::from_le_bytes(packed[at + 8..at + 16].try_into().unwrap());
+        assert_eq!(first, 0.25);
+        assert_eq!(second, 0.75);
     }
 
     #[test]

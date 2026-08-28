@@ -5,7 +5,8 @@
 //! tick-window resolve/filter (ABI 128) owns linear vs modular angular
 //! containment so seam-crossing polar sectors keep the same spokes as marks.
 //! ABI 199 Scene product encode filters authored cartesian majors through
-//! that window and pairs `tick_labels` during chrome pack. Tick-label
+//! that window and pairs `tick_labels` during chrome pack. ABI 200 filters
+//! authored cartesian minors (`require_finite`). Tick-label
 //! formatting (ABI 130) owns Cartesian linear/log/time/number-spec
 //! and angular/category defaults via `xyg_tick_format`. Hosts still map values
 //! to pixels on the compatibility `_svg` path; Scene product-path authored
