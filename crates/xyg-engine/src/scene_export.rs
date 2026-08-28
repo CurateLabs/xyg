@@ -48,8 +48,8 @@
 //! packed XYHP kind 5 (hosts omit `FLAG_COLOR2` / `OBS_GRADIENT` on that path).
 //! Polar ribbon, custom `role`, and explicit `FLAG_COLOR2` stay fail-closed.
 //! Annotation `html` is XYFS `OBS_ANNOTATION_HTML` / XYEP `html` (#305): Scene
-//! SVG/raster own literal text only. `class_name` and polar annotations stay
-//! fail-closed.
+//! SVG/raster own literal text only. Annotation `class_name` is
+//! `SCENE_FEATURE_BROWSER_CSS` (#306). Polar annotations stay fail-closed.
 //! Rust owns the public PolyFill group budget, including
 //! companion traces that share the browser painter's 1,024-group ceiling.
 
@@ -1114,7 +1114,8 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     // flags are unused. ABI 187 admits cartesian unwrapped text rotation the
     // same XYAW wrap=0 path. ABI 188 admits labelled cartesian marker rotation
     // the same way (XYAW nums[8]). Annotation html is OBS_ANNOTATION_HTML
-    // (#305). class_name and polar stay fail-closed.
+    // (#305). Annotation class_name is SCENE_FEATURE_BROWSER_CSS (#306).
+    // Polar stays fail-closed.
     if extra_key(&legend_keys, PUBLIC_LEGEND_KEYS) {
         return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LEGEND");
     }

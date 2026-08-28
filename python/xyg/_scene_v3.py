@@ -723,8 +723,9 @@ def _annotation_allowed_style(kind: str, wrapped: bool, labelled: bool) -> set[s
 def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
     """Pack one authored annotation as XYAF v1; Rust classifies the family.
 
-    Annotation ``class_name`` is an XYFS observation (ABI 165), not an XYAF
-    field. Product encode reports ``XYG_SCENE_UNSUPPORTED_BROWSER_CSS``.
+    Annotation ``class_name`` is an XYFS observation (ABI 165 / #306), not an
+    XYAF field. Scene SVG/raster do not encode CSS classes. Product encode
+    reports ``XYG_SCENE_UNSUPPORTED_BROWSER_CSS``.
     Annotation ``html`` is XYFS ``OBS_ANNOTATION_HTML`` (#305); Scene SVG/raster
     own literal text only. Product encode reports
     ``XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML``.

@@ -1598,7 +1598,8 @@ XYAW `wrap=0`. ABI 188 admits labelled cartesian marker `rotation` as XYAW
 `wrap=0`. ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from
 packed XYTA. ABI 190 intern cartesian per-item two-ended ribbon `color2_ch`
 from packed XYHP kind 5. Annotation `html` stays fail-closed
-(`XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML`). `class_name` and polar stay
+(`XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML`). Annotation `class_name` stays
+fail-closed as `XYG_SCENE_UNSUPPORTED_BROWSER_CSS` (#306). Polar stays
 fail-closed. Per-item radius
 channels stay compatibility. Irregular
 spacing, and LOD stay compatibility.
