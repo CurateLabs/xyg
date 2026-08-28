@@ -1766,6 +1766,28 @@ def test_public_literal_linear_gradient_fills_route_through_scene(factory) -> No
     assert 'fill="url(#xy-scene-g' in svg
 
 
+def test_var_and_theme_css_gradients_are_fail_closed_product_contract() -> None:
+    """#289: unresolved `var()` / theme CSS stay compatibility; literal gradients stay Scene."""
+    from xyg import _svg
+
+    literal = _supported().bar([0, 1], [1, 2], fill="linear-gradient(to bottom, #000000, #ffffff)")
+    assert scene_export_support_reason(literal) is None
+    assert "<linearGradient" in literal.to_svg()
+
+    unresolved = _supported().bar(
+        [0, 1], [1, 2], fill="linear-gradient(to bottom, var(--accent), #ffffff)"
+    )
+    reason = scene_export_support_reason(unresolved) or ""
+    assert "XYG_SCENE_UNSUPPORTED_GRADIENT" in reason or "gradient" in reason.lower()
+    with pytest.raises(UnsupportedSceneV3, match=r"solid literal paints|gradient fills|non-CSS"):
+        figure_scene(unresolved)
+    assert public_static_export(unresolved, "svg") is None
+    compat = unresolved.to_svg()
+    assert compat.startswith("<svg")
+    assert compat == _svg.to_svg(unresolved)
+    assert "xy-scene-g" not in compat
+
+
 @pytest.mark.parametrize(
     "kind,count", [("area", 0), ("area", 1), ("error_band", 0), ("error_band", 1)]
 )

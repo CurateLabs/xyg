@@ -727,6 +727,10 @@ are inside that migrated static subset: Rust preserves the independent
 semantics in all three consumers (major-tick geometry versus tick-label/title
 paint). This does not widen the boundary to rich tick strings, wrapping,
 custom fonts, CSS/classes, theme-driven chrome, or arbitrary annotation text.
+Unresolved mark-fill `var()` / theme CSS gradients are the bounded fail-closed
+Scene-static contract (#289): `XYG_SCENE_UNSUPPORTED_GRADIENT`. Literal
+`linear-gradient(...)` with resolvable CSS colors stays ABI 146 Scene XYGR.
+Live browser widgets still resolve `var()`.
 
 ### Contracts (MUST)
 
