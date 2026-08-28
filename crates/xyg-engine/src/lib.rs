@@ -62,6 +62,8 @@ pub mod scene_heatmap;
 pub use scene_heatmap::pack_heatmap_facts;
 pub mod scene_extras;
 pub use scene_extras::pack_scene_extras;
+pub mod scene_density;
+pub use scene_density::pack_density_grid;
 pub mod scene_style;
 pub use scene_style::{resolve_chrome_style, resolve_mark_styles};
 pub mod stats;

@@ -15,7 +15,6 @@ from typing import Any
 import numpy as np
 
 from . import _native, _validate, channels
-from .config import DENSITY_GRID
 from .marks import _SYMBOL_CODES, _validated_marker_path
 
 # Host mark kinds that lower to Scene Rect (kind 2). Geometry is already
@@ -1731,15 +1730,11 @@ def _density_blit_pack(
         return None
     if xr1 <= xr0 or yr1 <= yr0:
         return None
-    cols, rows = DENSITY_GRID
-    grid = _native.bin_2d(xv, yv, xr0, xr1, yr0, yr1, int(cols), int(rows))
-    encoded, gmax = _native.density_log_u8(grid)
     bin_colors = channels.resolve_bin_colors(getattr(trace, "color_ch", None), None)
-    mean_rgba = None
-    if bin_colors is not None:
-        mean_rgba = _native.bin_2d_mean_color(
-            xv, yv, xr0, xr1, yr0, yr1, int(cols), int(rows), **bin_colors
-        )
+    packed = _native.scene_pack_density_grid(xv, yv, xr0, xr1, yr0, yr1, **(bin_colors or {}))
+    if packed is None:
+        return None
+    encoded, gmax, mean_rgba, rows, cols = packed
     plane = _density_paint_plane(
         trace, encoded, int(rows), int(cols), float(gmax), int(trace.id), mean_rgba
     )
@@ -2132,6 +2127,8 @@ def figure_scene(
     # heatmap/density paint facts; Rust owns XYHP kind routing (ABI 149).
     # Hosts pack XYSS sidecar facts plus framed XYPL/XYHP; Rust owns
     # XYDS/XYLC/XYMP/XYGR layout, concat order, and XYEX wrapping (ABI 150).
+    # Hosts pass density columns; Rust owns bin_2d / density_log_u8 / mean-color
+    # (ABI 151).
     x_domain = tuple(float(value) for value in figure._range("x"))
     y_domain = tuple(float(value) for value in figure._range("y"))
     annotation_facts = bytearray()

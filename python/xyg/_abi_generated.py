@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 150
-SIGNATURE_SHA256 = "34aef3a7beeaa8c9fdbf177c73b3bceec2757088553fcd07cd8864caf17ad2d3"
+ABI_VERSION = 151
+SIGNATURE_SHA256 = "1f3b653d71809c1e05dc6d8827c5899cf22d84f549e8a69d7f7212555d3f36cd"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -670,6 +670,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_pack_colorbar
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_uint8, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_pack_density_grid(const double * x, const double * y, size_t len, double x0, double x1, double y0, double y1, const uint8_t * idx, const uint8_t * rgba, const uint8_t * lut, size_t lut_len, uint8_t * out, size_t out_cap)
+    function = lib.xyg_scene_pack_density_grid
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_scene_pack_heatmap_facts(const uint8_t * facts, size_t facts_len, uint8_t * out, size_t out_cap)
     function = lib.xyg_scene_pack_heatmap_facts
     function.restype = ctypes.c_int32

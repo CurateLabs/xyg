@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { cssColorRgba8, lineChart, scatterChart } from "../src/index.js";
 import { figureSceneV3 } from "../src/scene.js";
-import { xyScenePackAnnotationFacts, xyScenePackAnnotationMarks, xyScenePackHeatmapFacts, xyScenePackProduct, xyScenePackProductFacts, xyScenePackSceneExtras, xyScenePackTrace, xySceneResolveChromeStyle, xySceneResolvePackKind } from "../src/native.js";
+import { xyScenePackAnnotationFacts, xyScenePackAnnotationMarks, xyScenePackDensityGrid, xyScenePackHeatmapFacts, xyScenePackProduct, xyScenePackProductFacts, xyScenePackSceneExtras, xyScenePackTrace, xySceneResolveChromeStyle, xySceneResolvePackKind } from "../src/native.js";
 import { f64Ptr, u8Ptr } from "../src/encode.js";
 
 test("cssColorRgba8 matches Python named colors and none", () => {
@@ -381,4 +381,20 @@ test("xyScenePackSceneExtras encodes dash facts as raw XYDS", () => {
   assert.ok(code > 16);
   assert.equal(String.fromCharCode(out[0], out[1], out[2], out[3]), "XYDS");
   assert.equal(new DataView(out.buffer).getUint32(8, true), 1);
+});
+
+test("xyScenePackDensityGrid encodes a 512x384 log-u8 lattice", () => {
+  const x = new Float64Array([0.25, 0.75]);
+  const y = new Float64Array([0.25, 0.75]);
+  const out = new Uint8Array(32 + 512 * 384);
+  const code = xyScenePackDensityGrid(
+    f64Ptr(x), f64Ptr(y), 2n,
+    0, 1, 0, 1,
+    0, 0, 0, 0n,
+    u8Ptr(out), BigInt(out.length),
+  );
+  assert.equal(code, 32 + 512 * 384);
+  assert.equal(String.fromCharCode(out[0], out[1], out[2], out[3]), "XYDE");
+  assert.equal(new DataView(out.buffer).getUint32(8, true), 512);
+  assert.equal(new DataView(out.buffer).getUint32(12, true), 384);
 });

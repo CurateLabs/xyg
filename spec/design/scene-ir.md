@@ -102,7 +102,9 @@ change Scene records; `xyg_scene_pack_heatmap_facts` owns heatmap/density
 XYHP kind routing from packed XYHF v1. ABI 150 does not
 change Scene records; `xyg_scene_pack_scene_extras` owns XYDS/XYLC/XYMP/XYGR
 layout, concat order, omit-empty, and XYEX wrapping from packed XYSS v1 plus
-framed XYPL/XYHP.
+framed XYPL/XYHP. ABI 151 does not
+change Scene records; `xyg_scene_pack_density_grid` owns Scene density
+`bin_2d` / `density_log_u8` / optional mean-color from packed columns.
 
 ## Version 3: backend-neutral core scene batch
 
@@ -421,6 +423,9 @@ from packed XYHF v1.
 ABI 150 does not change Scene records;
 `xyg_scene_pack_scene_extras` owns XYDS/XYLC/XYMP/XYGR layout, concat order,
 omit-empty, and XYEX wrapping from packed XYSS v1 plus framed XYPL/XYHP.
+ABI 151 does not change Scene records;
+`xyg_scene_pack_density_grid` owns Scene density `bin_2d` / `density_log_u8`
+/ optional mean-color from packed columns.
 
 ABI 110 adds `xyg_scene_pack_legend` so both hosts pass loc/flags/paints
 and receive XYLG bytes; header layout, text offsets, and bounded-text
@@ -1272,6 +1277,9 @@ packed XYHF v1.
 ABI 150 does not change Scene records either;
 `xyg_scene_pack_scene_extras` owns XYDS/XYLC/XYMP/XYGR layout, concat order,
 and XYEX wrapping from packed XYSS v1 plus framed XYPL/XYHP.
+ABI 151 does not change Scene records either;
+`xyg_scene_pack_density_grid` owns Scene density `bin_2d` / `density_log_u8`
+/ optional mean-color from packed columns.
 Polar+step+smooth and authored marker glyphs stay compatibility. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;

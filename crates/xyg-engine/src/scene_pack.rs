@@ -27,7 +27,9 @@
 //! `scene_heatmap.rs`: XYHF v1 facts pack heatmap/density XYHP kind routing
 //! so painted-lattice sidecars cannot drift. ABI 150 lives in
 //! `scene_extras.rs`: XYSS v1 facts pack XYDS/XYLC/XYMP/XYGR layout, concat
-//! order, omit-empty, and XYEX wrapping so extras cannot drift.
+//! order, omit-empty, and XYEX wrapping so extras cannot drift. ABI 151 lives
+//! in `scene_density.rs`: Scene density blit owns `bin_2d`, `density_log_u8`,
+//! optional mean-color, and XYDE wrapping so the Image lattice cannot drift.
 
 use crate::scene::MAX_SCENE_MARKS;
 

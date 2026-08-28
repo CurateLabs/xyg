@@ -207,7 +207,8 @@ crates/
                         #   XYPK product packing facts plus ABI 148 XYAF
                         #   annotation packing facts plus ABI 149 XYHF
                         #   heatmap/density paint-fact packing plus ABI 150
-                        #   XYSS extras packing.
+                        #   XYSS extras packing plus ABI 151 Scene density
+                        #   grid packing.
     scene_legend.rs     # primary XYLG legend framing (ABI 110): header,
                         #   entry table, text offsets, and bounded-text
                         #   rejection.
@@ -223,6 +224,9 @@ crates/
     scene_extras.rs     # ABI 150 XYSS extras packing: XYDS/XYLC/XYMP/XYGR
                         #   table layout, concat order, omit-empty, and XYEX
                         #   wrapping from framed XYPL/XYHP plus sidecar facts.
+    scene_density.rs    # ABI 151 Scene density grid packing: 512×384 blit
+                        #   lattice, bin_2d, density_log_u8, optional
+                        #   mean-color, and XYDE wrapping.
     jpeg.rs             # baseline JPEG encode (ABI 114): YCbCr 4:4:4, Annex K
                         #   tables, libjpeg quality curve, Huffman packing.
                         #   Native hosts only (`raster` feature).
@@ -750,5 +754,6 @@ landed; the remainder, in order:
    ABI 147 XYPK product packing facts (`xyg_scene_pack_product_facts`) ✅;
    ABI 148 XYAF annotation packing facts (`xyg_scene_pack_annotation_facts`) ✅;
    ABI 149 XYHF heatmap/density paint-fact packing (`xyg_scene_pack_heatmap_facts`) ✅;
-   ABI 150 XYSS extras packing (`xyg_scene_pack_scene_extras`) ✅.
+   ABI 150 XYSS extras packing (`xyg_scene_pack_scene_extras`) ✅;
+   ABI 151 Scene density grid packing (`xyg_scene_pack_density_grid`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

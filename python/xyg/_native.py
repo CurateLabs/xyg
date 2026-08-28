@@ -2362,6 +2362,73 @@ def scene_pack_scene_extras(polar: bytes, paint: bytes, facts: bytes) -> bytes:
     return bytes(out[:code])
 
 
+def scene_pack_density_grid(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    x0: float,
+    x1: float,
+    y0: float,
+    y1: float,
+    *,
+    idx: "npt.NDArray[np.uint8] | None" = None,
+    rgba: "npt.NDArray[np.uint8] | None" = None,
+    lut: "npt.NDArray[np.uint8] | None" = None,
+) -> tuple[np.ndarray, float, np.ndarray | None, int, int] | None:
+    """Pack Scene density log-u8 (and optional mean RGBA) as XYDE (M2 #271)."""
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("x and y must have equal length")
+    idx_ptr = rgba_ptr = lut_ptr = 0
+    lut_len = 0
+    keepalive: tuple = ()
+    if idx is not None or rgba is not None:
+        idx_ptr, rgba_ptr, lut_ptr, lut_len, keepalive = _color_source_args(len(x), idx, rgba, lut)
+        idx_ptr = int(idx_ptr or 0)
+        rgba_ptr = int(rgba_ptr or 0)
+        lut_ptr = int(lut_ptr or 0)
+    out = np.zeros(32 + 512 * 384 * 5, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_pack_density_grid(
+            _ptr_f64(x) if len(x) else 0,
+            _ptr_f64(y) if len(y) else 0,
+            len(x),
+            float(x0),
+            float(x1),
+            float(y0),
+            float(y1),
+            idx_ptr,
+            rgba_ptr,
+            lut_ptr,
+            int(lut_len),
+            _ptr_u8(out),
+            len(out),
+        )
+    )
+    _ = keepalive
+    if code == -5:
+        raise ValueError("Scene density columns must have equal length")
+    if code == -6:
+        raise ValueError("Scene density mean-color source is invalid")
+    if code < 0:
+        raise ValueError("invalid scene density packing")
+    if code == 0:
+        return None
+    blob = bytes(out[:code])
+    if blob[:4] != b"XYDE" or len(blob) < 32:
+        raise ValueError("invalid scene density packing")
+    cols = int.from_bytes(blob[8:12], "little")
+    rows = int.from_bytes(blob[12:16], "little")
+    flags = int.from_bytes(blob[16:20], "little")
+    gmax = struct.unpack_from("<d", blob, 24)[0]
+    cells = rows * cols
+    encoded = np.frombuffer(blob, dtype=np.uint8, offset=32, count=cells).copy()
+    mean: np.ndarray | None = None
+    if flags & 1:
+        mean = np.frombuffer(blob, dtype=np.uint8, offset=32 + cells, count=cells * 4).copy()
+    return encoded, float(gmax), mean, int(rows), int(cols)
+
+
 def scene_pack_legend(
     *,
     loc: int,

@@ -183,7 +183,9 @@ XYAF v1. ABI 149 adds `xyg_scene_pack_heatmap_facts` so heatmap/density
 XYHP kind routing resolves from packed XYHF v1. ABI 150 adds
 `xyg_scene_pack_scene_extras` so XYDS/XYLC/XYMP/XYGR layout, concat order,
 omit-empty, and XYEX wrapping resolve from packed XYSS v1 plus framed
-XYPL/XYHP. ABI 137 / Scene v27 adds
+XYPL/XYHP. ABI 151 adds
+`xyg_scene_pack_density_grid` so Scene density `bin_2d` / `density_log_u8` /
+optional mean-color resolve from packed columns. ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
 record plus XYIM. ABI 138 / Scene v28
@@ -204,7 +206,8 @@ constant mark `fill` linear-gradients via an XYGR extras sidecar kept on the
 encoded Scene. ABI 147 owns product packing facts from XYPK v1. ABI 148 owns
 annotation family routing from XYAF v1. ABI 149 owns heatmap/density XYHP
 kind routing from XYHF v1. ABI 150 owns style-sidecar layout and extras wrapping
-from XYSS v1. Polar+step+smooth
+from XYSS v1. ABI 151 owns Scene density binning and log-u8 encoding from
+packed columns. Polar+step+smooth
 and authored marker glyphs stay
 compatibility. ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
@@ -422,6 +425,9 @@ rule/band/marker routing from packed XYAF v1. ABI 149
 ABI 150
 `xyg_scene_pack_scene_extras` owns XYDS/XYLC/XYMP/XYGR layout, concat order,
 omit-empty, and XYEX wrapping from packed XYSS v1 plus framed XYPL/XYHP.
+ABI 151
+`xyg_scene_pack_density_grid` owns Scene density `bin_2d` / `density_log_u8`
+/ optional mean-color from packed columns.
 ABI 116
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 so tags and opposite-axis spanning cannot drift. ABI 117

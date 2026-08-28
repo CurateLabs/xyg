@@ -50,6 +50,7 @@ use xyg_engine::scene;
 use xyg_engine::scene_annotations::{self, AnnotationError};
 use xyg_engine::scene_heatmap::{self, HeatmapFactError};
 use xyg_engine::scene_extras::{self, ExtrasError};
+use xyg_engine::scene_density::{self, DensityGridError};
 use xyg_engine::scene_colorbar::{self, ColorbarError};
 use xyg_engine::scene_figure_support_reason;
 use xyg_engine::scene_legend::{self, LegendError};
@@ -123,7 +124,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 150;
+pub const ABI_VERSION: u32 = 151;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -1372,6 +1373,77 @@ pub unsafe extern "C" fn xyg_scene_pack_scene_extras(
     })
 }
 
+/// Pack Scene density log-u8 (and optional mean RGBA) as XYDE v1.
+///
+/// Hosts pass authored x/y columns, the product domain, and an optional
+/// mean-color source (`idx`+`lut` or `rgba`). Rust owns the 512×384 blit
+/// lattice, `bin_2d`, `density_log_u8`, and optional `bin_2d_mean_color`.
+/// Returns the XYDE byte count on success, or 0 when columns are empty or
+/// the domain is not strictly increasing. Encoded Scene v31 is unchanged.
+///
+/// # Safety
+/// When `len` is non-zero, `x` and `y` must address that many readable f64s.
+/// Color pointers follow `xyg_bin_2d_mean_color`. When `out_cap` is non-zero,
+/// `out` must address that many writable bytes.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn xyg_scene_pack_density_grid(
+    x: *const f64,
+    y: *const f64,
+    len: usize,
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+    idx: *const u8,
+    rgba: *const u8,
+    lut: *const u8,
+    lut_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if (len > 0 && (x.is_null() || y.is_null())) || (out_cap > 0 && out.is_null()) {
+        return -(DensityGridError::Length as i32);
+    }
+    ffi_guard(-(DensityGridError::Length as i32), || {
+        let x_bytes = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(x, len)
+        };
+        let y_bytes = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(y, len)
+        };
+        let colors = if idx.is_null() && rgba.is_null() {
+            None
+        } else {
+            match color_source_from_raw(len, idx, rgba, lut, lut_len) {
+                Some(source) => Some(source),
+                None => return -(DensityGridError::Payload as i32),
+            }
+        };
+        match scene_density::pack_density_grid(x_bytes, y_bytes, x0, x1, y0, y1, colors) {
+            Ok(bytes) => {
+                if bytes.len() > out_cap {
+                    return -(DensityGridError::Output as i32);
+                }
+                if bytes.is_empty() {
+                    return 0;
+                }
+                let dest = std::slice::from_raw_parts_mut(out, out_cap);
+                dest[..bytes.len()].copy_from_slice(&bytes);
+                match i32::try_from(bytes.len()) {
+                    Ok(count) => count,
+                    Err(_) => -(DensityGridError::Limit as i32),
+                }
+            }
+            Err(error) => -(error as i32),
+        }
+    })
+}
+
 /// Resolve a packed `XYAR` v1 envelope to the product axis range.
 ///
 /// Writes `(lo, hi)` on success and returns 0. Hosts pack axis options,
@@ -1860,6 +1932,10 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// `xyg_scene_pack_scene_extras` owns XYDS/XYLC/XYMP/XYGR layout, concat
 /// order, omit-empty, and XYEX wrapping from packed XYSS v1 plus framed
 /// XYPL/XYHP so extras cannot drift.
+/// ABI 151 does not change Scene records;
+/// `xyg_scene_pack_density_grid` owns Scene density `bin_2d` /
+/// `density_log_u8` / optional mean-color from packed columns so the Image
+/// lattice cannot drift.
 /// Returns required bytes or `usize::MAX` on error.
 ///
 /// # Safety
@@ -14455,6 +14531,32 @@ mod tests {
         assert_eq!(
             u32::from_le_bytes(extras_out[8..12].try_into().unwrap()),
             1
+        );
+        let dx = [0.25_f64, 0.75];
+        let dy = [0.25_f64, 0.75];
+        let mut density_out = vec![0u8; 32 + 512 * 384];
+        let density_code = unsafe {
+            xyg_scene_pack_density_grid(
+                dx.as_ptr(),
+                dy.as_ptr(),
+                dx.len(),
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                std::ptr::null(),
+                std::ptr::null(),
+                std::ptr::null(),
+                0,
+                density_out.as_mut_ptr(),
+                density_out.len(),
+            )
+        };
+        assert_eq!(density_code, 32 + 512 * 384);
+        assert_eq!(&density_out[..4], b"XYDE");
+        assert_eq!(
+            u32::from_le_bytes(density_out[8..12].try_into().unwrap()),
+            512
         );
     }
 

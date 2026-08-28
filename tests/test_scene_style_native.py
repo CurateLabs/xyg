@@ -13,6 +13,7 @@ from xyg._native import (
     scene_pack_annotation_marks,
     scene_pack_annotations,
     scene_pack_colorbar,
+    scene_pack_density_grid,
     scene_pack_heatmap_facts,
     scene_pack_legend,
     scene_pack_product,
@@ -560,3 +561,35 @@ def test_pack_scene_extras_polar_and_paint_wrap_xyex() -> None:
     assert extras[:4] == b"XYEX"
     assert int.from_bytes(extras[4:8], "little") == 1
     assert int.from_bytes(extras[8:12], "little") == 92
+
+
+def test_pack_density_grid_encodes_log_u8_lattice() -> None:
+    packed = scene_pack_density_grid(
+        [0.25, 0.75],
+        [0.25, 0.75],
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+    )
+    assert packed is not None
+    encoded, gmax, mean, rows, cols = packed
+    assert (cols, rows) == (512, 384)
+    assert encoded.size == 512 * 384
+    assert mean is None
+    assert gmax > 0.0
+    assert int(encoded.max()) > 0
+
+
+def test_pack_density_grid_skips_empty_columns() -> None:
+    assert (
+        scene_pack_density_grid(
+            [],
+            [],
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+        )
+        is None
+    )

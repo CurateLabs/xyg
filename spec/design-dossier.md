@@ -1445,7 +1445,8 @@ mark `fill` linear-gradients via an XYGR extras sidecar kept on encoded Scene.
 ABI 147 owns product packing facts from packed XYPK v1. ABI 148 owns
 annotation family routing from packed XYAF v1. ABI 149 owns heatmap/density
 XYHP kind routing from packed XYHF v1. ABI 150 owns style-sidecar layout and
-extras wrapping from packed XYSS v1. Polar+step+smooth and
+extras wrapping from packed XYSS v1. ABI 151 owns Scene density binning and
+log-u8 encoding from packed columns. Polar+step+smooth and
 authored marker glyphs stay compatibility. Irregular
 spacing, and LOD stay compatibility.
 

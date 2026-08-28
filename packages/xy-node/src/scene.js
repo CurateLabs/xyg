@@ -41,6 +41,7 @@ import {
   xyScenePackAnnotationFacts,
   xyScenePackHeatmapFacts,
   xyScenePackSceneExtras,
+  xyScenePackDensityGrid,
   xyScenePackAnnotationMarks,
   xySceneRasterCommands,
   xySceneResolveChromeStyle,
@@ -56,7 +57,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, shouldUseDensity, u32Ptr, u8Ptr, bin2d, bin2dMeanColor, densityLogU8, colormapNamedStops, DENSITY_GRID } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops } from "./encode.js";
 import { cssColorRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -1526,6 +1527,62 @@ function densityPaintPlane(trace, encoded, rows, cols, maximum, stableId, meanRg
     fillOpacity,
     remainder: concatBytes(parts),
   }));
+}
+
+function packDensityGrid(x, y, x0, x1, y0, y1, source = null) {
+  const xa = asF64Array(x, "x");
+  const ya = asF64Array(y, "y");
+  if (xa.length !== ya.length) throw new RangeError("Scene density columns must have equal length");
+  if (!xa.length) return null;
+  let idxPtr = 0;
+  let rgbaPtr = 0;
+  let lutPtr = 0;
+  let lutLen = 0n;
+  if (source?.rgba != null) {
+    const rgba = source.rgba instanceof Uint8Array ? source.rgba : Uint8Array.from(source.rgba);
+    if (rgba.length !== xa.length * 4) {
+      throw new RangeError("Scene density mean-color rgba length must be 4 * n");
+    }
+    rgbaPtr = u8Ptr(rgba);
+  } else if (source?.idx != null && source?.lut != null) {
+    const idx = source.idx instanceof Uint8Array ? source.idx : Uint8Array.from(source.idx);
+    const lut = source.lut instanceof Uint8Array ? source.lut : Uint8Array.from(source.lut);
+    if (idx.length !== xa.length) throw new RangeError("Scene density mean-color idx length must match n");
+    if (lut.length < 4 || lut.length % 4) throw new RangeError("Scene density mean-color lut must be RGBA8");
+    idxPtr = u8Ptr(idx);
+    lutPtr = u8Ptr(lut);
+    lutLen = BigInt(lut.length / 4);
+  }
+  const out = new Uint8Array(32 + 512 * 384 * 5);
+  const code = xyScenePackDensityGrid(
+    f64Ptr(xa),
+    f64Ptr(ya),
+    BigInt(xa.length),
+    Number(x0),
+    Number(x1),
+    Number(y0),
+    Number(y1),
+    idxPtr,
+    rgbaPtr,
+    lutPtr,
+    lutLen,
+    u8Ptr(out),
+    BigInt(out.length),
+  );
+  if (code === -5) throw new RangeError("Scene density columns must have equal length");
+  if (code === -6) throw new RangeError("Scene density mean-color source is invalid");
+  if (code < 0) throw new RangeError("invalid scene density packing");
+  if (code === 0) return null;
+  const view = new DataView(out.buffer, out.byteOffset, out.byteLength);
+  const cols = view.getUint32(8, true);
+  const rows = view.getUint32(12, true);
+  const flags = view.getUint32(16, true);
+  const maximum = view.getFloat64(24, true);
+  const cells = rows * cols;
+  const encoded = out.subarray(32, 32 + cells);
+  let meanRgba = null;
+  if (flags & 1) meanRgba = out.subarray(32 + cells, 32 + cells + cells * 4);
+  return { encoded, max: maximum, meanRgba, rows, cols };
 }
 
 function packXyhp(planes) {
@@ -3596,24 +3653,21 @@ export function figureSceneV3(figure, { margins = null } = {}) {
         coords: "cartesian",
         perItemChannels: perItem,
       })) {
-        const [cols, rows] = DENSITY_GRID;
-        const grid = bin2d(trace.x, trace.y, xDomain[0], xDomain[1], yDomain[0], yDomain[1], cols, rows);
-        const { encoded, max } = densityLogU8(grid);
-        const binColors = resolveDensityBinColors(trace);
-        let meanRgba = null;
-        if (binColors != null) {
-          meanRgba = bin2dMeanColor(
-            trace.x, trace.y, xDomain[0], xDomain[1], yDomain[0], yDomain[1], cols, rows, binColors,
-          );
+        const packed = packDensityGrid(
+          trace.x, trace.y, xDomain[0], xDomain[1], yDomain[0], yDomain[1], resolveDensityBinColors(trace),
+        );
+        if (packed) {
+          heatmapPaintPlanes.push(densityPaintPlane(
+            trace, packed.encoded, packed.rows, packed.cols, packed.max, id, packed.meanRgba,
+          ));
+          gridRows = packed.rows;
+          gridCols = packed.cols;
+          factBits |= FACT_DENSITY_PLANE;
+          packSymbol = 0;
+          packDiameter = 0;
+          packX = [xDomain[0], xDomain[1]];
+          packY = [yDomain[0], yDomain[1]];
         }
-        heatmapPaintPlanes.push(densityPaintPlane(trace, encoded, rows, cols, max, id, meanRgba));
-        gridRows = rows;
-        gridCols = cols;
-        factBits |= FACT_DENSITY_PLANE;
-        packSymbol = 0;
-        packDiameter = 0;
-        packX = [xDomain[0], xDomain[1]];
-        packY = [yDomain[0], yDomain[1]];
       }
     }
     appendPacked(kinds, stableIds, styleRefs, diameter, symbols, expansionModes, x0, y0, x1, y1, packProductFacts({
