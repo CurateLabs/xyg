@@ -2230,7 +2230,7 @@ def _admitted_fill_gradient_from_fill(fill: Any, mark_color: str) -> dict[str, A
         css = str(stop[1]).strip()
         lowered = css.lower()
         if "var(" in lowered:
-            return None
+            return None  # #289: unresolved browser tokens stay fail-closed
         if lowered in {"currentcolor", ""}:
             css = mark_color
         try:

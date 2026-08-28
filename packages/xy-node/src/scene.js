@@ -1926,7 +1926,7 @@ function admitFillGradient(trace) {
     if (!Number.isFinite(t) || t < 0 || t > 1 || t < prevT) return null;
     let css = String(stop[1]).trim();
     const lowered = css.toLowerCase();
-    if (lowered.includes("var(")) return null;
+    if (lowered.includes("var(")) return null; // #289: unresolved browser tokens stay fail-closed
     if (lowered === "currentcolor" || css === "") css = markColor;
     const rgba = cssColorRgba8(css, 1);
     resolved.push([t, rgba]);

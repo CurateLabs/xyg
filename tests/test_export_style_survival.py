@@ -98,6 +98,21 @@ def test_the_two_spellings_of_a_legend_style_agree() -> None:
     assert through_component.to_svg() == through_slot.to_svg()
 
 
+def test_unresolved_var_mark_fill_does_not_resolve_in_native_svg() -> None:
+    """#289: Scene static cannot resolve `var()` stops; browser CSS still can."""
+    figure = xyg.bar_chart(
+        xyg.bar(
+            x=[0.0, 1.0],
+            y=[1.0, 2.0],
+            fill="linear-gradient(to bottom, var(--accent), #ffffff)",
+        )
+    ).figure()
+    spec, _ = figure.build_payload()
+    assert "var(--accent)" in str(spec["traces"][0]["style"].get("fill", ""))
+    svg = figure.to_svg()
+    assert "xy-scene-g" not in svg
+
+
 def test_a_legend_style_may_be_written_in_kebab_case() -> None:
     # The writers key on the browser's camelCase property names, but every doc
     # example — and normal CSS — uses kebab-case. Both spellings are the same
