@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 191;
+pub const ABI_VERSION: u32 = 192;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -2952,10 +2952,10 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// Polyline run. ABI 141 / Scene v31 adds `BandFlatten=12`: compact Band
 /// knots flatten top and base through the same Hermite densify into a denser
 /// Band run. Polar `HeatmapLattice`
-/// and `HeatmapPainted` inputs expand in data space, then tessellate to
-/// PolyFill wedges. ABI 143 polar `DensityBlit` intern occupied cells as
-/// Rects on that same tessellation (encoded Scene v31 is unchanged);
-/// Image records plus XYPL stay fail-closed. ABI 144 admits cartesian
+/// inputs expand in data space, then tessellate to
+/// PolyFill wedges. Polar `HeatmapPainted` (ABI 192) inverse-rasters to one
+/// Image blit covering the plot (Image+XYPL). ABI 143 polar `DensityBlit` intern occupied cells as
+/// Rects on that same tessellation (encoded Scene v31 is unchanged). ABI 144 admits cartesian
 /// `error_band(curve="smooth")` on existing `BandFlatten=12` and polar
 /// `curve="smooth"` line/area/error_band as identity chords (polar-axes.md §5);
 /// encoded Scene v31 is unchanged. ABI 145 admits constant validated
@@ -3352,11 +3352,11 @@ pub unsafe extern "C" fn xyg_scene_batch_encode(
             std::slice::from_raw_parts(expansion_modes, len)
         };
         let (polar_bytes, paint_bytes, dash_bytes) = unsafe { scene_extras_bytes(polar_input) }?;
-        // Polar HeatmapLattice/HeatmapPainted stay compact through this ABI:
-        // expansion is data-space (rows×cols Rect cells, painted planes intern
-        // unique fills), then `with_polar` tessellates those cells to PolyFill
-        // annular sectors. Polar DensityBlit (ABI 143) intern occupied cells
-        // as Rects on that same path so Image+XYPL never share a batch.
+        // Polar HeatmapLattice stays compact through this ABI: expansion is
+        // data-space (rows×cols Rect cells), then `with_polar` tessellates
+        // those cells to PolyFill annular sectors. Polar HeatmapPainted
+        // (ABI 192) emits one Image blit and inverse-rasters at encode.
+        // Polar DensityBlit (ABI 143) intern occupied cells as Rects.
         let (records, painted_styles, images) = scene::expand_scene_records_painted(
             scene::SceneExpansionInput {
                 kinds,

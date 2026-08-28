@@ -48,8 +48,10 @@ _HEXBIN_KINDS = frozenset({"hexbin"})
 _HEXBIN_REDUCES = frozenset({"count", "mean", "sum"})
 # Regular Cartesian heatmap cells expand onto Rect records in Rust
 # (`SceneExpansionMode::HeatmapLattice`). Hosts pack extent plus rows/cols.
-# Painted lattices (`HeatmapPainted`) add an XYHP sidecar; Rust tessellates
-# cells and interns unique fills. Polar encode maps those Rects to PolyFill.
+# Painted lattices (`HeatmapPainted`) add an XYHP sidecar. Cartesian
+# tessellates cells and interns unique fills. Polar painted heatmaps
+# inverse-raster to one Image blit covering the plot (ABI 192).
+# Constant-style polar lattices still tessellate Rects to PolyFill wedges.
 _HEATMAP_KINDS = frozenset({"heatmap"})
 _POINT_KINDS = frozenset({"scatter", "line"})
 _SUPPORTED_KINDS = (
@@ -90,8 +92,9 @@ _SCENE_DASH_PRESETS: dict[str, list[float] | None] = {
 # Regular heatmap cells are ordinary Rect records and share the histogram
 # 10,000-bin public ceiling. Irregular grids stay on the compatibility
 # exporters. Scalar-colormap and truecolor heatmaps tessellate those Rects
-# with per-cell literal styles (polar encode then maps Rects to PolyFill
-# annular sectors).
+# with per-cell literal styles on cartesian Scene. Polar painted heatmaps
+# inverse-raster to one plot-covering Image (ABI 192); the public cell cap
+# for that blit is `MAX_SCENE_IMAGE_PIXELS` in Rust.
 _MAX_PUBLIC_HEATMAP_CELLS = 10_000
 
 _PUBLIC_EXPORT_KIND_CODES = {
@@ -3401,6 +3404,8 @@ def _pack_public_export_support(
         flags |= 1 << 2
     if getattr(figure, "title_options", None):
         flags |= 1 << 3
+    if getattr(figure, "coords", "cartesian") == "polar":
+        flags |= 1 << 4
     style_keys = [str(key) for key in (getattr(figure, "style", None) or {})]
     legend_keys = [str(key) for key in (getattr(figure, "legend_options", None) or {})]
     colorbar_keys = [str(key) for key in (getattr(figure, "colorbar_options", None) or {})]

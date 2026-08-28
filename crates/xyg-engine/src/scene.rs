@@ -3404,11 +3404,12 @@ pub fn validate_scene_batch(bytes: &[u8]) -> Result<SceneBatchSummary, SceneErro
             }
         }
     }
-    if !xypl.is_empty() && !images.is_empty() {
-        return Err(SceneError::Length);
-    }
-    // the reserved Scene v12 annotation namespace. A batch that validates here
-    // must never fail later only because its annotation runs were malformed.
+    // Polar painted heatmap (ABI 192) encodes one screen-space Image blit plus
+    // XYPL. Polar density still tessellates occupied cells and never shares
+    // this sidecar. Annotation tags 1..=6 are validated next so encode can
+    // trust the reserved Scene v12 annotation namespace. A batch that
+    // validates here must never fail later only because its annotation runs
+    // were malformed.
     let mut annotation_cursor = 0;
     let mut annotations_started = false;
     while annotation_cursor < records {
@@ -3646,13 +3647,16 @@ pub enum SceneExpansionMode {
     /// Two PolyFill rows are one triangle face: `(x0,y0,x1,y1)` then `(x2,y2,0,0)`.
     TriangleFace = 8,
     /// Two Rect rows like [`Self::HeatmapLattice`], plus an XYHP paint plane
-    /// keyed by stable id. Rust tessellates cells and interns unique fills.
+    /// keyed by stable id. Cartesian tessellates cells and interns unique
+    /// fills. Polar (ABI 192) inverse-rasters the painted grid to one Image.
     HeatmapPainted = 9,
     /// Two Rect rows like [`Self::HeatmapLattice`], plus an XYHP density plane
     /// (log-u8 colormap or log-u8 + mean-color RGBA). Cartesian batches emit
     /// one Image record and an XYIM RGBA sidecar. Polar batches (ABI 143)
     /// skip empty cells and intern occupied fills as Rects so `with_polar`
-    /// tessellates annular-sector PolyFill wedges; Image+XYPL stays forbidden.
+    /// tessellates annular-sector PolyFill wedges. Polar painted heatmap
+    /// (ABI 192) is the Image+XYPL exception: one screen-space inverse-raster
+    /// blit covering the plot.
     DensityBlit = 10,
     /// Compact polyline knots flatten through `geom::curve_flatten` into a
     /// denser Polyline run (`SCENE_CURVE_STEPS` samples per increasing span).
@@ -4293,6 +4297,32 @@ fn heatmap_paint_fills(plane: HeatmapPaintPlane<'_>, alpha: u8) -> Result<Vec<[u
         });
     }
     Ok(fills)
+}
+
+fn heatmap_grid_image(
+    stable_id: u64,
+    rows: usize,
+    cols: usize,
+    fills: &[[u8; 4]],
+) -> Result<SceneImage, SceneError> {
+    let cells = rows.checked_mul(cols).ok_or(SceneError::Limit)?;
+    if cells == 0 || cells > MAX_SCENE_IMAGE_PIXELS || fills.len() != cells {
+        return Err(SceneError::Limit);
+    }
+    let mut rgba = vec![0u8; cells * 4];
+    for row in 0..rows {
+        let image_row = rows - 1 - row;
+        for col in 0..cols {
+            let start = (image_row * cols + col) * 4;
+            rgba[start..start + 4].copy_from_slice(&fills[row * cols + col]);
+        }
+    }
+    Ok(SceneImage {
+        stable_id,
+        width: cols as u32,
+        height: rows as u32,
+        rgba,
+    })
 }
 
 fn density_blit_plane(plane: &HeatmapPaintPlane<'_>, rows: usize, cols: usize) -> bool {
@@ -5756,7 +5786,15 @@ pub fn expand_scene_records_painted(
                 if style_index >= stroke_width.len() {
                     return Err(SceneError::Length);
                 }
-                rows.checked_mul(cols).ok_or(SceneError::Limit)?
+                if polar {
+                    let n = rows.checked_mul(cols).ok_or(SceneError::Limit)?;
+                    if n == 0 || n > MAX_SCENE_IMAGE_PIXELS {
+                        return Err(SceneError::Limit);
+                    }
+                    1
+                } else {
+                    rows.checked_mul(cols).ok_or(SceneError::Limit)?
+                }
             }
             SceneExpansionMode::DensityBlit => {
                 if run_len != 2 {
@@ -5953,6 +5991,18 @@ pub fn expand_scene_records_painted(
             let dy = (y1 - y0) / rows as f64;
             if !dx.is_finite() || !dy.is_finite() {
                 return Err(SceneError::NonFinite);
+            }
+            if polar && mode == SceneExpansionMode::HeatmapPainted {
+                let plane = take_paint_plane(&mut paint_planes, stable_id)?;
+                if plane.rows != rows || plane.cols != cols {
+                    return Err(SceneError::Length);
+                }
+                let fills =
+                    heatmap_paint_fills(plane, style_rgba4(fill_rgba, style_ref)?[3])?;
+                images.push(heatmap_grid_image(stable_id, rows, cols, &fills)?);
+                output.push_image(stable_id, style_ref, x0, y0, x1, y1);
+                cursor = run_end;
+                continue;
             }
             let fills = if mode == SceneExpansionMode::HeatmapPainted {
                 let plane = take_paint_plane(&mut paint_planes, stable_id)?;
@@ -7220,15 +7270,15 @@ impl<'a> SceneBatch<'a> {
     }
 
     /// Attach decoded density/image blit planes. Empty keeps the Scene without
-    /// Image records. Polar scenes reject image blits.
+    /// Image records. Polar painted heatmap blits materialize in `with_polar`.
     pub fn with_images(mut self, images: Vec<SceneImage>) -> Result<Self, SceneError> {
         if images.is_empty() {
             return Ok(self);
         }
-        if self.polar.is_some() {
-            return Err(SceneError::Length);
-        }
         self.images = images;
+        if self.polar.is_some() {
+            self.materialize_polar_heatmap_images()?;
+        }
         Ok(self)
     }
 
@@ -7320,6 +7370,7 @@ impl<'a> SceneBatch<'a> {
     /// Attach a host-packed XYPL v1 polar envelope. Empty bytes keep Cartesian
     /// mapping. Labeled-annotation extras fail closed. Polar Rects — including
     /// heatmap-lattice cells — tessellate to PolyFill annular sectors at encode.
+    /// Polar painted heatmap Image records inverse-raster onto the plot.
     /// Rust recuts the cartesian plot rect (`recut_polar_plot`) before
     /// `polar_layout` so the inscribed disc and optional legend gutter match
     /// compatibility static export.
@@ -7328,12 +7379,6 @@ impl<'a> SceneBatch<'a> {
             return Ok(self);
         }
         if !self.arrows.is_empty() || !self.callouts.is_empty() || !self.labels.is_empty() {
-            return Err(SceneError::Length);
-        }
-        if self.kinds.iter().any(|kind| {
-            SceneRecordKind::from_code(*kind) == Ok(SceneRecordKind::Image)
-        }) || !self.images.is_empty()
-        {
             return Err(SceneError::Length);
         }
         let (layout, legend_box) = recut_polar_scene_layout(
@@ -7350,7 +7395,59 @@ impl<'a> SceneBatch<'a> {
         let mut polar = PolarSceneState::from_xypl(bytes, self.layout)?;
         polar.legend_box = legend_box;
         self.polar = Some(polar);
+        self.materialize_polar_heatmap_images()?;
         Ok(self)
+    }
+
+    fn materialize_polar_heatmap_images(&mut self) -> Result<(), SceneError> {
+        let Some(polar) = &self.polar else {
+            return Ok(());
+        };
+        if self.images.is_empty() {
+            return Ok(());
+        }
+        let metrics = polar.metrics;
+        let plot_x = self.layout.left;
+        let plot_y = self.layout.top;
+        let plot_w = self.layout.right - self.layout.left;
+        let plot_h = self.layout.bottom - self.layout.top;
+        let mut replacements = Vec::new();
+        for index in 0..self.kinds.len() {
+            if SceneRecordKind::from_code(self.kinds[index]) != Ok(SceneRecordKind::Image) {
+                continue;
+            }
+            let id = self.stable_ids[index];
+            let image = self
+                .images
+                .iter()
+                .find(|image| image.stable_id == id)
+                .ok_or(SceneError::Length)?;
+            let (width, height, rgba) = polar::polar_heatmap_inverse_raster(
+                &metrics,
+                plot_x,
+                plot_y,
+                plot_w,
+                plot_h,
+                &image.rgba,
+                image.width,
+                image.height,
+                self.x0[index],
+                self.y0[index],
+                self.x1[index],
+                self.y1[index],
+                1.0,
+            )
+            .ok_or(SceneError::Length)?;
+            replacements.push((id, width, height, rgba));
+        }
+        for (id, width, height, rgba) in replacements {
+            if let Some(image) = self.images.iter_mut().find(|image| image.stable_id == id) {
+                image.width = width;
+                image.height = height;
+                image.rgba = rgba;
+            }
+        }
+        Ok(())
     }
 
     fn prepared_mark_records(&self) -> Vec<PreparedMarkRecord> {
@@ -7433,7 +7530,12 @@ impl<'a> SceneBatch<'a> {
                         }
                     }
                     SceneRecordKind::Rect => unreachable!("polar Rects tessellate before mapping"),
-                    SceneRecordKind::Image => [f64::NAN, f64::NAN, f64::NAN, f64::NAN],
+                    SceneRecordKind::Image => [
+                        self.layout.left,
+                        self.layout.top,
+                        self.layout.right,
+                        self.layout.bottom,
+                    ],
                 }
             } else {
                 match kind {
@@ -7458,7 +7560,8 @@ impl<'a> SceneBatch<'a> {
                     polar.visible(self.x0[index], self.y0[index])
                         || polar.visible(self.x1[index], self.y1[index])
                 }
-                SceneRecordKind::Rect | SceneRecordKind::Image => false,
+                SceneRecordKind::Rect => false,
+                SceneRecordKind::Image => true,
                 _ => polar.visible(self.x0[index], self.y0[index]),
             });
             let visible = mapped.iter().all(|value| value.is_finite())
@@ -7479,9 +7582,15 @@ impl<'a> SceneBatch<'a> {
                             && mapped[1] + geometry.extent_y >= self.layout.top
                             && mapped[1] - geometry.extent_y <= self.layout.bottom
                     }
-                    SceneRecordKind::Rect | SceneRecordKind::Image => {
+                    SceneRecordKind::Rect => {
                         self.polar.is_none()
                             && mapped[0].min(mapped[2]) <= self.layout.right
+                            && mapped[0].max(mapped[2]) >= self.layout.left
+                            && mapped[1].min(mapped[3]) <= self.layout.bottom
+                            && mapped[1].max(mapped[3]) >= self.layout.top
+                    }
+                    SceneRecordKind::Image => {
+                        mapped[0].min(mapped[2]) <= self.layout.right
                             && mapped[0].max(mapped[2]) >= self.layout.left
                             && mapped[1].min(mapped[3]) <= self.layout.bottom
                             && mapped[1].max(mapped[3]) >= self.layout.top
@@ -9446,9 +9555,9 @@ impl SceneDocument {
             state.legend_box = polar_legend_box_after_recut(layout, legend.as_ref());
         }
         let images = parse_xyim(xyim)?;
-        if polar.is_some() && !images.is_empty() {
-            return Err(SceneError::Length);
-        }
+        // Polar painted heatmap inverse-raster is a plot-covering Image+XYPL
+        // blit (ABI 192). Polar density still tessellates and never shares
+        // this sidecar.
         if labels.iter().any(|label| {
             label.x < 0.0
                 || label.x > layout.viewport_width
@@ -10795,7 +10904,11 @@ impl SceneDocument {
                             let y = record.coordinates[1];
                             let width = record.coordinates[2] - record.coordinates[0];
                             let height = record.coordinates[3] - record.coordinates[1];
-                            out.push_str("<image x=\"");
+                            out.push_str("<image");
+                            if self.polar.is_some() {
+                                out.push_str(" data-xy-polar-heatmap=\"true\"");
+                            }
+                            out.push_str(" x=\"");
                             push_num(&mut out, x);
                             out.push_str("\" y=\"");
                             push_num(&mut out, y);
@@ -17742,6 +17855,115 @@ mod tests {
             .all(|record| record.kind == SceneRecordKind::PolyFill));
         let svg = document.to_svg();
         assert!(svg.contains("<path d=\"M"));
+        assert!(!svg.contains("<rect x="));
+        assert!(document.to_raster_commands(1.0).unwrap().len() > 100);
+    }
+
+    #[test]
+    fn polar_heatmap_painted_inverse_rasters_to_plot_image() {
+        let paint = xyhp_colormap(
+            9,
+            2,
+            2,
+            0.0,
+            1.0,
+            &[0.0, 0.33, 0.66, 1.0],
+            &[[255, 0, 0], [0, 255, 0], [0, 0, 255]],
+        );
+        let (expanded, _painted, images) = expand_scene_records_painted(
+            SceneExpansionInput {
+                kinds: &[2, 2],
+                stable_ids: &[9, 9],
+                style_refs: &[0, 0],
+                diameter: &[2.0, 2.0],
+                symbols: &[0, 0],
+                x0: &[0.0, 0.0],
+                y0: &[0.0, 0.0],
+                x1: &[std::f64::consts::PI, 0.0],
+                y1: &[1.0, 0.0],
+                expansion_modes: &[
+                    SceneExpansionMode::HeatmapPainted as u8,
+                    SceneExpansionMode::HeatmapPainted as u8,
+                ],
+            },
+            test_linear_x_scale(),
+            test_linear_y_scale(),
+            &[255, 0, 0, 255],
+            &[0, 0, 0, 0],
+            &[0.0],
+            &paint,
+            true,
+        )
+        .unwrap();
+        assert_eq!(expanded.kinds, [SceneRecordKind::Image as u8]);
+        assert_eq!(images.len(), 1);
+        assert_eq!(images[0].width, 2);
+        assert_eq!(images[0].height, 2);
+
+        let layout = PlotLayout::new(400.0, 400.0, 0.0, 0.0, 0.0, 0.0).unwrap();
+        let x = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            std::f64::consts::PI,
+            0.0,
+            400.0,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, 400.0, 0.0, 1.0, false).unwrap();
+        let envelope = polar::PolarEnvelope {
+            theta_unit: 0,
+            theta_direction: 0,
+            n_categories: 0,
+            r_scale_kind: 0,
+            grid_shape: 0,
+            r_mask_nonpositive: false,
+            theta_zero: 0.0,
+            sector_start: 0.0,
+            sector_end: std::f64::consts::PI,
+            r_lo: 0.0,
+            r_hi: 1.0,
+            r_origin: f64::NAN,
+            hole: 0.25,
+            r_constant: 1.0,
+        };
+        let xypl = polar::encode_xypl(&envelope);
+        let encoded = SceneBatch::new(
+            layout,
+            1,
+            2,
+            x,
+            y,
+            &expanded.kinds,
+            &expanded.stable_ids,
+            &expanded.style_refs,
+            &[255, 0, 0, 255],
+            &[0, 0, 0, 0],
+            &[0.0],
+            &expanded.diameter,
+            &expanded.symbols,
+            &expanded.x0,
+            &expanded.y0,
+            &expanded.x1,
+            &expanded.y1,
+        )
+        .unwrap()
+        .with_images(images)
+        .unwrap()
+        .with_polar(&xypl)
+        .unwrap()
+        .encode();
+        assert!(validate_scene_batch(&encoded).is_ok());
+        let document = SceneDocument::decode(&encoded).unwrap();
+        assert_eq!(document.images.len(), 1);
+        assert!(document
+            .records
+            .iter()
+            .any(|record| record.kind == SceneRecordKind::Image && record.visible));
+        let svg = document.to_svg();
+        assert!(svg.contains("data-xy-polar-heatmap=\"true\""));
+        assert!(svg.contains("<image"));
         assert!(!svg.contains("<rect x="));
         assert!(document.to_raster_commands(1.0).unwrap().len() > 100);
     }

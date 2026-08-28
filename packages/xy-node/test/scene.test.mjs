@@ -44,6 +44,14 @@ test("Node projects Rust-owned Scene support decisions verbatim", () => {
   const polarHeat = new Figure({ coords: "polar" }); polarHeat.heatmap([[1, 2], [3, 4]]);
   const polarHeatScene = polarHeat.toScene();
   assert.ok(sceneSvg(polarHeatScene).includes("<path"));
+  const polarPainted = new Figure({ width: 400, height: 400, coords: "polar" });
+  polarPainted.setAxisDomain("x", [0, 2]);
+  polarPainted.setAxisDomain("y", [0, 2]);
+  polarPainted.heatmap([[1, 2], [3, 4]], { colormap: "viridis" });
+  const polarPaintedSvg = sceneSvg(polarPainted.toScene());
+  assert.ok(polarPaintedSvg.includes("<image"));
+  assert.ok(polarPaintedSvg.includes('data-xy-polar-heatmap="true"'));
+  assert.equal(sceneExportSupportReason(polarPainted), null);
   const polarContour = new Figure({ coords: "polar" });
   polarContour.contour([[1, 2], [3, 4]], { levels: 2, color: "#3987e5" });
   const polarContourScene = polarContour.toScene();

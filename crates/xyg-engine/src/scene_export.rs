@@ -16,6 +16,11 @@
 //! Scene (XYMS already composites those channels). ABI 176 admits
 //! bar/column/histogram `fill_opacity` / `stroke_opacity` the same way.
 //! ABI 177 admits heatmap `fill_opacity` on that public Scene (XYMS fill alpha).
+//! ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2.
+//! ABI 192 admits polar painted heatmap as one inverse-raster Image blit
+//! (`FLAG_POLAR` allowlists polar axis keys; painted polar heatmaps use the
+//! `MAX_SCENE_IMAGE_PIXELS` cell cap). Constant-style polar lattices still
+//! tessellate to PolyFill wedges under the 10k public cell ceiling.
 //! ABI 178 admits scatter `fill_opacity` / `stroke_opacity` the same way.
 //! ABI 179 admits hexbin `fill_opacity` on that public Scene (XYMS fill alpha).
 //! ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint the same way.
@@ -40,7 +45,7 @@
 //! Rust owns the public PolyFill group budget, including
 //! companion traces that share the browser painter's 1,024-group ceiling.
 
-use crate::scene::SceneError;
+use crate::scene::{SceneError, MAX_SCENE_IMAGE_PIXELS};
 
 const XYEP_MAGIC: &[u8; 4] = b"XYEP";
 const XYEP_VERSION: u32 = 1;
@@ -68,6 +73,7 @@ const FLAG_FLUID_WIDTH: u32 = 1 << 0;
 const FLAG_FLUID_HEIGHT: u32 = 1 << 1;
 const FLAG_CHROME_STYLES: u32 = 1 << 2;
 const FLAG_TITLE_OPTIONS: u32 = 1 << 3;
+const FLAG_POLAR: u32 = 1 << 4;
 
 const ANN_WRAP: u8 = 1 << 0;
 const ANN_DX: u8 = 1 << 1;
@@ -1091,7 +1097,16 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
         if axis.resolved_kind != 0 || !matches!(axis.authored_type, 0 | 1 | 2 | 3) {
             return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
         }
-        if extra_key(&axis.keys, PUBLIC_AXIS_KEYS) {
+        let axis_allowed: Vec<&str> = if flags & FLAG_POLAR != 0 {
+            PUBLIC_AXIS_KEYS
+                .iter()
+                .chain(POLAR_AXIS_KEYS.iter())
+                .copied()
+                .collect()
+        } else {
+            PUBLIC_AXIS_KEYS.to_vec()
+        };
+        if extra_key(&axis.keys, axis_allowed.as_slice()) {
             return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS");
         }
     }
@@ -1223,7 +1238,15 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
             let cells = (trace.heatmap_rows as usize)
                 .checked_mul(trace.heatmap_cols as usize)
                 .ok_or(SceneError::Limit)?;
-            if cells > MAX_PUBLIC_HEATMAP_CELLS
+            let polar_painted = flags & FLAG_POLAR != 0
+                && (trace.style_keys.contains(&"colormap")
+                    || trace.style_keys.contains(&"truecolor"));
+            let cell_cap = if polar_painted {
+                MAX_SCENE_IMAGE_PIXELS
+            } else {
+                MAX_PUBLIC_HEATMAP_CELLS
+            };
+            if cells > cell_cap
                 || trace.heatmap_values as usize != cells
                 || trace.flags & TRACE_HEATMAP_FINITE == 0
             {

@@ -154,7 +154,8 @@ def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
     heat_scene = polar_heatmap.to_scene()
     assert heat_scene[4:8] == (31).to_bytes(4, "little")
     heat_svg = _native.scene_svg(heat_scene)
-    assert "<path" in heat_svg and 'd="M' in heat_svg
+    assert "<image" in heat_svg
+    assert 'data-xy-polar-heatmap="true"' in heat_svg
     assert "<rect x=" not in heat_svg
     polar_contour = Figure(coords="polar")
     polar_contour.contour([[1.0, 2.0], [3.0, 4.0]], levels=2, color="#3987e5")

@@ -626,7 +626,8 @@ def test_polar_heatmap_is_scene_supported() -> None:
     assert scene_export_support_reason(figure) is None
     exported = public_static_export(figure, "svg")
     assert exported is not None
-    assert b"<path" in exported
+    assert b"<image" in exported
+    assert b'data-xy-polar-heatmap="true"' in exported
     assert b"<rect x=" not in exported
     constant = Figure(width=320, height=240, coords="polar")
     constant.axis_options["x"]["domain"] = (0.0, 2.0)
@@ -636,6 +637,47 @@ def test_polar_heatmap_is_scene_supported() -> None:
     constant_svg = public_static_export(constant, "svg")
     assert constant_svg is not None
     assert b"<path" in constant_svg
+    assert b'data-xy-polar-heatmap="true"' not in constant_svg
+
+
+def test_polar_painted_heatmap_over_ten_thousand_cells_is_scene_supported() -> None:
+    grid = np.arange(101 * 101, dtype=np.float64).reshape(101, 101)
+    figure = Figure(width=320, height=240, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    figure.heatmap(grid)
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b'data-xy-polar-heatmap="true"' in exported
+
+
+def test_polar_lattice_heatmap_over_ten_thousand_cells_stays_public_lod() -> None:
+    grid = np.ones((101, 101), dtype=np.float64)
+    figure = Figure(width=320, height=240, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, 2.0)
+    figure.axis_options["y"]["domain"] = (0.0, 2.0)
+    figure.heatmap(grid, color="#3987e5")
+    assert scene_export_support_reason(figure) == "XYG_SCENE_UNSUPPORTED_PUBLIC_LOD"
+
+
+def test_polar_chart_heatmap_sector_hole_is_scene_supported() -> None:
+    chart = xyg.polar_chart(
+        xyg.heatmap(
+            np.arange(12.0).reshape(3, 4),
+            x=np.linspace(0.0, np.pi, 4),
+            y=[1.0, 2.0, 3.0],
+        ),
+        xyg.theta_axis(sector=(0.0, float(np.pi)), grid_shape="linear"),
+        xyg.r_axis(domain=(0.0, 3.0), hole=0.25),
+        width=360,
+        height=280,
+    )
+    figure = chart.figure()
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b'data-xy-polar-heatmap="true"' in exported
 
 
 def test_polar_bar_is_scene_supported() -> None:

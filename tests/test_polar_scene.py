@@ -109,14 +109,17 @@ def test_polar_heatmap_is_scene_eligible() -> None:
     scene = figure_scene(figure)
     assert scene[:4] == b"XYGS"
     assert scene[4:8] == (31).to_bytes(4, "little")
-    assert scene[-92:-88] == b"XYPL"
+    assert b"XYPL" in scene
+    assert b"XYIM" in scene
     svg = _native.scene_svg(scene)
-    assert "<path" in svg and 'd="M' in svg
+    assert "<image" in svg
+    assert 'data-xy-polar-heatmap="true"' in svg
     assert "<rect x=" not in svg
     assert 'data-xy-grid="ring"' in svg or 'data-xy-frame="polar"' in svg
     public_svg = public_static_export(figure, "svg")
     assert public_svg is not None
-    assert b"<path" in public_svg
+    assert b"<image" in public_svg
+    assert b'data-xy-polar-heatmap="true"' in public_svg
     public_png = public_static_export(figure, "png")
     assert public_png is not None
 
@@ -133,10 +136,15 @@ def test_polar_truecolor_heatmap_is_scene_eligible() -> None:
     )
     scene = figure_scene(figure)
     assert scene[4:8] == (31).to_bytes(4, "little")
-    assert scene[-92:-88] == b"XYPL"
+    assert b"XYPL" in scene
+    assert b"XYIM" in scene
     svg = _native.scene_svg(scene)
-    assert "<path" in svg and 'd="M' in svg
-    assert public_static_export(figure, "svg") is not None
+    assert "<image" in svg
+    assert 'data-xy-polar-heatmap="true"' in svg
+    assert "<rect x=" not in svg
+    public_svg = public_static_export(figure, "svg")
+    assert public_svg is not None
+    assert b'data-xy-polar-heatmap="true"' in public_svg
 
 
 def test_polar_density_is_scene_eligible() -> None:

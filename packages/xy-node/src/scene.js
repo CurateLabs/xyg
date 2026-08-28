@@ -4650,7 +4650,8 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
   const chrome = figure.chromeStyles ?? figure.chrome_styles;
   if (chrome && Object.keys(chrome).length) flags |= 1 << 2;
   const titleOptions = figure.titleOptions ?? figure.title_options;
-  if (Array.isArray(titleOptions) ? titleOptions.length : titleOptions) flags |= 1 << 3;
+  if (titleOptions && (Array.isArray(titleOptions) ? titleOptions.length : titleOptions)) flags |= 1 << 3;
+  if ((figure.coords ?? "cartesian") === "polar") flags |= 1 << 4;
   const styleKeys = Object.keys(figure.style ?? {});
   const legend = figure.legend ?? figure.legend_options ?? {};
   const legendKeys = Object.keys(legend);

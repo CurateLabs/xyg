@@ -80,7 +80,8 @@ via `polar_wedge_points`), `errorbar` (projected polylines), and `heatmap`
 resolve to per-cell literal styles) when hosts pass an XYPL v1 envelope into
 `xyg_scene_batch_encode`. Polar density (ABI 143) tessellates occupied
 `DensityBlit` cells to PolyFill wedges through the same `polar_wedge_points`
-path as polar heatmap; Image+XYPL stays fail-closed. Labeled-annotation extras
+path as polar heatmap lattices; polar painted heatmap (ABI 192) is the
+Image+XYPL exception (one screen-space inverse-raster blit). Labeled-annotation extras
 still reject with `XYG_SCENE_UNSUPPORTED_POLAR`. ABI 145 admits constant
 validated `marker_path` contours: hosts pack XYMP on the extras dash slot and
 Rust tessellates each scatter centre to PolyFill (filled) or Polyline
@@ -1119,10 +1120,9 @@ Eligible polar kinds: `line` (including step-line), `scatter`, `area`,
 `(theta0,r0,theta1,r1)` into a PolyFill vertex run via `polar_wedge_points`
 (span-proportional `polar_bar_segments`, gap=0/corner=0). Polar `errorbar`
 and `contour` use existing SegmentPair polylines through `polar_project` (chords, matching
-§5). Polar `heatmap` uses the same Rect→PolyFill tessellation: constant-style
-lattices expand in Rust, and scalar colormaps resolve to per-cell literal
-styles before encode. Scene has no image-blit record, so this is annular-sector
-geometry rather than the compatibility inverse-sample `<image>`.
+§5). Polar `heatmap` constant-style lattices use the same Rect→PolyFill tessellation.
+Polar painted heatmap (colormap / truecolor / rgba_grid) inverse-rasters at
+encode to one plot-covering Image (ABI 192); encoded Scene v31 is unchanged.
 ABI 143 polar density uses the same occupied-cell Rect→PolyFill path
 (no XYIM). `XYG_SCENE_UNSUPPORTED_POLAR` remains for other
 kinds. Hidden Cartesian chrome is never inferred
@@ -1571,7 +1571,7 @@ is positive. ABI 169 admits polar `curve="smooth"` plus `step` as polar step
 expansion. ABI 170 admits constant scatter `marker_glyph` via XYMG. ABI 171 admits
 scatter `stroke_width` without `stroke` as match-fill. ABI 172 admits cartesian
 line `curve="smooth"` plus `step` as authored step expansion. ABI 173 tessellates
-heatmap `corner_radius`. ABI 174 tessellates violin/box `corner_radius`. ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`. ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`. ABI 177 admits heatmap `fill_opacity`. ABI 178 admits scatter `fill_opacity` / `stroke_opacity`. ABI 179 admits hexbin `fill_opacity`. ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint. ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as authored band step expansion. ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring from the Rust boundary walk. ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`. ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`. ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`. ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto HexCell PolyFills. ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 / XYLB v6). ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0`. ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from packed XYTA. ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from packed XYHP kind 5. ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2. ABI 116 does not change Scene records either;
+heatmap `corner_radius`. ABI 174 tessellates violin/box `corner_radius`. ABI 175 admits violin/box `fill_opacity` / `stroke_opacity`. ABI 176 admits bar/column/histogram `fill_opacity` / `stroke_opacity`. ABI 177 admits heatmap `fill_opacity`. ABI 178 admits scatter `fill_opacity` / `stroke_opacity`. ABI 179 admits hexbin `fill_opacity`. ABI 180 admits triangle_mesh `fill_opacity` / constant stroke paint. ABI 181 admits cartesian area/error_band `curve="smooth"` plus `step` as authored band step expansion. ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring from the Rust boundary walk. ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`. ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`. ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`. ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto HexCell PolyFills. ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 / XYLB v6). ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0`. ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from packed XYTA. ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from packed XYHP kind 5. ABI 191 admits constant multi-character scatter `marker_glyph` via XYMG v2. ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;
 `xyg_scene_figure_support_reason` owns figure-compile support from packed

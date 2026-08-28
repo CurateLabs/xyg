@@ -592,7 +592,8 @@ F3, still pending (above).
   `rotation` as XYAW `wrap=0`, then ABI 189 owns heatmap/hexbin cell-fill
   tessellation eligibility from packed XYTA, then ABI 190 intern cartesian
   per-item two-ended ribbon `color2_ch` from packed XYHP kind 5, then ABI 191
-  admits constant multi-character scatter `marker_glyph` via XYMG v2.
+  admits constant multi-character scatter `marker_glyph` via XYMG v2, then
+  ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit.
   `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
   panel Scene. That predicate
   owns the public PolyFill group budget, including companion traces that share
@@ -1411,9 +1412,10 @@ helpers; wedge/ring/polygon helpers remain host-side and call native projection.
 ChartView GLSL `xyPolarPos` is unchanged until WASM (#277). Scene v26 / ABI 133
 compiles polar line, scatter, area, bar/column, errorbar, heatmap, and contour through XYPL v1 into `xyg_scene_batch_encode`;
 ABI 143 polar density tessellates occupied `DensityBlit` cells to PolyFill
-wedges. Polar heatmap tessellates lattice Rects to
-PolyFill wedges (scalar colormaps become per-cell literal styles); inverse-sample
-`<image>` blit stays on the compatibility exporters because Scene has no image record.
+wedges. Polar heatmap constant-style lattices tessellate Rects to
+PolyFill wedges; polar painted heatmap (ABI 192) inverse-rasters to one
+plot-covering Image blit (Image+XYPL). Polar density still tessellates
+occupied cells (no XYIM).
 Polar contour reuses SegmentPair polylines through `polar_project`.
 ABI 132 moves first-paint density scatter emit policy into Rust. Hosts call
 `xyg_density_emit_meta`, `xyg_density_grid_path`, `xyg_density_format_binning`,
@@ -1424,12 +1426,15 @@ call `xyg_colormap_rgba`, `xyg_colormap_rgba_canonical`, and existing
 `xyg_density_rgba` for log-u8 density; direct `t ∈ [0, 1]` stop
 interpolation (matching `_svg._lut`) is engine-owned and distinct from
 `xyg_heatmap_rgba`'s `((value * 255 - 1) / 254)` remap. Hosts still
-resolve colormap stop tables, CSS paint colors, truecolor RGBA buffers,
-and polar inverse-raster sampling (#283).
+resolve colormap stop tables, CSS paint colors, and truecolor RGBA buffers.
+ABI 192 owns polar painted heatmap inverse-raster sampling on Scene encode
+(#292); the compatibility CPU twin in `_svg.polar_heatmap_rgba` remains until
+Rust owns the path and differentials are green (#283).
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
-rim tick-label placement. Polar heatmap uses the same Rect tessellation (per-cell
-literal styles for scalar colormaps). Cartesian Scene bytes change only the version u32.
+rim tick-label placement. Polar heatmap constant-style lattices use the same
+Rect tessellation; ABI 192 polar painted heatmap inverse-rasters to one Image.
+Cartesian Scene bytes change only the version u32.
 ABI 110 moves primary Scene legend framing into Rust. Hosts pass loc/flags,
 font sizes, paints, title, and per-entry meta plus labels; XYLG header
 layout, text offsets, and bounded-text rejection are engine-owned and
@@ -1517,6 +1522,7 @@ bar/column/histogram `corner_radius` when the inner radius is positive.
 ABI 169 admits polar `curve="smooth"` plus `step` as polar step expansion.
 ABI 170 admits constant scatter `marker_glyph` via an XYMG extras sidecar
 kept on the encoded Scene. ABI 191 admits multi-character UTF-8 (XYMG v2).
+ABI 192 admits polar painted heatmap inverse-raster as one Scene Image blit.
 Combined `marker_path` + `marker_glyph` stays fail-closed. ABI 171 admits scatter
 `stroke_width` without an authored `stroke` as match-fill. ABI 172 admits
 cartesian line `curve="smooth"` plus `step` as authored step expansion.
