@@ -820,9 +820,11 @@ Polar scenes append the original 92-byte XYPL envelope after the chrome
 trailer so SVG/raster/decode recover polar chrome; Cartesian trailer bytes
 stay identical except the Scene version u32 at offset 4. Hosts pack authoring
 only; Rust calls `polar_layout` with the finalized `PlotLayout` plot rect and
-does not trust host-computed cx/cy/R. This slice uses the Cartesian plot rect
-with `polar_layout`'s inscribed disc; applying `xyg_recut_polar_plot` inside
-encode remains [#275](https://github.com/CurateLabs/xyg/issues/275).
+does not trust host-computed cx/cy/R. Polar encode applies `recut_polar_plot`
+(ABI 126) before `polar_layout` so the inscribed disc matches compatibility
+static-export gutters, including the polar legend box. Hosts still pack
+legend loc/entries; Rust owns the recut and gutter placement. Remaining #275
+debt is compatibility `_svg.layout()` orchestration of CSS rooms.
 Optional formats still use the versioned `XYAF` v1 authoring envelope (`magic`,
 version, x-format length, y-format length, legacy-annotation length, then those
 exact payloads). Exact lengths are overflow-checked; malformed, trailing,

@@ -227,6 +227,12 @@ function packFigureAutorange(figure, axisId, { useDomain = true } = {}) {
   view.setFloat64(40, options.margin == null ? 0 : Number(options.margin), true);
   const parts = [header];
   for (const trace of traces) {
+    if (
+      trace.kind === "ribbon"
+      && (trace.x0 == null || trace.x1 == null || trace.y0 == null || trace.y1 == null)
+    ) {
+      throw new RangeError("ribbon trace missing geometry columns");
+    }
     let traceFlags = 0;
     if ((trace.x_axis ?? "x") === axisId) traceFlags |= 1 << 0;
     if ((trace.y_axis ?? "y") === axisId) traceFlags |= 1 << 1;

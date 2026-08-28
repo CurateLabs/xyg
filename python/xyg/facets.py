@@ -255,14 +255,13 @@ for(const p of panels){{
 
                 if _scene_v3.scene_export_support_reason(fig) is None:
                     svg = _scene_v3.figure_svg(fig)
-                    scene_clip = "xy-scene-plot"
-                    panel_clip = f"xy{i}-{scene_clip}"
-                    svg = svg.replace(f'id="{scene_clip}"', f'id="{panel_clip}"')
-                    svg = svg.replace(f"url(#{scene_clip})", f"url(#{panel_clip})")
-                    # This is an invariant of the Scene consumer vocabulary,
-                    # not a fallback boundary.  If it changes, fail instead
-                    # of emitting a composed document with cross-panel ids.
-                    if f'id="{scene_clip}"' in svg or f"url(#{scene_clip})" in svg:
+                    # Scene SVG owns a closed id vocabulary (`xy-scene-plot`
+                    # clips plus `xy-scene-gN` linearGradient ids). Prefix the
+                    # whole vocabulary so sibling panels cannot cross-clip or
+                    # share gradient paints.
+                    svg = svg.replace('id="xy-scene-', f'id="xy{i}-xy-scene-')
+                    svg = svg.replace("url(#xy-scene-", f"url(#xy{i}-xy-scene-")
+                    if 'id="xy-scene-' in svg or "url(#xy-scene-" in svg:
                         raise RuntimeError("unexpected un-namespaced Scene SVG id")
                     panel_svgs.append(svg)
                     continue

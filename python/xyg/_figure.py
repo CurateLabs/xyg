@@ -1490,6 +1490,10 @@ class Figure(AnnotationsMixin, PayloadMixin):
             )
         )
         for t in self.traces:
+            if t.kind == "ribbon" and (
+                t.x0 is None or t.x1 is None or t.y0 is None or t.y1 is None
+            ):
+                raise ValueError("ribbon trace missing geometry columns")
             trace_flags = 0
             if t.x_axis == axis_id:
                 trace_flags |= 1 << 0

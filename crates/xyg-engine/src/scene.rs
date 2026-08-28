@@ -5,6 +5,7 @@
 //! stroke-inclusive sizing, validation, bounds, and SVG construction live here.
 
 use crate::colormap;
+use crate::compat_layout;
 use crate::css;
 use crate::geom;
 use crate::kernels::{
@@ -2876,9 +2877,115 @@ fn write_chrome_trailer(
     out.extend_from_slice(label_bytes);
 }
 
+fn polar_legend_loc_has_left(location: LegendLocation) -> bool {
+    matches!(
+        location,
+        LegendLocation::UpperLeft | LegendLocation::LowerLeft | LegendLocation::CenterLeft
+    )
+}
+
+fn polar_legend_box_after_recut(
+    layout: PlotLayout,
+    legend: Option<&SceneLegend>,
+) -> Option<[f64; 4]> {
+    let legend = legend?;
+    let compact = compat_layout::is_compact(layout.viewport_width)?;
+    let (side, room) = compat_layout::polar_legend_reserve(
+        compact,
+        polar_legend_loc_has_left(legend.location),
+        layout.viewport_width,
+    )?;
+    if side == compat_layout::LEGEND_SIDE_NONE || room <= 0.0 {
+        return None;
+    }
+    match side {
+        compat_layout::LEGEND_SIDE_LEFT => Some([
+            0.0,
+            layout.top,
+            room,
+            layout.bottom - layout.top,
+        ]),
+        compat_layout::LEGEND_SIDE_RIGHT => Some([
+            layout.viewport_width - room,
+            layout.top,
+            room,
+            layout.bottom - layout.top,
+        ]),
+        compat_layout::LEGEND_SIDE_BOTTOM => Some([
+            layout.left,
+            layout.viewport_height - room,
+            layout.right - layout.left,
+            room,
+        ]),
+        _ => None,
+    }
+}
+
+fn recut_polar_scene_layout(
+    layout: PlotLayout,
+    legend: Option<&SceneLegend>,
+    text: &SceneChromeText,
+    colorbar: Option<&SceneColorbar>,
+    chrome: &SceneChromeStyle,
+) -> Result<(PlotLayout, Option<[f64; 4]>), SceneError> {
+    let compact = compat_layout::is_compact(layout.viewport_width).ok_or(SceneError::NonFinite)?;
+    let (legend_side, legend_room) = if let Some(legend) = legend {
+        compat_layout::polar_legend_reserve(
+            compact,
+            polar_legend_loc_has_left(legend.location),
+            layout.viewport_width,
+        )
+        .ok_or(SceneError::NonFinite)?
+    } else {
+        (compat_layout::LEGEND_SIDE_NONE, 0.0)
+    };
+    let labels_hidden =
+        chrome.x_axis.tick_label_sides == 0 || chrome.x_axis.label_rgba[3] == 0;
+    let polar_label_room = if labels_hidden {
+        0.0
+    } else {
+        let widest = chrome.x_tick_labels.as_ref().map(|labels| {
+            labels
+                .iter()
+                .map(|label| text_advance(label, chrome.label_font_size))
+                .fold(0.0_f64, f64::max)
+        });
+        compat_layout::polar_label_room(widest).ok_or(SceneError::NonFinite)?
+    };
+    let recut = compat_layout::recut_polar_plot(
+        compat_layout::PolarPlot {
+            x: layout.left,
+            y: layout.top,
+            w: layout.right - layout.left,
+            h: layout.bottom - layout.top,
+            top_axis_room: layout.top,
+            legend_box: None,
+        },
+        layout.viewport_width,
+        layout.viewport_height,
+        legend_side,
+        legend_room,
+        polar_label_room,
+        false,
+        !text.y_label.is_empty(),
+        !text.x_label.is_empty() || colorbar.is_some_and(|bar| bar.horizontal),
+    )
+    .ok_or(SceneError::NonFinite)?;
+    let recut_layout = PlotLayout::new(
+        layout.viewport_width,
+        layout.viewport_height,
+        recut.x,
+        layout.viewport_width - (recut.x + recut.w),
+        recut.y,
+        layout.viewport_height - (recut.y + recut.h),
+    )?;
+    Ok((recut_layout, recut.legend_box))
+}
+
 fn resolved_legend_bounds(
     layout: PlotLayout,
     legend: &SceneLegend,
+    polar_legend_box: Option<[f64; 4]>,
 ) -> Result<(f64, f64, f64, f64), SceneError> {
     let widest = legend
         .entries
@@ -2894,38 +3001,50 @@ fn resolved_legend_bounds(
     let height = 12.0
         + legend.entries.len() as f64 * (legend.font_size + 6.0)
         + title_rows as f64 * (legend.title_font_size + 6.0);
+    let (plot_left, plot_top, plot_right, plot_bottom) = match polar_legend_box {
+        Some([bx, by, bw, bh]) => (bx, by, bx + bw, by + bh),
+        None => (layout.left, layout.top, layout.right, layout.bottom),
+    };
     if !width.is_finite()
         || !height.is_finite()
-        || width > layout.right - layout.left - 16.0
-        || height > layout.bottom - layout.top - 16.0
+        || width > plot_right - plot_left - 16.0
+        || height > plot_bottom - plot_top - 16.0
     {
         return Err(SceneError::Limit);
     }
-    let (mut x, mut y) = (layout.left + 8.0, layout.top + 8.0);
+    let (mut x, mut y) = (plot_left + 8.0, plot_top + 8.0);
     match legend.location {
-        LegendLocation::UpperRight => x = layout.right - width - 8.0,
+        LegendLocation::UpperRight => x = plot_right - width - 8.0,
         LegendLocation::UpperLeft => {}
-        LegendLocation::LowerLeft => y = layout.bottom - height - 8.0,
+        LegendLocation::LowerLeft => y = plot_bottom - height - 8.0,
         LegendLocation::LowerRight => {
-            x = layout.right - width - 8.0;
-            y = layout.bottom - height - 8.0;
+            x = plot_right - width - 8.0;
+            y = plot_bottom - height - 8.0;
         }
         LegendLocation::CenterRight => {
-            x = layout.right - width - 8.0;
-            y = (layout.top + layout.bottom - height) * 0.5;
+            x = plot_right - width - 8.0;
+            y = (plot_top + plot_bottom - height) * 0.5;
         }
-        LegendLocation::CenterLeft => y = (layout.top + layout.bottom - height) * 0.5,
-        LegendLocation::UpperCenter => x = (layout.left + layout.right - width) * 0.5,
+        LegendLocation::CenterLeft => y = (plot_top + plot_bottom - height) * 0.5,
+        LegendLocation::UpperCenter => x = (plot_left + plot_right - width) * 0.5,
         LegendLocation::LowerCenter => {
-            x = (layout.left + layout.right - width) * 0.5;
-            y = layout.bottom - height - 8.0;
+            x = (plot_left + plot_right - width) * 0.5;
+            y = plot_bottom - height - 8.0;
         }
         LegendLocation::Center => {
-            x = (layout.left + layout.right - width) * 0.5;
-            y = (layout.top + layout.bottom - height) * 0.5;
+            x = (plot_left + plot_right - width) * 0.5;
+            y = (plot_top + plot_bottom - height) * 0.5;
         }
     }
     Ok((x, y, width, height))
+}
+
+fn legend_swatch_rgba(rgba: [u8; 4]) -> [u8; 4] {
+    if rgba[3] == 0 {
+        rgba
+    } else {
+        [rgba[0], rgba[1], rgba[2], 255]
+    }
 }
 
 /// Resolved screen-space bounds for the bounded right/bottom colorbar. This is
@@ -5708,6 +5827,7 @@ struct PolarSceneState {
     metrics: [f64; POLAR_METRICS_LEN],
     grid_shape: u8,
     xypl: Vec<u8>,
+    legend_box: Option<[f64; 4]>,
 }
 
 impl PolarSceneState {
@@ -5726,6 +5846,7 @@ impl PolarSceneState {
             metrics,
             grid_shape: envelope.grid_shape,
             xypl: bytes.to_vec(),
+            legend_box: None,
         })
     }
 
@@ -6404,7 +6525,7 @@ impl<'a> SceneBatch<'a> {
             }) {
                 return Err(SceneError::Length);
             }
-            resolved_legend_bounds(layout, value)?;
+            resolved_legend_bounds(layout, value, None)?;
         }
         if let Some(value) = &colorbar {
             value.encode()?;
@@ -6631,6 +6752,9 @@ impl<'a> SceneBatch<'a> {
     /// Attach a host-packed XYPL v1 polar envelope. Empty bytes keep Cartesian
     /// mapping. Labeled-annotation extras fail closed. Polar Rects — including
     /// heatmap-lattice cells — tessellate to PolyFill annular sectors at encode.
+    /// Rust recuts the cartesian plot rect (`recut_polar_plot`) before
+    /// `polar_layout` so the inscribed disc and optional legend gutter match
+    /// compatibility static export.
     pub fn with_polar(mut self, bytes: &[u8]) -> Result<Self, SceneError> {
         if bytes.is_empty() {
             return Ok(self);
@@ -6644,7 +6768,20 @@ impl<'a> SceneBatch<'a> {
         {
             return Err(SceneError::Length);
         }
-        self.polar = Some(PolarSceneState::from_xypl(bytes, self.layout)?);
+        let (layout, legend_box) = recut_polar_scene_layout(
+            self.layout,
+            self.legend.as_ref(),
+            &self.text,
+            self.colorbar.as_ref(),
+            &self.chrome,
+        )?;
+        self.layout = layout;
+        if let Some(legend) = &self.legend {
+            resolved_legend_bounds(self.layout, legend, legend_box)?;
+        }
+        let mut polar = PolarSceneState::from_xypl(bytes, self.layout)?;
+        polar.legend_box = legend_box;
+        self.polar = Some(polar);
         Ok(self)
     }
 
@@ -8693,11 +8830,14 @@ impl SceneDocument {
             top,
             viewport_height - bottom,
         )?;
-        let polar = if xypl.is_empty() {
+        let mut polar = if xypl.is_empty() {
             None
         } else {
             Some(PolarSceneState::from_xypl(xypl, layout)?)
         };
+        if let Some(state) = polar.as_mut() {
+            state.legend_box = polar_legend_box_after_recut(layout, legend.as_ref());
+        }
         let images = parse_xyim(xyim)?;
         if polar.is_some() && !images.is_empty() {
             return Err(SceneError::Length);
@@ -8716,7 +8856,11 @@ impl SceneDocument {
             return Err(SceneError::Length);
         }
         if let Some(value) = &legend {
-            resolved_legend_bounds(layout, value)?;
+            resolved_legend_bounds(
+                layout,
+                value,
+                polar.as_ref().and_then(|state| state.legend_box),
+            )?;
         }
         if let Some(value) = &colorbar {
             resolved_colorbar_bounds(layout, value)?;
@@ -9111,7 +9255,11 @@ impl SceneDocument {
     }
 
     fn legend_bounds(&self, legend: &SceneLegend) -> Result<(f64, f64, f64, f64), SceneError> {
-        resolved_legend_bounds(self.layout, legend)
+        resolved_legend_bounds(
+            self.layout,
+            legend,
+            self.polar.as_ref().and_then(|state| state.legend_box),
+        )
     }
 
     fn append_svg_legend(&self, out: &mut String) {
@@ -9171,7 +9319,7 @@ impl SceneDocument {
                     if symbol.is_line() {
                         out.push_str(" fill=\"none\"");
                     } else {
-                        push_paint(out, "fill", style.fill, None);
+                        push_paint(out, "fill", legend_swatch_rgba(style.fill), None);
                     }
                     if geometry.stroke_width > 0.0 || symbol.is_line() {
                         push_paint(out, "stroke", style.stroke, None);
@@ -10936,7 +11084,7 @@ impl SceneDocument {
                     push_raster_f32(out, swatch_y, scale)?;
                     push_raster_f32(out, geometry.radius, scale)?;
                     out.push(entry.symbol);
-                    out.extend_from_slice(&style.fill);
+                    out.extend_from_slice(&legend_swatch_rgba(style.fill));
                     push_raster_f32(out, geometry.stroke_width, scale)?;
                     out.extend_from_slice(&style.stroke);
                 }
@@ -16233,13 +16381,28 @@ mod tests {
         let document = SceneDocument::decode(&encoded).unwrap();
         let record = document.records[0];
         assert!(record.visible);
-        assert!((record.coordinates[0] - 400.0).abs() < 1e-6);
+        // Recut insets polar_label_room (30px) on a 400² zero-margin plot.
+        assert!((record.coordinates[0] - 370.0).abs() < 1e-6);
         assert!((record.coordinates[1] - 200.0).abs() < 1e-6);
         let svg = document.to_svg();
         assert!(svg.contains("data-xy-grid=\"ring\"") || svg.contains("<circle"));
         assert!(svg.contains("clipPath"));
         assert!(!svg.contains("<clipPath id=\"xy-scene-plot\"><rect"));
         SceneDocument::decode(&encoded).unwrap();
+    }
+
+    #[test]
+    fn polar_encode_recuts_cartesian_gutters_to_compat_plot() {
+        let layout = PlotLayout::new(400.0, 400.0, 46.0, 8.0, 6.0, 36.0).unwrap();
+        let chrome = SceneChromeStyle::default_style();
+        let text = SceneChromeText::default();
+        let (recut, legend_box) =
+            recut_polar_scene_layout(layout, None, &text, None, &chrome).unwrap();
+        assert!(legend_box.is_none());
+        assert!((recut.left - 30.0).abs() < 1e-9);
+        assert!((recut.top - 36.0).abs() < 1e-9);
+        assert!((recut.right - 370.0).abs() < 1e-9);
+        assert!((recut.bottom - 370.0).abs() < 1e-9);
     }
 
     #[test]

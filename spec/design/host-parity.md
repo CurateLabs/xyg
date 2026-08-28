@@ -311,6 +311,8 @@ ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap/c
 XYPL v1 authoring (`_pack_polar_scene_input` / `packPolarSceneInput`); Rust
 owns layout, `polar_project`, `polar_wedge_points` (annular-sector PolyFill),
 clip, rings/spokes, and rim tick labels.
+Polar encode applies ABI 126 `recut_polar_plot` before `polar_layout` so the
+inscribed disc and polar legend gutter match compatibility static export.
 Cartesian Scene bytes change only the version u32 at offset 4. Polar
 density stays `XYG_SCENE_UNSUPPORTED_POLAR`. Polar heatmap tessellates lattice
 Rects; inverse-sample `<image>` remains a compatibility exporter. Polar contour
