@@ -2978,18 +2978,9 @@ def figure_scene(
         raise ValueError("invalid canonical scene batch") from error
     except ValueError as error:
         message = str(error)
-        if message in {
-            "invalid canonical scene plot layout",
-            "scene axis tick lists are limited to 200 values",
-            "legend font sizes must be finite and in [1, 1000]",
-            "invalid scene chrome packing",
-            "invalid scene chrome facts version",
-            "Scene extras polar or paint envelope is invalid",
-            "Scene style sidecar facts are invalid",
-            "invalid scene extras packing",
-        }:
-            raise
-        raise UnsupportedSceneV3(message) from error
+        if message.startswith(("Scene v12 ", "Scene v19 ")):
+            raise UnsupportedSceneV3(message) from error
+        raise
 
 
 def figure_svg(figure: Any, **options: Any) -> str:
