@@ -1611,7 +1611,7 @@ def _rect_extra_flags(style: dict[str, Any], kind: str, polar: bool) -> int:
     if isinstance(fill, dict) and _admitted_fill_gradient_from_fill(fill, "#3987e5") is None:
         flags |= _XYFS_TRACE_RECT_GRADIENT
     radius = style.get("corner_radius", 0.0)
-    admitted = kind in {"bar", "column", "histogram", "heatmap"}
+    admitted = kind in {"bar", "column", "histogram", "heatmap", "violin", "box"}
     if isinstance(radius, (list, tuple)):
         if admitted and len(radius) == 2:
             pass
@@ -2418,7 +2418,7 @@ def _pack_xytc(figure: Any) -> bytes:
         r_tip = 0.0
         r_base = 0.0
         wedge_gap = 0.0
-        if str(trace.kind) in {"bar", "column", "histogram", "heatmap"}:
+        if str(trace.kind) in {"bar", "column", "histogram", "heatmap", "violin", "box"}:
             radius = style.get("corner_radius", 0.0)
             if isinstance(radius, (list, tuple)) and len(radius) == 2:
                 r_tip = float(radius[0])

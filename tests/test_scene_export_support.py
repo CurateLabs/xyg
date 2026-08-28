@@ -673,6 +673,27 @@ def test_polar_bar_corner_radius_is_scene_supported() -> None:
     assert exported_cartesian.count(b'<path d="M') == 4
 
 
+def test_violin_box_corner_radius_is_scene_supported() -> None:
+    violin = _public_violin()
+    violin.traces[-1].style["corner_radius"] = 6.0
+    assert scene_export_support_reason(violin) is None
+    exported_violin = public_static_export(violin, "svg")
+    assert exported_violin is not None
+    assert b'<path d="M' in exported_violin
+    square_violin = public_static_export(_public_violin(), "svg")
+    assert square_violin is not None
+    assert exported_violin != square_violin
+    rounded_box = _public_box()
+    next(trace for trace in rounded_box.traces if trace.kind == "box").style["corner_radius"] = 6.0
+    assert scene_export_support_reason(rounded_box) is None
+    exported_box = public_static_export(rounded_box, "svg")
+    assert exported_box is not None
+    assert b'<path d="M' in exported_box
+    square_box = public_static_export(_public_box(), "svg")
+    assert square_box is not None
+    assert exported_box != square_box
+
+
 def test_bounded_primary_cartesian_annotation_family_is_a_supported_public_scene_slice() -> None:
     figure = _callout()
     assert scene_export_support_reason(figure) is None

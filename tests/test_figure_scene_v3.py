@@ -1165,6 +1165,65 @@ def test_python_scene_compiles_rect_corner_radius() -> None:
     assert cell_svg != _native.scene_svg(square_cells.to_scene())
 
 
+def test_python_scene_compiles_violin_box_corner_radius() -> None:
+    violin = Figure(width=320, height=240)
+    violin.axis_options["x"]["domain"] = (-1.0, 5.0)
+    violin.axis_options["y"]["domain"] = (-1.0, 5.0)
+    violin.violin(
+        [[1, 2, 2, 3, 4], [2, 2.5, 3.5]],
+        bins=8,
+        width=0.7,
+        color="#7c3aed",
+        opacity=0.6,
+        style={"fill": "#22c55e"},
+    )
+    violin.traces[-1].style["corner_radius"] = 6.0
+    violin_scene = violin.to_scene()
+    assert violin_scene[4:8] == (31).to_bytes(4, "little")
+    violin_svg = _native.scene_svg(violin_scene)
+    assert '<path d="M' in violin_svg
+    assert violin.to_svg() == violin_svg
+    assert _scene_v3.scene_export_support_reason(violin) is None
+    square_violin = Figure(width=320, height=240)
+    square_violin.axis_options["x"]["domain"] = (-1.0, 5.0)
+    square_violin.axis_options["y"]["domain"] = (-1.0, 5.0)
+    square_violin.violin(
+        [[1, 2, 2, 3, 4], [2, 2.5, 3.5]],
+        bins=8,
+        width=0.7,
+        color="#7c3aed",
+        opacity=0.6,
+        style={"fill": "#22c55e"},
+    )
+    assert violin_svg != _native.scene_svg(square_violin.to_scene())
+    rounded_box = Figure(width=320, height=240)
+    rounded_box.axis_options["x"]["domain"] = (-2.0, 102.0)
+    rounded_box.axis_options["y"]["domain"] = (-2.0, 102.0)
+    rounded_box.box(
+        [[1, 2, 3, 100], [2, 3, 4, 5]],
+        width=0.7,
+        color="#7c3aed",
+        opacity=0.6,
+        name="dist",
+    )
+    next(trace for trace in rounded_box.traces if trace.kind == "box").style["corner_radius"] = 6.0
+    box_svg = _native.scene_svg(rounded_box.to_scene())
+    assert '<path d="M' in box_svg
+    assert rounded_box.to_svg() == box_svg
+    assert _scene_v3.scene_export_support_reason(rounded_box) is None
+    square_box = Figure(width=320, height=240)
+    square_box.axis_options["x"]["domain"] = (-2.0, 102.0)
+    square_box.axis_options["y"]["domain"] = (-2.0, 102.0)
+    square_box.box(
+        [[1, 2, 3, 100], [2, 3, 4, 5]],
+        width=0.7,
+        color="#7c3aed",
+        opacity=0.6,
+        name="dist",
+    )
+    assert box_svg != _native.scene_svg(square_box.to_scene())
+
+
 def test_python_scene_compiles_polar_corner_radius() -> None:
     donut = Figure(width=400, height=400, coords="polar")
     donut.axis_options["x"]["domain"] = (0.0, 6.283185307179586)

@@ -18,6 +18,7 @@
 //! tessellates polar bar/column/histogram `corner_radius` from those same
 //! packed radii when the inner radius is positive. ABI 173 tessellates heatmap
 //! `corner_radius` from that same blob (cartesian rounded Rects / polar wedges).
+//! ABI 174 tessellates violin/box `corner_radius` from that same blob.
 //! Encoded Scene v31 is
 //! unchanged.
 
