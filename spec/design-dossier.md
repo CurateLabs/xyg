@@ -1599,7 +1599,9 @@ XYAW `wrap=0`. ABI 188 admits labelled cartesian marker `rotation` as XYAW
 packed XYTA. ABI 190 intern cartesian per-item two-ended ribbon `color2_ch`
 from packed XYHP kind 5. Annotation `html` stays fail-closed
 (`XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML`). Annotation `class_name` stays
-fail-closed as `XYG_SCENE_UNSUPPORTED_BROWSER_CSS` (#306). Polar stays
+fail-closed as `XYG_SCENE_UNSUPPORTED_BROWSER_CSS` (#306). Annotation
+`collision` stays fail-closed as `XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION`
+(#307). Polar stays
 fail-closed. Per-item radius
 channels stay compatibility. Irregular
 spacing, and LOD stay compatibility.

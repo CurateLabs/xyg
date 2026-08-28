@@ -726,6 +726,9 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
     Annotation ``class_name`` is an XYFS observation (ABI 165 / #306), not an
     XYAF field. Scene SVG/raster do not encode CSS classes. Product encode
     reports ``XYG_SCENE_UNSUPPORTED_BROWSER_CSS``.
+    Annotation ``collision`` is XYFS ``OBS_ANNOTATION_COLLISION`` (#307);
+    Scene does not encode annotation collision. Product encode reports
+    ``XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION``.
     Annotation ``html`` is XYFS ``OBS_ANNOTATION_HTML`` (#305); Scene SVG/raster
     own literal text only. Product encode reports
     ``XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML``.
@@ -3639,6 +3642,8 @@ def _pack_figure_support(
         flags |= 1 << 2
     if any(annotation.get("html") not in (None, "") for annotation in annotations):
         flags |= 1 << 8
+    if any(annotation.get("collision") not in (None, "") for annotation in annotations):
+        flags |= 1 << 6
     if any(
         _classify_ribbon_color2(trace) == "fail"
         or (

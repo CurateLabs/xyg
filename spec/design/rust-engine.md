@@ -359,6 +359,7 @@ crates/
                         #   + Scene cartesian ABI 123 collision emit (ABI 203) ✅
                         #   + annotation html fail-closed #305 (`scene_export.rs`) ✅
                         #   + annotation class_name BROWSER_CSS pin #306 ✅
+                        #   + annotation collision fail-closed #307 (`scene_export.rs`) ✅
     stream.rs           # Rust-owned canonical append buffers (`xyg_stream_*`).
                         # Capacity-doubling f64 store; zone maps on seal
                         # (ZONE_CHUNK splice, bitwise-identical to
@@ -813,7 +814,7 @@ landed; the remainder, in order:
    ABI 199 Scene product encode filters authored cartesian majors (`scene_chrome.rs` / `tick_layout.rs`) ✅;
    ABI 200 Scene product encode filters authored cartesian minors (`scene_chrome.rs` / `tick_layout.rs`) ✅;
    ABI 201 Scene polar modular theta window / angular labels (`scene_chrome.rs` / `scene.rs` / `tick_layout.rs`) ✅;
-   ABI 202 Scene product-path ABI 130 time/angular formats (`scene.rs` / `scene_chrome.rs`) ✅; ABI 203 Scene cartesian ABI 123 collision emit (`scene.rs` / `scene_chrome.rs`) ✅; annotation html fail-closed #305 (`scene_export.rs`) ✅; annotation class_name BROWSER_CSS pin #306 ✅; ABI 130
+   ABI 202 Scene product-path ABI 130 time/angular formats (`scene.rs` / `scene_chrome.rs`) ✅; ABI 203 Scene cartesian ABI 123 collision emit (`scene.rs` / `scene_chrome.rs`) ✅; annotation html fail-closed #305 (`scene_export.rs`) ✅; annotation class_name BROWSER_CSS pin #306 ✅; annotation collision fail-closed #307 (`scene_export.rs`) ✅; ABI 130
    `xyg_tick_format` ✅; ABI 131 `xyg_polar_layout` / `xyg_polar_project` /
    `xyg_polar_theta_visible_mask` / `xyg_polar_visible_mask` /
    `xyg_polar_position_mask` ✅; ABI 132 `xyg_density_bin_window` /
@@ -891,5 +892,5 @@ landed; the remainder, in order:
    ABI 199 Scene product encode filters authored cartesian majors and pairs `tick_labels` (`tick_layout.rs` / `scene_chrome.rs`) ✅.
    ABI 200 Scene product encode filters authored cartesian minors (`tick_layout.rs` / `scene_chrome.rs`) ✅.
    ABI 201 Scene polar modular theta window / angular labels (`tick_layout.rs` / `scene_chrome.rs` / `scene.rs`) ✅.
-   ABI 202 Scene product-path ABI 130 time/angular formats (`scene.rs` / `scene_chrome.rs`) ✅; ABI 203 Scene cartesian ABI 123 collision emit (`scene.rs` / `scene_chrome.rs`) ✅; annotation html fail-closed #305 (`scene_export.rs`) ✅; annotation class_name BROWSER_CSS pin #306 ✅.
+   ABI 202 Scene product-path ABI 130 time/angular formats (`scene.rs` / `scene_chrome.rs`) ✅; ABI 203 Scene cartesian ABI 123 collision emit (`scene.rs` / `scene_chrome.rs`) ✅; annotation html fail-closed #305 (`scene_export.rs`) ✅; annotation class_name BROWSER_CSS pin #306 ✅; annotation collision fail-closed #307 (`scene_export.rs`) ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).

@@ -1934,6 +1934,8 @@ def test_public_annotation_router_fails_closed_for_unmodeled_host_layout_and_css
         assert "XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML" in reason
     if "class_name" in annotation:
         assert "XYG_SCENE_UNSUPPORTED_BROWSER_CSS" in reason
+    if "collision" in annotation:
+        assert "XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION" in reason
 
 
 @pytest.mark.parametrize(

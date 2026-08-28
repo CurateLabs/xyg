@@ -146,6 +146,19 @@ def test_scene_annotation_class_name_stays_fail_closed() -> None:
     assert "XYG_SCENE_UNSUPPORTED_BROWSER_CSS" in reason
 
 
+def test_scene_annotation_collision_stays_fail_closed() -> None:
+    figure = Figure(width=320, height=240).line([0.0, 1.0], [0.0, 1.0])
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.annotations = [
+        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "collision", "collision": "hide"}
+    ]
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION"):
+        figure.to_scene()
+    reason = scene_v3.scene_export_support_reason(figure) or ""
+    assert "XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION" in reason
+
+
 def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
     assert _native.scene_support_reason(0) == ""
     assert _native.scene_support_reason((1 << 6) | (1 << 1)) == (

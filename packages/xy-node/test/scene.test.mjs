@@ -1622,6 +1622,14 @@ test("Node Scene annotation class_name stays fail-closed as browser CSS", () => 
   assert.throws(() => figure.toScene(), /XYG_SCENE_UNSUPPORTED_BROWSER_CSS/);
 });
 
+test("Node Scene annotation collision stays fail-closed", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 1]); figure.setAxisDomain("y", [0, 1]);
+  figure.line([0, 1], [0, 1]);
+  figure.annotations = [{ kind: "marker", x: 0.5, y: 0.5, text: "collision", collision: "hide" }];
+  assert.throws(() => figure.toScene(), /XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION/);
+});
+
 test("Node Scene v9 rejects non-byte chrome style input before the ABI", () => {
   const input = {
     viewport: [100, 80], margins: [10, 10, 10, 10],

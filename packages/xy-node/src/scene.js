@@ -2951,6 +2951,7 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
     || annotations.some((annotation) => annotation.className || annotation.class_name)
   ) flags |= 1 << 2;
   if (annotations.some((annotation) => annotation.html != null && annotation.html !== "")) flags |= 1 << 8;
+  if (annotations.some((annotation) => annotation.collision != null && annotation.collision !== "")) flags |= 1 << 6;
   if ((figure.traces ?? []).some((trace) => (
     classifyRibbonColor2(trace) === "fail"
     || (
