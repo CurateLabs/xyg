@@ -28,6 +28,8 @@ import {
   xyPolarProject,
   xyRecutPolarPlot,
   xyTightLayoutSolve,
+  xyCompatCombinePlot,
+  xyTightLayoutFigureExtra,
   xySceneBatchEncode,
   xySceneBrowserPainter,
   xyScenePackAnnotations,
@@ -2219,6 +2221,95 @@ export function recutPolarPlot(plot, width, height, {
   return result;
 }
 
+export function compatCombinePlot(width, height, {
+  authoredPadding = null,
+  titleRoom = 0,
+  xTopRoom = 0,
+  xBottomRoom = 0,
+  xMeasuredBottom = 0,
+  colorbarKind = "none",
+  colorbarHasLabel = false,
+  colorbarPadZero = false,
+  hasRightY = false,
+  yLeftRoom = null,
+  edgeLeft = null,
+  edgeRight = null,
+  xRoomsFinal = null,
+  polar = null,
+} = {}) {
+  const code = COLORBAR_KINDS[colorbarKind];
+  if (code === undefined) throw new RangeError("unknown colorbar layout kind");
+  const pad = authoredPadding == null ? null : Float64Array.from(authoredPadding);
+  if (pad != null && pad.length !== 4) {
+    throw new RangeError("authoredPadding must be top, right, bottom, left");
+  }
+  const xFinal = xRoomsFinal == null ? null : Float64Array.from(xRoomsFinal);
+  if (xFinal != null && xFinal.length !== 3) {
+    throw new RangeError("xRoomsFinal must be top, bottom, measuredBottom");
+  }
+  const polarOn = polar != null;
+  let side = 0;
+  let legendRoom = 0;
+  let labelRoom = 0;
+  let authoredPaddingFlag = false;
+  let yTitled = false;
+  let keepsBottom = false;
+  if (polarOn) {
+    const legendSide = polar.legendSide ?? polar.legend_side ?? "";
+    side = POLAR_LEGEND_SIDE_CODES[legendSide];
+    if (side === undefined) throw new RangeError("legendSide must be '', left, right, or bottom");
+    legendRoom = Number(polar.legendRoom ?? polar.legend_room ?? 0);
+    labelRoom = Number(polar.polarLabelRoom ?? polar.polar_label_room ?? 0);
+    authoredPaddingFlag = Boolean(polar.authoredPadding ?? polar.authored_padding);
+    yTitled = Boolean(polar.yTitled ?? polar.y_titled);
+    keepsBottom = Boolean(polar.keepsBottom ?? polar.keeps_bottom);
+  }
+  const out = new Float64Array(12);
+  const written = xyCompatCombinePlot(
+    Number(width),
+    Number(height),
+    pad == null ? 0 : f64Ptr(pad),
+    Number(titleRoom),
+    Number(xTopRoom),
+    Number(xBottomRoom),
+    Number(xMeasuredBottom),
+    code,
+    colorbarHasLabel ? 1 : 0,
+    colorbarPadZero ? 1 : 0,
+    hasRightY ? 1 : 0,
+    yLeftRoom == null ? Number.NaN : Number(yLeftRoom),
+    edgeLeft == null ? Number.NaN : Number(edgeLeft),
+    edgeRight == null ? Number.NaN : Number(edgeRight),
+    xFinal == null ? 0 : f64Ptr(xFinal),
+    polarOn ? 1 : 0,
+    side,
+    legendRoom,
+    labelRoom,
+    authoredPaddingFlag ? 1 : 0,
+    yTitled ? 1 : 0,
+    keepsBottom ? 1 : 0,
+    f64Ptr(out),
+  );
+  if (written === USIZE_MAX_64) throw new RangeError("invalid static-export layout combination");
+  const result = {
+    x: out[0],
+    y: out[1],
+    w: out[2],
+    h: out[3],
+    titleRoom: out[4],
+    titleWrapWidth: out[5],
+    topAxisRoom: out[6],
+    bottomAxisRoom: out[7],
+  };
+  if (Number.isFinite(out[8])) {
+    result.legendBoxX = out[8];
+    result.legendBoxY = out[9];
+    result.legendBoxW = out[10];
+    result.legendBoxH = out[11];
+  }
+  return result;
+}
+
 export function tightLayoutSolve({
   canvasW,
   canvasH,
@@ -2273,6 +2364,28 @@ export function tightLayoutSolve({
   );
   if (written === USIZE_MAX_64) throw new RangeError("invalid tight-layout request");
   return { left: out[0], right: out[1], bottom: out[2], top: out[3], wspace: out[4], hspace: out[5] };
+}
+
+export function tightLayoutFigureExtra(canvasW, canvasH, {
+  suptitleHeight = null,
+  suptitleY = 0.98,
+  xlabelSize = null,
+  ylabelSize = null,
+  legendBoxW = null,
+} = {}) {
+  const extra = new Float64Array(4);
+  const written = xyTightLayoutFigureExtra(
+    Number(canvasW),
+    Number(canvasH),
+    suptitleHeight == null ? Number.NaN : Number(suptitleHeight),
+    Number(suptitleY),
+    xlabelSize == null ? Number.NaN : Number(xlabelSize),
+    ylabelSize == null ? Number.NaN : Number(ylabelSize),
+    legendBoxW == null ? Number.NaN : Number(legendBoxW),
+    f64Ptr(extra),
+  );
+  if (written === USIZE_MAX_64) throw new RangeError("invalid tight-layout figure-extra request");
+  return { left: extra[0], right: extra[1], bottom: extra[2], top: extra[3] };
 }
 
 export function scaleMap({ values, kind = "linear", operation = "pixel", domain, range = [0, 1], constant = 1, nonpositive = "clip" }) {

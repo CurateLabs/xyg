@@ -4632,6 +4632,107 @@ def recut_polar_plot(
     return result
 
 
+def compat_combine_plot(
+    width: float,
+    height: float,
+    *,
+    authored_padding: Sequence[float] | None = None,
+    title_room: float = 0.0,
+    x_top_room: float = 0.0,
+    x_bottom_room: float = 0.0,
+    x_measured_bottom: float = 0.0,
+    colorbar_kind: str = "none",
+    colorbar_has_label: bool = False,
+    colorbar_pad_zero: bool = False,
+    has_right_y: bool = False,
+    y_left_room: float | None = None,
+    edge_left: float | None = None,
+    edge_right: float | None = None,
+    x_rooms_final: Sequence[float] | None = None,
+    polar: Mapping[str, Any] | None = None,
+) -> dict[str, float]:
+    """Combine static-export padding/title/rooms/colorbar/polar recut (ABI 198)."""
+    try:
+        cb_code = _COLORBAR_KINDS[colorbar_kind]
+    except KeyError as exc:
+        raise ValueError("unknown colorbar layout kind") from exc
+    pad_arr = None
+    if authored_padding is not None:
+        if len(authored_padding) != 4:
+            raise ValueError("authored_padding must be top, right, bottom, left")
+        pad_arr = np.asarray(authored_padding, dtype=np.float64)
+    x_final_arr = None
+    if x_rooms_final is not None:
+        if len(x_rooms_final) != 3:
+            raise ValueError("x_rooms_final must be top, bottom, measured_bottom")
+        x_final_arr = np.asarray(x_rooms_final, dtype=np.float64)
+    side_codes = {"": 0, "left": 1, "right": 2, "bottom": 3}
+    polar_on = polar is not None
+    legend_side = ""
+    legend_room = 0.0
+    polar_label_room = 0.0
+    authored_padding_flag = False
+    y_titled = False
+    keeps_bottom = False
+    if polar_on:
+        legend_side = str(polar.get("legend_side") or "")
+        try:
+            side = side_codes[legend_side]
+        except KeyError as exc:
+            raise ValueError("legend_side must be '', left, right, or bottom") from exc
+        legend_room = float(polar.get("legend_room") or 0.0)
+        polar_label_room = float(polar.get("polar_label_room") or 0.0)
+        authored_padding_flag = bool(polar.get("authored_padding"))
+        y_titled = bool(polar.get("y_titled"))
+        keeps_bottom = bool(polar.get("keeps_bottom"))
+    else:
+        side = 0
+    out = np.empty(12, dtype=np.float64)
+    written = _lib.xyg_compat_combine_plot(
+        float(width),
+        float(height),
+        _ptr_f64(pad_arr) if pad_arr is not None else 0,
+        float(title_room),
+        float(x_top_room),
+        float(x_bottom_room),
+        float(x_measured_bottom),
+        cb_code,
+        1 if colorbar_has_label else 0,
+        1 if colorbar_pad_zero else 0,
+        1 if has_right_y else 0,
+        float("nan") if y_left_room is None else float(y_left_room),
+        float("nan") if edge_left is None else float(edge_left),
+        float("nan") if edge_right is None else float(edge_right),
+        _ptr_f64(x_final_arr) if x_final_arr is not None else 0,
+        1 if polar_on else 0,
+        side,
+        legend_room,
+        polar_label_room,
+        1 if authored_padding_flag else 0,
+        1 if y_titled else 0,
+        1 if keeps_bottom else 0,
+        _ptr_f64(out),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid static-export layout combination")
+    result = {
+        "x": float(out[0]),
+        "y": float(out[1]),
+        "w": float(out[2]),
+        "h": float(out[3]),
+        "title_room": float(out[4]),
+        "title_wrap_width": float(out[5]),
+        "top_axis_room": float(out[6]),
+        "bottom_axis_room": float(out[7]),
+    }
+    if np.isfinite(out[8]):
+        result["legend_box_x"] = float(out[8])
+        result["legend_box_y"] = float(out[9])
+        result["legend_box_w"] = float(out[10])
+        result["legend_box_h"] = float(out[11])
+    return result
+
+
 def tight_layout_solve(
     canvas_w: float,
     canvas_h: float,
@@ -4692,6 +4793,37 @@ def tight_layout_solve(
         float(out[4]),
         float(out[5]),
     )
+
+
+def tight_layout_figure_extra(
+    canvas_w: float,
+    canvas_h: float,
+    *,
+    suptitle_height: float | None = None,
+    suptitle_y: float = 0.98,
+    xlabel_size: float | None = None,
+    ylabel_size: float | None = None,
+    legend_box_w: float | None = None,
+) -> tuple[float, float, float, float]:
+    """Figure-edge extras for ``xyg_tight_layout_solve`` (ABI 198).
+
+    Returns ``(left, right, bottom, top)``. Hosts still measure suptitle height,
+    figure-label sizes, and outside-legend box width.
+    """
+    extra = np.empty(4, dtype=np.float64)
+    written = _lib.xyg_tight_layout_figure_extra(
+        float(canvas_w),
+        float(canvas_h),
+        float("nan") if suptitle_height is None else float(suptitle_height),
+        float(suptitle_y),
+        float("nan") if xlabel_size is None else float(xlabel_size),
+        float("nan") if ylabel_size is None else float(ylabel_size),
+        float("nan") if legend_box_w is None else float(legend_box_w),
+        _ptr_f64(extra),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid tight-layout figure-extra request")
+    return float(extra[0]), float(extra[1]), float(extra[2]), float(extra[3])
 
 
 def scene_scale_map(

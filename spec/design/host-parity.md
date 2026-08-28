@@ -538,6 +538,13 @@ ABI 127 moves the pyplot tight-layout grid solve into Rust: Python and
 Node call `xyg_tight_layout_solve` so edge maxima, neighbor gaps, pad
 multiples, and `subplots_adjust` fractions cannot drift. Hosts still
 measure per-panel chrome, suptitle, figure labels, and outside legends.
+ABI 198 moves the remaining static-export combination and tight-layout
+figure-edge extras into Rust: Python and Node call
+`xyg_compat_combine_plot` and `xyg_tight_layout_figure_extra` so padding,
+title-band, colorbar extra, right-y, floors, polar recut, and
+suptitle/label/legend extras cannot drift. Hosts still iterate axes,
+format ticks, measure rooms, resolve CSS visibility, and decide polar
+legend reservation.
 ABI 128 moves authored tick-window resolve and filter into Rust: Python
 and Node call `xyg_tick_window` and `xyg_tick_window_filter` so linear
 vs modular angular containment cannot drift. Hosts still choose tick

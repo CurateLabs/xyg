@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 197;
+pub const ABI_VERSION: u32 = 198;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -13596,6 +13596,132 @@ pub unsafe extern "C" fn xyg_recut_polar_plot(
     })
 }
 
+/// Combine static-export padding, title-band, rooms, colorbar extra, right-y,
+/// floors, and optional polar recut (ABI 198).
+///
+/// `authored_padding` is null for compact/default pads, otherwise four f64s
+/// `(top, right, bottom, left)`. `y_left_room` / `edge_left` / `edge_right` are
+/// NaN to skip those floors. `x_rooms_final` is null to skip the second x-room
+/// pass, otherwise three f64s `(top, bottom, measured_bottom)`. `polar` is 0/1;
+/// when 1 the polar recut arguments are required. `out` is
+/// [`compat_layout::COMBINE_OUT_LEN`]: x, y, w, h, title_room, title_wrap_width,
+/// top_axis_room, bottom_axis_room, legend_box_x/y/w/h (NaN when absent).
+///
+/// # Safety
+/// `out` must address 12 writable f64s. Optional pointers follow the empty=0
+/// contract.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_compat_combine_plot(
+    width: f64,
+    height: f64,
+    authored_padding: *const f64,
+    title_room: f64,
+    x_top_room: f64,
+    x_bottom_room: f64,
+    x_measured_bottom: f64,
+    colorbar_kind: u32,
+    colorbar_has_label: i32,
+    colorbar_pad_zero: i32,
+    has_right_y: i32,
+    y_left_room: f64,
+    edge_left: f64,
+    edge_right: f64,
+    x_rooms_final: *const f64,
+    polar: i32,
+    legend_side: u32,
+    legend_room: f64,
+    polar_label_room: f64,
+    authored_padding_flag: i32,
+    y_titled: i32,
+    keeps_bottom: i32,
+    out: *mut f64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out.is_null()
+            || !matches!(colorbar_has_label, 0 | 1)
+            || !matches!(colorbar_pad_zero, 0 | 1)
+            || !matches!(has_right_y, 0 | 1)
+            || !matches!(polar, 0 | 1)
+            || !matches!(authored_padding_flag, 0 | 1)
+            || !matches!(y_titled, 0 | 1)
+            || !matches!(keeps_bottom, 0 | 1)
+        {
+            return usize::MAX;
+        }
+        let padding = if authored_padding.is_null() {
+            None
+        } else {
+            let values = std::slice::from_raw_parts(authored_padding, 4);
+            Some([values[0], values[1], values[2], values[3]])
+        };
+        let x_final = if x_rooms_final.is_null() {
+            None
+        } else {
+            let values = std::slice::from_raw_parts(x_rooms_final, 3);
+            Some((values[0], values[1], values[2]))
+        };
+        let polar_recut = if polar == 0 {
+            None
+        } else {
+            Some(compat_layout::PolarCombine {
+                legend_side,
+                legend_room,
+                polar_label_room,
+                authored_padding: authored_padding_flag == 1,
+                y_titled: y_titled == 1,
+                keeps_bottom: keeps_bottom == 1,
+            })
+        };
+        let Some(plot) = compat_layout::combine_plot(compat_layout::CombinePlotRequest {
+            width,
+            height,
+            authored_padding: padding,
+            title_room,
+            x_top_room,
+            x_bottom_room,
+            x_measured_bottom,
+            colorbar_kind,
+            colorbar_has_label: colorbar_has_label == 1,
+            colorbar_pad_zero: colorbar_pad_zero == 1,
+            has_right_y: has_right_y == 1,
+            y_left_room: if y_left_room.is_nan() {
+                None
+            } else {
+                Some(y_left_room)
+            },
+            edge_left: if edge_left.is_nan() {
+                None
+            } else {
+                Some(edge_left)
+            },
+            edge_right: if edge_right.is_nan() {
+                None
+            } else {
+                Some(edge_right)
+            },
+            x_rooms_final: x_final,
+            polar: polar_recut,
+        }) else {
+            return usize::MAX;
+        };
+        let dest = std::slice::from_raw_parts_mut(out, compat_layout::COMBINE_OUT_LEN);
+        dest[0] = plot.x;
+        dest[1] = plot.y;
+        dest[2] = plot.w;
+        dest[3] = plot.h;
+        dest[4] = plot.title_room;
+        dest[5] = plot.title_wrap_width;
+        dest[6] = plot.top_axis_room;
+        dest[7] = plot.bottom_axis_room;
+        if let Some(box_rect) = plot.legend_box {
+            dest[8..12].copy_from_slice(&box_rect);
+        } else {
+            dest[8..12].fill(f64::NAN);
+        }
+        12
+    })
+}
+
 /// Polar disc layout and projection metrics (ABI 131).
 ///
 /// Writes [`polar::POLAR_METRICS_LEN`] doubles: centre, radius, angular/radial
@@ -13934,6 +14060,57 @@ pub unsafe extern "C" fn xyg_tight_layout_solve(
         };
         std::slice::from_raw_parts_mut(out, compat_layout::TIGHT_OUT_LEN).copy_from_slice(&values);
         6
+    })
+}
+
+/// Figure-edge extras for tight-layout solve (ABI 198).
+///
+/// Writes `(left, right, bottom, top)`. `suptitle_height`, `xlabel_size`,
+/// `ylabel_size`, and `legend_box_w` are NaN when that decoration is absent.
+///
+/// # Safety
+/// `out_extra` must address four writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_tight_layout_figure_extra(
+    canvas_w: f64,
+    canvas_h: f64,
+    suptitle_height: f64,
+    suptitle_y: f64,
+    xlabel_size: f64,
+    ylabel_size: f64,
+    legend_box_w: f64,
+    out_extra: *mut f64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        let Some(values) = compat_layout::tight_figure_extra(
+            canvas_w,
+            canvas_h,
+            if suptitle_height.is_nan() {
+                None
+            } else {
+                Some(suptitle_height)
+            },
+            suptitle_y,
+            if xlabel_size.is_nan() {
+                None
+            } else {
+                Some(xlabel_size)
+            },
+            if ylabel_size.is_nan() {
+                None
+            } else {
+                Some(ylabel_size)
+            },
+            if legend_box_w.is_nan() {
+                None
+            } else {
+                Some(legend_box_w)
+            },
+        ) else {
+            return usize::MAX;
+        };
+        std::slice::from_raw_parts_mut(out_extra, 4).copy_from_slice(&values);
+        4
     })
 }
 
@@ -16964,6 +17141,56 @@ mod tests {
         assert_eq!(n, 6);
         assert!((out[0] - 62.0 / 800.0).abs() < 1e-12);
         assert!((out[1] - (1.0 - 26.0 / 800.0)).abs() < 1e-12);
+    }
+
+    #[test]
+    fn combine_plot_default_padding_matches_engine() {
+        let mut out = [0.0f64; 12];
+        let n = unsafe {
+            xyg_compat_combine_plot(
+                900.0,
+                420.0,
+                std::ptr::null(),
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0,
+                0,
+                0,
+                0,
+                f64::NAN,
+                f64::NAN,
+                f64::NAN,
+                std::ptr::null(),
+                0,
+                0,
+                0.0,
+                0.0,
+                0,
+                0,
+                0,
+                out.as_mut_ptr(),
+            )
+        };
+        assert_eq!(n, 12);
+        assert_eq!(&out[..4], &[62.0, 10.0, 824.0, 368.0]);
+        let mut extra = [0.0f64; 4];
+        let n = unsafe {
+            xyg_tight_layout_figure_extra(
+                800.0,
+                600.0,
+                20.0,
+                0.98,
+                f64::NAN,
+                12.0,
+                80.0,
+                extra.as_mut_ptr(),
+            )
+        };
+        assert_eq!(n, 4);
+        assert_eq!(extra[0], 20.0);
+        assert_eq!(extra[1], 92.0);
     }
 
     #[test]

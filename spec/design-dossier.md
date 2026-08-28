@@ -1407,6 +1407,14 @@ extras, and Matplotlib pad/rect; edge maxima, neighbor gaps, pad
 multiples, and `subplots_adjust` fractions are engine-owned. Hosts still
 measure `_panel_chrome`, suptitle, figure labels, and outside legends
 (#275).
+ABI 198 moves the remaining static-export padding/title/colorbar/right-y
+combination and pyplot tight-layout figure-edge extras into Rust. Hosts
+call `xyg_compat_combine_plot` and `xyg_tight_layout_figure_extra`;
+additive vs floor gutters, second x-room pass, polar recut, and
+suptitle/label/outside-legend extras are engine-owned and identical for
+Python and Node. Hosts still iterate axes, format ticks, measure ABI 125
+rooms, resolve CSS visibility, and decide polar legend reservation
+(#299). `_svg._*room` stays for polar/extra-axis/custom-font measurement.
 ABI 128 moves authored tick-window resolve and filter into Rust. Hosts
 call `xyg_tick_window` and `xyg_tick_window_filter`; linear vs modular
 angular containment (including seam-crossing sectors) is engine-owned

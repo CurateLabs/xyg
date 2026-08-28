@@ -1012,6 +1012,32 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         F64P,
     ]
+    lib.xyg_compat_combine_plot.restype = ctypes.c_size_t
+    lib.xyg_compat_combine_plot.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        ctypes.c_int32,
+        ctypes.c_uint32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        F64P,
+    ]
     lib.xyg_tight_layout_solve.restype = ctypes.c_size_t
     lib.xyg_tight_layout_solve.argtypes = [
         ctypes.c_double,
@@ -1027,6 +1053,17 @@ def load() -> ctypes.CDLL:
         ctypes.c_double,
         ctypes.c_double,
         F64P,
+        F64P,
+    ]
+    lib.xyg_tight_layout_figure_extra.restype = ctypes.c_size_t
+    lib.xyg_tight_layout_figure_extra.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
         F64P,
     ]
     lib.xyg_tick_window.restype = ctypes.c_size_t
@@ -2756,6 +2793,53 @@ def main() -> None:
     ok(
         tight_n == 6 and abs(tight_out[0] - 62.0 / 800.0) < 1e-12,
         "tight_layout_solve empty wide defaults",
+    )
+    combine_out = array("d", [0.0] * 12)
+    combine_n = lib.xyg_compat_combine_plot(
+        900.0,
+        420.0,
+        None,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0,
+        0,
+        0,
+        0,
+        float("nan"),
+        float("nan"),
+        float("nan"),
+        None,
+        0,
+        0,
+        0.0,
+        0.0,
+        0,
+        0,
+        0,
+        _ptr(combine_out, ctypes.c_double),
+    )
+    extra_out = array("d", [0.0] * 4)
+    extra_n = lib.xyg_tight_layout_figure_extra(
+        800.0,
+        600.0,
+        20.0,
+        0.98,
+        float("nan"),
+        12.0,
+        80.0,
+        _ptr(extra_out, ctypes.c_double),
+    )
+    ok(
+        combine_n == 12
+        and combine_out[0] == 62.0
+        and combine_out[1] == 10.0
+        and combine_out[2] == 824.0
+        and extra_n == 4
+        and extra_out[0] == 20.0
+        and extra_out[1] == 92.0,
+        "compat_combine_plot default padding and tight figure extras",
     )
     tick_lo = ctypes.c_double()
     tick_hi = ctypes.c_double()

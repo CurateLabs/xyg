@@ -1035,9 +1035,11 @@ static-export gutters, including the polar legend box. Hosts still pack
 legend loc/entries; Rust owns the recut and gutter placement. ABI 125 default-font
 cartesian Scene-shaped specs use `xyg_scene_plot_layout` (#297). ABI 197
 settles authored `loc="best"` from packed XYCL/XYNM during product encode
-(#298); compatibility `_legendfit.py` still packs ChartView specs. Remaining #275
-debt is compatibility `_svg.layout()` orchestration of polar / extra-axis / CSS-font rooms
-and `_svg._legend_layout` CSS remaps.
+(#298); compatibility `_legendfit.py` still packs ChartView specs. ABI 198
+owns `_svg.layout()` padding/title/colorbar/right-y/polar-recut combination
+and pyplot tight-layout figure-edge extras (#299). Remaining #275
+debt is compatibility `_svg._*room` for polar / extra-axis / CSS-font
+measurement and `_svg._legend_layout` CSS remaps.
 Optional formats still use the versioned `XYAF` v1 authoring envelope (`magic`,
 version, x-format length, y-format length, legacy-annotation length, then those
 exact payloads). Exact lengths are overflow-checked; malformed, trailing,

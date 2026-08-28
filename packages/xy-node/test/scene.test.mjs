@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import test from "node:test";
 
-import { axisTicks, tickFormat, tickLabelLayout, tickWindow, tickWindowFilter, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yAxisLeftRoom, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatColorbarExtra, polarLegendRoom, polarLabelRoom, polarLayout, polarProject, recutPolarPlot, tightLayoutSolve, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
+import { axisTicks, tickFormat, tickLabelLayout, tickWindow, tickWindowFilter, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yAxisLeftRoom, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatColorbarExtra, polarLegendRoom, polarLabelRoom, polarLayout, polarProject, recutPolarPlot, compatCombinePlot, tightLayoutSolve, tightLayoutFigureExtra, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
 import { Figure, sceneRasterCommands, sceneStaticExport, sceneSvg } from "../src/index.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
@@ -1759,6 +1759,25 @@ test("Node consumes Rust-owned static-export layout combination", () => {
   assert.equal(recut.w, 140);
   assert.equal(recut.h, 140);
   assert.equal(recut.topAxisRoom, 40);
+  const combined = compatCombinePlot(900, 420);
+  assert.equal(combined.x, 62);
+  assert.equal(combined.y, 10);
+  assert.equal(combined.w, 824);
+  assert.equal(combined.h, 368);
+  const polarCombined = compatCombinePlot(200, 200, {
+    authoredPadding: [0, 0, 0, 0],
+    polar: { polarLabelRoom: 30, authoredPadding: true },
+  });
+  assert.equal(polarCombined.x, 30);
+  assert.equal(polarCombined.w, 140);
+  const extra = tightLayoutFigureExtra(800, 600, {
+    suptitleHeight: 20,
+    suptitleY: 0.98,
+    ylabelSize: 12,
+    legendBoxW: 80,
+  });
+  assert.equal(extra.left, 20);
+  assert.equal(extra.right, 92);
 });
 
 test("Node polar layout/project matches default-cardinals fixture", () => {
