@@ -3,10 +3,11 @@ paint it with the Rust rasterizer (`kernels.rasterize`, `crates/xyg-engine/src/r
 encode PNG. Browser-free and screen-bounded — the same decimated payload the SVG
 exporter consumes.
 
-Reuses `_svg`'s layout/scale/tick/colormap math and `_scene`'s tessellated
-geometry so the raster matches the SVG (and the live chart). The one thing the
-SVG path never needed — a CSS-color → RGBA8 parser — lives here, since the
-browser did that resolution for the SVG/widget.
+Reuses `_svg`'s layout/scale/tick/colormap math and ABI 121 tessellation
+kernels so the raster matches the SVG (and the live chart). Compatibility
+`_scene.py` wrappers stay for tests; this emitter calls `kernels` directly
+(#310). The one thing the SVG path never needed — a CSS-color → RGBA8 parser
+— lives here, since the browser did that resolution for the SVG/widget.
 """
 
 from __future__ import annotations
@@ -20,7 +21,7 @@ from typing import Any, Optional, cast
 
 import numpy as np
 
-from . import _paint, _png, _scene, _textblock
+from . import _paint, _png, _textblock, kernels
 from ._arrowgeom import arrow_shapes as _arrow_shapes
 from ._svg import (
     _AXIS,
@@ -82,7 +83,83 @@ from ._svg import (
     warp_grid_rgba,
 )
 
-# Opcodes — must match crates/xyg-engine/src/raster.rs.
+# Samples per smooth Bézier span when flattening to a polyline (#310 / ABI 121).
+_BEZIER_STEPS = 16
+
+
+def _curve_points(xv: np.ndarray, yv: np.ndarray, sx: Any, sy: Any, smooth: bool) -> np.ndarray:
+    """Pixel-space polyline; smooth uses Rust monotone-cubic flatten (ABI 121)."""
+    px = np.asarray(sx(xv), dtype=np.float64)
+    py = np.asarray(sy(yv), dtype=np.float64)
+    if not smooth or len(xv) < 3 or not (sx.affine and sy.affine):
+        return np.column_stack([px, py])
+    data_x, data_y = kernels.curve_flatten(
+        np.asarray(xv, dtype=np.float64),
+        np.asarray(yv, dtype=np.float64),
+        _BEZIER_STEPS,
+    )
+    return np.column_stack(
+        [np.asarray(sx(data_x), dtype=np.float64), np.asarray(sy(data_y), dtype=np.float64)]
+    )
+
+
+def _rounded_rect_vertices(
+    x: float, y: float, w: float, h: float, r_tip: float, r_base: float, tip_top: bool
+) -> list[tuple[float, float]]:
+    xs, ys = kernels.rounded_rect_poly(x, y, w, h, r_tip, r_base, tip_top)
+    return list(zip(xs.tolist(), ys.tolist(), strict=True))
+
+
+def _grid_dest_rect(x_range: list, y_range: list, sx: Any, sy: Any) -> tuple:
+    """Pixel destination rect (x, y, w, h) for a grid image, matching `_svg._grid_image`."""
+    px0, px1 = float(sx(x_range[0])), float(sx(x_range[1]))
+    py0, py1 = float(sy(y_range[1])), float(sy(y_range[0]))
+    return min(px0, px1), min(py0, py1), abs(px1 - px0), abs(py1 - py0)
+
+
+def _compat_grid_rgba(kind: str, g: dict, blob: bytes, cols: list, style: dict) -> tuple:
+    """Density/heatmap grid → `(h, w, 4)` uint8 RGBA (top row first)."""
+    w, h = int(g["w"]), int(g["h"])
+    stops = np.asarray(_colormap_stops(g.get("colormap", "viridis")), dtype=np.uint8)
+    if kind == "density":
+        if g.get("enc") == "log-u8":
+            meta = cols[g["buf"]]
+            encoded = np.frombuffer(
+                blob, dtype=np.uint8, count=meta["len"], offset=meta["byte_offset"]
+            )
+            gmax = float(g.get("max") or 1.0) or 1.0
+            rgba = kernels.density_rgba(
+                encoded,
+                w,
+                h,
+                gmax,
+                stops,
+                float(style.get("opacity", 0.85)),
+            )
+            return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
+        grid = _density_column(blob, cols[g["buf"]], g).reshape(h, w)
+        gmax = float(g.get("max") or 1.0) or 1.0
+        tnorm = np.clip(grid / gmax, 0.0, 1.0)
+        rgb = _lut(g.get("colormap", "viridis"), tnorm.reshape(-1)).reshape(h, w, 3)
+        alpha = (np.clip(tnorm * 1.35, 0, 1) * 255 * float(style.get("opacity", 0.85))).astype(
+            np.uint8
+        )
+        alpha[tnorm <= 0] = 0
+    else:
+        meta = cols[g["buf"]]
+        alpha = int(255 * float(style.get("opacity", 0.95)))
+        if g.get("enc") == "canonical-f64":
+            values = _column(blob, meta).reshape(h, w)
+            d0, d1 = (float(value) for value in g["domain"])
+            rgba = kernels.colormap_rgba_canonical(values, w, h, (d0, d1), stops, alpha)
+            return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
+        raw = _column(blob, meta).reshape(h, w)
+        rgba = kernels.colormap_rgba(raw, w, h, stops, alpha)
+        return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
+    rgba = np.dstack([rgb, alpha])[::-1]
+    return np.ascontiguousarray(rgba, dtype=np.uint8), g["x_range"], g["y_range"]
+
+
 (
     _CLIP,
     _FILL,
@@ -1633,7 +1710,7 @@ def _emit_line(
     elif style.get("curve") == "smooth" and len(xv) >= 3 and affine_fast_path(sx, sy, polar):
         cmd.smooth_stroke(xv, yv, sx, sy, width, c, dash=style.get("dash"), cap=cap)
     else:
-        pts = _scene.curve_points(xv, yv, sx, sy, False)
+        pts = _curve_points(xv, yv, sx, sy, False)
         cmd.stroke(pts, width, c, dash=style.get("dash"), cap=cap)
 
 
@@ -1963,8 +2040,8 @@ def _emit_area(
             run_base = np.column_stack(polar(xv[run][::-1], base_r[run][::-1]))
             pieces.append((run_top, run_base))
     else:
-        top = _scene.curve_points(xv, yv, sx, sy, smooth)
-        base = _scene.curve_points(xv[::-1], bv[::-1], sx, sy, smooth)
+        top = _curve_points(xv, yv, sx, sy, smooth)
+        base = _curve_points(xv[::-1], bv[::-1], sx, sy, smooth)
         pieces = [(top, base)]
     op = _fill_opacity(style, 0.35)
     fill_spec = style.get("fill")
@@ -2440,7 +2517,7 @@ def _emit_ribbon(
 ) -> None:
     """Flow bands, flattened, with the gradient running along the flow.
 
-    Geometry comes from `_scene.ribbon_polygon` — the same reference the SVG
+    Geometry comes from `kernels.ribbon_polygon` (ABI 121) — the same Rust
     exporter's cubics and the golden test consume — so the two static outputs
     cannot drift. The polygon is built from the **axis-mapped** endpoints, not
     mapped after flattening: the ribbon cubic is normative in transformed space
@@ -2499,8 +2576,8 @@ def _emit_ribbon(
         py_tlo, py_thi = float(sy(tlo[i])), float(sy(thi[i]))
         if not all(math.isfinite(v) for v in (px0, px1, py_slo, py_shi, py_tlo, py_thi)):
             continue
-        poly_data = _scene.ribbon_polygon(px0, px1, py_slo, py_shi, py_tlo, py_thi)
-        poly = list(zip(poly_data[:, 0].tolist(), poly_data[:, 1].tolist(), strict=True))
+        xs, ys = kernels.ribbon_polygon(px0, px1, py_slo, py_shi, py_tlo, py_thi)
+        poly = list(zip(xs.tolist(), ys.tolist(), strict=True))
         # effective_rgba already folded the trace opacity into the alpha.
         a = tuple(int(v) for v in fills[i])
         b = tuple(int(v) for v in fills2[i])
@@ -2511,7 +2588,7 @@ def _emit_ribbon(
         else:
             # Gradient vector spans the two faces horizontally; the y term is
             # irrelevant because the ramp is purely along the flow.
-            gy = float(poly_data[0, 1])
+            gy = float(ys[0])
             cmd.grad(poly, (px0, gy), (px1, gy), [(0.0, a), (1.0, b)])
         edge_c = (
             stroke_c
@@ -2604,7 +2681,7 @@ def _bar_geom(
 ) -> None:
     r_tip, r_base = _corner_radii(style)
     if r_tip or r_base:
-        poly = _scene.rounded_rect_poly(x, y, w, h, r_tip, r_base, tip_top)
+        poly = _rounded_rect_vertices(x, y, w, h, r_tip, r_base, tip_top)
         fill_cmd(poly)
         if sw > 0:
             cmd.stroke(poly, sw, stroke_c, closed=True)
@@ -2970,7 +3047,7 @@ def _emit_grid(
                 _heatmap_rgba_grid(g, blob, cols, style, borrowed), xr, yr, sx, sy
             )
             oh, ow = rgba.shape[:2]
-            dx, dy, dw, dh = _scene.grid_dest_rect(xr, yr, sx, sy)
+            dx, dy, dw, dh = _grid_dest_rect(xr, yr, sx, sy)
             cmd.image(
                 dx, dy, dw, dh, ow, oh, np.ascontiguousarray(rgba[::-1]).tobytes(), nearest=True
             )
@@ -2981,14 +3058,14 @@ def _emit_grid(
             rgba[:, 3] = (rgba[:, 3].astype(np.float64) * _fill_opacity(style)).astype(np.uint8)
             rgba = rgba.reshape(h, w, 4)[::-1]
             xr, yr = g["x_range"], g["y_range"]
-            dx, dy, dw, dh = _scene.grid_dest_rect(xr, yr, sx, sy)
+            dx, dy, dw, dh = _grid_dest_rect(xr, yr, sx, sy)
             cmd.image(dx, dy, dw, dh, w, h, rgba.tobytes(), nearest=True)
             return
         meta = cols[g["buf"]]
         stops = np.asarray(_colormap_stops(g.get("colormap", "viridis")), dtype=np.uint8)
         alpha = int(255 * _fill_opacity(style, 0.95))
         xr, yr = g["x_range"], g["y_range"]
-        dx, dy, dw, dh = _scene.grid_dest_rect(xr, yr, sx, sy)
+        dx, dy, dw, dh = _grid_dest_rect(xr, yr, sx, sy)
         canonical = g.get("enc") == "canonical-f64"
         cmd.heatmap_image(
             dx,
@@ -3009,7 +3086,7 @@ def _emit_grid(
         w, h = int(g["w"]), int(g["h"])
         meta = cols[g["buf"]]
         xr, yr = g["x_range"], g["y_range"]
-        dx, dy, dw, dh = _scene.grid_dest_rect(xr, yr, sx, sy)
+        dx, dy, dw, dh = _grid_dest_rect(xr, yr, sx, sy)
         if g.get("rgba") is not None:
             # Mean point color per cell (LOD doc §2): rgb from the shipped
             # plane; displayed alpha is the PHYSICAL compositing of the
@@ -3048,9 +3125,9 @@ def _emit_grid(
         )
         return
     else:
-        rgba, xr, yr = _scene.grid_rgba(kind, g, blob, cols, style)
+        rgba, xr, yr = _compat_grid_rgba(kind, g, blob, cols, style)
         h, w = rgba.shape[0], rgba.shape[1]
-    dx, dy, dw, dh = _scene.grid_dest_rect(xr, yr, sx, sy)
+    dx, dy, dw, dh = _grid_dest_rect(xr, yr, sx, sy)
     cmd.image(dx, dy, dw, dh, w, h, rgba.tobytes(), nearest=kind == "heatmap")
 
 

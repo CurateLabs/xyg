@@ -1152,11 +1152,17 @@ def test_python_scene_compiles_unwrapped_text_layout() -> None:
     assert 'transform="rotate(-30 ' in rotated_svg
     assert rotated.to_svg() == rotated_svg
     assert _scene_v3.scene_export_support_reason(rotated) is None
+    styled = representative_figure()
+    styled.annotations.append(
+        {"kind": "text", "x": 0.5, "y": 0.5, "text": "rotated", "style": {"rotation": 30}}
+    )
+    styled_svg = _native.scene_svg(styled.to_scene())
+    assert 'transform="rotate(-30 ' in styled_svg
+    assert _scene_v3.scene_export_support_reason(styled) is None
     authored = representative_figure()
-    authored.text(2.0, 2.5, "note")
+    authored.text(2.0, 2.5, "note", rotation=30)
     assert _scene_v3.scene_export_support_reason(authored) is None
-    assert b"note" in authored.to_scene()
-    assert "note" in authored.to_svg()
+    assert 'transform="rotate(-30 ' in authored.to_svg()
 
 
 def test_python_scene_compiles_labelled_marker_layout() -> None:
@@ -1196,11 +1202,17 @@ def test_python_scene_compiles_labelled_marker_layout() -> None:
     assert 'transform="rotate(-30 ' in rotated_svg
     assert rotated.to_svg() == rotated_svg
     assert _scene_v3.scene_export_support_reason(rotated) is None
+    styled = representative_figure()
+    styled.annotations.append(
+        {"kind": "marker", "x": 0.5, "y": 0.5, "text": "rotated", "style": {"rotation": 30}}
+    )
+    styled_svg = _native.scene_svg(styled.to_scene())
+    assert 'transform="rotate(-30 ' in styled_svg
+    assert _scene_v3.scene_export_support_reason(styled) is None
     authored = representative_figure()
-    authored.marker(2.0, 2.5, text="note")
+    authored.marker(2.0, 2.5, text="note", rotation=30)
     assert _scene_v3.scene_export_support_reason(authored) is None
-    assert b"note" in authored.to_scene()
-    assert "note" in authored.to_svg()
+    assert 'transform="rotate(-30 ' in authored.to_svg()
     unlabelled = representative_figure()
     unlabelled.annotations.append({"kind": "marker", "x": 0.5, "y": 0.5, "dx": 8, "dy": -8})
     assert _scene_v3.scene_export_support_reason(unlabelled) is None
