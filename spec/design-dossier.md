@@ -561,7 +561,8 @@ F3, still pending (above).
   both native hosts through one ABI. Python compatibility SVG/raster and pyplot
   call that ABI through one `_svg.axis_ticks` framing function; the obsolete
   per-family Python adapters are retired. `public_static_export` is likewise
-  the only optional Python selector for the bounded product route; explicit
+  the only optional Python selector for the bounded product route; it reuses
+  the predicate's compiled Scene rather than encoding twice. Explicit
   Scene APIs retain no second fallback predicate. Rust also owns
   chrome ordering, plus bounded primary static legend entry ordering,
   placement, frame, text, and swatch policy;

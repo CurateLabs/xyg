@@ -424,6 +424,34 @@ def test_supported_public_exports_route_through_rust_scene(
     assert calls["raster"] >= 1
 
 
+def test_public_static_export_compiles_scene_once(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The public router reuses the predicate Scene instead of encoding twice."""
+    figure = public_callout_figure()
+    real = _scene_v3.figure_scene
+    calls = {"n": 0}
+
+    def counted(*args: object, **kwargs: object) -> bytes:
+        calls["n"] += 1
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(_scene_v3, "figure_scene", counted)
+    exported = _scene_v3.public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported.decode("utf-8") == _native.scene_svg(real(figure))
+    assert calls["n"] == 1
+    calls["n"] = 0
+    assert _scene_v3.public_static_export(figure, "png", scale=1) is not None
+    assert calls["n"] == 1
+    calls["n"] = 0
+    assert _scene_v3.public_static_export(figure, "pdf") is not None
+    assert calls["n"] == 1
+    calls["n"] = 0
+    assert _scene_v3.scene_export_support_reason(figure) is None
+    assert calls["n"] == 1
+
+
 def test_public_exporters_share_one_scene_selection_seam(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

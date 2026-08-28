@@ -251,10 +251,11 @@ for(const p of panels){{
             # overrides remain on the documented compatibility path: the
             # Scene public subset has not yet modeled that whole-grid contract.
             if background is None:
-                from . import _scene_v3
+                from . import _native, _scene_v3
 
-                if _scene_v3.scene_export_support_reason(fig) is None:
-                    svg = _scene_v3.figure_svg(fig)
+                reason, scene = _scene_v3._public_scene_or_reason(fig)
+                if reason is None and scene is not None:
+                    svg = _native.scene_svg(scene)
                     # Scene SVG owns a closed id vocabulary (`xy-scene-plot`
                     # clips plus `xy-scene-gN` linearGradient ids). Prefix the
                     # whole vocabulary so sibling panels cannot cross-clip or

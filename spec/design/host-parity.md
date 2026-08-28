@@ -507,7 +507,10 @@ consumer failure remains an error rather than a fallback signal.
 `public_static_export` is now the only optional Python product-route selector;
 the older format-specific `try_public_*` adapters have been retired. The
 support predicate itself is ABI 105 `xyg_scene_public_export_reason`; hosts
-only pack literal figure metadata. ABI 106 `xyg_figure_autorange` owns the
+only pack literal figure metadata. The Python public router and facet SVG
+path reuse the predicate's compiled Scene instead of compiling a second
+batch for the Rust SVG/raster/PDF consumers. Explicit `figure_svg` /
+`figure_raster_commands` callers still compile on demand. ABI 106 `xyg_figure_autorange` owns the
 product domain/padding/polar/zero-baseline decisions from the same packed
 extents both hosts already had. ABI 107 `xyg_scene_resolve_mark_styles` /
 `xyg_css_color_rgba` own per-kind fill/stroke defaults and CSS→RGBA8 so named

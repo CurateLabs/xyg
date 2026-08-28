@@ -754,7 +754,9 @@ consumer error propagates. Figure methods and both legacy/unified Python export
 entry points delegate to it rather than independently selecting a Scene consumer.
 Parity with the compiler is by construction — the predicate runs
 ``figure_scene`` — so a router built on it can never disagree with the encoder it
-guards, and it never triggers a silent fallback: input errors (for example a
+guards. ``public_static_export`` and ``FacetGrid.to_svg`` reuse that compiled
+batch for SVG/PNG/PDF/JPEG/WebP consumers rather than encoding a second Scene.
+The router never triggers a silent fallback: input errors (for example a
 non-finite opacity) propagate rather than being reported as a routing reason.
 The one non-feature routing exception is a valid viewport too small to contain
 the bounded Scene chrome; it reports ``XYG_SCENE_UNSUPPORTED_VIEWPORT`` before
@@ -1359,7 +1361,9 @@ ABI 163 packs product-path Scene encode from `XYTC` plus `XYTA` plus `XYNM`
 plus `XYCL` plus `XYAF` plus `XYCF` plus polar so compile/attach/sidecar/row/
 annotation/style/splice/encode orchestration cannot drift. An empty reason selects the Scene route;
 hosts still compile the Scene and may still report compiler or viewport
-diagnostics, including the shared PolyFill group budget. ABI 106 does not
+diagnostics, including the shared PolyFill group budget. Python
+`public_static_export` and `FacetGrid.to_svg` reuse that compiled batch
+rather than encoding twice. ABI 106 does not
 change Scene records; `xyg_figure_autorange` owns the domain the annotation
 and chrome packers already pass as `figure._range`. ABI 107 does not change
 Scene records either; `xyg_scene_resolve_mark_styles` owns per-kind fill/stroke

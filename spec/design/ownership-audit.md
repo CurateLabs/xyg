@@ -230,8 +230,9 @@ consumer, namespacing its closed clip-id vocabulary only for nested-document
 composition; panel backgrounds and unsupported panels deliberately select
 compatibility before compilation. `python/xyg/_scene_v3.py` is the single
 preflight/orchestration seam for that subset: `public_static_export` owns the
-Scene-format selection, while Python entry points only retain host options and
-the documented compatibility exceptions. `_svg.py` and
+Scene-format selection and reuses the predicate's compiled batch, while Python
+entry points only retain host options and the documented compatibility
+exceptions. `FacetGrid.to_svg` uses the same compiled panel Scene. `_svg.py` and
 `_raster.py` remain compatibility owners for rich text and legend variants, every
 annotation outside that bounded primary Cartesian family (including rotation,
 collision/layout directives, markup, CSS/classes, and custom typography), themes, custom fonts or CSS/classes,

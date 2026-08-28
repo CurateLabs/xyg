@@ -5,7 +5,8 @@ decide whether a figure routes through the canonical Rust Scene or the
 compatibility renderers. It is intentionally narrower than `figure_scene`:
 explicit Scene APIs may exercise a migrating record before the public output
 contract is complete. These tests pin both compiler rejection and public
-preflight so the router cannot silently select a partial consumer.
+preflight so the router cannot silently select a partial consumer. The public
+router reuses that compiled Scene instead of encoding a second batch.
 """
 
 from __future__ import annotations
@@ -1288,6 +1289,7 @@ def test_migrated_scene_packers_have_no_host_step_geometry_expander() -> None:
     assert "function stepArrays" not in node_packer
     assert "return _native.scene_encode_product(" in python_packer
     assert "return encodeProduct(" in node_packer
+    assert "reason, scene = _public_scene_or_reason(" in python_packer
     assert "viewport=(w, h)" not in python_packer
     assert "xAxis: xSceneAxis" not in node_packer
     assert "sidecars = _unpack_xysd(" not in python_packer

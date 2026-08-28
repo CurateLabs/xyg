@@ -2963,16 +2963,19 @@ def public_static_export(
     subset.  It returns ``None`` only after the explicit support predicate
     selects compatibility *before* Scene compilation.  Once selected, every
     compiler or consumer error propagates: it is never a request to retry a
-    compatibility renderer.
+    compatibility renderer. The router reuses the predicate's compiled batch
+    rather than compiling a second Scene for SVG, raster, or PDF consumers.
+    Explicit Scene callers still use ``figure_svg`` / ``figure_raster_commands``.
     """
-    if scene_export_support_reason(figure, width=width, height=height) is not None:
+    reason, scene = _public_scene_or_reason(figure, width=width, height=height)
+    if reason is not None or scene is None:
         return None
     if format == "svg":
-        return figure_svg(figure, width=width, height=height).encode("utf-8")
+        return _native.scene_svg(scene).encode("utf-8")
     if format == "png":
         from . import kernels
 
-        commands = figure_raster_commands(figure, width=width, height=height, scale=scale)
+        commands = _native.scene_raster_commands(scene, scale)
         w = int(width if width is not None else figure.width)
         h = int(height if height is not None else figure.height)
         return kernels.rasterize_png(
@@ -2981,11 +2984,11 @@ def public_static_export(
             max(1, int(round(h * float(scale)))),
         )
     if format == "pdf":
-        return _native.svg_to_pdf(figure_svg(figure, width=width, height=height))
+        return _native.svg_to_pdf(_native.scene_svg(scene))
     if format in {"jpeg", "webp"}:
         from . import kernels
 
-        commands = figure_raster_commands(figure, width=width, height=height, scale=scale)
+        commands = _native.scene_raster_commands(scene, scale)
         w = max(1, int(round(int(width if width is not None else figure.width) * float(scale))))
         h = max(1, int(round(int(height if height is not None else figure.height) * float(scale))))
         rgba = kernels.rasterize(commands, w, h)
@@ -3342,31 +3345,21 @@ def _pack_public_export_support(
     return _native.scene_pack_public_export(bytes(payload))
 
 
-def scene_export_support_reason(
+def _public_scene_or_reason(
     figure: Any,
     *,
     width: int | None = None,
     height: int | None = None,
-) -> str | None:
-    """Return why a figure cannot compile to the canonical Rust Scene, or ``None``.
+) -> tuple[str | None, bytes | None]:
+    """Compile the public Scene once, or return the support diagnostic.
 
-    This is the single support predicate the #117 public static-export router
-    consults before selecting the Rust Scene path over the compatibility
-    ``_svg`` / ``_raster`` renderers. It reports the stable
-    ``XYG_SCENE_UNSUPPORTED_*`` diagnostic (or the compiler's own bounded
-    message) so callers can log or surface an actionable reason for the fallback.
-
-    Hosts pack authored XYEF facts (viewport flags, keys, axis codes, and
-    column observations). Rust owns XYEP layout, kind/step/annotation codes,
-    flag derivation, allowlists, check order, and diagnostic wording. After
-    that preflight the predicate still compiles the Scene so it cannot
-    disagree with the encoder, and it asks the browser painter to enforce the
-    shared PolyFill group budget.
+    The predicate must still compile so it cannot disagree with the encoder.
+    Product routers reuse the compiled batch instead of encoding a second time.
     """
     envelope = _pack_public_export_support(figure, width=width, height=height)
     reason = _native.scene_public_export_reason(envelope)
     if reason:
-        return reason
+        return reason, None
     public_triangle_mesh_count = 0
     for trace in getattr(figure, "traces", None) or []:
         if trace.kind in _POLYFILL_KINDS:
@@ -3386,17 +3379,42 @@ def scene_export_support_reason(
         scene = figure_scene(figure, width=width, height=height)
     except UnsupportedSceneV3 as unsupported:
         if str(unsupported) == "invalid canonical scene plot layout":
-            return "XYG_SCENE_UNSUPPORTED_VIEWPORT"
-        return str(unsupported)
+            return "XYG_SCENE_UNSUPPORTED_VIEWPORT", None
+        return str(unsupported), None
     except ValueError as exc:
         if str(exc) == "invalid canonical scene plot layout":
-            return "XYG_SCENE_UNSUPPORTED_VIEWPORT"
+            return "XYG_SCENE_UNSUPPORTED_VIEWPORT", None
         raise
     if public_triangle_mesh_count:
         try:
             _native.scene_browser_painter(scene)
         except ValueError as exc:
             if str(exc) == "invalid canonical scene for browser painter":
-                return "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH"
+                return "XYG_SCENE_UNSUPPORTED_PUBLIC_TRIANGLE_MESH", None
             raise
-    return None
+    return None, scene
+
+
+def scene_export_support_reason(
+    figure: Any,
+    *,
+    width: int | None = None,
+    height: int | None = None,
+) -> str | None:
+    """Return why a figure cannot compile to the canonical Rust Scene, or ``None``.
+
+    This is the single support predicate the #117 public static-export router
+    consults before selecting the Rust Scene path over the compatibility
+    ``_svg`` / ``_raster`` renderers. It reports the stable
+    ``XYG_SCENE_UNSUPPORTED_*`` diagnostic (or the compiler's own bounded
+    message) so callers can log or surface an actionable reason for the fallback.
+
+    Hosts pack authored XYEF facts (viewport flags, keys, axis codes, and
+    column observations). Rust owns XYEP layout, kind/step/annotation codes,
+    flag derivation, allowlists, check order, and diagnostic wording. After
+    that preflight the predicate still compiles the Scene so it cannot
+    disagree with the encoder, and it asks the browser painter to enforce the
+    shared PolyFill group budget. ``public_static_export`` and facet SVG reuse
+    that compiled batch rather than compiling a second Scene.
+    """
+    return _public_scene_or_reason(figure, width=width, height=height)[0]

@@ -190,7 +190,7 @@ def test_supported_facet_svg_routes_each_panel_through_the_canonical_scene(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Grid placement must not bypass an otherwise supported public export."""
-    from xyg import _native
+    from xyg import _native, _scene_v3
 
     figures = [
         Figure(width=240, height=160).scatter([1, 2], [2, 3], color="#3987e5"),
@@ -206,9 +206,18 @@ def test_supported_facet_svg_routes_each_panel_through_the_canonical_scene(
         return scene_svg(*args, **kwargs)  # type: ignore[arg-type]
 
     monkeypatch.setattr(_native, "scene_svg", observed_scene_svg)
+    real_scene = _scene_v3.figure_scene
+    compile_calls = {"n": 0}
+
+    def counted_scene(*args: object, **kwargs: object) -> bytes:
+        compile_calls["n"] += 1
+        return real_scene(*args, **kwargs)
+
+    monkeypatch.setattr(_scene_v3, "figure_scene", counted_scene)
     svg = grid.to_svg()
 
     assert calls == 2
+    assert compile_calls["n"] == 2
     assert 'id="xy0-xy-scene-plot"' in svg
     assert 'id="xy1-xy-scene-plot"' in svg
     assert "url(#xy0-xy-scene-plot)" in svg
