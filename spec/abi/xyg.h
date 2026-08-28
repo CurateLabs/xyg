@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 205
-#define XYG_ABI_SIGNATURE_SHA256 "8b5d7deabe7b4189dfb237a6c94bb9b6c4b65e24e7989f922c7c70179c7519a2"
+#define XYG_ABI_VERSION 206
+#define XYG_ABI_SIGNATURE_SHA256 "96c78bffbc6e30c2982aa963d9463bfc707a30bdaca004f8e6c2efcaa3e3ea66"
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,6 +32,7 @@ size_t xyg_chunked_columns_overview(uint64_t store, size_t max_points, uint64_t 
 size_t xyg_chunked_columns_read(uint64_t store, double x0, double x1, double y0, double y1, int32_t use_y, uint64_t budget_bytes, uint64_t generation, double * out_x, double * out_y, size_t capacity, uint64_t * out_stats);
 size_t xyg_chunked_columns_read_page(uint64_t store, double x0, double x1, double y0, double y1, int32_t use_y, uint64_t budget_bytes, uint64_t generation, uint32_t cursor, double * out_x, double * out_y, size_t capacity, uint64_t * out_stats);
 uint64_t xyg_chunked_columns_rows(uint64_t store);
+int32_t xyg_colormap_lut(const double * t, size_t n, const uint8_t * stops, size_t stop_count, uint8_t * out);
 int32_t xyg_colormap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out);
 int32_t xyg_colormap_rgba_canonical(const double * raw, size_t w, size_t h, double domain_lo, double domain_hi, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out);
 uint32_t xyg_colormap_stops(const uint8_t * name, size_t name_len, uint8_t * out, size_t cap);
@@ -59,6 +60,7 @@ int32_t xyg_density_grid_path(int32_t oversized, int32_t full_identity, int32_t 
 int32_t xyg_density_log_u8(const float * grid, size_t len, uint8_t * out, double * out_max);
 size_t xyg_density_pyramid_preflight(int32_t x_linear, int32_t y_linear, uint64_t n_points, int32_t has_pyramid_resource, int32_t x_memmapped, int32_t y_memmapped, int32_t force_pyramid, int32_t force_bin2d, uint32_t * out);
 int32_t xyg_density_rgba(const uint8_t * encoded, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out);
+int32_t xyg_density_rgba_linear(const double * counts, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out);
 int32_t xyg_density_wasm_eligible(int32_t cartesian, int32_t x_linear, int32_t y_linear, int32_t color_mode, int32_t x_has_nulls, int32_t y_has_nulls, uint64_t n_points);
 int32_t xyg_drill_decision(uint64_t visible, double budget, int32_t in_drill, double exit_factor, int32_t * out_exact);
 int32_t xyg_encode_f32(const double * data, size_t len, double offset, double scale, float * out);
@@ -125,6 +127,7 @@ size_t xyg_marching_triangles(const double * x, const double * y, const double *
 int32_t xyg_min_max(const double * data, size_t len, double * out_min, double * out_max);
 size_t xyg_monotone_tangents(const double * x, const double * y, size_t n, double * out_m, size_t capacity);
 int32_t xyg_normalize_f32(const double * data, size_t len, double lo, double hi, int32_t nan_mode, float * out);
+int32_t xyg_paint_effective_rgba(const double * intrinsic, size_t n, const double * artist_alpha, const double * opacity, double component_opacity, double * out);
 size_t xyg_payload_even_indices(size_t n, size_t count, int32_t * out_keep_all, uint32_t * out, size_t capacity);
 size_t xyg_payload_m4_indices(uint64_t n_points, int32_t polar, const double * x, const double * y, size_t n, double x0, double x1, size_t n_buckets, const double * bin_x, double bin_x0, double bin_x1, int32_t * out_tier, uint32_t * out, size_t capacity);
 size_t xyg_payload_sample_target_indices(size_t n, size_t target, uint64_t seed, uint32_t level, double growth, int32_t * out_keep_all, uint32_t * out, size_t capacity);

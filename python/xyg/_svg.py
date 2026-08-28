@@ -919,23 +919,10 @@ def _colormap_stops(colormap: Any) -> list[tuple[int, int, int]]:
 
 
 def _lut(colormap: Any, t: np.ndarray) -> np.ndarray:
-    """Vectorized colormap sample: t in [0,1] -> (n,3) uint8, matching the
-    client's 256-texel LUT interpolation."""
-    stops = np.array(_colormap_stops(colormap), dtype=np.float64)
-    pos = np.clip(t, 0.0, 1.0) * (len(stops) - 1)
-    # int32, not uint8: a resampled custom ramp ships 256 stops, whose top
-    # index is exactly 255 -- one more stop would wrap to 0 and paint the
-    # ramp's dark end at its bright end.
-    lo = np.floor(pos).astype(np.int32)
-    hi = np.minimum(lo + 1, len(stops) - 1)
-    fraction = pos - lo
-    out = np.empty((len(pos), 3), dtype=np.uint8)
-    # Channel-wise interpolation is numerically identical to the broadcasted
-    # `(n, 3)` expression but avoids three multi-megabyte float temporaries.
-    for channel in range(3):
-        start = stops[lo, channel]
-        out[:, channel] = np.round(start + (stops[hi, channel] - start) * fraction).astype(np.uint8)
-    return out
+    """Vectorized colormap sample: t in [0,1] -> (n,3) uint8 via ABI 206."""
+    values = np.asarray(t, dtype=np.float64).reshape(-1)
+    stops = np.asarray(_colormap_stops(colormap), dtype=np.uint8)
+    return kernels.colormap_lut(values, stops)
 
 
 def _paint_rgba8(css: Any) -> tuple[int, int, int, int]:
@@ -5839,18 +5826,19 @@ def _density_image(
         )
         return _grid_image(w, h, rgba.tobytes(), d["x_range"], d["y_range"], sx, sy)
     grid = _density_column(blob, cols[d["buf"]], d).reshape(h, w)
-    tnorm = np.clip(grid / gmax, 0.0, 1.0)
     if d.get("color") is not None:
-        rgb = np.empty((h, w, 3), dtype=np.uint8)
-        rgb[:] = (red, green, blue)
+        stops = np.asarray([(red, green, blue), (red, green, blue)], dtype=np.uint8)
     else:
-        rgb = _lut(d.get("colormap", "viridis"), tnorm.reshape(-1)).reshape(h, w, 3)
-    alpha = (np.clip(tnorm * 1.35, 0, 1) * 255 * _fill_opacity(style, 0.85) * paint_alpha).astype(
-        np.uint8
+        stops = np.asarray(_colormap_stops(d.get("colormap", "viridis")), dtype=np.uint8)
+    rgba = kernels.density_rgba_linear(
+        grid,
+        w,
+        h,
+        gmax,
+        stops,
+        _fill_opacity(style, 0.85) * paint_alpha,
     )
-    alpha[tnorm <= 0] = 0
-    rgba = np.dstack([rgb, alpha])[::-1].tobytes()  # flip: PNG rows are top-first
-    return _grid_image(w, h, rgba, d["x_range"], d["y_range"], sx, sy)
+    return _grid_image(w, h, rgba.tobytes(), d["x_range"], d["y_range"], sx, sy)
 
 
 def _heatmap_image(

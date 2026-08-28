@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 205
-SIGNATURE_SHA256 = "8b5d7deabe7b4189dfb237a6c94bb9b6c4b65e24e7989f922c7c70179c7519a2"
+ABI_VERSION = 206
+SIGNATURE_SHA256 = "96c78bffbc6e30c2982aa963d9463bfc707a30bdaca004f8e6c2efcaa3e3ea66"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -94,6 +94,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_chunked_columns_rows
     function.restype = ctypes.c_uint64
     function.argtypes = [ctypes.c_uint64]
+    # int32_t xyg_colormap_lut(const double * t, size_t n, const uint8_t * stops, size_t stop_count, uint8_t * out)
+    function = lib.xyg_colormap_lut
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     # int32_t xyg_colormap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)
     function = lib.xyg_colormap_rgba
     function.restype = ctypes.c_int32
@@ -200,6 +204,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_uint64, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p]
     # int32_t xyg_density_rgba(const uint8_t * encoded, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out)
     function = lib.xyg_density_rgba
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_double, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_void_p]
+    # int32_t xyg_density_rgba_linear(const double * counts, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out)
+    function = lib.xyg_density_rgba_linear
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_double, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_void_p]
     # int32_t xyg_density_wasm_eligible(int32_t cartesian, int32_t x_linear, int32_t y_linear, int32_t color_mode, int32_t x_has_nulls, int32_t y_has_nulls, uint64_t n_points)
@@ -466,6 +474,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_normalize_f32
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_paint_effective_rgba(const double * intrinsic, size_t n, const double * artist_alpha, const double * opacity, double component_opacity, double * out)
+    function = lib.xyg_paint_effective_rgba
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_double, ctypes.c_void_p]
     # size_t xyg_payload_even_indices(size_t n, size_t count, int32_t * out_keep_all, uint32_t * out, size_t capacity)
     function = lib.xyg_payload_even_indices
     function.restype = ctypes.c_size_t

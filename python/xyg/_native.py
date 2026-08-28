@@ -9339,6 +9339,95 @@ def density_rgba(
     return out
 
 
+def colormap_lut(t: npt.ArrayLike, stops: npt.ArrayLike) -> npt.NDArray[np.uint8]:
+    """Map normalized scalars ``t ∈ [0, 1]`` to packed ``(n, 3)`` RGB (ABI 206)."""
+    values = np.ascontiguousarray(t, dtype=np.float64).reshape(-1)
+    stop_array = np.ascontiguousarray(stops, dtype=np.uint8)
+    if stop_array.ndim != 2 or stop_array.shape[1] != 3 or stop_array.shape[0] < 1:
+        raise ValueError("colormap stops must be a non-empty (n, 3) array")
+    n = int(values.size)
+    out = np.empty((n, 3), dtype=np.uint8)
+    ok = _lib.xyg_colormap_lut(
+        _ptr_f64(values) if n else 0,
+        n,
+        _ptr_u8(stop_array),
+        stop_array.shape[0],
+        _ptr_u8(out) if n else 0,
+    )
+    if not ok:
+        raise ValueError("native colormap lut rejected the inputs")
+    return out
+
+
+def density_rgba_linear(
+    counts: npt.ArrayLike,
+    w: int,
+    h: int,
+    maximum: float,
+    stops: npt.ArrayLike,
+    opacity: float,
+) -> npt.NDArray[np.uint8]:
+    """Map an f64 count grid to a vertically flipped RGBA8 image (ABI 206)."""
+    w = _positive_int(w, "density width")
+    h = _positive_int(h, "density height")
+    values = np.ascontiguousarray(counts, dtype=np.float64).reshape(-1)
+    stop_array = np.ascontiguousarray(stops, dtype=np.uint8)
+    maximum = _finite_float(maximum, "density maximum")
+    opacity = _finite_float(opacity, "density opacity")
+    if maximum < 0.0:
+        raise ValueError("density maximum must be >= 0")
+    if not 0.0 <= opacity <= 1.0:
+        raise ValueError("density opacity must be in [0, 1]")
+    if values.size != w * h:
+        raise ValueError("density scalar count must match width * height")
+    if stop_array.ndim != 2 or stop_array.shape[1] != 3 or stop_array.shape[0] < 1:
+        raise ValueError("density stops must be a non-empty (n, 3) array")
+    out = np.empty((h, w, 4), dtype=np.uint8)
+    ok = _lib.xyg_density_rgba_linear(
+        _ptr_f64(values),
+        w,
+        h,
+        maximum,
+        _ptr_u8(stop_array),
+        stop_array.shape[0],
+        opacity,
+        _ptr_u8(out),
+    )
+    if not ok:
+        raise ValueError("native linear density colormap rejected the inputs")
+    return out
+
+
+def paint_effective_rgba(
+    intrinsic: npt.ArrayLike,
+    artist_alpha: npt.ArrayLike,
+    opacity: npt.ArrayLike,
+    component_opacity: float,
+) -> npt.NDArray[np.float64]:
+    """Artist-alpha replace then xy opacity multiply (ABI 206)."""
+    rgba = np.ascontiguousarray(intrinsic, dtype=np.float64)
+    if rgba.ndim != 2 or rgba.shape[1] != 4:
+        raise ValueError(f"intrinsic paint must have shape (N, 4), got {rgba.shape}")
+    n = int(rgba.shape[0])
+    artist = np.ascontiguousarray(artist_alpha, dtype=np.float64).reshape(-1)
+    opac = np.ascontiguousarray(opacity, dtype=np.float64).reshape(-1)
+    if artist.size != n or opac.size != n:
+        raise ValueError("artist_alpha and opacity must match intrinsic row count")
+    component_opacity = _finite_float(component_opacity, "component_opacity")
+    out = np.empty((n, 4), dtype=np.float64)
+    ok = _lib.xyg_paint_effective_rgba(
+        _ptr_f64(rgba) if n else 0,
+        n,
+        _ptr_f64(artist) if n else 0,
+        _ptr_f64(opac) if n else 0,
+        component_opacity,
+        _ptr_f64(out) if n else 0,
+    )
+    if not ok:
+        raise ValueError("native paint_effective_rgba rejected the inputs")
+    return out
+
+
 def density_log_u8(grid: npt.NDArray[np.float32]) -> tuple[npt.NDArray[np.uint8], float]:
     """Log-encode a density grid for the client's one-byte R8 texture."""
     values = np.ascontiguousarray(grid, dtype=np.float32)

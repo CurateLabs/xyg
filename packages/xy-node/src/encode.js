@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyPayloadVisibleIndices, xyPayloadEvenIndices, xyPayloadSampleTargetIndices, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapLut, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityRgbaLinear, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyPayloadVisibleIndices, xyPayloadEvenIndices, xyPayloadSampleTargetIndices, xyPaintEffectiveRgba, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -940,6 +940,84 @@ export function colormapRgbaCanonical(raw, w, h, domain, stops, alpha = 255) {
     throw new Error("xy_colormap_rgba_canonical failed");
   }
   return { rgba: out, width: ww, height: hh };
+}
+
+/** 1D colormap sample matching `_svg._lut` (ABI 206). */
+export function colormapLut(t, stops) {
+  const values = asF64Array(t);
+  const stopArr = stops instanceof Uint8Array ? stops : Uint8Array.from(stops);
+  if (stopArr.length % 3 !== 0 || stopArr.length < 3) {
+    throw new RangeError("colormapLut stops must be a non-empty multiple of 3");
+  }
+  const n = values.length;
+  const out = new Uint8Array(n * 3);
+  const ok = xyColormapLut(
+    n ? f64Ptr(values) : 0,
+    BigInt(n),
+    u8Ptr(stopArr),
+    BigInt(stopArr.length / 3),
+    n ? u8Ptr(out) : 0,
+  );
+  if (ok !== 1) {
+    throw new Error("xy_colormap_lut failed");
+  }
+  return out;
+}
+
+/** Legacy f64 count-grid density colormap (ABI 206). */
+export function densityRgbaLinear(counts, w, h, maximum, stops, opacity) {
+  const ww = Number(w);
+  const hh = Number(h);
+  const values = asF64Array(counts);
+  if (values.length !== ww * hh) {
+    throw new RangeError("densityRgbaLinear scalar count must match width * height");
+  }
+  const stopArr = stops instanceof Uint8Array ? stops : Uint8Array.from(stops);
+  if (stopArr.length % 3 !== 0 || stopArr.length < 3) {
+    throw new RangeError("densityRgbaLinear stops must be a non-empty multiple of 3");
+  }
+  const out = new Uint8Array(hh * ww * 4);
+  const ok = xyDensityRgbaLinear(
+    f64Ptr(values),
+    BigInt(ww),
+    BigInt(hh),
+    Number(maximum),
+    u8Ptr(stopArr),
+    BigInt(stopArr.length / 3),
+    Number(opacity),
+    u8Ptr(out),
+  );
+  if (ok !== 1) {
+    throw new Error("xy_density_rgba_linear failed");
+  }
+  return { rgba: out, width: ww, height: hh };
+}
+
+/** Matplotlib artist-alpha replace then xy opacity multiply (ABI 206). */
+export function paintEffectiveRgba(intrinsic, artistAlpha, opacity, componentOpacity) {
+  const rgba = asF64Array(intrinsic);
+  if (rgba.length % 4 !== 0) {
+    throw new RangeError("paintEffectiveRgba intrinsic must be N*4 f64s");
+  }
+  const n = rgba.length / 4;
+  const artist = asF64Array(artistAlpha);
+  const opac = asF64Array(opacity);
+  if (artist.length !== n || opac.length !== n) {
+    throw new RangeError("paintEffectiveRgba artist/opacity length must match N");
+  }
+  const out = new Float64Array(rgba.length);
+  const ok = xyPaintEffectiveRgba(
+    n ? f64Ptr(rgba) : 0,
+    BigInt(n),
+    n ? f64Ptr(artist) : 0,
+    n ? f64Ptr(opac) : 0,
+    Number(componentOpacity),
+    n ? f64Ptr(out) : 0,
+  );
+  if (ok !== 1) {
+    throw new Error("xy_paint_effective_rgba failed");
+  }
+  return out;
 }
 
 /** Resolve a named colormap to packed RGB triples (`n * 3` bytes). */

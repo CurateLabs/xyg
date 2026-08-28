@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 205;
+pub const ABI_VERSION: u32 = 206;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -6412,6 +6412,131 @@ pub unsafe extern "C" fn xyg_density_rgba(
     let out = std::slice::from_raw_parts_mut(out, out_len);
     ffi_guard(0, || {
         kernels::density_rgba_into(encoded, w, h, maximum, stops, opacity, out) as i32
+    })
+}
+
+/// 1D colormap sample matching `_svg._lut` (ABI 206). `t ∈ [0, 1]` writes packed RGB.
+///
+/// # Safety
+/// When `n > 0`, `t` is `n` readable f64s, `stops` is `stop_count*3` bytes, and
+/// `out` is `n*3` writable bytes. Empty native pointers are null/`0`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_colormap_lut(
+    t: *const f64,
+    n: usize,
+    stops: *const u8,
+    stop_count: usize,
+    out: *mut u8,
+) -> i32 {
+    let Some(out_len) = n.checked_mul(3) else {
+        return 0;
+    };
+    let Some(stop_len) = stop_count.checked_mul(3) else {
+        return 0;
+    };
+    if stop_count == 0 || stops.is_null() {
+        return 0;
+    }
+    if n > 0 && (t.is_null() || out.is_null()) {
+        return 0;
+    }
+    let t = if n == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(t, n)
+    };
+    let stop_bytes = std::slice::from_raw_parts(stops, stop_len);
+    let stops = std::slice::from_raw_parts(stop_bytes.as_ptr().cast::<[u8; 3]>(), stop_count);
+    let out = if n == 0 {
+        &mut [][..]
+    } else {
+        std::slice::from_raw_parts_mut(out, out_len)
+    };
+    ffi_guard(0, || kernels::colormap_lut_into(t, stops, out) as i32)
+}
+
+/// Legacy f64 count-grid density colormap (ABI 206). Same `t * 1.35` alpha law
+/// as [`xyg_density_rgba`], including the vertical flip.
+///
+/// # Safety
+/// When `w*h > 0`, `counts` is that many readable f64s, `stops` is
+/// `stop_count*3` bytes, and `out` is `w*h*4` writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_density_rgba_linear(
+    counts: *const f64,
+    w: usize,
+    h: usize,
+    maximum: f64,
+    stops: *const u8,
+    stop_count: usize,
+    opacity: f64,
+    out: *mut u8,
+) -> i32 {
+    let Some(len) = w.checked_mul(h) else {
+        return 0;
+    };
+    let Some(out_len) = len.checked_mul(4) else {
+        return 0;
+    };
+    let Some(stop_len) = stop_count.checked_mul(3) else {
+        return 0;
+    };
+    if len == 0 || stop_count == 0 || counts.is_null() || stops.is_null() || out.is_null() {
+        return 0;
+    }
+    let counts = std::slice::from_raw_parts(counts, len);
+    let stop_bytes = std::slice::from_raw_parts(stops, stop_len);
+    let stops = std::slice::from_raw_parts(stop_bytes.as_ptr().cast::<[u8; 3]>(), stop_count);
+    let out = std::slice::from_raw_parts_mut(out, out_len);
+    ffi_guard(0, || {
+        kernels::density_rgba_linear_into(counts, w, h, maximum, stops, opacity, out) as i32
+    })
+}
+
+/// Matplotlib artist-alpha replace then xy opacity multiply (ABI 206).
+///
+/// # Safety
+/// `intrinsic`/`out` are `n*4` f64s. `artist_alpha`/`opacity` are `n` f64s.
+/// Empty native pointers are null/`0`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_paint_effective_rgba(
+    intrinsic: *const f64,
+    n: usize,
+    artist_alpha: *const f64,
+    opacity: *const f64,
+    component_opacity: f64,
+    out: *mut f64,
+) -> i32 {
+    let Some(rgba_len) = n.checked_mul(4) else {
+        return 0;
+    };
+    if n > 0 && (intrinsic.is_null() || artist_alpha.is_null() || opacity.is_null() || out.is_null())
+    {
+        return 0;
+    }
+    let intrinsic = if n == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(intrinsic, rgba_len)
+    };
+    let artist_alpha = if n == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(artist_alpha, n)
+    };
+    let opacity = if n == 0 {
+        &[][..]
+    } else {
+        std::slice::from_raw_parts(opacity, n)
+    };
+    let out = if n == 0 {
+        &mut [][..]
+    } else {
+        std::slice::from_raw_parts_mut(out, rgba_len)
+    };
+    ffi_guard(0, || {
+        kernels::paint_effective_rgba_into(intrinsic, artist_alpha, opacity, component_opacity, out)
+            as i32
     })
 }
 
@@ -15939,6 +16064,52 @@ mod tests {
         };
         assert_eq!(unknown, viridis);
         assert!(unknown > 0);
+    }
+
+    #[test]
+    fn colormap_lut_and_density_linear_ffi() {
+        let t = [0.0f64, 1.0];
+        let stops = [0u8, 10, 20, 100, 110, 120];
+        let mut rgb = [0u8; 6];
+        let ok = unsafe {
+            xyg_colormap_lut(t.as_ptr(), 2, stops.as_ptr(), 2, rgb.as_mut_ptr())
+        };
+        assert_eq!(ok, 1);
+        assert_eq!(&rgb[..3], &[0, 10, 20]);
+        assert_eq!(&rgb[3..], &[100, 110, 120]);
+        let counts = [0.0f64, 100.0, 50.0, 0.0];
+        let mut rgba = [0u8; 16];
+        let ok = unsafe {
+            xyg_density_rgba_linear(
+                counts.as_ptr(),
+                2,
+                2,
+                100.0,
+                stops.as_ptr(),
+                2,
+                0.85,
+                rgba.as_mut_ptr(),
+            )
+        };
+        assert_eq!(ok, 1);
+        assert_eq!(rgba[11], 0);
+        assert_eq!(&rgba[12..16], &[100, 110, 120, 216]);
+        let intrinsic = [0.2f64, 0.3, 0.4, 0.8];
+        let artist = [-1.0f64];
+        let opacity = [0.5f64];
+        let mut out = [0.0f64; 4];
+        let ok = unsafe {
+            xyg_paint_effective_rgba(
+                intrinsic.as_ptr(),
+                1,
+                artist.as_ptr(),
+                opacity.as_ptr(),
+                1.0,
+                out.as_mut_ptr(),
+            )
+        };
+        assert_eq!(ok, 1);
+        assert!((out[3] - 0.4).abs() < 1e-12);
     }
 
     #[test]

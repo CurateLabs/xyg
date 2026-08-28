@@ -1479,7 +1479,11 @@ ABI 129 moves Cartesian static-export grid colormap into Rust. Hosts
 call `xyg_colormap_rgba`, `xyg_colormap_rgba_canonical`, and existing
 `xyg_density_rgba` for log-u8 density; direct `t ∈ [0, 1]` stop
 interpolation (matching `_svg._lut`) is engine-owned and distinct from
-`xyg_heatmap_rgba`'s `((value * 255 - 1) / 254)` remap. Hosts still
+`xyg_heatmap_rgba`'s `((value * 255 - 1) / 254)` remap. ABI 206 adds
+`xyg_colormap_lut` (1D `_lut`), `xyg_density_rgba_linear` (legacy f64
+count grids with the `t * 1.35` alpha law), and `xyg_paint_effective_rgba`
+(artist-alpha replace then xy opacity multiply) so remaining compatibility
+paint/colormap policy cannot drift (#313). Hosts still
 resolve colormap stop tables, CSS paint colors, and truecolor RGBA buffers.
 ABI 192 owns polar painted heatmap inverse-raster sampling on Scene encode
 (#292); the compatibility CPU twin in `_svg.polar_heatmap_rgba` remains until
