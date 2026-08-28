@@ -263,6 +263,7 @@ function packXyAf(annotation, index) {
   // ABI 185 packs labelled cartesian marker dx/dy/anchor the same way in Rust.
   // ABI 187 packs cartesian unwrapped text rotation as XYAW wrap=0 (XYAW v2).
   // ABI 188 packs labelled cartesian marker rotation the same way (nums[8]).
+  // Annotation html is XYFS OBS_ANNOTATION_HTML (#305); Scene owns literal text.
   const kind = annotation.kind;
   const kindCode = XYAF_KIND_CODES[kind];
   if (kindCode == null) throw new RangeError(`Scene v12 annotations support rule, band, and unlabeled marker only; ${JSON.stringify(kind)} is deferred`);
@@ -2949,6 +2950,7 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
     || Object.keys(figure.style ?? {}).some((key) => !["background", "--chart-bg"].includes(key))
     || annotations.some((annotation) => annotation.className || annotation.class_name)
   ) flags |= 1 << 2;
+  if (annotations.some((annotation) => annotation.html != null && annotation.html !== "")) flags |= 1 << 8;
   if ((figure.traces ?? []).some((trace) => (
     classifyRibbonColor2(trace) === "fail"
     || (

@@ -120,6 +120,19 @@ def test_scene_v25_wrapped_annotations_fail_closed_for_host_layout_features(
         figure.to_scene()
 
 
+def test_scene_annotation_html_stays_fail_closed() -> None:
+    figure = Figure(width=320, height=240).line([0.0, 1.0], [0.0, 1.0])
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.annotations = [
+        {"kind": "callout", "x": 0.5, "y": 0.5, "text": "rich", "html": "<b>rich</b>"}
+    ]
+    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML"):
+        figure.to_scene()
+    reason = scene_v3.scene_export_support_reason(figure) or ""
+    assert "XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML" in reason
+
+
 def test_rust_scene_support_predicate_is_stable_and_fail_closed() -> None:
     assert _native.scene_support_reason(0) == ""
     assert _native.scene_support_reason((1 << 6) | (1 << 1)) == (

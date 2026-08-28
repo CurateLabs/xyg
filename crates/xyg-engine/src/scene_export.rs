@@ -47,7 +47,9 @@
 //! XYTA. ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from
 //! packed XYHP kind 5 (hosts omit `FLAG_COLOR2` / `OBS_GRADIENT` on that path).
 //! Polar ribbon, custom `role`, and explicit `FLAG_COLOR2` stay fail-closed.
-//! html, `class_name`, and polar annotations stay fail-closed.
+//! Annotation `html` is XYFS `OBS_ANNOTATION_HTML` / XYEP `html` (#305): Scene
+//! SVG/raster own literal text only. `class_name` and polar annotations stay
+//! fail-closed.
 //! Rust owns the public PolyFill group budget, including
 //! companion traces that share the browser painter's 1,024-group ceiling.
 
@@ -1095,6 +1097,9 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
         return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_TEXT");
     }
     for annotation in &annotations {
+        if annotation.fields.iter().any(|key| *key == "html") {
+            return Ok(ANNOTATION_HTML_REASON);
+        }
         let allowed = annotation_fields(annotation.kind);
         if annotation.flags & ANN_NOT_OBJECT != 0
             || allowed.is_none()
@@ -1108,7 +1113,8 @@ pub fn scene_public_export_reason(bytes: &[u8]) -> Result<&'static str, SceneErr
     // (keep the marker mark row; skip AttachedRow). Unlabelled marker layout
     // flags are unused. ABI 187 admits cartesian unwrapped text rotation the
     // same XYAW wrap=0 path. ABI 188 admits labelled cartesian marker rotation
-    // the same way (XYAW nums[8]). html, class_name, and polar stay fail-closed.
+    // the same way (XYAW nums[8]). Annotation html is OBS_ANNOTATION_HTML
+    // (#305). class_name and polar stay fail-closed.
     if extra_key(&legend_keys, PUBLIC_LEGEND_KEYS) {
         return Ok("XYG_SCENE_UNSUPPORTED_PUBLIC_LEGEND");
     }
@@ -1350,8 +1356,11 @@ const OBS_GRADIENT: u32 = 1 << 3;
 const OBS_COLORBAR: u32 = 1 << 4;
 const OBS_EXTRA_LEGEND: u32 = 1 << 5;
 const OBS_LABELED_ANNOTATION: u32 = 1 << 7;
+const OBS_ANNOTATION_HTML: u32 = 1 << 8;
 const OBS_MASK: u32 = (1 << 9) - 1;
 
+const ANNOTATION_HTML_REASON: &str =
+    "XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML: Scene does not encode annotation html";
 const FIGURE_AXIS_SET_REASON: &str =
     "Scene v12 figure compilation currently supports exactly x/y axes";
 const FIGURE_AXIS_KEYS_REASON: &str =
@@ -1518,6 +1527,9 @@ pub fn scene_figure_support_reason_with_attach(
     let feature_reason = scene_support_reason(SCENE_SUPPORT_REQUEST_VERSION, features)?;
     if !feature_reason.is_empty() {
         return Ok(feature_reason.to_string());
+    }
+    if flags & OBS_ANNOTATION_HTML != 0 {
+        return Ok(ANNOTATION_HTML_REASON.to_string());
     }
 
     let axis_allowed: Vec<&str> = if flags & OBS_POLAR != 0 {
@@ -1785,6 +1797,14 @@ mod tests {
         assert_eq!(
             scene_figure_support_reason(&xyfs_v2(0, &PRIMARY_XY, &[(0, "scatter")])),
             Ok(String::new())
+        );
+    }
+
+    #[test]
+    fn figure_support_rejects_annotation_html() {
+        assert_eq!(
+            scene_figure_support_reason(&xyfs(OBS_ANNOTATION_HTML, &PRIMARY_XY)),
+            Ok(ANNOTATION_HTML_REASON.to_string())
         );
     }
 

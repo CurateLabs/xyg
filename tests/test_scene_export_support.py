@@ -1930,6 +1930,8 @@ def test_public_annotation_router_fails_closed_for_unmodeled_host_layout_and_css
     figure.annotations = [annotation]
     reason = scene_export_support_reason(figure) or ""
     assert "UNSUPPORTED" in reason
+    if "html" in annotation:
+        assert "XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML" in reason
 
 
 @pytest.mark.parametrize(

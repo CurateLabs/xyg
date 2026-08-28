@@ -1595,7 +1595,9 @@ and categorical / `direct_rgba` hexbin on that same HexCell intern. ABI 195 admi
 XYAW `wrap=0`. ABI 188 admits labelled cartesian marker `rotation` as XYAW
 `wrap=0`. ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from
 packed XYTA. ABI 190 intern cartesian per-item two-ended ribbon `color2_ch`
-from packed XYHP kind 5. html, `class_name`, and polar stay fail-closed. Per-item radius
+from packed XYHP kind 5. Annotation `html` stays fail-closed
+(`XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML`). `class_name` and polar stay
+fail-closed. Per-item radius
 channels stay compatibility. Irregular
 spacing, and LOD stay compatibility.
 
