@@ -1545,10 +1545,28 @@ def test_python_scene_compiles_smooth_polylines() -> None:
     stepped = Figure(width=400, height=400, coords="polar")
     stepped.axis_options["x"]["domain"] = (0.0, math.tau)
     stepped.axis_options["y"]["domain"] = (0.0, 1.0)
-    stepped.line([0.0, math.pi / 2, math.pi], [0.5, 1.0, 0.5], curve="smooth", color="#ef4444")
+    stepped.line([0.0, math.pi / 2, math.pi], [0.5, 1.0, 0.5], color="#ef4444")
     stepped.traces[-1].style["step"] = "mid"
+    stepped_smooth = Figure(width=400, height=400, coords="polar")
+    stepped_smooth.axis_options["x"]["domain"] = (0.0, math.tau)
+    stepped_smooth.axis_options["y"]["domain"] = (0.0, 1.0)
+    stepped_smooth.line(
+        [0.0, math.pi / 2, math.pi], [0.5, 1.0, 0.5], curve="smooth", color="#ef4444"
+    )
+    stepped_smooth.traces[-1].style["step"] = "mid"
+    stepped_svg = _native.scene_svg(stepped.to_scene())
+    stepped_smooth_svg = _native.scene_svg(stepped_smooth.to_scene())
+    assert stepped_smooth_svg == stepped_svg
+    assert stepped_smooth_svg != polar_svg
+    assert stepped_smooth.to_svg() == stepped_smooth_svg
+    assert _scene_v3.scene_export_support_reason(stepped_smooth) is None
+    cartesian_both = Figure(width=240, height=160)
+    cartesian_both.axis_options["x"]["domain"] = (0.0, 2.0)
+    cartesian_both.axis_options["y"]["domain"] = (0.0, 2.0)
+    cartesian_both.line([0.0, 1.0, 2.0], [0.0, 1.0, 0.5], curve="smooth")
+    cartesian_both.traces[-1].style["step"] = "mid"
     with pytest.raises(UnsupportedSceneV3, match="authored markers"):
-        stepped.to_scene()
+        cartesian_both.to_scene()
     marked = Figure().line([0.0, 1.0], [0.0, 1.0])
     marked.traces[-1].style["marker_path"] = "M0 0"
     with pytest.raises(UnsupportedSceneV3, match="authored markers"):

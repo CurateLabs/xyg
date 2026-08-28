@@ -526,6 +526,26 @@ def test_polar_smooth_line_is_scene_supported() -> None:
     assert b"<polyline" in exported or b"<path" in exported
 
 
+def test_polar_smooth_step_line_is_scene_supported() -> None:
+    figure = Figure(width=320, height=240, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, 6.283185307179586)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.line(
+        [0.0, 1.5707963267948966, 3.141592653589793],
+        [0.5, 1.0, 0.5],
+        curve="smooth",
+        color="#ef4444",
+    )
+    figure.traces[-1].style["step"] = "mid"
+    assert scene_export_support_reason(figure) is None
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert b"<polyline" in exported
+    cartesian = _supported().line([0, 1, 2], [1, 2, 1], curve="smooth")
+    cartesian.traces[-1].style["step"] = "mid"
+    assert scene_export_support_reason(cartesian) is not None
+
+
 def test_polar_scatter_is_scene_supported() -> None:
     figure = _polar()
     assert scene_export_support_reason(figure) is None

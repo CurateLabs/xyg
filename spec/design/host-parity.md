@@ -241,7 +241,8 @@ ABI 166 tessellates cartesian bar/column/histogram `corner_radius` after pixel
 mapping through `geom::rounded_rect_poly`; ABI 167 applies polar
 bar/column/histogram `wedge_gap` as a constant pixel inset. ABI 168
 tessellates polar bar/column/histogram `corner_radius` when the inner radius
-is positive.
+is positive. ABI 169 admits polar `curve="smooth"` plus `step` as polar step
+expansion (identity chords).
 ABI 137 / Scene v27 adds
 `DensityBlit=10` and `SceneRecordKind::Image=5`: hosts pack the heatmap
 extent lattice plus an XYHP kind-3 log-u8 plane, and Rust emits one Image
@@ -290,8 +291,8 @@ style-sidecar, splice, and assembled encode from packed XYTC plus XYTA plus
 XYNM plus XYCL plus XYAF plus XYCF plus polar.
 ABI 164 owns public SVG/PNG/PDF/JPEG/WebP consumers from one encoded Scene.
 ABI 165 owns the figure-compile support probe from packed XYFS on product encode.
-Polar+step+smooth
-and authored marker glyphs stay
+ABI 169 admits polar `curve="smooth"` plus `step` as polar step expansion
+(identity chords). Authored marker glyphs stay
 compatibility. ABI 104 likewise moves
 disconnected endpoint pairs (`SegmentPair=7`) and unjoined triangle faces
 (`TriangleFace=8`) into that compact expansion; hosts pack one four-coordinate
@@ -338,7 +339,8 @@ same product Scene so public `to_svg` / PNG do not fall back to `_svg.py` /
 `_raster.py` for constant radii. ABI 167 applies polar
 bar/column/histogram `wedge_gap` on that same product Scene. ABI 168
 tessellates polar bar/column/histogram `corner_radius` on that same product
-Scene when the inner radius is positive.
+Scene when the inner radius is positive. ABI 169 admits polar `curve="smooth"`
+plus `step` on that same product Scene as polar step expansion.
 The explicit `xyg_scene_figure_support_reason` ABI remains for tests.
 ABI 106 makes Figure autorange/domain the same way: Python and Node pack
 `XYAR` v1 extents and zero-baseline predicates, then call

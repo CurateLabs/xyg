@@ -12,7 +12,9 @@
 //! existing `DensityBlit` Image blit (no new pack kind).
 //! ABI 144 admits cartesian `error_band(curve="smooth")` on that same
 //! `BandFlatten` mapping; polar `curve="smooth"` line/area/error_band pack as
-//! identity chords (no `step_mode=4`).
+//! identity chords (no `step_mode=4`). ABI 169 admits polar `curve="smooth"`
+//! plus `step` on that same identity-chord packing: authored `step_mode` 1–3
+//! expands, and smooth does not promote to `CurveFlatten`.
 //! ABI 145 admits constant `marker_path` via an XYMP extras sidecar;
 //! tessellation is Scene-owned after pixel mapping (no new pack kind).
 //! ABI 146 admits constant mark `fill` linear-gradients via an XYGR extras

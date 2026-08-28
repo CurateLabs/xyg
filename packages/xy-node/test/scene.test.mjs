@@ -258,6 +258,24 @@ test("Node Scene v30 compiles flattened smooth polylines and polar smooth as cho
   polarLinear.line([0, Math.PI / 2, Math.PI], [0.5, 1, 0.5], { style: { color: "#ef4444" } });
   assert.equal(sceneSvg(polar.toScene()), sceneSvg(polarLinear.toScene()));
   assert.equal(sceneExportSupportReason(polar), null);
+  const stepped = new Figure({ width: 400, height: 400, coords: "polar" });
+  stepped.setAxisDomain("x", [0, Math.PI * 2]);
+  stepped.setAxisDomain("y", [0, 1]);
+  stepped.line([0, Math.PI / 2, Math.PI], [0.5, 1, 0.5], { style: { color: "#ef4444", step: "mid" } });
+  const steppedSmooth = new Figure({ width: 400, height: 400, coords: "polar" });
+  steppedSmooth.setAxisDomain("x", [0, Math.PI * 2]);
+  steppedSmooth.setAxisDomain("y", [0, 1]);
+  steppedSmooth.line([0, Math.PI / 2, Math.PI], [0.5, 1, 0.5], {
+    style: { curve: "smooth", color: "#ef4444", step: "mid" },
+  });
+  assert.equal(sceneSvg(steppedSmooth.toScene()), sceneSvg(stepped.toScene()));
+  assert.notEqual(sceneSvg(steppedSmooth.toScene()), sceneSvg(polar.toScene()));
+  assert.equal(sceneExportSupportReason(steppedSmooth), null);
+  const cartesianBoth = new Figure({ width: 240, height: 160 });
+  cartesianBoth.setAxisDomain("x", [0, 2]);
+  cartesianBoth.setAxisDomain("y", [0, 2]);
+  cartesianBoth.line([0, 1, 2], [0, 1, 0.5], { style: { curve: "smooth", step: "mid" } });
+  assert.throws(() => cartesianBoth.toScene(), /authored markers/);
 });
 
 test("Node Scene v31 compiles flattened smooth areas and polar smooth areas as chords", () => {

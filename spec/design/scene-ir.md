@@ -153,8 +153,9 @@ ABI 166 does not change Scene records; cartesian bar/column/histogram
 polar bar/column/histogram `wedge_gap` insets those PolyFill wedges by a
 constant pixel gap. ABI 168 does not change Scene records; polar
 bar/column/histogram `corner_radius` tessellates those PolyFill wedges when
-the inner radius is positive. Violin/box/heatmap radii and per-item radius
-channels stay fail-closed.
+the inner radius is positive. ABI 169 does not change Scene records; polar
+`curve="smooth"` plus `step` keeps authored step expansion on identity chords.
+Violin/box/heatmap radii and per-item radius channels stay fail-closed.
 
 ## Version 3: backend-neutral core scene batch
 
@@ -455,8 +456,9 @@ match Python on the public Scene route. ABI 144 admits cartesian
 allowlist includes `curve` for `KIND_ERROR_BAND`) and polar
 `curve="smooth"` line/area/error_band as identity chords (polar-axes.md §5;
 ABI 147 resolves `step_mode=4` from packed XYPK coords so polar smooth stays
-identity). Polar+step+smooth
-and authored marker glyphs stay on the compatibility exporters. ABI 145 admits
+identity). ABI 169 admits polar `curve="smooth"` plus `step` as authored
+step expansion on those identity chords. Authored marker glyphs stay on the
+compatibility exporters. ABI 145 admits
 constant scatter `marker_path` via an XYMP extras sidecar; Rust tessellates
 centres to existing PolyFill/Polyline after pixel mapping (public allowlist
 includes `marker_path` for `KIND_SCATTER`; encoded Scene v31 is unchanged).
@@ -1480,7 +1482,8 @@ ABI 166 does not change Scene records either;
 cartesian bar/column/histogram `corner_radius` tessellates to PolyFill after
 pixel mapping. ABI 167 insets polar bar/column/histogram `wedge_gap`. ABI 168
 tessellates polar bar/column/histogram `corner_radius` when the inner radius
-is positive. Polar+step+smooth and authored marker glyphs stay compatibility. ABI 116 does not change Scene records either;
+is positive. ABI 169 admits polar `curve="smooth"` plus `step` as polar step
+expansion. Authored marker glyphs stay compatibility. ABI 116 does not change Scene records either;
 `xyg_scene_pack_annotation_marks` owns rule/band/marker domain expansion
 from packed scalars plus axis domains. ABI 117 does not change Scene records either;
 `xyg_scene_figure_support_reason` owns figure-compile support from packed

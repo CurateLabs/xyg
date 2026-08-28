@@ -296,6 +296,8 @@ matplotlib arc-interpolates paths.
 Chords need no subdivision, which is why line, scatter and area are cheap.
 Scene polar `curve="smooth"` is the same identity-chord packing: hosts must
 not set `step_mode=4` / `CurveFlatten` / `BandFlatten` under `coords="polar"`.
+ABI 169 admits polar `curve="smooth"` combined with `step`: authored
+`step_mode` 1–3 expands, and smooth stays identity (no Hermite flatten).
 Hermite-flattening in (θ, r) then projecting would be a different visual from
 this section and from the compatibility polar `_curve_path`. Arcs
 flatten to polylines wherever the medium lacks a real arc: the raster display
@@ -459,7 +461,8 @@ matching polar errorbar) through Rust
 labels when hosts pass explicit XYPL v1. ABI 143 polar density-tier scatter
 tessellates occupied cells to PolyFill wedges. ABI 144 polar `curve="smooth"`
 line/area pack as identity chords (§5), not flattened Hermite polylines.
-ABI 145 tessellates constant polar `marker_path` contours in pixel space
+ABI 169 admits polar `curve="smooth"` plus `step` as that same identity-chord
+step expansion. ABI 145 tessellates constant polar `marker_path` contours in pixel space
 around each projected centre. ABI 146 paints polar PolyFill wedges (and
 cartesian Rects) with constant mark `fill` linear-gradients from XYGR.
 Inverse-sample `<image>` blit stays on the
