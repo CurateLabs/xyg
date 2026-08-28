@@ -76,6 +76,15 @@ test("Node projects Rust-owned Scene support decisions verbatim", () => {
   assert.throws(() => customFont.toScene(), /XYG_SCENE_UNSUPPORTED_CUSTOM_FONT/);
   const browserCss = new Figure(); browserCss.line([0, 1], [0, 1]); browserCss.className = "browser-only";
   assert.throws(() => browserCss.toScene(), /XYG_SCENE_UNSUPPORTED_BROWSER_CSS/);
+  const defaultFont = new Figure({ width: 240, height: 160 });
+  defaultFont.setAxisDomain("x", [0, 1]);
+  defaultFont.setAxisDomain("y", [0, 1]);
+  defaultFont.line([0, 1], [0, 1]);
+  assert.equal(sceneExportSupportReason(defaultFont), null);
+  const defaultScene = defaultFont.toScene();
+  assert.ok(sceneSvg(defaultScene).startsWith("<svg"));
+  const defaultPng = sceneStaticExport(defaultScene, "png", { scale: 1, width: 240, height: 160 });
+  assert.ok(defaultPng[0] === 0x89 && defaultPng[1] === 0x50 && defaultPng[2] === 0x4e && defaultPng[3] === 0x47);
   const gradient = new Figure(); gradient.bar([0], [1]); gradient.traces[0].style.fill = { type: "linear", colors: ["#000", "#fff"] };
   assert.throws(() => gradient.toScene(), /XYG_SCENE_UNSUPPORTED_GRADIENT/);
   for (const color of [

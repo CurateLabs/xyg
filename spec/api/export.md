@@ -277,6 +277,13 @@ is the normal way to use both surfaces together. A class name is also the one
 surface a file genuinely cannot honor: it selects a rule out of a stylesheet,
 and an exported file has no stylesheet to select from.
 
+Literal mark `fill="linear-gradient(...)"` with resolvable CSS colors is Scene
+XYGR (ABI 146). Unresolved `var()` / theme CSS stops are the bounded fail-closed
+contract `XYG_SCENE_UNSUPPORTED_GRADIENT` (#289): native Scene cannot resolve
+browser tokens, so those figures do not take the Scene consumers. Compatibility
+writers may substitute the mark color; live browser and Chromium capture still
+resolve `var()`. Per-item two-ended ribbon `color2_ch` stays #290.
+
 ### Which per-slot styles reach a file, and why only those
 
 A slot reaches the native writers when it names chrome a static file actually
