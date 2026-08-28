@@ -16,7 +16,10 @@
 //! routes labelled cartesian marker `rotation` the same way (nums[8]; markers
 //! never wrap, and nums[15] stays stroke_width). Annotation `html` is the
 //! #305 XYFS/XYEP pin (`XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML`). `class_name`
-//! and polar stay fail-closed.
+//! is the #306 `SCENE_FEATURE_BROWSER_CSS` pin. Annotation `collision` is
+//! the #307 XYFS/XYEP pin (`XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION`).
+//! Annotation `markup` is the #308 XYFS/XYEP pin
+//! (`XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP`). Polar stays fail-closed.
 
 use crate::css::{apply_opacity_rgba8, color_rgba8};
 use crate::scene::{
