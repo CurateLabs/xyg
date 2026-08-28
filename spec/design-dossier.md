@@ -459,7 +459,7 @@ re-exports several of them as a historic import path and is not listed for those
 | Constant | Value | What it gates | Read by |
 | --- | --- | --- | --- |
 | `PROTOCOL_VERSION` | `3` | Wire-spec version stamped on every payload; the client refuses a mismatch loudly (§33). | `_payload.py` |
-| `DECIMATION_THRESHOLD` | `10_000` | Line/area traces with more points than this ship M4-decimated (Tier 1); at or below, raw columns go over the wire. Also gates re-decimation on the interaction path. Strict `>`; `xyg_payload_tier` owns the compile-time choice (ABI 122). | `_payload.py`, `interaction.py`; lockstep `lod_plan.rs` |
+| `DECIMATION_THRESHOLD` | `10_000` | Line/area traces with more points than this ship M4-decimated (Tier 1); at or below, raw columns go over the wire. Also gates re-decimation on the interaction path. Strict `>`; `xyg_payload_tier` owns the compile-time choice (ABI 122); `xyg_payload_m4_indices` owns emit/re-decimate (ABI 204). | `_payload.py`, `interaction.py`; lockstep `lod_plan.rs` |
 | `SCATTER_DENSITY_THRESHOLD` | `200_000` | Tier-0 → Tier-2 count budget for a scatter with **no** per-point channel (`Trace.use_density()` via `xyg_payload_tier`), and the visible-count budget for view-LOD planning and drill decisions. Strict `>`. | `_trace.py`, `interaction.py`; lockstep `lod_plan.rs`; mirrored client-side as `LOD_DIRECT_POINT_BUDGET` in `js/src/45_lod.ts` |
 | `DIRECT_SOFT_CEILING` | `2_000_000` | Tier-0 → Tier-2 count budget for a scatter that **does** carry a per-point color or size channel; above it density is forced and warned about — the color channel aggregates to the surface's per-cell mean point color (LOD doc §2), every other per-item channel is dropped and named, never silently (§5 F5). Strict `>`; `xyg_payload_tier` owns the compile-time choice (ABI 122). | `_trace.py`, `marks.py`; lockstep `lod_plan.rs` |
 | `DENSITY_GRID` | `(512, 384)` | Default density-grid cell dimensions for the initial spec, before the client requests a viewport-matched size via `density_view`. | `_payload.py` |
@@ -1360,14 +1360,19 @@ ABI 121 moves ribbon/curve/rounded-rect tessellation into Rust. Hosts call
 `xyg_ribbon_edge`, `xyg_ribbon_polygon`, `xyg_monotone_tangents`,
 `xyg_curve_flatten`, and `xyg_rounded_rect_poly`; bump-X flattening,
 Fritsch–Carlson tangents, Hermite polylines, and independent tip/base radii
-are engine-owned and identical for Python and Node. Hosts still map affine
-scales and apply colormaps (`grid_rgba`, #283).
+are engine-owned and identical for Python and Node. Compatibility PNG
+(`_raster.py`) calls those kernels directly (#310); `_scene.py` wrappers
+remain for tests. Hosts still map affine
+scales and apply colormaps (`grid_rgba`, #283 / #313).
 ABI 122 moves compile-time payload LOD into Rust. Hosts call
 `xyg_payload_tier`, `xyg_payload_visible_needed`, and
 `xyg_payload_visible_mask`; line M4 vs direct, scatter density vs
 direct (strict `>`, per-item ceiling, polar skip), and the finite/log
-keep mask are engine-owned and identical for Python and Node. Hosts
-still gather, encode, and ship the chosen rows (#282).
+keep mask are engine-owned and identical for Python and Node. ABI 204
+`xyg_payload_m4_indices` owns remaining line M4 emit: the closed-window
+ulp, optional nonlinear `bin_x` buckets, and polar skip on first paint
+and `decimate_view`. Hosts still map scale coordinates, gather extra
+columns, encode, and ship the chosen rows (#282 / #311).
 ABI 123 moves tick-label collision thinning into Rust. Hosts call
 `xyg_scene_tick_label_layout`; auto / hide / rotate / stagger, the
 edge-anchor rotate gap, and stride downsampling are engine-owned and
@@ -1599,7 +1604,13 @@ XYAW `wrap=0`. ABI 188 admits labelled cartesian marker `rotation` as XYAW
 packed XYTA. ABI 190 intern cartesian per-item two-ended ribbon `color2_ch`
 from packed XYHP kind 5. Annotation `html` stays fail-closed
 (`XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML`). Annotation `class_name` stays
-fail-closed as `XYG_SCENE_UNSUPPORTED_BROWSER_CSS` (#306). Polar stays
+fail-closed as `XYG_SCENE_UNSUPPORTED_BROWSER_CSS` (#306). Annotation
+`collision` stays fail-closed as `XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION`
+(#307). Annotation `markup` stays fail-closed as
+`XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP` (#308). Annotation custom
+typography stays fail-closed as `XYG_SCENE_UNSUPPORTED_CUSTOM_FONT` (#309).
+Text/marker `style.rotation` lifts onto the ABI 187/188 rotation field.
+Polar stays
 fail-closed. Per-item radius
 channels stay compatibility. Irregular
 spacing, and LOD stay compatibility.

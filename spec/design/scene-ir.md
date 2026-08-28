@@ -245,7 +245,13 @@ use XYLB v6). ABI 188 does not change Scene records; labelled cartesian marker
 fail-closed (`XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML`, #305): Scene SVG/raster
 own literal text only. Annotation `class_name` stays fail-closed as
 `XYG_SCENE_UNSUPPORTED_BROWSER_CSS` (#306): Scene SVG/raster do not encode
-CSS classes. Polar stays fail-closed.
+CSS classes. Annotation `collision` stays fail-closed as
+`XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION` (#307). Annotation `markup`
+stays fail-closed as `XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP` (#308): Scene
+owns literal text only. Annotation custom typography stays fail-closed as
+`XYG_SCENE_UNSUPPORTED_CUSTOM_FONT` (#309): Scene SVG/raster use the built-in
+default font. Text/marker `style.rotation` lifts onto the ABI 187/188
+top-level rotation field. Polar stays fail-closed.
 Per-item radius channels stay fail-closed.
 
 ## Version 3: backend-neutral core scene batch
@@ -1063,7 +1069,13 @@ time strftime and polar angular numeric formats onto `XYTL` (`format_axis_tick`,
 #303). ABI 203 runs ABI 123 cartesian collision at Scene SVG/raster emit (#304).
 Annotation `html` stays fail-closed as `XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML`
 (#305). Annotation `class_name` stays fail-closed as
-`XYG_SCENE_UNSUPPORTED_BROWSER_CSS` (#306). Hosts pack domain tick-kind in XYCF 154–155. Invalid ABI 96
+`XYG_SCENE_UNSUPPORTED_BROWSER_CSS` (#306). Annotation `collision` stays
+fail-closed as `XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION` (#307). Annotation
+`markup` stays fail-closed as `XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP` (#308).
+Annotation custom typography stays fail-closed as
+`XYG_SCENE_UNSUPPORTED_CUSTOM_FONT` (#309). Text/marker `style.rotation`
+lifts onto the ABI 187/188 rotation field.
+Hosts pack domain tick-kind in XYCF 154–155. Invalid ABI 96
 grammar still falls back. Secondary axes stay
 fail-closed. Remaining #275
 debt is compatibility `_svg._*room` for polar / extra-axis / CSS-font

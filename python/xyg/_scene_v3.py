@@ -726,6 +726,16 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
     Annotation ``class_name`` is an XYFS observation (ABI 165 / #306), not an
     XYAF field. Scene SVG/raster do not encode CSS classes. Product encode
     reports ``XYG_SCENE_UNSUPPORTED_BROWSER_CSS``.
+    Annotation ``collision`` is XYFS ``OBS_ANNOTATION_COLLISION`` (#307);
+    Scene does not encode annotation collision. Product encode reports
+    ``XYG_SCENE_UNSUPPORTED_ANNOTATION_COLLISION``.
+    Annotation ``markup`` is XYFS ``OBS_ANNOTATION_MARKUP`` (#308); Scene
+    owns literal text only. Product encode reports
+    ``XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP``.
+    Annotation custom typography is XYFS ``OBS_CUSTOM_FONT`` (#309); Scene
+    SVG/raster use the built-in default font. Product encode reports
+    ``XYG_SCENE_UNSUPPORTED_CUSTOM_FONT``. Text/marker ``style.rotation``
+    lifts onto the ABI 187/188 top-level rotation field.
     Annotation ``html`` is XYFS ``OBS_ANNOTATION_HTML`` (#305); Scene SVG/raster
     own literal text only. Product encode reports
     ``XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML``.
@@ -739,12 +749,20 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
     ``stroke_width``). ABI 189 packs raw heatmap/hexbin XYTA observations;
     Rust owns cell-fill tessellation eligibility on the XYFS probe.
     """
+    annotation = dict(annotation)
     kind = annotation.get("kind")
     kind_code = _XYAF_KIND_CODES.get(str(kind) if kind is not None else "")
     if kind_code is None:
         raise UnsupportedSceneV3(
             f"Scene v12 annotations support rule, band, and unlabeled marker only; {kind!r} is deferred"
         )
+    style = dict(annotation.get("style") or {})
+    if (
+        str(kind) in {"text", "marker"}
+        and "rotation" not in annotation
+        and style.get("rotation") is not None
+    ):
+        annotation["rotation"] = style["rotation"]
     authored_wrap = kind in {"text", "callout"} and "wrap" in annotation
     layout_text = kind == "text" and any(
         key in annotation for key in ("dx", "dy", "anchor", "rotation")
@@ -789,10 +807,14 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
             if kind == "callout"
             else "Scene v16 text annotations require nonempty NUL-free text"
         )
-    style = dict(annotation.get("style") or {})
     allowed = _annotation_allowed_style(str(kind), wrapped, labelled)
+    skip_style = {"markup"} | _ANNOTATION_TYPOGRAPHY_STYLE_KEYS
+    if str(kind) in {"text", "marker"}:
+        skip_style = skip_style | {"rotation"}
     unsupported = sorted(
-        key for key, value in style.items() if key not in allowed and value is not None
+        key
+        for key, value in style.items()
+        if key not in allowed and key not in skip_style and value is not None
     )
     if unsupported:
         if wrapped:
@@ -3617,6 +3639,43 @@ def _pack_polar_scene_input(figure: Any) -> bytes:
     )
 
 
+def _annotation_has_markup(annotation: Any) -> bool:
+    if not isinstance(annotation, dict):
+        return False
+    if annotation.get("markup") not in (None, ""):
+        return True
+    style = annotation.get("style") or {}
+    return isinstance(style, dict) and style.get("markup") not in (None, "")
+
+
+_ANNOTATION_TYPOGRAPHY_STYLE_KEYS = frozenset(
+    {
+        "font_family",
+        "font_size",
+        "font_weight",
+        "font_style",
+        "fontFamily",
+        "fontSize",
+        "fontWeight",
+        "fontStyle",
+    }
+)
+
+
+def _annotation_has_custom_typography(annotation: Any) -> bool:
+    if not isinstance(annotation, dict):
+        return False
+    style = annotation.get("style") or {}
+    if not isinstance(style, dict):
+        style = {}
+    for key in _ANNOTATION_TYPOGRAPHY_STYLE_KEYS:
+        if style.get(key) not in (None, "", False):
+            return True
+        if annotation.get(key) not in (None, "", False):
+            return True
+    return False
+
+
 def _pack_figure_support(
     figure: Any,
     annotations: list[Any],
@@ -3627,7 +3686,9 @@ def _pack_figure_support(
     if figure.coords != "cartesian":
         flags |= 1 << 0
     chrome_styles = getattr(figure, "chrome_styles", None) or {}
-    if any("font-family" in (style or {}) for style in chrome_styles.values()):
+    if any("font-family" in (style or {}) for style in chrome_styles.values()) or any(
+        _annotation_has_custom_typography(annotation) for annotation in annotations
+    ):
         flags |= 1 << 1
     if (
         getattr(figure, "class_name", None)
@@ -3639,6 +3700,10 @@ def _pack_figure_support(
         flags |= 1 << 2
     if any(annotation.get("html") not in (None, "") for annotation in annotations):
         flags |= 1 << 8
+    if any(annotation.get("collision") not in (None, "") for annotation in annotations):
+        flags |= 1 << 6
+    if any(_annotation_has_markup(annotation) for annotation in annotations):
+        flags |= 1 << 9
     if any(
         _classify_ribbon_color2(trace) == "fail"
         or (
@@ -3777,6 +3842,8 @@ def _pack_public_export_support(
             continue
         kind_b = str(annotation.get("kind") or "").encode("utf-8")[:256]
         fields = [str(key) for key in annotation]
+        if _annotation_has_markup(annotation) and "markup" not in fields:
+            fields.append("markup")
         payload.extend(struct.pack("<B3sHH", 0, b"", len(kind_b), len(fields)))
         payload.extend(kind_b)
         _xyep_put_keys(payload, fields)

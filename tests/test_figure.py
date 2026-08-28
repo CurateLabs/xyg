@@ -1667,11 +1667,11 @@ def test_decimate_view_clamps_huge_frontend_pixel_width(monkeypatch):
     fig = Figure().line(x, np.sin(x * 0.01))
     seen_buckets = []
 
-    def fake_m4_indices(_x, _y, _x0, _x1, n_buckets):
+    def fake_payload_m4_indices(_n_points, _x, _y, _x0, _x1, n_buckets, **_kwargs):
         seen_buckets.append(n_buckets)
-        return np.empty(0, dtype=np.uint32)
+        return 1, np.empty(0, dtype=np.uint32)
 
-    monkeypatch.setattr(interaction.kernels, "m4_indices", fake_m4_indices)
+    monkeypatch.setattr(interaction.kernels, "payload_m4_indices", fake_payload_m4_indices)
     update, buffers = fig.decimate_view(0.0, float(n), 10**12)
     tr = update["traces"][0]
     assert seen_buckets == [MAX_SCREEN_DIM]

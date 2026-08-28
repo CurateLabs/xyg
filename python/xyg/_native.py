@@ -9547,6 +9547,66 @@ def payload_visible_mask(
     return out.astype(bool, copy=False)
 
 
+def payload_m4_indices(
+    n_points: int,
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    x0: float,
+    x1: float,
+    n_buckets: int,
+    *,
+    polar: bool = False,
+    bin_x: npt.NDArray[np.float64] | None = None,
+    bin_x0: float = 0.0,
+    bin_x1: float = 0.0,
+) -> tuple[int, npt.NDArray[np.uint32]]:
+    """Line M4 indices via ``xyg_payload_m4_indices`` (ABI 204).
+
+    Returns ``(tier, indices)``. ``tier`` is 0=direct (empty indices) or
+    1=decimated. Rust owns the threshold, polar skip, and closed-window ulp.
+    """
+    if isinstance(n_points, (bool, np.bool_)) or not isinstance(n_points, numbers.Integral):
+        raise ValueError("n_points must be an integer >= 0")
+    n_pts = int(n_points)
+    if n_pts < 0:
+        raise ValueError("n_points must be an integer >= 0")
+    if isinstance(n_buckets, (bool, np.bool_)) or not isinstance(n_buckets, numbers.Integral):
+        raise ValueError("n_buckets must be an integer >= 0")
+    n_buckets_i = int(n_buckets)
+    if n_buckets_i < 0:
+        raise ValueError("n_buckets must be an integer >= 0")
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("payload_m4_indices x and y must have equal length")
+    n = len(x)
+    bin_arr = _as_f64(bin_x, "bin_x") if bin_x is not None else None
+    if bin_arr is not None and len(bin_arr) != n:
+        raise ValueError("payload_m4_indices bin_x must match x/y length")
+    out_tier = ctypes.c_int32(-1)
+    cap = n_buckets_i * 4 if n_buckets_i else 0
+    out = np.empty(cap, dtype=np.uint32) if cap else np.empty(0, dtype=np.uint32)
+    written = _lib.xyg_payload_m4_indices(
+        n_pts,
+        int(bool(polar)),
+        _ptr_f64(x) if n else 0,
+        _ptr_f64(y) if n else 0,
+        n,
+        float(x0),
+        float(x1),
+        n_buckets_i,
+        _ptr_f64(bin_arr) if bin_arr is not None and n else 0,
+        float(bin_x0),
+        float(bin_x1),
+        ctypes.byref(out_tier),
+        out.ctypes.data if cap else 0,
+        cap,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid payload_m4_indices arguments")
+    return int(out_tier.value), out[:written].copy()
+
+
 DENSITY_GRID_PATH_OVERSIZED_BIN2D = 0
 DENSITY_GRID_PATH_IDENTITY_GRID_ONLY = 1
 DENSITY_GRID_PATH_IDENTITY_STRATIFIED_FUSED = 2
