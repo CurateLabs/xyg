@@ -19,6 +19,8 @@
 //! other symbol.
 
 #![allow(clippy::too_many_arguments)] // C ABI entry points; arity is the contract
+#![allow(clippy::missing_safety_doc)] // crate-level Safety contract is documented above
+#![allow(clippy::useless_vec)] // test fixtures pack versioned envelopes
 
 use xyg_engine::auto_domain;
 use xyg_engine::autorange::{rect_zero_baseline_flags, AutorangeError};
@@ -12722,13 +12724,12 @@ pub unsafe extern "C" fn xyg_legend_box_layout(
             }
             _ => return usize::MAX,
         };
-        let refs: Vec<&str> = texts.iter().copied().collect();
         let Some(laid) = legend_layout::legend_box_layout(legend_layout::LegendBoxRequest {
             plot_x,
             plot_y,
             plot_w,
             plot_h,
-            names: &refs,
+            names: &texts,
             title,
             loc,
             font_size,

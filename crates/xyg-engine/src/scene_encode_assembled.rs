@@ -758,6 +758,7 @@ pub fn encode_assembled_from_sidecars(
 /// Rust owns compile, attach, sidecar, row, annotation, style-sidecar, splice,
 /// and sidecar assembled encode so hosts pack XYTC/XYTA/XYNM/XYCL/XYAF/XYCF/
 /// polar once. Encoded Scene v31 is unchanged.
+#[allow(clippy::too_many_arguments)] // authored blob list is the ABI 163 contract
 pub fn encode_product(
     xytc: &[u8],
     xyta: &[u8],
