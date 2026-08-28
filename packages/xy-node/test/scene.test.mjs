@@ -1143,7 +1143,10 @@ test("Node Scene compiles constant ribbon color2 as XYGR", () => {
     colorTarget: ["#34d399", "#f59e0b"],
     name: null,
   });
-  assert.throws(() => perItem.toScene(), /XYG_SCENE_UNSUPPORTED_GRADIENT/);
+  const perItemScene = perItem.toScene();
+  assert.ok(Buffer.from(perItemScene).includes(Buffer.from("XYGR")));
+  assert.equal((sceneSvg(perItemScene).match(/<linearGradient/g) || []).length, 2);
+  assert.equal(sceneExportSupportReason(perItem), null);
   const custom = new Figure({ width: 240, height: 160 });
   custom.setAxisDomain("x", [0, 1]);
   custom.setAxisDomain("y", [0, 1]);

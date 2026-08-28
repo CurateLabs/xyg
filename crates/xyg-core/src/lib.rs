@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 189;
+pub const ABI_VERSION: u32 = 190;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -2968,9 +2968,10 @@ unsafe fn scene_extras_bytes<'a>(view: *const u8) -> Option<(&'a [u8], &'a [u8],
 /// `stroke` as match-fill (matplotlib `edgecolors='face'`): Rust paints the
 /// mark color at the authored width. Encoded Scene v31 is unchanged. ABI 146 admits constant validated mark `fill` linear-gradients: hosts pack
 /// XYGR on the extras dash slot; Rust keeps XYGR on the encoded Scene so SVG
-/// emits `<linearGradient>` and raster emits `OP_FILL_POLY_GRAD`. Two-ended
-/// ribbon `color2_ch` and data-driven `color_ch` stay fail-closed. Encoded
-/// Scene v31 is unchanged. ABI 147 does not change Scene records;
+/// emits `<linearGradient>` and raster emits `OP_FILL_POLY_GRAD`. ABI 183 admits
+/// constant ribbon `color2_ch` as that XYGR; ABI 190 intern per-item two-ended
+/// paint from packed XYHP kind 5. Explicit `FLAG_COLOR2` stays fail-closed.
+/// Encoded Scene v31 is unchanged. ABI 147 does not change Scene records;
 /// `xyg_scene_pack_product_facts` owns flags/`step_mode`/extra0/extra1 from
 /// packed XYPK v1 so cartesian-vs-polar smooth and painted heatmap dispatch
 /// cannot drift. ABI 148 does not change Scene records;

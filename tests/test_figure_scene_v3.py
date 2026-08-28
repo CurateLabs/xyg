@@ -964,8 +964,13 @@ def test_python_scene_compiles_constant_ribbon_color2() -> None:
         color=["#7c3aed", "#2563eb"],
         color_target=["#34d399", "#f59e0b"],
     )
-    with pytest.raises(UnsupportedSceneV3, match="XYG_SCENE_UNSUPPORTED_GRADIENT"):
-        per_item.to_scene()
+    scene = per_item.to_scene()
+    assert scene[4:8] == (31).to_bytes(4, "little")
+    assert b"XYGR" in scene
+    svg = _native.scene_svg(scene)
+    assert svg.count("<linearGradient") == 2
+    assert per_item.to_svg() == svg
+    assert _scene_v3.scene_export_support_reason(per_item) is None
 
 
 def test_python_scene_compiles_unwrapped_text_layout() -> None:

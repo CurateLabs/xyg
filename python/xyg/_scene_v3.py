@@ -1124,6 +1124,8 @@ def _constant_color(trace: Any, fallback: str) -> str:
     if channel.mode != "constant" or channel.constant is None:
         if str(getattr(trace, "kind", "") or "") == "scatter" and trace.use_density():
             return str((getattr(trace, "style", None) or {}).get("color", fallback))
+        if _hexbin_packs_colormap_plane(trace) or _ribbon_packs_end_paints(trace):
+            return str((getattr(trace, "style", None) or {}).get("color", fallback))
         raise UnsupportedSceneV3("Scene v12 does not yet support data-driven paint channels")
     return channel.constant
 
@@ -1916,6 +1918,18 @@ def _pack_xyta(figure: Any) -> bytes:
             if domain is not None and len(domain) == 2:
                 flags |= _XYTA_HAS_DOMAIN
                 cmap_lo, cmap_hi = float(domain[0]), float(domain[1])
+        elif (
+            trace.kind in _RIBBON_KINDS
+            and str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
+            and _ribbon_packs_end_paints(trace)
+        ):
+            ends = _ribbon_end_rgba_pair(trace)
+            if ends is not None:
+                source, target = ends
+                flags |= _XYTA_RIBBON_ENDS | _XYTA_SHAPE | _XYTA_HAS_RGBA
+                rows, cols = 1, len(source) // 4
+                rgba = source
+                mean_rgba = target
         elif trace.kind == "scatter" and trace.use_density():
             flags |= _XYTA_DENSITY
             xv = _trace_column(trace, "x")
@@ -2265,21 +2279,91 @@ def _css_paints_equal(left: str, right: str) -> bool:
 
 
 def _classify_ribbon_color2(trace: Any) -> str:
-    """Classify two-ended ribbon paint: absent, solid, gradient, or fail."""
+    """Classify two-ended ribbon paint: absent, solid, gradient, ends, or fail."""
     color2 = getattr(trace, "color2_ch", None)
     if color2 is None:
         return "absent"
     if str(getattr(trace, "kind", "") or "") != "ribbon":
         return "fail"
     target = _channel_constant_css(color2)
-    if target is None:
-        return "fail"
-    source = _trace_source_color_css(trace)
-    if _css_paints_equal(source, target):
-        return "solid"
+    source_const = _channel_constant_css(getattr(trace, "color_ch", None))
+    if target is not None and source_const is not None:
+        source = _trace_source_color_css(trace)
+        if _css_paints_equal(source, target):
+            return "solid"
+        if "fill" in (getattr(trace, "style", None) or {}):
+            return "fail"
+        return "gradient"
     if "fill" in (getattr(trace, "style", None) or {}):
         return "fail"
-    return "gradient"
+    if _ribbon_end_rgba_pair(trace) is None:
+        return "fail"
+    return "ends"
+
+
+def _ribbon_count(trace: Any) -> int:
+    raw = getattr(trace, "count", None)
+    if raw is not None:
+        try:
+            return int(raw)
+        except (TypeError, ValueError):
+            pass
+    column = _trace_column(trace, "x0")
+    return 0 if column is None else int(len(column))
+
+
+def _channel_end_rgba8(channel: Any, n: int, fallback: str) -> bytes | None:
+    """Pack n RGBA8 pixels from a constant or direct_rgba channel."""
+    if n < 1:
+        return None
+    if channel is None:
+        rgba = _native.css_color_rgba(fallback, 1.0)
+        return bytes(rgba) * n
+    mode = getattr(channel, "mode", None)
+    if mode == "constant":
+        css = getattr(channel, "constant", None)
+        if css is None:
+            return None
+        try:
+            rgba = _native.css_color_rgba(str(css), 1.0)
+        except ValueError:
+            return None
+        return bytes(rgba) * n
+    if mode == "direct_rgba":
+        packed = getattr(channel, "rgba", None)
+        if packed is None:
+            return None
+        values = np.asarray(packed)
+        if values.ndim == 1 and values.size == n * 4:
+            values = values.reshape(n, 4)
+        if values.shape != (n, 4):
+            return None
+        if values.dtype == np.uint8:
+            return np.ascontiguousarray(values).tobytes()
+        return np.ascontiguousarray(channels._quantized_rgba8(values.astype(np.float64))).tobytes()
+    return None
+
+
+def _ribbon_end_rgba_pair(trace: Any) -> tuple[bytes, bytes] | None:
+    n = _ribbon_count(trace)
+    if n < 1:
+        return None
+    fallback = _trace_source_color_css(trace)
+    source = _channel_end_rgba8(getattr(trace, "color_ch", None), n, fallback)
+    target = _channel_end_rgba8(getattr(trace, "color2_ch", None), n, fallback)
+    if source is None or target is None:
+        return None
+    return source, target
+
+
+def _ribbon_packs_end_paints(trace: Any, polar: bool = False) -> bool:
+    """Return whether hosts should pack this ribbon's source/target RGBA8 ends.
+
+    Polar stays off this path. Rust intern unique pairs onto Band+XYGR (ABI 190).
+    """
+    if polar or str(getattr(trace, "kind", "") or "") != "ribbon":
+        return False
+    return _classify_ribbon_color2(trace) == "ends"
 
 
 def _ribbon_color2_gradient_spec(trace: Any) -> dict[str, Any] | None:
@@ -2330,6 +2414,7 @@ _XYTA_HAS_OPACITY = 1 << 10
 _XYTA_HAS_FILL_OPACITY = 1 << 11
 _XYTA_HAS_DOMAIN = 1 << 12
 _XYTA_SHAPE = 1 << 13
+_XYTA_RIBBON_ENDS = 1 << 14
 _XYTC_HAS_FILL = 1 << 0
 _XYTC_HAS_STROKE = 1 << 1
 _XYTC_HAS_LINE_COLOR = 1 << 2
@@ -3220,6 +3305,10 @@ def _pack_figure_support(
             and not (
                 str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
                 and _hexbin_packs_colormap_plane(trace)
+            )
+            and not (
+                str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
+                and _ribbon_packs_end_paints(trace)
             )
         )
         or (

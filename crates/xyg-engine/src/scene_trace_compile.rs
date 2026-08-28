@@ -26,7 +26,8 @@
 //! matches the compatibility join predicate.
 //! ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`
 //! (hosts pack `FLAG_HAS_FILL | FLAG_HAS_GRADIENT_SPEC`, not `FLAG_COLOR2`).
-//! Data-driven two-ended paint and explicit `FLAG_COLOR2` stay fail-closed.
+//! ABI 190 intern per-item two-ended paint from packed XYHP kind 5; hosts omit
+//! `FLAG_COLOR2` on that path. Explicit `FLAG_COLOR2` stays fail-closed.
 //! ABI 170 admits constant scatter `marker_glyph` as UTF-8 in the existing
 //! XYTR marker blob (`FLAG_HAS_GLYPH`); encoded Scene keeps XYMG so SVG/raster
 //! emit `<text>` / `OP_TEXT` instead of a disc.
@@ -455,6 +456,13 @@ fn constant_color<'a>(input: &'a Input<'a>, index: usize) -> Result<&'a str, Tra
         });
     }
     if input.kind == "hexbin" {
+        return Ok(if input.color_css.is_empty() {
+            DEFAULT_COLOR
+        } else {
+            input.color_css
+        });
+    }
+    if input.kind == "ribbon" {
         return Ok(if input.color_css.is_empty() {
             DEFAULT_COLOR
         } else {

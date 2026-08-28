@@ -552,7 +552,7 @@ F3, still pending (above).
   immediately-following generated constant built-in stem marker). Gradients,
   rounded corners, dashed or data-driven segment styles, LOD/density,
   nonliteral palettes, triangle-mesh component alpha/outlines/per-face styles/
-  larger batches, per-item two-ended ribbon gradients, polar geometry, and
+  larger batches, polar geometry, and
   unmodeled marks retain their
   compatibility renderers. Rust
   now owns chart/plot backgrounds, authored axis side/visibility and
@@ -589,7 +589,9 @@ F3, still pending (above).
   admits cartesian colormap hexbin as a 1×N XYHP plane interned onto HexCell
   PolyFills, then ABI 187 admits cartesian unwrapped text `rotation` as XYAW
   `wrap=0` (XYAW v2 / XYLB v6), then ABI 188 admits labelled cartesian marker
-  `rotation` as XYAW `wrap=0`.
+  `rotation` as XYAW `wrap=0`, then ABI 189 owns heatmap/hexbin cell-fill
+  tessellation eligibility from packed XYTA, then ABI 190 intern cartesian
+  per-item two-ended ribbon `color2_ch` from packed XYHP kind 5.
   `FacetGrid.to_svg` / native facet PNG/JPEG/WebP reuse that same compiled
   panel Scene. That predicate
   owns the public PolyFill group budget, including companion traces that share
@@ -1530,15 +1532,17 @@ authored band step expansion (`step_mode` 1–3 wins over `BandFlatten`).
 ABI 182 admits triangle_mesh `joined_fill` as one identity PolyFill ring from
 the Rust boundary walk (disconnected meshes keep per-face `TriangleFace` rows).
 ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`
-(hosts pack the two-stop fill, not `FLAG_COLOR2`). Per-item two-ended paint
-stays fail-closed. ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor`
+(hosts pack the two-stop fill, not `FLAG_COLOR2`). ABI 190 intern per-item
+two-ended paint from packed XYHP kind 5. Polar ribbon and explicit `FLAG_COLOR2`
+stay fail-closed. ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor`
 as XYAW `wrap=0`. ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor`
 as XYAW `wrap=0`. ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane
 interned onto HexCell PolyFills. Polar hexbin, custom reducers, and per-item
 RGBA stay fail-closed. ABI 187 admits cartesian unwrapped text `rotation` as
 XYAW `wrap=0`. ABI 188 admits labelled cartesian marker `rotation` as XYAW
 `wrap=0`. ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from
-packed XYTA. html, `class_name`, and polar stay fail-closed. Per-item radius
+packed XYTA. ABI 190 intern cartesian per-item two-ended ribbon `color2_ch`
+from packed XYHP kind 5. html, `class_name`, and polar stay fail-closed. Per-item radius
 channels stay compatibility. Irregular
 spacing, and LOD stay compatibility.
 

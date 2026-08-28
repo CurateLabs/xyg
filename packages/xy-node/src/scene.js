@@ -72,7 +72,7 @@ import {
   polarAbiInputPointer,
 } from "./native.js";
 import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops } from "./encode.js";
-import { cssColorRgba8 } from "./color.js";
+import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
 const MAX_SCENE_MARKS = 2_000_000;
@@ -1815,10 +1815,88 @@ function classifyRibbonColor2(trace) {
   if (channel == null) return "absent";
   if (String(trace.kind ?? "") !== "ribbon") return "fail";
   const target = channelConstantCss(channel);
-  if (target == null) return "fail";
-  if (cssPaintsEqual(sourceColorCss(trace), target)) return "solid";
+  const sourceConst = channelConstantCss(trace.color_ch ?? trace.colorChannel ?? trace.color);
+  if (target != null && sourceConst != null) {
+    if (cssPaintsEqual(sourceColorCss(trace), target)) return "solid";
+    if (Object.hasOwn(trace.style ?? {}, "fill")) return "fail";
+    return "gradient";
+  }
   if (Object.hasOwn(trace.style ?? {}, "fill")) return "fail";
-  return "gradient";
+  if (ribbonEndRgbaPair(trace) == null) return "fail";
+  return "ends";
+}
+
+function ribbonCount(trace) {
+  const raw = trace.count;
+  if (raw != null && Number.isFinite(Number(raw))) return Number(raw);
+  const column = trace.x0;
+  return column == null ? 0 : column.length;
+}
+
+function channelEndRgba8(channel, n, fallback) {
+  if (!(n >= 1)) return null;
+  const replicate = (css) => {
+    try {
+      const rgba = cssColorRgba8(String(css), 1);
+      const out = new Uint8Array(n * 4);
+      for (let i = 0; i < n; i += 1) out.set(rgba, i * 4);
+      return out;
+    } catch {
+      return null;
+    }
+  };
+  if (channel == null) return replicate(fallback);
+  if (typeof channel === "string") return replicate(channel);
+  if (Array.isArray(channel) || ArrayBuffer.isView(channel)) {
+    if (channel.length === n * 4 && (channel instanceof Uint8Array || ArrayBuffer.isView(channel))) {
+      return channel instanceof Uint8Array ? channel : Uint8Array.from(channel);
+    }
+    if (channel.length !== n) return null;
+    try {
+      return cssColorsToRgba8([...channel].map(String));
+    } catch {
+      return null;
+    }
+  }
+  if (typeof channel === "object") {
+    if (channel.mode === "constant") {
+      const css = channel.constant ?? channel.color;
+      if (css == null) return null;
+      return replicate(css);
+    }
+    if (channel.mode === "direct_rgba" && channel.rgba != null) {
+      const raw = channel.rgba;
+      if (raw instanceof Uint8Array && raw.length === n * 4) return raw;
+      if (Array.isArray(raw) && raw.length === n && Array.isArray(raw[0])) {
+        const out = new Uint8Array(n * 4);
+        for (let i = 0; i < n; i += 1) {
+          const row = raw[i];
+          out[i * 4] = Math.round(Math.min(1, Math.max(0, Number(row[0]))) * 255);
+          out[i * 4 + 1] = Math.round(Math.min(1, Math.max(0, Number(row[1]))) * 255);
+          out[i * 4 + 2] = Math.round(Math.min(1, Math.max(0, Number(row[2]))) * 255);
+          out[i * 4 + 3] = Math.round(Math.min(1, Math.max(0, Number(row[3] ?? 1))) * 255);
+        }
+        return out;
+      }
+      if (ArrayBuffer.isView(raw) && raw.length === n * 4) return Uint8Array.from(raw);
+    }
+  }
+  return null;
+}
+
+function ribbonEndRgbaPair(trace) {
+  const n = ribbonCount(trace);
+  if (n < 1) return null;
+  const fallback = sourceColorCss(trace);
+  const source = channelEndRgba8(trace.color_ch ?? trace.colorChannel ?? trace.color, n, fallback);
+  const target = channelEndRgba8(color2Channel(trace), n, fallback);
+  if (source == null || target == null) return null;
+  return { source, target };
+}
+
+function ribbonPacksEndPaints(trace, polar = false) {
+  if (polar || String(trace.kind ?? "") !== "ribbon") return false;
+  return classifyRibbonColor2(trace) === "ends";
 }
 
 function ribbonColor2GradientSpec(trace) {
@@ -2726,6 +2804,7 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
       scatterHasNonConstantColor(trace)
       && !scatterUsesDensity(trace)
       && !(figure.coords !== "polar" && hexbinPacksColormapPlane(trace))
+      && !(figure.coords !== "polar" && ribbonPacksEndPaints(trace))
     )
     || (
       fillIsGradientAuthoring(trace.style?.fill)
@@ -3163,6 +3242,7 @@ const XYTA_HAS_OPACITY = 1 << 10;
 const XYTA_HAS_FILL_OPACITY = 1 << 11;
 const XYTA_HAS_DOMAIN = 1 << 12;
 const XYTA_SHAPE = 1 << 13;
+const XYTA_RIBBON_ENDS = 1 << 14;
 const GRAD_DIR_FROM_CODE = { 0: "down", 1: "up", 2: "right", 3: "left" };
 
 function packMarkerBlob(value) {
@@ -3682,6 +3762,19 @@ function packXyTa(figure, xDomain, yDomain) {
         flags |= XYTA_HAS_DOMAIN;
         cmapLo = Number(domain[0]);
         cmapHi = Number(domain[1]);
+      }
+    } else if (
+      RIBBON_KINDS.has(trace.kind)
+      && figure.coords !== "polar"
+      && ribbonPacksEndPaints(trace)
+    ) {
+      const ends = ribbonEndRgbaPair(trace);
+      if (ends != null) {
+        flags |= XYTA_RIBBON_ENDS | XYTA_SHAPE | XYTA_HAS_RGBA;
+        rows = 1;
+        cols = ends.source.length / 4;
+        rgba = ends.source;
+        meanRgba = ends.target;
       }
     } else if ((trace.kind ?? "scatter") === "scatter" && scatterUsesDensity(trace)) {
       flags |= XYTA_DENSITY;

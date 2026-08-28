@@ -14,6 +14,8 @@
 //! separately. Empty `XYFS` skips the probe (stepwise ABI 163 callers).
 //! ABI 189 consults packed XYTA during that probe so heatmap/hexbin cell-fill
 //! tessellation eligibility is Rust-owned.
+//! ABI 190 intern per-item two-ended ribbon `color2_ch` from packed XYHP kind 5
+//! onto Band `style_ref`s plus XYGR mark-space `dir=right`.
 //! ABI 166 tessellates cartesian bar/column/histogram `corner_radius` from
 //! packed XYSD radius blobs after pixel mapping. ABI 167 applies polar
 //! `wedge_gap` from that same blob during `polar_wedge_points`. ABI 168
@@ -33,10 +35,10 @@
 //! unchanged.
 
 use crate::scene::{
-    decode_tick_labels, expand_scene_records_painted, resolve_numeric_tick_formats,
-    scene_text_advance, split_scene_extras, AxisScale, PlotLayout, ScaleKind, SceneBatch,
-    SceneChromeStyle, SceneChromeText, SceneColorbar, SceneCornerRadius, SceneError,
-    SceneExpansionInput, SceneLegend, MAX_AUTHORED_TEXT_ANNOTATIONS, MAX_AXIS_TICKS,
+    decode_tick_labels, expand_scene_records_painted, merge_dash_gradients,
+    resolve_numeric_tick_formats, scene_text_advance, split_scene_extras, AxisScale, PlotLayout,
+    ScaleKind, SceneBatch, SceneChromeStyle, SceneChromeText, SceneColorbar, SceneCornerRadius,
+    SceneError, SceneExpansionInput, SceneLegend, MAX_AUTHORED_TEXT_ANNOTATIONS, MAX_AXIS_TICKS,
     MAX_SCENE_AXIS_FORMAT_BYTES, MAX_SCENE_COLORBAR_INPUT_BYTES, MAX_SCENE_LABEL_TEXT_BYTES,
     MAX_SCENE_LEGEND_ENTRIES, MAX_SCENE_LEGEND_TEXT_BYTES, MAX_SCENE_MARKS, MAX_SCENE_STYLES,
     MAX_SCENE_TEXT_BYTES, SCENE_CHROME_STYLE_INPUT_BYTES, SCENE_STYLE_RECORD_BYTES,
@@ -685,6 +687,12 @@ fn encode_assembled_with_radii(
             parsed.stroke_width.as_slice(),
         ),
     };
+    let dash_merged = match &painted_styles {
+        Some(styles) if !styles.extra_xygr.is_empty() => {
+            merge_dash_gradients(dash_bytes, &styles.extra_xygr).map_err(map_scene)?
+        }
+        _ => dash_bytes.to_vec(),
+    };
     let text = SceneChromeText::from_parts(chrome.title, chrome.x_label, chrome.y_label)
         .map_err(map_scene)?;
     let legend =
@@ -738,7 +746,7 @@ fn encode_assembled_with_radii(
     Ok(batch
         .with_images(images)
         .map_err(map_scene)?
-        .with_dashes(dash_bytes)
+        .with_dashes(&dash_merged)
         .map_err(map_scene)?
         .with_polar(polar_bytes)
         .map_err(map_scene)?

@@ -1526,11 +1526,6 @@ def test_builtin_symbol_cutover_keeps_nonliteral_scatter_fail_closed(
 @pytest.mark.parametrize(
     "mutate",
     [
-        lambda figure: setattr(
-            figure.traces[0],
-            "color2_ch",
-            ColorChannel(mode="direct_rgba", rgba=np.array([[0.2, 0.8, 0.5, 1.0]])),
-        ),
         lambda figure: figure.traces[0].style.__setitem__("role", "custom-ribbon"),
         lambda figure: setattr(figure, "coords", "polar"),
     ],
@@ -1541,6 +1536,40 @@ def test_public_ribbon_route_fails_closed_for_unmodeled_behavior(
     figure = _public_ribbon("linear")
     mutate(figure)
     assert scene_export_support_reason(figure) is not None
+
+
+def test_public_ribbon_per_item_color2_routes_through_scene() -> None:
+    from xyg import _native
+
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 1.0)
+    figure.axis_options["y"]["domain"] = (0.0, 1.0)
+    figure.ribbon(
+        [0.0, 0.2],
+        [0.4, 0.8],
+        [0.0, 0.1],
+        [0.2, 0.3],
+        [0.15, 0.25],
+        [0.35, 0.45],
+        color=["#7c3aed", "#2563eb"],
+        color_target=["#34d399", "#f59e0b"],
+    )
+    assert scene_export_support_reason(figure) is None
+    svg = _native.scene_svg(figure_scene(figure))
+    assert svg.count("<linearGradient") == 2
+    assert 'id="xy-scene-g1"' in svg
+    assert figure.to_svg() == svg
+    exported = public_static_export(figure, "svg")
+    assert exported is not None
+    assert exported.count(b"<linearGradient") == 2
+    one = _public_ribbon("linear")
+    one.traces[0].color2_ch = ColorChannel(
+        mode="direct_rgba", rgba=np.array([[0.2, 0.8, 0.5, 1.0]])
+    )
+    assert scene_export_support_reason(one) is None
+    one_svg = _native.scene_svg(figure_scene(one))
+    assert "<linearGradient" in one_svg
+    assert one.to_svg() == one_svg
 
 
 def test_public_ribbon_constant_color2_routes_through_scene() -> None:
@@ -1594,8 +1623,8 @@ def test_migrated_scene_packers_have_no_host_step_geometry_expander() -> None:
     assert "def _heatmap_tessellates_cell_fills" not in python_packer
     assert "function hexbinTessellatesCellFills" not in node_packer
     assert "function heatmapTessellatesCellFills" not in node_packer
-    assert "def _hexbin_packs_colormap_plane" in python_packer
-    assert "function hexbinPacksColormapPlane" in node_packer
+    assert "def _ribbon_packs_end_paints" in python_packer
+    assert "function ribbonPacksEndPaints" in node_packer
     assert "and _hexbin_tessellates_cell_fills(trace)" not in python_packer
     assert "and heatmapTessellatesCellFills(trace)" not in node_packer
     assert "&& hexbinTessellatesCellFills(trace)" not in node_packer

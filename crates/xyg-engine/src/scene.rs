@@ -3758,6 +3758,10 @@ pub const XYHP_PAINT_COLORMAP: u32 = 1;
 pub const XYHP_PAINT_NAMED: u32 = 2;
 pub const XYHP_PAINT_DENSITY: u32 = 3;
 pub const XYHP_PAINT_MEAN_COLOR: u32 = 4;
+/// ABI 190: N paired source/target RGBA8 ends for cartesian ribbon intern.
+/// Payload is `cols * 8` bytes (`rows` must be 1); expansion interns unique
+/// pairs onto Band `style_ref`s plus XYGR mark-space `dir=right`.
+pub const XYHP_PAINT_RIBBON: u32 = 5;
 pub const XYHP_MAX_NAME_BYTES: usize = 64;
 /// XYIM v1 image-blit sidecar (ABI 137 / Scene v27). One RGBA8 plane per
 /// `DensityBlit` Image record, keyed by stable id, image-top-first.
@@ -3809,8 +3813,9 @@ pub const XYMP_VERTEX_LIMIT: f64 = 0.500001;
 /// Concatenated after XYMP in the extras dash slot. Encoded Scene keeps XYGR
 /// (paint sidecar) so SVG/raster can emit `<linearGradient>` / `OP_FILL_POLY_GRAD`.
 /// ABI 183 admits constant ribbon `color2_ch` as this same XYGR mark-space
-/// `dir=right` two-stop fill. Data-driven / per-item `color2_ch` and explicit
-/// `FLAG_COLOR2` stay fail-closed.
+/// `dir=right` two-stop fill. ABI 190 intern per-item two-ended `color2_ch`
+/// from packed XYHP kind 5 onto one XYGR per unique source/target pair.
+/// Explicit `FLAG_COLOR2` stays fail-closed.
 pub const XYGR_MAGIC: &[u8; 4] = b"XYGR";
 pub const XYGR_VERSION: u32 = 1;
 pub const XYGR_V1_HEADER_BYTES: usize = 16;
@@ -3850,6 +3855,8 @@ pub struct ExpandedSceneStyles {
     pub fill_rgba: Vec<u8>,
     pub stroke_rgba: Vec<u8>,
     pub stroke_width: Vec<f64>,
+    /// ABI 190 interned ribbon XYGR entries (may be empty when every pair is solid).
+    pub extra_xygr: Vec<u8>,
 }
 
 /// One decoded density/image blit plane. RGBA8 is image-top-first, `width*height*4`.
@@ -4004,6 +4011,7 @@ fn parse_heatmap_paint(bytes: &[u8]) -> Result<Vec<HeatmapPaintPlane<'_>>, Scene
                     | XYHP_PAINT_NAMED
                     | XYHP_PAINT_DENSITY
                     | XYHP_PAINT_MEAN_COLOR
+                    | XYHP_PAINT_RIBBON
             )
         {
             return Err(SceneError::Length);
@@ -4011,7 +4019,11 @@ fn parse_heatmap_paint(bytes: &[u8]) -> Result<Vec<HeatmapPaintPlane<'_>>, Scene
         let payload_end = header_end.checked_add(payload_len).ok_or(SceneError::Limit)?;
         let payload = bytes.get(header_end..payload_end).ok_or(SceneError::Length)?;
         let cells = rows.checked_mul(cols).ok_or(SceneError::Limit)?;
-        if kind == XYHP_PAINT_RGBA {
+        if kind == XYHP_PAINT_RIBBON {
+            if rows != 1 || payload_len != cols.checked_mul(8).ok_or(SceneError::Limit)? {
+                return Err(SceneError::Length);
+            }
+        } else if kind == XYHP_PAINT_RGBA {
             if payload_len != cells.checked_mul(4).ok_or(SceneError::Limit)? {
                 return Err(SceneError::Length);
             }
@@ -4123,6 +4135,64 @@ fn intern_heatmap_fill(
     styles.stroke_rgba.extend_from_slice(&stroke);
     styles.stroke_width.push(stroke_width);
     intern.insert(fill, style_ref);
+    Ok(style_ref)
+}
+
+fn apply_fill_alpha(rgba: [u8; 4], alpha: u8) -> [u8; 4] {
+    [
+        rgba[0],
+        rgba[1],
+        rgba[2],
+        ((u16::from(rgba[3]) * u16::from(alpha)) / 255) as u8,
+    ]
+}
+
+fn ribbon_end_paints(plane: HeatmapPaintPlane<'_>) -> Result<Vec<([u8; 4], [u8; 4])>, SceneError> {
+    if plane.kind != XYHP_PAINT_RIBBON || plane.rows != 1 {
+        return Err(SceneError::Length);
+    }
+    let mut ends = Vec::with_capacity(plane.cols);
+    for index in 0..plane.cols {
+        let start = index.checked_mul(8).ok_or(SceneError::Limit)?;
+        let slice = plane
+            .payload
+            .get(start..start + 8)
+            .ok_or(SceneError::Length)?;
+        ends.push((
+            [slice[0], slice[1], slice[2], slice[3]],
+            [slice[4], slice[5], slice[6], slice[7]],
+        ));
+    }
+    Ok(ends)
+}
+
+fn intern_ribbon_pair(
+    styles: &mut ExpandedSceneStyles,
+    intern: &mut HashMap<([u8; 4], [u8; 4]), u32>,
+    gradients: &mut Vec<StyleGradient>,
+    source: [u8; 4],
+    target: [u8; 4],
+    stroke: [u8; 4],
+    stroke_width: f64,
+) -> Result<u32, SceneError> {
+    if let Some(existing) = intern.get(&(source, target)) {
+        return Ok(*existing);
+    }
+    // Unique (source, target) pairs need distinct style_refs even when the
+    // source fill matches an earlier intern, so fill-only reuse stays off.
+    let mut unused_fill_intern = HashMap::new();
+    let style_ref = intern_heatmap_fill(styles, &mut unused_fill_intern, source, stroke, stroke_width)?;
+    intern.insert((source, target), style_ref);
+    if source != target {
+        gradients.push(StyleGradient {
+            style_ref,
+            gradient: AuthoredGradient {
+                plot_space: false,
+                dir: XYGR_DIR_RIGHT as u8,
+                stops: vec![(0.0, source), (1.0, target)],
+            },
+        });
+    }
     Ok(style_ref)
 }
 
@@ -4917,7 +4987,6 @@ fn parse_xygr(bytes: &[u8]) -> Result<Vec<StyleGradient>, SceneError> {
     Ok(entries)
 }
 
-#[cfg(test)]
 fn encode_xygr(entries: &[StyleGradient]) -> Result<Vec<u8>, SceneError> {
     if entries.is_empty() {
         return Ok(Vec::new());
@@ -4957,6 +5026,27 @@ fn encode_xygr(entries: &[StyleGradient]) -> Result<Vec<u8>, SceneError> {
             prev_t = t;
         }
     }
+    Ok(out)
+}
+
+/// Concatenate interned ribbon XYGR onto an existing extras dash sidecar.
+pub(crate) fn merge_dash_gradients(dash: &[u8], extra_xygr: &[u8]) -> Result<Vec<u8>, SceneError> {
+    if extra_xygr.is_empty() {
+        return Ok(dash.to_vec());
+    }
+    if dash.is_empty() {
+        return Ok(extra_xygr.to_vec());
+    }
+    let (ds, cap, markers, grads, glyphs) = split_style_sidecars(dash)?;
+    let mut entries = parse_xygr(grads)?;
+    entries.extend(parse_xygr(extra_xygr)?);
+    let merged = encode_xygr(&entries)?;
+    let mut out = Vec::with_capacity(ds.len() + cap.len() + markers.len() + merged.len() + glyphs.len());
+    out.extend_from_slice(ds);
+    out.extend_from_slice(cap);
+    out.extend_from_slice(markers);
+    out.extend_from_slice(&merged);
+    out.extend_from_slice(glyphs);
     Ok(out)
 }
 
@@ -5462,17 +5552,28 @@ pub fn expand_scene_records_painted(
     let mut has_painted = false;
     let mut has_density = false;
     let mut has_hex = false;
+    let mut has_ribbon = false;
     for mode in input.expansion_modes {
         match SceneExpansionMode::from_code(*mode)? {
             SceneExpansionMode::HeatmapPainted => has_painted = true,
             SceneExpansionMode::DensityBlit => has_density = true,
             SceneExpansionMode::HexCell => has_hex = true,
+            SceneExpansionMode::Ribbon => has_ribbon = true,
             _ => {}
         }
     }
     let intern_density = has_density && polar;
     let intern_hex = has_hex && !paint.is_empty();
-    if has_painted || intern_density || intern_hex {
+    let mut paint_planes: Vec<Option<HeatmapPaintPlane<'_>>> = parse_heatmap_paint(paint)?
+        .into_iter()
+        .map(Some)
+        .collect();
+    let intern_ribbon = has_ribbon
+        && paint_planes
+            .iter()
+            .flatten()
+            .any(|plane| plane.kind == XYHP_PAINT_RIBBON);
+    if has_painted || intern_density || intern_hex || intern_ribbon {
         if fill_rgba.len() != stroke_width.len().saturating_mul(4)
             || stroke_rgba.len() != fill_rgba.len()
             || stroke_width.is_empty()
@@ -5482,21 +5583,23 @@ pub fn expand_scene_records_painted(
     } else if !has_density && !paint.is_empty() {
         return Err(SceneError::Length);
     }
-    let mut paint_planes: Vec<Option<HeatmapPaintPlane<'_>>> = parse_heatmap_paint(paint)?
-        .into_iter()
-        .map(Some)
-        .collect();
     if (has_painted || has_density) && paint_planes.is_empty() {
         return Err(SceneError::Length);
     }
-    let mut painted_styles = (has_painted || intern_density || intern_hex).then(|| ExpandedSceneStyles {
-        fill_rgba: fill_rgba.to_vec(),
-        stroke_rgba: stroke_rgba.to_vec(),
-        stroke_width: stroke_width.to_vec(),
+    let mut painted_styles = (has_painted || intern_density || intern_hex || intern_ribbon).then(|| {
+        ExpandedSceneStyles {
+            fill_rgba: fill_rgba.to_vec(),
+            stroke_rgba: stroke_rgba.to_vec(),
+            stroke_width: stroke_width.to_vec(),
+            extra_xygr: Vec::new(),
+        }
     });
     let mut images = Vec::new();
     let mut hex_fills: HashMap<u64, Vec<[u8; 4]>> = HashMap::new();
     let mut hex_intern: HashMap<[u8; 4], u32> = HashMap::new();
+    let mut ribbon_ends: HashMap<u64, Vec<([u8; 4], [u8; 4])>> = HashMap::new();
+    let mut ribbon_intern: HashMap<([u8; 4], [u8; 4]), u32> = HashMap::new();
+    let mut ribbon_gradients: Vec<StyleGradient> = Vec::new();
 
     // Stable identity is the canonical Polyline run boundary. Reject any
     // attempt to switch step mode inside one contiguous same-kind identity
@@ -5694,12 +5797,39 @@ pub fn expand_scene_records_painted(
             continue;
         }
         let stable_id = input.stable_ids[cursor];
-        let style_ref = input.style_refs[cursor];
+        let mut style_ref = input.style_refs[cursor];
         let run_end =
             scene_expansion_group_end(input.stable_ids, input.kinds, input.expansion_modes, cursor);
         if mode == SceneExpansionMode::Ribbon {
             let upper = cursor;
             let lower = cursor + 1;
+            if intern_ribbon {
+                let parent = stable_id >> 32;
+                let cell_index = (stable_id & 0xffff_ffff) as usize;
+                if let Entry::Vacant(slot) = ribbon_ends.entry(parent) {
+                    if let Ok(plane) = take_paint_plane(&mut paint_planes, parent) {
+                        slot.insert(ribbon_end_paints(plane)?);
+                    } else {
+                        slot.insert(Vec::new());
+                    }
+                }
+                if let Some(ends) = ribbon_ends.get(&parent) {
+                    if let Some(&(source, target)) = ends.get(cell_index) {
+                        let alpha = style_rgba4(fill_rgba, style_ref)?[3];
+                        style_ref = intern_ribbon_pair(
+                            painted_styles.as_mut().ok_or(SceneError::Length)?,
+                            &mut ribbon_intern,
+                            &mut ribbon_gradients,
+                            apply_fill_alpha(source, alpha),
+                            apply_fill_alpha(target, alpha),
+                            style_rgba4(stroke_rgba, style_ref)?,
+                            *stroke_width
+                                .get(style_ref as usize)
+                                .ok_or(SceneError::Length)?,
+                        )?;
+                    }
+                }
+            }
             let cx0 = x_scale.coord(input.x0[upper]);
             let cx1 = x_scale.coord(input.x1[upper]);
             let upper_y0 = y_scale.coord(input.y0[upper]);
@@ -6089,6 +6219,9 @@ pub fn expand_scene_records_painted(
     }
     if paint_planes.iter().any(Option::is_some) {
         return Err(SceneError::Length);
+    }
+    if let Some(styles) = painted_styles.as_mut() {
+        styles.extra_xygr = encode_xygr(&ribbon_gradients)?;
     }
     debug_assert_eq!(output.kinds.len(), expanded_len);
     Ok((output, painted_styles, images))

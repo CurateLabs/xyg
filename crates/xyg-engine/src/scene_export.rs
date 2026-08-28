@@ -23,8 +23,8 @@
 //! from the Rust boundary walk (disconnected meshes keep per-face triangles;
 //! `role` other than `triangle-mesh` stays fail-closed).
 //! ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`
-//! (hosts omit `FLAG_COLOR2` / `OBS_GRADIENT` on that path). Per-item two-ended
-//! paint, polar ribbon, and `role` other than `ribbon` stay fail-closed.
+//! (hosts omit `FLAG_COLOR2` / `OBS_GRADIENT` on that path). ABI 190 intern
+//! per-item two-ended paint from packed XYHP kind 5. Polar ribbon, and `role` other than `ribbon` stay fail-closed.
 //! ABI 184 admits cartesian unwrapped text `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 //! ABI 185 admits labelled cartesian marker `dx`/`dy`/`anchor` as XYAW `wrap=0`.
 //! ABI 186 admits cartesian colormap hexbin as a 1×N XYHP plane interned onto
@@ -33,7 +33,9 @@
 //! ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2 / XYLB v6).
 //! ABI 188 admits labelled cartesian marker `rotation` as XYAW `wrap=0` (nums[8]).
 //! ABI 189 owns heatmap/hexbin cell-fill tessellation eligibility from packed
-//! XYTA so hosts no longer decide Scene vs compatibility for those predicates.
+//! XYTA. ABI 190 intern cartesian per-item two-ended ribbon `color2_ch` from
+//! packed XYHP kind 5 (hosts omit `FLAG_COLOR2` / `OBS_GRADIENT` on that path).
+//! Polar ribbon, custom `role`, and explicit `FLAG_COLOR2` stay fail-closed.
 //! Rotation, html, `class_name`, and polar stay fail-closed.
 //! Rust owns the public PolyFill group budget, including
 //! companion traces that share the browser painter's 1,024-group ceiling.
@@ -1515,10 +1517,12 @@ pub fn scene_figure_support_reason_with_attach(
             kind == "hexbin" && tess != crate::scene_trace_attach::CellFillTessellation::None;
         let heatmap_cells =
             kind == "heatmap" && tess != crate::scene_trace_attach::CellFillTessellation::None;
+        let ribbon_ends =
+            kind == "ribbon" && tess == crate::scene_trace_attach::CellFillTessellation::Ribbon;
         if trace_flags & XYFS_TRACE_NON_PRIMARY_AXIS != 0 {
             return Ok(FIGURE_TRACE_AXIS_REASON.to_string());
         }
-        if trace_flags & XYFS_TRACE_HIDDEN_OR_PER_ITEM != 0 && !hexbin_cells {
+        if trace_flags & XYFS_TRACE_HIDDEN_OR_PER_ITEM != 0 && !hexbin_cells && !ribbon_ends {
             return Ok(FIGURE_HIDDEN_REASON.to_string());
         }
         if trace_flags & XYFS_TRACE_DENSITY != 0 {

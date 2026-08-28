@@ -23,7 +23,11 @@
 //! `joined_fill` as one identity PolyFill ring from `geom::triangle_mesh_boundary`
 //! (disconnected meshes and holes keep per-face `TriangleFace` rows).
 //! ABI 183 admits constant ribbon `color2_ch` as XYGR mark-space `dir=right`
-//! (no new pack kind; encoded Scene keeps XYGR). ABI 186 admits cartesian
+//! (no new pack kind; encoded Scene keeps XYGR). ABI 190 intern per-item
+//! two-ended ribbon `color2_ch` from packed XYHP kind 5 (`FLAG_HEATMAP_PAINTED`
+//! is allowed on `PACK_RIBBON` so the plane rides extras; Band expansion intern
+//! unique pairs onto XYGR). Polar ribbon and explicit `FLAG_COLOR2` stay
+//! fail-closed.
 //! colormap hexbin as `PACK_HEXBIN` plus `FLAG_HEATMAP_PAINTED` (XYHP 1×N
 //! plane; HexCell expansion interns per-cell fills; no new pack kind).
 //! ABI 187 admits cartesian unwrapped text `rotation` as XYAW `wrap=0` (XYAW v2
@@ -312,7 +316,7 @@ pub fn resolve_pack_kind(kind: &str, flags: u8) -> Result<u8, PackError> {
         "segments" | "errorbar" | "stem" | "contour" | "box_whisker" | "box_median" => PACK_SEGMENT,
         _ => return Err(PackError::UnknownKind),
     };
-    if painted && pack_kind != PACK_HEATMAP_PAINTED && pack_kind != PACK_HEXBIN {
+    if painted && pack_kind != PACK_HEATMAP_PAINTED && pack_kind != PACK_HEXBIN && pack_kind != PACK_RIBBON {
         return Err(PackError::Length);
     }
     if density && pack_kind != PACK_DENSITY_BLIT {
@@ -1386,6 +1390,10 @@ mod tests {
         assert_eq!(
             resolve_pack_kind("hexbin", FLAG_HEATMAP_PAINTED).unwrap(),
             PACK_HEXBIN
+        );
+        assert_eq!(
+            resolve_pack_kind("ribbon", FLAG_HEATMAP_PAINTED).unwrap(),
+            PACK_RIBBON
         );
         assert_eq!(
             resolve_pack_kind("line", FLAG_HEATMAP_PAINTED),

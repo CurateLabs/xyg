@@ -7,7 +7,9 @@
 //! packing, `FACT_HEATMAP_PAINT` / `FACT_DENSITY_PLANE`, density
 //! symbol/diameter zeroing, and domain-endpoint column rewrite so Python and
 //! Node cannot drift. ABI 186 reuses `FLAG_HEATMAP` / `FACT_HEATMAP_PAINT` for
-//! cartesian colormap hexbin as a 1×N XYHP plane. Encoded Scene v31 is unchanged.
+//! cartesian colormap hexbin as a 1×N XYHP plane. ABI 190 intern cartesian
+//! per-item ribbon source/target RGBA8 as XYHP kind 5 (`FLAG_RIBBON_ENDS`).
+//! Encoded Scene v31 is unchanged.
 
 use crate::kernels::BinColorSource;
 use crate::scene_density::{self, pack_density_grid, DensityGridError, XYDE_HAS_MEAN_RGBA};
@@ -18,6 +20,7 @@ use crate::scene_heatmap::{
     XYHF_HAS_STOPS, XYHF_HAS_STYLE_COLOR, XYHF_HAS_TRUECOLOR, XYHF_MAGIC, XYHF_V1_HEADER_BYTES,
     XYHF_VERSION,
 };
+use crate::scene::{XYHP_PAINT_RIBBON, XYHP_PLANE_HEADER_BYTES};
 use crate::scene_pack::{FACT_DENSITY_PLANE, FACT_HEATMAP_PAINT};
 use crate::scene_trace_compile::{XYTO_HEADER_BYTES, XYTO_MAGIC, XYTO_PREFIX_BYTES, XYTO_VERSION};
 
@@ -44,6 +47,8 @@ pub const FLAG_HAS_OPACITY: u32 = 1 << 10;
 pub const FLAG_HAS_FILL_OPACITY: u32 = 1 << 11;
 pub const FLAG_HAS_DOMAIN: u32 = 1 << 12;
 pub const FLAG_SHAPE: u32 = 1 << 13;
+/// ABI 190: cartesian ribbon source/target RGBA8 ends (`rgba` + `mean_rgba`).
+pub const FLAG_RIBBON_ENDS: u32 = 1 << 14;
 
 const MAX_TRACES: usize = 4_096;
 const NAN: f64 = f64::NAN;
@@ -474,6 +479,35 @@ fn attach_heatmap(
     Ok((plane, rows, cols))
 }
 
+fn attach_ribbon_ends(
+    input: &AttachInput<'_>,
+    compiled: &mut CompiledTrace,
+    index: usize,
+) -> Result<(Vec<u8>, u32, u32), TraceAttachError> {
+    if input.rows != 1 || input.cols < 1 {
+        return Err(TraceAttachError::new(TraceAttachCode::HeatmapShape, index));
+    }
+    let n = input.cols as usize;
+    if input.rgba.len() != n.saturating_mul(4) || input.mean_rgba.len() != n.saturating_mul(4) {
+        return Err(TraceAttachError::new(TraceAttachCode::HeatmapRgba, index));
+    }
+    let payload_len = n.saturating_mul(8);
+    let mut plane = vec![0u8; XYHP_PLANE_HEADER_BYTES];
+    plane[..8].copy_from_slice(&u64::from(input.stable_id).to_le_bytes());
+    plane[8..12].copy_from_slice(&1u32.to_le_bytes());
+    plane[12..16].copy_from_slice(&(n as u32).to_le_bytes());
+    plane[16..20].copy_from_slice(&XYHP_PAINT_RIBBON.to_le_bytes());
+    plane[20..24].copy_from_slice(&(payload_len as u32).to_le_bytes());
+    plane.reserve(payload_len);
+    for cell in 0..n {
+        let src = cell * 4;
+        plane.extend_from_slice(&input.rgba[src..src + 4]);
+        plane.extend_from_slice(&input.mean_rgba[src..src + 4]);
+    }
+    or_fact(&mut compiled.prefix, FACT_HEATMAP_PAINT);
+    Ok((plane, 1, n as u32))
+}
+
 fn attach_density(
     input: &AttachInput<'_>,
     compiled: &mut CompiledTrace,
@@ -649,15 +683,29 @@ fn write_attached(
 ///
 /// ABI 189: hosts pack raw heatmap/hexbin attach observations; Rust decides
 /// whether those facts intern onto per-cell paints (and therefore whether
-/// XYFS `PER_ITEM` / `HEATMAP_COLORMAP` bits fail closed).
+/// XYFS `PER_ITEM` / `HEATMAP_COLORMAP` bits fail closed). ABI 190 intern
+/// cartesian ribbon source/target RGBA8 as `Ribbon` so `PER_ITEM` relaxes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CellFillTessellation {
     None,
     Heatmap,
     Hexbin,
+    Ribbon,
 }
 
 fn classify_cell_fill(input: &AttachInput<'_>) -> CellFillTessellation {
+    if input.flags & FLAG_RIBBON_ENDS != 0 {
+        if input.flags & FLAG_HEATMAP != 0
+            || input.flags & FLAG_DENSITY != 0
+            || input.rows != 1
+            || input.cols < 1
+            || input.rgba.len() != (input.cols as usize).saturating_mul(4)
+            || input.mean_rgba.len() != (input.cols as usize).saturating_mul(4)
+        {
+            return CellFillTessellation::None;
+        }
+        return CellFillTessellation::Ribbon;
+    }
     if input.flags & FLAG_DENSITY != 0 || input.flags & FLAG_HEATMAP == 0 {
         return CellFillTessellation::None;
     }
@@ -739,7 +787,12 @@ pub fn pack_trace_attach(compiled: &[u8], attach: &[u8]) -> Result<Vec<u8>, Trac
         let mut grid_rows = 0u32;
         let mut grid_cols = 0u32;
         let mut rewrite = None;
-        if input.flags & FLAG_HEATMAP != 0 {
+        if input.flags & FLAG_RIBBON_ENDS != 0 {
+            let (plane, rows, cols) = attach_ribbon_ends(&input, compiled, index)?;
+            heatmap = plane;
+            grid_rows = rows;
+            grid_cols = cols;
+        } else if input.flags & FLAG_HEATMAP != 0 {
             let (plane, rows, cols) = attach_heatmap(&input, compiled, index)?;
             heatmap = plane;
             grid_rows = rows;
@@ -1066,5 +1119,32 @@ mod tests {
             vec![CellFillTessellation::Heatmap]
         );
         assert!(xyta_cell_fill_tessellation(b"XXXX").is_err());
+    }
+
+    #[test]
+    fn xyta_classifies_ribbon_end_paints() {
+        let n = 2usize;
+        let mut attach = xyta_header(1);
+        let mut prefix = vec![0u8; XYTA_PREFIX_BYTES];
+        prefix[..4].copy_from_slice(&(FLAG_RIBBON_ENDS | FLAG_SHAPE | FLAG_HAS_RGBA).to_le_bytes());
+        prefix[8..12].copy_from_slice(&1i32.to_le_bytes());
+        prefix[12..16].copy_from_slice(&2i32.to_le_bytes());
+        prefix[20..24].copy_from_slice(&((n * 4) as u32).to_le_bytes());
+        prefix[36..40].copy_from_slice(&((n * 4) as u32).to_le_bytes());
+        attach.extend_from_slice(&prefix);
+        attach.extend_from_slice(&[0x7c, 0x3a, 0xed, 0xff, 0x25, 0x63, 0xeb, 0xff]);
+        attach.extend_from_slice(&[0x34, 0xd3, 0x99, 0xff, 0xf5, 0x9e, 0x0b, 0xff]);
+        assert_eq!(
+            xyta_cell_fill_tessellation(&attach).unwrap(),
+            vec![CellFillTessellation::Ribbon]
+        );
+        prefix[..4].copy_from_slice(&(FLAG_RIBBON_ENDS | FLAG_HEATMAP).to_le_bytes());
+        let mut mixed = xyta_header(1);
+        mixed.extend_from_slice(&prefix);
+        mixed.extend_from_slice(&[0u8; 16]);
+        assert_eq!(
+            xyta_cell_fill_tessellation(&mixed).unwrap(),
+            vec![CellFillTessellation::None]
+        );
     }
 }
