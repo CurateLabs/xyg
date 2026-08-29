@@ -50,6 +50,7 @@ export {
   sceneCurveClassify,
   sceneMarkerGlyphAdmit,
   sceneKindAdmit,
+  sceneKindClass,
   roundedRectPoly,
   violinDensity,
   boxStats,

@@ -1392,13 +1392,25 @@ def scene_marker_glyph_admit(text: str | None = None) -> bool:
 def scene_kind_admit(text: str | None = None) -> bool:
     """Scene product-kind admit via ``xyg_scene_kind_admit`` (ABI 235).
 
-    Empty native pointers are ``0``. Rect/segment/band packing sets stay host.
+    Empty native pointers are ``0``. Packing-family bits are ABI 236.
     """
     encoded = b"" if text is None else str(text).encode("utf-8")
     code = int(_lib.xyg_scene_kind_admit(encoded if encoded else 0, len(encoded)))
     if code == -2:
         raise ValueError("invalid scene-kind-admit request")
     return code == 1
+
+
+def scene_kind_class(text: str | None = None) -> int:
+    """Scene packing-family bits via ``xyg_scene_kind_class`` (ABI 236).
+
+    Empty native pointers are ``0``. Hosts still pick channels and pack rows.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_kind_class(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-kind-class request")
+    return code
 
 
 def f32_safe_scale(offset: float, lo: float, hi: float) -> float:

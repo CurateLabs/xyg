@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 235;
+pub const ABI_VERSION: u32 = 236;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5400,7 +5400,7 @@ pub unsafe extern "C" fn xyg_scene_marker_glyph_admit(
 ///
 /// Exact supported kind names return `1`. Unknown names, including empty
 /// text, return `0`. No lowercasing. `-2` FFI. Empty native pointers are
-/// null/`0`. Rect/segment/band packing sets stay host.
+/// null/`0`. Packing-family bits are ABI 236.
 ///
 /// # Safety
 /// `text` must address `text_len` readable bytes when `text_len` is
@@ -5423,6 +5423,36 @@ pub unsafe extern "C" fn xyg_scene_kind_admit(
             return -2;
         };
         kernels::scene_kind_admit(text)
+    })
+}
+
+/// Scene packing-family classify (ABI 236).
+///
+/// Exact names return a bitmask of packing families. Unknown names, including
+/// empty text, return `0`. No lowercasing. `-2` FFI. Empty native pointers
+/// are null/`0`. Hosts still pick channels and pack rows.
+///
+/// # Safety
+/// `text` must address `text_len` readable bytes when `text_len` is
+/// nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_kind_class(
+    text: *const u8,
+    text_len: usize,
+) -> i32 {
+    if text_len > 0 && text.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let bytes = if text_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(text, text_len)
+        };
+        let Ok(text) = std::str::from_utf8(bytes) else {
+            return -2;
+        };
+        kernels::scene_kind_class(text)
     })
 }
 

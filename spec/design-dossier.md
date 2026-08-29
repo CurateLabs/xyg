@@ -1581,7 +1581,11 @@ ABI 235 `xyg_scene_kind_admit` owns Scene product-kind names (exact
 `errorbar`/`stem`/`contour`/`box_whisker`/`box_median`/`area`/`error_band`/
 `ribbon`/`triangle_mesh`/`hexbin`/`heatmap`; unknown/empty reject; no
 lowercasing) so Python `_figure_trace_support_flags` and Node
-`figureTraceSupport` cannot drift. Rect/segment/band packing sets stay host.
+`figureTraceSupport` cannot drift. Packing-family bits are ABI 236.
+ABI 236 `xyg_scene_kind_class` owns Scene packing-family bits (rect/segment/
+band/ribbon/polyfill/hexbin/heatmap/stroke/scatter/line; unknown/empty → 0;
+no lowercasing) so Python `_scene_v3` pack and Node `scene.js` pack cannot
+drift. Hosts still pick channels and pack rows.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1699,7 +1703,11 @@ ABI 235 `xyg_scene_kind_admit` owns Scene product-kind names (exact
 `errorbar`/`stem`/`contour`/`box_whisker`/`box_median`/`area`/`error_band`/
 `ribbon`/`triangle_mesh`/`hexbin`/`heatmap`; unknown/empty reject; no
 lowercasing) so Python `_figure_trace_support_flags` and Node
-`figureTraceSupport` cannot drift. Rect/segment/band packing sets stay host.
+`figureTraceSupport` cannot drift. Packing-family bits are ABI 236.
+ABI 236 `xyg_scene_kind_class` owns Scene packing-family bits (rect/segment/
+band/ribbon/polyfill/hexbin/heatmap/stroke/scatter/line; unknown/empty → 0;
+no lowercasing) so Python `_scene_v3` pack and Node `scene.js` pack cannot
+drift. Hosts still pick channels and pack rows.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same
