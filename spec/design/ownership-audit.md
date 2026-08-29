@@ -709,7 +709,7 @@ Forbidden:
 | `python/xyg/graph_layout.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/interaction.py` | Python host | `python-host` | `keep-host`; ABI 204 owns line/area re-decimate skip, closed-window ulp, and polar skip | — |
 | `python/xyg/kernels.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xyg/lod.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/lod.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 208 owns `geometry_offset` / `f32_safe_scale`; hosts still map log-family scale names and pack `EncodedColumn` | #58 |
 | `python/xyg/marks.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xyg/plugins.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/pyplot/__init__.py` | Python host | `python-host` | `keep-host` | — |

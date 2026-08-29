@@ -613,7 +613,10 @@ drift on heatmap/density grid export. ABI 206 adds `xyg_colormap_lut`,
 compatibility 1D LUT samples, legacy count-grid density, and artist-alpha
 compositing cannot drift (#313). ABI 207 `xyg_polar_heatmap_inverse_map`
 owns the compatibility polar heatmap gather-after-inverse map so SVG/raster
-exporters no longer invert pixels in Python or Node (#283). `xyg_heatmap_rgba` keeps its
+exporters no longer invert pixels in Python or Node (#283). ABI 208
+`xyg_geometry_offset` / `xyg_f32_safe_scale` owns §4/§16 encode offset and
+the §19 f32-safe scale so Python `lod.py` and Node `encode.js` cannot drift;
+hosts still map log-family scale names onto `pin_zero`. `xyg_heatmap_rgba` keeps its
 distinct normalized-scalar remap for other consumers. Hosts still
 resolve stop tables, CSS paints, and truecolor RGBA buffers.
 ABI 110 makes primary legend framing the same way: Python

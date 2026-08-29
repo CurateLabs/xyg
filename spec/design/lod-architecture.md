@@ -77,7 +77,9 @@ Tiered chart kinds must enter through the common LOD primitives in
   data-space values become finite f32 buffers plus `{offset, scale, len}`
   metadata in exactly one place. `geometry_offset` is the one offset policy:
   window/domain midpoint on linear axes, pinned 0.0 on log-family axes
-  (dossier §16).
+  (dossier §16). ABI 208 `xyg_geometry_offset` / `xyg_f32_safe_scale` owns
+  the numeric policy; hosts still map scale names onto `pin_zero` and pack
+  `EncodedColumn` metadata.
 - `sample_rows_for_target(...)` is the shared target-bounded subset primitive:
   density overlays and future sampled tiers ask for "about N stable rows from
   this viewport" in one place instead of copying target-fraction math.

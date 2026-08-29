@@ -866,8 +866,8 @@ detail inside a decade of millisecond timestamps).
   than the offset — after which zooming back out could never recover the point
   spread. Only log-family axes (log, symlog) decode before mapping, because their
   transforms are not affine. *Augments §4.*
-- **Log-family axes pin the encode offset to 0.0** (`lod.geometry_offset`) instead
-  of re-centering on a midpoint. A midpoint offset makes f32 error *absolute*
+- **Log-family axes pin the encode offset to 0.0** (`lod.geometry_offset`, ABI 208
+  `xyg_geometry_offset`) instead of re-centering on a midpoint. A midpoint offset makes f32 error *absolute*
   (~span/10⁷), which under symlog collapses exactly the neighborhood of zero the
   scale exists to spread (x=0 and x=1 encode to the same word when the domain
   reaches 10¹²), and under log destroys the small decades. With offset 0 the f32
@@ -1489,6 +1489,9 @@ ABI 192 owns polar painted heatmap inverse-raster sampling on Scene encode
 (#292). ABI 207 `xyg_polar_heatmap_inverse_map` owns the compatibility
 gather-after-inverse pixel map used by `_svg.polar_heatmap_rgba` (#283);
 hosts still color the returned source indices.
+ABI 208 `xyg_geometry_offset` / `xyg_f32_safe_scale` owns §4/§16 encode
+offset and the §19 f32-safe scale so Python and Node cannot drift; hosts
+still map log-family scale names (`log`/`symlog`) onto `pin_zero`.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

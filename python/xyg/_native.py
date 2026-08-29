@@ -941,6 +941,34 @@ def encode_f32(
     return out
 
 
+def geometry_offset(pin_zero: bool, lo: float, hi: float) -> float:
+    """Precision center for offset-encoded geometry (ABI 208, §4/§16)."""
+    out = ctypes.c_double()
+    ok = _lib.xyg_geometry_offset(
+        int(bool(pin_zero)),
+        float(lo),
+        float(hi),
+        ctypes.byref(out),
+    )
+    if ok != 1:
+        raise RuntimeError("xyg native geometry_offset failed (output undefined)")
+    return float(out.value)
+
+
+def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
+    """f32-safe encode scale for offset-encoded geometry (ABI 208, §19)."""
+    out = ctypes.c_double()
+    ok = _lib.xyg_f32_safe_scale(
+        float(offset),
+        float(lo),
+        float(hi),
+        ctypes.byref(out),
+    )
+    if ok != 1:
+        raise RuntimeError("xyg native f32_safe_scale failed (output undefined)")
+    return float(out.value)
+
+
 def stacked_bounds(
     values: npt.NDArray[np.float64], baseline: str = "zero"
 ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:

@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 207;
-export const SIGNATURE_SHA256 = "dab61512a93a1ba06aee7d639b7322473e11d17c5db6aec1fab84d78ec5ea240";
+export const ABI_VERSION = 208;
+export const SIGNATURE_SHA256 = "73efbf7582520e490905c5e4c319dc153fb9dafc827a3dbd72f568e82fda348a";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -61,6 +61,7 @@ export let xyEncodeF32;
 export let xyEncodeJpeg;
 export let xyEncodePng;
 export let xyEncodeWebp;
+export let xyF32SafeScale;
 export let xyFactorizeFixed;
 export let xyFactorizeFixedU8;
 export let xyFactorizeFixedU8Counts;
@@ -72,6 +73,7 @@ export let xyGeoColumnGeometry;
 export let xyGeoColumnLen;
 export let xyGeoColumnNew;
 export let xyGeoColumnVertexCount;
+export let xyGeometryOffset;
 export let xyGraphBuildCsr;
 export let xyGraphBuildRender;
 export let xyGraphClusterAggregate;
@@ -356,6 +358,7 @@ export function bindGeneratedAbi(lib) {
   xyEncodeJpeg = lib.func("size_t xyg_encode_jpeg(const uint8_t * pixels, size_t n, size_t width, size_t height, size_t channels, int32_t quality, uint8_t * out, size_t out_cap)");
   xyEncodePng = lib.func("size_t xyg_encode_png(const uint8_t * pixels, size_t n, size_t width, size_t height, size_t channels, int32_t mode, int32_t compression, uint8_t * out, size_t out_cap)");
   xyEncodeWebp = lib.func("size_t xyg_encode_webp(const uint8_t * pixels, size_t n, size_t width, size_t height, size_t channels, uint8_t * out, size_t out_cap)");
+  xyF32SafeScale = lib.func("int32_t xyg_f32_safe_scale(double offset, double lo, double hi, double * out_scale)");
   xyFactorizeFixed = lib.func("size_t xyg_factorize_fixed(const uint8_t * data, size_t len, size_t width, uint32_t * out_codes, uint32_t * out_unique_indices)");
   xyFactorizeFixedU8 = lib.func("size_t xyg_factorize_fixed_u8(const uint8_t * data, size_t len, size_t width, uint8_t * out_codes, uint32_t * out_unique_indices, size_t unique_capacity)");
   xyFactorizeFixedU8Counts = lib.func("size_t xyg_factorize_fixed_u8_counts(const uint8_t * data, size_t len, size_t width, uint8_t * out_codes, uint32_t * out_unique_indices, uint64_t * out_counts, size_t unique_capacity)");
@@ -367,6 +370,7 @@ export function bindGeneratedAbi(lib) {
   xyGeoColumnLen = lib.func("size_t xyg_geo_column_len(uint64_t handle)");
   xyGeoColumnNew = lib.func("uint64_t xyg_geo_column_new(uint32_t geometry, uint32_t crs, const double * xy, size_t xy_len, const uint8_t * validity, size_t validity_len, const uint64_t * feature_ids, const uint32_t * offsets0, size_t offsets0_len, const uint32_t * offsets1, size_t offsets1_len, const uint32_t * offsets2, size_t offsets2_len, int32_t * out_error)");
   xyGeoColumnVertexCount = lib.func("size_t xyg_geo_column_vertex_count(uint64_t handle)");
+  xyGeometryOffset = lib.func("int32_t xyg_geometry_offset(int32_t pin_zero, double lo, double hi, double * out_offset)");
   xyGraphBuildCsr = lib.func("int32_t xyg_graph_build_csr(uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, int32_t directed, uint64_t * out_offsets, uint64_t * out_neighbors, uint64_t neighbors_cap, uint64_t * out_neighbor_len)");
   xyGraphBuildRender = lib.func("int32_t xyg_graph_build_render(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, const uint64_t * sources, const uint64_t * targets, uint64_t node_budget, uint64_t edge_budget, int32_t viewport_enabled, double vp_x0, double vp_y0, double vp_x1, double vp_y1, double * out_node_x, double * out_node_y, uint64_t * out_member_of, uint64_t * out_edge_sources, uint64_t * out_edge_targets, uint64_t * out_n_nodes, uint64_t * out_n_edges, uint32_t * out_tier, uint64_t * out_edges_kept)");
   xyGraphClusterAggregate = lib.func("int32_t xyg_graph_cluster_aggregate(uint64_t n_nodes, uint64_t n_edges, const double * x, const double * y, uint64_t node_budget, uint64_t edge_budget, double * out_x, double * out_y, uint64_t * out_count, uint64_t * out_member_of, uint32_t * out_tier, uint64_t * out_edges_kept)");

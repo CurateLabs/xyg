@@ -848,10 +848,7 @@ def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
     would otherwise encode to ±inf; design dossier §19). Exactly 1.0 for every
     normal domain, so the common path is unchanged; only absurd magnitudes
     normalize."""
-    half = max(abs(lo - offset), abs(hi - offset))
-    if not np.isfinite(half) or half <= F32_SAFE_MAG:
-        return 1.0
-    return F32_SAFE_MAG / half
+    return float(kernels.f32_safe_scale(float(offset), float(lo), float(hi)))
 
 
 def encode_f32_values(
@@ -905,9 +902,7 @@ def geometry_offset(scale: str | None, lo: float, hi: float) -> float:
     decades). With offset 0 the encode error is a ~2⁻²⁴ *relative* error,
     which the log-family transform maps to a bounded sub-pixel coordinate
     error at every magnitude."""
-    if pins_offset_to_zero(scale) or not (np.isfinite(lo) and np.isfinite(hi)):
-        return 0.0
-    return (lo + hi) / 2.0
+    return float(kernels.geometry_offset(pins_offset_to_zero(scale), float(lo), float(hi)))
 
 
 def encode_window_xy_columns(

@@ -2,12 +2,25 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  F32_SAFE_MAG,
   curveFlatten,
+  f32SafeScale,
+  geometryOffset,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
   roundedRectPoly,
 } from "../src/index.js";
+
+test("geometryOffset pins log family and nonfinite to zero", () => {
+  assert.equal(geometryOffset("log", 10, 20), 0);
+  assert.equal(geometryOffset("symlog", 10, 20), 0);
+  assert.equal(geometryOffset("linear", 10, 20), 15);
+  assert.equal(geometryOffset("linear", Number.NaN, 20), 0);
+  assert.equal(f32SafeScale(0, -1, 1), 1);
+  const huge = F32_SAFE_MAG * 10;
+  assert.ok(Math.abs(f32SafeScale(0, -huge, huge) - 0.1) < 1e-12);
+});
 
 test("ribbonEdge midpoint matches Python golden", () => {
   const { x, y } = ribbonEdge(0, 10, 1, 3, 8);

@@ -863,6 +863,35 @@ fn zone_maps_impl(data: &[f64], chunk_size: usize, threads: usize) -> Vec<ZoneMa
     })
 }
 
+/// Encoded extremes stay well inside f32 (max ~3.4e38); the margin also keeps
+/// the client's 1/(span*scale) map uniforms clear of f32 subnormals.
+pub const F32_SAFE_MAG: f64 = 1e37;
+
+/// Precision center for offset-encoded geometry (§4/§16).
+///
+/// Linear axes re-center on the domain midpoint. Log-family axes pin the
+/// offset to 0.0 so the shader transform after decode does not collapse the
+/// hole/decades the scale exists to separate. Non-finite bounds also pin to 0.
+pub fn geometry_offset(pin_zero: bool, lo: f64, hi: f64) -> f64 {
+    if pin_zero || !lo.is_finite() || !hi.is_finite() {
+        0.0
+    } else {
+        (lo + hi) / 2.0
+    }
+}
+
+/// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
+///
+/// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
+pub fn f32_safe_scale(offset: f64, lo: f64, hi: f64) -> f64 {
+    let half = (lo - offset).abs().max((hi - offset).abs());
+    if !half.is_finite() || half <= F32_SAFE_MAG {
+        1.0
+    } else {
+        F32_SAFE_MAG / half
+    }
+}
+
 /// Encode canonical f64 values as relative f32: `(v - offset) * scale` (§4).
 ///
 /// NaN passes through as f32 NaN — the caller is responsible for keeping NaN out
@@ -7690,6 +7719,18 @@ mod tests {
         assert_eq!(zms[0].positive_min, 1.0);
         assert_eq!(zms[0].positive_max, 3.0);
         assert!(zms[0].sum_sq.is_finite());
+    }
+
+    #[test]
+    fn geometry_offset_pins_log_family_and_nonfinite_to_zero() {
+        assert_eq!(geometry_offset(true, 10.0, 20.0), 0.0);
+        assert_eq!(geometry_offset(false, 10.0, 20.0), 15.0);
+        assert_eq!(geometry_offset(false, f64::NAN, 20.0), 0.0);
+        assert_eq!(geometry_offset(false, f64::INFINITY, 20.0), 0.0);
+        assert_eq!(f32_safe_scale(0.0, -1.0, 1.0), 1.0);
+        let huge = F32_SAFE_MAG * 10.0;
+        let scale = f32_safe_scale(0.0, -huge, huge);
+        assert!((scale - 0.1).abs() < 1e-12);
     }
 
     #[test]

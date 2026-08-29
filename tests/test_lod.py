@@ -628,6 +628,13 @@ def test_pins_offset_to_zero_agrees_with_geometry_offset() -> None:
         assert not lod.pins_offset_to_zero(scale)
         assert lod.geometry_offset(scale, 10.0, 20.0) == 15.0
 
+    assert kernels.geometry_offset(True, 10.0, 20.0) == 0.0
+    assert kernels.geometry_offset(False, 10.0, 20.0) == 15.0
+    assert kernels.geometry_offset(False, float("nan"), 20.0) == 0.0
+    assert kernels.f32_safe_scale(0.0, -1.0, 1.0) == 1.0
+    huge = lod.F32_SAFE_MAG * 10.0
+    assert abs(kernels.f32_safe_scale(0.0, -huge, huge) - 0.1) < 1e-12
+
 
 def test_plan_view_lod_uses_native_decision_math() -> None:
     """Numeric half of LodPlan comes from xy_lod_plan (Rust), not a host reimplementation."""
