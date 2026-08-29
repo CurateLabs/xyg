@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 206
-SIGNATURE_SHA256 = "96c78bffbc6e30c2982aa963d9463bfc707a30bdaca004f8e6c2efcaa3e3ea66"
+ABI_VERSION = 207
+SIGNATURE_SHA256 = "dab61512a93a1ba06aee7d639b7322473e11d17c5db6aec1fab84d78ec5ea240"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -506,6 +506,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_payload_visible_needed
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32]
+    # size_t xyg_polar_heatmap_inverse_map(const double * metrics, size_t metrics_len, double plot_x, double plot_y, double plot_w, double plot_h, uint32_t grid_w, uint32_t grid_h, double x0, double y0, double x1, double y1, double output_scale, uint32_t * out_w, uint32_t * out_h, uint32_t * out_row, uint32_t * out_col, uint32_t * out_source, size_t capacity)
+    function = lib.xyg_polar_heatmap_inverse_map
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
     # size_t xyg_polar_label_room(double widest, double * out_room)
     function = lib.xyg_polar_label_room
     function.restype = ctypes.c_size_t

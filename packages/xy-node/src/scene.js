@@ -26,6 +26,7 @@ import {
   xyPolarLabelRoom,
   xyPolarLayout,
   xyPolarProject,
+  xyPolarHeatmapInverseMap,
   xyRecutPolarPlot,
   xyTightLayoutSolve,
   xyCompatCombinePlot,
@@ -2182,6 +2183,76 @@ export function polarProject(metrics, theta, r) {
   }
   if (!Array.isArray(theta)) return [outX[0], outY[0]];
   return [outX, outY];
+}
+
+export function polarHeatmapInverseMap(
+  metrics,
+  plot,
+  gridW,
+  gridH,
+  xRange,
+  yRange,
+  outputScale = 1,
+) {
+  const packed = metrics instanceof Float64Array ? metrics : Float64Array.from(metrics);
+  const outW = new Uint32Array(1);
+  const outH = new Uint32Array(1);
+  const probed = xyPolarHeatmapInverseMap(
+    packed.length ? f64Ptr(packed) : 0,
+    packed.length,
+    Number(plot.x ?? 0),
+    Number(plot.y ?? 0),
+    Number(plot.w ?? 0),
+    Number(plot.h ?? 0),
+    Number(gridW),
+    Number(gridH),
+    Number(xRange[0]),
+    Number(yRange[0]),
+    Number(xRange[1]),
+    Number(yRange[1]),
+    Number(outputScale),
+    u32Ptr(outW),
+    u32Ptr(outH),
+    0,
+    0,
+    0,
+    0,
+  );
+  if (probed === USIZE_MAX_64) throw new RangeError("invalid polar-heatmap inverse-map request");
+  const capacity = Number(outW[0]) * Number(outH[0]);
+  const rows = new Uint32Array(capacity);
+  const cols = new Uint32Array(capacity);
+  const source = new Uint32Array(capacity);
+  const written = xyPolarHeatmapInverseMap(
+    packed.length ? f64Ptr(packed) : 0,
+    packed.length,
+    Number(plot.x ?? 0),
+    Number(plot.y ?? 0),
+    Number(plot.w ?? 0),
+    Number(plot.h ?? 0),
+    Number(gridW),
+    Number(gridH),
+    Number(xRange[0]),
+    Number(yRange[0]),
+    Number(xRange[1]),
+    Number(yRange[1]),
+    Number(outputScale),
+    u32Ptr(outW),
+    u32Ptr(outH),
+    capacity ? u32Ptr(rows) : 0,
+    capacity ? u32Ptr(cols) : 0,
+    capacity ? u32Ptr(source) : 0,
+    capacity,
+  );
+  if (written === USIZE_MAX_64) throw new RangeError("invalid polar-heatmap inverse-map request");
+  const n = Number(written);
+  return {
+    width: Number(outW[0]),
+    height: Number(outH[0]),
+    rows: rows.subarray(0, n),
+    cols: cols.subarray(0, n),
+    sourceIndices: source.subarray(0, n),
+  };
 }
 
 export function polarLegendRoom(width) {

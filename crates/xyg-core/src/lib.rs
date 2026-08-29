@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 206;
+pub const ABI_VERSION: u32 = 207;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -14242,6 +14242,99 @@ pub unsafe extern "C" fn xyg_polar_project(
             )
         };
         polar::polar_project(metrics, theta, r, out_x, out_y).unwrap_or(usize::MAX)
+    })
+}
+
+/// Compat polar heatmap inverse map (ABI 207).
+///
+/// Writes output dimensions into `out_w`/`out_h`. When `capacity` is zero,
+/// hit pointers may be null/`0` and the return is zero. When `capacity` is
+/// non-zero, writes up to that many (row, col, source_index) triples and
+/// returns the visible hit count (`usize::MAX` on invalid input).
+/// `source_index` is row-major with source row 0 at the radial-range bottom.
+///
+/// # Safety
+/// `metrics` must address at least `polar::POLAR_METRICS_LEN` values.
+/// `out_w` and `out_h` must be writable. When `capacity > 0`, `out_row`,
+/// `out_col`, and `out_source` each address `capacity` writable u32s.
+/// Empty native pointers are null/`0`.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_polar_heatmap_inverse_map(
+    metrics: *const f64,
+    metrics_len: usize,
+    plot_x: f64,
+    plot_y: f64,
+    plot_w: f64,
+    plot_h: f64,
+    grid_w: u32,
+    grid_h: u32,
+    x0: f64,
+    y0: f64,
+    x1: f64,
+    y1: f64,
+    output_scale: f64,
+    out_w: *mut u32,
+    out_h: *mut u32,
+    out_row: *mut u32,
+    out_col: *mut u32,
+    out_source: *mut u32,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out_w.is_null() || out_h.is_null() {
+            return usize::MAX;
+        }
+        if metrics_len == 0 || metrics.is_null() || metrics_len < polar::POLAR_METRICS_LEN {
+            return usize::MAX;
+        }
+        if capacity > 0 && (out_row.is_null() || out_col.is_null() || out_source.is_null()) {
+            return usize::MAX;
+        }
+        let metrics = std::slice::from_raw_parts(metrics, metrics_len);
+        if capacity == 0 {
+            if grid_w == 0 || grid_h == 0 {
+                return usize::MAX;
+            }
+            let Some((width, height)) =
+                polar::polar_heatmap_output_size(plot_w, plot_h, output_scale)
+            else {
+                return usize::MAX;
+            };
+            *out_w = width;
+            *out_h = height;
+            return 0;
+        }
+        let Some((width, height, hits)) = polar::polar_heatmap_inverse_hits(
+            metrics,
+            plot_x,
+            plot_y,
+            plot_w,
+            plot_h,
+            grid_w,
+            grid_h,
+            x0,
+            y0,
+            x1,
+            y1,
+            output_scale,
+        ) else {
+            return usize::MAX;
+        };
+        *out_w = width;
+        *out_h = height;
+        if capacity == 0 {
+            return 0;
+        }
+        let n = hits.len().min(capacity);
+        let out_row = std::slice::from_raw_parts_mut(out_row, n);
+        let out_col = std::slice::from_raw_parts_mut(out_col, n);
+        let out_source = std::slice::from_raw_parts_mut(out_source, n);
+        for (index, hit) in hits.iter().take(n).enumerate() {
+            out_row[index] = hit.row;
+            out_col[index] = hit.col;
+            out_source[index] = hit.source_index;
+        }
+        hits.len()
     })
 }
 

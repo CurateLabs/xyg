@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import test from "node:test";
 
-import { axisTicks, tickFormat, tickLabelLayout, tickWindow, tickWindowFilter, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yAxisLeftRoom, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatColorbarExtra, polarLegendRoom, polarLabelRoom, polarLayout, polarProject, recutPolarPlot, compatCombinePlot, tightLayoutSolve, tightLayoutFigureExtra, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
+import { axisTicks, tickFormat, tickLabelLayout, tickWindow, tickWindowFilter, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yAxisLeftRoom, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatColorbarExtra, polarLegendRoom, polarLabelRoom, polarLayout, polarProject, polarHeatmapInverseMap, recutPolarPlot, compatCombinePlot, tightLayoutSolve, tightLayoutFigureExtra, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
 import { Figure, sceneRasterCommands, sceneStaticExport, sceneSvg } from "../src/index.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
@@ -1968,6 +1968,24 @@ test("Node polar layout/project matches default-cardinals fixture", () => {
   const [px1, py1] = polarProject(metrics, Math.PI / 2, 1);
   assert.ok(Math.abs(px1 - 200) < 1e-6);
   assert.ok(Math.abs(py1 - 0) < 1e-6);
+});
+
+test("Node polar heatmap inverse map stays screen-bounded", () => {
+  const metrics = polarLayout({}, { range: [0, 1] }, { x: 0, y: 0, w: 8, h: 8 });
+  const mapped = polarHeatmapInverseMap(
+    metrics,
+    { x: 0, y: 0, w: 8, h: 8 },
+    2,
+    2,
+    [0, Math.PI * 2],
+    [0, 1],
+    1,
+  );
+  assert.equal(mapped.width, 8);
+  assert.equal(mapped.height, 8);
+  assert.ok(mapped.sourceIndices.length > 0);
+  assert.ok(mapped.sourceIndices.length <= 64);
+  assert.ok(Array.from(mapped.sourceIndices).every((index) => index < 4));
 });
 
 test("Node consumes Rust-owned pyplot tight-layout solve", () => {

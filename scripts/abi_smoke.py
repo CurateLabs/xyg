@@ -1219,6 +1219,28 @@ def load() -> ctypes.CDLL:
         F64P,
         F64P,
     ]
+    lib.xyg_polar_heatmap_inverse_map.restype = ctypes.c_size_t
+    lib.xyg_polar_heatmap_inverse_map.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        U32P,
+        U32P,
+        U32P,
+        U32P,
+        U32P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_hexbin_groups.restype = ctypes.c_size_t
     lib.xyg_hexbin_groups.argtypes = [
         F64P,
@@ -3123,6 +3145,85 @@ def main() -> None:
         and abs(polar_px[1] - 200.0) < 1e-6
         and abs(polar_py[1] - 0.0) < 1e-6,
         "polar default-cardinals",
+    )
+    polar_small = array("d", [0.0]) * 23
+    polar_small_n = lib.xyg_polar_layout(
+        0.0,
+        0.0,
+        8.0,
+        8.0,
+        0,
+        0.0,
+        0,
+        0.0,
+        6.283185307179586,
+        0,
+        0.0,
+        1.0,
+        float("nan"),
+        0.0,
+        0,
+        1.0,
+        0,
+        _ptr(polar_small, ctypes.c_double),
+        23,
+    )
+    polar_out_w = ctypes.c_uint32()
+    polar_out_h = ctypes.c_uint32()
+    polar_map_n = lib.xyg_polar_heatmap_inverse_map(
+        _ptr(polar_small, ctypes.c_double),
+        23,
+        0.0,
+        0.0,
+        8.0,
+        8.0,
+        2,
+        2,
+        0.0,
+        0.0,
+        6.283185307179586,
+        1.0,
+        1.0,
+        ctypes.byref(polar_out_w),
+        ctypes.byref(polar_out_h),
+        null_u32,
+        null_u32,
+        null_u32,
+        0,
+    )
+    polar_hits = array("I", [0]) * 64
+    polar_cols = array("I", [0]) * 64
+    polar_src = array("I", [0]) * 64
+    polar_filled = lib.xyg_polar_heatmap_inverse_map(
+        _ptr(polar_small, ctypes.c_double),
+        23,
+        0.0,
+        0.0,
+        8.0,
+        8.0,
+        2,
+        2,
+        0.0,
+        0.0,
+        6.283185307179586,
+        1.0,
+        1.0,
+        ctypes.byref(polar_out_w),
+        ctypes.byref(polar_out_h),
+        _ptr(polar_hits, ctypes.c_uint32),
+        _ptr(polar_cols, ctypes.c_uint32),
+        _ptr(polar_src, ctypes.c_uint32),
+        64,
+    )
+    ok(
+        polar_small_n == 23
+        and polar_map_n == 0
+        and polar_out_w.value == 8
+        and polar_out_h.value == 8
+        and polar_filled > 0
+        and polar_filled <= 64
+        and polar_src[0] < 4,
+        "polar heatmap inverse map",
     )
     cf_x = array("d", [0.0, 1.0, 2.0, 3.0, 4.0])
     cf_y = array("d", [0.0, 1.0, 0.5, 2.0, 1.5])

@@ -1486,8 +1486,9 @@ count grids with the `t * 1.35` alpha law), and `xyg_paint_effective_rgba`
 paint/colormap policy cannot drift (#313). Hosts still
 resolve colormap stop tables, CSS paint colors, and truecolor RGBA buffers.
 ABI 192 owns polar painted heatmap inverse-raster sampling on Scene encode
-(#292); the compatibility CPU twin in `_svg.polar_heatmap_rgba` remains until
-Rust owns the path and differentials are green (#283).
+(#292). ABI 207 `xyg_polar_heatmap_inverse_map` owns the compatibility
+gather-after-inverse pixel map used by `_svg.polar_heatmap_rgba` (#283);
+hosts still color the returned source indices.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

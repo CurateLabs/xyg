@@ -5566,10 +5566,49 @@ def _heatmap_rgba_grid(
 
 
 _POLAR_HEATMAP_MAX_DIMENSION = 4096
-# Keep inverse-projection scratch well below the returned RGBA image. At the
-# maximum output width this is 64 rows, so the one dense float tile is 2 MiB
-# instead of the old implementation's many 128 MiB full-frame arrays.
-_POLAR_HEATMAP_TILE_PIXELS = 256 * 1024
+
+
+def polar_heatmap_rgba(
+    hm: dict[str, Any],
+    blob: bytes,
+    cols: list[dict[str, Any]],
+    style: dict[str, Any],
+    polar: _PolarProjection,
+    borrowed: tuple[np.ndarray, ...] = (),
+    *,
+    output_scale: float = 1.0,
+) -> np.ndarray:
+    """Inverse-raster a regular heatmap into the visible annular sector.
+
+    The returned image is top-first RGBA and covers ``polar.plot``. Rust (ABI
+    207) owns the inverse map; this wrapper colors only the returned source
+    cells via ``_heatmap_rgba_samples`` so work stays bounded by output pixels,
+    not source cells. ``output_scale`` lets native raster export sample once
+    per device pixel; SVG uses the default one sample per logical pixel.
+    """
+    source_w, source_h = int(hm["w"]), int(hm["h"])
+    out_w, out_h, rows, cols_i, source_indices = _native.polar_heatmap_inverse_map(
+        polar._metrics,
+        polar.plot,
+        source_w,
+        source_h,
+        hm["x_range"],
+        hm["y_range"],
+        output_scale,
+    )
+    if out_w > _POLAR_HEATMAP_MAX_DIMENSION or out_h > _POLAR_HEATMAP_MAX_DIMENSION:
+        raise ValueError("polar heatmap output exceeds the screen-bounded cap")
+    out = np.zeros((out_h, out_w, 4), dtype=np.uint8)
+    if len(source_indices):
+        out[rows, cols_i] = _heatmap_rgba_samples(
+            hm,
+            source_indices.astype(np.int64, copy=False),
+            blob,
+            cols,
+            style,
+            borrowed,
+        )
+    return out
 
 
 def _heatmap_sample_column(
@@ -5635,115 +5674,6 @@ def _heatmap_rgba_samples(
     else:
         rgba = kernels.colormap_rgba(values, len(indices), 1, stops, alpha)
     return rgba[:, 0, :]
-
-
-def polar_heatmap_rgba(
-    hm: dict[str, Any],
-    blob: bytes,
-    cols: list[dict[str, Any]],
-    style: dict[str, Any],
-    polar: _PolarProjection,
-    borrowed: tuple[np.ndarray, ...] = (),
-    *,
-    output_scale: float = 1.0,
-) -> np.ndarray:
-    """Inverse-raster a regular heatmap into the visible annular sector.
-
-    The returned image is top-first RGBA and covers ``polar.plot``. Each output
-    pixel is inverted through the joint polar transform, then nearest-samples
-    the source cell grid (whose row 0 is the radial-range bottom). This is the
-    CPU twin of ``HEATMAP_FS`` and is shared by SVG and native raster export.
-
-    Work is bounded by output pixels, not source cells: source values are
-    gathered only after inverse mapping, and projection scratch is tiled.
-    ``output_scale`` lets native raster export sample once per device pixel;
-    SVG uses the default one sample per logical pixel.
-    """
-    source_w, source_h = int(hm["w"]), int(hm["h"])
-    if source_w <= 0 or source_h <= 0:
-        raise ValueError("polar heatmap dimensions must be positive")
-    plot = polar.plot
-    output_scale = float(output_scale)
-    if not math.isfinite(output_scale) or output_scale <= 0.0:
-        raise ValueError("polar heatmap output_scale must be positive and finite")
-    out_w = max(
-        1,
-        min(
-            _POLAR_HEATMAP_MAX_DIMENSION,
-            int(math.ceil(float(plot["w"]) * output_scale)),
-        ),
-    )
-    out_h = max(
-        1,
-        min(
-            _POLAR_HEATMAP_MAX_DIMENSION,
-            int(math.ceil(float(plot["h"]) * output_scale)),
-        ),
-    )
-    xs = float(plot["x"]) + (np.arange(out_w, dtype=np.float64) + 0.5) * (float(plot["w"]) / out_w)
-    dx = xs - polar.cx
-    xr = hm["x_range"]
-    yr = hm["y_range"]
-    out = np.zeros((out_h, out_w, 4), dtype=np.uint8)
-    tile_rows = max(1, min(out_h, _POLAR_HEATMAP_TILE_PIXELS // out_w))
-    near = float(polar.theta_value(float(xr[0])))
-    inner = polar.inner_fraction
-    radius = max(polar.radius, 1e-30)
-    x_span = (float(xr[1]) - float(xr[0])) or 1.0
-    y_span = (float(yr[1]) - float(yr[0])) or 1.0
-
-    for row_start in range(0, out_h, tile_rows):
-        row_stop = min(out_h, row_start + tile_rows)
-        rows = np.arange(row_start, row_stop, dtype=np.float64)
-        ys = float(plot["y"]) + (rows + 0.5) * (float(plot["h"]) / out_h)
-        dy = polar.cy - ys
-        normalized = np.hypot(dy[:, None], dx[None, :]) / radius
-        candidate_rows, candidate_cols = np.nonzero(
-            (normalized >= inner - 1e-9) & (normalized <= 1.0 + 1e-9)
-        )
-        if not len(candidate_rows):
-            continue
-
-        candidate_norm = normalized[candidate_rows, candidate_cols]
-        angles = np.arctan2(dy[candidate_rows], dx[candidate_cols])
-        theta = np.asarray(polar.theta_from_angle(angles, near=near), dtype=np.float64)
-        radial = np.asarray(polar.radius_value(candidate_norm), dtype=np.float64)
-        fx = (theta - float(xr[0])) / x_span
-        fy = (radial - float(yr[0])) / y_span
-        raw_theta = np.asarray(polar.theta_value(theta), dtype=np.float64)
-        visible = (
-            np.isfinite(fx)
-            & np.isfinite(fy)
-            & polar._angular_value_visible_mask(raw_theta)
-            & (fx >= 0.0)
-            & (fx <= 1.0)
-            & (fy >= 0.0)
-            & (fy <= 1.0)
-        )
-        if not bool(visible.any()):
-            continue
-        target_rows = candidate_rows[visible]
-        target_cols = candidate_cols[visible]
-        source_x = np.clip(
-            np.floor(fx[visible] * source_w).astype(np.int64),
-            0,
-            source_w - 1,
-        )
-        source_y = np.clip(
-            np.floor(fy[visible] * source_h).astype(np.int64),
-            0,
-            source_h - 1,
-        )
-        source_indices = source_y * source_w + source_x
-        out[row_start + target_rows, target_cols] = _heatmap_rgba_samples(
-            hm,
-            source_indices,
-            blob,
-            cols,
-            style,
-            borrowed,
-        )
-    return out
 
 
 def _grid_image(

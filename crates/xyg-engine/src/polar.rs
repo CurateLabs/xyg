@@ -890,48 +890,29 @@ fn radius_value(metrics: &[f64], normalized: f64) -> Option<f64> {
     Some(r_scale.value(coord))
 }
 
-/// Screen-bounded inverse-raster of a polar heatmap grid (polar-axes.md §3.2).
+/// One visible output pixel mapped onto a source heatmap cell.
 ///
-/// `grid` is image-top-first RGBA8 (`width*height*4`). Source row 0 of the
-/// canonical heatmap is the radial-range bottom, so this samples
-/// `image_row = height - 1 - source_y`. Output covers the plot rect at
-/// `output_scale` samples per logical pixel, capped at
-/// [`POLAR_HEATMAP_MAX_DIMENSION`]. Work is bounded by output pixels.
-pub fn polar_heatmap_inverse_raster(
-    metrics: &[f64],
-    plot_x: f64,
-    plot_y: f64,
+/// `source_index` is row-major with source row 0 at the radial-range bottom
+/// (`source_y * grid_w + source_x`), matching compatibility `_heatmap_rgba_samples`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PolarHeatmapHit {
+    pub row: u32,
+    pub col: u32,
+    pub source_index: u32,
+}
+
+/// Output image size for polar inverse-raster, capped at [`POLAR_HEATMAP_MAX_DIMENSION`].
+pub fn polar_heatmap_output_size(
     plot_w: f64,
     plot_h: f64,
-    grid: &[u8],
-    grid_w: u32,
-    grid_h: u32,
-    x0: f64,
-    y0: f64,
-    x1: f64,
-    y1: f64,
     output_scale: f64,
-) -> Option<(u32, u32, Vec<u8>)> {
-    if metrics.len() < POLAR_METRICS_LEN {
-        return None;
-    }
-    if grid_w == 0 || grid_h == 0 {
-        return None;
-    }
-    let cells = (grid_w as usize).checked_mul(grid_h as usize)?;
-    if grid.len() != cells.checked_mul(4)? {
-        return None;
-    }
+) -> Option<(u32, u32)> {
     if !plot_w.is_finite()
         || !plot_h.is_finite()
         || plot_w <= 0.0
         || plot_h <= 0.0
         || !output_scale.is_finite()
         || output_scale <= 0.0
-        || !x0.is_finite()
-        || !x1.is_finite()
-        || !y0.is_finite()
-        || !y1.is_finite()
     {
         return None;
     }
@@ -941,6 +922,38 @@ pub fn polar_heatmap_inverse_raster(
     let out_h = (plot_h * output_scale)
         .ceil()
         .clamp(1.0, f64::from(POLAR_HEATMAP_MAX_DIMENSION)) as u32;
+    Some((out_w, out_h))
+}
+
+/// Screen-bounded inverse map of a polar heatmap grid (polar-axes.md §3.2).
+///
+/// Work is bounded by output pixels: each visible plot sample yields one
+/// source-cell index. Hosts color those indices; Scene paints a prebuilt
+/// image-top-first RGBA grid through [`polar_heatmap_inverse_raster`].
+pub fn polar_heatmap_inverse_hits(
+    metrics: &[f64],
+    plot_x: f64,
+    plot_y: f64,
+    plot_w: f64,
+    plot_h: f64,
+    grid_w: u32,
+    grid_h: u32,
+    x0: f64,
+    y0: f64,
+    x1: f64,
+    y1: f64,
+    output_scale: f64,
+) -> Option<(u32, u32, Vec<PolarHeatmapHit>)> {
+    if metrics.len() < POLAR_METRICS_LEN {
+        return None;
+    }
+    if grid_w == 0 || grid_h == 0 {
+        return None;
+    }
+    if !x0.is_finite() || !x1.is_finite() || !y0.is_finite() || !y1.is_finite() {
+        return None;
+    }
+    let (out_w, out_h) = polar_heatmap_output_size(plot_w, plot_h, output_scale)?;
     let cx = metrics[METRIC_CX];
     let cy = metrics[METRIC_CY];
     let radius = metrics[METRIC_RADIUS].max(1e-30);
@@ -948,14 +961,10 @@ pub fn polar_heatmap_inverse_raster(
     let x_span = if x1 > x0 { x1 - x0 } else { 1.0 };
     let y_span = if y1 > y0 { y1 - y0 } else { 1.0 };
     let near = theta_value(metrics, x0);
-    let mut out = vec![
-        0u8;
-        (out_w as usize)
-            .checked_mul(out_h as usize)?
-            .checked_mul(4)?
-    ];
+    let mut hits = Vec::new();
     let dx_step = plot_w / f64::from(out_w);
     let dy_step = plot_h / f64::from(out_h);
+    let source_w = grid_w as usize;
     for row in 0..out_h {
         let y = plot_y + (f64::from(row) + 0.5) * dy_step;
         let dy = cy - y;
@@ -986,11 +995,74 @@ pub fn polar_heatmap_inverse_raster(
                 ((fx * f64::from(grid_w)).floor() as i64).clamp(0, i64::from(grid_w) - 1) as usize;
             let source_y =
                 ((fy * f64::from(grid_h)).floor() as i64).clamp(0, i64::from(grid_h) - 1) as usize;
-            let image_row = (grid_h as usize) - 1 - source_y;
-            let src = (image_row * grid_w as usize + source_x) * 4;
-            let dst = (row as usize * out_w as usize + col as usize) * 4;
-            out[dst..dst + 4].copy_from_slice(&grid[src..src + 4]);
+            let source_index = u32::try_from(source_y.checked_mul(source_w)?.checked_add(source_x)?)
+                .ok()?;
+            hits.push(PolarHeatmapHit {
+                row,
+                col,
+                source_index,
+            });
         }
+    }
+    Some((out_w, out_h, hits))
+}
+
+/// Screen-bounded inverse-raster of a polar heatmap grid (polar-axes.md §3.2).
+///
+/// `grid` is image-top-first RGBA8 (`width*height*4`). Source row 0 of the
+/// canonical heatmap is the radial-range bottom, so this samples
+/// `image_row = height - 1 - source_y`. Output covers the plot rect at
+/// `output_scale` samples per logical pixel, capped at
+/// [`POLAR_HEATMAP_MAX_DIMENSION`]. Work is bounded by output pixels.
+pub fn polar_heatmap_inverse_raster(
+    metrics: &[f64],
+    plot_x: f64,
+    plot_y: f64,
+    plot_w: f64,
+    plot_h: f64,
+    grid: &[u8],
+    grid_w: u32,
+    grid_h: u32,
+    x0: f64,
+    y0: f64,
+    x1: f64,
+    y1: f64,
+    output_scale: f64,
+) -> Option<(u32, u32, Vec<u8>)> {
+    let cells = (grid_w as usize).checked_mul(grid_h as usize)?;
+    if grid.len() != cells.checked_mul(4)? {
+        return None;
+    }
+    let (out_w, out_h, hits) = polar_heatmap_inverse_hits(
+        metrics,
+        plot_x,
+        plot_y,
+        plot_w,
+        plot_h,
+        grid_w,
+        grid_h,
+        x0,
+        y0,
+        x1,
+        y1,
+        output_scale,
+    )?;
+    let mut out = vec![
+        0u8;
+        (out_w as usize)
+            .checked_mul(out_h as usize)?
+            .checked_mul(4)?
+    ];
+    let source_w = grid_w as usize;
+    let source_h = grid_h as usize;
+    for hit in hits {
+        let source_index = hit.source_index as usize;
+        let source_y = source_index / source_w;
+        let source_x = source_index % source_w;
+        let image_row = source_h - 1 - source_y;
+        let src = (image_row * source_w + source_x) * 4;
+        let dst = (hit.row as usize * out_w as usize + hit.col as usize) * 4;
+        out[dst..dst + 4].copy_from_slice(&grid[src..src + 4]);
     }
     Some((out_w, out_h, out))
 }
@@ -1224,5 +1296,23 @@ mod tests {
         assert_ne!(&rgba[painted..painted + 4], &[0, 0, 0, 0]);
         let south = ((out_h as usize - 1) * out_w as usize + out_w as usize / 2) * 4;
         assert_eq!(&rgba[south..south + 4], &[0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn polar_heatmap_inverse_hits_use_bottom_row_source_index() {
+        let mut input = default_input();
+        input.plot_w = 8.0;
+        input.plot_h = 8.0;
+        let mut metrics = [0.0; POLAR_METRICS_LEN];
+        polar_layout(input, &mut metrics).unwrap();
+        let (out_w, out_h, hits) = polar_heatmap_inverse_hits(
+            &metrics, 0.0, 0.0, 8.0, 8.0, 2, 2, 0.0, 0.0, 2.0 * PI, 1.0, 1.0,
+        )
+        .unwrap();
+        assert_eq!(out_w, 8);
+        assert_eq!(out_h, 8);
+        assert!(!hits.is_empty());
+        assert!(hits.iter().all(|hit| hit.source_index < 4));
+        assert!(hits.iter().all(|hit| hit.row < 8 && hit.col < 8));
     }
 }
