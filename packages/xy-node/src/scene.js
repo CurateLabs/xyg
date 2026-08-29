@@ -3584,10 +3584,7 @@ function packXyTc(figure) {
     let colorMode = new Uint8Array();
     let colorConst = new Uint8Array();
     const channel = trace.color_ch ?? trace.colorChannel;
-    if (typeof channel === "string") {
-      flags |= XYTC_COLOR_CH | XYTC_COLOR_CH_CONSTANT;
-      colorConst = encodeUtf8(channel);
-    } else if (channel != null && typeof channel === "object" && !Array.isArray(channel) && !ArrayBuffer.isView(channel)) {
+    if (channel != null && typeof channel === "object" && !Array.isArray(channel) && !ArrayBuffer.isView(channel)) {
       flags |= XYTC_COLOR_CH;
       colorMode = encodeUtf8(String(channel.mode ?? ""));
       if (channel.mode === "constant" && channel.constant != null) {

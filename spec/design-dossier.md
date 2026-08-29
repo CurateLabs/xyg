@@ -1715,6 +1715,7 @@ Node XYMS mark color uses `style.color` only (same as Python `_constant_color` s
 Node XYTC style color uses `style.color` only (same as Python); `trace.color` is not a packed-color fallback.
 Node XYTC constant paint uses `channel.constant` only (same as Python); `channel.color` is not a packed-constant fallback.
 Node density-blit observation uses `scatterUsesDensity` (same as Python `use_density`); `style.color_channel` is not a per-item density extra.
+Node XYTC color_ch packing ignores string channels (same as Python object-only); only a channel object packs COLOR_CH.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1966,6 +1967,7 @@ Node XYMS mark color uses `style.color` only (same as Python `_constant_color` s
 Node XYTC style color uses `style.color` only (same as Python); `trace.color` is not a packed-color fallback.
 Node XYTC constant paint uses `channel.constant` only (same as Python); `channel.color` is not a packed-constant fallback.
 Node density-blit observation uses `scatterUsesDensity` (same as Python `use_density`); `style.color_channel` is not a per-item density extra.
+Node XYTC color_ch packing ignores string channels (same as Python object-only); only a channel object packs COLOR_CH.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same
