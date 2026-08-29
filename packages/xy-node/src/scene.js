@@ -5470,8 +5470,8 @@ export function scatterUsesDensity(trace) {
   });
 }
 
-function resolveDensityBinColors(trace) {
-  const color = trace.color_ch ?? trace.colorChannel ?? trace.color ?? trace.style?.color_channel;
+export function resolveDensityBinColors(trace) {
+  const color = trace.color_ch ?? trace.colorChannel ?? trace.style?.color_channel;
   if (color == null || typeof color !== "object") return null;
   if (color.mode === "direct_rgba" && color.rgba != null) {
     return { rgba: color.rgba instanceof Uint8Array ? color.rgba : Uint8Array.from(color.rgba) };
