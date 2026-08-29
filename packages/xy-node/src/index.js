@@ -300,6 +300,7 @@ export {
   payloadTier,
   payloadM4Indices,
   payloadEvenIndices,
+  payloadErrorbarIndices,
   payloadSampleTargetIndices,
   payloadSegmentBudget,
   payloadVisibleNeeded,

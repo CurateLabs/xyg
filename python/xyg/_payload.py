@@ -826,17 +826,15 @@ class PayloadMixin(_Host):
             if remainder == 0 and seg_per >= 1:
                 segment_sources = np.tile(np.arange(t.count, dtype=np.int64), seg_per)
                 segment_roles = np.repeat(np.arange(seg_per, dtype=np.uint32), t.count)
-            if remainder == 0 and seg_per >= 1 and t.count > max_groups:
-                keep_all, chosen = kernels.payload_even_indices(t.count, max_groups)
-                if not keep_all:
-                    chosen64 = chosen.astype(np.int64, copy=False)
-                    indices = np.concatenate([chosen64 + k * t.count for k in range(seg_per)])
-                    x0v, x1v, y0v, y1v = x0v[indices], x1v[indices], y0v[indices], y1v[indices]
-                    source_sel = indices
-                    if segment_sources is not None and segment_roles is not None:
-                        segment_sources = segment_sources[indices]
-                        segment_roles = segment_roles[indices]
-                    tier = "decimated"
+            keep_all, chosen = kernels.payload_errorbar_indices(len(x0v), t.count, max_groups)
+            if not keep_all:
+                chosen64 = chosen.astype(np.int64, copy=False)
+                x0v, x1v, y0v, y1v = x0v[chosen64], x1v[chosen64], y0v[chosen64], y1v[chosen64]
+                source_sel = chosen64
+                if segment_sources is not None and segment_roles is not None:
+                    segment_sources = segment_sources[chosen64]
+                    segment_roles = segment_roles[chosen64]
+                tier = "decimated"
         elif t.kind == "stem" and len(x0v) > max_groups:
             keep_all, chosen = kernels.payload_even_indices(len(x0v), max_groups)
             if not keep_all:

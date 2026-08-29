@@ -10075,6 +10075,39 @@ def payload_segment_budget(px_width: float) -> int:
     return written
 
 
+def payload_errorbar_indices(
+    n_segments: int, n_points: int, budget: int
+) -> tuple[bool, npt.NDArray[np.uint32]]:
+    """Errorbar role-block keep indices via ``xyg_payload_errorbar_indices`` (ABI 215).
+
+    Even-samples ``n_points`` at ``budget`` then expands
+    ``chosen[i] + k * n_points`` across concatenated role groups. Returns
+    ``(keep_all, indices)``; ``keep_all`` when every segment ships.
+    """
+    n_seg = _bounded_nonnegative_int(n_segments, "n_segments", max_value=np.iinfo(np.uint32).max)
+    n_pts = _bounded_nonnegative_int(n_points, "n_points", max_value=np.iinfo(np.uint32).max)
+    budget_i = _bounded_nonnegative_int(budget, "budget", max_value=np.iinfo(np.uint32).max)
+    if n_pts == 0 or budget_i == 0:
+        raise ValueError("n_points and budget must be positive integers")
+    keep_all = ctypes.c_int32(-1)
+    out = np.empty(n_seg, dtype=np.uint32)
+    written = _lib.xyg_payload_errorbar_indices(
+        n_seg,
+        n_pts,
+        budget_i,
+        ctypes.byref(keep_all),
+        out.ctypes.data if n_seg else 0,
+        n_seg,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid payload_errorbar_indices arguments")
+    if int(keep_all.value) == 1:
+        return True, np.empty(0, dtype=np.uint32)
+    if written > n_seg:
+        raise RuntimeError("native payload_errorbar_indices returned an inconsistent count")
+    return False, out[:written].copy()
+
+
 def payload_sample_target_indices(
     n: int,
     target: int,

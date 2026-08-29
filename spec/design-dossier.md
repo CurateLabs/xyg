@@ -1379,9 +1379,10 @@ ABI 205 moves remaining `_emit_*` sampling into Rust. Hosts call
 NumPy int64 linspace stem/errorbar sampling, and density-overlay
 `min(1, target/n)` SplitMix selection are engine-owned and identical
 for Python and Node. ABI 214 `xyg_payload_segment_budget` owns the
-stem/errorbar count budget (`max(1024, floor(px_width)*4)`). Hosts still
-expand errorbar role blocks, gather extra
-columns, and ship the chosen rows (#282 / #312).
+stem/errorbar count budget (`max(1024, floor(px_width)*4)`). ABI 215
+`xyg_payload_errorbar_indices` owns even-index expansion across concatenated
+role groups. Hosts still
+gather extra columns, and ship the chosen rows (#282 / #312).
 ABI 123 moves tick-label collision thinning into Rust. Hosts call
 `xyg_scene_tick_label_layout`; auto / hide / rotate / stagger, the
 edge-anchor rotate gap, and stride downsampling are engine-owned and
@@ -1516,8 +1517,10 @@ domain pad, and Nx3/Nx4 admit so Python `channels.resolve_color` and Node
 factorize labels, pin palettes, and emit warning text.
 ABI 214 `xyg_payload_segment_budget` owns the stem/errorbar count budget
 (`max(1024, floor(px_width)*4)`) so Python `_payload._emit_segments` and Node
-`_emitSegments` cannot drift. Hosts still expand errorbar role blocks,
-gather extra columns, and ship the chosen rows.
+`_emitSegments` cannot drift. ABI 215 `xyg_payload_errorbar_indices` owns
+even-index expansion across concatenated role groups so Python and Node
+cannot drift on cap-attached errorbar sampling. Hosts still expand
+transition-key role maps, gather extra columns, and ship the chosen rows.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

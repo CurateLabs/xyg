@@ -119,6 +119,16 @@ def test_payload_segment_budget_matches_host_max() -> None:
         pass
 
 
+def test_payload_errorbar_indices_expands_even_keep_across_roles() -> None:
+    keep_all, idx = kernels.payload_errorbar_indices(33, 11, 20)
+    assert keep_all
+    keep_all, idx = kernels.payload_errorbar_indices(10, 3, 2)
+    assert keep_all
+    keep_all, idx = kernels.payload_errorbar_indices(33, 11, 4)
+    assert not keep_all
+    np.testing.assert_array_equal(idx, [0, 3, 6, 10, 11, 14, 17, 21, 22, 25, 28, 32])
+
+
 def test_payload_sample_target_indices_keep_all() -> None:
     keep_all, idx = kernels.payload_sample_target_indices(100, 8_192)
     assert keep_all

@@ -23,7 +23,8 @@ payload M4/density/direct is `xyg_payload_tier` (ABI 122). Line M4 emit
 indices are `xyg_payload_m4_indices` (ABI 204). Remaining emit sampling
 is `xyg_payload_visible_indices` / `xyg_payload_even_indices` /
 `xyg_payload_sample_target_indices` (ABI 205). The stem/errorbar count
-budget is `xyg_payload_segment_budget` (ABI 214). Hosts only
+budget is `xyg_payload_segment_budget` (ABI 214). Errorbar role-block
+expand is `xyg_payload_errorbar_indices` (ABI 215). Hosts only
 validate and map mode ids to wire strings. `js/src/45_lod.ts` still mirrors the numeric rule
 for client-side hints. Implemented today for scatter (drill-in/out with hysteresis); this
 doc extends the same rule to every kind. Folding `mark_pixel_area × overdraw`

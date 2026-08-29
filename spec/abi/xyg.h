@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 214
-#define XYG_ABI_SIGNATURE_SHA256 "bfc547a33f2549192a2ef339dd23f9305e36b36fb5e4d53c1211edd47abc1e55"
+#define XYG_ABI_VERSION 215
+#define XYG_ABI_SIGNATURE_SHA256 "560e70473373915ed2962e6418d1269939fd3d19c33f851c0988dc48ef2f677a"
 
 #ifdef __cplusplus
 extern "C" {
@@ -135,6 +135,7 @@ int32_t xyg_min_max(const double * data, size_t len, double * out_min, double * 
 size_t xyg_monotone_tangents(const double * x, const double * y, size_t n, double * out_m, size_t capacity);
 int32_t xyg_normalize_f32(const double * data, size_t len, double lo, double hi, int32_t nan_mode, float * out);
 int32_t xyg_paint_effective_rgba(const double * intrinsic, size_t n, const double * artist_alpha, const double * opacity, double component_opacity, double * out);
+size_t xyg_payload_errorbar_indices(size_t n_segments, size_t n_points, size_t budget, int32_t * out_keep_all, uint32_t * out, size_t capacity);
 size_t xyg_payload_even_indices(size_t n, size_t count, int32_t * out_keep_all, uint32_t * out, size_t capacity);
 size_t xyg_payload_m4_indices(uint64_t n_points, int32_t polar, const double * x, const double * y, size_t n, double x0, double x1, size_t n_buckets, const double * bin_x, double bin_x0, double bin_x1, int32_t * out_tier, uint32_t * out, size_t capacity);
 size_t xyg_payload_sample_target_indices(size_t n, size_t target, uint64_t seed, uint32_t level, double growth, int32_t * out_keep_all, uint32_t * out, size_t capacity);
