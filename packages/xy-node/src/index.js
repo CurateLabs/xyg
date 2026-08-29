@@ -41,6 +41,7 @@ export {
   sceneItemWidthsAdmit,
   sceneItemFillT,
   sceneAnnotationStyleAdmit,
+  sceneArraysEqual,
   sceneRibbonColor2Classify,
   sceneScatterPaintChannelAdmit,
   sceneTickLabelStrategy,

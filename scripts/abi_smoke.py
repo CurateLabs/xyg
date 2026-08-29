@@ -361,6 +361,8 @@ def load() -> ctypes.CDLL:
     lib.xyg_scene_finite_all.argtypes = [F64P, ctypes.c_size_t]
     lib.xyg_scene_gradient_solid_css.restype = ctypes.c_int32
     lib.xyg_scene_gradient_solid_css.argtypes = [U8P, ctypes.c_size_t, U8P, ctypes.c_size_t]
+    lib.xyg_scene_arrays_equal.restype = ctypes.c_int32
+    lib.xyg_scene_arrays_equal.argtypes = [F64P, ctypes.c_size_t, F64P, ctypes.c_size_t]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2972,6 +2974,35 @@ def main() -> None:
         )
         == 0,
         "scene_gradient_solid_css odd reject",
+    )
+    ok(
+        lib.xyg_scene_arrays_equal(null_f64, 0, null_f64, 0) == 1,
+        "scene_arrays_equal empty",
+    )
+    equal_left = array("d", [1.0, 2.0])
+    equal_right = array("d", [1.0, 2.0])
+    ok(
+        lib.xyg_scene_arrays_equal(
+            _ptr(equal_left, ctypes.c_double), 2, _ptr(equal_right, ctypes.c_double), 2
+        )
+        == 1,
+        "scene_arrays_equal match",
+    )
+    mismatch = array("d", [1.0])
+    ok(
+        lib.xyg_scene_arrays_equal(
+            _ptr(equal_left, ctypes.c_double), 2, _ptr(mismatch, ctypes.c_double), 1
+        )
+        == 0,
+        "scene_arrays_equal len",
+    )
+    nan_eq = array("d", [float("nan")])
+    ok(
+        lib.xyg_scene_arrays_equal(
+            _ptr(nan_eq, ctypes.c_double), 1, _ptr(nan_eq, ctypes.c_double), 1
+        )
+        == 0,
+        "scene_arrays_equal nan",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8

@@ -1549,6 +1549,18 @@ pub fn scene_gradient_solid_css(rgba: &[u8], out: &mut [u8]) -> i32 {
     bytes.len() as i32
 }
 
+/// Scene f64 arrays-equal (ABI 250).
+///
+/// `1` iff lengths match and every pair is IEEE-equal (`==`). Empty
+/// slices compare equal. NaN is never equal, including to itself.
+/// Field picking and null checks stay host.
+pub fn scene_arrays_equal(left: &[f64], right: &[f64]) -> i32 {
+    if left.len() != right.len() {
+        return 0;
+    }
+    i32::from(left.iter().zip(right.iter()).all(|(a, b)| a == b))
+}
+
 /// Admit Scene hexbin reduce names (ABI 232).
 ///
 /// `count`/`mean`/`sum`/`custom` return `1`. Unknown names, including empty
@@ -10257,6 +10269,16 @@ mod fuzz {
         assert_eq!(&out[..n as usize], b"rgb(0,0,0)");
         assert_eq!(scene_gradient_solid_css(&[1, 2, 3], &mut out), 0);
         assert_eq!(scene_gradient_solid_css(&[1, 2, 3, 4], &mut [0u8; 4]), 0);
+    }
+
+    #[test]
+    fn scene_arrays_equal_matches_host_table() {
+        assert_eq!(scene_arrays_equal(&[], &[]), 1);
+        assert_eq!(scene_arrays_equal(&[1.0, 2.0], &[1.0, 2.0]), 1);
+        assert_eq!(scene_arrays_equal(&[1.0], &[1.0, 2.0]), 0);
+        assert_eq!(scene_arrays_equal(&[1.0], &[2.0]), 0);
+        assert_eq!(scene_arrays_equal(&[f64::NAN], &[f64::NAN]), 0);
+        assert_eq!(scene_arrays_equal(&[0.0], &[-0.0]), 1);
     }
 
     #[test]
