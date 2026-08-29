@@ -823,6 +823,7 @@ Python `resolved_hex_paint` / `_resolved_rgb` quantize `css_check` 0-1
 channels through ABI 251 `xyg_clip_quantize_u8`. Browser-only rejection stays host.
 Python `resolve_style_channel` admits finite arrays through ABI 248
 `xyg_scene_finite_all`. Bounds checks stay host.
+SVG `_rgb_css` formats 0-1 RGB through ABI 251 `xyg_clip_quantize_u8`.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1214,6 +1215,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   SVG `_paint_rgba8` uses `xyg_css_color_rgba`.
   Authoring hex / colormap-stop u8 uses ABI 251.
   Style-channel finite arrays use ABI 248.
+  SVG `_rgb_css` uses ABI 251.
 
 ---
 

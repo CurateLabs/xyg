@@ -935,6 +935,12 @@ def _paint_rgba8(css: Any) -> tuple[int, int, int, int]:
     return _native.css_color_rgba(str(css), 1.0)
 
 
+def _rgb_css(paint: Any) -> str:
+    """Format 0-1 RGB as ``rgb(r,g,b)`` via ABI 251 ``xyg_clip_quantize_u8``."""
+    u8 = kernels.clip_quantize_u8(np.asarray((paint[0], paint[1], paint[2]), dtype=np.float64))
+    return f"rgb({int(u8[0])},{int(u8[1])},{int(u8[2])})"
+
+
 def _css(c: Any, fallback: str) -> str:
     """Resolve static colors after chart-level tokens have been expanded."""
     s = str(c or "").strip()
@@ -4664,7 +4670,7 @@ def _segment_marks(
     return "".join(
         f'<line x1="{_num(float(px0[i]))}" y1="{_num(float(py0[i]))}" '
         f'x2="{_num(float(px1[i]))}" y2="{_num(float(py1[i]))}" '
-        f'stroke="{css_paint if constant_paint else f"rgb({round(colors[i, 0] * 255)},{round(colors[i, 1] * 255)},{round(colors[i, 2] * 255)})"}" '
+        f'stroke="{css_paint if constant_paint else _rgb_css(colors[i])}" '
         f'stroke-opacity="{_num(float(colors[i, 3]))}" '
         f'stroke-width="{_num(float(widths[i]))}" fill="none" stroke-linecap="round"'
         f"{_dash_attr(style)}/>"
@@ -4816,11 +4822,7 @@ def _scatter_marks(
         if visible is not None and not visible[i]:
             continue
         fill = face_rgba[i]
-        fill_value = (
-            escape(face_css)
-            if face_css_constant
-            else f"rgb({round(fill[0] * 255)},{round(fill[1] * 255)},{round(fill[2] * 255)})"
-        )
+        fill_value = escape(face_css) if face_css_constant else _rgb_css(fill)
         fill_attr = f' fill="{fill_value}"' + (
             f' fill-opacity="{_num(float(fill[3]))}"' if float(fill[3]) < 1.0 else ""
         )
@@ -4846,7 +4848,7 @@ def _scatter_marks(
             if authored_line
             else escape(stroke_css)
             if stroke_css_constant
-            else f"rgb({round(stroke_color[0] * 255)},{round(stroke_color[1] * 255)},{round(stroke_color[2] * 255)})"
+            else _rgb_css(stroke_color)
         )
         stroke_attr = (
             f' stroke="{stroke_value}"'
@@ -5060,9 +5062,6 @@ def _ribbon_marks(
     # one arbitrary colour. Explicit strokes stay a single declared paint.
     stroke_paint = None if stroke_css is None else escape(_css(stroke_css, fallback))
 
-    def rgb(paint: Any) -> str:
-        return f"rgb({round(paint[0] * 255)},{round(paint[1] * 255)},{round(paint[2] * 255)})"
-
     out: list[str] = []
     for i in range(n):
         px0, px1 = float(sx(x0v[i])), float(sx(x1v[i]))
@@ -5086,10 +5085,12 @@ def _ribbon_marks(
         alpha_a, alpha_b = float(a[3]), float(b[3])
         alpha_same = abs(alpha_a - alpha_b) < 1e-9
         if rgb_same and alpha_same:
-            paint = f'fill="{rgb(a)}"'
+            paint = f'fill="{_rgb_css(a)}"'
             attrs = paint + (f' fill-opacity="{_num(alpha_a)}"' if alpha_a < 1 else "")
         elif alpha_same:
-            ramp = svg.gradient_vector(px0, 0.0, px1, 0.0, [(0.0, rgb(a), 1.0), (1.0, rgb(b), 1.0)])
+            ramp = svg.gradient_vector(
+                px0, 0.0, px1, 0.0, [(0.0, _rgb_css(a), 1.0), (1.0, _rgb_css(b), 1.0)]
+            )
             attrs = f'fill="{ramp}"' + (f' fill-opacity="{_num(alpha_a)}"' if alpha_a < 1 else "")
         else:
             # Differing endpoint alphas ride per-stop stop-opacity so the
@@ -5097,11 +5098,11 @@ def _ribbon_marks(
             # (the raster and the client already do); a path-level
             # fill-opacity would flatten both ends to the source's alpha.
             ramp = svg.gradient_vector(
-                px0, 0.0, px1, 0.0, [(0.0, rgb(a), alpha_a), (1.0, rgb(b), alpha_b)]
+                px0, 0.0, px1, 0.0, [(0.0, _rgb_css(a), alpha_a), (1.0, _rgb_css(b), alpha_b)]
             )
             attrs = f'fill="{ramp}"'
         if stroke_width > 0:
-            paint_css = stroke_paint if stroke_paint is not None else rgb(source_rgba[i])
+            paint_css = stroke_paint if stroke_paint is not None else _rgb_css(source_rgba[i])
             # The band paint's own alpha rides the stroke stack, exactly as
             # `effective_rgba` folds it into the fill.
             edge_op = stroke_op * (1.0 if stroke_paint is not None else float(source_rgba[i][3]))
@@ -5150,8 +5151,7 @@ def _triangle_mesh_marks(
             points = " ".join(f"{_num(float(sx(x)))},{_num(float(sy(y)))}" for x, y in boundary)
             fill = fills[0]
             return (
-                f'<polygon points="{points}" fill="rgb({round(fill[0] * 255)},'
-                f'{round(fill[1] * 255)},{round(fill[2] * 255)})" '
+                f'<polygon points="{points}" fill="{_rgb_css(fill)}" '
                 f'fill-opacity="{_num(float(fill[3]))}"/>'
             )
     out = ["<g>"]
@@ -5161,15 +5161,11 @@ def _triangle_mesh_marks(
             for x, y in ((x0[i], y0[i]), (x1[i], y1[i]), (x2[i], y2[i]))
         )
         fill = fills[i]
-        attrs = (
-            f' fill="rgb({round(fill[0] * 255)},{round(fill[1] * 255)},'
-            f'{round(fill[2] * 255)})" fill-opacity="{_num(float(fill[3]))}"'
-        )
+        attrs = f' fill="{_rgb_css(fill)}" fill-opacity="{_num(float(fill[3]))}"'
         if stroke_widths[i] > 0:
             stroke = strokes[i]
             attrs += (
-                f' stroke="rgb({round(stroke[0] * 255)},{round(stroke[1] * 255)},'
-                f'{round(stroke[2] * 255)})" stroke-opacity="{_num(float(stroke[3]))}" '
+                f' stroke="{_rgb_css(stroke)}" stroke-opacity="{_num(float(stroke[3]))}" '
                 f'stroke-width="{_num(float(stroke_widths[i]))}"'
             )
         out.append(f'<polygon points="{points}"{attrs}/>')
@@ -5243,12 +5239,11 @@ def _rect_svg_styles(
     fills: list[str] = []
     extras: list[str] = []
     for fill, stroke, width in zip(fills_rgba, strokes, widths, strict=True):
-        fills.append(f"rgb({round(fill[0] * 255)},{round(fill[1] * 255)},{round(fill[2] * 255)})")
+        fills.append(_rgb_css(fill))
         extra = f' fill-opacity="{_num(float(fill[3]))}"'
         if width > 0:
             extra += (
-                f' stroke="rgb({round(stroke[0] * 255)},{round(stroke[1] * 255)},'
-                f'{round(stroke[2] * 255)})" stroke-opacity="{_num(float(stroke[3]))}" '
+                f' stroke="{_rgb_css(stroke)}" stroke-opacity="{_num(float(stroke[3]))}" '
                 f'stroke-width="{_num(float(width))}"'
             )
         extras.append(extra)
