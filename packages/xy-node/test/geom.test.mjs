@@ -12,6 +12,7 @@ import {
   geometryOffset,
   hexbinRing,
   hexbinPacksColormapPlane,
+  itemWidths,
   markerPathScale,
   arrowGeometry,
   arrowShaftPoints,
@@ -488,6 +489,21 @@ test("sceneItemWidthsAdmit matches host table", () => {
   assert.equal(sceneItemWidthsAdmit(null, 3, 2.5), true);
   assert.equal(sceneItemWidthsAdmit(null, 3, -1), false);
   assert.equal(sceneItemWidthsAdmit(null, 3, Number.POSITIVE_INFINITY), false);
+});
+
+test("itemWidths missing values fail-closes like Python", () => {
+  assert.equal(itemWidths({ style_channels: { stroke_width: {} } }, 2), null);
+  assert.equal(itemWidths({ style_channels: { stroke_width: { values: null } } }, 1), null);
+  const packed = itemWidths({ style_channels: { stroke_width: { values: [1.5, 2.5] } } }, 2);
+  assert.equal(packed.length, 16);
+  const view = new DataView(packed.buffer, packed.byteOffset, packed.byteLength);
+  assert.equal(view.getFloat64(0, true), 1.5);
+  assert.equal(view.getFloat64(8, true), 2.5);
+  const scalar = itemWidths({ style: { stroke_width: 3 } }, 2);
+  assert.equal(scalar.length, 16);
+  const scalarView = new DataView(scalar.buffer, scalar.byteOffset, scalar.byteLength);
+  assert.equal(scalarView.getFloat64(0, true), 3);
+  assert.equal(scalarView.getFloat64(8, true), 3);
 });
 
 test("sceneItemFillT matches host table", () => {
