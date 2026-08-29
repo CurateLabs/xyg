@@ -1167,9 +1167,10 @@ class PayloadMixin(_Host):
         color_spec, size_spec = self._ship_channels(t, sample_sel, pw.ship_scalar, pw.ship_u8)
         style = dict(t.style)
         try:
-            style["opacity"] = min(float(style.get("opacity", 0.8)), 0.55)
+            authored = float(style.get("opacity", 0.8))
         except (TypeError, ValueError):
-            style["opacity"] = 0.55
+            authored = float("nan")
+        style["opacity"] = kernels.density_overlay_opacity(authored)
         x_col = pw.ship_values(
             t.x.values[sample_sel], kind=t.x.kind, scale=self._axis_scale(t.x_axis)
         )

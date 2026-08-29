@@ -27,6 +27,7 @@ import {
   densityEmitPlan,
   densityFormatBinning,
   densityLogU8,
+  densityOverlayOpacity,
   encodeF32Values,
   geometryOffset,
   payloadEvenIndices,
@@ -1188,7 +1189,7 @@ export class Figure {
           y_range: [...yr],
           style: {
             ...t.style,
-            opacity: Number.isFinite(opacityRaw) ? Math.min(opacityRaw, 0.55) : 0.55,
+            opacity: densityOverlayOpacity(opacityRaw),
           },
         };
       }

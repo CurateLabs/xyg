@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 219;
+pub const ABI_VERSION: u32 = 220;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4699,6 +4699,24 @@ pub unsafe extern "C" fn xyg_scene_linecap_admit(text: *const u8, text_len: usiz
             Some(cap) => i32::from(kernels::scene_linecap_code(cap)),
             None => -1,
         }
+    })
+}
+
+/// Density overlay sample opacity (ABI 220).
+///
+/// Finite `authored` is capped at `0.55`. Non-finite values become `0.55`.
+/// Writes `out`. Returns `1` on success, `0` when `out` is null.
+///
+/// # Safety
+/// `out` must be a writable f64 when non-null.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_density_overlay_opacity(authored: f64, out: *mut f64) -> i32 {
+    if out.is_null() {
+        return 0;
+    }
+    ffi_guard(0, || {
+        *out = kernels::density_overlay_opacity(authored);
+        1
     })
 }
 

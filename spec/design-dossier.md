@@ -1509,6 +1509,9 @@ ABI 219 `xyg_scene_linecap_admit` owns Scene linecap names so Python
 `_parse_scene_linecap` and Node `parseSceneLinecap` cannot drift. Unknown
 names and whitespace-only strings reject. Hosts still fail-close empty
 strings without calling the kernel.
+ABI 220 `xyg_density_overlay_opacity` owns density overlay sample opacity
+(`min(authored, 0.55)`; non-finite → `0.55`) so Python `_payload` and Node
+`figure.js` cannot drift. Hosts still default omitted opacity to `0.8`.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1554,6 +1557,9 @@ ABI 219 `xyg_scene_linecap_admit` owns Scene linecap names so Python
 `_parse_scene_linecap` and Node `parseSceneLinecap` cannot drift. Unknown
 names and whitespace-only strings reject. Hosts still fail-close empty
 strings without calling the kernel.
+ABI 220 `xyg_density_overlay_opacity` owns density overlay sample opacity
+(`min(authored, 0.55)`; non-finite → `0.55`) so Python `_payload` and Node
+`figure.js` cannot drift. Hosts still default omitted opacity to `0.8`.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

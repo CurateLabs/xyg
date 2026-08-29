@@ -563,7 +563,7 @@ Forbidden:
 | `crates/xyg-engine/src/hexbin.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/jpeg.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/colormap.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 135 named colormap tables (`xyg_colormap_stops`, XYHP paint kind 2) | — |
-| `crates/xyg-engine/src/kernels.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 129 Cartesian static-export grid colormap (`colormap_rgba_into` / `colormap_rgba_canonical_into`); ABI 218 Scene dash admit; ABI 219 Scene linecap admit | — |
+| `crates/xyg-engine/src/kernels.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 129 Cartesian static-export grid colormap (`colormap_rgba_into` / `colormap_rgba_canonical_into`); ABI 218 Scene dash admit; ABI 219 Scene linecap admit; ABI 220 density overlay opacity | — |
 | `crates/xyg-engine/src/layout_rooms.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 125 measured cartesian gutters. #297 routes default-font Scene-shaped specs through `xyg_scene_plot_layout` | — |
 | `crates/xyg-engine/src/legend_fit.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/legend_layout.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 124 static legend box packing | — |
@@ -647,7 +647,7 @@ Forbidden:
 | `packages/xy-node/src/charts.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/color.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/encode.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
-| `packages/xy-node/src/figure.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
+| `packages/xy-node/src/figure.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust`; ABI 220 owns density overlay opacity; hosts still default omitted opacity to `0.8` and gather/ship | #58 |
 | `packages/xy-node/src/force_scheduler.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/graph.js` | Node host with canonical-policy debt | `node-scene-migration` | `split-and-move-rust` | #58 |
 | `packages/xy-node/src/html.js` | Node host | `node-host` | `keep-host` | — |
@@ -710,7 +710,7 @@ Forbidden:
 | `python/xyg/_native.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_ooc.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_paint.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 206 owns `effective_rgba`; `triangle_mesh_boundary` stays host joined-fill geometry | #58 |
-| `python/xyg/_payload.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 122 owns compile-time payload LOD and the visible-row mask; ABI 204 owns line M4 emit indices; ABI 205 owns remaining emit visible/even/sample indices; ABI 214 owns the stem/errorbar count budget; ABI 215 owns errorbar role-block expand; emitters still gather extra columns and ship | #58 |
+| `python/xyg/_payload.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 122 owns compile-time payload LOD and the visible-row mask; ABI 204 owns line M4 emit indices; ABI 205 owns remaining emit visible/even/sample indices; ABI 214 owns the stem/errorbar count budget; ABI 215 owns errorbar role-block expand; ABI 220 owns density overlay opacity; emitters still gather extra columns and ship | #58 |
 | `python/xyg/_pdf.py` | Python host | `python-host` | `keep-host`; ABI 113 moves closed-subset SVG→PDF into Rust; this module only coerces UTF-8 and raises the historical diagnostic wording | #274 |
 | `python/xyg/_png.py` | Python host | `python-host` | `keep-host`; ABI 115 moves filter-0 PNG encode into Rust; this module only coerces host buffers and forwards `mode` / `compression` | #274 |
 | `python/xyg/_raster.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 121 tessellation via `kernels` directly (#310); ABI 206 owns remaining `_lut` / linear density / effective rgba (#313); ABI 210 owns hexbin ring offsets; ABI 211 owns step/stairs expand; ABI 212 owns authored marker-path scale; `triangle_mesh_boundary` stays host geometry | #58 |

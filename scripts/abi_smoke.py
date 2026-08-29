@@ -202,6 +202,8 @@ def load() -> ctypes.CDLL:
     ]
     lib.xyg_scene_linecap_admit.restype = ctypes.c_int32
     lib.xyg_scene_linecap_admit.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_density_overlay_opacity.restype = ctypes.c_int32
+    lib.xyg_density_overlay_opacity.argtypes = [ctypes.c_double, F64P]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2130,6 +2132,21 @@ def main() -> None:
         lib.xyg_scene_linecap_admit(_ptr(bad_cap, ctypes.c_uint8), len(bad_cap)) == -1,
         "scene_linecap_admit rejects unknown",
     )
+    overlay = ctypes.c_double()
+    ok(
+        lib.xyg_density_overlay_opacity(0.8, ctypes.byref(overlay)) == 1 and overlay.value == 0.55,
+        "density_overlay_opacity default cap",
+    )
+    ok(
+        lib.xyg_density_overlay_opacity(0.3, ctypes.byref(overlay)) == 1 and overlay.value == 0.3,
+        "density_overlay_opacity below cap",
+    )
+    ok(
+        lib.xyg_density_overlay_opacity(float("nan"), ctypes.byref(overlay)) == 1
+        and overlay.value == 0.55,
+        "density_overlay_opacity nan",
+    )
+    ok(lib.xyg_density_overlay_opacity(0.8, null_f64) == 0, "density_overlay_opacity null out")
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8
     arrow_style[8] = 90.0

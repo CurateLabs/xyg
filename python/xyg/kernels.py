@@ -41,6 +41,7 @@ correlation = _impl.correlation
 density_rgba = _impl.density_rgba
 density_rgba_linear = _impl.density_rgba_linear
 density_log_u8 = _impl.density_log_u8
+density_overlay_opacity = _impl.density_overlay_opacity
 density_bin_window = _impl.density_bin_window
 density_emit_plan = _impl.density_emit_plan
 density_format_binning = _impl.density_format_binning
@@ -213,6 +214,7 @@ __all__ = [
     "density_full_identity",
     "density_grid_path",
     "density_log_u8",
+    "density_overlay_opacity",
     "density_pyramid_preflight",
     "density_rgba",
     "density_rgba_linear",

@@ -1004,6 +1004,22 @@ pub fn scene_linecap_code(cap: SceneLinecap) -> u8 {
     }
 }
 
+/// Density overlay sample opacity cap (ABI 220).
+///
+/// Hosts default omitted opacity to `0.8` then call this. Finite values are
+/// capped at `0.55`. Non-finite (NaN, inf) become `0.55` so Python `min(nan,
+/// 0.55)` cannot leak NaN onto the wire.
+pub const DENSITY_OVERLAY_OPACITY_CAP: f64 = 0.55;
+
+/// Clamp an authored density-overlay opacity to a finite paint value.
+pub fn density_overlay_opacity(authored: f64) -> f64 {
+    if authored.is_finite() {
+        authored.min(DENSITY_OVERLAY_OPACITY_CAP)
+    } else {
+        DENSITY_OVERLAY_OPACITY_CAP
+    }
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -8750,6 +8766,16 @@ mod fuzz {
         assert_eq!(scene_linecap_code(SceneLinecap::Round), 255);
         assert_eq!(scene_linecap_code(SceneLinecap::Butt), 0);
         assert_eq!(scene_linecap_code(SceneLinecap::Square), 2);
+    }
+
+    #[test]
+    fn density_overlay_opacity_caps_and_rejects_non_finite() {
+        assert_eq!(density_overlay_opacity(0.8), 0.55);
+        assert_eq!(density_overlay_opacity(0.3), 0.3);
+        assert_eq!(density_overlay_opacity(1.0), 0.55);
+        assert_eq!(density_overlay_opacity(f64::NAN), 0.55);
+        assert_eq!(density_overlay_opacity(f64::INFINITY), 0.55);
+        assert_eq!(density_overlay_opacity(f64::NEG_INFINITY), 0.55);
     }
 
     #[test]
