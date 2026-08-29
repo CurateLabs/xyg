@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 230;
+pub const ABI_VERSION: u32 = 231;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5270,6 +5270,36 @@ pub unsafe extern "C" fn xyg_scene_linear_gradient_prefix(
             return -2;
         };
         kernels::scene_linear_gradient_prefix(text)
+    })
+}
+
+/// Scene fill-gradient space pack (ABI 231).
+///
+/// `mark` is `0`, `plot` is `1`. Unknown names, including empty text, return
+/// `255`. No lowercasing. `-2` FFI. Empty native pointers are null/`0`.
+/// Hosts still pick `space` vs missing keys. XYSS plot-space is `code == 1`.
+///
+/// # Safety
+/// `text` must address `text_len` readable bytes when `text_len` is
+/// nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_gradient_space(
+    text: *const u8,
+    text_len: usize,
+) -> i32 {
+    if text_len > 0 && text.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let bytes = if text_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(text, text_len)
+        };
+        let Ok(text) = std::str::from_utf8(bytes) else {
+            return -2;
+        };
+        kernels::scene_gradient_space(text)
     })
 }
 

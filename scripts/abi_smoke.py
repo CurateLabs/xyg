@@ -281,6 +281,8 @@ def load() -> ctypes.CDLL:
     lib.xyg_scene_gradient_dir.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_scene_linear_gradient_prefix.restype = ctypes.c_int32
     lib.xyg_scene_linear_gradient_prefix.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_scene_gradient_space.restype = ctypes.c_int32
+    lib.xyg_scene_gradient_space.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2598,6 +2600,22 @@ def main() -> None:
         "scene_linear_gradient_prefix radial",
     )
     ok(lib.xyg_scene_linear_gradient_prefix(null_u8, 0) == 0, "scene_linear_gradient_prefix empty")
+    mark_name = array("B", b"mark")
+    plot_name = array("B", b"plot")
+    mark_upper = array("B", b"MARK")
+    ok(
+        lib.xyg_scene_gradient_space(_ptr(mark_name, ctypes.c_uint8), len(mark_name)) == 0,
+        "scene_gradient_space mark",
+    )
+    ok(
+        lib.xyg_scene_gradient_space(_ptr(plot_name, ctypes.c_uint8), len(plot_name)) == 1,
+        "scene_gradient_space plot",
+    )
+    ok(lib.xyg_scene_gradient_space(null_u8, 0) == 255, "scene_gradient_space empty")
+    ok(
+        lib.xyg_scene_gradient_space(_ptr(mark_upper, ctypes.c_uint8), len(mark_upper)) == 255,
+        "scene_gradient_space MARK",
+    )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8
     arrow_style[8] = 90.0

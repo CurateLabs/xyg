@@ -1334,6 +1334,20 @@ def scene_linear_gradient_prefix(text: str | None = None) -> bool:
     return code == 1
 
 
+def scene_gradient_space(text: str | None = None) -> int:
+    """Scene fill-gradient space pack via ``xyg_scene_gradient_space`` (ABI 231).
+
+    Returns ``0`` mark, ``1`` plot, or ``255`` when unknown. Empty native
+    pointers are ``0``. Hosts still pick ``space`` vs missing keys. XYSS
+    plot-space is ``code == 1``.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_gradient_space(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-gradient-space request")
+    return int(code)
+
+
 def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
     """f32-safe encode scale for offset-encoded geometry (ABI 208, §19)."""
     out = ctypes.c_double()
