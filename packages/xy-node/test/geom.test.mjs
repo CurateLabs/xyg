@@ -17,6 +17,7 @@ import {
   sceneMarkerPathAdmit,
   sceneAnnotationStyleAdmit,
   sceneRibbonColor2Classify,
+  sceneTickLabelStrategy,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -179,6 +180,20 @@ test("sceneAnnotationStyleAdmit matches host allowlist table", () => {
   assert.equal(sceneAnnotationStyleAdmit("band", false, true, "label_color"), true);
   assert.equal(sceneAnnotationStyleAdmit("marker", false, false, "stroke_width"), true);
   assert.equal(sceneAnnotationStyleAdmit("foo", false, true, "width"), false);
+});
+
+test("sceneTickLabelStrategy matches host table", () => {
+  assert.equal(sceneTickLabelStrategy("auto"), 0);
+  assert.equal(sceneTickLabelStrategy("hide"), 1);
+  assert.equal(sceneTickLabelStrategy("rotate"), 2);
+  assert.equal(sceneTickLabelStrategy("stagger"), 3);
+  assert.equal(sceneTickLabelStrategy("preserve"), 4);
+  assert.equal(sceneTickLabelStrategy("none"), 5);
+  assert.equal(sceneTickLabelStrategy("off"), 6);
+  assert.equal(sceneTickLabelStrategy("hide-overlap"), 0);
+  assert.equal(sceneTickLabelStrategy(""), 0);
+  assert.equal(sceneTickLabelStrategy("foo"), 0);
+  assert.equal(sceneTickLabelStrategy("HIDE"), 0);
 });
 
 test("sceneRibbonColor2Classify matches host table", () => {

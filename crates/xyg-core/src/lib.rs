@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 223;
+pub const ABI_VERSION: u32 = 224;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4881,6 +4881,37 @@ pub unsafe extern "C" fn xyg_scene_ribbon_color2_classify(
             has_fill != 0,
             has_end_pair != 0,
         )
+    })
+}
+
+/// Scene tick-label strategy admit (ABI 224).
+///
+/// Hyphens become underscores. Known names return `0` auto through `6` off.
+/// Unknown names, including empty text, return `0` (auto). `-2` FFI. Empty
+/// native pointers are null/`0`. Hosts still pick `tick_label_strategy` vs
+/// `collision` vs camelCase keys.
+///
+/// # Safety
+/// `text` must address `text_len` readable bytes when `text_len` is
+/// nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_tick_label_strategy(
+    text: *const u8,
+    text_len: usize,
+) -> i32 {
+    if text_len > 0 && text.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let bytes = if text_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(text, text_len)
+        };
+        let Ok(text) = std::str::from_utf8(bytes) else {
+            return -2;
+        };
+        kernels::scene_tick_label_strategy(text)
     })
 }
 

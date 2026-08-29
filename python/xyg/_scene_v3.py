@@ -1345,6 +1345,15 @@ _SCENE_TICK_STRATEGIES = {
     "none": 5,
     "off": 6,
 }
+_SCENE_TICK_STRATEGY_NAMES = (
+    "auto",
+    "hide",
+    "rotate",
+    "stagger",
+    "preserve",
+    "none",
+    "off",
+)
 _SCENE_TICK_ANCHORS = {"start": 0, "center": 1, "middle": 1, "end": 2}
 _POLAR_COLLISION_KEYS = {
     "tick_label_strategy",
@@ -1475,8 +1484,10 @@ def _scene_tick_label_strategy(options: dict[str, Any]) -> str:
     raw = options.get("tick_label_strategy")
     if raw is None:
         raw = options.get("collision")
-    value = str(raw or "auto").replace("-", "_")
-    return value if value in _SCENE_TICK_STRATEGIES else "auto"
+    code = _native.scene_tick_label_strategy(str(raw or "auto"))
+    if 0 <= code < len(_SCENE_TICK_STRATEGY_NAMES):
+        return _SCENE_TICK_STRATEGY_NAMES[code]
+    return "auto"
 
 
 def _scene_tick_anchor_code(options: dict[str, Any]) -> int | None:

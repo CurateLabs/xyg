@@ -1173,6 +1173,36 @@ pub fn scene_ribbon_color2_classify(
     SCENE_RIBBON_COLOR2_ENDS
 }
 
+/// Scene tick-label strategy codes (ABI 224).
+pub const SCENE_TICK_STRATEGY_AUTO: i32 = 0;
+pub const SCENE_TICK_STRATEGY_HIDE: i32 = 1;
+pub const SCENE_TICK_STRATEGY_ROTATE: i32 = 2;
+pub const SCENE_TICK_STRATEGY_STAGGER: i32 = 3;
+pub const SCENE_TICK_STRATEGY_PRESERVE: i32 = 4;
+pub const SCENE_TICK_STRATEGY_NONE: i32 = 5;
+pub const SCENE_TICK_STRATEGY_OFF: i32 = 6;
+
+/// Admit a Scene tick-label strategy name. Hyphens become underscores.
+/// Unknown names, including empty text, map to `auto` (0).
+pub fn scene_tick_label_strategy(text: &str) -> i32 {
+    let owned;
+    let key = if text.contains('-') {
+        owned = text.replace('-', "_");
+        owned.as_str()
+    } else {
+        text
+    };
+    match key {
+        "hide" => SCENE_TICK_STRATEGY_HIDE,
+        "rotate" => SCENE_TICK_STRATEGY_ROTATE,
+        "stagger" => SCENE_TICK_STRATEGY_STAGGER,
+        "preserve" => SCENE_TICK_STRATEGY_PRESERVE,
+        "none" => SCENE_TICK_STRATEGY_NONE,
+        "off" => SCENE_TICK_STRATEGY_OFF,
+        _ => SCENE_TICK_STRATEGY_AUTO,
+    }
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -9035,6 +9065,21 @@ mod fuzz {
             scene_ribbon_color2_classify(true, true, None, None, "#336699", false, false),
             SCENE_RIBBON_COLOR2_FAIL
         );
+    }
+
+    #[test]
+    fn scene_tick_label_strategy_matches_host_table() {
+        assert_eq!(scene_tick_label_strategy("auto"), 0);
+        assert_eq!(scene_tick_label_strategy("hide"), 1);
+        assert_eq!(scene_tick_label_strategy("rotate"), 2);
+        assert_eq!(scene_tick_label_strategy("stagger"), 3);
+        assert_eq!(scene_tick_label_strategy("preserve"), 4);
+        assert_eq!(scene_tick_label_strategy("none"), 5);
+        assert_eq!(scene_tick_label_strategy("off"), 6);
+        assert_eq!(scene_tick_label_strategy("hide-overlap"), 0);
+        assert_eq!(scene_tick_label_strategy(""), 0);
+        assert_eq!(scene_tick_label_strategy("foo"), 0);
+        assert_eq!(scene_tick_label_strategy("HIDE"), 0);
     }
 
     #[test]

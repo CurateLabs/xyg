@@ -1525,6 +1525,11 @@ ABI 223 `xyg_scene_ribbon_color2_classify` owns ribbon two-ended paint class
 (absent/solid/gradient/ends/fail) so Python `_classify_ribbon_color2` and
 Node `classifyRibbonColor2` cannot drift. Hosts still coerce channels and
 pack end RGBA8.
+ABI 224 `xyg_scene_tick_label_strategy` owns Scene tick-label strategy names
+so Python `_scene_tick_label_strategy` and Node `sceneTickStrategy` cannot
+drift. Hyphens become underscores. Unknown names, including empty text, map
+to `auto`. Hosts still pick `tick_label_strategy` vs `collision` vs camelCase
+keys.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1586,6 +1591,11 @@ ABI 223 `xyg_scene_ribbon_color2_classify` owns ribbon two-ended paint class
 (absent/solid/gradient/ends/fail) so Python `_classify_ribbon_color2` and
 Node `classifyRibbonColor2` cannot drift. Hosts still coerce channels and
 pack end RGBA8.
+ABI 224 `xyg_scene_tick_label_strategy` owns Scene tick-label strategy names
+so Python `_scene_tick_label_strategy` and Node `sceneTickStrategy` cannot
+drift. Hyphens become underscores. Unknown names, including empty text, map
+to `auto`. Hosts still pick `tick_label_strategy` vs `collision` vs camelCase
+keys.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

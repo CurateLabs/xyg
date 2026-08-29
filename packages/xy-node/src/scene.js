@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -3006,10 +3006,12 @@ export function sceneSupportReason(features, requestVersion = 1) {
   return new TextDecoder("utf-8", { fatal: true }).decode(output);
 }
 
+const SCENE_TICK_STRATEGY_NAMES = ["auto", "hide", "rotate", "stagger", "preserve", "none", "off"];
+
 function sceneTickStrategy(options) {
   const raw = options?.tick_label_strategy ?? options?.tickLabelStrategy ?? options?.collision;
-  const value = String(raw ?? "auto").replaceAll("-", "_");
-  return ["auto", "hide", "rotate", "stagger", "preserve", "none", "off"].includes(value) ? value : "auto";
+  const code = sceneTickLabelStrategy(String(raw ?? "auto"));
+  return SCENE_TICK_STRATEGY_NAMES[code] ?? "auto";
 }
 
 const POLAR_COLLISION_KEYS = new Set([
