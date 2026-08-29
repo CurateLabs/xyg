@@ -463,7 +463,13 @@ test("scatterHasNonConstantColor uses color_ch only like Python", () => {
 });
 
 test("scatterPerItemChannels ignores style.color_channel like Python", () => {
-  assert.equal(scatterPerItemChannels({ color_ch: { mode: "constant" } }), true);
+  assert.equal(scatterPerItemChannels({ color_ch: { mode: "constant" } }), false);
+  assert.equal(
+    scatterPerItemChannels({ color_ch: { mode: "continuous", values: [0, 1] } }),
+    true,
+  );
+  assert.equal(scatterPerItemChannels({ stroke_ch: { mode: "match_fill" } }), false);
+  assert.equal(scatterPerItemChannels({ style_channels: { opacity: { mode: "continuous" } } }), true);
   assert.equal(scatterPerItemChannels({ style: { color_channel: { mode: "continuous" } } }), false);
   assert.equal(scatterPerItemChannels({ style: { size_channel: { mode: "continuous" } } }), false);
   assert.equal(scatterPerItemChannels({ style: { stroke_channel: { mode: "continuous" } } }), false);

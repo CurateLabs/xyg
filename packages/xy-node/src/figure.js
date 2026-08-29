@@ -78,7 +78,7 @@ import { composeStep, composeStairs } from "./marks/step.js";
 import { composeTriangleMesh } from "./marks/triangle_mesh.js";
 import { composeRadar } from "./marks/radar.js";
 import { toHtml } from "./html.js";
-import { figureSceneV3, sceneRasterCommands, sceneSvg, svgToPdf } from "./scene.js";
+import { figureSceneV3, scatterPaintChannelNames, sceneRasterCommands, sceneSvg, svgToPdf } from "./scene.js";
 
 export { PROTOCOL_VERSION };
 
@@ -105,7 +105,7 @@ function gatherItems(arr, idx) {
 }
 
 export function scatterPerItemChannels(t) {
-  return Boolean(t.color_ch || t.size_ch || t.stroke_ch);
+  return scatterPaintChannelNames(t).length > 0;
 }
 
 const AUTORANGE_KIND = {
