@@ -866,6 +866,7 @@ Node `resolveDensityBinColors` ignores `style.color_channel` (same as Python); o
 Node XYMS mark color uses `style.color` only (same as Python `_constant_color` style fallback); `trace.color` is not a mark-color fallback.
 Node XYTC style color uses `style.color` only (same as Python); `trace.color` is not a packed-color fallback.
 Node XYTC constant paint uses `channel.constant` only (same as Python); `channel.color` is not a packed-constant fallback.
+Node density-blit observation uses `scatterUsesDensity` (same as Python `use_density`); `style.color_channel` is not a per-item density extra.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1297,6 +1298,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node XYMS mark color uses `style.color` only.
   Node XYTC style color uses `style.color` only.
   Node XYTC constant paint uses `channel.constant` only.
+  Node density-blit observation uses `scatterUsesDensity`.
 
 ---
 
