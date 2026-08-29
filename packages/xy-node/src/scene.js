@@ -3301,6 +3301,46 @@ export function packXyTcJoinedFill(trace) {
   return (trace.style ?? {}).joined_fill ? XYTC_JOINED_FILL : 0;
 }
 
+/** XYTC line color. Python `_pack_xytc` reads `"line_color" in style` only. */
+export function packXyTcLineColor(style) {
+  const record = style ?? {};
+  if (!Object.hasOwn(record, "line_color")) return { flags: 0, bytes: new Uint8Array() };
+  return { flags: XYTC_HAS_LINE_COLOR, bytes: encodeUtf8(record.line_color) };
+}
+
+/** XYTC line opacity. Python `_pack_xytc` uses `style.get("line_opacity", 1.0)` only. */
+export function packXyTcLineOpacity(style, kindClass) {
+  if (!(kindClass & SCENE_KIND_CLASS_BAND)) return 1;
+  return Number((style ?? {}).line_opacity ?? 1);
+}
+
+/** XYTC line width. Python `_pack_xytc` reads `"line_width" in style` only. */
+export function packXyTcLineWidth(style) {
+  const record = style ?? {};
+  if (!Object.hasOwn(record, "line_width")) return { flags: 0, value: 0 };
+  return { flags: XYTC_HAS_LINE_WIDTH, value: Number(record.line_width) };
+}
+
+/** XYTC size. Python `_pack_xytc` reads `"size" in style` only. */
+export function packXyTcSize(style) {
+  const record = style ?? {};
+  if (!Object.hasOwn(record, "size")) return { flags: 0, value: Number.NaN };
+  return { flags: XYTC_HAS_SIZE, value: Number(record.size) };
+}
+
+/** XYTC stroke opacity. Python `_pack_xytc` uses `style.get("stroke_opacity", 1.0)` only. */
+export function packXyTcStrokeOpacity(style, kindClass) {
+  if (!(kindClass & SCENE_KIND_CLASS_OPACITY)) return 1;
+  return Number((style ?? {}).stroke_opacity ?? 1);
+}
+
+/** XYTC stroke width. Python `_pack_xytc` reads `"stroke_width" in style` only. */
+export function packXyTcStrokeWidth(style) {
+  const record = style ?? {};
+  if (!Object.hasOwn(record, "stroke_width")) return { flags: 0, value: 0 };
+  return { flags: XYTC_HAS_STROKE_WIDTH, value: Number(record.stroke_width) };
+}
+
 function packXyTc(figure) {
   const traces = figure.traces ?? [];
   const records = [];
@@ -3328,15 +3368,16 @@ function packXyTc(figure) {
     let lineOpacity = 1;
     if (kindClass & SCENE_KIND_CLASS_OPACITY) {
       fillOpacity = packXyTcFillOpacity(style, kindClass);
-      strokeOpacity = Number(style.stroke_opacity ?? style.strokeOpacity ?? 1);
+      strokeOpacity = packXyTcStrokeOpacity(style, kindClass);
     }
     if (kindClass & SCENE_KIND_CLASS_BAND) {
-      lineOpacity = Number(style.line_opacity ?? style.lineOpacity ?? 1);
+      lineOpacity = packXyTcLineOpacity(style, kindClass);
     }
     let size = Number.NaN;
-    if (Object.hasOwn(style, "size") || Object.hasOwn(style, "diameter")) {
-      flags |= XYTC_HAS_SIZE;
-      size = Number(style.size ?? style.diameter);
+    const packedSize = packXyTcSize(style);
+    if (packedSize.flags) {
+      flags |= packedSize.flags;
+      size = packedSize.value;
     }
     let sizeCh = Number.NaN;
     const sizeChannel = trace.size_ch ?? trace.sizeChannel;
@@ -3347,17 +3388,19 @@ function packXyTc(figure) {
     let strokeWidth = 0;
     let width = 0;
     let lineWidth = 0;
-    if (Object.hasOwn(style, "stroke_width") || Object.hasOwn(style, "strokeWidth")) {
-      flags |= XYTC_HAS_STROKE_WIDTH;
-      strokeWidth = Number(style.stroke_width ?? style.strokeWidth);
+    const packedStrokeWidth = packXyTcStrokeWidth(style);
+    if (packedStrokeWidth.flags) {
+      flags |= packedStrokeWidth.flags;
+      strokeWidth = packedStrokeWidth.value;
     }
     if (Object.hasOwn(style, "width")) {
       flags |= XYTC_HAS_WIDTH;
       width = Number(style.width);
     }
-    if (Object.hasOwn(style, "line_width") || Object.hasOwn(style, "lineWidth")) {
-      flags |= XYTC_HAS_LINE_WIDTH;
-      lineWidth = Number(style.line_width ?? style.lineWidth);
+    const packedLineWidth = packXyTcLineWidth(style);
+    if (packedLineWidth.flags) {
+      flags |= packedLineWidth.flags;
+      lineWidth = packedLineWidth.value;
     }
     let hexDx = Number.NaN;
     let hexDy = Number.NaN;
@@ -3407,9 +3450,10 @@ function packXyTc(figure) {
       strokeCss = encodeUtf8(style.stroke);
     }
     let lineColor = new Uint8Array();
-    if (Object.hasOwn(style, "line_color") || Object.hasOwn(style, "lineColor")) {
-      flags |= XYTC_HAS_LINE_COLOR;
-      lineColor = encodeUtf8(style.line_color ?? style.lineColor);
+    const packedLineColor = packXyTcLineColor(style);
+    if (packedLineColor.flags) {
+      flags |= packedLineColor.flags;
+      lineColor = packedLineColor.bytes;
     }
     const colorCss = encodeUtf8(style.color ?? "");
     let colorMode = new Uint8Array();
