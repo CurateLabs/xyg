@@ -549,6 +549,7 @@ Forbidden:
 | `crates/xyg-wasm/src/typed_series_abi_generated.rs` | Generated cross-host WASM contract binding | `browser-wasm-generated` | `generate` | #59 |
 | `crates/xyg-engine/src/css.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/autorange.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/arrow_geom.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 217 annotation-arrow geometry | — |
 | `crates/xyg-engine/src/dashboard.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/font.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
