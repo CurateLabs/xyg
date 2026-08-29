@@ -2536,15 +2536,14 @@ def _emit_ribbon(
         return _column(blob, cols[index])
 
     source_rgba = _trace_paint_rgba(t, "color", n, color, read)
-    fills = np.rint(
-        _paint.effective_rgba(source_rgba, t, read, component="fill", default_opacity=1.0) * 255.0
-    ).astype(np.uint8)
+    fills = _rgba8(
+        _paint.effective_rgba(source_rgba, t, read, component="fill", default_opacity=1.0)
+    )
     if t.get("color_target"):
         target_rgba = _trace_paint_rgba(t, "color_target", n, color, read)
-        fills2 = np.rint(
+        fills2 = _rgba8(
             _paint.effective_rgba(target_rgba, t, read, component="fill", default_opacity=1.0)
-            * 255.0
-        ).astype(np.uint8)
+        )
     else:
         fills2 = fills
     stroke_width = float(style.get("stroke_width", 0.0) or 0.0)
@@ -2558,13 +2557,10 @@ def _emit_ribbon(
         if stroke_width > 0 and style.get("stroke") is not None
         else None
     )
-    edges = (
-        np.rint(
-            np.column_stack([source_rgba[:, :3] * 255.0, source_rgba[:, 3] * stroke_op * 255.0])
-        ).astype(np.uint8)
-        if stroke_width > 0 and style.get("stroke") is None
-        else None
-    )
+    edges = None
+    if stroke_width > 0 and style.get("stroke") is None:
+        folded = np.column_stack([source_rgba[:, :3], source_rgba[:, 3] * stroke_op])
+        edges = _rgba8(folded)
 
     for i in range(n):
         px0, px1 = float(sx(x0v[i])), float(sx(x1v[i]))
@@ -2626,10 +2622,9 @@ def _emit_triangle_mesh(
         )
     else:
         stroke_intrinsic = _trace_paint_rgba(t, "color", n, color, read)
-    strokes = np.rint(
+    strokes = _rgba8(
         _paint.effective_rgba(stroke_intrinsic, t, read, component="stroke", default_opacity=1.0)
-        * 255.0
-    ).astype(np.uint8)
+    )
     projected = (sx(x0[:n]), sy(y0[:n]), sx(x1[:n]), sy(y1[:n]), sx(x2[:n]), sy(y2[:n]))
     if n == 0:
         return
