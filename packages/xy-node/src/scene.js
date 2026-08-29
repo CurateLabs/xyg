@@ -5435,7 +5435,7 @@ function densityAggregatesColor(trace) {
 export function scatterHasNonConstantColor(trace) {
   const color = trace.color_ch ?? trace.colorChannel;
   if (color == null || typeof color !== "object") return false;
-  return color.mode !== "constant" || (color.color == null && color.constant == null);
+  return color.mode !== "constant" || color.constant == null;
 }
 
 export function scatterUsesDensity(trace) {
