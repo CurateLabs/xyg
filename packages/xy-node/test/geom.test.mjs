@@ -421,6 +421,17 @@ test("itemFillRgba8 uses color_ch only like Python", () => {
   assert.deepEqual([...fromColor], [...fallback]);
 });
 
+test("scatterPaintChannelNames uses color_ch only like Python", () => {
+  assert.deepEqual(
+    scatterPaintChannelNames({ color_ch: { mode: "continuous", values: [0, 1] } }),
+    ["color"],
+  );
+  assert.deepEqual(
+    scatterPaintChannelNames({ color: { mode: "continuous", values: [0, 1] } }),
+    [],
+  );
+});
+
 test("sceneGradientSpace matches host table", () => {
   assert.equal(sceneGradientSpace("mark"), 0);
   assert.equal(sceneGradientSpace("plot"), 1);
