@@ -757,6 +757,7 @@ test("resolveDensityBinColors uses color_ch only like Python", () => {
   assert.ok(fromCh != null && fromCh.rgba != null);
   assert.equal(fromColor, null);
   assert.equal(fromStyle, null);
+  assert.equal(resolveDensityBinColors({ colorChannel: ch }), null);
 });
 
 test("sceneGradientSpace matches host table", () => {
