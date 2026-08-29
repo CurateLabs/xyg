@@ -12,7 +12,6 @@ matching the §2 "typical scatter ≤ 24 B/pt" budget with headroom.
 from __future__ import annotations
 
 import numbers
-import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Optional, TypeAlias, Union
@@ -263,7 +262,6 @@ def _is_categorical(arr: np.ndarray) -> bool:
 
 
 # `#rrggbb` and `rgb()/hsl()` cannot be mistaken for data; a bare `red` can.
-_FUNCTIONAL_COLOR = re.compile(r"^\s*(#|rgba?\s*\(|hsla?\s*\()", re.IGNORECASE)
 
 
 def _literal_color_rgba(arr: np.ndarray) -> Optional[npt.NDArray[np.float64]]:
@@ -291,10 +289,10 @@ def _literal_color_rgba(arr: np.ndarray) -> Optional[npt.NDArray[np.float64]]:
     # Requiring entry zero to match is exactly as strict as the `all(...)`
     # below, which already demands every entry be a color string.
     first = arr.flat[0]
-    if not isinstance(first, str) or not _FUNCTIONAL_COLOR.match(first):
+    if not isinstance(first, str) or not kernels.css_is_functional(first):
         return None
     values = arr.tolist()
-    if not all(isinstance(v, str) and _FUNCTIONAL_COLOR.match(v) for v in values):
+    if not all(isinstance(v, str) and kernels.css_is_functional(v) for v in values):
         return None
     # Distinct-first: a million-row column of a handful of colors parses each
     # one once, through the same grammar a scalar `color=` is validated with.
@@ -484,14 +482,7 @@ def _size_range(range_px: tuple[float, float]) -> tuple[float, float]:
 
 
 def _continuous_domain(values: npt.NDArray[np.float64]) -> tuple[float, float]:
-    bounds = kernels.min_max(values)
-    if bounds is None:
-        return (0.0, 1.0)
-    lo, hi = bounds
-    if lo == hi:
-        pad = abs(lo) * 0.05 or 0.5
-        return (lo - pad, hi + pad)
-    return (lo, hi)
+    return kernels.continuous_domain(values)
 
 
 def append_continuous(channel: Any, values: npt.NDArray[np.float64], label: str) -> None:
@@ -589,14 +580,17 @@ def resolve_color(
     arr = np.asarray(color)
     if arr.ndim == 2 and arr.shape in {(n, 3), (n, 4)}:
         try:
-            rgba = np.asarray(arr, dtype=np.float64)
+            flat = np.ascontiguousarray(arr, dtype=np.float64).reshape(-1)
         except (TypeError, ValueError) as exc:
             raise ValueError("direct RGB/RGBA colors must be real numeric") from exc
-        if not np.isfinite(rgba).all() or np.any((rgba < 0.0) | (rgba > 1.0)):
-            raise ValueError("direct RGB/RGBA colors must contain finite values between 0 and 1")
-        if rgba.shape[1] == 3:
-            rgba = np.column_stack((rgba, np.ones(n, dtype=np.float64)))
-        return ColorChannel(mode="direct_rgba", rgba=np.ascontiguousarray(rgba))
+        try:
+            packed = kernels.direct_rgba_admit(flat, int(arr.shape[1]))
+        except ValueError as exc:
+            raise ValueError(
+                "direct RGB/RGBA colors must contain finite values between 0 and 1"
+            ) from exc
+        rgba = np.ascontiguousarray(packed.reshape(n, 4))
+        return ColorChannel(mode="direct_rgba", rgba=rgba)
 
     if arr.ndim != 1 or len(arr) != n:
         raise ValueError(f"color array must be 1-D length {n}, got shape {arr.shape}")

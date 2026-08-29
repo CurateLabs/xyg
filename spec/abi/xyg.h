@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 212
-#define XYG_ABI_SIGNATURE_SHA256 "512cb62348b1724d96c4d67745e3d99da72522300e6519259f4d3a2e9f43e7fe"
+#define XYG_ABI_VERSION 213
+#define XYG_ABI_SIGNATURE_SHA256 "fdb5dcae5d49e430b6d2eba4c0b66afdb0cf862de9153ac7e2dd34c66715dde6"
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,12 +44,14 @@ size_t xyg_compat_right_y_room(int32_t compact, double * out_room);
 size_t xyg_compat_title_room(int32_t compact, double block_height, double pad, int32_t automatic_y, double y, double * out_room);
 size_t xyg_compat_title_wrap_width(double width, double left, double right, double * out_width);
 size_t xyg_compat_x_axis_side_room(int32_t compact, int32_t top, double measured, double * out_room, double * out_measured_bottom);
+int32_t xyg_continuous_domain(const double * data, size_t len, double * out_lo, double * out_hi);
 size_t xyg_contour_levels(const double * data, size_t len, size_t n_levels, double * out, size_t capacity);
 size_t xyg_contourf_bands(const double * z, size_t rows, size_t cols, const double * xpos, const double * ypos, const double * edges, size_t n_edges, uint8_t extend_min, uint8_t extend_max, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, int64_t * out_slots, size_t capacity);
 int32_t xyg_contourf_densify(const double * z, size_t rows, size_t cols, const double * xpos, const double * ypos, double * out_z, double * out_x, double * out_y, size_t out_z_cap, size_t out_x_cap, size_t out_y_cap, size_t * out_rows, size_t * out_cols);
 int32_t xyg_correlation(const double * x, const double * y, size_t len, size_t max_lag, int32_t normalize, double * out_lag, double * out_correlation);
 int32_t xyg_css_check(uint32_t kind, const uint8_t * prop, size_t prop_len, const uint8_t * value, size_t value_len, float * out_rgba);
 int32_t xyg_css_color_rgba(const uint8_t * css, size_t len, float opacity, uint8_t * out_rgba);
+int32_t xyg_css_is_functional(const uint8_t * css, size_t len);
 size_t xyg_curve_flatten(const double * x, const double * y, size_t n, size_t bezier_steps, double * out_x, double * out_y, size_t capacity);
 size_t xyg_delaunay_triangles(const double * x, const double * y, size_t len, int64_t * out, size_t capacity);
 size_t xyg_density_bin_window(int32_t x_linear, int32_t y_linear, double xr0, double xr1, double yr0, double yr1, double x_c0, double x_c1, double y_c0, double y_c1, double * out);
@@ -62,6 +64,7 @@ size_t xyg_density_pyramid_preflight(int32_t x_linear, int32_t y_linear, uint64_
 int32_t xyg_density_rgba(const uint8_t * encoded, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out);
 int32_t xyg_density_rgba_linear(const double * counts, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out);
 int32_t xyg_density_wasm_eligible(int32_t cartesian, int32_t x_linear, int32_t y_linear, int32_t color_mode, int32_t x_has_nulls, int32_t y_has_nulls, uint64_t n_points);
+size_t xyg_direct_rgba_admit(const double * values, size_t n, size_t components, double * out, size_t capacity);
 int32_t xyg_drill_decision(uint64_t visible, double budget, int32_t in_drill, double exit_factor, int32_t * out_exact);
 int32_t xyg_encode_f32(const double * data, size_t len, double offset, double scale, float * out);
 size_t xyg_encode_jpeg(const uint8_t * pixels, size_t n, size_t width, size_t height, size_t channels, int32_t quality, uint8_t * out, size_t out_cap);

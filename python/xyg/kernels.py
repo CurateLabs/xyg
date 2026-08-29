@@ -33,6 +33,7 @@ CSS_NUMBER = _impl.CSS_NUMBER
 
 css_check = _impl.css_check
 css_color_rgba = _impl.css_color_rgba
+css_is_functional = _impl.css_is_functional
 colormap_rgba = _impl.colormap_rgba
 colormap_rgba_canonical = _impl.colormap_rgba_canonical
 colormap_lut = _impl.colormap_lut
@@ -64,6 +65,8 @@ marching_triangles = _impl.marching_triangles
 is_sorted = _impl.is_sorted
 argsort_stable = _impl.argsort_stable
 min_max = _impl.min_max
+continuous_domain = _impl.continuous_domain
+direct_rgba_admit = _impl.direct_rgba_admit
 bin_2d = _impl.bin_2d
 binned_ecdf = _impl.binned_ecdf
 bin_2d_f32 = _impl.bin_2d_f32
@@ -179,12 +182,14 @@ __all__ = [
     "colormap_lut",
     "colormap_rgba",
     "colormap_rgba_canonical",
+    "continuous_domain",
     "contour_levels",
     "contourf_bands",
     "contourf_densify",
     "correlation",
     "css_check",
     "css_color_rgba",
+    "css_is_functional",
     "curve_flatten",
     "delaunay_triangles",
     "density_bin_window",
@@ -197,6 +202,7 @@ __all__ = [
     "density_rgba",
     "density_rgba_linear",
     "density_wasm_eligible",
+    "direct_rgba_admit",
     "drill_decision",
     "encode_f32",
     "f32_safe_scale",

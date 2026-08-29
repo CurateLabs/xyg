@@ -1508,6 +1508,11 @@ vertices (`out_x = cx + scale * unit_x`, `out_y = cy - scale * unit_y`) so
 Python `_svg._authored_marker_path_d` / `_raster` and Node `markerPathScale`
 cannot drift. ChartView legend/annotation scale keeps the same formula until
 WASM. SVG `d=` string assembly stays host.
+ABI 213 `xyg_css_is_functional` / `xyg_continuous_domain` /
+`xyg_direct_rgba_admit` owns the `resolve_color` CSS/numeric split, equal-bound
+domain pad, and Nx3/Nx4 admit so Python `channels.resolve_color` and Node
+`resolveColorChannel` cannot drift. Named colors stay categories. Hosts still
+factorize labels, pin palettes, and emit warning text.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

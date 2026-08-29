@@ -6118,6 +6118,69 @@ pub fn min_max(data: &[f64]) -> Option<(f64, f64)> {
     min_max_impl(data, par_threads(data.len()))
 }
 
+/// Continuous color/size domain (ABI 213). Empty or all-nonfinite → `(0, 1)`.
+/// Equal finite bounds expand by `abs(lo) * 0.05`, or `0.5` when that pad is 0,
+/// matching Python `channels._continuous_domain`.
+pub fn continuous_domain(data: &[f64]) -> (f64, f64) {
+    match min_max(data) {
+        None => (0.0, 1.0),
+        Some((lo, hi)) if lo == hi => {
+            let pad = lo.abs() * 0.05;
+            let pad = if pad == 0.0 { 0.5 } else { pad };
+            (lo - pad, hi + pad)
+        }
+        Some(bounds) => bounds,
+    }
+}
+
+/// Admit per-point RGB or RGBA in `[0, 1]` as contiguous Nx4 (ABI 213).
+///
+/// `components` is 3 or 4. Empty `out` is a size probe (`n * 4` floats).
+/// Non-finite or out-of-range channels return `None`.
+pub fn direct_rgba_admit(values: &[f64], components: usize, out: &mut [f64]) -> Option<usize> {
+    if components != 3 && components != 4 {
+        return None;
+    }
+    if values.len() % components != 0 {
+        return None;
+    }
+    let n = values.len() / components;
+    let need = n.checked_mul(4)?;
+    if out.is_empty() {
+        return Some(need);
+    }
+    if out.len() < need {
+        return None;
+    }
+    for i in 0..n {
+        let base = i * components;
+        let r = values[base];
+        let g = values[base + 1];
+        let b = values[base + 2];
+        let a = if components == 4 {
+            values[base + 3]
+        } else {
+            1.0
+        };
+        if !(r.is_finite() && g.is_finite() && b.is_finite() && a.is_finite()) {
+            return None;
+        }
+        if !(0.0..=1.0).contains(&r)
+            || !(0.0..=1.0).contains(&g)
+            || !(0.0..=1.0).contains(&b)
+            || !(0.0..=1.0).contains(&a)
+        {
+            return None;
+        }
+        let dest = i * 4;
+        out[dest] = r;
+        out[dest + 1] = g;
+        out[dest + 2] = b;
+        out[dest + 3] = a;
+    }
+    Some(need)
+}
+
 /// Non-decreasing check with NaN-poisoning: every consecutive pair must
 /// satisfy `next >= prev`, and any NaN in either position fails the pair
 /// (IEEE comparisons with NaN are false). This is exactly NumPy's
@@ -7817,6 +7880,29 @@ mod tests {
         );
         assert_eq!(min_max(&[f64::NAN, f64::INFINITY]), None);
         assert_eq!(min_max(&[]), None);
+    }
+
+    #[test]
+    fn continuous_domain_pads_equal_bounds() {
+        assert_eq!(continuous_domain(&[]), (0.0, 1.0));
+        assert_eq!(continuous_domain(&[f64::NAN]), (0.0, 1.0));
+        assert_eq!(continuous_domain(&[0.0, 100.0]), (0.0, 100.0));
+        assert_eq!(continuous_domain(&[0.0, 0.0]), (-0.5, 0.5));
+        assert_eq!(continuous_domain(&[10.0, 10.0]), (9.5, 10.5));
+    }
+
+    #[test]
+    fn direct_rgba_admit_expands_rgb_and_rejects_range() {
+        let rgb = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6];
+        let mut out = [0.0; 8];
+        assert_eq!(direct_rgba_admit(&rgb, 3, &mut out), Some(8));
+        assert_eq!(&out, &[0.1, 0.2, 0.3, 1.0, 0.4, 0.5, 0.6, 1.0]);
+        assert_eq!(direct_rgba_admit(&rgb, 3, &mut []), Some(8));
+        assert!(direct_rgba_admit(&[0.0, 0.0, 1.1], 3, &mut out).is_none());
+        assert!(direct_rgba_admit(&[0.0, f64::NAN, 1.0], 3, &mut out).is_none());
+        let rgba = [0.1, 0.2, 0.3, 0.4];
+        assert_eq!(direct_rgba_admit(&rgba, 4, &mut out), Some(4));
+        assert_eq!(&out[..4], &[0.1, 0.2, 0.3, 0.4]);
     }
 
     #[test]

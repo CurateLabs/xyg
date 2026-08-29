@@ -2868,6 +2868,15 @@ def css_color_rgba(css: str, opacity: float = 1.0) -> tuple[int, int, int, int]:
     return (int(out[0]), int(out[1]), int(out[2]), int(out[3]))
 
 
+def css_is_functional(css: str) -> bool:
+    """Unambiguous `#` / `rgb()` / `hsl()` paint syntax (ABI 213)."""
+    encoded = str(css).encode("utf-8")
+    code = int(_lib.xyg_css_is_functional(encoded if encoded else 0, len(encoded)))
+    if code < 0:
+        raise ValueError("invalid css-is-functional request")
+    return code == 1
+
+
 def scene_resolve_mark_styles(
     payload: bytes,
 ) -> list[tuple[tuple[int, int, int, int], tuple[int, int, int, int], float]]:
@@ -6140,6 +6149,62 @@ def min_max(data: npt.NDArray[np.float64]) -> Optional[tuple[float, float]]:
     hi = ctypes.c_double()
     ok = _lib.xyg_min_max(_ptr_f64(data), len(data), ctypes.byref(lo), ctypes.byref(hi))
     return (lo.value, hi.value) if ok else None
+
+
+def continuous_domain(data: npt.NDArray[np.float64]) -> tuple[float, float]:
+    """Continuous color/size domain via ``xyg_continuous_domain`` (ABI 213)."""
+    data = _as_f64(data, "data")
+    n = len(data)
+    lo = ctypes.c_double()
+    hi = ctypes.c_double()
+    code = int(
+        _lib.xyg_continuous_domain(
+            _ptr_f64(data) if n else 0,
+            n,
+            ctypes.byref(lo),
+            ctypes.byref(hi),
+        )
+    )
+    if code != 0:
+        raise ValueError("invalid continuous-domain request")
+    return (float(lo.value), float(hi.value))
+
+
+def direct_rgba_admit(
+    values: npt.NDArray[np.float64],
+    components: int,
+) -> npt.NDArray[np.float64]:
+    """Admit per-point RGB/RGBA in ``[0, 1]`` as contiguous Nx4 (ABI 213)."""
+    values = _as_f64(values, "direct rgba")
+    components = int(components)
+    if components not in (3, 4):
+        raise ValueError("direct RGB/RGBA colors must be 3 or 4 components")
+    if values.size % components != 0:
+        raise ValueError("direct RGB/RGBA colors must be a multiple of the component count")
+    n = int(values.size // components)
+    probed = _lib.xyg_direct_rgba_admit(
+        _ptr_f64(values) if n else 0,
+        n,
+        components,
+        0,
+        0,
+    )
+    if probed == _USIZE_MAX:
+        raise ValueError("direct RGB/RGBA colors must contain finite values between 0 and 1")
+    count = int(probed)
+    if count == 0:
+        return np.empty(0, dtype=np.float64)
+    out = np.empty(count, dtype=np.float64)
+    written = _lib.xyg_direct_rgba_admit(
+        _ptr_f64(values) if n else 0,
+        n,
+        components,
+        _ptr_f64(out),
+        count,
+    )
+    if written == _USIZE_MAX or written != count:
+        raise ValueError("direct RGB/RGBA colors must contain finite values between 0 and 1")
+    return out
 
 
 def histogram_uniform(

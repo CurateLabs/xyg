@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 212
-SIGNATURE_SHA256 = "512cb62348b1724d96c4d67745e3d99da72522300e6519259f4d3a2e9f43e7fe"
+ABI_VERSION = 213
+SIGNATURE_SHA256 = "fdb5dcae5d49e430b6d2eba4c0b66afdb0cf862de9153ac7e2dd34c66715dde6"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -142,6 +142,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_compat_x_axis_side_room
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_continuous_domain(const double * data, size_t len, double * out_lo, double * out_hi)
+    function = lib.xyg_continuous_domain
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p]
     # size_t xyg_contour_levels(const double * data, size_t len, size_t n_levels, double * out, size_t capacity)
     function = lib.xyg_contour_levels
     function.restype = ctypes.c_size_t
@@ -166,6 +170,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_css_color_rgba
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_float, ctypes.c_void_p]
+    # int32_t xyg_css_is_functional(const uint8_t * css, size_t len)
+    function = lib.xyg_css_is_functional
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
     # size_t xyg_curve_flatten(const double * x, const double * y, size_t n, size_t bezier_steps, double * out_x, double * out_y, size_t capacity)
     function = lib.xyg_curve_flatten
     function.restype = ctypes.c_size_t
@@ -214,6 +222,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_density_wasm_eligible
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_uint64]
+    # size_t xyg_direct_rgba_admit(const double * values, size_t n, size_t components, double * out, size_t capacity)
+    function = lib.xyg_direct_rgba_admit
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_drill_decision(uint64_t visible, double budget, int32_t in_drill, double exit_factor, int32_t * out_exact)
     function = lib.xyg_drill_decision
     function.restype = ctypes.c_int32

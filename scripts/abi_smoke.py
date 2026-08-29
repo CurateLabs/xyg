@@ -185,6 +185,18 @@ def load() -> ctypes.CDLL:
     ]
     lib.xyg_min_max.restype = ctypes.c_int32
     lib.xyg_min_max.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
+    lib.xyg_css_is_functional.restype = ctypes.c_int32
+    lib.xyg_css_is_functional.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_continuous_domain.restype = ctypes.c_int32
+    lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
+    lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
+    lib.xyg_direct_rgba_admit.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_is_sorted.restype = ctypes.c_int32
     lib.xyg_is_sorted.argtypes = [F64P, ctypes.c_size_t]
     lib.xyg_argsort_stable.restype = ctypes.c_size_t
@@ -2606,6 +2618,66 @@ def main() -> None:
     ok(
         lib.xyg_min_max(_ptr(allnan, ctypes.c_double), 1, ctypes.byref(lo), ctypes.byref(hi)) == 0,
         "min_max all-NaN returns 0",
+    )
+    dlo = ctypes.c_double()
+    dhi = ctypes.c_double()
+    ok(
+        lib.xyg_continuous_domain(
+            _ptr(data, ctypes.c_double),
+            len(data),
+            ctypes.byref(dlo),
+            ctypes.byref(dhi),
+        )
+        == 0
+        and dlo.value == 0.0
+        and dhi.value == 9.0,
+        "continuous domain span",
+    )
+    equal = array("d", [0.0, 0.0])
+    ok(
+        lib.xyg_continuous_domain(
+            _ptr(equal, ctypes.c_double),
+            2,
+            ctypes.byref(dlo),
+            ctypes.byref(dhi),
+        )
+        == 0
+        and abs(dlo.value + 0.5) < 1e-15
+        and abs(dhi.value - 0.5) < 1e-15,
+        "continuous domain zero pad",
+    )
+    hex_css = array("B", b"#ff0000")
+    ok(
+        lib.xyg_css_is_functional(_ptr(hex_css, ctypes.c_uint8), len(hex_css)) == 1,
+        "css is functional hex",
+    )
+    named = array("B", b"red")
+    ok(
+        lib.xyg_css_is_functional(_ptr(named, ctypes.c_uint8), len(named)) == 0,
+        "css named is category",
+    )
+    rgb = array("d", [0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
+    rgb_n = lib.xyg_direct_rgba_admit(
+        _ptr(rgb, ctypes.c_double),
+        2,
+        3,
+        null_f64,
+        0,
+    )
+    rgb_out = array("d", [0.0]) * 8
+    rgb_filled = lib.xyg_direct_rgba_admit(
+        _ptr(rgb, ctypes.c_double),
+        2,
+        3,
+        _ptr(rgb_out, ctypes.c_double),
+        8,
+    )
+    ok(
+        rgb_n == 8
+        and rgb_filled == 8
+        and abs(rgb_out[3] - 1.0) < 1e-15
+        and abs(rgb_out[4] - 0.4) < 1e-15,
+        "direct rgba admit rgb",
     )
 
     # bin_2d: 4 points, one per quadrant of a 2×2 grid; count conserved, row0 bottom.

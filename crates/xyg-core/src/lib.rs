@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 212;
+pub const ABI_VERSION: u32 = 213;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4414,6 +4414,33 @@ pub unsafe extern "C" fn xyg_css_color_rgba(
     })
 }
 
+/// Unambiguous authored CSS paint syntax (ABI 213).
+///
+/// Returns `1` for `#…` / `rgb()` / `rgba()` / `hsl()` / `hsla()` (optional
+/// leading whitespace, optional space before `(`). Returns `0` otherwise,
+/// including named colors such as `red`. `-1` when `css` is not UTF-8 or a
+/// non-empty pointer is missing.
+///
+/// # Safety
+/// `css` must address `len` readable bytes when `len` is non-zero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_css_is_functional(css: *const u8, len: usize) -> i32 {
+    if len > 0 && css.is_null() {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        let bytes = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(css, len)
+        };
+        let Ok(value) = std::str::from_utf8(bytes) else {
+            return -1;
+        };
+        i32::from(css::is_functional_color(value))
+    })
+}
+
 /// Zone maps (§22) over `data[0..len]` in chunks of `chunk_size`.
 ///
 /// Output arrays must each hold `ceil(len / chunk_size)` elements.
@@ -6896,6 +6923,79 @@ pub unsafe extern "C" fn xyg_min_max(
         }
         None => 0,
     }
+}
+
+/// Continuous color/size domain (ABI 213). Always writes `(lo, hi)`.
+/// Empty / all-nonfinite input is `(0, 1)`. Equal finite bounds expand by
+/// `abs(lo) * 0.05`, or `0.5` when that pad is 0. Empty native data pointers
+/// are null/`0` when `len == 0`. Returns 0 on success, `-1` when an output
+/// pointer is missing.
+///
+/// # Safety
+/// When `len > 0`, `data` addresses `len` readable f64s. `out_lo` and
+/// `out_hi` each address one writable f64.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_continuous_domain(
+    data: *const f64,
+    len: usize,
+    out_lo: *mut f64,
+    out_hi: *mut f64,
+) -> i32 {
+    if out_lo.is_null() || out_hi.is_null() || (len > 0 && data.is_null()) {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        let data = if len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(data, len)
+        };
+        let (lo, hi) = kernels::continuous_domain(data);
+        *out_lo = lo;
+        *out_hi = hi;
+        0
+    })
+}
+
+/// Admit per-point RGB or RGBA in `[0, 1]` as contiguous Nx4 floats (ABI 213).
+///
+/// `components` is 3 or 4. Probe with `capacity == 0` and null/`0` output;
+/// the return is `n * 4`. `usize::MAX` on invalid input. Empty native
+/// pointers are null/`0`.
+///
+/// # Safety
+/// When `n > 0`, `values` addresses `n * components` readable f64s. When
+/// `capacity > 0`, `out` addresses `capacity` writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_direct_rgba_admit(
+    values: *const f64,
+    n: usize,
+    components: usize,
+    out: *mut f64,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if components != 3 && components != 4 {
+            return usize::MAX;
+        }
+        let values = if n == 0 {
+            &[][..]
+        } else {
+            if values.is_null() {
+                return usize::MAX;
+            }
+            std::slice::from_raw_parts(values, n.saturating_mul(components))
+        };
+        let out = if capacity == 0 {
+            &mut [][..]
+        } else {
+            if out.is_null() {
+                return usize::MAX;
+            }
+            std::slice::from_raw_parts_mut(out, capacity)
+        };
+        kernels::direct_rgba_admit(values, components, out).unwrap_or(usize::MAX)
+    })
 }
 
 /// Uniform fixed-bin histogram. Returns the count of finite in-range values, or
