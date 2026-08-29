@@ -774,6 +774,10 @@ ABI 244 `xyg_scene_mesh_paint_plane_admit` owns Scene mesh paint-plane packing
 unknown/empty → 0; no lowercasing) so Python `_mesh_packs_paint_plane` and
 Node `meshPacksPaintPlane` cannot drift. `joined_fill` field picking and
 `has_per_item` gathering stay host.
+ABI 245 `xyg_scene_item_apply_opacity` owns Scene per-item RGBA8 artist-alpha
+replace then opacity multiply (ties-to-even u8 quantize) so Python
+`_item_apply_opacity` and Node `itemApplyOpacity` cannot drift. Field picking
+stays host.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1150,6 +1154,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Scene hexbin colormap-plane admit is ABI 242.
   Scene hexbin RGBA-plane admit is ABI 243.
   Scene mesh paint-plane admit is ABI 244.
+  Scene per-item RGBA8 artist-alpha/opacity is ABI 245.
 
 ---
 

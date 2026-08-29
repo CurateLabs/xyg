@@ -324,6 +324,20 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         ctypes.c_int32,
     ]
+    lib.xyg_scene_item_apply_opacity.restype = ctypes.c_int32
+    lib.xyg_scene_item_apply_opacity.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        U8P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2840,6 +2854,32 @@ def main() -> None:
     ok(
         lib.xyg_scene_mesh_paint_plane_admit(null_u8, 0, 0, 1) == 0,
         "scene_mesh_paint_plane_admit empty",
+    )
+    item_packed = array("B", [10, 20, 30, 40])
+    item_out = array("B", [0, 0, 0, 0])
+    item_artist = array("d", [0.5])
+    ok(
+        lib.xyg_scene_item_apply_opacity(
+            _ptr(item_packed, ctypes.c_uint8),
+            4,
+            1,
+            _ptr(item_artist, ctypes.c_double),
+            1,
+            1,
+            null_f64,
+            0,
+            0,
+            _ptr(item_out, ctypes.c_uint8),
+            4,
+        )
+        == 1
+        and item_out[3] == 128,
+        "scene_item_apply_opacity artist",
+    )
+    ok(
+        lib.xyg_scene_item_apply_opacity(null_u8, 0, 0, null_f64, 0, 0, null_f64, 0, 0, null_u8, 0)
+        == 1,
+        "scene_item_apply_opacity empty",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8

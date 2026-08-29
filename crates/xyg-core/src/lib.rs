@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 244;
+pub const ABI_VERSION: u32 = 245;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5626,6 +5626,76 @@ pub unsafe extern "C" fn xyg_scene_mesh_paint_plane_admit(
             return -2;
         };
         kernels::scene_mesh_paint_plane_admit(text, joined_fill, has_per_item)
+    })
+}
+
+/// Scene per-item RGBA8 artist-alpha replace then opacity multiply (ABI 245).
+///
+/// A present channel whose length is not `n` returns `0`. Artist values
+/// `>= 0` replace packed alpha in 0–255 units after clipping to `[0, 1]`;
+/// negative artist keeps packed alpha. Opacity clips to `[0, 1]` and
+/// multiplies. Ties-to-even quantize. `-2` FFI. Empty native pointers are
+/// null/`0`. Field picking stays host.
+///
+/// # Safety
+/// `packed` must address `packed_len` readable bytes when `packed_len` is
+/// nonzero. `artist`/`opacity` must address their lengths when those lengths
+/// are nonzero. `out` must address `out_len` writable bytes when `out_len`
+/// is nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_item_apply_opacity(
+    packed: *const u8,
+    packed_len: usize,
+    n: usize,
+    artist: *const f64,
+    artist_len: usize,
+    has_artist: i32,
+    opacity: *const f64,
+    opacity_len: usize,
+    has_opacity: i32,
+    out: *mut u8,
+    out_len: usize,
+) -> i32 {
+    if packed_len > 0 && packed.is_null() {
+        return -2;
+    }
+    if out_len > 0 && out.is_null() {
+        return -2;
+    }
+    if artist_len > 0 && artist.is_null() {
+        return -2;
+    }
+    if opacity_len > 0 && opacity.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let packed = if packed_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(packed, packed_len)
+        };
+        let artist = if has_artist == 0 {
+            None
+        } else if artist_len == 0 {
+            Some(&[][..])
+        } else {
+            Some(std::slice::from_raw_parts(artist, artist_len))
+        };
+        let opacity = if has_opacity == 0 {
+            None
+        } else if opacity_len == 0 {
+            Some(&[][..])
+        } else {
+            Some(std::slice::from_raw_parts(opacity, opacity_len))
+        };
+        let out = if out_len == 0 {
+            &mut [][..]
+        } else {
+            std::slice::from_raw_parts_mut(out, out_len)
+        };
+        i32::from(kernels::scene_item_apply_opacity(
+            packed, n, artist, opacity, out,
+        ))
     })
 }
 

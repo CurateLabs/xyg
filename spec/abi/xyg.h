@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 244
-#define XYG_ABI_SIGNATURE_SHA256 "2f8c1e71c1f893c488c725ba899ed6b6a57b8303b1ed78d364298ad7bc7a0e9b"
+#define XYG_ABI_VERSION 245
+#define XYG_ABI_SIGNATURE_SHA256 "52b45e44a4d447f474c8ffa559eeb4a298632df1c1ee0effe41901b19a10c72e"
 
 #ifdef __cplusplus
 extern "C" {
@@ -214,6 +214,7 @@ int32_t xyg_scene_hexbin_colormap_plane_admit(const uint8_t * text, size_t text_
 int32_t xyg_scene_hexbin_pitch_admit(double dx, double dy);
 int32_t xyg_scene_hexbin_reduce_admit(const uint8_t * text, size_t text_len);
 int32_t xyg_scene_hexbin_rgba_plane_admit(const uint8_t * text, size_t text_len);
+int32_t xyg_scene_item_apply_opacity(const uint8_t * packed, size_t packed_len, size_t n, const double * artist, size_t artist_len, int32_t has_artist, const double * opacity, size_t opacity_len, int32_t has_opacity, uint8_t * out, size_t out_len);
 int32_t xyg_scene_kind_admit(const uint8_t * text, size_t text_len);
 int32_t xyg_scene_kind_class(const uint8_t * text, size_t text_len);
 int32_t xyg_scene_linear_gradient_prefix(const uint8_t * text, size_t text_len);
