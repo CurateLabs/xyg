@@ -60,6 +60,7 @@ import {
   packXyTaGrid,
   packXyTaRgba,
   packXyTaRgbaGrid,
+  packXyTcColorChannel,
   packXyTcFillOpacity,
   packXyTcJoinedFill,
   packXyTcLineColor,
@@ -515,6 +516,22 @@ test("packXyTcStrokeOpacity uses stroke_opacity only like Python", () => {
   assert.equal(packXyTcStrokeOpacity({ stroke_opacity: 0.5 }, scatter), 0.5);
   assert.equal(packXyTcStrokeOpacity({ stroke_opacity: 0.5 }, line), 1);
   assert.equal(packXyTcStrokeOpacity({ stroke_opacity: 0.5 }, 0), 1);
+});
+
+test("packXyTcColorChannel uses color_ch only like Python", () => {
+  const utf8 = new TextEncoder();
+  const missing = packXyTcColorChannel({});
+  assert.equal(missing.flags, 0);
+  assert.deepEqual([...missing.mode], []);
+  assert.deepEqual([...missing.constant], []);
+  const camel = packXyTcColorChannel({ colorChannel: { mode: "constant", constant: "red" } });
+  assert.equal(camel.flags, 0);
+  const asString = packXyTcColorChannel({ color_ch: "red" });
+  assert.equal(asString.flags, 0);
+  const snake = packXyTcColorChannel({ color_ch: { mode: "constant", constant: "red" } });
+  assert.equal(snake.flags, (1 << 11) | (1 << 12));
+  assert.deepEqual([...snake.mode], [...utf8.encode("constant")]);
+  assert.deepEqual([...snake.constant], [...utf8.encode("red")]);
 });
 
 test("packXyTcStrokePerimeter uses stroke_perimeter only like Python", () => {
