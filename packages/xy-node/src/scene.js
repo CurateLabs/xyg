@@ -1625,11 +1625,11 @@ export function channelEndRgba8(channel, n, fallback) {
   return null;
 }
 
-function ribbonEndRgbaPair(trace) {
+export function ribbonEndRgbaPair(trace) {
   const n = ribbonCount(trace);
   if (n < 1) return null;
   const fallback = sourceColorCss(trace);
-  const source = channelEndRgba8(trace.color_ch ?? trace.colorChannel, n, fallback);
+  const source = channelEndRgba8(trace.color_ch, n, fallback);
   const target = channelEndRgba8(color2Channel(trace), n, fallback);
   if (source == null || target == null) return null;
   return { source, target };
