@@ -1146,9 +1146,7 @@ def scene_tick_label_strategy(text: str | None = None) -> int:
     ``tick_label_strategy`` vs ``collision`` vs camelCase keys.
     """
     encoded = b"" if text is None else str(text).encode("utf-8")
-    code = int(
-        _lib.xyg_scene_tick_label_strategy(encoded if encoded else 0, len(encoded))
-    )
+    code = int(_lib.xyg_scene_tick_label_strategy(encoded if encoded else 0, len(encoded)))
     if code == -2:
         raise ValueError("invalid scene-tick-label-strategy request")
     return int(code)
