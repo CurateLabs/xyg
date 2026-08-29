@@ -1733,6 +1733,7 @@ Node `rectFiniteSel` drops nonfinite rectangle rows through `validIndicesF64` li
 Node `packXyTa` density fill opacity uses `style.fill_opacity` only like Python `_pack_xyta`; `fillOpacity` is not a fill-opacity key.
 Node XYTC fill opacity uses `style.fill_opacity` only like Python `_pack_xytc`; `fillOpacity` is not a fill-opacity key.
 Node XYTC stroke opacity uses `style.stroke_opacity` only like Python `_pack_xytc`; `strokeOpacity` is not a stroke-opacity key.
+Node XYTC line opacity uses `style.line_opacity` only like Python `_pack_xytc`; `lineOpacity` is not a line-opacity key.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -2002,6 +2003,7 @@ Node `rectFiniteSel` drops nonfinite rectangle rows through `validIndicesF64` li
 Node `packXyTa` density fill opacity uses `style.fill_opacity` only like Python `_pack_xyta`; `fillOpacity` is not a fill-opacity key.
 Node XYTC fill opacity uses `style.fill_opacity` only like Python `_pack_xytc`; `fillOpacity` is not a fill-opacity key.
 Node XYTC stroke opacity uses `style.stroke_opacity` only like Python `_pack_xytc`; `strokeOpacity` is not a stroke-opacity key.
+Node XYTC line opacity uses `style.line_opacity` only like Python `_pack_xytc`; `lineOpacity` is not a line-opacity key.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

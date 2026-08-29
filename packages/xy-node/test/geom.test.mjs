@@ -61,6 +61,7 @@ import {
   packXyTaRgba,
   packXyTaRgbaGrid,
   packXyTcFillOpacity,
+  packXyTcLineOpacity,
   packXyTcStrokeOpacity,
   hexbinXyTaColormap,
   constantMarkColor,
@@ -416,6 +417,16 @@ test("packXyTcFillOpacity uses fill_opacity only like Python", () => {
   assert.equal(packXyTcFillOpacity({ fill_opacity: 0.5 }, scatter), 0.5);
   assert.equal(packXyTcFillOpacity({ fill_opacity: 0.5 }, line), 1);
   assert.equal(packXyTcFillOpacity({ fill_opacity: 0.5 }, 0), 1);
+});
+
+test("packXyTcLineOpacity uses line_opacity only like Python", () => {
+  const area = sceneKindClass("area");
+  const scatter = sceneKindClass("scatter");
+  assert.equal(packXyTcLineOpacity({}, area), 1);
+  assert.equal(packXyTcLineOpacity({ lineOpacity: 0.25 }, area), 1);
+  assert.equal(packXyTcLineOpacity({ line_opacity: 0.5 }, area), 0.5);
+  assert.equal(packXyTcLineOpacity({ line_opacity: 0.5 }, scatter), 1);
+  assert.equal(packXyTcLineOpacity({ line_opacity: 0.5 }, 0), 1);
 });
 
 test("packXyTcStrokeOpacity uses stroke_opacity only like Python", () => {

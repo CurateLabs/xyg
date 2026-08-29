@@ -3295,6 +3295,12 @@ export function packXyTcFillOpacity(style, kindClass) {
   return Number((style ?? {}).fill_opacity ?? 1);
 }
 
+/** XYTC line opacity. Python `_pack_xytc` uses `style.get("line_opacity", 1.0)` only. */
+export function packXyTcLineOpacity(style, kindClass) {
+  if (!(kindClass & SCENE_KIND_CLASS_BAND)) return 1;
+  return Number((style ?? {}).line_opacity ?? 1);
+}
+
 /** XYTC stroke opacity. Python `_pack_xytc` uses `style.get("stroke_opacity", 1.0)` only. */
 export function packXyTcStrokeOpacity(style, kindClass) {
   if (!(kindClass & SCENE_KIND_CLASS_OPACITY)) return 1;
@@ -3331,7 +3337,7 @@ function packXyTc(figure) {
       strokeOpacity = packXyTcStrokeOpacity(style, kindClass);
     }
     if (kindClass & SCENE_KIND_CLASS_BAND) {
-      lineOpacity = Number(style.line_opacity ?? style.lineOpacity ?? 1);
+      lineOpacity = packXyTcLineOpacity(style, kindClass);
     }
     let size = Number.NaN;
     if (Object.hasOwn(style, "size") || Object.hasOwn(style, "diameter")) {
