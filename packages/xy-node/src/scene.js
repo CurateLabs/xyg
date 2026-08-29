@@ -3289,6 +3289,27 @@ function packGradientSpec(fill) {
   return concatBytes(parts);
 }
 
+/** XYTC color_ch. Python `_pack_xytc` reads `getattr(trace, "color_ch", None)` only. */
+export function packXyTcColorChannel(trace) {
+  const channel = (trace ?? {}).color_ch;
+  if (
+    channel == null
+    || typeof channel !== "object"
+    || Array.isArray(channel)
+    || ArrayBuffer.isView(channel)
+  ) {
+    return { flags: 0, mode: new Uint8Array(), constant: new Uint8Array() };
+  }
+  let flags = XYTC_COLOR_CH;
+  const mode = encodeUtf8(String(channel.mode ?? ""));
+  let constant = new Uint8Array();
+  if (channel.constant != null) {
+    flags |= XYTC_COLOR_CH_CONSTANT;
+    constant = encodeUtf8(String(channel.constant));
+  }
+  return { flags, mode, constant };
+}
+
 /** XYTC fill opacity. Python `_pack_xytc` uses `style.get("fill_opacity", 1.0)` only. */
 export function packXyTcFillOpacity(style, kindClass) {
   if (!(kindClass & SCENE_KIND_CLASS_OPACITY)) return 1;
@@ -3462,14 +3483,11 @@ function packXyTc(figure) {
     const colorCss = encodeUtf8(style.color ?? "");
     let colorMode = new Uint8Array();
     let colorConst = new Uint8Array();
-    const channel = trace.color_ch ?? trace.colorChannel;
-    if (channel != null && typeof channel === "object" && !Array.isArray(channel) && !ArrayBuffer.isView(channel)) {
-      flags |= XYTC_COLOR_CH;
-      colorMode = encodeUtf8(String(channel.mode ?? ""));
-      if (channel.constant != null) {
-        flags |= XYTC_COLOR_CH_CONSTANT;
-        colorConst = encodeUtf8(String(channel.constant));
-      }
+    const packedChannel = packXyTcColorChannel(trace);
+    if (packedChannel.flags) {
+      flags |= packedChannel.flags;
+      colorMode = packedChannel.mode;
+      colorConst = packedChannel.constant;
     }
     const color2Class = classifyRibbonColor2(trace);
     if (color2Class === "fail") flags |= XYTC_COLOR2;
