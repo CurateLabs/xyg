@@ -874,6 +874,7 @@ Node XYMS mark color uses `constantMarkColor` / ABI 252 (same as Python `_consta
 Node `scatterPerItemChannels` ignores `style.color_channel` / `size_channel` / `stroke_channel` (same as Python `has_per_item_channels`); only `*_ch` presence counts.
 Node `scatterPerItemChannels` is mode-based like Python `has_per_item_channels`; a constant `color_ch` is not per-item.
 Node `channelEndRgba8` ignores array and typed-array channels (same as Python object-only); only `null` and mode objects pack.
+Node `channelEndRgba8` categorical paint uses `DEFAULT_PALETTE` when palette is empty (same as Python); fallback CSS is not a missing-slot stand-in.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1313,6 +1314,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `scatterPerItemChannels` ignores `style.color_channel`.
   Node `scatterPerItemChannels` is mode-based.
   Node `channelEndRgba8` ignores array channels.
+  Node `channelEndRgba8` categorical paint uses `DEFAULT_PALETTE`.
 
 ---
 
