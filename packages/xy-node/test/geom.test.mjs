@@ -61,6 +61,7 @@ import {
   meshHasPerItem,
   meshJoinedFill,
   packXyTaColormap,
+  packXyTaDensityColorCh,
   packXyTaFillOpacity,
   packXyTaGrid,
   packXyTaRgba,
@@ -374,6 +375,22 @@ test("packXyTaColormap stop bytes require RGB rows like Python", () => {
   const rgba = packXyTaColormap({ style: { colormap: [[255, 0, 0, 255]] } });
   assert.equal(rgba.flags, 1 << 7);
   assert.equal(rgba.stops.length, 0);
+});
+
+
+test("packXyTaDensityColorCh uses color_ch only like Python", () => {
+  const missing = packXyTaDensityColorCh({});
+  assert.equal(missing.flags, 0);
+  assert.equal(missing.bytes.length, 0);
+  const camel = packXyTaDensityColorCh({
+    colorChannel: { mode: "constant", constant: "#ff0000" },
+  });
+  assert.equal(camel.flags, 0);
+  const snake = packXyTaDensityColorCh({
+    color_ch: { mode: "constant", constant: "#ff0000" },
+  });
+  assert.equal(snake.flags, 1 << 8);
+  assert.deepEqual([...snake.bytes], [...new TextEncoder().encode("#ff0000")]);
 });
 
 test("packXyTaFillOpacity uses fill_opacity only like Python", () => {
