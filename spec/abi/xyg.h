@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 206
-#define XYG_ABI_SIGNATURE_SHA256 "96c78bffbc6e30c2982aa963d9463bfc707a30bdaca004f8e6c2efcaa3e3ea66"
+#define XYG_ABI_VERSION 207
+#define XYG_ABI_SIGNATURE_SHA256 "dab61512a93a1ba06aee7d639b7322473e11d17c5db6aec1fab84d78ec5ea240"
 
 #ifdef __cplusplus
 extern "C" {
@@ -135,6 +135,7 @@ int32_t xyg_payload_tier(int32_t kind, uint64_t n_points, int32_t polar, int32_t
 size_t xyg_payload_visible_indices(const double * x, const double * y, size_t n, int32_t x_log, int32_t y_log, const double * base, int32_t has_base, int32_t prefiltered, int32_t x_has_nulls, int32_t y_has_nulls, int32_t base_has_nulls, int32_t * out_keep_all, uint32_t * out, size_t capacity);
 size_t xyg_payload_visible_mask(const double * x, const double * y, size_t n, int32_t x_log, int32_t y_log, const double * base, int32_t has_base, uint8_t * out, size_t capacity);
 int32_t xyg_payload_visible_needed(int32_t x_log, int32_t y_log, int32_t prefiltered, int32_t x_has_nulls, int32_t y_has_nulls, int32_t has_base, int32_t base_has_nulls);
+size_t xyg_polar_heatmap_inverse_map(const double * metrics, size_t metrics_len, double plot_x, double plot_y, double plot_w, double plot_h, uint32_t grid_w, uint32_t grid_h, double x0, double y0, double x1, double y1, double output_scale, uint32_t * out_w, uint32_t * out_h, uint32_t * out_row, uint32_t * out_col, uint32_t * out_source, size_t capacity);
 size_t xyg_polar_label_room(double widest, double * out_room);
 size_t xyg_polar_layout(double plot_x, double plot_y, double plot_w, double plot_h, uint32_t theta_unit, double theta_zero, uint32_t theta_direction, double sector_start, double sector_end, uint32_t n_categories, double r_lo, double r_hi, double r_origin, double hole, uint32_t r_scale_kind, double r_constant, int32_t r_mask_nonpositive, double * out_metrics, size_t out_cap);
 size_t xyg_polar_legend_reserve(int32_t compact, int32_t loc_has_left, double width, uint32_t * out_side, double * out_room);

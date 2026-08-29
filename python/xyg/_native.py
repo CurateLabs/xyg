@@ -467,6 +467,10 @@ def _ptr_u8(arr: npt.NDArray[np.uint8]) -> int:
     return arr.ctypes.data
 
 
+def _ptr_u32(arr: npt.NDArray[np.uint32]) -> int:
+    return arr.ctypes.data
+
+
 class _PolarAbiInput(ctypes.Structure):
     """Packed extras pointer/len view so Scene encode stays at Koffi's 64-arg ceiling."""
 
@@ -4511,6 +4515,89 @@ def polar_project(
     if np.ndim(theta) == 0:
         return out_x.reshape(()), out_y.reshape(())
     return out_x.reshape(np.shape(theta)), out_y.reshape(np.shape(r))
+
+
+def polar_heatmap_inverse_map(
+    metrics: npt.ArrayLike,
+    plot: Mapping[str, float],
+    grid_w: int,
+    grid_h: int,
+    x_range: tuple[float, float] | list[float],
+    y_range: tuple[float, float] | list[float],
+    output_scale: float = 1.0,
+) -> tuple[int, int, npt.NDArray[np.uint32], npt.NDArray[np.uint32], npt.NDArray[np.uint32]]:
+    """Map visible polar-heatmap pixels onto source cells (ABI 207).
+
+    Returns ``(out_w, out_h, rows, cols, source_indices)``. ``source_indices``
+    are row-major with source row 0 at the radial-range bottom so hosts can
+    color only those cells. Empty native pointers are ``0``.
+    """
+    packed = _as_f64(np.asarray(metrics, dtype=np.float64).reshape(-1), "metrics")
+    grid_w = int(grid_w)
+    grid_h = int(grid_h)
+    if grid_w <= 0 or grid_h <= 0:
+        raise ValueError("polar heatmap dimensions must be positive")
+    scale = float(output_scale)
+    if not math.isfinite(scale) or scale <= 0.0:
+        raise ValueError("polar heatmap output_scale must be positive and finite")
+    xr = (float(x_range[0]), float(x_range[1]))
+    yr = (float(y_range[0]), float(y_range[1]))
+    out_w = ctypes.c_uint32()
+    out_h = ctypes.c_uint32()
+    probed = _lib.xyg_polar_heatmap_inverse_map(
+        _ptr_f64(packed) if len(packed) else 0,
+        len(packed),
+        float(plot["x"]),
+        float(plot["y"]),
+        float(plot["w"]),
+        float(plot["h"]),
+        grid_w,
+        grid_h,
+        xr[0],
+        yr[0],
+        xr[1],
+        yr[1],
+        scale,
+        ctypes.byref(out_w),
+        ctypes.byref(out_h),
+        0,
+        0,
+        0,
+        0,
+    )
+    if probed == _USIZE_MAX:
+        raise ValueError("invalid polar-heatmap inverse-map request")
+    width = int(out_w.value)
+    height = int(out_h.value)
+    capacity = width * height
+    rows = np.empty(capacity, dtype=np.uint32)
+    cols = np.empty(capacity, dtype=np.uint32)
+    source = np.empty(capacity, dtype=np.uint32)
+    written = _lib.xyg_polar_heatmap_inverse_map(
+        _ptr_f64(packed) if len(packed) else 0,
+        len(packed),
+        float(plot["x"]),
+        float(plot["y"]),
+        float(plot["w"]),
+        float(plot["h"]),
+        grid_w,
+        grid_h,
+        xr[0],
+        yr[0],
+        xr[1],
+        yr[1],
+        scale,
+        ctypes.byref(out_w),
+        ctypes.byref(out_h),
+        _ptr_u32(rows) if capacity else 0,
+        _ptr_u32(cols) if capacity else 0,
+        _ptr_u32(source) if capacity else 0,
+        capacity,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid polar-heatmap inverse-map request")
+    n = int(written)
+    return width, height, rows[:n], cols[:n], source[:n]
 
 
 def _polar_mask(

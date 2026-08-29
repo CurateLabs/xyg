@@ -611,10 +611,11 @@ and Node call `xyg_colormap_rgba`, `xyg_colormap_rgba_canonical`, and
 drift on heatmap/density grid export. ABI 206 adds `xyg_colormap_lut`,
 `xyg_density_rgba_linear`, and `xyg_paint_effective_rgba` so remaining
 compatibility 1D LUT samples, legacy count-grid density, and artist-alpha
-compositing cannot drift (#313). `xyg_heatmap_rgba` keeps its
+compositing cannot drift (#313). ABI 207 `xyg_polar_heatmap_inverse_map`
+owns the compatibility polar heatmap gather-after-inverse map so SVG/raster
+exporters no longer invert pixels in Python or Node (#283). `xyg_heatmap_rgba` keeps its
 distinct normalized-scalar remap for other consumers. Hosts still
-resolve stop tables, CSS paints, truecolor RGBA buffers, and polar
-inverse-raster sampling.
+resolve stop tables, CSS paints, and truecolor RGBA buffers.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call

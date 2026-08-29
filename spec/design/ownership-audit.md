@@ -689,10 +689,10 @@ Forbidden:
 | `python/xyg/_png.py` | Python host | `python-host` | `keep-host`; ABI 115 moves filter-0 PNG encode into Rust; this module only coerces host buffers and forwards `mode` / `compression` | #274 |
 | `python/xyg/_raster.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 121 tessellation via `kernels` directly (#310); ABI 206 owns remaining `_lut` / linear density / effective rgba (#313); `triangle_mesh_boundary` stays host geometry | #58 |
 | `python/xyg/_sankey.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xyg/_scene.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 121 owns ribbon/curve/rounded-rect tessellation; compatibility PNG calls those kernels directly (#310); wrappers remain for tests; `grid_rgba` colormap remains #283/#313 | #58 |
+| `python/xyg/_scene.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 121 owns ribbon/curve/rounded-rect tessellation; compatibility PNG calls those kernels directly (#310); wrappers remain for tests; `grid_rgba` uses ABI 129/206 colormap kernels | #58 |
 | `python/xyg/_scene_v3.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xyg/_spatial.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xyg/_svg.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/_svg.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 207 owns polar heatmap inverse-map hits; hosts still color sampled cells | #58 |
 | `python/xyg/_textblock.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xyg/_trace.py` | Python host | `python-host` | `keep-host`; ABI 122 owns the density/M4 threshold decision; this module packs kind/force/per-item onto `payload_tier` | — |
 | `python/xyg/_typing.py` | Python host | `python-host` | `keep-host` | — |

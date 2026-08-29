@@ -51,7 +51,7 @@ Create/refresh GitHub sub-issues with `python3 scripts/m2_leftover_clusters.py`.
 | `279-compat-geometry` | #279 | — | P1 | [#310](https://github.com/CurateLabs/xyg/issues/310) | [M2 follow-on][P1][#279] Compatibility emitters still call `_scene.py` geometry |
 | `282-m4` | #282 | — | P1 | [#311](https://github.com/CurateLabs/xyg/issues/311) | [M2 follow-on][P1][#282] Remaining `_m4_decimate` policy |
 | `282-emit` | #282 | — | P1 | [#312](https://github.com/CurateLabs/xyg/issues/312) | [M2 follow-on][P1][#282] Remaining `_payload._emit_*` sampling / density / masks |
-| `283-paint` | #283 | — | P2 | [#313](https://github.com/CurateLabs/xyg/issues/313) | [M2 follow-on][P2][#283] Remaining LUT / `_paint.py` / `_trace_paint_rgba` policy |
+| `283-paint` | #283 | — | P2 | [#313](https://github.com/CurateLabs/xyg/issues/313) | [M2 follow-on][P2][#283] Remaining LUT / `_paint.py` / `_trace_paint_rgba` policy (closed via ABI 206 / PR #341). Remaining parent work: polar heatmap gather-after-inverse map (ABI 207). |
 
 ## Parents
 
