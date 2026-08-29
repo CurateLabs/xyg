@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 251;
+pub const ABI_VERSION: u32 = 252;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5496,7 +5496,7 @@ pub extern "C" fn xyg_scene_heatmap_colormap_admit(
 ///
 /// Finite integer-valued `rows`/`cols` `>= 1` return `1`. Fractional,
 /// non-finite, and non-positive return `0`. `-2` FFI. Length==2 stays host.
-/// XYTA integer coerce stays extra.
+/// XYTA integer coerce uses the same kernel.
 #[no_mangle]
 pub extern "C" fn xyg_scene_heatmap_shape_admit(rows: f64, cols: f64) -> i32 {
     ffi_guard(-2, || kernels::scene_heatmap_shape_admit(rows, cols))
@@ -5878,6 +5878,27 @@ pub unsafe extern "C" fn xyg_scene_arrays_equal(
             std::slice::from_raw_parts(right, right_len)
         };
         kernels::scene_arrays_equal(left, right)
+    })
+}
+
+/// Scene constant-color admit (ABI 252).
+///
+/// `0` fail, `1` style fallback, `2` channel constant. Nonzero flags
+/// are true. `-2` FFI. Ribbon-fail and field picking stay host.
+#[no_mangle]
+pub extern "C" fn xyg_scene_constant_color_admit(
+    has_channel: i32,
+    constant_ok: i32,
+    scatter_density: i32,
+    packs_paint_plane: i32,
+) -> i32 {
+    ffi_guard(-2, || {
+        kernels::scene_constant_color_admit(
+            has_channel,
+            constant_ok,
+            scatter_density,
+            packs_paint_plane,
+        )
     })
 }
 

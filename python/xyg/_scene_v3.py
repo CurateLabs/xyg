@@ -27,6 +27,7 @@ _SCENE_KIND_CLASS_POLYFILL = 1 << 4
 _SCENE_KIND_CLASS_HEXBIN = 1 << 5
 _SCENE_KIND_CLASS_HEATMAP = 1 << 6
 _SCENE_KIND_CLASS_SCATTER = 1 << 8
+_SCENE_KIND_CLASS_LINE = 1 << 9
 _SCENE_KIND_CLASS_OPACITY = (
     _SCENE_KIND_CLASS_BAND
     | _SCENE_KIND_CLASS_RIBBON
@@ -1126,20 +1127,30 @@ def _constant_color(trace: Any, fallback: str) -> str:
     channel = trace.color_ch
     if _classify_ribbon_color2(trace) == "fail":
         raise UnsupportedSceneV3("Scene v12 does not yet encode two-ended ribbon gradients")
-    if channel is None:
-        return str(trace.style.get("color", fallback))
-    if channel.mode != "constant" or channel.constant is None:
-        if str(getattr(trace, "kind", "") or "") == "scatter" and trace.use_density():
-            return str((getattr(trace, "style", None) or {}).get("color", fallback))
-        if (
-            _hexbin_packs_paint_plane(trace)
-            or _ribbon_packs_end_paints(trace)
-            or _mesh_packs_paint_plane(trace)
-            or _scatter_packs_paint_plane(trace)
-        ):
-            return str((getattr(trace, "style", None) or {}).get("color", fallback))
-        raise UnsupportedSceneV3("Scene v12 does not yet support data-driven paint channels")
-    return channel.constant
+    has_channel = channel is not None
+    constant_ok = (
+        has_channel
+        and getattr(channel, "mode", None) == "constant"
+        and getattr(channel, "constant", None) is not None
+    )
+    scatter_density = str(getattr(trace, "kind", "") or "") == "scatter" and bool(
+        getattr(trace, "use_density", lambda: False)()
+    )
+    packs_paint = (
+        _hexbin_packs_paint_plane(trace)
+        or _ribbon_packs_end_paints(trace)
+        or _mesh_packs_paint_plane(trace)
+        or _scatter_packs_paint_plane(trace)
+    )
+    code = _native.scene_constant_color_admit(
+        has_channel, constant_ok, scatter_density, packs_paint
+    )
+    if code == 2:
+        assert channel is not None
+        return str(channel.constant)
+    if code == 1:
+        return str((getattr(trace, "style", None) or {}).get("color", fallback))
+    raise UnsupportedSceneV3("Scene v12 does not yet support data-driven paint channels")
 
 
 _SCENE_AXIS_STYLE_KEYS = frozenset(
@@ -1826,7 +1837,7 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
     if curve is not None:
         curve_code = _native.scene_curve_classify(curve)
         if curve_code == 1:
-            if kind not in {"line", "area", "error_band"}:
+            if not (kind_class & (_SCENE_KIND_CLASS_LINE | _SCENE_KIND_CLASS_BAND)):
                 flags |= _XYFS_TRACE_DASHED_MARKERS
         elif curve_code != 0:
             flags |= _XYFS_TRACE_DASHED_MARKERS
@@ -2172,9 +2183,12 @@ def _pack_xyta(figure: Any) -> bytes:
             if shape is not None and len(shape) == 2:
                 flags |= _XYTA_SHAPE
                 try:
-                    rows, cols = int(shape[0]), int(shape[1])
+                    rows_f, cols_f = float(shape[0]), float(shape[1])
                 except (TypeError, ValueError):
                     rows = cols = 0
+                else:
+                    if _native.scene_heatmap_shape_admit(rows_f, cols_f):
+                        rows, cols = int(rows_f), int(cols_f)
             raw_grid = getattr(trace, "grid", None)
             if raw_grid is not None:
                 flags |= _XYTA_HAS_GRID

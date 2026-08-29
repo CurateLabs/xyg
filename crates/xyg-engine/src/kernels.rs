@@ -1561,6 +1561,33 @@ pub fn scene_arrays_equal(left: &[f64], right: &[f64]) -> i32 {
     i32::from(left.iter().zip(right.iter()).all(|(a, b)| a == b))
 }
 
+/// Scene constant-color admit (ABI 252).
+///
+/// `0` fail (data-driven without density/paint-plane), `1` style fallback,
+/// `2` use channel constant. Nonzero flags are true. Ribbon-fail and
+/// field picking stay host.
+pub const SCENE_CONSTANT_COLOR_FAIL: i32 = 0;
+pub const SCENE_CONSTANT_COLOR_FALLBACK: i32 = 1;
+pub const SCENE_CONSTANT_COLOR_CONSTANT: i32 = 2;
+
+pub fn scene_constant_color_admit(
+    has_channel: i32,
+    constant_ok: i32,
+    scatter_density: i32,
+    packs_paint_plane: i32,
+) -> i32 {
+    if has_channel == 0 {
+        return SCENE_CONSTANT_COLOR_FALLBACK;
+    }
+    if constant_ok != 0 {
+        return SCENE_CONSTANT_COLOR_CONSTANT;
+    }
+    if scatter_density != 0 || packs_paint_plane != 0 {
+        return SCENE_CONSTANT_COLOR_FALLBACK;
+    }
+    SCENE_CONSTANT_COLOR_FAIL
+}
+
 /// Admit Scene hexbin reduce names (ABI 232).
 ///
 /// `count`/`mean`/`sum`/`custom` return `1`. Unknown names, including empty
@@ -1709,7 +1736,8 @@ pub fn scene_heatmap_colormap_admit(
 /// Admit Scene heatmap lattice shape (ABI 240).
 ///
 /// Both `rows` and `cols` finite, integer-valued, and `>= 1` return `1`.
-/// Length==2 and field picking stay host. XYTA integer coerce stays extra.
+/// Length==2 and field picking stay host. XYTA integer coerce uses the
+/// same kernel.
 pub fn scene_heatmap_shape_admit(rows: f64, cols: f64) -> i32 {
     i32::from(
         rows.is_finite()
@@ -10313,6 +10341,16 @@ mod fuzz {
         assert_eq!(scene_arrays_equal(&[1.0], &[2.0]), 0);
         assert_eq!(scene_arrays_equal(&[f64::NAN], &[f64::NAN]), 0);
         assert_eq!(scene_arrays_equal(&[0.0], &[-0.0]), 1);
+    }
+
+    #[test]
+    fn scene_constant_color_admit_matches_host_table() {
+        assert_eq!(scene_constant_color_admit(0, 0, 0, 0), SCENE_CONSTANT_COLOR_FALLBACK);
+        assert_eq!(scene_constant_color_admit(1, 1, 0, 0), SCENE_CONSTANT_COLOR_CONSTANT);
+        assert_eq!(scene_constant_color_admit(1, 0, 1, 0), SCENE_CONSTANT_COLOR_FALLBACK);
+        assert_eq!(scene_constant_color_admit(1, 0, 0, 1), SCENE_CONSTANT_COLOR_FALLBACK);
+        assert_eq!(scene_constant_color_admit(1, 0, 0, 0), SCENE_CONSTANT_COLOR_FAIL);
+        assert_eq!(scene_constant_color_admit(1, 1, 1, 1), SCENE_CONSTANT_COLOR_CONSTANT);
     }
 
     #[test]

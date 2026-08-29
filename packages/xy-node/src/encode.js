@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyF32SafeScale, xyGeometryOffset, xyScalePinsOffset, xySceneDashAdmit, xySceneLinecapAdmit, xyDensityOverlayOpacity, xySceneMarkerPathAdmit, xySceneAnnotationStyleAdmit, xySceneArraysEqual, xySceneRibbonColor2Classify, xySceneScatterPaintChannelAdmit, xySceneTickLabelStrategy, xySceneTickAnchor, xySceneFillGradientAdmit, xySceneFiniteAll, xySceneParseLinearGradient, xySceneRectExtraFlags, xySceneGradientDir, xySceneLinearGradientPrefix, xySceneGradientSpace, xySceneGradientSolidCss, xySceneHeatmapColormapAdmit, xySceneHeatmapExtentAdmit, xySceneHeatmapShapeAdmit, xySceneHexbinColormapPlaneAdmit, xySceneHexbinPitchAdmit, xySceneHexbinReduceAdmit, xySceneHexbinRgbaPlaneAdmit, xySceneMeshPaintPlaneAdmit, xySceneItemApplyOpacity, xySceneItemWidthsAdmit, xySceneItemFillT, xySceneCurveClassify, xySceneMarkerGlyphAdmit, xySceneKindAdmit, xySceneKindClass, xyArrowGeometry, xyArrowShaftPoints, xyArrowEndDecoration, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyHexbinRing, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyStepArrays, xyMarkerPathScale, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapLut, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityRgbaLinear, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyPayloadVisibleIndices, xyPayloadEvenIndices, xyPayloadErrorbarIndices, xyPayloadSegmentBudget, xyPayloadSampleTargetIndices, xyPaintEffectiveRgba, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyF32SafeScale, xyGeometryOffset, xyScalePinsOffset, xySceneDashAdmit, xySceneLinecapAdmit, xyDensityOverlayOpacity, xySceneMarkerPathAdmit, xySceneAnnotationStyleAdmit, xySceneArraysEqual, xySceneConstantColorAdmit, xySceneRibbonColor2Classify, xySceneScatterPaintChannelAdmit, xySceneTickLabelStrategy, xySceneTickAnchor, xySceneFillGradientAdmit, xySceneFiniteAll, xySceneParseLinearGradient, xySceneRectExtraFlags, xySceneGradientDir, xySceneLinearGradientPrefix, xySceneGradientSpace, xySceneGradientSolidCss, xySceneHeatmapColormapAdmit, xySceneHeatmapExtentAdmit, xySceneHeatmapShapeAdmit, xySceneHexbinColormapPlaneAdmit, xySceneHexbinPitchAdmit, xySceneHexbinReduceAdmit, xySceneHexbinRgbaPlaneAdmit, xySceneMeshPaintPlaneAdmit, xySceneItemApplyOpacity, xySceneItemWidthsAdmit, xySceneItemFillT, xySceneCurveClassify, xySceneMarkerGlyphAdmit, xySceneKindAdmit, xySceneKindClass, xyArrowGeometry, xyArrowShaftPoints, xyArrowEndDecoration, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyHexbinRing, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyStepArrays, xyMarkerPathScale, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapLut, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityRgbaLinear, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyPayloadVisibleIndices, xyPayloadEvenIndices, xyPayloadErrorbarIndices, xyPayloadSegmentBudget, xyPayloadSampleTargetIndices, xyPaintEffectiveRgba, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -170,6 +170,20 @@ export function sceneArraysEqual(left, right) {
   );
   if (code === -2) throw new RangeError("invalid scene-arrays-equal request");
   return code === 1;
+}
+
+/** Scene constant-color admit (ABI 252). Ribbon-fail and field picking stay host. */
+export function sceneConstantColorAdmit(hasChannel, constantOk, scatterDensity, packsPaintPlane) {
+  const code = Number(
+    xySceneConstantColorAdmit(
+      hasChannel ? 1 : 0,
+      constantOk ? 1 : 0,
+      scatterDensity ? 1 : 0,
+      packsPaintPlane ? 1 : 0,
+    ),
+  );
+  if (code === -2) throw new RangeError("invalid scene-constant-color-admit request");
+  return code;
 }
 
 const RIBBON_COLOR2_NAMES = ["absent", "solid", "gradient", "ends", "fail"];
@@ -425,7 +439,7 @@ export function sceneHeatmapExtentAdmit(x0, x1, y0, y1) {
   return code === 1;
 }
 
-/** Scene heatmap lattice-shape admit (ABI 240). Length==2 stays host. */
+/** Scene heatmap lattice-shape admit (ABI 240). Length==2 stays host. XYTA uses the same kernel. */
 export function sceneHeatmapShapeAdmit(rows, cols) {
   const code = Number(xySceneHeatmapShapeAdmit(Number(rows), Number(cols)));
   if (code === -2) throw new RangeError("invalid scene-heatmap-shape-admit request");
