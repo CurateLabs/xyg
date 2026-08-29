@@ -844,6 +844,7 @@ Node `figureTraceSupport` does not fail-close `style.smooth`; curve names stay A
 Node `itemWidths` fail-closes a present `stroke_width` channel without values (same as Python).
 Node `itemApplyOpacity` fail-closes a present opacity/artist_alpha channel without values (same as Python).
 Node missing scatter kind uses `|| ""` (same as Python); it is not defaulted to `"scatter"`.
+Node `fillIsGradientAuthoring` rejects arrays (same as Python dict-only).
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1253,6 +1254,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `itemWidths` fail-closes a present `stroke_width` channel without values.
   Node `itemApplyOpacity` fail-closes a present opacity/artist_alpha channel without values.
   Node missing scatter kind uses `|| ""`.
+  Node `fillIsGradientAuthoring` rejects arrays (same as Python dict-only).
 
 ---
 

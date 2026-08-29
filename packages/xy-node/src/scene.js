@@ -1653,8 +1653,13 @@ function validateMarkerPath(value) {
   return sceneMarkerPathAdmit(value);
 }
 
-function fillIsGradientAuthoring(fill) {
-  if (fill != null && typeof fill === "object") return true;
+export function fillIsGradientAuthoring(fill) {
+  if (
+    fill != null
+    && typeof fill === "object"
+    && !Array.isArray(fill)
+    && !ArrayBuffer.isView(fill)
+  ) return true;
   if (typeof fill !== "string") return false;
   return sceneLinearGradientPrefix(fill);
 }
