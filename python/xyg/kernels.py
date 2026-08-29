@@ -58,6 +58,7 @@ geometry_offset = _impl.geometry_offset
 scale_pins_offset = _impl.scale_pins_offset
 scene_dash_admit = _impl.scene_dash_admit
 scene_linecap_admit = _impl.scene_linecap_admit
+scene_marker_path_admit = _impl.scene_marker_path_admit
 factorize_fixed = _impl.factorize_fixed
 factorize_fixed_u8 = _impl.factorize_fixed_u8
 factorize_fixed_u8_counts = _impl.factorize_fixed_u8_counts
@@ -288,6 +289,7 @@ __all__ = [
     "scale_pins_offset",
     "scene_dash_admit",
     "scene_linecap_admit",
+    "scene_marker_path_admit",
     "sector_triangles",
     "spectrogram",
     "stacked_bounds",

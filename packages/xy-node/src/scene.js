@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -1669,21 +1669,7 @@ function parseSceneLinecap(value) {
 }
 
 function validateMarkerPath(value) {
-  if (value == null || typeof value !== "object" || Array.isArray(value)) return null;
-  const contours = value.contours;
-  if (!Array.isArray(contours) || contours.length < 1 || contours.length > 32) return null;
-  const result = [];
-  let totalVertices = 0;
-  for (const contour of contours) {
-    if (!Array.isArray(contour)) return null;
-    const values = contour.map(Number);
-    if (values.length < 4 || values.length % 2) return null;
-    if (values.some((item) => !Number.isFinite(item) || Math.abs(item) > 0.500001)) return null;
-    totalVertices += values.length / 2;
-    result.push(values);
-  }
-  if (totalVertices > 96) return null;
-  return { contours: result, filled: value.filled == null ? true : Boolean(value.filled) };
+  return sceneMarkerPathAdmit(value);
 }
 
 const GRAD_DIR_CODES = { down: 0, up: 1, right: 2, left: 3 };

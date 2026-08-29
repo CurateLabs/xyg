@@ -35,6 +35,7 @@ export {
   sceneDashAdmit,
   sceneLinecapAdmit,
   densityOverlayOpacity,
+  sceneMarkerPathAdmit,
   roundedRectPoly,
   violinDensity,
   boxStats,

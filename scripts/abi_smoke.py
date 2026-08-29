@@ -204,6 +204,8 @@ def load() -> ctypes.CDLL:
     lib.xyg_scene_linecap_admit.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_density_overlay_opacity.restype = ctypes.c_int32
     lib.xyg_density_overlay_opacity.argtypes = [ctypes.c_double, F64P]
+    lib.xyg_scene_marker_path_admit.restype = ctypes.c_int32
+    lib.xyg_scene_marker_path_admit.argtypes = [F64P, ctypes.c_size_t, U32P, ctypes.c_size_t]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2147,6 +2149,34 @@ def main() -> None:
         "density_overlay_opacity nan",
     )
     ok(lib.xyg_density_overlay_opacity(0.8, null_f64) == 0, "density_overlay_opacity null out")
+    marker_vals = array("d", [-0.5, -0.5, 0.5, -0.5, 0.0, 0.5])
+    marker_lens = array("I", [6])
+    ok(
+        lib.xyg_scene_marker_path_admit(
+            _ptr(marker_vals, ctypes.c_double),
+            len(marker_vals),
+            _ptr(marker_lens, ctypes.c_uint32),
+            len(marker_lens),
+        )
+        == 1,
+        "scene_marker_path_admit triangle",
+    )
+    bad_marker = array("d", [0.0, 0.0])
+    bad_lens = array("I", [2])
+    ok(
+        lib.xyg_scene_marker_path_admit(
+            _ptr(bad_marker, ctypes.c_double),
+            len(bad_marker),
+            _ptr(bad_lens, ctypes.c_uint32),
+            len(bad_lens),
+        )
+        == 0,
+        "scene_marker_path_admit short contour",
+    )
+    ok(
+        lib.xyg_scene_marker_path_admit(null_f64, 0, null_u32, 0) == 0,
+        "scene_marker_path_admit empty",
+    )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8
     arrow_style[8] = 90.0

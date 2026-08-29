@@ -1020,6 +1020,49 @@ pub fn density_overlay_opacity(authored: f64) -> f64 {
     }
 }
 
+/// Scene marker-path admit: 1–32 contours of x/y pairs (ABI 221).
+///
+/// Each contour has an even length of at least 4 finite values with
+/// `|v| ≤ 0.500001`. Total vertices are at most 96. `lengths` is the
+/// per-contour value count and must consume `values` exactly. Filled
+/// contours shorter than 6 values stay a compile-path extra, not this admit.
+pub const SCENE_MARKER_PATH_MAX_CONTOURS: usize = 32;
+pub const SCENE_MARKER_PATH_MAX_VERTICES: usize = 96;
+pub const SCENE_MARKER_PATH_MAX_ABS: f64 = 0.500001;
+
+/// Admit concatenated Scene marker-path contour values.
+pub fn scene_marker_path_admit(values: &[f64], lengths: &[u32]) -> bool {
+    if !(1..=SCENE_MARKER_PATH_MAX_CONTOURS).contains(&lengths.len()) {
+        return false;
+    }
+    let mut at = 0usize;
+    let mut total_vertices = 0usize;
+    for &n_values in lengths {
+        let n = n_values as usize;
+        if n < 4 || n % 2 != 0 {
+            return false;
+        }
+        let Some(end) = at.checked_add(n) else {
+            return false;
+        };
+        if end > values.len() {
+            return false;
+        }
+        if values[at..end]
+            .iter()
+            .any(|value| !value.is_finite() || value.abs() > SCENE_MARKER_PATH_MAX_ABS)
+        {
+            return false;
+        }
+        total_vertices += n / 2;
+        if total_vertices > SCENE_MARKER_PATH_MAX_VERTICES {
+            return false;
+        }
+        at = end;
+    }
+    at == values.len()
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -8776,6 +8819,22 @@ mod fuzz {
         assert_eq!(density_overlay_opacity(f64::NAN), 0.55);
         assert_eq!(density_overlay_opacity(f64::INFINITY), 0.55);
         assert_eq!(density_overlay_opacity(f64::NEG_INFINITY), 0.55);
+    }
+
+    #[test]
+    fn scene_marker_path_admit_matches_host_bounds() {
+        assert!(scene_marker_path_admit(
+            &[-0.5, -0.5, 0.5, -0.5, 0.0, 0.5],
+            &[6]
+        ));
+        assert!(!scene_marker_path_admit(&[-0.5, -0.5, 0.5, -0.5], &[]));
+        assert!(!scene_marker_path_admit(&[0.0, 0.0], &[2]));
+        assert!(!scene_marker_path_admit(&[0.0, 0.0, 0.0], &[3]));
+        assert!(!scene_marker_path_admit(&[0.0, 0.0, f64::NAN, 0.0], &[4]));
+        assert!(!scene_marker_path_admit(&[0.0, 0.0, 0.6, 0.0], &[4]));
+        assert!(!scene_marker_path_admit(&[0.0, 0.0, 0.5, 0.0], &[4, 0]));
+        let too_many = vec![0.0; 194];
+        assert!(!scene_marker_path_admit(&too_many, &[194]));
     }
 
     #[test]
