@@ -48,6 +48,7 @@ export {
   sceneGradientSpace,
   sceneHeatmapColormapAdmit,
   sceneHeatmapExtentAdmit,
+  sceneHeatmapShapeAdmit,
   sceneHexbinPitchAdmit,
   sceneHexbinReduceAdmit,
   sceneCurveClassify,

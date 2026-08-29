@@ -309,6 +309,8 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         ctypes.c_int32,
     ]
+    lib.xyg_scene_heatmap_shape_admit.restype = ctypes.c_int32
+    lib.xyg_scene_heatmap_shape_admit.argtypes = [ctypes.c_double, ctypes.c_double]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2749,6 +2751,12 @@ def main() -> None:
     ok(
         lib.xyg_scene_heatmap_colormap_admit(0, 1, 0, 0) == 1,
         "scene_heatmap_colormap_admit colormap",
+    )
+    ok(lib.xyg_scene_heatmap_shape_admit(1.0, 2.0) == 1, "scene_heatmap_shape_admit ok")
+    ok(lib.xyg_scene_heatmap_shape_admit(0.0, 2.0) == 0, "scene_heatmap_shape_admit zero")
+    ok(
+        lib.xyg_scene_heatmap_shape_admit(1.5, 2.0) == 0,
+        "scene_heatmap_shape_admit fractional",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8

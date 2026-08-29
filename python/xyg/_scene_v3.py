@@ -2096,10 +2096,10 @@ def _heatmap_shape(trace: Any) -> tuple[int, int]:
     shape = getattr(trace, "grid_shape", None)
     if shape is None or len(shape) != 2:
         raise UnsupportedSceneV3("Scene v12 heatmap requires a rows x cols grid_shape")
-    rows, cols = int(shape[0]), int(shape[1])
-    if rows < 1 or cols < 1:
+    rows_f, cols_f = float(shape[0]), float(shape[1])
+    if not _native.scene_heatmap_shape_admit(rows_f, cols_f):
         raise UnsupportedSceneV3("Scene v12 heatmap requires a positive grid_shape")
-    return rows, cols
+    return int(rows_f), int(cols_f)
 
 
 def _heatmap_grid_values(trace: Any) -> np.ndarray:

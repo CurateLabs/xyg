@@ -1,9 +1,9 @@
 {
-  "abi_version": 239,
+  "abi_version": 240,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "27e3d633b32a5692bec6b2ed8ed65ee122efb005f8c8fcfabeaf86f5ddc64ed0",
+  "signature_sha256": "1a010e02315c86429680d64b83c75adfd4631475c25804368ebf905f776290a5",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -28830,6 +28830,56 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_scene_heatmap_extent_admit(double x0, double x1, double y0, double y1)"
+    },
+    {
+      "name": "xyg_scene_heatmap_shape_admit",
+      "node_name": "xySceneHeatmapShapeAdmit",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "rows",
+          "type": {
+            "rust": "f64",
+            "c": "double",
+            "ctypes": "ctypes.c_double",
+            "koffi": "double",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "cols",
+          "type": {
+            "rust": "f64",
+            "c": "double",
+            "ctypes": "ctypes.c_double",
+            "koffi": "double",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_scene_heatmap_shape_admit(double rows, double cols)"
     },
     {
       "name": "xyg_scene_hexbin_pitch_admit",

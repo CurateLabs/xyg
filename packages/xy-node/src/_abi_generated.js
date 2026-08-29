@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 239;
-export const SIGNATURE_SHA256 = "27e3d633b32a5692bec6b2ed8ed65ee122efb005f8c8fcfabeaf86f5ddc64ed0";
+export const ABI_VERSION = 240;
+export const SIGNATURE_SHA256 = "1a010e02315c86429680d64b83c75adfd4631475c25804368ebf905f776290a5";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -203,6 +203,7 @@ export let xySceneGradientDir;
 export let xySceneGradientSpace;
 export let xySceneHeatmapColormapAdmit;
 export let xySceneHeatmapExtentAdmit;
+export let xySceneHeatmapShapeAdmit;
 export let xySceneHexbinPitchAdmit;
 export let xySceneHexbinReduceAdmit;
 export let xySceneKindAdmit;
@@ -537,6 +538,7 @@ export function bindGeneratedAbi(lib) {
   xySceneGradientSpace = lib.func("int32_t xyg_scene_gradient_space(const uint8_t * text, size_t text_len)");
   xySceneHeatmapColormapAdmit = lib.func("int32_t xyg_scene_heatmap_colormap_admit(int32_t truecolor, int32_t has_colormap, int32_t has_rgba_grid, int32_t has_rgba)");
   xySceneHeatmapExtentAdmit = lib.func("int32_t xyg_scene_heatmap_extent_admit(double x0, double x1, double y0, double y1)");
+  xySceneHeatmapShapeAdmit = lib.func("int32_t xyg_scene_heatmap_shape_admit(double rows, double cols)");
   xySceneHexbinPitchAdmit = lib.func("int32_t xyg_scene_hexbin_pitch_admit(double dx, double dy)");
   xySceneHexbinReduceAdmit = lib.func("int32_t xyg_scene_hexbin_reduce_admit(const uint8_t * text, size_t text_len)");
   xySceneKindAdmit = lib.func("int32_t xyg_scene_kind_admit(const uint8_t * text, size_t text_len)");
