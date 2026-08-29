@@ -3289,6 +3289,13 @@ function packGradientSpec(fill) {
   return concatBytes(parts);
 }
 
+/** XYTC size. Python `_pack_xytc` reads `"size" in style` only. */
+export function packXyTcSize(style) {
+  const record = style ?? {};
+  if (!Object.hasOwn(record, "size")) return { flags: 0, value: Number.NaN };
+  return { flags: XYTC_HAS_SIZE, value: Number(record.size) };
+}
+
 function packXyTc(figure) {
   const traces = figure.traces ?? [];
   const records = [];
@@ -3322,9 +3329,10 @@ function packXyTc(figure) {
       lineOpacity = Number(style.line_opacity ?? style.lineOpacity ?? 1);
     }
     let size = Number.NaN;
-    if (Object.hasOwn(style, "size") || Object.hasOwn(style, "diameter")) {
-      flags |= XYTC_HAS_SIZE;
-      size = Number(style.size ?? style.diameter);
+    const packedSize = packXyTcSize(style);
+    if (packedSize.flags) {
+      flags |= packedSize.flags;
+      size = packedSize.value;
     }
     let sizeCh = Number.NaN;
     const sizeChannel = trace.size_ch ?? trace.sizeChannel;

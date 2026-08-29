@@ -60,6 +60,7 @@ import {
   packXyTaGrid,
   packXyTaRgba,
   packXyTaRgbaGrid,
+  packXyTcSize,
   hexbinXyTaColormap,
   constantMarkColor,
   xyHfColormap,
@@ -367,6 +368,18 @@ test("packXyTaFillOpacity uses fill_opacity only like Python", () => {
   const snake = packXyTaFillOpacity({ fill_opacity: 0.5 });
   assert.equal(snake.flags, 1 << 11);
   assert.equal(snake.value, 0.5);
+});
+
+test("packXyTcSize uses size only like Python", () => {
+  const missing = packXyTcSize({});
+  assert.equal(missing.flags, 0);
+  assert.equal(Number.isNaN(missing.value), true);
+  const camel = packXyTcSize({ diameter: 12 });
+  assert.equal(camel.flags, 0);
+  assert.equal(Number.isNaN(camel.value), true);
+  const snake = packXyTcSize({ size: 12 });
+  assert.equal(snake.flags, 1 << 6);
+  assert.equal(snake.value, 12);
 });
 
 test("packXyTaGrid flattens plane.values like Python", () => {
