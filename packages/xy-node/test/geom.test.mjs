@@ -57,6 +57,7 @@ import {
   xyHfColormap,
   channelConstantCss,
   channelEndRgba8,
+  color2Channel,
   sourceColorCss,
   sceneMeshPaintPlaneAdmit,
   sceneItemApplyOpacity,
@@ -402,6 +403,13 @@ test("sourceColorCss uses color_ch only like Python", () => {
     "#3987e5",
   );
   assert.equal(sourceColorCss({ style: { color: "#123456" } }), "#123456");
+});
+
+test("color2Channel uses color2_ch only like Python", () => {
+  const ch = { mode: "constant", constant: "red" };
+  assert.equal(color2Channel({ color2_ch: ch }), ch);
+  assert.equal(color2Channel({ color_target: ch }), null);
+  assert.equal(color2Channel({ colorTarget: ch }), null);
 });
 
 test("sceneGradientSpace matches host table", () => {

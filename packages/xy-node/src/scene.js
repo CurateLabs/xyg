@@ -1704,8 +1704,8 @@ export function channelConstantCss(channel) {
   return String(channel.constant);
 }
 
-function color2Channel(trace) {
-  return trace.color2_ch ?? trace.color_target ?? trace.colorTarget ?? null;
+export function color2Channel(trace) {
+  return trace.color2_ch ?? null;
 }
 
 export function sourceColorCss(trace) {
