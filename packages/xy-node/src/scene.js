@@ -3847,21 +3847,18 @@ function packTraceCompile(facts) {
   return out.subarray(0, code);
 }
 
-function packXyTaColormap(trace) {
+export function packXyTaColormap(trace) {
   const style = trace.style ?? {};
-  const colormap = style.colormap ?? trace.colormap;
-  const stopSource = style.colormapStops ?? trace.colormapStops;
+  const colormap = style.colormap;
   let flags = 0;
   let cmap = new Uint8Array();
   let stops = new Uint8Array();
   if (typeof colormap === "string") {
     flags |= XYTA_HAS_NAMED_CMAP;
     cmap = new TextEncoder().encode(colormap);
-  } else if (colormap != null || stopSource != null) {
+  } else if (colormap != null) {
     flags |= XYTA_HAS_STOPS;
-    stops = stopSource == null
-      ? Uint8Array.from(colormap.flat ? colormap.flat() : colormap)
-      : Uint8Array.from(stopSource);
+    stops = Uint8Array.from(colormap.flat ? colormap.flat() : colormap);
   }
   return { flags, cmap, stops };
 }
