@@ -3110,7 +3110,13 @@ function packMarkStyleRecord(trace, opacity, fillOpacity, strokeOpacity, lineOpa
     flags |= MS_HAS_LINE_COLOR;
     lineColor = encodeUtf8(style.line_color ?? style.lineColor);
   }
-  const color = style.color ?? "#3987e5";
+  const color = constantMarkColor(trace);
+  if (color == null) {
+    if (classifyRibbonColor2(trace) === "fail") {
+      throw new RangeError("Scene v12 does not yet encode two-ended ribbon gradients");
+    }
+    throw new RangeError("Scene v12 does not yet support data-driven paint channels");
+  }
   const colorBytes = encodeUtf8(color);
   let strokeWidth = 0;
   let width = 0;
