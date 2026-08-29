@@ -3891,7 +3891,7 @@ function packXyTa(figure, xDomain, yDomain) {
         flags |= XYTA_SHAPE;
         const rawRows = Number(shape[0]);
         const rawCols = Number(shape[1]);
-        if (Number.isInteger(rawRows) && Number.isInteger(rawCols)) {
+        if (sceneHeatmapShapeAdmit(rawRows, rawCols)) {
           rows = rawRows;
           cols = rawCols;
         }

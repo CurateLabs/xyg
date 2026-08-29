@@ -1603,7 +1603,7 @@ stay host.
 ABI 240 `xyg_scene_heatmap_shape_admit` owns Scene heatmap lattice-shape
 admit (finite integer-valued `rows`/`cols` `>= 1`) so Python `_heatmap_shape`
 and Node XYEP pack cannot drift. Length==2 stays host. XYTA integer coerce
-stays extra. Closes Python `int()` truncation vs Node `Number.isInteger`.
+uses the same kernel (no new ABI). Closes Python `int()` truncation vs Node `Number.isInteger`.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1743,7 +1743,7 @@ stay host.
 ABI 240 `xyg_scene_heatmap_shape_admit` owns Scene heatmap lattice-shape
 admit (finite integer-valued `rows`/`cols` `>= 1`) so Python `_heatmap_shape`
 and Node XYEP pack cannot drift. Length==2 stays host. XYTA integer coerce
-stays extra. Closes Python `int()` truncation vs Node `Number.isInteger`.
+uses the same kernel (no new ABI). Closes Python `int()` truncation vs Node `Number.isInteger`.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

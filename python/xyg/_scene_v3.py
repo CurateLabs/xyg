@@ -2184,9 +2184,12 @@ def _pack_xyta(figure: Any) -> bytes:
             if shape is not None and len(shape) == 2:
                 flags |= _XYTA_SHAPE
                 try:
-                    rows, cols = int(shape[0]), int(shape[1])
+                    rows_f, cols_f = float(shape[0]), float(shape[1])
                 except (TypeError, ValueError):
                     rows = cols = 0
+                else:
+                    if _native.scene_heatmap_shape_admit(rows_f, cols_f):
+                        rows, cols = int(rows_f), int(cols_f)
             raw_grid = getattr(trace, "grid", None)
             if raw_grid is not None:
                 flags |= _XYTA_HAS_GRID

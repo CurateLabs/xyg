@@ -755,7 +755,7 @@ stay host.
 ABI 240 `xyg_scene_heatmap_shape_admit` owns Scene heatmap lattice-shape
 admit (finite integer-valued `rows`/`cols` `>= 1`) so Python `_heatmap_shape`
 and Node XYEP pack cannot drift. Length==2 stays host. XYTA integer coerce
-stays extra. Closes Python `int()` truncation vs Node `Number.isInteger`.
+uses the same kernel (no new ABI). Closes Python `int()` truncation vs Node `Number.isInteger`.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
