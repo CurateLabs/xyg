@@ -5513,9 +5513,9 @@ function rectExtraFlags(style, kind, polar) {
   return sceneRectExtraFlags(kind, polar, gradientFail, values, radiusSeq, gap);
 }
 
-function figureTraceSupport(figure, trace) {
+export function figureTraceSupport(figure, trace) {
   const style = trace.style ?? {};
-  const kind = String(trace.kind ?? "mark");
+  const kind = String(trace.kind || "mark");
   const kindClass = sceneKindClass(kind);
   let flags = 0;
   if (!sceneKindAdmit(kind)) flags |= XYFS_TRACE_UNSUPPORTED_KIND;

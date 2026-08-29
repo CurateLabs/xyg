@@ -54,6 +54,7 @@ import {
   sceneMarkerGlyphAdmit,
   sceneKindAdmit,
   sceneKindClass,
+  figureTraceSupport,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -365,6 +366,12 @@ test("sceneKindAdmit matches host table", () => {
   assert.equal(sceneKindAdmit("SCATTER"), false);
   assert.equal(sceneKindAdmit("pie"), false);
   assert.equal(sceneKindAdmit(" scatter"), false);
+});
+
+test("figureTraceSupport empty kind matches Python or mark", () => {
+  assert.equal(figureTraceSupport({}, { kind: "" }).kind, "mark");
+  assert.equal(figureTraceSupport({}, {}).kind, "mark");
+  assert.equal(figureTraceSupport({}, { kind: "scatter" }).kind, "scatter");
 });
 
 test("sceneKindClass matches host table", () => {
