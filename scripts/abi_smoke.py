@@ -317,6 +317,13 @@ def load() -> ctypes.CDLL:
     lib.xyg_scene_hexbin_colormap_plane_admit.argtypes = [U8P, ctypes.c_size_t, ctypes.c_int32]
     lib.xyg_scene_hexbin_rgba_plane_admit.restype = ctypes.c_int32
     lib.xyg_scene_hexbin_rgba_plane_admit.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_scene_mesh_paint_plane_admit.restype = ctypes.c_int32
+    lib.xyg_scene_mesh_paint_plane_admit.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_int32,
+    ]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2818,6 +2825,21 @@ def main() -> None:
     ok(
         lib.xyg_scene_hexbin_rgba_plane_admit(null_u8, 0) == 0,
         "scene_hexbin_rgba_plane_admit empty",
+    )
+    mesh_kind = array("B", b"triangle_mesh")
+    ok(
+        lib.xyg_scene_mesh_paint_plane_admit(_ptr(mesh_kind, ctypes.c_uint8), len(mesh_kind), 0, 1)
+        == 1,
+        "scene_mesh_paint_plane_admit triangle_mesh",
+    )
+    ok(
+        lib.xyg_scene_mesh_paint_plane_admit(_ptr(mesh_kind, ctypes.c_uint8), len(mesh_kind), 1, 1)
+        == 0,
+        "scene_mesh_paint_plane_admit joined_fill",
+    )
+    ok(
+        lib.xyg_scene_mesh_paint_plane_admit(null_u8, 0, 0, 1) == 0,
+        "scene_mesh_paint_plane_admit empty",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8

@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 243
-SIGNATURE_SHA256 = "86675d260aaedd4c40b5834b5536e0aba1f76fac457aeebf538f1da5a0efb5e1"
+ABI_VERSION = 244
+SIGNATURE_SHA256 = "2f8c1e71c1f893c488c725ba899ed6b6a57b8303b1ed78d364298ad7bc7a0e9b"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -846,6 +846,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_marker_path_admit
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_mesh_paint_plane_admit(const uint8_t * text, size_t text_len, int32_t joined_fill, int32_t has_per_item)
+    function = lib.xyg_scene_mesh_paint_plane_admit
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_int32]
     # int32_t xyg_scene_pack_annotation_facts(const uint8_t * facts, size_t facts_len, uint32_t style_ref_base, double x0, double x1, double y0, double y1, uint8_t * out, size_t out_cap)
     function = lib.xyg_scene_pack_annotation_facts
     function.restype = ctypes.c_int32

@@ -1709,6 +1709,16 @@ pub fn scene_hexbin_rgba_plane_admit(mode: &str) -> i32 {
     i32::from(matches!(mode, "categorical" | "direct_rgba"))
 }
 
+/// Admit Scene mesh paint-plane packing (ABI 244).
+///
+/// Exact `triangle_mesh` plus `joined_fill == 0` plus a nonzero
+/// `has_per_item` flag return `1`. Unknown kinds, including empty text,
+/// joined fill, or a zero flag return `0`. No lowercasing. `joined_fill`
+/// field picking and `has_per_item` gathering stay host.
+pub fn scene_mesh_paint_plane_admit(kind: &str, joined_fill: i32, has_per_item: i32) -> i32 {
+    i32::from(kind == "triangle_mesh" && joined_fill == 0 && has_per_item != 0)
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -9983,6 +9993,18 @@ mod fuzz {
         assert_eq!(scene_hexbin_rgba_plane_admit("CATEGORICAL"), 0);
         assert_eq!(scene_hexbin_rgba_plane_admit("continuous"), 0);
         assert_eq!(scene_hexbin_rgba_plane_admit("direct-rgba"), 0);
+    }
+
+    #[test]
+    fn scene_mesh_paint_plane_admit_matches_host_table() {
+        assert_eq!(scene_mesh_paint_plane_admit("triangle_mesh", 0, 1), 1);
+        assert_eq!(scene_mesh_paint_plane_admit("triangle_mesh", 0, 2), 1);
+        assert_eq!(scene_mesh_paint_plane_admit("triangle_mesh", 1, 1), 0);
+        assert_eq!(scene_mesh_paint_plane_admit("triangle_mesh", 0, 0), 0);
+        assert_eq!(scene_mesh_paint_plane_admit("", 0, 1), 0);
+        assert_eq!(scene_mesh_paint_plane_admit("TRIANGLE_MESH", 0, 1), 0);
+        assert_eq!(scene_mesh_paint_plane_admit("scatter", 0, 1), 0);
+        assert_eq!(scene_mesh_paint_plane_admit(" triangle_mesh", 0, 1), 0);
     }
 
     #[test]

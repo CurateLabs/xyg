@@ -1,9 +1,9 @@
 {
-  "abi_version": 243,
+  "abi_version": 244,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "86675d260aaedd4c40b5834b5536e0aba1f76fac457aeebf538f1da5a0efb5e1",
+  "signature_sha256": "2f8c1e71c1f893c488c725ba899ed6b6a57b8303b1ed78d364298ad7bc7a0e9b",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -29435,6 +29435,87 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_scene_marker_path_admit(const double * values, size_t n_values, const uint32_t * lengths, size_t n_contours)"
+    },
+    {
+      "name": "xyg_scene_mesh_paint_plane_admit",
+      "node_name": "xySceneMeshPaintPlaneAdmit",
+      "nargs": 4,
+      "arguments": [
+        {
+          "name": "text",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "text_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "joined_fill",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_per_item",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_scene_mesh_paint_plane_admit(const uint8_t * text, size_t text_len, int32_t joined_fill, int32_t has_per_item)"
     },
     {
       "name": "xyg_scene_pack_annotation_facts",

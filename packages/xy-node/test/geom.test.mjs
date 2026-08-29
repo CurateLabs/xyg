@@ -33,6 +33,7 @@ import {
   sceneHexbinPitchAdmit,
   sceneHexbinReduceAdmit,
   sceneHexbinRgbaPlaneAdmit,
+  sceneMeshPaintPlaneAdmit,
   sceneCurveClassify,
   sceneMarkerGlyphAdmit,
   sceneKindAdmit,
@@ -382,6 +383,16 @@ test("sceneHexbinRgbaPlaneAdmit matches host table", () => {
   assert.equal(sceneHexbinRgbaPlaneAdmit("CATEGORICAL"), false);
   assert.equal(sceneHexbinRgbaPlaneAdmit("continuous"), false);
   assert.equal(sceneHexbinRgbaPlaneAdmit("direct-rgba"), false);
+});
+
+test("sceneMeshPaintPlaneAdmit matches host table", () => {
+  assert.equal(sceneMeshPaintPlaneAdmit("triangle_mesh", 0, 1), true);
+  assert.equal(sceneMeshPaintPlaneAdmit("triangle_mesh", 1, 1), false);
+  assert.equal(sceneMeshPaintPlaneAdmit("triangle_mesh", 0, 0), false);
+  assert.equal(sceneMeshPaintPlaneAdmit("", 0, 1), false);
+  assert.equal(sceneMeshPaintPlaneAdmit("TRIANGLE_MESH", 0, 1), false);
+  assert.equal(sceneMeshPaintPlaneAdmit("scatter", 0, 1), false);
+  assert.equal(sceneMeshPaintPlaneAdmit(" triangle_mesh", 0, 1), false);
 });
 
 test("sceneHexbinPitchAdmit matches host table", () => {

@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 243;
-export const SIGNATURE_SHA256 = "86675d260aaedd4c40b5834b5536e0aba1f76fac457aeebf538f1da5a0efb5e1";
+export const ABI_VERSION = 244;
+export const SIGNATURE_SHA256 = "2f8c1e71c1f893c488c725ba899ed6b6a57b8303b1ed78d364298ad7bc7a0e9b";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -214,6 +214,7 @@ export let xySceneLinearGradientPrefix;
 export let xySceneLinecapAdmit;
 export let xySceneMarkerGlyphAdmit;
 export let xySceneMarkerPathAdmit;
+export let xySceneMeshPaintPlaneAdmit;
 export let xyScenePackAnnotationFacts;
 export let xyScenePackAnnotationMarks;
 export let xyScenePackAnnotations;
@@ -552,6 +553,7 @@ export function bindGeneratedAbi(lib) {
   xySceneLinecapAdmit = lib.func("int32_t xyg_scene_linecap_admit(const uint8_t * text, size_t text_len)");
   xySceneMarkerGlyphAdmit = lib.func("int32_t xyg_scene_marker_glyph_admit(const uint8_t * text, size_t text_len)");
   xySceneMarkerPathAdmit = lib.func("int32_t xyg_scene_marker_path_admit(const double * values, size_t n_values, const uint32_t * lengths, size_t n_contours)");
+  xySceneMeshPaintPlaneAdmit = lib.func("int32_t xyg_scene_mesh_paint_plane_admit(const uint8_t * text, size_t text_len, int32_t joined_fill, int32_t has_per_item)");
   xyScenePackAnnotationFacts = lib.func("int32_t xyg_scene_pack_annotation_facts(const uint8_t * facts, size_t facts_len, uint32_t style_ref_base, double x0, double x1, double y0, double y1, uint8_t * out, size_t out_cap)");
   xyScenePackAnnotationMarks = lib.func("int32_t xyg_scene_pack_annotation_marks(const uint8_t * rows, size_t rows_len, double x0, double x1, double y0, double y1, uint8_t * out, size_t out_cap)");
   xyScenePackAnnotations = lib.func("int32_t xyg_scene_pack_annotations(uint32_t n_text, const uint8_t * text_meta, size_t text_meta_len, const uint32_t * text_lens, const uint8_t * texts, size_t texts_len, uint32_t n_attached, const uint8_t * attached_meta, size_t attached_meta_len, const uint32_t * attached_lens, const uint8_t * attached_texts, size_t attached_texts_len, uint32_t n_arrows, const uint8_t * arrow_meta, size_t arrow_meta_len, uint32_t n_callouts, const uint8_t * callout_meta, size_t callout_meta_len, const uint32_t * callout_lens, const uint8_t * callout_texts, size_t callout_texts_len, uint32_t n_wrapped, const uint8_t * wrapped_meta, size_t wrapped_meta_len, const uint32_t * wrapped_lens, const uint8_t * wrapped_texts, size_t wrapped_texts_len, uint8_t * out, size_t out_cap)");

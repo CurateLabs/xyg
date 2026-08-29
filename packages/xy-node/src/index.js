@@ -36,6 +36,7 @@ export {
   sceneLinecapAdmit,
   densityOverlayOpacity,
   sceneMarkerPathAdmit,
+  sceneMeshPaintPlaneAdmit,
   sceneAnnotationStyleAdmit,
   sceneRibbonColor2Classify,
   sceneScatterPaintChannelAdmit,
