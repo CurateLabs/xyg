@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 248
-SIGNATURE_SHA256 = "e72a822b39888540615f6def2828cc1fd14011892fd5564d5188e091983492fa"
+ABI_VERSION = 249
+SIGNATURE_SHA256 = "ea061668d14761f531afc21a1f354d8343c6b6da8233a1677adfe25f6dd69769"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -794,6 +794,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_gradient_dir
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_gradient_solid_css(const uint8_t * rgba, size_t rgba_len, uint8_t * out, size_t out_len)
+    function = lib.xyg_scene_gradient_solid_css
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_scene_gradient_space(const uint8_t * text, size_t text_len)
     function = lib.xyg_scene_gradient_space
     function.restype = ctypes.c_int32

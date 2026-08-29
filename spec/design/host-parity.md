@@ -789,6 +789,10 @@ cannot drift. Field picking and colormap lookup stay host.
 ABI 248 `xyg_scene_finite_all` owns Scene finite-all admit (empty → `1`)
 so Python `_xyep_finite` / heatmap XYEP and Node `exportColumnFinite`
 cannot drift. Field picking stays host.
+ABI 249 `xyg_scene_gradient_solid_css` owns Scene gradient solid CSS
+(first packed RGBA8 stop with alpha `> 0` → `rgb(r,g,b)`; else
+`rgb(0,0,0)`) so Python `_gradient_solid_css` and Node `gradientSolidCss`
+cannot drift. Field picking stays host.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1169,6 +1173,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Scene per-item stroke-width admit is ABI 246.
   Scene continuous per-item fill unit-t is ABI 247.
   Scene finite-all admit is ABI 248.
+  Scene gradient-solid CSS is ABI 249.
 
 ---
 

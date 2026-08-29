@@ -1525,6 +1525,30 @@ pub fn scene_gradient_space(text: &str) -> i32 {
     }
 }
 
+/// Scene gradient solid CSS (ABI 249).
+///
+/// Packed RGBA8 (`len % 4 == 0`). First stop with alpha `> 0` writes
+/// `rgb(r,g,b)` (no spaces). Otherwise `rgb(0,0,0)`. Empty is the zero
+/// color. Returns written UTF-8 length, or `0` when `len` is not a
+/// multiple of 4 or `out` is too small. Field picking stays host.
+pub fn scene_gradient_solid_css(rgba: &[u8], out: &mut [u8]) -> i32 {
+    if rgba.len() % 4 != 0 {
+        return 0;
+    }
+    let (r, g, b) = rgba
+        .chunks_exact(4)
+        .find(|chunk| chunk[3] > 0)
+        .map(|chunk| (chunk[0], chunk[1], chunk[2]))
+        .unwrap_or((0, 0, 0));
+    let text = format!("rgb({r},{g},{b})");
+    let bytes = text.as_bytes();
+    if out.len() < bytes.len() {
+        return 0;
+    }
+    out[..bytes.len()].copy_from_slice(bytes);
+    bytes.len() as i32
+}
+
 /// Admit Scene hexbin reduce names (ABI 232).
 ///
 /// `count`/`mean`/`sum`/`custom` return `1`. Unknown names, including empty
@@ -10217,6 +10241,21 @@ mod fuzz {
         assert_eq!(scene_finite_all(&[f64::INFINITY]), 0);
         assert_eq!(scene_finite_all(&[f64::NEG_INFINITY]), 0);
         assert_eq!(scene_finite_all(&[0.0, f64::NAN]), 0);
+    }
+
+    #[test]
+    fn scene_gradient_solid_css_matches_host_table() {
+        let mut out = [0u8; 16];
+        let n = scene_gradient_solid_css(&[], &mut out);
+        assert_eq!(&out[..n as usize], b"rgb(0,0,0)");
+        let n = scene_gradient_solid_css(&[1, 2, 3, 0, 10, 20, 30, 255], &mut out);
+        assert_eq!(&out[..n as usize], b"rgb(10,20,30)");
+        let n = scene_gradient_solid_css(&[255, 0, 0, 1], &mut out);
+        assert_eq!(&out[..n as usize], b"rgb(255,0,0)");
+        let n = scene_gradient_solid_css(&[1, 2, 3, 0], &mut out);
+        assert_eq!(&out[..n as usize], b"rgb(0,0,0)");
+        assert_eq!(scene_gradient_solid_css(&[1, 2, 3], &mut out), 0);
+        assert_eq!(scene_gradient_solid_css(&[1, 2, 3, 4], &mut [0u8; 4]), 0);
     }
 
     #[test]

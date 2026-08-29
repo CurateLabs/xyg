@@ -27,6 +27,7 @@ import {
   sceneGradientDir,
   sceneLinearGradientPrefix,
   sceneGradientSpace,
+  sceneGradientSolidCss,
   sceneHeatmapColormapAdmit,
   sceneHeatmapExtentAdmit,
   sceneHeatmapShapeAdmit,
@@ -438,6 +439,14 @@ test("sceneFiniteAll matches host table", () => {
   assert.equal(sceneFiniteAll([Number.POSITIVE_INFINITY]), false);
   assert.equal(sceneFiniteAll([Number.NEGATIVE_INFINITY]), false);
   assert.equal(sceneFiniteAll([0, Number.NaN]), false);
+});
+
+test("sceneGradientSolidCss matches host table", () => {
+  assert.equal(sceneGradientSolidCss([]), "rgb(0,0,0)");
+  assert.equal(sceneGradientSolidCss([1, 2, 3, 0, 10, 20, 30, 255]), "rgb(10,20,30)");
+  assert.equal(sceneGradientSolidCss([255, 0, 0, 1]), "rgb(255,0,0)");
+  assert.equal(sceneGradientSolidCss([1, 2, 3, 0]), "rgb(0,0,0)");
+  assert.equal(sceneGradientSolidCss([1, 2, 3]), null);
 });
 
 test("sceneHexbinPitchAdmit matches host table", () => {

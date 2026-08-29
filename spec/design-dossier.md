@@ -1637,6 +1637,10 @@ cannot drift. Field picking and colormap lookup stay host.
 ABI 248 `xyg_scene_finite_all` owns Scene finite-all admit (empty → `1`)
 so Python `_xyep_finite` / heatmap XYEP and Node `exportColumnFinite`
 cannot drift. Field picking stays host.
+ABI 249 `xyg_scene_gradient_solid_css` owns Scene gradient solid CSS
+(first packed RGBA8 stop with alpha `> 0` → `rgb(r,g,b)`; else
+`rgb(0,0,0)`) so Python `_gradient_solid_css` and Node `gradientSolidCss`
+cannot drift. Field picking stays host.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1809,6 +1813,10 @@ clip to `[0, 1]`) so Python `_item_fill_rgba8` and Node `itemFillRgba8`
 cannot drift. Field picking and colormap lookup stay host.
 ABI 248 `xyg_scene_finite_all` owns Scene finite-all admit (empty → `1`)
 so Python `_xyep_finite` / heatmap XYEP and Node `exportColumnFinite`
+cannot drift. Field picking stays host.
+ABI 249 `xyg_scene_gradient_solid_css` owns Scene gradient solid CSS
+(first packed RGBA8 stop with alpha `> 0` → `rgb(r,g,b)`; else
+`rgb(0,0,0)`) so Python `_gradient_solid_css` and Node `gradientSolidCss`
 cannot drift. Field picking stays host.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and

@@ -1378,6 +1378,31 @@ def scene_gradient_space(text: str | None = None) -> int:
     return int(code)
 
 
+_SCENE_GRADIENT_SOLID_CSS_CAP = 16
+
+
+def scene_gradient_solid_css(rgba: npt.ArrayLike) -> str | None:
+    """Scene gradient solid CSS via ``xyg_scene_gradient_solid_css`` (ABI 249).
+
+    Empty native pointers are ``0``. Field picking stays host.
+    """
+    packed = np.ascontiguousarray(np.asarray(rgba, dtype=np.uint8).reshape(-1), dtype=np.uint8)
+    out = np.empty(_SCENE_GRADIENT_SOLID_CSS_CAP, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_gradient_solid_css(
+            _ptr_u8(packed) if packed.size else 0,
+            int(packed.size),
+            _ptr_u8(out),
+            int(out.size),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-gradient-solid-css request")
+    if code <= 0:
+        return None
+    return bytes(out[:code]).decode("ascii")
+
+
 def scene_hexbin_reduce_admit(text: str | None = None) -> bool:
     """Scene hexbin reduce admit via ``xyg_scene_hexbin_reduce_admit`` (ABI 232).
 
