@@ -99,8 +99,11 @@ test("Node projects Rust-owned Scene support decisions verbatim", () => {
     assert.equal(sceneExportSupportReason(colorChannel), null);
   }
   const incomplete = new Figure(); incomplete.scatter([0, 1], [0, 1]);
-  incomplete.traces[0].color = { mode: "constant" };
+  incomplete.traces[0].color_ch = { mode: "constant" };
   assert.throws(() => incomplete.toScene(), /hidden or per-item|data-driven|GRADIENT/);
+  const colorOnly = new Figure(); colorOnly.scatter([0, 1], [0, 1]);
+  colorOnly.traces[0].color = { mode: "constant" };
+  assert.doesNotThrow(() => colorOnly.toScene());
   const constantColor = new Figure(); constantColor.scatter([0], [0]);
   constantColor.traces[0].color = { mode: "constant", color: "#3987e5" };
   assert.doesNotThrow(() => constantColor.toScene());
