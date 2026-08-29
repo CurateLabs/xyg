@@ -303,7 +303,7 @@ this section and from the compatibility polar `_curve_path`. Arcs
 flatten to polylines wherever the medium lacks a real arc: the raster display
 list always, and the GPU bar sweep by construction. SVG needs no count: it draws
 real `A` arcs (`_polar_wedge_path`), and `polar_wedge_points` is the flattened
-twin the raster path consumes.
+twin the raster path consumes through ABI 209 `xyg_polar_wedge_points`.
 
 The subdivision count is **span-proportional and recorded as a formula**
 (`config.polar_bar_segments`, mirrored by `xyPolarBarSegments` in
@@ -349,7 +349,7 @@ half-height `hr` and half-width `sweep/2 · dist`, so the standard rounded-rect
 profile applies there and rolls back out to corners that follow the arc. The
 client evaluates that profile per fragment (the annular-sector SDF in
 `RECT_FS`); the exporters sample the same profile into a polygon
-(`_rounded_wedge_points`), which is why a rounded wedge ships as a polyline
+(`xyg_polar_wedge_points`), which is why a rounded wedge ships as a polyline
 while a plain one keeps its exact `A` arcs — the rounded boundary is not a
 circular arc once rolled back, so a polyline is the honest shape rather than an
 approximation of one.
@@ -457,7 +457,7 @@ tessellated to PolyFill), `errorbar` (projected polylines), `heatmap`
 (the same Rect→PolyFill tessellation; ABI 134 `HeatmapPainted` interns scalar
 colormaps and truecolor RGBA planes to per-cell literal styles), and `contour` (SegmentPair polylines through `polar_project`,
 matching polar errorbar) through Rust
-`polar_project` / `polar_wedge_points`, polar rings/spokes/clip, and rim tick
+`polar_project` / `polar_wedge_points` (ABI 209 C ABI for compatibility flatten), polar rings/spokes/clip, and rim tick
 labels when hosts pass explicit XYPL v1. ABI 143 polar density-tier scatter
 tessellates occupied cells to PolyFill wedges. ABI 144 polar `curve="smooth"`
 line/area pack as identity chords (§5), not flattened Hermite polylines.

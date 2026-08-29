@@ -680,7 +680,8 @@ pub fn wedge_angles(metrics: &[f64], theta0: f64, theta1: f64) -> Option<(f64, f
 }
 
 /// Annular sector with rounded corners, sampled in the unrolled (arc, radial)
-/// frame then rolled back to screen pixels. Matches `_svg._rounded_wedge_points`.
+/// frame then rolled back to screen pixels. Compatibility flatten shares this
+/// kernel through ABI 209.
 fn rounded_wedge_points(
     cx: f64,
     cy: f64,
@@ -757,20 +758,62 @@ pub fn polar_wedge_points(
     wedge_gap: f64,
     corner_radius: f64,
 ) -> Vec<(f64, f64)> {
-    if metrics.len() < POLAR_METRICS_LEN {
+    polar_wedge_points_ex(
+        metrics,
+        theta0,
+        theta1,
+        r0,
+        r1,
+        wedge_gap,
+        corner_radius,
+        0,
+        f64::NAN,
+        f64::NAN,
+    )
+}
+
+/// Compatibility flatten of [`polar_wedge_points`].
+///
+/// `steps == 0` uses [`polar_bar_segments`]. Finite `norm_lo`/`norm_hi` skip
+/// `norm_radius_from_metrics` so exporters can pass pre-normalized radial
+/// fractions. `steps` above [`POLAR_WEDGE_MAX_STEPS`] yields an empty polygon.
+pub fn polar_wedge_points_ex(
+    metrics: &[f64],
+    theta0: f64,
+    theta1: f64,
+    r0: f64,
+    r1: f64,
+    wedge_gap: f64,
+    corner_radius: f64,
+    steps: usize,
+    norm_lo: f64,
+    norm_hi: f64,
+) -> Vec<(f64, f64)> {
+    if metrics.len() < POLAR_METRICS_LEN || steps > POLAR_WEDGE_MAX_STEPS {
         return Vec::new();
     }
     let floor = inner_fraction(metrics);
-    let lo_frac = norm_radius_from_metrics(metrics, r0);
-    let hi_frac = norm_radius_from_metrics(metrics, r1);
-    if !floor.is_finite() || !lo_frac.is_finite() || !hi_frac.is_finite() {
+    let (lo_frac, hi_frac) = if norm_lo.is_finite() && norm_hi.is_finite() {
+        if norm_lo <= norm_hi {
+            (norm_lo, norm_hi)
+        } else {
+            (norm_hi, norm_lo)
+        }
+    } else {
+        let lo_frac = norm_radius_from_metrics(metrics, r0);
+        let hi_frac = norm_radius_from_metrics(metrics, r1);
+        if !lo_frac.is_finite() || !hi_frac.is_finite() {
+            return Vec::new();
+        }
+        if lo_frac <= hi_frac {
+            (lo_frac, hi_frac)
+        } else {
+            (hi_frac, lo_frac)
+        }
+    };
+    if !floor.is_finite() {
         return Vec::new();
     }
-    let (lo_frac, hi_frac) = if lo_frac <= hi_frac {
-        (lo_frac, hi_frac)
-    } else {
-        (hi_frac, lo_frac)
-    };
     let radius = metrics[METRIC_RADIUS];
     let outer = floor.max(hi_frac).min(1.0) * radius;
     let inner = floor.max(lo_frac).min(1.0) * radius;
@@ -783,7 +826,11 @@ pub fn polar_wedge_points(
     if !a0.is_finite() || !a1.is_finite() {
         return Vec::new();
     }
-    let steps = polar_bar_segments(a1 - a0, 2.0 * std::f64::consts::PI);
+    let steps = if steps == 0 {
+        polar_bar_segments(a1 - a0, 2.0 * std::f64::consts::PI)
+    } else {
+        steps
+    };
     let cx = metrics[METRIC_CX];
     let cy = metrics[METRIC_CY];
     if corner_radius > 0.0 && inner > 0.0 {
@@ -860,6 +907,9 @@ pub fn polar_position_mask(
 
 /// Cap matching the compatibility polar inverse-raster exporters.
 pub const POLAR_HEATMAP_MAX_DIMENSION: u32 = 4096;
+/// Host-pinned wedge flatten count ceiling (ABI 209). Auto counts stay in
+/// `[POLAR_BAR_SEGMENTS_MIN, POLAR_BAR_SEGMENTS]`.
+pub const POLAR_WEDGE_MAX_STEPS: usize = 4096;
 
 fn theta_from_angle(metrics: &[f64], angle: f64, near: f64) -> f64 {
     let dir = metrics[METRIC_DIR];
@@ -995,8 +1045,8 @@ pub fn polar_heatmap_inverse_hits(
                 ((fx * f64::from(grid_w)).floor() as i64).clamp(0, i64::from(grid_w) - 1) as usize;
             let source_y =
                 ((fy * f64::from(grid_h)).floor() as i64).clamp(0, i64::from(grid_h) - 1) as usize;
-            let source_index = u32::try_from(source_y.checked_mul(source_w)?.checked_add(source_x)?)
-                .ok()?;
+            let source_index =
+                u32::try_from(source_y.checked_mul(source_w)?.checked_add(source_x)?).ok()?;
             hits.push(PolarHeatmapHit {
                 row,
                 col,
@@ -1200,6 +1250,19 @@ mod tests {
         assert!((north.1 - (cy - radius)).abs() < 1e-6);
         assert!(north.1 < cy);
         assert_eq!(polar_bar_segments(FRAC_PI_2, 2.0 * PI), 24);
+        let pinned = polar_wedge_points_ex(
+            &metrics,
+            0.0,
+            FRAC_PI_2,
+            0.5,
+            1.0,
+            0.0,
+            0.0,
+            8,
+            f64::NAN,
+            f64::NAN,
+        );
+        assert_eq!(pinned.len(), 18);
     }
 
     #[test]
@@ -1306,7 +1369,18 @@ mod tests {
         let mut metrics = [0.0; POLAR_METRICS_LEN];
         polar_layout(input, &mut metrics).unwrap();
         let (out_w, out_h, hits) = polar_heatmap_inverse_hits(
-            &metrics, 0.0, 0.0, 8.0, 8.0, 2, 2, 0.0, 0.0, 2.0 * PI, 1.0, 1.0,
+            &metrics,
+            0.0,
+            0.0,
+            8.0,
+            8.0,
+            2,
+            2,
+            0.0,
+            0.0,
+            2.0 * PI,
+            1.0,
+            1.0,
         )
         .unwrap();
         assert_eq!(out_w, 8);

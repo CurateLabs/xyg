@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 208
-SIGNATURE_SHA256 = "73efbf7582520e490905c5e4c319dc153fb9dafc827a3dbd72f568e82fda348a"
+ABI_VERSION = 209
+SIGNATURE_SHA256 = "49d15c48025e938f9ee8ea0d44dac78a4ebb95952b53e92a60acd6241f6d4e96"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -550,6 +550,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_polar_visible_mask
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_polar_wedge_points(const double * metrics, size_t metrics_len, double theta0, double theta1, double r0, double r1, double wedge_gap, double corner_radius, uint32_t steps, double norm_lo, double norm_hi, double * out_x, double * out_y, size_t capacity)
+    function = lib.xyg_polar_wedge_points
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
     # size_t xyg_polygon_select(const double * x, const double * y, size_t len, const uint32_t * rows, size_t n_rows, const double * poly_x, const double * poly_y, size_t n_poly, uint32_t * out)
     function = lib.xyg_polygon_select
     function.restype = ctypes.c_size_t

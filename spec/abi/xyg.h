@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 208
-#define XYG_ABI_SIGNATURE_SHA256 "73efbf7582520e490905c5e4c319dc153fb9dafc827a3dbd72f568e82fda348a"
+#define XYG_ABI_VERSION 209
+#define XYG_ABI_SIGNATURE_SHA256 "49d15c48025e938f9ee8ea0d44dac78a4ebb95952b53e92a60acd6241f6d4e96"
 
 #ifdef __cplusplus
 extern "C" {
@@ -146,6 +146,7 @@ size_t xyg_polar_position_mask(const double * metrics, size_t metrics_len, const
 size_t xyg_polar_project(const double * metrics, size_t metrics_len, const double * theta, const double * r, size_t n, double * out_x, double * out_y);
 size_t xyg_polar_theta_visible_mask(const double * metrics, size_t metrics_len, const double * theta, size_t n, uint8_t * out, size_t out_cap);
 size_t xyg_polar_visible_mask(const double * metrics, size_t metrics_len, const double * r, size_t n, uint8_t * out, size_t out_cap);
+size_t xyg_polar_wedge_points(const double * metrics, size_t metrics_len, double theta0, double theta1, double r0, double r1, double wedge_gap, double corner_radius, uint32_t steps, double norm_lo, double norm_hi, double * out_x, double * out_y, size_t capacity);
 size_t xyg_polygon_select(const double * x, const double * y, size_t len, const uint32_t * rows, size_t n_rows, const double * poly_x, const double * poly_y, size_t n_poly, uint32_t * out);
 size_t xyg_polygon_triangles(const double * x, const double * y, size_t len, int64_t * out, size_t capacity);
 int32_t xyg_pyramid_append(uint64_t handle, const double * x, const double * y, size_t len);

@@ -26,6 +26,7 @@ import {
   xyPolarLabelRoom,
   xyPolarLayout,
   xyPolarProject,
+  xyPolarWedgePoints,
   xyPolarHeatmapInverseMap,
   xyRecutPolarPlot,
   xyTightLayoutSolve,
@@ -2183,6 +2184,65 @@ export function polarProject(metrics, theta, r) {
   }
   if (!Array.isArray(theta)) return [outX[0], outY[0]];
   return [outX, outY];
+}
+
+export function polarWedgePoints(
+  metrics,
+  theta0,
+  theta1,
+  r0,
+  r1,
+  {
+    wedgeGap = 0,
+    cornerRadius = 0,
+    steps = 0,
+    normalized = null,
+  } = {},
+) {
+  const packed = metrics instanceof Float64Array ? metrics : Float64Array.from(metrics);
+  const normLo = normalized == null ? Number.NaN : Number(normalized[0]);
+  const normHi = normalized == null ? Number.NaN : Number(normalized[1]);
+  const probed = xyPolarWedgePoints(
+    packed.length ? f64Ptr(packed) : 0,
+    packed.length,
+    Number(theta0),
+    Number(theta1),
+    Number(r0),
+    Number(r1),
+    Number(wedgeGap),
+    Number(cornerRadius),
+    Number(steps),
+    normLo,
+    normHi,
+    0,
+    0,
+    0,
+  );
+  if (probed === USIZE_MAX_64) throw new RangeError("invalid polar-wedge request");
+  const n = Number(probed);
+  if (n === 0) return [];
+  const outX = new Float64Array(n);
+  const outY = new Float64Array(n);
+  const written = xyPolarWedgePoints(
+    packed.length ? f64Ptr(packed) : 0,
+    packed.length,
+    Number(theta0),
+    Number(theta1),
+    Number(r0),
+    Number(r1),
+    Number(wedgeGap),
+    Number(cornerRadius),
+    Number(steps),
+    normLo,
+    normHi,
+    f64Ptr(outX),
+    f64Ptr(outY),
+    n,
+  );
+  if (written === USIZE_MAX_64 || Number(written) !== n) {
+    throw new RangeError("invalid polar-wedge request");
+  }
+  return Array.from({ length: n }, (_, index) => [outX[index], outY[index]]);
 }
 
 export function polarHeatmapInverseMap(

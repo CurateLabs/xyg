@@ -1233,6 +1233,23 @@ def load() -> ctypes.CDLL:
         F64P,
         F64P,
     ]
+    lib.xyg_polar_wedge_points.restype = ctypes.c_size_t
+    lib.xyg_polar_wedge_points.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint32,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_polar_heatmap_inverse_map.restype = ctypes.c_size_t
     lib.xyg_polar_heatmap_inverse_map.argtypes = [
         F64P,
@@ -3176,6 +3193,67 @@ def main() -> None:
         and abs(polar_px[1] - 200.0) < 1e-6
         and abs(polar_py[1] - 0.0) < 1e-6,
         "polar default-cardinals",
+    )
+    polar_wedge_n = lib.xyg_polar_wedge_points(
+        _ptr(polar_metrics, ctypes.c_double),
+        23,
+        0.0,
+        1.5707963267948966,
+        0.5,
+        1.0,
+        0.0,
+        0.0,
+        8,
+        float("nan"),
+        float("nan"),
+        null_f64,
+        null_f64,
+        0,
+    )
+    polar_wx = array("d", [0.0]) * 32
+    polar_wy = array("d", [0.0]) * 32
+    polar_wedge_filled = lib.xyg_polar_wedge_points(
+        _ptr(polar_metrics, ctypes.c_double),
+        23,
+        0.0,
+        1.5707963267948966,
+        0.5,
+        1.0,
+        0.0,
+        0.0,
+        8,
+        float("nan"),
+        float("nan"),
+        _ptr(polar_wx, ctypes.c_double),
+        _ptr(polar_wy, ctypes.c_double),
+        32,
+    )
+    ok(
+        polar_wedge_n == 18
+        and polar_wedge_filled == 18
+        and abs(polar_wx[0] - 400.0) < 1e-6
+        and abs(polar_wy[0] - 200.0) < 1e-6,
+        "polar wedge flatten",
+    )
+    ok(
+        lib.xyg_polar_wedge_points(
+            _ptr(polar_metrics, ctypes.c_double),
+            23,
+            0.0,
+            1.5707963267948966,
+            0.5,
+            1.0,
+            0.0,
+            0.0,
+            4097,
+            float("nan"),
+            float("nan"),
+            null_f64,
+            null_f64,
+            0,
+        )
+        == size_max,
+        "polar wedge overcap",
     )
     polar_small = array("d", [0.0]) * 23
     polar_small_n = lib.xyg_polar_layout(
