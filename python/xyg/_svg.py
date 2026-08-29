@@ -941,6 +941,14 @@ def _rgb_css(paint: Any) -> str:
     return f"rgb({int(u8[0])},{int(u8[1])},{int(u8[2])})"
 
 
+def _rgba8(paint: Any) -> np.ndarray:
+    """Format 0-1 RGBA rows as RGBA8 via ABI 251 ``xyg_clip_quantize_u8``."""
+    arr = np.asarray(paint, dtype=np.float64)
+    return np.ascontiguousarray(
+        kernels.clip_quantize_u8(arr.reshape(-1)).reshape(arr.shape), dtype=np.uint8
+    )
+
+
 def _css(c: Any, fallback: str) -> str:
     """Resolve static colors after chart-level tokens have been expanded."""
     s = str(c or "").strip()
@@ -4793,10 +4801,8 @@ def _scatter_marks(
             dtype=np.uint8,
             count=n,
         )
-        fill_u8 = np.ascontiguousarray(np.rint(np.clip(face_rgba, 0.0, 1.0) * 255), dtype=np.uint8)
-        stroke_u8 = np.ascontiguousarray(
-            np.rint(np.clip(stroke_rgba, 0.0, 1.0) * 255), dtype=np.uint8
-        )
+        fill_u8 = _rgba8(face_rgba)
+        stroke_u8 = _rgba8(stroke_rgba)
         return [
             _native.scene_scatter_svg(
                 px,
