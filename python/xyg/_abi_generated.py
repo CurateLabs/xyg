@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 240
-SIGNATURE_SHA256 = "1a010e02315c86429680d64b83c75adfd4631475c25804368ebf905f776290a5"
+ABI_VERSION = 241
+SIGNATURE_SHA256 = "c192bb9a12c369795d07dea19469d0646b7e036e3487de71e24c4d05a3a1b20b"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -958,6 +958,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_scale_map
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_scene_scatter_paint_channel_admit(const uint8_t * text, size_t text_len)
+    function = lib.xyg_scene_scatter_paint_channel_admit
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
     # size_t xyg_scene_scatter_svg(const double * x, const double * y, const double * diameter, const uint8_t * fill_rgba, const uint8_t * stroke_rgba, const double * stroke_width, const uint8_t * symbols, const uint8_t * visible, const uint8_t * fill_css, size_t fill_css_len, const uint8_t * stroke_css, size_t stroke_css_len, size_t len, uint8_t * out, size_t out_cap)
     function = lib.xyg_scene_scatter_svg
     function.restype = ctypes.c_size_t

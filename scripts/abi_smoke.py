@@ -311,6 +311,8 @@ def load() -> ctypes.CDLL:
     ]
     lib.xyg_scene_heatmap_shape_admit.restype = ctypes.c_int32
     lib.xyg_scene_heatmap_shape_admit.argtypes = [ctypes.c_double, ctypes.c_double]
+    lib.xyg_scene_scatter_paint_channel_admit.restype = ctypes.c_int32
+    lib.xyg_scene_scatter_paint_channel_admit.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2757,6 +2759,30 @@ def main() -> None:
     ok(
         lib.xyg_scene_heatmap_shape_admit(1.5, 2.0) == 0,
         "scene_heatmap_shape_admit fractional",
+    )
+    color_ch = array("B", b"color")
+    stroke_upper = array("B", b"STROKE")
+    color_pad = array("B", b" color")
+    ok(
+        lib.xyg_scene_scatter_paint_channel_admit(_ptr(color_ch, ctypes.c_uint8), len(color_ch))
+        == 1,
+        "scene_scatter_paint_channel_admit color",
+    )
+    ok(
+        lib.xyg_scene_scatter_paint_channel_admit(null_u8, 0) == 0,
+        "scene_scatter_paint_channel_admit empty",
+    )
+    ok(
+        lib.xyg_scene_scatter_paint_channel_admit(
+            _ptr(stroke_upper, ctypes.c_uint8), len(stroke_upper)
+        )
+        == 0,
+        "scene_scatter_paint_channel_admit STROKE",
+    )
+    ok(
+        lib.xyg_scene_scatter_paint_channel_admit(_ptr(color_pad, ctypes.c_uint8), len(color_pad))
+        == 0,
+        "scene_scatter_paint_channel_admit padded color",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8
