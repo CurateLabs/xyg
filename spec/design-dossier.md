@@ -1681,6 +1681,7 @@ Raster scatter RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster mesh/hexbin fill RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster rectangle style RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster segment stroke RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Node `meshHasPerItem` uses `perItemChannelNames` (same as Python `has_per_item_channels`) for ABI 244.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1898,6 +1899,7 @@ Raster scatter RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster mesh/hexbin fill RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster rectangle style RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster segment stroke RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Node `meshHasPerItem` uses `perItemChannelNames` (same as Python `has_per_item_channels`) for ABI 244.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same
