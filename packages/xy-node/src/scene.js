@@ -5041,19 +5041,8 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
       symbol = "";
     }
     if (
-      trace.kind === "scatter"
-      && (figure.coords ?? "cartesian") === "cartesian"
-      && shouldUseDensity(trace.x?.length ?? 0, {
-        forceDensity: Boolean(trace.force_density ?? trace.forceDensity),
-        forceDirect: Boolean(trace.force_direct ?? trace.forceDirect),
-        coords: "cartesian",
-        perItemChannels: style.color_channel != null
-          || style.size_channel != null
-          || style.stroke_channel != null
-          || trace.color_ch != null
-          || trace.size_ch != null
-          || trace.stroke_ch != null,
-      })
+      (figure.coords ?? "cartesian") === "cartesian"
+      && scatterUsesDensity(trace)
     ) {
       obs |= OBS_DENSITY_BLIT;
     }
