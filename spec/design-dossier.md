@@ -1755,6 +1755,7 @@ Node `hexbinPacksColormapPlane` uses `color_ch` only like Python `_hexbin_packs_
 Node `ribbonEndRgbaPair` uses `color_ch` only like Python `_ribbon_end_rgba_pair`; `colorChannel` is not a ribbon-end source fallback.
 Node `hexbinXyTaColormap` uses `color_ch` only like Python `_pack_xyta` hexbin colormap; `colorChannel` is not a colormap fallback.
 Node `hexbinPacksRgbaPlane` uses `color_ch` only like Python `_hexbin_packs_rgba_plane`; `colorChannel` is not an RGBA-plane fallback.
+Node `hexbinCellRgba8` uses `color_ch` only like Python `_hexbin_cell_rgba8`; `colorChannel` is not a cell-paint fallback.
 Node `itemStrokeRgba8` uses `stroke_ch` only like Python `_item_stroke_rgba8`; `strokeChannel` is not a stroke-channel fallback.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
@@ -2047,6 +2048,7 @@ Node `hexbinPacksColormapPlane` uses `color_ch` only like Python `_hexbin_packs_
 Node `ribbonEndRgbaPair` uses `color_ch` only like Python `_ribbon_end_rgba_pair`; `colorChannel` is not a ribbon-end source fallback.
 Node `hexbinXyTaColormap` uses `color_ch` only like Python `_pack_xyta` hexbin colormap; `colorChannel` is not a colormap fallback.
 Node `hexbinPacksRgbaPlane` uses `color_ch` only like Python `_hexbin_packs_rgba_plane`; `colorChannel` is not an RGBA-plane fallback.
+Node `hexbinCellRgba8` uses `color_ch` only like Python `_hexbin_cell_rgba8`; `colorChannel` is not a cell-paint fallback.
 Node `itemStrokeRgba8` uses `stroke_ch` only like Python `_item_stroke_rgba8`; `strokeChannel` is not a stroke-channel fallback.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
