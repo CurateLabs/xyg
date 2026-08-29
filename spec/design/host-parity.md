@@ -885,6 +885,7 @@ Node `rectFiniteSel` drops nonfinite rectangle rows through `validIndicesF64` li
 Node `packXyTa` density fill opacity uses `style.fill_opacity` only like Python `_pack_xyta`; `fillOpacity` is not a fill-opacity key.
 Node XYTC fill opacity uses `style.fill_opacity` only like Python `_pack_xytc`; `fillOpacity` is not a fill-opacity key.
 Node XYTC stroke opacity uses `style.stroke_opacity` only like Python `_pack_xytc`; `strokeOpacity` is not a stroke-opacity key.
+Node XYTC stroke perimeter uses `style.stroke_perimeter` only like Python `_pack_xytc`; `strokePerimeter` is not a stroke-perimeter key.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1335,6 +1336,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `packXyTa` density fill opacity uses `fill_opacity` only.
   Node XYTC fill opacity uses `fill_opacity` only.
   Node XYTC stroke opacity uses `stroke_opacity` only.
+  Node XYTC stroke perimeter uses `stroke_perimeter` only.
 
 ---
 
