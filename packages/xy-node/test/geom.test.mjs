@@ -53,6 +53,7 @@ import {
   meshHasPerItem,
   packXyTaColormap,
   hexbinXyTaColormap,
+  xyHfColormap,
   sceneMeshPaintPlaneAdmit,
   sceneItemApplyOpacity,
   sceneItemWidthsAdmit,
@@ -345,6 +346,15 @@ test("hexbinXyTaColormap uses channel.colormap only like Python", () => {
     }).flags,
     0,
   );
+});
+
+test("xyHfColormap uses style.colormap only like Python", () => {
+  const named = xyHfColormap({ colormap: "viridis" });
+  assert.equal(named.flags, 1 << 5);
+  assert.deepEqual([...named.bytes], [...new TextEncoder().encode("viridis")]);
+  assert.equal(xyHfColormap({ colormap: "viridis", colormapStops: [[0, 0, 0]] }).flags, 1 << 5);
+  assert.equal(xyHfColormap({}), null);
+  assert.equal(xyHfColormap({ colormapStops: [[0, 0, 0]] }), null);
 });
 
 test("sceneGradientSpace matches host table", () => {

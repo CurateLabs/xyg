@@ -1433,12 +1433,34 @@ function packHeatmapFacts(facts) {
   return out.subarray(0, code);
 }
 
+export function xyHfColormap(style) {
+  const colormap = style?.colormap;
+  if (typeof colormap === "string") {
+    return { flags: XYHF_HAS_NAMED_CMAP, bytes: new TextEncoder().encode(colormap) };
+  }
+  if (colormap != null) {
+    return {
+      flags: XYHF_HAS_STOPS,
+      bytes: Uint8Array.from(colormap.flat ? colormap.flat() : colormap),
+    };
+  }
+  return null;
+}
+
+function appendXyHfColormap(style, parts, label) {
+  const plane = xyHfColormap(style);
+  if (plane == null) return 0;
+  if ((plane.flags & XYHF_HAS_STOPS) && (plane.bytes.length < 3 || plane.bytes.length % 3 !== 0)) {
+    throw new RangeError(`Scene ${label} colormap requires RGB stops`);
+  }
+  parts.push(packXyHfPrefixed(plane.bytes));
+  return plane.flags;
+}
+
 function heatmapPaintPlane(trace, rows, cols, stableId) {
   const style = trace.style ?? {};
   const packed = trace.rgba;
   const planes = trace.rgba_grid;
-  const stops = style.colormapStops ?? trace.colormapStops;
-  const colormap = style.colormap ?? trace.colormap;
   const grid = trace.grid;
   if (grid == null) throw new RangeError("heatmap Scene v12 compilation requires a scalar grid");
   let flags = XYHF_HAS_GRID;
@@ -1472,19 +1494,7 @@ function heatmapPaintPlane(trace, rows, cols, stableId) {
     const rgbaOffset = packed != null ? 1 : 0;
     parts.splice(rgbaOffset, 0, new Uint8Array(interleaved.buffer));
   }
-  if (typeof colormap === "string") {
-    flags |= XYHF_HAS_NAMED_CMAP;
-    parts.push(packXyHfPrefixed(new TextEncoder().encode(colormap)));
-  } else if (colormap != null || stops != null) {
-    flags |= XYHF_HAS_STOPS;
-    const stopBytes = stops == null
-      ? Uint8Array.from(colormap.flat ? colormap.flat() : colormap)
-      : Uint8Array.from(stops);
-    if (stopBytes.length < 3 || stopBytes.length % 3 !== 0) {
-      throw new RangeError("Scene heatmap colormap requires RGB stops");
-    }
-    parts.push(packXyHfPrefixed(stopBytes));
-  }
+  flags |= appendXyHfColormap(style, parts, "heatmap");
   if (style.truecolor) flags |= XYHF_HAS_TRUECOLOR;
   const domain = style.domain;
   const lo = domain == null || domain.length !== 2 ? Number.NaN : Number(domain[0]);
@@ -1520,21 +1530,7 @@ function densityPaintPlane(trace, encoded, rows, cols, maximum, stableId, meanRg
     flags |= XYHF_HAS_MEAN_RGBA;
     parts.push(rgbaBytes);
   }
-  const colormap = style.colormap ?? trace.colormap;
-  const stops = style.colormapStops ?? trace.colormapStops;
-  if (typeof colormap === "string") {
-    flags |= XYHF_HAS_NAMED_CMAP;
-    parts.push(packXyHfPrefixed(new TextEncoder().encode(colormap)));
-  } else if (colormap != null || stops != null) {
-    flags |= XYHF_HAS_STOPS;
-    const stopBytes = stops == null
-      ? Uint8Array.from(colormap.flat ? colormap.flat() : colormap)
-      : Uint8Array.from(stops);
-    if (stopBytes.length < 3 || stopBytes.length % 3 !== 0) {
-      throw new RangeError("Scene density colormap requires RGB stops");
-    }
-    parts.push(packXyHfPrefixed(stopBytes));
-  }
+  flags |= appendXyHfColormap(style, parts, "density");
   const channel = trace.color_ch ?? trace.colorChannel;
   if (channel != null && channel.mode === "constant" && channel.constant != null) {
     flags |= XYHF_HAS_COLOR_CH;
