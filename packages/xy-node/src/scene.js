@@ -3334,6 +3334,17 @@ export function packXyTcStrokeOpacity(style, kindClass) {
   return Number((style ?? {}).stroke_opacity ?? 1);
 }
 
+/** XYTC stroke perimeter. Python `_pack_xytc` reads `"stroke_perimeter" in style` only. */
+export function packXyTcStrokePerimeter(style, kindClass) {
+  if (!(kindClass & SCENE_KIND_CLASS_BAND)) return 0;
+  const record = style ?? {};
+  if (!Object.hasOwn(record, "stroke_perimeter")) return 0;
+  const perimeter = record.stroke_perimeter;
+  if (typeof perimeter !== "boolean") return XYTC_PERIMETER_INVALID;
+  if (perimeter === true) return XYTC_PERIMETER_TRUE;
+  return 0;
+}
+
 /** XYTC stroke width. Python `_pack_xytc` reads `"stroke_width" in style` only. */
 export function packXyTcStrokeWidth(style) {
   const record = style ?? {};
@@ -3409,14 +3420,7 @@ function packXyTc(figure) {
       if (style.hex_dx != null || style.dx != null) hexDx = Number(style.hex_dx ?? style.dx);
       if (style.hex_dy != null || style.dy != null) hexDy = Number(style.hex_dy ?? style.dy);
     }
-    if (kindClass & SCENE_KIND_CLASS_BAND) {
-      const hasPerimeter = Object.hasOwn(style, "stroke_perimeter") || Object.hasOwn(style, "strokePerimeter");
-      if (hasPerimeter) {
-        const perimeter = Object.hasOwn(style, "stroke_perimeter") ? style.stroke_perimeter : style.strokePerimeter;
-        if (typeof perimeter !== "boolean") flags |= XYTC_PERIMETER_INVALID;
-        else if (perimeter === true) flags |= XYTC_PERIMETER_TRUE;
-      }
-    }
+    flags |= packXyTcStrokePerimeter(style, kindClass);
     let dashB = new Uint8Array();
     let dashPattern = [];
     const dash = style.dash;
