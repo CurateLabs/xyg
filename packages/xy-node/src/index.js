@@ -75,6 +75,7 @@ export {
   colormapRgba,
   colormapRgbaCanonical,
   colormapLut,
+  colormapLutRgba8,
   densityRgbaLinear,
   paintEffectiveRgba,
   colormapNamedStops,

@@ -1650,6 +1650,9 @@ ties-to-even u8 quantize (NaN → 0) so Python `_quantized_rgba8` /
 `channels.ship_color_channel` and Node `clipQuantizeU8` /
 `resolveColorChannel` / `channelEndRgba8` cannot drift. Field picking
 stays host.
+Python `colormap_lut_rgba8` and Node `colormapLutRgba8` sample 256
+unit-t texels through ABI 206 `xyg_colormap_lut` then host-pack alpha
+255 so the density LUT cannot drift on half-up vs ties-to-even.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1836,6 +1839,9 @@ ties-to-even u8 quantize (NaN → 0) so Python `_quantized_rgba8` /
 `channels.ship_color_channel` and Node `clipQuantizeU8` /
 `resolveColorChannel` / `channelEndRgba8` cannot drift. Field picking
 stays host.
+Python `colormap_lut_rgba8` and Node `colormapLutRgba8` sample 256
+unit-t texels through ABI 206 `xyg_colormap_lut` then host-pack alpha
+255 so the density LUT cannot drift on half-up vs ties-to-even.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

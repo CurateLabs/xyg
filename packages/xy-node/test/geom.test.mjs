@@ -5,6 +5,9 @@ import {
   F32_SAFE_MAG,
   curveFlatten,
   clipQuantizeU8,
+  colormapLut,
+  colormapLutRgba8,
+  colormapNamedStops,
   f32SafeScale,
   geometryOffset,
   hexbinRing,
@@ -465,6 +468,20 @@ test("clipQuantizeU8 matches host table", () => {
   assert.deepEqual([...clipQuantizeU8([0, 0.5, 1, 1.5])], [0, 128, 255, 255]);
   assert.deepEqual([...clipQuantizeU8([Number.NaN])], [0]);
   assert.deepEqual([...clipQuantizeU8([1.5 / 255])], [2]);
+});
+
+test("colormapLutRgba8 matches ABI 206 RGB plus opaque alpha", () => {
+  const lut = colormapLutRgba8("viridis");
+  assert.equal(lut.length, 256 * 4);
+  const t = Float64Array.from({ length: 256 }, (_, i) => i / 255);
+  const rgb = colormapLut(t, colormapNamedStops("viridis"));
+  for (let i = 0; i < 256; i++) {
+    assert.equal(lut[i * 4], rgb[i * 3]);
+    assert.equal(lut[i * 4 + 1], rgb[i * 3 + 1]);
+    assert.equal(lut[i * 4 + 2], rgb[i * 3 + 2]);
+    assert.equal(lut[i * 4 + 3], 255);
+  }
+  assert.equal(colormapLutRgba8(null).length, 256 * 4);
 });
 
 test("sceneHexbinPitchAdmit matches host table", () => {
