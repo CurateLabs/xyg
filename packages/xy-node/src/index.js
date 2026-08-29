@@ -49,6 +49,7 @@ export {
   sceneHexbinReduceAdmit,
   sceneCurveClassify,
   sceneMarkerGlyphAdmit,
+  sceneKindAdmit,
   roundedRectPoly,
   violinDensity,
   boxStats,

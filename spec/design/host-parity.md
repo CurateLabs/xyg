@@ -728,6 +728,12 @@ ABI 234 `xyg_scene_marker_glyph_admit` owns Scene marker-glyph UTF-8 admit
 and Node `admittedMarkerGlyph` cannot drift. Hosts still coerce non-strings
 and check scatter kind / combined `marker_path`. Compile-path `admit_glyph`
 stays extra.
+ABI 235 `xyg_scene_kind_admit` owns Scene product-kind names (exact
+`scatter`/`line`/`bar`/`column`/`histogram`/`violin`/`box`/`segments`/
+`errorbar`/`stem`/`contour`/`box_whisker`/`box_median`/`area`/`error_band`/
+`ribbon`/`triangle_mesh`/`hexbin`/`heatmap`; unknown/empty reject; no
+lowercasing) so Python `_figure_trace_support_flags` and Node
+`figureTraceSupport` cannot drift. Rect/segment/band packing sets stay host.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1094,6 +1100,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Scene hexbin reduce admit is ABI 232.
   Scene curve-name classify is ABI 233.
   Scene marker-glyph admit is ABI 234.
+  Scene product-kind admit is ABI 235.
 
 ---
 

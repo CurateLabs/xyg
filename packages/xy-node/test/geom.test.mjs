@@ -28,6 +28,7 @@ import {
   sceneHexbinReduceAdmit,
   sceneCurveClassify,
   sceneMarkerGlyphAdmit,
+  sceneKindAdmit,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -308,6 +309,37 @@ test("sceneMarkerGlyphAdmit matches host table", () => {
   assert.equal(sceneMarkerGlyphAdmit("a\rb"), false);
   assert.equal(sceneMarkerGlyphAdmit("x".repeat(64)), true);
   assert.equal(sceneMarkerGlyphAdmit("x".repeat(65)), false);
+});
+
+test("sceneKindAdmit matches host table", () => {
+  for (const name of [
+    "scatter",
+    "line",
+    "bar",
+    "column",
+    "histogram",
+    "violin",
+    "box",
+    "segments",
+    "errorbar",
+    "stem",
+    "contour",
+    "box_whisker",
+    "box_median",
+    "area",
+    "error_band",
+    "ribbon",
+    "triangle_mesh",
+    "hexbin",
+    "heatmap",
+  ]) {
+    assert.equal(sceneKindAdmit(name), true, name);
+  }
+  assert.equal(sceneKindAdmit(""), false);
+  assert.equal(sceneKindAdmit("mark"), false);
+  assert.equal(sceneKindAdmit("SCATTER"), false);
+  assert.equal(sceneKindAdmit("pie"), false);
+  assert.equal(sceneKindAdmit(" scatter"), false);
 });
 
 test("sceneRibbonColor2Classify matches host table", () => {

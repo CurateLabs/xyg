@@ -1,9 +1,9 @@
 {
-  "abi_version": 234,
+  "abi_version": 235,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "33b753c58afa53c76c6c03e73075d1757f084e78989375e69c765ac4f4f41bfd",
+  "signature_sha256": "2ecf4e96584902e73c5195fd2c8560d6b5f122c7c548b98950dbd7540ca43e6f",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -28721,6 +28721,57 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_scene_hexbin_reduce_admit(const uint8_t * text, size_t text_len)"
+    },
+    {
+      "name": "xyg_scene_kind_admit",
+      "node_name": "xySceneKindAdmit",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "text",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "text_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_scene_kind_admit(const uint8_t * text, size_t text_len)"
     },
     {
       "name": "xyg_scene_linear_gradient_prefix",

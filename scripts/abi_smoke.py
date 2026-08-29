@@ -289,6 +289,8 @@ def load() -> ctypes.CDLL:
     lib.xyg_scene_curve_classify.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_scene_marker_glyph_admit.restype = ctypes.c_int32
     lib.xyg_scene_marker_glyph_admit.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_scene_kind_admit.restype = ctypes.c_int32
+    lib.xyg_scene_kind_admit.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2669,6 +2671,22 @@ def main() -> None:
     ok(
         lib.xyg_scene_marker_glyph_admit(_ptr(glyph_long, ctypes.c_uint8), len(glyph_long)) == 0,
         "scene_marker_glyph_admit over-cap",
+    )
+    scatter_kind = array("B", b"scatter")
+    mark_kind = array("B", b"mark")
+    scatter_upper = array("B", b"SCATTER")
+    ok(
+        lib.xyg_scene_kind_admit(_ptr(scatter_kind, ctypes.c_uint8), len(scatter_kind)) == 1,
+        "scene_kind_admit scatter",
+    )
+    ok(lib.xyg_scene_kind_admit(null_u8, 0) == 0, "scene_kind_admit empty")
+    ok(
+        lib.xyg_scene_kind_admit(_ptr(mark_kind, ctypes.c_uint8), len(mark_kind)) == 0,
+        "scene_kind_admit mark",
+    )
+    ok(
+        lib.xyg_scene_kind_admit(_ptr(scatter_upper, ctypes.c_uint8), len(scatter_upper)) == 0,
+        "scene_kind_admit SCATTER",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8
