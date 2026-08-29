@@ -35,6 +35,7 @@ import {
   sceneHexbinRgbaPlaneAdmit,
   sceneMeshPaintPlaneAdmit,
   sceneItemApplyOpacity,
+  sceneItemWidthsAdmit,
   sceneCurveClassify,
   sceneMarkerGlyphAdmit,
   sceneKindAdmit,
@@ -405,6 +406,18 @@ test("sceneItemApplyOpacity matches host table", () => {
   assert.deepEqual([...artist.slice(4)], [1, 2, 3, 128]);
   const bad = sceneItemApplyOpacity(packed, 2, [0.5], null);
   assert.equal(bad, null);
+});
+
+test("sceneItemWidthsAdmit matches host table", () => {
+  assert.equal(sceneItemWidthsAdmit([0.0, 1.5], 2, 0), true);
+  assert.equal(sceneItemWidthsAdmit([], 0, 0), true);
+  assert.equal(sceneItemWidthsAdmit([0.0], 2, 0), false);
+  assert.equal(sceneItemWidthsAdmit([-0.1], 1, 0), false);
+  assert.equal(sceneItemWidthsAdmit([Number.NaN], 1, 0), false);
+  assert.equal(sceneItemWidthsAdmit(null, 3, 0), true);
+  assert.equal(sceneItemWidthsAdmit(null, 3, 2.5), true);
+  assert.equal(sceneItemWidthsAdmit(null, 3, -1), false);
+  assert.equal(sceneItemWidthsAdmit(null, 3, Number.POSITIVE_INFINITY), false);
 });
 
 test("sceneHexbinPitchAdmit matches host table", () => {

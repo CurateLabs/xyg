@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -5687,11 +5687,11 @@ function itemWidths(trace, n) {
   const widthCh = (trace.style_channels ?? trace.styleChannels ?? {}).stroke_width;
   if (widthCh?.values != null) {
     const values = [...widthCh.values].map(Number);
-    if (values.length !== n || values.some((width) => !Number.isFinite(width) || width < 0)) return null;
+    if (!sceneItemWidthsAdmit(values, n, 0)) return null;
     return packF64Le(values);
   }
   const width = Number((trace.style ?? {}).stroke_width ?? 0);
-  if (!Number.isFinite(width) || width < 0) return null;
+  if (!sceneItemWidthsAdmit(null, n, width)) return null;
   return packF64Le(new Float64Array(n).fill(width));
 }
 

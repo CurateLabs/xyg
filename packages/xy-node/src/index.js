@@ -38,6 +38,7 @@ export {
   sceneMarkerPathAdmit,
   sceneMeshPaintPlaneAdmit,
   sceneItemApplyOpacity,
+  sceneItemWidthsAdmit,
   sceneAnnotationStyleAdmit,
   sceneRibbonColor2Classify,
   sceneScatterPaintChannelAdmit,

@@ -1567,6 +1567,33 @@ def scene_item_apply_opacity(
     return bytes(out)
 
 
+def scene_item_widths_admit(values: npt.ArrayLike | None, n: int, scalar: float) -> bool:
+    """Scene per-item stroke-width admit via ``xyg_scene_item_widths_admit`` (ABI 246).
+
+    Empty native pointers are ``0``. Field picking and f64 packing stay host.
+    """
+    n_i = int(n)
+    if n_i < 0:
+        return False
+    values_arr: npt.NDArray[np.float64] | None = None
+    has_values = 0
+    if values is not None:
+        values_arr = _as_f64(np.asarray(values, dtype=np.float64).reshape(-1), "item_widths")
+        has_values = 1
+    code = int(
+        _lib.xyg_scene_item_widths_admit(
+            _ptr_f64(values_arr) if values_arr is not None and values_arr.size else 0,
+            0 if values_arr is None else int(values_arr.size),
+            has_values,
+            n_i,
+            float(scalar),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-item-widths-admit request")
+    return code == 1
+
+
 def scene_hexbin_pitch_admit(dx: float, dy: float) -> bool:
     """Scene hexbin cell-pitch admit via ``xyg_scene_hexbin_pitch_admit`` (ABI 237).
 
