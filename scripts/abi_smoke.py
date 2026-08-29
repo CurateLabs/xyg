@@ -338,6 +338,14 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
     ]
+    lib.xyg_scene_item_widths_admit.restype = ctypes.c_int32
+    lib.xyg_scene_item_widths_admit.argtypes = [
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_size_t,
+        ctypes.c_double,
+    ]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2880,6 +2888,19 @@ def main() -> None:
         lib.xyg_scene_item_apply_opacity(null_u8, 0, 0, null_f64, 0, 0, null_f64, 0, 0, null_u8, 0)
         == 1,
         "scene_item_apply_opacity empty",
+    )
+    item_widths = array("d", [0.0, 1.5])
+    ok(
+        lib.xyg_scene_item_widths_admit(_ptr(item_widths, ctypes.c_double), 2, 1, 2, 0.0) == 1,
+        "scene_item_widths_admit values",
+    )
+    ok(
+        lib.xyg_scene_item_widths_admit(null_f64, 0, 0, 3, 2.5) == 1,
+        "scene_item_widths_admit scalar",
+    )
+    ok(
+        lib.xyg_scene_item_widths_admit(null_f64, 0, 0, 3, -1.0) == 0,
+        "scene_item_widths_admit scalar reject",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8

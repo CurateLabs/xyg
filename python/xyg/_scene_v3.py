@@ -2057,12 +2057,12 @@ def _item_widths(trace: Any, n: int) -> bytes | None:
         values = np.ascontiguousarray(
             np.asarray(getattr(width_ch, "values", None), dtype=np.float64).reshape(-1)
         )
-        if values.size != n or not np.isfinite(values).all() or np.any(values < 0.0):
+        if not _native.scene_item_widths_admit(values, n, 0.0):
             return None
         return values.tobytes()
     style = getattr(trace, "style", None) or {}
     width = float(style.get("stroke_width", 0.0) or 0.0)
-    if not np.isfinite(width) or width < 0.0:
+    if not _native.scene_item_widths_admit(None, n, width):
         return None
     return np.full(n, width, dtype=np.float64).tobytes()
 

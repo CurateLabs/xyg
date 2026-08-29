@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 245;
+pub const ABI_VERSION: u32 = 246;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5696,6 +5696,39 @@ pub unsafe extern "C" fn xyg_scene_item_apply_opacity(
         i32::from(kernels::scene_item_apply_opacity(
             packed, n, artist, opacity, out,
         ))
+    })
+}
+
+/// Scene per-item stroke-width admit (ABI 246).
+///
+/// A present values slice is admitted when `len == n` and every value is
+/// finite and `>= 0`. An absent slice admits a finite `scalar >= 0`. `-2`
+/// FFI. Empty native pointers are null/`0`. Field picking and f64 packing
+/// stay host.
+///
+/// # Safety
+/// `values` must address `values_len` readable f64s when `values_len` is
+/// nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_item_widths_admit(
+    values: *const f64,
+    values_len: usize,
+    has_values: i32,
+    n: usize,
+    scalar: f64,
+) -> i32 {
+    if values_len > 0 && values.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let values = if has_values == 0 {
+            None
+        } else if values_len == 0 {
+            Some(&[][..])
+        } else {
+            Some(std::slice::from_raw_parts(values, values_len))
+        };
+        kernels::scene_item_widths_admit(values, n, scalar)
     })
 }
 

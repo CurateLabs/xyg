@@ -1769,6 +1769,21 @@ pub fn scene_item_apply_opacity(
     true
 }
 
+/// Admit Scene per-item stroke widths (ABI 246).
+///
+/// A present values slice is admitted when `len == n` and every value is
+/// finite and `>= 0`. An absent slice admits a finite `scalar >= 0`. Field
+/// picking stays host. Packing f64 bytes stays host.
+pub fn scene_item_widths_admit(values: Option<&[f64]>, n: usize, scalar: f64) -> i32 {
+    if let Some(values) = values {
+        i32::from(
+            values.len() == n && values.iter().all(|width| width.is_finite() && *width >= 0.0),
+        )
+    } else {
+        i32::from(scalar.is_finite() && scalar >= 0.0)
+    }
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -10104,6 +10119,19 @@ mod fuzz {
             None,
             &mut empty_out,
         ));
+    }
+
+    #[test]
+    fn scene_item_widths_admit_matches_host_table() {
+        assert_eq!(scene_item_widths_admit(Some(&[0.0, 1.5]), 2, 0.0), 1);
+        assert_eq!(scene_item_widths_admit(Some(&[]), 0, 0.0), 1);
+        assert_eq!(scene_item_widths_admit(Some(&[0.0]), 2, 0.0), 0);
+        assert_eq!(scene_item_widths_admit(Some(&[-0.1]), 1, 0.0), 0);
+        assert_eq!(scene_item_widths_admit(Some(&[f64::NAN]), 1, 0.0), 0);
+        assert_eq!(scene_item_widths_admit(None, 3, 0.0), 1);
+        assert_eq!(scene_item_widths_admit(None, 3, 2.5), 1);
+        assert_eq!(scene_item_widths_admit(None, 3, -1.0), 0);
+        assert_eq!(scene_item_widths_admit(None, 3, f64::INFINITY), 0);
     }
 
     #[test]

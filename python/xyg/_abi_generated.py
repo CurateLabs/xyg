@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 245
-SIGNATURE_SHA256 = "52b45e44a4d447f474c8ffa559eeb4a298632df1c1ee0effe41901b19a10c72e"
+ABI_VERSION = 246
+SIGNATURE_SHA256 = "430a08fd8d9b492525e1464b1fd9892e143555409cebb7ef27452131be2e1e1a"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -826,6 +826,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_item_apply_opacity
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_item_widths_admit(const double * values, size_t values_len, int32_t has_values, size_t n, double scalar)
+    function = lib.xyg_scene_item_widths_admit
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_size_t, ctypes.c_double]
     # int32_t xyg_scene_kind_admit(const uint8_t * text, size_t text_len)
     function = lib.xyg_scene_kind_admit
     function.restype = ctypes.c_int32

@@ -70,6 +70,7 @@ scene_hexbin_pitch_admit = _impl.scene_hexbin_pitch_admit
 scene_hexbin_reduce_admit = _impl.scene_hexbin_reduce_admit
 scene_hexbin_rgba_plane_admit = _impl.scene_hexbin_rgba_plane_admit
 scene_item_apply_opacity = _impl.scene_item_apply_opacity
+scene_item_widths_admit = _impl.scene_item_widths_admit
 scene_kind_admit = _impl.scene_kind_admit
 scene_kind_class = _impl.scene_kind_class
 scene_linear_gradient_prefix = _impl.scene_linear_gradient_prefix
@@ -325,6 +326,7 @@ __all__ = [
     "scene_hexbin_reduce_admit",
     "scene_hexbin_rgba_plane_admit",
     "scene_item_apply_opacity",
+    "scene_item_widths_admit",
     "scene_kind_admit",
     "scene_kind_class",
     "scene_linear_gradient_prefix",
