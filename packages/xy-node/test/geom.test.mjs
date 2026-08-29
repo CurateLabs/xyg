@@ -605,6 +605,10 @@ test("constantMarkColor uses color_ch.constant only like Python", () => {
     constantMarkColor({ color: { mode: "constant", constant: "blue" } }),
     "#3987e5",
   );
+  assert.equal(
+    constantMarkColor({ colorChannel: { mode: "constant", constant: "red" } }),
+    "#3987e5",
+  );
 });
 
 test("channelConstantCss uses channel.constant only like Python", () => {
