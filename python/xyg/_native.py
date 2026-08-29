@@ -1361,6 +1361,20 @@ def scene_hexbin_reduce_admit(text: str | None = None) -> bool:
     return code == 1
 
 
+def scene_curve_classify(text: str | None = None) -> int:
+    """Scene curve-name classify via ``xyg_scene_curve_classify`` (ABI 233).
+
+    Returns ``0`` linear, ``1`` smooth, or ``255`` when unknown. Empty native
+    pointers are ``0``. Hosts still check kind for ``smooth``. Compile-path
+    ``curve_smooth`` in ``scene_trace_compile.rs`` stays extra.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_curve_classify(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-curve-classify request")
+    return int(code)
+
+
 def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
     """f32-safe encode scale for offset-encoded geometry (ABI 208, §19)."""
     out = ctypes.c_double()

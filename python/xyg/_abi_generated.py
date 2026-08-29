@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 232
-SIGNATURE_SHA256 = "9f16a029ed4bb9b6c71a08a84ba0808284111929cbcc885df89431d9a7fd1b19"
+ABI_VERSION = 233
+SIGNATURE_SHA256 = "cbb9c3b804eda71837981408f0af6d8cd1d16a08aa38fa8b1835408064ce9d26"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -758,6 +758,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_browser_painter
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_curve_classify(const uint8_t * text, size_t text_len)
+    function = lib.xyg_scene_curve_classify
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_scene_dash_admit(const uint8_t * text, size_t text_len, const double * lengths, size_t n, int32_t use_lengths, double * out, size_t out_cap, size_t * out_n)
     function = lib.xyg_scene_dash_admit
     function.restype = ctypes.c_int32

@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 232;
+pub const ABI_VERSION: u32 = 233;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5331,6 +5331,37 @@ pub unsafe extern "C" fn xyg_scene_hexbin_reduce_admit(
             return -2;
         };
         kernels::scene_hexbin_reduce_admit(text)
+    })
+}
+
+/// Scene curve-name classify (ABI 233).
+///
+/// `linear` returns `0`, `smooth` returns `1`. Unknown names, including
+/// empty text, return `255`. Trim then Unicode lowercase. `-2` FFI. Empty
+/// native pointers are null/`0`. Hosts still check kind for `smooth`.
+/// Compile-path `curve_smooth` in `scene_trace_compile.rs` stays extra.
+///
+/// # Safety
+/// `text` must address `text_len` readable bytes when `text_len` is
+/// nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_curve_classify(
+    text: *const u8,
+    text_len: usize,
+) -> i32 {
+    if text_len > 0 && text.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let bytes = if text_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(text, text_len)
+        };
+        let Ok(text) = std::str::from_utf8(bytes) else {
+            return -2;
+        };
+        kernels::scene_curve_classify(text)
     })
 }
 

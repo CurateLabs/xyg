@@ -1566,6 +1566,11 @@ ABI 232 `xyg_scene_hexbin_reduce_admit` owns Scene hexbin reduce names
 Python `_figure_trace_support_flags` and Node `figureTraceSupport` cannot
 drift. Hosts still check hexbin kind. Compile-path `HEXBIN_REDUCES` in
 `scene_export.rs` stays extra.
+ABI 233 `xyg_scene_curve_classify` owns Scene curve names (`linear` → 0,
+`smooth` → 1; unknown/empty → 255; trim then lowercase) so Python
+`_figure_trace_support_flags` and Node `figureTraceSupport` cannot drift.
+Hosts still check kind for `smooth`. Compile-path `curve_smooth` in
+`scene_trace_compile.rs` stays extra.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1668,6 +1673,11 @@ ABI 232 `xyg_scene_hexbin_reduce_admit` owns Scene hexbin reduce names
 Python `_figure_trace_support_flags` and Node `figureTraceSupport` cannot
 drift. Hosts still check hexbin kind. Compile-path `HEXBIN_REDUCES` in
 `scene_export.rs` stays extra.
+ABI 233 `xyg_scene_curve_classify` owns Scene curve names (`linear` → 0,
+`smooth` → 1; unknown/empty → 255; trim then lowercase) so Python
+`_figure_trace_support_flags` and Node `figureTraceSupport` cannot drift.
+Hosts still check kind for `smooth`. Compile-path `curve_smooth` in
+`scene_trace_compile.rs` stays extra.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same
