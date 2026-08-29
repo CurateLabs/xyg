@@ -877,6 +877,7 @@ Node `channelEndRgba8` ignores array and typed-array channels (same as Python ob
 Node `channelEndRgba8` categorical paint uses `DEFAULT_PALETTE` when palette is empty (same as Python); fallback CSS is not a missing-slot stand-in.
 Node `packXyTaColormap` stop bytes require RGB rows like Python `_colormap_stop_bytes`; a flat or RGBA list packs empty stops.
 Node `xyHfColormap` stop bytes require RGB rows like Python `_colormap_stop_bytes`; a flat or RGBA list packs empty stops.
+Node `packXyTaRgbaGrid` stacks flattened planes like Python `_pack_xyta` `rgba_grid`; nested 2D index fallback is not a plane layout.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1319,6 +1320,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `channelEndRgba8` categorical paint uses `DEFAULT_PALETTE`.
   Node `packXyTaColormap` stop bytes require RGB rows.
   Node `xyHfColormap` stop bytes require RGB rows.
+  Node `packXyTaRgbaGrid` stacks flattened planes.
 
 ---
 

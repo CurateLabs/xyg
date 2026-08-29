@@ -3818,6 +3818,54 @@ function packTraceCompile(facts) {
   return out.subarray(0, code);
 }
 
+export function packXyTaRgbaGrid(planes) {
+  if (planes == null || planes.length !== 4) return new Uint8Array();
+  try {
+    const channels = [];
+    for (const plane of planes) {
+      const raw = plane != null
+        && typeof plane === "object"
+        && !Array.isArray(plane)
+        && !ArrayBuffer.isView(plane)
+        && plane.values != null
+        ? plane.values
+        : plane;
+      const flat = flattenPlaneF64(raw);
+      if (flat == null) return new Uint8Array();
+      channels.push(flat);
+    }
+    const n = channels[0].length;
+    if (!channels.every((channel) => channel.length === n)) return new Uint8Array();
+    const interleaved = new Float64Array(n * 4);
+    for (let i = 0; i < n; i += 1) {
+      for (let c = 0; c < 4; c += 1) interleaved[i * 4 + c] = channels[c][i];
+    }
+    return new Uint8Array(interleaved.buffer);
+  } catch {
+    return new Uint8Array();
+  }
+}
+
+function flattenPlaneF64(raw) {
+  if (raw == null) return null;
+  if (ArrayBuffer.isView(raw) && !(raw instanceof DataView)) {
+    return Float64Array.from(raw, Number);
+  }
+  if (!Array.isArray(raw)) return null;
+  if (raw.length > 0 && (Array.isArray(raw[0]) || ArrayBuffer.isView(raw[0]))) {
+    const rows = raw.map((row) => Array.from(row, Number));
+    const width = rows[0].length;
+    const out = new Float64Array(rows.length * width);
+    let k = 0;
+    for (const row of rows) {
+      if (row.length !== width) return null;
+      for (const value of row) out[k++] = value;
+    }
+    return out;
+  }
+  return Float64Array.from(raw, Number);
+}
+
 export function packXyTaColormap(trace) {
   const style = trace.style ?? {};
   const colormap = style.colormap;
@@ -3927,19 +3975,7 @@ function packXyTa(figure, xDomain, yDomain) {
       }
       if (trace.rgba_grid != null) {
         flags |= XYTA_HAS_RGBA_GRID;
-        const planes = trace.rgba_grid;
-        if (planes.length === 4 && rows > 0 && cols > 0) {
-          const interleaved = new Float64Array(rows * cols * 4);
-          for (let row = 0; row < rows; row += 1) {
-            for (let col = 0; col < cols; col += 1) {
-              const index = (row * cols + col) * 4;
-              for (let channel = 0; channel < 4; channel += 1) {
-                interleaved[index + channel] = Number(planes[channel][row * cols + col] ?? planes[channel][row]?.[col]);
-              }
-            }
-          }
-          rgbaGrid = new Uint8Array(interleaved.buffer);
-        }
+        rgbaGrid = packXyTaRgbaGrid(trace.rgba_grid);
       }
       const packedCmap = packXyTaColormap(trace);
       flags |= packedCmap.flags;

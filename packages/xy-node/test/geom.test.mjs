@@ -56,6 +56,7 @@ import {
   sceneHexbinRgbaPlaneAdmit,
   meshHasPerItem,
   packXyTaColormap,
+  packXyTaRgbaGrid,
   hexbinXyTaColormap,
   constantMarkColor,
   xyHfColormap,
@@ -351,6 +352,24 @@ test("packXyTaColormap stop bytes require RGB rows like Python", () => {
   const rgba = packXyTaColormap({ style: { colormap: [[255, 0, 0, 255]] } });
   assert.equal(rgba.flags, 1 << 7);
   assert.equal(rgba.stops.length, 0);
+});
+
+test("packXyTaRgbaGrid stacks flattened planes like Python", () => {
+  const packed = packXyTaRgbaGrid([[1, 2], [3, 4], [5, 6], [7, 8]]);
+  const view = new Float64Array(packed.buffer, packed.byteOffset, packed.byteLength / 8);
+  assert.deepEqual([...view], [1, 3, 5, 7, 2, 4, 6, 8]);
+  const nested = packXyTaRgbaGrid([[[1, 2]], [[3, 4]], [[5, 6]], [[7, 8]]]);
+  const nestedView = new Float64Array(nested.buffer, nested.byteOffset, nested.byteLength / 8);
+  assert.deepEqual([...nestedView], [1, 3, 5, 7, 2, 4, 6, 8]);
+  const fromValues = packXyTaRgbaGrid([
+    { values: [1, 2] },
+    { values: [3, 4] },
+    { values: [5, 6] },
+    { values: [7, 8] },
+  ]);
+  const valuesView = new Float64Array(fromValues.buffer, fromValues.byteOffset, fromValues.byteLength / 8);
+  assert.deepEqual([...valuesView], [1, 3, 5, 7, 2, 4, 6, 8]);
+  assert.equal(packXyTaRgbaGrid([[1], [2], [3]]).length, 0);
 });
 
 test("hexbinXyTaColormap uses channel.colormap only like Python", () => {
