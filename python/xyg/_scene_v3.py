@@ -1792,14 +1792,11 @@ def _admitted_marker_glyph(glyph: Any) -> bytes | None:
     ABI 191 admits multi-character UTF-8 up to 64 bytes. Combined marker_path
     stays fail-closed at the caller. Empty, NUL, and newline stay off this path.
     """
-    if not isinstance(glyph, str) or not glyph:
+    if not isinstance(glyph, str):
         return None
-    if "\0" in glyph or "\n" in glyph or "\r" in glyph:
+    if not _native.scene_marker_glyph_admit(glyph):
         return None
-    encoded = glyph.encode("utf-8")
-    if len(encoded) > _XYMG_MAX_UTF8:
-        return None
-    return encoded
+    return glyph.encode("utf-8")
 
 
 def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, str]:

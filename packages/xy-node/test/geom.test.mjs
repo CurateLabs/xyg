@@ -27,6 +27,7 @@ import {
   sceneGradientSpace,
   sceneHexbinReduceAdmit,
   sceneCurveClassify,
+  sceneMarkerGlyphAdmit,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -296,6 +297,17 @@ test("sceneCurveClassify matches host table", () => {
   assert.equal(sceneCurveClassify(""), 255);
   assert.equal(sceneCurveClassify("foo"), 255);
   assert.equal(sceneCurveClassify("step"), 255);
+});
+
+test("sceneMarkerGlyphAdmit matches host table", () => {
+  assert.equal(sceneMarkerGlyphAdmit("A"), true);
+  assert.equal(sceneMarkerGlyphAdmit("α"), true);
+  assert.equal(sceneMarkerGlyphAdmit(""), false);
+  assert.equal(sceneMarkerGlyphAdmit("a\0b"), false);
+  assert.equal(sceneMarkerGlyphAdmit("a\nb"), false);
+  assert.equal(sceneMarkerGlyphAdmit("a\rb"), false);
+  assert.equal(sceneMarkerGlyphAdmit("x".repeat(64)), true);
+  assert.equal(sceneMarkerGlyphAdmit("x".repeat(65)), false);
 });
 
 test("sceneRibbonColor2Classify matches host table", () => {
