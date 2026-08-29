@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 226;
+pub const ABI_VERSION: u32 = 227;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4954,7 +4954,7 @@ pub unsafe extern "C" fn xyg_scene_tick_anchor(
 /// with `css_lens` byte counts. Empty/`currentcolor` use `mark_color`. `var(`
 /// rejects. Writes `n * 4` RGBA8 bytes into `out_rgba`. Returns `1` admitted,
 /// `0` reject, `-2` FFI. Empty native pointers are null/`0`. Hosts still
-/// coerce fill mappings and parse `linear-gradient(` CSS.
+/// coerce fill mappings; CSS `linear-gradient(` parse is ABI 227.
 ///
 /// # Safety
 /// Pointers must address the claimed readable or writable bytes when the
@@ -5066,6 +5066,95 @@ pub unsafe extern "C" fn xyg_scene_fill_gradient_admit(
             return -2;
         }
         kernels::scene_fill_gradient_admit(space, dir, t_slice, &css_parts, mark, out)
+    })
+}
+
+/// Scene `linear-gradient(` CSS parse (ABI 227).
+///
+/// `space` is the host-selected `mark`/`plot` (or other) string. Writes dir
+/// code `0..3` (`down`/`up`/`right`/`left`), resolved `t`, concatenated stop
+/// CSS, per-stop byte lengths, and `n`. Returns `1` parsed, `0` not a
+/// `linear-gradient(...)` value, `3` unsupported direction, `4` left/right in
+/// mark space, `5` stop count, `6` empty color, `7` invalid stop position,
+/// `-2` FFI. Empty native pointers are null/`0`. Hosts still coerce fill
+/// mappings and raise authoring error text. `css_color` validation stays host.
+///
+/// # Safety
+/// Pointers must address the claimed readable or writable bytes when the
+/// corresponding length is nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_parse_linear_gradient(
+    css: *const u8,
+    css_len: usize,
+    space: *const u8,
+    space_len: usize,
+    out_dir: *mut u8,
+    out_t: *mut f64,
+    out_t_cap: usize,
+    out_css: *mut u8,
+    out_css_cap: usize,
+    out_css_lens: *mut u32,
+    out_lens_cap: usize,
+    out_n: *mut usize,
+) -> i32 {
+    if css_len > 0 && css.is_null() {
+        return -2;
+    }
+    if space_len > 0 && space.is_null() {
+        return -2;
+    }
+    if out_dir.is_null() || out_n.is_null() {
+        return -2;
+    }
+    if out_t_cap > 0 && out_t.is_null() {
+        return -2;
+    }
+    if out_css_cap > 0 && out_css.is_null() {
+        return -2;
+    }
+    if out_lens_cap > 0 && out_css_lens.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let css_bytes = if css_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(css, css_len)
+        };
+        let space_bytes = if space_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(space, space_len)
+        };
+        let Ok(css) = std::str::from_utf8(css_bytes) else {
+            return -2;
+        };
+        let Ok(space) = std::str::from_utf8(space_bytes) else {
+            return -2;
+        };
+        let parsed = match kernels::scene_parse_linear_gradient(css, space) {
+            Ok(parsed) => parsed,
+            Err(code) => return code,
+        };
+        let n = parsed.t.len();
+        let css_bytes: usize = parsed.css.iter().map(|s| s.len()).sum();
+        if out_t_cap < n || out_lens_cap < n || out_css_cap < css_bytes {
+            return -2;
+        }
+        let out_t = std::slice::from_raw_parts_mut(out_t, out_t_cap);
+        let out_css = std::slice::from_raw_parts_mut(out_css, out_css_cap);
+        let out_lens = std::slice::from_raw_parts_mut(out_css_lens, out_lens_cap);
+        *out_dir = parsed.dir;
+        *out_n = n;
+        out_t[..n].copy_from_slice(&parsed.t);
+        let mut at = 0usize;
+        for (index, color) in parsed.css.iter().enumerate() {
+            let bytes = color.as_bytes();
+            out_css[at..at + bytes.len()].copy_from_slice(bytes);
+            out_lens[index] = bytes.len() as u32;
+            at += bytes.len();
+        }
+        kernels::SCENE_PARSE_LINEAR_GRADIENT_OK
     })
 }
 

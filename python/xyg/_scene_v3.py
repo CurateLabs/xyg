@@ -14,7 +14,7 @@ from typing import Any, NoReturn
 
 import numpy as np
 
-from . import _native, _validate, channels
+from . import _native, channels
 from .marks import _SYMBOL_CODES, _validated_marker_path
 
 # Host mark kinds that lower to Scene Rect (kind 2). Geometry is already
@@ -2541,11 +2541,24 @@ def _admitted_fill_gradient_from_fill(fill: Any, mark_color: str) -> dict[str, A
     spec: dict[str, Any] | None
     if isinstance(fill, dict) and {"space", "dir", "stops"} <= set(fill):
         spec = fill
-    else:
-        try:
-            spec = _validate.mark_fill(fill, "fill")
-        except (TypeError, ValueError):
+    elif isinstance(fill, dict):
+        extra = [key for key in fill if key not in {"gradient", "space"}]
+        if extra:
             return None
+        gradient = fill.get("gradient")
+        if not isinstance(gradient, str):
+            return None
+        raw_space = fill.get("space", "mark")
+        space = "mark" if raw_space is None else str(raw_space)
+        code, spec = _native.scene_parse_linear_gradient(gradient, space)
+        if code != 1:
+            return None
+    elif isinstance(fill, str):
+        code, spec = _native.scene_parse_linear_gradient(fill, "mark")
+        if code != 1:
+            return None
+    else:
+        return None
     if not spec:
         return None
     space = spec.get("space")

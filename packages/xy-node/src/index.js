@@ -41,6 +41,7 @@ export {
   sceneTickLabelStrategy,
   sceneTickAnchor,
   sceneFillGradientAdmit,
+  sceneParseLinearGradient,
   roundedRectPoly,
   violinDensity,
   boxStats,

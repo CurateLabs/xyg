@@ -690,8 +690,13 @@ throw-on-unknown table.
 ABI 226 `xyg_scene_fill_gradient_admit` owns Scene fill-gradient stop admit
 (space/dir, 2–8 monotone `t` in `[0, 1]`, `var(` reject, empty/`currentcolor`
 → mark color, RGBA8) so Python `_admitted_fill_gradient_from_fill` and Node
-`admitFillGradient` cannot drift. Hosts still coerce fill mappings and parse
-`linear-gradient(` CSS.
+`admitFillGradient` cannot drift. Hosts still coerce fill mappings.
+ABI 227 `xyg_scene_parse_linear_gradient` owns CSS `linear-gradient(...)`
+parse (cardinal `to` directions, 2–8 resolved stops, nested function commas)
+so Python `mark_fill` / `_admitted_fill_gradient_from_fill` and Node
+`parseLinearGradient` cannot drift. Hosts still coerce fill mappings, wrap
+authoring error text, and run `css_color` on authoring stops. Compile-path
+skip-empty split stays extra.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1049,7 +1054,8 @@ client must not grow a parallel “JS layout/LOD” product path.
   Scene ribbon color2 classify is ABI 223;
   Scene tick-label strategy admit is ABI 224;
   Scene tick-label anchor admit is ABI 225;
-  Scene fill-gradient admit is ABI 226.
+  Scene fill-gradient admit is ABI 226;
+  Scene linear-gradient CSS parse is ABI 227.
 
 ---
 

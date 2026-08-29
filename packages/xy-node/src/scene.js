@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -1654,87 +1654,15 @@ function validateMarkerPath(value) {
 }
 
 const GRAD_DIR_CODES = { down: 0, up: 1, right: 2, left: 3 };
-const GRADIENT_DIRS = { "to top": "up", "to bottom": "down", "to left": "left", "to right": "right" };
 
 function fillIsGradientAuthoring(fill) {
   if (fill != null && typeof fill === "object") return true;
   return typeof fill === "string" && fill.trim().toLowerCase().startsWith("linear-gradient(");
 }
 
-function splitTopLevel(text) {
-  const parts = [];
-  let current = "";
-  let depth = 0;
-  for (const ch of text) {
-    if (ch === "(") depth += 1;
-    else if (ch === ")") depth = Math.max(0, depth - 1);
-    if (ch === "," && depth === 0) {
-      parts.push(current.trim());
-      current = "";
-      continue;
-    }
-    current += ch;
-  }
-  if (current.trim()) parts.push(current.trim());
-  return parts;
-}
-
-function parseGradientStop(item) {
-  const tokens = item.trim().split(/\s+/);
-  if (tokens.length >= 2 && tokens[tokens.length - 1].endsWith("%")) {
-    const pos = Number(tokens[tokens.length - 1].slice(0, -1)) / 100;
-    if (!Number.isFinite(pos)) return null;
-    return { t: Math.min(1, Math.max(0, pos)), color: tokens.slice(0, -1).join(" ") };
-  }
-  return { t: null, color: item.trim() };
-}
-
 function parseLinearGradient(value, space = "mark") {
   if (typeof value !== "string") return null;
-  const text = value.trim();
-  const lowered = text.toLowerCase();
-  if (!lowered.startsWith("linear-gradient(") || !text.endsWith(")")) return null;
-  let args = splitTopLevel(text.slice("linear-gradient(".length, -1));
-  let dir = "down";
-  if (args.length && Object.hasOwn(GRADIENT_DIRS, args[0].toLowerCase())) {
-    dir = GRADIENT_DIRS[args[0].toLowerCase()];
-    args = args.slice(1);
-  } else if (args.length && (args[0].toLowerCase().startsWith("to ") || args[0].toLowerCase().endsWith("deg"))) {
-    return null;
-  }
-  if ((dir === "left" || dir === "right") && space === "mark") return null;
-  if (args.length < 2 || args.length > 8) return null;
-  const parsed = args.map(parseGradientStop);
-  if (parsed.some((item) => item == null || !item.color)) return null;
-  const count = parsed.length;
-  const anchors = new Map();
-  parsed.forEach((item, index) => {
-    if (item.t != null) anchors.set(index, item.t);
-  });
-  if (!anchors.has(0)) anchors.set(0, 0);
-  if (!anchors.has(count - 1)) anchors.set(count - 1, 1);
-  const keys = [...anchors.keys()].sort((a, b) => a - b);
-  let prev = 0;
-  for (const key of keys) {
-    prev = Math.max(anchors.get(key), prev);
-    anchors.set(key, prev);
-  }
-  const resolved = new Array(count).fill(0);
-  for (let i = 0; i < keys.length - 1; i += 1) {
-    const i0 = keys[i];
-    const i1 = keys[i + 1];
-    const v0 = anchors.get(i0);
-    const v1 = anchors.get(i1);
-    for (let k = i0; k < i1; k += 1) {
-      resolved[k] = v0 + ((v1 - v0) * (k - i0)) / (i1 - i0);
-    }
-  }
-  resolved[count - 1] = anchors.get(count - 1);
-  return {
-    space,
-    dir,
-    stops: parsed.map((item, index) => [resolved[index], item.color]),
-  };
+  return sceneParseLinearGradient(value, space);
 }
 
 function normalizeFillSpec(fill) {

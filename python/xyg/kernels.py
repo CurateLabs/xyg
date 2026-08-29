@@ -61,6 +61,7 @@ scene_dash_admit = _impl.scene_dash_admit
 scene_fill_gradient_admit = _impl.scene_fill_gradient_admit
 scene_linecap_admit = _impl.scene_linecap_admit
 scene_marker_path_admit = _impl.scene_marker_path_admit
+scene_parse_linear_gradient = _impl.scene_parse_linear_gradient
 scene_ribbon_color2_classify = _impl.scene_ribbon_color2_classify
 scene_tick_anchor = _impl.scene_tick_anchor
 scene_tick_label_strategy = _impl.scene_tick_label_strategy
@@ -297,6 +298,7 @@ __all__ = [
     "scene_fill_gradient_admit",
     "scene_linecap_admit",
     "scene_marker_path_admit",
+    "scene_parse_linear_gradient",
     "scene_ribbon_color2_classify",
     "scene_tick_anchor",
     "scene_tick_label_strategy",

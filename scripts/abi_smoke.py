@@ -251,6 +251,21 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
     ]
+    lib.xyg_scene_parse_linear_gradient.restype = ctypes.c_int32
+    lib.xyg_scene_parse_linear_gradient.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        F64P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        U32P,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_size_t),
+    ]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2370,6 +2385,91 @@ def main() -> None:
         )
         == 0,
         "scene_fill_gradient_admit var reject",
+    )
+    parse_css = array("B", b"linear-gradient(red, blue)")
+    parse_space = array("B", b"mark")
+    parse_dir = ctypes.c_uint8(255)
+    parse_t = array("d", [0.0] * 8)
+    parse_css_out = array("B", [0] * 256)
+    parse_lens = array("I", [0] * 8)
+    parse_n = ctypes.c_size_t(0)
+    ok(
+        lib.xyg_scene_parse_linear_gradient(
+            _ptr(parse_css, ctypes.c_uint8),
+            len(parse_css),
+            _ptr(parse_space, ctypes.c_uint8),
+            len(parse_space),
+            ctypes.byref(parse_dir),
+            _ptr(parse_t, ctypes.c_double),
+            8,
+            _ptr(parse_css_out, ctypes.c_uint8),
+            len(parse_css_out),
+            _ptr(parse_lens, ctypes.c_uint32),
+            8,
+            ctypes.byref(parse_n),
+        )
+        == 1
+        and parse_dir.value == 0
+        and parse_n.value == 2
+        and abs(parse_t[0] - 0.0) < 1e-15
+        and abs(parse_t[1] - 1.0) < 1e-15,
+        "scene_parse_linear_gradient pair",
+    )
+    parse_deg = array("B", b"linear-gradient(45deg, red, blue)")
+    ok(
+        lib.xyg_scene_parse_linear_gradient(
+            _ptr(parse_deg, ctypes.c_uint8),
+            len(parse_deg),
+            _ptr(parse_space, ctypes.c_uint8),
+            len(parse_space),
+            ctypes.byref(parse_dir),
+            _ptr(parse_t, ctypes.c_double),
+            8,
+            _ptr(parse_css_out, ctypes.c_uint8),
+            len(parse_css_out),
+            _ptr(parse_lens, ctypes.c_uint32),
+            8,
+            ctypes.byref(parse_n),
+        )
+        == 3,
+        "scene_parse_linear_gradient degree reject",
+    )
+    parse_left = array("B", b"linear-gradient(to left, red, blue)")
+    ok(
+        lib.xyg_scene_parse_linear_gradient(
+            _ptr(parse_left, ctypes.c_uint8),
+            len(parse_left),
+            _ptr(parse_space, ctypes.c_uint8),
+            len(parse_space),
+            ctypes.byref(parse_dir),
+            _ptr(parse_t, ctypes.c_double),
+            8,
+            _ptr(parse_css_out, ctypes.c_uint8),
+            len(parse_css_out),
+            _ptr(parse_lens, ctypes.c_uint32),
+            8,
+            ctypes.byref(parse_n),
+        )
+        == 4,
+        "scene_parse_linear_gradient mark axis",
+    )
+    ok(
+        lib.xyg_scene_parse_linear_gradient(
+            null_u8,
+            0,
+            _ptr(parse_space, ctypes.c_uint8),
+            len(parse_space),
+            ctypes.byref(parse_dir),
+            _ptr(parse_t, ctypes.c_double),
+            8,
+            _ptr(parse_css_out, ctypes.c_uint8),
+            len(parse_css_out),
+            _ptr(parse_lens, ctypes.c_uint32),
+            8,
+            ctypes.byref(parse_n),
+        )
+        == 0,
+        "scene_parse_linear_gradient empty",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8

@@ -1538,8 +1538,13 @@ throw-on-unknown table.
 ABI 226 `xyg_scene_fill_gradient_admit` owns Scene fill-gradient stop admit
 (space/dir, 2–8 monotone `t` in `[0, 1]`, `var(` reject, empty/`currentcolor`
 → mark color, RGBA8) so Python `_admitted_fill_gradient_from_fill` and Node
-`admitFillGradient` cannot drift. Hosts still coerce fill mappings and parse
-`linear-gradient(` CSS.
+`admitFillGradient` cannot drift. Hosts still coerce fill mappings.
+ABI 227 `xyg_scene_parse_linear_gradient` owns CSS `linear-gradient(...)`
+parse (cardinal `to` directions, 2–8 resolved stops, nested function commas)
+so Python `mark_fill` / `_admitted_fill_gradient_from_fill` and Node
+`parseLinearGradient` cannot drift. Hosts still coerce fill mappings, wrap
+authoring error text, and run `css_color` on authoring stops. Compile-path
+skip-empty split stays extra.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1614,8 +1619,13 @@ throw-on-unknown table.
 ABI 226 `xyg_scene_fill_gradient_admit` owns Scene fill-gradient stop admit
 (space/dir, 2–8 monotone `t` in `[0, 1]`, `var(` reject, empty/`currentcolor`
 → mark color, RGBA8) so Python `_admitted_fill_gradient_from_fill` and Node
-`admitFillGradient` cannot drift. Hosts still coerce fill mappings and parse
-`linear-gradient(` CSS.
+`admitFillGradient` cannot drift. Hosts still coerce fill mappings.
+ABI 227 `xyg_scene_parse_linear_gradient` owns CSS `linear-gradient(...)`
+parse (cardinal `to` directions, 2–8 resolved stops, nested function commas)
+so Python `mark_fill` / `_admitted_fill_gradient_from_fill` and Node
+`parseLinearGradient` cannot drift. Hosts still coerce fill mappings, wrap
+authoring error text, and run `css_color` on authoring stops. Compile-path
+skip-empty split stays extra.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same
