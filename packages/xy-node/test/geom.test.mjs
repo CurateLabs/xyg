@@ -55,6 +55,7 @@ import {
   sceneHexbinReduceAdmit,
   sceneHexbinRgbaPlaneAdmit,
   meshHasPerItem,
+  meshJoinedFill,
   packXyTaColormap,
   packXyTaFillOpacity,
   packXyTaGrid,
@@ -907,6 +908,13 @@ test("meshHasPerItem matches Python has_per_item_channels", () => {
     }),
     true,
   );
+});
+
+test("meshJoinedFill uses joined_fill only like Python", () => {
+  assert.equal(meshJoinedFill({}), false);
+  assert.equal(meshJoinedFill({ style: { joinedFill: true } }), false);
+  assert.equal(meshJoinedFill({ style: { joined_fill: true } }), true);
+  assert.equal(meshJoinedFill({ style: { joined_fill: 1 } }), true);
 });
 
 test("sceneItemApplyOpacity matches host table", () => {
