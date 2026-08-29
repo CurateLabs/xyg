@@ -860,6 +860,7 @@ Node `itemFillRgba8` uses `color_ch` only (same as Python); `trace.color` is not
 Node `scatterPaintChannelNames` uses `color_ch` only (same as Python); `trace.color` is not a per-item color channel.
 Node `scatterHasNonConstantColor` uses `color_ch` only (same as Python); `trace.color` is not a non-constant-color fallback.
 Node `resolveDensityBinColors` uses `color_ch` only (same as Python); `trace.color` is not a density-bin color channel.
+Node `scatterHasNonConstantColor` ignores `style.color_channel` (same as Python); only `color_ch` is a non-constant-color channel.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1285,6 +1286,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `scatterPaintChannelNames` uses `color_ch` only.
   Node `scatterHasNonConstantColor` uses `color_ch` only.
   Node `resolveDensityBinColors` uses `color_ch` only.
+  Node `scatterHasNonConstantColor` ignores `style.color_channel`.
 
 ---
 
