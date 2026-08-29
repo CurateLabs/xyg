@@ -3829,9 +3829,37 @@ export function packXyTaColormap(trace) {
     cmap = new TextEncoder().encode(colormap);
   } else if (colormap != null) {
     flags |= XYTA_HAS_STOPS;
-    stops = Uint8Array.from(colormap.flat ? colormap.flat() : colormap);
+    stops = xyTaColormapStopBytes(colormap) ?? new Uint8Array();
   }
   return { flags, cmap, stops };
+}
+
+function xyTaColormapStopBytes(colormap) {
+  try {
+    const rows = [];
+    for (const row of colormap) {
+      if (row == null || typeof row === "number" || typeof row === "string") return null;
+      const parts = [...row];
+      if (parts.length !== 3) return null;
+      const rgb = [];
+      for (const value of parts) {
+        const n = Number(value);
+        if (!Number.isFinite(n)) return null;
+        rgb.push(n | 0);
+      }
+      rows.push(rgb);
+    }
+    if (rows.length < 1) return null;
+    const out = new Uint8Array(rows.length * 3);
+    for (let i = 0; i < rows.length; i += 1) {
+      out[i * 3] = rows[i][0];
+      out[i * 3 + 1] = rows[i][1];
+      out[i * 3 + 2] = rows[i][2];
+    }
+    return out;
+  } catch {
+    return null;
+  }
 }
 
 export function hexbinXyTaColormap(trace) {
