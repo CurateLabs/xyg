@@ -12,6 +12,7 @@ import {
   geometryOffset,
   hexbinRing,
   hexbinPacksColormapPlane,
+  itemApplyOpacity,
   itemWidths,
   markerPathScale,
   arrowGeometry,
@@ -504,6 +505,17 @@ test("itemWidths missing values fail-closes like Python", () => {
   const scalarView = new DataView(scalar.buffer, scalar.byteOffset, scalar.byteLength);
   assert.equal(scalarView.getFloat64(0, true), 3);
   assert.equal(scalarView.getFloat64(8, true), 3);
+});
+
+test("itemApplyOpacity missing values fail-closes like Python", () => {
+  const packed = new Uint8Array([10, 20, 30, 255, 40, 50, 60, 255]);
+  assert.equal(itemApplyOpacity({}, packed, 2), packed);
+  assert.equal(itemApplyOpacity({ style_channels: { opacity: {} } }, packed, 2), null);
+  assert.equal(itemApplyOpacity({ style_channels: { artist_alpha: { values: null } } }, packed, 1), null);
+  const out = itemApplyOpacity({ style_channels: { opacity: { values: [0.5, 0.5] } } }, packed, 2);
+  assert.equal(out[0], 10);
+  assert.equal(out[3], 128);
+  assert.equal(out[7], 128);
 });
 
 test("sceneItemFillT matches host table", () => {

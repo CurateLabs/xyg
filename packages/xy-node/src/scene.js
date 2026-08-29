@@ -5616,16 +5616,16 @@ function scatterCount(trace) {
   return trace.x?.length ?? trace.count ?? 0;
 }
 
-function itemApplyOpacity(trace, packed, n) {
+export function itemApplyOpacity(trace, packed, n) {
   const channels = trace.style_channels ?? trace.styleChannels ?? {};
   const opacityCh = channels.opacity;
   const artistCh = channels.artist_alpha;
-  if (opacityCh?.values == null && artistCh?.values == null) return packed;
+  if (opacityCh == null && artistCh == null) return packed;
   return sceneItemApplyOpacity(
     packed,
     n,
-    artistCh?.values ?? null,
-    opacityCh?.values ?? null,
+    artistCh == null ? null : (artistCh.values != null ? artistCh.values : [Number.NaN]),
+    opacityCh == null ? null : (opacityCh.values != null ? opacityCh.values : [Number.NaN]),
   );
 }
 

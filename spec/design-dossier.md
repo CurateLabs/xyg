@@ -1690,6 +1690,7 @@ Node hexbin colormap-plane packing uses `channel.values` (same as Python); `trac
 Node empty kind uses `|| "mark"` (same as Python `or "mark"`).
 Node `figureTraceSupport` does not fail-close `style.smooth`; curve names stay ABI 233.
 Node `itemWidths` fail-closes a present `stroke_width` channel without values (same as Python).
+Node `itemApplyOpacity` fail-closes a present opacity/artist_alpha channel without values (same as Python).
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1916,6 +1917,7 @@ Node hexbin colormap-plane packing uses `channel.values` (same as Python); `trac
 Node empty kind uses `|| "mark"` (same as Python `or "mark"`).
 Node `figureTraceSupport` does not fail-close `style.smooth`; curve names stay ABI 233.
 Node `itemWidths` fail-closes a present `stroke_width` channel without values (same as Python).
+Node `itemApplyOpacity` fail-closes a present opacity/artist_alpha channel without values (same as Python).
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same
