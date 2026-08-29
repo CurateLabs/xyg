@@ -3307,6 +3307,27 @@ export function packXyTcStrokeOpacity(style, kindClass) {
   return Number((style ?? {}).stroke_opacity ?? 1);
 }
 
+/** XYTC color_ch. Python `_pack_xytc` reads `getattr(trace, "color_ch", None)` only. */
+export function packXyTcColorChannel(trace) {
+  const channel = (trace ?? {}).color_ch;
+  if (
+    channel == null
+    || typeof channel !== "object"
+    || Array.isArray(channel)
+    || ArrayBuffer.isView(channel)
+  ) {
+    return { flags: 0, mode: new Uint8Array(), constant: new Uint8Array() };
+  }
+  let flags = XYTC_COLOR_CH;
+  const mode = encodeUtf8(String(channel.mode ?? ""));
+  let constant = new Uint8Array();
+  if (channel.constant != null) {
+    flags |= XYTC_COLOR_CH_CONSTANT;
+    constant = encodeUtf8(String(channel.constant));
+  }
+  return { flags, mode, constant };
+}
+
 function packXyTc(figure) {
   const traces = figure.traces ?? [];
   const records = [];
@@ -3420,14 +3441,11 @@ function packXyTc(figure) {
     const colorCss = encodeUtf8(style.color ?? "");
     let colorMode = new Uint8Array();
     let colorConst = new Uint8Array();
-    const channel = trace.color_ch ?? trace.colorChannel;
-    if (channel != null && typeof channel === "object" && !Array.isArray(channel) && !ArrayBuffer.isView(channel)) {
-      flags |= XYTC_COLOR_CH;
-      colorMode = encodeUtf8(String(channel.mode ?? ""));
-      if (channel.constant != null) {
-        flags |= XYTC_COLOR_CH_CONSTANT;
-        colorConst = encodeUtf8(String(channel.constant));
-      }
+    const packedChannel = packXyTcColorChannel(trace);
+    if (packedChannel.flags) {
+      flags |= packedChannel.flags;
+      colorMode = packedChannel.mode;
+      colorConst = packedChannel.constant;
     }
     const color2Class = classifyRibbonColor2(trace);
     if (color2Class === "fail") flags |= XYTC_COLOR2;
