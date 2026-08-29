@@ -63,6 +63,7 @@ import {
   packXyTcFillOpacity,
   packXyTcLineOpacity,
   packXyTcLineWidth,
+  packXyTcSize,
   packXyTcStrokeOpacity,
   packXyTcStrokeWidth,
   hexbinXyTaColormap,
@@ -396,6 +397,18 @@ test("packXyTcLineWidth uses line_width only like Python", () => {
   const snake = packXyTcLineWidth({ line_width: 2.5 });
   assert.equal(snake.flags, 1 << 5);
   assert.equal(snake.value, 2.5);
+});
+
+test("packXyTcSize uses size only like Python", () => {
+  const missing = packXyTcSize({});
+  assert.equal(missing.flags, 0);
+  assert.equal(Number.isNaN(missing.value), true);
+  const camel = packXyTcSize({ diameter: 12 });
+  assert.equal(camel.flags, 0);
+  assert.equal(Number.isNaN(camel.value), true);
+  const snake = packXyTcSize({ size: 12 });
+  assert.equal(snake.flags, 1 << 6);
+  assert.equal(snake.value, 12);
 });
 
 test("packXyTaGrid flattens plane.values like Python", () => {

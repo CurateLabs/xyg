@@ -3308,6 +3308,13 @@ export function packXyTcLineWidth(style) {
   return { flags: XYTC_HAS_LINE_WIDTH, value: Number(record.line_width) };
 }
 
+/** XYTC size. Python `_pack_xytc` reads `"size" in style` only. */
+export function packXyTcSize(style) {
+  const record = style ?? {};
+  if (!Object.hasOwn(record, "size")) return { flags: 0, value: Number.NaN };
+  return { flags: XYTC_HAS_SIZE, value: Number(record.size) };
+}
+
 /** XYTC stroke opacity. Python `_pack_xytc` uses `style.get("stroke_opacity", 1.0)` only. */
 export function packXyTcStrokeOpacity(style, kindClass) {
   if (!(kindClass & SCENE_KIND_CLASS_OPACITY)) return 1;
@@ -3354,9 +3361,10 @@ function packXyTc(figure) {
       lineOpacity = packXyTcLineOpacity(style, kindClass);
     }
     let size = Number.NaN;
-    if (Object.hasOwn(style, "size") || Object.hasOwn(style, "diameter")) {
-      flags |= XYTC_HAS_SIZE;
-      size = Number(style.size ?? style.diameter);
+    const packedSize = packXyTcSize(style);
+    if (packedSize.flags) {
+      flags |= packedSize.flags;
+      size = packedSize.value;
     }
     let sizeCh = Number.NaN;
     const sizeChannel = trace.size_ch ?? trace.sizeChannel;
