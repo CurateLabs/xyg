@@ -819,6 +819,8 @@ ABI 251 `xyg_clip_quantize_u8`. Browser-only palette status and per-index
 substitute stay host.
 Python `_svg._paint_rgba8` resolves CSS paints through `xyg_css_color_rgba`,
 matching `_raster._parse_color` and Node `cssColorRgba8`.
+Python `resolved_hex_paint` / `_resolved_rgb` quantize `css_check` 0-1
+channels through ABI 251 `xyg_clip_quantize_u8`. Browser-only rejection stays host.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1208,6 +1210,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node density-bin LUT idx uses the same composition.
   Categorical palette LUT u8 uses ABI 251.
   SVG `_paint_rgba8` uses `xyg_css_color_rgba`.
+  Authoring hex / colormap-stop u8 uses ABI 251.
 
 ---
 
