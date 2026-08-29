@@ -708,6 +708,10 @@ test("scatterHasNonConstantColor uses color_ch only like Python", () => {
     scatterHasNonConstantColor({ color_ch: { mode: "constant", constant: "red" } }),
     false,
   );
+  assert.equal(
+    scatterHasNonConstantColor({ colorChannel: { mode: "continuous", values: [0, 1] } }),
+    false,
+  );
 });
 
 test("scatterPerItemChannels ignores style.color_channel like Python", () => {
