@@ -817,6 +817,7 @@ class PayloadMixin(_Host):
         source_sel: Optional[np.ndarray] = None
         segment_sources: Optional[np.ndarray] = None
         segment_roles: Optional[np.ndarray] = None
+        max_groups = kernels.payload_segment_budget(px_width)
         if t.kind == "errorbar" and t.count:
             # Segments ship grouped by role, count per group: 3 groups with
             # caps (main + two cap blocks), 1 without. Decimate per point
@@ -825,7 +826,6 @@ class PayloadMixin(_Host):
             if remainder == 0 and seg_per >= 1:
                 segment_sources = np.tile(np.arange(t.count, dtype=np.int64), seg_per)
                 segment_roles = np.repeat(np.arange(seg_per, dtype=np.uint32), t.count)
-            max_groups = max(1024, int(px_width) * 4)
             if remainder == 0 and seg_per >= 1 and t.count > max_groups:
                 keep_all, chosen = kernels.payload_even_indices(t.count, max_groups)
                 if not keep_all:
@@ -837,8 +837,8 @@ class PayloadMixin(_Host):
                         segment_sources = segment_sources[indices]
                         segment_roles = segment_roles[indices]
                     tier = "decimated"
-        elif t.kind == "stem" and len(x0v) > max(1024, int(px_width) * 4):
-            keep_all, chosen = kernels.payload_even_indices(len(x0v), max(1024, int(px_width) * 4))
+        elif t.kind == "stem" and len(x0v) > max_groups:
+            keep_all, chosen = kernels.payload_even_indices(len(x0v), max_groups)
             if not keep_all:
                 x0v, x1v, y0v, y1v = x0v[chosen], x1v[chosen], y0v[chosen], y1v[chosen]
                 source_sel = chosen.astype(np.int64, copy=False)

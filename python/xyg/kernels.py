@@ -138,6 +138,7 @@ payload_visible_mask = _impl.payload_visible_mask
 payload_visible_needed = _impl.payload_visible_needed
 payload_visible_indices = _impl.payload_visible_indices
 payload_even_indices = _impl.payload_even_indices
+payload_segment_budget = _impl.payload_segment_budget
 payload_sample_target_indices = _impl.payload_sample_target_indices
 paint_effective_rgba = _impl.paint_effective_rgba
 quantiles = _impl.quantiles
@@ -237,6 +238,7 @@ __all__ = [
     "payload_even_indices",
     "payload_m4_indices",
     "payload_sample_target_indices",
+    "payload_segment_budget",
     "payload_tier",
     "payload_visible_indices",
     "payload_visible_mask",

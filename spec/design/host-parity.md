@@ -514,9 +514,10 @@ ABI 205 moves remaining `_emit_*` sampling into Rust: Python and Node
 call `xyg_payload_visible_indices`, `xyg_payload_even_indices`, and
 `xyg_payload_sample_target_indices` so fused finite/log keep indices,
 NumPy int64 linspace stem/errorbar sampling, and density-overlay
-`min(1, target/n)` selection cannot drift. Hosts still choose the
-stem/errorbar count budget, expand errorbar role blocks, gather extra
-columns, and ship the chosen rows.
+`min(1, target/n)` selection cannot drift. ABI 214
+`xyg_payload_segment_budget` owns the stem/errorbar count budget
+(`max(1024, floor(px_width)*4)`). Hosts still expand errorbar role blocks,
+gather extra columns, and ship the chosen rows.
 ABI 123 moves tick-label collision thinning into Rust: Python and Node
 call `xyg_scene_tick_label_layout` so auto / hide / rotate / stagger,
 the edge-anchor rotate gap, and stride downsampling cannot drift.
@@ -635,6 +636,10 @@ CSS/numeric split, equal-bound domain pad, and Nx3/Nx4 admit so Python
 colors stay categories. `xyg_heatmap_rgba` keeps its
 distinct normalized-scalar remap for other consumers. Hosts still
 resolve stop tables, CSS paints, and truecolor RGBA buffers.
+ABI 214 `xyg_payload_segment_budget` owns the stem/errorbar count budget
+(`max(1024, floor(px_width)*4)`) so Python `_payload._emit_segments` and Node
+`_emitSegments` cannot drift. Hosts still expand errorbar role blocks,
+gather extra columns, and ship the chosen rows.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -984,7 +989,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   encode offset/scale is ABI 208; polar wedge flatten is ABI 209; hexbin ring
   offsets are ABI 210; step/stairs expand is ABI 211; authored marker-path
   scale is ABI 212; color CSS/numeric split, domain pad, and direct RGBA admit
-  are ABI 213.
+  are ABI 213; stem/errorbar count budget is ABI 214.
 
 ---
 

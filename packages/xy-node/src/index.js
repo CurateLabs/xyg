@@ -301,6 +301,7 @@ export {
   payloadM4Indices,
   payloadEvenIndices,
   payloadSampleTargetIndices,
+  payloadSegmentBudget,
   payloadVisibleNeeded,
   payloadVisibleMask,
   payloadVisibleIndices,
