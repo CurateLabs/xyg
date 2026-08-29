@@ -90,6 +90,7 @@ import {
   sceneKindClass,
   figureTraceSupport,
   fillIsGradientAuthoring,
+  xyEfJoinedFill,
   xyEfStrokeWidthOnly,
   monotoneTangents,
   ribbonEdge,
@@ -811,6 +812,13 @@ test("figureTraceSupport ignores style.smooth like Python", () => {
   const dashed = 1 << 4;
   assert.equal(figureTraceSupport({}, { kind: "line", style: { smooth: true } }).flags & dashed, 0);
   assert.equal(figureTraceSupport({}, { kind: "scatter", style: { curve: "smooth" } }).flags & dashed, dashed);
+});
+
+test("xyEfJoinedFill uses joined_fill only like Python", () => {
+  assert.equal(xyEfJoinedFill({}), false);
+  assert.equal(xyEfJoinedFill({ joinedFill: true }), false);
+  assert.equal(xyEfJoinedFill({ joined_fill: true }), true);
+  assert.equal(xyEfJoinedFill({ joined_fill: 1 }), true);
 });
 
 test("xyEfStrokeWidthOnly uses stroke_width only like Python", () => {
