@@ -1585,7 +1585,8 @@ lowercasing) so Python `_figure_trace_support_flags` and Node
 ABI 236 `xyg_scene_kind_class` owns Scene packing-family bits (rect/segment/
 band/ribbon/polyfill/hexbin/heatmap/stroke/scatter/line; unknown/empty → 0;
 no lowercasing) so Python `_scene_v3` pack and Node `scene.js` pack cannot
-drift. Hosts still pick channels and pack rows.
+drift. Hosts still pick channels and pack rows. Smooth-kind eligibility
+uses the existing LINE|BAND bits (no new ABI).
 ABI 237 `xyg_scene_hexbin_pitch_admit` owns Scene hexbin cell-pitch admit
 (finite strictly-positive `dx`/`dy`) so Python `_hexbin_pitch` and Node
 XYEP pack cannot drift. Field picking (`hex_dx` vs `dx`) stays host.
@@ -1602,7 +1603,7 @@ stay host.
 ABI 240 `xyg_scene_heatmap_shape_admit` owns Scene heatmap lattice-shape
 admit (finite integer-valued `rows`/`cols` `>= 1`) so Python `_heatmap_shape`
 and Node XYEP pack cannot drift. Length==2 stays host. XYTA integer coerce
-stays extra. Closes Python `int()` truncation vs Node `Number.isInteger`.
+uses the same kernel (no new ABI). Closes Python `int()` truncation vs Node `Number.isInteger`.
 ABI 241 `xyg_scene_scatter_paint_channel_admit` owns Scene scatter paint-plane
 channel names (exact `color`/`stroke`/`stroke_width`/`opacity`/`artist_alpha`;
 unknown/empty → 0; no lowercasing) so Python `_scatter_packs_paint_plane` and
@@ -1643,13 +1644,17 @@ ABI 249 `xyg_scene_gradient_solid_css` owns Scene gradient solid CSS
 cannot drift. Field picking stays host.
 ABI 250 `xyg_scene_arrays_equal` owns Scene f64 arrays-equal (lengths
 match and every pair is IEEE `==`; empty equal; NaN never equals) so
-Python companion XY match and Node `exportArraysEqual` cannot drift.
+Python companion x1/y1 match and Node `exportArraysEqual` cannot drift.
 Field picking and null checks stay host.
 ABI 251 `xyg_clip_quantize_u8` owns unit-f64 clip-to-`[0, 1]` × 255
 ties-to-even u8 quantize (NaN → 0) so Python `_quantized_rgba8` /
 `channels.ship_color_channel` and Node `clipQuantizeU8` /
 `resolveColorChannel` / `channelEndRgba8` cannot drift. Field picking
 stays host.
+ABI 252 `xyg_scene_constant_color_admit` owns Scene constant-color admit
+(`0` fail, `1` style fallback, `2` channel constant) so Python
+`_constant_color` and Node `constantMarkColor` cannot drift. Ribbon-fail
+and field picking stay host.
 Python `colormap_lut_rgba8` and Node `colormapLutRgba8` sample 256
 unit-t texels through ABI 206 `xyg_colormap_lut` then host-pack alpha
 255 so the density LUT cannot drift on half-up vs ties-to-even.
@@ -1774,7 +1779,8 @@ lowercasing) so Python `_figure_trace_support_flags` and Node
 ABI 236 `xyg_scene_kind_class` owns Scene packing-family bits (rect/segment/
 band/ribbon/polyfill/hexbin/heatmap/stroke/scatter/line; unknown/empty → 0;
 no lowercasing) so Python `_scene_v3` pack and Node `scene.js` pack cannot
-drift. Hosts still pick channels and pack rows.
+drift. Hosts still pick channels and pack rows. Smooth-kind eligibility
+uses the existing LINE|BAND bits (no new ABI).
 ABI 237 `xyg_scene_hexbin_pitch_admit` owns Scene hexbin cell-pitch admit
 (finite strictly-positive `dx`/`dy`) so Python `_hexbin_pitch` and Node
 XYEP pack cannot drift. Field picking (`hex_dx` vs `dx`) stays host.
@@ -1791,7 +1797,7 @@ stay host.
 ABI 240 `xyg_scene_heatmap_shape_admit` owns Scene heatmap lattice-shape
 admit (finite integer-valued `rows`/`cols` `>= 1`) so Python `_heatmap_shape`
 and Node XYEP pack cannot drift. Length==2 stays host. XYTA integer coerce
-stays extra. Closes Python `int()` truncation vs Node `Number.isInteger`.
+uses the same kernel (no new ABI). Closes Python `int()` truncation vs Node `Number.isInteger`.
 ABI 241 `xyg_scene_scatter_paint_channel_admit` owns Scene scatter paint-plane
 channel names (exact `color`/`stroke`/`stroke_width`/`opacity`/`artist_alpha`;
 unknown/empty → 0; no lowercasing) so Python `_scatter_packs_paint_plane` and
@@ -1832,13 +1838,17 @@ ABI 249 `xyg_scene_gradient_solid_css` owns Scene gradient solid CSS
 cannot drift. Field picking stays host.
 ABI 250 `xyg_scene_arrays_equal` owns Scene f64 arrays-equal (lengths
 match and every pair is IEEE `==`; empty equal; NaN never equals) so
-Python companion XY match and Node `exportArraysEqual` cannot drift.
+Python companion x1/y1 match and Node `exportArraysEqual` cannot drift.
 Field picking and null checks stay host.
 ABI 251 `xyg_clip_quantize_u8` owns unit-f64 clip-to-`[0, 1]` × 255
 ties-to-even u8 quantize (NaN → 0) so Python `_quantized_rgba8` /
 `channels.ship_color_channel` and Node `clipQuantizeU8` /
 `resolveColorChannel` / `channelEndRgba8` cannot drift. Field picking
 stays host.
+ABI 252 `xyg_scene_constant_color_admit` owns Scene constant-color admit
+(`0` fail, `1` style fallback, `2` channel constant) so Python
+`_constant_color` and Node `constantMarkColor` cannot drift. Ribbon-fail
+and field picking stay host.
 Python `colormap_lut_rgba8` and Node `colormapLutRgba8` sample 256
 unit-t texels through ABI 206 `xyg_colormap_lut` then host-pack alpha
 255 so the density LUT cannot drift on half-up vs ties-to-even.

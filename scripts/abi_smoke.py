@@ -363,6 +363,13 @@ def load() -> ctypes.CDLL:
     lib.xyg_scene_gradient_solid_css.argtypes = [U8P, ctypes.c_size_t, U8P, ctypes.c_size_t]
     lib.xyg_scene_arrays_equal.restype = ctypes.c_int32
     lib.xyg_scene_arrays_equal.argtypes = [F64P, ctypes.c_size_t, F64P, ctypes.c_size_t]
+    lib.xyg_scene_constant_color_admit.restype = ctypes.c_int32
+    lib.xyg_scene_constant_color_admit.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+    ]
     lib.xyg_clip_quantize_u8.restype = ctypes.c_int32
     lib.xyg_clip_quantize_u8.argtypes = [F64P, ctypes.c_size_t, U8P, ctypes.c_size_t]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
@@ -3005,6 +3012,18 @@ def main() -> None:
         )
         == 0,
         "scene_arrays_equal nan",
+    )
+    ok(
+        lib.xyg_scene_constant_color_admit(0, 0, 0, 0) == 1,
+        "scene_constant_color_admit fallback",
+    )
+    ok(
+        lib.xyg_scene_constant_color_admit(1, 1, 0, 0) == 2,
+        "scene_constant_color_admit constant",
+    )
+    ok(
+        lib.xyg_scene_constant_color_admit(1, 0, 0, 0) == 0,
+        "scene_constant_color_admit fail",
     )
     ok(
         lib.xyg_clip_quantize_u8(null_f64, 0, null_u8, 0) == 1,
