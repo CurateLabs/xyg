@@ -1901,6 +1901,22 @@ export function colormapLut(t, stops) {
   return out;
 }
 
+/** 256-texel RGBA8 LUT matching Python `colormap_lut_rgba8` (ABI 206 + host alpha). */
+export function colormapLutRgba8(name) {
+  const stopBytes = colormapNamedStops(name ?? "viridis");
+  const t = new Float64Array(256);
+  for (let i = 0; i < 256; i++) t[i] = i / 255;
+  const rgb = colormapLut(t, stopBytes);
+  const lut = new Uint8Array(256 * 4);
+  for (let i = 0; i < 256; i++) {
+    lut[i * 4] = rgb[i * 3];
+    lut[i * 4 + 1] = rgb[i * 3 + 1];
+    lut[i * 4 + 2] = rgb[i * 3 + 2];
+    lut[i * 4 + 3] = 255;
+  }
+  return lut;
+}
+
 /** Legacy f64 count-grid density colormap (ABI 206). */
 export function densityRgbaLinear(counts, w, h, maximum, stops, opacity) {
   const ww = Number(w);

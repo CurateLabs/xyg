@@ -807,6 +807,9 @@ ABI 252 `xyg_scene_constant_color_admit` owns Scene constant-color admit
 (`0` fail, `1` style fallback, `2` channel constant) so Python
 `_constant_color` and Node `constantMarkColor` cannot drift. Ribbon-fail
 and field picking stay host.
+Python `colormap_lut_rgba8` and Node `colormapLutRgba8` sample 256
+unit-t texels through ABI 206 `xyg_colormap_lut` then host-pack alpha
+255 so the density LUT cannot drift on half-up vs ties-to-even.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1191,6 +1194,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Scene f64 arrays-equal is ABI 250.
   Unit-f64 clip-quantize u8 is ABI 251.
   Scene constant-color admit is ABI 252.
+  256-texel colormap RGBA8 LUT uses ABI 206.
 
 ---
 

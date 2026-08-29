@@ -1655,6 +1655,9 @@ ABI 252 `xyg_scene_constant_color_admit` owns Scene constant-color admit
 (`0` fail, `1` style fallback, `2` channel constant) so Python
 `_constant_color` and Node `constantMarkColor` cannot drift. Ribbon-fail
 and field picking stay host.
+Python `colormap_lut_rgba8` and Node `colormapLutRgba8` sample 256
+unit-t texels through ABI 206 `xyg_colormap_lut` then host-pack alpha
+255 so the density LUT cannot drift on half-up vs ties-to-even.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1846,6 +1849,9 @@ ABI 252 `xyg_scene_constant_color_admit` owns Scene constant-color admit
 (`0` fail, `1` style fallback, `2` channel constant) so Python
 `_constant_color` and Node `constantMarkColor` cannot drift. Ribbon-fail
 and field picking stay host.
+Python `colormap_lut_rgba8` and Node `colormapLutRgba8` sample 256
+unit-t texels through ABI 206 `xyg_colormap_lut` then host-pack alpha
+255 so the density LUT cannot drift on half-up vs ties-to-even.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same
