@@ -313,6 +313,8 @@ def load() -> ctypes.CDLL:
     lib.xyg_scene_heatmap_shape_admit.argtypes = [ctypes.c_double, ctypes.c_double]
     lib.xyg_scene_scatter_paint_channel_admit.restype = ctypes.c_int32
     lib.xyg_scene_scatter_paint_channel_admit.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_scene_hexbin_colormap_plane_admit.restype = ctypes.c_int32
+    lib.xyg_scene_hexbin_colormap_plane_admit.argtypes = [U8P, ctypes.c_size_t, ctypes.c_int32]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2783,6 +2785,25 @@ def main() -> None:
         lib.xyg_scene_scatter_paint_channel_admit(_ptr(color_pad, ctypes.c_uint8), len(color_pad))
         == 0,
         "scene_scatter_paint_channel_admit padded color",
+    )
+    continuous_mode = array("B", b"continuous")
+    ok(
+        lib.xyg_scene_hexbin_colormap_plane_admit(
+            _ptr(continuous_mode, ctypes.c_uint8), len(continuous_mode), 1
+        )
+        == 1,
+        "scene_hexbin_colormap_plane_admit continuous values",
+    )
+    ok(
+        lib.xyg_scene_hexbin_colormap_plane_admit(
+            _ptr(continuous_mode, ctypes.c_uint8), len(continuous_mode), 0
+        )
+        == 0,
+        "scene_hexbin_colormap_plane_admit continuous empty",
+    )
+    ok(
+        lib.xyg_scene_hexbin_colormap_plane_admit(null_u8, 0, 1) == 0,
+        "scene_hexbin_colormap_plane_admit empty mode",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8

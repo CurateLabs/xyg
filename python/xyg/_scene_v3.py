@@ -1878,9 +1878,12 @@ def _hexbin_packs_colormap_plane(trace: Any) -> bool:
     ):
         return False
     channel = getattr(trace, "color_ch", None)
-    if channel is None or getattr(channel, "mode", None) != "continuous":
+    if channel is None:
         return False
-    return getattr(channel, "values", None) is not None
+    return _native.scene_hexbin_colormap_plane_admit(
+        getattr(channel, "mode", None),
+        1 if getattr(channel, "values", None) is not None else 0,
+    )
 
 
 def _hexbin_count(trace: Any) -> int:

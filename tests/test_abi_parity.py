@@ -36,9 +36,9 @@ def test_host_declarations_match_rust_symbol_set() -> None:
     assert errors == []
 
 
-def test_abi_version_is_241() -> None:
+def test_abi_version_is_242() -> None:
     manifest = gen_abi_manifest.generate_manifest()
-    assert manifest["abi_version"] == 241
+    assert manifest["abi_version"] == 242
     assert manifest["artifact"] == "xyg_core"
     assert all(item["name"].startswith("xyg_") for item in manifest["symbols"])
     assert any(item["name"] == "xyg_abi_version" for item in manifest["symbols"])
@@ -164,6 +164,7 @@ def test_abi_version_is_241() -> None:
     assert "xyg_scene_heatmap_colormap_admit" in names
     assert "xyg_scene_heatmap_shape_admit" in names
     assert "xyg_scene_scatter_paint_channel_admit" in names
+    assert "xyg_scene_hexbin_colormap_plane_admit" in names
     assert "xyg_f32_safe_scale" in names
     assert "xyg_scene_figure_support_reason" in names
     assert "xyg_argsort_stable" in names

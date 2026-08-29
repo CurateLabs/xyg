@@ -50,6 +50,7 @@ export {
   sceneHeatmapColormapAdmit,
   sceneHeatmapExtentAdmit,
   sceneHeatmapShapeAdmit,
+  sceneHexbinColormapPlaneAdmit,
   sceneHexbinPitchAdmit,
   sceneHexbinReduceAdmit,
   sceneCurveClassify,

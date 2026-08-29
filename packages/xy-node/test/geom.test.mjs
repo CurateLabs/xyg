@@ -29,6 +29,7 @@ import {
   sceneHeatmapColormapAdmit,
   sceneHeatmapExtentAdmit,
   sceneHeatmapShapeAdmit,
+  sceneHexbinColormapPlaneAdmit,
   sceneHexbinPitchAdmit,
   sceneHexbinReduceAdmit,
   sceneCurveClassify,
@@ -362,6 +363,15 @@ test("sceneKindClass matches host table", () => {
   assert.equal(sceneKindClass("mark"), 0);
   assert.equal(sceneKindClass("SCATTER"), 0);
   assert.equal(sceneKindClass("BAR"), 0);
+});
+
+test("sceneHexbinColormapPlaneAdmit matches host table", () => {
+  assert.equal(sceneHexbinColormapPlaneAdmit("continuous", 1), true);
+  assert.equal(sceneHexbinColormapPlaneAdmit("continuous", 0), false);
+  assert.equal(sceneHexbinColormapPlaneAdmit("", 1), false);
+  assert.equal(sceneHexbinColormapPlaneAdmit("CONTINUOUS", 1), false);
+  assert.equal(sceneHexbinColormapPlaneAdmit("categorical", 1), false);
+  assert.equal(sceneHexbinColormapPlaneAdmit("direct_rgba", 1), false);
 });
 
 test("sceneHexbinPitchAdmit matches host table", () => {

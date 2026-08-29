@@ -1608,6 +1608,11 @@ channel names (exact `color`/`stroke`/`stroke_width`/`opacity`/`artist_alpha`;
 unknown/empty → 0; no lowercasing) so Python `_scatter_packs_paint_plane` and
 Node `scatterPacksPaintPlane` cannot drift. Kind, density, and name gathering
 stay host.
+ABI 242 `xyg_scene_hexbin_colormap_plane_admit` owns Scene hexbin colormap-plane
+packing (exact `continuous` plus a values-present flag; unknown/empty → 0; no
+lowercasing) so Python `_hexbin_packs_colormap_plane` and Node
+`hexbinPacksColormapPlane` cannot drift. Kind checks and field picking
+(`color_ch` vs `colorChannel`, `values` vs `metric`) stay host.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1752,6 +1757,11 @@ channel names (exact `color`/`stroke`/`stroke_width`/`opacity`/`artist_alpha`;
 unknown/empty → 0; no lowercasing) so Python `_scatter_packs_paint_plane` and
 Node `scatterPacksPaintPlane` cannot drift. Kind, density, and name gathering
 stay host.
+ABI 242 `xyg_scene_hexbin_colormap_plane_admit` owns Scene hexbin colormap-plane
+packing (exact `continuous` plus a values-present flag; unknown/empty → 0; no
+lowercasing) so Python `_hexbin_packs_colormap_plane` and Node
+`hexbinPacksColormapPlane` cannot drift. Kind checks and field picking
+(`color_ch` vs `colorChannel`, `values` vs `metric`) stay host.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same
