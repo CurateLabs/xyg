@@ -67,6 +67,7 @@ import {
   packXyTcLineOpacity,
   packXyTcLineWidth,
   packXyTcSize,
+  packXyTcSizeChannel,
   packXyTcStrokeOpacity,
   packXyTcStrokePerimeter,
   packXyTcStrokeWidth,
@@ -490,6 +491,21 @@ test("packXyTcLineOpacity uses line_opacity only like Python", () => {
   assert.equal(packXyTcLineOpacity({ line_opacity: 0.5 }, area), 0.5);
   assert.equal(packXyTcLineOpacity({ line_opacity: 0.5 }, scatter), 1);
   assert.equal(packXyTcLineOpacity({ line_opacity: 0.5 }, 0), 1);
+});
+
+test("packXyTcSizeChannel uses size_ch only like Python", () => {
+  const missing = packXyTcSizeChannel({});
+  assert.equal(missing.flags, 0);
+  assert.equal(Number.isNaN(missing.value), true);
+  const camel = packXyTcSizeChannel({ sizeChannel: { constant: 4 } });
+  assert.equal(camel.flags, 0);
+  assert.equal(Number.isNaN(camel.value), true);
+  const snake = packXyTcSizeChannel({ size_ch: { constant: 4 } });
+  assert.equal(snake.flags, 1 << 7);
+  assert.equal(snake.value, 4);
+  const present = packXyTcSizeChannel({ size_ch: { mode: "identity" } });
+  assert.equal(present.flags, 1 << 7);
+  assert.equal(Number.isNaN(present.value), true);
 });
 
 test("packXyTcStrokeOpacity uses stroke_opacity only like Python", () => {
