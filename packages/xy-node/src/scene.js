@@ -5598,7 +5598,7 @@ export function itemApplyOpacity(trace, packed, n) {
 
 export function itemFillRgba8(trace, n) {
   const fallback = sourceColorCss(trace);
-  const channel = trace.color_ch ?? trace.colorChannel;
+  const channel = trace.color_ch;
   let packed = channelEndRgba8(channel, n, fallback);
   if (packed == null && channel != null && typeof channel === "object" && channel.mode === "continuous" && channel.values != null) {
     const values = [...channel.values].map(Number);
