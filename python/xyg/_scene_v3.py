@@ -27,6 +27,7 @@ _SCENE_KIND_CLASS_POLYFILL = 1 << 4
 _SCENE_KIND_CLASS_HEXBIN = 1 << 5
 _SCENE_KIND_CLASS_HEATMAP = 1 << 6
 _SCENE_KIND_CLASS_SCATTER = 1 << 8
+_SCENE_KIND_CLASS_LINE = 1 << 9
 _SCENE_KIND_CLASS_OPACITY = (
     _SCENE_KIND_CLASS_BAND
     | _SCENE_KIND_CLASS_RIBBON
@@ -1826,7 +1827,7 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
     if curve is not None:
         curve_code = _native.scene_curve_classify(curve)
         if curve_code == 1:
-            if kind not in {"line", "area", "error_band"}:
+            if not (kind_class & (_SCENE_KIND_CLASS_LINE | _SCENE_KIND_CLASS_BAND)):
                 flags |= _XYFS_TRACE_DASHED_MARKERS
         elif curve_code != 0:
             flags |= _XYFS_TRACE_DASHED_MARKERS
