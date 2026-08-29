@@ -78,6 +78,7 @@ import {
   xyHfColormap,
   channelConstantCss,
   channelEndRgba8,
+  classifyRibbonColor2,
   color2Channel,
   sourceColorCss,
   sceneMeshPaintPlaneAdmit,
@@ -1182,6 +1183,18 @@ test("sceneRibbonColor2Classify matches host table", () => {
   assert.equal(sceneRibbonColor2Classify(true, true, "#336699", "#34d399", "#336699", true, false), "fail");
   assert.equal(sceneRibbonColor2Classify(true, true, null, "#34d399", "#336699", false, true), "ends");
   assert.equal(sceneRibbonColor2Classify(true, true, null, null, "#336699", false, false), "fail");
+});
+
+test("classifyRibbonColor2 uses color_ch only like Python", () => {
+  assert.equal(
+    classifyRibbonColor2({
+      kind: "ribbon",
+      color_ch: { mode: "constant", constant: "#336699" },
+      colorChannel: { mode: "constant", constant: "#111111" },
+      color2_ch: { mode: "constant", constant: "#336699" },
+    }),
+    "solid",
+  );
 });
 
 test("roundedRectPoly zero radii is four corners", () => {
