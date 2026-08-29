@@ -842,6 +842,7 @@ Node hexbin colormap-plane packing uses `channel.values` (same as Python); `trac
 Node empty kind uses `|| "mark"` (same as Python `or "mark"`).
 Node `figureTraceSupport` does not fail-close `style.smooth`; curve names stay ABI 233.
 Node `itemWidths` fail-closes a present `stroke_width` channel without values (same as Python).
+Node `itemApplyOpacity` fail-closes a present opacity/artist_alpha channel without values (same as Python).
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1249,6 +1250,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node empty kind uses `|| "mark"`.
   Node `figureTraceSupport` does not fail-close `style.smooth`.
   Node `itemWidths` fail-closes a present `stroke_width` channel without values.
+  Node `itemApplyOpacity` fail-closes a present opacity/artist_alpha channel without values.
 
 ---
 
