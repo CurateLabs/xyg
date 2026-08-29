@@ -55,6 +55,7 @@ import {
   hexbinXyTaColormap,
   constantMarkColor,
   xyHfColormap,
+  channelConstantCss,
   sceneMeshPaintPlaneAdmit,
   sceneItemApplyOpacity,
   sceneItemWidthsAdmit,
@@ -372,6 +373,14 @@ test("constantMarkColor uses color_ch.constant only like Python", () => {
     constantMarkColor({ color: { mode: "constant", constant: "blue" } }),
     "#3987e5",
   );
+});
+
+test("channelConstantCss uses channel.constant only like Python", () => {
+  assert.equal(channelConstantCss({ mode: "constant", constant: "red" }), "red");
+  assert.equal(channelConstantCss("red"), null);
+  assert.equal(channelConstantCss({ mode: "constant", color: "red" }), null);
+  assert.equal(channelConstantCss({ mode: "direct_rgba", constant: "red" }), null);
+  assert.equal(channelConstantCss(null), null);
 });
 
 test("sceneGradientSpace matches host table", () => {
