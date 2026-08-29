@@ -1233,6 +1233,23 @@ def scene_fill_gradient_admit(
     ]
 
 
+def scene_finite_all(values: npt.ArrayLike) -> bool:
+    """Scene finite-all admit via ``xyg_scene_finite_all`` (ABI 248).
+
+    Empty native pointers are ``0``. Field picking stays host.
+    """
+    values_arr = _as_f64(np.asarray(values, dtype=np.float64).reshape(-1), "scene_finite_all")
+    code = int(
+        _lib.xyg_scene_finite_all(
+            _ptr_f64(values_arr) if values_arr.size else 0,
+            int(values_arr.size),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-finite-all request")
+    return code == 1
+
+
 _SCENE_PARSE_LINEAR_GRADIENT_DIRS = ("down", "up", "right", "left")
 
 

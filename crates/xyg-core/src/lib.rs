@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 247;
+pub const ABI_VERSION: u32 = 248;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5777,6 +5777,30 @@ pub unsafe extern "C" fn xyg_scene_item_fill_t(
             Some((domain_lo, domain_hi))
         };
         i32::from(kernels::scene_item_fill_t(values, n, domain, out))
+    })
+}
+
+/// Scene finite-all admit (ABI 248).
+///
+/// `1` iff every value is finite. Empty (`values_len == 0`, pointer
+/// null/`0`) is `1`. `-2` FFI when `values_len > 0` and `values` is
+/// null. Field picking stays host.
+///
+/// # Safety
+/// `values` must address `values_len` readable f64s when `values_len` is
+/// nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_finite_all(values: *const f64, values_len: usize) -> i32 {
+    if values_len > 0 && values.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let values = if values_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(values, values_len)
+        };
+        kernels::scene_finite_all(values)
     })
 }
 

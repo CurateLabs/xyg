@@ -1277,6 +1277,14 @@ pub fn scene_fill_gradient_admit(
     1
 }
 
+/// Scene finite-all admit (ABI 248).
+///
+/// `1` iff every value is finite. An empty slice is `1` (vacuous). NaN
+/// and infinities fail. Field picking stays host.
+pub fn scene_finite_all(values: &[f64]) -> i32 {
+    i32::from(values.iter().all(|value| value.is_finite()))
+}
+
 /// Scene `linear-gradient(` CSS parse (ABI 227).
 ///
 /// Hosts still coerce fill mappings and wrap authoring error text. `var(`
@@ -10200,6 +10208,16 @@ mod fuzz {
         let mut empty: [f64; 0] = [];
         assert!(scene_item_fill_t(&[], 0, Some((0.0, 1.0)), &mut empty));
         assert!(!scene_item_fill_t(&[], 0, None, &mut empty));
+    }
+
+    #[test]
+    fn scene_finite_all_matches_host_table() {
+        assert_eq!(scene_finite_all(&[]), 1);
+        assert_eq!(scene_finite_all(&[0.0, 1.5]), 1);
+        assert_eq!(scene_finite_all(&[f64::NAN]), 0);
+        assert_eq!(scene_finite_all(&[f64::INFINITY]), 0);
+        assert_eq!(scene_finite_all(&[f64::NEG_INFINITY]), 0);
+        assert_eq!(scene_finite_all(&[0.0, f64::NAN]), 0);
     }
 
     #[test]

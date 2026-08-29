@@ -357,6 +357,8 @@ def load() -> ctypes.CDLL:
         F64P,
         ctypes.c_size_t,
     ]
+    lib.xyg_scene_finite_all.restype = ctypes.c_int32
+    lib.xyg_scene_finite_all.argtypes = [F64P, ctypes.c_size_t]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2934,6 +2936,17 @@ def main() -> None:
     ok(
         lib.xyg_scene_item_fill_t(null_f64, 0, 1, 0.0, 1.0, 0, null_f64, 0) == 0,
         "scene_item_fill_t empty reject",
+    )
+    ok(lib.xyg_scene_finite_all(null_f64, 0) == 1, "scene_finite_all empty")
+    finite_all = array("d", [0.0, 1.5])
+    ok(
+        lib.xyg_scene_finite_all(_ptr(finite_all, ctypes.c_double), 2) == 1,
+        "scene_finite_all finite",
+    )
+    nan_all = array("d", [float("nan")])
+    ok(
+        lib.xyg_scene_finite_all(_ptr(nan_all, ctypes.c_double), 1) == 0,
+        "scene_finite_all nan",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8

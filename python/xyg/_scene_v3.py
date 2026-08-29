@@ -3749,7 +3749,9 @@ def _xyep_len(column: Any) -> int:
 
 
 def _xyep_finite(column: Any) -> bool:
-    return column is not None and bool(np.isfinite(column.values).all())
+    if column is None:
+        return False
+    return _native.scene_finite_all(column.values)
 
 
 def _pack_public_export_support(
@@ -3876,7 +3878,7 @@ def _pack_public_export_support(
                 obs |= _XYEF_OBS_HEATMAP_SHAPE_OK
                 obs |= _XYEF_OBS_HEATMAP_EXTENT_OK
                 heatmap_values = int(values.size)
-                if np.isfinite(values).all():
+                if _native.scene_finite_all(values):
                     obs |= _XYEF_OBS_HEATMAP_FINITE
             except (UnsupportedSceneV3, ValueError, TypeError):
                 heatmap_rows = heatmap_cols = heatmap_values = 0

@@ -21,6 +21,7 @@ import {
   sceneTickLabelStrategy,
   sceneTickAnchor,
   sceneFillGradientAdmit,
+  sceneFiniteAll,
   sceneParseLinearGradient,
   sceneRectExtraFlags,
   sceneGradientDir,
@@ -428,6 +429,15 @@ test("sceneItemFillT matches host table", () => {
   assert.equal(sceneItemFillT([0], 2, null), null);
   assert.equal(sceneItemFillT([-1], 1, [0, 1])[0], 0);
   assert.equal(sceneItemFillT([2], 1, [0, 1])[0], 1);
+});
+
+test("sceneFiniteAll matches host table", () => {
+  assert.equal(sceneFiniteAll([]), true);
+  assert.equal(sceneFiniteAll([0, 1.5]), true);
+  assert.equal(sceneFiniteAll([Number.NaN]), false);
+  assert.equal(sceneFiniteAll([Number.POSITIVE_INFINITY]), false);
+  assert.equal(sceneFiniteAll([Number.NEGATIVE_INFINITY]), false);
+  assert.equal(sceneFiniteAll([0, Number.NaN]), false);
 });
 
 test("sceneHexbinPitchAdmit matches host table", () => {
