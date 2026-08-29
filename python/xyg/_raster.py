@@ -2557,13 +2557,10 @@ def _emit_ribbon(
         if stroke_width > 0 and style.get("stroke") is not None
         else None
     )
-    edges = (
-        np.rint(
-            np.column_stack([source_rgba[:, :3] * 255.0, source_rgba[:, 3] * stroke_op * 255.0])
-        ).astype(np.uint8)
-        if stroke_width > 0 and style.get("stroke") is None
-        else None
-    )
+    edges = None
+    if stroke_width > 0 and style.get("stroke") is None:
+        folded = np.column_stack([source_rgba[:, :3], source_rgba[:, 3] * stroke_op])
+        edges = _rgba8(folded)
 
     for i in range(n):
         px0, px1 = float(sx(x0v[i])), float(sx(x1v[i]))
