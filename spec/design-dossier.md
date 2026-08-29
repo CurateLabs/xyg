@@ -1747,6 +1747,7 @@ Node `meshJoinedFill` uses `style.joined_fill` only like Python `_mesh_joined_fi
 Node XYEF joined-fill observation uses `style.joined_fill` only like Python; `joinedFill` is not an observation key.
 Node `constantMarkColor` uses `color_ch` only like Python `_constant_color`; `colorChannel` is not a source-channel fallback.
 Node `sourceColorCss` uses `color_ch` only like Python `_trace_source_color_css`; `colorChannel` is not a source-css fallback.
+Node `scatterHasNonConstantColor` uses `color_ch` only like Python; `colorChannel` is not a non-constant-color fallback.
 Node `ribbonEndRgbaPair` uses `color_ch` only like Python `_ribbon_end_rgba_pair`; `colorChannel` is not a ribbon-end source fallback.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
@@ -2031,6 +2032,7 @@ Node `meshJoinedFill` uses `style.joined_fill` only like Python `_mesh_joined_fi
 Node XYEF joined-fill observation uses `style.joined_fill` only like Python; `joinedFill` is not an observation key.
 Node `constantMarkColor` uses `color_ch` only like Python `_constant_color`; `colorChannel` is not a source-channel fallback.
 Node `sourceColorCss` uses `color_ch` only like Python `_trace_source_color_css`; `colorChannel` is not a source-css fallback.
+Node `scatterHasNonConstantColor` uses `color_ch` only like Python; `colorChannel` is not a non-constant-color fallback.
 Node `ribbonEndRgbaPair` uses `color_ch` only like Python `_ribbon_end_rgba_pair`; `colorChannel` is not a ribbon-end source fallback.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
