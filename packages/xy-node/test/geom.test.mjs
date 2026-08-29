@@ -11,6 +11,7 @@ import {
   f32SafeScale,
   geometryOffset,
   hexbinRing,
+  hexbinPacksColormapPlane,
   markerPathScale,
   arrowGeometry,
   arrowShaftPoints,
@@ -396,6 +397,24 @@ test("sceneHexbinColormapPlaneAdmit matches host table", () => {
   assert.equal(sceneHexbinColormapPlaneAdmit("CONTINUOUS", 1), false);
   assert.equal(sceneHexbinColormapPlaneAdmit("categorical", 1), false);
   assert.equal(sceneHexbinColormapPlaneAdmit("direct_rgba", 1), false);
+});
+
+test("hexbinPacksColormapPlane matches Python channel.values only", () => {
+  assert.equal(
+    hexbinPacksColormapPlane({
+      kind: "hexbin",
+      color_ch: { mode: "continuous" },
+      metric: [1, 2, 3],
+    }),
+    false,
+  );
+  assert.equal(
+    hexbinPacksColormapPlane({
+      kind: "hexbin",
+      color_ch: { mode: "continuous", values: [1, 2, 3] },
+    }),
+    true,
+  );
 });
 
 test("sceneHexbinRgbaPlaneAdmit matches host table", () => {
