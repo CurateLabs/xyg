@@ -574,6 +574,11 @@ test("itemFillRgba8 uses color_ch only like Python", () => {
   const fallback = itemFillRgba8({}, 1);
   assert.equal(fromCh.length, 4);
   assert.deepEqual([...fromColor], [...fallback]);
+  const fromBoth = itemFillRgba8({
+    color_ch: { mode: "constant", constant: "#ff0000" },
+    colorChannel: { mode: "constant", constant: "#0000ff" },
+  }, 1);
+  assert.deepEqual([...fromBoth], [...fromCh]);
 });
 
 test("scatterPaintChannelNames uses color_ch only like Python", () => {
