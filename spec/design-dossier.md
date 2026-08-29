@@ -1742,6 +1742,7 @@ Node XYTC joined fill uses `style.joined_fill` only like Python `_pack_xytc`; `j
 Node XYTC stroke perimeter uses `style.stroke_perimeter` only like Python `_pack_xytc`; `strokePerimeter` is not a stroke-perimeter key.
 Node XYTC COLOR_CH packing uses `color_ch` only like Python `_pack_xytc`; `colorChannel` is not a packed-channel fallback.
 Node XYTC size_ch packing uses `size_ch` only like Python `_pack_xytc`; `sizeChannel` is not a packed-channel fallback.
+Node XYEF stroke-width-only observation uses `style.stroke_width` only like Python; `strokeWidth` is not an observation key.
 Node `resolveDensityBinColors` uses `color_ch` only like Python; `colorChannel` is not a density-bin color channel.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
@@ -2021,6 +2022,7 @@ Node XYTC joined fill uses `style.joined_fill` only like Python `_pack_xytc`; `j
 Node XYTC stroke perimeter uses `style.stroke_perimeter` only like Python `_pack_xytc`; `strokePerimeter` is not a stroke-perimeter key.
 Node XYTC COLOR_CH packing uses `color_ch` only like Python `_pack_xytc`; `colorChannel` is not a packed-channel fallback.
 Node XYTC size_ch packing uses `size_ch` only like Python `_pack_xytc`; `sizeChannel` is not a packed-channel fallback.
+Node XYEF stroke-width-only observation uses `style.stroke_width` only like Python; `strokeWidth` is not an observation key.
 Node `resolveDensityBinColors` uses `color_ch` only like Python; `colorChannel` is not a density-bin color channel.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
