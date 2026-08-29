@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 252
-#define XYG_ABI_SIGNATURE_SHA256 "53c35d8a2588f837463d6112bf8b2f1b04ed6c6f69086a5982d1ce6ac0365d79"
+#define XYG_ABI_VERSION 253
+#define XYG_ABI_SIGNATURE_SHA256 "9cd1c105eb8a874a11eb48e9798f84d99cf43ea7f7b8a470f048916448a5fdc0"
 
 #ifdef __cplusplus
 extern "C" {
@@ -219,6 +219,7 @@ int32_t xyg_scene_hexbin_colormap_plane_admit(const uint8_t * text, size_t text_
 int32_t xyg_scene_hexbin_pitch_admit(double dx, double dy);
 int32_t xyg_scene_hexbin_reduce_admit(const uint8_t * text, size_t text_len);
 int32_t xyg_scene_hexbin_rgba_plane_admit(const uint8_t * text, size_t text_len);
+int32_t xyg_scene_hidden_or_per_item_admit(int32_t hidden, int32_t has_per_item, int32_t density_aggregates);
 int32_t xyg_scene_item_apply_opacity(const uint8_t * packed, size_t packed_len, size_t n, const double * artist, size_t artist_len, int32_t has_artist, const double * opacity, size_t opacity_len, int32_t has_opacity, uint8_t * out, size_t out_len);
 int32_t xyg_scene_item_fill_t(const double * values, size_t values_len, size_t n, double domain_lo, double domain_hi, int32_t has_domain, double * out, size_t out_len);
 int32_t xyg_scene_item_widths_admit(const double * values, size_t values_len, int32_t has_values, size_t n, double scalar);

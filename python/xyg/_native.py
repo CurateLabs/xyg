@@ -1139,6 +1139,27 @@ def scene_constant_color_admit(
     return int(code)
 
 
+def scene_hidden_or_per_item_admit(
+    hidden: bool,
+    has_per_item: bool,
+    density_aggregates: bool,
+) -> bool:
+    """Scene hidden-or-per-item admit via ``xyg_scene_hidden_or_per_item_admit`` (ABI 253).
+
+    Field picking stays host.
+    """
+    code = int(
+        _lib.xyg_scene_hidden_or_per_item_admit(
+            1 if hidden else 0,
+            1 if has_per_item else 0,
+            1 if density_aggregates else 0,
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-hidden-or-per-item-admit request")
+    return code == 1
+
+
 _SCENE_RIBBON_COLOR2_NAMES = ("absent", "solid", "gradient", "ends", "fail")
 
 

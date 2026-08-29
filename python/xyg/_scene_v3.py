@@ -1807,8 +1807,10 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
         flags |= _XYFS_TRACE_UNSUPPORTED_KIND
     if getattr(trace, "x_axis", "x") != "x" or getattr(trace, "y_axis", "y") != "y":
         flags |= _XYFS_TRACE_NON_PRIMARY_AXIS
-    if getattr(trace, "hidden", False) or (
-        trace.has_per_item_channels() and not _density_aggregates_color(trace)
+    if _native.scene_hidden_or_per_item_admit(
+        bool(getattr(trace, "hidden", False)),
+        trace.has_per_item_channels(),
+        _density_aggregates_color(trace),
     ):
         flags |= _XYFS_TRACE_HIDDEN_OR_PER_ITEM
     if style.get("marker_glyph") is not None:
