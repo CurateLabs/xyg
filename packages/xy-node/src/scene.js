@@ -3295,6 +3295,13 @@ export function packXyTcFillOpacity(style, kindClass) {
   return Number((style ?? {}).fill_opacity ?? 1);
 }
 
+/** XYTC line color. Python `_pack_xytc` reads `"line_color" in style` only. */
+export function packXyTcLineColor(style) {
+  const record = style ?? {};
+  if (!Object.hasOwn(record, "line_color")) return { flags: 0, bytes: new Uint8Array() };
+  return { flags: XYTC_HAS_LINE_COLOR, bytes: encodeUtf8(record.line_color) };
+}
+
 /** XYTC line opacity. Python `_pack_xytc` uses `style.get("line_opacity", 1.0)` only. */
 export function packXyTcLineOpacity(style, kindClass) {
   if (!(kindClass & SCENE_KIND_CLASS_BAND)) return 1;
@@ -3437,9 +3444,10 @@ function packXyTc(figure) {
       strokeCss = encodeUtf8(style.stroke);
     }
     let lineColor = new Uint8Array();
-    if (Object.hasOwn(style, "line_color") || Object.hasOwn(style, "lineColor")) {
-      flags |= XYTC_HAS_LINE_COLOR;
-      lineColor = encodeUtf8(style.line_color ?? style.lineColor);
+    const packedLineColor = packXyTcLineColor(style);
+    if (packedLineColor.flags) {
+      flags |= packedLineColor.flags;
+      lineColor = packedLineColor.bytes;
     }
     const colorCss = encodeUtf8(style.color ?? "");
     let colorMode = new Uint8Array();

@@ -61,6 +61,7 @@ import {
   packXyTaRgba,
   packXyTaRgbaGrid,
   packXyTcFillOpacity,
+  packXyTcLineColor,
   packXyTcLineOpacity,
   packXyTcLineWidth,
   packXyTcSize,
@@ -456,6 +457,18 @@ test("packXyTcFillOpacity uses fill_opacity only like Python", () => {
   assert.equal(packXyTcFillOpacity({ fill_opacity: 0.5 }, scatter), 0.5);
   assert.equal(packXyTcFillOpacity({ fill_opacity: 0.5 }, line), 1);
   assert.equal(packXyTcFillOpacity({ fill_opacity: 0.5 }, 0), 1);
+});
+
+test("packXyTcLineColor uses line_color only like Python", () => {
+  const missing = packXyTcLineColor({});
+  assert.equal(missing.flags, 0);
+  assert.equal(missing.bytes.length, 0);
+  const camel = packXyTcLineColor({ lineColor: "#ff0000" });
+  assert.equal(camel.flags, 0);
+  assert.equal(camel.bytes.length, 0);
+  const snake = packXyTcLineColor({ line_color: "#ff0000" });
+  assert.equal(snake.flags, 1 << 2);
+  assert.deepEqual([...snake.bytes], [...new TextEncoder().encode("#ff0000")]);
 });
 
 test("packXyTcLineOpacity uses line_opacity only like Python", () => {
