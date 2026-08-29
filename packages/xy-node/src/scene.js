@@ -3642,6 +3642,19 @@ function packTraceCompile(facts) {
   return out.subarray(0, code);
 }
 
+export function packXyTaGrid(raw) {
+  const source = raw != null
+    && typeof raw === "object"
+    && !Array.isArray(raw)
+    && !ArrayBuffer.isView(raw)
+    && raw.values != null
+    ? raw.values
+    : raw;
+  const flat = flattenPlaneF64(source);
+  if (flat == null) return new Uint8Array();
+  return packF64Le(flat);
+}
+
 export function packXyTaRgba(packed) {
   if (packed instanceof Uint8Array) return packed;
   return Uint8Array.from(packed);
@@ -3791,7 +3804,7 @@ function packXyTa(figure, xDomain, yDomain) {
       }
       if (trace.grid != null) {
         flags |= XYTA_HAS_GRID;
-        grid = packF64Le(trace.grid);
+        grid = packXyTaGrid(trace.grid);
       }
       if (trace.rgba != null) {
         flags |= XYTA_HAS_RGBA;
