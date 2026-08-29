@@ -923,6 +923,8 @@ test("figureTraceSupport ignores style.smooth like Python", () => {
   const dashed = 1 << 4;
   assert.equal(figureTraceSupport({}, { kind: "line", style: { smooth: true } }).flags & dashed, 0);
   assert.equal(figureTraceSupport({}, { kind: "scatter", style: { curve: "smooth" } }).flags & dashed, dashed);
+  assert.equal(figureTraceSupport({}, { kind: "line", style: { lineCap: "nope" } }).flags & dashed, 0);
+  assert.equal(figureTraceSupport({}, { kind: "line", style: { linecap: "nope" } }).flags & dashed, dashed);
 });
 
 test("xyEfJoinedFill uses joined_fill only like Python", () => {
