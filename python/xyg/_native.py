@@ -1472,6 +1472,22 @@ def scene_heatmap_shape_admit(rows: float, cols: float) -> bool:
     return code == 1
 
 
+def scene_hexbin_colormap_plane_admit(text: str | None = None, has_values: int = 0) -> bool:
+    """Scene hexbin colormap-plane admit via ``xyg_scene_hexbin_colormap_plane_admit`` (ABI 242).
+
+    Empty native pointers are ``0``. Kind checks and field picking stay host.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(
+        _lib.xyg_scene_hexbin_colormap_plane_admit(
+            encoded if encoded else 0, len(encoded), int(has_values)
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-hexbin-colormap-plane-admit request")
+    return code == 1
+
+
 def scene_hexbin_pitch_admit(dx: float, dy: float) -> bool:
     """Scene hexbin cell-pitch admit via ``xyg_scene_hexbin_pitch_admit`` (ABI 237).
 

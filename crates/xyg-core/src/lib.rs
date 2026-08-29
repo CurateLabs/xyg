@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 241;
+pub const ABI_VERSION: u32 = 242;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5530,6 +5530,38 @@ pub unsafe extern "C" fn xyg_scene_scatter_paint_channel_admit(
             return -2;
         };
         kernels::scene_scatter_paint_channel_admit(text)
+    })
+}
+
+/// Scene hexbin colormap-plane admit (ABI 242).
+///
+/// Exact `continuous` plus a nonzero `has_values` flag return `1`. Unknown
+/// modes, including empty text, and a zero flag return `0`. No lowercasing.
+/// `-2` FFI. Empty native pointers are null/`0`. Kind checks and field
+/// picking stay host.
+///
+/// # Safety
+/// `text` must address `text_len` readable bytes when `text_len` is
+/// nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_hexbin_colormap_plane_admit(
+    text: *const u8,
+    text_len: usize,
+    has_values: i32,
+) -> i32 {
+    if text_len > 0 && text.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let bytes = if text_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(text, text_len)
+        };
+        let Ok(text) = std::str::from_utf8(bytes) else {
+            return -2;
+        };
+        kernels::scene_hexbin_colormap_plane_admit(text, has_values)
     })
 }
 

@@ -1690,6 +1690,16 @@ pub fn scene_scatter_paint_channel_admit(text: &str) -> i32 {
     ))
 }
 
+/// Admit Scene hexbin colormap-plane packing (ABI 242).
+///
+/// Exact `continuous` plus a nonzero `has_values` flag return `1`. Unknown
+/// modes, including empty text, and a zero flag return `0`. No lowercasing.
+/// Kind checks and field picking (`color_ch` vs `colorChannel`, `values` vs
+/// `metric`) stay host.
+pub fn scene_hexbin_colormap_plane_admit(mode: &str, has_values: i32) -> i32 {
+    i32::from(mode == "continuous" && has_values != 0)
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -9944,6 +9954,16 @@ mod fuzz {
         assert_eq!(scene_scatter_paint_channel_admit(" color"), 0);
         assert_eq!(scene_scatter_paint_channel_admit("size"), 0);
         assert_eq!(scene_scatter_paint_channel_admit("symbol"), 0);
+    }
+
+    #[test]
+    fn scene_hexbin_colormap_plane_admit_matches_host_table() {
+        assert_eq!(scene_hexbin_colormap_plane_admit("continuous", 1), 1);
+        assert_eq!(scene_hexbin_colormap_plane_admit("continuous", 0), 0);
+        assert_eq!(scene_hexbin_colormap_plane_admit("", 1), 0);
+        assert_eq!(scene_hexbin_colormap_plane_admit("CONTINUOUS", 1), 0);
+        assert_eq!(scene_hexbin_colormap_plane_admit("categorical", 1), 0);
+        assert_eq!(scene_hexbin_colormap_plane_admit("direct_rgba", 1), 0);
     }
 
     #[test]
