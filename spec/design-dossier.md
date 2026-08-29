@@ -1684,6 +1684,7 @@ Raster segment stroke RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster mesh stroke RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster ribbon fill RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster ribbon match-fill edge RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Node `meshHasPerItem` uses `perItemChannelNames` (same as Python `has_per_item_channels`) for ABI 244.
 Node hexbin colormap-plane packing uses `channel.values` (same as Python); `trace.metric` is not a values fallback.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
@@ -1905,6 +1906,7 @@ Raster segment stroke RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster mesh stroke RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster ribbon fill RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster ribbon match-fill edge RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Node `meshHasPerItem` uses `perItemChannelNames` (same as Python `has_per_item_channels`) for ABI 244.
 Node hexbin colormap-plane packing uses `channel.values` (same as Python); `trace.metric` is not a values fallback.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and

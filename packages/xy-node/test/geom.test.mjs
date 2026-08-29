@@ -44,6 +44,7 @@ import {
   sceneHexbinPitchAdmit,
   sceneHexbinReduceAdmit,
   sceneHexbinRgbaPlaneAdmit,
+  meshHasPerItem,
   sceneMeshPaintPlaneAdmit,
   sceneItemApplyOpacity,
   sceneItemWidthsAdmit,
@@ -425,6 +426,31 @@ test("sceneMeshPaintPlaneAdmit matches host table", () => {
   assert.equal(sceneMeshPaintPlaneAdmit("TRIANGLE_MESH", 0, 1), false);
   assert.equal(sceneMeshPaintPlaneAdmit("scatter", 0, 1), false);
   assert.equal(sceneMeshPaintPlaneAdmit(" triangle_mesh", 0, 1), false);
+});
+
+test("meshHasPerItem matches Python has_per_item_channels", () => {
+  assert.equal(meshHasPerItem({ kind: "triangle_mesh" }), false);
+  assert.equal(
+    meshHasPerItem({
+      kind: "triangle_mesh",
+      stroke_ch: { mode: "constant", constant: "#111827" },
+    }),
+    false,
+  );
+  assert.equal(
+    meshHasPerItem({
+      kind: "triangle_mesh",
+      color_ch: { mode: "continuous", values: [0, 1] },
+    }),
+    true,
+  );
+  assert.equal(
+    meshHasPerItem({
+      kind: "triangle_mesh",
+      style_channels: { opacity: { values: [0.5, 1] } },
+    }),
+    true,
+  );
 });
 
 test("sceneItemApplyOpacity matches host table", () => {
