@@ -457,8 +457,10 @@ test("resolveDensityBinColors uses color_ch only like Python", () => {
   const ch = { mode: "direct_rgba", rgba: new Uint8Array([255, 0, 0, 255, 0, 255, 0, 255]) };
   const fromCh = resolveDensityBinColors({ color_ch: ch });
   const fromColor = resolveDensityBinColors({ color: ch });
+  const fromStyle = resolveDensityBinColors({ style: { color_channel: ch } });
   assert.ok(fromCh != null && fromCh.rgba != null);
   assert.equal(fromColor, null);
+  assert.equal(fromStyle, null);
 });
 
 test("sceneGradientSpace matches host table", () => {

@@ -1710,6 +1710,7 @@ Node `scatterHasNonConstantColor` uses `color_ch` only (same as Python); `trace.
 Node `resolveDensityBinColors` uses `color_ch` only (same as Python); `trace.color` is not a density-bin color channel.
 Node `scatterHasNonConstantColor` ignores `style.color_channel` (same as Python); only `color_ch` is a non-constant-color channel.
 Node `scatterPaintChannelNames` ignores `style.color_channel` / `stroke_channel` / `size_channel` (same as Python); per-item extras come from `style_channels`.
+Node `resolveDensityBinColors` ignores `style.color_channel` (same as Python); only `color_ch` is a density-bin color channel.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1956,6 +1957,7 @@ Node `scatterHasNonConstantColor` uses `color_ch` only (same as Python); `trace.
 Node `resolveDensityBinColors` uses `color_ch` only (same as Python); `trace.color` is not a density-bin color channel.
 Node `scatterHasNonConstantColor` ignores `style.color_channel` (same as Python); only `color_ch` is a non-constant-color channel.
 Node `scatterPaintChannelNames` ignores `style.color_channel` / `stroke_channel` / `size_channel` (same as Python); per-item extras come from `style_channels`.
+Node `resolveDensityBinColors` ignores `style.color_channel` (same as Python); only `color_ch` is a density-bin color channel.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same
