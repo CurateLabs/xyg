@@ -1502,6 +1502,21 @@ pub fn scene_linear_gradient_prefix(text: &str) -> i32 {
     )
 }
 
+/// Scene fill-gradient space codes (ABI 231).
+pub const SCENE_GRAD_SPACE_MARK: i32 = 0;
+pub const SCENE_GRAD_SPACE_PLOT: i32 = 1;
+pub const SCENE_GRAD_SPACE_UNKNOWN: i32 = 255;
+
+/// Pack a Scene fill-gradient space name. No lowercasing. Unknown names,
+/// including empty text, return `255`.
+pub fn scene_gradient_space(text: &str) -> i32 {
+    match text {
+        "mark" => SCENE_GRAD_SPACE_MARK,
+        "plot" => SCENE_GRAD_SPACE_PLOT,
+        _ => SCENE_GRAD_SPACE_UNKNOWN,
+    }
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -9571,6 +9586,16 @@ mod fuzz {
         assert_eq!(scene_linear_gradient_prefix("linear-gradient"), 0);
         assert_eq!(scene_linear_gradient_prefix(""), 0);
         assert_eq!(scene_linear_gradient_prefix("red"), 0);
+    }
+
+    #[test]
+    fn scene_gradient_space_matches_host_table() {
+        assert_eq!(scene_gradient_space("mark"), SCENE_GRAD_SPACE_MARK);
+        assert_eq!(scene_gradient_space("plot"), SCENE_GRAD_SPACE_PLOT);
+        assert_eq!(scene_gradient_space(""), SCENE_GRAD_SPACE_UNKNOWN);
+        assert_eq!(scene_gradient_space("foo"), SCENE_GRAD_SPACE_UNKNOWN);
+        assert_eq!(scene_gradient_space("MARK"), SCENE_GRAD_SPACE_UNKNOWN);
+        assert_eq!(scene_gradient_space("data"), SCENE_GRAD_SPACE_UNKNOWN);
     }
 
     #[test]

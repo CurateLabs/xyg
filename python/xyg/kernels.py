@@ -60,6 +60,7 @@ scene_annotation_style_admit = _impl.scene_annotation_style_admit
 scene_dash_admit = _impl.scene_dash_admit
 scene_fill_gradient_admit = _impl.scene_fill_gradient_admit
 scene_gradient_dir = _impl.scene_gradient_dir
+scene_gradient_space = _impl.scene_gradient_space
 scene_linear_gradient_prefix = _impl.scene_linear_gradient_prefix
 scene_linecap_admit = _impl.scene_linecap_admit
 scene_marker_path_admit = _impl.scene_marker_path_admit
@@ -300,6 +301,7 @@ __all__ = [
     "scene_dash_admit",
     "scene_fill_gradient_admit",
     "scene_gradient_dir",
+    "scene_gradient_space",
     "scene_linear_gradient_prefix",
     "scene_linecap_admit",
     "scene_marker_path_admit",

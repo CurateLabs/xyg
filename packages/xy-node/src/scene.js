@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -1899,7 +1899,7 @@ function packXySs(dashes, linecaps, markerPaths, gradients = []) {
     record[7] = path ? path.contours.length : 0;
     record[8] = gradient ? gradient.stops.length : 0;
     record[9] = gradient ? sceneGradientDir(gradient.dir) : 0;
-    record[10] = gradient && gradient.space === "plot" ? 1 : 0;
+    record[10] = gradient ? (sceneGradientSpace(gradient.space) === 1 ? 1 : 0) : 0;
     record[11] = path && path.filled === false ? 0 : (path ? 1 : 0);
     if (pattern && pattern.length) {
       for (let offset = 0; offset < pattern.length; offset += 1) {
@@ -3467,7 +3467,7 @@ function packMarkerBlob(value) {
 }
 
 function packGradientSpec(fill) {
-  const space = fill.space === "plot" ? 1 : fill.space === "mark" ? 0 : 255;
+  const space = sceneGradientSpace(fill.space);
   const dir = sceneGradientDir(fill.dir);
   if (!Array.isArray(fill.stops)) return null;
   const parts = [new Uint8Array([space, dir, fill.stops.length & 0xff, 0])];

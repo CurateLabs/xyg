@@ -45,6 +45,7 @@ export {
   sceneRectExtraFlags,
   sceneGradientDir,
   sceneLinearGradientPrefix,
+  sceneGradientSpace,
   roundedRectPoly,
   violinDensity,
   boxStats,

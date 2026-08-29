@@ -2492,7 +2492,7 @@ def _pack_xyss(
             stops = gradient["stops"]
             n_stops = len(stops)
             grad_dir = _native.scene_gradient_dir(gradient["dir"])
-            plot_space = 1 if gradient.get("space") == "plot" else 0
+            plot_space = 1 if _native.scene_gradient_space(gradient.get("space")) == 1 else 0
             for t, rgba in stops:
                 remainder.extend(struct.pack("<f4B", float(t), rgba[0], rgba[1], rgba[2], rgba[3]))
         if not flags:
@@ -2808,7 +2808,7 @@ def _pack_marker_blob(value: Any) -> bytes | None:
 
 
 def _pack_gradient_spec(fill: dict[str, Any]) -> bytes | None:
-    space = {"mark": 0, "plot": 1}.get(fill.get("space"), 255)
+    space = _native.scene_gradient_space(fill.get("space"))
     direction = _native.scene_gradient_dir(fill.get("dir"))
     stops = fill.get("stops")
     if not isinstance(stops, (list, tuple)):
