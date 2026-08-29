@@ -295,6 +295,13 @@ def load() -> ctypes.CDLL:
     lib.xyg_scene_kind_class.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_scene_hexbin_pitch_admit.restype = ctypes.c_int32
     lib.xyg_scene_hexbin_pitch_admit.argtypes = [ctypes.c_double, ctypes.c_double]
+    lib.xyg_scene_heatmap_extent_admit.restype = ctypes.c_int32
+    lib.xyg_scene_heatmap_extent_admit.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+    ]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2711,6 +2718,18 @@ def main() -> None:
     ok(
         lib.xyg_scene_hexbin_pitch_admit(float("nan"), 1.0) == 0,
         "scene_hexbin_pitch_admit nan",
+    )
+    ok(
+        lib.xyg_scene_heatmap_extent_admit(0.0, 1.0, 0.0, 1.0) == 1,
+        "scene_heatmap_extent_admit ok",
+    )
+    ok(
+        lib.xyg_scene_heatmap_extent_admit(0.0, 0.0, 0.0, 1.0) == 0,
+        "scene_heatmap_extent_admit equal",
+    )
+    ok(
+        lib.xyg_scene_heatmap_extent_admit(float("nan"), 1.0, 0.0, 1.0) == 0,
+        "scene_heatmap_extent_admit nan",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8

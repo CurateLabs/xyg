@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 237
-SIGNATURE_SHA256 = "000ac322161adbeaea40aa5e6d40ec6027db8e3d90e8e822ca8451c1cc3ca6b4"
+ABI_VERSION = 238
+SIGNATURE_SHA256 = "ee32679d286b75975b78fa861d96307f11f89fc5207d7dce7d5168f1c8f08e2d"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -794,6 +794,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_gradient_space
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_heatmap_extent_admit(double x0, double x1, double y0, double y1)
+    function = lib.xyg_scene_heatmap_extent_admit
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double]
     # int32_t xyg_scene_hexbin_pitch_admit(double dx, double dy)
     function = lib.xyg_scene_hexbin_pitch_admit
     function.restype = ctypes.c_int32

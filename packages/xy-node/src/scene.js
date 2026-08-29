@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinPitchAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinPitchAdmit, sceneHeatmapExtentAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -5026,8 +5026,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
           if (grid != null) heatmapValues = grid.length;
           if (
             hx != null && hy != null && hx.length === 2 && hy.length === 2
-            && [hx[0], hx[1], hy[0], hy[1]].every((value) => Number.isFinite(Number(value)))
-            && Number(hx[0]) < Number(hx[1]) && Number(hy[0]) < Number(hy[1])
+            && sceneHeatmapExtentAdmit(Number(hx[0]), Number(hx[1]), Number(hy[0]), Number(hy[1]))
           ) obs |= OBS_HEATMAP_EXTENT_OK;
           if (grid != null && exportColumnFinite(grid)) obs |= OBS_HEATMAP_FINITE;
         }

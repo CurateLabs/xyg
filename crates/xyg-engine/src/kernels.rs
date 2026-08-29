@@ -1631,6 +1631,22 @@ pub fn scene_hexbin_pitch_admit(dx: f64, dy: f64) -> i32 {
     i32::from(dx.is_finite() && dy.is_finite() && dx > 0.0 && dy > 0.0)
 }
 
+/// Admit Scene heatmap cell extent (ABI 238).
+///
+/// All four finite and strictly increasing (`x0 < x1 && y0 < y1`) return
+/// `1`. Length==2 and field picking stay host. Compile-path
+/// `heatmap_extent_columns` in `scene_pack.rs` stays extra.
+pub fn scene_heatmap_extent_admit(x0: f64, x1: f64, y0: f64, y1: f64) -> i32 {
+    i32::from(
+        x0.is_finite()
+            && x1.is_finite()
+            && y0.is_finite()
+            && y1.is_finite()
+            && x0 < x1
+            && y0 < y1,
+    )
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -9836,6 +9852,17 @@ mod fuzz {
         assert_eq!(scene_hexbin_pitch_admit(-1.0, 1.0), 0);
         assert_eq!(scene_hexbin_pitch_admit(1.0, f64::NAN), 0);
         assert_eq!(scene_hexbin_pitch_admit(f64::INFINITY, 1.0), 0);
+    }
+
+    #[test]
+    fn scene_heatmap_extent_admit_matches_host_table() {
+        assert_eq!(scene_heatmap_extent_admit(0.0, 1.0, 0.0, 1.0), 1);
+        assert_eq!(scene_heatmap_extent_admit(0.0, 0.0, 0.0, 1.0), 0);
+        assert_eq!(scene_heatmap_extent_admit(0.0, 1.0, 0.0, 0.0), 0);
+        assert_eq!(scene_heatmap_extent_admit(1.0, 0.0, 0.0, 1.0), 0);
+        assert_eq!(scene_heatmap_extent_admit(0.0, 1.0, 1.0, 0.0), 0);
+        assert_eq!(scene_heatmap_extent_admit(f64::NAN, 1.0, 0.0, 1.0), 0);
+        assert_eq!(scene_heatmap_extent_admit(0.0, f64::INFINITY, 0.0, 1.0), 0);
     }
 
     #[test]

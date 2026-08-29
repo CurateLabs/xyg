@@ -2120,7 +2120,7 @@ def _heatmap_extent(trace: Any) -> tuple[float, float, float, float]:
         raise UnsupportedSceneV3("Scene v12 heatmap range columns must be two endpoints")
     x0, x1 = float(xv[0]), float(xv[1])
     y0, y1 = float(yv[0]), float(yv[1])
-    if not np.isfinite([x0, x1, y0, y1]).all() or x0 >= x1 or y0 >= y1:
+    if not _native.scene_heatmap_extent_admit(x0, x1, y0, y1):
         raise UnsupportedSceneV3("Scene v12 heatmap requires a finite increasing cell extent")
     return x0, x1, y0, y1
 

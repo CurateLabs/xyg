@@ -25,6 +25,7 @@ import {
   sceneGradientDir,
   sceneLinearGradientPrefix,
   sceneGradientSpace,
+  sceneHeatmapExtentAdmit,
   sceneHexbinPitchAdmit,
   sceneHexbinReduceAdmit,
   sceneCurveClassify,
@@ -367,6 +368,15 @@ test("sceneHexbinPitchAdmit matches host table", () => {
   assert.equal(sceneHexbinPitchAdmit(-1, 1), false);
   assert.equal(sceneHexbinPitchAdmit(Number.NaN, 1), false);
   assert.equal(sceneHexbinPitchAdmit(1, Number.POSITIVE_INFINITY), false);
+});
+
+test("sceneHeatmapExtentAdmit matches host table", () => {
+  assert.equal(sceneHeatmapExtentAdmit(0, 1, 0, 1), true);
+  assert.equal(sceneHeatmapExtentAdmit(0, 0, 0, 1), false);
+  assert.equal(sceneHeatmapExtentAdmit(0, 1, 0, 0), false);
+  assert.equal(sceneHeatmapExtentAdmit(1, 0, 0, 1), false);
+  assert.equal(sceneHeatmapExtentAdmit(Number.NaN, 1, 0, 1), false);
+  assert.equal(sceneHeatmapExtentAdmit(0, Number.POSITIVE_INFINITY, 0, 1), false);
 });
 
 test("sceneRibbonColor2Classify matches host table", () => {
