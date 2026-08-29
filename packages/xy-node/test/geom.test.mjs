@@ -59,6 +59,7 @@ import {
   sceneKindAdmit,
   sceneKindClass,
   figureTraceSupport,
+  fillIsGradientAuthoring,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -299,6 +300,16 @@ test("sceneLinearGradientPrefix matches host table", () => {
   assert.equal(sceneLinearGradientPrefix("radial-gradient(red, blue)"), false);
   assert.equal(sceneLinearGradientPrefix("linear-gradient"), false);
   assert.equal(sceneLinearGradientPrefix(""), false);
+});
+
+test("fillIsGradientAuthoring host coercion matches Python dict-only", () => {
+  assert.equal(fillIsGradientAuthoring({ space: "mark", dir: "down", stops: [] }), true);
+  assert.equal(fillIsGradientAuthoring("linear-gradient(red, blue)"), true);
+  assert.equal(fillIsGradientAuthoring("  LINEAR-GRADIENT(red, blue)"), true);
+  assert.equal(fillIsGradientAuthoring("radial-gradient(red, blue)"), false);
+  assert.equal(fillIsGradientAuthoring("#3987e5"), false);
+  assert.equal(fillIsGradientAuthoring(null), false);
+  assert.equal(fillIsGradientAuthoring(["linear-gradient(red, blue)"]), false);
 });
 
 test("sceneGradientSpace matches host table", () => {
