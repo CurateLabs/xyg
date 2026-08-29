@@ -1708,8 +1708,8 @@ function color2Channel(trace) {
   return trace.color2_ch ?? trace.color_target ?? trace.colorTarget ?? null;
 }
 
-function sourceColorCss(trace) {
-  const css = channelConstantCss(trace.color_ch ?? trace.colorChannel ?? trace.color);
+export function sourceColorCss(trace) {
+  const css = channelConstantCss(trace.color_ch ?? trace.colorChannel);
   if (css != null) return css;
   return String(trace.style?.color ?? "#3987e5");
 }
@@ -1719,7 +1719,7 @@ function classifyRibbonColor2(trace) {
   const hasColor2 = channel != null;
   const kindIsRibbon = String(trace.kind ?? "") === "ribbon";
   const target = hasColor2 ? channelConstantCss(channel) : null;
-  const sourceConst = channelConstantCss(trace.color_ch ?? trace.colorChannel ?? trace.color);
+  const sourceConst = channelConstantCss(trace.color_ch ?? trace.colorChannel);
   const sourcePaint = sourceColorCss(trace);
   const hasFill = Object.hasOwn(trace.style ?? {}, "fill");
   const bothConst = target != null && sourceConst != null;
@@ -1816,7 +1816,7 @@ function ribbonEndRgbaPair(trace) {
   const n = ribbonCount(trace);
   if (n < 1) return null;
   const fallback = sourceColorCss(trace);
-  const source = channelEndRgba8(trace.color_ch ?? trace.colorChannel ?? trace.color, n, fallback);
+  const source = channelEndRgba8(trace.color_ch ?? trace.colorChannel, n, fallback);
   const target = channelEndRgba8(color2Channel(trace), n, fallback);
   if (source == null || target == null) return null;
   return { source, target };

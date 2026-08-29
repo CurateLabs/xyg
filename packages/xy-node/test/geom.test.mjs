@@ -57,6 +57,7 @@ import {
   xyHfColormap,
   channelConstantCss,
   channelEndRgba8,
+  sourceColorCss,
   sceneMeshPaintPlaneAdmit,
   sceneItemApplyOpacity,
   sceneItemWidthsAdmit,
@@ -389,6 +390,18 @@ test("channelEndRgba8 constant uses .constant only like Python", () => {
   assert.equal(packed.length, 4);
   assert.equal(channelEndRgba8("red", 1, "#000000"), null);
   assert.equal(channelEndRgba8({ mode: "constant", color: "red" }, 1, "#000000"), null);
+});
+
+test("sourceColorCss uses color_ch only like Python", () => {
+  assert.equal(
+    sourceColorCss({ color_ch: { mode: "constant", constant: "red" } }),
+    "red",
+  );
+  assert.equal(
+    sourceColorCss({ color: { mode: "constant", constant: "blue" } }),
+    "#3987e5",
+  );
+  assert.equal(sourceColorCss({ style: { color: "#123456" } }), "#123456");
 });
 
 test("sceneGradientSpace matches host table", () => {
