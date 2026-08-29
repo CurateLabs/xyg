@@ -852,6 +852,7 @@ Node hexbin XYTA colormap uses `channel.colormap` only (same as Python); `style.
 Node XYHF heatmap/density colormap uses `style.colormap` only (same as Python); `trace.colormap` / `colormapStops` are not fallbacks.
 Node `constantMarkColor` uses `color_ch.constant` only (same as Python); string channels, `channel.color`, and `trace.color` are not fallbacks.
 Node `channelConstantCss` uses `channel.constant` only (same as Python); string channels and `channel.color` are not fallbacks.
+Node `channelEndRgba8` constant paint uses `channel.constant` only (same as Python); string channels and `channel.color` are not fallbacks.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1269,6 +1270,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node XYHF heatmap/density colormap uses `style.colormap` only.
   Node `constantMarkColor` uses `color_ch.constant` only.
   Node `channelConstantCss` uses `channel.constant` only.
+  Node `channelEndRgba8` constant paint uses `channel.constant` only.
 
 ---
 

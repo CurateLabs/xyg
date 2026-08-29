@@ -1745,7 +1745,7 @@ function ribbonCount(trace) {
   return column == null ? 0 : column.length;
 }
 
-function channelEndRgba8(channel, n, fallback) {
+export function channelEndRgba8(channel, n, fallback) {
   if (!(n >= 1)) return null;
   const replicate = (css) => {
     try {
@@ -1758,7 +1758,6 @@ function channelEndRgba8(channel, n, fallback) {
     }
   };
   if (channel == null) return replicate(fallback);
-  if (typeof channel === "string") return replicate(channel);
   if (Array.isArray(channel) || ArrayBuffer.isView(channel)) {
     if (channel.length === n * 4 && (channel instanceof Uint8Array || ArrayBuffer.isView(channel))) {
       return channel instanceof Uint8Array ? channel : Uint8Array.from(channel);
@@ -1772,9 +1771,8 @@ function channelEndRgba8(channel, n, fallback) {
   }
   if (typeof channel === "object") {
     if (channel.mode === "constant") {
-      const css = channel.constant ?? channel.color;
-      if (css == null) return null;
-      return replicate(css);
+      if (channel.constant == null) return null;
+      return replicate(channel.constant);
     }
     if (channel.mode === "direct_rgba" && channel.rgba != null) {
       const raw = channel.rgba;

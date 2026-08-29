@@ -56,6 +56,7 @@ import {
   constantMarkColor,
   xyHfColormap,
   channelConstantCss,
+  channelEndRgba8,
   sceneMeshPaintPlaneAdmit,
   sceneItemApplyOpacity,
   sceneItemWidthsAdmit,
@@ -381,6 +382,13 @@ test("channelConstantCss uses channel.constant only like Python", () => {
   assert.equal(channelConstantCss({ mode: "constant", color: "red" }), null);
   assert.equal(channelConstantCss({ mode: "direct_rgba", constant: "red" }), null);
   assert.equal(channelConstantCss(null), null);
+});
+
+test("channelEndRgba8 constant uses .constant only like Python", () => {
+  const packed = channelEndRgba8({ mode: "constant", constant: "#ff0000" }, 1, "#000000");
+  assert.equal(packed.length, 4);
+  assert.equal(channelEndRgba8("red", 1, "#000000"), null);
+  assert.equal(channelEndRgba8({ mode: "constant", color: "red" }, 1, "#000000"), null);
 });
 
 test("sceneGradientSpace matches host table", () => {
