@@ -1745,6 +1745,7 @@ Node XYTC size_ch packing uses `size_ch` only like Python `_pack_xytc`; `sizeCha
 Node XYEF stroke-width-only observation uses `style.stroke_width` only like Python; `strokeWidth` is not an observation key.
 Node `meshJoinedFill` uses `style.joined_fill` only like Python `_mesh_joined_fill`; `joinedFill` is not a joined-fill key.
 Node XYEF joined-fill observation uses `style.joined_fill` only like Python; `joinedFill` is not an observation key.
+Node `constantMarkColor` uses `color_ch` only like Python `_constant_color`; `colorChannel` is not a source-channel fallback.
 Node `resolveDensityBinColors` uses `color_ch` only like Python; `colorChannel` is not a density-bin color channel.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
@@ -2027,6 +2028,7 @@ Node XYTC size_ch packing uses `size_ch` only like Python `_pack_xytc`; `sizeCha
 Node XYEF stroke-width-only observation uses `style.stroke_width` only like Python; `strokeWidth` is not an observation key.
 Node `meshJoinedFill` uses `style.joined_fill` only like Python `_mesh_joined_fill`; `joinedFill` is not a joined-fill key.
 Node XYEF joined-fill observation uses `style.joined_fill` only like Python; `joinedFill` is not an observation key.
+Node `constantMarkColor` uses `color_ch` only like Python `_constant_color`; `colorChannel` is not a source-channel fallback.
 Node `resolveDensityBinColors` uses `color_ch` only like Python; `colorChannel` is not a density-bin color channel.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
