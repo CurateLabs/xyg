@@ -62,6 +62,7 @@ scene_dash_admit = _impl.scene_dash_admit
 scene_fill_gradient_admit = _impl.scene_fill_gradient_admit
 scene_gradient_dir = _impl.scene_gradient_dir
 scene_gradient_space = _impl.scene_gradient_space
+scene_hexbin_pitch_admit = _impl.scene_hexbin_pitch_admit
 scene_hexbin_reduce_admit = _impl.scene_hexbin_reduce_admit
 scene_kind_admit = _impl.scene_kind_admit
 scene_kind_class = _impl.scene_kind_class
@@ -308,6 +309,7 @@ __all__ = [
     "scene_fill_gradient_admit",
     "scene_gradient_dir",
     "scene_gradient_space",
+    "scene_hexbin_pitch_admit",
     "scene_hexbin_reduce_admit",
     "scene_kind_admit",
     "scene_kind_class",

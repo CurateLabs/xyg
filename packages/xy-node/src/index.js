@@ -46,6 +46,7 @@ export {
   sceneGradientDir,
   sceneLinearGradientPrefix,
   sceneGradientSpace,
+  sceneHexbinPitchAdmit,
   sceneHexbinReduceAdmit,
   sceneCurveClassify,
   sceneMarkerGlyphAdmit,

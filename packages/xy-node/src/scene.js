@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinPitchAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -5070,6 +5070,10 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
     if (sceneKindClass(trace.kind) & SCENE_KIND_CLASS_HEXBIN) {
       hexDx = Number(style.hex_dx ?? style.hexDx ?? style.dx);
       hexDy = Number(style.hex_dy ?? style.hexDy ?? style.dy);
+      if (!sceneHexbinPitchAdmit(hexDx, hexDy)) {
+        hexDx = Number.NaN;
+        hexDy = Number.NaN;
+      }
     }
     const styleKeysTrace = Object.entries(style).filter(([, value]) => value != null).map(([key]) => canonicalExportKey(key));
     const kindBytes = encodeUtf8(trace.kind == null ? "" : String(trace.kind)).slice(0, 256);

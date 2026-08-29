@@ -1413,6 +1413,17 @@ def scene_kind_class(text: str | None = None) -> int:
     return code
 
 
+def scene_hexbin_pitch_admit(dx: float, dy: float) -> bool:
+    """Scene hexbin cell-pitch admit via ``xyg_scene_hexbin_pitch_admit`` (ABI 237).
+
+    Field picking stays host. Compile-path ``hex_pitch`` stays extra.
+    """
+    code = int(_lib.xyg_scene_hexbin_pitch_admit(float(dx), float(dy)))
+    if code == -2:
+        raise ValueError("invalid scene-hexbin-pitch-admit request")
+    return code == 1
+
+
 def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
     """f32-safe encode scale for offset-encoded geometry (ABI 208, §19)."""
     out = ctypes.c_double()
