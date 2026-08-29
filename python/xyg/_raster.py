@@ -2760,10 +2760,9 @@ def _rect_style_arrays(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Resolve batched rectangle paint, stroke width, and radii."""
     face = _trace_paint_rgba(trace, "color", n, fallback, read)
-    fills = np.rint(
+    fills = _rgba8(
         _paint.effective_rgba(face, trace, read, component="fill", default_opacity=default_opacity)
-        * 255.0
-    ).astype(np.uint8)
+    )
     style = trace.get("style") or {}
     if (trace.get("stroke") or {}).get("mode") == "match_fill":
         stroke_face = face
@@ -2776,12 +2775,11 @@ def _rect_style_arrays(
         )
     else:
         stroke_face = face
-    strokes = np.rint(
+    strokes = _rgba8(
         _paint.effective_rgba(
             stroke_face, trace, read, component="stroke", default_opacity=default_opacity
         )
-        * 255.0
-    ).astype(np.uint8)
+    )
     widths = _paint.style_values(
         trace, "stroke_width", n, read, float(style.get("stroke_width", 0.0))
     )
