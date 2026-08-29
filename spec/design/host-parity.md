@@ -967,9 +967,11 @@ client must not grow a parallel “JS layout/LOD” product path.
   rule; no conflicting “Python owns decisions” guidance remains in force
   (upstream text survives only as clearly-marked provenance).
 - **REQ-HOSTPARITY-6 (MUST, MVP).** Remove Python host-only layout/encode
-  shenanigans for MVP: promote remaining host-only paths (e.g. Sankey) into
-  Rust so every shipped mark is dual-host capable without a parallel host
-  implementation.
+  shenanigans for MVP: remaining twins are compatibility `_svg`/`_raster`
+  geometry (hex rings, marker paths, step/stairs expand), `channels.resolve_color`,
+  `_payload` emit orchestration, and `_scene_v3` pack. Sankey placement already
+  lives in `xyg_sankey_layout`; encode offset/scale is ABI 208; polar wedge
+  flatten is ABI 209.
 
 ---
 
