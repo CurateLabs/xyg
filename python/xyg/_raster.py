@@ -59,6 +59,7 @@ from ._svg import (
     _preserve_scene_chrome_for_axis_visibility,
     _px_size,
     _resolve_static_css_vars,
+    _rgba8,
     _Scale,
     _solid_paint,
     _step_arrays,
@@ -2125,9 +2126,7 @@ def _emit_authored_scatter(
         return _column(blob, cols[index])
 
     face = _trace_paint_rgba(t, "color", n, color, read)
-    fills = np.rint(
-        _paint.effective_rgba(face, t, read, component="fill", default_opacity=0.8) * 255.0
-    ).astype(np.uint8)
+    fills = _rgba8(_paint.effective_rgba(face, t, read, component="fill", default_opacity=0.8))
     if (t.get("stroke") or {}).get("mode") == "match_fill":
         stroke_intrinsic = face
     elif t.get("stroke") is not None:
@@ -2143,7 +2142,7 @@ def _emit_authored_scatter(
         )
     else:
         stroke_intrinsic = face
-    strokes = np.rint(
+    strokes = _rgba8(
         _paint.effective_rgba(
             stroke_intrinsic,
             t,
@@ -2151,8 +2150,7 @@ def _emit_authored_scatter(
             component="stroke",
             default_opacity=0.8,
         )
-        * 255.0
-    ).astype(np.uint8)
+    )
     size_ch = t.get("size") or {}
     if size_ch.get("mode") == "continuous":
         values = _column(blob, cols[size_ch["buf"]])
@@ -2298,10 +2296,9 @@ def _emit_scatter(
     if n == 0:
         return
     face_intrinsic = _trace_paint_rgba(t, "color", n, color, read)
-    fills = np.rint(
+    fills = _rgba8(
         _paint.effective_rgba(face_intrinsic, t, read, component="fill", default_opacity=0.8)
-        * 255.0
-    ).astype(np.uint8)
+    )
 
     if size_ch.get("mode") == "continuous":
         sv = _column(blob, cols[size_ch["buf"]])
@@ -2328,10 +2325,9 @@ def _emit_scatter(
         )
     else:
         stroke_intrinsic = face_intrinsic
-    strokes = np.rint(
+    strokes = _rgba8(
         _paint.effective_rgba(stroke_intrinsic, t, read, component="stroke", default_opacity=0.8)
-        * 255.0
-    ).astype(np.uint8)
+    )
     if polar is not None:
         # Cull out-of-range radii the way the client shader does: below r_lo a
         # sprite mirrors through the centre. The shaped clip contains glyph
