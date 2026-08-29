@@ -1501,6 +1501,10 @@ ABI 217 `xyg_arrow_geometry` / `xyg_arrow_shaft_points` /
 so Python `_arrowgeom.py` and Node `arrowGeometry` cannot drift. ChartView
 `51_annotations.ts` keeps the same formula until WASM. Hosts still parse
 comma-separated `start_offset` / `label_clear` strings.
+ABI 218 `xyg_scene_dash_admit` owns Scene dash presets and 2–8 finite length
+patterns so Python `_parse_scene_dash` and Node `parseSceneDash` cannot drift.
+Invalid comma tokens reject the whole string. Hosts still coerce list vs
+string and fail-close empty strings.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1538,6 +1542,10 @@ ABI 217 `xyg_arrow_geometry` / `xyg_arrow_shaft_points` /
 so Python `_arrowgeom.py` and Node `arrowGeometry` cannot drift. ChartView
 `51_annotations.ts` keeps the same formula until WASM. Hosts still parse
 comma-separated `start_offset` / `label_clear` strings.
+ABI 218 `xyg_scene_dash_admit` owns Scene dash presets and 2–8 finite length
+patterns so Python `_parse_scene_dash` and Node `parseSceneDash` cannot drift.
+Invalid comma tokens reject the whole string. Hosts still coerce list vs
+string and fail-close empty strings.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

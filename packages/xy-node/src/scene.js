@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -1661,20 +1661,7 @@ function packXyhp(planes) {
 }
 
 function parseSceneDash(value) {
-  if (value == null) return null;
-  if (typeof value === "string") {
-    const preset = SCENE_DASH_PRESETS[value.trim().toLowerCase()];
-    if (Object.hasOwn(SCENE_DASH_PRESETS, value.trim().toLowerCase())) return preset;
-    const parts = value.split(",").map((part) => part.trim()).filter(Boolean);
-    const lengths = parts.map(Number);
-    if (lengths.some((length) => !Number.isFinite(length))) return false;
-    value = lengths;
-  }
-  if (!Array.isArray(value)) return false;
-  if (value.length < 2 || value.length > 8) return false;
-  const lengths = value.map(Number);
-  if (lengths.some((length) => !Number.isFinite(length) || length <= 0)) return false;
-  return lengths;
+  return sceneDashAdmit(value);
 }
 
 function parseSceneLinecap(value) {
@@ -3034,12 +3021,6 @@ const XYFS_TRACE_JOINED_FILL = 1 << 8; // reserved; ABI 182 no longer fail-close
 const XYFS_TRACE_CUSTOM_HEX_REDUCE = 1 << 9;
 const XYFS_TRACE_HEATMAP_COLORMAP = 1 << 10;
 const XYFS_TRACE_NON_CSS_FILL = 1 << 11;
-const SCENE_DASH_PRESETS = {
-  solid: null,
-  dashed: [6, 4],
-  dotted: [1.5, 3],
-  dashdot: [6, 3, 1.5, 3],
-};
 
 /** Return Rust's stable diagnostic for authored Scene feature bits. */
 export function sceneSupportReason(features, requestVersion = 1) {

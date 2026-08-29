@@ -11,6 +11,7 @@ import {
   arrowGeometry,
   arrowShaftPoints,
   pinsOffsetToZero,
+  sceneDashAdmit,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -116,6 +117,17 @@ test("markerPathScale flips y and matches host vertices", () => {
   assert.deepEqual([...empty.x], []);
   assert.deepEqual([...empty.y], []);
   assert.throws(() => markerPathScale(10, 20, 8, [0, 1], [0]), /equal length/);
+});
+
+test("sceneDashAdmit presets reject bad tokens and empty lists", () => {
+  assert.deepEqual(sceneDashAdmit("dashed"), [6, 4]);
+  assert.deepEqual(sceneDashAdmit("dotted"), [1.5, 3]);
+  assert.equal(sceneDashAdmit("solid"), null);
+  assert.equal(sceneDashAdmit(null), null);
+  assert.equal(sceneDashAdmit(""), false);
+  assert.equal(sceneDashAdmit("6,foo,4"), false);
+  assert.deepEqual(sceneDashAdmit([6, 4]), [6, 4]);
+  assert.equal(sceneDashAdmit([]), false);
 });
 
 test("roundedRectPoly zero radii is four corners", () => {

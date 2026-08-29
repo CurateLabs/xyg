@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 217;
+pub const ABI_VERSION: u32 = 218;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4602,6 +4602,73 @@ pub unsafe extern "C" fn xyg_scale_pins_offset(scale: *const u8, len: usize) -> 
             return -1;
         };
         i32::from(kernels::scale_pins_offset(value))
+    })
+}
+
+/// Scene dash admit (ABI 218).
+///
+/// `use_lengths` is 1 for the list path (including the empty list). Otherwise
+/// `text` is a preset or comma-separated lengths. Writes at most 8 f64s.
+/// Returns `1` pattern, `0` solid/omitted, `-1` reject, `-2` FFI. Empty native
+/// pointers are null/`0`.
+///
+/// # Safety
+/// `text` must address `text_len` readable bytes when `text_len` is non-zero.
+/// `lengths` must address `n` readable f64s when `n` is non-zero. `out` must
+/// address `out_cap` writable f64s when `out_cap` is non-zero. `out_n` must
+/// be a writable usize when non-null.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_dash_admit(
+    text: *const u8,
+    text_len: usize,
+    lengths: *const f64,
+    n: usize,
+    use_lengths: i32,
+    out: *mut f64,
+    out_cap: usize,
+    out_n: *mut usize,
+) -> i32 {
+    if text_len > 0 && text.is_null() {
+        return -2;
+    }
+    if n > 0 && lengths.is_null() {
+        return -2;
+    }
+    if out_cap > 0 && out.is_null() {
+        return -2;
+    }
+    if use_lengths != 0 && use_lengths != 1 {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let bytes = if text_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(text, text_len)
+        };
+        let Ok(text) = std::str::from_utf8(bytes) else {
+            return -2;
+        };
+        let lengths = if n == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(lengths, n)
+        };
+        let out = if out_cap == 0 {
+            &mut [][..]
+        } else {
+            std::slice::from_raw_parts_mut(out, out_cap)
+        };
+        let Some(dash) = kernels::scene_dash_admit(text, lengths, use_lengths == 1) else {
+            return -1;
+        };
+        let Some(count) = kernels::write_scene_dash(&dash, out) else {
+            return -2;
+        };
+        if !out_n.is_null() {
+            *out_n = count;
+        }
+        i32::from(count > 0)
     })
 }
 

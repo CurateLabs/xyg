@@ -80,12 +80,6 @@ _XYFS_TRACE_CUSTOM_HEX_REDUCE = 1 << 9
 _XYFS_TRACE_HEATMAP_COLORMAP = 1 << 10
 _XYFS_TRACE_NON_CSS_FILL = 1 << 11
 _XYMG_MAX_UTF8 = 64
-_SCENE_DASH_PRESETS: dict[str, list[float] | None] = {
-    "solid": None,
-    "dashed": [6.0, 4.0],
-    "dotted": [1.5, 3.0],
-    "dashdot": [6.0, 3.0, 1.5, 3.0],
-}
 
 # Each unjoined triangle or hex cell is one PolyFill group in the Rust browser
 # painter. Keep the public route inside its canonical group budget; larger
@@ -2424,26 +2418,16 @@ def _parse_scene_dash(value: Any) -> list[float] | None | bool:
     if value is None:
         return None
     if isinstance(value, str):
-        preset = _SCENE_DASH_PRESETS.get(value.strip().lower())
-        if value.strip().lower() in _SCENE_DASH_PRESETS:
-            return preset
-        parts = [part.strip() for part in value.split(",") if part.strip()]
-        try:
-            lengths = [float(part) for part in parts]
-        except ValueError:
+        if not value:
             return False
-    elif isinstance(value, (list, tuple)):
+        return _native.scene_dash_admit(value)
+    if isinstance(value, (list, tuple)):
         try:
             lengths = [float(part) for part in value]
         except (TypeError, ValueError):
             return False
-    else:
-        return False
-    if not 2 <= len(lengths) <= 8:
-        return False
-    if any(not np.isfinite(length) or length <= 0.0 for length in lengths):
-        return False
-    return lengths
+        return _native.scene_dash_admit("", lengths, use_lengths=True)
+    return False
 
 
 def _parse_scene_linecap(value: Any) -> int | None | bool:
