@@ -891,6 +891,7 @@ Node XYTC line width uses `style.line_width` only like Python `_pack_xytc`; `lin
 Node XYTC size uses `style.size` only like Python `_pack_xytc`; `diameter` is not a size key.
 Node XYTC line color uses `style.line_color` only like Python `_pack_xytc`; `lineColor` is not a line-color key.
 Node XYTC joined fill uses `style.joined_fill` only like Python `_pack_xytc`; `joinedFill` is not a joined-fill key.
+Node XYTC stroke perimeter uses `style.stroke_perimeter` only like Python `_pack_xytc`; `strokePerimeter` is not a stroke-perimeter key.
 Node XYTC COLOR_CH packing uses `color_ch` only like Python `_pack_xytc`; `colorChannel` is not a packed-channel fallback.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
@@ -1348,6 +1349,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node XYTC size uses `size` only.
   Node XYTC line color uses `line_color` only.
   Node XYTC joined fill uses `joined_fill` only.
+  Node XYTC stroke perimeter uses `stroke_perimeter` only.
   Node XYTC COLOR_CH packing uses `color_ch` only.
 ---
 

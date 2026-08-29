@@ -68,6 +68,7 @@ import {
   packXyTcLineWidth,
   packXyTcSize,
   packXyTcStrokeOpacity,
+  packXyTcStrokePerimeter,
   packXyTcStrokeWidth,
   hexbinXyTaColormap,
   constantMarkColor,
@@ -515,6 +516,17 @@ test("packXyTcColorChannel uses color_ch only like Python", () => {
   assert.equal(snake.flags, (1 << 11) | (1 << 12));
   assert.deepEqual([...snake.mode], [...utf8.encode("constant")]);
   assert.deepEqual([...snake.constant], [...utf8.encode("red")]);
+});
+
+test("packXyTcStrokePerimeter uses stroke_perimeter only like Python", () => {
+  const area = sceneKindClass("area");
+  const scatter = sceneKindClass("scatter");
+  assert.equal(packXyTcStrokePerimeter({}, area), 0);
+  assert.equal(packXyTcStrokePerimeter({ strokePerimeter: true }, area), 0);
+  assert.equal(packXyTcStrokePerimeter({ stroke_perimeter: true }, scatter), 0);
+  assert.equal(packXyTcStrokePerimeter({ stroke_perimeter: false }, area), 0);
+  assert.equal(packXyTcStrokePerimeter({ stroke_perimeter: true }, area), 1 << 9);
+  assert.equal(packXyTcStrokePerimeter({ stroke_perimeter: "yes" }, area), 1 << 10);
 });
 
 test("hexbinXyTaColormap uses channel.colormap only like Python", () => {
