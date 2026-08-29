@@ -21,6 +21,7 @@ import {
   sceneMarkerPathAdmit,
   sceneAnnotationStyleAdmit,
   sceneArraysEqual,
+  sceneConstantColorAdmit,
   sceneRibbonColor2Classify,
   sceneScatterPaintChannelAdmit,
   sceneTickLabelStrategy,
@@ -468,6 +469,15 @@ test("clipQuantizeU8 matches host table", () => {
   assert.deepEqual([...clipQuantizeU8([0, 0.5, 1, 1.5])], [0, 128, 255, 255]);
   assert.deepEqual([...clipQuantizeU8([Number.NaN])], [0]);
   assert.deepEqual([...clipQuantizeU8([1.5 / 255])], [2]);
+});
+
+test("sceneConstantColorAdmit matches host table", () => {
+  assert.equal(sceneConstantColorAdmit(false, false, false, false), 1);
+  assert.equal(sceneConstantColorAdmit(true, true, false, false), 2);
+  assert.equal(sceneConstantColorAdmit(true, false, true, false), 1);
+  assert.equal(sceneConstantColorAdmit(true, false, false, true), 1);
+  assert.equal(sceneConstantColorAdmit(true, false, false, false), 0);
+  assert.equal(sceneConstantColorAdmit(true, true, true, true), 2);
 });
 
 test("colormapLutRgba8 matches ABI 206 RGB plus opaque alpha", () => {
