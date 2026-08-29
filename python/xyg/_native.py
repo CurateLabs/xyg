@@ -1115,6 +1115,30 @@ def scene_arrays_equal(left: npt.ArrayLike, right: npt.ArrayLike) -> bool:
     return code == 1
 
 
+def scene_constant_color_admit(
+    has_channel: bool,
+    constant_ok: bool,
+    scatter_density: bool,
+    packs_paint_plane: bool,
+) -> int:
+    """Scene constant-color admit via ``xyg_scene_constant_color_admit`` (ABI 252).
+
+    Returns ``0`` fail, ``1`` style fallback, or ``2`` channel constant.
+    Ribbon-fail and field picking stay host.
+    """
+    code = int(
+        _lib.xyg_scene_constant_color_admit(
+            1 if has_channel else 0,
+            1 if constant_ok else 0,
+            1 if scatter_density else 0,
+            1 if packs_paint_plane else 0,
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-constant-color-admit request")
+    return int(code)
+
+
 _SCENE_RIBBON_COLOR2_NAMES = ("absent", "solid", "gradient", "ends", "fail")
 
 

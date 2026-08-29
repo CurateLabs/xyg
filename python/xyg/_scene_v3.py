@@ -1126,20 +1126,29 @@ def _constant_color(trace: Any, fallback: str) -> str:
     channel = trace.color_ch
     if _classify_ribbon_color2(trace) == "fail":
         raise UnsupportedSceneV3("Scene v12 does not yet encode two-ended ribbon gradients")
-    if channel is None:
-        return str(trace.style.get("color", fallback))
-    if channel.mode != "constant" or channel.constant is None:
-        if str(getattr(trace, "kind", "") or "") == "scatter" and trace.use_density():
-            return str((getattr(trace, "style", None) or {}).get("color", fallback))
-        if (
-            _hexbin_packs_paint_plane(trace)
-            or _ribbon_packs_end_paints(trace)
-            or _mesh_packs_paint_plane(trace)
-            or _scatter_packs_paint_plane(trace)
-        ):
-            return str((getattr(trace, "style", None) or {}).get("color", fallback))
-        raise UnsupportedSceneV3("Scene v12 does not yet support data-driven paint channels")
-    return channel.constant
+    has_channel = channel is not None
+    constant_ok = (
+        has_channel
+        and getattr(channel, "mode", None) == "constant"
+        and getattr(channel, "constant", None) is not None
+    )
+    scatter_density = str(getattr(trace, "kind", "") or "") == "scatter" and bool(
+        getattr(trace, "use_density", lambda: False)()
+    )
+    packs_paint = (
+        _hexbin_packs_paint_plane(trace)
+        or _ribbon_packs_end_paints(trace)
+        or _mesh_packs_paint_plane(trace)
+        or _scatter_packs_paint_plane(trace)
+    )
+    code = _native.scene_constant_color_admit(
+        has_channel, constant_ok, scatter_density, packs_paint
+    )
+    if code == 2:
+        return channel.constant
+    if code == 1:
+        return str((getattr(trace, "style", None) or {}).get("color", fallback))
+    raise UnsupportedSceneV3("Scene v12 does not yet support data-driven paint channels")
 
 
 _SCENE_AXIS_STYLE_KEYS = frozenset(

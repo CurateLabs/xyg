@@ -802,6 +802,10 @@ ties-to-even u8 quantize (NaN → 0) so Python `_quantized_rgba8` /
 `channels.ship_color_channel` and Node `clipQuantizeU8` /
 `resolveColorChannel` / `channelEndRgba8` cannot drift. Field picking
 stays host.
+ABI 252 `xyg_scene_constant_color_admit` owns Scene constant-color admit
+(`0` fail, `1` style fallback, `2` channel constant) so Python
+`_constant_color` and Node `constantMarkColor` cannot drift. Ribbon-fail
+and field picking stay host.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1185,6 +1189,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Scene gradient-solid CSS is ABI 249.
   Scene f64 arrays-equal is ABI 250.
   Unit-f64 clip-quantize u8 is ABI 251.
+  Scene constant-color admit is ABI 252.
 
 ---
 
