@@ -1623,11 +1623,11 @@
     },
     {
       "path": "python/xyg/_framing.py",
-      "current_owner": "Python host with canonical-policy debt",
-      "policy": "python-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
       "path": "python/xyg/_geoarrow.py",
@@ -1639,11 +1639,11 @@
     },
     {
       "path": "python/xyg/_graph.py",
-      "current_owner": "Python host with canonical-policy debt",
-      "policy": "python-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
       "path": "python/xyg/_hosts.py",
@@ -1727,19 +1727,19 @@
     },
     {
       "path": "python/xyg/_sankey.py",
-      "current_owner": "Python host with canonical-policy debt",
-      "policy": "python-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
       "path": "python/xyg/_scene.py",
-      "current_owner": "Python host with canonical-policy debt",
-      "policy": "python-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
       "path": "python/xyg/_scene_v3.py",
@@ -1767,11 +1767,11 @@
     },
     {
       "path": "python/xyg/_textblock.py",
-      "current_owner": "Python host with canonical-policy debt",
-      "policy": "python-scene-migration",
-      "disposition": "split-and-move-rust",
-      "follow_up_issue": 58,
-      "rationale": "This file currently mixes legitimate Python ergonomics with behavior that issue #58 moves into Rust."
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
       "path": "python/xyg/_trace.py",
