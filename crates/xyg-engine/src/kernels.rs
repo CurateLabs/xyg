@@ -1673,7 +1673,8 @@ pub fn scene_heatmap_colormap_admit(
 /// Admit Scene heatmap lattice shape (ABI 240).
 ///
 /// Both `rows` and `cols` finite, integer-valued, and `>= 1` return `1`.
-/// Length==2 and field picking stay host. XYTA integer coerce stays extra.
+/// Length==2 and field picking stay host. XYTA integer coerce uses the
+/// same kernel.
 pub fn scene_heatmap_shape_admit(rows: f64, cols: f64) -> i32 {
     i32::from(
         rows.is_finite()
