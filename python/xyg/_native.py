@@ -964,6 +964,49 @@ def scale_pins_offset(scale: str) -> bool:
     return code == 1
 
 
+def scene_dash_admit(
+    text: str | None = None,
+    lengths: npt.ArrayLike | None = None,
+    *,
+    use_lengths: bool = False,
+) -> list[float] | None | bool:
+    """Scene dash admit via ``xyg_scene_dash_admit`` (ABI 218).
+
+    Returns ``None`` for solid/omitted, ``False`` when unusable, or a 2–8
+    length pattern. Empty native pointers are ``0``.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    if use_lengths:
+        packed = _as_f64(
+            np.asarray([] if lengths is None else lengths, dtype=np.float64).reshape(-1),
+            "lengths",
+        )
+    else:
+        packed = np.empty(0, dtype=np.float64)
+    out = np.empty(8, dtype=np.float64)
+    out_n = ctypes.c_size_t(0)
+    code = int(
+        _lib.xyg_scene_dash_admit(
+            encoded if encoded else 0,
+            len(encoded),
+            _ptr_f64(packed) if len(packed) else 0,
+            len(packed),
+            int(bool(use_lengths)),
+            _ptr_f64(out),
+            8,
+            ctypes.byref(out_n),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-dash-admit request")
+    if code < 0:
+        return False
+    if code == 0:
+        return None
+    count = int(out_n.value)
+    return [float(value) for value in out[:count]]
+
+
 def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
     """f32-safe encode scale for offset-encoded geometry (ABI 208, §19)."""
     out = ctypes.c_double()

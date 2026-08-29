@@ -358,44 +358,15 @@ fn in_unit_interval(value: f64) -> bool {
 }
 
 fn parse_dash(text: &str, pattern: &[f64], flags: u32) -> Option<Vec<f64>> {
-    if flags & FLAG_HAS_DASH_PATTERN != 0 {
-        return admit_dash_lengths(pattern);
+    let admitted = if flags & FLAG_HAS_DASH_PATTERN != 0 {
+        crate::kernels::scene_dash_admit("", pattern, true)
+    } else {
+        crate::kernels::scene_dash_admit(text, &[], false)
+    };
+    match admitted {
+        Some(crate::kernels::SceneDash::Pattern(values)) => Some(values),
+        _ => None,
     }
-    if text.is_empty() {
-        return None;
-    }
-    let lowered = text.trim().to_ascii_lowercase();
-    match lowered.as_str() {
-        "solid" => None,
-        "dashed" => Some(vec![6.0, 4.0]),
-        "dotted" => Some(vec![1.5, 3.0]),
-        "dashdot" => Some(vec![6.0, 3.0, 1.5, 3.0]),
-        _ => {
-            let lengths: Vec<f64> = text
-                .split(',')
-                .map(str::trim)
-                .filter(|part| !part.is_empty())
-                .filter_map(|part| part.parse().ok())
-                .collect();
-            if lengths.iter().any(|value| !value.is_finite()) {
-                return None;
-            }
-            admit_dash_lengths(&lengths)
-        }
-    }
-}
-
-fn admit_dash_lengths(lengths: &[f64]) -> Option<Vec<f64>> {
-    if !(2..=MAX_PATTERN).contains(&lengths.len()) {
-        return None;
-    }
-    if lengths
-        .iter()
-        .any(|value| !value.is_finite() || *value <= 0.0)
-    {
-        return None;
-    }
-    Some(lengths.to_vec())
 }
 
 fn parse_linecap(text: &str) -> Option<u8> {

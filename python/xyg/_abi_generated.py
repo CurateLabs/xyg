@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 217
-SIGNATURE_SHA256 = "c8d160687a7ca4bb25df62923d0d139e58be1d9ae265b530297b1f575892896c"
+ABI_VERSION = 218
+SIGNATURE_SHA256 = "e7ca092fc748658196c1d13e82c8dd9ba7dd95ed7f5e5031e1f7278ab53bd9eb"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -750,6 +750,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_browser_painter
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_dash_admit(const uint8_t * text, size_t text_len, const double * lengths, size_t n, int32_t use_lengths, double * out, size_t out_cap, size_t * out_n)
+    function = lib.xyg_scene_dash_admit
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     # int32_t xyg_scene_encode_assembled(const uint8_t * xyas, size_t xyas_len, const uint8_t * chrome, size_t chrome_len, const uint8_t * extras, size_t extras_len, double viewport_width, double viewport_height, uint64_t x_axis_id, uint32_t x_kind, double x_lo, double x_hi, double x_constant, int32_t x_mask_nonpositive, uint64_t y_axis_id, uint32_t y_kind, double y_lo, double y_hi, double y_constant, int32_t y_mask_nonpositive, uint8_t * out, size_t out_cap)
     function = lib.xyg_scene_encode_assembled
     function.restype = ctypes.c_int32

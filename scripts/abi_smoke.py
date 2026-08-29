@@ -189,6 +189,17 @@ def load() -> ctypes.CDLL:
     lib.xyg_css_is_functional.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_scale_pins_offset.restype = ctypes.c_int32
     lib.xyg_scale_pins_offset.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_scene_dash_admit.restype = ctypes.c_int32
+    lib.xyg_scene_dash_admit.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_size_t),
+    ]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2033,6 +2044,69 @@ def main() -> None:
         "scale_pins_offset linear",
     )
     ok(lib.xyg_scale_pins_offset(null_u8, 0) == 0, "scale_pins_offset empty")
+    dashed_name = array("B", b"dashed")
+    dash_out = array("d", [0.0] * 8)
+    dash_n = ctypes.c_size_t(0)
+    ok(
+        lib.xyg_scene_dash_admit(
+            _ptr(dashed_name, ctypes.c_uint8),
+            len(dashed_name),
+            null_f64,
+            0,
+            0,
+            _ptr(dash_out, ctypes.c_double),
+            8,
+            ctypes.byref(dash_n),
+        )
+        == 1
+        and dash_n.value == 2
+        and dash_out[0] == 6.0
+        and dash_out[1] == 4.0,
+        "scene_dash_admit dashed",
+    )
+    bad_dash = array("B", b"6,foo,4")
+    ok(
+        lib.xyg_scene_dash_admit(
+            _ptr(bad_dash, ctypes.c_uint8),
+            len(bad_dash),
+            null_f64,
+            0,
+            0,
+            _ptr(dash_out, ctypes.c_double),
+            8,
+            ctypes.byref(dash_n),
+        )
+        == -1,
+        "scene_dash_admit rejects bad tokens",
+    )
+    ok(
+        lib.xyg_scene_dash_admit(
+            null_u8,
+            0,
+            null_f64,
+            0,
+            1,
+            _ptr(dash_out, ctypes.c_double),
+            8,
+            ctypes.byref(dash_n),
+        )
+        == -1,
+        "scene_dash_admit empty list",
+    )
+    ok(
+        lib.xyg_scene_dash_admit(
+            null_u8,
+            0,
+            null_f64,
+            0,
+            0,
+            _ptr(dash_out, ctypes.c_double),
+            8,
+            ctypes.byref(dash_n),
+        )
+        == 0,
+        "scene_dash_admit omitted",
+    )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8
     arrow_style[8] = 90.0

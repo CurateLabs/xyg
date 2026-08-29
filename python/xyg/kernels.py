@@ -55,6 +55,7 @@ encode_f32 = _impl.encode_f32
 f32_safe_scale = _impl.f32_safe_scale
 geometry_offset = _impl.geometry_offset
 scale_pins_offset = _impl.scale_pins_offset
+scene_dash_admit = _impl.scene_dash_admit
 factorize_fixed = _impl.factorize_fixed
 factorize_fixed_u8 = _impl.factorize_fixed_u8
 factorize_fixed_u8_counts = _impl.factorize_fixed_u8_counts
@@ -282,6 +283,7 @@ __all__ = [
     "sample_mask",
     "sample_range_indices",
     "scale_pins_offset",
+    "scene_dash_admit",
     "sector_triangles",
     "spectrogram",
     "stacked_bounds",

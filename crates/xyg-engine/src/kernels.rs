@@ -887,6 +887,81 @@ pub fn scale_pins_offset(scale: &str) -> bool {
     matches!(scale, "log" | "symlog")
 }
 
+/// Scene dash admit: solid, a 2–8 length pattern, or reject (ABI 218).
+///
+/// Hosts map `None` / omitted to solid, `False` to reject, and a list to a
+/// pattern. Presets are case-insensitive after trim. Comma-separated text
+/// rejects the whole string when any token is non-numeric — it does not skip
+/// bad tokens. `use_lengths` is the list path, including the empty list.
+pub const SCENE_DASH_MAX_PATTERN: usize = 8;
+
+/// Admitted Scene stroke dash.
+#[derive(Clone, Debug, PartialEq)]
+pub enum SceneDash {
+    /// Omitted, empty, or the `solid` preset.
+    Solid,
+    /// 2–8 finite lengths, each `> 0`.
+    Pattern(Vec<f64>),
+}
+
+/// Admit a Scene dash from UTF-8 text and/or an already-parsed length list.
+pub fn scene_dash_admit(text: &str, lengths: &[f64], use_lengths: bool) -> Option<SceneDash> {
+    if use_lengths {
+        return admit_scene_dash_lengths(lengths);
+    }
+    if text.is_empty() {
+        return Some(SceneDash::Solid);
+    }
+    let lowered = text.trim().to_ascii_lowercase();
+    match lowered.as_str() {
+        "solid" => Some(SceneDash::Solid),
+        "dashed" => Some(SceneDash::Pattern(vec![6.0, 4.0])),
+        "dotted" => Some(SceneDash::Pattern(vec![1.5, 3.0])),
+        "dashdot" => Some(SceneDash::Pattern(vec![6.0, 3.0, 1.5, 3.0])),
+        _ => {
+            let mut parsed = Vec::new();
+            for part in text.split(',') {
+                let part = part.trim();
+                if part.is_empty() {
+                    continue;
+                }
+                let Ok(value) = part.parse::<f64>() else {
+                    return None;
+                };
+                parsed.push(value);
+            }
+            admit_scene_dash_lengths(&parsed)
+        }
+    }
+}
+
+fn admit_scene_dash_lengths(lengths: &[f64]) -> Option<SceneDash> {
+    if !(2..=SCENE_DASH_MAX_PATTERN).contains(&lengths.len()) {
+        return None;
+    }
+    if lengths
+        .iter()
+        .any(|value| !value.is_finite() || *value <= 0.0)
+    {
+        return None;
+    }
+    Some(SceneDash::Pattern(lengths.to_vec()))
+}
+
+/// Write an admitted dash into `out`. Returns the written count (`0` = solid).
+pub fn write_scene_dash(dash: &SceneDash, out: &mut [f64]) -> Option<usize> {
+    match dash {
+        SceneDash::Solid => Some(0),
+        SceneDash::Pattern(values) => {
+            if out.len() < values.len() {
+                return None;
+            }
+            out[..values.len()].copy_from_slice(values);
+            Some(values.len())
+        }
+    }
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -8579,6 +8654,47 @@ mod fuzz {
                 assert!((0.0..=1.0).contains(&d), "it={it} i={i} d={d}");
             }
         }
+    }
+
+    #[test]
+    fn scene_dash_admit_matches_host_presets_and_rejects_bad_tokens() {
+        assert_eq!(scene_dash_admit("", &[], false), Some(SceneDash::Solid));
+        assert_eq!(
+            scene_dash_admit(" solid ", &[], false),
+            Some(SceneDash::Solid)
+        );
+        assert_eq!(
+            scene_dash_admit("Dashed", &[], false),
+            Some(SceneDash::Pattern(vec![6.0, 4.0]))
+        );
+        assert_eq!(
+            scene_dash_admit("dotted", &[], false),
+            Some(SceneDash::Pattern(vec![1.5, 3.0]))
+        );
+        assert_eq!(
+            scene_dash_admit("dashdot", &[], false),
+            Some(SceneDash::Pattern(vec![6.0, 3.0, 1.5, 3.0]))
+        );
+        assert_eq!(
+            scene_dash_admit("6, 4", &[], false),
+            Some(SceneDash::Pattern(vec![6.0, 4.0]))
+        );
+        assert_eq!(scene_dash_admit("6,foo,4", &[], false), None);
+        assert_eq!(scene_dash_admit("6", &[], false), None);
+        assert_eq!(scene_dash_admit("", &[], true), None);
+        assert_eq!(
+            scene_dash_admit("", &[6.0, 4.0], true),
+            Some(SceneDash::Pattern(vec![6.0, 4.0]))
+        );
+        assert_eq!(scene_dash_admit("", &[6.0, 0.0], true), None);
+        assert_eq!(scene_dash_admit("", &[6.0, f64::NAN], true), None);
+        let mut out = [0.0; 8];
+        assert_eq!(write_scene_dash(&SceneDash::Solid, &mut out), Some(0));
+        assert_eq!(
+            write_scene_dash(&SceneDash::Pattern(vec![6.0, 4.0]), &mut out),
+            Some(2)
+        );
+        assert_eq!(&out[..2], &[6.0, 4.0]);
     }
 
     #[test]
