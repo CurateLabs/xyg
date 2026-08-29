@@ -1496,6 +1496,9 @@ ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
 emits exact `A` arcs for unrounded wedges.
+ABI 210 `xyg_hexbin_ring` owns the pointy-top hexagon vertex offsets scaled
+by cell pitch so Python `_svg.hexbin_ring` and Node `hexbinRing` cannot drift.
+ChartView `_buildHexbinMark` keeps the same fractions until WASM.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

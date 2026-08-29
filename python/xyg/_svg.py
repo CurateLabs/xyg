@@ -4955,25 +4955,13 @@ def _trace_paint_rgba(
 
 
 # The hexagon ring around a hexbin cell center, as fractions of the cell
-# pitch (style hex_dx/hex_dy). Shared by the SVG and raster exporters; the JS
-# client mirrors it in _buildHexbinMark (js/src/50_chartview.ts) — keep them
-# in sync.
-HEX_RING = (
-    (0.0, -1.0 / 3.0),
-    (0.5, -1.0 / 6.0),
-    (0.5, 1.0 / 6.0),
-    (0.0, 1.0 / 3.0),
-    (-0.5, 1.0 / 6.0),
-    (-0.5, -1.0 / 6.0),
-)
+# pitch (style hex_dx/hex_dy). ABI 210 `xyg_hexbin_ring` owns the six
+# offsets; ChartView `_buildHexbinMark` must match.
 
 
 def hexbin_ring(style: dict) -> tuple[np.ndarray, np.ndarray]:
     """Data-space hexagon vertex offsets (6) for a hexbin trace's cell pitch."""
-    ring = np.asarray(HEX_RING, dtype=np.float64)
-    return ring[:, 0] * float(style.get("hex_dx", 0.0)), ring[:, 1] * float(
-        style.get("hex_dy", 0.0)
-    )
+    return _native.hexbin_ring(float(style.get("hex_dx", 0.0)), float(style.get("hex_dy", 0.0)))
 
 
 def _mesh_fills(t: dict, blob: bytes, cols: list, n: int, fallback: str) -> list[str]:

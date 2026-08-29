@@ -61,6 +61,33 @@ pub struct HexbinGroups {
 /// Maximum grid dimension accepted by the ABI (matches the Python mark).
 pub const MAX_GRID: usize = 2048;
 
+/// Pointy-top hexagon ring as fractions of `hex_dx`/`hex_dy` (ABI 210).
+///
+/// Same contract as compatibility SVG/raster expanders and Scene
+/// `SCENE_HEXBIN_RING` / ChartView `_buildHexbinMark`.
+pub const HEXBIN_RING: [(f64, f64); 6] = [
+    (0.0, -1.0 / 3.0),
+    (0.5, -1.0 / 6.0),
+    (0.5, 1.0 / 6.0),
+    (0.0, 1.0 / 3.0),
+    (-0.5, 1.0 / 6.0),
+    (-0.5, -1.0 / 6.0),
+];
+
+/// Vertex count for [`HEXBIN_RING`].
+pub const HEXBIN_RING_LEN: usize = HEXBIN_RING.len();
+
+/// Scale the canonical ring by cell pitch.
+///
+/// Returns `None` when either pitch is non-finite so hosts fail closed
+/// instead of emitting NaN vertices.
+pub fn hexbin_ring(dx: f64, dy: f64) -> Option<[(f64, f64); 6]> {
+    if !dx.is_finite() || !dy.is_finite() {
+        return None;
+    }
+    Some(HEXBIN_RING.map(|(rx, ry)| (rx * dx, ry * dy)))
+}
+
 /// Resolved lattice size and data domain after finite-pair ingress.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct HexbinIngress {
@@ -852,5 +879,17 @@ mod tests {
         assert_eq!(auto.counts, explicit.counts);
         assert_eq!(auto.dx, explicit.dx);
         assert_eq!(auto.dy, explicit.dy);
+    }
+
+    #[test]
+    fn hexbin_ring_scales_the_canonical_pointy_top_fractions() {
+        let ring = hexbin_ring(6.0, 12.0).unwrap();
+        assert_eq!(ring.len(), 6);
+        assert!((ring[0].0 - 0.0).abs() < 1e-15);
+        assert!((ring[0].1 - (-4.0)).abs() < 1e-15);
+        assert!((ring[1].0 - 3.0).abs() < 1e-15);
+        assert!((ring[1].1 - (-2.0)).abs() < 1e-15);
+        assert!(hexbin_ring(f64::NAN, 1.0).is_none());
+        assert!(hexbin_ring(1.0, f64::INFINITY).is_none());
     }
 }

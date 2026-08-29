@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyF32SafeScale, xyGeometryOffset, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapLut, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityRgbaLinear, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyPayloadVisibleIndices, xyPayloadEvenIndices, xyPayloadSampleTargetIndices, xyPaintEffectiveRgba, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyF32SafeScale, xyGeometryOffset, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyHexbinRing, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapLut, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityRgbaLinear, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyPayloadVisibleIndices, xyPayloadEvenIndices, xyPayloadSampleTargetIndices, xyPaintEffectiveRgba, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -570,6 +570,28 @@ function hexbinGridAndRange(gridsize, range) {
     throw new RangeError("hexbin range must be a finite increasing rectangle");
   }
   return { w: width, h: height, x0, x1, y0, y1, useRange: 1 };
+}
+
+const USIZE_MAX_64 = (1n << 64n) - 1n;
+
+/** Pointy-top hexagon vertex offsets scaled by cell pitch (ABI 210). */
+export function hexbinRing(hexDx, hexDy) {
+  const probed = xyHexbinRing(Number(hexDx), Number(hexDy), 0, 0, 0);
+  if (probed === USIZE_MAX_64) throw new RangeError("invalid hexbin-ring request");
+  const n = Number(probed);
+  const outX = new Float64Array(n);
+  const outY = new Float64Array(n);
+  const written = xyHexbinRing(
+    Number(hexDx),
+    Number(hexDy),
+    f64Ptr(outX),
+    f64Ptr(outY),
+    n,
+  );
+  if (written === USIZE_MAX_64 || Number(written) !== n) {
+    throw new RangeError("invalid hexbin-ring request");
+  }
+  return { x: outX, y: outY };
 }
 
 /** Rust-owned hexbin finite-pair domain and default grid aspect. */

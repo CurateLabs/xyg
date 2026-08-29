@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 209
-#define XYG_ABI_SIGNATURE_SHA256 "49d15c48025e938f9ee8ea0d44dac78a4ebb95952b53e92a60acd6241f6d4e96"
+#define XYG_ABI_VERSION 210
+#define XYG_ABI_SIGNATURE_SHA256 "d9104d128893ec02b6278dd2998f1d3fd03433f95dad0538affa850954c8b172"
 
 #ifdef __cplusplus
 extern "C" {
@@ -109,6 +109,7 @@ int32_t xyg_heatmap_rgba(const double * raw, size_t w, size_t h, const uint8_t *
 size_t xyg_hexbin(const double * x, const double * y, const double * c, size_t len, size_t grid_w, size_t grid_h, double x0, double x1, double y0, double y1, int32_t use_range, size_t mincnt, int32_t reduce, double * out_cx, double * out_cy, double * out_metric, double * out_counts, size_t capacity, double * out_dx, double * out_dy);
 size_t xyg_hexbin_groups(const double * x, const double * y, const double * c, size_t len, size_t grid_w, size_t grid_h, double x0, double x1, double y0, double y1, int32_t use_range, size_t mincnt, double * out_cx, double * out_cy, double * out_counts, uint32_t * out_starts, uint32_t * out_lens, size_t cell_capacity, uint32_t * out_indices, size_t index_capacity, size_t * out_n_indices, double * out_dx, double * out_dy);
 int32_t xyg_hexbin_ingress(const double * x, const double * y, const double * c, size_t len, size_t grid_w, size_t grid_h, double x0, double x1, double y0, double y1, int32_t use_range, double * out_x0, double * out_x1, double * out_y0, double * out_y1, size_t * out_grid_w, size_t * out_grid_h);
+size_t xyg_hexbin_ring(double dx, double dy, double * out_x, double * out_y, size_t capacity);
 int32_t xyg_histogram2d(const double * x, const double * y, const double * weights, size_t len, const double * x_edges, size_t x_edge_len, const double * y_edges, size_t y_edge_len, double * out);
 size_t xyg_histogram_bins(const double * values, size_t len, const double * edges, size_t edge_len, int32_t density, int32_t cumulative, double * out_counts);
 size_t xyg_histogram_edges(const double * data, size_t len, double lo, double hi, int32_t use_range, int32_t method, double * out_edges, size_t capacity);
