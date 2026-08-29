@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 214;
+pub const ABI_VERSION: u32 = 215;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -12583,6 +12583,32 @@ pub extern "C" fn xyg_payload_segment_budget(px_width: f64) -> usize {
     })
 }
 
+/// Errorbar role-block keep indices (ABI 215). `out_keep_all` is 1 when the
+/// host ships every segment. Empty native pointers are null/`0`.
+///
+/// # Safety
+/// `out_keep_all` must be writable. When `capacity` is nonzero, `out` must
+/// hold that many writable u32s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_errorbar_indices(
+    n_segments: usize,
+    n_points: usize,
+    budget: usize,
+    out_keep_all: *mut i32,
+    out: *mut u32,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out_keep_all.is_null() || (capacity > 0 && out.is_null()) {
+            return usize::MAX;
+        }
+        let Some(sel) = lod_plan::payload_errorbar_indices(n_segments, n_points, budget) else {
+            return usize::MAX;
+        };
+        write_payload_index_sel(sel, out_keep_all, out, capacity)
+    })
+}
+
 /// Density-overlay sample of implicit ids `0..n` (ABI 205). Owns
 /// `min(1, target/n)`, level/growth fraction, threshold, and range sampling.
 /// `out_keep_all` is 1 when every row ships. Returns the count written, the
@@ -17794,6 +17820,23 @@ mod tests {
         assert_eq!(xyg_payload_segment_budget(100.0), 1024);
         assert_eq!(xyg_payload_segment_budget(257.0), 1028);
         assert_eq!(xyg_payload_segment_budget(f64::NAN), usize::MAX);
+        let mut err_out = [0u32; 12];
+        let err_n = unsafe {
+            xyg_payload_errorbar_indices(
+                33,
+                11,
+                4,
+                &mut keep_all,
+                err_out.as_mut_ptr(),
+                err_out.len(),
+            )
+        };
+        assert_eq!(keep_all, 0);
+        assert_eq!(err_n, 12);
+        assert_eq!(
+            &err_out[..12],
+            &[0, 3, 6, 10, 11, 14, 17, 21, 22, 25, 28, 32]
+        );
         let even_n = unsafe {
             xyg_payload_even_indices(11, 4, &mut keep_all, vis_out.as_mut_ptr(), vis_out.len())
         };

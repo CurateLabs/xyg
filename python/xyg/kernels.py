@@ -138,6 +138,7 @@ payload_visible_mask = _impl.payload_visible_mask
 payload_visible_needed = _impl.payload_visible_needed
 payload_visible_indices = _impl.payload_visible_indices
 payload_even_indices = _impl.payload_even_indices
+payload_errorbar_indices = _impl.payload_errorbar_indices
 payload_segment_budget = _impl.payload_segment_budget
 payload_sample_target_indices = _impl.payload_sample_target_indices
 paint_effective_rgba = _impl.paint_effective_rgba
@@ -235,6 +236,7 @@ __all__ = [
     "monotone_tangents",
     "normalize_f32",
     "paint_effective_rgba",
+    "payload_errorbar_indices",
     "payload_even_indices",
     "payload_m4_indices",
     "payload_sample_target_indices",

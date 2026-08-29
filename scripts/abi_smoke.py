@@ -845,6 +845,15 @@ def load() -> ctypes.CDLL:
     ]
     lib.xyg_payload_segment_budget.restype = ctypes.c_size_t
     lib.xyg_payload_segment_budget.argtypes = [ctypes.c_double]
+    lib.xyg_payload_errorbar_indices.restype = ctypes.c_size_t
+    lib.xyg_payload_errorbar_indices.argtypes = [
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_int32),
+        U32P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_payload_sample_target_indices.restype = ctypes.c_size_t
     lib.xyg_payload_sample_target_indices.argtypes = [
         ctypes.c_size_t,
@@ -2933,6 +2942,17 @@ def main() -> None:
         and lib.xyg_payload_segment_budget(257.0) == 1028
         and lib.xyg_payload_segment_budget(float("nan")) == ctypes.c_size_t(-1).value,
         "payload_segment_budget floor and sentinel",
+    )
+    err_keep = ctypes.c_int32(-1)
+    err_out = array("I", [0]) * 12
+    err_n = lib.xyg_payload_errorbar_indices(
+        33, 11, 4, ctypes.byref(err_keep), _ptr(err_out, ctypes.c_uint32), 12
+    )
+    ok(
+        err_keep.value == 0
+        and err_n == 12
+        and list(err_out) == [0, 3, 6, 10, 11, 14, 17, 21, 22, 25, 28, 32],
+        "payload_errorbar_indices role expand",
     )
     sample_keep = ctypes.c_int32(-1)
     sample_n = lib.xyg_payload_sample_target_indices(

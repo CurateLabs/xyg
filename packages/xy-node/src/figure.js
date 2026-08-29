@@ -30,6 +30,7 @@ import {
   encodeF32Values,
   geometryOffset,
   payloadEvenIndices,
+  payloadErrorbarIndices,
   payloadM4Indices,
   payloadSegmentBudget,
   payloadSampleTargetIndices,
@@ -1304,27 +1305,13 @@ export class Figure {
     let tier = "direct";
     const maxGroups = payloadSegmentBudget(pxWidth);
     if (t.kind === "errorbar" && t.count) {
-      const n = x0v.length;
-      const count = t.count;
-      const remainder = n % count;
-      const segPer = remainder === 0 ? n / count : 0;
-      if (remainder === 0 && segPer >= 1 && count > maxGroups) {
-        const { keepAll, indices: chosen } = payloadEvenIndices(count, maxGroups);
-        if (!keepAll) {
-          const indices = new Uint32Array(chosen.length * segPer);
-          let w = 0;
-          for (let k = 0; k < segPer; k += 1) {
-            for (let i = 0; i < chosen.length; i += 1) {
-              indices[w] = chosen[i] + k * count;
-              w += 1;
-            }
-          }
-          x0v = gatherF64(x0v, indices);
-          x1v = gatherF64(x1v, indices);
-          y0v = gatherF64(y0v, indices);
-          y1v = gatherF64(y1v, indices);
-          tier = "decimated";
-        }
+      const { keepAll, indices } = payloadErrorbarIndices(x0v.length, t.count, maxGroups);
+      if (!keepAll) {
+        x0v = gatherF64(x0v, indices);
+        x1v = gatherF64(x1v, indices);
+        y0v = gatherF64(y0v, indices);
+        y1v = gatherF64(y1v, indices);
+        tier = "decimated";
       }
     } else if (t.kind === "stem" && x0v.length > maxGroups) {
       const { keepAll, indices } = payloadEvenIndices(x0v.length, maxGroups);

@@ -19,6 +19,7 @@ import {
   payloadTier,
   payloadM4Indices,
   payloadEvenIndices,
+  payloadErrorbarIndices,
   payloadSampleTargetIndices,
   payloadSegmentBudget,
   payloadVisibleIndices,
@@ -104,6 +105,16 @@ test("payloadSegmentBudget matches host max(1024, floor(px)*4)", () => {
   assert.equal(payloadSegmentBudget(0), 1024);
   assert.equal(payloadSegmentBudget(-10.7), 1024);
   assert.throws(() => payloadSegmentBudget(Number.NaN), /finite/);
+});
+
+test("payloadErrorbarIndices expands even keep across role groups", () => {
+  const keep = payloadErrorbarIndices(33, 11, 20);
+  assert.equal(keep.keepAll, true);
+  const remainder = payloadErrorbarIndices(10, 3, 2);
+  assert.equal(remainder.keepAll, true);
+  const expanded = payloadErrorbarIndices(33, 11, 4);
+  assert.equal(expanded.keepAll, false);
+  assert.deepEqual([...expanded.indices], [0, 3, 6, 10, 11, 14, 17, 21, 22, 25, 28, 32]);
 });
 
 test("payloadSampleTargetIndices keep-all under target", () => {

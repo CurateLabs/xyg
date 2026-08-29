@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 214
-SIGNATURE_SHA256 = "bfc547a33f2549192a2ef339dd23f9305e36b36fb5e4d53c1211edd47abc1e55"
+ABI_VERSION = 215
+SIGNATURE_SHA256 = "560e70473373915ed2962e6418d1269939fd3d19c33f851c0988dc48ef2f677a"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -506,6 +506,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_paint_effective_rgba
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_double, ctypes.c_void_p]
+    # size_t xyg_payload_errorbar_indices(size_t n_segments, size_t n_points, size_t budget, int32_t * out_keep_all, uint32_t * out, size_t capacity)
+    function = lib.xyg_payload_errorbar_indices
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
     # size_t xyg_payload_even_indices(size_t n, size_t count, int32_t * out_keep_all, uint32_t * out, size_t capacity)
     function = lib.xyg_payload_even_indices
     function.restype = ctypes.c_size_t

@@ -388,6 +388,49 @@ pub fn payload_segment_budget(px_width: f64) -> Option<usize> {
     Some(width.saturating_mul(4).max(1024) as usize)
 }
 
+/// Errorbar role-block keep indices (ABI 215).
+///
+/// Segments ship as `seg_per` concatenated groups of `n_points`. When
+/// `n_segments % n_points != 0` the host keeps every row. Otherwise this
+/// takes ABI 205 even indices of the points and expands
+/// `chosen[i] + k * n_points` for `k` in `0..seg_per` (Python concatenate /
+/// Node nested `k`/`i` loop).
+pub fn payload_errorbar_indices(
+    n_segments: usize,
+    n_points: usize,
+    budget: usize,
+) -> Option<PayloadIndexSel> {
+    if n_points == 0
+        || budget == 0
+        || n_points > u32::MAX as usize
+        || n_segments > u32::MAX as usize
+        || budget > u32::MAX as usize
+    {
+        return None;
+    }
+    if n_segments % n_points != 0 {
+        return Some(PayloadIndexSel::KeepAll);
+    }
+    let seg_per = n_segments / n_points;
+    if seg_per == 0 {
+        return Some(PayloadIndexSel::KeepAll);
+    }
+    match payload_even_indices(n_points, budget)? {
+        PayloadIndexSel::KeepAll => Some(PayloadIndexSel::KeepAll),
+        PayloadIndexSel::Indices(chosen) => {
+            let out_len = chosen.len().checked_mul(seg_per)?;
+            let mut out = Vec::with_capacity(out_len);
+            for k in 0..seg_per {
+                let base = (k as u32).checked_mul(n_points as u32)?;
+                for &idx in &chosen {
+                    out.push(idx.checked_add(base)?);
+                }
+            }
+            Some(PayloadIndexSel::Indices(out))
+        }
+    }
+}
+
 /// NumPy `linspace(0, n-1, count, dtype=np.int64)` as u32 (ABI 205).
 ///
 /// Truncates toward 0 and pins the last element to `n-1`. When `n <= count`
@@ -685,6 +728,26 @@ mod tests {
         assert_eq!(payload_segment_budget(-10.7), Some(1024));
         assert!(payload_segment_budget(f64::NAN).is_none());
         assert!(payload_segment_budget(f64::INFINITY).is_none());
+    }
+
+    #[test]
+    fn payload_errorbar_indices_expands_even_keep_across_roles() {
+        assert_eq!(
+            payload_errorbar_indices(33, 11, 20),
+            Some(PayloadIndexSel::KeepAll)
+        );
+        assert_eq!(
+            payload_errorbar_indices(10, 3, 2),
+            Some(PayloadIndexSel::KeepAll)
+        );
+        assert_eq!(
+            payload_errorbar_indices(33, 11, 4),
+            Some(PayloadIndexSel::Indices(vec![
+                0, 3, 6, 10, 11, 14, 17, 21, 22, 25, 28, 32
+            ]))
+        );
+        assert!(payload_errorbar_indices(33, 0, 4).is_none());
+        assert!(payload_errorbar_indices(33, 11, 0).is_none());
     }
 
     #[test]
