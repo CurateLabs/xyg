@@ -3289,6 +3289,24 @@ function packGradientSpec(fill) {
   return concatBytes(parts);
 }
 
+/** XYTC fill opacity. Python `_pack_xytc` uses `style.get("fill_opacity", 1.0)` only. */
+export function packXyTcFillOpacity(style, kindClass) {
+  if (!(kindClass & SCENE_KIND_CLASS_OPACITY)) return 1;
+  return Number((style ?? {}).fill_opacity ?? 1);
+}
+
+/** XYTC line opacity. Python `_pack_xytc` uses `style.get("line_opacity", 1.0)` only. */
+export function packXyTcLineOpacity(style, kindClass) {
+  if (!(kindClass & SCENE_KIND_CLASS_BAND)) return 1;
+  return Number((style ?? {}).line_opacity ?? 1);
+}
+
+/** XYTC stroke opacity. Python `_pack_xytc` uses `style.get("stroke_opacity", 1.0)` only. */
+export function packXyTcStrokeOpacity(style, kindClass) {
+  if (!(kindClass & SCENE_KIND_CLASS_OPACITY)) return 1;
+  return Number((style ?? {}).stroke_opacity ?? 1);
+}
+
 /** XYTC stroke width. Python `_pack_xytc` reads `"stroke_width" in style` only. */
 export function packXyTcStrokeWidth(style) {
   const record = style ?? {};
@@ -3322,11 +3340,11 @@ function packXyTc(figure) {
     let strokeOpacity = 1;
     let lineOpacity = 1;
     if (kindClass & SCENE_KIND_CLASS_OPACITY) {
-      fillOpacity = Number(style.fill_opacity ?? style.fillOpacity ?? 1);
-      strokeOpacity = Number(style.stroke_opacity ?? style.strokeOpacity ?? 1);
+      fillOpacity = packXyTcFillOpacity(style, kindClass);
+      strokeOpacity = packXyTcStrokeOpacity(style, kindClass);
     }
     if (kindClass & SCENE_KIND_CLASS_BAND) {
-      lineOpacity = Number(style.line_opacity ?? style.lineOpacity ?? 1);
+      lineOpacity = packXyTcLineOpacity(style, kindClass);
     }
     let size = Number.NaN;
     if (Object.hasOwn(style, "size") || Object.hasOwn(style, "diameter")) {
