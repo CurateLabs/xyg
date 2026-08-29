@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneHexbinReduceAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -2882,7 +2882,6 @@ const BAND_KINDS = new Set(["area", "error_band"]);
 const RIBBON_KINDS = new Set(["ribbon"]);
 const POLYFILL_KINDS = new Set(["triangle_mesh"]);
 const HEXBIN_KINDS = new Set(["hexbin"]);
-const HEXBIN_REDUCES = new Set(["count", "mean", "sum", "custom"]);
 const HEATMAP_KINDS = new Set(["heatmap"]);
 const STROKE_KINDS = new Set(["line", "segments", "errorbar", "stem", "contour", "box_whisker", "box_median"]);
 const SUPPORTED_KINDS = new Set([
@@ -5549,7 +5548,7 @@ function figureTraceSupport(figure, trace) {
   }
   if (style.dash != null && parseSceneDash(style.dash) === false) flags |= XYFS_TRACE_DASHED_MARKERS;
   if (RECT_KINDS.has(kind) || HEATMAP_KINDS.has(kind)) flags |= rectExtraFlags(style, kind, figure.coords === "polar");
-  if (HEXBIN_KINDS.has(kind) && !HEXBIN_REDUCES.has(style.reduce)) flags |= XYFS_TRACE_CUSTOM_HEX_REDUCE;
+  if (HEXBIN_KINDS.has(kind) && !sceneHexbinReduceAdmit(style.reduce)) flags |= XYFS_TRACE_CUSTOM_HEX_REDUCE;
   if (
     HEATMAP_KINDS.has(kind)
     && (style.truecolor || style.colormap != null || trace.rgba_grid != null || trace.rgba != null)

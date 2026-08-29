@@ -1561,6 +1561,11 @@ ABI 230 `xyg_scene_linear_gradient_prefix` owns the CSS `linear-gradient(`
 prefix check (trim, lowercase) so Python `_fill_is_gradient_authoring` and
 Node `fillIsGradientAuthoring` cannot drift. Hosts still treat dict/object
 fills as authoring. Compile-path flag bits stay extra.
+ABI 232 `xyg_scene_hexbin_reduce_admit` owns Scene hexbin reduce names
+(`count`/`mean`/`sum`/`custom`; unknown/empty reject; no lowercasing) so
+Python `_figure_trace_support_flags` and Node `figureTraceSupport` cannot
+drift. Hosts still check hexbin kind. Compile-path `HEXBIN_REDUCES` in
+`scene_export.rs` stays extra.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1658,6 +1663,11 @@ ABI 230 `xyg_scene_linear_gradient_prefix` owns the CSS `linear-gradient(`
 prefix check (trim, lowercase) so Python `_fill_is_gradient_authoring` and
 Node `fillIsGradientAuthoring` cannot drift. Hosts still treat dict/object
 fills as authoring. Compile-path flag bits stay extra.
+ABI 232 `xyg_scene_hexbin_reduce_admit` owns Scene hexbin reduce names
+(`count`/`mean`/`sum`/`custom`; unknown/empty reject; no lowercasing) so
+Python `_figure_trace_support_flags` and Node `figureTraceSupport` cannot
+drift. Hosts still check hexbin kind. Compile-path `HEXBIN_REDUCES` in
+`scene_export.rs` stays extra.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

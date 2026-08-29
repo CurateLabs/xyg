@@ -47,7 +47,6 @@ _POLYFILL_KINDS = frozenset({"triangle_mesh"})
 # Rust (`SceneExpansionMode::HexCell`). Hosts pack one compact center+pitch
 # row per cell.
 _HEXBIN_KINDS = frozenset({"hexbin"})
-_HEXBIN_REDUCES = frozenset({"count", "mean", "sum", "custom"})
 # Regular Cartesian heatmap cells expand onto Rect records in Rust
 # (`SceneExpansionMode::HeatmapLattice`). Hosts pack extent plus rows/cols.
 # Painted lattices (`HeatmapPainted`) add an XYHP sidecar. Cartesian
@@ -1854,7 +1853,7 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
         flags |= _XYFS_TRACE_DASHED_MARKERS
     if kind in _RECT_KINDS or kind in _HEATMAP_KINDS:
         flags |= _rect_extra_flags(style, kind, polar)
-    if kind in _HEXBIN_KINDS and style.get("reduce") not in _HEXBIN_REDUCES:
+    if kind in _HEXBIN_KINDS and not _native.scene_hexbin_reduce_admit(style.get("reduce")):
         flags |= _XYFS_TRACE_CUSTOM_HEX_REDUCE
     if kind in _HEATMAP_KINDS and _heatmap_uses_colormap(trace):
         flags |= _XYFS_TRACE_HEATMAP_COLORMAP

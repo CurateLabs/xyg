@@ -25,6 +25,7 @@ import {
   sceneGradientDir,
   sceneLinearGradientPrefix,
   sceneGradientSpace,
+  sceneHexbinReduceAdmit,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -273,6 +274,16 @@ test("sceneGradientSpace matches host table", () => {
   assert.equal(sceneGradientSpace(""), 255);
   assert.equal(sceneGradientSpace("foo"), 255);
   assert.equal(sceneGradientSpace("MARK"), 255);
+});
+
+test("sceneHexbinReduceAdmit matches host table", () => {
+  assert.equal(sceneHexbinReduceAdmit("count"), true);
+  assert.equal(sceneHexbinReduceAdmit("mean"), true);
+  assert.equal(sceneHexbinReduceAdmit("sum"), true);
+  assert.equal(sceneHexbinReduceAdmit("custom"), true);
+  assert.equal(sceneHexbinReduceAdmit(""), false);
+  assert.equal(sceneHexbinReduceAdmit("foo"), false);
+  assert.equal(sceneHexbinReduceAdmit("COUNT"), false);
 });
 
 test("sceneRibbonColor2Classify matches host table", () => {

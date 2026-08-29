@@ -713,6 +713,11 @@ ABI 230 `xyg_scene_linear_gradient_prefix` owns the CSS `linear-gradient(`
 prefix check (trim, lowercase) so Python `_fill_is_gradient_authoring` and
 Node `fillIsGradientAuthoring` cannot drift. Hosts still treat dict/object
 fills as authoring. Compile-path flag bits stay extra.
+ABI 232 `xyg_scene_hexbin_reduce_admit` owns Scene hexbin reduce names
+(`count`/`mean`/`sum`/`custom`; unknown/empty reject; no lowercasing) so
+Python `_figure_trace_support_flags` and Node `figureTraceSupport` cannot
+drift. Hosts still check hexbin kind. Compile-path `HEXBIN_REDUCES` in
+`scene_export.rs` stays extra.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1075,7 +1080,8 @@ client must not grow a parallel “JS layout/LOD” product path.
   Scene rect extra-flag pack is ABI 228;
   Scene fill-gradient direction pack is ABI 229;
   Scene linear-gradient CSS prefix is ABI 230;
-  Scene fill-gradient space pack is ABI 231.
+  Scene fill-gradient space pack is ABI 231;
+  Scene hexbin reduce admit is ABI 232.
 
 ---
 

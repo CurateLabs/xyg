@@ -283,6 +283,8 @@ def load() -> ctypes.CDLL:
     lib.xyg_scene_linear_gradient_prefix.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_scene_gradient_space.restype = ctypes.c_int32
     lib.xyg_scene_gradient_space.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_scene_hexbin_reduce_admit.restype = ctypes.c_int32
+    lib.xyg_scene_hexbin_reduce_admit.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2615,6 +2617,22 @@ def main() -> None:
     ok(
         lib.xyg_scene_gradient_space(_ptr(mark_upper, ctypes.c_uint8), len(mark_upper)) == 255,
         "scene_gradient_space MARK",
+    )
+    count_name = array("B", b"count")
+    mean_name = array("B", b"mean")
+    count_upper = array("B", b"COUNT")
+    ok(
+        lib.xyg_scene_hexbin_reduce_admit(_ptr(count_name, ctypes.c_uint8), len(count_name)) == 1,
+        "scene_hexbin_reduce_admit count",
+    )
+    ok(
+        lib.xyg_scene_hexbin_reduce_admit(_ptr(mean_name, ctypes.c_uint8), len(mean_name)) == 1,
+        "scene_hexbin_reduce_admit mean",
+    )
+    ok(lib.xyg_scene_hexbin_reduce_admit(null_u8, 0) == 0, "scene_hexbin_reduce_admit empty")
+    ok(
+        lib.xyg_scene_hexbin_reduce_admit(_ptr(count_upper, ctypes.c_uint8), len(count_upper)) == 0,
+        "scene_hexbin_reduce_admit COUNT",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8
