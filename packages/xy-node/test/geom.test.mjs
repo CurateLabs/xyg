@@ -57,6 +57,7 @@ import {
   sceneItemFillT,
   sceneCurveClassify,
   sceneMarkerGlyphAdmit,
+  admittedMarkerGlyph,
   sceneKindAdmit,
   sceneKindClass,
   figureTraceSupport,
@@ -357,6 +358,13 @@ test("sceneMarkerGlyphAdmit matches host table", () => {
   assert.equal(sceneMarkerGlyphAdmit("a\rb"), false);
   assert.equal(sceneMarkerGlyphAdmit("x".repeat(64)), true);
   assert.equal(sceneMarkerGlyphAdmit("x".repeat(65)), false);
+});
+
+test("admittedMarkerGlyph host coercion matches Python str-only", () => {
+  assert.deepEqual([...admittedMarkerGlyph("A")], [65]);
+  assert.equal(admittedMarkerGlyph(123), null);
+  assert.equal(admittedMarkerGlyph(["A"]), null);
+  assert.equal(admittedMarkerGlyph(null), null);
 });
 
 test("sceneKindAdmit matches host table", () => {

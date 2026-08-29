@@ -846,6 +846,7 @@ Node `itemApplyOpacity` fail-closes a present opacity/artist_alpha channel witho
 Node missing scatter kind uses `|| ""` (same as Python); it is not defaulted to `"scatter"`.
 Node `fillIsGradientAuthoring` rejects arrays (same as Python dict-only).
 Node `rectExtraFlags` treats only mapping fills as gradient-fail (same as Python dict-only).
+Node `admittedMarkerGlyph` rejects non-strings (same as Python `isinstance(..., str)`).
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1257,6 +1258,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node missing scatter kind uses `|| ""`.
   Node `fillIsGradientAuthoring` rejects arrays (same as Python dict-only).
   Node `rectExtraFlags` treats only mapping fills as gradient-fail (same as Python dict-only).
+  Node `admittedMarkerGlyph` rejects non-strings (same as Python `isinstance(..., str)`).
 
 ---
 

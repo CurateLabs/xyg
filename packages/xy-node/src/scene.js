@@ -3448,11 +3448,10 @@ const XYTA_SCATTER_PAINT = 1 << 16;
 const XYMG_MAX_UTF8 = 64;
 const GRAD_DIR_FROM_CODE = { 0: "down", 1: "up", 2: "right", 3: "left" };
 
-function admittedMarkerGlyph(glyph) {
-  if (glyph == null) return null;
-  const text = String(glyph);
-  if (!sceneMarkerGlyphAdmit(text)) return null;
-  return encodeUtf8(text);
+export function admittedMarkerGlyph(glyph) {
+  if (typeof glyph !== "string") return null;
+  if (!sceneMarkerGlyphAdmit(glyph)) return null;
+  return encodeUtf8(glyph);
 }
 
 function packMarkerBlob(value) {
