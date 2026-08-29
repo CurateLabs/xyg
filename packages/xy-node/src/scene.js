@@ -5539,7 +5539,6 @@ export function figureTraceSupport(figure, trace) {
       }
     }
   }
-  if (style.smooth != null) flags |= XYFS_TRACE_DASHED_MARKERS;
   const curve = style.curve;
   if (curve != null) {
     const curveCode = sceneCurveClassify(curve);

@@ -374,6 +374,12 @@ test("figureTraceSupport empty kind matches Python or mark", () => {
   assert.equal(figureTraceSupport({}, { kind: "scatter" }).kind, "scatter");
 });
 
+test("figureTraceSupport ignores style.smooth like Python", () => {
+  const dashed = 1 << 4;
+  assert.equal(figureTraceSupport({}, { kind: "line", style: { smooth: true } }).flags & dashed, 0);
+  assert.equal(figureTraceSupport({}, { kind: "scatter", style: { curve: "smooth" } }).flags & dashed, dashed);
+});
+
 test("sceneKindClass matches host table", () => {
   assert.equal(sceneKindClass("bar"), 1 << 0);
   assert.equal(sceneKindClass("segments"), (1 << 1) | (1 << 7));

@@ -840,6 +840,7 @@ Node `meshHasPerItem` uses `perItemChannelNames` (same as Python `has_per_item_c
 Node `scatterPaintChannelNames` uses `perItemChannelNames` (same as Python `per_item_channel_names`) for ABI 241.
 Node hexbin colormap-plane packing uses `channel.values` (same as Python); `trace.metric` is not a values fallback.
 Node empty kind uses `|| "mark"` (same as Python `or "mark"`).
+Node `figureTraceSupport` does not fail-close `style.smooth`; curve names stay ABI 233.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1245,6 +1246,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `scatterPaintChannelNames` uses `perItemChannelNames` for ABI 241.
   Node hexbin colormap-plane packing uses `channel.values` for ABI 242.
   Node empty kind uses `|| "mark"`.
+  Node `figureTraceSupport` does not fail-close `style.smooth`.
 
 ---
 
