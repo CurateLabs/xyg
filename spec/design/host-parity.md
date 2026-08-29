@@ -881,6 +881,7 @@ Node `packXyTaRgbaGrid` stacks flattened planes like Python `_pack_xyta` `rgba_g
 Node heatmap `trace.rgba` stores a flat uint8 buffer; `packXyTaRgba` packs that buffer like Python `_pack_xyta` and does not unwrap nested `.rgba`.
 Node heatmap and density Scene packing is XYTA-only like Python `_pack_xyta`; unused XYHF paint-plane helpers are not a second plane layout.
 Node `packXyTaGrid` flattens heatmap `grid` like Python `_pack_xyta` (`plane.values` or plane); nested length indexing is not a grid layout.
+Node `rectFiniteSel` drops nonfinite rectangle rows through `validIndicesF64` like Python `_rect_finite_sel`; NaN never reaches vertex buffers (§19).
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1327,6 +1328,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node heatmap `trace.rgba` is a flat uint8 buffer.
   Node heatmap and density Scene packing is XYTA-only.
   Node `packXyTaGrid` flattens heatmap `grid`.
+  Node `rectFiniteSel` drops nonfinite rectangle rows.
 
 ---
 
