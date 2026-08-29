@@ -52,6 +52,7 @@ import {
   sceneMarkerGlyphAdmit,
   sceneKindAdmit,
   sceneKindClass,
+  figureTraceSupport,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -363,6 +364,12 @@ test("sceneKindAdmit matches host table", () => {
   assert.equal(sceneKindAdmit("SCATTER"), false);
   assert.equal(sceneKindAdmit("pie"), false);
   assert.equal(sceneKindAdmit(" scatter"), false);
+});
+
+test("figureTraceSupport ignores style.smooth like Python", () => {
+  const dashed = 1 << 4;
+  assert.equal(figureTraceSupport({}, { kind: "line", style: { smooth: true } }).flags & dashed, 0);
+  assert.equal(figureTraceSupport({}, { kind: "scatter", style: { curve: "smooth" } }).flags & dashed, dashed);
 });
 
 test("sceneKindClass matches host table", () => {

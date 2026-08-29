@@ -5513,7 +5513,7 @@ function rectExtraFlags(style, kind, polar) {
   return sceneRectExtraFlags(kind, polar, gradientFail, values, radiusSeq, gap);
 }
 
-function figureTraceSupport(figure, trace) {
+export function figureTraceSupport(figure, trace) {
   const style = trace.style ?? {};
   const kind = String(trace.kind ?? "mark");
   const kindClass = sceneKindClass(kind);
@@ -5539,7 +5539,6 @@ function figureTraceSupport(figure, trace) {
       }
     }
   }
-  if (style.smooth != null) flags |= XYFS_TRACE_DASHED_MARKERS;
   const curve = style.curve;
   if (curve != null) {
     const curveCode = sceneCurveClassify(curve);
