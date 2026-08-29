@@ -2883,6 +2883,7 @@ const SCENE_KIND_CLASS_POLYFILL = 1 << 4;
 const SCENE_KIND_CLASS_HEXBIN = 1 << 5;
 const SCENE_KIND_CLASS_HEATMAP = 1 << 6;
 const SCENE_KIND_CLASS_SCATTER = 1 << 8;
+const SCENE_KIND_CLASS_LINE = 1 << 9;
 const SCENE_KIND_CLASS_OPACITY = SCENE_KIND_CLASS_BAND | SCENE_KIND_CLASS_RIBBON | SCENE_KIND_CLASS_RECT | SCENE_KIND_CLASS_HEATMAP | SCENE_KIND_CLASS_SCATTER | SCENE_KIND_CLASS_HEXBIN | SCENE_KIND_CLASS_POLYFILL;
 const XYFS_TRACE_UNSUPPORTED_KIND = 1 << 0;
 const XYFS_TRACE_NON_PRIMARY_AXIS = 1 << 1;
@@ -5537,7 +5538,7 @@ function figureTraceSupport(figure, trace) {
   if (curve != null) {
     const curveCode = sceneCurveClassify(curve);
     if (curveCode === 1) {
-      if (kind !== "line" && kind !== "area" && kind !== "error_band") flags |= XYFS_TRACE_DASHED_MARKERS;
+      if (!(kindClass & (SCENE_KIND_CLASS_LINE | SCENE_KIND_CLASS_BAND))) flags |= XYFS_TRACE_DASHED_MARKERS;
     } else if (curveCode !== 0) {
       flags |= XYFS_TRACE_DASHED_MARKERS;
     }
