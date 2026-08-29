@@ -34,6 +34,7 @@ import {
   sceneHexbinReduceAdmit,
   sceneHexbinRgbaPlaneAdmit,
   sceneMeshPaintPlaneAdmit,
+  sceneItemApplyOpacity,
   sceneCurveClassify,
   sceneMarkerGlyphAdmit,
   sceneKindAdmit,
@@ -393,6 +394,17 @@ test("sceneMeshPaintPlaneAdmit matches host table", () => {
   assert.equal(sceneMeshPaintPlaneAdmit("TRIANGLE_MESH", 0, 1), false);
   assert.equal(sceneMeshPaintPlaneAdmit("scatter", 0, 1), false);
   assert.equal(sceneMeshPaintPlaneAdmit(" triangle_mesh", 0, 1), false);
+});
+
+test("sceneItemApplyOpacity matches host table", () => {
+  const packed = Uint8Array.from([10, 20, 30, 40, 1, 2, 3, 80]);
+  const identity = sceneItemApplyOpacity(packed, 2, null, null);
+  assert.deepEqual([...identity], [...packed]);
+  const artist = sceneItemApplyOpacity(packed, 2, [-1, 0.5], null);
+  assert.deepEqual([...artist.slice(0, 4)], [10, 20, 30, 40]);
+  assert.deepEqual([...artist.slice(4)], [1, 2, 3, 128]);
+  const bad = sceneItemApplyOpacity(packed, 2, [0.5], null);
+  assert.equal(bad, null);
 });
 
 test("sceneHexbinPitchAdmit matches host table", () => {

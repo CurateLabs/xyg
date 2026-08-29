@@ -37,6 +37,7 @@ export {
   densityOverlayOpacity,
   sceneMarkerPathAdmit,
   sceneMeshPaintPlaneAdmit,
+  sceneItemApplyOpacity,
   sceneAnnotationStyleAdmit,
   sceneRibbonColor2Classify,
   sceneScatterPaintChannelAdmit,

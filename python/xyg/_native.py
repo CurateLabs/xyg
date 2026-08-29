@@ -1523,6 +1523,50 @@ def scene_mesh_paint_plane_admit(
     return code == 1
 
 
+def scene_item_apply_opacity(
+    packed: bytes,
+    n: int,
+    artist: npt.ArrayLike | None = None,
+    opacity: npt.ArrayLike | None = None,
+) -> bytes | None:
+    """Scene per-item RGBA8 artist-alpha then opacity via ABI 245.
+
+    Empty native pointers are ``0``. Field picking stays host.
+    """
+    n_i = int(n)
+    if n_i < 0:
+        return None
+    src = np.frombuffer(packed, dtype=np.uint8)
+    need = n_i * 4
+    out = np.empty(need, dtype=np.uint8)
+    artist_arr: npt.NDArray[np.float64] | None = None
+    if artist is not None:
+        artist_arr = _as_f64(np.asarray(artist, dtype=np.float64).reshape(-1), "artist")
+    opacity_arr: npt.NDArray[np.float64] | None = None
+    if opacity is not None:
+        opacity_arr = _as_f64(np.asarray(opacity, dtype=np.float64).reshape(-1), "opacity")
+    code = int(
+        _lib.xyg_scene_item_apply_opacity(
+            _ptr_u8(src) if src.size else 0,
+            int(src.size),
+            n_i,
+            _ptr_f64(artist_arr) if artist_arr is not None and artist_arr.size else 0,
+            0 if artist_arr is None else int(artist_arr.size),
+            0 if artist_arr is None else 1,
+            _ptr_f64(opacity_arr) if opacity_arr is not None and opacity_arr.size else 0,
+            0 if opacity_arr is None else int(opacity_arr.size),
+            0 if opacity_arr is None else 1,
+            _ptr_u8(out) if need else 0,
+            need,
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-item-apply-opacity request")
+    if code != 1:
+        return None
+    return bytes(out)
+
+
 def scene_hexbin_pitch_admit(dx: float, dy: float) -> bool:
     """Scene hexbin cell-pitch admit via ``xyg_scene_hexbin_pitch_admit`` (ABI 237).
 

@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -5631,22 +5631,12 @@ function itemApplyOpacity(trace, packed, n) {
   const opacityCh = channels.opacity;
   const artistCh = channels.artist_alpha;
   if (opacityCh?.values == null && artistCh?.values == null) return packed;
-  const out = Uint8Array.from(packed);
-  for (let i = 0; i < n; i += 1) {
-    let alpha = out[i * 4 + 3];
-    if (artistCh?.values != null) {
-      const artist = Number(artistCh.values[i]);
-      if (artist >= 0) alpha = Math.min(1, Math.max(0, artist)) * 255;
-    }
-    if (opacityCh?.values != null) {
-      const opacity = Math.min(1, Math.max(0, Number(opacityCh.values[i])));
-      alpha *= opacity;
-    }
-    out[i * 4 + 3] = Math.round(Math.min(255, Math.max(0, alpha)));
-  }
-  if (opacityCh?.values != null && opacityCh.values.length !== n) return null;
-  if (artistCh?.values != null && artistCh.values.length !== n) return null;
-  return out;
+  return sceneItemApplyOpacity(
+    packed,
+    n,
+    artistCh?.values ?? null,
+    opacityCh?.values ?? null,
+  );
 }
 
 function itemFillRgba8(trace, n) {

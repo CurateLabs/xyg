@@ -1719,6 +1719,56 @@ pub fn scene_mesh_paint_plane_admit(kind: &str, joined_fill: i32, has_per_item: 
     i32::from(kind == "triangle_mesh" && joined_fill == 0 && has_per_item != 0)
 }
 
+/// Apply optional per-item artist-alpha replace then opacity multiply onto
+/// packed RGBA8 (ABI 245).
+///
+/// A present channel whose length is not `n` returns `false`. Artist values
+/// `>= 0` replace the packed alpha in 0–255 units after clipping to `[0, 1]`;
+/// negative artist keeps the packed alpha. Opacity clips to `[0, 1]` and
+/// multiplies. The result quantizes with ties-to-even. Field picking stays
+/// host.
+pub fn scene_item_apply_opacity(
+    packed: &[u8],
+    n: usize,
+    artist: Option<&[f64]>,
+    opacity: Option<&[f64]>,
+    out: &mut [u8],
+) -> bool {
+    let Some(need) = n.checked_mul(4) else {
+        return false;
+    };
+    if packed.len() != need || out.len() != need {
+        return false;
+    }
+    if let Some(artist) = artist {
+        if artist.len() != n {
+            return false;
+        }
+    }
+    if let Some(opacity) = opacity {
+        if opacity.len() != n {
+            return false;
+        }
+    }
+    out.copy_from_slice(packed);
+    if artist.is_none() && opacity.is_none() {
+        return true;
+    }
+    for i in 0..n {
+        let mut alpha = packed[i * 4 + 3] as f64;
+        if let Some(artist) = artist {
+            if artist[i] >= 0.0 {
+                alpha = artist[i].clamp(0.0, 1.0) * 255.0;
+            }
+        }
+        if let Some(opacity) = opacity {
+            alpha *= opacity[i].clamp(0.0, 1.0);
+        }
+        out[i * 4 + 3] = alpha.clamp(0.0, 255.0).round_ties_even() as u8;
+    }
+    true
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -10005,6 +10055,55 @@ mod fuzz {
         assert_eq!(scene_mesh_paint_plane_admit("TRIANGLE_MESH", 0, 1), 0);
         assert_eq!(scene_mesh_paint_plane_admit("scatter", 0, 1), 0);
         assert_eq!(scene_mesh_paint_plane_admit(" triangle_mesh", 0, 1), 0);
+    }
+
+    #[test]
+    fn scene_item_apply_opacity_matches_host_table() {
+        let packed = [10u8, 20, 30, 40, 1, 2, 3, 80];
+        let mut out = [0u8; 8];
+        assert!(scene_item_apply_opacity(&packed, 2, None, None, &mut out));
+        assert_eq!(out, packed);
+
+        let mut out = [0u8; 8];
+        assert!(scene_item_apply_opacity(
+            &packed,
+            2,
+            Some(&[-1.0, 0.5]),
+            None,
+            &mut out,
+        ));
+        assert_eq!(&out[..4], &[10, 20, 30, 40]);
+        assert_eq!(&out[4..], &[1, 2, 3, 128]);
+
+        let mut out = [0u8; 8];
+        assert!(scene_item_apply_opacity(
+            &packed,
+            2,
+            None,
+            Some(&[0.5, 0.25]),
+            &mut out,
+        ));
+        assert_eq!(out[3], 20);
+        assert_eq!(out[7], 20);
+
+        let mut out = [0u8; 8];
+        assert!(!scene_item_apply_opacity(
+            &packed,
+            2,
+            Some(&[0.5]),
+            None,
+            &mut out,
+        ));
+
+        let empty_in: [u8; 0] = [];
+        let mut empty_out: [u8; 0] = [];
+        assert!(scene_item_apply_opacity(
+            &empty_in,
+            0,
+            None,
+            None,
+            &mut empty_out,
+        ));
     }
 
     #[test]

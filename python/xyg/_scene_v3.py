@@ -1992,20 +1992,13 @@ def _item_apply_opacity(trace: Any, packed: bytes, n: int) -> bytes | None:
     artist_ch = channels.get("artist_alpha")
     if opacity_ch is None and artist_ch is None:
         return packed
-    rgba = np.frombuffer(bytearray(packed), dtype=np.uint8).reshape(n, 4).copy()
-    alpha = rgba[:, 3].astype(np.float64)
+    artist = None
     if artist_ch is not None:
         artist = np.asarray(getattr(artist_ch, "values", None), dtype=np.float64).reshape(-1)
-        if artist.size != n:
-            return None
-        alpha = np.where(artist >= 0.0, np.clip(artist, 0.0, 1.0) * 255.0, alpha)
+    opacity = None
     if opacity_ch is not None:
-        values = np.asarray(getattr(opacity_ch, "values", None), dtype=np.float64).reshape(-1)
-        if values.size != n:
-            return None
-        alpha = alpha * np.clip(values, 0.0, 1.0)
-    rgba[:, 3] = np.rint(np.clip(alpha, 0.0, 255.0)).astype(np.uint8)
-    return np.ascontiguousarray(rgba).tobytes()
+        opacity = np.asarray(getattr(opacity_ch, "values", None), dtype=np.float64).reshape(-1)
+    return _native.scene_item_apply_opacity(packed, n, artist, opacity)
 
 
 def _item_fill_rgba8(trace: Any, n: int) -> bytes | None:
