@@ -1554,6 +1554,10 @@ ABI 229 `xyg_scene_gradient_dir` owns Scene fill-gradient direction codes
 `_pack_gradient_spec` / XYSS pack and Node `packGradientSpec` cannot drift.
 Hosts still pick `dir` vs missing keys. Space `mark`/`plot` packing stays
 host. Compile-path `to bottom` aliases stay extra.
+ABI 230 `xyg_scene_linear_gradient_prefix` owns the CSS `linear-gradient(`
+prefix check (trim, lowercase) so Python `_fill_is_gradient_authoring` and
+Node `fillIsGradientAuthoring` cannot drift. Hosts still treat dict/object
+fills as authoring. Compile-path flag bits stay extra.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1644,6 +1648,10 @@ ABI 229 `xyg_scene_gradient_dir` owns Scene fill-gradient direction codes
 `_pack_gradient_spec` / XYSS pack and Node `packGradientSpec` cannot drift.
 Hosts still pick `dir` vs missing keys. Space `mark`/`plot` packing stays
 host. Compile-path `to bottom` aliases stay extra.
+ABI 230 `xyg_scene_linear_gradient_prefix` owns the CSS `linear-gradient(`
+prefix check (trim, lowercase) so Python `_fill_is_gradient_authoring` and
+Node `fillIsGradientAuthoring` cannot drift. Hosts still treat dict/object
+fills as authoring. Compile-path flag bits stay extra.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

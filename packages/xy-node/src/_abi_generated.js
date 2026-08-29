@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 229;
-export const SIGNATURE_SHA256 = "0a273341438ebd2956bb6b16f321e79c181f40c5c53373282ee7b9f1ccf20e92";
+export const ABI_VERSION = 230;
+export const SIGNATURE_SHA256 = "917b6a7a949dfc77befa7463203cadcc2b39e78a27576214d30fb397086e5c91";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -199,6 +199,7 @@ export let xySceneEncodeProduct;
 export let xySceneFigureSupportReason;
 export let xySceneFillGradientAdmit;
 export let xySceneGradientDir;
+export let xySceneLinearGradientPrefix;
 export let xySceneLinecapAdmit;
 export let xySceneMarkerPathAdmit;
 export let xyScenePackAnnotationFacts;
@@ -523,6 +524,7 @@ export function bindGeneratedAbi(lib) {
   xySceneFigureSupportReason = lib.func("size_t xyg_scene_figure_support_reason(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap)");
   xySceneFillGradientAdmit = lib.func("int32_t xyg_scene_fill_gradient_admit(const uint8_t * space, size_t space_len, const uint8_t * dir, size_t dir_len, const double * t, size_t n_stops, const uint8_t * css, size_t css_len, const uint32_t * css_lens, size_t n_css, const uint8_t * mark_color, size_t mark_len, uint8_t * out_rgba, size_t out_cap)");
   xySceneGradientDir = lib.func("int32_t xyg_scene_gradient_dir(const uint8_t * text, size_t text_len)");
+  xySceneLinearGradientPrefix = lib.func("int32_t xyg_scene_linear_gradient_prefix(const uint8_t * text, size_t text_len)");
   xySceneLinecapAdmit = lib.func("int32_t xyg_scene_linecap_admit(const uint8_t * text, size_t text_len)");
   xySceneMarkerPathAdmit = lib.func("int32_t xyg_scene_marker_path_admit(const double * values, size_t n_values, const uint32_t * lengths, size_t n_contours)");
   xyScenePackAnnotationFacts = lib.func("int32_t xyg_scene_pack_annotation_facts(const uint8_t * facts, size_t facts_len, uint32_t style_ref_base, double x0, double x1, double y0, double y1, uint8_t * out, size_t out_cap)");

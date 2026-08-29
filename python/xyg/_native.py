@@ -1321,6 +1321,19 @@ def scene_gradient_dir(text: str | None = None) -> int:
     return int(code)
 
 
+def scene_linear_gradient_prefix(text: str | None = None) -> bool:
+    """Scene CSS ``linear-gradient(`` prefix via ``xyg_scene_linear_gradient_prefix`` (ABI 230).
+
+    Empty native pointers are ``0``. Hosts still treat dict/object fills as
+    authoring. Compile-path flag bits stay extra.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_linear_gradient_prefix(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-linear-gradient-prefix request")
+    return code == 1
+
+
 def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
     """f32-safe encode scale for offset-encoded geometry (ABI 208, §19)."""
     out = ctypes.c_double()

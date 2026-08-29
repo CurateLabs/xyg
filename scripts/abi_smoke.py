@@ -279,6 +279,8 @@ def load() -> ctypes.CDLL:
     ]
     lib.xyg_scene_gradient_dir.restype = ctypes.c_int32
     lib.xyg_scene_gradient_dir.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_scene_linear_gradient_prefix.restype = ctypes.c_int32
+    lib.xyg_scene_linear_gradient_prefix.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2578,6 +2580,24 @@ def main() -> None:
         lib.xyg_scene_gradient_dir(_ptr(to_bottom, ctypes.c_uint8), len(to_bottom)) == 255,
         "scene_gradient_dir to bottom",
     )
+    grad_css = array("B", b"linear-gradient(red, blue)")
+    grad_upper = array("B", b"  LINEAR-GRADIENT(red, blue)  ")
+    radial_css = array("B", b"radial-gradient(red, blue)")
+    ok(
+        lib.xyg_scene_linear_gradient_prefix(_ptr(grad_css, ctypes.c_uint8), len(grad_css)) == 1,
+        "scene_linear_gradient_prefix css",
+    )
+    ok(
+        lib.xyg_scene_linear_gradient_prefix(_ptr(grad_upper, ctypes.c_uint8), len(grad_upper))
+        == 1,
+        "scene_linear_gradient_prefix upper",
+    )
+    ok(
+        lib.xyg_scene_linear_gradient_prefix(_ptr(radial_css, ctypes.c_uint8), len(radial_css))
+        == 0,
+        "scene_linear_gradient_prefix radial",
+    )
+    ok(lib.xyg_scene_linear_gradient_prefix(null_u8, 0) == 0, "scene_linear_gradient_prefix empty")
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8
     arrow_style[8] = 90.0

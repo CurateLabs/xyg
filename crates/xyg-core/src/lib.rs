@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 229;
+pub const ABI_VERSION: u32 = 230;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5240,6 +5240,36 @@ pub unsafe extern "C" fn xyg_scene_gradient_dir(
             return -2;
         };
         kernels::scene_gradient_dir(text)
+    })
+}
+
+/// Scene CSS `linear-gradient(` prefix (ABI 230).
+///
+/// Trim, lowercase, then prefix-match `linear-gradient(`. Returns `1` yes,
+/// `0` no, `-2` FFI. Empty native pointers are null/`0`. Hosts still treat
+/// dict/object fills as authoring. Compile-path flag bits stay extra.
+///
+/// # Safety
+/// `text` must address `text_len` readable bytes when `text_len` is
+/// nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_linear_gradient_prefix(
+    text: *const u8,
+    text_len: usize,
+) -> i32 {
+    if text_len > 0 && text.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let bytes = if text_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(text, text_len)
+        };
+        let Ok(text) = std::str::from_utf8(bytes) else {
+            return -2;
+        };
+        kernels::scene_linear_gradient_prefix(text)
     })
 }
 

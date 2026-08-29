@@ -23,6 +23,7 @@ import {
   sceneParseLinearGradient,
   sceneRectExtraFlags,
   sceneGradientDir,
+  sceneLinearGradientPrefix,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -254,6 +255,15 @@ test("sceneGradientDir matches host table", () => {
   assert.equal(sceneGradientDir("foo"), 255);
   assert.equal(sceneGradientDir("DOWN"), 255);
   assert.equal(sceneGradientDir("to bottom"), 255);
+});
+
+test("sceneLinearGradientPrefix matches host table", () => {
+  assert.equal(sceneLinearGradientPrefix("linear-gradient(red, blue)"), true);
+  assert.equal(sceneLinearGradientPrefix("  LINEAR-GRADIENT(red, blue)  "), true);
+  assert.equal(sceneLinearGradientPrefix("linear-gradient(45deg, red, blue)"), true);
+  assert.equal(sceneLinearGradientPrefix("radial-gradient(red, blue)"), false);
+  assert.equal(sceneLinearGradientPrefix("linear-gradient"), false);
+  assert.equal(sceneLinearGradientPrefix(""), false);
 });
 
 test("sceneRibbonColor2Classify matches host table", () => {

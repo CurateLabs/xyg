@@ -1,9 +1,9 @@
 {
-  "abi_version": 229,
+  "abi_version": 230,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "0a273341438ebd2956bb6b16f321e79c181f40c5c53373282ee7b9f1ccf20e92",
+  "signature_sha256": "917b6a7a949dfc77befa7463203cadcc2b39e78a27576214d30fb397086e5c91",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -28568,6 +28568,57 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_scene_gradient_dir(const uint8_t * text, size_t text_len)"
+    },
+    {
+      "name": "xyg_scene_linear_gradient_prefix",
+      "node_name": "xySceneLinearGradientPrefix",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "text",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "text_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_scene_linear_gradient_prefix(const uint8_t * text, size_t text_len)"
     },
     {
       "name": "xyg_scene_linecap_admit",

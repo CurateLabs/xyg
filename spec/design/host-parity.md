@@ -706,6 +706,10 @@ ABI 229 `xyg_scene_gradient_dir` owns Scene fill-gradient direction codes
 `_pack_gradient_spec` / XYSS pack and Node `packGradientSpec` cannot drift.
 Hosts still pick `dir` vs missing keys. Space `mark`/`plot` packing stays
 host. Compile-path `to bottom` aliases stay extra.
+ABI 230 `xyg_scene_linear_gradient_prefix` owns the CSS `linear-gradient(`
+prefix check (trim, lowercase) so Python `_fill_is_gradient_authoring` and
+Node `fillIsGradientAuthoring` cannot drift. Hosts still treat dict/object
+fills as authoring. Compile-path flag bits stay extra.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1066,7 +1070,8 @@ client must not grow a parallel “JS layout/LOD” product path.
   Scene fill-gradient admit is ABI 226;
   Scene linear-gradient CSS parse is ABI 227;
   Scene rect extra-flag pack is ABI 228;
-  Scene fill-gradient direction pack is ABI 229.
+  Scene fill-gradient direction pack is ABI 229;
+  Scene linear-gradient CSS prefix is ABI 230.
 
 ---
 
