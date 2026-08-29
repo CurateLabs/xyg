@@ -58,6 +58,7 @@ geometry_offset = _impl.geometry_offset
 scale_pins_offset = _impl.scale_pins_offset
 scene_annotation_style_admit = _impl.scene_annotation_style_admit
 scene_dash_admit = _impl.scene_dash_admit
+scene_fill_gradient_admit = _impl.scene_fill_gradient_admit
 scene_linecap_admit = _impl.scene_linecap_admit
 scene_marker_path_admit = _impl.scene_marker_path_admit
 scene_ribbon_color2_classify = _impl.scene_ribbon_color2_classify
@@ -293,6 +294,7 @@ __all__ = [
     "scale_pins_offset",
     "scene_annotation_style_admit",
     "scene_dash_admit",
+    "scene_fill_gradient_admit",
     "scene_linecap_admit",
     "scene_marker_path_admit",
     "scene_ribbon_color2_classify",

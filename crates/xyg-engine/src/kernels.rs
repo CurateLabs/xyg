@@ -1227,6 +1227,56 @@ pub fn scene_tick_anchor(text: &str) -> i32 {
     }
 }
 
+/// Admit Scene fill-gradient stops (ABI 226).
+///
+/// `space` is `mark` or `plot`. `dir` is `down`/`up`/`right`/`left`. Stops are
+/// 2–8 finite `t` in `[0, 1]`, monotone, with CSS that is not `var(`. Empty
+/// and `currentcolor` paint as `mark_color`. Writes `n * 4` RGBA8 bytes.
+/// Returns `1` admitted, `0` reject.
+pub fn scene_fill_gradient_admit(
+    space: &str,
+    dir: &str,
+    t: &[f64],
+    css: &[&str],
+    mark_color: &str,
+    out_rgba: &mut [u8],
+) -> i32 {
+    if space != "mark" && space != "plot" {
+        return 0;
+    }
+    if dir != "down" && dir != "up" && dir != "right" && dir != "left" {
+        return 0;
+    }
+    if t.len() != css.len() || !(2..=8).contains(&t.len()) {
+        return 0;
+    }
+    let needed = t.len() * 4;
+    if out_rgba.len() < needed {
+        return 0;
+    }
+    let mut prev_t = -1.0;
+    for (index, (&stop_t, stop_css)) in t.iter().zip(css.iter()).enumerate() {
+        if !stop_t.is_finite() || stop_t < 0.0 || stop_t > 1.0 || stop_t < prev_t {
+            return 0;
+        }
+        let trimmed = stop_css.trim();
+        let lowered = trimmed.to_lowercase();
+        if lowered.contains("var(") {
+            return 0;
+        }
+        let paint = if lowered == "currentcolor" || trimmed.is_empty() {
+            mark_color
+        } else {
+            trimmed
+        };
+        let rgba = crate::css::color_rgba8(paint, 1.0);
+        let at = index * 4;
+        out_rgba[at..at + 4].copy_from_slice(&rgba);
+        prev_t = stop_t;
+    }
+    1
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -9116,6 +9166,71 @@ mod fuzz {
         assert_eq!(scene_tick_anchor("foo"), -1);
         assert_eq!(scene_tick_anchor("START"), -1);
         assert_eq!(scene_tick_anchor("left"), -1);
+    }
+
+    #[test]
+    fn scene_fill_gradient_admit_matches_host_table() {
+        let mut out = [0u8; 8];
+        assert_eq!(
+            scene_fill_gradient_admit(
+                "mark",
+                "down",
+                &[0.0, 1.0],
+                &["#336699", "#34d399"],
+                "#3987e5",
+                &mut out,
+            ),
+            1
+        );
+        assert_eq!(&out[..4], &crate::css::color_rgba8("#336699", 1.0));
+        assert_eq!(&out[4..], &crate::css::color_rgba8("#34d399", 1.0));
+        assert_eq!(
+            scene_fill_gradient_admit(
+                "plot",
+                "up",
+                &[0.0, 1.0],
+                &["currentcolor", ""],
+                "#3987e5",
+                &mut out,
+            ),
+            1
+        );
+        assert_eq!(&out[..4], &crate::css::color_rgba8("#3987e5", 1.0));
+        assert_eq!(&out[4..], &crate::css::color_rgba8("#3987e5", 1.0));
+        assert_eq!(
+            scene_fill_gradient_admit(
+                "mark",
+                "down",
+                &[0.0, 1.0],
+                &["var(--accent)", "#ffffff"],
+                "#3987e5",
+                &mut out,
+            ),
+            0
+        );
+        assert_eq!(
+            scene_fill_gradient_admit("data", "down", &[0.0, 1.0], &["#336699", "#34d399"], "#3987e5", &mut out),
+            0
+        );
+        assert_eq!(
+            scene_fill_gradient_admit("mark", "diagonal", &[0.0, 1.0], &["#336699", "#34d399"], "#3987e5", &mut out),
+            0
+        );
+        assert_eq!(
+            scene_fill_gradient_admit("mark", "down", &[0.5], &["#336699"], "#3987e5", &mut out),
+            0
+        );
+        assert_eq!(
+            scene_fill_gradient_admit(
+                "mark",
+                "down",
+                &[0.5, 0.25],
+                &["#336699", "#34d399"],
+                "#3987e5",
+                &mut out,
+            ),
+            0
+        );
     }
 
     #[test]

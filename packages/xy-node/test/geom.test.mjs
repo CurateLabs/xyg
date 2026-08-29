@@ -19,6 +19,7 @@ import {
   sceneRibbonColor2Classify,
   sceneTickLabelStrategy,
   sceneTickAnchor,
+  sceneFillGradientAdmit,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -206,6 +207,15 @@ test("sceneTickAnchor matches host table", () => {
   assert.equal(sceneTickAnchor("foo"), null);
   assert.equal(sceneTickAnchor("START"), null);
   assert.equal(sceneTickAnchor("left"), null);
+});
+
+test("sceneFillGradientAdmit matches host table", () => {
+  const admitted = sceneFillGradientAdmit("mark", "down", [0, 1], ["#336699", "#34d399"], "#3987e5");
+  assert.equal(admitted.length, 2);
+  assert.equal(sceneFillGradientAdmit("mark", "down", [0, 1], ["var(--accent)", "#ffffff"], "#3987e5"), null);
+  const current = sceneFillGradientAdmit("plot", "up", [0, 1], ["currentcolor", ""], "#3987e5");
+  assert.equal(current.length, 2);
+  assert.equal(sceneFillGradientAdmit("data", "down", [0, 1], ["#336699", "#34d399"], "#3987e5"), null);
 });
 
 test("sceneRibbonColor2Classify matches host table", () => {

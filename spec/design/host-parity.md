@@ -687,6 +687,11 @@ ABI 225 `xyg_scene_tick_anchor` owns Scene tick-label anchor names so Python
 `center`. Unknown names, including empty text, reject. Hosts still pick
 `tick_label_anchor` vs camelCase keys. ABI 123 layout enums stay a separate
 throw-on-unknown table.
+ABI 226 `xyg_scene_fill_gradient_admit` owns Scene fill-gradient stop admit
+(space/dir, 2–8 monotone `t` in `[0, 1]`, `var(` reject, empty/`currentcolor`
+→ mark color, RGBA8) so Python `_admitted_fill_gradient_from_fill` and Node
+`admitFillGradient` cannot drift. Hosts still coerce fill mappings and parse
+`linear-gradient(` CSS.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1043,7 +1048,8 @@ client must not grow a parallel “JS layout/LOD” product path.
   Scene marker-path admit is ABI 221;   Scene annotation style admit is ABI 222;
   Scene ribbon color2 classify is ABI 223;
   Scene tick-label strategy admit is ABI 224;
-  Scene tick-label anchor admit is ABI 225.
+  Scene tick-label anchor admit is ABI 225;
+  Scene fill-gradient admit is ABI 226.
 
 ---
 

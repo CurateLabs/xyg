@@ -1535,6 +1535,11 @@ ABI 225 `xyg_scene_tick_anchor` owns Scene tick-label anchor names so Python
 `center`. Unknown names, including empty text, reject. Hosts still pick
 `tick_label_anchor` vs camelCase keys. ABI 123 layout enums stay a separate
 throw-on-unknown table.
+ABI 226 `xyg_scene_fill_gradient_admit` owns Scene fill-gradient stop admit
+(space/dir, 2–8 monotone `t` in `[0, 1]`, `var(` reject, empty/`currentcolor`
+→ mark color, RGBA8) so Python `_admitted_fill_gradient_from_fill` and Node
+`admitFillGradient` cannot drift. Hosts still coerce fill mappings and parse
+`linear-gradient(` CSS.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1606,6 +1611,11 @@ ABI 225 `xyg_scene_tick_anchor` owns Scene tick-label anchor names so Python
 `center`. Unknown names, including empty text, reject. Hosts still pick
 `tick_label_anchor` vs camelCase keys. ABI 123 layout enums stay a separate
 throw-on-unknown table.
+ABI 226 `xyg_scene_fill_gradient_admit` owns Scene fill-gradient stop admit
+(space/dir, 2–8 monotone `t` in `[0, 1]`, `var(` reject, empty/`currentcolor`
+→ mark color, RGBA8) so Python `_admitted_fill_gradient_from_fill` and Node
+`admitFillGradient` cannot drift. Hosts still coerce fill mappings and parse
+`linear-gradient(` CSS.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

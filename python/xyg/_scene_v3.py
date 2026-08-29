@@ -2551,33 +2551,28 @@ def _admitted_fill_gradient_from_fill(fill: Any, mark_color: str) -> dict[str, A
     space = spec.get("space")
     direction = spec.get("dir")
     stops = spec.get("stops")
-    if space not in {"mark", "plot"} or direction not in _GRAD_DIR_CODES:
+    if not isinstance(stops, (list, tuple)):
         return None
-    if not isinstance(stops, (list, tuple)) or not 2 <= len(stops) <= 8:
-        return None
-    resolved: list[tuple[float, tuple[int, int, int, int]]] = []
-    prev_t = -1.0
+    ts: list[float] = []
+    css_stops: list[str] = []
     for stop in stops:
         if not isinstance(stop, (list, tuple)) or len(stop) != 2:
             return None
         try:
-            t = float(stop[0])
+            ts.append(float(stop[0]))
         except (TypeError, ValueError):
             return None
-        if not math.isfinite(t) or t < 0.0 or t > 1.0 or t < prev_t:
-            return None
-        css = str(stop[1]).strip()
-        lowered = css.lower()
-        if "var(" in lowered:
-            return None  # #289: unresolved browser tokens stay fail-closed
-        if lowered in {"currentcolor", ""}:
-            css = mark_color
-        try:
-            rgba = _native.css_color_rgba(css, 1.0)
-        except ValueError:
-            return None
-        resolved.append((t, rgba))
-        prev_t = t
+        css_stops.append(str(stop[1]))
+    rgba = _native.scene_fill_gradient_admit(
+        str(space),
+        str(direction),
+        ts,
+        css_stops,
+        mark_color,
+    )
+    if rgba is None:
+        return None
+    resolved = [(ts[i], rgba[i]) for i in range(len(ts))]
     return {"space": space, "dir": direction, "stops": resolved}
 
 

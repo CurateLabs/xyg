@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyF32SafeScale, xyGeometryOffset, xyScalePinsOffset, xySceneDashAdmit, xySceneLinecapAdmit, xyDensityOverlayOpacity, xySceneMarkerPathAdmit, xySceneAnnotationStyleAdmit, xySceneRibbonColor2Classify, xySceneTickLabelStrategy, xySceneTickAnchor, xyArrowGeometry, xyArrowShaftPoints, xyArrowEndDecoration, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyHexbinRing, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyStepArrays, xyMarkerPathScale, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapLut, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityRgbaLinear, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyPayloadVisibleIndices, xyPayloadEvenIndices, xyPayloadErrorbarIndices, xyPayloadSegmentBudget, xyPayloadSampleTargetIndices, xyPaintEffectiveRgba, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyF32SafeScale, xyGeometryOffset, xyScalePinsOffset, xySceneDashAdmit, xySceneLinecapAdmit, xyDensityOverlayOpacity, xySceneMarkerPathAdmit, xySceneAnnotationStyleAdmit, xySceneRibbonColor2Classify, xySceneTickLabelStrategy, xySceneTickAnchor, xySceneFillGradientAdmit, xyArrowGeometry, xyArrowShaftPoints, xyArrowEndDecoration, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyHexbinRing, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyStepArrays, xyMarkerPathScale, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapLut, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityRgbaLinear, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyPayloadVisibleIndices, xyPayloadEvenIndices, xyPayloadErrorbarIndices, xyPayloadSegmentBudget, xyPayloadSampleTargetIndices, xyPaintEffectiveRgba, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -210,6 +210,49 @@ export function sceneTickAnchor(text) {
   if (code === -2) throw new RangeError("invalid scene-tick-anchor request");
   if (code < 0) return null;
   return code;
+}
+
+/** Scene fill-gradient admit (ABI 226). Hosts still coerce fill mappings and parse linear-gradient CSS. */
+export function sceneFillGradientAdmit(space, dir, t, css, markColor) {
+  const spaceBytes = new TextEncoder().encode(String(space ?? ""));
+  const dirBytes = new TextEncoder().encode(String(dir ?? ""));
+  const markBytes = new TextEncoder().encode(String(markColor ?? ""));
+  const stops = asF64Array(t ?? [], "t");
+  const encoded = Array.from(css ?? [], (item) => new TextEncoder().encode(String(item)));
+  const lens = Uint32Array.from(encoded, (item) => item.length);
+  const cssLen = encoded.reduce((sum, item) => sum + item.length, 0);
+  const cssBytes = new Uint8Array(cssLen);
+  let at = 0;
+  for (const item of encoded) {
+    cssBytes.set(item, at);
+    at += item.length;
+  }
+  const out = new Uint8Array(stops.length * 4);
+  const code = Number(
+    xySceneFillGradientAdmit(
+      spaceBytes.length ? u8Ptr(spaceBytes) : 0,
+      BigInt(spaceBytes.length),
+      dirBytes.length ? u8Ptr(dirBytes) : 0,
+      BigInt(dirBytes.length),
+      stops.length ? f64Ptr(stops) : 0,
+      BigInt(stops.length),
+      cssBytes.length ? u8Ptr(cssBytes) : 0,
+      BigInt(cssBytes.length),
+      lens.length ? u32Ptr(lens) : 0,
+      BigInt(lens.length),
+      markBytes.length ? u8Ptr(markBytes) : 0,
+      BigInt(markBytes.length),
+      out.length ? u8Ptr(out) : 0,
+      BigInt(out.length),
+    ),
+  );
+  if (code === -2) throw new RangeError("invalid scene-fill-gradient-admit request");
+  if (code !== 1) return null;
+  const rgba = [];
+  for (let i = 0; i < stops.length; i += 1) {
+    rgba.push(out.subarray(i * 4, i * 4 + 4));
+  }
+  return rgba;
 }
 
 export function geometryOffset(scale, lo, hi) {
