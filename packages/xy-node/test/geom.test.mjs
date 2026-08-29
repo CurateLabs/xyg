@@ -15,6 +15,7 @@ import {
   sceneLinecapAdmit,
   densityOverlayOpacity,
   sceneMarkerPathAdmit,
+  sceneAnnotationStyleAdmit,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -160,6 +161,23 @@ test("sceneMarkerPathAdmit bounds and host coercion", () => {
   assert.equal(sceneMarkerPathAdmit({ contours: [[0, 0]] }), null);
   assert.equal(sceneMarkerPathAdmit({ contours: [] }), null);
   assert.equal(sceneMarkerPathAdmit({ contours: [[0, 0, 0.6, 0]] }), null);
+});
+
+test("sceneAnnotationStyleAdmit matches host allowlist table", () => {
+  assert.equal(sceneAnnotationStyleAdmit("arrow", false, false, "width"), true);
+  assert.equal(sceneAnnotationStyleAdmit("arrow", false, false, "dash"), false);
+  assert.equal(sceneAnnotationStyleAdmit("arrow", false, true, "label_color"), false);
+  assert.equal(sceneAnnotationStyleAdmit("callout", false, false, "width"), true);
+  assert.equal(sceneAnnotationStyleAdmit("text", false, false, "width"), false);
+  assert.equal(sceneAnnotationStyleAdmit("text", true, true, "width"), false);
+  assert.equal(sceneAnnotationStyleAdmit("text", true, true, "label_background"), true);
+  assert.equal(sceneAnnotationStyleAdmit("rule", false, false, "dash"), true);
+  assert.equal(sceneAnnotationStyleAdmit("rule", false, false, "label_color"), false);
+  assert.equal(sceneAnnotationStyleAdmit("rule", false, true, "label_color"), true);
+  assert.equal(sceneAnnotationStyleAdmit("band", false, false, "label_color"), false);
+  assert.equal(sceneAnnotationStyleAdmit("band", false, true, "label_color"), true);
+  assert.equal(sceneAnnotationStyleAdmit("marker", false, false, "stroke_width"), true);
+  assert.equal(sceneAnnotationStyleAdmit("foo", false, true, "width"), false);
 });
 
 test("roundedRectPoly zero radii is four corners", () => {

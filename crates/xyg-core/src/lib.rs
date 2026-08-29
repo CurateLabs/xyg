@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 221;
+pub const ABI_VERSION: u32 = 222;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4755,6 +4755,58 @@ pub unsafe extern "C" fn xyg_scene_marker_path_admit(
             std::slice::from_raw_parts(lengths, n_contours)
         };
         i32::from(kernels::scene_marker_path_admit(values, lengths))
+    })
+}
+
+/// Scene annotation style-key admit (ABI 222).
+///
+/// `kind` and `key` are UTF-8. `wrapped`/`labelled` are nonzero-true.
+/// Returns `1` allowed, `0` reject, `-2` FFI. Empty native pointers are
+/// null/`0`. Hosts still skip markup/typography/rotation and raise error
+/// text.
+///
+/// # Safety
+/// `kind` must address `kind_len` readable bytes when `kind_len` is
+/// nonzero. `key` must address `key_len` readable bytes when `key_len` is
+/// nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_annotation_style_admit(
+    kind: *const u8,
+    kind_len: usize,
+    wrapped: u8,
+    labelled: u8,
+    key: *const u8,
+    key_len: usize,
+) -> i32 {
+    if kind_len > 0 && kind.is_null() {
+        return -2;
+    }
+    if key_len > 0 && key.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let kind_bytes = if kind_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(kind, kind_len)
+        };
+        let key_bytes = if key_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(key, key_len)
+        };
+        let Ok(kind) = std::str::from_utf8(kind_bytes) else {
+            return -2;
+        };
+        let Ok(key) = std::str::from_utf8(key_bytes) else {
+            return -2;
+        };
+        i32::from(kernels::scene_annotation_style_admit(
+            kind,
+            wrapped != 0,
+            labelled != 0,
+            key,
+        ))
     })
 }
 

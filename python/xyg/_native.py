@@ -1067,6 +1067,34 @@ def scene_marker_path_admit(
     return code == 1
 
 
+def scene_annotation_style_admit(
+    kind: str,
+    wrapped: bool = False,
+    labelled: bool = False,
+    key: str = "",
+) -> bool:
+    """Scene annotation style-key admit via ``xyg_scene_annotation_style_admit`` (ABI 222).
+
+    Empty native pointers are ``0``. Hosts still skip markup/typography/rotation
+    and raise error text.
+    """
+    kind_b = str(kind).encode("utf-8")
+    key_b = str(key).encode("utf-8")
+    code = int(
+        _lib.xyg_scene_annotation_style_admit(
+            kind_b if kind_b else 0,
+            len(kind_b),
+            1 if wrapped else 0,
+            1 if labelled else 0,
+            key_b if key_b else 0,
+            len(key_b),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-annotation-style-admit request")
+    return code == 1
+
+
 def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
     """f32-safe encode scale for offset-encoded geometry (ABI 208, §19)."""
     out = ctypes.c_double()

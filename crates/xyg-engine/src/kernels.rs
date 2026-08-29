@@ -1063,6 +1063,71 @@ pub fn scene_marker_path_admit(values: &[f64], lengths: &[u32]) -> bool {
     at == values.len()
 }
 
+/// Scene annotation style-key admit (ABI 222).
+///
+/// Matches Python `_annotation_allowed_style` / Node `annotationAllowedStyle`:
+/// wrapped returns early with label chrome; arrow/callout/text return before
+/// labelled extras; labelled `rule`/`band`/`marker` add label keys.
+pub fn scene_annotation_style_admit(
+    kind: &str,
+    wrapped: bool,
+    labelled: bool,
+    key: &str,
+) -> bool {
+    if wrapped {
+        return matches!(
+            key,
+            "color"
+                | "opacity"
+                | "label_background"
+                | "label_border_color"
+                | "label_border_width"
+        );
+    }
+    match kind {
+        "arrow" => return matches!(key, "color" | "opacity" | "width"),
+        "callout" => {
+            return matches!(
+                key,
+                "color"
+                    | "opacity"
+                    | "width"
+                    | "label_background"
+                    | "label_border_color"
+                    | "label_border_width"
+            );
+        }
+        "text" => {
+            return matches!(
+                key,
+                "color"
+                    | "opacity"
+                    | "label_background"
+                    | "label_border_color"
+                    | "label_border_width"
+            );
+        }
+        _ => {}
+    }
+    let mut allowed = matches!(key, "color" | "opacity");
+    if kind == "rule" {
+        allowed |= matches!(key, "width" | "dash" | "linecap");
+    } else if kind == "marker" {
+        allowed |= matches!(key, "stroke_color" | "stroke_width");
+    }
+    if labelled && matches!(kind, "rule" | "band" | "marker") {
+        allowed |= matches!(
+            key,
+            "label_color"
+                | "label_opacity"
+                | "label_background"
+                | "label_border_color"
+                | "label_border_width"
+        );
+    }
+    allowed
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -8835,6 +8900,40 @@ mod fuzz {
         assert!(!scene_marker_path_admit(&[0.0, 0.0, 0.5, 0.0], &[4, 0]));
         let too_many = vec![0.0; 194];
         assert!(!scene_marker_path_admit(&too_many, &[194]));
+    }
+
+    #[test]
+    fn scene_annotation_style_admit_matches_host_table() {
+        assert!(scene_annotation_style_admit("arrow", false, false, "width"));
+        assert!(!scene_annotation_style_admit("arrow", false, false, "dash"));
+        assert!(!scene_annotation_style_admit(
+            "arrow", false, true, "label_color"
+        ));
+        assert!(scene_annotation_style_admit("callout", false, false, "width"));
+        assert!(!scene_annotation_style_admit("text", false, false, "width"));
+        assert!(!scene_annotation_style_admit("text", true, true, "width"));
+        assert!(scene_annotation_style_admit(
+            "text", true, true, "label_background"
+        ));
+        assert!(scene_annotation_style_admit("rule", false, false, "dash"));
+        assert!(!scene_annotation_style_admit(
+            "rule", false, false, "label_color"
+        ));
+        assert!(scene_annotation_style_admit(
+            "rule", false, true, "label_color"
+        ));
+        assert!(!scene_annotation_style_admit(
+            "band", false, false, "label_color"
+        ));
+        assert!(scene_annotation_style_admit(
+            "band", false, true, "label_color"
+        ));
+        assert!(scene_annotation_style_admit(
+            "marker", false, false, "stroke_width"
+        ));
+        assert!(!scene_annotation_style_admit("foo", false, true, "width"));
+        assert!(scene_annotation_style_admit("", false, false, "color"));
+        assert!(!scene_annotation_style_admit("rule", false, false, ""));
     }
 
     #[test]
