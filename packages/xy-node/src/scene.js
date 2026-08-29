@@ -5440,10 +5440,6 @@ function perItemChannelNames(trace) {
   if (channels != null && typeof channels === "object" && !Array.isArray(channels) && !ArrayBuffer.isView(channels)) {
     names.push(...Object.keys(channels));
   }
-  const style = trace.style ?? {};
-  if (style.color_channel != null && !names.includes("color")) names.push("color");
-  if (style.stroke_channel != null && !names.includes("stroke")) names.push("stroke");
-  if (style.size_channel != null && !names.includes("size")) names.push("size");
   return names;
 }
 

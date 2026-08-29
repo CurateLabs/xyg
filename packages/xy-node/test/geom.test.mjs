@@ -432,6 +432,10 @@ test("scatterPaintChannelNames uses color_ch only like Python", () => {
     scatterPaintChannelNames({ color: { mode: "continuous", values: [0, 1] } }),
     [],
   );
+  assert.deepEqual(
+    scatterPaintChannelNames({ style: { color_channel: { mode: "continuous" } } }),
+    [],
+  );
 });
 
 test("scatterHasNonConstantColor uses color_ch only like Python", () => {
