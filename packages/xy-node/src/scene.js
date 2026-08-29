@@ -5508,9 +5508,14 @@ function resolveDensityBinColors(trace) {
   return null;
 }
 
-function rectExtraFlags(style, kind, polar) {
-  const gradientFail =
-    style.fill != null && typeof style.fill === "object" && admitFillGradient({ style }) == null;
+export function rectExtraFlags(style, kind, polar) {
+  const fill = style.fill;
+  const fillIsMapping =
+    fill != null
+    && typeof fill === "object"
+    && !Array.isArray(fill)
+    && !ArrayBuffer.isView(fill);
+  const gradientFail = fillIsMapping && admitFillGradient({ style }) == null;
   const radius = style.corner_radius ?? 0;
   const radiusSeq = Array.isArray(radius);
   const values = radiusSeq ? radius.map(Number) : [Number(radius)];
