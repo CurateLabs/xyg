@@ -61,6 +61,7 @@ import {
   packXyTaRgba,
   packXyTaRgbaGrid,
   packXyTcFillOpacity,
+  packXyTcJoinedFill,
   packXyTcLineColor,
   packXyTcLineOpacity,
   packXyTcLineWidth,
@@ -457,6 +458,14 @@ test("packXyTcFillOpacity uses fill_opacity only like Python", () => {
   assert.equal(packXyTcFillOpacity({ fill_opacity: 0.5 }, scatter), 0.5);
   assert.equal(packXyTcFillOpacity({ fill_opacity: 0.5 }, line), 1);
   assert.equal(packXyTcFillOpacity({ fill_opacity: 0.5 }, 0), 1);
+});
+
+test("packXyTcJoinedFill uses joined_fill only like Python", () => {
+  assert.equal(packXyTcJoinedFill({ kind: "scatter", style: { joined_fill: true } }), 0);
+  assert.equal(packXyTcJoinedFill({ kind: "triangle_mesh", style: { joinedFill: true } }), 0);
+  assert.equal(packXyTcJoinedFill({ kind: "triangle_mesh", style: { joined_fill: false } }), 0);
+  assert.equal(packXyTcJoinedFill({ kind: "triangle_mesh", style: {} }), 0);
+  assert.equal(packXyTcJoinedFill({ kind: "triangle_mesh", style: { joined_fill: true } }), 1 << 25);
 });
 
 test("packXyTcLineColor uses line_color only like Python", () => {
