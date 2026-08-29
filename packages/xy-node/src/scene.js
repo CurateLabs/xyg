@@ -5651,14 +5651,19 @@ export function itemWidths(trace, n) {
   return packF64Le(new Float64Array(n).fill(width));
 }
 
+export function scatterPointStrokeRgba8(trace, fills) {
+  const n = scatterCount(trace);
+  const packed = itemStrokeRgba8(trace, fills, n);
+  if (packed == null) return null;
+  const strokeCh = trace.stroke_ch;
+  if (strokeCh != null && strokeCh.mode === "match_fill") return packed;
+  return itemApplyOpacity(trace, packed, n);
+}
+
 function scatterPointPaints(trace) {
   const n = scatterCount(trace);
   const packedFills = itemFillRgba8(trace, n);
-  const strokeCh = trace.stroke_ch ?? trace.strokeChannel;
-  let packedStrokes = itemStrokeRgba8(trace, packedFills, n);
-  if (packedStrokes != null && !(strokeCh != null && strokeCh.mode === "match_fill")) {
-    packedStrokes = itemApplyOpacity(trace, packedStrokes, n);
-  }
+  const packedStrokes = scatterPointStrokeRgba8(trace, packedFills);
   const packedWidths = itemWidths(trace, n);
   if (packedFills == null || packedStrokes == null || packedWidths == null) return null;
   return { fills: packedFills, strokes: packedStrokes, widths: packedWidths };
