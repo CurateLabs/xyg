@@ -46,6 +46,7 @@ export {
   sceneGradientDir,
   sceneLinearGradientPrefix,
   sceneGradientSpace,
+  sceneHeatmapExtentAdmit,
   sceneHexbinPitchAdmit,
   sceneHexbinReduceAdmit,
   sceneCurveClassify,

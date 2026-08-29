@@ -1413,6 +1413,18 @@ def scene_kind_class(text: str | None = None) -> int:
     return code
 
 
+def scene_heatmap_extent_admit(x0: float, x1: float, y0: float, y1: float) -> bool:
+    """Scene heatmap cell-extent admit via ``xyg_scene_heatmap_extent_admit`` (ABI 238).
+
+    Length==2 and field picking stay host. Compile-path
+    ``heatmap_extent_columns`` stays extra.
+    """
+    code = int(_lib.xyg_scene_heatmap_extent_admit(float(x0), float(x1), float(y0), float(y1)))
+    if code == -2:
+        raise ValueError("invalid scene-heatmap-extent-admit request")
+    return code == 1
+
+
 def scene_hexbin_pitch_admit(dx: float, dy: float) -> bool:
     """Scene hexbin cell-pitch admit via ``xyg_scene_hexbin_pitch_admit`` (ABI 237).
 
