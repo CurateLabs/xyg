@@ -443,6 +443,10 @@ test("scatterHasNonConstantColor uses color_ch only like Python", () => {
     scatterHasNonConstantColor({ color: { mode: "continuous", values: [0, 1] } }),
     false,
   );
+  assert.equal(
+    scatterHasNonConstantColor({ style: { color_channel: { mode: "continuous" } } }),
+    false,
+  );
 });
 
 test("resolveDensityBinColors uses color_ch only like Python", () => {
