@@ -2388,9 +2388,9 @@ def _emit_segments(
 
     n = len(x0)
     intrinsic = _trace_paint_rgba(t, "color", n, color, read)
-    colors = np.rint(
-        _paint.effective_rgba(intrinsic, t, read, component="stroke", default_opacity=1.0) * 255.0
-    ).astype(np.uint8)
+    colors = _rgba8(
+        _paint.effective_rgba(intrinsic, t, read, component="stroke", default_opacity=1.0)
+    )
     widths = _paint.style_values(t, "width", n, read, float(style.get("width", 1.2)))
     if polar is None:
         px0, py0, px1, py1 = sx(x0), sy(y0), sx(x1), sy(y1)
