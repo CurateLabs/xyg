@@ -5476,16 +5476,6 @@ function scatterHasNonConstantColor(trace) {
   return color.mode !== "constant" || (color.color == null && color.constant == null);
 }
 
-function scatterHasDroppedPerItem(trace) {
-  const style = trace.style ?? {};
-  return Boolean(
-    style.size_channel
-    || style.stroke_channel
-    || trace.size_ch
-    || trace.stroke_ch
-  );
-}
-
 function scatterUsesDensity(trace) {
   if ((trace.kind ?? "scatter") !== "scatter") return false;
   return shouldUseDensity(trace.x?.length ?? 0, {
@@ -5723,17 +5713,8 @@ function meshJoinedFill(trace) {
   return Boolean(style.joined_fill || style.joinedFill);
 }
 
-function meshHasPerItem(trace) {
-  const style = trace.style ?? {};
-  const channels = trace.style_channels ?? trace.styleChannels ?? {};
-  return Boolean(
-    scatterHasNonConstantColor(trace)
-    || scatterHasDroppedPerItem(trace)
-    || channels.opacity
-    || channels.stroke_width
-    || style.opacity_channel
-    || style.stroke_width_channel
-  );
+export function meshHasPerItem(trace) {
+  return perItemChannelNames(trace).length > 0;
 }
 
 function meshPacksPaintPlane(trace) {
