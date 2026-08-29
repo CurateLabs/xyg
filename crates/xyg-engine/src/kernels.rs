@@ -1662,6 +1662,21 @@ pub fn scene_heatmap_colormap_admit(
     )
 }
 
+/// Admit Scene heatmap lattice shape (ABI 240).
+///
+/// Both `rows` and `cols` finite, integer-valued, and `>= 1` return `1`.
+/// Length==2 and field picking stay host. XYTA integer coerce stays extra.
+pub fn scene_heatmap_shape_admit(rows: f64, cols: f64) -> i32 {
+    i32::from(
+        rows.is_finite()
+            && cols.is_finite()
+            && rows.fract() == 0.0
+            && cols.fract() == 0.0
+            && rows >= 1.0
+            && cols >= 1.0,
+    )
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -9888,6 +9903,16 @@ mod fuzz {
         assert_eq!(scene_heatmap_colormap_admit(0, 0, 1, 0), 1);
         assert_eq!(scene_heatmap_colormap_admit(0, 0, 0, 1), 1);
         assert_eq!(scene_heatmap_colormap_admit(1, 1, 1, 1), 1);
+    }
+
+    #[test]
+    fn scene_heatmap_shape_admit_matches_host_table() {
+        assert_eq!(scene_heatmap_shape_admit(1.0, 2.0), 1);
+        assert_eq!(scene_heatmap_shape_admit(0.0, 2.0), 0);
+        assert_eq!(scene_heatmap_shape_admit(1.0, 0.0), 0);
+        assert_eq!(scene_heatmap_shape_admit(1.5, 2.0), 0);
+        assert_eq!(scene_heatmap_shape_admit(1.0, f64::NAN), 0);
+        assert_eq!(scene_heatmap_shape_admit(f64::INFINITY, 2.0), 0);
     }
 
     #[test]

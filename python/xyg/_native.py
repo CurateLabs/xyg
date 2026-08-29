@@ -1448,6 +1448,17 @@ def scene_heatmap_extent_admit(x0: float, x1: float, y0: float, y1: float) -> bo
     return code == 1
 
 
+def scene_heatmap_shape_admit(rows: float, cols: float) -> bool:
+    """Scene heatmap lattice-shape admit via ``xyg_scene_heatmap_shape_admit`` (ABI 240).
+
+    Length==2 stays host. XYTA integer coerce stays extra.
+    """
+    code = int(_lib.xyg_scene_heatmap_shape_admit(float(rows), float(cols)))
+    if code == -2:
+        raise ValueError("invalid scene-heatmap-shape-admit request")
+    return code == 1
+
+
 def scene_hexbin_pitch_admit(dx: float, dy: float) -> bool:
     """Scene hexbin cell-pitch admit via ``xyg_scene_hexbin_pitch_admit`` (ABI 237).
 

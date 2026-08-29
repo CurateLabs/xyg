@@ -64,6 +64,7 @@ scene_gradient_dir = _impl.scene_gradient_dir
 scene_gradient_space = _impl.scene_gradient_space
 scene_heatmap_colormap_admit = _impl.scene_heatmap_colormap_admit
 scene_heatmap_extent_admit = _impl.scene_heatmap_extent_admit
+scene_heatmap_shape_admit = _impl.scene_heatmap_shape_admit
 scene_hexbin_pitch_admit = _impl.scene_hexbin_pitch_admit
 scene_hexbin_reduce_admit = _impl.scene_hexbin_reduce_admit
 scene_kind_admit = _impl.scene_kind_admit
@@ -313,6 +314,7 @@ __all__ = [
     "scene_gradient_space",
     "scene_heatmap_colormap_admit",
     "scene_heatmap_extent_admit",
+    "scene_heatmap_shape_admit",
     "scene_hexbin_pitch_admit",
     "scene_hexbin_reduce_admit",
     "scene_kind_admit",

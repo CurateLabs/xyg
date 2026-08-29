@@ -751,6 +751,10 @@ eligibility (OR of already-coerced truecolor / colormap / rgba_grid / rgba
 flags) so Python `_heatmap_uses_colormap` and Node `figureTraceSupport`
 cannot drift. Field picking and truthy coercion stay host. Kind checks
 stay host.
+ABI 240 `xyg_scene_heatmap_shape_admit` owns Scene heatmap lattice-shape
+admit (finite integer-valued `rows`/`cols` `>= 1`) so Python `_heatmap_shape`
+and Node XYEP pack cannot drift. Length==2 stays host. XYTA integer coerce
+stays extra. Closes Python `int()` truncation vs Node `Number.isInteger`.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1122,6 +1126,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Scene hexbin cell-pitch admit is ABI 237.
   Scene heatmap cell-extent admit is ABI 238.
   Scene heatmap colormap eligibility is ABI 239.
+  Scene heatmap lattice-shape admit is ABI 240.
 
 ---
 

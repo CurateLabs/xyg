@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 239;
+pub const ABI_VERSION: u32 = 240;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5490,6 +5490,16 @@ pub extern "C" fn xyg_scene_heatmap_colormap_admit(
     ffi_guard(-2, || {
         kernels::scene_heatmap_colormap_admit(truecolor, has_colormap, has_rgba_grid, has_rgba)
     })
+}
+
+/// Scene heatmap lattice-shape admit (ABI 240).
+///
+/// Finite integer-valued `rows`/`cols` `>= 1` return `1`. Fractional,
+/// non-finite, and non-positive return `0`. `-2` FFI. Length==2 stays host.
+/// XYTA integer coerce stays extra.
+#[no_mangle]
+pub extern "C" fn xyg_scene_heatmap_shape_admit(rows: f64, cols: f64) -> i32 {
+    ffi_guard(-2, || kernels::scene_heatmap_shape_admit(rows, cols))
 }
 
 /// Annotation arrow connectionstyle geometry (ABI 217).
