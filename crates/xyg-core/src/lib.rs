@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 252;
+pub const ABI_VERSION: u32 = 253;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5899,6 +5899,21 @@ pub extern "C" fn xyg_scene_constant_color_admit(
             scatter_density,
             packs_paint_plane,
         )
+    })
+}
+
+/// Scene hidden-or-per-item support admit (ABI 253).
+///
+/// `1` when hidden, or per-item channels that density color aggregation
+/// does not own. Nonzero flags are true. `-2` FFI. Field picking stays host.
+#[no_mangle]
+pub extern "C" fn xyg_scene_hidden_or_per_item_admit(
+    hidden: i32,
+    has_per_item: i32,
+    density_aggregates: i32,
+) -> i32 {
+    ffi_guard(-2, || {
+        kernels::scene_hidden_or_per_item_admit(hidden, has_per_item, density_aggregates)
     })
 }
 

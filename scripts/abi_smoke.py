@@ -370,6 +370,12 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         ctypes.c_int32,
     ]
+    lib.xyg_scene_hidden_or_per_item_admit.restype = ctypes.c_int32
+    lib.xyg_scene_hidden_or_per_item_admit.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+    ]
     lib.xyg_clip_quantize_u8.restype = ctypes.c_int32
     lib.xyg_clip_quantize_u8.argtypes = [F64P, ctypes.c_size_t, U8P, ctypes.c_size_t]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
@@ -3024,6 +3030,18 @@ def main() -> None:
     ok(
         lib.xyg_scene_constant_color_admit(1, 0, 0, 0) == 0,
         "scene_constant_color_admit fail",
+    )
+    ok(
+        lib.xyg_scene_hidden_or_per_item_admit(0, 0, 0) == 0,
+        "scene_hidden_or_per_item_admit none",
+    )
+    ok(
+        lib.xyg_scene_hidden_or_per_item_admit(0, 1, 1) == 0,
+        "scene_hidden_or_per_item_admit density",
+    )
+    ok(
+        lib.xyg_scene_hidden_or_per_item_admit(0, 1, 0) == 1,
+        "scene_hidden_or_per_item_admit per-item",
     )
     ok(
         lib.xyg_clip_quantize_u8(null_f64, 0, null_u8, 0) == 1,

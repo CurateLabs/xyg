@@ -23,6 +23,7 @@ import {
   sceneAnnotationStyleAdmit,
   sceneArraysEqual,
   sceneConstantColorAdmit,
+  sceneHiddenOrPerItemAdmit,
   sceneRibbonColor2Classify,
   sceneScatterPaintChannelAdmit,
   sceneTickLabelStrategy,
@@ -479,6 +480,15 @@ test("sceneConstantColorAdmit matches host table", () => {
   assert.equal(sceneConstantColorAdmit(true, false, false, true), 1);
   assert.equal(sceneConstantColorAdmit(true, false, false, false), 0);
   assert.equal(sceneConstantColorAdmit(true, true, true, true), 2);
+});
+
+test("sceneHiddenOrPerItemAdmit matches host table", () => {
+  assert.equal(sceneHiddenOrPerItemAdmit(false, false, false), false);
+  assert.equal(sceneHiddenOrPerItemAdmit(true, false, false), true);
+  assert.equal(sceneHiddenOrPerItemAdmit(false, true, false), true);
+  assert.equal(sceneHiddenOrPerItemAdmit(false, true, true), false);
+  assert.equal(sceneHiddenOrPerItemAdmit(true, true, true), true);
+  assert.equal(sceneHiddenOrPerItemAdmit(false, false, true), false);
 });
 
 test("quantizeUnitU8 matches normalize then clip-quantize", () => {
