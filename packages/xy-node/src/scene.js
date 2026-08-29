@@ -5425,7 +5425,7 @@ function packAnnotationEnvelope({ texts, attached, arrows, callouts, wrapped }) 
 
 function perItemChannelNames(trace) {
   const names = [];
-  const color = trace.color_ch ?? trace.colorChannel ?? trace.color;
+  const color = trace.color_ch ?? trace.colorChannel;
   if (color != null && typeof color === "object" && color.mode !== "constant") names.push("color");
   const stroke = trace.stroke_ch ?? trace.strokeChannel;
   if (
