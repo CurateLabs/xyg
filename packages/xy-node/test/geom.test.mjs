@@ -10,6 +10,7 @@ import {
   ribbonEdge,
   ribbonPolygon,
   roundedRectPoly,
+  stepArrays,
 } from "../src/index.js";
 
 test("geometryOffset pins log family and nonfinite to zero", () => {
@@ -54,6 +55,22 @@ test("curveFlatten keeps knots and 15 interiors per span", () => {
   assert.equal(y[16], 1);
   assert.equal(x[64], 4);
   assert.equal(y[64], 1.5);
+});
+
+test("stepArrays expands pre mid and post vertices", () => {
+  const pre = stepArrays([0, 1, 2], [10, 20, 30], "pre");
+  assert.deepEqual([...pre.x], [0, 0, 1, 1, 2]);
+  assert.deepEqual([...pre.y], [10, 20, 20, 30, 30]);
+  const mid = stepArrays([0, 1, 2], [10, 20, 30], "mid");
+  assert.deepEqual([...mid.x], [0, 0.5, 0.5, 1, 1.5, 1.5, 2]);
+  assert.deepEqual([...mid.y], [10, 10, 20, 20, 20, 30, 30]);
+  const post = stepArrays([0, 1, 2], [10, 20, 30], "post");
+  assert.deepEqual([...post.x], [0, 1, 1, 2, 2]);
+  assert.deepEqual([...post.y], [10, 10, 20, 20, 30]);
+  const identity = stepArrays([7], [9], "pre");
+  assert.deepEqual([...identity.x], [7]);
+  assert.deepEqual([...identity.y], [9]);
+  assert.throws(() => stepArrays([0, 1], [10], "post"), /equal length/);
 });
 
 test("roundedRectPoly zero radii is four corners", () => {

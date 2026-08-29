@@ -1526,22 +1526,14 @@ def _curve_path(
 
 
 def _step_arrays(xv: np.ndarray, yv: np.ndarray, where: str) -> tuple[np.ndarray, np.ndarray]:
-    if len(xv) < 2:
-        return xv, yv
-    xs = [float(xv[0])]
-    ys = [float(yv[0])]
-    for i in range(1, len(xv)):
-        if where == "pre":
-            xs.extend((xv[i - 1], xv[i]))
-            ys.extend((yv[i], yv[i]))
-        elif where == "mid":
-            mid = (xv[i - 1] + xv[i]) * 0.5
-            xs.extend((mid, mid, xv[i]))
-            ys.extend((yv[i - 1], yv[i], yv[i]))
-        else:
-            xs.extend((xv[i], xv[i]))
-            ys.extend((yv[i - 1], yv[i]))
-    return np.asarray(xs), np.asarray(ys)
+    """Expand compact vertices into a step polyline via ABI 210.
+
+    Unknown ``where`` values keep the historical else=``post`` mapping.
+    """
+    mode = 1 if where == "pre" else 2 if where == "mid" else 3
+    return _native.step_arrays(
+        np.asarray(xv, dtype=np.float64), np.asarray(yv, dtype=np.float64), mode
+    )
 
 
 _SYMBOL_BUILDERS = {

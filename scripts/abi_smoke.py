@@ -715,6 +715,16 @@ def load() -> ctypes.CDLL:
         F64P,
         ctypes.c_size_t,
     ]
+    lib.xyg_step_arrays.restype = ctypes.c_size_t
+    lib.xyg_step_arrays.argtypes = [
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_uint8,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_rounded_rect_poly.restype = ctypes.c_size_t
     lib.xyg_rounded_rect_poly.argtypes = [
         ctypes.c_double,
@@ -3254,6 +3264,49 @@ def main() -> None:
         )
         == size_max,
         "polar wedge overcap",
+    )
+    step_x = array("d", [0.0, 1.0, 2.0])
+    step_y = array("d", [10.0, 20.0, 30.0])
+    step_n = lib.xyg_step_arrays(
+        _ptr(step_x, ctypes.c_double),
+        _ptr(step_y, ctypes.c_double),
+        3,
+        1,
+        null_f64,
+        null_f64,
+        0,
+    )
+    step_ox = array("d", [0.0]) * 8
+    step_oy = array("d", [0.0]) * 8
+    step_filled = lib.xyg_step_arrays(
+        _ptr(step_x, ctypes.c_double),
+        _ptr(step_y, ctypes.c_double),
+        3,
+        1,
+        _ptr(step_ox, ctypes.c_double),
+        _ptr(step_oy, ctypes.c_double),
+        8,
+    )
+    ok(
+        step_n == 5
+        and step_filled == 5
+        and abs(step_ox[0] - 0.0) < 1e-15
+        and abs(step_oy[1] - 20.0) < 1e-15
+        and abs(step_ox[4] - 2.0) < 1e-15,
+        "step arrays pre expand",
+    )
+    ok(
+        lib.xyg_step_arrays(
+            _ptr(step_x, ctypes.c_double),
+            _ptr(step_y, ctypes.c_double),
+            3,
+            0,
+            null_f64,
+            null_f64,
+            0,
+        )
+        == size_max,
+        "step arrays invalid mode",
     )
     polar_small = array("d", [0.0]) * 23
     polar_small_n = lib.xyg_polar_layout(

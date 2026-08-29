@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyF32SafeScale, xyGeometryOffset, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapLut, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityRgbaLinear, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyPayloadVisibleIndices, xyPayloadEvenIndices, xyPayloadSampleTargetIndices, xyPaintEffectiveRgba, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyF32SafeScale, xyGeometryOffset, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyStepArrays, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapLut, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityRgbaLinear, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyPayloadVisibleIndices, xyPayloadEvenIndices, xyPayloadSampleTargetIndices, xyPaintEffectiveRgba, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -522,6 +522,54 @@ export function curveFlatten(x, y, bezierSteps = 16) {
     "xyg_curve_flatten",
   );
   return { x: outX.subarray(0, written), y: outY.subarray(0, written) };
+}
+
+const USIZE_MAX_64 = (1n << 64n) - 1n;
+
+function stepMode(where) {
+  if (where === "pre" || where === 1) return 1;
+  if (where === "mid" || where === 2) return 2;
+  if (where === "post" || where === 3) return 3;
+  if (typeof where === "string") return 3;
+  throw new RangeError("stepArrays where must be pre, mid, or post");
+}
+
+/** Expand compact vertices into a step polyline (ABI 210). */
+export function stepArrays(x, y, where = "post") {
+  const xv = asF64Array(x);
+  const yv = asF64Array(y);
+  if (xv.length !== yv.length) {
+    throw new Error("stepArrays x and y must have equal length");
+  }
+  const mode = stepMode(where);
+  const n = xv.length;
+  const probed = xyStepArrays(
+    n ? f64Ptr(xv) : 0,
+    n ? f64Ptr(yv) : 0,
+    BigInt(n),
+    mode,
+    0,
+    0,
+    0,
+  );
+  if (probed === USIZE_MAX_64) throw new RangeError("invalid step-arrays request");
+  const count = Number(probed);
+  if (count === 0) return { x: new Float64Array(0), y: new Float64Array(0) };
+  const outX = new Float64Array(count);
+  const outY = new Float64Array(count);
+  const written = xyStepArrays(
+    n ? f64Ptr(xv) : 0,
+    n ? f64Ptr(yv) : 0,
+    BigInt(n),
+    mode,
+    f64Ptr(outX),
+    f64Ptr(outY),
+    count,
+  );
+  if (written === USIZE_MAX_64 || Number(written) !== count) {
+    throw new RangeError("invalid step-arrays request");
+  }
+  return { x: outX, y: outY };
 }
 
 /** CW rounded-rect outline with independent tip/base radii. */

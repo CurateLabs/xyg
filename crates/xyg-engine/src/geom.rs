@@ -1,9 +1,10 @@
 //! Compatibility geometry helpers (M2 #279 / ABI 121).
 //!
-//! One cubic, one Fritsch–Carlson tangent construction, and one rounded-rect
-//! tessellation shared by Scene ribbon expansion and the host SVG/raster
-//! fallbacks. Hosts still map through their scale objects; this module owns
-//! the coordinate-free flattening so Python and Node cannot drift.
+//! One cubic, one Fritsch–Carlson tangent construction, one rounded-rect
+//! tessellation, and one step/stairs expand shared by Scene ribbon expansion
+//! and the host SVG/raster fallbacks. Hosts still map through their scale
+//! objects; this module owns the coordinate-free flattening so Python and Node
+//! cannot drift.
 
 use std::collections::{BTreeSet, HashMap};
 
@@ -216,6 +217,97 @@ pub fn curve_flatten(
         push(p3x, p3y)?;
     }
     Some(written)
+}
+
+/// Authored step/stairs mode: `1` pre, `2` mid, `3` post (Scene `step_mode`).
+pub const STEP_PRE: u8 = 1;
+pub const STEP_MID: u8 = 2;
+pub const STEP_POST: u8 = 3;
+
+/// Expanded vertex count for compact length `n`. `n < 2` is identity.
+pub fn step_arrays_len(n: usize, mode: u8) -> Option<usize> {
+    if n < 2 {
+        return match mode {
+            STEP_PRE | STEP_MID | STEP_POST => Some(n),
+            _ => None,
+        };
+    }
+    match mode {
+        STEP_PRE | STEP_POST => n.checked_mul(2)?.checked_sub(1),
+        STEP_MID => n.checked_mul(3)?.checked_sub(2),
+        _ => None,
+    }
+}
+
+/// Expand compact `(x, y)` vertices into a step polyline (ABI 210).
+///
+/// Matches compatibility `_svg._step_arrays` / ChartView `_stepArrays`:
+/// pre holds the new y at the previous x, mid transitions at the midpoint,
+/// post holds the previous y at the new x. Empty `out_x`/`out_y` is a size
+/// probe. Length mismatch or an unknown mode returns `None`.
+pub fn step_arrays(
+    x: &[f64],
+    y: &[f64],
+    mode: u8,
+    out_x: &mut [f64],
+    out_y: &mut [f64],
+) -> Option<usize> {
+    if x.len() != y.len() {
+        return None;
+    }
+    let n = x.len();
+    let need = step_arrays_len(n, mode)?;
+    if out_x.is_empty() && out_y.is_empty() {
+        return Some(need);
+    }
+    if out_x.len() < need || out_y.len() < need {
+        return None;
+    }
+    if n < 2 {
+        if n == 1 {
+            out_x[0] = x[0];
+            out_y[0] = y[0];
+        }
+        return Some(n);
+    }
+    out_x[0] = x[0];
+    out_y[0] = y[0];
+    let mut written = 1usize;
+    for i in 1..n {
+        match mode {
+            STEP_PRE => {
+                out_x[written] = x[i - 1];
+                out_y[written] = y[i];
+                written += 1;
+                out_x[written] = x[i];
+                out_y[written] = y[i];
+                written += 1;
+            }
+            STEP_MID => {
+                let mid = (x[i - 1] + x[i]) * 0.5;
+                out_x[written] = mid;
+                out_y[written] = y[i - 1];
+                written += 1;
+                out_x[written] = mid;
+                out_y[written] = y[i];
+                written += 1;
+                out_x[written] = x[i];
+                out_y[written] = y[i];
+                written += 1;
+            }
+            STEP_POST => {
+                out_x[written] = x[i];
+                out_y[written] = y[i - 1];
+                written += 1;
+                out_x[written] = x[i];
+                out_y[written] = y[i];
+                written += 1;
+            }
+            _ => return None,
+        }
+    }
+    debug_assert_eq!(written, need);
+    Some(need)
 }
 
 fn push_arc(
@@ -599,6 +691,36 @@ mod tests {
         assert!((ys[19] - 7.0).abs() < 1e-12);
         assert!((xs[4] - 3.0).abs() < 1e-12);
         assert!((ys[4] - 2.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn step_arrays_pre_mid_post_match_host_vertices() {
+        let x = [0.0, 1.0, 2.0];
+        let y = [10.0, 20.0, 30.0];
+        let mut xs = [0.0; 8];
+        let mut ys = [0.0; 8];
+        assert_eq!(step_arrays_len(3, STEP_PRE), Some(5));
+        assert_eq!(step_arrays(&x, &y, STEP_PRE, &mut xs, &mut ys), Some(5));
+        assert_eq!(&xs[..5], &[0.0, 0.0, 1.0, 1.0, 2.0]);
+        assert_eq!(&ys[..5], &[10.0, 20.0, 20.0, 30.0, 30.0]);
+        assert_eq!(step_arrays_len(3, STEP_MID), Some(7));
+        assert_eq!(step_arrays(&x, &y, STEP_MID, &mut xs, &mut ys), Some(7));
+        assert_eq!(&xs[..7], &[0.0, 0.5, 0.5, 1.0, 1.5, 1.5, 2.0]);
+        assert_eq!(&ys[..7], &[10.0, 10.0, 20.0, 20.0, 20.0, 30.0, 30.0]);
+        assert_eq!(step_arrays_len(3, STEP_POST), Some(5));
+        assert_eq!(step_arrays(&x, &y, STEP_POST, &mut xs, &mut ys), Some(5));
+        assert_eq!(&xs[..5], &[0.0, 1.0, 1.0, 2.0, 2.0]);
+        assert_eq!(&ys[..5], &[10.0, 10.0, 20.0, 20.0, 30.0]);
+        assert_eq!(step_arrays(&x, &y, STEP_POST, &mut [], &mut []), Some(5));
+        assert_eq!(
+            step_arrays(&x[..1], &y[..1], STEP_PRE, &mut xs, &mut ys),
+            Some(1)
+        );
+        assert_eq!(xs[0], 0.0);
+        assert_eq!(ys[0], 10.0);
+        assert!(step_arrays(&x, &y, 0, &mut xs, &mut ys).is_none());
+        assert!(step_arrays(&x, &y[..2], STEP_POST, &mut xs, &mut ys).is_none());
+        assert!(step_arrays_len(usize::MAX / 2, STEP_MID).is_none());
     }
 
     #[test]

@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 209;
-export const SIGNATURE_SHA256 = "49d15c48025e938f9ee8ea0d44dac78a4ebb95952b53e92a60acd6241f6d4e96";
+export const ABI_VERSION = 210;
+export const SIGNATURE_SHA256 = "0471764bcdaa2a3d25eabf147e4f59a9e684d23e30cc617c16ba92e7e5622e98";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -218,6 +218,7 @@ export let xySceneVersion;
 export let xySectorTriangles;
 export let xySpectrogram;
 export let xyStackedBounds;
+export let xyStepArrays;
 export let xyStratifiedSampleMask;
 export let xyStratifiedSampleMaskU32;
 export let xyStratifiedSampleRangeU8;
@@ -516,6 +517,7 @@ export function bindGeneratedAbi(lib) {
   xySectorTriangles = lib.func("size_t xyg_sector_triangles(const double * values, size_t len, const double * explode, double center_x, double center_y, double radius, double inner_radius, double start_degrees, int32_t counterclockwise, int32_t normalize, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, double * out_sector, size_t capacity)");
   xySpectrogram = lib.func("int32_t xyg_spectrogram(const double * data, size_t len, size_t nfft, size_t noverlap, double sample_rate, double * out_frequency, double * out_time, double * out_power)");
   xyStackedBounds = lib.func("int32_t xyg_stacked_bounds(const double * values, size_t rows, size_t cols, uint32_t baseline, double * out_lower, double * out_upper)");
+  xyStepArrays = lib.func("size_t xyg_step_arrays(const double * x, const double * y, size_t n, uint8_t mode, double * out_x, double * out_y, size_t capacity)");
   xyStratifiedSampleMask = lib.func("int32_t xyg_stratified_sample_mask(const uint64_t * ids, const uint32_t * groups, size_t len, size_t n_groups, uint64_t seed, double fraction, uint64_t min_count, uint8_t * out)");
   xyStratifiedSampleMaskU32 = lib.func("int32_t xyg_stratified_sample_mask_u32(const uint32_t * ids, const uint32_t * groups, size_t len, size_t n_groups, uint64_t seed, double fraction, uint64_t min_count, uint8_t * out)");
   xyStratifiedSampleRangeU8 = lib.func("size_t xyg_stratified_sample_range_u8(const uint8_t * groups, size_t len, size_t n_groups, uint64_t seed, double fraction, uint64_t min_count, uint32_t * out, size_t capacity)");

@@ -10919,6 +10919,52 @@ def curve_flatten(
     return out_x[: int(written)].copy(), out_y[: int(written)].copy()
 
 
+def step_arrays(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    mode: int,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Expand compact vertices into a step polyline (ABI 210).
+
+    ``mode`` is ``1`` pre, ``2`` mid, ``3`` post. ``n < 2`` is identity.
+    Empty native pointers are ``0``.
+    """
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("step_arrays x and y must have equal length")
+    mode = int(mode)
+    n = len(x)
+    probed = _lib.xyg_step_arrays(
+        _ptr_f64(x) if n else 0,
+        _ptr_f64(y) if n else 0,
+        n,
+        mode,
+        0,
+        0,
+        0,
+    )
+    if probed == _USIZE_MAX:
+        raise ValueError("invalid step-arrays request")
+    count = int(probed)
+    if count == 0:
+        return np.empty(0, dtype=np.float64), np.empty(0, dtype=np.float64)
+    out_x = np.empty(count, dtype=np.float64)
+    out_y = np.empty(count, dtype=np.float64)
+    written = _lib.xyg_step_arrays(
+        _ptr_f64(x) if n else 0,
+        _ptr_f64(y) if n else 0,
+        n,
+        mode,
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        count,
+    )
+    if written == _USIZE_MAX or written != count:
+        raise ValueError("invalid step-arrays request")
+    return out_x, out_y
+
+
 def rounded_rect_poly(
     x: float,
     y: float,

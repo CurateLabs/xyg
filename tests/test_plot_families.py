@@ -248,6 +248,25 @@ def test_stairs_ships_compact_form_and_renders_correct_bins() -> None:
         Figure().stairs([], [0.0])
 
 
+def test_step_arrays_native_kernel_matches_pre_mid_post() -> None:
+    from xyg._svg import _step_arrays
+
+    xv = np.array([0.0, 1.0, 2.0])
+    yv = np.array([10.0, 20.0, 30.0])
+    pre_x, pre_y = _step_arrays(xv, yv, "pre")
+    np.testing.assert_array_equal(pre_x, [0.0, 0.0, 1.0, 1.0, 2.0])
+    np.testing.assert_array_equal(pre_y, [10.0, 20.0, 20.0, 30.0, 30.0])
+    mid_x, mid_y = _step_arrays(xv, yv, "mid")
+    np.testing.assert_array_equal(mid_x, [0.0, 0.5, 0.5, 1.0, 1.5, 1.5, 2.0])
+    np.testing.assert_array_equal(mid_y, [10.0, 10.0, 20.0, 20.0, 20.0, 30.0, 30.0])
+    post_x, post_y = _step_arrays(xv, yv, "unknown")
+    np.testing.assert_array_equal(post_x, [0.0, 1.0, 1.0, 2.0, 2.0])
+    np.testing.assert_array_equal(post_y, [10.0, 10.0, 20.0, 20.0, 30.0])
+    ident_x, ident_y = _step_arrays(np.array([7.0]), np.array([9.0]), "pre")
+    np.testing.assert_array_equal(ident_x, [7.0])
+    np.testing.assert_array_equal(ident_y, [9.0])
+
+
 def test_grouped_box_matches_naive_grouping_semantics() -> None:
     rng = np.random.default_rng(42)
     vals = rng.normal(size=10_000)
