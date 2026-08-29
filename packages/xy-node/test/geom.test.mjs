@@ -30,6 +30,7 @@ import {
   sceneHiddenOrPerItemAdmit,
   sceneRibbonColor2Classify,
   sceneScatterPaintChannelAdmit,
+  scatterHasNonConstantColor,
   scatterPacksPaintPlane,
   scatterPaintChannelNames,
   scatterUsesDensity,
@@ -429,6 +430,17 @@ test("scatterPaintChannelNames uses color_ch only like Python", () => {
   assert.deepEqual(
     scatterPaintChannelNames({ color: { mode: "continuous", values: [0, 1] } }),
     [],
+  );
+});
+
+test("scatterHasNonConstantColor uses color_ch only like Python", () => {
+  assert.equal(
+    scatterHasNonConstantColor({ color_ch: { mode: "continuous", values: [0, 1] } }),
+    true,
+  );
+  assert.equal(
+    scatterHasNonConstantColor({ color: { mode: "continuous", values: [0, 1] } }),
+    false,
   );
 });
 
