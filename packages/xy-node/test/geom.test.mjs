@@ -90,6 +90,7 @@ import {
   figureTraceSupport,
   fillIsGradientAuthoring,
   xyEfJoinedFill,
+  xyEfStrokeWidthOnly,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -813,6 +814,13 @@ test("xyEfJoinedFill uses joined_fill only like Python", () => {
   assert.equal(xyEfJoinedFill({ joinedFill: true }), false);
   assert.equal(xyEfJoinedFill({ joined_fill: true }), true);
   assert.equal(xyEfJoinedFill({ joined_fill: 1 }), true);
+});
+
+test("xyEfStrokeWidthOnly uses stroke_width only like Python", () => {
+  assert.equal(xyEfStrokeWidthOnly({}), false);
+  assert.equal(xyEfStrokeWidthOnly({ strokeWidth: 2 }), false);
+  assert.equal(xyEfStrokeWidthOnly({ stroke_width: 2 }), true);
+  assert.equal(xyEfStrokeWidthOnly({ stroke_width: 2, stroke: "#000" }), false);
 });
 
 test("sceneKindClass matches host table", () => {
