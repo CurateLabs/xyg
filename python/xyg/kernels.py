@@ -62,6 +62,7 @@ scene_dash_admit = _impl.scene_dash_admit
 scene_fill_gradient_admit = _impl.scene_fill_gradient_admit
 scene_finite_all = _impl.scene_finite_all
 scene_gradient_dir = _impl.scene_gradient_dir
+scene_gradient_solid_css = _impl.scene_gradient_solid_css
 scene_gradient_space = _impl.scene_gradient_space
 scene_heatmap_colormap_admit = _impl.scene_heatmap_colormap_admit
 scene_heatmap_extent_admit = _impl.scene_heatmap_extent_admit
@@ -320,6 +321,7 @@ __all__ = [
     "scene_fill_gradient_admit",
     "scene_finite_all",
     "scene_gradient_dir",
+    "scene_gradient_solid_css",
     "scene_gradient_space",
     "scene_heatmap_colormap_admit",
     "scene_heatmap_extent_admit",

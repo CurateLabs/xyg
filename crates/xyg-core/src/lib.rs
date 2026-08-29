@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 248;
+pub const ABI_VERSION: u32 = 249;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5801,6 +5801,45 @@ pub unsafe extern "C" fn xyg_scene_finite_all(values: *const f64, values_len: us
             std::slice::from_raw_parts(values, values_len)
         };
         kernels::scene_finite_all(values)
+    })
+}
+
+/// Scene gradient solid CSS (ABI 249).
+///
+/// Packed RGBA8 (`rgba_len % 4 == 0`). First stop with alpha `> 0`
+/// writes `rgb(r,g,b)`. Otherwise `rgb(0,0,0)`. Returns written UTF-8
+/// length. Empty native pointers are null/`0`. `-2` FFI. Field picking
+/// stays host.
+///
+/// # Safety
+/// `rgba` must address `rgba_len` readable bytes when `rgba_len` is
+/// nonzero. `out` must address `out_len` writable bytes when `out_len`
+/// is nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_gradient_solid_css(
+    rgba: *const u8,
+    rgba_len: usize,
+    out: *mut u8,
+    out_len: usize,
+) -> i32 {
+    if rgba_len > 0 && rgba.is_null() {
+        return -2;
+    }
+    if out_len > 0 && out.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let rgba = if rgba_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(rgba, rgba_len)
+        };
+        let out = if out_len == 0 {
+            &mut [][..]
+        } else {
+            std::slice::from_raw_parts_mut(out, out_len)
+        };
+        kernels::scene_gradient_solid_css(rgba, out)
     })
 }
 

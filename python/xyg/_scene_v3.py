@@ -2705,10 +2705,11 @@ def _ribbon_color2_gradient_spec(trace: Any) -> dict[str, Any] | None:
 
 
 def _gradient_solid_css(gradient: dict[str, Any]) -> str:
+    packed: list[int] = []
     for _t, rgba in gradient["stops"]:
-        if rgba[3] > 0:
-            return f"rgb({rgba[0]},{rgba[1]},{rgba[2]})"
-    return "rgb(0,0,0)"
+        packed.extend((int(rgba[0]), int(rgba[1]), int(rgba[2]), int(rgba[3])))
+    css = _native.scene_gradient_solid_css(packed)
+    return "rgb(0,0,0)" if css is None else css
 
 
 _XYTC_HEADER = struct.Struct("<4sIII")

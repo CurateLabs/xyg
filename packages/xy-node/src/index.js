@@ -52,6 +52,7 @@ export {
   sceneGradientDir,
   sceneLinearGradientPrefix,
   sceneGradientSpace,
+  sceneGradientSolidCss,
   sceneHeatmapColormapAdmit,
   sceneHeatmapExtentAdmit,
   sceneHeatmapShapeAdmit,

@@ -359,6 +359,8 @@ def load() -> ctypes.CDLL:
     ]
     lib.xyg_scene_finite_all.restype = ctypes.c_int32
     lib.xyg_scene_finite_all.argtypes = [F64P, ctypes.c_size_t]
+    lib.xyg_scene_gradient_solid_css.restype = ctypes.c_int32
+    lib.xyg_scene_gradient_solid_css.argtypes = [U8P, ctypes.c_size_t, U8P, ctypes.c_size_t]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2947,6 +2949,29 @@ def main() -> None:
     ok(
         lib.xyg_scene_finite_all(_ptr(nan_all, ctypes.c_double), 1) == 0,
         "scene_finite_all nan",
+    )
+    solid_out = array("B", [0] * 16)
+    ok(
+        lib.xyg_scene_gradient_solid_css(null_u8, 0, _ptr(solid_out, ctypes.c_uint8), 16) == 10
+        and bytes(solid_out[:10]) == b"rgb(0,0,0)",
+        "scene_gradient_solid_css empty",
+    )
+    solid_rgba = array("B", [1, 2, 3, 0, 10, 20, 30, 255])
+    ok(
+        lib.xyg_scene_gradient_solid_css(
+            _ptr(solid_rgba, ctypes.c_uint8), 8, _ptr(solid_out, ctypes.c_uint8), 16
+        )
+        == 13
+        and bytes(solid_out[:13]) == b"rgb(10,20,30)",
+        "scene_gradient_solid_css first opaque",
+    )
+    odd_rgba = array("B", [1, 2, 3])
+    ok(
+        lib.xyg_scene_gradient_solid_css(
+            _ptr(odd_rgba, ctypes.c_uint8), 3, _ptr(solid_out, ctypes.c_uint8), 16
+        )
+        == 0,
+        "scene_gradient_solid_css odd reject",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8
