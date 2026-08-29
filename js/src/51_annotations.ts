@@ -38,8 +38,9 @@ const XY_ANNOTATION_SHAPE_STYLE_KEYS = new Set([
   "coordinate_space",
 ]);
 
-// Arrow path geometry shared by every arrow/callout draw (mirrored by the
-// static exporters in python/xyg/_arrowgeom.py — keep the two in sync):
+// Arrow path geometry: ChartView keeps this copy until WASM. Canonical
+// policy is ABI 217 `xyg_arrow_geometry` (python/xyg/_arrowgeom.py and
+// Node `arrowGeometry` call the kernel). Keep the two in sync:
 // an optional quadratic control point from `curve` (matplotlib arc3 rad,
 // bulge as a fraction of chord length) or `angle_a`/`angle_b` (matplotlib
 // angle3/angle departure/arrival angles in degrees, y-up screen space —
@@ -151,7 +152,7 @@ function xyTrimPolylineEnd(points, trim) {
     remaining -= seg;
     out.pop();
   }
-  return out;
+  return out.length >= 2 ? out : [points[0], points[0]];
 }
 
 function xyCanvasRegularPolygon(ctx, cx, cy, radius, points, start = -Math.PI / 2) {

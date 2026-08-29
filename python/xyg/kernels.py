@@ -65,6 +65,11 @@ marching_squares = _impl.marching_squares
 marching_triangles = _impl.marching_triangles
 is_sorted = _impl.is_sorted
 argsort_stable = _impl.argsort_stable
+arrow_end_decoration = _impl.arrow_end_decoration
+arrow_geometry = _impl.arrow_geometry
+arrow_shaft_points = _impl.arrow_shaft_points
+arrow_taper_polygon = _impl.arrow_taper_polygon
+arrow_trim_polyline_end = _impl.arrow_trim_polyline_end
 min_max = _impl.min_max
 continuous_domain = _impl.continuous_domain
 direct_rgba_admit = _impl.direct_rgba_admit
@@ -172,6 +177,11 @@ __all__ = [
     "CSS_LENGTH",
     "CSS_NUMBER",
     "argsort_stable",
+    "arrow_end_decoration",
+    "arrow_geometry",
+    "arrow_shaft_points",
+    "arrow_taper_polygon",
+    "arrow_trim_polyline_end",
     "bar_stack",
     "bin_2d",
     "bin_2d_f32",

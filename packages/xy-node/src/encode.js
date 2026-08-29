@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyF32SafeScale, xyGeometryOffset, xyScalePinsOffset, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyHexbinRing, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyStepArrays, xyMarkerPathScale, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapLut, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityRgbaLinear, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyPayloadVisibleIndices, xyPayloadEvenIndices, xyPayloadErrorbarIndices, xyPayloadSegmentBudget, xyPayloadSampleTargetIndices, xyPaintEffectiveRgba, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyF32SafeScale, xyGeometryOffset, xyScalePinsOffset, xyArrowGeometry, xyArrowShaftPoints, xyArrowEndDecoration, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyHexbinRing, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyStepArrays, xyMarkerPathScale, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapLut, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityRgbaLinear, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyPayloadVisibleIndices, xyPayloadEvenIndices, xyPayloadErrorbarIndices, xyPayloadSegmentBudget, xyPayloadSampleTargetIndices, xyPaintEffectiveRgba, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -618,6 +618,228 @@ export function markerPathScale(cx, cy, scale, x, y) {
     throw new RangeError("invalid marker-path-scale request");
   }
   return { x: outX, y: outY };
+}
+
+function packArrowStyle(style = {}) {
+  const packed = new Float64Array(12);
+  packed.fill(Number.NaN);
+  if (typeof style.start_offset === "string") {
+    const offset = style.start_offset.split(",").map(Number);
+    if (offset.length === 2 && offset.every(Number.isFinite)) {
+      packed[0] = offset[0];
+      packed[1] = offset[1];
+    }
+  }
+  const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : null);
+  const angleA = num(style.angle_a);
+  const angleB = num(style.angle_b);
+  if (angleA !== null) packed[2] = angleA;
+  if (angleB !== null) packed[3] = angleB;
+  const curve = num(style.curve);
+  if (curve !== null) packed[4] = curve;
+  const gapStart = num(style.gap_start);
+  const gapEnd = num(style.gap_end);
+  if (gapStart !== null) packed[5] = gapStart;
+  if (gapEnd !== null) packed[6] = gapEnd;
+  if (typeof style.label_clear === "string") {
+    const parts = style.label_clear.split(",").map(Number);
+    if (parts.length === 4 && parts.every((p) => Number.isFinite(p) && p >= 0)) {
+      packed[7] = parts[0];
+      packed[8] = parts[1];
+      packed[9] = parts[2];
+      packed[10] = parts[3];
+    }
+  }
+  if (style.elbow) packed[11] = 1;
+  return packed;
+}
+
+/** Annotation arrow connectionstyle geometry (ABI 217). */
+export function arrowGeometry(x0, y0, x1, y1, style = {}) {
+  const packed = packArrowStyle(style);
+  const out = new Float64Array(11);
+  const ok = xyArrowGeometry(
+    Number(x0),
+    Number(y0),
+    Number(x1),
+    Number(y1),
+    f64Ptr(packed),
+    12n,
+    f64Ptr(out),
+    11n,
+  );
+  if (ok !== 1) throw new Error("xyg_arrow_geometry failed");
+  const hasControl = out[6] !== 0;
+  return {
+    p0: [out[0], out[1]],
+    p1: [out[2], out[3]],
+    control: hasControl ? [out[4], out[5]] : null,
+    elbow: Boolean(style.elbow),
+    dir0: [out[7], out[8]],
+    dir1: [out[9], out[10]],
+  };
+}
+
+/** Quadratic / elbow / linear shaft samples (ABI 217). */
+export function arrowShaftPoints(geom, samples = 24) {
+  const [p0x, p0y] = geom.p0;
+  const [p1x, p1y] = geom.p1;
+  const hasControl = geom.control != null;
+  const [cx, cy] = hasControl ? geom.control : [0, 0];
+  const probed = xyArrowShaftPoints(
+    Number(p0x),
+    Number(p0y),
+    Number(p1x),
+    Number(p1y),
+    Number(cx),
+    Number(cy),
+    hasControl ? 1 : 0,
+    geom.elbow ? 1 : 0,
+    BigInt(samples),
+    0,
+    0,
+    0,
+  );
+  if (probed === USIZE_MAX_64) throw new RangeError("invalid arrow-shaft-points request");
+  const count = Number(probed);
+  if (count === 0) return [];
+  const outX = new Float64Array(count);
+  const outY = new Float64Array(count);
+  const written = xyArrowShaftPoints(
+    Number(p0x),
+    Number(p0y),
+    Number(p1x),
+    Number(p1y),
+    Number(cx),
+    Number(cy),
+    hasControl ? 1 : 0,
+    geom.elbow ? 1 : 0,
+    BigInt(samples),
+    f64Ptr(outX),
+    f64Ptr(outY),
+    count,
+  );
+  if (written === USIZE_MAX_64 || Number(written) !== count) {
+    throw new RangeError("invalid arrow-shaft-points request");
+  }
+  return Array.from({ length: count }, (_, i) => [outX[i], outY[i]]);
+}
+
+/** Endpoint decoration vertices (ABI 217). kind 0 none / 1 fill / 2 stroke. */
+export function arrowEndDecoration(point, direction, style, head) {
+  const encoded = new TextEncoder().encode(String(style));
+  const kind = new Int32Array([-1]);
+  const probed = xyArrowEndDecoration(
+    Number(point[0]),
+    Number(point[1]),
+    Number(direction[0]),
+    Number(direction[1]),
+    encoded.length ? u8Ptr(encoded) : 0,
+    BigInt(encoded.length),
+    Number(head),
+    0,
+    0,
+    0,
+    pointer(kind, "int32_t *"),
+  );
+  if (probed === USIZE_MAX_64 || kind[0] < 0) {
+    throw new RangeError("invalid arrow-end-decoration request");
+  }
+  const count = Number(probed);
+  if (count === 0) return { kind: kind[0], points: [] };
+  const outX = new Float64Array(count);
+  const outY = new Float64Array(count);
+  kind[0] = -1;
+  const written = xyArrowEndDecoration(
+    Number(point[0]),
+    Number(point[1]),
+    Number(direction[0]),
+    Number(direction[1]),
+    encoded.length ? u8Ptr(encoded) : 0,
+    BigInt(encoded.length),
+    Number(head),
+    f64Ptr(outX),
+    f64Ptr(outY),
+    count,
+    pointer(kind, "int32_t *"),
+  );
+  if (written === USIZE_MAX_64 || Number(written) !== count || kind[0] < 0) {
+    throw new RangeError("invalid arrow-end-decoration request");
+  }
+  return {
+    kind: kind[0],
+    points: Array.from({ length: count }, (_, i) => [outX[i], outY[i]]),
+  };
+}
+
+/** Tapered shaft polygon (ABI 217). */
+export function arrowTaperPolygon(points, widthStart, widthEnd) {
+  const xv = new Float64Array(points.map((p) => p[0]));
+  const yv = new Float64Array(points.map((p) => p[1]));
+  const n = xv.length;
+  const probed = xyArrowTaperPolygon(
+    n ? f64Ptr(xv) : 0,
+    n ? f64Ptr(yv) : 0,
+    BigInt(n),
+    Number(widthStart),
+    Number(widthEnd),
+    0,
+    0,
+    0,
+  );
+  if (probed === USIZE_MAX_64) throw new RangeError("invalid arrow-taper-polygon request");
+  const count = Number(probed);
+  if (count === 0) return [];
+  const outX = new Float64Array(count);
+  const outY = new Float64Array(count);
+  const written = xyArrowTaperPolygon(
+    n ? f64Ptr(xv) : 0,
+    n ? f64Ptr(yv) : 0,
+    BigInt(n),
+    Number(widthStart),
+    Number(widthEnd),
+    f64Ptr(outX),
+    f64Ptr(outY),
+    count,
+  );
+  if (written === USIZE_MAX_64 || Number(written) !== count) {
+    throw new RangeError("invalid arrow-taper-polygon request");
+  }
+  return Array.from({ length: count }, (_, i) => [outX[i], outY[i]]);
+}
+
+/** Trim arclength from a polyline end (ABI 217). */
+export function arrowTrimPolylineEnd(points, trim) {
+  const xv = new Float64Array(points.map((p) => p[0]));
+  const yv = new Float64Array(points.map((p) => p[1]));
+  const n = xv.length;
+  const probed = xyArrowTrimPolylineEnd(
+    n ? f64Ptr(xv) : 0,
+    n ? f64Ptr(yv) : 0,
+    BigInt(n),
+    Number(trim),
+    0,
+    0,
+    0,
+  );
+  if (probed === USIZE_MAX_64) throw new RangeError("invalid arrow-trim-polyline-end request");
+  const count = Number(probed);
+  if (count === 0) return [];
+  const outX = new Float64Array(count);
+  const outY = new Float64Array(count);
+  const written = xyArrowTrimPolylineEnd(
+    n ? f64Ptr(xv) : 0,
+    n ? f64Ptr(yv) : 0,
+    BigInt(n),
+    Number(trim),
+    f64Ptr(outX),
+    f64Ptr(outY),
+    count,
+  );
+  if (written === USIZE_MAX_64 || Number(written) !== count) {
+    throw new RangeError("invalid arrow-trim-polyline-end request");
+  }
+  return Array.from({ length: count }, (_, i) => [outX[i], outY[i]]);
 }
 
 /** CW rounded-rect outline with independent tip/base radii. */

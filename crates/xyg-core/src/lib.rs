@@ -22,6 +22,7 @@
 #![allow(clippy::missing_safety_doc)] // crate-level Safety contract is documented above
 #![allow(clippy::useless_vec)] // test fixtures pack versioned envelopes
 
+use xyg_engine::arrow_geom;
 use xyg_engine::auto_domain;
 use xyg_engine::autorange::{rect_zero_baseline_flags, AutorangeError};
 use xyg_engine::colormap;
@@ -159,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 216;
+pub const ABI_VERSION: u32 = 217;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4601,6 +4602,263 @@ pub unsafe extern "C" fn xyg_scale_pins_offset(scale: *const u8, len: usize) -> 
             return -1;
         };
         i32::from(kernels::scale_pins_offset(value))
+    })
+}
+
+/// Annotation arrow connectionstyle geometry (ABI 217).
+///
+/// `style` is 12 f64s (NaN = absent): start offset xy, angle_a/b, curve,
+/// gap_start/end, label-clear left/right/up/down, elbow. `out` is 11 f64s:
+/// p0 xy, p1 xy, control xy, has_control, dir0 xy, dir1 xy. Empty native
+/// pointers are null/`0`. Returns `1` on success.
+///
+/// # Safety
+/// `style` must address `style_len` readable f64s when `style_len` is
+/// non-zero. `out` must address `out_len` writable f64s when `out_len` is
+/// non-zero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_arrow_geometry(
+    x0: f64,
+    y0: f64,
+    x1: f64,
+    y1: f64,
+    style: *const f64,
+    style_len: usize,
+    out: *mut f64,
+    out_len: usize,
+) -> i32 {
+    if style_len > 0 && style.is_null() {
+        return 0;
+    }
+    if out_len > 0 && out.is_null() {
+        return 0;
+    }
+    ffi_guard(0, || {
+        let style = if style_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(style, style_len)
+        };
+        let out = if out_len == 0 {
+            &mut [][..]
+        } else {
+            std::slice::from_raw_parts_mut(out, out_len)
+        };
+        let Some(geom) = arrow_geom::arrow_geometry(x0, y0, x1, y1, style) else {
+            return 0;
+        };
+        i32::from(arrow_geom::write_arrow_geometry(&geom, out).is_some())
+    })
+}
+
+/// Quadratic / elbow / linear shaft samples (ABI 217).
+///
+/// `samples == 0` selects 24. Probe with `capacity == 0` and null/`0` hit
+/// pointers; the return is the point count. `has_control` is 0/1. Empty
+/// native pointers are null/`0`.
+///
+/// # Safety
+/// When `capacity > 0`, `out_x` and `out_y` each address `capacity`
+/// writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_arrow_shaft_points(
+    p0x: f64,
+    p0y: f64,
+    p1x: f64,
+    p1y: f64,
+    cx: f64,
+    cy: f64,
+    has_control: i32,
+    elbow: i32,
+    samples: usize,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    capacity: usize,
+) -> usize {
+    if !matches!(has_control, 0 | 1) || !matches!(elbow, 0 | 1) {
+        return usize::MAX;
+    }
+    ffi_guard(usize::MAX, || {
+        let (out_x, out_y) = if capacity == 0 {
+            (&mut [][..], &mut [][..])
+        } else {
+            if out_x.is_null() || out_y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts_mut(out_x, capacity),
+                std::slice::from_raw_parts_mut(out_y, capacity),
+            )
+        };
+        let control = if has_control == 1 {
+            Some((cx, cy))
+        } else {
+            None
+        };
+        arrow_geom::arrow_shaft_points(
+            (p0x, p0y),
+            (p1x, p1y),
+            control,
+            elbow != 0,
+            samples,
+            out_x,
+            out_y,
+        )
+        .unwrap_or(usize::MAX)
+    })
+}
+
+/// Arrow endpoint decoration vertices (ABI 217).
+///
+/// Writes `out_kind` as 0 none / 1 fill / 2 stroke. Probe with
+/// `capacity == 0`. `-1` kind and `usize::MAX` count on invalid UTF-8 or
+/// missing non-empty style pointer. Empty native pointers are null/`0`.
+///
+/// # Safety
+/// `style` must address `style_len` readable bytes when `style_len` is
+/// non-zero. `out_kind` must be writable. When `capacity > 0`, `out_x` and
+/// `out_y` each address `capacity` writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_arrow_end_decoration(
+    px: f64,
+    py: f64,
+    dx: f64,
+    dy: f64,
+    style: *const u8,
+    style_len: usize,
+    head: f64,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    capacity: usize,
+    out_kind: *mut i32,
+) -> usize {
+    if style_len > 0 && style.is_null() {
+        return usize::MAX;
+    }
+    if out_kind.is_null() {
+        return usize::MAX;
+    }
+    ffi_guard(usize::MAX, || {
+        let bytes = if style_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(style, style_len)
+        };
+        let Ok(value) = std::str::from_utf8(bytes) else {
+            return usize::MAX;
+        };
+        let (out_x, out_y) = if capacity == 0 {
+            (&mut [][..], &mut [][..])
+        } else {
+            if out_x.is_null() || out_y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts_mut(out_x, capacity),
+                std::slice::from_raw_parts_mut(out_y, capacity),
+            )
+        };
+        let Some((kind, n)) =
+            arrow_geom::arrow_end_decoration((px, py), (dx, dy), value, head, out_x, out_y)
+        else {
+            return usize::MAX;
+        };
+        *out_kind = match kind {
+            arrow_geom::ArrowEndKind::None => 0,
+            arrow_geom::ArrowEndKind::Fill => 1,
+            arrow_geom::ArrowEndKind::Stroke => 2,
+        };
+        n
+    })
+}
+
+/// Tapered shaft polygon (ABI 217).
+///
+/// Probe with `capacity == 0`. Empty native pointers are null/`0`.
+///
+/// # Safety
+/// When `n > 0`, `x` and `y` each address `n` readable f64s. When
+/// `capacity > 0`, `out_x` and `out_y` each address `capacity` writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_arrow_taper_polygon(
+    x: *const f64,
+    y: *const f64,
+    n: usize,
+    width_start: f64,
+    width_end: f64,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        let (x, y) = if n == 0 {
+            (&[][..], &[][..])
+        } else {
+            if x.is_null() || y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts(x, n),
+                std::slice::from_raw_parts(y, n),
+            )
+        };
+        let (out_x, out_y) = if capacity == 0 {
+            (&mut [][..], &mut [][..])
+        } else {
+            if out_x.is_null() || out_y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts_mut(out_x, capacity),
+                std::slice::from_raw_parts_mut(out_y, capacity),
+            )
+        };
+        arrow_geom::arrow_taper_polygon(x, y, width_start, width_end, out_x, out_y)
+            .unwrap_or(usize::MAX)
+    })
+}
+
+/// Trim arclength from a polyline end (ABI 217).
+///
+/// Probe with `capacity == 0`. Empty native pointers are null/`0`.
+///
+/// # Safety
+/// When `n > 0`, `x` and `y` each address `n` readable f64s. When
+/// `capacity > 0`, `out_x` and `out_y` each address `capacity` writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_arrow_trim_polyline_end(
+    x: *const f64,
+    y: *const f64,
+    n: usize,
+    trim: f64,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        let (x, y) = if n == 0 {
+            (&[][..], &[][..])
+        } else {
+            if x.is_null() || y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts(x, n),
+                std::slice::from_raw_parts(y, n),
+            )
+        };
+        let (out_x, out_y) = if capacity == 0 {
+            (&mut [][..], &mut [][..])
+        } else {
+            if out_x.is_null() || out_y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts_mut(out_x, capacity),
+                std::slice::from_raw_parts_mut(out_y, capacity),
+            )
+        };
+        arrow_geom::arrow_trim_polyline_end(x, y, trim, out_x, out_y).unwrap_or(usize::MAX)
     })
 }
 
