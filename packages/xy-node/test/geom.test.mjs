@@ -21,6 +21,7 @@ import {
   sceneTickAnchor,
   sceneFillGradientAdmit,
   sceneParseLinearGradient,
+  sceneRectExtraFlags,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -230,6 +231,17 @@ test("sceneParseLinearGradient matches host table", () => {
   assert.equal(sceneParseLinearGradient("linear-gradient(45deg, red, blue)", "mark"), null);
   assert.equal(sceneParseLinearGradient("linear-gradient(to left, red, blue)", "mark"), null);
   assert.equal(sceneParseLinearGradient("linear-gradient(red)", "mark"), null);
+});
+
+test("sceneRectExtraFlags matches host table", () => {
+  assert.equal(sceneRectExtraFlags("bar", false, false, [0], false, 0), 0);
+  assert.equal(sceneRectExtraFlags("bar", false, true, [0], false, 0), 1 << 5);
+  assert.equal(sceneRectExtraFlags("bar", false, false, [1, 2], true, 0), 0);
+  assert.equal(sceneRectExtraFlags("bar", false, false, [1], true, 0), 1 << 6);
+  assert.equal(sceneRectExtraFlags("line", false, false, [3], false, 0), 1 << 6);
+  assert.equal(sceneRectExtraFlags("bar", false, false, [0], false, 0.2), 1 << 7);
+  assert.equal(sceneRectExtraFlags("bar", true, false, [0], false, 0.2), 0);
+  assert.equal(sceneRectExtraFlags("heatmap", true, false, [0], false, 0.2), 1 << 7);
 });
 
 test("sceneRibbonColor2Classify matches host table", () => {

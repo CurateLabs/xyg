@@ -1765,24 +1765,19 @@ def _pack_chrome_facts(
 
 def _rect_extra_flags(style: dict[str, Any], kind: str, polar: bool) -> int:
     """Pack Scene-unsupported rect extras as XYFS v2 trace flags."""
-    flags = 0
     fill = style.get("fill")
-    if isinstance(fill, dict) and _admitted_fill_gradient_from_fill(fill, "#3987e5") is None:
-        flags |= _XYFS_TRACE_RECT_GRADIENT
+    gradient_fail = (
+        isinstance(fill, dict) and _admitted_fill_gradient_from_fill(fill, "#3987e5") is None
+    )
     radius = style.get("corner_radius", 0.0)
-    admitted = kind in {"bar", "column", "histogram", "heatmap", "violin", "box"}
     if isinstance(radius, (list, tuple)):
-        if admitted and len(radius) == 2:
-            pass
-        elif any(float(value) != 0.0 for value in radius):
-            flags |= _XYFS_TRACE_CORNER_RADIUS
-    elif not admitted and float(radius) != 0.0:
-        flags |= _XYFS_TRACE_CORNER_RADIUS
-    if float(style.get("wedge_gap", 0.0) or 0.0) != 0.0 and not (
-        polar and kind in {"bar", "column", "histogram"}
-    ):
-        flags |= _XYFS_TRACE_WEDGE_GAP
-    return flags
+        values = [float(value) for value in radius]
+        radius_seq = True
+    else:
+        values = [float(radius)]
+        radius_seq = False
+    gap = float(style.get("wedge_gap", 0.0) or 0.0)
+    return _native.scene_rect_extra_flags(kind, polar, gradient_fail, values, radius_seq, gap)
 
 
 def _density_aggregates_color(trace: Any) -> bool:

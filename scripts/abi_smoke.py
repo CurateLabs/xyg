@@ -266,6 +266,17 @@ def load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.POINTER(ctypes.c_size_t),
     ]
+    lib.xyg_scene_rect_extra_flags.restype = ctypes.c_int32
+    lib.xyg_scene_rect_extra_flags.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_double,
+    ]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2470,6 +2481,69 @@ def main() -> None:
         )
         == 0,
         "scene_parse_linear_gradient empty",
+    )
+    bar_kind = array("B", b"bar")
+    zero_r = array("d", [0.0])
+    ok(
+        lib.xyg_scene_rect_extra_flags(
+            _ptr(bar_kind, ctypes.c_uint8),
+            len(bar_kind),
+            0,
+            0,
+            _ptr(zero_r, ctypes.c_double),
+            1,
+            0,
+            0.0,
+        )
+        == 0,
+        "scene_rect_extra_flags clean bar",
+    )
+    ok(
+        lib.xyg_scene_rect_extra_flags(
+            _ptr(bar_kind, ctypes.c_uint8),
+            len(bar_kind),
+            0,
+            1,
+            _ptr(zero_r, ctypes.c_double),
+            1,
+            0,
+            0.0,
+        )
+        == (1 << 5),
+        "scene_rect_extra_flags gradient fail",
+    )
+    pair_r = array("d", [1.0])
+    ok(
+        lib.xyg_scene_rect_extra_flags(
+            _ptr(bar_kind, ctypes.c_uint8),
+            len(bar_kind),
+            0,
+            0,
+            _ptr(pair_r, ctypes.c_double),
+            1,
+            1,
+            0.0,
+        )
+        == (1 << 6),
+        "scene_rect_extra_flags seq radius",
+    )
+    ok(
+        lib.xyg_scene_rect_extra_flags(
+            _ptr(bar_kind, ctypes.c_uint8),
+            len(bar_kind),
+            1,
+            0,
+            _ptr(zero_r, ctypes.c_double),
+            1,
+            0,
+            0.2,
+        )
+        == 0,
+        "scene_rect_extra_flags polar wedge",
+    )
+    ok(
+        lib.xyg_scene_rect_extra_flags(null_u8, 0, 0, 0, null_f64, 0, 0, 0.2) == (1 << 7),
+        "scene_rect_extra_flags empty kind wedge",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8

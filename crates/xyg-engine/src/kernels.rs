@@ -1423,6 +1423,54 @@ pub fn scene_parse_linear_gradient(
     })
 }
 
+const XYFS_TRACE_RECT_GRADIENT: i32 = 1 << 5;
+const XYFS_TRACE_CORNER_RADIUS: i32 = 1 << 6;
+const XYFS_TRACE_WEDGE_GAP: i32 = 1 << 7;
+
+fn scene_rect_kind_admits_radius(kind: &str) -> bool {
+    matches!(
+        kind,
+        "bar" | "column" | "histogram" | "heatmap" | "violin" | "box"
+    )
+}
+
+fn scene_rect_kind_admits_polar_wedge(kind: &str) -> bool {
+    matches!(kind, "bar" | "column" | "histogram")
+}
+
+/// Pack Scene-unsupported rect extras as XYFS v2 trace flags (ABI 228).
+///
+/// Hosts still coerce fill mappings (dict vs object), radius lists, and
+/// `wedge_gap`. `gradient_fail` is the already-decided unusable-gradient bit.
+pub fn scene_rect_extra_flags(
+    kind: &str,
+    polar: bool,
+    gradient_fail: bool,
+    radius: &[f64],
+    radius_seq: bool,
+    wedge_gap: f64,
+) -> i32 {
+    let mut flags = 0i32;
+    if gradient_fail {
+        flags |= XYFS_TRACE_RECT_GRADIENT;
+    }
+    let admitted = scene_rect_kind_admits_radius(kind);
+    if radius_seq {
+        if !(admitted && radius.len() == 2) && radius.iter().any(|&value| value != 0.0) {
+            flags |= XYFS_TRACE_CORNER_RADIUS;
+        }
+    } else {
+        let value = radius.first().copied().unwrap_or(0.0);
+        if !admitted && value != 0.0 {
+            flags |= XYFS_TRACE_CORNER_RADIUS;
+        }
+    }
+    if wedge_gap != 0.0 && !(polar && scene_rect_kind_admits_polar_wedge(kind)) {
+        flags |= XYFS_TRACE_WEDGE_GAP;
+    }
+    flags
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -9426,6 +9474,43 @@ mod fuzz {
         assert_eq!(
             scene_parse_linear_gradient("", "mark").unwrap_err(),
             SCENE_PARSE_LINEAR_GRADIENT_REJECT
+        );
+    }
+
+    #[test]
+    fn scene_rect_extra_flags_matches_host_table() {
+        assert_eq!(scene_rect_extra_flags("bar", false, false, &[0.0], false, 0.0), 0);
+        assert_eq!(
+            scene_rect_extra_flags("bar", false, true, &[0.0], false, 0.0),
+            XYFS_TRACE_RECT_GRADIENT
+        );
+        assert_eq!(
+            scene_rect_extra_flags("bar", false, false, &[1.0, 2.0], true, 0.0),
+            0
+        );
+        assert_eq!(
+            scene_rect_extra_flags("bar", false, false, &[1.0], true, 0.0),
+            XYFS_TRACE_CORNER_RADIUS
+        );
+        assert_eq!(
+            scene_rect_extra_flags("line", false, false, &[3.0], false, 0.0),
+            XYFS_TRACE_CORNER_RADIUS
+        );
+        assert_eq!(
+            scene_rect_extra_flags("bar", false, false, &[0.0], false, 0.2),
+            XYFS_TRACE_WEDGE_GAP
+        );
+        assert_eq!(
+            scene_rect_extra_flags("bar", true, false, &[0.0], false, 0.2),
+            0
+        );
+        assert_eq!(
+            scene_rect_extra_flags("heatmap", true, false, &[0.0], false, 0.2),
+            XYFS_TRACE_WEDGE_GAP
+        );
+        assert_eq!(
+            scene_rect_extra_flags("violin", false, false, &[4.0, 5.0], true, 0.0),
+            0
         );
     }
 
