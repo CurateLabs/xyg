@@ -1348,6 +1348,19 @@ def scene_gradient_space(text: str | None = None) -> int:
     return int(code)
 
 
+def scene_hexbin_reduce_admit(text: str | None = None) -> bool:
+    """Scene hexbin reduce admit via ``xyg_scene_hexbin_reduce_admit`` (ABI 232).
+
+    Empty native pointers are ``0``. Hosts still check hexbin kind.
+    Compile-path ``HEXBIN_REDUCES`` in ``scene_export.rs`` stays extra.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_hexbin_reduce_admit(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-hexbin-reduce-admit request")
+    return code == 1
+
+
 def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
     """f32-safe encode scale for offset-encoded geometry (ABI 208, §19)."""
     out = ctypes.c_double()

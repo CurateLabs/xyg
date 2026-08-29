@@ -1517,6 +1517,14 @@ pub fn scene_gradient_space(text: &str) -> i32 {
     }
 }
 
+/// Admit Scene hexbin reduce names (ABI 232).
+///
+/// `count`/`mean`/`sum`/`custom` return `1`. Unknown names, including empty
+/// text, return `0`. No lowercasing. Hexbin kind checks stay host.
+pub fn scene_hexbin_reduce_admit(text: &str) -> i32 {
+    i32::from(matches!(text, "count" | "mean" | "sum" | "custom"))
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -9596,6 +9604,18 @@ mod fuzz {
         assert_eq!(scene_gradient_space("foo"), SCENE_GRAD_SPACE_UNKNOWN);
         assert_eq!(scene_gradient_space("MARK"), SCENE_GRAD_SPACE_UNKNOWN);
         assert_eq!(scene_gradient_space("data"), SCENE_GRAD_SPACE_UNKNOWN);
+    }
+
+    #[test]
+    fn scene_hexbin_reduce_admit_matches_host_table() {
+        assert_eq!(scene_hexbin_reduce_admit("count"), 1);
+        assert_eq!(scene_hexbin_reduce_admit("mean"), 1);
+        assert_eq!(scene_hexbin_reduce_admit("sum"), 1);
+        assert_eq!(scene_hexbin_reduce_admit("custom"), 1);
+        assert_eq!(scene_hexbin_reduce_admit(""), 0);
+        assert_eq!(scene_hexbin_reduce_admit("foo"), 0);
+        assert_eq!(scene_hexbin_reduce_admit("COUNT"), 0);
+        assert_eq!(scene_hexbin_reduce_admit("median"), 0);
     }
 
     #[test]

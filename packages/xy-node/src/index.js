@@ -46,6 +46,7 @@ export {
   sceneGradientDir,
   sceneLinearGradientPrefix,
   sceneGradientSpace,
+  sceneHexbinReduceAdmit,
   roundedRectPoly,
   violinDensity,
   boxStats,
