@@ -40,6 +40,7 @@ export {
   sceneRibbonColor2Classify,
   sceneTickLabelStrategy,
   sceneTickAnchor,
+  sceneFillGradientAdmit,
   roundedRectPoly,
   violinDensity,
   boxStats,

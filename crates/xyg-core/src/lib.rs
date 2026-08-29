@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 225;
+pub const ABI_VERSION: u32 = 226;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4944,6 +4944,128 @@ pub unsafe extern "C" fn xyg_scene_tick_anchor(
             return -2;
         };
         kernels::scene_tick_anchor(text)
+    })
+}
+
+/// Scene fill-gradient stop admit (ABI 226).
+///
+/// `space` is `mark`/`plot`. `dir` is `down`/`up`/`right`/`left`. `t` is 2–8
+/// finite positions in `[0, 1]`, monotone. `css` is concatenated stop paint
+/// with `css_lens` byte counts. Empty/`currentcolor` use `mark_color`. `var(`
+/// rejects. Writes `n * 4` RGBA8 bytes into `out_rgba`. Returns `1` admitted,
+/// `0` reject, `-2` FFI. Empty native pointers are null/`0`. Hosts still
+/// coerce fill mappings and parse `linear-gradient(` CSS.
+///
+/// # Safety
+/// Pointers must address the claimed readable or writable bytes when the
+/// corresponding length is nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_fill_gradient_admit(
+    space: *const u8,
+    space_len: usize,
+    dir: *const u8,
+    dir_len: usize,
+    t: *const f64,
+    n_stops: usize,
+    css: *const u8,
+    css_len: usize,
+    css_lens: *const u32,
+    n_css: usize,
+    mark_color: *const u8,
+    mark_len: usize,
+    out_rgba: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if space_len > 0 && space.is_null() {
+        return -2;
+    }
+    if dir_len > 0 && dir.is_null() {
+        return -2;
+    }
+    if n_stops > 0 && t.is_null() {
+        return -2;
+    }
+    if css_len > 0 && css.is_null() {
+        return -2;
+    }
+    if n_css > 0 && css_lens.is_null() {
+        return -2;
+    }
+    if mark_len > 0 && mark_color.is_null() {
+        return -2;
+    }
+    if out_cap > 0 && out_rgba.is_null() {
+        return -2;
+    }
+    if n_stops != n_css {
+        return -2;
+    }
+    if n_stops > 0 && out_cap < n_stops.saturating_mul(4) {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let space_bytes = if space_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(space, space_len)
+        };
+        let dir_bytes = if dir_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(dir, dir_len)
+        };
+        let t_slice = if n_stops == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(t, n_stops)
+        };
+        let css_bytes = if css_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(css, css_len)
+        };
+        let lens = if n_css == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(css_lens, n_css)
+        };
+        let mark_bytes = if mark_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(mark_color, mark_len)
+        };
+        let out = if out_cap == 0 {
+            &mut [][..]
+        } else {
+            std::slice::from_raw_parts_mut(out_rgba, out_cap)
+        };
+        let Ok(space) = std::str::from_utf8(space_bytes) else {
+            return -2;
+        };
+        let Ok(dir) = std::str::from_utf8(dir_bytes) else {
+            return -2;
+        };
+        let Ok(mark) = std::str::from_utf8(mark_bytes) else {
+            return -2;
+        };
+        let mut css_parts: Vec<&str> = Vec::with_capacity(lens.len());
+        let mut at = 0usize;
+        for &len in lens {
+            let n = len as usize;
+            let end = match at.checked_add(n) {
+                Some(end) if end <= css_bytes.len() => end,
+                _ => return -2,
+            };
+            let Ok(part) = std::str::from_utf8(&css_bytes[at..end]) else {
+                return -2;
+            };
+            css_parts.push(part);
+            at = end;
+        }
+        if at != css_bytes.len() {
+            return -2;
+        }
+        kernels::scene_fill_gradient_admit(space, dir, t_slice, &css_parts, mark, out)
     })
 }
 

@@ -1168,6 +1168,58 @@ def scene_tick_anchor(text: str | None = None) -> int | None:
     return int(code)
 
 
+def scene_fill_gradient_admit(
+    space: str,
+    direction: str,
+    t: npt.ArrayLike,
+    css: Sequence[str],
+    mark_color: str,
+) -> list[tuple[int, int, int, int]] | None:
+    """Scene fill-gradient admit via ``xyg_scene_fill_gradient_admit`` (ABI 226).
+
+    Returns per-stop RGBA8 or ``None`` when unusable. Empty native pointers are
+    ``0``. Hosts still coerce fill mappings and parse ``linear-gradient(`` CSS.
+    """
+    space_b = str(space).encode("utf-8")
+    dir_b = str(direction).encode("utf-8")
+    mark_b = str(mark_color).encode("utf-8")
+    packed_t = _as_f64(np.asarray(t, dtype=np.float64).reshape(-1), "t")
+    encoded = [str(item).encode("utf-8") for item in css]
+    lens = np.asarray([len(item) for item in encoded], dtype=np.uint32)
+    css_blob = b"".join(encoded)
+    css_arr = (
+        np.frombuffer(css_blob, dtype=np.uint8).copy() if css_blob else np.empty(0, dtype=np.uint8)
+    )
+    n = len(packed_t)
+    out = np.empty(n * 4, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_fill_gradient_admit(
+            space_b if space_b else 0,
+            len(space_b),
+            dir_b if dir_b else 0,
+            len(dir_b),
+            _ptr_f64(packed_t) if n else 0,
+            n,
+            _ptr_u8(css_arr) if len(css_arr) else 0,
+            len(css_arr),
+            _ptr_u32(lens) if len(lens) else 0,
+            len(lens),
+            mark_b if mark_b else 0,
+            len(mark_b),
+            _ptr_u8(out) if len(out) else 0,
+            len(out),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-fill-gradient-admit request")
+    if code != 1:
+        return None
+    return [
+        (int(out[i * 4]), int(out[i * 4 + 1]), int(out[i * 4 + 2]), int(out[i * 4 + 3]))
+        for i in range(n)
+    ]
+
+
 def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
     """f32-safe encode scale for offset-encoded geometry (ABI 208, §19)."""
     out = ctypes.c_double()

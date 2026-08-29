@@ -234,6 +234,23 @@ def load() -> ctypes.CDLL:
     lib.xyg_scene_tick_label_strategy.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_scene_tick_anchor.restype = ctypes.c_int32
     lib.xyg_scene_tick_anchor.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_scene_fill_gradient_admit.restype = ctypes.c_int32
+    lib.xyg_scene_fill_gradient_admit.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        U32P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2301,6 +2318,59 @@ def main() -> None:
         "scene_tick_anchor middle",
     )
     ok(lib.xyg_scene_tick_anchor(null_u8, 0) == -1, "scene_tick_anchor empty")
+    grad_space = array("B", b"mark")
+    grad_dir = array("B", b"down")
+    grad_t = array("d", [0.0, 1.0])
+    grad_a = b"#336699"
+    grad_b = b"#34d399"
+    grad_css = array("B", grad_a + grad_b)
+    grad_lens = array("I", [len(grad_a), len(grad_b)])
+    grad_mark = array("B", b"#3987e5")
+    grad_out = array("B", [0] * 8)
+    ok(
+        lib.xyg_scene_fill_gradient_admit(
+            _ptr(grad_space, ctypes.c_uint8),
+            len(grad_space),
+            _ptr(grad_dir, ctypes.c_uint8),
+            len(grad_dir),
+            _ptr(grad_t, ctypes.c_double),
+            2,
+            _ptr(grad_css, ctypes.c_uint8),
+            len(grad_css),
+            _ptr(grad_lens, ctypes.c_uint32),
+            2,
+            _ptr(grad_mark, ctypes.c_uint8),
+            len(grad_mark),
+            _ptr(grad_out, ctypes.c_uint8),
+            8,
+        )
+        == 1,
+        "scene_fill_gradient_admit pair",
+    )
+    grad_var_a = b"var(--accent)"
+    grad_var_b = b"#ffffff"
+    grad_var = array("B", grad_var_a + grad_var_b)
+    grad_var_lens = array("I", [len(grad_var_a), len(grad_var_b)])
+    ok(
+        lib.xyg_scene_fill_gradient_admit(
+            _ptr(grad_space, ctypes.c_uint8),
+            len(grad_space),
+            _ptr(grad_dir, ctypes.c_uint8),
+            len(grad_dir),
+            _ptr(grad_t, ctypes.c_double),
+            2,
+            _ptr(grad_var, ctypes.c_uint8),
+            len(grad_var),
+            _ptr(grad_var_lens, ctypes.c_uint32),
+            2,
+            _ptr(grad_mark, ctypes.c_uint8),
+            len(grad_mark),
+            _ptr(grad_out, ctypes.c_uint8),
+            8,
+        )
+        == 0,
+        "scene_fill_gradient_admit var reject",
+    )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8
     arrow_style[8] = 90.0

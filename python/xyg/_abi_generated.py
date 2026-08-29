@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 225
-SIGNATURE_SHA256 = "30477d9d8b899f7c48b18f2f791f909f0a71b555db84bcbf4169fb4ea9c45fef"
+ABI_VERSION = 226
+SIGNATURE_SHA256 = "9cf6eb6f78bf567ef53eaf88820b713205b76709bf7afac71c1136ac4690de0d"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -778,6 +778,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_figure_support_reason
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_fill_gradient_admit(const uint8_t * space, size_t space_len, const uint8_t * dir, size_t dir_len, const double * t, size_t n_stops, const uint8_t * css, size_t css_len, const uint32_t * css_lens, size_t n_css, const uint8_t * mark_color, size_t mark_len, uint8_t * out_rgba, size_t out_cap)
+    function = lib.xyg_scene_fill_gradient_admit
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_scene_linecap_admit(const uint8_t * text, size_t text_len)
     function = lib.xyg_scene_linecap_admit
     function.restype = ctypes.c_int32

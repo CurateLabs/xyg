@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -1915,23 +1915,17 @@ function admitFillGradient(trace) {
   const spec = normalizeFillSpec(fill);
   const markColor = constantMarkColor(trace);
   if (spec == null || markColor == null) return null;
-  if (!["mark", "plot"].includes(spec.space) || !Object.hasOwn(GRAD_DIR_CODES, spec.dir)) return null;
-  if (!Array.isArray(spec.stops) || spec.stops.length < 2 || spec.stops.length > 8) return null;
-  const resolved = [];
-  let prevT = -1;
+  if (!Array.isArray(spec.stops)) return null;
+  const ts = [];
+  const css = [];
   for (const stop of spec.stops) {
     if (!Array.isArray(stop) || stop.length !== 2) return null;
-    const t = Number(stop[0]);
-    if (!Number.isFinite(t) || t < 0 || t > 1 || t < prevT) return null;
-    let css = String(stop[1]).trim();
-    const lowered = css.toLowerCase();
-    if (lowered.includes("var(")) return null; // #289: unresolved browser tokens stay fail-closed
-    if (lowered === "currentcolor" || css === "") css = markColor;
-    const rgba = cssColorRgba8(css, 1);
-    resolved.push([t, rgba]);
-    prevT = t;
+    ts.push(Number(stop[0]));
+    css.push(String(stop[1]));
   }
-  return { space: spec.space, dir: spec.dir, stops: resolved };
+  const rgba = sceneFillGradientAdmit(spec.space, spec.dir, ts, css, markColor);
+  if (rgba == null) return null;
+  return { space: spec.space, dir: spec.dir, stops: ts.map((t, i) => [t, rgba[i]]) };
 }
 
 function gradientSolidCss(gradient) {
