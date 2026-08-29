@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -1785,30 +1785,28 @@ function sourceColorCss(trace) {
   return String(trace.style?.color ?? "#3987e5");
 }
 
-function cssPaintsEqual(left, right) {
-  try {
-    const a = cssColorRgba8(left, 1);
-    const b = cssColorRgba8(right, 1);
-    return a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3];
-  } catch {
-    return false;
-  }
-}
-
 function classifyRibbonColor2(trace) {
   const channel = color2Channel(trace);
-  if (channel == null) return "absent";
-  if (String(trace.kind ?? "") !== "ribbon") return "fail";
-  const target = channelConstantCss(channel);
+  const hasColor2 = channel != null;
+  const kindIsRibbon = String(trace.kind ?? "") === "ribbon";
+  const target = hasColor2 ? channelConstantCss(channel) : null;
   const sourceConst = channelConstantCss(trace.color_ch ?? trace.colorChannel ?? trace.color);
-  if (target != null && sourceConst != null) {
-    if (cssPaintsEqual(sourceColorCss(trace), target)) return "solid";
-    if (Object.hasOwn(trace.style ?? {}, "fill")) return "fail";
-    return "gradient";
+  const sourcePaint = sourceColorCss(trace);
+  const hasFill = Object.hasOwn(trace.style ?? {}, "fill");
+  const bothConst = target != null && sourceConst != null;
+  let hasEndPair = false;
+  if (hasColor2 && kindIsRibbon && !bothConst && !hasFill) {
+    hasEndPair = ribbonEndRgbaPair(trace) != null;
   }
-  if (Object.hasOwn(trace.style ?? {}, "fill")) return "fail";
-  if (ribbonEndRgbaPair(trace) == null) return "fail";
-  return "ends";
+  return sceneRibbonColor2Classify(
+    hasColor2,
+    kindIsRibbon,
+    sourceConst,
+    target,
+    sourcePaint,
+    hasFill,
+    hasEndPair,
+  );
 }
 
 function ribbonCount(trace) {

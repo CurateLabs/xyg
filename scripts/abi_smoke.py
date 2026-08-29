@@ -215,6 +215,21 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
     ]
+    lib.xyg_scene_ribbon_color2_classify.restype = ctypes.c_int32
+    lib.xyg_scene_ribbon_color2_classify.argtypes = [
+        ctypes.c_uint8,
+        ctypes.c_uint8,
+        ctypes.c_uint8,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_uint8,
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_uint8,
+        ctypes.c_uint8,
+    ]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2224,6 +2239,40 @@ def main() -> None:
     ok(
         lib.xyg_scene_annotation_style_admit(null_u8, 0, 0, 0, null_u8, 0) == 0,
         "scene_annotation_style_admit empty key",
+    )
+    paint = array("B", b"#336699")
+    other = array("B", b"#34d399")
+    ok(
+        lib.xyg_scene_ribbon_color2_classify(
+            0, 1, 0, null_u8, 0, 0, null_u8, 0, _ptr(paint, ctypes.c_uint8), len(paint), 0, 0
+        )
+        == 0,
+        "scene_ribbon_color2_classify absent",
+    )
+    ok(
+        lib.xyg_scene_ribbon_color2_classify(
+            1,
+            1,
+            1,
+            _ptr(paint, ctypes.c_uint8),
+            len(paint),
+            1,
+            _ptr(other, ctypes.c_uint8),
+            len(other),
+            _ptr(paint, ctypes.c_uint8),
+            len(paint),
+            0,
+            0,
+        )
+        == 2,
+        "scene_ribbon_color2_classify gradient",
+    )
+    ok(
+        lib.xyg_scene_ribbon_color2_classify(
+            1, 1, 0, null_u8, 0, 0, null_u8, 0, _ptr(paint, ctypes.c_uint8), len(paint), 0, 0
+        )
+        == 4,
+        "scene_ribbon_color2_classify ends fail",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8

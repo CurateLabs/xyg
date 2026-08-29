@@ -673,6 +673,10 @@ ABI 222 `xyg_scene_annotation_style_admit` owns Scene annotation style-key
 allowlists so Python `_annotation_allowed_style` and Node
 `annotationAllowedStyle` cannot drift. Hosts still skip markup/typography/
 rotation and raise error text.
+ABI 223 `xyg_scene_ribbon_color2_classify` owns ribbon two-ended paint class
+(absent/solid/gradient/ends/fail) so Python `_classify_ribbon_color2` and
+Node `classifyRibbonColor2` cannot drift. Hosts still coerce channels and
+pack end RGBA8.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1026,7 +1030,8 @@ client must not grow a parallel “JS layout/LOD” product path.
   expand is ABI 215; log-family pin_zero admission is ABI 216;
   annotation-arrow geometry is ABI 217; Scene dash admit is ABI 218;
   Scene linecap admit is ABI 219; density overlay opacity is ABI 220;
-  Scene marker-path admit is ABI 221; Scene annotation style admit is ABI 222.
+  Scene marker-path admit is ABI 221; Scene annotation style admit is ABI 222;
+  Scene ribbon color2 classify is ABI 223.
 
 ---
 

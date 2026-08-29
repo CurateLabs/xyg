@@ -2600,34 +2600,28 @@ def _trace_source_color_css(trace: Any) -> str:
     return str((getattr(trace, "style", None) or {}).get("color") or "#3987e5")
 
 
-def _css_paints_equal(left: str, right: str) -> bool:
-    try:
-        return _native.css_color_rgba(left, 1.0) == _native.css_color_rgba(right, 1.0)
-    except ValueError:
-        return False
-
-
 def _classify_ribbon_color2(trace: Any) -> str:
     """Classify two-ended ribbon paint: absent, solid, gradient, ends, or fail."""
     color2 = getattr(trace, "color2_ch", None)
-    if color2 is None:
-        return "absent"
-    if str(getattr(trace, "kind", "") or "") != "ribbon":
-        return "fail"
-    target = _channel_constant_css(color2)
+    has_color2 = color2 is not None
+    kind_is_ribbon = str(getattr(trace, "kind", "") or "") == "ribbon"
+    target = _channel_constant_css(color2) if has_color2 else None
     source_const = _channel_constant_css(getattr(trace, "color_ch", None))
-    if target is not None and source_const is not None:
-        source = _trace_source_color_css(trace)
-        if _css_paints_equal(source, target):
-            return "solid"
-        if "fill" in (getattr(trace, "style", None) or {}):
-            return "fail"
-        return "gradient"
-    if "fill" in (getattr(trace, "style", None) or {}):
-        return "fail"
-    if _ribbon_end_rgba_pair(trace) is None:
-        return "fail"
-    return "ends"
+    source_paint = _trace_source_color_css(trace)
+    has_fill = "fill" in (getattr(trace, "style", None) or {})
+    both_const = target is not None and source_const is not None
+    has_end_pair = False
+    if has_color2 and kind_is_ribbon and not both_const and not has_fill:
+        has_end_pair = _ribbon_end_rgba_pair(trace) is not None
+    return _native.scene_ribbon_color2_classify(
+        has_color2,
+        kind_is_ribbon,
+        source_const,
+        target,
+        source_paint,
+        has_fill,
+        has_end_pair,
+    )
 
 
 def _ribbon_count(trace: Any) -> int:

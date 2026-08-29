@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 222
-SIGNATURE_SHA256 = "4bdb7e61a9209dcd6312aa4ca77a12669f41e45599a5853a08505eabee6b1ac2"
+ABI_VERSION = 223
+SIGNATURE_SHA256 = "20053a9aca79d0499f5ff02d9c01a2ba82987c3d63e101b159473fa48ac760bf"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -890,6 +890,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_resolve_pack_kind
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint8]
+    # int32_t xyg_scene_ribbon_color2_classify(uint8_t has_color2, uint8_t kind_is_ribbon, uint8_t has_source_css, const uint8_t * source_css, size_t source_len, uint8_t has_target_css, const uint8_t * target_css, size_t target_len, const uint8_t * source_paint, size_t source_paint_len, uint8_t has_fill, uint8_t has_end_pair)
+    function = lib.xyg_scene_ribbon_color2_classify
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_uint8, ctypes.c_uint8, ctypes.c_uint8, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint8, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint8, ctypes.c_uint8]
     # int32_t xyg_scene_scale_map(const double * values, size_t len, uint32_t kind, uint32_t operation, double lo, double hi, double px0, double px1, double constant, int32_t mask_nonpositive, double * out)
     function = lib.xyg_scene_scale_map
     function.restype = ctypes.c_int32

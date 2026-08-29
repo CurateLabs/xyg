@@ -60,6 +60,7 @@ scene_annotation_style_admit = _impl.scene_annotation_style_admit
 scene_dash_admit = _impl.scene_dash_admit
 scene_linecap_admit = _impl.scene_linecap_admit
 scene_marker_path_admit = _impl.scene_marker_path_admit
+scene_ribbon_color2_classify = _impl.scene_ribbon_color2_classify
 factorize_fixed = _impl.factorize_fixed
 factorize_fixed_u8 = _impl.factorize_fixed_u8
 factorize_fixed_u8_counts = _impl.factorize_fixed_u8_counts
@@ -292,6 +293,7 @@ __all__ = [
     "scene_dash_admit",
     "scene_linecap_admit",
     "scene_marker_path_admit",
+    "scene_ribbon_color2_classify",
     "sector_triangles",
     "spectrogram",
     "stacked_bounds",

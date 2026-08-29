@@ -1521,6 +1521,10 @@ ABI 222 `xyg_scene_annotation_style_admit` owns Scene annotation style-key
 allowlists so Python `_annotation_allowed_style` and Node
 `annotationAllowedStyle` cannot drift. Hosts still skip markup/typography/
 rotation and raise error text.
+ABI 223 `xyg_scene_ribbon_color2_classify` owns ribbon two-ended paint class
+(absent/solid/gradient/ends/fail) so Python `_classify_ribbon_color2` and
+Node `classifyRibbonColor2` cannot drift. Hosts still coerce channels and
+pack end RGBA8.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1578,6 +1582,10 @@ ABI 222 `xyg_scene_annotation_style_admit` owns Scene annotation style-key
 allowlists so Python `_annotation_allowed_style` and Node
 `annotationAllowedStyle` cannot drift. Hosts still skip markup/typography/
 rotation and raise error text.
+ABI 223 `xyg_scene_ribbon_color2_classify` owns ribbon two-ended paint class
+(absent/solid/gradient/ends/fail) so Python `_classify_ribbon_color2` and
+Node `classifyRibbonColor2` cannot drift. Hosts still coerce channels and
+pack end RGBA8.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same
