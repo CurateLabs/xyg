@@ -89,6 +89,7 @@ import {
   sceneKindClass,
   figureTraceSupport,
   fillIsGradientAuthoring,
+  xyEfStrokeWidthOnly,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -805,6 +806,13 @@ test("figureTraceSupport ignores style.smooth like Python", () => {
   const dashed = 1 << 4;
   assert.equal(figureTraceSupport({}, { kind: "line", style: { smooth: true } }).flags & dashed, 0);
   assert.equal(figureTraceSupport({}, { kind: "scatter", style: { curve: "smooth" } }).flags & dashed, dashed);
+});
+
+test("xyEfStrokeWidthOnly uses stroke_width only like Python", () => {
+  assert.equal(xyEfStrokeWidthOnly({}), false);
+  assert.equal(xyEfStrokeWidthOnly({ strokeWidth: 2 }), false);
+  assert.equal(xyEfStrokeWidthOnly({ stroke_width: 2 }), true);
+  assert.equal(xyEfStrokeWidthOnly({ stroke_width: 2, stroke: "#000" }), false);
 });
 
 test("sceneKindClass matches host table", () => {
