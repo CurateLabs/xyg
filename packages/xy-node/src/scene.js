@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -1679,14 +1679,28 @@ function normalizeFillSpec(fill) {
 function constantMarkColor(trace) {
   const channel = trace.color_ch ?? trace.colorChannel ?? trace.color;
   if (classifyRibbonColor2(trace) === "fail") return null;
-  if (channel == null) return String(trace.style?.color ?? "#3987e5");
-  if (typeof channel === "string") return channel;
-  if (channel.mode === "constant" && (channel.constant != null || channel.color != null)) {
-    return String(channel.constant ?? channel.color);
+  let hasChannel = channel != null;
+  let constantOk = false;
+  let constant = null;
+  if (typeof channel === "string") {
+    hasChannel = true;
+    constantOk = true;
+    constant = channel;
+  } else if (channel != null && typeof channel === "object") {
+    if (channel.mode === "constant" && (channel.constant != null || channel.color != null)) {
+      constantOk = true;
+      constant = String(channel.constant ?? channel.color);
+    }
   }
-  if (String(trace.kind ?? "") === "scatter" && scatterUsesDensity(trace)) {
-    return String(trace.style?.color ?? "#3987e5");
-  }
+  const scatterDensity = String(trace.kind ?? "") === "scatter" && scatterUsesDensity(trace);
+  const packsPaint =
+    hexbinPacksPaintPlane(trace)
+    || ribbonPacksEndPaints(trace)
+    || meshPacksPaintPlane(trace)
+    || scatterPacksPaintPlane(trace);
+  const code = sceneConstantColorAdmit(hasChannel, constantOk, scatterDensity, packsPaint);
+  if (code === 2) return String(constant);
+  if (code === 1) return String(trace.style?.color ?? "#3987e5");
   return null;
 }
 
