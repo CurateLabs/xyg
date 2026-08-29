@@ -60,9 +60,15 @@ import {
   packXyTaGrid,
   packXyTaRgba,
   packXyTaRgbaGrid,
+  packXyTcColorChannel,
   packXyTcFillOpacity,
+  packXyTcJoinedFill,
+  packXyTcLineColor,
   packXyTcLineOpacity,
+  packXyTcLineWidth,
+  packXyTcSize,
   packXyTcStrokeOpacity,
+  packXyTcStrokePerimeter,
   packXyTcStrokeWidth,
   hexbinXyTaColormap,
   constantMarkColor,
@@ -386,6 +392,30 @@ test("packXyTcStrokeWidth uses stroke_width only like Python", () => {
   assert.equal(snake.value, 2.5);
 });
 
+test("packXyTcLineWidth uses line_width only like Python", () => {
+  const missing = packXyTcLineWidth({});
+  assert.equal(missing.flags, 0);
+  assert.equal(missing.value, 0);
+  const camel = packXyTcLineWidth({ lineWidth: 2.5 });
+  assert.equal(camel.flags, 0);
+  assert.equal(camel.value, 0);
+  const snake = packXyTcLineWidth({ line_width: 2.5 });
+  assert.equal(snake.flags, 1 << 5);
+  assert.equal(snake.value, 2.5);
+});
+
+test("packXyTcSize uses size only like Python", () => {
+  const missing = packXyTcSize({});
+  assert.equal(missing.flags, 0);
+  assert.equal(Number.isNaN(missing.value), true);
+  const camel = packXyTcSize({ diameter: 12 });
+  assert.equal(camel.flags, 0);
+  assert.equal(Number.isNaN(camel.value), true);
+  const snake = packXyTcSize({ size: 12 });
+  assert.equal(snake.flags, 1 << 6);
+  assert.equal(snake.value, 12);
+});
+
 test("packXyTaGrid flattens plane.values like Python", () => {
   const direct = packXyTaGrid([1, 2]);
   const view = new Float64Array(direct.buffer, direct.byteOffset, direct.byteLength / 8);
@@ -433,6 +463,26 @@ test("packXyTcFillOpacity uses fill_opacity only like Python", () => {
   assert.equal(packXyTcFillOpacity({ fill_opacity: 0.5 }, 0), 1);
 });
 
+test("packXyTcJoinedFill uses joined_fill only like Python", () => {
+  assert.equal(packXyTcJoinedFill({ kind: "scatter", style: { joined_fill: true } }), 0);
+  assert.equal(packXyTcJoinedFill({ kind: "triangle_mesh", style: { joinedFill: true } }), 0);
+  assert.equal(packXyTcJoinedFill({ kind: "triangle_mesh", style: { joined_fill: false } }), 0);
+  assert.equal(packXyTcJoinedFill({ kind: "triangle_mesh", style: {} }), 0);
+  assert.equal(packXyTcJoinedFill({ kind: "triangle_mesh", style: { joined_fill: true } }), 1 << 25);
+});
+
+test("packXyTcLineColor uses line_color only like Python", () => {
+  const missing = packXyTcLineColor({});
+  assert.equal(missing.flags, 0);
+  assert.equal(missing.bytes.length, 0);
+  const camel = packXyTcLineColor({ lineColor: "#ff0000" });
+  assert.equal(camel.flags, 0);
+  assert.equal(camel.bytes.length, 0);
+  const snake = packXyTcLineColor({ line_color: "#ff0000" });
+  assert.equal(snake.flags, 1 << 2);
+  assert.deepEqual([...snake.bytes], [...new TextEncoder().encode("#ff0000")]);
+});
+
 test("packXyTcLineOpacity uses line_opacity only like Python", () => {
   const area = sceneKindClass("area");
   const scatter = sceneKindClass("scatter");
@@ -451,6 +501,33 @@ test("packXyTcStrokeOpacity uses stroke_opacity only like Python", () => {
   assert.equal(packXyTcStrokeOpacity({ stroke_opacity: 0.5 }, scatter), 0.5);
   assert.equal(packXyTcStrokeOpacity({ stroke_opacity: 0.5 }, line), 1);
   assert.equal(packXyTcStrokeOpacity({ stroke_opacity: 0.5 }, 0), 1);
+});
+
+test("packXyTcColorChannel uses color_ch only like Python", () => {
+  const utf8 = new TextEncoder();
+  const missing = packXyTcColorChannel({});
+  assert.equal(missing.flags, 0);
+  assert.deepEqual([...missing.mode], []);
+  assert.deepEqual([...missing.constant], []);
+  const camel = packXyTcColorChannel({ colorChannel: { mode: "constant", constant: "red" } });
+  assert.equal(camel.flags, 0);
+  const asString = packXyTcColorChannel({ color_ch: "red" });
+  assert.equal(asString.flags, 0);
+  const snake = packXyTcColorChannel({ color_ch: { mode: "constant", constant: "red" } });
+  assert.equal(snake.flags, (1 << 11) | (1 << 12));
+  assert.deepEqual([...snake.mode], [...utf8.encode("constant")]);
+  assert.deepEqual([...snake.constant], [...utf8.encode("red")]);
+});
+
+test("packXyTcStrokePerimeter uses stroke_perimeter only like Python", () => {
+  const area = sceneKindClass("area");
+  const scatter = sceneKindClass("scatter");
+  assert.equal(packXyTcStrokePerimeter({}, area), 0);
+  assert.equal(packXyTcStrokePerimeter({ strokePerimeter: true }, area), 0);
+  assert.equal(packXyTcStrokePerimeter({ stroke_perimeter: true }, scatter), 0);
+  assert.equal(packXyTcStrokePerimeter({ stroke_perimeter: false }, area), 0);
+  assert.equal(packXyTcStrokePerimeter({ stroke_perimeter: true }, area), 1 << 9);
+  assert.equal(packXyTcStrokePerimeter({ stroke_perimeter: "yes" }, area), 1 << 10);
 });
 
 test("hexbinXyTaColormap uses channel.colormap only like Python", () => {

@@ -887,6 +887,12 @@ Node XYTC fill opacity uses `style.fill_opacity` only like Python `_pack_xytc`; 
 Node XYTC stroke opacity uses `style.stroke_opacity` only like Python `_pack_xytc`; `strokeOpacity` is not a stroke-opacity key.
 Node XYTC line opacity uses `style.line_opacity` only like Python `_pack_xytc`; `lineOpacity` is not a line-opacity key.
 Node XYTC stroke width uses `style.stroke_width` only like Python `_pack_xytc`; `strokeWidth` is not a stroke-width key.
+Node XYTC line width uses `style.line_width` only like Python `_pack_xytc`; `lineWidth` is not a line-width key.
+Node XYTC size uses `style.size` only like Python `_pack_xytc`; `diameter` is not a size key.
+Node XYTC line color uses `style.line_color` only like Python `_pack_xytc`; `lineColor` is not a line-color key.
+Node XYTC joined fill uses `style.joined_fill` only like Python `_pack_xytc`; `joinedFill` is not a joined-fill key.
+Node XYTC stroke perimeter uses `style.stroke_perimeter` only like Python `_pack_xytc`; `strokePerimeter` is not a stroke-perimeter key.
+Node XYTC COLOR_CH packing uses `color_ch` only like Python `_pack_xytc`; `colorChannel` is not a packed-channel fallback.
 Node XYEF joined-fill observation uses `style.joined_fill` only like Python; `joinedFill` is not an observation key.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
@@ -1340,8 +1346,13 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node XYTC stroke opacity uses `stroke_opacity` only.
   Node XYTC line opacity uses `line_opacity` only.
   Node XYTC stroke width uses `stroke_width` only.
+  Node XYTC line width uses `line_width` only.
+  Node XYTC size uses `size` only.
+  Node XYTC line color uses `line_color` only.
+  Node XYTC joined fill uses `joined_fill` only.
+  Node XYTC stroke perimeter uses `stroke_perimeter` only.
+  Node XYTC COLOR_CH packing uses `color_ch` only.
   Node XYEF joined-fill observation uses `joined_fill` only.
-
 ---
 
 ## 4. Delivery order
