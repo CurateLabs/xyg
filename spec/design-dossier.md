@@ -1662,6 +1662,9 @@ Python `quantize_unit_u8` / `_quantized_lut_idx` and Node
 `quantizeUnitU8` / `resolveDensityBinColors` normalize through
 `xyg_normalize_f32` (nonfinite → 0) then ABI 251 `xyg_clip_quantize_u8`.
 Equal or non-finite domain stays a host zero-span short-circuit.
+Python `palette_rows_rgba8` quantizes `css_check` 0-1 channels through
+ABI 251 `xyg_clip_quantize_u8`. Browser-only palette status and per-index
+substitute stay host.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1860,6 +1863,9 @@ Python `quantize_unit_u8` / `_quantized_lut_idx` and Node
 `quantizeUnitU8` / `resolveDensityBinColors` normalize through
 `xyg_normalize_f32` (nonfinite → 0) then ABI 251 `xyg_clip_quantize_u8`.
 Equal or non-finite domain stays a host zero-span short-circuit.
+Python `palette_rows_rgba8` quantizes `css_check` 0-1 channels through
+ABI 251 `xyg_clip_quantize_u8`. Browser-only palette status and per-index
+substitute stay host.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

@@ -800,7 +800,10 @@ def palette_rows_rgba8(palette: Sequence[str], rows: int) -> npt.NDArray[np.uint
     (`var()`, `oklch()`) has no fixed channels here; it falls back to the
     built-in palette's color **at the same index**, never to one shared
     fallback, because a shared fallback collapses distinct categories into a
-    single indistinguishable color. The substitution warns (§28)."""
+    single indistinguishable color. The substitution warns (§28).
+
+    Static 0-1 channels from ``css_check`` quantize through ABI 251
+    ``xyg_clip_quantize_u8``. Browser-only status stays host."""
     lut = np.empty((max(rows, 1), 4), dtype=np.uint8)
     unresolved: list[str] = []
     for i in range(lut.shape[0]):
@@ -814,7 +817,7 @@ def palette_rows_rgba8(palette: Sequence[str], rows: int) -> npt.NDArray[np.uint
             # substitute always parses; assert it rather than carry an
             # unreachable None through the arithmetic below.
             assert rgba is not None, "built-in palette entry failed to parse"
-        lut[i] = [round(c * 255) for c in rgba]
+        lut[i] = kernels.clip_quantize_u8(np.asarray(rgba, dtype=np.float64))
     if unresolved:
         import warnings
 

@@ -814,6 +814,9 @@ Python `quantize_unit_u8` / `_quantized_lut_idx` and Node
 `quantizeUnitU8` / `resolveDensityBinColors` normalize through
 `xyg_normalize_f32` (nonfinite → 0) then ABI 251 `xyg_clip_quantize_u8`.
 Equal or non-finite domain stays a host zero-span short-circuit.
+Python `palette_rows_rgba8` quantizes `css_check` 0-1 channels through
+ABI 251 `xyg_clip_quantize_u8`. Browser-only palette status and per-index
+substitute stay host.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1201,6 +1204,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   256-texel colormap RGBA8 LUT uses ABI 206.
   Unit-t LUT/size u8 quantize uses ABI 251.
   Node density-bin LUT idx uses the same composition.
+  Categorical palette LUT u8 uses ABI 251.
 
 ---
 
