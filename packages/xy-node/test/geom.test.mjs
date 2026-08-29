@@ -8,6 +8,8 @@ import {
   geometryOffset,
   hexbinRing,
   markerPathScale,
+  arrowGeometry,
+  arrowShaftPoints,
   pinsOffsetToZero,
   monotoneTangents,
   ribbonEdge,
@@ -30,6 +32,19 @@ test("geometryOffset pins log family and nonfinite to zero", () => {
   assert.equal(f32SafeScale(0, -1, 1), 1);
   const huge = F32_SAFE_MAG * 10;
   assert.ok(Math.abs(f32SafeScale(0, -huge, huge) - 0.1) < 1e-12);
+});
+
+test("arrowGeometry trims label_clear and samples shafts", () => {
+  const geom = arrowGeometry(0, 0, 300, 0, { label_clear: "2.8,90,2.8,17" });
+  assert.ok(Math.abs(geom.p0[0] - 90) < 1e-12);
+  assert.equal(geom.p0[1], 0);
+  assert.deepEqual(geom.p1, [300, 0]);
+  const short = arrowGeometry(0, 0, 50, 0, { label_clear: "2.8,90,2.8,17" });
+  assert.deepEqual(short.p0, [0, 0]);
+  const elbow = arrowGeometry(0, 0, 10, 10, { angle_a: 0, angle_b: 90, elbow: true });
+  assert.equal(arrowShaftPoints(elbow).length, 3);
+  const curved = arrowGeometry(0, 0, 10, 10, { curve: 0.3 });
+  assert.equal(arrowShaftPoints(curved).length, 25);
 });
 
 test("hexbinRing scales the canonical pointy-top fractions", () => {

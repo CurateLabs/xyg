@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 216
-#define XYG_ABI_SIGNATURE_SHA256 "1698d44f6239722754efecf82f93ac9ac4498045d5c22b44bb6ba55881090359"
+#define XYG_ABI_VERSION 217
+#define XYG_ABI_SIGNATURE_SHA256 "c8d160687a7ca4bb25df62923d0d139e58be1d9ae265b530297b1f575892896c"
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,6 +14,11 @@ extern "C" {
 
 uint32_t xyg_abi_version();
 size_t xyg_argsort_stable(const double * data, size_t len, uint32_t * out, size_t capacity);
+size_t xyg_arrow_end_decoration(double px, double py, double dx, double dy, const uint8_t * style, size_t style_len, double head, double * out_x, double * out_y, size_t capacity, int32_t * out_kind);
+int32_t xyg_arrow_geometry(double x0, double y0, double x1, double y1, const double * style, size_t style_len, double * out, size_t out_len);
+size_t xyg_arrow_shaft_points(double p0x, double p0y, double p1x, double p1y, double cx, double cy, int32_t has_control, int32_t elbow, size_t samples, double * out_x, double * out_y, size_t capacity);
+size_t xyg_arrow_taper_polygon(const double * x, const double * y, size_t n, double width_start, double width_end, double * out_x, double * out_y, size_t capacity);
+size_t xyg_arrow_trim_polyline_end(const double * x, const double * y, size_t n, double trim, double * out_x, double * out_y, size_t capacity);
 int32_t xyg_auto_domain(uint32_t has_bounds, double lo, double hi, double * out_lo, double * out_hi);
 int32_t xyg_bar_stack(const double * pos, size_t n_items, const double * values, size_t n_series, const double * width, size_t width_len, const double * base, size_t base_len, uint32_t mode, uint32_t orientation, double * out_x0, double * out_x1, double * out_y0, double * out_y1);
 int32_t xyg_bin_2d(const double * x, const double * y, size_t len, double x0, double x1, double y0, double y1, size_t w, size_t h, float * out);

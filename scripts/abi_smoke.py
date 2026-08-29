@@ -759,6 +759,67 @@ def load() -> ctypes.CDLL:
         F64P,
         ctypes.c_size_t,
     ]
+    lib.xyg_arrow_geometry.restype = ctypes.c_int32
+    lib.xyg_arrow_geometry.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_arrow_shaft_points.restype = ctypes.c_size_t
+    lib.xyg_arrow_shaft_points.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_arrow_end_decoration.restype = ctypes.c_size_t
+    lib.xyg_arrow_end_decoration.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_int32),
+    ]
+    lib.xyg_arrow_taper_polygon.restype = ctypes.c_size_t
+    lib.xyg_arrow_taper_polygon.argtypes = [
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+    ]
+    lib.xyg_arrow_trim_polyline_end.restype = ctypes.c_size_t
+    lib.xyg_arrow_trim_polyline_end.argtypes = [
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_rounded_rect_poly.restype = ctypes.c_size_t
     lib.xyg_rounded_rect_poly.argtypes = [
         ctypes.c_double,
@@ -1972,6 +2033,61 @@ def main() -> None:
         "scale_pins_offset linear",
     )
     ok(lib.xyg_scale_pins_offset(null_u8, 0) == 0, "scale_pins_offset empty")
+    arrow_style = array("d", [float("nan")] * 12)
+    arrow_style[7] = 2.8
+    arrow_style[8] = 90.0
+    arrow_style[9] = 2.8
+    arrow_style[10] = 17.0
+    arrow_out = array("d", [0.0] * 11)
+    ok(
+        lib.xyg_arrow_geometry(
+            0.0,
+            0.0,
+            300.0,
+            0.0,
+            _ptr(arrow_style, ctypes.c_double),
+            12,
+            _ptr(arrow_out, ctypes.c_double),
+            11,
+        )
+        == 1
+        and abs(arrow_out[0] - 90.0) < 1e-12,
+        "arrow_geometry label_clear",
+    )
+    ok(
+        lib.xyg_arrow_geometry(
+            0.0,
+            0.0,
+            10.0,
+            0.0,
+            null_f64,
+            0,
+            _ptr(arrow_out, ctypes.c_double),
+            11,
+        )
+        == 1
+        and arrow_out[0] == 0.0
+        and arrow_out[2] == 10.0,
+        "arrow_geometry empty style",
+    )
+    ok(
+        lib.xyg_arrow_shaft_points(
+            0.0,
+            0.0,
+            10.0,
+            0.0,
+            0.0,
+            0.0,
+            0,
+            0,
+            0,
+            null_f64,
+            null_f64,
+            0,
+        )
+        == 2,
+        "arrow_shaft linear probe",
+    )
     scale = ctypes.c_double()
     ok(
         lib.xyg_f32_safe_scale(0.0, -1.0, 1.0, ctypes.byref(scale)) == 1 and scale.value == 1.0,

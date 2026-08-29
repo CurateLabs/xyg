@@ -647,6 +647,12 @@ ABI 216 `xyg_scale_pins_offset` owns log-family `pin_zero` admission
 (`log`/`symlog`, case-sensitive) so Python `lod.pins_offset_to_zero` and
 Node `pinsOffsetToZero` cannot drift. Hosts still pack `EncodedColumn`
 metadata.
+ABI 217 `xyg_arrow_geometry` / `xyg_arrow_shaft_points` /
+`xyg_arrow_end_decoration` / `xyg_arrow_taper_polygon` /
+`xyg_arrow_trim_polyline_end` owns annotation-arrow connectionstyle geometry
+so Python `_arrowgeom.py` and Node `arrowGeometry` cannot drift. ChartView
+`51_annotations.ts` keeps the same formula until WASM. Hosts still parse
+comma-separated `start_offset` / `label_clear` strings.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -997,7 +1003,8 @@ client must not grow a parallel “JS layout/LOD” product path.
   offsets are ABI 210; step/stairs expand is ABI 211; authored marker-path
   scale is ABI 212; color CSS/numeric split, domain pad, and direct RGBA admit
   are ABI 213; stem/errorbar count budget is ABI 214; errorbar role-block
-  expand is ABI 215; log-family pin_zero admission is ABI 216.
+  expand is ABI 215; log-family pin_zero admission is ABI 216;
+  annotation-arrow geometry is ABI 217.
 
 ---
 

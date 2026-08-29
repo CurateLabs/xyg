@@ -1495,6 +1495,12 @@ ABI 208 `xyg_geometry_offset` / `xyg_f32_safe_scale` owns §4/§16 encode
 offset and the §19 f32-safe scale so Python and Node cannot drift.
 ABI 216 `xyg_scale_pins_offset` owns log-family `pin_zero` admission
 (`log`/`symlog`, case-sensitive). Hosts still pack `EncodedColumn` metadata.
+ABI 217 `xyg_arrow_geometry` / `xyg_arrow_shaft_points` /
+`xyg_arrow_end_decoration` / `xyg_arrow_taper_polygon` /
+`xyg_arrow_trim_polyline_end` owns annotation-arrow connectionstyle geometry
+so Python `_arrowgeom.py` and Node `arrowGeometry` cannot drift. ChartView
+`51_annotations.ts` keeps the same formula until WASM. Hosts still parse
+comma-separated `start_offset` / `label_clear` strings.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1526,6 +1532,12 @@ ABI 216 `xyg_scale_pins_offset` owns log-family `pin_zero` admission
 (`log`/`symlog`, case-sensitive) so Python `lod.pins_offset_to_zero` and
 Node `pinsOffsetToZero` cannot drift. Hosts still pack `EncodedColumn`
 metadata.
+ABI 217 `xyg_arrow_geometry` / `xyg_arrow_shaft_points` /
+`xyg_arrow_end_decoration` / `xyg_arrow_taper_polygon` /
+`xyg_arrow_trim_polyline_end` owns annotation-arrow connectionstyle geometry
+so Python `_arrowgeom.py` and Node `arrowGeometry` cannot drift. ChartView
+`51_annotations.ts` keeps the same formula until WASM. Hosts still parse
+comma-separated `start_offset` / `label_clear` strings.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

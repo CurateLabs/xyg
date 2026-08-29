@@ -11160,6 +11160,220 @@ def marker_path_scale(
     return out_x, out_y
 
 
+def arrow_geometry(
+    x0: float,
+    y0: float,
+    x1: float,
+    y1: float,
+    style: npt.ArrayLike,
+) -> npt.NDArray[np.float64]:
+    """Packed annotation-arrow geometry via ``xyg_arrow_geometry`` (ABI 217)."""
+    style = _as_f64(np.asarray(style, dtype=np.float64).reshape(-1), "style")
+    if len(style) not in (0, 12):
+        raise ValueError("arrow_geometry style must have length 0 or 12")
+    out = np.empty(11, dtype=np.float64)
+    ok = _lib.xyg_arrow_geometry(
+        float(x0),
+        float(y0),
+        float(x1),
+        float(y1),
+        _ptr_f64(style) if len(style) else 0,
+        len(style),
+        _ptr_f64(out),
+        11,
+    )
+    if ok != 1:
+        raise RuntimeError("xyg native arrow_geometry failed (output undefined)")
+    return out
+
+
+def arrow_shaft_points(
+    p0x: float,
+    p0y: float,
+    p1x: float,
+    p1y: float,
+    cx: float,
+    cy: float,
+    has_control: bool,
+    elbow: bool,
+    samples: int = 0,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Shaft polyline via ``xyg_arrow_shaft_points`` (ABI 217)."""
+    probed = _lib.xyg_arrow_shaft_points(
+        float(p0x),
+        float(p0y),
+        float(p1x),
+        float(p1y),
+        float(cx),
+        float(cy),
+        int(bool(has_control)),
+        int(bool(elbow)),
+        int(samples),
+        0,
+        0,
+        0,
+    )
+    if probed == _USIZE_MAX:
+        raise ValueError("invalid arrow-shaft-points request")
+    count = int(probed)
+    if count == 0:
+        return np.empty(0, dtype=np.float64), np.empty(0, dtype=np.float64)
+    out_x = np.empty(count, dtype=np.float64)
+    out_y = np.empty(count, dtype=np.float64)
+    written = _lib.xyg_arrow_shaft_points(
+        float(p0x),
+        float(p0y),
+        float(p1x),
+        float(p1y),
+        float(cx),
+        float(cy),
+        int(bool(has_control)),
+        int(bool(elbow)),
+        int(samples),
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        count,
+    )
+    if written == _USIZE_MAX or written != count:
+        raise ValueError("invalid arrow-shaft-points request")
+    return out_x, out_y
+
+
+def arrow_end_decoration(
+    px: float,
+    py: float,
+    dx: float,
+    dy: float,
+    style: str,
+    head: float,
+) -> tuple[int, npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Endpoint decoration via ``xyg_arrow_end_decoration`` (ABI 217)."""
+    encoded = str(style).encode("utf-8")
+    kind = ctypes.c_int32(-1)
+    probed = _lib.xyg_arrow_end_decoration(
+        float(px),
+        float(py),
+        float(dx),
+        float(dy),
+        encoded if encoded else 0,
+        len(encoded),
+        float(head),
+        0,
+        0,
+        0,
+        ctypes.byref(kind),
+    )
+    if probed == _USIZE_MAX or int(kind.value) < 0:
+        raise ValueError("invalid arrow-end-decoration request")
+    count = int(probed)
+    if count == 0:
+        return int(kind.value), np.empty(0, dtype=np.float64), np.empty(0, dtype=np.float64)
+    out_x = np.empty(count, dtype=np.float64)
+    out_y = np.empty(count, dtype=np.float64)
+    kind = ctypes.c_int32(-1)
+    written = _lib.xyg_arrow_end_decoration(
+        float(px),
+        float(py),
+        float(dx),
+        float(dy),
+        encoded if encoded else 0,
+        len(encoded),
+        float(head),
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        count,
+        ctypes.byref(kind),
+    )
+    if written == _USIZE_MAX or written != count or int(kind.value) < 0:
+        raise ValueError("invalid arrow-end-decoration request")
+    return int(kind.value), out_x, out_y
+
+
+def arrow_taper_polygon(
+    x: npt.ArrayLike,
+    y: npt.ArrayLike,
+    width_start: float,
+    width_end: float,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Tapered shaft polygon via ``xyg_arrow_taper_polygon`` (ABI 217)."""
+    x = _as_f64(np.asarray(x, dtype=np.float64).reshape(-1), "x")
+    y = _as_f64(np.asarray(y, dtype=np.float64).reshape(-1), "y")
+    if len(x) != len(y):
+        raise ValueError("arrow_taper_polygon x and y must have equal length")
+    n = len(x)
+    probed = _lib.xyg_arrow_taper_polygon(
+        _ptr_f64(x) if n else 0,
+        _ptr_f64(y) if n else 0,
+        n,
+        float(width_start),
+        float(width_end),
+        0,
+        0,
+        0,
+    )
+    if probed == _USIZE_MAX:
+        raise ValueError("invalid arrow-taper-polygon request")
+    count = int(probed)
+    if count == 0:
+        return np.empty(0, dtype=np.float64), np.empty(0, dtype=np.float64)
+    out_x = np.empty(count, dtype=np.float64)
+    out_y = np.empty(count, dtype=np.float64)
+    written = _lib.xyg_arrow_taper_polygon(
+        _ptr_f64(x) if n else 0,
+        _ptr_f64(y) if n else 0,
+        n,
+        float(width_start),
+        float(width_end),
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        count,
+    )
+    if written == _USIZE_MAX or written != count:
+        raise ValueError("invalid arrow-taper-polygon request")
+    return out_x, out_y
+
+
+def arrow_trim_polyline_end(
+    x: npt.ArrayLike,
+    y: npt.ArrayLike,
+    trim: float,
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Trim arclength from a polyline end via ``xyg_arrow_trim_polyline_end`` (ABI 217)."""
+    x = _as_f64(np.asarray(x, dtype=np.float64).reshape(-1), "x")
+    y = _as_f64(np.asarray(y, dtype=np.float64).reshape(-1), "y")
+    if len(x) != len(y):
+        raise ValueError("arrow_trim_polyline_end x and y must have equal length")
+    n = len(x)
+    probed = _lib.xyg_arrow_trim_polyline_end(
+        _ptr_f64(x) if n else 0,
+        _ptr_f64(y) if n else 0,
+        n,
+        float(trim),
+        0,
+        0,
+        0,
+    )
+    if probed == _USIZE_MAX:
+        raise ValueError("invalid arrow-trim-polyline-end request")
+    count = int(probed)
+    if count == 0:
+        return np.empty(0, dtype=np.float64), np.empty(0, dtype=np.float64)
+    out_x = np.empty(count, dtype=np.float64)
+    out_y = np.empty(count, dtype=np.float64)
+    written = _lib.xyg_arrow_trim_polyline_end(
+        _ptr_f64(x) if n else 0,
+        _ptr_f64(y) if n else 0,
+        n,
+        float(trim),
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        count,
+    )
+    if written == _USIZE_MAX or written != count:
+        raise ValueError("invalid arrow-trim-polyline-end request")
+    return out_x, out_y
+
+
 def rounded_rect_poly(
     x: float,
     y: float,
