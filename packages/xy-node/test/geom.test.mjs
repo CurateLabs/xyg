@@ -41,6 +41,7 @@ import {
   sceneParseLinearGradient,
   sceneRectExtraFlags,
   rectExtraFlags,
+  resolveDensityBinColors,
   sceneGradientDir,
   sceneLinearGradientPrefix,
   sceneGradientSpace,
@@ -442,6 +443,14 @@ test("scatterHasNonConstantColor uses color_ch only like Python", () => {
     scatterHasNonConstantColor({ color: { mode: "continuous", values: [0, 1] } }),
     false,
   );
+});
+
+test("resolveDensityBinColors uses color_ch only like Python", () => {
+  const ch = { mode: "direct_rgba", rgba: new Uint8Array([255, 0, 0, 255, 0, 255, 0, 255]) };
+  const fromCh = resolveDensityBinColors({ color_ch: ch });
+  const fromColor = resolveDensityBinColors({ color: ch });
+  assert.ok(fromCh != null && fromCh.rgba != null);
+  assert.equal(fromColor, null);
 });
 
 test("sceneGradientSpace matches host table", () => {
