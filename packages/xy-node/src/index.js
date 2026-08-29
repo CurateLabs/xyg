@@ -217,7 +217,7 @@ export {
   composeGraph,
 } from "./graph.js";
 
-import { Figure, PayloadWriter, figure, autoDomain } from "./figure.js";
+import { Figure, PayloadWriter, figure, autoDomain, scatterPerItemChannels } from "./figure.js";
 import { toHtml } from "./html.js";
 
 /** Stable engine entry — alias of {@link figure} for Node servers / VS Code hosts. */
@@ -225,7 +225,7 @@ export function createEngine(opts = {}) {
   return figure(opts);
 }
 
-export { Figure, PayloadWriter, figure, toHtml, autoDomain };
+export { Figure, PayloadWriter, figure, toHtml, autoDomain, scatterPerItemChannels };
 
 export { axisTicks, tickFormat, tickLabelLayout, tickWindow, tickWindowFilter, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yTickLabelExtent, yAxisLeftRoom, xAxisTitleRoom, xTickLabelRoom, xTickLabelEdgeRooms, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatTitleRoom, compatXAxisSideRoom, compatColorbarExtra, compatRightYRoom, polarLegendRoom, polarLegendReserve, polarLabelRoom, polarLayout, polarProject, polarWedgePoints, polarHeatmapInverseMap, recutPolarPlot, compatCombinePlot, tightLayoutSolve, tightLayoutFigureExtra, encodeJpeg, encodePng, encodeWebp, admittedMarkerGlyph, channelConstantCss, channelEndRgba8, color2Channel, constantMarkColor, figureSceneV3, figureTraceSupport, fillIsGradientAuthoring, hexbinPacksColormapPlane, hexbinXyTaColormap, itemApplyOpacity, itemFillRgba8, itemWidths, meshHasPerItem, packXyTaColormap, rectExtraFlags, resolveDensityBinColors, scaleMap, scatterHasNonConstantColor, scatterPacksPaintPlane, scatterPaintChannelNames, scatterUsesDensity, sceneBatchEncode, sceneBrowserPainter, sceneExportSupportReason, sceneRasterCommands, sceneStaticExport, sceneSupportReason, sceneSvg, sceneVersion, scatterSceneSvg, sourceColorCss, svgToPdf, xyHfColormap } from "./scene.js";
 

@@ -104,16 +104,8 @@ function gatherItems(arr, idx) {
   return out;
 }
 
-function scatterPerItemChannels(t) {
-  const style = t.style ?? {};
-  return Boolean(
-    t.color_ch
-    || t.size_ch
-    || t.stroke_ch
-    || style.color_channel
-    || style.size_channel
-    || style.stroke_channel,
-  );
+export function scatterPerItemChannels(t) {
+  return Boolean(t.color_ch || t.size_ch || t.stroke_ch);
 }
 
 const AUTORANGE_KIND = {

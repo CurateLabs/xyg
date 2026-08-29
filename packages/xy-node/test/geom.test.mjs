@@ -33,6 +33,7 @@ import {
   scatterHasNonConstantColor,
   scatterPacksPaintPlane,
   scatterPaintChannelNames,
+  scatterPerItemChannels,
   scatterUsesDensity,
   sceneTickLabelStrategy,
   sceneTickAnchor,
@@ -459,6 +460,13 @@ test("scatterHasNonConstantColor uses color_ch only like Python", () => {
     scatterHasNonConstantColor({ color_ch: { mode: "constant", constant: "red" } }),
     false,
   );
+});
+
+test("scatterPerItemChannels ignores style.color_channel like Python", () => {
+  assert.equal(scatterPerItemChannels({ color_ch: { mode: "constant" } }), true);
+  assert.equal(scatterPerItemChannels({ style: { color_channel: { mode: "continuous" } } }), false);
+  assert.equal(scatterPerItemChannels({ style: { size_channel: { mode: "continuous" } } }), false);
+  assert.equal(scatterPerItemChannels({ style: { stroke_channel: { mode: "continuous" } } }), false);
 });
 
 test("resolveDensityBinColors uses color_ch only like Python", () => {
