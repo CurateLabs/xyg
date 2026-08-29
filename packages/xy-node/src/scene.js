@@ -1502,7 +1502,7 @@ function normalizeFillSpec(fill) {
 }
 
 export function constantMarkColor(trace) {
-  const channel = trace.color_ch ?? trace.colorChannel;
+  const channel = trace.color_ch;
   if (classifyRibbonColor2(trace) === "fail") return null;
   const hasChannel = channel != null;
   const constantOk =
