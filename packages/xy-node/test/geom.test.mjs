@@ -1124,6 +1124,12 @@ test("itemApplyOpacity missing values fail-closes like Python", () => {
   assert.equal(out[0], 10);
   assert.equal(out[3], 128);
   assert.equal(out[7], 128);
+  const camelOnly = itemApplyOpacity(
+    { styleChannels: { opacity: { values: [0.5, 0.5] } } },
+    packed,
+    2,
+  );
+  assert.equal(camelOnly, packed);
 });
 
 test("sceneItemFillT matches host table", () => {

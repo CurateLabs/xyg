@@ -5592,7 +5592,7 @@ function scatterCount(trace) {
 }
 
 export function itemApplyOpacity(trace, packed, n) {
-  const channels = trace.style_channels ?? trace.styleChannels ?? {};
+  const channels = trace.style_channels ?? {};
   const opacityCh = channels.opacity;
   const artistCh = channels.artist_alpha;
   if (opacityCh == null && artistCh == null) return packed;
