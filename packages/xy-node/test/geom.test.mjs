@@ -27,6 +27,7 @@ import {
   sceneHiddenOrPerItemAdmit,
   sceneRibbonColor2Classify,
   sceneScatterPaintChannelAdmit,
+  scatterPaintChannelNames,
   sceneTickLabelStrategy,
   sceneTickAnchor,
   sceneFillGradientAdmit,
@@ -592,6 +593,32 @@ test("sceneScatterPaintChannelAdmit matches host table", () => {
   assert.equal(sceneScatterPaintChannelAdmit(" color"), false);
   assert.equal(sceneScatterPaintChannelAdmit("size"), false);
   assert.equal(sceneScatterPaintChannelAdmit("symbol"), false);
+});
+
+test("scatterPaintChannelNames matches Python per_item_channel_names", () => {
+  assert.deepEqual(scatterPaintChannelNames({ kind: "scatter" }), []);
+  assert.deepEqual(
+    scatterPaintChannelNames({
+      kind: "scatter",
+      size_ch: { mode: "constant", constant: 8 },
+      color_ch: { mode: "continuous", values: [0, 1] },
+    }),
+    ["color"],
+  );
+  assert.deepEqual(
+    scatterPaintChannelNames({
+      kind: "scatter",
+      size_ch: { mode: "constant" },
+    }),
+    [],
+  );
+  assert.deepEqual(
+    scatterPaintChannelNames({
+      kind: "scatter",
+      style_channels: { opacity: { values: [0.5, 1] } },
+    }),
+    ["opacity"],
+  );
 });
 
 test("sceneHeatmapShapeAdmit matches host table", () => {
