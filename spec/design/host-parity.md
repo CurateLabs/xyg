@@ -882,6 +882,8 @@ Node heatmap `trace.rgba` stores a flat uint8 buffer; `packXyTaRgba` packs that 
 Node heatmap and density Scene packing is XYTA-only like Python `_pack_xyta`; unused XYHF paint-plane helpers are not a second plane layout.
 Node `packXyTaGrid` flattens heatmap `grid` like Python `_pack_xyta` (`plane.values` or plane); nested length indexing is not a grid layout.
 Node `rectFiniteSel` drops nonfinite rectangle rows through `validIndicesF64` like Python `_rect_finite_sel`; NaN never reaches vertex buffers (§19).
+Node `packXyTa` density fill opacity uses `style.fill_opacity` only like Python `_pack_xyta`; `fillOpacity` is not a fill-opacity key.
+Node XYTC fill opacity uses `style.fill_opacity` only like Python `_pack_xytc`; `fillOpacity` is not a fill-opacity key.
 Node XYTC stroke opacity uses `style.stroke_opacity` only like Python `_pack_xytc`; `strokeOpacity` is not a stroke-opacity key.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
@@ -1330,6 +1332,8 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node heatmap and density Scene packing is XYTA-only.
   Node `packXyTaGrid` flattens heatmap `grid`.
   Node `rectFiniteSel` drops nonfinite rectangle rows.
+  Node `packXyTa` density fill opacity uses `fill_opacity` only.
+  Node XYTC fill opacity uses `fill_opacity` only.
   Node XYTC stroke opacity uses `stroke_opacity` only.
 
 ---
