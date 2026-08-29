@@ -466,7 +466,8 @@ _GRID = "rgba(32,32,32,0.14)"
 _AXIS = "rgba(32,32,32,0.55)"
 _FONT = "system-ui, -apple-system, 'Segoe UI', sans-serif"
 _MS = {"s": 1e3, "m": 6e4, "h": 36e5, "d": 864e5}
-_STATIC_COLOR_FALLBACK = (0.3, 0.47, 0.66, 1.0)
+# Unresolved CSS paints use native `STATIC_COLOR_FALLBACK_RGBA8` via
+# `xyg_css_color_rgba` (76, 120, 168, 255).
 _AXIS_GRID_DASHES = {
     "solid": None,
     "dashed": [6.0, 4.0],
@@ -926,19 +927,12 @@ def _lut(colormap: Any, t: np.ndarray) -> np.ndarray:
 
 
 def _paint_rgba8(css: Any) -> tuple[int, int, int, int]:
-    """Resolve a validated CSS paint for static density images."""
-    from . import kernels
+    """Resolve a CSS paint to RGBA8 via ``xyg_css_color_rgba``.
 
-    _status, rgba = kernels.css_check(kernels.CSS_COLOR, str(css))
-    if rgba is None:
-        rgba = _STATIC_COLOR_FALLBACK
-    red, green, blue, alpha = rgba
-    return (
-        int(round(red * 255)),
-        int(round(green * 255)),
-        int(round(blue * 255)),
-        int(round(alpha * 255)),
-    )
+    Same conversion as ``_raster._parse_color`` and Node ``cssColorRgba8``.
+    Unresolved / browser-only values use the native never-invisible fallback.
+    """
+    return _native.css_color_rgba(str(css), 1.0)
 
 
 def _css(c: Any, fallback: str) -> str:

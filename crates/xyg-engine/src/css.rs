@@ -519,9 +519,8 @@ pub fn parse_color(raw: &str) -> Result<Checked, CssErr> {
 }
 
 /// Blue-gray used when a CSS color cannot be resolved statically (`oklch()`,
-/// `var()`, `currentColor`, unknown names). Matches Python
-/// `_STATIC_COLOR_FALLBACK` after 0..1 → u8 conversion (`0.3 * 255` bankers-
-/// rounds to 76).
+/// `var()`, `currentColor`, unknown names). Former host 0..1 fallback
+/// `(0.3, 0.47, 0.66, 1.0)` bankers-rounds (`0.3 * 255` → 76).
 pub const STATIC_COLOR_FALLBACK_RGBA8: [u8; 4] = [76, 120, 168, 255];
 
 fn bankers_round_to_u8(value: f32) -> u8 {
