@@ -796,7 +796,7 @@ ABI 249 `xyg_scene_gradient_solid_css` owns Scene gradient solid CSS
 cannot drift. Field picking stays host.
 ABI 250 `xyg_scene_arrays_equal` owns Scene f64 arrays-equal (lengths
 match and every pair is IEEE `==`; empty equal; NaN never equals) so
-Python companion XY match and Node `exportArraysEqual` cannot drift.
+Python companion x1/y1 match and Node `exportArraysEqual` cannot drift.
 Field picking and null checks stay host.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
