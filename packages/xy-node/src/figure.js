@@ -1468,7 +1468,7 @@ export class Figure {
       y_axis: t.y_axis ?? "y",
     };
     if (t.rgba != null) {
-      entry.rgba_len = t.rgba.rgba.length;
+      entry.rgba_len = t.rgba.length;
     }
     return entry;
   }

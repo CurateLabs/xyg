@@ -229,7 +229,7 @@ const out = {
     cols: heatCols,
     z_f64_hex: f64Hex(heatZ),
     stops_u8_hex: u8Hex(heatStops),
-    rgba_u8_hex: u8Hex(heatComposed.traces[0].rgba.rgba),
+    rgba_u8_hex: u8Hex(heatComposed.traces[0].rgba),
   },
   hexbin: {
     x_f64_hex: f64Hex(hexX),

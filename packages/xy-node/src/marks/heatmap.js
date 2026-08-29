@@ -90,7 +90,7 @@ export function composeHeatmap(z, opts = {}) {
   };
   let rgba = null;
   if (opts.colormapStops != null) {
-    rgba = heatmapRgba(flat, cols, rows, opts.colormapStops, opts.alpha ?? 255);
+    rgba = heatmapRgba(flat, cols, rows, opts.colormapStops, opts.alpha ?? 255).rgba;
   }
   return {
     traces: [

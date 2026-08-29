@@ -56,6 +56,7 @@ import {
   sceneHexbinRgbaPlaneAdmit,
   meshHasPerItem,
   packXyTaColormap,
+  packXyTaRgba,
   packXyTaRgbaGrid,
   hexbinXyTaColormap,
   constantMarkColor,
@@ -352,6 +353,13 @@ test("packXyTaColormap stop bytes require RGB rows like Python", () => {
   const rgba = packXyTaColormap({ style: { colormap: [[255, 0, 0, 255]] } });
   assert.equal(rgba.flags, 1 << 7);
   assert.equal(rgba.stops.length, 0);
+});
+
+test("packXyTaRgba ignores nested .rgba like Python", () => {
+  assert.deepEqual([...packXyTaRgba(new Uint8Array([1, 2, 3, 4]))], [1, 2, 3, 4]);
+  assert.deepEqual([...packXyTaRgba([5, 6, 7, 8])], [5, 6, 7, 8]);
+  const nested = packXyTaRgba({ rgba: new Uint8Array([9, 8, 7, 6]) });
+  assert.equal(nested.length, 0);
 });
 
 test("packXyTaRgbaGrid stacks flattened planes like Python", () => {
