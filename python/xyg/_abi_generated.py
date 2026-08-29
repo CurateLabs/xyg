@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 211
-SIGNATURE_SHA256 = "727884ac41f80aed67e0c0da867cc1a3390282a7f910093a4e08a70a4b5552ce"
+ABI_VERSION = 212
+SIGNATURE_SHA256 = "512cb62348b1724d96c4d67745e3d99da72522300e6519259f4d3a2e9f43e7fe"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -474,6 +474,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_marching_triangles
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_marker_path_scale(double cx, double cy, double scale, const double * x, const double * y, size_t n, double * out_x, double * out_y, size_t capacity)
+    function = lib.xyg_marker_path_scale
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_min_max(const double * data, size_t len, double * out_min, double * out_max)
     function = lib.xyg_min_max
     function.restype = ctypes.c_int32

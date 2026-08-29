@@ -32,6 +32,7 @@ from ._svg import (
     DEFAULT_PALETTE,
     _annotation_connector_unclipped,
     _annotation_first_baseline,
+    _authored_marker_points,
     _axis_label_geometry,
     _axis_scales,
     _axis_tick_font_size,
@@ -2185,15 +2186,16 @@ def _emit_authored_scatter(
         contours = []
         for contour in marker_path.get("contours") or ():
             values = np.asarray(contour, dtype=np.float64).reshape(-1, 2)
-            contours.append(
-                [
-                    (
-                        float(px[index]) + diameter * float(x),
-                        float(py[index]) - diameter * float(y),
-                    )
-                    for x, y in values
-                ]
+            if not len(values):
+                continue
+            xs, ys = _authored_marker_points(
+                values[:, 0],
+                values[:, 1],
+                float(px[index]),
+                float(py[index]),
+                diameter,
             )
+            contours.append(list(zip(xs.tolist(), ys.tolist(), strict=True)))
         if filled:
             for points in contours:
                 cmd.fill(points, fill)
@@ -3285,7 +3287,10 @@ def _emit_legend_marker(
     elif marker_path:
         for contour in marker_path.get("contours") or ():
             values = np.asarray(contour, dtype=np.float64).reshape(-1, 2)
-            points = [(x + 2 * radius * float(px), y - 2 * radius * float(py)) for px, py in values]
+            if not len(values):
+                continue
+            xs, ys = _authored_marker_points(values[:, 0], values[:, 1], x, y, 2 * radius)
+            points = list(zip(xs.tolist(), ys.tolist(), strict=True))
             if bool(marker_path.get("filled", True)):
                 cmd.fill(points, color)
                 if sw > 0:

@@ -267,6 +267,35 @@ def test_step_arrays_native_kernel_matches_pre_mid_post() -> None:
     np.testing.assert_array_equal(ident_y, [9.0])
 
 
+def test_authored_marker_path_scale_native_kernel() -> None:
+    from xyg._svg import _authored_marker_path_d, _authored_marker_points
+
+    px, py = _authored_marker_points(
+        np.array([0.0, 0.5, 0.0, -0.5]),
+        np.array([0.5, 0.0, -0.5, 0.0]),
+        10.0,
+        20.0,
+        8.0,
+    )
+    np.testing.assert_array_equal(px, [10.0, 14.0, 10.0, 6.0])
+    np.testing.assert_array_equal(py, [16.0, 20.0, 24.0, 20.0])
+    empty_x, empty_y = _authored_marker_points(
+        np.array([], dtype=np.float64), np.array([], dtype=np.float64), 10.0, 20.0, 8.0
+    )
+    assert len(empty_x) == 0 and len(empty_y) == 0
+    d = _authored_marker_path_d(
+        {"contours": [[[0.0, 0.5], [0.5, 0.0], [0.0, -0.5], [-0.5, 0.0]]], "filled": True},
+        10.0,
+        20.0,
+        8.0,
+    )
+    assert d.startswith("M 10 16")
+    assert "L 14 20" in d
+    assert "L 10 24" in d
+    assert "L 6 20" in d
+    assert d.endswith("Z")
+
+
 def test_grouped_box_matches_naive_grouping_semantics() -> None:
     rng = np.random.default_rng(42)
     vals = rng.normal(size=10_000)

@@ -301,15 +301,14 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 
 **Still blocks “Python is only a host”** (compatibility modules stay until these twins move or stay-host is recorded with diffs):
 
-1. Compat marker paths in `_svg.py` / `_raster.py`
-2. `channels.resolve_color` versus the thinner Node `color.js` (CSS/numeric split, categorical factorization, direct RGBA)
-3. `_payload` emit orchestration, including the stem/errorbar budget `max(1024, px_width*4)` (index math is ABI 204/205)
-4. `_scene_v3.py` / Node `scene.js` pack and figure-to-record orchestration
-5. Curved annotation arrows `_arrowgeom.py` ↔ `js/src/51_annotations.ts`
-6. `lod.py` remaining viewport/sample/`EncodedColumn` packing — offset/scale math is ABI 208; hosts still map `log`/`symlog` onto `pin_zero`
-7. `marks.py`, `facets.py`, `_figure.py`, `_annotations.py` composition and `_fontmetrics.py` generated DejaVu table used by compatibility SVG gutters
+1. `channels.resolve_color` versus the thinner Node `color.js` (CSS/numeric split, categorical factorization, direct RGBA)
+2. `_payload` emit orchestration, including the stem/errorbar budget `max(1024, px_width*4)` (index math is ABI 204/205)
+3. `_scene_v3.py` / Node `scene.js` pack and figure-to-record orchestration
+4. Curved annotation arrows `_arrowgeom.py` ↔ `js/src/51_annotations.ts`
+5. `lod.py` remaining viewport/sample/`EncodedColumn` packing — offset/scale math is ABI 208; hosts still map `log`/`symlog` onto `pin_zero`
+6. `marks.py`, `facets.py`, `_figure.py`, `_annotations.py` composition and `_fontmetrics.py` generated DejaVu table used by compatibility SVG gutters
 
-ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi` skip radial-range normalization). `_polar_wedge_path` still emits SVG `A` arcs for unrounded wedges. ABI 210 `xyg_hexbin_ring` owns pointy-top hexagon vertex offsets scaled by cell pitch. ChartView `_buildHexbinMark` keeps the same fractions until WASM. ABI 211 `xyg_step_arrays` owns compatibility step/stairs expand (`mode` 1/2/3 = pre/mid/post; `n < 2` identity). ChartView `_stepArrays` keeps the same vertices until WASM. Next kernel: compat marker paths. Do not wrap Scene's RGBA-grid raster as a compat path.
+ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi` skip radial-range normalization). `_polar_wedge_path` still emits SVG `A` arcs for unrounded wedges. ABI 210 `xyg_hexbin_ring` owns pointy-top hexagon vertex offsets scaled by cell pitch. ChartView `_buildHexbinMark` keeps the same fractions until WASM. ABI 211 `xyg_step_arrays` owns compatibility step/stairs expand (`mode` 1/2/3 = pre/mid/post; `n < 2` identity). ChartView `_stepArrays` keeps the same vertices until WASM. ABI 212 `xyg_marker_path_scale` owns authored-marker pixel vertices (`out_x = cx + scale * unit_x`, `out_y = cy - scale * unit_y`). ChartView legend/annotation scale keeps the same formula until WASM. SVG `d=` assembly stays host. Next kernel: `channels.resolve_color`. Do not wrap Scene's RGBA-grid raster as a compat path.
 
 ## Disposition summary
 
@@ -714,12 +713,12 @@ Forbidden:
 | `python/xyg/_payload.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 122 owns compile-time payload LOD and the visible-row mask; ABI 204 owns line M4 emit indices; ABI 205 owns remaining emit visible/even/sample indices; emitters still pack and ship columns | #58 |
 | `python/xyg/_pdf.py` | Python host | `python-host` | `keep-host`; ABI 113 moves closed-subset SVG→PDF into Rust; this module only coerces UTF-8 and raises the historical diagnostic wording | #274 |
 | `python/xyg/_png.py` | Python host | `python-host` | `keep-host`; ABI 115 moves filter-0 PNG encode into Rust; this module only coerces host buffers and forwards `mode` / `compression` | #274 |
-| `python/xyg/_raster.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 121 tessellation via `kernels` directly (#310); ABI 206 owns remaining `_lut` / linear density / effective rgba (#313); ABI 210 owns hexbin ring offsets; ABI 211 owns step/stairs expand; `triangle_mesh_boundary` stays host geometry | #58 |
+| `python/xyg/_raster.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 121 tessellation via `kernels` directly (#310); ABI 206 owns remaining `_lut` / linear density / effective rgba (#313); ABI 210 owns hexbin ring offsets; ABI 211 owns step/stairs expand; ABI 212 owns authored marker-path scale; `triangle_mesh_boundary` stays host geometry | #58 |
 | `python/xyg/_sankey.py` | Python host | `python-host` | `keep-host`; ABI `xyg_sankey_layout`; this module resolves names and error text | — |
 | `python/xyg/_scene.py` | Python host | `python-host` | `keep-host`; ABI 121 tessellation wrappers; `grid_rgba` uses ABI 129/206 colormap kernels | — |
 | `python/xyg/_scene_v3.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
 | `python/xyg/_spatial.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xyg/_svg.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 207 owns polar heatmap inverse-map hits; ABI 209 owns polar wedge flatten; ABI 210 owns hexbin ring offsets; ABI 211 owns step/stairs expand; hosts still color sampled cells and emit SVG `A` arcs | #58 |
+| `python/xyg/_svg.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 207 owns polar heatmap inverse-map hits; ABI 209 owns polar wedge flatten; ABI 210 owns hexbin ring offsets; ABI 211 owns step/stairs expand; ABI 212 owns authored marker-path scale; hosts still color sampled cells and emit SVG `A` arcs / `d=` strings | #58 |
 | `python/xyg/_textblock.py` | Python host | `python-host` | `keep-host`; ABI 125 packer plus a pass-scoped measurement cache | — |
 | `python/xyg/_trace.py` | Python host | `python-host` | `keep-host`; ABI 122 owns the density/M4 threshold decision; this module packs kind/force/per-item onto `payload_tier` | — |
 | `python/xyg/_typing.py` | Python host | `python-host` | `keep-host` | — |

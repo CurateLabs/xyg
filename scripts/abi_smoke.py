@@ -733,6 +733,18 @@ def load() -> ctypes.CDLL:
         F64P,
         ctypes.c_size_t,
     ]
+    lib.xyg_marker_path_scale.restype = ctypes.c_size_t
+    lib.xyg_marker_path_scale.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_rounded_rect_poly.restype = ctypes.c_size_t
     lib.xyg_rounded_rect_poly.argtypes = [
         ctypes.c_double,
@@ -3315,6 +3327,56 @@ def main() -> None:
         )
         == size_max,
         "step arrays invalid mode",
+    )
+    marker_x = array("d", [0.0, 0.5, 0.0, -0.5])
+    marker_y = array("d", [0.5, 0.0, -0.5, 0.0])
+    marker_n = lib.xyg_marker_path_scale(
+        10.0,
+        20.0,
+        8.0,
+        _ptr(marker_x, ctypes.c_double),
+        _ptr(marker_y, ctypes.c_double),
+        4,
+        null_f64,
+        null_f64,
+        0,
+    )
+    marker_ox = array("d", [0.0]) * 4
+    marker_oy = array("d", [0.0]) * 4
+    marker_filled = lib.xyg_marker_path_scale(
+        10.0,
+        20.0,
+        8.0,
+        _ptr(marker_x, ctypes.c_double),
+        _ptr(marker_y, ctypes.c_double),
+        4,
+        _ptr(marker_ox, ctypes.c_double),
+        _ptr(marker_oy, ctypes.c_double),
+        4,
+    )
+    ok(
+        marker_n == 4
+        and marker_filled == 4
+        and abs(marker_ox[0] - 10.0) < 1e-15
+        and abs(marker_oy[0] - 16.0) < 1e-15
+        and abs(marker_ox[1] - 14.0) < 1e-15
+        and abs(marker_oy[2] - 24.0) < 1e-15,
+        "marker path scale diamond",
+    )
+    ok(
+        lib.xyg_marker_path_scale(
+            10.0,
+            20.0,
+            8.0,
+            _ptr(marker_x, ctypes.c_double),
+            _ptr(marker_y, ctypes.c_double),
+            4,
+            _ptr(marker_ox, ctypes.c_double),
+            _ptr(marker_oy, ctypes.c_double),
+            2,
+        )
+        == size_max,
+        "marker path scale short buffer",
     )
     polar_small = array("d", [0.0]) * 23
     polar_small_n = lib.xyg_polar_layout(
