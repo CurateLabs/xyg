@@ -3289,10 +3289,22 @@ function packGradientSpec(fill) {
   return concatBytes(parts);
 }
 
+/** XYTC fill opacity. Python `_pack_xytc` uses `style.get("fill_opacity", 1.0)` only. */
+export function packXyTcFillOpacity(style, kindClass) {
+  if (!(kindClass & SCENE_KIND_CLASS_OPACITY)) return 1;
+  return Number((style ?? {}).fill_opacity ?? 1);
+}
+
 /** XYTC line opacity. Python `_pack_xytc` uses `style.get("line_opacity", 1.0)` only. */
 export function packXyTcLineOpacity(style, kindClass) {
   if (!(kindClass & SCENE_KIND_CLASS_BAND)) return 1;
   return Number((style ?? {}).line_opacity ?? 1);
+}
+
+/** XYTC stroke opacity. Python `_pack_xytc` uses `style.get("stroke_opacity", 1.0)` only. */
+export function packXyTcStrokeOpacity(style, kindClass) {
+  if (!(kindClass & SCENE_KIND_CLASS_OPACITY)) return 1;
+  return Number((style ?? {}).stroke_opacity ?? 1);
 }
 
 function packXyTc(figure) {
@@ -3321,8 +3333,8 @@ function packXyTc(figure) {
     let strokeOpacity = 1;
     let lineOpacity = 1;
     if (kindClass & SCENE_KIND_CLASS_OPACITY) {
-      fillOpacity = Number(style.fill_opacity ?? style.fillOpacity ?? 1);
-      strokeOpacity = Number(style.stroke_opacity ?? style.strokeOpacity ?? 1);
+      fillOpacity = packXyTcFillOpacity(style, kindClass);
+      strokeOpacity = packXyTcStrokeOpacity(style, kindClass);
     }
     if (kindClass & SCENE_KIND_CLASS_BAND) {
       lineOpacity = packXyTcLineOpacity(style, kindClass);
@@ -3730,6 +3742,13 @@ export function packXyTaColormap(trace) {
   return { flags, cmap, stops };
 }
 
+/** Density XYTA fill opacity. Python `_pack_xyta` reads `fill_opacity` only. */
+export function packXyTaFillOpacity(style) {
+  const record = style ?? {};
+  if (!Object.hasOwn(record, "fill_opacity")) return { flags: 0, value: Number.NaN };
+  return { flags: XYTA_HAS_FILL_OPACITY, value: Number(record.fill_opacity) };
+}
+
 function xyTaColormapStopBytes(colormap) {
   try {
     const rows = [];
@@ -3915,9 +3934,10 @@ function packXyTa(figure, xDomain, yDomain) {
         flags |= XYTA_HAS_OPACITY;
         opacity = Number(style.opacity);
       }
-      if (Object.hasOwn(style, "fill_opacity") || Object.hasOwn(style, "fillOpacity")) {
-        flags |= XYTA_HAS_FILL_OPACITY;
-        fillOpacity = Number(style.fill_opacity ?? style.fillOpacity);
+      const packedFill = packXyTaFillOpacity(style);
+      if (packedFill.flags) {
+        flags |= packedFill.flags;
+        fillOpacity = packedFill.value;
       }
       const source = resolveDensityBinColors(trace);
       if (source?.rgba != null) {

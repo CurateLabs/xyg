@@ -56,10 +56,13 @@ import {
   sceneHexbinRgbaPlaneAdmit,
   meshHasPerItem,
   packXyTaColormap,
+  packXyTaFillOpacity,
   packXyTaGrid,
   packXyTaRgba,
   packXyTaRgbaGrid,
+  packXyTcFillOpacity,
   packXyTcLineOpacity,
+  packXyTcStrokeOpacity,
   hexbinXyTaColormap,
   constantMarkColor,
   xyHfColormap,
@@ -357,6 +360,18 @@ test("packXyTaColormap stop bytes require RGB rows like Python", () => {
   assert.equal(rgba.stops.length, 0);
 });
 
+test("packXyTaFillOpacity uses fill_opacity only like Python", () => {
+  const missing = packXyTaFillOpacity({});
+  assert.equal(missing.flags, 0);
+  assert.equal(Number.isNaN(missing.value), true);
+  const camel = packXyTaFillOpacity({ fillOpacity: 0.25 });
+  assert.equal(camel.flags, 0);
+  assert.equal(Number.isNaN(camel.value), true);
+  const snake = packXyTaFillOpacity({ fill_opacity: 0.5 });
+  assert.equal(snake.flags, 1 << 11);
+  assert.equal(snake.value, 0.5);
+});
+
 test("packXyTaGrid flattens plane.values like Python", () => {
   const direct = packXyTaGrid([1, 2]);
   const view = new Float64Array(direct.buffer, direct.byteOffset, direct.byteLength / 8);
@@ -394,6 +409,16 @@ test("packXyTaRgbaGrid stacks flattened planes like Python", () => {
   assert.equal(packXyTaRgbaGrid([[1], [2], [3]]).length, 0);
 });
 
+test("packXyTcFillOpacity uses fill_opacity only like Python", () => {
+  const scatter = sceneKindClass("scatter");
+  const line = sceneKindClass("line");
+  assert.equal(packXyTcFillOpacity({}, scatter), 1);
+  assert.equal(packXyTcFillOpacity({ fillOpacity: 0.25 }, scatter), 1);
+  assert.equal(packXyTcFillOpacity({ fill_opacity: 0.5 }, scatter), 0.5);
+  assert.equal(packXyTcFillOpacity({ fill_opacity: 0.5 }, line), 1);
+  assert.equal(packXyTcFillOpacity({ fill_opacity: 0.5 }, 0), 1);
+});
+
 test("packXyTcLineOpacity uses line_opacity only like Python", () => {
   const area = sceneKindClass("area");
   const scatter = sceneKindClass("scatter");
@@ -402,6 +427,16 @@ test("packXyTcLineOpacity uses line_opacity only like Python", () => {
   assert.equal(packXyTcLineOpacity({ line_opacity: 0.5 }, area), 0.5);
   assert.equal(packXyTcLineOpacity({ line_opacity: 0.5 }, scatter), 1);
   assert.equal(packXyTcLineOpacity({ line_opacity: 0.5 }, 0), 1);
+});
+
+test("packXyTcStrokeOpacity uses stroke_opacity only like Python", () => {
+  const scatter = sceneKindClass("scatter");
+  const line = sceneKindClass("line");
+  assert.equal(packXyTcStrokeOpacity({}, scatter), 1);
+  assert.equal(packXyTcStrokeOpacity({ strokeOpacity: 0.25 }, scatter), 1);
+  assert.equal(packXyTcStrokeOpacity({ stroke_opacity: 0.5 }, scatter), 0.5);
+  assert.equal(packXyTcStrokeOpacity({ stroke_opacity: 0.5 }, line), 1);
+  assert.equal(packXyTcStrokeOpacity({ stroke_opacity: 0.5 }, 0), 1);
 });
 
 test("hexbinXyTaColormap uses channel.colormap only like Python", () => {
