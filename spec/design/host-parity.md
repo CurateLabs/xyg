@@ -723,6 +723,11 @@ ABI 233 `xyg_scene_curve_classify` owns Scene curve names (`linear` → 0,
 `_figure_trace_support_flags` and Node `figureTraceSupport` cannot drift.
 Hosts still check kind for `smooth`. Compile-path `curve_smooth` in
 `scene_trace_compile.rs` stays extra.
+ABI 234 `xyg_scene_marker_glyph_admit` owns Scene marker-glyph UTF-8 admit
+(nonempty, no NUL/CR/LF, at most 64 bytes) so Python `_admitted_marker_glyph`
+and Node `admittedMarkerGlyph` cannot drift. Hosts still coerce non-strings
+and check scatter kind / combined `marker_path`. Compile-path `admit_glyph`
+stays extra.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1088,6 +1093,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Scene fill-gradient space pack is ABI 231;
   Scene hexbin reduce admit is ABI 232.
   Scene curve-name classify is ABI 233.
+  Scene marker-glyph admit is ABI 234.
 
 ---
 

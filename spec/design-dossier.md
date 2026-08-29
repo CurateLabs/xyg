@@ -1571,6 +1571,11 @@ ABI 233 `xyg_scene_curve_classify` owns Scene curve names (`linear` → 0,
 `_figure_trace_support_flags` and Node `figureTraceSupport` cannot drift.
 Hosts still check kind for `smooth`. Compile-path `curve_smooth` in
 `scene_trace_compile.rs` stays extra.
+ABI 234 `xyg_scene_marker_glyph_admit` owns Scene marker-glyph UTF-8 admit
+(nonempty, no NUL/CR/LF, at most 64 bytes) so Python `_admitted_marker_glyph`
+and Node `admittedMarkerGlyph` cannot drift. Hosts still coerce non-strings
+and check scatter kind / combined `marker_path`. Compile-path `admit_glyph`
+stays extra.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1678,6 +1683,11 @@ ABI 233 `xyg_scene_curve_classify` owns Scene curve names (`linear` → 0,
 `_figure_trace_support_flags` and Node `figureTraceSupport` cannot drift.
 Hosts still check kind for `smooth`. Compile-path `curve_smooth` in
 `scene_trace_compile.rs` stays extra.
+ABI 234 `xyg_scene_marker_glyph_admit` owns Scene marker-glyph UTF-8 admit
+(nonempty, no NUL/CR/LF, at most 64 bytes) so Python `_admitted_marker_glyph`
+and Node `admittedMarkerGlyph` cannot drift. Hosts still coerce non-strings
+and check scatter kind / combined `marker_path`. Compile-path `admit_glyph`
+stays extra.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

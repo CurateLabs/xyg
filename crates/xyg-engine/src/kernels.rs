@@ -1541,6 +1541,22 @@ pub fn scene_curve_classify(text: &str) -> i32 {
     }
 }
 
+/// Admit Scene marker-glyph UTF-8 (ABI 234).
+///
+/// Nonempty text without NUL/CR/LF and at most 64 UTF-8 bytes returns `1`.
+/// Scatter kind and combined `marker_path` checks stay host. Compile-path
+/// `admit_glyph` in `scene_trace_compile.rs` stays extra.
+pub fn scene_marker_glyph_admit(text: &str) -> i32 {
+    i32::from(
+        !text.is_empty()
+            && text.len() <= 64
+            && !text
+                .as_bytes()
+                .iter()
+                .any(|&b| b == 0 || b == b'\n' || b == b'\r'),
+    )
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -9644,6 +9660,18 @@ mod fuzz {
         assert_eq!(scene_curve_classify(""), SCENE_CURVE_UNKNOWN);
         assert_eq!(scene_curve_classify("foo"), SCENE_CURVE_UNKNOWN);
         assert_eq!(scene_curve_classify("step"), SCENE_CURVE_UNKNOWN);
+    }
+
+    #[test]
+    fn scene_marker_glyph_admit_matches_host_table() {
+        assert_eq!(scene_marker_glyph_admit("A"), 1);
+        assert_eq!(scene_marker_glyph_admit("α"), 1);
+        assert_eq!(scene_marker_glyph_admit(""), 0);
+        assert_eq!(scene_marker_glyph_admit("a\0b"), 0);
+        assert_eq!(scene_marker_glyph_admit("a\nb"), 0);
+        assert_eq!(scene_marker_glyph_admit("a\rb"), 0);
+        assert_eq!(scene_marker_glyph_admit(&"x".repeat(64)), 1);
+        assert_eq!(scene_marker_glyph_admit(&"x".repeat(65)), 0);
     }
 
     #[test]

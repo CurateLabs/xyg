@@ -1375,6 +1375,20 @@ def scene_curve_classify(text: str | None = None) -> int:
     return int(code)
 
 
+def scene_marker_glyph_admit(text: str | None = None) -> bool:
+    """Scene marker-glyph admit via ``xyg_scene_marker_glyph_admit`` (ABI 234).
+
+    Empty native pointers are ``0``. Hosts still coerce non-strings and check
+    scatter kind / combined ``marker_path``. Compile-path ``admit_glyph``
+    stays extra.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_marker_glyph_admit(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-marker-glyph-admit request")
+    return code == 1
+
+
 def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
     """f32-safe encode scale for offset-encoded geometry (ABI 208, §19)."""
     out = ctypes.c_double()

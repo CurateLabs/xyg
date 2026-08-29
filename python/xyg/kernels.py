@@ -65,6 +65,7 @@ scene_gradient_space = _impl.scene_gradient_space
 scene_hexbin_reduce_admit = _impl.scene_hexbin_reduce_admit
 scene_linear_gradient_prefix = _impl.scene_linear_gradient_prefix
 scene_linecap_admit = _impl.scene_linecap_admit
+scene_marker_glyph_admit = _impl.scene_marker_glyph_admit
 scene_marker_path_admit = _impl.scene_marker_path_admit
 scene_parse_linear_gradient = _impl.scene_parse_linear_gradient
 scene_rect_extra_flags = _impl.scene_rect_extra_flags
@@ -308,6 +309,7 @@ __all__ = [
     "scene_hexbin_reduce_admit",
     "scene_linear_gradient_prefix",
     "scene_linecap_admit",
+    "scene_marker_glyph_admit",
     "scene_marker_path_admit",
     "scene_parse_linear_gradient",
     "scene_rect_extra_flags",

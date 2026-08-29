@@ -1,9 +1,9 @@
 {
-  "abi_version": 233,
+  "abi_version": 234,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "cbb9c3b804eda71837981408f0af6d8cd1d16a08aa38fa8b1835408064ce9d26",
+  "signature_sha256": "33b753c58afa53c76c6c03e73075d1757f084e78989375e69c765ac4f4f41bfd",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -28823,6 +28823,57 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_scene_linecap_admit(const uint8_t * text, size_t text_len)"
+    },
+    {
+      "name": "xyg_scene_marker_glyph_admit",
+      "node_name": "xySceneMarkerGlyphAdmit",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "text",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "text_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_scene_marker_glyph_admit(const uint8_t * text, size_t text_len)"
     },
     {
       "name": "xyg_scene_marker_path_admit",

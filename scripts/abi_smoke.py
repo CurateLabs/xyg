@@ -287,6 +287,8 @@ def load() -> ctypes.CDLL:
     lib.xyg_scene_hexbin_reduce_admit.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_scene_curve_classify.restype = ctypes.c_int32
     lib.xyg_scene_curve_classify.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_scene_marker_glyph_admit.restype = ctypes.c_int32
+    lib.xyg_scene_marker_glyph_admit.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2651,6 +2653,22 @@ def main() -> None:
     ok(
         lib.xyg_scene_curve_classify(_ptr(smooth_upper, ctypes.c_uint8), len(smooth_upper)) == 1,
         "scene_curve_classify SMOOTH",
+    )
+    glyph_ok = array("B", b"A")
+    glyph_nl = array("B", b"a\nb")
+    glyph_long = array("B", b"x" * 65)
+    ok(
+        lib.xyg_scene_marker_glyph_admit(_ptr(glyph_ok, ctypes.c_uint8), len(glyph_ok)) == 1,
+        "scene_marker_glyph_admit A",
+    )
+    ok(lib.xyg_scene_marker_glyph_admit(null_u8, 0) == 0, "scene_marker_glyph_admit empty")
+    ok(
+        lib.xyg_scene_marker_glyph_admit(_ptr(glyph_nl, ctypes.c_uint8), len(glyph_nl)) == 0,
+        "scene_marker_glyph_admit newline",
+    )
+    ok(
+        lib.xyg_scene_marker_glyph_admit(_ptr(glyph_long, ctypes.c_uint8), len(glyph_long)) == 0,
+        "scene_marker_glyph_admit over-cap",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8
