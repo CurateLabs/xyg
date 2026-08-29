@@ -869,6 +869,7 @@ Node XYTC constant paint uses `channel.constant` only (same as Python); `channel
 Node density-blit observation uses `scatterUsesDensity` (same as Python `use_density`); `style.color_channel` is not a per-item density extra.
 Node XYTC color_ch packing ignores string channels (same as Python object-only); only a channel object packs COLOR_CH.
 Node `scatterHasNonConstantColor` uses `channel.constant` only (same as Python); `channel.color` is not a packed-constant stand-in.
+Node XYTC `COLOR_CH_CONSTANT` packs whenever `channel.constant` is set (same as Python); `mode === "constant"` is not a gate.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1303,6 +1304,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node density-blit observation uses `scatterUsesDensity`.
   Node XYTC color_ch packing ignores string channels.
   Node `scatterHasNonConstantColor` uses `channel.constant` only.
+  Node XYTC `COLOR_CH_CONSTANT` packs whenever `channel.constant` is set.
 
 ---
 

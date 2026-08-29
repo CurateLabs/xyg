@@ -3587,7 +3587,7 @@ function packXyTc(figure) {
     if (channel != null && typeof channel === "object" && !Array.isArray(channel) && !ArrayBuffer.isView(channel)) {
       flags |= XYTC_COLOR_CH;
       colorMode = encodeUtf8(String(channel.mode ?? ""));
-      if (channel.mode === "constant" && channel.constant != null) {
+      if (channel.constant != null) {
         flags |= XYTC_COLOR_CH_CONSTANT;
         colorConst = encodeUtf8(String(channel.constant));
       }
