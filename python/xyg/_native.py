@@ -4545,6 +4545,77 @@ def polar_project(
     return out_x.reshape(np.shape(theta)), out_y.reshape(np.shape(r))
 
 
+def polar_wedge_points(
+    metrics: npt.ArrayLike,
+    theta0: float,
+    theta1: float,
+    r0: float,
+    r1: float,
+    wedge_gap: float = 0.0,
+    corner_radius: float = 0.0,
+    steps: int = 0,
+    normalized: tuple[float, float] | list[float] | None = None,
+) -> list[tuple[float, float]]:
+    """Flatten a polar annular sector to screen pixels (ABI 209).
+
+    ``steps == 0`` uses ``polar_bar_segments``. Finite ``normalized``
+    fractions skip radial-range normalization. Empty native pointers are
+    ``0``.
+    """
+    packed = _as_f64(np.asarray(metrics, dtype=np.float64).reshape(-1), "metrics")
+    step_count = int(steps)
+    if step_count < 0:
+        raise ValueError("polar wedge steps must be non-negative")
+    if normalized is None:
+        norm_lo = float("nan")
+        norm_hi = float("nan")
+    else:
+        norm_lo = float(normalized[0])
+        norm_hi = float(normalized[1])
+    probed = _lib.xyg_polar_wedge_points(
+        _ptr_f64(packed) if len(packed) else 0,
+        len(packed),
+        float(theta0),
+        float(theta1),
+        float(r0),
+        float(r1),
+        float(wedge_gap),
+        float(corner_radius),
+        step_count,
+        norm_lo,
+        norm_hi,
+        0,
+        0,
+        0,
+    )
+    if probed == _USIZE_MAX:
+        raise ValueError("invalid polar-wedge request")
+    n = int(probed)
+    if n == 0:
+        return []
+    out_x = np.empty(n, dtype=np.float64)
+    out_y = np.empty(n, dtype=np.float64)
+    written = _lib.xyg_polar_wedge_points(
+        _ptr_f64(packed) if len(packed) else 0,
+        len(packed),
+        float(theta0),
+        float(theta1),
+        float(r0),
+        float(r1),
+        float(wedge_gap),
+        float(corner_radius),
+        step_count,
+        norm_lo,
+        norm_hi,
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        n,
+    )
+    if written == _USIZE_MAX or written != n:
+        raise ValueError("invalid polar-wedge request")
+    return [(float(x), float(y)) for x, y in zip(out_x, out_y, strict=True)]
+
+
 def polar_heatmap_inverse_map(
     metrics: npt.ArrayLike,
     plot: Mapping[str, float],

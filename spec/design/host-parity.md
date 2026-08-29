@@ -585,7 +585,8 @@ ABI 131 moves static polar (theta, r) → screen-pixel projection into Rust:
 Python and Node call `xyg_polar_layout`, `xyg_polar_project`, and the polar
 visibility-mask helpers so disc layout, projection, and cull predicates cannot
 drift on static export. ChartView GLSL `xyPolarPos` stays until WASM; hosts
-still own wedge/ring/polygon helpers that call native projection.
+still own ring/polygon helpers that call native projection. ABI 209 owns
+compatibility wedge flatten (`xyg_polar_wedge_points`).
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap/contour: Python and Node pack
 XYPL v1 authoring (`_pack_polar_scene_input` / `packPolarSceneInput`); Rust
 owns layout, `polar_project`, `polar_wedge_points` (annular-sector PolyFill),
@@ -616,7 +617,10 @@ owns the compatibility polar heatmap gather-after-inverse map so SVG/raster
 exporters no longer invert pixels in Python or Node (#283). ABI 208
 `xyg_geometry_offset` / `xyg_f32_safe_scale` owns §4/§16 encode offset and
 the §19 f32-safe scale so Python `lod.py` and Node `encode.js` cannot drift;
-hosts still map log-family scale names onto `pin_zero`. `xyg_heatmap_rgba` keeps its
+hosts still map log-family scale names onto `pin_zero`. ABI 209
+`xyg_polar_wedge_points` owns compatibility annular-sector flatten so
+Python `_svg.polar_wedge_points` and Node `polarWedgePoints` cannot drift;
+SVG still emits exact `A` arcs for unrounded wedges. `xyg_heatmap_rgba` keeps its
 distinct normalized-scalar remap for other consumers. Hosts still
 resolve stop tables, CSS paints, and truecolor RGBA buffers.
 ABI 110 makes primary legend framing the same way: Python

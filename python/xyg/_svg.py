@@ -30,7 +30,7 @@ import numpy as np
 
 from . import _fontmetrics, _native, _paint, _png, _textblock, kernels
 from ._arrowgeom import arrow_shapes as _arrow_shapes
-from .config import DEFAULT_PALETTE, polar_bar_segments
+from .config import DEFAULT_PALETTE
 
 
 def escape(data: str, entities: dict[str, str] | None = None) -> str:
@@ -2911,56 +2911,21 @@ def polar_wedge_points(
     within the flattening. `steps` defaults to `config.polar_bar_segments` over
     this wedge's own sweep — a 22.5-degree wind-rose sector is flattened with six
     segments rather than the full-turn worst case of 96, at the same sagitta
-    bound. Pass an explicit count only to pin one.
+    bound. Pass an explicit count only to pin one. Flattening is ABI 209
+    (`xyg_polar_wedge_points`); this wrapper only packs metrics and optional
+    host-normalized radial fractions.
     """
-    # Clamp both radii into the visible radial interval: a bar crossing r_lo or
-    # r_hi retains the visible part instead of becoming an invalid endpoint.
-    # The client clamps identically in BAR_VS; the static shaped clips then
-    # contain stroke antialiasing at the exact annular-sector boundary.
-    floor = polar.inner_fraction
-    # Order the NORMALIZED fractions before clamping: on a reversed radial
-    # axis `norm_radius` is decreasing, so norm(r1) < norm(r0) for r1 > r0 and
-    # taking them positionally dropped every wedge from both static exports
-    # while the shader (which min/maxes u_rrange) kept drawing them.
-    lo_frac, hi_frac = (
-        sorted((float(polar.norm_radius(r0)), float(polar.norm_radius(r1))))
-        if normalized is None
-        else sorted(normalized)
+    return _native.polar_wedge_points(
+        polar._metrics,
+        float(theta0),
+        float(theta1),
+        float(r0),
+        float(r1),
+        wedge_gap=float(wedge_gap),
+        corner_radius=float(corner_radius),
+        steps=0 if steps is None else int(steps),
+        normalized=normalized,
     )
-    outer = min(1.0, max(floor, hi_frac)) * polar.radius
-    inner = min(1.0, max(floor, lo_frac)) * polar.radius
-    if outer <= 0.0 or outer <= inner:
-        return []
-    angles = polar.wedge_angles(theta0, theta1)
-    if angles is None:
-        return []
-    a0, a1 = angles
-    if steps is None:
-        steps = polar_bar_segments(a1 - a0, 2.0 * math.pi)
-
-    if corner_radius > 0.0 and inner > 0.0:
-        return _rounded_wedge_points(polar, a0, a1, inner, outer, corner_radius, steps, wedge_gap)
-
-    # A constant ANGULAR pad makes the gap between neighbours `r · dtheta` wide,
-    # so it tapers to nothing at the hole and is widest at the rim — the seam
-    # between two pie slices visibly converges toward the centre. A constant
-    # gap in px needs an angular inset that grows as the radius shrinks; the
-    # two radial edges then become straight lines a fixed distance apart, which
-    # is what d3's padAngle/padRadius pair and every pie in the wild produce.
-    inset = _wedge_edge_inset(wedge_gap, a0, a1)
-
-    def arc(radius: float, reverse: bool) -> list[tuple[float, float]]:
-        d = inset(radius)
-        start, end = (a1 - d, a0 + d) if reverse else (a0 + d, a1 - d)
-        out = []
-        for i in range(steps + 1):
-            angle = start + (end - start) * (i / steps)
-            out.append((polar.cx + radius * math.cos(angle), polar.cy - radius * math.sin(angle)))
-        return out
-
-    if inner <= 0.0:
-        return [(polar.cx, polar.cy), *arc(outer, False)]
-    return [*arc(outer, False), *arc(inner, True)]
 
 
 def _wedge_edge_inset(wedge_gap: float, a0: float, a1: float):
@@ -2981,76 +2946,6 @@ def _wedge_edge_inset(wedge_gap: float, a0: float, a1: float):
         return sign * min(half / radius, span / 2.0)
 
     return inset
-
-
-def _rounded_wedge_points(
-    polar: "_PolarProjection",
-    a0: float,
-    a1: float,
-    inner: float,
-    outer: float,
-    corner_radius: float,
-    steps: int,
-    wedge_gap: float = 0.0,
-) -> list[tuple[float, float]]:
-    """An annular sector with rounded corners, as a closed polygon.
-
-    `corner_radius` on a slice is what every donut, progress ring and gauge
-    design in the wild asks for, and it has no rectangle to hang off. The
-    definition used here is the one the client's fragment SDF uses, so the
-    three renderers agree: unroll the wedge into an (arc, radial) frame — where
-    it *is* a rectangle, of half-height `hr` and half-width `sweep/2 · dist` at
-    each radius — round it there with the standard rounded-rect profile, and
-    roll it back. The corners then follow the arc instead of being chorded off.
-
-    Sampled rather than expressed as SVG arcs: the rounded profile is not a
-    circular arc once rolled back (its angular inset varies with radius), so a
-    polyline is the honest shape rather than an approximation of one. Plain
-    wedges keep their exact `A` arcs — this path is only taken when a radius is
-    actually asked for.
-    """
-    r_mid = (inner + outer) / 2.0
-    hr = (outer - inner) / 2.0
-    sweep = abs(a1 - a0)
-    mid = (a0 + a1) / 2.0
-    sign = 1.0 if a1 >= a0 else -1.0
-
-    def half_angle(lr: float) -> float:
-        dist = r_mid + lr
-        if dist <= 1e-9:
-            return 0.0
-        # Taking a constant number of px off the arc half-width at every
-        # radius is exactly the constant-width gap (see `_wedge_edge_inset`);
-        # the corner radius then clamps against the reduced width.
-        ha_px = max(sweep * 0.5 * dist - max(0.0, wedge_gap) / 2.0, 0.0)
-        rad = min(corner_radius, hr, ha_px)
-        over = abs(lr) - (hr - rad)
-        if over <= 0.0:
-            half_px = ha_px
-        else:
-            half_px = (ha_px - rad) + math.sqrt(max(0.0, rad * rad - over * over))
-        return half_px / dist
-
-    def at(dist: float, angle: float) -> tuple[float, float]:
-        return polar.cx + dist * math.cos(angle), polar.cy - dist * math.sin(angle)
-
-    out: list[tuple[float, float]] = []
-    # Outer rim, then the trailing edge inward, then the inner rim back, then
-    # the leading edge outward. Each edge samples the rounded profile, so the
-    # corner arcs fall out of the same walk rather than being spliced in.
-    for i in range(steps + 1):
-        t = i / steps
-        out.append(at(outer, mid - sign * half_angle(hr) + sign * half_angle(hr) * 2.0 * t))
-    for i in range(1, steps + 1):
-        lr = hr - 2.0 * hr * (i / steps)
-        out.append(at(r_mid + lr, mid + sign * half_angle(lr)))
-    for i in range(1, steps + 1):
-        t = i / steps
-        out.append(at(inner, mid + sign * half_angle(-hr) - sign * half_angle(-hr) * 2.0 * t))
-    for i in range(1, steps):
-        lr = -hr + 2.0 * hr * (i / steps)
-        out.append(at(r_mid + lr, mid - sign * half_angle(lr)))
-    return out
 
 
 def _polar_wedge_path(
@@ -3090,18 +2985,17 @@ def _polar_wedge_path(
     a0, a1 = angles
     if corner_radius > 0.0 and inner > 0.0:
         # Rounded corners are not circular arcs once rolled back out of the
-        # unrolled frame, so the shared polygon is the honest shape here too.
-        pts = _rounded_wedge_points(
+        # unrolled frame, so the shared ABI 209 polygon is the honest shape
+        # here too. Auto `steps` matches the raster twin.
+        pts = polar_wedge_points(
             polar,
-            a0,
-            a1,
-            inner,
-            outer,
-            corner_radius,
-            # Same span-proportional count `polar_wedge_points` flattens with, so
-            # a rounded wedge and its raster twin sample the identical profile.
-            polar_bar_segments(a1 - a0, 2.0 * math.pi),
-            wedge_gap,
+            theta0,
+            theta1,
+            r0,
+            r1,
+            corner_radius=corner_radius,
+            wedge_gap=wedge_gap,
+            normalized=normalized,
         )
         if len(pts) < 3:
             return ""

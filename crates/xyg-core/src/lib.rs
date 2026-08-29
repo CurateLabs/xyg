@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 208;
+pub const ABI_VERSION: u32 = 209;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -14287,6 +14287,75 @@ pub unsafe extern "C" fn xyg_polar_project(
             )
         };
         polar::polar_project(metrics, theta, r, out_x, out_y).unwrap_or(usize::MAX)
+    })
+}
+
+/// Flatten a polar annular sector to screen pixels (ABI 209).
+///
+/// `steps == 0` uses `polar_bar_segments`. Finite `norm_lo`/`norm_hi` skip
+/// radial-range normalization. Probe with `capacity == 0` and null/`0` hit
+/// pointers; the return is the vertex count (zero for an empty wedge).
+/// `usize::MAX` on invalid input. Empty native pointers are null/`0`.
+///
+/// # Safety
+/// `metrics` must address at least `polar::POLAR_METRICS_LEN` values when
+/// `metrics_len` is non-zero. When `capacity > 0`, `out_x` and `out_y` each
+/// address `capacity` writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_polar_wedge_points(
+    metrics: *const f64,
+    metrics_len: usize,
+    theta0: f64,
+    theta1: f64,
+    r0: f64,
+    r1: f64,
+    wedge_gap: f64,
+    corner_radius: f64,
+    steps: u32,
+    norm_lo: f64,
+    norm_hi: f64,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        let steps = steps as usize;
+        if steps > polar::POLAR_WEDGE_MAX_STEPS {
+            return usize::MAX;
+        }
+        let metrics = if metrics_len == 0 {
+            &[][..]
+        } else {
+            if metrics.is_null() || metrics_len < polar::POLAR_METRICS_LEN {
+                return usize::MAX;
+            }
+            std::slice::from_raw_parts(metrics, metrics_len)
+        };
+        let pts = polar::polar_wedge_points_ex(
+            metrics,
+            theta0,
+            theta1,
+            r0,
+            r1,
+            wedge_gap,
+            corner_radius,
+            steps,
+            norm_lo,
+            norm_hi,
+        );
+        if capacity == 0 {
+            return pts.len();
+        }
+        if out_x.is_null() || out_y.is_null() || capacity < pts.len() {
+            return usize::MAX;
+        }
+        let out_x = std::slice::from_raw_parts_mut(out_x, capacity);
+        let out_y = std::slice::from_raw_parts_mut(out_y, capacity);
+        for (index, &(x, y)) in pts.iter().enumerate() {
+            out_x[index] = x;
+            out_y[index] = y;
+        }
+        pts.len()
     })
 }
 
