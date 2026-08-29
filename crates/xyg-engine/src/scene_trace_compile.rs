@@ -756,38 +756,35 @@ fn admit_marker(blob: &[u8], kind: &str) -> Option<Vec<u8>> {
         return None;
     }
     let n_contours = u32::from_le_bytes(blob[0..4].try_into().ok()?) as usize;
-    if !(1..=32).contains(&n_contours) {
-        return None;
-    }
     let filled = blob[4] != 0;
     let mut at = 8usize;
-    let mut total_vertices = 0usize;
-    let mut contours: Vec<Vec<f64>> = Vec::with_capacity(n_contours);
+    let mut values = Vec::new();
+    let mut lengths = Vec::with_capacity(n_contours);
     for _ in 0..n_contours {
         if at + 4 > blob.len() {
             return None;
         }
-        let n_values = u32::from_le_bytes(blob[at..at + 4].try_into().ok()?) as usize;
+        let n_values = u32::from_le_bytes(blob[at..at + 4].try_into().ok()?);
         at += 4;
-        if n_values < 4 || n_values % 2 != 0 || at + n_values * 8 > blob.len() {
+        let n = n_values as usize;
+        let nbytes = n.checked_mul(8)?;
+        let end = at.checked_add(nbytes)?;
+        if end > blob.len() {
             return None;
         }
-        let mut values = Vec::with_capacity(n_values);
-        for _ in 0..n_values {
-            let value = f64::from_le_bytes(blob[at..at + 8].try_into().ok()?);
-            if !value.is_finite() || value.abs() > 0.500001 {
-                return None;
-            }
-            values.push(value);
+        for _ in 0..n {
+            values.push(f64::from_le_bytes(blob[at..at + 8].try_into().ok()?));
             at += 8;
         }
-        total_vertices += n_values / 2;
-        contours.push(values);
+        lengths.push(n_values);
     }
-    if total_vertices > 96 {
+    if at != blob.len() {
         return None;
     }
-    if filled && contours.iter().any(|contour| contour.len() < 6) {
+    if !crate::kernels::scene_marker_path_admit(&values, &lengths) {
+        return None;
+    }
+    if filled && lengths.iter().any(|&n_values| n_values < 6) {
         return None;
     }
     Some(blob.to_vec())

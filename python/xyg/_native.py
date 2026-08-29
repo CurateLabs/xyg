@@ -1037,6 +1037,36 @@ def density_overlay_opacity(authored: float = 0.8) -> float:
     return float(out.value)
 
 
+def scene_marker_path_admit(
+    values: npt.ArrayLike,
+    lengths: npt.ArrayLike,
+) -> bool:
+    """Scene marker-path admit via ``xyg_scene_marker_path_admit`` (ABI 221).
+
+    ``values`` is concatenated x/y pairs; ``lengths`` is the per-contour value
+    count. Empty native pointers are ``0``.
+    """
+    packed = _as_f64(
+        np.asarray(values, dtype=np.float64).reshape(-1),
+        "values",
+    )
+    lens = np.ascontiguousarray(
+        np.asarray(lengths, dtype=np.uint32).reshape(-1),
+        dtype=np.uint32,
+    )
+    code = int(
+        _lib.xyg_scene_marker_path_admit(
+            _ptr_f64(packed) if len(packed) else 0,
+            len(packed),
+            _ptr_u32(lens) if len(lens) else 0,
+            len(lens),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-marker-path-admit request")
+    return code == 1
+
+
 def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
     """f32-safe encode scale for offset-encoded geometry (ABI 208, §19)."""
     out = ctypes.c_double()

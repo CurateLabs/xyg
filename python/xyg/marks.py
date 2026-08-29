@@ -100,23 +100,21 @@ def _validated_marker_path(value: Any) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError("scatter authored marker path must be a mapping")
     contours = value.get("contours")
-    if not isinstance(contours, (list, tuple)) or not 1 <= len(contours) <= 32:
+    if not isinstance(contours, (list, tuple)):
         raise ValueError("scatter authored marker path must have 1-32 contours")
+    packed: list[float] = []
+    lengths: list[int] = []
     result: list[list[float]] = []
-    total_vertices = 0
     for index, contour in enumerate(contours):
         try:
             values = np.asarray(contour, dtype=np.float64).reshape(-1)
         except (TypeError, ValueError) as exc:
             raise ValueError(f"scatter authored marker contour {index} must be numeric") from exc
-        if len(values) < 4 or len(values) % 2:
-            raise ValueError(f"scatter authored marker contour {index} needs x/y vertex pairs")
-        if not np.all(np.isfinite(values)) or np.any(np.abs(values) > 0.500001):
-            raise ValueError("scatter authored marker vertices must be finite and normalized")
-        total_vertices += len(values) // 2
+        packed.extend(float(item) for item in values)
+        lengths.append(len(values))
         result.append([float(item) for item in values])
-    if total_vertices > 96:
-        raise ValueError("scatter authored marker paths support at most 96 total vertices")
+    if not kernels.scene_marker_path_admit(packed, lengths):
+        raise ValueError("scatter authored marker path is not a Scene marker path")
     return {"contours": result, "filled": bool(value.get("filled", True))}
 
 

@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 220;
+pub const ABI_VERSION: u32 = 221;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4717,6 +4717,44 @@ pub unsafe extern "C" fn xyg_density_overlay_opacity(authored: f64, out: *mut f6
     ffi_guard(0, || {
         *out = kernels::density_overlay_opacity(authored);
         1
+    })
+}
+
+/// Scene marker-path admit (ABI 221).
+///
+/// `values` is concatenated x/y pairs. `lengths` is the per-contour value
+/// count. Returns `1` admitted, `0` reject, `-2` FFI. Empty native pointers
+/// are null/`0`. Filled-contour length ≥ 6 stays compile-path extra.
+///
+/// # Safety
+/// `values` must address `n_values` readable f64s when `n_values` is
+/// non-zero. `lengths` must address `n_contours` readable u32s when
+/// `n_contours` is non-zero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_marker_path_admit(
+    values: *const f64,
+    n_values: usize,
+    lengths: *const u32,
+    n_contours: usize,
+) -> i32 {
+    if n_values > 0 && values.is_null() {
+        return -2;
+    }
+    if n_contours > 0 && lengths.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let values = if n_values == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(values, n_values)
+        };
+        let lengths = if n_contours == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(lengths, n_contours)
+        };
+        i32::from(kernels::scene_marker_path_admit(values, lengths))
     })
 }
 

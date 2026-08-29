@@ -14,6 +14,7 @@ import {
   sceneDashAdmit,
   sceneLinecapAdmit,
   densityOverlayOpacity,
+  sceneMarkerPathAdmit,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -148,6 +149,17 @@ test("densityOverlayOpacity caps finite and maps non-finite to 0.55", () => {
   assert.equal(densityOverlayOpacity(0.3), 0.3);
   assert.equal(densityOverlayOpacity(Number.NaN), 0.55);
   assert.equal(densityOverlayOpacity(Number.POSITIVE_INFINITY), 0.55);
+});
+
+test("sceneMarkerPathAdmit bounds and host coercion", () => {
+  const diamond = { contours: [[-0.4, 0, 0, 0.4, 0.4, 0, 0, -0.4]] };
+  const admitted = sceneMarkerPathAdmit(diamond);
+  assert.equal(admitted.filled, true);
+  assert.equal(admitted.contours.length, 1);
+  assert.equal(sceneMarkerPathAdmit(null), null);
+  assert.equal(sceneMarkerPathAdmit({ contours: [[0, 0]] }), null);
+  assert.equal(sceneMarkerPathAdmit({ contours: [] }), null);
+  assert.equal(sceneMarkerPathAdmit({ contours: [[0, 0, 0.6, 0]] }), null);
 });
 
 test("roundedRectPoly zero radii is four corners", () => {
