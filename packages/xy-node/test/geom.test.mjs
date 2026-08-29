@@ -52,6 +52,7 @@ import {
   sceneHexbinRgbaPlaneAdmit,
   meshHasPerItem,
   packXyTaColormap,
+  hexbinXyTaColormap,
   sceneMeshPaintPlaneAdmit,
   sceneItemApplyOpacity,
   sceneItemWidthsAdmit,
@@ -328,6 +329,22 @@ test("packXyTaColormap uses style.colormap only like Python", () => {
   assert.equal(packXyTaColormap({ colormap: "viridis" }).flags, 0);
   assert.equal(packXyTaColormap({ style: {}, colormapStops: [[0, 0, 0]] }).flags, 0);
   assert.equal(packXyTaColormap({ colormapStops: [[0, 0, 0]] }).flags, 0);
+});
+
+test("hexbinXyTaColormap uses channel.colormap only like Python", () => {
+  const fromChannel = hexbinXyTaColormap({
+    color_ch: { values: [1, 2], colormap: "plasma" },
+    style: { colormap: "viridis" },
+  });
+  assert.equal(fromChannel.flags, 1 << 6);
+  assert.deepEqual([...fromChannel.cmap], [...new TextEncoder().encode("plasma")]);
+  assert.equal(
+    hexbinXyTaColormap({
+      color_ch: { values: [1, 2] },
+      style: { colormap: "viridis" },
+    }).flags,
+    0,
+  );
 });
 
 test("sceneGradientSpace matches host table", () => {
