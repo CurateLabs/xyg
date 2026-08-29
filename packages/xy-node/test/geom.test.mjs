@@ -341,6 +341,18 @@ test("packXyTaColormap uses style.colormap only like Python", () => {
   assert.equal(packXyTaColormap({ colormapStops: [[0, 0, 0]] }).flags, 0);
 });
 
+test("packXyTaColormap stop bytes require RGB rows like Python", () => {
+  const rgb = packXyTaColormap({ style: { colormap: [[255, 0, 0], [0, 255, 0]] } });
+  assert.equal(rgb.flags, 1 << 7);
+  assert.deepEqual([...rgb.stops], [255, 0, 0, 0, 255, 0]);
+  const flat = packXyTaColormap({ style: { colormap: [255, 0, 0] } });
+  assert.equal(flat.flags, 1 << 7);
+  assert.equal(flat.stops.length, 0);
+  const rgba = packXyTaColormap({ style: { colormap: [[255, 0, 0, 255]] } });
+  assert.equal(rgba.flags, 1 << 7);
+  assert.equal(rgba.stops.length, 0);
+});
+
 test("hexbinXyTaColormap uses channel.colormap only like Python", () => {
   const fromChannel = hexbinXyTaColormap({
     color_ch: { values: [1, 2], colormap: "plasma" },
