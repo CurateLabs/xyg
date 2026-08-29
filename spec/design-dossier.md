@@ -1683,6 +1683,7 @@ Raster rectangle style RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster segment stroke RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster mesh stroke RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster ribbon fill RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Raster ribbon match-fill edge RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Node empty kind uses `|| "mark"` (same as Python `or "mark"`).
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
@@ -1903,6 +1904,7 @@ Raster rectangle style RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster segment stroke RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster mesh stroke RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster ribbon fill RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Raster ribbon match-fill edge RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Node empty kind uses `|| "mark"` (same as Python `or "mark"`).
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and

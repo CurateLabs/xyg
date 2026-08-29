@@ -835,6 +835,7 @@ Raster rectangle style RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster segment stroke RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster mesh stroke RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster ribbon fill RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Raster ribbon match-fill edge RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Node empty kind uses `|| "mark"` (same as Python `or "mark"`).
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
@@ -1236,6 +1237,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Raster segment stroke RGBA8 uses ABI 251.
   Raster mesh stroke RGBA8 uses ABI 251.
   Raster ribbon fill RGBA8 uses ABI 251.
+  Raster ribbon match-fill edge RGBA8 uses ABI 251.
   Node empty kind uses `|| "mark"`.
 
 ---
