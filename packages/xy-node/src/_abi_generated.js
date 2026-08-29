@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 211;
-export const SIGNATURE_SHA256 = "727884ac41f80aed67e0c0da867cc1a3390282a7f910093a4e08a70a4b5552ce";
+export const ABI_VERSION = 212;
+export const SIGNATURE_SHA256 = "512cb62348b1724d96c4d67745e3d99da72522300e6519259f4d3a2e9f43e7fe";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -121,6 +121,7 @@ export let xyM4Indices;
 export let xyM4Points;
 export let xyMarchingSquares;
 export let xyMarchingTriangles;
+export let xyMarkerPathScale;
 export let xyMinMax;
 export let xyMonotoneTangents;
 export let xyNormalizeF32;
@@ -421,6 +422,7 @@ export function bindGeneratedAbi(lib) {
   xyM4Points = lib.func("size_t xyg_m4_points(const double * x, const double * y, size_t len, double x0, double x1, size_t n_buckets, double * out_x, double * out_y)");
   xyMarchingSquares = lib.func("size_t xyg_marching_squares(const double * z, size_t rows, size_t cols, const double * x_coords, const double * y_coords, const double * levels, size_t n_levels, uint8_t corner_mask, double * out_x0, double * out_x1, double * out_y0, double * out_y1, double * out_levels, size_t capacity)");
   xyMarchingTriangles = lib.func("size_t xyg_marching_triangles(const double * x, const double * y, const double * z, size_t vertex_count, const int64_t * triangles, size_t face_count, const double * levels, size_t level_count, double * out_x0, double * out_x1, double * out_y0, double * out_y1, double * out_levels, size_t capacity)");
+  xyMarkerPathScale = lib.func("size_t xyg_marker_path_scale(double cx, double cy, double scale, const double * x, const double * y, size_t n, double * out_x, double * out_y, size_t capacity)");
   xyMinMax = lib.func("int32_t xyg_min_max(const double * data, size_t len, double * out_min, double * out_max)");
   xyMonotoneTangents = lib.func("size_t xyg_monotone_tangents(const double * x, const double * y, size_t n, double * out_m, size_t capacity)");
   xyNormalizeF32 = lib.func("int32_t xyg_normalize_f32(const double * data, size_t len, double lo, double hi, int32_t nan_mode, float * out)");

@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 211;
+pub const ABI_VERSION: u32 = 212;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -14403,6 +14403,55 @@ pub unsafe extern "C" fn xyg_step_arrays(
             )
         };
         geom::step_arrays(x, y, mode, out_x, out_y).unwrap_or(usize::MAX)
+    })
+}
+
+/// Pixel-space authored marker vertices (ABI 212).
+///
+/// Writes `out_x[i] = cx + scale * x[i]`, `out_y[i] = cy - scale * y[i]`.
+/// Probe with `capacity == 0` and null/`0` hit pointers; the return is `n`.
+/// `usize::MAX` on length mismatch or missing/undersized fill buffers.
+/// Empty native pointers are null/`0`.
+///
+/// # Safety
+/// When `n > 0`, `x` and `y` each address `n` readable f64s. When
+/// `capacity > 0`, `out_x` and `out_y` each address `capacity` writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_marker_path_scale(
+    cx: f64,
+    cy: f64,
+    scale: f64,
+    x: *const f64,
+    y: *const f64,
+    n: usize,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        let (x, y) = if n == 0 {
+            (&[][..], &[][..])
+        } else {
+            if x.is_null() || y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts(x, n),
+                std::slice::from_raw_parts(y, n),
+            )
+        };
+        let (out_x, out_y) = if capacity == 0 {
+            (&mut [][..], &mut [][..])
+        } else {
+            if out_x.is_null() || out_y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts_mut(out_x, capacity),
+                std::slice::from_raw_parts_mut(out_y, capacity),
+            )
+        };
+        geom::marker_path_scale(cx, cy, scale, x, y, out_x, out_y).unwrap_or(usize::MAX)
     })
 }
 

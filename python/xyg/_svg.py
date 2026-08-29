@@ -1536,6 +1536,23 @@ def _step_arrays(xv: np.ndarray, yv: np.ndarray, where: str) -> tuple[np.ndarray
     )
 
 
+def _authored_marker_points(
+    unit_x: np.ndarray,
+    unit_y: np.ndarray,
+    cx: float,
+    cy: float,
+    scale: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Pixel-space authored marker vertices via ABI 212."""
+    return _native.marker_path_scale(
+        float(cx),
+        float(cy),
+        float(scale),
+        np.asarray(unit_x, dtype=np.float64),
+        np.asarray(unit_y, dtype=np.float64),
+    )
+
+
 _SYMBOL_BUILDERS = {
     "pixel": lambda cx, cy, r: (
         f'<rect x="{_num(cx - r)}" y="{_num(cy - r)}" width="{_num(2 * r)}" height="{_num(2 * r)}"'
@@ -4679,9 +4696,11 @@ def _authored_marker_path_d(
         values = np.asarray(contour, dtype=np.float64).reshape(-1, 2)
         if not len(values):
             continue
-        points = [(cx + diameter * float(x), cy - diameter * float(y)) for x, y in values]
-        parts.append(f"M {_num(points[0][0])} {_num(points[0][1])}")
-        parts.extend(f"L {_num(x)} {_num(y)}" for x, y in points[1:])
+        px, py = _authored_marker_points(values[:, 0], values[:, 1], cx, cy, diameter)
+        parts.append(f"M {_num(float(px[0]))} {_num(float(py[0]))}")
+        parts.extend(
+            f"L {_num(float(x))} {_num(float(y))}" for x, y in zip(px[1:], py[1:], strict=True)
+        )
         if bool(marker_path.get("filled", True)):
             parts.append("Z")
     return " ".join(parts)

@@ -1503,6 +1503,11 @@ ABI 211 `xyg_step_arrays` owns compatibility step/stairs expand (`mode` 1/2/3
 = pre/mid/post; `n < 2` identity) so Python `_svg._step_arrays` and Node
 `stepArrays` cannot drift. ChartView `_stepArrays` keeps the same vertices
 until WASM.
+ABI 212 `xyg_marker_path_scale` owns compatibility authored-marker pixel
+vertices (`out_x = cx + scale * unit_x`, `out_y = cy - scale * unit_y`) so
+Python `_svg._authored_marker_path_d` / `_raster` and Node `markerPathScale`
+cannot drift. ChartView legend/annotation scale keeps the same formula until
+WASM. SVG `d=` string assembly stays host.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

@@ -7,6 +7,7 @@ import {
   f32SafeScale,
   geometryOffset,
   hexbinRing,
+  markerPathScale,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -83,6 +84,16 @@ test("stepArrays expands pre mid and post vertices", () => {
   assert.deepEqual([...identity.x], [7]);
   assert.deepEqual([...identity.y], [9]);
   assert.throws(() => stepArrays([0, 1], [10], "post"), /equal length/);
+});
+
+test("markerPathScale flips y and matches host vertices", () => {
+  const scaled = markerPathScale(10, 20, 8, [0, 0.5, 0, -0.5], [0.5, 0, -0.5, 0]);
+  assert.deepEqual([...scaled.x], [10, 14, 10, 6]);
+  assert.deepEqual([...scaled.y], [16, 20, 24, 20]);
+  const empty = markerPathScale(10, 20, 8, [], []);
+  assert.deepEqual([...empty.x], []);
+  assert.deepEqual([...empty.y], []);
+  assert.throws(() => markerPathScale(10, 20, 8, [0, 1], [0]), /equal length/);
 });
 
 test("roundedRectPoly zero radii is four corners", () => {

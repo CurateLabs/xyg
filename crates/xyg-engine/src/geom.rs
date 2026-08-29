@@ -1,10 +1,10 @@
 //! Compatibility geometry helpers (M2 #279 / ABI 121).
 //!
 //! One cubic, one Fritsch–Carlson tangent construction, one rounded-rect
-//! tessellation, and one step/stairs expand shared by Scene ribbon expansion
-//! and the host SVG/raster fallbacks. Hosts still map through their scale
-//! objects; this module owns the coordinate-free flattening so Python and Node
-//! cannot drift.
+//! tessellation, one step/stairs expand, and one authored marker-path scale
+//! shared by Scene ribbon expansion and the host SVG/raster fallbacks. Hosts
+//! still map through their scale objects; this module owns the
+//! coordinate-free flattening so Python and Node cannot drift.
 
 use std::collections::{BTreeSet, HashMap};
 
@@ -308,6 +308,40 @@ pub fn step_arrays(
     }
     debug_assert_eq!(written, need);
     Some(need)
+}
+
+/// Pixel-space authored marker vertices (ABI 212).
+///
+/// `out_x[i] = cx + scale * x[i]`, `out_y[i] = cy - scale * y[i]` (Y-flip so
+/// unit contours authored with +y up land in pixel space with +y down).
+/// Matches compatibility `_svg._authored_marker_path_d` / raster scatter
+/// and ChartView legend/annotation scale. Empty `out_x`/`out_y` is a size
+/// probe that returns `n`. Length mismatch or short buffers return `None`.
+/// Non-finite vertices are not extra-rejected: ingest already validated them.
+pub fn marker_path_scale(
+    cx: f64,
+    cy: f64,
+    scale: f64,
+    x: &[f64],
+    y: &[f64],
+    out_x: &mut [f64],
+    out_y: &mut [f64],
+) -> Option<usize> {
+    if x.len() != y.len() {
+        return None;
+    }
+    let n = x.len();
+    if out_x.is_empty() && out_y.is_empty() {
+        return Some(n);
+    }
+    if out_x.len() < n || out_y.len() < n {
+        return None;
+    }
+    for i in 0..n {
+        out_x[i] = cx + scale * x[i];
+        out_y[i] = cy - scale * y[i];
+    }
+    Some(n)
 }
 
 fn push_arc(
@@ -721,6 +755,32 @@ mod tests {
         assert!(step_arrays(&x, &y, 0, &mut xs, &mut ys).is_none());
         assert!(step_arrays(&x, &y[..2], STEP_POST, &mut xs, &mut ys).is_none());
         assert!(step_arrays_len(usize::MAX / 2, STEP_MID).is_none());
+    }
+
+    #[test]
+    fn marker_path_scale_flips_y_and_matches_host_vertices() {
+        let x = [0.0, 0.5, 0.0, -0.5];
+        let y = [0.5, 0.0, -0.5, 0.0];
+        let mut xs = [0.0; 4];
+        let mut ys = [0.0; 4];
+        assert_eq!(
+            marker_path_scale(10.0, 20.0, 8.0, &x, &y, &mut xs, &mut ys),
+            Some(4)
+        );
+        assert_eq!(&xs, &[10.0, 14.0, 10.0, 6.0]);
+        assert_eq!(&ys, &[16.0, 20.0, 24.0, 20.0]);
+        assert_eq!(
+            marker_path_scale(10.0, 20.0, 8.0, &x, &y, &mut [], &mut []),
+            Some(4)
+        );
+        assert_eq!(
+            marker_path_scale(1.0, 2.0, 3.0, &[], &[], &mut [], &mut []),
+            Some(0)
+        );
+        assert!(marker_path_scale(10.0, 20.0, 8.0, &x, &y[..2], &mut xs, &mut ys).is_none());
+        let mut short_x = [0.0; 2];
+        let mut short_y = [0.0; 2];
+        assert!(marker_path_scale(10.0, 20.0, 8.0, &x, &y, &mut short_x, &mut short_y).is_none());
     }
 
     #[test]

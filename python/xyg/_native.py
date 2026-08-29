@@ -10987,6 +10987,57 @@ def step_arrays(
     return out_x, out_y
 
 
+def marker_path_scale(
+    cx: float,
+    cy: float,
+    scale: float,
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Pixel-space authored marker vertices via ``xyg_marker_path_scale`` (ABI 212).
+
+    Writes ``out_x = cx + scale * x``, ``out_y = cy - scale * y``. Empty native
+    pointers are ``0``.
+    """
+    x = _as_f64(x, "x")
+    y = _as_f64(y, "y")
+    if len(x) != len(y):
+        raise ValueError("marker_path_scale x and y must have equal length")
+    n = len(x)
+    probed = _lib.xyg_marker_path_scale(
+        float(cx),
+        float(cy),
+        float(scale),
+        _ptr_f64(x) if n else 0,
+        _ptr_f64(y) if n else 0,
+        n,
+        0,
+        0,
+        0,
+    )
+    if probed == _USIZE_MAX:
+        raise ValueError("invalid marker-path-scale request")
+    count = int(probed)
+    if count == 0:
+        return np.empty(0, dtype=np.float64), np.empty(0, dtype=np.float64)
+    out_x = np.empty(count, dtype=np.float64)
+    out_y = np.empty(count, dtype=np.float64)
+    written = _lib.xyg_marker_path_scale(
+        float(cx),
+        float(cy),
+        float(scale),
+        _ptr_f64(x) if n else 0,
+        _ptr_f64(y) if n else 0,
+        n,
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        count,
+    )
+    if written == _USIZE_MAX or written != count:
+        raise ValueError("invalid marker-path-scale request")
+    return out_x, out_y
+
+
 def rounded_rect_poly(
     x: float,
     y: float,

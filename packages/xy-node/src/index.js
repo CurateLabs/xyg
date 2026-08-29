@@ -26,6 +26,7 @@ export {
   monotoneTangents,
   curveFlatten,
   stepArrays,
+  markerPathScale,
   roundedRectPoly,
   violinDensity,
   boxStats,
