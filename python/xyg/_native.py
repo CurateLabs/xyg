@@ -1594,6 +1594,44 @@ def scene_item_widths_admit(values: npt.ArrayLike | None, n: int, scalar: float)
     return code == 1
 
 
+def scene_item_fill_t(
+    values: npt.ArrayLike, n: int, domain: tuple[float, float] | None = None
+) -> npt.NDArray[np.float64] | None:
+    """Scene continuous per-item fill unit-t via ABI 247.
+
+    Empty native pointers are ``0``. Field picking and colormap lookup stay host.
+    """
+    n_i = int(n)
+    if n_i < 0:
+        return None
+    values_arr = _as_f64(np.asarray(values, dtype=np.float64).reshape(-1), "item_fill_t")
+    out = np.empty(n_i, dtype=np.float64)
+    has_domain = 0
+    lo = 0.0
+    hi = 0.0
+    if domain is not None:
+        has_domain = 1
+        lo = float(domain[0])
+        hi = float(domain[1])
+    code = int(
+        _lib.xyg_scene_item_fill_t(
+            _ptr_f64(values_arr) if values_arr.size else 0,
+            int(values_arr.size),
+            n_i,
+            lo,
+            hi,
+            has_domain,
+            _ptr_f64(out) if n_i else 0,
+            n_i,
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-item-fill-t request")
+    if code != 1:
+        return None
+    return out
+
+
 def scene_hexbin_pitch_admit(dx: float, dy: float) -> bool:
     """Scene hexbin cell-pitch admit via ``xyg_scene_hexbin_pitch_admit`` (ABI 237).
 

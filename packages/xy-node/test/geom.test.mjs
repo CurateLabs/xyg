@@ -36,6 +36,7 @@ import {
   sceneMeshPaintPlaneAdmit,
   sceneItemApplyOpacity,
   sceneItemWidthsAdmit,
+  sceneItemFillT,
   sceneCurveClassify,
   sceneMarkerGlyphAdmit,
   sceneKindAdmit,
@@ -418,6 +419,15 @@ test("sceneItemWidthsAdmit matches host table", () => {
   assert.equal(sceneItemWidthsAdmit(null, 3, 2.5), true);
   assert.equal(sceneItemWidthsAdmit(null, 3, -1), false);
   assert.equal(sceneItemWidthsAdmit(null, 3, Number.POSITIVE_INFINITY), false);
+});
+
+test("sceneItemFillT matches host table", () => {
+  assert.deepEqual([...sceneItemFillT([0, 10], 2, [0, 10])], [0, 1]);
+  assert.deepEqual([...sceneItemFillT([5, 5], 2, null)], [0, 0]);
+  assert.equal(sceneItemFillT([Number.NaN], 1, null), null);
+  assert.equal(sceneItemFillT([0], 2, null), null);
+  assert.equal(sceneItemFillT([-1], 1, [0, 1])[0], 0);
+  assert.equal(sceneItemFillT([2], 1, [0, 1])[0], 1);
 });
 
 test("sceneHexbinPitchAdmit matches host table", () => {

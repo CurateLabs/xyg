@@ -2010,22 +2010,13 @@ def _item_fill_rgba8(trace: Any, n: int) -> bytes | None:
         if values is None:
             return None
         scalars = np.ascontiguousarray(np.asarray(values, dtype=np.float64).reshape(-1))
-        if scalars.size != n:
-            return None
         domain = getattr(channel, "domain", None)
+        domain_pair = None
         if domain is not None and len(domain) == 2:
-            lo, hi = float(domain[0]), float(domain[1])
-        else:
-            finite = scalars[np.isfinite(scalars)]
-            if finite.size == 0:
-                return None
-            lo, hi = float(finite.min()), float(finite.max())
-        span = hi - lo
-        t = (
-            np.zeros(n, dtype=np.float64)
-            if not np.isfinite(span) or span == 0.0
-            else np.clip((scalars - lo) / span, 0.0, 1.0)
-        )
+            domain_pair = (float(domain[0]), float(domain[1]))
+        t = _native.scene_item_fill_t(scalars, n, domain_pair)
+        if t is None:
+            return None
         cmap = getattr(channel, "colormap", None) or "viridis"
         try:
             stops = _native.colormap_stops(str(cmap))

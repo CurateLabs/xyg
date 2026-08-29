@@ -1784,6 +1784,55 @@ pub fn scene_item_widths_admit(values: Option<&[f64]>, n: usize, scalar: f64) ->
     }
 }
 
+/// Scene continuous per-item fill unit-t (ABI 247).
+///
+/// `values.len()` must equal `n` and `out.len()`. A present domain uses
+/// `(lo, hi)` as-is. An absent domain takes finite min/max; no finite
+/// values fail. Zero or non-finite span writes zeros. Otherwise each
+/// value is `(v - lo) / span` clipped to `[0, 1]` (NaN stays NaN).
+/// Field picking and colormap lookup stay host.
+pub fn scene_item_fill_t(
+    values: &[f64],
+    n: usize,
+    domain: Option<(f64, f64)>,
+    out: &mut [f64],
+) -> bool {
+    if values.len() != n || out.len() != n {
+        return false;
+    }
+    let (lo, hi) = if let Some(domain) = domain {
+        domain
+    } else {
+        let mut lo = f64::INFINITY;
+        let mut hi = f64::NEG_INFINITY;
+        let mut any = false;
+        for &value in values {
+            if value.is_finite() {
+                any = true;
+                if value < lo {
+                    lo = value;
+                }
+                if value > hi {
+                    hi = value;
+                }
+            }
+        }
+        if !any {
+            return false;
+        }
+        (lo, hi)
+    };
+    let span = hi - lo;
+    if !span.is_finite() || span == 0.0 {
+        out.fill(0.0);
+        return true;
+    }
+    for (slot, &value) in out.iter_mut().zip(values.iter()) {
+        *slot = ((value - lo) / span).clamp(0.0, 1.0);
+    }
+    true
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -10132,6 +10181,25 @@ mod fuzz {
         assert_eq!(scene_item_widths_admit(None, 3, 2.5), 1);
         assert_eq!(scene_item_widths_admit(None, 3, -1.0), 0);
         assert_eq!(scene_item_widths_admit(None, 3, f64::INFINITY), 0);
+    }
+
+    #[test]
+    fn scene_item_fill_t_matches_host_table() {
+        let mut out = [0.0; 2];
+        assert!(scene_item_fill_t(&[0.0, 10.0], 2, Some((0.0, 10.0)), &mut out));
+        assert_eq!(out, [0.0, 1.0]);
+        assert!(scene_item_fill_t(&[5.0, 5.0], 2, None, &mut out));
+        assert_eq!(out, [0.0, 0.0]);
+        assert!(!scene_item_fill_t(&[f64::NAN], 1, None, &mut [0.0]));
+        assert!(!scene_item_fill_t(&[0.0], 2, None, &mut [0.0, 0.0]));
+        let mut one = [0.0];
+        assert!(scene_item_fill_t(&[-1.0], 1, Some((0.0, 1.0)), &mut one));
+        assert_eq!(one[0], 0.0);
+        assert!(scene_item_fill_t(&[2.0], 1, Some((0.0, 1.0)), &mut one));
+        assert_eq!(one[0], 1.0);
+        let mut empty: [f64; 0] = [];
+        assert!(scene_item_fill_t(&[], 0, Some((0.0, 1.0)), &mut empty));
+        assert!(!scene_item_fill_t(&[], 0, None, &mut empty));
     }
 
     #[test]

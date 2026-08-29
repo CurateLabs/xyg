@@ -783,6 +783,10 @@ ABI 246 `xyg_scene_item_widths_admit` owns Scene per-item stroke-width
 admit (present values: `len == n` and every value finite `>= 0`; absent:
 finite scalar `>= 0`) so Python `_item_widths` and Node `itemWidths` cannot
 drift. Field picking and f64 packing stay host.
+ABI 247 `xyg_scene_item_fill_t` owns Scene continuous per-item fill unit-t
+(domain pair as-is, else finite min/max; zero/non-finite span → zeros;
+clip to `[0, 1]`) so Python `_item_fill_rgba8` and Node `itemFillRgba8`
+cannot drift. Field picking and colormap lookup stay host.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1161,6 +1165,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Scene mesh paint-plane admit is ABI 244.
   Scene per-item RGBA8 artist-alpha/opacity is ABI 245.
   Scene per-item stroke-width admit is ABI 246.
+  Scene continuous per-item fill unit-t is ABI 247.
 
 ---
 
