@@ -301,14 +301,13 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 
 **Still blocks “Python is only a host”** (compatibility modules stay until these twins move or stay-host is recorded with diffs):
 
-1. `channels.resolve_color` versus the thinner Node `color.js` (CSS/numeric split, categorical factorization, direct RGBA)
-2. `_payload` emit orchestration, including the stem/errorbar budget `max(1024, px_width*4)` (index math is ABI 204/205)
-3. `_scene_v3.py` / Node `scene.js` pack and figure-to-record orchestration
-4. Curved annotation arrows `_arrowgeom.py` ↔ `js/src/51_annotations.ts`
-5. `lod.py` remaining viewport/sample/`EncodedColumn` packing — offset/scale math is ABI 208; hosts still map `log`/`symlog` onto `pin_zero`
-6. `marks.py`, `facets.py`, `_figure.py`, `_annotations.py` composition and `_fontmetrics.py` generated DejaVu table used by compatibility SVG gutters
+1. `_payload` emit orchestration, including the stem/errorbar budget `max(1024, px_width*4)` (index math is ABI 204/205)
+2. `_scene_v3.py` / Node `scene.js` pack and figure-to-record orchestration
+3. Curved annotation arrows `_arrowgeom.py` ↔ `js/src/51_annotations.ts`
+4. `lod.py` remaining viewport/sample/`EncodedColumn` packing — offset/scale math is ABI 208; hosts still map `log`/`symlog` onto `pin_zero`
+5. `marks.py`, `facets.py`, `_figure.py`, `_annotations.py` composition and `_fontmetrics.py` generated DejaVu table used by compatibility SVG gutters
 
-ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi` skip radial-range normalization). `_polar_wedge_path` still emits SVG `A` arcs for unrounded wedges. ABI 210 `xyg_hexbin_ring` owns pointy-top hexagon vertex offsets scaled by cell pitch. ChartView `_buildHexbinMark` keeps the same fractions until WASM. ABI 211 `xyg_step_arrays` owns compatibility step/stairs expand (`mode` 1/2/3 = pre/mid/post; `n < 2` identity). ChartView `_stepArrays` keeps the same vertices until WASM. ABI 212 `xyg_marker_path_scale` owns authored-marker pixel vertices (`out_x = cx + scale * unit_x`, `out_y = cy - scale * unit_y`). ChartView legend/annotation scale keeps the same formula until WASM. SVG `d=` assembly stays host. Next kernel: `channels.resolve_color`. Do not wrap Scene's RGBA-grid raster as a compat path.
+ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi` skip radial-range normalization). `_polar_wedge_path` still emits SVG `A` arcs for unrounded wedges. ABI 210 `xyg_hexbin_ring` owns pointy-top hexagon vertex offsets scaled by cell pitch. ChartView `_buildHexbinMark` keeps the same fractions until WASM. ABI 211 `xyg_step_arrays` owns compatibility step/stairs expand (`mode` 1/2/3 = pre/mid/post; `n < 2` identity). ChartView `_stepArrays` keeps the same vertices until WASM. ABI 212 `xyg_marker_path_scale` owns authored-marker pixel vertices (`out_x = cx + scale * unit_x`, `out_y = cy - scale * unit_y`). ChartView legend/annotation scale keeps the same formula until WASM. SVG `d=` assembly stays host. ABI 213 `xyg_css_is_functional` / `xyg_continuous_domain` / `xyg_direct_rgba_admit` owns the `resolve_color` CSS/numeric split, equal-bound domain pad, and Nx3/Nx4 admit so Python `channels.resolve_color` and Node `resolveColorChannel` cannot drift. Named colors stay categories. Hosts still factorize labels, pin palettes, and emit warning text. Next kernel: `_payload` emit orchestration. Do not wrap Scene's RGBA-grid raster as a compat path.
 
 ## Disposition summary
 
@@ -725,7 +724,7 @@ Forbidden:
 | `python/xyg/_validate.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_webp.py` | Python host | `python-host` | `keep-host`; ABI 114 moves lossless WebP encode into Rust; this module only coerces a NumPy array | #274 |
 | `python/xyg/channel.py` | Python host | `python-host` | `keep-host` | — |
-| `python/xyg/channels.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
+| `python/xyg/channels.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 213 owns CSS/numeric split, domain pad, and direct RGBA admit; hosts still factorize labels and pin palettes | #58 |
 | `python/xyg/columns.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/components.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/config.py` | Python host | `python-host` | `keep-host` | — |

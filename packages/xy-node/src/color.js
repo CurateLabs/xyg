@@ -3,10 +3,15 @@
  * Ships constant CSS strings, packed RGBA8 for direct_rgba, or continuous
  * unit-f32 channels for numeric encodings (Python `_ship_channels` parity).
  */
-import { pointer, xyCssColorRgba } from "./native.js";
+import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit } from "./native.js";
+import { DEFAULT_PALETTE } from "./encode.js";
 
 function u8Ptr(view) {
   return pointer(view, "uint8_t *");
+}
+
+function f64Ptr(view) {
+  return pointer(view, "double *");
 }
 
 /**
@@ -96,10 +101,101 @@ export function cssColorsToRgba8(colors) {
   return out;
 }
 
-function looksLikeCssColor(value) {
-  if (typeof value !== "string") return false;
-  const s = value.trim();
-  return s.startsWith("#") || /^rgba?\(/i.test(s) || /^[a-zA-Z][a-zA-Z0-9-]*$/.test(s);
+/** Unambiguous `#` / `rgb()` / `hsl()` paint syntax (ABI 213). */
+export function cssIsFunctional(css) {
+  const encoded = new TextEncoder().encode(String(css ?? ""));
+  const code = Number(
+    xyCssIsFunctional(encoded.length ? u8Ptr(encoded) : 0, BigInt(encoded.length)),
+  );
+  if (code < 0) throw new RangeError("invalid css-is-functional request");
+  return code === 1;
+}
+
+/** Continuous color/size domain (ABI 213). */
+export function continuousDomain(values) {
+  const xv = values instanceof Float64Array ? values : Float64Array.from(values, Number);
+  const lo = new Float64Array(1);
+  const hi = new Float64Array(1);
+  const code = Number(
+    xyContinuousDomain(
+      xv.length ? f64Ptr(xv) : 0,
+      BigInt(xv.length),
+      f64Ptr(lo),
+      f64Ptr(hi),
+    ),
+  );
+  if (code !== 0) throw new RangeError("invalid continuous-domain request");
+  return [lo[0], hi[0]];
+}
+
+/** Admit per-point RGB/RGBA in `[0, 1]` as contiguous Nx4 (ABI 213). */
+export function directRgbaAdmit(values, components) {
+  const xv = values instanceof Float64Array ? values : Float64Array.from(values, Number);
+  const nComp = Number(components);
+  if (nComp !== 3 && nComp !== 4) {
+    throw new RangeError("direct RGB/RGBA colors must be 3 or 4 components");
+  }
+  if (xv.length % nComp !== 0) {
+    throw new RangeError("direct RGB/RGBA colors must be a multiple of the component count");
+  }
+  const n = xv.length / nComp;
+  const probed = xyDirectRgbaAdmit(n ? f64Ptr(xv) : 0, BigInt(n), BigInt(nComp), 0, 0);
+  const USIZE_MAX_64 = (1n << 64n) - 1n;
+  if (probed === USIZE_MAX_64) {
+    throw new RangeError("direct RGB/RGBA colors must contain finite values between 0 and 1");
+  }
+  const count = Number(probed);
+  if (count === 0) return new Float64Array(0);
+  const out = new Float64Array(count);
+  const written = xyDirectRgbaAdmit(
+    n ? f64Ptr(xv) : 0,
+    BigInt(n),
+    BigInt(nComp),
+    f64Ptr(out),
+    count,
+  );
+  if (written === USIZE_MAX_64 || Number(written) !== count) {
+    throw new RangeError("direct RGB/RGBA colors must contain finite values between 0 and 1");
+  }
+  return out;
+}
+
+function categoryLabel(value) {
+  if (value == null) return "(missing)";
+  if (typeof value === "number" && Number.isNaN(value)) return "(missing)";
+  return String(value);
+}
+
+function factorizeCategories(raw) {
+  const labels = raw.map(categoryLabel);
+  const categories = [...new Set(labels)].sort();
+  const index = new Map(categories.map((label, i) => [label, i]));
+  const codes =
+    categories.length <= 256 ? new Uint8Array(labels.length) : new Uint32Array(labels.length);
+  for (let i = 0; i < labels.length; i += 1) {
+    codes[i] = index.get(labels[i]);
+  }
+  return {
+    mode: "categorical",
+    codes,
+    categories,
+    palette: [...DEFAULT_PALETTE],
+  };
+}
+
+function flattenRgbRows(raw, n) {
+  if (raw.length !== n) return null;
+  const first = raw[0];
+  if (!Array.isArray(first) && !ArrayBuffer.isView(first)) return null;
+  const components = first.length;
+  if (components !== 3 && components !== 4) return null;
+  const flat = new Float64Array(n * components);
+  for (let i = 0; i < n; i += 1) {
+    const row = raw[i];
+    if (row == null || row.length !== components) return null;
+    for (let c = 0; c < components; c += 1) flat[i * components + c] = Number(row[c]);
+  }
+  return { flat, components };
 }
 
 /**
@@ -108,7 +204,7 @@ function looksLikeCssColor(value) {
  * @param {string|string[]|number[]|TypedArray|null|undefined} color
  * @param {number} n
  * @param {string} [fallback]
- * @returns {{mode: string, color?: string, rgba?: Uint8Array, values?: Float64Array, domain?: number[], colormap?: string}|null}
+ * @returns {{mode: string, color?: string, rgba?: Uint8Array, values?: Float64Array, domain?: number[], colormap?: string, codes?: Uint8Array|Uint32Array, categories?: string[], palette?: string[]}|null}
  */
 export function resolveColorChannel(color, n, fallback = "#3987e5") {
   if (color == null) {
@@ -121,41 +217,42 @@ export function resolveColorChannel(color, n, fallback = "#3987e5") {
     if (!Number.isFinite(color)) {
       throw new RangeError("color scalar must be finite");
     }
+    const values = Float64Array.from({ length: n }, () => color);
     return {
       mode: "continuous",
-      values: Float64Array.from({ length: n }, () => color),
-      domain: [color, color === 0 ? 1 : color * 1.000001 || 1],
+      values,
+      domain: continuousDomain(new Float64Array([color])),
       colormap: "viridis",
     };
   }
   if (Array.isArray(color) || ArrayBuffer.isView(color)) {
-    const raw = [...color];
-    if (raw.length === 1) {
-      const only = raw[0];
-      if (looksLikeCssColor(only) || typeof only === "string") {
-        return { mode: "constant", color: String(only) };
+    const raw = Array.isArray(color) ? color : [...color];
+    const rgb = flattenRgbRows(raw, n);
+    if (rgb) {
+      const packed = directRgbaAdmit(rgb.flat, rgb.components);
+      const rgba = new Uint8Array(packed.length);
+      for (let i = 0; i < packed.length; i += 1) {
+        rgba[i] = Math.round(Math.min(1, Math.max(0, packed[i])) * 255);
       }
+      return { mode: "direct_rgba", rgba };
     }
     if (raw.length !== n) {
       throw new RangeError(`color length ${raw.length} != n=${n}`);
     }
-    const numeric = raw.every((v) => !looksLikeCssColor(v) && Number.isFinite(Number(v)));
+    const numeric = raw.every((v) => typeof v !== "string" && Number.isFinite(Number(v)));
     if (numeric) {
       const values = Float64Array.from(raw, Number);
-      let lo = Number.POSITIVE_INFINITY;
-      let hi = Number.NEGATIVE_INFINITY;
-      for (const v of values) {
-        if (v < lo) lo = v;
-        if (v > hi) hi = v;
-      }
-      if (!Number.isFinite(lo) || !Number.isFinite(hi)) {
-        lo = 0;
-        hi = 1;
-      }
-      if (lo === hi) hi = lo + 1;
-      return { mode: "continuous", values, domain: [lo, hi], colormap: "viridis" };
+      return {
+        mode: "continuous",
+        values,
+        domain: continuousDomain(values),
+        colormap: "viridis",
+      };
     }
-    return { mode: "direct_rgba", rgba: cssColorsToRgba8(raw.map(String)) };
+    if (raw.every((v) => typeof v === "string" && cssIsFunctional(v))) {
+      return { mode: "direct_rgba", rgba: cssColorsToRgba8(raw) };
+    }
+    return factorizeCategories(raw);
   }
   return { mode: "constant", color: String(color) };
 }

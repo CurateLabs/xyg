@@ -198,6 +198,9 @@ export {
   parseCssColor,
   cssColorRgba8,
   cssColorsToRgba8,
+  cssIsFunctional,
+  continuousDomain,
+  directRgbaAdmit,
   resolveColorChannel,
 } from "./color.js";
 

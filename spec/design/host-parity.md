@@ -628,7 +628,11 @@ pitch so Python `_svg.hexbin_ring` and Node `hexbinRing` cannot drift. ABI 211
 `xyg_marker_path_scale` owns authored-marker pixel vertices
 (`out_x = cx + scale * unit_x`, `out_y = cy - scale * unit_y`) so Python
 `_svg._authored_marker_path_d` / `_raster` and Node `markerPathScale` cannot
-drift; SVG `d=` assembly stays host. `xyg_heatmap_rgba` keeps its
+drift; SVG `d=` assembly stays host. ABI 213 `xyg_css_is_functional` /
+`xyg_continuous_domain` / `xyg_direct_rgba_admit` owns the `resolve_color`
+CSS/numeric split, equal-bound domain pad, and Nx3/Nx4 admit so Python
+`channels.resolve_color` and Node `resolveColorChannel` cannot drift; named
+colors stay categories. `xyg_heatmap_rgba` keeps its
 distinct normalized-scalar remap for other consumers. Hosts still
 resolve stop tables, CSS paints, and truecolor RGBA buffers.
 ABI 110 makes primary legend framing the same way: Python
@@ -975,11 +979,12 @@ client must not grow a parallel “JS layout/LOD” product path.
   rule; no conflicting “Python owns decisions” guidance remains in force
   (upstream text survives only as clearly-marked provenance).
 - **REQ-HOSTPARITY-6 (MUST, MVP).** Remove Python host-only layout/encode
-  shenanigans for MVP: remaining twins are `channels.resolve_color`,
-  `_payload` emit orchestration, and `_scene_v3` pack. Sankey placement already
-  lives in `xyg_sankey_layout`; encode offset/scale is ABI 208; polar wedge
-  flatten is ABI 209; hexbin ring offsets are ABI 210; step/stairs expand is
-  ABI 211; authored marker-path scale is ABI 212.
+  shenanigans for MVP: remaining twins are `_payload` emit orchestration and
+  `_scene_v3` pack. Sankey placement already lives in `xyg_sankey_layout`;
+  encode offset/scale is ABI 208; polar wedge flatten is ABI 209; hexbin ring
+  offsets are ABI 210; step/stairs expand is ABI 211; authored marker-path
+  scale is ABI 212; color CSS/numeric split, domain pad, and direct RGBA admit
+  are ABI 213.
 
 ---
 

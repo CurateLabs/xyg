@@ -448,6 +448,26 @@ fn hsl_args(args: &str) -> Result<[f32; 4], CssErr> {
     Ok([f(0.0), f(8.0), f(4.0), a])
 }
 
+/// Unambiguous authored CSS paint syntax: `#…`, `rgb()`/`rgba()`, `hsl()`/`hsla()`.
+///
+/// Matches Python `channels.resolve_color`. A bare `red` is a category
+/// label, not paint — only `#` / functional color forms are unambiguous.
+pub fn is_functional_color(value: &str) -> bool {
+    let s = value.trim_start();
+    if s.starts_with('#') {
+        return true;
+    }
+    fn starts_fn(s: &str, name: &str) -> bool {
+        let bytes = s.as_bytes();
+        let name_b = name.as_bytes();
+        if bytes.len() < name_b.len() || !bytes[..name_b.len()].eq_ignore_ascii_case(name_b) {
+            return false;
+        }
+        s[name.len()..].trim_start().starts_with('(')
+    }
+    starts_fn(s, "rgba") || starts_fn(s, "rgb") || starts_fn(s, "hsla") || starts_fn(s, "hsl")
+}
+
 /// Parse a CSS `<color>`. `Ok(Checked::Parsed(Some(rgba)))` for statically
 /// resolvable colors; `Parsed(None)` for `currentColor` (valid, resolves to
 /// the mark/text color at paint); `Passthrough` for browser-resolved
@@ -745,6 +765,19 @@ mod tests {
         assert_eq!(parse_color("#12"), Err(CssErr::BadHex));
         assert_eq!(parse_color("#1234567"), Err(CssErr::BadHex));
         assert_eq!(parse_color("#"), Err(CssErr::BadHex));
+    }
+
+    #[test]
+    fn functional_color_gate_matches_host_regex() {
+        assert!(is_functional_color("#ff0000"));
+        assert!(is_functional_color("  RGB(1, 2, 3)"));
+        assert!(is_functional_color("rgba (0,0,0,1)"));
+        assert!(is_functional_color("HSL(0,100%,50%)"));
+        assert!(is_functional_color("hsla(0,0%,0%,0.5)"));
+        assert!(!is_functional_color("red"));
+        assert!(!is_functional_color("var(--x)"));
+        assert!(!is_functional_color("rgb"));
+        assert!(!is_functional_color(""));
     }
 
     #[test]
