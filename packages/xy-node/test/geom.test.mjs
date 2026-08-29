@@ -44,6 +44,7 @@ import {
   sceneRectExtraFlags,
   rectExtraFlags,
   resolveDensityBinColors,
+  ribbonEndRgbaPair,
   sceneGradientDir,
   sceneLinearGradientPrefix,
   sceneGradientSpace,
@@ -1190,6 +1191,19 @@ test("sceneHeatmapShapeAdmit matches host table", () => {
   assert.equal(sceneHeatmapShapeAdmit(1.5, 2), false);
   assert.equal(sceneHeatmapShapeAdmit(Number.NaN, 2), false);
   assert.equal(sceneHeatmapShapeAdmit(Number.POSITIVE_INFINITY, 2), false);
+});
+
+
+test("ribbonEndRgbaPair uses color_ch only like Python", () => {
+  const pair = ribbonEndRgbaPair({
+    count: 1,
+    color_ch: { mode: "constant", constant: "#ff0000" },
+    colorChannel: { mode: "constant", constant: "#0000ff" },
+    color2_ch: { mode: "constant", constant: "#00ff00" },
+  });
+  assert.ok(pair != null);
+  assert.deepEqual([...pair.source], [255, 0, 0, 255]);
+  assert.deepEqual([...pair.target], [0, 255, 0, 255]);
 });
 
 test("sceneRibbonColor2Classify matches host table", () => {
