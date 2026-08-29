@@ -3580,7 +3580,7 @@ function packXyTc(figure) {
       flags |= XYTC_HAS_LINE_COLOR;
       lineColor = encodeUtf8(style.line_color ?? style.lineColor);
     }
-    const colorCss = encodeUtf8(style.color ?? (typeof trace.color === "string" ? trace.color : trace.color?.color) ?? "");
+    const colorCss = encodeUtf8(style.color ?? "");
     let colorMode = new Uint8Array();
     let colorConst = new Uint8Array();
     const channel = trace.color_ch ?? trace.colorChannel;
