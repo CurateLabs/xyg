@@ -20,6 +20,7 @@ import {
   sceneTickLabelStrategy,
   sceneTickAnchor,
   sceneFillGradientAdmit,
+  sceneParseLinearGradient,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -216,6 +217,19 @@ test("sceneFillGradientAdmit matches host table", () => {
   const current = sceneFillGradientAdmit("plot", "up", [0, 1], ["currentcolor", ""], "#3987e5");
   assert.equal(current.length, 2);
   assert.equal(sceneFillGradientAdmit("data", "down", [0, 1], ["#336699", "#34d399"], "#3987e5"), null);
+});
+
+test("sceneParseLinearGradient matches host table", () => {
+  const parsed = sceneParseLinearGradient("linear-gradient(currentColor, transparent)", "mark");
+  assert.equal(parsed.dir, "down");
+  assert.deepEqual(parsed.stops, [[0, "currentColor"], [1, "transparent"]]);
+  const plot = sceneParseLinearGradient("linear-gradient(to right, red 10%, blue)", "plot");
+  assert.equal(plot.dir, "right");
+  assert.deepEqual(plot.stops, [[0.1, "red"], [1, "blue"]]);
+  assert.equal(sceneParseLinearGradient("radial-gradient(red, blue)", "mark"), null);
+  assert.equal(sceneParseLinearGradient("linear-gradient(45deg, red, blue)", "mark"), null);
+  assert.equal(sceneParseLinearGradient("linear-gradient(to left, red, blue)", "mark"), null);
+  assert.equal(sceneParseLinearGradient("linear-gradient(red)", "mark"), null);
 });
 
 test("sceneRibbonColor2Classify matches host table", () => {

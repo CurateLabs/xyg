@@ -1178,7 +1178,7 @@ def scene_fill_gradient_admit(
     """Scene fill-gradient admit via ``xyg_scene_fill_gradient_admit`` (ABI 226).
 
     Returns per-stop RGBA8 or ``None`` when unusable. Empty native pointers are
-    ``0``. Hosts still coerce fill mappings and parse ``linear-gradient(`` CSS.
+    ``0``. Hosts still coerce fill mappings; CSS parse is ABI 227.
     """
     space_b = str(space).encode("utf-8")
     dir_b = str(direction).encode("utf-8")
@@ -1218,6 +1218,60 @@ def scene_fill_gradient_admit(
         (int(out[i * 4]), int(out[i * 4 + 1]), int(out[i * 4 + 2]), int(out[i * 4 + 3]))
         for i in range(n)
     ]
+
+
+_SCENE_PARSE_LINEAR_GRADIENT_DIRS = ("down", "up", "right", "left")
+
+
+def scene_parse_linear_gradient(css: str, space: str = "mark") -> tuple[int, dict[str, Any] | None]:
+    """Scene ``linear-gradient(`` CSS parse via ``xyg_scene_parse_linear_gradient`` (ABI 227).
+
+    Returns ``(1, spec)`` or ``(code, None)``. Empty native pointers are ``0``.
+    Hosts still coerce fill mappings and raise authoring error text.
+    """
+    css_b = str(css).encode("utf-8")
+    space_b = str(space).encode("utf-8")
+    out_dir = ctypes.c_uint8(0)
+    out_t = np.empty(8, dtype=np.float64)
+    out_css = np.empty(65536, dtype=np.uint8)
+    out_lens = np.empty(8, dtype=np.uint32)
+    out_n = ctypes.c_size_t(0)
+    code = int(
+        _lib.xyg_scene_parse_linear_gradient(
+            css_b if css_b else 0,
+            len(css_b),
+            space_b if space_b else 0,
+            len(space_b),
+            ctypes.byref(out_dir),
+            _ptr_f64(out_t),
+            len(out_t),
+            _ptr_u8(out_css),
+            len(out_css),
+            _ptr_u32(out_lens),
+            len(out_lens),
+            ctypes.byref(out_n),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-parse-linear-gradient request")
+    if code != 1:
+        return int(code), None
+    n = int(out_n.value)
+    dir_code = int(out_dir.value)
+    if not 0 <= dir_code < len(_SCENE_PARSE_LINEAR_GRADIENT_DIRS) or not 2 <= n <= 8:
+        return 0, None
+    stops: list[list[Any]] = []
+    at = 0
+    for i in range(n):
+        length = int(out_lens[i])
+        color = out_css[at : at + length].tobytes().decode("utf-8")
+        at += length
+        stops.append([float(out_t[i]), color])
+    return 1, {
+        "space": str(space),
+        "dir": _SCENE_PARSE_LINEAR_GRADIENT_DIRS[dir_code],
+        "stops": stops,
+    }
 
 
 def f32_safe_scale(offset: float, lo: float, hi: float) -> float:

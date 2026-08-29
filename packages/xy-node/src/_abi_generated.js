@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 226;
-export const SIGNATURE_SHA256 = "9cf6eb6f78bf567ef53eaf88820b713205b76709bf7afac71c1136ac4690de0d";
+export const ABI_VERSION = 227;
+export const SIGNATURE_SHA256 = "fb5fc24b72f0fae9df0431683c55cfc04172cefd5ec6f1b4e137ea120f64953c";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -220,6 +220,7 @@ export let xyScenePackTraceAttach;
 export let xyScenePackTraceCompile;
 export let xyScenePackTraceRows;
 export let xyScenePackTraceSidecars;
+export let xySceneParseLinearGradient;
 export let xyScenePlotLayout;
 export let xyScenePublicExportReason;
 export let xySceneRasterCommands;
@@ -541,6 +542,7 @@ export function bindGeneratedAbi(lib) {
   xyScenePackTraceCompile = lib.func("int32_t xyg_scene_pack_trace_compile(const uint8_t * facts, size_t facts_len, uint8_t * out, size_t out_cap)");
   xyScenePackTraceRows = lib.func("int32_t xyg_scene_pack_trace_rows(const uint8_t * attached, size_t attached_len, const uint8_t * columns, size_t columns_len, uint8_t * out, size_t out_cap)");
   xyScenePackTraceSidecars = lib.func("int32_t xyg_scene_pack_trace_sidecars(const uint8_t * attached, size_t attached_len, const uint8_t * names, size_t names_len, uint8_t * out, size_t out_cap)");
+  xySceneParseLinearGradient = lib.func("int32_t xyg_scene_parse_linear_gradient(const uint8_t * css, size_t css_len, const uint8_t * space, size_t space_len, uint8_t * out_dir, double * out_t, size_t out_t_cap, uint8_t * out_css, size_t out_css_cap, uint32_t * out_css_lens, size_t out_lens_cap, size_t * out_n)");
   xyScenePlotLayout = lib.func("size_t xyg_scene_plot_layout(double viewport_width, double viewport_height, const double * authored_padding, uint32_t x_kind, double x_lo, double x_hi, double x_constant, int32_t x_mask_nonpositive, uint32_t y_kind, double y_lo, double y_hi, double y_constant, int32_t y_mask_nonpositive, const uint8_t * title, size_t title_len, const uint8_t * x_label, size_t x_label_len, const uint8_t * y_label, size_t y_label_len, const uint8_t * x_format, size_t x_format_len, const uint8_t * y_format, size_t y_format_len, uint32_t colorbar_side, double * out_margins)");
   xyScenePublicExportReason = lib.func("size_t xyg_scene_public_export_reason(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap)");
   xySceneRasterCommands = lib.func("size_t xyg_scene_raster_commands(const uint8_t * encoded, size_t encoded_len, double scale, uint8_t * out, size_t out_cap)");

@@ -1277,6 +1277,152 @@ pub fn scene_fill_gradient_admit(
     1
 }
 
+/// Scene `linear-gradient(` CSS parse (ABI 227).
+///
+/// Hosts still coerce fill mappings and wrap authoring error text. `var(`
+/// paint stays a later ABI 226 admit reject, not a parse reject. Empty split
+/// parts are kept (host table); compile-path skip-empty stays extra.
+pub const SCENE_PARSE_LINEAR_GRADIENT_OK: i32 = 1;
+pub const SCENE_PARSE_LINEAR_GRADIENT_REJECT: i32 = 0;
+pub const SCENE_PARSE_LINEAR_GRADIENT_DIRECTION: i32 = 3;
+pub const SCENE_PARSE_LINEAR_GRADIENT_MARK_AXIS: i32 = 4;
+pub const SCENE_PARSE_LINEAR_GRADIENT_STOP_COUNT: i32 = 5;
+pub const SCENE_PARSE_LINEAR_GRADIENT_EMPTY_COLOR: i32 = 6;
+pub const SCENE_PARSE_LINEAR_GRADIENT_STOP_POS: i32 = 7;
+
+/// Parsed Scene fill-gradient CSS: dir code plus resolved stop `t` and paint.
+#[derive(Debug)]
+pub struct SceneParsedLinearGradient {
+    pub dir: u8,
+    pub t: Vec<f64>,
+    pub css: Vec<String>,
+}
+
+fn split_top_level_keep_empty(text: &str) -> Vec<&str> {
+    let mut parts = Vec::new();
+    let mut start = 0usize;
+    let mut depth = 0i32;
+    for (index, ch) in text.char_indices() {
+        match ch {
+            '(' => depth += 1,
+            ')' => depth = (depth - 1).max(0),
+            ',' if depth == 0 => {
+                parts.push(text[start..index].trim());
+                start = index + ch.len_utf8();
+            }
+            _ => {}
+        }
+    }
+    parts.push(text[start..].trim());
+    parts
+}
+
+fn parse_host_gradient_stop(item: &str) -> Result<(Option<f64>, &str), i32> {
+    let item = item.trim();
+    if let Some((color, pos)) = item.rsplit_once(char::is_whitespace) {
+        if pos.ends_with('%') {
+            let Ok(value) = pos[..pos.len() - 1].parse::<f64>() else {
+                return Err(SCENE_PARSE_LINEAR_GRADIENT_STOP_POS);
+            };
+            if !value.is_finite() {
+                return Err(SCENE_PARSE_LINEAR_GRADIENT_STOP_POS);
+            }
+            return Ok((Some((value / 100.0).clamp(0.0, 1.0)), color.trim()));
+        }
+    }
+    Ok((None, item))
+}
+
+fn resolve_host_stop_positions(positions: &[Option<f64>]) -> Vec<f64> {
+    let count = positions.len();
+    let mut anchors: Vec<(usize, f64)> = positions
+        .iter()
+        .enumerate()
+        .filter_map(|(index, value)| value.map(|t| (index, t)))
+        .collect();
+    if positions[0].is_none() {
+        anchors.push((0, 0.0));
+    }
+    if positions[count - 1].is_none() {
+        anchors.push((count - 1, 1.0));
+    }
+    anchors.sort_by_key(|(index, _)| *index);
+    let mut prev = 0.0;
+    for anchor in &mut anchors {
+        prev = anchor.1.max(prev);
+        anchor.1 = prev;
+    }
+    let mut resolved = vec![0.0; count];
+    for pair in anchors.windows(2) {
+        let (i0, v0) = pair[0];
+        let (i1, v1) = pair[1];
+        let span = (i1 - i0) as f64;
+        for k in i0..i1 {
+            resolved[k] = if span == 0.0 {
+                v0
+            } else {
+                v0 + (v1 - v0) * (k - i0) as f64 / span
+            };
+        }
+    }
+    if let Some((_, last)) = anchors.last() {
+        resolved[count - 1] = *last;
+    }
+    resolved
+}
+
+/// Parse CSS `linear-gradient(...)` into space-relative dir + resolved stops.
+pub fn scene_parse_linear_gradient(
+    css: &str,
+    space: &str,
+) -> Result<SceneParsedLinearGradient, i32> {
+    let text = css.trim();
+    let lowered = text.to_lowercase();
+    if !lowered.starts_with("linear-gradient(") || !text.ends_with(')') {
+        return Err(SCENE_PARSE_LINEAR_GRADIENT_REJECT);
+    }
+    let inner = &text["linear-gradient(".len()..text.len() - 1];
+    let mut args = split_top_level_keep_empty(inner);
+    let mut dir = 0u8;
+    if !args.is_empty() {
+        let first = args[0].to_lowercase();
+        if let Some(code) = match first.as_str() {
+            "to top" => Some(1u8),
+            "to bottom" => Some(0u8),
+            "to right" => Some(2u8),
+            "to left" => Some(3u8),
+            _ => None,
+        } {
+            dir = code;
+            args.remove(0);
+        } else if first.starts_with("to ") || first.ends_with("deg") {
+            return Err(SCENE_PARSE_LINEAR_GRADIENT_DIRECTION);
+        }
+    }
+    if (dir == 2 || dir == 3) && space == "mark" {
+        return Err(SCENE_PARSE_LINEAR_GRADIENT_MARK_AXIS);
+    }
+    if !(2..=8).contains(&args.len()) {
+        return Err(SCENE_PARSE_LINEAR_GRADIENT_STOP_COUNT);
+    }
+    let mut positions = Vec::with_capacity(args.len());
+    let mut colors = Vec::with_capacity(args.len());
+    for item in args {
+        let (pos, color) = parse_host_gradient_stop(item)?;
+        if color.is_empty() {
+            return Err(SCENE_PARSE_LINEAR_GRADIENT_EMPTY_COLOR);
+        }
+        positions.push(pos);
+        colors.push(color.to_string());
+    }
+    let resolved = resolve_host_stop_positions(&positions);
+    Ok(SceneParsedLinearGradient {
+        dir,
+        t: resolved,
+        css: colors,
+    })
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -9230,6 +9376,56 @@ mod fuzz {
                 &mut out,
             ),
             0
+        );
+    }
+
+    #[test]
+    fn scene_parse_linear_gradient_matches_host_table() {
+        let parsed = scene_parse_linear_gradient(
+            "linear-gradient(currentColor, transparent)",
+            "mark",
+        )
+        .unwrap();
+        assert_eq!(parsed.dir, 0);
+        assert_eq!(parsed.t, vec![0.0, 1.0]);
+        assert_eq!(parsed.css, vec!["currentColor".to_string(), "transparent".to_string()]);
+        let plot = scene_parse_linear_gradient(
+            "linear-gradient(to right, red 10%, blue)",
+            "plot",
+        )
+        .unwrap();
+        assert_eq!(plot.dir, 2);
+        assert_eq!(plot.t, vec![0.1, 1.0]);
+        assert_eq!(plot.css, vec!["red".to_string(), "blue".to_string()]);
+        let nested = scene_parse_linear_gradient(
+            "linear-gradient(rgba(1,2,3,.5), var(--mid), rgb(9,9,9))",
+            "mark",
+        )
+        .unwrap();
+        assert_eq!(nested.t, vec![0.0, 0.5, 1.0]);
+        assert_eq!(nested.css[1], "var(--mid)");
+        assert_eq!(
+            scene_parse_linear_gradient("radial-gradient(red, blue)", "mark").unwrap_err(),
+            SCENE_PARSE_LINEAR_GRADIENT_REJECT
+        );
+        assert_eq!(
+            scene_parse_linear_gradient("linear-gradient(45deg, red, blue)", "mark").unwrap_err(),
+            SCENE_PARSE_LINEAR_GRADIENT_DIRECTION
+        );
+        assert_eq!(
+            scene_parse_linear_gradient("linear-gradient(to left, red, blue)", "mark").unwrap_err(),
+            SCENE_PARSE_LINEAR_GRADIENT_MARK_AXIS
+        );
+        assert_eq!(
+            scene_parse_linear_gradient("linear-gradient(red)", "mark").unwrap_err(),
+            SCENE_PARSE_LINEAR_GRADIENT_STOP_COUNT
+        );
+        let upper = scene_parse_linear_gradient("LINEAR-GRADIENT(red, blue)", "mark").unwrap();
+        assert_eq!(upper.dir, 0);
+        assert_eq!(upper.css, vec!["red".to_string(), "blue".to_string()]);
+        assert_eq!(
+            scene_parse_linear_gradient("", "mark").unwrap_err(),
+            SCENE_PARSE_LINEAR_GRADIENT_REJECT
         );
     }
 
