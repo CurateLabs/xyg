@@ -11165,10 +11165,10 @@ def arrow_geometry(
     y0: float,
     x1: float,
     y1: float,
-    style: npt.NDArray[np.float64],
+    style: npt.ArrayLike,
 ) -> npt.NDArray[np.float64]:
     """Packed annotation-arrow geometry via ``xyg_arrow_geometry`` (ABI 217)."""
-    style = _as_f64(style, "style")
+    style = _as_f64(np.asarray(style, dtype=np.float64).reshape(-1), "style")
     if len(style) not in (0, 12):
         raise ValueError("arrow_geometry style must have length 0 or 12")
     out = np.empty(11, dtype=np.float64)
@@ -11290,14 +11290,14 @@ def arrow_end_decoration(
 
 
 def arrow_taper_polygon(
-    x: npt.NDArray[np.float64],
-    y: npt.NDArray[np.float64],
+    x: npt.ArrayLike,
+    y: npt.ArrayLike,
     width_start: float,
     width_end: float,
 ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     """Tapered shaft polygon via ``xyg_arrow_taper_polygon`` (ABI 217)."""
-    x = _as_f64(x, "x")
-    y = _as_f64(y, "y")
+    x = _as_f64(np.asarray(x, dtype=np.float64).reshape(-1), "x")
+    y = _as_f64(np.asarray(y, dtype=np.float64).reshape(-1), "y")
     if len(x) != len(y):
         raise ValueError("arrow_taper_polygon x and y must have equal length")
     n = len(x)
@@ -11334,13 +11334,13 @@ def arrow_taper_polygon(
 
 
 def arrow_trim_polyline_end(
-    x: npt.NDArray[np.float64],
-    y: npt.NDArray[np.float64],
+    x: npt.ArrayLike,
+    y: npt.ArrayLike,
     trim: float,
 ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     """Trim arclength from a polyline end via ``xyg_arrow_trim_polyline_end`` (ABI 217)."""
-    x = _as_f64(x, "x")
-    y = _as_f64(y, "y")
+    x = _as_f64(np.asarray(x, dtype=np.float64).reshape(-1), "x")
+    y = _as_f64(np.asarray(y, dtype=np.float64).reshape(-1), "y")
     if len(x) != len(y):
         raise ValueError("arrow_trim_polyline_end x and y must have equal length")
     n = len(x)
