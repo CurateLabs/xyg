@@ -1389,6 +1389,18 @@ def scene_marker_glyph_admit(text: str | None = None) -> bool:
     return code == 1
 
 
+def scene_kind_admit(text: str | None = None) -> bool:
+    """Scene product-kind admit via ``xyg_scene_kind_admit`` (ABI 235).
+
+    Empty native pointers are ``0``. Rect/segment/band packing sets stay host.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_kind_admit(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-kind-admit request")
+    return code == 1
+
+
 def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
     """f32-safe encode scale for offset-encoded geometry (ABI 208, §19)."""
     out = ctypes.c_double()

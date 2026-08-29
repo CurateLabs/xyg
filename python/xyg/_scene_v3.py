@@ -54,17 +54,6 @@ _HEXBIN_KINDS = frozenset({"hexbin"})
 # inverse-raster to one Image blit covering the plot (ABI 192).
 # Constant-style polar lattices still tessellate Rects to PolyFill wedges.
 _HEATMAP_KINDS = frozenset({"heatmap"})
-_POINT_KINDS = frozenset({"scatter", "line"})
-_SUPPORTED_KINDS = (
-    _POINT_KINDS
-    | _RECT_KINDS
-    | _SEGMENT_KINDS
-    | _BAND_KINDS
-    | _RIBBON_KINDS
-    | _POLYFILL_KINDS
-    | _HEXBIN_KINDS
-    | _HEATMAP_KINDS
-)
 _STROKE_KINDS = frozenset({"line"}) | _SEGMENT_KINDS
 _XYFS_TRACE_UNSUPPORTED_KIND = 1 << 0
 _XYFS_TRACE_NON_PRIMARY_AXIS = 1 << 1
@@ -1804,7 +1793,7 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
     kind = str(getattr(trace, "kind", "") or "mark")
     style = getattr(trace, "style", None) or {}
     flags = 0
-    if kind not in _SUPPORTED_KINDS:
+    if not _native.scene_kind_admit(kind):
         flags |= _XYFS_TRACE_UNSUPPORTED_KIND
     if getattr(trace, "x_axis", "x") != "x" or getattr(trace, "y_axis", "y") != "y":
         flags |= _XYFS_TRACE_NON_PRIMARY_AXIS

@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -2884,11 +2884,6 @@ const POLYFILL_KINDS = new Set(["triangle_mesh"]);
 const HEXBIN_KINDS = new Set(["hexbin"]);
 const HEATMAP_KINDS = new Set(["heatmap"]);
 const STROKE_KINDS = new Set(["line", "segments", "errorbar", "stem", "contour", "box_whisker", "box_median"]);
-const SUPPORTED_KINDS = new Set([
-  "scatter", "line", "bar", "column", "histogram", "violin", "box",
-  "segments", "errorbar", "stem", "contour", "box_whisker", "box_median",
-  "area", "error_band", "ribbon", "triangle_mesh", "hexbin", "heatmap",
-]);
 const XYFS_TRACE_UNSUPPORTED_KIND = 1 << 0;
 const XYFS_TRACE_NON_PRIMARY_AXIS = 1 << 1;
 const XYFS_TRACE_HIDDEN_OR_PER_ITEM = 1 << 2;
@@ -5508,7 +5503,7 @@ function figureTraceSupport(figure, trace) {
   const style = trace.style ?? {};
   const kind = String(trace.kind ?? "mark");
   let flags = 0;
-  if (!SUPPORTED_KINDS.has(kind)) flags |= XYFS_TRACE_UNSUPPORTED_KIND;
+  if (!sceneKindAdmit(kind)) flags |= XYFS_TRACE_UNSUPPORTED_KIND;
   if ((trace.x_axis ?? "x") !== "x" || (trace.y_axis ?? "y") !== "y") flags |= XYFS_TRACE_NON_PRIMARY_AXIS;
   if (
     trace.hidden

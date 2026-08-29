@@ -1557,6 +1557,38 @@ pub fn scene_marker_glyph_admit(text: &str) -> i32 {
     )
 }
 
+/// Admit Scene product kinds (ABI 235).
+///
+/// Exact `scatter`/`line`/`bar`/`column`/`histogram`/`violin`/`box`/
+/// `segments`/`errorbar`/`stem`/`contour`/`box_whisker`/`box_median`/
+/// `area`/`error_band`/`ribbon`/`triangle_mesh`/`hexbin`/`heatmap` return
+/// `1`. Unknown names, including empty text, return `0`. No lowercasing.
+/// Rect/segment/band packing sets stay host.
+pub fn scene_kind_admit(text: &str) -> i32 {
+    i32::from(matches!(
+        text,
+        "scatter"
+            | "line"
+            | "bar"
+            | "column"
+            | "histogram"
+            | "violin"
+            | "box"
+            | "segments"
+            | "errorbar"
+            | "stem"
+            | "contour"
+            | "box_whisker"
+            | "box_median"
+            | "area"
+            | "error_band"
+            | "ribbon"
+            | "triangle_mesh"
+            | "hexbin"
+            | "heatmap"
+    ))
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -9672,6 +9704,38 @@ mod fuzz {
         assert_eq!(scene_marker_glyph_admit("a\rb"), 0);
         assert_eq!(scene_marker_glyph_admit(&"x".repeat(64)), 1);
         assert_eq!(scene_marker_glyph_admit(&"x".repeat(65)), 0);
+    }
+
+    #[test]
+    fn scene_kind_admit_matches_host_table() {
+        for name in [
+            "scatter",
+            "line",
+            "bar",
+            "column",
+            "histogram",
+            "violin",
+            "box",
+            "segments",
+            "errorbar",
+            "stem",
+            "contour",
+            "box_whisker",
+            "box_median",
+            "area",
+            "error_band",
+            "ribbon",
+            "triangle_mesh",
+            "hexbin",
+            "heatmap",
+        ] {
+            assert_eq!(scene_kind_admit(name), 1, "{name}");
+        }
+        assert_eq!(scene_kind_admit(""), 0);
+        assert_eq!(scene_kind_admit("mark"), 0);
+        assert_eq!(scene_kind_admit("SCATTER"), 0);
+        assert_eq!(scene_kind_admit("pie"), 0);
+        assert_eq!(scene_kind_admit(" scatter"), 0);
     }
 
     #[test]

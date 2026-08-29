@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 234;
-export const SIGNATURE_SHA256 = "33b753c58afa53c76c6c03e73075d1757f084e78989375e69c765ac4f4f41bfd";
+export const ABI_VERSION = 235;
+export const SIGNATURE_SHA256 = "2ecf4e96584902e73c5195fd2c8560d6b5f122c7c548b98950dbd7540ca43e6f";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -202,6 +202,7 @@ export let xySceneFillGradientAdmit;
 export let xySceneGradientDir;
 export let xySceneGradientSpace;
 export let xySceneHexbinReduceAdmit;
+export let xySceneKindAdmit;
 export let xySceneLinearGradientPrefix;
 export let xySceneLinecapAdmit;
 export let xySceneMarkerGlyphAdmit;
@@ -531,6 +532,7 @@ export function bindGeneratedAbi(lib) {
   xySceneGradientDir = lib.func("int32_t xyg_scene_gradient_dir(const uint8_t * text, size_t text_len)");
   xySceneGradientSpace = lib.func("int32_t xyg_scene_gradient_space(const uint8_t * text, size_t text_len)");
   xySceneHexbinReduceAdmit = lib.func("int32_t xyg_scene_hexbin_reduce_admit(const uint8_t * text, size_t text_len)");
+  xySceneKindAdmit = lib.func("int32_t xyg_scene_kind_admit(const uint8_t * text, size_t text_len)");
   xySceneLinearGradientPrefix = lib.func("int32_t xyg_scene_linear_gradient_prefix(const uint8_t * text, size_t text_len)");
   xySceneLinecapAdmit = lib.func("int32_t xyg_scene_linecap_admit(const uint8_t * text, size_t text_len)");
   xySceneMarkerGlyphAdmit = lib.func("int32_t xyg_scene_marker_glyph_admit(const uint8_t * text, size_t text_len)");
