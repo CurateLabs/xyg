@@ -239,6 +239,7 @@ export {
   cssColorsToRgba8,
   cssIsFunctional,
   clipQuantizeU8,
+  quantizeUnitU8,
   continuousDomain,
   directRgbaAdmit,
   resolveColorChannel,

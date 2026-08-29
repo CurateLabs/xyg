@@ -76,7 +76,7 @@ import {
   polarAbiInputPointer,
 } from "./native.js";
 import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
-import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8 } from "./color.js";
+import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
 const MAX_SCENE_MARKS = 2_000_000;
@@ -5463,12 +5463,7 @@ function resolveDensityBinColors(trace) {
     const domain = color.domain ?? [0, 1];
     const lo = Number(domain[0]);
     const hi = Number(domain[1]);
-    const span = hi - lo;
-    const idx = new Uint8Array(values.length);
-    for (let i = 0; i < values.length; i++) {
-      const t = span === 0 ? 0 : (Number(values[i]) - lo) / span;
-      idx[i] = Math.round(Math.min(1, Math.max(0, t)) * 255);
-    }
+    const idx = quantizeUnitU8(values, lo, hi);
     return { idx, lut: colormapLutRgba8(color.colormap ?? "viridis") };
   }
   return null;
