@@ -1730,6 +1730,7 @@ Node heatmap `trace.rgba` stores a flat uint8 buffer; `packXyTaRgba` packs that 
 Node heatmap and density Scene packing is XYTA-only like Python `_pack_xyta`; unused XYHF paint-plane helpers are not a second plane layout.
 Node `packXyTaGrid` flattens heatmap `grid` like Python `_pack_xyta` (`plane.values` or plane); nested length indexing is not a grid layout.
 Node `rectFiniteSel` drops nonfinite rectangle rows through `validIndicesF64` like Python `_rect_finite_sel`; NaN never reaches vertex buffers (§19).
+Node XYTC fill opacity uses `style.fill_opacity` only like Python `_pack_xytc`; `fillOpacity` is not a fill-opacity key.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1996,6 +1997,7 @@ Node heatmap `trace.rgba` stores a flat uint8 buffer; `packXyTaRgba` packs that 
 Node heatmap and density Scene packing is XYTA-only like Python `_pack_xyta`; unused XYHF paint-plane helpers are not a second plane layout.
 Node `packXyTaGrid` flattens heatmap `grid` like Python `_pack_xyta` (`plane.values` or plane); nested length indexing is not a grid layout.
 Node `rectFiniteSel` drops nonfinite rectangle rows through `validIndicesF64` like Python `_rect_finite_sel`; NaN never reaches vertex buffers (§19).
+Node XYTC fill opacity uses `style.fill_opacity` only like Python `_pack_xytc`; `fillOpacity` is not a fill-opacity key.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same
