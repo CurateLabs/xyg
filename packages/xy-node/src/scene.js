@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -2876,14 +2876,14 @@ function annotationColor(style, key, fallback, label) {
   return raw;
 }
 
-const RECT_KINDS = new Set(["bar", "column", "histogram", "violin", "box"]);
-const SEGMENT_KINDS = new Set(["segments", "errorbar", "stem", "contour", "box_whisker", "box_median"]);
-const BAND_KINDS = new Set(["area", "error_band"]);
-const RIBBON_KINDS = new Set(["ribbon"]);
-const POLYFILL_KINDS = new Set(["triangle_mesh"]);
-const HEXBIN_KINDS = new Set(["hexbin"]);
-const HEATMAP_KINDS = new Set(["heatmap"]);
-const STROKE_KINDS = new Set(["line", "segments", "errorbar", "stem", "contour", "box_whisker", "box_median"]);
+const SCENE_KIND_CLASS_RECT = 1 << 0;
+const SCENE_KIND_CLASS_BAND = 1 << 2;
+const SCENE_KIND_CLASS_RIBBON = 1 << 3;
+const SCENE_KIND_CLASS_POLYFILL = 1 << 4;
+const SCENE_KIND_CLASS_HEXBIN = 1 << 5;
+const SCENE_KIND_CLASS_HEATMAP = 1 << 6;
+const SCENE_KIND_CLASS_SCATTER = 1 << 8;
+const SCENE_KIND_CLASS_OPACITY = SCENE_KIND_CLASS_BAND | SCENE_KIND_CLASS_RIBBON | SCENE_KIND_CLASS_RECT | SCENE_KIND_CLASS_HEATMAP | SCENE_KIND_CLASS_SCATTER | SCENE_KIND_CLASS_HEXBIN | SCENE_KIND_CLASS_POLYFILL;
 const XYFS_TRACE_UNSUPPORTED_KIND = 1 << 0;
 const XYFS_TRACE_NON_PRIMARY_AXIS = 1 << 1;
 const XYFS_TRACE_HIDDEN_OR_PER_ITEM = 1 << 2;
@@ -3482,7 +3482,9 @@ function packXyTc(figure) {
   for (const trace of traces) {
     const style = trace.style ?? {};
     let flags = 0;
-    const kind = encodeUtf8(String(trace.kind ?? ""));
+    const kindName = String(trace.kind ?? "");
+    const kind = encodeUtf8(kindName);
+    const kindClass = sceneKindClass(kindName);
     const name = trace.name != null && String(trace.name).length ? String(trace.name) : "";
     if (name) flags |= XYTC_HAS_NAME;
     const nameB = encodeUtf8(name);
@@ -3498,11 +3500,11 @@ function packXyTc(figure) {
     let fillOpacity = 1;
     let strokeOpacity = 1;
     let lineOpacity = 1;
-    if (BAND_KINDS.has(trace.kind) || RIBBON_KINDS.has(trace.kind) || RECT_KINDS.has(trace.kind) || HEATMAP_KINDS.has(trace.kind) || HEXBIN_KINDS.has(trace.kind) || POLYFILL_KINDS.has(trace.kind) || trace.kind === "scatter") {
+    if (kindClass & SCENE_KIND_CLASS_OPACITY) {
       fillOpacity = Number(style.fill_opacity ?? style.fillOpacity ?? 1);
       strokeOpacity = Number(style.stroke_opacity ?? style.strokeOpacity ?? 1);
     }
-    if (BAND_KINDS.has(trace.kind)) {
+    if (kindClass & SCENE_KIND_CLASS_BAND) {
       lineOpacity = Number(style.line_opacity ?? style.lineOpacity ?? 1);
     }
     let size = Number.NaN;
@@ -3533,12 +3535,12 @@ function packXyTc(figure) {
     }
     let hexDx = Number.NaN;
     let hexDy = Number.NaN;
-    if (HEXBIN_KINDS.has(trace.kind)) {
+    if (kindClass & SCENE_KIND_CLASS_HEXBIN) {
       flags |= XYTC_HAS_HEX;
       if (style.hex_dx != null || style.dx != null) hexDx = Number(style.hex_dx ?? style.dx);
       if (style.hex_dy != null || style.dy != null) hexDy = Number(style.hex_dy ?? style.dy);
     }
-    if (BAND_KINDS.has(trace.kind)) {
+    if (kindClass & SCENE_KIND_CLASS_BAND) {
       const hasPerimeter = Object.hasOwn(style, "stroke_perimeter") || Object.hasOwn(style, "strokePerimeter");
       if (hasPerimeter) {
         const perimeter = Object.hasOwn(style, "stroke_perimeter") ? style.stroke_perimeter : style.strokePerimeter;
@@ -3857,6 +3859,7 @@ function packXyTa(figure, xDomain, yDomain) {
   header.setUint32(8, traces.length, true);
   for (const [traceIndex, trace] of traces.entries()) {
     const style = trace.style ?? {};
+    const kindClass = sceneKindClass(trace.kind);
     let flags = 0;
     let rows = 0;
     let cols = 0;
@@ -3880,7 +3883,7 @@ function packXyTa(figure, xDomain, yDomain) {
     let cmapHi = Number.NaN;
     let opacity = Number.NaN;
     let fillOpacity = Number.NaN;
-    if (HEATMAP_KINDS.has(trace.kind)) {
+    if (kindClass & SCENE_KIND_CLASS_HEATMAP) {
       flags |= XYTA_HEATMAP;
       const shape = trace.grid_shape;
       if (shape != null && shape.length === 2) {
@@ -3932,7 +3935,7 @@ function packXyTa(figure, xDomain, yDomain) {
         cmapLo = Number(domain[0]);
         cmapHi = Number(domain[1]);
       }
-    } else if (HEXBIN_KINDS.has(trace.kind) && hexbinPacksColormapPlane(trace)) {
+    } else if (kindClass & SCENE_KIND_CLASS_HEXBIN && hexbinPacksColormapPlane(trace)) {
       flags |= XYTA_HEATMAP | XYTA_SHAPE | XYTA_HAS_GRID;
       const channel = trace.color_ch ?? trace.colorChannel;
       const values = channel?.values ?? trace.metric;
@@ -3952,7 +3955,7 @@ function packXyTa(figure, xDomain, yDomain) {
         cmapLo = Number(domain[0]);
         cmapHi = Number(domain[1]);
       }
-    } else if (HEXBIN_KINDS.has(trace.kind) && hexbinPacksRgbaPlane(trace)) {
+    } else if (kindClass & SCENE_KIND_CLASS_HEXBIN && hexbinPacksRgbaPlane(trace)) {
       const packed = hexbinCellRgba8(trace);
       if (packed != null) {
         flags |= XYTA_HEATMAP | XYTA_SHAPE | XYTA_HAS_GRID | XYTA_HAS_RGBA;
@@ -3962,7 +3965,7 @@ function packXyTa(figure, xDomain, yDomain) {
         rgba = packed;
       }
     } else if (
-      RIBBON_KINDS.has(trace.kind)
+      kindClass & SCENE_KIND_CLASS_RIBBON
       && figure.coords !== "polar"
       && ribbonPacksEndPaints(trace)
     ) {
@@ -5064,7 +5067,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
     const role = style.role == null ? "" : String(style.role);
     const reduce = style.reduce == null ? "" : String(style.reduce);
     let hexDx = Number.NaN, hexDy = Number.NaN;
-    if (trace.kind === "hexbin") {
+    if (sceneKindClass(trace.kind) & SCENE_KIND_CLASS_HEXBIN) {
       hexDx = Number(style.hex_dx ?? style.hexDx ?? style.dx);
       hexDy = Number(style.hex_dy ?? style.hexDy ?? style.dy);
     }
@@ -5502,6 +5505,7 @@ function rectExtraFlags(style, kind, polar) {
 function figureTraceSupport(figure, trace) {
   const style = trace.style ?? {};
   const kind = String(trace.kind ?? "mark");
+  const kindClass = sceneKindClass(kind);
   let flags = 0;
   if (!sceneKindAdmit(kind)) flags |= XYFS_TRACE_UNSUPPORTED_KIND;
   if ((trace.x_axis ?? "x") !== "x" || (trace.y_axis ?? "y") !== "y") flags |= XYFS_TRACE_NON_PRIMARY_AXIS;
@@ -5540,10 +5544,10 @@ function figureTraceSupport(figure, trace) {
     flags |= XYFS_TRACE_DASHED_MARKERS;
   }
   if (style.dash != null && parseSceneDash(style.dash) === false) flags |= XYFS_TRACE_DASHED_MARKERS;
-  if (RECT_KINDS.has(kind) || HEATMAP_KINDS.has(kind)) flags |= rectExtraFlags(style, kind, figure.coords === "polar");
-  if (HEXBIN_KINDS.has(kind) && !sceneHexbinReduceAdmit(style.reduce)) flags |= XYFS_TRACE_CUSTOM_HEX_REDUCE;
+  if (kindClass & (SCENE_KIND_CLASS_RECT | SCENE_KIND_CLASS_HEATMAP)) flags |= rectExtraFlags(style, kind, figure.coords === "polar");
+  if (kindClass & SCENE_KIND_CLASS_HEXBIN && !sceneHexbinReduceAdmit(style.reduce)) flags |= XYFS_TRACE_CUSTOM_HEX_REDUCE;
   if (
-    HEATMAP_KINDS.has(kind)
+    kindClass & SCENE_KIND_CLASS_HEATMAP
     && (style.truecolor || style.colormap != null || trace.rgba_grid != null || trace.rgba != null)
   ) flags |= XYFS_TRACE_HEATMAP_COLORMAP;
   if (Object.hasOwn(style, "fill") && typeof style.fill !== "string") {
@@ -5553,7 +5557,7 @@ function figureTraceSupport(figure, trace) {
 }
 
 function hexbinPacksColormapPlane(trace) {
-  if (!HEXBIN_KINDS.has(trace.kind)) return false;
+  if (!(sceneKindClass(trace.kind) & SCENE_KIND_CLASS_HEXBIN)) return false;
   const channel = trace.color_ch ?? trace.colorChannel;
   if (channel == null || channel.mode !== "continuous") return false;
   return (channel.values ?? trace.metric) != null;
@@ -5572,7 +5576,7 @@ function hexbinCellRgba8(trace) {
 }
 
 function hexbinPacksRgbaPlane(trace) {
-  if (!HEXBIN_KINDS.has(trace.kind)) return false;
+  if (!(sceneKindClass(trace.kind) & SCENE_KIND_CLASS_HEXBIN)) return false;
   const channel = trace.color_ch ?? trace.colorChannel;
   if (channel == null) return false;
   if (channel.mode !== "direct_rgba" && channel.mode !== "categorical") return false;

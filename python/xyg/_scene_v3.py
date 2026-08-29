@@ -19,13 +19,23 @@ from .marks import _SYMBOL_CODES, _validated_marker_path
 
 # Host mark kinds that lower to Scene Rect (kind 2). Geometry is already
 # x0/y0/x1/y1 columns on the Trace; Scene does not recompute bar stacking.
-_RECT_KINDS = frozenset({"bar", "column", "histogram", "violin", "box"})
-# Endpoint pairs that lower to disconnected Scene Polyline runs (kind 1).
-_SEGMENT_KINDS = frozenset({"segments", "errorbar", "stem", "contour", "box_whisker", "box_median"})
-# Top/base samples that lower to Scene Band (kind 3) filled polygons.
-_BAND_KINDS = frozenset({"area", "error_band"})
-# Host-tessellated flow bands also lower to Scene Band samples.
-_RIBBON_KINDS = frozenset({"ribbon"})
+# Packing-family bits are ABI 236 `xyg_scene_kind_class`.
+_SCENE_KIND_CLASS_RECT = 1 << 0
+_SCENE_KIND_CLASS_BAND = 1 << 2
+_SCENE_KIND_CLASS_RIBBON = 1 << 3
+_SCENE_KIND_CLASS_POLYFILL = 1 << 4
+_SCENE_KIND_CLASS_HEXBIN = 1 << 5
+_SCENE_KIND_CLASS_HEATMAP = 1 << 6
+_SCENE_KIND_CLASS_SCATTER = 1 << 8
+_SCENE_KIND_CLASS_OPACITY = (
+    _SCENE_KIND_CLASS_BAND
+    | _SCENE_KIND_CLASS_RIBBON
+    | _SCENE_KIND_CLASS_RECT
+    | _SCENE_KIND_CLASS_HEATMAP
+    | _SCENE_KIND_CLASS_SCATTER
+    | _SCENE_KIND_CLASS_HEXBIN
+    | _SCENE_KIND_CLASS_POLYFILL
+)
 # ABI 175 packs fill/stroke opacity channels for violin/box (XYMS already
 # composites them). ABI 176 extends that packing to bar/column/histogram, the
 # remaining PACK_RECT kinds. ABI 177 packs heatmap `fill_opacity` so lattice
@@ -35,26 +45,14 @@ _RIBBON_KINDS = frozenset({"ribbon"})
 # heatmap/hexbin `stroke_opacity` on that same XYMS path (authored `stroke` /
 # `stroke_width` already packed). ABI 180 packs
 # triangle_mesh `fill_opacity` / constant stroke on that same XYMS path.
-_OPACITY_CHANNEL_KINDS = (
-    _BAND_KINDS
-    | _RIBBON_KINDS
-    | _RECT_KINDS
-    | frozenset({"heatmap", "scatter", "hexbin", "triangle_mesh"})
-)
-# Independent triangles lower to Scene PolyFill (kind 4) vertex runs.
-_POLYFILL_KINDS = frozenset({"triangle_mesh"})
 # Cartesian hexbin centers expand onto PolyFill records (6-vertex cells) in
 # Rust (`SceneExpansionMode::HexCell`). Hosts pack one compact center+pitch
-# row per cell.
-_HEXBIN_KINDS = frozenset({"hexbin"})
-# Regular Cartesian heatmap cells expand onto Rect records in Rust
-# (`SceneExpansionMode::HeatmapLattice`). Hosts pack extent plus rows/cols.
-# Painted lattices (`HeatmapPainted`) add an XYHP sidecar. Cartesian
-# tessellates cells and interns unique fills. Polar painted heatmaps
-# inverse-raster to one Image blit covering the plot (ABI 192).
+# row per cell. Regular Cartesian heatmap cells expand onto Rect records in
+# Rust (`SceneExpansionMode::HeatmapLattice`). Hosts pack extent plus
+# rows/cols. Painted lattices (`HeatmapPainted`) add an XYHP sidecar.
+# Cartesian tessellates cells and interns unique fills. Polar painted
+# heatmaps inverse-raster to one Image blit covering the plot (ABI 192).
 # Constant-style polar lattices still tessellate Rects to PolyFill wedges.
-_HEATMAP_KINDS = frozenset({"heatmap"})
-_STROKE_KINDS = frozenset({"line"}) | _SEGMENT_KINDS
 _XYFS_TRACE_UNSUPPORTED_KIND = 1 << 0
 _XYFS_TRACE_NON_PRIMARY_AXIS = 1 << 1
 _XYFS_TRACE_HIDDEN_OR_PER_ITEM = 1 << 2
@@ -1793,6 +1791,7 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
     kind = str(getattr(trace, "kind", "") or "mark")
     style = getattr(trace, "style", None) or {}
     flags = 0
+    kind_class = _native.scene_kind_class(kind)
     if not _native.scene_kind_admit(kind):
         flags |= _XYFS_TRACE_UNSUPPORTED_KIND
     if getattr(trace, "x_axis", "x") != "x" or getattr(trace, "y_axis", "y") != "y":
@@ -1837,11 +1836,13 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
     dash = style.get("dash")
     if dash is not None and _parse_scene_dash(dash) is False:
         flags |= _XYFS_TRACE_DASHED_MARKERS
-    if kind in _RECT_KINDS or kind in _HEATMAP_KINDS:
+    if kind_class & (_SCENE_KIND_CLASS_RECT | _SCENE_KIND_CLASS_HEATMAP):
         flags |= _rect_extra_flags(style, kind, polar)
-    if kind in _HEXBIN_KINDS and not _native.scene_hexbin_reduce_admit(style.get("reduce")):
+    if kind_class & _SCENE_KIND_CLASS_HEXBIN and not _native.scene_hexbin_reduce_admit(
+        style.get("reduce")
+    ):
         flags |= _XYFS_TRACE_CUSTOM_HEX_REDUCE
-    if kind in _HEATMAP_KINDS and _heatmap_uses_colormap(trace):
+    if kind_class & _SCENE_KIND_CLASS_HEATMAP and _heatmap_uses_colormap(trace):
         flags |= _XYFS_TRACE_HEATMAP_COLORMAP
     if (
         "fill" in style
@@ -1872,7 +1873,9 @@ def _hexbin_packs_colormap_plane(trace: Any) -> bool:
     Missing colormap or length mismatch fail closed in XYFS/attach rather than
     in this packer. Polar uses the same 1×N plane (ABI 194).
     """
-    if str(getattr(trace, "kind", "") or "") not in _HEXBIN_KINDS:
+    if not (
+        _native.scene_kind_class(str(getattr(trace, "kind", "") or "")) & _SCENE_KIND_CLASS_HEXBIN
+    ):
         return False
     channel = getattr(trace, "color_ch", None)
     if channel is None or getattr(channel, "mode", None) != "continuous":
@@ -1898,7 +1901,9 @@ def _hexbin_packs_rgba_plane(trace: Any) -> bool:
     Categorical and `direct_rgba` channels intern onto HexCell PolyFills as a
     1×N XYHP RGBA plane (ABI 194). Constant paint stays on the shared style.
     """
-    if str(getattr(trace, "kind", "") or "") not in _HEXBIN_KINDS:
+    if not (
+        _native.scene_kind_class(str(getattr(trace, "kind", "") or "")) & _SCENE_KIND_CLASS_HEXBIN
+    ):
         return False
     channel = getattr(trace, "color_ch", None)
     if channel is None or getattr(channel, "mode", None) not in {"categorical", "direct_rgba"}:
@@ -2155,6 +2160,7 @@ def _pack_xyta(figure: Any) -> bytes:
     for trace in traces:
         style = getattr(trace, "style", None) or {}
         flags = 0
+        kind_class = _native.scene_kind_class(str(trace.kind))
         rows = cols = 0
         grid = b""
         rgba = b""
@@ -2171,7 +2177,7 @@ def _pack_xyta(figure: Any) -> bytes:
         domain_x0 = domain_x1 = domain_y0 = domain_y1 = nan
         cmap_lo = cmap_hi = nan
         opacity = fill_opacity = nan
-        if trace.kind in _HEATMAP_KINDS:
+        if kind_class & _SCENE_KIND_CLASS_HEATMAP:
             flags |= _XYTA_HEATMAP
             shape = getattr(trace, "grid_shape", None)
             if shape is not None and len(shape) == 2:
@@ -2209,7 +2215,7 @@ def _pack_xyta(figure: Any) -> bytes:
             if domain is not None and len(domain) == 2:
                 flags |= _XYTA_HAS_DOMAIN
                 cmap_lo, cmap_hi = float(domain[0]), float(domain[1])
-        elif trace.kind in _HEXBIN_KINDS and _hexbin_packs_colormap_plane(trace):
+        elif kind_class & _SCENE_KIND_CLASS_HEXBIN and _hexbin_packs_colormap_plane(trace):
             channel = trace.color_ch
             values = np.ascontiguousarray(np.asarray(channel.values, dtype=np.float64).reshape(-1))
             flags |= _XYTA_HEATMAP | _XYTA_SHAPE | _XYTA_HAS_GRID
@@ -2221,7 +2227,7 @@ def _pack_xyta(figure: Any) -> bytes:
             if domain is not None and len(domain) == 2:
                 flags |= _XYTA_HAS_DOMAIN
                 cmap_lo, cmap_hi = float(domain[0]), float(domain[1])
-        elif trace.kind in _HEXBIN_KINDS and _hexbin_packs_rgba_plane(trace):
+        elif kind_class & _SCENE_KIND_CLASS_HEXBIN and _hexbin_packs_rgba_plane(trace):
             packed = _hexbin_cell_rgba8(trace)
             if packed is not None:
                 n = len(packed) // 4
@@ -2230,7 +2236,7 @@ def _pack_xyta(figure: Any) -> bytes:
                 grid = np.zeros(n, dtype=np.float64).tobytes()
                 rgba = packed
         elif (
-            trace.kind in _RIBBON_KINDS
+            kind_class & _SCENE_KIND_CLASS_RIBBON
             and str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
             and _ribbon_packs_end_paints(trace)
         ):
@@ -2820,7 +2826,9 @@ def _pack_xytc(figure: Any) -> bytes:
     for trace in traces:
         style = getattr(trace, "style", None) or {}
         flags = 0
-        kind = str(trace.kind).encode("utf-8")
+        kind_name = str(trace.kind)
+        kind = kind_name.encode("utf-8")
+        kind_class = _native.scene_kind_class(kind_name)
         name = str(trace.name) if getattr(trace, "name", None) else ""
         if name:
             flags |= _XYTC_HAS_NAME
@@ -2829,10 +2837,10 @@ def _pack_xytc(figure: Any) -> bytes:
         symbol_b = symbol.encode("utf-8")
         opacity = float(style.get("opacity", 1.0))
         fill_opacity = stroke_opacity = line_opacity = 1.0
-        if trace.kind in _OPACITY_CHANNEL_KINDS:
+        if kind_class & _SCENE_KIND_CLASS_OPACITY:
             fill_opacity = float(style.get("fill_opacity", 1.0))
             stroke_opacity = float(style.get("stroke_opacity", 1.0))
-        if trace.kind in _BAND_KINDS:
+        if kind_class & _SCENE_KIND_CLASS_BAND:
             line_opacity = float(style.get("line_opacity", 1.0))
         size = nan
         if "size" in style:
@@ -2855,7 +2863,7 @@ def _pack_xytc(figure: Any) -> bytes:
             flags |= _XYTC_HAS_LINE_WIDTH
             line_width = float(style["line_width"])
         hex_dx = hex_dy = nan
-        if trace.kind in _HEXBIN_KINDS:
+        if kind_class & _SCENE_KIND_CLASS_HEXBIN:
             flags |= _XYTC_HAS_HEX
             raw_dx = style.get("hex_dx", style.get("dx"))
             raw_dy = style.get("hex_dy", style.get("dy"))
@@ -2863,7 +2871,7 @@ def _pack_xytc(figure: Any) -> bytes:
                 hex_dx = float(raw_dx)
             if raw_dy is not None:
                 hex_dy = float(raw_dy)
-        if trace.kind in _BAND_KINDS and "stroke_perimeter" in style:
+        if kind_class & _SCENE_KIND_CLASS_BAND and "stroke_perimeter" in style:
             perimeter = style["stroke_perimeter"]
             if not isinstance(perimeter, bool):
                 flags |= _XYTC_PERIMETER_INVALID
@@ -3909,7 +3917,9 @@ def _pack_public_export_support(
         reduce_s = "" if reduce is None else str(reduce)
         try:
             hex_dx, hex_dy = (
-                _hexbin_pitch(style) if trace.kind == "hexbin" else (float("nan"), float("nan"))
+                _hexbin_pitch(style)
+                if _native.scene_kind_class(str(trace.kind)) & _SCENE_KIND_CLASS_HEXBIN
+                else (float("nan"), float("nan"))
             )
         except UnsupportedSceneV3:
             hex_dx = hex_dy = float("nan")

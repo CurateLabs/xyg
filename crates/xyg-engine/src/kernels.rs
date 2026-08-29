@@ -1563,7 +1563,7 @@ pub fn scene_marker_glyph_admit(text: &str) -> i32 {
 /// `segments`/`errorbar`/`stem`/`contour`/`box_whisker`/`box_median`/
 /// `area`/`error_band`/`ribbon`/`triangle_mesh`/`hexbin`/`heatmap` return
 /// `1`. Unknown names, including empty text, return `0`. No lowercasing.
-/// Rect/segment/band packing sets stay host.
+/// Packing-family bits are ABI 236.
 pub fn scene_kind_admit(text: &str) -> i32 {
     i32::from(matches!(
         text,
@@ -1587,6 +1587,39 @@ pub fn scene_kind_admit(text: &str) -> i32 {
             | "hexbin"
             | "heatmap"
     ))
+}
+
+/// Scene packing-family bits (ABI 236). Exact names; no lowercasing.
+pub const SCENE_KIND_CLASS_RECT: i32 = 1 << 0;
+pub const SCENE_KIND_CLASS_SEGMENT: i32 = 1 << 1;
+pub const SCENE_KIND_CLASS_BAND: i32 = 1 << 2;
+pub const SCENE_KIND_CLASS_RIBBON: i32 = 1 << 3;
+pub const SCENE_KIND_CLASS_POLYFILL: i32 = 1 << 4;
+pub const SCENE_KIND_CLASS_HEXBIN: i32 = 1 << 5;
+pub const SCENE_KIND_CLASS_HEATMAP: i32 = 1 << 6;
+pub const SCENE_KIND_CLASS_STROKE: i32 = 1 << 7;
+pub const SCENE_KIND_CLASS_SCATTER: i32 = 1 << 8;
+pub const SCENE_KIND_CLASS_LINE: i32 = 1 << 9;
+
+/// Classify a Scene kind into packing-family bits (ABI 236).
+///
+/// Unknown names, including empty text, return `0`. Segment kinds also set
+/// stroke. `line` sets line+stroke. Hosts still pick channels and pack rows.
+pub fn scene_kind_class(text: &str) -> i32 {
+    match text {
+        "bar" | "column" | "histogram" | "violin" | "box" => SCENE_KIND_CLASS_RECT,
+        "segments" | "errorbar" | "stem" | "contour" | "box_whisker" | "box_median" => {
+            SCENE_KIND_CLASS_SEGMENT | SCENE_KIND_CLASS_STROKE
+        }
+        "area" | "error_band" => SCENE_KIND_CLASS_BAND,
+        "ribbon" => SCENE_KIND_CLASS_RIBBON,
+        "triangle_mesh" => SCENE_KIND_CLASS_POLYFILL,
+        "hexbin" => SCENE_KIND_CLASS_HEXBIN,
+        "heatmap" => SCENE_KIND_CLASS_HEATMAP,
+        "scatter" => SCENE_KIND_CLASS_SCATTER,
+        "line" => SCENE_KIND_CLASS_LINE | SCENE_KIND_CLASS_STROKE,
+        _ => 0,
+    }
 }
 
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
@@ -9736,6 +9769,54 @@ mod fuzz {
         assert_eq!(scene_kind_admit("SCATTER"), 0);
         assert_eq!(scene_kind_admit("pie"), 0);
         assert_eq!(scene_kind_admit(" scatter"), 0);
+    }
+
+    #[test]
+    fn scene_kind_class_matches_host_table() {
+        assert_eq!(scene_kind_class("bar"), SCENE_KIND_CLASS_RECT);
+        assert_eq!(scene_kind_class("column"), SCENE_KIND_CLASS_RECT);
+        assert_eq!(scene_kind_class("histogram"), SCENE_KIND_CLASS_RECT);
+        assert_eq!(scene_kind_class("violin"), SCENE_KIND_CLASS_RECT);
+        assert_eq!(scene_kind_class("box"), SCENE_KIND_CLASS_RECT);
+        assert_eq!(
+            scene_kind_class("segments"),
+            SCENE_KIND_CLASS_SEGMENT | SCENE_KIND_CLASS_STROKE
+        );
+        assert_eq!(
+            scene_kind_class("errorbar"),
+            SCENE_KIND_CLASS_SEGMENT | SCENE_KIND_CLASS_STROKE
+        );
+        assert_eq!(
+            scene_kind_class("stem"),
+            SCENE_KIND_CLASS_SEGMENT | SCENE_KIND_CLASS_STROKE
+        );
+        assert_eq!(
+            scene_kind_class("contour"),
+            SCENE_KIND_CLASS_SEGMENT | SCENE_KIND_CLASS_STROKE
+        );
+        assert_eq!(
+            scene_kind_class("box_whisker"),
+            SCENE_KIND_CLASS_SEGMENT | SCENE_KIND_CLASS_STROKE
+        );
+        assert_eq!(
+            scene_kind_class("box_median"),
+            SCENE_KIND_CLASS_SEGMENT | SCENE_KIND_CLASS_STROKE
+        );
+        assert_eq!(scene_kind_class("area"), SCENE_KIND_CLASS_BAND);
+        assert_eq!(scene_kind_class("error_band"), SCENE_KIND_CLASS_BAND);
+        assert_eq!(scene_kind_class("ribbon"), SCENE_KIND_CLASS_RIBBON);
+        assert_eq!(scene_kind_class("triangle_mesh"), SCENE_KIND_CLASS_POLYFILL);
+        assert_eq!(scene_kind_class("hexbin"), SCENE_KIND_CLASS_HEXBIN);
+        assert_eq!(scene_kind_class("heatmap"), SCENE_KIND_CLASS_HEATMAP);
+        assert_eq!(scene_kind_class("scatter"), SCENE_KIND_CLASS_SCATTER);
+        assert_eq!(
+            scene_kind_class("line"),
+            SCENE_KIND_CLASS_LINE | SCENE_KIND_CLASS_STROKE
+        );
+        assert_eq!(scene_kind_class(""), 0);
+        assert_eq!(scene_kind_class("mark"), 0);
+        assert_eq!(scene_kind_class("SCATTER"), 0);
+        assert_eq!(scene_kind_class("BAR"), 0);
     }
 
     #[test]
