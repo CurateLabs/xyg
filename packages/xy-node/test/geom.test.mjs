@@ -505,6 +505,12 @@ test("hexbinXyTaColormap uses channel.colormap only like Python", () => {
     }).flags,
     0,
   );
+  assert.equal(
+    hexbinXyTaColormap({
+      colorChannel: { values: [1, 2], colormap: "plasma" },
+    }).flags,
+    0,
+  );
 });
 
 test("xyHfColormap uses style.colormap only like Python", () => {
