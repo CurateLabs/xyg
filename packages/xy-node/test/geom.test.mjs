@@ -368,6 +368,12 @@ test("sceneKindAdmit matches host table", () => {
   assert.equal(sceneKindAdmit(" scatter"), false);
 });
 
+test("figureTraceSupport empty kind matches Python or mark", () => {
+  assert.equal(figureTraceSupport({}, { kind: "" }).kind, "mark");
+  assert.equal(figureTraceSupport({}, {}).kind, "mark");
+  assert.equal(figureTraceSupport({}, { kind: "scatter" }).kind, "scatter");
+});
+
 test("figureTraceSupport ignores style.smooth like Python", () => {
   const dashed = 1 << 4;
   assert.equal(figureTraceSupport({}, { kind: "line", style: { smooth: true } }).flags & dashed, 0);
