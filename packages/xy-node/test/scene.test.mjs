@@ -104,6 +104,10 @@ test("Node projects Rust-owned Scene support decisions verbatim", () => {
   const colorOnly = new Figure(); colorOnly.scatter([0, 1], [0, 1]);
   colorOnly.traces[0].color = { mode: "constant" };
   assert.doesNotThrow(() => colorOnly.toScene());
+  const stringCh = new Figure(); stringCh.line([0, 1], [0, 1]);
+  stringCh.traces[0].color_ch = "#112233";
+  const packed = stringCh.toScene();
+  assert.equal(Buffer.from(packed).indexOf("#112233"), -1);
   const constantColor = new Figure(); constantColor.scatter([0], [0]);
   constantColor.traces[0].color = { mode: "constant", color: "#3987e5" };
   assert.doesNotThrow(() => constantColor.toScene());
