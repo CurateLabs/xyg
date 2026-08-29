@@ -4795,6 +4795,11 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   ]);
 }
 
+/** XYEF joined-fill observation. Python uses `style.get("joined_fill")` only. */
+export function xyEfJoinedFill(style) {
+  return Boolean((style ?? {}).joined_fill);
+}
+
 function packPublicExportSupport(figure, { width = null, height = null } = {}) {
   const OBS_HAS_X = 1 << 0;
   const OBS_HAS_Y = 1 << 1;
@@ -4930,7 +4935,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
     if (exportColumnFinite(y0)) obs |= OBS_Y0_FINITE;
     if (exportColumnFinite(x1)) obs |= OBS_X1_FINITE;
     if (exportColumnFinite(y1)) obs |= OBS_Y1_FINITE;
-    if (style.joined_fill || style.joinedFill) obs |= OBS_JOINED_FILL;
+    if (xyEfJoinedFill(style)) obs |= OBS_JOINED_FILL;
     let heatmapRows = 0, heatmapCols = 0, heatmapValues = 0;
     if (trace.kind === "heatmap") {
       if (style.truecolor) obs |= OBS_HEATMAP_TRUECOLOR;
