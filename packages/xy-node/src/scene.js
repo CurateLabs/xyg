@@ -4009,7 +4009,7 @@ function packXyTa(figure, xDomain, yDomain) {
         meanRgba = packed.strokes;
         x = packed.widths;
       }
-    } else if ((trace.kind ?? "scatter") === "scatter" && scatterUsesDensity(trace)) {
+    } else if (String(trace.kind || "") === "scatter" && scatterUsesDensity(trace)) {
       flags |= XYTA_DENSITY;
       if (trace.x != null) x = packF64Le(asF64Array(trace.x, "x"));
       if (trace.y != null) y = packF64Le(asF64Array(trace.y, "y"));
@@ -5476,8 +5476,8 @@ function scatterHasNonConstantColor(trace) {
   return color.mode !== "constant" || (color.color == null && color.constant == null);
 }
 
-function scatterUsesDensity(trace) {
-  if ((trace.kind ?? "scatter") !== "scatter") return false;
+export function scatterUsesDensity(trace) {
+  if (String(trace.kind || "") !== "scatter") return false;
   return shouldUseDensity(trace.x?.length ?? 0, {
     forceDensity: Boolean(trace.force_density ?? trace.forceDensity),
     forceDirect: Boolean(trace.force_direct ?? trace.forceDirect),
@@ -5605,8 +5605,8 @@ export function scatterPaintChannelNames(trace) {
   return perItemChannelNames(trace);
 }
 
-function scatterPacksPaintPlane(trace) {
-  if ((trace.kind ?? "scatter") !== "scatter" || scatterUsesDensity(trace)) return false;
+export function scatterPacksPaintPlane(trace) {
+  if (String(trace.kind || "") !== "scatter" || scatterUsesDensity(trace)) return false;
   const names = scatterPaintChannelNames(trace);
   if (!names.length) return false;
   return names.every((name) => sceneScatterPaintChannelAdmit(name));
