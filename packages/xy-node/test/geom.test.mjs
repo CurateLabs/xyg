@@ -38,6 +38,7 @@ import {
   sceneFiniteAll,
   sceneParseLinearGradient,
   sceneRectExtraFlags,
+  rectExtraFlags,
   sceneGradientDir,
   sceneLinearGradientPrefix,
   sceneGradientSpace,
@@ -280,6 +281,12 @@ test("sceneRectExtraFlags matches host table", () => {
   assert.equal(sceneRectExtraFlags("bar", false, false, [0], false, 0.2), 1 << 7);
   assert.equal(sceneRectExtraFlags("bar", true, false, [0], false, 0.2), 0);
   assert.equal(sceneRectExtraFlags("heatmap", true, false, [0], false, 0.2), 1 << 7);
+});
+
+test("rectExtraFlags array fill matches Python dict-only", () => {
+  assert.equal(rectExtraFlags({ fill: ["linear-gradient(red, blue)"] }, "bar", false), 0);
+  assert.equal(rectExtraFlags({ fill: "linear-gradient(red, blue)" }, "bar", false), 0);
+  assert.equal(rectExtraFlags({ fill: { gradient: "radial-gradient(red, blue)" } }, "bar", false), 1 << 5);
 });
 
 test("sceneGradientDir matches host table", () => {
