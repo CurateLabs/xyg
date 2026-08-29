@@ -901,6 +901,7 @@ Node `constantMarkColor` uses `color_ch` only like Python `_constant_color`; `co
 Node `sourceColorCss` uses `color_ch` only like Python `_trace_source_color_css`; `colorChannel` is not a source-css fallback.
 Node `scatterHasNonConstantColor` uses `color_ch` only like Python; `colorChannel` is not a non-constant-color fallback.
 Node `classifyRibbonColor2` source-constant CSS uses `color_ch` only like Python `_classify_ribbon_color2`; `colorChannel` is not a source-constant fallback.
+Node `itemFillRgba8` uses `color_ch` only like Python `_item_fill_rgba8`; `colorChannel` is not a fill-channel fallback.
 Node XYTA density color_ch packing uses `color_ch` only like Python `_pack_xyta`; `colorChannel` is not a packed-constant fallback.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
