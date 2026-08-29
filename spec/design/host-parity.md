@@ -1366,7 +1366,6 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node XYEF joined-fill observation uses `joined_fill` only.
   Node `constantMarkColor` uses `color_ch` only.
   Node `classifyRibbonColor2` source-constant CSS uses `color_ch` only.
-  Node `resolveDensityBinColors` uses `color_ch` only.
 ---
 
 ## 4. Delivery order
