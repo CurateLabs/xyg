@@ -1700,6 +1700,15 @@ pub fn scene_hexbin_colormap_plane_admit(mode: &str, has_values: i32) -> i32 {
     i32::from(mode == "continuous" && has_values != 0)
 }
 
+/// Admit Scene hexbin RGBA-plane packing (ABI 243).
+///
+/// Exact `categorical`/`direct_rgba` return `1`. Unknown names, including
+/// empty text, return `0`. No lowercasing. Kind checks, field picking, and
+/// RGBA8 packing stay host.
+pub fn scene_hexbin_rgba_plane_admit(mode: &str) -> i32 {
+    i32::from(matches!(mode, "categorical" | "direct_rgba"))
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -9964,6 +9973,16 @@ mod fuzz {
         assert_eq!(scene_hexbin_colormap_plane_admit("CONTINUOUS", 1), 0);
         assert_eq!(scene_hexbin_colormap_plane_admit("categorical", 1), 0);
         assert_eq!(scene_hexbin_colormap_plane_admit("direct_rgba", 1), 0);
+    }
+
+    #[test]
+    fn scene_hexbin_rgba_plane_admit_matches_host_table() {
+        assert_eq!(scene_hexbin_rgba_plane_admit("categorical"), 1);
+        assert_eq!(scene_hexbin_rgba_plane_admit("direct_rgba"), 1);
+        assert_eq!(scene_hexbin_rgba_plane_admit(""), 0);
+        assert_eq!(scene_hexbin_rgba_plane_admit("CATEGORICAL"), 0);
+        assert_eq!(scene_hexbin_rgba_plane_admit("continuous"), 0);
+        assert_eq!(scene_hexbin_rgba_plane_admit("direct-rgba"), 0);
     }
 
     #[test]

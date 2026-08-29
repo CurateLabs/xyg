@@ -1488,6 +1488,19 @@ def scene_hexbin_colormap_plane_admit(text: str | None = None, has_values: int =
     return code == 1
 
 
+def scene_hexbin_rgba_plane_admit(text: str | None = None) -> bool:
+    """Scene hexbin RGBA-plane admit via ``xyg_scene_hexbin_rgba_plane_admit`` (ABI 243).
+
+    Empty native pointers are ``0``. Kind checks, field picking, and RGBA8
+    packing stay host.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_hexbin_rgba_plane_admit(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-hexbin-rgba-plane-admit request")
+    return code == 1
+
+
 def scene_hexbin_pitch_admit(dx: float, dy: float) -> bool:
     """Scene hexbin cell-pitch admit via ``xyg_scene_hexbin_pitch_admit`` (ABI 237).
 

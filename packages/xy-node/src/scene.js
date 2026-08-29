@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -5588,7 +5588,7 @@ function hexbinPacksRgbaPlane(trace) {
   if (!(sceneKindClass(trace.kind) & SCENE_KIND_CLASS_HEXBIN)) return false;
   const channel = trace.color_ch ?? trace.colorChannel;
   if (channel == null) return false;
-  if (channel.mode !== "direct_rgba" && channel.mode !== "categorical") return false;
+  if (!sceneHexbinRgbaPlaneAdmit(channel.mode)) return false;
   return hexbinCellRgba8(trace) != null;
 }
 

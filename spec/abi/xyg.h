@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 242
-#define XYG_ABI_SIGNATURE_SHA256 "e7f3d1809f37c63173e88b0b15bfb44a3942acb539e66443b119b2d28c54e34d"
+#define XYG_ABI_VERSION 243
+#define XYG_ABI_SIGNATURE_SHA256 "86675d260aaedd4c40b5834b5536e0aba1f76fac457aeebf538f1da5a0efb5e1"
 
 #ifdef __cplusplus
 extern "C" {
@@ -213,6 +213,7 @@ int32_t xyg_scene_heatmap_shape_admit(double rows, double cols);
 int32_t xyg_scene_hexbin_colormap_plane_admit(const uint8_t * text, size_t text_len, int32_t has_values);
 int32_t xyg_scene_hexbin_pitch_admit(double dx, double dy);
 int32_t xyg_scene_hexbin_reduce_admit(const uint8_t * text, size_t text_len);
+int32_t xyg_scene_hexbin_rgba_plane_admit(const uint8_t * text, size_t text_len);
 int32_t xyg_scene_kind_admit(const uint8_t * text, size_t text_len);
 int32_t xyg_scene_kind_class(const uint8_t * text, size_t text_len);
 int32_t xyg_scene_linear_gradient_prefix(const uint8_t * text, size_t text_len);

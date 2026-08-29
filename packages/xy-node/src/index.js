@@ -53,6 +53,7 @@ export {
   sceneHexbinColormapPlaneAdmit,
   sceneHexbinPitchAdmit,
   sceneHexbinReduceAdmit,
+  sceneHexbinRgbaPlaneAdmit,
   sceneCurveClassify,
   sceneMarkerGlyphAdmit,
   sceneKindAdmit,

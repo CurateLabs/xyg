@@ -766,6 +766,10 @@ packing (exact `continuous` plus a values-present flag; unknown/empty → 0; no
 lowercasing) so Python `_hexbin_packs_colormap_plane` and Node
 `hexbinPacksColormapPlane` cannot drift. Kind checks and field picking
 (`color_ch` vs `colorChannel`, `values` vs `metric`) stay host.
+ABI 243 `xyg_scene_hexbin_rgba_plane_admit` owns Scene hexbin RGBA-plane
+modes (exact `categorical`/`direct_rgba`; unknown/empty → 0; no lowercasing)
+so Python `_hexbin_packs_rgba_plane` and Node `hexbinPacksRgbaPlane` cannot
+drift. Kind checks, field picking, and RGBA8 packing stay host.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1140,6 +1144,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Scene heatmap lattice-shape admit is ABI 240.
   Scene scatter paint-channel admit is ABI 241.
   Scene hexbin colormap-plane admit is ABI 242.
+  Scene hexbin RGBA-plane admit is ABI 243.
 
 ---
 

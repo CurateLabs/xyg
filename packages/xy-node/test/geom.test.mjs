@@ -32,6 +32,7 @@ import {
   sceneHexbinColormapPlaneAdmit,
   sceneHexbinPitchAdmit,
   sceneHexbinReduceAdmit,
+  sceneHexbinRgbaPlaneAdmit,
   sceneCurveClassify,
   sceneMarkerGlyphAdmit,
   sceneKindAdmit,
@@ -372,6 +373,15 @@ test("sceneHexbinColormapPlaneAdmit matches host table", () => {
   assert.equal(sceneHexbinColormapPlaneAdmit("CONTINUOUS", 1), false);
   assert.equal(sceneHexbinColormapPlaneAdmit("categorical", 1), false);
   assert.equal(sceneHexbinColormapPlaneAdmit("direct_rgba", 1), false);
+});
+
+test("sceneHexbinRgbaPlaneAdmit matches host table", () => {
+  assert.equal(sceneHexbinRgbaPlaneAdmit("categorical"), true);
+  assert.equal(sceneHexbinRgbaPlaneAdmit("direct_rgba"), true);
+  assert.equal(sceneHexbinRgbaPlaneAdmit(""), false);
+  assert.equal(sceneHexbinRgbaPlaneAdmit("CATEGORICAL"), false);
+  assert.equal(sceneHexbinRgbaPlaneAdmit("continuous"), false);
+  assert.equal(sceneHexbinRgbaPlaneAdmit("direct-rgba"), false);
 });
 
 test("sceneHexbinPitchAdmit matches host table", () => {
