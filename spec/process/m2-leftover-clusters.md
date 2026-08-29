@@ -51,7 +51,7 @@ Create/refresh GitHub sub-issues with `python3 scripts/m2_leftover_clusters.py`.
 | `279-compat-geometry` | #279 | — | P1 | [#310](https://github.com/CurateLabs/xyg/issues/310) | [M2 follow-on][P1][#279] Compatibility emitters still call `_scene.py` geometry |
 | `282-m4` | #282 | — | P1 | [#311](https://github.com/CurateLabs/xyg/issues/311) | [M2 follow-on][P1][#282] Remaining `_m4_decimate` policy |
 | `282-emit` | #282 | — | P1 | [#312](https://github.com/CurateLabs/xyg/issues/312) | [M2 follow-on][P1][#282] Remaining `_payload._emit_*` sampling / density / masks |
-| `283-paint` | #283 | — | P2 | [#313](https://github.com/CurateLabs/xyg/issues/313) | [M2 follow-on][P2][#283] Remaining LUT / `_paint.py` / `_trace_paint_rgba` policy (closed via ABI 206 / PR #341). Remaining parent work: polar heatmap gather-after-inverse map (ABI 207). |
+| `283-paint` | #283 | — | P2 | [#313](https://github.com/CurateLabs/xyg/issues/313) | [M2 follow-on][P2][#283] Remaining LUT / `_paint.py` / `_trace_paint_rgba` policy (closed via ABI 206 / PR #341). Polar heatmap gather-after-inverse map closed via ABI 207 / PR #342. |
 
 ## Parents
 
@@ -65,4 +65,4 @@ Create/refresh GitHub sub-issues with `python3 scripts/m2_leftover_clusters.py`.
 | #278 | Remaining annotation exceptions after ABI 184-188 (`dx`/`dy`/`anchor`/`rotation` already landed on #286). |
 | #279 | Compatibility `_scene.py` geometry wrappers over ABI 121. |
 | #282 | Live `_payload.py` LOD/emit leftovers over ABI 122/132. |
-| #283 | P2 paint/colormap leftovers. Do not block P0/P1. |
+| #283 | P2 paint/colormap leftovers. Closed after ABI 206 (#313) and ABI 207 polar heatmap twin (PR #342). `triangle_mesh_boundary` stays host joined-fill geometry; `_trace_paint_rgba` stays host channel dispatch. |
