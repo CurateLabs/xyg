@@ -1588,6 +1588,25 @@ pub fn scene_constant_color_admit(
     SCENE_CONSTANT_COLOR_FAIL
 }
 
+/// Admit Scene hidden-or-per-item support flags (ABI 253).
+///
+/// `1` when the trace is hidden, or has per-item channels that density
+/// color aggregation does not own. Nonzero flags are true. Field picking
+/// stays host.
+pub fn scene_hidden_or_per_item_admit(
+    hidden: i32,
+    has_per_item: i32,
+    density_aggregates: i32,
+) -> i32 {
+    if hidden != 0 {
+        return 1;
+    }
+    if has_per_item != 0 && density_aggregates == 0 {
+        return 1;
+    }
+    0
+}
+
 /// Admit Scene hexbin reduce names (ABI 232).
 ///
 /// `count`/`mean`/`sum`/`custom` return `1`. Unknown names, including empty
@@ -10351,6 +10370,16 @@ mod fuzz {
         assert_eq!(scene_constant_color_admit(1, 0, 0, 1), SCENE_CONSTANT_COLOR_FALLBACK);
         assert_eq!(scene_constant_color_admit(1, 0, 0, 0), SCENE_CONSTANT_COLOR_FAIL);
         assert_eq!(scene_constant_color_admit(1, 1, 1, 1), SCENE_CONSTANT_COLOR_CONSTANT);
+    }
+
+    #[test]
+    fn scene_hidden_or_per_item_admit_matches_host_table() {
+        assert_eq!(scene_hidden_or_per_item_admit(0, 0, 0), 0);
+        assert_eq!(scene_hidden_or_per_item_admit(1, 0, 0), 1);
+        assert_eq!(scene_hidden_or_per_item_admit(0, 1, 0), 1);
+        assert_eq!(scene_hidden_or_per_item_admit(0, 1, 1), 0);
+        assert_eq!(scene_hidden_or_per_item_admit(1, 1, 1), 1);
+        assert_eq!(scene_hidden_or_per_item_admit(0, 0, 1), 0);
     }
 
     #[test]

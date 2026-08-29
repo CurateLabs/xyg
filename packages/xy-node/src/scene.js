@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -5439,6 +5439,35 @@ function packAnnotationEnvelope({ texts, attached, arrows, callouts, wrapped }) 
   return out.subarray(0, code);
 }
 
+function perItemChannelNames(trace) {
+  const names = [];
+  const color = trace.color_ch ?? trace.colorChannel ?? trace.color;
+  if (color != null && typeof color === "object" && color.mode !== "constant") names.push("color");
+  const stroke = trace.stroke_ch ?? trace.strokeChannel;
+  if (
+    stroke != null
+    && typeof stroke === "object"
+    && stroke.mode !== "constant"
+    && stroke.mode !== "match_fill"
+  ) names.push("stroke");
+  const size = trace.size_ch ?? trace.sizeChannel;
+  if (size != null && typeof size === "object" && size.mode !== "constant") names.push("size");
+  const channels = trace.style_channels ?? trace.styleChannels ?? {};
+  if (channels != null && typeof channels === "object" && !Array.isArray(channels) && !ArrayBuffer.isView(channels)) {
+    names.push(...Object.keys(channels));
+  }
+  const style = trace.style ?? {};
+  if (style.color_channel != null && !names.includes("color")) names.push("color");
+  if (style.stroke_channel != null && !names.includes("stroke")) names.push("stroke");
+  if (style.size_channel != null && !names.includes("size")) names.push("size");
+  return names;
+}
+
+function densityAggregatesColor(trace) {
+  if (String(trace.kind ?? "") !== "scatter" || !scatterUsesDensity(trace)) return false;
+  return perItemChannelNames(trace).every((name) => name === "color");
+}
+
 function scatterHasNonConstantColor(trace) {
   const style = trace.style ?? {};
   if (style.color_channel != null) return true;
@@ -5463,7 +5492,7 @@ function scatterUsesDensity(trace) {
     forceDensity: Boolean(trace.force_density ?? trace.forceDensity),
     forceDirect: Boolean(trace.force_direct ?? trace.forceDirect),
     coords: "cartesian",
-    perItemChannels: scatterHasNonConstantColor(trace) || scatterHasDroppedPerItem(trace),
+    perItemChannels: perItemChannelNames(trace).length > 0,
   });
 }
 
@@ -5501,12 +5530,11 @@ function figureTraceSupport(figure, trace) {
   let flags = 0;
   if (!sceneKindAdmit(kind)) flags |= XYFS_TRACE_UNSUPPORTED_KIND;
   if ((trace.x_axis ?? "x") !== "x" || (trace.y_axis ?? "y") !== "y") flags |= XYFS_TRACE_NON_PRIMARY_AXIS;
-  if (
-    trace.hidden
-    || scatterHasDroppedPerItem(trace)
-    || (scatterHasNonConstantColor(trace) && !scatterUsesDensity(trace))
-    || scatterPacksPaintPlane(trace)
-  ) flags |= XYFS_TRACE_HIDDEN_OR_PER_ITEM;
+  if (sceneHiddenOrPerItemAdmit(
+    Boolean(trace.hidden),
+    perItemChannelNames(trace).length > 0,
+    densityAggregatesColor(trace),
+  )) flags |= XYFS_TRACE_HIDDEN_OR_PER_ITEM;
   if (style.marker_glyph != null) {
     if (kind !== "scatter" || style.marker_path != null || admittedMarkerGlyph(style.marker_glyph) == null) {
       flags |= XYFS_TRACE_DASHED_MARKERS;

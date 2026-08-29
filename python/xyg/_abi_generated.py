@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 252
-SIGNATURE_SHA256 = "53c35d8a2588f837463d6112bf8b2f1b04ed6c6f69086a5982d1ce6ac0365d79"
+ABI_VERSION = 253
+SIGNATURE_SHA256 = "9cd1c105eb8a874a11eb48e9798f84d99cf43ea7f7b8a470f048916448a5fdc0"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -842,6 +842,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_hexbin_rgba_plane_admit
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_hidden_or_per_item_admit(int32_t hidden, int32_t has_per_item, int32_t density_aggregates)
+    function = lib.xyg_scene_hidden_or_per_item_admit
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_int32]
     # int32_t xyg_scene_item_apply_opacity(const uint8_t * packed, size_t packed_len, size_t n, const double * artist, size_t artist_len, int32_t has_artist, const double * opacity, size_t opacity_len, int32_t has_opacity, uint8_t * out, size_t out_len)
     function = lib.xyg_scene_item_apply_opacity
     function.restype = ctypes.c_int32

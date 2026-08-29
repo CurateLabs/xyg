@@ -807,6 +807,10 @@ ABI 252 `xyg_scene_constant_color_admit` owns Scene constant-color admit
 (`0` fail, `1` style fallback, `2` channel constant) so Python
 `_constant_color` and Node `constantMarkColor` cannot drift. Ribbon-fail
 and field picking stay host.
+ABI 253 `xyg_scene_hidden_or_per_item_admit` owns Scene hidden-or-per-item
+admit (`hidden || (has_per_item && !density_aggregates)`) so Python
+`_figure_trace_support_flags` and Node `figureTraceSupport` cannot drift.
+Field picking stays host.
 Python `colormap_lut_rgba8` and Node `colormapLutRgba8` sample 256
 unit-t texels through ABI 206 `xyg_colormap_lut` then host-pack alpha
 255 so the density LUT cannot drift on half-up vs ties-to-even.
@@ -1209,6 +1213,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Scene f64 arrays-equal is ABI 250.
   Unit-f64 clip-quantize u8 is ABI 251.
   Scene constant-color admit is ABI 252.
+  Scene hidden-or-per-item admit is ABI 253.
   256-texel colormap RGBA8 LUT uses ABI 206.
   Unit-t LUT/size u8 quantize uses ABI 251.
   Node density-bin LUT idx uses the same composition.
