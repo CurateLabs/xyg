@@ -25,6 +25,7 @@ import {
   sceneGradientDir,
   sceneLinearGradientPrefix,
   sceneGradientSpace,
+  sceneHexbinPitchAdmit,
   sceneHexbinReduceAdmit,
   sceneCurveClassify,
   sceneMarkerGlyphAdmit,
@@ -357,6 +358,15 @@ test("sceneKindClass matches host table", () => {
   assert.equal(sceneKindClass("mark"), 0);
   assert.equal(sceneKindClass("SCATTER"), 0);
   assert.equal(sceneKindClass("BAR"), 0);
+});
+
+test("sceneHexbinPitchAdmit matches host table", () => {
+  assert.equal(sceneHexbinPitchAdmit(1, 2), true);
+  assert.equal(sceneHexbinPitchAdmit(0, 1), false);
+  assert.equal(sceneHexbinPitchAdmit(1, 0), false);
+  assert.equal(sceneHexbinPitchAdmit(-1, 1), false);
+  assert.equal(sceneHexbinPitchAdmit(Number.NaN, 1), false);
+  assert.equal(sceneHexbinPitchAdmit(1, Number.POSITIVE_INFINITY), false);
 });
 
 test("sceneRibbonColor2Classify matches host table", () => {

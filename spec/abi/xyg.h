@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 236
-#define XYG_ABI_SIGNATURE_SHA256 "526cf656567f692236ab26d5150c45d92c56719878b27af560647c7d8b6856b6"
+#define XYG_ABI_VERSION 237
+#define XYG_ABI_SIGNATURE_SHA256 "000ac322161adbeaea40aa5e6d40ec6027db8e3d90e8e822ca8451c1cc3ca6b4"
 
 #ifdef __cplusplus
 extern "C" {
@@ -207,6 +207,7 @@ size_t xyg_scene_figure_support_reason(const uint8_t * input, size_t len, uint8_
 int32_t xyg_scene_fill_gradient_admit(const uint8_t * space, size_t space_len, const uint8_t * dir, size_t dir_len, const double * t, size_t n_stops, const uint8_t * css, size_t css_len, const uint32_t * css_lens, size_t n_css, const uint8_t * mark_color, size_t mark_len, uint8_t * out_rgba, size_t out_cap);
 int32_t xyg_scene_gradient_dir(const uint8_t * text, size_t text_len);
 int32_t xyg_scene_gradient_space(const uint8_t * text, size_t text_len);
+int32_t xyg_scene_hexbin_pitch_admit(double dx, double dy);
 int32_t xyg_scene_hexbin_reduce_admit(const uint8_t * text, size_t text_len);
 int32_t xyg_scene_kind_admit(const uint8_t * text, size_t text_len);
 int32_t xyg_scene_kind_class(const uint8_t * text, size_t text_len);

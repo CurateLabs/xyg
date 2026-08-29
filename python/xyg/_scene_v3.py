@@ -1861,7 +1861,7 @@ def _hexbin_pitch(style: dict[str, Any]) -> tuple[float, float]:
         raise UnsupportedSceneV3("Scene v12 hexbin requires finite hex_dx/hex_dy cell pitch")
     dx = float(raw_dx)
     dy = float(raw_dy)
-    if not np.isfinite(dx) or not np.isfinite(dy) or dx <= 0.0 or dy <= 0.0:
+    if not _native.scene_hexbin_pitch_admit(dx, dy):
         raise UnsupportedSceneV3("Scene v12 hexbin requires finite hex_dx/hex_dy cell pitch")
     return dx, dy
 

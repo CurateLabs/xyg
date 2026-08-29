@@ -738,6 +738,10 @@ ABI 236 `xyg_scene_kind_class` owns Scene packing-family bits (rect/segment/
 band/ribbon/polyfill/hexbin/heatmap/stroke/scatter/line; unknown/empty → 0;
 no lowercasing) so Python `_scene_v3` pack and Node `scene.js` pack cannot
 drift. Hosts still pick channels and pack rows.
+ABI 237 `xyg_scene_hexbin_pitch_admit` owns Scene hexbin cell-pitch admit
+(finite strictly-positive `dx`/`dy`) so Python `_hexbin_pitch` and Node
+XYEP pack cannot drift. Field picking (`hex_dx` vs `dx`) stays host.
+Compile-path `hex_pitch` in `scene_trace_compile.rs` stays extra.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1106,6 +1110,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Scene marker-glyph admit is ABI 234.
   Scene product-kind admit is ABI 235.
   Scene packing-family classify is ABI 236.
+  Scene hexbin cell-pitch admit is ABI 237.
 
 ---
 

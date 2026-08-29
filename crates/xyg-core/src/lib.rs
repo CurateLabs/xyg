@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 236;
+pub const ABI_VERSION: u32 = 237;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5454,6 +5454,16 @@ pub unsafe extern "C" fn xyg_scene_kind_class(
         };
         kernels::scene_kind_class(text)
     })
+}
+
+/// Scene hexbin cell-pitch admit (ABI 237).
+///
+/// Finite strictly-positive `dx`/`dy` return `1`. Unknown/non-finite/non-positive
+/// return `0`. `-2` FFI. Field picking stays host. Compile-path `hex_pitch`
+/// stays extra.
+#[no_mangle]
+pub extern "C" fn xyg_scene_hexbin_pitch_admit(dx: f64, dy: f64) -> i32 {
+    ffi_guard(-2, || kernels::scene_hexbin_pitch_admit(dx, dy))
 }
 
 /// Annotation arrow connectionstyle geometry (ABI 217).

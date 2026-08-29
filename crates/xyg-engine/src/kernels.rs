@@ -1622,6 +1622,15 @@ pub fn scene_kind_class(text: &str) -> i32 {
     }
 }
 
+/// Admit Scene hexbin cell pitch (ABI 237).
+///
+/// Finite and strictly positive `dx`/`dy` return `1`. Field picking
+/// (`hex_dx` vs `dx`) stays host. Compile-path `hex_pitch` in
+/// `scene_trace_compile.rs` stays extra.
+pub fn scene_hexbin_pitch_admit(dx: f64, dy: f64) -> i32 {
+    i32::from(dx.is_finite() && dy.is_finite() && dx > 0.0 && dy > 0.0)
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -9817,6 +9826,16 @@ mod fuzz {
         assert_eq!(scene_kind_class("mark"), 0);
         assert_eq!(scene_kind_class("SCATTER"), 0);
         assert_eq!(scene_kind_class("BAR"), 0);
+    }
+
+    #[test]
+    fn scene_hexbin_pitch_admit_matches_host_table() {
+        assert_eq!(scene_hexbin_pitch_admit(1.0, 2.0), 1);
+        assert_eq!(scene_hexbin_pitch_admit(0.0, 1.0), 0);
+        assert_eq!(scene_hexbin_pitch_admit(1.0, 0.0), 0);
+        assert_eq!(scene_hexbin_pitch_admit(-1.0, 1.0), 0);
+        assert_eq!(scene_hexbin_pitch_admit(1.0, f64::NAN), 0);
+        assert_eq!(scene_hexbin_pitch_admit(f64::INFINITY, 1.0), 0);
     }
 
     #[test]
