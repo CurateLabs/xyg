@@ -5663,10 +5663,12 @@ function itemStrokeRgba8(trace, fills, n) {
   return null;
 }
 
-function itemWidths(trace, n) {
+export function itemWidths(trace, n) {
   const widthCh = (trace.style_channels ?? trace.styleChannels ?? {}).stroke_width;
-  if (widthCh?.values != null) {
-    const values = [...widthCh.values].map(Number);
+  if (widthCh != null) {
+    const values = widthCh.values != null
+      ? [...widthCh.values].map(Number)
+      : [Number.NaN];
     if (!sceneItemWidthsAdmit(values, n, 0)) return null;
     return packF64Le(values);
   }
