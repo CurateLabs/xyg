@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 209;
+pub const ABI_VERSION: u32 = 210;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15223,6 +15223,44 @@ pub unsafe extern "C" fn xyg_hexbin_groups(
     }
     n
 }
+
+/// Pointy-top hexagon vertex offsets scaled by cell pitch (ABI 210).
+///
+/// Probe with `capacity == 0` and null/`0` output pointers; the return is
+/// always 6 on success. `usize::MAX` when either pitch is non-finite or the
+/// fill buffers are missing/undersized. Empty native pointers are null/`0`.
+///
+/// # Safety
+/// When `capacity > 0`, `out_x` and `out_y` each address `capacity` writable
+/// f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_hexbin_ring(
+    dx: f64,
+    dy: f64,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        let Some(ring) = hexbin::hexbin_ring(dx, dy) else {
+            return usize::MAX;
+        };
+        if capacity == 0 {
+            return hexbin::HEXBIN_RING_LEN;
+        }
+        if out_x.is_null() || out_y.is_null() || capacity < hexbin::HEXBIN_RING_LEN {
+            return usize::MAX;
+        }
+        let out_x = std::slice::from_raw_parts_mut(out_x, capacity);
+        let out_y = std::slice::from_raw_parts_mut(out_y, capacity);
+        for (index, &(x, y)) in ring.iter().enumerate() {
+            out_x[index] = x;
+            out_y[index] = y;
+        }
+        hexbin::HEXBIN_RING_LEN
+    })
+}
+
 /// coverage normalization. Writes `n_bins + 1` edges and `n_bins` density
 /// values. Returns 1 on success, 0 when there is no finite sample or args are
 /// invalid (`n_bins` outside `4..=1024`, null outs).

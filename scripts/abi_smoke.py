@@ -605,6 +605,14 @@ def load() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_size_t),
         ctypes.POINTER(ctypes.c_size_t),
     ]
+    lib.xyg_hexbin_ring.restype = ctypes.c_size_t
+    lib.xyg_hexbin_ring.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_violin_density.restype = ctypes.c_int32
     lib.xyg_violin_density.argtypes = [
         F64P,
@@ -3451,6 +3459,29 @@ def main() -> None:
         and abs(hx_in_x0.value - 9.5) < 1e-12
         and abs(hx_in_y0.value - 3.8) < 1e-12,
         "hexbin ingress auto domain and aspect",
+    )
+    hx_ring_n = lib.xyg_hexbin_ring(6.0, 12.0, null_f64, null_f64, 0)
+    hx_rx = array("d", [0.0]) * 6
+    hx_ry = array("d", [0.0]) * 6
+    hx_ring_filled = lib.xyg_hexbin_ring(
+        6.0,
+        12.0,
+        _ptr(hx_rx, ctypes.c_double),
+        _ptr(hx_ry, ctypes.c_double),
+        6,
+    )
+    ok(
+        hx_ring_n == 6
+        and hx_ring_filled == 6
+        and abs(hx_rx[0] - 0.0) < 1e-15
+        and abs(hx_ry[0] + 4.0) < 1e-15
+        and abs(hx_rx[1] - 3.0) < 1e-15
+        and abs(hx_ry[1] + 2.0) < 1e-15,
+        "hexbin ring scale",
+    )
+    ok(
+        lib.xyg_hexbin_ring(float("nan"), 1.0, null_f64, null_f64, 0) == size_max,
+        "hexbin ring nonfinite",
     )
 
     # wind_rose_bins: three bearings into a 4-sector rose, one speed band.
