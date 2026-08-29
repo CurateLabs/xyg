@@ -5449,7 +5449,7 @@ export function scatterUsesDensity(trace) {
 }
 
 export function resolveDensityBinColors(trace) {
-  const color = trace.color_ch ?? trace.colorChannel;
+  const color = trace.color_ch;
   if (color == null || typeof color !== "object") return null;
   if (color.mode === "direct_rgba" && color.rgba != null) {
     return { rgba: color.rgba instanceof Uint8Array ? color.rgba : Uint8Array.from(color.rgba) };
