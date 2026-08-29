@@ -7177,6 +7177,25 @@ pub fn direct_rgba_admit(values: &[f64], components: usize, out: &mut [f64]) -> 
     Some(need)
 }
 
+/// Clip unit f64 to `[0, 1]`, scale by 255, and quantize to u8 (ABI 251).
+///
+/// Ties round to even. Non-finite results (NaN) write `0`. Lengths must
+/// match; empty slices succeed. Field picking stays host.
+pub fn clip_quantize_u8(values: &[f64], out: &mut [u8]) -> i32 {
+    if values.len() != out.len() {
+        return 0;
+    }
+    for (value, dest) in values.iter().zip(out.iter_mut()) {
+        let quantized = (value.clamp(0.0, 1.0) * 255.0).round_ties_even();
+        *dest = if quantized.is_finite() {
+            quantized as u8
+        } else {
+            0
+        };
+    }
+    1
+}
+
 /// Non-decreasing check with NaN-poisoning: every consecutive pair must
 /// satisfy `next >= prev`, and any NaN in either position fails the pair
 /// (IEEE comparisons with NaN are false). This is exactly NumPy's
@@ -8904,6 +8923,22 @@ mod tests {
         let rgba = [0.1, 0.2, 0.3, 0.4];
         assert_eq!(direct_rgba_admit(&rgba, 4, &mut out), Some(4));
         assert_eq!(&out[..4], &[0.1, 0.2, 0.3, 0.4]);
+    }
+
+    #[test]
+    fn clip_quantize_u8_matches_host_table() {
+        let mut empty: [u8; 0] = [];
+        assert_eq!(clip_quantize_u8(&[], &mut empty), 1);
+        let mut out = [0u8; 4];
+        assert_eq!(clip_quantize_u8(&[0.0, 0.5, 1.0, 1.5], &mut out), 1);
+        assert_eq!(out, [0, 128, 255, 255]);
+        assert_eq!(clip_quantize_u8(&[0.0], &mut out), 0);
+        let mut nan_out = [255u8; 1];
+        assert_eq!(clip_quantize_u8(&[f64::NAN], &mut nan_out), 1);
+        assert_eq!(nan_out, [0]);
+        let mut half = [0u8; 1];
+        assert_eq!(clip_quantize_u8(&[1.5 / 255.0], &mut half), 1);
+        assert_eq!(half, [2]);
     }
 
     #[test]

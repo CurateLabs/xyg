@@ -6957,6 +6957,29 @@ def direct_rgba_admit(
     return out
 
 
+def clip_quantize_u8(values: npt.ArrayLike) -> npt.NDArray[np.uint8]:
+    """Clip unit f64 to ``[0, 1]``, scale by 255, and quantize to u8 (ABI 251).
+
+    Ties round to even. Non-finite results write ``0``. Empty native pointers
+    are ``0``. Field picking stays host.
+    """
+    arr = _as_f64(np.asarray(values, dtype=np.float64).reshape(-1), "clip_quantize_u8")
+    out = np.empty(arr.size, dtype=np.uint8)
+    code = int(
+        _lib.xyg_clip_quantize_u8(
+            _ptr_f64(arr) if arr.size else 0,
+            int(arr.size),
+            _ptr_u8(out) if out.size else 0,
+            int(out.size),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid clip-quantize-u8 request")
+    if code != 1:
+        raise ValueError("invalid clip-quantize-u8 request")
+    return out
+
+
 def histogram_uniform(
     data: npt.NDArray[np.float64],
     lo: float,

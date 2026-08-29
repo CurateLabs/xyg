@@ -363,6 +363,8 @@ def load() -> ctypes.CDLL:
     lib.xyg_scene_gradient_solid_css.argtypes = [U8P, ctypes.c_size_t, U8P, ctypes.c_size_t]
     lib.xyg_scene_arrays_equal.restype = ctypes.c_int32
     lib.xyg_scene_arrays_equal.argtypes = [F64P, ctypes.c_size_t, F64P, ctypes.c_size_t]
+    lib.xyg_clip_quantize_u8.restype = ctypes.c_int32
+    lib.xyg_clip_quantize_u8.argtypes = [F64P, ctypes.c_size_t, U8P, ctypes.c_size_t]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -3003,6 +3005,28 @@ def main() -> None:
         )
         == 0,
         "scene_arrays_equal nan",
+    )
+    ok(
+        lib.xyg_clip_quantize_u8(null_f64, 0, null_u8, 0) == 1,
+        "clip_quantize_u8 empty",
+    )
+    quant_in = array("d", [0.0, 0.5, 1.0, 1.5])
+    quant_out = array("B", [0] * 4)
+    ok(
+        lib.xyg_clip_quantize_u8(
+            _ptr(quant_in, ctypes.c_double), 4, _ptr(quant_out, ctypes.c_uint8), 4
+        )
+        == 1
+        and list(quant_out) == [0, 128, 255, 255],
+        "clip_quantize_u8 table",
+    )
+    nan_q = array("d", [float("nan")])
+    nan_out = array("B", [255])
+    ok(
+        lib.xyg_clip_quantize_u8(_ptr(nan_q, ctypes.c_double), 1, _ptr(nan_out, ctypes.c_uint8), 1)
+        == 1
+        and nan_out[0] == 0,
+        "clip_quantize_u8 nan",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8

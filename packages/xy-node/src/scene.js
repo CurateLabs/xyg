@@ -76,7 +76,7 @@ import {
   polarAbiInputPointer,
 } from "./native.js";
 import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
-import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
+import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
 const MAX_SCENE_MARKS = 2_000_000;
@@ -1778,17 +1778,19 @@ function channelEndRgba8(channel, n, fallback) {
       const raw = channel.rgba;
       if (raw instanceof Uint8Array && raw.length === n * 4) return raw;
       if (Array.isArray(raw) && raw.length === n && Array.isArray(raw[0])) {
-        const out = new Uint8Array(n * 4);
+        const flat = new Float64Array(n * 4);
         for (let i = 0; i < n; i += 1) {
           const row = raw[i];
-          out[i * 4] = Math.round(Math.min(1, Math.max(0, Number(row[0]))) * 255);
-          out[i * 4 + 1] = Math.round(Math.min(1, Math.max(0, Number(row[1]))) * 255);
-          out[i * 4 + 2] = Math.round(Math.min(1, Math.max(0, Number(row[2]))) * 255);
-          out[i * 4 + 3] = Math.round(Math.min(1, Math.max(0, Number(row[3] ?? 1))) * 255);
+          flat[i * 4] = Number(row[0]);
+          flat[i * 4 + 1] = Number(row[1]);
+          flat[i * 4 + 2] = Number(row[2]);
+          flat[i * 4 + 3] = Number(row[3] ?? 1);
         }
-        return out;
+        return clipQuantizeU8(flat);
       }
-      if (ArrayBuffer.isView(raw) && raw.length === n * 4) return Uint8Array.from(raw);
+      if (ArrayBuffer.isView(raw) && raw.length === n * 4) {
+        return clipQuantizeU8(raw);
+      }
     }
     if (channel.mode === "categorical" && channel.codes != null) {
       const codes = channel.codes;

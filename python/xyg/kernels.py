@@ -34,6 +34,7 @@ CSS_NUMBER = _impl.CSS_NUMBER
 css_check = _impl.css_check
 css_color_rgba = _impl.css_color_rgba
 css_is_functional = _impl.css_is_functional
+clip_quantize_u8 = _impl.clip_quantize_u8
 colormap_rgba = _impl.colormap_rgba
 colormap_rgba_canonical = _impl.colormap_rgba_canonical
 colormap_lut = _impl.colormap_lut
@@ -225,6 +226,7 @@ __all__ = [
     "binned_ecdf",
     "box_geometry",
     "box_stats",
+    "clip_quantize_u8",
     "colormap_lut",
     "colormap_rgba",
     "colormap_rgba_canonical",

@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 250
-SIGNATURE_SHA256 = "a91bceb28ae006d3be5db32dc379bf26eecbf58a0ad7568865165e3b86b3f205"
+ABI_VERSION = 251
+SIGNATURE_SHA256 = "8b61c0d55fd00994f9959799d10b8e3382648fbd53b1d93593927c50d5219d42"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -114,6 +114,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_chunked_columns_rows
     function.restype = ctypes.c_uint64
     function.argtypes = [ctypes.c_uint64]
+    # int32_t xyg_clip_quantize_u8(const double * values, size_t values_len, uint8_t * out, size_t out_len)
+    function = lib.xyg_clip_quantize_u8
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_colormap_lut(const double * t, size_t n, const uint8_t * stops, size_t stop_count, uint8_t * out)
     function = lib.xyg_colormap_lut
     function.restype = ctypes.c_int32

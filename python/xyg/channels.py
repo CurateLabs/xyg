@@ -878,16 +878,9 @@ def _quantized_lut_idx(values: npt.NDArray[np.float64], domain: tuple[float, flo
 
 
 def _quantized_rgba8(values: npt.NDArray[np.float64]) -> np.ndarray:
-    """Float RGBA rows -> straight-alpha RGBA8, chunk-bounded temporaries."""
-    out = np.empty(values.shape, dtype=np.uint8)
-    for start in range(0, len(values), _QUANTIZE_CHUNK):
-        end = start + _QUANTIZE_CHUNK
-        # `clip` copies the input rows; the rest of the chain reuses that copy.
-        seg = np.clip(values[start:end], 0.0, 1.0)
-        seg *= 255.0
-        np.rint(seg, out=seg)
-        out[start:end] = seg.astype(np.uint8)
-    return out
+    """Float RGBA rows -> straight-alpha RGBA8 via ``xyg_clip_quantize_u8``."""
+    flat = np.ascontiguousarray(values, dtype=np.float64).reshape(-1)
+    return kernels.clip_quantize_u8(flat).reshape(values.shape)
 
 
 def _folded_codes_u8(codes: np.ndarray, n_palette: int) -> np.ndarray:

@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   F32_SAFE_MAG,
   curveFlatten,
+  clipQuantizeU8,
   f32SafeScale,
   geometryOffset,
   hexbinRing,
@@ -457,6 +458,13 @@ test("sceneArraysEqual matches host table", () => {
   assert.equal(sceneArraysEqual([1], [2]), false);
   assert.equal(sceneArraysEqual([Number.NaN], [Number.NaN]), false);
   assert.equal(sceneArraysEqual([0], [-0]), true);
+});
+
+test("clipQuantizeU8 matches host table", () => {
+  assert.deepEqual([...clipQuantizeU8([])], []);
+  assert.deepEqual([...clipQuantizeU8([0, 0.5, 1, 1.5])], [0, 128, 255, 255]);
+  assert.deepEqual([...clipQuantizeU8([Number.NaN])], [0]);
+  assert.deepEqual([...clipQuantizeU8([1.5 / 255])], [2]);
 });
 
 test("sceneHexbinPitchAdmit matches host table", () => {
