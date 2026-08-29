@@ -1731,6 +1731,11 @@ Node heatmap and density Scene packing is XYTA-only like Python `_pack_xyta`; un
 Node `packXyTaGrid` flattens heatmap `grid` like Python `_pack_xyta` (`plane.values` or plane); nested length indexing is not a grid layout.
 Node `rectFiniteSel` drops nonfinite rectangle rows through `validIndicesF64` like Python `_rect_finite_sel`; NaN never reaches vertex buffers (§19).
 Node `packXyTa` density fill opacity uses `style.fill_opacity` only like Python `_pack_xyta`; `fillOpacity` is not a fill-opacity key.
+Node XYTC fill opacity uses `style.fill_opacity` only like Python `_pack_xytc`; `fillOpacity` is not a fill-opacity key.
+Node XYTC stroke opacity uses `style.stroke_opacity` only like Python `_pack_xytc`; `strokeOpacity` is not a stroke-opacity key.
+Node XYTC line opacity uses `style.line_opacity` only like Python `_pack_xytc`; `lineOpacity` is not a line-opacity key.
+Node XYTC stroke width uses `style.stroke_width` only like Python `_pack_xytc`; `strokeWidth` is not a stroke-width key.
+Node XYTC line width uses `style.line_width` only like Python `_pack_xytc`; `lineWidth` is not a line-width key.
 Node XYTC size uses `style.size` only like Python `_pack_xytc`; `diameter` is not a size key.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
@@ -1999,6 +2004,11 @@ Node heatmap and density Scene packing is XYTA-only like Python `_pack_xyta`; un
 Node `packXyTaGrid` flattens heatmap `grid` like Python `_pack_xyta` (`plane.values` or plane); nested length indexing is not a grid layout.
 Node `rectFiniteSel` drops nonfinite rectangle rows through `validIndicesF64` like Python `_rect_finite_sel`; NaN never reaches vertex buffers (§19).
 Node `packXyTa` density fill opacity uses `style.fill_opacity` only like Python `_pack_xyta`; `fillOpacity` is not a fill-opacity key.
+Node XYTC fill opacity uses `style.fill_opacity` only like Python `_pack_xytc`; `fillOpacity` is not a fill-opacity key.
+Node XYTC stroke opacity uses `style.stroke_opacity` only like Python `_pack_xytc`; `strokeOpacity` is not a stroke-opacity key.
+Node XYTC line opacity uses `style.line_opacity` only like Python `_pack_xytc`; `lineOpacity` is not a line-opacity key.
+Node XYTC stroke width uses `style.stroke_width` only like Python `_pack_xytc`; `strokeWidth` is not a stroke-width key.
+Node XYTC line width uses `style.line_width` only like Python `_pack_xytc`; `lineWidth` is not a line-width key.
 Node XYTC size uses `style.size` only like Python `_pack_xytc`; `diameter` is not a size key.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
