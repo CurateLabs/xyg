@@ -914,6 +914,7 @@ Node `scatterPointStrokeRgba8` uses `stroke_ch` only like Python `_scatter_point
 Node `perItemChannelNames` uses `color_ch` / `stroke_ch` / `size_ch` / `style_channels` only like Python `per_item_channel_names`; camelCase channel fields are not per-item name fallbacks.
 Node `itemApplyOpacity` uses `style_channels` only like Python `_item_apply_opacity`; `styleChannels` is not an opacity-channel fallback.
 Node `itemWidths` uses `style_channels` only like Python `_item_widths`; `styleChannels` is not a width-channel fallback.
+Node `scatterUsesDensity` uses `force_density` only like Python `use_density`; `forceDensity` is not a density-force fallback.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1389,6 +1390,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `perItemChannelNames` uses snake-case channel fields only.
   Node `itemApplyOpacity` uses `style_channels` only.
   Node `itemWidths` uses `style_channels` only.
+  Node `scatterUsesDensity` uses `force_density` only.
 ---
 
 ## 4. Delivery order
