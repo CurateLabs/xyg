@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 228
-#define XYG_ABI_SIGNATURE_SHA256 "c74836681fe8e56da6b336a6acb2808b6da0bf4f0900c82ebdf23abe2b4be804"
+#define XYG_ABI_VERSION 229
+#define XYG_ABI_SIGNATURE_SHA256 "0a273341438ebd2956bb6b16f321e79c181f40c5c53373282ee7b9f1ccf20e92"
 
 #ifdef __cplusplus
 extern "C" {
@@ -204,6 +204,7 @@ int32_t xyg_scene_encode_assembled_from_sidecars(const uint8_t * xyas, size_t xy
 int32_t xyg_scene_encode_product(const uint8_t * xytc, size_t xytc_len, const uint8_t * xyta, size_t xyta_len, const uint8_t * xynm, size_t xynm_len, const uint8_t * xycl, size_t xycl_len, const uint8_t * xyaf, size_t xyaf_len, uint32_t style_ref_base, double x_lo, double x_hi, double y_lo, double y_hi, const uint8_t * xycf, size_t xycf_len, const uint8_t * polar, size_t polar_len, const uint8_t * xyfs, size_t xyfs_len, uint8_t * out, size_t out_cap);
 size_t xyg_scene_figure_support_reason(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_fill_gradient_admit(const uint8_t * space, size_t space_len, const uint8_t * dir, size_t dir_len, const double * t, size_t n_stops, const uint8_t * css, size_t css_len, const uint32_t * css_lens, size_t n_css, const uint8_t * mark_color, size_t mark_len, uint8_t * out_rgba, size_t out_cap);
+int32_t xyg_scene_gradient_dir(const uint8_t * text, size_t text_len);
 int32_t xyg_scene_linecap_admit(const uint8_t * text, size_t text_len);
 int32_t xyg_scene_marker_path_admit(const double * values, size_t n_values, const uint32_t * lengths, size_t n_contours);
 int32_t xyg_scene_pack_annotation_facts(const uint8_t * facts, size_t facts_len, uint32_t style_ref_base, double x0, double x1, double y0, double y1, uint8_t * out, size_t out_cap);

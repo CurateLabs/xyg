@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -1653,8 +1653,6 @@ function validateMarkerPath(value) {
   return sceneMarkerPathAdmit(value);
 }
 
-const GRAD_DIR_CODES = { down: 0, up: 1, right: 2, left: 3 };
-
 function fillIsGradientAuthoring(fill) {
   if (fill != null && typeof fill === "object") return true;
   return typeof fill === "string" && fill.trim().toLowerCase().startsWith("linear-gradient(");
@@ -1899,7 +1897,7 @@ function packXySs(dashes, linecaps, markerPaths, gradients = []) {
     record[6] = (cap === 0 || cap === 2) ? cap : 255;
     record[7] = path ? path.contours.length : 0;
     record[8] = gradient ? gradient.stops.length : 0;
-    record[9] = gradient ? GRAD_DIR_CODES[gradient.dir] : 0;
+    record[9] = gradient ? sceneGradientDir(gradient.dir) : 0;
     record[10] = gradient && gradient.space === "plot" ? 1 : 0;
     record[11] = path && path.filled === false ? 0 : (path ? 1 : 0);
     if (pattern && pattern.length) {
@@ -3469,7 +3467,7 @@ function packMarkerBlob(value) {
 
 function packGradientSpec(fill) {
   const space = fill.space === "plot" ? 1 : fill.space === "mark" ? 0 : 255;
-  const dir = Object.hasOwn(GRAD_DIR_CODES, fill.dir) ? GRAD_DIR_CODES[fill.dir] : 255;
+  const dir = sceneGradientDir(fill.dir);
   if (!Array.isArray(fill.stops)) return null;
   const parts = [new Uint8Array([space, dir, fill.stops.length & 0xff, 0])];
   for (const stop of fill.stops) {
