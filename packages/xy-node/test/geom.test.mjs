@@ -51,6 +51,7 @@ import {
   sceneHexbinReduceAdmit,
   sceneHexbinRgbaPlaneAdmit,
   meshHasPerItem,
+  packXyTaColormap,
   sceneMeshPaintPlaneAdmit,
   sceneItemApplyOpacity,
   sceneItemWidthsAdmit,
@@ -318,6 +319,15 @@ test("fillIsGradientAuthoring host coercion matches Python dict-only", () => {
   assert.equal(fillIsGradientAuthoring("#3987e5"), false);
   assert.equal(fillIsGradientAuthoring(null), false);
   assert.equal(fillIsGradientAuthoring(["linear-gradient(red, blue)"]), false);
+});
+
+test("packXyTaColormap uses style.colormap only like Python", () => {
+  const named = packXyTaColormap({ style: { colormap: "viridis" } });
+  assert.equal(named.flags, 1 << 6);
+  assert.deepEqual([...named.cmap], [...new TextEncoder().encode("viridis")]);
+  assert.equal(packXyTaColormap({ colormap: "viridis" }).flags, 0);
+  assert.equal(packXyTaColormap({ style: {}, colormapStops: [[0, 0, 0]] }).flags, 0);
+  assert.equal(packXyTaColormap({ colormapStops: [[0, 0, 0]] }).flags, 0);
 });
 
 test("sceneGradientSpace matches host table", () => {
