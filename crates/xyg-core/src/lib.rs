@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 249;
+pub const ABI_VERSION: u32 = 250;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5840,6 +5840,44 @@ pub unsafe extern "C" fn xyg_scene_gradient_solid_css(
             std::slice::from_raw_parts_mut(out, out_len)
         };
         kernels::scene_gradient_solid_css(rgba, out)
+    })
+}
+
+/// Scene f64 arrays-equal (ABI 250).
+///
+/// `1` iff lengths match and every pair is IEEE-equal. Empty slices
+/// (`len == 0`, pointer null/`0`) compare equal. `-2` FFI. Field
+/// picking and null checks stay host.
+///
+/// # Safety
+/// `left` must address `left_len` readable f64s when `left_len` is
+/// nonzero. `right` must address `right_len` readable f64s when
+/// `right_len` is nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_arrays_equal(
+    left: *const f64,
+    left_len: usize,
+    right: *const f64,
+    right_len: usize,
+) -> i32 {
+    if left_len > 0 && left.is_null() {
+        return -2;
+    }
+    if right_len > 0 && right.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let left = if left_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(left, left_len)
+        };
+        let right = if right_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(right, right_len)
+        };
+        kernels::scene_arrays_equal(left, right)
     })
 }
 

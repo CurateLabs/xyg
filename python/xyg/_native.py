@@ -1095,6 +1095,26 @@ def scene_annotation_style_admit(
     return code == 1
 
 
+def scene_arrays_equal(left: npt.ArrayLike, right: npt.ArrayLike) -> bool:
+    """Scene f64 arrays-equal via ``xyg_scene_arrays_equal`` (ABI 250).
+
+    Empty native pointers are ``0``. Field picking and null checks stay host.
+    """
+    left_arr = _as_f64(np.asarray(left, dtype=np.float64).reshape(-1), "arrays_equal_left")
+    right_arr = _as_f64(np.asarray(right, dtype=np.float64).reshape(-1), "arrays_equal_right")
+    code = int(
+        _lib.xyg_scene_arrays_equal(
+            _ptr_f64(left_arr) if left_arr.size else 0,
+            int(left_arr.size),
+            _ptr_f64(right_arr) if right_arr.size else 0,
+            int(right_arr.size),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-arrays-equal request")
+    return code == 1
+
+
 _SCENE_RIBBON_COLOR2_NAMES = ("absent", "solid", "gradient", "ends", "fail")
 
 

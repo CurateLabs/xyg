@@ -57,6 +57,7 @@ f32_safe_scale = _impl.f32_safe_scale
 geometry_offset = _impl.geometry_offset
 scale_pins_offset = _impl.scale_pins_offset
 scene_annotation_style_admit = _impl.scene_annotation_style_admit
+scene_arrays_equal = _impl.scene_arrays_equal
 scene_curve_classify = _impl.scene_curve_classify
 scene_dash_admit = _impl.scene_dash_admit
 scene_fill_gradient_admit = _impl.scene_fill_gradient_admit
@@ -316,6 +317,7 @@ __all__ = [
     "sample_range_indices",
     "scale_pins_offset",
     "scene_annotation_style_admit",
+    "scene_arrays_equal",
     "scene_curve_classify",
     "scene_dash_admit",
     "scene_fill_gradient_admit",

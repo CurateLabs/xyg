@@ -16,6 +16,7 @@ import {
   densityOverlayOpacity,
   sceneMarkerPathAdmit,
   sceneAnnotationStyleAdmit,
+  sceneArraysEqual,
   sceneRibbonColor2Classify,
   sceneScatterPaintChannelAdmit,
   sceneTickLabelStrategy,
@@ -447,6 +448,15 @@ test("sceneGradientSolidCss matches host table", () => {
   assert.equal(sceneGradientSolidCss([255, 0, 0, 1]), "rgb(255,0,0)");
   assert.equal(sceneGradientSolidCss([1, 2, 3, 0]), "rgb(0,0,0)");
   assert.equal(sceneGradientSolidCss([1, 2, 3]), null);
+});
+
+test("sceneArraysEqual matches host table", () => {
+  assert.equal(sceneArraysEqual([], []), true);
+  assert.equal(sceneArraysEqual([1, 2], [1, 2]), true);
+  assert.equal(sceneArraysEqual([1], [1, 2]), false);
+  assert.equal(sceneArraysEqual([1], [2]), false);
+  assert.equal(sceneArraysEqual([Number.NaN], [Number.NaN]), false);
+  assert.equal(sceneArraysEqual([0], [-0]), true);
 });
 
 test("sceneHexbinPitchAdmit matches host table", () => {

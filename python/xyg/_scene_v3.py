@@ -3887,8 +3887,8 @@ def _pack_public_export_support(
             and yv is not None
             and _xyep_column(prev, "x1") is not None
             and _xyep_column(prev, "y1") is not None
-            and np.array_equal(xv.values, prev.x1.values)
-            and np.array_equal(yv.values, prev.y1.values)
+            and _native.scene_arrays_equal(xv.values, prev.x1.values)
+            and _native.scene_arrays_equal(yv.values, prev.y1.values)
         ):
             obs |= _XYEF_OBS_COMPANION_XY_MATCH
         if prev is not None and trace.x_axis == prev.x_axis and trace.y_axis == prev.y_axis:
