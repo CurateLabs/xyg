@@ -5656,9 +5656,10 @@ function meshCount(trace) {
   return trace.x0?.length ?? trace.count ?? 0;
 }
 
-function meshJoinedFill(trace) {
-  const style = trace.style ?? {};
-  return Boolean(style.joined_fill || style.joinedFill);
+/** Mesh joined_fill. Python `_mesh_joined_fill` reads `style.get("joined_fill")` only. */
+export function meshJoinedFill(trace) {
+  const style = (trace ?? {}).style ?? {};
+  return Boolean(style.joined_fill);
 }
 
 export function meshHasPerItem(trace) {
