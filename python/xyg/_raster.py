@@ -2471,9 +2471,7 @@ def _mesh_fill_rgba(
         return _column(blob, cols[index])
 
     intrinsic = _trace_paint_rgba(t, "color", n, color, read)
-    return np.rint(
-        _paint.effective_rgba(intrinsic, t, read, component="fill", default_opacity=1.0) * 255.0
-    ).astype(np.uint8)
+    return _rgba8(_paint.effective_rgba(intrinsic, t, read, component="fill", default_opacity=1.0))
 
 
 def _emit_hexbin(
