@@ -13,6 +13,7 @@ import {
   pinsOffsetToZero,
   sceneDashAdmit,
   sceneLinecapAdmit,
+  densityOverlayOpacity,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -140,6 +141,13 @@ test("sceneLinecapAdmit names reject unknown and whitespace", () => {
   assert.equal(sceneLinecapAdmit("  "), false);
   assert.equal(sceneLinecapAdmit("foo"), false);
   assert.equal(sceneLinecapAdmit("Butt"), 0);
+});
+
+test("densityOverlayOpacity caps finite and maps non-finite to 0.55", () => {
+  assert.equal(densityOverlayOpacity(0.8), 0.55);
+  assert.equal(densityOverlayOpacity(0.3), 0.3);
+  assert.equal(densityOverlayOpacity(Number.NaN), 0.55);
+  assert.equal(densityOverlayOpacity(Number.POSITIVE_INFINITY), 0.55);
 });
 
 test("roundedRectPoly zero radii is four corners", () => {

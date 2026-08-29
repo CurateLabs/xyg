@@ -1024,6 +1024,19 @@ def scene_linecap_admit(text: str | None = None) -> int | None | bool:
     return int(code)
 
 
+def density_overlay_opacity(authored: float = 0.8) -> float:
+    """Density overlay sample opacity via ``xyg_density_overlay_opacity`` (ABI 220).
+
+    Finite values are capped at ``0.55``. Non-finite authored opacity becomes
+    ``0.55``.
+    """
+    out = ctypes.c_double()
+    ok = _lib.xyg_density_overlay_opacity(float(authored), ctypes.byref(out))
+    if ok != 1:
+        raise ValueError("invalid density-overlay-opacity request")
+    return float(out.value)
+
+
 def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
     """f32-safe encode scale for offset-encoded geometry (ABI 208, §19)."""
     out = ctypes.c_double()

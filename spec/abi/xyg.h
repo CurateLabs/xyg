@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 219
-#define XYG_ABI_SIGNATURE_SHA256 "c4c6b363edf9047367f09a813a97f9c19ac5d611ec86091c6da248f575f531e4"
+#define XYG_ABI_VERSION 220
+#define XYG_ABI_SIGNATURE_SHA256 "3ad153971afad050afc7683c3f827e012b170558a7cade110f5619585f592b6f"
 
 #ifdef __cplusplus
 extern "C" {
@@ -65,6 +65,7 @@ size_t xyg_density_format_binning(int32_t exact, int32_t level, int32_t tiles, i
 int32_t xyg_density_full_identity(int32_t categorical, int32_t compact_categorical, int32_t x_has_nulls, int32_t y_has_nulls, double x_min, double x_max, double y_min, double y_max, double xr0, double xr1, double yr0, double yr1);
 int32_t xyg_density_grid_path(int32_t oversized, int32_t full_identity, int32_t point_overlay, int32_t compact_categorical, int32_t stratified_counts);
 int32_t xyg_density_log_u8(const float * grid, size_t len, uint8_t * out, double * out_max);
+int32_t xyg_density_overlay_opacity(double authored, double * out);
 size_t xyg_density_pyramid_preflight(int32_t x_linear, int32_t y_linear, uint64_t n_points, int32_t has_pyramid_resource, int32_t x_memmapped, int32_t y_memmapped, int32_t force_pyramid, int32_t force_bin2d, uint32_t * out);
 int32_t xyg_density_rgba(const uint8_t * encoded, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out);
 int32_t xyg_density_rgba_linear(const double * counts, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out);

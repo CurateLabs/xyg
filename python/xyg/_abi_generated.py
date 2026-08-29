@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 219
-SIGNATURE_SHA256 = "c4c6b363edf9047367f09a813a97f9c19ac5d611ec86091c6da248f575f531e4"
+ABI_VERSION = 220
+SIGNATURE_SHA256 = "3ad153971afad050afc7683c3f827e012b170558a7cade110f5619585f592b6f"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -226,6 +226,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_density_log_u8
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_density_overlay_opacity(double authored, double * out)
+    function = lib.xyg_density_overlay_opacity
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_double, ctypes.c_void_p]
     # size_t xyg_density_pyramid_preflight(int32_t x_linear, int32_t y_linear, uint64_t n_points, int32_t has_pyramid_resource, int32_t x_memmapped, int32_t y_memmapped, int32_t force_pyramid, int32_t force_bin2d, uint32_t * out)
     function = lib.xyg_density_pyramid_preflight
     function.restype = ctypes.c_size_t

@@ -1,9 +1,9 @@
 {
-  "abi_version": 219,
+  "abi_version": 220,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "c4c6b363edf9047367f09a813a97f9c19ac5d611ec86091c6da248f575f531e4",
+  "signature_sha256": "3ad153971afad050afc7683c3f827e012b170558a7cade110f5619585f592b6f",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -7587,6 +7587,57 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_density_log_u8(const float * grid, size_t len, uint8_t * out, double * out_max)"
+    },
+    {
+      "name": "xyg_density_overlay_opacity",
+      "node_name": "xyDensityOverlayOpacity",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "authored",
+          "type": {
+            "rust": "f64",
+            "c": "double",
+            "ctypes": "ctypes.c_double",
+            "koffi": "double",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out",
+          "type": {
+            "rust": "*mut f64",
+            "c": "double *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "double *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_density_overlay_opacity(double authored, double * out)"
     },
     {
       "name": "xyg_density_pyramid_preflight",

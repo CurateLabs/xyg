@@ -661,6 +661,9 @@ ABI 219 `xyg_scene_linecap_admit` owns Scene linecap names so Python
 `_parse_scene_linecap` and Node `parseSceneLinecap` cannot drift. Unknown
 names and whitespace-only strings reject. Hosts still fail-close empty
 strings without calling the kernel.
+ABI 220 `xyg_density_overlay_opacity` owns density overlay sample opacity
+(`min(authored, 0.55)`; non-finite → `0.55`) so Python `_payload` and Node
+`figure.js` cannot drift. Hosts still default omitted opacity to `0.8`.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1013,7 +1016,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   are ABI 213; stem/errorbar count budget is ABI 214; errorbar role-block
   expand is ABI 215; log-family pin_zero admission is ABI 216;
   annotation-arrow geometry is ABI 217; Scene dash admit is ABI 218;
-  Scene linecap admit is ABI 219.
+  Scene linecap admit is ABI 219; density overlay opacity is ABI 220.
 
 ---
 

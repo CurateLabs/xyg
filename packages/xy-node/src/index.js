@@ -34,6 +34,7 @@ export {
   arrowTrimPolylineEnd,
   sceneDashAdmit,
   sceneLinecapAdmit,
+  densityOverlayOpacity,
   roundedRectPoly,
   violinDensity,
   boxStats,
