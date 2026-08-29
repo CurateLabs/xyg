@@ -1585,7 +1585,8 @@ lowercasing) so Python `_figure_trace_support_flags` and Node
 ABI 236 `xyg_scene_kind_class` owns Scene packing-family bits (rect/segment/
 band/ribbon/polyfill/hexbin/heatmap/stroke/scatter/line; unknown/empty → 0;
 no lowercasing) so Python `_scene_v3` pack and Node `scene.js` pack cannot
-drift. Hosts still pick channels and pack rows.
+drift. Hosts still pick channels and pack rows. Smooth-kind eligibility
+uses the existing LINE|BAND bits (no new ABI).
 ABI 237 `xyg_scene_hexbin_pitch_admit` owns Scene hexbin cell-pitch admit
 (finite strictly-positive `dx`/`dy`) so Python `_hexbin_pitch` and Node
 XYEP pack cannot drift. Field picking (`hex_dx` vs `dx`) stays host.
@@ -1602,7 +1603,7 @@ stay host.
 ABI 240 `xyg_scene_heatmap_shape_admit` owns Scene heatmap lattice-shape
 admit (finite integer-valued `rows`/`cols` `>= 1`) so Python `_heatmap_shape`
 and Node XYEP pack cannot drift. Length==2 stays host. XYTA integer coerce
-stays extra. Closes Python `int()` truncation vs Node `Number.isInteger`.
+uses the same kernel (no new ABI). Closes Python `int()` truncation vs Node `Number.isInteger`.
 ABI 241 `xyg_scene_scatter_paint_channel_admit` owns Scene scatter paint-plane
 channel names (exact `color`/`stroke`/`stroke_width`/`opacity`/`artist_alpha`;
 unknown/empty → 0; no lowercasing) so Python `_scatter_packs_paint_plane` and
@@ -1743,7 +1744,8 @@ lowercasing) so Python `_figure_trace_support_flags` and Node
 ABI 236 `xyg_scene_kind_class` owns Scene packing-family bits (rect/segment/
 band/ribbon/polyfill/hexbin/heatmap/stroke/scatter/line; unknown/empty → 0;
 no lowercasing) so Python `_scene_v3` pack and Node `scene.js` pack cannot
-drift. Hosts still pick channels and pack rows.
+drift. Hosts still pick channels and pack rows. Smooth-kind eligibility
+uses the existing LINE|BAND bits (no new ABI).
 ABI 237 `xyg_scene_hexbin_pitch_admit` owns Scene hexbin cell-pitch admit
 (finite strictly-positive `dx`/`dy`) so Python `_hexbin_pitch` and Node
 XYEP pack cannot drift. Field picking (`hex_dx` vs `dx`) stays host.
@@ -1760,7 +1762,7 @@ stay host.
 ABI 240 `xyg_scene_heatmap_shape_admit` owns Scene heatmap lattice-shape
 admit (finite integer-valued `rows`/`cols` `>= 1`) so Python `_heatmap_shape`
 and Node XYEP pack cannot drift. Length==2 stays host. XYTA integer coerce
-stays extra. Closes Python `int()` truncation vs Node `Number.isInteger`.
+uses the same kernel (no new ABI). Closes Python `int()` truncation vs Node `Number.isInteger`.
 ABI 241 `xyg_scene_scatter_paint_channel_admit` owns Scene scatter paint-plane
 channel names (exact `color`/`stroke`/`stroke_width`/`opacity`/`artist_alpha`;
 unknown/empty → 0; no lowercasing) so Python `_scatter_packs_paint_plane` and

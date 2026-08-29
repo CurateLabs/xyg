@@ -5496,7 +5496,7 @@ pub extern "C" fn xyg_scene_heatmap_colormap_admit(
 ///
 /// Finite integer-valued `rows`/`cols` `>= 1` return `1`. Fractional,
 /// non-finite, and non-positive return `0`. `-2` FFI. Length==2 stays host.
-/// XYTA integer coerce stays extra.
+/// XYTA integer coerce uses the same kernel.
 #[no_mangle]
 pub extern "C" fn xyg_scene_heatmap_shape_admit(rows: f64, cols: f64) -> i32 {
     ffi_guard(-2, || kernels::scene_heatmap_shape_admit(rows, cols))
