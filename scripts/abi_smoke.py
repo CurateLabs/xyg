@@ -200,6 +200,8 @@ def load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.POINTER(ctypes.c_size_t),
     ]
+    lib.xyg_scene_linecap_admit.restype = ctypes.c_int32
+    lib.xyg_scene_linecap_admit.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2106,6 +2108,27 @@ def main() -> None:
         )
         == 0,
         "scene_dash_admit omitted",
+    )
+    butt_name = array("B", b"butt")
+    ok(
+        lib.xyg_scene_linecap_admit(_ptr(butt_name, ctypes.c_uint8), len(butt_name)) == 0,
+        "scene_linecap_admit butt",
+    )
+    square_name = array("B", b"SQUARE")
+    ok(
+        lib.xyg_scene_linecap_admit(_ptr(square_name, ctypes.c_uint8), len(square_name)) == 2,
+        "scene_linecap_admit square",
+    )
+    round_name = array("B", b" round ")
+    ok(
+        lib.xyg_scene_linecap_admit(_ptr(round_name, ctypes.c_uint8), len(round_name)) == 255,
+        "scene_linecap_admit round",
+    )
+    ok(lib.xyg_scene_linecap_admit(null_u8, 0) == 255, "scene_linecap_admit omitted")
+    bad_cap = array("B", b"foo")
+    ok(
+        lib.xyg_scene_linecap_admit(_ptr(bad_cap, ctypes.c_uint8), len(bad_cap)) == -1,
+        "scene_linecap_admit rejects unknown",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8

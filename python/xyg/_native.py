@@ -1007,6 +1007,23 @@ def scene_dash_admit(
     return [float(value) for value in out[:count]]
 
 
+def scene_linecap_admit(text: str | None = None) -> int | None | bool:
+    """Scene linecap admit via ``xyg_scene_linecap_admit`` (ABI 219).
+
+    Returns ``None`` for round/omitted, ``False`` when unusable, ``0`` for
+    butt, or ``2`` for square. Empty native pointers are ``0``.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_linecap_admit(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-linecap-admit request")
+    if code < 0:
+        return False
+    if code == 255:
+        return None
+    return int(code)
+
+
 def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
     """f32-safe encode scale for offset-encoded geometry (ABI 208, §19)."""
     out = ctypes.c_double()

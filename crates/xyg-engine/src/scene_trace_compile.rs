@@ -370,14 +370,10 @@ fn parse_dash(text: &str, pattern: &[f64], flags: u32) -> Option<Vec<f64>> {
 }
 
 fn parse_linecap(text: &str) -> Option<u8> {
-    if text.is_empty() {
-        return None;
-    }
-    match text.trim().to_ascii_lowercase().as_str() {
-        "butt" => Some(0),
-        "square" => Some(2),
-        "round" => None,
-        _ => None,
+    match crate::kernels::scene_linecap_admit(text) {
+        Some(crate::kernels::SceneLinecap::Butt) => Some(0),
+        Some(crate::kernels::SceneLinecap::Square) => Some(2),
+        Some(crate::kernels::SceneLinecap::Round) | None => None,
     }
 }
 

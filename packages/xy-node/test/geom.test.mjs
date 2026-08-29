@@ -12,6 +12,7 @@ import {
   arrowShaftPoints,
   pinsOffsetToZero,
   sceneDashAdmit,
+  sceneLinecapAdmit,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -128,6 +129,17 @@ test("sceneDashAdmit presets reject bad tokens and empty lists", () => {
   assert.equal(sceneDashAdmit("6,foo,4"), false);
   assert.deepEqual(sceneDashAdmit([6, 4]), [6, 4]);
   assert.equal(sceneDashAdmit([]), false);
+});
+
+test("sceneLinecapAdmit names reject unknown and whitespace", () => {
+  assert.equal(sceneLinecapAdmit("butt"), 0);
+  assert.equal(sceneLinecapAdmit("square"), 2);
+  assert.equal(sceneLinecapAdmit("round"), null);
+  assert.equal(sceneLinecapAdmit(null), null);
+  assert.equal(sceneLinecapAdmit(""), false);
+  assert.equal(sceneLinecapAdmit("  "), false);
+  assert.equal(sceneLinecapAdmit("foo"), false);
+  assert.equal(sceneLinecapAdmit("Butt"), 0);
 });
 
 test("roundedRectPoly zero radii is four corners", () => {

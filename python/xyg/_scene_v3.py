@@ -1847,7 +1847,7 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
         elif curve_name != "linear":
             flags |= _XYFS_TRACE_DASHED_MARKERS
     linecap = style.get("linecap")
-    if linecap is not None and str(linecap).strip().lower() not in {"butt", "round", "square"}:
+    if linecap is not None and _parse_scene_linecap(linecap) is False:
         flags |= _XYFS_TRACE_DASHED_MARKERS
     dash = style.get("dash")
     if dash is not None and _parse_scene_dash(dash) is False:
@@ -2434,14 +2434,10 @@ def _parse_scene_linecap(value: Any) -> int | None | bool:
     """Return 0=butt or 2=square, None for round/omitted, False if unusable."""
     if value is None:
         return None
-    name = str(value).strip().lower()
-    if name == "butt":
-        return 0
-    if name == "square":
-        return 2
-    if name == "round":
-        return None
-    return False
+    name = str(value)
+    if not name.strip():
+        return False
+    return _native.scene_linecap_admit(name)
 
 
 _XYSS_HAS_DASH = 1 << 0

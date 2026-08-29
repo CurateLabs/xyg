@@ -1,9 +1,9 @@
 {
-  "abi_version": 218,
+  "abi_version": 219,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "e7ca092fc748658196c1d13e82c8dd9ba7dd95ed7f5e5031e1f7278ab53bd9eb",
+  "signature_sha256": "c4c6b363edf9047367f09a813a97f9c19ac5d611ec86091c6da248f575f531e4",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -28117,6 +28117,57 @@
         "nullable": false
       },
       "c_signature": "size_t xyg_scene_figure_support_reason(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap)"
+    },
+    {
+      "name": "xyg_scene_linecap_admit",
+      "node_name": "xySceneLinecapAdmit",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "text",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "text_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_scene_linecap_admit(const uint8_t * text, size_t text_len)"
     },
     {
       "name": "xyg_scene_pack_annotation_facts",

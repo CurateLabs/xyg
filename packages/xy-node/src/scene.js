@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -1665,12 +1665,7 @@ function parseSceneDash(value) {
 }
 
 function parseSceneLinecap(value) {
-  if (value == null) return null;
-  const name = String(value).trim().toLowerCase();
-  if (name === "butt") return 0;
-  if (name === "square") return 2;
-  if (name === "round") return null;
-  return false;
+  return sceneLinecapAdmit(value);
 }
 
 function validateMarkerPath(value) {
@@ -5670,7 +5665,7 @@ function figureTraceSupport(figure, trace) {
     }
   }
   const linecap = style.linecap ?? style.lineCap;
-  if (linecap != null && !["butt", "round", "square"].includes(String(linecap).trim().toLowerCase())) {
+  if (linecap != null && parseSceneLinecap(linecap) === false) {
     flags |= XYFS_TRACE_DASHED_MARKERS;
   }
   if (style.dash != null && parseSceneDash(style.dash) === false) flags |= XYFS_TRACE_DASHED_MARKERS;
