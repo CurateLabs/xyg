@@ -402,6 +402,17 @@ test("channelEndRgba8 ignores array channels like Python", () => {
   assert.equal(channelEndRgba8(new Uint8Array([255, 0, 0, 255]), 1, "#000000"), null);
 });
 
+test("channelEndRgba8 categorical uses DEFAULT_PALETTE like Python", () => {
+  const packed = channelEndRgba8({ mode: "categorical", codes: [0], palette: [] }, 1, "#000000");
+  const expected = channelEndRgba8({ mode: "constant", constant: "#3987e5" }, 1, "#000000");
+  assert.deepEqual([...packed], [...expected]);
+  assert.equal(channelEndRgba8({ mode: "categorical", palette: ["#ff0000"] }, 1, "#000000"), null);
+  assert.equal(
+    channelEndRgba8({ mode: "categorical", codes: [0, 1], palette: ["#ff0000"] }, 1, "#000000"),
+    null,
+  );
+});
+
 test("sourceColorCss uses color_ch only like Python", () => {
   assert.equal(
     sourceColorCss({ color_ch: { mode: "constant", constant: "red" } }),
