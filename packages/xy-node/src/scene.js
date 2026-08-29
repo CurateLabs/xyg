@@ -5555,9 +5555,9 @@ function hexbinCount(trace) {
   return trace.x?.length ?? 0;
 }
 
-function hexbinCellRgba8(trace) {
+export function hexbinCellRgba8(trace) {
   return channelEndRgba8(
-    trace.color_ch ?? trace.colorChannel,
+    trace.color_ch,
     hexbinCount(trace),
     sourceColorCss(trace),
   );
