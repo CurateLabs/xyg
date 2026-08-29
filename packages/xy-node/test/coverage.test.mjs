@@ -23,7 +23,9 @@ import {
   payloadSampleTargetIndices,
   payloadSegmentBudget,
   payloadVisibleIndices,
+  rectFiniteSel,
   shouldUseDensity,
+  validIndicesF64,
   stairsChart,
   stemChart,
   stepChart,
@@ -87,6 +89,85 @@ test("payloadVisibleIndices keep-all vs log drop", () => {
   const logX = payloadVisibleIndices(x, y, { xLog: true, prefiltered: true });
   assert.equal(logX.keepAll, false);
   assert.deepEqual([...logX.indices], [0, 2, 4]);
+});
+
+test("validIndicesF64 keep-all vs filtered rows like Python", () => {
+  assert.equal(validIndicesF64([new Float64Array([1, 2]), new Float64Array([3, 4])]), null);
+  assert.equal(validIndicesF64([new Float64Array(0), new Float64Array(0)]), null);
+  const filtered = validIndicesF64([
+    new Float64Array([1, Number.NaN, 3, 4]),
+    new Float64Array([1, 2, 3, Number.NaN]),
+  ]);
+  assert.deepEqual([...filtered], [0, 2]);
+  assert.throws(() => validIndicesF64([]), /1 and 64/);
+  assert.throws(
+    () => validIndicesF64([new Float64Array([1, 2]), new Float64Array([3])]),
+    /equal length/,
+  );
+});
+
+test("rectFiniteSel drops nonfinite rows like Python _rect_finite_sel", () => {
+  const geom = {
+    kind: "bar",
+    x0: [0, 1, 2],
+    x1: [1, 2, 3],
+    y0: [0, 0, 0],
+    y1: [1, 2, 3],
+  };
+  assert.equal(rectFiniteSel(geom, geom.x0, geom.x1, geom.y0, geom.y1), null);
+  const withNan = { ...geom, y1: [1, Number.NaN, 3] };
+  assert.deepEqual(
+    [...rectFiniteSel(withNan, withNan.x0, withNan.x1, withNan.y0, withNan.y1)],
+    [0, 2],
+  );
+  const colorNan = {
+    ...geom,
+    color_ch: { mode: "continuous", values: [0.1, Number.NaN, 0.9] },
+  };
+  assert.deepEqual(
+    [...rectFiniteSel(colorNan, colorNan.x0, colorNan.x1, colorNan.y0, colorNan.y1)],
+    [0, 2],
+  );
+  const camel = {
+    ...withNan,
+    colorChannel: { mode: "continuous", values: [Number.NaN, Number.NaN, Number.NaN] },
+  };
+  assert.deepEqual(
+    [...rectFiniteSel(camel, camel.x0, camel.x1, camel.y0, camel.y1)],
+    [0, 2],
+  );
+  assert.throws(
+    () => rectFiniteSel({ kind: "bar" }, [0], [1], [0], [1]),
+    /missing rectangle columns/,
+  );
+  assert.throws(
+    () => rectFiniteSel(
+      { ...geom, color_ch: { mode: "continuous" } },
+      geom.x0, geom.x1, geom.y0, geom.y1,
+    ),
+    /missing values/,
+  );
+  assert.throws(
+    () => rectFiniteSel(
+      { ...geom, color_ch: { mode: "categorical" } },
+      geom.x0, geom.x1, geom.y0, geom.y1,
+    ),
+    /missing codes/,
+  );
+});
+
+test("segments and bars drop nonfinite rows at emit", () => {
+  const segments = figure({ width: 320, height: 240 });
+  segments.segments([0, 1, 2], [0, 1, 2], [1, 2, 3], [1, Number.NaN, 3]);
+  const seg = segments.buildPayload().spec.traces[0];
+  assert.equal(seg.n_points, 3);
+  assert.equal(seg.n_marks, 2);
+
+  const bars = figure({ width: 320, height: 240 });
+  bars.bar([0, 1, 2], [1, Number.NaN, 3]);
+  const bar = bars.buildPayload().spec.traces[0];
+  assert.equal(bar.kind, "bar");
+  assert.equal(bar.n_marks, 2);
 });
 
 test("payloadEvenIndices matches numpy int64 linspace", () => {

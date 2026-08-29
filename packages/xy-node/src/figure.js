@@ -36,6 +36,7 @@ import {
   payloadSegmentBudget,
   payloadSampleTargetIndices,
   payloadVisibleIndices,
+  rectFiniteSel,
   minMax,
   normalizeF32,
   payloadTier,
@@ -1291,6 +1292,9 @@ export class Figure {
   }
 
   _emitSegments(t, pw, pxWidth) {
+    if (t.x0 == null || t.x1 == null || t.y0 == null || t.y1 == null) {
+      throw new Error(`${t.kind} trace missing segment columns`);
+    }
     let x0v = t.x0;
     let x1v = t.x1;
     let y0v = t.y0;
@@ -1315,6 +1319,13 @@ export class Figure {
         y1v = gatherF64(y1v, indices);
         tier = "decimated";
       }
+    }
+    const finiteSel = rectFiniteSel(t, x0v, x1v, y0v, y1v);
+    if (finiteSel != null) {
+      x0v = gatherF64(x0v, finiteSel);
+      x1v = gatherF64(x1v, finiteSel);
+      y0v = gatherF64(y0v, finiteSel);
+      y1v = gatherF64(y1v, finiteSel);
     }
     const x0 = new Column(x0v);
     const x1 = new Column(x1v);
@@ -1368,10 +1379,24 @@ export class Figure {
   }
 
   _emitRect(t, pw, kind) {
-    const x0 = new Column(t.x0);
-    const x1 = new Column(t.x1);
-    const y0 = new Column(t.y0);
-    const y1 = new Column(t.y1);
+    if (t.x0 == null || t.x1 == null || t.y0 == null || t.y1 == null) {
+      throw new Error(`${t.kind} trace missing rectangle columns`);
+    }
+    let x0v = t.x0;
+    let x1v = t.x1;
+    let y0v = t.y0;
+    let y1v = t.y1;
+    const finiteSel = rectFiniteSel(t, x0v, x1v, y0v, y1v);
+    if (finiteSel != null) {
+      x0v = gatherF64(x0v, finiteSel);
+      x1v = gatherF64(x1v, finiteSel);
+      y0v = gatherF64(y0v, finiteSel);
+      y1v = gatherF64(y1v, finiteSel);
+    }
+    const x0 = new Column(x0v);
+    const x1 = new Column(x1v);
+    const y0 = new Column(y0v);
+    const y1 = new Column(y1v);
     return {
       id: t.id,
       kind,
@@ -1379,11 +1404,11 @@ export class Figure {
       style: { ...t.style },
       tier: "direct",
       n_points: t.count ?? t.x0.length,
-      n_marks: t.x0.length,
-      x0: pw.ship(t.x0, x0),
-      x1: pw.ship(t.x1, x1),
-      y0: pw.ship(t.y0, y0),
-      y1: pw.ship(t.y1, y1),
+      n_marks: x0v.length,
+      x0: pw.ship(x0v, x0),
+      x1: pw.ship(x1v, x1),
+      y0: pw.ship(y0v, y0),
+      y1: pw.ship(y1v, y1),
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
     };
