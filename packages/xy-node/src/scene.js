@@ -1705,16 +1705,11 @@ function constantMarkColor(trace) {
   return null;
 }
 
-function channelConstantCss(channel) {
+export function channelConstantCss(channel) {
   if (channel == null) return null;
-  if (typeof channel === "string") return String(channel);
-  if (typeof channel === "object" && !Array.isArray(channel) && !ArrayBuffer.isView(channel)) {
-    if (channel.mode === "constant") {
-      const css = channel.constant ?? channel.color;
-      if (css != null) return String(css);
-    }
-  }
-  return null;
+  if (channel.mode !== "constant") return null;
+  if (channel.constant == null) return null;
+  return String(channel.constant);
 }
 
 function color2Channel(trace) {

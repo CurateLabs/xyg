@@ -54,6 +54,7 @@ import {
   packXyTaColormap,
   hexbinXyTaColormap,
   xyHfColormap,
+  channelConstantCss,
   sceneMeshPaintPlaneAdmit,
   sceneItemApplyOpacity,
   sceneItemWidthsAdmit,
@@ -355,6 +356,14 @@ test("xyHfColormap uses style.colormap only like Python", () => {
   assert.equal(xyHfColormap({ colormap: "viridis", colormapStops: [[0, 0, 0]] }).flags, 1 << 5);
   assert.equal(xyHfColormap({}), null);
   assert.equal(xyHfColormap({ colormapStops: [[0, 0, 0]] }), null);
+});
+
+test("channelConstantCss uses channel.constant only like Python", () => {
+  assert.equal(channelConstantCss({ mode: "constant", constant: "red" }), "red");
+  assert.equal(channelConstantCss("red"), null);
+  assert.equal(channelConstantCss({ mode: "constant", color: "red" }), null);
+  assert.equal(channelConstantCss({ mode: "direct_rgba", constant: "red" }), null);
+  assert.equal(channelConstantCss(null), null);
 });
 
 test("sceneGradientSpace matches host table", () => {
