@@ -2536,15 +2536,14 @@ def _emit_ribbon(
         return _column(blob, cols[index])
 
     source_rgba = _trace_paint_rgba(t, "color", n, color, read)
-    fills = np.rint(
-        _paint.effective_rgba(source_rgba, t, read, component="fill", default_opacity=1.0) * 255.0
-    ).astype(np.uint8)
+    fills = _rgba8(
+        _paint.effective_rgba(source_rgba, t, read, component="fill", default_opacity=1.0)
+    )
     if t.get("color_target"):
         target_rgba = _trace_paint_rgba(t, "color_target", n, color, read)
-        fills2 = np.rint(
+        fills2 = _rgba8(
             _paint.effective_rgba(target_rgba, t, read, component="fill", default_opacity=1.0)
-            * 255.0
-        ).astype(np.uint8)
+        )
     else:
         fills2 = fills
     stroke_width = float(style.get("stroke_width", 0.0) or 0.0)
