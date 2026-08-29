@@ -45,7 +45,7 @@ export function composeRibbon(x0, x1, sourceLo, sourceHi, targetLo, targetHi, op
   const color = resolveColorChannel(opts.color, n);
   const colorTargetRaw = opts.colorTarget ?? opts.color_target;
   const colorTarget =
-    colorTargetRaw == null ? null : resolveColorChannel(colorTargetRaw, n, color.color);
+    colorTargetRaw == null ? null : resolveColorChannel(colorTargetRaw, n, color.constant);
   const style = {
     opacity,
     role: "ribbon",
@@ -66,7 +66,9 @@ export function composeRibbon(x0, x1, sourceLo, sourceHi, targetLo, targetHi, op
         y0: cols[2],
         y1: cols[3],
         color,
+        color_ch: color,
         color_target: colorTarget,
+        color2_ch: colorTarget,
         style,
         count: n,
         x_axis: opts.xAxis ?? "x",

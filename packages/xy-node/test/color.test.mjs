@@ -29,6 +29,8 @@ test("directRgbaAdmit expands rgb and rejects out of range", () => {
 test("resolveColorChannel splits css numeric categorical and direct rgba", () => {
   const constant = resolveColorChannel("#3987e5", 3);
   assert.equal(constant.mode, "constant");
+  assert.equal(constant.constant, "#3987e5");
+  assert.equal(constant.color, undefined);
   const continuous = resolveColorChannel([0, 0], 2);
   assert.equal(continuous.mode, "continuous");
   assert.deepEqual([...continuous.domain], [-0.5, 0.5]);
