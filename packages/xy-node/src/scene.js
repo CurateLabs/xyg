@@ -1758,18 +1758,7 @@ export function channelEndRgba8(channel, n, fallback) {
     }
   };
   if (channel == null) return replicate(fallback);
-  if (Array.isArray(channel) || ArrayBuffer.isView(channel)) {
-    if (channel.length === n * 4 && (channel instanceof Uint8Array || ArrayBuffer.isView(channel))) {
-      return channel instanceof Uint8Array ? channel : Uint8Array.from(channel);
-    }
-    if (channel.length !== n) return null;
-    try {
-      return cssColorsToRgba8([...channel].map(String));
-    } catch {
-      return null;
-    }
-  }
-  if (typeof channel === "object") {
+  if (typeof channel === "object" && !Array.isArray(channel) && !ArrayBuffer.isView(channel)) {
     if (channel.mode === "constant") {
       if (channel.constant == null) return null;
       return replicate(channel.constant);
