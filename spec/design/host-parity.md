@@ -886,6 +886,7 @@ Node `packXyTa` density fill opacity uses `style.fill_opacity` only like Python 
 Node XYTC fill opacity uses `style.fill_opacity` only like Python `_pack_xytc`; `fillOpacity` is not a fill-opacity key.
 Node XYTC stroke opacity uses `style.stroke_opacity` only like Python `_pack_xytc`; `strokeOpacity` is not a stroke-opacity key.
 Node XYTC line opacity uses `style.line_opacity` only like Python `_pack_xytc`; `lineOpacity` is not a line-opacity key.
+Node XYTC size_ch packing uses `size_ch` only like Python `_pack_xytc`; `sizeChannel` is not a packed-channel fallback.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1337,6 +1338,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node XYTC fill opacity uses `fill_opacity` only.
   Node XYTC stroke opacity uses `stroke_opacity` only.
   Node XYTC line opacity uses `line_opacity` only.
+  Node XYTC size_ch packing uses `size_ch` only.
 
 ---
 

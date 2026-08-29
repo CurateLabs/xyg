@@ -3301,6 +3301,14 @@ export function packXyTcLineOpacity(style, kindClass) {
   return Number((style ?? {}).line_opacity ?? 1);
 }
 
+/** XYTC size_ch. Python `_pack_xytc` reads `getattr(trace, "size_ch", None)` only. */
+export function packXyTcSizeChannel(trace) {
+  const sizeChannel = (trace ?? {}).size_ch;
+  if (sizeChannel == null) return { flags: 0, value: Number.NaN };
+  const value = sizeChannel.constant != null ? Number(sizeChannel.constant) : Number.NaN;
+  return { flags: XYTC_HAS_SIZE_CH, value };
+}
+
 /** XYTC stroke opacity. Python `_pack_xytc` uses `style.get("stroke_opacity", 1.0)` only. */
 export function packXyTcStrokeOpacity(style, kindClass) {
   if (!(kindClass & SCENE_KIND_CLASS_OPACITY)) return 1;
@@ -3345,10 +3353,10 @@ function packXyTc(figure) {
       size = Number(style.size ?? style.diameter);
     }
     let sizeCh = Number.NaN;
-    const sizeChannel = trace.size_ch ?? trace.sizeChannel;
-    if (sizeChannel != null) {
-      flags |= XYTC_HAS_SIZE_CH;
-      if (sizeChannel.constant != null) sizeCh = Number(sizeChannel.constant);
+    const packedSizeCh = packXyTcSizeChannel(trace);
+    if (packedSizeCh.flags) {
+      flags |= packedSizeCh.flags;
+      sizeCh = packedSizeCh.value;
     }
     let strokeWidth = 0;
     let width = 0;
