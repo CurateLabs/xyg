@@ -3110,9 +3110,7 @@ function packMarkStyleRecord(trace, opacity, fillOpacity, strokeOpacity, lineOpa
     flags |= MS_HAS_LINE_COLOR;
     lineColor = encodeUtf8(style.line_color ?? style.lineColor);
   }
-  const color = style.color
-    ?? (typeof trace.color === "string" ? trace.color : trace.color?.color)
-    ?? "#3987e5";
+  const color = style.color ?? "#3987e5";
   const colorBytes = encodeUtf8(color);
   let strokeWidth = 0;
   let width = 0;
