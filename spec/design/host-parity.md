@@ -873,6 +873,7 @@ Node XYTC `COLOR_CH_CONSTANT` packs whenever `channel.constant` is set (same as 
 Node XYMS mark color uses `constantMarkColor` / ABI 252 (same as Python `_constant_color`); `style.color` is the code-1 fallback only.
 Node `scatterPerItemChannels` ignores `style.color_channel` / `size_channel` / `stroke_channel` (same as Python `has_per_item_channels`); only `*_ch` presence counts.
 Node `scatterPerItemChannels` is mode-based like Python `has_per_item_channels`; a constant `color_ch` is not per-item.
+Node `channelEndRgba8` ignores array and typed-array channels (same as Python object-only); only `null` and mode objects pack.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1311,6 +1312,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node XYMS mark color uses `constantMarkColor`.
   Node `scatterPerItemChannels` ignores `style.color_channel`.
   Node `scatterPerItemChannels` is mode-based.
+  Node `channelEndRgba8` ignores array channels.
 
 ---
 

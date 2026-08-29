@@ -397,6 +397,11 @@ test("channelEndRgba8 constant uses .constant only like Python", () => {
   assert.equal(channelEndRgba8({ mode: "constant", color: "red" }, 1, "#000000"), null);
 });
 
+test("channelEndRgba8 ignores array channels like Python", () => {
+  assert.equal(channelEndRgba8(["#ff0000"], 1, "#000000"), null);
+  assert.equal(channelEndRgba8(new Uint8Array([255, 0, 0, 255]), 1, "#000000"), null);
+});
+
 test("sourceColorCss uses color_ch only like Python", () => {
   assert.equal(
     sourceColorCss({ color_ch: { mode: "constant", constant: "red" } }),
