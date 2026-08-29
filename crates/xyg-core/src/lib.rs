@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 246;
+pub const ABI_VERSION: u32 = 247;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5729,6 +5729,54 @@ pub unsafe extern "C" fn xyg_scene_item_widths_admit(
             Some(std::slice::from_raw_parts(values, values_len))
         };
         kernels::scene_item_widths_admit(values, n, scalar)
+    })
+}
+
+/// Scene continuous per-item fill unit-t (ABI 247).
+///
+/// `values_len` and `out_len` must equal `n`. A present domain uses
+/// `(lo, hi)` as-is. An absent domain takes finite min/max. `-2` FFI.
+/// Empty native pointers are null/`0`. Field picking and colormap
+/// lookup stay host.
+///
+/// # Safety
+/// `values` must address `values_len` readable f64s when `values_len` is
+/// nonzero. `out` must address `out_len` writable f64s when `out_len` is
+/// nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_item_fill_t(
+    values: *const f64,
+    values_len: usize,
+    n: usize,
+    domain_lo: f64,
+    domain_hi: f64,
+    has_domain: i32,
+    out: *mut f64,
+    out_len: usize,
+) -> i32 {
+    if values_len > 0 && values.is_null() {
+        return -2;
+    }
+    if out_len > 0 && out.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let values = if values_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(values, values_len)
+        };
+        let out = if out_len == 0 {
+            &mut [][..]
+        } else {
+            std::slice::from_raw_parts_mut(out, out_len)
+        };
+        let domain = if has_domain == 0 {
+            None
+        } else {
+            Some((domain_lo, domain_hi))
+        };
+        i32::from(kernels::scene_item_fill_t(values, n, domain, out))
     })
 }
 

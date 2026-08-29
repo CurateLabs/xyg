@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -5644,24 +5644,13 @@ function itemFillRgba8(trace, n) {
   let packed = channelEndRgba8(channel, n, fallback);
   if (packed == null && channel != null && typeof channel === "object" && channel.mode === "continuous" && channel.values != null) {
     const values = [...channel.values].map(Number);
-    if (values.length !== n) return null;
     const domain = channel.domain;
-    let lo;
-    let hi;
-    if (Array.isArray(domain) && domain.length === 2) {
-      lo = Number(domain[0]);
-      hi = Number(domain[1]);
-    } else {
-      const finite = values.filter(Number.isFinite);
-      if (!finite.length) return null;
-      lo = Math.min(...finite);
-      hi = Math.max(...finite);
-    }
-    const span = hi - lo;
-    const t = values.map((value) => {
-      if (!Number.isFinite(span) || span === 0) return 0;
-      return Math.min(1, Math.max(0, (value - lo) / span));
-    });
+    const t = sceneItemFillT(
+      values,
+      n,
+      Array.isArray(domain) && domain.length === 2 ? [Number(domain[0]), Number(domain[1])] : null,
+    );
+    if (t == null) return null;
     try {
       const stops = colormapNamedStops(channel.colormap ?? "viridis");
       packed = colormapRgba(t, n, 1, stops, 255).rgba;
