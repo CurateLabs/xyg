@@ -805,6 +805,8 @@ stays host.
 Python `colormap_lut_rgba8` and Node `colormapLutRgba8` sample 256
 unit-t texels through ABI 206 `xyg_colormap_lut` then host-pack alpha
 255 so the density LUT cannot drift on half-up vs ties-to-even.
+Python `quantize_unit_u8` / `_quantized_lut_idx` normalize through
+`xyg_normalize_f32` then ABI 251 `xyg_clip_quantize_u8`.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1189,6 +1191,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Scene f64 arrays-equal is ABI 250.
   Unit-f64 clip-quantize u8 is ABI 251.
   256-texel colormap RGBA8 LUT uses ABI 206.
+  Unit-t LUT/size u8 quantize uses ABI 251.
 
 ---
 

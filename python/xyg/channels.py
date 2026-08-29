@@ -739,18 +739,15 @@ def quantize_unit_u8(values: npt.NDArray[np.float64], domain: tuple[float, float
     texels; a size ramp spans ~16 px) and is never read back into a displayed
     number — 75% less traffic than f32, same rendered output (§29).
 
-    Chunk-bounded like the other quantizers (`_QUANTIZE_CHUNK`): the arithmetic
-    is element-wise and stays in f32 exactly as the one-shot chain did, so the
-    bytes are identical while the transient stays independent of N."""
+    Chunk-bounded like the other quantizers (`_QUANTIZE_CHUNK`): normalize
+    stays ABI ``normalize_f32``; clip × 255 ties-to-even is ABI 251
+    ``xyg_clip_quantize_u8``. Bytes match the one-shot chain while the
+    transient stays independent of N."""
     out = np.empty(len(values), dtype=np.uint8)
     for start in range(0, len(values), _QUANTIZE_CHUNK):
         end = start + _QUANTIZE_CHUNK
-        # Fresh f32 kernel output: clip/scale/round can all run in place on it.
-        unit = normalize_to_unit(values[start:end], domain)
-        np.clip(unit, 0.0, 1.0, out=unit)
-        unit *= 255.0
-        np.rint(unit, out=unit)
-        out[start:end] = unit.astype(np.uint8)
+        unit = np.asarray(normalize_to_unit(values[start:end], domain), dtype=np.float64)
+        out[start:end] = kernels.clip_quantize_u8(unit)
     return out
 
 
@@ -858,23 +855,8 @@ _QUANTIZE_CHUNK = 1 << 18
 
 
 def _quantized_lut_idx(values: npt.NDArray[np.float64], domain: tuple[float, float]) -> np.ndarray:
-    """Continuous values -> u8 LUT texel indices, chunk-bounded temporaries.
-
-    Per-element math is exactly the historical one-shot chain —
-    `normalize_to_unit` (f32), widen to f64, ×255, `rint`, cast u8 — applied
-    per chunk, so results are bitwise identical while peak memory stays
-    O(chunk) + the N-byte output. The ×255/`rint` stages run in place on the
-    widened copy, so one f64 chunk buffer serves the whole pipeline."""
-    out = np.empty(len(values), dtype=np.uint8)
-    for start in range(0, len(values), _QUANTIZE_CHUNK):
-        end = start + _QUANTIZE_CHUNK
-        # `normalize_to_unit` hands back a fresh f32 kernel output, so the
-        # widened copy below is ours to mutate.
-        scaled = np.asarray(normalize_to_unit(values[start:end], domain), dtype=np.float64)
-        scaled *= 255.0
-        np.rint(scaled, out=scaled)
-        out[start:end] = scaled.astype(np.uint8)
-    return out
+    """Continuous values -> u8 LUT texel indices via ``quantize_unit_u8``."""
+    return quantize_unit_u8(values, domain)
 
 
 def _quantized_rgba8(values: npt.NDArray[np.float64]) -> np.ndarray:
