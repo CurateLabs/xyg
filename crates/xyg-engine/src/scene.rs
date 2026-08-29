@@ -3964,15 +3964,9 @@ fn curve_flatten_required(x: &[f64]) -> Result<usize, SceneError> {
 }
 
 /// Pointy-top hexagon ring as fractions of `hex_dx`/`hex_dy`. Same contract as
-/// the retired Python/Node Scene packers and `js/src/50_chartview.ts`.
-pub const SCENE_HEXBIN_RING: [(f64, f64); 6] = [
-    (0.0, -1.0 / 3.0),
-    (0.5, -1.0 / 6.0),
-    (0.5, 1.0 / 6.0),
-    (0.0, 1.0 / 3.0),
-    (-0.5, 1.0 / 6.0),
-    (-0.5, -1.0 / 6.0),
-];
+/// the retired Python/Node Scene packers, ABI 210 `xyg_hexbin_ring`, and
+/// `js/src/50_chartview.ts`.
+pub const SCENE_HEXBIN_RING: [(f64, f64); 6] = crate::hexbin::HEXBIN_RING;
 
 /// XYHP v1 painted-heatmap sidecar (ABI 134). Hosts pack one plane per
 /// `HeatmapPainted` lattice; Rust tessellates cells and interns unique fills.

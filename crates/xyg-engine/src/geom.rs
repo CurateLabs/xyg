@@ -239,7 +239,7 @@ pub fn step_arrays_len(n: usize, mode: u8) -> Option<usize> {
     }
 }
 
-/// Expand compact `(x, y)` vertices into a step polyline (ABI 210).
+/// Expand compact `(x, y)` vertices into a step polyline (ABI 211).
 ///
 /// Matches compatibility `_svg._step_arrays` / ChartView `_stepArrays`:
 /// pre holds the new y at the previous x, mid transitions at the midpoint,

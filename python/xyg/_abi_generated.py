@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 210
-SIGNATURE_SHA256 = "0471764bcdaa2a3d25eabf147e4f59a9e684d23e30cc617c16ba92e7e5622e98"
+ABI_VERSION = 211
+SIGNATURE_SHA256 = "727884ac41f80aed67e0c0da867cc1a3390282a7f910093a4e08a70a4b5552ce"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -402,6 +402,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_hexbin_ingress
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+    # size_t xyg_hexbin_ring(double dx, double dy, double * out_x, double * out_y, size_t capacity)
+    function = lib.xyg_hexbin_ring
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_histogram2d(const double * x, const double * y, const double * weights, size_t len, const double * x_edges, size_t x_edge_len, const double * y_edges, size_t y_edge_len, double * out)
     function = lib.xyg_histogram2d
     function.restype = ctypes.c_int32

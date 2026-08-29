@@ -16,6 +16,7 @@ export {
   hexbin,
   hexbinIngress,
   hexbinGroups,
+  hexbinRing,
   contourLevels,
   legendNormalize,
   legendBestLoc,

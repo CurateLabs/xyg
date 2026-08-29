@@ -167,13 +167,12 @@ constant (`hex_dx`/`hex_dy`). Each renderer expands the six-triangle fan locally
 so the wire cost stays O(cells) instead of O(cells × vertices × channels).
 
 Three renderers expand it today and must agree exactly: `_buildHexbinMark`
-(`js/src/50_chartview.ts:2038`, WebGL), `HEX_RING`/`hexbin_ring()`
-(`python/xyg/_svg.py:2074`, the reference ring), and `_emit_hexbin`
-(`python/xyg/_raster.py:1413`, raster export, consuming `hexbin_ring`). Only code
-comments bind them; changing one without the others silently desynchronizes
-exports from the live chart, which has already produced a CI-red payload
-regression once. The rest of this section is normative — a fourth renderer
-implements it without reading the other three.
+(`js/src/50_chartview.ts`, WebGL), ABI 210 `xyg_hexbin_ring` consumed by
+`_svg.hexbin_ring()` / `_emit_hexbin` (`python/xyg/_raster.py`, raster export),
+and Scene `SCENE_HEXBIN_RING` (alias of `hexbin::HEXBIN_RING`). Changing one
+without the others silently desynchronizes exports from the live chart, which
+has already produced a CI-red payload regression once. The rest of this section
+is normative — a fourth renderer implements it without reading the other three.
 
 **On the wire.** The trace entry carries this and nothing else the geometry
 needs:
@@ -193,7 +192,7 @@ vertex, index, or per-triangle column ever ships.
 
 **What each renderer reconstructs.** For cell `i`, a hexagon centered on
 `(x[i], y[i])` with six vertices at `center + (rx_k · hex_dx, ry_k · hex_dy)`,
-where the ring fractions are `HEX_RING`:
+where the ring fractions are ABI 210 `xyg_hexbin_ring` / `hexbin::HEXBIN_RING`:
 
 ```
 k:    0       1       2       3       4       5
@@ -231,7 +230,7 @@ per cell — `(center, v_k, v_(k+1 mod 6))` — replicating the cell's color acr
 all six; a path renderer may emit the six vertices as one closed polygon instead
 (what `_svg.py` does). The coverage is identical.
 Constant-style Cartesian native count/mean/sum hexbin also expands that same
-`HEX_RING` onto existing Scene v25 PolyFill records (one 6-vertex group per
+`hexbin::HEXBIN_RING` onto existing Scene v25 PolyFill records (one 6-vertex group per
 cell) for public SVG/PNG/PDF. The wire stays centers-only; hosts do not add a
 Scene kind. Cartesian metric colormaps intern per-cell fills through a 1×N
 XYHP plane (ABI 186). Polar hexbin, custom `reduce_C_function`, and

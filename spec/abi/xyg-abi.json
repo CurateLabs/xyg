@@ -1,9 +1,9 @@
 {
-  "abi_version": 210,
+  "abi_version": 211,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "0471764bcdaa2a3d25eabf147e4f59a9e684d23e30cc617c16ba92e7e5622e98",
+  "signature_sha256": "727884ac41f80aed67e0c0da867cc1a3390282a7f910093a4e08a70a4b5552ce",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -13544,6 +13544,103 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_hexbin_ingress(const double * x, const double * y, const double * c, size_t len, size_t grid_w, size_t grid_h, double x0, double x1, double y0, double y1, int32_t use_range, double * out_x0, double * out_x1, double * out_y0, double * out_y1, size_t * out_grid_w, size_t * out_grid_h)"
+    },
+    {
+      "name": "xyg_hexbin_ring",
+      "node_name": "xyHexbinRing",
+      "nargs": 5,
+      "arguments": [
+        {
+          "name": "dx",
+          "type": {
+            "rust": "f64",
+            "c": "double",
+            "ctypes": "ctypes.c_double",
+            "koffi": "double",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "dy",
+          "type": {
+            "rust": "f64",
+            "c": "double",
+            "ctypes": "ctypes.c_double",
+            "koffi": "double",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_x",
+          "type": {
+            "rust": "*mut f64",
+            "c": "double *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "double *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_y",
+          "type": {
+            "rust": "*mut f64",
+            "c": "double *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "double *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "capacity",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "usize",
+        "c": "size_t",
+        "ctypes": "ctypes.c_size_t",
+        "koffi": "size_t",
+        "kind": "scalar",
+        "bits": "pointer",
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "size_t xyg_hexbin_ring(double dx, double dy, double * out_x, double * out_y, size_t capacity)"
     },
     {
       "name": "xyg_histogram2d",

@@ -6,6 +6,7 @@ import {
   curveFlatten,
   f32SafeScale,
   geometryOffset,
+  hexbinRing,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -21,6 +22,17 @@ test("geometryOffset pins log family and nonfinite to zero", () => {
   assert.equal(f32SafeScale(0, -1, 1), 1);
   const huge = F32_SAFE_MAG * 10;
   assert.ok(Math.abs(f32SafeScale(0, -huge, huge) - 0.1) < 1e-12);
+});
+
+test("hexbinRing scales the canonical pointy-top fractions", () => {
+  const { x, y } = hexbinRing(6, 12);
+  assert.equal(x.length, 6);
+  assert.equal(y.length, 6);
+  assert.equal(x[0], 0);
+  assert.equal(y[0], -4);
+  assert.equal(x[1], 3);
+  assert.equal(y[1], -2);
+  assert.throws(() => hexbinRing(Number.NaN, 1), /invalid hexbin-ring request/);
 });
 
 test("ribbonEdge midpoint matches Python golden", () => {

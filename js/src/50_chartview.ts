@@ -4911,7 +4911,7 @@ export class ChartView {
   // expands here instead of on the wire. Vertices stay in the centers'
   // encoded space: stored = (value - offset) * scale, so a data-space delta
   // scales by meta.scale and the center columns' metas serve every vertex.
-  // The ring must match HEX_RING in python/xyg/_svg.py.
+  // The ring must match ABI 210 `xyg_hexbin_ring` / `hexbin::HEXBIN_RING`.
   _buildHexbinMark(g, t, buffer) {
     const cx = this._columnView(buffer, this.spec.columns[t.x]);
     const cy = this._columnView(buffer, this.spec.columns[t.y]);

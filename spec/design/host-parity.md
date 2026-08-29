@@ -621,6 +621,8 @@ hosts still map log-family scale names onto `pin_zero`. ABI 209
 `xyg_polar_wedge_points` owns compatibility annular-sector flatten so
 Python `_svg.polar_wedge_points` and Node `polarWedgePoints` cannot drift;
 SVG still emits exact `A` arcs for unrounded wedges. ABI 210
+`xyg_hexbin_ring` owns the pointy-top hexagon vertex offsets scaled by cell
+pitch so Python `_svg.hexbin_ring` and Node `hexbinRing` cannot drift. ABI 211
 `xyg_step_arrays` owns compatibility step/stairs expand so Python
 `_svg._step_arrays` and Node `stepArrays` cannot drift. `xyg_heatmap_rgba` keeps its
 distinct normalized-scalar remap for other consumers. Hosts still
@@ -970,10 +972,11 @@ client must not grow a parallel “JS layout/LOD” product path.
   (upstream text survives only as clearly-marked provenance).
 - **REQ-HOSTPARITY-6 (MUST, MVP).** Remove Python host-only layout/encode
   shenanigans for MVP: remaining twins are compatibility `_svg`/`_raster`
-  geometry (hex rings, marker paths), `channels.resolve_color`,
+  geometry (marker paths), `channels.resolve_color`,
   `_payload` emit orchestration, and `_scene_v3` pack. Sankey placement already
   lives in `xyg_sankey_layout`; encode offset/scale is ABI 208; polar wedge
-  flatten is ABI 209; step/stairs expand is ABI 210.
+  flatten is ABI 209; hexbin ring offsets are ABI 210; step/stairs expand is
+  ABI 211.
 
 ---
 

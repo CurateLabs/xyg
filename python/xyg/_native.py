@@ -10500,6 +10500,28 @@ def _hexbin_grid_and_range(
     return w, h, x0, x1, y0, y1, 1
 
 
+def hexbin_ring(
+    hex_dx: float, hex_dy: float
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Pointy-top hexagon vertex offsets scaled by cell pitch (ABI 210)."""
+    probed = _lib.xyg_hexbin_ring(float(hex_dx), float(hex_dy), 0, 0, 0)
+    if probed == _USIZE_MAX:
+        raise ValueError("invalid hexbin-ring request")
+    n = int(probed)
+    out_x = np.empty(n, dtype=np.float64)
+    out_y = np.empty(n, dtype=np.float64)
+    written = _lib.xyg_hexbin_ring(
+        float(hex_dx),
+        float(hex_dy),
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        n,
+    )
+    if written == _USIZE_MAX or written != n:
+        raise ValueError("invalid hexbin-ring request")
+    return out_x, out_y
+
+
 def hexbin_ingress(
     x: npt.NDArray[np.float64],
     y: npt.NDArray[np.float64],
@@ -10924,7 +10946,7 @@ def step_arrays(
     y: npt.NDArray[np.float64],
     mode: int,
 ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
-    """Expand compact vertices into a step polyline (ABI 210).
+    """Expand compact vertices into a step polyline (ABI 211).
 
     ``mode`` is ``1`` pre, ``2`` mid, ``3`` post. ``n < 2`` is identity.
     Empty native pointers are ``0``.

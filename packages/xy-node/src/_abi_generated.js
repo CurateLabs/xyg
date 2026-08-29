@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 210;
-export const SIGNATURE_SHA256 = "0471764bcdaa2a3d25eabf147e4f59a9e684d23e30cc617c16ba92e7e5622e98";
+export const ABI_VERSION = 211;
+export const SIGNATURE_SHA256 = "727884ac41f80aed67e0c0da867cc1a3390282a7f910093a4e08a70a4b5552ce";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -103,6 +103,7 @@ export let xyHeatmapRgba;
 export let xyHexbin;
 export let xyHexbinGroups;
 export let xyHexbinIngress;
+export let xyHexbinRing;
 export let xyHistogram2d;
 export let xyHistogramBins;
 export let xyHistogramEdges;
@@ -402,6 +403,7 @@ export function bindGeneratedAbi(lib) {
   xyHexbin = lib.func("size_t xyg_hexbin(const double * x, const double * y, const double * c, size_t len, size_t grid_w, size_t grid_h, double x0, double x1, double y0, double y1, int32_t use_range, size_t mincnt, int32_t reduce, double * out_cx, double * out_cy, double * out_metric, double * out_counts, size_t capacity, double * out_dx, double * out_dy)");
   xyHexbinGroups = lib.func("size_t xyg_hexbin_groups(const double * x, const double * y, const double * c, size_t len, size_t grid_w, size_t grid_h, double x0, double x1, double y0, double y1, int32_t use_range, size_t mincnt, double * out_cx, double * out_cy, double * out_counts, uint32_t * out_starts, uint32_t * out_lens, size_t cell_capacity, uint32_t * out_indices, size_t index_capacity, size_t * out_n_indices, double * out_dx, double * out_dy)");
   xyHexbinIngress = lib.func("int32_t xyg_hexbin_ingress(const double * x, const double * y, const double * c, size_t len, size_t grid_w, size_t grid_h, double x0, double x1, double y0, double y1, int32_t use_range, double * out_x0, double * out_x1, double * out_y0, double * out_y1, size_t * out_grid_w, size_t * out_grid_h)");
+  xyHexbinRing = lib.func("size_t xyg_hexbin_ring(double dx, double dy, double * out_x, double * out_y, size_t capacity)");
   xyHistogram2d = lib.func("int32_t xyg_histogram2d(const double * x, const double * y, const double * weights, size_t len, const double * x_edges, size_t x_edge_len, const double * y_edges, size_t y_edge_len, double * out)");
   xyHistogramBins = lib.func("size_t xyg_histogram_bins(const double * values, size_t len, const double * edges, size_t edge_len, int32_t density, int32_t cumulative, double * out_counts)");
   xyHistogramEdges = lib.func("size_t xyg_histogram_edges(const double * data, size_t len, double lo, double hi, int32_t use_range, int32_t method, double * out_edges, size_t capacity)");
