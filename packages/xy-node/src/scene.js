@@ -3854,7 +3854,7 @@ function xyTaColormapStopBytes(colormap) {
 }
 
 export function hexbinXyTaColormap(trace) {
-  const channel = trace.color_ch ?? trace.colorChannel;
+  const channel = trace.color_ch;
   return packXyTaColormap({ style: { colormap: channel?.colormap } });
 }
 
