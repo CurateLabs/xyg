@@ -837,6 +837,7 @@ Raster mesh stroke RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster ribbon fill RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster ribbon match-fill edge RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Node `meshHasPerItem` uses `perItemChannelNames` (same as Python `has_per_item_channels`) for ABI 244.
+Node `scatterPaintChannelNames` uses `perItemChannelNames` (same as Python `per_item_channel_names`) for ABI 241.
 Node empty kind uses `|| "mark"` (same as Python `or "mark"`).
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
@@ -1240,6 +1241,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Raster ribbon fill RGBA8 uses ABI 251.
   Raster ribbon match-fill edge RGBA8 uses ABI 251.
   Node `meshHasPerItem` uses `perItemChannelNames` for ABI 244.
+  Node `scatterPaintChannelNames` uses `perItemChannelNames` for ABI 241.
   Node empty kind uses `|| "mark"`.
 
 ---

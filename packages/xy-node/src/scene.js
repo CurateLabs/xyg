@@ -5602,23 +5602,8 @@ function hexbinPacksPaintPlane(trace) {
   return hexbinPacksColormapPlane(trace) || hexbinPacksRgbaPlane(trace);
 }
 
-function scatterPaintChannelNames(trace) {
-  const names = [];
-  const style = trace.style ?? {};
-  const channels = trace.style_channels ?? trace.styleChannels ?? {};
-  if (scatterHasNonConstantColor(trace)) names.push("color");
-  const strokeCh = trace.stroke_ch ?? trace.strokeChannel;
-  if (strokeCh != null && strokeCh.mode !== "constant" && strokeCh.mode !== "match_fill") {
-    names.push("stroke");
-  } else if (style.stroke_channel && strokeCh == null) {
-    names.push("stroke");
-  }
-  if (channels.stroke_width || style.stroke_width_channel) names.push("stroke_width");
-  if (channels.opacity || style.opacity_channel) names.push("opacity");
-  if (channels.artist_alpha || style.artist_alpha_channel) names.push("artist_alpha");
-  if (trace.size_ch || style.size_channel) names.push("size");
-  if (channels.symbol || Array.isArray(style.symbol)) names.push("symbol");
-  return names;
+export function scatterPaintChannelNames(trace) {
+  return perItemChannelNames(trace);
 }
 
 function scatterPacksPaintPlane(trace) {
