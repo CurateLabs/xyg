@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 247;
-export const SIGNATURE_SHA256 = "068483af38c6377049e33ddb8cb2d3397766f3cbe381ef8027627f39b7194e1e";
+export const ABI_VERSION = 248;
+export const SIGNATURE_SHA256 = "e72a822b39888540615f6def2828cc1fd14011892fd5564d5188e091983492fa";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -199,6 +199,7 @@ export let xySceneEncodeAssembledFromSidecars;
 export let xySceneEncodeProduct;
 export let xySceneFigureSupportReason;
 export let xySceneFillGradientAdmit;
+export let xySceneFiniteAll;
 export let xySceneGradientDir;
 export let xySceneGradientSpace;
 export let xySceneHeatmapColormapAdmit;
@@ -541,6 +542,7 @@ export function bindGeneratedAbi(lib) {
   xySceneEncodeProduct = lib.func("int32_t xyg_scene_encode_product(const uint8_t * xytc, size_t xytc_len, const uint8_t * xyta, size_t xyta_len, const uint8_t * xynm, size_t xynm_len, const uint8_t * xycl, size_t xycl_len, const uint8_t * xyaf, size_t xyaf_len, uint32_t style_ref_base, double x_lo, double x_hi, double y_lo, double y_hi, const uint8_t * xycf, size_t xycf_len, const uint8_t * polar, size_t polar_len, const uint8_t * xyfs, size_t xyfs_len, uint8_t * out, size_t out_cap)");
   xySceneFigureSupportReason = lib.func("size_t xyg_scene_figure_support_reason(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap)");
   xySceneFillGradientAdmit = lib.func("int32_t xyg_scene_fill_gradient_admit(const uint8_t * space, size_t space_len, const uint8_t * dir, size_t dir_len, const double * t, size_t n_stops, const uint8_t * css, size_t css_len, const uint32_t * css_lens, size_t n_css, const uint8_t * mark_color, size_t mark_len, uint8_t * out_rgba, size_t out_cap)");
+  xySceneFiniteAll = lib.func("int32_t xyg_scene_finite_all(const double * values, size_t values_len)");
   xySceneGradientDir = lib.func("int32_t xyg_scene_gradient_dir(const uint8_t * text, size_t text_len)");
   xySceneGradientSpace = lib.func("int32_t xyg_scene_gradient_space(const uint8_t * text, size_t text_len)");
   xySceneHeatmapColormapAdmit = lib.func("int32_t xyg_scene_heatmap_colormap_admit(int32_t truecolor, int32_t has_colormap, int32_t has_rgba_grid, int32_t has_rgba)");

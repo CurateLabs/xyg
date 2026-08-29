@@ -46,6 +46,7 @@ export {
   sceneTickLabelStrategy,
   sceneTickAnchor,
   sceneFillGradientAdmit,
+  sceneFiniteAll,
   sceneParseLinearGradient,
   sceneRectExtraFlags,
   sceneGradientDir,
