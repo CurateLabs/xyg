@@ -856,6 +856,7 @@ Node `channelEndRgba8` constant paint uses `channel.constant` only (same as Pyth
 Node `sourceColorCss` uses `color_ch` only (same as Python); `trace.color` is not a source-channel fallback.
 Node `resolveColorChannel` constant CSS uses `.constant` (same as Python `ColorChannel`); `composeRibbon` writes `color_ch` / `color2_ch`.
 Node `color2Channel` uses `color2_ch` only (same as Python); `color_target` / `colorTarget` are not Scene-pack fallbacks.
+Node `itemFillRgba8` uses `color_ch` only (same as Python); `trace.color` is not a fill-channel fallback.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1277,6 +1278,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `sourceColorCss` uses `color_ch` only.
   Node `resolveColorChannel` constant CSS uses `.constant`.
   Node `color2Channel` uses `color2_ch` only.
+  Node `itemFillRgba8` uses `color_ch` only.
 
 ---
 
