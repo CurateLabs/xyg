@@ -888,6 +888,7 @@ Node XYTC stroke opacity uses `style.stroke_opacity` only like Python `_pack_xyt
 Node XYTC line opacity uses `style.line_opacity` only like Python `_pack_xytc`; `lineOpacity` is not a line-opacity key.
 Node XYTC stroke width uses `style.stroke_width` only like Python `_pack_xytc`; `strokeWidth` is not a stroke-width key.
 Node XYTC line width uses `style.line_width` only like Python `_pack_xytc`; `lineWidth` is not a line-width key.
+Node `sourceColorCss` uses `color_ch` only like Python `_trace_source_color_css`; `colorChannel` is not a source-css fallback.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1341,6 +1342,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node XYTC line opacity uses `line_opacity` only.
   Node XYTC stroke width uses `stroke_width` only.
   Node XYTC line width uses `line_width` only.
+  Node `sourceColorCss` uses `color_ch` only.
 
 ---
 

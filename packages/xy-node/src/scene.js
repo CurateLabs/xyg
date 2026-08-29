@@ -1533,7 +1533,7 @@ export function color2Channel(trace) {
 }
 
 export function sourceColorCss(trace) {
-  const css = channelConstantCss(trace.color_ch ?? trace.colorChannel);
+  const css = channelConstantCss(trace.color_ch);
   if (css != null) return css;
   return String(trace.style?.color ?? "#3987e5");
 }
