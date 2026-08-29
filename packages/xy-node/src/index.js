@@ -25,6 +25,7 @@ export {
   ribbonPolygon,
   monotoneTangents,
   curveFlatten,
+  stepArrays,
   roundedRectPoly,
   violinDensity,
   boxStats,

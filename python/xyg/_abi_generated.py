@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 210
-SIGNATURE_SHA256 = "d9104d128893ec02b6278dd2998f1d3fd03433f95dad0538affa850954c8b172"
+ABI_VERSION = 211
+SIGNATURE_SHA256 = "727884ac41f80aed67e0c0da867cc1a3390282a7f910093a4e08a70a4b5552ce"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -866,6 +866,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_stacked_bounds
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_void_p]
+    # size_t xyg_step_arrays(const double * x, const double * y, size_t n, uint8_t mode, double * out_x, double * out_y, size_t capacity)
+    function = lib.xyg_step_arrays
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint8, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_stratified_sample_mask(const uint64_t * ids, const uint32_t * groups, size_t len, size_t n_groups, uint64_t seed, double fraction, uint64_t min_count, uint8_t * out)
     function = lib.xyg_stratified_sample_mask
     function.restype = ctypes.c_int32

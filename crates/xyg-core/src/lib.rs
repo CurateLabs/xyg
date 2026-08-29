@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 210;
+pub const ABI_VERSION: u32 = 211;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -14356,6 +14356,53 @@ pub unsafe extern "C" fn xyg_polar_wedge_points(
             out_y[index] = y;
         }
         pts.len()
+    })
+}
+
+/// Expand compact `(x, y)` vertices into a step polyline (ABI 211).
+///
+/// `mode` is `1` pre, `2` mid, `3` post. `n < 2` is identity. Probe with
+/// `capacity == 0` and null/`0` hit pointers; the return is the expanded
+/// vertex count. `usize::MAX` on invalid input. Empty native pointers are
+/// null/`0`.
+///
+/// # Safety
+/// When `n > 0`, `x` and `y` each address `n` readable f64s. When
+/// `capacity > 0`, `out_x` and `out_y` each address `capacity` writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_step_arrays(
+    x: *const f64,
+    y: *const f64,
+    n: usize,
+    mode: u8,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        let (x, y) = if n == 0 {
+            (&[][..], &[][..])
+        } else {
+            if x.is_null() || y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts(x, n),
+                std::slice::from_raw_parts(y, n),
+            )
+        };
+        let (out_x, out_y) = if capacity == 0 {
+            (&mut [][..], &mut [][..])
+        } else {
+            if out_x.is_null() || out_y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts_mut(out_x, capacity),
+                std::slice::from_raw_parts_mut(out_y, capacity),
+            )
+        };
+        geom::step_arrays(x, y, mode, out_x, out_y).unwrap_or(usize::MAX)
     })
 }
 
