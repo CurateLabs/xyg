@@ -5414,20 +5414,21 @@ function packAnnotationEnvelope({ texts, attached, arrows, callouts, wrapped }) 
   return out.subarray(0, code);
 }
 
+/** Per-item channel names. Python `per_item_channel_names` reads `color_ch` / `stroke_ch` / `size_ch` / `style_channels` only. */
 function perItemChannelNames(trace) {
   const names = [];
-  const color = trace.color_ch ?? trace.colorChannel;
+  const color = trace.color_ch;
   if (color != null && typeof color === "object" && color.mode !== "constant") names.push("color");
-  const stroke = trace.stroke_ch ?? trace.strokeChannel;
+  const stroke = trace.stroke_ch;
   if (
     stroke != null
     && typeof stroke === "object"
     && stroke.mode !== "constant"
     && stroke.mode !== "match_fill"
   ) names.push("stroke");
-  const size = trace.size_ch ?? trace.sizeChannel;
+  const size = trace.size_ch;
   if (size != null && typeof size === "object" && size.mode !== "constant") names.push("size");
-  const channels = trace.style_channels ?? trace.styleChannels ?? {};
+  const channels = trace.style_channels ?? {};
   if (channels != null && typeof channels === "object" && !Array.isArray(channels) && !ArrayBuffer.isView(channels)) {
     names.push(...Object.keys(channels));
   }

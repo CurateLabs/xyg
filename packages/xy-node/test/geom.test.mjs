@@ -747,6 +747,26 @@ test("scatterPaintChannelNames uses color_ch only like Python", () => {
     scatterPaintChannelNames({ style: { color_channel: { mode: "continuous" } } }),
     [],
   );
+  assert.deepEqual(
+    scatterPaintChannelNames({ colorChannel: { mode: "continuous", values: [0, 1] } }),
+    [],
+  );
+  assert.deepEqual(
+    scatterPaintChannelNames({ strokeChannel: { mode: "continuous", values: [0, 1] } }),
+    [],
+  );
+  assert.deepEqual(
+    scatterPaintChannelNames({ sizeChannel: { mode: "continuous", values: [0, 1] } }),
+    [],
+  );
+  assert.deepEqual(
+    scatterPaintChannelNames({ styleChannels: { opacity: { values: [0.5] } } }),
+    [],
+  );
+  assert.deepEqual(
+    scatterPaintChannelNames({ style_channels: { opacity: { values: [0.5] } } }),
+    ["opacity"],
+  );
 });
 
 test("scatterPointStrokeRgba8 uses stroke_ch only like Python", () => {
