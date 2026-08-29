@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 224;
-export const SIGNATURE_SHA256 = "d439b891767192cf12e6decc6cd2d0754e3d6238cb468705fb7ac78ba6bc248a";
+export const ABI_VERSION = 225;
+export const SIGNATURE_SHA256 = "30477d9d8b899f7c48b18f2f791f909f0a71b555db84bcbf4169fb4ea9c45fef";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -232,6 +232,7 @@ export let xySceneSpliceAnnotations;
 export let xySceneStaticExport;
 export let xySceneSupportReason;
 export let xySceneSvg;
+export let xySceneTickAnchor;
 export let xySceneTickLabelLayout;
 export let xySceneTickLabelStrategy;
 export let xySceneVersion;
@@ -551,6 +552,7 @@ export function bindGeneratedAbi(lib) {
   xySceneStaticExport = lib.func("size_t xyg_scene_static_export(const uint8_t * encoded, size_t encoded_len, uint32_t format, double scale, size_t width, size_t height, int32_t quality, uint8_t * out, size_t out_cap)");
   xySceneSupportReason = lib.func("size_t xyg_scene_support_reason(uint32_t request_version, uint64_t features, uint8_t * out, size_t out_cap)");
   xySceneSvg = lib.func("size_t xyg_scene_svg(const uint8_t * encoded, size_t encoded_len, uint8_t * out, size_t out_cap)");
+  xySceneTickAnchor = lib.func("int32_t xyg_scene_tick_anchor(const uint8_t * text, size_t text_len)");
   xySceneTickLabelLayout = lib.func("size_t xyg_scene_tick_label_layout(const double * positions, size_t n, const uint32_t * label_lens, const uint8_t * labels, size_t labels_len, uint32_t kind, uint32_t side, uint32_t anchor, uint32_t flags, double font_size, double min_gap, double explicit_angle, uint32_t * out_index, double * out_angle, uint32_t * out_row, size_t out_cap)");
   xySceneTickLabelStrategy = lib.func("int32_t xyg_scene_tick_label_strategy(const uint8_t * text, size_t text_len)");
   xySceneVersion = lib.func("uint32_t xyg_scene_version()");

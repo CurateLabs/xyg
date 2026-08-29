@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 224
-SIGNATURE_SHA256 = "d439b891767192cf12e6decc6cd2d0754e3d6238cb468705fb7ac78ba6bc248a"
+ABI_VERSION = 225
+SIGNATURE_SHA256 = "30477d9d8b899f7c48b18f2f791f909f0a71b555db84bcbf4169fb4ea9c45fef"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -918,6 +918,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_svg
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_tick_anchor(const uint8_t * text, size_t text_len)
+    function = lib.xyg_scene_tick_anchor
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
     # size_t xyg_scene_tick_label_layout(const double * positions, size_t n, const uint32_t * label_lens, const uint8_t * labels, size_t labels_len, uint32_t kind, uint32_t side, uint32_t anchor, uint32_t flags, double font_size, double min_gap, double explicit_angle, uint32_t * out_index, double * out_angle, uint32_t * out_row, size_t out_cap)
     function = lib.xyg_scene_tick_label_layout
     function.restype = ctypes.c_size_t

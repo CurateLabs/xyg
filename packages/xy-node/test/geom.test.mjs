@@ -18,6 +18,7 @@ import {
   sceneAnnotationStyleAdmit,
   sceneRibbonColor2Classify,
   sceneTickLabelStrategy,
+  sceneTickAnchor,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -194,6 +195,17 @@ test("sceneTickLabelStrategy matches host table", () => {
   assert.equal(sceneTickLabelStrategy(""), 0);
   assert.equal(sceneTickLabelStrategy("foo"), 0);
   assert.equal(sceneTickLabelStrategy("HIDE"), 0);
+});
+
+test("sceneTickAnchor matches host table", () => {
+  assert.equal(sceneTickAnchor("start"), 0);
+  assert.equal(sceneTickAnchor("center"), 1);
+  assert.equal(sceneTickAnchor("middle"), 1);
+  assert.equal(sceneTickAnchor("end"), 2);
+  assert.equal(sceneTickAnchor(""), null);
+  assert.equal(sceneTickAnchor("foo"), null);
+  assert.equal(sceneTickAnchor("START"), null);
+  assert.equal(sceneTickAnchor("left"), null);
 });
 
 test("sceneRibbonColor2Classify matches host table", () => {
