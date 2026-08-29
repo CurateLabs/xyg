@@ -4861,6 +4861,12 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   ]);
 }
 
+/** XYEF stroke-width-only observation. Python uses `style.get("stroke_width")` only. */
+export function xyEfStrokeWidthOnly(style) {
+  const record = style ?? {};
+  return record.stroke_width != null && record.stroke == null;
+}
+
 function packPublicExportSupport(figure, { width = null, height = null } = {}) {
   const OBS_HAS_X = 1 << 0;
   const OBS_HAS_Y = 1 << 1;
@@ -5019,7 +5025,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
         }
       }
     }
-    if ((style.stroke_width ?? style.strokeWidth) != null && style.stroke == null) obs |= OBS_STROKE_WIDTH_ONLY;
+    if (xyEfStrokeWidthOnly(style)) obs |= OBS_STROKE_WIDTH_ONLY;
     const prevX1 = prev && exportColumn(prev, "x1");
     const prevY1 = prev && exportColumn(prev, "y1");
     if (prev != null && xv != null && yv != null && prevX1 != null && prevY1 != null && exportArraysEqual(xv, prevX1) && exportArraysEqual(yv, prevY1)) {
