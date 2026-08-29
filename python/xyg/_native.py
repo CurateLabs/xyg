@@ -1274,6 +1274,39 @@ def scene_parse_linear_gradient(css: str, space: str = "mark") -> tuple[int, dic
     }
 
 
+def scene_rect_extra_flags(
+    kind: str,
+    polar: bool,
+    gradient_fail: bool,
+    radius: npt.ArrayLike,
+    radius_seq: bool,
+    wedge_gap: float,
+) -> int:
+    """Scene rect extra-flag pack via ``xyg_scene_rect_extra_flags`` (ABI 228).
+
+    Returns XYFS v2 bits. Empty native pointers are ``0``. Hosts still coerce
+    fill mappings, radius lists, and ``wedge_gap``.
+    """
+    kind_b = str(kind).encode("utf-8")
+    packed = _as_f64(np.asarray(radius, dtype=np.float64).reshape(-1), "radius")
+    n = len(packed)
+    code = int(
+        _lib.xyg_scene_rect_extra_flags(
+            kind_b if kind_b else 0,
+            len(kind_b),
+            1 if polar else 0,
+            1 if gradient_fail else 0,
+            _ptr_f64(packed) if n else 0,
+            n,
+            1 if radius_seq else 0,
+            float(wedge_gap),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-rect-extra-flags request")
+    return int(code)
+
+
 def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
     """f32-safe encode scale for offset-encoded geometry (ABI 208, §19)."""
     out = ctypes.c_double()

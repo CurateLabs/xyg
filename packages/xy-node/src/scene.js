@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -5499,18 +5499,13 @@ function resolveDensityBinColors(trace) {
 }
 
 function rectExtraFlags(style, kind, polar) {
-  let flags = 0;
-  if (style.fill != null && typeof style.fill === "object" && admitFillGradient({ style }) == null) flags |= XYFS_TRACE_RECT_GRADIENT;
+  const gradientFail =
+    style.fill != null && typeof style.fill === "object" && admitFillGradient({ style }) == null;
   const radius = style.corner_radius ?? 0;
-  const admitted = kind === "bar" || kind === "column" || kind === "histogram" || kind === "heatmap" || kind === "violin" || kind === "box";
-  if (Array.isArray(radius)) {
-    if (!(admitted && radius.length === 2) && radius.some((value) => Number(value) !== 0)) flags |= XYFS_TRACE_CORNER_RADIUS;
-  } else if (!admitted && Number(radius) !== 0) {
-    flags |= XYFS_TRACE_CORNER_RADIUS;
-  }
+  const radiusSeq = Array.isArray(radius);
+  const values = radiusSeq ? radius.map(Number) : [Number(radius)];
   const gap = Number(style.wedge_gap ?? 0);
-  if (gap !== 0 && !(polar && (kind === "bar" || kind === "column" || kind === "histogram"))) flags |= XYFS_TRACE_WEDGE_GAP;
-  return flags;
+  return sceneRectExtraFlags(kind, polar, gradientFail, values, radiusSeq, gap);
 }
 
 function figureTraceSupport(figure, trace) {

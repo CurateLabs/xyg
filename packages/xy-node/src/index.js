@@ -42,6 +42,7 @@ export {
   sceneTickAnchor,
   sceneFillGradientAdmit,
   sceneParseLinearGradient,
+  sceneRectExtraFlags,
   roundedRectPoly,
   violinDensity,
   boxStats,

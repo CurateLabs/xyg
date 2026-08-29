@@ -697,6 +697,10 @@ so Python `mark_fill` / `_admitted_fill_gradient_from_fill` and Node
 `parseLinearGradient` cannot drift. Hosts still coerce fill mappings, wrap
 authoring error text, and run `css_color` on authoring stops. Compile-path
 skip-empty split stays extra.
+ABI 228 `xyg_scene_rect_extra_flags` owns Scene rect extra-flag pack
+(unusable-gradient bit, admitted corner-radius kinds, polar wedge-gap
+exception) so Python `_rect_extra_flags` and Node `rectExtraFlags` cannot
+drift. Hosts still coerce fill mappings, radius lists, and `wedge_gap`.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1055,7 +1059,8 @@ client must not grow a parallel “JS layout/LOD” product path.
   Scene tick-label strategy admit is ABI 224;
   Scene tick-label anchor admit is ABI 225;
   Scene fill-gradient admit is ABI 226;
-  Scene linear-gradient CSS parse is ABI 227.
+  Scene linear-gradient CSS parse is ABI 227;
+  Scene rect extra-flag pack is ABI 228.
 
 ---
 

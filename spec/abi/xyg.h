@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 227
-#define XYG_ABI_SIGNATURE_SHA256 "fb5fc24b72f0fae9df0431683c55cfc04172cefd5ec6f1b4e137ea120f64953c"
+#define XYG_ABI_VERSION 228
+#define XYG_ABI_SIGNATURE_SHA256 "c74836681fe8e56da6b336a6acb2808b6da0bf4f0900c82ebdf23abe2b4be804"
 
 #ifdef __cplusplus
 extern "C" {
@@ -230,6 +230,7 @@ int32_t xyg_scene_parse_linear_gradient(const uint8_t * css, size_t css_len, con
 size_t xyg_scene_plot_layout(double viewport_width, double viewport_height, const double * authored_padding, uint32_t x_kind, double x_lo, double x_hi, double x_constant, int32_t x_mask_nonpositive, uint32_t y_kind, double y_lo, double y_hi, double y_constant, int32_t y_mask_nonpositive, const uint8_t * title, size_t title_len, const uint8_t * x_label, size_t x_label_len, const uint8_t * y_label, size_t y_label_len, const uint8_t * x_format, size_t x_format_len, const uint8_t * y_format, size_t y_format_len, uint32_t colorbar_side, double * out_margins);
 size_t xyg_scene_public_export_reason(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap);
 size_t xyg_scene_raster_commands(const uint8_t * encoded, size_t encoded_len, double scale, uint8_t * out, size_t out_cap);
+int32_t xyg_scene_rect_extra_flags(const uint8_t * kind, size_t kind_len, int32_t polar, int32_t gradient_fail, const double * radius, size_t n_radius, int32_t radius_seq, double wedge_gap);
 int32_t xyg_scene_resolve_chrome_style(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_resolve_mark_styles(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_resolve_pack_kind(const uint8_t * kind, size_t kind_len, uint8_t flags);

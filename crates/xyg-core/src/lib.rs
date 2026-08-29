@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 227;
+pub const ABI_VERSION: u32 = 228;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5155,6 +5155,59 @@ pub unsafe extern "C" fn xyg_scene_parse_linear_gradient(
             at += bytes.len();
         }
         kernels::SCENE_PARSE_LINEAR_GRADIENT_OK
+    })
+}
+
+/// Scene rect extra-flag pack (ABI 228).
+///
+/// `kind` is the mark kind. `polar` / `gradient_fail` / `radius_seq` are 0/1.
+/// `radius` is the coerced corner-radius scalars. Returns the XYFS v2 bits
+/// (`1<<5` unusable gradient, `1<<6` corner radius, `1<<7` wedge gap), or
+/// `-2` FFI. Empty native pointers are null/`0`. Hosts still coerce fill
+/// mappings, radius lists, and `wedge_gap`.
+///
+/// # Safety
+/// Pointers must address the claimed readable bytes when the corresponding
+/// length is nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_rect_extra_flags(
+    kind: *const u8,
+    kind_len: usize,
+    polar: i32,
+    gradient_fail: i32,
+    radius: *const f64,
+    n_radius: usize,
+    radius_seq: i32,
+    wedge_gap: f64,
+) -> i32 {
+    if kind_len > 0 && kind.is_null() {
+        return -2;
+    }
+    if n_radius > 0 && radius.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let kind_bytes = if kind_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(kind, kind_len)
+        };
+        let Ok(kind) = std::str::from_utf8(kind_bytes) else {
+            return -2;
+        };
+        let radius = if n_radius == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(radius, n_radius)
+        };
+        kernels::scene_rect_extra_flags(
+            kind,
+            polar != 0,
+            gradient_fail != 0,
+            radius,
+            radius_seq != 0,
+            wedge_gap,
+        )
     })
 }
 
