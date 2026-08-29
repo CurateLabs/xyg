@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 222;
+pub const ABI_VERSION: u32 = 223;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4807,6 +4807,80 @@ pub unsafe extern "C" fn xyg_scene_annotation_style_admit(
             labelled != 0,
             key,
         ))
+    })
+}
+
+/// Scene ribbon `color2` classify (ABI 223).
+///
+/// `has_*` flags are nonzero-true. Empty CSS pointers are null/`0`; a zero
+/// `has_source_css` / `has_target_css` flag means the constant is absent
+/// even when the pointer is empty. Returns `0` absent, `1` solid, `2`
+/// gradient, `3` ends, `4` fail, `-2` FFI. Hosts still coerce channels and
+/// pack end RGBA8.
+///
+/// # Safety
+/// `source_css` must address `source_len` readable bytes when `source_len`
+/// is nonzero. `target_css` must address `target_len` readable bytes when
+/// `target_len` is nonzero. `source_paint` must address `source_paint_len`
+/// readable bytes when `source_paint_len` is nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_ribbon_color2_classify(
+    has_color2: u8,
+    kind_is_ribbon: u8,
+    has_source_css: u8,
+    source_css: *const u8,
+    source_len: usize,
+    has_target_css: u8,
+    target_css: *const u8,
+    target_len: usize,
+    source_paint: *const u8,
+    source_paint_len: usize,
+    has_fill: u8,
+    has_end_pair: u8,
+) -> i32 {
+    if source_len > 0 && source_css.is_null() {
+        return -2;
+    }
+    if target_len > 0 && target_css.is_null() {
+        return -2;
+    }
+    if source_paint_len > 0 && source_paint.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let source_bytes = if source_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(source_css, source_len)
+        };
+        let target_bytes = if target_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(target_css, target_len)
+        };
+        let paint_bytes = if source_paint_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(source_paint, source_paint_len)
+        };
+        let Ok(source) = std::str::from_utf8(source_bytes) else {
+            return -2;
+        };
+        let Ok(target) = std::str::from_utf8(target_bytes) else {
+            return -2;
+        };
+        let Ok(paint) = std::str::from_utf8(paint_bytes) else {
+            return -2;
+        };
+        kernels::scene_ribbon_color2_classify(
+            has_color2 != 0,
+            kind_is_ribbon != 0,
+            if has_source_css != 0 { Some(source) } else { None },
+            if has_target_css != 0 { Some(target) } else { None },
+            paint,
+            has_fill != 0,
+            has_end_pair != 0,
+        )
     })
 }
 

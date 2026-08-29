@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 222;
-export const SIGNATURE_SHA256 = "4bdb7e61a9209dcd6312aa4ca77a12669f41e45599a5853a08505eabee6b1ac2";
+export const ABI_VERSION = 223;
+export const SIGNATURE_SHA256 = "20053a9aca79d0499f5ff02d9c01a2ba82987c3d63e101b159473fa48ac760bf";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -225,6 +225,7 @@ export let xySceneRasterCommands;
 export let xySceneResolveChromeStyle;
 export let xySceneResolveMarkStyles;
 export let xySceneResolvePackKind;
+export let xySceneRibbonColor2Classify;
 export let xySceneScaleMap;
 export let xySceneScatterSvg;
 export let xySceneSpliceAnnotations;
@@ -542,6 +543,7 @@ export function bindGeneratedAbi(lib) {
   xySceneResolveChromeStyle = lib.func("int32_t xyg_scene_resolve_chrome_style(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap)");
   xySceneResolveMarkStyles = lib.func("int32_t xyg_scene_resolve_mark_styles(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap)");
   xySceneResolvePackKind = lib.func("int32_t xyg_scene_resolve_pack_kind(const uint8_t * kind, size_t kind_len, uint8_t flags)");
+  xySceneRibbonColor2Classify = lib.func("int32_t xyg_scene_ribbon_color2_classify(uint8_t has_color2, uint8_t kind_is_ribbon, uint8_t has_source_css, const uint8_t * source_css, size_t source_len, uint8_t has_target_css, const uint8_t * target_css, size_t target_len, const uint8_t * source_paint, size_t source_paint_len, uint8_t has_fill, uint8_t has_end_pair)");
   xySceneScaleMap = lib.func("int32_t xyg_scene_scale_map(const double * values, size_t len, uint32_t kind, uint32_t operation, double lo, double hi, double px0, double px1, double constant, int32_t mask_nonpositive, double * out)");
   xySceneScatterSvg = lib.func("size_t xyg_scene_scatter_svg(const double * x, const double * y, const double * diameter, const uint8_t * fill_rgba, const uint8_t * stroke_rgba, const double * stroke_width, const uint8_t * symbols, const uint8_t * visible, const uint8_t * fill_css, size_t fill_css_len, const uint8_t * stroke_css, size_t stroke_css_len, size_t len, uint8_t * out, size_t out_cap)");
   xySceneSpliceAnnotations = lib.func("int32_t xyg_scene_splice_annotations(const uint8_t * rows, size_t rows_len, const uint8_t * sidecars, size_t sidecars_len, const uint8_t * annotations, size_t annotations_len, uint8_t * out, size_t out_cap)");

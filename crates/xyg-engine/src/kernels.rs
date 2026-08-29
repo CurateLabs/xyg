@@ -1128,6 +1128,51 @@ pub fn scene_annotation_style_admit(
     allowed
 }
 
+/// Scene ribbon `color2` classify (ABI 223).
+///
+/// `0` absent, `1` solid, `2` gradient, `3` ends, `4` fail. Hosts still coerce
+/// channels, pack end RGBA8, and observe `style.fill`. Paint equality uses
+/// [`crate::css::color_rgba8`].
+pub const SCENE_RIBBON_COLOR2_ABSENT: i32 = 0;
+pub const SCENE_RIBBON_COLOR2_SOLID: i32 = 1;
+pub const SCENE_RIBBON_COLOR2_GRADIENT: i32 = 2;
+pub const SCENE_RIBBON_COLOR2_ENDS: i32 = 3;
+pub const SCENE_RIBBON_COLOR2_FAIL: i32 = 4;
+
+/// Classify two-ended ribbon paint from host-coerced observations.
+pub fn scene_ribbon_color2_classify(
+    has_color2: bool,
+    kind_is_ribbon: bool,
+    source_css: Option<&str>,
+    target_css: Option<&str>,
+    source_paint: &str,
+    has_fill: bool,
+    has_end_pair: bool,
+) -> i32 {
+    if !has_color2 {
+        return SCENE_RIBBON_COLOR2_ABSENT;
+    }
+    if !kind_is_ribbon {
+        return SCENE_RIBBON_COLOR2_FAIL;
+    }
+    if let (Some(_), Some(target)) = (source_css, target_css) {
+        if crate::css::color_rgba8(source_paint, 1.0) == crate::css::color_rgba8(target, 1.0) {
+            return SCENE_RIBBON_COLOR2_SOLID;
+        }
+        if has_fill {
+            return SCENE_RIBBON_COLOR2_FAIL;
+        }
+        return SCENE_RIBBON_COLOR2_GRADIENT;
+    }
+    if has_fill {
+        return SCENE_RIBBON_COLOR2_FAIL;
+    }
+    if !has_end_pair {
+        return SCENE_RIBBON_COLOR2_FAIL;
+    }
+    SCENE_RIBBON_COLOR2_ENDS
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -8934,6 +8979,62 @@ mod fuzz {
         assert!(!scene_annotation_style_admit("foo", false, true, "width"));
         assert!(scene_annotation_style_admit("", false, false, "color"));
         assert!(!scene_annotation_style_admit("rule", false, false, ""));
+    }
+
+    #[test]
+    fn scene_ribbon_color2_classify_matches_host_table() {
+        assert_eq!(
+            scene_ribbon_color2_classify(false, true, None, None, "#3987e5", false, false),
+            SCENE_RIBBON_COLOR2_ABSENT
+        );
+        assert_eq!(
+            scene_ribbon_color2_classify(true, false, None, None, "#3987e5", false, false),
+            SCENE_RIBBON_COLOR2_FAIL
+        );
+        assert_eq!(
+            scene_ribbon_color2_classify(
+                true,
+                true,
+                Some("#336699"),
+                Some("#336699"),
+                "#336699",
+                false,
+                false
+            ),
+            SCENE_RIBBON_COLOR2_SOLID
+        );
+        assert_eq!(
+            scene_ribbon_color2_classify(
+                true,
+                true,
+                Some("#336699"),
+                Some("#34d399"),
+                "#336699",
+                false,
+                false
+            ),
+            SCENE_RIBBON_COLOR2_GRADIENT
+        );
+        assert_eq!(
+            scene_ribbon_color2_classify(
+                true,
+                true,
+                Some("#336699"),
+                Some("#34d399"),
+                "#336699",
+                true,
+                false
+            ),
+            SCENE_RIBBON_COLOR2_FAIL
+        );
+        assert_eq!(
+            scene_ribbon_color2_classify(true, true, None, Some("#34d399"), "#336699", false, true),
+            SCENE_RIBBON_COLOR2_ENDS
+        );
+        assert_eq!(
+            scene_ribbon_color2_classify(true, true, None, None, "#336699", false, false),
+            SCENE_RIBBON_COLOR2_FAIL
+        );
     }
 
     #[test]

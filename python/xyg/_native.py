@@ -1095,6 +1095,49 @@ def scene_annotation_style_admit(
     return code == 1
 
 
+_SCENE_RIBBON_COLOR2_NAMES = ("absent", "solid", "gradient", "ends", "fail")
+
+
+def scene_ribbon_color2_classify(
+    has_color2: bool,
+    kind_is_ribbon: bool,
+    source_css: str | None,
+    target_css: str | None,
+    source_paint: str,
+    has_fill: bool = False,
+    has_end_pair: bool = False,
+) -> str:
+    """Scene ribbon ``color2`` classify via ``xyg_scene_ribbon_color2_classify`` (ABI 223).
+
+    Empty native pointers are ``0``. Hosts still coerce channels and pack end
+    RGBA8.
+    """
+    source_b = b"" if source_css is None else str(source_css).encode("utf-8")
+    target_b = b"" if target_css is None else str(target_css).encode("utf-8")
+    paint_b = str(source_paint).encode("utf-8")
+    code = int(
+        _lib.xyg_scene_ribbon_color2_classify(
+            1 if has_color2 else 0,
+            1 if kind_is_ribbon else 0,
+            0 if source_css is None else 1,
+            source_b if source_b else 0,
+            len(source_b),
+            0 if target_css is None else 1,
+            target_b if target_b else 0,
+            len(target_b),
+            paint_b if paint_b else 0,
+            len(paint_b),
+            1 if has_fill else 0,
+            1 if has_end_pair else 0,
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-ribbon-color2-classify request")
+    if 0 <= code < len(_SCENE_RIBBON_COLOR2_NAMES):
+        return _SCENE_RIBBON_COLOR2_NAMES[code]
+    return "fail"
+
+
 def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
     """f32-safe encode scale for offset-encoded geometry (ABI 208, §19)."""
     out = ctypes.c_double()
