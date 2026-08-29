@@ -3289,6 +3289,12 @@ function packGradientSpec(fill) {
   return concatBytes(parts);
 }
 
+/** XYTC line opacity. Python `_pack_xytc` uses `style.get("line_opacity", 1.0)` only. */
+export function packXyTcLineOpacity(style, kindClass) {
+  if (!(kindClass & SCENE_KIND_CLASS_BAND)) return 1;
+  return Number((style ?? {}).line_opacity ?? 1);
+}
+
 function packXyTc(figure) {
   const traces = figure.traces ?? [];
   const records = [];
@@ -3319,7 +3325,7 @@ function packXyTc(figure) {
       strokeOpacity = Number(style.stroke_opacity ?? style.strokeOpacity ?? 1);
     }
     if (kindClass & SCENE_KIND_CLASS_BAND) {
-      lineOpacity = Number(style.line_opacity ?? style.lineOpacity ?? 1);
+      lineOpacity = packXyTcLineOpacity(style, kindClass);
     }
     let size = Number.NaN;
     if (Object.hasOwn(style, "size") || Object.hasOwn(style, "diameter")) {

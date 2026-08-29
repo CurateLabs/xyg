@@ -59,6 +59,7 @@ import {
   packXyTaGrid,
   packXyTaRgba,
   packXyTaRgbaGrid,
+  packXyTcLineOpacity,
   hexbinXyTaColormap,
   constantMarkColor,
   xyHfColormap,
@@ -391,6 +392,16 @@ test("packXyTaRgbaGrid stacks flattened planes like Python", () => {
   const valuesView = new Float64Array(fromValues.buffer, fromValues.byteOffset, fromValues.byteLength / 8);
   assert.deepEqual([...valuesView], [1, 3, 5, 7, 2, 4, 6, 8]);
   assert.equal(packXyTaRgbaGrid([[1], [2], [3]]).length, 0);
+});
+
+test("packXyTcLineOpacity uses line_opacity only like Python", () => {
+  const area = sceneKindClass("area");
+  const scatter = sceneKindClass("scatter");
+  assert.equal(packXyTcLineOpacity({}, area), 1);
+  assert.equal(packXyTcLineOpacity({ lineOpacity: 0.25 }, area), 1);
+  assert.equal(packXyTcLineOpacity({ line_opacity: 0.5 }, area), 0.5);
+  assert.equal(packXyTcLineOpacity({ line_opacity: 0.5 }, scatter), 1);
+  assert.equal(packXyTcLineOpacity({ line_opacity: 0.5 }, 0), 1);
 });
 
 test("hexbinXyTaColormap uses channel.colormap only like Python", () => {
