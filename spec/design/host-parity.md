@@ -830,6 +830,7 @@ Python `resolve_style_channel` admits finite arrays through ABI 248
 SVG `_rgb_css` formats 0-1 RGB through ABI 251 `xyg_clip_quantize_u8`.
 SVG authored-scatter marker RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 Raster scatter RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
+Raster mesh/hexbin fill RGBA8 uses ABI 251 `xyg_clip_quantize_u8`.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1225,6 +1226,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   SVG `_rgb_css` uses ABI 251.
   SVG authored-scatter marker RGBA8 uses ABI 251.
   Raster scatter RGBA8 uses ABI 251.
+  Raster mesh/hexbin fill RGBA8 uses ABI 251.
 
 ---
 
