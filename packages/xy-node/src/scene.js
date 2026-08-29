@@ -1441,7 +1441,7 @@ export function xyHfColormap(style) {
   if (colormap != null) {
     return {
       flags: XYHF_HAS_STOPS,
-      bytes: Uint8Array.from(colormap.flat ? colormap.flat() : colormap),
+      bytes: xyTaColormapStopBytes(colormap) ?? new Uint8Array(),
     };
   }
   return null;

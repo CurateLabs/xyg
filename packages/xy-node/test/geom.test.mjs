@@ -378,6 +378,18 @@ test("xyHfColormap uses style.colormap only like Python", () => {
   assert.equal(xyHfColormap({ colormapStops: [[0, 0, 0]] }), null);
 });
 
+test("xyHfColormap stop bytes require RGB rows like Python", () => {
+  const rgb = xyHfColormap({ colormap: [[255, 0, 0], [0, 255, 0]] });
+  assert.equal(rgb.flags, 1 << 6);
+  assert.deepEqual([...rgb.bytes], [255, 0, 0, 0, 255, 0]);
+  const flat = xyHfColormap({ colormap: [255, 0, 0] });
+  assert.equal(flat.flags, 1 << 6);
+  assert.equal(flat.bytes.length, 0);
+  const rgba = xyHfColormap({ colormap: [[255, 0, 0, 255]] });
+  assert.equal(rgba.flags, 1 << 6);
+  assert.equal(rgba.bytes.length, 0);
+});
+
 test("constantMarkColor uses color_ch.constant only like Python", () => {
   assert.equal(
     constantMarkColor({ color_ch: { mode: "constant", constant: "red" } }),
