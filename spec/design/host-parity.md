@@ -890,6 +890,7 @@ Node XYTC stroke width uses `style.stroke_width` only like Python `_pack_xytc`; 
 Node XYTC line width uses `style.line_width` only like Python `_pack_xytc`; `lineWidth` is not a line-width key.
 Node XYTC size uses `style.size` only like Python `_pack_xytc`; `diameter` is not a size key.
 Node XYTC line color uses `style.line_color` only like Python `_pack_xytc`; `lineColor` is not a line-color key.
+Node `hexbinPacksRgbaPlane` uses `color_ch` only like Python `_hexbin_packs_rgba_plane`; `colorChannel` is not an RGBA-plane fallback.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1345,6 +1346,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node XYTC line width uses `line_width` only.
   Node XYTC size uses `size` only.
   Node XYTC line color uses `line_color` only.
+  Node `hexbinPacksRgbaPlane` uses `color_ch` only.
 
 ---
 

@@ -12,6 +12,7 @@ import {
   geometryOffset,
   hexbinRing,
   hexbinPacksColormapPlane,
+  hexbinPacksRgbaPlane,
   itemApplyOpacity,
   itemFillRgba8,
   itemWidths,
@@ -793,6 +794,27 @@ test("hexbinPacksColormapPlane matches Python channel.values only", () => {
       color_ch: { mode: "continuous", values: [1, 2, 3] },
     }),
     true,
+  );
+});
+
+
+test("hexbinPacksRgbaPlane uses color_ch only like Python", () => {
+  const rgba = new Uint8Array([255, 0, 0, 255]);
+  assert.equal(
+    hexbinPacksRgbaPlane({
+      kind: "hexbin",
+      x: [0],
+      color_ch: { mode: "direct_rgba", rgba },
+    }),
+    true,
+  );
+  assert.equal(
+    hexbinPacksRgbaPlane({
+      kind: "hexbin",
+      x: [0],
+      colorChannel: { mode: "direct_rgba", rgba },
+    }),
+    false,
   );
 });
 
