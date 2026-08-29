@@ -900,6 +900,7 @@ Node XYEF joined-fill observation uses `style.joined_fill` only like Python; `jo
 Node `constantMarkColor` uses `color_ch` only like Python `_constant_color`; `colorChannel` is not a source-channel fallback.
 Node `sourceColorCss` uses `color_ch` only like Python `_trace_source_color_css`; `colorChannel` is not a source-css fallback.
 Node `scatterHasNonConstantColor` uses `color_ch` only like Python; `colorChannel` is not a non-constant-color fallback.
+Node `classifyRibbonColor2` source-constant CSS uses `color_ch` only like Python `_classify_ribbon_color2`; `colorChannel` is not a source-constant fallback.
 Node `itemFillRgba8` uses `color_ch` only like Python `_item_fill_rgba8`; `colorChannel` is not a fill-channel fallback.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
@@ -1364,7 +1365,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `meshJoinedFill` uses `joined_fill` only.
   Node XYEF joined-fill observation uses `joined_fill` only.
   Node `constantMarkColor` uses `color_ch` only.
-  Node `itemFillRgba8` uses `color_ch` only.
+  Node `classifyRibbonColor2` source-constant CSS uses `color_ch` only.
 ---
 
 ## 4. Delivery order
