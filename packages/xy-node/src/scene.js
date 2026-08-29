@@ -3950,7 +3950,7 @@ function packXyTa(figure, xDomain, yDomain) {
     } else if (kindClass & SCENE_KIND_CLASS_HEXBIN && hexbinPacksColormapPlane(trace)) {
       flags |= XYTA_HEATMAP | XYTA_SHAPE | XYTA_HAS_GRID;
       const channel = trace.color_ch ?? trace.colorChannel;
-      const values = channel?.values ?? trace.metric;
+      const values = channel?.values;
       grid = packF64Le(values);
       rows = 1;
       cols = values.length;
@@ -5571,11 +5571,11 @@ export function figureTraceSupport(figure, trace) {
   return { flags, kind };
 }
 
-function hexbinPacksColormapPlane(trace) {
+export function hexbinPacksColormapPlane(trace) {
   if (!(sceneKindClass(trace.kind) & SCENE_KIND_CLASS_HEXBIN)) return false;
   const channel = trace.color_ch ?? trace.colorChannel;
   if (channel == null) return false;
-  return sceneHexbinColormapPlaneAdmit(channel.mode, (channel.values ?? trace.metric) != null);
+  return sceneHexbinColormapPlaneAdmit(channel.mode, channel.values != null);
 }
 
 function hexbinCount(trace) {
