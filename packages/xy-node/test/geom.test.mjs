@@ -62,6 +62,7 @@ import {
   packXyTaRgbaGrid,
   packXyTcFillOpacity,
   packXyTcLineOpacity,
+  packXyTcLineWidth,
   packXyTcStrokeOpacity,
   packXyTcStrokeWidth,
   hexbinXyTaColormap,
@@ -382,6 +383,18 @@ test("packXyTcStrokeWidth uses stroke_width only like Python", () => {
   assert.equal(camel.value, 0);
   const snake = packXyTcStrokeWidth({ stroke_width: 2.5 });
   assert.equal(snake.flags, 1 << 3);
+  assert.equal(snake.value, 2.5);
+});
+
+test("packXyTcLineWidth uses line_width only like Python", () => {
+  const missing = packXyTcLineWidth({});
+  assert.equal(missing.flags, 0);
+  assert.equal(missing.value, 0);
+  const camel = packXyTcLineWidth({ lineWidth: 2.5 });
+  assert.equal(camel.flags, 0);
+  assert.equal(camel.value, 0);
+  const snake = packXyTcLineWidth({ line_width: 2.5 });
+  assert.equal(snake.flags, 1 << 5);
   assert.equal(snake.value, 2.5);
 });
 

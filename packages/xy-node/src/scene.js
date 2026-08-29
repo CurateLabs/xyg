@@ -3301,6 +3301,13 @@ export function packXyTcLineOpacity(style, kindClass) {
   return Number((style ?? {}).line_opacity ?? 1);
 }
 
+/** XYTC line width. Python `_pack_xytc` reads `"line_width" in style` only. */
+export function packXyTcLineWidth(style) {
+  const record = style ?? {};
+  if (!Object.hasOwn(record, "line_width")) return { flags: 0, value: 0 };
+  return { flags: XYTC_HAS_LINE_WIDTH, value: Number(record.line_width) };
+}
+
 /** XYTC stroke opacity. Python `_pack_xytc` uses `style.get("stroke_opacity", 1.0)` only. */
 export function packXyTcStrokeOpacity(style, kindClass) {
   if (!(kindClass & SCENE_KIND_CLASS_OPACITY)) return 1;
@@ -3369,9 +3376,10 @@ function packXyTc(figure) {
       flags |= XYTC_HAS_WIDTH;
       width = Number(style.width);
     }
-    if (Object.hasOwn(style, "line_width") || Object.hasOwn(style, "lineWidth")) {
-      flags |= XYTC_HAS_LINE_WIDTH;
-      lineWidth = Number(style.line_width ?? style.lineWidth);
+    const packedLineWidth = packXyTcLineWidth(style);
+    if (packedLineWidth.flags) {
+      flags |= packedLineWidth.flags;
+      lineWidth = packedLineWidth.value;
     }
     let hexDx = Number.NaN;
     let hexDy = Number.NaN;
