@@ -1525,6 +1525,22 @@ pub fn scene_hexbin_reduce_admit(text: &str) -> i32 {
     i32::from(matches!(text, "count" | "mean" | "sum" | "custom"))
 }
 
+/// Scene curve-name codes (ABI 233).
+pub const SCENE_CURVE_LINEAR: i32 = 0;
+pub const SCENE_CURVE_SMOOTH: i32 = 1;
+pub const SCENE_CURVE_UNKNOWN: i32 = 255;
+
+/// Pack a Scene curve name. Trim then Unicode lowercase. Unknown names,
+/// including empty text, return `255`. Kind checks for `smooth` stay host.
+/// Compile-path `curve_smooth` in `scene_trace_compile.rs` stays extra.
+pub fn scene_curve_classify(text: &str) -> i32 {
+    match text.trim().to_lowercase().as_str() {
+        "linear" => SCENE_CURVE_LINEAR,
+        "smooth" => SCENE_CURVE_SMOOTH,
+        _ => SCENE_CURVE_UNKNOWN,
+    }
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -9616,6 +9632,18 @@ mod fuzz {
         assert_eq!(scene_hexbin_reduce_admit("foo"), 0);
         assert_eq!(scene_hexbin_reduce_admit("COUNT"), 0);
         assert_eq!(scene_hexbin_reduce_admit("median"), 0);
+    }
+
+    #[test]
+    fn scene_curve_classify_matches_host_table() {
+        assert_eq!(scene_curve_classify("linear"), SCENE_CURVE_LINEAR);
+        assert_eq!(scene_curve_classify("smooth"), SCENE_CURVE_SMOOTH);
+        assert_eq!(scene_curve_classify("LINEAR"), SCENE_CURVE_LINEAR);
+        assert_eq!(scene_curve_classify("SMOOTH"), SCENE_CURVE_SMOOTH);
+        assert_eq!(scene_curve_classify("  Smooth  "), SCENE_CURVE_SMOOTH);
+        assert_eq!(scene_curve_classify(""), SCENE_CURVE_UNKNOWN);
+        assert_eq!(scene_curve_classify("foo"), SCENE_CURVE_UNKNOWN);
+        assert_eq!(scene_curve_classify("step"), SCENE_CURVE_UNKNOWN);
     }
 
     #[test]

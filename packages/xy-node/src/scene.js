@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneHexbinReduceAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneHexbinReduceAdmit, sceneCurveClassify, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -5535,10 +5535,10 @@ function figureTraceSupport(figure, trace) {
   if (style.smooth != null) flags |= XYFS_TRACE_DASHED_MARKERS;
   const curve = style.curve;
   if (curve != null) {
-    const curveName = String(curve).trim().toLowerCase();
-    if (curveName === "smooth") {
+    const curveCode = sceneCurveClassify(curve);
+    if (curveCode === 1) {
       if (kind !== "line" && kind !== "area" && kind !== "error_band") flags |= XYFS_TRACE_DASHED_MARKERS;
-    } else if (curveName !== "linear") {
+    } else if (curveCode !== 0) {
       flags |= XYFS_TRACE_DASHED_MARKERS;
     }
   }

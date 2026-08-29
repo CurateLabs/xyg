@@ -1839,11 +1839,11 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
                     flags |= _XYFS_TRACE_DASHED_MARKERS
     curve = style.get("curve")
     if curve is not None:
-        curve_name = str(curve).strip().lower()
-        if curve_name == "smooth":
+        curve_code = _native.scene_curve_classify(curve)
+        if curve_code == 1:
             if kind not in {"line", "area", "error_band"}:
                 flags |= _XYFS_TRACE_DASHED_MARKERS
-        elif curve_name != "linear":
+        elif curve_code != 0:
             flags |= _XYFS_TRACE_DASHED_MARKERS
     linecap = style.get("linecap")
     if linecap is not None and _parse_scene_linecap(linecap) is False:

@@ -285,6 +285,8 @@ def load() -> ctypes.CDLL:
     lib.xyg_scene_gradient_space.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_scene_hexbin_reduce_admit.restype = ctypes.c_int32
     lib.xyg_scene_hexbin_reduce_admit.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_scene_curve_classify.restype = ctypes.c_int32
+    lib.xyg_scene_curve_classify.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2633,6 +2635,22 @@ def main() -> None:
     ok(
         lib.xyg_scene_hexbin_reduce_admit(_ptr(count_upper, ctypes.c_uint8), len(count_upper)) == 0,
         "scene_hexbin_reduce_admit COUNT",
+    )
+    linear_name = array("B", b"linear")
+    smooth_name = array("B", b"smooth")
+    smooth_upper = array("B", b"SMOOTH")
+    ok(
+        lib.xyg_scene_curve_classify(_ptr(linear_name, ctypes.c_uint8), len(linear_name)) == 0,
+        "scene_curve_classify linear",
+    )
+    ok(
+        lib.xyg_scene_curve_classify(_ptr(smooth_name, ctypes.c_uint8), len(smooth_name)) == 1,
+        "scene_curve_classify smooth",
+    )
+    ok(lib.xyg_scene_curve_classify(null_u8, 0) == 255, "scene_curve_classify empty")
+    ok(
+        lib.xyg_scene_curve_classify(_ptr(smooth_upper, ctypes.c_uint8), len(smooth_upper)) == 1,
+        "scene_curve_classify SMOOTH",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8

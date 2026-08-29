@@ -718,6 +718,11 @@ ABI 232 `xyg_scene_hexbin_reduce_admit` owns Scene hexbin reduce names
 Python `_figure_trace_support_flags` and Node `figureTraceSupport` cannot
 drift. Hosts still check hexbin kind. Compile-path `HEXBIN_REDUCES` in
 `scene_export.rs` stays extra.
+ABI 233 `xyg_scene_curve_classify` owns Scene curve names (`linear` → 0,
+`smooth` → 1; unknown/empty → 255; trim then lowercase) so Python
+`_figure_trace_support_flags` and Node `figureTraceSupport` cannot drift.
+Hosts still check kind for `smooth`. Compile-path `curve_smooth` in
+`scene_trace_compile.rs` stays extra.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1082,6 +1087,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Scene linear-gradient CSS prefix is ABI 230;
   Scene fill-gradient space pack is ABI 231;
   Scene hexbin reduce admit is ABI 232.
+  Scene curve-name classify is ABI 233.
 
 ---
 
