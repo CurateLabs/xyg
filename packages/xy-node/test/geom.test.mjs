@@ -53,6 +53,7 @@ import {
   meshHasPerItem,
   packXyTaColormap,
   hexbinXyTaColormap,
+  constantMarkColor,
   sceneMeshPaintPlaneAdmit,
   sceneItemApplyOpacity,
   sceneItemWidthsAdmit,
@@ -344,6 +345,22 @@ test("hexbinXyTaColormap uses channel.colormap only like Python", () => {
       style: { colormap: "viridis" },
     }).flags,
     0,
+  );
+});
+
+test("constantMarkColor uses color_ch.constant only like Python", () => {
+  assert.equal(
+    constantMarkColor({ color_ch: { mode: "constant", constant: "red" } }),
+    "red",
+  );
+  assert.equal(constantMarkColor({ color_ch: "red" }), null);
+  assert.equal(
+    constantMarkColor({ color_ch: { mode: "constant", color: "red" } }),
+    null,
+  );
+  assert.equal(
+    constantMarkColor({ color: { mode: "constant", constant: "blue" } }),
+    "#3987e5",
   );
 });
 
