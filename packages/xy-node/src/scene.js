@@ -1538,12 +1538,12 @@ export function sourceColorCss(trace) {
   return String(trace.style?.color ?? "#3987e5");
 }
 
-function classifyRibbonColor2(trace) {
+export function classifyRibbonColor2(trace) {
   const channel = color2Channel(trace);
   const hasColor2 = channel != null;
   const kindIsRibbon = String(trace.kind ?? "") === "ribbon";
   const target = hasColor2 ? channelConstantCss(channel) : null;
-  const sourceConst = channelConstantCss(trace.color_ch ?? trace.colorChannel);
+  const sourceConst = channelConstantCss(trace.color_ch);
   const sourcePaint = sourceColorCss(trace);
   const hasFill = Object.hasOwn(trace.style ?? {}, "fill");
   const bothConst = target != null && sourceConst != null;
