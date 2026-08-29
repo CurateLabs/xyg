@@ -11,6 +11,7 @@ import {
   f32SafeScale,
   geometryOffset,
   hexbinRing,
+  hexbinCellRgba8,
   hexbinPacksColormapPlane,
   hexbinPacksRgbaPlane,
   itemApplyOpacity,
@@ -878,6 +879,22 @@ test("sceneHexbinColormapPlaneAdmit matches host table", () => {
   assert.equal(sceneHexbinColormapPlaneAdmit("CONTINUOUS", 1), false);
   assert.equal(sceneHexbinColormapPlaneAdmit("categorical", 1), false);
   assert.equal(sceneHexbinColormapPlaneAdmit("direct_rgba", 1), false);
+});
+
+
+test("hexbinCellRgba8 uses color_ch only like Python", () => {
+  const rgba = new Uint8Array([255, 0, 0, 255]);
+  const fromCh = hexbinCellRgba8({
+    x: [0],
+    color_ch: { mode: "direct_rgba", rgba },
+  });
+  assert.deepEqual([...fromCh], [255, 0, 0, 255]);
+  const fromCamel = hexbinCellRgba8({
+    x: [0],
+    colorChannel: { mode: "direct_rgba", rgba },
+  });
+  const fallback = hexbinCellRgba8({ x: [0] });
+  assert.deepEqual([...fromCamel], [...fallback]);
 });
 
 test("hexbinPacksColormapPlane matches Python channel.values only", () => {

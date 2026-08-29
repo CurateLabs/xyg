@@ -907,6 +907,7 @@ Node `hexbinPacksColormapPlane` uses `color_ch` only like Python `_hexbin_packs_
 Node `ribbonEndRgbaPair` uses `color_ch` only like Python `_ribbon_end_rgba_pair`; `colorChannel` is not a ribbon-end source fallback.
 Node `hexbinXyTaColormap` uses `color_ch` only like Python `_pack_xyta` hexbin colormap; `colorChannel` is not a colormap fallback.
 Node `hexbinPacksRgbaPlane` uses `color_ch` only like Python `_hexbin_packs_rgba_plane`; `colorChannel` is not an RGBA-plane fallback.
+Node `hexbinCellRgba8` uses `color_ch` only like Python `_hexbin_cell_rgba8`; `colorChannel` is not a cell-paint fallback.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1375,6 +1376,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `ribbonEndRgbaPair` uses `color_ch` only.
   Node `hexbinXyTaColormap` uses `color_ch` only.
   Node `hexbinPacksRgbaPlane` uses `color_ch` only.
+  Node `hexbinCellRgba8` uses `color_ch` only.
 ---
 
 ## 4. Delivery order
