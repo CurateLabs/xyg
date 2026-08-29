@@ -21,6 +21,8 @@ from typing import Any, Optional
 
 import numpy as np
 
+from . import kernels
+
 _TICK_LABEL_STRATEGIES = frozenset({"auto", "hide", "rotate", "stagger", "preserve", "none", "off"})
 # Canonical anchors plus the matplotlib `ha` vocabulary the pyplot shim emits.
 _TICK_LABEL_ANCHORS = {
@@ -575,8 +577,6 @@ def resolvable_paint(css: str, label: str, subject: str) -> tuple[float, float, 
     there as on screen. Refusing it with the reason beats every alternative:
     a shared fallback collapses distinct entries onto one color, and a silent
     per-renderer difference is what §28 exists to prevent."""
-    from . import kernels
-
     status, rgba = kernels.css_check(kernels.CSS_COLOR, css)
     if status != 1 or rgba is None:
         raise ValueError(
@@ -601,8 +601,9 @@ def resolved_hex_paint(value: Any, label: str, subject: str) -> str:
     the same bytes off the wire with no cascade involved."""
     css = css_color(value, label)
     red, green, blue, alpha = resolvable_paint(css, label, subject)
-    hex_rgb = "#{:02x}{:02x}{:02x}".format(*(int(round(c * 255)) for c in (red, green, blue)))
-    return hex_rgb if alpha >= 1.0 else f"{hex_rgb}{int(round(alpha * 255)):02x}"
+    u8 = kernels.clip_quantize_u8(np.asarray((red, green, blue, alpha), dtype=np.float64))
+    hex_rgb = f"#{int(u8[0]):02x}{int(u8[1]):02x}{int(u8[2]):02x}"
+    return hex_rgb if alpha >= 1.0 else f"{hex_rgb}{int(u8[3]):02x}"
 
 
 def _resolved_rgb(color: Any, label: str) -> tuple[int, int, int]:
@@ -631,8 +632,8 @@ def _resolved_rgb(color: Any, label: str) -> tuple[int, int, int]:
             "no alpha). Set the mark's opacity/fill-opacity instead, or use the color the "
             "stop should blend to."
         )
-    red, green, blue = (int(round(channel * 255)) for channel in rgba[:3])
-    return red, green, blue
+    u8 = kernels.clip_quantize_u8(np.asarray(rgba[:3], dtype=np.float64))
+    return int(u8[0]), int(u8[1]), int(u8[2])
 
 
 def _colormap_stop_item(item: Any, index: int, label: str) -> tuple[Optional[float], Any]:
