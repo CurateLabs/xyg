@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 240;
-export const SIGNATURE_SHA256 = "1a010e02315c86429680d64b83c75adfd4631475c25804368ebf905f776290a5";
+export const ABI_VERSION = 241;
+export const SIGNATURE_SHA256 = "c192bb9a12c369795d07dea19469d0646b7e036e3487de71e24c4d05a3a1b20b";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -242,6 +242,7 @@ export let xySceneResolveMarkStyles;
 export let xySceneResolvePackKind;
 export let xySceneRibbonColor2Classify;
 export let xySceneScaleMap;
+export let xySceneScatterPaintChannelAdmit;
 export let xySceneScatterSvg;
 export let xySceneSpliceAnnotations;
 export let xySceneStaticExport;
@@ -577,6 +578,7 @@ export function bindGeneratedAbi(lib) {
   xySceneResolvePackKind = lib.func("int32_t xyg_scene_resolve_pack_kind(const uint8_t * kind, size_t kind_len, uint8_t flags)");
   xySceneRibbonColor2Classify = lib.func("int32_t xyg_scene_ribbon_color2_classify(uint8_t has_color2, uint8_t kind_is_ribbon, uint8_t has_source_css, const uint8_t * source_css, size_t source_len, uint8_t has_target_css, const uint8_t * target_css, size_t target_len, const uint8_t * source_paint, size_t source_paint_len, uint8_t has_fill, uint8_t has_end_pair)");
   xySceneScaleMap = lib.func("int32_t xyg_scene_scale_map(const double * values, size_t len, uint32_t kind, uint32_t operation, double lo, double hi, double px0, double px1, double constant, int32_t mask_nonpositive, double * out)");
+  xySceneScatterPaintChannelAdmit = lib.func("int32_t xyg_scene_scatter_paint_channel_admit(const uint8_t * text, size_t text_len)");
   xySceneScatterSvg = lib.func("size_t xyg_scene_scatter_svg(const double * x, const double * y, const double * diameter, const uint8_t * fill_rgba, const uint8_t * stroke_rgba, const double * stroke_width, const uint8_t * symbols, const uint8_t * visible, const uint8_t * fill_css, size_t fill_css_len, const uint8_t * stroke_css, size_t stroke_css_len, size_t len, uint8_t * out, size_t out_cap)");
   xySceneSpliceAnnotations = lib.func("int32_t xyg_scene_splice_annotations(const uint8_t * rows, size_t rows_len, const uint8_t * sidecars, size_t sidecars_len, const uint8_t * annotations, size_t annotations_len, uint8_t * out, size_t out_cap)");
   xySceneStaticExport = lib.func("size_t xyg_scene_static_export(const uint8_t * encoded, size_t encoded_len, uint32_t format, double scale, size_t width, size_t height, int32_t quality, uint8_t * out, size_t out_cap)");

@@ -1921,15 +1921,12 @@ def _scatter_count(trace: Any) -> int:
     return 0 if column is None else int(len(column))
 
 
-_SCATTER_PAINT_CHANNELS = frozenset({"color", "stroke", "stroke_width", "opacity", "artist_alpha"})
-
-
 def _scatter_packs_paint_plane(trace: Any) -> bool:
     """Return whether hosts should pack per-point scatter paint as XYTA.
 
     Per-item fill/stroke/width/opacity intern onto Scatter records as XYHP
     kind 7 (ABI 196). Per-item size and symbol stay fail-closed. Density
-    scatter keeps the blit path.
+    scatter keeps the blit path. Paint-channel names are ABI 241.
     """
     if str(getattr(trace, "kind", "") or "") != "scatter":
         return False
@@ -1938,7 +1935,7 @@ def _scatter_packs_paint_plane(trace: Any) -> bool:
     names = set(getattr(trace, "per_item_channel_names", lambda: ())())
     if not names:
         return False
-    return names <= _SCATTER_PAINT_CHANNELS
+    return all(_native.scene_scatter_paint_channel_admit(name) for name in names)
 
 
 def _scatter_point_fill_rgba8(trace: Any) -> bytes | None:

@@ -76,6 +76,7 @@ scene_marker_path_admit = _impl.scene_marker_path_admit
 scene_parse_linear_gradient = _impl.scene_parse_linear_gradient
 scene_rect_extra_flags = _impl.scene_rect_extra_flags
 scene_ribbon_color2_classify = _impl.scene_ribbon_color2_classify
+scene_scatter_paint_channel_admit = _impl.scene_scatter_paint_channel_admit
 scene_tick_anchor = _impl.scene_tick_anchor
 scene_tick_label_strategy = _impl.scene_tick_label_strategy
 factorize_fixed = _impl.factorize_fixed
@@ -326,6 +327,7 @@ __all__ = [
     "scene_parse_linear_gradient",
     "scene_rect_extra_flags",
     "scene_ribbon_color2_classify",
+    "scene_scatter_paint_channel_admit",
     "scene_tick_anchor",
     "scene_tick_label_strategy",
     "sector_triangles",

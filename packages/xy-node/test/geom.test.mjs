@@ -17,6 +17,7 @@ import {
   sceneMarkerPathAdmit,
   sceneAnnotationStyleAdmit,
   sceneRibbonColor2Classify,
+  sceneScatterPaintChannelAdmit,
   sceneTickLabelStrategy,
   sceneTickAnchor,
   sceneFillGradientAdmit,
@@ -387,6 +388,17 @@ test("sceneHeatmapColormapAdmit matches host table", () => {
   assert.equal(sceneHeatmapColormapAdmit(0, 1, 0, 0), true);
   assert.equal(sceneHeatmapColormapAdmit(0, 0, 1, 0), true);
   assert.equal(sceneHeatmapColormapAdmit(0, 0, 0, 1), true);
+});
+
+test("sceneScatterPaintChannelAdmit matches host table", () => {
+  for (const name of ["color", "stroke", "stroke_width", "opacity", "artist_alpha"]) {
+    assert.equal(sceneScatterPaintChannelAdmit(name), true, name);
+  }
+  assert.equal(sceneScatterPaintChannelAdmit(""), false);
+  assert.equal(sceneScatterPaintChannelAdmit("STROKE"), false);
+  assert.equal(sceneScatterPaintChannelAdmit(" color"), false);
+  assert.equal(sceneScatterPaintChannelAdmit("size"), false);
+  assert.equal(sceneScatterPaintChannelAdmit("symbol"), false);
 });
 
 test("sceneHeatmapShapeAdmit matches host table", () => {

@@ -1138,6 +1138,19 @@ def scene_ribbon_color2_classify(
     return "fail"
 
 
+def scene_scatter_paint_channel_admit(text: str | None = None) -> bool:
+    """Scene scatter paint-plane channel admit via ``xyg_scene_scatter_paint_channel_admit`` (ABI 241).
+
+    Empty native pointers are ``0``. Kind, density, and name gathering stay
+    host.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_scatter_paint_channel_admit(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-scatter-paint-channel-admit request")
+    return code == 1
+
+
 def scene_tick_label_strategy(text: str | None = None) -> int:
     """Scene tick-label strategy admit via ``xyg_scene_tick_label_strategy`` (ABI 224).
 

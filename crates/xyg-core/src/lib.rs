@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 240;
+pub const ABI_VERSION: u32 = 241;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5500,6 +5500,37 @@ pub extern "C" fn xyg_scene_heatmap_colormap_admit(
 #[no_mangle]
 pub extern "C" fn xyg_scene_heatmap_shape_admit(rows: f64, cols: f64) -> i32 {
     ffi_guard(-2, || kernels::scene_heatmap_shape_admit(rows, cols))
+}
+
+/// Scene scatter paint-plane channel admit (ABI 241).
+///
+/// Exact `color`/`stroke`/`stroke_width`/`opacity`/`artist_alpha` return
+/// `1`. Unknown names, including empty text, return `0`. No lowercasing.
+/// `-2` FFI. Empty native pointers are null/`0`. Kind, density, and name
+/// gathering stay host.
+///
+/// # Safety
+/// `text` must address `text_len` readable bytes when `text_len` is
+/// nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_scatter_paint_channel_admit(
+    text: *const u8,
+    text_len: usize,
+) -> i32 {
+    if text_len > 0 && text.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let bytes = if text_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(text, text_len)
+        };
+        let Ok(text) = std::str::from_utf8(bytes) else {
+            return -2;
+        };
+        kernels::scene_scatter_paint_channel_admit(text)
+    })
 }
 
 /// Annotation arrow connectionstyle geometry (ABI 217).

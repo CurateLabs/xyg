@@ -1678,6 +1678,18 @@ pub fn scene_heatmap_shape_admit(rows: f64, cols: f64) -> i32 {
     )
 }
 
+/// Admit Scene scatter paint-plane channel names (ABI 241).
+///
+/// Exact `color`/`stroke`/`stroke_width`/`opacity`/`artist_alpha` return
+/// `1`. Unknown names, including empty text, return `0`. No lowercasing.
+/// Kind, density, and name gathering stay host.
+pub fn scene_scatter_paint_channel_admit(text: &str) -> i32 {
+    i32::from(matches!(
+        text,
+        "color" | "stroke" | "stroke_width" | "opacity" | "artist_alpha"
+    ))
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -9914,6 +9926,24 @@ mod fuzz {
         assert_eq!(scene_heatmap_shape_admit(1.5, 2.0), 0);
         assert_eq!(scene_heatmap_shape_admit(1.0, f64::NAN), 0);
         assert_eq!(scene_heatmap_shape_admit(f64::INFINITY, 2.0), 0);
+    }
+
+    #[test]
+    fn scene_scatter_paint_channel_admit_matches_host_table() {
+        for name in [
+            "color",
+            "stroke",
+            "stroke_width",
+            "opacity",
+            "artist_alpha",
+        ] {
+            assert_eq!(scene_scatter_paint_channel_admit(name), 1, "{name}");
+        }
+        assert_eq!(scene_scatter_paint_channel_admit(""), 0);
+        assert_eq!(scene_scatter_paint_channel_admit("STROKE"), 0);
+        assert_eq!(scene_scatter_paint_channel_admit(" color"), 0);
+        assert_eq!(scene_scatter_paint_channel_admit("size"), 0);
+        assert_eq!(scene_scatter_paint_channel_admit("symbol"), 0);
     }
 
     #[test]

@@ -38,6 +38,7 @@ export {
   sceneMarkerPathAdmit,
   sceneAnnotationStyleAdmit,
   sceneRibbonColor2Classify,
+  sceneScatterPaintChannelAdmit,
   sceneTickLabelStrategy,
   sceneTickAnchor,
   sceneFillGradientAdmit,
