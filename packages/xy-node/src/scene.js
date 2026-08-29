@@ -3289,6 +3289,13 @@ function packGradientSpec(fill) {
   return concatBytes(parts);
 }
 
+/** XYTC stroke width. Python `_pack_xytc` reads `"stroke_width" in style` only. */
+export function packXyTcStrokeWidth(style) {
+  const record = style ?? {};
+  if (!Object.hasOwn(record, "stroke_width")) return { flags: 0, value: 0 };
+  return { flags: XYTC_HAS_STROKE_WIDTH, value: Number(record.stroke_width) };
+}
+
 function packXyTc(figure) {
   const traces = figure.traces ?? [];
   const records = [];
@@ -3335,9 +3342,10 @@ function packXyTc(figure) {
     let strokeWidth = 0;
     let width = 0;
     let lineWidth = 0;
-    if (Object.hasOwn(style, "stroke_width") || Object.hasOwn(style, "strokeWidth")) {
-      flags |= XYTC_HAS_STROKE_WIDTH;
-      strokeWidth = Number(style.stroke_width ?? style.strokeWidth);
+    const packedStrokeWidth = packXyTcStrokeWidth(style);
+    if (packedStrokeWidth.flags) {
+      flags |= packedStrokeWidth.flags;
+      strokeWidth = packedStrokeWidth.value;
     }
     if (Object.hasOwn(style, "width")) {
       flags |= XYTC_HAS_WIDTH;

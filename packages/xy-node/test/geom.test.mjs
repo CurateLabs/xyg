@@ -60,6 +60,7 @@ import {
   packXyTaGrid,
   packXyTaRgba,
   packXyTaRgbaGrid,
+  packXyTcStrokeWidth,
   hexbinXyTaColormap,
   constantMarkColor,
   xyHfColormap,
@@ -367,6 +368,18 @@ test("packXyTaFillOpacity uses fill_opacity only like Python", () => {
   const snake = packXyTaFillOpacity({ fill_opacity: 0.5 });
   assert.equal(snake.flags, 1 << 11);
   assert.equal(snake.value, 0.5);
+});
+
+test("packXyTcStrokeWidth uses stroke_width only like Python", () => {
+  const missing = packXyTcStrokeWidth({});
+  assert.equal(missing.flags, 0);
+  assert.equal(missing.value, 0);
+  const camel = packXyTcStrokeWidth({ strokeWidth: 2.5 });
+  assert.equal(camel.flags, 0);
+  assert.equal(camel.value, 0);
+  const snake = packXyTcStrokeWidth({ stroke_width: 2.5 });
+  assert.equal(snake.flags, 1 << 3);
+  assert.equal(snake.value, 2.5);
 });
 
 test("packXyTaGrid flattens plane.values like Python", () => {
