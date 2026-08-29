@@ -1547,7 +1547,7 @@ export class Figure {
       };
     }
     if (channel.mode === "constant") {
-      return { mode: "constant", color: channel.color };
+      return { mode: "constant", color: channel.constant };
     }
     return { ...channel };
   }

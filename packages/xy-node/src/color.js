@@ -231,14 +231,14 @@ function flattenRgbRows(raw, n) {
  * @param {string|string[]|number[]|TypedArray|null|undefined} color
  * @param {number} n
  * @param {string} [fallback]
- * @returns {{mode: string, color?: string, rgba?: Uint8Array, values?: Float64Array, domain?: number[], colormap?: string, codes?: Uint8Array|Uint32Array, categories?: string[], palette?: string[]}|null}
+ * @returns {{mode: string, constant?: string, rgba?: Uint8Array, values?: Float64Array, domain?: number[], colormap?: string, codes?: Uint8Array|Uint32Array, categories?: string[], palette?: string[]}|null}
  */
 export function resolveColorChannel(color, n, fallback = "#3987e5") {
   if (color == null) {
-    return { mode: "constant", color: fallback };
+    return { mode: "constant", constant: fallback };
   }
   if (typeof color === "string") {
-    return { mode: "constant", color };
+    return { mode: "constant", constant: color };
   }
   if (typeof color === "number") {
     if (!Number.isFinite(color)) {
@@ -277,5 +277,5 @@ export function resolveColorChannel(color, n, fallback = "#3987e5") {
     }
     return factorizeCategories(raw);
   }
-  return { mode: "constant", color: String(color) };
+  return { mode: "constant", constant: String(color) };
 }
