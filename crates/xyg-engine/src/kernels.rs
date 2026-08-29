@@ -962,6 +962,48 @@ pub fn write_scene_dash(dash: &SceneDash, out: &mut [f64]) -> Option<usize> {
     }
 }
 
+/// Scene linecap admit: round/omitted, butt, square, or reject (ABI 219).
+///
+/// Hosts map `None` / omitted to round, `False` to reject, `0` to butt, and
+/// `2` to square. Names are case-insensitive after trim. Empty text is
+/// omitted/round. Whitespace-only and unknown names reject — they do not
+/// fail-open as round.
+pub const SCENE_LINECAP_NONE: u8 = 255;
+
+/// Admitted Scene stroke linecap.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SceneLinecap {
+    /// Omitted, empty, or the `round` name.
+    Round,
+    /// `butt` → packed code 0.
+    Butt,
+    /// `square` → packed code 2.
+    Square,
+}
+
+/// Admit a Scene linecap from UTF-8 text.
+pub fn scene_linecap_admit(text: &str) -> Option<SceneLinecap> {
+    if text.is_empty() {
+        return Some(SceneLinecap::Round);
+    }
+    match text.trim().to_ascii_lowercase().as_str() {
+        "" => None,
+        "butt" => Some(SceneLinecap::Butt),
+        "square" => Some(SceneLinecap::Square),
+        "round" => Some(SceneLinecap::Round),
+        _ => None,
+    }
+}
+
+/// Packed XYLC/XYTO linecap byte: 255 = round/omitted, 0 = butt, 2 = square.
+pub fn scene_linecap_code(cap: SceneLinecap) -> u8 {
+    match cap {
+        SceneLinecap::Round => SCENE_LINECAP_NONE,
+        SceneLinecap::Butt => 0,
+        SceneLinecap::Square => 2,
+    }
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -8695,6 +8737,19 @@ mod fuzz {
             Some(2)
         );
         assert_eq!(&out[..2], &[6.0, 4.0]);
+    }
+
+    #[test]
+    fn scene_linecap_admit_matches_host_and_rejects_unknown() {
+        assert_eq!(scene_linecap_admit(""), Some(SceneLinecap::Round));
+        assert_eq!(scene_linecap_admit(" round "), Some(SceneLinecap::Round));
+        assert_eq!(scene_linecap_admit("Butt"), Some(SceneLinecap::Butt));
+        assert_eq!(scene_linecap_admit("SQUARE"), Some(SceneLinecap::Square));
+        assert_eq!(scene_linecap_admit("  "), None);
+        assert_eq!(scene_linecap_admit("foo"), None);
+        assert_eq!(scene_linecap_code(SceneLinecap::Round), 255);
+        assert_eq!(scene_linecap_code(SceneLinecap::Butt), 0);
+        assert_eq!(scene_linecap_code(SceneLinecap::Square), 2);
     }
 
     #[test]

@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 218;
+pub const ABI_VERSION: u32 = 219;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4669,6 +4669,36 @@ pub unsafe extern "C" fn xyg_scene_dash_admit(
             *out_n = count;
         }
         i32::from(count > 0)
+    })
+}
+
+/// Scene linecap admit (ABI 219).
+///
+/// `text` is a cap name (`butt` / `round` / `square`), case-insensitive after
+/// trim. Returns `0` butt, `2` square, `255` round/omitted, `-1` reject,
+/// `-2` FFI. Empty native pointers are null/`0`. Unknown names and
+/// whitespace-only strings reject.
+///
+/// # Safety
+/// `text` must address `text_len` readable bytes when `text_len` is non-zero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_linecap_admit(text: *const u8, text_len: usize) -> i32 {
+    if text_len > 0 && text.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let bytes = if text_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(text, text_len)
+        };
+        let Ok(text) = std::str::from_utf8(bytes) else {
+            return -2;
+        };
+        match kernels::scene_linecap_admit(text) {
+            Some(cap) => i32::from(kernels::scene_linecap_code(cap)),
+            None => -1,
+        }
     })
 }
 

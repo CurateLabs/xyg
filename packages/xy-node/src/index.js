@@ -33,6 +33,7 @@ export {
   arrowTaperPolygon,
   arrowTrimPolylineEnd,
   sceneDashAdmit,
+  sceneLinecapAdmit,
   roundedRectPoly,
   violinDensity,
   boxStats,
