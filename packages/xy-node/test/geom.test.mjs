@@ -647,6 +647,10 @@ test("sourceColorCss uses color_ch only like Python", () => {
     "#3987e5",
   );
   assert.equal(sourceColorCss({ style: { color: "#123456" } }), "#123456");
+  assert.equal(
+    sourceColorCss({ colorChannel: { mode: "constant", constant: "red" } }),
+    "#3987e5",
+  );
 });
 
 test("color2Channel uses color2_ch only like Python", () => {
