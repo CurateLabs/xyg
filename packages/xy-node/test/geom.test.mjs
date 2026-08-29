@@ -29,7 +29,9 @@ import {
   sceneHiddenOrPerItemAdmit,
   sceneRibbonColor2Classify,
   sceneScatterPaintChannelAdmit,
+  scatterPacksPaintPlane,
   scatterPaintChannelNames,
+  scatterUsesDensity,
   sceneTickLabelStrategy,
   sceneTickAnchor,
   sceneFillGradientAdmit,
@@ -660,6 +662,18 @@ test("scatterPaintChannelNames matches Python per_item_channel_names", () => {
     }),
     ["opacity"],
   );
+});
+
+test("scatterPacksPaintPlane missing kind matches Python empty not scatter", () => {
+  const perItem = {
+    color_ch: { mode: "continuous", values: [0, 1] },
+    x: [0, 1],
+  };
+  assert.equal(scatterPacksPaintPlane({ ...perItem, kind: "scatter" }), true);
+  assert.equal(scatterPacksPaintPlane({ ...perItem }), false);
+  assert.equal(scatterPacksPaintPlane({ ...perItem, kind: "" }), false);
+  assert.equal(scatterUsesDensity({ x: { length: 200_001 } }), false);
+  assert.equal(scatterUsesDensity({ kind: "line", x: { length: 200_001 } }), false);
 });
 
 test("sceneHeatmapShapeAdmit matches host table", () => {
