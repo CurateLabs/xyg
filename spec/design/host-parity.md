@@ -894,6 +894,7 @@ Node XYTC joined fill uses `style.joined_fill` only like Python `_pack_xytc`; `j
 Node XYTC stroke perimeter uses `style.stroke_perimeter` only like Python `_pack_xytc`; `strokePerimeter` is not a stroke-perimeter key.
 Node XYTC COLOR_CH packing uses `color_ch` only like Python `_pack_xytc`; `colorChannel` is not a packed-channel fallback.
 Node XYTC size_ch packing uses `size_ch` only like Python `_pack_xytc`; `sizeChannel` is not a packed-channel fallback.
+Node XYEF stroke-width-only observation uses `style.stroke_width` only like Python; `strokeWidth` is not an observation key.
 Node `hexbinPacksRgbaPlane` uses `color_ch` only like Python `_hexbin_packs_rgba_plane`; `colorChannel` is not an RGBA-plane fallback.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
@@ -1354,6 +1355,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node XYTC stroke perimeter uses `stroke_perimeter` only.
   Node XYTC COLOR_CH packing uses `color_ch` only.
   Node XYTC size_ch packing uses `size_ch` only.
+  Node XYEF stroke-width-only observation uses `stroke_width` only.
   Node `hexbinPacksRgbaPlane` uses `color_ch` only.
 ---
 
