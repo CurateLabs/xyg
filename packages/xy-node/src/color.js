@@ -4,7 +4,7 @@
  * unit-f32 channels for numeric encodings (Python `_ship_channels` parity).
  */
 import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8 } from "./native.js";
-import { DEFAULT_PALETTE } from "./encode.js";
+import { DEFAULT_PALETTE, normalizeF32 } from "./encode.js";
 
 function u8Ptr(view) {
   return pointer(view, "uint8_t *");
@@ -175,6 +175,16 @@ export function clipQuantizeU8(values) {
   if (code === -2) throw new RangeError("invalid clip-quantize-u8 request");
   if (code !== 1) return null;
   return out;
+}
+
+/** Normalize over `[lo, hi]` then ABI 251 clip-quantize (Python `quantize_unit_u8`). */
+export function quantizeUnitU8(values, lo, hi) {
+  const n = values == null ? 0 : values.length;
+  if (!(Number.isFinite(lo) && Number.isFinite(hi)) || hi <= lo) {
+    return new Uint8Array(n);
+  }
+  const unit = normalizeF32(values, lo, hi, { nanMode: "zero" });
+  return clipQuantizeU8(Float64Array.from(unit));
 }
 
 function categoryLabel(value) {

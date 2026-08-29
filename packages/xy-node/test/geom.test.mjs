@@ -15,6 +15,7 @@ import {
   arrowGeometry,
   arrowShaftPoints,
   pinsOffsetToZero,
+  quantizeUnitU8,
   sceneDashAdmit,
   sceneLinecapAdmit,
   densityOverlayOpacity,
@@ -478,6 +479,13 @@ test("sceneConstantColorAdmit matches host table", () => {
   assert.equal(sceneConstantColorAdmit(true, false, false, true), 1);
   assert.equal(sceneConstantColorAdmit(true, false, false, false), 0);
   assert.equal(sceneConstantColorAdmit(true, true, true, true), 2);
+});
+
+test("quantizeUnitU8 matches normalize then clip-quantize", () => {
+  assert.deepEqual([...quantizeUnitU8([0, 5, 10], 0, 10)], [0, 128, 255]);
+  assert.deepEqual([...quantizeUnitU8([Number.POSITIVE_INFINITY], 0, 1)], [0]);
+  assert.deepEqual([...quantizeUnitU8([Number.NaN], 0, 1)], [0]);
+  assert.deepEqual([...quantizeUnitU8([1], 5, 5)], [0]);
 });
 
 test("colormapLutRgba8 matches ABI 206 RGB plus opaque alpha", () => {
