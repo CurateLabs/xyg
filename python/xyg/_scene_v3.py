@@ -1909,7 +1909,9 @@ def _hexbin_packs_rgba_plane(trace: Any) -> bool:
     ):
         return False
     channel = getattr(trace, "color_ch", None)
-    if channel is None or getattr(channel, "mode", None) not in {"categorical", "direct_rgba"}:
+    if channel is None:
+        return False
+    if not _native.scene_hexbin_rgba_plane_admit(getattr(channel, "mode", None)):
         return False
     return _hexbin_cell_rgba8(trace) is not None
 

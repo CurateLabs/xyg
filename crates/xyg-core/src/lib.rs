@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 242;
+pub const ABI_VERSION: u32 = 243;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5562,6 +5562,36 @@ pub unsafe extern "C" fn xyg_scene_hexbin_colormap_plane_admit(
             return -2;
         };
         kernels::scene_hexbin_colormap_plane_admit(text, has_values)
+    })
+}
+
+/// Scene hexbin RGBA-plane admit (ABI 243).
+///
+/// Exact `categorical`/`direct_rgba` return `1`. Unknown names, including
+/// empty text, return `0`. No lowercasing. `-2` FFI. Empty native pointers
+/// are null/`0`. Kind checks, field picking, and RGBA8 packing stay host.
+///
+/// # Safety
+/// `text` must address `text_len` readable bytes when `text_len` is
+/// nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_hexbin_rgba_plane_admit(
+    text: *const u8,
+    text_len: usize,
+) -> i32 {
+    if text_len > 0 && text.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let bytes = if text_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(text, text_len)
+        };
+        let Ok(text) = std::str::from_utf8(bytes) else {
+            return -2;
+        };
+        kernels::scene_hexbin_rgba_plane_admit(text)
     })
 }
 
