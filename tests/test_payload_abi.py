@@ -105,6 +105,20 @@ def test_payload_even_indices_matches_numpy_int64_linspace() -> None:
     np.testing.assert_array_equal(idx, np.linspace(0, 10, 4, dtype=np.int64))
 
 
+def test_payload_segment_budget_matches_host_max() -> None:
+    assert kernels.payload_segment_budget(100) == max(1024, 100 * 4)
+    assert kernels.payload_segment_budget(256) == 1024
+    assert kernels.payload_segment_budget(257) == 1028
+    assert kernels.payload_segment_budget(256.9) == 1024
+    assert kernels.payload_segment_budget(0) == 1024
+    assert kernels.payload_segment_budget(-10.7) == 1024
+    try:
+        kernels.payload_segment_budget(float("nan"))
+        raise AssertionError("expected ValueError")
+    except ValueError:
+        pass
+
+
 def test_payload_sample_target_indices_keep_all() -> None:
     keep_all, idx = kernels.payload_sample_target_indices(100, 8_192)
     assert keep_all

@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 213;
+pub const ABI_VERSION: u32 = 214;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -12573,6 +12573,16 @@ pub unsafe extern "C" fn xyg_payload_even_indices(
     })
 }
 
+/// Stem/errorbar emit count budget (ABI 214). Returns
+/// `max(1024, floor(px_width) * 4)`, or `usize::MAX` when `px_width` is
+/// non-finite. Empty native pointers are not used.
+#[no_mangle]
+pub extern "C" fn xyg_payload_segment_budget(px_width: f64) -> usize {
+    ffi_guard(usize::MAX, || {
+        lod_plan::payload_segment_budget(px_width).unwrap_or(usize::MAX)
+    })
+}
+
 /// Density-overlay sample of implicit ids `0..n` (ABI 205). Owns
 /// `min(1, target/n)`, level/growth fraction, threshold, and range sampling.
 /// `out_keep_all` is 1 when every row ships. Returns the count written, the
@@ -17781,6 +17791,9 @@ mod tests {
         assert_eq!(keep_all, 0);
         assert_eq!(vis_n, 3);
         assert_eq!(&vis_out[..3], &[0, 2, 4]);
+        assert_eq!(xyg_payload_segment_budget(100.0), 1024);
+        assert_eq!(xyg_payload_segment_budget(257.0), 1028);
+        assert_eq!(xyg_payload_segment_budget(f64::NAN), usize::MAX);
         let even_n = unsafe {
             xyg_payload_even_indices(11, 4, &mut keep_all, vis_out.as_mut_ptr(), vis_out.len())
         };

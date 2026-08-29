@@ -843,6 +843,8 @@ def load() -> ctypes.CDLL:
         U32P,
         ctypes.c_size_t,
     ]
+    lib.xyg_payload_segment_budget.restype = ctypes.c_size_t
+    lib.xyg_payload_segment_budget.argtypes = [ctypes.c_double]
     lib.xyg_payload_sample_target_indices.restype = ctypes.c_size_t
     lib.xyg_payload_sample_target_indices.argtypes = [
         ctypes.c_size_t,
@@ -2926,6 +2928,12 @@ def main() -> None:
         4, 10, ctypes.byref(even_all), _ptr(even_out, ctypes.c_uint32), 4
     )
     ok(even_all.value == 1 and even_n == 0, "payload_even_indices keep-all")
+    ok(
+        lib.xyg_payload_segment_budget(100.0) == 1024
+        and lib.xyg_payload_segment_budget(257.0) == 1028
+        and lib.xyg_payload_segment_budget(float("nan")) == ctypes.c_size_t(-1).value,
+        "payload_segment_budget floor and sentinel",
+    )
     sample_keep = ctypes.c_int32(-1)
     sample_n = lib.xyg_payload_sample_target_indices(
         100,

@@ -31,6 +31,7 @@ import {
   geometryOffset,
   payloadEvenIndices,
   payloadM4Indices,
+  payloadSegmentBudget,
   payloadSampleTargetIndices,
   payloadVisibleIndices,
   minMax,
@@ -1301,7 +1302,7 @@ export class Figure {
     let y0v = t.y0;
     let y1v = t.y1;
     let tier = "direct";
-    const maxGroups = Math.max(1024, Math.floor(Number(pxWidth)) * 4);
+    const maxGroups = payloadSegmentBudget(pxWidth);
     if (t.kind === "errorbar" && t.count) {
       const n = x0v.length;
       const count = t.count;

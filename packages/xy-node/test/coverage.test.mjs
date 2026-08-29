@@ -20,6 +20,7 @@ import {
   payloadM4Indices,
   payloadEvenIndices,
   payloadSampleTargetIndices,
+  payloadSegmentBudget,
   payloadVisibleIndices,
   shouldUseDensity,
   stairsChart,
@@ -93,6 +94,16 @@ test("payloadEvenIndices matches numpy int64 linspace", () => {
   const even = payloadEvenIndices(11, 4);
   assert.equal(even.keepAll, false);
   assert.deepEqual([...even.indices], [0, 3, 6, 10]);
+});
+
+test("payloadSegmentBudget matches host max(1024, floor(px)*4)", () => {
+  assert.equal(payloadSegmentBudget(100), Math.max(1024, 100 * 4));
+  assert.equal(payloadSegmentBudget(256), 1024);
+  assert.equal(payloadSegmentBudget(257), 1028);
+  assert.equal(payloadSegmentBudget(256.9), 1024);
+  assert.equal(payloadSegmentBudget(0), 1024);
+  assert.equal(payloadSegmentBudget(-10.7), 1024);
+  assert.throws(() => payloadSegmentBudget(Number.NaN), /finite/);
 });
 
 test("payloadSampleTargetIndices keep-all under target", () => {

@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 213;
-export const SIGNATURE_SHA256 = "fdb5dcae5d49e430b6d2eba4c0b66afdb0cf862de9153ac7e2dd34c66715dde6";
+export const ABI_VERSION = 214;
+export const SIGNATURE_SHA256 = "bfc547a33f2549192a2ef339dd23f9305e36b36fb5e4d53c1211edd47abc1e55";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -132,6 +132,7 @@ export let xyPaintEffectiveRgba;
 export let xyPayloadEvenIndices;
 export let xyPayloadM4Indices;
 export let xyPayloadSampleTargetIndices;
+export let xyPayloadSegmentBudget;
 export let xyPayloadTier;
 export let xyPayloadVisibleIndices;
 export let xyPayloadVisibleMask;
@@ -436,6 +437,7 @@ export function bindGeneratedAbi(lib) {
   xyPayloadEvenIndices = lib.func("size_t xyg_payload_even_indices(size_t n, size_t count, int32_t * out_keep_all, uint32_t * out, size_t capacity)");
   xyPayloadM4Indices = lib.func("size_t xyg_payload_m4_indices(uint64_t n_points, int32_t polar, const double * x, const double * y, size_t n, double x0, double x1, size_t n_buckets, const double * bin_x, double bin_x0, double bin_x1, int32_t * out_tier, uint32_t * out, size_t capacity)");
   xyPayloadSampleTargetIndices = lib.func("size_t xyg_payload_sample_target_indices(size_t n, size_t target, uint64_t seed, uint32_t level, double growth, int32_t * out_keep_all, uint32_t * out, size_t capacity)");
+  xyPayloadSegmentBudget = lib.func("size_t xyg_payload_segment_budget(double px_width)");
   xyPayloadTier = lib.func("int32_t xyg_payload_tier(int32_t kind, uint64_t n_points, int32_t polar, int32_t force_density, int32_t force_direct, int32_t per_item)");
   xyPayloadVisibleIndices = lib.func("size_t xyg_payload_visible_indices(const double * x, const double * y, size_t n, int32_t x_log, int32_t y_log, const double * base, int32_t has_base, int32_t prefiltered, int32_t x_has_nulls, int32_t y_has_nulls, int32_t base_has_nulls, int32_t * out_keep_all, uint32_t * out, size_t capacity)");
   xyPayloadVisibleMask = lib.func("size_t xyg_payload_visible_mask(const double * x, const double * y, size_t n, int32_t x_log, int32_t y_log, const double * base, int32_t has_base, uint8_t * out, size_t capacity)");

@@ -366,6 +366,28 @@ pub fn payload_visible_indices(
     }
 }
 
+/// Stem/errorbar emit count budget: `max(1024, floor(px_width) * 4)` (ABI 214).
+///
+/// Matches Python `max(1024, int(px_width) * 4)` and Node
+/// `Math.max(1024, Math.floor(Number(pxWidth)) * 4)` for the finite
+/// non-negative widths hosts actually pass. Non-finite widths return `None`.
+/// Negative finite widths still yield `1024` because `max(1024, negative)` is
+/// `1024`. Saturates below `usize::MAX` so that sentinel stays the FFI error.
+pub fn payload_segment_budget(px_width: f64) -> Option<usize> {
+    if !px_width.is_finite() {
+        return None;
+    }
+    if px_width < 0.0 {
+        return Some(1024);
+    }
+    let floor = px_width.floor();
+    if floor >= (u64::MAX / 4) as f64 {
+        return Some(usize::MAX - 1);
+    }
+    let width = floor as u64;
+    Some(width.saturating_mul(4).max(1024) as usize)
+}
+
 /// NumPy `linspace(0, n-1, count, dtype=np.int64)` as u32 (ABI 205).
 ///
 /// Truncates toward 0 and pins the last element to `n-1`. When `n <= count`
@@ -651,6 +673,18 @@ mod tests {
             ),
             Some(PayloadIndexSel::KeepAll)
         );
+    }
+
+    #[test]
+    fn payload_segment_budget_matches_host_max() {
+        assert_eq!(payload_segment_budget(100.0), Some(1024));
+        assert_eq!(payload_segment_budget(256.0), Some(1024));
+        assert_eq!(payload_segment_budget(256.9), Some(1024));
+        assert_eq!(payload_segment_budget(257.0), Some(1028));
+        assert_eq!(payload_segment_budget(0.0), Some(1024));
+        assert_eq!(payload_segment_budget(-10.7), Some(1024));
+        assert!(payload_segment_budget(f64::NAN).is_none());
+        assert!(payload_segment_budget(f64::INFINITY).is_none());
     }
 
     #[test]

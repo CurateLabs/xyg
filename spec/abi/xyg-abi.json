@@ -1,9 +1,9 @@
 {
-  "abi_version": 213,
+  "abi_version": 214,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "fdb5dcae5d49e430b6d2eba4c0b66afdb0cf862de9153ac7e2dd34c66715dde6",
+  "signature_sha256": "bfc547a33f2549192a2ef339dd23f9305e36b36fb5e4d53c1211edd47abc1e55",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -18064,6 +18064,41 @@
         "nullable": false
       },
       "c_signature": "size_t xyg_payload_sample_target_indices(size_t n, size_t target, uint64_t seed, uint32_t level, double growth, int32_t * out_keep_all, uint32_t * out, size_t capacity)"
+    },
+    {
+      "name": "xyg_payload_segment_budget",
+      "node_name": "xyPayloadSegmentBudget",
+      "nargs": 1,
+      "arguments": [
+        {
+          "name": "px_width",
+          "type": {
+            "rust": "f64",
+            "c": "double",
+            "ctypes": "ctypes.c_double",
+            "koffi": "double",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "usize",
+        "c": "size_t",
+        "ctypes": "ctypes.c_size_t",
+        "koffi": "size_t",
+        "kind": "scalar",
+        "bits": "pointer",
+        "signed": false,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "size_t xyg_payload_segment_budget(double px_width)"
     },
     {
       "name": "xyg_payload_tier",

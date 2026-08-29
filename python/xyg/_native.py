@@ -10060,6 +10060,21 @@ def payload_even_indices(n: int, count: int) -> tuple[bool, npt.NDArray[np.uint3
     return False, out[:written].copy()
 
 
+def payload_segment_budget(px_width: float) -> int:
+    """Stem/errorbar emit count budget via ``xyg_payload_segment_budget`` (ABI 214).
+
+    ``max(1024, floor(px_width) * 4)``.
+    """
+    if isinstance(px_width, (bool, np.bool_)) or not isinstance(
+        px_width, (int, float, np.integer, np.floating, numbers.Real)
+    ):
+        raise ValueError("px_width must be a finite number")
+    written = int(_lib.xyg_payload_segment_budget(float(px_width)))
+    if written == _USIZE_MAX:
+        raise ValueError("invalid payload_segment_budget arguments")
+    return written
+
+
 def payload_sample_target_indices(
     n: int,
     target: int,
