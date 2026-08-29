@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinPitchAdmit, sceneHeatmapExtentAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinPitchAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -5551,7 +5551,12 @@ function figureTraceSupport(figure, trace) {
   if (kindClass & SCENE_KIND_CLASS_HEXBIN && !sceneHexbinReduceAdmit(style.reduce)) flags |= XYFS_TRACE_CUSTOM_HEX_REDUCE;
   if (
     kindClass & SCENE_KIND_CLASS_HEATMAP
-    && (style.truecolor || style.colormap != null || trace.rgba_grid != null || trace.rgba != null)
+    && sceneHeatmapColormapAdmit(
+      style.truecolor ? 1 : 0,
+      style.colormap != null ? 1 : 0,
+      trace.rgba_grid != null ? 1 : 0,
+      trace.rgba != null ? 1 : 0,
+    )
   ) flags |= XYFS_TRACE_HEATMAP_COLORMAP;
   if (Object.hasOwn(style, "fill") && typeof style.fill !== "string") {
     if (admitFillGradient(trace) == null) flags |= XYFS_TRACE_NON_CSS_FILL;
