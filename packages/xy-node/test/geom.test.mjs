@@ -53,6 +53,7 @@ import {
   meshHasPerItem,
   packXyTaColormap,
   hexbinXyTaColormap,
+  constantMarkColor,
   xyHfColormap,
   channelConstantCss,
   sceneMeshPaintPlaneAdmit,
@@ -356,6 +357,22 @@ test("xyHfColormap uses style.colormap only like Python", () => {
   assert.equal(xyHfColormap({ colormap: "viridis", colormapStops: [[0, 0, 0]] }).flags, 1 << 5);
   assert.equal(xyHfColormap({}), null);
   assert.equal(xyHfColormap({ colormapStops: [[0, 0, 0]] }), null);
+});
+
+test("constantMarkColor uses color_ch.constant only like Python", () => {
+  assert.equal(
+    constantMarkColor({ color_ch: { mode: "constant", constant: "red" } }),
+    "red",
+  );
+  assert.equal(constantMarkColor({ color_ch: "red" }), null);
+  assert.equal(
+    constantMarkColor({ color_ch: { mode: "constant", color: "red" } }),
+    null,
+  );
+  assert.equal(
+    constantMarkColor({ color: { mode: "constant", constant: "blue" } }),
+    "#3987e5",
+  );
 });
 
 test("channelConstantCss uses channel.constant only like Python", () => {

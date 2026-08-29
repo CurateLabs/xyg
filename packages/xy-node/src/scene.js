@@ -1677,22 +1677,14 @@ function normalizeFillSpec(fill) {
   return parseLinearGradient(fill, "mark");
 }
 
-function constantMarkColor(trace) {
-  const channel = trace.color_ch ?? trace.colorChannel ?? trace.color;
+export function constantMarkColor(trace) {
+  const channel = trace.color_ch ?? trace.colorChannel;
   if (classifyRibbonColor2(trace) === "fail") return null;
-  let hasChannel = channel != null;
-  let constantOk = false;
-  let constant = null;
-  if (typeof channel === "string") {
-    hasChannel = true;
-    constantOk = true;
-    constant = channel;
-  } else if (channel != null && typeof channel === "object") {
-    if (channel.mode === "constant" && (channel.constant != null || channel.color != null)) {
-      constantOk = true;
-      constant = String(channel.constant ?? channel.color);
-    }
-  }
+  const hasChannel = channel != null;
+  const constantOk =
+    hasChannel
+    && channel.mode === "constant"
+    && channel.constant != null;
   const scatterDensity = String(trace.kind ?? "") === "scatter" && scatterUsesDensity(trace);
   const packsPaint =
     hexbinPacksPaintPlane(trace)
@@ -1700,7 +1692,7 @@ function constantMarkColor(trace) {
     || meshPacksPaintPlane(trace)
     || scatterPacksPaintPlane(trace);
   const code = sceneConstantColorAdmit(hasChannel, constantOk, scatterDensity, packsPaint);
-  if (code === 2) return String(constant);
+  if (code === 2) return String(channel.constant);
   if (code === 1) return String(trace.style?.color ?? "#3987e5");
   return null;
 }
