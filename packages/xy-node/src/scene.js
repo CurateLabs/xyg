@@ -3289,6 +3289,13 @@ function packGradientSpec(fill) {
   return concatBytes(parts);
 }
 
+/** XYTC line width. Python `_pack_xytc` reads `"line_width" in style` only. */
+export function packXyTcLineWidth(style) {
+  const record = style ?? {};
+  if (!Object.hasOwn(record, "line_width")) return { flags: 0, value: 0 };
+  return { flags: XYTC_HAS_LINE_WIDTH, value: Number(record.line_width) };
+}
+
 function packXyTc(figure) {
   const traces = figure.traces ?? [];
   const records = [];
@@ -3343,9 +3350,10 @@ function packXyTc(figure) {
       flags |= XYTC_HAS_WIDTH;
       width = Number(style.width);
     }
-    if (Object.hasOwn(style, "line_width") || Object.hasOwn(style, "lineWidth")) {
-      flags |= XYTC_HAS_LINE_WIDTH;
-      lineWidth = Number(style.line_width ?? style.lineWidth);
+    const packedLineWidth = packXyTcLineWidth(style);
+    if (packedLineWidth.flags) {
+      flags |= packedLineWidth.flags;
+      lineWidth = packedLineWidth.value;
     }
     let hexDx = Number.NaN;
     let hexDy = Number.NaN;
