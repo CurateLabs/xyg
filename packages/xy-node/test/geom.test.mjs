@@ -889,6 +889,13 @@ test("hexbinPacksColormapPlane matches Python channel.values only", () => {
     }),
     true,
   );
+  assert.equal(
+    hexbinPacksColormapPlane({
+      kind: "hexbin",
+      colorChannel: { mode: "continuous", values: [1, 2, 3] },
+    }),
+    false,
+  );
 });
 
 test("sceneHexbinRgbaPlaneAdmit matches host table", () => {
