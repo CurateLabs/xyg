@@ -43,7 +43,6 @@ import {
   xyScenePackProduct,
   xyScenePackProductFacts,
   xyScenePackAnnotationFacts,
-  xyScenePackHeatmapFacts,
   xyScenePackSceneExtras,
   xyScenePackSceneExtrasFromSidecars,
   xyScenePackDensityGrid,
@@ -116,21 +115,8 @@ function decodePackedRows(out, code) {
   return rows;
 }
 
-const XYHF_FAMILY_HEATMAP = 0;
-const XYHF_FAMILY_DENSITY = 1;
-const XYHF_HAS_RGBA = 1 << 0;
-const XYHF_HAS_RGBA_GRID = 1 << 1;
-const XYHF_HAS_GRID = 1 << 2;
-const XYHF_HAS_ENCODED = 1 << 3;
-const XYHF_HAS_MEAN_RGBA = 1 << 4;
 const XYHF_HAS_NAMED_CMAP = 1 << 5;
 const XYHF_HAS_STOPS = 1 << 6;
-const XYHF_HAS_TRUECOLOR = 1 << 7;
-const XYHF_HAS_COLOR_CH = 1 << 8;
-const XYHF_HAS_STYLE_COLOR = 1 << 9;
-const XYHF_HAS_OPACITY = 1 << 10;
-const XYHF_HAS_FILL_OPACITY = 1 << 11;
-const XYHF_HAS_DOMAIN = 1 << 12;
 
 function packProduct({
   kind, flags = 0, stepMode = 0, symbol = 0, styleRef = 0, traceId = 0,
@@ -1379,35 +1365,6 @@ function encodeUtf8Magic(text) {
   return encodeUtf8(text).slice(0, 4);
 }
 
-function packXyHf({
-  family, flags, stableId, rows, cols, lo, hi, opacity, fillOpacity, remainder,
-}) {
-  const extra = remainder ?? new Uint8Array();
-  const out = new Uint8Array(64 + extra.length);
-  const view = new DataView(out.buffer);
-  out.set(encodeUtf8Magic("XYHF"), 0);
-  view.setUint32(4, 1, true);
-  view.setBigUint64(8, BigInt(stableId), true);
-  view.setUint32(16, rows >>> 0, true);
-  view.setUint32(20, cols >>> 0, true);
-  view.setUint32(24, flags >>> 0, true);
-  out[28] = family & 0xff;
-  view.setFloat64(32, Number(lo), true);
-  view.setFloat64(40, Number(hi), true);
-  view.setFloat64(48, Number(opacity), true);
-  view.setFloat64(56, Number(fillOpacity), true);
-  out.set(extra, 64);
-  return out;
-}
-
-function packXyHfPrefixed(payload) {
-  const body = payload instanceof Uint8Array ? payload : new Uint8Array(payload ?? []);
-  const out = new Uint8Array(4 + body.length);
-  new DataView(out.buffer).setUint32(0, body.length, true);
-  out.set(body, 4);
-  return out;
-}
-
 function packF64Le(values) {
   const out = new Uint8Array(values.length * 8);
   const view = new DataView(out.buffer);
@@ -1415,22 +1372,6 @@ function packF64Le(values) {
     view.setFloat64(index * 8, Number(values[index]), true);
   }
   return out;
-}
-
-function packHeatmapFacts(facts) {
-  const source = facts instanceof Uint8Array ? facts : new Uint8Array(facts ?? []);
-  if (!source.length) return new Uint8Array();
-  const out = new Uint8Array(Math.max(256, source.length + 64));
-  const code = xyScenePackHeatmapFacts(
-    u8Ptr(source),
-    BigInt(source.length),
-    u8Ptr(out),
-    BigInt(out.length),
-  );
-  if (code === -5) throw new RangeError("Scene heatmap or density plane shape is invalid");
-  if (code === -6) throw new RangeError("Scene heatmap colormap requires RGB stops");
-  if (code < 0) throw new RangeError("invalid scene heatmap packing");
-  return out.subarray(0, code);
 }
 
 export function xyHfColormap(style) {
@@ -1445,123 +1386,6 @@ export function xyHfColormap(style) {
     };
   }
   return null;
-}
-
-function appendXyHfColormap(style, parts, label) {
-  const plane = xyHfColormap(style);
-  if (plane == null) return 0;
-  if ((plane.flags & XYHF_HAS_STOPS) && (plane.bytes.length < 3 || plane.bytes.length % 3 !== 0)) {
-    throw new RangeError(`Scene ${label} colormap requires RGB stops`);
-  }
-  parts.push(packXyHfPrefixed(plane.bytes));
-  return plane.flags;
-}
-
-function heatmapPaintPlane(trace, rows, cols, stableId) {
-  const style = trace.style ?? {};
-  const packed = trace.rgba;
-  const planes = trace.rgba_grid;
-  const grid = trace.grid;
-  if (grid == null) throw new RangeError("heatmap Scene v12 compilation requires a scalar grid");
-  let flags = XYHF_HAS_GRID;
-  const parts = [packF64Le(grid)];
-  if (packed != null) {
-    flags |= XYHF_HAS_RGBA;
-    const raw = packed instanceof Uint8Array
-      ? packed
-      : packed.rgba instanceof Uint8Array
-        ? packed.rgba
-        : Uint8Array.from(packed);
-    if (raw.length !== rows * cols * 4) {
-      throw new RangeError("Scene heatmap RGBA plane must match rows x cols");
-    }
-    parts.unshift(raw);
-  }
-  if (planes != null) {
-    if (planes.length !== 4) {
-      throw new RangeError("Scene heatmap truecolor requires four RGBA planes");
-    }
-    flags |= XYHF_HAS_RGBA_GRID;
-    const interleaved = new Float64Array(rows * cols * 4);
-    for (let row = 0; row < rows; row += 1) {
-      for (let col = 0; col < cols; col += 1) {
-        const index = (row * cols + col) * 4;
-        for (let channel = 0; channel < 4; channel += 1) {
-          interleaved[index + channel] = Number(planes[channel][row * cols + col] ?? planes[channel][row]?.[col]);
-        }
-      }
-    }
-    const rgbaOffset = packed != null ? 1 : 0;
-    parts.splice(rgbaOffset, 0, new Uint8Array(interleaved.buffer));
-  }
-  flags |= appendXyHfColormap(style, parts, "heatmap");
-  if (style.truecolor) flags |= XYHF_HAS_TRUECOLOR;
-  const domain = style.domain;
-  const lo = domain == null || domain.length !== 2 ? Number.NaN : Number(domain[0]);
-  const hi = domain == null || domain.length !== 2 ? Number.NaN : Number(domain[1]);
-  if (domain != null && domain.length === 2) flags |= XYHF_HAS_DOMAIN;
-  return packHeatmapFacts(packXyHf({
-    family: XYHF_FAMILY_HEATMAP,
-    flags,
-    stableId,
-    rows,
-    cols,
-    lo,
-    hi,
-    opacity: Number.NaN,
-    fillOpacity: Number.NaN,
-    remainder: concatBytes(parts),
-  }));
-}
-
-function densityPaintPlane(trace, encoded, rows, cols, maximum, stableId, meanRgba = null) {
-  const style = trace.style ?? {};
-  const encodedBytes = encoded instanceof Uint8Array ? encoded : Uint8Array.from(encoded);
-  if (encodedBytes.length !== rows * cols) {
-    throw new RangeError("Scene density grid must match DENSITY_GRID");
-  }
-  let flags = XYHF_HAS_ENCODED;
-  const parts = [encodedBytes];
-  if (meanRgba != null) {
-    const rgbaBytes = meanRgba instanceof Uint8Array ? meanRgba : Uint8Array.from(meanRgba);
-    if (rgbaBytes.length !== rows * cols * 4) {
-      throw new RangeError("Scene mean-color plane must match DENSITY_GRID");
-    }
-    flags |= XYHF_HAS_MEAN_RGBA;
-    parts.push(rgbaBytes);
-  }
-  flags |= appendXyHfColormap(style, parts, "density");
-  const channel = trace.color_ch ?? trace.colorChannel;
-  if (channel != null && channel.mode === "constant" && channel.constant != null) {
-    flags |= XYHF_HAS_COLOR_CH;
-    parts.push(packXyHfPrefixed(new TextEncoder().encode(String(channel.constant))));
-  }
-  if (style.color != null) {
-    flags |= XYHF_HAS_STYLE_COLOR;
-    parts.push(packXyHfPrefixed(new TextEncoder().encode(String(style.color))));
-  }
-  let opacity = Number.NaN;
-  let fillOpacity = Number.NaN;
-  if (Object.hasOwn(style, "opacity")) {
-    flags |= XYHF_HAS_OPACITY;
-    opacity = Number(style.opacity);
-  }
-  if (Object.hasOwn(style, "fill_opacity") || Object.hasOwn(style, "fillOpacity")) {
-    flags |= XYHF_HAS_FILL_OPACITY;
-    fillOpacity = Number(style.fill_opacity ?? style.fillOpacity);
-  }
-  return packHeatmapFacts(packXyHf({
-    family: XYHF_FAMILY_DENSITY,
-    flags,
-    stableId,
-    rows,
-    cols,
-    lo: Number(maximum),
-    hi: Number.NaN,
-    opacity,
-    fillOpacity,
-    remainder: concatBytes(parts),
-  }));
 }
 
 function packDensityGrid(x, y, x0, x1, y0, y1, source = null) {

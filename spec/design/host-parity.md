@@ -879,6 +879,7 @@ Node `packXyTaColormap` stop bytes require RGB rows like Python `_colormap_stop_
 Node `xyHfColormap` stop bytes require RGB rows like Python `_colormap_stop_bytes`; a flat or RGBA list packs empty stops.
 Node `packXyTaRgbaGrid` stacks flattened planes like Python `_pack_xyta` `rgba_grid`; nested 2D index fallback is not a plane layout.
 Node heatmap `trace.rgba` stores a flat uint8 buffer; `packXyTaRgba` packs that buffer like Python `_pack_xyta` and does not unwrap nested `.rgba`.
+Node heatmap and density Scene packing is XYTA-only like Python `_pack_xyta`; unused XYHF paint-plane helpers are not a second plane layout.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1323,6 +1324,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `xyHfColormap` stop bytes require RGB rows.
   Node `packXyTaRgbaGrid` stacks flattened planes.
   Node heatmap `trace.rgba` is a flat uint8 buffer.
+  Node heatmap and density Scene packing is XYTA-only.
 
 ---
 
