@@ -16,6 +16,7 @@ import {
   hexbinPacksRgbaPlane,
   itemApplyOpacity,
   itemFillRgba8,
+  itemStrokeRgba8,
   itemWidths,
   markerPathScale,
   arrowGeometry,
@@ -701,6 +702,35 @@ test("itemFillRgba8 uses color_ch only like Python", () => {
     colorChannel: { mode: "constant", constant: "#ff0000" },
   }, 1);
   assert.deepEqual([...fromCamel], [...fallback]);
+});
+
+test("itemStrokeRgba8 uses stroke_ch only like Python", () => {
+  const fills = new Uint8Array([1, 2, 3, 4]);
+  assert.equal(itemStrokeRgba8({ stroke_ch: { mode: "match_fill" } }, fills, 1), fills);
+  const camelMatch = itemStrokeRgba8({ strokeChannel: { mode: "match_fill" } }, fills, 1);
+  const fallback = itemStrokeRgba8({}, fills, 1);
+  assert.notEqual(camelMatch, fills);
+  assert.deepEqual([...camelMatch], [...fallback]);
+  const fromCh = itemStrokeRgba8(
+    { stroke_ch: { mode: "constant", constant: "#ff0000" } },
+    fills,
+    1,
+  );
+  const fromCamel = itemStrokeRgba8(
+    { strokeChannel: { mode: "constant", constant: "#ff0000" } },
+    fills,
+    1,
+  );
+  assert.deepEqual([...fromCamel], [...fallback]);
+  const fromBoth = itemStrokeRgba8(
+    {
+      stroke_ch: { mode: "constant", constant: "#ff0000" },
+      strokeChannel: { mode: "constant", constant: "#0000ff" },
+    },
+    fills,
+    1,
+  );
+  assert.deepEqual([...fromBoth], [...fromCh]);
 });
 
 test("scatterPaintChannelNames uses color_ch only like Python", () => {

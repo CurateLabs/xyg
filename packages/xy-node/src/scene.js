@@ -5627,8 +5627,8 @@ export function itemFillRgba8(trace, n) {
   return itemApplyOpacity(trace, packed, n);
 }
 
-function itemStrokeRgba8(trace, fills, n) {
-  const strokeCh = trace.stroke_ch ?? trace.strokeChannel;
+export function itemStrokeRgba8(trace, fills, n) {
+  const strokeCh = trace.stroke_ch;
   if (strokeCh != null && strokeCh.mode === "match_fill") return fills;
   const fallback = String((trace.style ?? {}).stroke ?? "transparent");
   const packed = channelEndRgba8(strokeCh, n, fallback);
