@@ -1501,6 +1501,28 @@ def scene_hexbin_rgba_plane_admit(text: str | None = None) -> bool:
     return code == 1
 
 
+def scene_mesh_paint_plane_admit(
+    text: str | None = None, joined_fill: int = 0, has_per_item: int = 0
+) -> bool:
+    """Scene mesh paint-plane admit via ``xyg_scene_mesh_paint_plane_admit`` (ABI 244).
+
+    Empty native pointers are ``0``. ``joined_fill`` field picking and
+    ``has_per_item`` gathering stay host.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(
+        _lib.xyg_scene_mesh_paint_plane_admit(
+            encoded if encoded else 0,
+            len(encoded),
+            int(joined_fill),
+            int(has_per_item),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-mesh-paint-plane-admit request")
+    return code == 1
+
+
 def scene_hexbin_pitch_admit(dx: float, dy: float) -> bool:
     """Scene hexbin cell-pitch admit via ``xyg_scene_hexbin_pitch_admit`` (ABI 237).
 

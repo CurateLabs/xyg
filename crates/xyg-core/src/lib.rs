@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 243;
+pub const ABI_VERSION: u32 = 244;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5592,6 +5592,40 @@ pub unsafe extern "C" fn xyg_scene_hexbin_rgba_plane_admit(
             return -2;
         };
         kernels::scene_hexbin_rgba_plane_admit(text)
+    })
+}
+
+/// Scene mesh paint-plane admit (ABI 244).
+///
+/// Exact `triangle_mesh` plus `joined_fill == 0` plus a nonzero
+/// `has_per_item` flag return `1`. Unknown kinds, including empty text,
+/// joined fill, or a zero flag return `0`. No lowercasing. `-2` FFI.
+/// Empty native pointers are null/`0`. `joined_fill` field picking and
+/// `has_per_item` gathering stay host.
+///
+/// # Safety
+/// `text` must address `text_len` readable bytes when `text_len` is
+/// nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_mesh_paint_plane_admit(
+    text: *const u8,
+    text_len: usize,
+    joined_fill: i32,
+    has_per_item: i32,
+) -> i32 {
+    if text_len > 0 && text.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let bytes = if text_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(text, text_len)
+        };
+        let Ok(text) = std::str::from_utf8(bytes) else {
+            return -2;
+        };
+        kernels::scene_mesh_paint_plane_admit(text, joined_fill, has_per_item)
     })
 }
 

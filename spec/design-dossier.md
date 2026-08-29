@@ -1617,6 +1617,11 @@ ABI 243 `xyg_scene_hexbin_rgba_plane_admit` owns Scene hexbin RGBA-plane
 modes (exact `categorical`/`direct_rgba`; unknown/empty → 0; no lowercasing)
 so Python `_hexbin_packs_rgba_plane` and Node `hexbinPacksRgbaPlane` cannot
 drift. Kind checks, field picking, and RGBA8 packing stay host.
+ABI 244 `xyg_scene_mesh_paint_plane_admit` owns Scene mesh paint-plane packing
+(exact `triangle_mesh` plus `joined_fill == 0` plus a per-item flag;
+unknown/empty → 0; no lowercasing) so Python `_mesh_packs_paint_plane` and
+Node `meshPacksPaintPlane` cannot drift. `joined_fill` field picking and
+`has_per_item` gathering stay host.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1770,6 +1775,11 @@ ABI 243 `xyg_scene_hexbin_rgba_plane_admit` owns Scene hexbin RGBA-plane
 modes (exact `categorical`/`direct_rgba`; unknown/empty → 0; no lowercasing)
 so Python `_hexbin_packs_rgba_plane` and Node `hexbinPacksRgbaPlane` cannot
 drift. Kind checks, field picking, and RGBA8 packing stay host.
+ABI 244 `xyg_scene_mesh_paint_plane_admit` owns Scene mesh paint-plane packing
+(exact `triangle_mesh` plus `joined_fill == 0` plus a per-item flag;
+unknown/empty → 0; no lowercasing) so Python `_mesh_packs_paint_plane` and
+Node `meshPacksPaintPlane` cannot drift. `joined_fill` field picking and
+`has_per_item` gathering stay host.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

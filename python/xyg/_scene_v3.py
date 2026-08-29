@@ -1975,11 +1975,14 @@ def _mesh_packs_paint_plane(trace: Any) -> bool:
 
     Custom `role` is identity metadata. Per-item fill/stroke/width intern onto
     TriangleFace PolyFills as XYHP kind 6 (ABI 195). `joined_fill` stays one
-    ring and cannot represent per-face paint.
+    ring and cannot represent per-face paint. Kind / joined / per-item admit
+    is ABI 244; field picking and per-item gathering stay host.
     """
-    if str(getattr(trace, "kind", "") or "") != "triangle_mesh" or _mesh_joined_fill(trace):
-        return False
-    return bool(getattr(trace, "has_per_item_channels", lambda: False)())
+    return _native.scene_mesh_paint_plane_admit(
+        str(getattr(trace, "kind", "") or ""),
+        1 if _mesh_joined_fill(trace) else 0,
+        1 if bool(getattr(trace, "has_per_item_channels", lambda: False)()) else 0,
+    )
 
 
 def _item_apply_opacity(trace: Any, packed: bytes, n: int) -> bytes | None:

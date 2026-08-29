@@ -75,6 +75,7 @@ scene_linear_gradient_prefix = _impl.scene_linear_gradient_prefix
 scene_linecap_admit = _impl.scene_linecap_admit
 scene_marker_glyph_admit = _impl.scene_marker_glyph_admit
 scene_marker_path_admit = _impl.scene_marker_path_admit
+scene_mesh_paint_plane_admit = _impl.scene_mesh_paint_plane_admit
 scene_parse_linear_gradient = _impl.scene_parse_linear_gradient
 scene_rect_extra_flags = _impl.scene_rect_extra_flags
 scene_ribbon_color2_classify = _impl.scene_ribbon_color2_classify
@@ -328,6 +329,7 @@ __all__ = [
     "scene_linecap_admit",
     "scene_marker_glyph_admit",
     "scene_marker_path_admit",
+    "scene_mesh_paint_plane_admit",
     "scene_parse_linear_gradient",
     "scene_rect_extra_flags",
     "scene_ribbon_color2_classify",
