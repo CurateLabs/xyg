@@ -2626,10 +2626,9 @@ def _emit_triangle_mesh(
         )
     else:
         stroke_intrinsic = _trace_paint_rgba(t, "color", n, color, read)
-    strokes = np.rint(
+    strokes = _rgba8(
         _paint.effective_rgba(stroke_intrinsic, t, read, component="stroke", default_opacity=1.0)
-        * 255.0
-    ).astype(np.uint8)
+    )
     projected = (sx(x0[:n]), sy(y0[:n]), sx(x1[:n]), sy(y1[:n]), sx(x2[:n]), sy(y2[:n]))
     if n == 0:
         return
