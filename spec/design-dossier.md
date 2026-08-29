@@ -1492,8 +1492,9 @@ ABI 192 owns polar painted heatmap inverse-raster sampling on Scene encode
 gather-after-inverse pixel map used by `_svg.polar_heatmap_rgba` (#283);
 hosts still color the returned source indices.
 ABI 208 `xyg_geometry_offset` / `xyg_f32_safe_scale` owns §4/§16 encode
-offset and the §19 f32-safe scale so Python and Node cannot drift; hosts
-still map log-family scale names (`log`/`symlog`) onto `pin_zero`.
+offset and the §19 f32-safe scale so Python and Node cannot drift.
+ABI 216 `xyg_scale_pins_offset` owns log-family `pin_zero` admission
+(`log`/`symlog`, case-sensitive). Hosts still pack `EncodedColumn` metadata.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1521,6 +1522,10 @@ ABI 214 `xyg_payload_segment_budget` owns the stem/errorbar count budget
 even-index expansion across concatenated role groups so Python and Node
 cannot drift on cap-attached errorbar sampling. Hosts still expand
 transition-key role maps, gather extra columns, and ship the chosen rows.
+ABI 216 `xyg_scale_pins_offset` owns log-family `pin_zero` admission
+(`log`/`symlog`, case-sensitive) so Python `lod.pins_offset_to_zero` and
+Node `pinsOffsetToZero` cannot drift. Hosts still pack `EncodedColumn`
+metadata.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

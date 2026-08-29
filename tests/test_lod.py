@@ -628,6 +628,12 @@ def test_pins_offset_to_zero_agrees_with_geometry_offset() -> None:
         assert not lod.pins_offset_to_zero(scale)
         assert lod.geometry_offset(scale, 10.0, 20.0) == 15.0
 
+    assert not lod.pins_offset_to_zero("Log")
+    assert kernels.scale_pins_offset("log")
+    assert kernels.scale_pins_offset("symlog")
+    assert not kernels.scale_pins_offset("linear")
+    assert not kernels.scale_pins_offset("")
+    assert not kernels.scale_pins_offset("Log")
     assert kernels.geometry_offset(True, 10.0, 20.0) == 0.0
     assert kernels.geometry_offset(False, 10.0, 20.0) == 15.0
     assert kernels.geometry_offset(False, float("nan"), 20.0) == 0.0

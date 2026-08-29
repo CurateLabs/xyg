@@ -880,6 +880,13 @@ pub fn geometry_offset(pin_zero: bool, lo: f64, hi: f64) -> f64 {
     }
 }
 
+/// Whether an axis scale name pins geometry offset to 0 (ABI 216, §16).
+///
+/// `log` and `symlog` pin; every other name, including empty, is linear-family.
+pub fn scale_pins_offset(scale: &str) -> bool {
+    matches!(scale, "log" | "symlog")
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -7794,6 +7801,11 @@ mod tests {
         let huge = F32_SAFE_MAG * 10.0;
         let scale = f32_safe_scale(0.0, -huge, huge);
         assert!((scale - 0.1).abs() < 1e-12);
+        assert!(scale_pins_offset("log"));
+        assert!(scale_pins_offset("symlog"));
+        assert!(!scale_pins_offset("linear"));
+        assert!(!scale_pins_offset(""));
+        assert!(!scale_pins_offset("Log"));
     }
 
     #[test]

@@ -8,6 +8,7 @@ import {
   geometryOffset,
   hexbinRing,
   markerPathScale,
+  pinsOffsetToZero,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -16,6 +17,12 @@ import {
 } from "../src/index.js";
 
 test("geometryOffset pins log family and nonfinite to zero", () => {
+  assert.equal(pinsOffsetToZero("log"), true);
+  assert.equal(pinsOffsetToZero("symlog"), true);
+  assert.equal(pinsOffsetToZero("linear"), false);
+  assert.equal(pinsOffsetToZero("Log"), false);
+  assert.equal(pinsOffsetToZero(""), false);
+  assert.equal(pinsOffsetToZero(null), false);
   assert.equal(geometryOffset("log", 10, 20), 0);
   assert.equal(geometryOffset("symlog", 10, 20), 0);
   assert.equal(geometryOffset("linear", 10, 20), 15);
