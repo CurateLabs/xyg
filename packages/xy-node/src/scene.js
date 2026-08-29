@@ -3818,6 +3818,11 @@ function packTraceCompile(facts) {
   return out.subarray(0, code);
 }
 
+export function packXyTaRgba(packed) {
+  if (packed instanceof Uint8Array) return packed;
+  return Uint8Array.from(packed);
+}
+
 export function packXyTaRgbaGrid(planes) {
   if (planes == null || planes.length !== 4) return new Uint8Array();
   try {
@@ -3966,12 +3971,7 @@ function packXyTa(figure, xDomain, yDomain) {
       }
       if (trace.rgba != null) {
         flags |= XYTA_HAS_RGBA;
-        const packed = trace.rgba;
-        rgba = packed instanceof Uint8Array
-          ? packed
-          : packed.rgba instanceof Uint8Array
-            ? packed.rgba
-            : Uint8Array.from(packed);
+        rgba = packXyTaRgba(trace.rgba);
       }
       if (trace.rgba_grid != null) {
         flags |= XYTA_HAS_RGBA_GRID;

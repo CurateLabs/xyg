@@ -472,7 +472,7 @@ test("heatmap rgba matches Python fixture when present", () => {
       : Buffer.from(fixture.heatmap.stops_u8_hex, "hex");
   const hm = composeHeatmap(z, { rows, cols, colormapStops: stops });
   if (fixture != null) {
-    assert.equal(u8Hex(hm.traces[0].rgba.rgba), fixture.heatmap.rgba_u8_hex);
+    assert.equal(u8Hex(hm.traces[0].rgba), fixture.heatmap.rgba_u8_hex);
   }
   const fig = heatmapChart(z, { rows, cols, colormapStops: stops });
   assert.equal(fig.buildPayload().spec.traces[0].kind, "heatmap");
