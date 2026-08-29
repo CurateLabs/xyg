@@ -1138,6 +1138,20 @@ def scene_ribbon_color2_classify(
     return "fail"
 
 
+def scene_tick_label_strategy(text: str | None = None) -> int:
+    """Scene tick-label strategy admit via ``xyg_scene_tick_label_strategy`` (ABI 224).
+
+    Returns ``0`` auto through ``6`` off. Unknown names, including empty text,
+    map to ``0``. Empty native pointers are ``0``. Hosts still pick
+    ``tick_label_strategy`` vs ``collision`` vs camelCase keys.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_tick_label_strategy(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-tick-label-strategy request")
+    return int(code)
+
+
 def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
     """f32-safe encode scale for offset-encoded geometry (ABI 208, §19)."""
     out = ctypes.c_double()

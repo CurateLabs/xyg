@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 223
-#define XYG_ABI_SIGNATURE_SHA256 "20053a9aca79d0499f5ff02d9c01a2ba82987c3d63e101b159473fa48ac760bf"
+#define XYG_ABI_VERSION 224
+#define XYG_ABI_SIGNATURE_SHA256 "d439b891767192cf12e6decc6cd2d0754e3d6238cb468705fb7ac78ba6bc248a"
 
 #ifdef __cplusplus
 extern "C" {
@@ -239,6 +239,7 @@ size_t xyg_scene_static_export(const uint8_t * encoded, size_t encoded_len, uint
 size_t xyg_scene_support_reason(uint32_t request_version, uint64_t features, uint8_t * out, size_t out_cap);
 size_t xyg_scene_svg(const uint8_t * encoded, size_t encoded_len, uint8_t * out, size_t out_cap);
 size_t xyg_scene_tick_label_layout(const double * positions, size_t n, const uint32_t * label_lens, const uint8_t * labels, size_t labels_len, uint32_t kind, uint32_t side, uint32_t anchor, uint32_t flags, double font_size, double min_gap, double explicit_angle, uint32_t * out_index, double * out_angle, uint32_t * out_row, size_t out_cap);
+int32_t xyg_scene_tick_label_strategy(const uint8_t * text, size_t text_len);
 uint32_t xyg_scene_version();
 size_t xyg_sector_triangles(const double * values, size_t len, const double * explode, double center_x, double center_y, double radius, double inner_radius, double start_degrees, int32_t counterclockwise, int32_t normalize, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, double * out_sector, size_t capacity);
 int32_t xyg_spectrogram(const double * data, size_t len, size_t nfft, size_t noverlap, double sample_rate, double * out_frequency, double * out_time, double * out_power);
