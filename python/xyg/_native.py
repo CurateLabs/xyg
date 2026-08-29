@@ -1307,6 +1307,20 @@ def scene_rect_extra_flags(
     return int(code)
 
 
+def scene_gradient_dir(text: str | None = None) -> int:
+    """Scene fill-gradient direction pack via ``xyg_scene_gradient_dir`` (ABI 229).
+
+    Returns ``0`` down, ``1`` up, ``2`` right, ``3`` left, or ``255`` when
+    unknown. Empty native pointers are ``0``. Hosts still pick ``dir`` vs
+    missing keys. Space ``mark``/``plot`` packing stays host.
+    """
+    encoded = b"" if text is None else str(text).encode("utf-8")
+    code = int(_lib.xyg_scene_gradient_dir(encoded if encoded else 0, len(encoded)))
+    if code == -2:
+        raise ValueError("invalid scene-gradient-dir request")
+    return int(code)
+
+
 def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
     """f32-safe encode scale for offset-encoded geometry (ABI 208, §19)."""
     out = ctypes.c_double()

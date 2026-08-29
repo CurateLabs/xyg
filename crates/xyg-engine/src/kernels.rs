@@ -1471,6 +1471,25 @@ pub fn scene_rect_extra_flags(
     flags
 }
 
+/// Scene fill-gradient direction codes (ABI 229).
+pub const SCENE_GRAD_DIR_DOWN: i32 = 0;
+pub const SCENE_GRAD_DIR_UP: i32 = 1;
+pub const SCENE_GRAD_DIR_RIGHT: i32 = 2;
+pub const SCENE_GRAD_DIR_LEFT: i32 = 3;
+pub const SCENE_GRAD_DIR_UNKNOWN: i32 = 255;
+
+/// Pack a Scene fill-gradient direction name. No lowercasing and no hyphen
+/// rewrite. Unknown names, including empty text, return `255`.
+pub fn scene_gradient_dir(text: &str) -> i32 {
+    match text {
+        "down" => SCENE_GRAD_DIR_DOWN,
+        "up" => SCENE_GRAD_DIR_UP,
+        "right" => SCENE_GRAD_DIR_RIGHT,
+        "left" => SCENE_GRAD_DIR_LEFT,
+        _ => SCENE_GRAD_DIR_UNKNOWN,
+    }
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -9512,6 +9531,19 @@ mod fuzz {
             scene_rect_extra_flags("violin", false, false, &[4.0, 5.0], true, 0.0),
             0
         );
+    }
+
+    #[test]
+    fn scene_gradient_dir_matches_host_table() {
+        assert_eq!(scene_gradient_dir("down"), SCENE_GRAD_DIR_DOWN);
+        assert_eq!(scene_gradient_dir("up"), SCENE_GRAD_DIR_UP);
+        assert_eq!(scene_gradient_dir("right"), SCENE_GRAD_DIR_RIGHT);
+        assert_eq!(scene_gradient_dir("left"), SCENE_GRAD_DIR_LEFT);
+        assert_eq!(scene_gradient_dir(""), SCENE_GRAD_DIR_UNKNOWN);
+        assert_eq!(scene_gradient_dir("foo"), SCENE_GRAD_DIR_UNKNOWN);
+        assert_eq!(scene_gradient_dir("DOWN"), SCENE_GRAD_DIR_UNKNOWN);
+        assert_eq!(scene_gradient_dir("to bottom"), SCENE_GRAD_DIR_UNKNOWN);
+        assert_eq!(scene_gradient_dir("to-bottom"), SCENE_GRAD_DIR_UNKNOWN);
     }
 
     #[test]

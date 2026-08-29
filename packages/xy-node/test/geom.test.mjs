@@ -22,6 +22,7 @@ import {
   sceneFillGradientAdmit,
   sceneParseLinearGradient,
   sceneRectExtraFlags,
+  sceneGradientDir,
   monotoneTangents,
   ribbonEdge,
   ribbonPolygon,
@@ -242,6 +243,17 @@ test("sceneRectExtraFlags matches host table", () => {
   assert.equal(sceneRectExtraFlags("bar", false, false, [0], false, 0.2), 1 << 7);
   assert.equal(sceneRectExtraFlags("bar", true, false, [0], false, 0.2), 0);
   assert.equal(sceneRectExtraFlags("heatmap", true, false, [0], false, 0.2), 1 << 7);
+});
+
+test("sceneGradientDir matches host table", () => {
+  assert.equal(sceneGradientDir("down"), 0);
+  assert.equal(sceneGradientDir("up"), 1);
+  assert.equal(sceneGradientDir("right"), 2);
+  assert.equal(sceneGradientDir("left"), 3);
+  assert.equal(sceneGradientDir(""), 255);
+  assert.equal(sceneGradientDir("foo"), 255);
+  assert.equal(sceneGradientDir("DOWN"), 255);
+  assert.equal(sceneGradientDir("to bottom"), 255);
 });
 
 test("sceneRibbonColor2Classify matches host table", () => {

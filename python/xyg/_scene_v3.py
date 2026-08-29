@@ -2491,7 +2491,7 @@ def _pack_xyss(
             flags |= _XYSS_HAS_GRAD
             stops = gradient["stops"]
             n_stops = len(stops)
-            grad_dir = _GRAD_DIR_CODES[gradient["dir"]]
+            grad_dir = _native.scene_gradient_dir(gradient["dir"])
             plot_space = 1 if gradient.get("space") == "plot" else 0
             for t, rgba in stops:
                 remainder.extend(struct.pack("<f4B", float(t), rgba[0], rgba[1], rgba[2], rgba[3]))
@@ -2526,9 +2526,6 @@ def _fill_is_gradient_authoring(fill: Any) -> bool:
     if isinstance(fill, dict):
         return True
     return isinstance(fill, str) and fill.strip().lower().startswith("linear-gradient(")
-
-
-_GRAD_DIR_CODES = {"down": 0, "up": 1, "right": 2, "left": 3}
 
 
 def _admitted_fill_gradient_from_fill(fill: Any, mark_color: str) -> dict[str, Any] | None:
@@ -2810,7 +2807,7 @@ def _pack_marker_blob(value: Any) -> bytes | None:
 
 def _pack_gradient_spec(fill: dict[str, Any]) -> bytes | None:
     space = {"mark": 0, "plot": 1}.get(fill.get("space"), 255)
-    direction = _GRAD_DIR_CODES.get(fill.get("dir"), 255)
+    direction = _native.scene_gradient_dir(fill.get("dir"))
     stops = fill.get("stops")
     if not isinstance(stops, (list, tuple)):
         return None

@@ -277,6 +277,8 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         ctypes.c_double,
     ]
+    lib.xyg_scene_gradient_dir.restype = ctypes.c_int32
+    lib.xyg_scene_gradient_dir.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2544,6 +2546,37 @@ def main() -> None:
     ok(
         lib.xyg_scene_rect_extra_flags(null_u8, 0, 0, 0, null_f64, 0, 0, 0.2) == (1 << 7),
         "scene_rect_extra_flags empty kind wedge",
+    )
+    down_name = array("B", b"down")
+    up_name = array("B", b"up")
+    right_name = array("B", b"right")
+    left_name = array("B", b"left")
+    down_upper = array("B", b"DOWN")
+    to_bottom = array("B", b"to bottom")
+    ok(
+        lib.xyg_scene_gradient_dir(_ptr(down_name, ctypes.c_uint8), len(down_name)) == 0,
+        "scene_gradient_dir down",
+    )
+    ok(
+        lib.xyg_scene_gradient_dir(_ptr(up_name, ctypes.c_uint8), len(up_name)) == 1,
+        "scene_gradient_dir up",
+    )
+    ok(
+        lib.xyg_scene_gradient_dir(_ptr(right_name, ctypes.c_uint8), len(right_name)) == 2,
+        "scene_gradient_dir right",
+    )
+    ok(
+        lib.xyg_scene_gradient_dir(_ptr(left_name, ctypes.c_uint8), len(left_name)) == 3,
+        "scene_gradient_dir left",
+    )
+    ok(lib.xyg_scene_gradient_dir(null_u8, 0) == 255, "scene_gradient_dir empty")
+    ok(
+        lib.xyg_scene_gradient_dir(_ptr(down_upper, ctypes.c_uint8), len(down_upper)) == 255,
+        "scene_gradient_dir DOWN",
+    )
+    ok(
+        lib.xyg_scene_gradient_dir(_ptr(to_bottom, ctypes.c_uint8), len(to_bottom)) == 255,
+        "scene_gradient_dir to bottom",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8

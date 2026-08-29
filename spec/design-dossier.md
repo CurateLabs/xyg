@@ -1549,6 +1549,11 @@ ABI 228 `xyg_scene_rect_extra_flags` owns Scene rect extra-flag pack
 (unusable-gradient bit, admitted corner-radius kinds, polar wedge-gap
 exception) so Python `_rect_extra_flags` and Node `rectExtraFlags` cannot
 drift. Hosts still coerce fill mappings, radius lists, and `wedge_gap`.
+ABI 229 `xyg_scene_gradient_dir` owns Scene fill-gradient direction codes
+(`down`/`up`/`right`/`left`; unknown/empty → 255; no lowercasing) so Python
+`_pack_gradient_spec` / XYSS pack and Node `packGradientSpec` cannot drift.
+Hosts still pick `dir` vs missing keys. Space `mark`/`plot` packing stays
+host. Compile-path `to bottom` aliases stay extra.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1634,6 +1639,11 @@ ABI 228 `xyg_scene_rect_extra_flags` owns Scene rect extra-flag pack
 (unusable-gradient bit, admitted corner-radius kinds, polar wedge-gap
 exception) so Python `_rect_extra_flags` and Node `rectExtraFlags` cannot
 drift. Hosts still coerce fill mappings, radius lists, and `wedge_gap`.
+ABI 229 `xyg_scene_gradient_dir` owns Scene fill-gradient direction codes
+(`down`/`up`/`right`/`left`; unknown/empty → 255; no lowercasing) so Python
+`_pack_gradient_spec` / XYSS pack and Node `packGradientSpec` cannot drift.
+Hosts still pick `dir` vs missing keys. Space `mark`/`plot` packing stays
+host. Compile-path `to bottom` aliases stay extra.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same
