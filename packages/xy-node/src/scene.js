@@ -5556,9 +5556,9 @@ function hexbinCellRgba8(trace) {
   );
 }
 
-function hexbinPacksRgbaPlane(trace) {
+export function hexbinPacksRgbaPlane(trace) {
   if (!(sceneKindClass(trace.kind) & SCENE_KIND_CLASS_HEXBIN)) return false;
-  const channel = trace.color_ch ?? trace.colorChannel;
+  const channel = trace.color_ch;
   if (channel == null) return false;
   if (!sceneHexbinRgbaPlaneAdmit(channel.mode)) return false;
   return hexbinCellRgba8(trace) != null;
