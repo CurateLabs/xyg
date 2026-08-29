@@ -27,6 +27,7 @@ _SCENE_KIND_CLASS_POLYFILL = 1 << 4
 _SCENE_KIND_CLASS_HEXBIN = 1 << 5
 _SCENE_KIND_CLASS_HEATMAP = 1 << 6
 _SCENE_KIND_CLASS_SCATTER = 1 << 8
+_SCENE_KIND_CLASS_LINE = 1 << 9
 _SCENE_KIND_CLASS_OPACITY = (
     _SCENE_KIND_CLASS_BAND
     | _SCENE_KIND_CLASS_RIBBON
@@ -1826,7 +1827,7 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
     if curve is not None:
         curve_code = _native.scene_curve_classify(curve)
         if curve_code == 1:
-            if kind not in {"line", "area", "error_band"}:
+            if not (kind_class & (_SCENE_KIND_CLASS_LINE | _SCENE_KIND_CLASS_BAND)):
                 flags |= _XYFS_TRACE_DASHED_MARKERS
         elif curve_code != 0:
             flags |= _XYFS_TRACE_DASHED_MARKERS
@@ -2181,9 +2182,12 @@ def _pack_xyta(figure: Any) -> bytes:
             if shape is not None and len(shape) == 2:
                 flags |= _XYTA_SHAPE
                 try:
-                    rows, cols = int(shape[0]), int(shape[1])
+                    rows_f, cols_f = float(shape[0]), float(shape[1])
                 except (TypeError, ValueError):
                     rows = cols = 0
+                else:
+                    if _native.scene_heatmap_shape_admit(rows_f, cols_f):
+                        rows, cols = int(rows_f), int(cols_f)
             raw_grid = getattr(trace, "grid", None)
             if raw_grid is not None:
                 flags |= _XYTA_HAS_GRID
