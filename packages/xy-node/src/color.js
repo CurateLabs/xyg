@@ -3,7 +3,7 @@
  * Ships constant CSS strings, packed RGBA8 for direct_rgba, or continuous
  * unit-f32 channels for numeric encodings (Python `_ship_channels` parity).
  */
-import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit } from "./native.js";
+import { pointer, xyCssColorRgba, xyCssIsFunctional, xyContinuousDomain, xyDirectRgbaAdmit, xyClipQuantizeU8 } from "./native.js";
 import { DEFAULT_PALETTE } from "./encode.js";
 
 function u8Ptr(view) {
@@ -160,6 +160,23 @@ export function directRgbaAdmit(values, components) {
   return out;
 }
 
+/** Clip unit f64 to `[0, 1]`, scale by 255, and quantize to u8 (ABI 251). */
+export function clipQuantizeU8(values) {
+  const xv = values instanceof Float64Array ? values : Float64Array.from(values ?? [], Number);
+  const out = new Uint8Array(xv.length);
+  const code = Number(
+    xyClipQuantizeU8(
+      xv.length ? f64Ptr(xv) : 0,
+      BigInt(xv.length),
+      out.length ? u8Ptr(out) : 0,
+      BigInt(out.length),
+    ),
+  );
+  if (code === -2) throw new RangeError("invalid clip-quantize-u8 request");
+  if (code !== 1) return null;
+  return out;
+}
+
 function categoryLabel(value) {
   if (value == null) return "(missing)";
   if (typeof value === "number" && Number.isNaN(value)) return "(missing)";
@@ -230,11 +247,7 @@ export function resolveColorChannel(color, n, fallback = "#3987e5") {
     const rgb = flattenRgbRows(raw, n);
     if (rgb) {
       const packed = directRgbaAdmit(rgb.flat, rgb.components);
-      const rgba = new Uint8Array(packed.length);
-      for (let i = 0; i < packed.length; i += 1) {
-        rgba[i] = Math.round(Math.min(1, Math.max(0, packed[i])) * 255);
-      }
-      return { mode: "direct_rgba", rgba };
+      return { mode: "direct_rgba", rgba: clipQuantizeU8(packed) };
     }
     if (raw.length !== n) {
       throw new RangeError(`color length ${raw.length} != n=${n}`);

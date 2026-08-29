@@ -1646,6 +1646,11 @@ ABI 250 `xyg_scene_arrays_equal` owns Scene f64 arrays-equal (lengths
 match and every pair is IEEE `==`; empty equal; NaN never equals) so
 Python companion x1/y1 match and Node `exportArraysEqual` cannot drift.
 Field picking and null checks stay host.
+ABI 251 `xyg_clip_quantize_u8` owns unit-f64 clip-to-`[0, 1]` × 255
+ties-to-even u8 quantize (NaN → 0) so Python `_quantized_rgba8` /
+`channels.ship_color_channel` and Node `clipQuantizeU8` /
+`resolveColorChannel` / `channelEndRgba8` cannot drift. Field picking
+stays host.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1828,6 +1833,11 @@ ABI 250 `xyg_scene_arrays_equal` owns Scene f64 arrays-equal (lengths
 match and every pair is IEEE `==`; empty equal; NaN never equals) so
 Python companion x1/y1 match and Node `exportArraysEqual` cannot drift.
 Field picking and null checks stay host.
+ABI 251 `xyg_clip_quantize_u8` owns unit-f64 clip-to-`[0, 1]` × 255
+ties-to-even u8 quantize (NaN → 0) so Python `_quantized_rgba8` /
+`channels.ship_color_channel` and Node `clipQuantizeU8` /
+`resolveColorChannel` / `channelEndRgba8` cannot drift. Field picking
+stays host.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

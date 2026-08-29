@@ -798,6 +798,11 @@ ABI 250 `xyg_scene_arrays_equal` owns Scene f64 arrays-equal (lengths
 match and every pair is IEEE `==`; empty equal; NaN never equals) so
 Python companion x1/y1 match and Node `exportArraysEqual` cannot drift.
 Field picking and null checks stay host.
+ABI 251 `xyg_clip_quantize_u8` owns unit-f64 clip-to-`[0, 1]` × 255
+ties-to-even u8 quantize (NaN → 0) so Python `_quantized_rgba8` /
+`channels.ship_color_channel` and Node `clipQuantizeU8` /
+`resolveColorChannel` / `channelEndRgba8` cannot drift. Field picking
+stays host.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1180,6 +1185,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Scene finite-all admit is ABI 248.
   Scene gradient-solid CSS is ABI 249.
   Scene f64 arrays-equal is ABI 250.
+  Unit-f64 clip-quantize u8 is ABI 251.
 
 ---
 

@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 250;
-export const SIGNATURE_SHA256 = "a91bceb28ae006d3be5db32dc379bf26eecbf58a0ad7568865165e3b86b3f205";
+export const ABI_VERSION = 251;
+export const SIGNATURE_SHA256 = "8b61c0d55fd00994f9959799d10b8e3382648fbd53b1d93593927c50d5219d42";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -31,6 +31,7 @@ export let xyChunkedColumnsOverview;
 export let xyChunkedColumnsRead;
 export let xyChunkedColumnsReadPage;
 export let xyChunkedColumnsRows;
+export let xyClipQuantizeU8;
 export let xyColormapLut;
 export let xyColormapRgba;
 export let xyColormapRgbaCanonical;
@@ -376,6 +377,7 @@ export function bindGeneratedAbi(lib) {
   xyChunkedColumnsRead = lib.func("size_t xyg_chunked_columns_read(uint64_t store, double x0, double x1, double y0, double y1, int32_t use_y, uint64_t budget_bytes, uint64_t generation, double * out_x, double * out_y, size_t capacity, uint64_t * out_stats)");
   xyChunkedColumnsReadPage = lib.func("size_t xyg_chunked_columns_read_page(uint64_t store, double x0, double x1, double y0, double y1, int32_t use_y, uint64_t budget_bytes, uint64_t generation, uint32_t cursor, double * out_x, double * out_y, size_t capacity, uint64_t * out_stats)");
   xyChunkedColumnsRows = lib.func("uint64_t xyg_chunked_columns_rows(uint64_t store)");
+  xyClipQuantizeU8 = lib.func("int32_t xyg_clip_quantize_u8(const double * values, size_t values_len, uint8_t * out, size_t out_len)");
   xyColormapLut = lib.func("int32_t xyg_colormap_lut(const double * t, size_t n, const uint8_t * stops, size_t stop_count, uint8_t * out)");
   xyColormapRgba = lib.func("int32_t xyg_colormap_rgba(const double * raw, size_t w, size_t h, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)");
   xyColormapRgbaCanonical = lib.func("int32_t xyg_colormap_rgba_canonical(const double * raw, size_t w, size_t h, double domain_lo, double domain_hi, const uint8_t * stops, size_t stop_count, uint8_t alpha, uint8_t * out)");

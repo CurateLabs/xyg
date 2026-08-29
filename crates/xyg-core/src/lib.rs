@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 250;
+pub const ABI_VERSION: u32 = 251;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -8554,6 +8554,44 @@ pub unsafe extern "C" fn xyg_direct_rgba_admit(
             std::slice::from_raw_parts_mut(out, capacity)
         };
         kernels::direct_rgba_admit(values, components, out).unwrap_or(usize::MAX)
+    })
+}
+
+/// Clip unit f64 to `[0, 1]`, scale by 255, and quantize to u8 (ABI 251).
+///
+/// Ties round to even. Non-finite results write `0`. Empty slices
+/// (`len == 0`, pointer null/`0`) succeed. `-2` FFI. Field picking stays
+/// host.
+///
+/// # Safety
+/// `values` must address `values_len` readable f64s when `values_len` is
+/// nonzero. `out` must address `out_len` writable u8s when `out_len` is
+/// nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_clip_quantize_u8(
+    values: *const f64,
+    values_len: usize,
+    out: *mut u8,
+    out_len: usize,
+) -> i32 {
+    if values_len > 0 && values.is_null() {
+        return -2;
+    }
+    if out_len > 0 && out.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let values = if values_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(values, values_len)
+        };
+        let out = if out_len == 0 {
+            &mut [][..]
+        } else {
+            std::slice::from_raw_parts_mut(out, out_len)
+        };
+        kernels::clip_quantize_u8(values, out)
     })
 }
 
