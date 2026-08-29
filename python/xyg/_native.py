@@ -1413,6 +1413,29 @@ def scene_kind_class(text: str | None = None) -> int:
     return code
 
 
+def scene_heatmap_colormap_admit(
+    truecolor: int,
+    has_colormap: int,
+    has_rgba_grid: int,
+    has_rgba: int,
+) -> bool:
+    """Scene heatmap colormap eligibility via ``xyg_scene_heatmap_colormap_admit`` (ABI 239).
+
+    Field picking and truthy coercion stay host. Kind checks stay host.
+    """
+    code = int(
+        _lib.xyg_scene_heatmap_colormap_admit(
+            int(truecolor),
+            int(has_colormap),
+            int(has_rgba_grid),
+            int(has_rgba),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-heatmap-colormap-admit request")
+    return code == 1
+
+
 def scene_heatmap_extent_admit(x0: float, x1: float, y0: float, y1: float) -> bool:
     """Scene heatmap cell-extent admit via ``xyg_scene_heatmap_extent_admit`` (ABI 238).
 

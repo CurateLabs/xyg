@@ -1647,6 +1647,21 @@ pub fn scene_heatmap_extent_admit(x0: f64, x1: f64, y0: f64, y1: f64) -> i32 {
     )
 }
 
+/// Admit Scene heatmap colormap eligibility (ABI 239).
+///
+/// Any nonzero flag returns `1`. Field picking and truthy coercion stay
+/// host. Kind checks stay host.
+pub fn scene_heatmap_colormap_admit(
+    truecolor: i32,
+    has_colormap: i32,
+    has_rgba_grid: i32,
+    has_rgba: i32,
+) -> i32 {
+    i32::from(
+        truecolor != 0 || has_colormap != 0 || has_rgba_grid != 0 || has_rgba != 0,
+    )
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -9863,6 +9878,16 @@ mod fuzz {
         assert_eq!(scene_heatmap_extent_admit(0.0, 1.0, 1.0, 0.0), 0);
         assert_eq!(scene_heatmap_extent_admit(f64::NAN, 1.0, 0.0, 1.0), 0);
         assert_eq!(scene_heatmap_extent_admit(0.0, f64::INFINITY, 0.0, 1.0), 0);
+    }
+
+    #[test]
+    fn scene_heatmap_colormap_admit_matches_host_table() {
+        assert_eq!(scene_heatmap_colormap_admit(0, 0, 0, 0), 0);
+        assert_eq!(scene_heatmap_colormap_admit(1, 0, 0, 0), 1);
+        assert_eq!(scene_heatmap_colormap_admit(0, 1, 0, 0), 1);
+        assert_eq!(scene_heatmap_colormap_admit(0, 0, 1, 0), 1);
+        assert_eq!(scene_heatmap_colormap_admit(0, 0, 0, 1), 1);
+        assert_eq!(scene_heatmap_colormap_admit(1, 1, 1, 1), 1);
     }
 
     #[test]

@@ -1594,6 +1594,11 @@ ABI 238 `xyg_scene_heatmap_extent_admit` owns Scene heatmap cell-extent
 admit (all four finite and `x0 < x1 && y0 < y1`) so Python `_heatmap_extent`
 and Node XYEP pack cannot drift. Length==2 and field picking stay host.
 Compile-path `heatmap_extent_columns` in `scene_pack.rs` stays extra.
+ABI 239 `xyg_scene_heatmap_colormap_admit` owns Scene heatmap colormap
+eligibility (OR of already-coerced truecolor / colormap / rgba_grid / rgba
+flags) so Python `_heatmap_uses_colormap` and Node `figureTraceSupport`
+cannot drift. Field picking and truthy coercion stay host. Kind checks
+stay host.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1724,6 +1729,11 @@ ABI 238 `xyg_scene_heatmap_extent_admit` owns Scene heatmap cell-extent
 admit (all four finite and `x0 < x1 && y0 < y1`) so Python `_heatmap_extent`
 and Node XYEP pack cannot drift. Length==2 and field picking stay host.
 Compile-path `heatmap_extent_columns` in `scene_pack.rs` stays extra.
+ABI 239 `xyg_scene_heatmap_colormap_admit` owns Scene heatmap colormap
+eligibility (OR of already-coerced truecolor / colormap / rgba_grid / rgba
+flags) so Python `_heatmap_uses_colormap` and Node `figureTraceSupport`
+cannot drift. Field picking and truthy coercion stay host. Kind checks
+stay host.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

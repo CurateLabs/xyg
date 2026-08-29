@@ -1,9 +1,9 @@
 {
-  "abi_version": 238,
+  "abi_version": 239,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "ee32679d286b75975b78fa861d96307f11f89fc5207d7dce7d5168f1c8f08e2d",
+  "signature_sha256": "27e3d633b32a5692bec6b2ed8ed65ee122efb005f8c8fcfabeaf86f5ddc64ed0",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -28670,6 +28670,86 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_scene_gradient_space(const uint8_t * text, size_t text_len)"
+    },
+    {
+      "name": "xyg_scene_heatmap_colormap_admit",
+      "node_name": "xySceneHeatmapColormapAdmit",
+      "nargs": 4,
+      "arguments": [
+        {
+          "name": "truecolor",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_colormap",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_rgba_grid",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_rgba",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_scene_heatmap_colormap_admit(int32_t truecolor, int32_t has_colormap, int32_t has_rgba_grid, int32_t has_rgba)"
     },
     {
       "name": "xyg_scene_heatmap_extent_admit",

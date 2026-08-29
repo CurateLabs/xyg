@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 238
-SIGNATURE_SHA256 = "ee32679d286b75975b78fa861d96307f11f89fc5207d7dce7d5168f1c8f08e2d"
+ABI_VERSION = 239
+SIGNATURE_SHA256 = "27e3d633b32a5692bec6b2ed8ed65ee122efb005f8c8fcfabeaf86f5ddc64ed0"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -794,6 +794,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_gradient_space
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_heatmap_colormap_admit(int32_t truecolor, int32_t has_colormap, int32_t has_rgba_grid, int32_t has_rgba)
+    function = lib.xyg_scene_heatmap_colormap_admit
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32]
     # int32_t xyg_scene_heatmap_extent_admit(double x0, double x1, double y0, double y1)
     function = lib.xyg_scene_heatmap_extent_admit
     function.restype = ctypes.c_int32

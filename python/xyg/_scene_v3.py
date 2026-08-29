@@ -2083,11 +2083,11 @@ def _mesh_face_widths(trace: Any) -> bytes | None:
 def _heatmap_uses_colormap(trace: Any) -> bool:
     """Return whether a heatmap still needs the compatibility colormap path."""
     style = getattr(trace, "style", None) or {}
-    return bool(
-        style.get("truecolor")
-        or style.get("colormap") is not None
-        or getattr(trace, "rgba_grid", None) is not None
-        or getattr(trace, "rgba", None) is not None
+    return _native.scene_heatmap_colormap_admit(
+        1 if style.get("truecolor") else 0,
+        1 if style.get("colormap") is not None else 0,
+        1 if getattr(trace, "rgba_grid", None) is not None else 0,
+        1 if getattr(trace, "rgba", None) is not None else 0,
     )
 
 
