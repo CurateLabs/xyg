@@ -955,6 +955,15 @@ def geometry_offset(pin_zero: bool, lo: float, hi: float) -> float:
     return float(out.value)
 
 
+def scale_pins_offset(scale: str) -> bool:
+    """Whether an axis scale name pins geometry offset to 0 (ABI 216, §16)."""
+    encoded = str(scale).encode("utf-8")
+    code = int(_lib.xyg_scale_pins_offset(encoded if encoded else 0, len(encoded)))
+    if code < 0:
+        raise ValueError("invalid scale-pins-offset request")
+    return code == 1
+
+
 def f32_safe_scale(offset: float, lo: float, hi: float) -> float:
     """f32-safe encode scale for offset-encoded geometry (ABI 208, §19)."""
     out = ctypes.c_double()

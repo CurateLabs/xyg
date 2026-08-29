@@ -54,6 +54,7 @@ zone_maps_pair = _impl.zone_maps_pair
 encode_f32 = _impl.encode_f32
 f32_safe_scale = _impl.f32_safe_scale
 geometry_offset = _impl.geometry_offset
+scale_pins_offset = _impl.scale_pins_offset
 factorize_fixed = _impl.factorize_fixed
 factorize_fixed_u8 = _impl.factorize_fixed_u8
 factorize_fixed_u8_counts = _impl.factorize_fixed_u8_counts
@@ -270,6 +271,7 @@ __all__ = [
     "rounded_rect_poly",
     "sample_mask",
     "sample_range_indices",
+    "scale_pins_offset",
     "sector_triangles",
     "spectrogram",
     "stacked_bounds",

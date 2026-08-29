@@ -880,15 +880,14 @@ def encode_f32_values(
     return EncodedColumn(meta=meta, values=enc)
 
 
-#: Axis scales whose geometry must be encoded around a zero origin. Callers
-#: that choose an offset themselves (the sticky append offset in `_payload`)
-#: must branch on this, not on their own copy of the scale names.
-LOG_FAMILY_SCALES = ("log", "symlog")
-
-
 def pins_offset_to_zero(scale: str | None) -> bool:
-    """Whether `scale` requires the zero origin `geometry_offset` gives it."""
-    return scale in LOG_FAMILY_SCALES
+    """Whether `scale` requires the zero origin `geometry_offset` gives it.
+
+    Admission is ABI 216 ``xyg_scale_pins_offset`` (`log` / `symlog`).
+    """
+    if scale is None:
+        return False
+    return bool(kernels.scale_pins_offset(scale))
 
 
 def geometry_offset(scale: str | None, lo: float, hi: float) -> float:

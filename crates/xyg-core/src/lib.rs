@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 215;
+pub const ABI_VERSION: u32 = 216;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4576,6 +4576,31 @@ pub unsafe extern "C" fn xyg_encode_f32(
     ffi_guard(0, || {
         kernels::encode_f32_into(data, offset, scale, out);
         1
+    })
+}
+
+/// Whether an axis scale name pins geometry offset to 0 (ABI 216, §16).
+///
+/// Returns `1` for `log` / `symlog`, `0` otherwise. `-1` when `scale` is not
+/// UTF-8 or a non-empty pointer is missing. Empty native pointers are null/`0`.
+///
+/// # Safety
+/// `scale` must address `len` readable bytes when `len` is non-zero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scale_pins_offset(scale: *const u8, len: usize) -> i32 {
+    if len > 0 && scale.is_null() {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        let bytes = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(scale, len)
+        };
+        let Ok(value) = std::str::from_utf8(bytes) else {
+            return -1;
+        };
+        i32::from(kernels::scale_pins_offset(value))
     })
 }
 

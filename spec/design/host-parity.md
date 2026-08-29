@@ -618,8 +618,9 @@ compositing cannot drift (#313). ABI 207 `xyg_polar_heatmap_inverse_map`
 owns the compatibility polar heatmap gather-after-inverse map so SVG/raster
 exporters no longer invert pixels in Python or Node (#283). ABI 208
 `xyg_geometry_offset` / `xyg_f32_safe_scale` owns §4/§16 encode offset and
-the §19 f32-safe scale so Python `lod.py` and Node `encode.js` cannot drift;
-hosts still map log-family scale names onto `pin_zero`. ABI 209
+the §19 f32-safe scale so Python `lod.py` and Node `encode.js` cannot drift.
+ABI 216 `xyg_scale_pins_offset` owns log-family `pin_zero` admission
+(`log`/`symlog`, case-sensitive). Hosts still pack `EncodedColumn` metadata. ABI 209
 `xyg_polar_wedge_points` owns compatibility annular-sector flatten so
 Python `_svg.polar_wedge_points` and Node `polarWedgePoints` cannot drift;
 SVG still emits exact `A` arcs for unrounded wedges. ABI 210
@@ -642,6 +643,10 @@ ABI 214 `xyg_payload_segment_budget` owns the stem/errorbar count budget
 `_emitSegments` cannot drift. ABI 215 `xyg_payload_errorbar_indices` owns
 even-index expansion across concatenated role groups. Hosts still
 gather extra columns, and ship the chosen rows.
+ABI 216 `xyg_scale_pins_offset` owns log-family `pin_zero` admission
+(`log`/`symlog`, case-sensitive) so Python `lod.pins_offset_to_zero` and
+Node `pinsOffsetToZero` cannot drift. Hosts still pack `EncodedColumn`
+metadata.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -992,7 +997,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   offsets are ABI 210; step/stairs expand is ABI 211; authored marker-path
   scale is ABI 212; color CSS/numeric split, domain pad, and direct RGBA admit
   are ABI 213; stem/errorbar count budget is ABI 214; errorbar role-block
-  expand is ABI 215.
+  expand is ABI 215; log-family pin_zero admission is ABI 216.
 
 ---
 

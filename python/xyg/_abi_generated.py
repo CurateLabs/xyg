@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 215
-SIGNATURE_SHA256 = "560e70473373915ed2962e6418d1269939fd3d19c33f851c0988dc48ef2f677a"
+ABI_VERSION = 216
+SIGNATURE_SHA256 = "1698d44f6239722754efecf82f93ac9ac4498045d5c22b44bb6ba55881090359"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -714,6 +714,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_sankey_layout
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_uint64, ctypes.c_uint64, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_double, ctypes.c_double, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_scale_pins_offset(const uint8_t * scale, size_t len)
+    function = lib.xyg_scale_pins_offset
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
     # size_t xyg_scene_axis_ticks(uint32_t kind, double lo, double hi, size_t target, double aux, double * out_ticks, double * out_labeled, size_t * out_labeled_len, double * out_step, size_t out_cap)
     function = lib.xyg_scene_axis_ticks
     function.restype = ctypes.c_size_t

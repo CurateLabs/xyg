@@ -187,6 +187,8 @@ def load() -> ctypes.CDLL:
     lib.xyg_min_max.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_css_is_functional.restype = ctypes.c_int32
     lib.xyg_css_is_functional.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_scale_pins_offset.restype = ctypes.c_int32
+    lib.xyg_scale_pins_offset.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -1959,6 +1961,17 @@ def main() -> None:
     )
     ok(lib.xyg_geometry_offset(0, 10.0, 20.0, null_f64) == 0, "geometry_offset null out")
     ok(lib.xyg_geometry_offset(2, 10.0, 20.0, ctypes.byref(off)) == 0, "geometry_offset bad pin")
+    log_name = array("B", b"log")
+    linear_name = array("B", b"linear")
+    ok(
+        lib.xyg_scale_pins_offset(_ptr(log_name, ctypes.c_uint8), len(log_name)) == 1,
+        "scale_pins_offset log",
+    )
+    ok(
+        lib.xyg_scale_pins_offset(_ptr(linear_name, ctypes.c_uint8), len(linear_name)) == 0,
+        "scale_pins_offset linear",
+    )
+    ok(lib.xyg_scale_pins_offset(null_u8, 0) == 0, "scale_pins_offset empty")
     scale = ctypes.c_double()
     ok(
         lib.xyg_f32_safe_scale(0.0, -1.0, 1.0, ctypes.byref(scale)) == 1 and scale.value == 1.0,
