@@ -5539,7 +5539,7 @@ export function figureTraceSupport(figure, trace) {
 
 export function hexbinPacksColormapPlane(trace) {
   if (!(sceneKindClass(trace.kind) & SCENE_KIND_CLASS_HEXBIN)) return false;
-  const channel = trace.color_ch ?? trace.colorChannel;
+  const channel = trace.color_ch;
   if (channel == null) return false;
   return sceneHexbinColormapPlaneAdmit(channel.mode, channel.values != null);
 }

@@ -903,6 +903,7 @@ Node `scatterHasNonConstantColor` uses `color_ch` only like Python; `colorChanne
 Node `classifyRibbonColor2` source-constant CSS uses `color_ch` only like Python `_classify_ribbon_color2`; `colorChannel` is not a source-constant fallback.
 Node `itemFillRgba8` uses `color_ch` only like Python `_item_fill_rgba8`; `colorChannel` is not a fill-channel fallback.
 Node `resolveDensityBinColors` uses `color_ch` only like Python; `colorChannel` is not a density-bin color channel.
+Node `hexbinPacksColormapPlane` uses `color_ch` only like Python `_hexbin_packs_colormap_plane`; `colorChannel` is not a colormap-plane fallback.
 Node `hexbinXyTaColormap` uses `color_ch` only like Python `_pack_xyta` hexbin colormap; `colorChannel` is not a colormap fallback.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
@@ -1368,6 +1369,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node XYEF joined-fill observation uses `joined_fill` only.
   Node `constantMarkColor` uses `color_ch` only.
   Node `classifyRibbonColor2` source-constant CSS uses `color_ch` only.
+  Node `hexbinPacksColormapPlane` uses `color_ch` only.
   Node `hexbinXyTaColormap` uses `color_ch` only.
 ---
 
