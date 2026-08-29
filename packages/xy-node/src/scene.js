@@ -3289,6 +3289,12 @@ function packGradientSpec(fill) {
   return concatBytes(parts);
 }
 
+/** XYTC fill opacity. Python `_pack_xytc` uses `style.get("fill_opacity", 1.0)` only. */
+export function packXyTcFillOpacity(style, kindClass) {
+  if (!(kindClass & SCENE_KIND_CLASS_OPACITY)) return 1;
+  return Number((style ?? {}).fill_opacity ?? 1);
+}
+
 function packXyTc(figure) {
   const traces = figure.traces ?? [];
   const records = [];
@@ -3315,7 +3321,7 @@ function packXyTc(figure) {
     let strokeOpacity = 1;
     let lineOpacity = 1;
     if (kindClass & SCENE_KIND_CLASS_OPACITY) {
-      fillOpacity = Number(style.fill_opacity ?? style.fillOpacity ?? 1);
+      fillOpacity = packXyTcFillOpacity(style, kindClass);
       strokeOpacity = Number(style.stroke_opacity ?? style.strokeOpacity ?? 1);
     }
     if (kindClass & SCENE_KIND_CLASS_BAND) {
