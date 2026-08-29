@@ -1724,6 +1724,7 @@ Node `scatterPerItemChannels` is mode-based like Python `has_per_item_channels`;
 Node `channelEndRgba8` ignores array and typed-array channels (same as Python object-only); only `null` and mode objects pack.
 Node `channelEndRgba8` categorical paint uses `DEFAULT_PALETTE` when palette is empty (same as Python); fallback CSS is not a missing-slot stand-in.
 Node `packXyTaColormap` stop bytes require RGB rows like Python `_colormap_stop_bytes`; a flat or RGBA list packs empty stops.
+Node `xyHfColormap` stop bytes require RGB rows like Python `_colormap_stop_bytes`; a flat or RGBA list packs empty stops.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1984,6 +1985,7 @@ Node `scatterPerItemChannels` is mode-based like Python `has_per_item_channels`;
 Node `channelEndRgba8` ignores array and typed-array channels (same as Python object-only); only `null` and mode objects pack.
 Node `channelEndRgba8` categorical paint uses `DEFAULT_PALETTE` when palette is empty (same as Python); fallback CSS is not a missing-slot stand-in.
 Node `packXyTaColormap` stop bytes require RGB rows like Python `_colormap_stop_bytes`; a flat or RGBA list packs empty stops.
+Node `xyHfColormap` stop bytes require RGB rows like Python `_colormap_stop_bytes`; a flat or RGBA list packs empty stops.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same
