@@ -2525,7 +2525,9 @@ def _pack_xyss(
 def _fill_is_gradient_authoring(fill: Any) -> bool:
     if isinstance(fill, dict):
         return True
-    return isinstance(fill, str) and fill.strip().lower().startswith("linear-gradient(")
+    if not isinstance(fill, str):
+        return False
+    return _native.scene_linear_gradient_prefix(fill)
 
 
 def _admitted_fill_gradient_from_fill(fill: Any, mark_color: str) -> dict[str, Any] | None:

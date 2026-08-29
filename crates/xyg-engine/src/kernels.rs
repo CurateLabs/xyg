@@ -1490,6 +1490,18 @@ pub fn scene_gradient_dir(text: &str) -> i32 {
     }
 }
 
+/// Scene CSS `linear-gradient(` prefix (ABI 230).
+///
+/// Trim, lowercase, then `starts_with("linear-gradient(")`. Dict/object fills
+/// stay host. Compile-path flag bits stay extra.
+pub fn scene_linear_gradient_prefix(text: &str) -> i32 {
+    i32::from(
+        text.trim()
+            .to_lowercase()
+            .starts_with("linear-gradient("),
+    )
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -9544,6 +9556,21 @@ mod fuzz {
         assert_eq!(scene_gradient_dir("DOWN"), SCENE_GRAD_DIR_UNKNOWN);
         assert_eq!(scene_gradient_dir("to bottom"), SCENE_GRAD_DIR_UNKNOWN);
         assert_eq!(scene_gradient_dir("to-bottom"), SCENE_GRAD_DIR_UNKNOWN);
+    }
+
+    #[test]
+    fn scene_linear_gradient_prefix_matches_host_table() {
+        assert_eq!(scene_linear_gradient_prefix("linear-gradient(red, blue)"), 1);
+        assert_eq!(
+            scene_linear_gradient_prefix("  LINEAR-GRADIENT(red, blue)  "),
+            1
+        );
+        assert_eq!(scene_linear_gradient_prefix("linear-gradient(45deg, red, blue)"), 1);
+        assert_eq!(scene_linear_gradient_prefix("linear-gradient("), 1);
+        assert_eq!(scene_linear_gradient_prefix("radial-gradient(red, blue)"), 0);
+        assert_eq!(scene_linear_gradient_prefix("linear-gradient"), 0);
+        assert_eq!(scene_linear_gradient_prefix(""), 0);
+        assert_eq!(scene_linear_gradient_prefix("red"), 0);
     }
 
     #[test]
