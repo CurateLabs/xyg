@@ -1146,7 +1146,8 @@ def _constant_color(trace: Any, fallback: str) -> str:
         has_channel, constant_ok, scatter_density, packs_paint
     )
     if code == 2:
-        return str(getattr(channel, "constant"))
+        assert channel is not None
+        return str(channel.constant)
     if code == 1:
         return str((getattr(trace, "style", None) or {}).get("color", fallback))
     raise UnsupportedSceneV3("Scene v12 does not yet support data-driven paint channels")
