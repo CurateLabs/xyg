@@ -3730,6 +3730,13 @@ export function packXyTaColormap(trace) {
   return { flags, cmap, stops };
 }
 
+/** Density XYTA fill opacity. Python `_pack_xyta` reads `fill_opacity` only. */
+export function packXyTaFillOpacity(style) {
+  const record = style ?? {};
+  if (!Object.hasOwn(record, "fill_opacity")) return { flags: 0, value: Number.NaN };
+  return { flags: XYTA_HAS_FILL_OPACITY, value: Number(record.fill_opacity) };
+}
+
 function xyTaColormapStopBytes(colormap) {
   try {
     const rows = [];
@@ -3915,9 +3922,10 @@ function packXyTa(figure, xDomain, yDomain) {
         flags |= XYTA_HAS_OPACITY;
         opacity = Number(style.opacity);
       }
-      if (Object.hasOwn(style, "fill_opacity") || Object.hasOwn(style, "fillOpacity")) {
-        flags |= XYTA_HAS_FILL_OPACITY;
-        fillOpacity = Number(style.fill_opacity ?? style.fillOpacity);
+      const packedFill = packXyTaFillOpacity(style);
+      if (packedFill.flags) {
+        flags |= packedFill.flags;
+        fillOpacity = packedFill.value;
       }
       const source = resolveDensityBinColors(trace);
       if (source?.rgba != null) {

@@ -56,6 +56,7 @@ import {
   sceneHexbinRgbaPlaneAdmit,
   meshHasPerItem,
   packXyTaColormap,
+  packXyTaFillOpacity,
   packXyTaGrid,
   packXyTaRgba,
   packXyTaRgbaGrid,
@@ -355,6 +356,18 @@ test("packXyTaColormap stop bytes require RGB rows like Python", () => {
   const rgba = packXyTaColormap({ style: { colormap: [[255, 0, 0, 255]] } });
   assert.equal(rgba.flags, 1 << 7);
   assert.equal(rgba.stops.length, 0);
+});
+
+test("packXyTaFillOpacity uses fill_opacity only like Python", () => {
+  const missing = packXyTaFillOpacity({});
+  assert.equal(missing.flags, 0);
+  assert.equal(Number.isNaN(missing.value), true);
+  const camel = packXyTaFillOpacity({ fillOpacity: 0.25 });
+  assert.equal(camel.flags, 0);
+  assert.equal(Number.isNaN(camel.value), true);
+  const snake = packXyTaFillOpacity({ fill_opacity: 0.5 });
+  assert.equal(snake.flags, 1 << 11);
+  assert.equal(snake.value, 0.5);
 });
 
 test("packXyTaGrid flattens plane.values like Python", () => {
