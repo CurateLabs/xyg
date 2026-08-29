@@ -397,7 +397,7 @@ function packXyAf(annotation, index) {
     parsedDash = parseSceneDash(style.dash);
     if (parsedDash === false) throw new RangeError("Scene v12 rule annotation dash is not a constant pattern");
     if (parsedDash) styleBits |= XYAF_STYLE_DASH;
-    parsedCap = parseSceneLinecap(style.linecap ?? style.lineCap);
+    parsedCap = packXyAfLinecap(style);
     if (parsedCap === false) throw new RangeError("Scene v12 rule annotation linecap is not a Scene cap");
     if (parsedCap != null) styleBits |= XYAF_STYLE_LINECAP;
   }
@@ -1467,6 +1467,11 @@ function parseSceneDash(value) {
 
 function parseSceneLinecap(value) {
   return sceneLinecapAdmit(value);
+}
+
+/** XYAF rule linecap. Python `_pack_xyaf` reads `style.get("linecap")` only. */
+export function packXyAfLinecap(style) {
+  return parseSceneLinecap((style ?? {}).linecap);
 }
 
 function validateMarkerPath(value) {
