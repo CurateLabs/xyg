@@ -884,6 +884,7 @@ Node `packXyTaGrid` flattens heatmap `grid` like Python `_pack_xyta` (`plane.val
 Node `rectFiniteSel` drops nonfinite rectangle rows through `validIndicesF64` like Python `_rect_finite_sel`; NaN never reaches vertex buffers (§19).
 Node `packXyTa` density fill opacity uses `style.fill_opacity` only like Python `_pack_xyta`; `fillOpacity` is not a fill-opacity key.
 Node XYTC fill opacity uses `style.fill_opacity` only like Python `_pack_xytc`; `fillOpacity` is not a fill-opacity key.
+Node XYTC joined fill uses `style.joined_fill` only like Python `_pack_xytc`; `joinedFill` is not a joined-fill key.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1333,6 +1334,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `rectFiniteSel` drops nonfinite rectangle rows.
   Node `packXyTa` density fill opacity uses `fill_opacity` only.
   Node XYTC fill opacity uses `fill_opacity` only.
+  Node XYTC joined fill uses `joined_fill` only.
 
 ---
 

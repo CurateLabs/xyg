@@ -3295,6 +3295,12 @@ export function packXyTcFillOpacity(style, kindClass) {
   return Number((style ?? {}).fill_opacity ?? 1);
 }
 
+/** XYTC joined fill. Python `_pack_xytc` reads `style.get("joined_fill")` only. */
+export function packXyTcJoinedFill(trace) {
+  if (String(trace?.kind) !== "triangle_mesh") return 0;
+  return (trace.style ?? {}).joined_fill ? XYTC_JOINED_FILL : 0;
+}
+
 function packXyTc(figure) {
   const traces = figure.traces ?? [];
   const records = [];
@@ -3446,9 +3452,7 @@ function packXyTc(figure) {
         markerBlob = packedGlyph;
       }
     }
-    if (trace.kind === "triangle_mesh" && (style.joined_fill || style.joinedFill)) {
-      flags |= XYTC_JOINED_FILL;
-    }
+    flags |= packXyTcJoinedFill(trace);
     const prefix = new Uint8Array(160);
     const view = new DataView(prefix.buffer);
     prefix.set(encodeUtf8("XYTR").slice(0, 4), 0);
