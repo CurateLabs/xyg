@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -242,24 +242,6 @@ const XYAF_STYLE_LABEL_BACKGROUND = 1 << 9;
 const XYAF_STYLE_LABEL_BORDER_COLOR = 1 << 10;
 const XYAF_STYLE_LABEL_BORDER_WIDTH = 1 << 11;
 
-function annotationAllowedStyle(kind, wrapped, labelled) {
-  const allowed = new Set(["color", "opacity"]);
-  if (wrapped) return new Set(["color", "opacity", "label_background", "label_border_color", "label_border_width"]);
-  if (kind === "arrow") { allowed.add("width"); return allowed; }
-  if (kind === "callout" || kind === "text") {
-    allowed.add("label_background"); allowed.add("label_border_color"); allowed.add("label_border_width");
-    if (kind === "callout") allowed.add("width");
-    return allowed;
-  }
-  if (kind === "rule") { allowed.add("width"); allowed.add("dash"); allowed.add("linecap"); }
-  else if (kind === "marker") { allowed.add("stroke_color"); allowed.add("stroke_width"); }
-  if (labelled && ["rule", "band", "marker"].includes(kind)) {
-    allowed.add("label_color"); allowed.add("label_opacity"); allowed.add("label_background");
-    allowed.add("label_border_color"); allowed.add("label_border_width");
-  }
-  return allowed;
-}
-
 function annotationHasMarkup(annotation) {
   if (annotation == null || typeof annotation !== "object") return false;
   if (annotation.markup != null && annotation.markup !== "") return true;
@@ -314,10 +296,9 @@ function packXyAf(annotation, index) {
   } else if (kind === "text" || kind === "callout") {
     throw new RangeError(kind === "callout" ? "Scene callouts require nonempty NUL-free text" : "Scene v16 text annotations require nonempty NUL-free text");
   }
-  const allowed = annotationAllowedStyle(kind, wrapped, labelled);
   const skipStyle = new Set(["markup", ...ANNOTATION_TYPOGRAPHY_STYLE_KEYS]);
   if (["text", "marker"].includes(kind)) skipStyle.add("rotation");
-  const unsupported = Object.keys(style).filter((key) => !allowed.has(key) && !skipStyle.has(key) && style[key] != null).sort();
+  const unsupported = Object.keys(style).filter((key) => !skipStyle.has(key) && style[key] != null && !sceneAnnotationStyleAdmit(kind, wrapped, labelled, key)).sort();
   if (unsupported.length) {
     if (wrapped) throw new RangeError("Scene wrapped annotations do not encode class_name, custom fonts, CSS, markup, collision, or leader style");
     if (kind === "arrow") throw new RangeError(`Scene arrow style does not encode ${JSON.stringify(unsupported)}`);

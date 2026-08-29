@@ -206,6 +206,15 @@ def load() -> ctypes.CDLL:
     lib.xyg_density_overlay_opacity.argtypes = [ctypes.c_double, F64P]
     lib.xyg_scene_marker_path_admit.restype = ctypes.c_int32
     lib.xyg_scene_marker_path_admit.argtypes = [F64P, ctypes.c_size_t, U32P, ctypes.c_size_t]
+    lib.xyg_scene_annotation_style_admit.restype = ctypes.c_int32
+    lib.xyg_scene_annotation_style_admit.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_uint8,
+        ctypes.c_uint8,
+        U8P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2176,6 +2185,45 @@ def main() -> None:
     ok(
         lib.xyg_scene_marker_path_admit(null_f64, 0, null_u32, 0) == 0,
         "scene_marker_path_admit empty",
+    )
+    arrow_kind = array("B", b"arrow")
+    width_key = array("B", b"width")
+    dash_key = array("B", b"dash")
+    color_key = array("B", b"color")
+    ok(
+        lib.xyg_scene_annotation_style_admit(
+            _ptr(arrow_kind, ctypes.c_uint8),
+            len(arrow_kind),
+            0,
+            0,
+            _ptr(width_key, ctypes.c_uint8),
+            len(width_key),
+        )
+        == 1,
+        "scene_annotation_style_admit arrow width",
+    )
+    ok(
+        lib.xyg_scene_annotation_style_admit(
+            _ptr(arrow_kind, ctypes.c_uint8),
+            len(arrow_kind),
+            0,
+            0,
+            _ptr(dash_key, ctypes.c_uint8),
+            len(dash_key),
+        )
+        == 0,
+        "scene_annotation_style_admit arrow dash",
+    )
+    ok(
+        lib.xyg_scene_annotation_style_admit(
+            null_u8, 0, 0, 0, _ptr(color_key, ctypes.c_uint8), len(color_key)
+        )
+        == 1,
+        "scene_annotation_style_admit empty kind color",
+    )
+    ok(
+        lib.xyg_scene_annotation_style_admit(null_u8, 0, 0, 0, null_u8, 0) == 0,
+        "scene_annotation_style_admit empty key",
     )
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8

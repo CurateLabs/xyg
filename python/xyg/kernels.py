@@ -56,6 +56,7 @@ encode_f32 = _impl.encode_f32
 f32_safe_scale = _impl.f32_safe_scale
 geometry_offset = _impl.geometry_offset
 scale_pins_offset = _impl.scale_pins_offset
+scene_annotation_style_admit = _impl.scene_annotation_style_admit
 scene_dash_admit = _impl.scene_dash_admit
 scene_linecap_admit = _impl.scene_linecap_admit
 scene_marker_path_admit = _impl.scene_marker_path_admit
@@ -287,6 +288,7 @@ __all__ = [
     "sample_mask",
     "sample_range_indices",
     "scale_pins_offset",
+    "scene_annotation_style_admit",
     "scene_dash_admit",
     "scene_linecap_admit",
     "scene_marker_path_admit",

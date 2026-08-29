@@ -689,29 +689,23 @@ def _annotation_color(style: dict[str, Any], key: str, default: str, label: str)
 
 
 def _annotation_allowed_style(kind: str, wrapped: bool, labelled: bool) -> set[str]:
-    allowed = {"color", "opacity"}
-    if wrapped:
-        return allowed | {"label_background", "label_border_color", "label_border_width"}
-    if kind == "arrow":
-        return allowed | {"width"}
-    if kind in {"callout", "text"}:
-        allowed |= {"label_background", "label_border_color", "label_border_width"}
-        if kind == "callout":
-            allowed.add("width")
-        return allowed
-    if kind == "rule":
-        allowed |= {"width", "dash", "linecap"}
-    elif kind == "marker":
-        allowed |= {"stroke_color", "stroke_width"}
-    if labelled and kind in {"rule", "band", "marker"}:
-        allowed |= {
-            "label_color",
-            "label_opacity",
-            "label_background",
-            "label_border_color",
-            "label_border_width",
-        }
-    return allowed
+    keys = (
+        "color",
+        "opacity",
+        "width",
+        "dash",
+        "linecap",
+        "stroke_color",
+        "stroke_width",
+        "label_color",
+        "label_opacity",
+        "label_background",
+        "label_border_color",
+        "label_border_width",
+    )
+    return {
+        key for key in keys if _native.scene_annotation_style_admit(kind, wrapped, labelled, key)
+    }
 
 
 def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
@@ -801,14 +795,15 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
             if kind == "callout"
             else "Scene v16 text annotations require nonempty NUL-free text"
         )
-    allowed = _annotation_allowed_style(str(kind), wrapped, labelled)
     skip_style = {"markup"} | _ANNOTATION_TYPOGRAPHY_STYLE_KEYS
     if str(kind) in {"text", "marker"}:
         skip_style = skip_style | {"rotation"}
     unsupported = sorted(
         key
         for key, value in style.items()
-        if key not in allowed and key not in skip_style and value is not None
+        if key not in skip_style
+        and value is not None
+        and not _native.scene_annotation_style_admit(str(kind), wrapped, labelled, str(key))
     )
     if unsupported:
         if wrapped:
