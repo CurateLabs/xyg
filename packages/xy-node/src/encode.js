@@ -409,7 +409,7 @@ export function sceneHeatmapExtentAdmit(x0, x1, y0, y1) {
   return code === 1;
 }
 
-/** Scene heatmap lattice-shape admit (ABI 240). Length==2 stays host. */
+/** Scene heatmap lattice-shape admit (ABI 240). Length==2 stays host. XYTA uses the same kernel. */
 export function sceneHeatmapShapeAdmit(rows, cols) {
   const code = Number(xySceneHeatmapShapeAdmit(Number(rows), Number(cols)));
   if (code === -2) throw new RangeError("invalid scene-heatmap-shape-admit request");

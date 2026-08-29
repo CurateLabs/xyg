@@ -1506,7 +1506,7 @@ def scene_heatmap_extent_admit(x0: float, x1: float, y0: float, y1: float) -> bo
 def scene_heatmap_shape_admit(rows: float, cols: float) -> bool:
     """Scene heatmap lattice-shape admit via ``xyg_scene_heatmap_shape_admit`` (ABI 240).
 
-    Length==2 stays host. XYTA integer coerce stays extra.
+    Length==2 stays host. XYTA integer coerce uses the same kernel.
     """
     code = int(_lib.xyg_scene_heatmap_shape_admit(float(rows), float(cols)))
     if code == -2:
