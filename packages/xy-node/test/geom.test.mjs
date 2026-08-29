@@ -34,6 +34,7 @@ import {
   scatterPacksPaintPlane,
   scatterPaintChannelNames,
   scatterPerItemChannels,
+  scatterPointStrokeRgba8,
   scatterUsesDensity,
   sceneTickLabelStrategy,
   sceneTickAnchor,
@@ -671,6 +672,21 @@ test("scatterPaintChannelNames uses color_ch only like Python", () => {
     scatterPaintChannelNames({ style: { color_channel: { mode: "continuous" } } }),
     [],
   );
+});
+
+test("scatterPointStrokeRgba8 uses stroke_ch only like Python", () => {
+  const fills = new Uint8Array([10, 20, 30, 40]);
+  const opacity = { x: [0], style_channels: { opacity: { values: [0.5] } } };
+  const snake = scatterPointStrokeRgba8(
+    { ...opacity, stroke_ch: { mode: "match_fill" } },
+    fills,
+  );
+  const camel = scatterPointStrokeRgba8(
+    { ...opacity, strokeChannel: { mode: "match_fill" } },
+    fills,
+  );
+  assert.deepEqual([...snake], [...fills]);
+  assert.notDeepEqual([...camel], [...fills]);
 });
 
 test("scatterHasNonConstantColor uses color_ch only like Python", () => {

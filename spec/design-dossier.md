@@ -1744,6 +1744,7 @@ Node XYTC COLOR_CH packing uses `color_ch` only like Python `_pack_xytc`; `color
 Node XYTC size_ch packing uses `size_ch` only like Python `_pack_xytc`; `sizeChannel` is not a packed-channel fallback.
 Node XYEF stroke-width-only observation uses `style.stroke_width` only like Python; `strokeWidth` is not an observation key.
 Node `meshJoinedFill` uses `style.joined_fill` only like Python `_mesh_joined_fill`; `joinedFill` is not a joined-fill key.
+Node `scatterPointStrokeRgba8` uses `stroke_ch` only like Python `_scatter_point_stroke_rgba8`; `strokeChannel` is not a match-fill opacity skip.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -2024,6 +2025,7 @@ Node XYTC COLOR_CH packing uses `color_ch` only like Python `_pack_xytc`; `color
 Node XYTC size_ch packing uses `size_ch` only like Python `_pack_xytc`; `sizeChannel` is not a packed-channel fallback.
 Node XYEF stroke-width-only observation uses `style.stroke_width` only like Python; `strokeWidth` is not an observation key.
 Node `meshJoinedFill` uses `style.joined_fill` only like Python `_mesh_joined_fill`; `joinedFill` is not a joined-fill key.
+Node `scatterPointStrokeRgba8` uses `stroke_ch` only like Python `_scatter_point_stroke_rgba8`; `strokeChannel` is not a match-fill opacity skip.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same
