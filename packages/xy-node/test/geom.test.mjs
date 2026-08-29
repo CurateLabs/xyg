@@ -13,6 +13,7 @@ import {
   hexbinRing,
   hexbinPacksColormapPlane,
   itemApplyOpacity,
+  itemFillRgba8,
   itemWidths,
   markerPathScale,
   arrowGeometry,
@@ -410,6 +411,14 @@ test("color2Channel uses color2_ch only like Python", () => {
   assert.equal(color2Channel({ color2_ch: ch }), ch);
   assert.equal(color2Channel({ color_target: ch }), null);
   assert.equal(color2Channel({ colorTarget: ch }), null);
+});
+
+test("itemFillRgba8 uses color_ch only like Python", () => {
+  const fromCh = itemFillRgba8({ color_ch: { mode: "constant", constant: "#ff0000" } }, 1);
+  const fromColor = itemFillRgba8({ color: { mode: "constant", constant: "#ff0000" } }, 1);
+  const fallback = itemFillRgba8({}, 1);
+  assert.equal(fromCh.length, 4);
+  assert.deepEqual([...fromColor], [...fallback]);
 });
 
 test("sceneGradientSpace matches host table", () => {
