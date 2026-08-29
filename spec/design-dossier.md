@@ -1696,6 +1696,7 @@ Node `fillIsGradientAuthoring` rejects arrays (same as Python dict-only).
 Node `rectExtraFlags` treats only mapping fills as gradient-fail (same as Python dict-only).
 Node `admittedMarkerGlyph` rejects non-strings (same as Python `isinstance(..., str)`).
 Node `packXyTaColormap` uses `style.colormap` only (same as Python); `trace.colormap` / `colormapStops` are not fallbacks.
+Node hexbin XYTA colormap uses `channel.colormap` only (same as Python); `style.colormap` is not a fallback.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -1928,6 +1929,7 @@ Node `fillIsGradientAuthoring` rejects arrays (same as Python dict-only).
 Node `rectExtraFlags` treats only mapping fills as gradient-fail (same as Python dict-only).
 Node `admittedMarkerGlyph` rejects non-strings (same as Python `isinstance(..., str)`).
 Node `packXyTaColormap` uses `style.colormap` only (same as Python); `trace.colormap` / `colormapStops` are not fallbacks.
+Node hexbin XYTA colormap uses `channel.colormap` only (same as Python); `style.colormap` is not a fallback.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

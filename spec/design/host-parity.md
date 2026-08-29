@@ -848,6 +848,7 @@ Node `fillIsGradientAuthoring` rejects arrays (same as Python dict-only).
 Node `rectExtraFlags` treats only mapping fills as gradient-fail (same as Python dict-only).
 Node `admittedMarkerGlyph` rejects non-strings (same as Python `isinstance(..., str)`).
 Node `packXyTaColormap` uses `style.colormap` only (same as Python); `trace.colormap` / `colormapStops` are not fallbacks.
+Node hexbin XYTA colormap uses `channel.colormap` only (same as Python); `style.colormap` is not a fallback.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1261,6 +1262,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `rectExtraFlags` treats only mapping fills as gradient-fail (same as Python dict-only).
   Node `admittedMarkerGlyph` rejects non-strings (same as Python `isinstance(..., str)`).
   Node `packXyTaColormap` uses `style.colormap` only.
+  Node hexbin XYTA colormap uses `channel.colormap` only.
 
 ---
 

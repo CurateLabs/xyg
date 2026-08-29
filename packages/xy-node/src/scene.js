@@ -3863,6 +3863,11 @@ export function packXyTaColormap(trace) {
   return { flags, cmap, stops };
 }
 
+export function hexbinXyTaColormap(trace) {
+  const channel = trace.color_ch ?? trace.colorChannel;
+  return packXyTaColormap({ style: { colormap: channel?.colormap } });
+}
+
 function packXyTa(figure, xDomain, yDomain) {
   const traces = figure.traces ?? [];
   const records = [new Uint8Array(16)];
@@ -3955,10 +3960,7 @@ function packXyTa(figure, xDomain, yDomain) {
       grid = packF64Le(values);
       rows = 1;
       cols = values.length;
-      const packedCmap = packXyTaColormap({
-        ...trace,
-        style: { ...style, colormap: channel?.colormap ?? style.colormap },
-      });
+      const packedCmap = hexbinXyTaColormap(trace);
       flags |= packedCmap.flags;
       cmap = packedCmap.cmap;
       stops = packedCmap.stops;
