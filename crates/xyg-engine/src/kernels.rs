@@ -1203,6 +1203,30 @@ pub fn scene_tick_label_strategy(text: &str) -> i32 {
     }
 }
 
+/// Scene tick-label anchor codes (ABI 225).
+pub const SCENE_TICK_ANCHOR_START: i32 = 0;
+pub const SCENE_TICK_ANCHOR_CENTER: i32 = 1;
+pub const SCENE_TICK_ANCHOR_END: i32 = 2;
+pub const SCENE_TICK_ANCHOR_REJECT: i32 = -1;
+
+/// Admit a Scene tick-label anchor name. Hyphens become underscores.
+/// `middle` aliases `center`. Unknown names, including empty text, reject.
+pub fn scene_tick_anchor(text: &str) -> i32 {
+    let owned;
+    let key = if text.contains('-') {
+        owned = text.replace('-', "_");
+        owned.as_str()
+    } else {
+        text
+    };
+    match key {
+        "start" => SCENE_TICK_ANCHOR_START,
+        "center" | "middle" => SCENE_TICK_ANCHOR_CENTER,
+        "end" => SCENE_TICK_ANCHOR_END,
+        _ => SCENE_TICK_ANCHOR_REJECT,
+    }
+}
+
 /// Scale for offset-encoding so finite f64 can never overflow f32 (§19).
 ///
 /// Exactly 1.0 for every normal domain; only absurd magnitudes normalize.
@@ -9080,6 +9104,18 @@ mod fuzz {
         assert_eq!(scene_tick_label_strategy(""), 0);
         assert_eq!(scene_tick_label_strategy("foo"), 0);
         assert_eq!(scene_tick_label_strategy("HIDE"), 0);
+    }
+
+    #[test]
+    fn scene_tick_anchor_matches_host_table() {
+        assert_eq!(scene_tick_anchor("start"), 0);
+        assert_eq!(scene_tick_anchor("center"), 1);
+        assert_eq!(scene_tick_anchor("middle"), 1);
+        assert_eq!(scene_tick_anchor("end"), 2);
+        assert_eq!(scene_tick_anchor(""), -1);
+        assert_eq!(scene_tick_anchor("foo"), -1);
+        assert_eq!(scene_tick_anchor("START"), -1);
+        assert_eq!(scene_tick_anchor("left"), -1);
     }
 
     #[test]

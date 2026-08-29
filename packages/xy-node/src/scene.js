@@ -75,7 +75,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneRibbonColor2Classify, sceneTickLabelStrategy, sceneTickAnchor, shouldUseDensity, u32Ptr, u8Ptr, colormapNamedStops, colormapRgba } from "./encode.js";
 import { cssColorRgba8, cssColorsToRgba8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -4885,11 +4885,7 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   const anchorCode = (options) => {
     const raw = options.tick_label_anchor ?? options.tickLabelAnchor;
     if (raw == null) return null;
-    const value = String(raw).replaceAll("-", "_");
-    if (value === "start") return 0;
-    if (value === "end") return 2;
-    if (value === "center" || value === "middle") return 1;
-    return null;
+    return sceneTickAnchor(raw);
   };
   const xAnchor = anchorCode(xAxis);
   const yAnchor = anchorCode(yAxis);

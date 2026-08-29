@@ -682,6 +682,11 @@ so Python `_scene_tick_label_strategy` and Node `sceneTickStrategy` cannot
 drift. Hyphens become underscores. Unknown names, including empty text, map
 to `auto`. Hosts still pick `tick_label_strategy` vs `collision` vs camelCase
 keys.
+ABI 225 `xyg_scene_tick_anchor` owns Scene tick-label anchor names so Python
+`_scene_tick_anchor_code` and Node `anchorCode` cannot drift. `middle` aliases
+`center`. Unknown names, including empty text, reject. Hosts still pick
+`tick_label_anchor` vs camelCase keys. ABI 123 layout enums stay a separate
+throw-on-unknown table.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1037,7 +1042,8 @@ client must not grow a parallel “JS layout/LOD” product path.
   Scene linecap admit is ABI 219; density overlay opacity is ABI 220;
   Scene marker-path admit is ABI 221;   Scene annotation style admit is ABI 222;
   Scene ribbon color2 classify is ABI 223;
-  Scene tick-label strategy admit is ABI 224.
+  Scene tick-label strategy admit is ABI 224;
+  Scene tick-label anchor admit is ABI 225.
 
 ---
 

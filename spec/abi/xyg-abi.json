@@ -1,9 +1,9 @@
 {
-  "abi_version": 224,
+  "abi_version": 225,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "d439b891767192cf12e6decc6cd2d0754e3d6238cb468705fb7ac78ba6bc248a",
+  "signature_sha256": "30477d9d8b899f7c48b18f2f791f909f0a71b555db84bcbf4169fb4ea9c45fef",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -34097,6 +34097,57 @@
         "nullable": false
       },
       "c_signature": "size_t xyg_scene_svg(const uint8_t * encoded, size_t encoded_len, uint8_t * out, size_t out_cap)"
+    },
+    {
+      "name": "xyg_scene_tick_anchor",
+      "node_name": "xySceneTickAnchor",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "text",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "text_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_scene_tick_anchor(const uint8_t * text, size_t text_len)"
     },
     {
       "name": "xyg_scene_tick_label_layout",

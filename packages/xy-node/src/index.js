@@ -39,6 +39,7 @@ export {
   sceneAnnotationStyleAdmit,
   sceneRibbonColor2Classify,
   sceneTickLabelStrategy,
+  sceneTickAnchor,
   roundedRectPoly,
   violinDensity,
   boxStats,

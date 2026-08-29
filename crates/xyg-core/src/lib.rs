@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 224;
+pub const ABI_VERSION: u32 = 225;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4912,6 +4912,38 @@ pub unsafe extern "C" fn xyg_scene_tick_label_strategy(
             return -2;
         };
         kernels::scene_tick_label_strategy(text)
+    })
+}
+
+/// Scene tick-label anchor admit (ABI 225).
+///
+/// Hyphens become underscores. `start` is `0`, `center`/`middle` is `1`,
+/// `end` is `2`. Unknown names, including empty text, return `-1`. `-2` FFI.
+/// Empty native pointers are null/`0`. Hosts still pick `tick_label_anchor`
+/// vs camelCase keys. ABI 123 layout enums stay a separate throw-on-unknown
+/// table.
+///
+/// # Safety
+/// `text` must address `text_len` readable bytes when `text_len` is
+/// nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_tick_anchor(
+    text: *const u8,
+    text_len: usize,
+) -> i32 {
+    if text_len > 0 && text.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let bytes = if text_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(text, text_len)
+        };
+        let Ok(text) = std::str::from_utf8(bytes) else {
+            return -2;
+        };
+        kernels::scene_tick_anchor(text)
     })
 }
 

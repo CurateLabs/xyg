@@ -232,6 +232,8 @@ def load() -> ctypes.CDLL:
     ]
     lib.xyg_scene_tick_label_strategy.restype = ctypes.c_int32
     lib.xyg_scene_tick_label_strategy.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_scene_tick_anchor.restype = ctypes.c_int32
+    lib.xyg_scene_tick_anchor.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
     lib.xyg_continuous_domain.argtypes = [F64P, ctypes.c_size_t, F64P, F64P]
     lib.xyg_direct_rgba_admit.restype = ctypes.c_size_t
@@ -2288,6 +2290,17 @@ def main() -> None:
         "scene_tick_label_strategy hide-overlap",
     )
     ok(lib.xyg_scene_tick_label_strategy(null_u8, 0) == 0, "scene_tick_label_strategy empty")
+    start_name = array("B", b"start")
+    ok(
+        lib.xyg_scene_tick_anchor(_ptr(start_name, ctypes.c_uint8), len(start_name)) == 0,
+        "scene_tick_anchor start",
+    )
+    middle_name = array("B", b"middle")
+    ok(
+        lib.xyg_scene_tick_anchor(_ptr(middle_name, ctypes.c_uint8), len(middle_name)) == 1,
+        "scene_tick_anchor middle",
+    )
+    ok(lib.xyg_scene_tick_anchor(null_u8, 0) == -1, "scene_tick_anchor empty")
     arrow_style = array("d", [float("nan")] * 12)
     arrow_style[7] = 2.8
     arrow_style[8] = 90.0
