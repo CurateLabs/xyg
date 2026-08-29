@@ -1079,7 +1079,7 @@ def resolve_style_channel(
     if arr.shape != expected:
         raise ValueError(f"{label} array must have shape {expected}, got {arr.shape}")
     values = _as_real_array(arr.reshape(-1), f"{label} array").reshape(expected)
-    if not np.isfinite(values).all():
+    if not kernels.scene_finite_all(values):
         raise ValueError(f"{label} array must contain only finite values")
     if minimum is not None and np.any(values < minimum):
         raise ValueError(f"{label} array values must be at least {minimum}")
