@@ -139,6 +139,20 @@ def load() -> ctypes.CDLL:
     lib.xyg_remap_u8.argtypes = [U8P, ctypes.c_size_t, U8P, ctypes.c_size_t]
     lib.xyg_encode_f32.restype = ctypes.c_int32
     lib.xyg_encode_f32.argtypes = [F64P, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, F32P]
+    lib.xyg_geometry_offset.restype = ctypes.c_int32
+    lib.xyg_geometry_offset.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+    ]
+    lib.xyg_f32_safe_scale.restype = ctypes.c_int32
+    lib.xyg_f32_safe_scale.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+    ]
     lib.xyg_m4_indices.restype = ctypes.c_size_t
     lib.xyg_m4_indices.argtypes = [
         F64P,
@@ -1864,6 +1878,23 @@ def main() -> None:
 
     # Boundary guardrails: empty inputs may carry null pointers; invalid
     # non-empty null inputs must return sentinels/flags rather than crash.
+    off = ctypes.c_double()
+    ok(
+        lib.xyg_geometry_offset(1, 10.0, 20.0, ctypes.byref(off)) == 1 and off.value == 0.0,
+        "geometry_offset pin_zero",
+    )
+    ok(
+        lib.xyg_geometry_offset(0, 10.0, 20.0, ctypes.byref(off)) == 1 and off.value == 15.0,
+        "geometry_offset midpoint",
+    )
+    ok(lib.xyg_geometry_offset(0, 10.0, 20.0, null_f64) == 0, "geometry_offset null out")
+    ok(lib.xyg_geometry_offset(2, 10.0, 20.0, ctypes.byref(off)) == 0, "geometry_offset bad pin")
+    scale = ctypes.c_double()
+    ok(
+        lib.xyg_f32_safe_scale(0.0, -1.0, 1.0, ctypes.byref(scale)) == 1 and scale.value == 1.0,
+        "f32_safe_scale normal",
+    )
+    ok(lib.xyg_f32_safe_scale(0.0, -1.0, 1.0, null_f64) == 0, "f32_safe_scale null out")
     ok(lib.xyg_encode_f32(null_f64, 0, 0.0, 1.0, null_f32) == 1, "encode_f32 empty/null ok status")
     tiny_f = array("f", [123.0])
     status = lib.xyg_encode_f32(null_f64, 1, 0.0, 1.0, _ptr(tiny_f, ctypes.c_float))

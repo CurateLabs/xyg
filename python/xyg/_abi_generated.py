@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 207
-SIGNATURE_SHA256 = "dab61512a93a1ba06aee7d639b7322473e11d17c5db6aec1fab84d78ec5ea240"
+ABI_VERSION = 208
+SIGNATURE_SHA256 = "73efbf7582520e490905c5e4c319dc153fb9dafc827a3dbd72f568e82fda348a"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -234,6 +234,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_encode_webp
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_f32_safe_scale(double offset, double lo, double hi, double * out_scale)
+    function = lib.xyg_f32_safe_scale
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p]
     # size_t xyg_factorize_fixed(const uint8_t * data, size_t len, size_t width, uint32_t * out_codes, uint32_t * out_unique_indices)
     function = lib.xyg_factorize_fixed
     function.restype = ctypes.c_size_t
@@ -278,6 +282,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_geo_column_vertex_count
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_uint64]
+    # int32_t xyg_geometry_offset(int32_t pin_zero, double lo, double hi, double * out_offset)
+    function = lib.xyg_geometry_offset
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_double, ctypes.c_double, ctypes.c_void_p]
     # int32_t xyg_graph_build_csr(uint64_t n_nodes, uint64_t n_edges, const uint64_t * sources, const uint64_t * targets, int32_t directed, uint64_t * out_offsets, uint64_t * out_neighbors, uint64_t neighbors_cap, uint64_t * out_neighbor_len)
     function = lib.xyg_graph_build_csr
     function.restype = ctypes.c_int32

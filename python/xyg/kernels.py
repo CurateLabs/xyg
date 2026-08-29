@@ -51,6 +51,8 @@ delaunay_triangles = _impl.delaunay_triangles
 zone_maps = _impl.zone_maps
 zone_maps_pair = _impl.zone_maps_pair
 encode_f32 = _impl.encode_f32
+f32_safe_scale = _impl.f32_safe_scale
+geometry_offset = _impl.geometry_offset
 factorize_fixed = _impl.factorize_fixed
 factorize_fixed_u8 = _impl.factorize_fixed_u8
 factorize_fixed_u8_counts = _impl.factorize_fixed_u8_counts
@@ -197,10 +199,12 @@ __all__ = [
     "density_wasm_eligible",
     "drill_decision",
     "encode_f32",
+    "f32_safe_scale",
     "factorize_fixed",
     "factorize_fixed_u8",
     "factorize_fixed_u8_counts",
     "factorize_unicode1_u8_counts",
+    "geometry_offset",
     "heatmap_rgba",
     "hexbin",
     "hexbin_groups",

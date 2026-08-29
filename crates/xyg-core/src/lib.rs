@@ -159,7 +159,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 207;
+pub const ABI_VERSION: u32 = 208;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -4548,6 +4548,51 @@ pub unsafe extern "C" fn xyg_encode_f32(
     let out = std::slice::from_raw_parts_mut(out, len);
     ffi_guard(0, || {
         kernels::encode_f32_into(data, offset, scale, out);
+        1
+    })
+}
+
+/// Precision center for offset-encoded geometry (ABI 208, §4/§16).
+///
+/// `pin_zero` is 1 for log-family axes. Writes `out_offset`. Empty native
+/// pointers are null/`0`.
+///
+/// # Safety
+/// `out_offset` must be a writable f64.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_geometry_offset(
+    pin_zero: i32,
+    lo: f64,
+    hi: f64,
+    out_offset: *mut f64,
+) -> i32 {
+    if !matches!(pin_zero, 0 | 1) || out_offset.is_null() {
+        return 0;
+    }
+    ffi_guard(0, || {
+        *out_offset = kernels::geometry_offset(pin_zero != 0, lo, hi);
+        1
+    })
+}
+
+/// f32-safe encode scale for offset-encoded geometry (ABI 208, §19).
+///
+/// Writes `out_scale`. Empty native pointers are null/`0`.
+///
+/// # Safety
+/// `out_scale` must be a writable f64.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_f32_safe_scale(
+    offset: f64,
+    lo: f64,
+    hi: f64,
+    out_scale: *mut f64,
+) -> i32 {
+    if out_scale.is_null() {
+        return 0;
+    }
+    ffi_guard(0, || {
+        *out_scale = kernels::f32_safe_scale(offset, lo, hi);
         1
     })
 }
