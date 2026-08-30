@@ -87,6 +87,7 @@ import {
   heatmapGridShape,
   polarGridShape,
   polarAxisThetaUnit,
+  polarAxisThetaZero,
   constantMarkColor,
   xyHfColormap,
   channelConstantCss,
@@ -1078,6 +1079,12 @@ test("polarAxisThetaUnit uses theta_unit only like Python", () => {
   assert.equal(polarAxisThetaUnit({}), "radians");
   assert.equal(polarAxisThetaUnit({ thetaUnit: "degrees" }), "radians");
   assert.equal(polarAxisThetaUnit({ theta_unit: "degrees" }), "degrees");
+});
+
+test("polarAxisThetaZero uses theta_zero only like Python", () => {
+  assert.equal(polarAxisThetaZero({}), "E");
+  assert.equal(polarAxisThetaZero({ thetaZero: "N" }), "E");
+  assert.equal(polarAxisThetaZero({ theta_zero: "N" }), "N");
 });
 
 
