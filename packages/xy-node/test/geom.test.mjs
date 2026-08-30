@@ -100,6 +100,7 @@ import {
   axisTickLabelStrategy,
   figureXLabel,
   figureChromeStyles,
+  chromeAxisMinorStyle,
   chromeStyleHasFontFamily,
   figureClassName,
   figureClassNames,
@@ -1199,6 +1200,12 @@ test("figureChromeStyles uses chrome_styles only like Python", () => {
   assert.equal(figureChromeStyles({}), undefined);
   assert.equal(figureChromeStyles({ chromeStyles: { x: { color: "red" } } }), undefined);
   assert.deepEqual(figureChromeStyles({ chrome_styles: { x: { color: "red" } } }), { x: { color: "red" } });
+});
+
+test("chromeAxisMinorStyle uses minor_style only like Python", () => {
+  assert.equal(chromeAxisMinorStyle({}), undefined);
+  assert.equal(chromeAxisMinorStyle({ minorStyle: { tick_width: 1 } }), undefined);
+  assert.deepEqual(chromeAxisMinorStyle({ minor_style: { tick_width: 1 } }), { tick_width: 1 });
 });
 
 test("chromeStyleHasFontFamily uses font-family key only like Python", () => {
