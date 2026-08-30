@@ -319,6 +319,7 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
 });
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 test("_emitTriangleMesh omits animation unlike Python _transition_entry", () => {
   // Python `_emit_triangle_mesh` ships t.animation via `_transition_entry`.
@@ -342,6 +343,8 @@ test("_emitRibbon omits animation unlike Python _transition_entry", () => {
   assert.equal(spec.traces[0].animation, undefined);
 });
 
+=======
+>>>>>>> 79e3bf52 (Record Node _emitSegments omit animation stay-host vs Python)
 test("_emitSegments omits animation unlike Python _transition_entry", () => {
   // Python `_emit_segments` ships t.animation via `_transition_entry`. Node
   // segments encode omits that field. Recorded emit-segments-animation stay-host.
@@ -353,7 +356,10 @@ test("_emitSegments omits animation unlike Python _transition_entry", () => {
   assert.equal(spec.traces[0].animation, undefined);
 });
 
+<<<<<<< HEAD
 >>>>>>> 2c938a0a (Record Node _emitTriangleMesh omit animation stay-host vs Python)
+=======
+>>>>>>> 79e3bf52 (Record Node _emitSegments omit animation stay-host vs Python)
 test("_emitRect omits animation unlike Python _transition_entry", () => {
   // Python `_emit_rect` ships t.animation via `_transition_entry`. Node bar
   // encode omits that field. Recorded emit-rect-animation stay-host.
