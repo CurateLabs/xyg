@@ -1800,6 +1800,9 @@ export class Figure {
     // Node payload ribbon omits style_channels. Python `_emit_ribbon` ships
     // them as `channels` via `_ship_trace_styles`. Matching Python would add
     // entry.channels. Recorded emit-ribbon-channels stay-host.
+    // Node payload ribbon skips valid_indices_f64 gather. Python `_emit_ribbon`
+    // drops null geometry rows. Matching Python would gather. Recorded
+    // emit-ribbon-gather stay-host.
     return entry;
   }
 

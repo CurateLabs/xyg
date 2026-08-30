@@ -318,6 +318,19 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitRibbon skips valid_indices_f64 unlike Python _emit_ribbon", () => {
+  // Python `_emit_ribbon` gathers null geometry rows via `valid_indices_f64`.
+  // Node ribbon payload keeps every band even when a geometry column has NaN.
+  // Recorded emit-ribbon-gather stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.ribbon([0, 1], [1, 2], [0, 0], [1, 1], [0, 0], [1, 1], { color: "#112233" });
+  const n = fig.traces[0].x0.length;
+  fig.traces[0].x0[0] = Number.NaN;
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "ribbon");
+  assert.equal(spec.traces[0].n_marks, n);
+});
+
 test("_emitRect ships bar columns unlike Python nested bar", () => {
   // Python `_emit_bar` ships a nested `bar` spec via `_emit_bar_compact`.
   // Node bar payload keeps x0/x1/y0/y1 rect columns and no `bar` field.
