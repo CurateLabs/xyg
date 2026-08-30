@@ -1752,6 +1752,9 @@ export class Figure {
     const colorTarget = this._shipColor(t.color_target, pw);
     if (colorTarget != null) entry.color_target = colorTarget;
     if (t.tooltip_rows != null) entry.tooltip_rows = t.tooltip_rows;
+    // Node payload ribbon omits stroke_ch. Python `_emit_ribbon` ships
+    // stroke_ch via `_ship_trace_styles`. Matching Python would add
+    // entry.stroke. Recorded emit-ribbon-stroke stay-host.
     return entry;
   }
 
