@@ -4804,6 +4804,11 @@ export function figureTitleOptions(figure) {
   return (figure ?? {}).title_options;
 }
 
+/** Primary legend options. Python `_legend_input` / XYEF read `legend_options` only. */
+export function figureLegendOptions(figure) {
+  return (figure ?? {}).legend_options;
+}
+
 /** Annotation CSS class. Python `_pack_figure_support` reads `annotation.get("class_name")` only. */
 export function annotationClassName(annotation) {
   return (annotation ?? {}).class_name;
@@ -4874,7 +4879,7 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   if (figure.showLegend !== false) {
     flags |= FLAG_HAS_LEGEND;
     legendFlags |= LEGEND_SHOW;
-    const options = figure.legend ?? {};
+    const options = figureLegendOptions(figure) ?? {};
     const allowed = new Set(["loc", "title", "ncols", "style", "highlight", "toggle"]);
     if (Object.keys(options).some((key) => !allowed.has(key))) legendFlags |= LEGEND_UNSUPPORTED_KEYS;
     legendNcols = Number(options.ncols ?? 1);
@@ -5059,7 +5064,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
   if (titleOptions && (Array.isArray(titleOptions) ? titleOptions.length : titleOptions)) flags |= 1 << 3;
   if ((figure.coords ?? "cartesian") === "polar") flags |= 1 << 4;
   const styleKeys = Object.keys(figure.style ?? {});
-  const legend = figure.legend ?? figure.legend_options ?? {};
+  const legend = figureLegendOptions(figure) ?? {};
   const legendKeys = Object.keys(legend);
   const colorbar = figure.colorbarOptions ?? figure.colorbar_options ?? {};
   const colorbarKeys = Object.keys(colorbar ?? {});
@@ -5342,7 +5347,7 @@ function resolveLegendBestLoc(figure) {
 
 function legendInput(figure, entries, styles) {
   if (figure.showLegend === false || entries.length === 0) return new Uint8Array();
-  const options = figure.legend ?? {};
+  const options = figureLegendOptions(figure) ?? {};
   const allowed = new Set(["loc", "title", "ncols", "style", "highlight", "toggle"]);
   if (Object.keys(options).some((key) => !allowed.has(key)) || Number(options.ncols ?? 1) !== 1) throw new RangeError("Scene v12 primary legends do not yet encode anchors, multiple columns, or custom content");
   if (["toggle", "highlight"].some((key) => Object.hasOwn(options, key) && options[key] !== false)) throw new RangeError("Scene v12 primary legends are static; toggle and highlight must be false");
