@@ -169,6 +169,12 @@ export function figureAutorangeAxisOptions(figure, axisId) {
   return (figure ?? {}).axis_options?.[axisId] ?? {};
 }
 
+/** Autorange axis scale. Python `_axis_scale` reads axis `type` only. */
+export function figureAutorangeAxisScale(options) {
+  const scale = (options ?? {}).type;
+  return scale === "log" || scale === "symlog" ? scale : "linear";
+}
+
 function columnValues(col) {
   if (col == null) return null;
   if (col instanceof Column) return col.values;
@@ -244,8 +250,9 @@ function packFigureAutorange(figure, axisId, { useDomain = true } = {}) {
   if (figure.coords === "polar") flags |= 1 << 4;
   const axisDimX = typeof axisId === "string" ? axisId.startsWith("x") : axisId === "x";
   if (axisDimX) flags |= 1 << 5;
-  const authoredType = options.type ?? options.kind;
-  const scaleCode = authoredType === "log" ? 1 : authoredType === "symlog" ? 2 : 0;
+  const authoredType = options.type;
+  const scale = figureAutorangeAxisScale(options);
+  const scaleCode = scale === "log" ? 1 : scale === "symlog" ? 2 : 0;
   const categories = options.categories ?? figure._axis_categories?.[axisId];
   const kindCode = authoredType === "time" ? 1 : categories?.length ? 2 : 0;
   const thetaUnit = (options.theta_unit ?? options.thetaUnit ?? figure._polarMeta?.thetaUnit ?? "radians") === "degrees" ? 1 : 0;
