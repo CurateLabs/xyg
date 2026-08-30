@@ -93,6 +93,7 @@ import {
   polarAxisROrigin,
   polarAxisHole,
   polarAxisSector,
+  packPolarSceneInput,
   axisTickValues,
   axisScaleName,
   axisMinorTickValues,
@@ -1542,6 +1543,32 @@ test("_polarAxisSpecs uses axis r_origin like Python _axis_spec", () => {
   leftover.coords = "polar";
   leftover._polarMeta = { rOrigin: -1 };
   assert.equal(leftover._polarAxisSpecs([0, 1], [0, 1]).y.r_origin, undefined);
+});
+
+test("packPolarSceneInput uses figure _range like Python _pack_polar_scene_input", () => {
+  const fig = figure();
+  fig.setPolarMeta({});
+  fig.scatter([0, 1], [2, 8]);
+  const packed = packPolarSceneInput(fig);
+  const view = new DataView(packed.buffer, packed.byteOffset, packed.byteLength);
+  const [ylo, yhi] = fig._range("y");
+  assert.equal(view.getFloat64(52, true), ylo);
+  assert.equal(view.getFloat64(60, true), yhi);
+  const leftover = figure();
+  leftover.coords = "polar";
+  leftover.axis_options = { x: {}, y: { range: [10, 20] } };
+  leftover.scatter([0, 1], [2, 8]);
+  const leftoverPacked = packPolarSceneInput(leftover);
+  const leftoverView = new DataView(
+    leftoverPacked.buffer,
+    leftoverPacked.byteOffset,
+    leftoverPacked.byteLength,
+  );
+  const [lo, hi] = leftover._range("y");
+  assert.equal(leftoverView.getFloat64(52, true), lo);
+  assert.equal(leftoverView.getFloat64(60, true), hi);
+  assert.notEqual(lo, 10);
+  assert.notEqual(hi, 20);
 });
 
 test("figureAxisIsLog uses axis type only like Python _axis_scale log", () => {
