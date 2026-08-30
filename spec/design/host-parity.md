@@ -50,6 +50,7 @@ publish waits on the `@curatelabs` npm org (#13).
   Node `_emitScatterDensity` omits animation.
   Node `_emitScatterDensity` sample uses full n.
   Node `_emitScatterDensity` visible stays n_points.
+  Node `nextTraceId` starts at 1.
 ---
 
 ## 0. Three runtime surfaces (product-wide)
