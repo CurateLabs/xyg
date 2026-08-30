@@ -754,7 +754,10 @@ export class Figure {
   _pushRectTrace(kind, t, opts = {}) {
     this.traces.push({
       id: opts.id ?? nextTraceId++,
-      kind,
+      kind,    // Node payload rect omits animation. Python `_emit_rect` ships t.animation
+    // via `_transition_entry`. Matching Python would add entry.animation.
+    // Recorded emit-rect-animation stay-host.
+
       name: t.name ?? opts.name ?? null,
       x0: t.x0,
       x1: t.x1,
