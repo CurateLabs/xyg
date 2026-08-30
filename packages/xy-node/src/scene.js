@@ -1323,6 +1323,11 @@ export function polarAxisHole(rAxis) {
   return (rAxis ?? {}).hole;
 }
 
+/** Polar theta-axis sector. Python `_pack_polar_scene_input` / `polar_layout` read `theta_axis.get("sector")` only. */
+export function polarAxisSector(thetaAxis) {
+  return (thetaAxis ?? {}).sector;
+}
+
 /** Polar theta-axis direction. Python `_pack_polar_scene_input` / `polar_layout` read `theta_axis.get("theta_direction")` only. */
 export function polarAxisThetaDirection(thetaAxis) {
   return (thetaAxis ?? {}).theta_direction;
@@ -1363,7 +1368,7 @@ export function packPolarSceneInput(figure) {
   const rAxis = axes.y ?? {};
   const unit = polarAxisThetaUnit(thetaAxis);
   const turn = unit === "degrees" ? 360 : Math.PI * 2;
-  const sector = thetaAxis.sector ?? [0, turn];
+  const sector = polarAxisSector(thetaAxis) ?? [0, turn];
   const categories = thetaAxis.categories ?? [];
   const range = typeof figure._range === "function" ? figure._range("y") : (rAxis.range ?? [0, 1]);
   const [rLo, rHi] = range;
@@ -1852,7 +1857,7 @@ function packSceneExtrasFromSidecars(polar, xysd, facts) {
 export function polarLayout(thetaAxis = {}, rAxis = {}, plot = {}) {
   const unit = polarAxisThetaUnit(thetaAxis);
   const turn = unit === "degrees" ? 360 : Math.PI * 2;
-  const sector = thetaAxis.sector ?? [0, turn];
+  const sector = polarAxisSector(thetaAxis) ?? [0, turn];
   const categories = thetaAxis.categories ?? [];
   const [rLo, rHi] = rAxis.range ?? [0, 1];
   const origin = polarAxisROrigin(rAxis);
