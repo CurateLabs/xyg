@@ -5159,7 +5159,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
     const authored = options.type;
     const authoredCode = authored == null ? 0 : authored === "linear" ? 1 : authored === "log" ? 2 : authored === "symlog" ? 3 : 255;
     const resolvedCode = xyEfResolvedKind(figure, axisId);
-    const domain = options.domain ?? figure._axisRange?.[axisId];
+    const domain = figure._axisDomain(axisId);
     const side = options.side;
     const sideCode = side == null ? 0 : side === "bottom" ? 1 : side === "left" ? 2 : side === "top" ? 3 : side === "right" ? 4 : 255;
     const keys = significantExportKeys(options);

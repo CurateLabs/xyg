@@ -122,6 +122,7 @@ import {
   figureAxisKind,
   figureAutorangeThetaUnit,
   figureAutorangeCategories,
+  figureAutorangeDomain,
   figureAxisIsLog,
   figure,
   scatterPayloadForceBin2d,
@@ -1419,6 +1420,18 @@ test("figureAutorangeCategories uses _axis_categories only like Python", () => {
     coords: "cartesian",
     _axis_categories: { x: ["a"] },
   }, "x"), undefined);
+});
+
+test("figureAutorangeDomain uses axis domain only like Python", () => {
+  assert.equal(figureAutorangeDomain({}), undefined);
+  assert.deepEqual(figureAutorangeDomain({ domain: [0, 1] }), [0, 1]);
+  assert.equal(figureAutorangeDomain(figureAutorangeAxisOptions({
+    _axisRange: { x: [0, 1] },
+    axis_options: { x: {} },
+  }, "x")), undefined);
+  const fig = figure();
+  fig.setAxisDomain("x", [1, 0]);
+  assert.deepEqual(figureAutorangeDomain(figureAutorangeAxisOptions(fig, "x")), [0, 1]);
 });
 
 test("scatterPayloadForceBin2d uses force_bin2d only like Python", () => {
