@@ -2172,6 +2172,7 @@ export class Figure {
       // emit-payload-show-legend stay-host.
       // spec.title_options. Recorded emit-payload-title-options stay-host.
       // emit-payload-padding stay-host.
+      // Recorded emit-payload-dom stay-host.
       view: { ranges: { x: [...xr], y: [...yr] } },
     };
     if (this.coords === "polar") {
