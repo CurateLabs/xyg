@@ -916,6 +916,7 @@ Node `itemApplyOpacity` uses `style_channels` only like Python `_item_apply_opac
 Node `itemWidths` uses `style_channels` only like Python `_item_widths`; `styleChannels` is not a width-channel fallback.
 Node `scatterUsesDensity` uses `force_density` only like Python `use_density`; `forceDensity` is not a density-force fallback.
 Node `figureTraceSupport` uses `style.linecap` only like Python `_figure_trace_support_flags`; `lineCap` is not a dashed-marker linecap fallback.
+Node `packXyTcLinecap` uses `style.linecap` only like Python `_pack_xytc`; `lineCap` is not a packed-linecap fallback.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1393,6 +1394,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `itemWidths` uses `style_channels` only.
   Node `scatterUsesDensity` uses `force_density` only.
   Node `figureTraceSupport` uses `style.linecap` only.
+  Node `packXyTcLinecap` uses `style.linecap` only.
 ---
 
 ## 4. Delivery order

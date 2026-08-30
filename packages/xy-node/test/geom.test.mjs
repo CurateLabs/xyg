@@ -71,6 +71,7 @@ import {
   packXyTcFillOpacity,
   packXyTcJoinedFill,
   packXyTcLineColor,
+  packXyTcLinecap,
   packXyTcLineOpacity,
   packXyTcLineWidth,
   packXyTcSize,
@@ -507,6 +508,15 @@ test("packXyTcLineColor uses line_color only like Python", () => {
   const snake = packXyTcLineColor({ line_color: "#ff0000" });
   assert.equal(snake.flags, 1 << 2);
   assert.deepEqual([...snake.bytes], [...new TextEncoder().encode("#ff0000")]);
+});
+
+test("packXyTcLinecap uses linecap only like Python", () => {
+  assert.equal(packXyTcLinecap({}).length, 0);
+  assert.equal(packXyTcLinecap({ lineCap: "butt" }).length, 0);
+  assert.deepEqual(
+    [...packXyTcLinecap({ linecap: "butt" })],
+    [...new TextEncoder().encode("butt")],
+  );
 });
 
 test("packXyTcLineOpacity uses line_opacity only like Python", () => {

@@ -3329,6 +3329,13 @@ export function packXyTcLineColor(style) {
   return { flags: XYTC_HAS_LINE_COLOR, bytes: encodeUtf8(record.line_color) };
 }
 
+/** XYTC linecap. Python `_pack_xytc` reads `"linecap" in style` only. */
+export function packXyTcLinecap(style) {
+  const record = style ?? {};
+  if (!Object.hasOwn(record, "linecap")) return new Uint8Array();
+  return encodeUtf8(record.linecap);
+}
+
 /** XYTC line opacity. Python `_pack_xytc` uses `style.get("line_opacity", 1.0)` only. */
 export function packXyTcLineOpacity(style, kindClass) {
   if (!(kindClass & SCENE_KIND_CLASS_BAND)) return 1;
@@ -3459,7 +3466,7 @@ function packXyTc(figure) {
       flags |= XYTC_HAS_DASH_PATTERN;
       dashPattern = dash.map(Number);
     }
-    const linecapB = (style.linecap ?? style.lineCap) != null ? encodeUtf8(String(style.linecap ?? style.lineCap)) : new Uint8Array();
+    const linecapB = packXyTcLinecap(style);
     const stepB = style.step != null ? encodeUtf8(String(style.step)) : new Uint8Array();
     const curveB = style.curve != null ? encodeUtf8(String(style.curve)) : new Uint8Array();
     let fillCss = new Uint8Array();
