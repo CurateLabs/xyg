@@ -2204,6 +2204,13 @@ export class Figure {
         // Node cartesian payload axes omit label_offset. Python `_axis_spec`
         // ships `label_offset`. Matching Python would add x_axis.label_offset.
         // Recorded emit-payload-axis-label-offset stay-host.
+        // Node cartesian payload axes omit label_angle. Python `_axis_spec`
+        // ships `label_angle`. Matching Python would add x_axis.label_angle.
+        // Recorded emit-payload-axis-label-angle stay-host.
+        // Node cartesian payload axes omit tick_label_angle. Python
+        // `_axis_spec` ships `tick_label_angle`. Matching Python would add
+        // x_axis.tick_label_angle. Recorded emit-payload-axis-tick-label-angle
+        // stay-host.
         x: { range: xr, scale: "linear" },
         y: { range: yr, scale: "linear" },
       };
