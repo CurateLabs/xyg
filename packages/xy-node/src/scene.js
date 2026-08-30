@@ -4852,6 +4852,14 @@ export function figureAxisOptions(figure) {
   return (figure ?? {}).axis_options;
 }
 
+/** XYCF tick kind. Python `_pack_figure_chrome` uses `figure._axis_kind(axis_id)`. */
+export function chromeAxisTickKind(figure, axisId) {
+  const kind = figure._axisKind(axisId);
+  if (kind === "time") return 1;
+  if (kind === "category") return 2;
+  return 0;
+}
+
 /** Annotation CSS class. Python `_pack_figure_support` reads `annotation.get("class_name")` only. */
 export function annotationClassName(annotation) {
   return (annotation ?? {}).class_name;
@@ -4979,14 +4987,8 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   view.setFloat64(144, Number(yAxis.constant ?? 1), true);
   header[152] = (xAxis.nonpositive ?? "clip") === "mask" ? 1 : 0;
   header[153] = (yAxis.nonpositive ?? "clip") === "mask" ? 1 : 0;
-  const tickKind = (axis) => {
-    const kind = axis.kind ?? axis.type;
-    if (kind === "time") return 1;
-    if (kind === "category") return 2;
-    return 0;
-  };
-  header[154] = tickKind(xAxis);
-  header[155] = tickKind(yAxis);
+  header[154] = chromeAxisTickKind(figure, "x");
+  header[155] = chromeAxisTickKind(figure, "y");
   const strategyCode = (options) => ({ auto: 0, hide: 1, rotate: 2, stagger: 3, preserve: 4, none: 5, off: 6 }[sceneTickStrategy(options)] ?? 0);
   const anchorCode = (options) => {
     const raw = axisTickLabelAnchor(options);
@@ -5001,8 +5003,8 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   const yAngle = axisTickLabelAngle(yAxis);
   const extras = xGap != null || yGap != null || xAngle != null || yAngle != null;
   let collisionFlags = extras ? 1 : 0;
-  if ((xAxis.kind ?? xAxis.type) === "category") collisionFlags |= 1 << 1;
-  if ((yAxis.kind ?? yAxis.type) === "category") collisionFlags |= 1 << 2;
+  if (figure._axisKind("x") === "category") collisionFlags |= 1 << 1;
+  if (figure._axisKind("y") === "category") collisionFlags |= 1 << 2;
   if (xAnchor != null) collisionFlags |= 1 << 3;
   if (yAnchor != null) collisionFlags |= 1 << 4;
   header[12] = strategyCode(xAxis);
