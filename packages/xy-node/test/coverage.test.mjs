@@ -2064,3 +2064,13 @@ test("buildPayload omits polar axis label_offset unlike Python _axis_spec", () =
   const { spec } = fig.buildPayload();
   assert.equal(spec.x_axis.label_offset, undefined);
 });
+
+test("buildPayload omits polar axis label_angle unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `label_angle` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-label-angle stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { label_angle: 15 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.label_angle, undefined);
+});
