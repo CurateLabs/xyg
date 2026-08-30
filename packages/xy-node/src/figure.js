@@ -139,6 +139,11 @@ const AUTORANGE_ROLES = [
   ["base", 6],
 ];
 
+/** Payload density override. Python `payload_force_density` reads `force_density` only. */
+export function scatterPayloadForceDensity(trace) {
+  return (trace ?? {}).force_density;
+}
+
 /** Autorange axis record. Python `_axis_scale` / `_range` read `axis_options` only. */
 export function figureAutorangeAxisOptions(figure, axisId) {
   return (figure ?? {}).axis_options?.[axisId] ?? {};
@@ -1016,7 +1021,7 @@ export class Figure {
   }
 
   _emitScatter(t, pw, xr, yr) {
-    const forceDensity = Boolean(t.force_density ?? t.style?.force_density);
+    const forceDensity = Boolean(scatterPayloadForceDensity(t));
     const forceDirect = Boolean(t.force_direct ?? t.style?.force_direct);
     const forcePyramid = Boolean(t.force_pyramid ?? t.style?.force_pyramid);
     if (
