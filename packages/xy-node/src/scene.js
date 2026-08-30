@@ -2321,7 +2321,7 @@ function styleValue(style, snake, camel, fallback) {
 
 function packChromeAxis(axis, options, sides) {
   const style = options.style ?? {};
-  const minor = options.minorStyle ?? options.minor_style ?? {};
+  const minor = chromeAxisMinorStyle(options) ?? {};
   for (const [label, authored] of [["style", style], ["minor_style", minor]]) {
     const unsupported = Object.keys(authored).filter((key) => authored[key] != null && !AXIS_STYLE_KEYS.has(key));
     if (unsupported.length) {
@@ -4781,6 +4781,11 @@ export function axisTickLabelStrategy(options) {
 /** Chrome authored tick labels. Python `_pack_figure_chrome` reads `axis.get("tick_labels")` only. */
 export function axisTickLabels(axis) {
   return (axis ?? {}).tick_labels;
+}
+
+/** Chrome axis minor style. Python `_pack_chrome_axis` reads `options.get("minor_style")` only. */
+export function chromeAxisMinorStyle(options) {
+  return (options ?? {}).minor_style;
 }
 
 /** Chrome styles record. Python `_pack_figure_support` / XYEF observations read `chrome_styles` only. */
