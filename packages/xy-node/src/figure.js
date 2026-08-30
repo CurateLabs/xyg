@@ -1365,6 +1365,9 @@ export class Figure {
     // Node payload density scatter omits transition_keys. Python `_emit_scatter`
     // ships them via `_transition_entry` on the density path. Matching Python
     // would add entry.keys. Recorded emit-density-transition stay-host.
+    // Node payload density scatter omits animation. Python `_transition_entry`
+    // ships t.animation on the density path. Matching Python would add
+    // entry.animation. Recorded emit-density-animation stay-host.
     return {
       id: t.id,
       kind: "scatter",

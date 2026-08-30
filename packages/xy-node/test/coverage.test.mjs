@@ -321,6 +321,7 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 test("_emitTriangleMesh omits animation unlike Python _transition_entry", () => {
   // Python `_emit_triangle_mesh` ships t.animation via `_transition_entry`.
@@ -386,6 +387,16 @@ test("_emitHistogram omits animation unlike Python _transition_entry", () => {
   fig.traces[0].animation = { duration: 100 };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "histogram");
+=======
+test("_emitScatterDensity omits animation unlike Python _transition_entry", () => {
+  // Python `_transition_entry` ships t.animation on the density path. Node
+  // density encode omits that field. Recorded emit-density-animation stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1], { forceDensity: true });
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "density");
+>>>>>>> a6bef4d7 (Record Node _emitScatterDensity omit animation stay-host vs Python)
   assert.equal(spec.traces[0].animation, undefined);
 });
 
