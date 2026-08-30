@@ -101,6 +101,7 @@ import {
   figureChromeStyles,
   chromeStyleHasFontFamily,
   figureClassName,
+  figureClassNames,
   figureYLabel,
   plotTopAxisRoom,
   polarAxisThetaDirection,
@@ -1189,6 +1190,12 @@ test("figureClassName uses class_name only like Python", () => {
   assert.equal(figureClassName({}), undefined);
   assert.equal(figureClassName({ className: "browser-only" }), undefined);
   assert.equal(figureClassName({ class_name: "browser-only" }), "browser-only");
+});
+
+test("figureClassNames uses class_names only like Python", () => {
+  assert.equal(figureClassNames({}), undefined);
+  assert.equal(figureClassNames({ classNames: { title: "x" } }), undefined);
+  assert.deepEqual(figureClassNames({ class_names: { title: "x" } }), { title: "x" });
 });
 
 test("figureXLabel uses x_label then axis label like Python", () => {
