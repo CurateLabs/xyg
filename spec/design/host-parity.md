@@ -104,6 +104,7 @@ Node `polarAxisThetaDirection` uses axis `theta_direction` only like Python `_pa
   Node `_polarAxisSpecs` omits axis bounds.
   Node `_polarAxisSpecs` omits axis tick_sides.
   Node `_polarAxisSpecs` omits axis tick_label_sides.
+  Node `_polarAxisSpecs` omits axis label_position.
 ---
 
 ## 0. Three runtime surfaces (product-wide)
