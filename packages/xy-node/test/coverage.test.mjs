@@ -318,6 +318,19 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitScatter omits ship scale unlike Python _axis_scale", () => {
+  // Python `_base_entry` passes `_axis_scale` into `pw.ship`, pinning log
+  // offset to 0. Node scatter encode keeps the column midpoint. Recorded
+  // emit-scatter-ship-scale stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.setAxis("x", { type: "log" });
+  fig.scatter([1, 10], [1, 10]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "direct");
+  const xCol = spec.columns[spec.traces[0].x];
+  assert.notEqual(xCol.offset, 0);
+});
+
 test("_emitScatterDensity omits mean-color rgba unlike Python trace_bin_colors", () => {
   // Python `_density_trace_spec` ships density.rgba from trace_bin_colors.
   // Node density keeps no rgba/color_agg even when color_ch is continuous.

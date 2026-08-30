@@ -1154,6 +1154,9 @@ export class Figure {
       tier: "direct",
       n_points: t.x.length,
       n_marks: xv.length,
+      // Node payload scatter omits ship scale. Python `_base_entry` passes
+      // `_axis_scale`. Matching Python would pin log-axis offset to 0.
+      // Recorded emit-scatter-ship-scale stay-host.
       x: pw.ship(xv, sel == null ? xCol : new Column(xv)),
       y: pw.ship(yv, sel == null ? yCol : new Column(yv)),
       x_axis: t.x_axis ?? "x",
