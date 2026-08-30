@@ -110,6 +110,7 @@ import {
   figureShowLegend,
   figureAxisOptions,
   figureAutorangeAxisOptions,
+  scatterPayloadForceDensity,
   annotationClassName,
   figureYLabel,
   plotTopAxisRoom,
@@ -1262,6 +1263,12 @@ test("figureAutorangeAxisOptions uses axis_options only like Python", () => {
   assert.deepEqual(figureAutorangeAxisOptions({}, "x"), {});
   assert.deepEqual(figureAutorangeAxisOptions({ xAxis: { type: "log" } }, "x"), {});
   assert.deepEqual(figureAutorangeAxisOptions({ axis_options: { x: { type: "log" } } }, "x"), { type: "log" });
+});
+
+test("scatterPayloadForceDensity uses force_density only like Python", () => {
+  assert.equal(scatterPayloadForceDensity({}), undefined);
+  assert.equal(scatterPayloadForceDensity({ style: { force_density: true } }), undefined);
+  assert.equal(scatterPayloadForceDensity({ force_density: true }), true);
 });
 
 test("figureXLabel uses x_label then axis label like Python", () => {
