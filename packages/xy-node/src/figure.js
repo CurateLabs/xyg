@@ -1252,6 +1252,9 @@ export class Figure {
       h,
       max,
       enc: "log-u8",
+      // Node payload density colormap stays `style.colormap`. Python
+      // `_density_trace_spec` uses `color_ch.colormap`. Node `scatter()`
+      // does not copy `color_ch` onto traces. Recorded density-colormap stay-host.
       colormap: t.style?.colormap ?? "viridis",
       x_range: [...xr],
       y_range: [...yr],

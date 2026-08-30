@@ -304,6 +304,20 @@ test("_emitScatter still ORs forcePyramid into density unlike Python _emit_scatt
   fig.dispose();
 });
 
+test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
+  // Python `_density_trace_spec` reads `color_ch.colormap`. Node scatter traces
+  // keep `style.colormap` because authoring does not copy `color_ch`.
+  const n = 10;
+  const x = fill(n, (i) => i / n);
+  const y = fill(n, (i) => ((i * 3) % n) / n);
+  const fig = figure({ width: 320, height: 240 });
+  fig.scatter(x, y, { forceDensity: true, style: { colormap: "plasma" } });
+  fig.traces[0].color_ch = { mode: "continuous", colormap: "magma" };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "density");
+  assert.equal(spec.traces[0].density.colormap, "plasma");
+});
+
 test("lodPlan returns exact vs density for Rust budgets", () => {
   const exact = lodPlan(1_000, SCATTER_DENSITY_THRESHOLD);
   assert.equal(exact.exact, true);
