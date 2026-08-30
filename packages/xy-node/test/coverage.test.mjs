@@ -1664,3 +1664,15 @@ test("buildPayload omits cartesian axis label_position unlike Python _axis_spec"
   assert.equal(spec.x_axis.label_position, undefined);
 });
 
+test("buildPayload omits cartesian axis label_offset unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `label_offset`. Node cartesian payload axes omit
+  // that field even when axis label_offset is set. Recorded
+  // emit-payload-axis-label-offset stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { label_offset: 8 });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.label_offset, 8);
+  assert.equal(spec.x_axis.label_offset, undefined);
+});
+

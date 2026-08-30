@@ -1201,7 +1201,8 @@ export class Figure {
         range_px: t.sizeRange ?? [8, 22],
         domain: [lo, hi],
         buf: pw.shipScalar(norm),
-      };        // x_axis.tick_label_sides. Recorded emit-payload-axis-tick-label-sides
+      };        // Recorded emit-payload-axis-label-offset stay-host.
+        // x_axis.tick_label_sides. Recorded emit-payload-axis-tick-label-sides
         // emit-payload-axis-bounds stay-host.
         // emit-payload-axis-domain stay-host.
         // Recorded emit-payload-axis-tick-count stay-host.
