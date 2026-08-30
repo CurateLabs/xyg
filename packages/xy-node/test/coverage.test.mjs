@@ -318,6 +318,21 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitHistogram omits transition_keys unlike Python _transition_entry", () => {
+  // Python `_emit_histogram` ships transition_keys via `_emit_rect` /
+  // `_transition_entry`. Node histogram payload keeps no keys field even when
+  // transition_keys is present. Recorded emit-hist-transition stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
+  fig.traces[0].transition_keys = [
+    [1, 2],
+    [3, 4],
+  ];
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "histogram");
+  assert.equal(spec.traces[0].keys, undefined);
+});
+
 test("_emitSegments omits transition_keys unlike Python _transition_entry", () => {
   // Python `_emit_segments` ships transition_keys as `keys`. Node segments
   // payload keeps no keys field even when transition_keys is present.
