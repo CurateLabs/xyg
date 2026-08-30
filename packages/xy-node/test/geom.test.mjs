@@ -19,6 +19,7 @@ import {
   itemStrokeRgba8,
   itemWidths,
   legendStyleFontSizes,
+  legendAxisScale,
   markerPathScale,
   arrowGeometry,
   arrowShaftPoints,
@@ -1148,6 +1149,14 @@ test("axisScaleName uses type only like Python", () => {
   assert.equal(axisScaleName({ type: "log" }), "log");
   assert.equal(axisScaleName({ type: "symlog" }), "symlog");
   assert.equal(axisScaleName({ type: "time" }), "linear");
+});
+
+test("legendAxisScale uses type only like Python _axis_scale", () => {
+  assert.equal(legendAxisScale({}), "linear");
+  assert.equal(legendAxisScale({ kind: "log" }), "linear");
+  assert.equal(legendAxisScale({ scale: "log" }), "linear");
+  assert.equal(legendAxisScale({ type: "log" }), "log");
+  assert.equal(legendAxisScale({ type: "symlog" }), "symlog");
 });
 
 test("axisMinorTickValues uses minor_tick_values only like Python", () => {

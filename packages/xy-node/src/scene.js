@@ -5347,6 +5347,11 @@ function legendColumnValues(column) {
   return null;
 }
 
+/** Legend occupancy axis scale. Python legend best-loc uses `_axis_scale` (axis `type` only). */
+export function legendAxisScale(options) {
+  return axisScaleName(options);
+}
+
 function legendAxisSpec(figure, axisId) {
   const options = figureAxisOptions(figure)?.[axisId] ?? {};
   let lo, hi;
@@ -5358,7 +5363,7 @@ function legendAxisSpec(figure, axisId) {
   const reverse = lo > hi;
   if (reverse) [lo, hi] = [hi, lo];
   if (!(Number.isFinite(lo) && Number.isFinite(hi)) || hi <= lo) return null;
-  const scale = options.type ?? options.scale ?? options.kind ?? "linear";
+  const scale = legendAxisScale(options);
   const constant = options.constant == null || Number(options.constant) === 0 ? 1 : Number(options.constant);
   return { domain: [lo, hi], reverse, scale, constant };
 }
