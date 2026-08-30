@@ -4746,6 +4746,12 @@ export function axisTickValues(axis) {
   return (axis ?? {}).tick_values;
 }
 
+/** Axis scale name. Python `_axis_scale` reads `type` in {log,symlog}, else linear. */
+export function axisScaleName(axis) {
+  const scale = (axis ?? {}).type;
+  return scale === "log" || scale === "symlog" ? scale : "linear";
+}
+
 /** Chrome authored minor ticks. Python `_pack_figure_chrome` reads `axis.get("minor_tick_values")` only. */
 export function axisMinorTickValues(axis) {
   return (axis ?? {}).minor_tick_values;
@@ -4944,8 +4950,8 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   view.setFloat64(24, Number(height), true);
   authoredMargins.forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
   padding.forEach((value, index) => view.setFloat64(64 + index * 8, value, true));
-  view.setUint32(96, kindCode(xAxis.kind ?? xAxis.type ?? "linear"), true);
-  view.setUint32(100, kindCode(yAxis.kind ?? yAxis.type ?? "linear"), true);
+  view.setUint32(96, kindCode(axisScaleName(xAxis)), true);
+  view.setUint32(100, kindCode(axisScaleName(yAxis)), true);
   view.setFloat64(104, Number(xDomain[0]), true);
   view.setFloat64(112, Number(xDomain[1]), true);
   view.setFloat64(120, Number(xAxis.constant ?? 1), true);

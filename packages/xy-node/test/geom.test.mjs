@@ -91,6 +91,7 @@ import {
   polarAxisThetaZero,
   polarAxisROrigin,
   axisTickValues,
+  axisScaleName,
   axisMinorTickValues,
   axisTickLabels,
   axisTickLabelAnchor,
@@ -1127,6 +1128,14 @@ test("axisTickValues uses tick_values only like Python", () => {
   assert.equal(axisTickValues({}), undefined);
   assert.equal(axisTickValues({ tickValues: [0, 1] }), undefined);
   assert.deepEqual(axisTickValues({ tick_values: [0, 1] }), [0, 1]);
+});
+
+test("axisScaleName uses type only like Python", () => {
+  assert.equal(axisScaleName({}), "linear");
+  assert.equal(axisScaleName({ kind: "log" }), "linear");
+  assert.equal(axisScaleName({ type: "log" }), "log");
+  assert.equal(axisScaleName({ type: "symlog" }), "symlog");
+  assert.equal(axisScaleName({ type: "time" }), "linear");
 });
 
 test("axisMinorTickValues uses minor_tick_values only like Python", () => {
