@@ -924,6 +924,7 @@ Node `legendStyleFontSizes` uses `style.font_size` / `style.title_font_size` onl
 Node `heatmapGridShape` uses `grid_shape` only like Python `_heatmap_shape`; `gridShape` is not a heatmap-lattice fallback.
 Node `hexbinStylePitch` uses `style.hex_dx` then `style.dx` like Python `_hexbin_pitch`; `hexDx` / `hexDy` are not hexbin-pitch fallbacks.
 Node `polarGridShape` uses axis `grid_shape` only like Python `_pack_polar_scene_input`; `gridShape` is not a polar-grid fallback.
+Node `polarAxisThetaUnit` uses axis `theta_unit` only like Python `_pack_polar_scene_input`; `thetaUnit` is not a polar-unit fallback.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1409,6 +1410,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `heatmapGridShape` uses `grid_shape` only.
   Node `hexbinStylePitch` uses `hex_dx` then `dx`.
   Node `polarGridShape` uses axis `grid_shape` only.
+  Node `polarAxisThetaUnit` uses axis `theta_unit` only.
 ---
 
 ## 4. Delivery order

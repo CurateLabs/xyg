@@ -86,6 +86,7 @@ import {
   hexbinStylePitch,
   heatmapGridShape,
   polarGridShape,
+  polarAxisThetaUnit,
   constantMarkColor,
   xyHfColormap,
   channelConstantCss,
@@ -1071,6 +1072,12 @@ test("polarGridShape uses grid_shape only like Python", () => {
   assert.equal(polarGridShape({}), "circular");
   assert.equal(polarGridShape({ gridShape: "linear" }), "circular");
   assert.equal(polarGridShape({ grid_shape: "linear" }), "linear");
+});
+
+test("polarAxisThetaUnit uses theta_unit only like Python", () => {
+  assert.equal(polarAxisThetaUnit({}), "radians");
+  assert.equal(polarAxisThetaUnit({ thetaUnit: "degrees" }), "radians");
+  assert.equal(polarAxisThetaUnit({ theta_unit: "degrees" }), "degrees");
 });
 
 
