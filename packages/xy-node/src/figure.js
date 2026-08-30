@@ -1491,6 +1491,9 @@ export class Figure {
     // Node payload segments omits stroke_ch. Python `_emit_segments` ships
     // stroke_ch via `_ship_trace_styles`. Matching Python would add
     // entry.stroke. Recorded emit-segments-stroke stay-host.
+    // Node payload segments omits style_channels. Python `_emit_segments`
+    // ships them as `channels` via `_ship_trace_styles`. Matching Python
+    // would add entry.channels. Recorded emit-segments-channels stay-host.
     return entry;
   }
 
