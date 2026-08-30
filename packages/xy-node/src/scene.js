@@ -4735,6 +4735,11 @@ export function axisTickValues(axis) {
   return (axis ?? {}).tick_values;
 }
 
+/** Chrome authored minor ticks. Python `_pack_figure_chrome` reads `axis.get("minor_tick_values")` only. */
+export function axisMinorTickValues(axis) {
+  return (axis ?? {}).minor_tick_values;
+}
+
 function packChromeFacts(figure, { width, height, margins = null, colorbarOk = true } = {}) {
   const FLAG_AUTHORED_MARGINS = 1 << 0, FLAG_PADDING = 1 << 1, FLAG_X_MAJOR_AUTO = 1 << 2, FLAG_Y_MAJOR_AUTO = 1 << 3;
   const FLAG_X_TICK_LABELS = 1 << 4, FLAG_Y_TICK_LABELS = 1 << 5, FLAG_HAS_CHROME = 1 << 6, FLAG_HAS_LEGEND = 1 << 7, FLAG_HAS_COLORBAR = 1 << 8;
@@ -4771,8 +4776,8 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   // ABI 199: Rust pack_figure_chrome filters authored majors through the tick window.
   if (xTicks != null) { flags &= ~FLAG_X_MAJOR_AUTO; xMajor = Array.from(xTicks, Number); }
   if (yTicks != null) { flags &= ~FLAG_Y_MAJOR_AUTO; yMajor = Array.from(yTicks, Number); }
-  const xMinor = Array.from(xAxis.minorTickValues ?? xAxis.minor_tick_values ?? [], Number);
-  const yMinor = Array.from(yAxis.minorTickValues ?? yAxis.minor_tick_values ?? [], Number);
+  const xMinor = Array.from(axisMinorTickValues(xAxis) ?? [], Number);
+  const yMinor = Array.from(axisMinorTickValues(yAxis) ?? [], Number);
   // ABI 200: Rust pack_figure_chrome filters authored minors through the tick window.
   // ABI 201: product encode passes packed XYPL so polar theta uses the modular sector.
   // ABI 202: hosts pack domain tick-kind (linear/time/category) in XYCF 154–155.

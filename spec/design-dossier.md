@@ -1774,7 +1774,7 @@ Node `hexbinStylePitch` uses `style.hex_dx` then `style.dx` like Python `_hexbin
 Node `polarGridShape` uses axis `grid_shape` only like Python `_pack_polar_scene_input`; `gridShape` is not a polar-grid fallback.
 Node `polarAxisThetaUnit` uses axis `theta_unit` only like Python `_pack_polar_scene_input`; `thetaUnit` is not a polar-unit fallback.
 Node `polarAxisThetaZero` uses axis `theta_zero` only like Python `_pack_polar_scene_input`; `thetaZero` is not a polar-zero fallback.
-Node `polarAxisThetaDirection` uses axis `theta_direction` only like Python `_pack_polar_scene_input`; `thetaDirection` is not a polar-direction fallback. Node `polarAxisROrigin` uses axis `r_origin` only like Python `_pack_polar_scene_input`; `rOrigin` is not a polar-origin fallback. Node `axisTickValues` uses axis `tick_values` only like Python `_pack_figure_chrome`; `tickValues` is not a chrome-major-tick fallback.
+Node `polarAxisThetaDirection` uses axis `theta_direction` only like Python `_pack_polar_scene_input`; `thetaDirection` is not a polar-direction fallback. Node `polarAxisROrigin` uses axis `r_origin` only like Python `_pack_polar_scene_input`; `rOrigin` is not a polar-origin fallback. Node `axisTickValues` uses axis `tick_values` only like Python `_pack_figure_chrome`; `tickValues` is not a chrome-major-tick fallback. Node `axisMinorTickValues` uses axis `minor_tick_values` only like Python `_pack_figure_chrome`; `minorTickValues` is not a chrome-minor-tick fallback.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -2085,7 +2085,7 @@ Node `hexbinStylePitch` uses `style.hex_dx` then `style.dx` like Python `_hexbin
 Node `polarGridShape` uses axis `grid_shape` only like Python `_pack_polar_scene_input`; `gridShape` is not a polar-grid fallback.
 Node `polarAxisThetaUnit` uses axis `theta_unit` only like Python `_pack_polar_scene_input`; `thetaUnit` is not a polar-unit fallback.
 Node `polarAxisThetaZero` uses axis `theta_zero` only like Python `_pack_polar_scene_input`; `thetaZero` is not a polar-zero fallback.
-Node `polarAxisThetaDirection` uses axis `theta_direction` only like Python `_pack_polar_scene_input`; `thetaDirection` is not a polar-direction fallback. Node `polarAxisROrigin` uses axis `r_origin` only like Python `_pack_polar_scene_input`; `rOrigin` is not a polar-origin fallback. Node `axisTickValues` uses axis `tick_values` only like Python `_pack_figure_chrome`; `tickValues` is not a chrome-major-tick fallback.
+Node `polarAxisThetaDirection` uses axis `theta_direction` only like Python `_pack_polar_scene_input`; `thetaDirection` is not a polar-direction fallback. Node `polarAxisROrigin` uses axis `r_origin` only like Python `_pack_polar_scene_input`; `rOrigin` is not a polar-origin fallback. Node `axisTickValues` uses axis `tick_values` only like Python `_pack_figure_chrome`; `tickValues` is not a chrome-major-tick fallback. Node `axisMinorTickValues` uses axis `minor_tick_values` only like Python `_pack_figure_chrome`; `minorTickValues` is not a chrome-minor-tick fallback.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same
