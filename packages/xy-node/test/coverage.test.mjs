@@ -318,6 +318,18 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitRibbon omits style_channels unlike Python _ship_trace_styles", () => {
+  // Python `_emit_ribbon` ships style_channels as `channels`. Node ribbon
+  // payload keeps no channels field even when style_channels is present.
+  // Recorded emit-ribbon-channels stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.ribbon([0], [1], [0], [1], [0], [1], { color: "#112233" });
+  fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "ribbon");
+  assert.equal(spec.traces[0].channels, undefined);
+});
+
 test("_emitScatter omits style_channels unlike Python _ship_trace_styles", () => {
   // Python `_emit_scatter` ships style_channels as `channels`. Node scatter
   // payload keeps no channels field even when style_channels is present.
