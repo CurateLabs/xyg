@@ -1399,6 +1399,9 @@ export class Figure {
     if (tier === "decimated") {
       entry.decimation_px = pxWidth;
     }
+    // Node payload line omits transition_keys. Python `_emit_line` ships them
+    // via `_transition_entry`. Matching Python would add entry.keys.
+    // Recorded emit-line-transition stay-host.
     return entry;
   }
 
