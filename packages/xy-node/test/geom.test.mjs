@@ -1483,6 +1483,16 @@ test("_polarAxisSpecs uses axis theta_unit like Python _axis_spec", () => {
   assert.equal(leftover._polarAxisSpecs([0, 1], [0, 1]).x.theta_unit, "radians");
 });
 
+test("_polarAxisSpecs uses axis theta_zero like Python _axis_spec", () => {
+  const fig = figure();
+  fig.setPolarMeta({ thetaZero: "N" });
+  assert.equal(fig._polarAxisSpecs([0, 1], [0, 1]).x.theta_zero, "N");
+  const leftover = figure();
+  leftover.coords = "polar";
+  leftover._polarMeta = { thetaZero: "N" };
+  assert.equal(leftover._polarAxisSpecs([0, 1], [0, 1]).x.theta_zero, "E");
+});
+
 test("figureAxisIsLog uses axis type only like Python _axis_scale log", () => {
   assert.equal(figureAxisIsLog({}, "x"), false);
   assert.equal(figureAxisIsLog({ xAxis: { type: "log" } }, "x"), false);
