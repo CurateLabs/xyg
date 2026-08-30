@@ -79,6 +79,7 @@ publish waits on the `@curatelabs` npm org (#13).
   Node `buildPayload` omits cartesian axis minor_style.
   Node `buildPayload` omits cartesian axis style.
   Node `buildPayload` omits cartesian axis nonpositive.
+  Node `buildPayload` omits cartesian axis constant.
 ---
 
 ## 0. Three runtime surfaces (product-wide)
