@@ -318,6 +318,690 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitLine skips M4 bin_x unlike Python _m4_decimate", () => {
+  // Python `_m4_decimate` passes `_binning_coords` so log x buckets in
+  // scale space. Node `_emitLine` omits bin_x, so log x keeps the same
+  // n_marks as linear. Recorded emit-line-m4-bin-x stay-host.
+  const n = 10001;
+  const x = new Float64Array(n);
+  const y = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    x[i] = i < 9000 ? 1 + i * 0.001 : 10 + (i - 9000) * 0.09;
+    y[i] = i;
+  }
+  const lin = figure({ width: 240, height: 160 });
+  lin.setAxis("x", { domain: [1, 100] });
+  lin.line(x, y);
+  const log = figure({ width: 240, height: 160 });
+  log.setAxis("x", { type: "log", domain: [1, 100] });
+  log.line(x, y);
+  const a = lin.buildPayload({ pxWidth: 64 }).spec.traces[0];
+  const b = log.buildPayload({ pxWidth: 64 }).spec.traces[0];
+  assert.equal(a.tier, "decimated");
+  assert.equal(b.tier, "decimated");
+  assert.equal(a.n_marks, b.n_marks);
+});
+
+test("_emitArea skips M4 bin_x unlike Python _m4_decimate", () => {
+  // Python `_m4_decimate` passes `_binning_coords` so log x buckets in
+  // scale space. Node `_emitArea` omits bin_x, so log x keeps the same
+  // n_marks as linear. Recorded emit-area-m4-bin-x stay-host.
+  const n = 10001;
+  const x = new Float64Array(n);
+  const y = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    x[i] = i < 9000 ? 1 + i * 0.001 : 10 + (i - 9000) * 0.09;
+    y[i] = i;
+  }
+  const lin = figure({ width: 240, height: 160 });
+  lin.setAxis("x", { domain: [1, 100] });
+  lin.area(x, y);
+  const log = figure({ width: 240, height: 160 });
+  log.setAxis("x", { type: "log", domain: [1, 100] });
+  log.area(x, y);
+  const a = lin.buildPayload({ pxWidth: 64 }).spec.traces[0];
+  const b = log.buildPayload({ pxWidth: 64 }).spec.traces[0];
+  assert.equal(a.tier, "decimated");
+  assert.equal(b.tier, "decimated");
+  assert.equal(a.n_marks, b.n_marks);
+});
+
+test("buildPayload omits polar axis id unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `id` on polar axes. Node `_polarAxisSpecs`
+  // omits that field. Recorded emit-polar-payload-axis-id stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.id, undefined);
+});
+
+test("buildPayload omits polar axis kind unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `_axis_kind` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-kind stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.kind, undefined);
+});
+
+test("buildPayload omits polar axis side unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `side` on polar axes. Node `_polarAxisSpecs`
+  // omits that field. Recorded emit-polar-payload-axis-side stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.side, undefined);
+});
+
+test("buildPayload omits polar axis label unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `label` on polar axes. Node `_polarAxisSpecs`
+  // omits that field. Recorded emit-polar-payload-axis-label stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.label, undefined);
+});
+
+test("buildPayload omits polar axis tick_values unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_values` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-values stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_values: [0, 1] });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_values, undefined);
+});
+
+test("buildPayload omits polar axis minor_tick_values unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `minor_tick_values` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-minor-ticks stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { minor_tick_values: [0.5] });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.minor_tick_values, undefined);
+});
+
+test("buildPayload omits polar axis tick_labels unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_labels` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-labels stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_labels: ["a", "b"] });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_labels, undefined);
+});
+
+test("buildPayload omits polar axis tick_count unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_count` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-count stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_count: 4 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_count, undefined);
+});
+
+test("buildPayload omits polar axis reverse unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `reverse` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-reverse stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { reverse: true });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.reverse, undefined);
+});
+
+test("buildPayload omits polar axis domain unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `domain` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-domain stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { domain: [0, 1] });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.domain, undefined);
+});
+
+test("buildPayload omits polar axis format unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `format` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-format stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { format: ".2f" });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.format, undefined);
+});
+
+test("buildPayload omits polar axis bounds unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `bounds` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-bounds stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { bounds: [0, 1] });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.bounds, undefined);
+});
+
+test("buildPayload omits polar axis tick_sides unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_sides` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-sides stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_sides: ["bottom"] });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_sides, undefined);
+});
+
+test("buildPayload omits polar axis tick_label_sides unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_label_sides` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-label-sides stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_label_sides: ["bottom"] });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_sides, undefined);
+});
+
+test("buildPayload omits polar axis label_position unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `label_position` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-label-position stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { label_position: "end" });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.label_position, undefined);
+});
+
+test("buildPayload omits polar axis label_offset unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `label_offset` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-label-offset stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { label_offset: 4 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.label_offset, undefined);
+});
+
+test("buildPayload omits polar axis label_angle unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `label_angle` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-label-angle stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { label_angle: 15 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.label_angle, undefined);
+});
+
+test("buildPayload omits polar axis tick_label_angle unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_label_angle` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-label-angle stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_label_angle: 20 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_angle, undefined);
+});
+
+test("buildPayload omits polar axis tick_label_strategy unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_label_strategy` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-label-strategy stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_label_strategy: "max" });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_strategy, undefined);
+});
+
+test("buildPayload omits polar axis tick_label_anchor unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_label_anchor` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-label-anchor stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_label_anchor: "start" });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_anchor, undefined);
+});
+
+test("buildPayload omits polar axis tick_label_min_gap unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_label_min_gap` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-label-min-gap stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_label_min_gap: 2 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_min_gap, undefined);
+});
+
+test("buildPayload omits polar axis minor_style unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `minor_style` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-minor-style stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { minor_style: { color: "#111" } });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.minor_style, undefined);
+});
+
+test("buildPayload omits polar axis style unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `compiled axis `style`` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-style stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { style: { color: "#222" } });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.style, undefined);
+});
+
+test("buildPayload polar y stays linear unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `_axis_scale` when it is not linear. Node polar
+  // y_axis keeps scale linear. Recorded emit-polar-payload-axis-scale stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("y", { type: "log" });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.y_axis.scale, "linear");
+});
+
+test("buildPayload omits polar axis nonpositive unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `nonpositive` on log axes. Node `_polarAxisSpecs`
+  // omits that field. Recorded emit-polar-payload-axis-nonpositive stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("y", { type: "log", nonpositive: "mask" });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.y_axis.nonpositive, undefined);
+});
+
+test("buildPayload omits polar axis constant unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `constant` on symlog axes. Node `_polarAxisSpecs`
+  // omits that field. Recorded emit-polar-payload-axis-constant stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("y", { type: "symlog", constant: 2 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.y_axis.constant, undefined);
+});
+
+test("buildPayload omits polar axis categories unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `_axis_categories` for category axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-categories stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { type: "category", categories: ["a", "b"] });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.categories, undefined);
+});
+
+test("_emitScatterDensity yLinear stays true unlike Python _density_trace_spec", () => {
+  // Python `_density_trace_spec` bins in axis-scale coordinates. Node density
+  // emit plan keeps yLinear true, so a log y-axis does not change grid max.
+  // Recorded emit-density-ylinear stay-host.
+  const n = 80;
+  const x = new Float64Array(n);
+  const y = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    x[i] = 1;
+    y[i] = i < 70 ? 1 + i * 0.01 : 10 + (i - 70);
+  }
+  const lin = figure({ width: 240, height: 160 });
+  lin.setAxis("y", { domain: [1, 100] });
+  lin.scatter(x, y, { forceDensity: true });
+  const log = figure({ width: 240, height: 160 });
+  log.setAxis("y", { type: "log", domain: [1, 100] });
+  log.scatter(x, y, { forceDensity: true });
+  const a = lin.buildPayload().spec.traces[0];
+  const b = log.buildPayload().spec.traces[0];
+  assert.equal(a.tier, "density");
+  assert.equal(b.tier, "density");
+  assert.equal(a.density.max, b.density.max);
+});
+
+test("_emitScatterDensity xLinear stays true unlike Python _density_trace_spec", () => {
+  // Python `_density_trace_spec` bins in axis-scale coordinates. Node density
+  // emit plan keeps xLinear true, so a log x-axis does not change grid max.
+  // Recorded emit-density-xlinear stay-host.
+  const n = 80;
+  const x = new Float64Array(n);
+  const y = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    x[i] = i < 70 ? 1 + i * 0.01 : 10 + (i - 70);
+    y[i] = 1;
+  }
+  const lin = figure({ width: 240, height: 160 });
+  lin.setAxis("x", { domain: [1, 100] });
+  lin.scatter(x, y, { forceDensity: true });
+  const log = figure({ width: 240, height: 160 });
+  log.setAxis("x", { type: "log", domain: [1, 100] });
+  log.scatter(x, y, { forceDensity: true });
+  const a = lin.buildPayload().spec.traces[0];
+  const b = log.buildPayload().spec.traces[0];
+  assert.equal(a.tier, "density");
+  assert.equal(b.tier, "density");
+  assert.equal(a.density.max, b.density.max);
+});
+
+test("buildPayload omits cartesian axis categories unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `_axis_categories` for category axes. Node
+  // cartesian payload axes omit that field even when categories are set.
+  // Recorded emit-payload-axis-categories stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig._axis_categories = { x: ["a", "b"] };
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(fig._axis_categories.x, ["a", "b"]);
+  assert.equal(spec.x_axis.categories, undefined);
+});
+
+test("buildPayload omits cartesian axis constant unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `constant` on symlog axes. Node cartesian payload
+  // axes omit that field even when axis constant is set. Recorded
+  // emit-payload-axis-constant stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([1, 2], [1, 2]);
+  fig.setAxis("x", { type: "symlog", constant: 2 });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.constant, 2);
+  assert.equal(spec.x_axis.constant, undefined);
+});
+
+test("buildPayload omits cartesian axis nonpositive unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `nonpositive` on log axes. Node cartesian payload
+  // axes omit that field even when axis nonpositive is set. Recorded
+  // emit-payload-axis-nonpositive stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([1, 2], [1, 2]);
+  fig.setAxis("x", { type: "log", nonpositive: "clip" });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.nonpositive, "clip");
+  assert.equal(spec.x_axis.nonpositive, undefined);
+});
+
+test("buildPayload omits cartesian axis style unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships compiled axis `style`. Node cartesian payload
+  // axes omit that field even when axis style is set. Recorded
+  // emit-payload-axis-style stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { style: { color: "#111" } });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.style.color, "#111");
+  assert.equal(spec.x_axis.style, undefined);
+});
+
+test("buildPayload omits cartesian axis minor_style unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `minor_style`. Node cartesian payload axes omit
+  // that field even when axis minor_style is set. Recorded
+  // emit-payload-axis-minor-style stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { minor_style: { color: "#888" } });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.minor_style.color, "#888");
+  assert.equal(spec.x_axis.minor_style, undefined);
+});
+
+test("buildPayload omits cartesian axis tick_label_min_gap unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_label_min_gap`. Node cartesian payload
+  // axes omit that field even when axis tick_label_min_gap is set. Recorded
+  // emit-payload-axis-tick-label-min-gap stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_label_min_gap: 4 });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.tick_label_min_gap, 4);
+  assert.equal(spec.x_axis.tick_label_min_gap, undefined);
+});
+
+test("buildPayload omits cartesian axis tick_label_anchor unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_label_anchor`. Node cartesian payload axes
+  // omit that field even when axis tick_label_anchor is set. Recorded
+  // emit-payload-axis-tick-label-anchor stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_label_anchor: "start" });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.tick_label_anchor, "start");
+  assert.equal(spec.x_axis.tick_label_anchor, undefined);
+});
+
+test("buildPayload omits cartesian axis tick_label_strategy unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_label_strategy`. Node cartesian payload
+  // axes omit that field even when axis tick_label_strategy is set. Recorded
+  // emit-payload-axis-tick-label-strategy stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_label_strategy: "max" });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.tick_label_strategy, "max");
+  assert.equal(spec.x_axis.tick_label_strategy, undefined);
+});
+
+test("buildPayload omits cartesian axis tick_label_angle unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_label_angle`. Node cartesian payload axes
+  // omit that field even when axis tick_label_angle is set. Recorded
+  // emit-payload-axis-tick-label-angle stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_label_angle: 30 });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.tick_label_angle, 30);
+  assert.equal(spec.x_axis.tick_label_angle, undefined);
+});
+
+test("buildPayload omits cartesian axis label_angle unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `label_angle`. Node cartesian payload axes omit
+  // that field even when axis label_angle is set. Recorded
+  // emit-payload-axis-label-angle stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { label_angle: 45 });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.label_angle, 45);
+  assert.equal(spec.x_axis.label_angle, undefined);
+});
+
+test("buildPayload omits cartesian axis label_offset unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `label_offset`. Node cartesian payload axes omit
+  // that field even when axis label_offset is set. Recorded
+  // emit-payload-axis-label-offset stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { label_offset: 8 });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.label_offset, 8);
+  assert.equal(spec.x_axis.label_offset, undefined);
+});
+
+test("buildPayload omits cartesian axis label_position unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `label_position`. Node cartesian payload axes
+  // omit that field even when axis label_position is set. Recorded
+  // emit-payload-axis-label-position stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { label_position: "end" });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.label_position, "end");
+  assert.equal(spec.x_axis.label_position, undefined);
+});
+
+test("buildPayload omits cartesian axis tick_label_sides unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_label_sides`. Node cartesian payload axes
+  // omit that field even when axis tick_label_sides is set. Recorded
+  // emit-payload-axis-tick-label-sides stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_label_sides: ["bottom"] });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(fig.axis_options.x.tick_label_sides, ["bottom"]);
+  assert.equal(spec.x_axis.tick_label_sides, undefined);
+});
+
+test("buildPayload omits cartesian axis tick_sides unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_sides`. Node cartesian payload axes omit
+  // that field even when axis tick_sides is set. Recorded
+  // emit-payload-axis-tick-sides stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_sides: ["bottom"] });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(fig.axis_options.x.tick_sides, ["bottom"]);
+  assert.equal(spec.x_axis.tick_sides, undefined);
+});
+
+test("buildPayload omits cartesian axis bounds unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `bounds`. Node cartesian payload axes omit that
+  // field even when axis bounds is set. Recorded emit-payload-axis-bounds
+  // stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { bounds: [0, 2] });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(fig.axis_options.x.bounds, [0, 2]);
+  assert.equal(spec.x_axis.bounds, undefined);
+});
+
+test("buildPayload omits cartesian axis format unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `format`. Node cartesian payload axes omit that
+  // field even when axis format is set. Recorded emit-payload-axis-format
+  // stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { format: ".2f" });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.format, ".2f");
+  assert.equal(spec.x_axis.format, undefined);
+});
+
+test("buildPayload omits cartesian axis domain unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `domain`. Node cartesian payload axes omit that
+  // field even when axis domain is set. Recorded emit-payload-axis-domain
+  // stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([1, 2], [1, 2]);
+  fig.setAxis("x", { domain: [0, 3] });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(fig.axis_options.x.domain, [0, 3]);
+  assert.equal(spec.x_axis.domain, undefined);
+});
+
+test("buildPayload omits cartesian axis reverse unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `reverse`. Node cartesian payload axes omit
+  // that field even when axis reverse is set. Recorded
+  // emit-payload-axis-reverse stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { reverse: true });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.reverse, true);
+  assert.equal(spec.x_axis.reverse, undefined);
+});
+
+test("buildPayload omits cartesian axis tick_count unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_count`. Node cartesian payload axes omit
+  // that field even when axis tick_count is set. Recorded
+  // emit-payload-axis-tick-count stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_count: 4 });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.tick_count, 4);
+  assert.equal(spec.x_axis.tick_count, undefined);
+});
+
+test("buildPayload omits cartesian axis tick_labels unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_labels`. Node cartesian payload axes omit
+  // that field even when axis tick_labels is set. Recorded
+  // emit-payload-axis-tick-labels stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_labels: ["a", "b"] });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(fig.axis_options.x.tick_labels, ["a", "b"]);
+  assert.equal(spec.x_axis.tick_labels, undefined);
+});
+
+test("buildPayload omits cartesian axis minor_tick_values unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `minor_tick_values`. Node cartesian payload axes
+  // omit that field even when axis minor_tick_values is set. Recorded
+  // emit-payload-axis-minor-ticks stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { minor_tick_values: [0.25, 0.75] });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(fig.axis_options.x.minor_tick_values, [0.25, 0.75]);
+  assert.equal(spec.x_axis.minor_tick_values, undefined);
+});
+
+test("buildPayload omits cartesian axis tick_values unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_values`. Node cartesian payload axes omit
+  // that field even when axis tick_values is set. Recorded
+  // emit-payload-axis-tick-values stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_values: [0, 0.5, 1] });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(fig.axis_options.x.tick_values, [0, 0.5, 1]);
+  assert.equal(spec.x_axis.tick_values, undefined);
+});
+
+test("buildPayload omits dom unlike Python _dom_spec", () => {
+  // Python `_dom_spec` ships class_name / class_names / style / styles.
+  // Node payload omits spec.dom even when class_name is set. Recorded
+  // emit-payload-dom stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.class_name = "root-node";
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.class_name, "root-node");
+  assert.equal(spec.dom, undefined);
+});
+
+test("_emitScatterDensity omits categorical color unlike Python _density_trace_spec", () => {
+  // Python `_density_trace_spec` ships a slim categorical color spec for
+  // legend chrome. Node density encode omits that field. Recorded
+  // emit-density-cat-color stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1], { forceDensity: true });
+  fig.traces[0].color_ch = { mode: "categorical", categories: ["a", "b"] };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "density");
+  assert.equal(spec.traces[0].color, undefined);
+});
+
+test("buildPayload omits padding unlike Python build_payload", () => {
+  // Python `build_payload` ships `padding`. Node payload omits that field
+  // even when Scene pack would read figure.padding. Recorded
+  // emit-payload-padding stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.padding = [8, 8, 8, 8];
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(fig.padding, [8, 8, 8, 8]);
+  assert.equal(spec.padding, undefined);
+});
+
+test("buildPayload omits title_options unlike Python build_payload", () => {
+  // Python `build_payload` ships `title_options` with geometry columns. Node
+  // payload omits that field. Recorded emit-payload-title-options stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.title_options = [{ text: "T", y: 1.0, pad: 8.0 }];
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.title_options.length, 1);
+  assert.equal(spec.title_options, undefined);
+});
+
+test("buildPayload omits extra_legends unlike Python build_payload", () => {
+  // Python `build_payload` ships `extra_legends`. Node payload omits that
+  // field. Recorded emit-payload-extra-legends stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.extra_legends = [{ loc: "lower left" }];
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.extra_legends.length, 1);
+  assert.equal(spec.extra_legends, undefined);
+});
+
 test("buildPayload omits annotations unlike Python build_payload", () => {
   // Python `build_payload` ships `_annotation_specs`. Node payload omits
   // that field. Recorded emit-payload-annotations stay-host.
@@ -356,28 +1040,57 @@ test("_emitTriangleMesh omits animation unlike Python _transition_entry", () => 
   // Python `_emit_triangle_mesh` ships t.animation via `_transition_entry`.
   // Node mesh encode omits that field. Recorded emit-mesh-animation stay-host.
   const fig = figure({ width: 240, height: 160 });
+  fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "triangle_mesh");
+  assert.equal(spec.traces[0].animation, undefined);
+});
 
 test("_emitRibbon omits animation unlike Python _transition_entry", () => {
   // Python `_emit_ribbon` ships t.animation via `_transition_entry`. Node
   // ribbon encode omits that field. Recorded emit-ribbon-animation stay-host.
   const fig = figure({ width: 240, height: 160 });
+  fig.ribbon([0], [1], [0], [1], [0], [1]);
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "ribbon");
+  assert.equal(spec.traces[0].animation, undefined);
+});
 
 test("_emitSegments omits animation unlike Python _transition_entry", () => {
   // Python `_emit_segments` ships t.animation via `_transition_entry`. Node
   // segments encode omits that field. Recorded emit-segments-animation stay-host.
   const fig = figure({ width: 240, height: 160 });
+  fig.segments([0], [0], [1], [1]);
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "segments");
+  assert.equal(spec.traces[0].animation, undefined);
+});
 
 test("_emitRect omits animation unlike Python _transition_entry", () => {
   // Python `_emit_rect` ships t.animation via `_transition_entry`. Node bar
   // encode omits that field. Recorded emit-rect-animation stay-host.
   const fig = figure({ width: 240, height: 160 });
+  fig.bar([0, 1], [1, 2]);
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "bar");
+  assert.equal(spec.traces[0].animation, undefined);
+});
 
 test("_emitHistogram omits animation unlike Python _transition_entry", () => {
   // Python `_emit_histogram` calls `_emit_rect`, which ships t.animation via
   // `_transition_entry`. Node histogram encode omits that field. Recorded
   // emit-hist-animation stay-host.
   const fig = figure({ width: 240, height: 160 });
-
+  fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "histogram");
+  assert.equal(spec.traces[0].animation, undefined);
+});
 
 test("_emitScatterDensity omits animation unlike Python _transition_entry", () => {
   // Python `_transition_entry` ships t.animation on the density path. Node
@@ -1435,776 +2148,38 @@ test("sankeyChart emits ribbon bands", () => {
   assert.ok(spec.traces.some((t) => t.kind === "ribbon"));
 });
 
-test("buildPayload omits cartesian axis tick_values unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_values`. Node cartesian payload axes omit
-  // that field even when axis tick_values is set. Recorded
-  // emit-payload-axis-tick-values stay-host.
+test("nextTraceId starts at 1 unlike Python len(traces)", () => {
+  // Python first trace id is 0 (`id=len(self.traces)`). Node auto-ids start
+  // at 1 and never assign 0. Recorded next-trace-id-base stay-host.
   const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.setAxis("x", { tick_values: [0, 0.5, 1] });
-  const { spec } = fig.buildPayload();
-  assert.deepEqual(fig.axis_options.x.tick_values, [0, 0.5, 1]);
-  assert.equal(spec.x_axis.tick_values, undefined);
-});
-
-test("buildPayload omits dom unlike Python _dom_spec", () => {
-  // Python `_dom_spec` ships class_name / class_names / style / styles.
-  // Node payload omits spec.dom even when class_name is set. Recorded
-  // emit-payload-dom stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.class_name = "root-node";
-  const { spec } = fig.buildPayload();
-  assert.equal(fig.class_name, "root-node");
-  assert.equal(spec.dom, undefined);
-});
-
-test("_emitScatterDensity omits categorical color unlike Python _density_trace_spec", () => {
-  // Python `_density_trace_spec` ships a slim categorical color spec for
-  // legend chrome. Node density encode omits that field. Recorded
-  // emit-density-cat-color stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1], { forceDensity: true });
-  fig.traces[0].color_ch = { mode: "categorical", categories: ["a", "b"] };
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.traces[0].tier, "density");
-  assert.equal(spec.traces[0].color, undefined);
-});
-
-test("buildPayload omits padding unlike Python build_payload", () => {
-  // Python `build_payload` ships `padding`. Node payload omits that field
-  // even when Scene pack would read figure.padding. Recorded
-  // emit-payload-padding stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.padding = [8, 8, 8, 8];
-  const { spec } = fig.buildPayload();
-  assert.deepEqual(fig.padding, [8, 8, 8, 8]);
-  assert.equal(spec.padding, undefined);
-});
-
-test("buildPayload omits title_options unlike Python build_payload", () => {
-  // Python `build_payload` ships `title_options` with geometry columns. Node
-  // payload omits that field. Recorded emit-payload-title-options stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.title_options = [{ text: "T", y: 1.0, pad: 8.0 }];
-  const { spec } = fig.buildPayload();
-  assert.equal(fig.title_options.length, 1);
-  assert.equal(spec.title_options, undefined);
-});
-
-test("buildPayload omits extra_legends unlike Python build_payload", () => {
-  // Python `build_payload` ships `extra_legends`. Node payload omits that
-  // field. Recorded emit-payload-extra-legends stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.extra_legends = [{ loc: "lower left" }];
-  const { spec } = fig.buildPayload();
-  assert.equal(fig.extra_legends.length, 1);
-  assert.equal(spec.extra_legends, undefined);
-});
-
-test("buildPayload omits annotations unlike Python build_payload", () => {
-  // Python `build_payload` ships `_annotation_specs`. Node payload omits
-  // that field. Recorded emit-payload-annotations stay-host.
-  const fig = figure({
-    width: 240,
-    height: 160,
-    annotations: [{ kind: "text", text: "hi", x: 0, y: 1 }],
-  });
-  fig.scatter([0, 1], [0, 1]);
-  const { spec } = fig.buildPayload();
-  assert.equal(fig.annotations.length, 1);
-  assert.equal(spec.annotations, undefined);
-});
-
-test("buildPayload omits colorbar unlike Python build_payload", () => {
-  // Python `build_payload` ships `colorbar` from `colorbar_options`. Node
-  // payload omits that field. Recorded emit-payload-colorbar stay-host.
-  const fig = figure({ width: 240, height: 160, colorbar: { title: "c" } });
-  fig.scatter([0, 1], [0, 1]);
-  const { spec } = fig.buildPayload();
-  assert.equal(fig.colorbar_options.title, "c");
-  assert.equal(spec.colorbar, undefined);
-});
-
-test("buildPayload omits legend unlike Python build_payload", () => {
-  // Python `build_payload` ships `legend` from `legend_options`. Node
-  // payload omits that field. Recorded emit-payload-legend stay-host.
-  const fig = figure({ width: 240, height: 160, legend: { loc: "upper right" } });
-  fig.scatter([0, 1], [0, 1]);
-  const { spec } = fig.buildPayload();
-  assert.equal(fig.legend_options.loc, "upper right");
-  assert.equal(spec.legend, undefined);
-});
-
-test("_emitTriangleMesh omits animation unlike Python _transition_entry", () => {
-  // Python `_emit_triangle_mesh` ships t.animation via `_transition_entry`.
-  // Node mesh encode omits that field. Recorded emit-mesh-animation stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
-  fig.traces[0].animation = { duration: 100 };
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.traces[0].kind, "triangle_mesh");
-  assert.equal(spec.traces[0].animation, undefined);
-});
-
-test("_emitRibbon omits animation unlike Python _transition_entry", () => {
-  // Python `_emit_ribbon` ships t.animation via `_transition_entry`. Node
-  // ribbon encode omits that field. Recorded emit-ribbon-animation stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.ribbon([0], [1], [0], [1], [0], [1]);
-  fig.traces[0].animation = { duration: 100 };
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.traces[0].kind, "ribbon");
-  assert.equal(spec.traces[0].animation, undefined);
-});
-
-test("_emitSegments omits animation unlike Python _transition_entry", () => {
-  // Python `_emit_segments` ships t.animation via `_transition_entry`. Node
-  // segments encode omits that field. Recorded emit-segments-animation stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.segments([0], [0], [1], [1]);
-  fig.traces[0].animation = { duration: 100 };
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.traces[0].kind, "segments");
-  assert.equal(spec.traces[0].animation, undefined);
-});
-
-test("_emitRect omits animation unlike Python _transition_entry", () => {
-  // Python `_emit_rect` ships t.animation via `_transition_entry`. Node bar
-  // encode omits that field. Recorded emit-rect-animation stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.bar([0, 1], [1, 2]);
-  fig.traces[0].animation = { duration: 100 };
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.traces[0].kind, "bar");
-  assert.equal(spec.traces[0].animation, undefined);
-});
-
-test("_emitHistogram omits animation unlike Python _transition_entry", () => {
-  // Python `_emit_histogram` calls `_emit_rect`, which ships t.animation via
-  // `_transition_entry`. Node histogram encode omits that field. Recorded
-  // emit-hist-animation stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
-  fig.traces[0].animation = { duration: 100 };
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.traces[0].kind, "histogram");
-  assert.equal(spec.traces[0].animation, undefined);
-});
-
-test("buildPayload omits cartesian axis minor_tick_values unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `minor_tick_values`. Node cartesian payload axes
-  // omit that field even when axis minor_tick_values is set. Recorded
-  // emit-payload-axis-minor-ticks stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.setAxis("x", { minor_tick_values: [0.25, 0.75] });
-  const { spec } = fig.buildPayload();
-  assert.deepEqual(fig.axis_options.x.minor_tick_values, [0.25, 0.75]);
-  assert.equal(spec.x_axis.minor_tick_values, undefined);
-});
-
-test("buildPayload omits cartesian axis tick_labels unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_labels`. Node cartesian payload axes omit
-  // that field even when axis tick_labels is set. Recorded
-  // emit-payload-axis-tick-labels stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.setAxis("x", { tick_labels: ["a", "b"] });
-  const { spec } = fig.buildPayload();
-  assert.deepEqual(fig.axis_options.x.tick_labels, ["a", "b"]);
-  assert.equal(spec.x_axis.tick_labels, undefined);
-});
-
-test("buildPayload omits cartesian axis tick_count unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_count`. Node cartesian payload axes omit
-  // that field even when axis tick_count is set. Recorded
-  // emit-payload-axis-tick-count stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.setAxis("x", { tick_count: 4 });
-  const { spec } = fig.buildPayload();
-  assert.equal(fig.axis_options.x.tick_count, 4);
-  assert.equal(spec.x_axis.tick_count, undefined);
-});
-
-test("buildPayload omits cartesian axis reverse unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `reverse`. Node cartesian payload axes omit
-  // that field even when axis reverse is set. Recorded
-  // emit-payload-axis-reverse stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.setAxis("x", { reverse: true });
-  const { spec } = fig.buildPayload();
-  assert.equal(fig.axis_options.x.reverse, true);
-  assert.equal(spec.x_axis.reverse, undefined);
-});
-
-test("buildPayload omits cartesian axis domain unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `domain`. Node cartesian payload axes omit that
-  // field even when axis domain is set. Recorded emit-payload-axis-domain
-  // stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([1, 2], [1, 2]);
-  fig.setAxis("x", { domain: [0, 3] });
-  const { spec } = fig.buildPayload();
-  assert.deepEqual(fig.axis_options.x.domain, [0, 3]);
-  assert.equal(spec.x_axis.domain, undefined);
-});
-
-test("buildPayload omits cartesian axis format unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `format`. Node cartesian payload axes omit that
-  // field even when axis format is set. Recorded emit-payload-axis-format
-  // stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.setAxis("x", { format: ".2f" });
-  const { spec } = fig.buildPayload();
-  assert.equal(fig.axis_options.x.format, ".2f");
-  assert.equal(spec.x_axis.format, undefined);
-});
-
-test("buildPayload omits cartesian axis bounds unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `bounds`. Node cartesian payload axes omit that
-  // field even when axis bounds is set. Recorded emit-payload-axis-bounds
-  // stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.setAxis("x", { bounds: [0, 2] });
-  const { spec } = fig.buildPayload();
-  assert.deepEqual(fig.axis_options.x.bounds, [0, 2]);
-  assert.equal(spec.x_axis.bounds, undefined);
-});
-
-test("buildPayload omits cartesian axis tick_sides unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_sides`. Node cartesian payload axes omit
-  // that field even when axis tick_sides is set. Recorded
-  // emit-payload-axis-tick-sides stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.setAxis("x", { tick_sides: ["bottom"] });
-  const { spec } = fig.buildPayload();
-  assert.deepEqual(fig.axis_options.x.tick_sides, ["bottom"]);
-  assert.equal(spec.x_axis.tick_sides, undefined);
-});
-
-test("buildPayload omits cartesian axis tick_label_sides unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_label_sides`. Node cartesian payload axes
-  // omit that field even when axis tick_label_sides is set. Recorded
-  // emit-payload-axis-tick-label-sides stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.setAxis("x", { tick_label_sides: ["bottom"] });
-  const { spec } = fig.buildPayload();
-  assert.deepEqual(fig.axis_options.x.tick_label_sides, ["bottom"]);
-  assert.equal(spec.x_axis.tick_label_sides, undefined);
-});
-
-test("buildPayload omits cartesian axis label_position unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `label_position`. Node cartesian payload axes
-  // omit that field even when axis label_position is set. Recorded
-  // emit-payload-axis-label-position stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.setAxis("x", { label_position: "end" });
-  const { spec } = fig.buildPayload();
-  assert.equal(fig.axis_options.x.label_position, "end");
-  assert.equal(spec.x_axis.label_position, undefined);
-});
-
-test("buildPayload omits cartesian axis label_offset unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `label_offset`. Node cartesian payload axes omit
-  // that field even when axis label_offset is set. Recorded
-  // emit-payload-axis-label-offset stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.setAxis("x", { label_offset: 8 });
-  const { spec } = fig.buildPayload();
-  assert.equal(fig.axis_options.x.label_offset, 8);
-  assert.equal(spec.x_axis.label_offset, undefined);
-});
-
-test("buildPayload omits cartesian axis label_angle unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `label_angle`. Node cartesian payload axes omit
-  // that field even when axis label_angle is set. Recorded
-  // emit-payload-axis-label-angle stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.setAxis("x", { label_angle: 45 });
-  const { spec } = fig.buildPayload();
-  assert.equal(fig.axis_options.x.label_angle, 45);
-  assert.equal(spec.x_axis.label_angle, undefined);
-});
-
-test("buildPayload omits cartesian axis tick_label_angle unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_label_angle`. Node cartesian payload axes
-  // omit that field even when axis tick_label_angle is set. Recorded
-  // emit-payload-axis-tick-label-angle stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.setAxis("x", { tick_label_angle: 30 });
-  const { spec } = fig.buildPayload();
-  assert.equal(fig.axis_options.x.tick_label_angle, 30);
-  assert.equal(spec.x_axis.tick_label_angle, undefined);
-});
-
-test("buildPayload omits cartesian axis tick_label_strategy unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_label_strategy`. Node cartesian payload
-  // axes omit that field even when axis tick_label_strategy is set. Recorded
-  // emit-payload-axis-tick-label-strategy stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.setAxis("x", { tick_label_strategy: "max" });
-  const { spec } = fig.buildPayload();
-  assert.equal(fig.axis_options.x.tick_label_strategy, "max");
-  assert.equal(spec.x_axis.tick_label_strategy, undefined);
-});
-
-test("buildPayload omits cartesian axis tick_label_anchor unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_label_anchor`. Node cartesian payload axes
-  // omit that field even when axis tick_label_anchor is set. Recorded
-  // emit-payload-axis-tick-label-anchor stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.setAxis("x", { tick_label_anchor: "start" });
-  const { spec } = fig.buildPayload();
-  assert.equal(fig.axis_options.x.tick_label_anchor, "start");
-  assert.equal(spec.x_axis.tick_label_anchor, undefined);
-});
-
-test("buildPayload omits cartesian axis tick_label_min_gap unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_label_min_gap`. Node cartesian payload
-  // axes omit that field even when axis tick_label_min_gap is set. Recorded
-  // emit-payload-axis-tick-label-min-gap stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.setAxis("x", { tick_label_min_gap: 4 });
-  const { spec } = fig.buildPayload();
-  assert.equal(fig.axis_options.x.tick_label_min_gap, 4);
-  assert.equal(spec.x_axis.tick_label_min_gap, undefined);
-});
-
-test("buildPayload omits cartesian axis minor_style unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `minor_style`. Node cartesian payload axes omit
-  // that field even when axis minor_style is set. Recorded
-  // emit-payload-axis-minor-style stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.setAxis("x", { minor_style: { color: "#888" } });
-  const { spec } = fig.buildPayload();
-  assert.equal(fig.axis_options.x.minor_style.color, "#888");
-  assert.equal(spec.x_axis.minor_style, undefined);
-});
-
-test("buildPayload omits cartesian axis style unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships compiled axis `style`. Node cartesian payload
-  // axes omit that field even when axis style is set. Recorded
-  // emit-payload-axis-style stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig.setAxis("x", { style: { color: "#111" } });
-  const { spec } = fig.buildPayload();
-  assert.equal(fig.axis_options.x.style.color, "#111");
-  assert.equal(spec.x_axis.style, undefined);
-});
-
-test("buildPayload omits cartesian axis nonpositive unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `nonpositive` on log axes. Node cartesian payload
-  // axes omit that field even when axis nonpositive is set. Recorded
-  // emit-payload-axis-nonpositive stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([1, 2], [1, 2]);
-  fig.setAxis("x", { type: "log", nonpositive: "clip" });
-  const { spec } = fig.buildPayload();
-  assert.equal(fig.axis_options.x.nonpositive, "clip");
-  assert.equal(spec.x_axis.nonpositive, undefined);
-});
-
-test("buildPayload omits cartesian axis constant unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `constant` on symlog axes. Node cartesian payload
-  // axes omit that field even when axis constant is set. Recorded
-  // emit-payload-axis-constant stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([1, 2], [1, 2]);
-  fig.setAxis("x", { type: "symlog", constant: 2 });
-  const { spec } = fig.buildPayload();
-  assert.equal(fig.axis_options.x.constant, 2);
-  assert.equal(spec.x_axis.constant, undefined);
-});
-
-test("buildPayload omits cartesian axis categories unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `_axis_categories` for category axes. Node
-  // cartesian payload axes omit that field even when categories are set.
-  // Recorded emit-payload-axis-categories stay-host.
-  const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1]);
-  fig._axis_categories = { x: ["a", "b"] };
-  const { spec } = fig.buildPayload();
-  assert.deepEqual(fig._axis_categories.x, ["a", "b"]);
-  assert.equal(spec.x_axis.categories, undefined);
-});
-
-test("_emitLine skips M4 bin_x unlike Python _m4_decimate", () => {
-  // Python `_m4_decimate` passes `_binning_coords` so log x buckets in
-  // scale space. Node `_emitLine` omits bin_x, so log x keeps the same
-  // n_marks as linear. Recorded emit-line-m4-bin-x stay-host.
-  const n = 10001;
-  const x = new Float64Array(n);
-  const y = new Float64Array(n);
-  for (let i = 0; i < n; i++) {
-    x[i] = i < 9000 ? 1 + i * 0.001 : 10 + (i - 9000) * 0.09;
-    y[i] = i;
-  }
-  const lin = figure({ width: 240, height: 160 });
-  lin.setAxis("x", { domain: [1, 100] });
-  lin.line(x, y);
-  const log = figure({ width: 240, height: 160 });
-  log.setAxis("x", { type: "log", domain: [1, 100] });
-  log.line(x, y);
-  const a = lin.buildPayload({ pxWidth: 64 }).spec.traces[0];
-  const b = log.buildPayload({ pxWidth: 64 }).spec.traces[0];
-  assert.equal(a.tier, "decimated");
-  assert.equal(b.tier, "decimated");
-  assert.equal(a.n_marks, b.n_marks);
-});
-
-test("_emitArea skips M4 bin_x unlike Python _m4_decimate", () => {
-  // Python `_m4_decimate` passes `_binning_coords` so log x buckets in
-  // scale space. Node `_emitArea` omits bin_x, so log x keeps the same
-  // n_marks as linear. Recorded emit-area-m4-bin-x stay-host.
-  const n = 10001;
-  const x = new Float64Array(n);
-  const y = new Float64Array(n);
-  for (let i = 0; i < n; i++) {
-    x[i] = i < 9000 ? 1 + i * 0.001 : 10 + (i - 9000) * 0.09;
-    y[i] = i;
-  }
-  const lin = figure({ width: 240, height: 160 });
-  lin.setAxis("x", { domain: [1, 100] });
-  lin.area(x, y);
-  const log = figure({ width: 240, height: 160 });
-  log.setAxis("x", { type: "log", domain: [1, 100] });
-  log.area(x, y);
-  const a = lin.buildPayload({ pxWidth: 64 }).spec.traces[0];
-  const b = log.buildPayload({ pxWidth: 64 }).spec.traces[0];
-  assert.equal(a.tier, "decimated");
-  assert.equal(b.tier, "decimated");
-  assert.equal(a.n_marks, b.n_marks);
-});
-
-test("buildPayload omits polar axis id unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `id` on polar axes. Node `_polarAxisSpecs`
-  // omits that field. Recorded emit-polar-payload-axis-id stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.id, undefined);
+  assert.notEqual(spec.traces[0].id, 0);
 });
 
-test("_emitScatterDensity yLinear stays true unlike Python _density_trace_spec", () => {
-  // Python `_density_trace_spec` bins in axis-scale coordinates. Node density
-  // emit plan keeps yLinear true, so a log y-axis does not change grid max.
-  // Recorded emit-density-ylinear stay-host.
-  const n = 80;
-  const x = new Float64Array(n);
-  const y = new Float64Array(n);
-  for (let i = 0; i < n; i++) {
-    x[i] = 1;
-    y[i] = i < 70 ? 1 + i * 0.01 : 10 + (i - 70);
-  }
-  const lin = figure({ width: 240, height: 160 });
-  lin.setAxis("y", { domain: [1, 100] });
-  lin.scatter(x, y, { forceDensity: true });
-  const log = figure({ width: 240, height: 160 });
-  log.setAxis("y", { type: "log", domain: [1, 100] });
-  log.scatter(x, y, { forceDensity: true });
-  const a = lin.buildPayload().spec.traces[0];
-  const b = log.buildPayload().spec.traces[0];
-  assert.equal(a.tier, "density");
-  assert.equal(b.tier, "density");
-  assert.equal(a.density.max, b.density.max);
-});
-
-test("_emitScatterDensity xLinear stays true unlike Python _density_trace_spec", () => {
-  // Python `_density_trace_spec` bins in axis-scale coordinates. Node density
-  // emit plan keeps xLinear true, so a log x-axis does not change grid max.
-  // Recorded emit-density-xlinear stay-host.
-  const n = 80;
-  const x = new Float64Array(n);
-  const y = new Float64Array(n);
-  for (let i = 0; i < n; i++) {
-    x[i] = i < 70 ? 1 + i * 0.01 : 10 + (i - 70);
-    y[i] = 1;
-  }
-  const lin = figure({ width: 240, height: 160 });
-  lin.setAxis("x", { domain: [1, 100] });
-  lin.scatter(x, y, { forceDensity: true });
-  const log = figure({ width: 240, height: 160 });
-  log.setAxis("x", { type: "log", domain: [1, 100] });
-  log.scatter(x, y, { forceDensity: true });
-  const a = lin.buildPayload().spec.traces[0];
-  const b = log.buildPayload().spec.traces[0];
-  assert.equal(a.tier, "density");
-  assert.equal(b.tier, "density");
-  assert.equal(a.density.max, b.density.max);
-});
-
-test("buildPayload omits polar axis kind unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `_axis_kind` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-kind stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.scatter([0, 1], [1, 2]);
+test("_emitScatterDensity visible stays n_points unlike Python _density_trace_spec", () => {
+  // Python `_density_trace_spec` sets visible from range indices. Node uses
+  // `t.x.length`. Recorded emit-density-visible stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1, NaN, 2], [1, 2, 3, 4], { forceDensity: true });
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.kind, undefined);
+  assert.equal(spec.traces[0].visible, 4);
 });
 
-test("buildPayload omits polar axis side unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `side` on polar axes. Node `_polarAxisSpecs`
-  // omits that field. Recorded emit-polar-payload-axis-side stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.scatter([0, 1], [1, 2]);
+test("_emitScatterDensity sample uses full n unlike Python _density_sample_spec", () => {
+  // Python `_density_sample_spec` samples `sel`. Node samples `t.x.length`.
+  // Recorded emit-density-sample-sel stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1, NaN, 2], [1, 2, 3, 4], { forceDensity: true });
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.side, undefined);
+  assert.equal(spec.traces[0].density.sample.n, 4);
 });
 
-test("buildPayload omits polar axis label unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `label` on polar axes. Node `_polarAxisSpecs`
-  // omits that field. Recorded emit-polar-payload-axis-label stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.scatter([0, 1], [1, 2]);
+test("_emitScatterDensity sample.visible stays n unlike Python _density_sample_spec", () => {
+  // Python `_density_sample_spec` sets sample.visible from range-index visible.
+  // Node uses `n = t.x.length`. Recorded emit-density-sample-visible stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1, NaN, 2], [1, 2, 3, 4], { forceDensity: true });
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.label, undefined);
-});
-
-test("buildPayload omits polar axis tick_values unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_values` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-values stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { tick_values: [0, 1] });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.tick_values, undefined);
-});
-
-test("buildPayload omits polar axis minor_tick_values unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `minor_tick_values` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-minor-ticks stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { minor_tick_values: [0.5] });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.minor_tick_values, undefined);
-});
-
-test("buildPayload omits polar axis tick_labels unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_labels` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-labels stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { tick_labels: ["a", "b"] });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.tick_labels, undefined);
-});
-
-test("buildPayload omits polar axis tick_count unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_count` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-count stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { tick_count: 4 });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.tick_count, undefined);
-});
-
-test("buildPayload omits polar axis reverse unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `reverse` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-reverse stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { reverse: true });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.reverse, undefined);
-});
-
-test("buildPayload omits polar axis domain unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `domain` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-domain stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { domain: [0, 1] });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.domain, undefined);
-});
-
-test("buildPayload omits polar axis format unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `format` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-format stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { format: ".2f" });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.format, undefined);
-});
-
-test("buildPayload omits polar axis bounds unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `bounds` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-bounds stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { bounds: [0, 1] });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.bounds, undefined);
-});
-
-test("buildPayload omits polar axis tick_sides unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_sides` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-sides stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { tick_sides: ["bottom"] });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.tick_sides, undefined);
-});
-
-test("buildPayload omits polar axis tick_label_sides unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_label_sides` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-label-sides stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { tick_label_sides: ["bottom"] });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.tick_label_sides, undefined);
-});
-
-test("buildPayload omits polar axis label_position unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `label_position` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-label-position stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { label_position: "end" });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.label_position, undefined);
-});
-
-test("buildPayload omits polar axis label_offset unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `label_offset` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-label-offset stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { label_offset: 4 });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.label_offset, undefined);
-});
-
-test("buildPayload omits polar axis label_angle unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `label_angle` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-label-angle stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { label_angle: 15 });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.label_angle, undefined);
-});
-
-test("buildPayload omits polar axis tick_label_angle unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_label_angle` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-label-angle stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { tick_label_angle: 20 });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.tick_label_angle, undefined);
-});
-
-test("buildPayload omits polar axis tick_label_strategy unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_label_strategy` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-label-strategy stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { tick_label_strategy: "max" });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.tick_label_strategy, undefined);
-});
-
-test("buildPayload omits polar axis tick_label_anchor unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_label_anchor` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-label-anchor stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { tick_label_anchor: "start" });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.tick_label_anchor, undefined);
-});
-
-test("buildPayload omits polar axis tick_label_min_gap unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_label_min_gap` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-label-min-gap stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { tick_label_min_gap: 2 });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.tick_label_min_gap, undefined);
-});
-
-test("buildPayload omits polar axis minor_style unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `minor_style` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-minor-style stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { minor_style: { color: "#111" } });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.minor_style, undefined);
-});
-
-test("buildPayload omits polar axis style unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `compiled axis `style`` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-style stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { style: { color: "#222" } });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.style, undefined);
-});
-
-test("buildPayload polar y stays linear unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `_axis_scale` when it is not linear. Node polar
-  // y_axis keeps scale linear. Recorded emit-polar-payload-axis-scale stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("y", { type: "log" });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.y_axis.scale, "linear");
-});
-
-test("buildPayload omits polar axis nonpositive unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `nonpositive` on log axes. Node `_polarAxisSpecs`
-  // omits that field. Recorded emit-polar-payload-axis-nonpositive stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("y", { type: "log", nonpositive: "mask" });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.y_axis.nonpositive, undefined);
-});
-
-test("buildPayload omits polar axis constant unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `constant` on symlog axes. Node `_polarAxisSpecs`
-  // omits that field. Recorded emit-polar-payload-axis-constant stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("y", { type: "symlog", constant: 2 });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.y_axis.constant, undefined);
-});
-
-test("buildPayload omits polar axis categories unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `_axis_categories` for category axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-categories stay-host.
-  const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { type: "category", categories: ["a", "b"] });
-  fig.scatter([0, 1], [1, 2]);
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.categories, undefined);
+  assert.equal(spec.traces[0].density.sample.visible, 4);
 });
