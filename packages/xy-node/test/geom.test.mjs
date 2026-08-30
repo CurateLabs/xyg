@@ -1439,6 +1439,16 @@ test("setPolarMeta writes axis grid_shape like Python set_axis", () => {
   assert.equal(polarGridShape(figureAutorangeAxisOptions(leftover, "x")), "circular");
 });
 
+test("setPolarMeta writes axis hole like Python set_axis", () => {
+  const fig = figure();
+  fig.setPolarMeta({ hole: 0.25 });
+  assert.equal(figureAutorangeAxisOptions(fig, "y").hole, 0.25);
+  const leftover = figure();
+  leftover._polarMeta = { hole: 0.25 };
+  leftover.coords = "polar";
+  assert.equal(figureAutorangeAxisOptions(leftover, "y").hole, undefined);
+});
+
 test("figureAxisIsLog uses axis type only like Python _axis_scale log", () => {
   assert.equal(figureAxisIsLog({}, "x"), false);
   assert.equal(figureAxisIsLog({ xAxis: { type: "log" } }, "x"), false);

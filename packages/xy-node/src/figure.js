@@ -562,6 +562,11 @@ export class Figure {
       grid_shape: this._polarMeta.gridShape,
     };
     this.xAxis = this.axis_options.x;
+    this.axis_options.y = {
+      ...(this.axis_options.y ?? {}),
+      hole: this._polarMeta.hole,
+    };
+    this.yAxis = this.axis_options.y;
     return this;
   }
 
