@@ -186,6 +186,11 @@ export function figureAutorangeCategories(figure, axisId) {
   return figure._axis_categories?.[axisId];
 }
 
+/** Autorange axis domain. Python `_pack_autorange` / `_pack_public_export_support` read `axis_options.domain` only. */
+export function figureAutorangeDomain(options) {
+  return (options ?? {}).domain;
+}
+
 /** Axis kind. Python `_axis_kind` uses forced `type` time, then category labels, then `time_ms` columns. */
 export function figureAxisKind(figure, axisId) {
   const options = figureAutorangeAxisOptions(figure, axisId);
@@ -272,8 +277,7 @@ export function autoDomain(bounds) {
 
 function packFigureAutorange(figure, axisId, { useDomain = true } = {}) {
   const options = figureAutorangeAxisOptions(figure, axisId);
-  const explicit = figure._axisRange?.[axisId];
-  const domain = options.domain ?? explicit;
+  const domain = figureAutorangeDomain(options);
   let flags = 0;
   if (useDomain) flags |= 1 << 0;
   if (options.reverse) flags |= 1 << 1;
@@ -555,7 +559,11 @@ export class Figure {
   /** Pin an axis domain (used by facet shared-axis + polar pie domains). */
   setAxisDomain(axisId, range) {
     const [a, b] = range;
-    this._axisRange[axisId] = [Math.min(a, b), Math.max(a, b)];
+    const domain = [Math.min(a, b), Math.max(a, b)];
+    this._axisRange[axisId] = domain;
+    this.axis_options = this.axis_options ?? { x: {}, y: {} };
+    this.axis_options[axisId] = { ...(this.axis_options[axisId] ?? {}), domain };
+    this[`${axisId}Axis`] = this.axis_options[axisId];
     return this;
   }
 
@@ -1057,6 +1065,10 @@ export class Figure {
 
   _axisIsLog(axisId) {
     return figureAxisIsLog(this, axisId);
+  }
+
+  _axisDomain(axisId) {
+    return figureAutorangeDomain(figureAutorangeAxisOptions(this, axisId));
   }
 
   _visibleSel(t, x, y, {
