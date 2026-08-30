@@ -81,6 +81,11 @@ publish waits on the `@curatelabs` npm org (#13).
   Node `buildPayload` omits cartesian axis nonpositive.
   Node `buildPayload` omits cartesian axis constant.
   Node `buildPayload` omits cartesian axis categories.
+  Node `_emitScatterDensity` xLinear stays true.
+  Node `_emitScatterDensity` yLinear stays true.
+  Node `_emitLine` skips M4 bin_x.
+  Node `_emitArea` skips M4 bin_x.
+  Node `_polarAxisSpecs` omits axis id.
 ---
 
 ## 0. Three runtime surfaces (product-wide)

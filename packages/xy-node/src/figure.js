@@ -1995,7 +1995,8 @@ export class Figure {
         theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",
         // Node `??` keeps empty `theta_direction`. Python `_axis_spec` uses
         // `opts.get("theta_direction") or "counterclockwise"`. Recorded
-        // polar-payload-dir-empty stay-host.
+        // polar-payload-dir-empty stay-host.        // emit-polar-payload-axis-id stay-host.
+
         theta_direction: (this.axis_options?.x ?? {}).theta_direction ?? "counterclockwise",
         sector,
         // Node `??` keeps empty `grid_shape`. Python `_axis_spec` uses

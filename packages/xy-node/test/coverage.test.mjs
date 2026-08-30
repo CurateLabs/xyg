@@ -1796,3 +1796,112 @@ test("buildPayload omits cartesian axis categories unlike Python _axis_spec", ()
   assert.equal(spec.x_axis.categories, undefined);
 });
 
+test("_emitLine skips M4 bin_x unlike Python _m4_decimate", () => {
+  // Python `_m4_decimate` passes `_binning_coords` so log x buckets in
+  // scale space. Node `_emitLine` omits bin_x, so log x keeps the same
+  // n_marks as linear. Recorded emit-line-m4-bin-x stay-host.
+  const n = 10001;
+  const x = new Float64Array(n);
+  const y = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    x[i] = i < 9000 ? 1 + i * 0.001 : 10 + (i - 9000) * 0.09;
+    y[i] = i;
+  }
+  const lin = figure({ width: 240, height: 160 });
+  lin.setAxis("x", { domain: [1, 100] });
+  lin.line(x, y);
+  const log = figure({ width: 240, height: 160 });
+  log.setAxis("x", { type: "log", domain: [1, 100] });
+  log.line(x, y);
+  const a = lin.buildPayload({ pxWidth: 64 }).spec.traces[0];
+  const b = log.buildPayload({ pxWidth: 64 }).spec.traces[0];
+  assert.equal(a.tier, "decimated");
+  assert.equal(b.tier, "decimated");
+  assert.equal(a.n_marks, b.n_marks);
+});
+
+
+test("_emitArea skips M4 bin_x unlike Python _m4_decimate", () => {
+  // Python `_m4_decimate` passes `_binning_coords` so log x buckets in
+  // scale space. Node `_emitArea` omits bin_x, so log x keeps the same
+  // n_marks as linear. Recorded emit-area-m4-bin-x stay-host.
+  const n = 10001;
+  const x = new Float64Array(n);
+  const y = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    x[i] = i < 9000 ? 1 + i * 0.001 : 10 + (i - 9000) * 0.09;
+    y[i] = i;
+  }
+  const lin = figure({ width: 240, height: 160 });
+  lin.setAxis("x", { domain: [1, 100] });
+  lin.area(x, y);
+  const log = figure({ width: 240, height: 160 });
+  log.setAxis("x", { type: "log", domain: [1, 100] });
+  log.area(x, y);
+  const a = lin.buildPayload({ pxWidth: 64 }).spec.traces[0];
+  const b = log.buildPayload({ pxWidth: 64 }).spec.traces[0];
+  assert.equal(a.tier, "decimated");
+  assert.equal(b.tier, "decimated");
+  assert.equal(a.n_marks, b.n_marks);
+});
+
+
+test("buildPayload omits polar axis id unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `id` on polar axes. Node `_polarAxisSpecs`
+  // omits that field. Recorded emit-polar-payload-axis-id stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.id, undefined);
+});
+
+
+test("_emitScatterDensity yLinear stays true unlike Python _density_trace_spec", () => {
+  // Python `_density_trace_spec` bins in axis-scale coordinates. Node density
+  // emit plan keeps yLinear true, so a log y-axis does not change grid max.
+  // Recorded emit-density-ylinear stay-host.
+  const n = 80;
+  const x = new Float64Array(n);
+  const y = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    x[i] = 1;
+    y[i] = i < 70 ? 1 + i * 0.01 : 10 + (i - 70);
+  }
+  const lin = figure({ width: 240, height: 160 });
+  lin.setAxis("y", { domain: [1, 100] });
+  lin.scatter(x, y, { forceDensity: true });
+  const log = figure({ width: 240, height: 160 });
+  log.setAxis("y", { type: "log", domain: [1, 100] });
+  log.scatter(x, y, { forceDensity: true });
+  const a = lin.buildPayload().spec.traces[0];
+  const b = log.buildPayload().spec.traces[0];
+  assert.equal(a.tier, "density");
+  assert.equal(b.tier, "density");
+  assert.equal(a.density.max, b.density.max);
+});
+
+
+test("_emitScatterDensity xLinear stays true unlike Python _density_trace_spec", () => {
+  // Python `_density_trace_spec` bins in axis-scale coordinates. Node density
+  // emit plan keeps xLinear true, so a log x-axis does not change grid max.
+  // Recorded emit-density-xlinear stay-host.
+  const n = 80;
+  const x = new Float64Array(n);
+  const y = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    x[i] = i < 70 ? 1 + i * 0.01 : 10 + (i - 70);
+    y[i] = 1;
+  }
+  const lin = figure({ width: 240, height: 160 });
+  lin.setAxis("x", { domain: [1, 100] });
+  lin.scatter(x, y, { forceDensity: true });
+  const log = figure({ width: 240, height: 160 });
+  log.setAxis("x", { type: "log", domain: [1, 100] });
+  log.scatter(x, y, { forceDensity: true });
+  const a = lin.buildPayload().spec.traces[0];
+  const b = log.buildPayload().spec.traces[0];
+  assert.equal(a.tier, "density");
+  assert.equal(b.tier, "density");
+  assert.equal(a.density.max, b.density.max);
+});
+
