@@ -1513,6 +1513,16 @@ test("_polarAxisSpecs uses axis grid_shape like Python _axis_spec", () => {
   assert.equal(leftover._polarAxisSpecs([0, 1], [0, 1]).x.grid_shape, "circular");
 });
 
+test("_polarAxisSpecs uses axis sector like Python _axis_spec", () => {
+  const fig = figure();
+  fig.setPolarMeta({ sector: [0, Math.PI] });
+  assert.deepEqual(fig._polarAxisSpecs([0, 1], [0, 1]).x.sector, [0, Math.PI]);
+  const leftover = figure();
+  leftover.coords = "polar";
+  leftover._polarMeta = { sector: [0, Math.PI] };
+  assert.deepEqual(leftover._polarAxisSpecs([0, 1], [0, 1]).x.sector, [0, 2 * Math.PI]);
+});
+
 test("figureAxisIsLog uses axis type only like Python _axis_scale log", () => {
   assert.equal(figureAxisIsLog({}, "x"), false);
   assert.equal(figureAxisIsLog({ xAxis: { type: "log" } }, "x"), false);
