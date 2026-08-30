@@ -318,6 +318,16 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitHeatmap omits color unlike Python _emit_heatmap", () => {
+  // Python `_emit_heatmap` ships a continuous color spec. Node keeps no
+  // color field on the grid-column payload. Recorded emit-heatmap-color stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.heatmap([[0, 1], [1, 0]], { colormap: "viridis" });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "heatmap");
+  assert.equal(spec.traces[0].color, undefined);
+});
+
 test("_emitScatter ships sizeValues unlike Python size_ch", () => {
   // Python `_emit_scatter` ships size_ch. Node keeps t.sizeValues even when
   // size_ch is also present. Recorded emit-scatter-size stay-host.
