@@ -318,6 +318,17 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("buildPayload omits show_legend unlike Python build_payload", () => {
+  // Python `build_payload` ships `show_legend`. Node payload omits that
+  // field even when `show_legend` is false. Recorded
+  // emit-payload-show-legend stay-host.
+  const fig = figure({ width: 240, height: 160, showLegend: false });
+  fig.scatter([0, 1], [0, 1]);
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.show_legend, false);
+  assert.equal(spec.show_legend, undefined);
+});
+
 test("buildPayload omits wasm_density unlike Python build_payload", () => {
   // Python `build_payload` attaches wasm_density from split
   // density.wasm_source. Node split payloads omit that field. Recorded

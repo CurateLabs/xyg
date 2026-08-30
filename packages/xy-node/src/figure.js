@@ -2071,6 +2071,9 @@ export class Figure {
       traces: specTraces,
       columns: pw.columns,
       backend: "native",
+      // Node payload omits show_legend. Python `build_payload` ships
+      // `show_legend`. Matching Python would add spec.show_legend. Recorded
+      // emit-payload-show-legend stay-host.
       view: { ranges: { x: [...xr], y: [...yr] } },
     };
     if (this.coords === "polar") {
