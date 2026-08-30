@@ -770,6 +770,15 @@ test("color2Channel uses color2_ch only like Python", () => {
   assert.equal(color2Channel({ colorTarget: ch }), null);
 });
 
+test("itemFillRgba8 null style.color uses sourceColorCss unlike Python get", () => {
+  // Python `_item_fill_rgba8` uses style.get("color", default); a None
+  // value stringifies and fail-closes. Node sourceColorCss `??` uses the
+  // default CSS.
+  const missing = itemFillRgba8({}, 1);
+  const nulled = itemFillRgba8({ style: { color: null } }, 1);
+  assert.deepEqual([...nulled], [...missing]);
+});
+
 test("itemFillRgba8 uses color_ch only like Python", () => {
   const fromCh = itemFillRgba8({ color_ch: { mode: "constant", constant: "#ff0000" } }, 1);
   const fromColor = itemFillRgba8({ color: { mode: "constant", constant: "#ff0000" } }, 1);
