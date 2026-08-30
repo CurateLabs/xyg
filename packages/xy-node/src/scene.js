@@ -2822,8 +2822,7 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
   // chart/theme CSS, and class_name are XYFS observations; Rust reports
   // CUSTOM_FONT / BROWSER_CSS. Live browser widgets still apply CSS.
   if (
-    figure.className
-    || figure.class_name
+    figureClassName(figure)
     || Object.keys(figure.classNames ?? figure.class_names ?? {}).length
     || Object.keys(chromeStyles).length
     || Object.keys(figure.style ?? {}).some((key) => !["background", "--chart-bg"].includes(key))
@@ -4780,6 +4779,11 @@ export function figureChromeStyles(figure) {
 /** Chrome custom-font observation. Python `_pack_figure_support` checks `"font-family" in style` only. */
 export function chromeStyleHasFontFamily(style) {
   return Object.prototype.hasOwnProperty.call(style ?? {}, "font-family");
+}
+
+/** Chart root CSS class. Python `_pack_figure_support` reads `class_name` only. */
+export function figureClassName(figure) {
+  return (figure ?? {}).class_name;
 }
 
 /** Chrome x-axis label. Python `_pack_figure_chrome` reads `figure.x_label` then `axis.get("label")`. */
