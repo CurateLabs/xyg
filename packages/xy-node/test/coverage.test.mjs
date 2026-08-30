@@ -2251,3 +2251,14 @@ test("composeScatter omits stroke unlike Python stroke_ch Scene", () => {
   assert.deepEqual(Buffer.from(a.toScene()), Buffer.from(b.toScene()));
 });
 
+test("composeScatter omits symbol unlike Python style.symbol Scene", () => {
+  // Python marks.scatter sets style.symbol from symbol=, so Scene paints square.
+  // Node composeScatter ignores symbol, so Scene matches default circle marks.
+  // Recorded scene-scatter-symbol-ch stay-host.
+  const a = figure({ width: 240, height: 160 });
+  a.scatter([0, 1], [1, 2], { id: 1 });
+  const b = figure({ width: 240, height: 160 });
+  b.scatter([0, 1], [1, 2], { id: 1, symbol: "square" });
+  assert.deepEqual(Buffer.from(a.toScene()), Buffer.from(b.toScene()));
+});
+

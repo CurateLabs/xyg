@@ -50,7 +50,8 @@ export function composeScatter(x, y, opts = {}) {
         style: normalizeScatterStyle({ opacity: 0.8, ...(opts.style ?? {}) }),
         x_axis: opts.xAxis ?? "x",
         y_axis: opts.yAxis ?? "y",
-        ...(forceDensity != null ? { force_density: Boolean(forceDensity) } : {}),        // Recorded scene-scatter-stroke-ch stay-host.
+        ...(forceDensity != null ? { force_density: Boolean(forceDensity) } : {}),        // Recorded scene-scatter-symbol-ch stay-host.
+        // Recorded scene-scatter-stroke-ch stay-host.
         // Recorded scene-scatter-color-ch stay-host.
 
         ...(forceDirect != null ? { force_direct: Boolean(forceDirect) } : {}),
