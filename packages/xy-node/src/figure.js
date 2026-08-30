@@ -1419,6 +1419,9 @@ export class Figure {
     // Node payload histogram omits style_channels. Python `_emit_histogram`
     // calls `_emit_rect`, which ships them as `channels` via `_ship_trace_styles`.
     // Matching Python would add entry.channels. Recorded emit-hist-channels stay-host.
+    // Node payload histogram skips rectFiniteSel. Python `_emit_histogram` calls
+    // `_emit_rect`, which drops non-finite rows. Matching Python would gather.
+    // Recorded emit-hist-finite-sel stay-host.
     return {
       id: t.id,
       kind: "histogram",
