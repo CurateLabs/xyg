@@ -318,6 +318,18 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitTriangleMesh omits style_channels unlike Python _ship_trace_styles", () => {
+  // Python `_emit_triangle_mesh` ships style_channels as `channels`. Node
+  // mesh payload keeps no channels field even when style_channels is present.
+  // Recorded emit-mesh-channels stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
+  fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "triangle_mesh");
+  assert.equal(spec.traces[0].channels, undefined);
+});
+
 test("_emitRect omits style_channels unlike Python _ship_trace_styles", () => {
   // Python `_emit_rect` ships style_channels as `channels`. Node bar/rect
   // payload keeps no channels field even when style_channels is present.
