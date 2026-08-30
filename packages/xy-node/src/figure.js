@@ -1187,7 +1187,11 @@ export class Figure {
         range_px: t.sizeRange ?? [8, 22],
         domain: [lo, hi],
         buf: pw.shipScalar(norm),
-      };        // Node cartesian payload axes omit tick_label_strategy. Python
+      };        // Node cartesian payload axes omit tick_label_min_gap. Python
+        // `_axis_spec` ships `tick_label_min_gap`. Matching Python would add
+        // x_axis.tick_label_min_gap. Recorded emit-payload-axis-tick-label-min-gap
+        // stay-host.
+        // Node cartesian payload axes omit tick_label_strategy. Python
         // `_axis_spec` ships `tick_label_strategy`. Matching Python would add
         // x_axis.tick_label_strategy. Recorded
         // emit-payload-axis-tick-label-strategy stay-host.
