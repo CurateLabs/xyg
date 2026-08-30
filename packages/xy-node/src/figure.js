@@ -1035,6 +1035,10 @@ export class Figure {
     return [lo[0], hi[0]];
   }
 
+  _axisKind(axisId) {
+    return figureAxisKind(this, axisId);
+  }
+
   _axisIsLog(axisId) {
     const opts = this[`${axisId}Axis`] ?? {};
     const scale = opts.type ?? opts.scale;
