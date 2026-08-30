@@ -60,6 +60,58 @@ publish waits on the `@curatelabs` npm org (#13).
   Node `_emitScatterDensity` omits categorical color.
   Node `buildPayload` omits dom.
   Node `buildPayload` omits cartesian axis tick_values.
+  Node `buildPayload` omits cartesian axis minor_tick_values.
+  Node `buildPayload` omits cartesian axis tick_labels.
+  Node `buildPayload` omits cartesian axis tick_count.
+  Node `buildPayload` omits cartesian axis reverse.
+  Node `buildPayload` omits cartesian axis domain.
+  Node `buildPayload` omits cartesian axis format.
+  Node `buildPayload` omits cartesian axis bounds.
+  Node `buildPayload` omits cartesian axis tick_sides.
+  Node `buildPayload` omits cartesian axis tick_label_sides.
+  Node `buildPayload` omits cartesian axis label_position.
+  Node `buildPayload` omits cartesian axis label_offset.
+  Node `buildPayload` omits cartesian axis label_angle.
+  Node `buildPayload` omits cartesian axis tick_label_angle.
+  Node `buildPayload` omits cartesian axis tick_label_strategy.
+  Node `buildPayload` omits cartesian axis tick_label_anchor.
+  Node `buildPayload` omits cartesian axis tick_label_min_gap.
+  Node `buildPayload` omits cartesian axis minor_style.
+  Node `buildPayload` omits cartesian axis style.
+  Node `buildPayload` omits cartesian axis nonpositive.
+  Node `buildPayload` omits cartesian axis constant.
+  Node `buildPayload` omits cartesian axis categories.
+  Node `_emitScatterDensity` xLinear stays true.
+  Node `_emitScatterDensity` yLinear stays true.
+  Node `_emitLine` skips M4 bin_x.
+  Node `_emitArea` skips M4 bin_x.
+  Node `_polarAxisSpecs` omits axis id.
+  Node `_polarAxisSpecs` omits axis kind.
+  Node `_polarAxisSpecs` omits axis side.
+  Node `_polarAxisSpecs` omits axis label.
+  Node `_polarAxisSpecs` omits axis tick_values.
+  Node `_polarAxisSpecs` omits axis minor_tick_values.
+  Node `_polarAxisSpecs` omits axis tick_labels.
+  Node `_polarAxisSpecs` omits axis tick_count.
+  Node `_polarAxisSpecs` omits axis reverse.
+  Node `_polarAxisSpecs` omits axis domain.
+  Node `_polarAxisSpecs` omits axis format.
+  Node `_polarAxisSpecs` omits axis bounds.
+  Node `_polarAxisSpecs` omits axis tick_sides.
+  Node `_polarAxisSpecs` omits axis tick_label_sides.
+  Node `_polarAxisSpecs` omits axis label_position.
+  Node `_polarAxisSpecs` omits axis label_offset.
+  Node `_polarAxisSpecs` omits axis label_angle.
+  Node `_polarAxisSpecs` omits axis tick_label_angle.
+  Node `_polarAxisSpecs` omits axis tick_label_strategy.
+  Node `_polarAxisSpecs` omits axis tick_label_anchor.
+  Node `_polarAxisSpecs` omits axis tick_label_min_gap.
+  Node `_polarAxisSpecs` omits axis minor_style.
+  Node `_polarAxisSpecs` omits axis style.
+  Node `_polarAxisSpecs` y scale stays linear.
+  Node `_polarAxisSpecs` omits axis nonpositive.
+  Node `_polarAxisSpecs` omits axis constant.
+  Node `_polarAxisSpecs` omits axis categories.
 ---
 
 ## 0. Three runtime surfaces (product-wide)

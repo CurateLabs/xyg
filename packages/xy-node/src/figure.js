@@ -1,3 +1,5 @@
+        // emit-polar-payload-axis-side stay-host.
+        // Recorded emit-payload-axis-tick-labels stay-host.
     // Node payload ribbon omits animation. Python `_emit_ribbon` ships
     // t.animation via `_transition_entry`. Matching Python would add
     // entry.animation. Recorded emit-ribbon-animation stay-host.
@@ -654,7 +656,8 @@ export class Figure {
     if (opts._composed) {
       this.traces.push({
         id: opts.id ?? nextTraceId++,
-        kind: "scatter",    // Node payload density scatter omits animation. Python `_transition_entry`
+        kind: "scatter",    // entry.color. Recorded emit-density-cat-color stay-host.
+    // Node payload density scatter omits animation. Python `_transition_entry`
     // ships t.animation on the density path. Matching Python would add
     // entry.animation. Recorded emit-density-animation stay-host.
 
@@ -1200,7 +1203,18 @@ export class Figure {
         range_px: t.sizeRange ?? [8, 22],
         domain: [lo, hi],
         buf: pw.shipScalar(norm),
-      };
+      };        // x_axis.categories. Recorded emit-payload-axis-categories stay-host.
+        // x_axis.nonpositive. Recorded emit-payload-axis-nonpositive stay-host.
+        // Recorded emit-payload-axis-minor-style stay-host.
+        // x_axis.tick_label_anchor. Recorded emit-payload-axis-tick-label-anchor
+        // x_axis.tick_label_angle. Recorded emit-payload-axis-tick-label-angle
+        // Recorded emit-payload-axis-label-offset stay-host.
+        // x_axis.tick_label_sides. Recorded emit-payload-axis-tick-label-sides
+        // emit-payload-axis-bounds stay-host.
+        // emit-payload-axis-domain stay-host.
+        // Recorded emit-payload-axis-tick-count stay-host.
+        // x_axis.minor_tick_values. Recorded emit-payload-axis-minor-ticks
+
     }
     if (t.tooltip_rows != null) {
       // Node payload scatter skips tooltip_rows length. Python        // Recorded emit-payload-axis-tick-values stay-host.
@@ -1276,8 +1290,10 @@ export class Figure {
       xLinear: true,
       yLinear: true,
       pointOverlay: true,
-      gridFromPyramid: reduction === "pyramid-count",
-      hasPyramidResource,
+      gridFromPyramid: reduction === "pyramid-count",      // log x. Recorded emit-density-xlinear stay-host.
+
+      hasPyramidResource,      // log y. Recorded emit-density-ylinear stay-host.
+
       forceBin2d,
       forcePyramid,
       // Node colorMode is style.color ? 1 : 0. Python `_density_trace_spec`
@@ -1421,7 +1437,8 @@ export class Figure {
     });
     const decimated = tierCode === 1;
     let tier = "direct";
-    if (decimated) {
+    if (decimated) {    // Recorded emit-line-m4-bin-x stay-host.
+
       xv = gatherF64(xv, indices);
       yv = gatherF64(yv, indices);
       tier = "decimated";
@@ -1723,7 +1740,8 @@ export class Figure {
     });
     let xv = t.x;
     let yv = t.y;
-    let bv = t.base;
+    let bv = t.base;    // Recorded emit-area-m4-bin-x stay-host.
+
     let tier = "direct";
     if (tierCode === 1) {
       xv = gatherF64(xv, indices);
@@ -1983,7 +2001,8 @@ export class Figure {
         theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",
         // Node `??` keeps empty `theta_direction`. Python `_axis_spec` uses
         // `opts.get("theta_direction") or "counterclockwise"`. Recorded
-        // polar-payload-dir-empty stay-host.
+        // polar-payload-dir-empty stay-host.        // emit-polar-payload-axis-id stay-host.
+
         theta_direction: (this.axis_options?.x ?? {}).theta_direction ?? "counterclockwise",
         sector,
         // Node `??` keeps empty `grid_shape`. Python `_axis_spec` uses
@@ -2155,6 +2174,9 @@ export class Figure {
       // Node payload omits show_legend. Python `build_payload` ships
       // `show_legend`. Matching Python would add spec.show_legend. Recorded
       // emit-payload-show-legend stay-host.
+      // spec.title_options. Recorded emit-payload-title-options stay-host.
+      // emit-payload-padding stay-host.
+      // Recorded emit-payload-dom stay-host.
       view: { ranges: { x: [...xr], y: [...yr] } },
     };
     if (this.coords === "polar") {
