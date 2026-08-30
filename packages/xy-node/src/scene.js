@@ -1353,8 +1353,9 @@ function polarRScale(axis = {}) {
 
 export function packPolarSceneInput(figure) {
   if ((figure.coords ?? "cartesian") !== "polar") return new Uint8Array();
-  const thetaAxis = figure.xAxis ?? figure.x_axis ?? figure.axis_options?.x ?? {};
-  const rAxis = figure.yAxis ?? figure.y_axis ?? figure.axis_options?.y ?? {};
+  const axes = figureAxisOptions(figure) ?? {};
+  const thetaAxis = axes.x ?? {};
+  const rAxis = axes.y ?? {};
   const unit = polarAxisThetaUnit(thetaAxis);
   const turn = unit === "degrees" ? 360 : Math.PI * 2;
   const sector = thetaAxis.sector ?? [0, turn];
@@ -2414,8 +2415,9 @@ function packXyCh(figure) {
     flags |= 2;
     plot = encodeUtf8(figureStyle["--chart-bg"] || "transparent");
   }
-  const x = packChromeAxis("x", figure.xAxis ?? figure.x_axis ?? {}, ["bottom", "top"]);
-  const y = packChromeAxis("y", figure.yAxis ?? figure.y_axis ?? {}, ["left", "right"]);
+  const axes = figureAxisOptions(figure) ?? {};
+  const x = packChromeAxis("x", axes.x ?? {}, ["bottom", "top"]);
+  const y = packChromeAxis("y", axes.y ?? {}, ["left", "right"]);
   const header = new Uint8Array(16);
   const view = new DataView(header.buffer);
   header.set(encodeUtf8("XYCH").slice(0, 4), 0);
@@ -2860,11 +2862,12 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
     seenAxes.add(axisId);
     axisEntries.push([axisId, options ?? {}]);
   };
-  if (figure.axis_options && typeof figure.axis_options === "object") {
-    for (const [axisId, options] of Object.entries(figure.axis_options)) addAxis(axisId, options);
+  const axes = figureAxisOptions(figure) ?? {};
+  if (axes && typeof axes === "object") {
+    for (const [axisId, options] of Object.entries(axes)) addAxis(axisId, options);
   }
-  addAxis("x", figure.xAxis ?? figure.x_axis ?? figure.axis_options?.x ?? {});
-  addAxis("y", figure.yAxis ?? figure.y_axis ?? figure.axis_options?.y ?? {});
+  addAxis("x", axes.x ?? {});
+  addAxis("y", axes.y ?? {});
   const parts = [new Uint8Array(20)];
   const header = new DataView(parts[0].buffer);
   parts[0].set([88, 89, 70, 83]); // XYFS
@@ -4819,6 +4822,11 @@ export function figureShowLegend(figure) {
   return (figure ?? {}).show_legend;
 }
 
+/** Axis option records. Python `_pack_figure_chrome` / polar / XYFS / XYEF read `axis_options` only. */
+export function figureAxisOptions(figure) {
+  return (figure ?? {}).axis_options;
+}
+
 /** Annotation CSS class. Python `_pack_figure_support` reads `annotation.get("class_name")` only. */
 export function annotationClassName(annotation) {
   return (annotation ?? {}).class_name;
@@ -4842,8 +4850,9 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   const LEGEND_TOGGLE = 1 << 6, LEGEND_HIGHLIGHT = 1 << 7, LEGEND_SHOW = 1 << 8, LEGEND_UNSUPPORTED_STYLE = 1 << 9;
   const CB_HORIZONTAL = 1 << 1, CB_MINOR = 1 << 2, CB_INVALID_SIDE = 1 << 4;
   let flags = FLAG_HAS_CHROME | FLAG_X_MAJOR_AUTO | FLAG_Y_MAJOR_AUTO;
-  const xAxis = figure.xAxis ?? figure.x_axis ?? {};
-  const yAxis = figure.yAxis ?? figure.y_axis ?? {};
+  const axes = figureAxisOptions(figure) ?? {};
+  const xAxis = axes.x ?? {};
+  const yAxis = axes.y ?? {};
   const xDomain = figure._range("x");
   const yDomain = figure._range("y");
   const kindCode = (kind) => kind === "log" ? 1 : kind === "symlog" ? 2 : 0;
@@ -5087,11 +5096,12 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
     seenAxes.add(axisId);
     axisEntries.push([axisId, options ?? {}]);
   };
-  if (figure.axis_options && typeof figure.axis_options === "object") {
-    for (const [axisId, options] of Object.entries(figure.axis_options)) addAxis(axisId, options);
+  const axes = figureAxisOptions(figure) ?? {};
+  if (axes && typeof axes === "object") {
+    for (const [axisId, options] of Object.entries(axes)) addAxis(axisId, options);
   }
-  addAxis("x", figure.xAxis ?? figure.x_axis ?? figure.axis_options?.x ?? {});
-  addAxis("y", figure.yAxis ?? figure.y_axis ?? figure.axis_options?.y ?? {});
+  addAxis("x", axes.x ?? {});
+  addAxis("y", axes.y ?? {});
 
   const parts = [new Uint8Array(36)];
   const header = new DataView(parts[0].buffer);
@@ -5313,7 +5323,7 @@ function legendColumnValues(column) {
 }
 
 function legendAxisSpec(figure, axisId) {
-  const options = figure.axis_options?.[axisId] ?? figure[`${axisId}Axis`] ?? figure[`${axisId}_axis`] ?? {};
+  const options = figureAxisOptions(figure)?.[axisId] ?? {};
   let lo, hi;
   try {
     [lo, hi] = figure._range(axisId);

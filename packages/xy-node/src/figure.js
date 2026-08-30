@@ -452,6 +452,7 @@ export class Figure {
     // contract, so Node cannot acquire a second annotation policy.
     this.annotations = (opts.annotations ?? []).map((annotation) => copyAnnotation(requireAnnotationObject(annotation)));
     this.traces = [];
+    this.axis_options = { x: {}, y: {} };
     this._graphMeta = null;
     this._axisRange = { x: null, y: null };
     this._polarMeta = null;
@@ -497,7 +498,9 @@ export class Figure {
   setAxis(axisId, options = {}) {
     if (axisId !== "x" && axisId !== "y") throw new RangeError("axisId must be x or y");
     options = copySceneOptions(options, `Scene ${axisId} axis options`);
-    this[`${axisId}Axis`] = { ...(this[`${axisId}Axis`] ?? {}), ...options };
+    this.axis_options = this.axis_options ?? { x: {}, y: {} };
+    this.axis_options[axisId] = { ...(this.axis_options[axisId] ?? {}), ...options };
+    this[`${axisId}Axis`] = this.axis_options[axisId];
     if (options.domain != null) this.setAxisDomain(axisId, options.domain);
     return this;
   }
