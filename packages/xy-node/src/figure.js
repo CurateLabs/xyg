@@ -2227,6 +2227,13 @@ export class Figure {
         // `_axis_spec` ships `tick_label_anchor`. Matching Python would add
         // x_axis.tick_label_anchor. Recorded emit-payload-axis-tick-label-anchor
         // stay-host.
+        // Node cartesian payload axes omit tick_label_min_gap. Python
+        // `_axis_spec` ships `tick_label_min_gap`. Matching Python would add
+        // x_axis.tick_label_min_gap. Recorded emit-payload-axis-tick-label-min-gap
+        // stay-host.
+        // Node cartesian payload axes omit minor_style. Python `_axis_spec`
+        // ships `minor_style`. Matching Python would add x_axis.minor_style.
+        // Recorded emit-payload-axis-minor-style stay-host.
         x: { range: xr, scale: "linear" },
         y: { range: yr, scale: "linear" },
       };
