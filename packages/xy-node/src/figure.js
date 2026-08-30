@@ -1559,7 +1559,12 @@ export class Figure {
     // Recorded emit-segments-color stay-host.
     const color = this._shipColor(t.color, pw);
     if (color != null) entry.color = color;
-    if (t.tooltip_rows != null) entry.tooltip_rows = t.tooltip_rows;
+    if (t.tooltip_rows != null) {
+      // Node payload segments skips tooltip_rows length. Python
+      // `_attach_tooltip_rows` rejects a mismatch with n_points. Matching
+      // Python would throw. Recorded emit-segments-tooltip-len stay-host.
+      entry.tooltip_rows = t.tooltip_rows;
+    }
     // Node payload segments omits stroke_ch. Python `_emit_segments` ships
     // stroke_ch via `_ship_trace_styles`. Matching Python would add
     // entry.stroke. Recorded emit-segments-stroke stay-host.
