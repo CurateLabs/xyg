@@ -116,6 +116,7 @@ Node `polarAxisThetaDirection` uses axis `theta_direction` only like Python `_pa
   Node `_polarAxisSpecs` y scale stays linear.
   Node `_polarAxisSpecs` omits axis nonpositive.
   Node `_polarAxisSpecs` omits axis constant.
+  Node `_polarAxisSpecs` omits axis categories.
 ---
 
 ## 0. Three runtime surfaces (product-wide)

@@ -2164,3 +2164,13 @@ test("buildPayload omits polar axis constant unlike Python _axis_spec", () => {
   const { spec } = fig.buildPayload();
   assert.equal(spec.y_axis.constant, undefined);
 });
+
+test("buildPayload omits polar axis categories unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `_axis_categories` for category axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-categories stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { type: "category", categories: ["a", "b"] });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.categories, undefined);
+});
