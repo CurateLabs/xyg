@@ -159,6 +159,11 @@ export function scatterPayloadForcePyramid(trace) {
   return (trace ?? {}).force_pyramid;
 }
 
+/** Payload no-rescan override. Python `_density_trace_spec` does not read `style.no_rescan`. */
+export function scatterPayloadNoRescan(trace) {
+  return (trace ?? {}).no_rescan;
+}
+
 /** Autorange axis record. Python `_axis_scale` / `_range` read `axis_options` only. */
 export function figureAutorangeAxisOptions(figure, axisId) {
   return (figure ?? {}).axis_options?.[axisId] ?? {};
@@ -1109,7 +1114,7 @@ export class Figure {
     let tiles = null;
     const forceBin2d = Boolean(scatterPayloadForceBin2d(t));
     const forcePyramid = Boolean(scatterPayloadForcePyramid(t));
-    const noRescan = Boolean(t.no_rescan ?? t.style?.no_rescan);
+    const noRescan = Boolean(scatterPayloadNoRescan(t));
     const forceSpill = Boolean(t.pyramid_spill ?? t.style?.pyramid_spill);
     let hasPyramidResource = false;
     if (
