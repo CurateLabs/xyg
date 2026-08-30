@@ -318,6 +318,18 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitScatter skips tooltip_rows length unlike Python _attach_tooltip_rows", () => {
+  // Python `_attach_tooltip_rows` rejects a mismatch with n_points. Node
+  // scatter encode ships the short list. Recorded emit-scatter-tooltip-len
+  // stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.traces[0].tooltip_rows = [{ id: "a" }];
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "scatter");
+  assert.equal(spec.traces[0].tooltip_rows.length, 1);
+});
+
 test("_emitRibbon copies t.style unlike Python _default_styled", () => {
   // Python `_emit_ribbon` uses `_default_styled` to fill palette color when
   // style.color is missing. Node ribbon encode copies t.style. Recorded

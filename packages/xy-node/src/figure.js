@@ -1187,6 +1187,9 @@ export class Figure {
       };
     }
     if (t.tooltip_rows != null) {
+      // Node payload scatter skips tooltip_rows length. Python
+      // `_attach_tooltip_rows` rejects a mismatch with n_points. Matching
+      // Python would throw. Recorded emit-scatter-tooltip-len stay-host.
       entry.tooltip_rows = sel == null ? t.tooltip_rows : gatherItems(t.tooltip_rows, sel);
     }
     // Node payload scatter omits stroke_ch. Python `_emit_scatter` ships
