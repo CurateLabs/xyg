@@ -1296,6 +1296,9 @@ export class Figure {
     const plan = densityEmitPlan({
       cartesian: this.coords === "cartesian",
       xLinear: true,
+      // Node density emit plan xLinear stays true. Python `_density_trace_spec`
+      // uses `_axis_scale == "linear"`. Matching Python would pass false on
+      // log x. Recorded emit-density-xlinear stay-host.
       yLinear: true,
       pointOverlay: true,
       gridFromPyramid: reduction === "pyramid-count",
