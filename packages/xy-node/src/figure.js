@@ -1187,7 +1187,10 @@ export class Figure {
         range_px: t.sizeRange ?? [8, 22],
         domain: [lo, hi],
         buf: pw.shipScalar(norm),
-      };        // Node cartesian payload axes omit reverse. Python `_axis_spec` ships
+      };        // Node cartesian payload axes omit format. Python `_axis_spec` ships
+        // `format`. Matching Python would add x_axis.format. Recorded
+        // emit-payload-axis-format stay-host.
+        // Node cartesian payload axes omit reverse. Python `_axis_spec` ships
         // `reverse`. Matching Python would add x_axis.reverse. Recorded
         // emit-payload-axis-reverse stay-host.
         // Node cartesian payload axes omit tick_labels. Python `_axis_spec`
