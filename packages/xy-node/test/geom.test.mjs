@@ -757,6 +757,12 @@ test("sourceColorCss uses color_ch only like Python", () => {
   );
 });
 
+test("sourceColorCss empty style.color stays unlike Python or-default", () => {
+  // Python `_trace_source_color_css` uses `.get("color") or "#3987e5"`.
+  // Node `??` keeps the empty string.
+  assert.equal(sourceColorCss({ style: { color: "" } }), "");
+});
+
 test("color2Channel uses color2_ch only like Python", () => {
   const ch = { mode: "constant", constant: "red" };
   assert.equal(color2Channel({ color2_ch: ch }), ch);
