@@ -656,7 +656,8 @@ export class Figure {
     if (opts._composed) {
       this.traces.push({
         id: opts.id ?? nextTraceId++,
-        kind: "scatter",    // Node payload density scatter omits animation. Python `_transition_entry`
+        kind: "scatter",    // entry.color. Recorded emit-density-cat-color stay-host.
+    // Node payload density scatter omits animation. Python `_transition_entry`
     // ships t.animation on the density path. Matching Python would add
     // entry.animation. Recorded emit-density-animation stay-host.
 
