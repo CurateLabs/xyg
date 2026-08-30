@@ -88,6 +88,7 @@ import {
   polarGridShape,
   polarAxisThetaUnit,
   polarAxisThetaZero,
+  polarAxisROrigin,
   polarAxisThetaDirection,
   constantMarkColor,
   xyHfColormap,
@@ -1092,6 +1093,12 @@ test("polarAxisThetaDirection uses theta_direction only like Python", () => {
   assert.equal(polarAxisThetaDirection({}), undefined);
   assert.equal(polarAxisThetaDirection({ thetaDirection: "clockwise" }), undefined);
   assert.equal(polarAxisThetaDirection({ theta_direction: "clockwise" }), "clockwise");
+});
+
+test("polarAxisROrigin uses r_origin only like Python", () => {
+  assert.equal(polarAxisROrigin({}), undefined);
+  assert.equal(polarAxisROrigin({ rOrigin: 1 }), undefined);
+  assert.equal(polarAxisROrigin({ r_origin: 1 }), 1);
 });
 
 test("hexbinPacksRgbaPlane uses color_ch only like Python", () => {

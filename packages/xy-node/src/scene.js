@@ -1313,6 +1313,11 @@ function polarThetaZero(zero = "E") {
   return Number(zero);
 }
 
+/** Polar r-axis origin. Python `_pack_polar_scene_input` / `polar_layout` read `r_axis.get("r_origin")` only. */
+export function polarAxisROrigin(rAxis) {
+  return (rAxis ?? {}).r_origin;
+}
+
 /** Polar theta-axis direction. Python `_pack_polar_scene_input` / `polar_layout` read `theta_axis.get("theta_direction")` only. */
 export function polarAxisThetaDirection(thetaAxis) {
   return (thetaAxis ?? {}).theta_direction;
@@ -1356,7 +1361,7 @@ export function packPolarSceneInput(figure) {
   const categories = thetaAxis.categories ?? [];
   const range = typeof figure._range === "function" ? figure._range("y") : (rAxis.range ?? [0, 1]);
   const [rLo, rHi] = range;
-  const origin = rAxis.r_origin ?? rAxis.rOrigin;
+  const origin = polarAxisROrigin(rAxis);
   const scale = polarRScale(rAxis);
   const grid = polarGridShape(thetaAxis);
   const out = new Uint8Array(92);
@@ -1844,7 +1849,7 @@ export function polarLayout(thetaAxis = {}, rAxis = {}, plot = {}) {
   const sector = thetaAxis.sector ?? [0, turn];
   const categories = thetaAxis.categories ?? [];
   const [rLo, rHi] = rAxis.range ?? [0, 1];
-  const origin = rAxis.r_origin ?? rAxis.rOrigin;
+  const origin = polarAxisROrigin(rAxis);
   const scale = polarRScale(rAxis);
   const metrics = new Float64Array(POLAR_METRICS_LEN);
   const written = xyPolarLayout(
