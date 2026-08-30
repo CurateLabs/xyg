@@ -1771,6 +1771,7 @@ Node hexbin XYTA values packing uses `color_ch` only like Python `_pack_xyta`; `
 Node `legendStyleFontSizes` uses `style.font_size` / `style.title_font_size` only like Python `_legend_input`; `fontSize` / `titleFontSize` are not legend-font fallbacks.
 Node `heatmapGridShape` uses `grid_shape` only like Python `_heatmap_shape`; `gridShape` is not a heatmap-lattice fallback.
 Node `hexbinStylePitch` uses `style.hex_dx` then `style.dx` like Python `_hexbin_pitch`; `hexDx` / `hexDy` are not hexbin-pitch fallbacks.
+Node `polarGridShape` uses axis `grid_shape` only like Python `_pack_polar_scene_input`; `gridShape` is not a polar-grid fallback.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -2078,6 +2079,7 @@ Node hexbin XYTA values packing uses `color_ch` only like Python `_pack_xyta`; `
 Node `legendStyleFontSizes` uses `style.font_size` / `style.title_font_size` only like Python `_legend_input`; `fontSize` / `titleFontSize` are not legend-font fallbacks.
 Node `heatmapGridShape` uses `grid_shape` only like Python `_heatmap_shape`; `gridShape` is not a heatmap-lattice fallback.
 Node `hexbinStylePitch` uses `style.hex_dx` then `style.dx` like Python `_hexbin_pitch`; `hexDx` / `hexDy` are not hexbin-pitch fallbacks.
+Node `polarGridShape` uses axis `grid_shape` only like Python `_pack_polar_scene_input`; `gridShape` is not a polar-grid fallback.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same

@@ -85,6 +85,7 @@ import {
   hexbinXyTaColormap,
   hexbinStylePitch,
   heatmapGridShape,
+  polarGridShape,
   constantMarkColor,
   xyHfColormap,
   channelConstantCss,
@@ -1064,6 +1065,12 @@ test("hexbinStylePitch uses hex_dx then dx like Python", () => {
   assert.deepEqual(hexbinStylePitch({ hexDx: 1, hexDy: 2 }), { hex_dx: undefined, hex_dy: undefined });
   assert.deepEqual(hexbinStylePitch({ hex_dx: 1, hex_dy: 2 }), { hex_dx: 1, hex_dy: 2 });
   assert.deepEqual(hexbinStylePitch({ dx: 3, dy: 4 }), { hex_dx: 3, hex_dy: 4 });
+});
+
+test("polarGridShape uses grid_shape only like Python", () => {
+  assert.equal(polarGridShape({}), "circular");
+  assert.equal(polarGridShape({ gridShape: "linear" }), "circular");
+  assert.equal(polarGridShape({ grid_shape: "linear" }), "linear");
 });
 
 
