@@ -2312,13 +2312,14 @@ export function chromeAxisStyleKeys() {
   return AXIS_STYLE_KEYS;
 }
 
-function styleHas(style, snake, camel) {
-  return Object.hasOwn(style, snake) || (camel != null && Object.hasOwn(style, camel));
+/** Chrome axis style presence. Python `_pack_chrome_axis` uses `key in style` only. */
+export function chromeAxisStyleHas(style, key) {
+  return Object.hasOwn(style ?? {}, key);
 }
 
-function styleValue(style, snake, camel, fallback) {
-  if (Object.hasOwn(style, snake)) return style[snake];
-  if (camel != null && Object.hasOwn(style, camel)) return style[camel];
+/** Chrome axis style value. Python `_pack_chrome_axis` uses `style.get(key, fallback)` only. */
+export function chromeAxisStyleValue(style, key, fallback) {
+  if (Object.hasOwn(style ?? {}, key)) return style[key];
   return fallback;
 }
 
@@ -2344,48 +2345,48 @@ function packChromeAxis(axis, options, sides) {
   };
   const direction = { out: 0, in: 1, inout: 2 };
   let paintFlags = 0;
-  if (styleHas(style, "axis_color", "axisColor")) paintFlags |= 1 << 0;
-  if (styleHas(style, "grid_color", "gridColor")) paintFlags |= 1 << 1;
-  if (styleHas(style, "tick_color", "tickColor")) paintFlags |= 1 << 2;
-  if (styleHas(minor, "grid_color", "gridColor")) paintFlags |= 1 << 3;
-  if (styleHas(minor, "tick_color", "tickColor")) paintFlags |= 1 << 4;
-  if (styleHas(style, "tick_label_color", "tickLabelColor") || styleHas(style, "label_color", "labelColor")) paintFlags |= 1 << 5;
+  if (chromeAxisStyleHas(style, "axis_color")) paintFlags |= 1 << 0;
+  if (chromeAxisStyleHas(style, "grid_color")) paintFlags |= 1 << 1;
+  if (chromeAxisStyleHas(style, "tick_color")) paintFlags |= 1 << 2;
+  if (chromeAxisStyleHas(minor, "grid_color")) paintFlags |= 1 << 3;
+  if (chromeAxisStyleHas(minor, "tick_color")) paintFlags |= 1 << 4;
+  if (chromeAxisStyleHas(style, "tick_label_color") || chromeAxisStyleHas(style, "label_color")) paintFlags |= 1 << 5;
   const widthSpecs = [
-    [style, "axis_width", "axisWidth", 1],
-    [style, "grid_width", "gridWidth", 1],
-    [style, "tick_width", "tickWidth", 1],
-    [style, "tick_length", "tickLength", 4],
-    [minor, "grid_width", "gridWidth", 1],
-    [minor, "tick_width", "tickWidth", 1],
-    [minor, "tick_length", "tickLength", 0],
+    [style, "axis_width", 1],
+    [style, "grid_width", 1],
+    [style, "tick_width", 1],
+    [style, "tick_length", 4],
+    [minor, "grid_width", 1],
+    [minor, "tick_width", 1],
+    [minor, "tick_length", 0],
   ];
   let widthFlags = 0;
-  const widths = widthSpecs.map(([source, snake, camel, fallback], index) => {
-    if (styleHas(source, snake, camel)) {
+  const widths = widthSpecs.map(([source, snake, fallback], index) => {
+    if (chromeAxisStyleHas(source, snake)) {
       widthFlags |= 1 << index;
-      return Number(styleValue(source, snake, camel, fallback));
+      return Number(chromeAxisStyleValue(source, snake, fallback));
     }
     return fallback;
   });
   const paints = [
-    String(styleValue(style, "axis_color", "axisColor", "#202020")),
-    String(styleValue(style, "grid_color", "gridColor", "#202020")),
-    String(styleValue(style, "tick_color", "tickColor", "#202020")),
-    String(styleValue(minor, "grid_color", "gridColor", "transparent")),
-    String(styleValue(minor, "tick_color", "tickColor", "#202020")),
-    String(styleValue(style, "tick_label_color", "tickLabelColor", styleValue(style, "label_color", "labelColor", "#202020"))),
+    String(chromeAxisStyleValue(style, "axis_color", "#202020")),
+    String(chromeAxisStyleValue(style, "grid_color", "#202020")),
+    String(chromeAxisStyleValue(style, "tick_color", "#202020")),
+    String(chromeAxisStyleValue(minor, "grid_color", "transparent")),
+    String(chromeAxisStyleValue(minor, "tick_color", "#202020")),
+    String(chromeAxisStyleValue(style, "tick_label_color", chromeAxisStyleValue(style, "label_color", "#202020"))),
   ].map(encodeUtf8);
   const prefix = new Uint8Array(84);
   const view = new DataView(prefix.buffer);
   prefix[0] = sideCode;
   prefix[1] = mask(chromeAxisTickSides(options), "tick_sides");
   prefix[2] = mask(chromeAxisTickLabelSides(options), "tick_label_sides");
-  prefix[3] = direction[String(styleValue(style, "tick_direction", "tickDirection", "out"))] ?? 255;
-  prefix[4] = direction[String(styleValue(minor, "tick_direction", "tickDirection", "out"))] ?? 255;
+  prefix[3] = direction[String(chromeAxisStyleValue(style, "tick_direction", "out"))] ?? 255;
+  prefix[4] = direction[String(chromeAxisStyleValue(minor, "tick_direction", "out"))] ?? 255;
   prefix[5] = paintFlags;
   prefix[6] = widthFlags;
-  view.setFloat32(8, Number(styleValue(style, "grid_opacity", "gridOpacity", 1)), true);
-  view.setFloat32(12, Number(styleValue(minor, "grid_opacity", "gridOpacity", 1)), true);
+  view.setFloat32(8, Number(chromeAxisStyleValue(style, "grid_opacity", 1)), true);
+  view.setFloat32(12, Number(chromeAxisStyleValue(minor, "grid_opacity", 1)), true);
   widths.forEach((value, index) => view.setFloat64(16 + index * 8, value, true));
   paints.forEach((bytes, index) => view.setUint16(72 + index * 2, bytes.length, true));
   return concatBytes([prefix, ...paints]);
