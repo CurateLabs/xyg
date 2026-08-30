@@ -4679,6 +4679,17 @@ function unpackXyAs(blob) {
   return { styles, xyad, ...rows };
 }
 
+const LEGEND_ALLOWED_STYLE = new Set(["background", "color", "font_size", "title_font_size"]);
+
+/** Legend style font sizes. Python `_legend_input` / XYCF observations read `style.get("font_size")` / `style.get("title_font_size")` only. */
+export function legendStyleFontSizes(style) {
+  const record = style ?? {};
+  return {
+    font_size: record.font_size,
+    title_font_size: record.title_font_size,
+  };
+}
+
 function packChromeFacts(figure, { width, height, margins = null, colorbarOk = true } = {}) {
   const FLAG_AUTHORED_MARGINS = 1 << 0, FLAG_PADDING = 1 << 1, FLAG_X_MAJOR_AUTO = 1 << 2, FLAG_Y_MAJOR_AUTO = 1 << 3;
   const FLAG_X_TICK_LABELS = 1 << 4, FLAG_Y_TICK_LABELS = 1 << 5, FLAG_HAS_CHROME = 1 << 6, FLAG_HAS_LEGEND = 1 << 7, FLAG_HAS_COLORBAR = 1 << 8;
@@ -4746,10 +4757,8 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
       legendLoc = encodeUtf8(String(loc));
     }
     const style = options.style ?? {};
-    const allowedStyle = new Set(["background", "color", "font_size", "fontSize", "title_font_size", "titleFontSize"]);
-    if (Object.keys(style).some((key) => !allowedStyle.has(key))) legendFlags |= LEGEND_UNSUPPORTED_STYLE;
-    const authoredFont = style.font_size ?? style.fontSize;
-    const authoredTitleFont = style.title_font_size ?? style.titleFontSize;
+    if (Object.keys(style).some((key) => !LEGEND_ALLOWED_STYLE.has(key))) legendFlags |= LEGEND_UNSUPPORTED_STYLE;
+    const { font_size: authoredFont, title_font_size: authoredTitleFont } = legendStyleFontSizes(style);
     if (authoredFont != null) { legendFlags |= LEGEND_AUTHORED_FONT; legendFont = Number(authoredFont); }
     if (authoredTitleFont != null) { legendFlags |= LEGEND_AUTHORED_TITLE_FONT; legendTitleFont = Number(authoredTitleFont); }
     legendTitle = encodeUtf8(String(options.title ?? ""));
@@ -5212,9 +5221,8 @@ function legendInput(figure, entries, styles) {
   if (loc === "best") loc = resolveLegendBestLoc(figure);
   if (!LEGEND_LOCATIONS.has(loc)) throw new RangeError(`Scene v12 does not support legend location ${JSON.stringify(loc)}`);
   const style = options.style ?? {};
-  const allowedStyle = new Set(["background", "color", "font_size", "fontSize", "title_font_size", "titleFontSize"]);
-  if (Object.keys(style).some((key) => !allowedStyle.has(key))) throw new RangeError("Scene v12 legends support only background, color, font_size, and title_font_size");
-  const authoredFontSize = style.font_size ?? style.fontSize, authoredTitleFontSize = style.title_font_size ?? style.titleFontSize;
+  if (Object.keys(style).some((key) => !LEGEND_ALLOWED_STYLE.has(key))) throw new RangeError("Scene v12 legends support only background, color, font_size, and title_font_size");
+  const { font_size: authoredFontSize, title_font_size: authoredTitleFontSize } = legendStyleFontSizes(style);
   const fontSize = authoredFontSize == null ? 0 : Number(authoredFontSize), titleFontSize = authoredTitleFontSize == null ? 0 : Number(authoredTitleFontSize);
   if (!((authoredFontSize == null || (fontSize >= 1 && fontSize <= 1000)) && (authoredTitleFontSize == null || (titleFontSize >= 1 && titleFontSize <= 1000)))) throw new RangeError("legend font sizes must be finite and in [1, 1000]");
   const encoder = new TextEncoder(), title = encoder.encode(String(options.title ?? "")), labels = entries.map((entry) => encoder.encode(entry.label));

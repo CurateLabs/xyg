@@ -18,6 +18,7 @@ import {
   itemFillRgba8,
   itemStrokeRgba8,
   itemWidths,
+  legendStyleFontSizes,
   markerPathScale,
   arrowGeometry,
   arrowShaftPoints,
@@ -1033,6 +1034,21 @@ test("hexbinPacksColormapPlane matches Python channel.values only", () => {
     hexbinXyTaColorChannel({ color_ch: { values: [1, 2, 3] } }).values,
     [1, 2, 3],
   );
+});
+
+test("legendStyleFontSizes uses font_size only like Python", () => {
+  assert.deepEqual(legendStyleFontSizes({}), {
+    font_size: undefined,
+    title_font_size: undefined,
+  });
+  assert.deepEqual(legendStyleFontSizes({ fontSize: 14, titleFontSize: 18 }), {
+    font_size: undefined,
+    title_font_size: undefined,
+  });
+  assert.deepEqual(legendStyleFontSizes({ font_size: 14, title_font_size: 18 }), {
+    font_size: 14,
+    title_font_size: 18,
+  });
 });
 
 
