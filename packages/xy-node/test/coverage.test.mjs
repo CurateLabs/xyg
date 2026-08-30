@@ -2112,3 +2112,13 @@ test("buildPayload omits polar axis minor_style unlike Python _axis_spec", () =>
   assert.equal(spec.x_axis.minor_style, undefined);
 });
 
+test("buildPayload omits polar axis style unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `compiled axis `style`` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-style stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { style: { color: "#222" } });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.style, undefined);
+});
+
