@@ -318,6 +318,18 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitLine copies t.style unlike Python _default_styled", () => {
+  // Python `_emit_line` uses `_default_styled` to fill palette color when
+  // style.color is missing. Node line encode copies t.style. Recorded
+  // emit-line-default-styled stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.line([0, 1], [0, 1]);
+  fig.traces[0].style = { opacity: 0.9 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "line");
+  assert.equal(spec.traces[0].style.color, undefined);
+});
+
 test("buildPayload omits cartesian axis label unlike Python _axis_spec", () => {
   // Python `_axis_spec` ships `label`. Node cartesian payload axes omit that
   // field. Recorded emit-payload-axis-label stay-host.

@@ -1420,6 +1420,10 @@ export class Figure {
       id: t.id,
       kind: "line",
       name: t.name,
+      // Node payload line copies t.style. Python `_emit_line` uses
+      // `_default_styled` to fill palette color when style.color is missing.
+      // Matching Python would add style.color. Recorded
+      // emit-line-default-styled stay-host.
       style: { ...t.style },
       tier,
       n_points: t.x.length,
