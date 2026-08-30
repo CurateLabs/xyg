@@ -1713,7 +1713,7 @@ export class Figure {
       sector: null,
       gridShape: "circular",
     };
-    const unit = meta.thetaUnit ?? "radians";
+    const unit = figureAutorangeThetaUnit(this.axis_options?.x) ?? "radians";
     const turn = unit === "degrees" ? 360.0 : 2.0 * Math.PI;
     const sector = meta.sector != null ? [...meta.sector] : [0.0, turn];
     return {
