@@ -1113,6 +1113,17 @@ test("itemWidths missing values fail-closes like Python", () => {
   const scalarView = new DataView(scalar.buffer, scalar.byteOffset, scalar.byteLength);
   assert.equal(scalarView.getFloat64(0, true), 3);
   assert.equal(scalarView.getFloat64(8, true), 3);
+  const camelOnly = itemWidths(
+    {
+      styleChannels: { stroke_width: { values: [1.5, 2.5] } },
+      style: { stroke_width: 3 },
+    },
+    2,
+  );
+  assert.equal(camelOnly.length, 16);
+  const camelView = new DataView(camelOnly.buffer, camelOnly.byteOffset, camelOnly.byteLength);
+  assert.equal(camelView.getFloat64(0, true), 3);
+  assert.equal(camelView.getFloat64(8, true), 3);
 });
 
 test("itemApplyOpacity missing values fail-closes like Python", () => {

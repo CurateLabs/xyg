@@ -5639,7 +5639,7 @@ export function itemStrokeRgba8(trace, fills, n) {
 }
 
 export function itemWidths(trace, n) {
-  const widthCh = (trace.style_channels ?? trace.styleChannels ?? {}).stroke_width;
+  const widthCh = (trace.style_channels ?? {}).stroke_width;
   if (widthCh != null) {
     const values = widthCh.values != null
       ? [...widthCh.values].map(Number)
