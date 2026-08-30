@@ -1326,6 +1326,14 @@ test("scatterPacksPaintPlane missing kind matches Python empty not scatter", () 
     scatterUsesDensity({ kind: "scatter", x: { length: 10 }, force_density: true }),
     true,
   );
+  assert.equal(
+    scatterUsesDensity({ kind: "scatter", x: { length: 200_001 }, forceDirect: true }),
+    true,
+  );
+  assert.equal(
+    scatterUsesDensity({ kind: "scatter", x: { length: 200_001 }, force_direct: true }),
+    true,
+  );
 });
 
 test("sceneHeatmapShapeAdmit matches host table", () => {

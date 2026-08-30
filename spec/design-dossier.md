@@ -1766,6 +1766,7 @@ Node `scatterUsesDensity` uses `force_density` only like Python `use_density`; `
 Node `figureTraceSupport` uses `style.linecap` only like Python `_figure_trace_support_flags`; `lineCap` is not a dashed-marker linecap fallback.
 Node `packXyTcLinecap` uses `style.linecap` only like Python `_pack_xytc`; `lineCap` is not a packed-linecap fallback.
 Node `packXyAfLinecap` uses `style.linecap` only like Python `_pack_xyaf`; `lineCap` is not an annotation-linecap fallback.
+Node `scatterUsesDensity` does not pass `force_direct` like Python `use_density`; `forceDirect` / `force_direct` are not density-direct overrides.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -2068,6 +2069,7 @@ Node `scatterUsesDensity` uses `force_density` only like Python `use_density`; `
 Node `figureTraceSupport` uses `style.linecap` only like Python `_figure_trace_support_flags`; `lineCap` is not a dashed-marker linecap fallback.
 Node `packXyTcLinecap` uses `style.linecap` only like Python `_pack_xytc`; `lineCap` is not a packed-linecap fallback.
 Node `packXyAfLinecap` uses `style.linecap` only like Python `_pack_xyaf`; `lineCap` is not an annotation-linecap fallback.
+Node `scatterUsesDensity` does not pass `force_direct` like Python `use_density`; `forceDirect` / `force_direct` are not density-direct overrides.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same
