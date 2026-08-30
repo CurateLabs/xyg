@@ -2183,6 +2183,13 @@ export class Figure {
         // Node cartesian payload axes omit bounds. Python `_axis_spec` ships
         // `bounds`. Matching Python would add x_axis.bounds. Recorded
         // emit-payload-axis-bounds stay-host.
+        // Node cartesian payload axes omit tick_sides. Python `_axis_spec`
+        // ships `tick_sides`. Matching Python would add x_axis.tick_sides.
+        // Recorded emit-payload-axis-tick-sides stay-host.
+        // Node cartesian payload axes omit tick_label_sides. Python
+        // `_axis_spec` ships `tick_label_sides`. Matching Python would add
+        // x_axis.tick_label_sides. Recorded emit-payload-axis-tick-label-sides
+        // stay-host.
         x: { range: xr, scale: "linear" },
         y: { range: yr, scale: "linear" },
       };

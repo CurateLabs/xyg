@@ -1656,3 +1656,15 @@ test("buildPayload omits cartesian axis tick_sides unlike Python _axis_spec", ()
   assert.deepEqual(fig.axis_options.x.tick_sides, ["bottom"]);
   assert.equal(spec.x_axis.tick_sides, undefined);
 });
+
+test("buildPayload omits cartesian axis tick_label_sides unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_label_sides`. Node cartesian payload axes
+  // omit that field even when axis tick_label_sides is set. Recorded
+  // emit-payload-axis-tick-label-sides stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_label_sides: ["bottom"] });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(fig.axis_options.x.tick_label_sides, ["bottom"]);
+  assert.equal(spec.x_axis.tick_label_sides, undefined);
+});
