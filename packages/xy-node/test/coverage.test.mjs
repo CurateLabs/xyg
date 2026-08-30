@@ -318,6 +318,18 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitScatter omits stroke_ch unlike Python _ship_trace_styles", () => {
+  // Python `_emit_scatter` ships stroke_ch via `_ship_trace_styles`. Node
+  // scatter payload keeps no stroke field even when stroke_ch is present.
+  // Recorded emit-scatter-stroke stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.traces[0].stroke_ch = { mode: "constant", constant: "#112233" };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "direct");
+  assert.equal(spec.traces[0].stroke, undefined);
+});
+
 test("_emitTriangleMesh ships x/y unlike Python x2/y2", () => {
   // Python `_emit_triangle_mesh` ships x2/y2. Node keeps x/y for the third
   // vertex. Recorded emit-mesh-xy stay-host.
