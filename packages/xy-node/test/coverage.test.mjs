@@ -1592,3 +1592,15 @@ test("buildPayload omits cartesian axis reverse unlike Python _axis_spec", () =>
   assert.equal(spec.x_axis.reverse, undefined);
 });
 
+test("buildPayload omits cartesian axis domain unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `domain`. Node cartesian payload axes omit that
+  // field even when axis domain is set. Recorded emit-payload-axis-domain
+  // stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([1, 2], [1, 2]);
+  fig.setAxis("x", { domain: [0, 3] });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(fig.axis_options.x.domain, [0, 3]);
+  assert.equal(spec.x_axis.domain, undefined);
+});
+
