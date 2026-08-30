@@ -1520,6 +1520,9 @@ export class Figure {
       tier,
       n_points: t.count ?? t.x0.length,
       n_marks: x0v.length,
+      // Node payload segments omits ship scale. Python `_emit_segments`
+      // passes `_axis_scale` into `pw.ship`. Matching Python would pin
+      // log-axis offset to 0. Recorded emit-segments-ship-scale stay-host.
       x0: pw.ship(x0v, x0),
       x1: pw.ship(x1v, x1),
       y0: pw.ship(y0v, y0),
