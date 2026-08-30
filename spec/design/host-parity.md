@@ -111,6 +111,7 @@ publish waits on the `@curatelabs` npm org (#13).
   Node `_polarAxisSpecs` y scale stays linear.
   Node `_polarAxisSpecs` omits axis nonpositive.
   Node `_polarAxisSpecs` omits axis constant.
+  Node `_polarAxisSpecs` omits axis categories.
 ---
 
 ## 0. Three runtime surfaces (product-wide)
