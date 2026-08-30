@@ -2215,6 +2215,14 @@ export class Figure {
         // `_axis_spec` ships `tick_label_angle`. Matching Python would add
         // x_axis.tick_label_angle. Recorded emit-payload-axis-tick-label-angle
         // stay-host.
+        // Node cartesian payload axes omit tick_label_strategy. Python
+        // `_axis_spec` ships `tick_label_strategy`. Matching Python would add
+        // x_axis.tick_label_strategy. Recorded
+        // emit-payload-axis-tick-label-strategy stay-host.
+        // Node cartesian payload axes omit tick_label_anchor. Python
+        // `_axis_spec` ships `tick_label_anchor`. Matching Python would add
+        // x_axis.tick_label_anchor. Recorded emit-payload-axis-tick-label-anchor
+        // stay-host.
         x: { range: xr, scale: "linear" },
         y: { range: yr, scale: "linear" },
       };
