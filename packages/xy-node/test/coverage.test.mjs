@@ -318,6 +318,18 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitRibbon omits transition_keys unlike Python _transition_entry", () => {
+  // Python `_emit_ribbon` ships transition_keys as `keys`. Node ribbon
+  // payload keeps no keys field even when transition_keys is present.
+  // Recorded emit-ribbon-transition stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.ribbon([0], [1], [0], [1], [0], [1], { color: "#112233" });
+  fig.traces[0].transition_keys = [[1, 2]];
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "ribbon");
+  assert.equal(spec.traces[0].keys, undefined);
+});
+
 test("_emitRect omits transition_keys unlike Python _transition_entry", () => {
   // Python `_emit_rect` / `_emit_bar_compact` ship transition_keys as `keys`.
   // Node bar/rect payload keeps no keys field even when transition_keys is
