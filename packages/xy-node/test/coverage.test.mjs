@@ -2161,4 +2161,3 @@ test("buildPayload omits polar axis categories unlike Python _axis_spec", () => 
   const { spec } = fig.buildPayload();
   assert.equal(spec.x_axis.categories, undefined);
 });
-
