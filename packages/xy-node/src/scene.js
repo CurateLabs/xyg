@@ -3417,7 +3417,8 @@ export function packXyTcSize(style) {
 /** XYTC size_ch. Python `_pack_xytc` reads `getattr(trace, "size_ch", None)` only. */
 export function packXyTcSizeChannel(trace) {
   const sizeChannel = (trace ?? {}).size_ch;
-  if (sizeChannel == null) return { flags: 0, value: Number.NaN };
+  if (sizeChannel == null) return { flags: 0, value: Number.NaN };// default mark size. Recorded scene-scatter-size-ch stay-host.
+
   const value = sizeChannel.constant != null ? Number(sizeChannel.constant) : Number.NaN;
   return { flags: XYTC_HAS_SIZE_CH, value };
 }
