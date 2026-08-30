@@ -1386,3 +1386,38 @@ test("_emitRect omits animation unlike Python _transition_entry", () => {
   assert.equal(spec.traces[0].animation, undefined);
 });
 
+test("_emitTriangleMesh omits animation unlike Python _transition_entry", () => {
+  // Python `_emit_triangle_mesh` ships t.animation via `_transition_entry`.
+  // Node mesh encode omits that field. Recorded emit-mesh-animation stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "triangle_mesh");
+  assert.equal(spec.traces[0].animation, undefined);
+});
+
+
+test("_emitRibbon omits animation unlike Python _transition_entry", () => {
+  // Python `_emit_ribbon` ships t.animation via `_transition_entry`. Node
+  // ribbon encode omits that field. Recorded emit-ribbon-animation stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.ribbon([0], [1], [0], [1], [0], [1]);
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "ribbon");
+  assert.equal(spec.traces[0].animation, undefined);
+});
+
+
+test("_emitSegments omits animation unlike Python _transition_entry", () => {
+  // Python `_emit_segments` ships t.animation via `_transition_entry`. Node
+  // segments encode omits that field. Recorded emit-segments-animation stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.segments([0], [0], [1], [1]);
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "segments");
+  assert.equal(spec.traces[0].animation, undefined);
+});
+

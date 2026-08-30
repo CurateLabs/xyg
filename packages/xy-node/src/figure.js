@@ -1610,7 +1610,10 @@ export class Figure {
     // Recorded emit-mesh-transition stay-host.
     return {
       id: t.id,
-      kind: "triangle_mesh",
+      kind: "triangle_mesh",    // Node payload mesh omits animation. Python `_emit_triangle_mesh` ships
+    // t.animation via `_transition_entry`. Matching Python would add
+    // entry.animation. Recorded emit-mesh-animation stay-host.
+
       name: t.name,
       // Node payload mesh copies t.style. Python `_emit_triangle_mesh` uses
       // `_default_styled` to fill palette color when style.color is missing.
