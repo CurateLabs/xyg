@@ -112,6 +112,10 @@ publish waits on the `@curatelabs` npm org (#13).
   Node `_polarAxisSpecs` omits axis nonpositive.
   Node `_polarAxisSpecs` omits axis constant.
   Node `_polarAxisSpecs` omits axis categories.
+  Node `_emitScatterDensity` sample uses full n.
+  Node `_emitScatterDensity` visible stays n_points.
+  Node `_emitScatterDensity` sample.visible stays n.
+  Node density Scene omits scatter `color_ch`.
 ---
 
 ## 0. Three runtime surfaces (product-wide)

@@ -2161,3 +2161,58 @@ test("buildPayload omits polar axis categories unlike Python _axis_spec", () => 
   const { spec } = fig.buildPayload();
   assert.equal(spec.x_axis.categories, undefined);
 });
+
+test("nextTraceId starts at 1 unlike Python len(traces)", () => {
+  // Python first trace id is 0 (`id=len(self.traces)`). Node auto-ids start
+  // at 1 and never assign 0. Recorded next-trace-id-base stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.notEqual(spec.traces[0].id, 0);
+});
+
+
+test("_emitScatterDensity visible stays n_points unlike Python _density_trace_spec", () => {
+  // Python `_density_trace_spec` sets visible from range indices. Node uses
+  // `t.x.length`. Recorded emit-density-visible stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1, NaN, 2], [1, 2, 3, 4], { forceDensity: true });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].visible, 4);
+});
+
+
+test("_emitScatterDensity sample uses full n unlike Python _density_sample_spec", () => {
+  // Python `_density_sample_spec` samples `sel`. Node samples `t.x.length`.
+  // Recorded emit-density-sample-sel stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1, NaN, 2], [1, 2, 3, 4], { forceDensity: true });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].density.sample.n, 4);
+});
+
+
+test("_emitScatterDensity sample.visible stays n unlike Python _density_sample_spec", () => {
+  // Python `_density_sample_spec` sets sample.visible from range-index visible.
+  // Node uses `n = t.x.length`. Recorded emit-density-sample-visible stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1, NaN, 2], [1, 2, 3, 4], { forceDensity: true });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].density.sample.visible, 4);
+});
+
+
+test("density Scene uses viridis unlike Python color_ch palette", () => {
+  // Python marks.scatter always sets color_ch from next_series_color, so
+  // density Scene paints palette #3987e5. Node scatter() omits color_ch, so
+  // packXyTaDensityColorCh is empty and Rust falls back to viridis.
+  // Recorded scene-density-color-ch stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [1, 2], { forceDensity: true });
+  const scene = Buffer.from(fig.toScene());
+  const viridis = Buffer.from([0x44, 0x01, 0x54, 0x00]);
+  const palette = Buffer.from([0x39, 0x87, 0xe5, 0x00]);
+  assert.equal(scene.includes(viridis), true);
+  assert.equal(scene.includes(palette), false);
+});
+
