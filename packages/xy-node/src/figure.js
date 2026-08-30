@@ -2410,6 +2410,9 @@ export class Figure {
       // Node payload omits padding. Python `build_payload` ships `padding`.
       // Matching Python would add spec.padding. Recorded
       // emit-payload-padding stay-host.
+      // Node payload omits dom. Python `_dom_spec` ships class_name /
+      // class_names / style / styles. Matching Python would add spec.dom.
+      // Recorded emit-payload-dom stay-host.
       view: { ranges: { x: [...xr], y: [...yr] } },
     };
     if (this.coords === "polar") {
