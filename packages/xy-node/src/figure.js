@@ -2025,6 +2025,12 @@ export class Figure {
         // Node polar payload axes omit kind. Python `_axis_spec` ships
         // `_axis_kind`. Matching Python would add x_axis.kind. Recorded
         // emit-polar-payload-axis-kind stay-host.
+        // Node polar payload axes omit side. Python `_axis_spec` ships
+        // `side`. Matching Python would add x_axis.side. Recorded
+        // emit-polar-payload-axis-side stay-host.
+        // Node polar payload axes omit label. Python `_axis_spec` ships
+        // `label`. Matching Python would add x_axis.label. Recorded
+        // emit-polar-payload-axis-label stay-host.
         scale: "linear",
         theta_unit: unit,
         theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",        // Node polar payload axes omit side. Python `_axis_spec` ships
