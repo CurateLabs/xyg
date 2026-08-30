@@ -46,6 +46,7 @@ publish waits on the `@curatelabs` npm org (#13).
   Node `_emitRect` omits animation.
   Node `_emitTriangleMesh` omits animation.
   Node `_emitSegments` omits animation.
+  Node `_emitRibbon` omits animation.
 ---
 
 ## 0. Three runtime surfaces (product-wide)
