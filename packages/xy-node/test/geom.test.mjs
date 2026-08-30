@@ -1649,6 +1649,12 @@ test("figureXLabel uses x_label then axis label like Python", () => {
   assert.equal(figureXLabel({}, { label: "X" }), "X");
 });
 
+test("figureXLabel empty x_label stays unlike Python or-fallthrough", () => {
+  // Python `_pack_figure_chrome` uses `figure.x_label or axis label`.
+  // Node `??` keeps the empty string.
+  assert.equal(figureXLabel({ x_label: "" }, { label: "X" }), "");
+});
+
 test("figureYLabel uses y_label then axis label like Python", () => {
   assert.equal(figureYLabel({}, {}), undefined);
   assert.equal(figureYLabel({ yLabel: "Y" }, {}), undefined);

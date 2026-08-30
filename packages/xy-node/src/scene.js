@@ -4878,6 +4878,8 @@ export function annotationClassName(annotation) {
 
 /** Chrome x-axis label. Python `_pack_figure_chrome` reads `figure.x_label` then `axis.get("label")`. */
 export function figureXLabel(figure, xAxis) {
+  // Node `??` keeps empty `x_label`. Python `or` falls through to axis `label`.
+  // Recorded xlabel-empty stay-host.
   return (figure ?? {}).x_label ?? (xAxis ?? {}).label;
 }
 
