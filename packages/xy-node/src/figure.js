@@ -2194,6 +2194,13 @@ export class Figure {
         // `_axis_spec` ships `tick_label_sides`. Matching Python would add
         // x_axis.tick_label_sides. Recorded emit-payload-axis-tick-label-sides
         // stay-host.
+        // Node cartesian payload axes omit label_position. Python `_axis_spec`
+        // ships `label_position`. Matching Python would add
+        // x_axis.label_position. Recorded emit-payload-axis-label-position
+        // stay-host.
+        // Node cartesian payload axes omit label_offset. Python `_axis_spec`
+        // ships `label_offset`. Matching Python would add x_axis.label_offset.
+        // Recorded emit-payload-axis-label-offset stay-host.
         x: { range: xr, scale: "linear" },
         y: { range: yr, scale: "linear" },
       };

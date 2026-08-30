@@ -75,6 +75,7 @@ Node `polarAxisThetaDirection` uses axis `theta_direction` only like Python `_pa
   Node `buildPayload` omits cartesian axis tick_sides.
   Node `buildPayload` omits cartesian axis tick_label_sides.
   Node `buildPayload` omits cartesian axis label_position.
+  Node `buildPayload` omits cartesian axis label_offset.
 ---
 
 ## 0. Three runtime surfaces (product-wide)
