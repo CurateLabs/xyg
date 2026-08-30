@@ -2092,3 +2092,13 @@ test("buildPayload omits polar axis tick_label_anchor unlike Python _axis_spec",
   assert.equal(spec.x_axis.tick_label_anchor, undefined);
 });
 
+test("buildPayload omits polar axis tick_label_min_gap unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_label_min_gap` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-label-min-gap stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_label_min_gap: 2 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_min_gap, undefined);
+});
+
