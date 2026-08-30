@@ -1313,6 +1313,11 @@ function polarThetaZero(zero = "E") {
   return Number(zero);
 }
 
+/** Polar theta-axis grid. Python `_pack_polar_scene_input` reads `xa.get("grid_shape", "circular")` only. */
+export function polarGridShape(thetaAxis) {
+  return (thetaAxis ?? {}).grid_shape ?? "circular";
+}
+
 function polarRScale(axis = {}) {
   const scale = axis.scale ?? "";
   const kind = axis.kind ?? "linear";
@@ -1338,7 +1343,7 @@ export function packPolarSceneInput(figure) {
   const [rLo, rHi] = range;
   const origin = rAxis.r_origin ?? rAxis.rOrigin;
   const scale = polarRScale(rAxis);
-  const grid = thetaAxis.grid_shape ?? thetaAxis.gridShape ?? "circular";
+  const grid = polarGridShape(thetaAxis);
   const out = new Uint8Array(92);
   const view = new DataView(out.buffer);
   out.set(encodeUtf8("XYPL").slice(0, 4), 0);
