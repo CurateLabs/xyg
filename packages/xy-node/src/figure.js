@@ -144,6 +144,11 @@ export function scatterPayloadForceDensity(trace) {
   return (trace ?? {}).force_density;
 }
 
+/** Payload bin2d override. Python `_density_trace_spec` does not read `style.force_bin2d`. */
+export function scatterPayloadForceBin2d(trace) {
+  return (trace ?? {}).force_bin2d;
+}
+
 /** Payload direct override. Python `_emit_scatter` does not read `style.force_direct`. */
 export function scatterPayloadForceDirect(trace) {
   return (trace ?? {}).force_direct;
@@ -1102,7 +1107,7 @@ export class Figure {
     let binning = densityFormatBinning({ exact: true });
     let reduction = "bin2d";
     let tiles = null;
-    const forceBin2d = Boolean(t.force_bin2d ?? t.style?.force_bin2d);
+    const forceBin2d = Boolean(scatterPayloadForceBin2d(t));
     const forcePyramid = Boolean(scatterPayloadForcePyramid(t));
     const noRescan = Boolean(t.no_rescan ?? t.style?.no_rescan);
     const forceSpill = Boolean(t.pyramid_spill ?? t.style?.pyramid_spill);

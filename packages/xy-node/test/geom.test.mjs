@@ -110,6 +110,7 @@ import {
   figureShowLegend,
   figureAxisOptions,
   figureAutorangeAxisOptions,
+  scatterPayloadForceBin2d,
   scatterPayloadForceDensity,
   scatterPayloadForceDirect,
   scatterPayloadForcePyramid,
@@ -1265,6 +1266,12 @@ test("figureAutorangeAxisOptions uses axis_options only like Python", () => {
   assert.deepEqual(figureAutorangeAxisOptions({}, "x"), {});
   assert.deepEqual(figureAutorangeAxisOptions({ xAxis: { type: "log" } }, "x"), {});
   assert.deepEqual(figureAutorangeAxisOptions({ axis_options: { x: { type: "log" } } }, "x"), { type: "log" });
+});
+
+test("scatterPayloadForceBin2d uses force_bin2d only like Python", () => {
+  assert.equal(scatterPayloadForceBin2d({}), undefined);
+  assert.equal(scatterPayloadForceBin2d({ style: { force_bin2d: true } }), undefined);
+  assert.equal(scatterPayloadForceBin2d({ force_bin2d: true }), true);
 });
 
 test("scatterPayloadForceDensity uses force_density only like Python", () => {
