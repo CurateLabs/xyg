@@ -1591,6 +1591,10 @@ export class Figure {
       id: t.id,
       kind: "triangle_mesh",
       name: t.name,
+      // Node payload mesh copies t.style. Python `_emit_triangle_mesh` uses
+      // `_default_styled` to fill palette color when style.color is missing.
+      // Matching Python would add style.color. Recorded
+      // emit-mesh-default-styled stay-host.
       style: { ...t.style },
       tier: "direct",
       n_points: t.count ?? t.x0.length,
