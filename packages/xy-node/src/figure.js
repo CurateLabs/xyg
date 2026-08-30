@@ -1575,6 +1575,9 @@ export class Figure {
     // Node payload rect omits style_channels. Python `_emit_rect` ships them
     // as `channels` via `_ship_trace_styles`. Matching Python would add
     // entry.channels. Recorded emit-rect-channels stay-host.
+    // Node payload bar/column ships rect columns. Python `_emit_bar` ships a
+    // nested `bar` spec via `_emit_bar_compact`. Matching Python would nest
+    // bar. Recorded emit-bar-compact stay-host.
     return {
       id: t.id,
       kind,
