@@ -80,6 +80,7 @@ import {
   packXyTcStrokeOpacity,
   packXyTcStrokePerimeter,
   packXyTcStrokeWidth,
+  hexbinXyTaColorChannel,
   hexbinXyTaColormap,
   constantMarkColor,
   xyHfColormap,
@@ -1023,6 +1024,14 @@ test("hexbinPacksColormapPlane matches Python channel.values only", () => {
       colorChannel: { mode: "continuous", values: [1, 2, 3] },
     }),
     false,
+  );
+  assert.equal(
+    hexbinXyTaColorChannel({ colorChannel: { values: [1, 2, 3] } }),
+    undefined,
+  );
+  assert.deepEqual(
+    hexbinXyTaColorChannel({ color_ch: { values: [1, 2, 3] } }).values,
+    [1, 2, 3],
   );
 });
 
