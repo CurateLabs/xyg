@@ -711,7 +711,8 @@ export class Figure {
     const t = composed.traces[0];
     this.traces.push({
       id: opts.id ?? nextTraceId++,
-      kind: "histogram",
+      kind: "histogram",    // Python would add entry.animation. Recorded emit-hist-animation stay-host.
+
       name: t.name,
       x0: t.x0,
       x1: t.x1,

@@ -1363,3 +1363,15 @@ test("_emitArea omits animation unlike Python _base_entry", () => {
   assert.equal(spec.traces[0].animation, undefined);
 });
 
+test("_emitHistogram omits animation unlike Python _transition_entry", () => {
+  // Python `_emit_histogram` calls `_emit_rect`, which ships t.animation via
+  // `_transition_entry`. Node histogram encode omits that field. Recorded
+  // emit-hist-animation stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "histogram");
+  assert.equal(spec.traces[0].animation, undefined);
+});
+
