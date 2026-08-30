@@ -1313,6 +1313,11 @@ function polarThetaZero(zero = "E") {
   return Number(zero);
 }
 
+/** Polar theta-axis unit. Python `_pack_polar_scene_input` / `polar_layout` read `theta_axis.get("theta_unit", "radians")` only. */
+export function polarAxisThetaUnit(thetaAxis) {
+  return (thetaAxis ?? {}).theta_unit ?? "radians";
+}
+
 /** Polar theta-axis grid. Python `_pack_polar_scene_input` reads `xa.get("grid_shape", "circular")` only. */
 export function polarGridShape(thetaAxis) {
   return (thetaAxis ?? {}).grid_shape ?? "circular";
@@ -1335,7 +1340,7 @@ export function packPolarSceneInput(figure) {
   if ((figure.coords ?? "cartesian") !== "polar") return new Uint8Array();
   const thetaAxis = figure.xAxis ?? figure.x_axis ?? figure.axis_options?.x ?? {};
   const rAxis = figure.yAxis ?? figure.y_axis ?? figure.axis_options?.y ?? {};
-  const unit = thetaAxis.theta_unit ?? thetaAxis.thetaUnit ?? "radians";
+  const unit = polarAxisThetaUnit(thetaAxis);
   const turn = unit === "degrees" ? 360 : Math.PI * 2;
   const sector = thetaAxis.sector ?? [0, turn];
   const categories = thetaAxis.categories ?? [];
@@ -1824,7 +1829,7 @@ function packSceneExtrasFromSidecars(polar, xysd, facts) {
 }
 
 export function polarLayout(thetaAxis = {}, rAxis = {}, plot = {}) {
-  const unit = thetaAxis.theta_unit ?? thetaAxis.thetaUnit ?? "radians";
+  const unit = polarAxisThetaUnit(thetaAxis);
   const turn = unit === "degrees" ? 360 : Math.PI * 2;
   const sector = thetaAxis.sector ?? [0, turn];
   const categories = thetaAxis.categories ?? [];
