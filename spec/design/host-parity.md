@@ -71,6 +71,7 @@ Node `polarAxisThetaDirection` uses axis `theta_direction` only like Python `_pa
   Node `buildPayload` omits cartesian axis reverse.
   Node `buildPayload` omits cartesian axis domain.
   Node `buildPayload` omits cartesian axis format.
+  Node `buildPayload` omits cartesian axis bounds.
 ---
 
 ## 0. Three runtime surfaces (product-wide)

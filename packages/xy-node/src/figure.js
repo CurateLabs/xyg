@@ -2174,6 +2174,12 @@ export class Figure {
         // Node cartesian payload axes omit domain. Python `_axis_spec` ships
         // `domain`. Matching Python would add x_axis.domain. Recorded
         // emit-payload-axis-domain stay-host.
+        // Node cartesian payload axes omit format. Python `_axis_spec` ships
+        // `format`. Matching Python would add x_axis.format. Recorded
+        // emit-payload-axis-format stay-host.
+        // Node cartesian payload axes omit bounds. Python `_axis_spec` ships
+        // `bounds`. Matching Python would add x_axis.bounds. Recorded
+        // emit-payload-axis-bounds stay-host.
         x: { range: xr, scale: "linear" },
         y: { range: yr, scale: "linear" },
       };
