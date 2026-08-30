@@ -318,6 +318,18 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitScatterDensity sample omits ship scale unlike Python _axis_scale", () => {
+  // Python `_density_sample_spec` passes `_axis_scale` into `pw.ship_values`,
+  // pinning log offset to 0. Node density sample encode keeps the column
+  // midpoint. Recorded emit-density-sample-ship-scale stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.setAxis("x", { type: "log" });
+  fig.scatter([1, 10], [1, 10], { forceDensity: true });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "density");
+  assert.notEqual(spec.traces[0].density.sample.x.offset, 0);
+});
+
 test("_emitHistogram omits ship scale unlike Python _axis_scale", () => {
   // Python `_emit_histogram` calls `_emit_rect`, which passes `_axis_scale`
   // into `pw.ship`, pinning log offset to 0. Node histogram encode keeps the
