@@ -4885,6 +4885,8 @@ export function figureXLabel(figure, xAxis) {
 
 /** Chrome y-axis label. Python `_pack_figure_chrome` reads `figure.y_label` then `axis.get("label")`. */
 export function figureYLabel(figure, yAxis) {
+  // Node `??` keeps empty `y_label`. Python `or` falls through to axis `label`.
+  // Recorded ylabel-empty stay-host.
   return (figure ?? {}).y_label ?? (yAxis ?? {}).label;
 }
 
