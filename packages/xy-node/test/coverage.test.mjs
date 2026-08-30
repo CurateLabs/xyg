@@ -318,6 +318,17 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitRect omits color_ch unlike Python _emit_rect", () => {
+  // Python `_emit_rect` ships color_ch. Node bar/rect payload keeps no color
+  // field even when color_ch is present. Recorded emit-rect-color stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.bar([0, 1], [1, 2]);
+  fig.traces[0].color_ch = { mode: "constant", constant: "#112233" };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "bar");
+  assert.equal(spec.traces[0].color, undefined);
+});
+
 test("_emitRibbon ships t.color unlike Python color_ch", () => {
   // Python `_emit_ribbon` ships color_ch. Node keeps t.color even when
   // color_ch differs. Recorded ribbon-ship-color stay-host.

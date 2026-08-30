@@ -1521,6 +1521,9 @@ export class Figure {
     const x1 = new Column(x1v);
     const y0 = new Column(y0v);
     const y1 = new Column(y1v);
+    // Node payload rect omits color_ch. Python `_emit_rect` ships color_ch
+    // via `_ship_channels`. Matching Python would add entry.color. Recorded
+    // emit-rect-color stay-host.
     return {
       id: t.id,
       kind,
