@@ -4730,6 +4730,11 @@ export function legendStyleFontSizes(style) {
   };
 }
 
+/** Chrome authored major ticks. Python `_pack_figure_chrome` reads `axis.get("tick_values")` only. */
+export function axisTickValues(axis) {
+  return (axis ?? {}).tick_values;
+}
+
 function packChromeFacts(figure, { width, height, margins = null, colorbarOk = true } = {}) {
   const FLAG_AUTHORED_MARGINS = 1 << 0, FLAG_PADDING = 1 << 1, FLAG_X_MAJOR_AUTO = 1 << 2, FLAG_Y_MAJOR_AUTO = 1 << 3;
   const FLAG_X_TICK_LABELS = 1 << 4, FLAG_Y_TICK_LABELS = 1 << 5, FLAG_HAS_CHROME = 1 << 6, FLAG_HAS_LEGEND = 1 << 7, FLAG_HAS_COLORBAR = 1 << 8;
@@ -4761,8 +4766,8 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   const xFormat = xAxis.format == null ? new Uint8Array() : encodeUtf8(String(xAxis.format));
   const yFormat = yAxis.format == null ? new Uint8Array() : encodeUtf8(String(yAxis.format));
   let xMajor = [], yMajor = [];
-  const xTicks = xAxis.tickValues ?? xAxis.tick_values;
-  const yTicks = yAxis.tickValues ?? yAxis.tick_values;
+  const xTicks = axisTickValues(xAxis);
+  const yTicks = axisTickValues(yAxis);
   // ABI 199: Rust pack_figure_chrome filters authored majors through the tick window.
   if (xTicks != null) { flags &= ~FLAG_X_MAJOR_AUTO; xMajor = Array.from(xTicks, Number); }
   if (yTicks != null) { flags &= ~FLAG_Y_MAJOR_AUTO; yMajor = Array.from(yTicks, Number); }
