@@ -1292,6 +1292,9 @@ export class Figure {
       // Node payload density omits mean-color rgba. Python `_density_trace_spec`
       // ships rgba from `trace_bin_colors`. Matching Python would add
       // density.rgba. Recorded emit-density-rgba stay-host.
+      // Node payload density omits wasm_source. Python `_density_trace_spec`
+      // ships a split f64 replay source. Matching Python would add
+      // density.wasm_source. Recorded emit-density-wasm-source stay-host.
       channels_dropped: false,
       dropped_channels: [],
     };
