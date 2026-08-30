@@ -191,6 +191,11 @@ export function figureAxisKind(figure, axisId) {
   return "linear";
 }
 
+/** Autorange theta unit. Python `_pack_autorange` reads `opts.get("theta_unit")` only. */
+export function figureAutorangeThetaUnit(options) {
+  return (options ?? {}).theta_unit;
+}
+
 function columnValues(col) {
   if (col == null) return null;
   if (col instanceof Column) return col.values;
@@ -271,7 +276,7 @@ function packFigureAutorange(figure, axisId, { useDomain = true } = {}) {
   const categories = options.categories ?? figure._axis_categories?.[axisId];
   const kind = figureAxisKind(figure, axisId);
   const kindCode = kind === "time" ? 1 : kind === "category" ? 2 : 0;
-  const thetaUnit = (options.theta_unit ?? options.thetaUnit ?? figure._polarMeta?.thetaUnit ?? "radians") === "degrees" ? 1 : 0;
+  const thetaUnit = (figureAutorangeThetaUnit(options) ?? figure._polarMeta?.thetaUnit ?? "radians") === "degrees" ? 1 : 0;
   const nCategories = figure.coords === "polar" && categories?.length ? categories.length : 0;
   const traces = figure.traces ?? [];
   if (traces.length > 0xffff) throw new RangeError("figure autorange trace budget exceeded");

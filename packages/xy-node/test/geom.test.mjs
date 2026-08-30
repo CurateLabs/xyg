@@ -120,6 +120,7 @@ import {
   figureAutorangeAxisOptions,
   figureAutorangeAxisScale,
   figureAxisKind,
+  figureAutorangeThetaUnit,
   figure,
   scatterPayloadForceBin2d,
   scatterPayloadForceDensity,
@@ -1387,6 +1388,12 @@ test("xyEfResolvedKind uses Figure._axisKind like Python", () => {
   const cat = figure();
   cat._axis_categories = { x: [] };
   assert.equal(xyEfResolvedKind(cat, "x"), 2);
+});
+
+test("figureAutorangeThetaUnit uses theta_unit only like Python", () => {
+  assert.equal(figureAutorangeThetaUnit({}), undefined);
+  assert.equal(figureAutorangeThetaUnit({ thetaUnit: "degrees" }), undefined);
+  assert.equal(figureAutorangeThetaUnit({ theta_unit: "degrees" }), "degrees");
 });
 
 test("scatterPayloadForceBin2d uses force_bin2d only like Python", () => {
