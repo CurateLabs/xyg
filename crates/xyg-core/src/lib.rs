@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 255;
+pub const ABI_VERSION: u32 = 256;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5914,6 +5914,64 @@ pub extern "C" fn xyg_scene_hidden_or_per_item_admit(
 ) -> i32 {
     ffi_guard(-2, || {
         kernels::scene_hidden_or_per_item_admit(hidden, has_per_item, density_aggregates)
+    })
+}
+
+/// Scene channel-constant CSS (ABI 256).
+///
+/// Exact `mode == "constant"` and `has_constant != 0` writes `constant`
+/// UTF-8 and returns the length. `-1` reject, `-2` FFI. Empty native
+/// pointers are null/`0`. Hosts still pick `.mode` / `.constant`.
+///
+/// # Safety
+/// `mode` must address `mode_len` readable bytes when `mode_len` is
+/// nonzero. `constant` must address `constant_len` readable bytes when
+/// `constant_len` is nonzero. `out` must address `out_cap` writable
+/// bytes when `out_cap` is nonzero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_channel_constant_css(
+    mode: *const u8,
+    mode_len: usize,
+    has_constant: i32,
+    constant: *const u8,
+    constant_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+) -> i32 {
+    if mode_len > 0 && mode.is_null() {
+        return -2;
+    }
+    if constant_len > 0 && constant.is_null() {
+        return -2;
+    }
+    if out_cap > 0 && out.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let mode = if mode_len == 0 {
+            ""
+        } else {
+            let bytes = std::slice::from_raw_parts(mode, mode_len);
+            let Ok(text) = std::str::from_utf8(bytes) else {
+                return -2;
+            };
+            text
+        };
+        let constant = if constant_len == 0 {
+            ""
+        } else {
+            let bytes = std::slice::from_raw_parts(constant, constant_len);
+            let Ok(text) = std::str::from_utf8(bytes) else {
+                return -2;
+            };
+            text
+        };
+        let out = if out_cap == 0 {
+            &mut [][..]
+        } else {
+            std::slice::from_raw_parts_mut(out, out_cap)
+        };
+        kernels::scene_channel_constant_css(mode, has_constant, constant, out)
     })
 }
 

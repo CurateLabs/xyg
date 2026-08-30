@@ -1192,6 +1192,38 @@ def scene_hidden_or_per_item_admit(
     return code == 1
 
 
+def scene_channel_constant_css(
+    mode: str | None = None,
+    has_constant: bool = False,
+    constant: str | None = None,
+) -> str | None:
+    """Scene channel-constant CSS via ``xyg_scene_channel_constant_css`` (ABI 256).
+
+    Returns the constant CSS when ``mode`` is exactly ``constant`` and
+    ``has_constant`` is true. Empty native pointers are ``0``. Hosts still
+    pick ``.mode`` / ``.constant``.
+    """
+    mode_b = b"" if mode is None else str(mode).encode("utf-8")
+    const_b = b"" if constant is None else str(constant).encode("utf-8")
+    out = (ctypes.c_uint8 * len(const_b))()
+    code = int(
+        _lib.xyg_scene_channel_constant_css(
+            mode_b if mode_b else 0,
+            len(mode_b),
+            1 if has_constant else 0,
+            const_b if const_b else 0,
+            len(const_b),
+            out if const_b else 0,
+            len(const_b),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-channel-constant-css request")
+    if code < 0:
+        return None
+    return bytes(out[:code]).decode("utf-8")
+
+
 _SCENE_RIBBON_COLOR2_NAMES = ("absent", "solid", "gradient", "ends", "fail")
 
 

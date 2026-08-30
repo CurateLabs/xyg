@@ -60,6 +60,7 @@ geometry_offset = _impl.geometry_offset
 scale_pins_offset = _impl.scale_pins_offset
 scene_annotation_style_admit = _impl.scene_annotation_style_admit
 scene_arrays_equal = _impl.scene_arrays_equal
+scene_channel_constant_css = _impl.scene_channel_constant_css
 scene_constant_color_admit = _impl.scene_constant_color_admit
 scene_curve_classify = _impl.scene_curve_classify
 scene_dash_admit = _impl.scene_dash_admit
@@ -327,6 +328,7 @@ __all__ = [
     "scale_pins_offset",
     "scene_annotation_style_admit",
     "scene_arrays_equal",
+    "scene_channel_constant_css",
     "scene_constant_color_admit",
     "scene_curve_classify",
     "scene_dash_admit",

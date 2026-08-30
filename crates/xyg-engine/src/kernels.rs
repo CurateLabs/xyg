@@ -1607,6 +1607,30 @@ pub fn scene_hidden_or_per_item_admit(
     0
 }
 
+/// Scene channel-constant CSS (ABI 254).
+///
+/// Exact `mode == "constant"` and `has_constant != 0` copies `constant`
+/// UTF-8 into `out` and returns the written length (`0` for admitted
+/// empty CSS). Otherwise `-1`. `out` shorter than `constant` is `-2`.
+/// No lowercasing. Hosts still pick `.mode` / `.constant` vs `.color`
+/// and skip null channels.
+pub fn scene_channel_constant_css(
+    mode: &str,
+    has_constant: i32,
+    constant: &str,
+    out: &mut [u8],
+) -> i32 {
+    if mode != "constant" || has_constant == 0 {
+        return -1;
+    }
+    let bytes = constant.as_bytes();
+    if out.len() < bytes.len() {
+        return -2;
+    }
+    out[..bytes.len()].copy_from_slice(bytes);
+    i32::try_from(bytes.len()).unwrap_or(-2)
+}
+
 /// Admit Scene hexbin reduce names (ABI 232).
 ///
 /// `count`/`mean`/`sum`/`custom` return `1`. Unknown names, including empty
@@ -10399,6 +10423,19 @@ mod fuzz {
         assert_eq!(scene_hidden_or_per_item_admit(0, 1, 1), 0);
         assert_eq!(scene_hidden_or_per_item_admit(1, 1, 1), 1);
         assert_eq!(scene_hidden_or_per_item_admit(0, 0, 1), 0);
+    }
+
+    #[test]
+    fn scene_channel_constant_css_matches_host_table() {
+        let mut out = [0u8; 8];
+        assert_eq!(scene_channel_constant_css("constant", 1, "red", &mut out), 3);
+        assert_eq!(&out[..3], b"red");
+        assert_eq!(scene_channel_constant_css("constant", 1, "", &mut []), 0);
+        assert_eq!(scene_channel_constant_css("constant", 0, "red", &mut out), -1);
+        assert_eq!(scene_channel_constant_css("direct_rgba", 1, "red", &mut out), -1);
+        assert_eq!(scene_channel_constant_css("", 1, "red", &mut out), -1);
+        assert_eq!(scene_channel_constant_css("CONSTANT", 1, "red", &mut out), -1);
+        assert_eq!(scene_channel_constant_css("constant", 1, "red", &mut [0u8; 2]), -2);
     }
 
     #[test]

@@ -2593,12 +2593,13 @@ def _admitted_fill_gradient(trace: Any) -> dict[str, Any] | None:
 def _channel_constant_css(channel: Any) -> str | None:
     if channel is None:
         return None
-    if getattr(channel, "mode", None) != "constant":
-        return None
+    mode = getattr(channel, "mode", None)
     constant = getattr(channel, "constant", None)
-    if constant is None:
-        return None
-    return str(constant)
+    return _native.scene_channel_constant_css(
+        None if mode is None else str(mode),
+        constant is not None,
+        None if constant is None else str(constant),
+    )
 
 
 def _trace_source_color_css(trace: Any) -> str:

@@ -386,6 +386,16 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         ctypes.c_int32,
     ]
+    lib.xyg_scene_channel_constant_css.restype = ctypes.c_int32
+    lib.xyg_scene_channel_constant_css.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_clip_quantize_u8.restype = ctypes.c_int32
     lib.xyg_clip_quantize_u8.argtypes = [F64P, ctypes.c_size_t, U8P, ctypes.c_size_t]
     lib.xyg_continuous_domain.restype = ctypes.c_int32
@@ -3094,6 +3104,50 @@ def main() -> None:
     ok(
         lib.xyg_scene_hidden_or_per_item_admit(0, 1, 0) == 1,
         "scene_hidden_or_per_item_admit per-item",
+    )
+    css_mode = array("B", b"constant")
+    css_red = array("B", b"red")
+    css_out = array("B", [0] * 8)
+    ok(
+        lib.xyg_scene_channel_constant_css(
+            _ptr(css_mode, ctypes.c_uint8),
+            len(css_mode),
+            1,
+            _ptr(css_red, ctypes.c_uint8),
+            len(css_red),
+            _ptr(css_out, ctypes.c_uint8),
+            len(css_out),
+        )
+        == 3
+        and bytes(css_out[:3]) == b"red",
+        "scene_channel_constant_css constant",
+    )
+    ok(
+        lib.xyg_scene_channel_constant_css(
+            _ptr(css_mode, ctypes.c_uint8),
+            len(css_mode),
+            0,
+            _ptr(css_red, ctypes.c_uint8),
+            len(css_red),
+            _ptr(css_out, ctypes.c_uint8),
+            len(css_out),
+        )
+        == -1,
+        "scene_channel_constant_css missing",
+    )
+    css_direct = array("B", b"direct_rgba")
+    ok(
+        lib.xyg_scene_channel_constant_css(
+            _ptr(css_direct, ctypes.c_uint8),
+            len(css_direct),
+            1,
+            _ptr(css_red, ctypes.c_uint8),
+            len(css_red),
+            _ptr(css_out, ctypes.c_uint8),
+            len(css_out),
+        )
+        == -1,
+        "scene_channel_constant_css mode",
     )
     ok(
         lib.xyg_clip_quantize_u8(null_f64, 0, null_u8, 0) == 1,
