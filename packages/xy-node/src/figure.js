@@ -1809,6 +1809,9 @@ export class Figure {
     // Node payload ribbon skips valid_indices_f64 gather. Python `_emit_ribbon`
     // drops null geometry rows. Matching Python would gather. Recorded
     // emit-ribbon-gather stay-host.
+    // Node payload ribbon omits transition_keys. Python `_emit_ribbon` ships
+    // them via `_transition_entry`. Matching Python would add entry.keys.
+    // Recorded emit-ribbon-transition stay-host.
     return entry;
   }
 
