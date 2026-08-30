@@ -74,7 +74,7 @@ test("Node projects Rust-owned Scene support decisions verbatim", () => {
   const customFont = new Figure(); customFont.line([0, 1], [0, 1]);
   customFont.chrome_styles = { title: { "font-family": "Example Sans" } };
   assert.throws(() => customFont.toScene(), /XYG_SCENE_UNSUPPORTED_CUSTOM_FONT/);
-  const browserCss = new Figure(); browserCss.line([0, 1], [0, 1]); browserCss.className = "browser-only";
+  const browserCss = new Figure(); browserCss.line([0, 1], [0, 1]); browserCss.class_name = "browser-only";
   assert.throws(() => browserCss.toScene(), /XYG_SCENE_UNSUPPORTED_BROWSER_CSS/);
   const defaultFont = new Figure({ width: 240, height: 160 });
   defaultFont.setAxisDomain("x", [0, 1]);
@@ -1579,7 +1579,7 @@ test("Node public Figure matches the combined Python authored Scene v25 fixture"
   assert.match(svg, /data-xy-slot="annotation_label_box"/);
   for (const [mutate, reason] of [
     [(value) => { value.chrome_styles = { title: { "font-family": "Example Sans" } }; }, /CUSTOM_FONT/],
-    [(value) => { value.className = "browser-only"; }, /BROWSER_CSS/],
+    [(value) => { value.class_name = "browser-only"; }, /BROWSER_CSS/],
     [(value) => { value.traces[0].style.fill = { type: "linear" }; }, /GRADIENT/],
   ]) {
     const rejected = new Figure({ width: fixture.viewport[0], height: fixture.viewport[1] });
