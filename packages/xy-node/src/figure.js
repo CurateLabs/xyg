@@ -1234,6 +1234,9 @@ export class Figure {
       hasPyramidResource,
       forceBin2d,
       forcePyramid,
+      // Node colorMode is style.color ? 1 : 0. Python `_density_trace_spec`
+      // uses color_ch (none/constant/other). Node scatter() does not copy
+      // color_ch onto traces. Recorded density-colormode stay-host.
       colorMode: t.style?.color ? 1 : 0,
       xMin: xmm[0],
       xMax: xmm[1],

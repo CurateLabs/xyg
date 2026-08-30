@@ -318,6 +318,20 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitScatterDensity colorMode stays style unlike Python color_ch", () => {
+  // Python color_mode follows color_ch. Node uses style.color ? 1 : 0, so
+  // density.color ships from style even when color_ch is continuous.
+  const n = 10;
+  const x = fill(n, (i) => i / n);
+  const y = fill(n, (i) => ((i * 3) % n) / n);
+  const fig = figure({ width: 320, height: 240 });
+  fig.scatter(x, y, { forceDensity: true, style: { color: "#112233" } });
+  fig.traces[0].color_ch = { mode: "continuous", colormap: "magma" };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "density");
+  assert.equal(spec.traces[0].density.color, "#112233");
+});
+
 test("lodPlan returns exact vs density for Rust budgets", () => {
   const exact = lodPlan(1_000, SCATTER_DENSITY_THRESHOLD);
   assert.equal(exact.exact, true);
