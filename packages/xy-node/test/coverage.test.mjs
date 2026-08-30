@@ -318,6 +318,17 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("buildPayload cartesian axes stay linear unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `_axis_scale` when it is not linear. Node
+  // cartesian payload axes keep scale linear. Recorded
+  // emit-payload-axis-scale stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.setAxis("x", { type: "log" });
+  fig.scatter([1, 10], [1, 10]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.scale, "linear");
+});
+
 test("_emitScatterDensity omits wasm_source unlike Python _density_trace_spec", () => {
   // Python `_density_trace_spec` ships density.wasm_source on split payloads.
   // Node density encode omits that replay source. Recorded

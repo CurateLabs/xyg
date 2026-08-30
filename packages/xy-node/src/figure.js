@@ -2054,6 +2054,9 @@ export class Figure {
     }
     const axisSpecs =
       this.coords === "polar" ? this._polarAxisSpecs(xr, yr) : {
+        // Node cartesian payload axes stay linear. Python `_axis_spec` ships
+        // `_axis_scale` when it is not linear. Matching Python would set
+        // scale to log. Recorded emit-payload-axis-scale stay-host.
         x: { range: xr, scale: "linear" },
         y: { range: yr, scale: "linear" },
       };
