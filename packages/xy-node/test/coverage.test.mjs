@@ -1560,3 +1560,15 @@ test("_emitHistogram omits animation unlike Python _transition_entry", () => {
   assert.equal(spec.traces[0].kind, "histogram");
   assert.equal(spec.traces[0].animation, undefined);
 });
+
+test("buildPayload omits cartesian axis minor_tick_values unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `minor_tick_values`. Node cartesian payload axes
+  // omit that field even when axis minor_tick_values is set. Recorded
+  // emit-payload-axis-minor-ticks stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { minor_tick_values: [0.25, 0.75] });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(fig.axis_options.x.minor_tick_values, [0.25, 0.75]);
+  assert.equal(spec.x_axis.minor_tick_values, undefined);
+});

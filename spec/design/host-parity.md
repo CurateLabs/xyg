@@ -65,6 +65,7 @@ Node `polarAxisThetaDirection` uses axis `theta_direction` only like Python `_pa
   Node `_emitScatterDensity` omits categorical color.
   Node `buildPayload` omits dom.
   Node `buildPayload` omits cartesian axis tick_values.
+  Node `buildPayload` omits cartesian axis minor_tick_values.
 ---
 
 ## 0. Three runtime surfaces (product-wide)
