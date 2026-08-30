@@ -318,6 +318,19 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitTriangleMesh omits ship scale unlike Python _axis_scale", () => {
+  // Python `_emit_triangle_mesh` passes `_axis_scale` into `pw.ship`, pinning
+  // log offset to 0. Node mesh encode keeps the column midpoint. Recorded
+  // emit-mesh-ship-scale stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.setAxis("x", { type: "log" });
+  fig.triangleMesh([1], [1], [10], [1], [5], [10]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "triangle_mesh");
+  const x0Col = spec.columns[spec.traces[0].x0];
+  assert.notEqual(x0Col.offset, 0);
+});
+
 test("_emitRibbon omits ship scale unlike Python _axis_scale", () => {
   // Python `_emit_ribbon` passes `_axis_scale` into `pw.ship`, pinning log
   // offset to 0. Node ribbon encode keeps the column midpoint. Recorded
