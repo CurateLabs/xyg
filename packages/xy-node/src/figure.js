@@ -2091,6 +2091,12 @@ export class Figure {
         // Node polar payload y scale stays linear. Python `_axis_spec` ships
         // `_axis_scale` when it is not linear. Matching Python would set
         // y_axis.scale to log. Recorded emit-polar-payload-axis-scale stay-host.
+        // Node polar payload axes omit nonpositive. Python `_axis_spec` ships
+        // `nonpositive` on log axes. Matching Python would add y_axis.nonpositive.
+        // Recorded emit-polar-payload-axis-nonpositive stay-host.
+        // Node polar payload axes omit constant. Python `_axis_spec` ships
+        // `constant` on symlog axes. Matching Python would add y_axis.constant.
+        // Recorded emit-polar-payload-axis-constant stay-host.
         scale: "linear",
         theta_unit: unit,
         theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",        // Node polar payload axes omit nonpositive. Python `_axis_spec` ships

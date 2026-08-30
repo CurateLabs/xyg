@@ -2154,3 +2154,13 @@ test("buildPayload omits polar axis nonpositive unlike Python _axis_spec", () =>
   const { spec } = fig.buildPayload();
   assert.equal(spec.y_axis.nonpositive, undefined);
 });
+
+test("buildPayload omits polar axis constant unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `constant` on symlog axes. Node `_polarAxisSpecs`
+  // omits that field. Recorded emit-polar-payload-axis-constant stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("y", { type: "symlog", constant: 2 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.y_axis.constant, undefined);
+});
