@@ -1469,6 +1469,9 @@ export class Figure {
       id: t.id,
       kind: "histogram",
       name: t.name,
+      // Node payload histogram copies t.style. Python `_emit_histogram`
+      // calls `_emit_rect`, which uses `_default_styled`. Matching Python
+      // would add style.color. Recorded emit-hist-default-styled stay-host.
       style: { ...t.style },
       tier: "direct",
       n_points: t.count ?? t.x0.length,

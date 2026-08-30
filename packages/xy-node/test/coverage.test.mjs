@@ -318,6 +318,18 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitHistogram copies t.style unlike Python _default_styled", () => {
+  // Python `_emit_histogram` calls `_emit_rect`, which uses `_default_styled`
+  // to fill palette color when style.color is missing. Node histogram encode
+  // copies t.style. Recorded emit-hist-default-styled stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
+  fig.traces[0].style = { opacity: 0.9 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "histogram");
+  assert.equal(spec.traces[0].style.color, undefined);
+});
+
 test("_emitHexbin copies t.style unlike Python _default_styled", () => {
   // Python `_emit_hexbin` uses `_default_styled` to fill palette color when
   // style.color is missing. Node hexbin encode copies t.style. Recorded
