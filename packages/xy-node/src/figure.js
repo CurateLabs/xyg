@@ -94,7 +94,8 @@ export { PROTOCOL_VERSION };
 let nextTraceId = 1;
 
 function asF64(value) {
-  if (value instanceof Float64Array) return value;
+  if (value instanceof Float64Array) return value;// next-trace-id-base stay-host.
+
   if (value == null) return new Float64Array(0);
   return Float64Array.from(value, Number);
 }
