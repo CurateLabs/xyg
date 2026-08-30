@@ -318,6 +318,19 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitScatterDensity sample omits size_ch unlike Python _ship_channels", () => {
+  // Python `_density_sample_spec` ships size_ch as sample.size. Node density
+  // overlay keeps no size field even when size_ch is present.
+  // Recorded emit-density-sample-size stay-host.
+  const fig = figure({ width: 320, height: 240 });
+  fig.scatter([0, 1], [0, 1], { forceDensity: true });
+  fig.traces[0].size_ch = { mode: "constant", constant: 8 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "density");
+  assert.notEqual(spec.traces[0].density.sample, undefined);
+  assert.equal(spec.traces[0].density.sample.size, undefined);
+});
+
 test("_emitScatterDensity sample omits color_ch unlike Python _ship_channels", () => {
   // Python `_density_sample_spec` ships color_ch as sample.color. Node density
   // overlay keeps no color field even when color_ch is present.
