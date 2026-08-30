@@ -1164,6 +1164,9 @@ export class Figure {
     // Recorded scatter-ship-color stay-host.
     const color = this._shipColor(t.color, pw, sel);
     if (color != null) entry.color = color;
+    // Node payload scatter ships t.sizeValues. Python `_emit_scatter` ships
+    // size_ch via `_ship_channels`. Matching Python would ignore t.sizeValues.
+    // Recorded emit-scatter-size stay-host.
     if (t.sizeValues != null) {
       let values = t.sizeValues instanceof Float64Array
         ? t.sizeValues
