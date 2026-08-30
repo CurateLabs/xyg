@@ -318,6 +318,17 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("buildPayload omits wasm_density unlike Python build_payload", () => {
+  // Python `build_payload` attaches wasm_density from split
+  // density.wasm_source. Node split payloads omit that field. Recorded
+  // emit-payload-wasm-density stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([1, 10], [1, 10], { forceDensity: true });
+  const { spec } = fig.buildPayload({ split: true });
+  assert.equal(spec.traces[0].tier, "density");
+  assert.equal(spec.wasm_density, undefined);
+});
+
 test("buildPayload cartesian axes stay linear unlike Python _axis_spec", () => {
   // Python `_axis_spec` ships `_axis_scale` when it is not linear. Node
   // cartesian payload axes keep scale linear. Recorded
