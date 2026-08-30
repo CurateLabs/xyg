@@ -1800,3 +1800,15 @@ test("buildPayload omits cartesian axis constant unlike Python _axis_spec", () =
   assert.equal(fig.axis_options.x.constant, 2);
   assert.equal(spec.x_axis.constant, undefined);
 });
+
+test("buildPayload omits cartesian axis categories unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `_axis_categories` for category axes. Node
+  // cartesian payload axes omit that field even when categories are set.
+  // Recorded emit-payload-axis-categories stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig._axis_categories = { x: ["a", "b"] };
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(fig._axis_categories.x, ["a", "b"]);
+  assert.equal(spec.x_axis.categories, undefined);
+});

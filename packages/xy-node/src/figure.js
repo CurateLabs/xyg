@@ -2246,6 +2246,12 @@ export class Figure {
         // Node cartesian payload axes omit nonpositive. Python `_axis_spec`
         // ships `nonpositive` on log axes. Matching Python would add
         // x_axis.nonpositive. Recorded emit-payload-axis-nonpositive stay-host.
+        // Node cartesian payload axes omit constant. Python `_axis_spec` ships
+        // `constant` on symlog axes. Matching Python would add x_axis.constant.
+        // Recorded emit-payload-axis-constant stay-host.
+        // Node cartesian payload axes omit categories. Python `_axis_spec`
+        // ships `_axis_categories` for category axes. Matching Python would add
+        // x_axis.categories. Recorded emit-payload-axis-categories stay-host.
         x: { range: xr, scale: "linear" },
         y: { range: yr, scale: "linear" },
       };
