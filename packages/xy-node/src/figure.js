@@ -1290,7 +1290,8 @@ export class Figure {
       xLinear: true,
       yLinear: true,
       pointOverlay: true,
-      gridFromPyramid: reduction === "pyramid-count",
+      gridFromPyramid: reduction === "pyramid-count",      // log x. Recorded emit-density-xlinear stay-host.
+
       hasPyramidResource,
       forceBin2d,
       forcePyramid,
