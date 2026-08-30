@@ -149,6 +149,11 @@ export function scatterPayloadForceDirect(trace) {
   return (trace ?? {}).force_direct;
 }
 
+/** Payload pyramid override. Python `_emit_scatter` does not read `style.force_pyramid`. */
+export function scatterPayloadForcePyramid(trace) {
+  return (trace ?? {}).force_pyramid;
+}
+
 /** Autorange axis record. Python `_axis_scale` / `_range` read `axis_options` only. */
 export function figureAutorangeAxisOptions(figure, axisId) {
   return (figure ?? {}).axis_options?.[axisId] ?? {};
@@ -1028,7 +1033,7 @@ export class Figure {
   _emitScatter(t, pw, xr, yr) {
     const forceDensity = Boolean(scatterPayloadForceDensity(t));
     const forceDirect = Boolean(scatterPayloadForceDirect(t));
-    const forcePyramid = Boolean(t.force_pyramid ?? t.style?.force_pyramid);
+    const forcePyramid = Boolean(scatterPayloadForcePyramid(t));
     if (
       shouldUseDensity(t.x.length, {
         forceDensity: forceDensity || forcePyramid,
@@ -1098,7 +1103,7 @@ export class Figure {
     let reduction = "bin2d";
     let tiles = null;
     const forceBin2d = Boolean(t.force_bin2d ?? t.style?.force_bin2d);
-    const forcePyramid = Boolean(t.force_pyramid ?? t.style?.force_pyramid);
+    const forcePyramid = Boolean(scatterPayloadForcePyramid(t));
     const noRescan = Boolean(t.no_rescan ?? t.style?.no_rescan);
     const forceSpill = Boolean(t.pyramid_spill ?? t.style?.pyramid_spill);
     let hasPyramidResource = false;
