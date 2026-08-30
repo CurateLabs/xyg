@@ -919,6 +919,7 @@ Node `figureTraceSupport` uses `style.linecap` only like Python `_figure_trace_s
 Node `packXyTcLinecap` uses `style.linecap` only like Python `_pack_xytc`; `lineCap` is not a packed-linecap fallback.
 Node `packXyAfLinecap` uses `style.linecap` only like Python `_pack_xyaf`; `lineCap` is not an annotation-linecap fallback.
 Node `scatterUsesDensity` does not pass `force_direct` like Python `use_density`; `forceDirect` / `force_direct` are not density-direct overrides.
+Node hexbin XYTA values packing uses `color_ch` only like Python `_pack_xyta`; `colorChannel` is not a hexbin-grid values fallback.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1399,6 +1400,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `packXyTcLinecap` uses `style.linecap` only.
   Node `packXyAfLinecap` uses `style.linecap` only.
   Node `scatterUsesDensity` does not pass `force_direct`.
+  Node hexbin XYTA values packing uses `color_ch` only.
 ---
 
 ## 4. Delivery order

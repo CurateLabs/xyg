@@ -3865,8 +3865,12 @@ function xyTaColormapStopBytes(colormap) {
   }
 }
 
+export function hexbinXyTaColorChannel(trace) {
+  return (trace ?? {}).color_ch;
+}
+
 export function hexbinXyTaColormap(trace) {
-  const channel = trace.color_ch;
+  const channel = hexbinXyTaColorChannel(trace);
   return packXyTaColormap({ style: { colormap: channel?.colormap } });
 }
 
@@ -3940,7 +3944,7 @@ function packXyTa(figure, xDomain, yDomain) {
       }
     } else if (kindClass & SCENE_KIND_CLASS_HEXBIN && hexbinPacksColormapPlane(trace)) {
       flags |= XYTA_HEATMAP | XYTA_SHAPE | XYTA_HAS_GRID;
-      const channel = trace.color_ch ?? trace.colorChannel;
+      const channel = hexbinXyTaColorChannel(trace);
       const values = channel?.values;
       grid = packF64Le(values);
       rows = 1;
