@@ -5870,6 +5870,8 @@ export function itemFillRgba8(trace, n) {
 export function itemStrokeRgba8(trace, fills, n) {
   const strokeCh = trace.stroke_ch;
   if (strokeCh != null && strokeCh.mode === "match_fill") return fills;
+  // Node `??` keeps empty `style.stroke`. Python `_item_stroke_rgba8`
+  // uses `.get("stroke") or "transparent"`. Recorded item-stroke-empty stay-host.
   const fallback = String((trace.style ?? {}).stroke ?? "transparent");
   const packed = channelEndRgba8(strokeCh, n, fallback);
   if (packed != null) return packed;

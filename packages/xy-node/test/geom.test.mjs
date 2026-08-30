@@ -796,6 +796,15 @@ test("itemFillRgba8 uses color_ch only like Python", () => {
   assert.deepEqual([...fromCamel], [...fallback]);
 });
 
+test("itemStrokeRgba8 empty style.stroke stays unlike Python or-default", () => {
+  // Python `_item_stroke_rgba8` uses `.get("stroke") or "transparent"`.
+  // Node `??` keeps the empty string, which is not the transparent fallback.
+  const fills = new Uint8Array([1, 2, 3, 4]);
+  const missing = itemStrokeRgba8({}, fills, 1);
+  const empty = itemStrokeRgba8({ style: { stroke: "" } }, fills, 1);
+  assert.notDeepEqual([...empty], [...missing]);
+});
+
 test("itemStrokeRgba8 uses stroke_ch only like Python", () => {
   const fills = new Uint8Array([1, 2, 3, 4]);
   assert.equal(itemStrokeRgba8({ stroke_ch: { mode: "match_fill" } }, fills, 1), fills);
