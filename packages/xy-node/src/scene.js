@@ -4799,6 +4799,11 @@ export function figureExtraLegends(figure) {
   return (figure ?? {}).extra_legends;
 }
 
+/** Title options. Python `_pack_public_export_support` reads `title_options` only. */
+export function figureTitleOptions(figure) {
+  return (figure ?? {}).title_options;
+}
+
 /** Annotation CSS class. Python `_pack_figure_support` reads `annotation.get("class_name")` only. */
 export function annotationClassName(annotation) {
   return (annotation ?? {}).class_name;
@@ -5050,7 +5055,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
   if (height == null && !Number.isInteger(figure.height)) flags |= 1 << 1;
   const chrome = figureChromeStyles(figure);
   if (chrome && Object.keys(chrome).length) flags |= 1 << 2;
-  const titleOptions = figure.titleOptions ?? figure.title_options;
+  const titleOptions = figureTitleOptions(figure);
   if (titleOptions && (Array.isArray(titleOptions) ? titleOptions.length : titleOptions)) flags |= 1 << 3;
   if ((figure.coords ?? "cartesian") === "polar") flags |= 1 << 4;
   const styleKeys = Object.keys(figure.style ?? {});
