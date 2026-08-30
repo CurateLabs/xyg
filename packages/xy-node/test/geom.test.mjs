@@ -1419,6 +1419,16 @@ test("setPolarMeta writes axis theta_zero like Python set_axis", () => {
   assert.equal(polarAxisThetaZero(figureAutorangeAxisOptions(leftover, "x")), "E");
 });
 
+test("setPolarMeta writes axis theta_direction like Python set_axis", () => {
+  const fig = figure();
+  fig.setPolarMeta({ thetaDirection: "clockwise" });
+  assert.equal(polarAxisThetaDirection(figureAutorangeAxisOptions(fig, "x")), "clockwise");
+  const leftover = figure();
+  leftover._polarMeta = { thetaDirection: "clockwise" };
+  leftover.coords = "polar";
+  assert.equal(polarAxisThetaDirection(figureAutorangeAxisOptions(leftover, "x")), undefined);
+});
+
 test("figureAxisIsLog uses axis type only like Python _axis_scale log", () => {
   assert.equal(figureAxisIsLog({}, "x"), false);
   assert.equal(figureAxisIsLog({ xAxis: { type: "log" } }, "x"), false);
