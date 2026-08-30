@@ -1645,6 +1645,9 @@ export class Figure {
     if (tier === "decimated") {
       entry.decimation_px = pxWidth;
     }
+    // Node payload area omits transition_keys. Python `_emit_area` ships them
+    // via `_transition_entry`. Matching Python would add entry.keys.
+    // Recorded emit-area-transition stay-host.
     return entry;
   }
 
