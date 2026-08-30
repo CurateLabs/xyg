@@ -1503,6 +1503,16 @@ test("_polarAxisSpecs uses axis theta_direction like Python _axis_spec", () => {
   assert.equal(leftover._polarAxisSpecs([0, 1], [0, 1]).x.theta_direction, "counterclockwise");
 });
 
+test("_polarAxisSpecs uses axis grid_shape like Python _axis_spec", () => {
+  const fig = figure();
+  fig.setPolarMeta({ gridShape: "linear" });
+  assert.equal(fig._polarAxisSpecs([0, 1], [0, 1]).x.grid_shape, "linear");
+  const leftover = figure();
+  leftover.coords = "polar";
+  leftover._polarMeta = { gridShape: "linear" };
+  assert.equal(leftover._polarAxisSpecs([0, 1], [0, 1]).x.grid_shape, "circular");
+});
+
 test("figureAxisIsLog uses axis type only like Python _axis_scale log", () => {
   assert.equal(figureAxisIsLog({}, "x"), false);
   assert.equal(figureAxisIsLog({ xAxis: { type: "log" } }, "x"), false);
