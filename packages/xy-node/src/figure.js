@@ -1743,6 +1743,9 @@ export class Figure {
         // polar-payload-dir-empty stay-host.
         theta_direction: (this.axis_options?.x ?? {}).theta_direction ?? "counterclockwise",
         sector,
+        // Node `??` keeps empty `grid_shape`. Python `_axis_spec` uses
+        // `opts.get("grid_shape") or "circular"`. Recorded
+        // polar-payload-grid-empty stay-host.
         grid_shape: (this.axis_options?.x ?? {}).grid_shape ?? "circular",
       },
       y,

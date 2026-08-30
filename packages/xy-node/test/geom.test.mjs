@@ -1553,6 +1553,14 @@ test("_polarAxisSpecs uses axis theta_direction like Python _axis_spec", () => {
   assert.equal(leftover._polarAxisSpecs([0, 1], [0, 1]).x.theta_direction, "counterclockwise");
 });
 
+test("_polarAxisSpecs empty grid_shape stays unlike Python or-default", () => {
+  // Python `_axis_spec` uses `opts.get("grid_shape") or "circular"`.
+  // Node `??` keeps the empty string.
+  const fig = figure();
+  fig.setPolarMeta({ gridShape: "" });
+  assert.equal(fig._polarAxisSpecs([0, 1], [0, 1]).x.grid_shape, "");
+});
+
 test("_polarAxisSpecs uses axis grid_shape like Python _axis_spec", () => {
   const fig = figure();
   fig.setPolarMeta({ gridShape: "linear" });
