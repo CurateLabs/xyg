@@ -99,6 +99,7 @@ import {
   axisTickLabelStrategy,
   figureXLabel,
   figureChromeStyles,
+  chromeStyleHasFontFamily,
   figureYLabel,
   plotTopAxisRoom,
   polarAxisThetaDirection,
@@ -1174,6 +1175,13 @@ test("figureChromeStyles uses chrome_styles only like Python", () => {
   assert.equal(figureChromeStyles({}), undefined);
   assert.equal(figureChromeStyles({ chromeStyles: { x: { color: "red" } } }), undefined);
   assert.deepEqual(figureChromeStyles({ chrome_styles: { x: { color: "red" } } }), { x: { color: "red" } });
+});
+
+test("chromeStyleHasFontFamily uses font-family key only like Python", () => {
+  assert.equal(chromeStyleHasFontFamily({}), false);
+  assert.equal(chromeStyleHasFontFamily({ fontFamily: "Example Sans" }), false);
+  assert.equal(chromeStyleHasFontFamily({ "font-family": "Example Sans" }), true);
+  assert.equal(chromeStyleHasFontFamily({ "font-family": "" }), true);
 });
 
 test("figureXLabel uses x_label then axis label like Python", () => {

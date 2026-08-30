@@ -72,7 +72,7 @@ test("Node projects Rust-owned Scene support decisions verbatim", () => {
   assert.equal((polarHexSvg.match(/<path d="M /g) ?? []).length, polarHex.traces[0].x.length);
   assert.equal(sceneExportSupportReason(polarHex), null);
   const customFont = new Figure(); customFont.line([0, 1], [0, 1]);
-  customFont.chrome_styles = { title: { fontFamily: "Example Sans" } };
+  customFont.chrome_styles = { title: { "font-family": "Example Sans" } };
   assert.throws(() => customFont.toScene(), /XYG_SCENE_UNSUPPORTED_CUSTOM_FONT/);
   const browserCss = new Figure(); browserCss.line([0, 1], [0, 1]); browserCss.className = "browser-only";
   assert.throws(() => browserCss.toScene(), /XYG_SCENE_UNSUPPORTED_BROWSER_CSS/);
@@ -1578,7 +1578,7 @@ test("Node public Figure matches the combined Python authored Scene v25 fixture"
   assert.match(svg, /data-xy-slot="colorbar_tick"/);
   assert.match(svg, /data-xy-slot="annotation_label_box"/);
   for (const [mutate, reason] of [
-    [(value) => { value.chrome_styles = { title: { fontFamily: "Example Sans" } }; }, /CUSTOM_FONT/],
+    [(value) => { value.chrome_styles = { title: { "font-family": "Example Sans" } }; }, /CUSTOM_FONT/],
     [(value) => { value.className = "browser-only"; }, /BROWSER_CSS/],
     [(value) => { value.traces[0].style.fill = { type: "linear" }; }, /GRADIENT/],
   ]) {
