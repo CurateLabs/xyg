@@ -318,6 +318,21 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitArea omits transition_keys unlike Python _transition_entry", () => {
+  // Python `_emit_area` ships transition_keys as `keys`. Node area payload
+  // keeps no keys field even when transition_keys is present.
+  // Recorded emit-area-transition stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.area([0, 1], [0, 1]);
+  fig.traces[0].transition_keys = [
+    [1, 2],
+    [3, 4],
+  ];
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "area");
+  assert.equal(spec.traces[0].keys, undefined);
+});
+
 test("_emitLine omits transition_keys unlike Python _transition_entry", () => {
   // Python `_emit_line` ships transition_keys as `keys`. Node line payload
   // keeps no keys field even when transition_keys is present.
