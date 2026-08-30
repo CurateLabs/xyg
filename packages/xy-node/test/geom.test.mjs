@@ -86,6 +86,7 @@ import {
   hexbinStylePitch,
   heatmapGridShape,
   polarGridShape,
+  polarCollisionKeys,
   polarAxisThetaUnit,
   polarAxisThetaZero,
   polarAxisROrigin,
@@ -1153,6 +1154,19 @@ test("axisTickLabelStrategy uses tick_label_strategy then collision like Python"
   assert.equal(axisTickLabelStrategy({ tick_label_strategy: "hide" }), "hide");
   assert.equal(axisTickLabelStrategy({ collision: "rotate" }), "rotate");
   assert.equal(axisTickLabelStrategy({ tick_label_strategy: "hide", collision: "rotate" }), "hide");
+});
+
+test("polarCollisionKeys uses snake-case keys only like Python", () => {
+  const keys = polarCollisionKeys();
+  assert.equal(keys.has("tick_label_strategy"), true);
+  assert.equal(keys.has("collision"), true);
+  assert.equal(keys.has("tick_label_min_gap"), true);
+  assert.equal(keys.has("tick_label_angle"), true);
+  assert.equal(keys.has("tick_label_anchor"), true);
+  assert.equal(keys.has("tickLabelStrategy"), false);
+  assert.equal(keys.has("tickLabelMinGap"), false);
+  assert.equal(keys.has("tickLabelAngle"), false);
+  assert.equal(keys.has("tickLabelAnchor"), false);
 });
 
 test("figureXLabel uses x_label then axis label like Python", () => {

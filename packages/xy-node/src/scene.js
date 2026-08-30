@@ -2781,16 +2781,17 @@ function sceneTickStrategy(options) {
   return SCENE_TICK_STRATEGY_NAMES[code] ?? "auto";
 }
 
+/** Polar collision keys skipped when strategy is none/off/auto. Python `_POLAR_COLLISION_KEYS` is snake-case only. */
+export function polarCollisionKeys() {
+  return POLAR_COLLISION_KEYS;
+}
+
 const POLAR_COLLISION_KEYS = new Set([
   "tick_label_strategy",
-  "tickLabelStrategy",
   "collision",
   "tick_label_min_gap",
-  "tickLabelMinGap",
   "tick_label_angle",
-  "tickLabelAngle",
   "tick_label_anchor",
-  "tickLabelAnchor",
 ]);
 
 function significantSceneAxisKeys(options, polar = false) {
@@ -2803,7 +2804,7 @@ function significantSceneAxisKeys(options, polar = false) {
     })
     .map(([key]) => key);
   if (polar && ["none", "off", "auto"].includes(sceneTickStrategy(options))) {
-    keys = keys.filter((key) => !POLAR_COLLISION_KEYS.has(key));
+    keys = keys.filter((key) => !polarCollisionKeys().has(key));
   }
   return keys;
 }
