@@ -1,13 +1,14 @@
 """Arrow-annotation path geometry shared by the SVG and raster exporters.
 
 Admission is ABI 217 ``xyg_arrow_geometry`` / shaft / taper / trim / end
-decoration so Python and Node cannot drift. Style keys stay host-parsed:
-``curve`` (matplotlib arc3 rad — quadratic bulge as a fraction of chord
-length), ``angle_a``/``angle_b`` (matplotlib angle3/angle departure/arrival
-angles, degrees, y-up screen space), ``elbow``, ``gap_start``/``gap_end``,
-``start_offset`` (an "x,y" px shift), ``label_clear`` (a "left,right,up,down"
-px rectangle), ``head_style``/``tail_style`` (``triangle``/``v``/``bar``/
-``none``) and ``head_size``.
+decoration so Python and Node cannot drift. ABI 254 ``xyg_arrow_style_pack``
+owns comma-separated ``start_offset`` / ``label_clear`` packing. Hosts still
+coerce style keys and elbow truthiness. ChartView ``51_annotations.ts`` keeps
+the same CSV parse until WASM. Remaining host-only keys: ``curve`` (matplotlib
+arc3 rad — quadratic bulge as a fraction of chord length), ``angle_a``/
+``angle_b`` (matplotlib angle3/angle departure/arrival angles, degrees, y-up
+screen space), ``elbow``, ``gap_start``/``gap_end``, ``head_style``/
+``tail_style`` (``triangle``/``v``/``bar``/``none``) and ``head_size``.
 """
 
 from __future__ import annotations
@@ -26,38 +27,25 @@ def _number(value: Any) -> Optional[float]:
     return number if math.isfinite(number) else None
 
 
+def _finite_or_nan(value: Any) -> float:
+    number = _number(value)
+    return math.nan if number is None else number
+
+
 def _pack_style(style: dict[str, Any]) -> list[float]:
-    packed = [math.nan] * 12
     raw_offset = style.get("start_offset")
-    if isinstance(raw_offset, str):
-        offset = [_number(part) for part in raw_offset.split(",")]
-        if len(offset) == 2 and None not in offset:
-            packed[0] = offset[0] if offset[0] is not None else math.nan
-            packed[1] = offset[1] if offset[1] is not None else math.nan
-    angle_a = _number(style.get("angle_a"))
-    angle_b = _number(style.get("angle_b"))
-    if angle_a is not None:
-        packed[2] = angle_a
-    if angle_b is not None:
-        packed[3] = angle_b
-    curve = _number(style.get("curve"))
-    if curve is not None:
-        packed[4] = curve
-    gap_start = _number(style.get("gap_start"))
-    gap_end = _number(style.get("gap_end"))
-    if gap_start is not None:
-        packed[5] = gap_start
-    if gap_end is not None:
-        packed[6] = gap_end
     raw_clear = style.get("label_clear")
-    if isinstance(raw_clear, str):
-        parts = [_number(part) for part in raw_clear.split(",")]
-        extents = [part for part in parts if part is not None and part >= 0]
-        if len(parts) == 4 and len(extents) == 4:
-            packed[7], packed[8], packed[9], packed[10] = extents
-    if style.get("elbow"):
-        packed[11] = 1.0
-    return packed
+    packed = kernels.arrow_style_pack(
+        raw_offset if isinstance(raw_offset, str) else None,
+        _finite_or_nan(style.get("angle_a")),
+        _finite_or_nan(style.get("angle_b")),
+        _finite_or_nan(style.get("curve")),
+        _finite_or_nan(style.get("gap_start")),
+        _finite_or_nan(style.get("gap_end")),
+        raw_clear if isinstance(raw_clear, str) else None,
+        1.0 if style.get("elbow") else math.nan,
+    )
+    return [float(value) for value in packed]
 
 
 def _unpack_geom(out: Any) -> dict[str, Any]:

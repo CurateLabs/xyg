@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import math
 
-from xyg._arrowgeom import arrow_geometry
+from xyg._arrowgeom import _pack_style, arrow_geometry
 
 
 def test_label_clear_trims_start_along_departure_tangent():
@@ -51,9 +51,12 @@ def test_start_offset_shifts_the_departure_point():
 
 
 def test_start_offset_malformed_values_are_ignored():
-    for bad in ("", "5", "5,x", 7):
+    for bad in ("", "5", "5,x", "1,", "1,2,3", 7):
         geom = arrow_geometry(0, 0, 300, 0, {"start_offset": bad})
         assert geom["p0"] == (0, 0)
+        if isinstance(bad, str):
+            packed = _pack_style({"start_offset": bad})
+            assert math.isnan(packed[0]) and math.isnan(packed[1])
 
 
 def test_label_clear_never_swallows_short_arrows():

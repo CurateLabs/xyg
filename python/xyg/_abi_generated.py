@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 253
-SIGNATURE_SHA256 = "9cd1c105eb8a874a11eb48e9798f84d99cf43ea7f7b8a470f048916448a5fdc0"
+ABI_VERSION = 254
+SIGNATURE_SHA256 = "037437b67681618783b882658c5de4069ea553e257584955c311a6641711dd5a"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -34,6 +34,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_arrow_shaft_points
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_int32, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_arrow_style_pack(const uint8_t * start_offset, size_t start_offset_len, double start_angle, double end_angle, double curve, double gap_start, double gap_end, const uint8_t * label_clear, size_t label_clear_len, double elbow, double * out, size_t out_len)
+    function = lib.xyg_arrow_style_pack
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_double, ctypes.c_void_p, ctypes.c_size_t]
     # size_t xyg_arrow_taper_polygon(const double * x, const double * y, size_t n, double width_start, double width_end, double * out_x, double * out_y, size_t capacity)
     function = lib.xyg_arrow_taper_polygon
     function.restype = ctypes.c_size_t

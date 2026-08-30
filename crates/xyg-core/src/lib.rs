@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 253;
+pub const ABI_VERSION: u32 = 254;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5960,6 +5960,88 @@ pub unsafe extern "C" fn xyg_arrow_geometry(
             return 0;
         };
         i32::from(arrow_geom::write_arrow_geometry(&geom, out).is_some())
+    })
+}
+
+/// Annotation-arrow style CSV pack (ABI 254).
+///
+/// Writes 12 f64s (NaN = absent): start offset xy, angle_a/b, curve,
+/// gap_start/end, label-clear left/right/up/down, elbow. Empty native
+/// pointers are null/`0`. Empty CSV tokens and non-finite parts fail that
+/// CSV (slots stay NaN). `start_offset` packs only at exactly two parts;
+/// `label_clear` packs only at exactly four non-negative parts. Returns `0`
+/// on success, negative on bad args. `out_len` must be 12.
+///
+/// # Safety
+/// `start_offset` must address `start_offset_len` readable bytes when
+/// `start_offset_len` is non-zero. `label_clear` must address
+/// `label_clear_len` readable bytes when `label_clear_len` is non-zero.
+/// `out` must address `out_len` writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_arrow_style_pack(
+    start_offset: *const u8,
+    start_offset_len: usize,
+    start_angle: f64,
+    end_angle: f64,
+    curve: f64,
+    gap_start: f64,
+    gap_end: f64,
+    label_clear: *const u8,
+    label_clear_len: usize,
+    elbow: f64,
+    out: *mut f64,
+    out_len: usize,
+) -> i32 {
+    if start_offset_len > 0 && start_offset.is_null() {
+        return -1;
+    }
+    if label_clear_len > 0 && label_clear.is_null() {
+        return -1;
+    }
+    if out_len != arrow_geom::ARROW_STYLE_LEN || out.is_null() {
+        return -1;
+    }
+    ffi_guard(-1, || {
+        let offset_bytes = if start_offset_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(start_offset, start_offset_len)
+        };
+        let clear_bytes = if label_clear_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(label_clear, label_clear_len)
+        };
+        let Ok(offset_text) = std::str::from_utf8(offset_bytes) else {
+            return -1;
+        };
+        let Ok(clear_text) = std::str::from_utf8(clear_bytes) else {
+            return -1;
+        };
+        let out = std::slice::from_raw_parts_mut(out, out_len);
+        if arrow_geom::arrow_style_pack(
+            if start_offset_len == 0 {
+                None
+            } else {
+                Some(offset_text)
+            },
+            start_angle,
+            end_angle,
+            curve,
+            gap_start,
+            gap_end,
+            if label_clear_len == 0 {
+                None
+            } else {
+                Some(clear_text)
+            },
+            elbow,
+            out,
+        ) {
+            0
+        } else {
+            -1
+        }
     })
 }
 
