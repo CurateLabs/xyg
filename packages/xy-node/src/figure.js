@@ -1762,6 +1762,9 @@ export class Figure {
       tier: "direct",
       n_points: t.n_points ?? t.x.length,
       n_marks: xv.length,
+      // Node payload hexbin omits ship scale. Python `_emit_hexbin` passes
+      // `_axis_scale` into `ship_values`. Matching Python would pin log-axis
+      // offset to 0. Recorded emit-hexbin-ship-scale stay-host.
       x: pw.ship(xv, shipX),
       y: pw.ship(yv, shipY),
       // Node payload hexbin ships metric. Python `_emit_hexbin` ships color
