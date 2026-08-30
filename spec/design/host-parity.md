@@ -110,6 +110,7 @@ Node `polarAxisThetaDirection` uses axis `theta_direction` only like Python `_pa
   Node `_polarAxisSpecs` omits axis tick_label_angle.
   Node `_polarAxisSpecs` omits axis tick_label_strategy.
   Node `_polarAxisSpecs` omits axis tick_label_anchor.
+  Node `_polarAxisSpecs` omits axis tick_label_min_gap.
 ---
 
 ## 0. Three runtime surfaces (product-wide)
