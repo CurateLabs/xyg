@@ -1311,6 +1311,9 @@ export class Figure {
       if (sx.length > 0) {
         const sampleX = new Column(sx);
         const sampleY = new Column(sy);
+        // Node density sample omits ship scale. Python `_density_sample_spec`
+        // passes `_axis_scale` into `pw.ship_values`. Matching Python would
+        // pin log-axis offset to 0. Recorded emit-density-sample-ship-scale stay-host.
         const xCol = pw.ship(sx, sampleX);
         const yCol = pw.ship(sy, sampleY);
         const opacityRaw = Number(t.style?.opacity ?? 0.8);
