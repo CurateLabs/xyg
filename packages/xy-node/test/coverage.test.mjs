@@ -318,6 +318,17 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitScatterDensity omits wasm_source unlike Python _density_trace_spec", () => {
+  // Python `_density_trace_spec` ships density.wasm_source on split payloads.
+  // Node density encode omits that replay source. Recorded
+  // emit-density-wasm-source stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([1, 10], [1, 10], { forceDensity: true });
+  const { spec } = fig.buildPayload({ split: true });
+  assert.equal(spec.traces[0].tier, "density");
+  assert.equal(spec.traces[0].density.wasm_source, undefined);
+});
+
 test("_emitScatterDensity sample omits ship scale unlike Python _axis_scale", () => {
   // Python `_density_sample_spec` passes `_axis_scale` into `pw.ship_values`,
   // pinning log offset to 0. Node density sample encode keeps the column
