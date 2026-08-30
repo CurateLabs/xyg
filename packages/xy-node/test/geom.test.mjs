@@ -111,6 +111,7 @@ import {
   figureAxisOptions,
   figureAutorangeAxisOptions,
   scatterPayloadForceDensity,
+  scatterPayloadForceDirect,
   annotationClassName,
   figureYLabel,
   plotTopAxisRoom,
@@ -1269,6 +1270,12 @@ test("scatterPayloadForceDensity uses force_density only like Python", () => {
   assert.equal(scatterPayloadForceDensity({}), undefined);
   assert.equal(scatterPayloadForceDensity({ style: { force_density: true } }), undefined);
   assert.equal(scatterPayloadForceDensity({ force_density: true }), true);
+});
+
+test("scatterPayloadForceDirect uses force_direct only like Python", () => {
+  assert.equal(scatterPayloadForceDirect({}), undefined);
+  assert.equal(scatterPayloadForceDirect({ style: { force_direct: true } }), undefined);
+  assert.equal(scatterPayloadForceDirect({ force_direct: true }), true);
 });
 
 test("figureXLabel uses x_label then axis label like Python", () => {
