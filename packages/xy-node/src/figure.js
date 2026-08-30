@@ -1722,7 +1722,7 @@ export class Figure {
         scale: "linear",
         theta_unit: unit,
         theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",
-        theta_direction: meta.thetaDirection ?? "counterclockwise",
+        theta_direction: (this.axis_options?.x ?? {}).theta_direction ?? "counterclockwise",
         sector,
         grid_shape: meta.gridShape ?? "circular",
       },
