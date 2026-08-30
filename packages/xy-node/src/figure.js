@@ -1504,6 +1504,9 @@ export class Figure {
       y0: pw.ship(t.y0, y0),
       x1: pw.ship(t.x1, x1),
       y1: pw.ship(t.y1, y1),
+      // Node payload mesh ships x/y for the third vertex. Python
+      // `_emit_triangle_mesh` ships x2/y2. Matching Python would rename these
+      // keys. Recorded emit-mesh-xy stay-host.
       x: pw.ship(t.x, x2),
       y: pw.ship(t.y, y2),
       x_axis: t.x_axis ?? "x",
