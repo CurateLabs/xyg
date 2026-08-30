@@ -1112,6 +1112,10 @@ export class Figure {
     const forceDensity = Boolean(scatterPayloadForceDensity(t));
     const forceDirect = Boolean(scatterPayloadForceDirect(t));
     const forcePyramid = Boolean(scatterPayloadForcePyramid(t));
+    // Node still passes forceDirect into shouldUseDensity. Python
+    // `_emit_scatter` never passes force_direct (ABI defaults false).
+    // Dropping it would ship density for Node `forceDirect: true` on
+    // large scatters. Recorded emit-force-direct stay-host.
     if (
       shouldUseDensity(t.x.length, {
         forceDensity: forceDensity || forcePyramid,
