@@ -1410,6 +1410,9 @@ export class Figure {
     // Node payload histogram omits stroke_ch. Python `_emit_histogram` calls
     // `_emit_rect`, which ships stroke_ch via `_ship_trace_styles`. Matching
     // Python would add entry.stroke. Recorded emit-hist-stroke stay-host.
+    // Node payload histogram omits style_channels. Python `_emit_histogram`
+    // calls `_emit_rect`, which ships them as `channels` via `_ship_trace_styles`.
+    // Matching Python would add entry.channels. Recorded emit-hist-channels stay-host.
     return {
       id: t.id,
       kind: "histogram",
