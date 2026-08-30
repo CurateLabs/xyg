@@ -5523,7 +5523,7 @@ export function figureTraceSupport(figure, trace) {
       flags |= XYFS_TRACE_DASHED_MARKERS;
     }
   }
-  const linecap = style.linecap ?? style.lineCap;
+  const linecap = style.linecap;
   if (linecap != null && parseSceneLinecap(linecap) === false) {
     flags |= XYFS_TRACE_DASHED_MARKERS;
   }
