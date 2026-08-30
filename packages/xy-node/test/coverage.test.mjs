@@ -1952,3 +1952,13 @@ test("buildPayload omits polar axis minor_tick_values unlike Python _axis_spec",
   assert.equal(spec.x_axis.minor_tick_values, undefined);
 });
 
+test("buildPayload omits polar axis tick_labels unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_labels` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-labels stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_labels: ["a", "b"] });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_labels, undefined);
+});
+
