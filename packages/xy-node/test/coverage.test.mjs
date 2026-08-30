@@ -318,6 +318,19 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitHistogram skips rectFiniteSel unlike Python _emit_rect", () => {
+  // Python `_emit_histogram` calls `_emit_rect`, which drops non-finite rows
+  // via `_rect_finite_sel`. Node histogram payload keeps every bin even when
+  // a geometry column has NaN. Recorded emit-hist-finite-sel stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
+  const nBins = fig.traces[0].x0.length;
+  fig.traces[0].x0[0] = Number.NaN;
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "histogram");
+  assert.equal(spec.traces[0].n_marks, nBins);
+});
+
 test("_emitArea omits transition_keys unlike Python _transition_entry", () => {
   // Python `_emit_area` ships transition_keys as `keys`. Node area payload
   // keeps no keys field even when transition_keys is present.
