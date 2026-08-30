@@ -1318,6 +1318,11 @@ export function polarAxisThetaUnit(thetaAxis) {
   return (thetaAxis ?? {}).theta_unit ?? "radians";
 }
 
+/** Polar theta-axis zero. Python `_pack_polar_scene_input` / `polar_layout` read `theta_axis.get("theta_zero", "E")` only. */
+export function polarAxisThetaZero(thetaAxis) {
+  return (thetaAxis ?? {}).theta_zero ?? "E";
+}
+
 /** Polar theta-axis grid. Python `_pack_polar_scene_input` reads `xa.get("grid_shape", "circular")` only. */
 export function polarGridShape(thetaAxis) {
   return (thetaAxis ?? {}).grid_shape ?? "circular";
@@ -1360,7 +1365,7 @@ export function packPolarSceneInput(figure) {
   out[24] = grid === "linear" ? 1 : 0;
   out[25] = scale.maskNonpositive ? 1 : 0;
   view.setUint16(26, 0, true);
-  view.setFloat64(28, polarThetaZero(thetaAxis.theta_zero ?? thetaAxis.thetaZero ?? "E"), true);
+  view.setFloat64(28, polarThetaZero(polarAxisThetaZero(thetaAxis)), true);
   view.setFloat64(36, Number(sector[0]), true);
   view.setFloat64(44, Number(sector[1]), true);
   view.setFloat64(52, Number(rLo), true);
@@ -1843,7 +1848,7 @@ export function polarLayout(thetaAxis = {}, rAxis = {}, plot = {}) {
     Number(plot.w ?? 0),
     Number(plot.h ?? 0),
     polarThetaUnit(unit),
-    polarThetaZero(thetaAxis.theta_zero ?? thetaAxis.thetaZero ?? "E"),
+    polarThetaZero(polarAxisThetaZero(thetaAxis)),
     polarThetaDirection(thetaAxis.theta_direction ?? thetaAxis.thetaDirection),
     Number(sector[0]),
     Number(sector[1]),
