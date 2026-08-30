@@ -2810,7 +2810,7 @@ function significantSceneAxisKeys(options, polar = false) {
 }
 
 function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
-  const chromeStyles = figure.chromeStyles ?? figure.chrome_styles ?? {};
+  const chromeStyles = figureChromeStyles(figure) ?? {};
   const annotations = [...(figure.annotations ?? [])];
   let flags = 0;
   if (figure.coords !== "cartesian") flags |= 1 << 0;
@@ -4772,6 +4772,11 @@ export function axisTickLabels(axis) {
   return (axis ?? {}).tick_labels;
 }
 
+/** Chrome styles record. Python `_pack_figure_support` / XYEF observations read `chrome_styles` only. */
+export function figureChromeStyles(figure) {
+  return (figure ?? {}).chrome_styles;
+}
+
 /** Chrome x-axis label. Python `_pack_figure_chrome` reads `figure.x_label` then `axis.get("label")`. */
 export function figureXLabel(figure, xAxis) {
   return (figure ?? {}).x_label ?? (xAxis ?? {}).label;
@@ -5016,7 +5021,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
   let flags = 0;
   if (width == null && !Number.isInteger(figure.width)) flags |= 1 << 0;
   if (height == null && !Number.isInteger(figure.height)) flags |= 1 << 1;
-  const chrome = figure.chromeStyles ?? figure.chrome_styles;
+  const chrome = figureChromeStyles(figure);
   if (chrome && Object.keys(chrome).length) flags |= 1 << 2;
   const titleOptions = figure.titleOptions ?? figure.title_options;
   if (titleOptions && (Array.isArray(titleOptions) ? titleOptions.length : titleOptions)) flags |= 1 << 3;

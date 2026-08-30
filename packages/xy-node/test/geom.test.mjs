@@ -98,6 +98,7 @@ import {
   axisTickLabelMinGap,
   axisTickLabelStrategy,
   figureXLabel,
+  figureChromeStyles,
   figureYLabel,
   plotTopAxisRoom,
   polarAxisThetaDirection,
@@ -1167,6 +1168,12 @@ test("polarCollisionKeys uses snake-case keys only like Python", () => {
   assert.equal(keys.has("tickLabelMinGap"), false);
   assert.equal(keys.has("tickLabelAngle"), false);
   assert.equal(keys.has("tickLabelAnchor"), false);
+});
+
+test("figureChromeStyles uses chrome_styles only like Python", () => {
+  assert.equal(figureChromeStyles({}), undefined);
+  assert.equal(figureChromeStyles({ chromeStyles: { x: { color: "red" } } }), undefined);
+  assert.deepEqual(figureChromeStyles({ chrome_styles: { x: { color: "red" } } }), { x: { color: "red" } });
 });
 
 test("figureXLabel uses x_label then axis label like Python", () => {
