@@ -1201,6 +1201,9 @@ export class Figure {
     // Node payload scatter omits transition_keys. Python `_emit_scatter` ships
     // them via `_transition_entry`. Matching Python would add entry.keys.
     // Recorded emit-scatter-transition stay-host.
+    // Node payload scatter omits animation. Python `_base_entry` ships
+    // t.animation. Matching Python would add entry.animation. Recorded
+    // emit-scatter-animation stay-host.
     return entry;
   }
 

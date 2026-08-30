@@ -318,6 +318,17 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitScatter omits animation unlike Python _base_entry", () => {
+  // Python `_base_entry` ships t.animation. Node scatter encode omits that
+  // field. Recorded emit-scatter-animation stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "scatter");
+  assert.equal(spec.traces[0].animation, undefined);
+});
+
 test("_emitRibbon skips tooltip_rows length unlike Python _attach_tooltip_rows", () => {
   // Python `_attach_tooltip_rows` rejects a mismatch with n_points. Node
   // ribbon encode ships the short list. Recorded emit-ribbon-tooltip-len
