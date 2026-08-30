@@ -101,7 +101,9 @@ import {
   figureXLabel,
   figureChromeStyles,
   chromeAxisMinorStyle,
+  chromeAxisStyleHas,
   chromeAxisStyleKeys,
+  chromeAxisStyleValue,
   chromeAxisTickSides,
   chromeAxisTickLabelSides,
   chromeStyleHasFontFamily,
@@ -1247,6 +1249,15 @@ test("chromeAxisStyleKeys admits snake-case keys only like Python", () => {
   assert.equal(keys.has("tickDirection"), false);
   assert.equal(keys.has("tickLabelColor"), false);
   assert.equal(keys.has("labelColor"), false);
+});
+
+test("chromeAxisStyleHas and chromeAxisStyleValue read snake-case keys only like Python", () => {
+  assert.equal(chromeAxisStyleHas({}, "axis_color"), false);
+  assert.equal(chromeAxisStyleHas({ axisColor: "#f00" }, "axis_color"), false);
+  assert.equal(chromeAxisStyleHas({ axis_color: "#f00" }, "axis_color"), true);
+  assert.equal(chromeAxisStyleValue({}, "grid_color", "#202020"), "#202020");
+  assert.equal(chromeAxisStyleValue({ gridColor: "#0f0" }, "grid_color", "#202020"), "#202020");
+  assert.equal(chromeAxisStyleValue({ grid_color: "#0f0" }, "grid_color", "#202020"), "#0f0");
 });
 
 test("chromeStyleHasFontFamily uses font-family key only like Python", () => {
