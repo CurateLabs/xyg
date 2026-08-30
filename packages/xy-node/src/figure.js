@@ -653,7 +653,10 @@ export class Figure {
     if (opts._composed) {
       this.traces.push({
         id: opts.id ?? nextTraceId++,
-        kind: "scatter",
+        kind: "scatter",    // Node payload density scatter omits animation. Python `_transition_entry`
+    // ships t.animation on the density path. Matching Python would add
+    // entry.animation. Recorded emit-density-animation stay-host.
+
         name: opts.name ?? null,
         // Node scatter stores f64, not Column.kind. Python Column infers
         // time_ms. Recorded scatter-f64-kind stay-host.
