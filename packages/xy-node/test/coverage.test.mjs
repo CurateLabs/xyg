@@ -2144,3 +2144,13 @@ test("buildPayload polar y stays linear unlike Python _axis_spec", () => {
   const { spec } = fig.buildPayload();
   assert.equal(spec.y_axis.scale, "linear");
 });
+
+test("buildPayload omits polar axis nonpositive unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `nonpositive` on log axes. Node `_polarAxisSpecs`
+  // omits that field. Recorded emit-polar-payload-axis-nonpositive stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("y", { type: "log", nonpositive: "mask" });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.y_axis.nonpositive, undefined);
+});

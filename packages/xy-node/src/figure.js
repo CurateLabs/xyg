@@ -2093,7 +2093,10 @@ export class Figure {
         // y_axis.scale to log. Recorded emit-polar-payload-axis-scale stay-host.
         scale: "linear",
         theta_unit: unit,
-        theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",        // Node polar payload axes omit style. Python `_axis_spec` ships
+        theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",        // Node polar payload axes omit nonpositive. Python `_axis_spec` ships
+        // `nonpositive` on log axes. Matching Python would add y_axis.nonpositive.
+        // Recorded emit-polar-payload-axis-nonpositive stay-host.
+        // Node polar payload axes omit style. Python `_axis_spec` ships
         // `compiled axis `style``. Matching Python would add x_axis.style. Recorded
         // emit-polar-payload-axis-style stay-host.
         // Node polar payload axes omit tick_label_min_gap. Python `_axis_spec` ships
