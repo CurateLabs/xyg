@@ -93,6 +93,7 @@ import {
   axisMinorTickValues,
   axisTickLabels,
   axisTickLabelAnchor,
+  axisTickLabelMinGap,
   figureXLabel,
   figureYLabel,
   plotTopAxisRoom,
@@ -1130,6 +1131,12 @@ test("axisTickLabelAnchor uses tick_label_anchor only like Python", () => {
   assert.equal(axisTickLabelAnchor({}), undefined);
   assert.equal(axisTickLabelAnchor({ tickLabelAnchor: "end" }), undefined);
   assert.equal(axisTickLabelAnchor({ tick_label_anchor: "end" }), "end");
+});
+
+test("axisTickLabelMinGap uses tick_label_min_gap only like Python", () => {
+  assert.equal(axisTickLabelMinGap({}), undefined);
+  assert.equal(axisTickLabelMinGap({ tickLabelMinGap: 4 }), undefined);
+  assert.equal(axisTickLabelMinGap({ tick_label_min_gap: 4 }), 4);
 });
 
 test("figureXLabel uses x_label then axis label like Python", () => {
