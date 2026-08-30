@@ -1705,14 +1705,6 @@ export class Figure {
   }
 
   _polarAxisSpecs(xr, yr) {
-    const meta = this._polarMeta ?? {
-      thetaUnit: "radians",
-      thetaZero: "E",
-      thetaDirection: "counterclockwise",
-      hole: 0.0,
-      sector: null,
-      gridShape: "circular",
-    };
     const unit = figureAutorangeThetaUnit(this.axis_options?.x) ?? "radians";
     const turn = unit === "degrees" ? 360.0 : 2.0 * Math.PI;
     const authoredSector = (this.axis_options?.x ?? {}).sector;
@@ -1730,7 +1722,7 @@ export class Figure {
       y: {
         range: yr,
         scale: "linear",
-        hole: meta.hole ?? 0.0,
+        hole: (this.axis_options?.y ?? {}).hole ?? 0.0,
       },
     };
   }

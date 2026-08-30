@@ -1523,6 +1523,16 @@ test("_polarAxisSpecs uses axis sector like Python _axis_spec", () => {
   assert.deepEqual(leftover._polarAxisSpecs([0, 1], [0, 1]).x.sector, [0, 2 * Math.PI]);
 });
 
+test("_polarAxisSpecs uses axis hole like Python _axis_spec", () => {
+  const fig = figure();
+  fig.setPolarMeta({ hole: 0.25 });
+  assert.equal(fig._polarAxisSpecs([0, 1], [0, 1]).y.hole, 0.25);
+  const leftover = figure();
+  leftover.coords = "polar";
+  leftover._polarMeta = { hole: 0.25 };
+  assert.equal(leftover._polarAxisSpecs([0, 1], [0, 1]).y.hole, 0.0);
+});
+
 test("figureAxisIsLog uses axis type only like Python _axis_scale log", () => {
   assert.equal(figureAxisIsLog({}, "x"), false);
   assert.equal(figureAxisIsLog({ xAxis: { type: "log" } }, "x"), false);
