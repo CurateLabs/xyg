@@ -83,6 +83,7 @@ import {
   packXyTcStrokeWidth,
   hexbinXyTaColorChannel,
   hexbinXyTaColormap,
+  hexbinStylePitch,
   heatmapGridShape,
   constantMarkColor,
   xyHfColormap,
@@ -1056,6 +1057,13 @@ test("heatmapGridShape uses grid_shape only like Python", () => {
   assert.equal(heatmapGridShape({}), undefined);
   assert.equal(heatmapGridShape({ gridShape: [2, 3] }), undefined);
   assert.deepEqual(heatmapGridShape({ grid_shape: [2, 3] }), [2, 3]);
+});
+
+test("hexbinStylePitch uses hex_dx then dx like Python", () => {
+  assert.deepEqual(hexbinStylePitch({}), { hex_dx: undefined, hex_dy: undefined });
+  assert.deepEqual(hexbinStylePitch({ hexDx: 1, hexDy: 2 }), { hex_dx: undefined, hex_dy: undefined });
+  assert.deepEqual(hexbinStylePitch({ hex_dx: 1, hex_dy: 2 }), { hex_dx: 1, hex_dy: 2 });
+  assert.deepEqual(hexbinStylePitch({ dx: 3, dy: 4 }), { hex_dx: 3, hex_dy: 4 });
 });
 
 

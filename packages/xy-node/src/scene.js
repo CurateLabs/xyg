@@ -3459,8 +3459,9 @@ function packXyTc(figure) {
     let hexDy = Number.NaN;
     if (kindClass & SCENE_KIND_CLASS_HEXBIN) {
       flags |= XYTC_HAS_HEX;
-      if (style.hex_dx != null || style.dx != null) hexDx = Number(style.hex_dx ?? style.dx);
-      if (style.hex_dy != null || style.dy != null) hexDy = Number(style.hex_dy ?? style.dy);
+      const pitch = hexbinStylePitch(style);
+      if (pitch.hex_dx != null) hexDx = Number(pitch.hex_dx);
+      if (pitch.hex_dy != null) hexDy = Number(pitch.hex_dy);
     }
     flags |= packXyTcStrokePerimeter(style, kindClass);
     let dashB = new Uint8Array();
@@ -3877,6 +3878,15 @@ export function hexbinXyTaColormap(trace) {
 /** Heatmap lattice shape. Python `_heatmap_shape` / `_pack_xyta` read `trace.grid_shape` only. */
 export function heatmapGridShape(trace) {
   return (trace ?? {}).grid_shape;
+}
+
+/** Hexbin cell pitch. Python `_hexbin_pitch` / `_pack_xytc` read `style.get("hex_dx", style.get("dx"))` only. */
+export function hexbinStylePitch(style) {
+  const record = style ?? {};
+  return {
+    hex_dx: record.hex_dx ?? record.dx,
+    hex_dy: record.hex_dy ?? record.dy,
+  };
 }
 
 function packXyTa(figure, xDomain, yDomain) {
@@ -5084,8 +5094,9 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
     const reduce = style.reduce == null ? "" : String(style.reduce);
     let hexDx = Number.NaN, hexDy = Number.NaN;
     if (sceneKindClass(trace.kind) & SCENE_KIND_CLASS_HEXBIN) {
-      hexDx = Number(style.hex_dx ?? style.hexDx ?? style.dx);
-      hexDy = Number(style.hex_dy ?? style.hexDy ?? style.dy);
+      const pitch = hexbinStylePitch(style);
+      hexDx = Number(pitch.hex_dx);
+      hexDy = Number(pitch.hex_dy);
       if (!sceneHexbinPitchAdmit(hexDx, hexDy)) {
         hexDx = Number.NaN;
         hexDy = Number.NaN;
