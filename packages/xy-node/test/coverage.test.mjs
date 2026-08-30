@@ -318,6 +318,29 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitScatter omits animation unlike Python _base_entry", () => {
+  // Python `_base_entry` ships t.animation. Node scatter encode omits that
+  // field. Recorded emit-scatter-animation stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "scatter");
+  assert.equal(spec.traces[0].animation, undefined);
+});
+
+test("_emitRibbon skips tooltip_rows length unlike Python _attach_tooltip_rows", () => {
+  // Python `_attach_tooltip_rows` rejects a mismatch with n_points. Node
+  // ribbon encode ships the short list. Recorded emit-ribbon-tooltip-len
+  // stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.ribbon([0], [1], [0], [1], [0], [1]);
+  fig.traces[0].tooltip_rows = [{ id: "a" }, { id: "b" }];
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "ribbon");
+  assert.equal(spec.traces[0].tooltip_rows.length, 2);
+});
+
 test("_emitSegments skips tooltip_rows length unlike Python _attach_tooltip_rows", () => {
   // Python `_attach_tooltip_rows` rejects a mismatch with n_points. Node
   // segments encode ships the short list. Recorded emit-segments-tooltip-len
@@ -1317,3 +1340,38 @@ test("sankeyChart emits ribbon bands", () => {
   const { spec } = sankeyChart(nodes, links).buildPayload();
   assert.ok(spec.traces.some((t) => t.kind === "ribbon"));
 });
+
+test("_emitLine omits animation unlike Python _base_entry", () => {
+  // Python `_base_entry` ships t.animation. Node line encode omits that
+  // field. Recorded emit-line-animation stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.line([0, 1], [0, 1]);
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "line");
+  assert.equal(spec.traces[0].animation, undefined);
+});
+
+test("_emitArea omits animation unlike Python _base_entry", () => {
+  // Python `_base_entry` ships t.animation. Node area encode omits that
+  // field. Recorded emit-area-animation stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.area([0, 1], [0, 1]);
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "area");
+  assert.equal(spec.traces[0].animation, undefined);
+});
+
+test("_emitHistogram omits animation unlike Python _transition_entry", () => {
+  // Python `_emit_histogram` calls `_emit_rect`, which ships t.animation via
+  // `_transition_entry`. Node histogram encode omits that field. Recorded
+  // emit-hist-animation stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "histogram");
+  assert.equal(spec.traces[0].animation, undefined);
+});
+

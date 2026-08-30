@@ -1,3 +1,5 @@
+    // emit-area-animation stay-host.
+    // emit-line-animation stay-host.
 /**
  * Minimal Node figure — holds scatter/line/histogram/segments traces and builds
  * a §29-ish payload subset (PROTOCOL_VERSION matches Python).
@@ -709,7 +711,8 @@ export class Figure {
     const t = composed.traces[0];
     this.traces.push({
       id: opts.id ?? nextTraceId++,
-      kind: "histogram",
+      kind: "histogram",    // Python would add entry.animation. Recorded emit-hist-animation stay-host.
+
       name: t.name,
       x0: t.x0,
       x1: t.x1,
@@ -1201,6 +1204,9 @@ export class Figure {
     // Node payload scatter omits transition_keys. Python `_emit_scatter` ships
     // them via `_transition_entry`. Matching Python would add entry.keys.
     // Recorded emit-scatter-transition stay-host.
+    // Node payload scatter omits animation. Python `_base_entry` ships
+    // t.animation. Matching Python would add entry.animation. Recorded
+    // emit-scatter-animation stay-host.
     return entry;
   }
 
@@ -1911,7 +1917,12 @@ export class Figure {
     // ribbon-color-target stay-host.
     const colorTarget = this._shipColor(t.color_target, pw);
     if (colorTarget != null) entry.color_target = colorTarget;
-    if (t.tooltip_rows != null) entry.tooltip_rows = t.tooltip_rows;
+    if (t.tooltip_rows != null) {
+      // Node payload ribbon skips tooltip_rows length. Python
+      // `_attach_tooltip_rows` rejects a mismatch with n_points. Matching
+      // Python would throw. Recorded emit-ribbon-tooltip-len stay-host.
+      entry.tooltip_rows = t.tooltip_rows;
+    }
     // Node payload ribbon omits stroke_ch. Python `_emit_ribbon` ships
     // stroke_ch via `_ship_trace_styles`. Matching Python would add
     // entry.stroke. Recorded emit-ribbon-stroke stay-host.
