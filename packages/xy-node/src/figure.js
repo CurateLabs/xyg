@@ -1709,6 +1709,13 @@ export class Figure {
     const turn = unit === "degrees" ? 360.0 : 2.0 * Math.PI;
     const authoredSector = (this.axis_options?.x ?? {}).sector;
     const sector = authoredSector != null ? [...authoredSector] : [0.0, turn];
+    const yOpts = this.axis_options?.y ?? {};
+    const y = {
+      range: yr,
+      scale: "linear",
+      hole: yOpts.hole ?? 0.0,
+    };
+    if (yOpts.r_origin != null) y.r_origin = yOpts.r_origin;
     return {
       x: {
         range: xr,
@@ -1719,11 +1726,7 @@ export class Figure {
         sector,
         grid_shape: (this.axis_options?.x ?? {}).grid_shape ?? "circular",
       },
-      y: {
-        range: yr,
-        scale: "linear",
-        hole: (this.axis_options?.y ?? {}).hole ?? 0.0,
-      },
+      y,
     };
   }
 
