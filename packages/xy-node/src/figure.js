@@ -1300,6 +1300,9 @@ export class Figure {
       // uses `_axis_scale == "linear"`. Matching Python would pass false on
       // log x. Recorded emit-density-xlinear stay-host.
       yLinear: true,
+      // Node density emit plan yLinear stays true. Python `_density_trace_spec`
+      // uses `_axis_scale == "linear"`. Matching Python would pass false on
+      // log y. Recorded emit-density-ylinear stay-host.
       pointOverlay: true,
       gridFromPyramid: reduction === "pyramid-count",
       hasPyramidResource,
