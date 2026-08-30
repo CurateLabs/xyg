@@ -1950,6 +1950,9 @@ export class Figure {
     // Node payload ribbon omits transition_keys. Python `_emit_ribbon` ships
     // them via `_transition_entry`. Matching Python would add entry.keys.
     // Recorded emit-ribbon-transition stay-host.
+    // Node payload ribbon omits animation. Python `_emit_ribbon` ships
+    // t.animation via `_transition_entry`. Matching Python would add
+    // entry.animation. Recorded emit-ribbon-animation stay-host.
     return entry;
   }
 
