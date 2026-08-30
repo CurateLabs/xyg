@@ -102,6 +102,7 @@ import {
   figureChromeStyles,
   chromeAxisMinorStyle,
   chromeAxisTickSides,
+  chromeAxisTickLabelSides,
   chromeStyleHasFontFamily,
   figureClassName,
   figureClassNames,
@@ -1213,6 +1214,12 @@ test("chromeAxisTickSides uses tick_sides only like Python", () => {
   assert.equal(chromeAxisTickSides({}), undefined);
   assert.deepEqual(chromeAxisTickSides({ tickSides: ["top"] }), undefined);
   assert.deepEqual(chromeAxisTickSides({ tick_sides: ["top"] }), ["top"]);
+});
+
+test("chromeAxisTickLabelSides uses tick_label_sides only like Python", () => {
+  assert.equal(chromeAxisTickLabelSides({}), undefined);
+  assert.deepEqual(chromeAxisTickLabelSides({ tickLabelSides: ["top"] }), undefined);
+  assert.deepEqual(chromeAxisTickLabelSides({ tick_label_sides: ["top"] }), ["top"]);
 });
 
 test("chromeStyleHasFontFamily uses font-family key only like Python", () => {
