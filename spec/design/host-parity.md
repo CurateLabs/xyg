@@ -116,6 +116,7 @@ publish waits on the `@curatelabs` npm org (#13).
   Node `_emitScatterDensity` visible stays n_points.
   Node `_emitScatterDensity` sample.visible stays n.
   Node density Scene omits scatter `color_ch`.
+  Node `composeScatter` omits `color`.
 ---
 
 ## 0. Three runtime surfaces (product-wide)

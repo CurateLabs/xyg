@@ -2216,3 +2216,16 @@ test("density Scene uses viridis unlike Python color_ch palette", () => {
   assert.equal(scene.includes(palette), false);
 });
 
+test("composeScatter omits color unlike Python color_ch Scene", () => {
+  // Python marks.scatter sets color_ch from color=, so Scene paints #112233.
+  // Node composeScatter ignores color, so Scene keeps palette #3987e5.
+  // Recorded scene-scatter-color-ch stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [1, 2], { color: "#112233" });
+  const scene = Buffer.from(fig.toScene());
+  const authored = Buffer.from([0x11, 0x22, 0x33]);
+  const palette = Buffer.from([0x39, 0x87, 0xe5]);
+  assert.equal(scene.includes(palette), true);
+  assert.equal(scene.includes(authored), false);
+});
+
