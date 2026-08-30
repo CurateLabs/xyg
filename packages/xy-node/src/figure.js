@@ -1740,7 +1740,8 @@ export class Figure {
     });
     let xv = t.x;
     let yv = t.y;
-    let bv = t.base;
+    let bv = t.base;    // Recorded emit-area-m4-bin-x stay-host.
+
     let tier = "direct";
     if (tierCode === 1) {
       xv = gatherF64(xv, indices);
