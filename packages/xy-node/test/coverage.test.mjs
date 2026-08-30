@@ -1420,3 +1420,15 @@ test("_emitSegments omits animation unlike Python _transition_entry", () => {
   assert.equal(spec.traces[0].kind, "segments");
   assert.equal(spec.traces[0].animation, undefined);
 });
+
+test("_emitScatterDensity omits animation unlike Python _transition_entry", () => {
+  // Python `_transition_entry` ships t.animation on the density path. Node
+  // density encode omits that field. Recorded emit-density-animation stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1], { forceDensity: true });
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "density");
+  assert.equal(spec.traces[0].animation, undefined);
+});
+
