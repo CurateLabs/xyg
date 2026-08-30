@@ -1201,7 +1201,8 @@ export class Figure {
         range_px: t.sizeRange ?? [8, 22],
         domain: [lo, hi],
         buf: pw.shipScalar(norm),
-      };        // x_axis.nonpositive. Recorded emit-payload-axis-nonpositive stay-host.
+      };        // x_axis.categories. Recorded emit-payload-axis-categories stay-host.
+        // x_axis.nonpositive. Recorded emit-payload-axis-nonpositive stay-host.
         // Recorded emit-payload-axis-minor-style stay-host.
         // x_axis.tick_label_anchor. Recorded emit-payload-axis-tick-label-anchor
         // x_axis.tick_label_angle. Recorded emit-payload-axis-tick-label-angle
