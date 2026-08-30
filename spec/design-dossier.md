@@ -1494,7 +1494,7 @@ hosts still color the returned source indices.
 ABI 208 `xyg_geometry_offset` / `xyg_f32_safe_scale` owns §4/§16 encode
 offset and the §19 f32-safe scale so Python and Node cannot drift.
 ABI 216 `xyg_scale_pins_offset` owns log-family `pin_zero` admission
-(`log`/`symlog`, case-sensitive). ABI 254 `xyg_encoded_column_meta` owns
+(`log`/`symlog`, case-sensitive). ABI 255 `xyg_encoded_column_meta` owns
 `EncodedColumn` offset/scale/kind-presence packing. Hosts still copy the
 original kind string.
 ABI 217 `xyg_arrow_geometry` / `xyg_arrow_shaft_points` /
@@ -1665,16 +1665,13 @@ ABI 253 `xyg_scene_hidden_or_per_item_admit` owns Scene hidden-or-per-item
 admit (`hidden || (has_per_item && !density_aggregates)`) so Python
 `_figure_trace_support_flags` and Node `figureTraceSupport` cannot drift.
 Field picking stays host.
-<<<<<<< HEAD
 ABI 254 `xyg_arrow_style_pack` owns annotation-arrow `start_offset` /
 `label_clear` CSV pack (12 f64s, NaN = absent) so Python `_pack_style` and
 Node `packArrowStyle` cannot drift. ChartView still parses those strings
 until WASM. Hosts still coerce style keys and elbow truthiness.
-=======
-ABI 254 `xyg_encoded_column_meta` owns EncodedColumn offset/scale/kind-presence
+ABI 255 `xyg_encoded_column_meta` owns EncodedColumn offset/scale/kind-presence
 packing so Python `lod.encode_f32_values` and Node `encodeF32Values` cannot
 drift. Hosts still copy the original kind string.
->>>>>>> f6e3e258 (Move EncodedColumn offset/scale/kind-presence packing into ABI 254)
 Python `colormap_lut_rgba8` and Node `colormapLutRgba8` sample 256
 unit-t texels through ABI 206 `xyg_colormap_lut` then host-pack alpha
 255 so the density LUT cannot drift on half-up vs ties-to-even.
@@ -1820,7 +1817,7 @@ cannot drift on cap-attached errorbar sampling. Hosts still expand
 transition-key role maps, gather extra columns, and ship the chosen rows.
 ABI 216 `xyg_scale_pins_offset` owns log-family `pin_zero` admission
 (`log`/`symlog`, case-sensitive) so Python `lod.pins_offset_to_zero` and
-Node `pinsOffsetToZero` cannot drift. ABI 254 `xyg_encoded_column_meta` owns
+Node `pinsOffsetToZero` cannot drift. ABI 255 `xyg_encoded_column_meta` owns
 `EncodedColumn` offset/scale/kind-presence packing so Python
 `lod.encode_f32_values` and Node `encodeF32Values` cannot drift. Hosts still
 copy the original kind string.
@@ -1992,16 +1989,13 @@ ABI 253 `xyg_scene_hidden_or_per_item_admit` owns Scene hidden-or-per-item
 admit (`hidden || (has_per_item && !density_aggregates)`) so Python
 `_figure_trace_support_flags` and Node `figureTraceSupport` cannot drift.
 Field picking stays host.
-<<<<<<< HEAD
 ABI 254 `xyg_arrow_style_pack` owns annotation-arrow `start_offset` /
 `label_clear` CSV pack (12 f64s, NaN = absent) so Python `_pack_style` and
 Node `packArrowStyle` cannot drift. ChartView still parses those strings
 until WASM. Hosts still coerce style keys and elbow truthiness.
-=======
-ABI 254 `xyg_encoded_column_meta` owns EncodedColumn offset/scale/kind-presence
+ABI 255 `xyg_encoded_column_meta` owns EncodedColumn offset/scale/kind-presence
 packing so Python `lod.encode_f32_values` and Node `encodeF32Values` cannot
 drift. Hosts still copy the original kind string.
->>>>>>> f6e3e258 (Move EncodedColumn offset/scale/kind-presence packing into ABI 254)
 Python `colormap_lut_rgba8` and Node `colormapLutRgba8` sample 256
 unit-t texels through ABI 206 `xyg_colormap_lut` then host-pack alpha
 255 so the density LUT cannot drift on half-up vs ties-to-even.

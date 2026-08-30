@@ -958,7 +958,7 @@ def geometry_offset(pin_zero: bool, lo: float, hi: float) -> float:
 def encoded_column_meta(
     offset: float, lo: float, hi: float, kind: str | None = None
 ) -> tuple[float, float, bool]:
-    """Pack EncodedColumn offset/scale/kind-presence via ``xyg_encoded_column_meta`` (ABI 254).
+    """Pack EncodedColumn offset/scale/kind-presence via ``xyg_encoded_column_meta`` (ABI 255).
 
     Empty native pointers are ``0``. A present empty kind keeps a non-null
     pointer with ``kind_len == 0``. Hosts copy the original kind value.

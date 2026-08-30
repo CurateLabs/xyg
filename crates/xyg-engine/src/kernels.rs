@@ -1935,7 +1935,7 @@ pub fn f32_safe_scale(offset: f64, lo: f64, hi: f64) -> f64 {
     }
 }
 
-/// Pack EncodedColumn wire metadata (ABI 254).
+/// Pack EncodedColumn wire metadata (ABI 255).
 ///
 /// Echoes `offset`, writes [`f32_safe_scale`], and reports whether a `kind`
 /// string is present. `None` omits `kind`; `Some` includes it, including the

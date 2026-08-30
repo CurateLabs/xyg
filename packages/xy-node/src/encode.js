@@ -675,7 +675,7 @@ export function f32SafeScale(offset, lo, hi) {
   return out[0];
 }
 
-/** EncodedColumn offset/scale/kind-presence (ABI 254). Hosts copy the original kind. */
+/** EncodedColumn offset/scale/kind-presence (ABI 255). Hosts copy the original kind. */
 export function encodedColumnMeta(offset, lo, hi, kind = null) {
   const out = new Float64Array(2);
   let kindPtr = 0;

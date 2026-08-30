@@ -6301,7 +6301,7 @@ pub unsafe extern "C" fn xyg_f32_safe_scale(
     })
 }
 
-/// Pack EncodedColumn offset/scale/kind-presence (ABI 254, §16/§19).
+/// Pack EncodedColumn offset/scale/kind-presence (ABI 255, §16/§19).
 ///
 /// Writes `out[0] = offset` and `out[1] = f32_safe_scale(offset, lo, hi)`.
 /// Returns `1` when `kind` is present (non-null pointer, including

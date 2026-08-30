@@ -81,7 +81,7 @@ Tiered chart kinds must enter through the common LOD primitives in
   window/domain midpoint on linear axes, pinned 0.0 on log-family axes
   (dossier §16). ABI 208 `xyg_geometry_offset` / `xyg_f32_safe_scale` owns
   the numeric policy. ABI 216 `xyg_scale_pins_offset` owns log-family
-  `pin_zero` admission (`log`/`symlog`). ABI 254 `xyg_encoded_column_meta`
+  `pin_zero` admission (`log`/`symlog`). ABI 255 `xyg_encoded_column_meta`
   owns `EncodedColumn` offset/scale/kind-presence packing; hosts still copy
   the original kind string.
 - `sample_rows_for_target(...)` is the shared target-bounded subset primitive:

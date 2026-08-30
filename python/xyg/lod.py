@@ -865,7 +865,7 @@ def encode_f32_values(
     expected numeric domain used to pick an f32-safe scale. Windowed updates
     usually pass viewport bounds; first-payload columns pass canonical column
     bounds. The optional `kind` rides only in first-payload column tables.
-    Offset, scale, and kind presence are ABI 254 ``xyg_encoded_column_meta``.
+    Offset, scale, and kind presence are ABI 255 ``xyg_encoded_column_meta``.
     """
     vals = np.ascontiguousarray(np.asarray(values, dtype=np.float64).ravel())
     offset_f, scale, has_kind = kernels.encoded_column_meta(
