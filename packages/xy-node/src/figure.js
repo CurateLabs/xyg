@@ -1644,6 +1644,9 @@ export class Figure {
       n_marks: xv.length,
       x: pw.ship(xv, shipX),
       y: pw.ship(yv, shipY),
+      // Node payload hexbin ships metric. Python `_emit_hexbin` ships color
+      // from color_ch. Matching Python would call `_shipColor`. Recorded
+      // hexbin-metric stay-host.
       metric: pw.ship(mv, mCol),
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",

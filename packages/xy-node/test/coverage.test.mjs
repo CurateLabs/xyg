@@ -318,6 +318,18 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitHexbin ships metric unlike Python color_ch", () => {
+  // Python `_emit_hexbin` ships color from color_ch. Node hexbin() stores
+  // both metric and color_ch, but payload keeps metric. Recorded hexbin-metric stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.hexbin([0, 1, 0, 1, 0.5], [0, 0, 1, 1, 0.5], { gridsize: 4 });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "hexbin");
+  assert.ok(spec.traces[0].metric != null);
+  assert.equal(spec.traces[0].color, undefined);
+  assert.ok(fig.traces[0].color_ch != null);
+});
+
 test("_emitScatterDensity colorMode stays style unlike Python color_ch", () => {
   // Python color_mode follows color_ch. Node uses style.color ? 1 : 0, so
   // density.color ships from style even when color_ch is continuous.
