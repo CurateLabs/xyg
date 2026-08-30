@@ -435,6 +435,7 @@ export class Figure {
     this.title = opts.title ?? null;
     this.coords = opts.coords ?? "cartesian";
     this.showLegend = opts.showLegend ?? true;
+    this.show_legend = this.showLegend;
     // These are deliberately inert host snapshots. `figureSceneV3` is the
     // only validation/packing seam, so Node cannot grow a competing chrome
     // layout or default-resolution policy.
