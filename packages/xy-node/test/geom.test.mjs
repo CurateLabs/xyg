@@ -23,7 +23,6 @@ import {
   markerPathScale,
   arrowGeometry,
   arrowShaftPoints,
-  packArrowStyle,
   pinsOffsetToZero,
   quantizeUnitU8,
   sceneDashAdmit,
@@ -165,6 +164,7 @@ import {
   roundedRectPoly,
   stepArrays,
 } from "../src/index.js";
+import { packArrowStyle } from "../src/encode.js";
 
 test("geometryOffset pins log family and nonfinite to zero", () => {
   assert.equal(pinsOffsetToZero("log"), true);
