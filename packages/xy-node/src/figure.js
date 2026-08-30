@@ -1911,7 +1911,12 @@ export class Figure {
     // ribbon-color-target stay-host.
     const colorTarget = this._shipColor(t.color_target, pw);
     if (colorTarget != null) entry.color_target = colorTarget;
-    if (t.tooltip_rows != null) entry.tooltip_rows = t.tooltip_rows;
+    if (t.tooltip_rows != null) {
+      // Node payload ribbon skips tooltip_rows length. Python
+      // `_attach_tooltip_rows` rejects a mismatch with n_points. Matching
+      // Python would throw. Recorded emit-ribbon-tooltip-len stay-host.
+      entry.tooltip_rows = t.tooltip_rows;
+    }
     // Node payload ribbon omits stroke_ch. Python `_emit_ribbon` ships
     // stroke_ch via `_ship_trace_styles`. Matching Python would add
     // entry.stroke. Recorded emit-ribbon-stroke stay-host.
