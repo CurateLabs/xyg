@@ -105,6 +105,7 @@ import {
   chromeAxisStyleHas,
   chromeAxisStyleKeys,
   chromeAxisStyleValue,
+  chromeAxisTickKind,
   chromeAxisTickSides,
   chromeAxisTickLabelSides,
   chromeStyleHasFontFamily,
@@ -119,6 +120,7 @@ import {
   figureAutorangeAxisOptions,
   figureAutorangeAxisScale,
   figureAxisKind,
+  figure,
   scatterPayloadForceBin2d,
   scatterPayloadForceDensity,
   scatterPayloadForceDirect,
@@ -1358,6 +1360,19 @@ test("figureAxisKind matches Python _axis_kind", () => {
   assert.equal(figureAxisKind({
     traces: [{ x_axis: "x", y_axis: "y", x: { kind: "time_ms" }, y: { kind: "float" } }],
   }, "y"), "linear");
+});
+
+test("chromeAxisTickKind uses Figure._axisKind like Python", () => {
+  const fig = figure();
+  assert.equal(chromeAxisTickKind(fig, "x"), 0);
+  fig.setAxis("x", { kind: "time" });
+  assert.equal(chromeAxisTickKind(fig, "x"), 0);
+  const timed = figure();
+  timed.setAxis("x", { type: "time" });
+  assert.equal(chromeAxisTickKind(timed, "x"), 1);
+  const cat = figure();
+  cat._axis_categories = { x: [] };
+  assert.equal(chromeAxisTickKind(cat, "x"), 2);
 });
 
 test("scatterPayloadForceBin2d uses force_bin2d only like Python", () => {
