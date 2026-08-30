@@ -41,6 +41,7 @@ Python. Public npm names are `@curatelabs/xyg` (paint client) and
 The paint-client artifact is in-repo as `@curatelabs/xyg` (#23); registry
 publish waits on the `@curatelabs` npm org (#13).
 
+  Node `_emitArea` omits animation.
 ---
 
 ## 0. Three runtime surfaces (product-wide)

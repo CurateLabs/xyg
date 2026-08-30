@@ -1352,3 +1352,14 @@ test("_emitLine omits animation unlike Python _base_entry", () => {
   assert.equal(spec.traces[0].animation, undefined);
 });
 
+test("_emitArea omits animation unlike Python _base_entry", () => {
+  // Python `_base_entry` ships t.animation. Node area encode omits that
+  // field. Recorded emit-area-animation stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.area([0, 1], [0, 1]);
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "area");
+  assert.equal(spec.traces[0].animation, undefined);
+});
+

@@ -1,3 +1,4 @@
+    // emit-area-animation stay-host.
     // emit-line-animation stay-host.
 /**
  * Minimal Node figure — holds scatter/line/histogram/segments traces and builds
