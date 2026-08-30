@@ -48,6 +48,11 @@ test("shouldUseDensity mirrors Python threshold / force / polar rules", () => {
   assert.equal(shouldUseDensity(SCATTER_DENSITY_THRESHOLD * 2, { coords: "polar" }), false);
 });
 
+test("shouldUseDensity Boolean false stays auto unlike Python payload_force_density False", () => {
+  // Python payload_force_density False → 0 (forced off). Node false → -1 (auto).
+  assert.equal(shouldUseDensity(SCATTER_DENSITY_THRESHOLD + 1, { forceDensity: false }), true);
+});
+
 test("payloadTier polar line stays direct over M4 threshold", () => {
   assert.equal(payloadTier({ kind: 0, nPoints: 10_000 }), 0);
   assert.equal(payloadTier({ kind: 0, nPoints: 10_001 }), 1);

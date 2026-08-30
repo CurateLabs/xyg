@@ -3096,6 +3096,8 @@ export function densityWasmEligible({
 /**
  * Whether a scatter should use the density tier (Python Trace.use_density).
  * Polar / forceDirect always ship direct; threshold is strict `>` (ABI 122).
+ * Boolean `forceDensity` false maps to ABI auto (`-1`), not Python
+ * `payload_force_density` False → `0`. Recorded density-tristate stay-host.
  */
 export function shouldUseDensity(nPoints, {
   forceDensity = false,
