@@ -92,6 +92,7 @@ import {
   axisTickValues,
   axisMinorTickValues,
   axisTickLabels,
+  axisTickLabelAnchor,
   figureXLabel,
   figureYLabel,
   plotTopAxisRoom,
@@ -1123,6 +1124,12 @@ test("axisTickLabels uses tick_labels only like Python", () => {
   assert.equal(axisTickLabels({}), undefined);
   assert.equal(axisTickLabels({ tickLabels: ["a"] }), undefined);
   assert.deepEqual(axisTickLabels({ tick_labels: ["a"] }), ["a"]);
+});
+
+test("axisTickLabelAnchor uses tick_label_anchor only like Python", () => {
+  assert.equal(axisTickLabelAnchor({}), undefined);
+  assert.equal(axisTickLabelAnchor({ tickLabelAnchor: "end" }), undefined);
+  assert.equal(axisTickLabelAnchor({ tick_label_anchor: "end" }), "end");
 });
 
 test("figureXLabel uses x_label then axis label like Python", () => {
