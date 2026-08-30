@@ -2815,7 +2815,7 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
   let flags = 0;
   if (figure.coords !== "cartesian") flags |= 1 << 0;
   if (
-    Object.values(chromeStyles).some((style) => style?.fontFamily != null || style?.["font-family"] != null)
+    Object.values(chromeStyles).some((style) => chromeStyleHasFontFamily(style))
     || annotations.some((annotation) => annotationHasCustomTypography(annotation))
   ) flags |= 1 << 1;
   // Scene static paint/measure is DejaVu Sans (#288). Custom font-family,
@@ -4775,6 +4775,11 @@ export function axisTickLabels(axis) {
 /** Chrome styles record. Python `_pack_figure_support` / XYEF observations read `chrome_styles` only. */
 export function figureChromeStyles(figure) {
   return (figure ?? {}).chrome_styles;
+}
+
+/** Chrome custom-font observation. Python `_pack_figure_support` checks `"font-family" in style` only. */
+export function chromeStyleHasFontFamily(style) {
+  return Object.prototype.hasOwnProperty.call(style ?? {}, "font-family");
 }
 
 /** Chrome x-axis label. Python `_pack_figure_chrome` reads `figure.x_label` then `axis.get("label")`. */
