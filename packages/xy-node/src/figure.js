@@ -175,6 +175,22 @@ export function figureAutorangeAxisScale(options) {
   return scale === "log" || scale === "symlog" ? scale : "linear";
 }
 
+/** Axis kind. Python `_axis_kind` uses forced `type` time, then category labels, then `time_ms` columns. */
+export function figureAxisKind(figure, axisId) {
+  const options = figureAutorangeAxisOptions(figure, axisId);
+  if (options.type === "time") return "time";
+  const categories = figure?._axis_categories;
+  if (categories != null && Object.prototype.hasOwnProperty.call(categories, axisId)) return "category";
+  const axis = typeof axisId === "string" && axisId.startsWith("x") ? "x" : "y";
+  for (const trace of figure?.traces ?? []) {
+    if (axis === "x" && trace.x_axis !== axisId) continue;
+    if (axis === "y" && trace.y_axis !== axisId) continue;
+    const col = axis === "x" ? trace.x : trace.y;
+    if (col?.kind === "time_ms") return "time";
+  }
+  return "linear";
+}
+
 function columnValues(col) {
   if (col == null) return null;
   if (col instanceof Column) return col.values;
@@ -250,11 +266,11 @@ function packFigureAutorange(figure, axisId, { useDomain = true } = {}) {
   if (figure.coords === "polar") flags |= 1 << 4;
   const axisDimX = typeof axisId === "string" ? axisId.startsWith("x") : axisId === "x";
   if (axisDimX) flags |= 1 << 5;
-  const authoredType = options.type;
   const scale = figureAutorangeAxisScale(options);
   const scaleCode = scale === "log" ? 1 : scale === "symlog" ? 2 : 0;
   const categories = options.categories ?? figure._axis_categories?.[axisId];
-  const kindCode = authoredType === "time" ? 1 : categories?.length ? 2 : 0;
+  const kind = figureAxisKind(figure, axisId);
+  const kindCode = kind === "time" ? 1 : kind === "category" ? 2 : 0;
   const thetaUnit = (options.theta_unit ?? options.thetaUnit ?? figure._polarMeta?.thetaUnit ?? "radians") === "degrees" ? 1 : 0;
   const nCategories = figure.coords === "polar" && categories?.length ? categories.length : 0;
   const traces = figure.traces ?? [];
@@ -1017,6 +1033,10 @@ export class Figure {
     }
     if (code !== 0) throw new RangeError("invalid figure autorange envelope");
     return [lo[0], hi[0]];
+  }
+
+  _axisKind(axisId) {
+    return figureAxisKind(this, axisId);
   }
 
   _axisIsLog(axisId) {
