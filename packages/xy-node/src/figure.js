@@ -1187,7 +1187,10 @@ export class Figure {
         range_px: t.sizeRange ?? [8, 22],
         domain: [lo, hi],
         buf: pw.shipScalar(norm),
-      };        // Node cartesian payload axes omit style. Python `_axis_spec` ships
+      };        // Node cartesian payload axes omit constant. Python `_axis_spec` ships
+        // `constant` on symlog axes. Matching Python would add x_axis.constant.
+        // Recorded emit-payload-axis-constant stay-host.
+        // Node cartesian payload axes omit style. Python `_axis_spec` ships
         // compiled axis `style`. Matching Python would add x_axis.style.
         // Recorded emit-payload-axis-style stay-host.
         // Node cartesian payload axes omit tick_label_min_gap. Python

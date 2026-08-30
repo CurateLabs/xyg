@@ -1788,3 +1788,15 @@ test("buildPayload omits cartesian axis nonpositive unlike Python _axis_spec", (
   assert.equal(fig.axis_options.x.nonpositive, "clip");
   assert.equal(spec.x_axis.nonpositive, undefined);
 });
+
+test("buildPayload omits cartesian axis constant unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `constant` on symlog axes. Node cartesian payload
+  // axes omit that field even when axis constant is set. Recorded
+  // emit-payload-axis-constant stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([1, 2], [1, 2]);
+  fig.setAxis("x", { type: "symlog", constant: 2 });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.constant, 2);
+  assert.equal(spec.x_axis.constant, undefined);
+});
