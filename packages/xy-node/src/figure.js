@@ -2057,6 +2057,9 @@ export class Figure {
         // Node cartesian payload axes stay linear. Python `_axis_spec` ships
         // `_axis_scale` when it is not linear. Matching Python would set
         // scale to log. Recorded emit-payload-axis-scale stay-host.
+        // Node cartesian payload axes omit id. Python `_axis_spec` ships
+        // `id`. Matching Python would add x_axis.id. Recorded
+        // emit-payload-axis-id stay-host.
         x: { range: xr, scale: "linear" },
         y: { range: yr, scale: "linear" },
       };
