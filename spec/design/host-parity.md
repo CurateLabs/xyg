@@ -86,6 +86,7 @@ publish waits on the `@curatelabs` npm org (#13).
   Node `_emitLine` skips M4 bin_x.
   Node `_emitArea` skips M4 bin_x.
   Node `_polarAxisSpecs` omits axis id.
+  Node `_polarAxisSpecs` omits axis kind.
 ---
 
 ## 0. Three runtime surfaces (product-wide)
