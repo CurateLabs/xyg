@@ -1398,6 +1398,9 @@ export class Figure {
     const x1 = new Column(t.x1);
     const y0 = new Column(t.y0);
     const y1 = new Column(t.y1);
+    // Node payload histogram omits color_ch. Python `_emit_histogram` calls
+    // `_emit_rect`, which ships color_ch. Matching Python would add
+    // entry.color. Recorded emit-hist-color stay-host.
     return {
       id: t.id,
       kind: "histogram",
