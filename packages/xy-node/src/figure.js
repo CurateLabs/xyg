@@ -1470,6 +1470,9 @@ export class Figure {
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
     };
+    // Node payload segments ships t.color. Python `_emit_segments` ships
+    // color_ch via `_ship_channels`. Matching Python would ignore t.color.
+    // Recorded emit-segments-color stay-host.
     const color = this._shipColor(t.color, pw);
     if (color != null) entry.color = color;
     if (t.tooltip_rows != null) entry.tooltip_rows = t.tooltip_rows;
