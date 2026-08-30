@@ -318,6 +318,17 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitLine omits animation unlike Python _base_entry", () => {
+  // Python `_base_entry` ships t.animation. Node line encode omits that
+  // field. Recorded emit-line-animation stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.line([0, 1], [0, 1]);
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "line");
+  assert.equal(spec.traces[0].animation, undefined);
+});
+
 test("_emitScatter omits animation unlike Python _base_entry", () => {
   // Python `_base_entry` ships t.animation. Node scatter encode omits that
   // field. Recorded emit-scatter-animation stay-host.

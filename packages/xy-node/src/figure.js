@@ -1448,6 +1448,9 @@ export class Figure {
     // Node payload line omits transition_keys. Python `_emit_line` ships them
     // via `_transition_entry`. Matching Python would add entry.keys.
     // Recorded emit-line-transition stay-host.
+    // Node payload line omits animation. Python `_base_entry` ships
+    // t.animation. Matching Python would add entry.animation. Recorded
+    // emit-line-animation stay-host.
     return entry;
   }
 
