@@ -1604,3 +1604,15 @@ test("buildPayload omits cartesian axis domain unlike Python _axis_spec", () => 
   assert.equal(spec.x_axis.domain, undefined);
 });
 
+test("buildPayload omits cartesian axis format unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `format`. Node cartesian payload axes omit that
+  // field even when axis format is set. Recorded emit-payload-axis-format
+  // stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { format: ".2f" });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.format, ".2f");
+  assert.equal(spec.x_axis.format, undefined);
+});
+
