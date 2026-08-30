@@ -318,6 +318,19 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitRibbon omits ship scale unlike Python _axis_scale", () => {
+  // Python `_emit_ribbon` passes `_axis_scale` into `pw.ship`, pinning log
+  // offset to 0. Node ribbon encode keeps the column midpoint. Recorded
+  // emit-ribbon-ship-scale stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.setAxis("x", { type: "log" });
+  fig.ribbon([1], [10], [1], [10], [1], [10]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "ribbon");
+  const x0Col = spec.columns[spec.traces[0].x0];
+  assert.notEqual(x0Col.offset, 0);
+});
+
 test("_emitSegments omits ship scale unlike Python _axis_scale", () => {
   // Python `_emit_segments` passes `_axis_scale` into `pw.ship`, pinning log
   // offset to 0. Node segments encode keeps the column midpoint. Recorded
