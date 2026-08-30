@@ -2240,3 +2240,14 @@ test("composeScatter omits size unlike Python size_ch Scene", () => {
   assert.deepEqual(Buffer.from(a.toScene()), Buffer.from(b.toScene()));
 });
 
+test("composeScatter omits stroke unlike Python stroke_ch Scene", () => {
+  // Python marks.scatter sets stroke_ch from stroke=, so Scene paints outline.
+  // Node composeScatter ignores stroke, so Scene matches default fill-only marks.
+  // Recorded scene-scatter-stroke-ch stay-host.
+  const a = figure({ width: 240, height: 160 });
+  a.scatter([0, 1], [1, 2], { id: 1 });
+  const b = figure({ width: 240, height: 160 });
+  b.scatter([0, 1], [1, 2], { id: 1, stroke: "#ff0000", strokeWidth: 2 });
+  assert.deepEqual(Buffer.from(a.toScene()), Buffer.from(b.toScene()));
+});
+
