@@ -2037,6 +2037,12 @@ export class Figure {
         // Node polar payload axes omit minor_tick_values. Python `_axis_spec` ships
         // `minor_tick_values`. Matching Python would add x_axis.minor_tick_values. Recorded
         // emit-polar-payload-axis-minor-ticks stay-host.
+        // Node polar payload axes omit tick_labels. Python `_axis_spec` ships
+        // `tick_labels`. Matching Python would add x_axis.tick_labels. Recorded
+        // emit-polar-payload-axis-tick-labels stay-host.
+        // Node polar payload axes omit tick_count. Python `_axis_spec` ships
+        // `tick_count`. Matching Python would add x_axis.tick_count. Recorded
+        // emit-polar-payload-axis-tick-count stay-host.
         scale: "linear",
         theta_unit: unit,
         theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",        // Node polar payload axes omit tick_labels. Python `_axis_spec` ships

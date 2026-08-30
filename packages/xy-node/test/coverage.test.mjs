@@ -1974,3 +1974,13 @@ test("buildPayload omits polar axis tick_labels unlike Python _axis_spec", () =>
   const { spec } = fig.buildPayload();
   assert.equal(spec.x_axis.tick_labels, undefined);
 });
+
+test("buildPayload omits polar axis tick_count unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_count` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-count stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_count: 4 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_count, undefined);
+});
