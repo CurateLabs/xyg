@@ -2826,7 +2826,10 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
     || Object.keys(figureClassNames(figure) ?? {}).length
     || Object.keys(chromeStyles).length
     || Object.keys(figure.style ?? {}).some((key) => !["background", "--chart-bg"].includes(key))
-    || annotations.some((annotation) => annotation.className || annotation.class_name)
+    || annotations.some((annotation) => {
+      const name = annotationClassName(annotation);
+      return name != null && name !== "";
+    })
   ) flags |= 1 << 2;
   if (annotations.some((annotation) => annotation.html != null && annotation.html !== "")) flags |= 1 << 8;
   if (annotations.some((annotation) => annotation.collision != null && annotation.collision !== "")) flags |= 1 << 6;
@@ -4789,6 +4792,11 @@ export function figureClassName(figure) {
 /** Chart slot CSS classes. Python `_pack_figure_support` reads `class_names` only. */
 export function figureClassNames(figure) {
   return (figure ?? {}).class_names;
+}
+
+/** Annotation CSS class. Python `_pack_figure_support` reads `annotation.get("class_name")` only. */
+export function annotationClassName(annotation) {
+  return (annotation ?? {}).class_name;
 }
 
 /** Chrome x-axis label. Python `_pack_figure_chrome` reads `figure.x_label` then `axis.get("label")`. */
