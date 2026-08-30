@@ -23,6 +23,7 @@ import {
   markerPathScale,
   arrowGeometry,
   arrowShaftPoints,
+  packArrowStyle,
   pinsOffsetToZero,
   quantizeUnitU8,
   sceneDashAdmit,
@@ -192,6 +193,35 @@ test("arrowGeometry trims label_clear and samples shafts", () => {
   assert.equal(arrowShaftPoints(elbow).length, 3);
   const curved = arrowGeometry(0, 0, 10, 10, { curve: 0.3 });
   assert.equal(arrowShaftPoints(curved).length, 25);
+});
+
+test("packArrowStyle ignores malformed start_offset CSV", () => {
+  for (const bad of ["", "5", "5,x", "1,", "1,2,3"]) {
+    const packed = packArrowStyle({ start_offset: bad });
+    assert.equal(packed.length, 12);
+    assert.ok(Number.isNaN(packed[0]));
+    assert.ok(Number.isNaN(packed[1]));
+    const geom = arrowGeometry(0, 0, 300, 0, { start_offset: bad });
+    assert.deepEqual(geom.p0, [0, 0]);
+  }
+  const ok = packArrowStyle({ start_offset: "50,-7" });
+  assert.equal(ok[0], 50);
+  assert.equal(ok[1], -7);
+});
+
+test("packArrowStyle ignores malformed label_clear CSV", () => {
+  for (const bad of ["", "1,2,3", "1,2,3,x", "1,2,3,-4"]) {
+    const packed = packArrowStyle({ label_clear: bad });
+    assert.ok(Number.isNaN(packed[7]));
+    assert.ok(Number.isNaN(packed[8]));
+    assert.ok(Number.isNaN(packed[9]));
+    assert.ok(Number.isNaN(packed[10]));
+  }
+  const ok = packArrowStyle({ label_clear: "2.8,90,2.8,17" });
+  assert.equal(ok[7], 2.8);
+  assert.equal(ok[8], 90);
+  assert.equal(ok[9], 2.8);
+  assert.equal(ok[10], 17);
 });
 
 test("hexbinRing scales the canonical pointy-top fractions", () => {

@@ -104,6 +104,8 @@ argsort_stable = _impl.argsort_stable
 arrow_end_decoration = _impl.arrow_end_decoration
 arrow_geometry = _impl.arrow_geometry
 arrow_shaft_points = _impl.arrow_shaft_points
+arrow_style_pack = _impl.arrow_style_pack
+arrow_taper_polygon = _impl.arrow_taper_polygon
 arrow_taper_polygon = _impl.arrow_taper_polygon
 arrow_trim_polyline_end = _impl.arrow_trim_polyline_end
 min_max = _impl.min_max
@@ -216,6 +218,7 @@ __all__ = [
     "arrow_end_decoration",
     "arrow_geometry",
     "arrow_shaft_points",
+    "arrow_style_pack",
     "arrow_taper_polygon",
     "arrow_trim_polyline_end",
     "bar_stack",

@@ -1499,8 +1499,12 @@ ABI 217 `xyg_arrow_geometry` / `xyg_arrow_shaft_points` /
 `xyg_arrow_end_decoration` / `xyg_arrow_taper_polygon` /
 `xyg_arrow_trim_polyline_end` owns annotation-arrow connectionstyle geometry
 so Python `_arrowgeom.py` and Node `arrowGeometry` cannot drift. ChartView
-`51_annotations.ts` keeps the same formula until WASM. Hosts still parse
-comma-separated `start_offset` / `label_clear` strings.
+`51_annotations.ts` keeps the same formula until WASM.
+ABI 254 `xyg_arrow_style_pack` owns comma-separated `start_offset` /
+`label_clear` packing (empty tokens and non-finite parts fail the CSV;
+exact 2 parts for offset, exact 4 non-negative parts for clear) so Python
+`_pack_style` and Node `packArrowStyle` cannot drift. ChartView still parses
+those strings until WASM. Hosts still coerce style keys and elbow truthiness.
 ABI 218 `xyg_scene_dash_admit` owns Scene dash presets and 2–8 finite length
 patterns so Python `_parse_scene_dash` and Node `parseSceneDash` cannot drift.
 Invalid comma tokens reject the whole string. Hosts still coerce list vs
@@ -1659,6 +1663,10 @@ ABI 253 `xyg_scene_hidden_or_per_item_admit` owns Scene hidden-or-per-item
 admit (`hidden || (has_per_item && !density_aggregates)`) so Python
 `_figure_trace_support_flags` and Node `figureTraceSupport` cannot drift.
 Field picking stays host.
+ABI 254 `xyg_arrow_style_pack` owns annotation-arrow `start_offset` /
+`label_clear` CSV pack (12 f64s, NaN = absent) so Python `_pack_style` and
+Node `packArrowStyle` cannot drift. ChartView still parses those strings
+until WASM. Hosts still coerce style keys and elbow truthiness.
 Python `colormap_lut_rgba8` and Node `colormapLutRgba8` sample 256
 unit-t texels through ABI 206 `xyg_colormap_lut` then host-pack alpha
 255 so the density LUT cannot drift on half-up vs ties-to-even.
@@ -1810,8 +1818,12 @@ ABI 217 `xyg_arrow_geometry` / `xyg_arrow_shaft_points` /
 `xyg_arrow_end_decoration` / `xyg_arrow_taper_polygon` /
 `xyg_arrow_trim_polyline_end` owns annotation-arrow connectionstyle geometry
 so Python `_arrowgeom.py` and Node `arrowGeometry` cannot drift. ChartView
-`51_annotations.ts` keeps the same formula until WASM. Hosts still parse
-comma-separated `start_offset` / `label_clear` strings.
+`51_annotations.ts` keeps the same formula until WASM.
+ABI 254 `xyg_arrow_style_pack` owns comma-separated `start_offset` /
+`label_clear` packing (empty tokens and non-finite parts fail the CSV;
+exact 2 parts for offset, exact 4 non-negative parts for clear) so Python
+`_pack_style` and Node `packArrowStyle` cannot drift. ChartView still parses
+those strings until WASM. Hosts still coerce style keys and elbow truthiness.
 ABI 218 `xyg_scene_dash_admit` owns Scene dash presets and 2–8 finite length
 patterns so Python `_parse_scene_dash` and Node `parseSceneDash` cannot drift.
 Invalid comma tokens reject the whole string. Hosts still coerce list vs
@@ -1970,6 +1982,10 @@ ABI 253 `xyg_scene_hidden_or_per_item_admit` owns Scene hidden-or-per-item
 admit (`hidden || (has_per_item && !density_aggregates)`) so Python
 `_figure_trace_support_flags` and Node `figureTraceSupport` cannot drift.
 Field picking stays host.
+ABI 254 `xyg_arrow_style_pack` owns annotation-arrow `start_offset` /
+`label_clear` CSV pack (12 f64s, NaN = absent) so Python `_pack_style` and
+Node `packArrowStyle` cannot drift. ChartView still parses those strings
+until WASM. Hosts still coerce style keys and elbow truthiness.
 Python `colormap_lut_rgba8` and Node `colormapLutRgba8` sample 256
 unit-t texels through ABI 206 `xyg_colormap_lut` then host-pack alpha
 255 so the density LUT cannot drift on half-up vs ties-to-even.

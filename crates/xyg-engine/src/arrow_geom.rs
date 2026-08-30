@@ -1,9 +1,11 @@
-//! Annotation arrow path geometry (ABI 217).
+//! Annotation arrow path geometry (ABI 217) and style CSV pack (ABI 254).
 //!
 //! Owns matplotlib connectionstyle control points, label-clearance trim,
 //! quadratic/elbow shaft samples, tapered shafts, and endpoint decorations
 //! so Python `_arrowgeom.py` and ChartView `51_annotations.ts` cannot drift.
-//! Hosts still parse comma-separated `start_offset` / `label_clear` strings.
+//! ABI 254 owns comma-separated `start_offset` / `label_clear` packing so
+//! Python `_pack_style` and Node `packArrowStyle` cannot drift. ChartView
+//! still parses those strings until WASM.
 
 use std::f64::consts::PI;
 
@@ -36,6 +38,79 @@ pub enum ArrowEndKind {
     None,
     Fill,
     Stroke,
+}
+
+/// Parse a comma-separated f64 list. Empty tokens, non-finite parts, and
+/// invalid floats fail the whole string (Python `_csv_floats` / `_number`).
+fn csv_floats(text: &str) -> Option<Vec<f64>> {
+    let mut values = Vec::new();
+    for part in text.split(',') {
+        let Ok(value) = part.trim().parse::<f64>() else {
+            return None;
+        };
+        if !value.is_finite() {
+            return None;
+        }
+        values.push(value);
+    }
+    Some(values)
+}
+
+/// Packed style: start_ox/oy, angle_a/b, curve, gap_start/end,
+/// clear_l/r/u/d, elbow. NaN = absent. `start_offset` needs exactly two
+/// finite parts; `label_clear` needs exactly four non-negative finite parts.
+pub fn arrow_style_pack(
+    start_offset: Option<&str>,
+    start_angle: f64,
+    end_angle: f64,
+    curve: f64,
+    gap_start: f64,
+    gap_end: f64,
+    label_clear: Option<&str>,
+    elbow: f64,
+    out: &mut [f64],
+) -> bool {
+    if out.len() != ARROW_STYLE_LEN {
+        return false;
+    }
+    out.fill(f64::NAN);
+    if let Some(text) = start_offset {
+        if let Some(parts) = csv_floats(text) {
+            if parts.len() == 2 {
+                out[0] = parts[0];
+                out[1] = parts[1];
+            }
+        }
+    }
+    if start_angle.is_finite() {
+        out[2] = start_angle;
+    }
+    if end_angle.is_finite() {
+        out[3] = end_angle;
+    }
+    if curve.is_finite() {
+        out[4] = curve;
+    }
+    if gap_start.is_finite() {
+        out[5] = gap_start;
+    }
+    if gap_end.is_finite() {
+        out[6] = gap_end;
+    }
+    if let Some(text) = label_clear {
+        if let Some(parts) = csv_floats(text) {
+            if parts.len() == 4 && parts.iter().all(|value| *value >= 0.0) {
+                out[7] = parts[0];
+                out[8] = parts[1];
+                out[9] = parts[2];
+                out[10] = parts[3];
+            }
+        }
+    }
+    if elbow.is_finite() {
+        out[11] = elbow;
+    }
+    true
 }
 
 fn toward(px: f64, py: f64, qx: f64, qy: f64) -> (f64, f64) {
@@ -493,6 +568,105 @@ mod tests {
         )
         .unwrap();
         assert_eq!(n, 25);
+    }
+
+    #[test]
+    fn style_pack_writes_finite_csv_and_numeric_slots() {
+        let mut packed = [0.0; ARROW_STYLE_LEN];
+        assert!(arrow_style_pack(
+            Some("50,-7"),
+            10.0,
+            90.0,
+            0.3,
+            1.0,
+            2.0,
+            Some("2.8,90,2.8,17"),
+            1.0,
+            &mut packed,
+        ));
+        assert_eq!(packed[0], 50.0);
+        assert_eq!(packed[1], -7.0);
+        assert_eq!(packed[2], 10.0);
+        assert_eq!(packed[3], 90.0);
+        assert_eq!(packed[4], 0.3);
+        assert_eq!(packed[5], 1.0);
+        assert_eq!(packed[6], 2.0);
+        assert_eq!(&packed[7..11], &[2.8, 90.0, 2.8, 17.0]);
+        assert_eq!(packed[11], 1.0);
+    }
+
+    #[test]
+    fn style_pack_rejects_malformed_start_offset() {
+        for bad in ["", "5", "5,x", "1,", "1,2,3", "nan,1", "1,inf"] {
+            let mut packed = [0.0; ARROW_STYLE_LEN];
+            assert!(arrow_style_pack(
+                Some(bad),
+                f64::NAN,
+                f64::NAN,
+                f64::NAN,
+                f64::NAN,
+                f64::NAN,
+                None,
+                f64::NAN,
+                &mut packed,
+            ));
+            assert!(packed[0].is_nan());
+            assert!(packed[1].is_nan());
+        }
+    }
+
+    #[test]
+    fn style_pack_rejects_malformed_label_clear() {
+        for bad in ["", "1,2,3", "1,2,3,x", "1,2,3,-4", "1,2,3,", "1,,2,3"] {
+            let mut packed = [0.0; ARROW_STYLE_LEN];
+            assert!(arrow_style_pack(
+                None,
+                f64::NAN,
+                f64::NAN,
+                f64::NAN,
+                f64::NAN,
+                f64::NAN,
+                Some(bad),
+                f64::NAN,
+                &mut packed,
+            ));
+            assert!(packed[7..11].iter().all(|value| value.is_nan()));
+        }
+    }
+
+    #[test]
+    fn style_pack_trims_csv_whitespace() {
+        let mut packed = [0.0; ARROW_STYLE_LEN];
+        assert!(arrow_style_pack(
+            Some(" 50 , -7 "),
+            f64::NAN,
+            f64::NAN,
+            f64::NAN,
+            f64::NAN,
+            f64::NAN,
+            Some(" 2.8, 90, 2.8, 17 "),
+            f64::NAN,
+            &mut packed,
+        ));
+        assert_eq!(packed[0], 50.0);
+        assert_eq!(packed[1], -7.0);
+        assert_eq!(&packed[7..11], &[2.8, 90.0, 2.8, 17.0]);
+    }
+
+    #[test]
+    fn style_pack_rejects_wrong_out_len() {
+        let mut packed = [0.0; 11];
+        assert!(!arrow_style_pack(
+            None,
+            f64::NAN,
+            f64::NAN,
+            f64::NAN,
+            f64::NAN,
+            f64::NAN,
+            None,
+            f64::NAN,
+            &mut packed,
+        ));
     }
 
     #[test]

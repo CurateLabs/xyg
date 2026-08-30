@@ -11969,6 +11969,42 @@ def marker_path_scale(
     return out_x, out_y
 
 
+def arrow_style_pack(
+    start_offset: str | None,
+    start_angle: float,
+    end_angle: float,
+    curve: float,
+    gap_start: float,
+    gap_end: float,
+    label_clear: str | None,
+    elbow: float,
+) -> npt.NDArray[np.float64]:
+    """Packed annotation-arrow style via ``xyg_arrow_style_pack`` (ABI 254).
+
+    Empty native pointers are ``0``. Returns 12 f64s (NaN = absent).
+    """
+    offset_b = b"" if start_offset is None else str(start_offset).encode("utf-8")
+    clear_b = b"" if label_clear is None else str(label_clear).encode("utf-8")
+    out = np.empty(12, dtype=np.float64)
+    ok = _lib.xyg_arrow_style_pack(
+        offset_b if offset_b else 0,
+        len(offset_b),
+        float(start_angle),
+        float(end_angle),
+        float(curve),
+        float(gap_start),
+        float(gap_end),
+        clear_b if clear_b else 0,
+        len(clear_b),
+        float(elbow),
+        _ptr_f64(out),
+        12,
+    )
+    if ok != 0:
+        raise ValueError("invalid arrow-style-pack request")
+    return out
+
+
 def arrow_geometry(
     x0: float,
     y0: float,
