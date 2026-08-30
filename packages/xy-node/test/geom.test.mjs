@@ -101,6 +101,7 @@ import {
   figureXLabel,
   figureChromeStyles,
   chromeAxisMinorStyle,
+  chromeAxisStyleKeys,
   chromeAxisTickSides,
   chromeAxisTickLabelSides,
   chromeStyleHasFontFamily,
@@ -1220,6 +1221,32 @@ test("chromeAxisTickLabelSides uses tick_label_sides only like Python", () => {
   assert.equal(chromeAxisTickLabelSides({}), undefined);
   assert.deepEqual(chromeAxisTickLabelSides({ tickLabelSides: ["top"] }), undefined);
   assert.deepEqual(chromeAxisTickLabelSides({ tick_label_sides: ["top"] }), ["top"]);
+});
+
+test("chromeAxisStyleKeys admits snake-case keys only like Python", () => {
+  const keys = chromeAxisStyleKeys();
+  assert.equal(keys.has("grid_color"), true);
+  assert.equal(keys.has("grid_width"), true);
+  assert.equal(keys.has("grid_opacity"), true);
+  assert.equal(keys.has("axis_color"), true);
+  assert.equal(keys.has("axis_width"), true);
+  assert.equal(keys.has("tick_color"), true);
+  assert.equal(keys.has("tick_width"), true);
+  assert.equal(keys.has("tick_length"), true);
+  assert.equal(keys.has("tick_direction"), true);
+  assert.equal(keys.has("tick_label_color"), true);
+  assert.equal(keys.has("label_color"), true);
+  assert.equal(keys.has("gridColor"), false);
+  assert.equal(keys.has("gridWidth"), false);
+  assert.equal(keys.has("gridOpacity"), false);
+  assert.equal(keys.has("axisColor"), false);
+  assert.equal(keys.has("axisWidth"), false);
+  assert.equal(keys.has("tickColor"), false);
+  assert.equal(keys.has("tickWidth"), false);
+  assert.equal(keys.has("tickLength"), false);
+  assert.equal(keys.has("tickDirection"), false);
+  assert.equal(keys.has("tickLabelColor"), false);
+  assert.equal(keys.has("labelColor"), false);
 });
 
 test("chromeStyleHasFontFamily uses font-family key only like Python", () => {
