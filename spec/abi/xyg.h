@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 254
-#define XYG_ABI_SIGNATURE_SHA256 "037437b67681618783b882658c5de4069ea553e257584955c311a6641711dd5a"
+#define XYG_ABI_VERSION 255
+#define XYG_ABI_SIGNATURE_SHA256 "dfa02de3da9aaabc728cb68a4591bbd307f8bd2d5fdd98e825c3fa2a122f7c10"
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,6 +78,7 @@ int32_t xyg_encode_f32(const double * data, size_t len, double offset, double sc
 size_t xyg_encode_jpeg(const uint8_t * pixels, size_t n, size_t width, size_t height, size_t channels, int32_t quality, uint8_t * out, size_t out_cap);
 size_t xyg_encode_png(const uint8_t * pixels, size_t n, size_t width, size_t height, size_t channels, int32_t mode, int32_t compression, uint8_t * out, size_t out_cap);
 size_t xyg_encode_webp(const uint8_t * pixels, size_t n, size_t width, size_t height, size_t channels, uint8_t * out, size_t out_cap);
+int32_t xyg_encoded_column_meta(double offset, double lo, double hi, const uint8_t * kind, size_t kind_len, double * out, size_t out_cap);
 int32_t xyg_f32_safe_scale(double offset, double lo, double hi, double * out_scale);
 size_t xyg_factorize_fixed(const uint8_t * data, size_t len, size_t width, uint32_t * out_codes, uint32_t * out_unique_indices);
 size_t xyg_factorize_fixed_u8(const uint8_t * data, size_t len, size_t width, uint8_t * out_codes, uint32_t * out_unique_indices, size_t unique_capacity);

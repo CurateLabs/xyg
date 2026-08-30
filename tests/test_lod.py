@@ -269,6 +269,38 @@ def test_encode_f32_values_handles_empty_and_scalar_inputs() -> None:
     assert scalar.values.tolist() == [2.0]
 
 
+def test_encode_f32_values_packs_meta_from_kernel() -> None:
+    offset = 1e300
+    lo = offset - 1e290
+    hi = offset + 1e290
+    packed_offset, packed_scale, has_kind = kernels.encoded_column_meta(offset, lo, hi, "float")
+    column = lod.encode_f32_values(
+        np.array([offset - 1e290, offset, offset + 1e290], dtype=np.float64),
+        offset,
+        lo,
+        hi,
+        kind="float",
+    )
+    omitted_offset, omitted_scale, omitted_kind = kernels.encoded_column_meta(0.0, 0.0, 0.0, None)
+    empty = lod.encode_f32_values([], 0.0, 0.0, 0.0)
+    empty_kind_offset, empty_kind_scale, empty_has_kind = kernels.encoded_column_meta(
+        1.0, 0.0, 2.0, ""
+    )
+    empty_kind = lod.encode_f32_values([1.0], 1.0, 0.0, 2.0, kind="")
+
+    assert packed_offset == offset
+    assert has_kind
+    assert column.meta == {"offset": packed_offset, "scale": packed_scale, "kind": "float"}
+    assert not omitted_kind
+    assert empty.meta == {"offset": omitted_offset, "scale": omitted_scale}
+    assert empty_has_kind
+    assert empty_kind.meta == {
+        "offset": empty_kind_offset,
+        "scale": empty_kind_scale,
+        "kind": "",
+    }
+
+
 def test_sample_keep_mask_is_deterministic_and_monotonic_by_level() -> None:
     row_ids = np.arange(100_000, dtype=np.int64)
 

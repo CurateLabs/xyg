@@ -865,17 +865,19 @@ def encode_f32_values(
     expected numeric domain used to pick an f32-safe scale. Windowed updates
     usually pass viewport bounds; first-payload columns pass canonical column
     bounds. The optional `kind` rides only in first-payload column tables.
+    Offset, scale, and kind presence are ABI 254 ``xyg_encoded_column_meta``.
     """
     vals = np.ascontiguousarray(np.asarray(values, dtype=np.float64).ravel())
-    offset_f = float(offset)
-    scale = f32_safe_scale(offset_f, float(lo), float(hi))
+    offset_f, scale, has_kind = kernels.encoded_column_meta(
+        float(offset), float(lo), float(hi), None if kind is None else str(kind)
+    )
     enc = (
         np.empty(0, dtype=np.float32)
         if len(vals) == 0
         else kernels.encode_f32(vals, offset_f, scale)
     )
     meta: dict[str, Any] = {"offset": offset_f, "scale": scale}
-    if kind is not None:
+    if has_kind:
         meta["kind"] = kind
     return EncodedColumn(meta=meta, values=enc)
 

@@ -955,6 +955,38 @@ def geometry_offset(pin_zero: bool, lo: float, hi: float) -> float:
     return float(out.value)
 
 
+def encoded_column_meta(
+    offset: float, lo: float, hi: float, kind: str | None = None
+) -> tuple[float, float, bool]:
+    """Pack EncodedColumn offset/scale/kind-presence via ``xyg_encoded_column_meta`` (ABI 254).
+
+    Empty native pointers are ``0``. A present empty kind keeps a non-null
+    pointer with ``kind_len == 0``. Hosts copy the original kind value.
+    """
+    out = (ctypes.c_double * 2)()
+    if kind is None:
+        kind_ptr: int | ctypes.Array[ctypes.c_uint8] = 0
+        kind_len = 0
+    else:
+        encoded = str(kind).encode("utf-8")
+        kind_len = len(encoded)
+        kind_ptr = (ctypes.c_uint8 * max(kind_len, 1))(*encoded)
+    code = int(
+        _lib.xyg_encoded_column_meta(
+            float(offset),
+            float(lo),
+            float(hi),
+            kind_ptr,
+            kind_len,
+            out,
+            2,
+        )
+    )
+    if code < 0:
+        raise ValueError("invalid encoded-column-meta request")
+    return float(out[0]), float(out[1]), code == 1
+
+
 def scale_pins_offset(scale: str) -> bool:
     """Whether an axis scale name pins geometry offset to 0 (ABI 216, §16)."""
     encoded = str(scale).encode("utf-8")

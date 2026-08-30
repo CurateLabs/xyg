@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 254;
+pub const ABI_VERSION: u32 = 255;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -6298,6 +6298,52 @@ pub unsafe extern "C" fn xyg_f32_safe_scale(
     ffi_guard(0, || {
         *out_scale = kernels::f32_safe_scale(offset, lo, hi);
         1
+    })
+}
+
+/// Pack EncodedColumn offset/scale/kind-presence (ABI 254, §16/§19).
+///
+/// Writes `out[0] = offset` and `out[1] = f32_safe_scale(offset, lo, hi)`.
+/// Returns `1` when `kind` is present (non-null pointer, including
+/// `kind_len == 0`), `0` when omitted (null/`0` with `kind_len == 0`).
+/// `-1` invalid UTF-8. `-2` FFI. Empty native pointers are null/`0`.
+///
+/// # Safety
+/// `kind` must address `kind_len` readable bytes when `kind_len` is
+/// non-zero. `out` must address `out_cap` writable f64s when `out_cap`
+/// is non-zero.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_encoded_column_meta(
+    offset: f64,
+    lo: f64,
+    hi: f64,
+    kind: *const u8,
+    kind_len: usize,
+    out: *mut f64,
+    out_cap: usize,
+) -> i32 {
+    if kind_len > 0 && kind.is_null() {
+        return -2;
+    }
+    if out_cap < 2 || out.is_null() {
+        return -2;
+    }
+    ffi_guard(-2, || {
+        let kind_text = if kind.is_null() {
+            None
+        } else {
+            let bytes = std::slice::from_raw_parts(kind, kind_len);
+            let Ok(value) = std::str::from_utf8(bytes) else {
+                return -1;
+            };
+            Some(value)
+        };
+        let (packed_offset, packed_scale, has_kind) =
+            kernels::encoded_column_meta(offset, lo, hi, kind_text);
+        let slot = std::slice::from_raw_parts_mut(out, out_cap);
+        slot[0] = packed_offset;
+        slot[1] = packed_scale;
+        i32::from(has_kind)
     })
 }
 

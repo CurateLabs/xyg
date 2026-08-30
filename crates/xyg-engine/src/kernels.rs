@@ -1935,6 +1935,15 @@ pub fn f32_safe_scale(offset: f64, lo: f64, hi: f64) -> f64 {
     }
 }
 
+/// Pack EncodedColumn wire metadata (ABI 254).
+///
+/// Echoes `offset`, writes [`f32_safe_scale`], and reports whether a `kind`
+/// string is present. `None` omits `kind`; `Some` includes it, including the
+/// empty string. Hosts copy the original kind value onto the wire dict.
+pub fn encoded_column_meta(offset: f64, lo: f64, hi: f64, kind: Option<&str>) -> (f64, f64, bool) {
+    (offset, f32_safe_scale(offset, lo, hi), kind.is_some())
+}
+
 /// Encode canonical f64 values as relative f32: `(v - offset) * scale` (§4).
 ///
 /// NaN passes through as f32 NaN — the caller is responsible for keeping NaN out
@@ -8861,6 +8870,16 @@ mod tests {
         assert!(!scale_pins_offset("linear"));
         assert!(!scale_pins_offset(""));
         assert!(!scale_pins_offset("Log"));
+        let (offset, scale, has_kind) = encoded_column_meta(0.0, -1.0, 1.0, None);
+        assert_eq!(offset, 0.0);
+        assert_eq!(scale, 1.0);
+        assert!(!has_kind);
+        let (offset, scale, has_kind) = encoded_column_meta(0.0, -huge, huge, Some("float"));
+        assert_eq!(offset, 0.0);
+        assert!((scale - 0.1).abs() < 1e-12);
+        assert!(has_kind);
+        let (_, _, empty_kind) = encoded_column_meta(1.0, 0.0, 2.0, Some(""));
+        assert!(empty_kind);
     }
 
     #[test]

@@ -189,6 +189,16 @@ def load() -> ctypes.CDLL:
     lib.xyg_css_is_functional.argtypes = [U8P, ctypes.c_size_t]
     lib.xyg_scale_pins_offset.restype = ctypes.c_int32
     lib.xyg_scale_pins_offset.argtypes = [U8P, ctypes.c_size_t]
+    lib.xyg_encoded_column_meta.restype = ctypes.c_int32
+    lib.xyg_encoded_column_meta.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        U8P,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_scene_dash_admit.restype = ctypes.c_int32
     lib.xyg_scene_dash_admit.argtypes = [
         U8P,
@@ -2222,6 +2232,48 @@ def main() -> None:
         "scale_pins_offset linear",
     )
     ok(lib.xyg_scale_pins_offset(null_u8, 0) == 0, "scale_pins_offset empty")
+    meta_out = array("d", [0.0, 0.0])
+    kind_name = array("B", b"float")
+    dummy_kind = array("B", [0])
+    ok(
+        lib.xyg_encoded_column_meta(0.0, -1.0, 1.0, null_u8, 0, _ptr(meta_out, ctypes.c_double), 2)
+        == 0
+        and meta_out[0] == 0.0
+        and meta_out[1] == 1.0,
+        "encoded_column_meta omitted kind",
+    )
+    ok(
+        lib.xyg_encoded_column_meta(
+            0.0,
+            -1.0,
+            1.0,
+            _ptr(kind_name, ctypes.c_uint8),
+            len(kind_name),
+            _ptr(meta_out, ctypes.c_double),
+            2,
+        )
+        == 1
+        and meta_out[0] == 0.0
+        and meta_out[1] == 1.0,
+        "encoded_column_meta present kind",
+    )
+    ok(
+        lib.xyg_encoded_column_meta(
+            1.0,
+            0.0,
+            2.0,
+            _ptr(dummy_kind, ctypes.c_uint8),
+            0,
+            _ptr(meta_out, ctypes.c_double),
+            2,
+        )
+        == 1,
+        "encoded_column_meta empty present kind",
+    )
+    ok(
+        lib.xyg_encoded_column_meta(0.0, -1.0, 1.0, null_u8, 0, null_f64, 2) == -2,
+        "encoded_column_meta null out",
+    )
     dashed_name = array("B", b"dashed")
     dash_out = array("d", [0.0] * 8)
     dash_n = ctypes.c_size_t(0)

@@ -141,6 +141,7 @@ def test_abi_version_is_254() -> None:
     assert "xyg_direct_rgba_admit" in names
     assert "xyg_geometry_offset" in names
     assert "xyg_scale_pins_offset" in names
+    assert "xyg_encoded_column_meta" in names
     assert "xyg_arrow_geometry" in names
     assert "xyg_arrow_shaft_points" in names
     assert "xyg_arrow_end_decoration" in names
