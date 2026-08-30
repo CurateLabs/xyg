@@ -180,6 +180,12 @@ export function figureAxisIsLog(figure, axisId) {
   return figureAutorangeAxisScale(figureAutorangeAxisOptions(figure, axisId)) === "log";
 }
 
+/** Polar autorange category labels. Python `_pack_autorange` reads `_axis_categories` only. */
+export function figureAutorangeCategories(figure, axisId) {
+  if ((figure ?? {}).coords !== "polar") return undefined;
+  return figure._axis_categories?.[axisId];
+}
+
 /** Axis kind. Python `_axis_kind` uses forced `type` time, then category labels, then `time_ms` columns. */
 export function figureAxisKind(figure, axisId) {
   const options = figureAutorangeAxisOptions(figure, axisId);
@@ -278,11 +284,11 @@ function packFigureAutorange(figure, axisId, { useDomain = true } = {}) {
   if (axisDimX) flags |= 1 << 5;
   const scale = figureAutorangeAxisScale(options);
   const scaleCode = scale === "log" ? 1 : scale === "symlog" ? 2 : 0;
-  const categories = options.categories ?? figure._axis_categories?.[axisId];
+  const categories = figureAutorangeCategories(figure, axisId);
   const kind = figureAxisKind(figure, axisId);
   const kindCode = kind === "time" ? 1 : kind === "category" ? 2 : 0;
   const thetaUnit = (figureAutorangeThetaUnit(options) ?? figure._polarMeta?.thetaUnit ?? "radians") === "degrees" ? 1 : 0;
-  const nCategories = figure.coords === "polar" && categories?.length ? categories.length : 0;
+  const nCategories = categories?.length ? categories.length : 0;
   const traces = figure.traces ?? [];
   if (traces.length > 0xffff) throw new RangeError("figure autorange trace budget exceeded");
   const header = new Uint8Array(48);
