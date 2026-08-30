@@ -1724,7 +1724,7 @@ export class Figure {
         theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",
         theta_direction: (this.axis_options?.x ?? {}).theta_direction ?? "counterclockwise",
         sector,
-        grid_shape: meta.gridShape ?? "circular",
+        grid_shape: (this.axis_options?.x ?? {}).grid_shape ?? "circular",
       },
       y: {
         range: yr,
