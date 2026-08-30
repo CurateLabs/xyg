@@ -926,7 +926,7 @@ Node `hexbinStylePitch` uses `style.hex_dx` then `style.dx` like Python `_hexbin
 Node `polarGridShape` uses axis `grid_shape` only like Python `_pack_polar_scene_input`; `gridShape` is not a polar-grid fallback.
 Node `polarAxisThetaUnit` uses axis `theta_unit` only like Python `_pack_polar_scene_input`; `thetaUnit` is not a polar-unit fallback.
 Node `polarAxisThetaZero` uses axis `theta_zero` only like Python `_pack_polar_scene_input`; `thetaZero` is not a polar-zero fallback.
-Node `polarAxisThetaDirection` uses axis `theta_direction` only like Python `_pack_polar_scene_input`; `thetaDirection` is not a polar-direction fallback.
+Node `polarAxisThetaDirection` uses axis `theta_direction` only like Python `_pack_polar_scene_input`; `thetaDirection` is not a polar-direction fallback. Node `polarAxisROrigin` uses axis `r_origin` only like Python `_pack_polar_scene_input`; `rOrigin` is not a polar-origin fallback.
 ABI 110 makes primary legend framing the same way: Python
 and Node call `xyg_scene_pack_legend` with loc/flags/paints/labels.
 ABI 111 makes primary colorbar framing the same way: Python and Node call
@@ -1415,6 +1415,7 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `polarAxisThetaUnit` uses axis `theta_unit` only.
   Node `polarAxisThetaZero` uses axis `theta_zero` only.
   Node `polarAxisThetaDirection` uses axis `theta_direction` only.
+  Node `polarAxisROrigin` uses axis `r_origin` only.
 ---
 
 ## 4. Delivery order
