@@ -2165,6 +2165,12 @@ export class Figure {
         // Node cartesian payload axes omit tick_count. Python `_axis_spec`
         // ships `tick_count`. Matching Python would add x_axis.tick_count.
         // Recorded emit-payload-axis-tick-count stay-host.
+        // Node cartesian payload axes omit reverse. Python `_axis_spec` ships
+        // `reverse`. Matching Python would add x_axis.reverse. Recorded
+        // emit-payload-axis-reverse stay-host.
+        // Node cartesian payload axes omit domain. Python `_axis_spec` ships
+        // `domain`. Matching Python would add x_axis.domain. Recorded
+        // emit-payload-axis-domain stay-host.
         x: { range: xr, scale: "linear" },
         y: { range: yr, scale: "linear" },
       };
