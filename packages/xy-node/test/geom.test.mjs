@@ -121,6 +121,7 @@ import {
   figureAutorangeAxisScale,
   figureAxisKind,
   figureAutorangeThetaUnit,
+  figureAxisIsLog,
   figure,
   scatterPayloadForceBin2d,
   scatterPayloadForceDensity,
@@ -1394,6 +1395,14 @@ test("figureAutorangeThetaUnit uses theta_unit only like Python", () => {
   assert.equal(figureAutorangeThetaUnit({}), undefined);
   assert.equal(figureAutorangeThetaUnit({ thetaUnit: "degrees" }), undefined);
   assert.equal(figureAutorangeThetaUnit({ theta_unit: "degrees" }), "degrees");
+});
+
+test("figureAxisIsLog uses axis type only like Python _axis_scale log", () => {
+  assert.equal(figureAxisIsLog({}, "x"), false);
+  assert.equal(figureAxisIsLog({ xAxis: { type: "log" } }, "x"), false);
+  assert.equal(figureAxisIsLog({ axis_options: { x: { scale: "log" } } }, "x"), false);
+  assert.equal(figureAxisIsLog({ axis_options: { x: { type: "symlog" } } }, "x"), false);
+  assert.equal(figureAxisIsLog({ axis_options: { x: { type: "log" } } }, "x"), true);
 });
 
 test("scatterPayloadForceBin2d uses force_bin2d only like Python", () => {

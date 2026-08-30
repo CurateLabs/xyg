@@ -175,6 +175,11 @@ export function figureAutorangeAxisScale(options) {
   return scale === "log" || scale === "symlog" ? scale : "linear";
 }
 
+/** Payload log-axis flag. Python `_axis_scale(...) == "log"` reads axis `type` only. */
+export function figureAxisIsLog(figure, axisId) {
+  return figureAutorangeAxisScale(figureAutorangeAxisOptions(figure, axisId)) === "log";
+}
+
 /** Axis kind. Python `_axis_kind` uses forced `type` time, then category labels, then `time_ms` columns. */
 export function figureAxisKind(figure, axisId) {
   const options = figureAutorangeAxisOptions(figure, axisId);
@@ -1045,9 +1050,7 @@ export class Figure {
   }
 
   _axisIsLog(axisId) {
-    const opts = this[`${axisId}Axis`] ?? {};
-    const scale = opts.type ?? opts.scale;
-    return scale === "log";
+    return figureAxisIsLog(this, axisId);
   }
 
   _visibleSel(t, x, y, {
