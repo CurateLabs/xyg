@@ -1429,6 +1429,16 @@ test("setPolarMeta writes axis theta_direction like Python set_axis", () => {
   assert.equal(polarAxisThetaDirection(figureAutorangeAxisOptions(leftover, "x")), undefined);
 });
 
+test("setPolarMeta writes axis grid_shape like Python set_axis", () => {
+  const fig = figure();
+  fig.setPolarMeta({ gridShape: "linear" });
+  assert.equal(polarGridShape(figureAutorangeAxisOptions(fig, "x")), "linear");
+  const leftover = figure();
+  leftover._polarMeta = { gridShape: "linear" };
+  leftover.coords = "polar";
+  assert.equal(polarGridShape(figureAutorangeAxisOptions(leftover, "x")), "circular");
+});
+
 test("figureAxisIsLog uses axis type only like Python _axis_scale log", () => {
   assert.equal(figureAxisIsLog({}, "x"), false);
   assert.equal(figureAxisIsLog({ xAxis: { type: "log" } }, "x"), false);

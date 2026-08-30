@@ -559,6 +559,7 @@ export class Figure {
       theta_unit: this._polarMeta.thetaUnit,
       theta_zero: this._polarMeta.thetaZero,
       theta_direction: this._polarMeta.thetaDirection,
+      grid_shape: this._polarMeta.gridShape,
     };
     this.xAxis = this.axis_options.x;
     return this;
