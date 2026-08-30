@@ -84,6 +84,9 @@ import { figureSceneV3, scatterPaintChannelNames, sceneRasterCommands, sceneSvg,
 export { PROTOCOL_VERSION };
 
 let nextTraceId = 1;
+// Node nextTraceId starts at 1. Python `id=len(self.traces)` starts at 0.
+// Matching Python would assign 0 to the first auto-id. Recorded
+// next-trace-id-base stay-host.
 
 function asF64(value) {
   if (value instanceof Float64Array) return value;
