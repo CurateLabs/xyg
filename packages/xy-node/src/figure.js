@@ -2404,6 +2404,9 @@ export class Figure {
       // Node payload omits title_options. Python `build_payload` ships
       // `title_options` with geometry columns. Matching Python would add
       // spec.title_options. Recorded emit-payload-title-options stay-host.
+      // Node payload omits padding. Python `build_payload` ships `padding`.
+      // Matching Python would add spec.padding. Recorded
+      // emit-payload-padding stay-host.
       view: { ranges: { x: [...xr], y: [...yr] } },
     };
     if (this.coords === "polar") {
