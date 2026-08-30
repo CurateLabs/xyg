@@ -1159,6 +1159,9 @@ export class Figure {
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
     };
+    // Node payload scatter ships t.color. Python `_emit_scatter` ships
+    // color_ch via `_ship_channels`. Matching Python would ignore t.color.
+    // Recorded scatter-ship-color stay-host.
     const color = this._shipColor(t.color, pw, sel);
     if (color != null) entry.color = color;
     if (t.sizeValues != null) {

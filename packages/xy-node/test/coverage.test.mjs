@@ -318,6 +318,20 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitScatter ships t.color unlike Python color_ch", () => {
+  // Python `_emit_scatter` ships color_ch. Node keeps t.color even when
+  // color_ch is also present. Recorded scatter-ship-color stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1], {
+    _composed: true,
+    color: { mode: "constant", constant: "#112233" },
+  });
+  fig.traces[0].color_ch = { mode: "constant", constant: "#445566" };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "direct");
+  assert.equal(spec.traces[0].color.color, "#112233");
+});
+
 test("_emitHeatmap ships grid columns unlike Python nested heatmap", () => {
   // Python `_emit_heatmap` ships a nested heatmap object. Node keeps grid
   // columns. Recorded heatmap-grid stay-host.
