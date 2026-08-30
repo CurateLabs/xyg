@@ -144,6 +144,11 @@ export function scatterPayloadForceDensity(trace) {
   return (trace ?? {}).force_density;
 }
 
+/** Payload direct override. Python `_emit_scatter` does not read `style.force_direct`. */
+export function scatterPayloadForceDirect(trace) {
+  return (trace ?? {}).force_direct;
+}
+
 /** Autorange axis record. Python `_axis_scale` / `_range` read `axis_options` only. */
 export function figureAutorangeAxisOptions(figure, axisId) {
   return (figure ?? {}).axis_options?.[axisId] ?? {};
@@ -1022,7 +1027,7 @@ export class Figure {
 
   _emitScatter(t, pw, xr, yr) {
     const forceDensity = Boolean(scatterPayloadForceDensity(t));
-    const forceDirect = Boolean(t.force_direct ?? t.style?.force_direct);
+    const forceDirect = Boolean(scatterPayloadForceDirect(t));
     const forcePyramid = Boolean(t.force_pyramid ?? t.style?.force_pyramid);
     if (
       shouldUseDensity(t.x.length, {
