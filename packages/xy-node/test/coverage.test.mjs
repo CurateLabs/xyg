@@ -318,6 +318,19 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitScatterDensity sample omits style_channels unlike Python _ship_trace_styles", () => {
+  // Python `_density_sample_spec` ships style_channels as sample.channels.
+  // Node density overlay keeps no channels field even when style_channels is
+  // present. Recorded emit-density-sample-channels stay-host.
+  const fig = figure({ width: 320, height: 240 });
+  fig.scatter([0, 1], [0, 1], { forceDensity: true });
+  fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "density");
+  assert.notEqual(spec.traces[0].density.sample, undefined);
+  assert.equal(spec.traces[0].density.sample.channels, undefined);
+});
+
 test("_emitScatterDensity sample omits stroke_ch unlike Python _ship_trace_styles", () => {
   // Python `_density_sample_spec` ships stroke_ch as sample.stroke. Node
   // density overlay keeps no stroke field even when stroke_ch is present.

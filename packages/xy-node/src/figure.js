@@ -1327,6 +1327,9 @@ export class Figure {
         // Node density sample omits stroke_ch. Python `_density_sample_spec`
         // ships stroke via `_ship_trace_styles`. Matching Python would add
         // sample.stroke. Recorded emit-density-sample-stroke stay-host.
+        // Node density sample omits style_channels. Python `_density_sample_spec`
+        // ships them as `channels` via `_ship_trace_styles`. Matching Python
+        // would add sample.channels. Recorded emit-density-sample-channels stay-host.
       }
     }
     if (tiles != null) {
