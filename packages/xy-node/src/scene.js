@@ -4750,6 +4750,11 @@ export function figureXLabel(figure, xAxis) {
   return (figure ?? {}).x_label ?? (xAxis ?? {}).label;
 }
 
+/** Chrome y-axis label. Python `_pack_figure_chrome` reads `figure.y_label` then `axis.get("label")`. */
+export function figureYLabel(figure, yAxis) {
+  return (figure ?? {}).y_label ?? (yAxis ?? {}).label;
+}
+
 function packChromeFacts(figure, { width, height, margins = null, colorbarOk = true } = {}) {
   const FLAG_AUTHORED_MARGINS = 1 << 0, FLAG_PADDING = 1 << 1, FLAG_X_MAJOR_AUTO = 1 << 2, FLAG_Y_MAJOR_AUTO = 1 << 3;
   const FLAG_X_TICK_LABELS = 1 << 4, FLAG_Y_TICK_LABELS = 1 << 5, FLAG_HAS_CHROME = 1 << 6, FLAG_HAS_LEGEND = 1 << 7, FLAG_HAS_COLORBAR = 1 << 8;
@@ -4777,7 +4782,7 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   }
   const title = encodeUtf8(String(figure.title ?? ""));
   const xLabel = encodeUtf8(String(figureXLabel(figure, xAxis) ?? ""));
-  const yLabel = encodeUtf8(String(figure.yLabel ?? figure.y_label ?? yAxis.label ?? ""));
+  const yLabel = encodeUtf8(String(figureYLabel(figure, yAxis) ?? ""));
   const xFormat = xAxis.format == null ? new Uint8Array() : encodeUtf8(String(xAxis.format));
   const yFormat = yAxis.format == null ? new Uint8Array() : encodeUtf8(String(yAxis.format));
   let xMajor = [], yMajor = [];

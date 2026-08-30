@@ -93,6 +93,7 @@ import {
   axisMinorTickValues,
   axisTickLabels,
   figureXLabel,
+  figureYLabel,
   polarAxisThetaDirection,
   constantMarkColor,
   xyHfColormap,
@@ -1128,6 +1129,13 @@ test("figureXLabel uses x_label then axis label like Python", () => {
   assert.equal(figureXLabel({ xLabel: "X" }, {}), undefined);
   assert.equal(figureXLabel({ x_label: "X" }, {}), "X");
   assert.equal(figureXLabel({}, { label: "X" }), "X");
+});
+
+test("figureYLabel uses y_label then axis label like Python", () => {
+  assert.equal(figureYLabel({}, {}), undefined);
+  assert.equal(figureYLabel({ yLabel: "Y" }, {}), undefined);
+  assert.equal(figureYLabel({ y_label: "Y" }, {}), "Y");
+  assert.equal(figureYLabel({}, { label: "Y" }), "Y");
 });
 
 test("hexbinPacksRgbaPlane uses color_ch only like Python", () => {
