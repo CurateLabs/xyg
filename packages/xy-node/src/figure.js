@@ -202,6 +202,9 @@ export function figureAxisKind(figure, axisId) {
     if (axis === "x" && trace.x_axis !== axisId) continue;
     if (axis === "y" && trace.y_axis !== axisId) continue;
     const col = axis === "x" ? trace.x : trace.y;
+    // Node scatter stores f64, so this time_ms scan is a no-op on typical
+    // Node traces. Python Column.kind can be time_ms. Recorded
+    // scatter-f64-kind stay-host.
     if (col?.kind === "time_ms") return "time";
   }
   return "linear";
@@ -644,6 +647,8 @@ export class Figure {
         id: opts.id ?? nextTraceId++,
         kind: "scatter",
         name: opts.name ?? null,
+        // Node scatter stores f64, not Column.kind. Python Column infers
+        // time_ms. Recorded scatter-f64-kind stay-host.
         x: asF64(x),
         y: asF64(y),
         style: normalizeScatterStyle(opts.style),

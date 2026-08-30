@@ -1402,6 +1402,15 @@ test("figureAutorangeAxisScale uses type only like Python _axis_scale", () => {
   assert.equal(figureAutorangeAxisScale({ type: "time" }), "linear");
 });
 
+test("figureAxisKind Node scatter f64 stays linear unlike Python Column.kind", () => {
+  // Python Column infers time_ms. Node scatter() stores f64, so the
+  // time_ms scan is a no-op on typical traces.
+  const fig = figure();
+  fig.scatter([1, 2], [3, 4]);
+  assert.equal(fig.traces[0].x.kind, undefined);
+  assert.equal(figureAxisKind(fig, "x"), "linear");
+});
+
 test("figureAxisKind matches Python _axis_kind", () => {
   assert.equal(figureAxisKind({}, "x"), "linear");
   assert.equal(figureAxisKind({ axis_options: { x: { kind: "time" } } }, "x"), "linear");
