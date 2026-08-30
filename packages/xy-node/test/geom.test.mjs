@@ -1533,6 +1533,17 @@ test("_polarAxisSpecs uses axis hole like Python _axis_spec", () => {
   assert.equal(leftover._polarAxisSpecs([0, 1], [0, 1]).y.hole, 0.0);
 });
 
+test("_polarAxisSpecs uses axis r_origin like Python _axis_spec", () => {
+  const fig = figure();
+  fig.coords = "polar";
+  fig.setAxis("y", { r_origin: -1 });
+  assert.equal(fig._polarAxisSpecs([0, 1], [0, 1]).y.r_origin, -1);
+  const leftover = figure();
+  leftover.coords = "polar";
+  leftover._polarMeta = { rOrigin: -1 };
+  assert.equal(leftover._polarAxisSpecs([0, 1], [0, 1]).y.r_origin, undefined);
+});
+
 test("figureAxisIsLog uses axis type only like Python _axis_scale log", () => {
   assert.equal(figureAxisIsLog({}, "x"), false);
   assert.equal(figureAxisIsLog({ xAxis: { type: "log" } }, "x"), false);
