@@ -109,6 +109,7 @@ import {
   figureColorbarOptions,
   figureShowLegend,
   figureAxisOptions,
+  figureAutorangeAxisOptions,
   annotationClassName,
   figureYLabel,
   plotTopAxisRoom,
@@ -1255,6 +1256,12 @@ test("figureAxisOptions uses axis_options only like Python", () => {
   assert.equal(figureAxisOptions({ xAxis: { label: "X" } }), undefined);
   assert.equal(figureAxisOptions({ x_axis: { label: "X" } }), undefined);
   assert.deepEqual(figureAxisOptions({ axis_options: { x: { label: "X" } } }), { x: { label: "X" } });
+});
+
+test("figureAutorangeAxisOptions uses axis_options only like Python", () => {
+  assert.deepEqual(figureAutorangeAxisOptions({}, "x"), {});
+  assert.deepEqual(figureAutorangeAxisOptions({ xAxis: { type: "log" } }, "x"), {});
+  assert.deepEqual(figureAutorangeAxisOptions({ axis_options: { x: { type: "log" } } }, "x"), { type: "log" });
 });
 
 test("figureXLabel uses x_label then axis label like Python", () => {

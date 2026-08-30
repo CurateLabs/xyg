@@ -139,8 +139,9 @@ const AUTORANGE_ROLES = [
   ["base", 6],
 ];
 
-function axisOptions(figure, axisId) {
-  return figure.axis_options?.[axisId] ?? figure[`${axisId}Axis`] ?? {};
+/** Autorange axis record. Python `_axis_scale` / `_range` read `axis_options` only. */
+export function figureAutorangeAxisOptions(figure, axisId) {
+  return (figure ?? {}).axis_options?.[axisId] ?? {};
 }
 
 function columnValues(col) {
@@ -207,7 +208,7 @@ export function autoDomain(bounds) {
 }
 
 function packFigureAutorange(figure, axisId, { useDomain = true } = {}) {
-  const options = axisOptions(figure, axisId);
+  const options = figureAutorangeAxisOptions(figure, axisId);
   const explicit = figure._axisRange?.[axisId];
   const domain = options.domain ?? explicit;
   let flags = 0;
