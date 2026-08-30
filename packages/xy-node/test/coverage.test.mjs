@@ -318,6 +318,19 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitLine omits ship scale unlike Python _axis_scale", () => {
+  // Python `_base_entry` passes `_axis_scale` into `pw.ship`, pinning log
+  // offset to 0. Node line encode keeps the column midpoint. Recorded
+  // emit-line-ship-scale stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.setAxis("x", { type: "log" });
+  fig.line([1, 10], [1, 10]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "line");
+  const xCol = spec.columns[spec.traces[0].x];
+  assert.notEqual(xCol.offset, 0);
+});
+
 test("_emitScatter omits ship scale unlike Python _axis_scale", () => {
   // Python `_base_entry` passes `_axis_scale` into `pw.ship`, pinning log
   // offset to 0. Node scatter encode keeps the column midpoint. Recorded
