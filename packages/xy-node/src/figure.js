@@ -1578,6 +1578,9 @@ export class Figure {
       tier: "direct",
       n_points: t.count ?? t.x0.length,
       n_marks: t.x0.length,
+      // Node payload mesh omits ship scale. Python `_emit_triangle_mesh`
+      // passes `_axis_scale` into `pw.ship`. Matching Python would pin
+      // log-axis offset to 0. Recorded emit-mesh-ship-scale stay-host.
       x0: pw.ship(t.x0, x0),
       y0: pw.ship(t.y0, y0),
       x1: pw.ship(t.x1, x1),
