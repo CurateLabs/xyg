@@ -2004,3 +2004,13 @@ test("buildPayload omits polar axis domain unlike Python _axis_spec", () => {
   const { spec } = fig.buildPayload();
   assert.equal(spec.x_axis.domain, undefined);
 });
+
+test("buildPayload omits polar axis format unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `format` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-format stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { format: ".2f" });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.format, undefined);
+});

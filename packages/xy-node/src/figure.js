@@ -2051,7 +2051,10 @@ export class Figure {
         // emit-polar-payload-axis-domain stay-host.
         scale: "linear",
         theta_unit: unit,
-        theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",        // Node polar payload axes omit reverse. Python `_axis_spec` ships
+        theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",        // Node polar payload axes omit format. Python `_axis_spec` ships
+        // `format`. Matching Python would add x_axis.format. Recorded
+        // emit-polar-payload-axis-format stay-host.
+        // Node polar payload axes omit reverse. Python `_axis_spec` ships
         // `reverse`. Matching Python would add x_axis.reverse. Recorded
         // emit-polar-payload-axis-reverse stay-host.
         // Node polar payload axes omit tick_labels. Python `_axis_spec` ships
