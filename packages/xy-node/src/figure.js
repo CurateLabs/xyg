@@ -1873,6 +1873,10 @@ export class Figure {
       id: t.id,
       kind: "ribbon",
       name: t.name,
+      // Node payload ribbon copies t.style. Python `_emit_ribbon` uses
+      // `_default_styled` to fill palette color when style.color is missing.
+      // Matching Python would add style.color. Recorded
+      // emit-ribbon-default-styled stay-host.
       style: { ...t.style },
       tier: "direct",
       n_points: t.count ?? t.x0.length,
