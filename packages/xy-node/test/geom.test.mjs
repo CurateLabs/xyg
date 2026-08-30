@@ -102,6 +102,7 @@ import {
   chromeStyleHasFontFamily,
   figureClassName,
   figureClassNames,
+  figureExtraLegends,
   annotationClassName,
   figureYLabel,
   plotTopAxisRoom,
@@ -1203,6 +1204,12 @@ test("annotationClassName uses class_name only like Python", () => {
   assert.equal(annotationClassName({}), undefined);
   assert.equal(annotationClassName({ className: "custom" }), undefined);
   assert.equal(annotationClassName({ class_name: "custom" }), "custom");
+});
+
+test("figureExtraLegends uses extra_legends only like Python", () => {
+  assert.equal(figureExtraLegends({}), undefined);
+  assert.equal(figureExtraLegends({ extraLegends: [{}] }), undefined);
+  assert.deepEqual(figureExtraLegends({ extra_legends: [{}] }), [{}]);
 });
 
 test("figureXLabel uses x_label then axis label like Python", () => {

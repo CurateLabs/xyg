@@ -2850,7 +2850,7 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
     )
   ))) flags |= 1 << 3;
   if (colorbarUnsupported) flags |= 1 << 4;
-  if ((figure.extraLegends ?? figure.extra_legends ?? []).length) flags |= 1 << 5;
+  if ((figureExtraLegends(figure) ?? []).length) flags |= 1 << 5;
   if (annotations.some((annotation) => !["callout", "arrow", "text"].includes(annotation.kind) && annotation.text != null && annotation.text !== "")) flags |= 1 << 7;
   const traces = [...(figure.traces ?? [])];
   const axisEntries = [];
@@ -4792,6 +4792,11 @@ export function figureClassName(figure) {
 /** Chart slot CSS classes. Python `_pack_figure_support` reads `class_names` only. */
 export function figureClassNames(figure) {
   return (figure ?? {}).class_names;
+}
+
+/** Extra legends. Python `_pack_figure_support` reads `figure.extra_legends` only. */
+export function figureExtraLegends(figure) {
+  return (figure ?? {}).extra_legends;
 }
 
 /** Annotation CSS class. Python `_pack_figure_support` reads `annotation.get("class_name")` only. */
