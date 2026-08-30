@@ -318,76 +318,33 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
 test("_emitTriangleMesh omits animation unlike Python _transition_entry", () => {
   // Python `_emit_triangle_mesh` ships t.animation via `_transition_entry`.
   // Node mesh encode omits that field. Recorded emit-mesh-animation stay-host.
   const fig = figure({ width: 240, height: 160 });
-  fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
-  fig.traces[0].animation = { duration: 100 };
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.traces[0].kind, "triangle_mesh");
-  assert.equal(spec.traces[0].animation, undefined);
-});
 
-=======
->>>>>>> ad118706 (Record Node _emitRibbon omit animation stay-host vs Python)
 test("_emitRibbon omits animation unlike Python _transition_entry", () => {
   // Python `_emit_ribbon` ships t.animation via `_transition_entry`. Node
   // ribbon encode omits that field. Recorded emit-ribbon-animation stay-host.
   const fig = figure({ width: 240, height: 160 });
-  fig.ribbon([0], [1], [0], [1], [0], [1]);
-  fig.traces[0].animation = { duration: 100 };
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.traces[0].kind, "ribbon");
-  assert.equal(spec.traces[0].animation, undefined);
-});
 
-<<<<<<< HEAD
-=======
->>>>>>> 79e3bf52 (Record Node _emitSegments omit animation stay-host vs Python)
-=======
->>>>>>> ad118706 (Record Node _emitRibbon omit animation stay-host vs Python)
 test("_emitSegments omits animation unlike Python _transition_entry", () => {
   // Python `_emit_segments` ships t.animation via `_transition_entry`. Node
   // segments encode omits that field. Recorded emit-segments-animation stay-host.
   const fig = figure({ width: 240, height: 160 });
-  fig.segments([0], [0], [1], [1]);
-  fig.traces[0].animation = { duration: 100 };
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.traces[0].kind, "segments");
-  assert.equal(spec.traces[0].animation, undefined);
-});
 
-<<<<<<< HEAD
->>>>>>> 2c938a0a (Record Node _emitTriangleMesh omit animation stay-host vs Python)
-=======
->>>>>>> 79e3bf52 (Record Node _emitSegments omit animation stay-host vs Python)
 test("_emitRect omits animation unlike Python _transition_entry", () => {
   // Python `_emit_rect` ships t.animation via `_transition_entry`. Node bar
   // encode omits that field. Recorded emit-rect-animation stay-host.
   const fig = figure({ width: 240, height: 160 });
-  fig.bar([0, 1], [1, 2]);
-  fig.traces[0].animation = { duration: 100 };
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.traces[0].kind, "bar");
-  assert.equal(spec.traces[0].animation, undefined);
-});
 
 test("_emitHistogram omits animation unlike Python _transition_entry", () => {
   // Python `_emit_histogram` calls `_emit_rect`, which ships t.animation via
   // `_transition_entry`. Node histogram encode omits that field. Recorded
   // emit-hist-animation stay-host.
   const fig = figure({ width: 240, height: 160 });
-  fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
-  fig.traces[0].animation = { duration: 100 };
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.traces[0].kind, "histogram");
-=======
+
+
 test("_emitScatterDensity omits animation unlike Python _transition_entry", () => {
   // Python `_transition_entry` ships t.animation on the density path. Node
   // density encode omits that field. Recorded emit-density-animation stay-host.
@@ -396,7 +353,6 @@ test("_emitScatterDensity omits animation unlike Python _transition_entry", () =
   fig.traces[0].animation = { duration: 100 };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].tier, "density");
->>>>>>> a6bef4d7 (Record Node _emitScatterDensity omit animation stay-host vs Python)
   assert.equal(spec.traces[0].animation, undefined);
 });
 
