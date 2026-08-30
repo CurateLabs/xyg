@@ -1554,6 +1554,9 @@ export class Figure {
     // Node payload rect omits stroke_ch. Python `_emit_rect` ships stroke_ch
     // via `_ship_trace_styles`. Matching Python would add entry.stroke.
     // Recorded emit-rect-stroke stay-host.
+    // Node payload rect omits style_channels. Python `_emit_rect` ships them
+    // as `channels` via `_ship_trace_styles`. Matching Python would add
+    // entry.channels. Recorded emit-rect-channels stay-host.
     return {
       id: t.id,
       kind,
