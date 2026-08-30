@@ -1972,3 +1972,13 @@ test("buildPayload omits polar axis tick_count unlike Python _axis_spec", () => 
   assert.equal(spec.x_axis.tick_count, undefined);
 });
 
+test("buildPayload omits polar axis reverse unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `reverse` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-reverse stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { reverse: true });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.reverse, undefined);
+});
+
