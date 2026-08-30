@@ -318,6 +318,19 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitTriangleMesh ships x/y unlike Python x2/y2", () => {
+  // Python `_emit_triangle_mesh` ships x2/y2. Node keeps x/y for the third
+  // vertex. Recorded emit-mesh-xy stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "triangle_mesh");
+  assert.ok(spec.traces[0].x != null);
+  assert.ok(spec.traces[0].y != null);
+  assert.equal(spec.traces[0].x2, undefined);
+  assert.equal(spec.traces[0].y2, undefined);
+});
+
 test("_emitHistogram omits color_ch unlike Python _emit_histogram", () => {
   // Python `_emit_histogram` ships color_ch via `_emit_rect`. Node histogram
   // payload keeps no color field even when color_ch is present. Recorded
