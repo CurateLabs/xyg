@@ -1286,6 +1286,9 @@ export class Figure {
       // Node payload density dropped_channels stays empty. Python
       // `_density_trace_spec` uses `per_item_channel_names`. Matching Python
       // would list per-item extras. Recorded emit-density-dropped-channels stay-host.
+      // Node payload density omits mean-color rgba. Python `_density_trace_spec`
+      // ships rgba from `trace_bin_colors`. Matching Python would add
+      // density.rgba. Recorded emit-density-rgba stay-host.
       channels_dropped: false,
       dropped_channels: [],
     };

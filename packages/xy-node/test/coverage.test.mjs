@@ -318,6 +318,24 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitScatterDensity omits mean-color rgba unlike Python trace_bin_colors", () => {
+  // Python `_density_trace_spec` ships density.rgba from trace_bin_colors.
+  // Node density keeps no rgba/color_agg even when color_ch is continuous.
+  // Recorded emit-density-rgba stay-host.
+  const fig = figure({ width: 320, height: 240 });
+  fig.scatter([0, 1], [0, 1], { forceDensity: true });
+  fig.traces[0].color_ch = {
+    mode: "continuous",
+    values: [0, 1],
+    domain: [0, 1],
+    colormap: "viridis",
+  };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "density");
+  assert.equal(spec.traces[0].density.rgba, undefined);
+  assert.equal(spec.traces[0].density.color_agg, undefined);
+});
+
 test("_emitScatterDensity dropped_channels stays empty unlike Python per_item_channel_names", () => {
   // Python `_density_trace_spec` lists per_item_channel_names as dropped_channels.
   // Node density keeps an empty list even when style_channels is present.
