@@ -119,6 +119,7 @@ publish waits on the `@curatelabs` npm org (#13).
   Node `composeScatter` omits `color`.
   Node `composeScatter` omits `size`.
   Node `composeScatter` omits `stroke`.
+  Node `composeScatter` omits `symbol`.
 ---
 
 ## 0. Three runtime surfaces (product-wide)
