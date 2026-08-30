@@ -2305,9 +2305,12 @@ function axisDescriptor(axis, name) {
 const AXIS_STYLE_KEYS = new Set([
   "grid_color", "grid_width", "grid_opacity", "axis_color", "axis_width",
   "tick_color", "tick_width", "tick_length", "tick_direction", "tick_label_color", "label_color",
-  "gridColor", "gridWidth", "gridOpacity", "axisColor", "axisWidth",
-  "tickColor", "tickWidth", "tickLength", "tickDirection", "tickLabelColor", "labelColor",
 ]);
+
+/** Chrome axis style keys. Python `_SCENE_AXIS_STYLE_KEYS` is snake-case only. */
+export function chromeAxisStyleKeys() {
+  return AXIS_STYLE_KEYS;
+}
 
 function styleHas(style, snake, camel) {
   return Object.hasOwn(style, snake) || (camel != null && Object.hasOwn(style, camel));
