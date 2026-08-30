@@ -291,7 +291,7 @@ function packFigureAutorange(figure, axisId, { useDomain = true } = {}) {
   const categories = figureAutorangeCategories(figure, axisId);
   const kind = figureAxisKind(figure, axisId);
   const kindCode = kind === "time" ? 1 : kind === "category" ? 2 : 0;
-  const thetaUnit = (figureAutorangeThetaUnit(options) ?? figure._polarMeta?.thetaUnit ?? "radians") === "degrees" ? 1 : 0;
+  const thetaUnit = (figureAutorangeThetaUnit(options) ?? "radians") === "degrees" ? 1 : 0;
   const nCategories = categories?.length ? categories.length : 0;
   const traces = figure.traces ?? [];
   if (traces.length > 0xffff) throw new RangeError("figure autorange trace budget exceeded");
@@ -553,6 +553,12 @@ export class Figure {
       gridShape: meta.gridShape ?? "circular",
       ...(meta ?? {}),
     };
+    this.axis_options = this.axis_options ?? { x: {}, y: {} };
+    this.axis_options.x = {
+      ...(this.axis_options.x ?? {}),
+      theta_unit: this._polarMeta.thetaUnit,
+    };
+    this.xAxis = this.axis_options.x;
     return this;
   }
 
