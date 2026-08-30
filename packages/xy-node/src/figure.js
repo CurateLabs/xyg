@@ -1292,7 +1292,8 @@ export class Figure {
       pointOverlay: true,
       gridFromPyramid: reduction === "pyramid-count",      // log x. Recorded emit-density-xlinear stay-host.
 
-      hasPyramidResource,
+      hasPyramidResource,      // log y. Recorded emit-density-ylinear stay-host.
+
       forceBin2d,
       forcePyramid,
       // Node colorMode is style.color ? 1 : 0. Python `_density_trace_spec`
