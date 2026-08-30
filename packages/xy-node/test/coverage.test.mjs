@@ -318,6 +318,18 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitHexbin copies t.style unlike Python _default_styled", () => {
+  // Python `_emit_hexbin` uses `_default_styled` to fill palette color when
+  // style.color is missing. Node hexbin encode copies t.style. Recorded
+  // emit-hexbin-default-styled stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.hexbin([1, 2, 3, 4, 5], [1, 2, 1, 2, 1.5], { gridsize: 4 });
+  fig.traces[0].style = { opacity: 0.9 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "hexbin");
+  assert.equal(spec.traces[0].style.color, undefined);
+});
+
 test("_emitArea copies t.style unlike Python _default_styled", () => {
   // Python `_emit_area` uses `_default_styled` to fill palette color when
   // style.color is missing. Node area encode copies t.style. Recorded

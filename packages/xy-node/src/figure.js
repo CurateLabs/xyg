@@ -1785,6 +1785,10 @@ export class Figure {
       id: t.id,
       kind: "hexbin",
       name: t.name,
+      // Node payload hexbin copies t.style. Python `_emit_hexbin` uses
+      // `_default_styled` to fill palette color when style.color is missing.
+      // Matching Python would add style.color. Recorded
+      // emit-hexbin-default-styled stay-host.
       style: { ...t.style },
       tier: "direct",
       n_points: t.n_points ?? t.x.length,
