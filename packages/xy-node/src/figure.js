@@ -1187,7 +1187,10 @@ export class Figure {
         range_px: t.sizeRange ?? [8, 22],
         domain: [lo, hi],
         buf: pw.shipScalar(norm),
-      };        // Node cartesian payload axes omit label_position. Python `_axis_spec`
+      };        // Node cartesian payload axes omit label_angle. Python `_axis_spec`
+        // ships `label_angle`. Matching Python would add x_axis.label_angle.
+        // Recorded emit-payload-axis-label-angle stay-host.
+        // Node cartesian payload axes omit label_position. Python `_axis_spec`
         // ships `label_position`. Matching Python would add
         // x_axis.label_position. Recorded emit-payload-axis-label-position
         // stay-host.
