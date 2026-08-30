@@ -1770,6 +1770,9 @@ export class Figure {
     // Node payload ribbon omits stroke_ch. Python `_emit_ribbon` ships
     // stroke_ch via `_ship_trace_styles`. Matching Python would add
     // entry.stroke. Recorded emit-ribbon-stroke stay-host.
+    // Node payload ribbon omits style_channels. Python `_emit_ribbon` ships
+    // them as `channels` via `_ship_trace_styles`. Matching Python would add
+    // entry.channels. Recorded emit-ribbon-channels stay-host.
     return entry;
   }
 
