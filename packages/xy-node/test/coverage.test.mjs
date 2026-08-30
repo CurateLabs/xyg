@@ -318,6 +318,18 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitRect ships bar columns unlike Python nested bar", () => {
+  // Python `_emit_bar` ships a nested `bar` spec via `_emit_bar_compact`.
+  // Node bar payload keeps x0/x1/y0/y1 rect columns and no `bar` field.
+  // Recorded emit-bar-compact stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.bar([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "bar");
+  assert.equal(spec.traces[0].bar, undefined);
+  assert.notEqual(spec.traces[0].x0, undefined);
+});
+
 test("_emitHistogram skips rectFiniteSel unlike Python _emit_rect", () => {
   // Python `_emit_histogram` calls `_emit_rect`, which drops non-finite rows
   // via `_rect_finite_sel`. Node histogram payload keeps every bin even when
