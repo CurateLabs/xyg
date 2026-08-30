@@ -114,6 +114,7 @@ import {
   scatterPayloadForceDensity,
   scatterPayloadForceDirect,
   scatterPayloadForcePyramid,
+  scatterPayloadNoRescan,
   annotationClassName,
   figureYLabel,
   plotTopAxisRoom,
@@ -1290,6 +1291,12 @@ test("scatterPayloadForcePyramid uses force_pyramid only like Python", () => {
   assert.equal(scatterPayloadForcePyramid({}), undefined);
   assert.equal(scatterPayloadForcePyramid({ style: { force_pyramid: true } }), undefined);
   assert.equal(scatterPayloadForcePyramid({ force_pyramid: true }), true);
+});
+
+test("scatterPayloadNoRescan uses no_rescan only like Python", () => {
+  assert.equal(scatterPayloadNoRescan({}), undefined);
+  assert.equal(scatterPayloadNoRescan({ style: { no_rescan: true } }), undefined);
+  assert.equal(scatterPayloadNoRescan({ no_rescan: true }), true);
 });
 
 test("figureXLabel uses x_label then axis label like Python", () => {
