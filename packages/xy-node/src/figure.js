@@ -1482,6 +1482,9 @@ export class Figure {
     const color = this._shipColor(t.color, pw);
     if (color != null) entry.color = color;
     if (t.tooltip_rows != null) entry.tooltip_rows = t.tooltip_rows;
+    // Node payload segments omits stroke_ch. Python `_emit_segments` ships
+    // stroke_ch via `_ship_trace_styles`. Matching Python would add
+    // entry.stroke. Recorded emit-segments-stroke stay-host.
     return entry;
   }
 
