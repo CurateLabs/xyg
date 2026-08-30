@@ -1186,6 +1186,9 @@ export class Figure {
     // Node payload scatter omits stroke_ch. Python `_emit_scatter` ships
     // stroke_ch via `_ship_trace_styles`. Matching Python would add
     // entry.stroke. Recorded emit-scatter-stroke stay-host.
+    // Node payload scatter omits style_channels. Python `_emit_scatter` ships
+    // them as `channels` via `_ship_trace_styles`. Matching Python would add
+    // entry.channels. Recorded emit-scatter-channels stay-host.
     return entry;
   }
 

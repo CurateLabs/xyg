@@ -318,6 +318,18 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitScatter omits style_channels unlike Python _ship_trace_styles", () => {
+  // Python `_emit_scatter` ships style_channels as `channels`. Node scatter
+  // payload keeps no channels field even when style_channels is present.
+  // Recorded emit-scatter-channels stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "direct");
+  assert.equal(spec.traces[0].channels, undefined);
+});
+
 test("_emitHistogram omits stroke_ch unlike Python _ship_trace_styles", () => {
   // Python `_emit_histogram` ships stroke_ch via `_emit_rect` /
   // `_ship_trace_styles`. Node histogram payload keeps no stroke field even
