@@ -1400,3 +1400,163 @@ test("sankeyChart emits ribbon bands", () => {
   const { spec } = sankeyChart(nodes, links).buildPayload();
   assert.ok(spec.traces.some((t) => t.kind === "ribbon"));
 });
+
+test("buildPayload omits cartesian axis tick_values unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_values`. Node cartesian payload axes omit
+  // that field even when axis tick_values is set. Recorded
+  // emit-payload-axis-tick-values stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_values: [0, 0.5, 1] });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(fig.axis_options.x.tick_values, [0, 0.5, 1]);
+  assert.equal(spec.x_axis.tick_values, undefined);
+});
+
+test("buildPayload omits dom unlike Python _dom_spec", () => {
+  // Python `_dom_spec` ships class_name / class_names / style / styles.
+  // Node payload omits spec.dom even when class_name is set. Recorded
+  // emit-payload-dom stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.class_name = "root-node";
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.class_name, "root-node");
+  assert.equal(spec.dom, undefined);
+});
+
+test("_emitScatterDensity omits categorical color unlike Python _density_trace_spec", () => {
+  // Python `_density_trace_spec` ships a slim categorical color spec for
+  // legend chrome. Node density encode omits that field. Recorded
+  // emit-density-cat-color stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1], { forceDensity: true });
+  fig.traces[0].color_ch = { mode: "categorical", categories: ["a", "b"] };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "density");
+  assert.equal(spec.traces[0].color, undefined);
+});
+
+test("buildPayload omits padding unlike Python build_payload", () => {
+  // Python `build_payload` ships `padding`. Node payload omits that field
+  // even when Scene pack would read figure.padding. Recorded
+  // emit-payload-padding stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.padding = [8, 8, 8, 8];
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(fig.padding, [8, 8, 8, 8]);
+  assert.equal(spec.padding, undefined);
+});
+
+test("buildPayload omits title_options unlike Python build_payload", () => {
+  // Python `build_payload` ships `title_options` with geometry columns. Node
+  // payload omits that field. Recorded emit-payload-title-options stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.title_options = [{ text: "T", y: 1.0, pad: 8.0 }];
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.title_options.length, 1);
+  assert.equal(spec.title_options, undefined);
+});
+
+test("buildPayload omits extra_legends unlike Python build_payload", () => {
+  // Python `build_payload` ships `extra_legends`. Node payload omits that
+  // field. Recorded emit-payload-extra-legends stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.extra_legends = [{ loc: "lower left" }];
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.extra_legends.length, 1);
+  assert.equal(spec.extra_legends, undefined);
+});
+
+test("buildPayload omits annotations unlike Python build_payload", () => {
+  // Python `build_payload` ships `_annotation_specs`. Node payload omits
+  // that field. Recorded emit-payload-annotations stay-host.
+  const fig = figure({
+    width: 240,
+    height: 160,
+    annotations: [{ kind: "text", text: "hi", x: 0, y: 1 }],
+  });
+  fig.scatter([0, 1], [0, 1]);
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.annotations.length, 1);
+  assert.equal(spec.annotations, undefined);
+});
+
+test("buildPayload omits colorbar unlike Python build_payload", () => {
+  // Python `build_payload` ships `colorbar` from `colorbar_options`. Node
+  // payload omits that field. Recorded emit-payload-colorbar stay-host.
+  const fig = figure({ width: 240, height: 160, colorbar: { title: "c" } });
+  fig.scatter([0, 1], [0, 1]);
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.colorbar_options.title, "c");
+  assert.equal(spec.colorbar, undefined);
+});
+
+test("buildPayload omits legend unlike Python build_payload", () => {
+  // Python `build_payload` ships `legend` from `legend_options`. Node
+  // payload omits that field. Recorded emit-payload-legend stay-host.
+  const fig = figure({ width: 240, height: 160, legend: { loc: "upper right" } });
+  fig.scatter([0, 1], [0, 1]);
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.legend_options.loc, "upper right");
+  assert.equal(spec.legend, undefined);
+});
+
+test("_emitTriangleMesh omits animation unlike Python _transition_entry", () => {
+  // Python `_emit_triangle_mesh` ships t.animation via `_transition_entry`.
+  // Node mesh encode omits that field. Recorded emit-mesh-animation stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "triangle_mesh");
+  assert.equal(spec.traces[0].animation, undefined);
+});
+
+test("_emitRibbon omits animation unlike Python _transition_entry", () => {
+  // Python `_emit_ribbon` ships t.animation via `_transition_entry`. Node
+  // ribbon encode omits that field. Recorded emit-ribbon-animation stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.ribbon([0], [1], [0], [1], [0], [1]);
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "ribbon");
+  assert.equal(spec.traces[0].animation, undefined);
+});
+
+test("_emitSegments omits animation unlike Python _transition_entry", () => {
+  // Python `_emit_segments` ships t.animation via `_transition_entry`. Node
+  // segments encode omits that field. Recorded emit-segments-animation stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.segments([0], [0], [1], [1]);
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "segments");
+  assert.equal(spec.traces[0].animation, undefined);
+});
+
+test("_emitRect omits animation unlike Python _transition_entry", () => {
+  // Python `_emit_rect` ships t.animation via `_transition_entry`. Node bar
+  // encode omits that field. Recorded emit-rect-animation stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.bar([0, 1], [1, 2]);
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "bar");
+  assert.equal(spec.traces[0].animation, undefined);
+});
+
+test("_emitHistogram omits animation unlike Python _transition_entry", () => {
+  // Python `_emit_histogram` calls `_emit_rect`, which ships t.animation via
+  // `_transition_entry`. Node histogram encode omits that field. Recorded
+  // emit-hist-animation stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "histogram");
+  assert.equal(spec.traces[0].animation, undefined);
+});

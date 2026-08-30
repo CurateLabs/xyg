@@ -1187,7 +1187,10 @@ export class Figure {
         range_px: t.sizeRange ?? [8, 22],
         domain: [lo, hi],
         buf: pw.shipScalar(norm),
-      };
+      };        // Node cartesian payload axes omit tick_values. Python `_axis_spec`
+        // ships `tick_values`. Matching Python would add x_axis.tick_values.
+        // Recorded emit-payload-axis-tick-values stay-host.
+
     }
     if (t.tooltip_rows != null) {
       // Node payload scatter skips tooltip_rows length. Python
