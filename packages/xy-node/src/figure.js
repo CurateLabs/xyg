@@ -1721,7 +1721,7 @@ export class Figure {
         range: xr,
         scale: "linear",
         theta_unit: unit,
-        theta_zero: meta.thetaZero ?? "E",
+        theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",
         theta_direction: meta.thetaDirection ?? "counterclockwise",
         sector,
         grid_shape: meta.gridShape ?? "circular",
