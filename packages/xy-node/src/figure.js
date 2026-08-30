@@ -2055,6 +2055,12 @@ export class Figure {
         // Node polar payload axes omit bounds. Python `_axis_spec` ships
         // `bounds`. Matching Python would add x_axis.bounds. Recorded
         // emit-polar-payload-axis-bounds stay-host.
+        // Node polar payload axes omit tick_sides. Python `_axis_spec` ships
+        // `tick_sides`. Matching Python would add x_axis.tick_sides. Recorded
+        // emit-polar-payload-axis-tick-sides stay-host.
+        // Node polar payload axes omit tick_label_sides. Python `_axis_spec` ships
+        // `tick_label_sides`. Matching Python would add x_axis.tick_label_sides. Recorded
+        // emit-polar-payload-axis-tick-label-sides stay-host.
         scale: "linear",
         theta_unit: unit,
         theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",        // Node polar payload axes omit tick_sides. Python `_axis_spec` ships

@@ -2034,3 +2034,13 @@ test("buildPayload omits polar axis tick_sides unlike Python _axis_spec", () => 
   const { spec } = fig.buildPayload();
   assert.equal(spec.x_axis.tick_sides, undefined);
 });
+
+test("buildPayload omits polar axis tick_label_sides unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_label_sides` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-label-sides stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_label_sides: ["bottom"] });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_sides, undefined);
+});
