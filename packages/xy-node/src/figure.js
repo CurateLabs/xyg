@@ -1724,6 +1724,8 @@ export class Figure {
     const unit = figureAutorangeThetaUnit(this.axis_options?.x) ?? "radians";
     const turn = unit === "degrees" ? 360.0 : 2.0 * Math.PI;
     const authoredSector = (this.axis_options?.x ?? {}).sector;
+    // Node keeps an empty sector list. Python `_axis_spec` uses
+    // `opts.get("sector") or (0.0, turn)`. Recorded polar-payload-sector-empty stay-host.
     const sector = authoredSector != null ? [...authoredSector] : [0.0, turn];
     const yOpts = this.axis_options?.y ?? {};
     const y = {

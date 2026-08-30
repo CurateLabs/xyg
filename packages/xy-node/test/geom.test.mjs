@@ -1571,6 +1571,14 @@ test("_polarAxisSpecs uses axis grid_shape like Python _axis_spec", () => {
   assert.equal(leftover._polarAxisSpecs([0, 1], [0, 1]).x.grid_shape, "circular");
 });
 
+test("_polarAxisSpecs empty sector stays unlike Python or-default", () => {
+  // Python `_axis_spec` uses `opts.get("sector") or (0.0, turn)`.
+  // Node `!= null` keeps the empty list.
+  const fig = figure();
+  fig.setPolarMeta({ sector: [] });
+  assert.deepEqual(fig._polarAxisSpecs([0, 1], [0, 1]).x.sector, []);
+});
+
 test("_polarAxisSpecs uses axis sector like Python _axis_spec", () => {
   const fig = figure();
   fig.setPolarMeta({ sector: [0, Math.PI] });
