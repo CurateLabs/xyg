@@ -1650,6 +1650,10 @@ export class Figure {
       id: t.id,
       kind,
       name: t.name,
+      // Node payload rect copies t.style. Python `_emit_rect` uses
+      // `_default_styled` to fill palette color when style.color is missing.
+      // Matching Python would add style.color. Recorded
+      // emit-rect-default-styled stay-host.
       style: { ...t.style },
       tier: "direct",
       n_points: t.count ?? t.x0.length,
