@@ -1606,6 +1606,9 @@ export class Figure {
       tier: "direct",
       n_points: t.count ?? t.grid.length,
       n_marks: t.grid.length,
+      // Node payload heatmap ships grid columns. Python `_emit_heatmap` ships
+      // a nested heatmap object. Matching Python would nest buf/w/h/colormap.
+      // Recorded heatmap-grid stay-host.
       x: pw.ship(t.x, xCol),
       y: pw.ship(t.y, yCol),
       grid: pw.ship(t.grid, gridCol),
