@@ -318,6 +318,18 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitTriangleMesh omits transition_keys unlike Python _transition_entry", () => {
+  // Python `_emit_triangle_mesh` ships transition_keys as `keys`. Node mesh
+  // payload keeps no keys field even when transition_keys is present.
+  // Recorded emit-mesh-transition stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
+  fig.traces[0].transition_keys = [[1, 2]];
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "triangle_mesh");
+  assert.equal(spec.traces[0].keys, undefined);
+});
+
 test("_emitRibbon omits transition_keys unlike Python _transition_entry", () => {
   // Python `_emit_ribbon` ships transition_keys as `keys`. Node ribbon
   // payload keeps no keys field even when transition_keys is present.
