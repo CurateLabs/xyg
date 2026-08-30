@@ -4750,6 +4750,11 @@ export function axisTickLabelAnchor(axis) {
   return (axis ?? {}).tick_label_anchor;
 }
 
+/** Chrome tick-label angle. Python `_pack_tick_collision` reads `axis.get("tick_label_angle")` only. */
+export function axisTickLabelAngle(axis) {
+  return (axis ?? {}).tick_label_angle;
+}
+
 /** Chrome tick-label min gap. Python `_pack_tick_collision` reads `axis.get("tick_label_min_gap")` only. */
 export function axisTickLabelMinGap(axis) {
   return (axis ?? {}).tick_label_min_gap;
@@ -4899,8 +4904,8 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   const yAnchor = anchorCode(yAxis);
   const xGap = axisTickLabelMinGap(xAxis);
   const yGap = axisTickLabelMinGap(yAxis);
-  const xAngle = xAxis.tick_label_angle ?? xAxis.tickLabelAngle;
-  const yAngle = yAxis.tick_label_angle ?? yAxis.tickLabelAngle;
+  const xAngle = axisTickLabelAngle(xAxis);
+  const yAngle = axisTickLabelAngle(yAxis);
   const extras = xGap != null || yGap != null || xAngle != null || yAngle != null;
   let collisionFlags = extras ? 1 : 0;
   if ((xAxis.kind ?? xAxis.type) === "category") collisionFlags |= 1 << 1;

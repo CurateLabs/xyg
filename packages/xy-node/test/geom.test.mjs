@@ -93,6 +93,7 @@ import {
   axisMinorTickValues,
   axisTickLabels,
   axisTickLabelAnchor,
+  axisTickLabelAngle,
   axisTickLabelMinGap,
   figureXLabel,
   figureYLabel,
@@ -1131,6 +1132,12 @@ test("axisTickLabelAnchor uses tick_label_anchor only like Python", () => {
   assert.equal(axisTickLabelAnchor({}), undefined);
   assert.equal(axisTickLabelAnchor({ tickLabelAnchor: "end" }), undefined);
   assert.equal(axisTickLabelAnchor({ tick_label_anchor: "end" }), "end");
+});
+
+test("axisTickLabelAngle uses tick_label_angle only like Python", () => {
+  assert.equal(axisTickLabelAngle({}), undefined);
+  assert.equal(axisTickLabelAngle({ tickLabelAngle: -30 }), undefined);
+  assert.equal(axisTickLabelAngle({ tick_label_angle: -30 }), -30);
 });
 
 test("axisTickLabelMinGap uses tick_label_min_gap only like Python", () => {
