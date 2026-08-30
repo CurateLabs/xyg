@@ -318,6 +318,15 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("buildPayload omits cartesian axis label unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `label`. Node cartesian payload axes omit that
+  // field. Recorded emit-payload-axis-label stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.label, undefined);
+});
+
 test("buildPayload omits cartesian axis side unlike Python _axis_spec", () => {
   // Python `_axis_spec` ships `side`. Node cartesian payload axes omit that
   // field. Recorded emit-payload-axis-side stay-host.
