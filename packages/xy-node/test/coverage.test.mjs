@@ -1580,3 +1580,15 @@ test("buildPayload omits cartesian axis tick_count unlike Python _axis_spec", ()
   assert.equal(spec.x_axis.tick_count, undefined);
 });
 
+test("buildPayload omits cartesian axis reverse unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `reverse`. Node cartesian payload axes omit
+  // that field even when axis reverse is set. Recorded
+  // emit-payload-axis-reverse stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { reverse: true });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.reverse, true);
+  assert.equal(spec.x_axis.reverse, undefined);
+});
+
