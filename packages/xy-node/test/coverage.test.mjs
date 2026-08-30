@@ -318,6 +318,16 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("buildPayload omits colorbar unlike Python build_payload", () => {
+  // Python `build_payload` ships `colorbar` from `colorbar_options`. Node
+  // payload omits that field. Recorded emit-payload-colorbar stay-host.
+  const fig = figure({ width: 240, height: 160, colorbar: { title: "c" } });
+  fig.scatter([0, 1], [0, 1]);
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.colorbar_options.title, "c");
+  assert.equal(spec.colorbar, undefined);
+});
+
 test("buildPayload omits legend unlike Python build_payload", () => {
   // Python `build_payload` ships `legend` from `legend_options`. Node
   // payload omits that field. Recorded emit-payload-legend stay-host.
