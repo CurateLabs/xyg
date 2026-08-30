@@ -1327,7 +1327,8 @@ export class Figure {
       const n = t.x.length;
       const { keepAll, indices } = payloadSampleTargetIndices({
         n,
-        target: DENSITY_SAMPLE_TARGET,
+        target: DENSITY_SAMPLE_TARGET,      // NaN rows from sample.n. Recorded emit-density-sample-sel stay-host.
+
         seed: DENSITY_SAMPLE_SEED,
       });
       const sx = keepAll ? t.x : gatherF64(t.x, indices);

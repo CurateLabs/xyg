@@ -1431,4 +1431,3 @@ test("_emitScatterDensity omits animation unlike Python _transition_entry", () =
   assert.equal(spec.traces[0].tier, "density");
   assert.equal(spec.traces[0].animation, undefined);
 });
-
