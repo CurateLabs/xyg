@@ -102,6 +102,7 @@ check-ci:
 
 check-ownership:
 	$(PYTHON) scripts/verify_ownership.py
+	$(PYTHON) scripts/audit_python_host_core.py >/dev/null
 
 check-benchmark-harness:
 	$(PYTHON) scripts/verify_local.py --only benchmark_harness
