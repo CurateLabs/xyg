@@ -118,6 +118,7 @@ import {
   figureAxisOptions,
   figureAutorangeAxisOptions,
   figureAutorangeAxisScale,
+  figureAxisKind,
   scatterPayloadForceBin2d,
   scatterPayloadForceDensity,
   scatterPayloadForceDirect,
@@ -1344,6 +1345,19 @@ test("figureAutorangeAxisScale uses type only like Python _axis_scale", () => {
   assert.equal(figureAutorangeAxisScale({ type: "log" }), "log");
   assert.equal(figureAutorangeAxisScale({ type: "symlog" }), "symlog");
   assert.equal(figureAutorangeAxisScale({ type: "time" }), "linear");
+});
+
+test("figureAxisKind matches Python _axis_kind", () => {
+  assert.equal(figureAxisKind({}, "x"), "linear");
+  assert.equal(figureAxisKind({ axis_options: { x: { kind: "time" } } }, "x"), "linear");
+  assert.equal(figureAxisKind({ axis_options: { x: { type: "time" } } }, "x"), "time");
+  assert.equal(figureAxisKind({ _axis_categories: { x: [] } }, "x"), "category");
+  assert.equal(figureAxisKind({
+    traces: [{ x_axis: "x", y_axis: "y", x: { kind: "time_ms" }, y: { kind: "float" } }],
+  }, "x"), "time");
+  assert.equal(figureAxisKind({
+    traces: [{ x_axis: "x", y_axis: "y", x: { kind: "time_ms" }, y: { kind: "float" } }],
+  }, "y"), "linear");
 });
 
 test("scatterPayloadForceBin2d uses force_bin2d only like Python", () => {
