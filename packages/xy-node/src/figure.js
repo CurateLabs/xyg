@@ -1705,6 +1705,9 @@ export class Figure {
       // Node payload heatmap ships grid columns. Python `_emit_heatmap` ships
       // a nested heatmap object. Matching Python would nest buf/w/h/colormap.
       // Recorded heatmap-grid stay-host.
+      // Node payload heatmap omits color. Python `_emit_heatmap` ships a
+      // continuous color spec from the nested colormap/domain. Matching
+      // Python would add entry.color. Recorded emit-heatmap-color stay-host.
       x: pw.ship(t.x, xCol),
       y: pw.ship(t.y, yCol),
       grid: pw.ship(t.grid, gridCol),
