@@ -61,6 +61,7 @@ import {
   sceneHexbinRgbaPlaneAdmit,
   meshHasPerItem,
   meshJoinedFill,
+  packXyAfLinecap,
   packXyTaColormap,
   packXyTaDensityColorCh,
   packXyTaFillOpacity,
@@ -517,6 +518,14 @@ test("packXyTcLinecap uses linecap only like Python", () => {
     [...packXyTcLinecap({ linecap: "butt" })],
     [...new TextEncoder().encode("butt")],
   );
+});
+
+test("packXyAfLinecap uses linecap only like Python", () => {
+  assert.equal(packXyAfLinecap({}), null);
+  assert.equal(packXyAfLinecap({ lineCap: "square" }), null);
+  assert.equal(packXyAfLinecap({ lineCap: "nope" }), null);
+  assert.equal(packXyAfLinecap({ linecap: "square" }), 2);
+  assert.equal(packXyAfLinecap({ linecap: "nope" }), false);
 });
 
 test("packXyTcLineOpacity uses line_opacity only like Python", () => {
