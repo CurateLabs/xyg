@@ -1688,3 +1688,15 @@ test("buildPayload omits cartesian axis label_angle unlike Python _axis_spec", (
   assert.equal(spec.x_axis.label_angle, undefined);
 });
 
+test("buildPayload omits cartesian axis tick_label_angle unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_label_angle`. Node cartesian payload axes
+  // omit that field even when axis tick_label_angle is set. Recorded
+  // emit-payload-axis-tick-label-angle stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_label_angle: 30 });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.tick_label_angle, 30);
+  assert.equal(spec.x_axis.tick_label_angle, undefined);
+});
+
