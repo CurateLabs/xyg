@@ -1575,6 +1575,8 @@ export function color2Channel(trace) {
 export function sourceColorCss(trace) {
   const css = channelConstantCss(trace.color_ch);
   if (css != null) return css;
+  // Node `??` keeps empty `style.color`. Python `_trace_source_color_css`
+  // uses `.get("color") or "#3987e5"`. Recorded source-css-empty stay-host.
   return String(trace.style?.color ?? "#3987e5");
 }
 
