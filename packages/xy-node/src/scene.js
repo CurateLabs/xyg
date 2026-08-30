@@ -1370,8 +1370,7 @@ export function packPolarSceneInput(figure) {
   const turn = unit === "degrees" ? 360 : Math.PI * 2;
   const sector = polarAxisSector(thetaAxis) ?? [0, turn];
   const categories = thetaAxis.categories ?? [];
-  const range = typeof figure._range === "function" ? figure._range("y") : (rAxis.range ?? [0, 1]);
-  const [rLo, rHi] = range;
+  const [rLo, rHi] = figure._range("y");
   const origin = polarAxisROrigin(rAxis);
   const scale = polarRScale(rAxis);
   const grid = polarGridShape(thetaAxis);
