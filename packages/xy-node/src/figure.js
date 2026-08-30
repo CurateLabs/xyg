@@ -2033,7 +2033,10 @@ export class Figure {
         // emit-polar-payload-axis-label stay-host.
         scale: "linear",
         theta_unit: unit,
-        theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",        // Node polar payload axes omit side. Python `_axis_spec` ships
+        theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",        // Node polar payload axes omit tick_values. Python `_axis_spec` ships
+        // `tick_values`. Matching Python would add x_axis.tick_values. Recorded
+        // emit-polar-payload-axis-tick-values stay-host.
+        // Node polar payload axes omit side. Python `_axis_spec` ships
         // `side`. Matching Python would add x_axis.side. Recorded
         // emit-polar-payload-axis-side stay-host.
         // Node polar payload axes omit id. Python `_axis_spec` ships
