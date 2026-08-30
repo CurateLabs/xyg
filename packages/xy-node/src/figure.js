@@ -2063,6 +2063,9 @@ export class Figure {
         // Node cartesian payload axes omit kind. Python `_axis_spec` ships
         // `_axis_kind`. Matching Python would add x_axis.kind. Recorded
         // emit-payload-axis-kind stay-host.
+        // Node cartesian payload axes omit side. Python `_axis_spec` ships
+        // `side`. Matching Python would add x_axis.side. Recorded
+        // emit-payload-axis-side stay-host.
         x: { range: xr, scale: "linear" },
         y: { range: yr, scale: "linear" },
       };
