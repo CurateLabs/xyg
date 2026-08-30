@@ -318,6 +318,18 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitSegments copies t.style unlike Python _default_styled", () => {
+  // Python `_emit_segments` uses `_default_styled` to fill palette color when
+  // style.color is missing. Node segments encode copies t.style. Recorded
+  // emit-segments-default-styled stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.segments([0, 1], [0, 1], [1, 2], [1, 2]);
+  fig.traces[0].style = { opacity: 0.9 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "segments");
+  assert.equal(spec.traces[0].style.color, undefined);
+});
+
 test("_emitTriangleMesh copies t.style unlike Python _default_styled", () => {
   // Python `_emit_triangle_mesh` uses `_default_styled` to fill palette color
   // when style.color is missing. Node mesh encode copies t.style. Recorded
