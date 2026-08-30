@@ -1392,7 +1392,8 @@ export class Figure {
       visible: t.x.length,
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
-      density,
+      density,      // rows from entry.visible. Recorded emit-density-visible stay-host.
+
     };
   }
 
