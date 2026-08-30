@@ -1572,3 +1572,15 @@ test("buildPayload omits cartesian axis minor_tick_values unlike Python _axis_sp
   assert.deepEqual(fig.axis_options.x.minor_tick_values, [0.25, 0.75]);
   assert.equal(spec.x_axis.minor_tick_values, undefined);
 });
+
+test("buildPayload omits cartesian axis tick_labels unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `tick_labels`. Node cartesian payload axes omit
+  // that field even when axis tick_labels is set. Recorded
+  // emit-payload-axis-tick-labels stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_labels: ["a", "b"] });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(fig.axis_options.x.tick_labels, ["a", "b"]);
+  assert.equal(spec.x_axis.tick_labels, undefined);
+});
