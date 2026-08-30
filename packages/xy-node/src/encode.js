@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyF32SafeScale, xyGeometryOffset, xyScalePinsOffset, xySceneDashAdmit, xySceneLinecapAdmit, xyDensityOverlayOpacity, xySceneMarkerPathAdmit, xySceneAnnotationStyleAdmit, xySceneArraysEqual, xySceneConstantColorAdmit, xySceneHiddenOrPerItemAdmit, xySceneRibbonColor2Classify, xySceneScatterPaintChannelAdmit, xySceneTickLabelStrategy, xySceneTickAnchor, xySceneFillGradientAdmit, xySceneFiniteAll, xySceneParseLinearGradient, xySceneRectExtraFlags, xySceneGradientDir, xySceneLinearGradientPrefix, xySceneGradientSpace, xySceneGradientSolidCss, xySceneHeatmapColormapAdmit, xySceneHeatmapExtentAdmit, xySceneHeatmapShapeAdmit, xySceneHexbinColormapPlaneAdmit, xySceneHexbinPitchAdmit, xySceneHexbinReduceAdmit, xySceneHexbinRgbaPlaneAdmit, xySceneMeshPaintPlaneAdmit, xySceneItemApplyOpacity, xySceneItemWidthsAdmit, xySceneItemFillT, xySceneCurveClassify, xySceneMarkerGlyphAdmit, xySceneKindAdmit, xySceneKindClass, xyArrowGeometry, xyArrowStylePack, xyArrowShaftPoints, xyArrowEndDecoration, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyHexbinRing, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyStepArrays, xyMarkerPathScale, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapLut, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityRgbaLinear, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyPayloadVisibleIndices, xyValidIndicesF64, xyPayloadEvenIndices, xyPayloadErrorbarIndices, xyPayloadSegmentBudget, xyPayloadSampleTargetIndices, xyPaintEffectiveRgba, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyEncodedColumnMeta, xyF32SafeScale, xyGeometryOffset, xyScalePinsOffset, xySceneDashAdmit, xySceneLinecapAdmit, xyDensityOverlayOpacity, xySceneMarkerPathAdmit, xySceneAnnotationStyleAdmit, xySceneArraysEqual, xySceneConstantColorAdmit, xySceneHiddenOrPerItemAdmit, xySceneRibbonColor2Classify, xySceneScatterPaintChannelAdmit, xySceneTickLabelStrategy, xySceneTickAnchor, xySceneFillGradientAdmit, xySceneFiniteAll, xySceneParseLinearGradient, xySceneRectExtraFlags, xySceneGradientDir, xySceneLinearGradientPrefix, xySceneGradientSpace, xySceneGradientSolidCss, xySceneHeatmapColormapAdmit, xySceneHeatmapExtentAdmit, xySceneHeatmapShapeAdmit, xySceneHexbinColormapPlaneAdmit, xySceneHexbinPitchAdmit, xySceneHexbinReduceAdmit, xySceneHexbinRgbaPlaneAdmit, xySceneMeshPaintPlaneAdmit, xySceneItemApplyOpacity, xySceneItemWidthsAdmit, xySceneItemFillT, xySceneCurveClassify, xySceneMarkerGlyphAdmit, xySceneKindAdmit, xySceneKindClass, xyArrowGeometry, xyArrowStylePack, xyArrowShaftPoints, xyArrowEndDecoration, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyHexbinRing, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyStepArrays, xyMarkerPathScale, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapLut, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityRgbaLinear, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyPayloadVisibleIndices, xyValidIndicesF64, xyPayloadEvenIndices, xyPayloadErrorbarIndices, xyPayloadSegmentBudget, xyPayloadSampleTargetIndices, xyPaintEffectiveRgba, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -675,6 +675,35 @@ export function f32SafeScale(offset, lo, hi) {
   return out[0];
 }
 
+/** EncodedColumn offset/scale/kind-presence (ABI 255). Hosts copy the original kind. */
+export function encodedColumnMeta(offset, lo, hi, kind = null) {
+  const out = new Float64Array(2);
+  let kindPtr = 0;
+  let kindLen = 0n;
+  let keep = null;
+  if (kind != null) {
+    const encoded = new TextEncoder().encode(String(kind));
+    kindLen = BigInt(encoded.length);
+    keep = encoded.length ? encoded : new Uint8Array(1);
+    kindPtr = u8Ptr(keep);
+  }
+  const code = Number(
+    xyEncodedColumnMeta(
+      Number(offset),
+      Number(lo),
+      Number(hi),
+      kindPtr,
+      kindLen,
+      f64Ptr(out),
+      2n,
+    ),
+  );
+  if (code < 0) {
+    throw new RangeError("invalid encoded-column-meta request");
+  }
+  return { offset: out[0], scale: out[1], hasKind: code === 1 };
+}
+
 export function asF64Array(value, name = "values") {
   if (value instanceof Float64Array) {
     return value;
@@ -745,11 +774,10 @@ export function encodeF32(data, offset, scale = 1.0) {
 
 export function encodeF32Values(values, offset, lo, hi, { kind = null } = {}) {
   const vals = asF64Array(values);
-  const offsetF = Number(offset);
-  const scale = f32SafeScale(offsetF, Number(lo), Number(hi));
-  const encoded = vals.length === 0 ? new Float32Array(0) : encodeF32(vals, offsetF, scale);
-  const meta = { offset: offsetF, scale };
-  if (kind != null) {
+  const packed = encodedColumnMeta(offset, lo, hi, kind);
+  const encoded = vals.length === 0 ? new Float32Array(0) : encodeF32(vals, packed.offset, packed.scale);
+  const meta = { offset: packed.offset, scale: packed.scale };
+  if (packed.hasKind) {
     meta.kind = kind;
   }
   return { values: encoded, meta, length: encoded.length };

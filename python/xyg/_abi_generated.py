@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 254
-SIGNATURE_SHA256 = "037437b67681618783b882658c5de4069ea553e257584955c311a6641711dd5a"
+ABI_VERSION = 255
+SIGNATURE_SHA256 = "dfa02de3da9aaabc728cb68a4591bbd307f8bd2d5fdd98e825c3fa2a122f7c10"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -278,6 +278,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_encode_webp
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_encoded_column_meta(double offset, double lo, double hi, const uint8_t * kind, size_t kind_len, double * out, size_t out_cap)
+    function = lib.xyg_encoded_column_meta
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_f32_safe_scale(double offset, double lo, double hi, double * out_scale)
     function = lib.xyg_f32_safe_scale
     function.restype = ctypes.c_int32

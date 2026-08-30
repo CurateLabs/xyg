@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 254;
-export const SIGNATURE_SHA256 = "037437b67681618783b882658c5de4069ea553e257584955c311a6641711dd5a";
+export const ABI_VERSION = 255;
+export const SIGNATURE_SHA256 = "dfa02de3da9aaabc728cb68a4591bbd307f8bd2d5fdd98e825c3fa2a122f7c10";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -72,6 +72,7 @@ export let xyEncodeF32;
 export let xyEncodeJpeg;
 export let xyEncodePng;
 export let xyEncodeWebp;
+export let xyEncodedColumnMeta;
 export let xyF32SafeScale;
 export let xyFactorizeFixed;
 export let xyFactorizeFixedU8;
@@ -421,6 +422,7 @@ export function bindGeneratedAbi(lib) {
   xyEncodeJpeg = lib.func("size_t xyg_encode_jpeg(const uint8_t * pixels, size_t n, size_t width, size_t height, size_t channels, int32_t quality, uint8_t * out, size_t out_cap)");
   xyEncodePng = lib.func("size_t xyg_encode_png(const uint8_t * pixels, size_t n, size_t width, size_t height, size_t channels, int32_t mode, int32_t compression, uint8_t * out, size_t out_cap)");
   xyEncodeWebp = lib.func("size_t xyg_encode_webp(const uint8_t * pixels, size_t n, size_t width, size_t height, size_t channels, uint8_t * out, size_t out_cap)");
+  xyEncodedColumnMeta = lib.func("int32_t xyg_encoded_column_meta(double offset, double lo, double hi, const uint8_t * kind, size_t kind_len, double * out, size_t out_cap)");
   xyF32SafeScale = lib.func("int32_t xyg_f32_safe_scale(double offset, double lo, double hi, double * out_scale)");
   xyFactorizeFixed = lib.func("size_t xyg_factorize_fixed(const uint8_t * data, size_t len, size_t width, uint32_t * out_codes, uint32_t * out_unique_indices)");
   xyFactorizeFixedU8 = lib.func("size_t xyg_factorize_fixed_u8(const uint8_t * data, size_t len, size_t width, uint8_t * out_codes, uint32_t * out_unique_indices, size_t unique_capacity)");

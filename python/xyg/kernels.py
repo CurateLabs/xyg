@@ -54,6 +54,7 @@ delaunay_triangles = _impl.delaunay_triangles
 zone_maps = _impl.zone_maps
 zone_maps_pair = _impl.zone_maps_pair
 encode_f32 = _impl.encode_f32
+encoded_column_meta = _impl.encoded_column_meta
 f32_safe_scale = _impl.f32_safe_scale
 geometry_offset = _impl.geometry_offset
 scale_pins_offset = _impl.scale_pins_offset
@@ -259,6 +260,7 @@ __all__ = [
     "direct_rgba_admit",
     "drill_decision",
     "encode_f32",
+    "encoded_column_meta",
     "f32_safe_scale",
     "factorize_fixed",
     "factorize_fixed_u8",

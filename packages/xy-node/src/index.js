@@ -97,6 +97,7 @@ export {
   geometryOffset,
   pinsOffsetToZero,
   f32SafeScale,
+  encodedColumnMeta,
   xyStreamNew,
   xyStreamAppend,
   xyStreamSeal,

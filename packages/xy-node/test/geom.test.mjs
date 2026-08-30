@@ -8,6 +8,8 @@ import {
   colormapLut,
   colormapLutRgba8,
   colormapNamedStops,
+  encodeF32Values,
+  encodedColumnMeta,
   f32SafeScale,
   geometryOffset,
   hexbinRing,
@@ -180,6 +182,32 @@ test("geometryOffset pins log family and nonfinite to zero", () => {
   assert.equal(f32SafeScale(0, -1, 1), 1);
   const huge = F32_SAFE_MAG * 10;
   assert.ok(Math.abs(f32SafeScale(0, -huge, huge) - 0.1) < 1e-12);
+});
+
+test("encodeF32Values packs EncodedColumn meta from the kernel", () => {
+  const omitted = encodedColumnMeta(0, 0, 0, null);
+  const empty = encodeF32Values([], 0, 0, 0);
+  const packed = encodedColumnMeta(0, -1, 1, "float");
+  const column = encodeF32Values([-1, 0, 1], 0, -1, 1, { kind: "float" });
+  const emptyKindPacked = encodedColumnMeta(1, 0, 2, "");
+  const emptyKind = encodeF32Values([1], 1, 0, 2, { kind: "" });
+  const huge = F32_SAFE_MAG * 10;
+  const hugePacked = encodedColumnMeta(0, -huge, huge, "float");
+  const hugeColumn = encodeF32Values([0], 0, -huge, huge, { kind: "float" });
+
+  assert.equal(omitted.hasKind, false);
+  assert.deepEqual(empty.meta, { offset: omitted.offset, scale: omitted.scale });
+  assert.equal(packed.hasKind, true);
+  assert.deepEqual(column.meta, { offset: packed.offset, scale: packed.scale, kind: "float" });
+  assert.equal(emptyKindPacked.hasKind, true);
+  assert.deepEqual(emptyKind.meta, {
+    offset: emptyKindPacked.offset,
+    scale: emptyKindPacked.scale,
+    kind: "",
+  });
+  assert.equal(hugeColumn.meta.offset, hugePacked.offset);
+  assert.equal(hugeColumn.meta.scale, hugePacked.scale);
+  assert.ok(Math.abs(hugePacked.scale - 0.1) < 1e-12);
 });
 
 test("arrowGeometry trims label_clear and samples shafts", () => {
