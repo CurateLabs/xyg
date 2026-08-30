@@ -1616,3 +1616,15 @@ test("buildPayload omits cartesian axis format unlike Python _axis_spec", () => 
   assert.equal(spec.x_axis.format, undefined);
 });
 
+test("buildPayload omits cartesian axis bounds unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `bounds`. Node cartesian payload axes omit that
+  // field even when axis bounds is set. Recorded emit-payload-axis-bounds
+  // stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { bounds: [0, 2] });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(fig.axis_options.x.bounds, [0, 2]);
+  assert.equal(spec.x_axis.bounds, undefined);
+});
+
