@@ -2079,6 +2079,9 @@ export class Figure {
     if (split) {
       spec.buffer_layout = "split";
     }
+    // Node payload omits wasm_density. Python `build_payload` attaches
+    // wasm_density from split density.wasm_source. Matching Python would add
+    // spec.wasm_density. Recorded emit-payload-wasm-density stay-host.
     if (this._graphMeta) {
       spec.graph = this._graphMeta;
     }
