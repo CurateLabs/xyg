@@ -4809,6 +4809,11 @@ export function figureLegendOptions(figure) {
   return (figure ?? {}).legend_options;
 }
 
+/** Colorbar options. Python `_colorbar_input` / XYEF read `colorbar_options` only. */
+export function figureColorbarOptions(figure) {
+  return (figure ?? {}).colorbar_options;
+}
+
 /** Annotation CSS class. Python `_pack_figure_support` reads `annotation.get("class_name")` only. */
 export function annotationClassName(annotation) {
   return (annotation ?? {}).class_name;
@@ -4902,7 +4907,7 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   let colorbarObs = 0, stopCount = 0, tickCount = 0, cbTitle = new Uint8Array();
   let cbLo = 0, cbHi = 0, cbText = Uint8Array.of(32, 32, 32, 255);
   let cbStops = [], cbTicks = [];
-  const colorbar = figure.colorbarOptions ?? figure.colorbar_options;
+  const colorbar = figureColorbarOptions(figure);
   if (colorbarOk && colorbar) {
     flags |= FLAG_HAS_COLORBAR;
     cbLo = Number(colorbar.domain[0]); cbHi = Number(colorbar.domain[1]);
@@ -5066,7 +5071,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
   const styleKeys = Object.keys(figure.style ?? {});
   const legend = figureLegendOptions(figure) ?? {};
   const legendKeys = Object.keys(legend);
-  const colorbar = figure.colorbarOptions ?? figure.colorbar_options ?? {};
+  const colorbar = figureColorbarOptions(figure) ?? {};
   const colorbarKeys = Object.keys(colorbar ?? {});
   const annotations = [...(figure.annotations ?? [])];
   const traces = [...(figure.traces ?? [])];
@@ -5409,7 +5414,7 @@ function legendInput(figure, entries, styles) {
 }
 
 function colorbarInput(figure) {
-  const options = figure.colorbarOptions ?? figure.colorbar_options;
+  const options = figureColorbarOptions(figure);
   if (options == null) return new Uint8Array();
   if (typeof options !== "object" || Array.isArray(options)) throw new RangeError("Scene v19 colorbar requires literal RGBA stops");
   const allowed = new Set(["domain", "stops", "side", "title", "text_rgba", "ticks", "minor_ticks"]);
@@ -5873,7 +5878,7 @@ function meshFacePaints(trace) {
 /** Compile migrated cartesian marks to Scene v12. */
 export function figureSceneV3(figure, { margins = null } = {}) {
   let colorbarUnsupported = false;
-  try { colorbarInput(figure); } catch { colorbarUnsupported = Boolean(figure.colorbarOptions ?? figure.colorbar_options); }
+  try { colorbarInput(figure); } catch { colorbarUnsupported = Boolean(figureColorbarOptions(figure)); }
   const xDomain = figure._range("x");
   const yDomain = figure._range("y");
   const annotationParts = [];

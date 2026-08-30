@@ -838,7 +838,7 @@ test("Node frames the literal Scene colorbar side before Rust reserves its lane"
   for (const [side, offset, viewport] of [["right", 64, 320], ["bottom", 72, 240]]) {
     const figure = new Figure({ width: 320, height: 240 });
     figure.scatter([0, 1], [0, 1]);
-    figure.colorbarOptions = {
+    figure.colorbar_options = {
       domain: [0, 1],
       stops: [[0, [0, 0, 0, 255]], [1, [255, 255, 255, 128]]],
       side,
@@ -851,7 +851,7 @@ test("Node frames the literal Scene colorbar side before Rust reserves its lane"
 test("Node frames bounded Scene colorbar ticks and Rust renders shared major/minor chrome", () => {
   const figure = new Figure({ width: 320, height: 240 });
   figure.scatter([0, 1], [0, 1]);
-  figure.colorbarOptions = {
+  figure.colorbar_options = {
     domain: [0, 1], stops: [[0, [0, 0, 0, 255]], [1, [255, 255, 255, 255]]],
     ticks: [0, 0.5, 1], minor_ticks: true,
   };

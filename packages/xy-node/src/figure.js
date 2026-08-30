@@ -442,6 +442,7 @@ export class Figure {
     this.legend = opts.legend == null ? {} : copySceneOptions(opts.legend, "legend");
     this.legend_options = this.legend;
     this.colorbarOptions = opts.colorbar == null ? null : copySceneOptions(opts.colorbar, "colorbar");
+    this.colorbar_options = this.colorbarOptions;
     if (opts.annotations != null && !Array.isArray(opts.annotations)) {
       throw new TypeError("annotations must be an array");
     }
@@ -521,6 +522,7 @@ export class Figure {
   /** Set (or clear with `null`) one literal-banded Scene colorbar request. */
   setColorbar(colorbar = null) {
     this.colorbarOptions = colorbar == null ? null : copySceneOptions(colorbar, "Scene colorbar");
+    this.colorbar_options = this.colorbarOptions;
     return this;
   }
 
