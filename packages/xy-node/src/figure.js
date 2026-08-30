@@ -1671,6 +1671,9 @@ export class Figure {
     // Node payload rect omits transition_keys. Python `_emit_rect` ships them
     // via `_transition_entry`. Matching Python would add entry.keys.
     // Recorded emit-rect-transition stay-host.
+    // Node payload rect omits animation. Python `_emit_rect` ships t.animation
+    // via `_transition_entry`. Matching Python would add entry.animation.
+    // Recorded emit-rect-animation stay-host.
     return {
       id: t.id,
       kind,

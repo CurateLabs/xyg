@@ -318,6 +318,17 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitRect omits animation unlike Python _transition_entry", () => {
+  // Python `_emit_rect` ships t.animation via `_transition_entry`. Node bar
+  // encode omits that field. Recorded emit-rect-animation stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.bar([0, 1], [1, 2]);
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "bar");
+  assert.equal(spec.traces[0].animation, undefined);
+});
+
 test("_emitHistogram omits animation unlike Python _transition_entry", () => {
   // Python `_emit_histogram` calls `_emit_rect`, which ships t.animation via
   // `_transition_entry`. Node histogram encode omits that field. Recorded
