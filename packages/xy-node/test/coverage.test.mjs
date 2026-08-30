@@ -318,6 +318,18 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitHistogram omits color_ch unlike Python _emit_histogram", () => {
+  // Python `_emit_histogram` ships color_ch via `_emit_rect`. Node histogram
+  // payload keeps no color field even when color_ch is present. Recorded
+  // emit-hist-color stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
+  fig.traces[0].color_ch = { mode: "constant", constant: "#112233" };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "histogram");
+  assert.equal(spec.traces[0].color, undefined);
+});
+
 test("_emitTriangleMesh omits color_ch unlike Python _emit_triangle_mesh", () => {
   // Python `_emit_triangle_mesh` ships color_ch. Node mesh payload keeps no
   // color field even when color_ch is present. Recorded emit-mesh-color stay-host.
