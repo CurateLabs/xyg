@@ -1495,6 +1495,9 @@ export class Figure {
     // Node payload mesh omits color_ch. Python `_emit_triangle_mesh` ships
     // color_ch via `_ship_channels`. Matching Python would add entry.color.
     // Recorded emit-mesh-color stay-host.
+    // Node payload mesh omits stroke_ch. Python `_emit_triangle_mesh` ships
+    // stroke_ch via `_ship_trace_styles`. Matching Python would add
+    // entry.stroke. Recorded emit-mesh-stroke stay-host.
     return {
       id: t.id,
       kind: "triangle_mesh",
