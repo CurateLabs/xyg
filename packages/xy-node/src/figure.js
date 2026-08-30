@@ -1116,6 +1116,10 @@ export class Figure {
     // `_emit_scatter` never passes force_direct (ABI defaults false).
     // Dropping it would ship density for Node `forceDirect: true` on
     // large scatters. Recorded emit-force-direct stay-host.
+    // Node also ORs forcePyramid into forceDensity. Python Trace has no
+    // force_pyramid and `_emit_scatter` never densifies from it. Dropping
+    // the OR would ship direct for Node `forcePyramid: true` below the
+    // density threshold. Recorded emit-force-pyramid stay-host.
     if (
       shouldUseDensity(t.x.length, {
         forceDensity: forceDensity || forcePyramid,
