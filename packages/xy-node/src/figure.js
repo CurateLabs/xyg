@@ -1724,6 +1724,8 @@ export class Figure {
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
     };
+    // Node payload ribbon ships t.color. Python `_emit_ribbon` ships color_ch.
+    // Matching Python would ignore t.color. Recorded ribbon-ship-color stay-host.
     const color = this._shipColor(t.color, pw);
     if (color != null) entry.color = color;
     // Node payload ribbon ships t.color_target. Python `_emit_ribbon` ships
