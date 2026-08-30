@@ -1764,3 +1764,15 @@ test("buildPayload omits cartesian axis minor_style unlike Python _axis_spec", (
   assert.equal(fig.axis_options.x.minor_style.color, "#888");
   assert.equal(spec.x_axis.minor_style, undefined);
 });
+
+test("buildPayload omits cartesian axis style unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships compiled axis `style`. Node cartesian payload
+  // axes omit that field even when axis style is set. Recorded
+  // emit-payload-axis-style stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { style: { color: "#111" } });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.style.color, "#111");
+  assert.equal(spec.x_axis.style, undefined);
+});
