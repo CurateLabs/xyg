@@ -1201,7 +1201,8 @@ export class Figure {
         range_px: t.sizeRange ?? [8, 22],
         domain: [lo, hi],
         buf: pw.shipScalar(norm),
-      };        // x_axis.minor_tick_values. Recorded emit-payload-axis-minor-ticks
+      };        // Recorded emit-payload-axis-tick-count stay-host.
+        // x_axis.minor_tick_values. Recorded emit-payload-axis-minor-ticks
 
     }
     if (t.tooltip_rows != null) {
