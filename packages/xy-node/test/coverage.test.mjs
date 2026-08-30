@@ -318,6 +318,17 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitRibbon ships t.color_target unlike Python color2_ch", () => {
+  // Python `_emit_ribbon` ships color2_ch. Node keeps t.color_target even when
+  // color2_ch differs. Recorded ribbon-color-target stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.ribbon([0], [1], [0], [1], [0], [1], { color: "#112233", colorTarget: "#445566" });
+  fig.traces[0].color2_ch = { mode: "constant", constant: "#778899" };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "ribbon");
+  assert.equal(spec.traces[0].color_target.color, "#445566");
+});
+
 test("_emitScatter ships t.color unlike Python color_ch", () => {
   // Python `_emit_scatter` ships color_ch. Node keeps t.color even when
   // color_ch is also present. Recorded scatter-ship-color stay-host.

@@ -1726,6 +1726,9 @@ export class Figure {
     };
     const color = this._shipColor(t.color, pw);
     if (color != null) entry.color = color;
+    // Node payload ribbon ships t.color_target. Python `_emit_ribbon` ships
+    // color2_ch. Matching Python would ignore t.color_target. Recorded
+    // ribbon-color-target stay-host.
     const colorTarget = this._shipColor(t.color_target, pw);
     if (colorTarget != null) entry.color_target = colorTarget;
     if (t.tooltip_rows != null) entry.tooltip_rows = t.tooltip_rows;
