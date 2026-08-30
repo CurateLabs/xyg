@@ -2122,3 +2122,13 @@ test("buildPayload omits polar axis style unlike Python _axis_spec", () => {
   assert.equal(spec.x_axis.style, undefined);
 });
 
+test("buildPayload polar y stays linear unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `_axis_scale` when it is not linear. Node polar
+  // y_axis keeps scale linear. Recorded emit-polar-payload-axis-scale stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("y", { type: "log" });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.y_axis.scale, "linear");
+});
+
