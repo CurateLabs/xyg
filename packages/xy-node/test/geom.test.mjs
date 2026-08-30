@@ -83,6 +83,7 @@ import {
   packXyTcStrokeWidth,
   hexbinXyTaColorChannel,
   hexbinXyTaColormap,
+  heatmapGridShape,
   constantMarkColor,
   xyHfColormap,
   channelConstantCss,
@@ -1049,6 +1050,12 @@ test("legendStyleFontSizes uses font_size only like Python", () => {
     font_size: 14,
     title_font_size: 18,
   });
+});
+
+test("heatmapGridShape uses grid_shape only like Python", () => {
+  assert.equal(heatmapGridShape({}), undefined);
+  assert.equal(heatmapGridShape({ gridShape: [2, 3] }), undefined);
+  assert.deepEqual(heatmapGridShape({ grid_shape: [2, 3] }), [2, 3]);
 });
 
 

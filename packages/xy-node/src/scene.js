@@ -3874,6 +3874,11 @@ export function hexbinXyTaColormap(trace) {
   return packXyTaColormap({ style: { colormap: channel?.colormap } });
 }
 
+/** Heatmap lattice shape. Python `_heatmap_shape` / `_pack_xyta` read `trace.grid_shape` only. */
+export function heatmapGridShape(trace) {
+  return (trace ?? {}).grid_shape;
+}
+
 function packXyTa(figure, xDomain, yDomain) {
   const traces = figure.traces ?? [];
   const records = [new Uint8Array(16)];
@@ -3909,7 +3914,7 @@ function packXyTa(figure, xDomain, yDomain) {
     let fillOpacity = Number.NaN;
     if (kindClass & SCENE_KIND_CLASS_HEATMAP) {
       flags |= XYTA_HEATMAP;
-      const shape = trace.grid_shape;
+      const shape = heatmapGridShape(trace);
       if (shape != null && shape.length === 2) {
         flags |= XYTA_SHAPE;
         const rawRows = Number(shape[0]);
@@ -5037,7 +5042,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
     if (trace.kind === "heatmap") {
       if (style.truecolor) obs |= OBS_HEATMAP_TRUECOLOR;
       if (trace.rgba_grid != null) obs |= OBS_HEATMAP_RGBA_GRID;
-      const shape = trace.grid_shape ?? trace.gridShape;
+      const shape = heatmapGridShape(trace);
       const grid = exportColumn(trace, "grid");
       const hx = xv, hy = yv;
       if (Array.isArray(shape) && shape.length === 2) {
