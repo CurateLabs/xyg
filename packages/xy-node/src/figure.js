@@ -1486,6 +1486,9 @@ export class Figure {
     const y1 = new Column(t.y1);
     const x2 = new Column(t.x);
     const y2 = new Column(t.y);
+    // Node payload mesh omits color_ch. Python `_emit_triangle_mesh` ships
+    // color_ch via `_ship_channels`. Matching Python would add entry.color.
+    // Recorded emit-mesh-color stay-host.
     return {
       id: t.id,
       kind: "triangle_mesh",
