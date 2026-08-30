@@ -1533,6 +1533,10 @@ export class Figure {
       id: t.id,
       kind: t.kind ?? "segments",
       name: t.name,
+      // Node payload segments copies t.style. Python `_emit_segments` uses
+      // `_default_styled` to fill palette color when style.color is missing.
+      // Matching Python would add style.color. Recorded
+      // emit-segments-default-styled stay-host.
       style: { ...t.style },
       tier,
       n_points: t.count ?? t.x0.length,
