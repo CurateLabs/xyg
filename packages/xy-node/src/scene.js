@@ -5449,7 +5449,7 @@ export function scatterHasNonConstantColor(trace) {
 export function scatterUsesDensity(trace) {
   if (String(trace.kind || "") !== "scatter") return false;
   return shouldUseDensity(trace.x?.length ?? 0, {
-    forceDensity: Boolean(trace.force_density ?? trace.forceDensity),
+    forceDensity: Boolean(trace.force_density),
     forceDirect: Boolean(trace.force_direct ?? trace.forceDirect),
     coords: "cartesian",
     perItemChannels: perItemChannelNames(trace).length > 0,

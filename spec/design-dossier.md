@@ -1762,6 +1762,7 @@ Node `scatterPointStrokeRgba8` uses `stroke_ch` only like Python `_scatter_point
 Node `perItemChannelNames` uses `color_ch` / `stroke_ch` / `size_ch` / `style_channels` only like Python `per_item_channel_names`; camelCase channel fields are not per-item name fallbacks.
 Node `itemApplyOpacity` uses `style_channels` only like Python `_item_apply_opacity`; `styleChannels` is not an opacity-channel fallback.
 Node `itemWidths` uses `style_channels` only like Python `_item_widths`; `styleChannels` is not a width-channel fallback.
+Node `scatterUsesDensity` uses `force_density` only like Python `use_density`; `forceDensity` is not a density-force fallback.
 ABI 209 `xyg_polar_wedge_points` owns compatibility annular-sector flatten
 (optional `steps`, `0` = `polar_bar_segments`; finite `norm_lo`/`norm_hi`
 skip radial-range normalization) so Python and Node cannot drift. SVG still
@@ -2060,6 +2061,7 @@ Node `scatterPointStrokeRgba8` uses `stroke_ch` only like Python `_scatter_point
 Node `perItemChannelNames` uses `color_ch` / `stroke_ch` / `size_ch` / `style_channels` only like Python `per_item_channel_names`; camelCase channel fields are not per-item name fallbacks.
 Node `itemApplyOpacity` uses `style_channels` only like Python `_item_apply_opacity`; `styleChannels` is not an opacity-channel fallback.
 Node `itemWidths` uses `style_channels` only like Python `_item_widths`; `styleChannels` is not a width-channel fallback.
+Node `scatterUsesDensity` uses `force_density` only like Python `use_density`; `forceDensity` is not a density-force fallback.
 ABI 133 compiles polar Scene v26 line/scatter/area/bar/column/errorbar/heatmap: hosts pack XYPL v1
 authoring; Rust owns `polar_layout`, `polar_project`, `polar_wedge_points`, clip, rings/spokes, and
 rim tick-label placement. Polar heatmap constant-style lattices use the same
