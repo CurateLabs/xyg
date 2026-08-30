@@ -51,6 +51,15 @@ publish waits on the `@curatelabs` npm org (#13).
   Node `_emitScatterDensity` sample uses full n.
   Node `_emitScatterDensity` visible stays n_points.
   Node `nextTraceId` starts at 1.
+  Node `buildPayload` omits legend.
+  Node `buildPayload` omits colorbar.
+  Node `buildPayload` omits annotations.
+  Node `buildPayload` omits extra_legends.
+  Node `buildPayload` omits title_options.
+  Node `buildPayload` omits padding.
+  Node `_emitScatterDensity` omits categorical color.
+  Node `buildPayload` omits dom.
+  Node `buildPayload` omits cartesian axis tick_values.
 ---
 
 ## 0. Three runtime surfaces (product-wide)
