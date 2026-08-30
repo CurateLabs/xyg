@@ -1437,7 +1437,8 @@ export class Figure {
     });
     const decimated = tierCode === 1;
     let tier = "direct";
-    if (decimated) {
+    if (decimated) {    // Recorded emit-line-m4-bin-x stay-host.
+
       xv = gatherF64(xv, indices);
       yv = gatherF64(yv, indices);
       tier = "decimated";
