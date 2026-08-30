@@ -318,6 +318,18 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitRibbon omits stroke_ch unlike Python _ship_trace_styles", () => {
+  // Python `_emit_ribbon` ships stroke_ch via `_ship_trace_styles`. Node
+  // ribbon payload keeps no stroke field even when stroke_ch is present.
+  // Recorded emit-ribbon-stroke stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.ribbon([0], [1], [0], [1], [0], [1], { color: "#112233" });
+  fig.traces[0].stroke_ch = { mode: "constant", constant: "#445566" };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "ribbon");
+  assert.equal(spec.traces[0].stroke, undefined);
+});
+
 test("_emitScatter omits stroke_ch unlike Python _ship_trace_styles", () => {
   // Python `_emit_scatter` ships stroke_ch via `_ship_trace_styles`. Node
   // scatter payload keeps no stroke field even when stroke_ch is present.
