@@ -4750,6 +4750,11 @@ export function axisTickLabelAnchor(axis) {
   return (axis ?? {}).tick_label_anchor;
 }
 
+/** Chrome tick-label min gap. Python `_pack_tick_collision` reads `axis.get("tick_label_min_gap")` only. */
+export function axisTickLabelMinGap(axis) {
+  return (axis ?? {}).tick_label_min_gap;
+}
+
 /** Chrome authored tick labels. Python `_pack_figure_chrome` reads `axis.get("tick_labels")` only. */
 export function axisTickLabels(axis) {
   return (axis ?? {}).tick_labels;
@@ -4892,8 +4897,8 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   };
   const xAnchor = anchorCode(xAxis);
   const yAnchor = anchorCode(yAxis);
-  const xGap = xAxis.tick_label_min_gap ?? xAxis.tickLabelMinGap;
-  const yGap = yAxis.tick_label_min_gap ?? yAxis.tickLabelMinGap;
+  const xGap = axisTickLabelMinGap(xAxis);
+  const yGap = axisTickLabelMinGap(yAxis);
   const xAngle = xAxis.tick_label_angle ?? xAxis.tickLabelAngle;
   const yAngle = yAxis.tick_label_angle ?? yAxis.tickLabelAngle;
   const extras = xGap != null || yGap != null || xAngle != null || yAngle != null;
