@@ -1422,6 +1422,9 @@ export class Figure {
     // Node payload histogram skips rectFiniteSel. Python `_emit_histogram` calls
     // `_emit_rect`, which drops non-finite rows. Matching Python would gather.
     // Recorded emit-hist-finite-sel stay-host.
+    // Node payload histogram omits transition_keys. Python `_emit_histogram`
+    // calls `_emit_rect`, which ships them via `_transition_entry`. Matching
+    // Python would add entry.keys. Recorded emit-hist-transition stay-host.
     return {
       id: t.id,
       kind: "histogram",
