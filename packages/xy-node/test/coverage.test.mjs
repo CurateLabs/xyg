@@ -2229,3 +2229,14 @@ test("composeScatter omits color unlike Python color_ch Scene", () => {
   assert.equal(scene.includes(authored), false);
 });
 
+test("composeScatter omits size unlike Python size_ch Scene", () => {
+  // Python marks.scatter sets size_ch from size=, so Scene paints authored px.
+  // Node composeScatter ignores size, so Scene matches default mark size.
+  // Recorded scene-scatter-size-ch stay-host.
+  const a = figure({ width: 240, height: 160 });
+  a.scatter([0, 1], [1, 2], { id: 1 });
+  const b = figure({ width: 240, height: 160 });
+  b.scatter([0, 1], [1, 2], { id: 1, size: 8 });
+  assert.deepEqual(Buffer.from(a.toScene()), Buffer.from(b.toScene()));
+});
+
