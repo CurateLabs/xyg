@@ -318,6 +318,19 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitScatterDensity dropped_channels stays empty unlike Python per_item_channel_names", () => {
+  // Python `_density_trace_spec` lists per_item_channel_names as dropped_channels.
+  // Node density keeps an empty list even when style_channels is present.
+  // Recorded emit-density-dropped-channels stay-host.
+  const fig = figure({ width: 320, height: 240 });
+  fig.scatter([0, 1], [0, 1], { forceDensity: true });
+  fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "density");
+  assert.equal(spec.traces[0].density.channels_dropped, false);
+  assert.deepEqual(spec.traces[0].density.dropped_channels, []);
+});
+
 test("_emitHeatmap ships rgba_len unlike Python nested rgba_bufs", () => {
   // Python `_emit_heatmap` ships nested heatmap.rgba_bufs from rgba_grid.
   // Node keeps rgba_len from t.rgba. Recorded emit-heatmap-rgba stay-host.

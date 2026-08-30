@@ -1283,6 +1283,9 @@ export class Figure {
       y_range: [...yr],
       binning,
       reduction,
+      // Node payload density dropped_channels stays empty. Python
+      // `_density_trace_spec` uses `per_item_channel_names`. Matching Python
+      // would list per-item extras. Recorded emit-density-dropped-channels stay-host.
       channels_dropped: false,
       dropped_channels: [],
     };
