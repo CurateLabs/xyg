@@ -1738,6 +1738,9 @@ export class Figure {
         scale: "linear",
         theta_unit: unit,
         theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",
+        // Node `??` keeps empty `theta_direction`. Python `_axis_spec` uses
+        // `opts.get("theta_direction") or "counterclockwise"`. Recorded
+        // polar-payload-dir-empty stay-host.
         theta_direction: (this.axis_options?.x ?? {}).theta_direction ?? "counterclockwise",
         sector,
         grid_shape: (this.axis_options?.x ?? {}).grid_shape ?? "circular",

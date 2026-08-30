@@ -1535,6 +1535,14 @@ test("_polarAxisSpecs uses axis theta_zero like Python _axis_spec", () => {
   assert.equal(leftover._polarAxisSpecs([0, 1], [0, 1]).x.theta_zero, "E");
 });
 
+test("_polarAxisSpecs empty theta_direction stays unlike Python or-default", () => {
+  // Python `_axis_spec` uses `opts.get("theta_direction") or "counterclockwise"`.
+  // Node `??` keeps the empty string.
+  const fig = figure();
+  fig.setPolarMeta({ thetaDirection: "" });
+  assert.equal(fig._polarAxisSpecs([0, 1], [0, 1]).x.theta_direction, "");
+});
+
 test("_polarAxisSpecs uses axis theta_direction like Python _axis_spec", () => {
   const fig = figure();
   fig.setPolarMeta({ thetaDirection: "clockwise" });
