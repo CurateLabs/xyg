@@ -1340,3 +1340,15 @@ test("sankeyChart emits ribbon bands", () => {
   const { spec } = sankeyChart(nodes, links).buildPayload();
   assert.ok(spec.traces.some((t) => t.kind === "ribbon"));
 });
+
+test("_emitLine omits animation unlike Python _base_entry", () => {
+  // Python `_base_entry` ships t.animation. Node line encode omits that
+  // field. Recorded emit-line-animation stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.line([0, 1], [0, 1]);
+  fig.traces[0].animation = { duration: 100 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "line");
+  assert.equal(spec.traces[0].animation, undefined);
+});
+

@@ -1,3 +1,4 @@
+    // emit-line-animation stay-host.
 /**
  * Minimal Node figure — holds scatter/line/histogram/segments traces and builds
  * a §29-ish payload subset (PROTOCOL_VERSION matches Python).
