@@ -91,6 +91,7 @@ import {
   polarAxisThetaUnit,
   polarAxisThetaZero,
   polarAxisROrigin,
+  polarAxisHole,
   axisTickValues,
   axisScaleName,
   axisMinorTickValues,
@@ -1144,6 +1145,12 @@ test("polarAxisROrigin uses r_origin only like Python", () => {
   assert.equal(polarAxisROrigin({}), undefined);
   assert.equal(polarAxisROrigin({ rOrigin: 1 }), undefined);
   assert.equal(polarAxisROrigin({ r_origin: 1 }), 1);
+});
+
+test("polarAxisHole uses hole only like Python", () => {
+  assert.equal(polarAxisHole({}), undefined);
+  assert.equal(polarAxisHole({ Hole: 0.25 }), undefined);
+  assert.equal(polarAxisHole({ hole: 0.25 }), 0.25);
 });
 
 test("axisTickValues uses tick_values only like Python", () => {

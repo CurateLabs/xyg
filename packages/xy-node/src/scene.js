@@ -1318,6 +1318,11 @@ export function polarAxisROrigin(rAxis) {
   return (rAxis ?? {}).r_origin;
 }
 
+/** Polar r-axis hole. Python `_pack_polar_scene_input` / `polar_layout` read `r_axis.get("hole")` only. */
+export function polarAxisHole(rAxis) {
+  return (rAxis ?? {}).hole;
+}
+
 /** Polar theta-axis direction. Python `_pack_polar_scene_input` / `polar_layout` read `theta_axis.get("theta_direction")` only. */
 export function polarAxisThetaDirection(thetaAxis) {
   return (thetaAxis ?? {}).theta_direction;
@@ -1382,7 +1387,7 @@ export function packPolarSceneInput(figure) {
   view.setFloat64(52, Number(rLo), true);
   view.setFloat64(60, Number(rHi), true);
   view.setFloat64(68, origin == null ? Number.NaN : Number(origin), true);
-  view.setFloat64(76, Number(rAxis.hole ?? 0), true);
+  view.setFloat64(76, Number(polarAxisHole(rAxis) ?? 0), true);
   view.setFloat64(84, scale.constant, true);
   return out;
 }
@@ -1867,7 +1872,7 @@ export function polarLayout(thetaAxis = {}, rAxis = {}, plot = {}) {
     Number(rLo),
     Number(rHi),
     origin == null ? Number.NaN : Number(origin),
-    Number(rAxis.hole ?? 0),
+    Number(polarAxisHole(rAxis) ?? 0),
     scale.kind,
     scale.constant,
     scale.maskNonpositive ? 1 : 0,
