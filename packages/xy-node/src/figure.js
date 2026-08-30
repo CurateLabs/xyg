@@ -1715,7 +1715,8 @@ export class Figure {
     };
     const unit = figureAutorangeThetaUnit(this.axis_options?.x) ?? "radians";
     const turn = unit === "degrees" ? 360.0 : 2.0 * Math.PI;
-    const sector = meta.sector != null ? [...meta.sector] : [0.0, turn];
+    const authoredSector = (this.axis_options?.x ?? {}).sector;
+    const sector = authoredSector != null ? [...authoredSector] : [0.0, turn];
     return {
       x: {
         range: xr,
