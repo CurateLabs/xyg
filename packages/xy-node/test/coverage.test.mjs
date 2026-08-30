@@ -318,6 +318,19 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitHexbin omits ship scale unlike Python _axis_scale", () => {
+  // Python `_emit_hexbin` passes `_axis_scale` into `ship_values`, pinning
+  // log offset to 0. Node hexbin encode keeps the column midpoint. Recorded
+  // emit-hexbin-ship-scale stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.setAxis("x", { type: "log" });
+  fig.hexbin([1, 2, 3, 4, 5], [1, 2, 1, 2, 1.5], { gridsize: 4 });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "hexbin");
+  const xCol = spec.columns[spec.traces[0].x];
+  assert.notEqual(xCol.offset, 0);
+});
+
 test("_emitArea omits ship scale unlike Python _axis_scale", () => {
   // Python `_base_entry` passes `_axis_scale` into `pw.ship`, pinning log
   // offset to 0. Node area encode keeps the column midpoint. Recorded
