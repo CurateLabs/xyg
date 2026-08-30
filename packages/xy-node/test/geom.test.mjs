@@ -95,6 +95,7 @@ import {
   axisTickLabelAnchor,
   axisTickLabelAngle,
   axisTickLabelMinGap,
+  axisTickLabelStrategy,
   figureXLabel,
   figureYLabel,
   plotTopAxisRoom,
@@ -1144,6 +1145,14 @@ test("axisTickLabelMinGap uses tick_label_min_gap only like Python", () => {
   assert.equal(axisTickLabelMinGap({}), undefined);
   assert.equal(axisTickLabelMinGap({ tickLabelMinGap: 4 }), undefined);
   assert.equal(axisTickLabelMinGap({ tick_label_min_gap: 4 }), 4);
+});
+
+test("axisTickLabelStrategy uses tick_label_strategy then collision like Python", () => {
+  assert.equal(axisTickLabelStrategy({}), undefined);
+  assert.equal(axisTickLabelStrategy({ tickLabelStrategy: "hide" }), undefined);
+  assert.equal(axisTickLabelStrategy({ tick_label_strategy: "hide" }), "hide");
+  assert.equal(axisTickLabelStrategy({ collision: "rotate" }), "rotate");
+  assert.equal(axisTickLabelStrategy({ tick_label_strategy: "hide", collision: "rotate" }), "hide");
 });
 
 test("figureXLabel uses x_label then axis label like Python", () => {

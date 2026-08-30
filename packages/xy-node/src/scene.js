@@ -2776,7 +2776,7 @@ export function sceneSupportReason(features, requestVersion = 1) {
 const SCENE_TICK_STRATEGY_NAMES = ["auto", "hide", "rotate", "stagger", "preserve", "none", "off"];
 
 function sceneTickStrategy(options) {
-  const raw = options?.tick_label_strategy ?? options?.tickLabelStrategy ?? options?.collision;
+  const raw = axisTickLabelStrategy(options);
   const code = sceneTickLabelStrategy(String(raw ?? "auto"));
   return SCENE_TICK_STRATEGY_NAMES[code] ?? "auto";
 }
@@ -4758,6 +4758,12 @@ export function axisTickLabelAngle(axis) {
 /** Chrome tick-label min gap. Python `_pack_tick_collision` reads `axis.get("tick_label_min_gap")` only. */
 export function axisTickLabelMinGap(axis) {
   return (axis ?? {}).tick_label_min_gap;
+}
+
+/** Chrome tick-label strategy. Python `_scene_tick_label_strategy` reads `tick_label_strategy` then `collision`. */
+export function axisTickLabelStrategy(options) {
+  const record = options ?? {};
+  return record.tick_label_strategy ?? record.collision;
 }
 
 /** Chrome authored tick labels. Python `_pack_figure_chrome` reads `axis.get("tick_labels")` only. */
