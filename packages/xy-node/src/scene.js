@@ -5066,6 +5066,15 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   ]);
 }
 
+/** XYEF resolved axis kind. Python `_pack_public_export_support` uses `figure._axis_kind(axis_id)`. */
+export function xyEfResolvedKind(figure, axisId) {
+  const kind = figure._axisKind(axisId);
+  if (kind === "time") return 1;
+  if (kind === "category") return 2;
+  if (kind === "linear") return 0;
+  return 255;
+}
+
 /** XYEF joined-fill observation. Python uses `style.get("joined_fill")` only. */
 export function xyEfJoinedFill(style) {
   return Boolean((style ?? {}).joined_fill);
@@ -5149,8 +5158,7 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
     const axisCode = axisId === "x" ? 0 : axisId === "y" ? 1 : 255;
     const authored = options.type;
     const authoredCode = authored == null ? 0 : authored === "linear" ? 1 : authored === "log" ? 2 : authored === "symlog" ? 3 : 255;
-    const forced = options.type ?? options.kind;
-    const resolvedCode = forced === "time" ? 1 : forced === "category" ? 2 : 0;
+    const resolvedCode = xyEfResolvedKind(figure, axisId);
     const domain = options.domain ?? figure._axisRange?.[axisId];
     const side = options.side;
     const sideCode = side == null ? 0 : side === "bottom" ? 1 : side === "left" ? 2 : side === "top" ? 3 : side === "right" ? 4 : 255;

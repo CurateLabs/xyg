@@ -149,6 +149,7 @@ import {
   figureTraceSupport,
   fillIsGradientAuthoring,
   xyEfJoinedFill,
+  xyEfResolvedKind,
   xyEfStrokeWidthOnly,
   monotoneTangents,
   ribbonEdge,
@@ -1373,6 +1374,19 @@ test("chromeAxisTickKind uses Figure._axisKind like Python", () => {
   const cat = figure();
   cat._axis_categories = { x: [] };
   assert.equal(chromeAxisTickKind(cat, "x"), 2);
+});
+
+test("xyEfResolvedKind uses Figure._axisKind like Python", () => {
+  const fig = figure();
+  assert.equal(xyEfResolvedKind(fig, "x"), 0);
+  fig.setAxis("x", { kind: "time" });
+  assert.equal(xyEfResolvedKind(fig, "x"), 0);
+  const timed = figure();
+  timed.setAxis("x", { type: "time" });
+  assert.equal(xyEfResolvedKind(timed, "x"), 1);
+  const cat = figure();
+  cat._axis_categories = { x: [] };
+  assert.equal(xyEfResolvedKind(cat, "x"), 2);
 });
 
 test("scatterPayloadForceBin2d uses force_bin2d only like Python", () => {
