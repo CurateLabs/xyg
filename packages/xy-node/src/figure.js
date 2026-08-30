@@ -1451,6 +1451,9 @@ export class Figure {
       nBuckets: pxWidth,
       polar: this.coords === "polar",
     });
+    // Node `_emitLine` skips M4 bin_x. Python `_m4_decimate` passes
+    // `_binning_coords`. Matching Python would change n_marks on log x.
+    // Recorded emit-line-m4-bin-x stay-host.
     const decimated = tierCode === 1;
     let tier = "direct";
     if (decimated) {
