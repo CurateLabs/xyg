@@ -4745,6 +4745,11 @@ export function axisMinorTickValues(axis) {
   return (axis ?? {}).minor_tick_values;
 }
 
+/** Chrome tick-label anchor. Python `_scene_tick_anchor_code` reads `options.get("tick_label_anchor")` only. */
+export function axisTickLabelAnchor(axis) {
+  return (axis ?? {}).tick_label_anchor;
+}
+
 /** Chrome authored tick labels. Python `_pack_figure_chrome` reads `axis.get("tick_labels")` only. */
 export function axisTickLabels(axis) {
   return (axis ?? {}).tick_labels;
@@ -4881,7 +4886,7 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   header[155] = tickKind(yAxis);
   const strategyCode = (options) => ({ auto: 0, hide: 1, rotate: 2, stagger: 3, preserve: 4, none: 5, off: 6 }[sceneTickStrategy(options)] ?? 0);
   const anchorCode = (options) => {
-    const raw = options.tick_label_anchor ?? options.tickLabelAnchor;
+    const raw = axisTickLabelAnchor(options);
     if (raw == null) return null;
     return sceneTickAnchor(raw);
   };
