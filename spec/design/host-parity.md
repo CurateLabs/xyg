@@ -76,6 +76,7 @@ publish waits on the `@curatelabs` npm org (#13).
   Node `buildPayload` omits cartesian axis tick_label_strategy.
   Node `buildPayload` omits cartesian axis tick_label_anchor.
   Node `buildPayload` omits cartesian axis tick_label_min_gap.
+  Node `buildPayload` omits cartesian axis minor_style.
 ---
 
 ## 0. Three runtime surfaces (product-wide)

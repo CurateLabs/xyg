@@ -1736,3 +1736,15 @@ test("buildPayload omits cartesian axis tick_label_min_gap unlike Python _axis_s
   assert.equal(spec.x_axis.tick_label_min_gap, undefined);
 });
 
+test("buildPayload omits cartesian axis minor_style unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `minor_style`. Node cartesian payload axes omit
+  // that field even when axis minor_style is set. Recorded
+  // emit-payload-axis-minor-style stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { minor_style: { color: "#888" } });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.minor_style.color, "#888");
+  assert.equal(spec.x_axis.minor_style, undefined);
+});
+
