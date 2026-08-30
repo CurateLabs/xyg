@@ -1525,6 +1525,9 @@ export class Figure {
     // Node payload mesh omits style_channels. Python `_emit_triangle_mesh`
     // ships them as `channels` via `_ship_trace_styles`. Matching Python
     // would add entry.channels. Recorded emit-mesh-channels stay-host.
+    // Node payload mesh skips valid_indices_f64 gather. Python
+    // `_emit_triangle_mesh` drops null geometry rows. Matching Python would
+    // gather. Recorded emit-mesh-gather stay-host.
     return {
       id: t.id,
       kind: "triangle_mesh",

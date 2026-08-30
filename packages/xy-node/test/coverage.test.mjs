@@ -318,6 +318,19 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitTriangleMesh skips valid_indices_f64 unlike Python _emit_triangle_mesh", () => {
+  // Python `_emit_triangle_mesh` gathers null geometry rows via
+  // `valid_indices_f64`. Node mesh payload keeps every triangle even when a
+  // geometry column has NaN. Recorded emit-mesh-gather stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.triangleMesh([0, 1], [0, 0], [1, 2], [0, 0], [0.5, 1.5], [1, 1]);
+  const n = fig.traces[0].x0.length;
+  fig.traces[0].x0[0] = Number.NaN;
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "triangle_mesh");
+  assert.equal(spec.traces[0].n_marks, n);
+});
+
 test("_emitRibbon skips valid_indices_f64 unlike Python _emit_ribbon", () => {
   // Python `_emit_ribbon` gathers null geometry rows via `valid_indices_f64`.
   // Node ribbon payload keeps every band even when a geometry column has NaN.
