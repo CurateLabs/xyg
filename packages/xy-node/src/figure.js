@@ -2049,6 +2049,12 @@ export class Figure {
         // Node polar payload axes omit domain. Python `_axis_spec` ships
         // `domain`. Matching Python would add x_axis.domain. Recorded
         // emit-polar-payload-axis-domain stay-host.
+        // Node polar payload axes omit format. Python `_axis_spec` ships
+        // `format`. Matching Python would add x_axis.format. Recorded
+        // emit-polar-payload-axis-format stay-host.
+        // Node polar payload axes omit bounds. Python `_axis_spec` ships
+        // `bounds`. Matching Python would add x_axis.bounds. Recorded
+        // emit-polar-payload-axis-bounds stay-host.
         scale: "linear",
         theta_unit: unit,
         theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",        // Node polar payload axes omit format. Python `_axis_spec` ships
