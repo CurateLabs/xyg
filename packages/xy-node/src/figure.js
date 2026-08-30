@@ -2237,6 +2237,12 @@ export class Figure {
         // Node cartesian payload axes omit minor_style. Python `_axis_spec`
         // ships `minor_style`. Matching Python would add x_axis.minor_style.
         // Recorded emit-payload-axis-minor-style stay-host.
+        // Node cartesian payload axes omit style. Python `_axis_spec` ships
+        // compiled axis `style`. Matching Python would add x_axis.style.
+        // Recorded emit-payload-axis-style stay-host.
+        // Node cartesian payload axes omit nonpositive. Python `_axis_spec`
+        // ships `nonpositive` on log axes. Matching Python would add
+        // x_axis.nonpositive. Recorded emit-payload-axis-nonpositive stay-host.
         x: { range: xr, scale: "linear" },
         y: { range: yr, scale: "linear" },
       };
