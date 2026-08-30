@@ -278,6 +278,19 @@ test("scatter force_direct stays direct even above threshold", () => {
   assert.equal(spec.traces[0].n_marks, n);
 });
 
+test("_emitScatter still passes forceDirect unlike Python _emit_scatter", () => {
+  // Python payload_tier omits force_direct (defaults false → density here).
+  // Node still passes forceDirect so large forceDirect scatters stay direct.
+  const n = SCATTER_DENSITY_THRESHOLD + 1;
+  const x = fill(n, (i) => i / n);
+  const y = fill(n, (i) => ((i * 3) % n) / n);
+  const fig = figure();
+  fig.scatter(x, y, { forceDirect: true });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "direct");
+  assert.equal(spec.traces[0].n_marks, n);
+});
+
 test("lodPlan returns exact vs density for Rust budgets", () => {
   const exact = lodPlan(1_000, SCATTER_DENSITY_THRESHOLD);
   assert.equal(exact.exact, true);
