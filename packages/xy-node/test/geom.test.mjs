@@ -91,6 +91,7 @@ import {
   polarAxisROrigin,
   axisTickValues,
   axisMinorTickValues,
+  axisTickLabels,
   polarAxisThetaDirection,
   constantMarkColor,
   xyHfColormap,
@@ -1113,6 +1114,12 @@ test("axisMinorTickValues uses minor_tick_values only like Python", () => {
   assert.equal(axisMinorTickValues({}), undefined);
   assert.equal(axisMinorTickValues({ minorTickValues: [0.25] }), undefined);
   assert.deepEqual(axisMinorTickValues({ minor_tick_values: [0.25] }), [0.25]);
+});
+
+test("axisTickLabels uses tick_labels only like Python", () => {
+  assert.equal(axisTickLabels({}), undefined);
+  assert.equal(axisTickLabels({ tickLabels: ["a"] }), undefined);
+  assert.deepEqual(axisTickLabels({ tick_labels: ["a"] }), ["a"]);
 });
 
 test("hexbinPacksRgbaPlane uses color_ch only like Python", () => {
