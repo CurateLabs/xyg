@@ -1203,7 +1203,8 @@ export class Figure {
       };
     }
     if (t.tooltip_rows != null) {
-      // Node payload scatter skips tooltip_rows length. Python
+      // Node payload scatter skips tooltip_rows length. Python        // Recorded emit-payload-axis-tick-values stay-host.
+
       // `_attach_tooltip_rows` rejects a mismatch with n_points. Matching
       // Python would throw. Recorded emit-scatter-tooltip-len stay-host.
       entry.tooltip_rows = sel == null ? t.tooltip_rows : gatherItems(t.tooltip_rows, sel);
