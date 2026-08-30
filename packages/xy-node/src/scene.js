@@ -2338,6 +2338,8 @@ function packChromeAxis(axis, options, sides) {
   const style = options.style ?? {};
   const minor = chromeAxisMinorStyle(options) ?? {};
   for (const [label, authored] of [["style", style], ["minor_style", minor]]) {
+    // Node skips null-valued keys. Python `_pack_chrome_axis` uses
+    // set(authored) so None-valued keys still reject. Recorded chrome-null-key stay-host.
     const unsupported = Object.keys(authored).filter((key) => authored[key] != null && !AXIS_STYLE_KEYS.has(key));
     if (unsupported.length) {
       throw new RangeError(`Scene v12 does not yet encode ${axis} axis ${label} keys`);
