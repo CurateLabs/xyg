@@ -318,6 +318,17 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitHeatmap ships grid columns unlike Python nested heatmap", () => {
+  // Python `_emit_heatmap` ships a nested heatmap object. Node keeps grid
+  // columns. Recorded heatmap-grid stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.heatmap([[0, 1], [1, 0]], { colormap: "viridis" });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "heatmap");
+  assert.ok(spec.traces[0].grid != null);
+  assert.equal(spec.traces[0].heatmap, undefined);
+});
+
 test("_emitHexbin ships metric unlike Python color_ch", () => {
   // Python `_emit_hexbin` ships color from color_ch. Node hexbin() stores
   // both metric and color_ch, but payload keeps metric. Recorded hexbin-metric stay-host.
