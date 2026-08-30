@@ -1729,6 +1729,8 @@ export class Figure {
     const y = {
       range: yr,
       scale: "linear",
+      // Node `??` keeps empty `hole`. Python `_axis_spec` uses
+      // `opts.get("hole") or 0.0`. Recorded polar-payload-hole-empty stay-host.
       hole: yOpts.hole ?? 0.0,
     };
     if (yOpts.r_origin != null) y.r_origin = yOpts.r_origin;

@@ -1581,6 +1581,14 @@ test("_polarAxisSpecs uses axis sector like Python _axis_spec", () => {
   assert.deepEqual(leftover._polarAxisSpecs([0, 1], [0, 1]).x.sector, [0, 2 * Math.PI]);
 });
 
+test("_polarAxisSpecs empty hole stays unlike Python or-default", () => {
+  // Python `_axis_spec` uses `opts.get("hole") or 0.0`.
+  // Node `??` keeps the empty string.
+  const fig = figure();
+  fig.setPolarMeta({ hole: "" });
+  assert.equal(fig._polarAxisSpecs([0, 1], [0, 1]).y.hole, "");
+});
+
 test("_polarAxisSpecs uses axis hole like Python _axis_spec", () => {
   const fig = figure();
   fig.setPolarMeta({ hole: 0.25 });
