@@ -1187,7 +1187,11 @@ export class Figure {
         range_px: t.sizeRange ?? [8, 22],
         domain: [lo, hi],
         buf: pw.shipScalar(norm),
-      };        // Node cartesian payload axes omit tick_sides. Python `_axis_spec`
+      };        // Node cartesian payload axes omit label_position. Python `_axis_spec`
+        // ships `label_position`. Matching Python would add
+        // x_axis.label_position. Recorded emit-payload-axis-label-position
+        // stay-host.
+        // Node cartesian payload axes omit tick_sides. Python `_axis_spec`
         // ships `tick_sides`. Matching Python would add x_axis.tick_sides.
         // Recorded emit-payload-axis-tick-sides stay-host.
         // Node cartesian payload axes omit format. Python `_axis_spec` ships
