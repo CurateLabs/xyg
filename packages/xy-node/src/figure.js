@@ -440,6 +440,7 @@ export class Figure {
     // layout or default-resolution policy.
     this.style = opts.style == null ? {} : copySceneOptions(opts.style, "style");
     this.legend = opts.legend == null ? {} : copySceneOptions(opts.legend, "legend");
+    this.legend_options = this.legend;
     this.colorbarOptions = opts.colorbar == null ? null : copySceneOptions(opts.colorbar, "colorbar");
     if (opts.annotations != null && !Array.isArray(opts.annotations)) {
       throw new TypeError("annotations must be an array");
@@ -513,6 +514,7 @@ export class Figure {
   /** Set one bounded static legend request for the Rust Scene compiler. */
   setLegend(legend = {}) {
     this.legend = copySceneOptions(legend, "Scene legend");
+    this.legend_options = this.legend;
     return this;
   }
 

@@ -104,6 +104,7 @@ import {
   figureClassNames,
   figureExtraLegends,
   figureTitleOptions,
+  figureLegendOptions,
   annotationClassName,
   figureYLabel,
   plotTopAxisRoom,
@@ -1217,6 +1218,12 @@ test("figureTitleOptions uses title_options only like Python", () => {
   assert.equal(figureTitleOptions({}), undefined);
   assert.equal(figureTitleOptions({ titleOptions: { text: "T" } }), undefined);
   assert.deepEqual(figureTitleOptions({ title_options: { text: "T" } }), { text: "T" });
+});
+
+test("figureLegendOptions uses legend_options only like Python", () => {
+  assert.equal(figureLegendOptions({}), undefined);
+  assert.equal(figureLegendOptions({ legend: { loc: "best" } }), undefined);
+  assert.deepEqual(figureLegendOptions({ legend_options: { loc: "best" } }), { loc: "best" });
 });
 
 test("figureXLabel uses x_label then axis label like Python", () => {
