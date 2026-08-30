@@ -1760,3 +1760,15 @@ test("buildPayload omits cartesian axis style unlike Python _axis_spec", () => {
   assert.equal(spec.x_axis.style, undefined);
 });
 
+test("buildPayload omits cartesian axis nonpositive unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `nonpositive` on log axes. Node cartesian payload
+  // axes omit that field even when axis nonpositive is set. Recorded
+  // emit-payload-axis-nonpositive stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([1, 2], [1, 2]);
+  fig.setAxis("x", { type: "log", nonpositive: "clip" });
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.axis_options.x.nonpositive, "clip");
+  assert.equal(spec.x_axis.nonpositive, undefined);
+});
+
