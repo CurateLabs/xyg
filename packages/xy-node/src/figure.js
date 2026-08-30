@@ -560,6 +560,7 @@ export class Figure {
       theta_zero: this._polarMeta.thetaZero,
       theta_direction: this._polarMeta.thetaDirection,
       grid_shape: this._polarMeta.gridShape,
+      sector: this._polarMeta.sector,
     };
     this.xAxis = this.axis_options.x;
     this.axis_options.y = {
