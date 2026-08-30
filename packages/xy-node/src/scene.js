@@ -2057,6 +2057,11 @@ export function polarLabelRoom(widest = null) {
   return out[0];
 }
 
+/** Polar recut incoming top-axis room. Python `recut_polar_plot` reads `plot.get("top_axis_room", 0.0)` only. */
+export function plotTopAxisRoom(plot) {
+  return (plot ?? {}).top_axis_room;
+}
+
 export function recutPolarPlot(plot, width, height, {
   legendSide = "",
   legendRoom = 0,
@@ -2072,7 +2077,7 @@ export function recutPolarPlot(plot, width, height, {
     Number(plot.y),
     Number(plot.w),
     Number(plot.h),
-    Number(plot.top_axis_room ?? plot.topAxisRoom ?? 0),
+    Number(plotTopAxisRoom(plot) ?? 0),
   ]);
   const out = new Float64Array(9);
   const written = xyRecutPolarPlot(

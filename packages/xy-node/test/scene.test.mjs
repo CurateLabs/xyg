@@ -1939,7 +1939,7 @@ test("Node consumes Rust-owned static-export layout combination", () => {
   assert.equal(polarLegendRoom(1000), 200);
   assert.equal(polarLabelRoom(null), 30);
   const recut = recutPolarPlot(
-    { x: 0, y: 0, w: 200, h: 200, topAxisRoom: 10 },
+    { x: 0, y: 0, w: 200, h: 200, top_axis_room: 10 },
     200,
     200,
     { polarLabelRoom: 30, authoredPadding: true },

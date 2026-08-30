@@ -94,6 +94,7 @@ import {
   axisTickLabels,
   figureXLabel,
   figureYLabel,
+  plotTopAxisRoom,
   polarAxisThetaDirection,
   constantMarkColor,
   xyHfColormap,
@@ -1136,6 +1137,12 @@ test("figureYLabel uses y_label then axis label like Python", () => {
   assert.equal(figureYLabel({ yLabel: "Y" }, {}), undefined);
   assert.equal(figureYLabel({ y_label: "Y" }, {}), "Y");
   assert.equal(figureYLabel({}, { label: "Y" }), "Y");
+});
+
+test("plotTopAxisRoom uses top_axis_room only like Python", () => {
+  assert.equal(plotTopAxisRoom({}), undefined);
+  assert.equal(plotTopAxisRoom({ topAxisRoom: 10 }), undefined);
+  assert.equal(plotTopAxisRoom({ top_axis_room: 10 }), 10);
 });
 
 test("hexbinPacksRgbaPlane uses color_ch only like Python", () => {
