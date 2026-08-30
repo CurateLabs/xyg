@@ -2389,6 +2389,21 @@ export class Figure {
       // Node payload omits show_legend. Python `build_payload` ships
       // `show_legend`. Matching Python would add spec.show_legend. Recorded
       // emit-payload-show-legend stay-host.
+      // Node payload omits legend. Python `build_payload` ships
+      // `legend` from `legend_options`. Matching Python would add spec.legend.
+      // Recorded emit-payload-legend stay-host.
+      // Node payload omits colorbar. Python `build_payload` ships
+      // `colorbar` from `colorbar_options`. Matching Python would add
+      // spec.colorbar. Recorded emit-payload-colorbar stay-host.
+      // Node payload omits annotations. Python `build_payload` ships
+      // `_annotation_specs`. Matching Python would add spec.annotations.
+      // Recorded emit-payload-annotations stay-host.
+      // Node payload omits extra_legends. Python `build_payload` ships
+      // `extra_legends`. Matching Python would add spec.extra_legends.
+      // Recorded emit-payload-extra-legends stay-host.
+      // Node payload omits title_options. Python `build_payload` ships
+      // `title_options` with geometry columns. Matching Python would add
+      // spec.title_options. Recorded emit-payload-title-options stay-host.
       view: { ranges: { x: [...xr], y: [...yr] } },
     };
     if (this.coords === "polar") {
