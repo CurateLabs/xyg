@@ -2156,6 +2156,12 @@ export class Figure {
         // `_axis_spec` ships `minor_tick_values`. Matching Python would add
         // x_axis.minor_tick_values. Recorded emit-payload-axis-minor-ticks
         // stay-host.
+        // Node cartesian payload axes omit tick_labels. Python `_axis_spec`
+        // ships `tick_labels`. Matching Python would add x_axis.tick_labels.
+        // Recorded emit-payload-axis-tick-labels stay-host.
+        // Node cartesian payload axes omit tick_count. Python `_axis_spec`
+        // ships `tick_count`. Matching Python would add x_axis.tick_count.
+        // Recorded emit-payload-axis-tick-count stay-host.
         x: { range: xr, scale: "linear" },
         y: { range: yr, scale: "linear" },
       };
