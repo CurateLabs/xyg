@@ -1608,6 +1608,9 @@ export class Figure {
     // Node payload mesh omits transition_keys. Python `_emit_triangle_mesh`
     // ships them via `_transition_entry`. Matching Python would add entry.keys.
     // Recorded emit-mesh-transition stay-host.
+    // Node payload mesh omits animation. Python `_emit_triangle_mesh` ships
+    // t.animation via `_transition_entry`. Matching Python would add
+    // entry.animation. Recorded emit-mesh-animation stay-host.
     return {
       id: t.id,
       kind: "triangle_mesh",

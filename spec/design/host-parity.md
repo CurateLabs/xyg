@@ -49,6 +49,7 @@ publish waits on the `@curatelabs` npm org (#13).
   Node `_emitScatter` omits animation.
   Node `_emitLine` omits animation.
   Node `_emitArea` omits animation.
+  Node `_emitTriangleMesh` omits animation.
 ---
 
 ## 0. Three runtime surfaces (product-wide)
