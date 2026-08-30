@@ -1706,6 +1706,10 @@ export class Figure {
       id: t.id,
       kind: t.kind === "error_band" ? "error_band" : "area",
       name: t.name,
+      // Node payload area copies t.style. Python `_emit_area` uses
+      // `_default_styled` to fill palette color when style.color is missing.
+      // Matching Python would add style.color. Recorded
+      // emit-area-default-styled stay-host.
       style: { ...t.style },
       tier,
       n_points: t.x.length,
