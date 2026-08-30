@@ -1407,6 +1407,9 @@ export class Figure {
     // Node payload density scatter omits animation. Python `_transition_entry`
     // ships t.animation on the density path. Matching Python would add
     // entry.animation. Recorded emit-density-animation stay-host.
+    // Node payload density omits categorical color. Python `_density_trace_spec`
+    // ships a slim color spec for legend chrome. Matching Python would add
+    // entry.color. Recorded emit-density-cat-color stay-host.
     return {
       id: t.id,
       kind: "scatter",
