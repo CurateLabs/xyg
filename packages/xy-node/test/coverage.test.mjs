@@ -318,6 +318,21 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitScatter ships sizeValues unlike Python size_ch", () => {
+  // Python `_emit_scatter` ships size_ch. Node keeps t.sizeValues even when
+  // size_ch is also present. Recorded emit-scatter-size stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1], {
+    _composed: true,
+    sizeValues: [4, 8],
+  });
+  fig.traces[0].size_ch = { mode: "constant", constant: 12 };
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "direct");
+  assert.equal(spec.traces[0].size.mode, "continuous");
+  assert.deepEqual([...spec.traces[0].size.domain], [4, 8]);
+});
+
 test("_emitScatterDensity sample omits style_channels unlike Python _ship_trace_styles", () => {
   // Python `_density_sample_spec` ships style_channels as sample.channels.
   // Node density overlay keeps no channels field even when style_channels is
