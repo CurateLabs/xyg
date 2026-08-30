@@ -1318,6 +1318,9 @@ export class Figure {
             opacity: densityOverlayOpacity(opacityRaw),
           },
         };
+        // Node density sample omits color_ch. Python `_density_sample_spec`
+        // ships color/size via `_ship_channels`. Matching Python would add
+        // sample.color. Recorded emit-density-sample-color stay-host.
       }
     }
     if (tiles != null) {
