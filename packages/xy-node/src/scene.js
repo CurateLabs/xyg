@@ -5840,6 +5840,8 @@ export function itemApplyOpacity(trace, packed, n) {
 }
 
 export function itemFillRgba8(trace, n) {
+  // Node fallback stays sourceColorCss (`??`). Python `_item_fill_rgba8`
+  // uses style.get("color", default). Recorded item-fill-css stay-host.
   const fallback = sourceColorCss(trace);
   const channel = trace.color_ch;
   let packed = channelEndRgba8(channel, n, fallback);
