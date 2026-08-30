@@ -4740,6 +4740,11 @@ export function axisMinorTickValues(axis) {
   return (axis ?? {}).minor_tick_values;
 }
 
+/** Chrome authored tick labels. Python `_pack_figure_chrome` reads `axis.get("tick_labels")` only. */
+export function axisTickLabels(axis) {
+  return (axis ?? {}).tick_labels;
+}
+
 function packChromeFacts(figure, { width, height, margins = null, colorbarOk = true } = {}) {
   const FLAG_AUTHORED_MARGINS = 1 << 0, FLAG_PADDING = 1 << 1, FLAG_X_MAJOR_AUTO = 1 << 2, FLAG_Y_MAJOR_AUTO = 1 << 3;
   const FLAG_X_TICK_LABELS = 1 << 4, FLAG_Y_TICK_LABELS = 1 << 5, FLAG_HAS_CHROME = 1 << 6, FLAG_HAS_LEGEND = 1 << 7, FLAG_HAS_COLORBAR = 1 << 8;
@@ -4782,8 +4787,8 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   // ABI 201: product encode passes packed XYPL so polar theta uses the modular sector.
   // ABI 202: hosts pack domain tick-kind (linear/time/category) in XYCF 154–155.
   // ABI 203: hosts pack ABI 123 collision strategy/anchor/gaps in XYCF 12–15.
-  const xLabels = xAxis.tickLabels ?? xAxis.tick_labels ?? null;
-  const yLabels = yAxis.tickLabels ?? yAxis.tick_labels ?? null;
+  const xLabels = axisTickLabels(xAxis) ?? null;
+  const yLabels = axisTickLabels(yAxis) ?? null;
   if (xLabels != null) flags |= FLAG_X_TICK_LABELS;
   if (yLabels != null) flags |= FLAG_Y_TICK_LABELS;
   const chrome = packXyCh(figure);
