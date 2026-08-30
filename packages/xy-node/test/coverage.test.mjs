@@ -318,6 +318,20 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("_emitHeatmap ships rgba_len unlike Python nested rgba_bufs", () => {
+  // Python `_emit_heatmap` ships nested heatmap.rgba_bufs from rgba_grid.
+  // Node keeps rgba_len from t.rgba. Recorded emit-heatmap-rgba stay-host.
+  const fig = figure({ width: 240, height: 160 });
+  fig.heatmap([[0, 1], [1, 0]], {
+    colormapStops: Uint8Array.from([0, 0, 255, 255, 255, 255, 255, 0, 0]),
+  });
+  fig.traces[0].rgba_grid = [{ values: [1, 0, 0, 1] }];
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].kind, "heatmap");
+  assert.notEqual(spec.traces[0].rgba_len, undefined);
+  assert.equal(spec.traces[0].heatmap, undefined);
+});
+
 test("_emitHeatmap omits color unlike Python _emit_heatmap", () => {
   // Python `_emit_heatmap` ships a continuous color spec. Node keeps no
   // color field on the grid-column payload. Recorded emit-heatmap-color stay-host.

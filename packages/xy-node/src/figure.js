@@ -1716,6 +1716,9 @@ export class Figure {
       y_axis: t.y_axis ?? "y",
     };
     if (t.rgba != null) {
+      // Node payload heatmap ships rgba_len. Python `_emit_heatmap` ships
+      // nested heatmap.rgba_bufs from rgba_grid. Matching Python would nest
+      // buffers. Recorded emit-heatmap-rgba stay-host.
       entry.rgba_len = t.rgba.length;
     }
     return entry;
