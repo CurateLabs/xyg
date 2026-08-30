@@ -2019,6 +2019,12 @@ export class Figure {
     return {
       x: {
         range: xr,
+        // Node polar payload axes omit id. Python `_axis_spec` ships
+        // `id`. Matching Python would add x_axis.id. Recorded
+        // emit-polar-payload-axis-id stay-host.
+        // Node polar payload axes omit kind. Python `_axis_spec` ships
+        // `_axis_kind`. Matching Python would add x_axis.kind. Recorded
+        // emit-polar-payload-axis-kind stay-host.
         scale: "linear",
         theta_unit: unit,
         theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",        // Node polar payload axes omit id. Python `_axis_spec` ships

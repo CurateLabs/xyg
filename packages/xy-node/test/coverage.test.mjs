@@ -1917,3 +1917,12 @@ test("_emitScatterDensity xLinear stays true unlike Python _density_trace_spec",
   assert.equal(b.tier, "density");
   assert.equal(a.density.max, b.density.max);
 });
+
+test("buildPayload omits polar axis kind unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `_axis_kind` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-kind stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.kind, undefined);
+});

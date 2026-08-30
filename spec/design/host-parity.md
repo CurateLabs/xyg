@@ -91,6 +91,7 @@ Node `polarAxisThetaDirection` uses axis `theta_direction` only like Python `_pa
   Node `_emitLine` skips M4 bin_x.
   Node `_emitArea` skips M4 bin_x.
   Node `_polarAxisSpecs` omits axis id.
+  Node `_polarAxisSpecs` omits axis kind.
 ---
 
 ## 0. Three runtime surfaces (product-wide)
