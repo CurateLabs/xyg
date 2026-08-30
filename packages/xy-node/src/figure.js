@@ -1581,6 +1581,9 @@ export class Figure {
     // Node payload bar/column ships rect columns. Python `_emit_bar` ships a
     // nested `bar` spec via `_emit_bar_compact`. Matching Python would nest
     // bar. Recorded emit-bar-compact stay-host.
+    // Node payload rect omits transition_keys. Python `_emit_rect` ships them
+    // via `_transition_entry`. Matching Python would add entry.keys.
+    // Recorded emit-rect-transition stay-host.
     return {
       id: t.id,
       kind,
