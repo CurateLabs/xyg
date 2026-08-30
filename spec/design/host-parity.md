@@ -94,6 +94,7 @@ publish waits on the `@curatelabs` npm org (#13).
   Node `_polarAxisSpecs` omits axis tick_labels.
   Node `_polarAxisSpecs` omits axis tick_count.
   Node `_polarAxisSpecs` omits axis reverse.
+  Node `_polarAxisSpecs` omits axis domain.
 ---
 
 ## 0. Three runtime surfaces (product-wide)

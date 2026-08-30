@@ -1982,3 +1982,13 @@ test("buildPayload omits polar axis reverse unlike Python _axis_spec", () => {
   assert.equal(spec.x_axis.reverse, undefined);
 });
 
+test("buildPayload omits polar axis domain unlike Python _axis_spec", () => {
+  // Python `_axis_spec` ships `domain` on polar axes. Node
+  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-domain stay-host.
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { domain: [0, 1] });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.domain, undefined);
+});
+
