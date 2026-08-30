@@ -2375,7 +2375,7 @@ function packChromeAxis(axis, options, sides) {
   const prefix = new Uint8Array(84);
   const view = new DataView(prefix.buffer);
   prefix[0] = sideCode;
-  prefix[1] = mask(options.tickSides ?? options.tick_sides, "tick_sides");
+  prefix[1] = mask(chromeAxisTickSides(options), "tick_sides");
   prefix[2] = mask(options.tickLabelSides ?? options.tick_label_sides, "tick_label_sides");
   prefix[3] = direction[String(styleValue(style, "tick_direction", "tickDirection", "out"))] ?? 255;
   prefix[4] = direction[String(styleValue(minor, "tick_direction", "tickDirection", "out"))] ?? 255;
@@ -4786,6 +4786,11 @@ export function axisTickLabels(axis) {
 /** Chrome axis minor style. Python `_pack_chrome_axis` reads `options.get("minor_style")` only. */
 export function chromeAxisMinorStyle(options) {
   return (options ?? {}).minor_style;
+}
+
+/** Chrome axis tick sides. Python `_pack_chrome_axis` reads `options.get("tick_sides")` only. */
+export function chromeAxisTickSides(options) {
+  return (options ?? {}).tick_sides;
 }
 
 /** Chrome styles record. Python `_pack_figure_support` / XYEF observations read `chrome_styles` only. */
