@@ -557,6 +557,7 @@ export class Figure {
     this.axis_options.x = {
       ...(this.axis_options.x ?? {}),
       theta_unit: this._polarMeta.thetaUnit,
+      theta_zero: this._polarMeta.thetaZero,
     };
     this.xAxis = this.axis_options.x;
     return this;
