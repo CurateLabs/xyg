@@ -1768,6 +1768,9 @@ export class Figure {
       nBuckets: pxWidth,
       polar: this.coords === "polar",
     });
+    // Node `_emitArea` skips M4 bin_x. Python `_m4_decimate` passes
+    // `_binning_coords`. Matching Python would change n_marks on log x.
+    // Recorded emit-area-m4-bin-x stay-host.
     let xv = t.x;
     let yv = t.y;
     let bv = t.base;
