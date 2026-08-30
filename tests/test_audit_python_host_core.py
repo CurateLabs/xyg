@@ -1,0 +1,39 @@
+"""Smoke tests for the python-scene-migration re-audit script."""
+
+from __future__ import annotations
+
+import importlib.util
+import subprocess
+import sys
+from pathlib import Path
+
+
+def _load():
+    path = Path(__file__).resolve().parents[1] / "scripts" / "audit_python_host_core.py"
+    spec = importlib.util.spec_from_file_location("audit_python_host_core", path)
+    mod = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_audit_lists_thirteen_scene_migration_files():
+    mod = _load()
+    paths = mod._load_paths(mod.MANIFEST)
+    assert len(paths) == 13
+    assert "python/xyg/_payload.py" in paths
+    assert "python/xyg/_scene_v3.py" in paths
+
+
+def test_audit_cli_exits_zero():
+    root = Path(__file__).resolve().parents[1]
+    proc = subprocess.run(
+        [sys.executable, str(root / "scripts" / "audit_python_host_core.py")],
+        cwd=root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert proc.returncode == 0
+    assert "python-scene-migration core-logic re-audit" in proc.stdout
+    assert "§302 blocker rollup" in proc.stdout

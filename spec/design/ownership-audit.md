@@ -284,9 +284,21 @@ Worker/WASM files at explicit URLs; this is not the all-host ChartView cutover.
 
 XYG intentionally ships one versioned C ABI cdylib for all hosts. Python uses ctypes and Node uses Koffi; Koffi itself is built on Node-API, but XYG is not an N-API addon. PyO3/abi3 and napi-rs would create separate host-specific native artifacts, packaging paths, and version seams. They are not the default while the product requires one core artifact usable by CPython versions, Node, VS Code, and future adapters. Issue #57 generated both low-level bindings and the C header from one typed ABI contract; measured evidence may revisit the seam later.
 
-## Current-tree re-audit (after leftover #283 / ABI 211)
+## Current-tree re-audit (M2 stay-host TAP + post-leftover #283)
 
 Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](https://github.com/CurateLabs/xyg/issues/313) and parents [#271](https://github.com/CurateLabs/xyg/issues/271)–[#283](https://github.com/CurateLabs/xyg/issues/283) are closed. Remaining `python-scene-migration` debt is not leftover-cluster titles. Do not delete `_svg.py`, `_raster.py`, `_scene.py`, `marks.py`, `_legendfit.py`, `_payload.py`, or `_textblock.py` until Rust owns the path **and** differentials are green. Do not delete `_scene_v3.py`. Do not route pyplot through Scene.
+
+**M2 Node stay-host TAP (2026-08-30).** Payload emit diffs [#644](https://github.com/CurateLabs/xyg/pull/644)–[#693](https://github.com/CurateLabs/xyg/pull/693) and scene compose diffs [#694](https://github.com/CurateLabs/xyg/pull/694)–[#698](https://github.com/CurateLabs/xyg/pull/698) are recorded on rebased branches (`cursor/m2-node-payload-rebase-staging-7ce1` through `ee9745c9`, scene tips rebased onto that staging tip). Merge serially after review; Python remains authoritative. Reproduce the inventory with `python3 scripts/audit_python_host_core.py`.
+
+**Next kernel stack (open, merge #640 → #641 → #642).**
+
+| PR | ABI | Rust owns | Python surface shrinks |
+| --- | ---: | --- | --- |
+| [#640](https://github.com/CurateLabs/xyg/pull/640) | 254 | `xyg_arrow_style_pack` | `_arrowgeom._pack_style` CSV keys |
+| [#641](https://github.com/CurateLabs/xyg/pull/641) | 255 | `xyg_encoded_column_meta` | `lod.encode_f32_values` `{offset, scale, kind?}` assembly |
+| [#642](https://github.com/CurateLabs/xyg/pull/642) | 256 | `xyg_scene_channel_constant_css` | `_scene_v3` constant-mode CSS admit |
+
+After #642, the largest remaining Python core surfaces are `_payload` emit gather/ship and `_scene_v3` XYTC/XYTA pack loops — not the thirteen ABI-218–253 admit slices already kernelized.
 
 **Reclassified keep-host** (Rust already owns the decision; the Python file packs, coerces, or carries error text):
 
