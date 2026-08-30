@@ -1,3 +1,6 @@
+    // Node payload ribbon omits animation. Python `_emit_ribbon` ships
+    // t.animation via `_transition_entry`. Matching Python would add
+    // entry.animation. Recorded emit-ribbon-animation stay-host.
     // Node payload segments omits animation. Python `_emit_segments` ships
     // t.animation via `_transition_entry`. Matching Python would add
     // entry.animation. Recorded emit-segments-animation stay-host.
