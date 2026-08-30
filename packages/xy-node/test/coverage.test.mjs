@@ -318,6 +318,16 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
+test("buildPayload omits legend unlike Python build_payload", () => {
+  // Python `build_payload` ships `legend` from `legend_options`. Node
+  // payload omits that field. Recorded emit-payload-legend stay-host.
+  const fig = figure({ width: 240, height: 160, legend: { loc: "upper right" } });
+  fig.scatter([0, 1], [0, 1]);
+  const { spec } = fig.buildPayload();
+  assert.equal(fig.legend_options.loc, "upper right");
+  assert.equal(spec.legend, undefined);
+});
+
 test("_emitTriangleMesh omits animation unlike Python _transition_entry", () => {
   // Python `_emit_triangle_mesh` ships t.animation via `_transition_entry`.
   // Node mesh encode omits that field. Recorded emit-mesh-animation stay-host.
