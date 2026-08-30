@@ -1420,4 +1420,3 @@ test("_emitSegments omits animation unlike Python _transition_entry", () => {
   assert.equal(spec.traces[0].kind, "segments");
   assert.equal(spec.traces[0].animation, undefined);
 });
-

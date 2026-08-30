@@ -1,3 +1,6 @@
+    // Node payload segments omits animation. Python `_emit_segments` ships
+    // t.animation via `_transition_entry`. Matching Python would add
+    // entry.animation. Recorded emit-segments-animation stay-host.
     // emit-area-animation stay-host.
     // emit-line-animation stay-host.
 /**
