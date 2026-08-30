@@ -1321,6 +1321,9 @@ export class Figure {
         // Node density sample omits color_ch. Python `_density_sample_spec`
         // ships color/size via `_ship_channels`. Matching Python would add
         // sample.color. Recorded emit-density-sample-color stay-host.
+        // Node density sample omits size_ch. Python `_density_sample_spec`
+        // ships size via `_ship_channels`. Matching Python would add
+        // sample.size. Recorded emit-density-sample-size stay-host.
       }
     }
     if (tiles != null) {
