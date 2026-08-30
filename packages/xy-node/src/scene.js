@@ -5792,6 +5792,8 @@ function hexbinCount(trace) {
 }
 
 export function hexbinCellRgba8(trace) {
+  // Node fallback stays sourceColorCss (`??`). Python `_hexbin_cell_rgba8`
+  // uses style.get("color", default). Recorded hexbin-css stay-host.
   return channelEndRgba8(
     trace.color_ch,
     hexbinCount(trace),

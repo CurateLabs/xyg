@@ -1058,6 +1058,15 @@ test("sceneHexbinColormapPlaneAdmit matches host table", () => {
 });
 
 
+test("hexbinCellRgba8 null style.color uses sourceColorCss unlike Python get", () => {
+  // Python `_hexbin_cell_rgba8` uses style.get("color", default); a None
+  // value stringifies and fail-closes. Node sourceColorCss `??` uses the
+  // default CSS.
+  const missing = hexbinCellRgba8({ x: [0] });
+  const nulled = hexbinCellRgba8({ x: [0], style: { color: null } });
+  assert.deepEqual([...nulled], [...missing]);
+});
+
 test("hexbinCellRgba8 uses color_ch only like Python", () => {
   const rgba = new Uint8Array([255, 0, 0, 255]);
   const fromCh = hexbinCellRgba8({
