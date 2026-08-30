@@ -1,3 +1,4 @@
+        // Recorded emit-payload-axis-tick-labels stay-host.
     // Node payload ribbon omits animation. Python `_emit_ribbon` ships
     // t.animation via `_transition_entry`. Matching Python would add
     // entry.animation. Recorded emit-ribbon-animation stay-host.
