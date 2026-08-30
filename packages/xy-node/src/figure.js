@@ -1183,6 +1183,9 @@ export class Figure {
     if (t.tooltip_rows != null) {
       entry.tooltip_rows = sel == null ? t.tooltip_rows : gatherItems(t.tooltip_rows, sel);
     }
+    // Node payload scatter omits stroke_ch. Python `_emit_scatter` ships
+    // stroke_ch via `_ship_trace_styles`. Matching Python would add
+    // entry.stroke. Recorded emit-scatter-stroke stay-host.
     return entry;
   }
 
