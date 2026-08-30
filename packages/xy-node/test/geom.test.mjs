@@ -1507,6 +1507,14 @@ test("setPolarMeta writes axis sector like Python set_axis", () => {
   assert.equal(figureAutorangeAxisOptions(leftover, "x").sector, undefined);
 });
 
+test("_polarAxisSpecs empty theta_unit stays unlike Python or-default", () => {
+  // Python `_axis_spec` uses `opts.get("theta_unit") or "radians"`.
+  // Node `??` keeps the empty string.
+  const fig = figure();
+  fig.setPolarMeta({ thetaUnit: "" });
+  assert.equal(fig._polarAxisSpecs([0, 1], [0, 1]).x.theta_unit, "");
+});
+
 test("_polarAxisSpecs uses axis theta_unit like Python _axis_spec", () => {
   const fig = figure();
   fig.setPolarMeta({ thetaUnit: "degrees" });
