@@ -2021,7 +2021,10 @@ export class Figure {
         range: xr,
         scale: "linear",
         theta_unit: unit,
-        theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",
+        theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",        // Node polar payload axes omit id. Python `_axis_spec` ships
+        // `id`. Matching Python would add x_axis.id. Recorded
+        // emit-polar-payload-axis-id stay-host.
+
         // Node `??` keeps empty `theta_direction`. Python `_axis_spec` uses
         // `opts.get("theta_direction") or "counterclockwise"`. Recorded
         // polar-payload-dir-empty stay-host.
