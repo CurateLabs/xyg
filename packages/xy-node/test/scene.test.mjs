@@ -910,6 +910,12 @@ test("Node Scene v9 primary legend matches Python bytes and rejects unsupported 
   const resolved = automatic.toScene();
   const locByte = resolved[Buffer.from(resolved).indexOf("XYLG") + 4];
   assert.equal(locByte, 1); // upper left in Scene XYLG codes
+  const camelFont = new Figure({ legend: { style: { fontSize: 14 } } }); camelFont.scatter([1], [1], { name: "x" });
+  assert.throws(() => camelFont.toScene(), /font_size/);
+  const snakeFont = new Figure({ width: 200, height: 120, legend: { loc: "lower left", title: "Series", style: { font_size: 14 } } });
+  snakeFont.setAxisDomain("x", [0, 1]); snakeFont.setAxisDomain("y", [0, 1]);
+  snakeFont.scatter([0.25], [0.5], { id: 0, name: "observed", style: { color: "#3987e5" } });
+  assert.doesNotThrow(() => snakeFont.toScene());
 });
 
 test("Node Scene v9 whole-scene consumers reject malformed and unsupported input", () => {
