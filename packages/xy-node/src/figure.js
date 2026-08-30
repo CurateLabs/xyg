@@ -1326,6 +1326,9 @@ export class Figure {
     if (t.style?.color) {
       density.color = t.style.color;
     }
+    // Node payload density scatter omits transition_keys. Python `_emit_scatter`
+    // ships them via `_transition_entry` on the density path. Matching Python
+    // would add entry.keys. Recorded emit-density-transition stay-host.
     return {
       id: t.id,
       kind: "scatter",
