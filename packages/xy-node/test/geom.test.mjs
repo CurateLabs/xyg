@@ -106,6 +106,7 @@ import {
   figureTitleOptions,
   figureLegendOptions,
   figureColorbarOptions,
+  figureShowLegend,
   annotationClassName,
   figureYLabel,
   plotTopAxisRoom,
@@ -1231,6 +1232,12 @@ test("figureColorbarOptions uses colorbar_options only like Python", () => {
   assert.equal(figureColorbarOptions({}), undefined);
   assert.equal(figureColorbarOptions({ colorbarOptions: { domain: [0, 1] } }), undefined);
   assert.deepEqual(figureColorbarOptions({ colorbar_options: { domain: [0, 1] } }), { domain: [0, 1] });
+});
+
+test("figureShowLegend uses show_legend only like Python", () => {
+  assert.equal(figureShowLegend({}), undefined);
+  assert.equal(figureShowLegend({ showLegend: false }), undefined);
+  assert.equal(figureShowLegend({ show_legend: false }), false);
 });
 
 test("figureXLabel uses x_label then axis label like Python", () => {

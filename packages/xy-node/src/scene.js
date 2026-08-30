@@ -3430,7 +3430,7 @@ export function packXyTcStrokeWidth(style) {
 function packXyTc(figure) {
   const traces = figure.traces ?? [];
   const records = [];
-  const showLegend = figure.showLegend !== false;
+  const showLegend = figureShowLegend(figure) !== false;
   for (const trace of traces) {
     const style = trace.style ?? {};
     let flags = 0;
@@ -4814,6 +4814,11 @@ export function figureColorbarOptions(figure) {
   return (figure ?? {}).colorbar_options;
 }
 
+/** Legend visibility. Python `_legend_input` / XYTC read `show_legend` only. */
+export function figureShowLegend(figure) {
+  return (figure ?? {}).show_legend;
+}
+
 /** Annotation CSS class. Python `_pack_figure_support` reads `annotation.get("class_name")` only. */
 export function annotationClassName(annotation) {
   return (annotation ?? {}).class_name;
@@ -4881,7 +4886,7 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   let legendTextRgba = new Uint8Array(4), legendFrameRgba = new Uint8Array(4);
   let legendMeta = new Uint8Array(), legendLens = [], legendBlob = new Uint8Array();
   let legendCount = 0;
-  if (figure.showLegend !== false) {
+  if (figureShowLegend(figure) !== false) {
     flags |= FLAG_HAS_LEGEND;
     legendFlags |= LEGEND_SHOW;
     const options = figureLegendOptions(figure) ?? {};
@@ -5351,7 +5356,7 @@ function resolveLegendBestLoc(figure) {
 }
 
 function legendInput(figure, entries, styles) {
-  if (figure.showLegend === false || entries.length === 0) return new Uint8Array();
+  if (figureShowLegend(figure) === false || entries.length === 0) return new Uint8Array();
   const options = figureLegendOptions(figure) ?? {};
   const allowed = new Set(["loc", "title", "ncols", "style", "highlight", "toggle"]);
   if (Object.keys(options).some((key) => !allowed.has(key)) || Number(options.ncols ?? 1) !== 1) throw new RangeError("Scene v12 primary legends do not yet encode anchors, multiple columns, or custom content");
