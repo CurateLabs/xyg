@@ -2085,6 +2085,12 @@ export class Figure {
         // Node polar payload axes omit minor_style. Python `_axis_spec` ships
         // `minor_style`. Matching Python would add x_axis.minor_style. Recorded
         // emit-polar-payload-axis-minor-style stay-host.
+        // Node polar payload axes omit style. Python `_axis_spec` ships
+        // `compiled axis `style``. Matching Python would add x_axis.style. Recorded
+        // emit-polar-payload-axis-style stay-host.
+        // Node polar payload y scale stays linear. Python `_axis_spec` ships
+        // `_axis_scale` when it is not linear. Matching Python would set
+        // y_axis.scale to log. Recorded emit-polar-payload-axis-scale stay-host.
         scale: "linear",
         theta_unit: unit,
         theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",        // Node polar payload axes omit style. Python `_axis_spec` ships
