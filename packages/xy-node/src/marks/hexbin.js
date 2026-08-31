@@ -41,8 +41,6 @@ export function composeHexbin(x, y, opts = {}) {
     color: constantColor ?? "#3987e5",
     opacity: opts.opacity ?? 0.9,
     role: "hexbin",
-    dx: result.dx,
-    dy: result.dy,
     hex_dx: result.dx,
     hex_dy: result.dy,
     reduce,
