@@ -1776,6 +1776,35 @@ pub fn scene_heatmap_colormap_admit(
     )
 }
 
+const XYTA_HAS_NAMED_CMAP: u32 = 1 << 6;
+const XYTA_HAS_STOPS: u32 = 1 << 7;
+
+/// Pack Scene XYTA colormap facts (ABI 258).
+///
+/// `mode`: `0` absent, `1` named UTF-8, `2` authored RGB stop rows as flat
+/// u8 triples. For mode `2`, invalid stop bytes (fewer than three or length
+/// not a multiple of three) still set `HAS_STOPS` with empty stop bytes —
+/// matching host try/except swallow. Field picking (`style.colormap` only)
+/// stays host.
+pub fn scene_xyta_colormap_pack(
+    mode: i32,
+    named_utf8: &[u8],
+    stop_rgb: &[u8],
+) -> (u32, Vec<u8>, Vec<u8>) {
+    match mode {
+        1 if !named_utf8.is_empty() => (XYTA_HAS_NAMED_CMAP, named_utf8.to_vec(), Vec::new()),
+        2 => {
+            let stops = if stop_rgb.len() >= 3 && stop_rgb.len().is_multiple_of(3) {
+                stop_rgb.to_vec()
+            } else {
+                Vec::new()
+            };
+            (XYTA_HAS_STOPS, Vec::new(), stops)
+        }
+        _ => (0, Vec::new(), Vec::new()),
+    }
+}
+
 /// Admit Scene heatmap lattice shape (ABI 240).
 ///
 /// Both `rows` and `cols` finite, integer-valued, and `>= 1` return `1`.
@@ -10227,6 +10256,27 @@ mod fuzz {
         assert_eq!(scene_heatmap_colormap_admit(0, 0, 1, 0), 1);
         assert_eq!(scene_heatmap_colormap_admit(0, 0, 0, 1), 1);
         assert_eq!(scene_heatmap_colormap_admit(1, 1, 1, 1), 1);
+    }
+
+    #[test]
+    fn scene_xyta_colormap_pack_matches_host_table() {
+        let (flags, cmap, stops) = scene_xyta_colormap_pack(1, b"viridis", &[]);
+        assert_eq!(flags, XYTA_HAS_NAMED_CMAP);
+        assert_eq!(cmap, b"viridis");
+        assert!(stops.is_empty());
+
+        let (flags, _cmap, stops) = scene_xyta_colormap_pack(2, &[], &[255, 0, 0, 0, 255, 0]);
+        assert_eq!(flags, XYTA_HAS_STOPS);
+        assert_eq!(stops, vec![255, 0, 0, 0, 255, 0]);
+
+        let (flags, _cmap, stops) = scene_xyta_colormap_pack(2, &[], &[255, 0]);
+        assert_eq!(flags, XYTA_HAS_STOPS);
+        assert!(stops.is_empty());
+
+        let (flags, cmap, stops) = scene_xyta_colormap_pack(0, b"ignored", &[1, 2, 3]);
+        assert_eq!(flags, 0);
+        assert!(cmap.is_empty());
+        assert!(stops.is_empty());
     }
 
     #[test]

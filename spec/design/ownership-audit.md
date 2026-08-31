@@ -298,6 +298,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | [#641](https://github.com/CurateLabs/xyg/pull/641) | 255 | `xyg_encoded_column_meta` | `lod.encode_f32_values` `{offset, scale, kind?}` assembly |
 | [#642](https://github.com/CurateLabs/xyg/pull/642) | 256 | `xyg_scene_channel_constant_css` | `_scene_v3` constant-mode CSS admit |
 | (this PR) | 257 | `xyg_arrow_shapes` | `_arrowgeom.arrow_shapes` shaft/taper/head/tail orchestration |
+| (this PR) | 258 | `xyg_scene_xyta_colormap_pack` | `_scene_v3._pack_xyta_colormap` flags/cmap/stops |
 
 Largest remaining Python core surfaces: `_payload` emit gather/ship and `_scene_v3` XYTC/XYTA pack loops — not the ABI-218–257 admit slices already kernelized.
 
