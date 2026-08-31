@@ -1076,6 +1076,68 @@ test("Node matches Python XYTA bytes for colormap hexbin", () => {
   );
 });
 
+test("Node matches Python Scene bytes for bounded polar hexbin, bar, line, and lattice heatmap", () => {
+  const tau = 6.283185307179586;
+  const cases = [
+    {
+      key: "public_polar_hexbin_sha256",
+      build: () => {
+        const figure = new Figure({ width: 400, height: 400, coords: "polar" });
+        figure.setAxisDomain("x", [0, tau]);
+        figure.setAxisDomain("y", [0, 4]);
+        figure.hexbin([0.5, 1.5, 2.5], [1, 2, 3], {
+          gridsize: [4, 4],
+          range: [[0, tau], [0, 4]],
+          color: "#3987e5",
+          opacity: 0.75,
+          name: "phex",
+          id: 0,
+        });
+        return figure;
+      },
+    },
+    {
+      key: "public_polar_bar_sha256",
+      build: () => {
+        const figure = new Figure({ width: 320, height: 240, coords: "polar" });
+        figure.setAxisDomain("x", [0, tau]);
+        figure.setAxisDomain("y", [0, 1]);
+        figure.bar([0, 1.57, 3.14], [0.5, 0.8, 0.6], { color: "#3987e5", name: "pbar", id: 0 });
+        return figure;
+      },
+    },
+    {
+      key: "public_polar_line_sha256",
+      build: () => {
+        const figure = new Figure({ width: 320, height: 240, coords: "polar" });
+        figure.setAxisDomain("x", [0, tau]);
+        figure.setAxisDomain("y", [0, 5]);
+        figure.line([0.5, 2.5, 4.5], [1, 3, 2], { color: "#3987e5", name: "pline", id: 0 });
+        return figure;
+      },
+    },
+    {
+      key: "public_polar_heatmap_sha256",
+      build: () => {
+        const figure = new Figure({ width: 320, height: 240, coords: "polar" });
+        figure.setAxisDomain("x", [0, 2]);
+        figure.setAxisDomain("y", [0, 2]);
+        figure.heatmap([[1, 2], [3, 4]], { color: "#3987e5", name: "pheat", id: 0 });
+        return figure;
+      },
+    },
+  ];
+  for (const { key, build } of cases) {
+    const figure = build();
+    assert.equal(sceneExportSupportReason(figure), null);
+    const scene = figure.toScene();
+    assert.equal(
+      crypto.createHash("sha256").update(scene).digest("hex"),
+      figureSceneFixture[key],
+    );
+  }
+});
+
 test("Node matches Python bytes for Rust-owned bounded violin geometry", () => {
   for (const orientation of ["vertical", "horizontal"]) {
     const figure = new Figure({ width: 320, height: 240 });
