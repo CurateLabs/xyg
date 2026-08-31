@@ -45,6 +45,10 @@ function buildCase(name) {
     fig.setAxis("x", { type: "log" });
     fig.scatter([1, 10], [1, 10]);
     fig.traces[0].id = 41;
+  } else if (name === "area_log_ship_scale") {
+    fig.setAxis("x", { type: "log" });
+    fig.area([1, 10], [1, 10]);
+    fig.traces[0].id = 42;
   } else if (name === "histogram_log_ship_scale") {
     fig.setAxis("x", { type: "log" });
     fig.histogram([1, 2, 10], { bins: 2, range: [1, 10] });
@@ -166,7 +170,7 @@ test("payload cross-host fixture contract", () => {
   assert.equal(fixture.schema, "xyg.payload-cross-host/v1");
   assert.equal(fixture.protocol, PROTOCOL_VERSION);
   assert.equal(Number(fixture.abi_version), abiVersion());
-  assert.equal(fixture.cases.length, 29);
+  assert.equal(fixture.cases.length, 30);
 });
 
 for (const entry of fixture.cases) {

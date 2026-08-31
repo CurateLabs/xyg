@@ -101,6 +101,19 @@
       "trace_keys": null
     },
     {
+      "name": "area_log_ship_scale",
+      "width": 240,
+      "height": 160,
+      "trace_id": 42,
+      "kind": "area",
+      "tier": "direct",
+      "n_marks": 2,
+      "payload_blob_len": 24,
+      "payload_blob_sha256": "b4e4ad148d75775aec5ba19add37eb1d79723edee8a6e736c993df8b4eb63f25",
+      "payload_blob_hex": "0000803f00002041000090c0000090400000000000000000",
+      "trace_keys": null
+    },
+    {
       "name": "histogram_log_ship_scale",
       "width": 240,
       "height": 160,
