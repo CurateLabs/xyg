@@ -1346,6 +1346,17 @@ test("_emitScatterDensity ships slim categorical entry color like Python _densit
 });
 
 
+test("buildPayload ships dom.styles from chrome_styles like Python _dom_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.chrome_styles = { title: { "font-size": "18px", color: "#333333" } };
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.dom, {
+    styles: { title: { "font-size": "18px", color: "#333333" } },
+  });
+});
+
+
 test("buildPayload ships padding via payload build plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
