@@ -218,3 +218,19 @@ def test_trace_pack_fixture_aliases_existing_public_goldens() -> None:
     assert trace["hexbin"]["xyta"] == fixture["public_hexbin_colormap_xyta_sha256"]
     assert trace["ribbon"]["xytc"] == fixture["public_ribbon_xytc_sha256"]
     assert trace["mesh"]["xytc"] == fixture["public_triangle_mesh_xytc_sha256"]
+
+
+def test_scene_xyta_trace_observations_materialize_abi323() -> None:
+    """ABI 323 materialize → 318 pack roundtrip for heatmap attach facts."""
+    from xyg._scene_marshal import marshal_xyta_trace_obs
+
+    figure = _heatmap_figure()
+    trace = figure.traces[0]
+    obs = marshal_xyta_trace_obs(trace, figure, polar=False)
+    materialized = _native.scene_xyta_trace_observations_materialize(obs)
+    assert materialized["pack_heatmap"] is True
+    assert materialized["has_grid"] is True
+    record = _native.scene_xyta_trace_pack(**materialized)
+    assert len(record) >= 4
+    fixture = _load_fixture()["trace_pack_sha256"]["heatmap"]
+    assert _sha256(_scene_v3._pack_xyta(figure)) == fixture["xyta"]

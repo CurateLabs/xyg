@@ -1,10 +1,12 @@
-"""Figure observation marshaling for scene bulk packers (ABI 321-322)."""
+"""Figure observation marshaling for scene bulk packers (ABI 321-323)."""
 
 from __future__ import annotations
 
 import math
 import struct
 from typing import Any
+
+import numpy as np
 
 from xyg import _native
 
@@ -319,6 +321,220 @@ def _marshal_trace_obs(trace: Any, *, polar: bool) -> dict[str, Any]:
             and not _scatter_packs_paint_plane(trace)
             and not (not polar and _ribbon_packs_end_paints(trace))
         ),
+    }
+
+
+def _marshal_xyta_color_channel(channel: Any) -> dict[str, Any]:
+    if channel is None:
+        return {
+            "present": False,
+            "mode": "",
+            "constant": None,
+            "colormap": None,
+            "has_domain": False,
+            "domain_lo": 0.0,
+            "domain_hi": 0.0,
+            "values_f64": np.empty(0, dtype=np.float64),
+            "rgba_u8": b"",
+            "codes_u8": b"",
+            "codes_i64": np.empty(0, dtype=np.int64),
+            "palette": [],
+            "n_categories": 0,
+        }
+    mode = str(getattr(channel, "mode", "") or "")
+    domain = getattr(channel, "domain", None)
+    has_domain = domain is not None and len(domain) == 2
+    values_f64 = np.empty(0, dtype=np.float64)
+    rgba_u8 = b""
+    values = getattr(channel, "values", None)
+    if values is not None:
+        values_f64 = np.ascontiguousarray(np.asarray(values, dtype=np.float64).reshape(-1))
+    elif getattr(channel, "rgba", None) is not None:
+        rgba = channel.rgba
+        if isinstance(rgba, (bytes, bytearray)):
+            rgba_u8 = bytes(rgba)
+        else:
+            values_f64 = np.ascontiguousarray(np.asarray(rgba, dtype=np.float64).reshape(-1))
+    codes_u8 = b""
+    codes_i64 = np.empty(0, dtype=np.int64)
+    codes = getattr(channel, "codes", None)
+    if codes is not None:
+        if isinstance(codes, np.ndarray) and codes.dtype == np.uint8:
+            codes_u8 = np.ascontiguousarray(codes, dtype=np.uint8).tobytes()
+        else:
+            codes_i64 = np.ascontiguousarray(np.asarray(codes, dtype=np.int64).reshape(-1))
+    palette = getattr(channel, "palette", None) or getattr(channel, "colors", None) or ()
+    colormap = getattr(channel, "colormap", None)
+    return {
+        "present": True,
+        "mode": mode,
+        "constant": getattr(channel, "constant", None),
+        "colormap": colormap if isinstance(colormap, str) else None,
+        "has_domain": has_domain,
+        "domain_lo": float(domain[0]) if has_domain else 0.0,
+        "domain_hi": float(domain[1]) if has_domain else 0.0,
+        "values_f64": values_f64,
+        "rgba_u8": rgba_u8,
+        "codes_u8": codes_u8,
+        "codes_i64": codes_i64,
+        "palette": [str(entry) for entry in palette],
+        "n_categories": len(getattr(channel, "categories", None) or ()),
+    }
+
+
+def _marshal_xyta_style_channel(channel: Any) -> dict[str, Any]:
+    if channel is None or getattr(channel, "values", None) is None:
+        return {"present": False, "values_f64": np.empty(0, dtype=np.float64)}
+    return {
+        "present": True,
+        "values_f64": np.ascontiguousarray(
+            np.asarray(channel.values, dtype=np.float64).reshape(-1)
+        ),
+    }
+
+
+def marshal_xyta_trace_obs(trace: Any, figure: Any, *, polar: bool) -> dict[str, Any]:
+    """Marshal XYTA trace observations for ABI 323 materialize."""
+    from xyg._scene_v3 import (
+        _mesh_count,
+        _mesh_packs_paint_plane,
+        _ribbon_color2_class_code,
+        _ribbon_count,
+        _scatter_count,
+        _scatter_packs_paint_plane,
+        _trace_column,
+        _xyta_hexbin_plane_observations,
+    )
+
+    style = getattr(trace, "style", None) or {}
+    kind_name = str(trace.kind)
+    hexbin_colormap, hexbin_rgba_ready = _xyta_hexbin_plane_observations(trace)
+    dispatch = _native.scene_xyta_trace_dispatch_plan(
+        kind=kind_name,
+        polar=polar,
+        use_density=kind_name == "scatter" and trace.use_density(),
+        hexbin_colormap_plane=hexbin_colormap,
+        hexbin_rgba_plane_ready=hexbin_rgba_ready,
+        ribbon_color2_class=_ribbon_color2_class_code(trace),
+        mesh_paint_plane=_mesh_packs_paint_plane(trace),
+        scatter_paint_plane=_scatter_packs_paint_plane(trace),
+    )
+    nan = float("nan")
+    domain_x0 = domain_x1 = domain_y0 = domain_y1 = nan
+    if dispatch["pack_density"]:
+        domain_x0, domain_x1 = (float(value) for value in figure._range("x"))
+        domain_y0, domain_y1 = (float(value) for value in figure._range("y"))
+    if kind_name == "hexbin":
+        xv_hex = _trace_column(trace, "x")
+        point_count = 0 if xv_hex is None else int(len(xv_hex))
+    elif kind_name == "ribbon":
+        point_count = _ribbon_count(trace)
+    elif kind_name == "triangle_mesh":
+        point_count = _mesh_count(trace)
+    elif kind_name == "scatter":
+        point_count = _scatter_count(trace)
+    else:
+        point_count = 0
+    colormap = style.get("colormap")
+    if isinstance(colormap, str):
+        style_colormap_mode = 1
+        style_colormap_named = colormap
+        style_colormap_stops = b""
+    elif colormap is not None:
+        style_colormap_mode = 2
+        style_colormap_named = ""
+        try:
+            stops = np.ascontiguousarray(
+                [(int(red), int(green), int(blue)) for red, green, blue in colormap],
+                dtype=np.uint8,
+            )
+            style_colormap_stops = (
+                stops.tobytes() if stops.ndim == 2 and stops.shape[1] == 3 else b""
+            )
+        except (TypeError, ValueError):
+            style_colormap_stops = b""
+    else:
+        style_colormap_mode = 0
+        style_colormap_named = ""
+        style_colormap_stops = b""
+    shape = getattr(trace, "grid_shape", None)
+    has_grid_shape = shape is not None and len(shape) == 2
+    grid_shape_rows = float(shape[0]) if has_grid_shape else 0.0
+    grid_shape_cols = float(shape[1]) if has_grid_shape else 0.0
+    raw_grid = getattr(trace, "grid", None)
+    if raw_grid is None:
+        grid_values = np.empty(0, dtype=np.float64)
+    else:
+        grid_values = np.ascontiguousarray(
+            np.asarray(getattr(raw_grid, "values", raw_grid), dtype=np.float64).reshape(-1)
+        )
+    packed_rgba = getattr(trace, "rgba", None)
+    rgba_u8 = (
+        np.ascontiguousarray(np.asarray(packed_rgba, dtype=np.uint8).reshape(-1)).tobytes()
+        if packed_rgba is not None
+        else b""
+    )
+    planes = getattr(trace, "rgba_grid", None)
+    if planes is None:
+        rgba_grid_f64 = np.empty(0, dtype=np.float64)
+    elif len(planes) == 4:
+        channels_f64 = [
+            np.asarray(getattr(plane, "values", plane), dtype=np.float64).reshape(-1)
+            for plane in planes
+        ]
+        rgba_grid_f64 = np.ascontiguousarray(np.stack(channels_f64, axis=-1)).reshape(-1)
+    else:
+        rgba_grid_f64 = np.empty(0, dtype=np.float64)
+    xv = _trace_column(trace, "x")
+    yv = _trace_column(trace, "y")
+    x_values = (
+        np.ascontiguousarray(xv, dtype=np.float64)
+        if xv is not None
+        else np.empty(0, dtype=np.float64)
+    )
+    y_values = (
+        np.ascontiguousarray(yv, dtype=np.float64)
+        if yv is not None
+        else np.empty(0, dtype=np.float64)
+    )
+    style_channels = getattr(trace, "style_channels", None) or {}
+    fallback_color = str(style.get("color", "#3987e5"))
+    return {
+        "trace_id": int(getattr(trace, "id", 0)) & 0xFFFFFFFF,
+        "dispatch": dispatch,
+        "domain_x0": domain_x0,
+        "domain_x1": domain_x1,
+        "domain_y0": domain_y0,
+        "domain_y1": domain_y1,
+        "point_count": point_count,
+        "fallback_color": fallback_color,
+        "style_color": style.get("color"),
+        "style_stroke": style.get("stroke"),
+        "style_stroke_width": float(style.get("stroke_width", 0.0) or 0.0),
+        "has_style_stroke_width": "stroke_width" in style,
+        "style_opacity": float(style["opacity"]) if "opacity" in style else nan,
+        "has_style_opacity": "opacity" in style,
+        "style_fill_opacity": float(style["fill_opacity"]) if "fill_opacity" in style else nan,
+        "has_style_fill_opacity": "fill_opacity" in style,
+        "style_truecolor": bool(style.get("truecolor")),
+        "style_domain": style.get("domain"),
+        "style_colormap_mode": style_colormap_mode,
+        "style_colormap_named": style_colormap_named,
+        "style_colormap_stops": style_colormap_stops,
+        "grid_shape_rows": grid_shape_rows,
+        "grid_shape_cols": grid_shape_cols,
+        "has_grid_shape": has_grid_shape,
+        "grid_values": grid_values,
+        "rgba_u8": rgba_u8,
+        "rgba_grid_f64": rgba_grid_f64,
+        "x_values": x_values,
+        "y_values": y_values,
+        "color_ch": _marshal_xyta_color_channel(getattr(trace, "color_ch", None)),
+        "stroke_ch": _marshal_xyta_color_channel(getattr(trace, "stroke_ch", None)),
+        "color2_ch": _marshal_xyta_color_channel(getattr(trace, "color2_ch", None)),
+        "opacity_ch": _marshal_xyta_style_channel(style_channels.get("opacity")),
+        "artist_alpha_ch": _marshal_xyta_style_channel(style_channels.get("artist_alpha")),
+        "stroke_width_ch": _marshal_xyta_style_channel(style_channels.get("stroke_width")),
     }
 
 

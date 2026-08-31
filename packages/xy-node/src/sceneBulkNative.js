@@ -7,12 +7,14 @@ import {
   xySceneFigureSupportMaterialize,
   xyScenePolarInputPack,
   xySceneXyafBulkPack,
+  xySceneXytaTraceObservationsMaterialize,
 } from "./native.js";
 
 const SCENE_XYCF_PACK_MAX = 1 << 20;
 const SCENE_FIGURE_SUPPORT_PACK_MAX = 1 << 18;
 const SCENE_POLAR_INPUT_PACK_MAX = 92;
 const SCENE_XYAF_BULK_PACK_MAX = 1 << 22;
+const SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES = 1 << 22;
 
 const StringRef = koffi.struct("XygStringRef", {
   ptr: "const uint8_t *",
@@ -542,6 +544,389 @@ export function sceneFigureSupportMaterialize({
   if (code === -2) throw new RangeError("sceneFigureSupportMaterialize output buffer too small");
   if (code !== 0) throw new RangeError("invalid sceneFigureSupportMaterialize arguments");
   return out.subarray(0, Number(outLen[0]));
+}
+
+const SceneXytaColorChannelDesc = koffi.struct("XygSceneXytaColorChannelDesc", {
+  present: "int32_t",
+  mode_len: "size_t",
+  constant_len: "size_t",
+  colormap_len: "size_t",
+  has_domain: "int32_t",
+  domain_lo: "double",
+  domain_hi: "double",
+  values_f64_len: "size_t",
+  rgba_u8_len: "size_t",
+  codes_u8_len: "size_t",
+  codes_i64_len: "size_t",
+  palette_count: "size_t",
+  n_categories: "size_t",
+});
+
+const SceneXytaStyleChannelDesc = koffi.struct("XygSceneXytaStyleChannelDesc", {
+  present: "int32_t",
+  values_f64_len: "size_t",
+});
+
+const SceneXytaTraceObservationsIn = koffi.struct("XygSceneXytaTraceObservationsIn", {
+  trace_id: "uint32_t",
+  pack_heatmap: "int32_t",
+  pack_hexbin_colormap: "int32_t",
+  pack_hexbin_rgba: "int32_t",
+  pack_ribbon_ends: "int32_t",
+  pack_mesh_faces: "int32_t",
+  pack_scatter_paint: "int32_t",
+  pack_density: "int32_t",
+  domain_x0: "double",
+  domain_x1: "double",
+  domain_y0: "double",
+  domain_y1: "double",
+  point_count: "size_t",
+  fallback_color_len: "size_t",
+  style_color_len: "size_t",
+  style_stroke_len: "size_t",
+  style_stroke_width: "double",
+  has_style_stroke_width: "int32_t",
+  style_opacity: "float",
+  has_style_opacity: "int32_t",
+  style_fill_opacity: "float",
+  has_style_fill_opacity: "int32_t",
+  style_truecolor: "int32_t",
+  style_domain_lo: "double",
+  style_domain_hi: "double",
+  has_style_domain: "int32_t",
+  style_colormap_mode: "int32_t",
+  style_colormap_named_len: "size_t",
+  style_colormap_stops_len: "size_t",
+  grid_shape_rows: "double",
+  grid_shape_cols: "double",
+  has_grid_shape: "int32_t",
+  grid_values_len: "size_t",
+  rgba_u8_len: "size_t",
+  rgba_grid_f64_len: "size_t",
+  x_values_len: "size_t",
+  y_values_len: "size_t",
+});
+
+const SceneXytaTraceObservationsOut = koffi.struct("XygSceneXytaTraceObservationsOut", {
+  trace_id: "uint32_t",
+  pack_heatmap: "int32_t",
+  pack_hexbin_colormap: "int32_t",
+  pack_hexbin_rgba: "int32_t",
+  pack_ribbon_ends: "int32_t",
+  pack_mesh_faces: "int32_t",
+  pack_scatter_paint: "int32_t",
+  pack_density: "int32_t",
+  grid_shape_rows: "double",
+  grid_shape_cols: "double",
+  has_grid_shape: "int32_t",
+  has_grid: "int32_t",
+  has_rgba: "int32_t",
+  has_rgba_grid: "int32_t",
+  truecolor: "int32_t",
+  has_cmap_domain: "int32_t",
+  cmap_lo: "double",
+  cmap_hi: "double",
+  has_color_ch: "int32_t",
+  has_style_color: "int32_t",
+  has_opacity: "int32_t",
+  has_fill_opacity: "int32_t",
+  opacity: "float",
+  fill_opacity: "float",
+  domain_x0: "double",
+  domain_x1: "double",
+  domain_y0: "double",
+  domain_y1: "double",
+  cmap_flags: "uint32_t",
+  rows: "int32_t",
+  cols: "int32_t",
+  grid_len: "size_t",
+  rgba_len: "size_t",
+  rgba_grid_len: "size_t",
+  x_len: "size_t",
+  y_len: "size_t",
+  mean_rgba_len: "size_t",
+  idx_len: "size_t",
+  lut_len: "size_t",
+  cmap_len: "size_t",
+  stops_len: "size_t",
+  color_ch_len: "size_t",
+  style_color_len: "size_t",
+  grid_off: "size_t",
+  rgba_off: "size_t",
+  rgba_grid_off: "size_t",
+  x_off: "size_t",
+  y_off: "size_t",
+  mean_rgba_off: "size_t",
+  idx_off: "size_t",
+  lut_off: "size_t",
+  cmap_off: "size_t",
+  stops_off: "size_t",
+  color_ch_off: "size_t",
+  style_color_off: "size_t",
+});
+
+function i64Ptr(arr) {
+  if (arr == null || arr.length === 0) return 0;
+  const view = arr instanceof BigInt64Array
+    ? arr
+    : BigInt64Array.from(arr, (value) => BigInt(value));
+  return pointer(view, "const int64_t *");
+}
+
+function xytaPalettePtrs(palette, keep) {
+  if (!palette?.length) return { ptrs: 0, lens: 0 };
+  const ptrBuf = Buffer.alloc(palette.length * 8);
+  const lenBuf = Buffer.alloc(palette.length * 8);
+  for (let index = 0; index < palette.length; index += 1) {
+    const encoded = new TextEncoder().encode(String(palette[index]));
+    keep.push(encoded);
+    ptrBuf.writeBigUInt64LE(BigInt(u8Ptr(encoded)), index * 8);
+    lenBuf.writeBigUInt64LE(BigInt(encoded.length), index * 8);
+  }
+  return {
+    ptrs: koffi.as(ptrBuf, "const uint8_t *const *"),
+    lens: koffi.as(lenBuf, "const size_t *"),
+  };
+}
+
+function xytaColorChannelSide(channel, keep) {
+  const mode = new TextEncoder().encode(String(channel?.mode ?? ""));
+  const constant = channel?.constant == null ? new Uint8Array() : new TextEncoder().encode(String(channel.constant));
+  const colormap = channel?.colormap == null || typeof channel.colormap !== "string"
+    ? new Uint8Array()
+    : new TextEncoder().encode(String(channel.colormap));
+  const valuesF64 = channel?.values_f64 instanceof Float64Array
+    ? channel.values_f64
+    : Float64Array.from(channel?.values_f64 ?? []);
+  const rgbaU8 = channel?.rgba_u8 instanceof Uint8Array ? channel.rgba_u8 : Uint8Array.from(channel?.rgba_u8 ?? []);
+  const codesU8 = channel?.codes_u8 instanceof Uint8Array ? channel.codes_u8 : Uint8Array.from(channel?.codes_u8 ?? []);
+  const codesI64 = channel?.codes_i64 instanceof BigInt64Array
+    ? channel.codes_i64
+    : BigInt64Array.from(channel?.codes_i64 ?? [], (value) => BigInt(value));
+  const palette = (channel?.palette ?? []).map(String);
+  const palettePtrs = xytaPalettePtrs(palette, keep);
+  keep.push(mode, constant, colormap, rgbaU8, codesU8);
+  const descBuf = Buffer.alloc(koffi.sizeof(SceneXytaColorChannelDesc));
+  koffi.encode(descBuf, SceneXytaColorChannelDesc, {
+    present: channel?.present ? 1 : 0,
+    mode_len: BigInt(mode.length),
+    constant_len: BigInt(constant.length),
+    colormap_len: BigInt(colormap.length),
+    has_domain: channel?.has_domain ? 1 : 0,
+    domain_lo: Number(channel?.domain_lo ?? 0),
+    domain_hi: Number(channel?.domain_hi ?? 0),
+    values_f64_len: BigInt(valuesF64.length),
+    rgba_u8_len: BigInt(rgbaU8.length),
+    codes_u8_len: BigInt(codesU8.length),
+    codes_i64_len: BigInt(codesI64.length),
+    palette_count: BigInt(palette.length),
+    n_categories: BigInt(channel?.n_categories ?? 0),
+  });
+  return {
+    desc: koffi.as(descBuf, "const void *"),
+    mode,
+    constant,
+    colormap,
+    valuesF64,
+    rgbaU8,
+    codesU8,
+    codesI64,
+    palettePtrs,
+  };
+}
+
+function xytaStyleChannelSide(channel) {
+  const valuesF64 = channel?.values_f64 instanceof Float64Array
+    ? channel.values_f64
+    : Float64Array.from(channel?.values_f64 ?? []);
+  const descBuf = Buffer.alloc(koffi.sizeof(SceneXytaStyleChannelDesc));
+  koffi.encode(descBuf, SceneXytaStyleChannelDesc, {
+    present: channel?.present ? 1 : 0,
+    values_f64_len: BigInt(valuesF64.length),
+  });
+  return { desc: koffi.as(descBuf, "const void *"), valuesF64 };
+}
+
+function sliceBlob(blob, off, len) {
+  return len ? blob.subarray(Number(off), Number(off) + Number(len)) : new Uint8Array();
+}
+
+/** Materialize XYTA trace observations via `xyg_scene_xyta_trace_observations_materialize` (ABI 323). */
+export function sceneXytaTraceObservationsMaterialize(obs) {
+  const keep = [];
+  const dispatch = obs.dispatch;
+  const fallback = new TextEncoder().encode(String(obs.fallback_color ?? ""));
+  const styleColor = obs.style_color == null ? new Uint8Array() : new TextEncoder().encode(String(obs.style_color));
+  const styleStroke = obs.style_stroke == null ? new Uint8Array() : new TextEncoder().encode(String(obs.style_stroke));
+  const styleColormapMode = Number(obs.style_colormap_mode ?? 0);
+  const styleColormapNamed = new TextEncoder().encode(String(obs.style_colormap_named ?? ""));
+  const styleColormapStops = obs.style_colormap_stops instanceof Uint8Array
+    ? obs.style_colormap_stops
+    : Uint8Array.from(obs.style_colormap_stops ?? []);
+  const gridValues = obs.grid_values instanceof Float64Array
+    ? obs.grid_values
+    : Float64Array.from(obs.grid_values ?? []);
+  const rgbaU8 = obs.rgba_u8 instanceof Uint8Array ? obs.rgba_u8 : Uint8Array.from(obs.rgba_u8 ?? []);
+  const rgbaGridF64 = obs.rgba_grid_f64 instanceof Float64Array
+    ? obs.rgba_grid_f64
+    : Float64Array.from(obs.rgba_grid_f64 ?? []);
+  const xValues = obs.x_values instanceof Float64Array ? obs.x_values : Float64Array.from(obs.x_values ?? []);
+  const yValues = obs.y_values instanceof Float64Array ? obs.y_values : Float64Array.from(obs.y_values ?? []);
+  const styleDomain = obs.style_domain;
+  const hasStyleDomain = styleDomain != null && styleDomain.length === 2;
+  const inputBuf = Buffer.alloc(koffi.sizeof(SceneXytaTraceObservationsIn));
+  koffi.encode(inputBuf, SceneXytaTraceObservationsIn, {
+    trace_id: Number(obs.trace_id ?? 0) >>> 0,
+    pack_heatmap: dispatch.packHeatmap ? 1 : 0,
+    pack_hexbin_colormap: dispatch.packHexbinColormap ? 1 : 0,
+    pack_hexbin_rgba: dispatch.packHexbinRgba ? 1 : 0,
+    pack_ribbon_ends: dispatch.packRibbonEnds ? 1 : 0,
+    pack_mesh_faces: dispatch.packMeshFaces ? 1 : 0,
+    pack_scatter_paint: dispatch.packScatterPaint ? 1 : 0,
+    pack_density: dispatch.packDensity ? 1 : 0,
+    domain_x0: Number(obs.domain_x0 ?? Number.NaN),
+    domain_x1: Number(obs.domain_x1 ?? Number.NaN),
+    domain_y0: Number(obs.domain_y0 ?? Number.NaN),
+    domain_y1: Number(obs.domain_y1 ?? Number.NaN),
+    point_count: BigInt(obs.point_count ?? 0),
+    fallback_color_len: BigInt(fallback.length),
+    style_color_len: BigInt(styleColor.length),
+    style_stroke_len: BigInt(styleStroke.length),
+    style_stroke_width: Number(obs.style_stroke_width ?? 0),
+    has_style_stroke_width: obs.has_style_stroke_width ? 1 : 0,
+    style_opacity: Number(obs.style_opacity ?? Number.NaN),
+    has_style_opacity: obs.has_style_opacity ? 1 : 0,
+    style_fill_opacity: Number(obs.style_fill_opacity ?? Number.NaN),
+    has_style_fill_opacity: obs.has_style_fill_opacity ? 1 : 0,
+    style_truecolor: obs.style_truecolor ? 1 : 0,
+    style_domain_lo: hasStyleDomain ? Number(styleDomain[0]) : 0,
+    style_domain_hi: hasStyleDomain ? Number(styleDomain[1]) : 0,
+    has_style_domain: hasStyleDomain ? 1 : 0,
+    style_colormap_mode: styleColormapMode,
+    style_colormap_named_len: styleColormapMode === 1 ? BigInt(styleColormapNamed.length) : 0n,
+    style_colormap_stops_len: styleColormapMode === 2 ? BigInt(styleColormapStops.length) : 0n,
+    grid_shape_rows: Number(obs.grid_shape_rows ?? 0),
+    grid_shape_cols: Number(obs.grid_shape_cols ?? 0),
+    has_grid_shape: obs.has_grid_shape ? 1 : 0,
+    grid_values_len: BigInt(gridValues.length),
+    rgba_u8_len: BigInt(rgbaU8.length),
+    rgba_grid_f64_len: BigInt(rgbaGridF64.length),
+    x_values_len: BigInt(xValues.length),
+    y_values_len: BigInt(yValues.length),
+  });
+  const color = xytaColorChannelSide(obs.color_ch, keep);
+  const stroke = xytaColorChannelSide(obs.stroke_ch, keep);
+  const color2 = xytaColorChannelSide(obs.color2_ch, keep);
+  const opacity = xytaStyleChannelSide(obs.opacity_ch);
+  const artist = xytaStyleChannelSide(obs.artist_alpha_ch);
+  const strokeWidth = xytaStyleChannelSide(obs.stroke_width_ch);
+  keep.push(fallback, styleColor, styleStroke, styleColormapNamed, styleColormapStops, rgbaU8);
+  const summaryBuf = Buffer.alloc(koffi.sizeof(SceneXytaTraceObservationsOut));
+  const out = new Uint8Array(SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES);
+  const outLen = new BigUint64Array(1);
+  const code = Number(xySceneXytaTraceObservationsMaterialize(
+    koffi.as(inputBuf, "const void *"),
+    fallback.length ? u8Ptr(fallback) : 0,
+    styleColor.length ? u8Ptr(styleColor) : 0,
+    styleStroke.length ? u8Ptr(styleStroke) : 0,
+    styleColormapMode === 1 && styleColormapNamed.length ? u8Ptr(styleColormapNamed) : 0,
+    styleColormapMode === 2 && styleColormapStops.length ? u8Ptr(styleColormapStops) : 0,
+    gridValues.length ? f64Ptr(gridValues) : 0,
+    rgbaU8.length ? u8Ptr(rgbaU8) : 0,
+    rgbaGridF64.length ? f64Ptr(rgbaGridF64) : 0,
+    xValues.length ? f64Ptr(xValues) : 0,
+    yValues.length ? f64Ptr(yValues) : 0,
+    color.desc,
+    color.mode.length ? u8Ptr(color.mode) : 0,
+    color.constant.length ? u8Ptr(color.constant) : 0,
+    color.colormap.length ? u8Ptr(color.colormap) : 0,
+    color.valuesF64.length ? f64Ptr(color.valuesF64) : 0,
+    color.rgbaU8.length ? u8Ptr(color.rgbaU8) : 0,
+    color.codesU8.length ? u8Ptr(color.codesU8) : 0,
+    color.codesI64.length ? i64Ptr(color.codesI64) : 0,
+    color.palettePtrs.ptrs,
+    color.palettePtrs.lens,
+    stroke.desc,
+    stroke.mode.length ? u8Ptr(stroke.mode) : 0,
+    stroke.constant.length ? u8Ptr(stroke.constant) : 0,
+    stroke.colormap.length ? u8Ptr(stroke.colormap) : 0,
+    stroke.valuesF64.length ? f64Ptr(stroke.valuesF64) : 0,
+    stroke.rgbaU8.length ? u8Ptr(stroke.rgbaU8) : 0,
+    stroke.codesU8.length ? u8Ptr(stroke.codesU8) : 0,
+    stroke.codesI64.length ? i64Ptr(stroke.codesI64) : 0,
+    stroke.palettePtrs.ptrs,
+    stroke.palettePtrs.lens,
+    color2.desc,
+    color2.mode.length ? u8Ptr(color2.mode) : 0,
+    color2.constant.length ? u8Ptr(color2.constant) : 0,
+    color2.colormap.length ? u8Ptr(color2.colormap) : 0,
+    color2.valuesF64.length ? f64Ptr(color2.valuesF64) : 0,
+    color2.rgbaU8.length ? u8Ptr(color2.rgbaU8) : 0,
+    color2.codesU8.length ? u8Ptr(color2.codesU8) : 0,
+    color2.codesI64.length ? i64Ptr(color2.codesI64) : 0,
+    color2.palettePtrs.ptrs,
+    color2.palettePtrs.lens,
+    opacity.desc,
+    opacity.valuesF64.length ? f64Ptr(opacity.valuesF64) : 0,
+    artist.desc,
+    artist.valuesF64.length ? f64Ptr(artist.valuesF64) : 0,
+    strokeWidth.desc,
+    strokeWidth.valuesF64.length ? f64Ptr(strokeWidth.valuesF64) : 0,
+    koffi.as(summaryBuf, "void *"),
+    u8Ptr(out),
+    BigInt(out.length),
+    pointer(outLen, "size_t *"),
+  ));
+  if (code === -2) throw new RangeError("sceneXytaTraceObservationsMaterialize output buffer too small");
+  if (code !== 0) throw new RangeError("invalid sceneXytaTraceObservationsMaterialize arguments");
+  const summary = koffi.decode(summaryBuf, SceneXytaTraceObservationsOut);
+  const blob = out.subarray(0, Number(outLen[0]));
+  const nan = Number.NaN;
+  return {
+    traceId: Number(summary.trace_id) >>> 0,
+    packHeatmap: summary.pack_heatmap !== 0,
+    packHexbinColormap: summary.pack_hexbin_colormap !== 0,
+    packHexbinRgba: summary.pack_hexbin_rgba !== 0,
+    packRibbonEnds: summary.pack_ribbon_ends !== 0,
+    packMeshFaces: summary.pack_mesh_faces !== 0,
+    packScatterPaint: summary.pack_scatter_paint !== 0,
+    packDensity: summary.pack_density !== 0,
+    gridShapeRows: Number(summary.grid_shape_rows),
+    gridShapeCols: Number(summary.grid_shape_cols),
+    hasGridShape: summary.has_grid_shape !== 0,
+    hasGrid: summary.has_grid !== 0,
+    hasRgba: summary.has_rgba !== 0,
+    hasRgbaGrid: summary.has_rgba_grid !== 0,
+    truecolor: summary.truecolor !== 0,
+    hasCmapDomain: summary.has_cmap_domain !== 0,
+    cmapLo: summary.has_cmap_domain !== 0 ? Number(summary.cmap_lo) : nan,
+    cmapHi: summary.has_cmap_domain !== 0 ? Number(summary.cmap_hi) : nan,
+    hasColorCh: summary.has_color_ch !== 0,
+    hasStyleColor: summary.has_style_color !== 0,
+    hasOpacity: summary.has_opacity !== 0,
+    hasFillOpacity: summary.has_fill_opacity !== 0,
+    opacity: summary.has_opacity !== 0 ? Number(summary.opacity) : nan,
+    fillOpacity: summary.has_fill_opacity !== 0 ? Number(summary.fill_opacity) : nan,
+    domainX0: Number(summary.domain_x0),
+    domainX1: Number(summary.domain_x1),
+    domainY0: Number(summary.domain_y0),
+    domainY1: Number(summary.domain_y1),
+    cmapFlags: Number(summary.cmap_flags) >>> 0,
+    rows: Number(summary.rows),
+    cols: Number(summary.cols),
+    grid: sliceBlob(blob, summary.grid_off, summary.grid_len),
+    rgba: sliceBlob(blob, summary.rgba_off, summary.rgba_len),
+    rgbaGrid: sliceBlob(blob, summary.rgba_grid_off, summary.rgba_grid_len),
+    x: sliceBlob(blob, summary.x_off, summary.x_len),
+    y: sliceBlob(blob, summary.y_off, summary.y_len),
+    meanRgba: sliceBlob(blob, summary.mean_rgba_off, summary.mean_rgba_len),
+    idx: sliceBlob(blob, summary.idx_off, summary.idx_len),
+    lut: sliceBlob(blob, summary.lut_off, summary.lut_len),
+    cmap: sliceBlob(blob, summary.cmap_off, summary.cmap_len),
+    stops: sliceBlob(blob, summary.stops_off, summary.stops_len),
+    colorCh: sliceBlob(blob, summary.color_ch_off, summary.color_ch_len),
+    styleColor: sliceBlob(blob, summary.style_color_off, summary.style_color_len),
+  };
 }
 
 /** Pack XYPL v1 polar authoring via `xyg_scene_polar_input_pack` (ABI 322). */

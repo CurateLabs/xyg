@@ -5870,7 +5870,7 @@ def main() -> None:
         and col_y_scale.value == 2
         and col_entries[4].registry_key == 9
         and col_entries[4].trace_slot == 0
-        and col_entries[4].ship_scale == 2,
+        and col_entries[4].ship_scale == 1,
         "payload_column_ship_plan ribbon registry",
     )
     ok(

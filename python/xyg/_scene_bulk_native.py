@@ -843,7 +843,19 @@ def _xyta_color_channel_side(
         len(palette),
         int(channel.get("n_categories") or 0),
     )
-    return desc, mode_b, constant_b, colormap_b, values_f64, rgba_u8, codes_u8, codes_i64, ptrs, lens, keepers
+    return (
+        desc,
+        mode_b,
+        constant_b,
+        colormap_b,
+        values_f64,
+        rgba_u8,
+        codes_u8,
+        codes_i64,
+        ptrs,
+        lens,
+        keepers,
+    )
 
 
 def _xyta_style_channel_side(
@@ -1030,6 +1042,7 @@ def scene_xyta_trace_observations_materialize(obs: Mapping[str, Any]) -> dict[st
     def _slice(off: int, length: int) -> bytes:
         return blob[off : off + length] if length else b""
 
+    nan = float("nan")
     return {
         "trace_id": int(summary.trace_id),
         "pack_heatmap": bool(summary.pack_heatmap),
@@ -1047,14 +1060,14 @@ def scene_xyta_trace_observations_materialize(obs: Mapping[str, Any]) -> dict[st
         "has_rgba_grid": bool(summary.has_rgba_grid),
         "truecolor": bool(summary.truecolor),
         "has_cmap_domain": bool(summary.has_cmap_domain),
-        "cmap_lo": float(summary.cmap_lo),
-        "cmap_hi": float(summary.cmap_hi),
+        "cmap_lo": float(summary.cmap_lo) if summary.has_cmap_domain else nan,
+        "cmap_hi": float(summary.cmap_hi) if summary.has_cmap_domain else nan,
         "has_color_ch": bool(summary.has_color_ch),
         "has_style_color": bool(summary.has_style_color),
         "has_opacity": bool(summary.has_opacity),
         "has_fill_opacity": bool(summary.has_fill_opacity),
-        "opacity": float(summary.opacity),
-        "fill_opacity": float(summary.fill_opacity),
+        "opacity": float(summary.opacity) if summary.has_opacity else nan,
+        "fill_opacity": float(summary.fill_opacity) if summary.has_fill_opacity else nan,
         "domain_x0": float(summary.domain_x0),
         "domain_x1": float(summary.domain_x1),
         "domain_y0": float(summary.domain_y0),

@@ -76,7 +76,7 @@ import {
 } from "./native.js";
 import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneXytcTracePack, sceneXytaFigurePlan, sceneXytaTraceDispatchPlan, sceneXytaTracePack, sceneFigureSupportFigurePlan, sceneFigureSupportTraceDispatchPlan, scenePublicExportFigurePlan, scenePublicExportTraceDispatchPlan, sceneXyafAnnotationDispatchPlan, sceneXycfFigurePlan, sceneXyclFigurePlan, sceneXynmFigurePlan, scenePolarFigurePlan, sceneEncodeProductAttachPlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba, densityMeanColorWireAdmit } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
-import { sceneChromePack, sceneFigureSupportMaterialize, scenePolarInputPack, sceneXyafBulkPack } from "./sceneBulkNative.js";
+import { sceneChromePack, sceneFigureSupportMaterialize, scenePolarInputPack, sceneXyafBulkPack, sceneXytaTraceObservationsMaterialize } from "./sceneBulkNative.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
 const MAX_SCENE_MARKS = 2_000_000;
@@ -3876,7 +3876,72 @@ function xytaHexbinPlaneObservations(trace) {
   return { hexbinColormapPlane, hexbinRgbaPlaneReady };
 }
 
-function marshalXyTaTraceRecord(trace, traceIndex, figure, xDomain, yDomain, polar) {
+function marshalXytaColorChannel(channel) {
+  if (channel == null) {
+    return {
+      present: false,
+      mode: "",
+      constant: null,
+      colormap: null,
+      has_domain: false,
+      domain_lo: 0,
+      domain_hi: 0,
+      values_f64: new Float64Array(),
+      rgba_u8: new Uint8Array(),
+      codes_u8: new Uint8Array(),
+      codes_i64: [],
+      palette: [],
+      n_categories: 0,
+    };
+  }
+  const mode = String(channel.mode ?? "");
+  const domain = channel.domain;
+  const hasDomain = domain != null && domain.length === 2;
+  let valuesF64 = new Float64Array();
+  let rgbaU8 = new Uint8Array();
+  if (channel.values != null) {
+    valuesF64 = Float64Array.from(channel.values, Number);
+  } else if (channel.rgba != null) {
+    const rgba = channel.rgba;
+    if (rgba instanceof Uint8Array) rgbaU8 = rgba;
+    else valuesF64 = Float64Array.from(rgba, Number);
+  }
+  let codesU8 = new Uint8Array();
+  let codesI64 = [];
+  if (channel.codes != null) {
+    const codes = channel.codes;
+    if (codes instanceof Uint8Array) codesU8 = codes;
+    else codesI64 = [...codes].map((value) => Number(value));
+  }
+  const palette = channel.palette?.length ? [...channel.palette] : (channel.colors ?? []);
+  return {
+    present: true,
+    mode,
+    constant: channel.constant ?? null,
+    colormap: typeof channel.colormap === "string" ? channel.colormap : null,
+    has_domain: hasDomain,
+    domain_lo: hasDomain ? Number(domain[0]) : 0,
+    domain_hi: hasDomain ? Number(domain[1]) : 0,
+    values_f64: valuesF64,
+    rgba_u8: rgbaU8,
+    codes_u8: codesU8,
+    codes_i64: codesI64,
+    palette: palette.map(String),
+    n_categories: channel.categories?.length ?? 0,
+  };
+}
+
+function marshalXytaStyleChannel(channel) {
+  if (channel?.values == null) {
+    return { present: false, values_f64: new Float64Array() };
+  }
+  return {
+    present: true,
+    values_f64: Float64Array.from(channel.values, Number),
+  };
+}
+
+export function marshalXytaTraceObs(trace, figure, xDomain, yDomain, polar) {
   const style = trace.style ?? {};
   const kindName = String(trace.kind ?? "");
   const { hexbinColormapPlane, hexbinRgbaPlaneReady } = xytaHexbinPlaneObservations(trace);
@@ -3891,212 +3956,137 @@ function marshalXyTaTraceRecord(trace, traceIndex, figure, xDomain, yDomain, pol
     scatterPaintPlane: scatterPacksPaintPlane(trace),
   });
   const nan = Number.NaN;
-  let rows = 0;
-  let cols = 0;
-  let grid = new Uint8Array();
-  let rgba = new Uint8Array();
-  let rgbaGrid = new Uint8Array();
-  let x = new Uint8Array();
-  let y = new Uint8Array();
-  let meanRgba = new Uint8Array();
-  let idx = new Uint8Array();
-  let lut = new Uint8Array();
-  let cmap = new Uint8Array();
-  let stops = new Uint8Array();
-  let colorCh = new Uint8Array();
-  let styleColor = new Uint8Array();
-  let domainX0 = nan;
-  let domainX1 = nan;
-  let domainY0 = nan;
-  let domainY1 = nan;
-  let cmapLo = nan;
-  let cmapHi = nan;
-  let opacity = nan;
-  let fillOpacity = nan;
-  let cmapFlags = 0;
-  let hasGridShape = false;
-  let hasGrid = false;
-  let hasRgba = false;
-  let hasRgbaGrid = false;
-  let truecolor = false;
-  let hasCmapDomain = false;
-  let hasColorCh = false;
-  let hasStyleColor = false;
-  let hasOpacity = false;
-  let hasFillOpacity = false;
-  let gridShapeRows = nan;
-  let gridShapeCols = nan;
-  if (dispatch.packHeatmap) {
-    const shape = heatmapGridShape(trace);
-    if (shape != null && shape.length === 2) {
-      hasGridShape = true;
-      gridShapeRows = Number(shape[0]);
-      gridShapeCols = Number(shape[1]);
-      if (sceneHeatmapShapeAdmit(gridShapeRows, gridShapeCols)) {
-        rows = gridShapeRows;
-        cols = gridShapeCols;
+  const domainX0 = dispatch.packDensity ? Number(xDomain[0]) : nan;
+  const domainX1 = dispatch.packDensity ? Number(xDomain[1]) : nan;
+  const domainY0 = dispatch.packDensity ? Number(yDomain[0]) : nan;
+  const domainY1 = dispatch.packDensity ? Number(yDomain[1]) : nan;
+  let pointCount = 0;
+  if (kindName === "hexbin") pointCount = trace.x?.length ?? trace.count ?? 0;
+  else if (kindName === "ribbon") pointCount = trace.count ?? trace.x0?.length ?? 0;
+  else if (kindName === "triangle_mesh") pointCount = trace.x0?.length ?? trace.count ?? 0;
+  else if (kindName === "scatter") pointCount = trace.x?.length ?? trace.count ?? 0;
+  const colormap = style.colormap;
+  let styleColormapMode = 0;
+  let styleColormapNamed = "";
+  let styleColormapStops = new Uint8Array();
+  if (typeof colormap === "string") {
+    styleColormapMode = 1;
+    styleColormapNamed = colormap;
+  } else if (colormap != null) {
+    styleColormapMode = 2;
+    try {
+      const stops = [];
+      for (const stop of colormap) {
+        stops.push(Number(stop[0]), Number(stop[1]), Number(stop[2]));
       }
-    }
-    if (trace.grid != null) {
-      hasGrid = true;
-      grid = packXyTaGrid(trace.grid);
-    }
-    if (trace.rgba != null) {
-      hasRgba = true;
-      rgba = packXyTaRgba(trace.rgba);
-    }
-    if (trace.rgba_grid != null) {
-      hasRgbaGrid = true;
-      rgbaGrid = packXyTaRgbaGrid(trace.rgba_grid);
-    }
-    const packedCmap = packXyTaColormap(trace);
-    cmapFlags = packedCmap.flags;
-    cmap = packedCmap.cmap;
-    stops = packedCmap.stops;
-    if (style.truecolor) truecolor = true;
-    const domain = style.domain;
-    if (domain != null && domain.length === 2) {
-      hasCmapDomain = true;
-      cmapLo = Number(domain[0]);
-      cmapHi = Number(domain[1]);
-    }
-  } else if (dispatch.packHexbinColormap) {
-    const channel = hexbinXyTaColorChannel(trace);
-    const values = channel?.values;
-    rows = 1;
-    cols = values.length;
-    hasGrid = true;
-    grid = packF64Le(values);
-    const packedCmap = hexbinXyTaColormap(trace);
-    cmapFlags = packedCmap.flags;
-    cmap = packedCmap.cmap;
-    stops = packedCmap.stops;
-    const domain = channel?.domain;
-    if (domain != null && domain.length === 2) {
-      hasCmapDomain = true;
-      cmapLo = Number(domain[0]);
-      cmapHi = Number(domain[1]);
-    }
-  } else if (dispatch.packHexbinRgba) {
-    const packed = hexbinCellRgba8(trace);
-    if (packed != null) {
-      rows = 1;
-      cols = packed.length / 4;
-      hasGrid = true;
-      hasRgba = true;
-      grid = packF64Le(new Float64Array(cols));
-      rgba = packed;
-    }
-  } else if (dispatch.packRibbonEnds) {
-    const ends = ribbonEndRgbaPair(trace);
-    if (ends != null) {
-      rows = 1;
-      cols = ends.source.length / 4;
-      hasRgba = true;
-      rgba = ends.source;
-      meanRgba = ends.target;
-    }
-  } else if (dispatch.packMeshFaces) {
-    const packed = meshFacePaints(trace);
-    if (packed != null) {
-      rows = 1;
-      cols = packed.fills.length / 4;
-      hasRgba = true;
-      rgba = packed.fills;
-      meanRgba = packed.strokes;
-      x = packed.widths;
-    }
-  } else if (dispatch.packScatterPaint) {
-    const packed = scatterPointPaints(trace);
-    if (packed != null) {
-      rows = 1;
-      cols = packed.fills.length / 4;
-      hasRgba = true;
-      rgba = packed.fills;
-      meanRgba = packed.strokes;
-      x = packed.widths;
-    }
-  } else if (dispatch.packDensity) {
-    if (trace.x != null) x = packF64Le(asF64Array(trace.x, "x"));
-    if (trace.y != null) y = packF64Le(asF64Array(trace.y, "y"));
-    domainX0 = Number(xDomain[0]);
-    domainX1 = Number(xDomain[1]);
-    domainY0 = Number(yDomain[0]);
-    domainY1 = Number(yDomain[1]);
-    const packedCmap = packXyTaColormap(trace);
-    cmapFlags = packedCmap.flags;
-    cmap = packedCmap.cmap;
-    stops = packedCmap.stops;
-    const packedColorCh = packXyTaDensityColorCh(trace);
-    if (packedColorCh.flags) {
-      hasColorCh = true;
-      colorCh = packedColorCh.bytes;
-    }
-    if (style.color != null) {
-      hasStyleColor = true;
-      styleColor = new TextEncoder().encode(String(style.color));
-    }
-    if (Object.hasOwn(style, "opacity")) {
-      hasOpacity = true;
-      opacity = Number(style.opacity);
-    }
-    const packedFill = packXyTaFillOpacity(style);
-    if (packedFill.flags) {
-      hasFillOpacity = true;
-      fillOpacity = packedFill.value;
-    }
-    const source = resolveDensityBinColors(trace);
-    if (source?.rgba != null) {
-      meanRgba = source.rgba instanceof Uint8Array ? source.rgba : Uint8Array.from(source.rgba);
-    } else if (source?.idx != null && source?.lut != null) {
-      idx = source.idx instanceof Uint8Array ? source.idx : Uint8Array.from(source.idx);
-      lut = source.lut instanceof Uint8Array ? source.lut : Uint8Array.from(source.lut);
+      styleColormapStops = new Uint8Array(stops);
+    } catch {
+      styleColormapStops = new Uint8Array();
     }
   }
+  const shape = heatmapGridShape(trace);
+  const hasGridShape = shape != null && shape.length === 2;
+  const gridShapeRows = hasGridShape ? Number(shape[0]) : 0;
+  const gridShapeCols = hasGridShape ? Number(shape[1]) : 0;
+  const gridBytes = trace.grid == null ? new Uint8Array() : packXyTaGrid(trace.grid);
+  const gridValues = gridBytes.length
+    ? new Float64Array(gridBytes.buffer, gridBytes.byteOffset, gridBytes.length / 8)
+    : new Float64Array();
+  const rgbaU8 = trace.rgba == null ? new Uint8Array() : packXyTaRgba(trace.rgba);
+  const rgbaGridBytes = trace.rgba_grid == null ? new Uint8Array() : packXyTaRgbaGrid(trace.rgba_grid);
+  const rgbaGridF64 = rgbaGridBytes.length
+    ? new Float64Array(rgbaGridBytes.buffer, rgbaGridBytes.byteOffset, rgbaGridBytes.length / 8)
+    : new Float64Array();
+  const xValues = trace.x == null ? new Float64Array() : asF64Array(trace.x, "x");
+  const yValues = trace.y == null ? new Float64Array() : asF64Array(trace.y, "y");
+  const styleChannels = trace.style_channels ?? {};
+  const packedFill = packXyTaFillOpacity(style);
+  return {
+    trace_id: Number(trace.id ?? 0) >>> 0,
+    dispatch,
+    domain_x0: domainX0,
+    domain_x1: domainX1,
+    domain_y0: domainY0,
+    domain_y1: domainY1,
+    point_count: pointCount,
+    fallback_color: traceStyleColorDefault(trace),
+    style_color: style.color ?? null,
+    style_stroke: style.stroke ?? null,
+    style_stroke_width: Number(style.stroke_width ?? 0),
+    has_style_stroke_width: Object.hasOwn(style, "stroke_width"),
+    style_opacity: Object.hasOwn(style, "opacity") ? Number(style.opacity) : Number.NaN,
+    has_style_opacity: Object.hasOwn(style, "opacity"),
+    style_fill_opacity: packedFill.flags ? packedFill.value : Number.NaN,
+    has_style_fill_opacity: packedFill.flags !== 0,
+    style_truecolor: Boolean(style.truecolor),
+    style_domain: style.domain ?? null,
+    style_colormap_mode: styleColormapMode,
+    style_colormap_named: styleColormapNamed,
+    style_colormap_stops: styleColormapStops,
+    grid_shape_rows: gridShapeRows,
+    grid_shape_cols: gridShapeCols,
+    has_grid_shape: hasGridShape,
+    grid_values: gridValues,
+    rgba_u8: rgbaU8,
+    rgba_grid_f64: rgbaGridF64,
+    x_values: xValues,
+    y_values: yValues,
+    color_ch: marshalXytaColorChannel(trace.color_ch),
+    stroke_ch: marshalXytaColorChannel(trace.stroke_ch),
+    color2_ch: marshalXytaColorChannel(trace.color2_ch),
+    opacity_ch: marshalXytaStyleChannel(styleChannels.opacity),
+    artist_alpha_ch: marshalXytaStyleChannel(styleChannels.artist_alpha),
+    stroke_width_ch: marshalXytaStyleChannel(styleChannels.stroke_width),
+  };
+}
+
+function marshalXyTaTraceRecord(trace, traceIndex, figure, xDomain, yDomain, polar) {
+  const obs = marshalXytaTraceObs(trace, figure, xDomain, yDomain, polar);
+  const materialized = sceneXytaTraceObservationsMaterialize(obs);
   return sceneXytaTracePack({
-    traceId: Number(trace.id ?? traceIndex) >>> 0,
-    packHeatmap: dispatch.packHeatmap,
-    packHexbinColormap: dispatch.packHexbinColormap,
-    packHexbinRgba: dispatch.packHexbinRgba,
-    packRibbonEnds: dispatch.packRibbonEnds,
-    packMeshFaces: dispatch.packMeshFaces,
-    packScatterPaint: dispatch.packScatterPaint,
-    packDensity: dispatch.packDensity,
-    gridShapeRows,
-    gridShapeCols,
-    hasGridShape,
-    hasGrid,
-    hasRgba,
-    hasRgbaGrid,
-    truecolor,
-    hasCmapDomain,
-    cmapLo,
-    cmapHi,
-    hasColorCh,
-    hasStyleColor,
-    hasOpacity,
-    hasFillOpacity,
-    opacity,
-    fillOpacity,
-    domainX0,
-    domainX1,
-    domainY0,
-    domainY1,
-    cmapFlags,
-    rows,
-    cols,
-    grid,
-    rgba,
-    rgbaGrid,
-    x,
-    y,
-    meanRgba,
-    idx,
-    lut,
-    cmap,
-    stops,
-    colorCh,
-    styleColor,
+    traceId: materialized.traceId,
+    packHeatmap: materialized.packHeatmap,
+    packHexbinColormap: materialized.packHexbinColormap,
+    packHexbinRgba: materialized.packHexbinRgba,
+    packRibbonEnds: materialized.packRibbonEnds,
+    packMeshFaces: materialized.packMeshFaces,
+    packScatterPaint: materialized.packScatterPaint,
+    packDensity: materialized.packDensity,
+    gridShapeRows: materialized.gridShapeRows,
+    gridShapeCols: materialized.gridShapeCols,
+    hasGridShape: materialized.hasGridShape,
+    hasGrid: materialized.hasGrid,
+    hasRgba: materialized.hasRgba,
+    hasRgbaGrid: materialized.hasRgbaGrid,
+    truecolor: materialized.truecolor,
+    hasCmapDomain: materialized.hasCmapDomain,
+    cmapLo: materialized.cmapLo,
+    cmapHi: materialized.cmapHi,
+    hasColorCh: materialized.hasColorCh,
+    hasStyleColor: materialized.hasStyleColor,
+    hasOpacity: materialized.hasOpacity,
+    hasFillOpacity: materialized.hasFillOpacity,
+    opacity: materialized.opacity,
+    fillOpacity: materialized.fillOpacity,
+    domainX0: materialized.domainX0,
+    domainX1: materialized.domainX1,
+    domainY0: materialized.domainY0,
+    domainY1: materialized.domainY1,
+    cmapFlags: materialized.cmapFlags,
+    rows: materialized.rows,
+    cols: materialized.cols,
+    grid: materialized.grid,
+    rgba: materialized.rgba,
+    rgbaGrid: materialized.rgbaGrid,
+    x: materialized.x,
+    y: materialized.y,
+    meanRgba: materialized.meanRgba,
+    idx: materialized.idx,
+    lut: materialized.lut,
+    cmap: materialized.cmap,
+    stops: materialized.stops,
+    colorCh: materialized.colorCh,
+    styleColor: materialized.styleColor,
   });
 }
 
