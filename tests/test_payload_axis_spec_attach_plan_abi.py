@@ -121,6 +121,26 @@ def test_axis_spec_cartesian_tick_count_cross_host_fixture() -> None:
     assert "tick_count" not in spec["y_axis"]
 
 
+def test_axis_spec_cartesian_reverse_cross_host_fixture() -> None:
+    """Node buildPayload axis reverse parity when attach_reverse is set."""
+    fig = Figure(width=240, height=160)
+    fig.scatter([0.0, 1.0], [0.0, 1.0])
+    fig.set_axis("x", reverse=True)
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["reverse"] is True
+    assert "reverse" not in spec["y_axis"]
+
+
+def test_axis_spec_cartesian_domain_cross_host_fixture() -> None:
+    """Node buildPayload axis domain parity when attach_domain is set."""
+    fig = Figure(width=240, height=160)
+    fig.scatter([1.0, 2.0], [1.0, 2.0])
+    fig.set_axis("x", domain=[0.0, 3.0])
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["domain"] == [0.0, 3.0]
+    assert "domain" not in spec["y_axis"]
+
+
 def test_axis_spec_omits_linear_scale() -> None:
     fig = Figure()
     fig.scatter([0.0, 1.0], [0.0, 1.0])

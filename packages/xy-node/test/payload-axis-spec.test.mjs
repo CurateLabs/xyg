@@ -99,7 +99,7 @@ test("buildPayload ships cartesian axis tick_values like Python _axis_spec", () 
   fig.setAxis("x", { tick_values: [0, 0.5, 1], domain: [0, 1], format: ".2f" });
   const { spec } = fig.buildPayload();
   assert.deepEqual(spec.x_axis.tick_values, [0, 0.5, 1]);
-  assert.deepEqual(spec.x_axis.domain, undefined);
+  assert.deepEqual(spec.x_axis.domain, [0, 1]);
   assert.equal(spec.x_axis.format, undefined);
 });
 
@@ -128,4 +128,22 @@ test("buildPayload ships cartesian axis tick_count like Python _axis_spec", () =
   const { spec } = fig.buildPayload();
   assert.equal(spec.x_axis.tick_count, 4);
   assert.equal(spec.y_axis.tick_count, undefined);
+});
+
+test("buildPayload ships cartesian axis reverse like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { reverse: true });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.reverse, true);
+  assert.equal(spec.y_axis.reverse, undefined);
+});
+
+test("buildPayload ships cartesian axis domain like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([1, 2], [1, 2]);
+  fig.setAxis("x", { domain: [0, 3] });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.x_axis.domain, [0, 3]);
+  assert.equal(spec.y_axis.domain, undefined);
 });
