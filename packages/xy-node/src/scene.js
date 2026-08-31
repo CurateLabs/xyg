@@ -74,7 +74,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, DEFAULT_PALETTE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, DEFAULT_PALETTE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcRadiusPack, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -3556,6 +3556,8 @@ function packXyTc(figure) {
       }
     }
     flags |= packXyTcJoinedFill(trace);
+    const packedRadius = sceneXytcRadiusPack(trace.kind, style);
+    flags |= packedRadius.flags;
     const prefix = new Uint8Array(160);
     const view = new DataView(prefix.buffer);
     prefix.set(encodeUtf8("XYTR").slice(0, 4), 0);
@@ -3590,27 +3592,9 @@ function packXyTc(figure) {
     view.setUint32(128, dashPattern.length, true);
     view.setUint32(132, markerBlob.length, true);
     view.setUint32(136, gradientBlob.length, true);
-    let rTip = 0;
-    let rBase = 0;
-    let wedgeGap = 0;
-    if (trace.kind === "bar" || trace.kind === "column" || trace.kind === "histogram" || trace.kind === "heatmap" || trace.kind === "violin" || trace.kind === "box") {
-      const radius = style.corner_radius ?? 0;
-      if (Array.isArray(radius) && radius.length === 2) {
-        rTip = Number(radius[0]);
-        rBase = Number(radius[1]);
-      } else {
-        rTip = rBase = Number(radius || 0);
-      }
-      if (rTip || rBase) flags |= XYTC_HAS_CORNER_RADIUS;
-      if (trace.kind === "bar" || trace.kind === "column" || trace.kind === "histogram") {
-        wedgeGap = Number(style.wedge_gap ?? 0);
-        if (wedgeGap) flags |= XYTC_HAS_WEDGE_GAP;
-      }
-    }
-    view.setUint32(8, flags >>> 0, true);
-    view.setFloat64(140, rTip, true);
-    view.setFloat64(148, rBase, true);
-    view.setFloat32(156, wedgeGap, true);
+    view.setFloat64(140, packedRadius.rTip, true);
+    view.setFloat64(148, packedRadius.rBase, true);
+    view.setFloat32(156, packedRadius.wedgeGap, true);
     const pattern = new Uint8Array(dashPattern.length * 8);
     const patternView = new DataView(pattern.buffer);
     dashPattern.forEach((value, index) => patternView.setFloat64(index * 8, value, true));

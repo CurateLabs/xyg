@@ -1570,6 +1570,44 @@ def scene_marker_blob_pack(
     return bytes(out[:code])
 
 
+def scene_xytc_radius_pack(
+    kind: str,
+    radius_seq: int,
+    r0: float,
+    r1: float,
+    wedge_gap_raw: float,
+) -> tuple[int, float, float, float]:
+    """XYTC corner-radius/wedge-gap pack via ``xyg_scene_xytc_radius_pack`` (ABI 262).
+
+    ``radius_seq``: ``0`` or ``1`` scalar ``r0``, ``2`` tip/base pair. Hosts still
+    pick style keys and coerce list vs scalar.
+    """
+    flags = ctypes.c_uint32(0)
+    r_tip = ctypes.c_double(0.0)
+    r_base = ctypes.c_double(0.0)
+    wedge_gap = ctypes.c_double(0.0)
+    encoded = str(kind).encode("utf-8")
+    ok = int(
+        _lib.xyg_scene_xytc_radius_pack(
+            _ptr_u8(np.frombuffer(encoded, dtype=np.uint8)) if encoded else 0,
+            len(encoded),
+            ctypes.c_int32(int(radius_seq)),
+            ctypes.c_double(float(r0)),
+            ctypes.c_double(float(r1)),
+            ctypes.c_double(float(wedge_gap_raw)),
+            ctypes.byref(flags),
+            ctypes.byref(r_tip),
+            ctypes.byref(r_base),
+            ctypes.byref(wedge_gap),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-radius-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-radius-pack request")
+    return int(flags.value), float(r_tip.value), float(r_base.value), float(wedge_gap.value)
+
+
 def scene_gradient_spec_pack(
     space: bytes,
     dir: bytes,
