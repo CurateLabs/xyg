@@ -18,6 +18,7 @@ const CASE_NAMES = [
   "density_sample_style_channels",
   "density_sample_log_x_ship",
   "density_sample_transition_fallback",
+  "density_sample_nan_oov_filter",
 ];
 
 const SAMPLE_CASE_KEYS = new Set([
@@ -185,6 +186,11 @@ function buildCase(name) {
       [1, 2],
       [3, 4],
     ];
+  } else if (name === "density_sample_nan_oov_filter") {
+    fig.setAxisDomain("x", [0, 1.5]);
+    fig.setAxisDomain("y", [0, 2.5]);
+    fig.scatter([0, 1, NaN, 5], [1, 2, 3, 4], { forceDensity: true });
+    fig.traces[0].id = 36;
   } else {
     throw new Error(`unknown case ${name}`);
   }

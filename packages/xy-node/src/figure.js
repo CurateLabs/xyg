@@ -23,6 +23,7 @@ import {
   WASM_AGGREGATE_MAX_POINTS,
   PROTOCOL_VERSION,
   bin2d,
+  bin2dIndices,
   bin2dMeanColor,
   densityFormatBinning,
   densityLogU8,
@@ -58,6 +59,8 @@ import {
   payloadTransitionEntryAttach,
   payloadSegmentBudget,
   payloadSampleTargetIndices,
+  sampleRowsForTarget,
+  DENSITY_GRID_PATH_RANGE_INDICES,
   payloadVisibleIndices,
   rectFiniteSel,
   minMax,
@@ -1687,6 +1690,15 @@ export class Figure {
     const noRescan = Boolean(scatterPayloadNoRescan(t));
     const forceSpill = Boolean(t.pyramid_spill ?? t.style?.pyramid_spill);
     let hasPyramidResource = false;
+    const xCol = t._xCol instanceof Column ? t._xCol : new Column(t.x);
+    const yCol = t._yCol instanceof Column ? t._yCol : new Column(t.y);
+    t._xCol = xCol;
+    t._yCol = yCol;
+    const xmm = minMax(t.x) ?? xr;
+    const ymm = minMax(t.y) ?? yr;
+    const colorMeta = densityColorChannelMeta(t);
+    let rangeSel = null;
+    let visible = t.x.length;
     if (
       this.coords !== "polar" &&
       !this._deferPyramidRebuild?.has(t.id) &&
@@ -1715,13 +1727,57 @@ export class Figure {
       }
     }
     if (grid == null) {
-      grid = bin2d(t.x, t.y, xr[0], xr[1], yr[0], yr[1], w, h);
+      const pathPlan = payloadDensityTraceEmitPlan({
+        hasChannel: colorMeta.hasChannel,
+        mode: colorMeta.mode,
+        codesPresent: colorMeta.codesPresent,
+        codesU8: colorMeta.codesU8,
+        hasCounts: colorMeta.hasCounts,
+        hasConstant: colorMeta.hasConstant,
+        cartesian: this.coords === "cartesian",
+        xLinear: true,
+        yLinear: true,
+        xHasNulls: xCol.nullCount > 0,
+        yHasNulls: yCol.nullCount > 0,
+        pointOverlay: true,
+        splitPayload: pw.split,
+        gridW: w,
+        gridH: h,
+        gridFromPyramid: false,
+        hasPyramidResource,
+        gridPresent: false,
+        forceBin2d: false,
+        forcePyramid: false,
+        xMemmapped: false,
+        yMemmapped: false,
+        xMin: xmm[0],
+        xMax: xmm[1],
+        yMin: ymm[0],
+        yMax: ymm[1],
+        xr0: xr[0],
+        xr1: xr[1],
+        yr0: yr[0],
+        yr1: yr[1],
+        bx0: xr[0],
+        bx1: xr[1],
+        by0: yr[0],
+        by1: yr[1],
+        nPoints: t.x.length,
+        hasPyramidRgba: false,
+        hasBinColors: false,
+        droppedCount: 0,
+      });
+      if (pathPlan.gridPath === DENSITY_GRID_PATH_RANGE_INDICES) {
+        const fused = bin2dIndices(t.x, t.y, xr[0], xr[1], yr[0], yr[1], w, h);
+        grid = fused.grid;
+        rangeSel = fused.indices;
+        visible = rangeSel.length;
+      } else {
+        grid = bin2d(t.x, t.y, xr[0], xr[1], yr[0], yr[1], w, h);
+      }
       binning = densityFormatBinning({ exact: true });
       reduction = "bin2d";
     }
-    const xmm = minMax(t.x) ?? xr;
-    const ymm = minMax(t.y) ?? yr;
-    const colorMeta = densityColorChannelMeta(t);
     const binColors = resolveDensityBinColors(t);
     let droppedChannels = scatterPaintChannelNames(t);
     const wire = payloadDensityTraceEmitPlan({
@@ -1734,6 +1790,8 @@ export class Figure {
       cartesian: this.coords === "cartesian",
       xLinear: true,
       yLinear: true,
+      xHasNulls: xCol.nullCount > 0,
+      yHasNulls: yCol.nullCount > 0,
       pointOverlay: true,
       splitPayload: pw.split,
       gridW: w,
@@ -1857,14 +1915,29 @@ export class Figure {
       } else if (kind === "overlay_rows_exceed") {
         density.overlay_omitted = "rows_exceed_u32";
       } else if (kind === "sample") {
-        const n = t.x.length;
-        const { keepAll, indices } = payloadSampleTargetIndices({
-          n,
-          target: DENSITY_SAMPLE_TARGET,
-          seed: DENSITY_SAMPLE_SEED,
-        });
-        const sx = keepAll ? t.x : gatherF64(t.x, indices);
-        const sy = keepAll ? t.y : gatherF64(t.y, indices);
+        if (visible <= 0) {
+          continue;
+        }
+        let sampleSel = null;
+        if (rangeSel != null && rangeSel.length > 0) {
+          sampleSel = sampleRowsForTarget(rangeSel, DENSITY_SAMPLE_TARGET, {
+            seed: DENSITY_SAMPLE_SEED,
+          });
+        } else {
+          const { keepAll, indices } = payloadSampleTargetIndices({
+            n: t.x.length,
+            target: DENSITY_SAMPLE_TARGET,
+            seed: DENSITY_SAMPLE_SEED,
+          });
+          if (!keepAll) {
+            sampleSel = indices;
+          }
+        }
+        if (sampleSel != null && sampleSel.length === 0) {
+          continue;
+        }
+        const sx = sampleSel == null ? t.x : gatherF64(t.x, sampleSel);
+        const sy = sampleSel == null ? t.y : gatherF64(t.y, sampleSel);
         if (sx.length > 0) {
           const xAxis = t.x_axis ?? "x";
           const yAxis = t.y_axis ?? "y";
@@ -1884,7 +1957,7 @@ export class Figure {
           density.sample = {
             mode: "sampled",
             n: sx.length,
-            visible: n,
+            visible,
             target: DENSITY_SAMPLE_TARGET,
             level: 0,
             seed: DENSITY_SAMPLE_SEED,
@@ -1907,7 +1980,7 @@ export class Figure {
             density.sample,
             t,
             pw,
-            keepAll ? null : indices,
+            sampleSel,
             plan.channelSlot,
             { includeTraceStyles: plan.includeTraceStyles },
           );

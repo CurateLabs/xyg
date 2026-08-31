@@ -41,7 +41,6 @@ Python. Public npm names are `@curatelabs/xyg` (paint client) and
 The paint-client artifact is in-repo as `@curatelabs/xyg` (#23); registry
 publish waits on the `@curatelabs` npm org (#13).
 
-  Node `_emitScatterDensity` sample uses full n.
   Node `_emitScatterDensity` visible stays n_points.
   Node `nextTraceId` starts at 1.
   Node `buildPayload` omits legend.
@@ -105,9 +104,7 @@ publish waits on the `@curatelabs` npm org (#13).
   Node `_polarAxisSpecs` omits axis nonpositive.
   Node `_polarAxisSpecs` omits axis constant.
   Node `_polarAxisSpecs` omits axis categories.
-  Node `_emitScatterDensity` sample uses full n.
   Node `_emitScatterDensity` visible stays n_points.
-  Node `_emitScatterDensity` sample.visible stays n.
   Node density Scene omits scatter `color_ch`.
   Node `composeScatter` omits `color`.
   Node `composeScatter` omits `size`.

@@ -2062,23 +2062,30 @@ test("_emitScatterDensity visible stays n_points unlike Python _density_trace_sp
 });
 
 
-test("_emitScatterDensity sample uses full n unlike Python _density_sample_spec", () => {
-  // Python `_density_sample_spec` samples `sel`. Node samples `t.x.length`.
-  // Recorded emit-density-sample-sel stay-host.
+test("_emitScatterDensity sample uses range-index sel like Python _density_sample_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1, NaN, 2], [1, 2, 3, 4], { forceDensity: true });
   const { spec } = fig.buildPayload();
-  assert.equal(spec.traces[0].density.sample.n, 4);
+  assert.equal(spec.traces[0].density.sample.n, 3);
 });
 
 
-test("_emitScatterDensity sample.visible stays n unlike Python _density_sample_spec", () => {
-  // Python `_density_sample_spec` sets sample.visible from range-index visible.
-  // Node uses `n = t.x.length`. Recorded emit-density-sample-visible stay-host.
+test("_emitScatterDensity sample.visible uses range-index visible like Python _density_sample_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1, NaN, 2], [1, 2, 3, 4], { forceDensity: true });
   const { spec } = fig.buildPayload();
-  assert.equal(spec.traces[0].density.sample.visible, 4);
+  assert.equal(spec.traces[0].density.sample.visible, 3);
+});
+
+
+test("_emitScatterDensity sample filters NaN and out-of-view rows like Python", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.setAxisDomain("x", [0, 1.5]);
+  fig.setAxisDomain("y", [0, 2.5]);
+  fig.scatter([0, 1, NaN, 5], [1, 2, 3, 4], { forceDensity: true });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].density.sample.n, 2);
+  assert.equal(spec.traces[0].density.sample.visible, 2);
 });
 
 
