@@ -74,7 +74,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneXytaFigurePlan, sceneXytaTraceDispatchPlan, sceneFigureSupportFigurePlan, sceneFigureSupportTraceDispatchPlan, scenePublicExportFigurePlan, scenePublicExportTraceDispatchPlan, sceneXyafAnnotationDispatchPlan, sceneXycfFigurePlan, sceneXyclFigurePlan, sceneXynmFigurePlan, scenePolarFigurePlan, sceneEncodeProductAttachPlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneXytaFigurePlan, sceneXytaTraceDispatchPlan, sceneFigureSupportFigurePlan, sceneFigureSupportTraceDispatchPlan, scenePublicExportFigurePlan, scenePublicExportTraceDispatchPlan, sceneXyafAnnotationDispatchPlan, sceneXycfFigurePlan, sceneXyclFigurePlan, sceneXynmFigurePlan, scenePolarFigurePlan, sceneEncodeProductAttachPlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba, densityMeanColorWireAdmit } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -5763,19 +5763,57 @@ export function scatterUsesDensity(trace) {
   });
 }
 
+function paletteRowsRgba8(palette, rows) {
+  const src = palette?.length ? palette : DEFAULT_PALETTE;
+  const n = Math.max(1, Math.floor(Number(rows)));
+  const lut = new Uint8Array(n * 4);
+  for (let i = 0; i < n; i += 1) {
+    const entry = String(src[i % src.length]);
+    try {
+      lut.set(cssColorRgba8(entry, 1), i * 4);
+    } catch {
+      lut.set(cssColorRgba8(String(DEFAULT_PALETTE[i % DEFAULT_PALETTE.length]), 1), i * 4);
+    }
+  }
+  return lut;
+}
+
+function foldedCodesU8(codes, paletteLen) {
+  const out = new Uint8Array(codes.length);
+  const mod = Math.max(1, Math.floor(Number(paletteLen)));
+  for (let i = 0; i < codes.length; i += 1) {
+    const code = Number(codes[i]);
+    out[i] = ((code % mod) + mod) % mod;
+  }
+  return out;
+}
+
 export function resolveDensityBinColors(trace) {
   const color = trace.color_ch;
   if (color == null || typeof color !== "object") return null;
-  if (color.mode === "direct_rgba" && color.rgba != null) {
+  const mode = String(color.mode ?? "");
+  if (!densityMeanColorWireAdmit({ hasChannel: true, mode })) return null;
+  if (mode === "direct_rgba" && color.rgba != null) {
     return { rgba: color.rgba instanceof Uint8Array ? color.rgba : Uint8Array.from(color.rgba) };
   }
-  if (color.mode === "continuous" && color.values != null) {
+  if (mode === "continuous" && color.values != null) {
     const values = color.values;
     const domain = color.domain ?? [0, 1];
     const lo = Number(domain[0]);
     const hi = Number(domain[1]);
     const idx = quantizeUnitU8(values, lo, hi);
     return { idx, lut: colormapLutRgba8(color.colormap ?? "viridis") };
+  }
+  if (mode === "categorical" && color.codes != null && color.categories != null) {
+    const palette = color.palette?.length ? color.palette : DEFAULT_PALETTE;
+    const codes = color.codes;
+    if (codes instanceof Uint8Array) {
+      return { idx: codes, lut: paletteRowsRgba8(palette, color.categories.length) };
+    }
+    return {
+      idx: foldedCodesU8(codes, palette.length),
+      lut: paletteRowsRgba8(palette, palette.length),
+    };
   }
   return null;
 }

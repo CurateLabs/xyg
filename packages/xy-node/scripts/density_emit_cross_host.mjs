@@ -54,6 +54,8 @@ function caseEntry(name, build) {
     density_colormap: density.colormap ?? null,
     density_dropped_channels: density.dropped_channels ?? [],
     density_channels_dropped: density.channels_dropped ?? false,
+    density_color_agg: density.color_agg ?? null,
+    density_has_rgba: density.rgba != null,
     ...sampleMeta(spec),
   };
 }
@@ -67,6 +69,14 @@ const cases = [
   caseEntry("scatter_density_dropped_channels", (fig) => {
     fig.scatter([0, 1, 2], [0, 1, 0.5], { forceDensity: true, size: [1, 2, 3] });
     fig.traces[0].id = 22;
+  }),
+  caseEntry("scatter_density_mean_color_categorical", (fig) => {
+    fig.scatter([0, 1, 2, 3, 4], [0, 1, 0.5, 0.2, 0.8], {
+      forceDensity: true,
+      color: ["a", "b", "a", "c", "b"],
+      size: [1, 2, 3, 4, 5],
+    });
+    fig.traces[0].id = 23;
   }),
   caseEntry("density_sample_color_size", (fig) => {
     fig.scatter([0, 1, 2, 3, 4], [0, 1, 0.5, 0.2, 0.8], {
