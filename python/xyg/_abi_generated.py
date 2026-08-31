@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 291
-SIGNATURE_SHA256 = "4e60e54149dff3cf7018a657e5d33ab20e0769693663223bf3f40edb6755f9b5"
+ABI_VERSION = 292
+SIGNATURE_SHA256 = "1b6302befbcdea991e6996e271c03b5955047d5c1e8bdcfead49f107ac6f3ed8"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -638,6 +638,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_payload_segment_budget
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_double]
+    # size_t xyg_payload_segments_emit_gather(const uint8_t * kind, size_t kind_len, size_t n_segments, size_t n_points, double px_width, int32_t * out_tier, int32_t * out_role_maps, int32_t * out_keep_all, uint32_t * out_indices, uint32_t * out_sources, uint32_t * out_roles, size_t capacity)
+    function = lib.xyg_payload_segments_emit_gather
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_payload_tier(int32_t kind, uint64_t n_points, int32_t polar, int32_t force_density, int32_t force_direct, int32_t per_item)
     function = lib.xyg_payload_tier
     function.restype = ctypes.c_int32

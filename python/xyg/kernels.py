@@ -224,6 +224,7 @@ payload_visible_indices = _impl.payload_visible_indices
 payload_even_indices = _impl.payload_even_indices
 payload_errorbar_role_keys = _impl.payload_errorbar_role_keys
 payload_errorbar_role_maps = _impl.payload_errorbar_role_maps
+payload_segments_emit_gather = _impl.payload_segments_emit_gather
 payload_bar_compact_admit = _impl.payload_bar_compact_admit
 payload_transition_keys_admit = _impl.payload_transition_keys_admit
 payload_errorbar_indices = _impl.payload_errorbar_indices
@@ -365,6 +366,7 @@ __all__ = [
     "payload_m4_indices",
     "payload_sample_target_indices",
     "payload_segment_budget",
+    "payload_segments_emit_gather",
     "payload_tier",
     "payload_transition_keys_admit",
     "payload_visible_indices",

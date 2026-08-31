@@ -62,6 +62,7 @@ pub mod layout_rooms;
 pub mod legend_fit;
 pub mod legend_layout;
 pub mod lod_plan;
+pub mod payload_emit;
 #[cfg(feature = "raster")]
 pub mod pdf;
 #[cfg(feature = "raster")]

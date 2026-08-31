@@ -148,6 +148,25 @@ def test_payload_sample_target_indices_keep_all() -> None:
     assert 0 < len(idx) < 10_000
 
 
+def test_payload_segments_emit_gather_stem_decimates() -> None:
+    gather = kernels.payload_segments_emit_gather("stem", 3000, 0, 100.0)
+    assert gather["tier"] == 1
+    assert not gather["role_maps"]
+    assert not gather["keep_all"]
+    assert gather["n_out"] == 1024
+    assert len(gather["indices"]) == 1024
+
+
+def test_payload_segments_emit_gather_errorbar_role_maps() -> None:
+    gather = kernels.payload_segments_emit_gather("errorbar", 33, 11, 100.0)
+    assert gather["tier"] == 0
+    assert gather["role_maps"]
+    assert gather["keep_all"]
+    assert gather["n_out"] == 33
+    np.testing.assert_array_equal(gather["sources"][:12], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0])
+    np.testing.assert_array_equal(gather["roles"][:12], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
+
+
 def test_polar_line_stays_direct_over_m4_threshold() -> None:
     n = DECIMATION_THRESHOLD + 1
     fig = Figure(coords="polar").line(np.arange(n, dtype=float), np.ones(n))

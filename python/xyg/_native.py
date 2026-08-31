@@ -11562,6 +11562,65 @@ def payload_errorbar_role_maps(
     return out_sources, out_roles
 
 
+def payload_segments_emit_gather(
+    kind: str,
+    n_segments: int,
+    n_points: int,
+    px_width: float,
+) -> dict[str, object]:
+    """Segment emit gather via ``xyg_payload_segments_emit_gather`` (ABI 292).
+
+    Owns errorbar role-map setup plus stem/errorbar decimation orchestration
+    from ``_emit_segments``. Returns tier, keep_all, optional indices, and
+    optional role maps for hosts to apply to geometry arrays.
+    """
+    if not isinstance(kind, str):
+        raise ValueError("kind must be a string")
+    n_seg = _bounded_nonnegative_int(n_segments, "n_segments", max_value=np.iinfo(np.uint32).max)
+    n_pts = _bounded_nonnegative_int(n_points, "n_points", max_value=np.iinfo(np.uint32).max)
+    if isinstance(px_width, (bool, np.bool_)) or not isinstance(
+        px_width, (int, float, np.integer, np.floating, numbers.Real)
+    ):
+        raise ValueError("px_width must be a finite number")
+    kind_b = kind.encode("utf-8")
+    tier = ctypes.c_int32(-1)
+    role_maps = ctypes.c_int32(-1)
+    keep_all = ctypes.c_int32(-1)
+    indices = np.empty(n_seg, dtype=np.uint32)
+    sources = np.empty(n_seg, dtype=np.uint32)
+    roles = np.empty(n_seg, dtype=np.uint32)
+    written = _lib.xyg_payload_segments_emit_gather(
+        kind_b,
+        len(kind_b),
+        n_seg,
+        n_pts,
+        float(px_width),
+        ctypes.byref(tier),
+        ctypes.byref(role_maps),
+        ctypes.byref(keep_all),
+        indices.ctypes.data if n_seg else 0,
+        sources.ctypes.data if n_seg else 0,
+        roles.ctypes.data if n_seg else 0,
+        n_seg,
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid payload_segments_emit_gather arguments")
+    if written > n_seg:
+        raise RuntimeError("native payload_segments_emit_gather returned an inconsistent count")
+    result: dict[str, object] = {
+        "tier": int(tier.value),
+        "role_maps": int(role_maps.value) == 1,
+        "keep_all": int(keep_all.value) == 1,
+        "n_out": int(written),
+    }
+    if not result["keep_all"]:
+        result["indices"] = indices[: int(written)].copy()
+    if result["role_maps"]:
+        result["sources"] = sources[: int(written)].copy()
+        result["roles"] = roles[: int(written)].copy()
+    return result
+
+
 def payload_bar_compact_admit(
     widths: npt.NDArray[np.float64],
     value0: npt.NDArray[np.float64],
