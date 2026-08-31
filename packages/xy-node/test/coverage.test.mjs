@@ -1341,16 +1341,20 @@ test("buildPayload ships dom via payload build plan", () => {
 });
 
 
-test("_emitScatterDensity omits categorical color unlike Python _density_trace_spec", () => {
-  // Python `_density_trace_spec` ships a slim categorical color spec for
-  // legend chrome. Node density encode omits that field. Recorded
-  // emit-density-cat-color stay-host.
+test("_emitScatterDensity ships slim categorical entry color like Python _density_trace_spec", () => {
   const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [0, 1], { forceDensity: true });
-  fig.traces[0].color_ch = { mode: "categorical", categories: ["a", "b"] };
+  fig.scatter([0, 1, 2, 3, 4], [0, 1, 0.5, 0.2, 0.8], {
+    forceDensity: true,
+    color: ["a", "b", "a", "c", "b"],
+  });
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].tier, "density");
-  assert.equal(spec.traces[0].color, undefined);
+  assert.deepEqual(spec.traces[0].color, {
+    mode: "categorical",
+    categories: ["a", "b", "c"],
+    palette: ["#3987e5", "#008300", "#d55181"],
+  });
+  assert.equal(spec.traces[0].color.buf, undefined);
 });
 
 

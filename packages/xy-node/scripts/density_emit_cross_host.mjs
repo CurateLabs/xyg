@@ -82,6 +82,7 @@ function caseEntry(name, build, { split = false, gridMeta = false } = {}) {
     density_channels_dropped: density.channels_dropped ?? false,
     density_color_agg: density.color_agg ?? null,
     density_has_rgba: density.rgba != null,
+    entry_color: stripWireBuffers(trace.color ?? null),
     ...sampleMeta(spec),
     ...(split ? wasmSourceMeta(spec) : {}),
   };
