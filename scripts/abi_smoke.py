@@ -71,6 +71,18 @@ class PayloadChannelShipEntry(ctypes.Structure):
     ]
 
 
+class PayloadDensityGridBufferEntry(ctypes.Structure):
+    _fields_ = [
+        ("registry_key", ctypes.c_int32),
+        ("buffer_slot", ctypes.c_int32),
+        ("ship_method", ctypes.c_int32),
+    ]
+
+
+class PayloadDensityGridAttachEntry(ctypes.Structure):
+    _fields_ = [("attach_kind", ctypes.c_int32)]
+
+
 def _lib_name() -> str:
     if sys.platform == "win32":
         return "xyg_core.dll"
@@ -1597,6 +1609,23 @@ def load() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_int32),
         ctypes.POINTER(ctypes.c_int32),
         ctypes.POINTER(PayloadColumnShipEntry),
+        ctypes.c_size_t,
+    ]
+    lib.xyg_payload_density_grid_ship_plan.restype = ctypes.c_int32
+    lib.xyg_payload_density_grid_ship_plan.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.POINTER(ctypes.c_size_t),
+        ctypes.POINTER(PayloadDensityGridBufferEntry),
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_size_t),
+        ctypes.POINTER(PayloadDensityGridAttachEntry),
         ctypes.c_size_t,
     ]
     lib.xyg_payload_channel_ship_plan.restype = ctypes.c_int32
@@ -5724,6 +5753,62 @@ def main() -> None:
         and col_entries[0].ship_method == 1
         and col_entries[0].gather == 0,
         "payload_column_ship_plan density_sample values",
+    )
+    grid_n_buf = ctypes.c_size_t(0)
+    grid_n_attach = ctypes.c_size_t(0)
+    grid_bufs = (PayloadDensityGridBufferEntry * 2)()
+    grid_attach = (PayloadDensityGridAttachEntry * 10)()
+    ok(
+        lib.xyg_payload_density_grid_ship_plan(
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            ctypes.byref(grid_n_buf),
+            grid_bufs,
+            2,
+            ctypes.byref(grid_n_attach),
+            grid_attach,
+            10,
+        )
+        == 1
+        and grid_n_buf.value == 1
+        and grid_bufs[0].registry_key == 0
+        and grid_bufs[0].buffer_slot == 0
+        and grid_bufs[0].ship_method == 0
+        and grid_n_attach.value == 2
+        and grid_attach[0].attach_kind == 3
+        and grid_attach[1].attach_kind == 4,
+        "payload_density_grid_ship_plan count-only registry",
+    )
+    ok(
+        lib.xyg_payload_density_grid_ship_plan(
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            1,
+            ctypes.byref(grid_n_buf),
+            grid_bufs,
+            2,
+            ctypes.byref(grid_n_attach),
+            grid_attach,
+            10,
+        )
+        == 1
+        and grid_n_buf.value == 2
+        and grid_bufs[1].registry_key == 1
+        and grid_n_attach.value == 8
+        and grid_attach[0].attach_kind == 0
+        and grid_attach[7].attach_kind == 9,
+        "payload_density_grid_ship_plan full overlay attach order",
     )
     chan_n = ctypes.c_size_t(0)
     chan_entries = (PayloadChannelShipEntry * 5)()

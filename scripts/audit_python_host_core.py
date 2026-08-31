@@ -29,7 +29,7 @@ DELEGATE_RE = re.compile(
     r"encoded_column_meta|arrow_style_pack|arrow_shapes|scene_channel_constant_css|"
     r"payload_.*_plan|scene_.*_plan|payload_segments_emit_gather|"
     r"payload_trace_channels_ship_attach|payload_transition_entry_attach|"
-    r"payload_column_ship_plan|payload_channel_ship_plan|payload_channel_wire_encode)\b"
+    r"payload_column_ship_plan|payload_density_grid_ship_plan|payload_channel_ship_plan|payload_channel_wire_encode)\b"
 )
 
 # Heuristic: likely host-local orchestration (not exhaustive).
@@ -138,6 +138,11 @@ MERGED_PAYLOAD_GATHER_SHIP: tuple[tuple[str, str, str], ...] = (
     ),
     (
         "#732",
+        "315",
+        "xyg_payload_density_grid_ship_plan density grid buffer registry + attach order",
+    ),
+    (
+        "#770",
         "314",
         "channels.ship_registry_attach + Node density wasm_source/sample registry parity",
     ),
@@ -145,11 +150,9 @@ MERGED_PAYLOAD_GATHER_SHIP: tuple[tuple[str, str, str], ...] = (
 
 REMAINING_CLOSE: tuple[tuple[str, str], ...] = (
     (
-        "#732",
-        "density grid ship in `_payload.py` (bin2d/pyramid compose stays host; "
-        "column/channel registry + row materialization dispatch complete ABI 310-314)",
+        "#731",
+        "parent M2 close — blocked on Node stay-host TAP convergence (#732 gather/ship closed)",
     ),
-    ("#731", "parent M2 close — blocked on #732 density grid + Node stay-host TAP convergence"),
 )
 
 
@@ -263,15 +266,15 @@ def main(argv: list[str] | None = None) -> int:
         MERGED_SCENE_ORCHESTRATION,
     )
     _print_stack(
-        "Merged payload gather/ship on main (#765 -> #768, ABI 310-313, #732 OPEN):",
+        "Merged payload gather/ship on main (#765 -> #769, ABI 310-315, #732 CLOSED):",
         MERGED_PAYLOAD_GATHER_SHIP,
     )
 
     print("M2 close contract (#731):")
     print("  - #733 CLOSED: Scene pack dispatch/plan orchestration is Rust-owned (ABI 305-309).")
     print(
-        "  - #732 OPEN: gather/ship registry + wire-encode kernels landed (ABI 310-313); "
-        "hosts still materialize density grids and channel/style rows."
+        "  - #732 CLOSED: gather/ship registry + density grid ship are Rust-owned (ABI 310-315); "
+        "hosts still materialize grids and channel/style rows."
     )
     print(
         "  - Admit/encode slices (ABI 218-291), orchestration plans (ABI 292-309), "
@@ -290,8 +293,8 @@ def main(argv: list[str] | None = None) -> int:
         f"{total_local} local-orchestration hooks"
     )
     print(
-        "Python remains authoritative for density grid ship and residual row materialization until #732 closes; "
-        "gather/ship registry and wire-encode policy are kernel-owned (ABI 310-313). "
+        "Python remains authoritative for bin2d/pyramid compose and residual row materialization; "
+        "gather/ship registry, density grid ship, and wire-encode policy are kernel-owned (ABI 310-315). "
         "Scene pack orchestration is kernel-owned (#733 closed)."
     )
     return 0

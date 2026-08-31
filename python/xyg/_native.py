@@ -12775,6 +12775,109 @@ def payload_column_ship_plan(
     }
 
 
+class _PayloadDensityGridBufferEntry(ctypes.Structure):
+    _fields_ = [
+        ("registry_key", ctypes.c_int32),
+        ("buffer_slot", ctypes.c_int32),
+        ("ship_method", ctypes.c_int32),
+    ]
+
+
+class _PayloadDensityGridAttachEntry(ctypes.Structure):
+    _fields_ = [("attach_kind", ctypes.c_int32)]
+
+
+_PAYLOAD_DENSITY_REGISTRY_KEY_BY_CODE: tuple[str, ...] = ("buf", "rgba")
+_PAYLOAD_DENSITY_BUFFER_SLOT_BY_CODE: tuple[str, ...] = ("count", "rgba")
+_PAYLOAD_DENSITY_SHIP_METHOD_BY_CODE: tuple[str, ...] = ("u8",)
+_PAYLOAD_DENSITY_ATTACH_KIND_BY_CODE: tuple[str, ...] = (
+    "wasm_source",
+    "tiles",
+    "rgba",
+    "channels_dropped",
+    "dropped_channels",
+    "constant_color",
+    "overlay_rows_exceed",
+    "sample",
+    "overlay_static_raster",
+    "entry_color",
+)
+PAYLOAD_DENSITY_GRID_SHIP_MAX_BUFFERS = 2
+PAYLOAD_DENSITY_GRID_SHIP_MAX_ATTACH = 10
+
+
+def payload_density_grid_ship_plan(
+    *,
+    ship_mean_color_rgba: bool,
+    ship_wasm_source: bool,
+    attach_sample: bool,
+    has_tiles: bool,
+    ship_constant_color: bool,
+    overlay_wire_rows_exceed: bool,
+    overlay_wire_static_raster: bool,
+    ship_categorical_entry_color: bool,
+) -> dict[str, int | list[dict[str, str]]]:
+    """Density grid buffer registry and attach-order plan (ABI 315).
+
+    Owns which u8 planes ship under ``density["buf"]`` / ``density["rgba"]`` and
+    the ordered nested attach steps after bin2d/pyramid compose. Hosts still
+    materialize grids and call ``pw.ship_u8``.
+    """
+    n_buffers = ctypes.c_size_t(0)
+    n_attach = ctypes.c_size_t(0)
+    buffers = (_PayloadDensityGridBufferEntry * PAYLOAD_DENSITY_GRID_SHIP_MAX_BUFFERS)()
+    attach = (_PayloadDensityGridAttachEntry * PAYLOAD_DENSITY_GRID_SHIP_MAX_ATTACH)()
+    ok = _lib.xyg_payload_density_grid_ship_plan(
+        1 if ship_mean_color_rgba else 0,
+        1 if ship_wasm_source else 0,
+        1 if attach_sample else 0,
+        1 if has_tiles else 0,
+        1 if ship_constant_color else 0,
+        1 if overlay_wire_rows_exceed else 0,
+        1 if overlay_wire_static_raster else 0,
+        1 if ship_categorical_entry_color else 0,
+        ctypes.byref(n_buffers),
+        buffers,
+        PAYLOAD_DENSITY_GRID_SHIP_MAX_BUFFERS,
+        ctypes.byref(n_attach),
+        attach,
+        PAYLOAD_DENSITY_GRID_SHIP_MAX_ATTACH,
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_density_grid_ship_plan arguments")
+    out_buffers: list[dict[str, str]] = []
+    for idx in range(int(n_buffers.value)):
+        entry = buffers[idx]
+        key_code = int(entry.registry_key)
+        slot_code = int(entry.buffer_slot)
+        method_code = int(entry.ship_method)
+        if not (0 <= key_code < len(_PAYLOAD_DENSITY_REGISTRY_KEY_BY_CODE)):
+            raise ValueError("invalid payload_density_grid_ship_plan registry key")
+        if not (0 <= slot_code < len(_PAYLOAD_DENSITY_BUFFER_SLOT_BY_CODE)):
+            raise ValueError("invalid payload_density_grid_ship_plan buffer slot")
+        if not (0 <= method_code < len(_PAYLOAD_DENSITY_SHIP_METHOD_BY_CODE)):
+            raise ValueError("invalid payload_density_grid_ship_plan ship method")
+        out_buffers.append(
+            {
+                "registry_key": _PAYLOAD_DENSITY_REGISTRY_KEY_BY_CODE[key_code],
+                "buffer_slot": _PAYLOAD_DENSITY_BUFFER_SLOT_BY_CODE[slot_code],
+                "ship_method": _PAYLOAD_DENSITY_SHIP_METHOD_BY_CODE[method_code],
+            }
+        )
+    out_attach: list[dict[str, str]] = []
+    for idx in range(int(n_attach.value)):
+        kind_code = int(attach[idx].attach_kind)
+        if not (0 <= kind_code < len(_PAYLOAD_DENSITY_ATTACH_KIND_BY_CODE)):
+            raise ValueError("invalid payload_density_grid_ship_plan attach kind")
+        out_attach.append({"attach_kind": _PAYLOAD_DENSITY_ATTACH_KIND_BY_CODE[kind_code]})
+    return {
+        "n_buffers": int(n_buffers.value),
+        "buffers": out_buffers,
+        "n_attach": int(n_attach.value),
+        "attach": out_attach,
+    }
+
+
 class _PayloadChannelShipEntry(ctypes.Structure):
     _fields_ = [
         ("registry_key", ctypes.c_int32),

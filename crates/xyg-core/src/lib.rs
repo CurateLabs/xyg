@@ -162,7 +162,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 314;
+pub const ABI_VERSION: u32 = 315;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -16056,7 +16056,7 @@ pub unsafe extern "C" fn xyg_payload_column_ship_plan(
         let mut x_ship_scale = 0i32;
         let mut y_ship_scale = 0i32;
         let ok = payload_emit::payload_column_ship_plan(
-            &kind_str,
+            kind_str,
             x_axis_type,
             y_axis_type,
             orientation,
@@ -16086,6 +16086,107 @@ pub unsafe extern "C" fn xyg_payload_column_ship_plan(
                     ship_method: entry.ship_method,
                     ship_scale: entry.ship_scale,
                     gather: u32::from(entry.gather != 0),
+                };
+            }
+        }
+        1
+    })
+}
+
+/// One u8 grid buffer descriptor from ``payload_density_grid_ship_plan`` (ABI 315).
+#[repr(C)]
+pub struct XygPayloadDensityGridBufferEntry {
+    pub registry_key: i32,
+    pub buffer_slot: i32,
+    pub ship_method: i32,
+}
+
+/// One ordered attach step from ``payload_density_grid_ship_plan`` (ABI 315).
+#[repr(C)]
+pub struct XygPayloadDensityGridAttachEntry {
+    pub attach_kind: i32,
+}
+
+/// Density grid buffer registry and attach-order plan from ``_density_trace_spec`` (ABI 315).
+///
+/// Owns which u8 planes ship and the ordered nested attach steps after bin2d/pyramid
+/// compose. Hosts still materialize grids and call ``pw.ship_u8`` / ``pw.shipU8``.
+///
+/// # Safety
+/// ``out_buffers`` / ``out_attach`` must be writable for ``buffer_capacity`` /
+/// ``attach_capacity`` entries; ``out_n_buffers`` / ``out_n_attach`` receive filled
+/// counts (``<= capacity``).
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_density_grid_ship_plan(
+    ship_mean_color_rgba: i32,
+    ship_wasm_source: i32,
+    attach_sample: i32,
+    has_tiles: i32,
+    ship_constant_color: i32,
+    overlay_wire_rows_exceed: i32,
+    overlay_wire_static_raster: i32,
+    ship_categorical_entry_color: i32,
+    out_n_buffers: *mut usize,
+    out_buffers: *mut XygPayloadDensityGridBufferEntry,
+    buffer_capacity: usize,
+    out_n_attach: *mut usize,
+    out_attach: *mut XygPayloadDensityGridAttachEntry,
+    attach_capacity: usize,
+) -> i32 {
+    ffi_guard(0, || {
+        if out_n_buffers.is_null()
+            || out_n_attach.is_null()
+            || (buffer_capacity > 0 && out_buffers.is_null())
+            || (attach_capacity > 0 && out_attach.is_null())
+        {
+            return 0;
+        }
+        let buf_cap = buffer_capacity.min(payload_emit::PAYLOAD_DENSITY_GRID_SHIP_MAX_BUFFERS);
+        let attach_cap = attach_capacity.min(payload_emit::PAYLOAD_DENSITY_GRID_SHIP_MAX_ATTACH);
+        let mut buffers = [payload_emit::PayloadDensityGridBufferEntry {
+            registry_key: 0,
+            buffer_slot: 0,
+            ship_method: 0,
+        }; payload_emit::PAYLOAD_DENSITY_GRID_SHIP_MAX_BUFFERS];
+        let mut attach = [payload_emit::PayloadDensityGridAttachEntry { attach_kind: 0 };
+            payload_emit::PAYLOAD_DENSITY_GRID_SHIP_MAX_ATTACH];
+        let mut n_buffers = 0usize;
+        let mut n_attach = 0usize;
+        let ok = payload_emit::payload_density_grid_ship_plan(
+            ship_mean_color_rgba,
+            ship_wasm_source,
+            attach_sample,
+            has_tiles,
+            ship_constant_color,
+            overlay_wire_rows_exceed,
+            overlay_wire_static_raster,
+            ship_categorical_entry_color,
+            &mut n_buffers,
+            &mut buffers,
+            &mut n_attach,
+            &mut attach,
+        );
+        if ok == 0 {
+            return 0;
+        }
+        if n_buffers > buf_cap || n_attach > attach_cap {
+            return 0;
+        }
+        *out_n_buffers = n_buffers;
+        *out_n_attach = n_attach;
+        if buf_cap > 0 {
+            for (idx, entry) in buffers.iter().take(n_buffers).enumerate() {
+                *out_buffers.add(idx) = XygPayloadDensityGridBufferEntry {
+                    registry_key: entry.registry_key,
+                    buffer_slot: entry.buffer_slot,
+                    ship_method: entry.ship_method,
+                };
+            }
+        }
+        if attach_cap > 0 {
+            for (idx, entry) in attach.iter().take(n_attach).enumerate() {
+                *out_attach.add(idx) = XygPayloadDensityGridAttachEntry {
+                    attach_kind: entry.attach_kind,
                 };
             }
         }

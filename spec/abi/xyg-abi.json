@@ -1,9 +1,9 @@
 {
-  "abi_version": 314,
+  "abi_version": 315,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "015d441fe926685b576d48892be6b0cc56bafaa9f8e9f94223243b68bdbd9fb9",
+  "signature_sha256": "5162d63142bd5b02d3fab8088121800ce857c50c6ac4712b0df45570eba751f4",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -22028,6 +22028,240 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_payload_column_ship_plan(const uint8_t * kind, size_t kind_len, int32_t x_axis_type, int32_t y_axis_type, int32_t orientation, int32_t * out_gather_policy, int32_t * out_gather_include_color, size_t * out_n_columns, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale, void * out_columns, size_t capacity)"
+    },
+    {
+      "name": "xyg_payload_density_grid_ship_plan",
+      "node_name": "xyPayloadDensityGridShipPlan",
+      "nargs": 14,
+      "arguments": [
+        {
+          "name": "ship_mean_color_rgba",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "ship_wasm_source",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "attach_sample",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_tiles",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "ship_constant_color",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "overlay_wire_rows_exceed",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "overlay_wire_static_raster",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "ship_categorical_entry_color",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_n_buffers",
+          "type": {
+            "rust": "*mut usize",
+            "c": "size_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "size_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_buffers",
+          "type": {
+            "rust": "*mut XygPayloadDensityGridBufferEntry",
+            "c": "void *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "void *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "buffer_capacity",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_n_attach",
+          "type": {
+            "rust": "*mut usize",
+            "c": "size_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "size_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_attach",
+          "type": {
+            "rust": "*mut XygPayloadDensityGridAttachEntry",
+            "c": "void *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "void *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "attach_capacity",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_payload_density_grid_ship_plan(int32_t ship_mean_color_rgba, int32_t ship_wasm_source, int32_t attach_sample, int32_t has_tiles, int32_t ship_constant_color, int32_t overlay_wire_rows_exceed, int32_t overlay_wire_static_raster, int32_t ship_categorical_entry_color, size_t * out_n_buffers, void * out_buffers, size_t buffer_capacity, size_t * out_n_attach, void * out_attach, size_t attach_capacity)"
     },
     {
       "name": "xyg_payload_density_trace_emit_plan",

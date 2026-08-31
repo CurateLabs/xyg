@@ -247,6 +247,7 @@ payload_bar_hist_emit_plan = _impl.payload_bar_hist_emit_plan
 payload_heatmap_emit_plan = _impl.payload_heatmap_emit_plan
 payload_mesh_emit_plan = _impl.payload_mesh_emit_plan
 payload_column_ship_plan = _impl.payload_column_ship_plan
+payload_density_grid_ship_plan = _impl.payload_density_grid_ship_plan
 payload_channel_ship_plan = _impl.payload_channel_ship_plan
 payload_channel_wire_encode = _impl.payload_channel_wire_encode
 payload_ribbon_emit_plan = _impl.payload_ribbon_emit_plan
@@ -406,6 +407,7 @@ __all__ = [
     "payload_channel_ship_plan",
     "payload_channel_wire_encode",
     "payload_column_ship_plan",
+    "payload_density_grid_ship_plan",
     "payload_density_trace_emit_plan",
     "payload_errorbar_indices",
     "payload_errorbar_role_keys",

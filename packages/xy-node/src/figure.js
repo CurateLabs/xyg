@@ -58,6 +58,8 @@ import {
   payloadChannelShipPlan,
   payloadChannelWireEncode,
   payloadColumnShipPlan,
+  payloadDensityGridShipPlan,
+  shipDensityGridBuffers,
   shipRegistryColumns,
   payloadTransitionEntryAttach,
   payloadSegmentBudget,
@@ -1657,8 +1659,17 @@ export class Figure {
       nPoints: t.x.length,
     });
     const { encoded, max } = densityLogU8(grid);
+    const gridPlan = payloadDensityGridShipPlan({
+      shipMeanColorRgba: wire.shipMeanColorRgba,
+      shipWasmSource: wire.shipWasmSource,
+      attachSample: wire.attachSample,
+      hasTiles: tiles != null,
+      shipConstantColor: wire.shipConstantColor,
+      overlayWireRowsExceed: wire.overlayWireRowsExceed,
+      overlayWireStaticRaster: wire.overlayWireStaticRaster,
+      shipCategoricalEntryColor: wire.shipCategoricalEntryColor,
+    });
     const density = {
-      buf: pw.shipU8(encoded),
       w,
       h,
       max,
@@ -1671,114 +1682,10 @@ export class Figure {
       y_range: [...yr],
       binning,
       reduction,
-      // Node payload density dropped_channels stays empty. Python
-      // `_density_trace_spec` uses `per_item_channel_names`. Matching Python
-      // would list per-item extras. Recorded emit-density-dropped-channels stay-host.
-      // Node payload density omits mean-color rgba. Python `_density_trace_spec`
-      // ships rgba from `trace_bin_colors`. Matching Python would add
-      // density.rgba. Recorded emit-density-rgba stay-host.
-      channels_dropped: wire.channelsDroppedCompat,
-      dropped_channels: [],
     };
-    if (wire.shipWasmSource) {
-      const xAxis = t.x_axis ?? "x";
-      const yAxis = t.y_axis ?? "y";
-      const wasmSource = {
-        kind: "cartesian-count-f64-stream-v1",
-        point_count: t.x.length,
-        trace_id: t.id,
-        capacity: WASM_AGGREGATE_MAX_POINTS,
-        ownership: "retain-host-replay",
-      };
-      const wasmColumnPlan = payloadColumnShipPlan({
-        kind: "density_wasm_source",
-        xAxisScale: payloadAxisScale(this, xAxis),
-        yAxisScale: payloadAxisScale(this, yAxis),
-      });
-      shipRegistryColumns(
-        wasmSource,
-        t,
-        pw,
-        wasmColumnPlan,
-        { x: t.x, y: t.y },
-      );
-      density.wasm_source = wasmSource;
-    }
-    if (wire.overlayWireStaticRaster) {
-      density.overlay_omitted = "static_raster";
-    } else if (wire.overlayWireRowsExceed) {
-      density.overlay_omitted = "rows_exceed_u32";
-    } else if (wire.attachSample) {
-      const n = t.x.length;
-      const { keepAll, indices } = payloadSampleTargetIndices({
-        n,
-        target: DENSITY_SAMPLE_TARGET,      // NaN rows from sample.n. Recorded emit-density-sample-sel stay-host.
-
-        seed: DENSITY_SAMPLE_SEED,
-      });
-      const sx = keepAll ? t.x : gatherF64(t.x, indices);
-      const sy = keepAll ? t.y : gatherF64(t.y, indices);
-      if (sx.length > 0) {
-        const xAxis = t.x_axis ?? "x";
-        const yAxis = t.y_axis ?? "y";
-        const columnPlan = payloadColumnShipPlan({
-          kind: "density_sample",
-          xAxisScale: payloadAxisScale(this, xAxis),
-          yAxisScale: payloadAxisScale(this, yAxis),
-        });
-        const plan = payloadNonxyEmitPlan({
-          kind: "density_sample",
-          nMarks: sx.length,
-          styleColorIsNone: t.style?.color == null,
-          xAxisScale: columnPlan.xShipScale,
-          yAxisScale: columnPlan.yShipScale,
-        });
-        const opacityRaw = Number(t.style?.opacity ?? 0.8);
-        density.sample = {
-          mode: "sampled",
-          n: sx.length,
-          visible: n,
-          target: DENSITY_SAMPLE_TARGET,
-          level: 0,
-          seed: DENSITY_SAMPLE_SEED,
-          x_range: [...xr],
-          y_range: [...yr],
-          style: {
-            ...t.style,
-            opacity: densityOverlayOpacity(opacityRaw),
-          },
-        };
-        shipRegistryColumns(
-          density.sample,
-          t,
-          pw,
-          columnPlan,
-          { x: sx, y: sy },
-          { nestedKeys: new Set(["x", "y"]) },
-        );
-        this._shipTraceChannelAttach(
-          density.sample,
-          t,
-          pw,
-          keepAll ? null : indices,
-          plan.channelSlot,
-          { includeTraceStyles: plan.includeTraceStyles },
-        );
-        // Node density sample omits style_channels. Python `_density_sample_spec`
-        // ships them as `channels` via `_ship_trace_styles`. Matching Python
-        // would add sample.channels. Recorded emit-density-sample-channels stay-host.
-      }
-    }
-    if (tiles != null) {
-      density.tiles = tiles;
-    }
-    if (t.style?.color) {
-      density.color = t.style.color;
-    }
-    // Node payload density scatter omits transition_keys. Python `_emit_scatter`
-    // ships them via `_transition_entry` on the density path. Matching Python
-    // would add entry.keys. Recorded emit-density-transition stay-host.
-    return {
+    shipDensityGridBuffers(density, pw, gridPlan, { count: encoded, rgba: null });
+    const droppedChannels = [];
+    const entry = {
       id: t.id,
       kind: "scatter",
       name: t.name,
@@ -1789,9 +1696,120 @@ export class Figure {
       visible: t.x.length,
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
-      density,      // rows from entry.visible. Recorded emit-density-visible stay-host.
-
+      density,
     };
+    for (const step of gridPlan.attach) {
+      const kind = step.attachKind;
+      if (kind === "wasm_source") {
+        const xAxis = t.x_axis ?? "x";
+        const yAxis = t.y_axis ?? "y";
+        const wasmSource = {
+          kind: "cartesian-count-f64-stream-v1",
+          point_count: t.x.length,
+          trace_id: t.id,
+          capacity: WASM_AGGREGATE_MAX_POINTS,
+          ownership: "retain-host-replay",
+        };
+        const wasmColumnPlan = payloadColumnShipPlan({
+          kind: "density_wasm_source",
+          xAxisScale: payloadAxisScale(this, xAxis),
+          yAxisScale: payloadAxisScale(this, yAxis),
+        });
+        shipRegistryColumns(
+          wasmSource,
+          t,
+          pw,
+          wasmColumnPlan,
+          { x: t.x, y: t.y },
+        );
+        density.wasm_source = wasmSource;
+      } else if (kind === "tiles") {
+        if (tiles != null) {
+          density.tiles = tiles;
+        }
+      } else if (kind === "rgba") {
+        density.color_agg = "mean";
+      } else if (kind === "channels_dropped") {
+        density.channels_dropped = wire.channelsDroppedCompat;
+      } else if (kind === "dropped_channels") {
+        // Node payload density dropped_channels stays empty. Python
+        // `_density_trace_spec` uses `per_item_channel_names`. Matching Python
+        // would list per-item extras. Recorded emit-density-dropped-channels stay-host.
+        density.dropped_channels = droppedChannels;
+      } else if (kind === "constant_color") {
+        if (t.style?.color) {
+          density.color = t.style.color;
+        }
+      } else if (kind === "overlay_rows_exceed") {
+        density.overlay_omitted = "rows_exceed_u32";
+      } else if (kind === "sample") {
+        const n = t.x.length;
+        const { keepAll, indices } = payloadSampleTargetIndices({
+          n,
+          target: DENSITY_SAMPLE_TARGET,
+          seed: DENSITY_SAMPLE_SEED,
+        });
+        const sx = keepAll ? t.x : gatherF64(t.x, indices);
+        const sy = keepAll ? t.y : gatherF64(t.y, indices);
+        if (sx.length > 0) {
+          const xAxis = t.x_axis ?? "x";
+          const yAxis = t.y_axis ?? "y";
+          const columnPlan = payloadColumnShipPlan({
+            kind: "density_sample",
+            xAxisScale: payloadAxisScale(this, xAxis),
+            yAxisScale: payloadAxisScale(this, yAxis),
+          });
+          const plan = payloadNonxyEmitPlan({
+            kind: "density_sample",
+            nMarks: sx.length,
+            styleColorIsNone: t.style?.color == null,
+            xAxisScale: columnPlan.xShipScale,
+            yAxisScale: columnPlan.yShipScale,
+          });
+          const opacityRaw = Number(t.style?.opacity ?? 0.8);
+          density.sample = {
+            mode: "sampled",
+            n: sx.length,
+            visible: n,
+            target: DENSITY_SAMPLE_TARGET,
+            level: 0,
+            seed: DENSITY_SAMPLE_SEED,
+            x_range: [...xr],
+            y_range: [...yr],
+            style: {
+              ...t.style,
+              opacity: densityOverlayOpacity(opacityRaw),
+            },
+          };
+          shipRegistryColumns(
+            density.sample,
+            t,
+            pw,
+            columnPlan,
+            { x: sx, y: sy },
+            { nestedKeys: new Set(["x", "y"]) },
+          );
+          this._shipTraceChannelAttach(
+            density.sample,
+            t,
+            pw,
+            keepAll ? null : indices,
+            plan.channelSlot,
+            { includeTraceStyles: plan.includeTraceStyles },
+          );
+        }
+      } else if (kind === "overlay_static_raster") {
+        density.overlay_omitted = "static_raster";
+      } else if (kind === "entry_color") {
+        // Node payload density omits categorical entry color. Python
+        // `_density_trace_spec` ships slim categorical color spec. Recorded
+        // emit-density-cat-color stay-host.
+      }
+    }
+    // Node payload density scatter omits transition_keys. Python `_emit_scatter`
+    // ships them via `_transition_entry` on the density path. Matching Python
+    // would add entry.keys. Recorded emit-density-transition stay-host.
+    return entry;
   }
 
   /** Release all Tier-3 pyramid handles owned by this figure. */

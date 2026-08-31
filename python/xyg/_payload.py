@@ -1462,6 +1462,104 @@ class PayloadMixin(_Host):
             else:
                 entry[key] = col_idx
 
+    def _ship_density_grid_buffers(
+        self,
+        density: dict[str, Any],
+        pw: "_PayloadWriter",
+        grid_plan: dict[str, Any],
+        *,
+        encoded_grid: np.ndarray,
+        rgba_grid: Optional[np.ndarray] = None,
+    ) -> None:
+        """Ship u8 density grid planes per the ABI 315 buffer registry."""
+        buffers = {"count": encoded_grid, "rgba": rgba_grid}
+        for buf in grid_plan["buffers"]:
+            key = buf["registry_key"]
+            slot = buf["buffer_slot"]
+            values = buffers[slot]
+            if values is None:
+                continue
+            if buf["ship_method"] == "u8":
+                density[key] = pw.ship_u8(values)
+
+    def _attach_density_grid_steps(
+        self,
+        density: dict[str, Any],
+        entry: dict[str, Any],
+        t: Trace,
+        pw: "_PayloadWriter",
+        grid_plan: dict[str, Any],
+        wire: dict[str, Any],
+        *,
+        sel: np.ndarray,
+        visible: int,
+        xr: tuple[float, float],
+        yr: tuple[float, float],
+        sample_sel: Optional[np.ndarray],
+        dropped_channels: list[str],
+        tiles_meta: Optional[dict[str, Any]],
+    ) -> None:
+        """Run ordered density nested attach steps from ABI 315."""
+        for step in grid_plan["attach"]:
+            kind = step["attach_kind"]
+            if kind == "wasm_source":
+                wasm_source: dict[str, Any] = {
+                    "kind": "cartesian-count-f64-stream-v1",
+                    "point_count": int(t.n_points),
+                    "trace_id": int(t.id),
+                    "capacity": WASM_AGGREGATE_MAX_POINTS,
+                    "ownership": "retain-host-replay",
+                }
+                column_plan = self._payload_column_ship_plan(t, kind="density_wasm_source")
+                self._ship_registry_columns(
+                    wasm_source,
+                    t,
+                    pw,
+                    column_plan,
+                    {"x": t.x.values, "y": t.y.values},
+                )
+                density["wasm_source"] = wasm_source
+            elif kind == "tiles":
+                if tiles_meta is not None:
+                    density["tiles"] = tiles_meta
+            elif kind == "rgba":
+                density["color_agg"] = "mean"
+            elif kind == "channels_dropped":
+                filtered = [
+                    name
+                    for name in dropped_channels
+                    if kernels.density_dropped_channel_wire_admit(
+                        channel=name,
+                        mean_color_aggregates=int(wire["mean_color_aggregates"]),
+                    )
+                ]
+                dropped_channels[:] = filtered
+                density["channels_dropped"] = kernels.density_channels_dropped_compat(
+                    dropped_count=len(filtered),
+                )
+            elif kind == "dropped_channels":
+                density["dropped_channels"] = dropped_channels
+            elif kind == "constant_color":
+                assert t.color_ch is not None
+                density["color"] = t.color_ch.constant
+            elif kind == "overlay_rows_exceed":
+                density["overlay_omitted"] = "rows_exceed_u32"
+            elif kind == "sample":
+                sample = self._density_sample_spec(
+                    t, sel, visible, xr, yr, pw, sample_sel=sample_sel
+                )
+                if sample is not None:
+                    density["sample"] = sample
+            elif kind == "overlay_static_raster":
+                density["overlay_omitted"] = "static_raster"
+            elif kind == "entry_color":
+                assert t.color_ch is not None
+                color_spec = t.color_ch.spec()
+                color_spec["palette"] = channels.categorical_palette(
+                    t.color_ch.colors, len(t.color_ch.categories or ())
+                )
+                entry["color"] = color_spec
+
     def _ship_channels(
         self, t: Trace, sel, ship_scalar, ship_u8, *, quantize_continuous: bool = False
     ) -> tuple[Any, Any]:  # noqa: ANN001
@@ -1841,6 +1939,24 @@ class PayloadMixin(_Host):
             has_pyramid_rgba=rgba_from_pyramid is not None,
             has_bin_colors=bin_colors is not None,
         )
+        rgba_grid: Optional[np.ndarray] = None
+        if wire["ship_mean_color_rgba"]:
+            if rgba_from_pyramid is not None:
+                rgba_grid = rgba_from_pyramid.reshape(-1)
+            elif bin_colors is not None:
+                rgba_grid = kernels.bin_2d_mean_color(
+                    bx, by, bx0, bx1, by0, by1, w, h, **bin_colors
+                ).reshape(-1)
+        grid_plan = kernels.payload_density_grid_ship_plan(
+            ship_mean_color_rgba=bool(wire["ship_mean_color_rgba"]),
+            ship_wasm_source=bool(wire["ship_wasm_source"]),
+            attach_sample=bool(wire["attach_sample"]),
+            has_tiles=tiles_meta is not None,
+            ship_constant_color=bool(wire["ship_constant_color"]),
+            overlay_wire_rows_exceed=bool(wire["overlay_wire_rows_exceed"]),
+            overlay_wire_static_raster=bool(wire["overlay_wire_static_raster"]),
+            ship_categorical_entry_color=bool(wire["ship_categorical_entry_color"]),
+        )
         # The density surface wears the data's own colors (LOD doc §2): count
         # is the alpha channel, and per-point color channels aggregate to a
         # per-cell mean shipped as an RGBA plane below. `colormap` stays on
@@ -1851,9 +1967,7 @@ class PayloadMixin(_Host):
             if t.color_ch is not None and wire["use_channel_colormap"]
             else channels.DEFAULT_COLORMAP
         )
-        dropped_channels = list(t.per_item_channel_names())
-        density = {
-            "buf": pw.ship_u8(encoded_grid),
+        density: dict[str, Any] = {
             "w": w,
             "h": h,
             "max": gmax,
@@ -1869,72 +1983,14 @@ class PayloadMixin(_Host):
                 else "bin2d"
             ),
         }
-        # `XYAS` v1 retains the canonical split f64 columns in the host for
-        # replay on every pan.  The worker only receives one ABI-generated
-        # 32,768-point raw chunk at a time; this source capacity is the
-        # generated aggregate ABI's declared point limit.
-        wasm_capacity = WASM_AGGREGATE_MAX_POINTS
-        if wire["ship_wasm_source"]:
-            wasm_source: dict[str, Any] = {
-                "kind": "cartesian-count-f64-stream-v1",
-                "point_count": int(t.n_points),
-                "trace_id": int(t.id),
-                "capacity": wasm_capacity,
-                "ownership": "retain-host-replay",
-            }
-            column_plan = self._payload_column_ship_plan(t, kind="density_wasm_source")
-            self._ship_registry_columns(
-                wasm_source,
-                t,
-                pw,
-                column_plan,
-                {"x": t.x.values, "y": t.y.values},
-            )
-            density["wasm_source"] = wasm_source
-        if tiles_meta is not None:
-            density["tiles"] = tiles_meta
-        ship_mean_color_rgba = bool(wire["ship_mean_color_rgba"])
-        if ship_mean_color_rgba:
-            if rgba_from_pyramid is not None:
-                density["rgba"] = pw.ship_u8(rgba_from_pyramid.reshape(-1))
-            elif bin_colors is not None:
-                # Mean point color per cell, straight-alpha RGBA8: the color the
-                # points themselves would downsample to (averaged in linear
-                # light). The channel is aggregated, recorded via `color_agg`,
-                # and therefore leaves the dropped list.
-                rgba_grid = kernels.bin_2d_mean_color(
-                    bx, by, bx0, bx1, by0, by1, w, h, **bin_colors
-                )
-                density["rgba"] = pw.ship_u8(rgba_grid.reshape(-1))
-            density["color_agg"] = "mean"
-        dropped_channels = [
-            name
-            for name in dropped_channels
-            if kernels.density_dropped_channel_wire_admit(
-                channel=name,
-                mean_color_aggregates=int(wire["mean_color_aggregates"]),
-            )
-        ]
-        density["channels_dropped"] = kernels.density_channels_dropped_compat(
-            dropped_count=len(dropped_channels),
+        self._ship_density_grid_buffers(
+            density,
+            pw,
+            grid_plan,
+            encoded_grid=encoded_grid,
+            rgba_grid=rgba_grid,
         )
-        density["dropped_channels"] = dropped_channels  # complete, actionable list (§28)
-        if wire["ship_constant_color"]:
-            assert t.color_ch is not None
-            density["color"] = t.color_ch.constant
-        if wire["overlay_wire_rows_exceed"]:
-            # §28: exact grid, but the deterministic point overlay is dropped
-            # because row ids exceed u32. Recorded so the client/legend can say so.
-            density["overlay_omitted"] = "rows_exceed_u32"
-        if wire["attach_sample"]:
-            sample = self._density_sample_spec(t, sel, visible, xr, yr, pw, sample_sel=sample_sel)
-            if sample is not None:
-                density["sample"] = sample
-        elif wire["overlay_wire_static_raster"]:
-            # §28: no representation is dropped silently. `oversized` above may
-            # have already recorded the more fundamental u32 reason; that one
-            # wins, so only claim the field when nothing else has.
-            density["overlay_omitted"] = "static_raster"
+        dropped_channels = list(t.per_item_channel_names())
         entry = {
             "id": t.id,
             "kind": "scatter",
@@ -1948,19 +2004,19 @@ class PayloadMixin(_Host):
             "y_axis": t.y_axis,
             "density": density,
         }
-        if wire["ship_categorical_entry_color"]:
-            assert t.color_ch is not None
-            # Legend chrome needs the encoding even though the per-point codes
-            # aggregate into the mean-color plane: ship the channel spec slim
-            # (categories + palette, no per-point `buf`) so category rows
-            # exist for density-tier traces — the §10 category-toggle path is
-            # unreachable without them, and every client consumer of a color
-            # buffer already guards on `buf`. Continuous channels stay
-            # deliberately unshipped here: a gradient row would claim
-            # color == density.
-            color_spec = t.color_ch.spec()
-            color_spec["palette"] = channels.categorical_palette(
-                t.color_ch.colors, len(t.color_ch.categories or ())
-            )
-            entry["color"] = color_spec
+        self._attach_density_grid_steps(
+            density,
+            entry,
+            t,
+            pw,
+            grid_plan,
+            wire,
+            sel=sel,
+            visible=visible,
+            xr=xr,
+            yr=yr,
+            sample_sel=sample_sel,
+            dropped_channels=dropped_channels,
+            tiles_meta=tiles_meta,
+        )
         return entry
