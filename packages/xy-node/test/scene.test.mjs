@@ -1094,6 +1094,52 @@ test("Node matches Python XYTA bytes for colormap heatmap", () => {
   );
 });
 
+test("Node matches Python XYTA bytes for constant-style Cartesian density", () => {
+  const x = [0.5, 1.5, 2.5, 3.5, 1, 2, 3];
+  const y = [0.5, 0.5, 0.5, 0.5, 2, 2, 2];
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 4]);
+  figure.setAxisDomain("y", [0, 5]);
+  figure.scatter(x, y, {
+    forceDensity: true,
+    color: "#3987e5",
+    opacity: 0.75,
+    name: "dens",
+    id: 0,
+  });
+  assert.equal(figure.traces[0].color_ch.mode, "constant");
+  assert.equal(figure.traces[0].color_ch.constant, "#3987e5");
+  const packed = packFigureXyTa(figure);
+  assert.equal(
+    crypto.createHash("sha256").update(packed).digest("hex"),
+    figureSceneFixture.public_constant_density_xyta_sha256,
+  );
+});
+
+test("Node matches Python Scene bytes for constant-style Cartesian density blit", () => {
+  const x = [0.5, 1.5, 2.5, 3.5, 1, 2, 3];
+  const y = [0.5, 0.5, 0.5, 0.5, 2, 2, 2];
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 4]);
+  figure.setAxisDomain("y", [0, 5]);
+  figure.scatter(x, y, {
+    forceDensity: true,
+    color: "#3987e5",
+    opacity: 0.75,
+    name: "dens",
+    id: 0,
+  });
+  const scene = figure.toScene();
+  assert.equal(
+    crypto.createHash("sha256").update(scene).digest("hex"),
+    figureSceneFixture.public_constant_density_sha256,
+  );
+  assert.ok(Buffer.from(scene).includes("XYIM"));
+  const svg = sceneSvg(scene);
+  assert.equal((svg.match(/<image/g) || []).length, 1);
+  assert.match(svg, /data:image\/png;base64,/);
+});
+
 test("Node matches Python Scene bytes for bounded polar hexbin, bar, line, and lattice heatmap", () => {
   const tau = 6.283185307179586;
   const cases = [
