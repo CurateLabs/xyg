@@ -124,7 +124,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  - {blocker}: {', '.join(by_blocker[blocker])}")
 
     print()
-    print("Open kernel PRs (merge stack #640 → #641 → #642 on main):")
+    print("Merged kernel stack on main (#640 → #641 → #642, ABI 254–256):")
     for pr, abi, sym, surface in NEXT_KERNEL:
         print(f"  - {pr} {abi} {sym} → {surface}")
 
