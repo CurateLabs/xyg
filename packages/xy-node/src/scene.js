@@ -6032,6 +6032,11 @@ function meshFacePaints(trace) {
 }
 
 /** Compile migrated cartesian marks to Scene v12. */
+/** Host-parity tests compare `_pack_xyta` / `packXyTa` bytes against Python fixtures. */
+export function packFigureXyTa(figure) {
+  return packXyTa(figure, figure._range("x"), figure._range("y"));
+}
+
 export function figureSceneV3(figure, { margins = null } = {}) {
   let colorbarUnsupported = false;
   try { colorbarInput(figure); } catch { colorbarUnsupported = Boolean(figureColorbarOptions(figure)); }
