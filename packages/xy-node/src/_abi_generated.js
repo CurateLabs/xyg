@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 316;
-export const SIGNATURE_SHA256 = "24ab61ae9a90ddb5285aff14a9580ec20d06f3c98e602a637498f220780a4936";
+export const ABI_VERSION = 318;
+export const SIGNATURE_SHA256 = "261a99a34ee2ed0ed2d03ff48c88c0f2f4e10d6e8a4774df2abaa70c5c33c798";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -322,6 +322,7 @@ export let xySceneXynmFigurePlan;
 export let xySceneXytaColormapPack;
 export let xySceneXytaFigurePlan;
 export let xySceneXytaTraceDispatchPlan;
+export let xySceneXytaTracePack;
 export let xySceneXytcColor2FlagsPack;
 export let xySceneXytcColorChannelPack;
 export let xySceneXytcDashPatternPack;
@@ -335,6 +336,7 @@ export let xySceneXytcRadiusPack;
 export let xySceneXytcStrokePerimeterPack;
 export let xySceneXytcSymbolIntPack;
 export let xySceneXytcTraceDispatchPlan;
+export let xySceneXytcTracePack;
 export let xySectorTriangles;
 export let xySpectrogram;
 export let xyStackedBounds;
@@ -741,6 +743,7 @@ export function bindGeneratedAbi(lib) {
   xySceneXytaColormapPack = lib.func("int32_t xyg_scene_xyta_colormap_pack(int32_t mode, const uint8_t * named, size_t named_len, const uint8_t * stop_rgb, size_t stop_len, uint32_t * out_flags, uint8_t * out_cmap, size_t cmap_cap, uint8_t * out_stops, size_t stops_cap)");
   xySceneXytaFigurePlan = lib.func("int32_t xyg_scene_xyta_figure_plan(int32_t polar, void * out)");
   xySceneXytaTraceDispatchPlan = lib.func("int32_t xyg_scene_xyta_trace_dispatch_plan(const uint8_t * kind, size_t kind_len, int32_t polar, int32_t use_density, int32_t hexbin_colormap_plane, int32_t hexbin_rgba_plane_ready, int32_t ribbon_color2_class, int32_t mesh_paint_plane, int32_t scatter_paint_plane, void * out)");
+  xySceneXytaTracePack = lib.func("int32_t xyg_scene_xyta_trace_pack(const void * input, const uint8_t * grid, const uint8_t * rgba, const uint8_t * rgba_grid, const uint8_t * x, const uint8_t * y, const uint8_t * mean_rgba, const uint8_t * idx, const uint8_t * lut, const uint8_t * cmap, const uint8_t * stops, const uint8_t * color_ch, const uint8_t * style_color, uint8_t * out, size_t out_cap, size_t * out_len)");
   xySceneXytcColor2FlagsPack = lib.func("int32_t xyg_scene_xytc_color2_flags_pack(int32_t color2_class, uint32_t paint_flags, int32_t gradient_packed, uint32_t * out_flags)");
   xySceneXytcColorChannelPack = lib.func("int32_t xyg_scene_xytc_color_channel_pack(int32_t present, int32_t has_constant, uint32_t * out_flags)");
   xySceneXytcDashPatternPack = lib.func("int32_t xyg_scene_xytc_dash_pattern_pack(int32_t is_array, uint32_t * out_flags)");
@@ -754,6 +757,7 @@ export function bindGeneratedAbi(lib) {
   xySceneXytcStrokePerimeterPack = lib.func("int32_t xyg_scene_xytc_stroke_perimeter_pack(int32_t band, int32_t present, int32_t perimeter_is_bool, int32_t perimeter_true, uint32_t * out_flags)");
   xySceneXytcSymbolIntPack = lib.func("int32_t xyg_scene_xytc_symbol_int_pack(int32_t symbol_is_int, uint32_t * out_flags)");
   xySceneXytcTraceDispatchPlan = lib.func("int32_t xyg_scene_xytc_trace_dispatch_plan(const uint8_t * kind, size_t kind_len, int32_t marker_path_present, int32_t use_density, int32_t joined_fill, void * out)");
+  xySceneXytcTracePack = lib.func("int32_t xyg_scene_xytc_trace_pack(const void * input, const uint8_t * kind, const uint8_t * name, const uint8_t * symbol_b, const uint8_t * dash_b, const double * dash_pattern, const uint8_t * linecap_b, const uint8_t * step_b, const uint8_t * curve_b, const uint8_t * fill_css, const uint8_t * fill_space, const uint8_t * fill_gradient_blob, const uint8_t * stroke_css, const uint8_t * line_color, const uint8_t * color_css, const uint8_t * color_mode, const uint8_t * color_const, const uint8_t * marker_blob, const uint8_t * color2_gradient_blob, uint8_t * out, size_t out_cap, size_t * out_len)");
   xySectorTriangles = lib.func("size_t xyg_sector_triangles(const double * values, size_t len, const double * explode, double center_x, double center_y, double radius, double inner_radius, double start_degrees, int32_t counterclockwise, int32_t normalize, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, double * out_sector, size_t capacity)");
   xySpectrogram = lib.func("int32_t xyg_spectrogram(const double * data, size_t len, size_t nfft, size_t noverlap, double sample_rate, double * out_frequency, double * out_time, double * out_power)");
   xyStackedBounds = lib.func("int32_t xyg_stacked_bounds(const double * values, size_t rows, size_t cols, uint32_t baseline, double * out_lower, double * out_upper)");

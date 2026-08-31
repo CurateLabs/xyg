@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyArgsortStable, xyArrowEndDecoration, xyArrowGeometry, xyArrowShaftPoints, xyArrowStylePack, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyBarStack, xyBin2d, xyBin2dIndices, xyBin2dMeanColor, xyBinnedEcdf, xyBoxGeometry, xyBoxStats, xyColormapLut, xyColormapRgba, xyColormapRgbaCanonical, xyColormapStops, xyContourLevels, xyContourfBands, xyContourfDensify, xyCurveFlatten, xyDensityBinCoordEndpoints, xyDensityBinWindow, xyDensityColorClassify, xyDensityTraceColorClassify, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityOverlayOpacity, xyDensityPyramidPreflight, xyDensityRgbaLinear, xyDensityWasmEligible, xyDrillDecision, xyEncodeF32, xyEncodedColumnMeta, xyF32SafeScale, xyGeometryOffset, xyHeatmapRgba, xyHexbin, xyHexbinGroups, xyHexbinIngress, xyHexbinRing, xyHistogramBins, xyHistogramEdges, xyHistogramMarkEdges, xyHistogramUniform, xyIsSorted, xyLegendBestLoc, xyLegendNormalize, xyLodPlan, xyM4Indices, xyM4Points, xyMarchingSquares, xyMarkerPathScale, xyMinMax, xyMonotoneTangents, xyNormalizeF32, xyPaintEffectiveRgba, xyPayloadBarCompactAdmit, xyPayloadBarHistEmitPlan, xyPayloadColumnShipPlan, xyPayloadDensityGridMaterialize, xyPayloadDensityGridShipPlan, xyPayloadChannelShipPlan, xyPayloadChannelWireEncode, xyPayloadHeatmapEmitPlan, xyPayloadMeshEmitPlan, xyPayloadRibbonEmitPlan, xyPayloadScatterEmitPlan, xyPayloadDensityTraceEmitPlan, xyPayloadBuildPlan, xyPayloadAxisSpecAttachPlan, xyPayloadSegmentsEmitPlan, xyPayloadBaseEntryPlan, xyPayloadNonxyEmitPlan, xyPayloadErrorbarIndices, xyPayloadErrorbarRoleKeys, xyPayloadErrorbarRoleMaps, xyPayloadEvenIndices, xyPayloadM4Indices, xyPayloadSampleTargetIndices, xyPayloadSegmentBudget, xyPayloadSegmentsEmitGather, xyPayloadTier, xyPayloadTraceChannelsShipAttach, xyPayloadTransitionEntryAttach, xyPayloadTransitionKeysAdmit, xyPayloadVisibleIndices, xyPayloadVisibleMask, xyPayloadVisibleNeeded, xyQuantiles, xySampleMaskU32, xyRibbonEdge, xyRibbonPolygon, xyRoundedRectPoly, xyScalePinsOffset, xySceneAnnotationStyleAdmit, xySceneArraysEqual, xySceneChannelConstantCss, xySceneConstantColorAdmit, xySceneCurveClassify, xySceneDashAdmit, xySceneEncodeProductAttachPlan, xySceneFillGradientAdmit, xySceneFiniteAll, xySceneGradientDir, xySceneGradientSolidCss, xySceneGradientSpace, xySceneGradientSpecPack, xySceneHeatmapColormapAdmit, xySceneHeatmapExtentAdmit, xySceneHeatmapShapeAdmit, xySceneHexbinColormapPlaneAdmit, xySceneHexbinPitchAdmit, xySceneHexbinReduceAdmit, xySceneHexbinRgbaPlaneAdmit, xySceneHiddenOrPerItemAdmit, xySceneItemApplyOpacity, xySceneItemFillT, xySceneItemWidthsAdmit, xySceneKindAdmit, xySceneKindClass, xySceneLinearGradientPrefix, xySceneLinecapAdmit, xySceneMarkerBlobPack, xySceneMarkerGlyphAdmit, xySceneMarkerPathAdmit, xySceneMeshPaintPlaneAdmit, xySceneParseLinearGradient, xyScenePolarFigurePlan, xySceneRectExtraFlags, xySceneRibbonColor2Classify, xySceneScatterPaintChannelAdmit, xySceneTickAnchor, xySceneTickLabelStrategy, xySceneXyhfColormapPack, xySceneFigureSupportFigurePlan, xySceneFigureSupportTraceDispatchPlan, xySceneXyclFigurePlan, xyScenePublicExportFigurePlan, xyScenePublicExportTraceDispatchPlan, xySceneXyafAnnotationDispatchPlan, xySceneXycfFigurePlan, xySceneXynmFigurePlan, xySceneXytaColormapPack, xySceneXytaFigurePlan, xySceneXytaTraceDispatchPlan, xySceneXytcColor2FlagsPack, xySceneXytcColorChannelPack, xySceneXytcDashPatternPack, xySceneXytcHexPitchPack, xySceneXytcMetaFlagsPack, xySceneXytcFigurePlan, xySceneXytcTraceDispatchPlan, xySceneXytcNumericStylePack, xySceneXytcOpacityPack, xySceneXytcPaintPresencePack, xySceneXytcRadiusPack, xySceneXytcStrokePerimeterPack, xySceneXytcSymbolIntPack, xyStepArrays, xyStreamAppend, xyStreamCapacity, xyStreamCopy, xyStreamFree, xyStreamLen, xyStreamNew, xyStreamSeal, xyValidIndicesF64, xyViolinDensity, xyViolinRects, xyWeightedEcdf, xyWindRoseBins, xyDensityUsesChannelColormap, xyDensityReductionKind, xyDensityOverlayOmittedWire, xyDensityGridPathIdentityState, xyDensityConstantColorWireAdmit, xyDensityWasmSourceAdmit, xyDensityWasmDensityWireKind, xyDensityCategoricalColorWireAdmit, xyDensityMeanColorWireAdmit, xyDensityChannelsDroppedCompat, xyDensityDroppedChannelWireAdmit, xyDensityMeanColorRgbaWireAdmit } from "./native.js";
+import { pointer, xyArgsortStable, xyArrowEndDecoration, xyArrowGeometry, xyArrowShaftPoints, xyArrowStylePack, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyBarStack, xyBin2d, xyBin2dIndices, xyBin2dMeanColor, xyBinnedEcdf, xyBoxGeometry, xyBoxStats, xyColormapLut, xyColormapRgba, xyColormapRgbaCanonical, xyColormapStops, xyContourLevels, xyContourfBands, xyContourfDensify, xyCurveFlatten, xyDensityBinCoordEndpoints, xyDensityBinWindow, xyDensityColorClassify, xyDensityTraceColorClassify, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityOverlayOpacity, xyDensityPyramidPreflight, xyDensityRgbaLinear, xyDensityWasmEligible, xyDrillDecision, xyEncodeF32, xyEncodedColumnMeta, xyF32SafeScale, xyGeometryOffset, xyHeatmapRgba, xyHexbin, xyHexbinGroups, xyHexbinIngress, xyHexbinRing, xyHistogramBins, xyHistogramEdges, xyHistogramMarkEdges, xyHistogramUniform, xyIsSorted, xyLegendBestLoc, xyLegendNormalize, xyLodPlan, xyM4Indices, xyM4Points, xyMarchingSquares, xyMarkerPathScale, xyMinMax, xyMonotoneTangents, xyNormalizeF32, xyPaintEffectiveRgba, xyPayloadBarCompactAdmit, xyPayloadBarHistEmitPlan, xyPayloadColumnShipPlan, xyPayloadDensityGridMaterialize, xyPayloadDensityGridShipPlan, xyPayloadChannelShipPlan, xyPayloadChannelWireEncode, xyPayloadHeatmapEmitPlan, xyPayloadMeshEmitPlan, xyPayloadRibbonEmitPlan, xyPayloadScatterEmitPlan, xyPayloadDensityTraceEmitPlan, xyPayloadBuildPlan, xyPayloadAxisSpecAttachPlan, xyPayloadSegmentsEmitPlan, xyPayloadBaseEntryPlan, xyPayloadNonxyEmitPlan, xyPayloadErrorbarIndices, xyPayloadErrorbarRoleKeys, xyPayloadErrorbarRoleMaps, xyPayloadEvenIndices, xyPayloadM4Indices, xyPayloadSampleTargetIndices, xyPayloadSegmentBudget, xyPayloadSegmentsEmitGather, xyPayloadTier, xyPayloadTraceChannelsShipAttach, xyPayloadTransitionEntryAttach, xyPayloadTransitionKeysAdmit, xyPayloadVisibleIndices, xyPayloadVisibleMask, xyPayloadVisibleNeeded, xyQuantiles, xySampleMaskU32, xyRibbonEdge, xyRibbonPolygon, xyRoundedRectPoly, xyScalePinsOffset, xySceneAnnotationStyleAdmit, xySceneArraysEqual, xySceneChannelConstantCss, xySceneConstantColorAdmit, xySceneCurveClassify, xySceneDashAdmit, xySceneEncodeProductAttachPlan, xySceneFillGradientAdmit, xySceneFiniteAll, xySceneGradientDir, xySceneGradientSolidCss, xySceneGradientSpace, xySceneGradientSpecPack, xySceneHeatmapColormapAdmit, xySceneHeatmapExtentAdmit, xySceneHeatmapShapeAdmit, xySceneHexbinColormapPlaneAdmit, xySceneHexbinPitchAdmit, xySceneHexbinReduceAdmit, xySceneHexbinRgbaPlaneAdmit, xySceneHiddenOrPerItemAdmit, xySceneItemApplyOpacity, xySceneItemFillT, xySceneItemWidthsAdmit, xySceneKindAdmit, xySceneKindClass, xySceneLinearGradientPrefix, xySceneLinecapAdmit, xySceneMarkerBlobPack, xySceneMarkerGlyphAdmit, xySceneMarkerPathAdmit, xySceneMeshPaintPlaneAdmit, xySceneParseLinearGradient, xyScenePolarFigurePlan, xySceneRectExtraFlags, xySceneRibbonColor2Classify, xySceneScatterPaintChannelAdmit, xySceneTickAnchor, xySceneTickLabelStrategy, xySceneXyhfColormapPack, xySceneFigureSupportFigurePlan, xySceneFigureSupportTraceDispatchPlan, xySceneXyclFigurePlan, xyScenePublicExportFigurePlan, xyScenePublicExportTraceDispatchPlan, xySceneXyafAnnotationDispatchPlan, xySceneXycfFigurePlan, xySceneXynmFigurePlan, xySceneXytaColormapPack, xySceneXytaFigurePlan, xySceneXytaTraceDispatchPlan, xySceneXytaTracePack, xySceneXytcColor2FlagsPack, xySceneXytcColorChannelPack, xySceneXytcDashPatternPack, xySceneXytcHexPitchPack, xySceneXytcMetaFlagsPack, xySceneXytcFigurePlan, xySceneXytcTraceDispatchPlan, xySceneXytcTracePack, xySceneXytcNumericStylePack, xySceneXytcOpacityPack, xySceneXytcPaintPresencePack, xySceneXytcRadiusPack, xySceneXytcStrokePerimeterPack, xySceneXytcSymbolIntPack, xyStepArrays, xyStreamAppend, xyStreamCapacity, xyStreamCopy, xyStreamFree, xyStreamLen, xyStreamNew, xyStreamSeal, xyValidIndicesF64, xyViolinDensity, xyViolinRects, xyWeightedEcdf, xyWindRoseBins, xyDensityUsesChannelColormap, xyDensityReductionKind, xyDensityOverlayOmittedWire, xyDensityGridPathIdentityState, xyDensityConstantColorWireAdmit, xyDensityWasmSourceAdmit, xyDensityWasmDensityWireKind, xyDensityCategoricalColorWireAdmit, xyDensityMeanColorWireAdmit, xyDensityChannelsDroppedCompat, xyDensityDroppedChannelWireAdmit, xyDensityMeanColorRgbaWireAdmit } from "./native.js";
 
 
 export const PROTOCOL_VERSION = 12;
@@ -5753,6 +5753,450 @@ export function sceneXytaTraceDispatchPlan({
     throw new RangeError("invalid scene-xyta-trace-dispatch-plan request");
   }
   return readSceneXytaTraceDispatchPlan(out);
+}
+
+const SCENE_XYTC_TRACE_STYLE_IN_BYTES = 336;
+const SCENE_XYTC_TRACE_PACK_IN_BYTES = 408;
+const SCENE_XYTA_TRACE_PACK_IN_BYTES = 256;
+export const SCENE_XYTC_TRACE_PACK_MAX_RECORD = 1 << 20;
+export const SCENE_XYTA_TRACE_PACK_MAX_RECORD = 1 << 20;
+
+function packSceneXytcTraceStyleIn(style) {
+  const buf = Buffer.alloc(SCENE_XYTC_TRACE_STYLE_IN_BYTES);
+  const setI32 = (off, value) => {
+    buf.writeInt32LE(Number(value), off);
+  };
+  const setU16 = (off, value) => {
+    buf.writeUInt16LE(Number(value) & 0xFFFF, off);
+  };
+  const setF64 = (off, value) => {
+    buf.writeDoubleLE(Number(value), off);
+  };
+  const setU64 = (off, value) => {
+    buf.writeBigUInt64LE(BigInt(value), off);
+  };
+  setI32(0, style.symbolIsInt);
+  setU16(4, style.symbolInt);
+  setF64(8, style.opacity);
+  setF64(16, style.fillOpacity);
+  setF64(24, style.strokeOpacity);
+  setF64(32, style.lineOpacity);
+  setI32(40, style.hasStroke);
+  setI32(44, style.hasLineColor);
+  setI32(48, style.hasSize);
+  setF64(56, style.size);
+  setI32(64, style.hasSizeCh);
+  setI32(68, style.hasSizeChConstant);
+  setF64(72, style.sizeChConstant);
+  setI32(80, style.hasStrokeWidth);
+  setF64(88, style.strokeWidth);
+  setI32(96, style.hasWidth);
+  setF64(104, style.width);
+  setI32(112, style.hasLineWidth);
+  setF64(120, style.lineWidth);
+  setI32(128, style.hasHexDx);
+  setF64(136, style.hexDx);
+  setI32(144, style.hasHexDy);
+  setF64(152, style.hexDy);
+  setI32(160, style.hasStrokePerimeter);
+  setI32(164, style.strokePerimeterIsBool);
+  setI32(168, style.strokePerimeterTrue);
+  setI32(172, style.dashIsArray);
+  setI32(176, style.hasFill);
+  setI32(180, style.fillKind);
+  setI32(184, style.colorChPresent);
+  setI32(188, style.colorChHasConstant);
+  setI32(192, style.radiusSeq);
+  setF64(200, style.r0);
+  setF64(208, style.r1);
+  setF64(216, style.wedgeGapRaw);
+  setU64(224, style.symbolLen);
+  setU64(232, style.dashLen);
+  setU64(240, style.dashPatternLen);
+  setU64(248, style.linecapLen);
+  setU64(256, style.stepLen);
+  setU64(264, style.curveLen);
+  setU64(272, style.fillCssLen);
+  setU64(280, style.fillSpaceLen);
+  setU64(288, style.fillGradientLen);
+  setU64(296, style.strokeCssLen);
+  setU64(304, style.lineColorLen);
+  setU64(312, style.colorCssLen);
+  setU64(320, style.colorModeLen);
+  setU64(328, style.colorConstLen);
+  return buf;
+}
+
+function packSceneXytcTracePackIn(fields, styleBuf) {
+  const buf = Buffer.alloc(SCENE_XYTC_TRACE_PACK_IN_BYTES);
+  const setI32 = (off, value) => {
+    buf.writeInt32LE(Number(value), off);
+  };
+  const setU64 = (off, value) => {
+    buf.writeBigUInt64LE(BigInt(value), off);
+  };
+  setI32(0, fields.showLegend);
+  setI32(4, fields.hasName);
+  setI32(8, fields.markerPathPresent);
+  setI32(12, fields.useDensity);
+  setI32(16, fields.joinedFill);
+  setI32(20, fields.markerPacked);
+  setI32(24, fields.glyphPacked);
+  setI32(28, fields.color2Class);
+  setI32(32, fields.color2GradientPacked);
+  setU64(40, fields.kindLen);
+  setU64(48, fields.nameLen);
+  setU64(56, fields.markerBlobLen);
+  setU64(64, fields.color2GradientLen);
+  styleBuf.copy(buf, 72);
+  return buf;
+}
+
+function packSceneXytaTracePackIn(fields) {
+  const buf = Buffer.alloc(SCENE_XYTA_TRACE_PACK_IN_BYTES);
+  const setI32 = (off, value) => {
+    buf.writeInt32LE(Number(value), off);
+  };
+  const setU32 = (off, value) => {
+    buf.writeUInt32LE(Number(value) >>> 0, off);
+  };
+  const setF32 = (off, value) => {
+    buf.writeFloatLE(Number(value), off);
+  };
+  const setF64 = (off, value) => {
+    buf.writeDoubleLE(Number(value), off);
+  };
+  const setU64 = (off, value) => {
+    buf.writeBigUInt64LE(BigInt(value), off);
+  };
+  setU32(0, fields.traceId);
+  setI32(4, fields.packHeatmap);
+  setI32(8, fields.packHexbinColormap);
+  setI32(12, fields.packHexbinRgba);
+  setI32(16, fields.packRibbonEnds);
+  setI32(20, fields.packMeshFaces);
+  setI32(24, fields.packScatterPaint);
+  setI32(28, fields.packDensity);
+  setF64(32, fields.gridShapeRows);
+  setF64(40, fields.gridShapeCols);
+  setI32(48, fields.hasGridShape);
+  setI32(52, fields.hasGrid);
+  setI32(56, fields.hasRgba);
+  setI32(60, fields.hasRgbaGrid);
+  setI32(64, fields.truecolor);
+  setI32(68, fields.hasCmapDomain);
+  setF64(72, fields.cmapLo);
+  setF64(80, fields.cmapHi);
+  setI32(88, fields.hasColorCh);
+  setI32(92, fields.hasStyleColor);
+  setI32(96, fields.hasOpacity);
+  setI32(100, fields.hasFillOpacity);
+  setF32(104, fields.opacity);
+  setF32(108, fields.fillOpacity);
+  setF64(112, fields.domainX0);
+  setF64(120, fields.domainX1);
+  setF64(128, fields.domainY0);
+  setF64(136, fields.domainY1);
+  setU32(144, fields.cmapFlags);
+  setI32(148, fields.rows);
+  setI32(152, fields.cols);
+  setU64(160, fields.gridLen);
+  setU64(168, fields.rgbaLen);
+  setU64(176, fields.rgbaGridLen);
+  setU64(184, fields.xLen);
+  setU64(192, fields.yLen);
+  setU64(200, fields.meanRgbaLen);
+  setU64(208, fields.idxLen);
+  setU64(216, fields.lutLen);
+  setU64(224, fields.cmapLen);
+  setU64(232, fields.stopsLen);
+  setU64(240, fields.colorChLen);
+  setU64(248, fields.styleColorLen);
+  return buf;
+}
+
+/** Pack one authored trace into an XYTR v1 record via `xyg_scene_xytc_trace_pack` (ABI 317). */
+export function sceneXytcTracePack({
+  showLegend = true,
+  kind,
+  hasName = false,
+  name,
+  markerPathPresent = false,
+  useDensity = false,
+  joinedFill = false,
+  markerPacked = false,
+  glyphPacked = false,
+  markerBlob,
+  color2Class = 0,
+  color2GradientBlob,
+  color2GradientPacked = false,
+  style,
+  symbolB,
+  dashB,
+  dashPattern,
+  linecapB,
+  stepB,
+  curveB,
+  fillCss,
+  fillSpace,
+  fillGradientBlob,
+  strokeCss,
+  lineColor,
+  colorCss,
+  colorMode,
+  colorConst,
+}) {
+  const kindBytes = kind instanceof Uint8Array ? kind : new TextEncoder().encode(String(kind ?? ""));
+  const nameBytes = name instanceof Uint8Array ? name : new TextEncoder().encode(String(name ?? ""));
+  const symbolBytes = symbolB instanceof Uint8Array ? symbolB : new Uint8Array();
+  const dashBytes = dashB instanceof Uint8Array ? dashB : new Uint8Array();
+  const dashPat = dashPattern instanceof Float64Array
+    ? dashPattern
+    : Float64Array.from(dashPattern ?? []);
+  const linecapBytes = linecapB instanceof Uint8Array ? linecapB : new Uint8Array();
+  const stepBytes = stepB instanceof Uint8Array ? stepB : new Uint8Array();
+  const curveBytes = curveB instanceof Uint8Array ? curveB : new Uint8Array();
+  const fillCssBytes = fillCss instanceof Uint8Array ? fillCss : new Uint8Array();
+  const fillSpaceBytes = fillSpace instanceof Uint8Array ? fillSpace : new Uint8Array();
+  const fillGradBytes = fillGradientBlob instanceof Uint8Array ? fillGradientBlob : new Uint8Array();
+  const strokeBytes = strokeCss instanceof Uint8Array ? strokeCss : new Uint8Array();
+  const lineColorBytes = lineColor instanceof Uint8Array ? lineColor : new Uint8Array();
+  const colorCssBytes = colorCss instanceof Uint8Array ? colorCss : new Uint8Array();
+  const colorModeBytes = colorMode instanceof Uint8Array ? colorMode : new Uint8Array();
+  const colorConstBytes = colorConst instanceof Uint8Array ? colorConst : new Uint8Array();
+  const markerBytes = markerBlob instanceof Uint8Array ? markerBlob : new Uint8Array();
+  const color2GradBytes = color2GradientBlob instanceof Uint8Array ? color2GradientBlob : new Uint8Array();
+  const styleBuf = packSceneXytcTraceStyleIn({
+    symbolIsInt: style.symbolIsInt,
+    symbolInt: style.symbolInt,
+    opacity: style.opacity,
+    fillOpacity: style.fillOpacity,
+    strokeOpacity: style.strokeOpacity,
+    lineOpacity: style.lineOpacity,
+    hasStroke: style.hasStroke,
+    hasLineColor: style.hasLineColor,
+    hasSize: style.hasSize,
+    size: style.size,
+    hasSizeCh: style.hasSizeCh,
+    hasSizeChConstant: style.hasSizeChConstant,
+    sizeChConstant: style.sizeChConstant,
+    hasStrokeWidth: style.hasStrokeWidth,
+    strokeWidth: style.strokeWidth,
+    hasWidth: style.hasWidth,
+    width: style.width,
+    hasLineWidth: style.hasLineWidth,
+    lineWidth: style.lineWidth,
+    hasHexDx: style.hasHexDx,
+    hexDx: style.hexDx,
+    hasHexDy: style.hasHexDy,
+    hexDy: style.hexDy,
+    hasStrokePerimeter: style.hasStrokePerimeter,
+    strokePerimeterIsBool: style.strokePerimeterIsBool,
+    strokePerimeterTrue: style.strokePerimeterTrue,
+    dashIsArray: style.dashIsArray,
+    hasFill: style.hasFill,
+    fillKind: style.fillKind,
+    colorChPresent: style.colorChPresent,
+    colorChHasConstant: style.colorChHasConstant,
+    radiusSeq: style.radiusSeq,
+    r0: style.r0,
+    r1: style.r1,
+    wedgeGapRaw: style.wedgeGapRaw,
+    symbolLen: symbolBytes.length,
+    dashLen: dashBytes.length,
+    dashPatternLen: dashPat.length,
+    linecapLen: linecapBytes.length,
+    stepLen: stepBytes.length,
+    curveLen: curveBytes.length,
+    fillCssLen: fillCssBytes.length,
+    fillSpaceLen: fillSpaceBytes.length,
+    fillGradientLen: fillGradBytes.length,
+    strokeCssLen: strokeBytes.length,
+    lineColorLen: lineColorBytes.length,
+    colorCssLen: colorCssBytes.length,
+    colorModeLen: colorModeBytes.length,
+    colorConstLen: colorConstBytes.length,
+  });
+  const inputBuf = packSceneXytcTracePackIn({
+    showLegend: showLegend ? 1 : 0,
+    hasName: hasName ? 1 : 0,
+    markerPathPresent: markerPathPresent ? 1 : 0,
+    useDensity: useDensity ? 1 : 0,
+    joinedFill: joinedFill ? 1 : 0,
+    markerPacked: markerPacked ? 1 : 0,
+    glyphPacked: glyphPacked ? 1 : 0,
+    color2Class,
+    color2GradientPacked: color2GradientPacked ? 1 : 0,
+    kindLen: kindBytes.length,
+    nameLen: nameBytes.length,
+    markerBlobLen: markerBytes.length,
+    color2GradientLen: color2GradBytes.length,
+  }, styleBuf);
+  const out = new Uint8Array(SCENE_XYTC_TRACE_PACK_MAX_RECORD);
+  const outLen = new BigUint64Array(1);
+  const code = Number(xySceneXytcTracePack(
+    inputBuf,
+    kindBytes.length ? u8Ptr(kindBytes) : 0,
+    nameBytes.length ? u8Ptr(nameBytes) : 0,
+    symbolBytes.length ? u8Ptr(symbolBytes) : 0,
+    dashBytes.length ? u8Ptr(dashBytes) : 0,
+    dashPat.length ? f64Ptr(dashPat) : 0,
+    linecapBytes.length ? u8Ptr(linecapBytes) : 0,
+    stepBytes.length ? u8Ptr(stepBytes) : 0,
+    curveBytes.length ? u8Ptr(curveBytes) : 0,
+    fillCssBytes.length ? u8Ptr(fillCssBytes) : 0,
+    fillSpaceBytes.length ? u8Ptr(fillSpaceBytes) : 0,
+    fillGradBytes.length ? u8Ptr(fillGradBytes) : 0,
+    strokeBytes.length ? u8Ptr(strokeBytes) : 0,
+    lineColorBytes.length ? u8Ptr(lineColorBytes) : 0,
+    colorCssBytes.length ? u8Ptr(colorCssBytes) : 0,
+    colorModeBytes.length ? u8Ptr(colorModeBytes) : 0,
+    colorConstBytes.length ? u8Ptr(colorConstBytes) : 0,
+    markerBytes.length ? u8Ptr(markerBytes) : 0,
+    color2GradBytes.length ? u8Ptr(color2GradBytes) : 0,
+    u8Ptr(out),
+    BigInt(out.length),
+    pointer(outLen, "size_t *"),
+  ));
+  if (code === -2) {
+    throw new RangeError("sceneXytcTracePack output buffer too small");
+  }
+  if (code !== 0) {
+    throw new RangeError("invalid sceneXytcTracePack arguments");
+  }
+  return out.subarray(0, Number(outLen[0]));
+}
+
+/** Pack one attach trace into an XYTA v1 record via `xyg_scene_xyta_trace_pack` (ABI 318). */
+export function sceneXytaTracePack({
+  traceId = 0,
+  packHeatmap = false,
+  packHexbinColormap = false,
+  packHexbinRgba = false,
+  packRibbonEnds = false,
+  packMeshFaces = false,
+  packScatterPaint = false,
+  packDensity = false,
+  gridShapeRows = Number.NaN,
+  gridShapeCols = Number.NaN,
+  hasGridShape = false,
+  hasGrid = false,
+  hasRgba = false,
+  hasRgbaGrid = false,
+  truecolor = false,
+  hasCmapDomain = false,
+  cmapLo = Number.NaN,
+  cmapHi = Number.NaN,
+  hasColorCh = false,
+  hasStyleColor = false,
+  hasOpacity = false,
+  hasFillOpacity = false,
+  opacity = Number.NaN,
+  fillOpacity = Number.NaN,
+  domainX0 = Number.NaN,
+  domainX1 = Number.NaN,
+  domainY0 = Number.NaN,
+  domainY1 = Number.NaN,
+  cmapFlags = 0,
+  rows = 0,
+  cols = 0,
+  grid,
+  rgba,
+  rgbaGrid,
+  x,
+  y,
+  meanRgba,
+  idx,
+  lut,
+  cmap,
+  stops,
+  colorCh,
+  styleColor,
+}) {
+  const gridBytes = grid instanceof Uint8Array ? grid : new Uint8Array();
+  const rgbaBytes = rgba instanceof Uint8Array ? rgba : new Uint8Array();
+  const rgbaGridBytes = rgbaGrid instanceof Uint8Array ? rgbaGrid : new Uint8Array();
+  const xBytes = x instanceof Uint8Array ? x : new Uint8Array();
+  const yBytes = y instanceof Uint8Array ? y : new Uint8Array();
+  const meanRgbaBytes = meanRgba instanceof Uint8Array ? meanRgba : new Uint8Array();
+  const idxBytes = idx instanceof Uint8Array ? idx : new Uint8Array();
+  const lutBytes = lut instanceof Uint8Array ? lut : new Uint8Array();
+  const cmapBytes = cmap instanceof Uint8Array ? cmap : new Uint8Array();
+  const stopsBytes = stops instanceof Uint8Array ? stops : new Uint8Array();
+  const colorChBytes = colorCh instanceof Uint8Array ? colorCh : new Uint8Array();
+  const styleColorBytes = styleColor instanceof Uint8Array ? styleColor : new Uint8Array();
+  const inputBuf = packSceneXytaTracePackIn({
+    traceId,
+    packHeatmap: packHeatmap ? 1 : 0,
+    packHexbinColormap: packHexbinColormap ? 1 : 0,
+    packHexbinRgba: packHexbinRgba ? 1 : 0,
+    packRibbonEnds: packRibbonEnds ? 1 : 0,
+    packMeshFaces: packMeshFaces ? 1 : 0,
+    packScatterPaint: packScatterPaint ? 1 : 0,
+    packDensity: packDensity ? 1 : 0,
+    gridShapeRows,
+    gridShapeCols,
+    hasGridShape: hasGridShape ? 1 : 0,
+    hasGrid: hasGrid ? 1 : 0,
+    hasRgba: hasRgba ? 1 : 0,
+    hasRgbaGrid: hasRgbaGrid ? 1 : 0,
+    truecolor: truecolor ? 1 : 0,
+    hasCmapDomain: hasCmapDomain ? 1 : 0,
+    cmapLo,
+    cmapHi,
+    hasColorCh: hasColorCh ? 1 : 0,
+    hasStyleColor: hasStyleColor ? 1 : 0,
+    hasOpacity: hasOpacity ? 1 : 0,
+    hasFillOpacity: hasFillOpacity ? 1 : 0,
+    opacity,
+    fillOpacity,
+    domainX0,
+    domainX1,
+    domainY0,
+    domainY1,
+    cmapFlags,
+    rows,
+    cols,
+    gridLen: gridBytes.length,
+    rgbaLen: rgbaBytes.length,
+    rgbaGridLen: rgbaGridBytes.length,
+    xLen: xBytes.length,
+    yLen: yBytes.length,
+    meanRgbaLen: meanRgbaBytes.length,
+    idxLen: idxBytes.length,
+    lutLen: lutBytes.length,
+    cmapLen: cmapBytes.length,
+    stopsLen: stopsBytes.length,
+    colorChLen: colorChBytes.length,
+    styleColorLen: styleColorBytes.length,
+  });
+  const out = new Uint8Array(SCENE_XYTA_TRACE_PACK_MAX_RECORD);
+  const outLen = new BigUint64Array(1);
+  const code = Number(xySceneXytaTracePack(
+    inputBuf,
+    gridBytes.length ? u8Ptr(gridBytes) : 0,
+    rgbaBytes.length ? u8Ptr(rgbaBytes) : 0,
+    rgbaGridBytes.length ? u8Ptr(rgbaGridBytes) : 0,
+    xBytes.length ? u8Ptr(xBytes) : 0,
+    yBytes.length ? u8Ptr(yBytes) : 0,
+    meanRgbaBytes.length ? u8Ptr(meanRgbaBytes) : 0,
+    idxBytes.length ? u8Ptr(idxBytes) : 0,
+    lutBytes.length ? u8Ptr(lutBytes) : 0,
+    cmapBytes.length ? u8Ptr(cmapBytes) : 0,
+    stopsBytes.length ? u8Ptr(stopsBytes) : 0,
+    colorChBytes.length ? u8Ptr(colorChBytes) : 0,
+    styleColorBytes.length ? u8Ptr(styleColorBytes) : 0,
+    u8Ptr(out),
+    BigInt(out.length),
+    pointer(outLen, "size_t *"),
+  ));
+  if (code === -2) {
+    throw new RangeError("sceneXytaTracePack output buffer too small");
+  }
+  if (code !== 0) {
+    throw new RangeError("invalid sceneXytaTracePack arguments");
+  }
+  return out.subarray(0, Number(outLen[0]));
 }
 
 const SCENE_FIGURE_SUPPORT_FIGURE_PLAN_BYTES = 4;

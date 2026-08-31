@@ -2200,6 +2200,430 @@ def scene_xyta_trace_dispatch_plan(
     return _scene_xyta_trace_dispatch_plan_dict(out)
 
 
+SCENE_XYTC_TRACE_PACK_MAX_RECORD = 1 << 20
+SCENE_XYTA_TRACE_PACK_MAX_RECORD = 1 << 20
+
+
+class _SceneXytcTraceStyleIn(ctypes.Structure):
+    _fields_ = [
+        ("symbol_is_int", ctypes.c_int32),
+        ("symbol_int", ctypes.c_uint16),
+        ("opacity", ctypes.c_double),
+        ("fill_opacity", ctypes.c_double),
+        ("stroke_opacity", ctypes.c_double),
+        ("line_opacity", ctypes.c_double),
+        ("has_stroke", ctypes.c_int32),
+        ("has_line_color", ctypes.c_int32),
+        ("has_size", ctypes.c_int32),
+        ("size", ctypes.c_double),
+        ("has_size_ch", ctypes.c_int32),
+        ("has_size_ch_constant", ctypes.c_int32),
+        ("size_ch_constant", ctypes.c_double),
+        ("has_stroke_width", ctypes.c_int32),
+        ("stroke_width", ctypes.c_double),
+        ("has_width", ctypes.c_int32),
+        ("width", ctypes.c_double),
+        ("has_line_width", ctypes.c_int32),
+        ("line_width", ctypes.c_double),
+        ("has_hex_dx", ctypes.c_int32),
+        ("hex_dx", ctypes.c_double),
+        ("has_hex_dy", ctypes.c_int32),
+        ("hex_dy", ctypes.c_double),
+        ("has_stroke_perimeter", ctypes.c_int32),
+        ("stroke_perimeter_is_bool", ctypes.c_int32),
+        ("stroke_perimeter_true", ctypes.c_int32),
+        ("dash_is_array", ctypes.c_int32),
+        ("has_fill", ctypes.c_int32),
+        ("fill_kind", ctypes.c_int32),
+        ("color_ch_present", ctypes.c_int32),
+        ("color_ch_has_constant", ctypes.c_int32),
+        ("radius_seq", ctypes.c_int32),
+        ("r0", ctypes.c_double),
+        ("r1", ctypes.c_double),
+        ("wedge_gap_raw", ctypes.c_double),
+        ("symbol_len", ctypes.c_size_t),
+        ("dash_len", ctypes.c_size_t),
+        ("dash_pattern_len", ctypes.c_size_t),
+        ("linecap_len", ctypes.c_size_t),
+        ("step_len", ctypes.c_size_t),
+        ("curve_len", ctypes.c_size_t),
+        ("fill_css_len", ctypes.c_size_t),
+        ("fill_space_len", ctypes.c_size_t),
+        ("fill_gradient_len", ctypes.c_size_t),
+        ("stroke_css_len", ctypes.c_size_t),
+        ("line_color_len", ctypes.c_size_t),
+        ("color_css_len", ctypes.c_size_t),
+        ("color_mode_len", ctypes.c_size_t),
+        ("color_const_len", ctypes.c_size_t),
+    ]
+
+
+class _SceneXytcTracePackIn(ctypes.Structure):
+    _fields_ = [
+        ("show_legend", ctypes.c_int32),
+        ("has_name", ctypes.c_int32),
+        ("marker_path_present", ctypes.c_int32),
+        ("use_density", ctypes.c_int32),
+        ("joined_fill", ctypes.c_int32),
+        ("marker_packed", ctypes.c_int32),
+        ("glyph_packed", ctypes.c_int32),
+        ("color2_class", ctypes.c_int32),
+        ("color2_gradient_packed", ctypes.c_int32),
+        ("kind_len", ctypes.c_size_t),
+        ("name_len", ctypes.c_size_t),
+        ("marker_blob_len", ctypes.c_size_t),
+        ("color2_gradient_len", ctypes.c_size_t),
+        ("style", _SceneXytcTraceStyleIn),
+    ]
+
+
+class _SceneXytaTracePackIn(ctypes.Structure):
+    _fields_ = [
+        ("trace_id", ctypes.c_uint32),
+        ("pack_heatmap", ctypes.c_int32),
+        ("pack_hexbin_colormap", ctypes.c_int32),
+        ("pack_hexbin_rgba", ctypes.c_int32),
+        ("pack_ribbon_ends", ctypes.c_int32),
+        ("pack_mesh_faces", ctypes.c_int32),
+        ("pack_scatter_paint", ctypes.c_int32),
+        ("pack_density", ctypes.c_int32),
+        ("grid_shape_rows", ctypes.c_double),
+        ("grid_shape_cols", ctypes.c_double),
+        ("has_grid_shape", ctypes.c_int32),
+        ("has_grid", ctypes.c_int32),
+        ("has_rgba", ctypes.c_int32),
+        ("has_rgba_grid", ctypes.c_int32),
+        ("truecolor", ctypes.c_int32),
+        ("has_cmap_domain", ctypes.c_int32),
+        ("cmap_lo", ctypes.c_double),
+        ("cmap_hi", ctypes.c_double),
+        ("has_color_ch", ctypes.c_int32),
+        ("has_style_color", ctypes.c_int32),
+        ("has_opacity", ctypes.c_int32),
+        ("has_fill_opacity", ctypes.c_int32),
+        ("opacity", ctypes.c_float),
+        ("fill_opacity", ctypes.c_float),
+        ("domain_x0", ctypes.c_double),
+        ("domain_x1", ctypes.c_double),
+        ("domain_y0", ctypes.c_double),
+        ("domain_y1", ctypes.c_double),
+        ("cmap_flags", ctypes.c_uint32),
+        ("rows", ctypes.c_int32),
+        ("cols", ctypes.c_int32),
+        ("grid_len", ctypes.c_size_t),
+        ("rgba_len", ctypes.c_size_t),
+        ("rgba_grid_len", ctypes.c_size_t),
+        ("x_len", ctypes.c_size_t),
+        ("y_len", ctypes.c_size_t),
+        ("mean_rgba_len", ctypes.c_size_t),
+        ("idx_len", ctypes.c_size_t),
+        ("lut_len", ctypes.c_size_t),
+        ("cmap_len", ctypes.c_size_t),
+        ("stops_len", ctypes.c_size_t),
+        ("color_ch_len", ctypes.c_size_t),
+        ("style_color_len", ctypes.c_size_t),
+    ]
+
+
+def _optional_u8_ptr(data: bytes) -> tuple[int, int]:
+    if not data:
+        return 0, 0
+    arr = np.frombuffer(data, dtype=np.uint8)
+    return _ptr_u8(arr), len(data)
+
+
+def _optional_f64_ptr(values: Sequence[float]) -> tuple[int, int]:
+    if not values:
+        return 0, 0
+    arr = np.ascontiguousarray(values, dtype=np.float64)
+    return _ptr_f64(arr), len(arr)
+
+
+def scene_xytc_trace_pack(
+    *,
+    show_legend: bool,
+    kind: bytes,
+    has_name: bool,
+    name: bytes,
+    marker_path_present: bool,
+    use_density: bool,
+    joined_fill: bool,
+    marker_packed: bool,
+    glyph_packed: bool,
+    marker_blob: bytes,
+    color2_class: int,
+    color2_gradient_blob: bytes,
+    color2_gradient_packed: bool,
+    style: Mapping[str, Any],
+    symbol_b: bytes,
+    dash_b: bytes,
+    dash_pattern: Sequence[float],
+    linecap_b: bytes,
+    step_b: bytes,
+    curve_b: bytes,
+    fill_css: bytes,
+    fill_space: bytes,
+    fill_gradient_blob: bytes,
+    stroke_css: bytes,
+    line_color: bytes,
+    color_css: bytes,
+    color_mode: bytes,
+    color_const: bytes,
+) -> bytes:
+    """Pack one authored trace into an XYTR v1 record via ``xyg_scene_xytc_trace_pack`` (ABI 317)."""
+    style_in = _SceneXytcTraceStyleIn(
+        int(style["symbol_is_int"]),
+        ctypes.c_uint16(int(style["symbol_int"]) & 0xFFFF),
+        float(style["opacity"]),
+        float(style["fill_opacity"]),
+        float(style["stroke_opacity"]),
+        float(style["line_opacity"]),
+        int(style["has_stroke"]),
+        int(style["has_line_color"]),
+        int(style["has_size"]),
+        float(style["size"]),
+        int(style["has_size_ch"]),
+        int(style["has_size_ch_constant"]),
+        float(style["size_ch_constant"]),
+        int(style["has_stroke_width"]),
+        float(style["stroke_width"]),
+        int(style["has_width"]),
+        float(style["width"]),
+        int(style["has_line_width"]),
+        float(style["line_width"]),
+        int(style["has_hex_dx"]),
+        float(style["hex_dx"]),
+        int(style["has_hex_dy"]),
+        float(style["hex_dy"]),
+        int(style["has_stroke_perimeter"]),
+        int(style["stroke_perimeter_is_bool"]),
+        int(style["stroke_perimeter_true"]),
+        int(style["dash_is_array"]),
+        int(style["has_fill"]),
+        int(style["fill_kind"]),
+        int(style["color_ch_present"]),
+        int(style["color_ch_has_constant"]),
+        int(style["radius_seq"]),
+        float(style["r0"]),
+        float(style["r1"]),
+        float(style["wedge_gap_raw"]),
+        len(symbol_b),
+        len(dash_b),
+        len(dash_pattern),
+        len(linecap_b),
+        len(step_b),
+        len(curve_b),
+        len(fill_css),
+        len(fill_space),
+        len(fill_gradient_blob),
+        len(stroke_css),
+        len(line_color),
+        len(color_css),
+        len(color_mode),
+        len(color_const),
+    )
+    pack_in = _SceneXytcTracePackIn(
+        int(show_legend),
+        int(has_name),
+        int(marker_path_present),
+        int(use_density),
+        int(joined_fill),
+        int(marker_packed),
+        int(glyph_packed),
+        int(color2_class),
+        int(color2_gradient_packed),
+        len(kind),
+        len(name),
+        len(marker_blob),
+        len(color2_gradient_blob),
+        style_in,
+    )
+    out = np.zeros(SCENE_XYTC_TRACE_PACK_MAX_RECORD, dtype=np.uint8)
+    out_len = ctypes.c_size_t(0)
+    kind_ptr, _ = _optional_u8_ptr(kind)
+    name_ptr, _ = _optional_u8_ptr(name)
+    symbol_ptr, _ = _optional_u8_ptr(symbol_b)
+    dash_ptr, _ = _optional_u8_ptr(dash_b)
+    dash_pat_ptr, _ = _optional_f64_ptr(dash_pattern)
+    linecap_ptr, _ = _optional_u8_ptr(linecap_b)
+    step_ptr, _ = _optional_u8_ptr(step_b)
+    curve_ptr, _ = _optional_u8_ptr(curve_b)
+    fill_css_ptr, _ = _optional_u8_ptr(fill_css)
+    fill_space_ptr, _ = _optional_u8_ptr(fill_space)
+    fill_grad_ptr, _ = _optional_u8_ptr(fill_gradient_blob)
+    stroke_ptr, _ = _optional_u8_ptr(stroke_css)
+    line_color_ptr, _ = _optional_u8_ptr(line_color)
+    color_css_ptr, _ = _optional_u8_ptr(color_css)
+    color_mode_ptr, _ = _optional_u8_ptr(color_mode)
+    color_const_ptr, _ = _optional_u8_ptr(color_const)
+    marker_ptr, _ = _optional_u8_ptr(marker_blob)
+    color2_grad_ptr, _ = _optional_u8_ptr(color2_gradient_blob)
+    code = int(
+        _lib.xyg_scene_xytc_trace_pack(
+            ctypes.byref(pack_in),
+            kind_ptr,
+            name_ptr,
+            symbol_ptr,
+            dash_ptr,
+            dash_pat_ptr,
+            linecap_ptr,
+            step_ptr,
+            curve_ptr,
+            fill_css_ptr,
+            fill_space_ptr,
+            fill_grad_ptr,
+            stroke_ptr,
+            line_color_ptr,
+            color_css_ptr,
+            color_mode_ptr,
+            color_const_ptr,
+            marker_ptr,
+            color2_grad_ptr,
+            _ptr_u8(out),
+            len(out),
+            ctypes.byref(out_len),
+        )
+    )
+    if code == -2:
+        raise ValueError("scene_xytc_trace_pack output buffer too small")
+    if code != 0:
+        raise ValueError("invalid scene_xytc_trace_pack arguments")
+    return bytes(out[: int(out_len.value)])
+
+
+def scene_xyta_trace_pack(
+    *,
+    trace_id: int,
+    pack_heatmap: bool,
+    pack_hexbin_colormap: bool,
+    pack_hexbin_rgba: bool,
+    pack_ribbon_ends: bool,
+    pack_mesh_faces: bool,
+    pack_scatter_paint: bool,
+    pack_density: bool,
+    grid_shape_rows: float,
+    grid_shape_cols: float,
+    has_grid_shape: bool,
+    has_grid: bool,
+    has_rgba: bool,
+    has_rgba_grid: bool,
+    truecolor: bool,
+    has_cmap_domain: bool,
+    cmap_lo: float,
+    cmap_hi: float,
+    has_color_ch: bool,
+    has_style_color: bool,
+    has_opacity: bool,
+    has_fill_opacity: bool,
+    opacity: float,
+    fill_opacity: float,
+    domain_x0: float,
+    domain_x1: float,
+    domain_y0: float,
+    domain_y1: float,
+    cmap_flags: int,
+    rows: int,
+    cols: int,
+    grid: bytes,
+    rgba: bytes,
+    rgba_grid: bytes,
+    x: bytes,
+    y: bytes,
+    mean_rgba: bytes,
+    idx: bytes,
+    lut: bytes,
+    cmap: bytes,
+    stops: bytes,
+    color_ch: bytes,
+    style_color: bytes,
+) -> bytes:
+    """Pack one attach trace into an XYTA v1 record via ``xyg_scene_xyta_trace_pack`` (ABI 318)."""
+    pack_in = _SceneXytaTracePackIn(
+        int(trace_id) & 0xFFFFFFFF,
+        int(pack_heatmap),
+        int(pack_hexbin_colormap),
+        int(pack_hexbin_rgba),
+        int(pack_ribbon_ends),
+        int(pack_mesh_faces),
+        int(pack_scatter_paint),
+        int(pack_density),
+        float(grid_shape_rows),
+        float(grid_shape_cols),
+        int(has_grid_shape),
+        int(has_grid),
+        int(has_rgba),
+        int(has_rgba_grid),
+        int(truecolor),
+        int(has_cmap_domain),
+        float(cmap_lo),
+        float(cmap_hi),
+        int(has_color_ch),
+        int(has_style_color),
+        int(has_opacity),
+        int(has_fill_opacity),
+        ctypes.c_float(float(opacity)),
+        ctypes.c_float(float(fill_opacity)),
+        float(domain_x0),
+        float(domain_x1),
+        float(domain_y0),
+        float(domain_y1),
+        ctypes.c_uint32(int(cmap_flags) & 0xFFFFFFFF),
+        int(rows),
+        int(cols),
+        len(grid),
+        len(rgba),
+        len(rgba_grid),
+        len(x),
+        len(y),
+        len(mean_rgba),
+        len(idx),
+        len(lut),
+        len(cmap),
+        len(stops),
+        len(color_ch),
+        len(style_color),
+    )
+    out = np.zeros(SCENE_XYTA_TRACE_PACK_MAX_RECORD, dtype=np.uint8)
+    out_len = ctypes.c_size_t(0)
+    grid_ptr, _ = _optional_u8_ptr(grid)
+    rgba_ptr, _ = _optional_u8_ptr(rgba)
+    rgba_grid_ptr, _ = _optional_u8_ptr(rgba_grid)
+    x_ptr, _ = _optional_u8_ptr(x)
+    y_ptr, _ = _optional_u8_ptr(y)
+    mean_rgba_ptr, _ = _optional_u8_ptr(mean_rgba)
+    idx_ptr, _ = _optional_u8_ptr(idx)
+    lut_ptr, _ = _optional_u8_ptr(lut)
+    cmap_ptr, _ = _optional_u8_ptr(cmap)
+    stops_ptr, _ = _optional_u8_ptr(stops)
+    color_ch_ptr, _ = _optional_u8_ptr(color_ch)
+    style_color_ptr, _ = _optional_u8_ptr(style_color)
+    code = int(
+        _lib.xyg_scene_xyta_trace_pack(
+            ctypes.byref(pack_in),
+            grid_ptr,
+            rgba_ptr,
+            rgba_grid_ptr,
+            x_ptr,
+            y_ptr,
+            mean_rgba_ptr,
+            idx_ptr,
+            lut_ptr,
+            cmap_ptr,
+            stops_ptr,
+            color_ch_ptr,
+            style_color_ptr,
+            _ptr_u8(out),
+            len(out),
+            ctypes.byref(out_len),
+        )
+    )
+    if code == -2:
+        raise ValueError("scene_xyta_trace_pack output buffer too small")
+    if code != 0:
+        raise ValueError("invalid scene_xyta_trace_pack arguments")
+    return bytes(out[: int(out_len.value)])
+
+
 def scene_figure_support_figure_plan(*, polar: bool) -> dict[str, bool]:
     """Figure-level XYFS support orchestration via ``xyg_scene_figure_support_figure_plan`` (ABI 307)."""
     out = _SceneFigureSupportFigurePlan()

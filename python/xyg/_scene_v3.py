@@ -2190,6 +2190,224 @@ def _xyta_hexbin_plane_observations(trace: Any) -> tuple[bool, bool]:
     return colormap, rgba_ready
 
 
+def _marshal_xyta_trace_record(trace: Any, figure: Any, *, polar: bool) -> bytes:
+    """Marshal one attach trace and pack an XYTA record via Rust (ABI 318)."""
+    style = getattr(trace, "style", None) or {}
+    kind_name = str(trace.kind)
+    hexbin_colormap, hexbin_rgba_ready = _xyta_hexbin_plane_observations(trace)
+    dispatch = _native.scene_xyta_trace_dispatch_plan(
+        kind=kind_name,
+        polar=polar,
+        use_density=kind_name == "scatter" and trace.use_density(),
+        hexbin_colormap_plane=hexbin_colormap,
+        hexbin_rgba_plane_ready=hexbin_rgba_ready,
+        ribbon_color2_class=_ribbon_color2_class_code(trace),
+        mesh_paint_plane=_mesh_packs_paint_plane(trace),
+        scatter_paint_plane=_scatter_packs_paint_plane(trace),
+    )
+    nan = float("nan")
+    rows = cols = 0
+    grid = b""
+    rgba = b""
+    rgba_grid = b""
+    x = b""
+    y = b""
+    mean_rgba = b""
+    idx = b""
+    lut = b""
+    cmap = b""
+    stops = b""
+    color_ch_b = b""
+    style_color = b""
+    domain_x0 = domain_x1 = domain_y0 = domain_y1 = nan
+    cmap_lo = cmap_hi = nan
+    opacity = fill_opacity = nan
+    has_grid_shape = False
+    has_grid = False
+    has_rgba = False
+    has_rgba_grid = False
+    truecolor = False
+    has_cmap_domain = False
+    has_color_ch = False
+    has_style_color = False
+    has_opacity = False
+    has_fill_opacity = False
+    cmap_flags = 0
+    grid_shape_rows = grid_shape_cols = 0.0
+    if dispatch["pack_heatmap"]:
+        shape = getattr(trace, "grid_shape", None)
+        if shape is not None and len(shape) == 2:
+            has_grid_shape = True
+            try:
+                rows_f, cols_f = float(shape[0]), float(shape[1])
+            except (TypeError, ValueError):
+                rows = cols = 0
+                has_grid_shape = False
+            else:
+                grid_shape_rows, grid_shape_cols = rows_f, cols_f
+                if _native.scene_heatmap_shape_admit(rows_f, cols_f):
+                    rows, cols = int(rows_f), int(cols_f)
+        raw_grid = getattr(trace, "grid", None)
+        if raw_grid is not None:
+            has_grid = True
+            grid = np.ascontiguousarray(
+                np.asarray(getattr(raw_grid, "values", raw_grid), dtype=np.float64).reshape(-1)
+            ).tobytes()
+        packed = getattr(trace, "rgba", None)
+        if packed is not None:
+            has_rgba = True
+            rgba = np.ascontiguousarray(np.asarray(packed, dtype=np.uint8).reshape(-1)).tobytes()
+        planes = getattr(trace, "rgba_grid", None)
+        if planes is not None:
+            has_rgba_grid = True
+            if len(planes) == 4:
+                channels_f64 = [
+                    np.asarray(getattr(plane, "values", plane), dtype=np.float64).reshape(-1)
+                    for plane in planes
+                ]
+                rgba_grid = np.ascontiguousarray(np.stack(channels_f64, axis=-1)).tobytes()
+        cmap_flags, cmap, stops = _pack_xyta_colormap(style)
+        if style.get("truecolor"):
+            truecolor = True
+        domain = style.get("domain")
+        if domain is not None and len(domain) == 2:
+            has_cmap_domain = True
+            cmap_lo, cmap_hi = float(domain[0]), float(domain[1])
+    elif dispatch["pack_hexbin_colormap"]:
+        channel = trace.color_ch
+        values = np.ascontiguousarray(np.asarray(channel.values, dtype=np.float64).reshape(-1))
+        rows, cols = 1, int(values.size)
+        has_grid = True
+        grid = values.tobytes()
+        cmap_flags, cmap, stops = _pack_xyta_colormap({"colormap": channel.colormap})
+        domain = getattr(channel, "domain", None)
+        if domain is not None and len(domain) == 2:
+            has_cmap_domain = True
+            cmap_lo, cmap_hi = float(domain[0]), float(domain[1])
+    elif dispatch["pack_hexbin_rgba"]:
+        packed = _hexbin_cell_rgba8(trace)
+        if packed is not None:
+            n = len(packed) // 4
+            rows, cols = 1, n
+            has_grid = True
+            has_rgba = True
+            grid = np.zeros(n, dtype=np.float64).tobytes()
+            rgba = packed
+    elif dispatch["pack_ribbon_ends"]:
+        ends = _ribbon_end_rgba_pair(trace)
+        if ends is not None:
+            source, target = ends
+            rows, cols = 1, len(source) // 4
+            has_rgba = True
+            rgba = source
+            mean_rgba = target
+    elif dispatch["pack_mesh_faces"]:
+        fills = _mesh_face_fill_rgba8(trace)
+        strokes = _mesh_face_stroke_rgba8(trace, fills or b"")
+        widths = _mesh_face_widths(trace)
+        if fills is not None and strokes is not None and widths is not None:
+            n = len(fills) // 4
+            rows, cols = 1, n
+            has_rgba = True
+            rgba = fills
+            mean_rgba = strokes
+            x = widths
+    elif dispatch["pack_scatter_paint"]:
+        fills = _scatter_point_fill_rgba8(trace)
+        strokes = _scatter_point_stroke_rgba8(trace, fills or b"")
+        widths = _scatter_point_widths(trace)
+        if fills is not None and strokes is not None and widths is not None:
+            n = len(fills) // 4
+            rows, cols = 1, n
+            has_rgba = True
+            rgba = fills
+            mean_rgba = strokes
+            x = widths
+    elif dispatch["pack_density"]:
+        xv = _trace_column(trace, "x")
+        yv = _trace_column(trace, "y")
+        if xv is not None:
+            x = np.ascontiguousarray(xv, dtype=np.float64).tobytes()
+        if yv is not None:
+            y = np.ascontiguousarray(yv, dtype=np.float64).tobytes()
+        xr0, xr1 = (float(value) for value in figure._range("x"))
+        yr0, yr1 = (float(value) for value in figure._range("y"))
+        domain_x0, domain_x1, domain_y0, domain_y1 = xr0, xr1, yr0, yr1
+        cmap_flags, cmap, stops = _pack_xyta_colormap(style)
+        channel = getattr(trace, "color_ch", None)
+        if channel is not None and channel.mode == "constant" and channel.constant is not None:
+            has_color_ch = True
+            color_ch_b = str(channel.constant).encode("utf-8")
+        if style.get("color") is not None:
+            has_style_color = True
+            style_color = str(style.get("color")).encode("utf-8")
+        if "opacity" in style:
+            has_opacity = True
+            opacity = float(style["opacity"])
+        if "fill_opacity" in style:
+            has_fill_opacity = True
+            fill_opacity = float(style["fill_opacity"])
+        bin_colors = channels.resolve_bin_colors(channel, None)
+        if bin_colors:
+            if "rgba" in bin_colors:
+                mean_rgba = np.ascontiguousarray(
+                    np.asarray(bin_colors["rgba"], dtype=np.uint8).reshape(-1)
+                ).tobytes()
+            if "idx" in bin_colors:
+                idx = np.ascontiguousarray(
+                    np.asarray(bin_colors["idx"], dtype=np.uint8).reshape(-1)
+                ).tobytes()
+            if "lut" in bin_colors:
+                lut = np.ascontiguousarray(
+                    np.asarray(bin_colors["lut"], dtype=np.uint8).reshape(-1)
+                ).tobytes()
+    return _native.scene_xyta_trace_pack(
+        trace_id=int(getattr(trace, "id", 0)) & 0xFFFFFFFF,
+        pack_heatmap=bool(dispatch["pack_heatmap"]),
+        pack_hexbin_colormap=bool(dispatch["pack_hexbin_colormap"]),
+        pack_hexbin_rgba=bool(dispatch["pack_hexbin_rgba"]),
+        pack_ribbon_ends=bool(dispatch["pack_ribbon_ends"]),
+        pack_mesh_faces=bool(dispatch["pack_mesh_faces"]),
+        pack_scatter_paint=bool(dispatch["pack_scatter_paint"]),
+        pack_density=bool(dispatch["pack_density"]),
+        grid_shape_rows=grid_shape_rows,
+        grid_shape_cols=grid_shape_cols,
+        has_grid_shape=has_grid_shape,
+        has_grid=has_grid,
+        has_rgba=has_rgba,
+        has_rgba_grid=has_rgba_grid,
+        truecolor=truecolor,
+        has_cmap_domain=has_cmap_domain,
+        cmap_lo=cmap_lo,
+        cmap_hi=cmap_hi,
+        has_color_ch=has_color_ch,
+        has_style_color=has_style_color,
+        has_opacity=has_opacity,
+        has_fill_opacity=has_fill_opacity,
+        opacity=opacity,
+        fill_opacity=fill_opacity,
+        domain_x0=domain_x0,
+        domain_x1=domain_x1,
+        domain_y0=domain_y0,
+        domain_y1=domain_y1,
+        cmap_flags=cmap_flags,
+        rows=rows,
+        cols=cols,
+        grid=grid,
+        rgba=rgba,
+        rgba_grid=rgba_grid,
+        x=x,
+        y=y,
+        mean_rgba=mean_rgba,
+        idx=idx,
+        lut=lut,
+        cmap=cmap,
+        stops=stops,
+        color_ch=color_ch_b,
+        style_color=style_color,
+    )
+
+
 def _pack_xyta(figure: Any) -> bytes:
     """Pack authored heatmap/density attach facts as XYTA v1; Rust emits XYTT."""
     traces = list(getattr(figure, "traces", None) or [])
@@ -2198,209 +2416,8 @@ def _pack_xyta(figure: Any) -> bytes:
         polar=str(getattr(figure, "coords", "cartesian") or "cartesian") == "polar"
     )
     polar = figure_plan["polar"]
-    nan = float("nan")
     for trace in traces:
-        style = getattr(trace, "style", None) or {}
-        flags = 0
-        kind_name = str(trace.kind)
-        hexbin_colormap, hexbin_rgba_ready = _xyta_hexbin_plane_observations(trace)
-        dispatch = _native.scene_xyta_trace_dispatch_plan(
-            kind=kind_name,
-            polar=polar,
-            use_density=kind_name == "scatter" and trace.use_density(),
-            hexbin_colormap_plane=hexbin_colormap,
-            hexbin_rgba_plane_ready=hexbin_rgba_ready,
-            ribbon_color2_class=_ribbon_color2_class_code(trace),
-            mesh_paint_plane=_mesh_packs_paint_plane(trace),
-            scatter_paint_plane=_scatter_packs_paint_plane(trace),
-        )
-        rows = cols = 0
-        grid = b""
-        rgba = b""
-        rgba_grid = b""
-        x = b""
-        y = b""
-        mean_rgba = b""
-        idx = b""
-        lut = b""
-        cmap = b""
-        stops = b""
-        color_ch_b = b""
-        style_color = b""
-        domain_x0 = domain_x1 = domain_y0 = domain_y1 = nan
-        cmap_lo = cmap_hi = nan
-        opacity = fill_opacity = nan
-        if dispatch["pack_heatmap"]:
-            flags |= _XYTA_HEATMAP
-            shape = getattr(trace, "grid_shape", None)
-            if shape is not None and len(shape) == 2:
-                flags |= _XYTA_SHAPE
-                try:
-                    rows_f, cols_f = float(shape[0]), float(shape[1])
-                except (TypeError, ValueError):
-                    rows = cols = 0
-                else:
-                    if _native.scene_heatmap_shape_admit(rows_f, cols_f):
-                        rows, cols = int(rows_f), int(cols_f)
-            raw_grid = getattr(trace, "grid", None)
-            if raw_grid is not None:
-                flags |= _XYTA_HAS_GRID
-                grid = np.ascontiguousarray(
-                    np.asarray(getattr(raw_grid, "values", raw_grid), dtype=np.float64).reshape(-1)
-                ).tobytes()
-            packed = getattr(trace, "rgba", None)
-            if packed is not None:
-                flags |= _XYTA_HAS_RGBA
-                rgba = np.ascontiguousarray(
-                    np.asarray(packed, dtype=np.uint8).reshape(-1)
-                ).tobytes()
-            planes = getattr(trace, "rgba_grid", None)
-            if planes is not None:
-                flags |= _XYTA_HAS_RGBA_GRID
-                if len(planes) == 4:
-                    channels_f64 = [
-                        np.asarray(getattr(plane, "values", plane), dtype=np.float64).reshape(-1)
-                        for plane in planes
-                    ]
-                    rgba_grid = np.ascontiguousarray(np.stack(channels_f64, axis=-1)).tobytes()
-            cmap_flags, cmap, stops = _pack_xyta_colormap(style)
-            flags |= cmap_flags
-            if style.get("truecolor"):
-                flags |= _XYTA_TRUECOLOR
-            domain = style.get("domain")
-            if domain is not None and len(domain) == 2:
-                flags |= _XYTA_HAS_DOMAIN
-                cmap_lo, cmap_hi = float(domain[0]), float(domain[1])
-        elif dispatch["pack_hexbin_colormap"]:
-            channel = trace.color_ch
-            values = np.ascontiguousarray(np.asarray(channel.values, dtype=np.float64).reshape(-1))
-            flags |= _XYTA_HEATMAP | _XYTA_SHAPE | _XYTA_HAS_GRID
-            rows, cols = 1, int(values.size)
-            grid = values.tobytes()
-            cmap_flags, cmap, stops = _pack_xyta_colormap({"colormap": channel.colormap})
-            flags |= cmap_flags
-            domain = getattr(channel, "domain", None)
-            if domain is not None and len(domain) == 2:
-                flags |= _XYTA_HAS_DOMAIN
-                cmap_lo, cmap_hi = float(domain[0]), float(domain[1])
-        elif dispatch["pack_hexbin_rgba"]:
-            packed = _hexbin_cell_rgba8(trace)
-            if packed is not None:
-                n = len(packed) // 4
-                flags |= _XYTA_HEATMAP | _XYTA_SHAPE | _XYTA_HAS_GRID | _XYTA_HAS_RGBA
-                rows, cols = 1, n
-                grid = np.zeros(n, dtype=np.float64).tobytes()
-                rgba = packed
-        elif dispatch["pack_ribbon_ends"]:
-            ends = _ribbon_end_rgba_pair(trace)
-            if ends is not None:
-                source, target = ends
-                flags |= _XYTA_RIBBON_ENDS | _XYTA_SHAPE | _XYTA_HAS_RGBA
-                rows, cols = 1, len(source) // 4
-                rgba = source
-                mean_rgba = target
-        elif dispatch["pack_mesh_faces"]:
-            fills = _mesh_face_fill_rgba8(trace)
-            strokes = _mesh_face_stroke_rgba8(trace, fills or b"")
-            widths = _mesh_face_widths(trace)
-            if fills is not None and strokes is not None and widths is not None:
-                n = len(fills) // 4
-                flags |= _XYTA_MESH_FACES | _XYTA_SHAPE | _XYTA_HAS_RGBA
-                rows, cols = 1, n
-                rgba = fills
-                mean_rgba = strokes
-                x = widths
-        elif dispatch["pack_scatter_paint"]:
-            fills = _scatter_point_fill_rgba8(trace)
-            strokes = _scatter_point_stroke_rgba8(trace, fills or b"")
-            widths = _scatter_point_widths(trace)
-            if fills is not None and strokes is not None and widths is not None:
-                n = len(fills) // 4
-                flags |= _XYTA_SCATTER_PAINT | _XYTA_SHAPE | _XYTA_HAS_RGBA
-                rows, cols = 1, n
-                rgba = fills
-                mean_rgba = strokes
-                x = widths
-        elif dispatch["pack_density"]:
-            flags |= _XYTA_DENSITY
-            xv = _trace_column(trace, "x")
-            yv = _trace_column(trace, "y")
-            if xv is not None:
-                x = np.ascontiguousarray(xv, dtype=np.float64).tobytes()
-            if yv is not None:
-                y = np.ascontiguousarray(yv, dtype=np.float64).tobytes()
-            xr0, xr1 = (float(value) for value in figure._range("x"))
-            yr0, yr1 = (float(value) for value in figure._range("y"))
-            domain_x0, domain_x1, domain_y0, domain_y1 = xr0, xr1, yr0, yr1
-            cmap_flags, cmap, stops = _pack_xyta_colormap(style)
-            flags |= cmap_flags
-            channel = getattr(trace, "color_ch", None)
-            if channel is not None and channel.mode == "constant" and channel.constant is not None:
-                flags |= _XYTA_HAS_COLOR_CH
-                color_ch_b = str(channel.constant).encode("utf-8")
-            if style.get("color") is not None:
-                flags |= _XYTA_HAS_STYLE_COLOR
-                style_color = str(style.get("color")).encode("utf-8")
-            if "opacity" in style:
-                flags |= _XYTA_HAS_OPACITY
-                opacity = float(style["opacity"])
-            if "fill_opacity" in style:
-                flags |= _XYTA_HAS_FILL_OPACITY
-                fill_opacity = float(style["fill_opacity"])
-            bin_colors = channels.resolve_bin_colors(channel, None)
-            if bin_colors:
-                if "rgba" in bin_colors:
-                    mean_rgba = np.ascontiguousarray(
-                        np.asarray(bin_colors["rgba"], dtype=np.uint8).reshape(-1)
-                    ).tobytes()
-                if "idx" in bin_colors:
-                    idx = np.ascontiguousarray(
-                        np.asarray(bin_colors["idx"], dtype=np.uint8).reshape(-1)
-                    ).tobytes()
-                if "lut" in bin_colors:
-                    lut = np.ascontiguousarray(
-                        np.asarray(bin_colors["lut"], dtype=np.uint8).reshape(-1)
-                    ).tobytes()
-        records.extend(
-            _XYTA_PREFIX.pack(
-                flags,
-                int(getattr(trace, "id", 0)) & 0xFFFFFFFF,
-                int(rows),
-                int(cols),
-                len(grid) // 8,
-                len(rgba),
-                len(rgba_grid) // 8,
-                len(x) // 8,
-                len(y) // 8,
-                len(mean_rgba),
-                len(idx),
-                len(lut),
-                min(len(cmap), 65535),
-                min(len(stops), 65535),
-                min(len(color_ch_b), 65535),
-                min(len(style_color), 65535),
-                float(domain_x0),
-                float(domain_x1),
-                float(domain_y0),
-                float(domain_y1),
-                float(cmap_lo),
-                float(cmap_hi),
-                float(opacity),
-                float(fill_opacity),
-            )
-        )
-        records.extend(grid)
-        records.extend(rgba)
-        records.extend(rgba_grid)
-        records.extend(cmap[:65535])
-        records.extend(stops[:65535])
-        records.extend(color_ch_b[:65535])
-        records.extend(style_color[:65535])
-        records.extend(x)
-        records.extend(y)
-        records.extend(mean_rgba)
-        records.extend(idx)
-        records.extend(lut)
+        records.extend(_marshal_xyta_trace_record(trace, figure, polar=polar))
     return bytes(records)
 
 
@@ -2900,179 +2917,103 @@ _COLOR2_CLASS_TO_CODE = {
 }
 
 
-def _pack_xytc_symbol(style: dict[str, Any]) -> tuple[int, bytes, int]:
-    symbol_raw = style.get("symbol", "circle")
-    if isinstance(symbol_raw, (int, float)) and not isinstance(symbol_raw, bool):
-        symbol_int = int(symbol_raw)
-        return _native.scene_xytc_symbol_int_pack(1), b"", symbol_int
-    symbol = str(symbol_raw or "circle")
-    return _native.scene_xytc_symbol_int_pack(0), symbol.encode("utf-8"), 0
+def _xytc_fill_kind(style: dict[str, Any]) -> int:
+    if "fill" not in style:
+        return 0
+    fill = style["fill"]
+    if isinstance(fill, str):
+        return 1
+    if isinstance(fill, dict) and {"space", "dir", "stops"} <= set(fill):
+        return 2
+    if isinstance(fill, dict):
+        return 3
+    return 1
 
 
-def _pack_xytc_color2(
-    trace: Any,
-    paint_flags: int,
-    gradient_blob: bytes,
-) -> tuple[int, bytes]:
-    color2_class = _classify_ribbon_color2(trace)
-    gradient_packed = 0
-    out_blob = gradient_blob
-    if color2_class == "gradient" and not (
-        paint_flags & (_XYTC_HAS_FILL | _XYTC_HAS_GRADIENT_SPEC)
-    ):
-        spec = _ribbon_color2_gradient_spec(trace)
-        packed = _pack_gradient_spec(spec) if spec is not None else None
-        if packed:
-            gradient_packed = 1
-            out_blob = packed
-    flags = _native.scene_xytc_color2_flags_pack(
-        _COLOR2_CLASS_TO_CODE[color2_class],
-        paint_flags,
-        gradient_packed,
-    )
-    return flags, out_blob
-
-
-def _pack_xytc_meta_flags(
-    trace: Any,
-    show_legend: bool,
-    *,
-    marker_path_present: int,
-    marker_packed: int,
-    glyph_packed: int,
-) -> int:
-    name = str(trace.name) if getattr(trace, "name", None) else ""
+def _marshal_xytc_trace_record(trace: Any, *, show_legend: bool) -> bytes:
+    """Marshal one trace and pack an XYTR record via Rust (ABI 317)."""
     style = getattr(trace, "style", None) or {}
-    use_density = 1 if trace.kind == "scatter" and trace.use_density() else 0
-    joined_fill = 1 if str(trace.kind) == "triangle_mesh" and style.get("joined_fill") else 0
-    return _native.scene_xytc_meta_flags_pack(
-        1 if name else 0,
-        1 if show_legend else 0,
-        str(trace.kind),
-        use_density,
-        joined_fill,
-        marker_path_present,
-        marker_packed,
-        glyph_packed,
+    kind_name = str(trace.kind)
+    kind = kind_name.encode("utf-8")
+    dispatch = _native.scene_xytc_trace_dispatch_plan(
+        kind=kind_name,
+        marker_path_present=kind_name == "scatter" and style.get("marker_path") is not None,
+        use_density=kind_name == "scatter" and trace.use_density(),
+        joined_fill=kind_name == "triangle_mesh" and bool(style.get("joined_fill")),
     )
-
-
-def _pack_xytc_paint_presence(style: dict[str, Any]) -> int:
-    has_fill = 1 if "fill" in style else 0
-    fill_kind = 0
-    if has_fill:
-        fill = style["fill"]
-        if isinstance(fill, str):
-            fill_kind = 1
-        elif isinstance(fill, dict) and {"space", "dir", "stops"} <= set(fill):
-            fill_kind = 2
-        elif isinstance(fill, dict):
-            fill_kind = 3
-        else:
-            fill_kind = 1
-    return _native.scene_xytc_paint_presence_pack(
-        has_fill,
-        fill_kind,
-        1 if "stroke" in style else 0,
-        1 if "line_color" in style else 0,
+    name = str(trace.name) if getattr(trace, "name", None) else ""
+    name_b = name.encode("utf-8")
+    _symbol_flags, symbol_b, symbol_int = _pack_xytc_symbol(style)
+    symbol_raw = style.get("symbol", "circle")
+    symbol_is_int = (
+        1 if isinstance(symbol_raw, (int, float)) and not isinstance(symbol_raw, bool) else 0
     )
-
-
-def _pack_xytc_dash(style: dict[str, Any]) -> tuple[int, bytes, list[float]]:
-    dash = style.get("dash")
-    dash_b = b""
-    dash_pattern: list[float] = []
-    is_array = 0
-    if isinstance(dash, str):
-        dash_b = dash.encode("utf-8")
-    elif isinstance(dash, (list, tuple)):
-        is_array = 1
-        try:
-            dash_pattern = [float(part) for part in dash]
-        except (TypeError, ValueError):
-            dash_pattern = []
-    return _native.scene_xytc_dash_pattern_pack(is_array), dash_b, dash_pattern
-
-
-def _pack_xytc_opacity(kind_class: int, style: dict[str, Any]) -> tuple[float, float, float]:
-    has_opacity = 1 if kind_class & _SCENE_KIND_CLASS_OPACITY else 0
-    has_band = 1 if kind_class & _SCENE_KIND_CLASS_BAND else 0
-    return _native.scene_xytc_opacity_pack(
-        has_opacity,
-        has_band,
-        float(style.get("fill_opacity", 1.0)),
-        float(style.get("stroke_opacity", 1.0)),
-        float(style.get("line_opacity", 1.0)),
-    )
-
-
-def _pack_xytc_hex_pitch(kind_class: int, style: dict[str, Any]) -> tuple[int, float, float]:
     nan = float("nan")
-    hexbin = 1 if kind_class & _SCENE_KIND_CLASS_HEXBIN else 0
+    opacity = float(style.get("opacity", 1.0))
+    fill_opacity, stroke_opacity, line_opacity = _pack_xytc_opacity(
+        int(dispatch["kind_class"]) if dispatch["pack_opacity"] else 0, style
+    )
+    (
+        _num_flags,
+        size,
+        size_ch_value,
+        stroke_width,
+        width,
+        line_width,
+    ) = _pack_xytc_numeric_style(trace, style)
     raw_dx = style.get("hex_dx", style.get("dx"))
     raw_dy = style.get("hex_dy", style.get("dy"))
-    has_dx = 1 if raw_dx is not None else 0
-    has_dy = 1 if raw_dy is not None else 0
-    return _native.scene_xytc_hex_pitch_pack(
-        hexbin,
-        has_dx,
-        has_dy,
-        float(raw_dx) if has_dx else nan,
-        float(raw_dy) if has_dy else nan,
-    )
-
-
-def _pack_xytc_stroke_perimeter(kind_class: int, style: dict[str, Any]) -> int:
-    band = 1 if kind_class & _SCENE_KIND_CLASS_BAND else 0
-    present = 1 if "stroke_perimeter" in style else 0
-    if present:
+    has_hex_dx = 1 if raw_dx is not None else 0
+    has_hex_dy = 1 if raw_dy is not None else 0
+    dash_flags, dash_b, dash_pattern = _pack_xytc_dash(style)
+    perimeter_present = 1 if "stroke_perimeter" in style else 0
+    if perimeter_present:
         perimeter = style["stroke_perimeter"]
         perimeter_is_bool = 1 if isinstance(perimeter, bool) else 0
         perimeter_true = 1 if perimeter_is_bool and perimeter else 0
     else:
         perimeter_is_bool = 0
         perimeter_true = 0
-    return _native.scene_xytc_stroke_perimeter_pack(
-        band, present, perimeter_is_bool, perimeter_true
-    )
-
-
-def _pack_xytc_numeric_style(
-    trace: Any, style: dict[str, Any]
-) -> tuple[int, float, float, float, float, float]:
-    nan = float("nan")
-    has_size = 1 if "size" in style else 0
-    size_ch = getattr(trace, "size_ch", None)
-    has_size_ch = 1 if size_ch is not None else 0
-    size_ch_constant = getattr(size_ch, "constant", None) if size_ch is not None else None
-    has_size_ch_constant = 1 if size_ch_constant is not None else 0
-    return _native.scene_xytc_numeric_style_pack(
-        has_size,
-        has_size_ch,
-        has_size_ch_constant,
-        1 if "stroke_width" in style else 0,
-        1 if "width" in style else 0,
-        1 if "line_width" in style else 0,
-        float(style["size"]) if has_size else nan,
-        float(size_ch_constant) if size_ch_constant is not None else nan,
-        float(style["stroke_width"]) if "stroke_width" in style else 0.0,
-        float(style["width"]) if "width" in style else 0.0,
-        float(style["line_width"]) if "line_width" in style else 0.0,
-    )
-
-
-def _pack_xytc_color_channel(trace: Any) -> tuple[int, bytes, bytes]:
-    channel = getattr(trace, "color_ch", None)
-    if channel is None:
-        return 0, b"", b""
-    has_constant = 1 if getattr(channel, "constant", None) is not None else 0
-    flags = _native.scene_xytc_color_channel_pack(1, has_constant)
-    color_mode = str(getattr(channel, "mode", "") or "").encode("utf-8")
-    color_const = str(channel.constant).encode("utf-8") if has_constant else b""
-    return flags, color_mode, color_const
-
-
-def _pack_xytc_radius(trace: Any, style: dict[str, Any]) -> tuple[int, float, float, float]:
+    fill_css = b""
+    fill_space = b""
+    gradient_blob = b""
+    if "fill" in style:
+        fill = style["fill"]
+        if isinstance(fill, str):
+            fill_css = fill.encode("utf-8")
+        elif isinstance(fill, dict) and {"space", "dir", "stops"} <= set(fill):
+            gradient_blob = _pack_gradient_spec(fill) or b""
+        elif isinstance(fill, dict):
+            fill_css = str(fill.get("gradient") or "").encode("utf-8")
+            fill_space = str(fill.get("space") or "mark").encode("utf-8")
+    color2_class = _COLOR2_CLASS_TO_CODE[_classify_ribbon_color2(trace)]
+    color2_gradient_blob = b""
+    color2_gradient_packed = 0
+    if dispatch["pack_color2"]:
+        paint_flags = _pack_xytc_paint_presence(style)
+        if color2_class == _COLOR2_CLASS_TO_CODE["gradient"] and not (
+            paint_flags & (_XYTC_HAS_FILL | _XYTC_HAS_GRADIENT_SPEC)
+        ):
+            spec = _ribbon_color2_gradient_spec(trace)
+            packed = _pack_gradient_spec(spec) if spec is not None else None
+            if packed:
+                color2_gradient_packed = 1
+                color2_gradient_blob = packed
+    marker_blob = b""
+    marker_path_present = 0
+    marker_packed = 0
+    glyph_packed = 0
+    if dispatch["marker_path_branch"]:
+        marker_path_present = 1
+        packed_marker = _pack_marker_blob(style.get("marker_path"))
+        if packed_marker:
+            marker_packed = 1
+            marker_blob = packed_marker
+    elif dispatch["marker_glyph_branch"]:
+        packed_glyph = _admitted_marker_glyph(style.get("marker_glyph"))
+        if packed_glyph is not None:
+            glyph_packed = 1
+            marker_blob = packed_glyph
     radius = style.get("corner_radius", 0.0)
     if isinstance(radius, (list, tuple)) and len(radius) == 2:
         radius_seq = 2
@@ -3082,8 +3023,81 @@ def _pack_xytc_radius(trace: Any, style: dict[str, Any]) -> tuple[int, float, fl
         radius_seq = 1
         r0 = float(radius or 0.0)
         r1 = 0.0
-    wedge_gap_raw = float(style.get("wedge_gap", 0.0) or 0.0)
-    return _native.scene_xytc_radius_pack(str(trace.kind), radius_seq, r0, r1, wedge_gap_raw)
+    channel = getattr(trace, "color_ch", None)
+    color_ch_present = 1 if channel is not None else 0
+    color_ch_has_constant = (
+        1 if channel is not None and getattr(channel, "constant", None) is not None else 0
+    )
+    _ch_flags, color_mode, color_const = _pack_xytc_color_channel(trace)
+    size_ch = getattr(trace, "size_ch", None)
+    size_ch_constant = getattr(size_ch, "constant", None) if size_ch is not None else None
+    style_scalars = {
+        "symbol_is_int": symbol_is_int,
+        "symbol_int": symbol_int,
+        "opacity": opacity,
+        "fill_opacity": fill_opacity,
+        "stroke_opacity": stroke_opacity,
+        "line_opacity": line_opacity,
+        "has_stroke": 1 if "stroke" in style else 0,
+        "has_line_color": 1 if "line_color" in style else 0,
+        "has_size": 1 if "size" in style else 0,
+        "size": float(style["size"]) if "size" in style else nan,
+        "has_size_ch": 1 if size_ch is not None else 0,
+        "has_size_ch_constant": 1 if size_ch_constant is not None else 0,
+        "size_ch_constant": float(size_ch_constant) if size_ch_constant is not None else nan,
+        "has_stroke_width": 1 if "stroke_width" in style else 0,
+        "stroke_width": float(style["stroke_width"]) if "stroke_width" in style else 0.0,
+        "has_width": 1 if "width" in style else 0,
+        "width": float(style["width"]) if "width" in style else 0.0,
+        "has_line_width": 1 if "line_width" in style else 0,
+        "line_width": float(style["line_width"]) if "line_width" in style else 0.0,
+        "has_hex_dx": has_hex_dx,
+        "hex_dx": float(raw_dx) if has_hex_dx else nan,
+        "has_hex_dy": has_hex_dy,
+        "hex_dy": float(raw_dy) if has_hex_dy else nan,
+        "has_stroke_perimeter": perimeter_present,
+        "stroke_perimeter_is_bool": perimeter_is_bool,
+        "stroke_perimeter_true": perimeter_true,
+        "dash_is_array": 1 if dash_flags else 0,
+        "has_fill": 1 if "fill" in style else 0,
+        "fill_kind": _xytc_fill_kind(style),
+        "color_ch_present": color_ch_present,
+        "color_ch_has_constant": color_ch_has_constant,
+        "radius_seq": radius_seq,
+        "r0": r0,
+        "r1": r1,
+        "wedge_gap_raw": float(style.get("wedge_gap", 0.0) or 0.0),
+    }
+    return _native.scene_xytc_trace_pack(
+        show_legend=show_legend,
+        kind=kind,
+        has_name=bool(name),
+        name=name_b,
+        marker_path_present=bool(marker_path_present),
+        use_density=kind_name == "scatter" and trace.use_density(),
+        joined_fill=kind_name == "triangle_mesh" and bool(style.get("joined_fill")),
+        marker_packed=bool(marker_packed),
+        glyph_packed=bool(glyph_packed),
+        marker_blob=marker_blob,
+        color2_class=color2_class,
+        color2_gradient_blob=color2_gradient_blob,
+        color2_gradient_packed=bool(color2_gradient_packed),
+        style=style_scalars,
+        symbol_b=symbol_b,
+        dash_b=dash_b,
+        dash_pattern=dash_pattern,
+        linecap_b=str(style["linecap"]).encode("utf-8") if "linecap" in style else b"",
+        step_b=str(style["step"]).encode("utf-8") if style.get("step") is not None else b"",
+        curve_b=str(style["curve"]).encode("utf-8") if style.get("curve") is not None else b"",
+        fill_css=fill_css,
+        fill_space=fill_space,
+        fill_gradient_blob=gradient_blob,
+        stroke_css=str(style["stroke"]).encode("utf-8") if "stroke" in style else b"",
+        line_color=str(style["line_color"]).encode("utf-8") if "line_color" in style else b"",
+        color_css=str(style["color"]).encode("utf-8") if "color" in style else b"",
+        color_mode=color_mode,
+        color_const=color_const,
+    )
 
 
 def _pack_xytc(figure: Any) -> bytes:
@@ -3095,151 +3109,7 @@ def _pack_xytc(figure: Any) -> bytes:
     )
     show_legend = figure_plan["show_legend"]
     for trace in traces:
-        style = getattr(trace, "style", None) or {}
-        flags = 0
-        kind_name = str(trace.kind)
-        kind = kind_name.encode("utf-8")
-        dispatch = _native.scene_xytc_trace_dispatch_plan(
-            kind=kind_name,
-            marker_path_present=kind_name == "scatter" and style.get("marker_path") is not None,
-            use_density=kind_name == "scatter" and trace.use_density(),
-            joined_fill=kind_name == "triangle_mesh" and bool(style.get("joined_fill")),
-        )
-        kind_class = int(dispatch["kind_class"])
-        name = str(trace.name) if getattr(trace, "name", None) else ""
-        name_b = name.encode("utf-8")
-        symbol_flags, symbol_b, symbol_int = _pack_xytc_symbol(style)
-        flags |= symbol_flags
-        opacity = float(style.get("opacity", 1.0))
-        fill_opacity, stroke_opacity, line_opacity = _pack_xytc_opacity(
-            kind_class if dispatch["pack_opacity"] else 0, style
-        )
-        (
-            num_flags,
-            size,
-            size_ch_value,
-            stroke_width,
-            width,
-            line_width,
-        ) = _pack_xytc_numeric_style(trace, style)
-        flags |= num_flags
-        if dispatch["pack_hex_pitch"]:
-            hex_flags, hex_dx, hex_dy = _pack_xytc_hex_pitch(kind_class, style)
-        else:
-            hex_flags, hex_dx, hex_dy = 0, float("nan"), float("nan")
-        flags |= hex_flags
-        if dispatch["pack_stroke_perimeter"]:
-            flags |= _pack_xytc_stroke_perimeter(kind_class, style)
-        dash_flags, dash_b, dash_pattern = _pack_xytc_dash(style)
-        flags |= dash_flags
-        linecap_b = str(style["linecap"]).encode("utf-8") if "linecap" in style else b""
-        step_b = str(style["step"]).encode("utf-8") if style.get("step") is not None else b""
-        curve_b = str(style["curve"]).encode("utf-8") if style.get("curve") is not None else b""
-        fill_css = b""
-        fill_space = b""
-        gradient_blob = b""
-        flags |= _pack_xytc_paint_presence(style)
-        if "fill" in style:
-            fill = style["fill"]
-            if isinstance(fill, str):
-                fill_css = fill.encode("utf-8")
-            elif isinstance(fill, dict) and {"space", "dir", "stops"} <= set(fill):
-                gradient_blob = _pack_gradient_spec(fill) or b""
-            elif isinstance(fill, dict):
-                fill_css = str(fill.get("gradient") or "").encode("utf-8")
-                fill_space = str(fill.get("space") or "mark").encode("utf-8")
-        stroke_css = str(style["stroke"]).encode("utf-8") if "stroke" in style else b""
-        line_color = str(style["line_color"]).encode("utf-8") if "line_color" in style else b""
-        color_css = str(style["color"]).encode("utf-8") if "color" in style else b""
-        ch_flags, color_mode, color_const = _pack_xytc_color_channel(trace)
-        flags |= ch_flags
-        if dispatch["pack_color2"]:
-            color2_flags, gradient_blob = _pack_xytc_color2(trace, flags, gradient_blob)
-            flags |= color2_flags
-        marker_blob = b""
-        marker_path_present = 0
-        marker_packed = 0
-        glyph_packed = 0
-        if dispatch["marker_path_branch"]:
-            marker_path_present = 1
-            packed_marker = _pack_marker_blob(style.get("marker_path"))
-            if packed_marker:
-                marker_packed = 1
-                marker_blob = packed_marker
-        elif dispatch["marker_glyph_branch"]:
-            packed_glyph = _admitted_marker_glyph(style.get("marker_glyph"))
-            if packed_glyph is not None:
-                glyph_packed = 1
-                marker_blob = packed_glyph
-        flags |= _pack_xytc_meta_flags(
-            trace,
-            show_legend,
-            marker_path_present=marker_path_present,
-            marker_packed=marker_packed,
-            glyph_packed=glyph_packed,
-        )
-        if dispatch["pack_radius"]:
-            radius_flags, r_tip, r_base, wedge_gap = _pack_xytc_radius(trace, style)
-            flags |= radius_flags
-        else:
-            r_tip, r_base, wedge_gap = 0.0, 0.0, 0.0
-        records.extend(
-            _XYTR_PREFIX.pack(
-                b"XYTR",
-                1,
-                len(kind),
-                flags,
-                len(name_b),
-                len(symbol_b),
-                opacity,
-                fill_opacity,
-                stroke_opacity,
-                line_opacity,
-                size,
-                size_ch_value,
-                stroke_width,
-                width,
-                line_width,
-                hex_dx,
-                hex_dy,
-                len(dash_b),
-                len(linecap_b),
-                len(step_b),
-                len(curve_b),
-                len(fill_css),
-                len(stroke_css),
-                len(line_color),
-                len(color_css),
-                len(color_mode),
-                len(color_const),
-                len(fill_space),
-                symbol_int,
-                len(dash_pattern),
-                len(marker_blob),
-                len(gradient_blob),
-                r_tip,
-                r_base,
-                wedge_gap,
-            )
-        )
-        records.extend(kind)
-        records.extend(name_b)
-        records.extend(symbol_b)
-        records.extend(dash_b)
-        records.extend(linecap_b)
-        records.extend(step_b)
-        records.extend(curve_b)
-        records.extend(fill_css)
-        records.extend(stroke_css)
-        records.extend(line_color)
-        records.extend(color_css)
-        records.extend(color_mode)
-        records.extend(color_const)
-        records.extend(fill_space)
-        if dash_pattern:
-            records.extend(struct.pack(f"<{len(dash_pattern)}d", *dash_pattern))
-        records.extend(marker_blob)
-        records.extend(gradient_blob)
+        records.extend(_marshal_xytc_trace_record(trace, show_legend=show_legend))
     return bytes(records)
 
 

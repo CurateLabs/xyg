@@ -150,6 +150,8 @@ _POINTER_C: dict[str, str] = {
     "*mut XygScenePublicExportTraceDispatchPlan": "void *",
     "*mut XygScenePolarFigurePlan": "void *",
     "*mut XygSceneEncodeProductAttachPlan": "void *",
+    "*const XygSceneXytcTracePackIn": "const void *",
+    "*const XygSceneXytaTracePackIn": "const void *",
     "*mut XygPayloadColumnShipEntry": "void *",
     "*mut XygPayloadChannelShipEntry": "void *",
     "*mut XygPayloadDensityGridBufferEntry": "void *",

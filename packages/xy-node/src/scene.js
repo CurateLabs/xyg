@@ -74,7 +74,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneXytaFigurePlan, sceneXytaTraceDispatchPlan, sceneFigureSupportFigurePlan, sceneFigureSupportTraceDispatchPlan, scenePublicExportFigurePlan, scenePublicExportTraceDispatchPlan, sceneXyafAnnotationDispatchPlan, sceneXycfFigurePlan, sceneXyclFigurePlan, sceneXynmFigurePlan, scenePolarFigurePlan, sceneEncodeProductAttachPlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba, densityMeanColorWireAdmit } from "./encode.js";
+import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneXytcTracePack, sceneXytaFigurePlan, sceneXytaTraceDispatchPlan, sceneXytaTracePack, sceneFigureSupportFigurePlan, sceneFigureSupportTraceDispatchPlan, scenePublicExportFigurePlan, scenePublicExportTraceDispatchPlan, sceneXyafAnnotationDispatchPlan, sceneXycfFigurePlan, sceneXyclFigurePlan, sceneXynmFigurePlan, scenePolarFigurePlan, sceneEncodeProductAttachPlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba, densityMeanColorWireAdmit } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -3560,174 +3560,192 @@ export function packXyTcStrokeWidth(style) {
   };
 }
 
+function xytcFillKind(style) {
+  const record = style ?? {};
+  if (!Object.hasOwn(record, "fill")) return 0;
+  const fill = record.fill;
+  if (typeof fill === "string") return 1;
+  if (fill != null && typeof fill === "object" && fill.space != null && fill.dir != null && Array.isArray(fill.stops)) {
+    return 2;
+  }
+  if (fill != null && typeof fill === "object") return 3;
+  return 1;
+}
+
+function marshalXyTcTraceRecord(trace, showLegend) {
+  const style = trace.style ?? {};
+  const kindName = String(trace.kind ?? "");
+  const kind = encodeUtf8(kindName);
+  const dispatch = sceneXytcTraceDispatchPlan({
+    kind: kindName,
+    markerPathPresent: kindName === "scatter" && style.marker_path != null,
+    useDensity: kindName === "scatter" && scatterUsesDensity(trace),
+    joinedFill: kindName === "triangle_mesh" && Boolean(style.joined_fill),
+  });
+  const name = trace.name != null && String(trace.name).length ? String(trace.name) : "";
+  const nameB = encodeUtf8(name);
+  const packedSymbol = packXyTcSymbol(style);
+  const symbolRaw = style.symbol ?? "circle";
+  const symbolIsInt = typeof symbolRaw === "number" && typeof symbolRaw !== "boolean" ? 1 : 0;
+  const nan = Number.NaN;
+  const opacity = Number(style.opacity ?? 1);
+  const packedOpacity = sceneXytcOpacityPack(
+    dispatch.packOpacity ? 1 : 0,
+    dispatch.kindClass & SCENE_KIND_CLASS_BAND ? 1 : 0,
+    style,
+  );
+  const packedNumeric = sceneXytcNumericStylePack(trace, style);
+  const rawDx = style.hex_dx ?? style.dx;
+  const rawDy = style.hex_dy ?? style.dy;
+  const hasHexDx = rawDx != null ? 1 : 0;
+  const hasHexDy = rawDy != null ? 1 : 0;
+  const packedDash = packXyTcDash(style);
+  const perimeterPresent = Object.hasOwn(style, "stroke_perimeter") ? 1 : 0;
+  let perimeterIsBool = 0;
+  let perimeterTrue = 0;
+  if (perimeterPresent) {
+    const perimeter = style.stroke_perimeter;
+    perimeterIsBool = typeof perimeter === "boolean" ? 1 : 0;
+    perimeterTrue = perimeterIsBool && perimeter === true ? 1 : 0;
+  }
+  let fillCss = new Uint8Array();
+  let fillSpace = new Uint8Array();
+  let gradientBlob = new Uint8Array();
+  if (Object.hasOwn(style, "fill")) {
+    const fill = style.fill;
+    if (typeof fill === "string") fillCss = encodeUtf8(fill);
+    else if (fill != null && typeof fill === "object" && fill.space != null && fill.dir != null && Array.isArray(fill.stops)) {
+      gradientBlob = packGradientSpec(fill) ?? new Uint8Array();
+    } else if (fill != null && typeof fill === "object") {
+      fillCss = encodeUtf8(String(fill.gradient ?? ""));
+      fillSpace = encodeUtf8(String(fill.space ?? "mark"));
+    }
+  }
+  const color2Class = COLOR2_CLASS_TO_CODE[classifyRibbonColor2(trace)] ?? 4;
+  let color2GradientBlob = new Uint8Array();
+  let color2GradientPacked = false;
+  if (dispatch.packColor2) {
+    const paintFlags = packXyTcPaintPresence(style);
+    if (
+      color2Class === COLOR2_CLASS_TO_CODE.gradient
+      && (paintFlags & (XYTC_HAS_FILL | XYTC_HAS_GRADIENT_SPEC)) === 0
+    ) {
+      const spec = ribbonColor2GradientSpec(trace);
+      const packed = spec == null ? null : packGradientSpec(spec);
+      if (packed && packed.length) {
+        color2GradientPacked = true;
+        color2GradientBlob = packed;
+      }
+    }
+  }
+  let markerBlob = new Uint8Array();
+  let markerPathPresent = false;
+  let markerPacked = false;
+  let glyphPacked = false;
+  if (dispatch.markerPathBranch) {
+    markerPathPresent = true;
+    const packed = packMarkerBlob(style.marker_path);
+    if (packed) {
+      markerPacked = true;
+      markerBlob = packed;
+    }
+  } else if (dispatch.markerGlyphBranch) {
+    const packedGlyph = admittedMarkerGlyph(style.marker_glyph);
+    if (packedGlyph != null) {
+      glyphPacked = true;
+      markerBlob = packedGlyph;
+    }
+  }
+  const radius = style.corner_radius ?? 0;
+  let radiusSeq = 1;
+  let r0 = Number(radius) || 0;
+  let r1 = 0;
+  if (Array.isArray(radius) && radius.length === 2) {
+    radiusSeq = 2;
+    r0 = Number(radius[0]);
+    r1 = Number(radius[1]);
+  }
+  const channel = trace.color_ch;
+  const colorChPresent = channel != null ? 1 : 0;
+  const colorChHasConstant = channel != null && channel.constant != null ? 1 : 0;
+  const packedChannel = packXyTcColorChannel(trace);
+  const sizeCh = trace.size_ch;
+  const sizeChConstant = sizeCh?.constant;
+  return sceneXytcTracePack({
+    showLegend,
+    kind,
+    hasName: Boolean(name),
+    name: nameB,
+    markerPathPresent,
+    useDensity: kindName === "scatter" && scatterUsesDensity(trace),
+    joinedFill: kindName === "triangle_mesh" && Boolean(style.joined_fill),
+    markerPacked,
+    glyphPacked,
+    markerBlob,
+    color2Class,
+    color2GradientBlob,
+    color2GradientPacked,
+    style: {
+      symbolIsInt,
+      symbolInt: packedSymbol.symbolInt,
+      opacity,
+      fillOpacity: packedOpacity.fillOpacity,
+      strokeOpacity: packedOpacity.strokeOpacity,
+      lineOpacity: packedOpacity.lineOpacity,
+      hasStroke: Object.hasOwn(style, "stroke") ? 1 : 0,
+      hasLineColor: Object.hasOwn(style, "line_color") ? 1 : 0,
+      hasSize: Object.hasOwn(style, "size") ? 1 : 0,
+      size: Object.hasOwn(style, "size") ? Number(style.size) : nan,
+      hasSizeCh: sizeCh != null ? 1 : 0,
+      hasSizeChConstant: sizeChConstant != null ? 1 : 0,
+      sizeChConstant: sizeChConstant != null ? Number(sizeChConstant) : nan,
+      hasStrokeWidth: Object.hasOwn(style, "stroke_width") ? 1 : 0,
+      strokeWidth: Object.hasOwn(style, "stroke_width") ? Number(style.stroke_width) : 0,
+      hasWidth: Object.hasOwn(style, "width") ? 1 : 0,
+      width: Object.hasOwn(style, "width") ? Number(style.width) : 0,
+      hasLineWidth: Object.hasOwn(style, "line_width") ? 1 : 0,
+      lineWidth: Object.hasOwn(style, "line_width") ? Number(style.line_width) : 0,
+      hasHexDx,
+      hexDx: hasHexDx ? Number(rawDx) : nan,
+      hasHexDy,
+      hexDy: hasHexDy ? Number(rawDy) : nan,
+      hasStrokePerimeter: perimeterPresent,
+      strokePerimeterIsBool: perimeterIsBool,
+      strokePerimeterTrue: perimeterTrue,
+      dashIsArray: packedDash.flags ? 1 : 0,
+      hasFill: Object.hasOwn(style, "fill") ? 1 : 0,
+      fillKind: xytcFillKind(style),
+      colorChPresent,
+      colorChHasConstant,
+      radiusSeq,
+      r0,
+      r1,
+      wedgeGapRaw: Number(style.wedge_gap ?? 0) || 0,
+    },
+    symbolB: packedSymbol.symbolB,
+    dashB: packedDash.dashB,
+    dashPattern: packedDash.pattern,
+    linecapB: Object.hasOwn(style, "linecap") ? encodeUtf8(String(style.linecap)) : new Uint8Array(),
+    stepB: style.step != null ? encodeUtf8(String(style.step)) : new Uint8Array(),
+    curveB: style.curve != null ? encodeUtf8(String(style.curve)) : new Uint8Array(),
+    fillCss,
+    fillSpace,
+    fillGradientBlob: gradientBlob,
+    strokeCss: Object.hasOwn(style, "stroke") ? encodeUtf8(String(style.stroke)) : new Uint8Array(),
+    lineColor: Object.hasOwn(style, "line_color") ? encodeUtf8(String(style.line_color)) : new Uint8Array(),
+    colorCss: Object.hasOwn(style, "color") ? encodeUtf8(String(style.color)) : new Uint8Array(),
+    colorMode: packedChannel.mode,
+    colorConst: packedChannel.constant,
+  });
+}
+
 function packXyTc(figure) {
   const traces = figure.traces ?? [];
   const records = [];
   const figurePlan = sceneXytcFigurePlan({ showLegend: figureShowLegend(figure) !== false });
   const showLegend = figurePlan.showLegend;
   for (const trace of traces) {
-    const style = trace.style ?? {};
-    let flags = 0;
-    const kindName = String(trace.kind ?? "");
-    const kind = encodeUtf8(kindName);
-    const dispatch = sceneXytcTraceDispatchPlan({
-      kind: kindName,
-      markerPathPresent: kindName === "scatter" && style.marker_path != null,
-      useDensity: kindName === "scatter" && scatterUsesDensity(trace),
-      joinedFill: kindName === "triangle_mesh" && Boolean(style.joined_fill),
-    });
-    const kindClass = dispatch.kindClass;
-    const name = trace.name != null && String(trace.name).length ? String(trace.name) : "";
-    const nameB = encodeUtf8(name);
-    const packedSymbol = packXyTcSymbol(style);
-    flags |= packedSymbol.flags;
-    const symbolB = packedSymbol.symbolB;
-    let symbolInt = packedSymbol.symbolInt;
-    const opacity = Number(style.opacity ?? 1);
-    const packedOpacity = sceneXytcOpacityPack(
-      dispatch.packOpacity ? 1 : 0,
-      kindClass & SCENE_KIND_CLASS_BAND ? 1 : 0,
-      style,
-    );
-    const fillOpacity = packedOpacity.fillOpacity;
-    const strokeOpacity = packedOpacity.strokeOpacity;
-    const lineOpacity = packedOpacity.lineOpacity;
-    const packedNumeric = sceneXytcNumericStylePack(trace, style);
-    flags |= packedNumeric.flags;
-    const size = packedNumeric.size;
-    const sizeCh = packedNumeric.sizeCh;
-    let strokeWidth = packedNumeric.strokeWidth;
-    let width = packedNumeric.width;
-    let lineWidth = packedNumeric.lineWidth;
-    let hexDx = Number.NaN;
-    let hexDy = Number.NaN;
-    if (dispatch.packHexPitch) {
-      const packedHex = sceneXytcHexPitchPack(1, style);
-      flags |= packedHex.flags;
-      hexDx = packedHex.hexDx;
-      hexDy = packedHex.hexDy;
-    }
-    if (dispatch.packStrokePerimeter) {
-      flags |= packXyTcStrokePerimeter(style, kindClass);
-    }
-    const packedDash = packXyTcDash(style);
-    flags |= packedDash.flags;
-    const dashB = packedDash.dashB;
-    const dashPattern = packedDash.pattern;
-    const linecapB = packXyTcLinecap(style);
-    const stepB = style.step != null ? encodeUtf8(String(style.step)) : new Uint8Array();
-    const curveB = style.curve != null ? encodeUtf8(String(style.curve)) : new Uint8Array();
-    let fillCss = new Uint8Array();
-    let fillSpace = new Uint8Array();
-    let gradientBlob = new Uint8Array();
-    flags |= packXyTcPaintPresence(style);
-    if (Object.hasOwn(style, "fill")) {
-      const fill = style.fill;
-      if (typeof fill === "string") fillCss = encodeUtf8(fill);
-      else if (fill != null && typeof fill === "object" && fill.space != null && fill.dir != null && Array.isArray(fill.stops)) {
-        gradientBlob = packGradientSpec(fill) ?? new Uint8Array();
-      } else if (fill != null && typeof fill === "object") {
-        fillCss = encodeUtf8(String(fill.gradient ?? ""));
-        fillSpace = encodeUtf8(String(fill.space ?? "mark"));
-      }
-    }
-    let strokeCss = new Uint8Array();
-    if (Object.hasOwn(style, "stroke")) {
-      strokeCss = encodeUtf8(style.stroke);
-    }
-    let lineColor = new Uint8Array();
-    const packedLineColor = packXyTcLineColor(style);
-    if (packedLineColor.flags) {
-      lineColor = packedLineColor.bytes;
-    }
-    const colorCss = encodeUtf8(style.color ?? "");
-    let colorMode = new Uint8Array();
-    let colorConst = new Uint8Array();
-    const packedChannel = packXyTcColorChannel(trace);
-    if (packedChannel.flags) {
-      flags |= packedChannel.flags;
-      colorMode = packedChannel.mode;
-      colorConst = packedChannel.constant;
-    }
-    if (dispatch.packColor2) {
-      const packedColor2 = packXyTcColor2(trace, flags, gradientBlob);
-      flags |= packedColor2.flags;
-      gradientBlob = packedColor2.gradientBlob;
-    }
-    let markerBlob = new Uint8Array();
-    let markerPathPresent = 0;
-    let markerPacked = 0;
-    let glyphPacked = 0;
-    if (dispatch.markerPathBranch) {
-      markerPathPresent = 1;
-      const packed = packMarkerBlob(style.marker_path);
-      if (packed) {
-        markerPacked = 1;
-        markerBlob = packed;
-      }
-    } else if (dispatch.markerGlyphBranch) {
-      const packedGlyph = admittedMarkerGlyph(style.marker_glyph);
-      if (packedGlyph != null) {
-        glyphPacked = 1;
-        markerBlob = packedGlyph;
-      }
-    }
-    flags |= packXyTcMetaFlags(trace, showLegend, {
-      markerPathPresent,
-      markerPacked,
-      glyphPacked,
-    });
-    let rTip = 0;
-    let rBase = 0;
-    let wedgeGap = 0;
-    if (dispatch.packRadius) {
-      const packedRadius = sceneXytcRadiusPack(trace.kind, style);
-      flags |= packedRadius.flags;
-      rTip = packedRadius.rTip;
-      rBase = packedRadius.rBase;
-      wedgeGap = packedRadius.wedgeGap;
-    }
-    const prefix = new Uint8Array(160);
-    const view = new DataView(prefix.buffer);
-    prefix.set(encodeUtf8("XYTR").slice(0, 4), 0);
-    view.setUint16(4, 1, true);
-    view.setUint16(6, kind.length, true);
-    view.setUint32(8, flags >>> 0, true);
-    view.setUint16(12, nameB.length, true);
-    view.setUint16(14, symbolB.length, true);
-    view.setFloat64(16, opacity, true);
-    view.setFloat64(24, fillOpacity, true);
-    view.setFloat64(32, strokeOpacity, true);
-    view.setFloat64(40, lineOpacity, true);
-    view.setFloat64(48, size, true);
-    view.setFloat64(56, sizeCh, true);
-    view.setFloat64(64, strokeWidth, true);
-    view.setFloat64(72, width, true);
-    view.setFloat64(80, lineWidth, true);
-    view.setFloat64(88, hexDx, true);
-    view.setFloat64(96, hexDy, true);
-    view.setUint16(104, dashB.length, true);
-    view.setUint16(106, linecapB.length, true);
-    view.setUint16(108, stepB.length, true);
-    view.setUint16(110, curveB.length, true);
-    view.setUint16(112, fillCss.length, true);
-    view.setUint16(114, strokeCss.length, true);
-    view.setUint16(116, lineColor.length, true);
-    view.setUint16(118, colorCss.length, true);
-    view.setUint16(120, colorMode.length, true);
-    view.setUint16(122, colorConst.length, true);
-    view.setUint16(124, fillSpace.length, true);
-    view.setUint16(126, symbolInt, true);
-    view.setUint32(128, dashPattern.length, true);
-    view.setUint32(132, markerBlob.length, true);
-    view.setUint32(136, gradientBlob.length, true);
-    view.setFloat64(140, rTip, true);
-    view.setFloat64(148, rBase, true);
-    view.setFloat32(156, wedgeGap, true);
-    const pattern = new Uint8Array(dashPattern.length * 8);
-    const patternView = new DataView(pattern.buffer);
-    dashPattern.forEach((value, index) => patternView.setFloat64(index * 8, value, true));
-    records.push(prefix, kind, nameB, symbolB, dashB, linecapB, stepB, curveB, fillCss, strokeCss, lineColor, colorCss, colorMode, colorConst, fillSpace, pattern, markerBlob, gradientBlob);
+    records.push(marshalXyTcTraceRecord(trace, showLegend));
   }
   const header = new Uint8Array(16);
   const headerView = new DataView(header.buffer);
@@ -3992,6 +4010,230 @@ function xytaHexbinPlaneObservations(trace) {
   return { hexbinColormapPlane, hexbinRgbaPlaneReady };
 }
 
+function marshalXyTaTraceRecord(trace, traceIndex, figure, xDomain, yDomain, polar) {
+  const style = trace.style ?? {};
+  const kindName = String(trace.kind ?? "");
+  const { hexbinColormapPlane, hexbinRgbaPlaneReady } = xytaHexbinPlaneObservations(trace);
+  const dispatch = sceneXytaTraceDispatchPlan({
+    kind: kindName,
+    polar,
+    useDensity: kindName === "scatter" && scatterUsesDensity(trace),
+    hexbinColormapPlane,
+    hexbinRgbaPlaneReady,
+    ribbonColor2Class: COLOR2_CLASS_TO_CODE[classifyRibbonColor2(trace)] ?? 4,
+    meshPaintPlane: meshPacksPaintPlane(trace),
+    scatterPaintPlane: scatterPacksPaintPlane(trace),
+  });
+  const nan = Number.NaN;
+  let rows = 0;
+  let cols = 0;
+  let grid = new Uint8Array();
+  let rgba = new Uint8Array();
+  let rgbaGrid = new Uint8Array();
+  let x = new Uint8Array();
+  let y = new Uint8Array();
+  let meanRgba = new Uint8Array();
+  let idx = new Uint8Array();
+  let lut = new Uint8Array();
+  let cmap = new Uint8Array();
+  let stops = new Uint8Array();
+  let colorCh = new Uint8Array();
+  let styleColor = new Uint8Array();
+  let domainX0 = nan;
+  let domainX1 = nan;
+  let domainY0 = nan;
+  let domainY1 = nan;
+  let cmapLo = nan;
+  let cmapHi = nan;
+  let opacity = nan;
+  let fillOpacity = nan;
+  let cmapFlags = 0;
+  let hasGridShape = false;
+  let hasGrid = false;
+  let hasRgba = false;
+  let hasRgbaGrid = false;
+  let truecolor = false;
+  let hasCmapDomain = false;
+  let hasColorCh = false;
+  let hasStyleColor = false;
+  let hasOpacity = false;
+  let hasFillOpacity = false;
+  let gridShapeRows = nan;
+  let gridShapeCols = nan;
+  if (dispatch.packHeatmap) {
+    const shape = heatmapGridShape(trace);
+    if (shape != null && shape.length === 2) {
+      hasGridShape = true;
+      gridShapeRows = Number(shape[0]);
+      gridShapeCols = Number(shape[1]);
+      if (sceneHeatmapShapeAdmit(gridShapeRows, gridShapeCols)) {
+        rows = gridShapeRows;
+        cols = gridShapeCols;
+      }
+    }
+    if (trace.grid != null) {
+      hasGrid = true;
+      grid = packXyTaGrid(trace.grid);
+    }
+    if (trace.rgba != null) {
+      hasRgba = true;
+      rgba = packXyTaRgba(trace.rgba);
+    }
+    if (trace.rgba_grid != null) {
+      hasRgbaGrid = true;
+      rgbaGrid = packXyTaRgbaGrid(trace.rgba_grid);
+    }
+    const packedCmap = packXyTaColormap(trace);
+    cmapFlags = packedCmap.flags;
+    cmap = packedCmap.cmap;
+    stops = packedCmap.stops;
+    if (style.truecolor) truecolor = true;
+    const domain = style.domain;
+    if (domain != null && domain.length === 2) {
+      hasCmapDomain = true;
+      cmapLo = Number(domain[0]);
+      cmapHi = Number(domain[1]);
+    }
+  } else if (dispatch.packHexbinColormap) {
+    const channel = hexbinXyTaColorChannel(trace);
+    const values = channel?.values;
+    rows = 1;
+    cols = values.length;
+    hasGrid = true;
+    grid = packF64Le(values);
+    const packedCmap = hexbinXyTaColormap(trace);
+    cmapFlags = packedCmap.flags;
+    cmap = packedCmap.cmap;
+    stops = packedCmap.stops;
+    const domain = channel?.domain;
+    if (domain != null && domain.length === 2) {
+      hasCmapDomain = true;
+      cmapLo = Number(domain[0]);
+      cmapHi = Number(domain[1]);
+    }
+  } else if (dispatch.packHexbinRgba) {
+    const packed = hexbinCellRgba8(trace);
+    if (packed != null) {
+      rows = 1;
+      cols = packed.length / 4;
+      hasGrid = true;
+      hasRgba = true;
+      grid = packF64Le(new Float64Array(cols));
+      rgba = packed;
+    }
+  } else if (dispatch.packRibbonEnds) {
+    const ends = ribbonEndRgbaPair(trace);
+    if (ends != null) {
+      rows = 1;
+      cols = ends.source.length / 4;
+      hasRgba = true;
+      rgba = ends.source;
+      meanRgba = ends.target;
+    }
+  } else if (dispatch.packMeshFaces) {
+    const packed = meshFacePaints(trace);
+    if (packed != null) {
+      rows = 1;
+      cols = packed.fills.length / 4;
+      hasRgba = true;
+      rgba = packed.fills;
+      meanRgba = packed.strokes;
+      x = packed.widths;
+    }
+  } else if (dispatch.packScatterPaint) {
+    const packed = scatterPointPaints(trace);
+    if (packed != null) {
+      rows = 1;
+      cols = packed.fills.length / 4;
+      hasRgba = true;
+      rgba = packed.fills;
+      meanRgba = packed.strokes;
+      x = packed.widths;
+    }
+  } else if (dispatch.packDensity) {
+    if (trace.x != null) x = packF64Le(asF64Array(trace.x, "x"));
+    if (trace.y != null) y = packF64Le(asF64Array(trace.y, "y"));
+    domainX0 = Number(xDomain[0]);
+    domainX1 = Number(xDomain[1]);
+    domainY0 = Number(yDomain[0]);
+    domainY1 = Number(yDomain[1]);
+    const packedCmap = packXyTaColormap(trace);
+    cmapFlags = packedCmap.flags;
+    cmap = packedCmap.cmap;
+    stops = packedCmap.stops;
+    const packedColorCh = packXyTaDensityColorCh(trace);
+    if (packedColorCh.flags) {
+      hasColorCh = true;
+      colorCh = packedColorCh.bytes;
+    }
+    if (style.color != null) {
+      hasStyleColor = true;
+      styleColor = new TextEncoder().encode(String(style.color));
+    }
+    if (Object.hasOwn(style, "opacity")) {
+      hasOpacity = true;
+      opacity = Number(style.opacity);
+    }
+    const packedFill = packXyTaFillOpacity(style);
+    if (packedFill.flags) {
+      hasFillOpacity = true;
+      fillOpacity = packedFill.value;
+    }
+    const source = resolveDensityBinColors(trace);
+    if (source?.rgba != null) {
+      meanRgba = source.rgba instanceof Uint8Array ? source.rgba : Uint8Array.from(source.rgba);
+    } else if (source?.idx != null && source?.lut != null) {
+      idx = source.idx instanceof Uint8Array ? source.idx : Uint8Array.from(source.idx);
+      lut = source.lut instanceof Uint8Array ? source.lut : Uint8Array.from(source.lut);
+    }
+  }
+  return sceneXytaTracePack({
+    traceId: Number(trace.id ?? traceIndex) >>> 0,
+    packHeatmap: dispatch.packHeatmap,
+    packHexbinColormap: dispatch.packHexbinColormap,
+    packHexbinRgba: dispatch.packHexbinRgba,
+    packRibbonEnds: dispatch.packRibbonEnds,
+    packMeshFaces: dispatch.packMeshFaces,
+    packScatterPaint: dispatch.packScatterPaint,
+    packDensity: dispatch.packDensity,
+    gridShapeRows,
+    gridShapeCols,
+    hasGridShape,
+    hasGrid,
+    hasRgba,
+    hasRgbaGrid,
+    truecolor,
+    hasCmapDomain,
+    cmapLo,
+    cmapHi,
+    hasColorCh,
+    hasStyleColor,
+    hasOpacity,
+    hasFillOpacity,
+    opacity,
+    fillOpacity,
+    domainX0,
+    domainX1,
+    domainY0,
+    domainY1,
+    cmapFlags,
+    rows,
+    cols,
+    grid,
+    rgba,
+    rgbaGrid,
+    x,
+    y,
+    meanRgba,
+    idx,
+    lut,
+    cmap,
+    stops,
+    colorCh,
+    styleColor,
+  });
+}
+
 function packXyTa(figure, xDomain, yDomain) {
   const traces = figure.traces ?? [];
   const records = [new Uint8Array(16)];
@@ -4002,200 +4244,7 @@ function packXyTa(figure, xDomain, yDomain) {
   const figurePlan = sceneXytaFigurePlan({ polar: figure.coords === "polar" });
   const polar = figurePlan.polar;
   for (const [traceIndex, trace] of traces.entries()) {
-    const style = trace.style ?? {};
-    const kindName = String(trace.kind ?? "");
-    const { hexbinColormapPlane, hexbinRgbaPlaneReady } = xytaHexbinPlaneObservations(trace);
-    const dispatch = sceneXytaTraceDispatchPlan({
-      kind: kindName,
-      polar,
-      useDensity: kindName === "scatter" && scatterUsesDensity(trace),
-      hexbinColormapPlane,
-      hexbinRgbaPlaneReady,
-      ribbonColor2Class: COLOR2_CLASS_TO_CODE[classifyRibbonColor2(trace)] ?? 4,
-      meshPaintPlane: meshPacksPaintPlane(trace),
-      scatterPaintPlane: scatterPacksPaintPlane(trace),
-    });
-    let flags = 0;
-    let rows = 0;
-    let cols = 0;
-    let grid = new Uint8Array();
-    let rgba = new Uint8Array();
-    let rgbaGrid = new Uint8Array();
-    let x = new Uint8Array();
-    let y = new Uint8Array();
-    let meanRgba = new Uint8Array();
-    let idx = new Uint8Array();
-    let lut = new Uint8Array();
-    let cmap = new Uint8Array();
-    let stops = new Uint8Array();
-    let colorCh = new Uint8Array();
-    let styleColor = new Uint8Array();
-    let domainX0 = Number.NaN;
-    let domainX1 = Number.NaN;
-    let domainY0 = Number.NaN;
-    let domainY1 = Number.NaN;
-    let cmapLo = Number.NaN;
-    let cmapHi = Number.NaN;
-    let opacity = Number.NaN;
-    let fillOpacity = Number.NaN;
-    if (dispatch.packHeatmap) {
-      flags |= XYTA_HEATMAP;
-      const shape = heatmapGridShape(trace);
-      if (shape != null && shape.length === 2) {
-        flags |= XYTA_SHAPE;
-        const rawRows = Number(shape[0]);
-        const rawCols = Number(shape[1]);
-        if (sceneHeatmapShapeAdmit(rawRows, rawCols)) {
-          rows = rawRows;
-          cols = rawCols;
-        }
-      }
-      if (trace.grid != null) {
-        flags |= XYTA_HAS_GRID;
-        grid = packXyTaGrid(trace.grid);
-      }
-      if (trace.rgba != null) {
-        flags |= XYTA_HAS_RGBA;
-        rgba = packXyTaRgba(trace.rgba);
-      }
-      if (trace.rgba_grid != null) {
-        flags |= XYTA_HAS_RGBA_GRID;
-        rgbaGrid = packXyTaRgbaGrid(trace.rgba_grid);
-      }
-      const packedCmap = packXyTaColormap(trace);
-      flags |= packedCmap.flags;
-      cmap = packedCmap.cmap;
-      stops = packedCmap.stops;
-      if (style.truecolor) flags |= XYTA_TRUECOLOR;
-      const domain = style.domain;
-      if (domain != null && domain.length === 2) {
-        flags |= XYTA_HAS_DOMAIN;
-        cmapLo = Number(domain[0]);
-        cmapHi = Number(domain[1]);
-      }
-    } else if (dispatch.packHexbinColormap) {
-      flags |= XYTA_HEATMAP | XYTA_SHAPE | XYTA_HAS_GRID;
-      const channel = hexbinXyTaColorChannel(trace);
-      const values = channel?.values;
-      grid = packF64Le(values);
-      rows = 1;
-      cols = values.length;
-      const packedCmap = hexbinXyTaColormap(trace);
-      flags |= packedCmap.flags;
-      cmap = packedCmap.cmap;
-      stops = packedCmap.stops;
-      const domain = channel?.domain;
-      if (domain != null && domain.length === 2) {
-        flags |= XYTA_HAS_DOMAIN;
-        cmapLo = Number(domain[0]);
-        cmapHi = Number(domain[1]);
-      }
-    } else if (dispatch.packHexbinRgba) {
-      const packed = hexbinCellRgba8(trace);
-      if (packed != null) {
-        flags |= XYTA_HEATMAP | XYTA_SHAPE | XYTA_HAS_GRID | XYTA_HAS_RGBA;
-        rows = 1;
-        cols = packed.length / 4;
-        grid = packF64Le(new Float64Array(cols));
-        rgba = packed;
-      }
-    } else if (dispatch.packRibbonEnds) {
-      const ends = ribbonEndRgbaPair(trace);
-      if (ends != null) {
-        flags |= XYTA_RIBBON_ENDS | XYTA_SHAPE | XYTA_HAS_RGBA;
-        rows = 1;
-        cols = ends.source.length / 4;
-        rgba = ends.source;
-        meanRgba = ends.target;
-      }
-    } else if (dispatch.packMeshFaces) {
-      const packed = meshFacePaints(trace);
-      if (packed != null) {
-        flags |= XYTA_MESH_FACES | XYTA_SHAPE | XYTA_HAS_RGBA;
-        rows = 1;
-        cols = packed.fills.length / 4;
-        rgba = packed.fills;
-        meanRgba = packed.strokes;
-        x = packed.widths;
-      }
-    } else if (dispatch.packScatterPaint) {
-      const packed = scatterPointPaints(trace);
-      if (packed != null) {
-        flags |= XYTA_SCATTER_PAINT | XYTA_SHAPE | XYTA_HAS_RGBA;
-        rows = 1;
-        cols = packed.fills.length / 4;
-        rgba = packed.fills;
-        meanRgba = packed.strokes;
-        x = packed.widths;
-      }
-    } else if (dispatch.packDensity) {
-      flags |= XYTA_DENSITY;
-      if (trace.x != null) x = packF64Le(asF64Array(trace.x, "x"));
-      if (trace.y != null) y = packF64Le(asF64Array(trace.y, "y"));
-      domainX0 = Number(xDomain[0]);
-      domainX1 = Number(xDomain[1]);
-      domainY0 = Number(yDomain[0]);
-      domainY1 = Number(yDomain[1]);
-      const packedCmap = packXyTaColormap(trace);
-      flags |= packedCmap.flags;
-      cmap = packedCmap.cmap;
-      stops = packedCmap.stops;
-      const packedColorCh = packXyTaDensityColorCh(trace);
-      flags |= packedColorCh.flags;
-      colorCh = packedColorCh.bytes;
-      if (style.color != null) {
-        flags |= XYTA_HAS_STYLE_COLOR;
-        styleColor = new TextEncoder().encode(String(style.color));
-      }
-      if (Object.hasOwn(style, "opacity")) {
-        flags |= XYTA_HAS_OPACITY;
-        opacity = Number(style.opacity);
-      }
-      const packedFill = packXyTaFillOpacity(style);
-      if (packedFill.flags) {
-        flags |= packedFill.flags;
-        fillOpacity = packedFill.value;
-      }
-      const source = resolveDensityBinColors(trace);
-      if (source?.rgba != null) {
-        meanRgba = source.rgba instanceof Uint8Array ? source.rgba : Uint8Array.from(source.rgba);
-      } else if (source?.idx != null && source?.lut != null) {
-        idx = source.idx instanceof Uint8Array ? source.idx : Uint8Array.from(source.idx);
-        lut = source.lut instanceof Uint8Array ? source.lut : Uint8Array.from(source.lut);
-      }
-    }
-    const prefix = new Uint8Array(128);
-    const view = new DataView(prefix.buffer);
-    view.setUint32(0, flags, true);
-    view.setUint32(4, Number(trace.id ?? traceIndex) >>> 0, true);
-    view.setInt32(8, rows, true);
-    view.setInt32(12, cols, true);
-    view.setUint32(16, grid.length / 8, true);
-    view.setUint32(20, rgba.length, true);
-    view.setUint32(24, rgbaGrid.length / 8, true);
-    view.setUint32(28, x.length / 8, true);
-    view.setUint32(32, y.length / 8, true);
-    view.setUint32(36, meanRgba.length, true);
-    view.setUint32(40, idx.length, true);
-    view.setUint32(44, lut.length, true);
-    view.setUint16(48, Math.min(cmap.length, 65535), true);
-    view.setUint16(50, Math.min(stops.length, 65535), true);
-    view.setUint16(52, Math.min(colorCh.length, 65535), true);
-    view.setUint16(54, Math.min(styleColor.length, 65535), true);
-    view.setFloat64(56, domainX0, true);
-    view.setFloat64(64, domainX1, true);
-    view.setFloat64(72, domainY0, true);
-    view.setFloat64(80, domainY1, true);
-    view.setFloat64(88, cmapLo, true);
-    view.setFloat64(96, cmapHi, true);
-    view.setFloat32(104, opacity, true);
-    view.setFloat32(108, fillOpacity, true);
-    records.push(
-      prefix, grid, rgba, rgbaGrid,
-      cmap.subarray(0, 65535), stops.subarray(0, 65535),
-      colorCh.subarray(0, 65535), styleColor.subarray(0, 65535),
-      x, y, meanRgba, idx, lut,
-    );
+    records.push(marshalXyTaTraceRecord(trace, traceIndex, figure, xDomain, yDomain, polar));
   }
   return concatBytes(records);
 }
