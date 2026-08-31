@@ -1397,6 +1397,13 @@ def load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_size_t,
     ]
+    lib.xyg_density_overlay_omitted_wire.restype = ctypes.c_size_t
+    lib.xyg_density_overlay_omitted_wire.argtypes = [
+        ctypes.c_uint32,
+        ctypes.c_int32,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+    ]
     lib.xyg_payload_sample_target_indices.restype = ctypes.c_size_t
     lib.xyg_payload_sample_target_indices.argtypes = [
         ctypes.c_size_t,
@@ -4949,6 +4956,14 @@ def main() -> None:
         lib.xyg_density_reduction_kind(b"exact", 5) == 0
         and lib.xyg_density_reduction_kind(b"pyramid-L2", 10) == 1,
         "density_reduction_kind prefix",
+    )
+    overlay_buf = ctypes.create_string_buffer(32)
+    ok(
+        lib.xyg_density_overlay_omitted_wire(1, 1, overlay_buf, 32) == 15
+        and overlay_buf.raw[:15] == b"rows_exceed_u32"
+        and lib.xyg_density_overlay_omitted_wire(2, 0, overlay_buf, 32) == 13
+        and overlay_buf.raw[:13] == b"static_raster",
+        "density_overlay_omitted_wire labels",
     )
     sample_keep = ctypes.c_int32(-1)
     sample_n = lib.xyg_payload_sample_target_indices(

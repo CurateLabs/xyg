@@ -11809,6 +11809,28 @@ def density_reduction_kind(*, binning: str = "") -> int:
     return int(kind)
 
 
+def density_overlay_omitted_wire(*, overlay_omitted: int, point_overlay: bool) -> str | None:
+    """Wire ``density["overlay_omitted"]`` via ``xyg_density_overlay_omitted_wire`` (ABI 266)."""
+    if overlay_omitted not in (
+        DENSITY_OVERLAY_NONE,
+        DENSITY_OVERLAY_ROWS_EXCEED_U32,
+        DENSITY_OVERLAY_STATIC_RASTER,
+    ):
+        raise ValueError("invalid density_overlay_omitted_wire overlay_omitted")
+    buf = np.empty(32, dtype=np.uint8)
+    written = _lib.xyg_density_overlay_omitted_wire(
+        int(overlay_omitted),
+        int(bool(point_overlay)),
+        buf.ctypes.data,
+        len(buf),
+    )
+    if written == _USIZE_MAX:
+        raise ValueError("invalid density_overlay_omitted_wire arguments")
+    if written == 0:
+        return None
+    return bytes(buf[:written]).decode("ascii")
+
+
 def density_bin_coord_endpoints(
     *,
     x_linear: bool,

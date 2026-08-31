@@ -43,6 +43,10 @@ density_rgba = _impl.density_rgba
 density_rgba_linear = _impl.density_rgba_linear
 density_log_u8 = _impl.density_log_u8
 density_overlay_opacity = _impl.density_overlay_opacity
+DENSITY_OVERLAY_NONE = _impl.DENSITY_OVERLAY_NONE
+DENSITY_OVERLAY_ROWS_EXCEED_U32 = _impl.DENSITY_OVERLAY_ROWS_EXCEED_U32
+DENSITY_OVERLAY_STATIC_RASTER = _impl.DENSITY_OVERLAY_STATIC_RASTER
+density_overlay_omitted_wire = _impl.density_overlay_omitted_wire
 density_bin_window = _impl.density_bin_window
 density_bin_coord_endpoints = _impl.density_bin_coord_endpoints
 density_emit_plan = _impl.density_emit_plan
@@ -242,6 +246,9 @@ __all__ = [
     "CSS_DECLARATION",
     "CSS_LENGTH",
     "CSS_NUMBER",
+    "DENSITY_OVERLAY_NONE",
+    "DENSITY_OVERLAY_ROWS_EXCEED_U32",
+    "DENSITY_OVERLAY_STATIC_RASTER",
     "DENSITY_REDUCTION_BIN2D",
     "DENSITY_REDUCTION_PYRAMID_COUNT",
     "argsort_stable",
@@ -284,6 +291,7 @@ __all__ = [
     "density_full_identity",
     "density_grid_path",
     "density_log_u8",
+    "density_overlay_omitted_wire",
     "density_overlay_opacity",
     "density_pyramid_preflight",
     "density_reduction_kind",
