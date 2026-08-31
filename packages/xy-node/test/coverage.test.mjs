@@ -1483,16 +1483,14 @@ test("buildPayload ships cartesian axis bounds like Python _axis_spec", () => {
   assert.equal(spec.y_axis.bounds, undefined);
 });
 
-test("buildPayload omits cartesian axis tick_sides unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_sides`. Node cartesian payload axes omit
-  // that field even when axis tick_sides is set. Recorded
-  // emit-payload-axis-tick-sides stay-host.
+test("buildPayload ships cartesian axis tick_sides like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   fig.setAxis("x", { tick_sides: ["bottom"] });
   const { spec } = fig.buildPayload();
   assert.deepEqual(fig.axis_options.x.tick_sides, ["bottom"]);
-  assert.equal(spec.x_axis.tick_sides, undefined);
+  assert.deepEqual(spec.x_axis.tick_sides, ["bottom"]);
+  assert.equal(spec.y_axis.tick_sides, undefined);
 });
 
 test("buildPayload omits cartesian axis tick_label_sides unlike Python _axis_spec", () => {
@@ -1849,14 +1847,12 @@ test("buildPayload ships polar axis bounds like Python _axis_spec", () => {
   assert.deepEqual(spec.x_axis.bounds, [0, 1]);
 });
 
-test("buildPayload omits polar axis tick_sides unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_sides` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-sides stay-host.
+test("buildPayload ships polar axis tick_sides like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.setAxis("x", { tick_sides: ["bottom"] });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.tick_sides, undefined);
+  assert.deepEqual(spec.x_axis.tick_sides, ["bottom"]);
 });
 
 test("buildPayload omits polar axis tick_label_sides unlike Python _axis_spec", () => {
