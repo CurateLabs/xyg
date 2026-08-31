@@ -7,7 +7,7 @@ use crate::scene_trace_attach::{
     XYTA_PREFIX_BYTES,
 };
 
-pub const SCENE_XYTA_TRACE_PACK_MAX_RECORD: usize = 1 << 20;
+pub const SCENE_XYTA_TRACE_PACK_MAX_RECORD: usize = 1 << 22;
 
 #[derive(Clone, Debug)]
 pub struct XytaTracePackInput<'a> {

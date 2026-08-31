@@ -2201,7 +2201,7 @@ def scene_xyta_trace_dispatch_plan(
 
 
 SCENE_XYTC_TRACE_PACK_MAX_RECORD = 1 << 20
-SCENE_XYTA_TRACE_PACK_MAX_RECORD = 1 << 20
+SCENE_XYTA_TRACE_PACK_MAX_RECORD = 1 << 22
 
 
 class _SceneXytcTraceStyleIn(ctypes.Structure):

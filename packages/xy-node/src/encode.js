@@ -5759,7 +5759,7 @@ const SCENE_XYTC_TRACE_STYLE_IN_BYTES = 336;
 const SCENE_XYTC_TRACE_PACK_IN_BYTES = 408;
 const SCENE_XYTA_TRACE_PACK_IN_BYTES = 256;
 export const SCENE_XYTC_TRACE_PACK_MAX_RECORD = 1 << 20;
-export const SCENE_XYTA_TRACE_PACK_MAX_RECORD = 1 << 20;
+export const SCENE_XYTA_TRACE_PACK_MAX_RECORD = 1 << 22;
 
 function packSceneXytcTraceStyleIn(style) {
   const buf = Buffer.alloc(SCENE_XYTC_TRACE_STYLE_IN_BYTES);
