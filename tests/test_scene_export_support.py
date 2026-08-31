@@ -164,6 +164,21 @@ def _public_heatmap() -> Figure:
     return figure
 
 
+def _public_colormap_heatmap() -> Figure:
+    """Colormap Cartesian heatmap with deterministic cross-host XYTA identity."""
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 4.0)
+    figure.axis_options["y"]["domain"] = (0.0, 5.0)
+    figure.heatmap(
+        _PUBLIC_HEATMAP_Z,
+        x=_PUBLIC_HEATMAP_X,
+        y=_PUBLIC_HEATMAP_Y,
+        name="heat",
+    )
+    figure.traces[-1].id = 0
+    return figure
+
+
 def _public_polar_hexbin() -> Figure:
     """Constant-style polar hexbin with deterministic cross-host identity."""
     figure = Figure(width=400, height=400, coords="polar")
@@ -1418,6 +1433,15 @@ def test_public_hexbin_colormap_xyta_matches_cross_host_fixture() -> None:
     packed = _pack_xyta(figure)
     assert packed.startswith(b"XYTA")
     assert hashlib.sha256(packed).hexdigest() == fixture["public_hexbin_colormap_xyta_sha256"]
+
+
+def test_public_heatmap_colormap_xyta_matches_cross_host_fixture() -> None:
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
+    figure = _public_colormap_heatmap()
+    assert figure.traces[0].style.get("colormap") == "viridis"
+    packed = _pack_xyta(figure)
+    assert packed.startswith(b"XYTA")
+    assert hashlib.sha256(packed).hexdigest() == fixture["public_heatmap_colormap_xyta_sha256"]
 
 
 @pytest.mark.parametrize(

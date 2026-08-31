@@ -2,7 +2,7 @@
  * Heatmap mark — 2-D scalar grid + optional `xy_heatmap_rgba` colormap.
  */
 
-import { asF64Array, heatmapRgba, minMax } from "../encode.js";
+import { asF64Array, DEFAULT_PALETTE, heatmapRgba, minMax } from "../encode.js";
 
 function cellEdges(pos, n) {
   if (pos != null) {
@@ -78,14 +78,18 @@ export function composeHeatmap(z, opts = {}) {
   } else {
     [lo, hi] = mm;
   }
+  const constantColor = typeof opts.color === "string" ? opts.color : null;
+  const useConstantColor = constantColor != null;
   const style = {
-    color: opts.color ?? "#3987e5",
+    color: constantColor ?? DEFAULT_PALETTE[0],
     opacity: opts.opacity ?? 0.95,
     role: "heatmap",
     domain: [lo, hi],
     x_range: [xEdges[0], xEdges[xEdges.length - 1]],
     y_range: [yEdges[0], yEdges[yEdges.length - 1]],
-    ...(opts.colormap != null ? { colormap: opts.colormap } : {}),
+    ...(useConstantColor
+      ? {}
+      : { colormap: opts.colormap ?? "viridis", truecolor: false }),
     ...(opts.style ?? {}),
   };
   let rgba = null;

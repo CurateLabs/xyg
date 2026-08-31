@@ -44,7 +44,7 @@ test("Node projects Rust-owned Scene support decisions verbatim", () => {
   assert.equal(new DataView(polarBarScene.buffer, polarBarScene.byteOffset).getUint32(4, true), 31);
   const polarHeat = new Figure({ coords: "polar" }); polarHeat.heatmap([[1, 2], [3, 4]]);
   const polarHeatScene = polarHeat.toScene();
-  assert.ok(sceneSvg(polarHeatScene).includes("<path"));
+  assert.ok(sceneSvg(polarHeatScene).includes("<image"));
   const polarPainted = new Figure({ width: 400, height: 400, coords: "polar" });
   polarPainted.setAxisDomain("x", [0, 2]);
   polarPainted.setAxisDomain("y", [0, 2]);
@@ -1073,6 +1073,24 @@ test("Node matches Python XYTA bytes for colormap hexbin", () => {
   assert.equal(
     crypto.createHash("sha256").update(packed).digest("hex"),
     figureSceneFixture.public_hexbin_colormap_xyta_sha256,
+  );
+});
+
+test("Node matches Python XYTA bytes for colormap heatmap", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 4]);
+  figure.setAxisDomain("y", [0, 5]);
+  figure.heatmap([[0, 1, 2], [3, 4, 5]], {
+    x: [1, 2, 3],
+    y: [1, 3],
+    name: "heat",
+    id: 0,
+  });
+  assert.equal(figure.traces[0].style.colormap, "viridis");
+  const packed = packFigureXyTa(figure);
+  assert.equal(
+    crypto.createHash("sha256").update(packed).digest("hex"),
+    figureSceneFixture.public_heatmap_colormap_xyta_sha256,
   );
 });
 
@@ -2241,14 +2259,14 @@ test("Node Scene compiles cartesian corner_radius and polar donut rounding", () 
   const cells = new Figure({ width: 240, height: 160 });
   cells.setAxisDomain("x", [0, 2]);
   cells.setAxisDomain("y", [0, 2]);
-  cells.heatmap([[1, 2], [3, 4]], { style: { color: "#3987e5", corner_radius: 6 }, name: null });
+  cells.heatmap([[1, 2], [3, 4]], { color: "#3987e5", style: { corner_radius: 6 }, name: null });
   const cellSvg = sceneSvg(cells.toScene());
   assert.equal((cellSvg.match(/<path d="M/g) || []).length, 4);
   assert.equal(sceneExportSupportReason(cells), null);
   const polarCells = new Figure({ width: 400, height: 400, coords: "polar" });
   polarCells.setAxisDomain("x", [0, Math.PI * 2]);
   polarCells.setAxisDomain("y", [0, 1]);
-  polarCells.heatmap([[1, 2], [3, 4]], { style: { color: "#3987e5", corner_radius: 4 }, name: null });
+  polarCells.heatmap([[1, 2], [3, 4]], { color: "#3987e5", style: { corner_radius: 4 }, name: null });
   assert.equal((sceneSvg(polarCells.toScene()).match(/<path d="M/g) || []).length, 4);
   assert.equal(sceneExportSupportReason(polarCells), null);
   const violin = new Figure({ width: 320, height: 240 });

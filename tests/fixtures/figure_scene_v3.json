@@ -187,6 +187,7 @@
     "sum": "f3ed9bd6ca388441b8b3fbf68dcd4b6582832d5973f410a4ab4b30e94f0f7055"
   },
   "public_hexbin_colormap_xyta_sha256": "57296fe4201a06f54dd431cd92a22947af5ec1be673c28e53d954121b48fc1d0",
+  "public_heatmap_colormap_xyta_sha256": "38b0e214f56146c079ba1f03966e2bcfa587d3d3c037aa8582f062a58ea225b4",
   "public_heatmap_sha256": "2799a0eea7b268b539843bf32919c01c61c3406531b57e98aad73909186dbc39",
   "public_polar_hexbin_sha256": "7346d7856085f640ca00ee48f1e62524616f162e6e0aa729efbe269892aebad2",
   "public_polar_bar_sha256": "d8d1de4f605d7e5c8385b3fa12f4cc2a88e17309997db158d88fe253773e056b",
