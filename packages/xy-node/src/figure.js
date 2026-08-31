@@ -1668,6 +1668,9 @@ export class Figure {
     if (attach.attachBounds && bounds != null) {
       spec.bounds = [...bounds].sort((a, b) => a - b);
     }
+    if (attach.attachMinorStyle && opts.minor_style) {
+      spec.minor_style = { ...opts.minor_style };
+    }
     if (attach.attachFormat && opts.format != null) {
       spec.format = opts.format;
     }

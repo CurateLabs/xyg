@@ -318,3 +318,20 @@ test("buildPayload ships polar axis tick_label_min_gap like Python _axis_spec", 
   const { spec } = fig.buildPayload();
   assert.equal(spec.x_axis.tick_label_min_gap, 12);
 });
+
+test("buildPayload ships cartesian axis minor_style like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { minor_style: { tick_color: "#888" } });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.minor_style.tick_color, "#888");
+  assert.equal(spec.y_axis.minor_style, undefined);
+});
+
+test("buildPayload ships polar axis minor_style like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { minor_style: { tick_color: "#111" } });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.minor_style.tick_color, "#111");
+});
