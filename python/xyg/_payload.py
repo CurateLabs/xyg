@@ -1526,19 +1526,23 @@ class PayloadMixin(_Host):
         density["dropped_channels"] = dropped_channels  # complete, actionable list (§28)
         if t.color_ch and t.color_ch.mode == "constant" and t.color_ch.constant is not None:
             density["color"] = t.color_ch.constant
-        if plan["overlay_omitted"] == _native.DENSITY_OVERLAY_ROWS_EXCEED_U32:
+        overlay_wire = kernels.density_overlay_omitted_wire(
+            overlay_omitted=int(plan["overlay_omitted"]),
+            point_overlay=bool(pw.point_overlay),
+        )
+        if overlay_wire == "rows_exceed_u32":
             # §28: exact grid, but the deterministic point overlay is dropped
             # because row ids exceed u32. Recorded so the client/legend can say so.
-            density["overlay_omitted"] = "rows_exceed_u32"
+            density["overlay_omitted"] = overlay_wire
         if pw.point_overlay:
             sample = self._density_sample_spec(t, sel, visible, xr, yr, pw, sample_sel=sample_sel)
             if sample is not None:
                 density["sample"] = sample
-        elif plan["overlay_omitted"] == _native.DENSITY_OVERLAY_STATIC_RASTER:
+        elif overlay_wire == "static_raster":
             # §28: no representation is dropped silently. `oversized` above may
             # have already recorded the more fundamental u32 reason; that one
             # wins, so only claim the field when nothing else has.
-            density["overlay_omitted"] = "static_raster"
+            density["overlay_omitted"] = overlay_wire
         entry = {
             "id": t.id,
             "kind": "scatter",

@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 281;
+pub const ABI_VERSION: u32 = 282;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15810,6 +15810,47 @@ pub unsafe extern "C" fn xyg_density_reduction_kind(
             text
         };
         density_emit::density_reduction_kind(binning_text)
+    })
+}
+
+/// Wire ``density["overlay_omitted"]`` from emit-plan flags (ABI 266).
+///
+/// Returns written byte length, ``0`` when the wire key is omitted, or
+/// ``usize::MAX`` on invalid inputs / undersized ``out``.
+///
+/// # Safety
+/// When ``out_cap > 0``, ``out`` must address that many writable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_density_overlay_omitted_wire(
+    overlay_omitted: u32,
+    point_overlay: i32,
+    out: *mut u8,
+    out_cap: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if !matches!(point_overlay, 0 | 1) {
+            return usize::MAX;
+        }
+        if out_cap > 0 && out.is_null() {
+            return usize::MAX;
+        }
+        let mut scratch = vec![0u8; out_cap];
+        let slice = if out_cap == 0 {
+            &mut [][..]
+        } else {
+            &mut scratch[..]
+        };
+        let Some(written) = density_emit::density_overlay_omitted_wire(
+            overlay_omitted,
+            point_overlay != 0,
+            slice,
+        ) else {
+            return usize::MAX;
+        };
+        if out_cap >= written && written > 0 {
+            std::ptr::copy_nonoverlapping(scratch.as_ptr(), out, written);
+        }
+        written
     })
 }
 

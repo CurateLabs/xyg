@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 281
-#define XYG_ABI_SIGNATURE_SHA256 "93d7fa0809037eb800c00ae86812c0a8c076a5e529a5313fe31ed2557975c1ea"
+#define XYG_ABI_VERSION 282
+#define XYG_ABI_SIGNATURE_SHA256 "4d17dc18cda0033b1b53d8540dcf9fb56230adcee4880aefe2637a547ebdf3f4"
 
 #ifdef __cplusplus
 extern "C" {
@@ -70,6 +70,7 @@ size_t xyg_density_format_binning(int32_t exact, int32_t level, int32_t tiles, i
 int32_t xyg_density_full_identity(int32_t categorical, int32_t compact_categorical, int32_t x_has_nulls, int32_t y_has_nulls, double x_min, double x_max, double y_min, double y_max, double xr0, double xr1, double yr0, double yr1);
 int32_t xyg_density_grid_path(int32_t oversized, int32_t full_identity, int32_t point_overlay, int32_t compact_categorical, int32_t stratified_counts);
 int32_t xyg_density_log_u8(const float * grid, size_t len, uint8_t * out, double * out_max);
+size_t xyg_density_overlay_omitted_wire(uint32_t overlay_omitted, int32_t point_overlay, uint8_t * out, size_t out_cap);
 int32_t xyg_density_overlay_opacity(double authored, double * out);
 size_t xyg_density_pyramid_preflight(int32_t x_linear, int32_t y_linear, uint64_t n_points, int32_t has_pyramid_resource, int32_t x_memmapped, int32_t y_memmapped, int32_t force_pyramid, int32_t force_bin2d, uint32_t * out);
 int32_t xyg_density_reduction_kind(const uint8_t * binning, size_t binning_len);

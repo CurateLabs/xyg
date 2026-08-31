@@ -184,6 +184,27 @@ pub fn density_reduction_kind(binning: &str) -> i32 {
     }
 }
 
+/// Wire ``density["overlay_omitted"]`` when the emit plan records a drop (ABI 266).
+///
+/// Returns written byte length, or ``None`` when ``out`` is too small. Zero means
+/// omit the wire key (``DENSITY_OVERLAY_NONE``, or static raster with overlay).
+pub fn density_overlay_omitted_wire(
+    overlay_omitted: u32,
+    point_overlay: bool,
+    out: &mut [u8],
+) -> Option<usize> {
+    let wire: &[u8] = match overlay_omitted {
+        DENSITY_OVERLAY_ROWS_EXCEED_U32 => b"rows_exceed_u32",
+        DENSITY_OVERLAY_STATIC_RASTER if !point_overlay => b"static_raster",
+        _ => return Some(0),
+    };
+    if out.len() < wire.len() {
+        return None;
+    }
+    out[..wire.len()].copy_from_slice(wire);
+    Some(wire.len())
+}
+
 pub const DENSITY_OVERLAY_NONE: u32 = 0;
 pub const DENSITY_OVERLAY_ROWS_EXCEED_U32: u32 = 1;
 pub const DENSITY_OVERLAY_STATIC_RASTER: u32 = 2;
@@ -734,6 +755,29 @@ mod tests {
         assert_eq!(
             density_reduction_kind("pyramid-L0-tiles-upsampled"),
             DENSITY_REDUCTION_PYRAMID_COUNT
+        );
+    }
+
+    #[test]
+    fn density_overlay_omitted_wire_matches_host_policy() {
+        let mut out = [0u8; 32];
+        assert_eq!(
+            density_overlay_omitted_wire(DENSITY_OVERLAY_ROWS_EXCEED_U32, true, &mut out),
+            Some(15)
+        );
+        assert_eq!(&out[..15], b"rows_exceed_u32");
+        assert_eq!(
+            density_overlay_omitted_wire(DENSITY_OVERLAY_STATIC_RASTER, false, &mut out),
+            Some(13)
+        );
+        assert_eq!(&out[..13], b"static_raster");
+        assert_eq!(
+            density_overlay_omitted_wire(DENSITY_OVERLAY_STATIC_RASTER, true, &mut out),
+            Some(0)
+        );
+        assert_eq!(
+            density_overlay_omitted_wire(DENSITY_OVERLAY_NONE, false, &mut out),
+            Some(0)
         );
     }
 

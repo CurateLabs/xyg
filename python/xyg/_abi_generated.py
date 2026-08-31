@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 281
-SIGNATURE_SHA256 = "93d7fa0809037eb800c00ae86812c0a8c076a5e529a5313fe31ed2557975c1ea"
+ABI_VERSION = 282
+SIGNATURE_SHA256 = "4d17dc18cda0033b1b53d8540dcf9fb56230adcee4880aefe2637a547ebdf3f4"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -246,6 +246,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_density_log_u8
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p]
+    # size_t xyg_density_overlay_omitted_wire(uint32_t overlay_omitted, int32_t point_overlay, uint8_t * out, size_t out_cap)
+    function = lib.xyg_density_overlay_omitted_wire
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_uint32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_density_overlay_opacity(double authored, double * out)
     function = lib.xyg_density_overlay_opacity
     function.restype = ctypes.c_int32

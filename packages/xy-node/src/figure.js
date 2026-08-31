@@ -28,8 +28,6 @@
 import {
   Column,
   DENSITY_GRID,
-  DENSITY_OVERLAY_STATIC_RASTER,
-  DENSITY_OVERLAY_ROWS_EXCEED_U32,
   DENSITY_SAMPLE_SEED,
   DENSITY_SAMPLE_TARGET,
   PROTOCOL_VERSION,
@@ -37,6 +35,7 @@ import {
   densityEmitPlan,
   densityFormatBinning,
   densityLogU8,
+  densityOverlayOmittedWire,
   densityOverlayOpacity,
   encodeF32Values,
   geometryOffset,
@@ -1337,10 +1336,14 @@ export class Figure {
       channels_dropped: false,
       dropped_channels: [],
     };
-    if (plan.overlay_omitted === DENSITY_OVERLAY_STATIC_RASTER) {
-      density.overlay_omitted = "static_raster";
-    } else if (plan.overlay_omitted === DENSITY_OVERLAY_ROWS_EXCEED_U32) {
-      density.overlay_omitted = "rows_exceed_u32";
+    const overlayWire = densityOverlayOmittedWire({
+      overlayOmitted: plan.overlay_omitted,
+      pointOverlay: true,
+    });
+    if (overlayWire === "static_raster") {
+      density.overlay_omitted = overlayWire;
+    } else if (overlayWire === "rows_exceed_u32") {
+      density.overlay_omitted = overlayWire;
     } else {
       const n = t.x.length;
       const { keepAll, indices } = payloadSampleTargetIndices({
