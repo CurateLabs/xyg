@@ -74,7 +74,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -3396,6 +3396,20 @@ export function packXyTcFillOpacity(style, kindClass) {
   return packed.fillOpacity;
 }
 
+/** XYTC scatter symbol. Python `_pack_xytc` symbol string vs int branch. */
+export function packXyTcSymbol(style) {
+  const record = style ?? {};
+  if (typeof record.symbol === "number") {
+    return {
+      flags: sceneXytcSymbolIntPack(1),
+      symbolB: new Uint8Array(),
+      symbolInt: record.symbol,
+    };
+  }
+  const symbolB = record.symbol != null ? encodeUtf8(String(record.symbol)) : new Uint8Array();
+  return { flags: sceneXytcSymbolIntPack(0), symbolB, symbolInt: 0 };
+}
+
 /** XYTC ribbon color2 flags. Python `_pack_xytc` color2 branch. */
 export function packXyTcColor2(trace, paintFlags, gradientBlob) {
   const color2Class = classifyRibbonColor2(trace);
@@ -3551,14 +3565,10 @@ function packXyTc(figure) {
     const kindClass = sceneKindClass(kindName);
     const name = trace.name != null && String(trace.name).length ? String(trace.name) : "";
     const nameB = encodeUtf8(name);
-    let symbolB = new Uint8Array();
-    let symbolInt = 0;
-    if (typeof style.symbol === "number") {
-      flags |= XYTC_SYMBOL_INT;
-      symbolInt = style.symbol;
-    } else if (style.symbol != null) {
-      symbolB = encodeUtf8(String(style.symbol));
-    }
+    const packedSymbol = packXyTcSymbol(style);
+    flags |= packedSymbol.flags;
+    const symbolB = packedSymbol.symbolB;
+    let symbolInt = packedSymbol.symbolInt;
     const opacity = Number(style.opacity ?? 1);
     const packedOpacity = sceneXytcOpacityPack(
       kindClass & SCENE_KIND_CLASS_OPACITY ? 1 : 0,

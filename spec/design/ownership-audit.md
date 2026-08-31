@@ -312,6 +312,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | (this PR) | 269 | `xyg_scene_xytc_paint_presence_pack` | `_pack_xytc` fill/stroke/line_color presence |
 | (this PR) | 270 | `xyg_scene_xytc_meta_flags_pack` | `_pack_xytc` name/legend/density/marker/joined flags |
 | (this PR) | 271 | `xyg_scene_xytc_color2_flags_pack` | `_pack_xytc` ribbon color2 flag orchestration |
+| (this PR) | 272 | `xyg_scene_xytc_symbol_int_pack` | `_pack_xytc` numeric scatter symbol flag + wire int |
 
 Largest remaining Python core surfaces: `_payload` emit gather/ship and `_scene_v3` XYTC/XYTA pack loops — not the ABI-218–257 admit slices already kernelized.
 

@@ -70,6 +70,7 @@ scene_gradient_dir = _impl.scene_gradient_dir
 scene_gradient_solid_css = _impl.scene_gradient_solid_css
 scene_gradient_spec_pack = _impl.scene_gradient_spec_pack
 scene_marker_blob_pack = _impl.scene_marker_blob_pack
+scene_xytc_symbol_int_pack = _impl.scene_xytc_symbol_int_pack
 scene_xytc_color2_flags_pack = _impl.scene_xytc_color2_flags_pack
 scene_xytc_meta_flags_pack = _impl.scene_xytc_meta_flags_pack
 scene_xytc_paint_presence_pack = _impl.scene_xytc_paint_presence_pack
@@ -390,6 +391,7 @@ __all__ = [
     "scene_xytc_paint_presence_pack",
     "scene_xytc_radius_pack",
     "scene_xytc_stroke_perimeter_pack",
+    "scene_xytc_symbol_int_pack",
     "sector_triangles",
     "spectrogram",
     "stacked_bounds",

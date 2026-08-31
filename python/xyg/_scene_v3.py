@@ -2846,6 +2846,15 @@ _COLOR2_CLASS_TO_CODE = {
 }
 
 
+def _pack_xytc_symbol(style: dict[str, Any]) -> tuple[int, bytes, int]:
+    symbol_raw = style.get("symbol", "circle")
+    if isinstance(symbol_raw, (int, float)) and not isinstance(symbol_raw, bool):
+        symbol_int = int(symbol_raw)
+        return _native.scene_xytc_symbol_int_pack(1), b"", symbol_int
+    symbol = str(symbol_raw or "circle")
+    return _native.scene_xytc_symbol_int_pack(0), symbol.encode("utf-8"), 0
+
+
 def _pack_xytc_color2(
     trace: Any,
     paint_flags: int,
@@ -3038,8 +3047,8 @@ def _pack_xytc(figure: Any) -> bytes:
         kind_class = _native.scene_kind_class(kind_name)
         name = str(trace.name) if getattr(trace, "name", None) else ""
         name_b = name.encode("utf-8")
-        symbol = str(style.get("symbol", "circle") or "")
-        symbol_b = symbol.encode("utf-8")
+        symbol_flags, symbol_b, symbol_int = _pack_xytc_symbol(style)
+        flags |= symbol_flags
         opacity = float(style.get("opacity", 1.0))
         fill_opacity, stroke_opacity, line_opacity = _pack_xytc_opacity(kind_class, style)
         (
@@ -3133,7 +3142,7 @@ def _pack_xytc(figure: Any) -> bytes:
                 len(color_mode),
                 len(color_const),
                 len(fill_space),
-                0,
+                symbol_int,
                 len(dash_pattern),
                 len(marker_blob),
                 len(gradient_blob),

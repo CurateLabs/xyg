@@ -1781,6 +1781,25 @@ def scene_xytc_paint_presence_pack(
     return int(flags.value)
 
 
+def scene_xytc_symbol_int_pack(symbol_is_int: int) -> int:
+    """XYTC numeric symbol flag via ``xyg_scene_xytc_symbol_int_pack`` (ABI 272).
+
+    String symbol names and ``symbol_int`` wire value stay host.
+    """
+    flags = ctypes.c_uint32(0)
+    ok = int(
+        _lib.xyg_scene_xytc_symbol_int_pack(
+            ctypes.c_int32(int(symbol_is_int)),
+            ctypes.byref(flags),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-symbol-int-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-symbol-int-pack request")
+    return int(flags.value)
+
+
 def scene_xytc_color2_flags_pack(
     color2_class: int,
     paint_flags: int,

@@ -403,6 +403,11 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         ctypes.POINTER(ctypes.c_uint32),
     ]
+    lib.xyg_scene_xytc_symbol_int_pack.restype = ctypes.c_int32
+    lib.xyg_scene_xytc_symbol_int_pack.argtypes = [
+        ctypes.c_int32,
+        ctypes.POINTER(ctypes.c_uint32),
+    ]
     lib.xyg_scene_xytc_opacity_pack.restype = ctypes.c_int32
     lib.xyg_scene_xytc_opacity_pack.argtypes = [
         ctypes.c_int32,
@@ -3571,6 +3576,12 @@ def main() -> None:
         lib.xyg_scene_xytc_color2_flags_pack(2, 0, 1, ctypes.byref(xytc_color2_flags)) == 1
         and xytc_color2_flags.value == ((1 << 0) | (1 << 19)),
         "scene_xytc_color2_flags_pack gradient inject",
+    )
+    xytc_symbol_flags = ctypes.c_uint32(0)
+    ok(
+        lib.xyg_scene_xytc_symbol_int_pack(1, ctypes.byref(xytc_symbol_flags)) == 1
+        and xytc_symbol_flags.value == (1 << 21),
+        "scene_xytc_symbol_int_pack numeric",
     )
     xytc_fill = ctypes.c_double(0.0)
     xytc_stroke = ctypes.c_double(0.0)
