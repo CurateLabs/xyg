@@ -1598,7 +1598,6 @@ export class Figure {
     });
     const spec = {};
     if (attach.attachId) spec.id = axisId;
-    if (attach.attachKind) spec.kind = this._axisKind(axisId);
     if (attach.attachLabel) {
       let label = null;
       if (axisId === "x") label = this.x_label ?? null;
@@ -1637,9 +1636,17 @@ export class Figure {
     if (attach.attachTickLabelMinGap && opts.tick_label_min_gap != null) {
       spec.tick_label_min_gap = opts.tick_label_min_gap;
     }
+    const kind = this._axisKind(axisId);
     const scale = payloadAxisScale(this, axisId);
+    if (attach.attachKind) spec.kind = kind;
     if (attach.attachScale && scale !== "linear") {
       spec.scale = scale;
+    }
+    if (attach.attachConstant && scale === "symlog") {
+      spec.constant = opts.constant ?? 1;
+    }
+    if (attach.attachNonpositive && scale === "log" && opts.nonpositive != null) {
+      spec.nonpositive = opts.nonpositive;
     }
     if (attach.attachTicks && opts.tick_values != null) {
       spec.tick_values = [...opts.tick_values];
@@ -1676,6 +1683,9 @@ export class Figure {
     }
     if (attach.attachFormat && opts.format != null) {
       spec.format = opts.format;
+    }
+    if (attach.attachCategories && kind === "category") {
+      spec.categories = [...(this._axis_categories?.[axisId] ?? [])];
     }
     if (attach.attachThetaUnit) {
       const unit = opts.theta_unit || "radians";

@@ -435,3 +435,68 @@ def test_axis_spec_uses_kernel_attach_plan_polar() -> None:
     assert spec["x_axis"]["theta_unit"] == "radians"
     assert spec["y_axis"]["hole"] == 0.0
     assert "theta_unit" not in spec["y_axis"]
+
+
+def test_axis_spec_cartesian_nonpositive_cross_host_fixture() -> None:
+    """Node buildPayload axis nonpositive parity when attach_nonpositive is set."""
+    fig = Figure(width=240, height=160)
+    fig.scatter([1.0, 10.0], [1.0, 10.0])
+    fig.set_axis("x", type_="log", nonpositive="mask")
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["nonpositive"] == "mask"
+    assert "nonpositive" not in spec["y_axis"]
+
+
+def test_axis_spec_cartesian_constant_cross_host_fixture() -> None:
+    """Node buildPayload axis constant parity when attach_constant is set."""
+    fig = Figure(width=240, height=160)
+    fig.scatter([-1.0, 1.0], [-1.0, 1.0])
+    fig.set_axis("x", type_="symlog", constant=2.0)
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["scale"] == "symlog"
+    assert spec["x_axis"]["constant"] == 2.0
+    assert "constant" not in spec["y_axis"]
+
+
+def test_axis_spec_cartesian_categories_cross_host_fixture() -> None:
+    """Node buildPayload axis categories parity when attach_categories is set."""
+    fig = Figure(width=240, height=160)
+    fig._axis_categories["x"] = ["a", "b", "c"]
+    fig.scatter([0.0, 1.0, 2.0], [0.0, 1.0, 2.0])
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["kind"] == "category"
+    assert spec["x_axis"]["categories"] == ["a", "b", "c"]
+    assert "categories" not in spec["y_axis"]
+
+
+def test_axis_spec_polar_nonpositive_cross_host_fixture() -> None:
+    """Node buildPayload polar axis nonpositive parity when attach_nonpositive is set."""
+    fig = Figure(coords="polar", width=240, height=160)
+    fig.set_axis("y", type_="log", nonpositive="mask")
+    fig.scatter([0.0, 1.0], [1.0, 2.0])
+    spec, _ = fig.build_payload()
+    assert spec["y_axis"]["scale"] == "log"
+    assert spec["y_axis"]["nonpositive"] == "mask"
+    assert "nonpositive" not in spec["x_axis"]
+
+
+def test_axis_spec_polar_constant_cross_host_fixture() -> None:
+    """Node buildPayload polar axis constant parity when attach_constant is set."""
+    fig = Figure(coords="polar", width=240, height=160)
+    fig.set_axis("y", type_="symlog", constant=2.0)
+    fig.scatter([0.0, 1.0], [1.0, 2.0])
+    spec, _ = fig.build_payload()
+    assert spec["y_axis"]["scale"] == "symlog"
+    assert spec["y_axis"]["constant"] == 2.0
+    assert "constant" not in spec["x_axis"]
+
+
+def test_axis_spec_polar_categories_cross_host_fixture() -> None:
+    """Node buildPayload polar axis categories parity when attach_categories is set."""
+    fig = Figure(coords="polar", width=240, height=160)
+    fig._axis_categories["x"] = ["a", "b"]
+    fig.scatter([0.0, 1.0], [1.0, 2.0])
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["kind"] == "category"
+    assert spec["x_axis"]["categories"] == ["a", "b"]
+    assert "categories" not in spec["y_axis"]
