@@ -1,6 +1,6 @@
 {
   "schema": "xyg.payload-chrome-cross-host/v1",
-  "authority": "python/xyg/_payload.py build_payload show_legend, legend, title_options, colorbar, and _dom_spec",
+  "authority": "python/xyg/_payload.py build_payload show_legend, legend, title_options, colorbar, extra_legends, annotations, and _dom_spec",
   "protocol": 12,
   "abi_version": 315,
   "cases": [
@@ -10,6 +10,8 @@
       "legend": null,
       "title_options": null,
       "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
       "dom": null
     },
     {
@@ -18,6 +20,8 @@
       "legend": null,
       "title_options": null,
       "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
       "dom": null
     },
     {
@@ -29,6 +33,8 @@
       },
       "title_options": null,
       "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
       "dom": null
     },
     {
@@ -39,6 +45,8 @@
       },
       "title_options": null,
       "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
       "dom": null
     },
     {
@@ -53,6 +61,8 @@
         }
       ],
       "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
       "dom": null
     },
     {
@@ -66,6 +76,8 @@
         }
       ],
       "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
       "dom": null
     },
     {
@@ -100,6 +112,8 @@
         ],
         "title": "Scale"
       },
+      "extra_legends": null,
+      "annotations": null,
       "dom": null
     },
     {
@@ -135,6 +149,64 @@
         "side": "bottom",
         "minor_ticks": true
       },
+      "extra_legends": null,
+      "annotations": null,
+      "dom": null
+    },
+    {
+      "name": "extra_legends_lower_left",
+      "show_legend": true,
+      "legend": null,
+      "title_options": null,
+      "colorbar": null,
+      "extra_legends": [
+        {
+          "loc": "lower left",
+          "title": "Extra"
+        }
+      ],
+      "annotations": null,
+      "dom": null
+    },
+    {
+      "name": "annotation_text",
+      "show_legend": true,
+      "legend": null,
+      "title_options": null,
+      "colorbar": null,
+      "extra_legends": null,
+      "annotations": [
+        {
+          "text": "hi",
+          "kind": "text",
+          "x": 0.0,
+          "y": 1.0,
+          "dx": 0.0,
+          "dy": 0.0,
+          "anchor": "start"
+        }
+      ],
+      "dom": null
+    },
+    {
+      "name": "annotation_rule",
+      "show_legend": true,
+      "legend": null,
+      "title_options": null,
+      "colorbar": null,
+      "extra_legends": null,
+      "annotations": [
+        {
+          "text": "line",
+          "style": {
+            "color": "#ff0000",
+            "width": 2.0
+          },
+          "kind": "rule",
+          "axis": "x",
+          "value": 1.0
+        }
+      ],
       "dom": null
     },
     {
@@ -143,6 +215,8 @@
       "legend": null,
       "title_options": null,
       "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
       "dom": {
         "class_name": "root-node"
       }
@@ -153,6 +227,8 @@
       "legend": null,
       "title_options": null,
       "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
       "dom": {
         "style": {
           "width": "100%"
@@ -165,6 +241,8 @@
       "legend": null,
       "title_options": null,
       "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
       "dom": {
         "class_names": {
           "title": "t"
@@ -177,6 +255,8 @@
       "legend": null,
       "title_options": null,
       "colorbar": null,
+      "extra_legends": null,
+      "annotations": null,
       "dom": {
         "class_name": "root-node",
         "class_names": {

@@ -1374,21 +1374,17 @@ test("buildPayload title_options geometry defaults like Python build_payload", (
 });
 
 
-test("buildPayload omits extra_legends unlike Python build_payload", () => {
-  // Python `build_payload` ships `extra_legends`. Node payload omits that
-  // field. Recorded emit-payload-extra-legends stay-host.
+test("buildPayload ships extra_legends like Python build_payload", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   fig.extra_legends = [{ loc: "lower left" }];
   const { spec } = fig.buildPayload();
   assert.equal(fig.extra_legends.length, 1);
-  assert.equal(spec.extra_legends, undefined);
+  assert.deepEqual(spec.extra_legends, fig.extra_legends);
 });
 
 
-test("buildPayload omits annotations unlike Python build_payload", () => {
-  // Python `build_payload` ships `_annotation_specs`. Node payload omits
-  // that field. Recorded emit-payload-annotations stay-host.
+test("buildPayload ships annotations from annotationSpecs like Python build_payload", () => {
   const fig = figure({
     width: 240,
     height: 160,
@@ -1397,7 +1393,9 @@ test("buildPayload omits annotations unlike Python build_payload", () => {
   fig.scatter([0, 1], [0, 1]);
   const { spec } = fig.buildPayload();
   assert.equal(fig.annotations.length, 1);
-  assert.equal(spec.annotations, undefined);
+  assert.deepEqual(spec.annotations, [
+    { text: "hi", kind: "text", x: 0, y: 1, dx: 0, dy: 0, anchor: "start" },
+  ]);
 });
 
 

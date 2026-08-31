@@ -26,6 +26,8 @@ function caseEntry(name, build) {
     legend: spec.legend ?? null,
     title_options: spec.title_options ?? null,
     colorbar: spec.colorbar ?? null,
+    extra_legends: spec.extra_legends ?? null,
+    annotations: spec.annotations ?? null,
     dom: spec.dom ?? null,
   };
 }
@@ -68,6 +70,23 @@ const cases = [
       minor_ticks: true,
     });
   }),
+  caseEntry("extra_legends_lower_left", (fig) => {
+    fig.extra_legends = [{ loc: "lower left", title: "Extra" }];
+  }),
+  caseEntry("annotation_text", (fig) => {
+    fig.annotations = [{ kind: "text", text: "hi", x: 0, y: 1 }];
+  }),
+  caseEntry("annotation_rule", (fig) => {
+    fig.annotations = [
+      {
+        kind: "rule",
+        axis: "x",
+        value: 1.0,
+        text: "line",
+        style: { color: "#ff0000", width: 2.0 },
+      },
+    ];
+  }),
   caseEntry("dom_class_name", (fig) => {
     fig.class_name = "root-node";
   }),
@@ -89,7 +108,7 @@ process.stdout.write(
   JSON.stringify(
     {
       schema: "xyg.payload-chrome-cross-host/v1",
-      authority: "packages/xy-node/src/figure.js buildPayload show_legend, legend, title_options, colorbar, and domSpec",
+      authority: "packages/xy-node/src/figure.js buildPayload show_legend, legend, title_options, colorbar, extra_legends, annotations, and domSpec",
       protocol: PROTOCOL_VERSION,
       abi_version: abiVersion(),
       cases,

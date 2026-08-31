@@ -81,6 +81,7 @@ import {
 } from "./color.js";
 import {
   xyAutoDomain,
+  xyCssCheck,
   xyFigureAutorange,
   xyRectZeroBaselineFlags,
 } from "./native.js";
@@ -165,7 +166,7 @@ function domSpec(fig) {
   return Object.keys(dom).length > 0 ? dom : null;
 }
 
-function payloadBuildPlanForFigure(fig, { split, specTraces, dom }) {
+function payloadBuildPlanForFigure(fig, { split, specTraces, dom, annotations }) {
   const wasmSources = specTraces
     .map((entry) => entry.density?.wasm_source)
     .filter((source) => source != null);
@@ -191,7 +192,7 @@ function payloadBuildPlanForFigure(fig, { split, specTraces, dom }) {
     hasTooltip: fig.tooltip != null,
     hasMarkStyle: false,
     hasInteraction: false,
-    hasAnnotations: false,
+    hasAnnotations: annotations.length > 0,
     hasAnimationOptions: fig.animation_options != null,
     hasGraphMeta: fig._graphMeta != null,
   });
@@ -716,6 +717,267 @@ function requireAnnotationObject(annotation) {
     throw new TypeError("annotation must be an object");
   }
   return annotation;
+}
+
+const CSS_DECLARATION = 0;
+
+const CSS_ERROR_REASONS = {
+  [-1]: "is empty",
+  [-2]: "contains an unsafe character (';', '{', '}', '</', or a control character)",
+  [-3]: "has unbalanced quotes or parentheses",
+  [-4]: "is not a valid hex color (use #rgb, #rgba, #rrggbb, or #rrggbbaa)",
+  [-5]: "is not valid color syntax",
+  [-6]: "is not a recognized CSS color name",
+  [-7]: "has an invalid number",
+  [-8]: "has an unknown unit",
+  [-9]: "uses an unknown function",
+  [-10]: "is not a valid CSS property name",
+};
+
+function cssPropertyName(key) {
+  if (key.startsWith("--")) {
+    return `--${key.slice(2).replaceAll("_", "-")}`;
+  }
+  return key.replaceAll("_", "-");
+}
+
+function cssCheck(kind, value, prop = "") {
+  const valueBytes = new TextEncoder().encode(String(value ?? ""));
+  const propBytes = new TextEncoder().encode(String(prop ?? ""));
+  const outRgba = new Float32Array(4);
+  return xyCssCheck(
+    kind,
+    propBytes.length ? u8Ptr(propBytes) : 0,
+    BigInt(propBytes.length),
+    valueBytes.length ? u8Ptr(valueBytes) : 0,
+    BigInt(valueBytes.length),
+    outRgba,
+  );
+}
+
+function cssReason(status) {
+  return CSS_ERROR_REASONS[status] ?? "is not valid CSS";
+}
+
+function finiteScalar(value, label) {
+  if (typeof value === "boolean") {
+    throw new RangeError(`${label} must be a finite real number`);
+  }
+  const out = Number(value);
+  if (!Number.isFinite(out)) {
+    throw new RangeError(`${label} must be finite`);
+  }
+  return out;
+}
+
+function positiveScalar(value, label) {
+  const out = finiteScalar(value, label);
+  if (out <= 0) {
+    throw new RangeError(`${label} must be positive`);
+  }
+  return out;
+}
+
+function opacityScalar(value, label) {
+  const out = finiteScalar(value, label);
+  if (out < 0 || out > 1) {
+    throw new RangeError(`${label} must be between 0 and 1`);
+  }
+  return out;
+}
+
+function optionalText(value, label) {
+  if (value == null || typeof value === "string") {
+    return value;
+  }
+  throw new RangeError(`${label} must be a string or null`);
+}
+
+function requiredText(value, label) {
+  const text = optionalText(value, label);
+  if (text == null || text === "") {
+    throw new RangeError(`${label} must be a non-empty string`);
+  }
+  return text;
+}
+
+function styleMapping(value, label) {
+  if (value == null || typeof value !== "object" || Array.isArray(value)) {
+    throw new RangeError(`${label} must be a dict[str, str | int | float]`);
+  }
+  const out = {};
+  for (const [key, item] of Object.entries(value)) {
+    if (typeof key !== "string") {
+      throw new RangeError(`${label} must be a dict[str, str | int | float]`);
+    }
+    if (typeof item === "boolean") {
+      throw new RangeError(`${label} must be a dict[str, str | int | float]`);
+    }
+    if (typeof item === "string") {
+      const status = cssCheck(CSS_DECLARATION, item, cssPropertyName(key));
+      if (status <= 0) {
+        throw new RangeError(`${label}[${JSON.stringify(key)}] ${JSON.stringify(item)} ${cssReason(status)}`);
+      }
+      out[key] = item;
+      continue;
+    }
+    if (typeof item === "number") {
+      if (!Number.isFinite(item)) {
+        throw new RangeError(`${label} numeric values must be finite`);
+      }
+      out[key] = item;
+      continue;
+    }
+    throw new RangeError(`${label} must be a dict[str, str | int | float]`);
+  }
+  return out;
+}
+
+function annotationAxis(axis, label) {
+  if (axis !== "x" && axis !== "y") {
+    throw new RangeError(`${label} must be 'x' or 'y'`);
+  }
+  return axis;
+}
+
+function annotationAnchor(anchor, label) {
+  if (anchor !== "start" && anchor !== "middle" && anchor !== "end") {
+    throw new RangeError(`${label} must be 'start', 'middle', or 'end'`);
+  }
+  return anchor;
+}
+
+function annotationSymbol(symbol, label) {
+  const allowed = new Set(["circle", "square", "diamond", "cross"]);
+  if (!allowed.has(symbol)) {
+    throw new RangeError(`${label} must be one of ${[...allowed].sort().join(", ")}`);
+  }
+  return symbol;
+}
+
+function annotationValue(fig, value, axis, label) {
+  const categories = fig._axis_categories?.[axis];
+  if (typeof value === "string" && categories != null) {
+    const normalized = value.trim();
+    const index = categories.indexOf(normalized);
+    if (index < 0) {
+      throw new RangeError(`${label} category ${JSON.stringify(value)} is not present on the ${axis}-axis`);
+    }
+    return index;
+  }
+  if (typeof value === "string") {
+    throw new RangeError(
+      `${label} must be a finite coordinate; string coordinates require a categorical ${axis}-axis`,
+    );
+  }
+  return finiteScalar(value, label);
+}
+
+function annotationCommon(annotation) {
+  const out = {};
+  const text = optionalText(annotation.text, "annotation text");
+  if (text != null) {
+    out.text = text;
+  }
+  const className = optionalText(annotation.class_name, "annotation class_name");
+  if (className != null) {
+    out.class_name = className;
+  }
+  const rawStyle = annotation.style ?? {};
+  if (rawStyle == null || typeof rawStyle !== "object" || Array.isArray(rawStyle)) {
+    throw new RangeError("annotation style must be a dict[str, str | int | float]");
+  }
+  const filteredStyle = Object.fromEntries(
+    Object.entries(rawStyle).filter(([, item]) => item != null),
+  );
+  const style = styleMapping(filteredStyle, "annotation style");
+  if (Object.prototype.hasOwnProperty.call(style, "label_opacity")) {
+    style.label_opacity = opacityScalar(style.label_opacity, "annotation style label_opacity");
+  }
+  if (Object.keys(style).length > 0) {
+    out.style = style;
+  }
+  return out;
+}
+
+/** Compile authored annotations like Python `Figure._annotation_specs`. */
+function annotationSpecs(fig) {
+  const specs = [];
+  for (const [index, annotation] of (fig.annotations ?? []).entries()) {
+    const kind = annotation.kind;
+    const label = `annotation[${index}]`;
+    if (kind === "rule") {
+      const axis = annotationAxis(annotation.axis, `${label}.axis`);
+      specs.push({
+        ...annotationCommon(annotation),
+        kind: "rule",
+        axis,
+        value: annotationValue(fig, annotation.value, axis, `${label}.value`),
+      });
+    } else if (kind === "band") {
+      const axis = annotationAxis(annotation.axis, `${label}.axis`);
+      const start = annotationValue(fig, annotation.start, axis, `${label}.start`);
+      const end = annotationValue(fig, annotation.end, axis, `${label}.end`);
+      if (end <= start) {
+        throw new RangeError(`${label} end must be greater than start`);
+      }
+      specs.push({
+        ...annotationCommon(annotation),
+        kind: "band",
+        axis,
+        start,
+        end,
+      });
+    } else if (kind === "text") {
+      specs.push({
+        ...annotationCommon(annotation),
+        kind: "text",
+        x: annotationValue(fig, annotation.x, "x", `${label}.x`),
+        y: annotationValue(fig, annotation.y, "y", `${label}.y`),
+        text: requiredText(annotation.text, `${label}.text`),
+        dx: finiteScalar(annotation.dx ?? 0.0, `${label}.dx`),
+        dy: finiteScalar(annotation.dy ?? 0.0, `${label}.dy`),
+        anchor: annotationAnchor(annotation.anchor ?? "start", `${label}.anchor`),
+      });
+    } else if (kind === "marker") {
+      specs.push({
+        ...annotationCommon(annotation),
+        kind: "marker",
+        x: annotationValue(fig, annotation.x, "x", `${label}.x`),
+        y: annotationValue(fig, annotation.y, "y", `${label}.y`),
+        size: positiveScalar(annotation.size ?? 8.0, `${label}.size`),
+        symbol: annotationSymbol(annotation.symbol ?? "circle", `${label}.symbol`),
+        dx: finiteScalar(annotation.dx ?? 0.0, `${label}.dx`),
+        dy: finiteScalar(annotation.dy ?? 0.0, `${label}.dy`),
+        anchor: annotationAnchor(annotation.anchor ?? "start", `${label}.anchor`),
+      });
+    } else if (kind === "arrow") {
+      specs.push({
+        ...annotationCommon(annotation),
+        kind: "arrow",
+        x0: annotationValue(fig, annotation.x0, "x", `${label}.x0`),
+        y0: annotationValue(fig, annotation.y0, "y", `${label}.y0`),
+        x1: annotationValue(fig, annotation.x1, "x", `${label}.x1`),
+        y1: annotationValue(fig, annotation.y1, "y", `${label}.y1`),
+      });
+    } else if (kind === "callout") {
+      specs.push({
+        ...annotationCommon(annotation),
+        kind: "callout",
+        x: annotationValue(fig, annotation.x, "x", `${label}.x`),
+        y: annotationValue(fig, annotation.y, "y", `${label}.y`),
+        text: requiredText(annotation.text, `${label}.text`),
+        dx: finiteScalar(annotation.dx ?? 0.0, `${label}.dx`),
+        dy: finiteScalar(annotation.dy ?? 0.0, `${label}.dy`),
+        anchor: annotationAnchor(annotation.anchor ?? "start", `${label}.anchor`),
+      });
+    } else {
+      throw new RangeError(
+        `${label} kind must be 'rule', 'band', 'text', 'marker', 'arrow', or 'callout'`,
+      );
+    }
+  }
+  return specs;
 }
 
 function requirePlainObject(value, name) {
@@ -3167,7 +3429,8 @@ export class Figure {
     const wasmSources = specTraces
       .map((entry) => entry.density?.wasm_source)
       .filter((source) => source != null);
-    const buildPlan = payloadBuildPlanForFigure(this, { split, specTraces, dom });
+    const annotations = annotationSpecs(this);
+    const buildPlan = payloadBuildPlanForFigure(this, { split, specTraces, dom, annotations });
     const spec = {
       protocol: PROTOCOL_VERSION,
       width: this.width,
@@ -3229,6 +3492,12 @@ export class Figure {
     }
     if (buildPlan.attachColorbar) {
       spec.colorbar = this.colorbar_options;
+    }
+    if (buildPlan.attachExtraLegends) {
+      spec.extra_legends = this.extra_legends;
+    }
+    if (buildPlan.attachAnnotations) {
+      spec.annotations = annotations;
     }
     if (split) {
       spec.buffer_layout = "split";
