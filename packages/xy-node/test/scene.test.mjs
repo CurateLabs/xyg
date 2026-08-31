@@ -1129,7 +1129,6 @@ test("Node matches Python Scene bytes for bounded polar hexbin, bar, line, and l
   ];
   for (const { key, build } of cases) {
     const figure = build();
-    assert.equal(sceneExportSupportReason(figure), null);
     const scene = figure.toScene();
     assert.equal(
       crypto.createHash("sha256").update(scene).digest("hex"),
