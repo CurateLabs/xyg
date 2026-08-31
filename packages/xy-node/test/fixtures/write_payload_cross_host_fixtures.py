@@ -118,6 +118,28 @@ def main() -> None:
     cases.append(_case("segments_color_ch", fig))
 
     fig = Figure(width=240, height=160)
+    fig.bar([0, 1], [1, 2], color="#112233")
+    fig.traces[0].color_ch = channels.ColorChannel(mode="constant", constant="#445566")
+    fig.traces[0].id = 23
+    cases.append(_case("rect_color_ch", fig))
+
+    fig = Figure(width=240, height=160)
+    fig.triangle_mesh([0.0], [0.0], [1.0], [0.0], [0.5], [1.0])
+    fig.traces[0].style_channels = {
+        "stroke_width": channels.StyleChannel(np.full(1, 2.0, dtype=np.float64))
+    }
+    fig.traces[0].id = 24
+    cases.append(_case("mesh_style_channels", fig))
+
+    fig = Figure(width=240, height=160)
+    fig.ribbon([0.0], [1.0], [0.0], [1.0], [0.0], [1.0], color="#112233")
+    fig.traces[0].style_channels = {
+        "stroke_width": channels.StyleChannel(np.full(1, 2.0, dtype=np.float64))
+    }
+    fig.traces[0].id = 25
+    cases.append(_case("ribbon_style_channels", fig))
+
+    fig = Figure(width=240, height=160)
     fig.axis_options["x"]["domain"] = (0.0, 4.0)
     fig.axis_options["y"]["domain"] = (0.0, 5.0)
     fig.hexbin(

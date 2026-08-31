@@ -119,6 +119,34 @@ def _build_case(name: str) -> tuple[Figure, dict[str, object]]:
         fig.traces[0].color_ch = channels.ColorChannel(mode="constant", constant="#445566")
         fig.traces[0].id = 22
         return fig, {}
+    if name == "rect_color_ch":
+        from xyg import channels
+
+        fig = Figure(width=240, height=160)
+        fig.bar([0.0, 1.0], [1.0, 2.0], color="#112233")
+        fig.traces[0].color_ch = channels.ColorChannel(mode="constant", constant="#445566")
+        fig.traces[0].id = 23
+        return fig, {}
+    if name == "mesh_style_channels":
+        from xyg import channels
+
+        fig = Figure(width=240, height=160)
+        fig.triangle_mesh([0.0], [0.0], [1.0], [0.0], [0.5], [1.0])
+        fig.traces[0].style_channels = {
+            "stroke_width": channels.StyleChannel(np.full(1, 2.0, dtype=np.float64))
+        }
+        fig.traces[0].id = 24
+        return fig, {}
+    if name == "ribbon_style_channels":
+        from xyg import channels
+
+        fig = Figure(width=240, height=160)
+        fig.ribbon([0.0], [1.0], [0.0], [1.0], [0.0], [1.0], color="#112233")
+        fig.traces[0].style_channels = {
+            "stroke_width": channels.StyleChannel(np.full(1, 2.0, dtype=np.float64))
+        }
+        fig.traces[0].id = 25
+        return fig, {}
     if name == "hexbin_colormap":
         fig = Figure(width=240, height=160)
         fig.axis_options["x"]["domain"] = (0.0, 4.0)
@@ -185,7 +213,7 @@ def test_fixture_contract(fixture: dict) -> None:
     assert fixture["schema"] == "xyg.payload-cross-host/v1"
     assert fixture["protocol"] == PROTOCOL_VERSION
     assert int(fixture["abi_version"]) == int(_native.ABI_VERSION)
-    assert len(fixture["cases"]) == 12
+    assert len(fixture["cases"]) == 15
     assert {case["name"] for case in fixture["cases"]} == {
         "scatter_direct",
         "scatter_categorical_color",
@@ -195,6 +223,9 @@ def test_fixture_contract(fixture: dict) -> None:
         "histogram_style_channels",
         "segments_pass_through",
         "segments_color_ch",
+        "rect_color_ch",
+        "mesh_style_channels",
+        "ribbon_style_channels",
         "hexbin_colormap",
         "bar_compact",
         "heatmap_colormap",
@@ -213,6 +244,9 @@ def test_fixture_contract(fixture: dict) -> None:
         "histogram_style_channels",
         "segments_pass_through",
         "segments_color_ch",
+        "rect_color_ch",
+        "mesh_style_channels",
+        "ribbon_style_channels",
         "hexbin_colormap",
         "bar_compact",
         "heatmap_colormap",
@@ -239,6 +273,9 @@ def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> Non
         "histogram_style_channels",
         "segments_pass_through",
         "segments_color_ch",
+        "rect_color_ch",
+        "mesh_style_channels",
+        "ribbon_style_channels",
         "hexbin_colormap",
         "bar_compact",
         "heatmap_colormap",
