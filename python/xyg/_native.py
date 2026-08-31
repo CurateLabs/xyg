@@ -12675,7 +12675,7 @@ _PAYLOAD_COL_REGISTRY_KEY_BY_CODE: tuple[str, ...] = (
     "value1",
 )
 _PAYLOAD_TRACE_SLOT_ATTR: tuple[str, ...] = ("x", "y", "x0", "x1", "y0", "y1", "base")
-_PAYLOAD_COL_SHIP_METHOD_BY_CODE: tuple[str, ...] = ("offset", "values")
+_PAYLOAD_COL_SHIP_METHOD_BY_CODE: tuple[str, ...] = ("offset", "values", "f64")
 _PAYLOAD_GATHER_POLICY_BY_CODE: tuple[str, ...] = (
     "none",
     "visible_sel",
@@ -12694,7 +12694,7 @@ def payload_column_ship_plan(
     y_axis_scale: str,
     orientation: str | None = None,
 ) -> dict[str, bool | int | str | list[dict[str, bool | int | str]]]:
-    """Column registry / gather plan via ``xyg_payload_column_ship_plan`` (ABI 310/313).
+    """Column registry / gather plan via ``xyg_payload_column_ship_plan`` (ABI 310/314).
 
     Owns geometry column keys, trace slots, ship method/scale codes, and gather
     policy. ``orientation`` is required for ``bar_compact``. Hosts still

@@ -162,7 +162,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 313;
+pub const ABI_VERSION: u32 = 314;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -16003,7 +16003,7 @@ pub struct XygPayloadColumnShipEntry {
     pub gather: u32,
 }
 
-/// Column registry / gather-and-ship plan from per-kind ``_emit_*`` (ABI 310/313).
+/// Column registry / gather-and-ship plan from per-kind ``_emit_*`` (ABI 310/314).
 ///
 /// Owns geometry column keys, trace slots, ship method/scale, and gather policy.
 /// ``orientation`` is ``PAYLOAD_BAR_ORIENTATION_*`` for ``bar_compact`` only; ignored

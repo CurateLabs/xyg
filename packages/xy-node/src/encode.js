@@ -3929,7 +3929,7 @@ const PAYLOAD_COL_REGISTRY_KEY_BY_CODE = [
   "pos", "value0", "value1",
 ];
 const PAYLOAD_TRACE_SLOT_ATTR = ["x", "y", "x0", "x1", "y0", "y1", "base"];
-const PAYLOAD_COL_SHIP_METHOD_BY_CODE = ["offset", "values"];
+const PAYLOAD_COL_SHIP_METHOD_BY_CODE = ["offset", "values", "f64"];
 const PAYLOAD_GATHER_POLICY_BY_CODE = [
   "none",
   "visible_sel",
@@ -3939,7 +3939,7 @@ const PAYLOAD_GATHER_POLICY_BY_CODE = [
   "m4",
 ];
 
-/** Column registry / gather plan via `xyg_payload_column_ship_plan` (ABI 310/313). */
+/** Column registry / gather plan via `xyg_payload_column_ship_plan` (ABI 310/314). */
 export function payloadColumnShipPlan({
   kind = "rect",
   xAxisScale = "linear",
@@ -4023,6 +4023,45 @@ export function payloadColumnShipPlan({
     yShipScale: scaleName(yShipScale[0]),
     columns: outColumns,
   };
+}
+
+/**
+ * Ship gathered geometry arrays into `entry` per the column registry (ABI 310/314).
+ * @param {Record<string, unknown>} entry
+ * @param {Record<string, unknown>} trace
+ * @param {{ ship: Function, shipValues: Function, shipF64?: Function, columns: unknown[] }} pw
+ * @param {ReturnType<typeof payloadColumnShipPlan>} columnPlan
+ * @param {Record<string, ArrayLike<number>>} arrays
+ * @param {{ skipKeys?: Set<string>, nestedKeys?: Set<string> }} [opts]
+ */
+export function shipRegistryColumns(entry, trace, pw, columnPlan, arrays, opts = {}) {
+  const { skipKeys, nestedKeys } = opts;
+  for (const col of columnPlan.columns) {
+    const key = col.registryKey;
+    if (skipKeys?.has(key)) {
+      continue;
+    }
+    const slot = col.traceSlot;
+    const values = arrays[key] ?? arrays[slot];
+    let colIdx;
+    if (col.shipMethod === "offset") {
+      colIdx = pw.ship(values, trace[slot], { scale: col.shipScale });
+    } else if (col.shipMethod === "f64") {
+      if (typeof pw.shipF64 !== "function") {
+        throw new RangeError("payload shipF64 unavailable");
+      }
+      colIdx = pw.shipF64(values);
+    } else {
+      const column = trace[slot];
+      const kind = column?.kind ?? "float";
+      colIdx = pw.shipValues(values, { kind, scale: col.shipScale });
+    }
+    if (nestedKeys?.has(key)) {
+      entry[key] = { col: colIdx, ...pw.columns[colIdx] };
+    } else {
+      entry[key] = colIdx;
+    }
+  }
 }
 
 const PAYLOAD_CHANNEL_SHIP_MAX = 5;

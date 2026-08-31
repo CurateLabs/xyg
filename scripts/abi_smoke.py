@@ -5679,6 +5679,52 @@ def main() -> None:
         and col_entries[4].ship_scale == 2,
         "payload_column_ship_plan ribbon registry",
     )
+    ok(
+        lib.xyg_payload_column_ship_plan(
+            b"density_wasm_source",
+            19,
+            1,
+            2,
+            0,
+            ctypes.byref(col_gather),
+            ctypes.byref(col_gather_color),
+            ctypes.byref(col_n),
+            ctypes.byref(col_x_scale),
+            ctypes.byref(col_y_scale),
+            col_entries,
+            8,
+        )
+        == 1
+        and col_gather.value == 0
+        and col_n.value == 2
+        and col_entries[0].registry_key == 0
+        and col_entries[0].ship_method == 2
+        and col_entries[0].gather == 0
+        and col_entries[1].ship_method == 2,
+        "payload_column_ship_plan density_wasm_source f64",
+    )
+    ok(
+        lib.xyg_payload_column_ship_plan(
+            b"density_sample",
+            14,
+            0,
+            1,
+            0,
+            ctypes.byref(col_gather),
+            ctypes.byref(col_gather_color),
+            ctypes.byref(col_n),
+            ctypes.byref(col_x_scale),
+            ctypes.byref(col_y_scale),
+            col_entries,
+            8,
+        )
+        == 1
+        and col_gather.value == 0
+        and col_n.value == 2
+        and col_entries[0].ship_method == 1
+        and col_entries[0].gather == 0,
+        "payload_column_ship_plan density_sample values",
+    )
     chan_n = ctypes.c_size_t(0)
     chan_entries = (PayloadChannelShipEntry * 5)()
     ok(

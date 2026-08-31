@@ -131,13 +131,19 @@ MERGED_PAYLOAD_GATHER_SHIP: tuple[tuple[str, str, str], ...] = (
     ("#766", "311", "xyg_payload_channel_ship_plan"),
     ("#767", "312", "xyg_payload_channel_wire_encode"),
     ("#768", "313", "xyg_payload_column_ship_plan orientation + thin emit rows"),
+    (
+        "#732",
+        "314",
+        "xyg_payload_column_ship_plan density_wasm_source f64 + density_sample registry",
+    ),
 )
 
 REMAINING_CLOSE: tuple[tuple[str, str], ...] = (
     (
         "#732",
         "density grid ship + residual row materialization in `_payload.py` / `channels.ship_*` "
-        "(registry + wire-encode plans ABI 310-313 landed; xy rows via `_ship_registry_columns`)",
+        "(density wasm_source + density_sample xy via `_ship_registry_columns` ABI 314; "
+        "channel/style residual rows remain)",
     ),
     ("#731", "parent M2 close — blocked on #732 + Node stay-host TAP convergence"),
 )

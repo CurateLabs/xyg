@@ -1433,7 +1433,7 @@ class PayloadMixin(_Host):
     def _payload_column_ship_plan(
         self, t: Trace, *, kind: Optional[str] = None, orientation: Optional[str] = None
     ) -> dict:
-        """Rust-owned geometry column registry and gather policy (ABI 310/313)."""
+        """Rust-owned geometry column registry and gather policy (ABI 310/314)."""
         return kernels.payload_column_ship_plan(
             kind=kind or t.kind,
             x_axis_scale=self._axis_scale(t.x_axis),
@@ -1450,6 +1450,7 @@ class PayloadMixin(_Host):
         arrays: dict[str, np.ndarray],
         *,
         skip_keys: Optional[frozenset[str]] = None,
+        nested_keys: Optional[frozenset[str]] = None,
     ) -> None:
         """Ship gathered geometry arrays into ``entry`` per the column registry."""
         for col in column_plan["columns"]:
@@ -1459,13 +1460,20 @@ class PayloadMixin(_Host):
             slot = col["trace_slot"]
             values = arrays[key] if key in arrays else arrays[slot]
             scale = col["ship_scale"]
-            if col["ship_method"] == "offset":
+            method = col["ship_method"]
+            if method == "offset":
                 column = getattr(t, slot)
-                entry[key] = pw.ship(values, column, scale=scale)
+                col_idx = pw.ship(values, column, scale=scale)
+            elif method == "f64":
+                col_idx = pw.ship_f64(values)
             else:
                 column = getattr(t, slot, None)
                 kind = column.kind if column is not None else "float"
-                entry[key] = pw.ship_values(values, kind=kind, scale=scale)
+                col_idx = pw.ship_values(values, kind=kind, scale=scale)
+            if nested_keys is not None and key in nested_keys:
+                entry[key] = {"col": col_idx, **pw.columns[col_idx]}
+            else:
+                entry[key] = col_idx
 
     def _ship_channels(
         self, t: Trace, sel, ship_scalar, ship_u8, *, quantize_continuous: bool = False
@@ -1520,16 +1528,6 @@ class PayloadMixin(_Host):
             authored = float("nan")
         style["opacity"] = kernels.density_overlay_opacity(authored)
         column_plan = self._payload_column_ship_plan(t, kind="density_sample")
-        x_col = pw.ship_values(
-            t.x.values[sample_sel],
-            kind=t.x.kind,
-            scale=column_plan["columns"][0]["ship_scale"],
-        )
-        y_col = pw.ship_values(
-            t.y.values[sample_sel],
-            kind=t.y.kind,
-            scale=column_plan["columns"][1]["ship_scale"],
-        )
         sample = {
             "mode": "sampled",
             "n": int(len(sample_sel)),
@@ -1537,12 +1535,18 @@ class PayloadMixin(_Host):
             "target": DENSITY_SAMPLE_TARGET,
             "level": 0,
             "seed": DENSITY_SAMPLE_SEED,
-            "x": {"col": x_col, **pw.columns[x_col]},
-            "y": {"col": y_col, **pw.columns[y_col]},
             "x_range": list(xr),
             "y_range": list(yr),
             "style": style,
         }
+        self._ship_registry_columns(
+            sample,
+            t,
+            pw,
+            column_plan,
+            {"x": t.x.values[sample_sel], "y": t.y.values[sample_sel]},
+            nested_keys=frozenset({"x", "y"}),
+        )
         self._ship_trace_channel_attach(
             sample,
             t,
@@ -1884,15 +1888,22 @@ class PayloadMixin(_Host):
         # generated aggregate ABI's declared point limit.
         wasm_capacity = WASM_AGGREGATE_MAX_POINTS
         if wire["ship_wasm_source"]:
-            density["wasm_source"] = {
+            wasm_source: dict[str, Any] = {
                 "kind": "cartesian-count-f64-stream-v1",
-                "x": pw.ship_f64(t.x.values),
-                "y": pw.ship_f64(t.y.values),
                 "point_count": int(t.n_points),
                 "trace_id": int(t.id),
                 "capacity": wasm_capacity,
                 "ownership": "retain-host-replay",
             }
+            column_plan = self._payload_column_ship_plan(t, kind="density_wasm_source")
+            self._ship_registry_columns(
+                wasm_source,
+                t,
+                pw,
+                column_plan,
+                {"x": t.x.values, "y": t.y.values},
+            )
+            density["wasm_source"] = wasm_source
         if tiles_meta is not None:
             density["tiles"] = tiles_meta
         ship_mean_color_rgba = bool(wire["ship_mean_color_rgba"])
