@@ -493,6 +493,30 @@ test("buildPayload ships wasm_density automatic on split density with wasm_sourc
   assert.equal(spec.wasm_density.source, spec.traces[0].density.wasm_source);
 });
 
+test("buildPayload ships ABI 303 attach flags like Python build_payload", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.frame_sides = ["bottom", "left"];
+  fig.show_modebar = false;
+  fig.export_options = { formats: ["png"] };
+  fig.show_tooltip = false;
+  fig.tooltip = { fields: ["x", "y"] };
+  fig.mark_style = { hover: { color: "#111111" } };
+  fig.interaction = { select: true };
+  fig.animation_options = { enabled: true, duration: 250.0 };
+  fig._graphMeta = [{ layout: "force" }];
+  fig.scatter([0, 1], [0, 1]);
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.frame_sides, ["bottom", "left"]);
+  assert.equal(spec.show_modebar, false);
+  assert.deepEqual(spec.export, { formats: ["png"] });
+  assert.equal(spec.show_tooltip, false);
+  assert.deepEqual(spec.tooltip, { fields: ["x", "y"] });
+  assert.deepEqual(spec.mark_style, { hover: { color: "#111111" } });
+  assert.deepEqual(spec.interaction, { select: true });
+  assert.deepEqual(spec.animation, { enabled: true, duration: 250.0 });
+  assert.deepEqual(spec.graph, [{ layout: "force" }]);
+});
+
 test("buildPayload omits linear axis scale like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([1, 10], [1, 10]);

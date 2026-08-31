@@ -180,7 +180,53 @@ function domSpec(fig) {
   return Object.keys(dom).length > 0 ? dom : null;
 }
 
-function payloadBuildPlanForFigure(fig, { split, specTraces, dom, annotations }) {
+/** Figure-level mark_style spec (Python `_mark_style_spec`). */
+function markStyleSpec(fig) {
+  const spec = {};
+  for (const state of ["hover", "selected", "unselected"]) {
+    const style = fig.mark_style?.[state];
+    if (style != null && typeof style === "object" && Object.keys(style).length > 0) {
+      spec[state] = { ...style };
+    }
+  }
+  return spec;
+}
+
+/** Figure-level interaction spec (Python `_interaction_spec`, simplified pass-through). */
+function interactionSpec(fig) {
+  const interaction = fig.interaction ?? {};
+  const spec = {};
+  for (const name of [
+    "hover",
+    "click",
+    "select",
+    "brush",
+    "crosshair",
+    "navigation",
+    "pan",
+    "zoom",
+    "wheel_zoom",
+    "box_zoom",
+    "zoom_buttons",
+    "double_click_reset",
+    "link_select",
+    "history",
+    "pan_axes",
+    "zoom_axes",
+    "reset_axes",
+    "link_axes",
+    "zoom_limits",
+    "default_drag_action",
+    "link_group",
+  ]) {
+    if (name in interaction) {
+      spec[name] = interaction[name];
+    }
+  }
+  return spec;
+}
+
+function payloadBuildPlanForFigure(fig, { split, specTraces, dom, annotations, markStyle, interaction }) {
   const wasmSources = specTraces
     .map((entry) => entry.density?.wasm_source)
     .filter((source) => source != null);
@@ -204,8 +250,8 @@ function payloadBuildPlanForFigure(fig, { split, specTraces, dom, annotations })
     hasPadding: fig.padding != null,
     hasDom: dom != null,
     hasTooltip: fig.tooltip != null,
-    hasMarkStyle: false,
-    hasInteraction: false,
+    hasMarkStyle: Object.keys(markStyle).length > 0,
+    hasInteraction: Object.keys(interaction).length > 0,
     hasAnnotations: annotations.length > 0,
     hasAnimationOptions: fig.animation_options != null,
     hasGraphMeta: fig._graphMeta != null,
@@ -1262,6 +1308,19 @@ export class Figure {
     // single validation/packing seam for the bounded Rust-owned annotation
     // contract, so Node cannot acquire a second annotation policy.
     this.annotations = (opts.annotations ?? []).map((annotation) => copyAnnotation(requireAnnotationObject(annotation)));
+    this.extra_legends = opts.extra_legends ?? null;
+    this.frame_sides = opts.frame_sides ?? null;
+    this.export_options = opts.export_options ?? null;
+    this.show_modebar = opts.show_modebar ?? opts.showModebar ?? true;
+    this.show_tooltip = opts.show_tooltip ?? opts.showTooltip ?? true;
+    this.tooltip = opts.tooltip ?? null;
+    this.interaction = opts.interaction ?? {};
+    this.mark_style = opts.mark_style ?? {};
+    this.animation_options = opts.animation_options ?? opts.animationOptions ?? null;
+    this.padding = opts.padding ?? null;
+    this.class_name = opts.class_name ?? opts.className ?? null;
+    this.class_names = opts.class_names ?? opts.classNames ?? {};
+    this.chrome_styles = opts.chrome_styles ?? opts.chromeStyles ?? {};
     this.traces = [];
     this.axis_options = { x: {}, y: {} };
     this._graphMeta = null;
@@ -3444,7 +3503,16 @@ export class Figure {
       .map((entry) => entry.density?.wasm_source)
       .filter((source) => source != null);
     const annotations = annotationSpecs(this);
-    const buildPlan = payloadBuildPlanForFigure(this, { split, specTraces, dom, annotations });
+    const markStyle = markStyleSpec(this);
+    const interaction = interactionSpec(this);
+    const buildPlan = payloadBuildPlanForFigure(this, {
+      split,
+      specTraces,
+      dom,
+      annotations,
+      markStyle,
+      interaction,
+    });
     const spec = {
       protocol: PROTOCOL_VERSION,
       width: this.width,
@@ -3510,14 +3578,38 @@ export class Figure {
     if (buildPlan.attachExtraLegends) {
       spec.extra_legends = this.extra_legends;
     }
+    if (buildPlan.attachFrameSides) {
+      spec.frame_sides = [...this.frame_sides];
+    }
+    if (buildPlan.attachShowModebar) {
+      spec.show_modebar = false;
+    }
+    if (buildPlan.attachExport) {
+      spec.export = this.export_options;
+    }
+    if (buildPlan.attachShowTooltip) {
+      spec.show_tooltip = false;
+    }
+    if (buildPlan.attachTooltip) {
+      spec.tooltip = this.tooltip;
+    }
+    if (buildPlan.attachMarkStyle) {
+      spec.mark_style = markStyle;
+    }
+    if (buildPlan.attachInteraction) {
+      spec.interaction = interaction;
+    }
     if (buildPlan.attachAnnotations) {
       spec.annotations = annotations;
     }
+    if (buildPlan.attachAnimation) {
+      spec.animation = { ...this.animation_options };
+    }
+    if (buildPlan.attachGraph) {
+      spec.graph = this._graphMeta;
+    }
     if (split) {
       spec.buffer_layout = "split";
-    }
-    if (this._graphMeta) {
-      spec.graph = this._graphMeta;
     }
     return {
       spec,
