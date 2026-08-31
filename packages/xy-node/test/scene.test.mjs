@@ -1179,7 +1179,7 @@ test("Node matches Python Scene bytes for constant-style Cartesian density blit"
   assert.match(svg, /data:image\/png;base64,/);
 });
 
-test("Node matches Python Scene bytes for bounded polar hexbin, bar, line, and lattice heatmap", () => {
+test("Node matches Python Scene bytes for bounded polar hexbin, bar, line, scatter, and lattice heatmap", () => {
   const tau = 6.283185307179586;
   const cases = [
     {
@@ -1216,6 +1216,22 @@ test("Node matches Python Scene bytes for bounded polar hexbin, bar, line, and l
         figure.setAxisDomain("x", [0, tau]);
         figure.setAxisDomain("y", [0, 5]);
         figure.line([0.5, 2.5, 4.5], [1, 3, 2], { color: "#3987e5", name: "pline", id: 0 });
+        return figure;
+      },
+    },
+    {
+      key: "public_polar_scatter_sha256",
+      build: () => {
+        const figure = new Figure({ width: 320, height: 240, coords: "polar" });
+        figure.setAxisDomain("x", [0, tau]);
+        figure.setAxisDomain("y", [0, 5]);
+        figure.scatter([0.5, 2.5], [1, 3], {
+          color: "#3987e5",
+          size: 6,
+          opacity: 0.8,
+          name: "pscat",
+          id: 0,
+        });
         return figure;
       },
     },

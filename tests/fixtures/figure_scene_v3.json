@@ -196,6 +196,7 @@
   "public_polar_hexbin_sha256": "7346d7856085f640ca00ee48f1e62524616f162e6e0aa729efbe269892aebad2",
   "public_polar_bar_sha256": "d8d1de4f605d7e5c8385b3fa12f4cc2a88e17309997db158d88fe253773e056b",
   "public_polar_line_sha256": "b62bb02e21044dc1a3d57e1cc7878f8cc1bb140b6f7b9dc1ae7f1343ed782290",
+  "public_polar_scatter_sha256": "faaa52264263d88ab431c94e2571adfaf1d3bb3e5d9a79eabe1a81941df507ed",
   "public_polar_heatmap_sha256": "d9b4aea33e5a59e0ff307d233234eabdfeb954112315ed57683ba0462dbe7e7f",
   "band_outlines": {
     "top": {

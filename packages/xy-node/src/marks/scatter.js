@@ -22,6 +22,26 @@ function optionalBoolean(value, name) {
   return value;
 }
 
+/** Match Python `channels.resolve_size` for Scene XYTC diameter packing. */
+function resolveSizeChannel(size, n, rangePx = [2, 18]) {
+  const range_px = rangePx;
+  if (size == null) {
+    return { mode: "constant", constant: 4.0, range_px };
+  }
+  if (typeof size === "number" && Number.isFinite(size)) {
+    if (size < 0) throw new RangeError("size must be non-negative");
+    return { mode: "constant", constant: size, range_px };
+  }
+  const values = asF64Array(size, "size");
+  if (values.length !== n) {
+    throw new RangeError(`size array must be 1-D length ${n}, got length ${values.length}`);
+  }
+  const mm = minMax(values) ?? [0, 1];
+  const lo = mm[0];
+  const hi = mm[0] === mm[1] ? mm[0] + 1 : mm[1];
+  return { mode: "continuous", values, domain: [lo, hi], range_px };
+}
+
 /**
  * @param {ArrayLike|TypedArray} x
  * @param {ArrayLike|TypedArray} y
@@ -45,6 +65,9 @@ export function composeScatter(x, y, opts = {}) {
   const opacity = opts.opacity ?? opts.style?.opacity ?? 0.8;
   const color = opts.color ?? opts.style?.color;
   const color_ch = resolveColorChannel(color, n);
+  const sizeRange = opts.sizeRange ?? opts.size_range ?? [2, 18];
+  const sizeInput = opts.size ?? opts.size_ch?.constant;
+  const size_ch = opts.size_ch ?? (sizeInput != null ? resolveSizeChannel(sizeInput, n, sizeRange) : null);
   return {
     traces: [
       {
@@ -53,12 +76,11 @@ export function composeScatter(x, y, opts = {}) {
         x: xa,
         y: ya,
         color_ch,
+        ...(size_ch != null ? { size_ch } : {}),
         style: normalizeScatterStyle({ opacity, ...(opts.style ?? {}) }),
         x_axis: opts.xAxis ?? "x",
         y_axis: opts.yAxis ?? "y",
-        ...(forceDensity != null ? { force_density: Boolean(forceDensity) } : {}),        // Recorded scene-scatter-symbol-ch stay-host.
-        // Recorded scene-scatter-stroke-ch stay-host.
-        // Recorded scene-scatter-color-ch stay-host.
+        ...(forceDensity != null ? { force_density: Boolean(forceDensity) } : {}),
 
         ...(forceDirect != null ? { force_direct: Boolean(forceDirect) } : {}),
         ...(forcePyramid != null ? { force_pyramid: Boolean(forcePyramid) } : {}),
@@ -85,6 +107,7 @@ export function attachScatter(fig, x, y, opts = {}) {
     xAxis: t.x_axis,
     yAxis: t.y_axis,
     id: t.id,
+    ...(t.size_ch != null ? { size_ch: t.size_ch } : {}),
     forceDensity: t.force_density,
     forceDirect: t.force_direct,
     forcePyramid: t.force_pyramid,
