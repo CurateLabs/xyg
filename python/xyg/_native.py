@@ -369,6 +369,27 @@ class _PayloadAxisSpecAttachPlan(ctypes.Structure):
     ]
 
 
+class _SceneXytcFigurePlan(ctypes.Structure):
+    _fields_ = [
+        ("show_legend", ctypes.c_uint32),
+    ]
+
+
+class _SceneXytcTraceDispatchPlan(ctypes.Structure):
+    _fields_ = [
+        ("kind_class", ctypes.c_uint32),
+        ("pack_opacity", ctypes.c_uint32),
+        ("pack_hex_pitch", ctypes.c_uint32),
+        ("pack_stroke_perimeter", ctypes.c_uint32),
+        ("pack_color2", ctypes.c_uint32),
+        ("pack_radius", ctypes.c_uint32),
+        ("marker_path_branch", ctypes.c_uint32),
+        ("marker_glyph_branch", ctypes.c_uint32),
+        ("meta_use_density", ctypes.c_uint32),
+        ("meta_joined_fill", ctypes.c_uint32),
+    ]
+
+
 PAYLOAD_DENSITY_TRACE_EMIT_PLAN_BYTES = ctypes.sizeof(_PayloadDensityTraceEmitPlan)
 
 
@@ -1966,6 +1987,55 @@ def scene_xytc_meta_flags_pack(
     if ok == 0:
         raise ValueError("invalid scene-xytc-meta-flags-pack request")
     return int(flags.value)
+
+
+def scene_xytc_figure_plan(*, show_legend: bool) -> dict[str, bool]:
+    """Figure-level XYTC pack orchestration via ``xyg_scene_xytc_figure_plan`` (ABI 305)."""
+    out = _SceneXytcFigurePlan()
+    ok = int(_lib.xyg_scene_xytc_figure_plan(1 if show_legend else 0, ctypes.byref(out)))
+    if ok != 1:
+        raise ValueError("invalid scene_xytc_figure_plan arguments")
+    return {"show_legend": bool(out.show_legend)}
+
+
+def _scene_xytc_trace_dispatch_plan_dict(out: _SceneXytcTraceDispatchPlan) -> dict[str, bool | int]:
+    return {
+        "kind_class": int(out.kind_class),
+        "pack_opacity": bool(out.pack_opacity),
+        "pack_hex_pitch": bool(out.pack_hex_pitch),
+        "pack_stroke_perimeter": bool(out.pack_stroke_perimeter),
+        "pack_color2": bool(out.pack_color2),
+        "pack_radius": bool(out.pack_radius),
+        "marker_path_branch": bool(out.marker_path_branch),
+        "marker_glyph_branch": bool(out.marker_glyph_branch),
+        "meta_use_density": bool(out.meta_use_density),
+        "meta_joined_fill": bool(out.meta_joined_fill),
+    }
+
+
+def scene_xytc_trace_dispatch_plan(
+    *,
+    kind: str,
+    marker_path_present: bool,
+    use_density: bool,
+    joined_fill: bool,
+) -> dict[str, bool | int]:
+    """Per-trace XYTC pack dispatch via ``xyg_scene_xytc_trace_dispatch_plan`` (ABI 305)."""
+    kind_b = kind.encode("utf-8")
+    out = _SceneXytcTraceDispatchPlan()
+    ok = int(
+        _lib.xyg_scene_xytc_trace_dispatch_plan(
+            kind_b,
+            len(kind_b),
+            1 if marker_path_present else 0,
+            1 if use_density else 0,
+            1 if joined_fill else 0,
+            ctypes.byref(out),
+        )
+    )
+    if ok != 1:
+        raise ValueError("invalid scene_xytc_trace_dispatch_plan arguments")
+    return _scene_xytc_trace_dispatch_plan_dict(out)
 
 
 def scene_xytc_dash_pattern_pack(is_array: int) -> int:

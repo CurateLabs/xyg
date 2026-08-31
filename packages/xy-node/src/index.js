@@ -68,6 +68,8 @@ export {
   sceneMarkerGlyphAdmit,
   sceneKindAdmit,
   sceneKindClass,
+  sceneXytcFigurePlan,
+  sceneXytcTraceDispatchPlan,
   roundedRectPoly,
   violinDensity,
   boxStats,

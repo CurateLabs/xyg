@@ -3038,19 +3038,30 @@ def _pack_xytc(figure: Any) -> bytes:
     """Pack authored per-trace style literals as XYTC v1; Rust compiles XYTO."""
     traces = list(getattr(figure, "traces", None) or [])
     records = bytearray(_XYTC_HEADER.pack(b"XYTC", 1, len(traces), 0))
-    show_legend = bool(getattr(figure, "show_legend", True))
+    figure_plan = _native.scene_xytc_figure_plan(
+        show_legend=bool(getattr(figure, "show_legend", True))
+    )
+    show_legend = figure_plan["show_legend"]
     for trace in traces:
         style = getattr(trace, "style", None) or {}
         flags = 0
         kind_name = str(trace.kind)
         kind = kind_name.encode("utf-8")
-        kind_class = _native.scene_kind_class(kind_name)
+        dispatch = _native.scene_xytc_trace_dispatch_plan(
+            kind=kind_name,
+            marker_path_present=kind_name == "scatter" and style.get("marker_path") is not None,
+            use_density=kind_name == "scatter" and trace.use_density(),
+            joined_fill=kind_name == "triangle_mesh" and bool(style.get("joined_fill")),
+        )
+        kind_class = int(dispatch["kind_class"])
         name = str(trace.name) if getattr(trace, "name", None) else ""
         name_b = name.encode("utf-8")
         symbol_flags, symbol_b, symbol_int = _pack_xytc_symbol(style)
         flags |= symbol_flags
         opacity = float(style.get("opacity", 1.0))
-        fill_opacity, stroke_opacity, line_opacity = _pack_xytc_opacity(kind_class, style)
+        fill_opacity, stroke_opacity, line_opacity = _pack_xytc_opacity(
+            kind_class if dispatch["pack_opacity"] else 0, style
+        )
         (
             num_flags,
             size,
@@ -3060,9 +3071,13 @@ def _pack_xytc(figure: Any) -> bytes:
             line_width,
         ) = _pack_xytc_numeric_style(trace, style)
         flags |= num_flags
-        hex_flags, hex_dx, hex_dy = _pack_xytc_hex_pitch(kind_class, style)
+        if dispatch["pack_hex_pitch"]:
+            hex_flags, hex_dx, hex_dy = _pack_xytc_hex_pitch(kind_class, style)
+        else:
+            hex_flags, hex_dx, hex_dy = 0, float("nan"), float("nan")
         flags |= hex_flags
-        flags |= _pack_xytc_stroke_perimeter(kind_class, style)
+        if dispatch["pack_stroke_perimeter"]:
+            flags |= _pack_xytc_stroke_perimeter(kind_class, style)
         dash_flags, dash_b, dash_pattern = _pack_xytc_dash(style)
         flags |= dash_flags
         linecap_b = str(style["linecap"]).encode("utf-8") if "linecap" in style else b""
@@ -3086,19 +3101,20 @@ def _pack_xytc(figure: Any) -> bytes:
         color_css = str(style["color"]).encode("utf-8") if "color" in style else b""
         ch_flags, color_mode, color_const = _pack_xytc_color_channel(trace)
         flags |= ch_flags
-        color2_flags, gradient_blob = _pack_xytc_color2(trace, flags, gradient_blob)
-        flags |= color2_flags
+        if dispatch["pack_color2"]:
+            color2_flags, gradient_blob = _pack_xytc_color2(trace, flags, gradient_blob)
+            flags |= color2_flags
         marker_blob = b""
         marker_path_present = 0
         marker_packed = 0
         glyph_packed = 0
-        if trace.kind == "scatter" and style.get("marker_path") is not None:
+        if dispatch["marker_path_branch"]:
             marker_path_present = 1
             packed_marker = _pack_marker_blob(style.get("marker_path"))
             if packed_marker:
                 marker_packed = 1
                 marker_blob = packed_marker
-        elif trace.kind == "scatter":
+        elif dispatch["marker_glyph_branch"]:
             packed_glyph = _admitted_marker_glyph(style.get("marker_glyph"))
             if packed_glyph is not None:
                 glyph_packed = 1
@@ -3110,8 +3126,11 @@ def _pack_xytc(figure: Any) -> bytes:
             marker_packed=marker_packed,
             glyph_packed=glyph_packed,
         )
-        radius_flags, r_tip, r_base, wedge_gap = _pack_xytc_radius(trace, style)
-        flags |= radius_flags
+        if dispatch["pack_radius"]:
+            radius_flags, r_tip, r_base, wedge_gap = _pack_xytc_radius(trace, style)
+            flags |= radius_flags
+        else:
+            r_tip, r_base, wedge_gap = 0.0, 0.0, 0.0
         records.extend(
             _XYTR_PREFIX.pack(
                 b"XYTR",

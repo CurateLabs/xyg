@@ -155,6 +155,8 @@ import {
   admittedMarkerGlyph,
   sceneKindAdmit,
   sceneKindClass,
+  sceneXytcFigurePlan,
+  sceneXytcTraceDispatchPlan,
   figureTraceSupport,
   fillIsGradientAuthoring,
   xyEfJoinedFill,
@@ -703,6 +705,33 @@ test("packXyTcStrokePerimeter uses stroke_perimeter only like Python", () => {
   assert.equal(packXyTcStrokePerimeter({ stroke_perimeter: false }, area), 0);
   assert.equal(packXyTcStrokePerimeter({ stroke_perimeter: true }, area), 1 << 9);
   assert.equal(packXyTcStrokePerimeter({ stroke_perimeter: "yes" }, area), 1 << 10);
+});
+
+test("sceneXytcFigurePlan passes showLegend like Python", () => {
+  assert.equal(sceneXytcFigurePlan({ showLegend: true }).showLegend, true);
+  assert.equal(sceneXytcFigurePlan({ showLegend: false }).showLegend, false);
+});
+
+test("sceneXytcTraceDispatchPlan scatter density and glyph routing", () => {
+  const plan = sceneXytcTraceDispatchPlan({
+    kind: "scatter",
+    markerPathPresent: false,
+    useDensity: true,
+    joinedFill: false,
+  });
+  assert.equal(plan.kindClass, sceneKindClass("scatter"));
+  assert.equal(plan.packOpacity, true);
+  assert.equal(plan.packHexPitch, false);
+  assert.equal(plan.markerGlyphBranch, true);
+  assert.equal(plan.metaUseDensity, true);
+});
+
+test("sceneXytcTraceDispatchPlan ribbon color2 and area perimeter", () => {
+  const ribbon = sceneXytcTraceDispatchPlan({ kind: "ribbon" });
+  assert.equal(ribbon.packColor2, true);
+  const area = sceneXytcTraceDispatchPlan({ kind: "area" });
+  assert.equal(area.packStrokePerimeter, true);
+  assert.equal(area.packColor2, false);
 });
 
 test("hexbinXyTaColormap uses channel.colormap only like Python", () => {

@@ -396,6 +396,20 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         ctypes.POINTER(ctypes.c_uint32),
     ]
+    lib.xyg_scene_xytc_figure_plan.restype = ctypes.c_int32
+    lib.xyg_scene_xytc_figure_plan.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_void_p,
+    ]
+    lib.xyg_scene_xytc_trace_dispatch_plan.restype = ctypes.c_int32
+    lib.xyg_scene_xytc_trace_dispatch_plan.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_void_p,
+    ]
     lib.xyg_scene_xytc_color2_flags_pack.restype = ctypes.c_int32
     lib.xyg_scene_xytc_color2_flags_pack.argtypes = [
         ctypes.c_int32,
@@ -5789,6 +5803,45 @@ def main() -> None:
         and axis_attach[30] == 1
         and axis_attach[31] == 1,
         "payload_axis_spec_attach_plan polar r on y",
+    )
+    xytc_figure = (ctypes.c_uint32 * 1)()
+    ok(
+        lib.xyg_scene_xytc_figure_plan(1, ctypes.byref(xytc_figure)) == 1 and xytc_figure[0] == 1,
+        "scene_xytc_figure_plan show_legend",
+    )
+    xytc_dispatch = (ctypes.c_uint32 * 10)()
+    scatter_kind = array("B", b"scatter")
+    ok(
+        lib.xyg_scene_xytc_trace_dispatch_plan(
+            _ptr(scatter_kind, ctypes.c_uint8),
+            len(scatter_kind),
+            0,
+            1,
+            0,
+            ctypes.byref(xytc_dispatch),
+        )
+        == 1
+        and xytc_dispatch[1] == 1
+        and xytc_dispatch[2] == 0
+        and xytc_dispatch[4] == 0
+        and xytc_dispatch[7] == 1
+        and xytc_dispatch[8] == 1,
+        "scene_xytc_trace_dispatch_plan scatter density glyph",
+    )
+    ribbon_kind = array("B", b"ribbon")
+    ok(
+        lib.xyg_scene_xytc_trace_dispatch_plan(
+            _ptr(ribbon_kind, ctypes.c_uint8),
+            len(ribbon_kind),
+            0,
+            0,
+            0,
+            ctypes.byref(xytc_dispatch),
+        )
+        == 1
+        and xytc_dispatch[4] == 1
+        and xytc_dispatch[3] == 0,
+        "scene_xytc_trace_dispatch_plan ribbon color2",
     )
     density_color_mode = ctypes.c_int32(-1)
     density_categorical = ctypes.c_int32(-1)
