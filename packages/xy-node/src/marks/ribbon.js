@@ -8,6 +8,22 @@
 import { asF64Array } from "../encode.js";
 import { resolveColorChannel } from "../color.js";
 
+/** Renderer-only fill/stroke alpha from compiled CSS (Python `styles._opacity_channels`). */
+function opacityChannels(extraStyle = {}) {
+  const out = {};
+  if (Object.hasOwn(extraStyle, "fill_opacity")) {
+    out.fill_opacity = Number(extraStyle.fill_opacity);
+  } else if (Object.hasOwn(extraStyle, "fill-opacity")) {
+    out.fill_opacity = Number(extraStyle["fill-opacity"]);
+  }
+  if (Object.hasOwn(extraStyle, "stroke_opacity")) {
+    out.stroke_opacity = Number(extraStyle.stroke_opacity);
+  } else if (Object.hasOwn(extraStyle, "stroke-opacity")) {
+    out.stroke_opacity = Number(extraStyle["stroke-opacity"]);
+  }
+  return out;
+}
+
 /**
  * @param {ArrayLike|TypedArray} x0
  * @param {ArrayLike|TypedArray} x1
@@ -46,13 +62,17 @@ export function composeRibbon(x0, x1, sourceLo, sourceHi, targetLo, targetHi, op
   const colorTargetRaw = opts.colorTarget ?? opts.color_target;
   const colorTarget =
     colorTargetRaw == null ? null : resolveColorChannel(colorTargetRaw, n, color.constant);
+  const extraStyle = opts.style ?? {};
   const style = {
     opacity,
     role: "ribbon",
     ...(opts.stroke != null ? { stroke: opts.stroke } : {}),
     ...(opts.strokeWidth ? { stroke_width: Number(opts.strokeWidth) } : {}),
-    ...(opts.style ?? {}),
+    ...opacityChannels(extraStyle),
+    ...extraStyle,
   };
+  delete style["fill-opacity"];
+  delete style["stroke-opacity"];
   return {
     traces: [
       {

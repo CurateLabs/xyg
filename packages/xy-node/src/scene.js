@@ -3410,8 +3410,8 @@ export function packXyTcSymbol(style) {
       symbolInt: record.symbol,
     };
   }
-  const symbolB = record.symbol != null ? encodeUtf8(String(record.symbol)) : new Uint8Array();
-  return { flags: sceneXytcSymbolIntPack(0), symbolB, symbolInt: 0 };
+  const symbol = String(record.symbol ?? "circle") || "circle";
+  return { flags: sceneXytcSymbolIntPack(0), symbolB: encodeUtf8(symbol), symbolInt: 0 };
 }
 
 /** XYTC ribbon color2 flags. Python `_pack_xytc` color2 branch. */

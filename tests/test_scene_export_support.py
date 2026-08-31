@@ -26,6 +26,7 @@ from xyg._figure import Figure
 from xyg._scene_v3 import (
     UnsupportedSceneV3,
     _pack_xyta,
+    _pack_xytc,
     figure_scene,
     public_static_export,
     scene_export_support_reason,
@@ -1469,6 +1470,28 @@ def test_public_constant_density_xyta_matches_cross_host_fixture() -> None:
     packed = _pack_xyta(figure)
     assert packed.startswith(b"XYTA")
     assert hashlib.sha256(packed).hexdigest() == fixture["public_constant_density_xyta_sha256"]
+
+
+def test_public_triangle_mesh_xytc_matches_cross_host_fixture() -> None:
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
+    figure = _public_triangle_mesh()
+    assert figure.traces[0].color_ch.mode == "constant"
+    assert figure.traces[0].color_ch.constant == "#22c55e"
+    packed = _pack_xytc(figure)
+    assert packed.startswith(b"XYTC")
+    assert hashlib.sha256(packed).hexdigest() == fixture["public_triangle_mesh_xytc_sha256"]
+
+
+def test_public_ribbon_xytc_matches_cross_host_fixture() -> None:
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
+    figure = _public_ribbon("linear")
+    assert figure.traces[0].color_ch.mode == "constant"
+    assert figure.traces[0].color_ch.constant == "#7c3aed"
+    assert figure.traces[0].style["fill_opacity"] == 0.8
+    assert figure.traces[0].style["stroke_opacity"] == 0.5
+    packed = _pack_xytc(figure)
+    assert packed.startswith(b"XYTC")
+    assert hashlib.sha256(packed).hexdigest() == fixture["public_ribbon_xytc_sha256"]
 
 
 def test_public_constant_density_matches_exact_cross_host_scene_bytes() -> None:
