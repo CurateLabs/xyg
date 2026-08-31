@@ -1176,6 +1176,24 @@ export function encodedColumnMeta(offset, lo, hi, kind = null) {
   return { offset: out[0], scale: out[1], hasKind: code === 1 };
 }
 
+/** Canonical scatter column — preserves Column.kind like Python Column ingest. */
+export function canonicalScatterColumn(value, name = "values") {
+  if (value instanceof Column) return value;
+  if (
+    value != null
+    && typeof value === "object"
+    && !ArrayBuffer.isView(value)
+    && value.kind != null
+  ) {
+    const values = value.values != null ? asF64Array(value.values, name) : asF64Array(value, name);
+    return new Column(values, { kind: String(value.kind) });
+  }
+  if (Array.isArray(value) && value.length > 0 && value[0] instanceof Date) {
+    return new Column(Float64Array.from(value, (item) => item.getTime()), { kind: "time_ms" });
+  }
+  return new Column(asF64Array(value, name));
+}
+
 export function asF64Array(value, name = "values") {
   if (value instanceof Float64Array) {
     return value;

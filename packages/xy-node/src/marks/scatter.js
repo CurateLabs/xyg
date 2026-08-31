@@ -4,7 +4,7 @@
  */
 
 import { cssIsFunctional, resolveColorChannel } from "../color.js";
-import { asF64Array, encodeF32Values, minMax } from "../encode.js";
+import { asF64Array, canonicalScatterColumn, encodeF32Values, minMax } from "../encode.js";
 
 const BUILTIN_SYMBOLS = [
   "circle",
@@ -122,8 +122,10 @@ export function resolveSizeChannel(size, n, rangePx = [2, 18]) {
  * @returns {{traces: object[]}}
  */
 export function composeScatter(x, y, opts = {}) {
-  const xa = asF64Array(x, "x");
-  const ya = asF64Array(y, "y");
+  const xCol = canonicalScatterColumn(x, "x");
+  const yCol = canonicalScatterColumn(y, "y");
+  const xa = xCol.values;
+  const ya = yCol.values;
   if (xa.length !== ya.length) {
     throw new RangeError("scatter x/y length mismatch");
   }
@@ -175,6 +177,8 @@ export function composeScatter(x, y, opts = {}) {
         name: opts.name ?? null,
         x: xa,
         y: ya,
+        _xCol: xCol,
+        _yCol: yCol,
         color_ch,
         size_ch,
         ...(resolvedStrokeCh != null ? { stroke_ch: resolvedStrokeCh } : {}),

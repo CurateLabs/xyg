@@ -17,6 +17,7 @@
 
 import {
   Column,
+  canonicalScatterColumn,
   DENSITY_GRID,
   DENSITY_SAMPLE_SEED,
   DENSITY_SAMPLE_TARGET,
@@ -607,10 +608,8 @@ export function figureAxisKind(figure, axisId) {
   for (const trace of figure?.traces ?? []) {
     if (axis === "x" && trace.x_axis !== axisId) continue;
     if (axis === "y" && trace.y_axis !== axisId) continue;
-    const col = axis === "x" ? trace.x : trace.y;
-    // Node scatter stores f64, so this time_ms scan is a no-op on typical
-    // Node traces. Python Column.kind can be time_ms. Recorded
-    // scatter-f64-kind stay-host.
+    const col = axis === "x" ? (trace._xCol ?? trace.x) : (trace._yCol ?? trace.y);
+    if (col instanceof Column && col.kind === "time_ms") return "time";
     if (col?.kind === "time_ms") return "time";
   }
   return "linear";
@@ -628,6 +627,14 @@ function columnValues(col) {
   if (ArrayBuffer.isView(col) || Array.isArray(col)) return asF64(col);
   if (col.values != null) return asF64(col.values);
   return asF64(col);
+}
+
+function traceGeometryCol(trace, axis) {
+  const cached = axis === "x" ? trace._xCol : trace._yCol;
+  if (cached instanceof Column) return cached;
+  const col = axis === "x" ? trace.x : trace.y;
+  if (col instanceof Column) return col;
+  return new Column(columnValues(col));
 }
 
 function columnExtent(col) {
@@ -1447,7 +1454,9 @@ export class Figure {
     );
     if (opts._composed) {
       const rawStyle = { ...(opts.style ?? {}) };
-      const xv = asF64(x);
+      const xCol = canonicalScatterColumn(x, "x");
+      const yCol = canonicalScatterColumn(y, "y");
+      const xv = xCol.values;
       const colorInput = opts.color ?? rawStyle.color ?? null;
       const sizeInput = opts.size ?? rawStyle.size ?? null;
       const strokeInput = opts.stroke ?? rawStyle.stroke ?? null;
@@ -1459,10 +1468,10 @@ export class Figure {
         id: opts.id ?? this.traces.length,
         kind: "scatter",
         name: opts.name ?? null,
-        // Node scatter stores f64, not Column.kind. Python Column infers
-        // time_ms. Recorded scatter-f64-kind stay-host.
         x: xv,
-        y: asF64(y),
+        y: yCol.values,
+        _xCol: xCol,
+        _yCol: yCol,
         style: normalizeScatterStyle({
           ...rawStyle,
           ...(strokeValue != null ? { stroke: strokeValue } : {}),
@@ -1498,6 +1507,8 @@ export class Figure {
       name: t.name,
       x: t.x,
       y: t.y,
+      ...(t._xCol != null ? { _xCol: t._xCol } : {}),
+      ...(t._yCol != null ? { _yCol: t._yCol } : {}),
       color_ch: opts.color_ch ?? t.color_ch,
       size_ch: opts.size_ch ?? t.size_ch,
       ...((opts.stroke_ch ?? t.stroke_ch) != null ? { stroke_ch: opts.stroke_ch ?? t.stroke_ch } : {}),
@@ -2157,12 +2168,12 @@ export class Figure {
       }
       return entry;
     }
-    const xCol = t._xCol instanceof Column ? t._xCol : new Column(t.x);
-    const yCol = t._yCol instanceof Column ? t._yCol : new Column(t.y);
+    const xCol = traceGeometryCol(t, "x");
+    const yCol = traceGeometryCol(t, "y");
     t._xCol = xCol;
     t._yCol = yCol;
-    let xv = t.x;
-    let yv = t.y;
+    let xv = xCol.values;
+    let yv = yCol.values;
     const sel = this._visibleSel(t, xv, yv, { xCol, yCol });
     if (sel != null) {
       xv = gatherF64(xv, sel);
@@ -2248,27 +2259,27 @@ export class Figure {
     const yAxis = t.y_axis ?? "y";
     const xLinear = payloadAxisScale(this, xAxis) === "linear";
     const yLinear = payloadAxisScale(this, yAxis) === "linear";
-    const xBin = this._binningCoords(xAxis, t.x, xr);
-    const yBin = this._binningCoords(yAxis, t.y, yr);
+    const xCol = traceGeometryCol(t, "x");
+    const yCol = traceGeometryCol(t, "y");
+    t._xCol = xCol;
+    t._yCol = yCol;
+    const xBin = this._binningCoords(xAxis, xCol.values, xr);
+    const yBin = this._binningCoords(yAxis, yCol.values, yr);
     const bx = xBin.values;
     const by = yBin.values;
     const bx0 = xBin.b0;
     const bx1 = xBin.b1;
     const by0 = yBin.b0;
     const by1 = yBin.b1;
-    const xCol = t._xCol instanceof Column ? t._xCol : new Column(t.x);
-    const yCol = t._yCol instanceof Column ? t._yCol : new Column(t.y);
-    t._xCol = xCol;
-    t._yCol = yCol;
-    const xmm = minMax(t.x) ?? xr;
-    const ymm = minMax(t.y) ?? yr;
+    const xmm = minMax(xCol.values) ?? xr;
+    const ymm = minMax(yCol.values) ?? yr;
     const colorMeta = densityColorChannelMeta(t);
     let rangeSel = null;
-    let visible = t.x.length;
+    let visible = xCol.length;
     if (
       this.coords !== "polar" &&
       !this._deferPyramidRebuild?.has(t.id) &&
-      shouldUsePyramid(t.x.length, { forceBin2d })
+      shouldUsePyramid(xCol.length, { forceBin2d })
     ) {
       let cache = this._pyramids.get(t.id);
       if (cache == null) {
@@ -2276,7 +2287,7 @@ export class Figure {
         this._pyramids.set(t.id, cache);
       }
       hasPyramidResource = true;
-      const served = densityViewFromPyramid(cache, t.x, t.y, bx0, bx1, by0, by1, w, h, {
+      const served = densityViewFromPyramid(cache, xCol.values, yCol.values, bx0, bx1, by0, by1, w, h, {
         noRescan,
         forceSpill,
       });
@@ -2453,7 +2464,7 @@ export class Figure {
           t,
           pw,
           wasmColumnPlan,
-          { x: t.x, y: t.y },
+          { x: xCol.values, y: yCol.values },
         );
         density.wasm_source = wasmSource;
       } else if (kind === "tiles") {
@@ -2502,8 +2513,8 @@ export class Figure {
         if (sampleSel != null && sampleSel.length === 0) {
           continue;
         }
-        const sx = sampleSel == null ? t.x : gatherF64(t.x, sampleSel);
-        const sy = sampleSel == null ? t.y : gatherF64(t.y, sampleSel);
+        const sx = sampleSel == null ? xCol.values : gatherF64(xCol.values, sampleSel);
+        const sy = sampleSel == null ? yCol.values : gatherF64(yCol.values, sampleSel);
         if (sx.length > 0) {
           const xAxis = t.x_axis ?? "x";
           const yAxis = t.y_axis ?? "y";
@@ -3426,15 +3437,16 @@ export class Figure {
           throw new RangeError("line append requires ascending x");
         }
       }
-      const prev = t.x.length === 0 ? Number.NaN : t.x[t.x.length - 1];
+      const prevVals = columnValues(t.x);
+      const prev = prevVals.length === 0 ? Number.NaN : prevVals[prevVals.length - 1];
       if (Number.isFinite(prev) && ax[0] < prev) {
         throw new RangeError(
           `line append must continue the series: new x starts at ${ax[0]}, before the current last x ${prev}`,
         );
       }
     }
-    const xCol = t._xCol instanceof Column ? t._xCol : new Column(t.x);
-    const yCol = t._yCol instanceof Column ? t._yCol : new Column(t.y);
+    const xCol = traceGeometryCol(t, "x");
+    const yCol = traceGeometryCol(t, "y");
     xCol.append(ax);
     yCol.append(ay);
     t._xCol = xCol;
