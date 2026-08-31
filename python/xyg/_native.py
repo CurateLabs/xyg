@@ -11826,6 +11826,32 @@ def density_wasm_source_admit(*, split_payload: bool, wasm_eligible: bool) -> bo
     return admit == 1
 
 
+DENSITY_WASM_DENSITY_NONE = 0
+DENSITY_WASM_DENSITY_AUTOMATIC = 1
+DENSITY_WASM_DENSITY_UNSUPPORTED = 2
+
+
+def density_wasm_density_wire_kind(
+    *,
+    split_payload: bool,
+    wasm_source_count: int,
+    has_density_tier: bool,
+) -> int:
+    """Payload wasm_density wire kind via ``xyg_density_wasm_density_wire_kind`` (ABI 270)."""
+    kind = _lib.xyg_density_wasm_density_wire_kind(
+        int(bool(split_payload)),
+        int(wasm_source_count),
+        int(bool(has_density_tier)),
+    )
+    if kind not in (
+        DENSITY_WASM_DENSITY_NONE,
+        DENSITY_WASM_DENSITY_AUTOMATIC,
+        DENSITY_WASM_DENSITY_UNSUPPORTED,
+    ):
+        raise ValueError("invalid density_wasm_density_wire_kind arguments")
+    return int(kind)
+
+
 DENSITY_REDUCTION_BIN2D = 0
 DENSITY_REDUCTION_PYRAMID_COUNT = 1
 

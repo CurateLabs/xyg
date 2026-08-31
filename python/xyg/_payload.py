@@ -302,9 +302,14 @@ class PayloadMixin(_Host):
         # One Cartesian count-only source is intentionally the first vertical.
         # Multiple/color/chunked sources remain on the authoritative kernel
         # route and are marked explicitly by the browser client.
-        if pw._split and len(wasm_sources) == 1:
+        wasm_density_kind = kernels.density_wasm_density_wire_kind(
+            split_payload=bool(pw._split),
+            wasm_source_count=len(wasm_sources),
+            has_density_tier=any(entry.get("tier") == "density" for entry in spec_traces),
+        )
+        if wasm_density_kind == kernels.DENSITY_WASM_DENSITY_AUTOMATIC:
             spec["wasm_density"] = {"automatic": True, "source": wasm_sources[0]}
-        elif any(entry.get("tier") == "density" for entry in spec_traces) and pw._split:
+        elif wasm_density_kind == kernels.DENSITY_WASM_DENSITY_UNSUPPORTED:
             spec["wasm_density"] = {
                 "automatic": False,
                 "unsupported": {

@@ -188,6 +188,32 @@ pub fn density_wasm_source_admit(split_payload: i32, wasm_eligible: i32) -> i32 
     i32::from(split_payload == 1 && wasm_eligible == 1)
 }
 
+pub const DENSITY_WASM_DENSITY_NONE: i32 = 0;
+pub const DENSITY_WASM_DENSITY_AUTOMATIC: i32 = 1;
+pub const DENSITY_WASM_DENSITY_UNSUPPORTED: i32 = 2;
+
+/// Payload-level ``wasm_density`` wire kind for split builds (ABI 270).
+///
+/// Returns ``DENSITY_WASM_DENSITY_AUTOMATIC`` when exactly one wasm source is
+/// present, ``DENSITY_WASM_DENSITY_UNSUPPORTED`` when split payloads include a
+/// density-tier trace but not exactly one source, otherwise ``NONE``.
+pub fn density_wasm_density_wire_kind(
+    split_payload: i32,
+    wasm_source_count: u64,
+    has_density_tier: i32,
+) -> i32 {
+    if split_payload == 0 {
+        return DENSITY_WASM_DENSITY_NONE;
+    }
+    if wasm_source_count == 1 {
+        return DENSITY_WASM_DENSITY_AUTOMATIC;
+    }
+    if has_density_tier == 1 {
+        return DENSITY_WASM_DENSITY_UNSUPPORTED;
+    }
+    DENSITY_WASM_DENSITY_NONE
+}
+
 pub const DENSITY_REDUCTION_BIN2D: i32 = 0;
 pub const DENSITY_REDUCTION_PYRAMID_COUNT: i32 = 1;
 
@@ -797,6 +823,30 @@ mod tests {
         assert_eq!(density_wasm_source_admit(0, 1), 0);
         assert_eq!(density_wasm_source_admit(1, 0), 0);
         assert_eq!(density_wasm_source_admit(0, 0), 0);
+    }
+
+    #[test]
+    fn density_wasm_density_wire_kind_matches_host_table() {
+        assert_eq!(
+            density_wasm_density_wire_kind(0, 1, 1),
+            DENSITY_WASM_DENSITY_NONE
+        );
+        assert_eq!(
+            density_wasm_density_wire_kind(1, 1, 0),
+            DENSITY_WASM_DENSITY_AUTOMATIC
+        );
+        assert_eq!(
+            density_wasm_density_wire_kind(1, 0, 1),
+            DENSITY_WASM_DENSITY_UNSUPPORTED
+        );
+        assert_eq!(
+            density_wasm_density_wire_kind(1, 2, 1),
+            DENSITY_WASM_DENSITY_UNSUPPORTED
+        );
+        assert_eq!(
+            density_wasm_density_wire_kind(1, 0, 0),
+            DENSITY_WASM_DENSITY_NONE
+        );
     }
 
     #[test]

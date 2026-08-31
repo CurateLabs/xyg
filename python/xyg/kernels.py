@@ -55,6 +55,10 @@ density_trace_color_classify = _impl.density_trace_color_classify
 density_uses_channel_colormap = _impl.density_uses_channel_colormap
 density_constant_color_wire_admit = _impl.density_constant_color_wire_admit
 density_wasm_source_admit = _impl.density_wasm_source_admit
+DENSITY_WASM_DENSITY_NONE = _impl.DENSITY_WASM_DENSITY_NONE
+DENSITY_WASM_DENSITY_AUTOMATIC = _impl.DENSITY_WASM_DENSITY_AUTOMATIC
+DENSITY_WASM_DENSITY_UNSUPPORTED = _impl.DENSITY_WASM_DENSITY_UNSUPPORTED
+density_wasm_density_wire_kind = _impl.density_wasm_density_wire_kind
 DENSITY_REDUCTION_BIN2D = _impl.DENSITY_REDUCTION_BIN2D
 DENSITY_REDUCTION_PYRAMID_COUNT = _impl.DENSITY_REDUCTION_PYRAMID_COUNT
 density_reduction_kind = _impl.density_reduction_kind
@@ -254,6 +258,9 @@ __all__ = [
     "DENSITY_OVERLAY_STATIC_RASTER",
     "DENSITY_REDUCTION_BIN2D",
     "DENSITY_REDUCTION_PYRAMID_COUNT",
+    "DENSITY_WASM_DENSITY_AUTOMATIC",
+    "DENSITY_WASM_DENSITY_NONE",
+    "DENSITY_WASM_DENSITY_UNSUPPORTED",
     "argsort_stable",
     "arrow_end_decoration",
     "arrow_geometry",
@@ -304,6 +311,7 @@ __all__ = [
     "density_rgba_linear",
     "density_trace_color_classify",
     "density_uses_channel_colormap",
+    "density_wasm_density_wire_kind",
     "density_wasm_eligible",
     "density_wasm_source_admit",
     "direct_rgba_admit",

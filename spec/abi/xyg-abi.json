@@ -1,9 +1,9 @@
 {
-  "abi_version": 285,
+  "abi_version": 286,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "f0ca532d13ba95e4231ba688162be1dfd88651c78b187a831bebe13653541ac8",
+  "signature_sha256": "9469fce387ff24f5dcb52cbe830f9031aa51b12fef36b1f4dbf432a47e541476",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -9543,6 +9543,71 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_density_uses_channel_colormap(int32_t has_channel, const uint8_t * mode, size_t mode_len)"
+    },
+    {
+      "name": "xyg_density_wasm_density_wire_kind",
+      "node_name": "xyDensityWasmDensityWireKind",
+      "nargs": 3,
+      "arguments": [
+        {
+          "name": "split_payload",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "wasm_source_count",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_density_tier",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_density_wasm_density_wire_kind(int32_t split_payload, uint64_t wasm_source_count, int32_t has_density_tier)"
     },
     {
       "name": "xyg_density_wasm_eligible",
