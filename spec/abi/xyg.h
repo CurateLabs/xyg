@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 282
-#define XYG_ABI_SIGNATURE_SHA256 "4d17dc18cda0033b1b53d8540dcf9fb56230adcee4880aefe2637a547ebdf3f4"
+#define XYG_ABI_VERSION 283
+#define XYG_ABI_SIGNATURE_SHA256 "78fb6a1da068da045ed7074fc3988af3c71cb4d2ee9d330d737aa6548e2be88a"
 
 #ifdef __cplusplus
 extern "C" {
@@ -69,6 +69,7 @@ int32_t xyg_density_emit_meta(int32_t cartesian, int32_t x_linear, int32_t y_lin
 size_t xyg_density_format_binning(int32_t exact, int32_t level, int32_t tiles, int32_t upsampled, uint8_t * out, size_t out_cap);
 int32_t xyg_density_full_identity(int32_t categorical, int32_t compact_categorical, int32_t x_has_nulls, int32_t y_has_nulls, double x_min, double x_max, double y_min, double y_max, double xr0, double xr1, double yr0, double yr1);
 int32_t xyg_density_grid_path(int32_t oversized, int32_t full_identity, int32_t point_overlay, int32_t compact_categorical, int32_t stratified_counts);
+int32_t xyg_density_grid_path_identity_state(int32_t grid_path);
 int32_t xyg_density_log_u8(const float * grid, size_t len, uint8_t * out, double * out_max);
 size_t xyg_density_overlay_omitted_wire(uint32_t overlay_omitted, int32_t point_overlay, uint8_t * out, size_t out_cap);
 int32_t xyg_density_overlay_opacity(double authored, double * out);

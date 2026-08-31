@@ -1384,21 +1384,18 @@ class PayloadMixin(_Host):
                 )
         if grid is None:
             path = int(plan["grid_path"])
-            if plan["use_raw_range_bin2d"]:
+            if kernels.density_grid_path_identity_state(grid_path=path):
                 visible = int(t.n_points)
                 sel = np.empty(0, dtype=np.uint32)
+            if plan["use_raw_range_bin2d"]:
                 sample_sel = None
                 grid = kernels.bin_2d(t.x.values, t.y.values, xr[0], xr[1], yr[0], yr[1], w, h)
                 binning = _native.density_format_binning(exact=True)
             elif path == _native.DENSITY_GRID_PATH_IDENTITY_GRID_ONLY:
-                visible = int(t.n_points)
-                sel = np.empty(0, dtype=np.uint32)
                 grid = kernels.bin_2d(bx, by, bx0, bx1, by0, by1, w, h)
                 binning = _native.density_format_binning(exact=True)
             elif path == _native.DENSITY_GRID_PATH_IDENTITY_STRATIFIED_FUSED:
                 assert t.color_ch is not None and t.color_ch.codes is not None
-                visible = int(t.n_points)
-                sel = np.empty(0, dtype=np.uint32)
                 grid, sample_sel = lod.bin_2d_stratified_sample_row_range_for_target(
                     bx,
                     by,
@@ -1417,8 +1414,6 @@ class PayloadMixin(_Host):
                 binning = _native.density_format_binning(exact=True)
             elif path == _native.DENSITY_GRID_PATH_IDENTITY_STRATIFIED_SPLIT:
                 assert t.color_ch is not None and t.color_ch.codes is not None
-                visible = int(t.n_points)
-                sel = np.empty(0, dtype=np.uint32)
                 grid = kernels.bin_2d(bx, by, bx0, bx1, by0, by1, w, h)
                 sample_sel = lod.stratified_sample_row_range_for_target(
                     t.color_ch.codes,
@@ -1428,8 +1423,6 @@ class PayloadMixin(_Host):
                 )
                 binning = _native.density_format_binning(exact=True)
             elif path == _native.DENSITY_GRID_PATH_IDENTITY_SAMPLE_FUSED:
-                visible = int(t.n_points)
-                sel = np.empty(0, dtype=np.uint32)
                 grid, sample_sel = lod.bin_2d_sample_row_range_for_target(
                     bx,
                     by,

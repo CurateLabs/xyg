@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 282
-SIGNATURE_SHA256 = "4d17dc18cda0033b1b53d8540dcf9fb56230adcee4880aefe2637a547ebdf3f4"
+ABI_VERSION = 283
+SIGNATURE_SHA256 = "78fb6a1da068da045ed7074fc3988af3c71cb4d2ee9d330d737aa6548e2be88a"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -242,6 +242,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_density_grid_path
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32]
+    # int32_t xyg_density_grid_path_identity_state(int32_t grid_path)
+    function = lib.xyg_density_grid_path_identity_state
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32]
     # int32_t xyg_density_log_u8(const float * grid, size_t len, uint8_t * out, double * out_max)
     function = lib.xyg_density_log_u8
     function.restype = ctypes.c_int32

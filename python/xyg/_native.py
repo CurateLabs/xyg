@@ -12008,6 +12008,14 @@ def density_grid_path(
     return code
 
 
+def density_grid_path_identity_state(*, grid_path: int) -> bool:
+    """Grid-path visible/sel init via ``xyg_density_grid_path_identity_state`` (ABI 267)."""
+    state = int(_lib.xyg_density_grid_path_identity_state(int(grid_path)))
+    if state not in (0, 1):
+        raise ValueError("invalid density_grid_path_identity_state arguments")
+    return state == 1
+
+
 def density_format_binning(
     *,
     exact: bool,

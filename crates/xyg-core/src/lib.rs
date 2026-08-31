@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 282;
+pub const ABI_VERSION: u32 = 283;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15852,6 +15852,16 @@ pub unsafe extern "C" fn xyg_density_overlay_omitted_wire(
         }
         written
     })
+}
+
+/// Grid-path visible/sel initialization policy (ABI 267).
+///
+/// Returns ``1`` when dispatch should set ``visible = n_points`` and empty
+/// ``sel`` before binning, ``0`` for range-indices paths, ``-1`` when
+/// ``grid_path`` is unknown.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_density_grid_path_identity_state(grid_path: i32) -> i32 {
+    ffi_guard(-1, || density_emit::density_grid_path_identity_state(grid_path))
 }
 
 #[repr(C)]

@@ -59,6 +59,7 @@ density_reduction_kind = _impl.density_reduction_kind
 density_format_binning = _impl.density_format_binning
 density_full_identity = _impl.density_full_identity
 density_grid_path = _impl.density_grid_path
+density_grid_path_identity_state = _impl.density_grid_path_identity_state
 density_pyramid_preflight = _impl.density_pyramid_preflight
 density_wasm_eligible = _impl.density_wasm_eligible
 delaunay_triangles = _impl.delaunay_triangles
@@ -290,6 +291,7 @@ __all__ = [
     "density_format_binning",
     "density_full_identity",
     "density_grid_path",
+    "density_grid_path_identity_state",
     "density_log_u8",
     "density_overlay_omitted_wire",
     "density_overlay_opacity",
