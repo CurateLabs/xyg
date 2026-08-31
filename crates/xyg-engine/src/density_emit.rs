@@ -380,6 +380,24 @@ pub fn grid_path(
     DENSITY_GRID_PATH_RANGE_INDICES
 }
 
+/// Whether grid-path dispatch initializes ``visible = n_points`` and an empty
+/// ``sel`` before binning (ABI 267).
+///
+/// Returns ``1`` for every path except ``DENSITY_GRID_PATH_RANGE_INDICES``,
+/// ``0`` for range-indices (visible comes from ``len(sel)`` after binning),
+/// ``-1`` when ``grid_path`` is unknown.
+pub fn density_grid_path_identity_state(grid_path: i32) -> i32 {
+    match grid_path {
+        DENSITY_GRID_PATH_RANGE_INDICES => 0,
+        DENSITY_GRID_PATH_OVERSIZED_BIN2D
+        | DENSITY_GRID_PATH_IDENTITY_GRID_ONLY
+        | DENSITY_GRID_PATH_IDENTITY_STRATIFIED_FUSED
+        | DENSITY_GRID_PATH_IDENTITY_STRATIFIED_SPLIT
+        | DENSITY_GRID_PATH_IDENTITY_SAMPLE_FUSED => 1,
+        _ => -1,
+    }
+}
+
 /// Format §28 `density["binning"]` strings (no trailing NUL).
 pub fn format_binning(
     exact: bool,
@@ -783,6 +801,19 @@ mod tests {
 
     #[test]
     fn grid_path_truth_table() {
+        assert_eq!(
+            density_grid_path_identity_state(DENSITY_GRID_PATH_OVERSIZED_BIN2D),
+            1
+        );
+        assert_eq!(
+            density_grid_path_identity_state(DENSITY_GRID_PATH_IDENTITY_GRID_ONLY),
+            1
+        );
+        assert_eq!(
+            density_grid_path_identity_state(DENSITY_GRID_PATH_RANGE_INDICES),
+            0
+        );
+        assert_eq!(density_grid_path_identity_state(99), -1);
         assert_eq!(
             grid_path(true, true, true, false, false),
             DENSITY_GRID_PATH_OVERSIZED_BIN2D

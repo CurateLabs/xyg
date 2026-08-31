@@ -1404,6 +1404,8 @@ def load() -> ctypes.CDLL:
         ctypes.c_void_p,
         ctypes.c_size_t,
     ]
+    lib.xyg_density_grid_path_identity_state.restype = ctypes.c_int32
+    lib.xyg_density_grid_path_identity_state.argtypes = [ctypes.c_int32]
     lib.xyg_payload_sample_target_indices.restype = ctypes.c_size_t
     lib.xyg_payload_sample_target_indices.argtypes = [
         ctypes.c_size_t,
@@ -4964,6 +4966,12 @@ def main() -> None:
         and lib.xyg_density_overlay_omitted_wire(2, 0, overlay_buf, 32) == 13
         and overlay_buf.raw[:13] == b"static_raster",
         "density_overlay_omitted_wire labels",
+    )
+    ok(
+        lib.xyg_density_grid_path_identity_state(1) == 1
+        and lib.xyg_density_grid_path_identity_state(5) == 0
+        and lib.xyg_density_grid_path_identity_state(99) == -1,
+        "density_grid_path_identity_state",
     )
     sample_keep = ctypes.c_int32(-1)
     sample_n = lib.xyg_payload_sample_target_indices(

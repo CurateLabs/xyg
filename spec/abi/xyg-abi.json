@@ -1,9 +1,9 @@
 {
-  "abi_version": 282,
+  "abi_version": 283,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "4d17dc18cda0033b1b53d8540dcf9fb56230adcee4880aefe2637a547ebdf3f4",
+  "signature_sha256": "78fb6a1da068da045ed7074fc3988af3c71cb4d2ee9d330d737aa6548e2be88a",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -8478,6 +8478,41 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_density_grid_path(int32_t oversized, int32_t full_identity, int32_t point_overlay, int32_t compact_categorical, int32_t stratified_counts)"
+    },
+    {
+      "name": "xyg_density_grid_path_identity_state",
+      "node_name": "xyDensityGridPathIdentityState",
+      "nargs": 1,
+      "arguments": [
+        {
+          "name": "grid_path",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_density_grid_path_identity_state(int32_t grid_path)"
     },
     {
       "name": "xyg_density_log_u8",

@@ -199,7 +199,7 @@ test("tryResolvePlatformPackageLibrary returns staged binary path", () => {
 });
 
 test("ABI mismatch fails before other symbols are usable", () => {
- 79832eee (ABI 266: kernelize density overlay_omitted wire labels)
+ f1a42a19 (ABI 267: kernelize density grid-path visible/sel initialization)
   assert.doesNotThrow(() => assertAbiVersion(62, 62));
   assert.throws(
     () => assertAbiVersion(59, 60),
