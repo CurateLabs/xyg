@@ -34,6 +34,16 @@ const cases = [
     fig.traces[0].id = 16;
     fig.traces[0].style = { opacity: 0.9 };
   }),
+  caseEntry("area_default_styled", (fig) => {
+    fig.area([0, 1], [0, 1]);
+    fig.traces[0].id = 17;
+    fig.traces[0].style = { opacity: 0.9 };
+  }),
+  caseEntry("hist_default_styled", (fig) => {
+    fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
+    fig.traces[0].id = 18;
+    fig.traces[0].style = { opacity: 0.9 };
+  }),
 ];
 
 const out = {

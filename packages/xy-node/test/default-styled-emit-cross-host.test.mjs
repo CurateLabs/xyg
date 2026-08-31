@@ -15,7 +15,15 @@ function buildCase(name) {
   const entry = fixture.cases.find((c) => c.name === name);
   if (entry == null) throw new Error(`unknown case ${name}`);
   const fig = figure({ width: 240, height: 160 });
-  fig.line([0, 1], [0, 1]);
+  if (name === "line_default_styled") {
+    fig.line([0, 1], [0, 1]);
+  } else if (name === "area_default_styled") {
+    fig.area([0, 1], [0, 1]);
+  } else if (name === "hist_default_styled") {
+    fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
+  } else {
+    throw new Error(`unknown case ${name}`);
+  }
   fig.traces[0].id = entry.trace_id;
   fig.traces[0].style = { opacity: 0.9 };
   return fig.buildPayload();
@@ -25,7 +33,7 @@ test("default-styled emit cross-host fixture contract", () => {
   assert.equal(fixture.schema, "xyg.default-styled-emit-cross-host/v1");
   assert.equal(fixture.protocol, PROTOCOL_VERSION);
   assert.equal(Number(fixture.abi_version), abiVersion());
-  assert.equal(fixture.cases.length, 1);
+  assert.equal(fixture.cases.length, 3);
 });
 
 for (const entry of fixture.cases) {

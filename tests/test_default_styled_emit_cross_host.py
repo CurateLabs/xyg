@@ -1,7 +1,7 @@
 """Cross-host default-styled emit parity: Python vs @curatelabs/xyg-node.
 
 Compares trace style dicts where Python ``_default_styled`` fills palette color
-when ``style.color`` is missing (line emit path first).
+when ``style.color`` is missing (line, area, and histogram emit paths).
 
 Run::
 
@@ -31,6 +31,12 @@ ROOT = Path(__file__).resolve().parents[1]
 NODE_SCRIPT = ROOT / "packages" / "xy-node" / "scripts" / "default_styled_emit_cross_host.mjs"
 FIXTURE_JSON = ROOT / "tests" / "fixtures" / "default_styled_emit_cross_host.json"
 
+CASE_NAMES = (
+    "line_default_styled",
+    "area_default_styled",
+    "hist_default_styled",
+)
+
 
 def _native_lib() -> Path:
     if sys.platform == "win32":
@@ -50,13 +56,22 @@ def _node_bin() -> str:
 
 
 def _build_case(name: str) -> Figure:
+    fig = Figure(width=240, height=160)
     if name == "line_default_styled":
-        fig = Figure(width=240, height=160)
         fig.line([0.0, 1.0], [0.0, 1.0])
-        fig.traces[0].id = 16
-        fig.traces[0].style = {"opacity": 0.9}
-        return fig
-    raise KeyError(name)
+    elif name == "area_default_styled":
+        fig.area([0.0, 1.0], [0.0, 1.0])
+    elif name == "hist_default_styled":
+        fig.histogram([0, 1, 1, 2], bins=2, range=(0, 2))
+    else:
+        raise KeyError(name)
+    fig.traces[0].id = {
+        "line_default_styled": 16,
+        "area_default_styled": 17,
+        "hist_default_styled": 18,
+    }[name]
+    fig.traces[0].style = {"opacity": 0.9}
+    return fig
 
 
 def _emit_style(spec: dict) -> dict:
@@ -105,11 +120,11 @@ def test_fixture_contract(fixture: dict) -> None:
     assert fixture["schema"] == "xyg.default-styled-emit-cross-host/v1"
     assert fixture["protocol"] == PROTOCOL_VERSION
     assert int(fixture["abi_version"]) == int(_native.ABI_VERSION)
-    assert len(fixture["cases"]) == 1
-    assert {case["name"] for case in fixture["cases"]} == {"line_default_styled"}
+    assert len(fixture["cases"]) == len(CASE_NAMES)
+    assert {case["name"] for case in fixture["cases"]} == set(CASE_NAMES)
 
 
-@pytest.mark.parametrize("case_name", ["line_default_styled"])
+@pytest.mark.parametrize("case_name", CASE_NAMES)
 def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> None:
     entry = next(case for case in fixture["cases"] if case["name"] == case_name)
     with warnings.catch_warnings():
@@ -122,7 +137,7 @@ def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> Non
     assert meta["palette_color"] == entry["palette_color"]
 
 
-@pytest.mark.parametrize("case_name", ["line_default_styled"])
+@pytest.mark.parametrize("case_name", CASE_NAMES)
 def test_node_live_matches_python(case_name: str, node_golden: dict) -> None:
     node_case = next(case for case in node_golden["cases"] if case["name"] == case_name)
     with warnings.catch_warnings():
