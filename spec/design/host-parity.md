@@ -1583,11 +1583,6 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `_emitHistogram` omits color_ch.
   Node `_emitTriangleMesh` ships x/y not x2/y2.
   Node `_emitScatter` omits style_channels.
-  Node `_emitRibbon` omits style_channels.
-  Node `_emitRect` omits style_channels.
-  Node `_emitTriangleMesh` omits style_channels.
-  Node `_emitSegments` omits style_channels.
-  Node `_emitHistogram` omits style_channels.
   Node `_emitHistogram` skips rectFiniteSel.
   Node `_emitRect` ships bar columns not nested bar.
   Node `_emitRibbon` skips valid_indices_f64.
