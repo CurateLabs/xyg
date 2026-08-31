@@ -615,6 +615,13 @@ Node call `xyg_density_emit_meta`, `xyg_density_grid_path`,
 `xyg_density_wasm_eligible` so path/binning/WASM/overlay decisions cannot
 drift. Hosts still transform axis-scale coordinates, invoke `bin_2d` /
 pyramid compose kernels, ship buffers, and assemble the wire spec.
+ABI 316 `xyg_payload_density_grid_materialize` owns the execution half of
+that grid body (bin2d / pyramid compose, log-u8 encode, optional mean-color
+RGBA, overlay sample selection) after emit-plan policy is resolved. Python
+ABI proof lives in `tests/test_density_grid_materialize_abi.py` (encoded-grid
+SHA golden mirroring the engine test); Node wiring and density cross-host
+grid-buffer SHA in `density_emit_cross_host.json` follow once hosts call the
+316 entry point instead of local `bin_2d` / encode.
 ABI 129 moves Cartesian static-export grid colormap into Rust: Python
 and Node call `xyg_colormap_rgba`, `xyg_colormap_rgba_canonical`, and
 `xyg_density_rgba` (log-u8 density) so `_lut` stop interpolation cannot

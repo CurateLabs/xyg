@@ -5,10 +5,11 @@
 //! ``_density_trace_spec`` after emit-plan policy is resolved.
 
 use crate::density_emit::{
-    format_binning, emit_meta, DensityEmitMeta, DENSITY_GRID_PATH_IDENTITY_GRID_ONLY,
+    format_binning, DensityEmitMeta, DENSITY_GRID_PATH_IDENTITY_GRID_ONLY,
     DENSITY_GRID_PATH_IDENTITY_SAMPLE_FUSED, DENSITY_GRID_PATH_IDENTITY_STRATIFIED_FUSED,
     DENSITY_GRID_PATH_IDENTITY_STRATIFIED_SPLIT, DENSITY_GRID_PATH_OVERSIZED_BIN2D,
-    DENSITY_GRID_PATH_RANGE_INDICES, DENSITY_SAMPLE_SEED, DENSITY_SAMPLE_TARGET,
+    DENSITY_GRID_PATH_RANGE_INDICES, DENSITY_OVERLAY_NONE, DENSITY_SAMPLE_SEED,
+    DENSITY_SAMPLE_TARGET,
 };
 use crate::kernels::{self, BinColorSource};
 use crate::lod_plan::{self, PayloadIndexSel};
@@ -238,7 +239,11 @@ pub fn payload_density_grid_materialize(
         }
     }
 
-    if needs_pyramid_sample && sample_sel.is_none() {
+    let wants_pyramid_sample = needs_pyramid_sample
+        || (grid_from_pyramid
+            && !meta.oversized
+            && meta.overlay_omitted == DENSITY_OVERLAY_NONE);
+    if wants_pyramid_sample && sample_sel.is_none() {
         sample_sel = pyramid_sample_sel(n_points, pyramid_sample_stratified, color_codes, color_counts);
     }
 
@@ -388,6 +393,7 @@ pub fn payload_density_grid_materialize(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::density_emit::emit_meta;
 
     #[test]
     fn materialize_identity_grid_only() {

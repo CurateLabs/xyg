@@ -1097,3 +1097,62 @@ def test_polar_scatter_stays_direct_even_when_density_forced() -> None:
     assert fig.traces[0].use_density()
     assert spec["traces"][0]["tier"] == "direct"
     assert spec["traces"][0]["n_marks"] == 10
+
+
+def test_payload_density_grid_materialize_identity_matches_bin2d_encode() -> None:
+    x = np.array([0.25, 0.75], dtype=np.float64)
+    y = np.array([0.25, 0.75], dtype=np.float64)
+    plan = kernels.density_emit_plan(
+        cartesian=True,
+        x_linear=True,
+        y_linear=True,
+        categorical=False,
+        compact_categorical=False,
+        stratified_counts=False,
+        x_has_nulls=False,
+        y_has_nulls=False,
+        point_overlay=True,
+        grid_from_pyramid=False,
+        x_memmapped=False,
+        y_memmapped=False,
+        has_pyramid_resource=False,
+        force_bin2d=False,
+        force_pyramid=False,
+        color_mode=0,
+        x_min=0.0,
+        x_max=1.0,
+        y_min=0.0,
+        y_max=1.0,
+        xr0=0.0,
+        xr1=1.0,
+        yr0=0.0,
+        yr1=1.0,
+        x_c0=0.0,
+        x_c1=1.0,
+        y_c0=0.0,
+        y_c1=1.0,
+        n_points=2,
+    )
+    out = kernels.payload_density_grid_materialize(
+        emit_plan=plan,
+        n_points=2,
+        bx0=0.0,
+        bx1=1.0,
+        by0=0.0,
+        by1=1.0,
+        xr0=0.0,
+        xr1=1.0,
+        yr0=0.0,
+        yr1=1.0,
+        w=4,
+        h=4,
+        x_raw=x,
+        y_raw=y,
+        bx=x,
+        by=y,
+    )
+    grid = kernels.bin_2d(x, y, 0.0, 1.0, 0.0, 1.0, 4, 4)
+    encoded, gmax = kernels.density_log_u8(grid)
+    np.testing.assert_array_equal(out["encoded_grid"], encoded.reshape(-1))
+    assert out["gmax"] == gmax
+    assert out["binning"] == "exact"

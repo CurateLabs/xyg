@@ -12878,6 +12878,222 @@ def payload_density_grid_ship_plan(
     }
 
 
+class _PayloadDensityGridMaterializeOut(ctypes.Structure):
+    _fields_ = [
+        ("gmax", ctypes.c_double),
+        ("visible", ctypes.c_uint64),
+        ("grid_from_pyramid", ctypes.c_uint32),
+        ("has_pyramid_rgba", ctypes.c_uint32),
+        ("pyramid_level", ctypes.c_int32),
+        ("from_tiles", ctypes.c_uint32),
+        ("encoded_len", ctypes.c_size_t),
+        ("rgba_len", ctypes.c_size_t),
+        ("sample_sel_len", ctypes.c_size_t),
+        ("visible_sel_len", ctypes.c_size_t),
+    ]
+
+
+PAYLOAD_DENSITY_GRID_MATERIALIZE_MAX_BINNING = 64
+DENSITY_RESOURCE_NONE = 0
+DENSITY_RESOURCE_PYRAMID = 1
+DENSITY_RESOURCE_TILE_STORE = 2
+
+
+def _density_emit_meta_struct(plan: dict[str, int | bool | float]) -> _DensityEmitMeta:
+    return _DensityEmitMeta(
+        grid_path=int(plan["grid_path"]),
+        bin_window_x0=float(plan["bin_window_x0"]),
+        bin_window_x1=float(plan["bin_window_x1"]),
+        bin_window_y0=float(plan["bin_window_y0"]),
+        bin_window_y1=float(plan["bin_window_y1"]),
+        full_identity=int(bool(plan["full_identity"])),
+        oversized=int(bool(plan["oversized"])),
+        pyramid_eligible=int(bool(plan["pyramid_eligible"])),
+        pyramid_attempt=int(bool(plan["pyramid_attempt"])),
+        pyramid_no_rescan=int(bool(plan["pyramid_no_rescan"])),
+        pyramid_max_upsample=int(plan["pyramid_max_upsample"]),
+        pyramid_tile_upsample=int(plan["pyramid_tile_upsample"]),
+        wasm_eligible=int(bool(plan["wasm_eligible"])),
+        needs_pyramid_sample=int(bool(plan["needs_pyramid_sample"])),
+        overlay_omitted=int(plan["overlay_omitted"]),
+        visible_is_n_points=int(bool(plan["visible_is_n_points"])),
+        use_raw_range_bin2d=int(bool(plan["use_raw_range_bin2d"])),
+        reserved=0,
+    )
+
+
+def payload_density_grid_materialize(
+    *,
+    emit_plan: dict[str, int | bool | float],
+    n_points: int,
+    bx0: float,
+    bx1: float,
+    by0: float,
+    by1: float,
+    xr0: float,
+    xr1: float,
+    yr0: float,
+    yr1: float,
+    w: int,
+    h: int,
+    x_raw: npt.NDArray[np.float64],
+    y_raw: npt.NDArray[np.float64],
+    bx: npt.NDArray[np.float64],
+    by: npt.NDArray[np.float64],
+    pyramid_attempt: bool = False,
+    pyramid_resource: int = DENSITY_RESOURCE_NONE,
+    pyramid_handle: int = 0,
+    pyr_colored: bool = False,
+    max_upsample: int = 2,
+    tile_upsample: int = 2,
+    pyramid_no_rescan: bool = False,
+    needs_pyramid_sample: bool = False,
+    pyramid_sample_stratified: bool = False,
+    color_codes: npt.NDArray[np.uint8] | None = None,
+    color_counts: npt.NDArray[np.uint64] | None = None,
+    ship_mean_color: bool = False,
+    color_idx: npt.NDArray[np.uint8] | None = None,
+    color_rgba: npt.NDArray[np.uint8] | None = None,
+    color_lut: npt.NDArray[np.uint8] | None = None,
+) -> dict[str, int | float | bool | str | np.ndarray | None]:
+    """Materialize a density count grid (ABI 316).
+
+    Owns bin2d / pyramid compose, log-u8 encode, optional mean-color RGBA, and
+    overlay sample row selection after emit-plan policy is resolved.
+    """
+    w = _bounded_positive_int(w, "w")
+    h = _bounded_positive_int(h, "h")
+    x_raw = _as_f64(x_raw, "x_raw")
+    y_raw = _as_f64(y_raw, "y_raw")
+    bx = _as_f64(bx, "bx")
+    by = _as_f64(by, "by")
+    if not (len(x_raw) == len(y_raw) == len(bx) == len(by)):
+        raise ValueError("x_raw, y_raw, bx, and by must have equal length")
+    if isinstance(n_points, (bool, np.bool_)) or not isinstance(n_points, numbers.Integral):
+        raise ValueError("n_points must be an integer >= 0")
+    n = int(n_points)
+    if n < 0:
+        raise ValueError("n_points must be an integer >= 0")
+    cells = w * h
+    meta = _density_emit_meta_struct(emit_plan)
+    binning_buf = (ctypes.c_uint8 * PAYLOAD_DENSITY_GRID_MATERIALIZE_MAX_BINNING)()
+    encoded = np.zeros(cells, dtype=np.uint8)
+    rgba_cap = cells * 4 if ship_mean_color else 0
+    rgba = np.zeros(rgba_cap, dtype=np.uint8) if rgba_cap else np.empty(0, dtype=np.uint8)
+    sample_cap = len(bx)
+    sample_sel = np.empty(sample_cap, dtype=np.uint32)
+    visible_sel = np.empty(sample_cap, dtype=np.uint32)
+    codes = None if color_codes is None else np.ascontiguousarray(color_codes, dtype=np.uint8)
+    counts = None if color_counts is None else np.ascontiguousarray(color_counts, dtype=np.uint64)
+    idx = None if color_idx is None else np.ascontiguousarray(color_idx, dtype=np.uint8)
+    rgba_src = None if color_rgba is None else np.ascontiguousarray(color_rgba, dtype=np.uint8)
+    lut = None if color_lut is None else np.ascontiguousarray(color_lut, dtype=np.uint8)
+    out = _PayloadDensityGridMaterializeOut()
+    code = int(
+        _lib.xyg_payload_density_grid_materialize(
+            ctypes.byref(meta),
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            bx0,
+            bx1,
+            by0,
+            by1,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            n,
+            w,
+            h,
+            _ptr_f64(x_raw),
+            _ptr_f64(y_raw),
+            _ptr_f64(bx),
+            _ptr_f64(by),
+            len(bx),
+            int(bool(pyramid_attempt)),
+            int(pyramid_resource),
+            ctypes.c_uint64(_pyramid_handle(pyramid_handle)),
+            int(bool(pyr_colored)),
+            int(max_upsample),
+            int(tile_upsample),
+            int(bool(pyramid_no_rescan)),
+            int(bool(needs_pyramid_sample)),
+            int(bool(pyramid_sample_stratified)),
+            None if codes is None else codes.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
+            None if counts is None else counts.ctypes.data_as(ctypes.POINTER(ctypes.c_uint64)),
+            0 if counts is None else len(counts),
+            None if idx is None else idx.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
+            None if rgba_src is None else rgba_src.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
+            None if lut is None else lut.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
+            0 if lut is None else len(lut),
+            int(bool(ship_mean_color)),
+            binning_buf,
+            PAYLOAD_DENSITY_GRID_MATERIALIZE_MAX_BINNING,
+            encoded.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
+            cells,
+            rgba.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)) if rgba_cap else None,
+            rgba_cap,
+            sample_sel.ctypes.data_as(ctypes.POINTER(ctypes.c_uint32)),
+            sample_cap,
+            visible_sel.ctypes.data_as(ctypes.POINTER(ctypes.c_uint32)),
+            sample_cap,
+            ctypes.byref(out),
+        )
+    )
+    if code == -2:
+        raise ValueError("unexpected density grid materialize path")
+    if code == -3:
+        raise ValueError("density grid stratified sample failed")
+    if code != 0:
+        raise ValueError("invalid payload_density_grid_materialize arguments")
+    binning = bytes(binning_buf).split(b"\0", 1)[0].decode("ascii")
+    encoded_out = encoded[: int(out.encoded_len)].copy()
+    rgba_out = None
+    if int(out.rgba_len) > 0:
+        rgba_out = rgba[: int(out.rgba_len)].copy()
+    sample_out = None
+    if int(out.sample_sel_len) > 0:
+        sample_out = sample_sel[: int(out.sample_sel_len)].copy()
+    visible_out = None
+    if int(out.visible_sel_len) > 0:
+        visible_out = visible_sel[: int(out.visible_sel_len)].copy()
+    return {
+        "encoded_grid": encoded_out,
+        "gmax": float(out.gmax),
+        "rgba_grid": rgba_out,
+        "sample_sel": sample_out,
+        "visible_sel": visible_out,
+        "visible": int(out.visible),
+        "binning": binning,
+        "grid_from_pyramid": bool(out.grid_from_pyramid),
+        "has_pyramid_rgba": bool(out.has_pyramid_rgba),
+        "pyramid_level": int(out.pyramid_level),
+        "from_tiles": bool(out.from_tiles),
+    }
+
+
 class _PayloadChannelShipEntry(ctypes.Structure):
     _fields_ = [
         ("registry_key", ctypes.c_int32),
