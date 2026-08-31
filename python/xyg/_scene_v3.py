@@ -3044,10 +3044,8 @@ def _pack_xytc_numeric_style(
     has_size = 1 if "size" in style else 0
     size_ch = getattr(trace, "size_ch", None)
     has_size_ch = 1 if size_ch is not None else 0
-    has_size_ch_constant = (
-        1 if size_ch is not None and getattr(size_ch, "constant", None) is not None else 0
-    )
-    size_ch_constant = float(size_ch.constant) if has_size_ch_constant else nan
+    size_ch_constant = getattr(size_ch, "constant", None) if size_ch is not None else None
+    has_size_ch_constant = 1 if size_ch_constant is not None else 0
     return _native.scene_xytc_numeric_style_pack(
         has_size,
         has_size_ch,
@@ -3056,7 +3054,7 @@ def _pack_xytc_numeric_style(
         1 if "width" in style else 0,
         1 if "line_width" in style else 0,
         float(style["size"]) if has_size else nan,
-        size_ch_constant,
+        float(size_ch_constant) if size_ch_constant is not None else nan,
         float(style["stroke_width"]) if "stroke_width" in style else 0.0,
         float(style["width"]) if "width" in style else 0.0,
         float(style["line_width"]) if "line_width" in style else 0.0,
