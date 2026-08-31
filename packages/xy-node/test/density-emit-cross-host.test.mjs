@@ -11,6 +11,7 @@ const fixture = JSON.parse(
 const CASE_NAMES = [
   "scatter_density_colormap",
   "scatter_density_dropped_channels",
+  "scatter_density_mean_color_categorical",
   "density_sample_color_size",
   "density_sample_stroke",
   "density_sample_style_channels",
@@ -70,6 +71,8 @@ function densityMeta(spec) {
     density_colormap: density.colormap ?? null,
     density_dropped_channels: density.dropped_channels ?? [],
     density_channels_dropped: density.channels_dropped ?? false,
+    density_color_agg: density.color_agg ?? null,
+    density_has_rgba: density.rgba != null,
     ...sampleMeta(spec),
   };
 }
@@ -90,6 +93,13 @@ function buildCase(name) {
   } else if (name === "scatter_density_dropped_channels") {
     fig.scatter([0, 1, 2], [0, 1, 0.5], { forceDensity: true, size: [1, 2, 3] });
     fig.traces[0].id = 22;
+  } else if (name === "scatter_density_mean_color_categorical") {
+    fig.scatter([0, 1, 2, 3, 4], [0, 1, 0.5, 0.2, 0.8], {
+      forceDensity: true,
+      color: ["a", "b", "a", "c", "b"],
+      size: [1, 2, 3, 4, 5],
+    });
+    fig.traces[0].id = 23;
   } else if (name === "density_sample_color_size") {
     fig.scatter([0, 1, 2, 3, 4], [0, 1, 0.5, 0.2, 0.8], {
       forceDensity: true,

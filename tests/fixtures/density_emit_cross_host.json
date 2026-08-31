@@ -11,6 +11,8 @@
       "density_colormap": "magma",
       "density_dropped_channels": [],
       "density_channels_dropped": false,
+      "density_color_agg": null,
+      "density_has_rgba": false,
       "has_sample": true,
       "sample_n": 3,
       "sample_visible": 3,
@@ -37,6 +39,8 @@
         "size"
       ],
       "density_channels_dropped": true,
+      "density_color_agg": null,
+      "density_has_rgba": false,
       "has_sample": true,
       "sample_n": 3,
       "sample_visible": 3,
@@ -62,15 +66,61 @@
       "animation_fallback": null
     },
     {
+      "name": "scatter_density_mean_color_categorical",
+      "trace_id": 23,
+      "tier": "density",
+      "density_colormap": "viridis",
+      "density_dropped_channels": [
+        "size"
+      ],
+      "density_channels_dropped": true,
+      "density_color_agg": "mean",
+      "density_has_rgba": true,
+      "has_sample": true,
+      "sample_n": 5,
+      "sample_visible": 5,
+      "sample_color": {
+        "mode": "categorical",
+        "categories": [
+          "a",
+          "b",
+          "c"
+        ],
+        "dtype": "u8",
+        "palette": [
+          "#3987e5",
+          "#008300",
+          "#d55181"
+        ]
+      },
+      "sample_size": {
+        "mode": "continuous",
+        "range_px": [
+          2,
+          18
+        ],
+        "domain": [
+          1,
+          5
+        ]
+      },
+      "sample_stroke": null,
+      "sample_channels": null,
+      "sample_x_offset": 2,
+      "sample_y_offset": 0.5,
+      "animation_fallback": null
+    },
+    {
       "name": "density_sample_color_size",
       "trace_id": 31,
       "tier": "density",
       "density_colormap": "viridis",
       "density_dropped_channels": [
-        "color",
         "size"
       ],
       "density_channels_dropped": true,
+      "density_color_agg": "mean",
+      "density_has_rgba": true,
       "has_sample": true,
       "sample_n": 5,
       "sample_visible": 5,
@@ -114,6 +164,8 @@
         "stroke"
       ],
       "density_channels_dropped": true,
+      "density_color_agg": null,
+      "density_has_rgba": false,
       "has_sample": true,
       "sample_n": 3,
       "sample_visible": 3,
@@ -145,6 +197,8 @@
         "opacity"
       ],
       "density_channels_dropped": true,
+      "density_color_agg": null,
+      "density_has_rgba": false,
       "has_sample": true,
       "sample_n": 3,
       "sample_visible": 3,
@@ -176,6 +230,8 @@
       "density_colormap": "viridis",
       "density_dropped_channels": [],
       "density_channels_dropped": false,
+      "density_color_agg": null,
+      "density_has_rgba": false,
       "has_sample": true,
       "sample_n": 3,
       "sample_visible": 3,
@@ -200,6 +256,8 @@
       "density_colormap": "viridis",
       "density_dropped_channels": [],
       "density_channels_dropped": false,
+      "density_color_agg": null,
+      "density_has_rgba": false,
       "has_sample": true,
       "sample_n": 2,
       "sample_visible": 2,

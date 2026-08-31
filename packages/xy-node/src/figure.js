@@ -23,6 +23,7 @@ import {
   WASM_AGGREGATE_MAX_POINTS,
   PROTOCOL_VERSION,
   bin2d,
+  bin2dMeanColor,
   densityFormatBinning,
   densityLogU8,
   densityOverlayOpacity,
@@ -108,7 +109,14 @@ import { composeStep, composeStairs } from "./marks/step.js";
 import { composeTriangleMesh } from "./marks/triangle_mesh.js";
 import { composeRadar } from "./marks/radar.js";
 import { toHtml } from "./html.js";
-import { figureSceneV3, scatterPaintChannelNames, sceneRasterCommands, sceneSvg, svgToPdf } from "./scene.js";
+import {
+  figureSceneV3,
+  resolveDensityBinColors,
+  scatterPaintChannelNames,
+  sceneRasterCommands,
+  sceneSvg,
+  svgToPdf,
+} from "./scene.js";
 
 export { PROTOCOL_VERSION };
 
@@ -1671,6 +1679,7 @@ export class Figure {
   _emitScatterDensity(t, pw, xr, yr) {
     const [w, h] = DENSITY_GRID;
     let grid;
+    let rgbaFromPyramid = null;
     let binning = densityFormatBinning({ exact: true });
     let reduction = "bin2d";
     let tiles = null;
@@ -1697,6 +1706,9 @@ export class Figure {
         grid = served.grid;
         binning = served.binning;
         reduction = served.reduction;
+        if (served.rgba != null) {
+          rgbaFromPyramid = served.rgba;
+        }
         if (served.tiles != null) {
           tiles = served.tiles;
         }
@@ -1710,6 +1722,7 @@ export class Figure {
     const xmm = minMax(t.x) ?? xr;
     const ymm = minMax(t.y) ?? yr;
     const colorMeta = densityColorChannelMeta(t);
+    const binColors = resolveDensityBinColors(t);
     let droppedChannels = scatterPaintChannelNames(t);
     const wire = payloadDensityTraceEmitPlan({
       hasChannel: colorMeta.hasChannel,
@@ -1743,9 +1756,19 @@ export class Figure {
       by0: yr[0],
       by1: yr[1],
       nPoints: t.x.length,
+      hasPyramidRgba: rgbaFromPyramid != null,
+      hasBinColors: binColors != null,
       droppedCount: droppedChannels.length,
     });
     const { encoded, max } = densityLogU8(grid);
+    let rgbaGrid = null;
+    if (wire.shipMeanColorRgba) {
+      if (rgbaFromPyramid != null) {
+        rgbaGrid = rgbaFromPyramid;
+      } else if (binColors != null) {
+        rgbaGrid = bin2dMeanColor(t.x, t.y, xr[0], xr[1], yr[0], yr[1], w, h, binColors);
+      }
+    }
     const gridPlan = payloadDensityGridShipPlan({
       shipMeanColorRgba: wire.shipMeanColorRgba,
       shipWasmSource: wire.shipWasmSource,
@@ -1770,7 +1793,7 @@ export class Figure {
       binning,
       reduction,
     };
-    shipDensityGridBuffers(density, pw, gridPlan, { count: encoded, rgba: null });
+    shipDensityGridBuffers(density, pw, gridPlan, { count: encoded, rgba: rgbaGrid });
     const entry = {
       id: t.id,
       kind: "scatter",

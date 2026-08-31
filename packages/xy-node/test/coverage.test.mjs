@@ -634,22 +634,20 @@ test("_emitScatter uses log ship scale via payload base-entry plan", () => {
   assert.equal(xCol.offset, 0);
 });
 
-test("_emitScatterDensity omits mean-color rgba unlike Python trace_bin_colors", () => {
-  // Python `_density_trace_spec` ships density.rgba from trace_bin_colors.
-  // Node density keeps no rgba/color_agg even when color_ch is continuous.
-  // Recorded emit-density-rgba stay-host.
-  const fig = figure({ width: 320, height: 240 });
-  fig.scatter([0, 1], [0, 1], { forceDensity: true });
-  fig.traces[0].color_ch = {
-    mode: "continuous",
-    values: [0, 1],
-    domain: [0, 1],
-    colormap: "viridis",
-  };
+test("_emitScatterDensity ships mean-color rgba for categorical color like Python", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1, 2, 3, 4], [0, 1, 0.5, 0.2, 0.8], {
+    forceDensity: true,
+    color: ["a", "b", "a", "c", "b"],
+    size: [1, 2, 3, 4, 5],
+  });
   const { spec } = fig.buildPayload();
+  const density = spec.traces[0].density;
   assert.equal(spec.traces[0].tier, "density");
-  assert.equal(spec.traces[0].density.rgba, undefined);
-  assert.equal(spec.traces[0].density.color_agg, undefined);
+  assert.equal(density.color_agg, "mean");
+  assert.equal(density.channels_dropped, true);
+  assert.deepEqual(density.dropped_channels, ["size"]);
+  assert.ok(density.rgba != null);
 });
 
 test("_emitScatterDensity dropped_channels lists per_item extras like Python", () => {

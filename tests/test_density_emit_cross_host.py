@@ -61,6 +61,7 @@ def _case_keys(case_name: str, entry: dict) -> list[str]:
 CASE_NAMES = (
     "scatter_density_colormap",
     "scatter_density_dropped_channels",
+    "scatter_density_mean_color_categorical",
     "density_sample_color_size",
     "density_sample_stroke",
     "density_sample_style_channels",
@@ -109,6 +110,17 @@ def _build_case(name: str) -> Figure:
         fig = Figure(width=240, height=160)
         fig.scatter([0.0, 1.0, 2.0], [0.0, 1.0, 0.5], density=True, size=[1.0, 2.0, 3.0])
         fig.traces[0].id = 22
+        return fig
+    if name == "scatter_density_mean_color_categorical":
+        fig = Figure(width=240, height=160)
+        fig.scatter(
+            [0.0, 1.0, 2.0, 3.0, 4.0],
+            [0.0, 1.0, 0.5, 0.2, 0.8],
+            density=True,
+            color=["a", "b", "a", "c", "b"],
+            size=[1.0, 2.0, 3.0, 4.0, 5.0],
+        )
+        fig.traces[0].id = 23
         return fig
     if name == "density_sample_color_size":
         fig = Figure(width=240, height=160)
@@ -168,6 +180,8 @@ def _density_wire_meta(spec: dict) -> dict:
         "density_colormap": density.get("colormap"),
         "density_dropped_channels": density.get("dropped_channels") or [],
         "density_channels_dropped": bool(density.get("channels_dropped")),
+        "density_color_agg": density.get("color_agg"),
+        "density_has_rgba": "rgba" in density,
         "has_sample": bool(sample),
         "sample_n": sample.get("n"),
         "sample_visible": sample.get("visible"),
