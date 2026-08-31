@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 280
-#define XYG_ABI_SIGNATURE_SHA256 "bbefc24b2e85916456e9f77c8563ca71f91ec74fb6b246d8930863828f6608dd"
+#define XYG_ABI_VERSION 281
+#define XYG_ABI_SIGNATURE_SHA256 "93d7fa0809037eb800c00ae86812c0a8c076a5e529a5313fe31ed2557975c1ea"
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,6 +72,7 @@ int32_t xyg_density_grid_path(int32_t oversized, int32_t full_identity, int32_t 
 int32_t xyg_density_log_u8(const float * grid, size_t len, uint8_t * out, double * out_max);
 int32_t xyg_density_overlay_opacity(double authored, double * out);
 size_t xyg_density_pyramid_preflight(int32_t x_linear, int32_t y_linear, uint64_t n_points, int32_t has_pyramid_resource, int32_t x_memmapped, int32_t y_memmapped, int32_t force_pyramid, int32_t force_bin2d, uint32_t * out);
+int32_t xyg_density_reduction_kind(const uint8_t * binning, size_t binning_len);
 int32_t xyg_density_rgba(const uint8_t * encoded, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out);
 int32_t xyg_density_rgba_linear(const double * counts, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out);
 int32_t xyg_density_trace_color_classify(int32_t has_channel, const uint8_t * mode, size_t mode_len, int32_t codes_present, int32_t codes_u8, int32_t has_counts, int32_t * out_color_mode, int32_t * out_categorical, int32_t * out_compact_categorical, int32_t * out_stratified_counts);

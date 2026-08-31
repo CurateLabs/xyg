@@ -199,7 +199,7 @@ test("tryResolvePlatformPackageLibrary returns staged binary path", () => {
 });
 
 test("ABI mismatch fails before other symbols are usable", () => {
- ef948d02 (Add ABI 264 density_uses_channel_colormap for payload density spec)
+ 5473f6bc (ABI 265: kernelize density reduction label from binning prefix)
   assert.doesNotThrow(() => assertAbiVersion(62, 62));
   assert.throws(
     () => assertAbiVersion(59, 60),

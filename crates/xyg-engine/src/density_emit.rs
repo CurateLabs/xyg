@@ -169,6 +169,21 @@ pub fn density_uses_channel_colormap(has_channel: i32, mode: &str) -> i32 {
     i32::from(matches!(mode, "constant" | "continuous"))
 }
 
+pub const DENSITY_REDUCTION_BIN2D: i32 = 0;
+pub const DENSITY_REDUCTION_PYRAMID_COUNT: i32 = 1;
+
+/// Density reduction label kind from ``density["binning"]`` (ABI 265).
+///
+/// Returns ``DENSITY_REDUCTION_PYRAMID_COUNT`` when ``binning`` starts with
+/// ``pyramid-``; otherwise ``DENSITY_REDUCTION_BIN2D``.
+pub fn density_reduction_kind(binning: &str) -> i32 {
+    if binning.starts_with("pyramid-") {
+        DENSITY_REDUCTION_PYRAMID_COUNT
+    } else {
+        DENSITY_REDUCTION_BIN2D
+    }
+}
+
 pub const DENSITY_OVERLAY_NONE: u32 = 0;
 pub const DENSITY_OVERLAY_ROWS_EXCEED_U32: u32 = 1;
 pub const DENSITY_OVERLAY_STATIC_RASTER: u32 = 2;
@@ -707,6 +722,19 @@ mod tests {
         assert_eq!(density_uses_channel_colormap(1, "categorical"), 0);
         assert_eq!(density_uses_channel_colormap(1, "direct_rgba"), 0);
         assert_eq!(density_uses_channel_colormap(2, "constant"), 0);
+    }
+
+    #[test]
+    fn density_reduction_kind_matches_host_prefix() {
+        assert_eq!(density_reduction_kind("exact"), DENSITY_REDUCTION_BIN2D);
+        assert_eq!(
+            density_reduction_kind("pyramid-L2"),
+            DENSITY_REDUCTION_PYRAMID_COUNT
+        );
+        assert_eq!(
+            density_reduction_kind("pyramid-L0-tiles-upsampled"),
+            DENSITY_REDUCTION_PYRAMID_COUNT
+        );
     }
 
     #[test]
