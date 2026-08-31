@@ -1619,6 +1619,15 @@ export class Figure {
     if (attach.attachLabelPosition && opts.label_position != null) {
       spec.label_position = opts.label_position;
     }
+    if (attach.attachLabelOffset && opts.label_offset != null) {
+      spec.label_offset = opts.label_offset;
+    }
+    if (attach.attachLabelAngle && opts.label_angle != null) {
+      spec.label_angle = opts.label_angle;
+    }
+    if (attach.attachTickLabelAngle && opts.tick_label_angle != null) {
+      spec.tick_label_angle = opts.tick_label_angle;
+    }
     const scale = payloadAxisScale(this, axisId);
     if (attach.attachScale && scale !== "linear") {
       spec.scale = scale;
