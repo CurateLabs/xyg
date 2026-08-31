@@ -360,6 +360,16 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
     ]
+    lib.xyg_scene_marker_blob_pack.restype = ctypes.c_int32
+    lib.xyg_scene_marker_blob_pack.argtypes = [
+        ctypes.c_int32,
+        F64P,
+        ctypes.c_size_t,
+        U32P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_scene_heatmap_shape_admit.restype = ctypes.c_int32
     lib.xyg_scene_heatmap_shape_admit.argtypes = [ctypes.c_double, ctypes.c_double]
     lib.xyg_scene_scatter_paint_channel_admit.restype = ctypes.c_int32
@@ -3399,6 +3409,22 @@ def main() -> None:
     ok(
         grad_n == 4 + 2 * 10 + 14 and bytes(grad_out[:4]) == bytes([0, 2, 2, 0]),
         "scene_gradient_spec_pack mark-right",
+    )
+    marker_vals = array("d", [0.0, 0.5, 0.5, 0.0, 0.0, -0.5, -0.5, 0.0, 0.0, 0.5])
+    marker_lens = array("I", [10])
+    marker_out = array("B", [0] * 128)
+    marker_n = lib.xyg_scene_marker_blob_pack(
+        1,
+        _ptr(marker_vals, ctypes.c_double),
+        len(marker_vals),
+        _ptr(marker_lens, ctypes.c_uint32),
+        len(marker_lens),
+        _ptr(marker_out, ctypes.c_uint8),
+        len(marker_out),
+    )
+    ok(
+        marker_n == 92 and bytes(marker_out[:8]) == bytes([1, 0, 0, 0, 1, 0, 0, 0]),
+        "scene_marker_blob_pack diamond",
     )
     scale = ctypes.c_double()
     ok(

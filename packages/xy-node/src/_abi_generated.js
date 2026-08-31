@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 260;
-export const SIGNATURE_SHA256 = "c590d062192a3954b03942fa12b03244561d18bccf7b45d86ca04a9fda2f1f38";
+export const ABI_VERSION = 261;
+export const SIGNATURE_SHA256 = "354bbfdb135c659d07c427841cd28e450111fafb5343bd2fb280d28252155ec4";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -226,6 +226,7 @@ export let xySceneKindAdmit;
 export let xySceneKindClass;
 export let xySceneLinearGradientPrefix;
 export let xySceneLinecapAdmit;
+export let xySceneMarkerBlobPack;
 export let xySceneMarkerGlyphAdmit;
 export let xySceneMarkerPathAdmit;
 export let xySceneMeshPaintPlaneAdmit;
@@ -581,6 +582,7 @@ export function bindGeneratedAbi(lib) {
   xySceneKindClass = lib.func("int32_t xyg_scene_kind_class(const uint8_t * text, size_t text_len)");
   xySceneLinearGradientPrefix = lib.func("int32_t xyg_scene_linear_gradient_prefix(const uint8_t * text, size_t text_len)");
   xySceneLinecapAdmit = lib.func("int32_t xyg_scene_linecap_admit(const uint8_t * text, size_t text_len)");
+  xySceneMarkerBlobPack = lib.func("int32_t xyg_scene_marker_blob_pack(int32_t filled, const double * values, size_t n_values, const uint32_t * contour_lens, size_t n_contours, uint8_t * out, size_t out_cap)");
   xySceneMarkerGlyphAdmit = lib.func("int32_t xyg_scene_marker_glyph_admit(const uint8_t * text, size_t text_len)");
   xySceneMarkerPathAdmit = lib.func("int32_t xyg_scene_marker_path_admit(const double * values, size_t n_values, const uint32_t * lengths, size_t n_contours)");
   xySceneMeshPaintPlaneAdmit = lib.func("int32_t xyg_scene_mesh_paint_plane_admit(const uint8_t * text, size_t text_len, int32_t joined_fill, int32_t has_per_item)");

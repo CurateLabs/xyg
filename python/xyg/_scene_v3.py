@@ -2794,18 +2794,19 @@ def _pack_marker_blob(value: Any) -> bytes | None:
     contours = value.get("contours")
     if not isinstance(contours, (list, tuple)):
         return None
-    payload = bytearray(struct.pack("<I", len(contours)))
-    payload.append(1 if value.get("filled", True) else 0)
-    payload.extend(b"\0\0\0")
+    values: list[float] = []
+    lens: list[int] = []
     try:
         for contour in contours:
-            values = [float(item) for item in contour]
-            payload.extend(struct.pack("<I", len(values)))
-            if values:
-                payload.extend(struct.pack(f"<{len(values)}d", *values))
+            if not isinstance(contour, (list, tuple)):
+                return None
+            floats = [float(item) for item in contour]
+            values.extend(floats)
+            lens.append(len(floats))
     except (TypeError, ValueError):
         return None
-    return bytes(payload)
+    filled = 1 if value.get("filled", True) else 0
+    return _native.scene_marker_blob_pack(filled, values, lens)
 
 
 def _pack_gradient_spec(fill: dict[str, Any]) -> bytes | None:

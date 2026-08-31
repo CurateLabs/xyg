@@ -1536,6 +1536,40 @@ def scene_gradient_solid_css(rgba: npt.ArrayLike) -> str | None:
     return bytes(out[:code]).decode("ascii")
 
 
+def scene_marker_blob_pack(
+    filled: int,
+    values: npt.ArrayLike,
+    contour_lens: npt.ArrayLike,
+) -> bytes | None:
+    """Scene XYTC marker-path blob via ``xyg_scene_marker_blob_pack`` (ABI 261).
+
+    Hosts pass ``filled`` (0/1), flattened contour f64 values, and per-contour
+    lengths. Invalid layout returns ``None``.
+    """
+    if filled not in (0, 1):
+        return None
+    val_arr = np.ascontiguousarray(np.asarray(values, dtype=np.float64))
+    lens = np.ascontiguousarray(np.asarray(contour_lens, dtype=np.uint32))
+    cap = max(8, 8 + int(lens.size) * 4 + int(val_arr.size) * 8)
+    out = np.empty(cap, dtype=np.uint8)
+    code = int(
+        _lib.xyg_scene_marker_blob_pack(
+            int(filled),
+            _ptr_f64(val_arr) if val_arr.size else 0,
+            int(val_arr.size),
+            _ptr_u32(lens) if lens.size else 0,
+            int(lens.size),
+            _ptr_u8(out),
+            int(out.size),
+        )
+    )
+    if code == -2:
+        raise ValueError("invalid scene-marker-blob-pack request")
+    if code <= 0:
+        return None
+    return bytes(out[:code])
+
+
 def scene_gradient_spec_pack(
     space: bytes,
     dir: bytes,

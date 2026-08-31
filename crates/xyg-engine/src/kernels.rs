@@ -1608,6 +1608,52 @@ pub fn scene_gradient_spec_pack(
     need as i32
 }
 
+/// Pack Scene XYTC marker-path blob into ``out`` (ABI 261).
+///
+/// Wire format: ``u32 n_contours``, ``u8 filled``, 3 zero bytes, then per
+/// contour ``u32 n_values`` + ``n_values`` little-endian f64s. Invalid
+/// layout (length mismatch) returns ``0``. Field picking stays host.
+/// Returns bytes written, ``0`` when invalid, ``-1`` when ``out`` is too small.
+pub fn scene_marker_blob_pack(
+    filled: i32,
+    values: &[f64],
+    contour_lens: &[u32],
+    out: &mut [u8],
+) -> i32 {
+    if !matches!(filled, 0 | 1) {
+        return 0;
+    }
+    let n_contours = contour_lens.len();
+    let total_values: usize = contour_lens.iter().map(|len| *len as usize).sum();
+    if total_values != values.len() {
+        return 0;
+    }
+    let need = 8usize
+        + contour_lens
+            .iter()
+            .map(|len| 4 + (*len as usize) * 8)
+            .sum::<usize>();
+    if out.len() < need {
+        return -1;
+    }
+    out[0..4].copy_from_slice(&(n_contours as u32).to_le_bytes());
+    out[4] = filled as u8;
+    out[5..8].fill(0);
+    let mut off = 8usize;
+    let mut val_off = 0usize;
+    for len in contour_lens {
+        out[off..off + 4].copy_from_slice(&len.to_le_bytes());
+        off += 4;
+        let n = *len as usize;
+        for value in &values[val_off..val_off + n] {
+            out[off..off + 8].copy_from_slice(&value.to_le_bytes());
+            off += 8;
+        }
+        val_off += n;
+    }
+    need as i32
+}
+
 /// Scene f64 arrays-equal (ABI 250).
 ///
 /// `1` iff lengths match and every pair is IEEE-equal (`==`). Empty
@@ -10572,6 +10618,21 @@ mod fuzz {
         let n = scene_gradient_spec_pack("", "", &[], &[], &[], &mut out);
         assert_eq!(n, 4);
         assert_eq!(&out[..4], &[255, 255, 0, 0]);
+    }
+
+    #[test]
+    fn scene_marker_blob_pack_matches_host_table() {
+        let diamond = [
+            0.0, 0.5, 0.5, 0.0, 0.0, -0.5, -0.5, 0.0, 0.0, 0.5,
+        ];
+        let lens = [10u32];
+        let mut out = vec![0u8; 128];
+        let n = scene_marker_blob_pack(1, &diamond, &lens, &mut out);
+        assert_eq!(n, 8 + 4 + 80);
+        assert_eq!(&out[..8], &[1, 0, 0, 0, 1, 0, 0, 0]);
+        assert_eq!(scene_marker_blob_pack(1, &diamond, &lens, &mut out[..3]), -1);
+        assert_eq!(scene_marker_blob_pack(1, &diamond[..5], &[5, 6], &mut out), 0);
+        assert_eq!(scene_marker_blob_pack(2, &diamond, &lens, &mut out), 0);
     }
 
     #[test]
