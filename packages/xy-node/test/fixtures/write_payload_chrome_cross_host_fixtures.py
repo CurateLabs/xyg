@@ -30,6 +30,8 @@ CASE_NAMES = (
     "legend_loc_best",
     "title_options_center",
     "title_options_defaults",
+    "colorbar_right",
+    "colorbar_bottom_minor",
     "dom_class_name",
     "dom_style",
     "dom_class_names",
@@ -49,6 +51,19 @@ def _build_case(name: str) -> Figure:
         fig.title_options = [{"text": "T", "loc": "center", "y": 1.0, "pad": 8.0}]
     if name == "title_options_defaults":
         fig.title_options = [{"text": "T"}]
+    if name == "colorbar_right":
+        fig.colorbar_options = {
+            "domain": [0.0, 1.0],
+            "stops": [[0.0, [0, 0, 0, 255]], [1.0, [255, 255, 255, 255]]],
+            "title": "Scale",
+        }
+    if name == "colorbar_bottom_minor":
+        fig.colorbar_options = {
+            "domain": [0.0, 1.0],
+            "stops": [[0.0, [0, 0, 0, 255]], [1.0, [255, 255, 255, 255]]],
+            "side": "bottom",
+            "minor_ticks": True,
+        }
     if name in ("dom_class_name", "chrome_combined"):
         fig.class_name = "root-node"
     if name == "dom_style":
@@ -73,12 +88,13 @@ def main() -> None:
                 "show_legend": spec["show_legend"],
                 "legend": spec.get("legend"),
                 "title_options": spec.get("title_options"),
+                "colorbar": spec.get("colorbar"),
                 "dom": spec.get("dom"),
             }
         )
     payload = {
         "schema": "xyg.payload-chrome-cross-host/v1",
-        "authority": "python/xyg/_payload.py build_payload show_legend, legend, title_options, and _dom_spec",
+        "authority": "python/xyg/_payload.py build_payload show_legend, legend, title_options, colorbar, and _dom_spec",
         "protocol": PROTOCOL_VERSION,
         "abi_version": int(_native.ABI_VERSION),
         "cases": cases,

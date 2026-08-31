@@ -25,6 +25,7 @@ function caseEntry(name, build) {
     show_legend: spec.show_legend,
     legend: spec.legend ?? null,
     title_options: spec.title_options ?? null,
+    colorbar: spec.colorbar ?? null,
     dom: spec.dom ?? null,
   };
 }
@@ -45,6 +46,27 @@ const cases = [
   }),
   caseEntry("title_options_defaults", (fig) => {
     fig.title_options = [{ text: "T" }];
+  }),
+  caseEntry("colorbar_right", (fig) => {
+    fig.setColorbar({
+      domain: [0, 1],
+      stops: [
+        [0, [0, 0, 0, 255]],
+        [1, [255, 255, 255, 255]],
+      ],
+      title: "Scale",
+    });
+  }),
+  caseEntry("colorbar_bottom_minor", (fig) => {
+    fig.setColorbar({
+      domain: [0, 1],
+      stops: [
+        [0, [0, 0, 0, 255]],
+        [1, [255, 255, 255, 255]],
+      ],
+      side: "bottom",
+      minor_ticks: true,
+    });
   }),
   caseEntry("dom_class_name", (fig) => {
     fig.class_name = "root-node";
@@ -67,7 +89,7 @@ process.stdout.write(
   JSON.stringify(
     {
       schema: "xyg.payload-chrome-cross-host/v1",
-      authority: "packages/xy-node/src/figure.js buildPayload show_legend, legend, title_options, and domSpec",
+      authority: "packages/xy-node/src/figure.js buildPayload show_legend, legend, title_options, colorbar, and domSpec",
       protocol: PROTOCOL_VERSION,
       abi_version: abiVersion(),
       cases,
