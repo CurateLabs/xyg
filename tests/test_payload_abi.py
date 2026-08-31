@@ -536,6 +536,40 @@ def test_payload_mesh_emit_plan_rejects_missing_continuous_color() -> None:
         )
 
 
+def test_payload_column_ship_plan_bar_compact_vertical() -> None:
+    plan = kernels.payload_column_ship_plan(
+        kind="bar_compact",
+        x_axis_scale="linear",
+        y_axis_scale="log",
+        orientation="vertical",
+    )
+    assert plan["gather_policy"] == "rect_finite"
+    assert plan["n_columns"] == 3
+    assert plan["columns"][0] == {
+        "registry_key": "pos",
+        "trace_slot": "x",
+        "ship_method": "offset",
+        "ship_scale": "linear",
+        "gather": False,
+    }
+    assert plan["columns"][1]["registry_key"] == "value1"
+    assert plan["columns"][2]["registry_key"] == "value0"
+
+
+def test_payload_column_ship_plan_bar_compact_horizontal() -> None:
+    plan = kernels.payload_column_ship_plan(
+        kind="bar_compact",
+        x_axis_scale="log",
+        y_axis_scale="symlog",
+        orientation="horizontal",
+    )
+    assert plan["n_columns"] == 3
+    assert plan["columns"][0]["registry_key"] == "pos"
+    assert plan["columns"][0]["ship_method"] == "values"
+    assert plan["columns"][1]["trace_slot"] == "x1"
+    assert plan["columns"][2]["trace_slot"] == "x0"
+
+
 def test_payload_column_ship_plan_rect() -> None:
     plan = kernels.payload_column_ship_plan(
         kind="rect",

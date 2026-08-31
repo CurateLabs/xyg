@@ -12670,6 +12670,9 @@ _PAYLOAD_COL_REGISTRY_KEY_BY_CODE: tuple[str, ...] = (
     "base",
     "target_y0",
     "target_y1",
+    "pos",
+    "value0",
+    "value1",
 )
 _PAYLOAD_TRACE_SLOT_ATTR: tuple[str, ...] = ("x", "y", "x0", "x1", "y0", "y1", "base")
 _PAYLOAD_COL_SHIP_METHOD_BY_CODE: tuple[str, ...] = ("offset", "values")
@@ -12689,13 +12692,23 @@ def payload_column_ship_plan(
     kind: str,
     x_axis_scale: str,
     y_axis_scale: str,
+    orientation: str | None = None,
 ) -> dict[str, bool | int | str | list[dict[str, bool | int | str]]]:
-    """Column registry / gather plan via ``xyg_payload_column_ship_plan`` (ABI 310).
+    """Column registry / gather plan via ``xyg_payload_column_ship_plan`` (ABI 310/313).
 
     Owns geometry column keys, trace slots, ship method/scale codes, and gather
-    policy. Hosts still NumPy-gather and ship buffers.
+    policy. ``orientation`` is required for ``bar_compact``. Hosts still
+    NumPy-gather and ship buffers.
     """
     kind_bytes = kind.encode("utf-8")
+    if kind == "bar_compact":
+        if orientation is None:
+            raise ValueError("payload_column_ship_plan bar_compact requires orientation")
+        orientation_i = _PAYLOAD_BAR_ORIENTATION_BY_NAME.get(orientation)
+        if orientation_i is None:
+            raise ValueError(f"invalid payload_column_ship_plan orientation {orientation!r}")
+    else:
+        orientation_i = PAYLOAD_BAR_ORIENTATION_VERTICAL
     gather_policy = ctypes.c_int32(-1)
     gather_include_color = ctypes.c_int32(-1)
     n_columns = ctypes.c_size_t(0)
@@ -12707,6 +12720,7 @@ def payload_column_ship_plan(
         len(kind_bytes),
         _payload_axis_type_code(x_axis_scale),
         _payload_axis_type_code(y_axis_scale),
+        orientation_i,
         ctypes.byref(gather_policy),
         ctypes.byref(gather_include_color),
         ctypes.byref(n_columns),

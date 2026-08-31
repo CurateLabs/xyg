@@ -1096,6 +1096,12 @@ pub const PAYLOAD_COL_KEY_BASE: i32 = 8;
 pub const PAYLOAD_COL_KEY_TARGET_Y0: i32 = 9;
 /// Spec registry key: ``target_y1``.
 pub const PAYLOAD_COL_KEY_TARGET_Y1: i32 = 10;
+/// Nested bar spec key: ``pos`` (bar-compact).
+pub const PAYLOAD_COL_KEY_POS: i32 = 11;
+/// Nested bar spec key: ``value0`` (bar-compact baseline).
+pub const PAYLOAD_COL_KEY_VALUE0: i32 = 12;
+/// Nested bar spec key: ``value1`` (bar-compact extent).
+pub const PAYLOAD_COL_KEY_VALUE1: i32 = 13;
 
 /// Trace column slot: ``t.x``.
 pub const PAYLOAD_TRACE_SLOT_X: i32 = 0;
@@ -1156,6 +1162,7 @@ pub fn payload_column_ship_plan(
     kind: &str,
     x_axis_type: i32,
     y_axis_type: i32,
+    orientation: i32,
     out_gather_policy: &mut i32,
     out_gather_include_color: &mut i32,
     out_n_columns: &mut usize,
@@ -1374,6 +1381,59 @@ pub fn payload_column_ship_plan(
                 gather: 1,
             };
             *out_n_columns = 6;
+        }
+        "bar_compact" => {
+            *out_gather_policy = PAYLOAD_GATHER_RECT_FINITE;
+            match orientation {
+                PAYLOAD_BAR_ORIENTATION_VERTICAL => {
+                    out_columns[0] = PayloadColumnShipEntry {
+                        registry_key: PAYLOAD_COL_KEY_POS,
+                        trace_slot: PAYLOAD_TRACE_SLOT_X,
+                        ship_method: PAYLOAD_COL_SHIP_OFFSET,
+                        ship_scale: x_scale,
+                        gather: 0,
+                    };
+                    out_columns[1] = PayloadColumnShipEntry {
+                        registry_key: PAYLOAD_COL_KEY_VALUE1,
+                        trace_slot: PAYLOAD_TRACE_SLOT_Y,
+                        ship_method: PAYLOAD_COL_SHIP_OFFSET,
+                        ship_scale: y_scale,
+                        gather: 0,
+                    };
+                    out_columns[2] = PayloadColumnShipEntry {
+                        registry_key: PAYLOAD_COL_KEY_VALUE0,
+                        trace_slot: PAYLOAD_TRACE_SLOT_Y0,
+                        ship_method: PAYLOAD_COL_SHIP_OFFSET,
+                        ship_scale: y_scale,
+                        gather: 0,
+                    };
+                }
+                PAYLOAD_BAR_ORIENTATION_HORIZONTAL => {
+                    out_columns[0] = PayloadColumnShipEntry {
+                        registry_key: PAYLOAD_COL_KEY_POS,
+                        trace_slot: PAYLOAD_TRACE_SLOT_Y0,
+                        ship_method: PAYLOAD_COL_SHIP_VALUES,
+                        ship_scale: y_scale,
+                        gather: 0,
+                    };
+                    out_columns[1] = PayloadColumnShipEntry {
+                        registry_key: PAYLOAD_COL_KEY_VALUE1,
+                        trace_slot: PAYLOAD_TRACE_SLOT_X1,
+                        ship_method: PAYLOAD_COL_SHIP_OFFSET,
+                        ship_scale: x_scale,
+                        gather: 0,
+                    };
+                    out_columns[2] = PayloadColumnShipEntry {
+                        registry_key: PAYLOAD_COL_KEY_VALUE0,
+                        trace_slot: PAYLOAD_TRACE_SLOT_X0,
+                        ship_method: PAYLOAD_COL_SHIP_OFFSET,
+                        ship_scale: x_scale,
+                        gather: 0,
+                    };
+                }
+                _ => return 0,
+            }
+            *out_n_columns = 3;
         }
         _ => return 0,
     }
@@ -3860,7 +3920,7 @@ mod tests {
         assert_eq!(y.attach_r_origin, 1);
     }
 
-    fn run_column_ship_plan(kind: &str) -> (
+    fn run_column_ship_plan(kind: &str, orientation: i32) -> (
         i32,
         i32,
         usize,
@@ -3884,6 +3944,7 @@ mod tests {
             kind,
             1,
             2,
+            orientation,
             &mut gather_policy,
             &mut gather_include_color,
             &mut n_columns,
@@ -3896,8 +3957,35 @@ mod tests {
     }
 
     #[test]
+    fn payload_column_ship_plan_bar_compact_vertical() {
+        let (gather, _, n, _, _, cols) =
+            run_column_ship_plan("bar_compact", PAYLOAD_BAR_ORIENTATION_VERTICAL);
+        assert_eq!(gather, PAYLOAD_GATHER_RECT_FINITE);
+        assert_eq!(n, 3);
+        assert_eq!(cols[0].registry_key, PAYLOAD_COL_KEY_POS);
+        assert_eq!(cols[0].trace_slot, PAYLOAD_TRACE_SLOT_X);
+        assert_eq!(cols[1].registry_key, PAYLOAD_COL_KEY_VALUE1);
+        assert_eq!(cols[2].registry_key, PAYLOAD_COL_KEY_VALUE0);
+        assert_eq!(cols[2].trace_slot, PAYLOAD_TRACE_SLOT_Y0);
+    }
+
+    #[test]
+    fn payload_column_ship_plan_bar_compact_horizontal() {
+        let (_, _, n, _, _, cols) =
+            run_column_ship_plan("bar_compact", PAYLOAD_BAR_ORIENTATION_HORIZONTAL);
+        assert_eq!(n, 3);
+        assert_eq!(cols[0].registry_key, PAYLOAD_COL_KEY_POS);
+        assert_eq!(cols[0].ship_method, PAYLOAD_COL_SHIP_VALUES);
+        assert_eq!(cols[1].registry_key, PAYLOAD_COL_KEY_VALUE1);
+        assert_eq!(cols[1].trace_slot, PAYLOAD_TRACE_SLOT_X1);
+        assert_eq!(cols[2].registry_key, PAYLOAD_COL_KEY_VALUE0);
+        assert_eq!(cols[2].trace_slot, PAYLOAD_TRACE_SLOT_X0);
+    }
+
+    #[test]
     fn payload_column_ship_plan_rect_registry_and_finite_gather() {
-        let (gather, _, n, x_scale, y_scale, cols) = run_column_ship_plan("rect");
+        let (gather, _, n, x_scale, y_scale, cols) =
+            run_column_ship_plan("rect", PAYLOAD_BAR_ORIENTATION_VERTICAL);
         assert_eq!(gather, PAYLOAD_GATHER_RECT_FINITE);
         assert_eq!(n, 4);
         assert_eq!(x_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_LOG);
@@ -3909,7 +3997,8 @@ mod tests {
 
     #[test]
     fn payload_column_ship_plan_hexbin_values_and_visible_gather() {
-        let (gather, _, n, _, _, cols) = run_column_ship_plan("hexbin");
+        let (gather, _, n, _, _, cols) =
+            run_column_ship_plan("hexbin", PAYLOAD_BAR_ORIENTATION_VERTICAL);
         assert_eq!(gather, PAYLOAD_GATHER_VISIBLE_SEL);
         assert_eq!(n, 2);
         assert_eq!(cols[0].ship_method, PAYLOAD_COL_SHIP_VALUES);
@@ -3918,7 +4007,8 @@ mod tests {
 
     #[test]
     fn payload_column_ship_plan_ribbon_six_columns_with_targets() {
-        let (gather, _, n, _, y_scale, cols) = run_column_ship_plan("ribbon");
+        let (gather, _, n, _, y_scale, cols) =
+            run_column_ship_plan("ribbon", PAYLOAD_BAR_ORIENTATION_VERTICAL);
         assert_eq!(gather, PAYLOAD_GATHER_VALID_INDICES);
         assert_eq!(n, 6);
         assert_eq!(cols[4].registry_key, PAYLOAD_COL_KEY_TARGET_Y0);
@@ -3929,7 +4019,8 @@ mod tests {
 
     #[test]
     fn payload_column_ship_plan_area_includes_base_after_m4() {
-        let (gather, _, n, _, _, cols) = run_column_ship_plan("area");
+        let (gather, _, n, _, _, cols) =
+            run_column_ship_plan("area", PAYLOAD_BAR_ORIENTATION_VERTICAL);
         assert_eq!(gather, PAYLOAD_GATHER_M4);
         assert_eq!(n, 3);
         assert_eq!(cols[2].registry_key, PAYLOAD_COL_KEY_BASE);
@@ -3955,6 +4046,7 @@ mod tests {
                 "sankey",
                 0,
                 0,
+                PAYLOAD_BAR_ORIENTATION_VERTICAL,
                 &mut gather_policy,
                 &mut gather_include_color,
                 &mut n_columns,

@@ -1,9 +1,9 @@
 {
-  "abi_version": 312,
+  "abi_version": 313,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "43f64eb83dcec91f98bffa12ee76aacd4b6e59564be4616fdab8646cde547a11",
+  "signature_sha256": "015d441fe926685b576d48892be6b0cc56bafaa9f8e9f94223243b68bdbd9fb9",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -21825,7 +21825,7 @@
     {
       "name": "xyg_payload_column_ship_plan",
       "node_name": "xyPayloadColumnShipPlan",
-      "nargs": 11,
+      "nargs": 12,
       "arguments": [
         {
           "name": "kind",
@@ -21875,6 +21875,21 @@
         },
         {
           "name": "y_axis_type",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "orientation",
           "type": {
             "rust": "i32",
             "c": "int32_t",
@@ -22012,7 +22027,7 @@
         "direction": "return",
         "nullable": false
       },
-      "c_signature": "int32_t xyg_payload_column_ship_plan(const uint8_t * kind, size_t kind_len, int32_t x_axis_type, int32_t y_axis_type, int32_t * out_gather_policy, int32_t * out_gather_include_color, size_t * out_n_columns, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale, void * out_columns, size_t capacity)"
+      "c_signature": "int32_t xyg_payload_column_ship_plan(const uint8_t * kind, size_t kind_len, int32_t x_axis_type, int32_t y_axis_type, int32_t orientation, int32_t * out_gather_policy, int32_t * out_gather_include_color, size_t * out_n_columns, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale, void * out_columns, size_t capacity)"
     },
     {
       "name": "xyg_payload_density_trace_emit_plan",
