@@ -1443,28 +1443,24 @@ test("buildPayload ships cartesian axis tick_count like Python _axis_spec", () =
   assert.equal(spec.y_axis.tick_count, undefined);
 });
 
-test("buildPayload omits cartesian axis reverse unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `reverse`. Node cartesian payload axes omit
-  // that field even when axis reverse is set. Recorded
-  // emit-payload-axis-reverse stay-host.
+test("buildPayload ships cartesian axis reverse like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   fig.setAxis("x", { reverse: true });
   const { spec } = fig.buildPayload();
   assert.equal(fig.axis_options.x.reverse, true);
-  assert.equal(spec.x_axis.reverse, undefined);
+  assert.equal(spec.x_axis.reverse, true);
+  assert.equal(spec.y_axis.reverse, undefined);
 });
 
-test("buildPayload omits cartesian axis domain unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `domain`. Node cartesian payload axes omit that
-  // field even when axis domain is set. Recorded emit-payload-axis-domain
-  // stay-host.
+test("buildPayload ships cartesian axis domain like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([1, 2], [1, 2]);
   fig.setAxis("x", { domain: [0, 3] });
   const { spec } = fig.buildPayload();
   assert.deepEqual(fig.axis_options.x.domain, [0, 3]);
-  assert.equal(spec.x_axis.domain, undefined);
+  assert.deepEqual(spec.x_axis.domain, [0, 3]);
+  assert.equal(spec.y_axis.domain, undefined);
 });
 
 test("buildPayload omits cartesian axis format unlike Python _axis_spec", () => {
@@ -1825,24 +1821,20 @@ test("buildPayload omits polar axis tick_count unlike Python _axis_spec", () => 
   assert.equal(spec.x_axis.tick_count, undefined);
 });
 
-test("buildPayload omits polar axis reverse unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `reverse` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-reverse stay-host.
+test("buildPayload ships polar axis reverse like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.setAxis("x", { reverse: true });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.reverse, undefined);
+  assert.equal(spec.x_axis.reverse, true);
 });
 
-test("buildPayload omits polar axis domain unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `domain` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-domain stay-host.
+test("buildPayload ships polar axis domain like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.setAxis("x", { domain: [0, 1] });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.domain, undefined);
+  assert.deepEqual(spec.x_axis.domain, [0, 1]);
 });
 
 test("buildPayload omits polar axis format unlike Python _axis_spec", () => {

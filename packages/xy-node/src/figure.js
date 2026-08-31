@@ -1626,6 +1626,12 @@ export class Figure {
     if (attach.attachTicks && this.coords === "cartesian" && opts.tick_count != null) {
       spec.tick_count = opts.tick_count;
     }
+    if (attach.attachReverse && opts.reverse) {
+      spec.reverse = true;
+    }
+    if (attach.attachDomain && opts.domain != null) {
+      spec.domain = [...opts.domain];
+    }
     if (attach.attachThetaUnit) {
       const unit = opts.theta_unit || "radians";
       spec.theta_unit = unit;
