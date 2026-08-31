@@ -10,6 +10,7 @@ const fixture = JSON.parse(
 
 const CASE_NAMES = [
   "scatter_density_colormap",
+  "scatter_density_continuous_colormap",
   "scatter_density_dropped_channels",
   "scatter_density_mean_color_categorical",
   "scatter_density_wasm_source_split",
@@ -176,6 +177,14 @@ function buildCase(name) {
     fig.scatter([0, 1, 2], [0, 1, 0.5], { forceDensity: true, colormap: "plasma" });
     fig.traces[0].id = 21;
     fig.traces[0].color_ch = { ...fig.traces[0].color_ch, colormap: "magma" };
+  } else if (name === "scatter_density_continuous_colormap") {
+    fig.scatter([0, 1, 2, 3], [0, 1, 0.5, 0.2], {
+      forceDensity: true,
+      colormap: "plasma",
+      color: [1, 2, 3, 4],
+    });
+    fig.traces[0].id = 24;
+    fig.traces[0].color_ch = { ...fig.traces[0].color_ch, colormap: "inferno" };
   } else if (name === "scatter_density_dropped_channels") {
     fig.scatter([0, 1, 2], [0, 1, 0.5], { forceDensity: true, size: [1, 2, 3] });
     fig.traces[0].id = 22;

@@ -100,6 +100,15 @@ const cases = [
     fig.traces[0].id = 21;
     fig.traces[0].color_ch = { ...fig.traces[0].color_ch, colormap: "magma" };
   }),
+  caseEntry("scatter_density_continuous_colormap", (fig) => {
+    fig.scatter([0, 1, 2, 3], [0, 1, 0.5, 0.2], {
+      forceDensity: true,
+      colormap: "plasma",
+      color: [1, 2, 3, 4],
+    });
+    fig.traces[0].id = 24;
+    fig.traces[0].color_ch = { ...fig.traces[0].color_ch, colormap: "inferno" };
+  }),
   caseEntry("scatter_density_dropped_channels", (fig) => {
     fig.scatter([0, 1, 2], [0, 1, 0.5], { forceDensity: true, size: [1, 2, 3] });
     fig.traces[0].id = 22;
