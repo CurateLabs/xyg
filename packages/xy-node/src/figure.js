@@ -2573,47 +2573,76 @@ export class Figure {
     this._pyramids.clear();
   }
 
-  _emitLine(t, pw, xr, pxWidth) {
-    let xv = t.x;
-    let yv = t.y;
+  _m4Decimate(t, xr, pxWidth, ...arrays) {
+    const xAxis = t.x_axis ?? "x";
+    const xBin = this._binningCoords(xAxis, arrays[0], xr);
+    const useBin = xBin.values !== arrays[0];
     const { tier: tierCode, indices } = payloadM4Indices({
-      nPoints: xv.length,
-      x: xv,
-      y: yv,
+      nPoints: t.x.length,
+      x: arrays[0],
+      y: arrays[1],
       x0: xr[0],
       x1: xr[1],
       nBuckets: pxWidth,
       polar: this.coords === "polar",
+      binX: useBin ? xBin.values : null,
+      binX0: useBin ? xBin.b0 : 0,
+      binX1: useBin ? xBin.b1 : 0,
     });
-    const decimated = tierCode === 1;
-    let tier = "direct";
-    if (decimated) {    // Recorded emit-line-m4-bin-x stay-host.
-
-      xv = gatherF64(xv, indices);
-      yv = gatherF64(yv, indices);
-      tier = "decimated";
+    if (tierCode === 0) {
+      return { tier: "direct", arrays, indices: null };
     }
-    const xCol = !decimated && t._xCol instanceof Column ? t._xCol : new Column(xv);
-    const yCol = !decimated && t._yCol instanceof Column ? t._yCol : new Column(yv);
-    if (!decimated) {
+    if (indices.length === 0) {
+      return {
+        tier: "decimated",
+        arrays: arrays.map((array) => array.subarray(0, 0)),
+        indices,
+      };
+    }
+    return {
+      tier: "decimated",
+      arrays: arrays.map((array) => gatherF64(array, indices)),
+      indices,
+    };
+  }
+
+  _emitLine(t, pw, xr, pxWidth) {
+    const m4 = this._m4Decimate(t, xr, pxWidth, t.x, t.y);
+    let [xv, yv] = m4.arrays;
+    const tier = m4.tier;
+    const xCol = tier === "direct" && t._xCol instanceof Column ? t._xCol : new Column(xv);
+    const yCol = tier === "direct" && t._yCol instanceof Column ? t._yCol : new Column(yv);
+    if (tier === "direct") {
       t._xCol = xCol;
       t._yCol = yCol;
+    } else {
+      if (!(t._xCol instanceof Column)) {
+        t._xCol = new Column(t.x);
+      }
+      if (!(t._yCol instanceof Column)) {
+        t._yCol = new Column(t.y);
+      }
     }
     const vis = this._visibleSel(t, xv, yv, {
-      prefiltered: decimated,
+      prefiltered: tier !== "direct",
+      xCol: t._xCol instanceof Column ? t._xCol : new Column(t.x),
+      yCol: t._yCol instanceof Column ? t._yCol : new Column(t.y),
     });
     if (vis != null) {
       xv = gatherF64(xv, vis);
       yv = gatherF64(yv, vis);
     }
-    const shipX = vis == null ? xCol : new Column(xv);
-    const shipY = vis == null ? yCol : new Column(yv);
     const xAxis = t.x_axis ?? "x";
     const yAxis = t.y_axis ?? "y";
     const basePlan = payloadBaseEntryPlan({
       hasTraceAnimation: t.animation != null,
       nXv: xv.length,
       styleColorIsNone: false,
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+    });
+    const columnPlan = payloadColumnShipPlan({
+      kind: "line",
       xAxisScale: payloadAxisScale(this, xAxis),
       yAxisScale: payloadAxisScale(this, yAxis),
     });
@@ -2625,11 +2654,10 @@ export class Figure {
       tier,
       n_points: t.x.length,
       n_marks: basePlan.nMarks,
-      x: pw.ship(xv, shipX, { scale: basePlan.xShipScale }),
-      y: pw.ship(yv, shipY, { scale: basePlan.yShipScale }),
       x_axis: xAxis,
       y_axis: yAxis,
     };
+    shipRegistryColumns(entry, t, pw, columnPlan, { x: xv, y: yv });
     if (basePlan.attachAnimation) {
       entry.animation = { ...t.animation };
     }
@@ -3047,51 +3075,48 @@ export class Figure {
   }
 
   _emitArea(t, pw, xr, pxWidth) {
-    const { tier: tierCode, indices } = payloadM4Indices({
-      nPoints: t.x.length,
-      x: t.x,
-      y: t.y,
-      x0: xr[0],
-      x1: xr[1],
-      nBuckets: pxWidth,
-      polar: this.coords === "polar",
-    });
-    let xv = t.x;
-    let yv = t.y;
-    let bv = t.base;    // Recorded emit-area-m4-bin-x stay-host.
-
-    let tier = "direct";
-    if (tierCode === 1) {
-      xv = gatherF64(xv, indices);
-      yv = gatherF64(yv, indices);
-      bv = gatherF64(bv, indices);
-      tier = "decimated";
-    }
-    const xCol = tier === "direct" && t._xCol instanceof Column ? t._xCol : new Column(xv);
-    const yCol = tier === "direct" && t._yCol instanceof Column ? t._yCol : new Column(yv);
+    const m4 = this._m4Decimate(t, xr, pxWidth, t.x, t.y, t.base);
+    let [xv, yv, bv] = m4.arrays;
+    const tier = m4.tier;
+    const xCol = tier === "direct" && t._xCol instanceof Column ? t._xCol : new Column(t.x);
+    const yCol = tier === "direct" && t._yCol instanceof Column ? t._yCol : new Column(t.y);
     if (tier === "direct") {
       t._xCol = xCol;
       t._yCol = yCol;
+    } else {
+      if (!(t._xCol instanceof Column)) {
+        t._xCol = new Column(t.x);
+      }
+      if (!(t._yCol instanceof Column)) {
+        t._yCol = new Column(t.y);
+      }
     }
-    const baseCol = new Column(bv);
+    if (!(t._baseCol instanceof Column)) {
+      t._baseCol = new Column(t.base);
+    }
     const vis = this._visibleSel(t, xv, yv, {
       base: bv,
-      baseCol: new Column(t.base),
+      baseCol: t._baseCol,
+      xCol: t._xCol,
+      yCol: t._yCol,
+      prefiltered: tier !== "direct",
     });
     if (vis != null) {
       xv = gatherF64(xv, vis);
       yv = gatherF64(yv, vis);
       bv = gatherF64(bv, vis);
     }
-    const shipX = vis == null ? xCol : new Column(xv);
-    const shipY = vis == null ? yCol : new Column(yv);
-    const shipB = vis == null ? baseCol : new Column(bv);
     const xAxis = t.x_axis ?? "x";
     const yAxis = t.y_axis ?? "y";
     const basePlan = payloadBaseEntryPlan({
       hasTraceAnimation: t.animation != null,
       nXv: xv.length,
       styleColorIsNone: false,
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+    });
+    const columnPlan = payloadColumnShipPlan({
+      kind: t.kind === "error_band" ? "error_band" : "area",
       xAxisScale: payloadAxisScale(this, xAxis),
       yAxisScale: payloadAxisScale(this, yAxis),
     });
@@ -3103,12 +3128,10 @@ export class Figure {
       tier,
       n_points: t.x.length,
       n_marks: basePlan.nMarks,
-      x: pw.ship(xv, shipX, { scale: basePlan.xShipScale }),
-      y: pw.ship(yv, shipY, { scale: basePlan.yShipScale }),
-      base: pw.ship(bv, shipB, { scale: basePlan.yShipScale }),
       x_axis: xAxis,
       y_axis: yAxis,
     };
+    shipRegistryColumns(entry, t, pw, columnPlan, { x: xv, y: yv, base: bv });
     if (basePlan.attachAnimation) {
       entry.animation = { ...t.animation };
     }

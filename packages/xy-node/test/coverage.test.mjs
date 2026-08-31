@@ -1689,10 +1689,7 @@ test("buildPayload ships cartesian axis categories like Python _axis_spec", () =
   assert.equal(spec.y_axis.categories, undefined);
 });
 
-test("_emitLine skips M4 bin_x unlike Python _m4_decimate", () => {
-  // Python `_m4_decimate` passes `_binning_coords` so log x buckets in
-  // scale space. Node `_emitLine` omits bin_x, so log x keeps the same
-  // n_marks as linear. Recorded emit-line-m4-bin-x stay-host.
+test("_emitLine passes M4 bin_x like Python _m4_decimate", () => {
   const n = 10001;
   const x = new Float64Array(n);
   const y = new Float64Array(n);
@@ -1706,18 +1703,18 @@ test("_emitLine skips M4 bin_x unlike Python _m4_decimate", () => {
   const log = figure({ width: 240, height: 160 });
   log.setAxis("x", { type: "log", domain: [1, 100] });
   log.line(x, y);
-  const a = lin.buildPayload({ pxWidth: 64 }).spec.traces[0];
-  const b = log.buildPayload({ pxWidth: 64 }).spec.traces[0];
-  assert.equal(a.tier, "decimated");
-  assert.equal(b.tier, "decimated");
-  assert.equal(a.n_marks, b.n_marks);
+  const a = lin.buildPayload({ pxWidth: 64 });
+  const b = log.buildPayload({ pxWidth: 64 });
+  assert.equal(a.spec.traces[0].tier, "decimated");
+  assert.equal(b.spec.traces[0].tier, "decimated");
+  assert.notEqual(
+    Buffer.from(a.buffers).compare(Buffer.from(b.buffers)),
+    0,
+  );
 });
 
 
-test("_emitArea skips M4 bin_x unlike Python _m4_decimate", () => {
-  // Python `_m4_decimate` passes `_binning_coords` so log x buckets in
-  // scale space. Node `_emitArea` omits bin_x, so log x keeps the same
-  // n_marks as linear. Recorded emit-area-m4-bin-x stay-host.
+test("_emitArea passes M4 bin_x like Python _m4_decimate", () => {
   const n = 10001;
   const x = new Float64Array(n);
   const y = new Float64Array(n);
@@ -1731,11 +1728,14 @@ test("_emitArea skips M4 bin_x unlike Python _m4_decimate", () => {
   const log = figure({ width: 240, height: 160 });
   log.setAxis("x", { type: "log", domain: [1, 100] });
   log.area(x, y);
-  const a = lin.buildPayload({ pxWidth: 64 }).spec.traces[0];
-  const b = log.buildPayload({ pxWidth: 64 }).spec.traces[0];
-  assert.equal(a.tier, "decimated");
-  assert.equal(b.tier, "decimated");
-  assert.equal(a.n_marks, b.n_marks);
+  const a = lin.buildPayload({ pxWidth: 64 });
+  const b = log.buildPayload({ pxWidth: 64 });
+  assert.equal(a.spec.traces[0].tier, "decimated");
+  assert.equal(b.spec.traces[0].tier, "decimated");
+  assert.notEqual(
+    Buffer.from(a.buffers).compare(Buffer.from(b.buffers)),
+    0,
+  );
 });
 
 
