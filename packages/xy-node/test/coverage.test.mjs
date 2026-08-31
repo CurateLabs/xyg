@@ -360,54 +360,58 @@ test("_emitScatter skips tooltip_rows length unlike Python _attach_tooltip_rows"
   assert.equal(spec.traces[0].tooltip_rows.length, 1);
 });
 
-test("_emitRibbon copies t.style unlike Python _default_styled", () => {
-  // Python `_emit_ribbon` uses `_default_styled` to fill palette color when
-  // style.color is missing. Node ribbon encode copies t.style. Recorded
-  // emit-ribbon-default-styled stay-host.
+test("_emitRibbon uses _defaultStyled when style.color is missing", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.ribbon([0], [1], [0], [1], [0], [1]);
   fig.traces[0].style = { opacity: 0.9 };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "ribbon");
-  assert.equal(spec.traces[0].style.color, undefined);
+  assert.equal(
+    spec.traces[0].style.color,
+    DEFAULT_PALETTE[fig.traces[0].id % DEFAULT_PALETTE.length],
+  );
+  assert.equal(spec.traces[0].style.opacity, 0.9);
 });
 
-test("_emitSegments copies t.style unlike Python _default_styled", () => {
-  // Python `_emit_segments` uses `_default_styled` to fill palette color when
-  // style.color is missing. Node segments encode copies t.style. Recorded
-  // emit-segments-default-styled stay-host.
+test("_emitSegments uses _defaultStyled when style.color is missing", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.segments([0, 1], [0, 1], [1, 2], [1, 2]);
   fig.traces[0].style = { opacity: 0.9 };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "segments");
-  assert.equal(spec.traces[0].style.color, undefined);
+  assert.equal(
+    spec.traces[0].style.color,
+    DEFAULT_PALETTE[fig.traces[0].id % DEFAULT_PALETTE.length],
+  );
+  assert.equal(spec.traces[0].style.opacity, 0.9);
 });
 
-test("_emitTriangleMesh copies t.style unlike Python _default_styled", () => {
-  // Python `_emit_triangle_mesh` uses `_default_styled` to fill palette color
-  // when style.color is missing. Node mesh encode copies t.style. Recorded
-  // emit-mesh-default-styled stay-host.
+test("_emitTriangleMesh uses _defaultStyled when style.color is missing", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
   fig.traces[0].style = { opacity: 0.9 };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "triangle_mesh");
-  assert.equal(spec.traces[0].style.color, undefined);
+  assert.equal(
+    spec.traces[0].style.color,
+    DEFAULT_PALETTE[fig.traces[0].id % DEFAULT_PALETTE.length],
+  );
+  assert.equal(spec.traces[0].style.opacity, 0.9);
 });
 
-test("_emitRect copies t.style unlike Python _default_styled", () => {
-  // Python `_emit_rect` uses `_default_styled` to fill palette color when
-  // style.color is missing. Node rect encode copies t.style. Recorded
-  // emit-rect-default-styled stay-host.
+test("_emitRect uses _defaultStyled when style.color is missing", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.box([1, 2, 3, 4, 5]);
-  const boxIdx = fig.traces.findIndex((t) => t.kind === "box");
-  fig.traces[boxIdx].style = { opacity: 0.9 };
+  const whiskerIdx = fig.traces.findIndex((t) => t.kind === "box_whisker");
+  fig.traces[whiskerIdx].style = { opacity: 0.9 };
   const { spec } = fig.buildPayload();
-  const boxTrace = spec.traces.find((t) => t.kind === "box");
-  assert.equal(boxTrace.kind, "box");
-  assert.equal(boxTrace.style.color, undefined);
+  const whiskerTrace = spec.traces.find((t) => t.kind === "box_whisker");
+  assert.equal(whiskerTrace.kind, "box_whisker");
+  assert.equal(
+    whiskerTrace.style.color,
+    DEFAULT_PALETTE[fig.traces[whiskerIdx].id % DEFAULT_PALETTE.length],
+  );
+  assert.equal(whiskerTrace.style.opacity, 0.9);
 });
 
 test("_emitHistogram uses _defaultStyled when style.color is missing", () => {
