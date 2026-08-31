@@ -65,6 +65,21 @@ def test_axis_spec_uses_kernel_attach_plan_cartesian() -> None:
     assert "theta_unit" not in axis
 
 
+def test_axis_spec_cartesian_meta_cross_host_fixture() -> None:
+    """Node buildPayload axis id/kind/side/label parity for scatter_direct."""
+    fig = Figure(width=240, height=160)
+    fig.scatter([0.0, 1.0, 2.0], [0.0, 1.0, 0.5])
+    fig.traces[0].id = 7
+    spec, _ = fig.build_payload()
+    for axis_id in ("x", "y"):
+        axis = spec[f"{axis_id}_axis"]
+        assert axis["id"] == axis_id
+        assert axis["kind"] == "linear"
+        assert axis["label"] is None
+    assert spec["x_axis"]["side"] == "bottom"
+    assert spec["y_axis"]["side"] == "left"
+
+
 def test_axis_spec_uses_kernel_attach_plan_polar() -> None:
     fig = Figure(coords="polar")
     fig.scatter([0.0, math.pi / 2], [0.0, 1.0])

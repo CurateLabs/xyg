@@ -444,40 +444,35 @@ test("_emitLine uses _defaultStyled when style.color is missing", () => {
   assert.equal(spec.traces[0].style.opacity, 0.9);
 });
 
-test("buildPayload omits cartesian axis label unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `label`. Node cartesian payload axes omit that
-  // field. Recorded emit-payload-axis-label stay-host.
+test("buildPayload ships cartesian axis label like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.label, undefined);
+  assert.equal(spec.x_axis.label, null);
 });
 
-test("buildPayload omits cartesian axis side unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `side`. Node cartesian payload axes omit that
-  // field. Recorded emit-payload-axis-side stay-host.
+test("buildPayload ships cartesian axis side like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.side, undefined);
+  assert.equal(spec.x_axis.side, "bottom");
+  assert.equal(spec.y_axis.side, "left");
 });
 
-test("buildPayload omits cartesian axis kind unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `_axis_kind`. Node cartesian payload axes omit
-  // that field. Recorded emit-payload-axis-kind stay-host.
+test("buildPayload ships cartesian axis kind like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.kind, undefined);
+  assert.equal(spec.x_axis.kind, "linear");
+  assert.equal(spec.y_axis.kind, "linear");
 });
 
-test("buildPayload omits cartesian axis id unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `id`. Node cartesian payload axes omit that
-  // field. Recorded emit-payload-axis-id stay-host.
+test("buildPayload ships cartesian axis id like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.id, undefined);
+  assert.equal(spec.x_axis.id, "x");
+  assert.equal(spec.y_axis.id, "y");
 });
 
 test("buildPayload ships show_legend via payload build plan", () => {
@@ -1720,13 +1715,12 @@ test("_emitArea skips M4 bin_x unlike Python _m4_decimate", () => {
 });
 
 
-test("buildPayload omits polar axis id unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `id` on polar axes. Node `_polarAxisSpecs`
-  // omits that field. Recorded emit-polar-payload-axis-id stay-host.
+test("buildPayload ships polar axis id like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.id, undefined);
+  assert.equal(spec.x_axis.id, "x");
+  assert.equal(spec.y_axis.id, "y");
 });
 
 
@@ -1773,31 +1767,28 @@ test("_emitScatterDensity xLinear follows axis scale like Python _density_trace_
   assert.notEqual(a.density.max, b.density.max);
 });
 
-test("buildPayload omits polar axis kind unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `_axis_kind` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-kind stay-host.
+test("buildPayload ships polar axis kind like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.kind, undefined);
+  assert.equal(spec.x_axis.kind, "linear");
+  assert.equal(spec.y_axis.kind, "linear");
 });
 
-test("buildPayload omits polar axis side unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `side` on polar axes. Node `_polarAxisSpecs`
-  // omits that field. Recorded emit-polar-payload-axis-side stay-host.
+test("buildPayload ships polar axis side like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.side, undefined);
+  assert.equal(spec.x_axis.side, "bottom");
+  assert.equal(spec.y_axis.side, "left");
 });
 
-test("buildPayload omits polar axis label unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `label` on polar axes. Node `_polarAxisSpecs`
-  // omits that field. Recorded emit-polar-payload-axis-label stay-host.
+test("buildPayload ships polar axis label like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.label, undefined);
+  assert.equal(spec.x_axis.label, null);
+  assert.equal(spec.y_axis.label, null);
 });
 
 test("buildPayload omits polar axis tick_values unlike Python _axis_spec", () => {

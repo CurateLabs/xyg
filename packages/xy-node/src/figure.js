@@ -44,6 +44,7 @@ import {
   payloadScatterEmitPlan,
   payloadDensityTraceEmitPlan,
   payloadBuildPlan,
+  payloadAxisSpecAttachPlan,
   DENSITY_WASM_DENSITY_AUTOMATIC,
   DENSITY_WASM_DENSITY_UNSUPPORTED,
   payloadSegmentsEmitGather,
@@ -1583,6 +1584,59 @@ export class Figure {
     return figureAxisKind(this, axisId);
   }
 
+  _axisDim(axisId) {
+    return String(axisId).startsWith("x") ? "x" : "y";
+  }
+
+  /** Payload axis descriptor via ABI 304 attach plan (Python `_axis_spec` core fields). */
+  _axisSpec(axisId, range_) {
+    const axis = this._axisDim(axisId);
+    const opts = figureAutorangeAxisOptions(this, axisId);
+    const attach = payloadAxisSpecAttachPlan({
+      coordsCartesian: this.coords === "cartesian",
+      axisIsX: axis === "x",
+    });
+    const spec = {};
+    if (attach.attachId) spec.id = axisId;
+    if (attach.attachKind) spec.kind = this._axisKind(axisId);
+    if (attach.attachLabel) {
+      let label = null;
+      if (axisId === "x") label = this.x_label ?? null;
+      else if (axisId === "y") label = this.y_label ?? null;
+      else label = opts.label ?? null;
+      spec.label = label;
+    }
+    if (attach.attachRange) spec.range = [...range_];
+    if (attach.attachSide) {
+      spec.side = opts.side ?? (axis === "x" ? "bottom" : "left");
+    }
+    if (attach.attachThetaUnit) {
+      const unit = opts.theta_unit || "radians";
+      spec.theta_unit = unit;
+      if (attach.attachThetaZero) {
+        spec.theta_zero = opts.theta_zero ?? "E";
+      }
+      if (attach.attachThetaDirection) {
+        spec.theta_direction = opts.theta_direction || "counterclockwise";
+      }
+      if (attach.attachSector) {
+        const turn = unit === "degrees" ? 360.0 : 2.0 * Math.PI;
+        const authoredSector = opts.sector;
+        spec.sector = authoredSector?.length ? [...authoredSector] : [0.0, turn];
+      }
+      if (attach.attachGridShape) {
+        spec.grid_shape = opts.grid_shape || "circular";
+      }
+    }
+    if (attach.attachHole) {
+      spec.hole = opts.hole ?? 0.0;
+      if (attach.attachROrigin && opts.r_origin != null) {
+        spec.r_origin = opts.r_origin;
+      }
+    }
+    return spec;
+  }
+
   _axisIsLog(axisId) {
     return figureAxisIsLog(this, axisId);
   }
@@ -2893,28 +2947,9 @@ export class Figure {
   }
 
   _polarAxisSpecs(xr, yr) {
-    const unit = figureAutorangeThetaUnit(this.axis_options?.x) || "radians";
-    const turn = unit === "degrees" ? 360.0 : 2.0 * Math.PI;
-    const authoredSector = (this.axis_options?.x ?? {}).sector;
-    const sector = authoredSector?.length ? [...authoredSector] : [0.0, turn];
-    const yOpts = this.axis_options?.y ?? {};
-    const y = {
-      range: yr,
-      scale: "linear",
-      hole: yOpts.hole || 0.0,
-    };
-    if (yOpts.r_origin != null) y.r_origin = yOpts.r_origin;
     return {
-      x: {
-        range: xr,
-        scale: "linear",
-        theta_unit: unit,
-        theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",
-        theta_direction: (this.axis_options?.x ?? {}).theta_direction || "counterclockwise",
-        sector,
-        grid_shape: (this.axis_options?.x ?? {}).grid_shape || "circular",
-      },
-      y,
+      x: this._axisSpec("x", xr),
+      y: this._axisSpec("y", yr),
     };
   }
 
@@ -3046,26 +3081,10 @@ export class Figure {
         throw new Error(`unsupported trace kind ${t.kind} in Node figure MVP`);
       }
     }
-    const axisSpecs =
-      this.coords === "polar" ? this._polarAxisSpecs(xr, yr) : {
-        // Node cartesian payload axes stay linear. Python `_axis_spec` ships
-        // `_axis_scale` when it is not linear. Matching Python would set
-        // scale to log. Recorded emit-payload-axis-scale stay-host.
-        // Node cartesian payload axes omit id. Python `_axis_spec` ships
-        // `id`. Matching Python would add x_axis.id. Recorded
-        // emit-payload-axis-id stay-host.
-        // Node cartesian payload axes omit kind. Python `_axis_spec` ships
-        // `_axis_kind`. Matching Python would add x_axis.kind. Recorded
-        // emit-payload-axis-kind stay-host.
-        // Node cartesian payload axes omit side. Python `_axis_spec` ships
-        // `side`. Matching Python would add x_axis.side. Recorded
-        // emit-payload-axis-side stay-host.
-        // Node cartesian payload axes omit label. Python `_axis_spec` ships
-        // `label`. Matching Python would add x_axis.label. Recorded
-        // emit-payload-axis-label stay-host.
-        x: { range: xr, scale: "linear" },
-        y: { range: yr, scale: "linear" },
-      };
+    const axisSpecs = {
+      x: { ...this._axisSpec("x", xr), scale: "linear" },
+      y: { ...this._axisSpec("y", yr), scale: "linear" },
+    };
     const dom = domSpec(this);
     const wasmSources = specTraces
       .map((entry) => entry.density?.wasm_source)
