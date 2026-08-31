@@ -1624,22 +1624,22 @@ def scene_heatmap_colormap_admit(
     return code == 1
 
 
-def scene_xyta_colormap_pack(
+def _scene_colormap_pack(
+    entrypoint: Any,
+    label: str,
     mode: int,
     named: bytes,
     stop_rgb: bytes,
+    named_bit: int,
+    stops_bit: int,
 ) -> tuple[int, bytes, bytes]:
-    """Scene XYTA colormap pack via ``xyg_scene_xyta_colormap_pack`` (ABI 258).
-
-    ``mode``: ``0`` absent, ``1`` named UTF-8, ``2`` flat u8 RGB triples.
-    """
     flags = ctypes.c_uint32(0)
     cmap_in = np.frombuffer(named, dtype=np.uint8) if named else np.empty(0, dtype=np.uint8)
     stops_in = np.frombuffer(stop_rgb, dtype=np.uint8) if stop_rgb else np.empty(0, dtype=np.uint8)
     cmap_out = np.empty(cmap_in.size, dtype=np.uint8)
     stops_out = np.empty(stops_in.size, dtype=np.uint8)
     ok = int(
-        _lib.xyg_scene_xyta_colormap_pack(
+        entrypoint(
             int(mode),
             _ptr_u8(cmap_in) if cmap_in.size else 0,
             int(cmap_in.size),
@@ -1653,17 +1653,57 @@ def scene_xyta_colormap_pack(
         )
     )
     if ok == 0:
-        raise ValueError("invalid scene-xyta-colormap-pack request")
+        raise ValueError(f"invalid {label} request")
     if ok < 0:
-        raise MemoryError("scene-xyta-colormap-pack output buffer too small")
+        raise MemoryError(f"{label} output buffer too small")
     flag_bits = int(flags.value)
-    if flag_bits & (1 << 6):
+    if flag_bits & named_bit:
         return flag_bits, bytes(cmap_out), b""
-    if flag_bits & (1 << 7):
+    if flag_bits & stops_bit:
         if stops_in.size >= 3 and stops_in.size % 3 == 0:
             return flag_bits, b"", bytes(stops_out)
         return flag_bits, b"", b""
     return flag_bits, b"", b""
+
+
+def scene_xyta_colormap_pack(
+    mode: int,
+    named: bytes,
+    stop_rgb: bytes,
+) -> tuple[int, bytes, bytes]:
+    """Scene XYTA colormap pack via ``xyg_scene_xyta_colormap_pack`` (ABI 258).
+
+    ``mode``: ``0`` absent, ``1`` named UTF-8, ``2`` flat u8 RGB triples.
+    """
+    return _scene_colormap_pack(
+        _lib.xyg_scene_xyta_colormap_pack,
+        "scene-xyta-colormap-pack",
+        mode,
+        named,
+        stop_rgb,
+        1 << 6,
+        1 << 7,
+    )
+
+
+def scene_xyhf_colormap_pack(
+    mode: int,
+    named: bytes,
+    stop_rgb: bytes,
+) -> tuple[int, bytes, bytes]:
+    """Scene XYHF colormap pack via ``xyg_scene_xyhf_colormap_pack`` (ABI 259).
+
+    ``mode``: ``0`` absent, ``1`` named UTF-8, ``2`` flat u8 RGB triples.
+    """
+    return _scene_colormap_pack(
+        _lib.xyg_scene_xyhf_colormap_pack,
+        "scene-xyhf-colormap-pack",
+        mode,
+        named,
+        stop_rgb,
+        1 << 5,
+        1 << 6,
+    )
 
 
 def scene_heatmap_extent_admit(x0: float, x1: float, y0: float, y1: float) -> bool:

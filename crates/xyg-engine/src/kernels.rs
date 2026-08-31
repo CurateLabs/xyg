@@ -1778,6 +1778,29 @@ pub fn scene_heatmap_colormap_admit(
 
 const XYTA_HAS_NAMED_CMAP: u32 = 1 << 6;
 const XYTA_HAS_STOPS: u32 = 1 << 7;
+const XYHF_HAS_NAMED_CMAP: u32 = 1 << 5;
+const XYHF_HAS_STOPS: u32 = 1 << 6;
+
+fn scene_colormap_pack(
+    mode: i32,
+    named_utf8: &[u8],
+    stop_rgb: &[u8],
+    named_flag: u32,
+    stops_flag: u32,
+) -> (u32, Vec<u8>, Vec<u8>) {
+    match mode {
+        1 if !named_utf8.is_empty() => (named_flag, named_utf8.to_vec(), Vec::new()),
+        2 => {
+            let stops = if stop_rgb.len() >= 3 && stop_rgb.len().is_multiple_of(3) {
+                stop_rgb.to_vec()
+            } else {
+                Vec::new()
+            };
+            (stops_flag, Vec::new(), stops)
+        }
+        _ => (0, Vec::new(), Vec::new()),
+    }
+}
 
 /// Pack Scene XYTA colormap facts (ABI 258).
 ///
@@ -1791,18 +1814,32 @@ pub fn scene_xyta_colormap_pack(
     named_utf8: &[u8],
     stop_rgb: &[u8],
 ) -> (u32, Vec<u8>, Vec<u8>) {
-    match mode {
-        1 if !named_utf8.is_empty() => (XYTA_HAS_NAMED_CMAP, named_utf8.to_vec(), Vec::new()),
-        2 => {
-            let stops = if stop_rgb.len() >= 3 && stop_rgb.len().is_multiple_of(3) {
-                stop_rgb.to_vec()
-            } else {
-                Vec::new()
-            };
-            (XYTA_HAS_STOPS, Vec::new(), stops)
-        }
-        _ => (0, Vec::new(), Vec::new()),
-    }
+    scene_colormap_pack(
+        mode,
+        named_utf8,
+        stop_rgb,
+        XYTA_HAS_NAMED_CMAP,
+        XYTA_HAS_STOPS,
+    )
+}
+
+/// Pack Scene XYHF colormap facts (ABI 259).
+///
+/// Same mode contract as [`scene_xyta_colormap_pack`], but emits XYHF attach
+/// flag bits (`1 << 5` / `1 << 6`). Node `xyHfColormap` and future Python
+/// XYHF packers use this kernel so hosts cannot drift.
+pub fn scene_xyhf_colormap_pack(
+    mode: i32,
+    named_utf8: &[u8],
+    stop_rgb: &[u8],
+) -> (u32, Vec<u8>, Vec<u8>) {
+    scene_colormap_pack(
+        mode,
+        named_utf8,
+        stop_rgb,
+        XYHF_HAS_NAMED_CMAP,
+        XYHF_HAS_STOPS,
+    )
 }
 
 /// Admit Scene heatmap lattice shape (ABI 240).
@@ -10276,6 +10313,22 @@ mod fuzz {
         let (flags, cmap, stops) = scene_xyta_colormap_pack(0, b"ignored", &[1, 2, 3]);
         assert_eq!(flags, 0);
         assert!(cmap.is_empty());
+        assert!(stops.is_empty());
+    }
+
+    #[test]
+    fn scene_xyhf_colormap_pack_matches_host_table() {
+        let (flags, cmap, stops) = scene_xyhf_colormap_pack(1, b"viridis", &[]);
+        assert_eq!(flags, XYHF_HAS_NAMED_CMAP);
+        assert_eq!(cmap, b"viridis");
+        assert!(stops.is_empty());
+
+        let (flags, _cmap, stops) = scene_xyhf_colormap_pack(2, &[], &[255, 0, 0, 0, 255, 0]);
+        assert_eq!(flags, XYHF_HAS_STOPS);
+        assert_eq!(stops, vec![255, 0, 0, 0, 255, 0]);
+
+        let (flags, _cmap, stops) = scene_xyhf_colormap_pack(2, &[], &[255, 0]);
+        assert_eq!(flags, XYHF_HAS_STOPS);
         assert!(stops.is_empty());
     }
 

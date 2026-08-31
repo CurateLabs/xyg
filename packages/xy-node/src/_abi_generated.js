@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 258;
-export const SIGNATURE_SHA256 = "0421548649fc11572746280437a3ff3289c5b2c024ff3efb0997994c763fd3e0";
+export const ABI_VERSION = 259;
+export const SIGNATURE_SHA256 = "116002a6846fd10943e968d8d4d01429263fa3be95c60bab8a0ddad4ef88f294";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -268,6 +268,7 @@ export let xySceneTickAnchor;
 export let xySceneTickLabelLayout;
 export let xySceneTickLabelStrategy;
 export let xySceneVersion;
+export let xySceneXyhfColormapPack;
 export let xySceneXytaColormapPack;
 export let xySectorTriangles;
 export let xySpectrogram;
@@ -621,6 +622,7 @@ export function bindGeneratedAbi(lib) {
   xySceneTickLabelLayout = lib.func("size_t xyg_scene_tick_label_layout(const double * positions, size_t n, const uint32_t * label_lens, const uint8_t * labels, size_t labels_len, uint32_t kind, uint32_t side, uint32_t anchor, uint32_t flags, double font_size, double min_gap, double explicit_angle, uint32_t * out_index, double * out_angle, uint32_t * out_row, size_t out_cap)");
   xySceneTickLabelStrategy = lib.func("int32_t xyg_scene_tick_label_strategy(const uint8_t * text, size_t text_len)");
   xySceneVersion = lib.func("uint32_t xyg_scene_version()");
+  xySceneXyhfColormapPack = lib.func("int32_t xyg_scene_xyhf_colormap_pack(int32_t mode, const uint8_t * named, size_t named_len, const uint8_t * stop_rgb, size_t stop_len, uint32_t * out_flags, uint8_t * out_cmap, size_t cmap_cap, uint8_t * out_stops, size_t stops_cap)");
   xySceneXytaColormapPack = lib.func("int32_t xyg_scene_xyta_colormap_pack(int32_t mode, const uint8_t * named, size_t named_len, const uint8_t * stop_rgb, size_t stop_len, uint32_t * out_flags, uint8_t * out_cmap, size_t cmap_cap, uint8_t * out_stops, size_t stops_cap)");
   xySectorTriangles = lib.func("size_t xyg_sector_triangles(const double * values, size_t len, const double * explode, double center_x, double center_y, double radius, double inner_radius, double start_degrees, int32_t counterclockwise, int32_t normalize, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, double * out_sector, size_t capacity)");
   xySpectrogram = lib.func("int32_t xyg_spectrogram(const double * data, size_t len, size_t nfft, size_t noverlap, double sample_rate, double * out_frequency, double * out_time, double * out_power)");

@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 258
-SIGNATURE_SHA256 = "0421548649fc11572746280437a3ff3289c5b2c024ff3efb0997994c763fd3e0"
+ABI_VERSION = 259
+SIGNATURE_SHA256 = "116002a6846fd10943e968d8d4d01429263fa3be95c60bab8a0ddad4ef88f294"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -1062,6 +1062,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_version
     function.restype = ctypes.c_uint32
     function.argtypes = []
+    # int32_t xyg_scene_xyhf_colormap_pack(int32_t mode, const uint8_t * named, size_t named_len, const uint8_t * stop_rgb, size_t stop_len, uint32_t * out_flags, uint8_t * out_cmap, size_t cmap_cap, uint8_t * out_stops, size_t stops_cap)
+    function = lib.xyg_scene_xyhf_colormap_pack
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_scene_xyta_colormap_pack(int32_t mode, const uint8_t * named, size_t named_len, const uint8_t * stop_rgb, size_t stop_len, uint32_t * out_flags, uint8_t * out_cmap, size_t cmap_cap, uint8_t * out_stops, size_t stops_cap)
     function = lib.xyg_scene_xyta_colormap_pack
     function.restype = ctypes.c_int32

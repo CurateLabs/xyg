@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyEncodeF32, xyEncodedColumnMeta, xyF32SafeScale, xyGeometryOffset, xyScalePinsOffset, xySceneDashAdmit, xySceneLinecapAdmit, xyDensityOverlayOpacity, xySceneMarkerPathAdmit, xySceneAnnotationStyleAdmit, xySceneArraysEqual, xySceneConstantColorAdmit, xySceneChannelConstantCss, xySceneHiddenOrPerItemAdmit, xySceneRibbonColor2Classify, xySceneScatterPaintChannelAdmit, xySceneTickLabelStrategy, xySceneTickAnchor, xySceneFillGradientAdmit, xySceneFiniteAll, xySceneParseLinearGradient, xySceneRectExtraFlags, xySceneGradientDir, xySceneLinearGradientPrefix, xySceneGradientSpace, xySceneGradientSolidCss, xySceneHeatmapColormapAdmit, xySceneHeatmapExtentAdmit, xySceneHeatmapShapeAdmit, xySceneHexbinColormapPlaneAdmit, xySceneHexbinPitchAdmit, xySceneHexbinReduceAdmit, xySceneHexbinRgbaPlaneAdmit, xySceneMeshPaintPlaneAdmit, xySceneItemApplyOpacity, xySceneItemWidthsAdmit, xySceneItemFillT, xySceneCurveClassify, xySceneMarkerGlyphAdmit, xySceneKindAdmit, xySceneKindClass, xyArrowGeometry, xyArrowStylePack, xyArrowShaftPoints, xyArrowEndDecoration, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyHexbinRing, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyStepArrays, xyMarkerPathScale, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapLut, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityRgbaLinear, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyPayloadVisibleIndices, xyValidIndicesF64, xyPayloadEvenIndices, xyPayloadErrorbarIndices, xyPayloadSegmentBudget, xyPayloadSampleTargetIndices, xyPaintEffectiveRgba, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
+import { pointer, xyEncodeF32, xyEncodedColumnMeta, xyF32SafeScale, xyGeometryOffset, xyScalePinsOffset, xySceneDashAdmit, xySceneLinecapAdmit, xyDensityOverlayOpacity, xySceneMarkerPathAdmit, xySceneAnnotationStyleAdmit, xySceneArraysEqual, xySceneConstantColorAdmit, xySceneChannelConstantCss, xySceneHiddenOrPerItemAdmit, xySceneRibbonColor2Classify, xySceneScatterPaintChannelAdmit, xySceneTickLabelStrategy, xySceneTickAnchor, xySceneFillGradientAdmit, xySceneFiniteAll, xySceneParseLinearGradient, xySceneRectExtraFlags, xySceneGradientDir, xySceneLinearGradientPrefix, xySceneGradientSpace, xySceneGradientSolidCss, xySceneHeatmapColormapAdmit, xySceneHeatmapExtentAdmit, xySceneHeatmapShapeAdmit, xySceneHexbinColormapPlaneAdmit, xySceneHexbinPitchAdmit, xySceneHexbinReduceAdmit, xySceneHexbinRgbaPlaneAdmit, xySceneMeshPaintPlaneAdmit, xySceneItemApplyOpacity, xySceneItemWidthsAdmit, xySceneItemFillT, xySceneCurveClassify, xySceneMarkerGlyphAdmit, xySceneKindAdmit, xySceneKindClass, xySceneXytaColormapPack, xySceneXyhfColormapPack, xyArrowGeometry, xyArrowStylePack, xyArrowShaftPoints, xyArrowEndDecoration, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyIsSorted, xyArgsortStable, xyMinMax, xyM4Points, xyM4Indices, xyHistogramUniform, xyHistogramBins, xyNormalizeF32, xyHexbin, xyHexbinIngress, xyHexbinGroups, xyHexbinRing, xyViolinDensity, xyViolinRects, xyHistogramEdges, xyHistogramMarkEdges, xyContourLevels, xyLegendNormalize, xyLegendBestLoc, xyRibbonEdge, xyRibbonPolygon, xyMonotoneTangents, xyCurveFlatten, xyStepArrays, xyMarkerPathScale, xyRoundedRectPoly, xyBoxGeometry, xyBoxStats, xyQuantiles, xyWindRoseBins, xyContourfDensify, xyContourfBands, xyBarStack, xyBinnedEcdf, xyWeightedEcdf, xyHeatmapRgba, xyColormapRgba, xyColormapRgbaCanonical, xyColormapLut, xyColormapStops, xyBin2d, xyBin2dMeanColor, xyDensityBinWindow, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityRgbaLinear, xyDensityPyramidPreflight, xyDensityWasmEligible, xyMarchingSquares, xyLodPlan, xyPayloadTier, xyPayloadM4Indices, xyPayloadVisibleNeeded, xyPayloadVisibleMask, xyPayloadVisibleIndices, xyValidIndicesF64, xyPayloadEvenIndices, xyPayloadErrorbarIndices, xyPayloadSegmentBudget, xyPayloadSampleTargetIndices, xyPaintEffectiveRgba, xyDrillDecision, xyStreamNew, xyStreamAppend, xyStreamSeal, xyStreamFree, xyStreamLen, xyStreamCapacity, xyStreamCopy } from "./native.js";
 
 export const PROTOCOL_VERSION = 12;
 export const DECIMATION_THRESHOLD = 10_000;
@@ -462,6 +462,98 @@ export function sceneHeatmapColormapAdmit(truecolor, hasColormap, hasRgbaGrid, h
   );
   if (code === -2) throw new RangeError("invalid scene-heatmap-colormap-admit request");
   return code === 1;
+}
+
+/** RGB stop rows as flat u8 triples; invalid rows return null (host swallow). */
+export function colormapStopBytes(colormap) {
+  try {
+    const rows = [];
+    for (const row of colormap) {
+      if (row == null || typeof row === "number" || typeof row === "string") return null;
+      const parts = [...row];
+      if (parts.length !== 3) return null;
+      const rgb = [];
+      for (const value of parts) {
+        const n = Number(value);
+        if (!Number.isFinite(n)) return null;
+        rgb.push(n | 0);
+      }
+      rows.push(rgb);
+    }
+    if (rows.length < 1) return null;
+    const out = new Uint8Array(rows.length * 3);
+    for (let i = 0; i < rows.length; i += 1) {
+      out[i * 3] = rows[i][0];
+      out[i * 3 + 1] = rows[i][1];
+      out[i * 3 + 2] = rows[i][2];
+    }
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+function sceneColormapInputs(style) {
+  const colormap = style?.colormap;
+  if (typeof colormap === "string") {
+    return {
+      mode: 1,
+      named: new TextEncoder().encode(colormap),
+      stops: new Uint8Array(),
+    };
+  }
+  if (colormap != null) {
+    return {
+      mode: 2,
+      named: new Uint8Array(),
+      stops: colormapStopBytes(colormap) ?? new Uint8Array(),
+    };
+  }
+  return { mode: 0, named: new Uint8Array(), stops: new Uint8Array() };
+}
+
+function sceneColormapPack(entrypoint, mode, named, stops, namedBit, stopsBit) {
+  const flagsOut = new Uint32Array(1);
+  const cmapOut = new Uint8Array(named.length);
+  const stopsOut = new Uint8Array(stops.length);
+  const ok = Number(
+    entrypoint(
+      Number(mode),
+      named.length ? u8Ptr(named) : 0,
+      BigInt(named.length),
+      stops.length ? u8Ptr(stops) : 0,
+      BigInt(stops.length),
+      u32Ptr(flagsOut),
+      cmapOut.length ? u8Ptr(cmapOut) : 0,
+      BigInt(cmapOut.length),
+      stopsOut.length ? u8Ptr(stopsOut) : 0,
+      BigInt(stopsOut.length),
+    ),
+  );
+  if (ok === 0) throw new RangeError("invalid scene-colormap-pack request");
+  if (ok < 0) throw new RangeError("scene-colormap-pack output buffer too small");
+  const flags = Number(flagsOut[0]);
+  if (flags & namedBit) return { flags, cmap: named, stops: new Uint8Array() };
+  if (flags & stopsBit) {
+    if (stops.length >= 3 && stops.length % 3 === 0) {
+      return { flags, cmap: new Uint8Array(), stops: stopsOut.subarray(0, stops.length) };
+    }
+    return { flags, cmap: new Uint8Array(), stops: new Uint8Array() };
+  }
+  return { flags: 0, cmap: new Uint8Array(), stops: new Uint8Array() };
+}
+
+/** Scene XYTA colormap pack (ABI 258). Field picking stays host. */
+export function sceneXytaColormapPack(style) {
+  const { mode, named, stops } = sceneColormapInputs(style ?? {});
+  return sceneColormapPack(xySceneXytaColormapPack, mode, named, stops, 1 << 6, 1 << 7);
+}
+
+/** Scene XYHF colormap pack (ABI 259). Field picking stays host. */
+export function sceneXyhfColormapPack(style) {
+  const { mode, named, stops } = sceneColormapInputs(style ?? {});
+  if (mode === 0) return null;
+  return sceneColormapPack(xySceneXyhfColormapPack, mode, named, stops, 1 << 5, 1 << 6);
 }
 
 /** Scene heatmap cell-extent admit (ABI 238). Length==2 stays host. */

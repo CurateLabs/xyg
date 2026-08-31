@@ -332,6 +332,19 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
     ]
+    lib.xyg_scene_xyhf_colormap_pack.restype = ctypes.c_int32
+    lib.xyg_scene_xyhf_colormap_pack.argtypes = [
+        ctypes.c_int32,
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.POINTER(ctypes.c_uint32),
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_scene_heatmap_shape_admit.restype = ctypes.c_int32
     lib.xyg_scene_heatmap_shape_admit.argtypes = [ctypes.c_double, ctypes.c_double]
     lib.xyg_scene_scatter_paint_channel_admit.restype = ctypes.c_int32
@@ -3327,6 +3340,26 @@ def main() -> None:
         and xyta_flags.value == (1 << 7)
         and bytes(stops_out) == bytes(stop_rgb),
         "scene_xyta_colormap_pack stops",
+    )
+    xyhf_flags = ctypes.c_uint32(0)
+    xyhf_stops_out = array("B", [0] * len(stop_rgb))
+    ok(
+        lib.xyg_scene_xyhf_colormap_pack(
+            2,
+            null_u8,
+            0,
+            _ptr(stop_rgb, ctypes.c_uint8),
+            len(stop_rgb),
+            ctypes.byref(xyhf_flags),
+            null_u8,
+            0,
+            _ptr(xyhf_stops_out, ctypes.c_uint8),
+            len(xyhf_stops_out),
+        )
+        == 1
+        and xyhf_flags.value == (1 << 6)
+        and bytes(xyhf_stops_out) == bytes(stop_rgb),
+        "scene_xyhf_colormap_pack stops",
     )
     scale = ctypes.c_double()
     ok(
