@@ -87,6 +87,7 @@ CASE_NAMES = (
     "density_sample_style_channels",
     "density_sample_log_x_ship",
     "density_sample_transition_fallback",
+    "density_sample_nan_oov_filter",
 )
 
 
@@ -191,6 +192,13 @@ def _build_case(name: str) -> Figure:
         fig.scatter([0.0, 1.0], [0.0, 1.0], density=True)
         fig.traces[0].id = 35
         fig.traces[0].transition_keys = [[1, 2], [3, 4]]
+        return fig
+    if name == "density_sample_nan_oov_filter":
+        fig = Figure(width=240, height=160)
+        fig._set_axis_domain("x", [0.0, 1.5])
+        fig._set_axis_domain("y", [0.0, 2.5])
+        fig.scatter([0.0, 1.0, float("nan"), 5.0], [1.0, 2.0, 3.0, 4.0], density=True)
+        fig.traces[0].id = 36
         return fig
     raise KeyError(name)
 

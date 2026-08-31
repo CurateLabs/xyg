@@ -310,6 +310,32 @@
       "sample_x_offset": 0.5,
       "sample_y_offset": 0.5,
       "animation_fallback": "snap:aggregate"
+    },
+    {
+      "name": "density_sample_nan_oov_filter",
+      "trace_id": 36,
+      "tier": "density",
+      "density_colormap": "viridis",
+      "density_dropped_channels": [],
+      "density_channels_dropped": false,
+      "density_color_agg": null,
+      "density_has_rgba": false,
+      "has_sample": true,
+      "sample_n": 2,
+      "sample_visible": 2,
+      "sample_color": {
+        "mode": "constant",
+        "color": "#3987e5"
+      },
+      "sample_size": {
+        "mode": "constant",
+        "size": 4
+      },
+      "sample_stroke": null,
+      "sample_channels": null,
+      "sample_x_offset": 0.5,
+      "sample_y_offset": 1.5,
+      "animation_fallback": null
     }
   ]
 }

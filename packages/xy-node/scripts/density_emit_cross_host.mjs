@@ -152,6 +152,12 @@ const cases = [
       [3, 4],
     ];
   }),
+  caseEntry("density_sample_nan_oov_filter", (fig) => {
+    fig.setAxisDomain("x", [0, 1.5]);
+    fig.setAxisDomain("y", [0, 2.5]);
+    fig.scatter([0, 1, NaN, 5], [1, 2, 3, 4], { forceDensity: true });
+    fig.traces[0].id = 36;
+  }),
 ];
 
 const out = {
