@@ -1632,6 +1632,15 @@ export class Figure {
     if (attach.attachDomain && opts.domain != null) {
       spec.domain = [...opts.domain];
     }
+    let bounds = opts.bounds ?? null;
+    if (bounds === "data") {
+      // Resolve once on the host so the client receives concrete limits even
+      // when an independent explicit domain sets view0.
+      bounds = this._range(axisId, { useDomain: false });
+    }
+    if (attach.attachBounds && bounds != null) {
+      spec.bounds = [...bounds].sort((a, b) => a - b);
+    }
     if (attach.attachFormat && opts.format != null) {
       spec.format = opts.format;
     }
