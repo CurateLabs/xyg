@@ -1,0 +1,70 @@
+{
+  "schema": "xyg.payload-cross-host/v1",
+  "authority": "python/xyg/_figure.py build_payload",
+  "protocol": 12,
+  "abi_version": 315,
+  "cases": [
+    {
+      "name": "scatter_direct",
+      "width": 240,
+      "height": 160,
+      "trace_id": 7,
+      "kind": "scatter",
+      "tier": "direct",
+      "n_marks": 3,
+      "payload_blob_len": 24,
+      "payload_blob_sha256": "202195d909001510911deac79229dbad7f356a85b3bad8e54976ce5bbc231c64",
+      "payload_blob_hex": "000080bf000000000000803f000000bf0000003f00000000",
+      "trace_keys": null
+    },
+    {
+      "name": "line_transition_keys",
+      "width": 240,
+      "height": 160,
+      "trace_id": 8,
+      "kind": "line",
+      "tier": "direct",
+      "n_marks": 3,
+      "payload_blob_len": 48,
+      "payload_blob_sha256": "6ec3a471c9f093d86ae7e6a6a290272efa32696f338307153f6bab0e050f6e67",
+      "payload_blob_hex": "000080bf000000000000803f000000bf0000003f00000000010000000300000005000000020000000400000006000000",
+      "trace_keys": {
+        "lo": 2,
+        "hi": 3
+      },
+      "keys_lo_hex": "010000000300000005000000",
+      "keys_hi_hex": "020000000400000006000000"
+    },
+    {
+      "name": "histogram_fixed_bins",
+      "width": 240,
+      "height": 160,
+      "trace_id": 10,
+      "kind": "histogram",
+      "tier": "direct",
+      "n_marks": 3,
+      "payload_blob_len": 48,
+      "payload_blob_sha256": "6f51f9648c7968b04541c923127cf97720e5e243662d35c73cb83c5348fbb8e9",
+      "payload_blob_hex": "000080bf000000000000803f000080bf000000000000803f000000000000000000000000000000bf0000003f0000003f",
+      "trace_keys": null
+    },
+    {
+      "name": "segments_pass_through",
+      "width": 240,
+      "height": 160,
+      "trace_id": 12,
+      "kind": "segments",
+      "tier": "direct",
+      "n_marks": 2,
+      "payload_blob_len": 32,
+      "payload_blob_sha256": "e170d78067c14bfc2fb6fa803463eed28b43619070f8172572d683772defec4e",
+      "payload_blob_hex": "000000bf0000003f000000bf0000003f000000bf0000003f0000003f000000bf",
+      "trace_keys": null
+    }
+  ],
+  "gaps": {
+    "heatmap_payload_blob": "Node ships x/y grid columns; Python ships heatmap rgba buffer only",
+    "hexbin_payload_blob": "Node omits continuous color channel wiring on payload path",
+    "bar_payload_blob": "Rect column layout differs (stay-host materialization)"
+  }
+}

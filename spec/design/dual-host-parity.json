@@ -161,21 +161,21 @@
       "python": "ready",
       "node": "ready",
       "rust": "ready",
-      "notes": "Node scatter density tier via xy_bin_2d + xy_density_log_u8 when n≥SCATTER_DENSITY_THRESHOLD (force_density / force_direct / polar); ABI 132 xyg_density_* owns first-paint path/binning/WASM/overlay policy; packages/xy-node test/coverage.test.mjs + encode f32 goldens"
+      "notes": "Node scatter density tier via xy_bin_2d + xy_density_log_u8 when n≥SCATTER_DENSITY_THRESHOLD (force_density / force_direct / polar); ABI 132 xyg_density_* owns first-paint path/binning/WASM/overlay policy; packages/xy-node test/coverage.test.mjs + encode f32 goldens; tests/fixtures/payload_cross_host.json + tests/test_payload_cross_host.py byte-identical direct-tier payload blobs"
     },
     {
       "kind": "line",
       "python": "ready",
       "node": "ready",
       "rust": "ready",
-      "notes": "packages/xy-node marks/line M4 via xy_m4_*; tests/test_node_mark_parity.py index-count goldens"
+      "notes": "packages/xy-node marks/line M4 via xy_m4_*; tests/test_node_mark_parity.py index-count goldens; tests/fixtures/payload_cross_host.json line_transition_keys packed blob"
     },
     {
       "kind": "histogram",
       "python": "ready",
       "node": "ready",
       "rust": "ready",
-      "notes": "Python and packages/xy-node omitted-bin composition histograms use bounded xy_histogram_edges(auto) plus xy_histogram_uniform; tests/test_histogram_auto_scene.py proves exact cross-host Scene bytes for unsorted/repeated/non-finite, constant, authored-range, fixed-bin, empty, density, and cumulative cases"
+      "notes": "Python and packages/xy-node omitted-bin composition histograms use bounded xy_histogram_edges(auto) plus xy_histogram_uniform; tests/test_histogram_auto_scene.py proves exact cross-host Scene bytes for unsorted/repeated/non-finite, constant, authored-range, fixed-bin, empty, density, and cumulative cases; tests/fixtures/payload_cross_host.json histogram_fixed_bins packed blob"
     },
     {
       "kind": "area",
