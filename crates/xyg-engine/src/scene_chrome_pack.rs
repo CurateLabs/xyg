@@ -234,10 +234,10 @@ fn pack_tick_collision(xa: &ChromeCollisionAxisInput<'_>, ya: &ChromeCollisionAx
 }
 
 fn tick_direction_code(raw: Option<&str>) -> u8 {
-    match raw {
-        Some("out") => 0,
-        Some("in") => 1,
-        Some("inout") => 2,
+    match raw.unwrap_or("out") {
+        "out" => 0,
+        "in" => 1,
+        "inout" => 2,
         _ => 255,
     }
 }
