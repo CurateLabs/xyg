@@ -11533,6 +11533,35 @@ def payload_errorbar_role_keys(
     return np.column_stack([out_lo, out_hi])
 
 
+def payload_errorbar_role_maps(
+    n_segments: int, n_points: int
+) -> tuple[npt.NDArray[np.uint32], npt.NDArray[np.uint32]] | None:
+    """Errorbar segment role/source maps via ``xyg_payload_errorbar_role_maps`` (ABI 261).
+
+    Returns ``(segment_sources, segment_roles)`` when ``n_segments % n_points == 0``
+    and ``seg_per >= 1``; otherwise ``None``.
+    """
+    n_seg = _bounded_nonnegative_int(n_segments, "n_segments", max_value=np.iinfo(np.uint32).max)
+    n_pts = _bounded_nonnegative_int(n_points, "n_points", max_value=np.iinfo(np.uint32).max)
+    if n_pts == 0:
+        raise ValueError("n_points must be a positive integer")
+    out_sources = np.empty(n_seg, dtype=np.uint32)
+    out_roles = np.empty(n_seg, dtype=np.uint32)
+    applicable = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_errorbar_role_maps(
+        n_seg,
+        n_pts,
+        out_sources.ctypes.data if n_seg else 0,
+        out_roles.ctypes.data if n_seg else 0,
+        ctypes.byref(applicable),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_errorbar_role_maps arguments")
+    if int(applicable.value) != 1:
+        return None
+    return out_sources, out_roles
+
+
 def payload_bar_compact_admit(
     widths: npt.NDArray[np.float64],
     value0: npt.NDArray[np.float64],

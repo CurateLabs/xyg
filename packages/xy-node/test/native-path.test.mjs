@@ -199,7 +199,11 @@ test("tryResolvePlatformPackageLibrary returns staged binary path", () => {
 });
 
 test("ABI mismatch fails before other symbols are usable", () => {
+<<<<<<< HEAD
   assert.equal(ABI_VERSION, 276);
+=======
+  assert.equal(ABI_VERSION, 261);
+>>>>>>> 778a3c88 (Add ABI 261 payload_errorbar_role_maps for segment role/source maps)
   assert.doesNotThrow(() => assertAbiVersion(62, 62));
   assert.throws(
     () => assertAbiVersion(59, 60),

@@ -160,7 +160,11 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
+<<<<<<< HEAD
 pub const ABI_VERSION: u32 = 276;
+=======
+pub const ABI_VERSION: u32 = 261;
+>>>>>>> 778a3c88 (Add ABI 261 payload_errorbar_role_maps for segment role/source maps)
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15240,7 +15244,57 @@ pub unsafe extern "C" fn xyg_payload_errorbar_role_keys(
     })
 }
 
+<<<<<<< HEAD
 /// Bar/column compact emit admit (ABI 274).
+=======
+/// Errorbar segment role/source maps (ABI 261).
+///
+/// When role maps apply, writes ``out_sources[i] = i % n_points`` and
+/// ``out_roles[i] = i / n_points``. Sets ``out_applicable`` to ``1`` when
+/// ``n_segments % n_points == 0`` and ``seg_per >= 1``; otherwise ``0``.
+/// Returns ``1`` on success, ``0`` when required outputs are null or buffers
+/// are too small for an applicable layout.
+///
+/// # Safety
+/// When ``n_segments > 0`` and maps apply, ``out_sources`` and ``out_roles``
+/// must hold ``n_segments`` writable u32s. ``out_applicable`` must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_errorbar_role_maps(
+    n_segments: usize,
+    n_points: usize,
+    out_sources: *mut u32,
+    out_roles: *mut u32,
+    out_applicable: *mut i32,
+) -> i32 {
+    ffi_guard(0, || {
+        if out_applicable.is_null() {
+            return 0;
+        }
+        if n_segments > 0 && (out_sources.is_null() || out_roles.is_null()) {
+            return 0;
+        }
+        let sources = if n_segments == 0 {
+            &mut []
+        } else {
+            std::slice::from_raw_parts_mut(out_sources, n_segments)
+        };
+        let roles = if n_segments == 0 {
+            &mut []
+        } else {
+            std::slice::from_raw_parts_mut(out_roles, n_segments)
+        };
+        lod_plan::payload_errorbar_role_maps(
+            n_segments,
+            n_points,
+            sources,
+            roles,
+            &mut *out_applicable,
+        )
+    })
+}
+
+/// Bar/column compact emit admit (ABI 258).
+>>>>>>> 778a3c88 (Add ABI 261 payload_errorbar_role_maps for segment role/source maps)
 ///
 /// ``out_compact`` is ``1`` when uniform finite positive width allows the
 /// nested ``bar`` spec; ``0`` means fall back to per-rect geometry.

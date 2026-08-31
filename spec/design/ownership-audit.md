@@ -297,6 +297,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | [#640](https://github.com/CurateLabs/xyg/pull/640) | 254 | `xyg_arrow_style_pack` | `_arrowgeom._pack_style` CSV keys |
 | [#641](https://github.com/CurateLabs/xyg/pull/641) | 255 | `xyg_encoded_column_meta` | `lod.encode_f32_values` `{offset, scale, kind?}` assembly |
 | [#642](https://github.com/CurateLabs/xyg/pull/642) | 256 | `xyg_scene_channel_constant_css` | `_scene_v3` constant-mode CSS admit |
+<<<<<<< HEAD
 | (this PR) | 257 | `xyg_arrow_shapes` | `_arrowgeom.arrow_shapes` shaft/taper/head/tail orchestration |
 | (this PR) | 258 | `xyg_scene_xyta_colormap_pack` | `_scene_v3._pack_xyta_colormap` flags/cmap/stops |
 | (this PR) | 259 | `xyg_scene_xyhf_colormap_pack` | Node `xyHfColormap` / shared colormap flag pack |
@@ -316,6 +317,13 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | (this PR) | 273 | `xyg_payload_errorbar_role_keys` | `_emit_segments` errorbar role-qualified keys |
 | (this PR) | 274 | `xyg_payload_bar_compact_admit` | `_emit_bar_compact` width/baseline admit |
 | (this PR) | 275 | `xyg_payload_transition_keys_admit` | `_transition_entry` animation fallback policy |
+=======
+| (this PR) | 257 | `xyg_payload_errorbar_role_keys` | `_emit_segments` errorbar role-qualified keys |
+| (this PR) | 258 | `xyg_payload_bar_compact_admit` | `_emit_bar_compact` width/baseline admit |
+| (this PR) | 259 | `xyg_payload_transition_keys_admit` | `_transition_entry` animation fallback policy |
+| (this PR) | 260 | `xyg_density_color_classify` | `_density_trace_spec` color-channel classify |
+| (this PR) | 261 | `xyg_payload_errorbar_role_maps` | `_emit_segments` errorbar role/source maps |
+>>>>>>> 778a3c88 (Add ABI 261 payload_errorbar_role_maps for segment role/source maps)
 
 Largest remaining Python core surfaces: `_payload` emit gather/ship and `_scene_v3` XYTC/XYTA pack loops — not the ABI-218–257 admit slices already kernelized.
 
@@ -332,7 +340,11 @@ Largest remaining Python core surfaces: `_payload` emit gather/ship and `_scene_
 
 **Still blocks “Python is only a host”** (compatibility modules stay until these twins move or stay-host is recorded with diffs):
 
+<<<<<<< HEAD
 1. `_payload` emit orchestration — extra-column gather and ship (index math is ABI 204/205; count budget is ABI 214; errorbar role expand is ABI 215; errorbar role keys is ABI 273; bar compact admit is ABI 274; transition-key admit is ABI 275)
+=======
+1. `_payload` emit orchestration — extra-column gather and ship (index math is ABI 204/205; count budget is ABI 214; errorbar role expand is ABI 215; errorbar role keys is ABI 257; errorbar role maps is ABI 261; bar compact admit is ABI 258; transition-key admit is ABI 259; density color classify is ABI 260)
+>>>>>>> 778a3c88 (Add ABI 261 payload_errorbar_role_maps for segment role/source maps)
 2. `_scene_v3.py` / Node `scene.js` pack and figure-to-record orchestration
 
 3. ChartView `51_annotations.ts` still copies arrow math until WASM; ABI 254 owns host `start_offset`/`label_clear` CSV pack
@@ -742,7 +754,11 @@ Forbidden:
 | `python/xyg/_native.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_ooc.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_paint.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 206 owns `effective_rgba`; `triangle_mesh_boundary` stays host joined-fill geometry | #58 |
+<<<<<<< HEAD
 | `python/xyg/_payload.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 122 owns compile-time payload LOD and the visible-row mask; ABI 204 owns line M4 emit indices; ABI 205 owns remaining emit visible/even/sample indices; ABI 214 owns the stem/errorbar count budget; ABI 215 owns errorbar role-block expand; ABI 273 owns errorbar role-qualified transition keys; ABI 274 owns bar/column compact width/baseline admit; ABI 275 owns transition-key shipping admit; ABI 220 owns density overlay opacity; emitters still gather extra columns and ship | #58 |
+=======
+| `python/xyg/_payload.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 122 owns compile-time payload LOD and the visible-row mask; ABI 204 owns line M4 emit indices; ABI 205 owns remaining emit visible/even/sample indices; ABI 214 owns the stem/errorbar count budget; ABI 215 owns errorbar role-block expand; ABI 257 owns errorbar role-qualified transition keys; ABI 261 owns errorbar segment role/source maps; ABI 258 owns bar/column compact width/baseline admit; ABI 259 owns transition-key shipping admit; ABI 260 owns density color-channel classify; ABI 220 owns density overlay opacity; emitters still gather extra columns and ship | #58 |
+>>>>>>> 778a3c88 (Add ABI 261 payload_errorbar_role_maps for segment role/source maps)
 | `python/xyg/_pdf.py` | Python host | `python-host` | `keep-host`; ABI 113 moves closed-subset SVG→PDF into Rust; this module only coerces UTF-8 and raises the historical diagnostic wording | #274 |
 | `python/xyg/_png.py` | Python host | `python-host` | `keep-host`; ABI 115 moves filter-0 PNG encode into Rust; this module only coerces host buffers and forwards `mode` / `compression` | #274 |
 | `python/xyg/_raster.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 121 tessellation via `kernels` directly (#310); ABI 206 owns remaining `_lut` / linear density / effective rgba (#313); ABI 210 owns hexbin ring offsets; ABI 211 owns step/stairs expand; ABI 212 owns authored marker-path scale; scatter RGBA8 uses ABI 251; mesh/hexbin fill RGBA8 uses ABI 251; rectangle style RGBA8 uses ABI 251; segment stroke RGBA8 uses ABI 251; mesh stroke RGBA8 uses ABI 251; ribbon fill RGBA8 uses ABI 251; ribbon match-fill edge RGBA8 uses ABI 251; `triangle_mesh_boundary` stays host geometry | #58 |

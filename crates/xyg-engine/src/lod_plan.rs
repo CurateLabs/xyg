@@ -477,6 +477,43 @@ pub fn payload_errorbar_role_keys(
     Some(Ok(n))
 }
 
+/// Errorbar segment role/source maps (ABI 261).
+///
+/// When ``n_segments % n_points == 0`` and ``seg_per >= 1``, writes
+/// ``out_sources[i] = i % n_points`` and ``out_roles[i] = i / n_points``
+/// (matching ``np.tile(np.arange(n_points), seg_per)`` /
+/// ``np.repeat(np.arange(seg_per), n_points)``). Sets ``out_applicable`` to
+/// ``1``; otherwise ``0`` without writing outputs.
+pub fn payload_errorbar_role_maps(
+    n_segments: usize,
+    n_points: usize,
+    out_sources: &mut [u32],
+    out_roles: &mut [u32],
+    out_applicable: &mut i32,
+) -> i32 {
+    if n_points == 0 || n_points > u32::MAX as usize {
+        return 0;
+    }
+    if n_segments % n_points != 0 {
+        *out_applicable = 0;
+        return 1;
+    }
+    let seg_per = n_segments / n_points;
+    if seg_per == 0 {
+        *out_applicable = 0;
+        return 1;
+    }
+    if out_sources.len() < n_segments || out_roles.len() < n_segments {
+        return 0;
+    }
+    for i in 0..n_segments {
+        out_sources[i] = (i % n_points) as u32;
+        out_roles[i] = (i / n_points) as u32;
+    }
+    *out_applicable = 1;
+    1
+}
+
 const PAYLOAD_BAR_WIDTH_RTOL: f64 = 1e-5;
 const PAYLOAD_BAR_WIDTH_ATOL: f64 = 1e-8;
 
@@ -880,6 +917,27 @@ mod tests {
         );
         assert!(payload_errorbar_indices(33, 0, 4).is_none());
         assert!(payload_errorbar_indices(33, 11, 0).is_none());
+    }
+
+    #[test]
+    fn payload_errorbar_role_maps_matches_host_tile_repeat() {
+        let mut sources = [0u32; 6];
+        let mut roles = [0u32; 6];
+        let mut applicable = -1;
+        assert_eq!(
+            payload_errorbar_role_maps(6, 3, &mut sources, &mut roles, &mut applicable),
+            1
+        );
+        assert_eq!(applicable, 1);
+        assert_eq!(sources, [0, 1, 2, 0, 1, 2]);
+        assert_eq!(roles, [0, 0, 0, 1, 1, 1]);
+        applicable = -1;
+        assert_eq!(
+            payload_errorbar_role_maps(10, 3, &mut sources, &mut roles, &mut applicable),
+            1
+        );
+        assert_eq!(applicable, 0);
+        assert_eq!(payload_errorbar_role_maps(6, 0, &mut sources, &mut roles, &mut applicable), 0);
     }
 
     #[test]

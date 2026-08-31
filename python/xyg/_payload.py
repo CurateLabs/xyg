@@ -825,8 +825,10 @@ class PayloadMixin(_Host):
             # across every group so caps stay attached to their bars.
             seg_per, remainder = divmod(len(x0v), t.count)
             if remainder == 0 and seg_per >= 1:
-                segment_sources = np.tile(np.arange(t.count, dtype=np.int64), seg_per)
-                segment_roles = np.repeat(np.arange(seg_per, dtype=np.uint32), t.count)
+                role_maps = kernels.payload_errorbar_role_maps(len(x0v), t.count)
+                if role_maps is not None:
+                    segment_sources, segment_roles = role_maps
+                    segment_sources = segment_sources.astype(np.int64, copy=False)
             keep_all, chosen = kernels.payload_errorbar_indices(len(x0v), t.count, max_groups)
             if not keep_all:
                 chosen64 = chosen.astype(np.int64, copy=False)
