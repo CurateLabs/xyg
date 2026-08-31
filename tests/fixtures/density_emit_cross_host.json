@@ -1,0 +1,26 @@
+{
+  "schema": "xyg.density-emit-cross-host/v1",
+  "authority": "packages/xy-node/src/figure.js buildPayload density wire metadata",
+  "protocol": 12,
+  "abi_version": 315,
+  "cases": [
+    {
+      "name": "scatter_density_colormap",
+      "trace_id": 21,
+      "tier": "density",
+      "density_colormap": "magma",
+      "density_dropped_channels": [],
+      "density_channels_dropped": false
+    },
+    {
+      "name": "scatter_density_dropped_channels",
+      "trace_id": 22,
+      "tier": "density",
+      "density_colormap": "viridis",
+      "density_dropped_channels": [
+        "size"
+      ],
+      "density_channels_dropped": true
+    }
+  ]
+}
