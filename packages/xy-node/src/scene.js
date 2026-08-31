@@ -3939,8 +3939,7 @@ export function packXyTaColormap(trace) {
 /** Density XYTA constant color_ch. Python `_pack_xyta` reads `getattr(trace, "color_ch", None)` only. */
 export function packXyTaDensityColorCh(trace) {
   const channel = trace.color_ch;
-  if (channel != null && channel.mode === "constant" && channel.constant != null) {// density Scene falls back to viridis. Recorded scene-density-color-ch stay-host.
-
+  if (channel != null && channel.mode === "constant" && channel.constant != null) {
     return { flags: XYTA_HAS_COLOR_CH, bytes: encodeUtf8(String(channel.constant)) };
   }
   return { flags: 0, bytes: new Uint8Array() };

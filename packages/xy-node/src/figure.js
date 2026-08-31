@@ -1503,6 +1503,9 @@ export class Figure {
       color_ch: opts.color_ch ?? t.color_ch,
       size_ch: opts.size_ch ?? t.size_ch,
       ...((opts.stroke_ch ?? t.stroke_ch) != null ? { stroke_ch: opts.stroke_ch ?? t.stroke_ch } : {}),
+      ...((opts.style_channels ?? t.style_channels) != null
+        ? { style_channels: opts.style_channels ?? t.style_channels }
+        : {}),
       style: { ...t.style },
       x_axis: t.x_axis,
       y_axis: t.y_axis,

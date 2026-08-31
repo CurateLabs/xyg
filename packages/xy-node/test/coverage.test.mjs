@@ -2108,14 +2108,20 @@ test("composeScatter resolves stroke for payload channel attach", () => {
   assert.equal(constantStroke.stroke_ch, undefined);
 });
 
-test("composeScatter omits symbol unlike Python style.symbol Scene", () => {
-  // Python marks.scatter sets style.symbol from symbol=, so Scene paints square.
-  // Node composeScatter ignores symbol, so Scene matches default circle marks.
-  // Recorded scene-scatter-symbol-ch stay-host.
+test("composeScatter resolves symbol like Python marks.scatter", () => {
+  const { traces } = composeScatter([0, 1], [1, 2], { symbol: "square" });
+  assert.equal(traces[0].style.symbol, "square");
+
   const a = figure({ width: 240, height: 160 });
   a.scatter([0, 1], [1, 2], { id: 1 });
   const b = figure({ width: 240, height: 160 });
   b.scatter([0, 1], [1, 2], { id: 1, symbol: "square" });
-  assert.deepEqual(Buffer.from(a.toScene()), Buffer.from(b.toScene()));
+  assert.notDeepEqual(Buffer.from(a.toScene()), Buffer.from(b.toScene()));
+});
+
+test("composeScatter sets match_fill stroke_ch when stroke_width lacks stroke", () => {
+  const { traces } = composeScatter([0, 1], [1, 2], { stroke_width: 2 });
+  assert.equal(traces[0].stroke_ch?.mode, "match_fill");
+  assert.equal(traces[0].style.stroke_width, 2);
 });
 
