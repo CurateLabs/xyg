@@ -180,6 +180,25 @@ def test_axis_spec_polar_tick_sides_cross_host_fixture() -> None:
     assert spec["x_axis"]["tick_sides"] == ["bottom"]
 
 
+def test_axis_spec_cartesian_tick_label_sides_cross_host_fixture() -> None:
+    """Node buildPayload axis tick_label_sides parity when attach_tick_label_sides is set."""
+    fig = Figure(width=240, height=160)
+    fig.scatter([0.0, 1.0], [0.0, 1.0])
+    fig.set_axis("x", tick_label_sides=["bottom"])
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["tick_label_sides"] == ["bottom"]
+    assert "tick_label_sides" not in spec["y_axis"]
+
+
+def test_axis_spec_polar_tick_label_sides_cross_host_fixture() -> None:
+    """Node buildPayload polar axis tick_label_sides parity when attach_tick_label_sides is set."""
+    fig = Figure(coords="polar", width=240, height=160)
+    fig.set_axis("x", tick_label_sides=["bottom"])
+    fig.scatter([0.0, 1.0], [1.0, 2.0])
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["tick_label_sides"] == ["bottom"]
+
+
 def test_axis_spec_omits_linear_scale() -> None:
     fig = Figure()
     fig.scatter([0.0, 1.0], [0.0, 1.0])
