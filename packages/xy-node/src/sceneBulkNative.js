@@ -1,13 +1,14 @@
 /** ctypes-compatible scene bulk packers (ABI 321-324). Mirrors python/xyg/_scene_bulk_native.py. */
 import koffi from "koffi";
 import { pointer } from "./native.js";
-import { u8Ptr, f64Ptr } from "./encode.js";
+import { u8Ptr, f64Ptr, u32Ptr } from "./encode.js";
 import {
   xySceneChromePack,
   xySceneFigureSupportMaterialize,
   xyScenePolarInputPack,
   xySceneXyafBulkPack,
   xySceneXytaTraceObservationsMaterialize,
+  xySceneXytcTraceObservationsMaterialize,
 } from "./native.js";
 
 const SCENE_XYCF_PACK_MAX = 1 << 20;
@@ -15,6 +16,7 @@ const SCENE_FIGURE_SUPPORT_PACK_MAX = 1 << 18;
 const SCENE_POLAR_INPUT_PACK_MAX = 92;
 const SCENE_XYAF_BULK_PACK_MAX = 1 << 22;
 const SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES = 1 << 22;
+const SCENE_XYTC_TRACE_OBSERVATIONS_MAX_BYTES = 1 << 20;
 
 const StringRef = koffi.struct("XygStringRef", {
   ptr: "const uint8_t *",
@@ -665,6 +667,167 @@ const SceneXytaTraceObservationsOut = koffi.struct("XygSceneXytaTraceObservation
   style_color_off: "size_t",
 });
 
+const SceneXytcTraceObservationsIn = koffi.struct("XygSceneXytcTraceObservationsIn", {
+  show_legend: "int32_t",
+  has_name: "int32_t",
+  marker_path_present: "int32_t",
+  use_density: "int32_t",
+  joined_fill: "int32_t",
+  symbol_is_int: "int32_t",
+  symbol_int: "uint16_t",
+  opacity: "double",
+  fill_opacity: "double",
+  stroke_opacity: "double",
+  line_opacity: "double",
+  has_stroke: "int32_t",
+  has_line_color: "int32_t",
+  has_color: "int32_t",
+  has_size: "int32_t",
+  size: "double",
+  has_size_ch: "int32_t",
+  has_size_ch_constant: "int32_t",
+  size_ch_constant: "double",
+  has_stroke_width: "int32_t",
+  stroke_width: "double",
+  has_width: "int32_t",
+  width: "double",
+  has_line_width: "int32_t",
+  line_width: "double",
+  has_hex_dx: "int32_t",
+  hex_dx: "double",
+  has_hex_dy: "int32_t",
+  hex_dy: "double",
+  has_stroke_perimeter: "int32_t",
+  stroke_perimeter_is_bool: "int32_t",
+  stroke_perimeter_true: "int32_t",
+  wedge_gap_raw: "double",
+  dash_is_array: "int32_t",
+  has_fill: "int32_t",
+  fill_is_string: "int32_t",
+  fill_has_full_spec: "int32_t",
+  fill_stop_count: "size_t",
+  marker_path_filled: "int32_t",
+  marker_contour_count: "size_t",
+  has_color2: "int32_t",
+  kind_is_ribbon: "int32_t",
+  has_end_pair: "int32_t",
+  corner_radius_seq: "int32_t",
+  corner_radius_r0: "double",
+  corner_radius_r1: "double",
+  color_ch_present: "int32_t",
+  color_ch_has_constant: "int32_t",
+  kind_len: "size_t",
+  name_len: "size_t",
+  symbol_len: "size_t",
+  stroke_len: "size_t",
+  line_color_len: "size_t",
+  color_css_len: "size_t",
+  dash_len: "size_t",
+  dash_values_len: "size_t",
+  fill_string_len: "size_t",
+  fill_space_len: "size_t",
+  fill_dir_len: "size_t",
+  fill_stop_t_len: "size_t",
+  fill_stop_css_len: "size_t",
+  fill_stop_css_lens_len: "size_t",
+  fill_dict_gradient_len: "size_t",
+  fill_dict_space_len: "size_t",
+  marker_values_len: "size_t",
+  marker_lens_len: "size_t",
+  marker_glyph_len: "size_t",
+  source_paint_len: "size_t",
+  color2_source_const_len: "size_t",
+  color2_target_const_len: "size_t",
+  color_mode_len: "size_t",
+  color_const_len: "size_t",
+  linecap_len: "size_t",
+  step_len: "size_t",
+  curve_len: "size_t",
+});
+
+const SceneXytcTraceObservationsOut = koffi.struct("XygSceneXytcTraceObservationsOut", {
+  show_legend: "int32_t",
+  has_name: "int32_t",
+  marker_path_present: "int32_t",
+  use_density: "int32_t",
+  joined_fill: "int32_t",
+  marker_packed: "int32_t",
+  glyph_packed: "int32_t",
+  color2_class: "int32_t",
+  color2_gradient_packed: "int32_t",
+  symbol_is_int: "int32_t",
+  symbol_int: "uint16_t",
+  opacity: "double",
+  fill_opacity: "double",
+  stroke_opacity: "double",
+  line_opacity: "double",
+  has_stroke: "int32_t",
+  has_line_color: "int32_t",
+  has_size: "int32_t",
+  size: "double",
+  has_size_ch: "int32_t",
+  has_size_ch_constant: "int32_t",
+  size_ch_constant: "double",
+  has_stroke_width: "int32_t",
+  stroke_width: "double",
+  has_width: "int32_t",
+  width: "double",
+  has_line_width: "int32_t",
+  line_width: "double",
+  has_hex_dx: "int32_t",
+  hex_dx: "double",
+  has_hex_dy: "int32_t",
+  hex_dy: "double",
+  has_stroke_perimeter: "int32_t",
+  stroke_perimeter_is_bool: "int32_t",
+  stroke_perimeter_true: "int32_t",
+  dash_is_array: "int32_t",
+  has_fill: "int32_t",
+  fill_kind: "int32_t",
+  color_ch_present: "int32_t",
+  color_ch_has_constant: "int32_t",
+  radius_seq: "int32_t",
+  r0: "double",
+  r1: "double",
+  wedge_gap_raw: "double",
+  kind_len: "size_t",
+  name_len: "size_t",
+  marker_blob_len: "size_t",
+  color2_gradient_len: "size_t",
+  symbol_len: "size_t",
+  dash_len: "size_t",
+  dash_pattern_len: "size_t",
+  linecap_len: "size_t",
+  step_len: "size_t",
+  curve_len: "size_t",
+  fill_css_len: "size_t",
+  fill_space_len: "size_t",
+  fill_gradient_len: "size_t",
+  stroke_len: "size_t",
+  line_color_len: "size_t",
+  color_css_len: "size_t",
+  color_mode_len: "size_t",
+  color_const_len: "size_t",
+  kind_off: "size_t",
+  name_off: "size_t",
+  marker_blob_off: "size_t",
+  color2_gradient_off: "size_t",
+  symbol_off: "size_t",
+  dash_off: "size_t",
+  dash_pattern_off: "size_t",
+  linecap_off: "size_t",
+  step_off: "size_t",
+  curve_off: "size_t",
+  fill_css_off: "size_t",
+  fill_space_off: "size_t",
+  fill_gradient_off: "size_t",
+  stroke_off: "size_t",
+  line_color_off: "size_t",
+  color_css_off: "size_t",
+  color_mode_off: "size_t",
+  color_const_off: "size_t",
+});
+
 function i64Ptr(arr) {
   if (arr == null || arr.length === 0) return 0;
   const view = arr instanceof BigInt64Array
@@ -926,6 +1089,316 @@ export function sceneXytaTraceObservationsMaterialize(obs) {
     stops: sliceBlob(blob, summary.stops_off, summary.stops_len),
     colorCh: sliceBlob(blob, summary.color_ch_off, summary.color_ch_len),
     styleColor: sliceBlob(blob, summary.style_color_off, summary.style_color_len),
+  };
+}
+
+function xytcFillStopSide(fill) {
+  const stops = fill?.stops;
+  if (!Array.isArray(stops)) return { stopT: [], stopCss: new Uint8Array(), stopCssLens: new Uint32Array() };
+  const stopT = [];
+  const cssParts = [];
+  const stopCssLens = [];
+  try {
+    for (const stop of stops) {
+      if (!Array.isArray(stop) || stop.length !== 2) {
+        return { stopT: [], stopCss: new Uint8Array(), stopCssLens: new Uint32Array() };
+      }
+      stopT.push(Number(stop[0]));
+      const css = new TextEncoder().encode(String(stop[1]));
+      cssParts.push(css);
+      stopCssLens.push(css.length);
+    }
+  } catch {
+    return { stopT: [], stopCss: new Uint8Array(), stopCssLens: new Uint32Array() };
+  }
+  const total = cssParts.reduce((sum, part) => sum + part.length, 0);
+  const stopCss = new Uint8Array(total);
+  let at = 0;
+  for (const part of cssParts) {
+    stopCss.set(part, at);
+    at += part.length;
+  }
+  return {
+    stopT,
+    stopCss,
+    stopCssLens: Uint32Array.from(stopCssLens),
+  };
+}
+
+function xytcMarkerPathSide(markerPath) {
+  if (markerPath == null || typeof markerPath !== "object") {
+    return { filled: 1, values: new Float64Array(), lens: new Uint32Array(), count: 0 };
+  }
+  const contours = markerPath.contours;
+  if (!Array.isArray(contours)) {
+    return { filled: 1, values: new Float64Array(), lens: new Uint32Array(), count: 0 };
+  }
+  const values = [];
+  const lens = [];
+  try {
+    for (const contour of contours) {
+      if (!Array.isArray(contour)) {
+        return { filled: 1, values: new Float64Array(), lens: new Uint32Array(), count: 0 };
+      }
+      const floats = contour.map((item) => Number(item));
+      values.push(...floats);
+      lens.push(floats.length);
+    }
+  } catch {
+    return { filled: 1, values: new Float64Array(), lens: new Uint32Array(), count: 0 };
+  }
+  return {
+    filled: markerPath.filled === false ? 0 : 1,
+    values: Float64Array.from(values),
+    lens: Uint32Array.from(lens),
+    count: lens.length,
+  };
+}
+
+/** Materialize XYTC trace observations via `xyg_scene_xytc_trace_observations_materialize` (ABI 325). */
+export function sceneXyTcTraceObservationsMaterialize(obs) {
+  const keep = [];
+  const enc = new TextEncoder();
+  const kind = enc.encode(String(obs.kind ?? ""));
+  const name = obs.name == null || String(obs.name).length === 0 ? new Uint8Array() : enc.encode(String(obs.name));
+  const symbol = obs.symbol_text == null ? new Uint8Array() : enc.encode(String(obs.symbol_text));
+  const stroke = obs.stroke == null ? new Uint8Array() : enc.encode(String(obs.stroke));
+  const lineColor = obs.line_color == null ? new Uint8Array() : enc.encode(String(obs.line_color));
+  const colorCss = obs.color == null ? new Uint8Array() : enc.encode(String(obs.color));
+  const dash = obs.dash_text == null ? new Uint8Array() : enc.encode(String(obs.dash_text));
+  const dashValues = obs.dash_values instanceof Float64Array
+    ? obs.dash_values
+    : Float64Array.from(obs.dash_values ?? []);
+  const fill = obs.fill;
+  let fillString = new Uint8Array();
+  let fillIsString = 0;
+  let fillHasFullSpec = 0;
+  let fillSpace = new Uint8Array();
+  let fillDir = new Uint8Array();
+  let fillStopT = new Float64Array();
+  let fillStopCss = new Uint8Array();
+  let fillStopCssLens = new Uint32Array();
+  let fillDictGradient = new Uint8Array();
+  let fillDictSpace = new Uint8Array();
+  const hasFill = obs.has_fill ? 1 : 0;
+  if (hasFill && typeof fill === "string") {
+    fillIsString = 1;
+    fillString = enc.encode(fill);
+  } else if (hasFill && fill != null && typeof fill === "object") {
+    if (fill.space != null && fill.dir != null && Array.isArray(fill.stops)) {
+      fillHasFullSpec = 1;
+      fillSpace = enc.encode(String(fill.space ?? ""));
+      fillDir = enc.encode(String(fill.dir ?? ""));
+      const packed = xytcFillStopSide(fill);
+      fillStopT = Float64Array.from(packed.stopT);
+      fillStopCss = packed.stopCss;
+      fillStopCssLens = packed.stopCssLens;
+    } else {
+      fillDictGradient = enc.encode(String(fill.gradient ?? ""));
+      fillDictSpace = enc.encode(String(fill.space ?? "mark"));
+    }
+  }
+  const marker = xytcMarkerPathSide(obs.marker_path);
+  const markerGlyph = obs.marker_glyph == null ? new Uint8Array() : enc.encode(String(obs.marker_glyph));
+  const sourcePaint = enc.encode(String(obs.source_paint ?? "#3987e5"));
+  const color2Source = obs.color2_source_const == null ? new Uint8Array() : enc.encode(String(obs.color2_source_const));
+  const color2Target = obs.color2_target_const == null ? new Uint8Array() : enc.encode(String(obs.color2_target_const));
+  const colorMode = obs.color_ch_mode == null ? new Uint8Array() : enc.encode(String(obs.color_ch_mode));
+  const colorConst = obs.color_ch_constant == null ? new Uint8Array() : enc.encode(String(obs.color_ch_constant));
+  const linecap = obs.linecap == null ? new Uint8Array() : enc.encode(String(obs.linecap));
+  const step = obs.step == null ? new Uint8Array() : enc.encode(String(obs.step));
+  const curve = obs.curve == null ? new Uint8Array() : enc.encode(String(obs.curve));
+  const inputBuf = Buffer.alloc(koffi.sizeof(SceneXytcTraceObservationsIn));
+  koffi.encode(inputBuf, SceneXytcTraceObservationsIn, {
+    show_legend: obs.show_legend ? 1 : 0,
+    has_name: obs.has_name ? 1 : 0,
+    marker_path_present: obs.marker_path_present ? 1 : 0,
+    use_density: obs.use_density ? 1 : 0,
+    joined_fill: obs.joined_fill ? 1 : 0,
+    symbol_is_int: Number(obs.symbol_is_int ?? 0),
+    symbol_int: Number(obs.symbol_int ?? 0) & 0xffff,
+    opacity: Number(obs.opacity ?? 1),
+    fill_opacity: Number(obs.fill_opacity ?? 1),
+    stroke_opacity: Number(obs.stroke_opacity ?? 1),
+    line_opacity: Number(obs.line_opacity ?? 1),
+    has_stroke: obs.has_stroke ? 1 : 0,
+    has_line_color: obs.has_line_color ? 1 : 0,
+    has_color: obs.has_color ? 1 : 0,
+    has_size: obs.has_size ? 1 : 0,
+    size: Number(obs.size ?? Number.NaN),
+    has_size_ch: obs.has_size_ch ? 1 : 0,
+    has_size_ch_constant: obs.has_size_ch_constant ? 1 : 0,
+    size_ch_constant: Number(obs.size_ch_constant ?? Number.NaN),
+    has_stroke_width: obs.has_stroke_width ? 1 : 0,
+    stroke_width: Number(obs.stroke_width ?? 0),
+    has_width: obs.has_width ? 1 : 0,
+    width: Number(obs.width ?? 0),
+    has_line_width: obs.has_line_width ? 1 : 0,
+    line_width: Number(obs.line_width ?? 0),
+    has_hex_dx: obs.has_hex_dx ? 1 : 0,
+    hex_dx: Number(obs.hex_dx ?? Number.NaN),
+    has_hex_dy: obs.has_hex_dy ? 1 : 0,
+    hex_dy: Number(obs.hex_dy ?? Number.NaN),
+    has_stroke_perimeter: obs.has_stroke_perimeter ? 1 : 0,
+    stroke_perimeter_is_bool: Number(obs.stroke_perimeter_is_bool ?? 0),
+    stroke_perimeter_true: Number(obs.stroke_perimeter_true ?? 0),
+    wedge_gap_raw: Number(obs.wedge_gap_raw ?? 0),
+    dash_is_array: obs.dash_is_array ? 1 : 0,
+    has_fill: hasFill,
+    fill_is_string: fillIsString,
+    fill_has_full_spec: fillHasFullSpec,
+    fill_stop_count: BigInt(fillStopT.length),
+    marker_path_filled: marker.filled,
+    marker_contour_count: BigInt(marker.count),
+    has_color2: obs.has_color2 ? 1 : 0,
+    kind_is_ribbon: obs.kind_is_ribbon ? 1 : 0,
+    has_end_pair: obs.has_end_pair ? 1 : 0,
+    corner_radius_seq: Number(obs.corner_radius_seq ?? 1),
+    corner_radius_r0: Number(obs.corner_radius_r0 ?? 0),
+    corner_radius_r1: Number(obs.corner_radius_r1 ?? 0),
+    color_ch_present: obs.color_ch_present ? 1 : 0,
+    color_ch_has_constant: obs.color_ch_has_constant ? 1 : 0,
+    kind_len: BigInt(kind.length),
+    name_len: BigInt(name.length),
+    symbol_len: BigInt(symbol.length),
+    stroke_len: BigInt(stroke.length),
+    line_color_len: BigInt(lineColor.length),
+    color_css_len: BigInt(colorCss.length),
+    dash_len: BigInt(dash.length),
+    dash_values_len: BigInt(dashValues.length),
+    fill_string_len: BigInt(fillString.length),
+    fill_space_len: BigInt(fillSpace.length),
+    fill_dir_len: BigInt(fillDir.length),
+    fill_stop_t_len: BigInt(fillStopT.length),
+    fill_stop_css_len: BigInt(fillStopCss.length),
+    fill_stop_css_lens_len: BigInt(fillStopCssLens.length),
+    fill_dict_gradient_len: BigInt(fillDictGradient.length),
+    fill_dict_space_len: BigInt(fillDictSpace.length),
+    marker_values_len: BigInt(marker.values.length),
+    marker_lens_len: BigInt(marker.lens.length),
+    marker_glyph_len: BigInt(markerGlyph.length),
+    source_paint_len: BigInt(sourcePaint.length),
+    color2_source_const_len: BigInt(color2Source.length),
+    color2_target_const_len: BigInt(color2Target.length),
+    color_mode_len: BigInt(colorMode.length),
+    color_const_len: BigInt(colorConst.length),
+    linecap_len: BigInt(linecap.length),
+    step_len: BigInt(step.length),
+    curve_len: BigInt(curve.length),
+  });
+  keep.push(kind, name, symbol, stroke, lineColor, colorCss, dash, fillString, fillSpace, fillDir, fillStopCss, fillDictGradient, fillDictSpace, markerGlyph, sourcePaint, color2Source, color2Target, colorMode, colorConst, linecap, step, curve);
+  const summaryBuf = Buffer.alloc(koffi.sizeof(SceneXytcTraceObservationsOut));
+  const out = new Uint8Array(SCENE_XYTC_TRACE_OBSERVATIONS_MAX_BYTES);
+  const outLen = new BigUint64Array(1);
+  const code = Number(xySceneXytcTraceObservationsMaterialize(
+    koffi.as(inputBuf, "const void *"),
+    kind.length ? u8Ptr(kind) : 0,
+    name.length ? u8Ptr(name) : 0,
+    symbol.length ? u8Ptr(symbol) : 0,
+    stroke.length ? u8Ptr(stroke) : 0,
+    lineColor.length ? u8Ptr(lineColor) : 0,
+    colorCss.length ? u8Ptr(colorCss) : 0,
+    dash.length ? u8Ptr(dash) : 0,
+    dashValues.length ? f64Ptr(dashValues) : 0,
+    fillString.length ? u8Ptr(fillString) : 0,
+    fillSpace.length ? u8Ptr(fillSpace) : 0,
+    fillDir.length ? u8Ptr(fillDir) : 0,
+    fillStopT.length ? f64Ptr(fillStopT) : 0,
+    fillStopCss.length ? u8Ptr(fillStopCss) : 0,
+    fillStopCssLens.length ? u32Ptr(fillStopCssLens) : 0,
+    fillDictGradient.length ? u8Ptr(fillDictGradient) : 0,
+    fillDictSpace.length ? u8Ptr(fillDictSpace) : 0,
+    marker.values.length ? f64Ptr(marker.values) : 0,
+    marker.lens.length ? u32Ptr(marker.lens) : 0,
+    markerGlyph.length ? u8Ptr(markerGlyph) : 0,
+    u8Ptr(sourcePaint),
+    color2Source.length ? u8Ptr(color2Source) : 0,
+    color2Target.length ? u8Ptr(color2Target) : 0,
+    colorMode.length ? u8Ptr(colorMode) : 0,
+    colorConst.length ? u8Ptr(colorConst) : 0,
+    linecap.length ? u8Ptr(linecap) : 0,
+    step.length ? u8Ptr(step) : 0,
+    curve.length ? u8Ptr(curve) : 0,
+    koffi.as(summaryBuf, "void *"),
+    u8Ptr(out),
+    BigInt(out.length),
+    pointer(outLen, "size_t *"),
+  ));
+  if (code === -2) throw new RangeError("sceneXyTcTraceObservationsMaterialize output buffer too small");
+  if (code !== 0) throw new RangeError("invalid sceneXyTcTraceObservationsMaterialize arguments");
+  const summary = koffi.decode(summaryBuf, SceneXytcTraceObservationsOut);
+  const blob = out.subarray(0, Number(outLen[0]));
+  const f64Slice = (off, count) => {
+    if (!count) return [];
+    const chunk = blob.subarray(Number(off), Number(off) + count * 8);
+    return [...new Float64Array(chunk.buffer, chunk.byteOffset, count)];
+  };
+  const style = {
+    symbolIsInt: summary.symbol_is_int,
+    symbolInt: summary.symbol_int,
+    opacity: summary.opacity,
+    fillOpacity: summary.fill_opacity,
+    strokeOpacity: summary.stroke_opacity,
+    lineOpacity: summary.line_opacity,
+    hasStroke: summary.has_stroke,
+    hasLineColor: summary.has_line_color,
+    hasSize: summary.has_size,
+    size: summary.size,
+    hasSizeCh: summary.has_size_ch,
+    hasSizeChConstant: summary.has_size_ch_constant,
+    sizeChConstant: summary.size_ch_constant,
+    hasStrokeWidth: summary.has_stroke_width,
+    strokeWidth: summary.stroke_width,
+    hasWidth: summary.has_width,
+    width: summary.width,
+    hasLineWidth: summary.has_line_width,
+    lineWidth: summary.line_width,
+    hasHexDx: summary.has_hex_dx,
+    hexDx: summary.hex_dx,
+    hasHexDy: summary.has_hex_dy,
+    hexDy: summary.hex_dy,
+    hasStrokePerimeter: summary.has_stroke_perimeter,
+    strokePerimeterIsBool: summary.stroke_perimeter_is_bool,
+    strokePerimeterTrue: summary.stroke_perimeter_true,
+    dashIsArray: summary.dash_is_array,
+    hasFill: summary.has_fill,
+    fillKind: summary.fill_kind,
+    colorChPresent: summary.color_ch_present,
+    colorChHasConstant: summary.color_ch_has_constant,
+    radiusSeq: summary.radius_seq,
+    r0: summary.r0,
+    r1: summary.r1,
+    wedgeGapRaw: summary.wedge_gap_raw,
+  };
+  return {
+    showLegend: summary.show_legend !== 0,
+    kind: sliceBlob(blob, summary.kind_off, summary.kind_len),
+    hasName: summary.has_name !== 0,
+    name: sliceBlob(blob, summary.name_off, summary.name_len),
+    markerPathPresent: summary.marker_path_present !== 0,
+    useDensity: summary.use_density !== 0,
+    joinedFill: summary.joined_fill !== 0,
+    markerPacked: summary.marker_packed !== 0,
+    glyphPacked: summary.glyph_packed !== 0,
+    markerBlob: sliceBlob(blob, summary.marker_blob_off, summary.marker_blob_len),
+    color2Class: summary.color2_class,
+    color2GradientBlob: sliceBlob(blob, summary.color2_gradient_off, summary.color2_gradient_len),
+    color2GradientPacked: summary.color2_gradient_packed !== 0,
+    style,
+    symbolB: sliceBlob(blob, summary.symbol_off, summary.symbol_len),
+    dashB: sliceBlob(blob, summary.dash_off, summary.dash_len),
+    dashPattern: f64Slice(summary.dash_pattern_off, Number(summary.dash_pattern_len)),
+    linecapB: sliceBlob(blob, summary.linecap_off, summary.linecap_len),
+    stepB: sliceBlob(blob, summary.step_off, summary.step_len),
+    curveB: sliceBlob(blob, summary.curve_off, summary.curve_len),
+    fillCss: sliceBlob(blob, summary.fill_css_off, summary.fill_css_len),
+    fillSpace: sliceBlob(blob, summary.fill_space_off, summary.fill_space_len),
+    fillGradientBlob: sliceBlob(blob, summary.fill_gradient_off, summary.fill_gradient_len),
+    strokeCss: sliceBlob(blob, summary.stroke_off, summary.stroke_len),
+    lineColor: sliceBlob(blob, summary.line_color_off, summary.line_color_len),
+    colorCss: sliceBlob(blob, summary.color_css_off, summary.color_css_len),
+    colorMode: sliceBlob(blob, summary.color_mode_off, summary.color_mode_len),
+    colorConst: sliceBlob(blob, summary.color_const_off, summary.color_const_len),
   };
 }
 

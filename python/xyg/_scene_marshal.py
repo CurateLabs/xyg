@@ -572,6 +572,136 @@ def marshal_xyta_trace_obs(trace: Any, figure: Any, *, polar: bool) -> dict[str,
     }
 
 
+def marshal_xytc_trace_obs(trace: Any, *, show_legend: bool) -> dict[str, Any]:
+    """Marshal XYTC trace observations for ABI 325 materialize."""
+    from xyg._scene_v3 import (
+        _channel_constant_css,
+        _ribbon_end_rgba_pair,
+        _trace_source_color_css,
+    )
+
+    style = getattr(trace, "style", None) or {}
+    kind_name = str(trace.kind)
+    nan = float("nan")
+    name = str(trace.name) if getattr(trace, "name", None) else ""
+    symbol_raw = style.get("symbol", "circle")
+    if isinstance(symbol_raw, (int, float)) and not isinstance(symbol_raw, bool):
+        symbol_is_int, symbol_int, symbol_text = 1, int(symbol_raw), None
+    else:
+        symbol_is_int, symbol_int = 0, 0
+        symbol_text = str(symbol_raw or "circle")
+    size_ch = getattr(trace, "size_ch", None)
+    size_ch_constant = getattr(size_ch, "constant", None) if size_ch is not None else None
+    raw_dx = style.get("hex_dx", style.get("dx"))
+    raw_dy = style.get("hex_dy", style.get("dy"))
+    dash = style.get("dash")
+    dash_text = None
+    dash_values: list[float] = []
+    dash_is_array = 0
+    if isinstance(dash, str):
+        dash_text = dash
+    elif isinstance(dash, (list, tuple)):
+        dash_is_array = 1
+        try:
+            dash_values = [float(part) for part in dash]
+        except (TypeError, ValueError):
+            dash_values = []
+    perimeter_present = 1 if "stroke_perimeter" in style else 0
+    if perimeter_present:
+        perimeter = style["stroke_perimeter"]
+        perimeter_is_bool = 1 if isinstance(perimeter, bool) else 0
+        perimeter_true = 1 if perimeter_is_bool and perimeter else 0
+    else:
+        perimeter_is_bool = perimeter_true = 0
+    radius = style.get("corner_radius", 0.0)
+    if isinstance(radius, (list, tuple)) and len(radius) == 2:
+        radius_seq, r0, r1 = 2, float(radius[0]), float(radius[1])
+    else:
+        radius_seq, r0, r1 = 1, float(radius or 0.0), 0.0
+    channel = getattr(trace, "color_ch", None)
+    color_ch_present = 1 if channel is not None and not isinstance(channel, str) else 0
+    color_ch_has_constant = (
+        1 if color_ch_present and getattr(channel, "constant", None) is not None else 0
+    )
+    color2 = getattr(trace, "color2_ch", None)
+    has_color2 = color2 is not None
+    kind_is_ribbon = kind_name == "ribbon"
+    has_fill = "fill" in style
+    color2_source_const = _channel_constant_css(getattr(trace, "color_ch", None))
+    color2_target_const = _channel_constant_css(color2) if has_color2 else None
+    has_end_pair = False
+    if has_color2 and kind_is_ribbon:
+        both_const = color2_target_const is not None and color2_source_const is not None
+        if not both_const and not has_fill:
+            has_end_pair = _ribbon_end_rgba_pair(trace) is not None
+    return {
+        "show_legend": show_legend,
+        "kind": kind_name,
+        "has_name": bool(name),
+        "name": name,
+        "marker_path_present": kind_name == "scatter" and style.get("marker_path") is not None,
+        "use_density": kind_name == "scatter" and trace.use_density(),
+        "joined_fill": kind_name == "triangle_mesh" and bool(style.get("joined_fill")),
+        "symbol_is_int": symbol_is_int,
+        "symbol_int": symbol_int,
+        "symbol_text": symbol_text,
+        "opacity": float(style.get("opacity", 1.0)),
+        "fill_opacity": float(style.get("fill_opacity", 1.0)),
+        "stroke_opacity": float(style.get("stroke_opacity", 1.0)),
+        "line_opacity": float(style.get("line_opacity", 1.0)),
+        "has_stroke": "stroke" in style,
+        "stroke": style.get("stroke"),
+        "has_line_color": "line_color" in style,
+        "line_color": style.get("line_color"),
+        "has_color": "color" in style,
+        "color": style.get("color"),
+        "has_size": "size" in style,
+        "size": float(style["size"]) if "size" in style else nan,
+        "has_size_ch": size_ch is not None,
+        "has_size_ch_constant": size_ch_constant is not None,
+        "size_ch_constant": float(size_ch_constant) if size_ch_constant is not None else nan,
+        "has_stroke_width": "stroke_width" in style,
+        "stroke_width": float(style["stroke_width"]) if "stroke_width" in style else 0.0,
+        "has_width": "width" in style,
+        "width": float(style["width"]) if "width" in style else 0.0,
+        "has_line_width": "line_width" in style,
+        "line_width": float(style["line_width"]) if "line_width" in style else 0.0,
+        "has_hex_dx": raw_dx is not None,
+        "hex_dx": float(raw_dx) if raw_dx is not None else nan,
+        "has_hex_dy": raw_dy is not None,
+        "hex_dy": float(raw_dy) if raw_dy is not None else nan,
+        "has_stroke_perimeter": bool(perimeter_present),
+        "stroke_perimeter_is_bool": perimeter_is_bool,
+        "stroke_perimeter_true": perimeter_true,
+        "wedge_gap_raw": float(style.get("wedge_gap", 0.0) or 0.0),
+        "dash_is_array": dash_is_array,
+        "dash_text": dash_text,
+        "dash_values": dash_values,
+        "has_fill": has_fill,
+        "fill": style.get("fill") if has_fill else None,
+        "marker_path": style.get("marker_path"),
+        "marker_glyph": style.get("marker_glyph"),
+        "has_color2": has_color2,
+        "kind_is_ribbon": kind_is_ribbon,
+        "color2_source_const": color2_source_const,
+        "color2_target_const": color2_target_const,
+        "source_paint": _trace_source_color_css(trace),
+        "has_end_pair": has_end_pair,
+        "corner_radius_seq": radius_seq,
+        "corner_radius_r0": r0,
+        "corner_radius_r1": r1,
+        "color_ch_present": color_ch_present,
+        "color_ch_has_constant": color_ch_has_constant,
+        "color_ch_mode": None
+        if channel is None or isinstance(channel, str)
+        else getattr(channel, "mode", ""),
+        "color_ch_constant": None if not color_ch_has_constant else str(channel.constant),
+        "linecap": style.get("linecap"),
+        "step": style.get("step"),
+        "curve": style.get("curve"),
+    }
+
+
 def pack_figure_support(
     figure: Any,
     annotations: list[Any],

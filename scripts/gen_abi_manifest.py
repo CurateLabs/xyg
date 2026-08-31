@@ -154,6 +154,8 @@ _POINTER_C: dict[str, str] = {
     "*const XygSceneXytaTracePackIn": "const void *",
     "*const XygSceneXytaTraceObservationsIn": "const void *",
     "*mut XygSceneXytaTraceObservationsOut": "void *",
+    "*const XygSceneXytcTraceObservationsIn": "const void *",
+    "*mut XygSceneXytcTraceObservationsOut": "void *",
     "*const XygSceneXytaColorChannelDesc": "const void *",
     "*const XygSceneXytaStyleChannelDesc": "const void *",
     "*const XygSceneXyafPackIn": "const void *",
@@ -482,6 +484,7 @@ def generate_manifest(root: Path = ROOT) -> dict[str, Any]:
         core / "scene_bulk_pack_ffi.rs",
         core / "payload_trace_emit_ffi.rs",
         core / "scene_xyta_trace_observations_ffi.rs",
+        core / "scene_xytc_trace_observations_ffi.rs",
     ]
     for ffi in ffi_files:
         if ffi.is_file():

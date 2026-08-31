@@ -96,6 +96,12 @@ pub use scene_xytc_trace_pack::{
     scene_xytc_trace_pack, XytcTracePackInput, XytcTraceStyleInput,
     SCENE_XYTC_TRACE_PACK_MAX_RECORD,
 };
+pub mod scene_xytc_trace_observations_materialize;
+pub use scene_xytc_trace_observations_materialize::{
+    scene_xytc_trace_observations_materialize, SceneXytcGradientStopIn,
+    SceneXytcTraceObservationsIn, SceneXytcTraceObservationsOut,
+    SCENE_XYTC_TRACE_OBSERVATIONS_MAX_BYTES,
+};
 pub mod scene_xyta_trace_pack;
 pub use scene_xyta_trace_pack::{
     scene_xyta_trace_pack, XytaTracePackInput, SCENE_XYTA_TRACE_PACK_MAX_RECORD,

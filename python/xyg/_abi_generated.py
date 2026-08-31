@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 324
-SIGNATURE_SHA256 = "dde9d687c67528d15111e61a22153cc8bc0faa9ba50bd94a8dc67fd26a9f9b3f"
+ABI_VERSION = 325
+SIGNATURE_SHA256 = "1cedacd317cc3bf7086e526e07d07bb9ec2c415f1ba1c3efc567b69412b2d444"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -1378,6 +1378,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_xytc_trace_dispatch_plan
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_scene_xytc_trace_observations_materialize(const void * input, const uint8_t * kind, const uint8_t * name, const uint8_t * symbol, const uint8_t * stroke, const uint8_t * line_color, const uint8_t * color_css, const uint8_t * dash, const double * dash_values, const uint8_t * fill_string, const uint8_t * fill_space, const uint8_t * fill_dir, const double * fill_stop_t, const uint8_t * fill_stop_css, const uint32_t * fill_stop_css_lens, const uint8_t * fill_dict_gradient, const uint8_t * fill_dict_space, const double * marker_values, const uint32_t * marker_lens, const uint8_t * marker_glyph, const uint8_t * source_paint, const uint8_t * color2_source_const, const uint8_t * color2_target_const, const uint8_t * color_mode, const uint8_t * color_const, const uint8_t * linecap, const uint8_t * step, const uint8_t * curve, void * summary, uint8_t * out_bytes, size_t out_cap, size_t * out_len)
+    function = lib.xyg_scene_xytc_trace_observations_materialize
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     # int32_t xyg_scene_xytc_trace_pack(const void * input, const uint8_t * kind, const uint8_t * name, const uint8_t * symbol_b, const uint8_t * dash_b, const double * dash_pattern, const uint8_t * linecap_b, const uint8_t * step_b, const uint8_t * curve_b, const uint8_t * fill_css, const uint8_t * fill_space, const uint8_t * fill_gradient_blob, const uint8_t * stroke_css, const uint8_t * line_color, const uint8_t * color_css, const uint8_t * color_mode, const uint8_t * color_const, const uint8_t * marker_blob, const uint8_t * color2_gradient_blob, uint8_t * out, size_t out_cap, size_t * out_len)
     function = lib.xyg_scene_xytc_trace_pack
     function.restype = ctypes.c_int32

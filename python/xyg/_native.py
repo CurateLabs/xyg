@@ -17178,12 +17178,14 @@ def chunked_columns_free(handle: int) -> bool:
 from ._scene_bulk_native import (  # noqa: E402
     SCENE_XYAF_BULK_PACK_MAX,
     SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES,
+    SCENE_XYTC_TRACE_OBSERVATIONS_MAX_BYTES,
     SceneXyafBulkPackError,
     scene_chrome_pack,
     scene_figure_support_materialize,
     scene_polar_input_pack,
     scene_xyaf_bulk_pack,
     scene_xyta_trace_observations_materialize,
+    scene_xytc_trace_observations_materialize,
 )
 from ._scene_bulk_native import (  # noqa: E402
     init as _init_scene_bulk_native,
@@ -17195,11 +17197,13 @@ _init_scene_bulk_native(sys.modules[__name__])
 _SCENE_BULK_REEXPORTS = (
     SCENE_XYAF_BULK_PACK_MAX,
     SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES,
+    SCENE_XYTC_TRACE_OBSERVATIONS_MAX_BYTES,
     SceneXyafBulkPackError,
     scene_chrome_pack,
     scene_figure_support_materialize,
     scene_polar_input_pack,
     scene_xyaf_bulk_pack,
     scene_xyta_trace_observations_materialize,
+    scene_xytc_trace_observations_materialize,
 )
 del _SCENE_BULK_REEXPORTS

@@ -2,7 +2,7 @@
   "schema": "xyg.tooltip-len-emit-cross-host/v1",
   "authority": "packages/xy-node/src/figure.js attachTooltipRows",
   "protocol": 12,
-  "abi_version": 324,
+  "abi_version": 325,
   "cases": [
     {
       "name": "scatter_tooltip_ok",
@@ -57,21 +57,21 @@
       "trace_id": 43,
       "expect_error": true,
       "error_match": "tooltip rows must match geometry",
-      "error_message": "scatter tooltip rows must match geometry (1 != 2)"
+      "error_message": "scatter tooltip rows must match geometry"
     },
     {
       "name": "segments_tooltip_mismatch",
       "trace_id": 44,
       "expect_error": true,
       "error_match": "tooltip rows must match geometry",
-      "error_message": "segments tooltip rows must match geometry (1 != 2)"
+      "error_message": "segments tooltip rows must match geometry"
     },
     {
       "name": "ribbon_tooltip_mismatch",
       "trace_id": 45,
       "expect_error": true,
       "error_match": "tooltip rows must match geometry",
-      "error_message": "ribbon tooltip rows must match geometry (2 != 1)"
+      "error_message": "ribbon tooltip rows must match geometry"
     }
   ]
 }

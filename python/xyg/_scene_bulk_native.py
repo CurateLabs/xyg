@@ -19,6 +19,7 @@ SCENE_POLAR_INPUT_PACK_MAX = 92
 SCENE_XYAF_BULK_PACK_MAX = 1 << 22
 SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES = 1 << 22
 SCENE_XYTA_TRACE_PACK_MAX_RECORD = 1 << 22
+SCENE_XYTC_TRACE_OBSERVATIONS_MAX_BYTES = 1 << 20
 
 
 def init(native: Any) -> None:
@@ -26,6 +27,7 @@ def init(native: Any) -> None:
     global _lib, _ptr_u8, _ptr_f64, _optional_u8_ptr
     global SCENE_XYCF_PACK_MAX, SCENE_FIGURE_SUPPORT_PACK_MAX, SCENE_XYAF_BULK_PACK_MAX
     global SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES, SCENE_XYTA_TRACE_PACK_MAX_RECORD
+    global SCENE_XYTC_TRACE_OBSERVATIONS_MAX_BYTES
     _lib = native._lib
     _ptr_u8 = native._ptr_u8
     _ptr_f64 = native._ptr_f64
@@ -37,6 +39,9 @@ def init(native: Any) -> None:
         native, "SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES", 1 << 22
     )
     SCENE_XYTA_TRACE_PACK_MAX_RECORD = getattr(native, "SCENE_XYTA_TRACE_PACK_MAX_RECORD", 1 << 22)
+    SCENE_XYTC_TRACE_OBSERVATIONS_MAX_BYTES = getattr(
+        native, "SCENE_XYTC_TRACE_OBSERVATIONS_MAX_BYTES", 1 << 20
+    )
 
 
 class _XygStringRef(ctypes.Structure):
@@ -1099,6 +1104,503 @@ def scene_xyta_trace_observations_materialize(obs: Mapping[str, Any]) -> dict[st
         "stops": _slice(int(summary.stops_off), int(summary.stops_len)),
         "color_ch": _slice(int(summary.color_ch_off), int(summary.color_ch_len)),
         "style_color": _slice(int(summary.style_color_off), int(summary.style_color_len)),
+    }
+
+
+class _XygSceneXytcTraceObservationsIn(ctypes.Structure):
+    _fields_ = [
+        ("show_legend", ctypes.c_int32),
+        ("has_name", ctypes.c_int32),
+        ("marker_path_present", ctypes.c_int32),
+        ("use_density", ctypes.c_int32),
+        ("joined_fill", ctypes.c_int32),
+        ("symbol_is_int", ctypes.c_int32),
+        ("symbol_int", ctypes.c_uint16),
+        ("opacity", ctypes.c_double),
+        ("fill_opacity", ctypes.c_double),
+        ("stroke_opacity", ctypes.c_double),
+        ("line_opacity", ctypes.c_double),
+        ("has_stroke", ctypes.c_int32),
+        ("has_line_color", ctypes.c_int32),
+        ("has_color", ctypes.c_int32),
+        ("has_size", ctypes.c_int32),
+        ("size", ctypes.c_double),
+        ("has_size_ch", ctypes.c_int32),
+        ("has_size_ch_constant", ctypes.c_int32),
+        ("size_ch_constant", ctypes.c_double),
+        ("has_stroke_width", ctypes.c_int32),
+        ("stroke_width", ctypes.c_double),
+        ("has_width", ctypes.c_int32),
+        ("width", ctypes.c_double),
+        ("has_line_width", ctypes.c_int32),
+        ("line_width", ctypes.c_double),
+        ("has_hex_dx", ctypes.c_int32),
+        ("hex_dx", ctypes.c_double),
+        ("has_hex_dy", ctypes.c_int32),
+        ("hex_dy", ctypes.c_double),
+        ("has_stroke_perimeter", ctypes.c_int32),
+        ("stroke_perimeter_is_bool", ctypes.c_int32),
+        ("stroke_perimeter_true", ctypes.c_int32),
+        ("wedge_gap_raw", ctypes.c_double),
+        ("dash_is_array", ctypes.c_int32),
+        ("has_fill", ctypes.c_int32),
+        ("fill_is_string", ctypes.c_int32),
+        ("fill_has_full_spec", ctypes.c_int32),
+        ("fill_stop_count", ctypes.c_size_t),
+        ("marker_path_filled", ctypes.c_int32),
+        ("marker_contour_count", ctypes.c_size_t),
+        ("has_color2", ctypes.c_int32),
+        ("kind_is_ribbon", ctypes.c_int32),
+        ("has_end_pair", ctypes.c_int32),
+        ("corner_radius_seq", ctypes.c_int32),
+        ("corner_radius_r0", ctypes.c_double),
+        ("corner_radius_r1", ctypes.c_double),
+        ("color_ch_present", ctypes.c_int32),
+        ("color_ch_has_constant", ctypes.c_int32),
+        ("kind_len", ctypes.c_size_t),
+        ("name_len", ctypes.c_size_t),
+        ("symbol_len", ctypes.c_size_t),
+        ("stroke_len", ctypes.c_size_t),
+        ("line_color_len", ctypes.c_size_t),
+        ("color_css_len", ctypes.c_size_t),
+        ("dash_len", ctypes.c_size_t),
+        ("dash_values_len", ctypes.c_size_t),
+        ("fill_string_len", ctypes.c_size_t),
+        ("fill_space_len", ctypes.c_size_t),
+        ("fill_dir_len", ctypes.c_size_t),
+        ("fill_stop_t_len", ctypes.c_size_t),
+        ("fill_stop_css_len", ctypes.c_size_t),
+        ("fill_stop_css_lens_len", ctypes.c_size_t),
+        ("fill_dict_gradient_len", ctypes.c_size_t),
+        ("fill_dict_space_len", ctypes.c_size_t),
+        ("marker_values_len", ctypes.c_size_t),
+        ("marker_lens_len", ctypes.c_size_t),
+        ("marker_glyph_len", ctypes.c_size_t),
+        ("source_paint_len", ctypes.c_size_t),
+        ("color2_source_const_len", ctypes.c_size_t),
+        ("color2_target_const_len", ctypes.c_size_t),
+        ("color_mode_len", ctypes.c_size_t),
+        ("color_const_len", ctypes.c_size_t),
+        ("linecap_len", ctypes.c_size_t),
+        ("step_len", ctypes.c_size_t),
+        ("curve_len", ctypes.c_size_t),
+    ]
+
+
+class _XygSceneXytcTraceObservationsOut(ctypes.Structure):
+    _fields_ = [
+        ("show_legend", ctypes.c_int32),
+        ("has_name", ctypes.c_int32),
+        ("marker_path_present", ctypes.c_int32),
+        ("use_density", ctypes.c_int32),
+        ("joined_fill", ctypes.c_int32),
+        ("marker_packed", ctypes.c_int32),
+        ("glyph_packed", ctypes.c_int32),
+        ("color2_class", ctypes.c_int32),
+        ("color2_gradient_packed", ctypes.c_int32),
+        ("symbol_is_int", ctypes.c_int32),
+        ("symbol_int", ctypes.c_uint16),
+        ("opacity", ctypes.c_double),
+        ("fill_opacity", ctypes.c_double),
+        ("stroke_opacity", ctypes.c_double),
+        ("line_opacity", ctypes.c_double),
+        ("has_stroke", ctypes.c_int32),
+        ("has_line_color", ctypes.c_int32),
+        ("has_size", ctypes.c_int32),
+        ("size", ctypes.c_double),
+        ("has_size_ch", ctypes.c_int32),
+        ("has_size_ch_constant", ctypes.c_int32),
+        ("size_ch_constant", ctypes.c_double),
+        ("has_stroke_width", ctypes.c_int32),
+        ("stroke_width", ctypes.c_double),
+        ("has_width", ctypes.c_int32),
+        ("width", ctypes.c_double),
+        ("has_line_width", ctypes.c_int32),
+        ("line_width", ctypes.c_double),
+        ("has_hex_dx", ctypes.c_int32),
+        ("hex_dx", ctypes.c_double),
+        ("has_hex_dy", ctypes.c_int32),
+        ("hex_dy", ctypes.c_double),
+        ("has_stroke_perimeter", ctypes.c_int32),
+        ("stroke_perimeter_is_bool", ctypes.c_int32),
+        ("stroke_perimeter_true", ctypes.c_int32),
+        ("dash_is_array", ctypes.c_int32),
+        ("has_fill", ctypes.c_int32),
+        ("fill_kind", ctypes.c_int32),
+        ("color_ch_present", ctypes.c_int32),
+        ("color_ch_has_constant", ctypes.c_int32),
+        ("radius_seq", ctypes.c_int32),
+        ("r0", ctypes.c_double),
+        ("r1", ctypes.c_double),
+        ("wedge_gap_raw", ctypes.c_double),
+        ("kind_len", ctypes.c_size_t),
+        ("name_len", ctypes.c_size_t),
+        ("marker_blob_len", ctypes.c_size_t),
+        ("color2_gradient_len", ctypes.c_size_t),
+        ("symbol_len", ctypes.c_size_t),
+        ("dash_len", ctypes.c_size_t),
+        ("dash_pattern_len", ctypes.c_size_t),
+        ("linecap_len", ctypes.c_size_t),
+        ("step_len", ctypes.c_size_t),
+        ("curve_len", ctypes.c_size_t),
+        ("fill_css_len", ctypes.c_size_t),
+        ("fill_space_len", ctypes.c_size_t),
+        ("fill_gradient_len", ctypes.c_size_t),
+        ("stroke_len", ctypes.c_size_t),
+        ("line_color_len", ctypes.c_size_t),
+        ("color_css_len", ctypes.c_size_t),
+        ("color_mode_len", ctypes.c_size_t),
+        ("color_const_len", ctypes.c_size_t),
+        ("kind_off", ctypes.c_size_t),
+        ("name_off", ctypes.c_size_t),
+        ("marker_blob_off", ctypes.c_size_t),
+        ("color2_gradient_off", ctypes.c_size_t),
+        ("symbol_off", ctypes.c_size_t),
+        ("dash_off", ctypes.c_size_t),
+        ("dash_pattern_off", ctypes.c_size_t),
+        ("linecap_off", ctypes.c_size_t),
+        ("step_off", ctypes.c_size_t),
+        ("curve_off", ctypes.c_size_t),
+        ("fill_css_off", ctypes.c_size_t),
+        ("fill_space_off", ctypes.c_size_t),
+        ("fill_gradient_off", ctypes.c_size_t),
+        ("stroke_off", ctypes.c_size_t),
+        ("line_color_off", ctypes.c_size_t),
+        ("color_css_off", ctypes.c_size_t),
+        ("color_mode_off", ctypes.c_size_t),
+        ("color_const_off", ctypes.c_size_t),
+    ]
+
+
+def _xytc_optional_str(value: Any) -> bytes:
+    return b"" if value is None else str(value).encode("utf-8")
+
+
+def _xytc_fill_stop_side(fill: Mapping[str, Any]) -> tuple[list[float], bytes, list[int]]:
+    stops = fill.get("stops")
+    if not isinstance(stops, (list, tuple)):
+        return [], b"", []
+    stop_t: list[float] = []
+    css_parts: list[bytes] = []
+    css_lens: list[int] = []
+    try:
+        for stop in stops:
+            if not isinstance(stop, (list, tuple)) or len(stop) != 2:
+                return [], b"", []
+            stop_t.append(float(stop[0]))
+            css = str(stop[1]).encode("utf-8")
+            css_parts.append(css)
+            css_lens.append(len(css))
+    except (TypeError, ValueError):
+        return [], b"", []
+    return stop_t, b"".join(css_parts), css_lens
+
+
+def _xytc_marker_path_side(marker_path: Any) -> tuple[int, np.ndarray, np.ndarray, int]:
+    if not isinstance(marker_path, dict):
+        return 1, np.empty(0, dtype=np.float64), np.empty(0, dtype=np.uint32), 0
+    contours = marker_path.get("contours")
+    if not isinstance(contours, (list, tuple)):
+        return 1, np.empty(0, dtype=np.float64), np.empty(0, dtype=np.uint32), 0
+    values: list[float] = []
+    lens: list[int] = []
+    try:
+        for contour in contours:
+            if not isinstance(contour, (list, tuple)):
+                return 1, np.empty(0, dtype=np.float64), np.empty(0, dtype=np.uint32), 0
+            floats = [float(item) for item in contour]
+            values.extend(floats)
+            lens.append(len(floats))
+    except (TypeError, ValueError):
+        return 1, np.empty(0, dtype=np.float64), np.empty(0, dtype=np.uint32), 0
+    filled = 1 if marker_path.get("filled", True) else 0
+    return (
+        filled,
+        np.ascontiguousarray(values, dtype=np.float64),
+        np.ascontiguousarray(lens, dtype=np.uint32),
+        len(lens),
+    )
+
+
+def scene_xytc_trace_observations_materialize(obs: Mapping[str, Any]) -> dict[str, Any]:
+    """Materialize XYTC trace observations via ``xyg_scene_xytc_trace_observations_materialize`` (ABI 325)."""
+    nan = float("nan")
+    kind_b = str(obs["kind"]).encode("utf-8")
+    name_b = _xytc_optional_str(obs.get("name"))
+    symbol_b = _xytc_optional_str(obs.get("symbol_text"))
+    stroke_b = _xytc_optional_str(obs.get("stroke"))
+    line_color_b = _xytc_optional_str(obs.get("line_color"))
+    color_css_b = _xytc_optional_str(obs.get("color"))
+    dash_b = _xytc_optional_str(obs.get("dash_text"))
+    dash_values = np.ascontiguousarray(
+        obs.get("dash_values", np.empty(0, dtype=np.float64)), dtype=np.float64
+    ).reshape(-1)
+    fill = obs.get("fill")
+    fill_string_b = b""
+    fill_is_string = 0
+    fill_has_full_spec = 0
+    fill_space_b = b""
+    fill_dir_b = b""
+    fill_stop_t: list[float] = []
+    fill_stop_css = b""
+    fill_stop_css_lens: list[int] = []
+    fill_dict_gradient_b = b""
+    fill_dict_space_b = b""
+    has_fill = 1 if obs.get("has_fill") else 0
+    if has_fill and isinstance(fill, str):
+        fill_is_string = 1
+        fill_string_b = fill.encode("utf-8")
+    elif has_fill and isinstance(fill, dict):
+        if {"space", "dir", "stops"} <= set(fill):
+            fill_has_full_spec = 1
+            fill_space_b = str(fill.get("space") or "").encode("utf-8")
+            fill_dir_b = str(fill.get("dir") or "").encode("utf-8")
+            fill_stop_t, fill_stop_css, fill_stop_css_lens = _xytc_fill_stop_side(fill)
+        else:
+            fill_dict_gradient_b = str(fill.get("gradient") or "").encode("utf-8")
+            fill_dict_space_b = str(fill.get("space") or "mark").encode("utf-8")
+    marker_filled, marker_values, marker_lens, marker_contour_count = _xytc_marker_path_side(
+        obs.get("marker_path")
+    )
+    marker_glyph_b = _xytc_optional_str(obs.get("marker_glyph"))
+    source_paint_b = str(obs.get("source_paint", "#3987e5")).encode("utf-8")
+    color2_source_b = _xytc_optional_str(obs.get("color2_source_const"))
+    color2_target_b = _xytc_optional_str(obs.get("color2_target_const"))
+    color_mode_b = _xytc_optional_str(obs.get("color_ch_mode"))
+    color_const_b = _xytc_optional_str(obs.get("color_ch_constant"))
+    linecap_b = _xytc_optional_str(obs.get("linecap"))
+    step_b = _xytc_optional_str(obs.get("step"))
+    curve_b = _xytc_optional_str(obs.get("curve"))
+    fill_stop_t_arr = np.ascontiguousarray(fill_stop_t, dtype=np.float64)
+    fill_stop_css_lens_arr = np.ascontiguousarray(fill_stop_css_lens, dtype=np.uint32)
+    pack_in = _XygSceneXytcTraceObservationsIn(
+        int(obs.get("show_legend") or 0),
+        int(obs.get("has_name") or 0),
+        int(obs.get("marker_path_present") or 0),
+        int(obs.get("use_density") or 0),
+        int(obs.get("joined_fill") or 0),
+        int(obs.get("symbol_is_int") or 0),
+        ctypes.c_uint16(int(obs.get("symbol_int") or 0) & 0xFFFF),
+        float(obs.get("opacity", 1.0)),
+        float(obs.get("fill_opacity", 1.0)),
+        float(obs.get("stroke_opacity", 1.0)),
+        float(obs.get("line_opacity", 1.0)),
+        int(obs.get("has_stroke") or 0),
+        int(obs.get("has_line_color") or 0),
+        int(obs.get("has_color") or 0),
+        int(obs.get("has_size") or 0),
+        float(obs.get("size", nan)),
+        int(obs.get("has_size_ch") or 0),
+        int(obs.get("has_size_ch_constant") or 0),
+        float(obs.get("size_ch_constant", nan)),
+        int(obs.get("has_stroke_width") or 0),
+        float(obs.get("stroke_width", 0.0)),
+        int(obs.get("has_width") or 0),
+        float(obs.get("width", 0.0)),
+        int(obs.get("has_line_width") or 0),
+        float(obs.get("line_width", 0.0)),
+        int(obs.get("has_hex_dx") or 0),
+        float(obs.get("hex_dx", nan)),
+        int(obs.get("has_hex_dy") or 0),
+        float(obs.get("hex_dy", nan)),
+        int(obs.get("has_stroke_perimeter") or 0),
+        int(obs.get("stroke_perimeter_is_bool") or 0),
+        int(obs.get("stroke_perimeter_true") or 0),
+        float(obs.get("wedge_gap_raw", 0.0)),
+        int(obs.get("dash_is_array") or 0),
+        has_fill,
+        fill_is_string,
+        fill_has_full_spec,
+        len(fill_stop_t),
+        marker_filled,
+        marker_contour_count,
+        int(obs.get("has_color2") or 0),
+        int(obs.get("kind_is_ribbon") or 0),
+        int(obs.get("has_end_pair") or 0),
+        int(obs.get("corner_radius_seq") or 1),
+        float(obs.get("corner_radius_r0", 0.0)),
+        float(obs.get("corner_radius_r1", 0.0)),
+        int(obs.get("color_ch_present") or 0),
+        int(obs.get("color_ch_has_constant") or 0),
+        len(kind_b),
+        len(name_b),
+        len(symbol_b),
+        len(stroke_b),
+        len(line_color_b),
+        len(color_css_b),
+        len(dash_b),
+        len(dash_values),
+        len(fill_string_b),
+        len(fill_space_b),
+        len(fill_dir_b),
+        len(fill_stop_t_arr),
+        len(fill_stop_css),
+        len(fill_stop_css_lens_arr),
+        len(fill_dict_gradient_b),
+        len(fill_dict_space_b),
+        len(marker_values),
+        len(marker_lens),
+        len(marker_glyph_b),
+        len(source_paint_b),
+        len(color2_source_b),
+        len(color2_target_b),
+        len(color_mode_b),
+        len(color_const_b),
+        len(linecap_b),
+        len(step_b),
+        len(curve_b),
+    )
+    keepers = [
+        kind_b,
+        name_b,
+        symbol_b,
+        stroke_b,
+        line_color_b,
+        color_css_b,
+        dash_b,
+        fill_string_b,
+        fill_space_b,
+        fill_dir_b,
+        fill_stop_css,
+        fill_dict_gradient_b,
+        fill_dict_space_b,
+        marker_glyph_b,
+        source_paint_b,
+        color2_source_b,
+        color2_target_b,
+        color_mode_b,
+        color_const_b,
+        linecap_b,
+        step_b,
+        curve_b,
+    ]
+    summary = _XygSceneXytcTraceObservationsOut()
+    out_bytes = np.zeros(SCENE_XYTC_TRACE_OBSERVATIONS_MAX_BYTES, dtype=np.uint8)
+    out_len = ctypes.c_size_t(0)
+    code = int(
+        _lib.xyg_scene_xytc_trace_observations_materialize(
+            ctypes.byref(pack_in),
+            _ptr_u8(np.frombuffer(kind_b, dtype=np.uint8)),
+            _ptr_u8(np.frombuffer(name_b, dtype=np.uint8)) if name_b else 0,
+            _ptr_u8(np.frombuffer(symbol_b, dtype=np.uint8)) if symbol_b else 0,
+            _ptr_u8(np.frombuffer(stroke_b, dtype=np.uint8)) if stroke_b else 0,
+            _ptr_u8(np.frombuffer(line_color_b, dtype=np.uint8)) if line_color_b else 0,
+            _ptr_u8(np.frombuffer(color_css_b, dtype=np.uint8)) if color_css_b else 0,
+            _ptr_u8(np.frombuffer(dash_b, dtype=np.uint8)) if dash_b else 0,
+            _ptr_f64(dash_values) if len(dash_values) else 0,
+            _ptr_u8(np.frombuffer(fill_string_b, dtype=np.uint8)) if fill_string_b else 0,
+            _ptr_u8(np.frombuffer(fill_space_b, dtype=np.uint8)) if fill_space_b else 0,
+            _ptr_u8(np.frombuffer(fill_dir_b, dtype=np.uint8)) if fill_dir_b else 0,
+            _ptr_f64(fill_stop_t_arr) if len(fill_stop_t_arr) else 0,
+            _ptr_u8(np.frombuffer(fill_stop_css, dtype=np.uint8)) if fill_stop_css else 0,
+            fill_stop_css_lens_arr.ctypes.data if len(fill_stop_css_lens_arr) else 0,
+            _ptr_u8(np.frombuffer(fill_dict_gradient_b, dtype=np.uint8))
+            if fill_dict_gradient_b
+            else 0,
+            _ptr_u8(np.frombuffer(fill_dict_space_b, dtype=np.uint8)) if fill_dict_space_b else 0,
+            _ptr_f64(marker_values) if len(marker_values) else 0,
+            marker_lens.ctypes.data if len(marker_lens) else 0,
+            _ptr_u8(np.frombuffer(marker_glyph_b, dtype=np.uint8)) if marker_glyph_b else 0,
+            _ptr_u8(np.frombuffer(source_paint_b, dtype=np.uint8)),
+            _ptr_u8(np.frombuffer(color2_source_b, dtype=np.uint8)) if color2_source_b else 0,
+            _ptr_u8(np.frombuffer(color2_target_b, dtype=np.uint8)) if color2_target_b else 0,
+            _ptr_u8(np.frombuffer(color_mode_b, dtype=np.uint8)) if color_mode_b else 0,
+            _ptr_u8(np.frombuffer(color_const_b, dtype=np.uint8)) if color_const_b else 0,
+            _ptr_u8(np.frombuffer(linecap_b, dtype=np.uint8)) if linecap_b else 0,
+            _ptr_u8(np.frombuffer(step_b, dtype=np.uint8)) if step_b else 0,
+            _ptr_u8(np.frombuffer(curve_b, dtype=np.uint8)) if curve_b else 0,
+            ctypes.byref(summary),
+            _ptr_u8(out_bytes),
+            len(out_bytes),
+            ctypes.byref(out_len),
+        )
+    )
+    del keepers
+    if code == -2:
+        raise ValueError("scene_xytc_trace_observations_materialize output buffer too small")
+    if code != 0:
+        raise ValueError("invalid scene_xytc_trace_observations_materialize arguments")
+    blob = bytes(out_bytes[: int(out_len.value)])
+
+    def _slice(off: int, length: int) -> bytes:
+        return blob[off : off + length] if length else b""
+
+    def _f64_slice(off: int, count: int) -> list[float]:
+        if count == 0:
+            return []
+        chunk = blob[off : off + count * 8]
+        return list(np.frombuffer(chunk, dtype=np.float64))
+
+    style = {
+        "symbol_is_int": int(summary.symbol_is_int),
+        "symbol_int": int(summary.symbol_int),
+        "opacity": float(summary.opacity),
+        "fill_opacity": float(summary.fill_opacity),
+        "stroke_opacity": float(summary.stroke_opacity),
+        "line_opacity": float(summary.line_opacity),
+        "has_stroke": int(summary.has_stroke),
+        "has_line_color": int(summary.has_line_color),
+        "has_size": int(summary.has_size),
+        "size": float(summary.size),
+        "has_size_ch": int(summary.has_size_ch),
+        "has_size_ch_constant": int(summary.has_size_ch_constant),
+        "size_ch_constant": float(summary.size_ch_constant),
+        "has_stroke_width": int(summary.has_stroke_width),
+        "stroke_width": float(summary.stroke_width),
+        "has_width": int(summary.has_width),
+        "width": float(summary.width),
+        "has_line_width": int(summary.has_line_width),
+        "line_width": float(summary.line_width),
+        "has_hex_dx": int(summary.has_hex_dx),
+        "hex_dx": float(summary.hex_dx),
+        "has_hex_dy": int(summary.has_hex_dy),
+        "hex_dy": float(summary.hex_dy),
+        "has_stroke_perimeter": int(summary.has_stroke_perimeter),
+        "stroke_perimeter_is_bool": int(summary.stroke_perimeter_is_bool),
+        "stroke_perimeter_true": int(summary.stroke_perimeter_true),
+        "dash_is_array": int(summary.dash_is_array),
+        "has_fill": int(summary.has_fill),
+        "fill_kind": int(summary.fill_kind),
+        "color_ch_present": int(summary.color_ch_present),
+        "color_ch_has_constant": int(summary.color_ch_has_constant),
+        "radius_seq": int(summary.radius_seq),
+        "r0": float(summary.r0),
+        "r1": float(summary.r1),
+        "wedge_gap_raw": float(summary.wedge_gap_raw),
+    }
+    return {
+        "show_legend": bool(summary.show_legend),
+        "kind": _slice(int(summary.kind_off), int(summary.kind_len)),
+        "has_name": bool(summary.has_name),
+        "name": _slice(int(summary.name_off), int(summary.name_len)),
+        "marker_path_present": bool(summary.marker_path_present),
+        "use_density": bool(summary.use_density),
+        "joined_fill": bool(summary.joined_fill),
+        "marker_packed": bool(summary.marker_packed),
+        "glyph_packed": bool(summary.glyph_packed),
+        "marker_blob": _slice(int(summary.marker_blob_off), int(summary.marker_blob_len)),
+        "color2_class": int(summary.color2_class),
+        "color2_gradient_blob": _slice(
+            int(summary.color2_gradient_off), int(summary.color2_gradient_len)
+        ),
+        "color2_gradient_packed": bool(summary.color2_gradient_packed),
+        "style": style,
+        "symbol_b": _slice(int(summary.symbol_off), int(summary.symbol_len)),
+        "dash_b": _slice(int(summary.dash_off), int(summary.dash_len)),
+        "dash_pattern": _f64_slice(int(summary.dash_pattern_off), int(summary.dash_pattern_len)),
+        "linecap_b": _slice(int(summary.linecap_off), int(summary.linecap_len)),
+        "step_b": _slice(int(summary.step_off), int(summary.step_len)),
+        "curve_b": _slice(int(summary.curve_off), int(summary.curve_len)),
+        "fill_css": _slice(int(summary.fill_css_off), int(summary.fill_css_len)),
+        "fill_space": _slice(int(summary.fill_space_off), int(summary.fill_space_len)),
+        "fill_gradient_blob": _slice(
+            int(summary.fill_gradient_off), int(summary.fill_gradient_len)
+        ),
+        "stroke_css": _slice(int(summary.stroke_off), int(summary.stroke_len)),
+        "line_color": _slice(int(summary.line_color_off), int(summary.line_color_len)),
+        "color_css": _slice(int(summary.color_css_off), int(summary.color_css_len)),
+        "color_mode": _slice(int(summary.color_mode_off), int(summary.color_mode_len)),
+        "color_const": _slice(int(summary.color_const_off), int(summary.color_const_len)),
     }
 
 

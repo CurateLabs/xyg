@@ -76,7 +76,7 @@ import {
 } from "./native.js";
 import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneXytcTracePack, sceneXytaFigurePlan, sceneXytaTraceDispatchPlan, sceneXytaTracePack, sceneFigureSupportFigurePlan, sceneFigureSupportTraceDispatchPlan, scenePublicExportFigurePlan, scenePublicExportTraceDispatchPlan, sceneXyafAnnotationDispatchPlan, sceneXycfFigurePlan, sceneXyclFigurePlan, sceneXynmFigurePlan, scenePolarFigurePlan, sceneEncodeProductAttachPlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba, densityMeanColorWireAdmit } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
-import { sceneChromePack, sceneFigureSupportMaterialize, scenePolarInputPack, sceneXyafBulkPack, sceneXytaTraceObservationsMaterialize } from "./sceneBulkNative.js";
+import { sceneChromePack, sceneFigureSupportMaterialize, scenePolarInputPack, sceneXyafBulkPack, sceneXytaTraceObservationsMaterialize, sceneXyTcTraceObservationsMaterialize } from "./sceneBulkNative.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
 const MAX_SCENE_MARKS = 2_000_000;
@@ -3692,83 +3692,48 @@ function xytcFillKind(style) {
   return 1;
 }
 
-function marshalXyTcTraceRecord(trace, showLegend) {
+export function marshalXyTcTraceObs(trace, showLegend) {
   const style = trace.style ?? {};
   const kindName = String(trace.kind ?? "");
-  const kind = encodeUtf8(kindName);
-  const dispatch = sceneXytcTraceDispatchPlan({
-    kind: kindName,
-    markerPathPresent: kindName === "scatter" && style.marker_path != null,
-    useDensity: kindName === "scatter" && scatterUsesDensity(trace),
-    joinedFill: kindName === "triangle_mesh" && Boolean(style.joined_fill),
-  });
-  const name = trace.name != null && String(trace.name).length ? String(trace.name) : "";
-  const nameB = encodeUtf8(name);
-  const packedSymbol = packXyTcSymbol(style);
-  const symbolRaw = style.symbol ?? "circle";
-  const symbolIsInt = typeof symbolRaw === "number" && typeof symbolRaw !== "boolean" ? 1 : 0;
   const nan = Number.NaN;
-  const opacity = Number(style.opacity ?? 1);
+  const name = trace.name != null && String(trace.name).length ? String(trace.name) : "";
+  const symbolRaw = style.symbol ?? "circle";
+  let symbolIsInt = 0;
+  let symbolInt = 0;
+  let symbolText = String(symbolRaw || "circle");
+  if (typeof symbolRaw === "number" && typeof symbolRaw !== "boolean") {
+    symbolIsInt = 1;
+    symbolInt = Number(symbolRaw);
+    symbolText = null;
+  }
+  const sizeCh = trace.size_ch;
+  const sizeChConstant = sizeCh?.constant;
   const rawDx = style.hex_dx ?? style.dx;
   const rawDy = style.hex_dy ?? style.dy;
-  const hasHexDx = rawDx != null ? 1 : 0;
-  const hasHexDy = rawDy != null ? 1 : 0;
-  const packedDash = packXyTcDash(style);
-  const perimeterPresent = Object.hasOwn(style, "stroke_perimeter") ? 1 : 0;
+  const dash = style.dash;
+  let dashText = null;
+  let dashValues = [];
+  let dashIsArray = 0;
+  if (typeof dash === "string") dashText = dash;
+  else if (Array.isArray(dash)) {
+    dashIsArray = 1;
+    try {
+      dashValues = dash.map((part) => {
+        const value = Number(part);
+        if (!Number.isFinite(value)) throw new RangeError("invalid dash part");
+        return value;
+      });
+    } catch {
+      dashValues = [];
+    }
+  }
+  const perimeterPresent = Object.hasOwn(style, "stroke_perimeter");
   let perimeterIsBool = 0;
   let perimeterTrue = 0;
   if (perimeterPresent) {
     const perimeter = style.stroke_perimeter;
     perimeterIsBool = typeof perimeter === "boolean" ? 1 : 0;
     perimeterTrue = perimeterIsBool && perimeter === true ? 1 : 0;
-  }
-  let fillCss = new Uint8Array();
-  let fillSpace = new Uint8Array();
-  let gradientBlob = new Uint8Array();
-  if (Object.hasOwn(style, "fill")) {
-    const fill = style.fill;
-    if (typeof fill === "string") fillCss = encodeUtf8(fill);
-    else if (fill != null && typeof fill === "object" && fill.space != null && fill.dir != null && Array.isArray(fill.stops)) {
-      gradientBlob = packGradientSpec(fill) ?? new Uint8Array();
-    } else if (fill != null && typeof fill === "object") {
-      fillCss = encodeUtf8(String(fill.gradient ?? ""));
-      fillSpace = encodeUtf8(String(fill.space ?? "mark"));
-    }
-  }
-  const color2Class = COLOR2_CLASS_TO_CODE[classifyRibbonColor2(trace)] ?? 4;
-  let color2GradientBlob = new Uint8Array();
-  let color2GradientPacked = false;
-  if (dispatch.packColor2) {
-    const paintFlags = packXyTcPaintPresence(style);
-    if (
-      color2Class === COLOR2_CLASS_TO_CODE.gradient
-      && (paintFlags & (XYTC_HAS_FILL | XYTC_HAS_GRADIENT_SPEC)) === 0
-    ) {
-      const spec = ribbonColor2GradientSpec(trace);
-      const packed = spec == null ? null : packGradientSpec(spec);
-      if (packed && packed.length) {
-        color2GradientPacked = true;
-        color2GradientBlob = packed;
-      }
-    }
-  }
-  let markerBlob = new Uint8Array();
-  let markerPathPresent = false;
-  let markerPacked = false;
-  let glyphPacked = false;
-  if (dispatch.markerPathBranch) {
-    markerPathPresent = true;
-    const packed = packMarkerBlob(style.marker_path);
-    if (packed) {
-      markerPacked = true;
-      markerBlob = packed;
-    }
-  } else if (dispatch.markerGlyphBranch) {
-    const packedGlyph = admittedMarkerGlyph(style.marker_glyph);
-    if (packedGlyph != null) {
-      glyphPacked = true;
-      markerBlob = packedGlyph;
-    }
   }
   const radius = style.corner_radius ?? 0;
   let radiusSeq = 1;
@@ -3782,74 +3747,151 @@ function marshalXyTcTraceRecord(trace, showLegend) {
   const channel = trace.color_ch;
   const colorChPresent = channel != null && typeof channel === "object" ? 1 : 0;
   const colorChHasConstant = colorChPresent && channel.constant != null ? 1 : 0;
-  const packedChannel = packXyTcColorChannel(trace);
-  const sizeCh = trace.size_ch;
-  const sizeChConstant = sizeCh?.constant;
+  const color2 = trace.color2_ch;
+  const hasColor2 = color2 != null;
+  const kindIsRibbon = kindName === "ribbon";
+  const hasFill = Object.hasOwn(style, "fill");
+  const color2SourceConst = channelConstantCss(trace.color_ch);
+  const color2TargetConst = hasColor2 ? channelConstantCss(color2) : null;
+  let hasEndPair = false;
+  if (hasColor2 && kindIsRibbon) {
+    const bothConst = color2TargetConst != null && color2SourceConst != null;
+    if (!bothConst && !hasFill) hasEndPair = ribbonEndRgbaPair(trace) != null;
+  }
+  return {
+    show_legend: showLegend,
+    kind: kindName,
+    has_name: Boolean(name),
+    name,
+    marker_path_present: kindName === "scatter" && style.marker_path != null,
+    use_density: kindName === "scatter" && scatterUsesDensity(trace),
+    joined_fill: kindName === "triangle_mesh" && Boolean(style.joined_fill),
+    symbol_is_int: symbolIsInt,
+    symbol_int: symbolInt,
+    symbol_text: symbolText,
+    opacity: Number(style.opacity ?? 1),
+    fill_opacity: Number(style.fill_opacity ?? 1),
+    stroke_opacity: Number(style.stroke_opacity ?? 1),
+    line_opacity: Number(style.line_opacity ?? 1),
+    has_stroke: Object.hasOwn(style, "stroke"),
+    stroke: style.stroke,
+    has_line_color: Object.hasOwn(style, "line_color"),
+    line_color: style.line_color,
+    has_color: Object.hasOwn(style, "color"),
+    color: style.color,
+    has_size: Object.hasOwn(style, "size"),
+    size: Object.hasOwn(style, "size") ? Number(style.size) : nan,
+    has_size_ch: sizeCh != null,
+    has_size_ch_constant: sizeChConstant != null,
+    size_ch_constant: sizeChConstant != null ? Number(sizeChConstant) : nan,
+    has_stroke_width: Object.hasOwn(style, "stroke_width"),
+    stroke_width: Object.hasOwn(style, "stroke_width") ? Number(style.stroke_width) : 0,
+    has_width: Object.hasOwn(style, "width"),
+    width: Object.hasOwn(style, "width") ? Number(style.width) : 0,
+    has_line_width: Object.hasOwn(style, "line_width"),
+    line_width: Object.hasOwn(style, "line_width") ? Number(style.line_width) : 0,
+    has_hex_dx: rawDx != null,
+    hex_dx: rawDx != null ? Number(rawDx) : nan,
+    has_hex_dy: rawDy != null,
+    hex_dy: rawDy != null ? Number(rawDy) : nan,
+    has_stroke_perimeter: perimeterPresent,
+    stroke_perimeter_is_bool: perimeterIsBool,
+    stroke_perimeter_true: perimeterTrue,
+    wedge_gap_raw: Number(style.wedge_gap ?? 0) || 0,
+    dash_is_array: dashIsArray,
+    dash_text: dashText,
+    dash_values: dashValues,
+    has_fill: hasFill,
+    fill: hasFill ? style.fill : null,
+    marker_path: style.marker_path,
+    marker_glyph: style.marker_glyph,
+    has_color2: hasColor2,
+    kind_is_ribbon: kindIsRibbon,
+    color2_source_const: color2SourceConst,
+    color2_target_const: color2TargetConst,
+    source_paint: sourceColorCss(trace),
+    has_end_pair: hasEndPair,
+    corner_radius_seq: radiusSeq,
+    corner_radius_r0: r0,
+    corner_radius_r1: r1,
+    color_ch_present: colorChPresent,
+    color_ch_has_constant: colorChHasConstant,
+    color_ch_mode: channel == null || typeof channel !== "object" ? null : String(channel.mode ?? ""),
+    color_ch_constant: colorChHasConstant ? String(channel.constant) : null,
+    linecap: style.linecap,
+    step: style.step,
+    curve: style.curve,
+  };
+}
+
+function marshalXyTcTraceRecord(trace, showLegend) {
+  const obs = marshalXyTcTraceObs(trace, showLegend);
+  const materialized = sceneXyTcTraceObservationsMaterialize(obs);
   return sceneXytcTracePack({
-    showLegend,
-    kind,
-    hasName: Boolean(name),
-    name: nameB,
-    markerPathPresent,
-    useDensity: kindName === "scatter" && scatterUsesDensity(trace),
-    joinedFill: kindName === "triangle_mesh" && Boolean(style.joined_fill),
-    markerPacked,
-    glyphPacked,
-    markerBlob,
-    color2Class,
-    color2GradientBlob,
-    color2GradientPacked,
+    showLegend: materialized.showLegend,
+    kind: materialized.kind,
+    hasName: materialized.hasName,
+    name: materialized.name,
+    markerPathPresent: materialized.markerPathPresent,
+    useDensity: materialized.useDensity,
+    joinedFill: materialized.joinedFill,
+    markerPacked: materialized.markerPacked,
+    glyphPacked: materialized.glyphPacked,
+    markerBlob: materialized.markerBlob,
+    color2Class: materialized.color2Class,
+    color2GradientBlob: materialized.color2GradientBlob,
+    color2GradientPacked: materialized.color2GradientPacked,
     style: {
-      symbolIsInt,
-      symbolInt: packedSymbol.symbolInt,
-      opacity,
-      fillOpacity: Number(style.fill_opacity ?? 1),
-      strokeOpacity: Number(style.stroke_opacity ?? 1),
-      lineOpacity: Number(style.line_opacity ?? 1),
-      hasStroke: Object.hasOwn(style, "stroke") ? 1 : 0,
-      hasLineColor: Object.hasOwn(style, "line_color") ? 1 : 0,
-      hasSize: Object.hasOwn(style, "size") ? 1 : 0,
-      size: Object.hasOwn(style, "size") ? Number(style.size) : nan,
-      hasSizeCh: sizeCh != null ? 1 : 0,
-      hasSizeChConstant: sizeChConstant != null ? 1 : 0,
-      sizeChConstant: sizeChConstant != null ? Number(sizeChConstant) : nan,
-      hasStrokeWidth: Object.hasOwn(style, "stroke_width") ? 1 : 0,
-      strokeWidth: Object.hasOwn(style, "stroke_width") ? Number(style.stroke_width) : 0,
-      hasWidth: Object.hasOwn(style, "width") ? 1 : 0,
-      width: Object.hasOwn(style, "width") ? Number(style.width) : 0,
-      hasLineWidth: Object.hasOwn(style, "line_width") ? 1 : 0,
-      lineWidth: Object.hasOwn(style, "line_width") ? Number(style.line_width) : 0,
-      hasHexDx,
-      hexDx: hasHexDx ? Number(rawDx) : nan,
-      hasHexDy,
-      hexDy: hasHexDy ? Number(rawDy) : nan,
-      hasStrokePerimeter: perimeterPresent,
-      strokePerimeterIsBool: perimeterIsBool,
-      strokePerimeterTrue: perimeterTrue,
-      dashIsArray: packedDash.flags ? 1 : 0,
-      hasFill: Object.hasOwn(style, "fill") ? 1 : 0,
-      fillKind: xytcFillKind(style),
-      colorChPresent,
-      colorChHasConstant,
-      radiusSeq,
-      r0,
-      r1,
-      wedgeGapRaw: Number(style.wedge_gap ?? 0) || 0,
+      symbolIsInt: materialized.style.symbolIsInt,
+      symbolInt: materialized.style.symbolInt,
+      opacity: materialized.style.opacity,
+      fillOpacity: materialized.style.fillOpacity,
+      strokeOpacity: materialized.style.strokeOpacity,
+      lineOpacity: materialized.style.lineOpacity,
+      hasStroke: materialized.style.hasStroke,
+      hasLineColor: materialized.style.hasLineColor,
+      hasSize: materialized.style.hasSize,
+      size: materialized.style.size,
+      hasSizeCh: materialized.style.hasSizeCh,
+      hasSizeChConstant: materialized.style.hasSizeChConstant,
+      sizeChConstant: materialized.style.sizeChConstant,
+      hasStrokeWidth: materialized.style.hasStrokeWidth,
+      strokeWidth: materialized.style.strokeWidth,
+      hasWidth: materialized.style.hasWidth,
+      width: materialized.style.width,
+      hasLineWidth: materialized.style.hasLineWidth,
+      lineWidth: materialized.style.lineWidth,
+      hasHexDx: materialized.style.hasHexDx,
+      hexDx: materialized.style.hexDx,
+      hasHexDy: materialized.style.hasHexDy,
+      hexDy: materialized.style.hexDy,
+      hasStrokePerimeter: materialized.style.hasStrokePerimeter,
+      strokePerimeterIsBool: materialized.style.strokePerimeterIsBool,
+      strokePerimeterTrue: materialized.style.strokePerimeterTrue,
+      dashIsArray: materialized.style.dashIsArray,
+      hasFill: materialized.style.hasFill,
+      fillKind: materialized.style.fillKind,
+      colorChPresent: materialized.style.colorChPresent,
+      colorChHasConstant: materialized.style.colorChHasConstant,
+      radiusSeq: materialized.style.radiusSeq,
+      r0: materialized.style.r0,
+      r1: materialized.style.r1,
+      wedgeGapRaw: materialized.style.wedgeGapRaw,
     },
-    symbolB: packedSymbol.symbolB,
-    dashB: packedDash.dashB,
-    dashPattern: packedDash.pattern,
-    linecapB: Object.hasOwn(style, "linecap") ? encodeUtf8(String(style.linecap)) : new Uint8Array(),
-    stepB: style.step != null ? encodeUtf8(String(style.step)) : new Uint8Array(),
-    curveB: style.curve != null ? encodeUtf8(String(style.curve)) : new Uint8Array(),
-    fillCss,
-    fillSpace,
-    fillGradientBlob: gradientBlob,
-    strokeCss: Object.hasOwn(style, "stroke") ? encodeUtf8(String(style.stroke)) : new Uint8Array(),
-    lineColor: Object.hasOwn(style, "line_color") ? encodeUtf8(String(style.line_color)) : new Uint8Array(),
-    colorCss: Object.hasOwn(style, "color") ? encodeUtf8(String(style.color)) : new Uint8Array(),
-    colorMode: packedChannel.mode,
-    colorConst: packedChannel.constant,
+    symbolB: materialized.symbolB,
+    dashB: materialized.dashB,
+    dashPattern: materialized.dashPattern,
+    linecapB: materialized.linecapB,
+    stepB: materialized.stepB,
+    curveB: materialized.curveB,
+    fillCss: materialized.fillCss,
+    fillSpace: materialized.fillSpace,
+    fillGradientBlob: materialized.fillGradientBlob,
+    strokeCss: materialized.strokeCss,
+    lineColor: materialized.lineColor,
+    colorCss: materialized.colorCss,
+    colorMode: materialized.colorMode,
+    colorConst: materialized.colorConst,
   });
 }
 

@@ -31,7 +31,7 @@ keys.
 | Push | Surface | ~Lines retired (cross-host) | New ABI | Exit criteria |
 | --- | --- | ---: | --- | --- |
 | **1** | `_payload` density grid materialize (bin2d / pyramid / sample / encode) | ~800 | **316** `xyg_payload_density_grid_materialize` | **DONE on #851** — grid body is plan → materialize → ship |
-| **2** | `_scene_v3` XYTC + XYTA trace pack | ~1,100 | **317–318** `xyg_scene_xytc_trace_pack`, `xyg_scene_xyta_trace_pack`; **323** `xyg_scene_xyta_trace_observations_materialize` | **DONE on #852** — `_pack_xyta` is marshal → materialize → pack; `_pack_xytc` delegates final record bytes to ABI 317 (follow-on: XYTC observations materialize to retire `_marshal_xytc_trace_record` field walks) |
+| **2** | `_scene_v3` XYTC + XYTA trace pack | ~1,100 | **317–318** `xyg_scene_xytc_trace_pack`, `xyg_scene_xyta_trace_pack`; **323** `xyg_scene_xyta_trace_observations_materialize`; **325** `xyg_scene_xytc_trace_observations_materialize` | **DONE** — `_pack_xyta` and `_pack_xytc` are marshal → materialize → pack on both hosts |
 | **3A** | Scene chrome / annotation / figure-support pack | ~1,500 | **319** bulk XYAF/XYCF/XYFS packers | **DONE** — `_pack_xyaf` / `_pack_chrome_facts` / `_pack_figure_support` marshal only |
 | **3B** | Payload geometry gather + channel materialize | ~950 | **320** column gather offset ship + channel materialize | **DONE** — `_ship_registry_columns` + `channels._ship_wire_buffer` delegate to Rust |
 
