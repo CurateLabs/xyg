@@ -88,6 +88,12 @@ def main() -> None:
     cases.append(_case("line_transition_keys", fig))
 
     fig = Figure(width=240, height=160)
+    fig.set_axis("x", type_="log")
+    fig.line([1.0, 10.0], [1.0, 10.0])
+    fig.traces[0].id = 40
+    cases.append(_case("line_log_ship_scale", fig))
+
+    fig = Figure(width=240, height=160)
     fig.histogram([0.0, 1.0, 1.0, 2.0, 3.0], bins=3, range=(0.0, 3.0))
     fig.traces[0].id = 10
     cases.append(_case("histogram_fixed_bins", fig))

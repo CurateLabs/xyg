@@ -73,6 +73,11 @@ const cases = [
       [5, 6],
     ];
   }),
+  caseEntry("line_log_ship_scale", (fig) => {
+    fig.setAxis("x", { type: "log" });
+    fig.line([1, 10], [1, 10]);
+    fig.traces[0].id = 40;
+  }),
   caseEntry("histogram_fixed_bins", (fig) => {
     fig.histogram([0, 1, 1, 2, 3], { bins: 3, range: [0, 3] });
     fig.traces[0].id = 10;
