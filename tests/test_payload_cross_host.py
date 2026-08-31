@@ -95,10 +95,29 @@ def _build_case(name: str) -> tuple[Figure, dict[str, object]]:
         )
         fig.traces[0].id = 17
         return fig, {}
+    if name == "histogram_style_channels":
+        from xyg import channels
+
+        fig = Figure(width=240, height=160)
+        fig.histogram([0.0, 1.0, 1.0, 2.0], bins=2, range=(0.0, 2.0))
+        n = len(fig.traces[0].x0.values)
+        fig.traces[0].style_channels = {
+            "stroke_width": channels.StyleChannel(np.full(n, 2.0, dtype=np.float64))
+        }
+        fig.traces[0].id = 21
+        return fig, {}
     if name == "segments_pass_through":
         fig = Figure(width=240, height=160)
         fig.segments([0.0, 1.0], [0.0, 1.0], [1.0, 2.0], [1.0, 0.0])
         fig.traces[0].id = 12
+        return fig, {}
+    if name == "segments_color_ch":
+        from xyg import channels
+
+        fig = Figure(width=240, height=160)
+        fig.segments([0.0], [0.0], [1.0], [1.0], color="#112233")
+        fig.traces[0].color_ch = channels.ColorChannel(mode="constant", constant="#445566")
+        fig.traces[0].id = 22
         return fig, {}
     if name == "hexbin_colormap":
         fig = Figure(width=240, height=160)
@@ -166,14 +185,16 @@ def test_fixture_contract(fixture: dict) -> None:
     assert fixture["schema"] == "xyg.payload-cross-host/v1"
     assert fixture["protocol"] == PROTOCOL_VERSION
     assert int(fixture["abi_version"]) == int(_native.ABI_VERSION)
-    assert len(fixture["cases"]) == 10
+    assert len(fixture["cases"]) == 12
     assert {case["name"] for case in fixture["cases"]} == {
         "scatter_direct",
         "scatter_categorical_color",
         "line_transition_keys",
         "histogram_fixed_bins",
         "histogram_finite_sel",
+        "histogram_style_channels",
         "segments_pass_through",
+        "segments_color_ch",
         "hexbin_colormap",
         "bar_compact",
         "heatmap_colormap",
@@ -189,7 +210,9 @@ def test_fixture_contract(fixture: dict) -> None:
         "line_transition_keys",
         "histogram_fixed_bins",
         "histogram_finite_sel",
+        "histogram_style_channels",
         "segments_pass_through",
+        "segments_color_ch",
         "hexbin_colormap",
         "bar_compact",
         "heatmap_colormap",
@@ -213,7 +236,9 @@ def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> Non
         "line_transition_keys",
         "histogram_fixed_bins",
         "histogram_finite_sel",
+        "histogram_style_channels",
         "segments_pass_through",
+        "segments_color_ch",
         "hexbin_colormap",
         "bar_compact",
         "heatmap_colormap",

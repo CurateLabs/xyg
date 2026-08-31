@@ -337,16 +337,36 @@ function shipColorChannel(channel, pw, sel = null, { quantizeContinuous = false 
   throw new Error(`unsupported color channel mode for wire encode: ${channel.mode}`);
 }
 
-function shipStyleChannels(styleChannels, pw, sel = null) {
-  const result = {};
-  for (const [name, channel] of Object.entries(styleChannels)) {
-    if (channel?.values == null) continue;
+function resolveStyleChannelValues(channel, sel, nMarks) {
+  if (channel?.values != null) {
     let values = channel.values;
     if (sel != null) {
       values = values instanceof Uint8Array
         ? gatherItems(values, sel)
         : gatherF64(values, sel);
     }
+    return values;
+  }
+  if (channel?.mode === "constant" && channel.constant != null) {
+    const n = sel != null ? sel.length : nMarks;
+    if (n == null || n <= 0) return null;
+    const constant = Number(channel.constant);
+    if (!Number.isFinite(constant)) return null;
+    if (channel.dtype === "u8") {
+      const out = new Uint8Array(n);
+      out.fill(constant);
+      return out;
+    }
+    return new Float64Array(n).fill(constant);
+  }
+  return null;
+}
+
+function shipStyleChannels(styleChannels, pw, sel = null, nMarks = null) {
+  const result = {};
+  for (const [name, channel] of Object.entries(styleChannels)) {
+    const values = resolveStyleChannelValues(channel, sel, nMarks);
+    if (values == null) continue;
     const plan = payloadChannelWireEncode({
       role: "style",
       mode: "direct",
@@ -358,7 +378,7 @@ function shipStyleChannels(styleChannels, pw, sel = null) {
       dtype: channel.dtype ?? "f32",
       buf: shipWireBuffer(plan, pw, { raw: values }),
     };
-    if (plan.setN) spec.n = sel == null ? values.length : sel.length;
+    if (plan.setN) spec.n = values.length;
     result[name] = spec;
   }
   return Object.keys(result).length > 0 ? result : undefined;
@@ -401,7 +421,7 @@ function shipRegistryAttach(entry, trace, pw, sel, plan) {
       const shipped = shipColorChannel(traceSlot, pw, sel);
       if (shipped != null) entry[key] = shipped;
     } else if (ch.shipMethod === "style") {
-      const shipped = shipStyleChannels(trace.style_channels, pw, sel);
+      const shipped = shipStyleChannels(trace.style_channels, pw, sel, entry.n_marks);
       if (shipped != null) entry[key] = shipped;
     }
   }
@@ -2284,15 +2304,7 @@ export class Figure {
       plan.channelSlot,
       { includeTraceStyles: plan.includeTraceStyles },
     );
-    // Node payload segments ships t.color. Python `_emit_segments` ships
-    // color_ch via `_ship_channels`. Matching Python would ignore t.color.
-    // Recorded emit-segments-color stay-host.
-    const color = this._shipColor(t.color, pw);
-    if (color != null) entry.color = color;
     attachTooltipRows(entry, t, sourceSel);
-    // Node payload segments omits style_channels. Python `_emit_segments`
-    // ships them as `channels` via `_ship_trace_styles`. Matching Python
-    // would add entry.channels. Recorded emit-segments-channels stay-host.
     if (plan.attachTransition) {
       attachTransitionEntry(entry, t, pw, sourceSel);
     }

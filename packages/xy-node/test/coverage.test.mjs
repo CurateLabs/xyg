@@ -907,65 +907,54 @@ test("_emitScatter ships transition_keys via payload transition attach", () => {
   assert.equal(spec.columns[spec.traces[0].keys.lo].dtype, "u32");
 });
 
-test("_emitHistogram omits style_channels unlike Python _ship_trace_styles", () => {
-  // Python `_emit_histogram` ships style_channels via `_emit_rect` /
-  // `_ship_trace_styles` as `channels`. Node histogram payload keeps no
-  // channels field even when style_channels is present.
-  // Recorded emit-hist-channels stay-host.
+test("_emitHistogram ships constant style_channels via shipStyleChannels", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
   fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "histogram");
-  assert.equal(spec.traces[0].channels, undefined);
+  assert.equal(spec.traces[0].channels.stroke_width.mode, "direct");
+  assert.equal(spec.traces[0].channels.stroke_width.n, 2);
 });
 
-test("_emitSegments omits style_channels unlike Python _ship_trace_styles", () => {
-  // Python `_emit_segments` ships style_channels as `channels`. Node
-  // segments payload keeps no channels field even when style_channels is present.
-  // Recorded emit-segments-channels stay-host.
+test("_emitSegments ships constant style_channels via shipStyleChannels", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.segments([0], [0], [1], [1]);
   fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "segments");
-  assert.equal(spec.traces[0].channels, undefined);
+  assert.equal(spec.traces[0].channels.stroke_width.mode, "direct");
+  assert.equal(spec.traces[0].channels.stroke_width.n, 1);
 });
 
-test("_emitTriangleMesh omits style_channels unlike Python _ship_trace_styles", () => {
-  // Python `_emit_triangle_mesh` ships style_channels as `channels`. Node
-  // mesh payload keeps no channels field even when style_channels is present.
-  // Recorded emit-mesh-channels stay-host.
+test("_emitTriangleMesh ships constant style_channels via shipStyleChannels", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
   fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "triangle_mesh");
-  assert.equal(spec.traces[0].channels, undefined);
+  assert.equal(spec.traces[0].channels.stroke_width.mode, "direct");
+  assert.equal(spec.traces[0].channels.stroke_width.n, 1);
 });
 
-test("_emitRect omits style_channels unlike Python _ship_trace_styles", () => {
-  // Python `_emit_rect` ships style_channels as `channels`. Node bar/rect
-  // payload keeps no channels field even when style_channels is present.
-  // Recorded emit-rect-channels stay-host.
+test("_emitRect ships constant style_channels via shipStyleChannels", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.bar([0, 1], [1, 2]);
   fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "bar");
-  assert.equal(spec.traces[0].channels, undefined);
+  assert.equal(spec.traces[0].channels.stroke_width.mode, "direct");
+  assert.equal(spec.traces[0].channels.stroke_width.n, 2);
 });
 
-test("_emitRibbon omits style_channels unlike Python _ship_trace_styles", () => {
-  // Python `_emit_ribbon` ships style_channels as `channels`. Node ribbon
-  // payload keeps no channels field even when style_channels is present.
-  // Recorded emit-ribbon-channels stay-host.
+test("_emitRibbon ships constant style_channels via shipStyleChannels", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.ribbon([0], [1], [0], [1], [0], [1], { color: "#112233" });
   fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "ribbon");
-  assert.equal(spec.traces[0].channels, undefined);
+  assert.equal(spec.traces[0].channels.stroke_width.mode, "direct");
+  assert.equal(spec.traces[0].channels.stroke_width.n, 1);
 });
 
 test("_emitScatter ships style_channels like Python _ship_trace_styles", () => {
@@ -1061,9 +1050,7 @@ test("_emitTriangleMesh ships color_ch via payload channel attach", () => {
   assert.equal(spec.traces[0].color.color, "#112233");
 });
 
-test("_emitSegments ships t.color unlike Python color_ch", () => {
-  // Python `_emit_segments` ships color_ch. Node keeps t.color even when
-  // color_ch is also present. Recorded emit-segments-color stay-host.
+test("_emitSegments ships color_ch like Python _emit_segments", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.segments([0], [0], [1], [1], {
     color: { mode: "constant", constant: "#112233" },
@@ -1071,7 +1058,7 @@ test("_emitSegments ships t.color unlike Python color_ch", () => {
   fig.traces[0].color_ch = { mode: "constant", constant: "#445566" };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "segments");
-  assert.equal(spec.traces[0].color.color, "#112233");
+  assert.equal(spec.traces[0].color.color, "#445566");
 });
 
 test("_emitRect ships color_ch via payload channel attach", () => {
