@@ -1575,13 +1575,9 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `scatter()` stores f64 not Column.kind.
   Node `_emitHexbin` ships metric not color_ch.
   Node `_emitHeatmap` ships grid columns not nested heatmap.
-  Node `_emitScatter` ships t.color not color_ch.
   Node `_emitRibbon` ships t.color_target not color2_ch.
   Node `_emitRibbon` ships t.color not color_ch.
-  Node `_emitRect` omits color_ch.
-  Node `_emitSegments` ships t.color not color_ch.
   Node `_emitTriangleMesh` ships x/y not x2/y2.
-  Node `_emitHistogram` skips rectFiniteSel.
   Node `_emitRect` ships bar columns not nested bar.
   Node `_emitRibbon` skips valid_indices_f64.
   Node `_emitTriangleMesh` skips valid_indices_f64.

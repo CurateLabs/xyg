@@ -76,6 +76,12 @@ def main() -> None:
     cases.append(_case("scatter_style_channels", fig))
 
     fig = Figure(width=240, height=160)
+    fig.scatter([0.0, 1.0], [0.0, 1.0], color="#112233")
+    fig.traces[0].color_ch = channels.ColorChannel(mode="constant", constant="#445566")
+    fig.traces[0].id = 36
+    cases.append(_case("scatter_color_ch", fig))
+
+    fig = Figure(width=240, height=160)
     fig.line([0.0, 1.0, 2.0], [0.0, 1.0, 0.5])
     fig.traces[0].id = 8
     fig.traces[0].transition_keys = np.array([[1, 2], [3, 4], [5, 6]], dtype=np.uint32)

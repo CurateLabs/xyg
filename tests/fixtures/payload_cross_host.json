@@ -44,6 +44,19 @@
       "trace_keys": null
     },
     {
+      "name": "scatter_color_ch",
+      "width": 240,
+      "height": 160,
+      "trace_id": 36,
+      "kind": "scatter",
+      "tier": "direct",
+      "n_marks": 2,
+      "payload_blob_len": 16,
+      "payload_blob_sha256": "55090b99bb7f1c18c589bf3e72621fc753c3b1d8af4060ce1467a30f75ac6a6b",
+      "payload_blob_hex": "000000bf0000003f000000bf0000003f",
+      "trace_keys": null
+    },
+    {
       "name": "line_transition_keys",
       "width": 240,
       "height": 160,
