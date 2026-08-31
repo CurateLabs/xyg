@@ -62,6 +62,19 @@
       "trace_keys": null
     },
     {
+      "name": "histogram_finite_sel",
+      "width": 240,
+      "height": 160,
+      "trace_id": 17,
+      "kind": "histogram",
+      "tier": "direct",
+      "n_marks": 1,
+      "payload_blob_len": 16,
+      "payload_blob_sha256": "3d1df9a10a86a5d03b0afe7848bbb3eb3d47fc08501e3556cb2266c5e85f5e1d",
+      "payload_blob_hex": "000000bf000000bf0000000000000000",
+      "trace_keys": null
+    },
+    {
       "name": "segments_pass_through",
       "width": 240,
       "height": 160,

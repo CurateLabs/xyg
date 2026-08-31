@@ -67,6 +67,19 @@ const cases = [
     fig.histogram([0, 1, 1, 2, 3], { bins: 3, range: [0, 3] });
     fig.traces[0].id = 10;
   }),
+  caseEntry("histogram_finite_sel", (fig) => {
+    fig.traces.push({
+      kind: "histogram",
+      id: 17,
+      name: null,
+      x0: new Float64Array([0, 1]),
+      x1: new Float64Array([1, 2]),
+      y0: new Float64Array([0, 0]),
+      y1: new Float64Array([1, Number.NaN]),
+      style: { color: "#3987e5", opacity: 0.85, role: "histogram" },
+      count: 4,
+    });
+  }),
   caseEntry("segments_pass_through", (fig) => {
     fig.segments([0, 1], [0, 1], [1, 2], [1, 0]);
     fig.traces[0].id = 12;

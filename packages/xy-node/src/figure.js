@@ -2139,27 +2139,29 @@ export class Figure {
   }
 
   _emitHistogram(t, pw) {
-    const x0 = new Column(t.x0);
-    const x1 = new Column(t.x1);
-    const y0 = new Column(t.y0);
-    const y1 = new Column(t.y1);
-    // Node payload histogram omits color_ch. Python `_emit_histogram` calls
-    // `_emit_rect`, which ships color_ch. Matching Python would add
-    // entry.color. Recorded emit-hist-color stay-host.
-    // Node payload histogram omits stroke_ch. Python `_emit_histogram` calls
-    // `_emit_rect`, which ships stroke_ch via `_ship_trace_styles`. Matching
-    // Python would add entry.stroke. Recorded emit-hist-stroke stay-host.
-    // Node payload histogram omits style_channels. Python `_emit_histogram`
-    // calls `_emit_rect`, which ships them as `channels` via `_ship_trace_styles`.
-    // Matching Python would add entry.channels. Recorded emit-hist-channels stay-host.
-    // Node payload histogram skips rectFiniteSel. Python `_emit_histogram` calls
-    // `_emit_rect`, which drops non-finite rows. Matching Python would gather.
-    // Recorded emit-hist-finite-sel stay-host.
+    if (t.x0 == null || t.x1 == null || t.y0 == null || t.y1 == null) {
+      throw new Error(`${t.kind} trace missing rectangle columns`);
+    }
+    let x0v = t.x0;
+    let x1v = t.x1;
+    let y0v = t.y0;
+    let y1v = t.y1;
+    const finiteSel = rectFiniteSel(t, x0v, x1v, y0v, y1v);
+    if (finiteSel != null) {
+      x0v = gatherF64(x0v, finiteSel);
+      x1v = gatherF64(x1v, finiteSel);
+      y0v = gatherF64(y0v, finiteSel);
+      y1v = gatherF64(y1v, finiteSel);
+    }
+    const x0Col = new Column(t.x0);
+    const x1Col = new Column(t.x1);
+    const y0Col = new Column(t.y0);
+    const y1Col = new Column(t.y1);
     const xAxis = t.x_axis ?? "x";
     const yAxis = t.y_axis ?? "y";
     const plan = payloadBarHistEmitPlan({
       kind: "histogram",
-      nMarks: t.x0.length,
+      nMarks: x0v.length,
       styleColorIsNone: t.style?.color == null,
       xAxisScale: payloadAxisScale(this, xAxis),
       yAxisScale: payloadAxisScale(this, yAxis),
@@ -2172,10 +2174,10 @@ export class Figure {
       tier: "direct",
       n_points: t.count ?? t.x0.length,
       n_marks: plan.nMarks,
-      x0: pw.ship(t.x0, x0, { scale: plan.xShipScale }),
-      x1: pw.ship(t.x1, x1, { scale: plan.xShipScale }),
-      y0: pw.ship(t.y0, y0, { scale: plan.yShipScale }),
-      y1: pw.ship(t.y1, y1, { scale: plan.yShipScale }),
+      x0: pw.ship(x0v, x0Col, { scale: plan.xShipScale }),
+      x1: pw.ship(x1v, x1Col, { scale: plan.xShipScale }),
+      y0: pw.ship(y0v, y0Col, { scale: plan.yShipScale }),
+      y1: pw.ship(y1v, y1Col, { scale: plan.yShipScale }),
       x_axis: xAxis,
       y_axis: yAxis,
     };
@@ -2183,12 +2185,12 @@ export class Figure {
       entry,
       t,
       pw,
-      null,
+      finiteSel,
       plan.channelSlot,
       { includeTraceStyles: plan.includeTraceStyles },
     );
     if (plan.attachTransition) {
-      attachTransitionEntry(entry, t, pw, null);
+      attachTransitionEntry(entry, t, pw, finiteSel);
     }
     return entry;
   }

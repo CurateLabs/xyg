@@ -32,6 +32,18 @@ function buildCase(name) {
   } else if (name === "histogram_fixed_bins") {
     fig.histogram([0, 1, 1, 2, 3], { bins: 3, range: [0, 3] });
     fig.traces[0].id = 10;
+  } else if (name === "histogram_finite_sel") {
+    fig.traces.push({
+      kind: "histogram",
+      id: 17,
+      name: null,
+      x0: new Float64Array([0, 1]),
+      x1: new Float64Array([1, 2]),
+      y0: new Float64Array([0, 0]),
+      y1: new Float64Array([1, Number.NaN]),
+      style: { color: "#3987e5", opacity: 0.85, role: "histogram" },
+      count: 4,
+    });
   } else if (name === "segments_pass_through") {
     fig.segments([0, 1], [0, 1], [1, 2], [1, 0]);
     fig.traces[0].id = 12;
@@ -62,7 +74,7 @@ test("payload cross-host fixture contract", () => {
   assert.equal(fixture.schema, "xyg.payload-cross-host/v1");
   assert.equal(fixture.protocol, PROTOCOL_VERSION);
   assert.equal(Number(fixture.abi_version), abiVersion());
-  assert.equal(fixture.cases.length, 9);
+  assert.equal(fixture.cases.length, 10);
 });
 
 for (const entry of fixture.cases) {

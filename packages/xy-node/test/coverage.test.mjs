@@ -850,17 +850,22 @@ test("_emitBarCompact ships nested bar spec like Python _emit_bar_compact", () =
   assert.equal(spec.traces[0].x0, undefined);
 });
 
-test("_emitHistogram skips rectFiniteSel unlike Python _emit_rect", () => {
-  // Python `_emit_histogram` calls `_emit_rect`, which drops non-finite rows
-  // via `_rect_finite_sel`. Node histogram payload keeps every bin even when
-  // a geometry column has NaN. Recorded emit-hist-finite-sel stay-host.
+test("_emitHistogram drops non-finite bins via rectFiniteSel like Python _emit_rect", () => {
   const fig = figure({ width: 240, height: 160 });
-  fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
-  const nBins = fig.traces[0].x0.length;
-  fig.traces[0].x0[0] = Number.NaN;
+  fig.traces.push({
+    kind: "histogram",
+    id: 17,
+    name: null,
+    x0: new Float64Array([0, 1]),
+    x1: new Float64Array([1, 2]),
+    y0: new Float64Array([0, 0]),
+    y1: new Float64Array([1, Number.NaN]),
+    style: { color: "#3987e5", opacity: 0.85, role: "histogram" },
+    count: 4,
+  });
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "histogram");
-  assert.equal(spec.traces[0].n_marks, nBins);
+  assert.equal(spec.traces[0].n_marks, 1);
 });
 
 test("_emitArea ships transition_keys via payload transition attach", () => {

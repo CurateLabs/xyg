@@ -81,6 +81,22 @@ def main() -> None:
     cases.append(_case("histogram_fixed_bins", fig))
 
     fig = Figure(width=240, height=160)
+    fig._append_rect_trace(
+        "histogram",
+        np.array([0.0, 1.0]),
+        np.array([1.0, 2.0]),
+        np.array([0.0, 0.0]),
+        np.array([1.0, np.nan]),
+        name=None,
+        color="#3987e5",
+        opacity=0.85,
+        role="histogram",
+        count=4,
+    )
+    fig.traces[0].id = 17
+    cases.append(_case("histogram_finite_sel", fig))
+
+    fig = Figure(width=240, height=160)
     fig.segments([0.0, 1.0], [0.0, 1.0], [1.0, 2.0], [1.0, 0.0])
     fig.traces[0].id = 12
     cases.append(_case("segments_pass_through", fig))
