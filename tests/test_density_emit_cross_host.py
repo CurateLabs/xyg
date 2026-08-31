@@ -75,6 +75,8 @@ def _case_keys(case_name: str, entry: dict) -> list[str]:
         return [key for key in entry if key in SAMPLE_CASE_KEYS]
     if case_name.startswith("scatter_density_wasm_source"):
         return [key for key in entry if key in WASM_SOURCE_CASE_KEYS]
+    if case_name == "scatter_density_log_y_grid":
+        return [key for key in entry if key != "name"]
     return [key for key in entry if key != "name"]
 
 
@@ -89,6 +91,7 @@ CASE_NAMES = (
     "density_sample_log_x_ship",
     "density_sample_transition_fallback",
     "density_sample_nan_oov_filter",
+    "scatter_density_log_y_grid",
 )
 
 
@@ -201,6 +204,16 @@ def _build_case(name: str) -> Figure:
         fig.scatter([0.0, 1.0, float("nan"), 5.0], [1.0, 2.0, 3.0, 4.0], density=True)
         fig.traces[0].id = 36
         return fig
+    if name == "scatter_density_log_y_grid":
+        fig = Figure(width=240, height=160)
+        fig.axis_options = {"y": {"type": "log"}, "x": {}}
+        fig._set_axis_domain("y", [1.0, 100.0])
+        n = 80
+        x = np.full(n, 1.0)
+        y = np.array([1.0 + i * 0.01 if i < 70 else 10.0 + (i - 70) for i in range(n)])
+        fig.scatter(x, y, density=True)
+        fig.traces[0].id = 37
+        return fig
     raise KeyError(name)
 
 
@@ -235,7 +248,7 @@ def _wasm_source_meta(spec: dict) -> dict:
     }
 
 
-def _density_wire_meta(spec: dict, *, split: bool = False) -> dict:
+def _density_wire_meta(spec: dict, *, case_name: str = "", split: bool = False) -> dict:
     trace = spec["traces"][0]
     density = trace.get("density") or {}
     sample = density.get("sample") or {}
@@ -263,6 +276,14 @@ def _density_wire_meta(spec: dict, *, split: bool = False) -> dict:
         else None,
         "animation_fallback": trace.get("animation_fallback"),
     }
+    if case_name == "scatter_density_log_y_grid":
+        meta.update(
+            {
+                "density_max": density.get("max"),
+                "density_binning": density.get("binning"),
+                "density_reduction": density.get("reduction"),
+            }
+        )
     if split:
         meta.update(_wasm_source_meta(spec))
     return meta
@@ -271,9 +292,9 @@ def _density_wire_meta(spec: dict, *, split: bool = False) -> dict:
 def _build_case_payload(name: str, fig: Figure) -> dict:
     if name == "scatter_density_wasm_source_split":
         spec, _buffers = fig.build_payload_split()
-        return _density_wire_meta(spec, split=True)
+        return _density_wire_meta(spec, case_name=name, split=True)
     spec, _blob = fig.build_payload()
-    return _density_wire_meta(spec)
+    return _density_wire_meta(spec, case_name=name)
 
 
 @pytest.fixture(scope="module")

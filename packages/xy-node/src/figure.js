@@ -116,6 +116,7 @@ import {
   figureSceneV3,
   resolveDensityBinColors,
   scatterPaintChannelNames,
+  scaleMap,
   sceneRasterCommands,
   sceneSvg,
   svgToPdf,
@@ -1550,6 +1551,44 @@ export class Figure {
     return figureAutorangeDomain(figureAutorangeAxisOptions(this, axisId));
   }
 
+  /** Column values and window bounds in the axis binning space (Python `_binning_coords`). */
+  _binningCoords(axisId, values, bounds) {
+    const scale = payloadAxisScale(this, axisId);
+    const b0 = Number(bounds[0]);
+    const b1 = Number(bounds[1]);
+    if (scale === "linear") {
+      return { values, b0, b1 };
+    }
+    const opts = figureAutorangeAxisOptions(this, axisId);
+    const constant = opts.constant ?? 1;
+    const domain = [b0, b1];
+    const transformedBounds = scaleMap({
+      values: domain,
+      kind: scale,
+      operation: "coord",
+      domain,
+      range: [0, 1],
+      constant,
+    });
+    const c0 = transformedBounds[0];
+    const c1 = transformedBounds[1];
+    if (!Number.isFinite(c0) || !Number.isFinite(c1) || c1 <= c0) {
+      return { values, b0, b1 };
+    }
+    return {
+      values: scaleMap({
+        values,
+        kind: scale,
+        operation: "coord",
+        domain,
+        range: [0, 1],
+        constant,
+      }),
+      b0: c0,
+      b1: c1,
+    };
+  }
+
   _visibleSel(t, x, y, {
     base = null,
     prefiltered = false,
@@ -1690,6 +1729,18 @@ export class Figure {
     const noRescan = Boolean(scatterPayloadNoRescan(t));
     const forceSpill = Boolean(t.pyramid_spill ?? t.style?.pyramid_spill);
     let hasPyramidResource = false;
+    const xAxis = t.x_axis ?? "x";
+    const yAxis = t.y_axis ?? "y";
+    const xLinear = payloadAxisScale(this, xAxis) === "linear";
+    const yLinear = payloadAxisScale(this, yAxis) === "linear";
+    const xBin = this._binningCoords(xAxis, t.x, xr);
+    const yBin = this._binningCoords(yAxis, t.y, yr);
+    const bx = xBin.values;
+    const by = yBin.values;
+    const bx0 = xBin.b0;
+    const bx1 = xBin.b1;
+    const by0 = yBin.b0;
+    const by1 = yBin.b1;
     const xCol = t._xCol instanceof Column ? t._xCol : new Column(t.x);
     const yCol = t._yCol instanceof Column ? t._yCol : new Column(t.y);
     t._xCol = xCol;
@@ -1710,7 +1761,7 @@ export class Figure {
         this._pyramids.set(t.id, cache);
       }
       hasPyramidResource = true;
-      const served = densityViewFromPyramid(cache, t.x, t.y, xr[0], xr[1], yr[0], yr[1], w, h, {
+      const served = densityViewFromPyramid(cache, t.x, t.y, bx0, bx1, by0, by1, w, h, {
         noRescan,
         forceSpill,
       });
@@ -1735,8 +1786,8 @@ export class Figure {
         hasCounts: colorMeta.hasCounts,
         hasConstant: colorMeta.hasConstant,
         cartesian: this.coords === "cartesian",
-        xLinear: true,
-        yLinear: true,
+        xLinear,
+        yLinear,
         xHasNulls: xCol.nullCount > 0,
         yHasNulls: yCol.nullCount > 0,
         pointOverlay: true,
@@ -1758,22 +1809,22 @@ export class Figure {
         xr1: xr[1],
         yr0: yr[0],
         yr1: yr[1],
-        bx0: xr[0],
-        bx1: xr[1],
-        by0: yr[0],
-        by1: yr[1],
+        bx0,
+        bx1,
+        by0,
+        by1,
         nPoints: t.x.length,
         hasPyramidRgba: false,
         hasBinColors: false,
         droppedCount: 0,
       });
       if (pathPlan.gridPath === DENSITY_GRID_PATH_RANGE_INDICES) {
-        const fused = bin2dIndices(t.x, t.y, xr[0], xr[1], yr[0], yr[1], w, h);
+        const fused = bin2dIndices(bx, by, bx0, bx1, by0, by1, w, h);
         grid = fused.grid;
         rangeSel = fused.indices;
         visible = rangeSel.length;
       } else {
-        grid = bin2d(t.x, t.y, xr[0], xr[1], yr[0], yr[1], w, h);
+        grid = bin2d(bx, by, bx0, bx1, by0, by1, w, h);
       }
       binning = densityFormatBinning({ exact: true });
       reduction = "bin2d";
@@ -1788,8 +1839,8 @@ export class Figure {
       hasCounts: colorMeta.hasCounts,
       hasConstant: colorMeta.hasConstant,
       cartesian: this.coords === "cartesian",
-      xLinear: true,
-      yLinear: true,
+      xLinear,
+      yLinear,
       xHasNulls: xCol.nullCount > 0,
       yHasNulls: yCol.nullCount > 0,
       pointOverlay: true,
@@ -1809,10 +1860,10 @@ export class Figure {
       xr1: xr[1],
       yr0: yr[0],
       yr1: yr[1],
-      bx0: xr[0],
-      bx1: xr[1],
-      by0: yr[0],
-      by1: yr[1],
+      bx0,
+      bx1,
+      by0,
+      by1,
       nPoints: t.x.length,
       hasPyramidRgba: rgbaFromPyramid != null,
       hasBinColors: binColors != null,
@@ -1824,7 +1875,7 @@ export class Figure {
       if (rgbaFromPyramid != null) {
         rgbaGrid = rgbaFromPyramid;
       } else if (binColors != null) {
-        rgbaGrid = bin2dMeanColor(t.x, t.y, xr[0], xr[1], yr[0], yr[1], w, h, binColors);
+        rgbaGrid = bin2dMeanColor(bx, by, bx0, bx1, by0, by1, w, h, binColors);
       }
     }
     const gridPlan = payloadDensityGridShipPlan({
