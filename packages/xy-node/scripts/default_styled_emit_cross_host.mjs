@@ -65,6 +65,11 @@ const cases = [
     fig.traces[whiskerIdx].id = 22;
     fig.traces[whiskerIdx].style = { opacity: 0.9 };
   }, (spec) => spec.traces.find((t) => t.kind === "box_whisker")),
+  caseEntry("hexbin_default_styled", (fig) => {
+    fig.hexbin([1, 2, 3, 4, 5], [1, 2, 1, 2, 1.5], { gridsize: 4 });
+    fig.traces[0].id = 23;
+    fig.traces[0].style = { opacity: 0.9 };
+  }),
 ];
 
 const out = {

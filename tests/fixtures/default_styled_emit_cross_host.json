@@ -73,6 +73,16 @@
         "color": "#9085e9"
       },
       "palette_color": "#9085e9"
+    },
+    {
+      "name": "hexbin_default_styled",
+      "trace_id": 23,
+      "kind": "hexbin",
+      "style": {
+        "opacity": 0.9,
+        "color": "#e66767"
+      },
+      "palette_color": "#e66767"
     }
   ]
 }

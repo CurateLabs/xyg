@@ -2706,21 +2706,15 @@ export class Figure {
   }
 
   _polarAxisSpecs(xr, yr) {
-    // Node `??` keeps empty `theta_unit`. Python `_axis_spec` uses
-    // `opts.get("theta_unit") or "radians"`. Recorded polar-payload-unit-empty stay-host.
-    const unit = figureAutorangeThetaUnit(this.axis_options?.x) ?? "radians";
+    const unit = figureAutorangeThetaUnit(this.axis_options?.x) || "radians";
     const turn = unit === "degrees" ? 360.0 : 2.0 * Math.PI;
     const authoredSector = (this.axis_options?.x ?? {}).sector;
-    // Node keeps an empty sector list. Python `_axis_spec` uses
-    // `opts.get("sector") or (0.0, turn)`. Recorded polar-payload-sector-empty stay-host.
-    const sector = authoredSector != null ? [...authoredSector] : [0.0, turn];
+    const sector = authoredSector?.length ? [...authoredSector] : [0.0, turn];
     const yOpts = this.axis_options?.y ?? {};
     const y = {
       range: yr,
       scale: "linear",
-      // Node `??` keeps empty `hole`. Python `_axis_spec` uses
-      // `opts.get("hole") or 0.0`. Recorded polar-payload-hole-empty stay-host.
-      hole: yOpts.hole ?? 0.0,
+      hole: yOpts.hole || 0.0,
     };
     if (yOpts.r_origin != null) y.r_origin = yOpts.r_origin;
     return {
@@ -2729,16 +2723,9 @@ export class Figure {
         scale: "linear",
         theta_unit: unit,
         theta_zero: (this.axis_options?.x ?? {}).theta_zero ?? "E",
-        // Node `??` keeps empty `theta_direction`. Python `_axis_spec` uses
-        // `opts.get("theta_direction") or "counterclockwise"`. Recorded
-        // polar-payload-dir-empty stay-host.        // emit-polar-payload-axis-id stay-host.
-
-        theta_direction: (this.axis_options?.x ?? {}).theta_direction ?? "counterclockwise",
+        theta_direction: (this.axis_options?.x ?? {}).theta_direction || "counterclockwise",
         sector,
-        // Node `??` keeps empty `grid_shape`. Python `_axis_spec` uses
-        // `opts.get("grid_shape") or "circular"`. Recorded
-        // polar-payload-grid-empty stay-host.
-        grid_shape: (this.axis_options?.x ?? {}).grid_shape ?? "circular",
+        grid_shape: (this.axis_options?.x ?? {}).grid_shape || "circular",
       },
       y,
     };
