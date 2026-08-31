@@ -151,8 +151,26 @@ MERGED_PAYLOAD_GATHER_SHIP: tuple[tuple[str, str, str], ...] = (
 REMAINING_CLOSE: tuple[tuple[str, str], ...] = (
     (
         "#731",
-        "parent M2 close — blocked on Node stay-host TAP convergence (#732 gather/ship closed)",
+        "parent M2 close — OPEN; #732/#733 closed; blocked on Node stay-host TAP (#644-#698) + cross-host proof",
     ),
+    (
+        "Node TAP",
+        "payload emit #644-#693 + scene compose #694-#698 serial merge onto main",
+    ),
+    (
+        "Secondary §302",
+        "_svg/_raster compat paths, marks/_figure composition, channels label factorization, lod cache wiring",
+    ),
+)
+
+M731_CLOSE_CHECKLIST: tuple[tuple[str, str], ...] = (
+    ("#732 gather/ship + density grid ship (ABI 310-315)", "CLOSED"),
+    ("#733 scene orchestration plans (ABI 305-309)", "CLOSED"),
+    ("Node stay-host TAP #644-#698 serial merge", "OPEN — primary blocker"),
+    ("Cross-host payload + Scene-byte differential proof", "OPEN"),
+    ("Residual host materialization (_payload bin2d/pyramid; _scene_v3 field-byte walks)", "OPEN"),
+    ("Secondary §302 (_svg/_raster, marks, channels labels)", "OPEN — out of #731 bar"),
+    ("#735 close-contract doc rebase onto main", "CONFLICTED"),
 )
 
 
@@ -266,11 +284,11 @@ def main(argv: list[str] | None = None) -> int:
         MERGED_SCENE_ORCHESTRATION,
     )
     _print_stack(
-        "Merged payload gather/ship on main (#765 -> #769, ABI 310-315, #732 CLOSED):",
+        "Merged payload gather/ship on main (#765 -> #770/#732, ABI 310-315, #732 CLOSED):",
         MERGED_PAYLOAD_GATHER_SHIP,
     )
 
-    print("M2 close contract (#731):")
+    print("M2 close contract (#731 — OPEN, do not mark M2 complete):")
     print("  - #733 CLOSED: Scene pack dispatch/plan orchestration is Rust-owned (ABI 305-309).")
     print(
         "  - #732 CLOSED: gather/ship registry + density grid ship are Rust-owned (ABI 310-315); "
@@ -278,14 +296,20 @@ def main(argv: list[str] | None = None) -> int:
     )
     print(
         "  - Admit/encode slices (ABI 218-291), orchestration plans (ABI 292-309), "
-        "and gather/ship registry (ABI 310-313) are done."
+        "and gather/ship registry (ABI 310-315) are done."
     )
-    print("  - Stay-host TAP (#644-#698) is inventory, not an alternate close path.")
+    print("  - Primary remainder: Node stay-host TAP (#644-#698) serial merge + cross-host proof.")
+    print("  - Stay-host TAP is inventory tied to #731 close, not an alternate close path.")
     print()
 
     print("Remaining close blockers:")
     for issue, desc in REMAINING_CLOSE:
         print(f"  - {issue}: {desc}")
+    print()
+
+    print("#731 close checklist:")
+    for gate, status in M731_CLOSE_CHECKLIST:
+        print(f"  - {gate}: {status}")
     print()
 
     print(

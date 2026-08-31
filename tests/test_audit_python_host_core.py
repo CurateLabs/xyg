@@ -46,8 +46,12 @@ def test_audit_cli_exits_zero():
     assert "#768" in proc.stdout
     assert "xyg_payload_column_ship_plan" in proc.stdout
     assert "xyg_payload_channel_wire_encode" in proc.stdout
-    assert "M2 close contract (#731)" in proc.stdout
+    assert "M2 close contract (#731 — OPEN, do not mark M2 complete)" in proc.stdout
     assert "#733 CLOSED" in proc.stdout
     assert "xyg_payload_density_grid_ship_plan" in proc.stdout
     assert "#732 CLOSED" in proc.stdout
     assert "Remaining close blockers" in proc.stdout
+    assert "#731 close checklist" in proc.stdout
+    assert "Node TAP" in proc.stdout
+    assert "Secondary §302" in proc.stdout
+    assert "do not mark M2 complete" in proc.stdout
