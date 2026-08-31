@@ -193,12 +193,31 @@ class CustomBuildHook(BuildHookInterface):
         # module. Release/direct-browser jobs prepackage it with
         # `js/package-wasm.mjs`; a docs editable build intentionally does not
         # require Rust or that target merely to build the ordinary client.
+        #
+        # Wheel vs sdist pathing differs by design:
+        # - The wheel installs the package at `xyg/…`, so optional assets must
+        #   be force-included (remapped to `xyg/static/…`) or they would not
+        #   ride `packages` in the wheel at all.
+        # - The sdist records the *source* tree. The `artifacts` config in
+        #   pyproject.toml already carries `python/xyg/static/wasm-worker.js`
+        #   and `packages/xy-client/dist/wasm-worker.js` at those source paths
+        #   (exactly like index.js/standalone.js). Force-including them again
+        #   would RELOCATE the files to `xyg/static/…` and leave the source
+        #   path absent — which is exactly the sdist regression CI caught
+        #   (verify_sdist requires `python/xyg/static/wasm-worker.js`). Only
+        #   the inline WASM artifact (never in `artifacts`) needs a
+        #   force-include in an sdist, and only when present.
         if static_dir is not None:
             force_include = build_data.setdefault("force_include", {})
-            for name in _OPTIONAL_STATIC_ASSETS:
-                asset = static_dir / name
-                if asset.is_file():
-                    force_include[str(asset)] = f"xyg/static/{name}"
+            if self.target_name == "wheel":
+                for name in _OPTIONAL_STATIC_ASSETS:
+                    asset = static_dir / name
+                    if asset.is_file():
+                        force_include[str(asset)] = f"xyg/static/{name}"
+            else:
+                inline_wasm = static_dir / _INLINE_WASM_BUNDLE
+                if inline_wasm.is_file():
+                    force_include[str(inline_wasm)] = f"xyg/static/{_INLINE_WASM_BUNDLE}"
 
         # The native core is a wheel-only, per-platform artifact.
         if self.target_name != "wheel":
