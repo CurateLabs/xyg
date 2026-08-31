@@ -739,10 +739,7 @@ test("_emitScatterDensity sample ships color_ch via payload channel attach", () 
   assert.equal(spec.traces[0].density.sample.color.color, "#112233");
 });
 
-test("_emitScatterDensity omits transition_keys unlike Python _transition_entry", () => {
-  // Python `_emit_scatter` ships transition_keys via `_transition_entry` on the
-  // density path. Node density payload keeps no keys field even when
-  // transition_keys is present. Recorded emit-density-transition stay-host.
+test("_emitScatterDensity ships animation_fallback via payload transition attach", () => {
   const fig = figure({ width: 320, height: 240 });
   fig.scatter([0, 1], [0, 1], { forceDensity: true });
   fig.traces[0].transition_keys = [
@@ -752,6 +749,7 @@ test("_emitScatterDensity omits transition_keys unlike Python _transition_entry"
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].tier, "density");
   assert.equal(spec.traces[0].keys, undefined);
+  assert.equal(spec.traces[0].animation_fallback, "snap:aggregate");
 });
 
 test("_emitHistogram ships transition_keys via payload bar-hist plan", () => {

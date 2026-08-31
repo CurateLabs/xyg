@@ -14,13 +14,17 @@ const { PROTOCOL_VERSION, abiVersion, figure } = await import(
 );
 
 const ANIM = { duration: 250, easing: "linear" };
+const TRANSITION_KEYS = [
+  [1, 2],
+  [3, 4],
+];
 
 function caseEntry(name, build) {
   const fig = figure({ width: 240, height: 160 });
   build(fig);
   const { spec } = fig.buildPayload();
   const trace = spec.traces[0];
-  return {
+  const entry = {
     name,
     trace_id: trace.id,
     kind: trace.kind,
@@ -28,6 +32,10 @@ function caseEntry(name, build) {
     tier: trace.tier,
     animation: trace.animation ?? null,
   };
+  if (trace.animation_fallback != null) {
+    entry.animation_fallback = trace.animation_fallback;
+  }
+  return entry;
 }
 
 const cases = [
@@ -89,11 +97,62 @@ const cases = [
     fig.scatter([1, 2], [1, 2], { forceDensity: true });
     fig.traces[0].id = 60;
   }),
+  caseEntry("hist_animation", (fig) => {
+    fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
+    fig.traces[0].id = 61;
+    fig.traces[0].animation = { ...ANIM };
+  }),
+  caseEntry("hist_no_animation", (fig) => {
+    fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
+    fig.traces[0].id = 62;
+  }),
+  caseEntry("bar_animation", (fig) => {
+    fig.bar([0, 1], [1, 2]);
+    fig.traces[0].id = 63;
+    fig.traces[0].animation = { ...ANIM };
+  }),
+  caseEntry("bar_no_animation", (fig) => {
+    fig.bar([0, 1], [1, 2]);
+    fig.traces[0].id = 64;
+  }),
+  caseEntry("segments_animation", (fig) => {
+    fig.segments([0, 1], [0, 1], [1, 2], [1, 2]);
+    fig.traces[0].id = 65;
+    fig.traces[0].animation = { ...ANIM };
+  }),
+  caseEntry("segments_no_animation", (fig) => {
+    fig.segments([0, 1], [0, 1], [1, 2], [1, 2]);
+    fig.traces[0].id = 66;
+  }),
+  caseEntry("ribbon_animation", (fig) => {
+    fig.ribbon([0], [1], [0], [1], [0], [1]);
+    fig.traces[0].id = 67;
+    fig.traces[0].animation = { ...ANIM };
+  }),
+  caseEntry("ribbon_no_animation", (fig) => {
+    fig.ribbon([0], [1], [0], [1], [0], [1]);
+    fig.traces[0].id = 68;
+  }),
+  caseEntry("mesh_animation", (fig) => {
+    fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
+    fig.traces[0].id = 69;
+    fig.traces[0].animation = { ...ANIM };
+  }),
+  caseEntry("mesh_no_animation", (fig) => {
+    fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
+    fig.traces[0].id = 70;
+  }),
+  caseEntry("density_transition_keys", (fig) => {
+    fig.scatter([0, 1], [0, 1], { forceDensity: true });
+    fig.traces[0].id = 71;
+    fig.traces[0].transition_keys = TRANSITION_KEYS.map((row) => [...row]);
+  }),
 ];
 
 const out = {
   schema: "xyg.animation-emit-cross-host/v1",
-  authority: "packages/xy-node/src/figure.js payloadBaseEntryPlan and attachTransitionEntry attachAnimation",
+  authority:
+    "packages/xy-node/src/figure.js payloadBaseEntryPlan and attachTransitionEntry attachAnimation",
   protocol: PROTOCOL_VERSION,
   abi_version: abiVersion(),
   cases,
