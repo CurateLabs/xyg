@@ -3,6 +3,13 @@
 //! Hosts retain buffer shipping and NumPy gathers; this module owns multi-step
 //! emit policy so Python and Node stay bit-identical.
 
+use crate::density_emit::{
+    bin_coord_endpoints, density_categorical_color_wire_admit, density_channels_dropped_compat,
+    density_constant_color_wire_admit, density_grid_path_identity_state,
+    density_mean_color_rgba_wire_admit, density_overlay_omitted_wire, density_trace_color_classify,
+    density_uses_channel_colormap, density_wasm_source_admit, emit_meta,
+    DENSITY_OVERLAY_ROWS_EXCEED_U32,
+};
 use crate::lod_plan::{
     payload_errorbar_indices, payload_errorbar_role_maps, payload_even_indices,
     payload_segment_budget, payload_tier, payload_transition_keys_admit, PayloadIndexSel,
@@ -524,6 +531,211 @@ pub fn payload_scatter_emit_plan(
     {
         return 0;
     }
+    1
+}
+
+/// Density trace emit orchestration from ``_density_trace_spec``.
+///
+/// Composes color classify, bin coord endpoints, ``emit_meta``, visible/sample
+/// init, pyramid routing hints, sample-overlay attach, transition wrap, and
+/// density wire-admit flags. Hosts still run pyramid compose, bin kernels,
+/// buffer shipping, and ``_density_sample_spec`` column gathers.
+#[allow(clippy::too_many_arguments)]
+pub fn payload_density_trace_emit_plan(
+    has_channel: i32,
+    mode: &str,
+    codes_present: i32,
+    codes_u8: i32,
+    has_counts: i32,
+    has_constant: i32,
+    cartesian: i32,
+    x_linear: i32,
+    y_linear: i32,
+    x_has_nulls: i32,
+    y_has_nulls: i32,
+    point_overlay: i32,
+    split_payload: i32,
+    grid_w: u32,
+    grid_h: u32,
+    grid_from_pyramid: i32,
+    has_pyramid_resource: i32,
+    grid_present: i32,
+    force_bin2d: i32,
+    force_pyramid: i32,
+    x_memmapped: i32,
+    y_memmapped: i32,
+    x_min: f64,
+    x_max: f64,
+    y_min: f64,
+    y_max: f64,
+    xr0: f64,
+    xr1: f64,
+    yr0: f64,
+    yr1: f64,
+    bx0: f64,
+    bx1: f64,
+    by0: f64,
+    by1: f64,
+    n_points: u64,
+    has_pyramid_rgba: i32,
+    has_bin_colors: i32,
+    dropped_count: i32,
+    out_color_mode: &mut i32,
+    out_categorical: &mut i32,
+    out_compact_categorical: &mut i32,
+    out_stratified_counts: &mut i32,
+    out_x_c0: &mut f64,
+    out_x_c1: &mut f64,
+    out_y_c0: &mut f64,
+    out_y_c1: &mut f64,
+    out_grid_path: &mut i32,
+    out_pyramid_eligible: &mut i32,
+    out_pyramid_attempt: &mut i32,
+    out_pyramid_no_rescan: &mut i32,
+    out_pyramid_max_upsample: &mut u32,
+    out_pyramid_tile_upsample: &mut u32,
+    out_wasm_eligible: &mut i32,
+    out_needs_pyramid_sample: &mut i32,
+    out_overlay_omitted: &mut u32,
+    out_visible_is_n_points: &mut i32,
+    out_use_raw_range_bin2d: &mut i32,
+    out_attach_transition: &mut i32,
+    out_n_marks: &mut usize,
+    out_visible_init_n_points: &mut i32,
+    out_attach_sample: &mut i32,
+    out_pyramid_sample_stratified: &mut i32,
+    out_use_channel_colormap: &mut i32,
+    out_ship_wasm_source: &mut i32,
+    out_ship_mean_color_rgba: &mut i32,
+    out_ship_constant_color: &mut i32,
+    out_ship_categorical_entry_color: &mut i32,
+    out_mean_color_aggregates: &mut i32,
+    out_overlay_wire_static_raster: &mut i32,
+    out_overlay_wire_rows_exceed: &mut i32,
+    out_channels_dropped_compat: &mut i32,
+) -> i32 {
+    if density_trace_color_classify(
+        has_channel,
+        mode,
+        codes_present,
+        codes_u8,
+        has_counts,
+        out_color_mode,
+        out_categorical,
+        out_compact_categorical,
+        out_stratified_counts,
+    ) == 0
+    {
+        return 0;
+    }
+    if bin_coord_endpoints(
+        x_linear != 0,
+        y_linear != 0,
+        xr0,
+        xr1,
+        yr0,
+        yr1,
+        bx0,
+        bx1,
+        by0,
+        by1,
+        out_x_c0,
+        out_x_c1,
+        out_y_c0,
+        out_y_c1,
+    ) == 0
+    {
+        return 0;
+    }
+    let Some(meta) = emit_meta(
+        cartesian != 0,
+        x_linear != 0,
+        y_linear != 0,
+        *out_categorical != 0,
+        *out_compact_categorical != 0,
+        *out_stratified_counts != 0,
+        x_has_nulls != 0,
+        y_has_nulls != 0,
+        point_overlay != 0,
+        grid_from_pyramid != 0,
+        x_memmapped != 0,
+        y_memmapped != 0,
+        has_pyramid_resource != 0,
+        force_bin2d != 0,
+        force_pyramid != 0,
+        *out_color_mode,
+        x_min,
+        x_max,
+        y_min,
+        y_max,
+        xr0,
+        xr1,
+        yr0,
+        yr1,
+        *out_x_c0,
+        *out_x_c1,
+        *out_y_c0,
+        *out_y_c1,
+        n_points,
+    ) else {
+        return 0;
+    };
+    let n_marks = match (grid_w as usize).checked_mul(grid_h as usize) {
+        Some(n) => n,
+        None => return 0,
+    };
+    *out_grid_path = meta.grid_path;
+    *out_pyramid_eligible = i32::from(meta.pyramid.eligible);
+    *out_pyramid_attempt = i32::from(meta.pyramid.attempt);
+    *out_pyramid_no_rescan = i32::from(meta.pyramid.no_rescan);
+    *out_pyramid_max_upsample = meta.pyramid.max_upsample;
+    *out_pyramid_tile_upsample = meta.pyramid.tile_upsample;
+    *out_wasm_eligible = i32::from(meta.wasm_eligible);
+    *out_needs_pyramid_sample = i32::from(meta.needs_pyramid_sample);
+    *out_overlay_omitted = meta.overlay_omitted;
+    *out_visible_is_n_points = i32::from(meta.visible_is_n_points);
+    *out_use_raw_range_bin2d = i32::from(meta.use_raw_range_bin2d);
+    *out_attach_transition = 1;
+    *out_n_marks = n_marks;
+    *out_visible_init_n_points = if grid_present != 0 && meta.visible_is_n_points {
+        1
+    } else if grid_present == 0
+        && meta.grid_path >= 0
+        && density_grid_path_identity_state(meta.grid_path) == 1
+    {
+        1
+    } else {
+        0
+    };
+    *out_attach_sample = i32::from(
+        point_overlay != 0 && meta.overlay_omitted != DENSITY_OVERLAY_ROWS_EXCEED_U32,
+    );
+    *out_pyramid_sample_stratified =
+        i32::from(meta.needs_pyramid_sample && *out_compact_categorical != 0);
+    *out_use_channel_colormap = density_uses_channel_colormap(has_channel, mode);
+    *out_ship_wasm_source =
+        density_wasm_source_admit(split_payload, i32::from(meta.wasm_eligible));
+    *out_ship_mean_color_rgba =
+        density_mean_color_rgba_wire_admit(has_pyramid_rgba, has_bin_colors);
+    *out_mean_color_aggregates = *out_ship_mean_color_rgba;
+    *out_ship_constant_color =
+        density_constant_color_wire_admit(has_channel, mode, has_constant);
+    *out_ship_categorical_entry_color =
+        density_categorical_color_wire_admit(*out_categorical, has_channel);
+    let mut overlay_buf = [0u8; 32];
+    let overlay_len = density_overlay_omitted_wire(
+        meta.overlay_omitted,
+        point_overlay != 0,
+        &mut overlay_buf,
+    );
+    *out_overlay_wire_static_raster = i32::from(
+        overlay_len == Some(b"static_raster".len())
+            && overlay_buf.starts_with(b"static_raster"),
+    );
+    *out_overlay_wire_rows_exceed = i32::from(
+        meta.overlay_omitted == DENSITY_OVERLAY_ROWS_EXCEED_U32,
+    );
+    *out_channels_dropped_compat = density_channels_dropped_compat(dropped_count);
     1
 }
 
@@ -2118,5 +2330,132 @@ mod tests {
         );
         assert_eq!(emit_density, 0);
         assert_eq!(set_sel, 1);
+    }
+
+    #[test]
+    fn payload_density_trace_emit_plan_identity_grid_and_wire() {
+        use crate::density_emit::{
+            DENSITY_COLOR_MODE_OTHER, DENSITY_GRID_PATH_IDENTITY_STRATIFIED_FUSED,
+        };
+
+        let mut color_mode = -1;
+        let mut categorical = -1;
+        let mut compact = -1;
+        let mut stratified = -1;
+        let mut x_c0 = 0.0;
+        let mut x_c1 = 0.0;
+        let mut y_c0 = 0.0;
+        let mut y_c1 = 0.0;
+        let mut grid_path = -1;
+        let mut pyramid_eligible = -1;
+        let mut pyramid_attempt = -1;
+        let mut pyramid_no_rescan = -1;
+        let mut pyramid_max_upsample = 0u32;
+        let mut pyramid_tile_upsample = 0u32;
+        let mut wasm_eligible = -1;
+        let mut needs_pyramid_sample = -1;
+        let mut overlay_omitted = 0u32;
+        let mut visible_is_n_points = -1;
+        let mut use_raw_range_bin2d = -1;
+        let mut attach_transition = -1;
+        let mut n_marks = 0usize;
+        let mut visible_init = -1;
+        let mut attach_sample = -1;
+        let mut pyramid_sample_stratified = -1;
+        let mut use_channel_colormap = -1;
+        let mut ship_wasm = -1;
+        let mut ship_mean_rgba = -1;
+        let mut ship_constant = -1;
+        let mut ship_categorical = -1;
+        let mut mean_color_aggregates = -1;
+        let mut overlay_static = -1;
+        let mut overlay_rows = -1;
+        let mut channels_dropped = -1;
+        assert_eq!(
+            payload_density_trace_emit_plan(
+                1,
+                "categorical",
+                1,
+                1,
+                1,
+                0,
+                1,
+                1,
+                1,
+                0,
+                0,
+                1,
+                0,
+                512,
+                512,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                0.0,
+                1.0,
+                10_000,
+                0,
+                0,
+                2,
+                &mut color_mode,
+                &mut categorical,
+                &mut compact,
+                &mut stratified,
+                &mut x_c0,
+                &mut x_c1,
+                &mut y_c0,
+                &mut y_c1,
+                &mut grid_path,
+                &mut pyramid_eligible,
+                &mut pyramid_attempt,
+                &mut pyramid_no_rescan,
+                &mut pyramid_max_upsample,
+                &mut pyramid_tile_upsample,
+                &mut wasm_eligible,
+                &mut needs_pyramid_sample,
+                &mut overlay_omitted,
+                &mut visible_is_n_points,
+                &mut use_raw_range_bin2d,
+                &mut attach_transition,
+                &mut n_marks,
+                &mut visible_init,
+                &mut attach_sample,
+                &mut pyramid_sample_stratified,
+                &mut use_channel_colormap,
+                &mut ship_wasm,
+                &mut ship_mean_rgba,
+                &mut ship_constant,
+                &mut ship_categorical,
+                &mut mean_color_aggregates,
+                &mut overlay_static,
+                &mut overlay_rows,
+                &mut channels_dropped,
+            ),
+            1
+        );
+        assert_eq!(color_mode, DENSITY_COLOR_MODE_OTHER);
+        assert_eq!(categorical, 1);
+        assert_eq!(grid_path, DENSITY_GRID_PATH_IDENTITY_STRATIFIED_FUSED);
+        assert_eq!(n_marks, 512 * 512);
+        assert_eq!(attach_transition, 1);
+        assert_eq!(visible_init, 1);
+        assert_eq!(attach_sample, 1);
+        assert_eq!(ship_categorical, 1);
+        assert_eq!(use_channel_colormap, 0);
+        assert_eq!(channels_dropped, 1);
     }
 }

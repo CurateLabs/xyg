@@ -235,6 +235,7 @@ payload_mesh_emit_plan = _impl.payload_mesh_emit_plan
 payload_ribbon_emit_plan = _impl.payload_ribbon_emit_plan
 payload_segments_emit_plan = _impl.payload_segments_emit_plan
 payload_scatter_emit_plan = _impl.payload_scatter_emit_plan
+payload_density_trace_emit_plan = _impl.payload_density_trace_emit_plan
 PAYLOAD_NONXY_KIND_RECT = _impl.PAYLOAD_NONXY_KIND_RECT
 PAYLOAD_NONXY_KIND_HEXBIN = _impl.PAYLOAD_NONXY_KIND_HEXBIN
 PAYLOAD_NONXY_KIND_DENSITY_SAMPLE = _impl.PAYLOAD_NONXY_KIND_DENSITY_SAMPLE
@@ -381,6 +382,7 @@ __all__ = [
     "payload_bar_compact_admit",
     "payload_bar_hist_emit_plan",
     "payload_base_entry_plan",
+    "payload_density_trace_emit_plan",
     "payload_errorbar_indices",
     "payload_errorbar_role_keys",
     "payload_errorbar_role_maps",

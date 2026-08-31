@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 301
-#define XYG_ABI_SIGNATURE_SHA256 "85539fcc4db1c748e54b7e6f8a210816a8a0e4aed249629148b0724d1450092e"
+#define XYG_ABI_VERSION 302
+#define XYG_ABI_SIGNATURE_SHA256 "fdd3b93badb7012f7eefdb745d9ecad80907ba8495d863596f8e25f7be5c59c8"
 
 #ifdef __cplusplus
 extern "C" {
@@ -163,6 +163,7 @@ int32_t xyg_paint_effective_rgba(const double * intrinsic, size_t n, const doubl
 int32_t xyg_payload_bar_compact_admit(size_t n_widths, const double * widths, size_t n_value0, const double * value0, double * out_width, double * out_value0_const, int32_t * out_has_value0_const, int32_t * out_compact);
 int32_t xyg_payload_bar_hist_emit_plan(int32_t kind, int32_t compact, size_t n_marks, int32_t style_color_is_none, int32_t x_axis_type, int32_t y_axis_type, int32_t orientation, int32_t * out_emit_bar, int32_t * out_tier_direct, size_t * out_n_marks, int32_t * out_apply_palette_default, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale, int32_t * out_pos_ship_scale, int32_t * out_value_ship_scale, int32_t * out_value_axis, int32_t * out_channel_slot, int32_t * out_include_trace_styles, int32_t * out_attach_transition);
 int32_t xyg_payload_base_entry_plan(int32_t has_trace_animation, size_t n_xv, int32_t style_color_is_none, int32_t x_axis_type, int32_t y_axis_type, int32_t * out_attach_animation, size_t * out_n_marks, int32_t * out_apply_palette_default, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale);
+int32_t xyg_payload_density_trace_emit_plan(int32_t has_channel, const uint8_t * mode, size_t mode_len, int32_t codes_present, int32_t codes_u8, int32_t has_counts, int32_t has_constant, int32_t cartesian, int32_t x_linear, int32_t y_linear, int32_t x_has_nulls, int32_t y_has_nulls, int32_t point_overlay, int32_t split_payload, uint32_t grid_w, uint32_t grid_h, int32_t grid_from_pyramid, int32_t has_pyramid_resource, int32_t grid_present, int32_t force_bin2d, int32_t force_pyramid, int32_t x_memmapped, int32_t y_memmapped, double x_min, double x_max, double y_min, double y_max, double xr0, double xr1, double yr0, double yr1, double bx0, double bx1, double by0, double by1, uint64_t n_points, int32_t has_pyramid_rgba, int32_t has_bin_colors, int32_t dropped_count, void * out);
 size_t xyg_payload_errorbar_indices(size_t n_segments, size_t n_points, size_t budget, int32_t * out_keep_all, uint32_t * out, size_t capacity);
 size_t xyg_payload_errorbar_role_keys(size_t n_points, size_t n_output, const uint32_t * point_keys_lo, const uint32_t * point_keys_hi, const uint32_t * segment_sources, const uint32_t * segment_roles, uint32_t * out_lo, uint32_t * out_hi, int32_t * out_collision);
 int32_t xyg_payload_errorbar_role_maps(size_t n_segments, size_t n_points, uint32_t * out_sources, uint32_t * out_roles, int32_t * out_applicable);

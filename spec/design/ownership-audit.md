@@ -346,6 +346,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | (this PR) | 299 | `xyg_payload_ribbon_emit_plan` | `_emit_ribbon` gather/channel/color2/transition skeleton policy |
 | (this PR) | 300 | `xyg_payload_segments_emit_plan` | `_emit_segments` gather/channel/transition skeleton policy |
 | (this PR) | 301 | `xyg_payload_scatter_emit_plan` | `_emit_scatter` tier/channel/transition/tooltip skeleton policy |
+| (this PR) | 302 | `xyg_payload_density_trace_emit_plan` | `_density_trace_spec` pyramid/bin2d routing, wire admits, sample/visible orchestration |
 
 Largest remaining Python core surfaces: `_payload` emit gather/ship and `_scene_v3` XYTC/XYTA pack loops — not the ABI-218–291 admit slices already kernelized.
 

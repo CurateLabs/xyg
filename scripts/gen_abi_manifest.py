@@ -130,6 +130,7 @@ _POINTER_C: dict[str, str] = {
     "*const XygTemporalGraphDescriptor": "const void *",
     "*mut XygTemporalGraphSnapshotMeta": "void *",
     "*mut XygDensityEmitMeta": "void *",
+    "*mut XygPayloadDensityTraceEmitPlan": "void *",
     "*const XygTemporalGraphSnapshotBuffers": "const void *",
     "*const i32": "const int32_t *",
     "*const *const f64": "const double *const *",

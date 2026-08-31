@@ -267,6 +267,47 @@ class _DensityEmitMeta(ctypes.Structure):
     ]
 
 
+class _PayloadDensityTraceEmitPlan(ctypes.Structure):
+    _fields_ = [
+        ("color_mode", ctypes.c_int32),
+        ("categorical", ctypes.c_uint32),
+        ("compact_categorical", ctypes.c_uint32),
+        ("stratified_counts", ctypes.c_uint32),
+        ("x_c0", ctypes.c_double),
+        ("x_c1", ctypes.c_double),
+        ("y_c0", ctypes.c_double),
+        ("y_c1", ctypes.c_double),
+        ("grid_path", ctypes.c_int32),
+        ("pyramid_eligible", ctypes.c_uint32),
+        ("pyramid_attempt", ctypes.c_uint32),
+        ("pyramid_no_rescan", ctypes.c_uint32),
+        ("pyramid_max_upsample", ctypes.c_uint32),
+        ("pyramid_tile_upsample", ctypes.c_uint32),
+        ("wasm_eligible", ctypes.c_uint32),
+        ("needs_pyramid_sample", ctypes.c_uint32),
+        ("overlay_omitted", ctypes.c_uint32),
+        ("visible_is_n_points", ctypes.c_uint32),
+        ("use_raw_range_bin2d", ctypes.c_uint32),
+        ("attach_transition", ctypes.c_uint32),
+        ("n_marks", ctypes.c_size_t),
+        ("visible_init_n_points", ctypes.c_uint32),
+        ("attach_sample", ctypes.c_uint32),
+        ("pyramid_sample_stratified", ctypes.c_uint32),
+        ("use_channel_colormap", ctypes.c_uint32),
+        ("ship_wasm_source", ctypes.c_uint32),
+        ("ship_mean_color_rgba", ctypes.c_uint32),
+        ("ship_constant_color", ctypes.c_uint32),
+        ("ship_categorical_entry_color", ctypes.c_uint32),
+        ("mean_color_aggregates", ctypes.c_uint32),
+        ("overlay_wire_static_raster", ctypes.c_uint32),
+        ("overlay_wire_rows_exceed", ctypes.c_uint32),
+        ("channels_dropped_compat", ctypes.c_uint32),
+    ]
+
+
+PAYLOAD_DENSITY_TRACE_EMIT_PLAN_BYTES = ctypes.sizeof(_PayloadDensityTraceEmitPlan)
+
+
 class TemporalNativeError(ValueError):
     """Stable error returned by the Rust-owned temporal column/index seam."""
 
@@ -12267,6 +12308,136 @@ def payload_scatter_emit_plan(
             }
         )
     return result
+
+
+def payload_density_trace_emit_plan(
+    *,
+    has_channel: bool,
+    mode: str = "",
+    codes_present: bool = False,
+    codes_u8: bool = False,
+    has_counts: bool = False,
+    has_constant: bool = False,
+    cartesian: bool,
+    x_linear: bool,
+    y_linear: bool,
+    x_has_nulls: bool,
+    y_has_nulls: bool,
+    point_overlay: bool,
+    split_payload: bool,
+    grid_w: int,
+    grid_h: int,
+    grid_from_pyramid: bool,
+    has_pyramid_resource: bool,
+    grid_present: bool,
+    force_bin2d: bool = False,
+    force_pyramid: bool = False,
+    x_memmapped: bool = False,
+    y_memmapped: bool = False,
+    x_min: float,
+    x_max: float,
+    y_min: float,
+    y_max: float,
+    xr0: float,
+    xr1: float,
+    yr0: float,
+    yr1: float,
+    bx0: float,
+    bx1: float,
+    by0: float,
+    by1: float,
+    n_points: int,
+    has_pyramid_rgba: bool = False,
+    has_bin_colors: bool = False,
+    dropped_count: int = 0,
+) -> dict[str, int | bool | float]:
+    """Density trace emit orchestration via ``xyg_payload_density_trace_emit_plan`` (ABI 302)."""
+    if isinstance(n_points, (bool, np.bool_)) or not isinstance(n_points, numbers.Integral):
+        raise ValueError("n_points must be an integer >= 0")
+    n = int(n_points)
+    if n < 0:
+        raise ValueError("n_points must be an integer >= 0")
+    mode_b = mode.encode("utf-8")
+    out = _PayloadDensityTraceEmitPlan()
+    ok = _lib.xyg_payload_density_trace_emit_plan(
+        1 if has_channel else 0,
+        mode_b,
+        len(mode_b),
+        1 if codes_present else 0,
+        1 if codes_u8 else 0,
+        1 if has_counts else 0,
+        1 if has_constant else 0,
+        1 if cartesian else 0,
+        1 if x_linear else 0,
+        1 if y_linear else 0,
+        1 if x_has_nulls else 0,
+        1 if y_has_nulls else 0,
+        1 if point_overlay else 0,
+        1 if split_payload else 0,
+        int(grid_w),
+        int(grid_h),
+        1 if grid_from_pyramid else 0,
+        1 if has_pyramid_resource else 0,
+        1 if grid_present else 0,
+        1 if force_bin2d else 0,
+        1 if force_pyramid else 0,
+        1 if x_memmapped else 0,
+        1 if y_memmapped else 0,
+        float(x_min),
+        float(x_max),
+        float(y_min),
+        float(y_max),
+        float(xr0),
+        float(xr1),
+        float(yr0),
+        float(yr1),
+        float(bx0),
+        float(bx1),
+        float(by0),
+        float(by1),
+        n,
+        1 if has_pyramid_rgba else 0,
+        1 if has_bin_colors else 0,
+        int(dropped_count),
+        ctypes.byref(out),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_density_trace_emit_plan arguments")
+    return {
+        "color_mode": int(out.color_mode),
+        "categorical": bool(out.categorical),
+        "compact_categorical": bool(out.compact_categorical),
+        "stratified_counts": bool(out.stratified_counts),
+        "x_c0": float(out.x_c0),
+        "x_c1": float(out.x_c1),
+        "y_c0": float(out.y_c0),
+        "y_c1": float(out.y_c1),
+        "grid_path": int(out.grid_path),
+        "pyramid_eligible": bool(out.pyramid_eligible),
+        "pyramid_attempt": bool(out.pyramid_attempt),
+        "pyramid_no_rescan": bool(out.pyramid_no_rescan),
+        "pyramid_max_upsample": int(out.pyramid_max_upsample),
+        "pyramid_tile_upsample": int(out.pyramid_tile_upsample),
+        "wasm_eligible": bool(out.wasm_eligible),
+        "needs_pyramid_sample": bool(out.needs_pyramid_sample),
+        "overlay_omitted": int(out.overlay_omitted),
+        "visible_is_n_points": bool(out.visible_is_n_points),
+        "use_raw_range_bin2d": bool(out.use_raw_range_bin2d),
+        "attach_transition": bool(out.attach_transition),
+        "n_marks": int(out.n_marks),
+        "visible_init_n_points": bool(out.visible_init_n_points),
+        "attach_sample": bool(out.attach_sample),
+        "pyramid_sample_stratified": bool(out.pyramid_sample_stratified),
+        "use_channel_colormap": bool(out.use_channel_colormap),
+        "ship_wasm_source": bool(out.ship_wasm_source),
+        "ship_mean_color_rgba": bool(out.ship_mean_color_rgba),
+        "ship_constant_color": bool(out.ship_constant_color),
+        "ship_categorical_entry_color": bool(out.ship_categorical_entry_color),
+        "mean_color_aggregates": bool(out.mean_color_aggregates),
+        "overlay_wire_static_raster": bool(out.overlay_wire_static_raster),
+        "overlay_wire_rows_exceed": bool(out.overlay_wire_rows_exceed),
+        "channels_dropped_compat": bool(out.channels_dropped_compat),
+    }
 
 
 def payload_segments_emit_plan(

@@ -161,7 +161,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 301;
+pub const ABI_VERSION: u32 = 302;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -16297,6 +16297,261 @@ pub unsafe extern "C" fn xyg_payload_scatter_emit_plan(
         *out_attach_tooltip = attach_tooltip;
         *out_filter_tooltip_by_sel = filter_tooltip_by_sel;
         *out_tooltip_length_ok = tooltip_length_ok;
+        1
+    })
+}
+
+/// Packed density trace emit orchestration plan (ABI 302).
+#[repr(C)]
+pub struct XygPayloadDensityTraceEmitPlan {
+    pub color_mode: i32,
+    pub categorical: u32,
+    pub compact_categorical: u32,
+    pub stratified_counts: u32,
+    pub x_c0: f64,
+    pub x_c1: f64,
+    pub y_c0: f64,
+    pub y_c1: f64,
+    pub grid_path: i32,
+    pub pyramid_eligible: u32,
+    pub pyramid_attempt: u32,
+    pub pyramid_no_rescan: u32,
+    pub pyramid_max_upsample: u32,
+    pub pyramid_tile_upsample: u32,
+    pub wasm_eligible: u32,
+    pub needs_pyramid_sample: u32,
+    pub overlay_omitted: u32,
+    pub visible_is_n_points: u32,
+    pub use_raw_range_bin2d: u32,
+    pub attach_transition: u32,
+    pub n_marks: usize,
+    pub visible_init_n_points: u32,
+    pub attach_sample: u32,
+    pub pyramid_sample_stratified: u32,
+    pub use_channel_colormap: u32,
+    pub ship_wasm_source: u32,
+    pub ship_mean_color_rgba: u32,
+    pub ship_constant_color: u32,
+    pub ship_categorical_entry_color: u32,
+    pub mean_color_aggregates: u32,
+    pub overlay_wire_static_raster: u32,
+    pub overlay_wire_rows_exceed: u32,
+    pub channels_dropped_compat: u32,
+}
+
+/// Density trace emit orchestration from ``_density_trace_spec`` (ABI 302).
+///
+/// Composes color classify, bin coord endpoints, ``emit_meta``, visible/sample
+/// init, pyramid routing hints, sample-overlay attach, transition wrap, and
+/// density wire-admit flags. Hosts still run pyramid compose, bin kernels,
+/// buffer shipping, and ``_density_sample_spec`` column gathers.
+///
+/// # Safety
+/// When ``mode_len > 0``, ``mode`` must address readable UTF-8 bytes.
+/// ``out`` must be valid for writes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_density_trace_emit_plan(
+    has_channel: i32,
+    mode: *const u8,
+    mode_len: usize,
+    codes_present: i32,
+    codes_u8: i32,
+    has_counts: i32,
+    has_constant: i32,
+    cartesian: i32,
+    x_linear: i32,
+    y_linear: i32,
+    x_has_nulls: i32,
+    y_has_nulls: i32,
+    point_overlay: i32,
+    split_payload: i32,
+    grid_w: u32,
+    grid_h: u32,
+    grid_from_pyramid: i32,
+    has_pyramid_resource: i32,
+    grid_present: i32,
+    force_bin2d: i32,
+    force_pyramid: i32,
+    x_memmapped: i32,
+    y_memmapped: i32,
+    x_min: f64,
+    x_max: f64,
+    y_min: f64,
+    y_max: f64,
+    xr0: f64,
+    xr1: f64,
+    yr0: f64,
+    yr1: f64,
+    bx0: f64,
+    bx1: f64,
+    by0: f64,
+    by1: f64,
+    n_points: u64,
+    has_pyramid_rgba: i32,
+    has_bin_colors: i32,
+    dropped_count: i32,
+    out: *mut XygPayloadDensityTraceEmitPlan,
+) -> i32 {
+    ffi_guard(0, || {
+        if out.is_null() {
+            return 0;
+        }
+        if mode_len > 0 && mode.is_null() {
+            return 0;
+        }
+        let mode_text = if mode_len == 0 {
+            ""
+        } else {
+            let bytes = std::slice::from_raw_parts(mode, mode_len);
+            let Ok(text) = std::str::from_utf8(bytes) else {
+                return 0;
+            };
+            text
+        };
+        let mut color_mode = 0i32;
+        let mut categorical = 0i32;
+        let mut compact_categorical = 0i32;
+        let mut stratified_counts = 0i32;
+        let mut x_c0 = 0.0;
+        let mut x_c1 = 0.0;
+        let mut y_c0 = 0.0;
+        let mut y_c1 = 0.0;
+        let mut grid_path = 0i32;
+        let mut pyramid_eligible = 0i32;
+        let mut pyramid_attempt = 0i32;
+        let mut pyramid_no_rescan = 0i32;
+        let mut pyramid_max_upsample = 0u32;
+        let mut pyramid_tile_upsample = 0u32;
+        let mut wasm_eligible = 0i32;
+        let mut needs_pyramid_sample = 0i32;
+        let mut overlay_omitted = 0u32;
+        let mut visible_is_n_points = 0i32;
+        let mut use_raw_range_bin2d = 0i32;
+        let mut attach_transition = 0i32;
+        let mut n_marks = 0usize;
+        let mut visible_init_n_points = 0i32;
+        let mut attach_sample = 0i32;
+        let mut pyramid_sample_stratified = 0i32;
+        let mut use_channel_colormap = 0i32;
+        let mut ship_wasm_source = 0i32;
+        let mut ship_mean_color_rgba = 0i32;
+        let mut ship_constant_color = 0i32;
+        let mut ship_categorical_entry_color = 0i32;
+        let mut mean_color_aggregates = 0i32;
+        let mut overlay_wire_static_raster = 0i32;
+        let mut overlay_wire_rows_exceed = 0i32;
+        let mut channels_dropped_compat = 0i32;
+        let ok = payload_emit::payload_density_trace_emit_plan(
+            has_channel,
+            mode_text,
+            codes_present,
+            codes_u8,
+            has_counts,
+            has_constant,
+            cartesian,
+            x_linear,
+            y_linear,
+            x_has_nulls,
+            y_has_nulls,
+            point_overlay,
+            split_payload,
+            grid_w,
+            grid_h,
+            grid_from_pyramid,
+            has_pyramid_resource,
+            grid_present,
+            force_bin2d,
+            force_pyramid,
+            x_memmapped,
+            y_memmapped,
+            x_min,
+            x_max,
+            y_min,
+            y_max,
+            xr0,
+            xr1,
+            yr0,
+            yr1,
+            bx0,
+            bx1,
+            by0,
+            by1,
+            n_points,
+            has_pyramid_rgba,
+            has_bin_colors,
+            dropped_count,
+            &mut color_mode,
+            &mut categorical,
+            &mut compact_categorical,
+            &mut stratified_counts,
+            &mut x_c0,
+            &mut x_c1,
+            &mut y_c0,
+            &mut y_c1,
+            &mut grid_path,
+            &mut pyramid_eligible,
+            &mut pyramid_attempt,
+            &mut pyramid_no_rescan,
+            &mut pyramid_max_upsample,
+            &mut pyramid_tile_upsample,
+            &mut wasm_eligible,
+            &mut needs_pyramid_sample,
+            &mut overlay_omitted,
+            &mut visible_is_n_points,
+            &mut use_raw_range_bin2d,
+            &mut attach_transition,
+            &mut n_marks,
+            &mut visible_init_n_points,
+            &mut attach_sample,
+            &mut pyramid_sample_stratified,
+            &mut use_channel_colormap,
+            &mut ship_wasm_source,
+            &mut ship_mean_color_rgba,
+            &mut ship_constant_color,
+            &mut ship_categorical_entry_color,
+            &mut mean_color_aggregates,
+            &mut overlay_wire_static_raster,
+            &mut overlay_wire_rows_exceed,
+            &mut channels_dropped_compat,
+        );
+        if ok == 0 {
+            return 0;
+        }
+        *out = XygPayloadDensityTraceEmitPlan {
+            color_mode,
+            categorical: u32::from(categorical != 0),
+            compact_categorical: u32::from(compact_categorical != 0),
+            stratified_counts: u32::from(stratified_counts != 0),
+            x_c0,
+            x_c1,
+            y_c0,
+            y_c1,
+            grid_path,
+            pyramid_eligible: u32::from(pyramid_eligible != 0),
+            pyramid_attempt: u32::from(pyramid_attempt != 0),
+            pyramid_no_rescan: u32::from(pyramid_no_rescan != 0),
+            pyramid_max_upsample,
+            pyramid_tile_upsample,
+            wasm_eligible: u32::from(wasm_eligible != 0),
+            needs_pyramid_sample: u32::from(needs_pyramid_sample != 0),
+            overlay_omitted,
+            visible_is_n_points: u32::from(visible_is_n_points != 0),
+            use_raw_range_bin2d: u32::from(use_raw_range_bin2d != 0),
+            attach_transition: u32::from(attach_transition != 0),
+            n_marks,
+            visible_init_n_points: u32::from(visible_init_n_points != 0),
+            attach_sample: u32::from(attach_sample != 0),
+            pyramid_sample_stratified: u32::from(pyramid_sample_stratified != 0),
+            use_channel_colormap: u32::from(use_channel_colormap != 0),
+            ship_wasm_source: u32::from(ship_wasm_source != 0),
+            ship_mean_color_rgba: u32::from(ship_mean_color_rgba != 0),
+            ship_constant_color: u32::from(ship_constant_color != 0),
+            ship_categorical_entry_color: u32::from(ship_categorical_entry_color != 0),
+            mean_color_aggregates: u32::from(mean_color_aggregates != 0),
+            overlay_wire_static_raster: u32::from(overlay_wire_static_raster != 0),
+            overlay_wire_rows_exceed: u32::from(overlay_wire_rows_exceed != 0),
+            channels_dropped_compat: u32::from(channels_dropped_compat != 0),
+        };
         1
     })
 }
