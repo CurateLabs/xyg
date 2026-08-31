@@ -151,6 +151,16 @@ def test_axis_spec_cartesian_format_cross_host_fixture() -> None:
     assert "format" not in spec["y_axis"]
 
 
+def test_axis_spec_cartesian_bounds_cross_host_fixture() -> None:
+    """Node buildPayload axis bounds parity when attach_bounds is set."""
+    fig = Figure(width=240, height=160)
+    fig.scatter([0.0, 1.0], [0.0, 1.0])
+    fig.set_axis("x", bounds=(0.0, 2.0))
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["bounds"] == [0.0, 2.0]
+    assert "bounds" not in spec["y_axis"]
+
+
 def test_axis_spec_omits_linear_scale() -> None:
     fig = Figure()
     fig.scatter([0.0, 1.0], [0.0, 1.0])

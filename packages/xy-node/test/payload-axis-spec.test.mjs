@@ -156,3 +156,12 @@ test("buildPayload ships cartesian axis format like Python _axis_spec", () => {
   assert.equal(spec.x_axis.format, ".2f");
   assert.equal(spec.y_axis.format, undefined);
 });
+
+test("buildPayload ships cartesian axis bounds like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { bounds: [0, 2] });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.x_axis.bounds, [0, 2]);
+  assert.equal(spec.y_axis.bounds, undefined);
+});
