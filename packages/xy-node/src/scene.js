@@ -251,9 +251,80 @@ function annotationHasCustomTypography(annotation) {
   return false;
 }
 
+function validateXyafAnnotationStyle(annotation) {
+  const kind = String(annotation.kind ?? "");
+  const style = { ...(annotation.style ?? {}) };
+  const authoredWrap = ["text", "callout"].includes(kind) && Object.hasOwn(annotation, "wrap");
+  const layoutText = kind === "text" && ["dx", "dy", "anchor", "rotation"].some((key) => Object.hasOwn(annotation, key));
+  const dispatch = sceneXyafAnnotationDispatchPlan({
+    kind,
+    authored_wrap: authoredWrap,
+    layout_text: layoutText,
+  });
+  const wrapped = Boolean(dispatch.wrapped);
+  const labelled = annotation.text != null && annotation.text !== "";
+  const skipStyle = new Set(["markup", ...ANNOTATION_TYPOGRAPHY_STYLE_KEYS]);
+  if (["text", "marker"].includes(kind)) skipStyle.add("rotation");
+  const unsupported = Object.entries(style)
+    .filter(([key, value]) => value != null && !skipStyle.has(key) && !sceneAnnotationStyleAdmit(kind, wrapped, labelled, key))
+    .map(([key]) => key)
+    .sort();
+  if (unsupported.length) {
+    if (wrapped) throw new RangeError(`Scene wrapped annotations do not encode ${JSON.stringify(unsupported)}`);
+    if (kind === "arrow") throw new RangeError(`Scene arrow style does not encode ${JSON.stringify(unsupported)}`);
+    if (kind === "callout") throw new RangeError(`Scene callout style does not encode ${JSON.stringify(unsupported)}`);
+    if (kind === "text") throw new RangeError("Scene v23 text annotations support only color, opacity, label_background, and label_border_*");
+    throw new RangeError(`Scene v12 ${kind} annotation style does not encode ${JSON.stringify(unsupported)}`);
+  }
+}
+
+function raiseXyafBulkError(error, annotations) {
+  const code = Number(error.code ?? 0);
+  const index = Number(error.index ?? 0);
+  const annotation = annotations[index] ?? {};
+  const kind = String(annotation.kind ?? "");
+  const style = { ...(annotation.style ?? {}) };
+  if (code === -6) {
+    if (Object.hasOwn(style, "label_opacity")) {
+      throw new RangeError(`Scene v16 ${kind} annotation label opacity must be finite and in [0, 1]`);
+    }
+    if (Object.hasOwn(style, "opacity")) {
+      throw new RangeError(`Scene v12 ${kind} annotation opacity must be finite and in [0, 1]`);
+    }
+    if (Object.hasOwn(style, "label_border_width")) {
+      throw new RangeError("Scene v23 label border width must be positive and finite");
+    }
+    if (Object.hasOwn(style, "width") && kind === "rule") {
+      throw new RangeError("Scene v12 rule annotation width must be finite and nonnegative");
+    }
+    throw new RangeError(`Scene v12 annotation values are invalid at index ${index}`);
+  }
+  if (code === -4) {
+    if (kind === "text") {
+      throw new RangeError("Scene v23 text annotations support only color, opacity, label_background, and label_border_*");
+    }
+    throw new RangeError(`Scene v12 ${kind} annotation style does not encode unsupported keys`);
+  }
+  throw error;
+}
+
 function packXyAfBulk(annotations) {
   if (!annotations.length) return new Uint8Array();
-  return sceneXyafBulkPack(annotations);
+  const normalized = annotations.map((annotation) => {
+    const ann = { ...annotation };
+    const kind = ann.kind;
+    const style = { ...(ann.style ?? {}) };
+    if (["text", "marker"].includes(kind) && !Object.hasOwn(ann, "rotation") && style.rotation != null) {
+      ann.rotation = style.rotation;
+    }
+    validateXyafAnnotationStyle(ann);
+    return ann;
+  });
+  try {
+    return sceneXyafBulkPack(normalized);
+  } catch (error) {
+    raiseXyafBulkError(error, normalized);
+  }
 }
 
 function packXyAf(annotation, index) {
@@ -4932,6 +5003,15 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   const legendOptions = { ...(figureLegendOptions(figure) ?? {}) };
   const legendStyle = { ...(legendOptions.style ?? {}) };
   const allowedLegend = new Set(["loc", "title", "ncols", "style", "highlight", "toggle"]);
+  if (Object.keys(legendOptions).some((key) => !allowedLegend.has(key)) || Number(legendOptions.ncols ?? 1) !== 1) {
+    throw new RangeError("Scene v12 primary legends do not yet encode anchors, multiple columns, or custom content");
+  }
+  if (["toggle", "highlight"].some((key) => Object.hasOwn(legendOptions, key) && legendOptions[key] !== false)) {
+    throw new RangeError("Scene v12 primary legends are static; toggle and highlight must be false");
+  }
+  if (Object.hasOwn(legendOptions, "loc") && !String(legendOptions.loc)) {
+    throw new RangeError(`Scene v12 does not support legend location ${JSON.stringify(String(legendOptions.loc))}`);
+  }
   const colorbar = colorbarOk ? figureColorbarOptions(figure) : null;
   let colorbarPayload = null;
   if (colorbar) {
@@ -5007,7 +5087,7 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
       unsupported_keys: Object.keys(legendOptions).some((key) => !allowedLegend.has(key)),
       toggle: Object.hasOwn(legendOptions, "toggle") && legendOptions.toggle !== false,
       highlight: Object.hasOwn(legendOptions, "highlight") && legendOptions.highlight !== false,
-      loc: optionalStr(legendOptions.loc),
+      loc: Object.hasOwn(legendOptions, "loc") ? String(legendOptions.loc) : null,
       title: optionalStr(typeof legendOptions.title === "boolean" ? String(legendOptions.title).toLowerCase() : legendOptions.title),
       ncols: Number(legendOptions.ncols ?? 1),
       unsupported_style: Object.keys(legendStyle).some((key) => !LEGEND_ALLOWED_STYLE.has(key)),

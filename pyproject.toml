@@ -215,6 +215,7 @@ ignore = [
 exclude = ["examples/pdsh/*.ipynb"]
 
 [tool.ruff.lint.per-file-ignores]
+"python/xyg/_native.py" = ["E402"]
 # Third-party example code (PDSH notebooks): kept faithful to upstream, so
 # upstream's import placement and naming style is not ours to lint. F811: the
 # dual-engine layout mirrors every cell (matplotlib then xy), so imports and

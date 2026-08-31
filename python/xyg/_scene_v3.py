@@ -682,6 +682,47 @@ def _annotation_allowed_style(kind: str, wrapped: bool, labelled: bool) -> set[s
     }
 
 
+def _validate_xyaf_annotation_style(annotation: dict[str, Any]) -> None:
+    """Fail closed on style keys the Scene admit table rejects (matches legacy _pack_xyaf)."""
+    kind = str(annotation.get("kind", ""))
+    style = dict(annotation.get("style") or {})
+    authored_wrap = kind in {"text", "callout"} and "wrap" in annotation
+    layout_text = kind == "text" and any(
+        key in annotation for key in ("dx", "dy", "anchor", "rotation")
+    )
+    dispatch = _native.scene_xyaf_annotation_dispatch_plan(
+        kind=kind,
+        authored_wrap=authored_wrap,
+        layout_text=layout_text,
+    )
+    wrapped = bool(dispatch["wrapped"])
+    labelled = annotation.get("text") not in (None, "")
+    skip_style = {"markup"} | _ANNOTATION_TYPOGRAPHY_STYLE_KEYS
+    if kind in {"text", "marker"}:
+        skip_style = skip_style | {"rotation"}
+    unsupported = sorted(
+        key
+        for key, value in style.items()
+        if key not in skip_style
+        and value is not None
+        and not _native.scene_annotation_style_admit(kind, wrapped, labelled, str(key))
+    )
+    if unsupported:
+        if wrapped:
+            raise UnsupportedSceneV3(f"Scene wrapped annotations do not encode {unsupported!r}")
+        if kind == "arrow":
+            raise UnsupportedSceneV3(f"Scene arrow style does not encode {unsupported!r}")
+        if kind == "callout":
+            raise UnsupportedSceneV3(f"Scene callout style does not encode {unsupported!r}")
+        if kind == "text":
+            raise UnsupportedSceneV3(
+                "Scene v23 text annotations support only color, opacity, label_background, and label_border_*"
+            )
+        raise UnsupportedSceneV3(
+            f"Scene v12 {kind} annotation style does not encode {unsupported!r}"
+        )
+
+
 def _raise_xyaf_bulk_error(error: _native.SceneXyafBulkPackError, annotations: list[Any]) -> None:
     code = int(error.code)
     index = int(error.index)
@@ -719,6 +760,17 @@ def _raise_xyaf_bulk_error(error: _native.SceneXyafBulkPackError, annotations: l
     if code == -13:
         raise ValueError(f"Scene v12 {kind} annotation axis must be 'x' or 'y'")
     if code == -6:
+        style = dict(annotation.get("style") or {})
+        if "label_opacity" in style:
+            raise ValueError(
+                f"Scene v16 {kind} annotation label opacity must be finite and in [0, 1]"
+            )
+        if "opacity" in style:
+            raise ValueError(f"Scene v12 {kind} annotation opacity must be finite and in [0, 1]")
+        if "label_border_width" in style:
+            raise ValueError("Scene v23 label border width must be positive and finite")
+        if "width" in style and kind == "rule":
+            raise ValueError("Scene v12 rule annotation width must be finite and nonnegative")
         raise ValueError(f"Scene v12 annotation values are invalid at index {index}")
     raise ValueError("invalid scene annotation packing")
 
@@ -727,10 +779,23 @@ def _pack_xyaf_bulk(annotations: list[Any]) -> bytes:
     """Marshal annotations and bulk-pack XYAF via Rust (ABI 324)."""
     if not annotations:
         return b""
+    normalized: list[dict[str, Any]] = []
+    for annotation in annotations:
+        ann = dict(annotation)
+        kind = str(ann.get("kind", ""))
+        style = dict(ann.get("style") or {})
+        if (
+            kind in {"text", "marker"}
+            and "rotation" not in ann
+            and style.get("rotation") is not None
+        ):
+            ann["rotation"] = style["rotation"]
+        _validate_xyaf_annotation_style(ann)
+        normalized.append(ann)
     try:
-        return _native.scene_xyaf_bulk_pack(annotations)
+        return _native.scene_xyaf_bulk_pack(normalized)
     except _native.SceneXyafBulkPackError as error:
-        _raise_xyaf_bulk_error(error, annotations)
+        _raise_xyaf_bulk_error(error, normalized)
 
 
 def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:

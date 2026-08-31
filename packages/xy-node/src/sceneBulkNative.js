@@ -387,7 +387,7 @@ export function sceneChromePack(kwargs) {
       unsupported_keys: legendKw.unsupported_keys ? 1 : 0,
       toggle: legendKw.toggle ? 1 : 0,
       highlight: legendKw.highlight ? 1 : 0,
-      loc: optionalStringRef(legendKw.loc, keep),
+      loc: legendKw.loc == null ? { ptr: 0n, len: 0n } : stringRef(String(legendKw.loc), keep),
       title: optionalStringRef(legendKw.title, keep),
       ncols: Number(legendKw.ncols ?? 1),
       unsupported_style: legendKw.unsupported_style ? 1 : 0,
@@ -1088,11 +1088,15 @@ function marshalXyafStyle(style, keep, { skipRotation = false } = {}) {
 
 function marshalXyafAnnotation(annotation, { indexOverride = null } = {}) {
   const keep = [];
-  const kind = String(annotation.kind ?? "");
-  const style = { ...(annotation.style ?? {}) };
+  const ann = { ...annotation };
+  const kind = String(ann.kind ?? "");
+  const style = { ...(ann.style ?? {}) };
+  if (["text", "marker"].includes(kind) && !Object.hasOwn(ann, "rotation") && style.rotation != null) {
+    ann.rotation = style.rotation;
+  }
   const { style: styleIn, extraBlob } = marshalXyafStyle(style, keep, { skipRotation: ["text", "marker"].includes(kind) });
-  const num = (key) => (Object.hasOwn(annotation, key) ? [1, Number(annotation[key])] : [0, 0]);
-  const text = annotation.text != null && annotation.text !== "" ? String(annotation.text) : "";
+  const num = (key) => (Object.hasOwn(ann, key) ? [1, Number(ann[key])] : [0, 0]);
+  const text = ann.text != null && ann.text !== "" ? String(ann.text) : "";
   const row = {
     kind: stringRef(kind, keep),
     text: stringRef(text, keep),
@@ -1110,12 +1114,12 @@ function marshalXyafAnnotation(annotation, { indexOverride = null } = {}) {
     size_present: num("size")[0], size: num("size")[1],
     wrap_present: num("wrap")[0], wrap: num("wrap")[1],
     rotation_present: num("rotation")[0], rotation: num("rotation")[1],
-    anchor_present: Object.hasOwn(annotation, "anchor") ? 1 : 0,
-    anchor: Object.hasOwn(annotation, "anchor") ? stringRef(String(annotation.anchor), keep) : stringRef("", keep),
-    axis_present: Object.hasOwn(annotation, "axis") ? 1 : 0,
-    axis: Object.hasOwn(annotation, "axis") ? stringRef(String(annotation.axis), keep) : stringRef("", keep),
-    symbol_present: Object.hasOwn(annotation, "symbol") ? 1 : 0,
-    symbol: Object.hasOwn(annotation, "symbol") ? stringRef(String(annotation.symbol), keep) : stringRef("", keep),
+    anchor_present: Object.hasOwn(ann, "anchor") ? 1 : 0,
+    anchor: Object.hasOwn(ann, "anchor") ? stringRef(String(ann.anchor), keep) : stringRef("", keep),
+    axis_present: Object.hasOwn(ann, "axis") ? 1 : 0,
+    axis: Object.hasOwn(ann, "axis") ? stringRef(String(ann.axis), keep) : stringRef("", keep),
+    symbol_present: Object.hasOwn(ann, "symbol") ? 1 : 0,
+    symbol: Object.hasOwn(ann, "symbol") ? stringRef(String(ann.symbol), keep) : stringRef("", keep),
     index_override_present: indexOverride == null ? 0 : 1,
     index_override: indexOverride == null ? 0 : Number(indexOverride) >>> 0,
     style: styleIn,

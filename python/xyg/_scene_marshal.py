@@ -77,6 +77,23 @@ def pack_chrome_facts(
     legend_options = dict(getattr(figure, "legend_options", None) or {})
     legend_style = dict(legend_options.get("style") or {})
     allowed_legend = {"loc", "title", "ncols", "style", "highlight", "toggle"}
+    unsupported_legend = set(legend_options) - allowed_legend
+    if unsupported_legend or int(legend_options.get("ncols") or 1) != 1:
+        raise UnsupportedSceneV3(
+            "Scene v12 primary legends do not yet encode anchors, multiple columns, or custom content"
+        )
+    if any(
+        key in legend_options and legend_options[key] is not False
+        for key in ("toggle", "highlight")
+    ):
+        raise UnsupportedSceneV3(
+            "Scene v12 primary legends are static; toggle and highlight must be false"
+        )
+    authored_loc = legend_options.get("loc")
+    if authored_loc is not None and not str(authored_loc):
+        raise UnsupportedSceneV3(
+            f"Scene v12 does not support legend location {str(authored_loc)!r}"
+        )
     colorbar = getattr(figure, "colorbar_options", None) if colorbar_ok else None
     colorbar_payload = None
     if colorbar:
@@ -218,7 +235,7 @@ def pack_chrome_facts(
             "unsupported_keys": bool(set(legend_options) - allowed_legend),
             "toggle": "toggle" in legend_options and legend_options["toggle"] is not False,
             "highlight": "highlight" in legend_options and legend_options["highlight"] is not False,
-            "loc": _optional_str(legend_options.get("loc")),
+            "loc": None if legend_options.get("loc") is None else str(legend_options.get("loc")),
             "title": _optional_str(
                 str(legend_options.get("title")).lower()
                 if isinstance(legend_options.get("title"), bool)
