@@ -58,6 +58,7 @@ density_categorical_color_wire_admit = _impl.density_categorical_color_wire_admi
 density_mean_color_wire_admit = _impl.density_mean_color_wire_admit
 density_channels_dropped_compat = _impl.density_channels_dropped_compat
 density_dropped_channel_wire_admit = _impl.density_dropped_channel_wire_admit
+density_mean_color_rgba_wire_admit = _impl.density_mean_color_rgba_wire_admit
 density_wasm_source_admit = _impl.density_wasm_source_admit
 DENSITY_WASM_DENSITY_NONE = _impl.DENSITY_WASM_DENSITY_NONE
 DENSITY_WASM_DENSITY_AUTOMATIC = _impl.DENSITY_WASM_DENSITY_AUTOMATIC
@@ -310,6 +311,7 @@ __all__ = [
     "density_grid_path",
     "density_grid_path_identity_state",
     "density_log_u8",
+    "density_mean_color_rgba_wire_admit",
     "density_mean_color_wire_admit",
     "density_overlay_omitted_wire",
     "density_overlay_opacity",

@@ -1,9 +1,9 @@
 {
-  "abi_version": 290,
+  "abi_version": 291,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "afe3e2b515a1fb939bcd10b641999003af199edade8fb16180ea5fe20626af01",
+  "signature_sha256": "4e60e54149dff3cf7018a657e5d33ab20e0769693663223bf3f40edb6755f9b5",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -8828,6 +8828,56 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_density_log_u8(const float * grid, size_t len, uint8_t * out, double * out_max)"
+    },
+    {
+      "name": "xyg_density_mean_color_rgba_wire_admit",
+      "node_name": "xyDensityMeanColorRgbaWireAdmit",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "has_pyramid_rgba",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_bin_colors",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_density_mean_color_rgba_wire_admit(int32_t has_pyramid_rgba, int32_t has_bin_colors)"
     },
     {
       "name": "xyg_density_mean_color_wire_admit",

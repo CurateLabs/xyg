@@ -1432,6 +1432,11 @@ def load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_int32,
     ]
+    lib.xyg_density_mean_color_rgba_wire_admit.restype = ctypes.c_int32
+    lib.xyg_density_mean_color_rgba_wire_admit.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+    ]
     lib.xyg_density_wasm_source_admit.restype = ctypes.c_int32
     lib.xyg_density_wasm_source_admit.argtypes = [ctypes.c_int32, ctypes.c_int32]
     lib.xyg_density_wasm_density_wire_kind.restype = ctypes.c_int32
@@ -5034,6 +5039,12 @@ def main() -> None:
         and lib.xyg_density_dropped_channel_wire_admit(b"size", 4, 1) == 1
         and lib.xyg_density_dropped_channel_wire_admit(b"color", 5, 0) == 1,
         "density_dropped_channel_wire_admit",
+    )
+    ok(
+        lib.xyg_density_mean_color_rgba_wire_admit(1, 0) == 1
+        and lib.xyg_density_mean_color_rgba_wire_admit(0, 1) == 1
+        and lib.xyg_density_mean_color_rgba_wire_admit(0, 0) == 0,
+        "density_mean_color_rgba_wire_admit",
     )
     ok(
         lib.xyg_density_wasm_source_admit(1, 1) == 1

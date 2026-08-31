@@ -1508,18 +1508,24 @@ class PayloadMixin(_Host):
             }
         if tiles_meta is not None:
             density["tiles"] = tiles_meta
-        if rgba_from_pyramid is not None:
-            density["rgba"] = pw.ship_u8(rgba_from_pyramid.reshape(-1))
+        ship_mean_color_rgba = kernels.density_mean_color_rgba_wire_admit(
+            has_pyramid_rgba=rgba_from_pyramid is not None,
+            has_bin_colors=bin_colors is not None,
+        )
+        if ship_mean_color_rgba:
+            if rgba_from_pyramid is not None:
+                density["rgba"] = pw.ship_u8(rgba_from_pyramid.reshape(-1))
+            elif bin_colors is not None:
+                # Mean point color per cell, straight-alpha RGBA8: the color the
+                # points themselves would downsample to (averaged in linear
+                # light). The channel is aggregated, recorded via `color_agg`,
+                # and therefore leaves the dropped list.
+                rgba_grid = kernels.bin_2d_mean_color(
+                    bx, by, bx0, bx1, by0, by1, w, h, **bin_colors
+                )
+                density["rgba"] = pw.ship_u8(rgba_grid.reshape(-1))
             density["color_agg"] = "mean"
-        elif bin_colors is not None:
-            # Mean point color per cell, straight-alpha RGBA8: the color the
-            # points themselves would downsample to (averaged in linear
-            # light). The channel is aggregated, recorded via `color_agg`,
-            # and therefore leaves the dropped list.
-            rgba_grid = kernels.bin_2d_mean_color(bx, by, bx0, bx1, by0, by1, w, h, **bin_colors)
-            density["rgba"] = pw.ship_u8(rgba_grid.reshape(-1))
-            density["color_agg"] = "mean"
-        mean_color_aggregates = rgba_from_pyramid is not None or bin_colors is not None
+        mean_color_aggregates = ship_mean_color_rgba
         dropped_channels = [
             name
             for name in dropped_channels
