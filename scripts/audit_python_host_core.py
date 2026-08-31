@@ -151,7 +151,7 @@ MERGED_PAYLOAD_GATHER_SHIP: tuple[tuple[str, str, str], ...] = (
 REMAINING_CLOSE: tuple[tuple[str, str], ...] = (
     (
         "Cross-host proof",
-        "payload + Scene-byte differentials; Node scene hexbin colormap compose gap",
+        "payload + Scene-byte differentials (hexbin colormap XYTA/payload goldens green on #852)",
     ),
     (
         "Residual host materialization",
