@@ -1610,6 +1610,9 @@ export class Figure {
     if (attach.attachSide) {
       spec.side = opts.side ?? (axis === "x" ? "bottom" : "left");
     }
+    if (attach.attachTickSides && opts.tick_sides != null) {
+      spec.tick_sides = [...opts.tick_sides];
+    }
     const scale = payloadAxisScale(this, axisId);
     if (attach.attachScale && scale !== "linear") {
       spec.scale = scale;
