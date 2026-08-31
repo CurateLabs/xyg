@@ -164,6 +164,12 @@ function traceColumnForEmit(raw) {
   return null;
 }
 
+function traceColumnForEmitAttr(trace, attr) {
+  if (attr === "x" && trace._xCol instanceof Column) return trace._xCol;
+  if (attr === "y" && trace._yCol instanceof Column) return trace._yCol;
+  return traceColumnForEmit(trace[attr]);
+}
+
 function traceColumnValues(raw) {
   return traceColumnForEmit(raw)?.values ?? null;
 }
@@ -318,7 +324,7 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
   const colKindBySlot = {};
   for (let i = 0; i < COL_ATTRS.length; i += 1) {
     const attr = COL_ATTRS[i];
-    const col = traceColumnForEmit(t[attr]);
+    const col = traceColumnForEmitAttr(t, attr);
     const { desc, arr, kind } = columnDesc(col);
     desc.copy(colDescs, i * COL_DESC_SIZE);
     colValuePtrs.push(arr.length ? arr : null);
