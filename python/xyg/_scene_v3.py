@@ -1802,7 +1802,13 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
     kind = str(getattr(trace, "kind", "") or "mark")
     style = getattr(trace, "style", None) or {}
     flags = 0
-    kind_class = _native.scene_kind_class(kind)
+    dispatch = _native.scene_figure_support_trace_dispatch_plan(
+        kind=kind,
+        marker_glyph_present=style.get("marker_glyph") is not None,
+        marker_path_present=style.get("marker_path") is not None,
+        curve_present=style.get("curve") is not None,
+        fill_present="fill" in style,
+    )
     if not _native.scene_kind_admit(kind):
         flags |= _XYFS_TRACE_UNSUPPORTED_KIND
     if getattr(trace, "x_axis", "x") != "x" or getattr(trace, "y_axis", "y") != "y":
@@ -1813,7 +1819,7 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
         _density_aggregates_color(trace),
     ):
         flags |= _XYFS_TRACE_HIDDEN_OR_PER_ITEM
-    if style.get("marker_glyph") is not None:
+    if dispatch["probe_marker_glyph"]:
         glyph = style.get("marker_glyph")
         if (
             kind != "scatter"
@@ -1822,7 +1828,7 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
         ):
             flags |= _XYFS_TRACE_DASHED_MARKERS
     marker_path = style.get("marker_path")
-    if marker_path is not None:
+    if dispatch["probe_marker_path"]:
         if kind != "scatter":
             flags |= _XYFS_TRACE_DASHED_MARKERS
         else:
@@ -1839,7 +1845,7 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
     if curve is not None:
         curve_code = _native.scene_curve_classify(curve)
         if curve_code == 1:
-            if not (kind_class & (_SCENE_KIND_CLASS_LINE | _SCENE_KIND_CLASS_BAND)):
+            if not dispatch["probe_curve_smooth"]:
                 flags |= _XYFS_TRACE_DASHED_MARKERS
         elif curve_code != 0:
             flags |= _XYFS_TRACE_DASHED_MARKERS
@@ -1849,16 +1855,16 @@ def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, s
     dash = style.get("dash")
     if dash is not None and _parse_scene_dash(dash) is False:
         flags |= _XYFS_TRACE_DASHED_MARKERS
-    if kind_class & (_SCENE_KIND_CLASS_RECT | _SCENE_KIND_CLASS_HEATMAP):
+    if dispatch["probe_rect_extra"]:
         flags |= _rect_extra_flags(style, kind, polar)
-    if kind_class & _SCENE_KIND_CLASS_HEXBIN and not _native.scene_hexbin_reduce_admit(
+    if dispatch["probe_hexbin_reduce"] and not _native.scene_hexbin_reduce_admit(
         style.get("reduce")
     ):
         flags |= _XYFS_TRACE_CUSTOM_HEX_REDUCE
-    if kind_class & _SCENE_KIND_CLASS_HEATMAP and _heatmap_uses_colormap(trace):
+    if dispatch["probe_heatmap_colormap"] and _heatmap_uses_colormap(trace):
         flags |= _XYFS_TRACE_HEATMAP_COLORMAP
     if (
-        "fill" in style
+        dispatch["probe_non_css_fill"]
         and not isinstance(style["fill"], str)
         and _admitted_fill_gradient(trace) is None
     ):
@@ -2398,7 +2404,10 @@ def _pack_xycl_column(column: np.ndarray | None) -> tuple[int, bytes]:
 def _pack_xycl(figure: Any) -> bytes:
     """Pack authored kind/coords/id plus canonical columns as XYCL v1."""
     traces = list(getattr(figure, "traces", None) or [])
-    coords = 1 if str(getattr(figure, "coords", "cartesian") or "cartesian") == "polar" else 0
+    figure_plan = _native.scene_xycl_figure_plan(
+        polar=str(getattr(figure, "coords", "cartesian") or "cartesian") == "polar"
+    )
+    coords = 1 if figure_plan["polar"] else 0
     records = bytearray(_XYCL_HEADER.pack(b"XYCL", 1, len(traces), 0))
     for trace in traces:
         kind = str(trace.kind).encode("utf-8")
@@ -2424,6 +2433,7 @@ def _pack_xycl(figure: Any) -> bytes:
 def _pack_xynm(figure: Any) -> bytes:
     """Pack authored legend names as XYNM v1; Rust owns legend-name gating."""
     traces = list(getattr(figure, "traces", None) or [])
+    _native.scene_xynm_figure_plan(show_legend=bool(getattr(figure, "show_legend", True)))
     records = bytearray(_XYNM_HEADER.pack(b"XYNM", 1, len(traces), 0))
     for trace in traces:
         name = getattr(trace, "name", None)
@@ -3859,8 +3869,12 @@ def _pack_figure_support(
     ``BROWSER_CSS``. Rust reports the stable fail-closed diagnostics. Live
     browser widgets still apply CSS outside this encoder.
     """
+    figure_plan = _native.scene_figure_support_figure_plan(
+        polar=str(getattr(figure, "coords", "cartesian") or "cartesian") == "polar"
+    )
+    polar = figure_plan["polar"]
     flags = 0
-    if figure.coords != "cartesian":
+    if polar:
         flags |= 1 << 0
     chrome_styles = getattr(figure, "chrome_styles", None) or {}
     if any("font-family" in (style or {}) for style in chrome_styles.values()) or any(
@@ -3920,12 +3934,12 @@ def _pack_figure_support(
     payload.extend(len(traces).to_bytes(4, "little"))
     for axis_id, options in figure.axis_options.items():
         axis_code = 0 if axis_id == "x" else 1 if axis_id == "y" else 255
-        keys = _significant_scene_axis_keys(options, polar=flags & 1 != 0)
+        keys = _significant_scene_axis_keys(options, polar=polar)
         payload.extend(bytes((axis_code, 0, 0, 0)))
         payload.extend(len(keys).to_bytes(4, "little"))
         _xyep_put_keys(payload, keys)
     for trace in traces:
-        trace_flags, kind = _figure_trace_support_flags(trace, flags & 1 != 0)
+        trace_flags, kind = _figure_trace_support_flags(trace, polar)
         encoded = str(kind).encode("utf-8")[:32]
         payload.extend(trace_flags.to_bytes(2, "little"))
         payload.extend(bytes((len(encoded), 0)))

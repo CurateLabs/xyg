@@ -7,8 +7,9 @@
 
 use crate::kernels::{
     scene_kind_class, SCENE_KIND_CLASS_BAND, SCENE_KIND_CLASS_HEXBIN,
-    SCENE_KIND_CLASS_HEATMAP, SCENE_KIND_CLASS_POLYFILL, SCENE_KIND_CLASS_RECT,
-    SCENE_KIND_CLASS_RIBBON, SCENE_KIND_CLASS_SCATTER, SCENE_RIBBON_COLOR2_ENDS,
+    SCENE_KIND_CLASS_HEATMAP, SCENE_KIND_CLASS_LINE, SCENE_KIND_CLASS_POLYFILL,
+    SCENE_KIND_CLASS_RECT, SCENE_KIND_CLASS_RIBBON, SCENE_KIND_CLASS_SCATTER,
+    SCENE_RIBBON_COLOR2_ENDS,
 };
 
 const SCENE_KIND_CLASS_OPACITY: i32 = SCENE_KIND_CLASS_BAND
@@ -185,6 +186,85 @@ pub fn scene_xyta_trace_dispatch_plan(
     }
     *out = plan;
     1
+}
+
+/// Resolved per-trace XYFS support-probe dispatch from product kind and host facts.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct FigureSupportTraceDispatchPlan {
+    pub kind_class: i32,
+    pub probe_marker_glyph: i32,
+    pub probe_marker_path: i32,
+    pub probe_curve_smooth: i32,
+    pub probe_rect_extra: i32,
+    pub probe_hexbin_reduce: i32,
+    pub probe_heatmap_colormap: i32,
+    pub probe_non_css_fill: i32,
+}
+
+fn scene_figure_support_host_bit(value: i32) -> bool {
+    matches!(value, 0 | 1)
+}
+
+/// Figure-level XYFS support orchestration from ``_pack_figure_support`` /
+/// ``packFigureSupport``.
+///
+/// Hosts coerce ``polar`` from figure coords. Returns ``1`` on success, ``0``
+/// when ``polar`` is not ``0`` or ``1``.
+pub fn scene_figure_support_figure_plan(polar: i32, out_polar: &mut i32) -> i32 {
+    scene_xyta_figure_plan(polar, out_polar)
+}
+
+/// Per-trace XYFS support dispatch from ``_figure_trace_support_flags`` /
+/// ``figureTraceSupport``.
+///
+/// Host observations are ``0``/``1``. Rust resolves ``kind_class`` and which
+/// kind-gated probe branches may run before hosts ship style observations.
+pub fn scene_figure_support_trace_dispatch_plan(
+    kind: &str,
+    marker_glyph_present: i32,
+    marker_path_present: i32,
+    curve_present: i32,
+    fill_present: i32,
+    out: &mut FigureSupportTraceDispatchPlan,
+) -> i32 {
+    for bit in [
+        marker_glyph_present,
+        marker_path_present,
+        curve_present,
+        fill_present,
+    ] {
+        if !scene_figure_support_host_bit(bit) {
+            return 0;
+        }
+    }
+    let kind_class = scene_kind_class(kind);
+    *out = FigureSupportTraceDispatchPlan {
+        kind_class,
+        probe_marker_glyph: i32::from(marker_glyph_present != 0),
+        probe_marker_path: i32::from(marker_path_present != 0),
+        probe_curve_smooth: i32::from(
+            kind_class & (SCENE_KIND_CLASS_LINE | SCENE_KIND_CLASS_BAND) != 0,
+        ),
+        probe_rect_extra: i32::from(
+            kind_class & (SCENE_KIND_CLASS_RECT | SCENE_KIND_CLASS_HEATMAP) != 0,
+        ),
+        probe_hexbin_reduce: i32::from(kind_class & SCENE_KIND_CLASS_HEXBIN != 0),
+        probe_heatmap_colormap: i32::from(kind_class & SCENE_KIND_CLASS_HEATMAP != 0),
+        probe_non_css_fill: i32::from(fill_present != 0),
+    };
+    1
+}
+
+/// Figure-level XYCL column attach orchestration from ``_pack_xycl`` /
+/// ``packXyCl``.
+pub fn scene_xycl_figure_plan(polar: i32, out_polar: &mut i32) -> i32 {
+    scene_figure_support_figure_plan(polar, out_polar)
+}
+
+/// Figure-level XYNM name attach orchestration from ``_pack_xynm`` /
+/// ``packXyNm``.
+pub fn scene_xynm_figure_plan(show_legend: i32, out_show_legend: &mut i32) -> i32 {
+    scene_xytc_figure_plan(show_legend, out_show_legend)
 }
 
 #[cfg(test)]
@@ -516,6 +596,116 @@ mod tests {
         );
         assert_eq!(
             scene_xyta_trace_dispatch_plan("ribbon", 0, 0, 0, 0, 5, 0, 0, &mut plan),
+            0
+        );
+    }
+
+    #[test]
+    fn figure_support_figure_plan_passes_polar() {
+        let mut polar = 0;
+        assert_eq!(scene_figure_support_figure_plan(1, &mut polar), 1);
+        assert_eq!(polar, 1);
+        assert_eq!(scene_figure_support_figure_plan(0, &mut polar), 1);
+        assert_eq!(polar, 0);
+        assert_eq!(scene_figure_support_figure_plan(2, &mut polar), 0);
+    }
+
+    #[test]
+    fn figure_support_dispatch_scatter_markers_and_fill() {
+        let mut plan = FigureSupportTraceDispatchPlan {
+            kind_class: 0,
+            probe_marker_glyph: 0,
+            probe_marker_path: 0,
+            probe_curve_smooth: 0,
+            probe_rect_extra: 0,
+            probe_hexbin_reduce: 0,
+            probe_heatmap_colormap: 0,
+            probe_non_css_fill: 0,
+        };
+        assert_eq!(
+            scene_figure_support_trace_dispatch_plan("scatter", 1, 0, 0, 1, &mut plan),
+            1
+        );
+        assert_eq!(plan.kind_class, SCENE_KIND_CLASS_SCATTER);
+        assert_eq!(plan.probe_marker_glyph, 1);
+        assert_eq!(plan.probe_marker_path, 0);
+        assert_eq!(plan.probe_non_css_fill, 1);
+        assert_eq!(plan.probe_curve_smooth, 0);
+
+        let mut path = plan;
+        assert_eq!(
+            scene_figure_support_trace_dispatch_plan("scatter", 0, 1, 0, 0, &mut path),
+            1
+        );
+        assert_eq!(path.probe_marker_glyph, 0);
+        assert_eq!(path.probe_marker_path, 1);
+    }
+
+    #[test]
+    fn figure_support_dispatch_kind_gates() {
+        let mut area = FigureSupportTraceDispatchPlan {
+            kind_class: 0,
+            probe_marker_glyph: 0,
+            probe_marker_path: 0,
+            probe_curve_smooth: 0,
+            probe_rect_extra: 0,
+            probe_hexbin_reduce: 0,
+            probe_heatmap_colormap: 0,
+            probe_non_css_fill: 0,
+        };
+        assert_eq!(
+            scene_figure_support_trace_dispatch_plan("area", 0, 0, 1, 0, &mut area),
+            1
+        );
+        assert_eq!(area.probe_curve_smooth, 1);
+        assert_eq!(area.probe_rect_extra, 0);
+
+        let mut bar = area;
+        assert_eq!(
+            scene_figure_support_trace_dispatch_plan("bar", 0, 0, 0, 0, &mut bar),
+            1
+        );
+        assert_eq!(bar.probe_rect_extra, 1);
+
+        let mut hex = bar;
+        assert_eq!(
+            scene_figure_support_trace_dispatch_plan("hexbin", 0, 0, 0, 0, &mut hex),
+            1
+        );
+        assert_eq!(hex.probe_hexbin_reduce, 1);
+
+        let mut heatmap = hex;
+        assert_eq!(
+            scene_figure_support_trace_dispatch_plan("heatmap", 0, 0, 0, 0, &mut heatmap),
+            1
+        );
+        assert_eq!(heatmap.probe_heatmap_colormap, 1);
+    }
+
+    #[test]
+    fn xycl_and_xynm_figure_plans_delegate() {
+        let mut polar = 0;
+        assert_eq!(scene_xycl_figure_plan(1, &mut polar), 1);
+        assert_eq!(polar, 1);
+        let mut show = 0;
+        assert_eq!(scene_xynm_figure_plan(1, &mut show), 1);
+        assert_eq!(show, 1);
+    }
+
+    #[test]
+    fn figure_support_dispatch_rejects_invalid_bits() {
+        let mut plan = FigureSupportTraceDispatchPlan {
+            kind_class: 0,
+            probe_marker_glyph: 0,
+            probe_marker_path: 0,
+            probe_curve_smooth: 0,
+            probe_rect_extra: 0,
+            probe_hexbin_reduce: 0,
+            probe_heatmap_colormap: 0,
+            probe_non_css_fill: 0,
+        };
+        assert_eq!(
+            scene_figure_support_trace_dispatch_plan("line", 2, 0, 0, 0, &mut plan),
             0
         );
     }
