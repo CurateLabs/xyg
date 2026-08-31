@@ -162,7 +162,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 309;
+pub const ABI_VERSION: u32 = 310;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15989,6 +15989,103 @@ pub unsafe extern "C" fn xyg_payload_mesh_emit_plan(
         *out_attach_transition = attach_transition;
         *out_attempt_gather = attempt_gather;
         *out_gather_include_color = gather_include_color;
+        1
+    })
+}
+
+/// One geometry column descriptor from ``payload_column_ship_plan`` (ABI 310).
+#[repr(C)]
+pub struct XygPayloadColumnShipEntry {
+    pub registry_key: i32,
+    pub trace_slot: i32,
+    pub ship_method: i32,
+    pub ship_scale: i32,
+    pub gather: u32,
+}
+
+/// Column registry / gather-and-ship plan from per-kind ``_emit_*`` (ABI 310).
+///
+/// Owns geometry column keys, trace slots, ship method/scale, and gather policy.
+/// Hosts still NumPy-gather and ship buffers.
+///
+/// # Safety
+/// ``kind`` must address ``kind_len`` readable bytes when ``kind_len > 0``.
+/// ``out_columns`` must be writable for ``capacity`` entries; ``out_n_columns``
+/// receives the filled count (``<= capacity``).
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_column_ship_plan(
+    kind: *const u8,
+    kind_len: usize,
+    x_axis_type: i32,
+    y_axis_type: i32,
+    out_gather_policy: *mut i32,
+    out_gather_include_color: *mut i32,
+    out_n_columns: *mut usize,
+    out_x_ship_scale: *mut i32,
+    out_y_ship_scale: *mut i32,
+    out_columns: *mut XygPayloadColumnShipEntry,
+    capacity: usize,
+) -> i32 {
+    ffi_guard(0, || {
+        if out_gather_policy.is_null()
+            || out_gather_include_color.is_null()
+            || out_n_columns.is_null()
+            || out_x_ship_scale.is_null()
+            || out_y_ship_scale.is_null()
+            || (capacity > 0 && out_columns.is_null())
+        {
+            return 0;
+        }
+        let kind_str = match read_utf8(kind, kind_len) {
+            Some(s) => s,
+            None => return 0,
+        };
+        let cap = capacity.min(payload_emit::PAYLOAD_COLUMN_SHIP_MAX);
+        let mut columns = [payload_emit::PayloadColumnShipEntry {
+            registry_key: 0,
+            trace_slot: 0,
+            ship_method: 0,
+            ship_scale: 0,
+            gather: 0,
+        }; payload_emit::PAYLOAD_COLUMN_SHIP_MAX];
+        let mut gather_policy = 0i32;
+        let mut gather_include_color = 0i32;
+        let mut n_columns = 0usize;
+        let mut x_ship_scale = 0i32;
+        let mut y_ship_scale = 0i32;
+        let ok = payload_emit::payload_column_ship_plan(
+            &kind_str,
+            x_axis_type,
+            y_axis_type,
+            &mut gather_policy,
+            &mut gather_include_color,
+            &mut n_columns,
+            &mut x_ship_scale,
+            &mut y_ship_scale,
+            &mut columns,
+        );
+        if ok == 0 {
+            return 0;
+        }
+        if n_columns > cap {
+            return 0;
+        }
+        *out_gather_policy = gather_policy;
+        *out_gather_include_color = gather_include_color;
+        *out_n_columns = n_columns;
+        *out_x_ship_scale = x_ship_scale;
+        *out_y_ship_scale = y_ship_scale;
+        if cap > 0 {
+            for (idx, entry) in columns.iter().take(n_columns).enumerate() {
+                *out_columns.add(idx) = XygPayloadColumnShipEntry {
+                    registry_key: entry.registry_key,
+                    trace_slot: entry.trace_slot,
+                    ship_method: entry.ship_method,
+                    ship_scale: entry.ship_scale,
+                    gather: u32::from(entry.gather != 0),
+                };
+            }
+        }
         1
     })
 }

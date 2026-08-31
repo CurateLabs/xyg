@@ -1071,6 +1071,315 @@ pub fn payload_axis_spec_attach_plan(
     1
 }
 
+/// Maximum geometry columns returned by ``payload_column_ship_plan``.
+pub const PAYLOAD_COLUMN_SHIP_MAX: usize = 8;
+
+/// Spec registry key: ``x``.
+pub const PAYLOAD_COL_KEY_X: i32 = 0;
+/// Spec registry key: ``y``.
+pub const PAYLOAD_COL_KEY_Y: i32 = 1;
+/// Spec registry key: ``x0``.
+pub const PAYLOAD_COL_KEY_X0: i32 = 2;
+/// Spec registry key: ``x1``.
+pub const PAYLOAD_COL_KEY_X1: i32 = 3;
+/// Spec registry key: ``y0``.
+pub const PAYLOAD_COL_KEY_Y0: i32 = 4;
+/// Spec registry key: ``y1``.
+pub const PAYLOAD_COL_KEY_Y1: i32 = 5;
+/// Spec registry key: ``x2``.
+pub const PAYLOAD_COL_KEY_X2: i32 = 6;
+/// Spec registry key: ``y2``.
+pub const PAYLOAD_COL_KEY_Y2: i32 = 7;
+/// Spec registry key: ``base`` (area baseline).
+pub const PAYLOAD_COL_KEY_BASE: i32 = 8;
+/// Spec registry key: ``target_y0`` (ribbon far span on the y scale).
+pub const PAYLOAD_COL_KEY_TARGET_Y0: i32 = 9;
+/// Spec registry key: ``target_y1``.
+pub const PAYLOAD_COL_KEY_TARGET_Y1: i32 = 10;
+
+/// Trace column slot: ``t.x``.
+pub const PAYLOAD_TRACE_SLOT_X: i32 = 0;
+/// Trace column slot: ``t.y``.
+pub const PAYLOAD_TRACE_SLOT_Y: i32 = 1;
+/// Trace column slot: ``t.x0``.
+pub const PAYLOAD_TRACE_SLOT_X0: i32 = 2;
+/// Trace column slot: ``t.x1``.
+pub const PAYLOAD_TRACE_SLOT_X1: i32 = 3;
+/// Trace column slot: ``t.y0``.
+pub const PAYLOAD_TRACE_SLOT_Y0: i32 = 4;
+/// Trace column slot: ``t.y1``.
+pub const PAYLOAD_TRACE_SLOT_Y1: i32 = 5;
+/// Trace column slot: ``t.base``.
+pub const PAYLOAD_TRACE_SLOT_BASE: i32 = 6;
+
+/// ``pw.ship`` offset-encoded geometry backed by a ``Column``.
+pub const PAYLOAD_COL_SHIP_OFFSET: i32 = 0;
+/// ``pw.ship_values`` temporary geometry without a canonical ``Column``.
+pub const PAYLOAD_COL_SHIP_VALUES: i32 = 1;
+
+/// Per-column ship scale: x-axis family.
+pub const PAYLOAD_COL_SCALE_X: i32 = 0;
+/// Per-column ship scale: y-axis family.
+pub const PAYLOAD_COL_SCALE_Y: i32 = 1;
+
+/// No row gather before shipping geometry.
+pub const PAYLOAD_GATHER_NONE: i32 = 0;
+/// ``_visible_sel`` on xy geometry (scatter direct, hexbin).
+pub const PAYLOAD_GATHER_VISIBLE_SEL: i32 = 1;
+/// ``_rect_finite_sel`` on rectangle geometry (rect, histogram, segments post-decimation).
+pub const PAYLOAD_GATHER_RECT_FINITE: i32 = 2;
+/// ``valid_indices_f64`` on geometry nulls (+ optional continuous color).
+pub const PAYLOAD_GATHER_VALID_INDICES: i32 = 3;
+/// ``payload_segments_emit_gather`` then optional ``_rect_finite_sel``.
+pub const PAYLOAD_GATHER_SEGMENTS: i32 = 4;
+/// ``_m4_decimate`` on parallel xy arrays (line, area).
+pub const PAYLOAD_GATHER_M4: i32 = 5;
+
+/// One geometry column in the payload registry.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PayloadColumnShipEntry {
+    pub registry_key: i32,
+    pub trace_slot: i32,
+    pub ship_method: i32,
+    pub ship_scale: i32,
+    pub gather: i32,
+}
+
+/// Column registry / gather policy from per-kind ``_emit_*`` geometry shipping.
+///
+/// Owns which trace columns ship under which spec keys, offset vs values encode,
+/// axis ship-scale selection, and the host gather hook (visible sel, rect finite,
+/// valid indices, segment decimation, M4). Hosts still NumPy-gather and call
+/// ``pw.ship`` / ``pw.ship_values``. Returns ``1`` on success, ``0`` for unknown
+/// kinds.
+pub fn payload_column_ship_plan(
+    kind: &str,
+    x_axis_type: i32,
+    y_axis_type: i32,
+    out_gather_policy: &mut i32,
+    out_gather_include_color: &mut i32,
+    out_n_columns: &mut usize,
+    out_x_ship_scale: &mut i32,
+    out_y_ship_scale: &mut i32,
+    out_columns: &mut [PayloadColumnShipEntry; PAYLOAD_COLUMN_SHIP_MAX],
+) -> i32 {
+    *out_gather_include_color = 0;
+    *out_n_columns = 0;
+    *out_x_ship_scale = payload_base_entry_ship_scale(x_axis_type);
+    *out_y_ship_scale = payload_base_entry_ship_scale(y_axis_type);
+    let x_scale = *out_x_ship_scale;
+    let y_scale = *out_y_ship_scale;
+
+    fn push_rect(
+        out: &mut [PayloadColumnShipEntry; PAYLOAD_COLUMN_SHIP_MAX],
+        n: &mut usize,
+        x_scale: i32,
+        y_scale: i32,
+    ) {
+        let cols = [
+            PayloadColumnShipEntry {
+                registry_key: PAYLOAD_COL_KEY_X0,
+                trace_slot: PAYLOAD_TRACE_SLOT_X0,
+                ship_method: PAYLOAD_COL_SHIP_OFFSET,
+                ship_scale: x_scale,
+                gather: 1,
+            },
+            PayloadColumnShipEntry {
+                registry_key: PAYLOAD_COL_KEY_X1,
+                trace_slot: PAYLOAD_TRACE_SLOT_X1,
+                ship_method: PAYLOAD_COL_SHIP_OFFSET,
+                ship_scale: x_scale,
+                gather: 1,
+            },
+            PayloadColumnShipEntry {
+                registry_key: PAYLOAD_COL_KEY_Y0,
+                trace_slot: PAYLOAD_TRACE_SLOT_Y0,
+                ship_method: PAYLOAD_COL_SHIP_OFFSET,
+                ship_scale: y_scale,
+                gather: 1,
+            },
+            PayloadColumnShipEntry {
+                registry_key: PAYLOAD_COL_KEY_Y1,
+                trace_slot: PAYLOAD_TRACE_SLOT_Y1,
+                ship_method: PAYLOAD_COL_SHIP_OFFSET,
+                ship_scale: y_scale,
+                gather: 1,
+            },
+        ];
+        out[..4].copy_from_slice(&cols);
+        *n = 4;
+    }
+
+    fn push_xy(
+        out: &mut [PayloadColumnShipEntry; PAYLOAD_COLUMN_SHIP_MAX],
+        n: &mut usize,
+        ship_method: i32,
+        x_scale: i32,
+        y_scale: i32,
+    ) {
+        out[0] = PayloadColumnShipEntry {
+            registry_key: PAYLOAD_COL_KEY_X,
+            trace_slot: PAYLOAD_TRACE_SLOT_X,
+            ship_method,
+            ship_scale: x_scale,
+            gather: 1,
+        };
+        out[1] = PayloadColumnShipEntry {
+            registry_key: PAYLOAD_COL_KEY_Y,
+            trace_slot: PAYLOAD_TRACE_SLOT_Y,
+            ship_method,
+            ship_scale: y_scale,
+            gather: 1,
+        };
+        *n = 2;
+    }
+
+    match kind {
+        "line" => {
+            *out_gather_policy = PAYLOAD_GATHER_M4;
+            push_xy(
+                out_columns,
+                out_n_columns,
+                PAYLOAD_COL_SHIP_OFFSET,
+                x_scale,
+                y_scale,
+            );
+        }
+        "area" | "error_band" => {
+            *out_gather_policy = PAYLOAD_GATHER_M4;
+            push_xy(
+                out_columns,
+                out_n_columns,
+                PAYLOAD_COL_SHIP_OFFSET,
+                x_scale,
+                y_scale,
+            );
+            out_columns[2] = PayloadColumnShipEntry {
+                registry_key: PAYLOAD_COL_KEY_BASE,
+                trace_slot: PAYLOAD_TRACE_SLOT_BASE,
+                ship_method: PAYLOAD_COL_SHIP_OFFSET,
+                ship_scale: y_scale,
+                gather: 1,
+            };
+            *out_n_columns = 3;
+        }
+        "scatter" => {
+            *out_gather_policy = PAYLOAD_GATHER_VISIBLE_SEL;
+            push_xy(
+                out_columns,
+                out_n_columns,
+                PAYLOAD_COL_SHIP_OFFSET,
+                x_scale,
+                y_scale,
+            );
+        }
+        "hexbin" => {
+            *out_gather_policy = PAYLOAD_GATHER_VISIBLE_SEL;
+            push_xy(
+                out_columns,
+                out_n_columns,
+                PAYLOAD_COL_SHIP_VALUES,
+                x_scale,
+                y_scale,
+            );
+        }
+        "density_sample" => {
+            *out_gather_policy = PAYLOAD_GATHER_NONE;
+            push_xy(
+                out_columns,
+                out_n_columns,
+                PAYLOAD_COL_SHIP_VALUES,
+                x_scale,
+                y_scale,
+            );
+            for entry in out_columns.iter_mut().take(*out_n_columns) {
+                entry.gather = 0;
+            }
+        }
+        "rect" | "histogram" | "box" | "violin" => {
+            *out_gather_policy = PAYLOAD_GATHER_RECT_FINITE;
+            push_rect(out_columns, out_n_columns, x_scale, y_scale);
+        }
+        "segments"
+        | "errorbar"
+        | "stem"
+        | "box_median"
+        | "box_whisker"
+        | "contour" => {
+            *out_gather_policy = PAYLOAD_GATHER_SEGMENTS;
+            push_rect(out_columns, out_n_columns, x_scale, y_scale);
+        }
+        "ribbon" => {
+            *out_gather_policy = PAYLOAD_GATHER_VALID_INDICES;
+            push_rect(out_columns, out_n_columns, x_scale, y_scale);
+            out_columns[4] = PayloadColumnShipEntry {
+                registry_key: PAYLOAD_COL_KEY_TARGET_Y0,
+                trace_slot: PAYLOAD_TRACE_SLOT_X,
+                ship_method: PAYLOAD_COL_SHIP_OFFSET,
+                ship_scale: y_scale,
+                gather: 1,
+            };
+            out_columns[5] = PayloadColumnShipEntry {
+                registry_key: PAYLOAD_COL_KEY_TARGET_Y1,
+                trace_slot: PAYLOAD_TRACE_SLOT_Y,
+                ship_method: PAYLOAD_COL_SHIP_OFFSET,
+                ship_scale: y_scale,
+                gather: 1,
+            };
+            *out_n_columns = 6;
+        }
+        "triangle_mesh" => {
+            *out_gather_policy = PAYLOAD_GATHER_VALID_INDICES;
+            *out_gather_include_color = 1;
+            out_columns[0] = PayloadColumnShipEntry {
+                registry_key: PAYLOAD_COL_KEY_X0,
+                trace_slot: PAYLOAD_TRACE_SLOT_X0,
+                ship_method: PAYLOAD_COL_SHIP_OFFSET,
+                ship_scale: x_scale,
+                gather: 1,
+            };
+            out_columns[1] = PayloadColumnShipEntry {
+                registry_key: PAYLOAD_COL_KEY_X1,
+                trace_slot: PAYLOAD_TRACE_SLOT_X1,
+                ship_method: PAYLOAD_COL_SHIP_OFFSET,
+                ship_scale: x_scale,
+                gather: 1,
+            };
+            out_columns[2] = PayloadColumnShipEntry {
+                registry_key: PAYLOAD_COL_KEY_X2,
+                trace_slot: PAYLOAD_TRACE_SLOT_X,
+                ship_method: PAYLOAD_COL_SHIP_OFFSET,
+                ship_scale: x_scale,
+                gather: 1,
+            };
+            out_columns[3] = PayloadColumnShipEntry {
+                registry_key: PAYLOAD_COL_KEY_Y0,
+                trace_slot: PAYLOAD_TRACE_SLOT_Y0,
+                ship_method: PAYLOAD_COL_SHIP_OFFSET,
+                ship_scale: y_scale,
+                gather: 1,
+            };
+            out_columns[4] = PayloadColumnShipEntry {
+                registry_key: PAYLOAD_COL_KEY_Y1,
+                trace_slot: PAYLOAD_TRACE_SLOT_Y1,
+                ship_method: PAYLOAD_COL_SHIP_OFFSET,
+                ship_scale: y_scale,
+                gather: 1,
+            };
+            out_columns[5] = PayloadColumnShipEntry {
+                registry_key: PAYLOAD_COL_KEY_Y2,
+                trace_slot: PAYLOAD_TRACE_SLOT_Y,
+                ship_method: PAYLOAD_COL_SHIP_OFFSET,
+                ship_scale: y_scale,
+                gather: 1,
+            };
+            *out_n_columns = 6;
+        }
+        _ => return 0,
+    }
+    1
+}
+
 /// Trace channel attach policy from ``_ship_channels`` / ``_ship_trace_styles``.
 ///
 /// ``slot`` is ``PAYLOAD_SHIP_CHANNELS_ALWAYS`` or ``PAYLOAD_SHIP_CHANNELS_IF_COLOR``.
@@ -3074,5 +3383,111 @@ mod tests {
         assert_eq!(y.attach_theta_unit, 0);
         assert_eq!(y.attach_hole, 1);
         assert_eq!(y.attach_r_origin, 1);
+    }
+
+    fn run_column_ship_plan(kind: &str) -> (
+        i32,
+        i32,
+        usize,
+        i32,
+        i32,
+        [PayloadColumnShipEntry; PAYLOAD_COLUMN_SHIP_MAX],
+    ) {
+        let mut gather_policy = -1;
+        let mut gather_include_color = -1;
+        let mut n_columns = 0usize;
+        let mut x_scale = -1;
+        let mut y_scale = -1;
+        let mut columns = [PayloadColumnShipEntry {
+            registry_key: -1,
+            trace_slot: -1,
+            ship_method: -1,
+            ship_scale: -1,
+            gather: -1,
+        }; PAYLOAD_COLUMN_SHIP_MAX];
+        let ok = payload_column_ship_plan(
+            kind,
+            1,
+            2,
+            &mut gather_policy,
+            &mut gather_include_color,
+            &mut n_columns,
+            &mut x_scale,
+            &mut y_scale,
+            &mut columns,
+        );
+        assert_eq!(ok, 1);
+        (gather_policy, gather_include_color, n_columns, x_scale, y_scale, columns)
+    }
+
+    #[test]
+    fn payload_column_ship_plan_rect_registry_and_finite_gather() {
+        let (gather, _, n, x_scale, y_scale, cols) = run_column_ship_plan("rect");
+        assert_eq!(gather, PAYLOAD_GATHER_RECT_FINITE);
+        assert_eq!(n, 4);
+        assert_eq!(x_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_LOG);
+        assert_eq!(y_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_SYMLOG);
+        assert_eq!(cols[0].registry_key, PAYLOAD_COL_KEY_X0);
+        assert_eq!(cols[3].registry_key, PAYLOAD_COL_KEY_Y1);
+        assert!(cols.iter().take(4).all(|c| c.ship_method == PAYLOAD_COL_SHIP_OFFSET));
+    }
+
+    #[test]
+    fn payload_column_ship_plan_hexbin_values_and_visible_gather() {
+        let (gather, _, n, _, _, cols) = run_column_ship_plan("hexbin");
+        assert_eq!(gather, PAYLOAD_GATHER_VISIBLE_SEL);
+        assert_eq!(n, 2);
+        assert_eq!(cols[0].ship_method, PAYLOAD_COL_SHIP_VALUES);
+        assert_eq!(cols[1].ship_method, PAYLOAD_COL_SHIP_VALUES);
+    }
+
+    #[test]
+    fn payload_column_ship_plan_ribbon_six_columns_with_targets() {
+        let (gather, _, n, _, y_scale, cols) = run_column_ship_plan("ribbon");
+        assert_eq!(gather, PAYLOAD_GATHER_VALID_INDICES);
+        assert_eq!(n, 6);
+        assert_eq!(cols[4].registry_key, PAYLOAD_COL_KEY_TARGET_Y0);
+        assert_eq!(cols[4].trace_slot, PAYLOAD_TRACE_SLOT_X);
+        assert_eq!(cols[4].ship_scale, y_scale);
+        assert_eq!(cols[5].registry_key, PAYLOAD_COL_KEY_TARGET_Y1);
+    }
+
+    #[test]
+    fn payload_column_ship_plan_area_includes_base_after_m4() {
+        let (gather, _, n, _, _, cols) = run_column_ship_plan("area");
+        assert_eq!(gather, PAYLOAD_GATHER_M4);
+        assert_eq!(n, 3);
+        assert_eq!(cols[2].registry_key, PAYLOAD_COL_KEY_BASE);
+        assert_eq!(cols[2].trace_slot, PAYLOAD_TRACE_SLOT_BASE);
+    }
+
+    #[test]
+    fn payload_column_ship_plan_rejects_unknown_kind() {
+        let mut gather_policy = 0;
+        let mut gather_include_color = 0;
+        let mut n_columns = 0usize;
+        let mut x_scale = 0;
+        let mut y_scale = 0;
+        let mut columns = [PayloadColumnShipEntry {
+            registry_key: 0,
+            trace_slot: 0,
+            ship_method: 0,
+            ship_scale: 0,
+            gather: 0,
+        }; PAYLOAD_COLUMN_SHIP_MAX];
+        assert_eq!(
+            payload_column_ship_plan(
+                "sankey",
+                0,
+                0,
+                &mut gather_policy,
+                &mut gather_include_color,
+                &mut n_columns,
+                &mut x_scale,
+                &mut y_scale,
+                &mut columns,
+            ),
+            0
+        );
     }
 }

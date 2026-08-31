@@ -53,6 +53,16 @@ class CZoneMap(ctypes.Structure):
     ]
 
 
+class PayloadColumnShipEntry(ctypes.Structure):
+    _fields_ = [
+        ("registry_key", ctypes.c_int32),
+        ("trace_slot", ctypes.c_int32),
+        ("ship_method", ctypes.c_int32),
+        ("ship_scale", ctypes.c_int32),
+        ("gather", ctypes.c_uint32),
+    ]
+
+
 def _lib_name() -> str:
     if sys.platform == "win32":
         return "xyg_core.dll"
@@ -1564,6 +1574,21 @@ def load() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_int32),
         ctypes.POINTER(ctypes.c_int32),
         ctypes.POINTER(ctypes.c_int32),
+    ]
+
+    lib.xyg_payload_column_ship_plan.restype = ctypes.c_int32
+    lib.xyg_payload_column_ship_plan.argtypes = [
+        ctypes.c_char_p,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_size_t),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(PayloadColumnShipEntry),
+        ctypes.c_size_t,
     ]
     lib.xyg_payload_ribbon_emit_plan.restype = ctypes.c_int32
     lib.xyg_payload_ribbon_emit_plan.argtypes = [
@@ -5588,6 +5613,36 @@ def main() -> None:
         and mesh_attempt_gather.value == 1
         and mesh_gather_color.value == 1,
         "payload_mesh_emit_plan gather skeleton",
+    )
+    col_gather = ctypes.c_int32(-1)
+    col_gather_color = ctypes.c_int32(-1)
+    col_n = ctypes.c_size_t(0)
+    col_x_scale = ctypes.c_int32(-1)
+    col_y_scale = ctypes.c_int32(-1)
+    col_entries = (PayloadColumnShipEntry * 8)()
+    ok(
+        lib.xyg_payload_column_ship_plan(
+            b"ribbon",
+            6,
+            1,
+            2,
+            ctypes.byref(col_gather),
+            ctypes.byref(col_gather_color),
+            ctypes.byref(col_n),
+            ctypes.byref(col_x_scale),
+            ctypes.byref(col_y_scale),
+            col_entries,
+            8,
+        )
+        == 1
+        and col_gather.value == 3
+        and col_n.value == 6
+        and col_x_scale.value == 1
+        and col_y_scale.value == 2
+        and col_entries[4].registry_key == 9
+        and col_entries[4].trace_slot == 0
+        and col_entries[4].ship_scale == 2,
+        "payload_column_ship_plan ribbon registry",
     )
     ribbon_tier_direct = ctypes.c_int32(-1)
     ribbon_n_marks = ctypes.c_size_t(0)

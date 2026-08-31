@@ -536,6 +536,73 @@ def test_payload_mesh_emit_plan_rejects_missing_continuous_color() -> None:
         )
 
 
+def test_payload_column_ship_plan_rect() -> None:
+    plan = kernels.payload_column_ship_plan(
+        kind="rect",
+        x_axis_scale="log",
+        y_axis_scale="symlog",
+    )
+    assert plan == {
+        "gather_policy": "rect_finite",
+        "gather_include_color": False,
+        "n_columns": 4,
+        "x_ship_scale": "log",
+        "y_ship_scale": "symlog",
+        "columns": [
+            {
+                "registry_key": "x0",
+                "trace_slot": "x0",
+                "ship_method": "offset",
+                "ship_scale": "log",
+                "gather": True,
+            },
+            {
+                "registry_key": "x1",
+                "trace_slot": "x1",
+                "ship_method": "offset",
+                "ship_scale": "log",
+                "gather": True,
+            },
+            {
+                "registry_key": "y0",
+                "trace_slot": "y0",
+                "ship_method": "offset",
+                "ship_scale": "symlog",
+                "gather": True,
+            },
+            {
+                "registry_key": "y1",
+                "trace_slot": "y1",
+                "ship_method": "offset",
+                "ship_scale": "symlog",
+                "gather": True,
+            },
+        ],
+    }
+
+
+def test_payload_column_ship_plan_ribbon_targets() -> None:
+    plan = kernels.payload_column_ship_plan(
+        kind="ribbon",
+        x_axis_scale="linear",
+        y_axis_scale="log",
+    )
+    assert plan["gather_policy"] == "valid_indices"
+    assert plan["n_columns"] == 6
+    assert plan["columns"][4]["registry_key"] == "target_y0"
+    assert plan["columns"][4]["trace_slot"] == "x"
+    assert plan["columns"][4]["ship_scale"] == "log"
+
+
+def test_payload_column_ship_plan_rejects_unknown_kind() -> None:
+    with pytest.raises(ValueError, match="payload_column_ship_plan"):
+        kernels.payload_column_ship_plan(
+            kind="sankey",
+            x_axis_scale="linear",
+            y_axis_scale="linear",
+        )
+
+
 def test_payload_ribbon_emit_plan_gather_and_transition() -> None:
     plan = kernels.payload_ribbon_emit_plan(
         n_marks=6,

@@ -94,6 +94,7 @@ def test_abi_version_is_309() -> None:
     assert "xyg_payload_bar_hist_emit_plan" in names
     assert "xyg_payload_heatmap_emit_plan" in names
     assert "xyg_payload_mesh_emit_plan" in names
+    assert "xyg_payload_column_ship_plan" in names
     assert "xyg_payload_ribbon_emit_plan" in names
     assert "xyg_payload_segments_emit_plan" in names
     assert "xyg_payload_scatter_emit_plan" in names
