@@ -157,6 +157,8 @@ import {
   sceneKindClass,
   sceneXytcFigurePlan,
   sceneXytcTraceDispatchPlan,
+  sceneXytaFigurePlan,
+  sceneXytaTraceDispatchPlan,
   figureTraceSupport,
   fillIsGradientAuthoring,
   xyEfJoinedFill,
@@ -732,6 +734,44 @@ test("sceneXytcTraceDispatchPlan ribbon color2 and area perimeter", () => {
   const area = sceneXytcTraceDispatchPlan({ kind: "area" });
   assert.equal(area.packStrokePerimeter, true);
   assert.equal(area.packColor2, false);
+});
+
+test("sceneXytaFigurePlan passes polar like Python", () => {
+  assert.equal(sceneXytaFigurePlan({ polar: true }).polar, true);
+  assert.equal(sceneXytaFigurePlan({ polar: false }).polar, false);
+});
+
+test("sceneXytaTraceDispatchPlan heatmap hexbin ribbon and density routing", () => {
+  const heatmap = sceneXytaTraceDispatchPlan({
+    kind: "heatmap",
+    hexbinColormapPlane: true,
+    hexbinRgbaPlaneReady: true,
+    ribbonColor2Class: 3,
+    meshPaintPlane: true,
+    scatterPaintPlane: true,
+  });
+  assert.equal(heatmap.packHeatmap, true);
+  assert.equal(heatmap.packHexbinColormap, false);
+
+  const hexCmap = sceneXytaTraceDispatchPlan({
+    kind: "hexbin",
+    hexbinColormapPlane: true,
+    hexbinRgbaPlaneReady: true,
+  });
+  assert.equal(hexCmap.packHexbinColormap, true);
+  assert.equal(hexCmap.packHexbinRgba, false);
+
+  const ribbon = sceneXytaTraceDispatchPlan({
+    kind: "ribbon",
+    ribbonColor2Class: 3,
+  });
+  assert.equal(ribbon.packRibbonEnds, true);
+
+  const density = sceneXytaTraceDispatchPlan({
+    kind: "scatter",
+    useDensity: true,
+  });
+  assert.equal(density.packDensity, true);
 });
 
 test("hexbinXyTaColormap uses channel.colormap only like Python", () => {

@@ -1,14 +1,14 @@
 //! Scene pack orchestration (M2 #733).
 //!
 //! Hosts still ship XYTC/XYTA buffers and coerce style literals. Rust owns
-//! figure-level legend attach and per-trace XYTC pack dispatch routing so
-//! Python ``_pack_xytc`` and Node ``packXyTc`` cannot drift on kind-class
-//! gates or scatter marker branches.
+//! figure-level attach orchestration and per-trace XYTC/XYTA pack dispatch
+//! routing so Python ``_pack_xytc`` / ``_pack_xyta`` and Node ``packXyTc`` /
+//! ``packXyTa`` cannot drift on kind-class gates or sidecar branches.
 
 use crate::kernels::{
     scene_kind_class, SCENE_KIND_CLASS_BAND, SCENE_KIND_CLASS_HEXBIN,
     SCENE_KIND_CLASS_HEATMAP, SCENE_KIND_CLASS_POLYFILL, SCENE_KIND_CLASS_RECT,
-    SCENE_KIND_CLASS_RIBBON, SCENE_KIND_CLASS_SCATTER,
+    SCENE_KIND_CLASS_RIBBON, SCENE_KIND_CLASS_SCATTER, SCENE_RIBBON_COLOR2_ENDS,
 };
 
 const SCENE_KIND_CLASS_OPACITY: i32 = SCENE_KIND_CLASS_BAND
@@ -91,6 +91,99 @@ pub fn scene_xytc_trace_dispatch_plan(
         meta_use_density: i32::from(scatter && use_density != 0),
         meta_joined_fill: i32::from(triangle_mesh && joined_fill != 0),
     };
+    1
+}
+
+/// Resolved per-trace XYTA attach dispatch from product kind and host facts.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct XytaTraceDispatchPlan {
+    pub kind_class: i32,
+    pub pack_heatmap: i32,
+    pub pack_hexbin_colormap: i32,
+    pub pack_hexbin_rgba: i32,
+    pub pack_ribbon_ends: i32,
+    pub pack_mesh_faces: i32,
+    pub pack_scatter_paint: i32,
+    pub pack_density: i32,
+}
+
+/// Figure-level XYTA orchestration from ``figure_scene`` / ``packXyTa``.
+///
+/// Hosts coerce ``polar`` from figure coords. Returns ``1`` on success, ``0``
+/// when ``polar`` is not ``0`` or ``1``.
+pub fn scene_xyta_figure_plan(polar: i32, out_polar: &mut i32) -> i32 {
+    if !matches!(polar, 0 | 1) {
+        return 0;
+    }
+    *out_polar = polar;
+    1
+}
+
+fn scene_xyta_host_bit(value: i32) -> bool {
+    matches!(value, 0 | 1)
+}
+
+/// Per-trace XYTA attach dispatch from ``_pack_xyta`` / ``packXyTa``.
+///
+/// Host observations are ``0``/``1`` except ``ribbon_color2_class`` (0–4 from
+/// [`scene_ribbon_color2_classify`]). Rust resolves ``kind_class`` and which
+/// attach branch may run before hosts ship grid/RGBA/density planes.
+pub fn scene_xyta_trace_dispatch_plan(
+    kind: &str,
+    polar: i32,
+    use_density: i32,
+    hexbin_colormap_plane: i32,
+    hexbin_rgba_plane_ready: i32,
+    ribbon_color2_class: i32,
+    mesh_paint_plane: i32,
+    scatter_paint_plane: i32,
+    out: &mut XytaTraceDispatchPlan,
+) -> i32 {
+    for bit in [
+        polar,
+        use_density,
+        hexbin_colormap_plane,
+        hexbin_rgba_plane_ready,
+        mesh_paint_plane,
+        scatter_paint_plane,
+    ] {
+        if !scene_xyta_host_bit(bit) {
+            return 0;
+        }
+    }
+    if !matches!(ribbon_color2_class, 0..=4) {
+        return 0;
+    }
+    let kind_class = scene_kind_class(kind);
+    let mut plan = XytaTraceDispatchPlan {
+        kind_class,
+        pack_heatmap: 0,
+        pack_hexbin_colormap: 0,
+        pack_hexbin_rgba: 0,
+        pack_ribbon_ends: 0,
+        pack_mesh_faces: 0,
+        pack_scatter_paint: 0,
+        pack_density: 0,
+    };
+    if kind_class & SCENE_KIND_CLASS_HEATMAP != 0 {
+        plan.pack_heatmap = 1;
+    } else if kind_class & SCENE_KIND_CLASS_HEXBIN != 0 && hexbin_colormap_plane != 0 {
+        plan.pack_hexbin_colormap = 1;
+    } else if kind_class & SCENE_KIND_CLASS_HEXBIN != 0 && hexbin_rgba_plane_ready != 0 {
+        plan.pack_hexbin_rgba = 1;
+    } else if kind_class & SCENE_KIND_CLASS_RIBBON != 0
+        && polar == 0
+        && ribbon_color2_class == SCENE_RIBBON_COLOR2_ENDS
+    {
+        plan.pack_ribbon_ends = 1;
+    } else if mesh_paint_plane != 0 {
+        plan.pack_mesh_faces = 1;
+    } else if scatter_paint_plane != 0 {
+        plan.pack_scatter_paint = 1;
+    } else if kind == "scatter" && use_density != 0 {
+        plan.pack_density = 1;
+    }
+    *out = plan;
     1
 }
 
@@ -257,5 +350,173 @@ mod tests {
             meta_joined_fill: 0,
         };
         assert_eq!(scene_xytc_trace_dispatch_plan("line", 2, 0, 0, &mut plan), 0);
+    }
+
+    #[test]
+    fn xyta_figure_plan_passes_polar() {
+        let mut polar = 0;
+        assert_eq!(scene_xyta_figure_plan(1, &mut polar), 1);
+        assert_eq!(polar, 1);
+        assert_eq!(scene_xyta_figure_plan(0, &mut polar), 1);
+        assert_eq!(polar, 0);
+        assert_eq!(scene_xyta_figure_plan(2, &mut polar), 0);
+    }
+
+    #[test]
+    fn xyta_dispatch_heatmap_wins_over_hexbin() {
+        let mut plan = XytaTraceDispatchPlan {
+            kind_class: 0,
+            pack_heatmap: 0,
+            pack_hexbin_colormap: 0,
+            pack_hexbin_rgba: 0,
+            pack_ribbon_ends: 0,
+            pack_mesh_faces: 0,
+            pack_scatter_paint: 0,
+            pack_density: 0,
+        };
+        assert_eq!(
+            scene_xyta_trace_dispatch_plan(
+                "heatmap",
+                0,
+                0,
+                1,
+                1,
+                SCENE_RIBBON_COLOR2_ENDS,
+                1,
+                1,
+                &mut plan,
+            ),
+            1
+        );
+        assert_eq!(plan.kind_class, SCENE_KIND_CLASS_HEATMAP);
+        assert_eq!(plan.pack_heatmap, 1);
+        assert_eq!(plan.pack_hexbin_colormap, 0);
+    }
+
+    #[test]
+    fn xyta_dispatch_hexbin_colormap_and_rgba_priority() {
+        let mut cmap = XytaTraceDispatchPlan {
+            kind_class: 0,
+            pack_heatmap: 0,
+            pack_hexbin_colormap: 0,
+            pack_hexbin_rgba: 0,
+            pack_ribbon_ends: 0,
+            pack_mesh_faces: 0,
+            pack_scatter_paint: 0,
+            pack_density: 0,
+        };
+        assert_eq!(
+            scene_xyta_trace_dispatch_plan(
+                "hexbin",
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                0,
+                &mut cmap,
+            ),
+            1
+        );
+        assert_eq!(cmap.pack_hexbin_colormap, 1);
+        assert_eq!(cmap.pack_hexbin_rgba, 0);
+
+        let mut rgba = cmap;
+        assert_eq!(
+            scene_xyta_trace_dispatch_plan("hexbin", 0, 0, 0, 1, 0, 0, 0, &mut rgba),
+            1
+        );
+        assert_eq!(rgba.pack_hexbin_colormap, 0);
+        assert_eq!(rgba.pack_hexbin_rgba, 1);
+    }
+
+    #[test]
+    fn xyta_dispatch_ribbon_mesh_scatter_and_density() {
+        let mut ribbon = XytaTraceDispatchPlan {
+            kind_class: 0,
+            pack_heatmap: 0,
+            pack_hexbin_colormap: 0,
+            pack_hexbin_rgba: 0,
+            pack_ribbon_ends: 0,
+            pack_mesh_faces: 0,
+            pack_scatter_paint: 0,
+            pack_density: 0,
+        };
+        assert_eq!(
+            scene_xyta_trace_dispatch_plan(
+                "ribbon",
+                0,
+                0,
+                0,
+                0,
+                SCENE_RIBBON_COLOR2_ENDS,
+                0,
+                0,
+                &mut ribbon,
+            ),
+            1
+        );
+        assert_eq!(ribbon.pack_ribbon_ends, 1);
+
+        let mut polar_ribbon = ribbon;
+        assert_eq!(
+            scene_xyta_trace_dispatch_plan(
+                "ribbon",
+                1,
+                0,
+                0,
+                0,
+                SCENE_RIBBON_COLOR2_ENDS,
+                0,
+                0,
+                &mut polar_ribbon,
+            ),
+            1
+        );
+        assert_eq!(polar_ribbon.pack_ribbon_ends, 0);
+
+        let mut mesh = polar_ribbon;
+        assert_eq!(
+            scene_xyta_trace_dispatch_plan("triangle_mesh", 0, 0, 0, 0, 0, 1, 0, &mut mesh),
+            1
+        );
+        assert_eq!(mesh.pack_mesh_faces, 1);
+
+        let mut scatter = mesh;
+        assert_eq!(
+            scene_xyta_trace_dispatch_plan("scatter", 0, 0, 0, 0, 0, 0, 1, &mut scatter),
+            1
+        );
+        assert_eq!(scatter.pack_scatter_paint, 1);
+
+        let mut density = scatter;
+        assert_eq!(
+            scene_xyta_trace_dispatch_plan("scatter", 0, 1, 0, 0, 0, 0, 0, &mut density),
+            1
+        );
+        assert_eq!(density.pack_density, 1);
+    }
+
+    #[test]
+    fn xyta_dispatch_rejects_invalid_observations() {
+        let mut plan = XytaTraceDispatchPlan {
+            kind_class: 0,
+            pack_heatmap: 0,
+            pack_hexbin_colormap: 0,
+            pack_hexbin_rgba: 0,
+            pack_ribbon_ends: 0,
+            pack_mesh_faces: 0,
+            pack_scatter_paint: 0,
+            pack_density: 0,
+        };
+        assert_eq!(
+            scene_xyta_trace_dispatch_plan("scatter", 2, 0, 0, 0, 0, 0, 0, &mut plan),
+            0
+        );
+        assert_eq!(
+            scene_xyta_trace_dispatch_plan("ribbon", 0, 0, 0, 0, 5, 0, 0, &mut plan),
+            0
+        );
     }
 }

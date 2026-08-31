@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 305
-SIGNATURE_SHA256 = "90c0349d1e2c88acabd496f60660393d1a0d97ccf728400720c6cc1b04ebb0df"
+ABI_VERSION = 306
+SIGNATURE_SHA256 = "66510a104d93eeaf4249aa40a2c4be1f905d0567c12a486d1dc3362b2b9b7915"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -1210,6 +1210,14 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_xyta_colormap_pack
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_xyta_figure_plan(int32_t polar, void * out)
+    function = lib.xyg_scene_xyta_figure_plan
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_scene_xyta_trace_dispatch_plan(const uint8_t * kind, size_t kind_len, int32_t polar, int32_t use_density, int32_t hexbin_colormap_plane, int32_t hexbin_rgba_plane_ready, int32_t ribbon_color2_class, int32_t mesh_paint_plane, int32_t scatter_paint_plane, void * out)
+    function = lib.xyg_scene_xyta_trace_dispatch_plan
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p]
     # int32_t xyg_scene_xytc_color2_flags_pack(int32_t color2_class, uint32_t paint_flags, int32_t gradient_packed, uint32_t * out_flags)
     function = lib.xyg_scene_xytc_color2_flags_pack
     function.restype = ctypes.c_int32

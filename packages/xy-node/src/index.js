@@ -70,6 +70,8 @@ export {
   sceneKindClass,
   sceneXytcFigurePlan,
   sceneXytcTraceDispatchPlan,
+  sceneXytaFigurePlan,
+  sceneXytaTraceDispatchPlan,
   roundedRectPoly,
   violinDensity,
   boxStats,

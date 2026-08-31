@@ -98,6 +98,8 @@ scene_xytc_color2_flags_pack = _impl.scene_xytc_color2_flags_pack
 scene_xytc_meta_flags_pack = _impl.scene_xytc_meta_flags_pack
 scene_xytc_figure_plan = _impl.scene_xytc_figure_plan
 scene_xytc_trace_dispatch_plan = _impl.scene_xytc_trace_dispatch_plan
+scene_xyta_figure_plan = _impl.scene_xyta_figure_plan
+scene_xyta_trace_dispatch_plan = _impl.scene_xyta_trace_dispatch_plan
 scene_xytc_paint_presence_pack = _impl.scene_xytc_paint_presence_pack
 scene_xytc_dash_pattern_pack = _impl.scene_xytc_dash_pattern_pack
 scene_xytc_opacity_pack = _impl.scene_xytc_opacity_pack
@@ -475,6 +477,8 @@ __all__ = [
     "scene_tick_label_strategy",
     "scene_xyhf_colormap_pack",
     "scene_xyta_colormap_pack",
+    "scene_xyta_figure_plan",
+    "scene_xyta_trace_dispatch_plan",
     "scene_xytc_color2_flags_pack",
     "scene_xytc_color_channel_pack",
     "scene_xytc_dash_pattern_pack",

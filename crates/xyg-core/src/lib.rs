@@ -162,7 +162,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 305;
+pub const ABI_VERSION: u32 = 306;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -16996,6 +16996,125 @@ pub unsafe extern "C" fn xyg_scene_xytc_trace_dispatch_plan(
             marker_glyph_branch: u32::from(plan.marker_glyph_branch != 0),
             meta_use_density: u32::from(plan.meta_use_density != 0),
             meta_joined_fill: u32::from(plan.meta_joined_fill != 0),
+        };
+        1
+    })
+}
+
+/// Packed XYTA figure orchestration plan (ABI 306).
+#[repr(C)]
+pub struct XygSceneXytaFigurePlan {
+    pub polar: u32,
+}
+
+/// Figure-level XYTA attach orchestration (ABI 306).
+///
+/// Hosts coerce ``polar`` from figure coords. Rust owns the polar gate passed
+/// into per-trace ribbon-end attach routing.
+///
+/// # Safety
+/// ``out`` must be valid for writes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_xyta_figure_plan(
+    polar: i32,
+    out: *mut XygSceneXytaFigurePlan,
+) -> i32 {
+    ffi_guard(0, || {
+        if out.is_null() {
+            return 0;
+        }
+        let mut resolved = 0i32;
+        if scene_pack_orchestrate::scene_xyta_figure_plan(polar, &mut resolved) == 0 {
+            return 0;
+        }
+        (*out).polar = u32::from(resolved != 0);
+        1
+    })
+}
+
+/// Packed per-trace XYTA dispatch plan (ABI 306).
+#[repr(C)]
+pub struct XygSceneXytaTraceDispatchPlan {
+    pub kind_class: u32,
+    pub pack_heatmap: u32,
+    pub pack_hexbin_colormap: u32,
+    pub pack_hexbin_rgba: u32,
+    pub pack_ribbon_ends: u32,
+    pub pack_mesh_faces: u32,
+    pub pack_scatter_paint: u32,
+    pub pack_density: u32,
+}
+
+/// Per-trace XYTA attach dispatch orchestration (ABI 306).
+///
+/// Owns kind-class gates and sidecar branch routing before hosts run per-field
+/// XYTA plane packing.
+///
+/// # Safety
+/// ``kind`` must address ``kind_len`` readable bytes when ``kind_len`` is
+/// non-zero. ``out`` must be valid for writes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_xyta_trace_dispatch_plan(
+    kind: *const u8,
+    kind_len: usize,
+    polar: i32,
+    use_density: i32,
+    hexbin_colormap_plane: i32,
+    hexbin_rgba_plane_ready: i32,
+    ribbon_color2_class: i32,
+    mesh_paint_plane: i32,
+    scatter_paint_plane: i32,
+    out: *mut XygSceneXytaTraceDispatchPlan,
+) -> i32 {
+    ffi_guard(0, || {
+        if out.is_null() {
+            return 0;
+        }
+        let kind_text = if kind_len == 0 {
+            ""
+        } else {
+            if kind.is_null() {
+                return 0;
+            }
+            let slice = std::slice::from_raw_parts(kind, kind_len);
+            match std::str::from_utf8(slice) {
+                Ok(text) => text,
+                Err(_) => return 0,
+            }
+        };
+        let mut plan = scene_pack_orchestrate::XytaTraceDispatchPlan {
+            kind_class: 0,
+            pack_heatmap: 0,
+            pack_hexbin_colormap: 0,
+            pack_hexbin_rgba: 0,
+            pack_ribbon_ends: 0,
+            pack_mesh_faces: 0,
+            pack_scatter_paint: 0,
+            pack_density: 0,
+        };
+        if scene_pack_orchestrate::scene_xyta_trace_dispatch_plan(
+            kind_text,
+            polar,
+            use_density,
+            hexbin_colormap_plane,
+            hexbin_rgba_plane_ready,
+            ribbon_color2_class,
+            mesh_paint_plane,
+            scatter_paint_plane,
+            &mut plan,
+        ) == 0
+        {
+            return 0;
+        }
+        *out = XygSceneXytaTraceDispatchPlan {
+            kind_class: plan.kind_class as u32,
+            pack_heatmap: u32::from(plan.pack_heatmap != 0),
+            pack_hexbin_colormap: u32::from(plan.pack_hexbin_colormap != 0),
+            pack_hexbin_rgba: u32::from(plan.pack_hexbin_rgba != 0),
+            pack_ribbon_ends: u32::from(plan.pack_ribbon_ends != 0),
+            pack_mesh_faces: u32::from(plan.pack_mesh_faces != 0),
+            pack_scatter_paint: u32::from(plan.pack_scatter_paint != 0),
+            pack_density: u32::from(plan.pack_density != 0),
         };
         1
     })

@@ -646,6 +646,14 @@
       "rationale": "The safe engine is the single implementation of parity-affecting behavior."
     },
     {
+      "path": "crates/xyg-engine/src/scene_pack_orchestrate.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
       "path": "crates/xyg-engine/src/scene_static.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",

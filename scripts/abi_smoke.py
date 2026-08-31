@@ -410,6 +410,24 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         ctypes.c_void_p,
     ]
+    lib.xyg_scene_xyta_figure_plan.restype = ctypes.c_int32
+    lib.xyg_scene_xyta_figure_plan.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_void_p,
+    ]
+    lib.xyg_scene_xyta_trace_dispatch_plan.restype = ctypes.c_int32
+    lib.xyg_scene_xyta_trace_dispatch_plan.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_void_p,
+    ]
     lib.xyg_scene_xytc_color2_flags_pack.restype = ctypes.c_int32
     lib.xyg_scene_xytc_color2_flags_pack.argtypes = [
         ctypes.c_int32,
@@ -5842,6 +5860,51 @@ def main() -> None:
         and xytc_dispatch[4] == 1
         and xytc_dispatch[3] == 0,
         "scene_xytc_trace_dispatch_plan ribbon color2",
+    )
+    xyta_figure = (ctypes.c_uint32 * 1)()
+    ok(
+        lib.xyg_scene_xyta_figure_plan(1, ctypes.byref(xyta_figure)) == 1 and xyta_figure[0] == 1,
+        "scene_xyta_figure_plan polar",
+    )
+    xyta_dispatch = (ctypes.c_uint32 * 8)()
+    heatmap_kind = array("B", b"heatmap")
+    ok(
+        lib.xyg_scene_xyta_trace_dispatch_plan(
+            _ptr(heatmap_kind, ctypes.c_uint8),
+            len(heatmap_kind),
+            0,
+            0,
+            1,
+            1,
+            3,
+            1,
+            1,
+            ctypes.byref(xyta_dispatch),
+        )
+        == 1
+        and xyta_dispatch[1] == 1
+        and xyta_dispatch[2] == 0
+        and xyta_dispatch[7] == 0,
+        "scene_xyta_trace_dispatch_plan heatmap wins",
+    )
+    scatter_kind = array("B", b"scatter")
+    ok(
+        lib.xyg_scene_xyta_trace_dispatch_plan(
+            _ptr(scatter_kind, ctypes.c_uint8),
+            len(scatter_kind),
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            ctypes.byref(xyta_dispatch),
+        )
+        == 1
+        and xyta_dispatch[7] == 1
+        and xyta_dispatch[6] == 0,
+        "scene_xyta_trace_dispatch_plan scatter density",
     )
     density_color_mode = ctypes.c_int32(-1)
     density_categorical = ctypes.c_int32(-1)

@@ -2157,15 +2157,47 @@ def _pack_xyta_colormap(style: dict[str, Any]) -> tuple[int, bytes, bytes]:
     return _native.scene_xyta_colormap_pack(mode, named, stop_rgb)
 
 
+def _xyta_hexbin_plane_observations(trace: Any) -> tuple[bool, bool]:
+    """Return hexbin colormap-plane and rgba-plane-ready host observations."""
+    channel = getattr(trace, "color_ch", None)
+    if channel is None:
+        return False, False
+    colormap = bool(
+        _native.scene_hexbin_colormap_plane_admit(
+            getattr(channel, "mode", None),
+            1 if getattr(channel, "values", None) is not None else 0,
+        )
+    )
+    rgba_ready = False
+    if _native.scene_hexbin_rgba_plane_admit(getattr(channel, "mode", None)):
+        rgba_ready = _hexbin_cell_rgba8(trace) is not None
+    return colormap, rgba_ready
+
+
 def _pack_xyta(figure: Any) -> bytes:
     """Pack authored heatmap/density attach facts as XYTA v1; Rust emits XYTT."""
     traces = list(getattr(figure, "traces", None) or [])
     records = bytearray(_XYTA_HEADER.pack(b"XYTA", 1, len(traces), 0))
+    figure_plan = _native.scene_xyta_figure_plan(
+        polar=str(getattr(figure, "coords", "cartesian") or "cartesian") == "polar"
+    )
+    polar = figure_plan["polar"]
     nan = float("nan")
     for trace in traces:
         style = getattr(trace, "style", None) or {}
         flags = 0
-        kind_class = _native.scene_kind_class(str(trace.kind))
+        kind_name = str(trace.kind)
+        hexbin_colormap, hexbin_rgba_ready = _xyta_hexbin_plane_observations(trace)
+        dispatch = _native.scene_xyta_trace_dispatch_plan(
+            kind=kind_name,
+            polar=polar,
+            use_density=kind_name == "scatter" and trace.use_density(),
+            hexbin_colormap_plane=hexbin_colormap,
+            hexbin_rgba_plane_ready=hexbin_rgba_ready,
+            ribbon_color2_class=_ribbon_color2_class_code(trace),
+            mesh_paint_plane=_mesh_packs_paint_plane(trace),
+            scatter_paint_plane=_scatter_packs_paint_plane(trace),
+        )
         rows = cols = 0
         grid = b""
         rgba = b""
@@ -2182,7 +2214,7 @@ def _pack_xyta(figure: Any) -> bytes:
         domain_x0 = domain_x1 = domain_y0 = domain_y1 = nan
         cmap_lo = cmap_hi = nan
         opacity = fill_opacity = nan
-        if kind_class & _SCENE_KIND_CLASS_HEATMAP:
+        if dispatch["pack_heatmap"]:
             flags |= _XYTA_HEATMAP
             shape = getattr(trace, "grid_shape", None)
             if shape is not None and len(shape) == 2:
@@ -2223,7 +2255,7 @@ def _pack_xyta(figure: Any) -> bytes:
             if domain is not None and len(domain) == 2:
                 flags |= _XYTA_HAS_DOMAIN
                 cmap_lo, cmap_hi = float(domain[0]), float(domain[1])
-        elif kind_class & _SCENE_KIND_CLASS_HEXBIN and _hexbin_packs_colormap_plane(trace):
+        elif dispatch["pack_hexbin_colormap"]:
             channel = trace.color_ch
             values = np.ascontiguousarray(np.asarray(channel.values, dtype=np.float64).reshape(-1))
             flags |= _XYTA_HEATMAP | _XYTA_SHAPE | _XYTA_HAS_GRID
@@ -2235,7 +2267,7 @@ def _pack_xyta(figure: Any) -> bytes:
             if domain is not None and len(domain) == 2:
                 flags |= _XYTA_HAS_DOMAIN
                 cmap_lo, cmap_hi = float(domain[0]), float(domain[1])
-        elif kind_class & _SCENE_KIND_CLASS_HEXBIN and _hexbin_packs_rgba_plane(trace):
+        elif dispatch["pack_hexbin_rgba"]:
             packed = _hexbin_cell_rgba8(trace)
             if packed is not None:
                 n = len(packed) // 4
@@ -2243,11 +2275,7 @@ def _pack_xyta(figure: Any) -> bytes:
                 rows, cols = 1, n
                 grid = np.zeros(n, dtype=np.float64).tobytes()
                 rgba = packed
-        elif (
-            kind_class & _SCENE_KIND_CLASS_RIBBON
-            and str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
-            and _ribbon_packs_end_paints(trace)
-        ):
+        elif dispatch["pack_ribbon_ends"]:
             ends = _ribbon_end_rgba_pair(trace)
             if ends is not None:
                 source, target = ends
@@ -2255,7 +2283,7 @@ def _pack_xyta(figure: Any) -> bytes:
                 rows, cols = 1, len(source) // 4
                 rgba = source
                 mean_rgba = target
-        elif _mesh_packs_paint_plane(trace):
+        elif dispatch["pack_mesh_faces"]:
             fills = _mesh_face_fill_rgba8(trace)
             strokes = _mesh_face_stroke_rgba8(trace, fills or b"")
             widths = _mesh_face_widths(trace)
@@ -2266,7 +2294,7 @@ def _pack_xyta(figure: Any) -> bytes:
                 rgba = fills
                 mean_rgba = strokes
                 x = widths
-        elif _scatter_packs_paint_plane(trace):
+        elif dispatch["pack_scatter_paint"]:
             fills = _scatter_point_fill_rgba8(trace)
             strokes = _scatter_point_stroke_rgba8(trace, fills or b"")
             widths = _scatter_point_widths(trace)
@@ -2277,7 +2305,7 @@ def _pack_xyta(figure: Any) -> bytes:
                 rgba = fills
                 mean_rgba = strokes
                 x = widths
-        elif trace.kind == "scatter" and trace.use_density():
+        elif dispatch["pack_density"]:
             flags |= _XYTA_DENSITY
             xv = _trace_column(trace, "x")
             yv = _trace_column(trace, "y")
@@ -2634,6 +2662,12 @@ def _classify_ribbon_color2(trace: Any) -> str:
         has_fill,
         has_end_pair,
     )
+
+
+def _ribbon_color2_class_code(trace: Any) -> int:
+    """Return ribbon color2 classify code (0–4) for XYTA dispatch."""
+    names = ("absent", "solid", "gradient", "ends", "fail")
+    return names.index(_classify_ribbon_color2(trace))
 
 
 def _ribbon_count(trace: Any) -> int:
