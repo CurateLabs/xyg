@@ -68,6 +68,14 @@ def _build_case(name: str) -> tuple[Figure, dict[str, object]]:
         fig.scatter([0.0, 1.0, 2.0], [0.0, 1.0, 0.5], color=["a", "b", "a"])
         fig.traces[0].id = 15
         return fig, {}
+    if name == "scatter_style_channels":
+        from xyg import channels
+
+        fig = Figure(width=240, height=160)
+        fig.scatter([0.0, 1.0], [0.0, 1.0])
+        fig.traces[0].style_channels = {"stroke_width": channels.StyleChannel([2.0, 3.0])}
+        fig.traces[0].id = 34
+        return fig, {}
     if name == "line_transition_keys":
         fig = Figure(width=240, height=160)
         fig.line([0.0, 1.0, 2.0], [0.0, 1.0, 0.5])
@@ -114,6 +122,14 @@ def _build_case(name: str) -> tuple[Figure, dict[str, object]]:
         rgba = np.array([[1, 0, 0, 1], [0, 1, 0, 1]], dtype=np.float64)
         fig.traces[0].stroke_ch = channels.resolve_color(rgba, 2, default_constant="transparent")
         fig.traces[0].id = 31
+        return fig, {}
+    if name == "histogram_color_ch":
+        from xyg import channels
+
+        fig = Figure(width=240, height=160)
+        fig.histogram([0.0, 1.0, 1.0, 2.0], bins=2, range=(0.0, 2.0))
+        fig.traces[0].color_ch = channels.ColorChannel(mode="constant", constant="#112233")
+        fig.traces[0].id = 35
         return fig, {}
     if name == "segments_pass_through":
         fig = Figure(width=240, height=160)
@@ -287,15 +303,17 @@ def test_fixture_contract(fixture: dict) -> None:
     assert fixture["schema"] == "xyg.payload-cross-host/v1"
     assert fixture["protocol"] == PROTOCOL_VERSION
     assert int(fixture["abi_version"]) == int(_native.ABI_VERSION)
-    assert len(fixture["cases"]) == 23
+    assert len(fixture["cases"]) == 25
     assert {case["name"] for case in fixture["cases"]} == {
         "scatter_direct",
         "scatter_categorical_color",
+        "scatter_style_channels",
         "line_transition_keys",
         "histogram_fixed_bins",
         "histogram_finite_sel",
         "histogram_style_channels",
         "histogram_stroke_ch",
+        "histogram_color_ch",
         "segments_pass_through",
         "segments_color_ch",
         "segments_style_channels",
@@ -320,11 +338,13 @@ def test_fixture_contract(fixture: dict) -> None:
     [
         "scatter_direct",
         "scatter_categorical_color",
+        "scatter_style_channels",
         "line_transition_keys",
         "histogram_fixed_bins",
         "histogram_finite_sel",
         "histogram_style_channels",
         "histogram_stroke_ch",
+        "histogram_color_ch",
         "segments_pass_through",
         "segments_color_ch",
         "segments_style_channels",
@@ -357,11 +377,13 @@ def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> Non
     [
         "scatter_direct",
         "scatter_categorical_color",
+        "scatter_style_channels",
         "line_transition_keys",
         "histogram_fixed_bins",
         "histogram_finite_sel",
         "histogram_style_channels",
         "histogram_stroke_ch",
+        "histogram_color_ch",
         "segments_pass_through",
         "segments_color_ch",
         "segments_style_channels",

@@ -54,6 +54,11 @@ const cases = [
     fig.scatter([0, 1, 2], [0, 1, 0.5], { color: ["a", "b", "a"] });
     fig.traces[0].id = 15;
   }),
+  caseEntry("scatter_style_channels", (fig) => {
+    fig.scatter([0, 1], [0, 1]);
+    fig.traces[0].style_channels = { stroke_width: { values: [2, 3] } };
+    fig.traces[0].id = 34;
+  }),
   caseEntry("line_transition_keys", (fig) => {
     fig.line([0, 1, 2], [0, 1, 0.5]);
     fig.traces[0].id = 8;
@@ -93,6 +98,11 @@ const cases = [
       n: 2,
     };
     fig.traces[0].id = 31;
+  }),
+  caseEntry("histogram_color_ch", (fig) => {
+    fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
+    fig.traces[0].color_ch = { mode: "constant", constant: "#112233" };
+    fig.traces[0].id = 35;
   }),
   caseEntry("segments_pass_through", (fig) => {
     fig.segments([0, 1], [0, 1], [1, 2], [1, 0]);

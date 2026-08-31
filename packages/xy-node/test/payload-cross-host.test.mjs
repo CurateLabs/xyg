@@ -21,6 +21,10 @@ function buildCase(name) {
   } else if (name === "scatter_categorical_color") {
     fig.scatter([0, 1, 2], [0, 1, 0.5], { color: ["a", "b", "a"] });
     fig.traces[0].id = 15;
+  } else if (name === "scatter_style_channels") {
+    fig.scatter([0, 1], [0, 1]);
+    fig.traces[0].style_channels = { stroke_width: { values: [2, 3] } };
+    fig.traces[0].id = 34;
   } else if (name === "line_transition_keys") {
     fig.line([0, 1, 2], [0, 1, 0.5]);
     fig.traces[0].id = 8;
@@ -56,6 +60,10 @@ function buildCase(name) {
       n: 2,
     };
     fig.traces[0].id = 31;
+  } else if (name === "histogram_color_ch") {
+    fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
+    fig.traces[0].color_ch = { mode: "constant", constant: "#112233" };
+    fig.traces[0].id = 35;
   } else if (name === "segments_pass_through") {
     fig.segments([0, 1], [0, 1], [1, 2], [1, 0]);
     fig.traces[0].id = 12;
@@ -142,7 +150,7 @@ test("payload cross-host fixture contract", () => {
   assert.equal(fixture.schema, "xyg.payload-cross-host/v1");
   assert.equal(fixture.protocol, PROTOCOL_VERSION);
   assert.equal(Number(fixture.abi_version), abiVersion());
-  assert.equal(fixture.cases.length, 23);
+  assert.equal(fixture.cases.length, 25);
 });
 
 for (const entry of fixture.cases) {

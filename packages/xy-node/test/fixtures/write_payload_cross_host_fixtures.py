@@ -70,6 +70,12 @@ def main() -> None:
     cases.append(_case("scatter_categorical_color", fig))
 
     fig = Figure(width=240, height=160)
+    fig.scatter([0.0, 1.0], [0.0, 1.0])
+    fig.traces[0].style_channels = {"stroke_width": channels.StyleChannel([2.0, 3.0])}
+    fig.traces[0].id = 34
+    cases.append(_case("scatter_style_channels", fig))
+
+    fig = Figure(width=240, height=160)
     fig.line([0.0, 1.0, 2.0], [0.0, 1.0, 0.5])
     fig.traces[0].id = 8
     fig.traces[0].transition_keys = np.array([[1, 2], [3, 4], [5, 6]], dtype=np.uint32)
@@ -112,6 +118,12 @@ def main() -> None:
     fig.traces[0].stroke_ch = channels.resolve_color(rgba, 2, default_constant="transparent")
     fig.traces[0].id = 31
     cases.append(_case("histogram_stroke_ch", fig))
+
+    fig = Figure(width=240, height=160)
+    fig.histogram([0.0, 1.0, 1.0, 2.0], bins=2, range=(0.0, 2.0))
+    fig.traces[0].color_ch = channels.ColorChannel(mode="constant", constant="#112233")
+    fig.traces[0].id = 35
+    cases.append(_case("histogram_color_ch", fig))
 
     fig = Figure(width=240, height=160)
     fig.segments([0.0, 1.0], [0.0, 1.0], [1.0, 2.0], [1.0, 0.0])
