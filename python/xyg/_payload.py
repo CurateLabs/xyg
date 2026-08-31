@@ -1760,17 +1760,11 @@ class PayloadMixin(_Host):
             )
 
         plan = _emit_plan(grid_from_pyramid=False, has_pyramid_resource=False)
-        sample_sel = None
-        grid = None
-        visible = int(t.n_points)
-        sel = np.empty(0, dtype=np.uint32)
-        binning = _native.density_format_binning(exact=True)
-        rgba_from_pyramid = None
-        tiles_meta = None
+        pyramid_resource = _native.DENSITY_RESOURCE_NONE
+        pyramid_handle = 0
+        pyr = None
+        store = None
         has_pyramid_resource = False
-        # Tier-3 first paint: when the interactive path would already build a
-        # pyramid, compose the opening density surface from it instead of an
-        # O(N) `bin_2d` that the next pan throws away (§28 `pyramid-L*`).
         if plan["pyramid_eligible"]:
             pyr = interaction._ensure_pyramid(t)
             store = interaction._tile_store_of(t)
@@ -1779,145 +1773,86 @@ class PayloadMixin(_Host):
                 grid_from_pyramid=False,
                 has_pyramid_resource=has_pyramid_resource,
             )
-            if plan["pyramid_attempt"]:
-                no_rescan = bool(plan["pyramid_no_rescan"])
-                max_upsample = int(plan["pyramid_max_upsample"])
-                tile_upsample = int(plan["pyramid_tile_upsample"])
-                if store is not None:
-                    if getattr(t, "_pyr_colored", False):
-                        res_color = kernels.tile_store_compose_color(
-                            store, bx0, bx1, by0, by1, w, h, tile_upsample
-                        )
-                        if res_color is not None:
-                            grid, rgba_from_pyramid, level = res_color
-                            binning = _native.density_format_binning(
-                                exact=False,
-                                level=int(level),
-                                tiles=True,
-                                upsampled=no_rescan and level == 0,
-                            )
-                            tiles_meta = interaction._tiles_stats_dict(store)
-                    else:
-                        res = kernels.tile_store_compose(
-                            store, bx0, bx1, by0, by1, w, h, tile_upsample
-                        )
-                        if res is not None:
-                            grid, level = res
-                            binning = _native.density_format_binning(
-                                exact=False,
-                                level=int(level),
-                                tiles=True,
-                                upsampled=no_rescan and level == 0,
-                            )
-                            tiles_meta = interaction._tiles_stats_dict(store)
-                elif pyr is not None and getattr(t, "_pyr_colored", False):
-                    res_color = kernels.pyramid_compose_color(
-                        pyr, bx0, bx1, by0, by1, w, h, max_upsample
-                    )
-                    if res_color is not None:
-                        grid, rgba_from_pyramid, level = res_color
-                        binning = _native.density_format_binning(
-                            exact=False,
-                            level=int(level),
-                            upsampled=no_rescan and level == 0,
-                        )
-                elif pyr is not None:
-                    res = kernels.pyramid_compose(pyr, bx0, bx1, by0, by1, w, h, max_upsample)
-                    if res is not None:
-                        grid, level = res
-                        binning = _native.density_format_binning(
-                            exact=False,
-                            level=int(level),
-                            upsampled=no_rescan and level == 0,
-                        )
-        plan = _emit_plan(
-            grid_from_pyramid=grid is not None,
-            has_pyramid_resource=has_pyramid_resource,
-        )
-        # Pyramid compose yields the grid without a fused overlay sample.
-        # Fill the public sample without re-binning so first paint still
-        # ships `density["sample"]` (raster `point_overlay=False` stays empty).
-        if plan["needs_pyramid_sample"] and sample_sel is None:
-            if plan["pyramid_sample_stratified"]:
-                assert t.color_ch is not None and t.color_ch.codes is not None
-                sample_sel = lod.stratified_sample_row_range_for_target(
-                    t.color_ch.codes,
-                    len(t.color_ch.categories or ()),
-                    DENSITY_SAMPLE_TARGET,
-                    counts=t.color_ch.counts,
-                    seed=DENSITY_SAMPLE_SEED,
-                )
-            else:
-                sample_sel = lod.sample_row_range_for_target(
-                    t.n_points,
-                    DENSITY_SAMPLE_TARGET,
-                    seed=DENSITY_SAMPLE_SEED,
-                )
-        if grid is None:
-            path = int(plan["grid_path"])
-            if plan["visible_init_n_points"]:
-                visible = int(t.n_points)
-                sel = np.empty(0, dtype=np.uint32)
-            if plan["use_raw_range_bin2d"]:
-                sample_sel = None
-                grid = kernels.bin_2d(t.x.values, t.y.values, xr[0], xr[1], yr[0], yr[1], w, h)
-                binning = _native.density_format_binning(exact=True)
-            elif path == _native.DENSITY_GRID_PATH_IDENTITY_GRID_ONLY:
-                grid = kernels.bin_2d(bx, by, bx0, bx1, by0, by1, w, h)
-                binning = _native.density_format_binning(exact=True)
-            elif path == _native.DENSITY_GRID_PATH_IDENTITY_STRATIFIED_FUSED:
-                assert t.color_ch is not None and t.color_ch.codes is not None
-                grid, sample_sel = lod.bin_2d_stratified_sample_row_range_for_target(
-                    bx,
-                    by,
-                    t.color_ch.codes,
-                    len(t.color_ch.categories or ()),
-                    bx0,
-                    bx1,
-                    by0,
-                    by1,
-                    w,
-                    h,
-                    DENSITY_SAMPLE_TARGET,
-                    counts=t.color_ch.counts,
-                    seed=DENSITY_SAMPLE_SEED,
-                )
-                binning = _native.density_format_binning(exact=True)
-            elif path == _native.DENSITY_GRID_PATH_IDENTITY_STRATIFIED_SPLIT:
-                assert t.color_ch is not None and t.color_ch.codes is not None
-                grid = kernels.bin_2d(bx, by, bx0, bx1, by0, by1, w, h)
-                sample_sel = lod.stratified_sample_row_range_for_target(
-                    t.color_ch.codes,
-                    len(t.color_ch.categories or ()),
-                    DENSITY_SAMPLE_TARGET,
-                    seed=DENSITY_SAMPLE_SEED,
-                )
-                binning = _native.density_format_binning(exact=True)
-            elif path == _native.DENSITY_GRID_PATH_IDENTITY_SAMPLE_FUSED:
-                grid, sample_sel = lod.bin_2d_sample_row_range_for_target(
-                    bx,
-                    by,
-                    bx0,
-                    bx1,
-                    by0,
-                    by1,
-                    w,
-                    h,
-                    DENSITY_SAMPLE_TARGET,
-                    seed=DENSITY_SAMPLE_SEED,
-                )
-                binning = _native.density_format_binning(exact=True)
-            elif path == _native.DENSITY_GRID_PATH_RANGE_INDICES:
-                grid, sel = kernels.bin_2d_indices(bx, by, bx0, bx1, by0, by1, w, h)
-                visible = int(len(sel))
-                binning = _native.density_format_binning(exact=True)
-            else:
-                raise RuntimeError(f"unexpected density grid path {path}")
-        elif plan["visible_is_n_points"]:
-            visible = int(t.n_points)
-            sel = np.empty(0, dtype=np.uint32)
-        encoded_grid, gmax = kernels.density_log_u8(grid)
+            if store is not None:
+                pyramid_resource = _native.DENSITY_RESOURCE_TILE_STORE
+                pyramid_handle = int(store)
+            elif pyr is not None:
+                pyramid_resource = _native.DENSITY_RESOURCE_PYRAMID
+                pyramid_handle = int(pyr)
         bin_colors = interaction.trace_bin_colors(t)
+        ship_mean_color = bool(getattr(t, "_pyr_colored", False) or bin_colors is not None)
+        color_codes = None
+        color_counts = None
+        if t.color_ch is not None and t.color_ch.codes is not None:
+            color_codes = t.color_ch.codes
+            if t.color_ch.counts is not None:
+                color_counts = t.color_ch.counts
+        materialized = kernels.payload_density_grid_materialize(
+            cartesian=self.coords == "cartesian",
+            x_linear=x_linear,
+            y_linear=y_linear,
+            categorical=bool(plan["categorical"]),
+            compact_categorical=bool(plan["compact_categorical"]),
+            stratified_counts=bool(plan["stratified_counts"]),
+            x_has_nulls=bool(t.x.zone.null_count),
+            y_has_nulls=bool(t.y.zone.null_count),
+            point_overlay=bool(pw.point_overlay),
+            grid_from_pyramid=False,
+            x_memmapped=x_memmapped,
+            y_memmapped=y_memmapped,
+            has_pyramid_resource=has_pyramid_resource,
+            color_mode=int(plan["color_mode"]),
+            x_min=float(t.x.min),
+            x_max=float(t.x.max),
+            y_min=float(t.y.min),
+            y_max=float(t.y.max),
+            x_c0=float(plan["x_c0"]),
+            x_c1=float(plan["x_c1"]),
+            y_c0=float(plan["y_c0"]),
+            y_c1=float(plan["y_c1"]),
+            n_points=int(t.n_points),
+            bx0=float(bx0),
+            bx1=float(bx1),
+            by0=float(by0),
+            by1=float(by1),
+            xr0=float(xr[0]),
+            xr1=float(xr[1]),
+            yr0=float(yr[0]),
+            yr1=float(yr[1]),
+            w=int(w),
+            h=int(h),
+            x_raw=t.x.values,
+            y_raw=t.y.values,
+            bx=bx,
+            by=by,
+            pyramid_attempt=bool(plan["pyramid_attempt"]),
+            pyramid_resource=int(pyramid_resource),
+            pyramid_handle=int(pyramid_handle),
+            pyr_colored=bool(getattr(t, "_pyr_colored", False)),
+            max_upsample=int(plan["pyramid_max_upsample"]),
+            tile_upsample=int(plan["pyramid_tile_upsample"]),
+            pyramid_no_rescan=bool(plan["pyramid_no_rescan"]),
+            needs_pyramid_sample=bool(plan["needs_pyramid_sample"]),
+            pyramid_sample_stratified=bool(plan["pyramid_sample_stratified"]),
+            ship_mean_color=ship_mean_color,
+            color_codes=color_codes,
+            color_counts=color_counts,
+            bin_colors=bin_colors,
+        )
+        binning = materialized["binning"]
+        encoded_grid = materialized["encoded_grid"]
+        gmax = materialized["gmax"]
+        visible = int(materialized["visible"])
+        sel = materialized["visible_sel"]
+        if sel is None:
+            sel = np.empty(0, dtype=np.uint32)
+        sample_sel = materialized["sample_sel"]
+        rgba_grid: Optional[np.ndarray] = materialized["rgba_grid"]
+        tiles_meta = (
+            interaction._tiles_stats_dict(store)
+            if materialized["from_tiles"] and store is not None
+            else None
+        )
         wire = self._density_trace_emit_plan(
             t,
             xr,
@@ -1933,20 +1868,12 @@ class PayloadMixin(_Host):
             y_linear,
             x_memmapped,
             y_memmapped,
-            grid_from_pyramid=grid is not None,
+            grid_from_pyramid=bool(materialized["grid_from_pyramid"]),
             has_pyramid_resource=has_pyramid_resource,
             grid_present=True,
-            has_pyramid_rgba=rgba_from_pyramid is not None,
+            has_pyramid_rgba=bool(materialized["has_pyramid_rgba"]),
             has_bin_colors=bin_colors is not None,
         )
-        rgba_grid: Optional[np.ndarray] = None
-        if wire["ship_mean_color_rgba"]:
-            if rgba_from_pyramid is not None:
-                rgba_grid = rgba_from_pyramid.reshape(-1)
-            elif bin_colors is not None:
-                rgba_grid = kernels.bin_2d_mean_color(
-                    bx, by, bx0, bx1, by0, by1, w, h, **bin_colors
-                ).reshape(-1)
         grid_plan = kernels.payload_density_grid_ship_plan(
             ship_mean_color_rgba=bool(wire["ship_mean_color_rgba"]),
             ship_wasm_source=bool(wire["ship_wasm_source"]),
