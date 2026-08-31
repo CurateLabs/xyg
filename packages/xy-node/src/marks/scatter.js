@@ -3,8 +3,28 @@
  * Encode stays in Rust (`xyg_encode_f32`); host only coerces and attaches.
  */
 
-import { resolveColorChannel } from "../color.js";
+import { cssIsFunctional, resolveColorChannel } from "../color.js";
 import { asF64Array, encodeF32Values, minMax } from "../encode.js";
+
+/** Match Python `marks._stroke_channel` for scatter stroke authoring. */
+export function resolveStrokeChannel(stroke, n) {
+  if (stroke == null) {
+    return { strokeValue: null, strokeCh: null };
+  }
+  if (typeof stroke === "string") {
+    if (!cssIsFunctional(stroke)) {
+      throw new RangeError("scatter stroke must be a CSS color");
+    }
+    return { strokeValue: stroke, strokeCh: null };
+  }
+  const resolved = resolveColorChannel(stroke, n, "transparent");
+  if (resolved.mode !== "direct_rgba") {
+    throw new RangeError(
+      `scatter stroke arrays must be numeric RGB/RGBA or CSS colors with length ${n}`,
+    );
+  }
+  return { strokeValue: null, strokeCh: resolved };
+}
 
 export function normalizeScatterStyle(style = {}) {
   const normalized = { ...style };
@@ -69,7 +89,10 @@ export function composeScatter(x, y, opts = {}) {
   const rawStyle = { ...(opts.style ?? {}) };
   const sizeInput = opts.size ?? rawStyle.size ?? opts.size_ch?.constant ?? null;
   if (rawStyle.size != null) delete rawStyle.size;
+  const strokeInput = opts.stroke ?? rawStyle.stroke ?? null;
+  if (rawStyle.stroke != null) delete rawStyle.stroke;
   const size_ch = opts.size_ch ?? resolveSizeChannel(sizeInput, n, sizeRange);
+  const { strokeValue, strokeCh } = resolveStrokeChannel(strokeInput, n);
   return {
     traces: [
       {
@@ -79,7 +102,12 @@ export function composeScatter(x, y, opts = {}) {
         y: ya,
         color_ch,
         size_ch,
-        style: normalizeScatterStyle({ opacity, ...rawStyle }),
+        ...(strokeCh != null ? { stroke_ch: strokeCh } : {}),
+        style: normalizeScatterStyle({
+          opacity,
+          ...rawStyle,
+          ...(strokeValue != null ? { stroke: strokeValue } : {}),
+        }),
         x_axis: opts.xAxis ?? "x",
         y_axis: opts.yAxis ?? "y",
         ...(forceDensity != null ? { force_density: Boolean(forceDensity) } : {}),

@@ -696,17 +696,35 @@ test("_emitScatter ships size_ch like Python _emit_scatter", () => {
   assert.equal(spec.traces[0].size.size, 12);
 });
 
-test("_emitScatterDensity sample omits style_channels unlike Python _ship_trace_styles", () => {
-  // Python `_density_sample_spec` ships style_channels as sample.channels.
-  // Node density overlay keeps no channels field even when style_channels is
-  // present. Recorded emit-density-sample-channels stay-host.
+test("_emitScatterDensity sample ships style_channels via payload channel attach", () => {
   const fig = figure({ width: 320, height: 240 });
-  fig.scatter([0, 1], [0, 1], { forceDensity: true });
-  fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
+  fig.scatter([0, 1, 2], [0, 1, 0.5], { forceDensity: true });
+  fig.traces[0].style_channels = {
+    opacity: {
+      mode: "direct",
+      values: new Float64Array([0.5, 0.6, 0.7]),
+      components: 1,
+      dtype: "f32",
+    },
+  };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].tier, "density");
   assert.notEqual(spec.traces[0].density.sample, undefined);
-  assert.equal(spec.traces[0].density.sample.channels, undefined);
+  assert.equal(spec.traces[0].density.sample.channels.opacity.mode, "direct");
+  assert.equal(spec.traces[0].density.sample.channels.opacity.n, 3);
+});
+
+test("_emitScatterDensity sample ships stroke arrays via stroke_ch resolution", () => {
+  const fig = figure({ width: 320, height: 240 });
+  fig.scatter([0, 1, 2], [0, 1, 0.5], {
+    forceDensity: true,
+    stroke: ["#f00", "#0f0", "#00f"],
+  });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "density");
+  assert.notEqual(spec.traces[0].density.sample, undefined);
+  assert.equal(spec.traces[0].density.sample.stroke.mode, "direct_rgba");
+  assert.equal(spec.traces[0].density.sample.stroke.n, 3);
 });
 
 test("_emitScatterDensity sample ships stroke_ch via payload channel attach", () => {
@@ -2109,15 +2127,16 @@ test("composeScatter maps size to size_ch like Python marks.scatter", () => {
   assert.equal(b.traces[0].size_ch?.constant, 8);
 });
 
-test("composeScatter omits stroke unlike Python stroke_ch Scene", () => {
-  // Python marks.scatter sets stroke_ch from stroke=, so Scene paints outline.
-  // Node composeScatter ignores stroke, so Scene matches default fill-only marks.
-  // Recorded scene-scatter-stroke-ch stay-host.
-  const a = figure({ width: 240, height: 160 });
-  a.scatter([0, 1], [1, 2], { id: 1 });
-  const b = figure({ width: 240, height: 160 });
-  b.scatter([0, 1], [1, 2], { id: 1, stroke: "#ff0000", strokeWidth: 2 });
-  assert.deepEqual(Buffer.from(a.toScene()), Buffer.from(b.toScene()));
+test("composeScatter resolves stroke for payload channel attach", () => {
+  const arrayStroke = composeScatter([0, 1, 2], [1, 2, 3], {
+    stroke: ["#f00", "#0f0", "#00f"],
+  }).traces[0];
+  assert.equal(arrayStroke.stroke_ch.mode, "direct_rgba");
+  assert.equal(arrayStroke.stroke_ch.rgba.length, 12);
+
+  const constantStroke = composeScatter([0, 1], [1, 2], { stroke: "#ff0000" }).traces[0];
+  assert.equal(constantStroke.style.stroke, "#ff0000");
+  assert.equal(constantStroke.stroke_ch, undefined);
 });
 
 test("composeScatter omits symbol unlike Python style.symbol Scene", () => {

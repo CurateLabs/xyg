@@ -88,7 +88,7 @@ import {
 } from "./pyramid.js";
 import { composeGraph } from "./graph.js";
 import { composeSankey } from "./sankey.js";
-import { composeScatter, normalizeScatterStyle, resolveSizeChannel } from "./marks/scatter.js";
+import { composeScatter, normalizeScatterStyle, resolveSizeChannel, resolveStrokeChannel } from "./marks/scatter.js";
 import { composeLine } from "./marks/line.js";
 import { composeHistogram } from "./marks/histogram.js";
 import { composeArea } from "./marks/area.js";
@@ -1063,8 +1063,11 @@ export class Figure {
       const xv = asF64(x);
       const colorInput = opts.color ?? rawStyle.color ?? null;
       const sizeInput = opts.size ?? rawStyle.size ?? null;
+      const strokeInput = opts.stroke ?? rawStyle.stroke ?? null;
       if (rawStyle.color != null) delete rawStyle.color;
       if (rawStyle.size != null) delete rawStyle.size;
+      if (rawStyle.stroke != null) delete rawStyle.stroke;
+      const { strokeValue, strokeCh } = resolveStrokeChannel(strokeInput, xv.length);
       this.traces.push({
         id: opts.id ?? nextTraceId++,
         kind: "scatter",
@@ -1073,7 +1076,10 @@ export class Figure {
         // time_ms. Recorded scatter-f64-kind stay-host.
         x: xv,
         y: asF64(y),
-        style: normalizeScatterStyle(rawStyle),
+        style: normalizeScatterStyle({
+          ...rawStyle,
+          ...(strokeValue != null ? { stroke: strokeValue } : {}),
+        }),
         x_axis: opts.xAxis ?? "x",
         y_axis: opts.yAxis ?? "y",
         color_ch: opts.color_ch ?? resolveColorChannel(colorInput, xv.length),
@@ -1082,6 +1088,7 @@ export class Figure {
           xv.length,
           opts.sizeRange ?? opts.size_range ?? [2, 18],
         ),
+        ...((opts.stroke_ch ?? strokeCh) != null ? { stroke_ch: opts.stroke_ch ?? strokeCh } : {}),
         ...(opts.sizeValues != null ? { sizeValues: opts.sizeValues } : {}),
         ...(opts.sizeRange != null ? { sizeRange: opts.sizeRange } : {}),
         ...(opts.tooltip_rows != null ? { tooltip_rows: opts.tooltip_rows } : {}),
@@ -1106,6 +1113,7 @@ export class Figure {
       y: t.y,
       color_ch: opts.color_ch ?? t.color_ch,
       size_ch: opts.size_ch ?? t.size_ch,
+      ...((opts.stroke_ch ?? t.stroke_ch) != null ? { stroke_ch: opts.stroke_ch ?? t.stroke_ch } : {}),
       style: { ...t.style },
       x_axis: t.x_axis,
       y_axis: t.y_axis,
