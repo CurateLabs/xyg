@@ -3359,7 +3359,7 @@ export function payloadErrorbarIndices(nSegments, nPoints, budget) {
   return result;
 }
 
-/** Errorbar role-qualified transition keys via `xyg_payload_errorbar_role_keys` (ABI 257). */
+/** Errorbar role-qualified transition keys via `xyg_payload_errorbar_role_keys` (ABI 273). */
 export function payloadErrorbarRoleKeys(pointKeysLo, pointKeysHi, segmentSources, segmentRoles) {
   const nPoints = pointKeysLo.length;
   const nOutput = segmentSources.length;

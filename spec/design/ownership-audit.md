@@ -330,7 +330,7 @@ Largest remaining Python core surfaces: `_payload` emit gather/ship and `_scene_
 
 **Still blocks “Python is only a host”** (compatibility modules stay until these twins move or stay-host is recorded with diffs):
 
-1. `_payload` emit orchestration — extra-column gather and ship (index math is ABI 204/205; count budget is ABI 214; errorbar role expand is ABI 215; errorbar role keys is ABI 257)
+1. `_payload` emit orchestration — extra-column gather and ship (index math is ABI 204/205; count budget is ABI 214; errorbar role expand is ABI 215; errorbar role keys is ABI 273)
 2. `_scene_v3.py` / Node `scene.js` pack and figure-to-record orchestration
 
 3. ChartView `51_annotations.ts` still copies arrow math until WASM; ABI 254 owns host `start_offset`/`label_clear` CSV pack

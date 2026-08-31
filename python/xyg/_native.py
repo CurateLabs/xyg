@@ -11497,7 +11497,7 @@ def payload_errorbar_role_keys(
     segment_sources: npt.NDArray[np.uint32],
     segment_roles: npt.NDArray[np.uint32],
 ) -> npt.NDArray[np.uint32]:
-    """Errorbar role-qualified keys via ``xyg_payload_errorbar_role_keys`` (ABI 257).
+    """Errorbar role-qualified keys via ``xyg_payload_errorbar_role_keys`` (ABI 273).
 
     XOR-mixes point transition keys with per-segment role ids. Raises
     ``ValueError`` on collision or invalid layout.
@@ -11506,6 +11506,10 @@ def payload_errorbar_role_keys(
     n_output = int(segment_sources.shape[0])
     if point_keys_hi.shape[0] != n_points or segment_roles.shape[0] != n_output:
         raise ValueError("invalid payload_errorbar_role_keys arguments")
+    point_keys_lo = np.ascontiguousarray(point_keys_lo, dtype=np.uint32)
+    point_keys_hi = np.ascontiguousarray(point_keys_hi, dtype=np.uint32)
+    segment_sources = np.ascontiguousarray(segment_sources, dtype=np.uint32)
+    segment_roles = np.ascontiguousarray(segment_roles, dtype=np.uint32)
     out_lo = np.empty(n_output, dtype=np.uint32)
     out_hi = np.empty(n_output, dtype=np.uint32)
     collision = ctypes.c_int32(-1)

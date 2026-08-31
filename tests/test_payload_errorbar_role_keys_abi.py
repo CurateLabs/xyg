@@ -1,4 +1,4 @@
-"""ABI 257 payload_errorbar_role_keys parity."""
+"""ABI 273 payload_errorbar_role_keys parity."""
 
 from __future__ import annotations
 

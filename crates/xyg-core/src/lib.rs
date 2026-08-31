@@ -15153,7 +15153,7 @@ pub unsafe extern "C" fn xyg_payload_errorbar_indices(
     })
 }
 
-/// Errorbar role-qualified transition keys (ABI 257).
+/// Errorbar role-qualified transition keys (ABI 273).
 ///
 /// Returns output count on success, ``usize::MAX`` when invalid, and sets
 /// ``*out_collision = 1`` when XOR-qualified keys collide.
