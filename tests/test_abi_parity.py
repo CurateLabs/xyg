@@ -36,9 +36,9 @@ def test_host_declarations_match_rust_symbol_set() -> None:
     assert errors == []
 
 
-def test_abi_version_is_290() -> None:
+def test_abi_version_is_291() -> None:
     manifest = gen_abi_manifest.generate_manifest()
-    assert manifest["abi_version"] == 290
+    assert manifest["abi_version"] == 291
     assert manifest["artifact"] == "xyg_core"
     assert all(item["name"].startswith("xyg_") for item in manifest["symbols"])
     assert any(item["name"] == "xyg_abi_version" for item in manifest["symbols"])
@@ -132,6 +132,7 @@ def test_abi_version_is_290() -> None:
     assert "xyg_density_mean_color_wire_admit" in names
     assert "xyg_density_channels_dropped_compat" in names
     assert "xyg_density_dropped_channel_wire_admit" in names
+    assert "xyg_density_mean_color_rgba_wire_admit" in names
     assert "xyg_density_wasm_source_admit" in names
     assert "xyg_density_wasm_density_wire_kind" in names
     assert "xyg_density_bin_coord_endpoints" in names

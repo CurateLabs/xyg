@@ -1285,7 +1285,10 @@ def density_view(
         "x_range": [lo_x, hi_x],
         "y_range": [lo_y, hi_y],
     }
-    if rgba_grid is not None:
+    if rgba_grid is not None and kernels.density_mean_color_rgba_wire_admit(
+        has_pyramid_rgba=True,
+        has_bin_colors=False,
+    ):
         density["rgba"] = writer.add_u8(np.ascontiguousarray(rgba_grid).reshape(-1))
         density["color_agg"] = "mean"
     if t.color_ch and t.color_ch.mode == "constant" and t.color_ch.constant is not None:

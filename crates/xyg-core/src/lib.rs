@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 290;
+pub const ABI_VERSION: u32 = 291;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -16005,6 +16005,20 @@ pub unsafe extern "C" fn xyg_density_dropped_channel_wire_admit(
             text
         };
         density_emit::density_dropped_channel_wire_admit(channel_text, mean_color_aggregates)
+    })
+}
+
+/// Whether density spec should ship ``density["rgba"]`` and ``color_agg`` (ABI 275).
+#[no_mangle]
+pub unsafe extern "C" fn xyg_density_mean_color_rgba_wire_admit(
+    has_pyramid_rgba: i32,
+    has_bin_colors: i32,
+) -> i32 {
+    ffi_guard(0, || {
+        if !matches!(has_pyramid_rgba, 0 | 1) || !matches!(has_bin_colors, 0 | 1) {
+            return 0;
+        }
+        density_emit::density_mean_color_rgba_wire_admit(has_pyramid_rgba, has_bin_colors)
     })
 }
 

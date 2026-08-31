@@ -11875,6 +11875,21 @@ def density_dropped_channel_wire_admit(
     return admit == 1
 
 
+def density_mean_color_rgba_wire_admit(
+    *,
+    has_pyramid_rgba: bool,
+    has_bin_colors: bool,
+) -> bool:
+    """Mean-color rgba wire admit via ``xyg_density_mean_color_rgba_wire_admit`` (ABI 275)."""
+    admit = _lib.xyg_density_mean_color_rgba_wire_admit(
+        int(bool(has_pyramid_rgba)),
+        int(bool(has_bin_colors)),
+    )
+    if admit not in (0, 1):
+        raise ValueError("invalid density_mean_color_rgba_wire_admit arguments")
+    return admit == 1
+
+
 DENSITY_WASM_DENSITY_NONE = 0
 DENSITY_WASM_DENSITY_AUTOMATIC = 1
 DENSITY_WASM_DENSITY_UNSUPPORTED = 2

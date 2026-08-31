@@ -218,6 +218,14 @@ pub fn density_dropped_channel_wire_admit(channel: &str, mean_color_aggregates: 
     1
 }
 
+/// Whether density spec should ship ``density["rgba"]`` and ``color_agg`` (ABI 275).
+///
+/// Returns ``1`` when a prebuilt pyramid rgba plane is present or bin-colors
+/// are resolved for a fresh mean-color aggregation pass.
+pub fn density_mean_color_rgba_wire_admit(has_pyramid_rgba: i32, has_bin_colors: i32) -> i32 {
+    i32::from(has_pyramid_rgba == 1 || has_bin_colors == 1)
+}
+
 /// Whether density spec should ship ``density["wasm_source"]`` (ABI 269).
 ///
 /// Returns ``1`` when the split payload writer is active and the emit plan
@@ -886,6 +894,14 @@ mod tests {
         assert_eq!(density_dropped_channel_wire_admit("color", 0), 1);
         assert_eq!(density_dropped_channel_wire_admit("size", 1), 1);
         assert_eq!(density_dropped_channel_wire_admit("stroke", 0), 1);
+    }
+
+    #[test]
+    fn density_mean_color_rgba_wire_admit_matches_host_or() {
+        assert_eq!(density_mean_color_rgba_wire_admit(1, 0), 1);
+        assert_eq!(density_mean_color_rgba_wire_admit(0, 1), 1);
+        assert_eq!(density_mean_color_rgba_wire_admit(1, 1), 1);
+        assert_eq!(density_mean_color_rgba_wire_admit(0, 0), 0);
     }
 
     #[test]
