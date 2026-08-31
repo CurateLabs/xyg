@@ -3,6 +3,7 @@
  */
 
 import { asF64Array } from "../encode.js";
+import { resolveColorChannel } from "../color.js";
 
 /**
  * @param {ArrayLike|TypedArray} x0
@@ -20,8 +21,9 @@ export function composeSegments(x0, y0, x1, y1, opts = {}) {
   if (ya0.length !== n || xa1.length !== n || ya1.length !== n) {
     throw new RangeError("segments coordinate columns must have equal length");
   }
+  const color = resolveColorChannel(opts.color ?? opts.style?.color ?? "#3987e5", n);
   const style = {
-    color: opts.color ?? "#3987e5",
+    color: color.mode === "constant" ? color.constant : opts.color ?? "#3987e5",
     width: opts.width ?? 1.2,
     opacity: opts.opacity ?? 1.0,
     role: "segments",
@@ -36,6 +38,7 @@ export function composeSegments(x0, y0, x1, y1, opts = {}) {
         y0: ya0,
         x1: xa1,
         y1: ya1,
+        ...(color.mode !== "constant" ? { color_ch: color } : {}),
         style,
         x_axis: opts.xAxis ?? "x",
         y_axis: opts.yAxis ?? "y",

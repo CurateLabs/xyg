@@ -67,6 +67,38 @@ function buildCase(name) {
     fig.ribbon([0], [1], [0], [1], [0], [1], { color: "#112233" });
     fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
     fig.traces[0].id = 25;
+  } else if (name === "rect_stroke_ch") {
+    fig.bar([0, 1], [1, 2]);
+    fig.traces[0].stroke_ch = {
+      mode: "direct_rgba",
+      rgba: Float64Array.from([1, 0, 0, 1, 0, 1, 0, 1]),
+      n: 2,
+    };
+    fig.traces[0].id = 26;
+  } else if (name === "mesh_stroke_ch") {
+    fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
+    fig.traces[0].stroke_ch = {
+      mode: "direct_rgba",
+      rgba: Float64Array.from([1, 0, 0, 1]),
+      n: 1,
+    };
+    fig.traces[0].id = 27;
+  } else if (name === "ribbon_stroke_ch") {
+    fig.ribbon([0], [1], [0], [1], [0], [1], { color: "#112233" });
+    fig.traces[0].stroke_ch = { mode: "constant", constant: "#445566" };
+    fig.traces[0].id = 28;
+  } else if (name === "segments_stroke_ch") {
+    fig.segments([0, 1], [0, 1], [1, 2], [1, 0]);
+    fig.traces[0].stroke_ch = {
+      mode: "direct_rgba",
+      rgba: Float64Array.from([1, 0, 0, 1, 0, 1, 0, 1]),
+      n: 2,
+    };
+    fig.traces[0].id = 29;
+  } else if (name === "mesh_color_ch") {
+    fig.triangleMesh([0], [0], [1], [0], [0.5], [1], { color: "#112233" });
+    fig.traces[0].color_ch = { mode: "constant", constant: "#445566" };
+    fig.traces[0].id = 30;
   } else if (name === "hexbin_colormap") {
     fig.axis_options = { x: { domain: [0, 4] }, y: { domain: [0, 5] } };
     fig.hexbin(
@@ -94,7 +126,7 @@ test("payload cross-host fixture contract", () => {
   assert.equal(fixture.schema, "xyg.payload-cross-host/v1");
   assert.equal(fixture.protocol, PROTOCOL_VERSION);
   assert.equal(Number(fixture.abi_version), abiVersion());
-  assert.equal(fixture.cases.length, 15);
+  assert.equal(fixture.cases.length, 20);
 });
 
 for (const entry of fixture.cases) {

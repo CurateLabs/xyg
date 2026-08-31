@@ -140,6 +140,39 @@ def main() -> None:
     cases.append(_case("ribbon_style_channels", fig))
 
     fig = Figure(width=240, height=160)
+    fig.bar([0, 1], [1, 2])
+    rgba = np.array([[1, 0, 0, 1], [0, 1, 0, 1]], dtype=np.float64)
+    fig.traces[0].stroke_ch = channels.resolve_color(rgba, 2, default_constant="transparent")
+    fig.traces[0].id = 26
+    cases.append(_case("rect_stroke_ch", fig))
+
+    fig = Figure(width=240, height=160)
+    fig.triangle_mesh([0.0], [0.0], [1.0], [0.0], [0.5], [1.0])
+    rgba = np.array([[1, 0, 0, 1]], dtype=np.float64)
+    fig.traces[0].stroke_ch = channels.resolve_color(rgba, 1, default_constant="transparent")
+    fig.traces[0].id = 27
+    cases.append(_case("mesh_stroke_ch", fig))
+
+    fig = Figure(width=240, height=160)
+    fig.ribbon([0.0], [1.0], [0.0], [1.0], [0.0], [1.0], color="#112233")
+    fig.traces[0].stroke_ch = channels.ColorChannel(mode="constant", constant="#445566")
+    fig.traces[0].id = 28
+    cases.append(_case("ribbon_stroke_ch", fig))
+
+    fig = Figure(width=240, height=160)
+    fig.segments([0.0, 1.0], [0.0, 1.0], [1.0, 2.0], [1.0, 0.0])
+    rgba = np.array([[1, 0, 0, 1], [0, 1, 0, 1]], dtype=np.float64)
+    fig.traces[0].stroke_ch = channels.resolve_color(rgba, 2, default_constant="transparent")
+    fig.traces[0].id = 29
+    cases.append(_case("segments_stroke_ch", fig))
+
+    fig = Figure(width=240, height=160)
+    fig.triangle_mesh([0.0], [0.0], [1.0], [0.0], [0.5], [1.0], color="#112233")
+    fig.traces[0].color_ch = channels.ColorChannel(mode="constant", constant="#445566")
+    fig.traces[0].id = 30
+    cases.append(_case("mesh_color_ch", fig))
+
+    fig = Figure(width=240, height=160)
     fig.axis_options["x"]["domain"] = (0.0, 4.0)
     fig.axis_options["y"]["domain"] = (0.0, 5.0)
     fig.hexbin(
