@@ -2837,6 +2837,18 @@ def _pack_gradient_spec(fill: dict[str, Any]) -> bytes | None:
     )
 
 
+def _pack_xytc_opacity(kind_class: int, style: dict[str, Any]) -> tuple[float, float, float]:
+    has_opacity = 1 if kind_class & _SCENE_KIND_CLASS_OPACITY else 0
+    has_band = 1 if kind_class & _SCENE_KIND_CLASS_BAND else 0
+    return _native.scene_xytc_opacity_pack(
+        has_opacity,
+        has_band,
+        float(style.get("fill_opacity", 1.0)),
+        float(style.get("stroke_opacity", 1.0)),
+        float(style.get("line_opacity", 1.0)),
+    )
+
+
 def _pack_xytc_hex_pitch(kind_class: int, style: dict[str, Any]) -> tuple[int, float, float]:
     nan = float("nan")
     hexbin = 1 if kind_class & _SCENE_KIND_CLASS_HEXBIN else 0
@@ -2937,12 +2949,7 @@ def _pack_xytc(figure: Any) -> bytes:
         symbol = str(style.get("symbol", "circle") or "")
         symbol_b = symbol.encode("utf-8")
         opacity = float(style.get("opacity", 1.0))
-        fill_opacity = stroke_opacity = line_opacity = 1.0
-        if kind_class & _SCENE_KIND_CLASS_OPACITY:
-            fill_opacity = float(style.get("fill_opacity", 1.0))
-            stroke_opacity = float(style.get("stroke_opacity", 1.0))
-        if kind_class & _SCENE_KIND_CLASS_BAND:
-            line_opacity = float(style.get("line_opacity", 1.0))
+        fill_opacity, stroke_opacity, line_opacity = _pack_xytc_opacity(kind_class, style)
         (
             num_flags,
             size,

@@ -1621,6 +1621,35 @@ const XYTC_PERIMETER_TRUE: u32 = 1 << 9;
 const XYTC_PERIMETER_INVALID: u32 = 1 << 10;
 const XYTC_HAS_HEX: u32 = 1 << 8;
 
+/// Pack XYTC fill/stroke/line opacity trailer values (ABI 267).
+///
+/// ``has_opacity_class`` / ``has_band_class`` gate which authored opacities
+/// replace the XYTC wire defaults (1.0). Key picking stays host.
+pub fn scene_xytc_opacity_pack(
+    has_opacity_class: i32,
+    has_band_class: i32,
+    authored_fill: f64,
+    authored_stroke: f64,
+    authored_line: f64,
+) -> Option<(f64, f64, f64)> {
+    for bit in [has_opacity_class, has_band_class] {
+        if !matches!(bit, 0 | 1) {
+            return None;
+        }
+    }
+    let mut fill = 1.0;
+    let mut stroke = 1.0;
+    let mut line = 1.0;
+    if has_opacity_class != 0 {
+        fill = authored_fill;
+        stroke = authored_stroke;
+    }
+    if has_band_class != 0 {
+        line = authored_line;
+    }
+    Some((fill, stroke, line))
+}
+
 /// Pack XYTC hexbin pitch flag and trailer values (ABI 266).
 ///
 /// ``hexbin``: kind is HEXBIN-eligible. ``has_dx`` / ``has_dy``: authored pitch
@@ -10842,6 +10871,27 @@ mod fuzz {
         assert_eq!(scene_marker_blob_pack(1, &diamond, &lens, &mut out[..3]), -1);
         assert_eq!(scene_marker_blob_pack(1, &diamond[..5], &[5, 6], &mut out), 0);
         assert_eq!(scene_marker_blob_pack(2, &diamond, &lens, &mut out), 0);
+    }
+
+    #[test]
+    fn scene_xytc_opacity_pack_matches_host_table() {
+        assert_eq!(
+            scene_xytc_opacity_pack(0, 0, 0.5, 0.6, 0.7).unwrap(),
+            (1.0, 1.0, 1.0)
+        );
+        assert_eq!(
+            scene_xytc_opacity_pack(1, 0, 0.5, 0.6, 0.7).unwrap(),
+            (0.5, 0.6, 1.0)
+        );
+        assert_eq!(
+            scene_xytc_opacity_pack(0, 1, 0.5, 0.6, 0.7).unwrap(),
+            (1.0, 1.0, 0.7)
+        );
+        assert_eq!(
+            scene_xytc_opacity_pack(1, 1, 0.5, 0.6, 0.7).unwrap(),
+            (0.5, 0.6, 0.7)
+        );
+        assert!(scene_xytc_opacity_pack(2, 0, 1.0, 1.0, 1.0).is_none());
     }
 
     #[test]

@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 266;
+pub const ABI_VERSION: u32 = 267;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -6651,6 +6651,43 @@ pub unsafe extern "C" fn xyg_scene_marker_blob_pack(
             std::slice::from_raw_parts_mut(out, out_cap)
         };
         kernels::scene_marker_blob_pack(filled, values, contour_lens, out)
+    })
+}
+
+/// Pack XYTC fill/stroke/line opacity trailer values (ABI 267).
+///
+/// Returns ``1`` on success, ``0`` when invalid.
+///
+/// # Safety
+/// Output pointers must be writable when non-null.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_xytc_opacity_pack(
+    has_opacity_class: i32,
+    has_band_class: i32,
+    authored_fill: f64,
+    authored_stroke: f64,
+    authored_line: f64,
+    out_fill: *mut f64,
+    out_stroke: *mut f64,
+    out_line: *mut f64,
+) -> i32 {
+    if out_fill.is_null() || out_stroke.is_null() || out_line.is_null() {
+        return 0;
+    }
+    ffi_guard(0, || {
+        let Some((fill, stroke, line)) = kernels::scene_xytc_opacity_pack(
+            has_opacity_class,
+            has_band_class,
+            authored_fill,
+            authored_stroke,
+            authored_line,
+        ) else {
+            return 0;
+        };
+        *out_fill = fill;
+        *out_stroke = stroke;
+        *out_line = line;
+        1
     })
 }
 

@@ -74,7 +74,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, DEFAULT_PALETTE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, DEFAULT_PALETTE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -3331,8 +3331,12 @@ export function packXyTcColorChannel(trace) {
 
 /** XYTC fill opacity. Python `_pack_xytc` uses `style.get("fill_opacity", 1.0)` only. */
 export function packXyTcFillOpacity(style, kindClass) {
-  if (!(kindClass & SCENE_KIND_CLASS_OPACITY)) return 1;
-  return Number((style ?? {}).fill_opacity ?? 1);
+  const packed = sceneXytcOpacityPack(
+    kindClass & SCENE_KIND_CLASS_OPACITY ? 1 : 0,
+    kindClass & SCENE_KIND_CLASS_BAND ? 1 : 0,
+    style,
+  );
+  return packed.fillOpacity;
 }
 
 /** XYTC joined fill. Python `_pack_xytc` reads `style.get("joined_fill")` only. */
@@ -3357,8 +3361,12 @@ export function packXyTcLinecap(style) {
 
 /** XYTC line opacity. Python `_pack_xytc` uses `style.get("line_opacity", 1.0)` only. */
 export function packXyTcLineOpacity(style, kindClass) {
-  if (!(kindClass & SCENE_KIND_CLASS_BAND)) return 1;
-  return Number((style ?? {}).line_opacity ?? 1);
+  const packed = sceneXytcOpacityPack(
+    kindClass & SCENE_KIND_CLASS_OPACITY ? 1 : 0,
+    kindClass & SCENE_KIND_CLASS_BAND ? 1 : 0,
+    style,
+  );
+  return packed.lineOpacity;
 }
 
 /** XYTC line width. Python `_pack_xytc` reads `"line_width" in style` only. */
@@ -3385,8 +3393,12 @@ export function packXyTcSizeChannel(trace) {
 
 /** XYTC stroke opacity. Python `_pack_xytc` uses `style.get("stroke_opacity", 1.0)` only. */
 export function packXyTcStrokeOpacity(style, kindClass) {
-  if (!(kindClass & SCENE_KIND_CLASS_OPACITY)) return 1;
-  return Number((style ?? {}).stroke_opacity ?? 1);
+  const packed = sceneXytcOpacityPack(
+    kindClass & SCENE_KIND_CLASS_OPACITY ? 1 : 0,
+    kindClass & SCENE_KIND_CLASS_BAND ? 1 : 0,
+    style,
+  );
+  return packed.strokeOpacity;
 }
 
 /** XYTC stroke perimeter. Python `_pack_xytc` reads `"stroke_perimeter" in style` only. */
@@ -3434,16 +3446,14 @@ function packXyTc(figure) {
       symbolB = encodeUtf8(String(style.symbol));
     }
     const opacity = Number(style.opacity ?? 1);
-    let fillOpacity = 1;
-    let strokeOpacity = 1;
-    let lineOpacity = 1;
-    if (kindClass & SCENE_KIND_CLASS_OPACITY) {
-      fillOpacity = packXyTcFillOpacity(style, kindClass);
-      strokeOpacity = packXyTcStrokeOpacity(style, kindClass);
-    }
-    if (kindClass & SCENE_KIND_CLASS_BAND) {
-      lineOpacity = packXyTcLineOpacity(style, kindClass);
-    }
+    const packedOpacity = sceneXytcOpacityPack(
+      kindClass & SCENE_KIND_CLASS_OPACITY ? 1 : 0,
+      kindClass & SCENE_KIND_CLASS_BAND ? 1 : 0,
+      style,
+    );
+    const fillOpacity = packedOpacity.fillOpacity;
+    const strokeOpacity = packedOpacity.strokeOpacity;
+    const lineOpacity = packedOpacity.lineOpacity;
     const packedNumeric = sceneXytcNumericStylePack(trace, style);
     flags |= packedNumeric.flags;
     const size = packedNumeric.size;
