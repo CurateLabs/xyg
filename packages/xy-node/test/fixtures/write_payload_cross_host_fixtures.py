@@ -93,6 +93,11 @@ def main() -> None:
     fig.traces[0].id = 14
     cases.append(_case("hexbin_colormap", fig))
 
+    fig = Figure(width=240, height=160)
+    fig.bar([0, 1], [1, 2])
+    fig.traces[0].id = 9
+    cases.append(_case("bar_compact", fig))
+
     payload = {
         "schema": "xyg.payload-cross-host/v1",
         "authority": "python/xyg/_figure.py build_payload",
@@ -101,7 +106,6 @@ def main() -> None:
         "cases": cases,
         "gaps": {
             "heatmap_payload_blob": "Node ships x/y grid columns; Python ships heatmap rgba buffer only",
-            "bar_payload_blob": "Rect column layout differs (stay-host materialization)",
         },
     }
     OUT.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")

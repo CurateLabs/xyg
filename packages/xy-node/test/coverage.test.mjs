@@ -405,11 +405,13 @@ test("_emitRect copies t.style unlike Python _default_styled", () => {
   // style.color is missing. Node rect encode copies t.style. Recorded
   // emit-rect-default-styled stay-host.
   const fig = figure({ width: 240, height: 160 });
-  fig.bar([0, 1], [1, 2]);
-  fig.traces[0].style = { opacity: 0.9 };
+  fig.box([1, 2, 3, 4, 5]);
+  const boxIdx = fig.traces.findIndex((t) => t.kind === "box");
+  fig.traces[boxIdx].style = { opacity: 0.9 };
   const { spec } = fig.buildPayload();
-  assert.equal(spec.traces[0].kind, "bar");
-  assert.equal(spec.traces[0].style.color, undefined);
+  const boxTrace = spec.traces.find((t) => t.kind === "box");
+  assert.equal(boxTrace.kind, "box");
+  assert.equal(boxTrace.style.color, undefined);
 });
 
 test("_emitHistogram copies t.style unlike Python _default_styled", () => {
@@ -599,10 +601,11 @@ test("_emitSegments uses log ship scale via payload segments plan", () => {
 test("_emitRect uses log ship scale via payload nonxy plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.setAxis("x", { type: "log" });
-  fig.bar([1, 10], [1, 2]);
+  fig.box([1, 2, 3, 4, 5]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.traces[0].kind, "bar");
-  const x0Col = spec.columns[spec.traces[0].x0];
+  const boxTrace = spec.traces.find((t) => t.kind === "box");
+  assert.equal(boxTrace.kind, "box");
+  const x0Col = spec.columns[boxTrace.x0];
   assert.equal(x0Col.offset, 0);
 });
 
@@ -845,16 +848,15 @@ test("_emitRibbon gathers null geometry rows via payload ribbon plan", () => {
   assert.equal(spec.traces[0].n_marks, n - 1);
 });
 
-test("_emitRect ships bar columns unlike Python nested bar", () => {
-  // Python `_emit_bar` ships a nested `bar` spec via `_emit_bar_compact`.
-  // Node bar payload keeps x0/x1/y0/y1 rect columns and no `bar` field.
-  // Recorded emit-bar-compact stay-host.
+test("_emitBarCompact ships nested bar spec like Python _emit_bar_compact", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.bar([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "bar");
-  assert.equal(spec.traces[0].bar, undefined);
-  assert.notEqual(spec.traces[0].x0, undefined);
+  assert.notEqual(spec.traces[0].bar, undefined);
+  assert.equal(spec.traces[0].bar.orientation, "vertical");
+  assert.equal(spec.traces[0].bar.value_axis, "y");
+  assert.equal(spec.traces[0].x0, undefined);
 });
 
 test("_emitHistogram skips rectFiniteSel unlike Python _emit_rect", () => {

@@ -40,6 +40,9 @@ function buildCase(name) {
       { gridsize: [4, 4], range: [[0, 4], [0, 5]], name: "hex" },
     );
     fig.traces[0].id = 14;
+  } else if (name === "bar_compact") {
+    fig.bar([0, 1], [1, 2]);
+    fig.traces[0].id = 9;
   } else {
     throw new Error(`unknown case ${name}`);
   }
@@ -50,7 +53,7 @@ test("payload cross-host fixture contract", () => {
   assert.equal(fixture.schema, "xyg.payload-cross-host/v1");
   assert.equal(fixture.protocol, PROTOCOL_VERSION);
   assert.equal(Number(fixture.abi_version), abiVersion());
-  assert.equal(fixture.cases.length, 5);
+  assert.equal(fixture.cases.length, 6);
 });
 
 for (const entry of fixture.cases) {

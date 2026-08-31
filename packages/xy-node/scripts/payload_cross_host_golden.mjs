@@ -76,6 +76,10 @@ const cases = [
     );
     fig.traces[0].id = 14;
   }),
+  caseEntry("bar_compact", (fig) => {
+    fig.bar([0, 1], [1, 2]);
+    fig.traces[0].id = 9;
+  }),
 ];
 
 const out = {
