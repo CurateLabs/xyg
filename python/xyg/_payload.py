@@ -1460,7 +1460,13 @@ class PayloadMixin(_Host):
         # specs); no shipped path colormaps counts.
         cmap = (
             t.color_ch.colormap
-            if (t.color_ch and t.color_ch.mode in ("constant", "continuous"))
+            if (
+                t.color_ch is not None
+                and kernels.density_uses_channel_colormap(
+                    has_channel=True,
+                    mode=t.color_ch.mode,
+                )
+            )
             else channels.DEFAULT_COLORMAP
         )
         dropped_channels = list(t.per_item_channel_names())
