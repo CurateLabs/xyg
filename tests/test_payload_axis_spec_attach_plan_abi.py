@@ -275,6 +275,63 @@ def test_axis_spec_polar_tick_label_angle_cross_host_fixture() -> None:
     assert spec["x_axis"]["tick_label_angle"] == 20.0
 
 
+def test_axis_spec_cartesian_tick_label_strategy_cross_host_fixture() -> None:
+    """Node buildPayload axis tick_label_strategy parity when attach_tick_label_strategy is set."""
+    fig = Figure(width=240, height=160)
+    fig.scatter([0.0, 1.0], [0.0, 1.0])
+    fig.set_axis("x", tick_label_strategy="rotate")
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["tick_label_strategy"] == "rotate"
+    assert "tick_label_strategy" not in spec["y_axis"]
+
+
+def test_axis_spec_polar_tick_label_strategy_cross_host_fixture() -> None:
+    """Node buildPayload polar axis tick_label_strategy parity when attach_tick_label_strategy is set."""
+    fig = Figure(coords="polar", width=240, height=160)
+    fig.set_axis("x", tick_label_strategy="stagger")
+    fig.scatter([0.0, 1.0], [1.0, 2.0])
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["tick_label_strategy"] == "stagger"
+
+
+def test_axis_spec_cartesian_tick_label_anchor_cross_host_fixture() -> None:
+    """Node buildPayload axis tick_label_anchor parity when attach_tick_label_anchor is set."""
+    fig = Figure(width=240, height=160)
+    fig.scatter([0.0, 1.0], [0.0, 1.0])
+    fig.set_axis("x", tick_label_anchor="end")
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["tick_label_anchor"] == "end"
+    assert "tick_label_anchor" not in spec["y_axis"]
+
+
+def test_axis_spec_polar_tick_label_anchor_cross_host_fixture() -> None:
+    """Node buildPayload polar axis tick_label_anchor parity when attach_tick_label_anchor is set."""
+    fig = Figure(coords="polar", width=240, height=160)
+    fig.set_axis("x", tick_label_anchor="center")
+    fig.scatter([0.0, 1.0], [1.0, 2.0])
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["tick_label_anchor"] == "center"
+
+
+def test_axis_spec_cartesian_tick_label_min_gap_cross_host_fixture() -> None:
+    """Node buildPayload axis tick_label_min_gap parity when attach_tick_label_min_gap is set."""
+    fig = Figure(width=240, height=160)
+    fig.scatter([0.0, 1.0], [0.0, 1.0])
+    fig.set_axis("x", tick_label_min_gap=9.0)
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["tick_label_min_gap"] == 9.0
+    assert "tick_label_min_gap" not in spec["y_axis"]
+
+
+def test_axis_spec_polar_tick_label_min_gap_cross_host_fixture() -> None:
+    """Node buildPayload polar axis tick_label_min_gap parity when attach_tick_label_min_gap is set."""
+    fig = Figure(coords="polar", width=240, height=160)
+    fig.set_axis("x", tick_label_min_gap=12.0)
+    fig.scatter([0.0, 1.0], [1.0, 2.0])
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["tick_label_min_gap"] == 12.0
+
+
 def test_axis_spec_omits_linear_scale() -> None:
     fig = Figure()
     fig.scatter([0.0, 1.0], [0.0, 1.0])

@@ -1543,40 +1543,34 @@ test("buildPayload ships cartesian axis tick_label_angle like Python _axis_spec"
   assert.equal(spec.y_axis.tick_label_angle, undefined);
 });
 
-test("buildPayload omits cartesian axis tick_label_strategy unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_label_strategy`. Node cartesian payload
-  // axes omit that field even when axis tick_label_strategy is set. Recorded
-  // emit-payload-axis-tick-label-strategy stay-host.
+test("buildPayload ships cartesian axis tick_label_strategy like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
-  fig.setAxis("x", { tick_label_strategy: "max" });
+  fig.setAxis("x", { tick_label_strategy: "hide" });
   const { spec } = fig.buildPayload();
-  assert.equal(fig.axis_options.x.tick_label_strategy, "max");
-  assert.equal(spec.x_axis.tick_label_strategy, undefined);
+  assert.equal(fig.axis_options.x.tick_label_strategy, "hide");
+  assert.equal(spec.x_axis.tick_label_strategy, "hide");
+  assert.equal(spec.y_axis.tick_label_strategy, undefined);
 });
 
-test("buildPayload omits cartesian axis tick_label_anchor unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_label_anchor`. Node cartesian payload axes
-  // omit that field even when axis tick_label_anchor is set. Recorded
-  // emit-payload-axis-tick-label-anchor stay-host.
+test("buildPayload ships cartesian axis tick_label_anchor like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   fig.setAxis("x", { tick_label_anchor: "start" });
   const { spec } = fig.buildPayload();
   assert.equal(fig.axis_options.x.tick_label_anchor, "start");
-  assert.equal(spec.x_axis.tick_label_anchor, undefined);
+  assert.equal(spec.x_axis.tick_label_anchor, "start");
+  assert.equal(spec.y_axis.tick_label_anchor, undefined);
 });
 
-test("buildPayload omits cartesian axis tick_label_min_gap unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_label_min_gap`. Node cartesian payload
-  // axes omit that field even when axis tick_label_min_gap is set. Recorded
-  // emit-payload-axis-tick-label-min-gap stay-host.
+test("buildPayload ships cartesian axis tick_label_min_gap like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   fig.setAxis("x", { tick_label_min_gap: 4 });
   const { spec } = fig.buildPayload();
   assert.equal(fig.axis_options.x.tick_label_min_gap, 4);
-  assert.equal(spec.x_axis.tick_label_min_gap, undefined);
+  assert.equal(spec.x_axis.tick_label_min_gap, 4);
+  assert.equal(spec.y_axis.tick_label_min_gap, undefined);
 });
 
 test("buildPayload omits cartesian axis minor_style unlike Python _axis_spec", () => {
@@ -1885,34 +1879,28 @@ test("buildPayload ships polar axis tick_label_angle like Python _axis_spec", ()
   assert.equal(spec.x_axis.tick_label_angle, 20);
 });
 
-test("buildPayload omits polar axis tick_label_strategy unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_label_strategy` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-label-strategy stay-host.
+test("buildPayload ships polar axis tick_label_strategy like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { tick_label_strategy: "max" });
+  fig.setAxis("x", { tick_label_strategy: "rotate" });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.tick_label_strategy, undefined);
+  assert.equal(spec.x_axis.tick_label_strategy, "rotate");
 });
 
-test("buildPayload omits polar axis tick_label_anchor unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_label_anchor` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-label-anchor stay-host.
+test("buildPayload ships polar axis tick_label_anchor like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.setAxis("x", { tick_label_anchor: "start" });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.tick_label_anchor, undefined);
+  assert.equal(spec.x_axis.tick_label_anchor, "start");
 });
 
-test("buildPayload omits polar axis tick_label_min_gap unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_label_min_gap` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-label-min-gap stay-host.
+test("buildPayload ships polar axis tick_label_min_gap like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.setAxis("x", { tick_label_min_gap: 2 });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.tick_label_min_gap, undefined);
+  assert.equal(spec.x_axis.tick_label_min_gap, 2);
 });
 
 test("buildPayload omits polar axis minor_style unlike Python _axis_spec", () => {
