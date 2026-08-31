@@ -23,6 +23,8 @@ import {
   graphVisualStates,
 } from "./abi.js";
 import { resolveColorChannel } from "./color.js";
+import { minMax } from "./encode.js";
+import { resolveSizeChannel } from "./marks/scatter.js";
 
 /** Default layout name — matches Python `_graph.DEFAULT_LAYOUT`. */
 export const DEFAULT_LAYOUT = "force";
@@ -747,21 +749,29 @@ export function composeGraph(nodes, edges, opts = {}) {
   const name = resolvedOpts.name ?? null;
   const nNodes = nodePositions.x.length;
   const nEdges = edgeSegments.x0.length;
-  let sizeValues = null;
   let styleSize = 8.0;
+  let size_ch = resolveSizeChannel(styleSize, nNodes);
   if (Array.isArray(sizeOpt) || ArrayBuffer.isView(sizeOpt)) {
-    sizeValues = sizeOpt instanceof Float64Array
+    const values = sizeOpt instanceof Float64Array
       ? sizeOpt
       : Float64Array.from(sizeOpt, Number);
-    if (sizeValues.length !== nNodes) {
+    if (values.length !== nNodes) {
       throw new RangeError(
-        `graph size length ${sizeValues.length} != render n_nodes=${nNodes} ` +
+        `graph size length ${values.length} != render n_nodes=${nNodes} ` +
           `(encodings are render-graph indexed after nodeBudget/edgeBudget; ` +
           `source_n_nodes=${meta.source_n_nodes ?? "?"})`,
       );
     }
+    const mm = minMax(values) ?? [0, 1];
+    size_ch = {
+      mode: "continuous",
+      values,
+      domain: [mm[0], mm[0] === mm[1] ? mm[0] + 1 : mm[1]],
+      range_px: [8, 22],
+    };
   } else if (sizeOpt != null) {
     styleSize = Number(sizeOpt);
+    size_ch = resolveSizeChannel(styleSize, nNodes);
   }
   let [nodeTooltipRows, edgeTooltipRows] = projectionTooltipRows(data);
   const nodesOneToOne = nNodes === data.ids.length;
@@ -823,14 +833,13 @@ export function composeGraph(nodes, edges, opts = {}) {
       y: nodePositions.y,
       style: {
         color: typeof nodeColor === "string" ? nodeColor : "#3987e5",
-        size: styleSize,
         symbol: resolvedOpts.symbol ?? "circle",
         ...(resolvedOpts.style ?? {}),
       },
       ...(nodeColor != null && typeof nodeColor !== "string"
         ? { color: resolveColorChannel(nodeColor, nNodes, "#3987e5") }
         : {}),
-      ...(sizeValues != null ? { sizeValues } : {}),
+      size_ch,
       ...(nodeTooltipRows != null ? { tooltip_rows: nodeTooltipRows } : {}),
     },
   ];

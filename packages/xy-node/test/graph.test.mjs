@@ -611,7 +611,7 @@ test("composeGraph accepts GraphData with size option object", () => {
   const data = fromGraphForgeTables(AIRPORTS_NODES, AIRPORTS_EDGES);
   const composed = composeGraph(data, { layout: "grid", seed: 1, size: "rank" });
   assert.equal(composed.traces[1].kind, "scatter");
-  assert.ok(composed.traces[1].sizeValues);
+  assert.equal(composed.traces[1].size_ch?.mode, "continuous");
 });
 
 test("resolveGraphData rejects mismatched preset y length", () => {

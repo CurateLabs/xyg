@@ -95,7 +95,7 @@ import {
 } from "./pyramid.js";
 import { composeGraph } from "./graph.js";
 import { composeSankey } from "./sankey.js";
-import { composeScatter, normalizeScatterStyle } from "./marks/scatter.js";
+import { composeScatter, normalizeScatterStyle, resolveSizeChannel } from "./marks/scatter.js";
 import { composeLine } from "./marks/line.js";
 import { composeHistogram } from "./marks/histogram.js";
 import { composeArea } from "./marks/area.js";
@@ -317,6 +317,28 @@ function shipStyleChannels(styleChannels, pw, sel = null) {
   return Object.keys(result).length > 0 ? result : undefined;
 }
 
+function shipSizeChannel(entry, sizeCh, pw, sel) {
+  if (sizeCh?.mode === "continuous" && sizeCh.values != null) {
+    let values = sizeCh.values instanceof Float64Array
+      ? sizeCh.values
+      : Float64Array.from(sizeCh.values, Number);
+    if (sel != null) values = gatherF64(values, sel);
+    const domain = sizeCh.domain ?? minMax(values) ?? [0, 1];
+    const lo = domain[0];
+    const hi = domain[0] === domain[1] ? domain[0] + 1 : domain[1];
+    const wirePlan = payloadChannelWireEncode({ role: "size", mode: "continuous" });
+    entry.size = {
+      mode: "continuous",
+      range_px: sizeCh.range_px ?? [8, 22],
+      domain: [lo, hi],
+      buf: shipWireBuffer(wirePlan, pw, { values, lo, hi }),
+    };
+    if (wirePlan.markDtypeU8) entry.size.dtype = "u8";
+  } else if (sizeCh?.mode === "constant") {
+    entry.size = { mode: "constant", size: sizeCh.constant ?? sizeCh.size ?? 8.0 };
+  }
+}
+
 /** Attach channels listed in a Rust-owned ship registry plan (ABI 311). */
 function shipRegistryAttach(entry, trace, pw, sel, plan) {
   for (const ch of plan.channels) {
@@ -324,26 +346,7 @@ function shipRegistryAttach(entry, trace, pw, sel, plan) {
     if (ch.shipMethod === "color_size") {
       const color = shipColorChannel(trace.color_ch, pw, sel);
       if (color != null) entry.color = color;
-      const sizeCh = trace.size_ch;
-      if (sizeCh?.mode === "continuous" && sizeCh.values != null) {
-        let values = sizeCh.values instanceof Float64Array
-          ? sizeCh.values
-          : Float64Array.from(sizeCh.values, Number);
-        if (sel != null) values = gatherF64(values, sel);
-        const domain = sizeCh.domain ?? minMax(values) ?? [0, 1];
-        const lo = domain[0];
-        const hi = domain[0] === domain[1] ? domain[0] + 1 : domain[1];
-        const wirePlan = payloadChannelWireEncode({ role: "size", mode: "continuous" });
-        entry.size = {
-          mode: "continuous",
-          range_px: sizeCh.range_px ?? [8, 22],
-          domain: [lo, hi],
-          buf: shipWireBuffer(wirePlan, pw, { values, lo, hi }),
-        };
-        if (wirePlan.markDtypeU8) entry.size.dtype = "u8";
-      } else if (sizeCh?.mode === "constant") {
-        entry.size = { mode: "constant", size: sizeCh.constant ?? sizeCh.size ?? 8.0 };
-      }
+      shipSizeChannel(entry, trace.size_ch, pw, sel);
     } else if (ch.shipMethod === "color") {
       const traceSlot = ch.traceSlot === "color2_ch"
         ? (trace.color_target ?? trace.color2_ch)
@@ -997,6 +1000,10 @@ export class Figure {
       "scatter pyramidSpill",
     );
     if (opts._composed) {
+      const rawStyle = { ...(opts.style ?? {}) };
+      const xv = asF64(x);
+      const sizeInput = opts.size ?? rawStyle.size ?? null;
+      if (rawStyle.size != null) delete rawStyle.size;
       this.traces.push({
         id: opts.id ?? nextTraceId++,
         kind: "scatter",    // entry.color. Recorded emit-density-cat-color stay-host.
@@ -1007,13 +1014,17 @@ export class Figure {
         name: opts.name ?? null,
         // Node scatter stores f64, not Column.kind. Python Column infers
         // time_ms. Recorded scatter-f64-kind stay-host.
-        x: asF64(x),
+        x: xv,
         y: asF64(y),
-        style: normalizeScatterStyle(opts.style),
+        style: normalizeScatterStyle(rawStyle),
         x_axis: opts.xAxis ?? "x",
         y_axis: opts.yAxis ?? "y",
         ...(opts.color != null ? { color: opts.color } : {}),
-        ...(opts.size_ch != null ? { size_ch: opts.size_ch } : {}),
+        size_ch: opts.size_ch ?? resolveSizeChannel(
+          sizeInput,
+          xv.length,
+          opts.sizeRange ?? opts.size_range ?? [2, 18],
+        ),
         ...(opts.sizeValues != null ? { sizeValues: opts.sizeValues } : {}),
         ...(opts.sizeRange != null ? { sizeRange: opts.sizeRange } : {}),
         ...(opts.tooltip_rows != null ? { tooltip_rows: opts.tooltip_rows } : {}),
@@ -1391,7 +1402,7 @@ export class Figure {
           name: t.name,
           style: t.style,
           color: t.color,
-          sizeValues: t.sizeValues,
+          size_ch: t.size_ch,
           tooltip_rows: t.tooltip_rows,
           _composed: true,
         });
@@ -1576,25 +1587,7 @@ export class Figure {
     // Recorded scatter-ship-color stay-host.
     const color = this._shipColor(t.color, pw, sel);
     if (color != null) entry.color = color;
-    // Node payload scatter ships t.sizeValues. Python `_emit_scatter` ships
-    // size_ch via `_ship_channels`. Matching Python would ignore t.sizeValues.
-    // Recorded emit-scatter-size stay-host.
-    if (t.sizeValues != null) {
-      let values = t.sizeValues instanceof Float64Array
-        ? t.sizeValues
-        : Float64Array.from(t.sizeValues, Number);
-      if (sel != null) values = gatherF64(values, sel);
-      const mm = minMax(values) ?? [0, 1];
-      const lo = mm[0];
-      const hi = mm[0] === mm[1] ? mm[0] + 1 : mm[1];
-      const norm = normalizeF32(values, lo, hi);
-      entry.size = {
-        mode: "continuous",
-        range_px: t.sizeRange ?? [8, 22],
-        domain: [lo, hi],
-        buf: pw.shipScalar(norm),
-      };
-    }
+    shipSizeChannel(entry, t.size_ch, pw, sel);
     if (t.tooltip_rows != null) {
       // Node payload scatter skips tooltip_rows length. Python
       // `_attach_tooltip_rows` rejects a mismatch with n_points. Matching

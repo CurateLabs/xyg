@@ -32,6 +32,7 @@ import {
   stepChart,
   triangleMeshChart,
 } from "../src/index.js";
+import { composeScatter } from "../src/marks/scatter.js";
 
 function fill(n, fn) {
   const out = new Float64Array(n);
@@ -702,9 +703,7 @@ test("_emitHeatmap attaches color like Python _emit_heatmap", () => {
   assert.equal(spec.traces[0].color.colormap, "viridis");
 });
 
-test("_emitScatter ships sizeValues unlike Python size_ch", () => {
-  // Python `_emit_scatter` ships size_ch. Node keeps t.sizeValues even when
-  // size_ch is also present. Recorded emit-scatter-size stay-host.
+test("_emitScatter ships size_ch like Python _emit_scatter", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1], {
     _composed: true,
@@ -713,8 +712,8 @@ test("_emitScatter ships sizeValues unlike Python size_ch", () => {
   fig.traces[0].size_ch = { mode: "constant", constant: 12 };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].tier, "direct");
-  assert.equal(spec.traces[0].size.mode, "continuous");
-  assert.deepEqual([...spec.traces[0].size.domain], [4, 8]);
+  assert.equal(spec.traces[0].size.mode, "constant");
+  assert.equal(spec.traces[0].size.size, 12);
 });
 
 test("_emitScatterDensity sample omits style_channels unlike Python _ship_trace_styles", () => {
@@ -2124,6 +2123,12 @@ test("composeScatter resolves color_ch like Python marks.scatter", () => {
   assert.equal(fig.traces[0].color_ch.constant, "#112233");
   assert.equal(scene.includes(authored), true);
   assert.equal(scene.includes(palette), false);
+});
+
+test("composeScatter always sets size_ch like Python marks.scatter", () => {
+  const { traces } = composeScatter([0, 1], [1, 2]);
+  assert.equal(traces[0].size_ch?.mode, "constant");
+  assert.equal(traces[0].size_ch?.constant, 4);
 });
 
 test("composeScatter maps size to size_ch like Python marks.scatter", () => {
