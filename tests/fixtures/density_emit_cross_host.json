@@ -10,6 +10,7 @@
       "tier": "density",
       "visible": 3,
       "density_colormap": "magma",
+      "density_color": "#3987e5",
       "density_dropped_channels": [],
       "density_channels_dropped": false,
       "density_color_agg": null,
@@ -38,6 +39,7 @@
       "tier": "density",
       "visible": 4,
       "density_colormap": "inferno",
+      "density_color": null,
       "density_dropped_channels": [],
       "density_channels_dropped": false,
       "density_color_agg": "mean",
@@ -50,8 +52,8 @@
         "mode": "continuous",
         "colormap": "inferno",
         "domain": [
-          1.0,
-          4.0
+          1,
+          4
         ]
       },
       "sample_size": {
@@ -65,11 +67,41 @@
       "animation_fallback": null
     },
     {
+      "name": "scatter_density_constant_color",
+      "trace_id": 25,
+      "tier": "density",
+      "visible": 3,
+      "density_colormap": "viridis",
+      "density_color": "#22c55e",
+      "density_dropped_channels": [],
+      "density_channels_dropped": false,
+      "density_color_agg": null,
+      "density_has_rgba": false,
+      "entry_color": null,
+      "has_sample": true,
+      "sample_n": 3,
+      "sample_visible": 3,
+      "sample_color": {
+        "mode": "constant",
+        "color": "#22c55e"
+      },
+      "sample_size": {
+        "mode": "constant",
+        "size": 4
+      },
+      "sample_stroke": null,
+      "sample_channels": null,
+      "sample_x_offset": 1,
+      "sample_y_offset": 0.5,
+      "animation_fallback": null
+    },
+    {
       "name": "scatter_density_dropped_channels",
       "trace_id": 22,
       "tier": "density",
       "visible": 3,
       "density_colormap": "viridis",
+      "density_color": "#3987e5",
       "density_dropped_channels": [
         "size"
       ],
@@ -107,6 +139,7 @@
       "tier": "density",
       "visible": 5,
       "density_colormap": "viridis",
+      "density_color": null,
       "density_dropped_channels": [
         "size"
       ],
@@ -166,6 +199,7 @@
       "tier": "density",
       "visible": 2,
       "density_colormap": "viridis",
+      "density_color": "#3987e5",
       "density_dropped_channels": [],
       "density_channels_dropped": false,
       "density_color_agg": null,
@@ -204,6 +238,7 @@
       "tier": "density",
       "visible": 5,
       "density_colormap": "viridis",
+      "density_color": null,
       "density_dropped_channels": [
         "size"
       ],
@@ -263,6 +298,7 @@
       "tier": "density",
       "visible": 3,
       "density_colormap": "viridis",
+      "density_color": "#3987e5",
       "density_dropped_channels": [
         "stroke"
       ],
@@ -298,6 +334,7 @@
       "tier": "density",
       "visible": 3,
       "density_colormap": "viridis",
+      "density_color": "#3987e5",
       "density_dropped_channels": [
         "opacity"
       ],
@@ -335,6 +372,7 @@
       "tier": "density",
       "visible": 3,
       "density_colormap": "viridis",
+      "density_color": "#3987e5",
       "density_dropped_channels": [],
       "density_channels_dropped": false,
       "density_color_agg": null,
@@ -363,6 +401,7 @@
       "tier": "density",
       "visible": 2,
       "density_colormap": "viridis",
+      "density_color": "#3987e5",
       "density_dropped_channels": [],
       "density_channels_dropped": false,
       "density_color_agg": null,
@@ -391,6 +430,7 @@
       "tier": "density",
       "visible": 2,
       "density_colormap": "viridis",
+      "density_color": "#3987e5",
       "density_dropped_channels": [],
       "density_channels_dropped": false,
       "density_color_agg": null,
@@ -419,6 +459,7 @@
       "tier": "density",
       "visible": 80,
       "density_colormap": "viridis",
+      "density_color": "#3987e5",
       "density_dropped_channels": [],
       "density_channels_dropped": false,
       "density_color_agg": null,

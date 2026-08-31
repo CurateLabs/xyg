@@ -84,6 +84,7 @@ def _case_keys(case_name: str, entry: dict) -> list[str]:
 CASE_NAMES = (
     "scatter_density_colormap",
     "scatter_density_continuous_colormap",
+    "scatter_density_constant_color",
     "scatter_density_dropped_channels",
     "scatter_density_mean_color_categorical",
     "scatter_density_wasm_source_split",
@@ -144,6 +145,13 @@ def _build_case(name: str) -> Figure:
         )
         fig.traces[0].id = 24
         fig.traces[0].color_ch.colormap = "inferno"
+        return fig
+    if name == "scatter_density_constant_color":
+        fig = Figure(width=240, height=160)
+        fig.scatter([0.0, 1.0, 2.0], [0.0, 1.0, 0.5], density=True)
+        fig.traces[0].id = 25
+        fig.traces[0].style["color"] = "#112233"
+        fig.traces[0].color_ch.constant = "#22c55e"
         return fig
     if name == "scatter_density_dropped_channels":
         fig = Figure(width=240, height=160)
@@ -270,6 +278,7 @@ def _density_wire_meta(spec: dict, *, case_name: str = "", split: bool = False) 
         "trace_id": trace["id"],
         "tier": trace.get("tier"),
         "density_colormap": density.get("colormap"),
+        "density_color": density.get("color"),
         "density_dropped_channels": density.get("dropped_channels") or [],
         "density_channels_dropped": bool(density.get("channels_dropped")),
         "density_color_agg": density.get("color_agg"),
