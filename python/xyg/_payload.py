@@ -709,37 +709,67 @@ class PayloadMixin(_Host):
     def _emit_scatter(
         self, t: Trace, pw: "_PayloadWriter", xr: tuple, yr: tuple, px_width: int
     ) -> dict[str, Any]:
-        if (
-            kernels.payload_tier(
-                1,
-                t.n_points,
-                polar=self.coords == "polar",
-                force_density=t.payload_force_density(),
-                per_item=t.has_per_item_channels(),
-            )
-            == 2
-        ):
-            # Polar forces direct: density bins an axis-aligned (x, y) grid,
-            # and equal (theta, r) bins near the origin cover far fewer pixels,
-            # so uniform data would render centre-concentrated. ABI 122 owns
-            # that override so Python and Node cannot drift
-            # (spec/design/polar-axes.md §7).
-            t.shipped_sel = None  # no per-point marks, no pick mapping
-            t.drill_mode = False  # full view: density until a zoom drills in
+        del px_width
+        pre_plan = kernels.payload_scatter_emit_plan(
+            n_points=t.n_points,
+            polar=self.coords == "polar",
+            force_density=t.payload_force_density(),
+            force_direct=False,
+            per_item=t.has_per_item_channels(),
+            n_marks=int(t.n_points),
+            has_trace_animation=t.animation is not None,
+            x_axis_scale=self._axis_scale(t.x_axis),
+            y_axis_scale=self._axis_scale(t.y_axis),
+            has_transition_keys=t.transition_keys is not None,
+            has_tooltip_rows=t.tooltip_rows is not None,
+            n_tooltip_rows=len(t.tooltip_rows) if t.tooltip_rows is not None else 0,
+        )
+        if pre_plan["emit_density"]:
+            if pre_plan["clear_shipped_sel"]:
+                t.shipped_sel = None
+            if pre_plan["drill_mode_false"]:
+                t.drill_mode = False
             entry = self._density_trace_spec(t, xr, yr, *DENSITY_GRID, pw)
-            return self._transition_entry(entry, t, pw)
+            if pre_plan["attach_transition"]:
+                return self._transition_entry(entry, t, pw)
+            return entry
         xv, yv = t.x.values, t.y.values
         sel = self._visible_sel(t, xv, yv)
         if sel is not None:
             xv, yv = xv[sel], yv[sel]
+        plan = kernels.payload_scatter_emit_plan(
+            n_points=t.n_points,
+            polar=self.coords == "polar",
+            force_density=t.payload_force_density(),
+            force_direct=False,
+            per_item=t.has_per_item_channels(),
+            n_marks=int(len(xv)),
+            has_trace_animation=t.animation is not None,
+            x_axis_scale=self._axis_scale(t.x_axis),
+            y_axis_scale=self._axis_scale(t.y_axis),
+            has_transition_keys=t.transition_keys is not None,
+            has_tooltip_rows=t.tooltip_rows is not None,
+            n_tooltip_rows=len(t.tooltip_rows) if t.tooltip_rows is not None else 0,
+        )
         entry = self._base_entry(t, pw, xv, yv, "direct", dict(t.style))
-        if t.transition_keys is not None:
+        if plan["attach_transition"]:
             self._transition_entry(entry, t, pw, sel)
         self._ship_trace_channel_attach(
-            entry, t, sel, pw, kernels.PAYLOAD_SHIP_CHANNELS_ALWAYS, include_trace_styles=True
+            entry,
+            t,
+            sel,
+            pw,
+            plan["channel_slot"],
+            include_trace_styles=plan["include_trace_styles"],
         )
-        self._attach_tooltip_rows(entry, t, sel)
-        t.shipped_sel = sel  # pick/selection translation (§17)
+        if plan["attach_tooltip"]:
+            self._attach_tooltip_rows(entry, t, sel)
+        elif t.tooltip_rows is not None and not plan["tooltip_length_ok"]:
+            raise ValueError(
+                f"{t.kind} tooltip rows must match geometry ({len(t.tooltip_rows)} != {t.n_points})"
+            )
+        if plan["set_shipped_sel"]:
+            t.shipped_sel = sel
         return entry
 
     def _emit_hexbin(

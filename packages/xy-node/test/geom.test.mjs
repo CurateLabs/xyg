@@ -1752,10 +1752,11 @@ test("scatterPayloadForceBin2d uses force_bin2d only like Python", () => {
   assert.equal(scatterPayloadForceBin2d({ force_bin2d: true }), true);
 });
 
-test("scatterPayloadForceDensity uses force_density only like Python", () => {
-  assert.equal(scatterPayloadForceDensity({}), undefined);
-  assert.equal(scatterPayloadForceDensity({ style: { force_density: true } }), undefined);
-  assert.equal(scatterPayloadForceDensity({ force_density: true }), true);
+test("scatterPayloadForceDensity uses force_density tri-state like Python", () => {
+  assert.equal(scatterPayloadForceDensity({}), -1);
+  assert.equal(scatterPayloadForceDensity({ style: { force_density: true } }), -1);
+  assert.equal(scatterPayloadForceDensity({ force_density: true }), 1);
+  assert.equal(scatterPayloadForceDensity({ force_density: false }), 0);
 });
 
 test("scatterPayloadForceDirect uses force_direct only like Python", () => {

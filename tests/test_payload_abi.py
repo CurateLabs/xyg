@@ -609,6 +609,81 @@ def test_payload_segments_emit_plan_stem_no_role_keys() -> None:
     assert plan["apply_palette_default"] is False
 
 
+def test_payload_scatter_emit_plan_density_tier() -> None:
+    plan = kernels.payload_scatter_emit_plan(
+        n_points=SCATTER_DENSITY_THRESHOLD + 1,
+        polar=False,
+        force_density=-1,
+        force_direct=False,
+        per_item=False,
+        n_marks=0,
+        has_trace_animation=False,
+        x_axis_scale="linear",
+        y_axis_scale="linear",
+        has_transition_keys=False,
+        has_tooltip_rows=False,
+        n_tooltip_rows=0,
+    )
+    assert plan["emit_density"] is True
+    assert plan["clear_shipped_sel"] is True
+    assert plan["drill_mode_false"] is True
+    assert plan["attach_transition"] is True
+
+
+def test_payload_scatter_emit_plan_direct_channels_always() -> None:
+    plan = kernels.payload_scatter_emit_plan(
+        n_points=100,
+        polar=False,
+        force_density=-1,
+        force_direct=False,
+        per_item=False,
+        n_marks=50,
+        has_trace_animation=True,
+        x_axis_scale="log",
+        y_axis_scale="linear",
+        has_transition_keys=True,
+        has_tooltip_rows=True,
+        n_tooltip_rows=100,
+    )
+    assert plan == {
+        "emit_density": False,
+        "clear_shipped_sel": False,
+        "drill_mode_false": False,
+        "set_shipped_sel": True,
+        "attach_transition": True,
+        "attach_tooltip": True,
+        "filter_tooltip_by_sel": False,
+        "tooltip_length_ok": True,
+        "tier_direct": True,
+        "n_marks": 50,
+        "apply_palette_default": False,
+        "attach_animation": True,
+        "x_ship_scale": "log",
+        "y_ship_scale": "linear",
+        "channel_slot": kernels.PAYLOAD_SHIP_CHANNELS_ALWAYS,
+        "include_trace_styles": True,
+    }
+
+
+def test_payload_scatter_emit_plan_force_density_false() -> None:
+    plan = kernels.payload_scatter_emit_plan(
+        n_points=1_000_000,
+        polar=False,
+        force_density=0,
+        force_direct=False,
+        per_item=False,
+        n_marks=100,
+        has_trace_animation=False,
+        x_axis_scale="linear",
+        y_axis_scale="linear",
+        has_transition_keys=False,
+        has_tooltip_rows=False,
+        n_tooltip_rows=0,
+    )
+    assert plan["emit_density"] is False
+    assert plan["set_shipped_sel"] is True
+
+
 def test_line_scatter_area_base_entry_ships_animation_and_log_scale() -> None:
     anim = {"duration": 250}
     fig = Figure().set_axis("x", type_="log")
