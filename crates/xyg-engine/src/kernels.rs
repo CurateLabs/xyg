@@ -1626,6 +1626,65 @@ const XYTC_HAS_STROKE: u32 = 1 << 1;
 const XYTC_HAS_LINE_COLOR: u32 = 1 << 2;
 const XYTC_HAS_GRADIENT_SPEC: u32 = 1 << 19;
 const XYTC_HAS_FILL_DICT: u32 = 1 << 20;
+const XYTC_USE_DENSITY: u32 = 1 << 14;
+const XYTC_SHOW_LEGEND: u32 = 1 << 15;
+const XYTC_HAS_NAME: u32 = 1 << 16;
+const XYTC_HAS_MARKER: u32 = 1 << 18;
+const XYTC_HAS_GLYPH: u32 = 1 << 24;
+const XYTC_JOINED_FILL: u32 = 1 << 25;
+
+/// Pack XYTC trace meta flag bits (ABI 270).
+///
+/// Hosts still pick trace names, evaluate scatter density, pack marker blobs,
+/// and admit marker glyphs. ``marker_path_present`` gates the marker branch;
+/// glyph flags apply only when that bit is clear and kind is ``scatter``.
+pub fn scene_xytc_meta_flags_pack(
+    has_name: i32,
+    show_legend: i32,
+    kind: &str,
+    use_density: i32,
+    joined_fill: i32,
+    marker_path_present: i32,
+    marker_packed: i32,
+    glyph_packed: i32,
+) -> Option<u32> {
+    for bit in [
+        has_name,
+        show_legend,
+        use_density,
+        joined_fill,
+        marker_path_present,
+        marker_packed,
+        glyph_packed,
+    ] {
+        if !matches!(bit, 0 | 1) {
+            return None;
+        }
+    }
+    let mut flags = 0u32;
+    if has_name != 0 {
+        flags |= XYTC_HAS_NAME;
+    }
+    if show_legend != 0 {
+        flags |= XYTC_SHOW_LEGEND;
+    }
+    if kind == "scatter" && use_density != 0 {
+        flags |= XYTC_USE_DENSITY;
+    }
+    if kind == "triangle_mesh" && joined_fill != 0 {
+        flags |= XYTC_JOINED_FILL;
+    }
+    if kind == "scatter" {
+        if marker_path_present != 0 {
+            if marker_packed != 0 {
+                flags |= XYTC_HAS_MARKER;
+            }
+        } else if glyph_packed != 0 {
+            flags |= XYTC_HAS_GLYPH;
+        }
+    }
+    Some(flags)
+}
 
 /// Pack XYTC fill/stroke/line_color presence flag bits (ABI 269).
 ///
@@ -10957,6 +11016,31 @@ mod fuzz {
         );
         assert!(scene_xytc_paint_presence_pack(1, 0, 0, 0).is_none());
         assert!(scene_xytc_paint_presence_pack(0, 1, 0, 0).is_none());
+    }
+
+    #[test]
+    fn scene_xytc_meta_flags_pack_matches_host_table() {
+        assert_eq!(
+            scene_xytc_meta_flags_pack(1, 1, "scatter", 1, 0, 0, 0, 0).unwrap(),
+            XYTC_HAS_NAME | XYTC_SHOW_LEGEND | XYTC_USE_DENSITY
+        );
+        assert_eq!(
+            scene_xytc_meta_flags_pack(0, 0, "triangle_mesh", 0, 1, 0, 0, 0).unwrap(),
+            XYTC_JOINED_FILL
+        );
+        assert_eq!(
+            scene_xytc_meta_flags_pack(0, 0, "scatter", 0, 0, 1, 1, 0).unwrap(),
+            XYTC_HAS_MARKER
+        );
+        assert_eq!(
+            scene_xytc_meta_flags_pack(0, 0, "scatter", 0, 0, 0, 0, 1).unwrap(),
+            XYTC_HAS_GLYPH
+        );
+        assert_eq!(
+            scene_xytc_meta_flags_pack(0, 0, "scatter", 0, 0, 1, 0, 1).unwrap(),
+            0
+        );
+        assert!(scene_xytc_meta_flags_pack(2, 0, "scatter", 0, 0, 0, 0, 0).is_none());
     }
 
     #[test]

@@ -74,7 +74,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, DEFAULT_PALETTE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, DEFAULT_PALETTE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -3398,8 +3398,39 @@ export function packXyTcFillOpacity(style, kindClass) {
 
 /** XYTC joined fill. Python `_pack_xytc` reads `style.get("joined_fill")` only. */
 export function packXyTcJoinedFill(trace) {
-  if (String(trace?.kind) !== "triangle_mesh") return 0;
-  return (trace.style ?? {}).joined_fill ? XYTC_JOINED_FILL : 0;
+  const style = trace?.style ?? {};
+  return sceneXytcMetaFlagsPack(
+    0,
+    0,
+    String(trace?.kind ?? ""),
+    0,
+    style.joined_fill ? 1 : 0,
+    0,
+    0,
+    0,
+  ) & XYTC_JOINED_FILL;
+}
+
+/** XYTC trace meta flags. Python `_pack_xytc` name/legend/density/marker/joined bits. */
+export function packXyTcMetaFlags(
+  trace,
+  showLegend,
+  { markerPathPresent = 0, markerPacked = 0, glyphPacked = 0 } = {},
+) {
+  const name = trace?.name != null && String(trace.name).length ? String(trace.name) : "";
+  const style = trace?.style ?? {};
+  const useDensity = trace?.kind === "scatter" && scatterUsesDensity(trace) ? 1 : 0;
+  const joinedFill = String(trace?.kind ?? "") === "triangle_mesh" && style.joined_fill ? 1 : 0;
+  return sceneXytcMetaFlagsPack(
+    name ? 1 : 0,
+    showLegend ? 1 : 0,
+    String(trace?.kind ?? ""),
+    useDensity,
+    joinedFill,
+    markerPathPresent,
+    markerPacked,
+    glyphPacked,
+  );
 }
 
 /** XYTC line color. Python `_pack_xytc` reads `"line_color" in style` only. */
@@ -3493,7 +3524,6 @@ function packXyTc(figure) {
     const kind = encodeUtf8(kindName);
     const kindClass = sceneKindClass(kindName);
     const name = trace.name != null && String(trace.name).length ? String(trace.name) : "";
-    if (name) flags |= XYTC_HAS_NAME;
     const nameB = encodeUtf8(name);
     let symbolB = new Uint8Array();
     let symbolInt = 0;
@@ -3581,23 +3611,29 @@ function packXyTc(figure) {
         } else flags |= XYTC_COLOR2;
       }
     }
-    if (scatterUsesDensity(trace)) flags |= XYTC_USE_DENSITY;
-    if (showLegend) flags |= XYTC_SHOW_LEGEND;
     let markerBlob = new Uint8Array();
+    let markerPathPresent = 0;
+    let markerPacked = 0;
+    let glyphPacked = 0;
     if (trace.kind === "scatter" && style.marker_path != null) {
+      markerPathPresent = 1;
       const packed = packMarkerBlob(style.marker_path);
       if (packed) {
-        flags |= XYTC_HAS_MARKER;
+        markerPacked = 1;
         markerBlob = packed;
       }
     } else if (trace.kind === "scatter") {
       const packedGlyph = admittedMarkerGlyph(style.marker_glyph);
       if (packedGlyph != null) {
-        flags |= XYTC_HAS_GLYPH;
+        glyphPacked = 1;
         markerBlob = packedGlyph;
       }
     }
-    flags |= packXyTcJoinedFill(trace);
+    flags |= packXyTcMetaFlags(trace, showLegend, {
+      markerPathPresent,
+      markerPacked,
+      glyphPacked,
+    });
     const packedRadius = sceneXytcRadiusPack(trace.kind, style);
     flags |= packedRadius.flags;
     const prefix = new Uint8Array(160);

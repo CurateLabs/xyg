@@ -383,6 +383,19 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         ctypes.POINTER(ctypes.c_uint32),
     ]
+    lib.xyg_scene_xytc_meta_flags_pack.restype = ctypes.c_int32
+    lib.xyg_scene_xytc_meta_flags_pack.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.POINTER(ctypes.c_uint32),
+    ]
     lib.xyg_scene_xytc_opacity_pack.restype = ctypes.c_int32
     lib.xyg_scene_xytc_opacity_pack.argtypes = [
         ctypes.c_int32,
@@ -3526,6 +3539,25 @@ def main() -> None:
         == 1
         and xytc_paint_flags.value == ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 19)),
         "scene_xytc_paint_presence_pack gradient+stroke+line",
+    )
+    xytc_meta_flags = ctypes.c_uint32(0)
+    scatter_kind = array("B", b"scatter")
+    ok(
+        lib.xyg_scene_xytc_meta_flags_pack(
+            1,
+            1,
+            _ptr(scatter_kind, ctypes.c_uint8),
+            len(scatter_kind),
+            1,
+            0,
+            0,
+            0,
+            0,
+            ctypes.byref(xytc_meta_flags),
+        )
+        == 1
+        and xytc_meta_flags.value == ((1 << 16) | (1 << 15) | (1 << 14)),
+        "scene_xytc_meta_flags_pack scatter density",
     )
     xytc_fill = ctypes.c_double(0.0)
     xytc_stroke = ctypes.c_double(0.0)

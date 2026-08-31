@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 269;
+pub const ABI_VERSION: u32 = 270;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -6651,6 +6651,49 @@ pub unsafe extern "C" fn xyg_scene_marker_blob_pack(
             std::slice::from_raw_parts_mut(out, out_cap)
         };
         kernels::scene_marker_blob_pack(filled, values, contour_lens, out)
+    })
+}
+
+/// Pack XYTC trace meta flag bits (ABI 270).
+///
+/// Returns ``1`` on success, ``0`` when invalid.
+///
+/// # Safety
+/// ``out_flags`` must be writable when non-null.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_xytc_meta_flags_pack(
+    has_name: i32,
+    show_legend: i32,
+    kind: *const u8,
+    kind_len: usize,
+    use_density: i32,
+    joined_fill: i32,
+    marker_path_present: i32,
+    marker_packed: i32,
+    glyph_packed: i32,
+    out_flags: *mut u32,
+) -> i32 {
+    if out_flags.is_null() {
+        return 0;
+    }
+    ffi_guard(0, || {
+        let Some(kind_str) = read_utf8(kind, kind_len) else {
+            return 0;
+        };
+        let Some(flags) = kernels::scene_xytc_meta_flags_pack(
+            has_name,
+            show_legend,
+            kind_str,
+            use_density,
+            joined_fill,
+            marker_path_present,
+            marker_packed,
+            glyph_packed,
+        ) else {
+            return 0;
+        };
+        *out_flags = flags;
+        1
     })
 }
 

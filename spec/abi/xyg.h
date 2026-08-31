@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 269
-#define XYG_ABI_SIGNATURE_SHA256 "c9127b71151fdb0ffc320035a8434d36e1508564c9cab9522bf124587c1a36d8"
+#define XYG_ABI_VERSION 270
+#define XYG_ABI_SIGNATURE_SHA256 "cc9dfe1f49ec50802a3599df0feeaec76bec2502525fee67b938aa799bcc3735"
 
 #ifdef __cplusplus
 extern "C" {
@@ -281,6 +281,7 @@ int32_t xyg_scene_xyta_colormap_pack(int32_t mode, const uint8_t * named, size_t
 int32_t xyg_scene_xytc_color_channel_pack(int32_t present, int32_t has_constant, uint32_t * out_flags);
 int32_t xyg_scene_xytc_dash_pattern_pack(int32_t is_array, uint32_t * out_flags);
 int32_t xyg_scene_xytc_hex_pitch_pack(int32_t hexbin, int32_t has_dx, int32_t has_dy, double dx, double dy, uint32_t * out_flags, double * out_hex_dx, double * out_hex_dy);
+int32_t xyg_scene_xytc_meta_flags_pack(int32_t has_name, int32_t show_legend, const uint8_t * kind, size_t kind_len, int32_t use_density, int32_t joined_fill, int32_t marker_path_present, int32_t marker_packed, int32_t glyph_packed, uint32_t * out_flags);
 int32_t xyg_scene_xytc_numeric_style_pack(int32_t has_size, int32_t has_size_ch, int32_t has_size_ch_constant, int32_t has_stroke_width, int32_t has_width, int32_t has_line_width, double size, double size_ch_constant, double stroke_width, double width, double line_width, uint32_t * out_flags, double * out_size, double * out_size_ch_value, double * out_stroke_width, double * out_width, double * out_line_width);
 int32_t xyg_scene_xytc_opacity_pack(int32_t has_opacity_class, int32_t has_band_class, double authored_fill, double authored_stroke, double authored_line, double * out_fill, double * out_stroke, double * out_line);
 int32_t xyg_scene_xytc_paint_presence_pack(int32_t has_fill, int32_t fill_kind, int32_t has_stroke, int32_t has_line_color, uint32_t * out_flags);

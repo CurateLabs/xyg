@@ -2837,6 +2837,30 @@ def _pack_gradient_spec(fill: dict[str, Any]) -> bytes | None:
     )
 
 
+def _pack_xytc_meta_flags(
+    trace: Any,
+    show_legend: bool,
+    *,
+    marker_path_present: int,
+    marker_packed: int,
+    glyph_packed: int,
+) -> int:
+    name = str(trace.name) if getattr(trace, "name", None) else ""
+    style = getattr(trace, "style", None) or {}
+    use_density = 1 if trace.kind == "scatter" and trace.use_density() else 0
+    joined_fill = 1 if str(trace.kind) == "triangle_mesh" and style.get("joined_fill") else 0
+    return _native.scene_xytc_meta_flags_pack(
+        1 if name else 0,
+        1 if show_legend else 0,
+        str(trace.kind),
+        use_density,
+        joined_fill,
+        marker_path_present,
+        marker_packed,
+        glyph_packed,
+    )
+
+
 def _pack_xytc_paint_presence(style: dict[str, Any]) -> int:
     has_fill = 1 if "fill" in style else 0
     fill_kind = 0
@@ -2980,8 +3004,6 @@ def _pack_xytc(figure: Any) -> bytes:
         kind = kind_name.encode("utf-8")
         kind_class = _native.scene_kind_class(kind_name)
         name = str(trace.name) if getattr(trace, "name", None) else ""
-        if name:
-            flags |= _XYTC_HAS_NAME
         name_b = name.encode("utf-8")
         symbol = str(style.get("symbol", "circle") or "")
         symbol_b = symbol.encode("utf-8")
@@ -3036,23 +3058,28 @@ def _pack_xytc(figure: Any) -> bytes:
                     gradient_blob = packed_gradient
                 else:
                     flags |= _XYTC_COLOR2
-        if trace.kind == "scatter" and trace.use_density():
-            flags |= _XYTC_USE_DENSITY
-        if show_legend:
-            flags |= _XYTC_SHOW_LEGEND
         marker_blob = b""
+        marker_path_present = 0
+        marker_packed = 0
+        glyph_packed = 0
         if trace.kind == "scatter" and style.get("marker_path") is not None:
+            marker_path_present = 1
             packed_marker = _pack_marker_blob(style.get("marker_path"))
             if packed_marker:
-                flags |= _XYTC_HAS_MARKER
+                marker_packed = 1
                 marker_blob = packed_marker
         elif trace.kind == "scatter":
             packed_glyph = _admitted_marker_glyph(style.get("marker_glyph"))
             if packed_glyph is not None:
-                flags |= _XYTC_HAS_GLYPH
+                glyph_packed = 1
                 marker_blob = packed_glyph
-        if str(trace.kind) == "triangle_mesh" and style.get("joined_fill"):
-            flags |= _XYTC_JOINED_FILL
+        flags |= _pack_xytc_meta_flags(
+            trace,
+            show_legend,
+            marker_path_present=marker_path_present,
+            marker_packed=marker_packed,
+            glyph_packed=glyph_packed,
+        )
         radius_flags, r_tip, r_base, wedge_gap = _pack_xytc_radius(trace, style)
         flags |= radius_flags
         records.extend(
