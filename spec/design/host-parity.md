@@ -622,6 +622,16 @@ ABI proof lives in `tests/test_density_grid_materialize_abi.py` (encoded-grid
 SHA golden mirroring the engine test); Node wiring and density cross-host
 grid-buffer SHA in `density_emit_cross_host.json` follow once hosts call the
 316 entry point instead of local `bin_2d` / encode.
+ABI 317 `xyg_scene_xytc_trace_pack` and ABI 318 `xyg_scene_xyta_trace_pack`
+(M2 Push 2) will retire host-side XYTC/XYTA field-byte walks in
+`_scene_v3.py` and `packages/xy-node/src/scene.js`: hosts marshal figure/trace
+inputs only and ship the returned compile/attach fact buffers. Until those
+entry points land, cross-host proof is the checked-in `trace_pack_sha256`
+matrix in `tests/fixtures/figure_scene_v3.json` exercised by
+`tests/test_scene_trace_pack_abi.py` and
+`packages/xy-node/scripts/scene_trace_pack_cross_host.mjs` for scatter, line,
+hexbin, heatmap, ribbon, and triangle mesh (XYTC/XYTA bytes plus the Rust
+XYTR/XYTT compile/attach chain).
 ABI 129 moves Cartesian static-export grid colormap into Rust: Python
 and Node call `xyg_colormap_rgba`, `xyg_colormap_rgba_canonical`, and
 `xyg_density_rgba` (log-u8 density) so `_lut` stop interpolation cannot

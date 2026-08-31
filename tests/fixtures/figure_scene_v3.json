@@ -237,5 +237,43 @@
       235,
       255
     ]
+  },
+  "trace_pack_sha256": {
+    "scatter": {
+      "xytc": "3e941f1084b5a3fc4842a30db70a310a09ff3261e355d833f8625d807a0fad3e",
+      "xyta": "89b094e5c013b4b0b4e3630a2b151e6dfb9d4f2f5975ddc52b41d34747ed104b",
+      "xytr": "30e2749172f2a3506943afe587763200060a78da7a692a4899478ca0419f2932",
+      "xytt": "bee309c21a37588452f52cb5470f08fa59f9a8ef373619792f0a7904793929cd"
+    },
+    "line": {
+      "xytc": "d70f88eea07b85cc5955b6740665ac8ec956725e29c90268dbde2c8a639cefeb",
+      "xyta": "c9ce9a2c0116ddd0f7b78b73ec737b20a4758eb2d10a886d18a9ac0257f6bf22",
+      "xytr": "80b8c83c944a07bc4f15c58acf4ef8a680eb83ba19785aa64bb48a49787596d6",
+      "xytt": "17375dd4ee93c670eff0ae719c711812c80272c1aaeb15d7795f2802c4efb111"
+    },
+    "hexbin": {
+      "xytc": "1aa1822150b9414099f282dabf49038cf596e7e588d5e9afb0a7060979162521",
+      "xyta": "57296fe4201a06f54dd431cd92a22947af5ec1be673c28e53d954121b48fc1d0",
+      "xytr": "3db9d3169874ca5df963dddd69c5d8c84f35a0040223eede2c4cf8bf255fb131",
+      "xytt": "126f5494b7074eeaed3d870a04c81b70ea3aba307cf37e3f2e8a649eb303a461"
+    },
+    "heatmap": {
+      "xytc": "acd27efdb7b024066ea06c2a369132334f896158de2e124aadd3f387a6b10598",
+      "xyta": "2efc01c9647d49c1037319f5e74692d8528ca1b8b613613ccabae68e96645bcc",
+      "xytr": "df3cf717074c305ae95d61fe4ab71074687d47657ac5a3509ee44d09450a0c3f",
+      "xytt": "f42068a294c9f178149b73ec9327f85c82c63b4567593c13adf04c29b83de410"
+    },
+    "ribbon": {
+      "xytc": "be265e235b5ec5a1456c61ebda8aa1aff57f51ddd2dddafbe821846fd90651f3",
+      "xyta": "a3aceb9dc5559ba0ab864e02f45fe633b679f72a33cfdaedca1b36c1959ec30a",
+      "xytr": "0063da82496aa47abd284fae79fa1f3395ce8dfbf50a9304443a17eeffc6434f",
+      "xytt": "77b67f2c1468fbf4659211ec577c984c1418e863557439e3c01c0183d758594e"
+    },
+    "mesh": {
+      "xytc": "de239248bc33e010b80b3f6f9d3fc51dfdd48508af15e521e3c3bf70abfa5771",
+      "xyta": "c9ce9a2c0116ddd0f7b78b73ec737b20a4758eb2d10a886d18a9ac0257f6bf22",
+      "xytr": "e27a52c72398e494f8530dd2a6ffa04ce08924f994cd1abf74c7e0761bcc785f",
+      "xytt": "bd40e6113ab84eb2b3ffa13dcbf214c6054b1e1141fd3402846ee88e7675fe44"
+    }
   }
 }
