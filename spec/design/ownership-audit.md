@@ -337,6 +337,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | (this PR) | 275 | `xyg_density_mean_color_rgba_wire_admit` | mean-color rgba / color_agg wire |
 | (this PR) | 292 | `xyg_payload_segments_emit_gather` | `_emit_segments` errorbar/stem decimation + role-map gather |
 | (this PR) | 293 | `xyg_payload_trace_channels_ship_attach` | `_ship_channels` / `_ship_trace_styles` attach policy |
+| (this PR) | 294 | `xyg_payload_transition_entry_attach` | `_transition_entry` / `_attach_tooltip_rows` attach policy |
 
 Largest remaining Python core surfaces: `_payload` emit gather/ship and `_scene_v3` XYTC/XYTA pack loops — not the ABI-218–291 admit slices already kernelized.
 
@@ -353,7 +354,7 @@ Largest remaining Python core surfaces: `_payload` emit gather/ship and `_scene_
 
 **Still blocks “Python is only a host”** (compatibility modules stay until these twins move or stay-host is recorded with diffs):
 
-1. `_payload` emit orchestration — extra-column gather and ship (index math is ABI 204/205; count budget is ABI 214; errorbar role expand is ABI 215; errorbar role keys is ABI 273; bar compact admit is ABI 274; transition-key admit is ABI 275; density color classify is ABI 276; density trace color classify is ABI 278; density bin coord endpoints is ABI 279); density colormap admit is ABI 280; density reduction kind is ABI 281; density overlay wire is ABI 282; density grid visible init is ABI 283; density constant color admit is ABI 284; density wasm source admit is ABI 285; wasm density wire kind is ABI 286; density categorical color admit is ABI 287; density mean-color plane admit is ABI 288; density channels_dropped compat is ABI 289; density dropped-channel list filter is ABI 290; density mean-color rgba wire admit is ABI 291; segment emit gather is ABI 292; trace channel attach is ABI 293
+1. `_payload` emit orchestration — extra-column gather and ship (index math is ABI 204/205; count budget is ABI 214; errorbar role expand is ABI 215; errorbar role keys is ABI 273; bar compact admit is ABI 274; transition-key admit is ABI 275; density color classify is ABI 276; density trace color classify is ABI 278; density bin coord endpoints is ABI 279); density colormap admit is ABI 280; density reduction kind is ABI 281; density overlay wire is ABI 282; density grid visible init is ABI 283; density constant color admit is ABI 284; density wasm source admit is ABI 285; wasm density wire kind is ABI 286; density categorical color admit is ABI 287; density mean-color plane admit is ABI 288; density channels_dropped compat is ABI 289; density dropped-channel list filter is ABI 290; density mean-color rgba wire admit is ABI 291; segment emit gather is ABI 292; trace channel attach is ABI 293; transition/tooltip entry attach is ABI 294
 2. `_scene_v3.py` / Node `scene.js` pack and figure-to-record orchestration
 
 3. ChartView `51_annotations.ts` still copies arrow math until WASM; ABI 254 owns host `start_offset`/`label_clear` CSV pack
