@@ -34,6 +34,7 @@ const GRID_META_CASE_KEYS = new Set([
   "density_channels_dropped",
   "density_color_agg",
   "density_has_rgba",
+  "entry_color",
   "has_sample",
   "sample_n",
   "sample_visible",
@@ -60,6 +61,7 @@ const SAMPLE_CASE_KEYS = new Set([
   "sample_x_offset",
   "sample_y_offset",
   "animation_fallback",
+  "entry_color",
 ]);
 
 const WASM_SOURCE_CASE_KEYS = new Set([
@@ -142,6 +144,7 @@ function densityMeta(spec, { caseName = "", split = false } = {}) {
     density_channels_dropped: density.channels_dropped ?? false,
     density_color_agg: density.color_agg ?? null,
     density_has_rgba: density.rgba != null,
+    entry_color: stripWireBuffers(trace.color ?? null),
     ...sampleMeta(spec),
     ...(split ? wasmSourceMeta(spec) : {}),
   };

@@ -49,6 +49,7 @@ SAMPLE_CASE_KEYS = frozenset(
         "sample_x_offset",
         "sample_y_offset",
         "animation_fallback",
+        "entry_color",
     }
 )
 
@@ -260,6 +261,7 @@ def _density_wire_meta(spec: dict, *, case_name: str = "", split: bool = False) 
         "density_channels_dropped": bool(density.get("channels_dropped")),
         "density_color_agg": density.get("color_agg"),
         "density_has_rgba": "rgba" in density,
+        "entry_color": _strip_wire_buffers(trace.get("color")),
         "has_sample": bool(sample),
         "sample_n": sample.get("n"),
         "sample_visible": sample.get("visible"),

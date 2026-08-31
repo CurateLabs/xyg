@@ -206,6 +206,19 @@ function categoricalPalette(palette, nCategories) {
   return Array.from({ length: nCategories }, (_, i) => palette[i % palette.length]);
 }
 
+/** Slim categorical color spec for density trace entries (legend toggle path). */
+function densityEntryColorSpec(channel) {
+  if (channel == null || channel.mode !== "categorical" || channel.categories == null) {
+    return undefined;
+  }
+  const palette = channel.palette?.length ? channel.palette : DEFAULT_PALETTE;
+  return {
+    mode: "categorical",
+    categories: channel.categories,
+    palette: categoricalPalette(palette, channel.categories.length),
+  };
+}
+
 function align4(n) {
   return (4 - (n % 4)) % 4;
 }
@@ -2039,9 +2052,10 @@ export class Figure {
       } else if (kind === "overlay_static_raster") {
         density.overlay_omitted = "static_raster";
       } else if (kind === "entry_color") {
-        // Node payload density omits categorical entry color. Python
-        // `_density_trace_spec` ships slim categorical color spec. Recorded
-        // emit-density-cat-color stay-host.
+        const colorSpec = densityEntryColorSpec(t.color_ch);
+        if (colorSpec != null) {
+          entry.color = colorSpec;
+        }
       }
     }
     return entry;
