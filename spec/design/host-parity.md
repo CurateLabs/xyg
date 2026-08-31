@@ -49,7 +49,6 @@ publish waits on the `@curatelabs` npm org (#13).
   Node `buildPayload` omits title_options.
   Node `buildPayload` omits padding.
   Node `buildPayload` omits dom.
-  Node `buildPayload` omits cartesian axis tick_values.
   Node `buildPayload` omits cartesian axis minor_tick_values.
   Node `buildPayload` omits cartesian axis tick_labels.
   Node `buildPayload` omits cartesian axis tick_count.

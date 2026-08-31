@@ -1309,16 +1309,13 @@ test("_emitScatterDensity ships animation via payload transition attach", () => 
   assert.deepEqual(spec.traces[0].animation, { duration: 100 });
 });
 
-test("buildPayload omits cartesian axis tick_values unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_values`. Node cartesian payload axes omit
-  // that field even when axis tick_values is set. Recorded
-  // emit-payload-axis-tick-values stay-host.
+test("buildPayload ships cartesian axis tick_values like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   fig.setAxis("x", { tick_values: [0, 0.5, 1] });
   const { spec } = fig.buildPayload();
-  assert.deepEqual(fig.axis_options.x.tick_values, [0, 0.5, 1]);
-  assert.equal(spec.x_axis.tick_values, undefined);
+  assert.deepEqual(spec.x_axis.tick_values, [0, 0.5, 1]);
+  assert.equal(spec.y_axis.tick_values, undefined);
 });
 
 
