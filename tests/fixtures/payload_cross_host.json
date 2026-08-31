@@ -335,6 +335,19 @@
       "trace_keys": null
     },
     {
+      "name": "ribbon_color2_ch",
+      "width": 240,
+      "height": 160,
+      "trace_id": 46,
+      "kind": "ribbon",
+      "tier": "direct",
+      "n_marks": 1,
+      "payload_blob_len": 24,
+      "payload_blob_sha256": "9d908ecfb6b256def8b49a7c504e6c889c4b0e41fe6ce3e01863dd7b61a20aa0",
+      "payload_blob_hex": "000000000000000000000000000000000000000000000000",
+      "trace_keys": null
+    },
+    {
       "name": "segments_stroke_ch",
       "width": 240,
       "height": 160,

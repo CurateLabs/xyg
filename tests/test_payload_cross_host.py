@@ -265,6 +265,23 @@ def _build_case(name: str) -> tuple[Figure, dict[str, object]]:
         fig.traces[0].stroke_ch = channels.ColorChannel(mode="constant", constant="#445566")
         fig.traces[0].id = 28
         return fig, {}
+    if name == "ribbon_color2_ch":
+        from xyg import channels
+
+        fig = Figure(width=240, height=160)
+        fig.ribbon(
+            [0.0],
+            [1.0],
+            [0.0],
+            [1.0],
+            [0.0],
+            [1.0],
+            color="#112233",
+            color_target="#445566",
+        )
+        fig.traces[0].color2_ch = channels.ColorChannel(mode="constant", constant="#778899")
+        fig.traces[0].id = 46
+        return fig, {}
     if name == "segments_stroke_ch":
         from xyg import channels
 
@@ -348,7 +365,7 @@ def test_fixture_contract(fixture: dict) -> None:
     assert fixture["schema"] == "xyg.payload-cross-host/v1"
     assert fixture["protocol"] == PROTOCOL_VERSION
     assert int(fixture["abi_version"]) == int(_native.ABI_VERSION)
-    assert len(fixture["cases"]) == 31
+    assert len(fixture["cases"]) == 32
     assert {case["name"] for case in fixture["cases"]} == {
         "scatter_direct",
         "scatter_categorical_color",
@@ -375,6 +392,7 @@ def test_fixture_contract(fixture: dict) -> None:
         "rect_stroke_ch",
         "mesh_stroke_ch",
         "ribbon_stroke_ch",
+        "ribbon_color2_ch",
         "segments_stroke_ch",
         "mesh_color_ch",
         "hexbin_colormap",
@@ -412,6 +430,7 @@ def test_fixture_contract(fixture: dict) -> None:
         "rect_stroke_ch",
         "mesh_stroke_ch",
         "ribbon_stroke_ch",
+        "ribbon_color2_ch",
         "segments_stroke_ch",
         "mesh_color_ch",
         "hexbin_colormap",
@@ -457,6 +476,7 @@ def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> Non
         "rect_stroke_ch",
         "mesh_stroke_ch",
         "ribbon_stroke_ch",
+        "ribbon_color2_ch",
         "segments_stroke_ch",
         "mesh_color_ch",
         "hexbin_colormap",

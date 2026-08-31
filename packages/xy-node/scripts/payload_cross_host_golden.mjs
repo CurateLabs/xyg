@@ -198,6 +198,11 @@ const cases = [
     fig.traces[0].stroke_ch = { mode: "constant", constant: "#445566" };
     fig.traces[0].id = 28;
   }),
+  caseEntry("ribbon_color2_ch", (fig) => {
+    fig.ribbon([0], [1], [0], [1], [0], [1], { color: "#112233", colorTarget: "#445566" });
+    fig.traces[0].color2_ch = { mode: "constant", constant: "#778899" };
+    fig.traces[0].id = 46;
+  }),
   caseEntry("segments_stroke_ch", (fig) => {
     fig.segments([0, 1], [0, 1], [1, 2], [1, 0]);
     fig.traces[0].stroke_ch = {

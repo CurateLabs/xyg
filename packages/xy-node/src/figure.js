@@ -487,10 +487,7 @@ function shipRegistryAttach(entry, trace, pw, sel, plan) {
       if (color != null) entry.color = color;
       shipSizeChannel(entry, trace.size_ch, pw, sel);
     } else if (ch.shipMethod === "color") {
-      const traceSlot = ch.traceSlot === "color2_ch"
-        ? (trace.color_target ?? trace.color2_ch)
-        : trace[ch.traceSlot];
-      const shipped = shipColorChannel(traceSlot, pw, sel);
+      const shipped = shipColorChannel(trace[ch.traceSlot], pw, sel);
       if (shipped != null) entry[key] = shipped;
     } else if (ch.shipMethod === "style") {
       const shipped = shipStyleChannels(trace.style_channels, pw, sel, entry.n_marks);
