@@ -4,6 +4,18 @@
 the remaining #731 residuals. Orchestration kernels ABI 218–315 are landed; this
 document tracks **execution retirement** only.
 
+## Complete retirement (goal)
+
+**Done** when Python `_payload.py` and `_scene_v3.py` are **marshal-only**: coerce
+host objects, call generated ABI, ship returned buffers. No second copy of bin2d/
+pyramid compose, emit row gathers, XYTC/XYTA field-byte walks, or channel row
+materialization. Pushes 1–3 below are **all required**; Push 1 alone does not
+satisfy the goal.
+
+Exit audit: `_payload.py` and `_scene_v3.py` each below ~400 lines of delegate
+hooks with zero `local-orchestration` hooks; `audit_python_host_core.py` reports
+no residual host materialization blockers.
+
 Reproduce inventory: `python3 scripts/audit_python_host_core.py`.
 
 ## Why big pushes
@@ -18,7 +30,7 @@ keys.
 
 | Push | Surface | ~Lines retired (cross-host) | New ABI | Exit criteria |
 | --- | --- | ---: | --- | --- |
-| **1** | `_payload` density grid materialize (bin2d / pyramid / sample / encode) | ~800 | **316** `xyg_payload_density_grid_materialize` | `_density_trace_spec` grid body is plan → materialize → ship; density cross-host grid SHA green |
+| **1** | `_payload` density grid materialize (bin2d / pyramid / sample / encode) | ~800 | **316** `xyg_payload_density_grid_materialize` | **DONE on #851** — grid body is plan → materialize → ship |
 | **2** | `_scene_v3` XYTC + XYTA trace pack | ~1,100 | **317–318** `xyg_scene_xytc_trace_pack`, `xyg_scene_xyta_trace_pack` | `_pack_xytc` / `_pack_xyta` marshal inputs only; `figure_scene_v3.json` SHA matrix green |
 | **3A** | Scene chrome / annotation / figure-support pack | ~1,500 | **319** bulk XYAF/XYCF/XYFS packers | Scene-byte cross-host proof closed (#731 blocker) |
 | **3B** | Payload geometry gather + channel materialize | ~950 | **320** column gather offset ship + channel materialize | `_emit_*` bodies and `channels.ship_registry_attach` execution retired |

@@ -155,7 +155,7 @@ REMAINING_CLOSE: tuple[tuple[str, str], ...] = (
     ),
     (
         "Residual host materialization",
-        "_payload bin2d/pyramid compose; _scene_v3 field-byte walks",
+        "_payload emit row gathers + channel rows; _scene_v3 field-byte walks (density grid: ABI 316 done)",
     ),
     (
         "Secondary §302",
@@ -169,7 +169,7 @@ M731_CLOSE_CHECKLIST: tuple[tuple[str, str], ...] = (
     ("#733 scene orchestration plans (ABI 305-309)", "CLOSED"),
     ("Node stay-host TAP #644-#698 serial merge", "CLOSED — merged on main (#630-#698)"),
     ("Cross-host payload + Scene-byte differential proof", "OPEN — follow-on, not #731 bar"),
-    ("Residual host materialization (_payload bin2d/pyramid; _scene_v3 field-byte walks)", "OPEN"),
+    ("Residual host materialization (_payload emit gathers; _scene_v3 pack walks)", "OPEN"),
     ("Secondary §302 (_svg/_raster, marks, channels labels)", "OPEN — out of #731 bar"),
     ("#735 close-contract doc rebase onto main", "CLOSED — merged at 8fa63e1f"),
 )
@@ -322,9 +322,10 @@ def main(argv: list[str] | None = None) -> int:
         f"{total_local} local-orchestration hooks"
     )
     print(
-        "Python remains authoritative for bin2d/pyramid compose and residual row materialization; "
-        "gather/ship registry, density grid ship, and wire-encode policy are kernel-owned (ABI 310-315). "
-        "Scene pack orchestration is kernel-owned (#733 closed)."
+        "Density grid materialization is kernel-owned (ABI 316). Python remains authoritative "
+        "for emit row gathers, channel row materialization, and _scene_v3 field-byte pack walks. "
+        "Gather/ship registry and wire-encode policy are kernel-owned (ABI 310-315). "
+        "Scene pack orchestration plans are kernel-owned (#733 closed)."
     )
     return 0
 
