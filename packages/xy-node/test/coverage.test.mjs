@@ -269,7 +269,18 @@ function scatterPayload(x, y) {
   return fig.buildPayload();
 }
 
-test("scatter force_direct stays direct even above threshold", () => {
+test("scatter force_direct ignored above threshold like Python _emit_scatter", () => {
+  const n = SCATTER_DENSITY_THRESHOLD + 1;
+  const x = fill(n, (i) => i / n);
+  const y = fill(n, (i) => ((i * 3) % n) / n);
+  const fig = figure();
+  fig.scatter(x, y, { forceDirect: true });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.traces[0].tier, "density");
+  assert.ok(spec.traces[0].density != null);
+});
+
+test("_emitScatter passes forceDirect false like Python _emit_scatter", () => {
   const n = SCATTER_DENSITY_THRESHOLD;
   const x = fill(n, (i) => i / n);
   const y = fill(n, (i) => ((i * 3) % n) / n);
@@ -280,29 +291,15 @@ test("scatter force_direct stays direct even above threshold", () => {
   assert.equal(spec.traces[0].n_marks, n);
 });
 
-test("_emitScatter still passes forceDirect unlike Python _emit_scatter", () => {
-  // Python payload_tier omits force_direct (defaults false → density here).
-  // Node still passes forceDirect so large forceDirect scatters stay direct.
-  const n = SCATTER_DENSITY_THRESHOLD + 1;
-  const x = fill(n, (i) => i / n);
-  const y = fill(n, (i) => ((i * 3) % n) / n);
-  const fig = figure();
-  fig.scatter(x, y, { forceDirect: true });
-  const { spec } = fig.buildPayload();
-  assert.equal(spec.traces[0].tier, "direct");
-  assert.equal(spec.traces[0].n_marks, n);
-});
-
-test("_emitScatter still ORs forcePyramid into density unlike Python _emit_scatter", () => {
-  // Python Trace has no force_pyramid; `_emit_scatter` never densifies from it.
-  // Node ORs forcePyramid into shouldUseDensity so small forcePyramid scatters densify.
+test("_emitScatter ignores forcePyramid below threshold like Python _emit_scatter", () => {
   const n = 10_000;
   const x = fill(n, (i) => i / n);
   const y = fill(n, (i) => ((i * 3) % n) / n);
   const fig = figure({ width: 320, height: 240 });
   fig.scatter(x, y, { forcePyramid: true });
   const { spec } = fig.buildPayload();
-  assert.equal(spec.traces[0].tier, "density");
+  assert.equal(spec.traces[0].tier, "direct");
+  assert.equal(spec.traces[0].n_marks, n);
   fig.dispose();
 });
 

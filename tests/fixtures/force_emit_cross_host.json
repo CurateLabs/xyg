@@ -1,0 +1,29 @@
+{
+  "schema": "xyg.force-emit-cross-host/v1",
+  "authority": "packages/xy-node/src/figure.js _emitScatter tier decisions",
+  "protocol": 12,
+  "abi_version": 315,
+  "scatter_density_threshold": 200000,
+  "cases": [
+    {
+      "name": "scatter_large_auto_density",
+      "trace_id": 31,
+      "n_points": 200001,
+      "tier": "density",
+      "n_marks": 196608,
+      "node_opts": {
+        "forceDirect": true
+      }
+    },
+    {
+      "name": "scatter_small_auto_direct",
+      "trace_id": 32,
+      "n_points": 10000,
+      "tier": "direct",
+      "n_marks": 10000,
+      "node_opts": {
+        "forcePyramid": true
+      }
+    }
+  ]
+}
