@@ -121,6 +121,47 @@ def test_axis_spec_cartesian_tick_count_cross_host_fixture() -> None:
     assert "tick_count" not in spec["y_axis"]
 
 
+def test_axis_spec_polar_tick_values_cross_host_fixture() -> None:
+    """Node buildPayload polar axis tick_values parity when attach_ticks is set."""
+    fig = Figure(coords="polar", width=240, height=160)
+    fig.set_axis("x", tick_values=[0.0, 0.5, 1.0], domain=[0.0, 1.0], format=".2f")
+    fig.scatter([0.0, 1.0], [1.0, 2.0])
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["tick_values"] == [0.0, 0.5, 1.0]
+    assert spec["x_axis"]["domain"] == [0.0, 1.0]
+    assert spec["x_axis"]["format"] == ".2f"
+
+
+def test_axis_spec_polar_minor_tick_values_cross_host_fixture() -> None:
+    """Node buildPayload polar axis minor_tick_values parity when attach_ticks is set."""
+    fig = Figure(coords="polar", width=240, height=160)
+    fig.set_axis("x", minor_tick_values=[0.25, 0.75])
+    fig.scatter([0.0, 1.0], [1.0, 2.0])
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["minor_tick_values"] == [0.25, 0.75]
+    assert "minor_tick_values" not in spec["y_axis"]
+
+
+def test_axis_spec_polar_tick_labels_cross_host_fixture() -> None:
+    """Node buildPayload polar axis tick_labels parity when attach_ticks is set."""
+    fig = Figure(coords="polar", width=240, height=160)
+    fig.set_axis("x", tick_values=[0.0, 1.0], tick_labels=["a", "b"])
+    fig.scatter([0.0, 1.0], [1.0, 2.0])
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["tick_labels"] == ["a", "b"]
+    assert "tick_labels" not in spec["y_axis"]
+
+
+def test_axis_spec_polar_tick_count_cross_host_fixture() -> None:
+    """Node buildPayload polar axis tick_count parity when attach_ticks is set."""
+    fig = Figure(coords="polar", width=240, height=160)
+    fig.set_axis("x", tick_count=4)
+    fig.scatter([0.0, 1.0], [1.0, 2.0])
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["tick_count"] == 4
+    assert "tick_count" not in spec["y_axis"]
+
+
 def test_axis_spec_cartesian_reverse_cross_host_fixture() -> None:
     """Node buildPayload axis reverse parity when attach_reverse is set."""
     fig = Figure(width=240, height=160)
