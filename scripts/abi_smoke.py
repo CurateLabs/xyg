@@ -1610,6 +1610,19 @@ def load() -> ctypes.CDLL:
         ctypes.POINTER(PayloadChannelShipEntry),
         ctypes.c_size_t,
     ]
+    lib.xyg_payload_channel_wire_encode.restype = ctypes.c_int32
+    lib.xyg_payload_channel_wire_encode.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+    ]
     lib.xyg_payload_ribbon_emit_plan.restype = ctypes.c_int32
     lib.xyg_payload_ribbon_emit_plan.argtypes = [
         ctypes.c_size_t,
@@ -5686,6 +5699,47 @@ def main() -> None:
         and chan_entries[1].registry_key == 0
         and chan_entries[1].ship_method == 0,
         "payload_channel_ship_plan ribbon color2 before color_size",
+    )
+    wire_buf = ctypes.c_int32(-1)
+    wire_xform = ctypes.c_int32(-1)
+    wire_dtype_u8 = ctypes.c_int32(-1)
+    wire_palette = ctypes.c_int32(-1)
+    wire_set_n = ctypes.c_int32(-1)
+    ok(
+        lib.xyg_payload_channel_wire_encode(
+            0,
+            2,
+            256,
+            0,
+            0,
+            ctypes.byref(wire_buf),
+            ctypes.byref(wire_xform),
+            ctypes.byref(wire_dtype_u8),
+            ctypes.byref(wire_palette),
+            ctypes.byref(wire_set_n),
+        )
+        == 1
+        and wire_buf.value == 1
+        and wire_xform.value == 4
+        and wire_dtype_u8.value == 1
+        and wire_palette.value == 1
+        and lib.xyg_payload_channel_wire_encode(
+            0,
+            2,
+            257,
+            0,
+            0,
+            ctypes.byref(wire_buf),
+            ctypes.byref(wire_xform),
+            ctypes.byref(wire_dtype_u8),
+            ctypes.byref(wire_palette),
+            ctypes.byref(wire_set_n),
+        )
+        == 1
+        and wire_buf.value == 2
+        and wire_xform.value == 4
+        and wire_dtype_u8.value == 0,
+        "payload_channel_wire_encode categorical u8 vs f32",
     )
     ribbon_tier_direct = ctypes.c_int32(-1)
     ribbon_n_marks = ctypes.c_size_t(0)

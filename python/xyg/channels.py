@@ -925,6 +925,60 @@ def resolve_bin_colors(cc: Optional[ColorChannel], sel: Any) -> Optional[dict]:
     }
 
 
+def _wire_encode_plan(
+    role: str,
+    mode: str,
+    *,
+    n_categories: int = 0,
+    style_dtype_u8: bool = False,
+    quantize_continuous: bool = False,
+) -> dict[str, bool | str]:
+    """Rust-owned buffer/transform policy for ``channels.ship_*`` (ABI 312)."""
+    return kernels.payload_channel_wire_encode(
+        role,
+        mode,
+        n_categories=n_categories,
+        style_dtype_u8=style_dtype_u8,
+        quantize_continuous=quantize_continuous,
+    )
+
+
+def _ship_wire_buffer(
+    plan: dict[str, bool | str],
+    ship_scalar: Any,
+    ship_u8: Any,
+    *,
+    vals: Optional[npt.NDArray[np.float64]] = None,
+    domain: Optional[tuple[float, float]] = None,
+    packed_rgba: Optional[npt.NDArray[np.uint8]] = None,
+    raw: Optional[np.ndarray] = None,
+) -> Any:
+    """Apply the ABI 312 transform and return a shipped buffer index."""
+    transform = plan["transform"]
+    if transform == "none":
+        return None
+    if transform == "rgba_pack":
+        if packed_rgba is None:
+            raise ValueError("direct RGBA wire encode missing packed values")
+        return ship_u8(packed_rgba.reshape(-1))
+    if transform == "quantize_u8":
+        if vals is None or domain is None:
+            raise ValueError("continuous wire encode missing values or domain")
+        return ship_u8(quantize_unit_u8(vals, domain))
+    if transform == "normalize":
+        if vals is None or domain is None:
+            raise ValueError("continuous wire encode missing values or domain")
+        return ship_scalar(normalize_to_unit(vals, domain))
+    if transform == "raw":
+        if raw is None:
+            raise ValueError("raw wire encode missing values")
+        flat = np.ascontiguousarray(raw).reshape(-1)
+        if plan["buf_kind"] == "u8":
+            return ship_u8(flat)
+        return ship_scalar(flat)
+    raise ValueError("invalid payload_channel_wire_encode transform")
+
+
 def ship_channels(
     trace: Any,
     sel: Any,
@@ -961,11 +1015,14 @@ def ship_channels(
         if values is None or domain is None:
             raise ValueError("continuous size channel missing values or domain")
         vals = values if sel is None else values[sel]
-        if quantize_continuous:
-            size_spec["buf"] = ship_u8(quantize_unit_u8(vals, domain))
+        plan = _wire_encode_plan(
+            "size",
+            sc.mode,
+            quantize_continuous=quantize_continuous,
+        )
+        size_spec["buf"] = _ship_wire_buffer(plan, ship_scalar, ship_u8, vals=vals, domain=domain)
+        if plan["mark_dtype_u8"]:
             size_spec["dtype"] = "u8"
-        else:
-            size_spec["buf"] = ship_scalar(normalize_to_unit(vals, domain))
     return color_spec, size_spec
 
 
@@ -1013,6 +1070,14 @@ def ship_color_channel(
 ) -> dict[str, Any]:
     """Ship one fill/stroke paint channel in the common wire representation."""
     color_spec = cc.spec()
+    plan = _wire_encode_plan(
+        "color",
+        cc.mode,
+        n_categories=len(cc.categories or []),
+        quantize_continuous=quantize_continuous,
+    )
+    if plan["transform"] == "none":
+        return color_spec
     if cc.mode == "direct_rgba":
         rgba = cc.rgba
         if rgba is None:
@@ -1022,38 +1087,32 @@ def ship_color_channel(
         # chunk-bounded: a full-column direct-RGBA trace otherwise holds three
         # 32-bytes-per-point f64 temporaries at once (§27).
         packed = _quantized_rgba8(values)
-        color_spec["buf"] = ship_u8(packed.reshape(-1))
-        color_spec["n"] = int(len(values))
-    elif cc.mode == "match_fill":
-        pass
+        color_spec["buf"] = _ship_wire_buffer(plan, ship_scalar, ship_u8, packed_rgba=packed)
     elif cc.mode == "continuous":
         values = cc.values
         domain = cc.domain
         if values is None or domain is None:
             raise ValueError("continuous color channel missing values or domain")
         vals = values if sel is None else values[sel]
-        if quantize_continuous:
-            color_spec["buf"] = ship_u8(quantize_unit_u8(vals, domain))
-            color_spec["dtype"] = "u8"
-        else:
-            color_spec["buf"] = ship_scalar(normalize_to_unit(vals, domain))
+        color_spec["buf"] = _ship_wire_buffer(plan, ship_scalar, ship_u8, vals=vals, domain=domain)
     elif cc.mode == "categorical":
         code_values = cc.codes
         categories = cc.categories
         if code_values is None or categories is None:
             raise ValueError("categorical color channel missing codes or categories")
         codes = code_values if sel is None else code_values[sel]
-        # The palette texture has exactly 256 entries.  When every category is
-        # representable, codes are lossless bytes: 75% less channel traffic
-        # and GPU storage than f32.  Keep the legacy f32 path above that limit
-        # so existing >256-category collision behavior is unchanged.
-        if len(categories) <= MAX_CATEGORIES:
-            color_spec["buf"] = ship_u8(codes)
-            color_spec["dtype"] = "u8"
+        color_spec["buf"] = _ship_wire_buffer(plan, ship_scalar, ship_u8, raw=codes)
+        if plan["ship_palette"]:
+            color_spec["palette"] = categorical_palette(cc.colors, len(categories))
+    else:
+        raise ValueError(f"unsupported color channel mode for wire encode: {cc.mode}")
+    if plan["mark_dtype_u8"]:
+        color_spec["dtype"] = "u8"
+    if plan["set_n"]:
+        if cc.mode == "direct_rgba":
+            color_spec["n"] = int(len(values))
         else:
-            color_spec["buf"] = ship_scalar(codes)
-        color_spec["palette"] = categorical_palette(cc.colors, len(categories))
-
+            raise ValueError("wire encode set_n without direct_rgba color channel")
     return color_spec
 
 
@@ -1098,8 +1157,9 @@ def ship_style_channels(
     for name, channel in style_channels.items():
         values = channel.values if sel is None else channel.values[sel]
         spec = channel.spec()
-        flat = np.ascontiguousarray(values).reshape(-1)
-        spec["buf"] = ship_u8(flat) if channel.dtype == "u8" else ship_scalar(flat)
-        spec["n"] = int(len(values))
+        plan = _wire_encode_plan("style", "direct", style_dtype_u8=channel.dtype == "u8")
+        spec["buf"] = _ship_wire_buffer(plan, ship_scalar, ship_u8, raw=values)
+        if plan["set_n"]:
+            spec["n"] = int(len(values))
         result[name] = spec
     return result
