@@ -46,6 +46,11 @@ pub const PAYLOAD_VALUE_AXIS_Y: i32 = 0;
 /// Compact bar values ship on the x axis.
 pub const PAYLOAD_VALUE_AXIS_X: i32 = 1;
 
+/// Heatmap RGBA lattice path (`rgba_grid` present).
+pub const PAYLOAD_HEATMAP_PATH_RGBA: i32 = 0;
+/// Heatmap normalized grid + colormap path.
+pub const PAYLOAD_HEATMAP_PATH_GRID: i32 = 1;
+
 fn payload_base_entry_ship_scale(axis_type: i32) -> i32 {
     match axis_type {
         1 => PAYLOAD_BASE_ENTRY_SHIP_SCALE_LOG,
@@ -232,6 +237,91 @@ pub fn payload_bar_hist_emit_plan(
         }
         _ => 0,
     }
+}
+
+/// Heatmap emit skeleton from ``_emit_heatmap``.
+///
+/// Owns rgba-vs-grid path selection, lattice ``n_marks``, top-level color
+/// attach on the grid path, canonical-f64 borrow encoding, and constant-color
+/// colormap fallback when ``style.colormap`` is absent. Hosts still ship grid
+/// buffers, parse fallback colors, and copy trace metadata.
+/// Returns ``1`` on success, ``0`` when ``grid_rows * grid_cols`` overflows.
+pub fn payload_heatmap_emit_plan(
+    has_rgba_grid: i32,
+    grid_rows: usize,
+    grid_cols: usize,
+    style_colormap_is_none: i32,
+    borrow_heatmaps: i32,
+    out_path: &mut i32,
+    out_tier_direct: &mut i32,
+    out_n_marks: &mut usize,
+    out_attach_color: &mut i32,
+    out_borrow_canonical: &mut i32,
+    out_attach_encoding: &mut i32,
+    out_use_constant_colormap_fallback: &mut i32,
+) -> i32 {
+    let n_marks = match grid_rows.checked_mul(grid_cols) {
+        Some(n) => n,
+        None => return 0,
+    };
+    *out_tier_direct = 1;
+    *out_n_marks = n_marks;
+    if has_rgba_grid != 0 {
+        *out_path = PAYLOAD_HEATMAP_PATH_RGBA;
+        *out_attach_color = 0;
+        *out_borrow_canonical = 0;
+        *out_attach_encoding = 0;
+        *out_use_constant_colormap_fallback = 0;
+    } else {
+        *out_path = PAYLOAD_HEATMAP_PATH_GRID;
+        *out_attach_color = 1;
+        *out_borrow_canonical = i32::from(borrow_heatmaps != 0);
+        *out_attach_encoding = i32::from(borrow_heatmaps != 0);
+        *out_use_constant_colormap_fallback = i32::from(style_colormap_is_none != 0);
+    }
+    1
+}
+
+/// Triangle-mesh emit skeleton from ``_emit_triangle_mesh``.
+///
+/// Owns direct tier, gathered ``n_marks``, palette default for missing trace
+/// color, axis ship scales, ``valid_indices_f64`` gather policy (geometry nulls
+/// plus continuous ``color_ch`` values), trace-channel attach slot/styles, and
+/// transition wrap. Hosts still gather geometry, ship columns, and attach
+/// channels. Returns ``1`` on success, ``0`` when continuous color lacks values.
+pub fn payload_mesh_emit_plan(
+    n_marks: usize,
+    style_color_is_none: i32,
+    x_axis_type: i32,
+    y_axis_type: i32,
+    any_geometry_nulls: i32,
+    has_continuous_color: i32,
+    continuous_color_values_missing: i32,
+    out_tier_direct: &mut i32,
+    out_n_marks: &mut usize,
+    out_apply_palette_default: &mut i32,
+    out_x_ship_scale: &mut i32,
+    out_y_ship_scale: &mut i32,
+    out_channel_slot: &mut i32,
+    out_include_trace_styles: &mut i32,
+    out_attach_transition: &mut i32,
+    out_attempt_gather: &mut i32,
+    out_gather_include_color: &mut i32,
+) -> i32 {
+    if has_continuous_color != 0 && continuous_color_values_missing != 0 {
+        return 0;
+    }
+    *out_tier_direct = 1;
+    *out_n_marks = n_marks;
+    *out_apply_palette_default = i32::from(style_color_is_none != 0);
+    *out_x_ship_scale = payload_base_entry_ship_scale(x_axis_type);
+    *out_y_ship_scale = payload_base_entry_ship_scale(y_axis_type);
+    *out_channel_slot = PAYLOAD_SHIP_CHANNELS_IF_COLOR;
+    *out_include_trace_styles = 1;
+    *out_attach_transition = 1;
+    *out_gather_include_color = i32::from(has_continuous_color != 0);
+    *out_attempt_gather = i32::from(any_geometry_nulls != 0 || has_continuous_color != 0);
+    1
 }
 
 /// Transition-entry / tooltip-row attach orchestration from
@@ -1255,6 +1345,228 @@ mod tests {
                 &mut slot,
                 &mut include_styles,
                 &mut attach_transition,
+            ),
+            0
+        );
+    }
+
+    #[test]
+    fn payload_heatmap_emit_plan_rgba_path() {
+        let mut path = -1;
+        let mut tier_direct = -1;
+        let mut n_marks = 0;
+        let mut attach_color = -1;
+        let mut borrow_canonical = -1;
+        let mut attach_encoding = -1;
+        let mut use_fallback = -1;
+        assert_eq!(
+            payload_heatmap_emit_plan(
+                1,
+                10,
+                20,
+                1,
+                1,
+                &mut path,
+                &mut tier_direct,
+                &mut n_marks,
+                &mut attach_color,
+                &mut borrow_canonical,
+                &mut attach_encoding,
+                &mut use_fallback,
+            ),
+            1
+        );
+        assert_eq!(path, PAYLOAD_HEATMAP_PATH_RGBA);
+        assert_eq!(tier_direct, 1);
+        assert_eq!(n_marks, 200);
+        assert_eq!(attach_color, 0);
+        assert_eq!(borrow_canonical, 0);
+        assert_eq!(attach_encoding, 0);
+        assert_eq!(use_fallback, 0);
+    }
+
+    #[test]
+    fn payload_heatmap_emit_plan_grid_borrow() {
+        let mut path = -1;
+        let mut tier_direct = -1;
+        let mut n_marks = 0;
+        let mut attach_color = -1;
+        let mut borrow_canonical = -1;
+        let mut attach_encoding = -1;
+        let mut use_fallback = -1;
+        assert_eq!(
+            payload_heatmap_emit_plan(
+                0,
+                4,
+                5,
+                0,
+                1,
+                &mut path,
+                &mut tier_direct,
+                &mut n_marks,
+                &mut attach_color,
+                &mut borrow_canonical,
+                &mut attach_encoding,
+                &mut use_fallback,
+            ),
+            1
+        );
+        assert_eq!(path, PAYLOAD_HEATMAP_PATH_GRID);
+        assert_eq!(n_marks, 20);
+        assert_eq!(attach_color, 1);
+        assert_eq!(borrow_canonical, 1);
+        assert_eq!(attach_encoding, 1);
+        assert_eq!(use_fallback, 0);
+    }
+
+    #[test]
+    fn payload_heatmap_emit_plan_grid_constant_colormap() {
+        let mut path = -1;
+        let mut tier_direct = -1;
+        let mut n_marks = 0;
+        let mut attach_color = -1;
+        let mut borrow_canonical = -1;
+        let mut attach_encoding = -1;
+        let mut use_fallback = -1;
+        assert_eq!(
+            payload_heatmap_emit_plan(
+                0,
+                2,
+                3,
+                1,
+                0,
+                &mut path,
+                &mut tier_direct,
+                &mut n_marks,
+                &mut attach_color,
+                &mut borrow_canonical,
+                &mut attach_encoding,
+                &mut use_fallback,
+            ),
+            1
+        );
+        assert_eq!(path, PAYLOAD_HEATMAP_PATH_GRID);
+        assert_eq!(borrow_canonical, 0);
+        assert_eq!(attach_encoding, 0);
+        assert_eq!(use_fallback, 1);
+    }
+
+    #[test]
+    fn payload_mesh_emit_plan_gather_and_transition() {
+        let mut tier_direct = -1;
+        let mut n_marks = 0;
+        let mut apply_palette = -1;
+        let mut x_scale = -1;
+        let mut y_scale = -1;
+        let mut slot = -1;
+        let mut include_styles = -1;
+        let mut attach_transition = -1;
+        let mut attempt_gather = -1;
+        let mut gather_color = -1;
+        assert_eq!(
+            payload_mesh_emit_plan(
+                12,
+                1,
+                1,
+                0,
+                1,
+                1,
+                0,
+                &mut tier_direct,
+                &mut n_marks,
+                &mut apply_palette,
+                &mut x_scale,
+                &mut y_scale,
+                &mut slot,
+                &mut include_styles,
+                &mut attach_transition,
+                &mut attempt_gather,
+                &mut gather_color,
+            ),
+            1
+        );
+        assert_eq!(tier_direct, 1);
+        assert_eq!(n_marks, 12);
+        assert_eq!(apply_palette, 1);
+        assert_eq!(x_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_LOG);
+        assert_eq!(y_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_LINEAR);
+        assert_eq!(slot, PAYLOAD_SHIP_CHANNELS_IF_COLOR);
+        assert_eq!(include_styles, 1);
+        assert_eq!(attach_transition, 1);
+        assert_eq!(attempt_gather, 1);
+        assert_eq!(gather_color, 1);
+    }
+
+    #[test]
+    fn payload_mesh_emit_plan_no_gather_without_nulls_or_color() {
+        let mut tier_direct = 0;
+        let mut n_marks = 0;
+        let mut apply_palette = 0;
+        let mut x_scale = 0;
+        let mut y_scale = 0;
+        let mut slot = 0;
+        let mut include_styles = 0;
+        let mut attach_transition = 0;
+        let mut attempt_gather = 0;
+        let mut gather_color = 0;
+        assert_eq!(
+            payload_mesh_emit_plan(
+                5,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                &mut tier_direct,
+                &mut n_marks,
+                &mut apply_palette,
+                &mut x_scale,
+                &mut y_scale,
+                &mut slot,
+                &mut include_styles,
+                &mut attach_transition,
+                &mut attempt_gather,
+                &mut gather_color,
+            ),
+            1
+        );
+        assert_eq!(attempt_gather, 0);
+        assert_eq!(gather_color, 0);
+        assert_eq!(apply_palette, 0);
+    }
+
+    #[test]
+    fn payload_mesh_emit_plan_rejects_missing_continuous_color_values() {
+        let mut tier_direct = 0;
+        let mut n_marks = 0;
+        let mut apply_palette = 0;
+        let mut x_scale = 0;
+        let mut y_scale = 0;
+        let mut slot = 0;
+        let mut include_styles = 0;
+        let mut attach_transition = 0;
+        let mut attempt_gather = 0;
+        let mut gather_color = 0;
+        assert_eq!(
+            payload_mesh_emit_plan(
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                &mut tier_direct,
+                &mut n_marks,
+                &mut apply_palette,
+                &mut x_scale,
+                &mut y_scale,
+                &mut slot,
+                &mut include_styles,
+                &mut attach_transition,
+                &mut attempt_gather,
+                &mut gather_color,
             ),
             0
         );

@@ -804,7 +804,14 @@ class PayloadMixin(_Host):
         if t.grid is None or t.grid_shape is None:
             raise ValueError("heatmap trace missing grid column")
         rows, cols = t.grid_shape
-        if t.rgba_grid is not None:
+        plan = kernels.payload_heatmap_emit_plan(
+            has_rgba_grid=t.rgba_grid is not None,
+            grid_rows=int(rows),
+            grid_cols=int(cols),
+            style_colormap_is_none=t.style.get("colormap") is None,
+            borrow_heatmaps=pw.borrow_heatmaps,
+        )
+        if plan["path"] == "rgba":
             return {
                 "id": t.id,
                 "kind": "heatmap",
@@ -812,7 +819,7 @@ class PayloadMixin(_Host):
                 "style": dict(t.style),
                 "tier": "direct",
                 "n_points": t.n_points,
-                "n_marks": int(rows * cols),
+                "n_marks": plan["n_marks"],
                 "x_axis": t.x_axis,
                 "y_axis": t.y_axis,
                 "heatmap": {
@@ -824,7 +831,7 @@ class PayloadMixin(_Host):
                 },
             }
         domain = tuple(t.style["domain"])
-        if pw.borrow_heatmaps:
+        if plan["borrow_canonical"]:
             buffer_index = pw.borrow_f64(t.grid.values)
             encoding = "canonical-f64"
         else:
@@ -832,21 +839,21 @@ class PayloadMixin(_Host):
             buffer_index = pw.ship_scalar(norm)
             encoding = None
         cmap = t.style.get("colormap")
-        if cmap is None:
+        if plan["use_constant_colormap_fallback"]:
             # Constant-style Scene path: every renderer must paint the literal
             # color, not a default viridis ramp, so exports stay aligned.
             from ._raster import _parse_color
 
             red, green, blue, _alpha = _parse_color(str(t.style.get("color", "#3987e5")), 1.0)
             cmap = [[red, green, blue], [red, green, blue]]
-        return {
+        entry: dict[str, Any] = {
             "id": t.id,
             "kind": "heatmap",
             "name": t.name,
             "style": dict(t.style),
             "tier": "direct",
             "n_points": t.n_points,
-            "n_marks": int(rows * cols),
+            "n_marks": plan["n_marks"],
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
             "heatmap": {
@@ -857,10 +864,12 @@ class PayloadMixin(_Host):
                 "y_range": list(t.style["y_range"]),
                 "colormap": cmap,
                 "domain": list(domain),
-                **({"enc": encoding} if encoding is not None else {}),
+                **({"enc": encoding} if plan["attach_encoding"] and encoding is not None else {}),
             },
-            "color": {"mode": "continuous", "colormap": cmap, "domain": list(domain)},
         }
+        if plan["attach_color"]:
+            entry["color"] = {"mode": "continuous", "colormap": cmap, "domain": list(domain)}
+        return entry
 
     def _emit_box(
         self, t: Trace, pw: "_PayloadWriter", xr: tuple, yr: tuple, px_width: int
@@ -1017,17 +1026,44 @@ class PayloadMixin(_Host):
         y0v, y1v, y2v = t.y0.values, t.y1.values, t.y.values
         geometry = (t.x0, t.x1, t.x, t.y0, t.y1, t.y)
         values = (x0v, x1v, x2v, y0v, y1v, y2v)
-        candidates = [
-            array for column, array in zip(geometry, values, strict=True) if column.zone.null_count
-        ]
-        if t.color_ch is not None and t.color_ch.mode == "continuous":
-            if t.color_ch.values is None:
-                raise ValueError("triangle_mesh continuous color channel missing values")
-            candidates.append(t.color_ch.values)
-        sel_arg = kernels.valid_indices_f64(tuple(candidates)) if candidates else None
+        any_geometry_nulls = any(column.zone.null_count for column in geometry)
+        has_continuous_color = t.color_ch is not None and t.color_ch.mode == "continuous"
+        continuous_color_values_missing = (
+            has_continuous_color and t.color_ch is not None and t.color_ch.values is None
+        )
+        pre_plan = kernels.payload_mesh_emit_plan(
+            n_marks=int(len(x0v)),
+            style_color_is_none=t.style.get("color") is None,
+            x_axis_scale=self._axis_scale(t.x_axis),
+            y_axis_scale=self._axis_scale(t.y_axis),
+            any_geometry_nulls=any_geometry_nulls,
+            has_continuous_color=has_continuous_color,
+            continuous_color_values_missing=continuous_color_values_missing,
+        )
+        sel_arg: Optional[np.ndarray] = None
+        if pre_plan["attempt_gather"]:
+            candidates = [
+                array
+                for column, array in zip(geometry, values, strict=True)
+                if column.zone.null_count
+            ]
+            if pre_plan["gather_include_color"]:
+                if t.color_ch is None or t.color_ch.values is None:
+                    raise ValueError("triangle_mesh continuous color channel missing values")
+                candidates.append(t.color_ch.values)
+            sel_arg = kernels.valid_indices_f64(tuple(candidates))
         if sel_arg is not None:
             x0v, x1v, x2v = x0v[sel_arg], x1v[sel_arg], x2v[sel_arg]
             y0v, y1v, y2v = y0v[sel_arg], y1v[sel_arg], y2v[sel_arg]
+        plan = kernels.payload_mesh_emit_plan(
+            n_marks=int(len(x0v)),
+            style_color_is_none=t.style.get("color") is None,
+            x_axis_scale=self._axis_scale(t.x_axis),
+            y_axis_scale=self._axis_scale(t.y_axis),
+            any_geometry_nulls=any_geometry_nulls,
+            has_continuous_color=has_continuous_color,
+            continuous_color_values_missing=continuous_color_values_missing,
+        )
         entry = {
             "id": t.id,
             "kind": t.kind,
@@ -1035,25 +1071,27 @@ class PayloadMixin(_Host):
             "style": self._default_styled(t),
             "tier": "direct",
             "n_points": t.n_points,
-            "n_marks": int(len(x0v)),
+            "n_marks": plan["n_marks"],
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
-            "x0": pw.ship(x0v, t.x0, scale=self._axis_scale(t.x_axis)),
-            "x1": pw.ship(x1v, t.x1, scale=self._axis_scale(t.x_axis)),
-            "x2": pw.ship(x2v, t.x, scale=self._axis_scale(t.x_axis)),
-            "y0": pw.ship(y0v, t.y0, scale=self._axis_scale(t.y_axis)),
-            "y1": pw.ship(y1v, t.y1, scale=self._axis_scale(t.y_axis)),
-            "y2": pw.ship(y2v, t.y, scale=self._axis_scale(t.y_axis)),
+            "x0": pw.ship(x0v, t.x0, scale=plan["x_ship_scale"]),
+            "x1": pw.ship(x1v, t.x1, scale=plan["x_ship_scale"]),
+            "x2": pw.ship(x2v, t.x, scale=plan["x_ship_scale"]),
+            "y0": pw.ship(y0v, t.y0, scale=plan["y_ship_scale"]),
+            "y1": pw.ship(y1v, t.y1, scale=plan["y_ship_scale"]),
+            "y2": pw.ship(y2v, t.y, scale=plan["y_ship_scale"]),
         }
         self._ship_trace_channel_attach(
             entry,
             t,
             sel_arg,
             pw,
-            kernels.PAYLOAD_SHIP_CHANNELS_IF_COLOR,
-            include_trace_styles=True,
+            plan["channel_slot"],
+            include_trace_styles=plan["include_trace_styles"],
         )
-        return self._transition_entry(entry, t, pw, sel_arg)
+        if plan["attach_transition"]:
+            return self._transition_entry(entry, t, pw, sel_arg)
+        return entry
 
     def _emit_errorbar(
         self, t: Trace, pw: "_PayloadWriter", xr: tuple, yr: tuple, px_width: int

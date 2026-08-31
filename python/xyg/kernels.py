@@ -230,6 +230,8 @@ payload_transition_entry_attach = _impl.payload_transition_entry_attach
 payload_base_entry_plan = _impl.payload_base_entry_plan
 payload_nonxy_emit_plan = _impl.payload_nonxy_emit_plan
 payload_bar_hist_emit_plan = _impl.payload_bar_hist_emit_plan
+payload_heatmap_emit_plan = _impl.payload_heatmap_emit_plan
+payload_mesh_emit_plan = _impl.payload_mesh_emit_plan
 PAYLOAD_NONXY_KIND_RECT = _impl.PAYLOAD_NONXY_KIND_RECT
 PAYLOAD_NONXY_KIND_HEXBIN = _impl.PAYLOAD_NONXY_KIND_HEXBIN
 PAYLOAD_NONXY_KIND_DENSITY_SAMPLE = _impl.PAYLOAD_NONXY_KIND_DENSITY_SAMPLE
@@ -380,7 +382,9 @@ __all__ = [
     "payload_errorbar_role_keys",
     "payload_errorbar_role_maps",
     "payload_even_indices",
+    "payload_heatmap_emit_plan",
     "payload_m4_indices",
+    "payload_mesh_emit_plan",
     "payload_nonxy_emit_plan",
     "payload_sample_target_indices",
     "payload_segment_budget",

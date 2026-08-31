@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from xyg import kernels
 from xyg._figure import Figure
@@ -458,6 +459,81 @@ def test_payload_bar_hist_emit_plan_bar_compact_rect_fallback() -> None:
     assert plan["emit_bar"] is False
     assert plan["n_marks"] == 3
     assert plan["attach_transition"] is True
+
+
+def test_payload_heatmap_emit_plan_rgba_path() -> None:
+    plan = kernels.payload_heatmap_emit_plan(
+        has_rgba_grid=True,
+        grid_rows=10,
+        grid_cols=20,
+        style_colormap_is_none=True,
+        borrow_heatmaps=True,
+    )
+    assert plan == {
+        "path": "rgba",
+        "tier_direct": True,
+        "n_marks": 200,
+        "attach_color": False,
+        "borrow_canonical": False,
+        "attach_encoding": False,
+        "use_constant_colormap_fallback": False,
+    }
+
+
+def test_payload_heatmap_emit_plan_grid_borrow() -> None:
+    plan = kernels.payload_heatmap_emit_plan(
+        has_rgba_grid=False,
+        grid_rows=4,
+        grid_cols=5,
+        style_colormap_is_none=False,
+        borrow_heatmaps=True,
+    )
+    assert plan == {
+        "path": "grid",
+        "tier_direct": True,
+        "n_marks": 20,
+        "attach_color": True,
+        "borrow_canonical": True,
+        "attach_encoding": True,
+        "use_constant_colormap_fallback": False,
+    }
+
+
+def test_payload_mesh_emit_plan_gather_and_transition() -> None:
+    plan = kernels.payload_mesh_emit_plan(
+        n_marks=12,
+        style_color_is_none=True,
+        x_axis_scale="log",
+        y_axis_scale="linear",
+        any_geometry_nulls=True,
+        has_continuous_color=True,
+        continuous_color_values_missing=False,
+    )
+    assert plan == {
+        "tier_direct": True,
+        "n_marks": 12,
+        "apply_palette_default": True,
+        "x_ship_scale": "log",
+        "y_ship_scale": "linear",
+        "channel_slot": kernels.PAYLOAD_SHIP_CHANNELS_IF_COLOR,
+        "include_trace_styles": True,
+        "attach_transition": True,
+        "attempt_gather": True,
+        "gather_include_color": True,
+    }
+
+
+def test_payload_mesh_emit_plan_rejects_missing_continuous_color() -> None:
+    with pytest.raises(ValueError, match="payload_mesh_emit_plan"):
+        kernels.payload_mesh_emit_plan(
+            n_marks=1,
+            style_color_is_none=False,
+            x_axis_scale="linear",
+            y_axis_scale="linear",
+            any_geometry_nulls=False,
+            has_continuous_color=True,
+            continuous_color_values_missing=True,
+        )
 
 
 def test_line_scatter_area_base_entry_ships_animation_and_log_scale() -> None:

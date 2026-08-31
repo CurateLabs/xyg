@@ -45,6 +45,8 @@ import {
   payloadBaseEntryPlan,
   payloadNonxyEmitPlan,
   payloadBarHistEmitPlan,
+  payloadHeatmapEmitPlan,
+  payloadMeshEmitPlan,
   payloadTraceChannelsShipAttach,
   payloadTransitionEntryAttach,
   payloadSegmentBudget,
@@ -56,6 +58,7 @@ import {
   payloadTier,
   pinsOffsetToZero,
   shouldUseDensity,
+  validIndicesF64,
   f64Ptr,
   u8Ptr,
 } from "./encode.js";
@@ -1714,6 +1717,64 @@ export class Figure {
     const y1 = new Column(t.y1);
     const x2 = new Column(t.x);
     const y2 = new Column(t.y);
+    const geometry = [x0, x1, x2, y0, y1, y2];
+    const values = [t.x0, t.x1, t.x, t.y0, t.y1, t.y];
+    const xAxis = t.x_axis ?? "x";
+    const yAxis = t.y_axis ?? "y";
+    const anyGeometryNulls = geometry.some((col) => col.nullCount > 0);
+    const hasContinuousColor = t.color_ch?.mode === "continuous";
+    const continuousColorValuesMissing = hasContinuousColor && t.color_ch?.values == null;
+    const prePlan = payloadMeshEmitPlan({
+      nMarks: t.x0.length,
+      styleColorIsNone: t.style?.color == null,
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+      anyGeometryNulls,
+      hasContinuousColor,
+      continuousColorValuesMissing,
+    });
+    let x0v = t.x0;
+    let x1v = t.x1;
+    let x2v = t.x;
+    let y0v = t.y0;
+    let y1v = t.y1;
+    let y2v = t.y;
+    let sel = null;
+    if (prePlan.attemptGather) {
+      const candidates = values
+        .map((array, i) => (geometry[i].nullCount > 0 ? asF64(array) : null))
+        .filter((array) => array != null);
+      if (prePlan.gatherIncludeColor) {
+        if (t.color_ch?.values == null) {
+          throw new Error("triangle_mesh continuous color channel missing values");
+        }
+        candidates.push(asF64(t.color_ch.values));
+      }
+      sel = validIndicesF64(candidates);
+      if (sel != null) {
+        x0v = gatherF64(x0v, sel);
+        x1v = gatherF64(x1v, sel);
+        x2v = gatherF64(x2v, sel);
+        y0v = gatherF64(y0v, sel);
+        y1v = gatherF64(y1v, sel);
+        y2v = gatherF64(y2v, sel);
+      }
+    }
+    const shipX0 = sel == null ? x0 : new Column(x0v);
+    const shipX1 = sel == null ? x1 : new Column(x1v);
+    const shipX2 = sel == null ? x2 : new Column(x2v);
+    const shipY0 = sel == null ? y0 : new Column(y0v);
+    const shipY1 = sel == null ? y1 : new Column(y1v);
+    const shipY2 = sel == null ? y2 : new Column(y2v);
+    const plan = payloadMeshEmitPlan({
+      nMarks: x0v.length,
+      styleColorIsNone: t.style?.color == null,
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+      anyGeometryNulls,
+      hasContinuousColor,
+      continuousColorValuesMissing,
+    });
     // Node payload mesh omits color_ch. Python `_emit_triangle_mesh` ships
     // color_ch via `_ship_channels`. Matching Python would add entry.color.
     // Recorded emit-mesh-color stay-host.
@@ -1723,13 +1784,10 @@ export class Figure {
     // Node payload mesh omits style_channels. Python `_emit_triangle_mesh`
     // ships them as `channels` via `_ship_trace_styles`. Matching Python
     // would add entry.channels. Recorded emit-mesh-channels stay-host.
-    // Node payload mesh skips valid_indices_f64 gather. Python
-    // `_emit_triangle_mesh` drops null geometry rows. Matching Python would
-    // gather. Recorded emit-mesh-gather stay-host.
     // Node payload mesh omits transition_keys. Python `_emit_triangle_mesh`
     // ships them via `_transition_entry`. Matching Python would add entry.keys.
     // Recorded emit-mesh-transition stay-host.
-    return {
+    const entry = {
       id: t.id,
       kind: "triangle_mesh",    // Node payload mesh omits animation. Python `_emit_triangle_mesh` ships
     // t.animation via `_transition_entry`. Matching Python would add
@@ -1743,22 +1801,31 @@ export class Figure {
       style: { ...t.style },
       tier: "direct",
       n_points: t.count ?? t.x0.length,
-      n_marks: t.x0.length,
-      // Node payload mesh omits ship scale. Python `_emit_triangle_mesh`
-      // passes `_axis_scale` into `pw.ship`. Matching Python would pin
-      // log-axis offset to 0. Recorded emit-mesh-ship-scale stay-host.
-      x0: pw.ship(t.x0, x0),
-      y0: pw.ship(t.y0, y0),
-      x1: pw.ship(t.x1, x1),
-      y1: pw.ship(t.y1, y1),
+      n_marks: plan.nMarks,
+      x0: pw.ship(x0v, shipX0, { scale: plan.xShipScale }),
+      y0: pw.ship(y0v, shipY0, { scale: plan.yShipScale }),
+      x1: pw.ship(x1v, shipX1, { scale: plan.xShipScale }),
+      y1: pw.ship(y1v, shipY1, { scale: plan.yShipScale }),
       // Node payload mesh ships x/y for the third vertex. Python
       // `_emit_triangle_mesh` ships x2/y2. Matching Python would rename these
       // keys. Recorded emit-mesh-xy stay-host.
-      x: pw.ship(t.x, x2),
-      y: pw.ship(t.y, y2),
-      x_axis: t.x_axis ?? "x",
-      y_axis: t.y_axis ?? "y",
+      x: pw.ship(x2v, shipX2, { scale: plan.xShipScale }),
+      y: pw.ship(y2v, shipY2, { scale: plan.yShipScale }),
+      x_axis: xAxis,
+      y_axis: yAxis,
     };
+    this._shipTraceChannelAttach(
+      entry,
+      t,
+      pw,
+      sel,
+      plan.channelSlot,
+      { includeTraceStyles: plan.includeTraceStyles },
+    );
+    if (plan.attachTransition) {
+      attachTransitionEntry(entry, t, pw, sel);
+    }
+    return entry;
   }
 
   _emitRect(t, pw, kind) {
@@ -1908,6 +1975,14 @@ export class Figure {
     const xCol = new Column(t.x);
     const yCol = new Column(t.y);
     const gridCol = new Column(t.grid);
+    const [rows, cols] = t.grid_shape ?? [0, t.grid?.length ?? 0];
+    const plan = payloadHeatmapEmitPlan({
+      hasRgbaGrid: t.rgba != null,
+      gridRows: rows,
+      gridCols: cols,
+      styleColormapIsNone: t.style?.colormap == null,
+      borrowHeatmaps: Boolean(pw.borrowHeatmaps),
+    });
     const entry = {
       id: t.id,
       kind: "heatmap",
@@ -1915,7 +1990,7 @@ export class Figure {
       style: { ...t.style },
       tier: "direct",
       n_points: t.count ?? t.grid.length,
-      n_marks: t.grid.length,
+      n_marks: plan.nMarks,
       // Node payload heatmap ships grid columns. Python `_emit_heatmap` ships
       // a nested heatmap object. Matching Python would nest buf/w/h/colormap.
       // Recorded heatmap-grid stay-host.
