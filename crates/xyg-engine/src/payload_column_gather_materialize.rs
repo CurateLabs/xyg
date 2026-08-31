@@ -106,7 +106,8 @@ fn encode_values_column(
     axis_scale: &str,
 ) -> Result<(Vec<u8>, f64, f64, i32), i32> {
     let (lo, hi) = min_max(values);
-    encode_offset_column(values, lo, hi, kind, 0.0, axis_scale)
+    let sticky = kernels::geometry_offset(scale_pins_offset(axis_scale), lo, hi);
+    encode_offset_column(values, lo, hi, kind, sticky, axis_scale)
 }
 
 /// Gather ``columns`` with optional ``sel`` and return encoded wire bytes.
@@ -206,5 +207,22 @@ mod tests {
         assert_eq!(out.len(), 2);
         assert_eq!(out[0].len, 2);
         assert_eq!(out[1].len, 2);
+    }
+
+    #[test]
+    fn values_ship_recenters_on_domain_midpoint() {
+        let x = [0.0, 1.0, 2.0];
+        let cols = [PayloadColumnMaterializeIn {
+            ship_method: PAYLOAD_COL_SHIP_VALUES,
+            ship_scale: PAYLOAD_COL_SCALE_X,
+            values: &x,
+            col_min: 0.0,
+            col_max: 0.0,
+            kind: Some("float"),
+            sticky_offset: 0.0,
+            axis_scale: "linear",
+        }];
+        let out = payload_column_gather_materialize(None, &cols).unwrap();
+        assert_eq!(out[0].offset, 1.0);
     }
 }
