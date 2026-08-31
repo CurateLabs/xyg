@@ -558,17 +558,14 @@ test("_emitHistogram uses log ship scale via payload bar-hist plan", () => {
   assert.equal(x0Col.offset, 0);
 });
 
-test("_emitTriangleMesh omits ship scale unlike Python _axis_scale", () => {
-  // Python `_emit_triangle_mesh` passes `_axis_scale` into `pw.ship`, pinning
-  // log offset to 0. Node mesh encode keeps the column midpoint. Recorded
-  // emit-mesh-ship-scale stay-host.
+test("_emitTriangleMesh uses log ship scale via payload mesh plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.setAxis("x", { type: "log" });
   fig.triangleMesh([1], [1], [10], [1], [5], [10]);
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "triangle_mesh");
   const x0Col = spec.columns[spec.traces[0].x0];
-  assert.notEqual(x0Col.offset, 0);
+  assert.equal(x0Col.offset, 0);
 });
 
 test("_emitRibbon omits ship scale unlike Python _axis_scale", () => {
@@ -799,16 +796,13 @@ test("_emitSegments omits transition_keys unlike Python _transition_entry", () =
   assert.equal(spec.traces[0].keys, undefined);
 });
 
-test("_emitTriangleMesh omits transition_keys unlike Python _transition_entry", () => {
-  // Python `_emit_triangle_mesh` ships transition_keys as `keys`. Node mesh
-  // payload keeps no keys field even when transition_keys is present.
-  // Recorded emit-mesh-transition stay-host.
+test("_emitTriangleMesh ships transition_keys via payload mesh plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
   fig.traces[0].transition_keys = [[1, 2]];
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "triangle_mesh");
-  assert.equal(spec.traces[0].keys, undefined);
+  assert.notEqual(spec.traces[0].keys, undefined);
 });
 
 test("_emitRibbon omits transition_keys unlike Python _transition_entry", () => {
@@ -835,17 +829,14 @@ test("_emitRect ships transition_keys via payload nonxy plan", () => {
   assert.notEqual(spec.traces[0].keys, undefined);
 });
 
-test("_emitTriangleMesh skips valid_indices_f64 unlike Python _emit_triangle_mesh", () => {
-  // Python `_emit_triangle_mesh` gathers null geometry rows via
-  // `valid_indices_f64`. Node mesh payload keeps every triangle even when a
-  // geometry column has NaN. Recorded emit-mesh-gather stay-host.
+test("_emitTriangleMesh gathers null geometry rows via payload mesh plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.triangleMesh([0, 1], [0, 0], [1, 2], [0, 0], [0.5, 1.5], [1, 1]);
   const n = fig.traces[0].x0.length;
   fig.traces[0].x0[0] = Number.NaN;
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "triangle_mesh");
-  assert.equal(spec.traces[0].n_marks, n);
+  assert.equal(spec.traces[0].n_marks, n - 1);
 });
 
 test("_emitRibbon skips valid_indices_f64 unlike Python _emit_ribbon", () => {
@@ -1019,16 +1010,13 @@ test("_emitSegments omits stroke_ch unlike Python _ship_trace_styles", () => {
   assert.equal(spec.traces[0].stroke, undefined);
 });
 
-test("_emitTriangleMesh omits stroke_ch unlike Python _ship_trace_styles", () => {
-  // Python `_emit_triangle_mesh` ships stroke_ch via `_ship_trace_styles`.
-  // Node mesh payload keeps no stroke field even when stroke_ch is present.
-  // Recorded emit-mesh-stroke stay-host.
+test("_emitTriangleMesh ships stroke_ch via payload channel attach", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
   fig.traces[0].stroke_ch = { mode: "constant", constant: "#112233" };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "triangle_mesh");
-  assert.equal(spec.traces[0].stroke, undefined);
+  assert.equal(spec.traces[0].stroke.color, "#112233");
 });
 
 test("_emitRect ships stroke_ch via payload channel attach", () => {
@@ -1086,15 +1074,13 @@ test("_emitHistogram ships color_ch via payload channel attach", () => {
   assert.equal(spec.traces[0].color.color, "#112233");
 });
 
-test("_emitTriangleMesh omits color_ch unlike Python _emit_triangle_mesh", () => {
-  // Python `_emit_triangle_mesh` ships color_ch. Node mesh payload keeps no
-  // color field even when color_ch is present. Recorded emit-mesh-color stay-host.
+test("_emitTriangleMesh ships color_ch via payload channel attach", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
   fig.traces[0].color_ch = { mode: "constant", constant: "#112233" };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "triangle_mesh");
-  assert.equal(spec.traces[0].color, undefined);
+  assert.equal(spec.traces[0].color.color, "#112233");
 });
 
 test("_emitSegments ships t.color unlike Python color_ch", () => {
@@ -1320,15 +1306,13 @@ test("_emitRect ships animation via payload transition attach", () => {
   assert.deepEqual(spec.traces[0].animation, { duration: 100 });
 });
 
-test("_emitTriangleMesh omits animation unlike Python _transition_entry", () => {
-  // Python `_emit_triangle_mesh` ships t.animation via `_transition_entry`.
-  // Node mesh encode omits that field. Recorded emit-mesh-animation stay-host.
+test("_emitTriangleMesh ships animation via payload mesh plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
   fig.traces[0].animation = { duration: 100 };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "triangle_mesh");
-  assert.equal(spec.traces[0].animation, undefined);
+  assert.deepEqual(spec.traces[0].animation, { duration: 100 });
 });
 
 

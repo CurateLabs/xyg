@@ -11978,6 +11978,131 @@ def payload_bar_hist_emit_plan(
     }
 
 
+PAYLOAD_HEATMAP_PATH_RGBA = 0
+PAYLOAD_HEATMAP_PATH_GRID = 1
+
+_PAYLOAD_HEATMAP_PATH_BY_CODE: dict[int, str] = {
+    PAYLOAD_HEATMAP_PATH_RGBA: "rgba",
+    PAYLOAD_HEATMAP_PATH_GRID: "grid",
+}
+
+
+def payload_heatmap_emit_plan(
+    *,
+    has_rgba_grid: bool,
+    grid_rows: int,
+    grid_cols: int,
+    style_colormap_is_none: bool,
+    borrow_heatmaps: bool,
+) -> dict[str, bool | int | str]:
+    """Heatmap emit skeleton via ``xyg_payload_heatmap_emit_plan`` (ABI 298).
+
+    Owns rgba-vs-grid path, lattice ``n_marks``, top-level color attach on the
+    grid path, canonical-f64 borrow encoding, and constant-colormap fallback.
+    """
+    path = ctypes.c_int32(-1)
+    tier_direct = ctypes.c_int32(-1)
+    n_marks_out = ctypes.c_size_t(0)
+    attach_color = ctypes.c_int32(-1)
+    borrow_canonical = ctypes.c_int32(-1)
+    attach_encoding = ctypes.c_int32(-1)
+    use_constant_colormap_fallback = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_heatmap_emit_plan(
+        1 if has_rgba_grid else 0,
+        int(grid_rows),
+        int(grid_cols),
+        1 if style_colormap_is_none else 0,
+        1 if borrow_heatmaps else 0,
+        ctypes.byref(path),
+        ctypes.byref(tier_direct),
+        ctypes.byref(n_marks_out),
+        ctypes.byref(attach_color),
+        ctypes.byref(borrow_canonical),
+        ctypes.byref(attach_encoding),
+        ctypes.byref(use_constant_colormap_fallback),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_heatmap_emit_plan arguments")
+    path_code = int(path.value)
+    if path_code not in _PAYLOAD_HEATMAP_PATH_BY_CODE:
+        raise ValueError("invalid payload_heatmap_emit_plan path")
+    return {
+        "path": _PAYLOAD_HEATMAP_PATH_BY_CODE[path_code],
+        "tier_direct": int(tier_direct.value) == 1,
+        "n_marks": int(n_marks_out.value),
+        "attach_color": int(attach_color.value) == 1,
+        "borrow_canonical": int(borrow_canonical.value) == 1,
+        "attach_encoding": int(attach_encoding.value) == 1,
+        "use_constant_colormap_fallback": int(use_constant_colormap_fallback.value) == 1,
+    }
+
+
+def payload_mesh_emit_plan(
+    *,
+    n_marks: int,
+    style_color_is_none: bool,
+    x_axis_scale: str,
+    y_axis_scale: str,
+    any_geometry_nulls: bool,
+    has_continuous_color: bool,
+    continuous_color_values_missing: bool,
+) -> dict[str, bool | int | str]:
+    """Triangle-mesh emit skeleton via ``xyg_payload_mesh_emit_plan`` (ABI 298).
+
+    Owns gather policy, palette default, axis ship scales, trace-channel attach,
+    and transition wrap.
+    """
+    tier_direct = ctypes.c_int32(-1)
+    n_marks_out = ctypes.c_size_t(0)
+    apply_palette_default = ctypes.c_int32(-1)
+    x_ship_scale = ctypes.c_int32(-1)
+    y_ship_scale = ctypes.c_int32(-1)
+    channel_slot = ctypes.c_int32(-1)
+    include_trace_styles = ctypes.c_int32(-1)
+    attach_transition = ctypes.c_int32(-1)
+    attempt_gather = ctypes.c_int32(-1)
+    gather_include_color = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_mesh_emit_plan(
+        int(n_marks),
+        1 if style_color_is_none else 0,
+        _payload_axis_type_code(x_axis_scale),
+        _payload_axis_type_code(y_axis_scale),
+        1 if any_geometry_nulls else 0,
+        1 if has_continuous_color else 0,
+        1 if continuous_color_values_missing else 0,
+        ctypes.byref(tier_direct),
+        ctypes.byref(n_marks_out),
+        ctypes.byref(apply_palette_default),
+        ctypes.byref(x_ship_scale),
+        ctypes.byref(y_ship_scale),
+        ctypes.byref(channel_slot),
+        ctypes.byref(include_trace_styles),
+        ctypes.byref(attach_transition),
+        ctypes.byref(attempt_gather),
+        ctypes.byref(gather_include_color),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_mesh_emit_plan arguments")
+    for name, code in (
+        ("x", int(x_ship_scale.value)),
+        ("y", int(y_ship_scale.value)),
+    ):
+        if not (0 <= code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+            raise ValueError(f"invalid payload_mesh_emit_plan {name} ship scale")
+    return {
+        "tier_direct": int(tier_direct.value) == 1,
+        "n_marks": int(n_marks_out.value),
+        "apply_palette_default": int(apply_palette_default.value) == 1,
+        "x_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(x_ship_scale.value)],
+        "y_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(y_ship_scale.value)],
+        "channel_slot": int(channel_slot.value),
+        "include_trace_styles": int(include_trace_styles.value) == 1,
+        "attach_transition": int(attach_transition.value) == 1,
+        "attempt_gather": int(attempt_gather.value) == 1,
+        "gather_include_color": int(gather_include_color.value) == 1,
+    }
+
+
 def payload_bar_compact_admit(
     widths: npt.NDArray[np.float64],
     value0: npt.NDArray[np.float64],

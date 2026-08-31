@@ -161,7 +161,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 297;
+pub const ABI_VERSION: u32 = 298;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15831,6 +15831,163 @@ pub unsafe extern "C" fn xyg_payload_bar_hist_emit_plan(
         *out_channel_slot = channel_slot;
         *out_include_trace_styles = include_trace_styles;
         *out_attach_transition = attach_transition;
+        1
+    })
+}
+
+/// Heatmap emit skeleton from ``_emit_heatmap`` (ABI 298).
+///
+/// ``has_rgba_grid``: ``1`` selects the rgba lattice path. ``borrow_heatmaps``:
+/// ``1`` ships canonical f64 with ``enc: canonical-f64`` on the grid path.
+/// Hosts still ship buffers, parse constant-color fallback, and copy metadata.
+///
+/// # Safety
+/// All ``out_*`` pointers must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_heatmap_emit_plan(
+    has_rgba_grid: i32,
+    grid_rows: usize,
+    grid_cols: usize,
+    style_colormap_is_none: i32,
+    borrow_heatmaps: i32,
+    out_path: *mut i32,
+    out_tier_direct: *mut i32,
+    out_n_marks: *mut usize,
+    out_attach_color: *mut i32,
+    out_borrow_canonical: *mut i32,
+    out_attach_encoding: *mut i32,
+    out_use_constant_colormap_fallback: *mut i32,
+) -> i32 {
+    ffi_guard(0, || {
+        if out_path.is_null()
+            || out_tier_direct.is_null()
+            || out_n_marks.is_null()
+            || out_attach_color.is_null()
+            || out_borrow_canonical.is_null()
+            || out_attach_encoding.is_null()
+            || out_use_constant_colormap_fallback.is_null()
+        {
+            return 0;
+        }
+        let mut path = 0i32;
+        let mut tier_direct = 0i32;
+        let mut n_marks_out = 0usize;
+        let mut attach_color = 0i32;
+        let mut borrow_canonical = 0i32;
+        let mut attach_encoding = 0i32;
+        let mut use_constant_colormap_fallback = 0i32;
+        let ok = payload_emit::payload_heatmap_emit_plan(
+            has_rgba_grid,
+            grid_rows,
+            grid_cols,
+            style_colormap_is_none,
+            borrow_heatmaps,
+            &mut path,
+            &mut tier_direct,
+            &mut n_marks_out,
+            &mut attach_color,
+            &mut borrow_canonical,
+            &mut attach_encoding,
+            &mut use_constant_colormap_fallback,
+        );
+        if ok == 0 {
+            return 0;
+        }
+        *out_path = path;
+        *out_tier_direct = tier_direct;
+        *out_n_marks = n_marks_out;
+        *out_attach_color = attach_color;
+        *out_borrow_canonical = borrow_canonical;
+        *out_attach_encoding = attach_encoding;
+        *out_use_constant_colormap_fallback = use_constant_colormap_fallback;
+        1
+    })
+}
+
+/// Triangle-mesh emit skeleton from ``_emit_triangle_mesh`` (ABI 298).
+///
+/// Owns gather policy (geometry nulls + continuous ``color_ch``), palette
+/// default, axis ship scales, trace-channel attach, and transition wrap.
+/// Returns ``0`` when continuous color lacks values. Hosts still gather and ship.
+///
+/// # Safety
+/// All ``out_*`` pointers must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_mesh_emit_plan(
+    n_marks: usize,
+    style_color_is_none: i32,
+    x_axis_type: i32,
+    y_axis_type: i32,
+    any_geometry_nulls: i32,
+    has_continuous_color: i32,
+    continuous_color_values_missing: i32,
+    out_tier_direct: *mut i32,
+    out_n_marks: *mut usize,
+    out_apply_palette_default: *mut i32,
+    out_x_ship_scale: *mut i32,
+    out_y_ship_scale: *mut i32,
+    out_channel_slot: *mut i32,
+    out_include_trace_styles: *mut i32,
+    out_attach_transition: *mut i32,
+    out_attempt_gather: *mut i32,
+    out_gather_include_color: *mut i32,
+) -> i32 {
+    ffi_guard(0, || {
+        if out_tier_direct.is_null()
+            || out_n_marks.is_null()
+            || out_apply_palette_default.is_null()
+            || out_x_ship_scale.is_null()
+            || out_y_ship_scale.is_null()
+            || out_channel_slot.is_null()
+            || out_include_trace_styles.is_null()
+            || out_attach_transition.is_null()
+            || out_attempt_gather.is_null()
+            || out_gather_include_color.is_null()
+        {
+            return 0;
+        }
+        let mut tier_direct = 0i32;
+        let mut n_marks_out = 0usize;
+        let mut apply_palette_default = 0i32;
+        let mut x_ship_scale = 0i32;
+        let mut y_ship_scale = 0i32;
+        let mut channel_slot = 0i32;
+        let mut include_trace_styles = 0i32;
+        let mut attach_transition = 0i32;
+        let mut attempt_gather = 0i32;
+        let mut gather_include_color = 0i32;
+        let ok = payload_emit::payload_mesh_emit_plan(
+            n_marks,
+            style_color_is_none,
+            x_axis_type,
+            y_axis_type,
+            any_geometry_nulls,
+            has_continuous_color,
+            continuous_color_values_missing,
+            &mut tier_direct,
+            &mut n_marks_out,
+            &mut apply_palette_default,
+            &mut x_ship_scale,
+            &mut y_ship_scale,
+            &mut channel_slot,
+            &mut include_trace_styles,
+            &mut attach_transition,
+            &mut attempt_gather,
+            &mut gather_include_color,
+        );
+        if ok == 0 {
+            return 0;
+        }
+        *out_tier_direct = tier_direct;
+        *out_n_marks = n_marks_out;
+        *out_apply_palette_default = apply_palette_default;
+        *out_x_ship_scale = x_ship_scale;
+        *out_y_ship_scale = y_ship_scale;
+        *out_channel_slot = channel_slot;
+        *out_include_trace_styles = include_trace_styles;
+        *out_attach_transition = attach_transition;
+        *out_attempt_gather = attempt_gather;
+        *out_gather_include_color = gather_include_color;
         1
     })
 }
