@@ -107,6 +107,26 @@ function buildCase(name) {
     fig.scatter([0, 1], [0, 1], { forceDensity: true });
     fig.traces[0].id = entry.trace_id;
     fig.traces[0].transition_keys = TRANSITION_KEYS.map((row) => [...row]);
+  } else if (name === "hist_transition_keys") {
+    fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
+    fig.traces[0].id = entry.trace_id;
+    fig.traces[0].transition_keys = TRANSITION_KEYS.map((row) => [...row]);
+  } else if (name === "rect_transition_keys") {
+    fig.bar([0, 1], [1, 2]);
+    fig.traces[0].id = entry.trace_id;
+    fig.traces[0].transition_keys = TRANSITION_KEYS.map((row) => [...row]);
+  } else if (name === "segments_transition_keys") {
+    fig.segments([0, 1], [0, 1], [1, 2], [1, 2]);
+    fig.traces[0].id = entry.trace_id;
+    fig.traces[0].transition_keys = TRANSITION_KEYS.map((row) => [...row]);
+  } else if (name === "ribbon_transition_keys") {
+    fig.ribbon([0, 1], [1, 2], [0, 0], [1, 1], [0, 0], [1, 1]);
+    fig.traces[0].id = entry.trace_id;
+    fig.traces[0].transition_keys = TRANSITION_KEYS.map((row) => [...row]);
+  } else if (name === "mesh_transition_keys") {
+    fig.triangleMesh([0, 1], [0, 0], [1, 2], [0, 0], [0.5, 1.5], [1, 1]);
+    fig.traces[0].id = entry.trace_id;
+    fig.traces[0].transition_keys = TRANSITION_KEYS.map((row) => [...row]);
   } else {
     throw new Error(`unknown case ${name}`);
   }
@@ -124,6 +144,9 @@ function traceMeta(trace) {
   if (trace.animation_fallback != null) {
     meta.animation_fallback = trace.animation_fallback;
   }
+  if (trace.keys != null) {
+    meta.has_keys = true;
+  }
   return meta;
 }
 
@@ -131,7 +154,7 @@ test("animation emit cross-host fixture contract", () => {
   assert.equal(fixture.schema, "xyg.animation-emit-cross-host/v1");
   assert.equal(fixture.protocol, PROTOCOL_VERSION);
   assert.equal(Number(fixture.abi_version), abiVersion());
-  assert.equal(fixture.cases.length, 22);
+  assert.equal(fixture.cases.length, 27);
 });
 
 for (const entry of fixture.cases) {

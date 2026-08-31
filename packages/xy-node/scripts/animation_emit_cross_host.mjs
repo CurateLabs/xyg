@@ -35,6 +35,9 @@ function caseEntry(name, build) {
   if (trace.animation_fallback != null) {
     entry.animation_fallback = trace.animation_fallback;
   }
+  if (trace.keys != null) {
+    entry.has_keys = true;
+  }
   return entry;
 }
 
@@ -145,6 +148,31 @@ const cases = [
   caseEntry("density_transition_keys", (fig) => {
     fig.scatter([0, 1], [0, 1], { forceDensity: true });
     fig.traces[0].id = 71;
+    fig.traces[0].transition_keys = TRANSITION_KEYS.map((row) => [...row]);
+  }),
+  caseEntry("hist_transition_keys", (fig) => {
+    fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
+    fig.traces[0].id = 72;
+    fig.traces[0].transition_keys = TRANSITION_KEYS.map((row) => [...row]);
+  }),
+  caseEntry("rect_transition_keys", (fig) => {
+    fig.bar([0, 1], [1, 2]);
+    fig.traces[0].id = 73;
+    fig.traces[0].transition_keys = TRANSITION_KEYS.map((row) => [...row]);
+  }),
+  caseEntry("segments_transition_keys", (fig) => {
+    fig.segments([0, 1], [0, 1], [1, 2], [1, 2]);
+    fig.traces[0].id = 74;
+    fig.traces[0].transition_keys = TRANSITION_KEYS.map((row) => [...row]);
+  }),
+  caseEntry("ribbon_transition_keys", (fig) => {
+    fig.ribbon([0, 1], [1, 2], [0, 0], [1, 1], [0, 0], [1, 1]);
+    fig.traces[0].id = 75;
+    fig.traces[0].transition_keys = TRANSITION_KEYS.map((row) => [...row]);
+  }),
+  caseEntry("mesh_transition_keys", (fig) => {
+    fig.triangleMesh([0, 1], [0, 0], [1, 2], [0, 0], [0.5, 1.5], [1, 1]);
+    fig.traces[0].id = 76;
     fig.traces[0].transition_keys = TRANSITION_KEYS.map((row) => [...row]);
   }),
 ];
