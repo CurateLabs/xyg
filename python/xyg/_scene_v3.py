@@ -742,7 +742,12 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
     layout_text = kind == "text" and any(
         key in annotation for key in ("dx", "dy", "anchor", "rotation")
     )
-    wrapped = authored_wrap or layout_text
+    dispatch = _native.scene_xyaf_annotation_dispatch_plan(
+        kind=str(kind),
+        authored_wrap=authored_wrap,
+        layout_text=layout_text,
+    )
+    wrapped = dispatch["wrapped"]
     attached_text = annotation.get("text")
     labelled = attached_text not in (None, "")
     if kind == "arrow" and labelled:
@@ -979,7 +984,7 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
         )
     parsed_dash: list[float] | None = None
     parsed_cap: int | None = None
-    if kind == "rule":
+    if dispatch["pack_rule_dash"] or dispatch["pack_rule_linecap"]:
         dash_or_reject = _parse_scene_dash(style.get("dash"))
         if isinstance(dash_or_reject, list):
             parsed_dash = [float(value) for value in dash_or_reject]
@@ -1543,6 +1548,11 @@ def _pack_chrome_facts(
     colorbar_ok: bool,
 ) -> bytes:
     """Pack authored XYCF v1 chrome facts; Rust owns XYCC layout and legend paints."""
+    figure_plan = _native.scene_xycf_figure_plan(
+        show_legend=bool(getattr(figure, "show_legend", True)),
+        colorbar_ok=bool(colorbar_ok),
+        polar=str(getattr(figure, "coords", "cartesian") or "cartesian") == "polar",
+    )
     flags = _XYCF_FLAG_HAS_CHROME | _XYCF_FLAG_X_MAJOR_AUTO | _XYCF_FLAG_Y_MAJOR_AUTO
     kind_codes = {"linear": 0, "log": 1, "symlog": 2}
     xa = figure.axis_options["x"]
@@ -1609,7 +1619,7 @@ def _pack_chrome_facts(
     legend_lens: list[int] = []
     legend_blob = b""
     legend_count = 0
-    if figure.show_legend:
+    if figure_plan["attach_legend"]:
         flags |= _XYCF_FLAG_HAS_LEGEND
         legend_flags |= _XYCF_LEGEND_SHOW
         options = dict(figure.legend_options or {})
@@ -1661,7 +1671,7 @@ def _pack_chrome_facts(
     colorbar_stops: list[tuple[float, bytes]] = []
     colorbar_ticks: list[float] = []
     options = getattr(figure, "colorbar_options", None)
-    if colorbar_ok and options:
+    if figure_plan["attach_colorbar"] and options:
         flags |= _XYCF_FLAG_HAS_COLORBAR
         domain = options.get("domain")
         stops = options.get("stops")
@@ -3978,16 +3988,21 @@ def _pack_public_export_support(
     height: int | None = None,
 ) -> bytes:
     """Pack authored XYEF facts; Rust owns the XYEP envelope (ABI 152)."""
+    export_plan = _native.scene_public_export_figure_plan(
+        polar=getattr(figure, "coords", "cartesian") == "polar",
+        has_chrome_styles=bool(getattr(figure, "chrome_styles", None)),
+        has_title_options=bool(getattr(figure, "title_options", None)),
+    )
     flags = 0
     if width is None and not isinstance(figure.width, int):
         flags |= 1 << 0
     if height is None and not isinstance(figure.height, int):
         flags |= 1 << 1
-    if getattr(figure, "chrome_styles", None):
+    if export_plan["has_chrome_styles"]:
         flags |= 1 << 2
-    if getattr(figure, "title_options", None):
+    if export_plan["has_title_options"]:
         flags |= 1 << 3
-    if getattr(figure, "coords", "cartesian") == "polar":
+    if export_plan["polar"]:
         flags |= 1 << 4
     style_keys = [str(key) for key in (getattr(figure, "style", None) or {})]
     legend_keys = [str(key) for key in (getattr(figure, "legend_options", None) or {})]
@@ -4042,6 +4057,11 @@ def _pack_public_export_support(
         _xyep_put_keys(payload, fields)
     for trace_index, trace in enumerate(traces):
         style = getattr(trace, "style", None) or {}
+        export_dispatch = _native.scene_public_export_trace_dispatch_plan(
+            kind=str(trace.kind),
+            polar=export_plan["polar"],
+            use_density=str(trace.kind) == "scatter" and trace.use_density(),
+        )
         opacity = float(style.get("opacity", 1.0))
         if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
             raise ValueError("trace opacity must be finite and in [0, 1]")
@@ -4117,11 +4137,7 @@ def _pack_public_export_support(
         if not isinstance(symbol, str):
             obs |= _XYEF_OBS_SYMBOL_NON_STRING
             symbol = ""
-        if (
-            trace.kind == "scatter"
-            and getattr(figure, "coords", "cartesian") == "cartesian"
-            and trace.use_density()
-        ):
+        if export_dispatch["pack_density_blit"]:
             obs |= _XYEF_OBS_DENSITY_BLIT
         role = style.get("role")
         role_s = "" if role is None else str(role)
@@ -4130,7 +4146,7 @@ def _pack_public_export_support(
         try:
             hex_dx, hex_dy = (
                 _hexbin_pitch(style)
-                if _native.scene_kind_class(str(trace.kind)) & _SCENE_KIND_CLASS_HEXBIN
+                if export_dispatch["pack_hexbin_pitch"]
                 else (float("nan"), float("nan"))
             )
         except UnsupportedSceneV3:

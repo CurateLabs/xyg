@@ -162,7 +162,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 307;
+pub const ABI_VERSION: u32 = 308;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -17285,6 +17285,235 @@ pub unsafe extern "C" fn xyg_scene_xynm_figure_plan(
             return 0;
         }
         (*out).show_legend = u32::from(resolved != 0);
+        1
+    })
+}
+
+/// Packed XYCF figure orchestration plan (ABI 308).
+#[repr(C)]
+pub struct XygSceneXycfFigurePlan {
+    pub show_legend: u32,
+    pub attach_legend: u32,
+    pub attach_colorbar: u32,
+    pub polar: u32,
+}
+
+/// Figure-level XYCF chrome attach orchestration (ABI 308).
+///
+/// Hosts coerce ``show_legend`` and observe ``colorbar_ok`` / ``polar``.
+/// Rust owns legend and colorbar attach routing before hosts ship XYCF facts.
+///
+/// # Safety
+/// ``out`` must be valid for writes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_xycf_figure_plan(
+    show_legend: i32,
+    colorbar_ok: i32,
+    polar: i32,
+    out: *mut XygSceneXycfFigurePlan,
+) -> i32 {
+    ffi_guard(0, || {
+        if out.is_null() {
+            return 0;
+        }
+        let mut plan = scene_pack_orchestrate::XycfFigurePlan {
+            show_legend: 0,
+            attach_legend: 0,
+            attach_colorbar: 0,
+            polar: 0,
+        };
+        if scene_pack_orchestrate::scene_xycf_figure_plan(
+            show_legend,
+            colorbar_ok,
+            polar,
+            &mut plan,
+        ) == 0
+        {
+            return 0;
+        }
+        (*out).show_legend = u32::from(plan.show_legend != 0);
+        (*out).attach_legend = u32::from(plan.attach_legend != 0);
+        (*out).attach_colorbar = u32::from(plan.attach_colorbar != 0);
+        (*out).polar = u32::from(plan.polar != 0);
+        1
+    })
+}
+
+/// Packed per-annotation XYAF dispatch plan (ABI 308).
+#[repr(C)]
+pub struct XygSceneXyafAnnotationDispatchPlan {
+    pub wrapped: u32,
+    pub pack_rule_dash: u32,
+    pub pack_rule_linecap: u32,
+    pub pack_axis: u32,
+    pub pack_symbol: u32,
+}
+
+/// Per-annotation XYAF attach dispatch orchestration (ABI 308).
+///
+/// Owns wrapped-text routing and rule/marker branch gates before hosts run
+/// per-field XYAF style packing.
+///
+/// # Safety
+/// ``kind`` must address ``kind_len`` readable bytes when ``kind_len`` is
+/// non-zero. ``out`` must be valid for writes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_xyaf_annotation_dispatch_plan(
+    kind: *const u8,
+    kind_len: usize,
+    authored_wrap: i32,
+    layout_text: i32,
+    out: *mut XygSceneXyafAnnotationDispatchPlan,
+) -> i32 {
+    ffi_guard(0, || {
+        if out.is_null() {
+            return 0;
+        }
+        let kind_text = if kind_len == 0 {
+            ""
+        } else {
+            if kind.is_null() {
+                return 0;
+            }
+            let slice = std::slice::from_raw_parts(kind, kind_len);
+            match std::str::from_utf8(slice) {
+                Ok(text) => text,
+                Err(_) => return 0,
+            }
+        };
+        let mut plan = scene_pack_orchestrate::XyafAnnotationDispatchPlan {
+            wrapped: 0,
+            pack_rule_dash: 0,
+            pack_rule_linecap: 0,
+            pack_axis: 0,
+            pack_symbol: 0,
+        };
+        if scene_pack_orchestrate::scene_xyaf_annotation_dispatch_plan(
+            kind_text,
+            authored_wrap,
+            layout_text,
+            &mut plan,
+        ) == 0
+        {
+            return 0;
+        }
+        *out = XygSceneXyafAnnotationDispatchPlan {
+            wrapped: u32::from(plan.wrapped != 0),
+            pack_rule_dash: u32::from(plan.pack_rule_dash != 0),
+            pack_rule_linecap: u32::from(plan.pack_rule_linecap != 0),
+            pack_axis: u32::from(plan.pack_axis != 0),
+            pack_symbol: u32::from(plan.pack_symbol != 0),
+        };
+        1
+    })
+}
+
+/// Packed XYEF public-export figure orchestration plan (ABI 308).
+#[repr(C)]
+pub struct XygScenePublicExportFigurePlan {
+    pub polar: u32,
+    pub has_chrome_styles: u32,
+    pub has_title_options: u32,
+}
+
+/// Figure-level XYEF export orchestration (ABI 308).
+///
+/// Host observations are ``0``/``1``. Rust resolves polar gating passed into
+/// per-trace export dispatch before hosts ship XYEF observations.
+///
+/// # Safety
+/// ``out`` must be valid for writes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_public_export_figure_plan(
+    polar: i32,
+    has_chrome_styles: i32,
+    has_title_options: i32,
+    out: *mut XygScenePublicExportFigurePlan,
+) -> i32 {
+    ffi_guard(0, || {
+        if out.is_null() {
+            return 0;
+        }
+        let mut plan = scene_pack_orchestrate::PublicExportFigurePlan {
+            polar: 0,
+            has_chrome_styles: 0,
+            has_title_options: 0,
+        };
+        if scene_pack_orchestrate::scene_public_export_figure_plan(
+            polar,
+            has_chrome_styles,
+            has_title_options,
+            &mut plan,
+        ) == 0
+        {
+            return 0;
+        }
+        (*out).polar = u32::from(plan.polar != 0);
+        (*out).has_chrome_styles = u32::from(plan.has_chrome_styles != 0);
+        (*out).has_title_options = u32::from(plan.has_title_options != 0);
+        1
+    })
+}
+
+/// Packed per-trace XYEF export dispatch plan (ABI 308).
+#[repr(C)]
+pub struct XygScenePublicExportTraceDispatchPlan {
+    pub kind_class: u32,
+    pub pack_density_blit: u32,
+    pub pack_hexbin_pitch: u32,
+}
+
+/// Per-trace XYEF export dispatch orchestration (ABI 308).
+///
+/// Owns kind-class gates and density-blit attach routing before hosts ship
+/// trace observation bytes.
+///
+/// # Safety
+/// ``kind`` must address ``kind_len`` readable bytes when ``kind_len`` is
+/// non-zero. ``out`` must be valid for writes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_public_export_trace_dispatch_plan(
+    kind: *const u8,
+    kind_len: usize,
+    polar: i32,
+    use_density: i32,
+    out: *mut XygScenePublicExportTraceDispatchPlan,
+) -> i32 {
+    ffi_guard(0, || {
+        if out.is_null() {
+            return 0;
+        }
+        let kind_text = if kind_len == 0 {
+            ""
+        } else {
+            if kind.is_null() {
+                return 0;
+            }
+            let slice = std::slice::from_raw_parts(kind, kind_len);
+            match std::str::from_utf8(slice) {
+                Ok(text) => text,
+                Err(_) => return 0,
+            }
+        };
+        let mut plan = scene_pack_orchestrate::PublicExportTraceDispatchPlan {
+            kind_class: 0,
+            pack_density_blit: 0,
+            pack_hexbin_pitch: 0,
+        };
+        if scene_pack_orchestrate::scene_public_export_trace_dispatch_plan(
+            kind_text,
+            polar,
+            use_density,
+            &mut plan,
+        ) == 0
+        {
+            return 0;
+        }
+        *out = XygScenePublicExportTraceDispatchPlan {
+            kind_class: plan.kind_class as u32,
+            pack_density_blit: u32::from(plan.pack_density_blit != 0),
+            pack_hexbin_pitch: u32::from(plan.pack_hexbin_pitch != 0),
+        };
         1
     })
 }

@@ -453,6 +453,36 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         ctypes.c_void_p,
     ]
+    lib.xyg_scene_xycf_figure_plan.restype = ctypes.c_int32
+    lib.xyg_scene_xycf_figure_plan.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_void_p,
+    ]
+    lib.xyg_scene_xyaf_annotation_dispatch_plan.restype = ctypes.c_int32
+    lib.xyg_scene_xyaf_annotation_dispatch_plan.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_void_p,
+    ]
+    lib.xyg_scene_public_export_figure_plan.restype = ctypes.c_int32
+    lib.xyg_scene_public_export_figure_plan.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_void_p,
+    ]
+    lib.xyg_scene_public_export_trace_dispatch_plan.restype = ctypes.c_int32
+    lib.xyg_scene_public_export_trace_dispatch_plan.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_void_p,
+    ]
     lib.xyg_scene_xytc_color2_flags_pack.restype = ctypes.c_int32
     lib.xyg_scene_xytc_color2_flags_pack.argtypes = [
         ctypes.c_int32,
@@ -5963,6 +5993,54 @@ def main() -> None:
     ok(
         lib.xyg_scene_xynm_figure_plan(0, ctypes.byref(xynm_figure)) == 1 and xynm_figure[0] == 0,
         "scene_xynm_figure_plan show_legend",
+    )
+    xycf_figure = (ctypes.c_uint32 * 4)()
+    ok(
+        lib.xyg_scene_xycf_figure_plan(1, 1, 0, ctypes.byref(xycf_figure)) == 1
+        and xycf_figure[0] == 1
+        and xycf_figure[1] == 1
+        and xycf_figure[2] == 1
+        and xycf_figure[3] == 0,
+        "scene_xycf_figure_plan legend and colorbar attach",
+    )
+    xyaf_dispatch = (ctypes.c_uint32 * 5)()
+    rule_kind = array("B", b"rule")
+    ok(
+        lib.xyg_scene_xyaf_annotation_dispatch_plan(
+            _ptr(rule_kind, ctypes.c_uint8),
+            len(rule_kind),
+            0,
+            0,
+            ctypes.byref(xyaf_dispatch),
+        )
+        == 1
+        and xyaf_dispatch[0] == 0
+        and xyaf_dispatch[1] == 1
+        and xyaf_dispatch[3] == 1,
+        "scene_xyaf_annotation_dispatch_plan rule dash and axis",
+    )
+    xyef_figure = (ctypes.c_uint32 * 3)()
+    ok(
+        lib.xyg_scene_public_export_figure_plan(1, 1, 0, ctypes.byref(xyef_figure)) == 1
+        and xyef_figure[0] == 1
+        and xyef_figure[1] == 1
+        and xyef_figure[2] == 0,
+        "scene_public_export_figure_plan polar and chrome styles",
+    )
+    xyef_dispatch = (ctypes.c_uint32 * 3)()
+    scatter_kind = array("B", b"scatter")
+    ok(
+        lib.xyg_scene_public_export_trace_dispatch_plan(
+            _ptr(scatter_kind, ctypes.c_uint8),
+            len(scatter_kind),
+            0,
+            1,
+            ctypes.byref(xyef_dispatch),
+        )
+        == 1
+        and xyef_dispatch[1] == 1
+        and xyef_dispatch[2] == 0,
+        "scene_public_export_trace_dispatch_plan scatter density blit",
     )
     density_color_mode = ctypes.c_int32(-1)
     density_categorical = ctypes.c_int32(-1)

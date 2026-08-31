@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 307;
-export const SIGNATURE_SHA256 = "aef4fa295617e28aa764e503c533c7c5f59fef2504f386f4a4c100c1df69b88a";
+export const ABI_VERSION = 308;
+export const SIGNATURE_SHA256 = "147e466487f05b612a2aab70e328843ca3697163bcfe8429051a1eb559571284";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -287,7 +287,9 @@ export let xyScenePackTraceRows;
 export let xyScenePackTraceSidecars;
 export let xySceneParseLinearGradient;
 export let xyScenePlotLayout;
+export let xyScenePublicExportFigurePlan;
 export let xyScenePublicExportReason;
+export let xyScenePublicExportTraceDispatchPlan;
 export let xySceneRasterCommands;
 export let xySceneRectExtraFlags;
 export let xySceneResolveChromeStyle;
@@ -305,6 +307,8 @@ export let xySceneTickAnchor;
 export let xySceneTickLabelLayout;
 export let xySceneTickLabelStrategy;
 export let xySceneVersion;
+export let xySceneXyafAnnotationDispatchPlan;
+export let xySceneXycfFigurePlan;
 export let xySceneXyclFigurePlan;
 export let xySceneXyhfColormapPack;
 export let xySceneXynmFigurePlan;
@@ -695,7 +699,9 @@ export function bindGeneratedAbi(lib) {
   xyScenePackTraceSidecars = lib.func("int32_t xyg_scene_pack_trace_sidecars(const uint8_t * attached, size_t attached_len, const uint8_t * names, size_t names_len, uint8_t * out, size_t out_cap)");
   xySceneParseLinearGradient = lib.func("int32_t xyg_scene_parse_linear_gradient(const uint8_t * css, size_t css_len, const uint8_t * space, size_t space_len, uint8_t * out_dir, double * out_t, size_t out_t_cap, uint8_t * out_css, size_t out_css_cap, uint32_t * out_css_lens, size_t out_lens_cap, size_t * out_n)");
   xyScenePlotLayout = lib.func("size_t xyg_scene_plot_layout(double viewport_width, double viewport_height, const double * authored_padding, uint32_t x_kind, double x_lo, double x_hi, double x_constant, int32_t x_mask_nonpositive, uint32_t y_kind, double y_lo, double y_hi, double y_constant, int32_t y_mask_nonpositive, const uint8_t * title, size_t title_len, const uint8_t * x_label, size_t x_label_len, const uint8_t * y_label, size_t y_label_len, const uint8_t * x_format, size_t x_format_len, const uint8_t * y_format, size_t y_format_len, uint32_t colorbar_side, double * out_margins)");
+  xyScenePublicExportFigurePlan = lib.func("int32_t xyg_scene_public_export_figure_plan(int32_t polar, int32_t has_chrome_styles, int32_t has_title_options, void * out)");
   xyScenePublicExportReason = lib.func("size_t xyg_scene_public_export_reason(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap)");
+  xyScenePublicExportTraceDispatchPlan = lib.func("int32_t xyg_scene_public_export_trace_dispatch_plan(const uint8_t * kind, size_t kind_len, int32_t polar, int32_t use_density, void * out)");
   xySceneRasterCommands = lib.func("size_t xyg_scene_raster_commands(const uint8_t * encoded, size_t encoded_len, double scale, uint8_t * out, size_t out_cap)");
   xySceneRectExtraFlags = lib.func("int32_t xyg_scene_rect_extra_flags(const uint8_t * kind, size_t kind_len, int32_t polar, int32_t gradient_fail, const double * radius, size_t n_radius, int32_t radius_seq, double wedge_gap)");
   xySceneResolveChromeStyle = lib.func("int32_t xyg_scene_resolve_chrome_style(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap)");
@@ -713,6 +719,8 @@ export function bindGeneratedAbi(lib) {
   xySceneTickLabelLayout = lib.func("size_t xyg_scene_tick_label_layout(const double * positions, size_t n, const uint32_t * label_lens, const uint8_t * labels, size_t labels_len, uint32_t kind, uint32_t side, uint32_t anchor, uint32_t flags, double font_size, double min_gap, double explicit_angle, uint32_t * out_index, double * out_angle, uint32_t * out_row, size_t out_cap)");
   xySceneTickLabelStrategy = lib.func("int32_t xyg_scene_tick_label_strategy(const uint8_t * text, size_t text_len)");
   xySceneVersion = lib.func("uint32_t xyg_scene_version()");
+  xySceneXyafAnnotationDispatchPlan = lib.func("int32_t xyg_scene_xyaf_annotation_dispatch_plan(const uint8_t * kind, size_t kind_len, int32_t authored_wrap, int32_t layout_text, void * out)");
+  xySceneXycfFigurePlan = lib.func("int32_t xyg_scene_xycf_figure_plan(int32_t show_legend, int32_t colorbar_ok, int32_t polar, void * out)");
   xySceneXyclFigurePlan = lib.func("int32_t xyg_scene_xycl_figure_plan(int32_t polar, void * out)");
   xySceneXyhfColormapPack = lib.func("int32_t xyg_scene_xyhf_colormap_pack(int32_t mode, const uint8_t * named, size_t named_len, const uint8_t * stop_rgb, size_t stop_len, uint32_t * out_flags, uint8_t * out_cmap, size_t cmap_cap, uint8_t * out_stops, size_t stops_cap)");
   xySceneXynmFigurePlan = lib.func("int32_t xyg_scene_xynm_figure_plan(int32_t show_legend, void * out)");

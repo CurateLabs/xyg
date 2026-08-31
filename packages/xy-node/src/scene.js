@@ -74,7 +74,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneXytaFigurePlan, sceneXytaTraceDispatchPlan, sceneFigureSupportFigurePlan, sceneFigureSupportTraceDispatchPlan, sceneXyclFigurePlan, sceneXynmFigurePlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneXytaFigurePlan, sceneXytaTraceDispatchPlan, sceneFigureSupportFigurePlan, sceneFigureSupportTraceDispatchPlan, scenePublicExportFigurePlan, scenePublicExportTraceDispatchPlan, sceneXyafAnnotationDispatchPlan, sceneXycfFigurePlan, sceneXyclFigurePlan, sceneXynmFigurePlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -269,7 +269,8 @@ function packXyAf(annotation, index) {
   }
   const authoredWrap = ["text", "callout"].includes(kind) && Object.hasOwn(annotation, "wrap");
   const layoutText = kind === "text" && ["dx", "dy", "anchor", "rotation"].some((key) => Object.hasOwn(annotation, key));
-  const wrapped = authoredWrap || layoutText;
+  const dispatch = sceneXyafAnnotationDispatchPlan({ kind, authoredWrap, layoutText });
+  const wrapped = dispatch.wrapped;
   const labelled = annotation.text != null && annotation.text !== "";
   if (kind === "arrow" && labelled) throw new RangeError("Scene arrows do not encode text");
   let encoded = new Uint8Array();
@@ -393,7 +394,7 @@ function packXyAf(annotation, index) {
   if ((style.label_border_color == null) !== (style.label_border_width == null)) throw new RangeError(wrapped ? "Scene wrapped label border requires color and width" : "Scene v23 label border requires color and width");
   let parsedDash = null;
   let parsedCap = null;
-  if (kind === "rule") {
+  if (dispatch.packRuleDash || dispatch.packRuleLinecap) {
     parsedDash = parseSceneDash(style.dash);
     if (parsedDash === false) throw new RangeError("Scene v12 rule annotation dash is not a constant pattern");
     if (parsedDash) styleBits |= XYAF_STYLE_DASH;
@@ -4952,6 +4953,11 @@ export function figureYLabel(figure, yAxis) {
 }
 
 function packChromeFacts(figure, { width, height, margins = null, colorbarOk = true } = {}) {
+  const figurePlan = sceneXycfFigurePlan({
+    showLegend: figureShowLegend(figure) !== false,
+    colorbarOk,
+    polar: (figure.coords ?? "cartesian") === "polar",
+  });
   const FLAG_AUTHORED_MARGINS = 1 << 0, FLAG_PADDING = 1 << 1, FLAG_X_MAJOR_AUTO = 1 << 2, FLAG_Y_MAJOR_AUTO = 1 << 3;
   const FLAG_X_TICK_LABELS = 1 << 4, FLAG_Y_TICK_LABELS = 1 << 5, FLAG_HAS_CHROME = 1 << 6, FLAG_HAS_LEGEND = 1 << 7, FLAG_HAS_COLORBAR = 1 << 8;
   const LEGEND_AUTHORED_LOC = 1 << 0, LEGEND_AUTHORED_FONT = 1 << 1, LEGEND_AUTHORED_TITLE_FONT = 1 << 2;
@@ -5004,7 +5010,7 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   let legendTextRgba = new Uint8Array(4), legendFrameRgba = new Uint8Array(4);
   let legendMeta = new Uint8Array(), legendLens = [], legendBlob = new Uint8Array();
   let legendCount = 0;
-  if (figureShowLegend(figure) !== false) {
+  if (figurePlan.attachLegend) {
     flags |= FLAG_HAS_LEGEND;
     legendFlags |= LEGEND_SHOW;
     const options = figureLegendOptions(figure) ?? {};
@@ -5031,7 +5037,7 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
   let cbLo = 0, cbHi = 0, cbText = Uint8Array.of(32, 32, 32, 255);
   let cbStops = [], cbTicks = [];
   const colorbar = figureColorbarOptions(figure);
-  if (colorbarOk && colorbar) {
+  if (figurePlan.attachColorbar && colorbar) {
     flags |= FLAG_HAS_COLORBAR;
     cbLo = Number(colorbar.domain[0]); cbHi = Number(colorbar.domain[1]);
     cbStops = colorbar.stops.map((stop) => [Number(stop[0]), Uint8Array.from(stop[1])]);
@@ -5163,6 +5169,11 @@ export function xyEfStrokeWidthOnly(style) {
 }
 
 function packPublicExportSupport(figure, { width = null, height = null } = {}) {
+  const exportPlan = scenePublicExportFigurePlan({
+    polar: (figure.coords ?? "cartesian") === "polar",
+    hasChromeStyles: Boolean(figureChromeStyles(figure) && Object.keys(figureChromeStyles(figure)).length),
+    hasTitleOptions: Boolean(figureTitleOptions(figure) && (Array.isArray(figureTitleOptions(figure)) ? figureTitleOptions(figure).length : figureTitleOptions(figure))),
+  });
   const OBS_HAS_X = 1 << 0;
   const OBS_HAS_Y = 1 << 1;
   const OBS_X_FINITE = 1 << 2;
@@ -5189,11 +5200,10 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
   let flags = 0;
   if (width == null && !Number.isInteger(figure.width)) flags |= 1 << 0;
   if (height == null && !Number.isInteger(figure.height)) flags |= 1 << 1;
-  const chrome = figureChromeStyles(figure);
-  if (chrome && Object.keys(chrome).length) flags |= 1 << 2;
+  if (exportPlan.hasChromeStyles) flags |= 1 << 2;
   const titleOptions = figureTitleOptions(figure);
-  if (titleOptions && (Array.isArray(titleOptions) ? titleOptions.length : titleOptions)) flags |= 1 << 3;
-  if ((figure.coords ?? "cartesian") === "polar") flags |= 1 << 4;
+  if (exportPlan.hasTitleOptions) flags |= 1 << 3;
+  if (exportPlan.polar) flags |= 1 << 4;
   const styleKeys = Object.keys(figure.style ?? {});
   const legend = figureLegendOptions(figure) ?? {};
   const legendKeys = Object.keys(legend);
@@ -5271,6 +5281,11 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
 
   for (const [traceIndex, trace] of traces.entries()) {
     const style = trace.style ?? {};
+    const exportDispatch = scenePublicExportTraceDispatchPlan({
+      kind: String(trace.kind ?? ""),
+      polar: exportPlan.polar,
+      useDensity: scatterUsesDensity(trace),
+    });
     const opacity = Number(style.opacity ?? 1);
     if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) {
       throw new RangeError("trace opacity must be finite and in [0, 1]");
@@ -5334,16 +5349,13 @@ function packPublicExportSupport(figure, { width = null, height = null } = {}) {
       obs |= OBS_SYMBOL_NON_STRING;
       symbol = "";
     }
-    if (
-      (figure.coords ?? "cartesian") === "cartesian"
-      && scatterUsesDensity(trace)
-    ) {
+    if (exportDispatch.packDensityBlit) {
       obs |= OBS_DENSITY_BLIT;
     }
     const role = style.role == null ? "" : String(style.role);
     const reduce = style.reduce == null ? "" : String(style.reduce);
     let hexDx = Number.NaN, hexDy = Number.NaN;
-    if (sceneKindClass(trace.kind) & SCENE_KIND_CLASS_HEXBIN) {
+    if (exportDispatch.packHexbinPitch) {
       const pitch = hexbinStylePitch(style);
       hexDx = Number(pitch.hex_dx);
       hexDy = Number(pitch.hex_dy);
