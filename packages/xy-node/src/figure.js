@@ -7,7 +7,6 @@
     // t.animation via `_transition_entry`. Matching Python would add
     // entry.animation. Recorded emit-segments-animation stay-host.
     // emit-area-animation stay-host.
-    // emit-line-animation stay-host.
 /**
  * Minimal Node figure — holds scatter/line/histogram/segments traces and builds
  * a §29-ish payload subset (PROTOCOL_VERSION matches Python).
