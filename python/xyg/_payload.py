@@ -1454,36 +1454,86 @@ class PayloadMixin(_Host):
         )
         return sample
 
-    def _density_trace_spec(self, t: Trace, xr, yr, w, h, pw: "_PayloadWriter") -> dict[str, Any]:  # noqa: ANN001
-        """Bin a scatter into a density grid and build its spec entry (§5 Tier 2).
-        The grid ships in the client's one-byte log texture precision; exact
-        visible counts remain metadata, and the client recomputes the
-        normalization domain per view so brightness is stable (§F6)."""
-        # A clean full-domain trace has identity visible rows. Avoid allocating
-        # and then hashing an N-entry u32 index vector merely to retain the
-        # small sampled overlay; the implicit-range samplers apply the same
-        # SplitMix predicates with scratch proportional to the returned rows.
-        # Compact categorical codes can be scanned directly in Rust; wider
-        # codes retain the general visible-index path.
+    def _density_trace_emit_plan(
+        self,
+        t: Trace,
+        xr,
+        yr,
+        w: int,
+        h: int,
+        pw: "_PayloadWriter",
+        bx0: float,
+        bx1: float,
+        by0: float,
+        by1: float,
+        x_linear: bool,
+        y_linear: bool,
+        x_memmapped: bool,
+        y_memmapped: bool,
+        *,
+        grid_from_pyramid: bool,
+        has_pyramid_resource: bool,
+        grid_present: bool,
+        has_pyramid_rgba: bool = False,
+        has_bin_colors: bool = False,
+        dropped_count: int = 0,
+    ) -> dict[str, int | bool | float]:
+        mode = ""
         codes_present = False
         codes_u8 = False
         has_counts = False
-        mode = ""
+        has_constant = False
         if t.color_ch is not None:
             mode = t.color_ch.mode
             codes = t.color_ch.codes
             codes_present = codes is not None
             codes_u8 = codes is not None and codes.dtype == np.uint8
             has_counts = t.color_ch.counts is not None
-        color_mode, categorical, compact_categorical, stratified_counts = (
-            kernels.density_trace_color_classify(
-                has_channel=t.color_ch is not None,
-                mode=mode,
-                codes_present=codes_present,
-                codes_u8=codes_u8,
-                has_counts=has_counts,
-            )
+            has_constant = t.color_ch.constant is not None
+        return kernels.payload_density_trace_emit_plan(
+            has_channel=t.color_ch is not None,
+            mode=mode,
+            codes_present=codes_present,
+            codes_u8=codes_u8,
+            has_counts=has_counts,
+            has_constant=has_constant,
+            cartesian=self.coords == "cartesian",
+            x_linear=x_linear,
+            y_linear=y_linear,
+            x_has_nulls=bool(t.x.zone.null_count),
+            y_has_nulls=bool(t.y.zone.null_count),
+            point_overlay=bool(pw.point_overlay),
+            split_payload=bool(pw._split),
+            grid_w=int(w),
+            grid_h=int(h),
+            grid_from_pyramid=grid_from_pyramid,
+            has_pyramid_resource=has_pyramid_resource,
+            grid_present=grid_present,
+            x_memmapped=x_memmapped,
+            y_memmapped=y_memmapped,
+            x_min=float(t.x.min),
+            x_max=float(t.x.max),
+            y_min=float(t.y.min),
+            y_max=float(t.y.max),
+            xr0=float(xr[0]),
+            xr1=float(xr[1]),
+            yr0=float(yr[0]),
+            yr1=float(yr[1]),
+            bx0=float(bx0),
+            bx1=float(bx1),
+            by0=float(by0),
+            by1=float(by1),
+            n_points=int(t.n_points),
+            has_pyramid_rgba=has_pyramid_rgba,
+            has_bin_colors=has_bin_colors,
+            dropped_count=int(dropped_count),
         )
+
+    def _density_trace_spec(self, t: Trace, xr, yr, w, h, pw: "_PayloadWriter") -> dict[str, Any]:  # noqa: ANN001
+        """Bin a scatter into a density grid and build its spec entry (§5 Tier 2).
+        The grid ships in the client's one-byte log texture precision; exact
+        visible counts remain metadata, and the client recomputes the
+        normalization domain per view so brightness is stable (§F6)."""
         # Density grids are uniform in axis-scale coordinates (§28): on a
         # nonlinear axis the columns and window are transformed before binning
         # so every cell covers the same strip of *screen*. The wire keeps raw
@@ -1493,54 +1543,32 @@ class PayloadMixin(_Host):
         by, (by0, by1) = self._binning_coords(t.y_axis, t.y.values, yr)
         x_linear = self._axis_scale(t.x_axis) == "linear"
         y_linear = self._axis_scale(t.y_axis) == "linear"
-        x_c0, x_c1, y_c0, y_c1 = kernels.density_bin_coord_endpoints(
-            x_linear=x_linear,
-            y_linear=y_linear,
-            xr0=float(xr[0]),
-            xr1=float(xr[1]),
-            yr0=float(yr[0]),
-            yr1=float(yr[1]),
-            bx0=float(bx0),
-            bx1=float(bx1),
-            by0=float(by0),
-            by1=float(by1),
-        )
         from . import _ooc as ooc
 
         x_memmapped = ooc.is_memmapped(t.x.values)
         y_memmapped = ooc.is_memmapped(t.y.values)
 
         def _emit_plan(
-            *, grid_from_pyramid: bool, has_pyramid_resource: bool
+            *, grid_from_pyramid: bool, has_pyramid_resource: bool, grid_present: bool = False
         ) -> dict[str, int | bool | float]:
-            return _native.density_emit_plan(
-                cartesian=self.coords == "cartesian",
-                x_linear=x_linear,
-                y_linear=y_linear,
-                categorical=categorical,
-                compact_categorical=compact_categorical,
-                stratified_counts=stratified_counts,
-                x_has_nulls=bool(t.x.zone.null_count),
-                y_has_nulls=bool(t.y.zone.null_count),
-                point_overlay=bool(pw.point_overlay),
+            return self._density_trace_emit_plan(
+                t,
+                xr,
+                yr,
+                w,
+                h,
+                pw,
+                bx0,
+                bx1,
+                by0,
+                by1,
+                x_linear,
+                y_linear,
+                x_memmapped,
+                y_memmapped,
                 grid_from_pyramid=grid_from_pyramid,
-                x_memmapped=x_memmapped,
-                y_memmapped=y_memmapped,
                 has_pyramid_resource=has_pyramid_resource,
-                color_mode=color_mode,
-                x_min=float(t.x.min),
-                x_max=float(t.x.max),
-                y_min=float(t.y.min),
-                y_max=float(t.y.max),
-                xr0=float(xr[0]),
-                xr1=float(xr[1]),
-                yr0=float(yr[0]),
-                yr1=float(yr[1]),
-                x_c0=x_c0,
-                x_c1=x_c1,
-                y_c0=y_c0,
-                y_c1=y_c1,
-                n_points=int(t.n_points),
+                grid_present=grid_present,
             )
 
         plan = _emit_plan(grid_from_pyramid=False, has_pyramid_resource=False)
@@ -1622,7 +1650,7 @@ class PayloadMixin(_Host):
         # Fill the public sample without re-binning so first paint still
         # ships `density["sample"]` (raster `point_overlay=False` stays empty).
         if plan["needs_pyramid_sample"] and sample_sel is None:
-            if compact_categorical:
+            if plan["pyramid_sample_stratified"]:
                 assert t.color_ch is not None and t.color_ch.codes is not None
                 sample_sel = lod.stratified_sample_row_range_for_target(
                     t.color_ch.codes,
@@ -1639,7 +1667,7 @@ class PayloadMixin(_Host):
                 )
         if grid is None:
             path = int(plan["grid_path"])
-            if kernels.density_grid_path_identity_state(grid_path=path):
+            if plan["visible_init_n_points"]:
                 visible = int(t.n_points)
                 sel = np.empty(0, dtype=np.uint32)
             if plan["use_raw_range_bin2d"]:
@@ -1701,6 +1729,28 @@ class PayloadMixin(_Host):
             visible = int(t.n_points)
             sel = np.empty(0, dtype=np.uint32)
         encoded_grid, gmax = kernels.density_log_u8(grid)
+        bin_colors = interaction.trace_bin_colors(t)
+        wire = self._density_trace_emit_plan(
+            t,
+            xr,
+            yr,
+            w,
+            h,
+            pw,
+            bx0,
+            bx1,
+            by0,
+            by1,
+            x_linear,
+            y_linear,
+            x_memmapped,
+            y_memmapped,
+            grid_from_pyramid=grid is not None,
+            has_pyramid_resource=has_pyramid_resource,
+            grid_present=True,
+            has_pyramid_rgba=rgba_from_pyramid is not None,
+            has_bin_colors=bin_colors is not None,
+        )
         # The density surface wears the data's own colors (LOD doc §2): count
         # is the alpha channel, and per-point color channels aggregate to a
         # per-cell mean shipped as an RGBA plane below. `colormap` stays on
@@ -1708,19 +1758,10 @@ class PayloadMixin(_Host):
         # specs); no shipped path colormaps counts.
         cmap = (
             t.color_ch.colormap
-            if (
-                t.color_ch is not None
-                and kernels.density_uses_channel_colormap(
-                    has_channel=True,
-                    mode=t.color_ch.mode,
-                )
-            )
+            if t.color_ch is not None and wire["use_channel_colormap"]
             else channels.DEFAULT_COLORMAP
         )
         dropped_channels = list(t.per_item_channel_names())
-        # Cached full-column resolution (LOD doc §2): the O(N) quantize pass
-        # is shared with the pyramid build and every later grid reply.
-        bin_colors = interaction.trace_bin_colors(t)
         density = {
             "buf": pw.ship_u8(encoded_grid),
             "w": w,
@@ -1743,10 +1784,7 @@ class PayloadMixin(_Host):
         # 32,768-point raw chunk at a time; this source capacity is the
         # generated aggregate ABI's declared point limit.
         wasm_capacity = WASM_AGGREGATE_MAX_POINTS
-        if kernels.density_wasm_source_admit(
-            split_payload=bool(pw._split),
-            wasm_eligible=bool(plan["wasm_eligible"]),
-        ):
+        if wire["ship_wasm_source"]:
             density["wasm_source"] = {
                 "kind": "cartesian-count-f64-stream-v1",
                 "x": pw.ship_f64(t.x.values),
@@ -1758,10 +1796,7 @@ class PayloadMixin(_Host):
             }
         if tiles_meta is not None:
             density["tiles"] = tiles_meta
-        ship_mean_color_rgba = kernels.density_mean_color_rgba_wire_admit(
-            has_pyramid_rgba=rgba_from_pyramid is not None,
-            has_bin_colors=bin_colors is not None,
-        )
+        ship_mean_color_rgba = bool(wire["ship_mean_color_rgba"])
         if ship_mean_color_rgba:
             if rgba_from_pyramid is not None:
                 density["rgba"] = pw.ship_u8(rgba_from_pyramid.reshape(-1))
@@ -1775,42 +1810,34 @@ class PayloadMixin(_Host):
                 )
                 density["rgba"] = pw.ship_u8(rgba_grid.reshape(-1))
             density["color_agg"] = "mean"
-        mean_color_aggregates = ship_mean_color_rgba
         dropped_channels = [
             name
             for name in dropped_channels
             if kernels.density_dropped_channel_wire_admit(
                 channel=name,
-                mean_color_aggregates=mean_color_aggregates,
+                mean_color_aggregates=int(wire["mean_color_aggregates"]),
             )
         ]
         density["channels_dropped"] = kernels.density_channels_dropped_compat(
             dropped_count=len(dropped_channels),
         )
         density["dropped_channels"] = dropped_channels  # complete, actionable list (§28)
-        if t.color_ch is not None and kernels.density_constant_color_wire_admit(
-            has_channel=True,
-            mode=t.color_ch.mode,
-            has_constant=t.color_ch.constant is not None,
-        ):
+        if wire["ship_constant_color"]:
+            assert t.color_ch is not None
             density["color"] = t.color_ch.constant
-        overlay_wire = kernels.density_overlay_omitted_wire(
-            overlay_omitted=int(plan["overlay_omitted"]),
-            point_overlay=bool(pw.point_overlay),
-        )
-        if overlay_wire == "rows_exceed_u32":
+        if wire["overlay_wire_rows_exceed"]:
             # §28: exact grid, but the deterministic point overlay is dropped
             # because row ids exceed u32. Recorded so the client/legend can say so.
-            density["overlay_omitted"] = overlay_wire
-        if pw.point_overlay:
+            density["overlay_omitted"] = "rows_exceed_u32"
+        if wire["attach_sample"]:
             sample = self._density_sample_spec(t, sel, visible, xr, yr, pw, sample_sel=sample_sel)
             if sample is not None:
                 density["sample"] = sample
-        elif overlay_wire == "static_raster":
+        elif wire["overlay_wire_static_raster"]:
             # §28: no representation is dropped silently. `oversized` above may
             # have already recorded the more fundamental u32 reason; that one
             # wins, so only claim the field when nothing else has.
-            density["overlay_omitted"] = overlay_wire
+            density["overlay_omitted"] = "static_raster"
         entry = {
             "id": t.id,
             "kind": "scatter",
@@ -1818,16 +1845,14 @@ class PayloadMixin(_Host):
             "style": dict(t.style),
             "tier": "density",
             "n_points": t.n_points,
-            "n_marks": int(w * h),
+            "n_marks": int(wire["n_marks"]),
             "visible": visible,
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
             "density": density,
         }
-        if kernels.density_categorical_color_wire_admit(
-            categorical=bool(categorical),
-            has_channel=t.color_ch is not None,
-        ):
+        if wire["ship_categorical_entry_color"]:
+            assert t.color_ch is not None
             # Legend chrome needs the encoding even though the per-point codes
             # aggregate into the mean-color plane: ship the channel spec slim
             # (categories + palette, no per-point `buf`) so category rows

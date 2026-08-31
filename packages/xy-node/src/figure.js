@@ -32,10 +32,8 @@ import {
   DENSITY_SAMPLE_TARGET,
   PROTOCOL_VERSION,
   bin2d,
-  densityEmitPlan,
   densityFormatBinning,
   densityLogU8,
-  densityOverlayOmittedWire,
   densityOverlayOpacity,
   encodeF32Values,
   geometryOffset,
@@ -49,6 +47,7 @@ import {
   payloadMeshEmitPlan,
   payloadRibbonEmitPlan,
   payloadScatterEmitPlan,
+  payloadDensityTraceEmitPlan,
   payloadSegmentsEmitGather,
   payloadSegmentsEmitPlan,
   payloadTraceChannelsShipAttach,
@@ -1377,21 +1376,19 @@ export class Figure {
     }
     const xmm = minMax(t.x) ?? xr;
     const ymm = minMax(t.y) ?? yr;
-    const plan = densityEmitPlan({
+    const wire = payloadDensityTraceEmitPlan({
+      hasChannel: false,
       cartesian: this.coords === "cartesian",
       xLinear: true,
       yLinear: true,
       pointOverlay: true,
-      gridFromPyramid: reduction === "pyramid-count",      // log x. Recorded emit-density-xlinear stay-host.
-
-      hasPyramidResource,      // log y. Recorded emit-density-ylinear stay-host.
-
+      gridW: w,
+      gridH: h,
+      gridFromPyramid: reduction === "pyramid-count",
+      hasPyramidResource,
+      gridPresent: true,
       forceBin2d,
       forcePyramid,
-      // Node colorMode is style.color ? 1 : 0. Python `_density_trace_spec`
-      // uses color_ch (none/constant/other). Node scatter() does not copy
-      // color_ch onto traces. Recorded density-colormode stay-host.
-      colorMode: t.style?.color ? 1 : 0,
       xMin: xmm[0],
       xMax: xmm[1],
       yMin: ymm[0],
@@ -1400,6 +1397,10 @@ export class Figure {
       xr1: xr[1],
       yr0: yr[0],
       yr1: yr[1],
+      bx0: xr[0],
+      bx1: xr[1],
+      by0: yr[0],
+      by1: yr[1],
       nPoints: t.x.length,
     });
     const { encoded, max } = densityLogU8(grid);
@@ -1426,18 +1427,14 @@ export class Figure {
       // Node payload density omits wasm_source. Python `_density_trace_spec`
       // ships a split f64 replay source. Matching Python would add
       // density.wasm_source. Recorded emit-density-wasm-source stay-host.
-      channels_dropped: false,
+      channels_dropped: wire.channelsDroppedCompat,
       dropped_channels: [],
     };
-    const overlayWire = densityOverlayOmittedWire({
-      overlayOmitted: plan.overlay_omitted,
-      pointOverlay: true,
-    });
-    if (overlayWire === "static_raster") {
-      density.overlay_omitted = overlayWire;
-    } else if (overlayWire === "rows_exceed_u32") {
-      density.overlay_omitted = overlayWire;
-    } else {
+    if (wire.overlayWireStaticRaster) {
+      density.overlay_omitted = "static_raster";
+    } else if (wire.overlayWireRowsExceed) {
+      density.overlay_omitted = "rows_exceed_u32";
+    } else if (wire.attachSample) {
       const n = t.x.length;
       const { keepAll, indices } = payloadSampleTargetIndices({
         n,
@@ -1507,7 +1504,7 @@ export class Figure {
       style: { ...t.style },
       tier: "density",
       n_points: t.x.length,
-      n_marks: w * h,
+      n_marks: wire.nMarks,
       visible: t.x.length,
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",

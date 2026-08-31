@@ -684,6 +684,49 @@ def test_payload_scatter_emit_plan_force_density_false() -> None:
     assert plan["set_shipped_sel"] is True
 
 
+def test_payload_density_trace_emit_plan_identity_grid() -> None:
+    plan = kernels.payload_density_trace_emit_plan(
+        has_channel=True,
+        mode="categorical",
+        codes_present=True,
+        codes_u8=True,
+        has_counts=True,
+        has_constant=False,
+        cartesian=True,
+        x_linear=True,
+        y_linear=True,
+        x_has_nulls=False,
+        y_has_nulls=False,
+        point_overlay=True,
+        split_payload=False,
+        grid_w=512,
+        grid_h=384,
+        grid_from_pyramid=False,
+        has_pyramid_resource=False,
+        grid_present=False,
+        x_min=0.0,
+        x_max=1.0,
+        y_min=0.0,
+        y_max=1.0,
+        xr0=0.0,
+        xr1=1.0,
+        yr0=0.0,
+        yr1=1.0,
+        bx0=0.0,
+        bx1=1.0,
+        by0=0.0,
+        by1=1.0,
+        n_points=10_000,
+        dropped_count=2,
+    )
+    assert plan["attach_transition"] is True
+    assert plan["n_marks"] == 512 * 384
+    assert plan["visible_init_n_points"] is True
+    assert plan["attach_sample"] is True
+    assert plan["ship_categorical_entry_color"] is True
+    assert plan["channels_dropped_compat"] is True
+
+
 def test_line_scatter_area_base_entry_ships_animation_and_log_scale() -> None:
     anim = {"duration": 250}
     fig = Figure().set_axis("x", type_="log")

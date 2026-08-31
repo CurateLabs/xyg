@@ -1537,6 +1537,49 @@ def load() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_int32),
         ctypes.POINTER(ctypes.c_int32),
     ]
+    lib.xyg_payload_density_trace_emit_plan.restype = ctypes.c_int32
+    lib.xyg_payload_density_trace_emit_plan.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_uint64,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_void_p,
+    ]
     lib.xyg_density_color_classify.restype = ctypes.c_int32
     lib.xyg_density_color_classify.argtypes = [
         ctypes.c_int32,
@@ -5591,6 +5634,70 @@ def main() -> None:
         and scatter_attach_transition.value == 1
         and scatter_attach_tooltip.value == 1,
         "payload_scatter_emit_plan direct tier skeleton",
+    )
+    trace_mode_bytes = b"categorical"
+    dt_plan = (ctypes.c_byte * 152)()
+    ok(
+        lib.xyg_payload_density_trace_emit_plan(
+            1,
+            trace_mode_bytes,
+            len(trace_mode_bytes),
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            0,
+            0,
+            1,
+            0,
+            512,
+            384,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            0.0,
+            1.0,
+            10_000,
+            0,
+            0,
+            2,
+            ctypes.byref(dt_plan),
+        )
+        == 1,
+        "payload_density_trace_emit_plan identity grid orchestration",
+    )
+    dt_view = memoryview(dt_plan)
+    dt_attach_transition = int.from_bytes(dt_view[92:96], "little")
+    dt_n_marks = int.from_bytes(dt_view[96:104], "little")
+    dt_visible_init = int.from_bytes(dt_view[104:108], "little")
+    dt_attach_sample = int.from_bytes(dt_view[108:112], "little")
+    dt_ship_categorical = int.from_bytes(dt_view[132:136], "little")
+    dt_channels_dropped = int.from_bytes(dt_view[148:152], "little")
+    ok(
+        dt_attach_transition == 1
+        and dt_n_marks == 512 * 384
+        and dt_visible_init == 1
+        and dt_attach_sample == 1
+        and dt_ship_categorical == 1
+        and dt_channels_dropped == 1,
+        "payload_density_trace_emit_plan packed fields",
     )
     density_color_mode = ctypes.c_int32(-1)
     density_categorical = ctypes.c_int32(-1)
