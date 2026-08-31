@@ -2809,22 +2809,31 @@ def _pack_marker_blob(value: Any) -> bytes | None:
 
 
 def _pack_gradient_spec(fill: dict[str, Any]) -> bytes | None:
-    space = _native.scene_gradient_space(fill.get("space"))
-    direction = _native.scene_gradient_dir(fill.get("dir"))
     stops = fill.get("stops")
     if not isinstance(stops, (list, tuple)):
         return None
-    payload = bytearray(bytes((space, direction, len(stops) & 0xFF, 0)))
+    stop_t: list[float] = []
+    css_parts: list[bytes] = []
+    css_lens: list[int] = []
     try:
         for stop in stops:
             if not isinstance(stop, (list, tuple)) or len(stop) != 2:
                 return None
+            stop_t.append(float(stop[0]))
             css = str(stop[1]).encode("utf-8")
-            payload.extend(struct.pack("<dH", float(stop[0]), len(css)))
-            payload.extend(css)
+            css_parts.append(css)
+            css_lens.append(len(css))
     except (TypeError, ValueError):
         return None
-    return bytes(payload)
+    space = fill.get("space")
+    dir_ = fill.get("dir")
+    return _native.scene_gradient_spec_pack(
+        b"" if space is None else str(space).encode("utf-8"),
+        b"" if dir_ is None else str(dir_).encode("utf-8"),
+        stop_t,
+        b"".join(css_parts),
+        css_lens,
+    )
 
 
 def _pack_xytc(figure: Any) -> bytes:

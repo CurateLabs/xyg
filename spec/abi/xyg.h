@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 259
-#define XYG_ABI_SIGNATURE_SHA256 "116002a6846fd10943e968d8d4d01429263fa3be95c60bab8a0ddad4ef88f294"
+#define XYG_ABI_VERSION 260
+#define XYG_ABI_SIGNATURE_SHA256 "c590d062192a3954b03942fa12b03244561d18bccf7b45d86ca04a9fda2f1f38"
 
 #ifdef __cplusplus
 extern "C" {
@@ -216,6 +216,7 @@ int32_t xyg_scene_finite_all(const double * values, size_t values_len);
 int32_t xyg_scene_gradient_dir(const uint8_t * text, size_t text_len);
 int32_t xyg_scene_gradient_solid_css(const uint8_t * rgba, size_t rgba_len, uint8_t * out, size_t out_len);
 int32_t xyg_scene_gradient_space(const uint8_t * text, size_t text_len);
+int32_t xyg_scene_gradient_spec_pack(const uint8_t * space, size_t space_len, const uint8_t * dir, size_t dir_len, const double * stop_t, size_t n_stops, const uint8_t * css, size_t css_len, const uint32_t * css_lens, size_t n_lens, uint8_t * out, size_t out_cap);
 int32_t xyg_scene_heatmap_colormap_admit(int32_t truecolor, int32_t has_colormap, int32_t has_rgba_grid, int32_t has_rgba);
 int32_t xyg_scene_heatmap_extent_admit(double x0, double x1, double y0, double y1);
 int32_t xyg_scene_heatmap_shape_admit(double rows, double cols);

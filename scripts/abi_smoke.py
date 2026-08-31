@@ -345,6 +345,21 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
     ]
+    lib.xyg_scene_gradient_spec_pack.restype = ctypes.c_int32
+    lib.xyg_scene_gradient_spec_pack.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        F64P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        U32P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_scene_heatmap_shape_admit.restype = ctypes.c_int32
     lib.xyg_scene_heatmap_shape_admit.argtypes = [ctypes.c_double, ctypes.c_double]
     lib.xyg_scene_scatter_paint_channel_admit.restype = ctypes.c_int32
@@ -3360,6 +3375,30 @@ def main() -> None:
         and xyhf_flags.value == (1 << 6)
         and bytes(xyhf_stops_out) == bytes(stop_rgb),
         "scene_xyhf_colormap_pack stops",
+    )
+    grad_space = array("B", b"mark")
+    grad_dir = array("B", b"right")
+    grad_t = array("d", [0.0, 1.0])
+    grad_css = array("B", b"#7c3aed#34d399")
+    grad_lens = array("I", [7, 7])
+    grad_out = array("B", [0] * 64)
+    grad_n = lib.xyg_scene_gradient_spec_pack(
+        _ptr(grad_space, ctypes.c_uint8),
+        len(grad_space),
+        _ptr(grad_dir, ctypes.c_uint8),
+        len(grad_dir),
+        _ptr(grad_t, ctypes.c_double),
+        len(grad_t),
+        _ptr(grad_css, ctypes.c_uint8),
+        len(grad_css),
+        _ptr(grad_lens, ctypes.c_uint32),
+        len(grad_lens),
+        _ptr(grad_out, ctypes.c_uint8),
+        len(grad_out),
+    )
+    ok(
+        grad_n == 4 + 2 * 10 + 14 and bytes(grad_out[:4]) == bytes([0, 2, 2, 0]),
+        "scene_gradient_spec_pack mark-right",
     )
     scale = ctypes.c_double()
     ok(
