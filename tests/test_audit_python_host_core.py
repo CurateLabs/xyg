@@ -37,3 +37,16 @@ def test_audit_cli_exits_zero():
     assert proc.returncode == 0
     assert "python-scene-migration core-logic re-audit" in proc.stdout
     assert "§302 blocker rollup" in proc.stdout
+    assert "abi_version: 313" in proc.stdout
+    assert "Merged scene lane on main" in proc.stdout
+    assert "Merged payload stack on main" in proc.stdout
+    assert "Merged payload orchestration on main" in proc.stdout
+    assert "Merged scene orchestration on main" in proc.stdout
+    assert "Merged payload gather/ship on main" in proc.stdout
+    assert "#768" in proc.stdout
+    assert "xyg_payload_column_ship_plan" in proc.stdout
+    assert "xyg_payload_channel_wire_encode" in proc.stdout
+    assert "M2 close contract (#731)" in proc.stdout
+    assert "#733 CLOSED" in proc.stdout
+    assert "#732 OPEN" in proc.stdout
+    assert "Remaining close blockers" in proc.stdout
