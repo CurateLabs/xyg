@@ -1369,6 +1369,23 @@ def load() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_int32),
         ctypes.POINTER(ctypes.c_int32),
     ]
+    lib.xyg_density_bin_coord_endpoints.restype = ctypes.c_int32
+    lib.xyg_density_bin_coord_endpoints.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.POINTER(ctypes.c_double),
+    ]
     lib.xyg_payload_sample_target_indices.restype = ctypes.c_size_t
     lib.xyg_payload_sample_target_indices.argtypes = [
         ctypes.c_size_t,
@@ -4883,6 +4900,34 @@ def main() -> None:
         and trace_categorical.value == 1
         and trace_stratified.value == 1,
         "density_trace_color_classify categorical mode",
+    )
+    bin_x_c0 = ctypes.c_double(0.0)
+    bin_x_c1 = ctypes.c_double(0.0)
+    bin_y_c0 = ctypes.c_double(0.0)
+    bin_y_c1 = ctypes.c_double(0.0)
+    ok(
+        lib.xyg_density_bin_coord_endpoints(
+            1,
+            0,
+            0.0,
+            10.0,
+            1.0,
+            9.0,
+            2.0,
+            8.0,
+            3.0,
+            7.0,
+            ctypes.byref(bin_x_c0),
+            ctypes.byref(bin_x_c1),
+            ctypes.byref(bin_y_c0),
+            ctypes.byref(bin_y_c1),
+        )
+        == 1
+        and abs(bin_x_c0.value - 0.0) < 1e-12
+        and abs(bin_x_c1.value - 10.0) < 1e-12
+        and abs(bin_y_c0.value - 3.0) < 1e-12
+        and abs(bin_y_c1.value - 7.0) < 1e-12,
+        "density_bin_coord_endpoints linear x",
     )
     sample_keep = ctypes.c_int32(-1)
     sample_n = lib.xyg_payload_sample_target_indices(

@@ -1238,14 +1238,18 @@ class PayloadMixin(_Host):
         by, (by0, by1) = self._binning_coords(t.y_axis, t.y.values, yr)
         x_linear = self._axis_scale(t.x_axis) == "linear"
         y_linear = self._axis_scale(t.y_axis) == "linear"
-        if x_linear:
-            x_c0, x_c1 = float(xr[0]), float(xr[1])
-        else:
-            x_c0, x_c1 = float(bx0), float(bx1)
-        if y_linear:
-            y_c0, y_c1 = float(yr[0]), float(yr[1])
-        else:
-            y_c0, y_c1 = float(by0), float(by1)
+        x_c0, x_c1, y_c0, y_c1 = kernels.density_bin_coord_endpoints(
+            x_linear=x_linear,
+            y_linear=y_linear,
+            xr0=float(xr[0]),
+            xr1=float(xr[1]),
+            yr0=float(yr[0]),
+            yr1=float(yr[1]),
+            bx0=float(bx0),
+            bx1=float(bx1),
+            by0=float(by0),
+            by1=float(by1),
+        )
         from . import _ooc as ooc
 
         x_memmapped = ooc.is_memmapped(t.x.values)

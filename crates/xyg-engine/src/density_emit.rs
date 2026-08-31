@@ -121,6 +121,43 @@ pub fn density_trace_color_classify(
     )
 }
 
+/// Select density binning coordinate endpoints (ABI 263).
+///
+/// Linear axes bin in view-range coordinates; nonlinear axes bin in transformed
+/// column bounds from ``_binning_coords``. Matches ``_density_trace_spec``.
+pub fn bin_coord_endpoints(
+    x_linear: bool,
+    y_linear: bool,
+    xr0: f64,
+    xr1: f64,
+    yr0: f64,
+    yr1: f64,
+    bx0: f64,
+    bx1: f64,
+    by0: f64,
+    by1: f64,
+    out_x_c0: &mut f64,
+    out_x_c1: &mut f64,
+    out_y_c0: &mut f64,
+    out_y_c1: &mut f64,
+) -> i32 {
+    if x_linear {
+        *out_x_c0 = xr0;
+        *out_x_c1 = xr1;
+    } else {
+        *out_x_c0 = bx0;
+        *out_x_c1 = bx1;
+    }
+    if y_linear {
+        *out_y_c0 = yr0;
+        *out_y_c1 = yr1;
+    } else {
+        *out_y_c0 = by0;
+        *out_y_c1 = by1;
+    }
+    1
+}
+
 pub const DENSITY_OVERLAY_NONE: u32 = 0;
 pub const DENSITY_OVERLAY_ROWS_EXCEED_U32: u32 = 1;
 pub const DENSITY_OVERLAY_STATIC_RASTER: u32 = 2;
@@ -620,6 +657,35 @@ mod tests {
         );
         assert_eq!(color_mode, DENSITY_COLOR_MODE_OTHER);
         assert_eq!(density_trace_color_classify(2, "constant", 0, 0, 0, &mut color_mode, &mut categorical, &mut compact, &mut stratified), 0);
+    }
+
+    #[test]
+    fn bin_coord_endpoints_matches_host_linear_nonlinear() {
+        let mut x_c0 = 0.0;
+        let mut x_c1 = 0.0;
+        let mut y_c0 = 0.0;
+        let mut y_c1 = 0.0;
+        assert_eq!(
+            bin_coord_endpoints(
+                true,
+                false,
+                0.0,
+                10.0,
+                1.0,
+                9.0,
+                2.0,
+                8.0,
+                3.0,
+                7.0,
+                &mut x_c0,
+                &mut x_c1,
+                &mut y_c0,
+                &mut y_c1,
+            ),
+            1
+        );
+        assert_eq!((x_c0, x_c1), (0.0, 10.0));
+        assert_eq!((y_c0, y_c1), (3.0, 7.0));
     }
 
     #[test]

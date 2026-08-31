@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 278;
+pub const ABI_VERSION: u32 = 279;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15694,6 +15694,59 @@ pub unsafe extern "C" fn xyg_density_trace_color_classify(
             &mut *out_categorical,
             &mut *out_compact_categorical,
             &mut *out_stratified_counts,
+        )
+    })
+}
+
+/// Density binning coordinate endpoints (ABI 263).
+///
+/// Linear axes use view ranges; nonlinear axes use transformed column bounds.
+/// Returns ``1`` on success, ``0`` when required outputs are null.
+///
+/// # Safety
+/// Output pointers must be writable when non-null.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_density_bin_coord_endpoints(
+    x_linear: i32,
+    y_linear: i32,
+    xr0: f64,
+    xr1: f64,
+    yr0: f64,
+    yr1: f64,
+    bx0: f64,
+    bx1: f64,
+    by0: f64,
+    by1: f64,
+    out_x_c0: *mut f64,
+    out_x_c1: *mut f64,
+    out_y_c0: *mut f64,
+    out_y_c1: *mut f64,
+) -> i32 {
+    ffi_guard(0, || {
+        if out_x_c0.is_null()
+            || out_x_c1.is_null()
+            || out_y_c0.is_null()
+            || out_y_c1.is_null()
+            || !matches!(x_linear, 0 | 1)
+            || !matches!(y_linear, 0 | 1)
+        {
+            return 0;
+        }
+        density_emit::bin_coord_endpoints(
+            x_linear != 0,
+            y_linear != 0,
+            xr0,
+            xr1,
+            yr0,
+            yr1,
+            bx0,
+            bx1,
+            by0,
+            by1,
+            &mut *out_x_c0,
+            &mut *out_x_c1,
+            &mut *out_y_c0,
+            &mut *out_y_c1,
         )
     })
 }

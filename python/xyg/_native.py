@@ -11783,6 +11783,50 @@ DENSITY_OVERLAY_ROWS_EXCEED_U32 = 1
 DENSITY_OVERLAY_STATIC_RASTER = 2
 
 
+def density_bin_coord_endpoints(
+    *,
+    x_linear: bool,
+    y_linear: bool,
+    xr0: float,
+    xr1: float,
+    yr0: float,
+    yr1: float,
+    bx0: float,
+    bx1: float,
+    by0: float,
+    by1: float,
+) -> tuple[float, float, float, float]:
+    """Density binning coordinate endpoints via ``xyg_density_bin_coord_endpoints`` (ABI 263)."""
+    out_x_c0 = ctypes.c_double(float("nan"))
+    out_x_c1 = ctypes.c_double(float("nan"))
+    out_y_c0 = ctypes.c_double(float("nan"))
+    out_y_c1 = ctypes.c_double(float("nan"))
+    ok = _lib.xyg_density_bin_coord_endpoints(
+        int(bool(x_linear)),
+        int(bool(y_linear)),
+        float(xr0),
+        float(xr1),
+        float(yr0),
+        float(yr1),
+        float(bx0),
+        float(bx1),
+        float(by0),
+        float(by1),
+        ctypes.byref(out_x_c0),
+        ctypes.byref(out_x_c1),
+        ctypes.byref(out_y_c0),
+        ctypes.byref(out_y_c1),
+    )
+    if ok != 1:
+        raise ValueError("invalid density_bin_coord_endpoints arguments")
+    return (
+        float(out_x_c0.value),
+        float(out_x_c1.value),
+        float(out_y_c0.value),
+        float(out_y_c1.value),
+    )
+
+
 def density_bin_window(
     *,
     x_linear: bool,

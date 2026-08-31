@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 278
-SIGNATURE_SHA256 = "8e87f27e9c90f6ee1c52800ec61e1b306a609a44ac14842a3dcb65099efdd4f2"
+ABI_VERSION = 279
+SIGNATURE_SHA256 = "bad7ee4d089120ba09c025b0dc49d7674a105cd440798ef9d303cb5a3a32f8e4"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -214,6 +214,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_delaunay_triangles
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_density_bin_coord_endpoints(int32_t x_linear, int32_t y_linear, double xr0, double xr1, double yr0, double yr1, double bx0, double bx1, double by0, double by1, double * out_x_c0, double * out_x_c1, double * out_y_c0, double * out_y_c1)
+    function = lib.xyg_density_bin_coord_endpoints
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
     # size_t xyg_density_bin_window(int32_t x_linear, int32_t y_linear, double xr0, double xr1, double yr0, double yr1, double x_c0, double x_c1, double y_c0, double y_c1, double * out)
     function = lib.xyg_density_bin_window
     function.restype = ctypes.c_size_t
