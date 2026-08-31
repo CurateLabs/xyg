@@ -13194,6 +13194,7 @@ _PAYLOAD_AXIS_TYPE_BY_SCALE: dict[str, int] = {
 }
 
 _PAYLOAD_SHIP_SCALE_BY_CODE: tuple[str, ...] = ("linear", "log", "symlog")
+_PAYLOAD_COL_AXIS_SLOT_BY_CODE: tuple[str, ...] = ("x", "y")
 
 
 def _payload_axis_type_code(scale: str) -> int:
@@ -13659,14 +13660,16 @@ def payload_column_ship_plan(
             raise ValueError("invalid payload_column_ship_plan trace slot")
         if not (0 <= method_code < len(_PAYLOAD_COL_SHIP_METHOD_BY_CODE)):
             raise ValueError("invalid payload_column_ship_plan ship method")
-        if not (0 <= scale_code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+        if not (0 <= scale_code < len(_PAYLOAD_COL_AXIS_SLOT_BY_CODE)):
             raise ValueError("invalid payload_column_ship_plan column ship scale")
         out_columns.append(
             {
                 "registry_key": _PAYLOAD_COL_REGISTRY_KEY_BY_CODE[key_code],
                 "trace_slot": _PAYLOAD_TRACE_SLOT_ATTR[slot_code],
                 "ship_method": _PAYLOAD_COL_SHIP_METHOD_BY_CODE[method_code],
-                "ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[scale_code],
+                "ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(y_ship_scale.value)]
+                if scale_code == 1
+                else _PAYLOAD_SHIP_SCALE_BY_CODE[int(x_ship_scale.value)],
                 "gather": bool(entry.gather),
             }
         )

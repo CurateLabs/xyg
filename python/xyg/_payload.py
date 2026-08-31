@@ -218,6 +218,27 @@ class _PayloadWriter:
         ]
 
 
+def _column_ship_scale_axis(col: dict[str, Any], plan: dict[str, Any]) -> str:
+    """Map a resolved column ship scale name to the x/y axis slot for gather materialize."""
+    x_name = str(plan["x_ship_scale"])
+    y_name = str(plan["y_ship_scale"])
+    name = str(col["ship_scale"])
+    if name == x_name and name != y_name:
+        return "x"
+    if name == y_name and name != x_name:
+        return "y"
+    slot = str(col["trace_slot"])
+    if slot.startswith("y") or slot in {
+        "base",
+        "value1",
+        "value0",
+        "target_y0",
+        "target_y1",
+    }:
+        return "y"
+    return "x"
+
+
 class PayloadMixin(PayloadDensityMixin, _Host):
     def build_payload(self, px_width: Optional[int] = None) -> tuple[dict[str, Any], bytes]:
         """Encode every trace for first paint: (spec, binary buffer blob).
@@ -675,7 +696,7 @@ class PayloadMixin(PayloadDensityMixin, _Host):
                 {
                     "registry_key": key,
                     "ship_method": col["ship_method"],
-                    "ship_scale": col["ship_scale"],
+                    "ship_scale": _column_ship_scale_axis(col, column_plan),
                     "col_min": col_min,
                     "col_max": col_max,
                     "sticky_offset": sticky,
@@ -683,7 +704,8 @@ class PayloadMixin(PayloadDensityMixin, _Host):
             )
             values.append(np.ascontiguousarray(raw_arr, dtype=np.float64).reshape(-1))
             kinds.append(kind_b)
-            scales.append(x_scale if col["ship_scale"] == "x" else y_scale)
+            axis_slot = _column_ship_scale_axis(col, column_plan)
+            scales.append(x_scale if axis_slot == "x" else y_scale)
         materialized = kernels.payload_column_gather_materialize(
             sel=sel,
             columns=descriptors,
