@@ -199,3 +199,20 @@ test("buildPayload ships polar axis tick_label_sides like Python _axis_spec", ()
   const { spec } = fig.buildPayload();
   assert.deepEqual(spec.x_axis.tick_label_sides, ["bottom"]);
 });
+
+test("buildPayload ships cartesian axis label_position like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { label_position: "end" });
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.x_axis.label_position, "end");
+  assert.equal(spec.y_axis.label_position, undefined);
+});
+
+test("buildPayload ships polar axis label_position like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { label_position: "end" });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.x_axis.label_position, "end");
+});

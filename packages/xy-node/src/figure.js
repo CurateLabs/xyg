@@ -1616,6 +1616,9 @@ export class Figure {
     if (attach.attachTickLabelSides && opts.tick_label_sides != null) {
       spec.tick_label_sides = [...opts.tick_label_sides];
     }
+    if (attach.attachLabelPosition && opts.label_position != null) {
+      spec.label_position = opts.label_position;
+    }
     const scale = payloadAxisScale(this, axisId);
     if (attach.attachScale && scale !== "linear") {
       spec.scale = scale;
