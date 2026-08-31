@@ -1,9 +1,9 @@
 {
-  "abi_version": 268,
+  "abi_version": 269,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "7c8c31cbb61392433efd14d3251cf512fd216a3cd40f839ca262ce59918f1e15",
+  "signature_sha256": "c9127b71151fdb0ffc320035a8434d36e1508564c9cab9522bf124587c1a36d8",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -38993,6 +38993,102 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_scene_xytc_opacity_pack(int32_t has_opacity_class, int32_t has_band_class, double authored_fill, double authored_stroke, double authored_line, double * out_fill, double * out_stroke, double * out_line)"
+    },
+    {
+      "name": "xyg_scene_xytc_paint_presence_pack",
+      "node_name": "xySceneXytcPaintPresencePack",
+      "nargs": 5,
+      "arguments": [
+        {
+          "name": "has_fill",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "fill_kind",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_stroke",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_line_color",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_flags",
+          "type": {
+            "rust": "*mut u32",
+            "c": "uint32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_scene_xytc_paint_presence_pack(int32_t has_fill, int32_t fill_kind, int32_t has_stroke, int32_t has_line_color, uint32_t * out_flags)"
     },
     {
       "name": "xyg_scene_xytc_radius_pack",

@@ -2837,6 +2837,27 @@ def _pack_gradient_spec(fill: dict[str, Any]) -> bytes | None:
     )
 
 
+def _pack_xytc_paint_presence(style: dict[str, Any]) -> int:
+    has_fill = 1 if "fill" in style else 0
+    fill_kind = 0
+    if has_fill:
+        fill = style["fill"]
+        if isinstance(fill, str):
+            fill_kind = 1
+        elif isinstance(fill, dict) and {"space", "dir", "stops"} <= set(fill):
+            fill_kind = 2
+        elif isinstance(fill, dict):
+            fill_kind = 3
+        else:
+            fill_kind = 1
+    return _native.scene_xytc_paint_presence_pack(
+        has_fill,
+        fill_kind,
+        1 if "stroke" in style else 0,
+        1 if "line_color" in style else 0,
+    )
+
+
 def _pack_xytc_dash(style: dict[str, Any]) -> tuple[int, bytes, list[float]]:
     dash = style.get("dash")
     dash_b = b""
@@ -2986,24 +3007,18 @@ def _pack_xytc(figure: Any) -> bytes:
         fill_css = b""
         fill_space = b""
         gradient_blob = b""
+        flags |= _pack_xytc_paint_presence(style)
         if "fill" in style:
-            flags |= _XYTC_HAS_FILL
             fill = style["fill"]
             if isinstance(fill, str):
                 fill_css = fill.encode("utf-8")
             elif isinstance(fill, dict) and {"space", "dir", "stops"} <= set(fill):
-                flags |= _XYTC_HAS_GRADIENT_SPEC
                 gradient_blob = _pack_gradient_spec(fill) or b""
             elif isinstance(fill, dict):
-                flags |= _XYTC_HAS_FILL_DICT
                 fill_css = str(fill.get("gradient") or "").encode("utf-8")
                 fill_space = str(fill.get("space") or "mark").encode("utf-8")
         stroke_css = str(style["stroke"]).encode("utf-8") if "stroke" in style else b""
-        if "stroke" in style:
-            flags |= _XYTC_HAS_STROKE
         line_color = str(style["line_color"]).encode("utf-8") if "line_color" in style else b""
-        if "line_color" in style:
-            flags |= _XYTC_HAS_LINE_COLOR
         color_css = str(style["color"]).encode("utf-8") if "color" in style else b""
         ch_flags, color_mode, color_const = _pack_xytc_color_channel(trace)
         flags |= ch_flags

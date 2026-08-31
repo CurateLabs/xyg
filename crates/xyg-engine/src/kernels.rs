@@ -1621,6 +1621,55 @@ const XYTC_PERIMETER_TRUE: u32 = 1 << 9;
 const XYTC_PERIMETER_INVALID: u32 = 1 << 10;
 const XYTC_HAS_HEX: u32 = 1 << 8;
 const XYTC_HAS_DASH_PATTERN: u32 = 1 << 17;
+const XYTC_HAS_FILL: u32 = 1 << 0;
+const XYTC_HAS_STROKE: u32 = 1 << 1;
+const XYTC_HAS_LINE_COLOR: u32 = 1 << 2;
+const XYTC_HAS_GRADIENT_SPEC: u32 = 1 << 19;
+const XYTC_HAS_FILL_DICT: u32 = 1 << 20;
+
+/// Pack XYTC fill/stroke/line_color presence flag bits (ABI 269).
+///
+/// ``fill_kind``: ``0`` absent, ``1`` string CSS, ``2`` gradient-spec dict,
+/// ``3`` legacy fill dict. CSS bytes and gradient blobs stay host.
+pub fn scene_xytc_paint_presence_pack(
+    has_fill: i32,
+    fill_kind: i32,
+    has_stroke: i32,
+    has_line_color: i32,
+) -> Option<u32> {
+    for bit in [has_fill, has_stroke, has_line_color] {
+        if !matches!(bit, 0 | 1) {
+            return None;
+        }
+    }
+    if !matches!(fill_kind, 0 | 1 | 2 | 3) {
+        return None;
+    }
+    if has_fill == 0 {
+        if fill_kind != 0 {
+            return None;
+        }
+    } else if fill_kind == 0 {
+        return None;
+    }
+    let mut flags = 0u32;
+    if has_stroke != 0 {
+        flags |= XYTC_HAS_STROKE;
+    }
+    if has_line_color != 0 {
+        flags |= XYTC_HAS_LINE_COLOR;
+    }
+    if has_fill != 0 {
+        flags |= XYTC_HAS_FILL;
+        match fill_kind {
+            1 => {}
+            2 => flags |= XYTC_HAS_GRADIENT_SPEC,
+            3 => flags |= XYTC_HAS_FILL_DICT,
+            _ => return None,
+        }
+    }
+    Some(flags)
+}
 
 /// Pack XYTC dash-array flag bit (ABI 268).
 ///
@@ -10886,6 +10935,28 @@ mod fuzz {
         assert_eq!(scene_marker_blob_pack(1, &diamond, &lens, &mut out[..3]), -1);
         assert_eq!(scene_marker_blob_pack(1, &diamond[..5], &[5, 6], &mut out), 0);
         assert_eq!(scene_marker_blob_pack(2, &diamond, &lens, &mut out), 0);
+    }
+
+    #[test]
+    fn scene_xytc_paint_presence_pack_matches_host_table() {
+        assert_eq!(
+            scene_xytc_paint_presence_pack(0, 0, 1, 1).unwrap(),
+            XYTC_HAS_STROKE | XYTC_HAS_LINE_COLOR
+        );
+        assert_eq!(
+            scene_xytc_paint_presence_pack(1, 1, 0, 0).unwrap(),
+            XYTC_HAS_FILL
+        );
+        assert_eq!(
+            scene_xytc_paint_presence_pack(1, 2, 0, 0).unwrap(),
+            XYTC_HAS_FILL | XYTC_HAS_GRADIENT_SPEC
+        );
+        assert_eq!(
+            scene_xytc_paint_presence_pack(1, 3, 0, 0).unwrap(),
+            XYTC_HAS_FILL | XYTC_HAS_FILL_DICT
+        );
+        assert!(scene_xytc_paint_presence_pack(1, 0, 0, 0).is_none());
+        assert!(scene_xytc_paint_presence_pack(0, 1, 0, 0).is_none());
     }
 
     #[test]

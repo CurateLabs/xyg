@@ -375,6 +375,14 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         ctypes.POINTER(ctypes.c_uint32),
     ]
+    lib.xyg_scene_xytc_paint_presence_pack.restype = ctypes.c_int32
+    lib.xyg_scene_xytc_paint_presence_pack.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.POINTER(ctypes.c_uint32),
+    ]
     lib.xyg_scene_xytc_opacity_pack.restype = ctypes.c_int32
     lib.xyg_scene_xytc_opacity_pack.argtypes = [
         ctypes.c_int32,
@@ -3505,6 +3513,19 @@ def main() -> None:
         lib.xyg_scene_xytc_dash_pattern_pack(1, ctypes.byref(xytc_dash_flags)) == 1
         and xytc_dash_flags.value == (1 << 17),
         "scene_xytc_dash_pattern_pack array",
+    )
+    xytc_paint_flags = ctypes.c_uint32(0)
+    ok(
+        lib.xyg_scene_xytc_paint_presence_pack(
+            1,
+            2,
+            1,
+            1,
+            ctypes.byref(xytc_paint_flags),
+        )
+        == 1
+        and xytc_paint_flags.value == ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 19)),
+        "scene_xytc_paint_presence_pack gradient+stroke+line",
     )
     xytc_fill = ctypes.c_double(0.0)
     xytc_stroke = ctypes.c_double(0.0)

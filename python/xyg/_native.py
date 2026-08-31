@@ -1753,6 +1753,34 @@ def scene_xytc_opacity_pack(
     return float(fill.value), float(stroke.value), float(line.value)
 
 
+def scene_xytc_paint_presence_pack(
+    has_fill: int,
+    fill_kind: int,
+    has_stroke: int,
+    has_line_color: int,
+) -> int:
+    """XYTC paint presence flags via ``xyg_scene_xytc_paint_presence_pack`` (ABI 269).
+
+    ``fill_kind``: 0 absent, 1 string CSS, 2 gradient-spec dict, 3 legacy dict.
+    CSS/gradient bytes stay host.
+    """
+    flags = ctypes.c_uint32(0)
+    ok = int(
+        _lib.xyg_scene_xytc_paint_presence_pack(
+            ctypes.c_int32(int(has_fill)),
+            ctypes.c_int32(int(fill_kind)),
+            ctypes.c_int32(int(has_stroke)),
+            ctypes.c_int32(int(has_line_color)),
+            ctypes.byref(flags),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-paint-presence-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-paint-presence-pack request")
+    return int(flags.value)
+
+
 def scene_xytc_dash_pattern_pack(is_array: int) -> int:
     """XYTC dash-array flag via ``xyg_scene_xytc_dash_pattern_pack`` (ABI 268).
 

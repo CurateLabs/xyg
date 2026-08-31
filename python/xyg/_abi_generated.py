@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 268
-SIGNATURE_SHA256 = "7c8c31cbb61392433efd14d3251cf512fd216a3cd40f839ca262ce59918f1e15"
+ABI_VERSION = 269
+SIGNATURE_SHA256 = "c9127b71151fdb0ffc320035a8434d36e1508564c9cab9522bf124587c1a36d8"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -1098,6 +1098,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_xytc_opacity_pack
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_scene_xytc_paint_presence_pack(int32_t has_fill, int32_t fill_kind, int32_t has_stroke, int32_t has_line_color, uint32_t * out_flags)
+    function = lib.xyg_scene_xytc_paint_presence_pack
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p]
     # int32_t xyg_scene_xytc_radius_pack(const uint8_t * kind, size_t kind_len, int32_t radius_seq, double r0, double r1, double wedge_gap_raw, uint32_t * out_flags, double * out_r_tip, double * out_r_base, double * out_wedge_gap)
     function = lib.xyg_scene_xytc_radius_pack
     function.restype = ctypes.c_int32
