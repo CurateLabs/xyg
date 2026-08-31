@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 294;
-export const SIGNATURE_SHA256 = "188fc1d11a89def01ae5706d918d6ee84413e8b0146f9d0022f54871b9192323";
+export const ABI_VERSION = 295;
+export const SIGNATURE_SHA256 = "0ad43977baf9a31a6dfa2718c65fa170fcf468778ef3e9110260d2c8a2e7cf8b";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -155,6 +155,7 @@ export let xyMonotoneTangents;
 export let xyNormalizeF32;
 export let xyPaintEffectiveRgba;
 export let xyPayloadBarCompactAdmit;
+export let xyPayloadBaseEntryPlan;
 export let xyPayloadErrorbarIndices;
 export let xyPayloadErrorbarRoleKeys;
 export let xyPayloadErrorbarRoleMaps;
@@ -544,6 +545,7 @@ export function bindGeneratedAbi(lib) {
   xyNormalizeF32 = lib.func("int32_t xyg_normalize_f32(const double * data, size_t len, double lo, double hi, int32_t nan_mode, float * out)");
   xyPaintEffectiveRgba = lib.func("int32_t xyg_paint_effective_rgba(const double * intrinsic, size_t n, const double * artist_alpha, const double * opacity, double component_opacity, double * out)");
   xyPayloadBarCompactAdmit = lib.func("int32_t xyg_payload_bar_compact_admit(size_t n_widths, const double * widths, size_t n_value0, const double * value0, double * out_width, double * out_value0_const, int32_t * out_has_value0_const, int32_t * out_compact)");
+  xyPayloadBaseEntryPlan = lib.func("int32_t xyg_payload_base_entry_plan(int32_t has_trace_animation, size_t n_xv, int32_t style_color_is_none, int32_t x_axis_type, int32_t y_axis_type, int32_t * out_attach_animation, size_t * out_n_marks, int32_t * out_apply_palette_default, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale)");
   xyPayloadErrorbarIndices = lib.func("size_t xyg_payload_errorbar_indices(size_t n_segments, size_t n_points, size_t budget, int32_t * out_keep_all, uint32_t * out, size_t capacity)");
   xyPayloadErrorbarRoleKeys = lib.func("size_t xyg_payload_errorbar_role_keys(size_t n_points, size_t n_output, const uint32_t * point_keys_lo, const uint32_t * point_keys_hi, const uint32_t * segment_sources, const uint32_t * segment_roles, uint32_t * out_lo, uint32_t * out_hi, int32_t * out_collision)");
   xyPayloadErrorbarRoleMaps = lib.func("int32_t xyg_payload_errorbar_role_maps(size_t n_segments, size_t n_points, uint32_t * out_sources, uint32_t * out_roles, int32_t * out_applicable)");

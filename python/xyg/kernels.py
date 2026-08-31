@@ -227,6 +227,7 @@ payload_errorbar_role_maps = _impl.payload_errorbar_role_maps
 payload_segments_emit_gather = _impl.payload_segments_emit_gather
 payload_trace_channels_ship_attach = _impl.payload_trace_channels_ship_attach
 payload_transition_entry_attach = _impl.payload_transition_entry_attach
+payload_base_entry_plan = _impl.payload_base_entry_plan
 PAYLOAD_SHIP_CHANNELS_ALWAYS = 0
 PAYLOAD_SHIP_CHANNELS_IF_COLOR = 1
 payload_bar_compact_admit = _impl.payload_bar_compact_admit
@@ -365,6 +366,7 @@ __all__ = [
     "normalize_f32",
     "paint_effective_rgba",
     "payload_bar_compact_admit",
+    "payload_base_entry_plan",
     "payload_errorbar_indices",
     "payload_errorbar_role_keys",
     "payload_errorbar_role_maps",

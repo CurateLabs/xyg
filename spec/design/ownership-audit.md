@@ -338,6 +338,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | (this PR) | 292 | `xyg_payload_segments_emit_gather` | `_emit_segments` errorbar/stem decimation + role-map gather |
 | (this PR) | 293 | `xyg_payload_trace_channels_ship_attach` | `_ship_channels` / `_ship_trace_styles` attach policy |
 | (this PR) | 294 | `xyg_payload_transition_entry_attach` | `_transition_entry` / `_attach_tooltip_rows` attach policy |
+| (this PR) | 295 | `xyg_payload_base_entry_plan` | `_base_entry` / `_default_styled` skeleton policy |
 
 Largest remaining Python core surfaces: `_payload` emit gather/ship and `_scene_v3` XYTC/XYTA pack loops — not the ABI-218–291 admit slices already kernelized.
 

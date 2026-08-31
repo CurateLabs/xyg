@@ -17,6 +17,47 @@ pub const PAYLOAD_SHIP_CHANNELS_ALWAYS: i32 = 0;
 /// Ship color/size only when ``color_ch`` is present (geometry marks).
 pub const PAYLOAD_SHIP_CHANNELS_IF_COLOR: i32 = 1;
 
+/// ``pw.ship`` scale for linear axes (`_axis_scale` default).
+pub const PAYLOAD_BASE_ENTRY_SHIP_SCALE_LINEAR: i32 = 0;
+/// ``pw.ship`` scale for log axes.
+pub const PAYLOAD_BASE_ENTRY_SHIP_SCALE_LOG: i32 = 1;
+/// ``pw.ship`` scale for symlog axes.
+pub const PAYLOAD_BASE_ENTRY_SHIP_SCALE_SYMLOG: i32 = 2;
+
+fn payload_base_entry_ship_scale(axis_type: i32) -> i32 {
+    match axis_type {
+        1 => PAYLOAD_BASE_ENTRY_SHIP_SCALE_LOG,
+        2 => PAYLOAD_BASE_ENTRY_SHIP_SCALE_SYMLOG,
+        _ => PAYLOAD_BASE_ENTRY_SHIP_SCALE_LINEAR,
+    }
+}
+
+/// Base-entry skeleton policy from ``_base_entry`` / ``_default_styled``.
+///
+/// Owns when animation ships on the base skeleton (directly, not deferred to
+/// ``_transition_entry``), ``n_marks`` from gathered geometry, palette default
+/// for missing trace color, and axis ship-scale selection. Hosts still copy
+/// trace metadata, ship f32 columns, and attach transition keys separately.
+pub fn payload_base_entry_plan(
+    has_trace_animation: i32,
+    n_xv: usize,
+    style_color_is_none: i32,
+    x_axis_type: i32,
+    y_axis_type: i32,
+    out_attach_animation: &mut i32,
+    out_n_marks: &mut usize,
+    out_apply_palette_default: &mut i32,
+    out_x_ship_scale: &mut i32,
+    out_y_ship_scale: &mut i32,
+) -> i32 {
+    *out_attach_animation = i32::from(has_trace_animation != 0);
+    *out_n_marks = n_xv;
+    *out_apply_palette_default = i32::from(style_color_is_none != 0);
+    *out_x_ship_scale = payload_base_entry_ship_scale(x_axis_type);
+    *out_y_ship_scale = payload_base_entry_ship_scale(y_axis_type);
+    1
+}
+
 /// Transition-entry / tooltip-row attach orchestration from
 /// ``_transition_entry`` and ``_attach_tooltip_rows``.
 ///
@@ -597,5 +638,63 @@ mod tests {
         );
         assert_eq!(attach_tooltip, 0);
         assert_eq!(tooltip_ok, 0);
+    }
+
+    #[test]
+    fn payload_base_entry_plan_ships_animation_and_marks() {
+        let mut attach_animation = -1;
+        let mut n_marks = 0;
+        let mut apply_palette = -1;
+        let mut x_scale = -1;
+        let mut y_scale = -1;
+        assert_eq!(
+            payload_base_entry_plan(
+                1,
+                42,
+                1,
+                1,
+                2,
+                &mut attach_animation,
+                &mut n_marks,
+                &mut apply_palette,
+                &mut x_scale,
+                &mut y_scale,
+            ),
+            1
+        );
+        assert_eq!(attach_animation, 1);
+        assert_eq!(n_marks, 42);
+        assert_eq!(apply_palette, 1);
+        assert_eq!(x_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_LOG);
+        assert_eq!(y_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_SYMLOG);
+    }
+
+    #[test]
+    fn payload_base_entry_plan_linear_without_animation() {
+        let mut attach_animation = -1;
+        let mut n_marks = 0;
+        let mut apply_palette = -1;
+        let mut x_scale = -1;
+        let mut y_scale = -1;
+        assert_eq!(
+            payload_base_entry_plan(
+                0,
+                5,
+                0,
+                0,
+                9,
+                &mut attach_animation,
+                &mut n_marks,
+                &mut apply_palette,
+                &mut x_scale,
+                &mut y_scale,
+            ),
+            1
+        );
+        assert_eq!(attach_animation, 0);
+        assert_eq!(n_marks, 5);
+        assert_eq!(apply_palette, 0);
+        assert_eq!(x_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_LINEAR);
+        assert_eq!(y_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_LINEAR);
     }
 }

@@ -11738,6 +11738,65 @@ def payload_transition_entry_attach(
     }
 
 
+_PAYLOAD_AXIS_TYPE_BY_SCALE: dict[str, int] = {
+    "log": 1,
+    "symlog": 2,
+}
+
+_PAYLOAD_SHIP_SCALE_BY_CODE: tuple[str, ...] = ("linear", "log", "symlog")
+
+
+def _payload_axis_type_code(scale: str) -> int:
+    return _PAYLOAD_AXIS_TYPE_BY_SCALE.get(scale, 0)
+
+
+def payload_base_entry_plan(
+    *,
+    has_trace_animation: bool,
+    n_xv: int,
+    style_color_is_none: bool,
+    x_axis_scale: str,
+    y_axis_scale: str,
+) -> dict[str, bool | int | str]:
+    """Base-entry skeleton via ``xyg_payload_base_entry_plan`` (ABI 295).
+
+    Owns ``_base_entry`` / ``_default_styled`` animation, ``n_marks``, palette
+    default, and axis ship-scale selection.
+    """
+    attach_animation = ctypes.c_int32(-1)
+    n_marks = ctypes.c_size_t(0)
+    apply_palette_default = ctypes.c_int32(-1)
+    x_ship_scale = ctypes.c_int32(-1)
+    y_ship_scale = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_base_entry_plan(
+        1 if has_trace_animation else 0,
+        int(n_xv),
+        1 if style_color_is_none else 0,
+        _payload_axis_type_code(x_axis_scale),
+        _payload_axis_type_code(y_axis_scale),
+        ctypes.byref(attach_animation),
+        ctypes.byref(n_marks),
+        ctypes.byref(apply_palette_default),
+        ctypes.byref(x_ship_scale),
+        ctypes.byref(y_ship_scale),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_base_entry_plan arguments")
+    x_code = int(x_ship_scale.value)
+    y_code = int(y_ship_scale.value)
+    if not (0 <= x_code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+        raise ValueError("invalid payload_base_entry_plan x ship scale")
+    if not (0 <= y_code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+        raise ValueError("invalid payload_base_entry_plan y ship scale")
+    return {
+        "attach_animation": int(attach_animation.value) == 1,
+        "n_marks": int(n_marks.value),
+        "apply_palette_default": int(apply_palette_default.value) == 1,
+        "x_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[x_code],
+        "y_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[y_code],
+    }
+
+
 def payload_bar_compact_admit(
     widths: npt.NDArray[np.float64],
     value0: npt.NDArray[np.float64],

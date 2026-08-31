@@ -318,15 +318,13 @@ test("_emitScatterDensity colormap stays style unlike Python color_ch", () => {
   assert.equal(spec.traces[0].density.colormap, "plasma");
 });
 
-test("_emitScatter omits animation unlike Python _base_entry", () => {
-  // Python `_base_entry` ships t.animation. Node scatter encode omits that
-  // field. Recorded emit-scatter-animation stay-host.
+test("_emitScatter ships animation via payload base-entry plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   fig.traces[0].animation = { duration: 100 };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "scatter");
-  assert.equal(spec.traces[0].animation, undefined);
+  assert.deepEqual(spec.traces[0].animation, { duration: 100 });
 });
 
 test("_emitRibbon skips tooltip_rows length unlike Python _attach_tooltip_rows", () => {
@@ -631,43 +629,34 @@ test("_emitHexbin omits ship scale unlike Python _axis_scale", () => {
   assert.notEqual(xCol.offset, 0);
 });
 
-test("_emitArea omits ship scale unlike Python _axis_scale", () => {
-  // Python `_base_entry` passes `_axis_scale` into `pw.ship`, pinning log
-  // offset to 0. Node area encode keeps the column midpoint. Recorded
-  // emit-area-ship-scale stay-host.
+test("_emitArea uses log ship scale via payload base-entry plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.setAxis("x", { type: "log" });
   fig.area([1, 10], [1, 10]);
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "area");
   const xCol = spec.columns[spec.traces[0].x];
-  assert.notEqual(xCol.offset, 0);
+  assert.equal(xCol.offset, 0);
 });
 
-test("_emitLine omits ship scale unlike Python _axis_scale", () => {
-  // Python `_base_entry` passes `_axis_scale` into `pw.ship`, pinning log
-  // offset to 0. Node line encode keeps the column midpoint. Recorded
-  // emit-line-ship-scale stay-host.
+test("_emitLine uses log ship scale via payload base-entry plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.setAxis("x", { type: "log" });
   fig.line([1, 10], [1, 10]);
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "line");
   const xCol = spec.columns[spec.traces[0].x];
-  assert.notEqual(xCol.offset, 0);
+  assert.equal(xCol.offset, 0);
 });
 
-test("_emitScatter omits ship scale unlike Python _axis_scale", () => {
-  // Python `_base_entry` passes `_axis_scale` into `pw.ship`, pinning log
-  // offset to 0. Node scatter encode keeps the column midpoint. Recorded
-  // emit-scatter-ship-scale stay-host.
+test("_emitScatter uses log ship scale via payload base-entry plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.setAxis("x", { type: "log" });
   fig.scatter([1, 10], [1, 10]);
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].tier, "direct");
   const xCol = spec.columns[spec.traces[0].x];
-  assert.notEqual(xCol.offset, 0);
+  assert.equal(xCol.offset, 0);
 });
 
 test("_emitScatterDensity omits mean-color rgba unlike Python trace_bin_colors", () => {
@@ -924,10 +913,7 @@ test("_emitHistogram skips rectFiniteSel unlike Python _emit_rect", () => {
   assert.equal(spec.traces[0].n_marks, nBins);
 });
 
-test("_emitArea omits transition_keys unlike Python _transition_entry", () => {
-  // Python `_emit_area` ships transition_keys as `keys`. Node area payload
-  // keeps no keys field even when transition_keys is present.
-  // Recorded emit-area-transition stay-host.
+test("_emitArea ships transition_keys via payload transition attach", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.area([0, 1], [0, 1]);
   fig.traces[0].transition_keys = [
@@ -936,13 +922,11 @@ test("_emitArea omits transition_keys unlike Python _transition_entry", () => {
   ];
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "area");
-  assert.equal(spec.traces[0].keys, undefined);
+  assert.ok(spec.traces[0].keys);
+  assert.equal(spec.columns[spec.traces[0].keys.lo].dtype, "u32");
 });
 
-test("_emitLine omits transition_keys unlike Python _transition_entry", () => {
-  // Python `_emit_line` ships transition_keys as `keys`. Node line payload
-  // keeps no keys field even when transition_keys is present.
-  // Recorded emit-line-transition stay-host.
+test("_emitLine ships transition_keys via payload transition attach", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.line([0, 1], [0, 1]);
   fig.traces[0].transition_keys = [
@@ -951,13 +935,11 @@ test("_emitLine omits transition_keys unlike Python _transition_entry", () => {
   ];
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "line");
-  assert.equal(spec.traces[0].keys, undefined);
+  assert.ok(spec.traces[0].keys);
+  assert.equal(spec.columns[spec.traces[0].keys.lo].dtype, "u32");
 });
 
-test("_emitScatter omits transition_keys unlike Python _transition_entry", () => {
-  // Python `_emit_scatter` ships transition_keys as `keys`. Node scatter
-  // payload keeps no keys field even when transition_keys is present.
-  // Recorded emit-scatter-transition stay-host.
+test("_emitScatter ships transition_keys via payload transition attach", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   fig.traces[0].transition_keys = [
@@ -966,7 +948,8 @@ test("_emitScatter omits transition_keys unlike Python _transition_entry", () =>
   ];
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].tier, "direct");
-  assert.equal(spec.traces[0].keys, undefined);
+  assert.ok(spec.traces[0].keys);
+  assert.equal(spec.columns[spec.traces[0].keys.lo].dtype, "u32");
 });
 
 test("_emitHistogram omits style_channels unlike Python _ship_trace_styles", () => {
@@ -1341,26 +1324,22 @@ test("sankeyChart emits ribbon bands", () => {
   assert.ok(spec.traces.some((t) => t.kind === "ribbon"));
 });
 
-test("_emitLine omits animation unlike Python _base_entry", () => {
-  // Python `_base_entry` ships t.animation. Node line encode omits that
-  // field. Recorded emit-line-animation stay-host.
+test("_emitLine ships animation via payload base-entry plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.line([0, 1], [0, 1]);
   fig.traces[0].animation = { duration: 100 };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "line");
-  assert.equal(spec.traces[0].animation, undefined);
+  assert.deepEqual(spec.traces[0].animation, { duration: 100 });
 });
 
-test("_emitArea omits animation unlike Python _base_entry", () => {
-  // Python `_base_entry` ships t.animation. Node area encode omits that
-  // field. Recorded emit-area-animation stay-host.
+test("_emitArea ships animation via payload base-entry plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.area([0, 1], [0, 1]);
   fig.traces[0].animation = { duration: 100 };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "area");
-  assert.equal(spec.traces[0].animation, undefined);
+  assert.deepEqual(spec.traces[0].animation, { duration: 100 });
 });
 
 test("_emitHistogram omits animation unlike Python _transition_entry", () => {

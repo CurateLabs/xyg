@@ -301,6 +301,55 @@ def test_payload_transition_entry_attach_tooltip_filter() -> None:
     assert plan["tooltip_length_ok"]
 
 
+def test_payload_base_entry_plan_animation_and_scales() -> None:
+    plan = kernels.payload_base_entry_plan(
+        has_trace_animation=True,
+        n_xv=12,
+        style_color_is_none=True,
+        x_axis_scale="log",
+        y_axis_scale="symlog",
+    )
+    assert plan == {
+        "attach_animation": True,
+        "n_marks": 12,
+        "apply_palette_default": True,
+        "x_ship_scale": "log",
+        "y_ship_scale": "symlog",
+    }
+
+
+def test_payload_base_entry_plan_linear_no_animation() -> None:
+    plan = kernels.payload_base_entry_plan(
+        has_trace_animation=False,
+        n_xv=3,
+        style_color_is_none=False,
+        x_axis_scale="linear",
+        y_axis_scale="linear",
+    )
+    assert plan == {
+        "attach_animation": False,
+        "n_marks": 3,
+        "apply_palette_default": False,
+        "x_ship_scale": "linear",
+        "y_ship_scale": "linear",
+    }
+
+
+def test_line_scatter_area_base_entry_ships_animation_and_log_scale() -> None:
+    anim = {"duration": 250}
+    fig = Figure().set_axis("x", type_="log")
+    fig.scatter([1.0, 10.0], [1.0, 10.0])
+    fig.line([2.0, 20.0], [2.0, 20.0])
+    fig.area([3.0, 30.0], [3.0, 30.0])
+    for trace in fig.traces:
+        trace.animation = anim
+    spec, _blob = fig.build_payload()
+    for entry in spec["traces"]:
+        assert entry["animation"] == anim
+        x_col = spec["columns"][entry["x"]]
+        assert x_col.get("offset") == 0.0
+
+
 def test_polar_line_stays_direct_over_m4_threshold() -> None:
     n = DECIMATION_THRESHOLD + 1
     fig = Figure(coords="polar").line(np.arange(n, dtype=float), np.ones(n))
