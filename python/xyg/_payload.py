@@ -1560,7 +1560,10 @@ class PayloadMixin(_Host):
             "y_axis": t.y_axis,
             "density": density,
         }
-        if categorical and t.color_ch is not None:
+        if kernels.density_categorical_color_wire_admit(
+            categorical=bool(categorical),
+            has_channel=t.color_ch is not None,
+        ):
             # Legend chrome needs the encoding even though the per-point codes
             # aggregate into the mean-color plane: ship the channel spec slim
             # (categories + palette, no per-point `buf`) so category rows

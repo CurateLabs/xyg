@@ -11826,6 +11826,17 @@ def density_wasm_source_admit(*, split_payload: bool, wasm_eligible: bool) -> bo
     return admit == 1
 
 
+def density_categorical_color_wire_admit(*, categorical: bool, has_channel: bool) -> bool:
+    """Categorical legend color wire admit via ``xyg_density_categorical_color_wire_admit`` (ABI 271)."""
+    admit = _lib.xyg_density_categorical_color_wire_admit(
+        int(bool(categorical)),
+        int(bool(has_channel)),
+    )
+    if admit not in (0, 1):
+        raise ValueError("invalid density_categorical_color_wire_admit arguments")
+    return admit == 1
+
+
 DENSITY_WASM_DENSITY_NONE = 0
 DENSITY_WASM_DENSITY_AUTOMATIC = 1
 DENSITY_WASM_DENSITY_UNSUPPORTED = 2

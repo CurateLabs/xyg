@@ -1,9 +1,9 @@
 {
-  "abi_version": 286,
+  "abi_version": 287,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "9469fce387ff24f5dcb52cbe830f9031aa51b12fef36b1f4dbf432a47e541476",
+  "signature_sha256": "2cc14e79fe254fcb22bbf660081b902dcc6f8070f51e096041bc093dfd52f64a",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -7457,6 +7457,56 @@
         "nullable": false
       },
       "c_signature": "size_t xyg_density_bin_window(int32_t x_linear, int32_t y_linear, double xr0, double xr1, double yr0, double yr1, double x_c0, double x_c1, double y_c0, double y_c1, double * out)"
+    },
+    {
+      "name": "xyg_density_categorical_color_wire_admit",
+      "node_name": "xyDensityCategoricalColorWireAdmit",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "categorical",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_channel",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_density_categorical_color_wire_admit(int32_t categorical, int32_t has_channel)"
     },
     {
       "name": "xyg_density_color_classify",

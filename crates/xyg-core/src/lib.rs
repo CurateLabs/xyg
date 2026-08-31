@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 286;
+pub const ABI_VERSION: u32 = 287;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15925,6 +15925,20 @@ pub unsafe extern "C" fn xyg_density_wasm_density_wire_kind(
             wasm_source_count,
             has_density_tier,
         )
+    })
+}
+
+/// Whether density scatter entry should ship slim categorical ``entry["color"]`` (ABI 271).
+#[no_mangle]
+pub unsafe extern "C" fn xyg_density_categorical_color_wire_admit(
+    categorical: i32,
+    has_channel: i32,
+) -> i32 {
+    ffi_guard(0, || {
+        if !matches!(categorical, 0 | 1) || !matches!(has_channel, 0 | 1) {
+            return 0;
+        }
+        density_emit::density_categorical_color_wire_admit(categorical, has_channel)
     })
 }
 

@@ -180,6 +180,13 @@ pub fn density_constant_color_wire_admit(has_channel: i32, mode: &str, has_const
     i32::from(mode == "constant")
 }
 
+/// Whether density scatter entry should ship slim categorical ``entry["color"]`` (ABI 271).
+///
+/// Returns ``1`` when the trace classified as categorical and ``color_ch`` is present.
+pub fn density_categorical_color_wire_admit(categorical: i32, has_channel: i32) -> i32 {
+    i32::from(categorical == 1 && has_channel == 1)
+}
+
 /// Whether density spec should ship ``density["wasm_source"]`` (ABI 269).
 ///
 /// Returns ``1`` when the split payload writer is active and the emit plan
@@ -815,6 +822,13 @@ mod tests {
         assert_eq!(density_constant_color_wire_admit(1, "constant", 1), 1);
         assert_eq!(density_constant_color_wire_admit(1, "continuous", 1), 0);
         assert_eq!(density_constant_color_wire_admit(1, "categorical", 1), 0);
+    }
+
+    #[test]
+    fn density_categorical_color_wire_admit_matches_host_and() {
+        assert_eq!(density_categorical_color_wire_admit(1, 1), 1);
+        assert_eq!(density_categorical_color_wire_admit(0, 1), 0);
+        assert_eq!(density_categorical_color_wire_admit(1, 0), 0);
     }
 
     #[test]
