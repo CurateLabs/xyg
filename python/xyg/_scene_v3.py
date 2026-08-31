@@ -8,14 +8,13 @@ does not exist yet.
 
 from __future__ import annotations
 
-import math
 import struct
 from typing import Any, NoReturn
 
 import numpy as np
 
 from . import _native, channels
-from .marks import _SYMBOL_CODES, _validated_marker_path
+from .marks import _SYMBOL_CODES
 
 # Host mark kinds that lower to Scene Rect (kind 2). Geometry is already
 # x0/y0/x1/y1 columns on the Trace; Scene does not recompute bar stacking.
@@ -54,18 +53,6 @@ _SCENE_KIND_CLASS_OPACITY = (
 # Cartesian tessellates cells and interns unique fills. Polar painted
 # heatmaps inverse-raster to one Image blit covering the plot (ABI 192).
 # Constant-style polar lattices still tessellate Rects to PolyFill wedges.
-_XYFS_TRACE_UNSUPPORTED_KIND = 1 << 0
-_XYFS_TRACE_NON_PRIMARY_AXIS = 1 << 1
-_XYFS_TRACE_HIDDEN_OR_PER_ITEM = 1 << 2
-_XYFS_TRACE_DENSITY = 1 << 3  # ABI 143 no longer sets this for polar density
-_XYFS_TRACE_DASHED_MARKERS = 1 << 4
-_XYFS_TRACE_RECT_GRADIENT = 1 << 5
-_XYFS_TRACE_CORNER_RADIUS = 1 << 6
-_XYFS_TRACE_WEDGE_GAP = 1 << 7
-_XYFS_TRACE_JOINED_FILL = 1 << 8  # reserved; ABI 182 no longer fail-closes this bit
-_XYFS_TRACE_CUSTOM_HEX_REDUCE = 1 << 9
-_XYFS_TRACE_HEATMAP_COLORMAP = 1 << 10
-_XYFS_TRACE_NON_CSS_FILL = 1 << 11
 _XYMG_MAX_UTF8 = 64
 
 # Each unjoined triangle or hex cell is one PolyFill group in the Rust browser
@@ -1167,31 +1154,6 @@ _SCENE_AXIS_STYLE_KEYS = frozenset(
     }
 )
 
-_CH_HAS_CHART_BG = 1 << 0
-_CH_HAS_PLOT_BG = 1 << 1
-_CH_PAINT_AXIS = 1 << 0
-_CH_PAINT_GRID = 1 << 1
-_CH_PAINT_TICK = 1 << 2
-_CH_PAINT_MINOR_GRID = 1 << 3
-_CH_PAINT_MINOR_TICK = 1 << 4
-_CH_PAINT_LABEL = 1 << 5
-_CH_WIDTH_AXIS = 1 << 0
-_CH_WIDTH_GRID = 1 << 1
-_CH_WIDTH_TICK = 1 << 2
-_CH_WIDTH_TICK_LENGTH = 1 << 3
-_CH_WIDTH_MINOR_GRID = 1 << 4
-_CH_WIDTH_MINOR_TICK = 1 << 5
-_CH_WIDTH_MINOR_TICK_LENGTH = 1 << 6
-_CH_DEFAULT_PAINTS = (
-    "#202020",
-    "#202020",
-    "#202020",
-    "transparent",
-    "#202020",
-    "#202020",
-)
-_CH_DEFAULT_WIDTHS = (1.0, 1.0, 1.0, 4.0, 1.0, 1.0, 0.0)
-
 
 def _scene_side_mask(
     values: Any,
@@ -1209,137 +1171,14 @@ def _scene_side_mask(
     return sum(1 << index for index, candidate in enumerate(allowed) if candidate in values)
 
 
-def _pack_chrome_axis(axis_id: str, options: dict[str, Any]) -> bytes:
-    style = dict(options.get("style") or {})
-    minor = dict(options.get("minor_style") or {})
-    for label, authored in (("style", style), ("minor_style", minor)):
-        unsupported = set(authored) - _SCENE_AXIS_STYLE_KEYS
-        if unsupported:
-            raise UnsupportedSceneV3(
-                f"Scene v12 does not yet encode {axis_id} axis {label} keys {sorted(unsupported)!r}"
-            )
-    side = options.get("side", "bottom" if axis_id == "x" else "left")
-    allowed = ("bottom", "top") if axis_id == "x" else ("left", "right")
-    if side not in allowed:
-        raise UnsupportedSceneV3(f"Scene v12 {axis_id} axis side must be one of {list(allowed)!r}")
-    side_code = 0 if side in {"bottom", "left"} else 1
-    tick_sides = options.get("tick_sides")
-    label_sides = options.get("tick_label_sides")
-    directions = {"out": 0, "in": 1, "inout": 2}
-    paint_flags = 0
-    if "axis_color" in style:
-        paint_flags |= _CH_PAINT_AXIS
-    if "grid_color" in style:
-        paint_flags |= _CH_PAINT_GRID
-    if "tick_color" in style:
-        paint_flags |= _CH_PAINT_TICK
-    if "grid_color" in minor:
-        paint_flags |= _CH_PAINT_MINOR_GRID
-    if "tick_color" in minor:
-        paint_flags |= _CH_PAINT_MINOR_TICK
-    if "tick_label_color" in style or "label_color" in style:
-        paint_flags |= _CH_PAINT_LABEL
-    width_flags = 0
-    width_keys = (
-        ("axis_width", style, _CH_WIDTH_AXIS),
-        ("grid_width", style, _CH_WIDTH_GRID),
-        ("tick_width", style, _CH_WIDTH_TICK),
-        ("tick_length", style, _CH_WIDTH_TICK_LENGTH),
-        ("grid_width", minor, _CH_WIDTH_MINOR_GRID),
-        ("tick_width", minor, _CH_WIDTH_MINOR_TICK),
-        ("tick_length", minor, _CH_WIDTH_MINOR_TICK_LENGTH),
-    )
-    widths = []
-    for key, source, flag in width_keys:
-        if key in source:
-            width_flags |= flag
-            widths.append(float(source[key]))
-        else:
-            widths.append(_CH_DEFAULT_WIDTHS[len(widths)])
-    paints = (
-        str(style.get("axis_color", _CH_DEFAULT_PAINTS[0])),
-        str(style.get("grid_color", _CH_DEFAULT_PAINTS[1])),
-        str(style.get("tick_color", _CH_DEFAULT_PAINTS[2])),
-        str(minor.get("grid_color", _CH_DEFAULT_PAINTS[3])),
-        str(minor.get("tick_color", _CH_DEFAULT_PAINTS[4])),
-        str(style.get("tick_label_color", style.get("label_color", _CH_DEFAULT_PAINTS[5]))),
-    )
-    paint_bytes = [value.encode("utf-8") for value in paints]
-    prefix = struct.pack(
-        "<8B2f7d6H",
-        side_code,
-        _scene_side_mask(tick_sides, "tick_sides", axis_id, allowed, side_code),
-        _scene_side_mask(label_sides, "tick_label_sides", axis_id, allowed, side_code),
-        directions.get(str(style.get("tick_direction", "out")), 255),
-        directions.get(str(minor.get("tick_direction", "out")), 255),
-        paint_flags,
-        width_flags,
-        0,
-        float(style.get("grid_opacity", 1.0)),
-        float(minor.get("grid_opacity", 1.0)),
-        *widths,
-        *[len(value) for value in paint_bytes],
-    )
-    return prefix + b"".join(paint_bytes)
-
-
-def _pack_xych(figure: Any) -> bytes:
-    """Pack authored XYCH v1 chrome literals; Rust owns the 200-byte Scene style."""
-    figure_style = getattr(figure, "style", None) or {}
-    flags = 2 << 8
-    chart_b = b""
-    plot_b = b""
-    if "background" in figure_style:
-        flags |= _CH_HAS_CHART_BG
-        chart_b = str(figure_style.get("background") or "transparent").encode("utf-8")
-    if "--chart-bg" in figure_style:
-        flags |= _CH_HAS_PLOT_BG
-        plot_b = str(figure_style.get("--chart-bg") or "transparent").encode("utf-8")
-    x_rec = _pack_chrome_axis("x", figure.axis_options["x"])
-    y_rec = _pack_chrome_axis("y", figure.axis_options["y"])
-    header = struct.pack("<4sIIHH", b"XYCH", 1, flags, len(chart_b), len(plot_b))
-    return header + chart_b + plot_b + x_rec + y_rec
-
-
 def _scene_chrome_style(figure: Any) -> bytes:
     """Pack authored chrome literals; Rust owns the 200-byte Scene style."""
-    return _native.scene_resolve_chrome_style(_pack_xych(figure))
+    from ._scene_marshal import scene_chrome_style
+
+    return scene_chrome_style(figure)
 
 
-_XYCF_HEADER = struct.Struct("<4sIII10d2I6dBBH15I2dII4s4sIIII2d4sI")
 _XYCC_HEADER = struct.Struct("<4sIII4d16I48x")
-_XYCF_FLAG_AUTHORED_MARGINS = 1 << 0
-_XYCF_FLAG_PADDING = 1 << 1
-_XYCF_FLAG_X_MAJOR_AUTO = 1 << 2
-_XYCF_FLAG_Y_MAJOR_AUTO = 1 << 3
-_XYCF_FLAG_X_TICK_LABELS = 1 << 4
-_XYCF_FLAG_Y_TICK_LABELS = 1 << 5
-_XYCF_FLAG_HAS_CHROME = 1 << 6
-_XYCF_FLAG_HAS_LEGEND = 1 << 7
-_XYCF_FLAG_HAS_COLORBAR = 1 << 8
-_XYCF_LEGEND_AUTHORED_LOC = 1 << 0
-_XYCF_LEGEND_AUTHORED_FONT = 1 << 1
-_XYCF_LEGEND_AUTHORED_TITLE_FONT = 1 << 2
-_XYCF_LEGEND_AUTHORED_COLOR = 1 << 3
-_XYCF_LEGEND_AUTHORED_BACKGROUND = 1 << 4
-_XYCF_LEGEND_UNSUPPORTED_KEYS = 1 << 5
-_XYCF_LEGEND_TOGGLE = 1 << 6
-_XYCF_LEGEND_HIGHLIGHT = 1 << 7
-_XYCF_LEGEND_SHOW = 1 << 8
-_XYCF_LEGEND_UNSUPPORTED_STYLE = 1 << 9
-_XYCF_CB_HORIZONTAL = 1 << 1
-_XYCF_CB_MINOR = 1 << 2
-_XYCF_CB_UNSUPPORTED = 1 << 3
-_XYCF_CB_INVALID_SIDE = 1 << 4
-_SCENE_TICK_STRATEGIES = {
-    "auto": 0,
-    "hide": 1,
-    "rotate": 2,
-    "stagger": 3,
-    "preserve": 4,
-    "none": 5,
-    "off": 6,
-}
 _SCENE_TICK_STRATEGY_NAMES = (
     "auto",
     "hide",
@@ -1356,25 +1195,6 @@ _POLAR_COLLISION_KEYS = {
     "tick_label_angle",
     "tick_label_anchor",
 }
-
-
-def _put_f64s(buf: bytearray, values: list[float]) -> None:
-    for value in values:
-        buf.extend(struct.pack("<d", float(value)))
-
-
-def _f64_bytes(values: list[float]) -> bytes:
-    return b"".join(struct.pack("<d", float(value)) for value in values)
-
-
-def _put_tick_labels(buf: bytearray, labels: list[str] | tuple[str, ...] | None) -> int:
-    if not labels:
-        return 0
-    for label in labels:
-        encoded = str(label).encode("utf-8")
-        buf.extend(len(encoded).to_bytes(4, "little"))
-        buf.extend(encoded)
-    return len(labels)
 
 
 def _xycc_tick_labels(blob: bytes) -> list[str] | None:
@@ -1488,54 +1308,6 @@ def _scene_tick_label_strategy(options: dict[str, Any]) -> str:
     return "auto"
 
 
-def _scene_tick_anchor_code(options: dict[str, Any]) -> int | None:
-    raw = options.get("tick_label_anchor")
-    if raw is None:
-        return None
-    return _native.scene_tick_anchor(str(raw))
-
-
-def _pack_tick_collision(xa: dict[str, Any], ya: dict[str, Any], figure: Any) -> tuple[int, bytes]:
-    """Pack XYCF bytes 12–15 plus optional 32-byte extras (ABI 203)."""
-    x_strategy = _SCENE_TICK_STRATEGIES[_scene_tick_label_strategy(xa)]
-    y_strategy = _SCENE_TICK_STRATEGIES[_scene_tick_label_strategy(ya)]
-    x_anchor = _scene_tick_anchor_code(xa)
-    y_anchor = _scene_tick_anchor_code(ya)
-    x_gap = xa.get("tick_label_min_gap")
-    y_gap = ya.get("tick_label_min_gap")
-    x_angle = xa.get("tick_label_angle")
-    y_angle = ya.get("tick_label_angle")
-    extras = x_gap is not None or y_gap is not None or x_angle is not None or y_angle is not None
-    flags = 0
-    if extras:
-        flags |= 1
-    if figure._axis_kind("x") == "category":
-        flags |= 1 << 1
-    if figure._axis_kind("y") == "category":
-        flags |= 1 << 2
-    if x_anchor is not None:
-        flags |= 1 << 3
-    if y_anchor is not None:
-        flags |= 1 << 4
-    header = (
-        x_strategy
-        | (y_strategy << 8)
-        | ((x_anchor or 0) << 16)
-        | ((y_anchor or 0) << 20)
-        | (flags << 24)
-    )
-    extra = b""
-    if extras:
-        extra = struct.pack(
-            "<4d",
-            8.0 if x_gap is None else float(x_gap),
-            4.0 if y_gap is None else float(y_gap),
-            float("nan") if x_angle is None else float(x_angle),
-            float("nan") if y_angle is None else float(y_angle),
-        )
-    return header, extra
-
-
 def _pack_chrome_facts(
     figure: Any,
     *,
@@ -1544,221 +1316,15 @@ def _pack_chrome_facts(
     margins: tuple[float, float, float, float] | None,
     colorbar_ok: bool,
 ) -> bytes:
-    """Pack authored XYCF v1 chrome facts; Rust owns XYCC layout and legend paints."""
-    figure_plan = _native.scene_xycf_figure_plan(
-        show_legend=bool(getattr(figure, "show_legend", True)),
-        colorbar_ok=bool(colorbar_ok),
-        polar=str(getattr(figure, "coords", "cartesian") or "cartesian") == "polar",
-    )
-    flags = _XYCF_FLAG_HAS_CHROME | _XYCF_FLAG_X_MAJOR_AUTO | _XYCF_FLAG_Y_MAJOR_AUTO
-    kind_codes = {"linear": 0, "log": 1, "symlog": 2}
-    xa = figure.axis_options["x"]
-    ya = figure.axis_options["y"]
-    x_scale = figure._axis_scale("x")
-    y_scale = figure._axis_scale("y")
-    x_lo, x_hi = (float(value) for value in figure._range("x"))
-    y_lo, y_hi = (float(value) for value in figure._range("y"))
-    authored_margins = (0.0, 0.0, 0.0, 0.0)
-    if margins is not None:
-        flags |= _XYCF_FLAG_AUTHORED_MARGINS
-        authored_margins = (
-            float(margins[0]),
-            float(margins[1]),
-            float(margins[2]),
-            float(margins[3]),
-        )
-    padding = (0.0, 0.0, 0.0, 0.0)
-    pad = getattr(figure, "padding", None)
-    if isinstance(pad, (list, tuple)) and len(pad) == 4:
-        flags |= _XYCF_FLAG_PADDING
-        padding = (float(pad[0]), float(pad[1]), float(pad[2]), float(pad[3]))
-    title = str(figure.title or "").encode("utf-8")
-    x_label = str(figure.x_label or xa.get("label") or "").encode("utf-8")
-    y_label = str(figure.y_label or ya.get("label") or "").encode("utf-8")
-    x_format = b"" if xa.get("format") is None else str(xa.get("format")).encode("utf-8")
-    y_format = b"" if ya.get("format") is None else str(ya.get("format")).encode("utf-8")
-    tick_kind_code = {"linear": 0, "time": 1, "category": 2}
-    tick_kinds = tick_kind_code.get(figure._axis_kind("x"), 0) | (
-        tick_kind_code.get(figure._axis_kind("y"), 0) << 8
-    )
-    x_major: list[float] = []
-    y_major: list[float] = []
-    if xa.get("tick_values") is not None:
-        flags &= ~_XYCF_FLAG_X_MAJOR_AUTO
-        # ABI 199: Rust pack_figure_chrome filters through the tick window.
-        x_major = [float(value) for value in xa.get("tick_values")]
-    if ya.get("tick_values") is not None:
-        flags &= ~_XYCF_FLAG_Y_MAJOR_AUTO
-        y_major = [float(value) for value in ya.get("tick_values")]
-    x_minor = [float(value) for value in (xa.get("minor_tick_values") or ())]
-    y_minor = [float(value) for value in (ya.get("minor_tick_values") or ())]
-    # ABI 200: Rust pack_figure_chrome filters authored minors through the tick window.
-    # ABI 201: product encode passes packed XYPL so polar theta uses the modular sector.
-    # ABI 202: hosts pack domain tick-kind (linear/time/category) in XYCF 154–155.
-    # ABI 203: hosts pack ABI 123 collision strategy/anchor/gaps in XYCF 12–15.
-    x_labels = xa.get("tick_labels")
-    y_labels = ya.get("tick_labels")
-    collision_header, collision_extra = _pack_tick_collision(xa, ya, figure)
-    if x_labels is not None:
-        flags |= _XYCF_FLAG_X_TICK_LABELS
-    if y_labels is not None:
-        flags |= _XYCF_FLAG_Y_TICK_LABELS
-    chrome = _pack_xych(figure)
-    legend_loc = b""
-    legend_title = b""
-    legend_ncols = 1
-    legend_font_size = 0.0
-    legend_title_font_size = 0.0
-    legend_flags = 0
-    legend_text_rgba = b"\x00\x00\x00\x00"
-    legend_frame_rgba = b"\x00\x00\x00\x00"
-    legend_meta = b""
-    legend_lens: list[int] = []
-    legend_blob = b""
-    legend_count = 0
-    if figure_plan["attach_legend"]:
-        flags |= _XYCF_FLAG_HAS_LEGEND
-        legend_flags |= _XYCF_LEGEND_SHOW
-        options = dict(figure.legend_options or {})
-        unsupported = {
-            key
-            for key in options
-            if key not in {"loc", "title", "ncols", "style", "highlight", "toggle"}
-        }
-        if unsupported:
-            legend_flags |= _XYCF_LEGEND_UNSUPPORTED_KEYS
-        legend_ncols = int(options.get("ncols") or 1)
-        if "toggle" in options and options["toggle"] is not False:
-            legend_flags |= _XYCF_LEGEND_TOGGLE
-        if "highlight" in options and options["highlight"] is not False:
-            legend_flags |= _XYCF_LEGEND_HIGHLIGHT
-        authored_loc = options.get("loc")
-        if authored_loc is not None:
-            legend_flags |= _XYCF_LEGEND_AUTHORED_LOC
-            # ABI 197: Rust encode_product settles loc="best" from XYCL/XYNM.
-            legend_loc = str(authored_loc).encode("utf-8")
-        style = dict(options.get("style") or {})
-        if set(style) - {"background", "color", "font_size", "title_font_size"}:
-            legend_flags |= _XYCF_LEGEND_UNSUPPORTED_STYLE
-        authored_font_size = style.get("font_size")
-        authored_title_font_size = style.get("title_font_size")
-        if authored_font_size is not None:
-            legend_flags |= _XYCF_LEGEND_AUTHORED_FONT
-            legend_font_size = float(authored_font_size)
-        if authored_title_font_size is not None:
-            legend_flags |= _XYCF_LEGEND_AUTHORED_TITLE_FONT
-            legend_title_font_size = float(authored_title_font_size)
-        title_value = options.get("title")
-        if isinstance(title_value, bool):
-            title_value = str(title_value).lower()
-        legend_title = str("" if title_value is None else title_value).encode("utf-8")
-        if "color" in style:
-            legend_flags |= _XYCF_LEGEND_AUTHORED_COLOR
-            legend_text_rgba = bytes(_rgba(str(style["color"]), 1.0))
-        if "background" in style:
-            legend_flags |= _XYCF_LEGEND_AUTHORED_BACKGROUND
-            legend_frame_rgba = bytes(_rgba(str(style["background"]), 1.0))
-    colorbar_obs = 0
-    colorbar_stop_count = 0
-    colorbar_title = b""
-    colorbar_lo = 0.0
-    colorbar_hi = 0.0
-    colorbar_text_rgba = bytes((32, 32, 32, 255))
-    colorbar_stops: list[tuple[float, bytes]] = []
-    colorbar_ticks: list[float] = []
-    options = getattr(figure, "colorbar_options", None)
-    if figure_plan["attach_colorbar"] and options:
-        flags |= _XYCF_FLAG_HAS_COLORBAR
-        domain = options.get("domain")
-        stops = options.get("stops")
-        colorbar_lo, colorbar_hi = (float(domain[0]), float(domain[1]))
-        parsed = [(float(item[0]), bytes(item[1])) for item in stops]
-        colorbar_stops = parsed
-        colorbar_stop_count = len(parsed)
-        side = options.get("side", "right")
-        if side == "bottom":
-            colorbar_obs |= _XYCF_CB_HORIZONTAL
-        elif side not in {"right", "bottom"}:
-            colorbar_obs |= _XYCF_CB_INVALID_SIDE
-        if options.get("minor_ticks"):
-            colorbar_obs |= _XYCF_CB_MINOR
-        colorbar_title = str(options.get("title", "")).encode("utf-8")
-        colorbar_text_rgba = bytes(options.get("text_rgba", (32, 32, 32, 255)))
-        raw_ticks = options.get("ticks")
-        if raw_ticks is not None:
-            colorbar_ticks = [float(value) for value in raw_ticks]
-    header = {
-        "flags": flags,
-        "collision_header": collision_header,
-        "width": float(width),
-        "height": float(height),
-        "margin_left": authored_margins[0],
-        "margin_right": authored_margins[1],
-        "margin_top": authored_margins[2],
-        "margin_bottom": authored_margins[3],
-        "pad_left": padding[0],
-        "pad_right": padding[1],
-        "pad_top": padding[2],
-        "pad_bottom": padding[3],
-        "x_scale_kind": kind_codes[x_scale],
-        "y_scale_kind": kind_codes[y_scale],
-        "x_lo": x_lo,
-        "x_hi": x_hi,
-        "x_constant": float(xa.get("constant") or 1.0),
-        "y_lo": y_lo,
-        "y_hi": y_hi,
-        "y_constant": float(ya.get("constant") or 1.0),
-        "x_nonpositive_mask": 1 if xa.get("nonpositive", "clip") == "mask" else 0,
-        "y_nonpositive_mask": 1 if ya.get("nonpositive", "clip") == "mask" else 0,
-        "tick_kinds": tick_kinds,
-        "x_label_count": 0 if x_labels is None else len(x_labels),
-        "y_label_count": 0 if y_labels is None else len(y_labels),
-        "legend_ncols": legend_ncols,
-        "legend_font_size": legend_font_size,
-        "legend_title_font_size": legend_title_font_size,
-        "legend_flags": legend_flags,
-        "legend_count": legend_count,
-        "legend_text_rgba": legend_text_rgba,
-        "legend_frame_rgba": legend_frame_rgba,
-        "colorbar_obs": colorbar_obs,
-        "colorbar_stop_count": colorbar_stop_count,
-        "colorbar_lo": colorbar_lo,
-        "colorbar_hi": colorbar_hi,
-        "colorbar_text_rgba": colorbar_text_rgba,
-    }
-    x_labels_blob = bytearray()
-    y_labels_blob = bytearray()
-    _put_tick_labels(x_labels_blob, None if x_labels is None else list(x_labels))
-    _put_tick_labels(y_labels_blob, None if y_labels is None else list(y_labels))
-    colorbar_stops_blob = bytearray()
-    for value, rgba in colorbar_stops:
-        colorbar_stops_blob.extend(struct.pack("<d", value))
-        colorbar_stops_blob.extend(rgba)
-    return _native.scene_xycf_pack(
-        header,
-        {
-            "title": title,
-            "x_label": x_label,
-            "y_label": y_label,
-            "x_format": x_format,
-            "y_format": y_format,
-            "x_major": _f64_bytes(x_major),
-            "x_minor": _f64_bytes(x_minor),
-            "y_major": _f64_bytes(y_major),
-            "y_minor": _f64_bytes(y_minor),
-            "x_labels_blob": bytes(x_labels_blob),
-            "y_labels_blob": bytes(y_labels_blob),
-            "chrome": chrome,
-            "legend_loc": legend_loc,
-            "legend_title": legend_title,
-            "legend_meta": legend_meta,
-            "legend_lens": b"".join(int(length).to_bytes(4, "little") for length in legend_lens),
-            "legend_blob": legend_blob,
-            "colorbar_stops_blob": bytes(colorbar_stops_blob),
-            "colorbar_ticks": _f64_bytes(colorbar_ticks),
-            "colorbar_title": colorbar_title,
-            "collision_extra": collision_extra,
-        },
+    """Marshal chrome observations and bulk-pack XYCF via Rust (ABI 321)."""
+    from ._scene_marshal import pack_chrome_facts
+
+    return pack_chrome_facts(
+        figure,
+        width=width,
+        height=height,
+        margins=margins,
+        colorbar_ok=colorbar_ok,
     )
 
 
@@ -1797,81 +1363,6 @@ def _admitted_marker_glyph(glyph: Any) -> bytes | None:
     if not _native.scene_marker_glyph_admit(glyph):
         return None
     return glyph.encode("utf-8")
-
-
-def _figure_trace_support_flags(trace: Any, polar: bool = False) -> tuple[int, str]:
-    """Observe per-trace Scene allowlist bits; Rust owns the diagnostic."""
-    kind = str(getattr(trace, "kind", "") or "mark")
-    style = getattr(trace, "style", None) or {}
-    flags = 0
-    dispatch = _native.scene_figure_support_trace_dispatch_plan(
-        kind=kind,
-        marker_glyph_present=style.get("marker_glyph") is not None,
-        marker_path_present=style.get("marker_path") is not None,
-        curve_present=style.get("curve") is not None,
-        fill_present="fill" in style,
-    )
-    if not _native.scene_kind_admit(kind):
-        flags |= _XYFS_TRACE_UNSUPPORTED_KIND
-    if getattr(trace, "x_axis", "x") != "x" or getattr(trace, "y_axis", "y") != "y":
-        flags |= _XYFS_TRACE_NON_PRIMARY_AXIS
-    if _native.scene_hidden_or_per_item_admit(
-        bool(getattr(trace, "hidden", False)),
-        trace.has_per_item_channels(),
-        _density_aggregates_color(trace),
-    ):
-        flags |= _XYFS_TRACE_HIDDEN_OR_PER_ITEM
-    if dispatch["probe_marker_glyph"]:
-        glyph = style.get("marker_glyph")
-        if (
-            kind != "scatter"
-            or style.get("marker_path") is not None
-            or _admitted_marker_glyph(glyph) is None
-        ):
-            flags |= _XYFS_TRACE_DASHED_MARKERS
-    marker_path = style.get("marker_path")
-    if dispatch["probe_marker_path"]:
-        if kind != "scatter":
-            flags |= _XYFS_TRACE_DASHED_MARKERS
-        else:
-            try:
-                validated = _validated_marker_path(marker_path)
-            except ValueError:
-                flags |= _XYFS_TRACE_DASHED_MARKERS
-            else:
-                if validated["filled"] and any(
-                    len(contour) < 6 for contour in validated["contours"]
-                ):
-                    flags |= _XYFS_TRACE_DASHED_MARKERS
-    curve = style.get("curve")
-    if curve is not None:
-        curve_code = _native.scene_curve_classify(curve)
-        if curve_code == 1:
-            if not dispatch["probe_curve_smooth"]:
-                flags |= _XYFS_TRACE_DASHED_MARKERS
-        elif curve_code != 0:
-            flags |= _XYFS_TRACE_DASHED_MARKERS
-    linecap = style.get("linecap")
-    if linecap is not None and _parse_scene_linecap(linecap) is False:
-        flags |= _XYFS_TRACE_DASHED_MARKERS
-    dash = style.get("dash")
-    if dash is not None and _parse_scene_dash(dash) is False:
-        flags |= _XYFS_TRACE_DASHED_MARKERS
-    if dispatch["probe_rect_extra"]:
-        flags |= _rect_extra_flags(style, kind, polar)
-    if dispatch["probe_hexbin_reduce"] and not _native.scene_hexbin_reduce_admit(
-        style.get("reduce")
-    ):
-        flags |= _XYFS_TRACE_CUSTOM_HEX_REDUCE
-    if dispatch["probe_heatmap_colormap"] and _heatmap_uses_colormap(trace):
-        flags |= _XYFS_TRACE_HEATMAP_COLORMAP
-    if (
-        dispatch["probe_non_css_fill"]
-        and not isinstance(style["fill"], str)
-        and _admitted_fill_gradient(trace) is None
-    ):
-        flags |= _XYFS_TRACE_NON_CSS_FILL
-    return flags, kind
 
 
 def _hexbin_pitch(style: dict[str, Any]) -> tuple[float, float]:
@@ -3676,46 +3167,10 @@ def _significant_scene_axis_keys(options: dict[str, Any], *, polar: bool = False
 
 
 def _pack_polar_scene_input(figure: Any) -> bytes:
-    """Pack XYPL v1 polar authoring. Rust owns disc layout from the plot rect."""
-    figure_plan = _native.scene_polar_figure_plan(
-        polar=str(getattr(figure, "coords", "cartesian") or "cartesian") == "polar"
-    )
-    if not figure_plan["attach_xypl"]:
-        return b""
-    xa = figure.axis_options.get("x") or {}
-    ya = figure.axis_options.get("y") or {}
-    unit = str(xa.get("theta_unit", "radians"))
-    turn = 360.0 if unit == "degrees" else 2.0 * math.pi
-    sector = xa.get("sector") or (0.0, turn)
-    sector_start, sector_end = float(sector[0]), float(sector[1])
-    categories = tuple(xa.get("categories") or ())
-    r_lo, r_hi = figure._range("y")
-    origin = ya.get("r_origin")
-    r_origin = float("nan") if origin is None else float(origin)
-    hole = float(ya.get("hole") or 0.0)
-    scale_kind, constant, mask_nonpositive = _native._polar_r_scale(ya)
-    grid = str(xa.get("grid_shape", "circular"))
-    grid_shape = 1 if grid == "linear" else 0
-    return struct.pack(
-        "<4s5I2BHdddddddd",
-        b"XYPL",
-        1,
-        _native._polar_theta_unit(unit),
-        _native._polar_theta_direction(xa.get("theta_direction")),
-        len(categories),
-        scale_kind,
-        grid_shape,
-        1 if mask_nonpositive else 0,
-        0,
-        _native._polar_theta_zero(xa.get("theta_zero", "E")),
-        sector_start,
-        sector_end,
-        float(r_lo),
-        float(r_hi),
-        r_origin,
-        hole,
-        constant,
-    )
+    """Marshal polar axis literals and pack XYPL via Rust (ABI 322)."""
+    from ._scene_marshal import pack_polar_scene_input
+
+    return pack_polar_scene_input(figure)
 
 
 def _annotation_has_markup(annotation: Any) -> bool:
@@ -3760,92 +3215,10 @@ def _pack_figure_support(
     annotations: list[Any],
     colorbar_unsupported: bool,
 ) -> bytes:
-    """Pack literal figure observations, axis keys, and per-trace allowlist flags.
+    """Marshal figure support observations and materialize XYFS via Rust (ABI 322)."""
+    from ._scene_marshal import pack_figure_support
 
-    Scene static SVG/PNG/PDF measure and paint DejaVu Sans (#288). Custom
-    ``font-family`` sets ``CUSTOM_FONT``; chart ``class_name`` / ``class_names``,
-    ``chrome_styles``, extra ``style`` keys, and annotation ``class_name`` set
-    ``BROWSER_CSS``. Rust reports the stable fail-closed diagnostics. Live
-    browser widgets still apply CSS outside this encoder.
-    """
-    figure_plan = _native.scene_figure_support_figure_plan(
-        polar=str(getattr(figure, "coords", "cartesian") or "cartesian") == "polar"
-    )
-    polar = figure_plan["polar"]
-    flags = 0
-    if polar:
-        flags |= 1 << 0
-    chrome_styles = getattr(figure, "chrome_styles", None) or {}
-    if any("font-family" in (style or {}) for style in chrome_styles.values()) or any(
-        _annotation_has_custom_typography(annotation) for annotation in annotations
-    ):
-        flags |= 1 << 1
-    if (
-        getattr(figure, "class_name", None)
-        or getattr(figure, "class_names", None)
-        or chrome_styles
-        or set(getattr(figure, "style", None) or {}) - {"background", "--chart-bg"}
-        or any(annotation.get("class_name") not in (None, "") for annotation in annotations)
-    ):
-        flags |= 1 << 2
-    if any(annotation.get("html") not in (None, "") for annotation in annotations):
-        flags |= 1 << 8
-    if any(annotation.get("collision") not in (None, "") for annotation in annotations):
-        flags |= 1 << 6
-    if any(_annotation_has_markup(annotation) for annotation in annotations):
-        flags |= 1 << 9
-    if any(
-        _classify_ribbon_color2(trace) == "fail"
-        or (
-            getattr(trace, "color_ch", None) is not None
-            and (trace.color_ch.mode != "constant" or trace.color_ch.constant is None)
-            and not (str(getattr(trace, "kind", "") or "") == "scatter" and trace.use_density())
-            and not _hexbin_packs_paint_plane(trace)
-            and not _mesh_packs_paint_plane(trace)
-            and not _scatter_packs_paint_plane(trace)
-            and not (
-                str(getattr(figure, "coords", "cartesian") or "cartesian") != "polar"
-                and _ribbon_packs_end_paints(trace)
-            )
-        )
-        or (
-            _fill_is_gradient_authoring((getattr(trace, "style", None) or {}).get("fill"))
-            and _admitted_fill_gradient(trace) is None
-        )
-        for trace in figure.traces
-    ):
-        flags |= 1 << 3
-    if colorbar_unsupported:
-        flags |= 1 << 4
-    if figure.extra_legends:
-        flags |= 1 << 5
-    if any(
-        annotation.get("kind") not in {"callout", "arrow", "text"}
-        and annotation.get("text") not in (None, "")
-        for annotation in annotations
-    ):
-        flags |= 1 << 7
-    traces = list(getattr(figure, "traces", None) or [])
-    axes_blob = bytearray()
-    for axis_id, options in figure.axis_options.items():
-        axis_code = 0 if axis_id == "x" else 1 if axis_id == "y" else 255
-        keys = _significant_scene_axis_keys(options, polar=polar)
-        axes_blob.extend(bytes((axis_code, 0, 0, 0)))
-        axes_blob.extend(len(keys).to_bytes(4, "little"))
-        _xyep_put_keys(axes_blob, keys)
-    traces_blob = bytearray()
-    for trace in traces:
-        trace_flags, kind = _figure_trace_support_flags(trace, polar)
-        encoded = str(kind).encode("utf-8")[:32]
-        traces_blob.extend(trace_flags.to_bytes(2, "little"))
-        traces_blob.extend(bytes((len(encoded), 0)))
-        traces_blob.extend((0).to_bytes(4, "little"))
-        traces_blob.extend(encoded)
-    return _native.scene_figure_support_pack(
-        flags=flags,
-        axes_blob=bytes(axes_blob),
-        traces_blob=bytes(traces_blob),
-    )
+    return pack_figure_support(figure, annotations, colorbar_unsupported)
 
 
 def _xyep_put_keys(buf: bytearray, keys: list[str]) -> None:

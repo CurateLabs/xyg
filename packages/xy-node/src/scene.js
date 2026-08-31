@@ -76,6 +76,7 @@ import {
 } from "./native.js";
 import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneXytcTracePack, sceneXytaFigurePlan, sceneXytaTraceDispatchPlan, sceneXytaTracePack, sceneFigureSupportFigurePlan, sceneFigureSupportTraceDispatchPlan, scenePublicExportFigurePlan, scenePublicExportTraceDispatchPlan, sceneXyafAnnotationDispatchPlan, sceneXycfFigurePlan, sceneXyclFigurePlan, sceneXynmFigurePlan, scenePolarFigurePlan, sceneEncodeProductAttachPlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba, densityMeanColorWireAdmit } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
+import { sceneChromePack, sceneFigureSupportMaterialize, scenePolarInputPack } from "./sceneBulkNative.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
 const MAX_SCENE_MARKS = 2_000_000;
@@ -1363,40 +1364,40 @@ function polarRScale(axis = {}) {
 }
 
 export function packPolarSceneInput(figure) {
-  const figurePlan = scenePolarFigurePlan({ polar: (figure.coords ?? "cartesian") === "polar" });
-  if (!figurePlan.attachXypl) return new Uint8Array();
   const axes = figureAxisOptions(figure) ?? {};
-  const thetaAxis = axes.x ?? {};
-  const rAxis = axes.y ?? {};
-  const unit = polarAxisThetaUnit(thetaAxis);
+  const xa = axes.x ?? {};
+  const ya = axes.y ?? {};
+  const unit = polarAxisThetaUnit(xa);
   const turn = unit === "degrees" ? 360 : Math.PI * 2;
-  const sector = polarAxisSector(thetaAxis) ?? [0, turn];
-  const categories = thetaAxis.categories ?? [];
+  const sector = polarAxisSector(xa) ?? [0, turn];
   const [rLo, rHi] = figure._range("y");
-  const origin = polarAxisROrigin(rAxis);
-  const scale = polarRScale(rAxis);
-  const grid = polarGridShape(thetaAxis);
-  const out = new Uint8Array(92);
-  const view = new DataView(out.buffer);
-  out.set(encodeUtf8("XYPL").slice(0, 4), 0);
-  view.setUint32(4, 1, true);
-  view.setUint32(8, polarThetaUnit(unit), true);
-  view.setUint32(12, polarThetaDirection(polarAxisThetaDirection(thetaAxis)), true);
-  view.setUint32(16, categories.length, true);
-  view.setUint32(20, scale.kind, true);
-  out[24] = grid === "linear" ? 1 : 0;
-  out[25] = scale.maskNonpositive ? 1 : 0;
-  view.setUint16(26, 0, true);
-  view.setFloat64(28, polarThetaZero(polarAxisThetaZero(thetaAxis)), true);
-  view.setFloat64(36, Number(sector[0]), true);
-  view.setFloat64(44, Number(sector[1]), true);
-  view.setFloat64(52, Number(rLo), true);
-  view.setFloat64(60, Number(rHi), true);
-  view.setFloat64(68, origin == null ? Number.NaN : Number(origin), true);
-  view.setFloat64(76, Number(polarAxisHole(rAxis) || 0), true);
-  view.setFloat64(84, scale.constant, true);
-  return out;
+  const origin = polarAxisROrigin(ya);
+  const scale = polarRScale(ya);
+  const grid = polarGridShape(xa);
+  const thetaZero = polarAxisThetaZero(xa);
+  const thetaZeroIsLabel = typeof thetaZero === "string";
+  return scenePolarInputPack({
+    polar: (figure.coords ?? "cartesian") === "polar",
+    theta_unit: polarThetaUnit(unit),
+    theta_direction: polarThetaDirection(polarAxisThetaDirection(xa)),
+    n_categories: (xa.categories ?? []).length,
+    grid_shape: grid === "linear" ? 1 : 0,
+    r_scale_kind: scale.kind,
+    r_mask_nonpositive: scale.maskNonpositive,
+    sector_start: Number(sector[0]),
+    sector_end: Number(sector[1]),
+    r_lo: Number(rLo),
+    r_hi: Number(rHi),
+    r_origin_is_nan: origin == null,
+    r_origin: origin == null ? Number.NaN : Number(origin),
+    hole: Number(polarAxisHole(ya) || 0),
+    r_constant: scale.constant,
+    theta_zero_is_label: thetaZeroIsLabel,
+    theta_zero_label: thetaZeroIsLabel ? String(thetaZero) : "",
+    theta_zero_numeric: polarThetaZero(thetaZero),
+  });
 }
+
 
 function encodeUtf8Magic(text) {
   return encodeUtf8(text).slice(0, 4);
@@ -2823,94 +2824,123 @@ function significantSceneAxisKeys(options, polar = false) {
   return keys;
 }
 
-function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
-  const chromeStyles = figureChromeStyles(figure) ?? {};
-  const annotations = [...(figure.annotations ?? [])];
-  const figurePlan = sceneFigureSupportFigurePlan({ polar: figure.coords === "polar" });
-  const polar = figurePlan.polar;
-  let flags = 0;
-  if (polar) flags |= 1 << 0;
-  if (
-    Object.values(chromeStyles).some((style) => chromeStyleHasFontFamily(style))
-    || annotations.some((annotation) => annotationHasCustomTypography(annotation))
-  ) flags |= 1 << 1;
-  // Scene static paint/measure is DejaVu Sans (#288). Custom font-family,
-  // chart/theme CSS, and class_name are XYFS observations; Rust reports
-  // CUSTOM_FONT / BROWSER_CSS. Live browser widgets still apply CSS.
-  if (
-    figureClassName(figure)
-    || Object.keys(figureClassNames(figure) ?? {}).length
-    || Object.keys(chromeStyles).length
-    || Object.keys(figure.style ?? {}).some((key) => !["background", "--chart-bg"].includes(key))
-    || annotations.some((annotation) => {
-      const name = annotationClassName(annotation);
-      return name != null && name !== "";
-    })
-  ) flags |= 1 << 2;
-  if (annotations.some((annotation) => annotation.html != null && annotation.html !== "")) flags |= 1 << 8;
-  if (annotations.some((annotation) => annotation.collision != null && annotation.collision !== "")) flags |= 1 << 6;
-  if (annotations.some((annotation) => annotationHasMarkup(annotation))) flags |= 1 << 9;
-  if ((figure.traces ?? []).some((trace) => (
-    classifyRibbonColor2(trace) === "fail"
-    || (
-      scatterHasNonConstantColor(trace)
-      && !scatterUsesDensity(trace)
+function optionalStr(value) {
+  if (value == null) return null;
+  const text = String(value);
+  return text ? text : null;
+}
+
+function marshalTraceSupportObs(trace, polar) {
+  const kind = String(trace.kind || "mark");
+  const style = trace.style ?? {};
+  const fill = style.fill;
+  let radiusValues;
+  let radiusSeq;
+  if (Array.isArray(style.corner_radius)) {
+    radiusValues = style.corner_radius.map(Number);
+    radiusSeq = true;
+  } else {
+    radiusValues = [Number(style.corner_radius ?? 0)];
+    radiusSeq = false;
+  }
+  const markerPath = style.marker_path;
+  let markerPathValid = false;
+  let markerPathFilledSmall = false;
+  if (markerPath != null && kind === "scatter") {
+    const validated = validateMarkerPath(markerPath);
+    if (validated != null) {
+      markerPathValid = true;
+      markerPathFilledSmall = validated.filled && validated.contours.some((contour) => contour.length < 6);
+    }
+  }
+  return {
+    kind,
+    x_axis: String(trace.x_axis ?? "x"),
+    y_axis: String(trace.y_axis ?? "y"),
+    hidden: Boolean(trace.hidden),
+    has_per_item_channels: perItemChannelNames(trace).length > 0,
+    density_aggregates_color: densityAggregatesColor(trace),
+    marker_glyph_present: style.marker_glyph != null,
+    marker_glyph: optionalStr(style.marker_glyph),
+    marker_path_present: markerPath != null,
+    marker_path_valid: markerPathValid,
+    marker_path_filled_small: markerPathFilledSmall,
+    curve_present: style.curve != null,
+    curve: optionalStr(style.curve),
+    linecap_present: style.linecap != null,
+    linecap: optionalStr(style.linecap),
+    dash_present: style.dash != null,
+    dash_text: Array.isArray(style.dash) ? null : optionalStr(style.dash),
+    dash_is_array: Array.isArray(style.dash),
+    fill_present: Object.hasOwn(style, "fill"),
+    fill_is_string: typeof fill === "string",
+    fill_gradient_admitted: admitFillGradient(trace) != null,
+    hexbin_reduce: optionalStr(style.reduce),
+    heatmap_truecolor: Boolean(trace.truecolor),
+    heatmap_has_colormap: trace.colormap != null,
+    heatmap_has_rgba_grid: trace.rgba_grid != null,
+    heatmap_has_rgba: trace.rgba != null,
+    rect_gradient_fail: typeof fill === "object" && fill != null && admitFillGradientFromFill(fill, "#3987e5") == null,
+    corner_radius_values: radiusValues,
+    corner_radius_seq: radiusSeq,
+    wedge_gap: Number(style.wedge_gap ?? 0),
+    ribbon_color2_fail: classifyRibbonColor2(trace) === "fail",
+    color_channel_unsupported: (
+      trace.color_ch != null
+      && (trace.color_ch.mode !== "constant" || trace.color_ch.constant == null)
+      && !(kind === "scatter" && scatterUsesDensity(trace))
       && !hexbinPacksPaintPlane(trace)
       && !meshPacksPaintPlane(trace)
       && !scatterPacksPaintPlane(trace)
-      && !(figure.coords !== "polar" && ribbonPacksEndPaints(trace))
-    )
-    || (
-      fillIsGradientAuthoring(trace.style?.fill)
-      && admitFillGradient(trace) == null
-    )
-  ))) flags |= 1 << 3;
-  if (colorbarUnsupported) flags |= 1 << 4;
-  if ((figureExtraLegends(figure) ?? []).length) flags |= 1 << 5;
-  if (annotations.some((annotation) => !["callout", "arrow", "text"].includes(annotation.kind) && annotation.text != null && annotation.text !== "")) flags |= 1 << 7;
-  const traces = [...(figure.traces ?? [])];
-  const axisEntries = [];
-  const seenAxes = new Set();
-  const addAxis = (axisId, options) => {
-    if (seenAxes.has(axisId)) return;
-    seenAxes.add(axisId);
-    axisEntries.push([axisId, options ?? {}]);
+      && !(!polar && ribbonPacksEndPaints(trace))
+    ),
   };
-  const axes = figureAxisOptions(figure) ?? {};
-  if (axes && typeof axes === "object") {
-    for (const [axisId, options] of Object.entries(axes)) addAxis(axisId, options);
-  }
-  addAxis("x", axes.x ?? {});
-  addAxis("y", axes.y ?? {});
-  const parts = [new Uint8Array(20)];
-  const header = new DataView(parts[0].buffer);
-  parts[0].set([88, 89, 70, 83]); // XYFS
-  header.setUint32(4, 2, true);
-  header.setUint32(8, flags, true);
-  header.setUint32(12, axisEntries.length, true);
-  header.setUint32(16, traces.length, true);
-  for (const [axisId, options] of axisEntries) {
-    const axisCode = axisId === "x" ? 0 : axisId === "y" ? 1 : 255;
-    const keys = significantSceneAxisKeys(options, polar);
-    const axis = new Uint8Array(8);
-    axis[0] = axisCode;
-    new DataView(axis.buffer).setUint32(4, keys.length, true);
-    parts.push(axis);
-    for (const key of keys) parts.push(encodeExportKey(key));
-  }
-  for (const trace of traces) {
-    const { flags: traceFlags, kind } = figureTraceSupport(figure, trace);
-    const kindBytes = new TextEncoder().encode(kind.slice(0, 32));
-    const row = new Uint8Array(8 + kindBytes.length);
-    const view = new DataView(row.buffer);
-    view.setUint16(0, traceFlags, true);
-    row[2] = kindBytes.length;
-    row.set(kindBytes, 8);
-    parts.push(row);
-  }
-  return concatBytes(parts);
 }
 
+function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
+  const chromeStyles = figureChromeStyles(figure) ?? {};
+  const annotations = [...(figure.annotations ?? [])];
+  const polar = (figure.coords ?? "cartesian") === "polar";
+  const annRows = annotations.map((annotation) => ({
+    has_html: annotation.html != null && annotation.html !== "",
+    has_collision: annotation.collision != null && annotation.collision !== "",
+    has_markup: annotationHasMarkup(annotation),
+    has_custom_typography: annotationHasCustomTypography(annotation),
+    has_class_name: annotation.class_name != null && annotation.class_name !== "",
+    kind_is_supported_text: ["callout", "arrow", "text"].includes(annotation.kind),
+    has_text: annotation.text != null && annotation.text !== "",
+  }));
+  const axes = [];
+  for (const [axisId, options] of Object.entries(figureAxisOptions(figure) ?? {})) {
+    axes.push({
+      axis_code: axisId === "x" ? 0 : axisId === "y" ? 1 : 255,
+      keys: significantSceneAxisKeys(options, polar),
+      tick_label_strategy: optionalStr(options.tick_label_strategy),
+      collision: optionalStr(options.collision),
+    });
+  }
+  const traces = (figure.traces ?? []).map((trace) => marshalTraceSupportObs(trace, polar));
+  return sceneFigureSupportMaterialize({
+    polar,
+    colorbarUnsupported,
+    hasCustomFont: Object.values(chromeStyles).some((style) => Object.hasOwn(style ?? {}, "font-family"))
+      || annotations.some((annotation) => annotationHasCustomTypography(annotation)),
+    hasBrowserCss: Boolean(
+      figureClassName(figure)
+      || Object.keys(figureClassNames(figure) ?? {}).length
+      || Object.keys(chromeStyles).length
+      || Object.keys(figure.style ?? {}).some((key) => !["background", "--chart-bg"].includes(key))
+      || annotations.some((annotation) => {
+        const name = annotationClassName(annotation);
+        return name != null && name !== "";
+      }),
+    ),
+    hasExtraLegends: (figureExtraLegends(figure) ?? []).length > 0,
+    annotations: annRows,
+    axes,
+    traces,
+  });
+}
 function sceneFigureSupportReason(figure, { colorbarUnsupported = false } = {}) {
   const envelope = packFigureSupport(figure, { colorbarUnsupported });
   const requiredRaw = xySceneFigureSupportReason(
@@ -5000,202 +5030,156 @@ export function figureYLabel(figure, yAxis) {
   return (figure ?? {}).y_label || (yAxis ?? {}).label;
 }
 
-function packChromeFacts(figure, { width, height, margins = null, colorbarOk = true } = {}) {
-  const figurePlan = sceneXycfFigurePlan({
-    showLegend: figureShowLegend(figure) !== false,
-    colorbarOk,
-    polar: (figure.coords ?? "cartesian") === "polar",
-  });
-  const FLAG_AUTHORED_MARGINS = 1 << 0, FLAG_PADDING = 1 << 1, FLAG_X_MAJOR_AUTO = 1 << 2, FLAG_Y_MAJOR_AUTO = 1 << 3;
-  const FLAG_X_TICK_LABELS = 1 << 4, FLAG_Y_TICK_LABELS = 1 << 5, FLAG_HAS_CHROME = 1 << 6, FLAG_HAS_LEGEND = 1 << 7, FLAG_HAS_COLORBAR = 1 << 8;
-  const LEGEND_AUTHORED_LOC = 1 << 0, LEGEND_AUTHORED_FONT = 1 << 1, LEGEND_AUTHORED_TITLE_FONT = 1 << 2;
-  const LEGEND_AUTHORED_COLOR = 1 << 3, LEGEND_AUTHORED_BACKGROUND = 1 << 4, LEGEND_UNSUPPORTED_KEYS = 1 << 5;
-  const LEGEND_TOGGLE = 1 << 6, LEGEND_HIGHLIGHT = 1 << 7, LEGEND_SHOW = 1 << 8, LEGEND_UNSUPPORTED_STYLE = 1 << 9;
-  const CB_HORIZONTAL = 1 << 1, CB_MINOR = 1 << 2, CB_INVALID_SIDE = 1 << 4;
-  let flags = FLAG_HAS_CHROME | FLAG_X_MAJOR_AUTO | FLAG_Y_MAJOR_AUTO;
-  const axes = figureAxisOptions(figure) ?? {};
-  const xAxis = axes.x ?? {};
-  const yAxis = axes.y ?? {};
-  const xDomain = figure._range("x");
-  const yDomain = figure._range("y");
-  const kindCode = (kind) => kind === "log" ? 1 : kind === "symlog" ? 2 : 0;
-  const authoredMargins = [0, 0, 0, 0];
-  if (margins != null) {
-    flags |= FLAG_AUTHORED_MARGINS;
-    authoredMargins[0] = Number(margins[0]); authoredMargins[1] = Number(margins[1]);
-    authoredMargins[2] = Number(margins[2]); authoredMargins[3] = Number(margins[3]);
-  }
-  const padding = [0, 0, 0, 0];
-  const pad = figure.padding;
-  if (Array.isArray(pad) && pad.length === 4) {
-    flags |= FLAG_PADDING;
-    padding[0] = Number(pad[0]); padding[1] = Number(pad[1]); padding[2] = Number(pad[2]); padding[3] = Number(pad[3]);
-  }
-  const title = encodeUtf8(String(figure.title ?? ""));
-  const xLabel = encodeUtf8(String(figureXLabel(figure, xAxis) ?? ""));
-  const yLabel = encodeUtf8(String(figureYLabel(figure, yAxis) ?? ""));
-  const xFormat = xAxis.format == null ? new Uint8Array() : encodeUtf8(String(xAxis.format));
-  const yFormat = yAxis.format == null ? new Uint8Array() : encodeUtf8(String(yAxis.format));
-  let xMajor = [], yMajor = [];
-  const xTicks = axisTickValues(xAxis);
-  const yTicks = axisTickValues(yAxis);
-  // ABI 199: Rust pack_figure_chrome filters authored majors through the tick window.
-  if (xTicks != null) { flags &= ~FLAG_X_MAJOR_AUTO; xMajor = Array.from(xTicks, Number); }
-  if (yTicks != null) { flags &= ~FLAG_Y_MAJOR_AUTO; yMajor = Array.from(yTicks, Number); }
-  const xMinor = Array.from(axisMinorTickValues(xAxis) ?? [], Number);
-  const yMinor = Array.from(axisMinorTickValues(yAxis) ?? [], Number);
-  // ABI 200: Rust pack_figure_chrome filters authored minors through the tick window.
-  // ABI 201: product encode passes packed XYPL so polar theta uses the modular sector.
-  // ABI 202: hosts pack domain tick-kind (linear/time/category) in XYCF 154–155.
-  // ABI 203: hosts pack ABI 123 collision strategy/anchor/gaps in XYCF 12–15.
-  const xLabels = axisTickLabels(xAxis) ?? null;
-  const yLabels = axisTickLabels(yAxis) ?? null;
-  if (xLabels != null) flags |= FLAG_X_TICK_LABELS;
-  if (yLabels != null) flags |= FLAG_Y_TICK_LABELS;
-  const chrome = packXyCh(figure);
-  let legendLoc = new Uint8Array(), legendTitle = new Uint8Array(), legendNcols = 1;
-  let legendFont = 0, legendTitleFont = 0, legendFlags = 0;
-  let legendTextRgba = new Uint8Array(4), legendFrameRgba = new Uint8Array(4);
-  let legendMeta = new Uint8Array(), legendLens = [], legendBlob = new Uint8Array();
-  let legendCount = 0;
-  if (figurePlan.attachLegend) {
-    flags |= FLAG_HAS_LEGEND;
-    legendFlags |= LEGEND_SHOW;
-    const options = figureLegendOptions(figure) ?? {};
-    const allowed = new Set(["loc", "title", "ncols", "style", "highlight", "toggle"]);
-    if (Object.keys(options).some((key) => !allowed.has(key))) legendFlags |= LEGEND_UNSUPPORTED_KEYS;
-    legendNcols = Number(options.ncols ?? 1);
-    if (Object.hasOwn(options, "toggle") && options.toggle !== false) legendFlags |= LEGEND_TOGGLE;
-    if (Object.hasOwn(options, "highlight") && options.highlight !== false) legendFlags |= LEGEND_HIGHLIGHT;
-    let loc = options.loc;
-    if (loc != null) {
-      legendFlags |= LEGEND_AUTHORED_LOC;
-      legendLoc = encodeUtf8(String(loc));
+function sceneSideMask(values, name, axisId, allowed, sideCode) {
+  if (values == null) return 1 << sideCode;
+  for (const value of values) {
+    if (!allowed.includes(value)) {
+      throw new RangeError(`Scene v12 ${axisId} axis ${name} must contain only ${JSON.stringify(allowed)}`);
     }
-    const style = options.style ?? {};
-    if (Object.keys(style).some((key) => !LEGEND_ALLOWED_STYLE.has(key))) legendFlags |= LEGEND_UNSUPPORTED_STYLE;
-    const { font_size: authoredFont, title_font_size: authoredTitleFont } = legendStyleFontSizes(style);
-    if (authoredFont != null) { legendFlags |= LEGEND_AUTHORED_FONT; legendFont = Number(authoredFont); }
-    if (authoredTitleFont != null) { legendFlags |= LEGEND_AUTHORED_TITLE_FONT; legendTitleFont = Number(authoredTitleFont); }
-    legendTitle = encodeUtf8(String(options.title ?? ""));
-    if (Object.hasOwn(style, "color")) { legendFlags |= LEGEND_AUTHORED_COLOR; legendTextRgba = rgba8(style.color, 1); }
-    if (Object.hasOwn(style, "background")) { legendFlags |= LEGEND_AUTHORED_BACKGROUND; legendFrameRgba = rgba8(style.background, 1); }
   }
-  let colorbarObs = 0, stopCount = 0, tickCount = 0, cbTitle = new Uint8Array();
-  let cbLo = 0, cbHi = 0, cbText = Uint8Array.of(32, 32, 32, 255);
-  let cbStops = [], cbTicks = [];
-  const colorbar = figureColorbarOptions(figure);
-  if (figurePlan.attachColorbar && colorbar) {
-    flags |= FLAG_HAS_COLORBAR;
-    cbLo = Number(colorbar.domain[0]); cbHi = Number(colorbar.domain[1]);
-    cbStops = colorbar.stops.map((stop) => [Number(stop[0]), Uint8Array.from(stop[1])]);
-    stopCount = cbStops.length;
-    const side = colorbar.side ?? "right";
-    if (side === "bottom") colorbarObs |= CB_HORIZONTAL;
-    else if (side !== "right") colorbarObs |= CB_INVALID_SIDE;
-    if (colorbar.minor_ticks) colorbarObs |= CB_MINOR;
-    cbTitle = encodeUtf8(String(colorbar.title ?? ""));
-    if (colorbar.text_rgba) cbText = Uint8Array.from(colorbar.text_rgba);
-    if (colorbar.ticks != null) { cbTicks = Array.from(colorbar.ticks, Number); tickCount = cbTicks.length; }
-  }
-  const header = new Uint8Array(288);
-  const view = new DataView(header.buffer);
-  header.set(encodeUtf8("XYCF").slice(0, 4), 0);
-  view.setUint32(4, 1, true);
-  view.setUint32(8, flags >>> 0, true);
-  view.setFloat64(16, Number(width), true);
-  view.setFloat64(24, Number(height), true);
-  authoredMargins.forEach((value, index) => view.setFloat64(32 + index * 8, value, true));
-  padding.forEach((value, index) => view.setFloat64(64 + index * 8, value, true));
-  view.setUint32(96, kindCode(axisScaleName(xAxis)), true);
-  view.setUint32(100, kindCode(axisScaleName(yAxis)), true);
-  view.setFloat64(104, Number(xDomain[0]), true);
-  view.setFloat64(112, Number(xDomain[1]), true);
-  view.setFloat64(120, Number(xAxis.constant ?? 1), true);
-  view.setFloat64(128, Number(yDomain[0]), true);
-  view.setFloat64(136, Number(yDomain[1]), true);
-  view.setFloat64(144, Number(yAxis.constant ?? 1), true);
-  header[152] = (xAxis.nonpositive ?? "clip") === "mask" ? 1 : 0;
-  header[153] = (yAxis.nonpositive ?? "clip") === "mask" ? 1 : 0;
-  header[154] = chromeAxisTickKind(figure, "x");
-  header[155] = chromeAxisTickKind(figure, "y");
-  const strategyCode = (options) => ({ auto: 0, hide: 1, rotate: 2, stagger: 3, preserve: 4, none: 5, off: 6 }[sceneTickStrategy(options)] ?? 0);
-  const anchorCode = (options) => {
-    const raw = axisTickLabelAnchor(options);
-    if (raw == null) return null;
-    return sceneTickAnchor(raw);
-  };
-  const xAnchor = anchorCode(xAxis);
-  const yAnchor = anchorCode(yAxis);
-  const xGap = axisTickLabelMinGap(xAxis);
-  const yGap = axisTickLabelMinGap(yAxis);
-  const xAngle = axisTickLabelAngle(xAxis);
-  const yAngle = axisTickLabelAngle(yAxis);
-  const extras = xGap != null || yGap != null || xAngle != null || yAngle != null;
-  let collisionFlags = extras ? 1 : 0;
-  if (figure._axisKind("x") === "category") collisionFlags |= 1 << 1;
-  if (figure._axisKind("y") === "category") collisionFlags |= 1 << 2;
-  if (xAnchor != null) collisionFlags |= 1 << 3;
-  if (yAnchor != null) collisionFlags |= 1 << 4;
-  header[12] = strategyCode(xAxis);
-  header[13] = strategyCode(yAxis);
-  header[14] = (xAnchor ?? 0) | ((yAnchor ?? 0) << 4);
-  header[15] = collisionFlags;
-  const collisionExtra = extras ? (() => {
-    const extra = new Uint8Array(32);
-    const extraView = new DataView(extra.buffer);
-    extraView.setFloat64(0, xGap == null ? 8 : Number(xGap), true);
-    extraView.setFloat64(8, yGap == null ? 4 : Number(yGap), true);
-    extraView.setFloat64(16, xAngle == null ? Number.NaN : Number(xAngle), true);
-    extraView.setFloat64(24, yAngle == null ? Number.NaN : Number(yAngle), true);
-    return extra;
-  })() : new Uint8Array();
-  view.setUint32(156, title.length, true);
-  view.setUint32(160, xLabel.length, true);
-  view.setUint32(164, yLabel.length, true);
-  view.setUint32(168, xFormat.length, true);
-  view.setUint32(172, yFormat.length, true);
-  view.setUint32(176, xMajor.length, true);
-  view.setUint32(180, xMinor.length, true);
-  view.setUint32(184, yMajor.length, true);
-  view.setUint32(188, yMinor.length, true);
-  view.setUint32(192, xLabels == null ? 0 : xLabels.length, true);
-  view.setUint32(196, yLabels == null ? 0 : yLabels.length, true);
-  view.setUint32(200, chrome.length, true);
-  view.setUint32(204, legendLoc.length, true);
-  view.setUint32(208, legendTitle.length, true);
-  view.setUint32(212, legendNcols, true);
-  view.setFloat64(216, legendFont, true);
-  view.setFloat64(224, legendTitleFont, true);
-  view.setUint32(232, legendFlags >>> 0, true);
-  view.setUint32(236, legendCount, true);
-  header.set(legendTextRgba, 240);
-  header.set(legendFrameRgba, 244);
-  view.setUint32(248, colorbarObs >>> 0, true);
-  view.setUint32(252, stopCount, true);
-  view.setUint32(256, tickCount, true);
-  view.setUint32(260, cbTitle.length, true);
-  view.setFloat64(264, cbLo, true);
-  view.setFloat64(272, cbHi, true);
-  header.set(cbText, 280);
-  const legendLensBytes = new Uint8Array(legendLens.length * 4);
-  const lensView = new DataView(legendLensBytes.buffer);
-  legendLens.forEach((len, index) => lensView.setUint32(index * 4, len, true));
-  const stopBytes = concatBytes(cbStops.map(([value, rgba]) => {
-    const row = new Uint8Array(12);
-    new DataView(row.buffer).setFloat64(0, value, true);
-    row.set(rgba, 8);
-    return row;
-  }));
-  return concatBytes([
-    header, title, xLabel, yLabel, xFormat, yFormat,
-    packF64s(xMajor), packF64s(xMinor), packF64s(yMajor), packF64s(yMinor),
-    packTickLabels(xLabels), packTickLabels(yLabels),
-    chrome, legendLoc, legendTitle, legendMeta, legendLensBytes, legendBlob,
-    stopBytes, packF64s(cbTicks), cbTitle, collisionExtra,
-  ]);
+  return allowed.reduce((mask, candidate, index) => (
+    values.includes(candidate) ? mask | (1 << index) : mask
+  ), 0);
 }
 
+function marshalChromeAxis(axisId, options) {
+  const style = { ...(options.style ?? {}) };
+  const minor = { ...(options.minor_style ?? {}) };
+  for (const [label, authored] of [["style", style], ["minor_style", minor]]) {
+    const unsupported = Object.keys(authored).filter((key) => !AXIS_STYLE_KEYS.has(key));
+    if (unsupported.length) {
+      throw new RangeError(`Scene v12 does not yet encode ${axisId} axis ${label} keys`);
+    }
+  }
+  const side = options.side ?? (axisId === "x" ? "bottom" : "left");
+  const allowed = axisId === "x" ? ["bottom", "top"] : ["left", "right"];
+  if (!allowed.includes(side)) throw new RangeError(`Scene v12 ${axisId} axis side is invalid`);
+  const sideCode = side === allowed[0] ? 0 : 1;
+  const marshalStyle = (src) => {
+    const out = {};
+    for (const key of [
+      "grid_color", "grid_width", "grid_opacity", "axis_color", "axis_width",
+      "tick_color", "tick_width", "tick_length", "tick_direction", "tick_label_color", "label_color",
+    ]) {
+      if (!Object.hasOwn(src, key)) continue;
+      if (["grid_width", "axis_width", "tick_width", "tick_length"].includes(key)) out[key] = Number(src[key]);
+      else if (key === "grid_opacity") out.grid_opacity = Number(src[key]);
+      else out[key] = String(src[key]);
+    }
+    return out;
+  };
+  return {
+    side_code: sideCode,
+    tick_sides_mask: sceneSideMask(options.tick_sides, "tick_sides", axisId, allowed, sideCode),
+    label_sides_mask: sceneSideMask(options.tick_label_sides, "tick_label_sides", axisId, allowed, sideCode),
+    style: marshalStyle(style),
+    minor_style: marshalStyle(minor),
+  };
+}
+
+function packChromeFacts(figure, { width, height, margins = null, colorbarOk = true } = {}) {
+  const axes = figureAxisOptions(figure) ?? {};
+  const xa = axes.x ?? {};
+  const ya = axes.y ?? {};
+  const kindCodes = { linear: 0, log: 1, symlog: 2 };
+  const tickKindCode = { linear: 0, time: 1, category: 2 };
+  const [xLo, xHi] = figure._range("x");
+  const [yLo, yHi] = figure._range("y");
+  const pad = figure.padding;
+  const hasPadding = Array.isArray(pad) && pad.length === 4;
+  const figureStyle = figure.style ?? {};
+  const legendOptions = { ...(figureLegendOptions(figure) ?? {}) };
+  const legendStyle = { ...(legendOptions.style ?? {}) };
+  const allowedLegend = new Set(["loc", "title", "ncols", "style", "highlight", "toggle"]);
+  const colorbar = colorbarOk ? figureColorbarOptions(figure) : null;
+  let colorbarPayload = null;
+  if (colorbar) {
+    const domain = colorbar.domain ?? [0, 1];
+    const stops = colorbar.stops ?? [];
+    const side = colorbar.side ?? "right";
+    colorbarPayload = {
+      domain_lo: Number(domain[0]),
+      domain_hi: Number(domain[1]),
+      stops: stops.map((stop) => [Number(stop[0]), Uint8Array.from(stop[1])]),
+      side_bottom: side === "bottom",
+      invalid_side: !["right", "bottom"].includes(side),
+      minor_ticks: Boolean(colorbar.minor_ticks),
+      title: optionalStr(colorbar.title),
+      text_rgba: Uint8Array.from(colorbar.text_rgba ?? [32, 32, 32, 255]),
+      ticks: colorbar.ticks == null ? null : Array.from(colorbar.ticks, Number),
+    };
+  }
+  return sceneChromePack({
+    width: Number(width),
+    height: Number(height),
+    show_legend: figureShowLegend(figure) !== false,
+    colorbar_ok: Boolean(colorbarOk && colorbarPayload),
+    polar: (figure.coords ?? "cartesian") === "polar",
+    has_margins: margins != null,
+    margins: margins == null ? [0, 0, 0, 0] : margins.map(Number),
+    has_padding: hasPadding,
+    padding: hasPadding ? pad.map(Number) : [0, 0, 0, 0],
+    title: String(figure.title ?? ""),
+    x_label: String(figureXLabel(figure, xa) ?? ""),
+    y_label: String(figureYLabel(figure, ya) ?? ""),
+    x_format: optionalStr(xa.format),
+    y_format: optionalStr(ya.format),
+    x_scale_kind: kindCodes[axisScaleName(xa)] ?? 0,
+    y_scale_kind: kindCodes[axisScaleName(ya)] ?? 0,
+    x_lo: Number(xLo),
+    x_hi: Number(xHi),
+    x_constant: Number(xa.constant ?? 1),
+    y_lo: Number(yLo),
+    y_hi: Number(yHi),
+    y_constant: Number(ya.constant ?? 1),
+    x_nonpositive_mask: (xa.nonpositive ?? "clip") === "mask" ? 1 : 0,
+    y_nonpositive_mask: (ya.nonpositive ?? "clip") === "mask" ? 1 : 0,
+    x_tick_kind: tickKindCode[figure._axisKind("x")] ?? 0,
+    y_tick_kind: tickKindCode[figure._axisKind("y")] ?? 0,
+    x_axis: marshalChromeAxis("x", xa),
+    y_axis: marshalChromeAxis("y", ya),
+    x_major: axisTickValues(xa) == null ? null : Array.from(axisTickValues(xa), Number),
+    y_major: axisTickValues(ya) == null ? null : Array.from(axisTickValues(ya), Number),
+    x_minor: Array.from(axisMinorTickValues(xa) ?? [], Number),
+    y_minor: Array.from(axisMinorTickValues(ya) ?? [], Number),
+    x_tick_labels: axisTickLabels(xa) == null ? null : Array.from(axisTickLabels(xa), String),
+    y_tick_labels: axisTickLabels(ya) == null ? null : Array.from(axisTickLabels(ya), String),
+    x_collision: {
+      strategy: optionalStr(xa.tick_label_strategy),
+      collision: optionalStr(xa.collision),
+      anchor: optionalStr(xa.tick_label_anchor),
+      min_gap: xa.tick_label_min_gap == null ? null : Number(xa.tick_label_min_gap),
+      angle: xa.tick_label_angle == null ? null : Number(xa.tick_label_angle),
+      tick_kind_category: figure._axisKind("x") === "category",
+    },
+    y_collision: {
+      strategy: optionalStr(ya.tick_label_strategy),
+      collision: optionalStr(ya.collision),
+      anchor: optionalStr(ya.tick_label_anchor),
+      min_gap: ya.tick_label_min_gap == null ? null : Number(ya.tick_label_min_gap),
+      angle: ya.tick_label_angle == null ? null : Number(ya.tick_label_angle),
+      tick_kind_category: figure._axisKind("y") === "category",
+    },
+    chart_background: optionalStr(figureStyle.background),
+    plot_background: optionalStr(figureStyle["--chart-bg"]),
+    legend: {
+      unsupported_keys: Object.keys(legendOptions).some((key) => !allowedLegend.has(key)),
+      toggle: Object.hasOwn(legendOptions, "toggle") && legendOptions.toggle !== false,
+      highlight: Object.hasOwn(legendOptions, "highlight") && legendOptions.highlight !== false,
+      loc: optionalStr(legendOptions.loc),
+      title: optionalStr(typeof legendOptions.title === "boolean" ? String(legendOptions.title).toLowerCase() : legendOptions.title),
+      ncols: Number(legendOptions.ncols ?? 1),
+      unsupported_style: Object.keys(legendStyle).some((key) => !LEGEND_ALLOWED_STYLE.has(key)),
+      font_size: legendStyle.font_size,
+      title_font_size: legendStyle.title_font_size,
+      color: optionalStr(legendStyle.color),
+      background: optionalStr(legendStyle.background),
+    },
+    colorbar: colorbarPayload,
+  });
+}
+ = {}) {
+  const figurePlan = sceneXycfFigurePlan({
 /** XYEF resolved axis kind. Python `_pack_public_export_support` uses `figure._axis_kind(axis_id)`. */
 export function xyEfResolvedKind(figure, axisId) {
   const kind = figure._axisKind(axisId);

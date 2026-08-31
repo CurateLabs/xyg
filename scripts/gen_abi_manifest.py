@@ -154,8 +154,20 @@ _POINTER_C: dict[str, str] = {
     "*const XygSceneXytaTracePackIn": "const void *",
     "*const XygSceneXyafPackIn": "const void *",
     "*const XygSceneXycfPackIn": "const void *",
+    "*const XygSceneChromePackIn": "const void *",
+    "*const XygStringRef": "const void *",
+    "*const XygFigureSupportAnnotationObs": "const void *",
+    "*const XygFigureSupportAxisObsIn": "const void *",
+    "*const XygFigureSupportTraceObsIn": "const void *",
+    "*const XygScenePolarInputPackIn": "const void *",
     "*const XygPayloadColumnMaterializeIn": "const void *",
     "*mut XygPayloadColumnMaterializeOut": "void *",
+    "*const XygPayloadTraceEmitIn": "const void *",
+    "*mut XygPayloadTraceEmitOut": "void *",
+    "*const XygPayloadTraceColumnDesc": "const void *",
+    "*const XygPayloadTraceChannelDesc": "const void *",
+    "*mut XygPayloadTraceGeomOut": "void *",
+    "*mut XygPayloadTraceChannelOut": "void *",
     "*mut XygPayloadColumnShipEntry": "void *",
     "*mut XygPayloadChannelShipEntry": "void *",
     "*mut XygPayloadDensityGridBufferEntry": "void *",
@@ -459,7 +471,11 @@ def render_c_header(manifest: dict[str, Any]) -> str:
 
 
 def generate_manifest(root: Path = ROOT) -> dict[str, Any]:
-    text = (root / "crates/xyg-core/src/lib.rs").read_text(encoding="utf-8")
+    core = root / "crates/xyg-core/src"
+    text = (core / "lib.rs").read_text(encoding="utf-8")
+    ffi = core / "scene_bulk_pack_ffi.rs"
+    if ffi.is_file():
+        text = text + "\n" + ffi.read_text(encoding="utf-8")
     return parse_rust_abi(text)
 
 

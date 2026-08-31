@@ -111,6 +111,17 @@ pub use scene_figure_support_pack::{
     scene_figure_support_pack, FigureSupportAxisInput, FigureSupportTraceInput,
     SCENE_FIGURE_SUPPORT_PACK_MAX,
 };
+pub mod scene_chrome_pack;
+pub use scene_chrome_pack::{scene_chrome_pack, SceneChromePackInput, SCENE_CHROME_PACK_MAX};
+pub mod scene_figure_support_materialize;
+pub use scene_figure_support_materialize::{
+    scene_figure_support_materialize, SceneFigureSupportMaterializeIn,
+    SCENE_FIGURE_SUPPORT_MATERIALIZE_MAX,
+};
+pub mod scene_polar_input_pack;
+pub use scene_polar_input_pack::{
+    scene_polar_input_pack, ScenePolarInputPackIn, SCENE_POLAR_INPUT_PACK_MAX,
+};
 pub mod payload_column_gather_materialize;
 pub use payload_column_gather_materialize::{
     payload_column_gather_materialize, PayloadColumnMaterializeIn, PayloadColumnMaterializeOut,

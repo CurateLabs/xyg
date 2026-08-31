@@ -17170,3 +17170,10 @@ def chunked_columns_read_page(
 
 def chunked_columns_free(handle: int) -> bool:
     return _lib.xyg_chunked_columns_free(ctypes.c_uint64(handle)) == 1
+
+
+from ._scene_bulk_native import (  # noqa: E402
+    init as _init_scene_bulk_native,
+)
+
+_init_scene_bulk_native(sys.modules[__name__])

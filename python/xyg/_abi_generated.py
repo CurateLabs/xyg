@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 320
-SIGNATURE_SHA256 = "7f418bb30e991562328bb6798b2f9c873419f1bd05c2776674a12038033bdb2c"
+ABI_VERSION = 322
+SIGNATURE_SHA256 = "ed31956286f8345f6480846f627da248f95cdfb5074b0ee5306b056818867492"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -942,6 +942,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_channel_constant_css
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_chrome_pack(const void * input, const double * x_major, const double * y_major, const double * x_minor, const double * y_minor, const void * x_tick_labels, const void * y_tick_labels, const uint8_t * colorbar_stops, const double * colorbar_ticks, uint8_t * out, size_t out_cap, size_t * out_len)
+    function = lib.xyg_scene_chrome_pack
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     # int32_t xyg_scene_constant_color_admit(int32_t has_channel, int32_t constant_ok, int32_t scatter_density, int32_t packs_paint_plane)
     function = lib.xyg_scene_constant_color_admit
     function.restype = ctypes.c_int32
@@ -974,6 +978,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_figure_support_figure_plan
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_scene_figure_support_materialize(int32_t polar, int32_t colorbar_unsupported, int32_t has_custom_font, int32_t has_browser_css, int32_t has_extra_legends, const void * annotations, size_t annotation_count, const void * axes, size_t axis_count, const uint8_t * axis_keys_blob, size_t axis_keys_len, const void * traces, size_t trace_count, const double * corner_radius, uint8_t * out, size_t out_cap, size_t * out_len)
+    function = lib.xyg_scene_figure_support_materialize
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     # int32_t xyg_scene_figure_support_pack(uint32_t flags, const uint8_t * axes_blob, size_t axes_len, const uint8_t * traces_blob, size_t traces_len, uint8_t * out, size_t out_cap, size_t * out_len)
     function = lib.xyg_scene_figure_support_pack
     function.restype = ctypes.c_int32
@@ -1178,6 +1186,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_polar_figure_plan
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_scene_polar_input_pack(const void * input, uint8_t * out, size_t out_cap, size_t * out_len)
+    function = lib.xyg_scene_polar_input_pack
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     # int32_t xyg_scene_public_export_figure_plan(int32_t polar, int32_t has_chrome_styles, int32_t has_title_options, void * out)
     function = lib.xyg_scene_public_export_figure_plan
     function.restype = ctypes.c_int32

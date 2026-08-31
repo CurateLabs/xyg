@@ -1,8 +1,4 @@
-"""Cross-host Scene chrome/support pack parity for Push 3A (ABI 319).
-
-Compares Python scene chrome packers against ``@curatelabs/xyg-node`` and
-verifies golden XYAF/XYCF/XYFS bytes for minimal fixtures.
-"""
+"""Cross-host Scene chrome/support pack parity for Push 3A (ABI 319+) and bulk packers (ABI 321-322)."""
 
 from __future__ import annotations
 
@@ -16,9 +12,12 @@ import pytest
 
 from xyg import _native
 from xyg._figure import Figure
+from xyg._scene_bulk_native import scene_chrome_pack, scene_figure_support_materialize
 
 ROOT = Path(__file__).resolve().parents[1]
 NODE_SCRIPT = ROOT / "packages" / "xy-node" / "scripts" / "scene_chrome_pack_cross_host.mjs"
+BULK_NODE_SCRIPT = ROOT / "packages" / "xy-node" / "scripts" / "scene_bulk_pack_cross_host.mjs"
+BULK_FIXTURE = ROOT / "tests" / "fixtures" / "scene_bulk_pack_minimal.json"
 
 
 def _node_bin() -> str:
@@ -159,4 +158,59 @@ def test_scene_chrome_pack_cross_host_node() -> None:
         flags=0, axes_blob=axes_blob, traces_blob=traces_blob
     )
     assert _sha256(py_xyaf) == payload["xyaf_sha256"]
+    assert _sha256(py_xyfs) == payload["xyfs_sha256"]
+
+
+def _bulk_fixture() -> dict:
+    return json.loads(BULK_FIXTURE.read_text(encoding="utf-8"))
+
+
+def test_scene_bulk_pack_minimal_fixture_bytes() -> None:
+    fixture = _bulk_fixture()
+    chrome = fixture["chrome"]
+    support = fixture["figure_support"]
+    xycf = scene_chrome_pack(**chrome)
+    xyfs = scene_figure_support_materialize(
+        polar=support["polar"],
+        colorbar_unsupported=support["colorbar_unsupported"],
+        has_custom_font=support["has_custom_font"],
+        has_browser_css=support["has_browser_css"],
+        has_extra_legends=support["has_extra_legends"],
+        annotations=support["annotations"],
+        axes=support["axes"],
+        traces=support["traces"],
+    )
+    assert xycf[:4] == b"XYCF"
+    assert xyfs[:4] == b"XYFS"
+    assert len(xycf) == 564
+
+
+@pytest.mark.skipif(
+    not _node_bin() or not BULK_NODE_SCRIPT.is_file(), reason="node bulk cross-host script missing"
+)
+def test_scene_bulk_pack_cross_host_node() -> None:
+    fixture = _bulk_fixture()
+    proc = subprocess.run(
+        [_node_bin(), str(BULK_NODE_SCRIPT)],
+        cwd=ROOT / "packages" / "xy-node",
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    payload = json.loads(proc.stdout)
+    chrome = fixture["chrome"]
+    support = fixture["figure_support"]
+    py_xycf = scene_chrome_pack(**chrome)
+    py_xyfs = scene_figure_support_materialize(
+        polar=support["polar"],
+        colorbar_unsupported=support["colorbar_unsupported"],
+        has_custom_font=support["has_custom_font"],
+        has_browser_css=support["has_browser_css"],
+        has_extra_legends=support["has_extra_legends"],
+        annotations=support["annotations"],
+        axes=support["axes"],
+        traces=support["traces"],
+    )
+    assert _sha256(py_xycf) == payload["xycf_sha256"]
     assert _sha256(py_xyfs) == payload["xyfs_sha256"]
