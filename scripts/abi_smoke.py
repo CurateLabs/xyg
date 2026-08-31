@@ -1306,6 +1306,18 @@ def load() -> ctypes.CDLL:
         U32P,
         ctypes.c_size_t,
     ]
+    lib.xyg_payload_errorbar_role_keys.restype = ctypes.c_size_t
+    lib.xyg_payload_errorbar_role_keys.argtypes = [
+        ctypes.c_size_t,
+        ctypes.c_size_t,
+        U32P,
+        U32P,
+        U32P,
+        U32P,
+        U32P,
+        U32P,
+        ctypes.POINTER(ctypes.c_int32),
+    ]
     lib.xyg_payload_sample_target_indices.restype = ctypes.c_size_t
     lib.xyg_payload_sample_target_indices.argtypes = [
         ctypes.c_size_t,
@@ -4700,6 +4712,31 @@ def main() -> None:
         and err_n == 12
         and list(err_out) == [0, 3, 6, 10, 11, 14, 17, 21, 22, 25, 28, 32],
         "payload_errorbar_indices role expand",
+    )
+    role_lo = array("I", [10, 20])
+    role_hi = array("I", [30, 40])
+    role_sources = array("I", [0, 1, 0, 1])
+    role_roles = array("I", [0, 0, 1, 1])
+    role_out_lo = array("I", [0, 0, 0, 0])
+    role_out_hi = array("I", [0, 0, 0, 0])
+    role_collision = ctypes.c_int32(-1)
+    role_n = lib.xyg_payload_errorbar_role_keys(
+        2,
+        4,
+        _ptr(role_lo, ctypes.c_uint32),
+        _ptr(role_hi, ctypes.c_uint32),
+        _ptr(role_sources, ctypes.c_uint32),
+        _ptr(role_roles, ctypes.c_uint32),
+        _ptr(role_out_lo, ctypes.c_uint32),
+        _ptr(role_out_hi, ctypes.c_uint32),
+        ctypes.byref(role_collision),
+    )
+    ok(
+        role_n == 4
+        and role_collision.value == 0
+        and role_out_lo[2] == (10 ^ 0x9E3779B9)
+        and role_out_hi[3] == (40 ^ 0x85EBCA6B),
+        "payload_errorbar_role_keys xor mix",
     )
     sample_keep = ctypes.c_int32(-1)
     sample_n = lib.xyg_payload_sample_target_indices(

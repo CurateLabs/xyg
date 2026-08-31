@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 272
-SIGNATURE_SHA256 = "000d64752b5ce89f1d9490121a45f0982f72fb602752ddf69a3647e5c2dd47a9"
+ABI_VERSION = 273
+SIGNATURE_SHA256 = "c8d13068f682fecb0a74050501ab449db54b8fbbb15b8d11ba67d2cede34807a"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -550,6 +550,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_payload_errorbar_indices
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]
+    # size_t xyg_payload_errorbar_role_keys(size_t n_points, size_t n_output, const uint32_t * point_keys_lo, const uint32_t * point_keys_hi, const uint32_t * segment_sources, const uint32_t * segment_roles, uint32_t * out_lo, uint32_t * out_hi, int32_t * out_collision)
+    function = lib.xyg_payload_errorbar_role_keys
+    function.restype = ctypes.c_size_t
+    function.argtypes = [ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
     # size_t xyg_payload_even_indices(size_t n, size_t count, int32_t * out_keep_all, uint32_t * out, size_t capacity)
     function = lib.xyg_payload_even_indices
     function.restype = ctypes.c_size_t

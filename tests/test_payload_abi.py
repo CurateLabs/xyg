@@ -129,6 +129,17 @@ def test_payload_errorbar_indices_expands_even_keep_across_roles() -> None:
     np.testing.assert_array_equal(idx, [0, 3, 6, 10, 11, 14, 17, 21, 22, 25, 28, 32])
 
 
+def test_payload_errorbar_role_keys_xor_mix() -> None:
+    keys = kernels.payload_errorbar_role_keys(
+        np.array([10, 20], dtype=np.uint32),
+        np.array([30, 40], dtype=np.uint32),
+        np.array([0, 1, 0, 1], dtype=np.uint32),
+        np.array([0, 0, 1, 1], dtype=np.uint32),
+    )
+    assert keys.shape == (4, 2)
+    assert keys[2, 0] == np.uint32(10 ^ 0x9E3779B9)
+
+
 def test_payload_sample_target_indices_keep_all() -> None:
     keep_all, idx = kernels.payload_sample_target_indices(100, 8_192)
     assert keep_all
