@@ -1413,6 +1413,8 @@ def load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_int32,
     ]
+    lib.xyg_density_wasm_source_admit.restype = ctypes.c_int32
+    lib.xyg_density_wasm_source_admit.argtypes = [ctypes.c_int32, ctypes.c_int32]
     lib.xyg_payload_sample_target_indices.restype = ctypes.c_size_t
     lib.xyg_payload_sample_target_indices.argtypes = [
         ctypes.c_size_t,
@@ -4984,6 +4986,11 @@ def main() -> None:
         lib.xyg_density_constant_color_wire_admit(1, b"constant", 8, 1) == 1
         and lib.xyg_density_constant_color_wire_admit(1, b"continuous", 10, 1) == 0,
         "density_constant_color_wire_admit",
+    )
+    ok(
+        lib.xyg_density_wasm_source_admit(1, 1) == 1
+        and lib.xyg_density_wasm_source_admit(0, 1) == 0,
+        "density_wasm_source_admit",
     )
     sample_keep = ctypes.c_int32(-1)
     sample_n = lib.xyg_payload_sample_target_indices(

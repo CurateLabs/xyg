@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 284
-SIGNATURE_SHA256 = "d6658354e74478cfc51fcc717fe0ec2fcb2e73d115b95c9b4ce843a6da4b6ff6"
+ABI_VERSION = 285
+SIGNATURE_SHA256 = "f0ca532d13ba95e4231ba688162be1dfd88651c78b187a831bebe13653541ac8"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -290,6 +290,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_density_wasm_eligible
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_uint64]
+    # int32_t xyg_density_wasm_source_admit(int32_t split_payload, int32_t wasm_eligible)
+    function = lib.xyg_density_wasm_source_admit
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_int32]
     # size_t xyg_direct_rgba_admit(const double * values, size_t n, size_t components, double * out, size_t capacity)
     function = lib.xyg_direct_rgba_admit
     function.restype = ctypes.c_size_t
