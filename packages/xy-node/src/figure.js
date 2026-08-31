@@ -21,13 +21,11 @@ import {
   DENSITY_GRID,
   DENSITY_SAMPLE_SEED,
   DENSITY_SAMPLE_TARGET,
+  DENSITY_RESOURCE_NONE,
+  DENSITY_RESOURCE_PYRAMID,
+  DENSITY_RESOURCE_TILE_STORE,
   WASM_AGGREGATE_MAX_POINTS,
   PROTOCOL_VERSION,
-  bin2d,
-  bin2dIndices,
-  bin2dMeanColor,
-  densityFormatBinning,
-  densityLogU8,
   densityOverlayOpacity,
   encodeF32Values,
   DEFAULT_PALETTE,
@@ -44,6 +42,7 @@ import {
   payloadRibbonEmitPlan,
   payloadScatterEmitPlan,
   payloadDensityTraceEmitPlan,
+  payloadDensityGridMaterialize,
   payloadBuildPlan,
   payloadAxisSpecAttachPlan,
   DENSITY_WASM_DENSITY_AUTOMATIC,
@@ -56,13 +55,11 @@ import {
   payloadDensityGridShipPlan,
   densityChannelsDroppedCompat,
   densityDroppedChannelWireAdmit,
+  sampleRowsForTarget,
   shipDensityGridBuffers,
   shipRegistryColumns,
   payloadTransitionEntryAttach,
   payloadSegmentBudget,
-  payloadSampleTargetIndices,
-  sampleRowsForTarget,
-  DENSITY_GRID_PATH_RANGE_INDICES,
   payloadVisibleIndices,
   rectFiniteSel,
   minMax,
@@ -72,6 +69,7 @@ import {
   validIndicesF64,
   f64Ptr,
   u8Ptr,
+  PYRAMID_NO_RESCAN_ROWS,
 } from "./encode.js";
 import {
   clipQuantizeU8,
@@ -88,10 +86,10 @@ import {
 } from "./native.js";
 import {
   PyramidCache,
-  densityViewFromPyramid,
   pyramidAppendFromStream,
   shouldUsePyramid,
   tileStoreAppend,
+  tileStoreStats,
 } from "./pyramid.js";
 import { composeGraph } from "./graph.js";
 import { composeSankey } from "./sankey.js";
@@ -2246,15 +2244,9 @@ export class Figure {
    */
   _emitScatterDensity(t, pw, xr, yr) {
     const [w, h] = DENSITY_GRID;
-    let grid;
-    let rgbaFromPyramid = null;
-    let binning = densityFormatBinning({ exact: true });
-    let reduction = "bin2d";
-    let tiles = null;
     const forceBin2d = Boolean(scatterPayloadForceBin2d(t));
     const noRescan = Boolean(scatterPayloadNoRescan(t));
     const forceSpill = Boolean(t.pyramid_spill ?? t.style?.pyramid_spill);
-    let hasPyramidResource = false;
     const xAxis = t.x_axis ?? "x";
     const yAxis = t.y_axis ?? "y";
     const xLinear = payloadAxisScale(this, xAxis) === "linear";
@@ -2274,8 +2266,11 @@ export class Figure {
     const xmm = minMax(xCol.values) ?? xr;
     const ymm = minMax(yCol.values) ?? yr;
     const colorMeta = densityColorChannelMeta(t);
-    let rangeSel = null;
-    let visible = xCol.length;
+    const binColors = resolveDensityBinColors(t);
+    let hasPyramidResource = false;
+    let pyramidResource = DENSITY_RESOURCE_NONE;
+    let pyramidHandle = 0n;
+    let pyrColored = false;
     if (
       this.coords !== "polar" &&
       !this._deferPyramidRebuild?.has(t.id) &&
@@ -2286,76 +2281,107 @@ export class Figure {
         cache = new PyramidCache();
         this._pyramids.set(t.id, cache);
       }
-      hasPyramidResource = true;
-      const served = densityViewFromPyramid(cache, xCol.values, yCol.values, bx0, bx1, by0, by1, w, h, {
-        noRescan,
+      const autoNoRescan = noRescan || xCol.length > PYRAMID_NO_RESCAN_ROWS;
+      const ensured = cache.ensure(xCol.values, yCol.values, {
+        noRescan: autoNoRescan,
         forceSpill,
       });
-      if (served != null) {
-        grid = served.grid;
-        binning = served.binning;
-        reduction = served.reduction;
-        if (served.rgba != null) {
-          rgbaFromPyramid = served.rgba;
-        }
-        if (served.tiles != null) {
-          tiles = served.tiles;
-        }
+      if (ensured.kind !== "none") {
+        hasPyramidResource = true;
+        pyramidHandle = ensured.handle;
+        pyrColored = cache.colored;
+        pyramidResource = ensured.kind === "tiles"
+          ? DENSITY_RESOURCE_TILE_STORE
+          : DENSITY_RESOURCE_PYRAMID;
       }
     }
-    if (grid == null) {
-      const pathPlan = payloadDensityTraceEmitPlan({
-        hasChannel: colorMeta.hasChannel,
-        mode: colorMeta.mode,
-        codesPresent: colorMeta.codesPresent,
-        codesU8: colorMeta.codesU8,
-        hasCounts: colorMeta.hasCounts,
-        hasConstant: colorMeta.hasConstant,
-        cartesian: this.coords === "cartesian",
-        xLinear,
-        yLinear,
-        xHasNulls: xCol.nullCount > 0,
-        yHasNulls: yCol.nullCount > 0,
-        pointOverlay: true,
-        splitPayload: pw.split,
-        gridW: w,
-        gridH: h,
-        gridFromPyramid: false,
-        hasPyramidResource,
-        gridPresent: false,
-        forceBin2d: false,
-        forcePyramid: false,
-        xMemmapped: false,
-        yMemmapped: false,
-        xMin: xmm[0],
-        xMax: xmm[1],
-        yMin: ymm[0],
-        yMax: ymm[1],
-        xr0: xr[0],
-        xr1: xr[1],
-        yr0: yr[0],
-        yr1: yr[1],
-        bx0,
-        bx1,
-        by0,
-        by1,
-        nPoints: t.x.length,
-        hasPyramidRgba: false,
-        hasBinColors: false,
-        droppedCount: 0,
-      });
-      if (pathPlan.gridPath === DENSITY_GRID_PATH_RANGE_INDICES) {
-        const fused = bin2dIndices(bx, by, bx0, bx1, by0, by1, w, h);
-        grid = fused.grid;
-        rangeSel = fused.indices;
-        visible = rangeSel.length;
-      } else {
-        grid = bin2d(bx, by, bx0, bx1, by0, by1, w, h);
-      }
-      binning = densityFormatBinning({ exact: true });
-      reduction = "bin2d";
+    const prePlan = payloadDensityTraceEmitPlan({
+      hasChannel: colorMeta.hasChannel,
+      mode: colorMeta.mode,
+      codesPresent: colorMeta.codesPresent,
+      codesU8: colorMeta.codesU8,
+      hasCounts: colorMeta.hasCounts,
+      hasConstant: colorMeta.hasConstant,
+      cartesian: this.coords === "cartesian",
+      xLinear,
+      yLinear,
+      xHasNulls: xCol.nullCount > 0,
+      yHasNulls: yCol.nullCount > 0,
+      pointOverlay: true,
+      splitPayload: pw.split,
+      gridW: w,
+      gridH: h,
+      gridFromPyramid: false,
+      hasPyramidResource,
+      gridPresent: false,
+      forceBin2d,
+      forcePyramid: Boolean(scatterPayloadForcePyramid(t)),
+      xMemmapped: false,
+      yMemmapped: false,
+      xMin: xmm[0],
+      xMax: xmm[1],
+      yMin: ymm[0],
+      yMax: ymm[1],
+      xr0: xr[0],
+      xr1: xr[1],
+      yr0: yr[0],
+      yr1: yr[1],
+      bx0,
+      bx1,
+      by0,
+      by1,
+      nPoints: t.x.length,
+      hasPyramidRgba: false,
+      hasBinColors: binColors != null,
+      droppedCount: 0,
+    });
+    const materialized = payloadDensityGridMaterialize({
+      emitPlan: prePlan,
+      cartesian: this.coords === "cartesian",
+      xLinear,
+      yLinear,
+      xHasNulls: xCol.nullCount > 0,
+      yHasNulls: yCol.nullCount > 0,
+      hasPyramidResource,
+      forceBin2d,
+      forcePyramid: Boolean(scatterPayloadForcePyramid(t)),
+      xMin: xmm[0],
+      xMax: xmm[1],
+      yMin: ymm[0],
+      yMax: ymm[1],
+      xr0: xr[0],
+      xr1: xr[1],
+      yr0: yr[0],
+      yr1: yr[1],
+      bx0,
+      bx1,
+      by0,
+      by1,
+      nPoints: t.x.length,
+      w,
+      h,
+      xRaw: xCol.values,
+      yRaw: yCol.values,
+      bx,
+      by,
+      pyramidAttempt: prePlan.pyramidAttempt && hasPyramidResource,
+      pyramidResource,
+      pyramidHandle,
+      pyrColored,
+      maxUpsample: prePlan.pyramidMaxUpsample,
+      tileUpsample: prePlan.pyramidTileUpsample,
+      pyramidNoRescan: prePlan.pyramidNoRescan,
+      needsPyramidSample: prePlan.needsPyramidSample,
+      pyramidSampleStratified: prePlan.pyramidSampleStratified,
+      colorCodes: t.color_ch?.codes ?? null,
+      colorCounts: t.color_ch?.counts ?? null,
+      binColors,
+      shipMeanColor: prePlan.shipMeanColorRgba,
+    });
+    let tiles = null;
+    if (materialized.fromTiles && pyramidHandle !== 0n) {
+      tiles = tileStoreStats(pyramidHandle);
     }
-    const binColors = resolveDensityBinColors(t);
     let droppedChannels = scatterPaintChannelNames(t);
     const wire = payloadDensityTraceEmitPlan({
       hasChannel: colorMeta.hasChannel,
@@ -2373,11 +2399,11 @@ export class Figure {
       splitPayload: pw.split,
       gridW: w,
       gridH: h,
-      gridFromPyramid: reduction === "pyramid-count",
+      gridFromPyramid: materialized.gridFromPyramid,
       hasPyramidResource,
       gridPresent: true,
-      forceBin2d: false,
-      forcePyramid: false,
+      forceBin2d,
+      forcePyramid: Boolean(scatterPayloadForcePyramid(t)),
       xMin: xmm[0],
       xMax: xmm[1],
       yMin: ymm[0],
@@ -2391,19 +2417,10 @@ export class Figure {
       by0,
       by1,
       nPoints: t.x.length,
-      hasPyramidRgba: rgbaFromPyramid != null,
+      hasPyramidRgba: materialized.hasPyramidRgba,
       hasBinColors: binColors != null,
       droppedCount: droppedChannels.length,
     });
-    const { encoded, max } = densityLogU8(grid);
-    let rgbaGrid = null;
-    if (wire.shipMeanColorRgba) {
-      if (rgbaFromPyramid != null) {
-        rgbaGrid = rgbaFromPyramid;
-      } else if (binColors != null) {
-        rgbaGrid = bin2dMeanColor(bx, by, bx0, bx1, by0, by1, w, h, binColors);
-      }
-    }
     const gridPlan = payloadDensityGridShipPlan({
       shipMeanColorRgba: wire.shipMeanColorRgba,
       shipWasmSource: wire.shipWasmSource,
@@ -2420,15 +2437,18 @@ export class Figure {
     const density = {
       w,
       h,
-      max,
+      max: materialized.max,
       enc: "log-u8",
       colormap,
       x_range: [...xr],
       y_range: [...yr],
-      binning,
-      reduction,
+      binning: materialized.binning,
+      reduction: materialized.reduction,
     };
-    shipDensityGridBuffers(density, pw, gridPlan, { count: encoded, rgba: rgbaGrid });
+    shipDensityGridBuffers(density, pw, gridPlan, {
+      count: materialized.encoded,
+      rgba: materialized.rgba,
+    });
     const entry = {
       id: t.id,
       kind: "scatter",
@@ -2437,7 +2457,7 @@ export class Figure {
       tier: "density",
       n_points: t.x.length,
       n_marks: wire.nMarks,
-      visible,
+      visible: materialized.visible,
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
       density,
@@ -2445,8 +2465,6 @@ export class Figure {
     for (const step of gridPlan.attach) {
       const kind = step.attachKind;
       if (kind === "wasm_source") {
-        const xAxis = t.x_axis ?? "x";
-        const yAxis = t.y_axis ?? "y";
         const wasmSource = {
           kind: "cartesian-count-f64-stream-v1",
           point_count: t.x.length,
@@ -2492,32 +2510,25 @@ export class Figure {
       } else if (kind === "overlay_rows_exceed") {
         density.overlay_omitted = "rows_exceed_u32";
       } else if (kind === "sample") {
-        if (visible <= 0) {
+        if (materialized.visible <= 0) {
           continue;
         }
-        let sampleSel = null;
-        if (rangeSel != null && rangeSel.length > 0) {
-          sampleSel = sampleRowsForTarget(rangeSel, DENSITY_SAMPLE_TARGET, {
-            seed: DENSITY_SAMPLE_SEED,
-          });
-        } else {
-          const { keepAll, indices } = payloadSampleTargetIndices({
-            n: t.x.length,
-            target: DENSITY_SAMPLE_TARGET,
-            seed: DENSITY_SAMPLE_SEED,
-          });
-          if (!keepAll) {
-            sampleSel = indices;
+        let sampleSel = materialized.sampleSel;
+        if (sampleSel == null) {
+          const visibleSel = materialized.visibleSel;
+          if (visibleSel == null || visibleSel.length === 0) {
+            continue;
           }
+          sampleSel = sampleRowsForTarget(visibleSel, DENSITY_SAMPLE_TARGET, {
+            seed: DENSITY_SAMPLE_SEED,
+          });
         }
-        if (sampleSel != null && sampleSel.length === 0) {
+        if (sampleSel.length === 0) {
           continue;
         }
-        const sx = sampleSel == null ? xCol.values : gatherF64(xCol.values, sampleSel);
-        const sy = sampleSel == null ? yCol.values : gatherF64(yCol.values, sampleSel);
+        const sx = gatherF64(xCol.values, sampleSel);
+        const sy = gatherF64(yCol.values, sampleSel);
         if (sx.length > 0) {
-          const xAxis = t.x_axis ?? "x";
-          const yAxis = t.y_axis ?? "y";
           const columnPlan = payloadColumnShipPlan({
             kind: "density_sample",
             xAxisScale: payloadAxisScale(this, xAxis),
@@ -2534,7 +2545,7 @@ export class Figure {
           density.sample = {
             mode: "sampled",
             n: sx.length,
-            visible,
+            visible: materialized.visible,
             target: DENSITY_SAMPLE_TARGET,
             level: 0,
             seed: DENSITY_SAMPLE_SEED,

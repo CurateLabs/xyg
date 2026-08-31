@@ -202,10 +202,15 @@ function factorizeCategories(raw) {
   for (let i = 0; i < labels.length; i += 1) {
     codes[i] = index.get(labels[i]);
   }
+  const counts = new BigUint64Array(categories.length);
+  for (let i = 0; i < codes.length; i += 1) {
+    counts[codes[i]] += 1n;
+  }
   return {
     mode: "categorical",
     codes,
     categories,
+    counts,
     palette: [...DEFAULT_PALETTE],
   };
 }
