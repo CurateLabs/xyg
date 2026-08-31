@@ -1620,6 +1620,9 @@ export class Figure {
     if (attach.attachTicks && this.coords === "cartesian" && opts.minor_tick_values != null) {
       spec.minor_tick_values = [...opts.minor_tick_values];
     }
+    if (attach.attachTicks && this.coords === "cartesian" && opts.tick_labels != null) {
+      spec.tick_labels = [...opts.tick_labels];
+    }
     if (attach.attachThetaUnit) {
       const unit = opts.theta_unit || "radians";
       spec.theta_unit = unit;
