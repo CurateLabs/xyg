@@ -162,7 +162,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 308;
+pub const ABI_VERSION: u32 = 309;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -17513,6 +17513,104 @@ pub unsafe extern "C" fn xyg_scene_public_export_trace_dispatch_plan(
             kind_class: plan.kind_class as u32,
             pack_density_blit: u32::from(plan.pack_density_blit != 0),
             pack_hexbin_pitch: u32::from(plan.pack_hexbin_pitch != 0),
+        };
+        1
+    })
+}
+
+/// Packed XYPL polar attach orchestration plan (ABI 309).
+#[repr(C)]
+pub struct XygScenePolarFigurePlan {
+    pub polar: u32,
+    pub attach_xypl: u32,
+}
+
+/// Figure-level XYPL polar attach orchestration (ABI 309).
+///
+/// Hosts coerce ``polar`` from figure coords. Rust owns XYPL attach gating
+/// before hosts ship polar authoring bytes.
+///
+/// # Safety
+/// ``out`` must be valid for writes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_polar_figure_plan(
+    polar: i32,
+    out: *mut XygScenePolarFigurePlan,
+) -> i32 {
+    ffi_guard(0, || {
+        if out.is_null() {
+            return 0;
+        }
+        let mut plan = scene_pack_orchestrate::PolarFigurePlan {
+            polar: 0,
+            attach_xypl: 0,
+        };
+        if scene_pack_orchestrate::scene_polar_figure_plan(polar, &mut plan) == 0 {
+            return 0;
+        }
+        (*out).polar = u32::from(plan.polar != 0);
+        (*out).attach_xypl = u32::from(plan.attach_xypl != 0);
+        1
+    })
+}
+
+/// Packed encode-product attach orchestration plan (ABI 309).
+#[repr(C)]
+pub struct XygSceneEncodeProductAttachPlan {
+    pub polar: u32,
+    pub attach_xypl: u32,
+    pub step_xytc: u32,
+    pub step_xyta: u32,
+    pub step_xynm: u32,
+    pub step_xycl: u32,
+    pub step_xyaf: u32,
+    pub step_xycf: u32,
+    pub step_xypl: u32,
+    pub step_xyfs: u32,
+}
+
+/// Figure-level encode-product attach orchestration (ABI 309).
+///
+/// Hosts coerce ``polar`` from figure coords. Rust owns the fixed pack order
+/// and XYPL attach gating before hosts call ``xyg_scene_encode_product``.
+///
+/// # Safety
+/// ``out`` must be valid for writes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_encode_product_attach_plan(
+    polar: i32,
+    out: *mut XygSceneEncodeProductAttachPlan,
+) -> i32 {
+    ffi_guard(0, || {
+        if out.is_null() {
+            return 0;
+        }
+        let mut plan = scene_pack_orchestrate::EncodeProductAttachPlan {
+            polar: 0,
+            attach_xypl: 0,
+            step_xytc: 0,
+            step_xyta: 0,
+            step_xynm: 0,
+            step_xycl: 0,
+            step_xyaf: 0,
+            step_xycf: 0,
+            step_xypl: 0,
+            step_xyfs: 0,
+        };
+        if scene_pack_orchestrate::scene_encode_product_attach_plan(polar, &mut plan) == 0 {
+            return 0;
+        }
+        *out = XygSceneEncodeProductAttachPlan {
+            polar: u32::from(plan.polar != 0),
+            attach_xypl: u32::from(plan.attach_xypl != 0),
+            step_xytc: plan.step_xytc as u32,
+            step_xyta: plan.step_xyta as u32,
+            step_xynm: plan.step_xynm as u32,
+            step_xycl: plan.step_xycl as u32,
+            step_xyaf: plan.step_xyaf as u32,
+            step_xycf: plan.step_xycf as u32,
+            step_xypl: plan.step_xypl as u32,
+            step_xyfs: plan.step_xyfs as u32,
         };
         1
     })

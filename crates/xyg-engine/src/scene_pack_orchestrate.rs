@@ -415,6 +415,77 @@ pub fn scene_public_export_trace_dispatch_plan(
     1
 }
 
+/// Fixed product-path pack step indices (1-based) before ``xyg_scene_encode_product``.
+pub const ENCODE_PRODUCT_STEP_XYTC: i32 = 1;
+pub const ENCODE_PRODUCT_STEP_XYTA: i32 = 2;
+pub const ENCODE_PRODUCT_STEP_XYNM: i32 = 3;
+pub const ENCODE_PRODUCT_STEP_XYCL: i32 = 4;
+pub const ENCODE_PRODUCT_STEP_XYAF: i32 = 5;
+pub const ENCODE_PRODUCT_STEP_XYCF: i32 = 6;
+pub const ENCODE_PRODUCT_STEP_XYPL: i32 = 7;
+pub const ENCODE_PRODUCT_STEP_XYFS: i32 = 8;
+
+/// Resolved XYPL polar attach plan from ``_pack_polar_scene_input`` /
+/// ``packPolarSceneInput``.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PolarFigurePlan {
+    pub polar: i32,
+    pub attach_xypl: i32,
+}
+
+/// Figure-level XYPL polar attach orchestration.
+///
+/// Hosts coerce ``polar`` from figure coords. Returns ``1`` on success, ``0``
+/// when ``polar`` is not ``0`` or ``1``.
+pub fn scene_polar_figure_plan(polar: i32, out: &mut PolarFigurePlan) -> i32 {
+    if !scene_orchestrate_host_bit(polar) {
+        return 0;
+    }
+    *out = PolarFigurePlan {
+        polar,
+        attach_xypl: polar,
+    };
+    1
+}
+
+/// Resolved product-path attach plan from ``figure_scene`` / ``figureSceneV3``.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct EncodeProductAttachPlan {
+    pub polar: i32,
+    pub attach_xypl: i32,
+    pub step_xytc: i32,
+    pub step_xyta: i32,
+    pub step_xynm: i32,
+    pub step_xycl: i32,
+    pub step_xyaf: i32,
+    pub step_xycf: i32,
+    pub step_xypl: i32,
+    pub step_xyfs: i32,
+}
+
+/// Figure-level encode-product attach orchestration.
+///
+/// Hosts coerce ``polar`` from figure coords. Rust owns the fixed pack order
+/// and XYPL attach gating before hosts call ``xyg_scene_encode_product``.
+pub fn scene_encode_product_attach_plan(polar: i32, out: &mut EncodeProductAttachPlan) -> i32 {
+    if !scene_orchestrate_host_bit(polar) {
+        return 0;
+    }
+    *out = EncodeProductAttachPlan {
+        polar,
+        attach_xypl: polar,
+        step_xytc: ENCODE_PRODUCT_STEP_XYTC,
+        step_xyta: ENCODE_PRODUCT_STEP_XYTA,
+        step_xynm: ENCODE_PRODUCT_STEP_XYNM,
+        step_xycl: ENCODE_PRODUCT_STEP_XYCL,
+        step_xyaf: ENCODE_PRODUCT_STEP_XYAF,
+        step_xycf: ENCODE_PRODUCT_STEP_XYCF,
+        step_xypl: ENCODE_PRODUCT_STEP_XYPL,
+        step_xyfs: ENCODE_PRODUCT_STEP_XYFS,
+    };
+    1
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -948,5 +1019,48 @@ mod tests {
             1
         );
         assert_eq!(hex.pack_hexbin_pitch, 1);
+    }
+
+    #[test]
+    fn polar_figure_plan_attach_xypl() {
+        let mut plan = PolarFigurePlan {
+            polar: 0,
+            attach_xypl: 0,
+        };
+        assert_eq!(scene_polar_figure_plan(1, &mut plan), 1);
+        assert_eq!(plan.polar, 1);
+        assert_eq!(plan.attach_xypl, 1);
+        assert_eq!(scene_polar_figure_plan(0, &mut plan), 1);
+        assert_eq!(plan.attach_xypl, 0);
+        assert_eq!(scene_polar_figure_plan(2, &mut plan), 0);
+    }
+
+    #[test]
+    fn encode_product_attach_plan_order_and_polar() {
+        let mut plan = EncodeProductAttachPlan {
+            polar: 0,
+            attach_xypl: 0,
+            step_xytc: 0,
+            step_xyta: 0,
+            step_xynm: 0,
+            step_xycl: 0,
+            step_xyaf: 0,
+            step_xycf: 0,
+            step_xypl: 0,
+            step_xyfs: 0,
+        };
+        assert_eq!(scene_encode_product_attach_plan(1, &mut plan), 1);
+        assert_eq!(plan.attach_xypl, 1);
+        assert_eq!(plan.step_xytc, ENCODE_PRODUCT_STEP_XYTC);
+        assert_eq!(plan.step_xyta, ENCODE_PRODUCT_STEP_XYTA);
+        assert_eq!(plan.step_xynm, ENCODE_PRODUCT_STEP_XYNM);
+        assert_eq!(plan.step_xycl, ENCODE_PRODUCT_STEP_XYCL);
+        assert_eq!(plan.step_xyaf, ENCODE_PRODUCT_STEP_XYAF);
+        assert_eq!(plan.step_xycf, ENCODE_PRODUCT_STEP_XYCF);
+        assert_eq!(plan.step_xypl, ENCODE_PRODUCT_STEP_XYPL);
+        assert_eq!(plan.step_xyfs, ENCODE_PRODUCT_STEP_XYFS);
+        assert_eq!(scene_encode_product_attach_plan(0, &mut plan), 1);
+        assert_eq!(plan.attach_xypl, 0);
+        assert_eq!(scene_encode_product_attach_plan(2, &mut plan), 0);
     }
 }

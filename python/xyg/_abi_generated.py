@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 308
-SIGNATURE_SHA256 = "147e466487f05b612a2aab70e328843ca3697163bcfe8429051a1eb559571284"
+ABI_VERSION = 309
+SIGNATURE_SHA256 = "7ef27a95b2d4e5585a32c2a16e26734b7524ac5f6f276d832b766895cb6fc025"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -938,6 +938,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_encode_product
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_encode_product_attach_plan(int32_t polar, void * out)
+    function = lib.xyg_scene_encode_product_attach_plan
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_void_p]
     # int32_t xyg_scene_figure_support_figure_plan(int32_t polar, void * out)
     function = lib.xyg_scene_figure_support_figure_plan
     function.restype = ctypes.c_int32
@@ -1138,6 +1142,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_plot_layout
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_void_p, ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_void_p]
+    # int32_t xyg_scene_polar_figure_plan(int32_t polar, void * out)
+    function = lib.xyg_scene_polar_figure_plan
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_void_p]
     # int32_t xyg_scene_public_export_figure_plan(int32_t polar, int32_t has_chrome_styles, int32_t has_title_options, void * out)
     function = lib.xyg_scene_public_export_figure_plan
     function.restype = ctypes.c_int32

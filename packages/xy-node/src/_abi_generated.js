@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 308;
-export const SIGNATURE_SHA256 = "147e466487f05b612a2aab70e328843ca3697163bcfe8429051a1eb559571284";
+export const ABI_VERSION = 309;
+export const SIGNATURE_SHA256 = "7ef27a95b2d4e5585a32c2a16e26734b7524ac5f6f276d832b766895cb6fc025";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -237,6 +237,7 @@ export let xySceneDashAdmit;
 export let xySceneEncodeAssembled;
 export let xySceneEncodeAssembledFromSidecars;
 export let xySceneEncodeProduct;
+export let xySceneEncodeProductAttachPlan;
 export let xySceneFigureSupportFigurePlan;
 export let xySceneFigureSupportReason;
 export let xySceneFigureSupportTraceDispatchPlan;
@@ -287,6 +288,7 @@ export let xyScenePackTraceRows;
 export let xyScenePackTraceSidecars;
 export let xySceneParseLinearGradient;
 export let xyScenePlotLayout;
+export let xyScenePolarFigurePlan;
 export let xyScenePublicExportFigurePlan;
 export let xyScenePublicExportReason;
 export let xyScenePublicExportTraceDispatchPlan;
@@ -649,6 +651,7 @@ export function bindGeneratedAbi(lib) {
   xySceneEncodeAssembled = lib.func("int32_t xyg_scene_encode_assembled(const uint8_t * xyas, size_t xyas_len, const uint8_t * chrome, size_t chrome_len, const uint8_t * extras, size_t extras_len, double viewport_width, double viewport_height, uint64_t x_axis_id, uint32_t x_kind, double x_lo, double x_hi, double x_constant, int32_t x_mask_nonpositive, uint64_t y_axis_id, uint32_t y_kind, double y_lo, double y_hi, double y_constant, int32_t y_mask_nonpositive, uint8_t * out, size_t out_cap)");
   xySceneEncodeAssembledFromSidecars = lib.func("int32_t xyg_scene_encode_assembled_from_sidecars(const uint8_t * xyas, size_t xyas_len, const uint8_t * chrome_facts, size_t chrome_facts_len, const uint8_t * xysd, size_t xysd_len, const uint8_t * polar, size_t polar_len, const uint8_t * extras_facts, size_t extras_facts_len, uint8_t * out, size_t out_cap)");
   xySceneEncodeProduct = lib.func("int32_t xyg_scene_encode_product(const uint8_t * xytc, size_t xytc_len, const uint8_t * xyta, size_t xyta_len, const uint8_t * xynm, size_t xynm_len, const uint8_t * xycl, size_t xycl_len, const uint8_t * xyaf, size_t xyaf_len, uint32_t style_ref_base, double x_lo, double x_hi, double y_lo, double y_hi, const uint8_t * xycf, size_t xycf_len, const uint8_t * polar, size_t polar_len, const uint8_t * xyfs, size_t xyfs_len, uint8_t * out, size_t out_cap)");
+  xySceneEncodeProductAttachPlan = lib.func("int32_t xyg_scene_encode_product_attach_plan(int32_t polar, void * out)");
   xySceneFigureSupportFigurePlan = lib.func("int32_t xyg_scene_figure_support_figure_plan(int32_t polar, void * out)");
   xySceneFigureSupportReason = lib.func("size_t xyg_scene_figure_support_reason(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap)");
   xySceneFigureSupportTraceDispatchPlan = lib.func("int32_t xyg_scene_figure_support_trace_dispatch_plan(const uint8_t * kind, size_t kind_len, int32_t marker_glyph_present, int32_t marker_path_present, int32_t curve_present, int32_t fill_present, void * out)");
@@ -699,6 +702,7 @@ export function bindGeneratedAbi(lib) {
   xyScenePackTraceSidecars = lib.func("int32_t xyg_scene_pack_trace_sidecars(const uint8_t * attached, size_t attached_len, const uint8_t * names, size_t names_len, uint8_t * out, size_t out_cap)");
   xySceneParseLinearGradient = lib.func("int32_t xyg_scene_parse_linear_gradient(const uint8_t * css, size_t css_len, const uint8_t * space, size_t space_len, uint8_t * out_dir, double * out_t, size_t out_t_cap, uint8_t * out_css, size_t out_css_cap, uint32_t * out_css_lens, size_t out_lens_cap, size_t * out_n)");
   xyScenePlotLayout = lib.func("size_t xyg_scene_plot_layout(double viewport_width, double viewport_height, const double * authored_padding, uint32_t x_kind, double x_lo, double x_hi, double x_constant, int32_t x_mask_nonpositive, uint32_t y_kind, double y_lo, double y_hi, double y_constant, int32_t y_mask_nonpositive, const uint8_t * title, size_t title_len, const uint8_t * x_label, size_t x_label_len, const uint8_t * y_label, size_t y_label_len, const uint8_t * x_format, size_t x_format_len, const uint8_t * y_format, size_t y_format_len, uint32_t colorbar_side, double * out_margins)");
+  xyScenePolarFigurePlan = lib.func("int32_t xyg_scene_polar_figure_plan(int32_t polar, void * out)");
   xyScenePublicExportFigurePlan = lib.func("int32_t xyg_scene_public_export_figure_plan(int32_t polar, int32_t has_chrome_styles, int32_t has_title_options, void * out)");
   xyScenePublicExportReason = lib.func("size_t xyg_scene_public_export_reason(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap)");
   xyScenePublicExportTraceDispatchPlan = lib.func("int32_t xyg_scene_public_export_trace_dispatch_plan(const uint8_t * kind, size_t kind_len, int32_t polar, int32_t use_density, void * out)");
