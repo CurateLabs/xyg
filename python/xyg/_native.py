@@ -11783,6 +11783,19 @@ DENSITY_OVERLAY_ROWS_EXCEED_U32 = 1
 DENSITY_OVERLAY_STATIC_RASTER = 2
 
 
+def density_uses_channel_colormap(*, has_channel: bool, mode: str = "") -> bool:
+    """Density colormap source admit via ``xyg_density_uses_channel_colormap`` (ABI 264)."""
+    mode_b = str(mode).encode("utf-8")
+    uses = _lib.xyg_density_uses_channel_colormap(
+        int(bool(has_channel)),
+        mode_b,
+        len(mode_b),
+    )
+    if uses not in (0, 1):
+        raise ValueError("invalid density_uses_channel_colormap arguments")
+    return uses == 1
+
+
 def density_bin_coord_endpoints(
     *,
     x_linear: bool,

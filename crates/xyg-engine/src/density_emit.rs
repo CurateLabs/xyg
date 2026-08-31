@@ -158,6 +158,17 @@ pub fn bin_coord_endpoints(
     1
 }
 
+/// Whether density spec uses the channel-authored colormap (ABI 264).
+///
+/// Returns ``1`` when ``color_ch`` is present and ``mode`` is ``constant`` or
+/// ``continuous``; otherwise ``0`` (host falls back to ``DEFAULT_COLORMAP``).
+pub fn density_uses_channel_colormap(has_channel: i32, mode: &str) -> i32 {
+    if has_channel == 0 {
+        return 0;
+    }
+    i32::from(matches!(mode, "constant" | "continuous"))
+}
+
 pub const DENSITY_OVERLAY_NONE: u32 = 0;
 pub const DENSITY_OVERLAY_ROWS_EXCEED_U32: u32 = 1;
 pub const DENSITY_OVERLAY_STATIC_RASTER: u32 = 2;
@@ -686,6 +697,16 @@ mod tests {
         );
         assert_eq!((x_c0, x_c1), (0.0, 10.0));
         assert_eq!((y_c0, y_c1), (3.0, 7.0));
+    }
+
+    #[test]
+    fn density_uses_channel_colormap_matches_host_table() {
+        assert_eq!(density_uses_channel_colormap(0, "constant"), 0);
+        assert_eq!(density_uses_channel_colormap(1, "constant"), 1);
+        assert_eq!(density_uses_channel_colormap(1, "continuous"), 1);
+        assert_eq!(density_uses_channel_colormap(1, "categorical"), 0);
+        assert_eq!(density_uses_channel_colormap(1, "direct_rgba"), 0);
+        assert_eq!(density_uses_channel_colormap(2, "constant"), 0);
     }
 
     #[test]

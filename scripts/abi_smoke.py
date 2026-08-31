@@ -1386,6 +1386,12 @@ def load() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_double),
         ctypes.POINTER(ctypes.c_double),
     ]
+    lib.xyg_density_uses_channel_colormap.restype = ctypes.c_int32
+    lib.xyg_density_uses_channel_colormap.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+    ]
     lib.xyg_payload_sample_target_indices.restype = ctypes.c_size_t
     lib.xyg_payload_sample_target_indices.argtypes = [
         ctypes.c_size_t,
@@ -4928,6 +4934,11 @@ def main() -> None:
         and abs(bin_y_c0.value - 3.0) < 1e-12
         and abs(bin_y_c1.value - 7.0) < 1e-12,
         "density_bin_coord_endpoints linear x",
+    )
+    ok(
+        lib.xyg_density_uses_channel_colormap(1, b"continuous", 10) == 1
+        and lib.xyg_density_uses_channel_colormap(1, b"categorical", 11) == 0,
+        "density_uses_channel_colormap admit",
     )
     sample_keep = ctypes.c_int32(-1)
     sample_n = lib.xyg_payload_sample_target_indices(

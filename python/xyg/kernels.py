@@ -48,6 +48,7 @@ density_bin_coord_endpoints = _impl.density_bin_coord_endpoints
 density_emit_plan = _impl.density_emit_plan
 density_color_classify = _impl.density_color_classify
 density_trace_color_classify = _impl.density_trace_color_classify
+density_uses_channel_colormap = _impl.density_uses_channel_colormap
 density_format_binning = _impl.density_format_binning
 density_full_identity = _impl.density_full_identity
 density_grid_path = _impl.density_grid_path
@@ -283,6 +284,7 @@ __all__ = [
     "density_rgba",
     "density_rgba_linear",
     "density_trace_color_classify",
+    "density_uses_channel_colormap",
     "density_wasm_eligible",
     "direct_rgba_admit",
     "drill_decision",

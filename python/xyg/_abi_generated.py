@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 279
-SIGNATURE_SHA256 = "bad7ee4d089120ba09c025b0dc49d7674a105cd440798ef9d303cb5a3a32f8e4"
+ABI_VERSION = 280
+SIGNATURE_SHA256 = "bbefc24b2e85916456e9f77c8563ca71f91ec74fb6b246d8930863828f6608dd"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -266,6 +266,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_density_trace_color_classify
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_density_uses_channel_colormap(int32_t has_channel, const uint8_t * mode, size_t mode_len)
+    function = lib.xyg_density_uses_channel_colormap
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_density_wasm_eligible(int32_t cartesian, int32_t x_linear, int32_t y_linear, int32_t color_mode, int32_t x_has_nulls, int32_t y_has_nulls, uint64_t n_points)
     function = lib.xyg_density_wasm_eligible
     function.restype = ctypes.c_int32

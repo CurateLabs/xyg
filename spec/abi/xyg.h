@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 279
-#define XYG_ABI_SIGNATURE_SHA256 "bad7ee4d089120ba09c025b0dc49d7674a105cd440798ef9d303cb5a3a32f8e4"
+#define XYG_ABI_VERSION 280
+#define XYG_ABI_SIGNATURE_SHA256 "bbefc24b2e85916456e9f77c8563ca71f91ec74fb6b246d8930863828f6608dd"
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,6 +75,7 @@ size_t xyg_density_pyramid_preflight(int32_t x_linear, int32_t y_linear, uint64_
 int32_t xyg_density_rgba(const uint8_t * encoded, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out);
 int32_t xyg_density_rgba_linear(const double * counts, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out);
 int32_t xyg_density_trace_color_classify(int32_t has_channel, const uint8_t * mode, size_t mode_len, int32_t codes_present, int32_t codes_u8, int32_t has_counts, int32_t * out_color_mode, int32_t * out_categorical, int32_t * out_compact_categorical, int32_t * out_stratified_counts);
+int32_t xyg_density_uses_channel_colormap(int32_t has_channel, const uint8_t * mode, size_t mode_len);
 int32_t xyg_density_wasm_eligible(int32_t cartesian, int32_t x_linear, int32_t y_linear, int32_t color_mode, int32_t x_has_nulls, int32_t y_has_nulls, uint64_t n_points);
 size_t xyg_direct_rgba_admit(const double * values, size_t n, size_t components, double * out, size_t capacity);
 int32_t xyg_drill_decision(uint64_t visible, double budget, int32_t in_drill, double exit_factor, int32_t * out_exact);
