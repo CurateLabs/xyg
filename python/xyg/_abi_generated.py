@@ -6,7 +6,7 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 313
+ABI_VERSION = 314
 SIGNATURE_SHA256 = "015d441fe926685b576d48892be6b0cc56bafaa9f8e9f94223243b68bdbd9fb9"
 
 

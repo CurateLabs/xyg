@@ -37,3 +37,29 @@ test("payloadColumnShipPlan rejects unknown kinds", () => {
     /invalid payload-column-ship-plan kind/,
   );
 });
+
+test("payloadColumnShipPlan density_sample uses values without gather", () => {
+  const plan = payloadColumnShipPlan({
+    kind: "density_sample",
+    xAxisScale: "linear",
+    yAxisScale: "log",
+  });
+  assert.equal(plan.gatherPolicy, "none");
+  assert.equal(plan.nColumns, 2);
+  assert.equal(plan.columns[0].shipMethod, "values");
+  assert.equal(plan.columns[0].gather, false);
+  assert.equal(plan.columns[1].shipScale, "log");
+});
+
+test("payloadColumnShipPlan density_wasm_source uses f64 without gather", () => {
+  const plan = payloadColumnShipPlan({
+    kind: "density_wasm_source",
+    xAxisScale: "log",
+    yAxisScale: "symlog",
+  });
+  assert.equal(plan.gatherPolicy, "none");
+  assert.equal(plan.nColumns, 2);
+  assert.equal(plan.columns[0].shipMethod, "f64");
+  assert.equal(plan.columns[0].gather, false);
+  assert.equal(plan.columns[1].shipMethod, "f64");
+});

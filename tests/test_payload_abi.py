@@ -628,6 +628,57 @@ def test_payload_column_ship_plan_ribbon_targets() -> None:
     assert plan["columns"][4]["ship_scale"] == "log"
 
 
+def test_payload_column_ship_plan_density_sample_values_no_gather() -> None:
+    plan = kernels.payload_column_ship_plan(
+        kind="density_sample",
+        x_axis_scale="linear",
+        y_axis_scale="log",
+    )
+    assert plan == {
+        "gather_policy": "none",
+        "gather_include_color": False,
+        "n_columns": 2,
+        "x_ship_scale": "linear",
+        "y_ship_scale": "log",
+        "columns": [
+            {
+                "registry_key": "x",
+                "trace_slot": "x",
+                "ship_method": "values",
+                "ship_scale": "linear",
+                "gather": False,
+            },
+            {
+                "registry_key": "y",
+                "trace_slot": "y",
+                "ship_method": "values",
+                "ship_scale": "log",
+                "gather": False,
+            },
+        ],
+    }
+
+
+def test_payload_column_ship_plan_density_wasm_source_f64_no_gather() -> None:
+    plan = kernels.payload_column_ship_plan(
+        kind="density_wasm_source",
+        x_axis_scale="log",
+        y_axis_scale="symlog",
+    )
+    assert plan["gather_policy"] == "none"
+    assert plan["n_columns"] == 2
+    assert plan["x_ship_scale"] == "log"
+    assert plan["y_ship_scale"] == "symlog"
+    assert plan["columns"][0] == {
+        "registry_key": "x",
+        "trace_slot": "x",
+        "ship_method": "f64",
+        "ship_scale": "log",
+        "gather": False,
+    }
+    assert plan["columns"][1]["ship_method"] == "f64"
+
+
 def test_payload_column_ship_plan_rejects_unknown_kind() -> None:
     with pytest.raises(ValueError, match="payload_column_ship_plan"):
         kernels.payload_column_ship_plan(

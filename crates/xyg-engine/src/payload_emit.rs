@@ -1122,6 +1122,8 @@ pub const PAYLOAD_TRACE_SLOT_BASE: i32 = 6;
 pub const PAYLOAD_COL_SHIP_OFFSET: i32 = 0;
 /// ``pw.ship_values`` temporary geometry without a canonical ``Column``.
 pub const PAYLOAD_COL_SHIP_VALUES: i32 = 1;
+/// ``pw.ship_f64`` canonical replay source (density ``wasm_source`` only).
+pub const PAYLOAD_COL_SHIP_F64: i32 = 2;
 
 /// Per-column ship scale: x-axis family.
 pub const PAYLOAD_COL_SCALE_X: i32 = 0;
@@ -1296,6 +1298,19 @@ pub fn payload_column_ship_plan(
                 out_columns,
                 out_n_columns,
                 PAYLOAD_COL_SHIP_VALUES,
+                x_scale,
+                y_scale,
+            );
+            for entry in out_columns.iter_mut().take(*out_n_columns) {
+                entry.gather = 0;
+            }
+        }
+        "density_wasm_source" => {
+            *out_gather_policy = PAYLOAD_GATHER_NONE;
+            push_xy(
+                out_columns,
+                out_n_columns,
+                PAYLOAD_COL_SHIP_F64,
                 x_scale,
                 y_scale,
             );
@@ -4003,6 +4018,35 @@ mod tests {
         assert_eq!(n, 2);
         assert_eq!(cols[0].ship_method, PAYLOAD_COL_SHIP_VALUES);
         assert_eq!(cols[1].ship_method, PAYLOAD_COL_SHIP_VALUES);
+    }
+
+    #[test]
+    fn payload_column_ship_plan_density_sample_values_no_gather() {
+        let (gather, _, n, _, _, cols) =
+            run_column_ship_plan("density_sample", PAYLOAD_BAR_ORIENTATION_VERTICAL);
+        assert_eq!(gather, PAYLOAD_GATHER_NONE);
+        assert_eq!(n, 2);
+        assert_eq!(cols[0].registry_key, PAYLOAD_COL_KEY_X);
+        assert_eq!(cols[0].ship_method, PAYLOAD_COL_SHIP_VALUES);
+        assert_eq!(cols[0].gather, 0);
+        assert_eq!(cols[1].registry_key, PAYLOAD_COL_KEY_Y);
+        assert_eq!(cols[1].ship_method, PAYLOAD_COL_SHIP_VALUES);
+        assert_eq!(cols[1].gather, 0);
+    }
+
+    #[test]
+    fn payload_column_ship_plan_density_wasm_source_f64_no_gather() {
+        let (gather, _, n, x_scale, y_scale, cols) =
+            run_column_ship_plan("density_wasm_source", PAYLOAD_BAR_ORIENTATION_VERTICAL);
+        assert_eq!(gather, PAYLOAD_GATHER_NONE);
+        assert_eq!(n, 2);
+        assert_eq!(x_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_LOG);
+        assert_eq!(y_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_SYMLOG);
+        assert_eq!(cols[0].registry_key, PAYLOAD_COL_KEY_X);
+        assert_eq!(cols[0].trace_slot, PAYLOAD_TRACE_SLOT_X);
+        assert_eq!(cols[0].ship_method, PAYLOAD_COL_SHIP_F64);
+        assert_eq!(cols[0].gather, 0);
+        assert_eq!(cols[1].ship_method, PAYLOAD_COL_SHIP_F64);
     }
 
     #[test]

@@ -56,6 +56,8 @@ import {
   payloadSegmentsEmitPlan,
   payloadChannelShipPlan,
   payloadChannelWireEncode,
+  payloadColumnShipPlan,
+  shipRegistryColumns,
   payloadTransitionEntryAttach,
   payloadSegmentBudget,
   payloadSampleTargetIndices,
@@ -706,6 +708,18 @@ export class PayloadWriter {
         ? values
         : Float32Array.from(values, (v) => Number(v));
     return this._append(enc, {});
+  }
+
+  /**
+   * Canonical f64 column for split WASM replay sources (density wasm_source).
+   * @param {Float64Array|ArrayLike<number>} values
+   */
+  shipF64(values) {
+    const enc =
+      values instanceof Float64Array
+        ? values
+        : Float64Array.from(values, (v) => Number(v));
+    return this._append(enc, { dtype: "f64" });
   }
 
   /**
@@ -1643,19 +1657,20 @@ export class Figure {
       const sx = keepAll ? t.x : gatherF64(t.x, indices);
       const sy = keepAll ? t.y : gatherF64(t.y, indices);
       if (sx.length > 0) {
-        const sampleX = new Column(sx);
-        const sampleY = new Column(sy);
         const xAxis = t.x_axis ?? "x";
         const yAxis = t.y_axis ?? "y";
+        const columnPlan = payloadColumnShipPlan({
+          kind: "density_sample",
+          xAxisScale: payloadAxisScale(this, xAxis),
+          yAxisScale: payloadAxisScale(this, yAxis),
+        });
         const plan = payloadNonxyEmitPlan({
           kind: "density_sample",
           nMarks: sx.length,
           styleColorIsNone: t.style?.color == null,
-          xAxisScale: payloadAxisScale(this, xAxis),
-          yAxisScale: payloadAxisScale(this, yAxis),
+          xAxisScale: columnPlan.xShipScale,
+          yAxisScale: columnPlan.yShipScale,
         });
-        const xCol = pw.ship(sx, sampleX, { scale: plan.xShipScale });
-        const yCol = pw.ship(sy, sampleY, { scale: plan.yShipScale });
         const opacityRaw = Number(t.style?.opacity ?? 0.8);
         density.sample = {
           mode: "sampled",
@@ -1664,8 +1679,6 @@ export class Figure {
           target: DENSITY_SAMPLE_TARGET,
           level: 0,
           seed: DENSITY_SAMPLE_SEED,
-          x: { col: xCol, ...pw.columns[xCol] },
-          y: { col: yCol, ...pw.columns[yCol] },
           x_range: [...xr],
           y_range: [...yr],
           style: {
@@ -1673,6 +1686,14 @@ export class Figure {
             opacity: densityOverlayOpacity(opacityRaw),
           },
         };
+        shipRegistryColumns(
+          density.sample,
+          t,
+          pw,
+          columnPlan,
+          { x: sx, y: sy },
+          { nestedKeys: new Set(["x", "y"]) },
+        );
         this._shipTraceChannelAttach(
           density.sample,
           t,
