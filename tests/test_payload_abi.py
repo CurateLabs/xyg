@@ -395,6 +395,71 @@ def test_payload_nonxy_emit_plan_density_sample() -> None:
     }
 
 
+def test_payload_bar_hist_emit_plan_histogram() -> None:
+    plan = kernels.payload_bar_hist_emit_plan(
+        kind="histogram",
+        n_marks=6,
+        style_color_is_none=True,
+        x_axis_scale="log",
+        y_axis_scale="linear",
+    )
+    assert plan == {
+        "emit_bar": False,
+        "tier_direct": True,
+        "n_marks": 6,
+        "apply_palette_default": True,
+        "x_ship_scale": "log",
+        "y_ship_scale": "linear",
+        "pos_ship_scale": "log",
+        "value_ship_scale": "linear",
+        "value_axis": "y",
+        "channel_slot": kernels.PAYLOAD_SHIP_CHANNELS_IF_COLOR,
+        "include_trace_styles": True,
+        "attach_transition": True,
+    }
+
+
+def test_payload_bar_hist_emit_plan_bar_compact_vertical() -> None:
+    plan = kernels.payload_bar_hist_emit_plan(
+        kind="bar_compact",
+        compact=True,
+        n_marks=4,
+        style_color_is_none=False,
+        x_axis_scale="linear",
+        y_axis_scale="log",
+        orientation="vertical",
+    )
+    assert plan == {
+        "emit_bar": True,
+        "tier_direct": True,
+        "n_marks": 4,
+        "apply_palette_default": False,
+        "x_ship_scale": "linear",
+        "y_ship_scale": "log",
+        "pos_ship_scale": "linear",
+        "value_ship_scale": "log",
+        "value_axis": "y",
+        "channel_slot": kernels.PAYLOAD_SHIP_CHANNELS_IF_COLOR,
+        "include_trace_styles": True,
+        "attach_transition": True,
+    }
+
+
+def test_payload_bar_hist_emit_plan_bar_compact_rect_fallback() -> None:
+    plan = kernels.payload_bar_hist_emit_plan(
+        kind="bar_compact",
+        compact=False,
+        n_marks=3,
+        style_color_is_none=True,
+        x_axis_scale="linear",
+        y_axis_scale="linear",
+        orientation="vertical",
+    )
+    assert plan["emit_bar"] is False
+    assert plan["n_marks"] == 3
+    assert plan["attach_transition"] is True
+
+
 def test_line_scatter_area_base_entry_ships_animation_and_log_scale() -> None:
     anim = {"duration": 250}
     fig = Figure().set_axis("x", type_="log")

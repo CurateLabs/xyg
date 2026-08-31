@@ -44,6 +44,7 @@ import {
   payloadM4Indices,
   payloadBaseEntryPlan,
   payloadNonxyEmitPlan,
+  payloadBarHistEmitPlan,
   payloadTraceChannelsShipAttach,
   payloadTransitionEntryAttach,
   payloadSegmentBudget,
@@ -1580,7 +1581,16 @@ export class Figure {
     // Node payload histogram omits transition_keys. Python `_emit_histogram`
     // calls `_emit_rect`, which ships them via `_transition_entry`. Matching
     // Python would add entry.keys. Recorded emit-hist-transition stay-host.
-    return {
+    const xAxis = t.x_axis ?? "x";
+    const yAxis = t.y_axis ?? "y";
+    const plan = payloadBarHistEmitPlan({
+      kind: "histogram",
+      nMarks: t.x0.length,
+      styleColorIsNone: t.style?.color == null,
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+    });
+    const entry = {
       id: t.id,
       kind: "histogram",
       name: t.name,
@@ -1590,18 +1600,26 @@ export class Figure {
       style: { ...t.style },
       tier: "direct",
       n_points: t.count ?? t.x0.length,
-      n_marks: t.x0.length,
-      // Node payload histogram omits ship scale. Python `_emit_histogram`
-      // calls `_emit_rect`, which passes `_axis_scale` into `pw.ship`.
-      // Matching Python would pin log-axis offset to 0. Recorded
-      // emit-hist-ship-scale stay-host.
-      x0: pw.ship(t.x0, x0),
-      x1: pw.ship(t.x1, x1),
-      y0: pw.ship(t.y0, y0),
-      y1: pw.ship(t.y1, y1),
-      x_axis: t.x_axis ?? "x",
-      y_axis: t.y_axis ?? "y",
+      n_marks: plan.nMarks,
+      x0: pw.ship(t.x0, x0, { scale: plan.xShipScale }),
+      x1: pw.ship(t.x1, x1, { scale: plan.xShipScale }),
+      y0: pw.ship(t.y0, y0, { scale: plan.yShipScale }),
+      y1: pw.ship(t.y1, y1, { scale: plan.yShipScale }),
+      x_axis: xAxis,
+      y_axis: yAxis,
     };
+    this._shipTraceChannelAttach(
+      entry,
+      t,
+      pw,
+      null,
+      plan.channelSlot,
+      { includeTraceStyles: plan.includeTraceStyles },
+    );
+    if (plan.attachTransition) {
+      attachTransitionEntry(entry, t, pw, null);
+    }
+    return entry;
   }
 
   _emitSegments(t, pw, pxWidth) {

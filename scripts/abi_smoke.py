@@ -1411,6 +1411,28 @@ def load() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_int32),
         ctypes.POINTER(ctypes.c_int32),
     ]
+    lib.xyg_payload_bar_hist_emit_plan.restype = ctypes.c_int32
+    lib.xyg_payload_bar_hist_emit_plan.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_size_t),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+    ]
     lib.xyg_density_color_classify.restype = ctypes.c_int32
     lib.xyg_density_color_classify.argtypes = [
         ctypes.c_int32,
@@ -5171,6 +5193,51 @@ def main() -> None:
         and nonxy_include_styles.value == 1
         and nonxy_attach_transition.value == 1,
         "payload_nonxy_emit_plan rect skeleton",
+    )
+    bar_hist_emit_bar = ctypes.c_int32(-1)
+    bar_hist_tier_direct = ctypes.c_int32(-1)
+    bar_hist_n_marks = ctypes.c_size_t(0)
+    bar_hist_apply_palette = ctypes.c_int32(-1)
+    bar_hist_x_scale = ctypes.c_int32(-1)
+    bar_hist_y_scale = ctypes.c_int32(-1)
+    bar_hist_pos_scale = ctypes.c_int32(-1)
+    bar_hist_value_scale = ctypes.c_int32(-1)
+    bar_hist_value_axis = ctypes.c_int32(-1)
+    bar_hist_channel_slot = ctypes.c_int32(-1)
+    bar_hist_include_styles = ctypes.c_int32(-1)
+    bar_hist_attach_transition = ctypes.c_int32(-1)
+    ok(
+        lib.xyg_payload_bar_hist_emit_plan(
+            0,
+            1,
+            5,
+            1,
+            1,
+            0,
+            0,
+            ctypes.byref(bar_hist_emit_bar),
+            ctypes.byref(bar_hist_tier_direct),
+            ctypes.byref(bar_hist_n_marks),
+            ctypes.byref(bar_hist_apply_palette),
+            ctypes.byref(bar_hist_x_scale),
+            ctypes.byref(bar_hist_y_scale),
+            ctypes.byref(bar_hist_pos_scale),
+            ctypes.byref(bar_hist_value_scale),
+            ctypes.byref(bar_hist_value_axis),
+            ctypes.byref(bar_hist_channel_slot),
+            ctypes.byref(bar_hist_include_styles),
+            ctypes.byref(bar_hist_attach_transition),
+        )
+        == 1
+        and bar_hist_emit_bar.value == 0
+        and bar_hist_tier_direct.value == 1
+        and bar_hist_n_marks.value == 5
+        and bar_hist_apply_palette.value == 1
+        and bar_hist_x_scale.value == 1
+        and bar_hist_y_scale.value == 0
+        and bar_hist_channel_slot.value == 1
+        and bar_hist_attach_transition.value == 1,
+        "payload_bar_hist_emit_plan histogram skeleton",
     )
     density_color_mode = ctypes.c_int32(-1)
     density_categorical = ctypes.c_int32(-1)

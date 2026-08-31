@@ -1092,13 +1092,22 @@ class PayloadMixin(_Host):
             x0v, x1v, y0v, y1v = x0v[sel_arg], x1v[sel_arg], y0v[sel_arg], y1v[sel_arg]
         x_scale = self._axis_scale(t.x_axis)
         y_scale = self._axis_scale(t.y_axis)
-        plan = kernels.payload_nonxy_emit_plan(
-            kind="rect",
-            n_marks=int(len(x0v)),
-            style_color_is_none=t.style.get("color") is None,
-            x_axis_scale=x_scale,
-            y_axis_scale=y_scale,
-        )
+        if t.kind == "histogram":
+            plan = kernels.payload_bar_hist_emit_plan(
+                kind="histogram",
+                n_marks=int(len(x0v)),
+                style_color_is_none=t.style.get("color") is None,
+                x_axis_scale=x_scale,
+                y_axis_scale=y_scale,
+            )
+        else:
+            plan = kernels.payload_nonxy_emit_plan(
+                kind="rect",
+                n_marks=int(len(x0v)),
+                style_color_is_none=t.style.get("color") is None,
+                x_axis_scale=x_scale,
+                y_axis_scale=y_scale,
+            )
         style = self._default_styled(t)
         entry = {
             "id": t.id,
@@ -1145,19 +1154,13 @@ class PayloadMixin(_Host):
             pos = t.x.values if sel_arg is None else t.x.values[sel_arg]
             value0 = y0v
             value1 = t.y.values if sel_arg is None else t.y.values[sel_arg]
-            pos_ref = pw.ship(pos, t.x, scale=self._axis_scale(t.x_axis))
-            value1_ref = pw.ship(value1, t.y, scale=self._axis_scale(t.y_axis))
             value0_col = t.y0
-            value_axis = "y"
         elif orientation == "horizontal":
             widths = y1v - y0v
             pos = (y0v + y1v) / 2.0
             value0 = x0v
             value1 = x1v
-            pos_ref = pw.ship_values(pos, scale=self._axis_scale(t.y_axis))
-            value1_ref = pw.ship(value1, t.x1, scale=self._axis_scale(t.x_axis))
             value0_col = t.x0
-            value_axis = "x"
         else:
             raise ValueError(f"unknown bar orientation {orientation!r}")
 
@@ -1165,13 +1168,31 @@ class PayloadMixin(_Host):
             np.ascontiguousarray(widths, dtype=np.float64),
             np.ascontiguousarray(value0, dtype=np.float64),
         )
-        if not compact:
+        x_scale = self._axis_scale(t.x_axis)
+        y_scale = self._axis_scale(t.y_axis)
+        plan = kernels.payload_bar_hist_emit_plan(
+            kind="bar_compact",
+            compact=compact,
+            n_marks=int(len(pos)),
+            style_color_is_none=t.style.get("color") is None,
+            x_axis_scale=x_scale,
+            y_axis_scale=y_scale,
+            orientation=orientation,
+        )
+        if not plan["emit_bar"]:
             return self._emit_rect(t, pw, (), (), 0)
+
+        if orientation == "vertical":
+            pos_ref = pw.ship(pos, t.x, scale=plan["pos_ship_scale"])
+            value1_ref = pw.ship(value1, t.y, scale=plan["value_ship_scale"])
+        else:
+            pos_ref = pw.ship_values(pos, scale=plan["pos_ship_scale"])
+            value1_ref = pw.ship(value1, t.x1, scale=plan["value_ship_scale"])
 
         style = self._default_styled(t)
         bar_spec: dict[str, Any] = {
             "orientation": orientation,
-            "value_axis": value_axis,
+            "value_axis": plan["value_axis"],
             "pos": pos_ref,
             "value1": value1_ref,
             "width": width,
@@ -1182,7 +1203,7 @@ class PayloadMixin(_Host):
             bar_spec["value0"] = pw.ship(
                 value0,
                 value0_col,
-                scale=self._axis_scale(t.y_axis if value_axis == "y" else t.x_axis),
+                scale=plan["value_ship_scale"],
             )
 
         entry = {
@@ -1192,7 +1213,7 @@ class PayloadMixin(_Host):
             "style": style,
             "tier": "direct",
             "n_points": t.n_points,
-            "n_marks": int(len(pos)),
+            "n_marks": plan["n_marks"],
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
             "bar": bar_spec,
@@ -1202,10 +1223,12 @@ class PayloadMixin(_Host):
             t,
             sel_arg,
             pw,
-            kernels.PAYLOAD_SHIP_CHANNELS_IF_COLOR,
-            include_trace_styles=True,
+            plan["channel_slot"],
+            include_trace_styles=plan["include_trace_styles"],
         )
-        return self._transition_entry(entry, t, pw, sel_arg)
+        if plan["attach_transition"]:
+            return self._transition_entry(entry, t, pw, sel_arg)
+        return entry
 
     def _ship_trace_channel_attach(
         self,

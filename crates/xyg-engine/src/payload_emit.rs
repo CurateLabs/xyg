@@ -31,6 +31,21 @@ pub const PAYLOAD_NONXY_KIND_HEXBIN: i32 = 1;
 /// Density overlay sample sub-spec (`_density_sample_spec`).
 pub const PAYLOAD_NONXY_KIND_DENSITY_SAMPLE: i32 = 2;
 
+/// Histogram rect skeleton (`_emit_histogram` → `_emit_rect`).
+pub const PAYLOAD_BAR_HIST_KIND_HISTOGRAM: i32 = 0;
+/// Bar/column compact skeleton (`_emit_bar_compact`).
+pub const PAYLOAD_BAR_HIST_KIND_BAR_COMPACT: i32 = 1;
+
+/// Vertical bar orientation (`style.orientation == "vertical"`).
+pub const PAYLOAD_BAR_ORIENTATION_VERTICAL: i32 = 0;
+/// Horizontal bar orientation (`style.orientation == "horizontal"`).
+pub const PAYLOAD_BAR_ORIENTATION_HORIZONTAL: i32 = 1;
+
+/// Compact bar values ship on the y axis.
+pub const PAYLOAD_VALUE_AXIS_Y: i32 = 0;
+/// Compact bar values ship on the x axis.
+pub const PAYLOAD_VALUE_AXIS_X: i32 = 1;
+
 fn payload_base_entry_ship_scale(axis_type: i32) -> i32 {
     match axis_type {
         1 => PAYLOAD_BASE_ENTRY_SHIP_SCALE_LOG,
@@ -107,6 +122,116 @@ pub fn payload_nonxy_emit_plan(
     *out_include_trace_styles = include_trace_styles;
     *out_attach_transition = attach_transition;
     1
+}
+
+/// Histogram / bar-compact emit skeleton from ``_emit_histogram`` and
+/// ``_emit_bar_compact``.
+///
+/// Histogram always uses rect geometry (``out_emit_bar = 0``). Bar-compact uses
+/// nested ``bar`` when ``compact != 0``; otherwise rect fallback. Hosts still
+/// run ``payload_bar_compact_admit``, gather finite rows, and ship columns.
+/// Returns ``1`` on success, ``0`` when ``kind`` or ``orientation`` is invalid.
+pub fn payload_bar_hist_emit_plan(
+    kind: i32,
+    compact: i32,
+    n_marks: usize,
+    style_color_is_none: i32,
+    x_axis_type: i32,
+    y_axis_type: i32,
+    orientation: i32,
+    out_emit_bar: &mut i32,
+    out_tier_direct: &mut i32,
+    out_n_marks: &mut usize,
+    out_apply_palette_default: &mut i32,
+    out_x_ship_scale: &mut i32,
+    out_y_ship_scale: &mut i32,
+    out_pos_ship_scale: &mut i32,
+    out_value_ship_scale: &mut i32,
+    out_value_axis: &mut i32,
+    out_channel_slot: &mut i32,
+    out_include_trace_styles: &mut i32,
+    out_attach_transition: &mut i32,
+) -> i32 {
+    match kind {
+        PAYLOAD_BAR_HIST_KIND_HISTOGRAM => {
+            *out_emit_bar = 0;
+            let ok = payload_nonxy_emit_plan(
+                PAYLOAD_NONXY_KIND_RECT,
+                n_marks,
+                style_color_is_none,
+                x_axis_type,
+                y_axis_type,
+                out_tier_direct,
+                out_n_marks,
+                out_apply_palette_default,
+                out_x_ship_scale,
+                out_y_ship_scale,
+                out_channel_slot,
+                out_include_trace_styles,
+                out_attach_transition,
+            );
+            if ok == 0 {
+                return 0;
+            }
+            *out_pos_ship_scale = *out_x_ship_scale;
+            *out_value_ship_scale = *out_y_ship_scale;
+            *out_value_axis = PAYLOAD_VALUE_AXIS_Y;
+            1
+        }
+        PAYLOAD_BAR_HIST_KIND_BAR_COMPACT if compact == 0 => {
+            *out_emit_bar = 0;
+            let ok = payload_nonxy_emit_plan(
+                PAYLOAD_NONXY_KIND_RECT,
+                n_marks,
+                style_color_is_none,
+                x_axis_type,
+                y_axis_type,
+                out_tier_direct,
+                out_n_marks,
+                out_apply_palette_default,
+                out_x_ship_scale,
+                out_y_ship_scale,
+                out_channel_slot,
+                out_include_trace_styles,
+                out_attach_transition,
+            );
+            if ok == 0 {
+                return 0;
+            }
+            *out_pos_ship_scale = *out_x_ship_scale;
+            *out_value_ship_scale = *out_y_ship_scale;
+            *out_value_axis = PAYLOAD_VALUE_AXIS_Y;
+            ok
+        }
+        PAYLOAD_BAR_HIST_KIND_BAR_COMPACT => {
+            *out_emit_bar = 1;
+            *out_tier_direct = 1;
+            *out_n_marks = n_marks;
+            *out_apply_palette_default = i32::from(style_color_is_none != 0);
+            let x_scale = payload_base_entry_ship_scale(x_axis_type);
+            let y_scale = payload_base_entry_ship_scale(y_axis_type);
+            *out_x_ship_scale = x_scale;
+            *out_y_ship_scale = y_scale;
+            *out_channel_slot = PAYLOAD_SHIP_CHANNELS_IF_COLOR;
+            *out_include_trace_styles = 1;
+            *out_attach_transition = 1;
+            match orientation {
+                PAYLOAD_BAR_ORIENTATION_VERTICAL => {
+                    *out_pos_ship_scale = x_scale;
+                    *out_value_ship_scale = y_scale;
+                    *out_value_axis = PAYLOAD_VALUE_AXIS_Y;
+                }
+                PAYLOAD_BAR_ORIENTATION_HORIZONTAL => {
+                    *out_pos_ship_scale = y_scale;
+                    *out_value_ship_scale = x_scale;
+                    *out_value_axis = PAYLOAD_VALUE_AXIS_X;
+                }
+                _ => return 0,
+            }
+            1
+        }
+        _ => 0,
+    }
 }
 
 /// Transition-entry / tooltip-row attach orchestration from
@@ -882,6 +1007,251 @@ mod tests {
                 &mut apply_palette,
                 &mut x_scale,
                 &mut y_scale,
+                &mut slot,
+                &mut include_styles,
+                &mut attach_transition,
+            ),
+            0
+        );
+    }
+
+    #[test]
+    fn payload_bar_hist_emit_plan_histogram_matches_rect() {
+        let mut emit_bar = -1;
+        let mut tier_direct = -1;
+        let mut n_marks = 0;
+        let mut apply_palette = -1;
+        let mut x_scale = -1;
+        let mut y_scale = -1;
+        let mut pos_scale = -1;
+        let mut value_scale = -1;
+        let mut value_axis = -1;
+        let mut slot = -1;
+        let mut include_styles = -1;
+        let mut attach_transition = -1;
+        assert_eq!(
+            payload_bar_hist_emit_plan(
+                PAYLOAD_BAR_HIST_KIND_HISTOGRAM,
+                1,
+                5,
+                1,
+                1,
+                0,
+                PAYLOAD_BAR_ORIENTATION_VERTICAL,
+                &mut emit_bar,
+                &mut tier_direct,
+                &mut n_marks,
+                &mut apply_palette,
+                &mut x_scale,
+                &mut y_scale,
+                &mut pos_scale,
+                &mut value_scale,
+                &mut value_axis,
+                &mut slot,
+                &mut include_styles,
+                &mut attach_transition,
+            ),
+            1
+        );
+        assert_eq!(emit_bar, 0);
+        assert_eq!(tier_direct, 1);
+        assert_eq!(n_marks, 5);
+        assert_eq!(apply_palette, 1);
+        assert_eq!(x_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_LOG);
+        assert_eq!(y_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_LINEAR);
+        assert_eq!(slot, PAYLOAD_SHIP_CHANNELS_IF_COLOR);
+        assert_eq!(include_styles, 1);
+        assert_eq!(attach_transition, 1);
+    }
+
+    #[test]
+    fn payload_bar_hist_emit_plan_bar_compact_vertical() {
+        let mut emit_bar = -1;
+        let mut tier_direct = -1;
+        let mut n_marks = 0;
+        let mut apply_palette = -1;
+        let mut x_scale = -1;
+        let mut y_scale = -1;
+        let mut pos_scale = -1;
+        let mut value_scale = -1;
+        let mut value_axis = -1;
+        let mut slot = -1;
+        let mut include_styles = -1;
+        let mut attach_transition = -1;
+        assert_eq!(
+            payload_bar_hist_emit_plan(
+                PAYLOAD_BAR_HIST_KIND_BAR_COMPACT,
+                1,
+                8,
+                0,
+                0,
+                1,
+                PAYLOAD_BAR_ORIENTATION_VERTICAL,
+                &mut emit_bar,
+                &mut tier_direct,
+                &mut n_marks,
+                &mut apply_palette,
+                &mut x_scale,
+                &mut y_scale,
+                &mut pos_scale,
+                &mut value_scale,
+                &mut value_axis,
+                &mut slot,
+                &mut include_styles,
+                &mut attach_transition,
+            ),
+            1
+        );
+        assert_eq!(emit_bar, 1);
+        assert_eq!(n_marks, 8);
+        assert_eq!(pos_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_LINEAR);
+        assert_eq!(value_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_LOG);
+        assert_eq!(value_axis, PAYLOAD_VALUE_AXIS_Y);
+    }
+
+    #[test]
+    fn payload_bar_hist_emit_plan_bar_compact_horizontal() {
+        let mut emit_bar = -1;
+        let mut tier_direct = -1;
+        let mut n_marks = 0;
+        let mut apply_palette = -1;
+        let mut x_scale = -1;
+        let mut y_scale = -1;
+        let mut pos_scale = -1;
+        let mut value_scale = -1;
+        let mut value_axis = -1;
+        let mut slot = -1;
+        let mut include_styles = -1;
+        let mut attach_transition = -1;
+        assert_eq!(
+            payload_bar_hist_emit_plan(
+                PAYLOAD_BAR_HIST_KIND_BAR_COMPACT,
+                1,
+                3,
+                0,
+                2,
+                2,
+                PAYLOAD_BAR_ORIENTATION_HORIZONTAL,
+                &mut emit_bar,
+                &mut tier_direct,
+                &mut n_marks,
+                &mut apply_palette,
+                &mut x_scale,
+                &mut y_scale,
+                &mut pos_scale,
+                &mut value_scale,
+                &mut value_axis,
+                &mut slot,
+                &mut include_styles,
+                &mut attach_transition,
+            ),
+            1
+        );
+        assert_eq!(emit_bar, 1);
+        assert_eq!(pos_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_SYMLOG);
+        assert_eq!(value_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_SYMLOG);
+        assert_eq!(value_axis, PAYLOAD_VALUE_AXIS_X);
+    }
+
+    #[test]
+    fn payload_bar_hist_emit_plan_bar_compact_rect_fallback() {
+        let mut emit_bar = -1;
+        let mut tier_direct = -1;
+        let mut n_marks = 0;
+        let mut apply_palette = -1;
+        let mut x_scale = -1;
+        let mut y_scale = -1;
+        let mut pos_scale = -1;
+        let mut value_scale = -1;
+        let mut value_axis = -1;
+        let mut slot = -1;
+        let mut include_styles = -1;
+        let mut attach_transition = -1;
+        assert_eq!(
+            payload_bar_hist_emit_plan(
+                PAYLOAD_BAR_HIST_KIND_BAR_COMPACT,
+                0,
+                4,
+                1,
+                0,
+                0,
+                PAYLOAD_BAR_ORIENTATION_VERTICAL,
+                &mut emit_bar,
+                &mut tier_direct,
+                &mut n_marks,
+                &mut apply_palette,
+                &mut x_scale,
+                &mut y_scale,
+                &mut pos_scale,
+                &mut value_scale,
+                &mut value_axis,
+                &mut slot,
+                &mut include_styles,
+                &mut attach_transition,
+            ),
+            1
+        );
+        assert_eq!(emit_bar, 0);
+        assert_eq!(n_marks, 4);
+        assert_eq!(attach_transition, 1);
+    }
+
+    #[test]
+    fn payload_bar_hist_emit_plan_rejects_unknown_kind_and_orientation() {
+        let mut emit_bar = 0;
+        let mut tier_direct = 0;
+        let mut n_marks = 0;
+        let mut apply_palette = 0;
+        let mut x_scale = 0;
+        let mut y_scale = 0;
+        let mut pos_scale = 0;
+        let mut value_scale = 0;
+        let mut value_axis = 0;
+        let mut slot = 0;
+        let mut include_styles = 0;
+        let mut attach_transition = 0;
+        assert_eq!(
+            payload_bar_hist_emit_plan(
+                9,
+                1,
+                1,
+                0,
+                0,
+                0,
+                PAYLOAD_BAR_ORIENTATION_VERTICAL,
+                &mut emit_bar,
+                &mut tier_direct,
+                &mut n_marks,
+                &mut apply_palette,
+                &mut x_scale,
+                &mut y_scale,
+                &mut pos_scale,
+                &mut value_scale,
+                &mut value_axis,
+                &mut slot,
+                &mut include_styles,
+                &mut attach_transition,
+            ),
+            0
+        );
+        assert_eq!(
+            payload_bar_hist_emit_plan(
+                PAYLOAD_BAR_HIST_KIND_BAR_COMPACT,
+                1,
+                1,
+                0,
+                0,
+                0,
+                9,
+                &mut emit_bar,
+                &mut tier_direct,
+                &mut n_marks,
+                &mut apply_palette,
+                &mut x_scale,
+                &mut y_scale,
+                &mut pos_scale,
+                &mut value_scale,
+                &mut value_axis,
                 &mut slot,
                 &mut include_styles,
                 &mut attach_transition,

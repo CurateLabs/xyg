@@ -548,17 +548,14 @@ test("_emitScatterDensity sample uses log ship scale via payload nonxy plan", ()
   assert.equal(spec.traces[0].density.sample.x.offset, 0);
 });
 
-test("_emitHistogram omits ship scale unlike Python _axis_scale", () => {
-  // Python `_emit_histogram` calls `_emit_rect`, which passes `_axis_scale`
-  // into `pw.ship`, pinning log offset to 0. Node histogram encode keeps the
-  // column midpoint. Recorded emit-hist-ship-scale stay-host.
+test("_emitHistogram uses log ship scale via payload bar-hist plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.setAxis("x", { type: "log" });
   fig.histogram([1, 2, 10], { bins: 2, range: [1, 10] });
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "histogram");
   const x0Col = spec.columns[spec.traces[0].x0];
-  assert.notEqual(x0Col.offset, 0);
+  assert.equal(x0Col.offset, 0);
 });
 
 test("_emitTriangleMesh omits ship scale unlike Python _axis_scale", () => {
@@ -778,10 +775,7 @@ test("_emitScatterDensity omits transition_keys unlike Python _transition_entry"
   assert.equal(spec.traces[0].keys, undefined);
 });
 
-test("_emitHistogram omits transition_keys unlike Python _transition_entry", () => {
-  // Python `_emit_histogram` ships transition_keys via `_emit_rect` /
-  // `_transition_entry`. Node histogram payload keeps no keys field even when
-  // transition_keys is present. Recorded emit-hist-transition stay-host.
+test("_emitHistogram ships transition_keys via payload bar-hist plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
   fig.traces[0].transition_keys = [
@@ -790,7 +784,7 @@ test("_emitHistogram omits transition_keys unlike Python _transition_entry", () 
   ];
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "histogram");
-  assert.equal(spec.traces[0].keys, undefined);
+  assert.notEqual(spec.traces[0].keys, undefined);
 });
 
 test("_emitSegments omits transition_keys unlike Python _transition_entry", () => {
@@ -1004,16 +998,13 @@ test("_emitScatter omits style_channels unlike Python _ship_trace_styles", () =>
   assert.equal(spec.traces[0].channels, undefined);
 });
 
-test("_emitHistogram omits stroke_ch unlike Python _ship_trace_styles", () => {
-  // Python `_emit_histogram` ships stroke_ch via `_emit_rect` /
-  // `_ship_trace_styles`. Node histogram payload keeps no stroke field even
-  // when stroke_ch is present. Recorded emit-hist-stroke stay-host.
+test("_emitHistogram ships stroke_ch via payload channel attach", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
   fig.traces[0].stroke_ch = { mode: "constant", constant: "#112233" };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "histogram");
-  assert.equal(spec.traces[0].stroke, undefined);
+  assert.equal(spec.traces[0].stroke.color, "#112233");
 });
 
 test("_emitSegments omits stroke_ch unlike Python _ship_trace_styles", () => {
@@ -1086,16 +1077,13 @@ test("_emitTriangleMesh ships x/y unlike Python x2/y2", () => {
   assert.equal(spec.traces[0].y2, undefined);
 });
 
-test("_emitHistogram omits color_ch unlike Python _emit_histogram", () => {
-  // Python `_emit_histogram` ships color_ch via `_emit_rect`. Node histogram
-  // payload keeps no color field even when color_ch is present. Recorded
-  // emit-hist-color stay-host.
+test("_emitHistogram ships color_ch via payload channel attach", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
   fig.traces[0].color_ch = { mode: "constant", constant: "#112233" };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "histogram");
-  assert.equal(spec.traces[0].color, undefined);
+  assert.equal(spec.traces[0].color.color, "#112233");
 });
 
 test("_emitTriangleMesh omits color_ch unlike Python _emit_triangle_mesh", () => {
@@ -1314,16 +1302,13 @@ test("_emitArea ships animation via payload base-entry plan", () => {
   assert.deepEqual(spec.traces[0].animation, { duration: 100 });
 });
 
-test("_emitHistogram omits animation unlike Python _transition_entry", () => {
-  // Python `_emit_histogram` calls `_emit_rect`, which ships t.animation via
-  // `_transition_entry`. Node histogram encode omits that field. Recorded
-  // emit-hist-animation stay-host.
+test("_emitHistogram ships animation via payload bar-hist plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
   fig.traces[0].animation = { duration: 100 };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "histogram");
-  assert.equal(spec.traces[0].animation, undefined);
+  assert.deepEqual(spec.traces[0].animation, { duration: 100 });
 });
 
 test("_emitRect ships animation via payload transition attach", () => {

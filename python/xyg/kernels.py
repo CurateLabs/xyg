@@ -229,6 +229,7 @@ payload_trace_channels_ship_attach = _impl.payload_trace_channels_ship_attach
 payload_transition_entry_attach = _impl.payload_transition_entry_attach
 payload_base_entry_plan = _impl.payload_base_entry_plan
 payload_nonxy_emit_plan = _impl.payload_nonxy_emit_plan
+payload_bar_hist_emit_plan = _impl.payload_bar_hist_emit_plan
 PAYLOAD_NONXY_KIND_RECT = _impl.PAYLOAD_NONXY_KIND_RECT
 PAYLOAD_NONXY_KIND_HEXBIN = _impl.PAYLOAD_NONXY_KIND_HEXBIN
 PAYLOAD_NONXY_KIND_DENSITY_SAMPLE = _impl.PAYLOAD_NONXY_KIND_DENSITY_SAMPLE
@@ -373,6 +374,7 @@ __all__ = [
     "normalize_f32",
     "paint_effective_rgba",
     "payload_bar_compact_admit",
+    "payload_bar_hist_emit_plan",
     "payload_base_entry_plan",
     "payload_errorbar_indices",
     "payload_errorbar_role_keys",
