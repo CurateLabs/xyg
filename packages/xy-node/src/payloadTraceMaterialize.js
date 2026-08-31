@@ -5,6 +5,7 @@ import {
   xyPayloadTraceEmitMaterialize,
 } from "./native.js";
 import { Column, DEFAULT_PALETTE, f64Ptr, payloadTransitionEntryAttach, u8Ptr, u32Ptr } from "./encode.js";
+import { clipQuantizeU8, directRgbaAdmit } from "./color.js";
 
 export const PAYLOAD_TRACE_EMIT_MAX_BYTES = 1 << 28;
 export const PAYLOAD_TRACE_EMIT_MAX_GEOM = 8;
@@ -16,6 +17,22 @@ export const PAYLOAD_TRACE_EMIT_PATH_HEATMAP_RGBA = 3;
 export const PAYLOAD_TRACE_EMIT_PATH_HEATMAP_GRID = 4;
 
 const COL_ATTRS = ["x", "y", "x0", "x1", "y0", "y1", "base"];
+const COL_SLOT_BY_REGISTRY = {
+  x: "x",
+  y: "y",
+  x0: "x0",
+  x1: "x1",
+  y0: "y0",
+  y1: "y1",
+  x2: "x",
+  y2: "y",
+  base: "base",
+  target_y0: "x",
+  target_y1: "y",
+  pos: "x",
+  value0: "y0",
+  value1: "y",
+};
 const COL_REGISTRY = ["x", "y", "x0", "x1", "y0", "y1", "x2", "y2", "base", "target_y0", "target_y1", "pos", "value0", "value1"];
 const CHAN_REGISTRY = ["color", "size", "stroke", "channels", "color_target"];
 const COL_DESC_SIZE = 56;
@@ -25,11 +42,108 @@ const EMIT_OUT_SIZE = 200;
 const GEOM_OUT_SIZE = 56;
 const CHAN_OUT_SIZE = 40;
 
+const TRANSITION_FALLBACK_BY_CODE = [
+  null,
+  "snap:aggregate",
+  "snap:key-limit",
+  "index:key-count-mismatch",
+];
 const AXIS_TYPE = { linear: 0, log: 1, symlog: 2 };
 const CHAN_MODE = { constant: 0, continuous: 1, categorical: 2, direct_rgba: 3, match_fill: 4, direct: 5 };
 
 function payloadAxisTypeCode(scale) {
   return AXIS_TYPE[scale] ?? 0;
+}
+
+function traceNPoints(t) {
+  return t.n_points ?? t.count ?? t.x?.length ?? t.x0?.length ?? 0;
+}
+
+/** Mirror Python ColorChannel/SizeChannel/StyleChannel `.spec()` for plain Node objects. */
+function traceChannelSpec(ch, role = "color") {
+  if (ch == null) {
+    return role === "size" ? { mode: "constant" } : { mode: "constant" };
+  }
+  if (typeof ch.spec === "function") return ch.spec();
+  if (ch.mode === "constant") {
+    if (role === "color") {
+      return { mode: "constant", color: ch.constant ?? ch.color ?? "#3987e5" };
+    }
+    if (role === "size") {
+      return { mode: "constant", size: ch.constant ?? ch.size ?? 4.0 };
+    }
+    return { mode: "constant" };
+  }
+  if (ch.mode === "continuous") {
+    const out = {
+      mode: "continuous",
+      domain: ch.domain ? [...ch.domain] : null,
+    };
+    if (role === "color") {
+      out.colormap = ch.colormap ?? "viridis";
+      if (ch.label != null) out.label = ch.label;
+    }
+    if (role === "size" && ch.range_px) out.range_px = [...ch.range_px];
+    return out;
+  }
+  if (ch.mode === "direct_rgba") {
+    return { mode: "direct_rgba", components: 4, dtype: "u8" };
+  }
+  if (ch.mode === "categorical") {
+    return { mode: "categorical", categories: ch.categories };
+  }
+  if (ch.mode === "match_fill") return { mode: "match_fill" };
+  if (ch.mode === "direct") {
+    return {
+      mode: "direct",
+      components: ch.components ?? 1,
+      dtype: ch.dtype ?? "f32",
+    };
+  }
+  return { mode: ch.mode ?? "constant" };
+}
+
+function styleChannelMarkCount(t) {
+  if (t.x0 != null) return t.x0.length;
+  if (t.x != null) return t.x.length;
+  return traceNPoints(t);
+}
+
+function styleChannelEntryName(styleChannels) {
+  if (styleChannels == null || typeof styleChannels !== "object") return null;
+  const keys = Object.keys(styleChannels);
+  return keys.length ? keys[0] : null;
+}
+
+function styleWireSpec(ch) {
+  if (ch == null) return { mode: "direct", components: 1, dtype: "f32" };
+  if (typeof ch.spec === "function") return ch.spec();
+  if (ch.mode === "direct" || ch.values != null) {
+    return {
+      mode: "direct",
+      components: ch.components ?? 1,
+      dtype: ch.dtype ?? "f32",
+    };
+  }
+  if (ch.mode === "constant" || ch.constant != null) {
+    return {
+      mode: "direct",
+      components: ch.components ?? 1,
+      dtype: ch.dtype ?? "f32",
+    };
+  }
+  return traceChannelSpec(ch, "color");
+}
+
+function rgbaChannelF64(rgba) {
+  if (rgba == null) return new Float64Array(0);
+  if (rgba instanceof Uint8Array) {
+    const out = new Float64Array(rgba.length);
+    for (let i = 0; i < rgba.length; i += 1) out[i] = rgba[i] / 255;
+    return out;
+  }
+  if (rgba instanceof Float64Array) return rgba;
+  return Float64Array.from(rgba, Number);
 }
 
 /** Resolve trace column attrs: raw Float64Array, Column, or column-like object. */
@@ -83,7 +197,7 @@ function styleWireChannel(ch) {
   return ch;
 }
 
-function channelDesc(ch) {
+function channelDesc(ch, nPoints = 0) {
   ch = styleWireChannel(ch);
   const empty = {
     desc: Buffer.alloc(CHAN_DESC_SIZE),
@@ -99,6 +213,17 @@ function channelDesc(ch) {
   if (ch.mode == null && ch.values != null) {
     mode = CHAN_MODE.direct;
     f64 = ch.values instanceof Float64Array ? ch.values : Float64Array.from(ch.values, Number);
+  } else if (ch.mode === "constant" && ch.constant != null && nPoints > 0) {
+    mode = CHAN_MODE.direct;
+    f64 = new Float64Array(nPoints).fill(Number(ch.constant));
+  } else if (ch.mode === "direct_rgba" && ch.values != null) {
+    mode = CHAN_MODE.direct_rgba;
+    const packed = ch.values instanceof Uint8Array
+      ? ch.values
+      : clipQuantizeU8(directRgbaAdmit(rgbaChannelF64(ch.values), 4));
+    f64 = rgbaChannelF64(packed);
+  } else if (ch.mode === "direct_rgba") {
+    mode = CHAN_MODE.direct_rgba;
   } else {
     mode = CHAN_MODE[ch.mode] ?? 0;
     if (ch.mode === "continuous" && ch.values != null) {
@@ -185,10 +310,12 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
   const xScaleB = new TextEncoder().encode(figureAxisScale(figure, t.x_axis ?? "x"));
   const yScaleB = new TextEncoder().encode(figureAxisScale(figure, t.y_axis ?? "y"));
   const orientB = new TextEncoder().encode(String(t.style?.orientation ?? "vertical"));
+  const nPoints = traceNPoints(t);
   const colDescs = Buffer.alloc(COL_DESC_SIZE * 7);
   const colValuePtrs = [];
   const colKindPtrs = [];
   const colKinds = [];
+  const colKindBySlot = {};
   for (let i = 0; i < COL_ATTRS.length; i += 1) {
     const attr = COL_ATTRS[i];
     const col = traceColumnForEmit(t[attr]);
@@ -197,14 +324,14 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
     colValuePtrs.push(arr.length ? arr : null);
     colKindPtrs.push(kind.length ? kind : null);
     colKinds.push(kind);
+    colKindBySlot[attr] = kind;
   }
-  const chNames = ["color", "stroke", "color2", "size", "style"];
   const chMap = {
     color: channelDesc(t.color_ch),
     stroke: channelDesc(t.stroke_ch),
     color2: channelDesc(t.color2_ch),
     size: channelDesc(t.size_ch),
-    style: channelDesc(t.style_channels),
+    style: channelDesc(t.style_channels, styleChannelMarkCount(t)),
   };
   let transitionLo = null;
   let transitionHi = null;
@@ -237,7 +364,7 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
   const emitIn = Buffer.alloc(EMIT_IN_SIZE);
   writeEmitIn(new DataView(emitIn.buffer, emitIn.byteOffset, emitIn.byteLength), {
     kindLen: kindB.length,
-    nPoints: t.n_points ?? t.count ?? t.x?.length ?? 0,
+    nPoints,
     segmentCount: t.count ?? 0,
     polar: figure.coords === "polar" ? 1 : 0,
     forceDensity: scatterPayloadForceDensity(t),
@@ -258,7 +385,7 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
     hasColor2Ch: t.color2_ch != null ? 1 : 0,
     hasColorCh: t.color_ch != null ? 1 : 0,
     hasStrokeCh: t.stroke_ch != null ? 1 : 0,
-    hasStyleChannels: t.style_channels ? 1 : 0,
+    hasStyleChannels: t.style_channels && Object.keys(t.style_channels).length ? 1 : 0,
     heatmapRows: t.grid_shape?.[0] ?? 0,
     heatmapCols: t.grid_shape?.[1] ?? 0,
     hasRgbaGrid: t.rgba_grid != null ? 1 : 0,
@@ -350,7 +477,7 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
     name: t.name,
     style,
     tier,
-    n_points: t.n_points ?? t.count ?? t.x?.length ?? 0,
+    n_points: nPoints,
     n_marks: Number(sv.getBigUint64(8, true)),
     x_axis: t.x_axis ?? "x",
     y_axis: t.y_axis ?? "y",
@@ -387,7 +514,8 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
       meta.offset = gv.getFloat64(16, true);
       meta.scale = gv.getFloat64(24, true);
       if (gv.getInt32(32, true)) {
-        meta.kind = new TextDecoder().decode(colKinds[i] ?? new Uint8Array(0));
+        const slot = COL_SLOT_BY_REGISTRY[key] ?? "x";
+        meta.kind = new TextDecoder().decode(colKindBySlot[slot] ?? new Uint8Array(0));
       }
     }
     const colIdx = pw._appendFromMaterialized(enc, meta);
@@ -402,8 +530,18 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
     const key = CHAN_REGISTRY[cv.getInt32(0, true)];
     const bufKind = cv.getInt32(4, true);
     if (bufKind === 0) {
-      if (key === "color") entry.color = t.color_ch?.spec?.() ?? { mode: "constant" };
-      else if (key === "size") entry.size = t.size_ch?.spec?.() ?? { mode: "constant" };
+      if (key === "color") entry.color = traceChannelSpec(t.color_ch, "color");
+      else if (key === "size") entry.size = traceChannelSpec(t.size_ch, "size");
+      else if (key === "stroke") entry.stroke = traceChannelSpec(t.stroke_ch, "color");
+      else if (key === "channels") {
+        const styleName = styleChannelEntryName(t.style_channels);
+        const wire = styleWireChannel(t.style_channels);
+        if (styleName != null && wire != null) {
+          entry.channels = { [styleName]: styleWireSpec(wire) };
+        }
+      } else if (key === "color_target") {
+        entry.color_target = traceChannelSpec(t.color2_ch, "color");
+      }
       continue;
     }
     const bytesOffset = Number(cv.getBigUint64(24, true));
@@ -416,11 +554,21 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
     if (cv.getInt32(8, true)) spec.dtype = "u8";
     if (cv.getInt32(12, true)) spec.palette = true;
     if (cv.getInt32(16, true)) spec.n = cv.getUint32(20, true);
-    if (key === "color") entry.color = { ...(t.color_ch?.spec?.() ?? { mode: "constant" }), ...spec };
-    else if (key === "size") entry.size = { ...(t.size_ch?.spec?.() ?? { mode: "constant" }), ...spec };
-    else if (key === "stroke") entry.stroke = spec;
-    else if (key === "channels") entry.channels = spec;
-    else if (key === "color_target") entry.color_target = spec;
+    if (key === "color") {
+      entry.color = { ...traceChannelSpec(t.color_ch, "color"), ...spec };
+    } else if (key === "size") {
+      entry.size = { ...traceChannelSpec(t.size_ch, "size"), ...spec };
+    } else if (key === "stroke") {
+      entry.stroke = { ...traceChannelSpec(t.stroke_ch, "color"), ...spec };
+    } else if (key === "channels") {
+      const styleName = styleChannelEntryName(t.style_channels);
+      const wire = styleWireChannel(t.style_channels);
+      const channelSpec = wire != null ? { ...styleWireSpec(wire), ...spec } : spec;
+      if (styleName != null) entry.channels = { [styleName]: channelSpec };
+      else entry.channels = channelSpec;
+    } else if (key === "color_target") {
+      entry.color_target = { ...traceChannelSpec(t.color2_ch, "color"), ...spec };
+    }
   }
   const loLen = Number(sv.getBigUint64(88, true));
   if (sv.getInt32(28, true) && loLen) {
@@ -437,7 +585,7 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
       entry.keys.hi = pw.shipU32(hi);
     }
   } else if (sv.getInt32(28, true) && sv.getInt32(60, true)) {
-    entry.animation_fallback = sv.getInt32(60, true);
+    entry.animation_fallback = TRANSITION_FALLBACK_BY_CODE[sv.getInt32(60, true)] ?? null;
   }
   if (sv.getInt32(32, true)) {
     const sel = t.shipped_sel;
@@ -524,8 +672,15 @@ function attachTransitionEntry(entry, t, pw) {
     nTooltipRows: 0,
     nPoints: entry.n_points ?? 0,
   });
+  if (plan.attachAnimation && t.animation != null) {
+    entry.animation = { ...t.animation };
+  }
   if (!plan.attemptKeys) return entry;
   const keys = t.transition_keys;
+  if (!plan.shipKeys) {
+    entry.animation_fallback = plan.animationFallback;
+    return entry;
+  }
   const lo = new Uint32Array(keys.length);
   const hi = new Uint32Array(keys.length);
   for (let i = 0; i < keys.length; i += 1) {

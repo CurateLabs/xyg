@@ -4121,6 +4121,8 @@ export function payloadColumnShipPlan({
     throw new RangeError("invalid payload-column-ship-plan gather policy");
   }
   const n = Number(nColumns[0]);
+  const xScale = scaleName(xShipScale[0]);
+  const yScale = scaleName(yShipScale[0]);
   const outColumns = [];
   for (let idx = 0; idx < n; idx += 1) {
     const base = idx * 20;
@@ -4136,6 +4138,7 @@ export function payloadColumnShipPlan({
       || slotCode >= PAYLOAD_TRACE_SLOT_ATTR.length
       || methodCode < 0
       || methodCode >= PAYLOAD_COL_SHIP_METHOD_BY_CODE.length
+      || (scaleCode !== 0 && scaleCode !== 1)
     ) {
       throw new RangeError("invalid payload-column-ship-plan column descriptor");
     }
@@ -4143,7 +4146,7 @@ export function payloadColumnShipPlan({
       registryKey: PAYLOAD_COL_REGISTRY_KEY_BY_CODE[keyCode],
       traceSlot: PAYLOAD_TRACE_SLOT_ATTR[slotCode],
       shipMethod: PAYLOAD_COL_SHIP_METHOD_BY_CODE[methodCode],
-      shipScale: scaleName(scaleCode),
+      shipScale: scaleCode === 1 ? yScale : xScale,
       gather,
     });
   }

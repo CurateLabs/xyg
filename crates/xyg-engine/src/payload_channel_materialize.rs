@@ -163,6 +163,11 @@ pub fn payload_channel_materialize(
                 let gathered = gather_f64(values_f64, sel)?;
                 if buf_kind == PAYLOAD_CHAN_BUF_U8 {
                     gathered.iter().map(|&v| v as u8).collect()
+                } else if buf_kind == PAYLOAD_CHAN_BUF_F32 {
+                    gathered
+                        .iter()
+                        .flat_map(|&v| (v as f32).to_le_bytes())
+                        .collect()
                 } else {
                     gathered.iter().flat_map(|v| v.to_le_bytes()).collect()
                 }
@@ -230,5 +235,27 @@ mod tests {
         )
         .unwrap();
         assert_eq!(out.buf_kind, PAYLOAD_CHAN_BUF_NONE);
+    }
+
+    #[test]
+    fn direct_style_f32_materialize_len() {
+        let values = [2.0, 3.0];
+        let out = payload_channel_materialize(
+            PAYLOAD_CHAN_WIRE_ROLE_STYLE,
+            PAYLOAD_CHAN_MODE_DIRECT,
+            0,
+            0,
+            0,
+            0.0,
+            1.0,
+            0,
+            None,
+            &values,
+            &[],
+        )
+        .unwrap();
+        assert_eq!(out.buf_kind, PAYLOAD_CHAN_BUF_F32);
+        assert_eq!(out.len, 2);
+        assert_eq!(out.bytes.len(), 8);
     }
 }
