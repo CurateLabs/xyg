@@ -624,6 +624,7 @@ Forbidden:
 | `crates/xyg-engine/src/density_emit.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 132 first-paint density emit policy | — |
 | `crates/xyg-engine/src/pdf.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/png_encode.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/payload_emit.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 292 segment emit gather orchestration | — |
 | `crates/xyg-engine/src/polar.rs` | Rust safe engine | `rust-engine` | `keep-rust`; ABI 131 polar projection; ABI 133 XYPL polar Scene compile | — |
 | `crates/xyg-engine/src/projection.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/raster.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
