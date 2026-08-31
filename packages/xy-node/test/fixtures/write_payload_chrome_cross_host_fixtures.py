@@ -28,6 +28,8 @@ CASE_NAMES = (
     "show_legend_false",
     "legend_loc_upper_right",
     "legend_loc_best",
+    "title_options_center",
+    "title_options_defaults",
     "dom_class_name",
     "dom_style",
     "dom_class_names",
@@ -43,6 +45,10 @@ def _build_case(name: str) -> Figure:
         fig.legend_options = {"loc": "upper right", "title": "Series"}
     if name == "legend_loc_best":
         fig.legend_options = {"loc": "best"}
+    if name == "title_options_center":
+        fig.title_options = [{"text": "T", "loc": "center", "y": 1.0, "pad": 8.0}]
+    if name == "title_options_defaults":
+        fig.title_options = [{"text": "T"}]
     if name in ("dom_class_name", "chrome_combined"):
         fig.class_name = "root-node"
     if name == "dom_style":
@@ -66,12 +72,13 @@ def main() -> None:
                 "name": name,
                 "show_legend": spec["show_legend"],
                 "legend": spec.get("legend"),
+                "title_options": spec.get("title_options"),
                 "dom": spec.get("dom"),
             }
         )
     payload = {
         "schema": "xyg.payload-chrome-cross-host/v1",
-        "authority": "python/xyg/_payload.py build_payload show_legend, legend, and _dom_spec",
+        "authority": "python/xyg/_payload.py build_payload show_legend, legend, title_options, and _dom_spec",
         "protocol": PROTOCOL_VERSION,
         "abi_version": int(_native.ABI_VERSION),
         "cases": cases,

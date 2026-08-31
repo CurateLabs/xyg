@@ -1,6 +1,6 @@
 {
   "schema": "xyg.payload-chrome-cross-host/v1",
-  "authority": "python/xyg/_payload.py build_payload show_legend, legend, and _dom_spec",
+  "authority": "python/xyg/_payload.py build_payload show_legend, legend, title_options, and _dom_spec",
   "protocol": 12,
   "abi_version": 315,
   "cases": [
@@ -8,12 +8,14 @@
       "name": "show_legend_default",
       "show_legend": true,
       "legend": null,
+      "title_options": null,
       "dom": null
     },
     {
       "name": "show_legend_false",
       "show_legend": false,
       "legend": null,
+      "title_options": null,
       "dom": null
     },
     {
@@ -23,6 +25,7 @@
         "loc": "upper right",
         "title": "Series"
       },
+      "title_options": null,
       "dom": null
     },
     {
@@ -31,12 +34,39 @@
       "legend": {
         "loc": "upper right"
       },
+      "title_options": null,
+      "dom": null
+    },
+    {
+      "name": "title_options_center",
+      "show_legend": true,
+      "legend": null,
+      "title_options": [
+        {
+          "text": "T",
+          "loc": "center",
+          "geometry": 2
+        }
+      ],
+      "dom": null
+    },
+    {
+      "name": "title_options_defaults",
+      "show_legend": true,
+      "legend": null,
+      "title_options": [
+        {
+          "text": "T",
+          "geometry": 2
+        }
+      ],
       "dom": null
     },
     {
       "name": "dom_class_name",
       "show_legend": true,
       "legend": null,
+      "title_options": null,
       "dom": {
         "class_name": "root-node"
       }
@@ -45,6 +75,7 @@
       "name": "dom_style",
       "show_legend": true,
       "legend": null,
+      "title_options": null,
       "dom": {
         "style": {
           "width": "100%"
@@ -55,6 +86,7 @@
       "name": "dom_class_names",
       "show_legend": true,
       "legend": null,
+      "title_options": null,
       "dom": {
         "class_names": {
           "title": "t"
@@ -65,6 +97,7 @@
       "name": "chrome_combined",
       "show_legend": false,
       "legend": null,
+      "title_options": null,
       "dom": {
         "class_name": "root-node",
         "class_names": {

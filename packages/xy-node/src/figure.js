@@ -3180,7 +3180,6 @@ export class Figure {
       columns: pw.columns,
       backend: "native",
       show_legend: this.show_legend,
-      // spec.title_options. Recorded emit-payload-title-options stay-host.
       view: { ranges: { x: [...xr], y: [...yr] } },
     };
     if (buildPlan.attachWasmDensity) {
@@ -3207,6 +3206,19 @@ export class Figure {
     }
     if (buildPlan.attachDom) {
       spec.dom = dom;
+    }
+    if (buildPlan.attachTitleOptions) {
+      spec.title_options = (this.title_options ?? []).map((entry) => {
+        const packed = { ...entry };
+        const geometryY = packed.y ?? 1.0;
+        const geometryPad = packed.pad ?? 8.0;
+        delete packed.y;
+        delete packed.pad;
+        return {
+          ...packed,
+          geometry: pw.shipScalar(Float32Array.from([geometryY, geometryPad])),
+        };
+      });
     }
     if (buildPlan.attachLegend) {
       let legend = { ...this.legend_options };
