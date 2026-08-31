@@ -2924,7 +2924,6 @@ def _pack_xytc(figure: Any) -> bytes:
     traces = list(getattr(figure, "traces", None) or [])
     records = bytearray(_XYTC_HEADER.pack(b"XYTC", 1, len(traces), 0))
     show_legend = bool(getattr(figure, "show_legend", True))
-    nan = float("nan")
     for trace in traces:
         style = getattr(trace, "style", None) or {}
         flags = 0
