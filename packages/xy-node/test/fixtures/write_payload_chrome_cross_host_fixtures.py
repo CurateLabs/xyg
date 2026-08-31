@@ -38,6 +38,8 @@ CASE_NAMES = (
     "dom_class_name",
     "dom_style",
     "dom_class_names",
+    "dom_chrome_styles",
+    "padding_explicit",
     "chrome_combined",
 )
 
@@ -87,9 +89,14 @@ def _build_case(name: str) -> Figure:
         fig.style = {"width": "100%"}
     if name == "dom_class_names":
         fig.class_names = {"title": "t"}
+    if name == "dom_chrome_styles":
+        fig.chrome_styles = {"title": {"font-size": "18px", "color": "#333333"}}
+    if name == "padding_explicit":
+        fig.padding = [8.0, 8.0, 8.0, 8.0]
     if name == "chrome_combined":
         fig.style = {"height": "320px"}
         fig.class_names = {"canvas": "p"}
+        fig.chrome_styles = {"title": {"font-weight": "bold"}}
     fig.scatter([0.0, 1.0, 2.0], [0.0, 1.0, 0.5])
     fig.traces[0].id = 7
     return fig
@@ -108,6 +115,7 @@ def main() -> None:
                 "colorbar": spec.get("colorbar"),
                 "extra_legends": spec.get("extra_legends"),
                 "annotations": spec.get("annotations"),
+                "padding": spec.get("padding"),
                 "dom": spec.get("dom"),
             }
         )

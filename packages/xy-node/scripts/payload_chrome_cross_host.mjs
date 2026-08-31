@@ -28,6 +28,7 @@ function caseEntry(name, build) {
     colorbar: spec.colorbar ?? null,
     extra_legends: spec.extra_legends ?? null,
     annotations: spec.annotations ?? null,
+    padding: spec.padding ?? null,
     dom: spec.dom ?? null,
   };
 }
@@ -96,11 +97,18 @@ const cases = [
   caseEntry("dom_class_names", (fig) => {
     fig.class_names = { title: "t" };
   }),
+  caseEntry("dom_chrome_styles", (fig) => {
+    fig.chrome_styles = { title: { "font-size": "18px", color: "#333333" } };
+  }),
+  caseEntry("padding_explicit", (fig) => {
+    fig.padding = [8, 8, 8, 8];
+  }),
   caseEntry("chrome_combined", (fig) => {
     fig.show_legend = false;
     fig.class_name = "root-node";
     fig.style = { height: "320px" };
     fig.class_names = { canvas: "p" };
+    fig.chrome_styles = { title: { "font-weight": "bold" } };
   }),
 ];
 

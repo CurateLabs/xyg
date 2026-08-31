@@ -114,7 +114,9 @@ import { composeStep, composeStairs } from "./marks/step.js";
 import { composeTriangleMesh } from "./marks/triangle_mesh.js";
 import { composeRadar } from "./marks/radar.js";
 import { toHtml } from "./html.js";
+import { validateDomSlots } from "./dom.js";
 import {
+  figureChromeStyles,
   figureSceneV3,
   resolveDensityBinColors,
   resolveLegendBestLoc,
@@ -156,13 +158,25 @@ function densityColorChannelMeta(trace) {
 
 function domSpec(fig) {
   const dom = {};
-  if (fig.class_name) dom.class_name = fig.class_name;
-  if (fig.class_names && Object.keys(fig.class_names).length > 0) {
-    dom.class_names = fig.class_names;
+  const className = optionalText(fig.class_name, "class_name");
+  if (className) dom.class_name = className;
+  const classNames = fig.class_names;
+  if (classNames && Object.keys(classNames).length > 0) {
+    validateDomSlots(classNames, "class_names");
+    dom.class_names = classNames;
   }
+  const chromeStyles = figureChromeStyles(fig) ?? {};
+  validateDomSlots(chromeStyles, "chrome_styles");
   if (fig.style && Object.keys(fig.style).length > 0) {
-    dom.style = fig.style;
+    const style = styleMapping(fig.style, "style");
+    if (Object.keys(style).length > 0) dom.style = style;
   }
+  const styles = {};
+  for (const [slot, slotStyle] of Object.entries(chromeStyles)) {
+    const mapped = styleMapping(slotStyle, `chrome_styles[${JSON.stringify(slot)}]`);
+    if (Object.keys(mapped).length > 0) styles[slot] = mapped;
+  }
+  if (Object.keys(styles).length > 0) dom.styles = styles;
   return Object.keys(dom).length > 0 ? dom : null;
 }
 

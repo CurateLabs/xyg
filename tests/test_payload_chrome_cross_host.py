@@ -2,8 +2,8 @@
 
 Compares top-level ``show_legend``, ``legend`` (from ``legend_options``),
 ``title_options``, ``colorbar`` (from ``colorbar_options``), ``extra_legends``,
-``annotations``, and partial ``dom`` (``class_name``, ``class_names``, ``style``
-only — not ``chrome_styles`` → ``dom.styles``).
+``annotations``, ``padding``, and ``dom`` (``class_name``, ``class_names``,
+``style``, and ``chrome_styles`` → ``dom.styles``).
 
 Run::
 
@@ -55,6 +55,8 @@ CASE_NAMES = (
     "dom_class_name",
     "dom_style",
     "dom_class_names",
+    "dom_chrome_styles",
+    "padding_explicit",
     "chrome_combined",
 )
 
@@ -121,9 +123,14 @@ def _build_case(name: str) -> Figure:
         fig.style = {"width": "100%"}
     if name == "dom_class_names":
         fig.class_names = {"title": "t"}
+    if name == "dom_chrome_styles":
+        fig.chrome_styles = {"title": {"font-size": "18px", "color": "#333333"}}
+    if name == "padding_explicit":
+        fig.padding = [8.0, 8.0, 8.0, 8.0]
     if name == "chrome_combined":
         fig.style = {"height": "320px"}
         fig.class_names = {"canvas": "p"}
+        fig.chrome_styles = {"title": {"font-weight": "bold"}}
     fig.scatter([0.0, 1.0, 2.0], [0.0, 1.0, 0.5])
     fig.traces[0].id = 7
     return fig
@@ -137,6 +144,7 @@ def _chrome_entry(spec: dict) -> dict:
         "colorbar": spec.get("colorbar"),
         "extra_legends": spec.get("extra_legends"),
         "annotations": spec.get("annotations"),
+        "padding": spec.get("padding"),
         "dom": spec.get("dom"),
     }
 
@@ -191,6 +199,7 @@ def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> Non
         "colorbar": entry.get("colorbar"),
         "extra_legends": entry.get("extra_legends"),
         "annotations": entry.get("annotations"),
+        "padding": entry.get("padding"),
         "dom": entry["dom"],
     }
 
@@ -206,6 +215,7 @@ def test_node_live_matches_python(case_name: str, node_chrome_golden: dict) -> N
         "colorbar": node_case.get("colorbar"),
         "extra_legends": node_case.get("extra_legends"),
         "annotations": node_case.get("annotations"),
+        "padding": node_case.get("padding"),
         "dom": node_case["dom"],
     }
 
@@ -233,6 +243,7 @@ def test_write_fixtures_and_match_node(node_chrome_golden: dict) -> None:
         assert case.get("colorbar") == node_case.get("colorbar")
         assert case.get("extra_legends") == node_case.get("extra_legends")
         assert case.get("annotations") == node_case.get("annotations")
+        assert case.get("padding") == node_case.get("padding")
         assert case["dom"] == node_case["dom"]
 
 
