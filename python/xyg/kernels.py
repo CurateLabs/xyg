@@ -44,6 +44,7 @@ density_rgba_linear = _impl.density_rgba_linear
 density_log_u8 = _impl.density_log_u8
 density_overlay_opacity = _impl.density_overlay_opacity
 density_bin_window = _impl.density_bin_window
+density_bin_coord_endpoints = _impl.density_bin_coord_endpoints
 density_emit_plan = _impl.density_emit_plan
 density_color_classify = _impl.density_color_classify
 density_trace_color_classify = _impl.density_trace_color_classify
@@ -269,6 +270,7 @@ __all__ = [
     "css_is_functional",
     "curve_flatten",
     "delaunay_triangles",
+    "density_bin_coord_endpoints",
     "density_bin_window",
     "density_color_classify",
     "density_emit_plan",

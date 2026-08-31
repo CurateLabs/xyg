@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 278;
-export const SIGNATURE_SHA256 = "8e87f27e9c90f6ee1c52800ec61e1b306a609a44ac14842a3dcb65099efdd4f2";
+export const ABI_VERSION = 279;
+export const SIGNATURE_SHA256 = "bad7ee4d089120ba09c025b0dc49d7674a105cd440798ef9d303cb5a3a32f8e4";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -56,6 +56,7 @@ export let xyCssColorRgba;
 export let xyCssIsFunctional;
 export let xyCurveFlatten;
 export let xyDelaunayTriangles;
+export let xyDensityBinCoordEndpoints;
 export let xyDensityBinWindow;
 export let xyDensityColorClassify;
 export let xyDensityEmitMeta;
@@ -429,6 +430,7 @@ export function bindGeneratedAbi(lib) {
   xyCssIsFunctional = lib.func("int32_t xyg_css_is_functional(const uint8_t * css, size_t len)");
   xyCurveFlatten = lib.func("size_t xyg_curve_flatten(const double * x, const double * y, size_t n, size_t bezier_steps, double * out_x, double * out_y, size_t capacity)");
   xyDelaunayTriangles = lib.func("size_t xyg_delaunay_triangles(const double * x, const double * y, size_t len, int64_t * out, size_t capacity)");
+  xyDensityBinCoordEndpoints = lib.func("int32_t xyg_density_bin_coord_endpoints(int32_t x_linear, int32_t y_linear, double xr0, double xr1, double yr0, double yr1, double bx0, double bx1, double by0, double by1, double * out_x_c0, double * out_x_c1, double * out_y_c0, double * out_y_c1)");
   xyDensityBinWindow = lib.func("size_t xyg_density_bin_window(int32_t x_linear, int32_t y_linear, double xr0, double xr1, double yr0, double yr1, double x_c0, double x_c1, double y_c0, double y_c1, double * out)");
   xyDensityColorClassify = lib.func("int32_t xyg_density_color_classify(int32_t channel_mode, int32_t codes_present, int32_t codes_u8, int32_t has_counts, int32_t * out_color_mode, int32_t * out_categorical, int32_t * out_compact_categorical, int32_t * out_stratified_counts)");
   xyDensityEmitMeta = lib.func("int32_t xyg_density_emit_meta(int32_t cartesian, int32_t x_linear, int32_t y_linear, int32_t categorical, int32_t compact_categorical, int32_t stratified_counts, int32_t x_has_nulls, int32_t y_has_nulls, int32_t point_overlay, int32_t grid_from_pyramid, int32_t x_memmapped, int32_t y_memmapped, int32_t has_pyramid_resource, int32_t force_bin2d, int32_t force_pyramid, int32_t color_mode, double x_min, double x_max, double y_min, double y_max, double xr0, double xr1, double yr0, double yr1, double x_c0, double x_c1, double y_c0, double y_c1, uint64_t n_points, void * out)");
