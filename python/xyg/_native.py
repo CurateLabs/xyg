@@ -11491,6 +11491,48 @@ def payload_errorbar_indices(
     return False, out[:written].copy()
 
 
+def payload_errorbar_role_keys(
+    point_keys_lo: npt.NDArray[np.uint32],
+    point_keys_hi: npt.NDArray[np.uint32],
+    segment_sources: npt.NDArray[np.uint32],
+    segment_roles: npt.NDArray[np.uint32],
+) -> npt.NDArray[np.uint32]:
+    """Errorbar role-qualified keys via ``xyg_payload_errorbar_role_keys`` (ABI 273).
+
+    XOR-mixes point transition keys with per-segment role ids. Raises
+    ``ValueError`` on collision or invalid layout.
+    """
+    n_points = int(point_keys_lo.shape[0])
+    n_output = int(segment_sources.shape[0])
+    if point_keys_hi.shape[0] != n_points or segment_roles.shape[0] != n_output:
+        raise ValueError("invalid payload_errorbar_role_keys arguments")
+    point_keys_lo = np.ascontiguousarray(point_keys_lo, dtype=np.uint32)
+    point_keys_hi = np.ascontiguousarray(point_keys_hi, dtype=np.uint32)
+    segment_sources = np.ascontiguousarray(segment_sources, dtype=np.uint32)
+    segment_roles = np.ascontiguousarray(segment_roles, dtype=np.uint32)
+    out_lo = np.empty(n_output, dtype=np.uint32)
+    out_hi = np.empty(n_output, dtype=np.uint32)
+    collision = ctypes.c_int32(-1)
+    written = _lib.xyg_payload_errorbar_role_keys(
+        n_points,
+        n_output,
+        point_keys_lo.ctypes.data if n_points else 0,
+        point_keys_hi.ctypes.data if n_points else 0,
+        segment_sources.ctypes.data if n_output else 0,
+        segment_roles.ctypes.data if n_output else 0,
+        out_lo.ctypes.data if n_output else 0,
+        out_hi.ctypes.data if n_output else 0,
+        ctypes.byref(collision),
+    )
+    if written == _USIZE_MAX:
+        if int(collision.value) == 1:
+            raise ValueError("errorbar role-qualified animation key collision")
+        raise ValueError("invalid payload_errorbar_role_keys arguments")
+    if written != n_output:
+        raise RuntimeError("native payload_errorbar_role_keys returned an inconsistent count")
+    return np.column_stack([out_lo, out_hi])
+
+
 def payload_sample_target_indices(
     n: int,
     target: int,

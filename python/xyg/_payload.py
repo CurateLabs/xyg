@@ -882,11 +882,12 @@ class PayloadMixin(_Host):
             # An errorbar point expands into independently rendered main/cap
             # segments. Derive a stable role-qualified key so the browser can
             # key-match those segments without duplicate identities.
-            key_values = np.array(t.transition_keys[segment_sources], copy=True)
-            key_values[:, 0] ^= segment_roles * np.uint32(0x9E3779B9)
-            key_values[:, 1] ^= segment_roles * np.uint32(0x85EBCA6B)
-            if len(np.unique(key_values, axis=0)) != len(key_values):
-                raise ValueError("errorbar role-qualified animation key collision")
+            key_values = kernels.payload_errorbar_role_keys(
+                t.transition_keys[:, 0],
+                t.transition_keys[:, 1],
+                segment_sources.astype(np.uint32, copy=False),
+                segment_roles.astype(np.uint32, copy=False),
+            )
         return self._transition_entry(entry, t, pw, source_sel, key_values)
 
     def _emit_ribbon(

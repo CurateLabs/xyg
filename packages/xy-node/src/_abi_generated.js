@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 272;
-export const SIGNATURE_SHA256 = "000d64752b5ce89f1d9490121a45f0982f72fb602752ddf69a3647e5c2dd47a9";
+export const ABI_VERSION = 273;
+export const SIGNATURE_SHA256 = "c8d13068f682fecb0a74050501ab449db54b8fbbb15b8d11ba67d2cede34807a";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -140,6 +140,7 @@ export let xyMonotoneTangents;
 export let xyNormalizeF32;
 export let xyPaintEffectiveRgba;
 export let xyPayloadErrorbarIndices;
+export let xyPayloadErrorbarRoleKeys;
 export let xyPayloadEvenIndices;
 export let xyPayloadM4Indices;
 export let xyPayloadSampleTargetIndices;
@@ -507,6 +508,7 @@ export function bindGeneratedAbi(lib) {
   xyNormalizeF32 = lib.func("int32_t xyg_normalize_f32(const double * data, size_t len, double lo, double hi, int32_t nan_mode, float * out)");
   xyPaintEffectiveRgba = lib.func("int32_t xyg_paint_effective_rgba(const double * intrinsic, size_t n, const double * artist_alpha, const double * opacity, double component_opacity, double * out)");
   xyPayloadErrorbarIndices = lib.func("size_t xyg_payload_errorbar_indices(size_t n_segments, size_t n_points, size_t budget, int32_t * out_keep_all, uint32_t * out, size_t capacity)");
+  xyPayloadErrorbarRoleKeys = lib.func("size_t xyg_payload_errorbar_role_keys(size_t n_points, size_t n_output, const uint32_t * point_keys_lo, const uint32_t * point_keys_hi, const uint32_t * segment_sources, const uint32_t * segment_roles, uint32_t * out_lo, uint32_t * out_hi, int32_t * out_collision)");
   xyPayloadEvenIndices = lib.func("size_t xyg_payload_even_indices(size_t n, size_t count, int32_t * out_keep_all, uint32_t * out, size_t capacity)");
   xyPayloadM4Indices = lib.func("size_t xyg_payload_m4_indices(uint64_t n_points, int32_t polar, const double * x, const double * y, size_t n, double x0, double x1, size_t n_buckets, const double * bin_x, double bin_x0, double bin_x1, int32_t * out_tier, uint32_t * out, size_t capacity)");
   xyPayloadSampleTargetIndices = lib.func("size_t xyg_payload_sample_target_indices(size_t n, size_t target, uint64_t seed, uint32_t level, double growth, int32_t * out_keep_all, uint32_t * out, size_t capacity)");

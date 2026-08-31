@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 272;
+pub const ABI_VERSION: u32 = 273;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15150,6 +15150,93 @@ pub unsafe extern "C" fn xyg_payload_errorbar_indices(
             return usize::MAX;
         };
         write_payload_index_sel(sel, out_keep_all, out, capacity)
+    })
+}
+
+/// Errorbar role-qualified transition keys (ABI 273).
+///
+/// Returns output count on success, ``usize::MAX`` when invalid, and sets
+/// ``*out_collision = 1`` when XOR-qualified keys collide.
+///
+/// # Safety
+/// When ``n_points > 0``, ``point_keys_lo`` and ``point_keys_hi`` must hold
+/// ``n_points`` readable u32s. When ``n_output > 0``, ``segment_sources``,
+/// ``segment_roles``, ``out_lo``, and ``out_hi`` must hold ``n_output`` elements.
+/// ``out_collision`` must be writable when non-null.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_errorbar_role_keys(
+    n_points: usize,
+    n_output: usize,
+    point_keys_lo: *const u32,
+    point_keys_hi: *const u32,
+    segment_sources: *const u32,
+    segment_roles: *const u32,
+    out_lo: *mut u32,
+    out_hi: *mut u32,
+    out_collision: *mut i32,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out_collision.is_null()
+            || (n_points > 0 && (point_keys_lo.is_null() || point_keys_hi.is_null()))
+            || (n_output > 0
+                && (segment_sources.is_null()
+                    || segment_roles.is_null()
+                    || out_lo.is_null()
+                    || out_hi.is_null()))
+        {
+            return usize::MAX;
+        }
+        let point_lo = if n_points == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(point_keys_lo, n_points)
+        };
+        let point_hi = if n_points == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(point_keys_hi, n_points)
+        };
+        let sources = if n_output == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(segment_sources, n_output)
+        };
+        let roles = if n_output == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(segment_roles, n_output)
+        };
+        let out_lo_slice = if n_output == 0 {
+            &mut []
+        } else {
+            std::slice::from_raw_parts_mut(out_lo, n_output)
+        };
+        let out_hi_slice = if n_output == 0 {
+            &mut []
+        } else {
+            std::slice::from_raw_parts_mut(out_hi, n_output)
+        };
+        let Some(result) = lod_plan::payload_errorbar_role_keys(
+            point_lo,
+            point_hi,
+            sources,
+            roles,
+            out_lo_slice,
+            out_hi_slice,
+        ) else {
+            return usize::MAX;
+        };
+        match result {
+            Ok(written) => {
+                *out_collision = 0;
+                written
+            }
+            Err(true) => {
+                *out_collision = 1;
+                usize::MAX
+            }
+            Err(false) => usize::MAX,
+        }
     })
 }
 

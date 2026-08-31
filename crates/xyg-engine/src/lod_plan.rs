@@ -431,6 +431,52 @@ pub fn payload_errorbar_indices(
     }
 }
 
+const ERRORBAR_ROLE_XOR_LO: u32 = 0x9E3779B9;
+const ERRORBAR_ROLE_XOR_HI: u32 = 0x85EBCA6B;
+
+/// Errorbar role-qualified transition keys (ABI 273).
+///
+/// Hosts pass per-segment point indices and role ids after decimation gather.
+/// Returns ``None`` when layouts are invalid; returns ``Some(Err(true))`` when
+/// XOR-qualified ``(lo, hi)`` pairs collide.
+pub fn payload_errorbar_role_keys(
+    point_keys_lo: &[u32],
+    point_keys_hi: &[u32],
+    segment_sources: &[u32],
+    segment_roles: &[u32],
+    out_lo: &mut [u32],
+    out_hi: &mut [u32],
+) -> Option<Result<usize, bool>> {
+    let n = segment_sources.len();
+    if n != segment_roles.len() || n > out_lo.len() || n > out_hi.len() {
+        return None;
+    }
+    if point_keys_lo.len() != point_keys_hi.len() {
+        return None;
+    }
+    let n_points = point_keys_lo.len();
+    if n_points == 0 && n > 0 {
+        return None;
+    }
+    use std::collections::HashSet;
+    let mut seen = HashSet::with_capacity(n);
+    for i in 0..n {
+        let point = segment_sources[i] as usize;
+        if point >= n_points {
+            return None;
+        }
+        let role = segment_roles[i];
+        let lo = point_keys_lo[point] ^ role.wrapping_mul(ERRORBAR_ROLE_XOR_LO);
+        let hi = point_keys_hi[point] ^ role.wrapping_mul(ERRORBAR_ROLE_XOR_HI);
+        if !seen.insert((lo, hi)) {
+            return Some(Err(true));
+        }
+        out_lo[i] = lo;
+        out_hi[i] = hi;
+    }
+    Some(Ok(n))
+}
+
 /// NumPy `linspace(0, n-1, count, dtype=np.int64)` as u32 (ABI 205).
 ///
 /// Truncates toward 0 and pins the last element to `n-1`. When `n <= count`
@@ -748,6 +794,50 @@ mod tests {
         );
         assert!(payload_errorbar_indices(33, 0, 4).is_none());
         assert!(payload_errorbar_indices(33, 11, 0).is_none());
+    }
+
+    #[test]
+    fn payload_errorbar_role_keys_matches_host_xor_mix() {
+        let point_lo = [10u32, 20];
+        let point_hi = [30u32, 40];
+        let sources = [0u32, 1, 0, 1];
+        let roles = [0u32, 0, 1, 1];
+        let mut out_lo = [0u32; 4];
+        let mut out_hi = [0u32; 4];
+        assert_eq!(
+            payload_errorbar_role_keys(
+                &point_lo,
+                &point_hi,
+                &sources,
+                &roles,
+                &mut out_lo,
+                &mut out_hi,
+            ),
+            Some(Ok(4))
+        );
+        assert_eq!(out_lo, [10, 20, 10 ^ ERRORBAR_ROLE_XOR_LO, 20 ^ ERRORBAR_ROLE_XOR_LO]);
+        assert_eq!(out_hi, [30, 40, 30 ^ ERRORBAR_ROLE_XOR_HI, 40 ^ ERRORBAR_ROLE_XOR_HI]);
+    }
+
+    #[test]
+    fn payload_errorbar_role_keys_rejects_collisions() {
+        let point_lo = [0u32, 0x9E3779B9];
+        let point_hi = [0u32, 0x85EBCA6B];
+        let sources = [1u32, 0];
+        let roles = [0u32, 1];
+        let mut out_lo = [0u32; 2];
+        let mut out_hi = [0u32; 2];
+        assert_eq!(
+            payload_errorbar_role_keys(
+                &point_lo,
+                &point_hi,
+                &sources,
+                &roles,
+                &mut out_lo,
+                &mut out_hi,
+            ),
+            Some(Err(true))
+        );
     }
 
     #[test]
