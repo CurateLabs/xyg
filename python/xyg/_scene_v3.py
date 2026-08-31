@@ -684,19 +684,7 @@ def _annotation_allowed_style(kind: str, wrapped: bool, labelled: bool) -> set[s
 
 def _validate_xyaf_annotation_style(annotation: dict[str, Any]) -> None:
     """Fail closed on style keys the Scene admit table rejects (matches legacy _pack_xyaf)."""
-    kind = str(annotation.get("kind", ""))
-    style = dict(annotation.get("style") or {})
-    authored_wrap = kind in {"text", "callout"} and "wrap" in annotation
-    layout_text = kind == "text" and any(
-        key in annotation for key in ("dx", "dy", "anchor", "rotation")
-    )
-    dispatch = _native.scene_xyaf_annotation_dispatch_plan(
-        kind=kind,
-        authored_wrap=authored_wrap,
-        layout_text=layout_text,
-    )
-    wrapped = bool(dispatch["wrapped"])
-    labelled = annotation.get("text") not in (None, "")
+    kind, style, wrapped, labelled, _kind_label = _xyaf_dispatch(annotation)
     skip_style = {"markup"} | _ANNOTATION_TYPOGRAPHY_STYLE_KEYS
     if kind in {"text", "marker"}:
         skip_style = skip_style | {"rotation"}
@@ -721,6 +709,130 @@ def _validate_xyaf_annotation_style(annotation: dict[str, Any]) -> None:
         raise UnsupportedSceneV3(
             f"Scene v12 {kind} annotation style does not encode {unsupported!r}"
         )
+
+
+def _xyaf_dispatch(annotation: dict[str, Any]) -> tuple[str, dict[str, Any], bool, bool, str]:
+    kind = str(annotation.get("kind", ""))
+    style = dict(annotation.get("style") or {})
+    authored_wrap = kind in {"text", "callout"} and "wrap" in annotation
+    layout_text = kind == "text" and any(
+        key in annotation for key in ("dx", "dy", "anchor", "rotation")
+    )
+    dispatch = _native.scene_xyaf_annotation_dispatch_plan(
+        kind=kind,
+        authored_wrap=authored_wrap,
+        layout_text=layout_text,
+    )
+    wrapped = bool(dispatch["wrapped"])
+    labelled = annotation.get("text") not in (None, "")
+    kind_label = "wrapped" if wrapped else kind
+    return kind, style, wrapped, labelled, kind_label
+
+
+def _validate_xyaf_annotation_values(annotation: dict[str, Any]) -> None:
+    """Fail closed on authored annotation geometry/style values (matches legacy _pack_xyaf)."""
+    kind, style, wrapped, labelled, kind_label = _xyaf_dispatch(annotation)
+    if kind == "arrow" and labelled:
+        raise UnsupportedSceneV3("Scene arrows do not encode text or class_name")
+    required = {
+        "arrow": (
+            ("x0", "arrow x0"),
+            ("y0", "arrow y0"),
+            ("x1", "arrow x1"),
+            ("y1", "arrow y1"),
+        ),
+        "callout": (("x", "callout x"), ("y", "callout y")),
+        "text": (("x", "text x"), ("y", "text y")),
+        "rule": (("value", "rule value"),),
+        "band": (("start", "band start"), ("end", "band end")),
+        "marker": (("x", "marker x"), ("y", "marker y")),
+    }.get(kind, ())
+    if wrapped:
+        required = (("x", "wrapped x"), ("y", "wrapped y"))
+    for key, label in required:
+        _annotation_number(annotation, key, None, label)
+    for key, label in (
+        ("dx", "wrapped dx" if wrapped else "callout dx"),
+        ("dy", "wrapped dy" if wrapped else "callout dy"),
+        ("size", "marker size"),
+    ):
+        if key in annotation:
+            value = _annotation_number(annotation, key, None, label)
+            if kind == "marker" and key == "size" and (not np.isfinite(value) or value <= 0):
+                raise ValueError("Scene v12 marker annotation size must be finite and positive")
+    if kind == "text" and "rotation" in annotation:
+        rotation = _annotation_number(annotation, "rotation", None, "text rotation")
+        if not np.isfinite(rotation):
+            raise ValueError("Scene v16 text annotation rotation must be finite")
+    if kind == "marker" and "rotation" in annotation:
+        rotation = _annotation_number(annotation, "rotation", None, "marker rotation")
+        if not np.isfinite(rotation):
+            raise ValueError("Scene v16 marker annotation rotation must be finite")
+    if kind in {"rule", "band"}:
+        axis_name = annotation.get("axis")
+        if axis_name not in {"x", "y"}:
+            raise ValueError(f"Scene v12 {kind} annotation axis must be 'x' or 'y'")
+    if kind == "marker" and "symbol" in annotation:
+        symbol_name = annotation.get("symbol")
+        if not isinstance(symbol_name, str):
+            raise ValueError("Scene v12 annotation marker symbol must be a supported string name")
+        if symbol_name not in _SYMBOL_CODES:
+            raise UnsupportedSceneV3(f"Scene v12 does not support marker symbol {symbol_name!r}")
+    if "anchor" in annotation or kind == "callout" or wrapped:
+        anchor_name = annotation.get("anchor", "start")
+        if anchor_name not in {"start", "middle", "end"}:
+            raise UnsupportedSceneV3(
+                "Scene wrapped annotation anchor must be start, middle, or end"
+                if wrapped
+                else "Scene callout anchor must be start, middle, or end"
+            )
+    for key in (
+        "color",
+        "stroke_color",
+        "label_color",
+        "label_background",
+        "label_border_color",
+    ):
+        if key in style:
+            _annotation_color(style, key, "", f"{kind_label} {key.replace('_', ' ')}")
+    if "opacity" in style:
+        opacity = _annotation_number(style, "opacity", None, f"{kind_label} opacity")
+        if not np.isfinite(opacity) or not 0.0 <= opacity <= 1.0:
+            if kind == "arrow":
+                raise ValueError("Scene arrow opacity must be in [0, 1] and width must be positive")
+            if wrapped:
+                raise ValueError("Scene wrapped annotation opacity must be in [0, 1]")
+            if kind == "callout":
+                raise ValueError(
+                    "Scene callout opacity must be in [0, 1] and width must be positive"
+                )
+            raise ValueError(f"Scene v12 {kind} annotation opacity must be finite and in [0, 1]")
+    if "width" in style:
+        width = _annotation_number(style, "width", None, f"{kind_label} width")
+        if kind in {"arrow", "callout"} and (not np.isfinite(width) or width <= 0):
+            raise ValueError(
+                "Scene arrow opacity must be in [0, 1] and width must be positive"
+                if kind == "arrow"
+                else "Scene callout opacity must be in [0, 1] and width must be positive"
+            )
+        if kind == "rule" and (not np.isfinite(width) or width <= 0):
+            raise ValueError("Scene v12 rule annotation width must be finite and nonnegative")
+    if "stroke_width" in style:
+        stroke_width = _annotation_number(style, "stroke_width", None, f"{kind} width")
+        if not np.isfinite(stroke_width) or stroke_width < 0:
+            raise ValueError(f"Scene v12 {kind} annotation width must be finite and nonnegative")
+    if "label_opacity" in style:
+        label_opacity = _annotation_number(style, "label_opacity", None, f"{kind} label opacity")
+        if not np.isfinite(label_opacity) or not 0.0 <= label_opacity <= 1.0:
+            raise ValueError(
+                f"Scene v16 {kind} annotation label opacity must be finite and in [0, 1]"
+            )
+    if "label_border_width" in style:
+        border_width = _annotation_number(
+            style, "label_border_width", None, f"{kind_label} label border width"
+        )
+        if not np.isfinite(border_width) or border_width <= 0:
+            raise ValueError("Scene v23 label border width must be positive and finite")
 
 
 def _raise_xyaf_bulk_error(error: _native.SceneXyafBulkPackError, annotations: list[Any]) -> None:
@@ -791,6 +903,7 @@ def _pack_xyaf_bulk(annotations: list[Any]) -> bytes:
         ):
             ann["rotation"] = style["rotation"]
         _validate_xyaf_annotation_style(ann)
+        _validate_xyaf_annotation_values(ann)
         normalized.append(ann)
     try:
         return _native.scene_xyaf_bulk_pack(normalized)

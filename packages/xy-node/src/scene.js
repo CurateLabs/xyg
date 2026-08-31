@@ -251,7 +251,7 @@ function annotationHasCustomTypography(annotation) {
   return false;
 }
 
-function validateXyafAnnotationStyle(annotation) {
+function xyafDispatch(annotation) {
   const kind = String(annotation.kind ?? "");
   const style = { ...(annotation.style ?? {}) };
   const authoredWrap = ["text", "callout"].includes(kind) && Object.hasOwn(annotation, "wrap");
@@ -263,6 +263,12 @@ function validateXyafAnnotationStyle(annotation) {
   });
   const wrapped = Boolean(dispatch.wrapped);
   const labelled = annotation.text != null && annotation.text !== "";
+  const kindLabel = wrapped ? "wrapped" : kind;
+  return { kind, style, wrapped, labelled, kindLabel };
+}
+
+function validateXyafAnnotationStyle(annotation) {
+  const { kind, style, wrapped, labelled } = xyafDispatch(annotation);
   const skipStyle = new Set(["markup", ...ANNOTATION_TYPOGRAPHY_STYLE_KEYS]);
   if (["text", "marker"].includes(kind)) skipStyle.add("rotation");
   const unsupported = Object.entries(style)
@@ -278,12 +284,145 @@ function validateXyafAnnotationStyle(annotation) {
   }
 }
 
+function validateXyafAnnotationValues(annotation) {
+  const { kind, style, wrapped, labelled, kindLabel } = xyafDispatch(annotation);
+  if (kind === "arrow" && labelled) {
+    throw new RangeError("Scene arrows do not encode text or class_name");
+  }
+  const required = {
+    arrow: [
+      ["x0", "arrow x0"],
+      ["y0", "arrow y0"],
+      ["x1", "arrow x1"],
+      ["y1", "arrow y1"],
+    ],
+    callout: [["x", "callout x"], ["y", "callout y"]],
+    text: [["x", "text x"], ["y", "text y"]],
+    rule: [["value", "rule value"]],
+    band: [["start", "band start"], ["end", "band end"]],
+    marker: [["x", "marker x"], ["y", "marker y"]],
+  }[kind] ?? [];
+  for (const [key, label] of (wrapped ? [["x", "wrapped x"], ["y", "wrapped y"]] : required)) {
+    annotationNumber(annotation, key, null, label);
+  }
+  for (const [key, label] of [
+    ["dx", wrapped ? "wrapped dx" : "callout dx"],
+    ["dy", wrapped ? "wrapped dy" : "callout dy"],
+    ["size", "marker size"],
+  ]) {
+    if (Object.hasOwn(annotation, key)) {
+      const value = annotationNumber(annotation, key, null, label);
+      if (kind === "marker" && key === "size" && (!Number.isFinite(value) || value <= 0)) {
+        throw new RangeError("Scene v12 marker annotation size must be finite and positive");
+      }
+    }
+  }
+  if (kind === "text" && Object.hasOwn(annotation, "rotation")) {
+    const rotation = annotationNumber(annotation, "rotation", null, "text rotation");
+    if (!Number.isFinite(rotation)) throw new RangeError("Scene v16 text annotation rotation must be finite");
+  }
+  if (kind === "marker" && Object.hasOwn(annotation, "rotation")) {
+    const rotation = annotationNumber(annotation, "rotation", null, "marker rotation");
+    if (!Number.isFinite(rotation)) throw new RangeError("Scene v16 marker annotation rotation must be finite");
+  }
+  if (kind === "rule" || kind === "band") {
+    const axisName = annotation.axis;
+    if (axisName !== "x" && axisName !== "y") {
+      throw new RangeError(`Scene v12 ${kind} annotation axis must be 'x' or 'y'`);
+    }
+  }
+  if (kind === "marker" && Object.hasOwn(annotation, "symbol")) {
+    annotationSymbolCode(annotation.symbol);
+  }
+  if (Object.hasOwn(annotation, "anchor") || kind === "callout" || wrapped) {
+    const anchorName = annotation.anchor ?? "start";
+    if (!["start", "middle", "end"].includes(anchorName)) {
+      throw new RangeError(
+        wrapped
+          ? "Scene wrapped annotation anchor must be start, middle, or end"
+          : "Scene callout anchor must be start, middle, or end",
+      );
+    }
+  }
+  for (const key of ["color", "stroke_color", "label_color", "label_background", "label_border_color"]) {
+    if (Object.hasOwn(style, key)) {
+      annotationColor(style, key, "", `${kindLabel} ${key.replaceAll("_", " ")}`);
+    }
+  }
+  if (Object.hasOwn(style, "opacity")) {
+    const opacity = annotationNumber(style, "opacity", null, `${kindLabel} opacity`);
+    if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) {
+      if (kind === "arrow") throw new RangeError("Scene arrow opacity must be in [0, 1] and width must be positive");
+      if (wrapped) throw new RangeError("Scene wrapped annotation opacity must be in [0, 1]");
+      if (kind === "callout") throw new RangeError("Scene callout opacity must be in [0, 1] and width must be positive");
+      throw new RangeError(`Scene v12 ${kind} annotation opacity must be finite and in [0, 1]`);
+    }
+  }
+  if (Object.hasOwn(style, "width")) {
+    const width = annotationNumber(style, "width", null, `${kindLabel} width`);
+    if ((kind === "arrow" || kind === "callout") && (!Number.isFinite(width) || width <= 0)) {
+      throw new RangeError(
+        kind === "arrow"
+          ? "Scene arrow opacity must be in [0, 1] and width must be positive"
+          : "Scene callout opacity must be in [0, 1] and width must be positive",
+      );
+    }
+    if (kind === "rule" && (!Number.isFinite(width) || width <= 0)) {
+      throw new RangeError("Scene v12 rule annotation width must be finite and nonnegative");
+    }
+  }
+  if (Object.hasOwn(style, "stroke_width")) {
+    const strokeWidth = annotationNumber(style, "stroke_width", null, `${kind} width`);
+    if (!Number.isFinite(strokeWidth) || strokeWidth < 0) {
+      throw new RangeError(`Scene v12 ${kind} annotation width must be finite and nonnegative`);
+    }
+  }
+  if (Object.hasOwn(style, "label_opacity")) {
+    const labelOpacity = annotationNumber(style, "label_opacity", null, `${kind} label opacity`);
+    if (!Number.isFinite(labelOpacity) || labelOpacity < 0 || labelOpacity > 1) {
+      throw new RangeError(`Scene v16 ${kind} annotation label opacity must be finite and in [0, 1]`);
+    }
+  }
+  if (Object.hasOwn(style, "label_border_width")) {
+    const borderWidth = annotationNumber(style, "label_border_width", null, `${kindLabel} label border width`);
+    if (!Number.isFinite(borderWidth) || borderWidth <= 0) {
+      throw new RangeError("Scene v23 label border width must be positive and finite");
+    }
+  }
+}
+
 function raiseXyafBulkError(error, annotations) {
   const code = Number(error.code ?? 0);
   const index = Number(error.index ?? 0);
   const annotation = annotations[index] ?? {};
   const kind = String(annotation.kind ?? "");
   const style = { ...(annotation.style ?? {}) };
+  if (code === -3) {
+    throw new RangeError(`Scene v12 annotations support rule, band, and unlabeled marker only; ${JSON.stringify(kind)} is deferred`);
+  }
+  if (code === -7) {
+    throw new RangeError("Scene arrows do not encode text or class_name");
+  }
+  if (code === -5) {
+    if (kind === "callout") throw new RangeError("Scene callouts require nonempty NUL-free text");
+    if (kind === "text") throw new RangeError("Scene v16 text annotations require nonempty NUL-free text");
+    throw new RangeError("Scene v16 annotation labels require nonempty NUL-free text");
+  }
+  if (code === -4) {
+    if (kind === "text") {
+      throw new RangeError("Scene v23 text annotations support only color, opacity, label_background, and label_border_*");
+    }
+    throw new RangeError(`Scene v12 ${kind} annotation style does not encode unsupported keys`);
+  }
+  if (code === -8) throw new RangeError("Scene v12 rule annotation dash is not a constant pattern");
+  if (code === -9) throw new RangeError("Scene v12 rule annotation linecap is not a Scene cap");
+  if (code === -10) {
+    const symbolName = String(annotation.symbol ?? "circle");
+    throw new RangeError(`Scene v12 does not support marker symbol ${JSON.stringify(symbolName)}`);
+  }
+  if (code === -11) throw new RangeError("Scene callout anchor must be start, middle, or end");
+  if (code === -12) throw new RangeError("Scene v23 label border requires color and width");
+  if (code === -13) throw new RangeError(`Scene v12 ${kind} annotation axis must be 'x' or 'y'`);
   if (code === -6) {
     if (Object.hasOwn(style, "label_opacity")) {
       throw new RangeError(`Scene v16 ${kind} annotation label opacity must be finite and in [0, 1]`);
@@ -299,12 +438,6 @@ function raiseXyafBulkError(error, annotations) {
     }
     throw new RangeError(`Scene v12 annotation values are invalid at index ${index}`);
   }
-  if (code === -4) {
-    if (kind === "text") {
-      throw new RangeError("Scene v23 text annotations support only color, opacity, label_background, and label_border_*");
-    }
-    throw new RangeError(`Scene v12 ${kind} annotation style does not encode unsupported keys`);
-  }
   throw error;
 }
 
@@ -318,6 +451,7 @@ function packXyAfBulk(annotations) {
       ann.rotation = style.rotation;
     }
     validateXyafAnnotationStyle(ann);
+    validateXyafAnnotationValues(ann);
     return ann;
   });
   try {
@@ -1613,6 +1747,39 @@ function admitFillGradient(trace) {
     css.push(String(stop[1]));
   }
   const rgba = sceneFillGradientAdmit(spec.space, spec.dir, ts, css, markColor);
+  if (rgba == null) return null;
+  return { space: spec.space, dir: spec.dir, stops: ts.map((t, i) => [t, rgba[i]]) };
+}
+
+function admitFillGradientFromFill(fill, markColor) {
+  let spec = null;
+  if (fill != null && typeof fill === "object" && fill.space != null && fill.dir != null && Array.isArray(fill.stops)) {
+    spec = fill;
+  } else if (fill != null && typeof fill === "object") {
+    const extra = Object.keys(fill).filter((key) => key !== "gradient" && key !== "space");
+    if (extra.length) return null;
+    const gradient = fill.gradient;
+    if (typeof gradient !== "string") return null;
+    const space = fill.space == null ? "mark" : String(fill.space);
+    spec = sceneParseLinearGradient(gradient, space);
+  } else if (typeof fill === "string") {
+    spec = sceneParseLinearGradient(fill, "mark");
+  } else {
+    return null;
+  }
+  if (spec == null) return null;
+  const stops = spec.stops;
+  if (!Array.isArray(stops)) return null;
+  const ts = [];
+  const css = [];
+  for (const stop of stops) {
+    if (!Array.isArray(stop) || stop.length !== 2) return null;
+    const t = Number(stop[0]);
+    if (!Number.isFinite(t)) return null;
+    ts.push(t);
+    css.push(String(stop[1]));
+  }
+  const rgba = sceneFillGradientAdmit(String(spec.space), String(spec.dir), ts, css, markColor);
   if (rgba == null) return null;
   return { space: spec.space, dir: spec.dir, stops: ts.map((t, i) => [t, rgba[i]]) };
 }
