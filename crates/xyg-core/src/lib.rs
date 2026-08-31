@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 267;
+pub const ABI_VERSION: u32 = 268;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -6651,6 +6651,29 @@ pub unsafe extern "C" fn xyg_scene_marker_blob_pack(
             std::slice::from_raw_parts_mut(out, out_cap)
         };
         kernels::scene_marker_blob_pack(filled, values, contour_lens, out)
+    })
+}
+
+/// Pack XYTC dash-array flag bit (ABI 268).
+///
+/// Returns ``1`` on success, ``0`` when invalid.
+///
+/// # Safety
+/// ``out_flags`` must be writable when non-null.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_xytc_dash_pattern_pack(
+    is_array: i32,
+    out_flags: *mut u32,
+) -> i32 {
+    if out_flags.is_null() {
+        return 0;
+    }
+    ffi_guard(0, || {
+        let Some(flags) = kernels::scene_xytc_dash_pattern_pack(is_array) else {
+            return 0;
+        };
+        *out_flags = flags;
+        1
     })
 }
 

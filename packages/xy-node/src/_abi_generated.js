@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 267;
-export const SIGNATURE_SHA256 = "533891a4de41279a405bc7fe7e97c4ef9b9a960f3ca931f37fe203d1727ef060";
+export const ABI_VERSION = 268;
+export const SIGNATURE_SHA256 = "7c8c31cbb61392433efd14d3251cf512fd216a3cd40f839ca262ce59918f1e15";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -273,6 +273,7 @@ export let xySceneVersion;
 export let xySceneXyhfColormapPack;
 export let xySceneXytaColormapPack;
 export let xySceneXytcColorChannelPack;
+export let xySceneXytcDashPatternPack;
 export let xySceneXytcHexPitchPack;
 export let xySceneXytcNumericStylePack;
 export let xySceneXytcOpacityPack;
@@ -635,6 +636,7 @@ export function bindGeneratedAbi(lib) {
   xySceneXyhfColormapPack = lib.func("int32_t xyg_scene_xyhf_colormap_pack(int32_t mode, const uint8_t * named, size_t named_len, const uint8_t * stop_rgb, size_t stop_len, uint32_t * out_flags, uint8_t * out_cmap, size_t cmap_cap, uint8_t * out_stops, size_t stops_cap)");
   xySceneXytaColormapPack = lib.func("int32_t xyg_scene_xyta_colormap_pack(int32_t mode, const uint8_t * named, size_t named_len, const uint8_t * stop_rgb, size_t stop_len, uint32_t * out_flags, uint8_t * out_cmap, size_t cmap_cap, uint8_t * out_stops, size_t stops_cap)");
   xySceneXytcColorChannelPack = lib.func("int32_t xyg_scene_xytc_color_channel_pack(int32_t present, int32_t has_constant, uint32_t * out_flags)");
+  xySceneXytcDashPatternPack = lib.func("int32_t xyg_scene_xytc_dash_pattern_pack(int32_t is_array, uint32_t * out_flags)");
   xySceneXytcHexPitchPack = lib.func("int32_t xyg_scene_xytc_hex_pitch_pack(int32_t hexbin, int32_t has_dx, int32_t has_dy, double dx, double dy, uint32_t * out_flags, double * out_hex_dx, double * out_hex_dy)");
   xySceneXytcNumericStylePack = lib.func("int32_t xyg_scene_xytc_numeric_style_pack(int32_t has_size, int32_t has_size_ch, int32_t has_size_ch_constant, int32_t has_stroke_width, int32_t has_width, int32_t has_line_width, double size, double size_ch_constant, double stroke_width, double width, double line_width, uint32_t * out_flags, double * out_size, double * out_size_ch_value, double * out_stroke_width, double * out_width, double * out_line_width)");
   xySceneXytcOpacityPack = lib.func("int32_t xyg_scene_xytc_opacity_pack(int32_t has_opacity_class, int32_t has_band_class, double authored_fill, double authored_stroke, double authored_line, double * out_fill, double * out_stroke, double * out_line)");

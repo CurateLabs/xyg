@@ -74,7 +74,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, DEFAULT_PALETTE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, DEFAULT_PALETTE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -3329,6 +3329,33 @@ export function packXyTcColorChannel(trace) {
   return { flags, mode, constant };
 }
 
+/** XYTC dash. Python `_pack_xytc` reads `style.get("dash")` only. */
+export function packXyTcDash(style) {
+  const record = style ?? {};
+  const dash = record.dash;
+  if (typeof dash === "string") {
+    return { flags: 0, dashB: encodeUtf8(dash), pattern: [] };
+  }
+  if (Array.isArray(dash)) {
+    let pattern = [];
+    try {
+      pattern = dash.map((part) => {
+        const value = Number(part);
+        if (!Number.isFinite(value)) throw new RangeError("invalid dash part");
+        return value;
+      });
+    } catch {
+      pattern = [];
+    }
+    return {
+      flags: sceneXytcDashPatternPack(1),
+      dashB: new Uint8Array(),
+      pattern,
+    };
+  }
+  return { flags: 0, dashB: new Uint8Array(), pattern: [] };
+}
+
 /** XYTC fill opacity. Python `_pack_xytc` uses `style.get("fill_opacity", 1.0)` only. */
 export function packXyTcFillOpacity(style, kindClass) {
   const packed = sceneXytcOpacityPack(
@@ -3471,14 +3498,10 @@ function packXyTc(figure) {
     hexDx = packedHex.hexDx;
     hexDy = packedHex.hexDy;
     flags |= packXyTcStrokePerimeter(style, kindClass);
-    let dashB = new Uint8Array();
-    let dashPattern = [];
-    const dash = style.dash;
-    if (typeof dash === "string") dashB = encodeUtf8(dash);
-    else if (Array.isArray(dash)) {
-      flags |= XYTC_HAS_DASH_PATTERN;
-      dashPattern = dash.map(Number);
-    }
+    const packedDash = packXyTcDash(style);
+    flags |= packedDash.flags;
+    const dashB = packedDash.dashB;
+    const dashPattern = packedDash.pattern;
     const linecapB = packXyTcLinecap(style);
     const stepB = style.step != null ? encodeUtf8(String(style.step)) : new Uint8Array();
     const curveB = style.curve != null ? encodeUtf8(String(style.curve)) : new Uint8Array();

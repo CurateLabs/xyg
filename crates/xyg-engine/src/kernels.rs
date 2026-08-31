@@ -1620,6 +1620,21 @@ const XYTC_HAS_SIZE_CH: u32 = 1 << 7;
 const XYTC_PERIMETER_TRUE: u32 = 1 << 9;
 const XYTC_PERIMETER_INVALID: u32 = 1 << 10;
 const XYTC_HAS_HEX: u32 = 1 << 8;
+const XYTC_HAS_DASH_PATTERN: u32 = 1 << 17;
+
+/// Pack XYTC dash-array flag bit (ABI 268).
+///
+/// ``is_array``: dash authored as list/tuple/array. String dash presets stay
+/// host (UTF-8 ``dash_b`` bytes). Float coercion stays host.
+pub fn scene_xytc_dash_pattern_pack(is_array: i32) -> Option<u32> {
+    if !matches!(is_array, 0 | 1) {
+        return None;
+    }
+    if is_array == 0 {
+        return Some(0);
+    }
+    Some(XYTC_HAS_DASH_PATTERN)
+}
 
 /// Pack XYTC fill/stroke/line opacity trailer values (ABI 267).
 ///
@@ -10871,6 +10886,13 @@ mod fuzz {
         assert_eq!(scene_marker_blob_pack(1, &diamond, &lens, &mut out[..3]), -1);
         assert_eq!(scene_marker_blob_pack(1, &diamond[..5], &[5, 6], &mut out), 0);
         assert_eq!(scene_marker_blob_pack(2, &diamond, &lens, &mut out), 0);
+    }
+
+    #[test]
+    fn scene_xytc_dash_pattern_pack_matches_host_table() {
+        assert_eq!(scene_xytc_dash_pattern_pack(0), Some(0));
+        assert_eq!(scene_xytc_dash_pattern_pack(1), Some(1 << 17));
+        assert!(scene_xytc_dash_pattern_pack(2).is_none());
     }
 
     #[test]

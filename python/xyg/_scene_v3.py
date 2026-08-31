@@ -2837,6 +2837,22 @@ def _pack_gradient_spec(fill: dict[str, Any]) -> bytes | None:
     )
 
 
+def _pack_xytc_dash(style: dict[str, Any]) -> tuple[int, bytes, list[float]]:
+    dash = style.get("dash")
+    dash_b = b""
+    dash_pattern: list[float] = []
+    is_array = 0
+    if isinstance(dash, str):
+        dash_b = dash.encode("utf-8")
+    elif isinstance(dash, (list, tuple)):
+        is_array = 1
+        try:
+            dash_pattern = [float(part) for part in dash]
+        except (TypeError, ValueError):
+            dash_pattern = []
+    return _native.scene_xytc_dash_pattern_pack(is_array), dash_b, dash_pattern
+
+
 def _pack_xytc_opacity(kind_class: int, style: dict[str, Any]) -> tuple[float, float, float]:
     has_opacity = 1 if kind_class & _SCENE_KIND_CLASS_OPACITY else 0
     has_band = 1 if kind_class & _SCENE_KIND_CLASS_BAND else 0
@@ -2962,17 +2978,8 @@ def _pack_xytc(figure: Any) -> bytes:
         hex_flags, hex_dx, hex_dy = _pack_xytc_hex_pitch(kind_class, style)
         flags |= hex_flags
         flags |= _pack_xytc_stroke_perimeter(kind_class, style)
-        dash_b = b""
-        dash_pattern: list[float] = []
-        dash = style.get("dash")
-        if isinstance(dash, str):
-            dash_b = dash.encode("utf-8")
-        elif isinstance(dash, (list, tuple)):
-            flags |= _XYTC_HAS_DASH_PATTERN
-            try:
-                dash_pattern = [float(part) for part in dash]
-            except (TypeError, ValueError):
-                dash_pattern = []
+        dash_flags, dash_b, dash_pattern = _pack_xytc_dash(style)
+        flags |= dash_flags
         linecap_b = str(style["linecap"]).encode("utf-8") if "linecap" in style else b""
         step_b = str(style["step"]).encode("utf-8") if style.get("step") is not None else b""
         curve_b = str(style["curve"]).encode("utf-8") if style.get("curve") is not None else b""

@@ -1,9 +1,9 @@
 {
-  "abi_version": 267,
+  "abi_version": 268,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "533891a4de41279a405bc7fe7e97c4ef9b9a960f3ca931f37fe203d1727ef060",
+  "signature_sha256": "7c8c31cbb61392433efd14d3251cf512fd216a3cd40f839ca262ce59918f1e15",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -38375,6 +38375,57 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_scene_xytc_color_channel_pack(int32_t present, int32_t has_constant, uint32_t * out_flags)"
+    },
+    {
+      "name": "xyg_scene_xytc_dash_pattern_pack",
+      "node_name": "xySceneXytcDashPatternPack",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "is_array",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_flags",
+          "type": {
+            "rust": "*mut u32",
+            "c": "uint32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_scene_xytc_dash_pattern_pack(int32_t is_array, uint32_t * out_flags)"
     },
     {
       "name": "xyg_scene_xytc_hex_pitch_pack",
