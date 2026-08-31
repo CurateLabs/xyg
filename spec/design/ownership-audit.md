@@ -290,15 +290,16 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 
 **M2 Node stay-host TAP (2026-08-30).** Payload emit diffs [#644](https://github.com/CurateLabs/xyg/pull/644)–[#693](https://github.com/CurateLabs/xyg/pull/693) and scene compose diffs [#694](https://github.com/CurateLabs/xyg/pull/694)–[#698](https://github.com/CurateLabs/xyg/pull/698) are recorded on rebased branches (`cursor/m2-node-payload-rebase-staging-7ce1` through `ee9745c9`, scene tips rebased onto that staging tip). Main already landed [#630](https://github.com/CurateLabs/xyg/pull/630)–[#643](https://github.com/CurateLabs/xyg/pull/643) (payload axis/show-legend/wasm-density through line/area default-styled stay-host); continue serial merge for the remaining open TAP PRs. Python remains authoritative. Reproduce the inventory with `python3 scripts/audit_python_host_core.py`.
 
-**Next kernel stack (open, merge #640 → #641 → #642).**
+**Merged kernel stack (#640 → #642, ABI 254–256).** Next open slice: ABI 257 `xyg_arrow_shapes` (`_arrowgeom.arrow_shapes` orchestration for compat SVG/raster).
 
 | PR | ABI | Rust owns | Python surface shrinks |
 | --- | ---: | --- | --- |
 | [#640](https://github.com/CurateLabs/xyg/pull/640) | 254 | `xyg_arrow_style_pack` | `_arrowgeom._pack_style` CSV keys |
 | [#641](https://github.com/CurateLabs/xyg/pull/641) | 255 | `xyg_encoded_column_meta` | `lod.encode_f32_values` `{offset, scale, kind?}` assembly |
 | [#642](https://github.com/CurateLabs/xyg/pull/642) | 256 | `xyg_scene_channel_constant_css` | `_scene_v3` constant-mode CSS admit |
+| (this PR) | 257 | `xyg_arrow_shapes` | `_arrowgeom.arrow_shapes` shaft/taper/head/tail orchestration |
 
-After #642, the largest remaining Python core surfaces are `_payload` emit gather/ship and `_scene_v3` XYTC/XYTA pack loops — not the thirteen ABI-218–253 admit slices already kernelized.
+Largest remaining Python core surfaces: `_payload` emit gather/ship and `_scene_v3` XYTC/XYTA pack loops — not the ABI-218–257 admit slices already kernelized.
 
 **Reclassified keep-host** (Rust already owns the decision; the Python file packs, coerces, or carries error text):
 
@@ -709,7 +710,7 @@ Forbidden:
 | `python/xyg/_abi_generated.py` | Python low-level ABI binding | `python-abi-generated` | `generate` | #57 |
 | `python/xyg/_wasm_aggregate_generated.py` | Generated cross-host WASM contract binding | `browser-wasm-generated` | `generate` | #59 |
 | `python/xyg/_annotations.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |
-| `python/xyg/_arrowgeom.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 217 owns connectionstyle/shaft/taper/trim/end geometry; ABI 254 owns `start_offset`/`label_clear` CSV pack; hosts still coerce style keys and elbow truthiness; ChartView still parses those strings until WASM | #58 |
+| `python/xyg/_arrowgeom.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust`; ABI 217 owns connectionstyle/shaft/taper/trim/end geometry; ABI 254 owns `start_offset`/`label_clear` CSV pack; ABI 257 owns `arrow_shapes` orchestration for compat SVG/raster; hosts still coerce style keys and elbow truthiness; ChartView still parses those strings until WASM | #58 |
 | `python/xyg/_benchmark_theme.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_chromium.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_figure.py` | Python host with canonical-policy debt | `python-scene-migration` | `split-and-move-rust` | #58 |

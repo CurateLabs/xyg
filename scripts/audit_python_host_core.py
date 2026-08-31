@@ -25,7 +25,7 @@ MANIFEST = ROOT / "spec" / "design" / "ownership-audit.json"
 DELEGATE_RE = re.compile(
     r"\b(kernels\.|_native\.|scene_encode_product|figure_autorange|"
     r"payload_m4_indices|payload_visible_|valid_indices_f64|"
-    r"encoded_column_meta|arrow_style_pack|scene_channel_constant_css)\b"
+    r"encoded_column_meta|arrow_style_pack|arrow_shapes|scene_channel_constant_css)\b"
 )
 
 # Heuristic: likely host-local orchestration (not exhaustive).
@@ -38,7 +38,7 @@ LOCAL_RE = re.compile(
 BLOCKER_MAP: dict[str, str] = {
     "python/xyg/_payload.py": "payload emit orchestration",
     "python/xyg/_scene_v3.py": "scene_v3 pack / figure-to-record",
-    "python/xyg/_arrowgeom.py": "arrow style pack + arrow_shapes orchestration",
+    "_arrowgeom.py": "arrow style pack (ABI 254/257 shapes orchestration)",
     "python/xyg/lod.py": "EncodedColumn meta + LOD host cache",
     "python/xyg/marks.py": "marks composition / validation",
     "python/xyg/facets.py": "facet grid orchestration",

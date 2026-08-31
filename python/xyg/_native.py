@@ -471,6 +471,10 @@ def _ptr_u32(arr: npt.NDArray[np.uint32]) -> int:
     return arr.ctypes.data
 
 
+def _ptr_i32(arr: npt.NDArray[np.int32]) -> int:
+    return arr.ctypes.data
+
+
 class _PolarAbiInput(ctypes.Structure):
     """Packed extras pointer/len view so Scene encode stays at Koffi's 64-arg ceiling."""
 
@@ -12281,6 +12285,83 @@ def arrow_trim_polyline_end(
     if written == _USIZE_MAX or written != count:
         raise ValueError("invalid arrow-trim-polyline-end request")
     return out_x, out_y
+
+
+def arrow_shapes(
+    x0: float,
+    y0: float,
+    x1: float,
+    y1: float,
+    style: npt.ArrayLike,
+    head_style: str,
+    tail_style: str,
+    head_size: float,
+    width_start: float,
+    width_end: float,
+    elbow_authoring: bool,
+) -> tuple[npt.NDArray[np.int32], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Annotation arrow shapes via ``xyg_arrow_shapes`` (ABI 257).
+
+    Returns ``(meta[6], x, y)`` with sequential shaft/taper/head/tail points.
+    """
+    style = _as_f64(np.asarray(style, dtype=np.float64).reshape(-1), "style")
+    if len(style) not in (0, 12):
+        raise ValueError("arrow_shapes style must have length 0 or 12")
+    head_b = str(head_style).encode("utf-8")
+    tail_b = str(tail_style).encode("utf-8")
+    meta = np.empty(6, dtype=np.int32)
+    probed = _lib.xyg_arrow_shapes(
+        float(x0),
+        float(y0),
+        float(x1),
+        float(y1),
+        _ptr_f64(style) if len(style) else 0,
+        len(style),
+        head_b if head_b else 0,
+        len(head_b),
+        tail_b if tail_b else 0,
+        len(tail_b),
+        float(head_size),
+        float(width_start),
+        float(width_end),
+        int(bool(elbow_authoring)),
+        _ptr_i32(meta),
+        6,
+        0,
+        0,
+        0,
+    )
+    if probed == _USIZE_MAX:
+        raise ValueError("invalid arrow-shapes request")
+    count = int(probed)
+    if count == 0:
+        return meta, np.empty(0, dtype=np.float64), np.empty(0, dtype=np.float64)
+    out_x = np.empty(count, dtype=np.float64)
+    out_y = np.empty(count, dtype=np.float64)
+    written = _lib.xyg_arrow_shapes(
+        float(x0),
+        float(y0),
+        float(x1),
+        float(y1),
+        _ptr_f64(style) if len(style) else 0,
+        len(style),
+        head_b if head_b else 0,
+        len(head_b),
+        tail_b if tail_b else 0,
+        len(tail_b),
+        float(head_size),
+        float(width_start),
+        float(width_end),
+        int(bool(elbow_authoring)),
+        _ptr_i32(meta),
+        6,
+        _ptr_f64(out_x),
+        _ptr_f64(out_y),
+        count,
+    )
+    if written == _USIZE_MAX or written != count:
+        raise ValueError("invalid arrow-shapes request")
+    return meta, out_x, out_y
 
 
 def rounded_rect_poly(

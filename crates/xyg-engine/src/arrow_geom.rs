@@ -431,6 +431,187 @@ pub fn arrow_taper_polygon(
     Some(n)
 }
 
+/// Meta slots for [`arrow_shapes`] / ABI 257: shaft count, taper count,
+/// head kind, head count, tail kind, tail count. Shaft and taper are
+/// mutually exclusive (one count is zero).
+pub const ARROW_SHAPES_META_LEN: usize = 6;
+
+fn authored_head_size(raw: f64) -> f64 {
+    let base = if raw.is_finite() { raw } else { 8.0 };
+    base.max(4.0)
+}
+
+fn end_kind_code(kind: ArrowEndKind) -> i32 {
+    match kind {
+        ArrowEndKind::None => 0,
+        ArrowEndKind::Fill => 1,
+        ArrowEndKind::Stroke => 2,
+    }
+}
+
+/// Shaft or taper polyline plus endpoint decorations for one arrow/callout.
+///
+/// `style` is the 12-slot ABI 254 pack. `head_size` NaN selects 8.0 before
+/// the `max(4.0, …)` clamp. `width_start` / `width_end` NaN mean no taper.
+/// `elbow_authoring` mirrors Python `style.get("elbow")` for shaft sampling.
+/// Probe with empty `out_x`/`out_y`; returns the total point count.
+pub fn arrow_shapes(
+    x0: f64,
+    y0: f64,
+    x1: f64,
+    y1: f64,
+    style: &[f64],
+    head_style: &str,
+    tail_style: &str,
+    head_size: f64,
+    width_start: f64,
+    width_end: f64,
+    elbow_authoring: bool,
+    out_meta: &mut [i32],
+    out_x: &mut [f64],
+    out_y: &mut [f64],
+) -> Option<usize> {
+    if out_meta.len() < ARROW_SHAPES_META_LEN {
+        return None;
+    }
+    let geom = arrow_geometry(x0, y0, x1, y1, style)?;
+    let head = authored_head_size(head_size);
+    let head_style = if head_style.is_empty() {
+        "triangle"
+    } else {
+        head_style
+    };
+    let tail_style = if tail_style.is_empty() {
+        "none"
+    } else {
+        tail_style
+    };
+
+    let shaft_n = arrow_shaft_points(
+        geom.p0,
+        geom.p1,
+        geom.control,
+        elbow_authoring,
+        0,
+        &mut [],
+        &mut [],
+    )?;
+    let mut shaft_x = vec![0.0; shaft_n];
+    let mut shaft_y = vec![0.0; shaft_n];
+    arrow_shaft_points(
+        geom.p0,
+        geom.p1,
+        geom.control,
+        elbow_authoring,
+        0,
+        &mut shaft_x,
+        &mut shaft_y,
+    )?;
+
+    let taper_requested = width_start.is_finite() || width_end.is_finite();
+    let mut taper_x: Vec<f64> = Vec::new();
+    let mut taper_y: Vec<f64> = Vec::new();
+    if taper_requested {
+        if head_style == "triangle" {
+            let trim = head * (PI / 6.0).cos();
+            let trimmed_n = arrow_trim_polyline_end(&shaft_x, &shaft_y, trim, &mut [], &mut [])?;
+            let mut trimmed_x = vec![0.0; trimmed_n];
+            let mut trimmed_y = vec![0.0; trimmed_n];
+            arrow_trim_polyline_end(&shaft_x, &shaft_y, trim, &mut trimmed_x, &mut trimmed_y)?;
+            shaft_x = trimmed_x;
+            shaft_y = trimmed_y;
+        }
+        let w0 = if width_start.is_finite() { width_start } else { 1.0 };
+        let w1 = if width_end.is_finite() { width_end } else { 1.0 };
+        let taper_n = arrow_taper_polygon(&shaft_x, &shaft_y, w0, w1, &mut [], &mut [])?;
+        taper_x.resize(taper_n, 0.0);
+        taper_y.resize(taper_n, 0.0);
+        arrow_taper_polygon(&shaft_x, &shaft_y, w0, w1, &mut taper_x, &mut taper_y)?;
+    }
+
+    let (head_kind, head_n) = arrow_end_decoration(
+        geom.p1,
+        geom.dir1,
+        head_style,
+        head,
+        &mut [],
+        &mut [],
+    )?;
+    let mut head_x = vec![0.0; head_n];
+    let mut head_y = vec![0.0; head_n];
+    if head_n > 0 {
+        arrow_end_decoration(
+            geom.p1,
+            geom.dir1,
+            head_style,
+            head,
+            &mut head_x,
+            &mut head_y,
+        )?;
+    }
+
+    let (tail_kind, tail_n) = arrow_end_decoration(
+        geom.p0,
+        geom.dir0,
+        tail_style,
+        head,
+        &mut [],
+        &mut [],
+    )?;
+    let mut tail_x = vec![0.0; tail_n];
+    let mut tail_y = vec![0.0; tail_n];
+    if tail_n > 0 {
+        arrow_end_decoration(
+            geom.p0,
+            geom.dir0,
+            tail_style,
+            head,
+            &mut tail_x,
+            &mut tail_y,
+        )?;
+    }
+
+    let shaft_count = if taper_requested { 0 } else { shaft_n };
+    let taper_count = if taper_requested { taper_x.len() } else { 0 };
+    let total = shaft_count + taper_count + head_n + tail_n;
+
+    out_meta[0] = i32::try_from(shaft_count).ok()?;
+    out_meta[1] = i32::try_from(taper_count).ok()?;
+    out_meta[2] = end_kind_code(head_kind);
+    out_meta[3] = i32::try_from(head_n).ok()?;
+    out_meta[4] = end_kind_code(tail_kind);
+    out_meta[5] = i32::try_from(tail_n).ok()?;
+
+    if out_x.is_empty() && out_y.is_empty() {
+        return Some(total);
+    }
+    if out_x.len() < total || out_y.len() < total {
+        return None;
+    }
+
+    let mut offset = 0usize;
+    if shaft_count > 0 {
+        out_x[offset..offset + shaft_count].copy_from_slice(&shaft_x[..shaft_count]);
+        out_y[offset..offset + shaft_count].copy_from_slice(&shaft_y[..shaft_count]);
+        offset += shaft_count;
+    }
+    if taper_count > 0 {
+        out_x[offset..offset + taper_count].copy_from_slice(&taper_x[..taper_count]);
+        out_y[offset..offset + taper_count].copy_from_slice(&taper_y[..taper_count]);
+        offset += taper_count;
+    }
+    if head_n > 0 {
+        out_x[offset..offset + head_n].copy_from_slice(&head_x[..head_n]);
+        out_y[offset..offset + head_n].copy_from_slice(&head_y[..head_n]);
+        offset += head_n;
+    }
+    if tail_n > 0 {
+        out_x[offset..offset + tail_n].copy_from_slice(&tail_x[..tail_n]);
+        out_y[offset..offset + tail_n].copy_from_slice(&tail_y[..tail_n]);
+    }
+    Some(total)
+}
+
 /// Remove `trim` px of arclength from the polyline's end.
 pub fn arrow_trim_polyline_end(
     x: &[f64],
@@ -679,5 +860,84 @@ mod tests {
         assert_eq!(n, 2);
         assert_eq!(ox, [0.0, 0.0]);
         assert_eq!(oy, [0.0, 0.0]);
+    }
+
+    #[test]
+    fn arrow_shapes_linear_shaft_and_triangle_head() {
+        let style = [f64::NAN; ARROW_STYLE_LEN];
+        let mut meta = [0i32; ARROW_SHAPES_META_LEN];
+        let total = arrow_shapes(
+            0.0,
+            0.0,
+            100.0,
+            0.0,
+            &style,
+            "triangle",
+            "none",
+            f64::NAN,
+            f64::NAN,
+            f64::NAN,
+            false,
+            &mut meta,
+            &mut [],
+            &mut [],
+        )
+        .unwrap();
+        assert_eq!(meta[0], 2);
+        assert_eq!(meta[1], 0);
+        assert_eq!(meta[2], 1);
+        assert_eq!(meta[3], 3);
+        assert_eq!(meta[4], 0);
+        assert_eq!(meta[5], 0);
+        assert_eq!(total, 5);
+        let mut xs = vec![0.0; total];
+        let mut ys = vec![0.0; total];
+        arrow_shapes(
+            0.0,
+            0.0,
+            100.0,
+            0.0,
+            &style,
+            "triangle",
+            "none",
+            f64::NAN,
+            f64::NAN,
+            f64::NAN,
+            false,
+            &mut meta,
+            &mut xs,
+            &mut ys,
+        )
+        .unwrap();
+        assert_eq!(xs[0], 0.0);
+        assert_eq!(xs[1], 100.0);
+        assert_eq!(xs[2], 100.0);
+    }
+
+    #[test]
+    fn arrow_shapes_taper_replaces_shaft() {
+        let style = [f64::NAN; ARROW_STYLE_LEN];
+        let mut meta = [0i32; ARROW_SHAPES_META_LEN];
+        let total = arrow_shapes(
+            0.0,
+            0.0,
+            40.0,
+            0.0,
+            &style,
+            "triangle",
+            "none",
+            8.0,
+            2.0,
+            1.0,
+            false,
+            &mut meta,
+            &mut [],
+            &mut [],
+        )
+        .unwrap();
+        assert_eq!(meta[0], 0);
+        assert!(meta[1] > 0);
+        assert_eq!(meta[2], 1);
+        assert_eq!(total, meta[1] as usize + 3);
     }
 }
