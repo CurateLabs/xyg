@@ -91,6 +91,15 @@ pub mod scene_trace_rows;
 pub use scene_trace_rows::{pack_trace_rows, TraceRowsCode, TraceRowsError};
 pub mod scene_trace_sidecars;
 pub use scene_trace_sidecars::{pack_trace_sidecars, TraceSidecarsCode, TraceSidecarsError};
+pub mod scene_xytc_trace_pack;
+pub use scene_xytc_trace_pack::{
+    scene_xytc_trace_pack, XytcTracePackInput, XytcTraceStyleInput,
+    SCENE_XYTC_TRACE_PACK_MAX_RECORD,
+};
+pub mod scene_xyta_trace_pack;
+pub use scene_xyta_trace_pack::{
+    scene_xyta_trace_pack, XytaTracePackInput, SCENE_XYTA_TRACE_PACK_MAX_RECORD,
+};
 pub mod scene_pack;
 pub use scene_pack::{
     pack_product, pack_product_facts, pack_trace, parse_product_facts, resolve_pack_kind,

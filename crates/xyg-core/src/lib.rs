@@ -55,6 +55,8 @@ use xyg_engine::scene;
 use xyg_engine::scene_annotations::{self, AnnotationError};
 use xyg_engine::scene_heatmap::{self, HeatmapFactError};
 use xyg_engine::scene_extras::{self, ExtrasError};
+use xyg_engine::scene_xytc_trace_pack;
+use xyg_engine::scene_xyta_trace_pack;
 use xyg_engine::scene_pack_orchestrate;
 use xyg_engine::scene_density::{self, DensityGridError};
 use xyg_engine::scene_colorbar::{self, ColorbarError};
@@ -163,7 +165,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 316;
+pub const ABI_VERSION: u32 = 318;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -17800,6 +17802,448 @@ pub unsafe extern "C" fn xyg_scene_xyta_trace_dispatch_plan(
         };
         1
     })
+}
+
+/// XYTC trace style scalars (ABI 317).
+#[repr(C)]
+pub struct XygSceneXytcTraceStyleIn {
+    pub symbol_is_int: i32,
+    pub symbol_int: u16,
+    pub opacity: f64,
+    pub fill_opacity: f64,
+    pub stroke_opacity: f64,
+    pub line_opacity: f64,
+    pub has_stroke: i32,
+    pub has_line_color: i32,
+    pub has_size: i32,
+    pub size: f64,
+    pub has_size_ch: i32,
+    pub has_size_ch_constant: i32,
+    pub size_ch_constant: f64,
+    pub has_stroke_width: i32,
+    pub stroke_width: f64,
+    pub has_width: i32,
+    pub width: f64,
+    pub has_line_width: i32,
+    pub line_width: f64,
+    pub has_hex_dx: i32,
+    pub hex_dx: f64,
+    pub has_hex_dy: i32,
+    pub hex_dy: f64,
+    pub has_stroke_perimeter: i32,
+    pub stroke_perimeter_is_bool: i32,
+    pub stroke_perimeter_true: i32,
+    pub dash_is_array: i32,
+    pub has_fill: i32,
+    pub fill_kind: i32,
+    pub color_ch_present: i32,
+    pub color_ch_has_constant: i32,
+    pub radius_seq: i32,
+    pub r0: f64,
+    pub r1: f64,
+    pub wedge_gap_raw: f64,
+    pub symbol_len: usize,
+    pub dash_len: usize,
+    pub dash_pattern_len: usize,
+    pub linecap_len: usize,
+    pub step_len: usize,
+    pub curve_len: usize,
+    pub fill_css_len: usize,
+    pub fill_space_len: usize,
+    pub fill_gradient_len: usize,
+    pub stroke_css_len: usize,
+    pub line_color_len: usize,
+    pub color_css_len: usize,
+    pub color_mode_len: usize,
+    pub color_const_len: usize,
+}
+
+/// XYTC trace pack scalars (ABI 317).
+#[repr(C)]
+pub struct XygSceneXytcTracePackIn {
+    pub show_legend: i32,
+    pub has_name: i32,
+    pub marker_path_present: i32,
+    pub use_density: i32,
+    pub joined_fill: i32,
+    pub marker_packed: i32,
+    pub glyph_packed: i32,
+    pub color2_class: i32,
+    pub color2_gradient_packed: i32,
+    pub kind_len: usize,
+    pub name_len: usize,
+    pub marker_blob_len: usize,
+    pub color2_gradient_len: usize,
+    pub style: XygSceneXytcTraceStyleIn,
+}
+
+fn optional_bytes<'a>(ptr: *const u8, len: usize) -> Option<&'a [u8]> {
+    if len == 0 {
+        Some(&[])
+    } else if ptr.is_null() {
+        None
+    } else {
+        Some(unsafe { std::slice::from_raw_parts(ptr, len) })
+    }
+}
+
+fn optional_f64<'a>(ptr: *const f64, len: usize) -> Option<&'a [f64]> {
+    if len == 0 {
+        Some(&[])
+    } else if ptr.is_null() {
+        None
+    } else {
+        Some(unsafe { std::slice::from_raw_parts(ptr, len) })
+    }
+}
+
+/// Pack one authored trace into an XYTR v1 record blob (ABI 317).
+///
+/// Returns ``0`` on success, ``-1`` invalid args, ``-2`` output too small.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_xytc_trace_pack(
+    input: *const XygSceneXytcTracePackIn,
+    kind: *const u8,
+    name: *const u8,
+    symbol_b: *const u8,
+    dash_b: *const u8,
+    dash_pattern: *const f64,
+    linecap_b: *const u8,
+    step_b: *const u8,
+    curve_b: *const u8,
+    fill_css: *const u8,
+    fill_space: *const u8,
+    fill_gradient_blob: *const u8,
+    stroke_css: *const u8,
+    line_color: *const u8,
+    color_css: *const u8,
+    color_mode: *const u8,
+    color_const: *const u8,
+    marker_blob: *const u8,
+    color2_gradient_blob: *const u8,
+    out: *mut u8,
+    out_cap: usize,
+    out_len: *mut usize,
+) -> i32 {
+    if input.is_null() || out_len.is_null() {
+        return -1;
+    }
+    let input = &*input;
+    let style_in = &input.style;
+    let Some(kind_text) = read_utf8(kind, input.kind_len) else {
+        return -1;
+    };
+    let Some(name_bytes) = optional_bytes(name, input.name_len) else {
+        return -1;
+    };
+    let Some(symbol_b) = optional_bytes(symbol_b, style_in.symbol_len) else {
+        return -1;
+    };
+    let Some(dash_b) = optional_bytes(dash_b, style_in.dash_len) else {
+        return -1;
+    };
+    let Some(dash_pattern) = optional_f64(dash_pattern, style_in.dash_pattern_len) else {
+        return -1;
+    };
+    let Some(linecap_b) = optional_bytes(linecap_b, style_in.linecap_len) else {
+        return -1;
+    };
+    let Some(step_b) = optional_bytes(step_b, style_in.step_len) else {
+        return -1;
+    };
+    let Some(curve_b) = optional_bytes(curve_b, style_in.curve_len) else {
+        return -1;
+    };
+    let Some(fill_css) = optional_bytes(fill_css, style_in.fill_css_len) else {
+        return -1;
+    };
+    let Some(fill_space) = optional_bytes(fill_space, style_in.fill_space_len) else {
+        return -1;
+    };
+    let Some(fill_gradient_blob) = optional_bytes(fill_gradient_blob, style_in.fill_gradient_len)
+    else {
+        return -1;
+    };
+    let Some(stroke_css) = optional_bytes(stroke_css, style_in.stroke_css_len) else {
+        return -1;
+    };
+    let Some(line_color) = optional_bytes(line_color, style_in.line_color_len) else {
+        return -1;
+    };
+    let Some(color_css) = optional_bytes(color_css, style_in.color_css_len) else {
+        return -1;
+    };
+    let Some(color_mode) = optional_bytes(color_mode, style_in.color_mode_len) else {
+        return -1;
+    };
+    let Some(color_const) = optional_bytes(color_const, style_in.color_const_len) else {
+        return -1;
+    };
+    let Some(marker_blob) = optional_bytes(marker_blob, input.marker_blob_len) else {
+        return -1;
+    };
+    let Some(color2_gradient_blob) = optional_bytes(color2_gradient_blob, input.color2_gradient_len)
+    else {
+        return -1;
+    };
+    if out_cap > 0 && out.is_null() {
+        return -1;
+    }
+    let style = scene_xytc_trace_pack::XytcTraceStyleInput {
+        symbol_is_int: style_in.symbol_is_int,
+        symbol_int: style_in.symbol_int,
+        symbol_b,
+        opacity: style_in.opacity,
+        fill_opacity: style_in.fill_opacity,
+        stroke_opacity: style_in.stroke_opacity,
+        line_opacity: style_in.line_opacity,
+        has_stroke: style_in.has_stroke,
+        has_line_color: style_in.has_line_color,
+        has_size: style_in.has_size,
+        size: style_in.size,
+        has_size_ch: style_in.has_size_ch,
+        has_size_ch_constant: style_in.has_size_ch_constant,
+        size_ch_constant: style_in.size_ch_constant,
+        has_stroke_width: style_in.has_stroke_width,
+        stroke_width: style_in.stroke_width,
+        has_width: style_in.has_width,
+        width: style_in.width,
+        has_line_width: style_in.has_line_width,
+        line_width: style_in.line_width,
+        has_hex_dx: style_in.has_hex_dx,
+        hex_dx: style_in.hex_dx,
+        has_hex_dy: style_in.has_hex_dy,
+        hex_dy: style_in.hex_dy,
+        has_stroke_perimeter: style_in.has_stroke_perimeter,
+        stroke_perimeter_is_bool: style_in.stroke_perimeter_is_bool,
+        stroke_perimeter_true: style_in.stroke_perimeter_true,
+        dash_is_array: style_in.dash_is_array,
+        dash_b,
+        dash_pattern,
+        linecap_b,
+        step_b,
+        curve_b,
+        has_fill: style_in.has_fill,
+        fill_kind: style_in.fill_kind,
+        fill_css,
+        fill_space,
+        fill_gradient_blob,
+        stroke_css,
+        line_color,
+        color_css,
+        color_ch_present: style_in.color_ch_present,
+        color_ch_has_constant: style_in.color_ch_has_constant,
+        color_mode,
+        color_const,
+        radius_seq: style_in.radius_seq,
+        r0: style_in.r0,
+        r1: style_in.r1,
+        wedge_gap_raw: style_in.wedge_gap_raw,
+    };
+    let pack_input = scene_xytc_trace_pack::XytcTracePackInput {
+        show_legend: input.show_legend,
+        kind: kind_text,
+        has_name: input.has_name,
+        name: name_bytes,
+        marker_path_present: input.marker_path_present,
+        use_density: input.use_density,
+        joined_fill: input.joined_fill,
+        marker_packed: input.marker_packed,
+        glyph_packed: input.glyph_packed,
+        marker_blob,
+        color2_class: input.color2_class,
+        color2_gradient_blob,
+        color2_gradient_packed: input.color2_gradient_packed,
+        style,
+    };
+    match scene_xytc_trace_pack::scene_xytc_trace_pack(&pack_input) {
+        Ok(packed) => {
+            if packed.len() > out_cap {
+                return -2;
+            }
+            if !packed.is_empty() {
+                std::ptr::copy_nonoverlapping(packed.as_ptr(), out, packed.len());
+            }
+            *out_len = packed.len();
+            0
+        }
+        Err(-1) => -1,
+        Err(code) => code,
+    }
+}
+
+/// XYTA trace pack scalars (ABI 318).
+#[repr(C)]
+pub struct XygSceneXytaTracePackIn {
+    pub trace_id: u32,
+    pub pack_heatmap: i32,
+    pub pack_hexbin_colormap: i32,
+    pub pack_hexbin_rgba: i32,
+    pub pack_ribbon_ends: i32,
+    pub pack_mesh_faces: i32,
+    pub pack_scatter_paint: i32,
+    pub pack_density: i32,
+    pub grid_shape_rows: f64,
+    pub grid_shape_cols: f64,
+    pub has_grid_shape: i32,
+    pub has_grid: i32,
+    pub has_rgba: i32,
+    pub has_rgba_grid: i32,
+    pub truecolor: i32,
+    pub has_cmap_domain: i32,
+    pub cmap_lo: f64,
+    pub cmap_hi: f64,
+    pub has_color_ch: i32,
+    pub has_style_color: i32,
+    pub has_opacity: i32,
+    pub has_fill_opacity: i32,
+    pub opacity: f32,
+    pub fill_opacity: f32,
+    pub domain_x0: f64,
+    pub domain_x1: f64,
+    pub domain_y0: f64,
+    pub domain_y1: f64,
+    pub cmap_flags: u32,
+    pub rows: i32,
+    pub cols: i32,
+    pub grid_len: usize,
+    pub rgba_len: usize,
+    pub rgba_grid_len: usize,
+    pub x_len: usize,
+    pub y_len: usize,
+    pub mean_rgba_len: usize,
+    pub idx_len: usize,
+    pub lut_len: usize,
+    pub cmap_len: usize,
+    pub stops_len: usize,
+    pub color_ch_len: usize,
+    pub style_color_len: usize,
+}
+
+/// Pack one authored attach trace into an XYTA v1 record blob (ABI 318).
+///
+/// Returns ``0`` on success, ``-1`` invalid args, ``-2`` output too small.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_xyta_trace_pack(
+    input: *const XygSceneXytaTracePackIn,
+    grid: *const u8,
+    rgba: *const u8,
+    rgba_grid: *const u8,
+    x: *const u8,
+    y: *const u8,
+    mean_rgba: *const u8,
+    idx: *const u8,
+    lut: *const u8,
+    cmap: *const u8,
+    stops: *const u8,
+    color_ch: *const u8,
+    style_color: *const u8,
+    out: *mut u8,
+    out_cap: usize,
+    out_len: *mut usize,
+) -> i32 {
+    if input.is_null() || out_len.is_null() {
+        return -1;
+    }
+    let input = &*input;
+    let Some(grid) = optional_bytes(grid, input.grid_len) else {
+        return -1;
+    };
+    let Some(rgba) = optional_bytes(rgba, input.rgba_len) else {
+        return -1;
+    };
+    let Some(rgba_grid) = optional_bytes(rgba_grid, input.rgba_grid_len) else {
+        return -1;
+    };
+    let Some(x) = optional_bytes(x, input.x_len) else {
+        return -1;
+    };
+    let Some(y) = optional_bytes(y, input.y_len) else {
+        return -1;
+    };
+    let Some(mean_rgba) = optional_bytes(mean_rgba, input.mean_rgba_len) else {
+        return -1;
+    };
+    let Some(idx) = optional_bytes(idx, input.idx_len) else {
+        return -1;
+    };
+    let Some(lut) = optional_bytes(lut, input.lut_len) else {
+        return -1;
+    };
+    let Some(cmap) = optional_bytes(cmap, input.cmap_len) else {
+        return -1;
+    };
+    let Some(stops) = optional_bytes(stops, input.stops_len) else {
+        return -1;
+    };
+    let Some(color_ch) = optional_bytes(color_ch, input.color_ch_len) else {
+        return -1;
+    };
+    let Some(style_color) = optional_bytes(style_color, input.style_color_len) else {
+        return -1;
+    };
+    if out_cap > 0 && out.is_null() {
+        return -1;
+    }
+    let pack_input = scene_xyta_trace_pack::XytaTracePackInput {
+        trace_id: input.trace_id,
+        pack_heatmap: input.pack_heatmap,
+        pack_hexbin_colormap: input.pack_hexbin_colormap,
+        pack_hexbin_rgba: input.pack_hexbin_rgba,
+        pack_ribbon_ends: input.pack_ribbon_ends,
+        pack_mesh_faces: input.pack_mesh_faces,
+        pack_scatter_paint: input.pack_scatter_paint,
+        pack_density: input.pack_density,
+        grid_shape_rows: input.grid_shape_rows,
+        grid_shape_cols: input.grid_shape_cols,
+        has_grid_shape: input.has_grid_shape,
+        has_grid: input.has_grid,
+        has_rgba: input.has_rgba,
+        has_rgba_grid: input.has_rgba_grid,
+        truecolor: input.truecolor,
+        has_cmap_domain: input.has_cmap_domain,
+        cmap_lo: input.cmap_lo,
+        cmap_hi: input.cmap_hi,
+        has_color_ch: input.has_color_ch,
+        has_style_color: input.has_style_color,
+        has_opacity: input.has_opacity,
+        has_fill_opacity: input.has_fill_opacity,
+        opacity: input.opacity,
+        fill_opacity: input.fill_opacity,
+        domain_x0: input.domain_x0,
+        domain_x1: input.domain_x1,
+        domain_y0: input.domain_y0,
+        domain_y1: input.domain_y1,
+        cmap_flags: input.cmap_flags,
+        rows: input.rows,
+        cols: input.cols,
+        grid,
+        rgba,
+        rgba_grid,
+        x,
+        y,
+        mean_rgba,
+        idx,
+        lut,
+        cmap,
+        stops,
+        color_ch,
+        style_color,
+    };
+    match scene_xyta_trace_pack::scene_xyta_trace_pack(&pack_input) {
+        Ok(packed) => {
+            if packed.len() > out_cap {
+                return -2;
+            }
+            if !packed.is_empty() {
+                std::ptr::copy_nonoverlapping(packed.as_ptr(), out, packed.len());
+            }
+            *out_len = packed.len();
+            0
+        }
+        Err(-1) => -1,
+        Err(code) => code,
+    }
 }
 
 /// Packed XYFS figure orchestration plan (ABI 307).
