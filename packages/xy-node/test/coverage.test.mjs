@@ -495,26 +495,21 @@ test("buildPayload omits cartesian axis id unlike Python _axis_spec", () => {
   assert.equal(spec.x_axis.id, undefined);
 });
 
-test("buildPayload omits show_legend unlike Python build_payload", () => {
-  // Python `build_payload` ships `show_legend`. Node payload omits that
-  // field even when `show_legend` is false. Recorded
-  // emit-payload-show-legend stay-host.
+test("buildPayload ships show_legend via payload build plan", () => {
   const fig = figure({ width: 240, height: 160, showLegend: false });
   fig.scatter([0, 1], [0, 1]);
   const { spec } = fig.buildPayload();
   assert.equal(fig.show_legend, false);
-  assert.equal(spec.show_legend, undefined);
+  assert.equal(spec.show_legend, false);
 });
 
-test("buildPayload omits wasm_density unlike Python build_payload", () => {
-  // Python `build_payload` attaches wasm_density from split
-  // density.wasm_source. Node split payloads omit that field. Recorded
-  // emit-payload-wasm-density stay-host.
+test("buildPayload ships wasm_density unsupported on split density without source", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([1, 10], [1, 10], { forceDensity: true });
   const { spec } = fig.buildPayload({ split: true });
   assert.equal(spec.traces[0].tier, "density");
-  assert.equal(spec.wasm_density, undefined);
+  assert.equal(spec.wasm_density.automatic, false);
+  assert.equal(spec.wasm_density.unsupported.code, "XYG_WASM_SOURCE_UNSUPPORTED");
 });
 
 test("buildPayload cartesian axes stay linear unlike Python _axis_spec", () => {
@@ -1338,16 +1333,13 @@ test("buildPayload omits cartesian axis tick_values unlike Python _axis_spec", (
 });
 
 
-test("buildPayload omits dom unlike Python _dom_spec", () => {
-  // Python `_dom_spec` ships class_name / class_names / style / styles.
-  // Node payload omits spec.dom even when class_name is set. Recorded
-  // emit-payload-dom stay-host.
+test("buildPayload ships dom via payload build plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   fig.class_name = "root-node";
   const { spec } = fig.buildPayload();
   assert.equal(fig.class_name, "root-node");
-  assert.equal(spec.dom, undefined);
+  assert.deepEqual(spec.dom, { class_name: "root-node" });
 });
 
 
@@ -1364,16 +1356,13 @@ test("_emitScatterDensity omits categorical color unlike Python _density_trace_s
 });
 
 
-test("buildPayload omits padding unlike Python build_payload", () => {
-  // Python `build_payload` ships `padding`. Node payload omits that field
-  // even when Scene pack would read figure.padding. Recorded
-  // emit-payload-padding stay-host.
+test("buildPayload ships padding via payload build plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   fig.padding = [8, 8, 8, 8];
   const { spec } = fig.buildPayload();
   assert.deepEqual(fig.padding, [8, 8, 8, 8]);
-  assert.equal(spec.padding, undefined);
+  assert.deepEqual(spec.padding, [8, 8, 8, 8]);
 });
 
 

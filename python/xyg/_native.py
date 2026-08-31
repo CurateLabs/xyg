@@ -305,6 +305,33 @@ class _PayloadDensityTraceEmitPlan(ctypes.Structure):
     ]
 
 
+class _PayloadBuildPlan(ctypes.Structure):
+    _fields_ = [
+        ("attach_show_legend", ctypes.c_uint32),
+        ("wasm_density_kind", ctypes.c_int32),
+        ("attach_wasm_density", ctypes.c_uint32),
+        ("attach_title_options", ctypes.c_uint32),
+        ("attach_coords", ctypes.c_uint32),
+        ("attach_palette", ctypes.c_uint32),
+        ("attach_legend", ctypes.c_uint32),
+        ("resolve_legend_best", ctypes.c_uint32),
+        ("attach_extra_legends", ctypes.c_uint32),
+        ("attach_frame_sides", ctypes.c_uint32),
+        ("attach_colorbar", ctypes.c_uint32),
+        ("attach_show_modebar", ctypes.c_uint32),
+        ("attach_export", ctypes.c_uint32),
+        ("attach_show_tooltip", ctypes.c_uint32),
+        ("attach_padding", ctypes.c_uint32),
+        ("attach_dom", ctypes.c_uint32),
+        ("attach_tooltip", ctypes.c_uint32),
+        ("attach_mark_style", ctypes.c_uint32),
+        ("attach_interaction", ctypes.c_uint32),
+        ("attach_annotations", ctypes.c_uint32),
+        ("attach_animation", ctypes.c_uint32),
+        ("attach_graph", ctypes.c_uint32),
+    ]
+
+
 PAYLOAD_DENSITY_TRACE_EMIT_PLAN_BYTES = ctypes.sizeof(_PayloadDensityTraceEmitPlan)
 
 
@@ -12437,6 +12464,93 @@ def payload_density_trace_emit_plan(
         "overlay_wire_static_raster": bool(out.overlay_wire_static_raster),
         "overlay_wire_rows_exceed": bool(out.overlay_wire_rows_exceed),
         "channels_dropped_compat": bool(out.channels_dropped_compat),
+    }
+
+
+def payload_build_plan(
+    *,
+    split_payload: bool,
+    wasm_source_count: int,
+    has_density_tier: bool,
+    coords_cartesian: bool,
+    has_title_options: bool,
+    has_palette: bool,
+    has_legend_options: bool,
+    legend_loc_best: bool,
+    has_extra_legends: bool,
+    has_frame_sides: bool,
+    has_colorbar_options: bool,
+    show_modebar_is_false: bool,
+    has_export_options: bool,
+    show_tooltip_is_false: bool,
+    has_padding: bool,
+    has_dom: bool,
+    has_tooltip: bool,
+    has_mark_style: bool,
+    has_interaction: bool,
+    has_annotations: bool,
+    has_animation_options: bool,
+    has_graph_meta: bool,
+) -> dict[str, bool | int]:
+    """Top-level payload build attach orchestration via ``xyg_payload_build_plan`` (ABI 303)."""
+    out = _PayloadBuildPlan()
+    ok = _lib.xyg_payload_build_plan(
+        1 if split_payload else 0,
+        int(wasm_source_count),
+        1 if has_density_tier else 0,
+        1 if coords_cartesian else 0,
+        1 if has_title_options else 0,
+        1 if has_palette else 0,
+        1 if has_legend_options else 0,
+        1 if legend_loc_best else 0,
+        1 if has_extra_legends else 0,
+        1 if has_frame_sides else 0,
+        1 if has_colorbar_options else 0,
+        1 if show_modebar_is_false else 0,
+        1 if has_export_options else 0,
+        1 if show_tooltip_is_false else 0,
+        1 if has_padding else 0,
+        1 if has_dom else 0,
+        1 if has_tooltip else 0,
+        1 if has_mark_style else 0,
+        1 if has_interaction else 0,
+        1 if has_annotations else 0,
+        1 if has_animation_options else 0,
+        1 if has_graph_meta else 0,
+        ctypes.byref(out),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_build_plan arguments")
+    kind = int(out.wasm_density_kind)
+    if kind not in (
+        DENSITY_WASM_DENSITY_NONE,
+        DENSITY_WASM_DENSITY_AUTOMATIC,
+        DENSITY_WASM_DENSITY_UNSUPPORTED,
+    ):
+        raise ValueError("invalid payload_build_plan wasm_density_kind")
+    return {
+        "attach_show_legend": bool(out.attach_show_legend),
+        "wasm_density_kind": kind,
+        "attach_wasm_density": bool(out.attach_wasm_density),
+        "attach_title_options": bool(out.attach_title_options),
+        "attach_coords": bool(out.attach_coords),
+        "attach_palette": bool(out.attach_palette),
+        "attach_legend": bool(out.attach_legend),
+        "resolve_legend_best": bool(out.resolve_legend_best),
+        "attach_extra_legends": bool(out.attach_extra_legends),
+        "attach_frame_sides": bool(out.attach_frame_sides),
+        "attach_colorbar": bool(out.attach_colorbar),
+        "attach_show_modebar": bool(out.attach_show_modebar),
+        "attach_export": bool(out.attach_export),
+        "attach_show_tooltip": bool(out.attach_show_tooltip),
+        "attach_padding": bool(out.attach_padding),
+        "attach_dom": bool(out.attach_dom),
+        "attach_tooltip": bool(out.attach_tooltip),
+        "attach_mark_style": bool(out.attach_mark_style),
+        "attach_interaction": bool(out.attach_interaction),
+        "attach_annotations": bool(out.attach_annotations),
+        "attach_animation": bool(out.attach_animation),
+        "attach_graph": bool(out.attach_graph),
     }
 
 

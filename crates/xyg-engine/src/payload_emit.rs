@@ -7,8 +7,8 @@ use crate::density_emit::{
     bin_coord_endpoints, density_categorical_color_wire_admit, density_channels_dropped_compat,
     density_constant_color_wire_admit, density_grid_path_identity_state,
     density_mean_color_rgba_wire_admit, density_overlay_omitted_wire, density_trace_color_classify,
-    density_uses_channel_colormap, density_wasm_source_admit, emit_meta,
-    DENSITY_OVERLAY_ROWS_EXCEED_U32,
+    density_uses_channel_colormap, density_wasm_density_wire_kind, density_wasm_source_admit,
+    emit_meta, DENSITY_OVERLAY_ROWS_EXCEED_U32, DENSITY_WASM_DENSITY_NONE,
 };
 use crate::lod_plan::{
     payload_errorbar_indices, payload_errorbar_role_maps, payload_even_indices,
@@ -809,6 +809,83 @@ pub fn payload_transition_entry_attach(
             *out_filter_tooltip_by_sel = i32::from(has_sel != 0);
         }
     }
+    1
+}
+
+/// Top-level ``build_payload`` / ``_payload_spec`` attach orchestration.
+///
+/// Owns when optional figure-level spec sections ship (not field admit).
+/// Hosts still build axis specs, dom dicts, legend resolution, and trace emits.
+#[allow(clippy::too_many_arguments)]
+pub fn payload_build_plan(
+    split_payload: i32,
+    wasm_source_count: u64,
+    has_density_tier: i32,
+    coords_cartesian: i32,
+    has_title_options: i32,
+    has_palette: i32,
+    has_legend_options: i32,
+    legend_loc_best: i32,
+    has_extra_legends: i32,
+    has_frame_sides: i32,
+    has_colorbar_options: i32,
+    show_modebar_is_false: i32,
+    has_export_options: i32,
+    show_tooltip_is_false: i32,
+    has_padding: i32,
+    has_dom: i32,
+    has_tooltip: i32,
+    has_mark_style: i32,
+    has_interaction: i32,
+    has_annotations: i32,
+    has_animation_options: i32,
+    has_graph_meta: i32,
+    out_attach_show_legend: &mut i32,
+    out_wasm_density_kind: &mut i32,
+    out_attach_wasm_density: &mut i32,
+    out_attach_title_options: &mut i32,
+    out_attach_coords: &mut i32,
+    out_attach_palette: &mut i32,
+    out_attach_legend: &mut i32,
+    out_resolve_legend_best: &mut i32,
+    out_attach_extra_legends: &mut i32,
+    out_attach_frame_sides: &mut i32,
+    out_attach_colorbar: &mut i32,
+    out_attach_show_modebar: &mut i32,
+    out_attach_export: &mut i32,
+    out_attach_show_tooltip: &mut i32,
+    out_attach_padding: &mut i32,
+    out_attach_dom: &mut i32,
+    out_attach_tooltip: &mut i32,
+    out_attach_mark_style: &mut i32,
+    out_attach_interaction: &mut i32,
+    out_attach_annotations: &mut i32,
+    out_attach_animation: &mut i32,
+    out_attach_graph: &mut i32,
+) -> i32 {
+    *out_attach_show_legend = 1;
+    let kind = density_wasm_density_wire_kind(split_payload, wasm_source_count, has_density_tier);
+    *out_wasm_density_kind = kind;
+    *out_attach_wasm_density = i32::from(kind != DENSITY_WASM_DENSITY_NONE);
+    *out_attach_title_options = has_title_options;
+    *out_attach_coords = i32::from(coords_cartesian == 0);
+    *out_attach_palette = has_palette;
+    *out_attach_legend = has_legend_options;
+    *out_resolve_legend_best = i32::from(has_legend_options != 0 && legend_loc_best != 0);
+    *out_attach_extra_legends = has_extra_legends;
+    *out_attach_frame_sides = has_frame_sides;
+    *out_attach_colorbar = has_colorbar_options;
+    *out_attach_show_modebar = show_modebar_is_false;
+    *out_attach_export = has_export_options;
+    *out_attach_show_tooltip = show_tooltip_is_false;
+    *out_attach_padding = has_padding;
+    *out_attach_dom = has_dom;
+    *out_attach_tooltip = has_tooltip;
+    *out_attach_mark_style = has_mark_style;
+    *out_attach_interaction = has_interaction;
+    *out_attach_annotations = has_annotations;
+    *out_attach_animation = has_animation_options;
+    *out_attach_graph = has_graph_meta;
     1
 }
 
@@ -2457,5 +2534,252 @@ mod tests {
         assert_eq!(ship_categorical, 1);
         assert_eq!(use_channel_colormap, 0);
         assert_eq!(channels_dropped, 1);
+    }
+
+    #[test]
+    fn payload_build_plan_always_attaches_show_legend_and_optional_sections() {
+        let mut attach_show_legend = 0;
+        let mut wasm_kind = -1;
+        let mut attach_wasm = -1;
+        let mut attach_title = -1;
+        let mut attach_coords = -1;
+        let mut attach_palette = -1;
+        let mut attach_legend = -1;
+        let mut resolve_best = -1;
+        let mut attach_extra = -1;
+        let mut attach_frame = -1;
+        let mut attach_colorbar = -1;
+        let mut attach_modebar = -1;
+        let mut attach_export = -1;
+        let mut attach_tooltip_flag = -1;
+        let mut attach_padding = -1;
+        let mut attach_dom = -1;
+        let mut attach_tooltip = -1;
+        let mut attach_mark = -1;
+        let mut attach_interaction = -1;
+        let mut attach_annotations = -1;
+        let mut attach_animation = -1;
+        let mut attach_graph = -1;
+        assert_eq!(
+            payload_build_plan(
+                0,
+                0,
+                0,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                &mut attach_show_legend,
+                &mut wasm_kind,
+                &mut attach_wasm,
+                &mut attach_title,
+                &mut attach_coords,
+                &mut attach_palette,
+                &mut attach_legend,
+                &mut resolve_best,
+                &mut attach_extra,
+                &mut attach_frame,
+                &mut attach_colorbar,
+                &mut attach_modebar,
+                &mut attach_export,
+                &mut attach_tooltip_flag,
+                &mut attach_padding,
+                &mut attach_dom,
+                &mut attach_tooltip,
+                &mut attach_mark,
+                &mut attach_interaction,
+                &mut attach_annotations,
+                &mut attach_animation,
+                &mut attach_graph,
+            ),
+            1
+        );
+        assert_eq!(attach_show_legend, 1);
+        assert_eq!(wasm_kind, DENSITY_WASM_DENSITY_NONE);
+        assert_eq!(attach_wasm, 0);
+        assert_eq!(attach_title, 1);
+        assert_eq!(attach_coords, 0);
+        assert_eq!(attach_palette, 1);
+        assert_eq!(attach_legend, 1);
+        assert_eq!(resolve_best, 1);
+        assert_eq!(attach_extra, 1);
+        assert_eq!(attach_frame, 1);
+        assert_eq!(attach_colorbar, 1);
+        assert_eq!(attach_modebar, 1);
+        assert_eq!(attach_export, 1);
+        assert_eq!(attach_tooltip_flag, 1);
+        assert_eq!(attach_padding, 1);
+        assert_eq!(attach_dom, 1);
+        assert_eq!(attach_tooltip, 1);
+        assert_eq!(attach_mark, 1);
+        assert_eq!(attach_interaction, 1);
+        assert_eq!(attach_annotations, 1);
+        assert_eq!(attach_animation, 1);
+        assert_eq!(attach_graph, 1);
+    }
+
+    fn run_payload_build_plan(
+        scratch: &mut PayloadBuildPlanScratch,
+        split_payload: i32,
+        wasm_source_count: u64,
+        has_density_tier: i32,
+        coords_cartesian: i32,
+        has_title_options: i32,
+        has_palette: i32,
+        has_legend_options: i32,
+        legend_loc_best: i32,
+        has_extra_legends: i32,
+        has_frame_sides: i32,
+        has_colorbar_options: i32,
+        show_modebar_is_false: i32,
+        has_export_options: i32,
+        show_tooltip_is_false: i32,
+        has_padding: i32,
+        has_dom: i32,
+        has_tooltip: i32,
+        has_mark_style: i32,
+        has_interaction: i32,
+        has_annotations: i32,
+        has_animation_options: i32,
+        has_graph_meta: i32,
+    ) -> i32 {
+        payload_build_plan(
+            split_payload,
+            wasm_source_count,
+            has_density_tier,
+            coords_cartesian,
+            has_title_options,
+            has_palette,
+            has_legend_options,
+            legend_loc_best,
+            has_extra_legends,
+            has_frame_sides,
+            has_colorbar_options,
+            show_modebar_is_false,
+            has_export_options,
+            show_tooltip_is_false,
+            has_padding,
+            has_dom,
+            has_tooltip,
+            has_mark_style,
+            has_interaction,
+            has_annotations,
+            has_animation_options,
+            has_graph_meta,
+            &mut scratch.attach_show_legend,
+            &mut scratch.wasm_kind,
+            &mut scratch.attach_wasm,
+            &mut scratch.attach_title,
+            &mut scratch.attach_coords,
+            &mut scratch.attach_palette,
+            &mut scratch.attach_legend,
+            &mut scratch.resolve_best,
+            &mut scratch.attach_extra,
+            &mut scratch.attach_frame,
+            &mut scratch.attach_colorbar,
+            &mut scratch.attach_modebar,
+            &mut scratch.attach_export,
+            &mut scratch.attach_tooltip_flag,
+            &mut scratch.attach_padding,
+            &mut scratch.attach_dom,
+            &mut scratch.attach_tooltip,
+            &mut scratch.attach_mark,
+            &mut scratch.attach_interaction,
+            &mut scratch.attach_annotations,
+            &mut scratch.attach_animation,
+            &mut scratch.attach_graph,
+        )
+    }
+
+    #[test]
+    fn payload_build_plan_wasm_density_split_automatic_and_unsupported() {
+        let mut outs = payload_build_plan_scratch();
+        assert_eq!(
+            run_payload_build_plan(&mut outs, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+            1
+        );
+        assert_eq!(outs.wasm_kind, crate::density_emit::DENSITY_WASM_DENSITY_AUTOMATIC);
+        assert_eq!(outs.attach_wasm, 1);
+
+        outs = payload_build_plan_scratch();
+        assert_eq!(
+            run_payload_build_plan(&mut outs, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+            1
+        );
+        assert_eq!(outs.wasm_kind, crate::density_emit::DENSITY_WASM_DENSITY_UNSUPPORTED);
+        assert_eq!(outs.attach_wasm, 1);
+    }
+
+    struct PayloadBuildPlanScratch {
+        attach_show_legend: i32,
+        wasm_kind: i32,
+        attach_wasm: i32,
+        attach_title: i32,
+        attach_coords: i32,
+        attach_palette: i32,
+        attach_legend: i32,
+        resolve_best: i32,
+        attach_extra: i32,
+        attach_frame: i32,
+        attach_colorbar: i32,
+        attach_modebar: i32,
+        attach_export: i32,
+        attach_tooltip_flag: i32,
+        attach_padding: i32,
+        attach_dom: i32,
+        attach_tooltip: i32,
+        attach_mark: i32,
+        attach_interaction: i32,
+        attach_annotations: i32,
+        attach_animation: i32,
+        attach_graph: i32,
+    }
+
+    impl PayloadBuildPlanScratch {
+        fn new() -> Self {
+            Self {
+                attach_show_legend: 0,
+                wasm_kind: 0,
+                attach_wasm: 0,
+                attach_title: 0,
+                attach_coords: 0,
+                attach_palette: 0,
+                attach_legend: 0,
+                resolve_best: 0,
+                attach_extra: 0,
+                attach_frame: 0,
+                attach_colorbar: 0,
+                attach_modebar: 0,
+                attach_export: 0,
+                attach_tooltip_flag: 0,
+                attach_padding: 0,
+                attach_dom: 0,
+                attach_tooltip: 0,
+                attach_mark: 0,
+                attach_interaction: 0,
+                attach_annotations: 0,
+                attach_animation: 0,
+                attach_graph: 0,
+            }
+        }
+    }
+
+    fn payload_build_plan_scratch() -> PayloadBuildPlanScratch {
+        PayloadBuildPlanScratch::new()
     }
 }

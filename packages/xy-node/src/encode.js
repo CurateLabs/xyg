@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyArgsortStable, xyArrowEndDecoration, xyArrowGeometry, xyArrowShaftPoints, xyArrowStylePack, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyBarStack, xyBin2d, xyBin2dMeanColor, xyBinnedEcdf, xyBoxGeometry, xyBoxStats, xyColormapLut, xyColormapRgba, xyColormapRgbaCanonical, xyColormapStops, xyContourLevels, xyContourfBands, xyContourfDensify, xyCurveFlatten, xyDensityBinCoordEndpoints, xyDensityBinWindow, xyDensityColorClassify, xyDensityTraceColorClassify, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityOverlayOpacity, xyDensityPyramidPreflight, xyDensityRgbaLinear, xyDensityWasmEligible, xyDrillDecision, xyEncodeF32, xyEncodedColumnMeta, xyF32SafeScale, xyGeometryOffset, xyHeatmapRgba, xyHexbin, xyHexbinGroups, xyHexbinIngress, xyHexbinRing, xyHistogramBins, xyHistogramEdges, xyHistogramMarkEdges, xyHistogramUniform, xyIsSorted, xyLegendBestLoc, xyLegendNormalize, xyLodPlan, xyM4Indices, xyM4Points, xyMarchingSquares, xyMarkerPathScale, xyMinMax, xyMonotoneTangents, xyNormalizeF32, xyPaintEffectiveRgba, xyPayloadBarCompactAdmit, xyPayloadBarHistEmitPlan, xyPayloadHeatmapEmitPlan, xyPayloadMeshEmitPlan, xyPayloadRibbonEmitPlan, xyPayloadScatterEmitPlan, xyPayloadDensityTraceEmitPlan, xyPayloadSegmentsEmitPlan, xyPayloadBaseEntryPlan, xyPayloadNonxyEmitPlan, xyPayloadErrorbarIndices, xyPayloadErrorbarRoleKeys, xyPayloadErrorbarRoleMaps, xyPayloadEvenIndices, xyPayloadM4Indices, xyPayloadSampleTargetIndices, xyPayloadSegmentBudget, xyPayloadSegmentsEmitGather, xyPayloadTier, xyPayloadTraceChannelsShipAttach, xyPayloadTransitionEntryAttach, xyPayloadTransitionKeysAdmit, xyPayloadVisibleIndices, xyPayloadVisibleMask, xyPayloadVisibleNeeded, xyQuantiles, xyRibbonEdge, xyRibbonPolygon, xyRoundedRectPoly, xyScalePinsOffset, xySceneAnnotationStyleAdmit, xySceneArraysEqual, xySceneChannelConstantCss, xySceneConstantColorAdmit, xySceneCurveClassify, xySceneDashAdmit, xySceneFillGradientAdmit, xySceneFiniteAll, xySceneGradientDir, xySceneGradientSolidCss, xySceneGradientSpace, xySceneGradientSpecPack, xySceneHeatmapColormapAdmit, xySceneHeatmapExtentAdmit, xySceneHeatmapShapeAdmit, xySceneHexbinColormapPlaneAdmit, xySceneHexbinPitchAdmit, xySceneHexbinReduceAdmit, xySceneHexbinRgbaPlaneAdmit, xySceneHiddenOrPerItemAdmit, xySceneItemApplyOpacity, xySceneItemFillT, xySceneItemWidthsAdmit, xySceneKindAdmit, xySceneKindClass, xySceneLinearGradientPrefix, xySceneLinecapAdmit, xySceneMarkerBlobPack, xySceneMarkerGlyphAdmit, xySceneMarkerPathAdmit, xySceneMeshPaintPlaneAdmit, xySceneParseLinearGradient, xySceneRectExtraFlags, xySceneRibbonColor2Classify, xySceneScatterPaintChannelAdmit, xySceneTickAnchor, xySceneTickLabelStrategy, xySceneXyhfColormapPack, xySceneXytaColormapPack, xySceneXytcColor2FlagsPack, xySceneXytcColorChannelPack, xySceneXytcDashPatternPack, xySceneXytcHexPitchPack, xySceneXytcMetaFlagsPack, xySceneXytcNumericStylePack, xySceneXytcOpacityPack, xySceneXytcPaintPresencePack, xySceneXytcRadiusPack, xySceneXytcStrokePerimeterPack, xySceneXytcSymbolIntPack, xyStepArrays, xyStreamAppend, xyStreamCapacity, xyStreamCopy, xyStreamFree, xyStreamLen, xyStreamNew, xyStreamSeal, xyValidIndicesF64, xyViolinDensity, xyViolinRects, xyWeightedEcdf, xyWindRoseBins, xyDensityUsesChannelColormap, xyDensityReductionKind, xyDensityOverlayOmittedWire, xyDensityGridPathIdentityState, xyDensityConstantColorWireAdmit, xyDensityWasmSourceAdmit, xyDensityWasmDensityWireKind, xyDensityCategoricalColorWireAdmit, xyDensityMeanColorWireAdmit, xyDensityChannelsDroppedCompat, xyDensityDroppedChannelWireAdmit, xyDensityMeanColorRgbaWireAdmit } from "./native.js";
+import { pointer, xyArgsortStable, xyArrowEndDecoration, xyArrowGeometry, xyArrowShaftPoints, xyArrowStylePack, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyBarStack, xyBin2d, xyBin2dMeanColor, xyBinnedEcdf, xyBoxGeometry, xyBoxStats, xyColormapLut, xyColormapRgba, xyColormapRgbaCanonical, xyColormapStops, xyContourLevels, xyContourfBands, xyContourfDensify, xyCurveFlatten, xyDensityBinCoordEndpoints, xyDensityBinWindow, xyDensityColorClassify, xyDensityTraceColorClassify, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityOverlayOpacity, xyDensityPyramidPreflight, xyDensityRgbaLinear, xyDensityWasmEligible, xyDrillDecision, xyEncodeF32, xyEncodedColumnMeta, xyF32SafeScale, xyGeometryOffset, xyHeatmapRgba, xyHexbin, xyHexbinGroups, xyHexbinIngress, xyHexbinRing, xyHistogramBins, xyHistogramEdges, xyHistogramMarkEdges, xyHistogramUniform, xyIsSorted, xyLegendBestLoc, xyLegendNormalize, xyLodPlan, xyM4Indices, xyM4Points, xyMarchingSquares, xyMarkerPathScale, xyMinMax, xyMonotoneTangents, xyNormalizeF32, xyPaintEffectiveRgba, xyPayloadBarCompactAdmit, xyPayloadBarHistEmitPlan, xyPayloadHeatmapEmitPlan, xyPayloadMeshEmitPlan, xyPayloadRibbonEmitPlan, xyPayloadScatterEmitPlan, xyPayloadDensityTraceEmitPlan, xyPayloadBuildPlan, xyPayloadSegmentsEmitPlan, xyPayloadBaseEntryPlan, xyPayloadNonxyEmitPlan, xyPayloadErrorbarIndices, xyPayloadErrorbarRoleKeys, xyPayloadErrorbarRoleMaps, xyPayloadEvenIndices, xyPayloadM4Indices, xyPayloadSampleTargetIndices, xyPayloadSegmentBudget, xyPayloadSegmentsEmitGather, xyPayloadTier, xyPayloadTraceChannelsShipAttach, xyPayloadTransitionEntryAttach, xyPayloadTransitionKeysAdmit, xyPayloadVisibleIndices, xyPayloadVisibleMask, xyPayloadVisibleNeeded, xyQuantiles, xyRibbonEdge, xyRibbonPolygon, xyRoundedRectPoly, xyScalePinsOffset, xySceneAnnotationStyleAdmit, xySceneArraysEqual, xySceneChannelConstantCss, xySceneConstantColorAdmit, xySceneCurveClassify, xySceneDashAdmit, xySceneFillGradientAdmit, xySceneFiniteAll, xySceneGradientDir, xySceneGradientSolidCss, xySceneGradientSpace, xySceneGradientSpecPack, xySceneHeatmapColormapAdmit, xySceneHeatmapExtentAdmit, xySceneHeatmapShapeAdmit, xySceneHexbinColormapPlaneAdmit, xySceneHexbinPitchAdmit, xySceneHexbinReduceAdmit, xySceneHexbinRgbaPlaneAdmit, xySceneHiddenOrPerItemAdmit, xySceneItemApplyOpacity, xySceneItemFillT, xySceneItemWidthsAdmit, xySceneKindAdmit, xySceneKindClass, xySceneLinearGradientPrefix, xySceneLinecapAdmit, xySceneMarkerBlobPack, xySceneMarkerGlyphAdmit, xySceneMarkerPathAdmit, xySceneMeshPaintPlaneAdmit, xySceneParseLinearGradient, xySceneRectExtraFlags, xySceneRibbonColor2Classify, xySceneScatterPaintChannelAdmit, xySceneTickAnchor, xySceneTickLabelStrategy, xySceneXyhfColormapPack, xySceneXytaColormapPack, xySceneXytcColor2FlagsPack, xySceneXytcColorChannelPack, xySceneXytcDashPatternPack, xySceneXytcHexPitchPack, xySceneXytcMetaFlagsPack, xySceneXytcNumericStylePack, xySceneXytcOpacityPack, xySceneXytcPaintPresencePack, xySceneXytcRadiusPack, xySceneXytcStrokePerimeterPack, xySceneXytcSymbolIntPack, xyStepArrays, xyStreamAppend, xyStreamCapacity, xyStreamCopy, xyStreamFree, xyStreamLen, xyStreamNew, xyStreamSeal, xyValidIndicesF64, xyViolinDensity, xyViolinRects, xyWeightedEcdf, xyWindRoseBins, xyDensityUsesChannelColormap, xyDensityReductionKind, xyDensityOverlayOmittedWire, xyDensityGridPathIdentityState, xyDensityConstantColorWireAdmit, xyDensityWasmSourceAdmit, xyDensityWasmDensityWireKind, xyDensityCategoricalColorWireAdmit, xyDensityMeanColorWireAdmit, xyDensityChannelsDroppedCompat, xyDensityDroppedChannelWireAdmit, xyDensityMeanColorRgbaWireAdmit } from "./native.js";
 
 
 export const PROTOCOL_VERSION = 12;
@@ -4587,6 +4587,114 @@ export function densityWasmDensityWireKind({
     throw new RangeError("invalid density-wasm-density-wire-kind request");
   }
   return kind;
+}
+
+const PAYLOAD_BUILD_PLAN_BYTES = 88;
+
+function readPayloadBuildPlan(buf) {
+  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  let off = 0;
+  const u32 = () => {
+    const value = view.getUint32(off, true);
+    off += 4;
+    return value;
+  };
+  const i32 = () => {
+    const value = view.getInt32(off, true);
+    off += 4;
+    return value;
+  };
+  const attachShowLegend = u32() !== 0;
+  const wasmDensityKind = i32();
+  return {
+    attachShowLegend,
+    wasmDensityKind,
+    attachWasmDensity: u32() !== 0,
+    attachTitleOptions: u32() !== 0,
+    attachCoords: u32() !== 0,
+    attachPalette: u32() !== 0,
+    attachLegend: u32() !== 0,
+    resolveLegendBest: u32() !== 0,
+    attachExtraLegends: u32() !== 0,
+    attachFrameSides: u32() !== 0,
+    attachColorbar: u32() !== 0,
+    attachShowModebar: u32() !== 0,
+    attachExport: u32() !== 0,
+    attachShowTooltip: u32() !== 0,
+    attachPadding: u32() !== 0,
+    attachDom: u32() !== 0,
+    attachTooltip: u32() !== 0,
+    attachMarkStyle: u32() !== 0,
+    attachInteraction: u32() !== 0,
+    attachAnnotations: u32() !== 0,
+    attachAnimation: u32() !== 0,
+    attachGraph: u32() !== 0,
+  };
+}
+
+/** Top-level payload build attach orchestration via `xyg_payload_build_plan` (ABI 303). */
+export function payloadBuildPlan({
+  splitPayload = false,
+  wasmSourceCount = 0,
+  hasDensityTier = false,
+  coordsCartesian = true,
+  hasTitleOptions = false,
+  hasPalette = false,
+  hasLegendOptions = false,
+  legendLocBest = false,
+  hasExtraLegends = false,
+  hasFrameSides = false,
+  hasColorbarOptions = false,
+  showModebarIsFalse = false,
+  hasExportOptions = false,
+  showTooltipIsFalse = false,
+  hasPadding = false,
+  hasDom = false,
+  hasTooltip = false,
+  hasMarkStyle = false,
+  hasInteraction = false,
+  hasAnnotations = false,
+  hasAnimationOptions = false,
+  hasGraphMeta = false,
+} = {}) {
+  const out = new Uint8Array(PAYLOAD_BUILD_PLAN_BYTES);
+  const ok = Number(xyPayloadBuildPlan(
+    splitPayload ? 1 : 0,
+    BigInt(Math.max(0, Number(wasmSourceCount))),
+    hasDensityTier ? 1 : 0,
+    coordsCartesian ? 1 : 0,
+    hasTitleOptions ? 1 : 0,
+    hasPalette ? 1 : 0,
+    hasLegendOptions ? 1 : 0,
+    legendLocBest ? 1 : 0,
+    hasExtraLegends ? 1 : 0,
+    hasFrameSides ? 1 : 0,
+    hasColorbarOptions ? 1 : 0,
+    showModebarIsFalse ? 1 : 0,
+    hasExportOptions ? 1 : 0,
+    showTooltipIsFalse ? 1 : 0,
+    hasPadding ? 1 : 0,
+    hasDom ? 1 : 0,
+    hasTooltip ? 1 : 0,
+    hasMarkStyle ? 1 : 0,
+    hasInteraction ? 1 : 0,
+    hasAnnotations ? 1 : 0,
+    hasAnimationOptions ? 1 : 0,
+    hasGraphMeta ? 1 : 0,
+    u8Ptr(out),
+  ));
+  if (ok !== 1) {
+    throw new RangeError("invalid payload-build-plan request");
+  }
+  const plan = readPayloadBuildPlan(out);
+  if (
+    plan.wasmDensityKind !== DENSITY_WASM_DENSITY_NONE
+    && plan.wasmDensityKind !== DENSITY_WASM_DENSITY_AUTOMATIC
+    && plan.wasmDensityKind !== DENSITY_WASM_DENSITY_UNSUPPORTED
+  ) {
+    throw new RangeError("invalid payload-build-plan wasm_density_kind");
+  }
+  return plan;
 }
 
 export const DENSITY_REDUCTION_BIN2D = 0;

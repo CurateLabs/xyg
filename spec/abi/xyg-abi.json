@@ -1,9 +1,9 @@
 {
-  "abi_version": 302,
+  "abi_version": 303,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "fdd3b93badb7012f7eefdb745d9ecad80907ba8495d863596f8e25f7be5c59c8",
+  "signature_sha256": "d99d2f73e66bdacaeecc25eb05cb09afc1c3d6076089e1555a0af790b0c1cd62",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -21057,6 +21057,372 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_payload_base_entry_plan(int32_t has_trace_animation, size_t n_xv, int32_t style_color_is_none, int32_t x_axis_type, int32_t y_axis_type, int32_t * out_attach_animation, size_t * out_n_marks, int32_t * out_apply_palette_default, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale)"
+    },
+    {
+      "name": "xyg_payload_build_plan",
+      "node_name": "xyPayloadBuildPlan",
+      "nargs": 23,
+      "arguments": [
+        {
+          "name": "split_payload",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "wasm_source_count",
+          "type": {
+            "rust": "u64",
+            "c": "uint64_t",
+            "ctypes": "ctypes.c_uint64",
+            "koffi": "uint64_t",
+            "kind": "scalar",
+            "bits": 64,
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_density_tier",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "coords_cartesian",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_title_options",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_palette",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_legend_options",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "legend_loc_best",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_extra_legends",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_frame_sides",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_colorbar_options",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "show_modebar_is_false",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_export_options",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "show_tooltip_is_false",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_padding",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_dom",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_tooltip",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_mark_style",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_interaction",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_annotations",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_animation_options",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_graph_meta",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out",
+          "type": {
+            "rust": "*mut XygPayloadBuildPlan",
+            "c": "void *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "void *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_payload_build_plan(int32_t split_payload, uint64_t wasm_source_count, int32_t has_density_tier, int32_t coords_cartesian, int32_t has_title_options, int32_t has_palette, int32_t has_legend_options, int32_t legend_loc_best, int32_t has_extra_legends, int32_t has_frame_sides, int32_t has_colorbar_options, int32_t show_modebar_is_false, int32_t has_export_options, int32_t show_tooltip_is_false, int32_t has_padding, int32_t has_dom, int32_t has_tooltip, int32_t has_mark_style, int32_t has_interaction, int32_t has_annotations, int32_t has_animation_options, int32_t has_graph_meta, void * out)"
     },
     {
       "name": "xyg_payload_density_trace_emit_plan",

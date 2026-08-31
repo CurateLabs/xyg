@@ -281,6 +281,39 @@ class PayloadMixin(_Host):
             axis_id: self._axis_spec(axis_id, axis_range(axis_id)) for axis_id in self.axis_options
         }
 
+        wasm_sources = [entry.get("density", {}).get("wasm_source") for entry in spec_traces]
+        wasm_sources = [source for source in wasm_sources if source is not None]
+        has_density_tier = any(entry.get("tier") == "density" for entry in spec_traces)
+        dom = self._dom_spec()
+        legend_opts = self.legend_options
+        mark_style = self._mark_style_spec()
+        interaction_spec = self._interaction_spec()
+        annotations = self._annotation_specs()
+        build_plan = kernels.payload_build_plan(
+            split_payload=bool(pw._split),
+            wasm_source_count=len(wasm_sources),
+            has_density_tier=has_density_tier,
+            coords_cartesian=self.coords == "cartesian",
+            has_title_options=bool(self.title_options),
+            has_palette=self.palette is not None,
+            has_legend_options=bool(legend_opts),
+            legend_loc_best=bool(legend_opts and legend_opts.get("loc") == "best"),
+            has_extra_legends=bool(getattr(self, "extra_legends", None)),
+            has_frame_sides=self.frame_sides is not None,
+            has_colorbar_options=bool(self.colorbar_options),
+            show_modebar_is_false=self.show_modebar is False,
+            has_export_options=bool(getattr(self, "export_options", None)),
+            show_tooltip_is_false=self.show_tooltip is False,
+            has_padding=self.padding is not None,
+            has_dom=bool(dom),
+            has_tooltip=self.tooltip is not None,
+            has_mark_style=bool(mark_style),
+            has_interaction=bool(interaction_spec),
+            has_annotations=bool(annotations),
+            has_animation_options=self.animation_options is not None,
+            has_graph_meta=bool(getattr(self, "_graph_meta", None)),
+        )
+
         spec = {
             "protocol": PROTOCOL_VERSION,
             "width": self.width,
@@ -297,30 +330,22 @@ class PayloadMixin(_Host):
                 "ranges": {axis_id: list(axis["range"]) for axis_id, axis in axis_specs.items()}
             },
         }
-        wasm_sources = [entry.get("density", {}).get("wasm_source") for entry in spec_traces]
-        wasm_sources = [source for source in wasm_sources if source is not None]
-        # One Cartesian count-only source is intentionally the first vertical.
-        # Multiple/color/chunked sources remain on the authoritative kernel
-        # route and are marked explicitly by the browser client.
-        wasm_density_kind = kernels.density_wasm_density_wire_kind(
-            split_payload=bool(pw._split),
-            wasm_source_count=len(wasm_sources),
-            has_density_tier=any(entry.get("tier") == "density" for entry in spec_traces),
-        )
-        if wasm_density_kind == kernels.DENSITY_WASM_DENSITY_AUTOMATIC:
-            spec["wasm_density"] = {"automatic": True, "source": wasm_sources[0]}
-        elif wasm_density_kind == kernels.DENSITY_WASM_DENSITY_UNSUPPORTED:
-            spec["wasm_density"] = {
-                "automatic": False,
-                "unsupported": {
-                    "code": "XYG_WASM_SOURCE_UNSUPPORTED",
-                    "message": "direct WASM density requires one bounded Cartesian count-only f64 source",
-                    "trace_ids": [
-                        entry["id"] for entry in spec_traces if entry.get("tier") == "density"
-                    ],
-                },
-            }
-        if self.title_options:
+        if build_plan["attach_wasm_density"]:
+            wasm_density_kind = build_plan["wasm_density_kind"]
+            if wasm_density_kind == kernels.DENSITY_WASM_DENSITY_AUTOMATIC:
+                spec["wasm_density"] = {"automatic": True, "source": wasm_sources[0]}
+            elif wasm_density_kind == kernels.DENSITY_WASM_DENSITY_UNSUPPORTED:
+                spec["wasm_density"] = {
+                    "automatic": False,
+                    "unsupported": {
+                        "code": "XYG_WASM_SOURCE_UNSUPPORTED",
+                        "message": "direct WASM density requires one bounded Cartesian count-only f64 source",
+                        "trace_ids": [
+                            entry["id"] for entry in spec_traces if entry.get("tier") == "density"
+                        ],
+                    },
+                }
+        if build_plan["attach_title_options"]:
             spec["title_options"] = [
                 {
                     **{key: value for key, value in entry.items() if key not in {"y", "pad"}},
@@ -333,9 +358,9 @@ class PayloadMixin(_Host):
                 }
                 for entry in self.title_options
             ]
-        if self.coords != "cartesian":
+        if build_plan["attach_coords"]:
             spec["coords"] = self.coords
-        if self.palette is not None:
+        if build_plan["attach_palette"]:
             # Chart-level categorical cycle (`xyg.theme(palette=...)`). Every
             # trace already bakes its own color and every categorical channel
             # ships its own resolved `palette`, so this is only the indexed
@@ -346,9 +371,9 @@ class PayloadMixin(_Host):
             # `palette_cycle`, not `list(self.palette)`: a `{category: color}`
             # palette would otherwise ship its category NAMES as colors.
             spec["palette"] = self.palette_cycle
-        if self.legend_options:
-            legend = self.legend_options
-            if legend.get("loc") == "best":
+        if build_plan["attach_legend"]:
+            legend = legend_opts
+            if build_plan["resolve_legend_best"]:
                 # Settle `best` here, once, so the client and the two static
                 # writers all receive a concrete location and cannot disagree
                 # about it (§28: the decision ships, it is not re-made
@@ -357,43 +382,36 @@ class PayloadMixin(_Host):
 
                 legend = {**legend, "loc": resolve_for_figure(self)}
             spec["legend"] = legend
-        extra_legends = getattr(self, "extra_legends", None)
-        if extra_legends:
-            spec["extra_legends"] = extra_legends
-        if self.frame_sides is not None:
+        if build_plan["attach_extra_legends"]:
+            spec["extra_legends"] = getattr(self, "extra_legends", None)
+        if build_plan["attach_frame_sides"]:
             spec["frame_sides"] = list(self.frame_sides)
-        if self.colorbar_options:
+        if build_plan["attach_colorbar"]:
             spec["colorbar"] = self.colorbar_options
-        if self.show_modebar is False:
+        if build_plan["attach_show_modebar"]:
             spec["show_modebar"] = False
-        export_options = getattr(self, "export_options", None)
-        if export_options:
-            spec["export"] = export_options
-        if self.show_tooltip is False:
+        if build_plan["attach_export"]:
+            spec["export"] = getattr(self, "export_options", None)
+        if build_plan["attach_show_tooltip"]:
             spec["show_tooltip"] = False
-        if self.padding is not None:
+        if build_plan["attach_padding"]:
             spec["padding"] = list(self.padding)
-        dom = self._dom_spec()
-        if dom:
+        if build_plan["attach_dom"]:
             spec["dom"] = dom
-        if self.tooltip is not None:
+        if build_plan["attach_tooltip"]:
             spec["tooltip"] = self.tooltip
-        mark_style = self._mark_style_spec()
-        if mark_style:
+        if build_plan["attach_mark_style"]:
             spec["mark_style"] = mark_style
-        interaction = self._interaction_spec()
-        if interaction:
-            spec["interaction"] = interaction
-        annotations = self._annotation_specs()
-        if annotations:
+        if build_plan["attach_interaction"]:
+            spec["interaction"] = interaction_spec
+        if build_plan["attach_annotations"]:
             spec["annotations"] = annotations
-        if self.animation_options is not None:
+        if build_plan["attach_animation"]:
             spec["animation"] = dict(self.animation_options)
-        graph_meta = getattr(self, "_graph_meta", None)
-        if graph_meta:
+        if build_plan["attach_graph"]:
             # JSON-safe graph meta for neighborhood highlight / LOD (§28).
             # CSR offsets/neighbors stay u64 lists; geometry remains segments+scatter.
-            spec["graph"] = list(graph_meta)
+            spec["graph"] = list(getattr(self, "_graph_meta", None))
         return spec
 
     @staticmethod
