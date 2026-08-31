@@ -235,6 +235,16 @@ def _public_polar_line() -> Figure:
     return figure
 
 
+def _public_polar_scatter() -> Figure:
+    """Bounded polar scatter with deterministic cross-host identity."""
+    figure = Figure(width=320, height=240, coords="polar")
+    figure.axis_options["x"]["domain"] = (0.0, _PUBLIC_POLAR_TAU)
+    figure.axis_options["y"]["domain"] = (0.0, 5.0)
+    figure.scatter([0.5, 2.5], [1.0, 3.0], color="#3987e5", size=6, opacity=0.8, name="pscat")
+    figure.traces[-1].id = 0
+    return figure
+
+
 def _public_polar_heatmap() -> Figure:
     """Constant-style polar lattice heatmap with deterministic cross-host identity."""
     figure = Figure(width=320, height=240, coords="polar")
@@ -1508,6 +1518,7 @@ def test_public_constant_density_matches_exact_cross_host_scene_bytes() -> None:
         (_public_polar_hexbin, "public_polar_hexbin_sha256"),
         (_public_polar_bar, "public_polar_bar_sha256"),
         (_public_polar_line, "public_polar_line_sha256"),
+        (_public_polar_scatter, "public_polar_scatter_sha256"),
         (_public_polar_heatmap, "public_polar_heatmap_sha256"),
     ],
 )
