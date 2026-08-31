@@ -49,6 +49,9 @@ function buildCase(name) {
   } else if (name === "heatmap_colormap") {
     fig.heatmap([[0, 1], [1, 0]], { colormap: "viridis" });
     fig.traces[0].id = 11;
+  } else if (name === "triangle_mesh_single") {
+    fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
+    fig.traces[0].id = 20;
   } else {
     throw new Error(`unknown case ${name}`);
   }
@@ -59,7 +62,7 @@ test("payload cross-host fixture contract", () => {
   assert.equal(fixture.schema, "xyg.payload-cross-host/v1");
   assert.equal(fixture.protocol, PROTOCOL_VERSION);
   assert.equal(Number(fixture.abi_version), abiVersion());
-  assert.equal(fixture.cases.length, 8);
+  assert.equal(fixture.cases.length, 9);
 });
 
 for (const entry of fixture.cases) {
@@ -71,6 +74,12 @@ for (const entry of fixture.cases) {
     assert.equal(buffers.length, entry.payload_blob_len);
     assert.equal(sha256(buffers), entry.payload_blob_sha256);
     assert.equal(Buffer.from(buffers).toString("hex"), entry.payload_blob_hex);
+    if (entry.name === "triangle_mesh_single") {
+      assert.ok(trace.x2 != null);
+      assert.ok(trace.y2 != null);
+      assert.equal(trace.x, undefined);
+      assert.equal(trace.y, undefined);
+    }
     if (entry.trace_keys != null) {
       assert.deepEqual(trace.keys, entry.trace_keys);
       const lo = spec.columns[trace.keys.lo];

@@ -107,6 +107,11 @@ def _build_case(name: str) -> tuple[Figure, dict[str, object]]:
         fig.heatmap([[0, 1], [1, 0]], colormap="viridis")
         fig.traces[0].id = 11
         return fig, {}
+    if name == "triangle_mesh_single":
+        fig = Figure(width=240, height=160)
+        fig.triangle_mesh([0.0], [0.0], [1.0], [0.0], [0.5], [1.0])
+        fig.traces[0].id = 20
+        return fig, {}
     raise KeyError(name)
 
 
@@ -145,7 +150,7 @@ def test_fixture_contract(fixture: dict) -> None:
     assert fixture["schema"] == "xyg.payload-cross-host/v1"
     assert fixture["protocol"] == PROTOCOL_VERSION
     assert int(fixture["abi_version"]) == int(_native.ABI_VERSION)
-    assert len(fixture["cases"]) == 8
+    assert len(fixture["cases"]) == 9
     assert {case["name"] for case in fixture["cases"]} == {
         "scatter_direct",
         "scatter_categorical_color",
@@ -155,6 +160,7 @@ def test_fixture_contract(fixture: dict) -> None:
         "hexbin_colormap",
         "bar_compact",
         "heatmap_colormap",
+        "triangle_mesh_single",
     }
 
 
@@ -169,6 +175,7 @@ def test_fixture_contract(fixture: dict) -> None:
         "hexbin_colormap",
         "bar_compact",
         "heatmap_colormap",
+        "triangle_mesh_single",
     ],
 )
 def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> None:
@@ -191,6 +198,7 @@ def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> Non
         "hexbin_colormap",
         "bar_compact",
         "heatmap_colormap",
+        "triangle_mesh_single",
     ],
 )
 def test_node_live_matches_python(case_name: str, node_payload_golden: dict) -> None:

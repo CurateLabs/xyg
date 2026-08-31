@@ -1027,17 +1027,15 @@ test("_emitScatter ships stroke_ch like Python _ship_trace_styles", () => {
   assert.equal(spec.traces[0].stroke.color, "#112233");
 });
 
-test("_emitTriangleMesh ships x/y unlike Python x2/y2", () => {
-  // Python `_emit_triangle_mesh` ships x2/y2. Node keeps x/y for the third
-  // vertex. Recorded emit-mesh-xy stay-host.
+test("_emitTriangleMesh ships x2/y2 via payload column ship registry", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "triangle_mesh");
-  assert.ok(spec.traces[0].x != null);
-  assert.ok(spec.traces[0].y != null);
-  assert.equal(spec.traces[0].x2, undefined);
-  assert.equal(spec.traces[0].y2, undefined);
+  assert.ok(spec.traces[0].x2 != null);
+  assert.ok(spec.traces[0].y2 != null);
+  assert.equal(spec.traces[0].x, undefined);
+  assert.equal(spec.traces[0].y, undefined);
 });
 
 test("_emitHistogram ships color_ch via payload channel attach", () => {

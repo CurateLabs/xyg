@@ -88,6 +88,10 @@ const cases = [
     fig.heatmap([[0, 1], [1, 0]], { colormap: "viridis" });
     fig.traces[0].id = 11;
   }),
+  caseEntry("triangle_mesh_single", (fig) => {
+    fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
+    fig.traces[0].id = 20;
+  }),
 ];
 
 const out = {

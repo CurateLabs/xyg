@@ -112,6 +112,19 @@
       "payload_blob_sha256": "d72fb9fe14d3250816558b2800a2205f395174fe86c62efa3dbbea0e998f802c",
       "payload_blob_hex": "000000000000803f0000803f00000000",
       "trace_keys": null
+    },
+    {
+      "name": "triangle_mesh_single",
+      "width": 240,
+      "height": 160,
+      "trace_id": 20,
+      "kind": "triangle_mesh",
+      "tier": "direct",
+      "n_marks": 1,
+      "payload_blob_len": 24,
+      "payload_blob_sha256": "9d908ecfb6b256def8b49a7c504e6c889c4b0e41fe6ce3e01863dd7b61a20aa0",
+      "payload_blob_hex": "000000000000000000000000000000000000000000000000",
+      "trace_keys": null
     }
   ],
   "gaps": {}
