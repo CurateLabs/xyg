@@ -226,6 +226,15 @@ function interactionSpec(fig) {
   return spec;
 }
 
+/** Chart palette as a positional cycle (Python `Figure.palette_cycle`). */
+function paletteCycle(palette) {
+  if (palette == null) return null;
+  if (typeof palette === "object" && !Array.isArray(palette)) {
+    return Object.values(palette);
+  }
+  return [...palette];
+}
+
 function payloadBuildPlanForFigure(fig, { split, specTraces, dom, annotations, markStyle, interaction }) {
   const wasmSources = specTraces
     .map((entry) => entry.density?.wasm_source)
@@ -1317,6 +1326,7 @@ export class Figure {
     this.interaction = opts.interaction ?? {};
     this.mark_style = opts.mark_style ?? {};
     this.animation_options = opts.animation_options ?? opts.animationOptions ?? null;
+    this.palette = opts.palette ?? null;
     this.padding = opts.padding ?? null;
     this.class_name = opts.class_name ?? opts.className ?? null;
     this.class_names = opts.class_names ?? opts.classNames ?? {};
@@ -3545,6 +3555,9 @@ export class Figure {
     }
     if (buildPlan.attachCoords) {
       spec.coords = this.coords;
+    }
+    if (buildPlan.attachPalette) {
+      spec.palette = paletteCycle(this.palette);
     }
     if (buildPlan.attachPadding) {
       spec.padding = [...this.padding];

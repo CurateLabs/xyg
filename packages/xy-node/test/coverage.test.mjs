@@ -517,6 +517,24 @@ test("buildPayload ships ABI 303 attach flags like Python build_payload", () => 
   assert.deepEqual(spec.graph, [{ layout: "force" }]);
 });
 
+test("buildPayload ships chart palette cycle like Python build_payload", () => {
+  const fig = figure({ width: 240, height: 160, palette: ["#ff0000", "#00ff00", "#0000ff"] });
+  fig.scatter([0, 1], [0, 1]);
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.palette, ["#ff0000", "#00ff00", "#0000ff"]);
+});
+
+test("buildPayload ships mapped palette values not labels like Python palette_cycle", () => {
+  const fig = figure({
+    width: 240,
+    height: 160,
+    palette: { a: "#ff0000", b: "#00ff00", c: "#0000ff" },
+  });
+  fig.scatter([0, 1], [0, 1]);
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(spec.palette, ["#ff0000", "#00ff00", "#0000ff"]);
+});
+
 test("buildPayload omits linear axis scale like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([1, 10], [1, 10]);
