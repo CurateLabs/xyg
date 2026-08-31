@@ -96,6 +96,19 @@ def _build_case(name: str) -> tuple[Figure, dict[str, object]]:
         fig.line([1.0, 10.0], [1.0, 10.0])
         fig.traces[0].id = 40
         return fig, {}
+    if name == "line_log_m4_bin_x":
+        n = 10001
+        x = np.array(
+            [1 + i * 0.001 if i < 9000 else 10 + (i - 9000) * 0.09 for i in range(n)],
+            dtype=np.float64,
+        )
+        y = np.arange(n, dtype=np.float64)
+        fig = Figure(width=240, height=160)
+        fig.set_axis("x", type_="log")
+        fig.axis_options["x"]["domain"] = (1.0, 100.0)
+        fig.line(x, y)
+        fig.traces[0].id = 45
+        return fig, {}
     if name == "scatter_log_ship_scale":
         fig = Figure(width=240, height=160)
         fig.set_axis("x", type_="log")
@@ -335,7 +348,7 @@ def test_fixture_contract(fixture: dict) -> None:
     assert fixture["schema"] == "xyg.payload-cross-host/v1"
     assert fixture["protocol"] == PROTOCOL_VERSION
     assert int(fixture["abi_version"]) == int(_native.ABI_VERSION)
-    assert len(fixture["cases"]) == 30
+    assert len(fixture["cases"]) == 31
     assert {case["name"] for case in fixture["cases"]} == {
         "scatter_direct",
         "scatter_categorical_color",
@@ -343,6 +356,7 @@ def test_fixture_contract(fixture: dict) -> None:
         "scatter_color_ch",
         "line_transition_keys",
         "line_log_ship_scale",
+        "line_log_m4_bin_x",
         "scatter_log_ship_scale",
         "area_log_ship_scale",
         "histogram_log_ship_scale",
@@ -379,6 +393,7 @@ def test_fixture_contract(fixture: dict) -> None:
         "scatter_color_ch",
         "line_transition_keys",
         "line_log_ship_scale",
+        "line_log_m4_bin_x",
         "scatter_log_ship_scale",
         "area_log_ship_scale",
         "histogram_log_ship_scale",
@@ -423,6 +438,7 @@ def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> Non
         "scatter_color_ch",
         "line_transition_keys",
         "line_log_ship_scale",
+        "line_log_m4_bin_x",
         "scatter_log_ship_scale",
         "area_log_ship_scale",
         "histogram_log_ship_scale",

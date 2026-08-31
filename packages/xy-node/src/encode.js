@@ -4159,7 +4159,11 @@ export function shipRegistryColumns(entry, trace, pw, columnPlan, arrays, opts =
     const values = arrays[key] ?? arrays[slot];
     let colIdx;
     if (col.shipMethod === "offset") {
-      colIdx = pw.ship(values, trace[slot], { scale: col.shipScale });
+      const slotCol = trace[`_${slot}Col`];
+      const column = slotCol instanceof Column
+        ? slotCol
+        : (trace[slot] instanceof Column ? trace[slot] : new Column(trace[slot]));
+      colIdx = pw.ship(values, column, { scale: col.shipScale });
     } else if (col.shipMethod === "f64") {
       if (typeof pw.shipF64 !== "function") {
         throw new RangeError("payload shipF64 unavailable");
