@@ -349,6 +349,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | (this PR) | 302 | `xyg_payload_density_trace_emit_plan` | `_density_trace_spec` pyramid/bin2d routing, wire admits, sample/visible orchestration |
 | (this PR) | 303 | `xyg_payload_build_plan` | `build_payload` / `_payload_spec` wasm_density, show_legend, dom/padding, optional attach orchestration |
 | (this PR) | 304 | `xyg_payload_axis_spec_attach_plan` | `_axis_spec` cartesian vs polar field attach orchestration |
+| (this PR) | 305 | `xyg_scene_xytc_figure_plan` / `xyg_scene_xytc_trace_dispatch_plan` | `_pack_xytc` / `packXyTc` figure legend attach and per-trace kind-class dispatch routing |
 
 Largest remaining Python core surfaces: `_payload` emit gather/ship and `_scene_v3` XYTC/XYTA pack loops — not the ABI-218–291 admit slices already kernelized.
 

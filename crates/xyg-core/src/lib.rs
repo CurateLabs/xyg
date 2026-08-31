@@ -54,6 +54,7 @@ use xyg_engine::scene;
 use xyg_engine::scene_annotations::{self, AnnotationError};
 use xyg_engine::scene_heatmap::{self, HeatmapFactError};
 use xyg_engine::scene_extras::{self, ExtrasError};
+use xyg_engine::scene_pack_orchestrate;
 use xyg_engine::scene_density::{self, DensityGridError};
 use xyg_engine::scene_colorbar::{self, ColorbarError};
 use xyg_engine::pack_figure_chrome;
@@ -161,7 +162,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 304;
+pub const ABI_VERSION: u32 = 305;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -16878,6 +16879,123 @@ pub unsafe extern "C" fn xyg_payload_axis_spec_attach_plan(
             attach_grid_shape: u32::from(attach_grid_shape != 0),
             attach_hole: u32::from(attach_hole != 0),
             attach_r_origin: u32::from(attach_r_origin != 0),
+        };
+        1
+    })
+}
+
+/// Packed XYTC figure orchestration plan (ABI 305).
+#[repr(C)]
+pub struct XygSceneXytcFigurePlan {
+    pub show_legend: u32,
+}
+
+/// Figure-level XYTC pack orchestration (ABI 305).
+///
+/// Hosts coerce ``show_legend`` (default ``true`` when absent). Rust owns the
+/// shared legend attach bit passed into per-trace meta packing.
+///
+/// # Safety
+/// ``out`` must be valid for writes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_xytc_figure_plan(
+    show_legend: i32,
+    out: *mut XygSceneXytcFigurePlan,
+) -> i32 {
+    ffi_guard(0, || {
+        if out.is_null() {
+            return 0;
+        }
+        let mut show = 0i32;
+        if scene_pack_orchestrate::scene_xytc_figure_plan(show_legend, &mut show) == 0 {
+            return 0;
+        }
+        (*out).show_legend = u32::from(show != 0);
+        1
+    })
+}
+
+/// Packed per-trace XYTC dispatch plan (ABI 305).
+#[repr(C)]
+pub struct XygSceneXytcTraceDispatchPlan {
+    pub kind_class: u32,
+    pub pack_opacity: u32,
+    pub pack_hex_pitch: u32,
+    pub pack_stroke_perimeter: u32,
+    pub pack_color2: u32,
+    pub pack_radius: u32,
+    pub marker_path_branch: u32,
+    pub marker_glyph_branch: u32,
+    pub meta_use_density: u32,
+    pub meta_joined_fill: u32,
+}
+
+/// Per-trace XYTC pack dispatch orchestration (ABI 305).
+///
+/// Owns kind-class gates and scatter marker branch routing before hosts run
+/// per-field XYTC pack admits.
+///
+/// # Safety
+/// ``kind`` must address ``kind_len`` readable bytes when ``kind_len`` is
+/// non-zero. ``out`` must be valid for writes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_xytc_trace_dispatch_plan(
+    kind: *const u8,
+    kind_len: usize,
+    marker_path_present: i32,
+    use_density: i32,
+    joined_fill: i32,
+    out: *mut XygSceneXytcTraceDispatchPlan,
+) -> i32 {
+    ffi_guard(0, || {
+        if out.is_null() {
+            return 0;
+        }
+        let kind_text = if kind_len == 0 {
+            ""
+        } else {
+            if kind.is_null() {
+                return 0;
+            }
+            let slice = std::slice::from_raw_parts(kind, kind_len);
+            match std::str::from_utf8(slice) {
+                Ok(text) => text,
+                Err(_) => return 0,
+            }
+        };
+        let mut plan = scene_pack_orchestrate::XytcTraceDispatchPlan {
+            kind_class: 0,
+            pack_opacity: 0,
+            pack_hex_pitch: 0,
+            pack_stroke_perimeter: 0,
+            pack_color2: 0,
+            pack_radius: 0,
+            marker_path_branch: 0,
+            marker_glyph_branch: 0,
+            meta_use_density: 0,
+            meta_joined_fill: 0,
+        };
+        if scene_pack_orchestrate::scene_xytc_trace_dispatch_plan(
+            kind_text,
+            marker_path_present,
+            use_density,
+            joined_fill,
+            &mut plan,
+        ) == 0
+        {
+            return 0;
+        }
+        *out = XygSceneXytcTraceDispatchPlan {
+            kind_class: plan.kind_class as u32,
+            pack_opacity: u32::from(plan.pack_opacity != 0),
+            pack_hex_pitch: u32::from(plan.pack_hex_pitch != 0),
+            pack_stroke_perimeter: u32::from(plan.pack_stroke_perimeter != 0),
+            pack_color2: u32::from(plan.pack_color2 != 0),
+            pack_radius: u32::from(plan.pack_radius != 0),
+            marker_path_branch: u32::from(plan.marker_path_branch != 0),
+            marker_glyph_branch: u32::from(plan.marker_glyph_branch != 0),
+            meta_use_density: u32::from(plan.meta_use_density != 0),
+            meta_joined_fill: u32::from(plan.meta_joined_fill != 0),
         };
         1
     })

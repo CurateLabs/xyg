@@ -133,6 +133,8 @@ _POINTER_C: dict[str, str] = {
     "*mut XygPayloadDensityTraceEmitPlan": "void *",
     "*mut XygPayloadBuildPlan": "void *",
     "*mut XygPayloadAxisSpecAttachPlan": "void *",
+    "*mut XygSceneXytcFigurePlan": "void *",
+    "*mut XygSceneXytcTraceDispatchPlan": "void *",
     "*const XygTemporalGraphSnapshotBuffers": "const void *",
     "*const i32": "const int32_t *",
     "*const *const f64": "const double *const *",

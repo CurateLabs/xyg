@@ -74,7 +74,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -3556,13 +3556,20 @@ export function packXyTcStrokeWidth(style) {
 function packXyTc(figure) {
   const traces = figure.traces ?? [];
   const records = [];
-  const showLegend = figureShowLegend(figure) !== false;
+  const figurePlan = sceneXytcFigurePlan({ showLegend: figureShowLegend(figure) !== false });
+  const showLegend = figurePlan.showLegend;
   for (const trace of traces) {
     const style = trace.style ?? {};
     let flags = 0;
     const kindName = String(trace.kind ?? "");
     const kind = encodeUtf8(kindName);
-    const kindClass = sceneKindClass(kindName);
+    const dispatch = sceneXytcTraceDispatchPlan({
+      kind: kindName,
+      markerPathPresent: kindName === "scatter" && style.marker_path != null,
+      useDensity: kindName === "scatter" && scatterUsesDensity(trace),
+      joinedFill: kindName === "triangle_mesh" && Boolean(style.joined_fill),
+    });
+    const kindClass = dispatch.kindClass;
     const name = trace.name != null && String(trace.name).length ? String(trace.name) : "";
     const nameB = encodeUtf8(name);
     const packedSymbol = packXyTcSymbol(style);
@@ -3571,7 +3578,7 @@ function packXyTc(figure) {
     let symbolInt = packedSymbol.symbolInt;
     const opacity = Number(style.opacity ?? 1);
     const packedOpacity = sceneXytcOpacityPack(
-      kindClass & SCENE_KIND_CLASS_OPACITY ? 1 : 0,
+      dispatch.packOpacity ? 1 : 0,
       kindClass & SCENE_KIND_CLASS_BAND ? 1 : 0,
       style,
     );
@@ -3587,14 +3594,15 @@ function packXyTc(figure) {
     let lineWidth = packedNumeric.lineWidth;
     let hexDx = Number.NaN;
     let hexDy = Number.NaN;
-    const packedHex = sceneXytcHexPitchPack(
-      kindClass & SCENE_KIND_CLASS_HEXBIN ? 1 : 0,
-      style,
-    );
-    flags |= packedHex.flags;
-    hexDx = packedHex.hexDx;
-    hexDy = packedHex.hexDy;
-    flags |= packXyTcStrokePerimeter(style, kindClass);
+    if (dispatch.packHexPitch) {
+      const packedHex = sceneXytcHexPitchPack(1, style);
+      flags |= packedHex.flags;
+      hexDx = packedHex.hexDx;
+      hexDy = packedHex.hexDy;
+    }
+    if (dispatch.packStrokePerimeter) {
+      flags |= packXyTcStrokePerimeter(style, kindClass);
+    }
     const packedDash = packXyTcDash(style);
     flags |= packedDash.flags;
     const dashB = packedDash.dashB;
@@ -3634,21 +3642,23 @@ function packXyTc(figure) {
       colorMode = packedChannel.mode;
       colorConst = packedChannel.constant;
     }
-    const packedColor2 = packXyTcColor2(trace, flags, gradientBlob);
-    flags |= packedColor2.flags;
-    gradientBlob = packedColor2.gradientBlob;
+    if (dispatch.packColor2) {
+      const packedColor2 = packXyTcColor2(trace, flags, gradientBlob);
+      flags |= packedColor2.flags;
+      gradientBlob = packedColor2.gradientBlob;
+    }
     let markerBlob = new Uint8Array();
     let markerPathPresent = 0;
     let markerPacked = 0;
     let glyphPacked = 0;
-    if (trace.kind === "scatter" && style.marker_path != null) {
+    if (dispatch.markerPathBranch) {
       markerPathPresent = 1;
       const packed = packMarkerBlob(style.marker_path);
       if (packed) {
         markerPacked = 1;
         markerBlob = packed;
       }
-    } else if (trace.kind === "scatter") {
+    } else if (dispatch.markerGlyphBranch) {
       const packedGlyph = admittedMarkerGlyph(style.marker_glyph);
       if (packedGlyph != null) {
         glyphPacked = 1;
@@ -3660,8 +3670,16 @@ function packXyTc(figure) {
       markerPacked,
       glyphPacked,
     });
-    const packedRadius = sceneXytcRadiusPack(trace.kind, style);
-    flags |= packedRadius.flags;
+    let rTip = 0;
+    let rBase = 0;
+    let wedgeGap = 0;
+    if (dispatch.packRadius) {
+      const packedRadius = sceneXytcRadiusPack(trace.kind, style);
+      flags |= packedRadius.flags;
+      rTip = packedRadius.rTip;
+      rBase = packedRadius.rBase;
+      wedgeGap = packedRadius.wedgeGap;
+    }
     const prefix = new Uint8Array(160);
     const view = new DataView(prefix.buffer);
     prefix.set(encodeUtf8("XYTR").slice(0, 4), 0);
@@ -3696,9 +3714,9 @@ function packXyTc(figure) {
     view.setUint32(128, dashPattern.length, true);
     view.setUint32(132, markerBlob.length, true);
     view.setUint32(136, gradientBlob.length, true);
-    view.setFloat64(140, packedRadius.rTip, true);
-    view.setFloat64(148, packedRadius.rBase, true);
-    view.setFloat32(156, packedRadius.wedgeGap, true);
+    view.setFloat64(140, rTip, true);
+    view.setFloat64(148, rBase, true);
+    view.setFloat32(156, wedgeGap, true);
     const pattern = new Uint8Array(dashPattern.length * 8);
     const patternView = new DataView(pattern.buffer);
     dashPattern.forEach((value, index) => patternView.setFloat64(index * 8, value, true));

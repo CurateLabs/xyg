@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 304
-SIGNATURE_SHA256 = "5a890f83965e4874a69d6460612f7beeb30118df9149f21dcd83e878e96d2726"
+ABI_VERSION = 305
+SIGNATURE_SHA256 = "90c0349d1e2c88acabd496f60660393d1a0d97ccf728400720c6cc1b04ebb0df"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -1222,6 +1222,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_xytc_dash_pattern_pack
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_scene_xytc_figure_plan(int32_t show_legend, void * out)
+    function = lib.xyg_scene_xytc_figure_plan
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_void_p]
     # int32_t xyg_scene_xytc_hex_pitch_pack(int32_t hexbin, int32_t has_dx, int32_t has_dy, double dx, double dy, uint32_t * out_flags, double * out_hex_dx, double * out_hex_dy)
     function = lib.xyg_scene_xytc_hex_pitch_pack
     function.restype = ctypes.c_int32
@@ -1254,6 +1258,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_xytc_symbol_int_pack
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_scene_xytc_trace_dispatch_plan(const uint8_t * kind, size_t kind_len, int32_t marker_path_present, int32_t use_density, int32_t joined_fill, void * out)
+    function = lib.xyg_scene_xytc_trace_dispatch_plan
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p]
     # size_t xyg_sector_triangles(const double * values, size_t len, const double * explode, double center_x, double center_y, double radius, double inner_radius, double start_degrees, int32_t counterclockwise, int32_t normalize, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, double * out_sector, size_t capacity)
     function = lib.xyg_sector_triangles
     function.restype = ctypes.c_size_t
