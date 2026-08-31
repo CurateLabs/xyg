@@ -94,6 +94,21 @@ const cases = [
     fig.traces[0].color_ch = { mode: "constant", constant: "#445566" };
     fig.traces[0].id = 22;
   }),
+  caseEntry("rect_color_ch", (fig) => {
+    fig.bar([0, 1], [1, 2], { color: "#112233" });
+    fig.traces[0].color_ch = { mode: "constant", constant: "#445566" };
+    fig.traces[0].id = 23;
+  }),
+  caseEntry("mesh_style_channels", (fig) => {
+    fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
+    fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
+    fig.traces[0].id = 24;
+  }),
+  caseEntry("ribbon_style_channels", (fig) => {
+    fig.ribbon([0], [1], [0], [1], [0], [1], { color: "#112233" });
+    fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
+    fig.traces[0].id = 25;
+  }),
   caseEntry("hexbin_colormap", (fig) => {
     fig.axis_options = { x: { domain: [0, 4] }, y: { domain: [0, 5] } };
     fig.hexbin(

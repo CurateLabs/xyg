@@ -2879,9 +2879,6 @@ export class Figure {
       { includeTraceStyles: plan.includeTraceStyles, hasColor2Ch: plan.attachColor2 },
     );
     attachTooltipRows(entry, t, sel);
-    // Node payload ribbon omits style_channels. Python `_emit_ribbon` ships
-    // them as `channels` via `_ship_trace_styles`. Matching Python would add
-    // entry.channels. Recorded emit-ribbon-channels stay-host.
     if (plan.attachTransition) {
       attachTransitionEntry(entry, t, pw, sel);
     }

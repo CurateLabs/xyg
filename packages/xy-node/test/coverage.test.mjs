@@ -1061,13 +1061,13 @@ test("_emitSegments ships color_ch like Python _emit_segments", () => {
   assert.equal(spec.traces[0].color.color, "#445566");
 });
 
-test("_emitRect ships color_ch via payload channel attach", () => {
+test("_emitRect ships color_ch like Python _emit_rect", () => {
   const fig = figure({ width: 240, height: 160 });
-  fig.bar([0, 1], [1, 2]);
-  fig.traces[0].color_ch = { mode: "constant", constant: "#112233" };
+  fig.bar([0, 1], [1, 2], { color: "#112233" });
+  fig.traces[0].color_ch = { mode: "constant", constant: "#445566" };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "bar");
-  assert.equal(spec.traces[0].color.color, "#112233");
+  assert.equal(spec.traces[0].color.color, "#445566");
 });
 
 test("_emitRibbon ships color_ch via payload channel attach", () => {
