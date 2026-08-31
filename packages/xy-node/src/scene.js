@@ -1393,7 +1393,7 @@ export function packPolarSceneInput(figure) {
   view.setFloat64(52, Number(rLo), true);
   view.setFloat64(60, Number(rHi), true);
   view.setFloat64(68, origin == null ? Number.NaN : Number(origin), true);
-  view.setFloat64(76, Number(polarAxisHole(rAxis) ?? 0), true);
+  view.setFloat64(76, Number(polarAxisHole(rAxis) || 0), true);
   view.setFloat64(84, scale.constant, true);
   return out;
 }
@@ -1875,7 +1875,7 @@ export function polarLayout(thetaAxis = {}, rAxis = {}, plot = {}) {
     Number(rLo),
     Number(rHi),
     origin == null ? Number.NaN : Number(origin),
-    Number(polarAxisHole(rAxis) ?? 0),
+    Number(polarAxisHole(rAxis) || 0),
     scale.kind,
     scale.constant,
     scale.maskNonpositive ? 1 : 0,
