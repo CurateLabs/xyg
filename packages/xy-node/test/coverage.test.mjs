@@ -578,17 +578,14 @@ test("_emitRibbon uses log ship scale via payload ribbon plan", () => {
   assert.equal(x0Col.offset, 0);
 });
 
-test("_emitSegments omits ship scale unlike Python _axis_scale", () => {
-  // Python `_emit_segments` passes `_axis_scale` into `pw.ship`, pinning log
-  // offset to 0. Node segments encode keeps the column midpoint. Recorded
-  // emit-segments-ship-scale stay-host.
+test("_emitSegments uses log ship scale via payload segments plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.setAxis("x", { type: "log" });
   fig.segments([1, 10], [1, 10], [2, 20], [2, 20]);
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "segments");
   const x0Col = spec.columns[spec.traces[0].x0];
-  assert.notEqual(x0Col.offset, 0);
+  assert.equal(x0Col.offset, 0);
 });
 
 test("_emitRect uses log ship scale via payload nonxy plan", () => {
@@ -781,16 +778,13 @@ test("_emitHistogram ships transition_keys via payload bar-hist plan", () => {
   assert.notEqual(spec.traces[0].keys, undefined);
 });
 
-test("_emitSegments omits transition_keys unlike Python _transition_entry", () => {
-  // Python `_emit_segments` ships transition_keys as `keys`. Node segments
-  // payload keeps no keys field even when transition_keys is present.
-  // Recorded emit-segments-transition stay-host.
+test("_emitSegments ships transition_keys via payload segments plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.segments([0], [0], [1], [1]);
   fig.traces[0].transition_keys = [[1, 2]];
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "segments");
-  assert.equal(spec.traces[0].keys, undefined);
+  assert.notEqual(spec.traces[0].keys, undefined);
 });
 
 test("_emitTriangleMesh ships transition_keys via payload mesh plan", () => {
@@ -989,16 +983,13 @@ test("_emitHistogram ships stroke_ch via payload channel attach", () => {
   assert.equal(spec.traces[0].stroke.color, "#112233");
 });
 
-test("_emitSegments omits stroke_ch unlike Python _ship_trace_styles", () => {
-  // Python `_emit_segments` ships stroke_ch via `_ship_trace_styles`. Node
-  // segments payload keeps no stroke field even when stroke_ch is present.
-  // Recorded emit-segments-stroke stay-host.
+test("_emitSegments ships stroke_ch via payload channel attach", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.segments([0], [0], [1], [1]);
   fig.traces[0].stroke_ch = { mode: "constant", constant: "#112233" };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "segments");
-  assert.equal(spec.traces[0].stroke, undefined);
+  assert.equal(spec.traces[0].stroke.color, "#112233");
 });
 
 test("_emitTriangleMesh ships stroke_ch via payload channel attach", () => {
@@ -1314,15 +1305,13 @@ test("_emitRibbon ships animation via payload ribbon plan", () => {
 });
 
 
-test("_emitSegments omits animation unlike Python _transition_entry", () => {
-  // Python `_emit_segments` ships t.animation via `_transition_entry`. Node
-  // segments encode omits that field. Recorded emit-segments-animation stay-host.
+test("_emitSegments ships animation via payload segments plan", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.segments([0], [0], [1], [1]);
   fig.traces[0].animation = { duration: 100 };
   const { spec } = fig.buildPayload();
   assert.equal(spec.traces[0].kind, "segments");
-  assert.equal(spec.traces[0].animation, undefined);
+  assert.notEqual(spec.traces[0].animation, undefined);
 });
 
 test("_emitScatterDensity omits animation unlike Python _transition_entry", () => {

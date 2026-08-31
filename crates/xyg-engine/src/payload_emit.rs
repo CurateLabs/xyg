@@ -361,6 +361,42 @@ pub fn payload_ribbon_emit_plan(
     1
 }
 
+/// Segment emit skeleton from ``_emit_segments``.
+///
+/// Owns palette default for missing trace color, axis ship scales,
+/// trace-channel attach slot/styles, segment gather attempt policy,
+/// errorbar role-key transition attach, and transition wrap.
+/// Hosts still call ``payload_segments_emit_gather``, apply indices,
+/// run ``_rect_finite_sel``, ship columns, and attach channels.
+pub fn payload_segments_emit_plan(
+    kind: &str,
+    n_marks: usize,
+    style_color_is_none: i32,
+    x_axis_type: i32,
+    y_axis_type: i32,
+    has_transition_keys: i32,
+    out_n_marks: &mut usize,
+    out_apply_palette_default: &mut i32,
+    out_x_ship_scale: &mut i32,
+    out_y_ship_scale: &mut i32,
+    out_channel_slot: &mut i32,
+    out_include_trace_styles: &mut i32,
+    out_attach_transition: &mut i32,
+    out_attempt_gather: &mut i32,
+    out_attempt_role_keys: &mut i32,
+) -> i32 {
+    *out_n_marks = n_marks;
+    *out_apply_palette_default = i32::from(style_color_is_none != 0);
+    *out_x_ship_scale = payload_base_entry_ship_scale(x_axis_type);
+    *out_y_ship_scale = payload_base_entry_ship_scale(y_axis_type);
+    *out_channel_slot = PAYLOAD_SHIP_CHANNELS_IF_COLOR;
+    *out_include_trace_styles = 1;
+    *out_attach_transition = 1;
+    *out_attempt_gather = 1;
+    *out_attempt_role_keys = i32::from(kind == "errorbar" && has_transition_keys != 0);
+    1
+}
+
 /// Transition-entry / tooltip-row attach orchestration from
 /// ``_transition_entry`` and ``_attach_tooltip_rows``.
 ///
@@ -1690,5 +1726,86 @@ mod tests {
         assert_eq!(attempt_gather, 0);
         assert_eq!(attach_color2, 0);
         assert_eq!(apply_palette, 0);
+    }
+
+    #[test]
+    fn payload_segments_emit_plan_errorbar_role_keys_and_gather() {
+        let mut n_marks = 0usize;
+        let mut apply_palette = -1;
+        let mut x_scale = -1;
+        let mut y_scale = -1;
+        let mut channel_slot = -1;
+        let mut include_styles = -1;
+        let mut attach_transition = -1;
+        let mut attempt_gather = -1;
+        let mut attempt_role_keys = -1;
+        assert_eq!(
+            payload_segments_emit_plan(
+                "errorbar",
+                33,
+                1,
+                1,
+                0,
+                1,
+                &mut n_marks,
+                &mut apply_palette,
+                &mut x_scale,
+                &mut y_scale,
+                &mut channel_slot,
+                &mut include_styles,
+                &mut attach_transition,
+                &mut attempt_gather,
+                &mut attempt_role_keys,
+            ),
+            1
+        );
+        assert_eq!(n_marks, 33);
+        assert_eq!(apply_palette, 1);
+        assert_eq!(x_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_LOG);
+        assert_eq!(y_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_LINEAR);
+        assert_eq!(channel_slot, PAYLOAD_SHIP_CHANNELS_IF_COLOR);
+        assert_eq!(include_styles, 1);
+        assert_eq!(attach_transition, 1);
+        assert_eq!(attempt_gather, 1);
+        assert_eq!(attempt_role_keys, 1);
+    }
+
+    #[test]
+    fn payload_segments_emit_plan_stem_no_role_keys_without_transition() {
+        let mut n_marks = 0usize;
+        let mut apply_palette = -1;
+        let mut x_scale = -1;
+        let mut y_scale = -1;
+        let mut channel_slot = -1;
+        let mut include_styles = -1;
+        let mut attach_transition = -1;
+        let mut attempt_gather = -1;
+        let mut attempt_role_keys = -1;
+        assert_eq!(
+            payload_segments_emit_plan(
+                "stem",
+                3000,
+                0,
+                0,
+                2,
+                0,
+                &mut n_marks,
+                &mut apply_palette,
+                &mut x_scale,
+                &mut y_scale,
+                &mut channel_slot,
+                &mut include_styles,
+                &mut attach_transition,
+                &mut attempt_gather,
+                &mut attempt_role_keys,
+            ),
+            1
+        );
+        assert_eq!(n_marks, 3000);
+        assert_eq!(apply_palette, 0);
+        assert_eq!(x_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_LINEAR);
+        assert_eq!(y_scale, PAYLOAD_BASE_ENTRY_SHIP_SCALE_SYMLOG);
+        assert_eq!(attempt_gather, 1);
+        assert_eq!(attempt_role_keys, 0);
     }
 }

@@ -12167,6 +12167,71 @@ def payload_ribbon_emit_plan(
     }
 
 
+def payload_segments_emit_plan(
+    *,
+    kind: str,
+    n_marks: int,
+    style_color_is_none: bool,
+    x_axis_scale: str,
+    y_axis_scale: str,
+    has_transition_keys: bool,
+) -> dict[str, bool | int | str]:
+    """Segment emit skeleton via ``xyg_payload_segments_emit_plan`` (ABI 300).
+
+    Owns segment gather attempt policy, palette default, axis ship scales,
+    trace-channel attach, errorbar role-key transition attach, and transition wrap.
+    """
+    if not isinstance(kind, str):
+        raise ValueError("kind must be a string")
+    kind_b = kind.encode("utf-8")
+    n_marks_out = ctypes.c_size_t(0)
+    apply_palette_default = ctypes.c_int32(-1)
+    x_ship_scale = ctypes.c_int32(-1)
+    y_ship_scale = ctypes.c_int32(-1)
+    channel_slot = ctypes.c_int32(-1)
+    include_trace_styles = ctypes.c_int32(-1)
+    attach_transition = ctypes.c_int32(-1)
+    attempt_gather = ctypes.c_int32(-1)
+    attempt_role_keys = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_segments_emit_plan(
+        kind_b,
+        len(kind_b),
+        int(n_marks),
+        1 if style_color_is_none else 0,
+        _payload_axis_type_code(x_axis_scale),
+        _payload_axis_type_code(y_axis_scale),
+        1 if has_transition_keys else 0,
+        ctypes.byref(n_marks_out),
+        ctypes.byref(apply_palette_default),
+        ctypes.byref(x_ship_scale),
+        ctypes.byref(y_ship_scale),
+        ctypes.byref(channel_slot),
+        ctypes.byref(include_trace_styles),
+        ctypes.byref(attach_transition),
+        ctypes.byref(attempt_gather),
+        ctypes.byref(attempt_role_keys),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_segments_emit_plan arguments")
+    for name, code in (
+        ("x", int(x_ship_scale.value)),
+        ("y", int(y_ship_scale.value)),
+    ):
+        if not (0 <= code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+            raise ValueError(f"invalid payload_segments_emit_plan {name} ship scale")
+    return {
+        "n_marks": int(n_marks_out.value),
+        "apply_palette_default": int(apply_palette_default.value) == 1,
+        "x_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(x_ship_scale.value)],
+        "y_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[int(y_ship_scale.value)],
+        "channel_slot": int(channel_slot.value),
+        "include_trace_styles": int(include_trace_styles.value) == 1,
+        "attach_transition": int(attach_transition.value) == 1,
+        "attempt_gather": int(attempt_gather.value) == 1,
+        "attempt_role_keys": int(attempt_role_keys.value) == 1,
+    }
+
+
 def payload_bar_compact_admit(
     widths: npt.NDArray[np.float64],
     value0: npt.NDArray[np.float64],

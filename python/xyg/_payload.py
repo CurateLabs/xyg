@@ -888,23 +888,40 @@ class PayloadMixin(_Host):
         if t.x0 is None or t.x1 is None or t.y0 is None or t.y1 is None:
             raise ValueError(f"{t.kind} trace missing segment columns")
         x0v, x1v, y0v, y1v = t.x0.values, t.x1.values, t.y0.values, t.y1.values
-        gather = kernels.payload_segments_emit_gather(
-            t.kind,
-            len(x0v),
-            int(t.count or 0),
-            px_width,
+        pre_plan = kernels.payload_segments_emit_plan(
+            kind=t.kind,
+            n_marks=int(len(x0v)),
+            style_color_is_none=t.style.get("color") is None,
+            x_axis_scale=self._axis_scale(t.x_axis),
+            y_axis_scale=self._axis_scale(t.y_axis),
+            has_transition_keys=t.transition_keys is not None,
         )
-        tier = "decimated" if gather["tier"] == 1 else "direct"
+        gather: Optional[dict[str, object]] = None
+        if pre_plan["attempt_gather"]:
+            gather = kernels.payload_segments_emit_gather(
+                t.kind,
+                len(x0v),
+                int(t.count or 0),
+                px_width,
+            )
+        tier = "direct"
         source_sel: Optional[np.ndarray] = None
         segment_sources: Optional[np.ndarray] = None
         segment_roles: Optional[np.ndarray] = None
-        if not gather["keep_all"]:
-            chosen64 = np.asarray(gather["indices"], dtype=np.int64)
-            x0v, x1v, y0v, y1v = x0v[chosen64], x1v[chosen64], y0v[chosen64], y1v[chosen64]
-            source_sel = chosen64
-        if gather["role_maps"]:
-            segment_sources = np.asarray(gather["sources"], dtype=np.int64)
-            segment_roles = np.asarray(gather["roles"], dtype=np.int64)
+        if gather is not None:
+            tier = "decimated" if gather["tier"] == 1 else "direct"
+            if not gather["keep_all"]:
+                chosen64 = np.asarray(gather["indices"], dtype=np.int64)
+                x0v, x1v, y0v, y1v = (
+                    x0v[chosen64],
+                    x1v[chosen64],
+                    y0v[chosen64],
+                    y1v[chosen64],
+                )
+                source_sel = chosen64
+            if gather["role_maps"]:
+                segment_sources = np.asarray(gather["sources"], dtype=np.int64)
+                segment_roles = np.asarray(gather["roles"], dtype=np.int64)
         finite_sel = self._rect_finite_sel(t, x0v, x1v, y0v, y1v)
         if finite_sel is not None:
             x0v, x1v, y0v, y1v = (
@@ -917,6 +934,14 @@ class PayloadMixin(_Host):
             if segment_sources is not None and segment_roles is not None:
                 segment_sources = segment_sources[finite_sel]
                 segment_roles = segment_roles[finite_sel]
+        plan = kernels.payload_segments_emit_plan(
+            kind=t.kind,
+            n_marks=int(len(x0v)),
+            style_color_is_none=t.style.get("color") is None,
+            x_axis_scale=self._axis_scale(t.x_axis),
+            y_axis_scale=self._axis_scale(t.y_axis),
+            has_transition_keys=t.transition_keys is not None,
+        )
         entry = {
             "id": t.id,
             "kind": t.kind,
@@ -924,26 +949,27 @@ class PayloadMixin(_Host):
             "style": self._default_styled(t),
             "tier": tier,
             "n_points": t.n_points,
-            "n_marks": int(len(x0v)),
+            "n_marks": plan["n_marks"],
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
-            "x0": pw.ship(x0v, t.x0, scale=self._axis_scale(t.x_axis)),
-            "x1": pw.ship(x1v, t.x1, scale=self._axis_scale(t.x_axis)),
-            "y0": pw.ship(y0v, t.y0, scale=self._axis_scale(t.y_axis)),
-            "y1": pw.ship(y1v, t.y1, scale=self._axis_scale(t.y_axis)),
+            "x0": pw.ship(x0v, t.x0, scale=plan["x_ship_scale"]),
+            "x1": pw.ship(x1v, t.x1, scale=plan["x_ship_scale"]),
+            "y0": pw.ship(y0v, t.y0, scale=plan["y_ship_scale"]),
+            "y1": pw.ship(y1v, t.y1, scale=plan["y_ship_scale"]),
         }
         self._ship_trace_channel_attach(
             entry,
             t,
             source_sel,
             pw,
-            kernels.PAYLOAD_SHIP_CHANNELS_IF_COLOR,
-            include_trace_styles=True,
+            plan["channel_slot"],
+            include_trace_styles=plan["include_trace_styles"],
         )
         self._attach_tooltip_rows(entry, t, source_sel)
         key_values = None
         if (
-            tier == "direct"
+            plan["attempt_role_keys"]
+            and tier == "direct"
             and t.transition_keys is not None
             and segment_sources is not None
             and segment_roles is not None
@@ -957,7 +983,9 @@ class PayloadMixin(_Host):
                 segment_sources.astype(np.uint32, copy=False),
                 segment_roles.astype(np.uint32, copy=False),
             )
-        return self._transition_entry(entry, t, pw, source_sel, key_values)
+        if plan["attach_transition"]:
+            return self._transition_entry(entry, t, pw, source_sel, key_values)
+        return entry
 
     def _emit_ribbon(
         self, t: Trace, pw: "_PayloadWriter", xr: tuple, yr: tuple, px_width: int
