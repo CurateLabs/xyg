@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 305;
-export const SIGNATURE_SHA256 = "90c0349d1e2c88acabd496f60660393d1a0d97ccf728400720c6cc1b04ebb0df";
+export const ABI_VERSION = 306;
+export const SIGNATURE_SHA256 = "66510a104d93eeaf4249aa40a2c4be1f905d0567c12a486d1dc3362b2b9b7915";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -305,6 +305,8 @@ export let xySceneTickLabelStrategy;
 export let xySceneVersion;
 export let xySceneXyhfColormapPack;
 export let xySceneXytaColormapPack;
+export let xySceneXytaFigurePlan;
+export let xySceneXytaTraceDispatchPlan;
 export let xySceneXytcColor2FlagsPack;
 export let xySceneXytcColorChannelPack;
 export let xySceneXytcDashPatternPack;
@@ -707,6 +709,8 @@ export function bindGeneratedAbi(lib) {
   xySceneVersion = lib.func("uint32_t xyg_scene_version()");
   xySceneXyhfColormapPack = lib.func("int32_t xyg_scene_xyhf_colormap_pack(int32_t mode, const uint8_t * named, size_t named_len, const uint8_t * stop_rgb, size_t stop_len, uint32_t * out_flags, uint8_t * out_cmap, size_t cmap_cap, uint8_t * out_stops, size_t stops_cap)");
   xySceneXytaColormapPack = lib.func("int32_t xyg_scene_xyta_colormap_pack(int32_t mode, const uint8_t * named, size_t named_len, const uint8_t * stop_rgb, size_t stop_len, uint32_t * out_flags, uint8_t * out_cmap, size_t cmap_cap, uint8_t * out_stops, size_t stops_cap)");
+  xySceneXytaFigurePlan = lib.func("int32_t xyg_scene_xyta_figure_plan(int32_t polar, void * out)");
+  xySceneXytaTraceDispatchPlan = lib.func("int32_t xyg_scene_xyta_trace_dispatch_plan(const uint8_t * kind, size_t kind_len, int32_t polar, int32_t use_density, int32_t hexbin_colormap_plane, int32_t hexbin_rgba_plane_ready, int32_t ribbon_color2_class, int32_t mesh_paint_plane, int32_t scatter_paint_plane, void * out)");
   xySceneXytcColor2FlagsPack = lib.func("int32_t xyg_scene_xytc_color2_flags_pack(int32_t color2_class, uint32_t paint_flags, int32_t gradient_packed, uint32_t * out_flags)");
   xySceneXytcColorChannelPack = lib.func("int32_t xyg_scene_xytc_color_channel_pack(int32_t present, int32_t has_constant, uint32_t * out_flags)");
   xySceneXytcDashPatternPack = lib.func("int32_t xyg_scene_xytc_dash_pattern_pack(int32_t is_array, uint32_t * out_flags)");

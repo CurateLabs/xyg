@@ -390,6 +390,25 @@ class _SceneXytcTraceDispatchPlan(ctypes.Structure):
     ]
 
 
+class _SceneXytaFigurePlan(ctypes.Structure):
+    _fields_ = [
+        ("polar", ctypes.c_uint32),
+    ]
+
+
+class _SceneXytaTraceDispatchPlan(ctypes.Structure):
+    _fields_ = [
+        ("kind_class", ctypes.c_uint32),
+        ("pack_heatmap", ctypes.c_uint32),
+        ("pack_hexbin_colormap", ctypes.c_uint32),
+        ("pack_hexbin_rgba", ctypes.c_uint32),
+        ("pack_ribbon_ends", ctypes.c_uint32),
+        ("pack_mesh_faces", ctypes.c_uint32),
+        ("pack_scatter_paint", ctypes.c_uint32),
+        ("pack_density", ctypes.c_uint32),
+    ]
+
+
 PAYLOAD_DENSITY_TRACE_EMIT_PLAN_BYTES = ctypes.sizeof(_PayloadDensityTraceEmitPlan)
 
 
@@ -2036,6 +2055,61 @@ def scene_xytc_trace_dispatch_plan(
     if ok != 1:
         raise ValueError("invalid scene_xytc_trace_dispatch_plan arguments")
     return _scene_xytc_trace_dispatch_plan_dict(out)
+
+
+def scene_xyta_figure_plan(*, polar: bool) -> dict[str, bool]:
+    """Figure-level XYTA attach orchestration via ``xyg_scene_xyta_figure_plan`` (ABI 306)."""
+    out = _SceneXytaFigurePlan()
+    ok = int(_lib.xyg_scene_xyta_figure_plan(1 if polar else 0, ctypes.byref(out)))
+    if ok != 1:
+        raise ValueError("invalid scene_xyta_figure_plan arguments")
+    return {"polar": bool(out.polar)}
+
+
+def _scene_xyta_trace_dispatch_plan_dict(out: _SceneXytaTraceDispatchPlan) -> dict[str, bool | int]:
+    return {
+        "kind_class": int(out.kind_class),
+        "pack_heatmap": bool(out.pack_heatmap),
+        "pack_hexbin_colormap": bool(out.pack_hexbin_colormap),
+        "pack_hexbin_rgba": bool(out.pack_hexbin_rgba),
+        "pack_ribbon_ends": bool(out.pack_ribbon_ends),
+        "pack_mesh_faces": bool(out.pack_mesh_faces),
+        "pack_scatter_paint": bool(out.pack_scatter_paint),
+        "pack_density": bool(out.pack_density),
+    }
+
+
+def scene_xyta_trace_dispatch_plan(
+    *,
+    kind: str,
+    polar: bool,
+    use_density: bool,
+    hexbin_colormap_plane: bool,
+    hexbin_rgba_plane_ready: bool,
+    ribbon_color2_class: int,
+    mesh_paint_plane: bool,
+    scatter_paint_plane: bool,
+) -> dict[str, bool | int]:
+    """Per-trace XYTA attach dispatch via ``xyg_scene_xyta_trace_dispatch_plan`` (ABI 306)."""
+    kind_b = kind.encode("utf-8")
+    out = _SceneXytaTraceDispatchPlan()
+    ok = int(
+        _lib.xyg_scene_xyta_trace_dispatch_plan(
+            kind_b,
+            len(kind_b),
+            1 if polar else 0,
+            1 if use_density else 0,
+            1 if hexbin_colormap_plane else 0,
+            1 if hexbin_rgba_plane_ready else 0,
+            int(ribbon_color2_class),
+            1 if mesh_paint_plane else 0,
+            1 if scatter_paint_plane else 0,
+            ctypes.byref(out),
+        )
+    )
+    if ok != 1:
+        raise ValueError("invalid scene_xyta_trace_dispatch_plan arguments")
+    return _scene_xyta_trace_dispatch_plan_dict(out)
 
 
 def scene_xytc_dash_pattern_pack(is_array: int) -> int:

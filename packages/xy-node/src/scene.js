@@ -74,7 +74,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneXytaFigurePlan, sceneXytaTraceDispatchPlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -3972,6 +3972,20 @@ export function hexbinStylePitch(style) {
   };
 }
 
+function xytaHexbinPlaneObservations(trace) {
+  const channel = trace.color_ch;
+  if (channel == null) return { hexbinColormapPlane: false, hexbinRgbaPlaneReady: false };
+  const hexbinColormapPlane = sceneHexbinColormapPlaneAdmit(
+    channel.mode,
+    channel.values != null,
+  ) === 1;
+  let hexbinRgbaPlaneReady = false;
+  if (sceneHexbinRgbaPlaneAdmit(channel.mode) === 1) {
+    hexbinRgbaPlaneReady = hexbinCellRgba8(trace) != null;
+  }
+  return { hexbinColormapPlane, hexbinRgbaPlaneReady };
+}
+
 function packXyTa(figure, xDomain, yDomain) {
   const traces = figure.traces ?? [];
   const records = [new Uint8Array(16)];
@@ -3979,9 +3993,22 @@ function packXyTa(figure, xDomain, yDomain) {
   records[0].set(new TextEncoder().encode("XYTA"), 0);
   header.setUint32(4, 1, true);
   header.setUint32(8, traces.length, true);
+  const figurePlan = sceneXytaFigurePlan({ polar: figure.coords === "polar" });
+  const polar = figurePlan.polar;
   for (const [traceIndex, trace] of traces.entries()) {
     const style = trace.style ?? {};
-    const kindClass = sceneKindClass(trace.kind);
+    const kindName = String(trace.kind ?? "");
+    const { hexbinColormapPlane, hexbinRgbaPlaneReady } = xytaHexbinPlaneObservations(trace);
+    const dispatch = sceneXytaTraceDispatchPlan({
+      kind: kindName,
+      polar,
+      useDensity: kindName === "scatter" && scatterUsesDensity(trace),
+      hexbinColormapPlane,
+      hexbinRgbaPlaneReady,
+      ribbonColor2Class: COLOR2_CLASS_TO_CODE[classifyRibbonColor2(trace)] ?? 4,
+      meshPaintPlane: meshPacksPaintPlane(trace),
+      scatterPaintPlane: scatterPacksPaintPlane(trace),
+    });
     let flags = 0;
     let rows = 0;
     let cols = 0;
@@ -4005,7 +4032,7 @@ function packXyTa(figure, xDomain, yDomain) {
     let cmapHi = Number.NaN;
     let opacity = Number.NaN;
     let fillOpacity = Number.NaN;
-    if (kindClass & SCENE_KIND_CLASS_HEATMAP) {
+    if (dispatch.packHeatmap) {
       flags |= XYTA_HEATMAP;
       const shape = heatmapGridShape(trace);
       if (shape != null && shape.length === 2) {
@@ -4040,7 +4067,7 @@ function packXyTa(figure, xDomain, yDomain) {
         cmapLo = Number(domain[0]);
         cmapHi = Number(domain[1]);
       }
-    } else if (kindClass & SCENE_KIND_CLASS_HEXBIN && hexbinPacksColormapPlane(trace)) {
+    } else if (dispatch.packHexbinColormap) {
       flags |= XYTA_HEATMAP | XYTA_SHAPE | XYTA_HAS_GRID;
       const channel = hexbinXyTaColorChannel(trace);
       const values = channel?.values;
@@ -4057,7 +4084,7 @@ function packXyTa(figure, xDomain, yDomain) {
         cmapLo = Number(domain[0]);
         cmapHi = Number(domain[1]);
       }
-    } else if (kindClass & SCENE_KIND_CLASS_HEXBIN && hexbinPacksRgbaPlane(trace)) {
+    } else if (dispatch.packHexbinRgba) {
       const packed = hexbinCellRgba8(trace);
       if (packed != null) {
         flags |= XYTA_HEATMAP | XYTA_SHAPE | XYTA_HAS_GRID | XYTA_HAS_RGBA;
@@ -4066,11 +4093,7 @@ function packXyTa(figure, xDomain, yDomain) {
         grid = packF64Le(new Float64Array(cols));
         rgba = packed;
       }
-    } else if (
-      kindClass & SCENE_KIND_CLASS_RIBBON
-      && figure.coords !== "polar"
-      && ribbonPacksEndPaints(trace)
-    ) {
+    } else if (dispatch.packRibbonEnds) {
       const ends = ribbonEndRgbaPair(trace);
       if (ends != null) {
         flags |= XYTA_RIBBON_ENDS | XYTA_SHAPE | XYTA_HAS_RGBA;
@@ -4079,7 +4102,7 @@ function packXyTa(figure, xDomain, yDomain) {
         rgba = ends.source;
         meanRgba = ends.target;
       }
-    } else if (meshPacksPaintPlane(trace)) {
+    } else if (dispatch.packMeshFaces) {
       const packed = meshFacePaints(trace);
       if (packed != null) {
         flags |= XYTA_MESH_FACES | XYTA_SHAPE | XYTA_HAS_RGBA;
@@ -4089,7 +4112,7 @@ function packXyTa(figure, xDomain, yDomain) {
         meanRgba = packed.strokes;
         x = packed.widths;
       }
-    } else if (scatterPacksPaintPlane(trace)) {
+    } else if (dispatch.packScatterPaint) {
       const packed = scatterPointPaints(trace);
       if (packed != null) {
         flags |= XYTA_SCATTER_PAINT | XYTA_SHAPE | XYTA_HAS_RGBA;
@@ -4099,7 +4122,7 @@ function packXyTa(figure, xDomain, yDomain) {
         meanRgba = packed.strokes;
         x = packed.widths;
       }
-    } else if (String(trace.kind || "") === "scatter" && scatterUsesDensity(trace)) {
+    } else if (dispatch.packDensity) {
       flags |= XYTA_DENSITY;
       if (trace.x != null) x = packF64Le(asF64Array(trace.x, "x"));
       if (trace.y != null) y = packF64Le(asF64Array(trace.y, "y"));
