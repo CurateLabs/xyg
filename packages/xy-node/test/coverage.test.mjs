@@ -2098,31 +2098,32 @@ test("_emitScatterDensity sample.visible stays n unlike Python _density_sample_s
 });
 
 
-test("density Scene uses viridis unlike Python color_ch palette", () => {
-  // Python marks.scatter always sets color_ch from next_series_color, so
-  // density Scene paints palette #3987e5. Node scatter() omits color_ch, so
-  // packXyTaDensityColorCh is empty and Rust falls back to viridis.
-  // Recorded scene-density-color-ch stay-host.
+test("density Scene uses default color_ch palette like Python", () => {
   const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [1, 2], { forceDensity: true });
+  fig.setAxisDomain("x", [0, 2]);
+  fig.setAxisDomain("y", [0, 3]);
+  fig.scatter([0, 1], [1, 2], { forceDensity: true, name: null });
   const scene = Buffer.from(fig.toScene());
   const viridis = Buffer.from([0x44, 0x01, 0x54, 0x00]);
   const palette = Buffer.from([0x39, 0x87, 0xe5, 0x00]);
-  assert.equal(scene.includes(viridis), true);
-  assert.equal(scene.includes(palette), false);
+  assert.equal(fig.traces[0].color_ch.mode, "constant");
+  assert.equal(fig.traces[0].color_ch.constant, "#3987e5");
+  assert.equal(scene.includes(palette), true);
+  assert.equal(scene.includes(viridis), false);
 });
 
-test("composeScatter omits color unlike Python color_ch Scene", () => {
-  // Python marks.scatter sets color_ch from color=, so Scene paints #112233.
-  // Node composeScatter ignores color, so Scene keeps palette #3987e5.
-  // Recorded scene-scatter-color-ch stay-host.
+test("composeScatter resolves color_ch like Python marks.scatter", () => {
   const fig = figure({ width: 240, height: 160 });
-  fig.scatter([0, 1], [1, 2], { color: "#112233" });
+  fig.setAxisDomain("x", [0, 2]);
+  fig.setAxisDomain("y", [0, 3]);
+  fig.scatter([0, 1], [1, 2], { color: "#112233", name: null });
   const scene = Buffer.from(fig.toScene());
   const authored = Buffer.from([0x11, 0x22, 0x33]);
   const palette = Buffer.from([0x39, 0x87, 0xe5]);
-  assert.equal(scene.includes(palette), true);
-  assert.equal(scene.includes(authored), false);
+  assert.equal(fig.traces[0].color_ch.mode, "constant");
+  assert.equal(fig.traces[0].color_ch.constant, "#112233");
+  assert.equal(scene.includes(authored), true);
+  assert.equal(scene.includes(palette), false);
 });
 
 test("composeScatter omits size unlike Python size_ch Scene", () => {

@@ -3,6 +3,7 @@
  * Encode stays in Rust (`xyg_encode_f32`); host only coerces and attaches.
  */
 
+import { resolveColorChannel } from "../color.js";
 import { asF64Array, encodeF32Values, minMax } from "../encode.js";
 
 export function normalizeScatterStyle(style = {}) {
@@ -33,13 +34,17 @@ export function composeScatter(x, y, opts = {}) {
   if (xa.length !== ya.length) {
     throw new RangeError("scatter x/y length mismatch");
   }
-  const forceDensity = opts.forceDensity ?? opts.force_density;
+  const forceDensity = opts.forceDensity ?? opts.force_density ?? opts.density;
   const forceDirect = opts.forceDirect ?? opts.force_direct;
   const forcePyramid = opts.forcePyramid ?? opts.force_pyramid;
   const pyramidSpill = optionalBoolean(
     opts.pyramidSpill ?? opts.pyramid_spill,
     "scatter pyramidSpill",
   );
+  const n = xa.length;
+  const opacity = opts.opacity ?? opts.style?.opacity ?? 0.8;
+  const color = opts.color ?? opts.style?.color;
+  const color_ch = resolveColorChannel(color, n);
   return {
     traces: [
       {
@@ -47,7 +52,8 @@ export function composeScatter(x, y, opts = {}) {
         name: opts.name ?? null,
         x: xa,
         y: ya,
-        style: normalizeScatterStyle({ opacity: 0.8, ...(opts.style ?? {}) }),
+        color_ch,
+        style: normalizeScatterStyle({ opacity, ...(opts.style ?? {}) }),
         x_axis: opts.xAxis ?? "x",
         y_axis: opts.yAxis ?? "y",
         ...(forceDensity != null ? { force_density: Boolean(forceDensity) } : {}),        // Recorded scene-scatter-symbol-ch stay-host.

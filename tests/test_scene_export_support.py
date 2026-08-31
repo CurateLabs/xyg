@@ -179,6 +179,23 @@ def _public_colormap_heatmap() -> Figure:
     return figure
 
 
+def _public_constant_density() -> Figure:
+    """Constant-style Cartesian density overlay with deterministic cross-host identity."""
+    figure = Figure(width=320, height=240)
+    figure.axis_options["x"]["domain"] = (0.0, 4.0)
+    figure.axis_options["y"]["domain"] = (0.0, 5.0)
+    figure.scatter(
+        _PUBLIC_HEXBIN_X,
+        _PUBLIC_HEXBIN_Y,
+        density=True,
+        color="#3987e5",
+        opacity=0.75,
+        name="dens",
+    )
+    figure.traces[-1].id = 0
+    return figure
+
+
 def _public_polar_hexbin() -> Figure:
     """Constant-style polar hexbin with deterministic cross-host identity."""
     figure = Figure(width=400, height=400, coords="polar")
@@ -1442,6 +1459,24 @@ def test_public_heatmap_colormap_xyta_matches_cross_host_fixture() -> None:
     packed = _pack_xyta(figure)
     assert packed.startswith(b"XYTA")
     assert hashlib.sha256(packed).hexdigest() == fixture["public_heatmap_colormap_xyta_sha256"]
+
+
+def test_public_constant_density_xyta_matches_cross_host_fixture() -> None:
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
+    figure = _public_constant_density()
+    assert figure.traces[0].color_ch.mode == "constant"
+    assert figure.traces[0].color_ch.constant == "#3987e5"
+    packed = _pack_xyta(figure)
+    assert packed.startswith(b"XYTA")
+    assert hashlib.sha256(packed).hexdigest() == fixture["public_constant_density_xyta_sha256"]
+
+
+def test_public_constant_density_matches_exact_cross_host_scene_bytes() -> None:
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "figure_scene_v3.json").read_text())
+    figure = _public_constant_density()
+    assert scene_export_support_reason(figure) is None
+    scene = figure_scene(figure)
+    assert hashlib.sha256(scene).hexdigest() == fixture["public_constant_density_sha256"]
 
 
 @pytest.mark.parametrize(

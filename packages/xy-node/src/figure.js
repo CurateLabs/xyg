@@ -989,7 +989,7 @@ export class Figure {
   }
 
   scatter(x, y, opts = {}) {
-    const forceDensity = opts.forceDensity ?? opts.force_density;
+    const forceDensity = opts.forceDensity ?? opts.force_density ?? opts.density;
     const forceDirect = opts.forceDirect ?? opts.force_direct;
     const forcePyramid = opts.forcePyramid ?? opts.force_pyramid;
     const pyramidSpill = optionalBoolean(
@@ -1035,6 +1035,7 @@ export class Figure {
       name: t.name,
       x: t.x,
       y: t.y,
+      color_ch: opts.color_ch ?? t.color_ch,
       style: { ...t.style },
       x_axis: t.x_axis,
       y_axis: t.y_axis,
