@@ -1,6 +1,6 @@
 {
   "schema": "xyg.payload-chrome-cross-host/v1",
-  "authority": "python/xyg/_payload.py build_payload show_legend, legend, title_options, and _dom_spec",
+  "authority": "python/xyg/_payload.py build_payload show_legend, legend, title_options, colorbar, and _dom_spec",
   "protocol": 12,
   "abi_version": 315,
   "cases": [
@@ -9,6 +9,7 @@
       "show_legend": true,
       "legend": null,
       "title_options": null,
+      "colorbar": null,
       "dom": null
     },
     {
@@ -16,6 +17,7 @@
       "show_legend": false,
       "legend": null,
       "title_options": null,
+      "colorbar": null,
       "dom": null
     },
     {
@@ -26,6 +28,7 @@
         "title": "Series"
       },
       "title_options": null,
+      "colorbar": null,
       "dom": null
     },
     {
@@ -35,6 +38,7 @@
         "loc": "upper right"
       },
       "title_options": null,
+      "colorbar": null,
       "dom": null
     },
     {
@@ -48,6 +52,7 @@
           "geometry": 2
         }
       ],
+      "colorbar": null,
       "dom": null
     },
     {
@@ -60,6 +65,76 @@
           "geometry": 2
         }
       ],
+      "colorbar": null,
+      "dom": null
+    },
+    {
+      "name": "colorbar_right",
+      "show_legend": true,
+      "legend": null,
+      "title_options": null,
+      "colorbar": {
+        "domain": [
+          0.0,
+          1.0
+        ],
+        "stops": [
+          [
+            0.0,
+            [
+              0,
+              0,
+              0,
+              255
+            ]
+          ],
+          [
+            1.0,
+            [
+              255,
+              255,
+              255,
+              255
+            ]
+          ]
+        ],
+        "title": "Scale"
+      },
+      "dom": null
+    },
+    {
+      "name": "colorbar_bottom_minor",
+      "show_legend": true,
+      "legend": null,
+      "title_options": null,
+      "colorbar": {
+        "domain": [
+          0.0,
+          1.0
+        ],
+        "stops": [
+          [
+            0.0,
+            [
+              0,
+              0,
+              0,
+              255
+            ]
+          ],
+          [
+            1.0,
+            [
+              255,
+              255,
+              255,
+              255
+            ]
+          ]
+        ],
+        "side": "bottom",
+        "minor_ticks": true
+      },
       "dom": null
     },
     {
@@ -67,6 +142,7 @@
       "show_legend": true,
       "legend": null,
       "title_options": null,
+      "colorbar": null,
       "dom": {
         "class_name": "root-node"
       }
@@ -76,6 +152,7 @@
       "show_legend": true,
       "legend": null,
       "title_options": null,
+      "colorbar": null,
       "dom": {
         "style": {
           "width": "100%"
@@ -87,6 +164,7 @@
       "show_legend": true,
       "legend": null,
       "title_options": null,
+      "colorbar": null,
       "dom": {
         "class_names": {
           "title": "t"
@@ -98,6 +176,7 @@
       "show_legend": false,
       "legend": null,
       "title_options": null,
+      "colorbar": null,
       "dom": {
         "class_name": "root-node",
         "class_names": {

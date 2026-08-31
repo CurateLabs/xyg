@@ -42,7 +42,6 @@ The paint-client artifact is in-repo as `@curatelabs/xyg` (#23); registry
 publish waits on the `@curatelabs` npm org (#13).
 
   Node `nextTraceId` starts at 1.
-  Node `buildPayload` omits colorbar.
   Node `buildPayload` omits annotations.
   Node `buildPayload` omits extra_legends.
   Node `_emitLine` skips M4 bin_x.

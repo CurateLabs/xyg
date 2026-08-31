@@ -3227,6 +3227,9 @@ export class Figure {
       }
       spec.legend = legend;
     }
+    if (buildPlan.attachColorbar) {
+      spec.colorbar = this.colorbar_options;
+    }
     if (split) {
       spec.buffer_layout = "split";
     }

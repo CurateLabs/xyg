@@ -1401,14 +1401,20 @@ test("buildPayload omits annotations unlike Python build_payload", () => {
 });
 
 
-test("buildPayload omits colorbar unlike Python build_payload", () => {
-  // Python `build_payload` ships `colorbar` from `colorbar_options`. Node
-  // payload omits that field. Recorded emit-payload-colorbar stay-host.
-  const fig = figure({ width: 240, height: 160, colorbar: { title: "c" } });
+test("buildPayload ships colorbar from colorbar_options like Python build_payload", () => {
+  const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
+  fig.setColorbar({
+    domain: [0, 1],
+    stops: [
+      [0, [0, 0, 0, 255]],
+      [1, [255, 255, 255, 255]],
+    ],
+    title: "Scale",
+  });
   const { spec } = fig.buildPayload();
-  assert.equal(fig.colorbar_options.title, "c");
-  assert.equal(spec.colorbar, undefined);
+  assert.equal(fig.colorbar_options.title, "Scale");
+  assert.deepEqual(spec.colorbar, fig.colorbar_options);
 });
 
 
