@@ -107,6 +107,13 @@ def main() -> None:
     cases.append(_case("histogram_style_channels", fig))
 
     fig = Figure(width=240, height=160)
+    fig.histogram([0.0, 1.0, 1.0, 2.0], bins=2, range=(0.0, 2.0))
+    rgba = np.array([[1, 0, 0, 1], [0, 1, 0, 1]], dtype=np.float64)
+    fig.traces[0].stroke_ch = channels.resolve_color(rgba, 2, default_constant="transparent")
+    fig.traces[0].id = 31
+    cases.append(_case("histogram_stroke_ch", fig))
+
+    fig = Figure(width=240, height=160)
     fig.segments([0.0, 1.0], [0.0, 1.0], [1.0, 2.0], [1.0, 0.0])
     fig.traces[0].id = 12
     cases.append(_case("segments_pass_through", fig))
@@ -118,10 +125,28 @@ def main() -> None:
     cases.append(_case("segments_color_ch", fig))
 
     fig = Figure(width=240, height=160)
+    fig.segments([0.0, 1.0], [0.0, 1.0], [1.0, 2.0], [1.0, 0.0])
+    n = len(fig.traces[0].x0.values)
+    fig.traces[0].style_channels = {
+        "stroke_width": channels.StyleChannel(np.full(n, 2.0, dtype=np.float64))
+    }
+    fig.traces[0].id = 33
+    cases.append(_case("segments_style_channels", fig))
+
+    fig = Figure(width=240, height=160)
     fig.bar([0, 1], [1, 2], color="#112233")
     fig.traces[0].color_ch = channels.ColorChannel(mode="constant", constant="#445566")
     fig.traces[0].id = 23
     cases.append(_case("rect_color_ch", fig))
+
+    fig = Figure(width=240, height=160)
+    fig.bar([0, 1], [1, 2])
+    n = len(fig.traces[0].x0.values)
+    fig.traces[0].style_channels = {
+        "stroke_width": channels.StyleChannel(np.full(n, 2.0, dtype=np.float64))
+    }
+    fig.traces[0].id = 32
+    cases.append(_case("rect_style_channels", fig))
 
     fig = Figure(width=240, height=160)
     fig.triangle_mesh([0.0], [0.0], [1.0], [0.0], [0.5], [1.0])

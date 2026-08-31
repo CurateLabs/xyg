@@ -106,6 +106,15 @@ def _build_case(name: str) -> tuple[Figure, dict[str, object]]:
         }
         fig.traces[0].id = 21
         return fig, {}
+    if name == "histogram_stroke_ch":
+        from xyg import channels
+
+        fig = Figure(width=240, height=160)
+        fig.histogram([0.0, 1.0, 1.0, 2.0], bins=2, range=(0.0, 2.0))
+        rgba = np.array([[1, 0, 0, 1], [0, 1, 0, 1]], dtype=np.float64)
+        fig.traces[0].stroke_ch = channels.resolve_color(rgba, 2, default_constant="transparent")
+        fig.traces[0].id = 31
+        return fig, {}
     if name == "segments_pass_through":
         fig = Figure(width=240, height=160)
         fig.segments([0.0, 1.0], [0.0, 1.0], [1.0, 2.0], [1.0, 0.0])
@@ -119,6 +128,17 @@ def _build_case(name: str) -> tuple[Figure, dict[str, object]]:
         fig.traces[0].color_ch = channels.ColorChannel(mode="constant", constant="#445566")
         fig.traces[0].id = 22
         return fig, {}
+    if name == "segments_style_channels":
+        from xyg import channels
+
+        fig = Figure(width=240, height=160)
+        fig.segments([0.0, 1.0], [0.0, 1.0], [1.0, 2.0], [1.0, 0.0])
+        n = len(fig.traces[0].x0.values)
+        fig.traces[0].style_channels = {
+            "stroke_width": channels.StyleChannel(np.full(n, 2.0, dtype=np.float64))
+        }
+        fig.traces[0].id = 33
+        return fig, {}
     if name == "rect_color_ch":
         from xyg import channels
 
@@ -126,6 +146,17 @@ def _build_case(name: str) -> tuple[Figure, dict[str, object]]:
         fig.bar([0.0, 1.0], [1.0, 2.0], color="#112233")
         fig.traces[0].color_ch = channels.ColorChannel(mode="constant", constant="#445566")
         fig.traces[0].id = 23
+        return fig, {}
+    if name == "rect_style_channels":
+        from xyg import channels
+
+        fig = Figure(width=240, height=160)
+        fig.bar([0.0, 1.0], [1.0, 2.0])
+        n = len(fig.traces[0].x0.values)
+        fig.traces[0].style_channels = {
+            "stroke_width": channels.StyleChannel(np.full(n, 2.0, dtype=np.float64))
+        }
+        fig.traces[0].id = 32
         return fig, {}
     if name == "mesh_style_channels":
         from xyg import channels
@@ -256,7 +287,7 @@ def test_fixture_contract(fixture: dict) -> None:
     assert fixture["schema"] == "xyg.payload-cross-host/v1"
     assert fixture["protocol"] == PROTOCOL_VERSION
     assert int(fixture["abi_version"]) == int(_native.ABI_VERSION)
-    assert len(fixture["cases"]) == 20
+    assert len(fixture["cases"]) == 23
     assert {case["name"] for case in fixture["cases"]} == {
         "scatter_direct",
         "scatter_categorical_color",
@@ -264,9 +295,12 @@ def test_fixture_contract(fixture: dict) -> None:
         "histogram_fixed_bins",
         "histogram_finite_sel",
         "histogram_style_channels",
+        "histogram_stroke_ch",
         "segments_pass_through",
         "segments_color_ch",
+        "segments_style_channels",
         "rect_color_ch",
+        "rect_style_channels",
         "mesh_style_channels",
         "ribbon_style_channels",
         "rect_stroke_ch",
@@ -290,9 +324,12 @@ def test_fixture_contract(fixture: dict) -> None:
         "histogram_fixed_bins",
         "histogram_finite_sel",
         "histogram_style_channels",
+        "histogram_stroke_ch",
         "segments_pass_through",
         "segments_color_ch",
+        "segments_style_channels",
         "rect_color_ch",
+        "rect_style_channels",
         "mesh_style_channels",
         "ribbon_style_channels",
         "rect_stroke_ch",
@@ -324,9 +361,12 @@ def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> Non
         "histogram_fixed_bins",
         "histogram_finite_sel",
         "histogram_style_channels",
+        "histogram_stroke_ch",
         "segments_pass_through",
         "segments_color_ch",
+        "segments_style_channels",
         "rect_color_ch",
+        "rect_style_channels",
         "mesh_style_channels",
         "ribbon_style_channels",
         "rect_stroke_ch",

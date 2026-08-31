@@ -88,6 +88,19 @@
       "trace_keys": null
     },
     {
+      "name": "histogram_stroke_ch",
+      "width": 240,
+      "height": 160,
+      "trace_id": 31,
+      "kind": "histogram",
+      "tier": "direct",
+      "n_marks": 2,
+      "payload_blob_len": 40,
+      "payload_blob_sha256": "11b6f4b1d8fba03ba7820002ceedd3912909f063b4a9caab54e0e6717abc9f52",
+      "payload_blob_hex": "000000bf0000003f000000bf0000003f0000000000000000000080bf0000803fff0000ff00ff00ff",
+      "trace_keys": null
+    },
+    {
       "name": "segments_pass_through",
       "width": 240,
       "height": 160,
@@ -114,6 +127,19 @@
       "trace_keys": null
     },
     {
+      "name": "segments_style_channels",
+      "width": 240,
+      "height": 160,
+      "trace_id": 33,
+      "kind": "segments",
+      "tier": "direct",
+      "n_marks": 2,
+      "payload_blob_len": 40,
+      "payload_blob_sha256": "897f6d6d6b03464321cd546f8f1df443cc9082d251bf4e6b93e85cb7e05cfab0",
+      "payload_blob_hex": "000000bf0000003f000000bf0000003f000000bf0000003f0000003f000000bf0000004000000040",
+      "trace_keys": null
+    },
+    {
       "name": "rect_color_ch",
       "width": 240,
       "height": 160,
@@ -124,6 +150,19 @@
       "payload_blob_len": 16,
       "payload_blob_sha256": "55090b99bb7f1c18c589bf3e72621fc753c3b1d8af4060ce1467a30f75ac6a6b",
       "payload_blob_hex": "000000bf0000003f000000bf0000003f",
+      "trace_keys": null
+    },
+    {
+      "name": "rect_style_channels",
+      "width": 240,
+      "height": 160,
+      "trace_id": 32,
+      "kind": "bar",
+      "tier": "direct",
+      "n_marks": 2,
+      "payload_blob_len": 24,
+      "payload_blob_sha256": "f18bfb8ed58dbae7756351a1b04f1f5cf67202515f6da7acb1058f4f07ad5bef",
+      "payload_blob_hex": "000000bf0000003f000000bf0000003f0000004000000040",
       "trace_keys": null
     },
     {

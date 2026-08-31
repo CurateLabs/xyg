@@ -85,6 +85,15 @@ const cases = [
     fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
     fig.traces[0].id = 21;
   }),
+  caseEntry("histogram_stroke_ch", (fig) => {
+    fig.histogram([0, 1, 1, 2], { bins: 2, range: [0, 2] });
+    fig.traces[0].stroke_ch = {
+      mode: "direct_rgba",
+      rgba: Float64Array.from([1, 0, 0, 1, 0, 1, 0, 1]),
+      n: 2,
+    };
+    fig.traces[0].id = 31;
+  }),
   caseEntry("segments_pass_through", (fig) => {
     fig.segments([0, 1], [0, 1], [1, 2], [1, 0]);
     fig.traces[0].id = 12;
@@ -94,10 +103,20 @@ const cases = [
     fig.traces[0].color_ch = { mode: "constant", constant: "#445566" };
     fig.traces[0].id = 22;
   }),
+  caseEntry("segments_style_channels", (fig) => {
+    fig.segments([0, 1], [0, 1], [1, 2], [1, 0]);
+    fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
+    fig.traces[0].id = 33;
+  }),
   caseEntry("rect_color_ch", (fig) => {
     fig.bar([0, 1], [1, 2], { color: "#112233" });
     fig.traces[0].color_ch = { mode: "constant", constant: "#445566" };
     fig.traces[0].id = 23;
+  }),
+  caseEntry("rect_style_channels", (fig) => {
+    fig.bar([0, 1], [1, 2]);
+    fig.traces[0].style_channels = { stroke_width: { mode: "constant", constant: 2 } };
+    fig.traces[0].id = 32;
   }),
   caseEntry("mesh_style_channels", (fig) => {
     fig.triangleMesh([0], [0], [1], [0], [0.5], [1]);
