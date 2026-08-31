@@ -23,7 +23,7 @@ function optionalBoolean(value, name) {
 }
 
 /** Match Python `channels.resolve_size` for Scene XYTC diameter packing. */
-function resolveSizeChannel(size, n, rangePx = [2, 18]) {
+export function resolveSizeChannel(size, n, rangePx = [2, 18]) {
   const range_px = rangePx;
   if (size == null) {
     return { mode: "constant", constant: 4.0, range_px };
@@ -66,8 +66,10 @@ export function composeScatter(x, y, opts = {}) {
   const color = opts.color ?? opts.style?.color;
   const color_ch = resolveColorChannel(color, n);
   const sizeRange = opts.sizeRange ?? opts.size_range ?? [2, 18];
-  const sizeInput = opts.size ?? opts.size_ch?.constant;
-  const size_ch = opts.size_ch ?? (sizeInput != null ? resolveSizeChannel(sizeInput, n, sizeRange) : null);
+  const rawStyle = { ...(opts.style ?? {}) };
+  const sizeInput = opts.size ?? rawStyle.size ?? opts.size_ch?.constant ?? null;
+  if (rawStyle.size != null) delete rawStyle.size;
+  const size_ch = opts.size_ch ?? resolveSizeChannel(sizeInput, n, sizeRange);
   return {
     traces: [
       {
@@ -76,8 +78,8 @@ export function composeScatter(x, y, opts = {}) {
         x: xa,
         y: ya,
         color_ch,
-        ...(size_ch != null ? { size_ch } : {}),
-        style: normalizeScatterStyle({ opacity, ...(opts.style ?? {}) }),
+        size_ch,
+        style: normalizeScatterStyle({ opacity, ...rawStyle }),
         x_axis: opts.xAxis ?? "x",
         y_axis: opts.yAxis ?? "y",
         ...(forceDensity != null ? { force_density: Boolean(forceDensity) } : {}),
@@ -107,7 +109,7 @@ export function attachScatter(fig, x, y, opts = {}) {
     xAxis: t.x_axis,
     yAxis: t.y_axis,
     id: t.id,
-    ...(t.size_ch != null ? { size_ch: t.size_ch } : {}),
+    size_ch: t.size_ch,
     forceDensity: t.force_density,
     forceDirect: t.force_direct,
     forcePyramid: t.force_pyramid,

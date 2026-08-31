@@ -144,11 +144,16 @@ test("composeGraph rejects tooltip_rows length mismatch", () => {
   );
 });
 
-test("PayloadWriter.shipScalar packs f32 unit buffers", () => {
+test("PayloadWriter ships continuous size_ch buffers", () => {
   const fig = figure({ width: 200, height: 150 });
   fig.scatter([0, 1, 2], [0, 1, 2], {
     _composed: true,
-    sizeValues: [4, 8, 12],
+    size_ch: {
+      mode: "continuous",
+      values: [4, 8, 12],
+      domain: [4, 12],
+      range_px: [8, 22],
+    },
   });
   const { spec, buffers } = fig.buildPayload();
   const size = spec.traces[0].size;
