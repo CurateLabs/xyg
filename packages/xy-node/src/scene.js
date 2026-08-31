@@ -74,7 +74,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, DEFAULT_PALETTE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, DEFAULT_PALETTE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -3329,6 +3329,36 @@ export function packXyTcColorChannel(trace) {
   return { flags, mode, constant };
 }
 
+/** XYTC fill/stroke/line_color presence. Python `_pack_xytc` key-presence only. */
+export function packXyTcPaintPresence(style) {
+  const record = style ?? {};
+  const hasFill = Object.hasOwn(record, "fill") ? 1 : 0;
+  let fillKind = 0;
+  if (hasFill) {
+    const fill = record.fill;
+    if (typeof fill === "string") fillKind = 1;
+    else if (
+      fill != null
+      && typeof fill === "object"
+      && fill.space != null
+      && fill.dir != null
+      && Array.isArray(fill.stops)
+    ) {
+      fillKind = 2;
+    } else if (fill != null && typeof fill === "object") {
+      fillKind = 3;
+    } else {
+      fillKind = 1;
+    }
+  }
+  return sceneXytcPaintPresencePack(
+    hasFill,
+    fillKind,
+    Object.hasOwn(record, "stroke") ? 1 : 0,
+    Object.hasOwn(record, "line_color") ? 1 : 0,
+  );
+}
+
 /** XYTC dash. Python `_pack_xytc` reads `style.get("dash")` only. */
 export function packXyTcDash(style) {
   const record = style ?? {};
@@ -3375,8 +3405,9 @@ export function packXyTcJoinedFill(trace) {
 /** XYTC line color. Python `_pack_xytc` reads `"line_color" in style` only. */
 export function packXyTcLineColor(style) {
   const record = style ?? {};
-  if (!Object.hasOwn(record, "line_color")) return { flags: 0, bytes: new Uint8Array() };
-  return { flags: XYTC_HAS_LINE_COLOR, bytes: encodeUtf8(record.line_color) };
+  const flags = packXyTcPaintPresence(record) & XYTC_HAS_LINE_COLOR;
+  if (!flags) return { flags: 0, bytes: new Uint8Array() };
+  return { flags, bytes: encodeUtf8(record.line_color) };
 }
 
 /** XYTC linecap. Python `_pack_xytc` reads `"linecap" in style` only. */
@@ -3508,28 +3539,24 @@ function packXyTc(figure) {
     let fillCss = new Uint8Array();
     let fillSpace = new Uint8Array();
     let gradientBlob = new Uint8Array();
+    flags |= packXyTcPaintPresence(style);
     if (Object.hasOwn(style, "fill")) {
-      flags |= XYTC_HAS_FILL;
       const fill = style.fill;
       if (typeof fill === "string") fillCss = encodeUtf8(fill);
       else if (fill != null && typeof fill === "object" && fill.space != null && fill.dir != null && Array.isArray(fill.stops)) {
-        flags |= XYTC_HAS_GRADIENT_SPEC;
         gradientBlob = packGradientSpec(fill) ?? new Uint8Array();
       } else if (fill != null && typeof fill === "object") {
-        flags |= XYTC_HAS_FILL_DICT;
         fillCss = encodeUtf8(String(fill.gradient ?? ""));
         fillSpace = encodeUtf8(String(fill.space ?? "mark"));
       }
     }
     let strokeCss = new Uint8Array();
     if (Object.hasOwn(style, "stroke")) {
-      flags |= XYTC_HAS_STROKE;
       strokeCss = encodeUtf8(style.stroke);
     }
     let lineColor = new Uint8Array();
     const packedLineColor = packXyTcLineColor(style);
     if (packedLineColor.flags) {
-      flags |= packedLineColor.flags;
       lineColor = packedLineColor.bytes;
     }
     const colorCss = encodeUtf8(style.color ?? "");
