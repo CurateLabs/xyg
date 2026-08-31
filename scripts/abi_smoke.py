@@ -1395,6 +1395,22 @@ def load() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_int32),
         ctypes.POINTER(ctypes.c_int32),
     ]
+    lib.xyg_payload_nonxy_emit_plan.restype = ctypes.c_int32
+    lib.xyg_payload_nonxy_emit_plan.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_size_t),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+    ]
     lib.xyg_density_color_classify.restype = ctypes.c_int32
     lib.xyg_density_color_classify.argtypes = [
         ctypes.c_int32,
@@ -5120,6 +5136,41 @@ def main() -> None:
         and base_x_scale.value == 1
         and base_y_scale.value == 2,
         "payload_base_entry_plan animation and scales",
+    )
+    nonxy_tier_direct = ctypes.c_int32(-1)
+    nonxy_n_marks = ctypes.c_size_t(0)
+    nonxy_apply_palette = ctypes.c_int32(-1)
+    nonxy_x_scale = ctypes.c_int32(-1)
+    nonxy_y_scale = ctypes.c_int32(-1)
+    nonxy_channel_slot = ctypes.c_int32(-1)
+    nonxy_include_styles = ctypes.c_int32(-1)
+    nonxy_attach_transition = ctypes.c_int32(-1)
+    ok(
+        lib.xyg_payload_nonxy_emit_plan(
+            0,
+            7,
+            1,
+            1,
+            0,
+            ctypes.byref(nonxy_tier_direct),
+            ctypes.byref(nonxy_n_marks),
+            ctypes.byref(nonxy_apply_palette),
+            ctypes.byref(nonxy_x_scale),
+            ctypes.byref(nonxy_y_scale),
+            ctypes.byref(nonxy_channel_slot),
+            ctypes.byref(nonxy_include_styles),
+            ctypes.byref(nonxy_attach_transition),
+        )
+        == 1
+        and nonxy_tier_direct.value == 1
+        and nonxy_n_marks.value == 7
+        and nonxy_apply_palette.value == 1
+        and nonxy_x_scale.value == 1
+        and nonxy_y_scale.value == 0
+        and nonxy_channel_slot.value == 1
+        and nonxy_include_styles.value == 1
+        and nonxy_attach_transition.value == 1,
+        "payload_nonxy_emit_plan rect skeleton",
     )
     density_color_mode = ctypes.c_int32(-1)
     density_categorical = ctypes.c_int32(-1)

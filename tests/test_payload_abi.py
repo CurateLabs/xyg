@@ -335,6 +335,66 @@ def test_payload_base_entry_plan_linear_no_animation() -> None:
     }
 
 
+def test_payload_nonxy_emit_plan_rect() -> None:
+    plan = kernels.payload_nonxy_emit_plan(
+        kind="rect",
+        n_marks=7,
+        style_color_is_none=True,
+        x_axis_scale="log",
+        y_axis_scale="linear",
+    )
+    assert plan == {
+        "tier_direct": True,
+        "n_marks": 7,
+        "apply_palette_default": True,
+        "x_ship_scale": "log",
+        "y_ship_scale": "linear",
+        "channel_slot": kernels.PAYLOAD_SHIP_CHANNELS_IF_COLOR,
+        "include_trace_styles": True,
+        "attach_transition": True,
+    }
+
+
+def test_payload_nonxy_emit_plan_hexbin() -> None:
+    plan = kernels.payload_nonxy_emit_plan(
+        kind="hexbin",
+        n_marks=12,
+        style_color_is_none=False,
+        x_axis_scale="symlog",
+        y_axis_scale="symlog",
+    )
+    assert plan == {
+        "tier_direct": True,
+        "n_marks": 12,
+        "apply_palette_default": False,
+        "x_ship_scale": "symlog",
+        "y_ship_scale": "symlog",
+        "channel_slot": kernels.PAYLOAD_SHIP_CHANNELS_ALWAYS,
+        "include_trace_styles": False,
+        "attach_transition": False,
+    }
+
+
+def test_payload_nonxy_emit_plan_density_sample() -> None:
+    plan = kernels.payload_nonxy_emit_plan(
+        kind="density_sample",
+        n_marks=200,
+        style_color_is_none=False,
+        x_axis_scale="linear",
+        y_axis_scale="log",
+    )
+    assert plan == {
+        "tier_direct": True,
+        "n_marks": 200,
+        "apply_palette_default": False,
+        "x_ship_scale": "linear",
+        "y_ship_scale": "log",
+        "channel_slot": kernels.PAYLOAD_SHIP_CHANNELS_ALWAYS,
+        "include_trace_styles": True,
+        "attach_transition": False,
+    }
+
+
 def test_line_scatter_area_base_entry_ships_animation_and_log_scale() -> None:
     anim = {"duration": 250}
     fig = Figure().set_axis("x", type_="log")

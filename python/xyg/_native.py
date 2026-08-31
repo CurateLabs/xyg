@@ -11797,6 +11797,76 @@ def payload_base_entry_plan(
     }
 
 
+PAYLOAD_NONXY_KIND_RECT = 0
+PAYLOAD_NONXY_KIND_HEXBIN = 1
+PAYLOAD_NONXY_KIND_DENSITY_SAMPLE = 2
+
+_PAYLOAD_NONXY_KIND_BY_NAME: dict[str, int] = {
+    "rect": PAYLOAD_NONXY_KIND_RECT,
+    "hexbin": PAYLOAD_NONXY_KIND_HEXBIN,
+    "density_sample": PAYLOAD_NONXY_KIND_DENSITY_SAMPLE,
+}
+
+
+def payload_nonxy_emit_plan(
+    *,
+    kind: str,
+    n_marks: int,
+    style_color_is_none: bool,
+    x_axis_scale: str,
+    y_axis_scale: str,
+) -> dict[str, bool | int | str]:
+    """Non-xy trace skeleton via ``xyg_payload_nonxy_emit_plan`` (ABI 296).
+
+    Owns rect/hexbin/density-sample tier, ``n_marks``, palette default, ship
+    scales, trace-channel attach slot/styles, and transition wrap policy.
+    """
+    kind_i = _PAYLOAD_NONXY_KIND_BY_NAME.get(kind)
+    if kind_i is None:
+        raise ValueError(f"invalid payload_nonxy_emit_plan kind {kind!r}")
+    tier_direct = ctypes.c_int32(-1)
+    n_marks_out = ctypes.c_size_t(0)
+    apply_palette_default = ctypes.c_int32(-1)
+    x_ship_scale = ctypes.c_int32(-1)
+    y_ship_scale = ctypes.c_int32(-1)
+    channel_slot = ctypes.c_int32(-1)
+    include_trace_styles = ctypes.c_int32(-1)
+    attach_transition = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_nonxy_emit_plan(
+        kind_i,
+        int(n_marks),
+        1 if style_color_is_none else 0,
+        _payload_axis_type_code(x_axis_scale),
+        _payload_axis_type_code(y_axis_scale),
+        ctypes.byref(tier_direct),
+        ctypes.byref(n_marks_out),
+        ctypes.byref(apply_palette_default),
+        ctypes.byref(x_ship_scale),
+        ctypes.byref(y_ship_scale),
+        ctypes.byref(channel_slot),
+        ctypes.byref(include_trace_styles),
+        ctypes.byref(attach_transition),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_nonxy_emit_plan arguments")
+    x_code = int(x_ship_scale.value)
+    y_code = int(y_ship_scale.value)
+    if not (0 <= x_code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+        raise ValueError("invalid payload_nonxy_emit_plan x ship scale")
+    if not (0 <= y_code < len(_PAYLOAD_SHIP_SCALE_BY_CODE)):
+        raise ValueError("invalid payload_nonxy_emit_plan y ship scale")
+    return {
+        "tier_direct": int(tier_direct.value) == 1,
+        "n_marks": int(n_marks_out.value),
+        "apply_palette_default": int(apply_palette_default.value) == 1,
+        "x_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[x_code],
+        "y_ship_scale": _PAYLOAD_SHIP_SCALE_BY_CODE[y_code],
+        "channel_slot": int(channel_slot.value),
+        "include_trace_styles": int(include_trace_styles.value) == 1,
+        "attach_transition": int(attach_transition.value) == 1,
+    }
+
+
 def payload_bar_compact_admit(
     widths: npt.NDArray[np.float64],
     value0: npt.NDArray[np.float64],

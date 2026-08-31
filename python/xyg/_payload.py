@@ -750,10 +750,15 @@ class PayloadMixin(_Host):
         sel = self._visible_sel(t, xv, yv)
         if sel is not None:
             xv, yv = xv[sel], yv[sel]
-        # Cells ship as centers plus one scalar color value. Every hexagon
-        # shares the same geometry (style hex_dx/hex_dy), so each renderer
-        # expands the six-triangle fan locally and the wire cost stays
-        # O(cells), not O(cells x vertices x channels) (§29).
+        x_scale = self._axis_scale(t.x_axis)
+        y_scale = self._axis_scale(t.y_axis)
+        plan = kernels.payload_nonxy_emit_plan(
+            kind="hexbin",
+            n_marks=int(len(xv)),
+            style_color_is_none=t.style.get("color") is None,
+            x_axis_scale=x_scale,
+            y_axis_scale=y_scale,
+        )
         entry = {
             "id": t.id,
             "kind": t.kind,
@@ -761,14 +766,19 @@ class PayloadMixin(_Host):
             "style": self._default_styled(t),
             "tier": "direct",
             "n_points": t.n_points,
-            "n_marks": int(len(xv)),
+            "n_marks": plan["n_marks"],
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
-            "x": pw.ship_values(xv, scale=self._axis_scale(t.x_axis)),
-            "y": pw.ship_values(yv, scale=self._axis_scale(t.y_axis)),
+            "x": pw.ship_values(xv, scale=plan["x_ship_scale"]),
+            "y": pw.ship_values(yv, scale=plan["y_ship_scale"]),
         }
         self._ship_trace_channel_attach(
-            entry, t, sel, pw, kernels.PAYLOAD_SHIP_CHANNELS_ALWAYS, include_trace_styles=False
+            entry,
+            t,
+            sel,
+            pw,
+            plan["channel_slot"],
+            include_trace_styles=plan["include_trace_styles"],
         )
         return entry
 
@@ -1080,6 +1090,15 @@ class PayloadMixin(_Host):
         sel_arg = self._rect_finite_sel(t, x0v, x1v, y0v, y1v)
         if sel_arg is not None:
             x0v, x1v, y0v, y1v = x0v[sel_arg], x1v[sel_arg], y0v[sel_arg], y1v[sel_arg]
+        x_scale = self._axis_scale(t.x_axis)
+        y_scale = self._axis_scale(t.y_axis)
+        plan = kernels.payload_nonxy_emit_plan(
+            kind="rect",
+            n_marks=int(len(x0v)),
+            style_color_is_none=t.style.get("color") is None,
+            x_axis_scale=x_scale,
+            y_axis_scale=y_scale,
+        )
         style = self._default_styled(t)
         entry = {
             "id": t.id,
@@ -1088,23 +1107,25 @@ class PayloadMixin(_Host):
             "style": style,
             "tier": "direct",
             "n_points": t.n_points,
-            "n_marks": int(len(x0v)),
+            "n_marks": plan["n_marks"],
             "x_axis": t.x_axis,
             "y_axis": t.y_axis,
-            "x0": pw.ship(x0v, t.x0, scale=self._axis_scale(t.x_axis)),
-            "x1": pw.ship(x1v, t.x1, scale=self._axis_scale(t.x_axis)),
-            "y0": pw.ship(y0v, t.y0, scale=self._axis_scale(t.y_axis)),
-            "y1": pw.ship(y1v, t.y1, scale=self._axis_scale(t.y_axis)),
+            "x0": pw.ship(x0v, t.x0, scale=plan["x_ship_scale"]),
+            "x1": pw.ship(x1v, t.x1, scale=plan["x_ship_scale"]),
+            "y0": pw.ship(y0v, t.y0, scale=plan["y_ship_scale"]),
+            "y1": pw.ship(y1v, t.y1, scale=plan["y_ship_scale"]),
         }
         self._ship_trace_channel_attach(
             entry,
             t,
             sel_arg,
             pw,
-            kernels.PAYLOAD_SHIP_CHANNELS_IF_COLOR,
-            include_trace_styles=True,
+            plan["channel_slot"],
+            include_trace_styles=plan["include_trace_styles"],
         )
-        return self._transition_entry(entry, t, pw, sel_arg)
+        if plan["attach_transition"]:
+            return self._transition_entry(entry, t, pw, sel_arg)
+        return entry
 
     def _emit_bar_compact(
         self, t: Trace, pw: "_PayloadWriter", xr: tuple, yr: tuple, px_width: int
@@ -1252,18 +1273,23 @@ class PayloadMixin(_Host):
             )
         if len(sample_sel) == 0:
             return None
+        x_scale = self._axis_scale(t.x_axis)
+        y_scale = self._axis_scale(t.y_axis)
+        plan = kernels.payload_nonxy_emit_plan(
+            kind="density_sample",
+            n_marks=int(len(sample_sel)),
+            style_color_is_none=t.style.get("color") is None,
+            x_axis_scale=x_scale,
+            y_axis_scale=y_scale,
+        )
         style = dict(t.style)
         try:
             authored = float(style.get("opacity", 0.8))
         except (TypeError, ValueError):
             authored = float("nan")
         style["opacity"] = kernels.density_overlay_opacity(authored)
-        x_col = pw.ship_values(
-            t.x.values[sample_sel], kind=t.x.kind, scale=self._axis_scale(t.x_axis)
-        )
-        y_col = pw.ship_values(
-            t.y.values[sample_sel], kind=t.y.kind, scale=self._axis_scale(t.y_axis)
-        )
+        x_col = pw.ship_values(t.x.values[sample_sel], kind=t.x.kind, scale=plan["x_ship_scale"])
+        y_col = pw.ship_values(t.y.values[sample_sel], kind=t.y.kind, scale=plan["y_ship_scale"])
         sample = {
             "mode": "sampled",
             "n": int(len(sample_sel)),
@@ -1282,8 +1308,8 @@ class PayloadMixin(_Host):
             t,
             sample_sel,
             pw,
-            kernels.PAYLOAD_SHIP_CHANNELS_ALWAYS,
-            include_trace_styles=True,
+            plan["channel_slot"],
+            include_trace_styles=plan["include_trace_styles"],
         )
         return sample
 

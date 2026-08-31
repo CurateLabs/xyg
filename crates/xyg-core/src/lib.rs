@@ -161,7 +161,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 295;
+pub const ABI_VERSION: u32 = 296;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15657,6 +15657,81 @@ pub unsafe extern "C" fn xyg_payload_base_entry_plan(
         *out_apply_palette_default = apply_palette_default;
         *out_x_ship_scale = x_ship_scale;
         *out_y_ship_scale = y_ship_scale;
+        1
+    })
+}
+
+/// Non-xy trace skeleton orchestration (ABI 296).
+///
+/// ``kind``: ``0`` rect, ``1`` hexbin, ``2`` density sample. Owns direct tier,
+/// gathered ``n_marks``, palette default, axis ship scales, trace-channel attach
+/// slot/styles, and ``_transition_entry`` wrap policy. Hosts still gather and
+/// ship geometry plus channel payloads.
+///
+/// # Safety
+/// All ``out_*`` pointers must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_nonxy_emit_plan(
+    kind: i32,
+    n_marks: usize,
+    style_color_is_none: i32,
+    x_axis_type: i32,
+    y_axis_type: i32,
+    out_tier_direct: *mut i32,
+    out_n_marks: *mut usize,
+    out_apply_palette_default: *mut i32,
+    out_x_ship_scale: *mut i32,
+    out_y_ship_scale: *mut i32,
+    out_channel_slot: *mut i32,
+    out_include_trace_styles: *mut i32,
+    out_attach_transition: *mut i32,
+) -> i32 {
+    ffi_guard(0, || {
+        if out_tier_direct.is_null()
+            || out_n_marks.is_null()
+            || out_apply_palette_default.is_null()
+            || out_x_ship_scale.is_null()
+            || out_y_ship_scale.is_null()
+            || out_channel_slot.is_null()
+            || out_include_trace_styles.is_null()
+            || out_attach_transition.is_null()
+        {
+            return 0;
+        }
+        let mut tier_direct = 0i32;
+        let mut n_marks_out = 0usize;
+        let mut apply_palette_default = 0i32;
+        let mut x_ship_scale = 0i32;
+        let mut y_ship_scale = 0i32;
+        let mut channel_slot = 0i32;
+        let mut include_trace_styles = 0i32;
+        let mut attach_transition = 0i32;
+        let ok = payload_emit::payload_nonxy_emit_plan(
+            kind,
+            n_marks,
+            style_color_is_none,
+            x_axis_type,
+            y_axis_type,
+            &mut tier_direct,
+            &mut n_marks_out,
+            &mut apply_palette_default,
+            &mut x_ship_scale,
+            &mut y_ship_scale,
+            &mut channel_slot,
+            &mut include_trace_styles,
+            &mut attach_transition,
+        );
+        if ok == 0 {
+            return 0;
+        }
+        *out_tier_direct = tier_direct;
+        *out_n_marks = n_marks_out;
+        *out_apply_palette_default = apply_palette_default;
+        *out_x_ship_scale = x_ship_scale;
+        *out_y_ship_scale = y_ship_scale;
+        *out_channel_slot = channel_slot;
+        *out_include_trace_styles = include_trace_styles;
+        *out_attach_transition = attach_transition;
         1
     })
 }
