@@ -263,10 +263,13 @@ def _string_ref(value: str | None) -> tuple[_XygStringRef, bytes]:
     return _XygStringRef(_ptr_u8(arr), len(encoded)), encoded
 
 
-def _chrome_axis_style(style: Mapping[str, Any]) -> _XygChromeAxisStyleIn:
+def _chrome_axis_style(style: Mapping[str, Any], keepers: list[bytes]) -> _XygChromeAxisStyleIn:
     def opt(key: str) -> _XygStringRef:
         raw = style.get(key)
-        return _string_ref(None if raw is None else str(raw))[0]
+        ref, encoded = _string_ref(None if raw is None else str(raw))
+        if encoded:
+            keepers.append(encoded)
+        return ref
 
     return _XygChromeAxisStyleIn(
         opt("grid_color"),
@@ -288,25 +291,34 @@ def _chrome_axis_style(style: Mapping[str, Any]) -> _XygChromeAxisStyleIn:
     )
 
 
-def _chrome_axis(axis: Mapping[str, Any]) -> _XygChromeAxisIn:
+def _chrome_axis(axis: Mapping[str, Any], keepers: list[bytes]) -> _XygChromeAxisIn:
     style = dict(axis.get("style") or {})
     minor = dict(axis.get("minor_style") or {})
     return _XygChromeAxisIn(
         int(axis["side_code"]) & 0xFF,
         int(axis["tick_sides_mask"]) & 0xFF,
         int(axis["label_sides_mask"]) & 0xFF,
-        _chrome_axis_style(style),
-        _chrome_axis_style(minor),
+        _chrome_axis_style(style, keepers),
+        _chrome_axis_style(minor, keepers),
     )
 
 
-def _collision_axis(collision: Mapping[str, Any]) -> _XygChromeCollisionAxisIn:
+def _collision_axis(
+    collision: Mapping[str, Any], keepers: list[bytes]
+) -> _XygChromeCollisionAxisIn:
     min_gap = collision.get("min_gap")
     angle = collision.get("angle")
+
+    def opt(value: str | None) -> _XygStringRef:
+        ref, encoded = _string_ref(value)
+        if encoded:
+            keepers.append(encoded)
+        return ref
+
     return _XygChromeCollisionAxisIn(
-        _string_ref(collision.get("strategy"))[0],
-        _string_ref(collision.get("collision"))[0],
-        _string_ref(collision.get("anchor"))[0],
+        opt(collision.get("strategy")),
+        opt(collision.get("collision")),
+        opt(collision.get("anchor")),
         1 if min_gap is not None else 0,
         float(min_gap if min_gap is not None else 0.0),
         1 if angle is not None else 0,
@@ -423,16 +435,16 @@ def scene_chrome_pack(**kwargs: Any) -> bytes:
         int(kwargs["y_nonpositive_mask"]),
         int(kwargs["x_tick_kind"]),
         int(kwargs["y_tick_kind"]),
-        _chrome_axis(kwargs["x_axis"]),
-        _chrome_axis(kwargs["y_axis"]),
+        _chrome_axis(kwargs["x_axis"], keepers),
+        _chrome_axis(kwargs["y_axis"], keepers),
         len(kwargs.get("x_major") or ()),
         len(kwargs.get("y_major") or ()),
         len(kwargs.get("x_minor") or ()),
         len(kwargs.get("y_minor") or ()),
         len(kwargs.get("x_tick_labels") or ()),
         len(kwargs.get("y_tick_labels") or ()),
-        _collision_axis(kwargs["x_collision"]),
-        _collision_axis(kwargs["y_collision"]),
+        _collision_axis(kwargs["x_collision"], keepers),
+        _collision_axis(kwargs["y_collision"], keepers),
         chart_bg_ref,
         plot_bg_ref,
         legend,
@@ -1260,6 +1272,12 @@ def _marshal_xyaf_annotation(
     annotation = dict(annotation)
     kind = str(annotation.get("kind", ""))
     style = dict(annotation.get("style") or {})
+    if (
+        kind in {"text", "marker"}
+        and "rotation" not in annotation
+        and style.get("rotation") is not None
+    ):
+        annotation["rotation"] = style["rotation"]
     skip_rotation = kind in {"text", "marker"}
     keepers: list[bytes] = []
     style_in, extra_blob = _marshal_xyaf_style(style, keepers, skip_rotation=skip_rotation)
