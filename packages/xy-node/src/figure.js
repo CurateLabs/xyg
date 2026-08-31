@@ -1986,9 +1986,6 @@ export class Figure {
     // Node payload histogram skips rectFiniteSel. Python `_emit_histogram` calls
     // `_emit_rect`, which drops non-finite rows. Matching Python would gather.
     // Recorded emit-hist-finite-sel stay-host.
-    // Node payload histogram omits transition_keys. Python `_emit_histogram`
-    // calls `_emit_rect`, which ships them via `_transition_entry`. Matching
-    // Python would add entry.keys. Recorded emit-hist-transition stay-host.
     const xAxis = t.x_axis ?? "x";
     const yAxis = t.y_axis ?? "y";
     const plan = payloadBarHistEmitPlan({
@@ -2205,9 +2202,6 @@ export class Figure {
     // Node payload mesh omits style_channels. Python `_emit_triangle_mesh`
     // ships them as `channels` via `_ship_trace_styles`. Matching Python
     // would add entry.channels. Recorded emit-mesh-channels stay-host.
-    // Node payload mesh omits transition_keys. Python `_emit_triangle_mesh`
-    // ships them via `_transition_entry`. Matching Python would add entry.keys.
-    // Recorded emit-mesh-transition stay-host.
     const entry = {
       id: t.id,
       kind: "triangle_mesh",

@@ -216,6 +216,51 @@
       "tier": "density",
       "animation": null,
       "animation_fallback": "snap:aggregate"
+    },
+    {
+      "name": "hist_transition_keys",
+      "trace_id": 72,
+      "kind": "histogram",
+      "n_points": 4,
+      "tier": "direct",
+      "animation": null,
+      "has_keys": true
+    },
+    {
+      "name": "rect_transition_keys",
+      "trace_id": 73,
+      "kind": "bar",
+      "n_points": 2,
+      "tier": "direct",
+      "animation": null,
+      "has_keys": true
+    },
+    {
+      "name": "segments_transition_keys",
+      "trace_id": 74,
+      "kind": "segments",
+      "n_points": 2,
+      "tier": "direct",
+      "animation": null,
+      "has_keys": true
+    },
+    {
+      "name": "ribbon_transition_keys",
+      "trace_id": 75,
+      "kind": "ribbon",
+      "n_points": 2,
+      "tier": "direct",
+      "animation": null,
+      "has_keys": true
+    },
+    {
+      "name": "mesh_transition_keys",
+      "trace_id": 76,
+      "kind": "triangle_mesh",
+      "n_points": 2,
+      "tier": "direct",
+      "animation": null,
+      "has_keys": true
     }
   ]
 }

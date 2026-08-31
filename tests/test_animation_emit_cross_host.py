@@ -21,6 +21,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from xyg import _native
@@ -57,6 +58,11 @@ CASE_NAMES = (
     "mesh_animation",
     "mesh_no_animation",
     "density_transition_keys",
+    "hist_transition_keys",
+    "rect_transition_keys",
+    "segments_transition_keys",
+    "ribbon_transition_keys",
+    "mesh_transition_keys",
 )
 
 
@@ -177,7 +183,32 @@ def _build_case(name: str) -> Figure:
         fig.scatter([0.0, 1.0], [0.0, 1.0], density=True)
         trace = fig.traces[-1]
         trace.id = 71
-        trace.transition_keys = [list(row) for row in TRANSITION_KEYS]
+        trace.transition_keys = np.array(TRANSITION_KEYS, dtype=np.uint32)
+    elif name == "hist_transition_keys":
+        fig.histogram([0, 1, 1, 2], bins=2, range=(0, 2))
+        trace = fig.traces[-1]
+        trace.id = 72
+        trace.transition_keys = np.array(TRANSITION_KEYS, dtype=np.uint32)
+    elif name == "rect_transition_keys":
+        fig.bar([0, 1], [1, 2])
+        trace = fig.traces[-1]
+        trace.id = 73
+        trace.transition_keys = np.array(TRANSITION_KEYS, dtype=np.uint32)
+    elif name == "segments_transition_keys":
+        fig.segments([0.0, 1.0], [0.0, 1.0], [1.0, 2.0], [1.0, 2.0])
+        trace = fig.traces[-1]
+        trace.id = 74
+        trace.transition_keys = np.array(TRANSITION_KEYS, dtype=np.uint32)
+    elif name == "ribbon_transition_keys":
+        fig.ribbon([0.0, 1.0], [1.0, 2.0], [0.0, 0.0], [1.0, 1.0], [0.0, 0.0], [1.0, 1.0])
+        trace = fig.traces[-1]
+        trace.id = 75
+        trace.transition_keys = np.array(TRANSITION_KEYS, dtype=np.uint32)
+    elif name == "mesh_transition_keys":
+        fig.triangle_mesh([0.0, 1.0], [0.0, 0.0], [1.0, 2.0], [0.0, 0.0], [0.5, 1.5], [1.0, 1.0])
+        trace = fig.traces[-1]
+        trace.id = 76
+        trace.transition_keys = np.array(TRANSITION_KEYS, dtype=np.uint32)
     else:
         raise KeyError(name)
     return fig
@@ -194,6 +225,8 @@ def _emit_meta(spec: dict) -> dict:
     }
     if "animation_fallback" in trace:
         meta["animation_fallback"] = trace.get("animation_fallback")
+    if "keys" in trace:
+        meta["has_keys"] = True
     return meta
 
 
