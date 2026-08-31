@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 256;
+pub const ABI_VERSION: u32 = 257;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -6311,6 +6311,111 @@ pub unsafe extern "C" fn xyg_arrow_trim_polyline_end(
             )
         };
         arrow_geom::arrow_trim_polyline_end(x, y, trim, out_x, out_y).unwrap_or(usize::MAX)
+    })
+}
+
+/// Annotation arrow shapes orchestration (ABI 257).
+///
+/// Composes geometry, shaft/taper, and endpoint decorations. `style` is 12
+/// f64s (ABI 254 pack). `head_style` / `tail_style` are UTF-8 endpoint
+/// names (`triangle`/`v`/`bar`/`none`). `head_size` NaN selects 8.0 before
+/// the `max(4.0, …)` clamp. `width_start` / `width_end` NaN mean no taper.
+/// `elbow_authoring` mirrors Python `style.get("elbow")` for shaft sampling.
+/// `out_meta` is 6 i32s: shaft_n, taper_n, head_kind, head_n, tail_kind,
+/// tail_n. Points are written sequentially to `out_x`/`out_y`. Probe with
+/// `capacity == 0`.
+///
+/// # Safety
+/// When `style_len > 0`, `style` addresses readable f64s. When
+/// `head_style_len > 0`, `head_style` addresses readable bytes. When
+/// `tail_style_len > 0`, `tail_style` addresses readable bytes. When
+/// `meta_len > 0`, `out_meta` addresses writable i32s. When `capacity > 0`,
+/// `out_x` and `out_y` each address `capacity` writable f64s.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_arrow_shapes(
+    x0: f64,
+    y0: f64,
+    x1: f64,
+    y1: f64,
+    style: *const f64,
+    style_len: usize,
+    head_style: *const u8,
+    head_style_len: usize,
+    tail_style: *const u8,
+    tail_style_len: usize,
+    head_size: f64,
+    width_start: f64,
+    width_end: f64,
+    elbow_authoring: i32,
+    out_meta: *mut i32,
+    meta_len: usize,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    capacity: usize,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if meta_len < arrow_geom::ARROW_SHAPES_META_LEN || out_meta.is_null() {
+            return usize::MAX;
+        }
+        if style_len > 0 && style.is_null() {
+            return usize::MAX;
+        }
+        if head_style_len > 0 && head_style.is_null() {
+            return usize::MAX;
+        }
+        if tail_style_len > 0 && tail_style.is_null() {
+            return usize::MAX;
+        }
+        let style = if style_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(style, style_len)
+        };
+        let head_bytes = if head_style_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(head_style, head_style_len)
+        };
+        let tail_bytes = if tail_style_len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(tail_style, tail_style_len)
+        };
+        let Ok(head_text) = std::str::from_utf8(head_bytes) else {
+            return usize::MAX;
+        };
+        let Ok(tail_text) = std::str::from_utf8(tail_bytes) else {
+            return usize::MAX;
+        };
+        let out_meta = std::slice::from_raw_parts_mut(out_meta, meta_len);
+        let (out_x, out_y) = if capacity == 0 {
+            (&mut [][..], &mut [][..])
+        } else {
+            if out_x.is_null() || out_y.is_null() {
+                return usize::MAX;
+            }
+            (
+                std::slice::from_raw_parts_mut(out_x, capacity),
+                std::slice::from_raw_parts_mut(out_y, capacity),
+            )
+        };
+        arrow_geom::arrow_shapes(
+            x0,
+            y0,
+            x1,
+            y1,
+            style,
+            head_text,
+            tail_text,
+            head_size,
+            width_start,
+            width_end,
+            elbow_authoring != 0,
+            out_meta,
+            out_x,
+            out_y,
+        )
+        .unwrap_or(usize::MAX)
     })
 }
 

@@ -2,12 +2,13 @@
 
 Admission is ABI 217 ``xyg_arrow_geometry`` / shaft / taper / trim / end
 decoration so Python and Node cannot drift. ABI 254 ``xyg_arrow_style_pack``
-owns comma-separated ``start_offset`` / ``label_clear`` packing. Hosts still
-coerce style keys and elbow truthiness. ChartView ``51_annotations.ts`` keeps
-the same CSV parse until WASM. Remaining host-only keys: ``curve`` (matplotlib
-arc3 rad — quadratic bulge as a fraction of chord length), ``angle_a``/
-``angle_b`` (matplotlib angle3/angle departure/arrival angles, degrees, y-up
-screen space), ``elbow``, ``gap_start``/``gap_end``, ``head_style``/
+owns comma-separated ``start_offset`` / ``label_clear`` packing. ABI 257
+``xyg_arrow_shapes`` owns shaft/taper/head/tail orchestration for compat
+exporters. ChartView ``51_annotations.ts`` keeps the same CSV parse until WASM.
+Hosts still coerce style keys and elbow truthiness. Remaining host-only keys:
+``curve`` (matplotlib arc3 rad — quadratic bulge as a fraction of chord length),
+``angle_a``/``angle_b`` (matplotlib angle3/angle departure/arrival angles,
+degrees, y-up screen space), ``elbow``, ``gap_start``/``gap_end``, ``head_style``/
 ``tail_style`` (``triangle``/``v``/``bar``/``none``) and ``head_size``.
 """
 
@@ -123,29 +124,60 @@ def trim_polyline_end(points: list[tuple[float, float]], trim: float) -> list[tu
     return [(float(x), float(y)) for x, y in zip(ox, oy, strict=True)]
 
 
+def _point_pairs(xs: Any, ys: Any, start: int, count: int) -> list[tuple[float, float]]:
+    return [
+        (float(x), float(y))
+        for x, y in zip(xs[start : start + count], ys[start : start + count], strict=True)
+    ]
+
+
+def _decoration_from_meta(
+    kind: int, xs: Any, ys: Any, start: int, count: int
+) -> Optional[dict[str, Any]]:
+    if kind == 0 or count == 0:
+        return None
+    return {
+        "kind": "fill" if kind == 1 else "stroke",
+        "points": _point_pairs(xs, ys, start, count),
+    }
+
+
 def arrow_shapes(
     x0: float, y0: float, x1: float, y1: float, style: dict[str, Any]
 ) -> dict[str, Any]:
     """Shaft polyline (or taper polygon) + endpoint decorations for one
     arrow/callout spec."""
-    geom = arrow_geometry(x0, y0, x1, y1, style)
-    head = max(4.0, _number(style.get("head_size")) or 8.0)
-    head_style = str(style.get("head_style") or "triangle")
-    shaft = shaft_points(geom)
     width_start = _number(style.get("shaft_width_start"))
     width_end = _number(style.get("shaft_width_end"))
+    meta, xs, ys = kernels.arrow_shapes(
+        x0,
+        y0,
+        x1,
+        y1,
+        _pack_style(style),
+        str(style.get("head_style") or "triangle"),
+        str(style.get("tail_style") or "none"),
+        _finite_or_nan(style.get("head_size")),
+        math.nan if width_start is None else width_start,
+        math.nan if width_end is None else width_end,
+        bool(style.get("elbow")),
+    )
+    shaft_n, taper_n, head_kind, head_n, tail_kind, tail_n = (int(v) for v in meta)
+    offset = 0
+    shaft = None
     taper = None
-    if width_start is not None or width_end is not None:
-        if head_style == "triangle":
-            # matplotlib construction: the shaft ends at the head BASE and the
-            # head spans base→tip — a full-length shaft would swallow the head.
-            shaft = trim_polyline_end(shaft, head * math.cos(math.pi / 6))
-        taper = taper_polygon(shaft, width_start or 1.0, width_end or 1.0)
+    if shaft_n:
+        shaft = _point_pairs(xs, ys, offset, shaft_n)
+        offset += shaft_n
+    if taper_n:
+        taper = _point_pairs(xs, ys, offset, taper_n)
+        offset += taper_n
+    head = _decoration_from_meta(head_kind, xs, ys, offset, head_n)
+    offset += head_n
+    tail = _decoration_from_meta(tail_kind, xs, ys, offset, tail_n)
     return {
-        "shaft": None if taper else shaft,
+        "shaft": shaft,
         "taper": taper,
-        "head": end_decoration(geom["p1"], geom["dir1"], head_style, head),
-        "tail": end_decoration(
-            geom["p0"], geom["dir0"], str(style.get("tail_style") or "none"), head
-        ),
+        "head": head,
+        "tail": tail,
     }

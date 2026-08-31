@@ -1029,6 +1029,28 @@ def load() -> ctypes.CDLL:
         F64P,
         ctypes.c_size_t,
     ]
+    lib.xyg_arrow_shapes.restype = ctypes.c_size_t
+    lib.xyg_arrow_shapes.argtypes = [
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_int32,
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.c_size_t,
+        F64P,
+        F64P,
+        ctypes.c_size_t,
+    ]
     lib.xyg_rounded_rect_poly.restype = ctypes.c_size_t
     lib.xyg_rounded_rect_poly.argtypes = [
         ctypes.c_double,
@@ -3226,6 +3248,31 @@ def main() -> None:
         == 2,
         "arrow_shaft linear probe",
     )
+    arrow_meta = array("i", [0] * 6)
+    head_style = array("B", b"triangle")
+    tail_style = array("B", b"none")
+    arrow_probe = lib.xyg_arrow_shapes(
+        0.0,
+        0.0,
+        100.0,
+        0.0,
+        null_f64,
+        0,
+        _ptr(head_style, ctypes.c_uint8),
+        len(head_style),
+        _ptr(tail_style, ctypes.c_uint8),
+        len(tail_style),
+        float("nan"),
+        float("nan"),
+        float("nan"),
+        0,
+        _ptr(arrow_meta, ctypes.c_int32),
+        6,
+        null_f64,
+        null_f64,
+        0,
+    )
+    ok(arrow_probe == 5 and arrow_meta[0] == 2 and arrow_meta[3] == 3, "arrow_shapes probe")
     scale = ctypes.c_double()
     ok(
         lib.xyg_f32_safe_scale(0.0, -1.0, 1.0, ctypes.byref(scale)) == 1 and scale.value == 1.0,
