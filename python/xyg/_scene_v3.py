@@ -1007,31 +1007,24 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
         dash_count = len(parsed_dash)
         dash[:dash_count] = [float(value) for value in parsed_dash]
     linecap = 255 if parsed_cap is None else int(parsed_cap)
-    return (
-        _XYAF_HEADER.pack(
-            b"XYAF",
-            1,
-            int(index),
-            int(kind_code),
-            int(axis_code),
-            int(symbol) & 0xFF,
-            int(anchor) & 0xFF,
-            int(facts),
-            int(style_bits),
-            int(linecap) & 0xFF,
-            int(dash_count) & 0xFF,
-            0,
-            len(encoded),
-            *[float(value) for value in nums],
-            color,
-            stroke,
-            label_color,
-            label_fill,
-            label_border,
-            0,
-            *[float(value) for value in dash],
-        )
-        + encoded
+    return _native.scene_xyaf_pack(
+        index=int(index),
+        kind_code=int(kind_code),
+        axis_code=int(axis_code),
+        symbol=int(symbol) & 0xFF,
+        anchor=int(anchor) & 0xFF,
+        facts=int(facts),
+        style_bits=int(style_bits),
+        linecap=int(linecap) & 0xFF,
+        dash_count=int(dash_count) & 0xFF,
+        nums=[float(value) for value in nums],
+        color=color,
+        stroke=stroke,
+        label_color=label_color,
+        label_fill=label_fill,
+        label_border=label_border,
+        dash=[float(value) for value in dash],
+        text=encoded,
     )
 
 
@@ -1370,6 +1363,10 @@ def _put_f64s(buf: bytearray, values: list[float]) -> None:
         buf.extend(struct.pack("<d", float(value)))
 
 
+def _f64_bytes(values: list[float]) -> bytes:
+    return b"".join(struct.pack("<d", float(value)) for value in values)
+
+
 def _put_tick_labels(buf: bytearray, labels: list[str] | tuple[str, ...] | None) -> int:
     if not labels:
         return 0
@@ -1663,7 +1660,6 @@ def _pack_chrome_facts(
             legend_frame_rgba = bytes(_rgba(str(style["background"]), 1.0))
     colorbar_obs = 0
     colorbar_stop_count = 0
-    colorbar_tick_count = 0
     colorbar_title = b""
     colorbar_lo = 0.0
     colorbar_hi = 0.0
@@ -1691,83 +1687,79 @@ def _pack_chrome_facts(
         raw_ticks = options.get("ticks")
         if raw_ticks is not None:
             colorbar_ticks = [float(value) for value in raw_ticks]
-            colorbar_tick_count = len(colorbar_ticks)
-    header = _XYCF_HEADER.pack(
-        b"XYCF",
-        1,
-        flags,
-        collision_header,
-        float(width),
-        float(height),
-        *authored_margins,
-        *padding,
-        kind_codes[x_scale],
-        kind_codes[y_scale],
-        x_lo,
-        x_hi,
-        float(xa.get("constant") or 1.0),
-        y_lo,
-        y_hi,
-        float(ya.get("constant") or 1.0),
-        1 if xa.get("nonpositive", "clip") == "mask" else 0,
-        1 if ya.get("nonpositive", "clip") == "mask" else 0,
-        tick_kinds,
-        len(title),
-        len(x_label),
-        len(y_label),
-        len(x_format),
-        len(y_format),
-        len(x_major),
-        len(x_minor),
-        len(y_major),
-        len(y_minor),
-        0 if x_labels is None else len(x_labels),
-        0 if y_labels is None else len(y_labels),
-        len(chrome),
-        len(legend_loc),
-        len(legend_title),
-        legend_ncols,
-        legend_font_size,
-        legend_title_font_size,
-        legend_flags,
-        legend_count,
-        legend_text_rgba,
-        legend_frame_rgba,
-        colorbar_obs,
-        colorbar_stop_count,
-        colorbar_tick_count,
-        len(colorbar_title),
-        colorbar_lo,
-        colorbar_hi,
-        colorbar_text_rgba,
-        0,
-    )
-    payload = bytearray(header)
-    payload.extend(title)
-    payload.extend(x_label)
-    payload.extend(y_label)
-    payload.extend(x_format)
-    payload.extend(y_format)
-    _put_f64s(payload, x_major)
-    _put_f64s(payload, x_minor)
-    _put_f64s(payload, y_major)
-    _put_f64s(payload, y_minor)
-    _put_tick_labels(payload, None if x_labels is None else list(x_labels))
-    _put_tick_labels(payload, None if y_labels is None else list(y_labels))
-    payload.extend(chrome)
-    payload.extend(legend_loc)
-    payload.extend(legend_title)
-    payload.extend(legend_meta)
-    for length in legend_lens:
-        payload.extend(int(length).to_bytes(4, "little"))
-    payload.extend(legend_blob)
+    header = {
+        "flags": flags,
+        "collision_header": collision_header,
+        "width": float(width),
+        "height": float(height),
+        "margin_left": authored_margins[0],
+        "margin_right": authored_margins[1],
+        "margin_top": authored_margins[2],
+        "margin_bottom": authored_margins[3],
+        "pad_left": padding[0],
+        "pad_right": padding[1],
+        "pad_top": padding[2],
+        "pad_bottom": padding[3],
+        "x_scale_kind": kind_codes[x_scale],
+        "y_scale_kind": kind_codes[y_scale],
+        "x_lo": x_lo,
+        "x_hi": x_hi,
+        "x_constant": float(xa.get("constant") or 1.0),
+        "y_lo": y_lo,
+        "y_hi": y_hi,
+        "y_constant": float(ya.get("constant") or 1.0),
+        "x_nonpositive_mask": 1 if xa.get("nonpositive", "clip") == "mask" else 0,
+        "y_nonpositive_mask": 1 if ya.get("nonpositive", "clip") == "mask" else 0,
+        "tick_kinds": tick_kinds,
+        "x_label_count": 0 if x_labels is None else len(x_labels),
+        "y_label_count": 0 if y_labels is None else len(y_labels),
+        "legend_ncols": legend_ncols,
+        "legend_font_size": legend_font_size,
+        "legend_title_font_size": legend_title_font_size,
+        "legend_flags": legend_flags,
+        "legend_count": legend_count,
+        "legend_text_rgba": legend_text_rgba,
+        "legend_frame_rgba": legend_frame_rgba,
+        "colorbar_obs": colorbar_obs,
+        "colorbar_stop_count": colorbar_stop_count,
+        "colorbar_lo": colorbar_lo,
+        "colorbar_hi": colorbar_hi,
+        "colorbar_text_rgba": colorbar_text_rgba,
+    }
+    x_labels_blob = bytearray()
+    y_labels_blob = bytearray()
+    _put_tick_labels(x_labels_blob, None if x_labels is None else list(x_labels))
+    _put_tick_labels(y_labels_blob, None if y_labels is None else list(y_labels))
+    colorbar_stops_blob = bytearray()
     for value, rgba in colorbar_stops:
-        payload.extend(struct.pack("<d", value))
-        payload.extend(rgba)
-    _put_f64s(payload, colorbar_ticks)
-    payload.extend(colorbar_title)
-    payload.extend(collision_extra)
-    return bytes(payload)
+        colorbar_stops_blob.extend(struct.pack("<d", value))
+        colorbar_stops_blob.extend(rgba)
+    return _native.scene_xycf_pack(
+        header,
+        {
+            "title": title,
+            "x_label": x_label,
+            "y_label": y_label,
+            "x_format": x_format,
+            "y_format": y_format,
+            "x_major": _f64_bytes(x_major),
+            "x_minor": _f64_bytes(x_minor),
+            "y_major": _f64_bytes(y_major),
+            "y_minor": _f64_bytes(y_minor),
+            "x_labels_blob": bytes(x_labels_blob),
+            "y_labels_blob": bytes(y_labels_blob),
+            "chrome": chrome,
+            "legend_loc": legend_loc,
+            "legend_title": legend_title,
+            "legend_meta": legend_meta,
+            "legend_lens": b"".join(int(length).to_bytes(4, "little") for length in legend_lens),
+            "legend_blob": legend_blob,
+            "colorbar_stops_blob": bytes(colorbar_stops_blob),
+            "colorbar_ticks": _f64_bytes(colorbar_ticks),
+            "colorbar_title": colorbar_title,
+            "collision_extra": collision_extra,
+        },
+    )
 
 
 def _rect_extra_flags(style: dict[str, Any], kind: str, polar: bool) -> int:
@@ -3834,25 +3826,26 @@ def _pack_figure_support(
     ):
         flags |= 1 << 7
     traces = list(getattr(figure, "traces", None) or [])
-    payload = bytearray(b"XYFS")
-    payload.extend((2).to_bytes(4, "little"))
-    payload.extend(flags.to_bytes(4, "little"))
-    payload.extend(len(figure.axis_options).to_bytes(4, "little"))
-    payload.extend(len(traces).to_bytes(4, "little"))
+    axes_blob = bytearray()
     for axis_id, options in figure.axis_options.items():
         axis_code = 0 if axis_id == "x" else 1 if axis_id == "y" else 255
         keys = _significant_scene_axis_keys(options, polar=polar)
-        payload.extend(bytes((axis_code, 0, 0, 0)))
-        payload.extend(len(keys).to_bytes(4, "little"))
-        _xyep_put_keys(payload, keys)
+        axes_blob.extend(bytes((axis_code, 0, 0, 0)))
+        axes_blob.extend(len(keys).to_bytes(4, "little"))
+        _xyep_put_keys(axes_blob, keys)
+    traces_blob = bytearray()
     for trace in traces:
         trace_flags, kind = _figure_trace_support_flags(trace, polar)
         encoded = str(kind).encode("utf-8")[:32]
-        payload.extend(trace_flags.to_bytes(2, "little"))
-        payload.extend(bytes((len(encoded), 0)))
-        payload.extend((0).to_bytes(4, "little"))
-        payload.extend(encoded)
-    return bytes(payload)
+        traces_blob.extend(trace_flags.to_bytes(2, "little"))
+        traces_blob.extend(bytes((len(encoded), 0)))
+        traces_blob.extend((0).to_bytes(4, "little"))
+        traces_blob.extend(encoded)
+    return _native.scene_figure_support_pack(
+        flags=flags,
+        axes_blob=bytes(axes_blob),
+        traces_blob=bytes(traces_blob),
+    )
 
 
 def _xyep_put_keys(buf: bytearray, keys: list[str]) -> None:

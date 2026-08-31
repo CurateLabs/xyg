@@ -952,31 +952,73 @@ def _ship_wire_buffer(
     domain: Optional[tuple[float, float]] = None,
     packed_rgba: Optional[npt.NDArray[np.uint8]] = None,
     raw: Optional[np.ndarray] = None,
+    sel: Any = None,
+    role: str = "color",
+    mode: str = "continuous",
+    n_categories: int = 0,
+    n_palette: int = 0,
 ) -> Any:
-    """Apply the ABI 312 transform and return a shipped buffer index."""
+    """Apply the ABI 312 transform via ``payload_channel_materialize`` (ABI 320)."""
     transform = plan["transform"]
     if transform == "none":
         return None
+    sel_arr = None if sel is None else np.asarray(sel, dtype=np.uint32)
     if transform == "rgba_pack":
         if packed_rgba is None:
             raise ValueError("direct RGBA wire encode missing packed values")
-        return ship_u8(packed_rgba.reshape(-1))
-    if transform == "quantize_u8":
+        materialized = kernels.payload_channel_materialize(
+            role=role,
+            mode="direct_rgba",
+            n_categories=0,
+            style_dtype_u8=False,
+            quantize_continuous=False,
+            domain=(0.0, 1.0),
+            n_palette=0,
+            sel=sel_arr,
+            values_f64=packed_rgba.reshape(-1, 4),
+            values_u8=None,
+        )
+    elif transform in {"quantize_u8", "normalize"}:
         if vals is None or domain is None:
             raise ValueError("continuous wire encode missing values or domain")
-        return ship_u8(quantize_unit_u8(vals, domain))
-    if transform == "normalize":
-        if vals is None or domain is None:
-            raise ValueError("continuous wire encode missing values or domain")
-        return ship_scalar(normalize_to_unit(vals, domain))
-    if transform == "raw":
+        materialized = kernels.payload_channel_materialize(
+            role=role,
+            mode=mode,
+            n_categories=n_categories,
+            style_dtype_u8=False,
+            quantize_continuous=transform == "quantize_u8",
+            domain=domain,
+            n_palette=n_palette,
+            sel=sel_arr,
+            values_f64=vals,
+            values_u8=None,
+        )
+    elif transform == "raw":
         if raw is None:
             raise ValueError("raw wire encode missing values")
-        flat = np.ascontiguousarray(raw).reshape(-1)
-        if plan["buf_kind"] == "u8":
-            return ship_u8(flat)
-        return ship_scalar(flat)
-    raise ValueError("invalid payload_channel_wire_encode transform")
+        materialized = kernels.payload_channel_materialize(
+            role=role,
+            mode=mode,
+            n_categories=n_categories,
+            style_dtype_u8=plan.get("mark_dtype_u8", False),
+            quantize_continuous=False,
+            domain=(0.0, 1.0),
+            n_palette=n_palette,
+            sel=sel_arr,
+            values_f64=raw.astype(np.float64, copy=False) if raw.dtype != np.uint8 else None,
+            values_u8=raw.astype(np.uint8, copy=False) if raw.dtype == np.uint8 else None,
+        )
+    else:
+        raise ValueError("invalid payload_channel_wire_encode transform")
+    if materialized["buf_kind"] == 0:
+        return None
+    enc = np.frombuffer(
+        materialized["bytes"],
+        dtype=np.uint8 if plan["buf_kind"] == "u8" else np.float32,
+    )
+    if plan["buf_kind"] == "u8":
+        return ship_u8(enc)
+    return ship_scalar(enc)
 
 
 def ship_registry_attach(
@@ -1107,25 +1149,48 @@ def ship_color_channel(
         if rgba is None:
             raise ValueError("direct RGBA color channel missing values")
         values = rgba if sel is None else rgba[sel]
-        # Same per-element chain as the historical one-shot expression, but
-        # chunk-bounded: a full-column direct-RGBA trace otherwise holds three
-        # 32-bytes-per-point f64 temporaries at once (§27).
-        packed = _quantized_rgba8(values)
-        color_spec["buf"] = _ship_wire_buffer(plan, ship_scalar, ship_u8, packed_rgba=packed)
+        color_spec["buf"] = _ship_wire_buffer(
+            plan,
+            ship_scalar,
+            ship_u8,
+            packed_rgba=values,
+            sel=None,
+            role="color",
+            mode="direct_rgba",
+        )
     elif cc.mode == "continuous":
         values = cc.values
         domain = cc.domain
         if values is None or domain is None:
             raise ValueError("continuous color channel missing values or domain")
         vals = values if sel is None else values[sel]
-        color_spec["buf"] = _ship_wire_buffer(plan, ship_scalar, ship_u8, vals=vals, domain=domain)
+        color_spec["buf"] = _ship_wire_buffer(
+            plan,
+            ship_scalar,
+            ship_u8,
+            vals=vals,
+            domain=domain,
+            sel=None,
+            role="color",
+            mode="continuous",
+        )
     elif cc.mode == "categorical":
         code_values = cc.codes
         categories = cc.categories
         if code_values is None or categories is None:
             raise ValueError("categorical color channel missing codes or categories")
         codes = code_values if sel is None else code_values[sel]
-        color_spec["buf"] = _ship_wire_buffer(plan, ship_scalar, ship_u8, raw=codes)
+        color_spec["buf"] = _ship_wire_buffer(
+            plan,
+            ship_scalar,
+            ship_u8,
+            raw=codes,
+            sel=None,
+            role="color",
+            mode="categorical",
+            n_categories=len(categories),
+            n_palette=len(categories),
+        )
         if plan["ship_palette"]:
             color_spec["palette"] = categorical_palette(cc.colors, len(categories))
     else:

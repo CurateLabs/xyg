@@ -100,6 +100,26 @@ pub mod scene_xyta_trace_pack;
 pub use scene_xyta_trace_pack::{
     scene_xyta_trace_pack, XytaTracePackInput, SCENE_XYTA_TRACE_PACK_MAX_RECORD,
 };
+pub mod scene_xyaf_pack;
+pub use scene_xyaf_pack::{scene_xyaf_pack, XyafPackInput, SCENE_XYAF_PACK_MAX_RECORD};
+pub mod scene_xycf_pack;
+pub use scene_xycf_pack::{
+    scene_xycf_pack, XycfPackHeader, XycfPackSidecars, SCENE_XYCF_PACK_MAX, XYCF_HEADER_BYTES,
+};
+pub mod scene_figure_support_pack;
+pub use scene_figure_support_pack::{
+    scene_figure_support_pack, FigureSupportAxisInput, FigureSupportTraceInput,
+    SCENE_FIGURE_SUPPORT_PACK_MAX,
+};
+pub mod payload_column_gather_materialize;
+pub use payload_column_gather_materialize::{
+    payload_column_gather_materialize, PayloadColumnMaterializeIn, PayloadColumnMaterializeOut,
+    PAYLOAD_COLUMN_GATHER_MATERIALIZE_MAX,
+};
+pub mod payload_channel_materialize;
+pub use payload_channel_materialize::{
+    payload_channel_materialize, PayloadChannelMaterializeOut, PAYLOAD_CHANNEL_MATERIALIZE_MAX_BYTES,
+};
 pub mod scene_pack;
 pub use scene_pack::{
     pack_product, pack_product_facts, pack_trace, parse_product_facts, resolve_pack_kind,

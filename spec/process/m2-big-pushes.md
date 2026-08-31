@@ -32,8 +32,8 @@ keys.
 | --- | --- | ---: | --- | --- |
 | **1** | `_payload` density grid materialize (bin2d / pyramid / sample / encode) | ~800 | **316** `xyg_payload_density_grid_materialize` | **DONE on #851** — grid body is plan → materialize → ship |
 | **2** | `_scene_v3` XYTC + XYTA trace pack | ~1,100 | **317–318** `xyg_scene_xytc_trace_pack`, `xyg_scene_xyta_trace_pack` | `_pack_xytc` / `_pack_xyta` marshal inputs only; `figure_scene_v3.json` SHA matrix green |
-| **3A** | Scene chrome / annotation / figure-support pack | ~1,500 | **319** bulk XYAF/XYCF/XYFS packers | Scene-byte cross-host proof closed (#731 blocker) |
-| **3B** | Payload geometry gather + channel materialize | ~950 | **320** column gather offset ship + channel materialize | `_emit_*` bodies and `channels.ship_registry_attach` execution retired |
+| **3A** | Scene chrome / annotation / figure-support pack | ~1,500 | **319** bulk XYAF/XYCF/XYFS packers | **DONE** — `_pack_xyaf` / `_pack_chrome_facts` / `_pack_figure_support` marshal only |
+| **3B** | Payload geometry gather + channel materialize | ~950 | **320** column gather offset ship + channel materialize | **DONE** — `_ship_registry_columns` + `channels._ship_wire_buffer` delegate to Rust |
 
 Push **3A** closes Scene parity; push **3B** closes payload parity. Order 3A vs 3B
 is negotiable; do not interleave with field slices.

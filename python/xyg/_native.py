@@ -704,6 +704,14 @@ def _ptr_u32(arr: npt.NDArray[np.uint32]) -> int:
     return arr.ctypes.data
 
 
+def _null_u32() -> int:
+    return 0
+
+
+def _null_u8() -> int:
+    return 0
+
+
 def _ptr_i32(arr: npt.NDArray[np.int32]) -> int:
     return arr.ctypes.data
 
@@ -2622,6 +2630,479 @@ def scene_xyta_trace_pack(
     if code != 0:
         raise ValueError("invalid scene_xyta_trace_pack arguments")
     return bytes(out[: int(out_len.value)])
+
+
+SCENE_XYAF_PACK_MAX_RECORD = 1 << 16
+SCENE_XYCF_PACK_MAX = 1 << 20
+SCENE_FIGURE_SUPPORT_PACK_MAX = 1 << 18
+PAYLOAD_COLUMN_GATHER_MATERIALIZE_MAX = 8
+PAYLOAD_COLUMN_MATERIALIZE_MAX_BYTES = 1 << 28
+PAYLOAD_CHANNEL_MATERIALIZE_MAX_BYTES = 1 << 28
+
+
+class _SceneXyafPackIn(ctypes.Structure):
+    _fields_ = [
+        ("index", ctypes.c_uint32),
+        ("kind_code", ctypes.c_uint8),
+        ("axis_code", ctypes.c_uint8),
+        ("symbol", ctypes.c_uint8),
+        ("anchor", ctypes.c_uint8),
+        ("facts", ctypes.c_uint32),
+        ("style_bits", ctypes.c_uint32),
+        ("linecap", ctypes.c_uint8),
+        ("dash_count", ctypes.c_uint8),
+        ("text_len", ctypes.c_size_t),
+        ("nums", ctypes.c_double * 18),
+        ("color", ctypes.c_uint8 * 4),
+        ("stroke", ctypes.c_uint8 * 4),
+        ("label_color", ctypes.c_uint8 * 4),
+        ("label_fill", ctypes.c_uint8 * 4),
+        ("label_border", ctypes.c_uint8 * 4),
+        ("dash", ctypes.c_float * 8),
+    ]
+
+
+class _SceneXycfPackIn(ctypes.Structure):
+    _fields_ = [
+        ("flags", ctypes.c_uint32),
+        ("collision_header", ctypes.c_uint32),
+        ("width", ctypes.c_double),
+        ("height", ctypes.c_double),
+        ("margin_left", ctypes.c_double),
+        ("margin_right", ctypes.c_double),
+        ("margin_top", ctypes.c_double),
+        ("margin_bottom", ctypes.c_double),
+        ("pad_left", ctypes.c_double),
+        ("pad_right", ctypes.c_double),
+        ("pad_top", ctypes.c_double),
+        ("pad_bottom", ctypes.c_double),
+        ("x_scale_kind", ctypes.c_uint32),
+        ("y_scale_kind", ctypes.c_uint32),
+        ("x_lo", ctypes.c_double),
+        ("x_hi", ctypes.c_double),
+        ("x_constant", ctypes.c_double),
+        ("y_lo", ctypes.c_double),
+        ("y_hi", ctypes.c_double),
+        ("y_constant", ctypes.c_double),
+        ("x_nonpositive_mask", ctypes.c_uint8),
+        ("y_nonpositive_mask", ctypes.c_uint8),
+        ("tick_kinds", ctypes.c_uint16),
+        ("title_len", ctypes.c_size_t),
+        ("x_label_len", ctypes.c_size_t),
+        ("y_label_len", ctypes.c_size_t),
+        ("x_format_len", ctypes.c_size_t),
+        ("y_format_len", ctypes.c_size_t),
+        ("x_major_len", ctypes.c_size_t),
+        ("x_minor_len", ctypes.c_size_t),
+        ("y_major_len", ctypes.c_size_t),
+        ("y_minor_len", ctypes.c_size_t),
+        ("x_label_count", ctypes.c_uint32),
+        ("y_label_count", ctypes.c_uint32),
+        ("chrome_len", ctypes.c_size_t),
+        ("legend_loc_len", ctypes.c_size_t),
+        ("legend_title_len", ctypes.c_size_t),
+        ("legend_ncols", ctypes.c_uint32),
+        ("legend_font_size", ctypes.c_double),
+        ("legend_title_font_size", ctypes.c_double),
+        ("legend_flags", ctypes.c_uint32),
+        ("legend_count", ctypes.c_uint32),
+        ("legend_text_rgba", ctypes.c_uint8 * 4),
+        ("legend_frame_rgba", ctypes.c_uint8 * 4),
+        ("colorbar_obs", ctypes.c_uint32),
+        ("colorbar_stop_count", ctypes.c_uint32),
+        ("colorbar_tick_count", ctypes.c_size_t),
+        ("colorbar_title_len", ctypes.c_size_t),
+        ("colorbar_lo", ctypes.c_double),
+        ("colorbar_hi", ctypes.c_double),
+        ("colorbar_text_rgba", ctypes.c_uint8 * 4),
+        ("legend_meta_len", ctypes.c_size_t),
+        ("legend_lens_len", ctypes.c_size_t),
+        ("legend_blob_len", ctypes.c_size_t),
+        ("colorbar_stops_len", ctypes.c_size_t),
+        ("collision_extra_len", ctypes.c_size_t),
+    ]
+
+
+class _PayloadColumnMaterializeIn(ctypes.Structure):
+    _fields_ = [
+        ("ship_method", ctypes.c_int32),
+        ("ship_scale", ctypes.c_int32),
+        ("values_len", ctypes.c_size_t),
+        ("col_min", ctypes.c_double),
+        ("col_max", ctypes.c_double),
+        ("kind_len", ctypes.c_size_t),
+        ("sticky_offset", ctypes.c_double),
+        ("axis_scale_len", ctypes.c_size_t),
+    ]
+
+
+class _PayloadColumnMaterializeOut(ctypes.Structure):
+    _fields_ = [
+        ("dtype_code", ctypes.c_int32),
+        ("offset", ctypes.c_double),
+        ("scale", ctypes.c_double),
+        ("has_kind", ctypes.c_int32),
+        ("len", ctypes.c_uint32),
+        ("bytes_offset", ctypes.c_size_t),
+        ("bytes_len", ctypes.c_size_t),
+    ]
+
+
+def scene_xyaf_pack(
+    *,
+    index: int,
+    kind_code: int,
+    axis_code: int,
+    symbol: int,
+    anchor: int,
+    facts: int,
+    style_bits: int,
+    linecap: int,
+    dash_count: int,
+    nums: Sequence[float],
+    color: bytes,
+    stroke: bytes,
+    label_color: bytes,
+    label_fill: bytes,
+    label_border: bytes,
+    dash: Sequence[float],
+    text: bytes,
+) -> bytes:
+    """Pack one XYAF v1 record via ``xyg_scene_xyaf_pack`` (ABI 319)."""
+    pack_in = _SceneXyafPackIn(
+        int(index) & 0xFFFFFFFF,
+        int(kind_code) & 0xFF,
+        int(axis_code) & 0xFF,
+        int(symbol) & 0xFF,
+        int(anchor) & 0xFF,
+        int(facts) & 0xFFFFFFFF,
+        int(style_bits) & 0xFFFFFFFF,
+        int(linecap) & 0xFF,
+        int(dash_count) & 0xFF,
+        len(text),
+        (ctypes.c_double * 18)(*(float(v) for v in nums)),
+        (ctypes.c_uint8 * 4).from_buffer_copy(color[:4].ljust(4, b"\0")),
+        (ctypes.c_uint8 * 4).from_buffer_copy(stroke[:4].ljust(4, b"\0")),
+        (ctypes.c_uint8 * 4).from_buffer_copy(label_color[:4].ljust(4, b"\0")),
+        (ctypes.c_uint8 * 4).from_buffer_copy(label_fill[:4].ljust(4, b"\0")),
+        (ctypes.c_uint8 * 4).from_buffer_copy(label_border[:4].ljust(4, b"\0")),
+        (ctypes.c_float * 8)(*(float(v) for v in dash)),
+    )
+    out = np.zeros(SCENE_XYAF_PACK_MAX_RECORD, dtype=np.uint8)
+    out_len = ctypes.c_size_t(0)
+    text_ptr, _ = _optional_u8_ptr(text)
+    code = int(
+        _lib.xyg_scene_xyaf_pack(
+            ctypes.byref(pack_in),
+            text_ptr,
+            _ptr_u8(out),
+            len(out),
+            ctypes.byref(out_len),
+        )
+    )
+    if code == -2:
+        raise ValueError("scene_xyaf_pack output buffer too small")
+    if code != 0:
+        raise ValueError("invalid scene_xyaf_pack arguments")
+    return bytes(out[: int(out_len.value)])
+
+
+def scene_xycf_pack(header: Mapping[str, Any], sidecars: Mapping[str, Any]) -> bytes:
+    """Pack XYCF v1 facts via ``xyg_scene_xycf_pack`` (ABI 319)."""
+    pack_in = _SceneXycfPackIn(
+        int(header["flags"]),
+        int(header["collision_header"]),
+        float(header["width"]),
+        float(header["height"]),
+        float(header["margin_left"]),
+        float(header["margin_right"]),
+        float(header["margin_top"]),
+        float(header["margin_bottom"]),
+        float(header["pad_left"]),
+        float(header["pad_right"]),
+        float(header["pad_top"]),
+        float(header["pad_bottom"]),
+        int(header["x_scale_kind"]),
+        int(header["y_scale_kind"]),
+        float(header["x_lo"]),
+        float(header["x_hi"]),
+        float(header["x_constant"]),
+        float(header["y_lo"]),
+        float(header["y_hi"]),
+        float(header["y_constant"]),
+        int(header["x_nonpositive_mask"]),
+        int(header["y_nonpositive_mask"]),
+        int(header["tick_kinds"]),
+        len(sidecars["title"]),
+        len(sidecars["x_label"]),
+        len(sidecars["y_label"]),
+        len(sidecars["x_format"]),
+        len(sidecars["y_format"]),
+        len(sidecars["x_major"]) // 8,
+        len(sidecars["x_minor"]) // 8,
+        len(sidecars["y_major"]) // 8,
+        len(sidecars["y_minor"]) // 8,
+        int(header["x_label_count"]),
+        int(header["y_label_count"]),
+        len(sidecars["chrome"]),
+        len(sidecars["legend_loc"]),
+        len(sidecars["legend_title"]),
+        int(header["legend_ncols"]),
+        float(header["legend_font_size"]),
+        float(header["legend_title_font_size"]),
+        int(header["legend_flags"]),
+        int(header["legend_count"]),
+        (ctypes.c_uint8 * 4).from_buffer_copy(header["legend_text_rgba"][:4]),
+        (ctypes.c_uint8 * 4).from_buffer_copy(header["legend_frame_rgba"][:4]),
+        int(header["colorbar_obs"]),
+        int(header["colorbar_stop_count"]),
+        len(sidecars["colorbar_ticks"]) // 8,
+        len(sidecars["colorbar_title"]),
+        float(header["colorbar_lo"]),
+        float(header["colorbar_hi"]),
+        (ctypes.c_uint8 * 4).from_buffer_copy(header["colorbar_text_rgba"][:4]),
+        len(sidecars["legend_meta"]),
+        len(sidecars["legend_lens"]) // 4,
+        len(sidecars["legend_blob"]),
+        len(sidecars["colorbar_stops_blob"]),
+        len(sidecars["collision_extra"]),
+    )
+    out = np.zeros(SCENE_XYCF_PACK_MAX, dtype=np.uint8)
+    out_len = ctypes.c_size_t(0)
+    x_major = (
+        np.frombuffer(sidecars["x_major"], dtype="<f8")
+        if sidecars["x_major"]
+        else np.empty(0, dtype=np.float64)
+    )
+    x_minor = (
+        np.frombuffer(sidecars["x_minor"], dtype="<f8")
+        if sidecars["x_minor"]
+        else np.empty(0, dtype=np.float64)
+    )
+    y_major = (
+        np.frombuffer(sidecars["y_major"], dtype="<f8")
+        if sidecars["y_major"]
+        else np.empty(0, dtype=np.float64)
+    )
+    y_minor = (
+        np.frombuffer(sidecars["y_minor"], dtype="<f8")
+        if sidecars["y_minor"]
+        else np.empty(0, dtype=np.float64)
+    )
+    colorbar_ticks = (
+        np.frombuffer(sidecars["colorbar_ticks"], dtype="<f8")
+        if sidecars["colorbar_ticks"]
+        else np.empty(0, dtype=np.float64)
+    )
+    legend_lens = (
+        np.frombuffer(sidecars["legend_lens"], dtype="<u4")
+        if sidecars["legend_lens"]
+        else np.empty(0, dtype=np.uint32)
+    )
+    code = int(
+        _lib.xyg_scene_xycf_pack(
+            ctypes.byref(pack_in),
+            *_optional_u8_ptr(sidecars["title"]),
+            *_optional_u8_ptr(sidecars["x_label"]),
+            *_optional_u8_ptr(sidecars["y_label"]),
+            *_optional_u8_ptr(sidecars["x_format"]),
+            *_optional_u8_ptr(sidecars["y_format"]),
+            _ptr_f64(x_major),
+            _ptr_f64(x_minor),
+            _ptr_f64(y_major),
+            _ptr_f64(y_minor),
+            *_optional_u8_ptr(sidecars["x_labels_blob"]),
+            *_optional_u8_ptr(sidecars["y_labels_blob"]),
+            *_optional_u8_ptr(sidecars["chrome"]),
+            *_optional_u8_ptr(sidecars["legend_loc"]),
+            *_optional_u8_ptr(sidecars["legend_title"]),
+            *_optional_u8_ptr(sidecars["legend_meta"]),
+            _ptr_u32(legend_lens) if len(legend_lens) else _null_u32(),
+            *_optional_u8_ptr(sidecars["legend_blob"]),
+            *_optional_u8_ptr(sidecars["colorbar_stops_blob"]),
+            _ptr_f64(colorbar_ticks),
+            *_optional_u8_ptr(sidecars["colorbar_title"]),
+            *_optional_u8_ptr(sidecars["collision_extra"]),
+            _ptr_u8(out),
+            len(out),
+            ctypes.byref(out_len),
+        )
+    )
+    if code == -2:
+        raise ValueError("scene_xycf_pack output buffer too small")
+    if code != 0:
+        raise ValueError("invalid scene_xycf_pack arguments")
+    return bytes(out[: int(out_len.value)])
+
+
+def scene_figure_support_pack(*, flags: int, axes_blob: bytes, traces_blob: bytes) -> bytes:
+    """Pack XYFS v2 support envelope via ``xyg_scene_figure_support_pack`` (ABI 319)."""
+    out = np.zeros(SCENE_FIGURE_SUPPORT_PACK_MAX, dtype=np.uint8)
+    out_len = ctypes.c_size_t(0)
+    axes_ptr, _ = _optional_u8_ptr(axes_blob)
+    traces_ptr, _ = _optional_u8_ptr(traces_blob)
+    code = int(
+        _lib.xyg_scene_figure_support_pack(
+            int(flags) & 0xFFFFFFFF,
+            axes_ptr,
+            len(axes_blob),
+            traces_ptr,
+            len(traces_blob),
+            _ptr_u8(out),
+            len(out),
+            ctypes.byref(out_len),
+        )
+    )
+    if code == -2:
+        raise ValueError("scene_figure_support_pack output buffer too small")
+    if code != 0:
+        raise ValueError("invalid scene_figure_support_pack arguments")
+    return bytes(out[: int(out_len.value)])
+
+
+def payload_column_gather_materialize(
+    *,
+    sel: npt.NDArray[np.uint32] | None,
+    columns: Sequence[dict[str, Any]],
+    values: Sequence[npt.NDArray[np.float64]],
+    kinds: Sequence[bytes],
+    axis_scales: Sequence[bytes],
+) -> list[dict[str, Any]]:
+    """Gather and offset-ship geometry columns via ``xyg_payload_column_gather_materialize`` (ABI 320)."""
+    n = len(columns)
+    if n == 0 or n > PAYLOAD_COLUMN_GATHER_MATERIALIZE_MAX:
+        raise ValueError("invalid payload_column_gather_materialize column count")
+    if not (len(values) == len(kinds) == len(axis_scales) == n):
+        raise ValueError("payload_column_gather_materialize descriptor length mismatch")
+    ship_method_by_name = {"offset": 0, "values": 1, "f64": 2}
+    ship_scale_by_name = {"x": 0, "y": 1}
+    ins = (_PayloadColumnMaterializeIn * n)()
+    value_ptrs = (ctypes.c_void_p * n)(*(arr.ctypes.data for arr in values))
+    kind_ptrs = (ctypes.c_void_p * n)(
+        *(np.frombuffer(kind_b, dtype=np.uint8).ctypes.data if kind_b else 0 for kind_b in kinds)
+    )
+    scale_ptrs = (ctypes.c_void_p * n)(
+        *(np.frombuffer(scale_b, dtype=np.uint8).ctypes.data for scale_b in axis_scales)
+    )
+    for idx, (col, arr, kind_b, scale_b) in enumerate(
+        zip(columns, values, kinds, axis_scales, strict=True)
+    ):
+        arr = np.ascontiguousarray(arr, dtype=np.float64).reshape(-1)
+        ins[idx] = _PayloadColumnMaterializeIn(
+            ship_method_by_name[col["ship_method"]],
+            ship_scale_by_name[col["ship_scale"]],
+            len(arr),
+            float(col["col_min"]),
+            float(col["col_max"]),
+            len(kind_b),
+            float(col["sticky_offset"]),
+            len(scale_b),
+        )
+    outs = (_PayloadColumnMaterializeOut * n)()
+    out_bytes = np.zeros(PAYLOAD_COLUMN_MATERIALIZE_MAX_BYTES, dtype=np.uint8)
+    out_bytes_len = ctypes.c_size_t(0)
+    sel_arr = np.ascontiguousarray(sel, dtype=np.uint32) if sel is not None else None
+    written = int(
+        _lib.xyg_payload_column_gather_materialize(
+            _ptr_u32(sel_arr) if sel_arr is not None and len(sel_arr) else _null_u32(),
+            len(sel_arr) if sel_arr is not None else 0,
+            ins,
+            n,
+            value_ptrs,
+            kind_ptrs,
+            scale_ptrs,
+            outs,
+            _ptr_u8(out_bytes),
+            len(out_bytes),
+            ctypes.byref(out_bytes_len),
+        )
+    )
+    if written < 0:
+        raise ValueError("invalid payload_column_gather_materialize arguments")
+    blob = bytes(out_bytes[: int(out_bytes_len.value)])
+    result: list[dict[str, Any]] = []
+    for idx in range(written):
+        out = outs[idx]
+        enc = blob[out.bytes_offset : out.bytes_offset + out.bytes_len]
+        meta: dict[str, Any] = {"len": int(out.len)}
+        if out.dtype_code == 1:
+            meta["dtype"] = "f64"
+        else:
+            meta["offset"] = float(out.offset)
+            meta["scale"] = float(out.scale)
+            if out.has_kind:
+                meta["kind"] = kinds[idx].decode("utf-8")
+        result.append({"bytes": enc, "meta": meta, "dtype_code": int(out.dtype_code)})
+    return result
+
+
+def payload_channel_materialize(
+    *,
+    role: str,
+    mode: str,
+    n_categories: int,
+    style_dtype_u8: bool,
+    quantize_continuous: bool,
+    domain: tuple[float, float],
+    n_palette: int,
+    sel: npt.NDArray[np.uint32] | None,
+    values_f64: npt.NDArray[np.float64] | None,
+    values_u8: npt.NDArray[np.uint8] | None,
+) -> dict[str, Any]:
+    """Materialize one channel wire buffer via ``xyg_payload_channel_materialize`` (ABI 320)."""
+    role_code = {"color": 0, "size": 1, "style": 2}[role]
+    mode_code = {
+        "constant": 0,
+        "continuous": 1,
+        "categorical": 2,
+        "direct_rgba": 3,
+        "match_fill": 4,
+        "direct": 5,
+    }[mode]
+    vals_f64 = (
+        np.ascontiguousarray(values_f64, dtype=np.float64).reshape(-1)
+        if values_f64 is not None
+        else np.empty(0, dtype=np.float64)
+    )
+    vals_u8 = (
+        np.ascontiguousarray(values_u8, dtype=np.uint8).reshape(-1)
+        if values_u8 is not None
+        else np.empty(0, dtype=np.uint8)
+    )
+    sel_arr = np.ascontiguousarray(sel, dtype=np.uint32) if sel is not None else None
+    out = np.zeros(PAYLOAD_CHANNEL_MATERIALIZE_MAX_BYTES, dtype=np.uint8)
+    meta = (ctypes.c_int32 * 5)()
+    nbytes = int(
+        _lib.xyg_payload_channel_materialize(
+            role_code,
+            mode_code,
+            int(n_categories),
+            1 if style_dtype_u8 else 0,
+            1 if quantize_continuous else 0,
+            float(domain[0]),
+            float(domain[1]),
+            int(n_palette),
+            _ptr_u32(sel_arr) if sel_arr is not None and len(sel_arr) else _null_u32(),
+            len(sel_arr) if sel_arr is not None else 0,
+            _ptr_f64(vals_f64),
+            len(vals_f64),
+            _ptr_u8(vals_u8),
+            len(vals_u8),
+            _ptr_u8(out),
+            len(out),
+            meta,
+        )
+    )
+    if nbytes < 0:
+        raise ValueError("invalid payload_channel_materialize arguments")
+    return {
+        "buf_kind": int(meta[0]),
+        "mark_dtype_u8": bool(meta[1]),
+        "ship_palette": bool(meta[2]),
+        "set_n": bool(meta[3]),
+        "len": int(meta[4]),
+        "bytes": bytes(out[:nbytes]),
+    }
 
 
 def scene_figure_support_figure_plan(*, polar: bool) -> dict[str, bool]:

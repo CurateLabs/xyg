@@ -2,7 +2,7 @@
  * Offset-encoded f32 geometry (§4/§16) and shared encode helpers.
  * Bit-identical to python/xyg/lod.encode_f32_values when calling xyg_encode_f32.
  */
-import { pointer, xyArgsortStable, xyArrowEndDecoration, xyArrowGeometry, xyArrowShaftPoints, xyArrowStylePack, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyBarStack, xyBin2d, xyBin2dIndices, xyBin2dMeanColor, xyBinnedEcdf, xyBoxGeometry, xyBoxStats, xyColormapLut, xyColormapRgba, xyColormapRgbaCanonical, xyColormapStops, xyContourLevels, xyContourfBands, xyContourfDensify, xyCurveFlatten, xyDensityBinCoordEndpoints, xyDensityBinWindow, xyDensityColorClassify, xyDensityTraceColorClassify, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityOverlayOpacity, xyDensityPyramidPreflight, xyDensityRgbaLinear, xyDensityWasmEligible, xyDrillDecision, xyEncodeF32, xyEncodedColumnMeta, xyF32SafeScale, xyGeometryOffset, xyHeatmapRgba, xyHexbin, xyHexbinGroups, xyHexbinIngress, xyHexbinRing, xyHistogramBins, xyHistogramEdges, xyHistogramMarkEdges, xyHistogramUniform, xyIsSorted, xyLegendBestLoc, xyLegendNormalize, xyLodPlan, xyM4Indices, xyM4Points, xyMarchingSquares, xyMarkerPathScale, xyMinMax, xyMonotoneTangents, xyNormalizeF32, xyPaintEffectiveRgba, xyPayloadBarCompactAdmit, xyPayloadBarHistEmitPlan, xyPayloadColumnShipPlan, xyPayloadDensityGridMaterialize, xyPayloadDensityGridShipPlan, xyPayloadChannelShipPlan, xyPayloadChannelWireEncode, xyPayloadHeatmapEmitPlan, xyPayloadMeshEmitPlan, xyPayloadRibbonEmitPlan, xyPayloadScatterEmitPlan, xyPayloadDensityTraceEmitPlan, xyPayloadBuildPlan, xyPayloadAxisSpecAttachPlan, xyPayloadSegmentsEmitPlan, xyPayloadBaseEntryPlan, xyPayloadNonxyEmitPlan, xyPayloadErrorbarIndices, xyPayloadErrorbarRoleKeys, xyPayloadErrorbarRoleMaps, xyPayloadEvenIndices, xyPayloadM4Indices, xyPayloadSampleTargetIndices, xyPayloadSegmentBudget, xyPayloadSegmentsEmitGather, xyPayloadTier, xyPayloadTraceChannelsShipAttach, xyPayloadTransitionEntryAttach, xyPayloadTransitionKeysAdmit, xyPayloadVisibleIndices, xyPayloadVisibleMask, xyPayloadVisibleNeeded, xyQuantiles, xySampleMaskU32, xyRibbonEdge, xyRibbonPolygon, xyRoundedRectPoly, xyScalePinsOffset, xySceneAnnotationStyleAdmit, xySceneArraysEqual, xySceneChannelConstantCss, xySceneConstantColorAdmit, xySceneCurveClassify, xySceneDashAdmit, xySceneEncodeProductAttachPlan, xySceneFillGradientAdmit, xySceneFiniteAll, xySceneGradientDir, xySceneGradientSolidCss, xySceneGradientSpace, xySceneGradientSpecPack, xySceneHeatmapColormapAdmit, xySceneHeatmapExtentAdmit, xySceneHeatmapShapeAdmit, xySceneHexbinColormapPlaneAdmit, xySceneHexbinPitchAdmit, xySceneHexbinReduceAdmit, xySceneHexbinRgbaPlaneAdmit, xySceneHiddenOrPerItemAdmit, xySceneItemApplyOpacity, xySceneItemFillT, xySceneItemWidthsAdmit, xySceneKindAdmit, xySceneKindClass, xySceneLinearGradientPrefix, xySceneLinecapAdmit, xySceneMarkerBlobPack, xySceneMarkerGlyphAdmit, xySceneMarkerPathAdmit, xySceneMeshPaintPlaneAdmit, xySceneParseLinearGradient, xyScenePolarFigurePlan, xySceneRectExtraFlags, xySceneRibbonColor2Classify, xySceneScatterPaintChannelAdmit, xySceneTickAnchor, xySceneTickLabelStrategy, xySceneXyhfColormapPack, xySceneFigureSupportFigurePlan, xySceneFigureSupportTraceDispatchPlan, xySceneXyclFigurePlan, xyScenePublicExportFigurePlan, xyScenePublicExportTraceDispatchPlan, xySceneXyafAnnotationDispatchPlan, xySceneXycfFigurePlan, xySceneXynmFigurePlan, xySceneXytaColormapPack, xySceneXytaFigurePlan, xySceneXytaTraceDispatchPlan, xySceneXytaTracePack, xySceneXytcColor2FlagsPack, xySceneXytcColorChannelPack, xySceneXytcDashPatternPack, xySceneXytcHexPitchPack, xySceneXytcMetaFlagsPack, xySceneXytcFigurePlan, xySceneXytcTraceDispatchPlan, xySceneXytcTracePack, xySceneXytcNumericStylePack, xySceneXytcOpacityPack, xySceneXytcPaintPresencePack, xySceneXytcRadiusPack, xySceneXytcStrokePerimeterPack, xySceneXytcSymbolIntPack, xyStepArrays, xyStreamAppend, xyStreamCapacity, xyStreamCopy, xyStreamFree, xyStreamLen, xyStreamNew, xyStreamSeal, xyValidIndicesF64, xyViolinDensity, xyViolinRects, xyWeightedEcdf, xyWindRoseBins, xyDensityUsesChannelColormap, xyDensityReductionKind, xyDensityOverlayOmittedWire, xyDensityGridPathIdentityState, xyDensityConstantColorWireAdmit, xyDensityWasmSourceAdmit, xyDensityWasmDensityWireKind, xyDensityCategoricalColorWireAdmit, xyDensityMeanColorWireAdmit, xyDensityChannelsDroppedCompat, xyDensityDroppedChannelWireAdmit, xyDensityMeanColorRgbaWireAdmit } from "./native.js";
+import { pointer, xyArgsortStable, xyArrowEndDecoration, xyArrowGeometry, xyArrowShaftPoints, xyArrowStylePack, xyArrowTaperPolygon, xyArrowTrimPolylineEnd, xyBarStack, xyBin2d, xyBin2dIndices, xyBin2dMeanColor, xyBinnedEcdf, xyBoxGeometry, xyBoxStats, xyColormapLut, xyColormapRgba, xyColormapRgbaCanonical, xyColormapStops, xyContourLevels, xyContourfBands, xyContourfDensify, xyCurveFlatten, xyDensityBinCoordEndpoints, xyDensityBinWindow, xyDensityColorClassify, xyDensityTraceColorClassify, xyDensityEmitMeta, xyDensityFormatBinning, xyDensityFullIdentity, xyDensityGridPath, xyDensityLogU8, xyDensityOverlayOpacity, xyDensityPyramidPreflight, xyDensityRgbaLinear, xyDensityWasmEligible, xyDrillDecision, xyEncodeF32, xyEncodedColumnMeta, xyF32SafeScale, xyGeometryOffset, xyHeatmapRgba, xyHexbin, xyHexbinGroups, xyHexbinIngress, xyHexbinRing, xyHistogramBins, xyHistogramEdges, xyHistogramMarkEdges, xyHistogramUniform, xyIsSorted, xyLegendBestLoc, xyLegendNormalize, xyLodPlan, xyM4Indices, xyM4Points, xyMarchingSquares, xyMarkerPathScale, xyMinMax, xyMonotoneTangents, xyNormalizeF32, xyPaintEffectiveRgba, xyPayloadBarCompactAdmit, xyPayloadBarHistEmitPlan, xyPayloadColumnShipPlan, xyPayloadColumnGatherMaterialize, xyPayloadChannelMaterialize, xyPayloadDensityGridMaterialize, xyPayloadDensityGridShipPlan, xyPayloadChannelShipPlan, xyPayloadChannelWireEncode, xyPayloadHeatmapEmitPlan, xyPayloadMeshEmitPlan, xyPayloadRibbonEmitPlan, xyPayloadScatterEmitPlan, xyPayloadDensityTraceEmitPlan, xyPayloadBuildPlan, xyPayloadAxisSpecAttachPlan, xyPayloadSegmentsEmitPlan, xyPayloadBaseEntryPlan, xyPayloadNonxyEmitPlan, xyPayloadErrorbarIndices, xyPayloadErrorbarRoleKeys, xyPayloadErrorbarRoleMaps, xyPayloadEvenIndices, xyPayloadM4Indices, xyPayloadSampleTargetIndices, xyPayloadSegmentBudget, xyPayloadSegmentsEmitGather, xyPayloadTier, xyPayloadTraceChannelsShipAttach, xyPayloadTransitionEntryAttach, xyPayloadTransitionKeysAdmit, xyPayloadVisibleIndices, xyPayloadVisibleMask, xyPayloadVisibleNeeded, xyQuantiles, xySampleMaskU32, xyRibbonEdge, xyRibbonPolygon, xyRoundedRectPoly, xyScalePinsOffset, xySceneAnnotationStyleAdmit, xySceneArraysEqual, xySceneChannelConstantCss, xySceneConstantColorAdmit, xySceneCurveClassify, xySceneDashAdmit, xySceneEncodeProductAttachPlan, xySceneFillGradientAdmit, xySceneFiniteAll, xySceneGradientDir, xySceneGradientSolidCss, xySceneGradientSpace, xySceneGradientSpecPack, xySceneHeatmapColormapAdmit, xySceneHeatmapExtentAdmit, xySceneHeatmapShapeAdmit, xySceneHexbinColormapPlaneAdmit, xySceneHexbinPitchAdmit, xySceneHexbinReduceAdmit, xySceneHexbinRgbaPlaneAdmit, xySceneHiddenOrPerItemAdmit, xySceneItemApplyOpacity, xySceneItemFillT, xySceneItemWidthsAdmit, xySceneKindAdmit, xySceneKindClass, xySceneLinearGradientPrefix, xySceneLinecapAdmit, xySceneMarkerBlobPack, xySceneMarkerGlyphAdmit, xySceneMarkerPathAdmit, xySceneMeshPaintPlaneAdmit, xySceneParseLinearGradient, xyScenePolarFigurePlan, xySceneRectExtraFlags, xySceneRibbonColor2Classify, xySceneScatterPaintChannelAdmit, xySceneTickAnchor, xySceneTickLabelStrategy, xySceneXyhfColormapPack, xySceneFigureSupportFigurePlan, xySceneFigureSupportPack, xySceneFigureSupportTraceDispatchPlan, xySceneXyclFigurePlan, xyScenePublicExportFigurePlan, xyScenePublicExportTraceDispatchPlan, xySceneXyafAnnotationDispatchPlan, xySceneXyafPack, xySceneXycfFigurePlan, xySceneXycfPack, xySceneXynmFigurePlan, xySceneXytaColormapPack, xySceneXytaFigurePlan, xySceneXytaTraceDispatchPlan, xySceneXytaTracePack, xySceneXytcColor2FlagsPack, xySceneXytcColorChannelPack, xySceneXytcDashPatternPack, xySceneXytcHexPitchPack, xySceneXytcMetaFlagsPack, xySceneXytcFigurePlan, xySceneXytcTraceDispatchPlan, xySceneXytcTracePack, xySceneXytcNumericStylePack, xySceneXytcOpacityPack, xySceneXytcPaintPresencePack, xySceneXytcRadiusPack, xySceneXytcStrokePerimeterPack, xySceneXytcSymbolIntPack, xyStepArrays, xyStreamAppend, xyStreamCapacity, xyStreamCopy, xyStreamFree, xyStreamLen, xyStreamNew, xyStreamSeal, xyValidIndicesF64, xyViolinDensity, xyViolinRects, xyWeightedEcdf, xyWindRoseBins, xyDensityUsesChannelColormap, xyDensityReductionKind, xyDensityOverlayOmittedWire, xyDensityGridPathIdentityState, xyDensityConstantColorWireAdmit, xyDensityWasmSourceAdmit, xyDensityWasmDensityWireKind, xyDensityCategoricalColorWireAdmit, xyDensityMeanColorWireAdmit, xyDensityChannelsDroppedCompat, xyDensityDroppedChannelWireAdmit, xyDensityMeanColorRgbaWireAdmit } from "./native.js";
 
 
 export const PROTOCOL_VERSION = 12;
@@ -6197,6 +6197,196 @@ export function sceneXytaTracePack({
     throw new RangeError("invalid sceneXytaTracePack arguments");
   }
   return out.subarray(0, Number(outLen[0]));
+}
+
+const SCENE_XYAF_PACK_MAX_RECORD = 1 << 16;
+const SCENE_XYCF_PACK_MAX = 1 << 20;
+const SCENE_FIGURE_SUPPORT_PACK_MAX = 1 << 18;
+const PAYLOAD_COLUMN_MATERIALIZE_MAX_BYTES = 1 << 28;
+const PAYLOAD_CHANNEL_MATERIALIZE_MAX_BYTES = 1 << 28;
+const SCENE_XYAF_PACK_IN_BYTES = 232;
+const SCENE_XYCF_PACK_IN_BYTES = 344;
+
+/** Pack one XYAF v1 record via `xyg_scene_xyaf_pack` (ABI 319). */
+export function sceneXyafPack({
+  index = 0,
+  kindCode = 0,
+  axisCode = 0,
+  symbol = 0,
+  anchor = 255,
+  facts = 0,
+  styleBits = 0,
+  linecap = 255,
+  dashCount = 0,
+  nums = [],
+  color = new Uint8Array(4),
+  stroke = new Uint8Array(4),
+  labelColor = new Uint8Array(4),
+  labelFill = new Uint8Array(4),
+  labelBorder = new Uint8Array(4),
+  dash = new Float32Array(8),
+  text = new Uint8Array(0),
+} = {}) {
+  const input = Buffer.alloc(232);
+  input.writeUInt32LE(index >>> 0, 0);
+  input.writeUInt8(kindCode & 0xff, 4);
+  input.writeUInt8(axisCode & 0xff, 5);
+  input.writeUInt8(symbol & 0xff, 6);
+  input.writeUInt8(anchor & 0xff, 7);
+  input.writeUInt32LE(facts >>> 0, 8);
+  input.writeUInt32LE(styleBits >>> 0, 12);
+  input.writeUInt8(linecap & 0xff, 16);
+  input.writeUInt8(dashCount & 0xff, 17);
+  input.writeBigUInt64LE(BigInt(text.length), 24);
+  for (let i = 0; i < 18; i += 1) input.writeDoubleLE(Number(nums[i] ?? Number.NaN), 32 + i * 8);
+  input.set(color.subarray(0, 4), 176);
+  input.set(stroke.subarray(0, 4), 180);
+  input.set(labelColor.subarray(0, 4), 184);
+  input.set(labelFill.subarray(0, 4), 188);
+  input.set(labelBorder.subarray(0, 4), 192);
+  for (let i = 0; i < 8; i += 1) input.writeFloatLE(Number(dash[i] ?? 0), 196 + i * 4);
+  const out = new Uint8Array(SCENE_XYAF_PACK_MAX_RECORD);
+  const outLen = new BigUint64Array(1);
+  const code = Number(xySceneXyafPack(
+    u8Ptr(input),
+    text.length ? u8Ptr(text) : 0,
+    u8Ptr(out),
+    BigInt(out.length),
+    pointer(outLen, "size_t *"),
+  ));
+  if (code === -2) throw new RangeError("sceneXyafPack output buffer too small");
+  if (code !== 0) throw new RangeError("invalid sceneXyafPack arguments");
+  return out.subarray(0, Number(outLen[0]));
+}
+
+/** Pack XYFS v2 support envelope via `xyg_scene_figure_support_pack` (ABI 319). */
+export function sceneFigureSupportPack({ flags = 0, axesBlob = new Uint8Array(0), tracesBlob = new Uint8Array(0) } = {}) {
+  const out = new Uint8Array(SCENE_FIGURE_SUPPORT_PACK_MAX);
+  const outLen = new BigUint64Array(1);
+  const code = Number(xySceneFigureSupportPack(
+    flags >>> 0,
+    axesBlob.length ? u8Ptr(axesBlob) : 0,
+    BigInt(axesBlob.length),
+    tracesBlob.length ? u8Ptr(tracesBlob) : 0,
+    BigInt(tracesBlob.length),
+    u8Ptr(out),
+    BigInt(out.length),
+    pointer(outLen, "size_t *"),
+  ));
+  if (code === -2) throw new RangeError("sceneFigureSupportPack output buffer too small");
+  if (code !== 0) throw new RangeError("invalid sceneFigureSupportPack arguments");
+  return out.subarray(0, Number(outLen[0]));
+}
+
+/** Gather and offset-ship geometry columns via `xyg_payload_column_gather_materialize` (ABI 320). */
+export function payloadColumnGatherMaterialize({ sel = null, columns = [], values = [], kinds = [], axisScales = [] } = {}) {
+  const n = columns.length;
+  const desc = Buffer.alloc(n * 56);
+  const valuePtrs = Buffer.alloc(n * 8);
+  const kindPtrs = Buffer.alloc(n * 8);
+  const scalePtrs = Buffer.alloc(n * 8);
+  const shipMethod = { offset: 0, values: 1, f64: 2 };
+  const shipScale = { x: 0, y: 1 };
+  for (let i = 0; i < n; i += 1) {
+    const base = i * 56;
+    desc.writeInt32LE(shipMethod[columns[i].shipMethod], base);
+    desc.writeInt32LE(shipScale[columns[i].shipScale], base + 4);
+    const arr = asF64Array(values[i]);
+    desc.writeBigUInt64LE(BigInt(arr.length), base + 8);
+    desc.writeDoubleLE(Number(columns[i].colMin ?? 0), base + 16);
+    desc.writeDoubleLE(Number(columns[i].colMax ?? 0), base + 24);
+    desc.writeBigUInt64LE(BigInt((kinds[i] ?? new Uint8Array(0)).length), base + 32);
+    desc.writeDoubleLE(Number(columns[i].stickyOffset ?? 0), base + 40);
+    const scaleBytes = new TextEncoder().encode(String(axisScales[i] ?? "linear"));
+    desc.writeBigUInt64LE(BigInt(scaleBytes.length), base + 48);
+    valuePtrs.writeBigUInt64LE(BigInt(f64Ptr(arr)), i * 8);
+    kindPtrs.writeBigUInt64LE(BigInt((kinds[i] ?? new Uint8Array(0)).length ? u8Ptr(kinds[i]) : 0), i * 8);
+    scalePtrs.writeBigUInt64LE(BigInt(scaleBytes.length ? u8Ptr(scaleBytes) : 0), i * 8);
+  }
+  const selArr = sel == null ? new Uint32Array(0) : sel;
+  const outDesc = Buffer.alloc(n * 48);
+  const outBytes = new Uint8Array(PAYLOAD_COLUMN_MATERIALIZE_MAX_BYTES);
+  const outBytesLen = new BigUint64Array(1);
+  const written = Number(xyPayloadColumnGatherMaterialize(
+    selArr.length ? u32Ptr(selArr) : 0,
+    BigInt(selArr.length),
+    u8Ptr(desc),
+    BigInt(n),
+    u8Ptr(valuePtrs),
+    u8Ptr(kindPtrs),
+    u8Ptr(scalePtrs),
+    u8Ptr(outDesc),
+    u8Ptr(outBytes),
+    BigInt(outBytes.length),
+    pointer(outBytesLen, "size_t *"),
+  ));
+  if (written < 0) throw new RangeError("invalid payloadColumnGatherMaterialize arguments");
+  const blob = outBytes.subarray(0, Number(outBytesLen[0]));
+  const result = [];
+  for (let i = 0; i < written; i += 1) {
+    const base = i * 48;
+    const view = new DataView(outDesc.buffer, outDesc.byteOffset + base, 48);
+    const bytesOffset = Number(view.getBigUint64(32, true));
+    const bytesLen = Number(view.getBigUint64(40, true));
+    result.push({
+      dtypeCode: view.getInt32(0, true),
+      meta: {
+        len: view.getUint32(16, true),
+        offset: view.getFloat64(8, true),
+        scale: view.getFloat64(24, true),
+      },
+      bytes: blob.subarray(bytesOffset, bytesOffset + bytesLen),
+    });
+  }
+  return result;
+}
+
+/** Materialize one channel wire buffer via `xyg_payload_channel_materialize` (ABI 320). */
+export function payloadChannelMaterialize({
+  role = "color",
+  mode = "continuous",
+  nCategories = 0,
+  styleDtypeU8 = false,
+  quantizeContinuous = false,
+  domain = [0, 1],
+  nPalette = 0,
+  sel = null,
+  valuesF64 = new Float64Array(0),
+  valuesU8 = new Uint8Array(0),
+} = {}) {
+  const roleCode = { color: 0, size: 1, style: 2 }[role];
+  const modeCode = { constant: 0, continuous: 1, categorical: 2, direct_rgba: 3, match_fill: 4, direct: 5 }[mode];
+  const selArr = sel == null ? new Uint32Array(0) : sel;
+  const out = new Uint8Array(PAYLOAD_CHANNEL_MATERIALIZE_MAX_BYTES);
+  const meta = new Int32Array(5);
+  const nbytes = Number(xyPayloadChannelMaterialize(
+    roleCode,
+    modeCode,
+    BigInt(nCategories),
+    styleDtypeU8 ? 1 : 0,
+    quantizeContinuous ? 1 : 0,
+    Number(domain[0]),
+    Number(domain[1]),
+    BigInt(nPalette),
+    selArr.length ? u32Ptr(selArr) : 0,
+    BigInt(selArr.length),
+    valuesF64.length ? f64Ptr(valuesF64) : 0,
+    BigInt(valuesF64.length),
+    valuesU8.length ? u8Ptr(valuesU8) : 0,
+    BigInt(valuesU8.length),
+    u8Ptr(out),
+    BigInt(out.length),
+    pointer(meta, "int32_t *"),
+  ));
+  if (nbytes < 0) throw new RangeError("invalid payloadChannelMaterialize arguments");
+  return {
+    bufKind: meta[0],
+    markDtypeU8: meta[1] !== 0,
+    shipPalette: meta[2] !== 0,
+    setN: meta[3] !== 0,
+    len: meta[4],
+    bytes: out.subarray(0, nbytes),
+  };
 }
 
 const SCENE_FIGURE_SUPPORT_FIGURE_PLAN_BYTES = 4;

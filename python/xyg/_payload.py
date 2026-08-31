@@ -170,6 +170,25 @@ class _PayloadWriter:
         encoded = lod.encode_f32_values(vals, offset, lo, hi, kind=kind)
         return self._append(encoded.values, encoded.meta)
 
+    def _append_from_materialized(self, enc: np.ndarray, meta: dict[str, Any]) -> int:
+        """Register a Rust-materialized column without host-side re-encoding."""
+        enc = np.ascontiguousarray(enc)
+        idx = len(self.columns)
+        if self._split:
+            self.columns.append({"buf": len(self._chunks), "byte_offset": 0, **meta})
+            self._chunks.append(enc)
+            self._pos += enc.nbytes
+            return idx
+        self.columns.append({"byte_offset": self._pos, **meta})
+        self._chunks.append(enc)
+        self._pos += enc.nbytes
+        if meta.get("dtype") != "u8" and meta.get("dtype") != "u32":
+            padding = (-self._pos) % 4
+            if padding:
+                self._chunks.append(bytes(padding))
+                self._pos += padding
+        return idx
+
     def _append(self, enc: np.ndarray, meta: dict[str, Any]) -> int:
         # Retain the encoded array until blob assembly so each column is copied
         # once into the final bytes object, rather than once in `tobytes()` and
@@ -632,6 +651,7 @@ class PayloadMixin(_Host):
         *,
         kind: Optional[str] = None,
         extra_arrays: Optional[dict[str, np.ndarray]] = None,
+        sel: np.ndarray | None = None,
     ) -> dict[str, Any]:
         """The shared spec skeleton for any xy trace that ships x/y geometry."""
         emit_kind = kind or t.kind
@@ -659,7 +679,7 @@ class PayloadMixin(_Host):
         arrays: dict[str, np.ndarray] = {"x": xv, "y": yv}
         if extra_arrays:
             arrays.update(extra_arrays)
-        self._ship_registry_columns(entry, t, pw, column_plan, arrays)
+        self._ship_registry_columns(entry, t, pw, column_plan, arrays, sel=sel)
         if plan["attach_animation"]:
             entry["animation"] = dict(t.animation)
         return entry
@@ -774,8 +794,6 @@ class PayloadMixin(_Host):
             return entry
         xv, yv = t.x.values, t.y.values
         sel = self._visible_sel(t, xv, yv)
-        if sel is not None:
-            xv, yv = xv[sel], yv[sel]
         plan = kernels.payload_scatter_emit_plan(
             n_points=t.n_points,
             polar=self.coords == "polar",
@@ -790,7 +808,7 @@ class PayloadMixin(_Host):
             has_tooltip_rows=t.tooltip_rows is not None,
             n_tooltip_rows=len(t.tooltip_rows) if t.tooltip_rows is not None else 0,
         )
-        entry = self._base_entry(t, pw, xv, yv, "direct", dict(t.style))
+        entry = self._base_entry(t, pw, xv, yv, "direct", dict(t.style), sel=sel)
         if plan["attach_transition"]:
             self._transition_entry(entry, t, pw, sel)
         self._ship_trace_channel_attach(
@@ -1438,25 +1456,68 @@ class PayloadMixin(_Host):
         *,
         skip_keys: Optional[frozenset[str]] = None,
         nested_keys: Optional[frozenset[str]] = None,
+        sel: np.ndarray | None = None,
     ) -> None:
         """Ship gathered geometry arrays into ``entry`` per the column registry."""
-        for col in column_plan["columns"]:
+        cols = [
+            col
+            for col in column_plan["columns"]
+            if skip_keys is None or col["registry_key"] not in skip_keys
+        ]
+        if not cols:
+            return
+        x_scale = self._axis_scale(t.x_axis).encode("utf-8")
+        y_scale = self._axis_scale(t.y_axis).encode("utf-8")
+        descriptors: list[dict[str, Any]] = []
+        values: list[np.ndarray] = []
+        kinds: list[bytes] = []
+        scales: list[bytes] = []
+        for col in cols:
             key = col["registry_key"]
-            if skip_keys is not None and key in skip_keys:
-                continue
             slot = col["trace_slot"]
-            values = arrays[key] if key in arrays else arrays[slot]
-            scale = col["ship_scale"]
-            method = col["ship_method"]
-            if method == "offset":
-                column = getattr(t, slot)
-                col_idx = pw.ship(values, column, scale=scale)
-            elif method == "f64":
-                col_idx = pw.ship_f64(values)
+            source = getattr(t, slot, None)
+            if sel is not None and isinstance(source, Column):
+                raw_arr = source.values
             else:
-                column = getattr(t, slot, None)
-                kind = column.kind if column is not None else "float"
-                col_idx = pw.ship_values(values, kind=kind, scale=scale)
+                raw_arr = arrays[key] if key in arrays else arrays[slot]
+            column = source if isinstance(source, Column) else getattr(t, slot, None)
+            if col["ship_method"] == "offset" and isinstance(column, Column):
+                col_min, col_max = float(column.min), float(column.max)
+                sticky = float(column.suggest_offset())
+                kind_b = str(column.kind).encode("utf-8")
+            elif col["ship_method"] == "values":
+                bounds = kernels.min_max(raw_arr)
+                col_min, col_max = bounds if bounds is not None else (0.0, 0.0)
+                sticky = 0.0
+                kind_b = str(column.kind if column is not None else "float").encode("utf-8")
+            else:
+                col_min, col_max = 0.0, 0.0
+                sticky = 0.0
+                kind_b = b""
+            descriptors.append(
+                {
+                    "registry_key": key,
+                    "ship_method": col["ship_method"],
+                    "ship_scale": col["ship_scale"],
+                    "col_min": col_min,
+                    "col_max": col_max,
+                    "sticky_offset": sticky,
+                }
+            )
+            values.append(np.ascontiguousarray(raw_arr, dtype=np.float64).reshape(-1))
+            kinds.append(kind_b)
+            scales.append(x_scale if col["ship_scale"] == "x" else y_scale)
+        materialized = kernels.payload_column_gather_materialize(
+            sel=sel,
+            columns=descriptors,
+            values=values,
+            kinds=kinds,
+            axis_scales=scales,
+        )
+        for col, mat in zip(cols, materialized, strict=True):
+            key = col["registry_key"]
+            enc = np.frombuffer(mat["bytes"], dtype="<f4" if mat["dtype_code"] == 0 else "<f8")
+            col_idx = pw._append_from_materialized(enc, mat["meta"])
             if nested_keys is not None and key in nested_keys:
                 entry[key] = {"col": col_idx, **pw.columns[col_idx]}
             else:

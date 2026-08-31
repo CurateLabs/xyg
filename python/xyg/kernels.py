@@ -249,6 +249,11 @@ payload_mesh_emit_plan = _impl.payload_mesh_emit_plan
 payload_column_ship_plan = _impl.payload_column_ship_plan
 payload_density_grid_ship_plan = _impl.payload_density_grid_ship_plan
 payload_density_grid_materialize = _impl.payload_density_grid_materialize
+payload_column_gather_materialize = _impl.payload_column_gather_materialize
+payload_channel_materialize = _impl.payload_channel_materialize
+scene_xyaf_pack = _impl.scene_xyaf_pack
+scene_xycf_pack = _impl.scene_xycf_pack
+scene_figure_support_pack = _impl.scene_figure_support_pack
 payload_channel_ship_plan = _impl.payload_channel_ship_plan
 payload_channel_wire_encode = _impl.payload_channel_wire_encode
 payload_ribbon_emit_plan = _impl.payload_ribbon_emit_plan
@@ -405,8 +410,10 @@ __all__ = [
     "payload_bar_hist_emit_plan",
     "payload_base_entry_plan",
     "payload_build_plan",
+    "payload_channel_materialize",
     "payload_channel_ship_plan",
     "payload_channel_wire_encode",
+    "payload_column_gather_materialize",
     "payload_column_ship_plan",
     "payload_density_grid_materialize",
     "payload_density_grid_ship_plan",
@@ -466,6 +473,9 @@ __all__ = [
     "scene_dash_admit",
     "scene_encode_product_attach_plan",
     "scene_figure_support_figure_plan",
+    "scene_figure_support_pack",
+    "scene_figure_support_pack",
+    "scene_figure_support_pack",
     "scene_figure_support_trace_dispatch_plan",
     "scene_fill_gradient_admit",
     "scene_finite_all",
@@ -502,7 +512,13 @@ __all__ = [
     "scene_tick_anchor",
     "scene_tick_label_strategy",
     "scene_xyaf_annotation_dispatch_plan",
+    "scene_xyaf_pack",
+    "scene_xyaf_pack",
+    "scene_xyaf_pack",
     "scene_xycf_figure_plan",
+    "scene_xycf_pack",
+    "scene_xycf_pack",
+    "scene_xycf_pack",
     "scene_xycl_figure_plan",
     "scene_xyhf_colormap_pack",
     "scene_xynm_figure_plan",

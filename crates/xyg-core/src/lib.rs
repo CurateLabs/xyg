@@ -57,6 +57,11 @@ use xyg_engine::scene_heatmap::{self, HeatmapFactError};
 use xyg_engine::scene_extras::{self, ExtrasError};
 use xyg_engine::scene_xytc_trace_pack;
 use xyg_engine::scene_xyta_trace_pack;
+use xyg_engine::scene_xyaf_pack;
+use xyg_engine::scene_xycf_pack;
+use xyg_engine::scene_figure_support_pack;
+use xyg_engine::payload_column_gather_materialize;
+use xyg_engine::payload_channel_materialize;
 use xyg_engine::scene_pack_orchestrate;
 use xyg_engine::scene_density::{self, DensityGridError};
 use xyg_engine::scene_colorbar::{self, ColorbarError};
@@ -165,7 +170,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 318;
+pub const ABI_VERSION: u32 = 320;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -18244,6 +18249,679 @@ pub unsafe extern "C" fn xyg_scene_xyta_trace_pack(
         Err(-1) => -1,
         Err(code) => code,
     }
+}
+
+/// Host-marshaled XYAF record for ``xyg_scene_xyaf_pack`` (ABI 319).
+#[repr(C)]
+pub struct XygSceneXyafPackIn {
+    pub index: u32,
+    pub kind_code: u8,
+    pub axis_code: u8,
+    pub symbol: u8,
+    pub anchor: u8,
+    pub facts: u32,
+    pub style_bits: u32,
+    pub linecap: u8,
+    pub dash_count: u8,
+    pub text_len: usize,
+    pub nums: [f64; 18],
+    pub color: [u8; 4],
+    pub stroke: [u8; 4],
+    pub label_color: [u8; 4],
+    pub label_fill: [u8; 4],
+    pub label_border: [u8; 4],
+    pub dash: [f32; 8],
+}
+
+/// Pack one XYAF v1 record (ABI 319).
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_xyaf_pack(
+    input: *const XygSceneXyafPackIn,
+    text: *const u8,
+    out: *mut u8,
+    out_cap: usize,
+    out_len: *mut usize,
+) -> i32 {
+    if input.is_null() || out_len.is_null() {
+        return -1;
+    }
+    let input = &*input;
+    let Some(text_bytes) = optional_bytes(text, input.text_len) else {
+        return -1;
+    };
+    if out_cap > 0 && out.is_null() {
+        return -1;
+    }
+    let pack_input = scene_xyaf_pack::XyafPackInput {
+        index: input.index,
+        kind_code: input.kind_code,
+        axis_code: input.axis_code,
+        symbol: input.symbol,
+        anchor: input.anchor,
+        facts: input.facts,
+        style_bits: input.style_bits,
+        linecap: input.linecap,
+        dash_count: input.dash_count,
+        nums: input.nums,
+        color: input.color,
+        stroke: input.stroke,
+        label_color: input.label_color,
+        label_fill: input.label_fill,
+        label_border: input.label_border,
+        dash: input.dash,
+        text: text_bytes,
+    };
+    match scene_xyaf_pack::scene_xyaf_pack(&pack_input) {
+        Ok(packed) => {
+            if packed.len() > out_cap {
+                return -2;
+            }
+            if !packed.is_empty() {
+                std::ptr::copy_nonoverlapping(packed.as_ptr(), out, packed.len());
+            }
+            *out_len = packed.len();
+            0
+        }
+        Err(-1) => -1,
+        Err(code) => code,
+    }
+}
+
+/// Host-marshaled XYCF header for ``xyg_scene_xycf_pack`` (ABI 319).
+#[repr(C)]
+pub struct XygSceneXycfPackIn {
+    pub flags: u32,
+    pub collision_header: u32,
+    pub width: f64,
+    pub height: f64,
+    pub margin_left: f64,
+    pub margin_right: f64,
+    pub margin_top: f64,
+    pub margin_bottom: f64,
+    pub pad_left: f64,
+    pub pad_right: f64,
+    pub pad_top: f64,
+    pub pad_bottom: f64,
+    pub x_scale_kind: u32,
+    pub y_scale_kind: u32,
+    pub x_lo: f64,
+    pub x_hi: f64,
+    pub x_constant: f64,
+    pub y_lo: f64,
+    pub y_hi: f64,
+    pub y_constant: f64,
+    pub x_nonpositive_mask: u8,
+    pub y_nonpositive_mask: u8,
+    pub tick_kinds: u16,
+    pub title_len: usize,
+    pub x_label_len: usize,
+    pub y_label_len: usize,
+    pub x_format_len: usize,
+    pub y_format_len: usize,
+    pub x_major_len: usize,
+    pub x_minor_len: usize,
+    pub y_major_len: usize,
+    pub y_minor_len: usize,
+    pub x_label_count: u32,
+    pub y_label_count: u32,
+    pub chrome_len: usize,
+    pub legend_loc_len: usize,
+    pub legend_title_len: usize,
+    pub legend_ncols: u32,
+    pub legend_font_size: f64,
+    pub legend_title_font_size: f64,
+    pub legend_flags: u32,
+    pub legend_count: u32,
+    pub legend_text_rgba: [u8; 4],
+    pub legend_frame_rgba: [u8; 4],
+    pub colorbar_obs: u32,
+    pub colorbar_stop_count: u32,
+    pub colorbar_tick_count: usize,
+    pub colorbar_title_len: usize,
+    pub colorbar_lo: f64,
+    pub colorbar_hi: f64,
+    pub colorbar_text_rgba: [u8; 4],
+    pub legend_meta_len: usize,
+    pub legend_lens_len: usize,
+    pub legend_blob_len: usize,
+    pub colorbar_stops_len: usize,
+    pub collision_extra_len: usize,
+}
+
+/// Pack XYCF v1 facts (ABI 319).
+#[allow(clippy::too_many_arguments)]
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_xycf_pack(
+    input: *const XygSceneXycfPackIn,
+    title: *const u8,
+    x_label: *const u8,
+    y_label: *const u8,
+    x_format: *const u8,
+    y_format: *const u8,
+    x_major: *const f64,
+    x_minor: *const f64,
+    y_major: *const f64,
+    y_minor: *const f64,
+    x_labels_blob: *const u8,
+    y_labels_blob: *const u8,
+    chrome: *const u8,
+    legend_loc: *const u8,
+    legend_title: *const u8,
+    legend_meta: *const u8,
+    legend_lens: *const u32,
+    legend_blob: *const u8,
+    colorbar_stops_blob: *const u8,
+    colorbar_ticks: *const f64,
+    colorbar_title: *const u8,
+    collision_extra: *const u8,
+    out: *mut u8,
+    out_cap: usize,
+    out_len: *mut usize,
+) -> i32 {
+    if input.is_null() || out_len.is_null() {
+        return -1;
+    }
+    let input = &*input;
+    let Some(title_b) = optional_bytes(title, input.title_len) else {
+        return -1;
+    };
+    let Some(x_label_b) = optional_bytes(x_label, input.x_label_len) else {
+        return -1;
+    };
+    let Some(y_label_b) = optional_bytes(y_label, input.y_label_len) else {
+        return -1;
+    };
+    let Some(x_format_b) = optional_bytes(x_format, input.x_format_len) else {
+        return -1;
+    };
+    let Some(y_format_b) = optional_bytes(y_format, input.y_format_len) else {
+        return -1;
+    };
+    let Some(x_major_b) = optional_f64(x_major, input.x_major_len) else {
+        return -1;
+    };
+    let Some(x_minor_b) = optional_f64(x_minor, input.x_minor_len) else {
+        return -1;
+    };
+    let Some(y_major_b) = optional_f64(y_major, input.y_major_len) else {
+        return -1;
+    };
+    let Some(y_minor_b) = optional_f64(y_minor, input.y_minor_len) else {
+        return -1;
+    };
+    let x_labels_len = input.x_label_count as usize * 4;
+    let y_labels_len = input.y_label_count as usize * 4;
+    let Some(x_labels_b) = optional_bytes(x_labels_blob, x_labels_len) else {
+        return -1;
+    };
+    let Some(y_labels_b) = optional_bytes(y_labels_blob, y_labels_len) else {
+        return -1;
+    };
+    let Some(chrome_b) = optional_bytes(chrome, input.chrome_len) else {
+        return -1;
+    };
+    let Some(legend_loc_b) = optional_bytes(legend_loc, input.legend_loc_len) else {
+        return -1;
+    };
+    let Some(legend_title_b) = optional_bytes(legend_title, input.legend_title_len) else {
+        return -1;
+    };
+    let Some(legend_meta_b) = optional_bytes(legend_meta, input.legend_meta_len) else {
+        return -1;
+    };
+    let legend_lens_b = if input.legend_lens_len == 0 {
+        &[][..]
+    } else if legend_lens.is_null() {
+        return -1;
+    } else {
+        std::slice::from_raw_parts(legend_lens, input.legend_lens_len)
+    };
+    let Some(legend_blob_b) = optional_bytes(legend_blob, input.legend_blob_len) else {
+        return -1;
+    };
+    let Some(colorbar_stops_b) = optional_bytes(colorbar_stops_blob, input.colorbar_stops_len)
+    else {
+        return -1;
+    };
+    let Some(colorbar_ticks_b) = optional_f64(colorbar_ticks, input.colorbar_tick_count) else {
+        return -1;
+    };
+    let Some(colorbar_title_b) = optional_bytes(colorbar_title, input.colorbar_title_len) else {
+        return -1;
+    };
+    let Some(collision_extra_b) = optional_bytes(collision_extra, input.collision_extra_len) else {
+        return -1;
+    };
+    if out_cap > 0 && out.is_null() {
+        return -1;
+    }
+    let header = scene_xycf_pack::XycfPackHeader {
+        flags: input.flags,
+        collision_header: input.collision_header,
+        width: input.width,
+        height: input.height,
+        margin_left: input.margin_left,
+        margin_right: input.margin_right,
+        margin_top: input.margin_top,
+        margin_bottom: input.margin_bottom,
+        pad_left: input.pad_left,
+        pad_right: input.pad_right,
+        pad_top: input.pad_top,
+        pad_bottom: input.pad_bottom,
+        x_scale_kind: input.x_scale_kind,
+        y_scale_kind: input.y_scale_kind,
+        x_lo: input.x_lo,
+        x_hi: input.x_hi,
+        x_constant: input.x_constant,
+        y_lo: input.y_lo,
+        y_hi: input.y_hi,
+        y_constant: input.y_constant,
+        x_nonpositive_mask: input.x_nonpositive_mask,
+        y_nonpositive_mask: input.y_nonpositive_mask,
+        tick_kinds: input.tick_kinds,
+        title_len: input.title_len as u32,
+        x_label_len: input.x_label_len as u32,
+        y_label_len: input.y_label_len as u32,
+        x_format_len: input.x_format_len as u32,
+        y_format_len: input.y_format_len as u32,
+        x_major_len: input.x_major_len as u32,
+        x_minor_len: input.x_minor_len as u32,
+        y_major_len: input.y_major_len as u32,
+        y_minor_len: input.y_minor_len as u32,
+        x_label_count: input.x_label_count,
+        y_label_count: input.y_label_count,
+        chrome_len: input.chrome_len as u32,
+        legend_loc_len: input.legend_loc_len as u32,
+        legend_title_len: input.legend_title_len as u32,
+        legend_ncols: input.legend_ncols,
+        legend_font_size: input.legend_font_size,
+        legend_title_font_size: input.legend_title_font_size,
+        legend_flags: input.legend_flags,
+        legend_count: input.legend_count,
+        legend_text_rgba: input.legend_text_rgba,
+        legend_frame_rgba: input.legend_frame_rgba,
+        colorbar_obs: input.colorbar_obs,
+        colorbar_stop_count: input.colorbar_stop_count,
+        colorbar_tick_count: input.colorbar_tick_count as u32,
+        colorbar_title_len: input.colorbar_title_len as u32,
+        colorbar_lo: input.colorbar_lo,
+        colorbar_hi: input.colorbar_hi,
+        colorbar_text_rgba: input.colorbar_text_rgba,
+    };
+    let sidecars = scene_xycf_pack::XycfPackSidecars {
+        title: title_b,
+        x_label: x_label_b,
+        y_label: y_label_b,
+        x_format: x_format_b,
+        y_format: y_format_b,
+        x_major: x_major_b,
+        x_minor: x_minor_b,
+        y_major: y_major_b,
+        y_minor: y_minor_b,
+        x_labels_blob: x_labels_b,
+        y_labels_blob: y_labels_b,
+        chrome: chrome_b,
+        legend_loc: legend_loc_b,
+        legend_title: legend_title_b,
+        legend_meta: legend_meta_b,
+        legend_lens: legend_lens_b,
+        legend_blob: legend_blob_b,
+        colorbar_stops_blob: colorbar_stops_b,
+        colorbar_ticks: colorbar_ticks_b,
+        colorbar_title: colorbar_title_b,
+        collision_extra: collision_extra_b,
+    };
+    match scene_xycf_pack::scene_xycf_pack(&header, &sidecars) {
+        Ok(packed) => {
+            if packed.len() > out_cap {
+                return -2;
+            }
+            if !packed.is_empty() {
+                std::ptr::copy_nonoverlapping(packed.as_ptr(), out, packed.len());
+            }
+            *out_len = packed.len();
+            0
+        }
+        Err(-1) => -1,
+        Err(code) => code,
+    }
+}
+
+fn parse_figure_support_axes(blob: &[u8]) -> Result<Vec<scene_figure_support_pack::FigureSupportAxisInput>, i32> {
+    let mut axes = Vec::new();
+    let mut at = 0usize;
+    while at < blob.len() {
+        if at + 8 > blob.len() {
+            return Err(-1);
+        }
+        let axis_code = blob[at];
+        let key_count = u32::from_le_bytes(blob[at + 4..at + 8].try_into().unwrap()) as usize;
+        at += 8;
+        let mut keys = Vec::with_capacity(key_count);
+        for _ in 0..key_count {
+            if at + 2 > blob.len() {
+                return Err(-1);
+            }
+            let key_len = u16::from_le_bytes(blob[at..at + 2].try_into().unwrap()) as usize;
+            at += 2;
+            if at + key_len > blob.len() {
+                return Err(-1);
+            }
+            let key = std::str::from_utf8(&blob[at..at + key_len])
+                .map_err(|_| -1)?
+                .to_string();
+            keys.push(key);
+            at += key_len;
+        }
+        axes.push(scene_figure_support_pack::FigureSupportAxisInput { axis_code, keys });
+    }
+    Ok(axes)
+}
+
+fn parse_figure_support_traces(
+    blob: &[u8],
+) -> Result<Vec<scene_figure_support_pack::FigureSupportTraceInput>, i32> {
+    let mut traces = Vec::new();
+    let mut at = 0usize;
+    while at < blob.len() {
+        if at + 8 > blob.len() {
+            return Err(-1);
+        }
+        let trace_flags = u16::from_le_bytes(blob[at..at + 2].try_into().unwrap());
+        let kind_len = blob[at + 2] as usize;
+        at += 8;
+        if at + kind_len > blob.len() {
+            return Err(-1);
+        }
+        let kind = std::str::from_utf8(&blob[at..at + kind_len])
+            .map_err(|_| -1)?
+            .to_string();
+        traces.push(scene_figure_support_pack::FigureSupportTraceInput {
+            trace_flags,
+            kind,
+        });
+        at += kind_len;
+    }
+    Ok(traces)
+}
+
+/// Pack XYFS v2 figure support envelope (ABI 319).
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_figure_support_pack(
+    flags: u32,
+    axes_blob: *const u8,
+    axes_len: usize,
+    traces_blob: *const u8,
+    traces_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+    out_len: *mut usize,
+) -> i32 {
+    if out_len.is_null() {
+        return -1;
+    }
+    let Some(axes_bytes) = optional_bytes(axes_blob, axes_len) else {
+        return -1;
+    };
+    let Some(traces_bytes) = optional_bytes(traces_blob, traces_len) else {
+        return -1;
+    };
+    if out_cap > 0 && out.is_null() {
+        return -1;
+    }
+    let axis_inputs = match parse_figure_support_axes(axes_bytes) {
+        Ok(v) => v,
+        Err(code) => return code,
+    };
+    let trace_inputs = match parse_figure_support_traces(traces_bytes) {
+        Ok(v) => v,
+        Err(code) => return code,
+    };
+    match scene_figure_support_pack::scene_figure_support_pack(
+        flags,
+        &axis_inputs,
+        &trace_inputs,
+    ) {
+        Ok(packed) => {
+            if packed.len() > out_cap {
+                return -2;
+            }
+            if !packed.is_empty() {
+                std::ptr::copy_nonoverlapping(packed.as_ptr(), out, packed.len());
+            }
+            *out_len = packed.len();
+            0
+        }
+        Err(-1) => -1,
+        Err(code) => code,
+    }
+}
+
+/// One column descriptor for ``xyg_payload_column_gather_materialize`` (ABI 320).
+#[repr(C)]
+pub struct XygPayloadColumnMaterializeIn {
+    pub ship_method: i32,
+    pub ship_scale: i32,
+    pub values_len: usize,
+    pub col_min: f64,
+    pub col_max: f64,
+    pub kind_len: usize,
+    pub sticky_offset: f64,
+    pub axis_scale_len: usize,
+}
+
+/// One encoded column out descriptor (ABI 320).
+#[repr(C)]
+pub struct XygPayloadColumnMaterializeOut {
+    pub dtype_code: i32,
+    pub offset: f64,
+    pub scale: f64,
+    pub has_kind: i32,
+    pub len: u32,
+    pub bytes_offset: usize,
+    pub bytes_len: usize,
+}
+
+/// Gather and offset-ship geometry columns (ABI 320).
+#[allow(clippy::too_many_arguments)]
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_column_gather_materialize(
+    sel: *const u32,
+    sel_len: usize,
+    columns: *const XygPayloadColumnMaterializeIn,
+    n_columns: usize,
+    values: *const *const f64,
+    kinds: *const *const u8,
+    axis_scales: *const *const u8,
+    out: *mut XygPayloadColumnMaterializeOut,
+    out_bytes: *mut u8,
+    out_bytes_cap: usize,
+    out_bytes_len: *mut usize,
+) -> i32 {
+    if n_columns == 0
+        || n_columns > payload_column_gather_materialize::PAYLOAD_COLUMN_GATHER_MATERIALIZE_MAX
+        || columns.is_null()
+        || values.is_null()
+        || axis_scales.is_null()
+        || out.is_null()
+        || out_bytes_len.is_null()
+    {
+        return -1;
+    }
+    let sel_slice = if sel_len == 0 {
+        None
+    } else if sel.is_null() {
+        return -1;
+    } else {
+        Some(std::slice::from_raw_parts(sel, sel_len))
+    };
+    let columns_in = std::slice::from_raw_parts(columns, n_columns);
+    let values_ptrs = std::slice::from_raw_parts(values, n_columns);
+    let axis_scale_ptrs = std::slice::from_raw_parts(axis_scales, n_columns);
+    let kinds_ptrs = if kinds.is_null() {
+        None
+    } else {
+        Some(std::slice::from_raw_parts(kinds, n_columns))
+    };
+    let mut materialize_in = Vec::with_capacity(n_columns);
+    for (idx, col) in columns_in.iter().enumerate() {
+        if col.values_len > 0 && values_ptrs[idx].is_null() {
+            return -1;
+        }
+        let values_slice = if col.values_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(values_ptrs[idx], col.values_len)
+        };
+        if col.axis_scale_len == 0 || axis_scale_ptrs[idx].is_null() {
+            return -1;
+        }
+        let axis_scale = match read_utf8(
+            axis_scale_ptrs[idx],
+            col.axis_scale_len,
+        ) {
+            Some(v) => v,
+            None => return -1,
+        };
+        let kind = if col.kind_len == 0 {
+            None
+        } else {
+            let kind_ptr = kinds_ptrs.and_then(|p| {
+                if p[idx].is_null() {
+                    None
+                } else {
+                    read_utf8(p[idx], col.kind_len)
+                }
+            });
+            kind_ptr
+        };
+        materialize_in.push(payload_column_gather_materialize::PayloadColumnMaterializeIn {
+            ship_method: col.ship_method,
+            ship_scale: col.ship_scale,
+            values: values_slice,
+            col_min: col.col_min,
+            col_max: col.col_max,
+            kind,
+            sticky_offset: col.sticky_offset,
+            axis_scale,
+        });
+    }
+    let materialized = match payload_column_gather_materialize::payload_column_gather_materialize(
+        sel_slice,
+        &materialize_in,
+    ) {
+        Ok(v) => v,
+        Err(code) => return code,
+    };
+    let total_bytes: usize = materialized.iter().map(|c| c.bytes.len()).sum();
+    if total_bytes > out_bytes_cap {
+        return -2;
+    }
+    if total_bytes > 0 && out_bytes.is_null() {
+        return -1;
+    }
+    let mut write_at = 0usize;
+    for (idx, col) in materialized.iter().enumerate() {
+        let bytes_offset = write_at;
+        if !col.bytes.is_empty() {
+            std::ptr::copy_nonoverlapping(
+                col.bytes.as_ptr(),
+                out_bytes.add(write_at),
+                col.bytes.len(),
+            );
+            write_at += col.bytes.len();
+        }
+        let out_col = out.add(idx);
+        (*out_col).dtype_code = col.dtype_code;
+        (*out_col).offset = col.offset;
+        (*out_col).scale = col.scale;
+        (*out_col).has_kind = col.has_kind;
+        (*out_col).len = col.len;
+        (*out_col).bytes_offset = bytes_offset;
+        (*out_col).bytes_len = col.bytes.len();
+    }
+    *out_bytes_len = total_bytes;
+    materialized.len() as i32
+}
+
+/// Materialize one channel wire buffer (ABI 320).
+#[allow(clippy::too_many_arguments)]
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_channel_materialize(
+    role: i32,
+    mode: i32,
+    n_categories: usize,
+    style_dtype_u8: i32,
+    quantize_continuous: i32,
+    domain_lo: f64,
+    domain_hi: f64,
+    n_palette: usize,
+    sel: *const u32,
+    sel_len: usize,
+    values_f64: *const f64,
+    values_f64_len: usize,
+    values_u8: *const u8,
+    values_u8_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+    out_meta: *mut i32,
+) -> i32 {
+    if out_meta.is_null() {
+        return -1;
+    }
+    let sel_slice = if sel_len == 0 {
+        None
+    } else if sel.is_null() {
+        return -1;
+    } else {
+        Some(std::slice::from_raw_parts(sel, sel_len))
+    };
+    let values_f64_slice = if values_f64_len == 0 {
+        &[][..]
+    } else if values_f64.is_null() {
+        return -1;
+    } else {
+        std::slice::from_raw_parts(values_f64, values_f64_len)
+    };
+    let values_u8_slice = if values_u8_len == 0 {
+        &[][..]
+    } else if values_u8.is_null() {
+        return -1;
+    } else {
+        std::slice::from_raw_parts(values_u8, values_u8_len)
+    };
+    if out_cap > 0 && out.is_null() {
+        return -1;
+    }
+    let materialized = match payload_channel_materialize::payload_channel_materialize(
+        role,
+        mode,
+        n_categories,
+        style_dtype_u8,
+        quantize_continuous,
+        domain_lo,
+        domain_hi,
+        n_palette,
+        sel_slice,
+        values_f64_slice,
+        values_u8_slice,
+    ) {
+        Ok(v) => v,
+        Err(code) => return code,
+    };
+    if materialized.bytes.len() > out_cap {
+        return -2;
+    }
+    if !materialized.bytes.is_empty() {
+        std::ptr::copy_nonoverlapping(materialized.bytes.as_ptr(), out, materialized.bytes.len());
+    }
+    let meta = std::slice::from_raw_parts_mut(out_meta, 5);
+    meta[0] = materialized.buf_kind;
+    meta[1] = materialized.mark_dtype_u8;
+    meta[2] = materialized.ship_palette;
+    meta[3] = materialized.set_n;
+    meta[4] = materialized.len as i32;
+    materialized.bytes.len() as i32
 }
 
 /// Packed XYFS figure orchestration plan (ABI 307).

@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 318;
-export const SIGNATURE_SHA256 = "261a99a34ee2ed0ed2d03ff48c88c0f2f4e10d6e8a4774df2abaa70c5c33c798";
+export const ABI_VERSION = 320;
+export const SIGNATURE_SHA256 = "7f418bb30e991562328bb6798b2f9c873419f1bd05c2776674a12038033bdb2c";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -159,8 +159,10 @@ export let xyPayloadBarCompactAdmit;
 export let xyPayloadBarHistEmitPlan;
 export let xyPayloadBaseEntryPlan;
 export let xyPayloadBuildPlan;
+export let xyPayloadChannelMaterialize;
 export let xyPayloadChannelShipPlan;
 export let xyPayloadChannelWireEncode;
+export let xyPayloadColumnGatherMaterialize;
 export let xyPayloadColumnShipPlan;
 export let xyPayloadDensityGridMaterialize;
 export let xyPayloadDensityGridShipPlan;
@@ -244,6 +246,7 @@ export let xySceneEncodeAssembledFromSidecars;
 export let xySceneEncodeProduct;
 export let xySceneEncodeProductAttachPlan;
 export let xySceneFigureSupportFigurePlan;
+export let xySceneFigureSupportPack;
 export let xySceneFigureSupportReason;
 export let xySceneFigureSupportTraceDispatchPlan;
 export let xySceneFillGradientAdmit;
@@ -315,7 +318,9 @@ export let xySceneTickLabelLayout;
 export let xySceneTickLabelStrategy;
 export let xySceneVersion;
 export let xySceneXyafAnnotationDispatchPlan;
+export let xySceneXyafPack;
 export let xySceneXycfFigurePlan;
+export let xySceneXycfPack;
 export let xySceneXyclFigurePlan;
 export let xySceneXyhfColormapPack;
 export let xySceneXynmFigurePlan;
@@ -580,8 +585,10 @@ export function bindGeneratedAbi(lib) {
   xyPayloadBarHistEmitPlan = lib.func("int32_t xyg_payload_bar_hist_emit_plan(int32_t kind, int32_t compact, size_t n_marks, int32_t style_color_is_none, int32_t x_axis_type, int32_t y_axis_type, int32_t orientation, int32_t * out_emit_bar, int32_t * out_tier_direct, size_t * out_n_marks, int32_t * out_apply_palette_default, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale, int32_t * out_pos_ship_scale, int32_t * out_value_ship_scale, int32_t * out_value_axis, int32_t * out_channel_slot, int32_t * out_include_trace_styles, int32_t * out_attach_transition)");
   xyPayloadBaseEntryPlan = lib.func("int32_t xyg_payload_base_entry_plan(int32_t has_trace_animation, size_t n_xv, int32_t style_color_is_none, int32_t x_axis_type, int32_t y_axis_type, int32_t * out_attach_animation, size_t * out_n_marks, int32_t * out_apply_palette_default, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale)");
   xyPayloadBuildPlan = lib.func("int32_t xyg_payload_build_plan(int32_t split_payload, uint64_t wasm_source_count, int32_t has_density_tier, int32_t coords_cartesian, int32_t has_title_options, int32_t has_palette, int32_t has_legend_options, int32_t legend_loc_best, int32_t has_extra_legends, int32_t has_frame_sides, int32_t has_colorbar_options, int32_t show_modebar_is_false, int32_t has_export_options, int32_t show_tooltip_is_false, int32_t has_padding, int32_t has_dom, int32_t has_tooltip, int32_t has_mark_style, int32_t has_interaction, int32_t has_annotations, int32_t has_animation_options, int32_t has_graph_meta, void * out)");
+  xyPayloadChannelMaterialize = lib.func("int32_t xyg_payload_channel_materialize(int32_t role, int32_t mode, size_t n_categories, int32_t style_dtype_u8, int32_t quantize_continuous, double domain_lo, double domain_hi, size_t n_palette, const uint32_t * sel, size_t sel_len, const double * values_f64, size_t values_f64_len, const uint8_t * values_u8, size_t values_u8_len, uint8_t * out, size_t out_cap, int32_t * out_meta)");
   xyPayloadChannelShipPlan = lib.func("int32_t xyg_payload_channel_ship_plan(int32_t slot, int32_t include_trace_styles, int32_t has_color2_ch, int32_t has_color_ch, int32_t has_stroke_ch, int32_t has_style_channels, size_t * out_n_channels, void * out_channels, size_t capacity)");
   xyPayloadChannelWireEncode = lib.func("int32_t xyg_payload_channel_wire_encode(int32_t role, int32_t mode, size_t n_categories, int32_t style_dtype_u8, int32_t quantize_continuous, int32_t * out_buf_kind, int32_t * out_transform, int32_t * out_mark_dtype_u8, int32_t * out_ship_palette, int32_t * out_set_n)");
+  xyPayloadColumnGatherMaterialize = lib.func("int32_t xyg_payload_column_gather_materialize(const uint32_t * sel, size_t sel_len, const void * columns, size_t n_columns, const double *const * values, const uint8_t *const * kinds, const uint8_t *const * axis_scales, void * out, uint8_t * out_bytes, size_t out_bytes_cap, size_t * out_bytes_len)");
   xyPayloadColumnShipPlan = lib.func("int32_t xyg_payload_column_ship_plan(const uint8_t * kind, size_t kind_len, int32_t x_axis_type, int32_t y_axis_type, int32_t orientation, int32_t * out_gather_policy, int32_t * out_gather_include_color, size_t * out_n_columns, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale, void * out_columns, size_t capacity)");
   xyPayloadDensityGridMaterialize = lib.func("int32_t xyg_payload_density_grid_materialize(const void * input, const double * x_raw, const double * y_raw, const double * bx, const double * by, const uint8_t * color_codes, const uint64_t * color_counts, const uint8_t * color_idx, const uint8_t * color_rgba, const uint8_t * color_lut, uint8_t * out_binning, uint8_t * out_encoded, uint8_t * out_rgba, uint32_t * out_sample_sel, uint32_t * out_visible_sel, void * out)");
   xyPayloadDensityGridShipPlan = lib.func("int32_t xyg_payload_density_grid_ship_plan(int32_t ship_mean_color_rgba, int32_t ship_wasm_source, int32_t attach_sample, int32_t has_tiles, int32_t ship_constant_color, int32_t overlay_wire_rows_exceed, int32_t overlay_wire_static_raster, int32_t ship_categorical_entry_color, size_t * out_n_buffers, void * out_buffers, size_t buffer_capacity, size_t * out_n_attach, void * out_attach, size_t attach_capacity)");
@@ -665,6 +672,7 @@ export function bindGeneratedAbi(lib) {
   xySceneEncodeProduct = lib.func("int32_t xyg_scene_encode_product(const uint8_t * xytc, size_t xytc_len, const uint8_t * xyta, size_t xyta_len, const uint8_t * xynm, size_t xynm_len, const uint8_t * xycl, size_t xycl_len, const uint8_t * xyaf, size_t xyaf_len, uint32_t style_ref_base, double x_lo, double x_hi, double y_lo, double y_hi, const uint8_t * xycf, size_t xycf_len, const uint8_t * polar, size_t polar_len, const uint8_t * xyfs, size_t xyfs_len, uint8_t * out, size_t out_cap)");
   xySceneEncodeProductAttachPlan = lib.func("int32_t xyg_scene_encode_product_attach_plan(int32_t polar, void * out)");
   xySceneFigureSupportFigurePlan = lib.func("int32_t xyg_scene_figure_support_figure_plan(int32_t polar, void * out)");
+  xySceneFigureSupportPack = lib.func("int32_t xyg_scene_figure_support_pack(uint32_t flags, const uint8_t * axes_blob, size_t axes_len, const uint8_t * traces_blob, size_t traces_len, uint8_t * out, size_t out_cap, size_t * out_len)");
   xySceneFigureSupportReason = lib.func("size_t xyg_scene_figure_support_reason(const uint8_t * input, size_t len, uint8_t * out, size_t out_cap)");
   xySceneFigureSupportTraceDispatchPlan = lib.func("int32_t xyg_scene_figure_support_trace_dispatch_plan(const uint8_t * kind, size_t kind_len, int32_t marker_glyph_present, int32_t marker_path_present, int32_t curve_present, int32_t fill_present, void * out)");
   xySceneFillGradientAdmit = lib.func("int32_t xyg_scene_fill_gradient_admit(const uint8_t * space, size_t space_len, const uint8_t * dir, size_t dir_len, const double * t, size_t n_stops, const uint8_t * css, size_t css_len, const uint32_t * css_lens, size_t n_css, const uint8_t * mark_color, size_t mark_len, uint8_t * out_rgba, size_t out_cap)");
@@ -736,7 +744,9 @@ export function bindGeneratedAbi(lib) {
   xySceneTickLabelStrategy = lib.func("int32_t xyg_scene_tick_label_strategy(const uint8_t * text, size_t text_len)");
   xySceneVersion = lib.func("uint32_t xyg_scene_version()");
   xySceneXyafAnnotationDispatchPlan = lib.func("int32_t xyg_scene_xyaf_annotation_dispatch_plan(const uint8_t * kind, size_t kind_len, int32_t authored_wrap, int32_t layout_text, void * out)");
+  xySceneXyafPack = lib.func("int32_t xyg_scene_xyaf_pack(const void * input, const uint8_t * text, uint8_t * out, size_t out_cap, size_t * out_len)");
   xySceneXycfFigurePlan = lib.func("int32_t xyg_scene_xycf_figure_plan(int32_t show_legend, int32_t colorbar_ok, int32_t polar, void * out)");
+  xySceneXycfPack = lib.func("int32_t xyg_scene_xycf_pack(const void * input, const uint8_t * title, const uint8_t * x_label, const uint8_t * y_label, const uint8_t * x_format, const uint8_t * y_format, const double * x_major, const double * x_minor, const double * y_major, const double * y_minor, const uint8_t * x_labels_blob, const uint8_t * y_labels_blob, const uint8_t * chrome, const uint8_t * legend_loc, const uint8_t * legend_title, const uint8_t * legend_meta, const uint32_t * legend_lens, const uint8_t * legend_blob, const uint8_t * colorbar_stops_blob, const double * colorbar_ticks, const uint8_t * colorbar_title, const uint8_t * collision_extra, uint8_t * out, size_t out_cap, size_t * out_len)");
   xySceneXyclFigurePlan = lib.func("int32_t xyg_scene_xycl_figure_plan(int32_t polar, void * out)");
   xySceneXyhfColormapPack = lib.func("int32_t xyg_scene_xyhf_colormap_pack(int32_t mode, const uint8_t * named, size_t named_len, const uint8_t * stop_rgb, size_t stop_len, uint32_t * out_flags, uint8_t * out_cmap, size_t cmap_cap, uint8_t * out_stops, size_t stops_cap)");
   xySceneXynmFigurePlan = lib.func("int32_t xyg_scene_xynm_figure_plan(int32_t show_legend, void * out)");
