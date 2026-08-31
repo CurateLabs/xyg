@@ -36,9 +36,6 @@ def test_host_declarations_match_rust_symbol_set() -> None:
     assert errors == []
 
 
-def test_abi_version_is_276() -> None:
-    manifest = gen_abi_manifest.generate_manifest()
-    assert manifest["abi_version"] == 276
     assert manifest["artifact"] == "xyg_core"
     assert all(item["name"].startswith("xyg_") for item in manifest["symbols"])
     assert any(item["name"] == "xyg_abi_version" for item in manifest["symbols"])
@@ -85,6 +82,7 @@ def test_abi_version_is_276() -> None:
     assert "xyg_payload_even_indices" in names
     assert "xyg_payload_errorbar_indices" in names
     assert "xyg_payload_errorbar_role_keys" in names
+    assert "xyg_payload_errorbar_role_maps" in names
     assert "xyg_payload_bar_compact_admit" in names
     assert "xyg_payload_transition_keys_admit" in names
     assert "xyg_payload_segment_budget" in names

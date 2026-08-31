@@ -201,6 +201,7 @@ payload_visible_needed = _impl.payload_visible_needed
 payload_visible_indices = _impl.payload_visible_indices
 payload_even_indices = _impl.payload_even_indices
 payload_errorbar_role_keys = _impl.payload_errorbar_role_keys
+payload_errorbar_role_maps = _impl.payload_errorbar_role_maps
 payload_bar_compact_admit = _impl.payload_bar_compact_admit
 payload_transition_keys_admit = _impl.payload_transition_keys_admit
 payload_errorbar_indices = _impl.payload_errorbar_indices
@@ -315,6 +316,7 @@ __all__ = [
     "payload_bar_compact_admit",
     "payload_errorbar_indices",
     "payload_errorbar_role_keys",
+    "payload_errorbar_role_maps",
     "payload_even_indices",
     "payload_m4_indices",
     "payload_sample_target_indices",
