@@ -71,6 +71,7 @@ scene_gradient_solid_css = _impl.scene_gradient_solid_css
 scene_gradient_space = _impl.scene_gradient_space
 scene_heatmap_colormap_admit = _impl.scene_heatmap_colormap_admit
 scene_xyta_colormap_pack = _impl.scene_xyta_colormap_pack
+scene_xyhf_colormap_pack = _impl.scene_xyhf_colormap_pack
 scene_heatmap_extent_admit = _impl.scene_heatmap_extent_admit
 scene_heatmap_shape_admit = _impl.scene_heatmap_shape_admit
 scene_hidden_or_per_item_admit = _impl.scene_hidden_or_per_item_admit
@@ -363,6 +364,7 @@ __all__ = [
     "scene_scatter_paint_channel_admit",
     "scene_tick_anchor",
     "scene_tick_label_strategy",
+    "scene_xyhf_colormap_pack",
     "scene_xyta_colormap_pack",
     "sector_triangles",
     "spectrogram",

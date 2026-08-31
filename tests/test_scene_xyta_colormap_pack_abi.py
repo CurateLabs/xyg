@@ -52,3 +52,17 @@ def test_scene_xyta_colormap_pack_absent(mode: int) -> None:
     assert flags == 0
     assert cmap == b""
     assert stops == b""
+
+
+def test_scene_xyhf_colormap_pack_named() -> None:
+    flags, cmap, stops = kernels.scene_xyhf_colormap_pack(1, b"plasma", b"")
+    assert flags == 1 << 5
+    assert cmap == b"plasma"
+    assert stops == b""
+
+
+def test_scene_xyhf_colormap_pack_rgb_stops() -> None:
+    flags, cmap, stops = kernels.scene_xyhf_colormap_pack(2, b"", bytes([0, 128, 255, 255, 128, 0]))
+    assert flags == 1 << 6
+    assert cmap == b""
+    assert stops == bytes([0, 128, 255, 255, 128, 0])

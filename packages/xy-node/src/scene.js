@@ -74,7 +74,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, DEFAULT_PALETTE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, DEFAULT_PALETTE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -1410,17 +1410,9 @@ function packF64Le(values) {
 }
 
 export function xyHfColormap(style) {
-  const colormap = style?.colormap;
-  if (typeof colormap === "string") {
-    return { flags: XYHF_HAS_NAMED_CMAP, bytes: new TextEncoder().encode(colormap) };
-  }
-  if (colormap != null) {
-    return {
-      flags: XYHF_HAS_STOPS,
-      bytes: xyTaColormapStopBytes(colormap) ?? new Uint8Array(),
-    };
-  }
-  return null;
+  const packed = sceneXyhfColormapPack(style ?? {});
+  if (packed == null) return null;
+  return { flags: packed.flags, bytes: packed.cmap.length ? packed.cmap : packed.stops };
 }
 
 function packDensityGrid(x, y, x0, x1, y0, y1, source = null) {
@@ -3859,19 +3851,8 @@ function flattenPlaneF64(raw) {
 }
 
 export function packXyTaColormap(trace) {
-  const style = trace.style ?? {};
-  const colormap = style.colormap;
-  let flags = 0;
-  let cmap = new Uint8Array();
-  let stops = new Uint8Array();
-  if (typeof colormap === "string") {
-    flags |= XYTA_HAS_NAMED_CMAP;
-    cmap = new TextEncoder().encode(colormap);
-  } else if (colormap != null) {
-    flags |= XYTA_HAS_STOPS;
-    stops = xyTaColormapStopBytes(colormap) ?? new Uint8Array();
-  }
-  return { flags, cmap, stops };
+  const packed = sceneXytaColormapPack(trace.style ?? {});
+  return { flags: packed.flags, cmap: packed.cmap, stops: packed.stops };
 }
 
 /** Density XYTA constant color_ch. Python `_pack_xyta` reads `getattr(trace, "color_ch", None)` only. */
@@ -3889,34 +3870,6 @@ export function packXyTaFillOpacity(style) {
   const record = style ?? {};
   if (!Object.hasOwn(record, "fill_opacity")) return { flags: 0, value: Number.NaN };
   return { flags: XYTA_HAS_FILL_OPACITY, value: Number(record.fill_opacity) };
-}
-
-function xyTaColormapStopBytes(colormap) {
-  try {
-    const rows = [];
-    for (const row of colormap) {
-      if (row == null || typeof row === "number" || typeof row === "string") return null;
-      const parts = [...row];
-      if (parts.length !== 3) return null;
-      const rgb = [];
-      for (const value of parts) {
-        const n = Number(value);
-        if (!Number.isFinite(n)) return null;
-        rgb.push(n | 0);
-      }
-      rows.push(rgb);
-    }
-    if (rows.length < 1) return null;
-    const out = new Uint8Array(rows.length * 3);
-    for (let i = 0; i < rows.length; i += 1) {
-      out[i * 3] = rows[i][0];
-      out[i * 3 + 1] = rows[i][1];
-      out[i * 3 + 2] = rows[i][2];
-    }
-    return out;
-  } catch {
-    return null;
-  }
 }
 
 export function hexbinXyTaColorChannel(trace) {

@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 258;
+pub const ABI_VERSION: u32 = 259;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -6465,6 +6465,59 @@ pub unsafe extern "C" fn xyg_scene_xyta_colormap_pack(
             std::slice::from_raw_parts(stop_rgb, stop_len)
         };
         let (flags, cmap, stops) = kernels::scene_xyta_colormap_pack(mode, named_bytes, stop_bytes);
+        if cmap.len() > cmap_cap || stops.len() > stops_cap {
+            return -1;
+        }
+        *out_flags = flags;
+        if !cmap.is_empty() {
+            std::slice::from_raw_parts_mut(out_cmap, cmap_cap)[..cmap.len()].copy_from_slice(&cmap);
+        }
+        if !stops.is_empty() {
+            std::slice::from_raw_parts_mut(out_stops, stops_cap)[..stops.len()]
+                .copy_from_slice(&stops);
+        }
+        1
+    })
+}
+
+/// Pack Scene XYHF colormap facts (ABI 259).
+///
+/// Same contract as [`xyg_scene_xyta_colormap_pack`], but emits XYHF attach
+/// flag bits for heatmap/density paint planes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_xyhf_colormap_pack(
+    mode: i32,
+    named: *const u8,
+    named_len: usize,
+    stop_rgb: *const u8,
+    stop_len: usize,
+    out_flags: *mut u32,
+    out_cmap: *mut u8,
+    cmap_cap: usize,
+    out_stops: *mut u8,
+    stops_cap: usize,
+) -> i32 {
+    if out_flags.is_null() {
+        return 0;
+    }
+    ffi_guard(0, || {
+        if (named_len > 0 && named.is_null()) || (stop_len > 0 && stop_rgb.is_null()) {
+            return 0;
+        }
+        if (cmap_cap > 0 && out_cmap.is_null()) || (stops_cap > 0 && out_stops.is_null()) {
+            return 0;
+        }
+        let named_bytes = if named_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(named, named_len)
+        };
+        let stop_bytes = if stop_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(stop_rgb, stop_len)
+        };
+        let (flags, cmap, stops) = kernels::scene_xyhf_colormap_pack(mode, named_bytes, stop_bytes);
         if cmap.len() > cmap_cap || stops.len() > stops_cap {
             return -1;
         }
