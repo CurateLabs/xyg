@@ -1580,6 +1580,32 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         ctypes.c_void_p,
     ]
+    lib.xyg_payload_build_plan.restype = ctypes.c_int32
+    lib.xyg_payload_build_plan.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_uint64,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_void_p,
+    ]
     lib.xyg_density_color_classify.restype = ctypes.c_int32
     lib.xyg_density_color_classify.argtypes = [
         ctypes.c_int32,
@@ -5698,6 +5724,43 @@ def main() -> None:
         and dt_ship_categorical == 1
         and dt_channels_dropped == 1,
         "payload_density_trace_emit_plan packed fields",
+    )
+    build_plan = (ctypes.c_byte * 88)()
+    ok(
+        lib.xyg_payload_build_plan(
+            1,
+            0,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            ctypes.byref(build_plan),
+        )
+        == 1,
+        "payload_build_plan split density unsupported",
+    )
+    bp_view = memoryview(build_plan)
+    ok(
+        int.from_bytes(bp_view[0:4], "little") == 1
+        and int.from_bytes(bp_view[4:8], "little", signed=True) == 2
+        and int.from_bytes(bp_view[8:12], "little") == 1,
+        "payload_build_plan show_legend and wasm_density attach",
     )
     density_color_mode = ctypes.c_int32(-1)
     density_categorical = ctypes.c_int32(-1)

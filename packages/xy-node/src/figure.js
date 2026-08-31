@@ -48,6 +48,9 @@ import {
   payloadRibbonEmitPlan,
   payloadScatterEmitPlan,
   payloadDensityTraceEmitPlan,
+  payloadBuildPlan,
+  DENSITY_WASM_DENSITY_AUTOMATIC,
+  DENSITY_WASM_DENSITY_UNSUPPORTED,
   payloadSegmentsEmitGather,
   payloadSegmentsEmitPlan,
   payloadTraceChannelsShipAttach,
@@ -103,6 +106,50 @@ import { figureSceneV3, scatterPaintChannelNames, sceneRasterCommands, sceneSvg,
 export { PROTOCOL_VERSION };
 
 let nextTraceId = 1;
+
+function domSpec(fig) {
+  const dom = {};
+  if (fig.class_name) dom.class_name = fig.class_name;
+  if (fig.class_names && Object.keys(fig.class_names).length > 0) {
+    dom.class_names = fig.class_names;
+  }
+  if (fig.style && Object.keys(fig.style).length > 0) {
+    dom.style = fig.style;
+  }
+  return Object.keys(dom).length > 0 ? dom : null;
+}
+
+function payloadBuildPlanForFigure(fig, { split, specTraces, dom }) {
+  const wasmSources = specTraces
+    .map((entry) => entry.density?.wasm_source)
+    .filter((source) => source != null);
+  const legendOpts = fig.legend_options;
+  const hasLegend = legendOpts != null && Object.keys(legendOpts).length > 0;
+  return payloadBuildPlan({
+    splitPayload: split,
+    wasmSourceCount: wasmSources.length,
+    hasDensityTier: specTraces.some((entry) => entry.tier === "density"),
+    coordsCartesian: fig.coords === "cartesian",
+    hasTitleOptions: Array.isArray(fig.title_options) && fig.title_options.length > 0,
+    hasPalette: fig.palette != null,
+    hasLegendOptions: hasLegend,
+    legendLocBest: hasLegend && legendOpts.loc === "best",
+    hasExtraLegends: Array.isArray(fig.extra_legends) && fig.extra_legends.length > 0,
+    hasFrameSides: Array.isArray(fig.frame_sides) && fig.frame_sides.length > 0,
+    hasColorbarOptions: fig.colorbar_options != null && Object.keys(fig.colorbar_options).length > 0,
+    showModebarIsFalse: fig.show_modebar === false,
+    hasExportOptions: fig.export_options != null,
+    showTooltipIsFalse: fig.show_tooltip === false,
+    hasPadding: fig.padding != null,
+    hasDom: dom != null,
+    hasTooltip: fig.tooltip != null,
+    hasMarkStyle: false,
+    hasInteraction: false,
+    hasAnnotations: false,
+    hasAnimationOptions: fig.animation_options != null,
+    hasGraphMeta: fig._graphMeta != null,
+  });
+}
 
 function asF64(value) {
   if (value instanceof Float64Array) return value;// next-trace-id-base stay-host.
@@ -2503,6 +2550,11 @@ export class Figure {
         x: { range: xr, scale: "linear" },
         y: { range: yr, scale: "linear" },
       };
+    const dom = domSpec(this);
+    const wasmSources = specTraces
+      .map((entry) => entry.density?.wasm_source)
+      .filter((source) => source != null);
+    const buildPlan = payloadBuildPlanForFigure(this, { split, specTraces, dom });
     const spec = {
       protocol: PROTOCOL_VERSION,
       width: this.width,
@@ -2514,24 +2566,38 @@ export class Figure {
       traces: specTraces,
       columns: pw.columns,
       backend: "native",
-      // Node payload omits show_legend. Python `build_payload` ships
-      // `show_legend`. Matching Python would add spec.show_legend. Recorded
-      // emit-payload-show-legend stay-host.
+      show_legend: this.show_legend,
       // spec.title_options. Recorded emit-payload-title-options stay-host.
-      // emit-payload-padding stay-host.
-      // Recorded emit-payload-dom stay-host.
-      // Recorded emit-payload-extra-legends stay-host.
       view: { ranges: { x: [...xr], y: [...yr] } },
     };
-    if (this.coords === "polar") {
-      spec.coords = "polar";
+    if (buildPlan.attachWasmDensity) {
+      if (buildPlan.wasmDensityKind === DENSITY_WASM_DENSITY_AUTOMATIC) {
+        spec.wasm_density = { automatic: true, source: wasmSources[0] };
+      } else if (buildPlan.wasmDensityKind === DENSITY_WASM_DENSITY_UNSUPPORTED) {
+        spec.wasm_density = {
+          automatic: false,
+          unsupported: {
+            code: "XYG_WASM_SOURCE_UNSUPPORTED",
+            message: "direct WASM density requires one bounded Cartesian count-only f64 source",
+            trace_ids: specTraces
+              .filter((entry) => entry.tier === "density")
+              .map((entry) => entry.id),
+          },
+        };
+      }
+    }
+    if (buildPlan.attachCoords) {
+      spec.coords = this.coords;
+    }
+    if (buildPlan.attachPadding) {
+      spec.padding = [...this.padding];
+    }
+    if (buildPlan.attachDom) {
+      spec.dom = dom;
     }
     if (split) {
       spec.buffer_layout = "split";
     }
-    // Node payload omits wasm_density. Python `build_payload` attaches
-    // wasm_density from split density.wasm_source. Matching Python would add
-    // spec.wasm_density. Recorded emit-payload-wasm-density stay-host.
     if (this._graphMeta) {
       spec.graph = this._graphMeta;
     }

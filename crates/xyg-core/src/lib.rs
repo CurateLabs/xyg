@@ -161,7 +161,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 302;
+pub const ABI_VERSION: u32 = 303;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -16551,6 +16551,170 @@ pub unsafe extern "C" fn xyg_payload_density_trace_emit_plan(
             overlay_wire_static_raster: u32::from(overlay_wire_static_raster != 0),
             overlay_wire_rows_exceed: u32::from(overlay_wire_rows_exceed != 0),
             channels_dropped_compat: u32::from(channels_dropped_compat != 0),
+        };
+        1
+    })
+}
+
+/// Packed top-level payload build attach plan (ABI 303).
+#[repr(C)]
+pub struct XygPayloadBuildPlan {
+    pub attach_show_legend: u32,
+    pub wasm_density_kind: i32,
+    pub attach_wasm_density: u32,
+    pub attach_title_options: u32,
+    pub attach_coords: u32,
+    pub attach_palette: u32,
+    pub attach_legend: u32,
+    pub resolve_legend_best: u32,
+    pub attach_extra_legends: u32,
+    pub attach_frame_sides: u32,
+    pub attach_colorbar: u32,
+    pub attach_show_modebar: u32,
+    pub attach_export: u32,
+    pub attach_show_tooltip: u32,
+    pub attach_padding: u32,
+    pub attach_dom: u32,
+    pub attach_tooltip: u32,
+    pub attach_mark_style: u32,
+    pub attach_interaction: u32,
+    pub attach_annotations: u32,
+    pub attach_animation: u32,
+    pub attach_graph: u32,
+}
+
+/// Top-level ``build_payload`` attach orchestration (ABI 303).
+///
+/// Owns ``wasm_density`` wire kind, ``show_legend``, dom/padding, and optional
+/// legend/colorbar/annotations/extra_legends/title_options attach decisions.
+/// Hosts still build axis specs and ship trace payloads.
+///
+/// # Safety
+/// ``out`` must be valid for writes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_build_plan(
+    split_payload: i32,
+    wasm_source_count: u64,
+    has_density_tier: i32,
+    coords_cartesian: i32,
+    has_title_options: i32,
+    has_palette: i32,
+    has_legend_options: i32,
+    legend_loc_best: i32,
+    has_extra_legends: i32,
+    has_frame_sides: i32,
+    has_colorbar_options: i32,
+    show_modebar_is_false: i32,
+    has_export_options: i32,
+    show_tooltip_is_false: i32,
+    has_padding: i32,
+    has_dom: i32,
+    has_tooltip: i32,
+    has_mark_style: i32,
+    has_interaction: i32,
+    has_annotations: i32,
+    has_animation_options: i32,
+    has_graph_meta: i32,
+    out: *mut XygPayloadBuildPlan,
+) -> i32 {
+    ffi_guard(0, || {
+        if out.is_null() {
+            return 0;
+        }
+        let mut attach_show_legend = 0i32;
+        let mut wasm_density_kind = 0i32;
+        let mut attach_wasm_density = 0i32;
+        let mut attach_title_options = 0i32;
+        let mut attach_coords = 0i32;
+        let mut attach_palette = 0i32;
+        let mut attach_legend = 0i32;
+        let mut resolve_legend_best = 0i32;
+        let mut attach_extra_legends = 0i32;
+        let mut attach_frame_sides = 0i32;
+        let mut attach_colorbar = 0i32;
+        let mut attach_show_modebar = 0i32;
+        let mut attach_export = 0i32;
+        let mut attach_show_tooltip = 0i32;
+        let mut attach_padding = 0i32;
+        let mut attach_dom = 0i32;
+        let mut attach_tooltip = 0i32;
+        let mut attach_mark_style = 0i32;
+        let mut attach_interaction = 0i32;
+        let mut attach_annotations = 0i32;
+        let mut attach_animation = 0i32;
+        let mut attach_graph = 0i32;
+        let ok = payload_emit::payload_build_plan(
+            split_payload,
+            wasm_source_count,
+            has_density_tier,
+            coords_cartesian,
+            has_title_options,
+            has_palette,
+            has_legend_options,
+            legend_loc_best,
+            has_extra_legends,
+            has_frame_sides,
+            has_colorbar_options,
+            show_modebar_is_false,
+            has_export_options,
+            show_tooltip_is_false,
+            has_padding,
+            has_dom,
+            has_tooltip,
+            has_mark_style,
+            has_interaction,
+            has_annotations,
+            has_animation_options,
+            has_graph_meta,
+            &mut attach_show_legend,
+            &mut wasm_density_kind,
+            &mut attach_wasm_density,
+            &mut attach_title_options,
+            &mut attach_coords,
+            &mut attach_palette,
+            &mut attach_legend,
+            &mut resolve_legend_best,
+            &mut attach_extra_legends,
+            &mut attach_frame_sides,
+            &mut attach_colorbar,
+            &mut attach_show_modebar,
+            &mut attach_export,
+            &mut attach_show_tooltip,
+            &mut attach_padding,
+            &mut attach_dom,
+            &mut attach_tooltip,
+            &mut attach_mark_style,
+            &mut attach_interaction,
+            &mut attach_annotations,
+            &mut attach_animation,
+            &mut attach_graph,
+        );
+        if ok == 0 {
+            return 0;
+        }
+        *out = XygPayloadBuildPlan {
+            attach_show_legend: u32::from(attach_show_legend != 0),
+            wasm_density_kind,
+            attach_wasm_density: u32::from(attach_wasm_density != 0),
+            attach_title_options: u32::from(attach_title_options != 0),
+            attach_coords: u32::from(attach_coords != 0),
+            attach_palette: u32::from(attach_palette != 0),
+            attach_legend: u32::from(attach_legend != 0),
+            resolve_legend_best: u32::from(resolve_legend_best != 0),
+            attach_extra_legends: u32::from(attach_extra_legends != 0),
+            attach_frame_sides: u32::from(attach_frame_sides != 0),
+            attach_colorbar: u32::from(attach_colorbar != 0),
+            attach_show_modebar: u32::from(attach_show_modebar != 0),
+            attach_export: u32::from(attach_export != 0),
+            attach_show_tooltip: u32::from(attach_show_tooltip != 0),
+            attach_padding: u32::from(attach_padding != 0),
+            attach_dom: u32::from(attach_dom != 0),
+            attach_tooltip: u32::from(attach_tooltip != 0),
+            attach_mark_style: u32::from(attach_mark_style != 0),
+            attach_interaction: u32::from(attach_interaction != 0),
+            attach_annotations: u32::from(attach_annotations != 0),
+            attach_animation: u32::from(attach_animation != 0),
+            attach_graph: u32::from(attach_graph != 0),
         };
         1
     })

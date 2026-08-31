@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 302
-SIGNATURE_SHA256 = "fdd3b93badb7012f7eefdb745d9ecad80907ba8495d863596f8e25f7be5c59c8"
+ABI_VERSION = 303
+SIGNATURE_SHA256 = "d99d2f73e66bdacaeecc25eb05cb09afc1c3d6076089e1555a0af790b0c1cd62"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -618,6 +618,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_payload_base_entry_plan
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_size_t, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_payload_build_plan(int32_t split_payload, uint64_t wasm_source_count, int32_t has_density_tier, int32_t coords_cartesian, int32_t has_title_options, int32_t has_palette, int32_t has_legend_options, int32_t legend_loc_best, int32_t has_extra_legends, int32_t has_frame_sides, int32_t has_colorbar_options, int32_t show_modebar_is_false, int32_t has_export_options, int32_t show_tooltip_is_false, int32_t has_padding, int32_t has_dom, int32_t has_tooltip, int32_t has_mark_style, int32_t has_interaction, int32_t has_annotations, int32_t has_animation_options, int32_t has_graph_meta, void * out)
+    function = lib.xyg_payload_build_plan
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_uint64, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p]
     # int32_t xyg_payload_density_trace_emit_plan(int32_t has_channel, const uint8_t * mode, size_t mode_len, int32_t codes_present, int32_t codes_u8, int32_t has_counts, int32_t has_constant, int32_t cartesian, int32_t x_linear, int32_t y_linear, int32_t x_has_nulls, int32_t y_has_nulls, int32_t point_overlay, int32_t split_payload, uint32_t grid_w, uint32_t grid_h, int32_t grid_from_pyramid, int32_t has_pyramid_resource, int32_t grid_present, int32_t force_bin2d, int32_t force_pyramid, int32_t x_memmapped, int32_t y_memmapped, double x_min, double x_max, double y_min, double y_max, double xr0, double xr1, double yr0, double yr1, double bx0, double bx1, double by0, double by1, uint64_t n_points, int32_t has_pyramid_rgba, int32_t has_bin_colors, int32_t dropped_count, void * out)
     function = lib.xyg_payload_density_trace_emit_plan
     function.restype = ctypes.c_int32
