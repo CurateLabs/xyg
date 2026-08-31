@@ -1356,6 +1356,19 @@ def load() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_int32),
         ctypes.POINTER(ctypes.c_int32),
     ]
+    lib.xyg_density_trace_color_classify.restype = ctypes.c_int32
+    lib.xyg_density_trace_color_classify.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+    ]
     lib.xyg_payload_sample_target_indices.restype = ctypes.c_size_t
     lib.xyg_payload_sample_target_indices.argtypes = [
         ctypes.c_size_t,
@@ -4846,6 +4859,30 @@ def main() -> None:
         and density_compact.value == 1
         and density_stratified.value == 1,
         "density_color_classify stratified categorical",
+    )
+    trace_mode = b"categorical"
+    trace_color_mode = ctypes.c_int32(-1)
+    trace_categorical = ctypes.c_int32(-1)
+    trace_compact = ctypes.c_int32(-1)
+    trace_stratified = ctypes.c_int32(-1)
+    ok(
+        lib.xyg_density_trace_color_classify(
+            1,
+            trace_mode,
+            len(trace_mode),
+            1,
+            1,
+            1,
+            ctypes.byref(trace_color_mode),
+            ctypes.byref(trace_categorical),
+            ctypes.byref(trace_compact),
+            ctypes.byref(trace_stratified),
+        )
+        == 1
+        and trace_color_mode.value == 2
+        and trace_categorical.value == 1
+        and trace_stratified.value == 1,
+        "density_trace_color_classify categorical mode",
     )
     sample_keep = ctypes.c_int32(-1)
     sample_n = lib.xyg_payload_sample_target_indices(

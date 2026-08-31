@@ -11738,6 +11738,46 @@ def density_color_classify(
     )
 
 
+def density_trace_color_classify(
+    *,
+    has_channel: bool,
+    mode: str = "",
+    codes_present: bool = False,
+    codes_u8: bool = False,
+    has_counts: bool = False,
+) -> tuple[int, bool, bool, bool]:
+    """Density trace color classify via ``xyg_density_trace_color_classify`` (ABI 262).
+
+    Resolves ``color_ch.mode`` then classifies categorical metadata. Returns
+    ``(color_mode, categorical, compact_categorical, stratified_counts)``.
+    """
+    mode_b = str(mode).encode("utf-8")
+    out_color_mode = ctypes.c_int32(-1)
+    out_categorical = ctypes.c_int32(-1)
+    out_compact = ctypes.c_int32(-1)
+    out_stratified = ctypes.c_int32(-1)
+    ok = _lib.xyg_density_trace_color_classify(
+        int(bool(has_channel)),
+        mode_b,
+        len(mode_b),
+        int(bool(codes_present)),
+        int(bool(codes_u8)),
+        int(bool(has_counts)),
+        ctypes.byref(out_color_mode),
+        ctypes.byref(out_categorical),
+        ctypes.byref(out_compact),
+        ctypes.byref(out_stratified),
+    )
+    if ok != 1:
+        raise ValueError("invalid density_trace_color_classify arguments")
+    return (
+        int(out_color_mode.value),
+        int(out_categorical.value) == 1,
+        int(out_compact.value) == 1,
+        int(out_stratified.value) == 1,
+    )
+
+
 DENSITY_OVERLAY_NONE = 0
 DENSITY_OVERLAY_ROWS_EXCEED_U32 = 1
 DENSITY_OVERLAY_STATIC_RASTER = 2

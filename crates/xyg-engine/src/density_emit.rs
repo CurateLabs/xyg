@@ -75,6 +75,52 @@ pub fn density_color_classify(
     1
 }
 
+/// Resolve density color-channel mode names (ABI 262 helper).
+fn density_channel_mode_from_name(mode: &str) -> i32 {
+    match mode {
+        "constant" => DENSITY_CHANNEL_MODE_CONSTANT,
+        "categorical" => DENSITY_CHANNEL_MODE_CATEGORICAL,
+        "continuous" => DENSITY_CHANNEL_MODE_CONTINUOUS,
+        _ => DENSITY_CHANNEL_MODE_OTHER,
+    }
+}
+
+/// Density trace color-channel classify (ABI 262).
+///
+/// Hosts pass whether ``color_ch`` is present, its ``mode`` string, and
+/// categorical code metadata. Resolves the channel mode then delegates to
+/// ``density_color_classify``.
+pub fn density_trace_color_classify(
+    has_channel: i32,
+    mode: &str,
+    codes_present: i32,
+    codes_u8: i32,
+    has_counts: i32,
+    out_color_mode: &mut i32,
+    out_categorical: &mut i32,
+    out_compact_categorical: &mut i32,
+    out_stratified_counts: &mut i32,
+) -> i32 {
+    if !matches!(has_channel, 0 | 1) {
+        return 0;
+    }
+    let channel_mode = if has_channel == 0 {
+        DENSITY_CHANNEL_MODE_NONE
+    } else {
+        density_channel_mode_from_name(mode)
+    };
+    density_color_classify(
+        channel_mode,
+        codes_present,
+        codes_u8,
+        has_counts,
+        out_color_mode,
+        out_categorical,
+        out_compact_categorical,
+        out_stratified_counts,
+    )
+}
+
 pub const DENSITY_OVERLAY_NONE: u32 = 0;
 pub const DENSITY_OVERLAY_ROWS_EXCEED_U32: u32 = 1;
 pub const DENSITY_OVERLAY_STATIC_RASTER: u32 = 2;
@@ -504,6 +550,76 @@ mod tests {
         );
         assert_eq!(compact, 0);
         assert_eq!(density_color_classify(99, 0, 0, 0, &mut color_mode, &mut categorical, &mut compact, &mut stratified), 0);
+    }
+
+    #[test]
+    fn density_trace_color_classify_matches_host_table() {
+        let mut color_mode = 0;
+        let mut categorical = 0;
+        let mut compact = 0;
+        let mut stratified = 0;
+        assert_eq!(
+            density_trace_color_classify(
+                0,
+                "",
+                0,
+                0,
+                0,
+                &mut color_mode,
+                &mut categorical,
+                &mut compact,
+                &mut stratified,
+            ),
+            1
+        );
+        assert_eq!(color_mode, DENSITY_COLOR_MODE_NONE);
+        assert_eq!(
+            density_trace_color_classify(
+                1,
+                "constant",
+                0,
+                0,
+                0,
+                &mut color_mode,
+                &mut categorical,
+                &mut compact,
+                &mut stratified,
+            ),
+            1
+        );
+        assert_eq!(color_mode, DENSITY_COLOR_MODE_CONSTANT);
+        assert_eq!(
+            density_trace_color_classify(
+                1,
+                "categorical",
+                1,
+                1,
+                1,
+                &mut color_mode,
+                &mut categorical,
+                &mut compact,
+                &mut stratified,
+            ),
+            1
+        );
+        assert_eq!(categorical, 1);
+        assert_eq!(stratified, 1);
+        assert_eq!(
+            density_trace_color_classify(
+                1,
+                "direct_rgba",
+                0,
+                0,
+                0,
+                &mut color_mode,
+                &mut categorical,
+                &mut compact,
+                &mut stratified,
+            ),
+            1
+        );
+        assert_eq!(color_mode, DENSITY_COLOR_MODE_OTHER);
+        assert_eq!(density_trace_color_classify(2, "constant", 0, 0, 0, &mut color_mode, &mut categorical, &mut compact, &mut stratified), 0);
     }
 
     #[test]

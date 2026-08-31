@@ -46,6 +46,7 @@ density_overlay_opacity = _impl.density_overlay_opacity
 density_bin_window = _impl.density_bin_window
 density_emit_plan = _impl.density_emit_plan
 density_color_classify = _impl.density_color_classify
+density_trace_color_classify = _impl.density_trace_color_classify
 density_format_binning = _impl.density_format_binning
 density_full_identity = _impl.density_full_identity
 density_grid_path = _impl.density_grid_path
@@ -279,6 +280,7 @@ __all__ = [
     "density_pyramid_preflight",
     "density_rgba",
     "density_rgba_linear",
+    "density_trace_color_classify",
     "density_wasm_eligible",
     "direct_rgba_admit",
     "drill_decision",

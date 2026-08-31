@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 277;
+pub const ABI_VERSION: u32 = 278;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15629,6 +15629,64 @@ pub unsafe extern "C" fn xyg_density_color_classify(
         }
         density_emit::density_color_classify(
             channel_mode,
+            codes_present,
+            codes_u8,
+            has_counts,
+            &mut *out_color_mode,
+            &mut *out_categorical,
+            &mut *out_compact_categorical,
+            &mut *out_stratified_counts,
+        )
+    })
+}
+
+/// Density trace color-channel classify (ABI 262).
+///
+/// When ``has_channel`` is ``0``, mode is ignored and ``DENSITY_CHANNEL_MODE_NONE``
+/// is used. Otherwise ``mode`` is one of ``constant`` / ``categorical`` /
+/// ``continuous`` with any other non-empty name mapping to ``OTHER``.
+/// Returns ``1`` on success and writes the same outputs as
+/// ``xyg_density_color_classify``.
+///
+/// # Safety
+/// When ``mode_len > 0``, ``mode`` must address readable UTF-8 bytes.
+/// Output pointers must be writable when non-null.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_density_trace_color_classify(
+    has_channel: i32,
+    mode: *const u8,
+    mode_len: usize,
+    codes_present: i32,
+    codes_u8: i32,
+    has_counts: i32,
+    out_color_mode: *mut i32,
+    out_categorical: *mut i32,
+    out_compact_categorical: *mut i32,
+    out_stratified_counts: *mut i32,
+) -> i32 {
+    ffi_guard(0, || {
+        if out_color_mode.is_null()
+            || out_categorical.is_null()
+            || out_compact_categorical.is_null()
+            || out_stratified_counts.is_null()
+        {
+            return 0;
+        }
+        if mode_len > 0 && mode.is_null() {
+            return 0;
+        }
+        let mode_text = if mode_len == 0 {
+            ""
+        } else {
+            let bytes = std::slice::from_raw_parts(mode, mode_len);
+            let Ok(text) = std::str::from_utf8(bytes) else {
+                return 0;
+            };
+            text
+        };
+        density_emit::density_trace_color_classify(
+            has_channel,
+            mode_text,
             codes_present,
             codes_u8,
             has_counts,

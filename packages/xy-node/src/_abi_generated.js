@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 277;
-export const SIGNATURE_SHA256 = "ea4012dd4d9eac9e8aaec3ec116d3748ba04f77c1253b43b56ad1270a6da1dd5";
+export const ABI_VERSION = 278;
+export const SIGNATURE_SHA256 = "8e87f27e9c90f6ee1c52800ec61e1b306a609a44ac14842a3dcb65099efdd4f2";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -67,6 +67,7 @@ export let xyDensityOverlayOpacity;
 export let xyDensityPyramidPreflight;
 export let xyDensityRgba;
 export let xyDensityRgbaLinear;
+export let xyDensityTraceColorClassify;
 export let xyDensityWasmEligible;
 export let xyDirectRgbaAdmit;
 export let xyDrillDecision;
@@ -439,6 +440,7 @@ export function bindGeneratedAbi(lib) {
   xyDensityPyramidPreflight = lib.func("size_t xyg_density_pyramid_preflight(int32_t x_linear, int32_t y_linear, uint64_t n_points, int32_t has_pyramid_resource, int32_t x_memmapped, int32_t y_memmapped, int32_t force_pyramid, int32_t force_bin2d, uint32_t * out)");
   xyDensityRgba = lib.func("int32_t xyg_density_rgba(const uint8_t * encoded, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out)");
   xyDensityRgbaLinear = lib.func("int32_t xyg_density_rgba_linear(const double * counts, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out)");
+  xyDensityTraceColorClassify = lib.func("int32_t xyg_density_trace_color_classify(int32_t has_channel, const uint8_t * mode, size_t mode_len, int32_t codes_present, int32_t codes_u8, int32_t has_counts, int32_t * out_color_mode, int32_t * out_categorical, int32_t * out_compact_categorical, int32_t * out_stratified_counts)");
   xyDensityWasmEligible = lib.func("int32_t xyg_density_wasm_eligible(int32_t cartesian, int32_t x_linear, int32_t y_linear, int32_t color_mode, int32_t x_has_nulls, int32_t y_has_nulls, uint64_t n_points)");
   xyDirectRgbaAdmit = lib.func("size_t xyg_direct_rgba_admit(const double * values, size_t n, size_t components, double * out, size_t capacity)");
   xyDrillDecision = lib.func("int32_t xyg_drill_decision(uint64_t visible, double budget, int32_t in_drill, double exit_factor, int32_t * out_exact)");
