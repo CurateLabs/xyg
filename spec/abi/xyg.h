@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 311
-#define XYG_ABI_SIGNATURE_SHA256 "c1bd389d8dd519f346df041238d3dcd64f8cb5b90fc3b35b72ddaade638e9a00"
+#define XYG_ABI_VERSION 312
+#define XYG_ABI_SIGNATURE_SHA256 "43f64eb83dcec91f98bffa12ee76aacd4b6e59564be4616fdab8646cde547a11"
 
 #ifdef __cplusplus
 extern "C" {
@@ -166,6 +166,7 @@ int32_t xyg_payload_bar_hist_emit_plan(int32_t kind, int32_t compact, size_t n_m
 int32_t xyg_payload_base_entry_plan(int32_t has_trace_animation, size_t n_xv, int32_t style_color_is_none, int32_t x_axis_type, int32_t y_axis_type, int32_t * out_attach_animation, size_t * out_n_marks, int32_t * out_apply_palette_default, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale);
 int32_t xyg_payload_build_plan(int32_t split_payload, uint64_t wasm_source_count, int32_t has_density_tier, int32_t coords_cartesian, int32_t has_title_options, int32_t has_palette, int32_t has_legend_options, int32_t legend_loc_best, int32_t has_extra_legends, int32_t has_frame_sides, int32_t has_colorbar_options, int32_t show_modebar_is_false, int32_t has_export_options, int32_t show_tooltip_is_false, int32_t has_padding, int32_t has_dom, int32_t has_tooltip, int32_t has_mark_style, int32_t has_interaction, int32_t has_annotations, int32_t has_animation_options, int32_t has_graph_meta, void * out);
 int32_t xyg_payload_channel_ship_plan(int32_t slot, int32_t include_trace_styles, int32_t has_color2_ch, int32_t has_color_ch, int32_t has_stroke_ch, int32_t has_style_channels, size_t * out_n_channels, void * out_channels, size_t capacity);
+int32_t xyg_payload_channel_wire_encode(int32_t role, int32_t mode, size_t n_categories, int32_t style_dtype_u8, int32_t quantize_continuous, int32_t * out_buf_kind, int32_t * out_transform, int32_t * out_mark_dtype_u8, int32_t * out_ship_palette, int32_t * out_set_n);
 int32_t xyg_payload_column_ship_plan(const uint8_t * kind, size_t kind_len, int32_t x_axis_type, int32_t y_axis_type, int32_t * out_gather_policy, int32_t * out_gather_include_color, size_t * out_n_columns, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale, void * out_columns, size_t capacity);
 int32_t xyg_payload_density_trace_emit_plan(int32_t has_channel, const uint8_t * mode, size_t mode_len, int32_t codes_present, int32_t codes_u8, int32_t has_counts, int32_t has_constant, int32_t cartesian, int32_t x_linear, int32_t y_linear, int32_t x_has_nulls, int32_t y_has_nulls, int32_t point_overlay, int32_t split_payload, uint32_t grid_w, uint32_t grid_h, int32_t grid_from_pyramid, int32_t has_pyramid_resource, int32_t grid_present, int32_t force_bin2d, int32_t force_pyramid, int32_t x_memmapped, int32_t y_memmapped, double x_min, double x_max, double y_min, double y_max, double xr0, double xr1, double yr0, double yr1, double bx0, double bx1, double by0, double by1, uint64_t n_points, int32_t has_pyramid_rgba, int32_t has_bin_colors, int32_t dropped_count, void * out);
 size_t xyg_payload_errorbar_indices(size_t n_segments, size_t n_points, size_t budget, int32_t * out_keep_all, uint32_t * out, size_t capacity);

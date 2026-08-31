@@ -12846,6 +12846,80 @@ def payload_channel_ship_plan(
     }
 
 
+_PAYLOAD_CHAN_WIRE_ROLE_BY_NAME: dict[str, int] = {
+    "color": 0,
+    "size": 1,
+    "style": 2,
+}
+_PAYLOAD_CHAN_MODE_BY_NAME: dict[str, int] = {
+    "constant": 0,
+    "continuous": 1,
+    "categorical": 2,
+    "direct_rgba": 3,
+    "match_fill": 4,
+    "direct": 5,
+}
+_PAYLOAD_CHAN_BUF_KIND_BY_CODE: tuple[str, ...] = ("none", "u8", "f32")
+_PAYLOAD_CHAN_XFORM_BY_CODE: tuple[str, ...] = (
+    "none",
+    "normalize",
+    "quantize_u8",
+    "rgba_pack",
+    "raw",
+)
+
+
+def payload_channel_wire_encode(
+    role: str,
+    mode: str,
+    *,
+    n_categories: int = 0,
+    style_dtype_u8: bool = False,
+    quantize_continuous: bool = False,
+) -> dict[str, bool | str]:
+    """Channel wire encoding policy via ``xyg_payload_channel_wire_encode`` (ABI 312).
+
+    Owns buffer kind, pre-ship transform, and spec flags. Hosts still slice,
+    transform, and ship buffers via ``channels.ship_*`` / ``pw.ship*``.
+    """
+    role_code = _PAYLOAD_CHAN_WIRE_ROLE_BY_NAME.get(role)
+    mode_code = _PAYLOAD_CHAN_MODE_BY_NAME.get(mode)
+    if role_code is None or mode_code is None:
+        raise ValueError("invalid payload_channel_wire_encode role or mode")
+    buf_kind = ctypes.c_int32(-1)
+    transform = ctypes.c_int32(-1)
+    mark_dtype_u8 = ctypes.c_int32(-1)
+    ship_palette = ctypes.c_int32(-1)
+    set_n = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_channel_wire_encode(
+        role_code,
+        mode_code,
+        int(n_categories),
+        1 if style_dtype_u8 else 0,
+        1 if quantize_continuous else 0,
+        ctypes.byref(buf_kind),
+        ctypes.byref(transform),
+        ctypes.byref(mark_dtype_u8),
+        ctypes.byref(ship_palette),
+        ctypes.byref(set_n),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_channel_wire_encode arguments")
+    buf_code = int(buf_kind.value)
+    xform_code = int(transform.value)
+    if not (0 <= buf_code < len(_PAYLOAD_CHAN_BUF_KIND_BY_CODE)):
+        raise ValueError("invalid payload_channel_wire_encode buf kind")
+    if not (0 <= xform_code < len(_PAYLOAD_CHAN_XFORM_BY_CODE)):
+        raise ValueError("invalid payload_channel_wire_encode transform")
+    return {
+        "buf_kind": _PAYLOAD_CHAN_BUF_KIND_BY_CODE[buf_code],
+        "transform": _PAYLOAD_CHAN_XFORM_BY_CODE[xform_code],
+        "mark_dtype_u8": int(mark_dtype_u8.value) == 1,
+        "ship_palette": int(ship_palette.value) == 1,
+        "set_n": int(set_n.value) == 1,
+    }
+
+
 def payload_ribbon_emit_plan(
     *,
     n_marks: int,

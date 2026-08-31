@@ -162,7 +162,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 311;
+pub const ABI_VERSION: u32 = 312;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -16156,6 +16156,64 @@ pub unsafe extern "C" fn xyg_payload_channel_ship_plan(
                 };
             }
         }
+        1
+    })
+}
+
+/// Channel wire encoding policy from ``channels.ship_*`` (ABI 312).
+///
+/// Owns buffer kind, pre-ship transform, and spec flags. Hosts still slice,
+/// transform, and ship buffers.
+///
+/// # Safety
+/// All ``out_*`` pointers must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_channel_wire_encode(
+    role: i32,
+    mode: i32,
+    n_categories: usize,
+    style_dtype_u8: i32,
+    quantize_continuous: i32,
+    out_buf_kind: *mut i32,
+    out_transform: *mut i32,
+    out_mark_dtype_u8: *mut i32,
+    out_ship_palette: *mut i32,
+    out_set_n: *mut i32,
+) -> i32 {
+    ffi_guard(0, || {
+        if out_buf_kind.is_null()
+            || out_transform.is_null()
+            || out_mark_dtype_u8.is_null()
+            || out_ship_palette.is_null()
+            || out_set_n.is_null()
+        {
+            return 0;
+        }
+        let mut buf_kind = 0i32;
+        let mut transform = 0i32;
+        let mut mark_dtype_u8 = 0i32;
+        let mut ship_palette = 0i32;
+        let mut set_n = 0i32;
+        let ok = payload_emit::payload_channel_wire_encode(
+            role,
+            mode,
+            n_categories,
+            style_dtype_u8,
+            quantize_continuous,
+            &mut buf_kind,
+            &mut transform,
+            &mut mark_dtype_u8,
+            &mut ship_palette,
+            &mut set_n,
+        );
+        if ok == 0 {
+            return 0;
+        }
+        *out_buf_kind = buf_kind;
+        *out_transform = transform;
+        *out_mark_dtype_u8 = mark_dtype_u8;
+        *out_ship_palette = ship_palette;
+        *out_set_n = set_n;
         1
     })
 }

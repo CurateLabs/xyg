@@ -36,6 +36,7 @@ import {
   densityLogU8,
   densityOverlayOpacity,
   encodeF32Values,
+  DEFAULT_PALETTE,
   geometryOffset,
   payloadEvenIndices,
   payloadErrorbarIndices,
@@ -54,6 +55,7 @@ import {
   payloadSegmentsEmitGather,
   payloadSegmentsEmitPlan,
   payloadChannelShipPlan,
+  payloadChannelWireEncode,
   payloadTransitionEntryAttach,
   payloadSegmentBudget,
   payloadSampleTargetIndices,
@@ -67,6 +69,11 @@ import {
   f64Ptr,
   u8Ptr,
 } from "./encode.js";
+import {
+  clipQuantizeU8,
+  directRgbaAdmit,
+  quantizeUnitU8,
+} from "./color.js";
 import {
   xyAutoDomain,
   xyFigureAutorange,
@@ -156,6 +163,150 @@ function asF64(value) {
 
   if (value == null) return new Float64Array(0);
   return Float64Array.from(value, Number);
+}
+
+function categoricalPalette(palette, nCategories) {
+  return Array.from({ length: nCategories }, (_, i) => palette[i % palette.length]);
+}
+
+function shipWireBuffer(plan, pw, {
+  values = null,
+  lo = null,
+  hi = null,
+  packedRgba = null,
+  raw = null,
+} = {}) {
+  const { transform, bufKind } = plan;
+  if (transform === "none") return undefined;
+  if (transform === "rgba_pack") {
+    if (packedRgba == null) throw new Error("direct RGBA wire encode missing packed values");
+    return pw.shipU8(packedRgba);
+  }
+  if (transform === "quantize_u8") {
+    if (values == null || lo == null || hi == null) {
+      throw new Error("continuous wire encode missing values or domain");
+    }
+    return pw.shipU8(quantizeUnitU8(values, lo, hi));
+  }
+  if (transform === "normalize") {
+    if (values == null || lo == null || hi == null) {
+      throw new Error("continuous wire encode missing values or domain");
+    }
+    return pw.shipScalar(normalizeF32(values, lo, hi));
+  }
+  if (transform === "raw") {
+    if (raw == null) throw new Error("raw wire encode missing values");
+    const flat = raw instanceof Float64Array || raw instanceof Uint8Array || raw instanceof Uint32Array
+      ? raw
+      : Float64Array.from(raw, Number);
+    return bufKind === "u8" ? pw.shipU8(flat) : pw.shipScalar(flat);
+  }
+  throw new RangeError("invalid payload-channel-wire-encode transform");
+}
+
+function shipColorChannel(channel, pw, sel = null, { quantizeContinuous = false } = {}) {
+  if (channel == null) return undefined;
+  const plan = payloadChannelWireEncode({
+    role: "color",
+    mode: channel.mode,
+    nCategories: channel.categories?.length ?? 0,
+    quantizeContinuous,
+  });
+  if (plan.transform === "none") {
+    if (channel.mode === "constant") {
+      return { mode: "constant", color: channel.constant };
+    }
+    return { ...channel };
+  }
+  const spec = { mode: channel.mode };
+  if (channel.mode === "direct_rgba") {
+    let rgba = channel.rgba;
+    if (rgba == null) return { ...channel };
+    if (sel != null) {
+      const out = new Uint8Array(sel.length * 4);
+      for (let i = 0; i < sel.length; i += 1) {
+        const src = sel[i] * 4;
+        const dst = i * 4;
+        out[dst] = rgba[src];
+        out[dst + 1] = rgba[src + 1];
+        out[dst + 2] = rgba[src + 2];
+        out[dst + 3] = rgba[src + 3];
+      }
+      rgba = out;
+    }
+    let packed = rgba;
+    if (!(rgba instanceof Uint8Array)) {
+      const flat = rgba instanceof Float64Array
+        ? rgba
+        : Float64Array.from(rgba, Number);
+      packed = clipQuantizeU8(directRgbaAdmit(flat, 4));
+    }
+    spec.components = 4;
+    spec.dtype = "u8";
+    spec.buf = shipWireBuffer(plan, pw, { packedRgba: packed });
+    if (plan.setN) spec.n = Math.floor(packed.length / 4);
+    return spec;
+  }
+  if (channel.mode === "continuous") {
+    if (channel.values == null) return { ...channel };
+    let values = channel.values instanceof Float64Array
+      ? channel.values
+      : Float64Array.from(channel.values, Number);
+    if (sel != null) values = gatherF64(values, sel);
+    const domain = channel.domain ?? minMax(values) ?? [0, 1];
+    const lo = domain[0];
+    const hi = domain[0] === domain[1] ? domain[0] + 1 : domain[1];
+    spec.colormap = channel.colormap ?? "viridis";
+    spec.domain = [lo, hi];
+    if (channel.label != null) spec.label = channel.label;
+    spec.buf = shipWireBuffer(plan, pw, { values, lo, hi });
+    if (plan.markDtypeU8) spec.dtype = "u8";
+    return spec;
+  }
+  if (channel.mode === "categorical") {
+    if (channel.codes == null || channel.categories == null) return { ...channel };
+    let codes = channel.codes;
+    if (sel != null) {
+      codes = codes instanceof Uint8Array || codes instanceof Uint32Array
+        ? gatherItems(codes, sel)
+        : gatherF64(codes, sel);
+    }
+    spec.categories = channel.categories;
+    spec.buf = shipWireBuffer(plan, pw, { raw: codes });
+    if (plan.markDtypeU8) spec.dtype = "u8";
+    if (plan.shipPalette) {
+      const palette = channel.palette?.length ? channel.palette : DEFAULT_PALETTE;
+      spec.palette = categoricalPalette(palette, channel.categories.length);
+    }
+    return spec;
+  }
+  throw new Error(`unsupported color channel mode for wire encode: ${channel.mode}`);
+}
+
+function shipStyleChannels(styleChannels, pw, sel = null) {
+  const result = {};
+  for (const [name, channel] of Object.entries(styleChannels)) {
+    let values = channel.values;
+    if (sel != null) {
+      values = values instanceof Uint8Array
+        ? gatherItems(values, sel)
+        : gatherF64(values, sel);
+    }
+    const plan = payloadChannelWireEncode({
+      role: "style",
+      mode: "direct",
+      styleDtypeU8: channel.dtype === "u8",
+    });
+    const spec = {
+      mode: "direct",
+      components: channel.components ?? 1,
+      dtype: channel.dtype ?? "f32",
+      buf: shipWireBuffer(plan, pw, { raw: values }),
+    };
+    if (plan.setN) spec.n = sel == null ? values.length : sel.length;
+    result[name] = spec;
+  }
+  return result;
 }
 
 function gatherF64(arr, idx) {
@@ -2193,7 +2344,7 @@ export class Figure {
     for (const ch of plan.channels) {
       const key = ch.registryKey;
       if (ch.shipMethod === "color_size") {
-        const color = this._shipColor(t.color_ch, pw, sel);
+        const color = shipColorChannel(t.color_ch, pw, sel);
         if (color != null) entry.color = color;
         const sizeCh = t.size_ch;
         if (sizeCh?.mode === "continuous" && sizeCh.values != null) {
@@ -2204,12 +2355,14 @@ export class Figure {
           const domain = sizeCh.domain ?? minMax(values) ?? [0, 1];
           const lo = domain[0];
           const hi = domain[0] === domain[1] ? domain[0] + 1 : domain[1];
+          const plan = payloadChannelWireEncode({ role: "size", mode: "continuous" });
           entry.size = {
             mode: "continuous",
             range_px: sizeCh.range_px ?? [8, 22],
             domain: [lo, hi],
-            buf: pw.shipScalar(normalizeF32(values, lo, hi)),
+            buf: shipWireBuffer(plan, pw, { values, lo, hi }),
           };
+          if (plan.markDtypeU8) entry.size.dtype = "u8";
         } else if (sizeCh?.mode === "constant") {
           entry.size = { ...sizeCh };
         }
@@ -2217,51 +2370,16 @@ export class Figure {
         const traceSlot = ch.traceSlot === "color2_ch"
           ? (t.color_target ?? t.color2_ch)
           : t[ch.traceSlot];
-        const shipped = this._shipColor(traceSlot, pw, sel);
+        const shipped = shipColorChannel(traceSlot, pw, sel);
         if (shipped != null) entry[key] = shipped;
+      } else if (ch.shipMethod === "style") {
+        entry[key] = shipStyleChannels(styleChannels, pw, sel);
       }
-      // Node style_channels wire stays host; Python ships via channels.ship_style_channels.
     }
   }
 
   _shipColor(channel, pw, sel = null) {
-    if (channel == null) return undefined;
-    if (channel.mode === "direct_rgba" && channel.rgba != null) {
-      let rgba = channel.rgba;
-      if (sel != null) {
-        const out = new Uint8Array(sel.length * 4);
-        for (let i = 0; i < sel.length; i += 1) {
-          const src = sel[i] * 4;
-          const dst = i * 4;
-          out[dst] = rgba[src];
-          out[dst + 1] = rgba[src + 1];
-          out[dst + 2] = rgba[src + 2];
-          out[dst + 3] = rgba[src + 3];
-        }
-        rgba = out;
-      }
-      return {
-        mode: "direct_rgba",
-        buf: pw.shipU8(rgba),
-        n: Math.floor(rgba.length / 4),
-      };
-    }
-    if (channel.mode === "continuous" && channel.values != null) {
-      const values = sel == null ? channel.values : gatherF64(channel.values, sel);
-      const domain = channel.domain ?? minMax(values) ?? [0, 1];
-      const lo = domain[0];
-      const hi = domain[0] === domain[1] ? domain[0] + 1 : domain[1];
-      return {
-        mode: "continuous",
-        colormap: channel.colormap ?? "viridis",
-        domain: [lo, hi],
-        buf: pw.shipScalar(normalizeF32(values, lo, hi)),
-      };
-    }
-    if (channel.mode === "constant") {
-      return { mode: "constant", color: channel.constant };
-    }
-    return { ...channel };
+    return shipColorChannel(channel, pw, sel);
   }
 
   _emitRibbon(t, pw) {

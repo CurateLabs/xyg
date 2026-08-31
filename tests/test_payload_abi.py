@@ -672,6 +672,53 @@ def test_payload_channel_ship_plan_rejects_unknown_slot() -> None:
         kernels.payload_channel_ship_plan(9, include_trace_styles=True)
 
 
+def test_payload_channel_wire_encode_continuous_and_categorical() -> None:
+    assert kernels.payload_channel_wire_encode("color", "continuous") == {
+        "buf_kind": "f32",
+        "transform": "normalize",
+        "mark_dtype_u8": False,
+        "ship_palette": False,
+        "set_n": False,
+    }
+    assert kernels.payload_channel_wire_encode("size", "continuous", quantize_continuous=True) == {
+        "buf_kind": "u8",
+        "transform": "quantize_u8",
+        "mark_dtype_u8": True,
+        "ship_palette": False,
+        "set_n": False,
+    }
+    assert kernels.payload_channel_wire_encode("color", "categorical", n_categories=256) == {
+        "buf_kind": "u8",
+        "transform": "raw",
+        "mark_dtype_u8": True,
+        "ship_palette": True,
+        "set_n": False,
+    }
+    assert (
+        kernels.payload_channel_wire_encode("color", "categorical", n_categories=300)["buf_kind"]
+        == "f32"
+    )
+    assert kernels.payload_channel_wire_encode("color", "direct_rgba") == {
+        "buf_kind": "u8",
+        "transform": "rgba_pack",
+        "mark_dtype_u8": False,
+        "ship_palette": False,
+        "set_n": True,
+    }
+    assert kernels.payload_channel_wire_encode("style", "direct", style_dtype_u8=True) == {
+        "buf_kind": "u8",
+        "transform": "raw",
+        "mark_dtype_u8": False,
+        "ship_palette": False,
+        "set_n": True,
+    }
+
+
+def test_payload_channel_wire_encode_rejects_invalid_role_mode() -> None:
+    with pytest.raises(ValueError, match="payload_channel_wire_encode"):
+        kernels.payload_channel_wire_encode("size", "categorical")
+
+
 def test_payload_ribbon_emit_plan_gather_and_transition() -> None:
     plan = kernels.payload_ribbon_emit_plan(
         n_marks=6,

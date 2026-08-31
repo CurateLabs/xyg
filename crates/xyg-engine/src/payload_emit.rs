@@ -1516,6 +1516,138 @@ pub fn payload_channel_ship_plan(
     1
 }
 
+/// Client palette LUT width; categorical codes ship as u8 at or below this count.
+pub const PAYLOAD_CHAN_MAX_CATEGORIES_U8: usize = 256;
+
+/// Wire-encode role: color / stroke paint (``ship_color_channel``).
+pub const PAYLOAD_CHAN_WIRE_ROLE_COLOR: i32 = 0;
+/// Wire-encode role: size channel (``ship_channels`` size half).
+pub const PAYLOAD_CHAN_WIRE_ROLE_SIZE: i32 = 1;
+/// Wire-encode role: direct style channel (``ship_style_channels``).
+pub const PAYLOAD_CHAN_WIRE_ROLE_STYLE: i32 = 2;
+
+/// Channel mode: constant (spec-only, no buffer).
+pub const PAYLOAD_CHAN_MODE_CONSTANT: i32 = 0;
+/// Channel mode: continuous normalized or quantized unit values.
+pub const PAYLOAD_CHAN_MODE_CONTINUOUS: i32 = 1;
+/// Channel mode: categorical palette-index codes.
+pub const PAYLOAD_CHAN_MODE_CATEGORICAL: i32 = 2;
+/// Channel mode: per-item packed RGBA8.
+pub const PAYLOAD_CHAN_MODE_DIRECT_RGBA: i32 = 3;
+/// Channel mode: match_fill (spec-only, no buffer).
+pub const PAYLOAD_CHAN_MODE_MATCH_FILL: i32 = 4;
+/// Channel mode: direct style values (``StyleChannel``).
+pub const PAYLOAD_CHAN_MODE_DIRECT: i32 = 5;
+
+/// No buffer is shipped for this channel slice.
+pub const PAYLOAD_CHAN_BUF_NONE: i32 = 0;
+/// Ship via host ``ship_u8`` / ``pw.shipU8``.
+pub const PAYLOAD_CHAN_BUF_U8: i32 = 1;
+/// Ship via host ``ship_scalar`` / ``pw.shipScalar`` (unit f32).
+pub const PAYLOAD_CHAN_BUF_F32: i32 = 2;
+
+/// No value transform before ship.
+pub const PAYLOAD_CHAN_XFORM_NONE: i32 = 0;
+/// ``normalize_to_unit`` / ``normalizeF32`` over the channel domain.
+pub const PAYLOAD_CHAN_XFORM_NORMALIZE: i32 = 1;
+/// ``quantize_unit_u8`` / ``quantizeUnitU8`` over the channel domain.
+pub const PAYLOAD_CHAN_XFORM_QUANTIZE_U8: i32 = 2;
+/// ``_quantized_rgba8`` pack then u8 ship (direct_rgba).
+pub const PAYLOAD_CHAN_XFORM_RGBA_PACK: i32 = 3;
+/// Passthrough values (style channels, categorical codes).
+pub const PAYLOAD_CHAN_XFORM_RAW: i32 = 4;
+
+/// Channel wire encoding policy from ``channels.ship_*`` (ABI 312).
+///
+/// Owns buffer kind (none/u8/f32), pre-ship transform, and spec flags
+/// (``dtype: "u8"``, categorical ``palette``, per-item ``n``). Hosts still
+/// slice columns, run the chosen transform, and ship buffers.
+///
+/// Returns ``1`` on success, ``0`` when ``role``/``mode`` is invalid.
+pub fn payload_channel_wire_encode(
+    role: i32,
+    mode: i32,
+    n_categories: usize,
+    style_dtype_u8: i32,
+    quantize_continuous: i32,
+    out_buf_kind: &mut i32,
+    out_transform: &mut i32,
+    out_mark_dtype_u8: &mut i32,
+    out_ship_palette: &mut i32,
+    out_set_n: &mut i32,
+) -> i32 {
+    *out_buf_kind = PAYLOAD_CHAN_BUF_NONE;
+    *out_transform = PAYLOAD_CHAN_XFORM_NONE;
+    *out_mark_dtype_u8 = 0;
+    *out_ship_palette = 0;
+    *out_set_n = 0;
+
+    match role {
+        PAYLOAD_CHAN_WIRE_ROLE_COLOR => match mode {
+            PAYLOAD_CHAN_MODE_CONSTANT | PAYLOAD_CHAN_MODE_MATCH_FILL => 1,
+            PAYLOAD_CHAN_MODE_DIRECT_RGBA => {
+                *out_buf_kind = PAYLOAD_CHAN_BUF_U8;
+                *out_transform = PAYLOAD_CHAN_XFORM_RGBA_PACK;
+                *out_set_n = 1;
+                1
+            }
+            PAYLOAD_CHAN_MODE_CONTINUOUS => {
+                if quantize_continuous != 0 {
+                    *out_buf_kind = PAYLOAD_CHAN_BUF_U8;
+                    *out_transform = PAYLOAD_CHAN_XFORM_QUANTIZE_U8;
+                    *out_mark_dtype_u8 = 1;
+                } else {
+                    *out_buf_kind = PAYLOAD_CHAN_BUF_F32;
+                    *out_transform = PAYLOAD_CHAN_XFORM_NORMALIZE;
+                }
+                1
+            }
+            PAYLOAD_CHAN_MODE_CATEGORICAL => {
+                *out_ship_palette = 1;
+                if n_categories <= PAYLOAD_CHAN_MAX_CATEGORIES_U8 {
+                    *out_buf_kind = PAYLOAD_CHAN_BUF_U8;
+                    *out_transform = PAYLOAD_CHAN_XFORM_RAW;
+                    *out_mark_dtype_u8 = 1;
+                } else {
+                    *out_buf_kind = PAYLOAD_CHAN_BUF_F32;
+                    *out_transform = PAYLOAD_CHAN_XFORM_RAW;
+                }
+                1
+            }
+            _ => 0,
+        },
+        PAYLOAD_CHAN_WIRE_ROLE_SIZE => match mode {
+            PAYLOAD_CHAN_MODE_CONSTANT => 1,
+            PAYLOAD_CHAN_MODE_CONTINUOUS => {
+                if quantize_continuous != 0 {
+                    *out_buf_kind = PAYLOAD_CHAN_BUF_U8;
+                    *out_transform = PAYLOAD_CHAN_XFORM_QUANTIZE_U8;
+                    *out_mark_dtype_u8 = 1;
+                } else {
+                    *out_buf_kind = PAYLOAD_CHAN_BUF_F32;
+                    *out_transform = PAYLOAD_CHAN_XFORM_NORMALIZE;
+                }
+                1
+            }
+            _ => 0,
+        },
+        PAYLOAD_CHAN_WIRE_ROLE_STYLE => {
+            if mode != PAYLOAD_CHAN_MODE_DIRECT {
+                return 0;
+            }
+            *out_buf_kind = if style_dtype_u8 != 0 {
+                PAYLOAD_CHAN_BUF_U8
+            } else {
+                PAYLOAD_CHAN_BUF_F32
+            };
+            *out_transform = PAYLOAD_CHAN_XFORM_RAW;
+            *out_set_n = 1;
+            1
+        }
+        _ => 0,
+    }
+}
+
 /// Trace channel attach policy from ``_ship_channels`` / ``_ship_trace_styles``.
 ///
 /// ``slot`` is ``PAYLOAD_SHIP_CHANNELS_ALWAYS`` or ``PAYLOAD_SHIP_CHANNELS_IF_COLOR``.
@@ -1908,6 +2040,129 @@ mod tests {
         let (ok, n, _) = run_channel_ship_plan(9, 1, 0, 1, 1, 1);
         assert_eq!(ok, 0);
         assert_eq!(n, 0);
+    }
+
+    fn run_channel_wire_encode(
+        role: i32,
+        mode: i32,
+        n_categories: usize,
+        style_dtype_u8: i32,
+        quantize_continuous: i32,
+    ) -> (i32, i32, i32, i32, i32, i32) {
+        let mut buf_kind = -1;
+        let mut transform = -1;
+        let mut mark_dtype_u8 = -1;
+        let mut ship_palette = -1;
+        let mut set_n = -1;
+        let ok = payload_channel_wire_encode(
+            role,
+            mode,
+            n_categories,
+            style_dtype_u8,
+            quantize_continuous,
+            &mut buf_kind,
+            &mut transform,
+            &mut mark_dtype_u8,
+            &mut ship_palette,
+            &mut set_n,
+        );
+        (ok, buf_kind, transform, mark_dtype_u8, ship_palette, set_n)
+    }
+
+    #[test]
+    fn payload_channel_wire_encode_continuous_f32_and_quantized_u8() {
+        let (ok, buf, xform, dtype_u8, _, _) = run_channel_wire_encode(
+            PAYLOAD_CHAN_WIRE_ROLE_COLOR,
+            PAYLOAD_CHAN_MODE_CONTINUOUS,
+            0,
+            0,
+            0,
+        );
+        assert_eq!(ok, 1);
+        assert_eq!(buf, PAYLOAD_CHAN_BUF_F32);
+        assert_eq!(xform, PAYLOAD_CHAN_XFORM_NORMALIZE);
+        assert_eq!(dtype_u8, 0);
+
+        let (ok, buf, xform, dtype_u8, _, _) = run_channel_wire_encode(
+            PAYLOAD_CHAN_WIRE_ROLE_SIZE,
+            PAYLOAD_CHAN_MODE_CONTINUOUS,
+            0,
+            0,
+            1,
+        );
+        assert_eq!(ok, 1);
+        assert_eq!(buf, PAYLOAD_CHAN_BUF_U8);
+        assert_eq!(xform, PAYLOAD_CHAN_XFORM_QUANTIZE_U8);
+        assert_eq!(dtype_u8, 1);
+    }
+
+    #[test]
+    fn payload_channel_wire_encode_categorical_u8_vs_f32() {
+        let (ok, buf, _, dtype_u8, palette, _) = run_channel_wire_encode(
+            PAYLOAD_CHAN_WIRE_ROLE_COLOR,
+            PAYLOAD_CHAN_MODE_CATEGORICAL,
+            256,
+            0,
+            0,
+        );
+        assert_eq!(ok, 1);
+        assert_eq!(buf, PAYLOAD_CHAN_BUF_U8);
+        assert_eq!(dtype_u8, 1);
+        assert_eq!(palette, 1);
+
+        let (ok, buf, _, dtype_u8, palette, _) = run_channel_wire_encode(
+            PAYLOAD_CHAN_WIRE_ROLE_COLOR,
+            PAYLOAD_CHAN_MODE_CATEGORICAL,
+            257,
+            0,
+            0,
+        );
+        assert_eq!(ok, 1);
+        assert_eq!(buf, PAYLOAD_CHAN_BUF_F32);
+        assert_eq!(dtype_u8, 0);
+        assert_eq!(palette, 1);
+    }
+
+    #[test]
+    fn payload_channel_wire_encode_direct_rgba_and_style() {
+        let (ok, buf, xform, _, _, set_n) = run_channel_wire_encode(
+            PAYLOAD_CHAN_WIRE_ROLE_COLOR,
+            PAYLOAD_CHAN_MODE_DIRECT_RGBA,
+            0,
+            0,
+            0,
+        );
+        assert_eq!(ok, 1);
+        assert_eq!(buf, PAYLOAD_CHAN_BUF_U8);
+        assert_eq!(xform, PAYLOAD_CHAN_XFORM_RGBA_PACK);
+        assert_eq!(set_n, 1);
+
+        let (ok, buf, xform, _, _, set_n) = run_channel_wire_encode(
+            PAYLOAD_CHAN_WIRE_ROLE_STYLE,
+            PAYLOAD_CHAN_MODE_DIRECT,
+            0,
+            1,
+            0,
+        );
+        assert_eq!(ok, 1);
+        assert_eq!(buf, PAYLOAD_CHAN_BUF_U8);
+        assert_eq!(xform, PAYLOAD_CHAN_XFORM_RAW);
+        assert_eq!(set_n, 1);
+    }
+
+    #[test]
+    fn payload_channel_wire_encode_rejects_invalid_role_mode() {
+        assert_eq!(
+            run_channel_wire_encode(
+                PAYLOAD_CHAN_WIRE_ROLE_SIZE,
+                PAYLOAD_CHAN_MODE_CATEGORICAL,
+                0,
+                0,
+                0,
+            )
+            .0,
+            0
+        );
     }
 
     #[test]
