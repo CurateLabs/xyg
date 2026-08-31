@@ -1531,27 +1531,14 @@ export class Figure {
   }
 
   _emitScatter(t, pw, xr, yr) {
-    let forceDensity = scatterPayloadForceDensity(t);
-    const forceDirect = Boolean(scatterPayloadForceDirect(t));
-    const forcePyramid = Boolean(scatterPayloadForcePyramid(t));
-    // Node still passes forceDirect into payload_scatter_emit_plan. Python
-    // `_emit_scatter` never passes force_direct (ABI defaults false).
-    // Dropping it would ship density for Node `forceDirect: true` on
-    // large scatters. Recorded emit-force-direct stay-host.
-    // Node also ORs forcePyramid into auto force_density. Python Trace has no
-    // force_pyramid and `_emit_scatter` never densifies from it. Dropping
-    // the OR would ship direct for Node `forcePyramid: true` below the
-    // density threshold. Recorded emit-force-pyramid stay-host.
-    if (forceDensity === -1 && forcePyramid) {
-      forceDensity = 1;
-    }
+    const forceDensity = scatterPayloadForceDensity(t);
     const xAxis = t.x_axis ?? "x";
     const yAxis = t.y_axis ?? "y";
     const prePlan = payloadScatterEmitPlan({
       nPoints: t.x.length,
       polar: this.coords === "polar",
       forceDensity,
-      forceDirect,
+      forceDirect: false,
       perItem: scatterPerItemChannels(t),
       nMarks: t.x.length,
       hasTraceAnimation: t.animation != null,
@@ -1579,7 +1566,7 @@ export class Figure {
       nPoints: t.x.length,
       polar: this.coords === "polar",
       forceDensity,
-      forceDirect,
+      forceDirect: false,
       perItem: scatterPerItemChannels(t),
       nMarks: xv.length,
       hasTraceAnimation: t.animation != null,
@@ -1646,14 +1633,13 @@ export class Figure {
     let reduction = "bin2d";
     let tiles = null;
     const forceBin2d = Boolean(scatterPayloadForceBin2d(t));
-    const forcePyramid = Boolean(scatterPayloadForcePyramid(t));
     const noRescan = Boolean(scatterPayloadNoRescan(t));
     const forceSpill = Boolean(t.pyramid_spill ?? t.style?.pyramid_spill);
     let hasPyramidResource = false;
     if (
       this.coords !== "polar" &&
       !this._deferPyramidRebuild?.has(t.id) &&
-      shouldUsePyramid(t.x.length, { forcePyramid, forceBin2d })
+      shouldUsePyramid(t.x.length, { forceBin2d })
     ) {
       let cache = this._pyramids.get(t.id);
       if (cache == null) {
@@ -1662,7 +1648,6 @@ export class Figure {
       }
       hasPyramidResource = true;
       const served = densityViewFromPyramid(cache, t.x, t.y, xr[0], xr[1], yr[0], yr[1], w, h, {
-        force: forcePyramid,
         noRescan,
         forceSpill,
       });
@@ -1701,8 +1686,8 @@ export class Figure {
       gridFromPyramid: reduction === "pyramid-count",
       hasPyramidResource,
       gridPresent: true,
-      forceBin2d,
-      forcePyramid,
+      forceBin2d: false,
+      forcePyramid: false,
       xMin: xmm[0],
       xMax: xmm[1],
       yMin: ymm[0],
