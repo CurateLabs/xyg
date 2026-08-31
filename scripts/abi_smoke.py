@@ -1337,6 +1337,17 @@ def load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_size_t,
     ]
+    lib.xyg_density_color_classify.restype = ctypes.c_int32
+    lib.xyg_density_color_classify.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+    ]
     lib.xyg_payload_sample_target_indices.restype = ctypes.c_size_t
     lib.xyg_payload_sample_target_indices.argtypes = [
         ctypes.c_size_t,
@@ -4788,6 +4799,28 @@ def main() -> None:
     ok(
         lib.xyg_payload_transition_keys_admit(1, 1, 10, 10, 200_000) == 0,
         "payload_transition_keys_admit ship",
+    )
+    density_color_mode = ctypes.c_int32(-1)
+    density_categorical = ctypes.c_int32(-1)
+    density_compact = ctypes.c_int32(-1)
+    density_stratified = ctypes.c_int32(-1)
+    ok(
+        lib.xyg_density_color_classify(
+            2,
+            1,
+            1,
+            1,
+            ctypes.byref(density_color_mode),
+            ctypes.byref(density_categorical),
+            ctypes.byref(density_compact),
+            ctypes.byref(density_stratified),
+        )
+        == 1
+        and density_color_mode.value == 2
+        and density_categorical.value == 1
+        and density_compact.value == 1
+        and density_stratified.value == 1,
+        "density_color_classify stratified categorical",
     )
     sample_keep = ctypes.c_int32(-1)
     sample_n = lib.xyg_payload_sample_target_indices(

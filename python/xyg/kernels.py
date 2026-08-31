@@ -45,6 +45,7 @@ density_log_u8 = _impl.density_log_u8
 density_overlay_opacity = _impl.density_overlay_opacity
 density_bin_window = _impl.density_bin_window
 density_emit_plan = _impl.density_emit_plan
+density_color_classify = _impl.density_color_classify
 density_format_binning = _impl.density_format_binning
 density_full_identity = _impl.density_full_identity
 density_grid_path = _impl.density_grid_path
@@ -267,6 +268,7 @@ __all__ = [
     "curve_flatten",
     "delaunay_triangles",
     "density_bin_window",
+    "density_color_classify",
     "density_emit_plan",
     "density_format_binning",
     "density_full_identity",

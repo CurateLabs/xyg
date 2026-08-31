@@ -1208,12 +1208,31 @@ class PayloadMixin(_Host):
         # SplitMix predicates with scratch proportional to the returned rows.
         # Compact categorical codes can be scanned directly in Rust; wider
         # codes retain the general visible-index path.
-        categorical = bool(t.color_ch and t.color_ch.mode == "categorical")
-        compact_categorical = bool(
-            categorical
-            and t.color_ch is not None
-            and t.color_ch.codes is not None
-            and t.color_ch.codes.dtype == np.uint8
+        channel_mode = _native.DENSITY_CHANNEL_MODE_NONE
+        codes_present = False
+        codes_u8 = False
+        has_counts = False
+        if t.color_ch is not None:
+            mode = t.color_ch.mode
+            if mode == "constant":
+                channel_mode = _native.DENSITY_CHANNEL_MODE_CONSTANT
+            elif mode == "categorical":
+                channel_mode = _native.DENSITY_CHANNEL_MODE_CATEGORICAL
+                codes = t.color_ch.codes
+                codes_present = codes is not None
+                codes_u8 = codes is not None and codes.dtype == np.uint8
+                has_counts = t.color_ch.counts is not None
+            elif mode == "continuous":
+                channel_mode = _native.DENSITY_CHANNEL_MODE_CONTINUOUS
+            else:
+                channel_mode = _native.DENSITY_CHANNEL_MODE_OTHER
+        color_mode, categorical, compact_categorical, stratified_counts = (
+            kernels.density_color_classify(
+                channel_mode=channel_mode,
+                codes_present=codes_present,
+                codes_u8=codes_u8,
+                has_counts=has_counts,
+            )
         )
         # Density grids are uniform in axis-scale coordinates (§28): on a
         # nonlinear axis the columns and window are transformed before binning
@@ -1232,19 +1251,10 @@ class PayloadMixin(_Host):
             y_c0, y_c1 = float(yr[0]), float(yr[1])
         else:
             y_c0, y_c1 = float(by0), float(by1)
-        if t.color_ch is None:
-            color_mode = _native.DENSITY_COLOR_MODE_NONE
-        elif t.color_ch.mode == "constant":
-            color_mode = _native.DENSITY_COLOR_MODE_CONSTANT
-        else:
-            color_mode = _native.DENSITY_COLOR_MODE_OTHER
         from . import _ooc as ooc
 
         x_memmapped = ooc.is_memmapped(t.x.values)
         y_memmapped = ooc.is_memmapped(t.y.values)
-        stratified_counts = bool(
-            compact_categorical and t.color_ch is not None and t.color_ch.counts is not None
-        )
 
         def _emit_plan(
             *, grid_from_pyramid: bool, has_pyramid_resource: bool

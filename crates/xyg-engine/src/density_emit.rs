@@ -37,6 +37,44 @@ pub const DENSITY_COLOR_MODE_NONE: i32 = 0;
 pub const DENSITY_COLOR_MODE_CONSTANT: i32 = 1;
 pub const DENSITY_COLOR_MODE_OTHER: i32 = 2;
 
+/// Host color-channel mode tokens for ``density_color_classify`` (ABI 260).
+pub const DENSITY_CHANNEL_MODE_NONE: i32 = 0;
+pub const DENSITY_CHANNEL_MODE_CONSTANT: i32 = 1;
+pub const DENSITY_CHANNEL_MODE_CATEGORICAL: i32 = 2;
+pub const DENSITY_CHANNEL_MODE_CONTINUOUS: i32 = 3;
+pub const DENSITY_CHANNEL_MODE_OTHER: i32 = 4;
+
+/// Density scatter color-channel classify (ABI 260).
+///
+/// Hosts pass the resolved color-channel mode plus categorical code metadata.
+/// Returns ``1`` on success and writes the ``density_emit_meta`` boolean trio
+/// plus ``DENSITY_COLOR_MODE_*``.
+pub fn density_color_classify(
+    channel_mode: i32,
+    codes_present: i32,
+    codes_u8: i32,
+    has_counts: i32,
+    out_color_mode: &mut i32,
+    out_categorical: &mut i32,
+    out_compact_categorical: &mut i32,
+    out_stratified_counts: &mut i32,
+) -> i32 {
+    if !(0..=4).contains(&channel_mode) {
+        return 0;
+    }
+    let categorical = channel_mode == DENSITY_CHANNEL_MODE_CATEGORICAL;
+    let compact = categorical && codes_present != 0 && codes_u8 != 0;
+    *out_categorical = i32::from(categorical);
+    *out_compact_categorical = i32::from(compact);
+    *out_stratified_counts = i32::from(compact && has_counts != 0);
+    *out_color_mode = match channel_mode {
+        DENSITY_CHANNEL_MODE_NONE => DENSITY_COLOR_MODE_NONE,
+        DENSITY_CHANNEL_MODE_CONSTANT => DENSITY_COLOR_MODE_CONSTANT,
+        _ => DENSITY_COLOR_MODE_OTHER,
+    };
+    1
+}
+
 pub const DENSITY_OVERLAY_NONE: u32 = 0;
 pub const DENSITY_OVERLAY_ROWS_EXCEED_U32: u32 = 1;
 pub const DENSITY_OVERLAY_STATIC_RASTER: u32 = 2;
@@ -428,6 +466,44 @@ mod tests {
             false, false, false, false, -1.0, 1.0, 0.0, 1.0, 0.0, 2.0, 0.0, 2.0
         )
         .unwrap());
+    }
+
+    #[test]
+    fn density_color_classify_matches_host_table() {
+        let mut color_mode = 0;
+        let mut categorical = 0;
+        let mut compact = 0;
+        let mut stratified = 0;
+        assert_eq!(
+            density_color_classify(0, 0, 0, 0, &mut color_mode, &mut categorical, &mut compact, &mut stratified),
+            1
+        );
+        assert_eq!(color_mode, DENSITY_COLOR_MODE_NONE);
+        assert_eq!(categorical, 0);
+        assert_eq!(
+            density_color_classify(1, 0, 0, 0, &mut color_mode, &mut categorical, &mut compact, &mut stratified),
+            1
+        );
+        assert_eq!(color_mode, DENSITY_COLOR_MODE_CONSTANT);
+        assert_eq!(
+            density_color_classify(2, 1, 1, 1, &mut color_mode, &mut categorical, &mut compact, &mut stratified),
+            1
+        );
+        assert_eq!(color_mode, DENSITY_COLOR_MODE_OTHER);
+        assert_eq!(categorical, 1);
+        assert_eq!(compact, 1);
+        assert_eq!(stratified, 1);
+        assert_eq!(
+            density_color_classify(2, 1, 1, 0, &mut color_mode, &mut categorical, &mut compact, &mut stratified),
+            1
+        );
+        assert_eq!(stratified, 0);
+        assert_eq!(
+            density_color_classify(2, 1, 0, 0, &mut color_mode, &mut categorical, &mut compact, &mut stratified),
+            1
+        );
+        assert_eq!(compact, 0);
+        assert_eq!(density_color_classify(99, 0, 0, 0, &mut color_mode, &mut categorical, &mut compact, &mut stratified), 0);
     }
 
     #[test]

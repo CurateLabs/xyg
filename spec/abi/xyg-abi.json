@@ -1,9 +1,9 @@
 {
-  "abi_version": 275,
+  "abi_version": 276,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "2db1c7b57397c19695ff262f171c39920af0fb89915472a503d24e70606c96b5",
+  "signature_sha256": "816beb525a1b0cba599b99150bc85b0bc47ca28cd2c3e4eb64748f14949942e7",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -7223,6 +7223,150 @@
         "nullable": false
       },
       "c_signature": "size_t xyg_density_bin_window(int32_t x_linear, int32_t y_linear, double xr0, double xr1, double yr0, double yr1, double x_c0, double x_c1, double y_c0, double y_c1, double * out)"
+    },
+    {
+      "name": "xyg_density_color_classify",
+      "node_name": "xyDensityColorClassify",
+      "nargs": 8,
+      "arguments": [
+        {
+          "name": "channel_mode",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "codes_present",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "codes_u8",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "has_counts",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_color_mode",
+          "type": {
+            "rust": "*mut i32",
+            "c": "int32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "int32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_categorical",
+          "type": {
+            "rust": "*mut i32",
+            "c": "int32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "int32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_compact_categorical",
+          "type": {
+            "rust": "*mut i32",
+            "c": "int32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "int32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_stratified_counts",
+          "type": {
+            "rust": "*mut i32",
+            "c": "int32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "int32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_density_color_classify(int32_t channel_mode, int32_t codes_present, int32_t codes_u8, int32_t has_counts, int32_t * out_color_mode, int32_t * out_categorical, int32_t * out_compact_categorical, int32_t * out_stratified_counts)"
     },
     {
       "name": "xyg_density_emit_meta",
