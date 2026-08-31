@@ -1,0 +1,217 @@
+{
+  "schema": "xyg.payload-attach-cross-host/v1",
+  "authority": "python/xyg/_payload.py build_payload ABI 303 attach flags (wasm_density, frame_sides, tooltip, mark_style, interaction, export, show_modebar, show_tooltip, animation, graph)",
+  "protocol": 12,
+  "abi_version": 315,
+  "cases": [
+    {
+      "name": "wasm_density_automatic_split",
+      "wasm_density": {
+        "automatic": true,
+        "unsupported": null,
+        "source": {
+          "kind": "cartesian-count-f64-stream-v1",
+          "point_count": 2,
+          "trace_id": 41,
+          "capacity": 8000000,
+          "ownership": "retain-host-replay",
+          "x_dtype": "f64",
+          "y_dtype": "f64"
+        }
+      },
+      "frame_sides": null,
+      "show_modebar": null,
+      "export": null,
+      "show_tooltip": null,
+      "tooltip": null,
+      "mark_style": null,
+      "interaction": null,
+      "animation": null,
+      "graph": null,
+      "buffer_layout": "split"
+    },
+    {
+      "name": "wasm_density_unsupported_split",
+      "wasm_density": {
+        "automatic": false,
+        "unsupported": {
+          "code": "XYG_WASM_SOURCE_UNSUPPORTED",
+          "message": "direct WASM density requires one bounded Cartesian count-only f64 source",
+          "trace_ids": [
+            42
+          ]
+        },
+        "source": null
+      },
+      "frame_sides": null,
+      "show_modebar": null,
+      "export": null,
+      "show_tooltip": null,
+      "tooltip": null,
+      "mark_style": null,
+      "interaction": null,
+      "animation": null,
+      "graph": null,
+      "buffer_layout": "split"
+    },
+    {
+      "name": "frame_sides_bottom_left",
+      "wasm_density": null,
+      "frame_sides": [
+        "bottom",
+        "left"
+      ],
+      "show_modebar": null,
+      "export": null,
+      "show_tooltip": null,
+      "tooltip": null,
+      "mark_style": null,
+      "interaction": null,
+      "animation": null,
+      "graph": null,
+      "buffer_layout": null
+    },
+    {
+      "name": "show_modebar_false",
+      "wasm_density": null,
+      "frame_sides": null,
+      "show_modebar": false,
+      "export": null,
+      "show_tooltip": null,
+      "tooltip": null,
+      "mark_style": null,
+      "interaction": null,
+      "animation": null,
+      "graph": null,
+      "buffer_layout": null
+    },
+    {
+      "name": "export_formats",
+      "wasm_density": null,
+      "frame_sides": null,
+      "show_modebar": null,
+      "export": {
+        "formats": [
+          "png",
+          "svg"
+        ]
+      },
+      "show_tooltip": null,
+      "tooltip": null,
+      "mark_style": null,
+      "interaction": null,
+      "animation": null,
+      "graph": null,
+      "buffer_layout": null
+    },
+    {
+      "name": "show_tooltip_false",
+      "wasm_density": null,
+      "frame_sides": null,
+      "show_modebar": null,
+      "export": null,
+      "show_tooltip": false,
+      "tooltip": null,
+      "mark_style": null,
+      "interaction": null,
+      "animation": null,
+      "graph": null,
+      "buffer_layout": null
+    },
+    {
+      "name": "tooltip_fields",
+      "wasm_density": null,
+      "frame_sides": null,
+      "show_modebar": null,
+      "export": null,
+      "show_tooltip": null,
+      "tooltip": {
+        "fields": [
+          "x",
+          "y"
+        ],
+        "title": "{x}",
+        "format": {
+          "x": ".2f"
+        }
+      },
+      "mark_style": null,
+      "interaction": null,
+      "animation": null,
+      "graph": null,
+      "buffer_layout": null
+    },
+    {
+      "name": "mark_style_hover",
+      "wasm_density": null,
+      "frame_sides": null,
+      "show_modebar": null,
+      "export": null,
+      "show_tooltip": null,
+      "tooltip": null,
+      "mark_style": {
+        "hover": {
+          "color": "#111111",
+          "size": 10
+        }
+      },
+      "interaction": null,
+      "animation": null,
+      "graph": null,
+      "buffer_layout": null
+    },
+    {
+      "name": "interaction_select",
+      "wasm_density": null,
+      "frame_sides": null,
+      "show_modebar": null,
+      "export": null,
+      "show_tooltip": null,
+      "tooltip": null,
+      "mark_style": null,
+      "interaction": {
+        "select": true
+      },
+      "animation": null,
+      "graph": null,
+      "buffer_layout": null
+    },
+    {
+      "name": "animation_duration",
+      "wasm_density": null,
+      "frame_sides": null,
+      "show_modebar": null,
+      "export": null,
+      "show_tooltip": null,
+      "tooltip": null,
+      "mark_style": null,
+      "interaction": null,
+      "animation": {
+        "enabled": true,
+        "duration": 250.0
+      },
+      "graph": null,
+      "buffer_layout": null
+    },
+    {
+      "name": "graph_meta",
+      "wasm_density": null,
+      "frame_sides": null,
+      "show_modebar": null,
+      "export": null,
+      "show_tooltip": null,
+      "tooltip": null,
+      "mark_style": null,
+      "interaction": null,
+      "animation": null,
+      "graph": [
+        {
+          "layout": "force",
+          "node_trace": 0,
+          "edge_trace": 1
+        }
+      ],
+      "buffer_layout": null
+    }
+  ]
+}
