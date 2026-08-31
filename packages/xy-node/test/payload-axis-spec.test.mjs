@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { figure } from "../src/index.js";
 import { payloadAxisSpecAttachPlan } from "../src/encode.js";
 
 test("payloadAxisSpecAttachPlan cartesian core without polar fields", () => {
@@ -29,4 +30,46 @@ test("payloadAxisSpecAttachPlan polar theta on x and radial on y", () => {
   assert.equal(y.attachThetaUnit, false);
   assert.equal(y.attachHole, true);
   assert.equal(y.attachROrigin, true);
+});
+
+function axisMeta(spec) {
+  return {
+    id: spec.id,
+    kind: spec.kind,
+    side: spec.side,
+    label: spec.label,
+  };
+}
+
+test("buildPayload cartesian axis meta matches Python _axis_spec core fields", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1, 2], [0, 1, 0.5]);
+  fig.traces[0].id = 7;
+  const { spec } = fig.buildPayload();
+  assert.deepEqual(axisMeta(spec.x_axis), {
+    id: "x",
+    kind: "linear",
+    side: "bottom",
+    label: null,
+  });
+  assert.deepEqual(axisMeta(spec.y_axis), {
+    id: "y",
+    kind: "linear",
+    side: "left",
+    label: null,
+  });
+});
+
+test("buildPayload polar axis meta matches Python _axis_spec core fields", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.scatter([0, Math.PI / 2], [0, 1]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.id, "x");
+  assert.equal(spec.x_axis.kind, "linear");
+  assert.equal(spec.x_axis.side, "bottom");
+  assert.equal(spec.x_axis.label, null);
+  assert.equal(spec.y_axis.id, "y");
+  assert.equal(spec.y_axis.kind, "linear");
+  assert.equal(spec.y_axis.side, "left");
+  assert.equal(spec.y_axis.label, null);
 });
