@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 280
-SIGNATURE_SHA256 = "bbefc24b2e85916456e9f77c8563ca71f91ec74fb6b246d8930863828f6608dd"
+ABI_VERSION = 281
+SIGNATURE_SHA256 = "93d7fa0809037eb800c00ae86812c0a8c076a5e529a5313fe31ed2557975c1ea"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -254,6 +254,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_density_pyramid_preflight
     function.restype = ctypes.c_size_t
     function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_uint64, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_density_reduction_kind(const uint8_t * binning, size_t binning_len)
+    function = lib.xyg_density_reduction_kind
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
     # int32_t xyg_density_rgba(const uint8_t * encoded, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out)
     function = lib.xyg_density_rgba
     function.restype = ctypes.c_int32

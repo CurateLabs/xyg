@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 280;
+pub const ABI_VERSION: u32 = 281;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15781,6 +15781,35 @@ pub unsafe extern "C" fn xyg_density_uses_channel_colormap(
             text
         };
         density_emit::density_uses_channel_colormap(has_channel, mode_text)
+    })
+}
+
+/// Density reduction label kind from ``density["binning"]`` (ABI 265).
+///
+/// Returns ``density_emit::DENSITY_REDUCTION_PYRAMID_COUNT`` when ``binning``
+/// starts with ``pyramid-``; otherwise ``density_emit::DENSITY_REDUCTION_BIN2D``.
+///
+/// # Safety
+/// When ``binning_len > 0``, ``binning`` must address readable UTF-8 bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_density_reduction_kind(
+    binning: *const u8,
+    binning_len: usize,
+) -> i32 {
+    ffi_guard(density_emit::DENSITY_REDUCTION_BIN2D, || {
+        if binning_len > 0 && binning.is_null() {
+            return density_emit::DENSITY_REDUCTION_BIN2D;
+        }
+        let binning_text = if binning_len == 0 {
+            ""
+        } else {
+            let bytes = std::slice::from_raw_parts(binning, binning_len);
+            let Ok(text) = std::str::from_utf8(bytes) else {
+                return density_emit::DENSITY_REDUCTION_BIN2D;
+            };
+            text
+        };
+        density_emit::density_reduction_kind(binning_text)
     })
 }
 

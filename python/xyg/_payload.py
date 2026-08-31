@@ -1483,7 +1483,12 @@ class PayloadMixin(_Host):
             "x_range": list(xr),
             "y_range": list(yr),
             "binning": binning,
-            "reduction": "pyramid-count" if binning.startswith("pyramid-") else "bin2d",
+            "reduction": (
+                "pyramid-count"
+                if kernels.density_reduction_kind(binning=binning)
+                == kernels.DENSITY_REDUCTION_PYRAMID_COUNT
+                else "bin2d"
+            ),
         }
         # `XYAS` v1 retains the canonical split f64 columns in the host for
         # replay on every pan.  The worker only receives one ABI-generated

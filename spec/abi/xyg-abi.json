@@ -1,9 +1,9 @@
 {
-  "abi_version": 280,
+  "abi_version": 281,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "bbefc24b2e85916456e9f77c8563ca71f91ec74fb6b246d8930863828f6608dd",
+  "signature_sha256": "93d7fa0809037eb800c00ae86812c0a8c076a5e529a5313fe31ed2557975c1ea",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -8768,6 +8768,57 @@
         "nullable": false
       },
       "c_signature": "size_t xyg_density_pyramid_preflight(int32_t x_linear, int32_t y_linear, uint64_t n_points, int32_t has_pyramid_resource, int32_t x_memmapped, int32_t y_memmapped, int32_t force_pyramid, int32_t force_bin2d, uint32_t * out)"
+    },
+    {
+      "name": "xyg_density_reduction_kind",
+      "node_name": "xyDensityReductionKind",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "binning",
+          "type": {
+            "rust": "*const u8",
+            "c": "const uint8_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "const uint8_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "in",
+            "nullable": "contract-defined",
+            "buffer_contract": "borrowed read-only storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "binning_len",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_density_reduction_kind(const uint8_t * binning, size_t binning_len)"
     },
     {
       "name": "xyg_density_rgba",

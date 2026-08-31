@@ -11796,6 +11796,19 @@ def density_uses_channel_colormap(*, has_channel: bool, mode: str = "") -> bool:
     return uses == 1
 
 
+DENSITY_REDUCTION_BIN2D = 0
+DENSITY_REDUCTION_PYRAMID_COUNT = 1
+
+
+def density_reduction_kind(*, binning: str = "") -> int:
+    """Density reduction label kind via ``xyg_density_reduction_kind`` (ABI 265)."""
+    binning_b = str(binning).encode("utf-8")
+    kind = _lib.xyg_density_reduction_kind(binning_b, len(binning_b))
+    if kind not in (DENSITY_REDUCTION_BIN2D, DENSITY_REDUCTION_PYRAMID_COUNT):
+        raise ValueError("invalid density_reduction_kind arguments")
+    return int(kind)
+
+
 def density_bin_coord_endpoints(
     *,
     x_linear: bool,

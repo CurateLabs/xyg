@@ -324,6 +324,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | (this PR) | 262 | `xyg_density_trace_color_classify` | `_density_trace_spec` color mode + classify |
 | (this PR) | 263 | `xyg_density_bin_coord_endpoints` | `_density_trace_spec` bin coord endpoints |
 | (this PR) | 264 | `xyg_density_uses_channel_colormap` | `_density_trace_spec` colormap admit |
+| (this PR) | 265 | `xyg_density_reduction_kind` | `_density_trace_spec` reduction label |
 
 Largest remaining Python core surfaces: `_payload` emit gather/ship and `_scene_v3` XYTC/XYTA pack loops — not the ABI-218–257 admit slices already kernelized.
 
@@ -340,7 +341,7 @@ Largest remaining Python core surfaces: `_payload` emit gather/ship and `_scene_
 
 **Still blocks “Python is only a host”** (compatibility modules stay until these twins move or stay-host is recorded with diffs):
 
-1. `_payload` emit orchestration — extra-column gather and ship (index math is ABI 204/205; count budget is ABI 214; errorbar role expand is ABI 215; errorbar role keys is ABI 273; bar compact admit is ABI 274; transition-key admit is ABI 275; density color classify is ABI 276; density trace color classify is ABI 278; density bin coord endpoints is ABI 279); density colormap admit is ABI 280
+1. `_payload` emit orchestration — extra-column gather and ship (index math is ABI 204/205; count budget is ABI 214; errorbar role expand is ABI 215; errorbar role keys is ABI 273; bar compact admit is ABI 274; transition-key admit is ABI 275; density color classify is ABI 276; density trace color classify is ABI 278; density bin coord endpoints is ABI 279); density colormap admit is ABI 280; density reduction kind is ABI 281
 2. `_scene_v3.py` / Node `scene.js` pack and figure-to-record orchestration
 
 3. ChartView `51_annotations.ts` still copies arrow math until WASM; ABI 254 owns host `start_offset`/`label_clear` CSV pack

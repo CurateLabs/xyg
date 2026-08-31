@@ -49,6 +49,9 @@ density_emit_plan = _impl.density_emit_plan
 density_color_classify = _impl.density_color_classify
 density_trace_color_classify = _impl.density_trace_color_classify
 density_uses_channel_colormap = _impl.density_uses_channel_colormap
+DENSITY_REDUCTION_BIN2D = _impl.DENSITY_REDUCTION_BIN2D
+DENSITY_REDUCTION_PYRAMID_COUNT = _impl.DENSITY_REDUCTION_PYRAMID_COUNT
+density_reduction_kind = _impl.density_reduction_kind
 density_format_binning = _impl.density_format_binning
 density_full_identity = _impl.density_full_identity
 density_grid_path = _impl.density_grid_path
@@ -239,6 +242,8 @@ __all__ = [
     "CSS_DECLARATION",
     "CSS_LENGTH",
     "CSS_NUMBER",
+    "DENSITY_REDUCTION_BIN2D",
+    "DENSITY_REDUCTION_PYRAMID_COUNT",
     "argsort_stable",
     "arrow_end_decoration",
     "arrow_geometry",
@@ -281,6 +286,7 @@ __all__ = [
     "density_log_u8",
     "density_overlay_opacity",
     "density_pyramid_preflight",
+    "density_reduction_kind",
     "density_rgba",
     "density_rgba_linear",
     "density_trace_color_classify",
