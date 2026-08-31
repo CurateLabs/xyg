@@ -288,9 +288,11 @@ XYG intentionally ships one versioned C ABI cdylib for all hosts. Python uses ct
 
 Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](https://github.com/CurateLabs/xyg/issues/313) and parents [#271](https://github.com/CurateLabs/xyg/issues/271)–[#283](https://github.com/CurateLabs/xyg/issues/283) are closed. Remaining `python-scene-migration` debt is not leftover-cluster titles. Do not delete `_svg.py`, `_raster.py`, `_scene.py`, `marks.py`, `_legendfit.py`, `_payload.py`, or `_textblock.py` until Rust owns the path **and** differentials are green. Do not delete `_scene_v3.py`. Do not route pyplot through Scene.
 
-**M2 Node stay-host TAP (2026-08-30).** Payload emit diffs [#644](https://github.com/CurateLabs/xyg/pull/644)–[#693](https://github.com/CurateLabs/xyg/pull/693) and scene compose diffs [#694](https://github.com/CurateLabs/xyg/pull/694)–[#698](https://github.com/CurateLabs/xyg/pull/698) are recorded on rebased branches (`cursor/m2-node-payload-rebase-staging-7ce1` through `ee9745c9`, scene tips rebased onto that staging tip). Main already landed [#630](https://github.com/CurateLabs/xyg/pull/630)–[#643](https://github.com/CurateLabs/xyg/pull/643) (payload axis/show-legend/wasm-density through line/area default-styled stay-host); continue serial merge for the remaining open TAP PRs. Python remains authoritative. Reproduce the inventory with `python3 scripts/audit_python_host_core.py`.
+**M2 milestone status (2026-08-31).** Milestone **M2: Rust-Owned Cross-Host Core** is closed on GitHub: tracker [#24](https://github.com/CurateLabs/xyg/issues/24), scene epic [#58](https://github.com/CurateLabs/xyg/issues/58), and leftover parents [#271](https://github.com/CurateLabs/xyg/issues/271)–[#283](https://github.com/CurateLabs/xyg/issues/283) are closed. Bounded admit/kernel slices through ABI **256** and the Node stay-host TAP chain are merged on `main`. **Python is not yet downstream-only:** `_payload` emit gather/ship and `_scene_v3` XYTC/XYTA pack / figure-to-record orchestration remain authoritative until the next kernel emit/scene-pack slices land. Reproduce the inventory with `python3 scripts/audit_python_host_core.py`.
 
-**Next kernel stack (open, merge #640 → #641 → #642).**
+**M2 Node stay-host TAP (merged).** Payload emit diffs [#644](https://github.com/CurateLabs/xyg/pull/644)–[#693](https://github.com/CurateLabs/xyg/pull/693) and scene compose diffs [#694](https://github.com/CurateLabs/xyg/pull/694)–[#698](https://github.com/CurateLabs/xyg/pull/698) merged on top of [#630](https://github.com/CurateLabs/xyg/pull/630)–[#643](https://github.com/CurateLabs/xyg/pull/643). Node `packages/xy-node` records intentional Python-vs-Node field-mapping diffs in `coverage.test.mjs`; Python remains authoritative for emit/scene pack until kernel orchestration replaces those loops.
+
+**Merged kernel stack (#640 → #641 → #642, ABI 254–256).**
 
 | PR | ABI | Rust owns | Python surface shrinks |
 | --- | ---: | --- | --- |
@@ -298,7 +300,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | [#641](https://github.com/CurateLabs/xyg/pull/641) | 255 | `xyg_encoded_column_meta` | `lod.encode_f32_values` `{offset, scale, kind?}` assembly |
 | [#642](https://github.com/CurateLabs/xyg/pull/642) | 256 | `xyg_scene_channel_constant_css` | `_scene_v3` constant-mode CSS admit |
 
-After #642, the largest remaining Python core surfaces are `_payload` emit gather/ship and `_scene_v3` XYTC/XYTA pack loops — not the thirteen ABI-218–253 admit slices already kernelized.
+**Next kernel targets (open).** Largest remaining Python core surfaces: `_payload` emit gather/ship and `_scene_v3` XYTC/XYTA pack loops — not the ABI-218–253 admit slices already kernelized. Smaller follow-ons: `_arrowgeom.arrow_shapes` orchestration, `lod.py` viewport/sample cache beyond ABI 255 meta, and compatibility exporters (`_svg`, `_raster`) until Scene/static routes retire them.
 
 **Reclassified keep-host** (Rust already owns the decision; the Python file packs, coerces, or carries error text):
 

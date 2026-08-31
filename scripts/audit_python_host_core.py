@@ -51,10 +51,17 @@ BLOCKER_MAP: dict[str, str] = {
     "python/xyg/channels.py": "color channel resolve / LUT pack",
 }
 
-NEXT_KERNEL = (
+MERGED_KERNEL = (
     ("#640", "ABI 254", "xyg_arrow_style_pack", "_arrowgeom._pack_style"),
     ("#641", "ABI 255", "xyg_encoded_column_meta", "lod.encode_f32_values meta"),
     ("#642", "ABI 256", "xyg_scene_channel_constant_css", "_scene_v3 channel CSS"),
+)
+
+NEXT_KERNEL_TARGETS = (
+    "_payload.py emit gather/ship orchestration",
+    "_scene_v3.py XYTC/XYTA pack and figure-to-record",
+    "_arrowgeom.py arrow_shapes orchestration (ABI 217 packers already kernel)",
+    "lod.py viewport/sample EncodedColumn host cache beyond ABI 255 meta",
 )
 
 
@@ -124,9 +131,15 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  - {blocker}: {', '.join(by_blocker[blocker])}")
 
     print()
+    print("M2 milestone: closed (tracker #24, scene #58, leftovers #271-#283).")
     print("Merged kernel stack on main (#640 -> #641 -> #642, ABI 254-256):")
-    for pr, abi, sym, surface in NEXT_KERNEL:
-        print(f"  - {pr} {abi} {sym} → {surface}")
+    for pr, abi, sym, surface in MERGED_KERNEL:
+        print(f"  - {pr} {abi} {sym} -> {surface}")
+
+    print()
+    print("Next kernel targets (Python not yet downstream-only):")
+    for target in NEXT_KERNEL_TARGETS:
+        print(f"  - {target}")
 
     print()
     print(
@@ -134,8 +147,8 @@ def main(argv: list[str] | None = None) -> int:
         f"{total_local} local-orchestration hooks"
     )
     print(
-        "Node payload/scene stay-host TAP (#644-#698) records intentional diffs; "
-        "Python remains authoritative until kernel emit/scene pack lands."
+        "Node payload/scene stay-host TAP (#644-#698) merged; coverage.test.mjs "
+        "records intentional diffs until kernel emit/scene pack lands."
     )
     return 0
 

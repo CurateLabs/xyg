@@ -37,3 +37,5 @@ def test_audit_cli_exits_zero():
     assert proc.returncode == 0
     assert "python-scene-migration core-logic re-audit" in proc.stdout
     assert "§302 blocker rollup" in proc.stdout
+    assert "M2 milestone: closed" in proc.stdout
+    assert "Next kernel targets" in proc.stdout

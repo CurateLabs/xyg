@@ -1412,7 +1412,9 @@ client must not grow a parallel “JS layout/LOD” product path.
   Scene constant-color admit is ABI 252.
 
   Scene hidden-or-per-item admit is ABI 253;
-  annotation-arrow style CSV pack is ABI 254.
+  annotation-arrow style CSV pack is ABI 254;
+  EncodedColumn offset/scale/kind-presence meta is ABI 255;
+  Scene channel-constant CSS admit is ABI 256.
   256-texel colormap RGBA8 LUT uses ABI 206.
   Unit-t LUT/size u8 quantize uses ABI 251.
   Node density-bin LUT idx uses the same composition.
