@@ -483,6 +483,16 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         ctypes.c_void_p,
     ]
+    lib.xyg_scene_polar_figure_plan.restype = ctypes.c_int32
+    lib.xyg_scene_polar_figure_plan.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_void_p,
+    ]
+    lib.xyg_scene_encode_product_attach_plan.restype = ctypes.c_int32
+    lib.xyg_scene_encode_product_attach_plan.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_void_p,
+    ]
     lib.xyg_scene_xytc_color2_flags_pack.restype = ctypes.c_int32
     lib.xyg_scene_xytc_color2_flags_pack.argtypes = [
         ctypes.c_int32,
@@ -6041,6 +6051,23 @@ def main() -> None:
         and xyef_dispatch[1] == 1
         and xyef_dispatch[2] == 0,
         "scene_public_export_trace_dispatch_plan scatter density blit",
+    )
+    polar_figure = (ctypes.c_uint32 * 2)()
+    ok(
+        lib.xyg_scene_polar_figure_plan(1, ctypes.byref(polar_figure)) == 1
+        and polar_figure[0] == 1
+        and polar_figure[1] == 1,
+        "scene_polar_figure_plan attach xypl",
+    )
+    encode_attach = (ctypes.c_uint32 * 10)()
+    ok(
+        lib.xyg_scene_encode_product_attach_plan(1, ctypes.byref(encode_attach)) == 1
+        and encode_attach[1] == 1
+        and encode_attach[2] == 1
+        and encode_attach[3] == 2
+        and encode_attach[8] == 7
+        and encode_attach[9] == 8,
+        "scene_encode_product_attach_plan pack order",
     )
     density_color_mode = ctypes.c_int32(-1)
     density_categorical = ctypes.c_int32(-1)

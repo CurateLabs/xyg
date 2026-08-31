@@ -76,6 +76,8 @@ export {
   sceneFigureSupportTraceDispatchPlan,
   scenePublicExportFigurePlan,
   scenePublicExportTraceDispatchPlan,
+  scenePolarFigurePlan,
+  sceneEncodeProductAttachPlan,
   sceneXyafAnnotationDispatchPlan,
   sceneXycfFigurePlan,
   sceneXyclFigurePlan,

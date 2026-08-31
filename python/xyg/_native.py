@@ -467,6 +467,28 @@ class _ScenePublicExportFigurePlan(ctypes.Structure):
     ]
 
 
+class _ScenePolarFigurePlan(ctypes.Structure):
+    _fields_ = [
+        ("polar", ctypes.c_uint32),
+        ("attach_xypl", ctypes.c_uint32),
+    ]
+
+
+class _SceneEncodeProductAttachPlan(ctypes.Structure):
+    _fields_ = [
+        ("polar", ctypes.c_uint32),
+        ("attach_xypl", ctypes.c_uint32),
+        ("step_xytc", ctypes.c_uint32),
+        ("step_xyta", ctypes.c_uint32),
+        ("step_xynm", ctypes.c_uint32),
+        ("step_xycl", ctypes.c_uint32),
+        ("step_xyaf", ctypes.c_uint32),
+        ("step_xycf", ctypes.c_uint32),
+        ("step_xypl", ctypes.c_uint32),
+        ("step_xyfs", ctypes.c_uint32),
+    ]
+
+
 class _ScenePublicExportTraceDispatchPlan(ctypes.Structure):
     _fields_ = [
         ("kind_class", ctypes.c_uint32),
@@ -2351,6 +2373,38 @@ def scene_public_export_trace_dispatch_plan(
         "kind_class": int(out.kind_class),
         "pack_density_blit": bool(out.pack_density_blit),
         "pack_hexbin_pitch": bool(out.pack_hexbin_pitch),
+    }
+
+
+def scene_polar_figure_plan(*, polar: bool) -> dict[str, bool]:
+    """Figure-level XYPL polar attach orchestration via ``xyg_scene_polar_figure_plan`` (ABI 309)."""
+    out = _ScenePolarFigurePlan()
+    ok = int(_lib.xyg_scene_polar_figure_plan(1 if polar else 0, ctypes.byref(out)))
+    if ok != 1:
+        raise ValueError("invalid scene_polar_figure_plan arguments")
+    return {
+        "polar": bool(out.polar),
+        "attach_xypl": bool(out.attach_xypl),
+    }
+
+
+def scene_encode_product_attach_plan(*, polar: bool) -> dict[str, bool | int]:
+    """Encode-product attach orchestration via ``xyg_scene_encode_product_attach_plan`` (ABI 309)."""
+    out = _SceneEncodeProductAttachPlan()
+    ok = int(_lib.xyg_scene_encode_product_attach_plan(1 if polar else 0, ctypes.byref(out)))
+    if ok != 1:
+        raise ValueError("invalid scene_encode_product_attach_plan arguments")
+    return {
+        "polar": bool(out.polar),
+        "attach_xypl": bool(out.attach_xypl),
+        "step_xytc": int(out.step_xytc),
+        "step_xyta": int(out.step_xyta),
+        "step_xynm": int(out.step_xynm),
+        "step_xycl": int(out.step_xycl),
+        "step_xyaf": int(out.step_xyaf),
+        "step_xycf": int(out.step_xycf),
+        "step_xypl": int(out.step_xypl),
+        "step_xyfs": int(out.step_xyfs),
     }
 
 

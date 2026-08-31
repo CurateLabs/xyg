@@ -3676,6 +3676,9 @@ def figure_scene(
     except UnsupportedSceneV3:
         colorbar_unsupported = True
 
+    polar = str(getattr(figure, "coords", "cartesian") or "cartesian") == "polar"
+    attach_plan = _native.scene_encode_product_attach_plan(polar=polar)
+
     # Hosts pack XYTC, XYTA, XYNM, XYCL, XYAF, XYCF, polar, and XYFS; Rust owns
     # compile, attach, sidecars, rows, annotation facts, style sidecars,
     # splice, XYCC/extras packing, viewport/axis scalars, assembled encode,
@@ -3707,7 +3710,7 @@ def figure_scene(
                 margins=margins,
                 colorbar_ok=not colorbar_unsupported,
             ),
-            polar=_pack_polar_scene_input(figure),
+            polar=_pack_polar_scene_input(figure) if attach_plan["attach_xypl"] else b"",
             figure_support=_pack_figure_support(figure, annotations, colorbar_unsupported),
         )
     except _native.SceneFigureSupportError as error:
@@ -3791,7 +3794,10 @@ def _significant_scene_axis_keys(options: dict[str, Any], *, polar: bool = False
 
 def _pack_polar_scene_input(figure: Any) -> bytes:
     """Pack XYPL v1 polar authoring. Rust owns disc layout from the plot rect."""
-    if getattr(figure, "coords", "cartesian") != "polar":
+    figure_plan = _native.scene_polar_figure_plan(
+        polar=str(getattr(figure, "coords", "cartesian") or "cartesian") == "polar"
+    )
+    if not figure_plan["attach_xypl"]:
         return b""
     xa = figure.axis_options.get("x") or {}
     ya = figure.axis_options.get("y") or {}

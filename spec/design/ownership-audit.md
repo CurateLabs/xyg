@@ -353,6 +353,7 @@ Leftover children [#287](https://github.com/CurateLabs/xyg/issues/287)–[#313](
 | (this PR) | 306 | `xyg_scene_xyta_figure_plan` / `xyg_scene_xyta_trace_dispatch_plan` | `_pack_xyta` / `packXyTa` figure polar attach and per-trace sidecar dispatch routing |
 | (this PR) | 307 | `xyg_scene_figure_support_figure_plan` / `xyg_scene_figure_support_trace_dispatch_plan` / `xyg_scene_xycl_figure_plan` / `xyg_scene_xynm_figure_plan` | `_pack_figure_support` / `figureTraceSupport` XYFS probe orchestration; `_pack_xycl` / `packXyCl` and `_pack_xynm` / `packXyNm` column/name attach routing |
 | (this PR) | 308 | `xyg_scene_xycf_figure_plan` / `xyg_scene_xyaf_annotation_dispatch_plan` / `xyg_scene_public_export_figure_plan` / `xyg_scene_public_export_trace_dispatch_plan` | `_pack_chrome_facts` / `packChromeFacts` legend/colorbar attach; `_pack_xyaf` / `packXyAf` wrapped/rule routing; `_pack_public_export_support` / `packPublicExportSupport` XYEF envelope orchestration |
+| (this PR) | 309 | `xyg_scene_polar_figure_plan` / `xyg_scene_encode_product_attach_plan` | `_pack_polar_scene_input` / `packPolarSceneInput` XYPL attach gating; `figure_scene` / `figureSceneV3` encode-product pack order before `xyg_scene_encode_product` |
 
 Largest remaining Python core surfaces: `_payload` emit gather/ship and `_scene_v3` XYTC/XYTA pack loops — not the ABI-218–291 admit slices already kernelized.
 
