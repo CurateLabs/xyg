@@ -1573,16 +1573,14 @@ test("buildPayload ships cartesian axis tick_label_min_gap like Python _axis_spe
   assert.equal(spec.y_axis.tick_label_min_gap, undefined);
 });
 
-test("buildPayload omits cartesian axis minor_style unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `minor_style`. Node cartesian payload axes omit
-  // that field even when axis minor_style is set. Recorded
-  // emit-payload-axis-minor-style stay-host.
+test("buildPayload ships cartesian axis minor_style like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   fig.setAxis("x", { minor_style: { color: "#888" } });
   const { spec } = fig.buildPayload();
   assert.equal(fig.axis_options.x.minor_style.color, "#888");
-  assert.equal(spec.x_axis.minor_style, undefined);
+  assert.equal(spec.x_axis.minor_style.color, "#888");
+  assert.equal(spec.y_axis.minor_style, undefined);
 });
 
 test("buildPayload omits cartesian axis style unlike Python _axis_spec", () => {
@@ -1903,14 +1901,12 @@ test("buildPayload ships polar axis tick_label_min_gap like Python _axis_spec", 
   assert.equal(spec.x_axis.tick_label_min_gap, 2);
 });
 
-test("buildPayload omits polar axis minor_style unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `minor_style` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-minor-style stay-host.
+test("buildPayload ships polar axis minor_style like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.setAxis("x", { minor_style: { color: "#111" } });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.minor_style, undefined);
+  assert.equal(spec.x_axis.minor_style.color, "#111");
 });
 
 test("buildPayload omits polar axis style unlike Python _axis_spec", () => {
