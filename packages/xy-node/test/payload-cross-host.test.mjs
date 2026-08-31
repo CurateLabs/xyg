@@ -41,6 +41,17 @@ function buildCase(name) {
     fig.setAxis("x", { type: "log" });
     fig.line([1, 10], [1, 10]);
     fig.traces[0].id = 40;
+  } else if (name === "line_log_m4_bin_x") {
+    const n = 10001;
+    const x = new Float64Array(n);
+    const y = new Float64Array(n);
+    for (let i = 0; i < n; i += 1) {
+      x[i] = i < 9000 ? 1 + i * 0.001 : 10 + (i - 9000) * 0.09;
+      y[i] = i;
+    }
+    fig.setAxis("x", { type: "log", domain: [1, 100] });
+    fig.line(x, y);
+    fig.traces[0].id = 45;
   } else if (name === "scatter_log_ship_scale") {
     fig.setAxis("x", { type: "log" });
     fig.scatter([1, 10], [1, 10]);
@@ -131,6 +142,10 @@ function buildCase(name) {
     fig.ribbon([0], [1], [0], [1], [0], [1], { color: "#112233" });
     fig.traces[0].stroke_ch = { mode: "constant", constant: "#445566" };
     fig.traces[0].id = 28;
+  } else if (name === "ribbon_color2_ch") {
+    fig.ribbon([0], [1], [0], [1], [0], [1], { color: "#112233", colorTarget: "#445566" });
+    fig.traces[0].color2_ch = { mode: "constant", constant: "#778899" };
+    fig.traces[0].id = 46;
   } else if (name === "segments_stroke_ch") {
     fig.segments([0, 1], [0, 1], [1, 2], [1, 0]);
     fig.traces[0].stroke_ch = {
@@ -170,7 +185,7 @@ test("payload cross-host fixture contract", () => {
   assert.equal(fixture.schema, "xyg.payload-cross-host/v1");
   assert.equal(fixture.protocol, PROTOCOL_VERSION);
   assert.equal(Number(fixture.abi_version), abiVersion());
-  assert.equal(fixture.cases.length, 30);
+  assert.equal(fixture.cases.length, 32);
 });
 
 for (const entry of fixture.cases) {
