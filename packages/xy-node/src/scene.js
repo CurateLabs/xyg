@@ -5178,8 +5178,7 @@ function packChromeFacts(figure, { width, height, margins = null, colorbarOk = t
     colorbar: colorbarPayload,
   });
 }
- = {}) {
-  const figurePlan = sceneXycfFigurePlan({
+
 /** XYEF resolved axis kind. Python `_pack_public_export_support` uses `figure._axis_kind(axis_id)`. */
 export function xyEfResolvedKind(figure, axisId) {
   const kind = figure._axisKind(axisId);

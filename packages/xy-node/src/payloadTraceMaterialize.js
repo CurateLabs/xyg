@@ -4,7 +4,7 @@ import {
   pointer,
   xyPayloadTraceEmitMaterialize,
 } from "./native.js";
-import { DEFAULT_PALETTE, f64Ptr, payloadTransitionEntryAttach, u8Ptr, u32Ptr } from "./encode.js";
+import { Column, DEFAULT_PALETTE, f64Ptr, payloadTransitionEntryAttach, u8Ptr, u32Ptr } from "./encode.js";
 
 export const PAYLOAD_TRACE_EMIT_MAX_BYTES = 1 << 28;
 export const PAYLOAD_TRACE_EMIT_MAX_GEOM = 8;
@@ -21,8 +21,8 @@ const CHAN_REGISTRY = ["color", "size", "stroke", "channels", "color_target"];
 const COL_DESC_SIZE = 56;
 const CHAN_DESC_SIZE = 64;
 const EMIT_IN_SIZE = 224;
-const EMIT_OUT_SIZE = 192;
-const GEOM_OUT_SIZE = 64;
+const EMIT_OUT_SIZE = 200;
+const GEOM_OUT_SIZE = 56;
 const CHAN_OUT_SIZE = 40;
 
 const AXIS_TYPE = { linear: 0, log: 1, symlog: 2 };
@@ -30,6 +30,28 @@ const CHAN_MODE = { constant: 0, continuous: 1, categorical: 2, direct_rgba: 3, 
 
 function payloadAxisTypeCode(scale) {
   return AXIS_TYPE[scale] ?? 0;
+}
+
+/** Resolve trace column attrs: raw Float64Array, Column, or column-like object. */
+function traceColumnForEmit(raw) {
+  if (raw == null) return null;
+  if (raw instanceof Column) return raw;
+  const values = raw.values;
+  if (values instanceof Float64Array
+    || (ArrayBuffer.isView(values) && !(values instanceof DataView))) {
+    return raw;
+  }
+  if (ArrayBuffer.isView(raw) && !(raw instanceof DataView)) {
+    return new Column(raw);
+  }
+  if (Array.isArray(raw)) {
+    return new Column(raw);
+  }
+  return null;
+}
+
+function traceColumnValues(raw) {
+  return traceColumnForEmit(raw)?.values ?? null;
 }
 
 function columnDesc(col) {
@@ -51,7 +73,18 @@ function columnDesc(col) {
   return { desc, arr, kind };
 }
 
+function styleWireChannel(ch) {
+  if (ch == null) return null;
+  if (typeof ch === "object" && !Object.hasOwn(ch, "mode")) {
+    const keys = Object.keys(ch);
+    if (keys.length === 0) return null;
+    return ch[keys[0]];
+  }
+  return ch;
+}
+
 function channelDesc(ch) {
+  ch = styleWireChannel(ch);
   const empty = {
     desc: Buffer.alloc(CHAN_DESC_SIZE),
     f64: new Float64Array(0),
@@ -60,18 +93,24 @@ function channelDesc(ch) {
   if (ch == null || (typeof ch === "object" && Object.keys(ch).length === 0)) {
     return empty;
   }
-  const mode = CHAN_MODE[ch.mode] ?? 0;
-  const dom = ch.domain ?? [0, 1];
+  let mode;
   let f64 = new Float64Array(0);
   let u8 = new Uint8Array(0);
-  if (ch.mode === "continuous" && ch.values != null) {
+  if (ch.mode == null && ch.values != null) {
+    mode = CHAN_MODE.direct;
     f64 = ch.values instanceof Float64Array ? ch.values : Float64Array.from(ch.values, Number);
-  } else if (ch.mode === "categorical" && ch.codes != null) {
-    u8 = ch.codes instanceof Uint8Array ? ch.codes : Uint8Array.from(ch.codes, (v) => Number(v) & 0xff);
-  } else if ((ch.mode === "direct_rgba" || ch.mode === "direct") && ch.values != null) {
-    f64 = ch.values instanceof Float64Array ? ch.values : Float64Array.from(ch.values, Number);
+  } else {
+    mode = CHAN_MODE[ch.mode] ?? 0;
+    if (ch.mode === "continuous" && ch.values != null) {
+      f64 = ch.values instanceof Float64Array ? ch.values : Float64Array.from(ch.values, Number);
+    } else if (ch.mode === "categorical" && ch.codes != null) {
+      u8 = ch.codes instanceof Uint8Array ? ch.codes : Uint8Array.from(ch.codes, (v) => Number(v) & 0xff);
+    } else if ((ch.mode === "direct_rgba" || ch.mode === "direct") && ch.values != null) {
+      f64 = ch.values instanceof Float64Array ? ch.values : Float64Array.from(ch.values, Number);
+    }
   }
   const desc = Buffer.alloc(CHAN_DESC_SIZE);
+  const dom = ch.domain ?? [0, 1];
   desc.writeInt32LE(1, 0);
   desc.writeInt32LE(mode, 4);
   desc.writeBigUInt64LE(BigInt((ch.categories ?? []).length), 8);
@@ -84,44 +123,60 @@ function channelDesc(ch) {
   return { desc, f64, u8 };
 }
 
+function traceGridValues(grid) {
+  if (grid == null) return null;
+  if (grid instanceof Column) {
+    return grid.values;
+  }
+  const values = grid.values;
+  if (values instanceof Float64Array
+    || (ArrayBuffer.isView(values) && !(values instanceof DataView))) {
+    return values instanceof Float64Array ? values : Float64Array.from(values, Number);
+  }
+  if (ArrayBuffer.isView(grid) && !(grid instanceof DataView)) {
+    return grid;
+  }
+  return Float64Array.from(grid, Number);
+}
+
+/** Pack `XygPayloadTraceEmitIn` (repr(C), 224 bytes) — offsets match Rust/Python ctypes. */
 function writeEmitIn(view, fields) {
-  let o = 0;
-  view.setBigUint64(o, BigInt(fields.kindLen), true); o += 8;
-  view.setBigUint64(o, BigInt(fields.nPoints), true); o += 8;
-  view.setBigUint64(o, BigInt(fields.segmentCount), true); o += 8;
-  view.setInt32(o, fields.polar, true); o += 4;
-  view.setInt32(o, fields.forceDensity, true); o += 4;
-  view.setInt32(o, fields.perItem, true); o += 4;
-  view.setInt32(o, fields.xAxisType, true); o += 4;
-  view.setInt32(o, fields.yAxisType, true); o += 4;
-  view.setBigUint64(o, BigInt(fields.xAxisScaleLen), true); o += 8;
-  view.setBigUint64(o, BigInt(fields.yAxisScaleLen), true); o += 8;
-  view.setFloat64(o, fields.xr0, true); o += 8;
-  view.setFloat64(o, fields.xr1, true); o += 8;
-  view.setUint32(o, fields.pxWidth, true); o += 4;
-  view.setInt32(o, fields.styleColorIsNone, true); o += 4;
-  view.setInt32(o, fields.hasTraceAnimation, true); o += 4;
-  view.setInt32(o, fields.hasTransitionKeys, true); o += 4;
-  view.setInt32(o, fields.hasTooltipRows, true); o += 4;
-  view.setBigUint64(o, BigInt(fields.nTooltipRows), true); o += 8;
-  view.setBigUint64(o, BigInt(fields.orientationLen), true); o += 8;
-  view.setInt32(o, fields.hasColor2Ch, true); o += 4;
-  view.setInt32(o, fields.hasColorCh, true); o += 4;
-  view.setInt32(o, fields.hasStrokeCh, true); o += 4;
-  view.setInt32(o, fields.hasStyleChannels, true); o += 4;
-  view.setUint32(o, fields.heatmapRows, true); o += 4;
-  view.setUint32(o, fields.heatmapCols, true); o += 4;
-  view.setInt32(o, fields.hasRgbaGrid, true); o += 4;
-  view.setInt32(o, fields.borrowHeatmaps, true); o += 4;
-  view.setInt32(o, fields.styleColormapIsNone, true); o += 4;
-  view.setBigUint64(o, BigInt(fields.gridValuesLen), true); o += 8;
-  view.setFloat64(o, fields.gridDomainLo, true); o += 8;
-  view.setFloat64(o, fields.gridDomainHi, true); o += 8;
-  view.setBigUint64(o, BigInt(fields.maxRows), true); o += 8;
-  view.setBigUint64(o, BigInt(fields.binXLen), true); o += 8;
-  view.setFloat64(o, fields.binX0, true); o += 8;
-  view.setFloat64(o, fields.binX1, true); o += 8;
-  view.setBigUint64(o, BigInt(fields.transitionKeysLen), true);
+  view.setBigUint64(0, BigInt(fields.kindLen), true);
+  view.setBigUint64(8, BigInt(fields.nPoints), true);
+  view.setBigUint64(16, BigInt(fields.segmentCount), true);
+  view.setInt32(24, fields.polar, true);
+  view.setInt32(28, fields.forceDensity, true);
+  view.setInt32(32, fields.perItem, true);
+  view.setInt32(36, fields.xAxisType, true);
+  view.setInt32(40, fields.yAxisType, true);
+  view.setBigUint64(48, BigInt(fields.xAxisScaleLen), true);
+  view.setBigUint64(56, BigInt(fields.yAxisScaleLen), true);
+  view.setFloat64(64, fields.xr0, true);
+  view.setFloat64(72, fields.xr1, true);
+  view.setUint32(80, fields.pxWidth, true);
+  view.setInt32(84, fields.styleColorIsNone, true);
+  view.setInt32(88, fields.hasTraceAnimation, true);
+  view.setInt32(92, fields.hasTransitionKeys, true);
+  view.setInt32(96, fields.hasTooltipRows, true);
+  view.setBigUint64(104, BigInt(fields.nTooltipRows), true);
+  view.setBigUint64(112, BigInt(fields.orientationLen), true);
+  view.setInt32(120, fields.hasColor2Ch, true);
+  view.setInt32(124, fields.hasColorCh, true);
+  view.setInt32(128, fields.hasStrokeCh, true);
+  view.setInt32(132, fields.hasStyleChannels, true);
+  view.setUint32(136, fields.heatmapRows, true);
+  view.setUint32(140, fields.heatmapCols, true);
+  view.setInt32(144, fields.hasRgbaGrid, true);
+  view.setInt32(148, fields.borrowHeatmaps, true);
+  view.setInt32(152, fields.styleColormapIsNone, true);
+  view.setBigUint64(160, BigInt(fields.gridValuesLen), true);
+  view.setFloat64(168, fields.gridDomainLo, true);
+  view.setFloat64(176, fields.gridDomainHi, true);
+  view.setBigUint64(184, BigInt(fields.maxRows), true);
+  view.setBigUint64(192, BigInt(fields.binXLen), true);
+  view.setFloat64(200, fields.binX0, true);
+  view.setFloat64(208, fields.binX1, true);
+  view.setBigUint64(216, BigInt(fields.transitionKeysLen), true);
 }
 
 /** @param {import("./figure.js").Figure} figure */
@@ -131,17 +186,16 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
   const yScaleB = new TextEncoder().encode(figureAxisScale(figure, t.y_axis ?? "y"));
   const orientB = new TextEncoder().encode(String(t.style?.orientation ?? "vertical"));
   const colDescs = Buffer.alloc(COL_DESC_SIZE * 7);
-  const colPtrs = Buffer.alloc(7 * 8);
-  const kindPtrs = Buffer.alloc(7 * 8);
+  const colValuePtrs = [];
+  const colKindPtrs = [];
   const colKinds = [];
   for (let i = 0; i < COL_ATTRS.length; i += 1) {
     const attr = COL_ATTRS[i];
-    const raw = t[attr];
-    const col = raw?.values != null || raw?.kind != null ? raw : null;
+    const col = traceColumnForEmit(t[attr]);
     const { desc, arr, kind } = columnDesc(col);
     desc.copy(colDescs, i * COL_DESC_SIZE);
-    colPtrs.writeBigUInt64LE(BigInt(arr.length ? f64Ptr(arr) : 0), i * 8);
-    kindPtrs.writeBigUInt64LE(BigInt(kind.length ? u8Ptr(kind) : 0), i * 8);
+    colValuePtrs.push(arr.length ? arr : null);
+    colKindPtrs.push(kind.length ? kind : null);
     colKinds.push(kind);
   }
   const chNames = ["color", "stroke", "color2", "size", "style"];
@@ -166,23 +220,24 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
   let binX0 = 0;
   let binX1 = 0;
   if (t.kind === "line" || t.kind === "area" || t.kind === "error_band") {
-    const bx = figure._binningCoords(t.x_axis ?? "x", t.x?.values ?? t.x, xr);
+    const xValues = traceColumnValues(t.x);
+    const bx = figure._binningCoords(t.x_axis ?? "x", xValues, xr);
     binX0 = bx.b0;
     binX1 = bx.b1;
-    if (bx.values !== (t.x?.values ?? t.x)) {
+    if (bx.values !== xValues) {
       binXArr = bx.values instanceof Float64Array ? bx.values : Float64Array.from(bx.values, Number);
     }
   }
   let gridArr = null;
   let domain = [0, 1];
   if (t.kind === "heatmap" && t.grid != null) {
-    gridArr = Float64Array.from(t.grid.values ?? t.grid, Number);
+    gridArr = traceGridValues(t.grid);
     domain = t.style?.domain ?? [0, 1];
   }
   const emitIn = Buffer.alloc(EMIT_IN_SIZE);
   writeEmitIn(new DataView(emitIn.buffer, emitIn.byteOffset, emitIn.byteLength), {
     kindLen: kindB.length,
-    nPoints: t.n_points ?? t.x?.length ?? 0,
+    nPoints: t.n_points ?? t.count ?? t.x?.length ?? 0,
     segmentCount: t.count ?? 0,
     polar: figure.coords === "polar" ? 1 : 0,
     forceDensity: scatterPayloadForceDensity(t),
@@ -230,8 +285,8 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
     yScaleB.length ? u8Ptr(yScaleB) : 0,
     orientB.length ? u8Ptr(orientB) : 0,
     u8Ptr(colDescs),
-    u8Ptr(colPtrs),
-    u8Ptr(kindPtrs),
+    colValuePtrs,
+    colKindPtrs,
     u8Ptr(chMap.color.desc),
     u8Ptr(chMap.stroke.desc),
     u8Ptr(chMap.color2.desc),
@@ -270,7 +325,7 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
     if (sv.getInt32(44, true)) t.shipped_sel = null;
     if (sv.getInt32(52, true)) t.drill_mode = false;
     let entry = figure._emitScatterDensity(t, pw, xr, yr);
-    if (sv.getInt32(20, true)) {
+    if (sv.getInt32(28, true)) {
       entry = attachTransitionEntry(entry, t, pw);
     }
     return entry;
@@ -286,7 +341,7 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
   }
   const tier = sv.getInt32(4, true) === 0 ? "direct" : "decimated";
   const style = { ...(t.style ?? {}) };
-  if (sv.getInt32(12, true)) {
+  if (sv.getInt32(20, true)) {
     style.color = DEFAULT_PALETTE[t.id % DEFAULT_PALETTE.length];
   }
   const entry = {
@@ -295,22 +350,22 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
     name: t.name,
     style,
     tier,
-    n_points: t.n_points ?? t.x?.length ?? 0,
+    n_points: t.n_points ?? t.count ?? t.x?.length ?? 0,
     n_marks: Number(sv.getBigUint64(8, true)),
     x_axis: t.x_axis ?? "x",
     y_axis: t.y_axis ?? "y",
   };
   const decPx = sv.getUint32(16, true);
   if (decPx) entry.decimation_px = decPx;
-  if (sv.getInt32(20, true) && t.animation != null) entry.animation = { ...t.animation };
+  if (sv.getInt32(24, true) && t.animation != null) entry.animation = { ...t.animation };
   let target = entry;
-  if (sv.getInt32(128, true)) {
+  if (sv.getInt32(112, true)) {
     const barSpec = {
-      orientation: sv.getInt32(132, true) === 0 ? "vertical" : "horizontal",
-      value_axis: sv.getInt32(136, true) === 0 ? "y" : "x",
-      width: sv.getFloat64(140, true),
+      orientation: sv.getInt32(116, true) === 0 ? "vertical" : "horizontal",
+      value_axis: sv.getInt32(120, true) === 0 ? "y" : "x",
+      width: sv.getFloat64(128, true),
     };
-    if (sv.getInt32(148, true)) barSpec.value0_const = sv.getFloat64(152, true);
+    if (sv.getInt32(136, true)) barSpec.value0_const = sv.getFloat64(144, true);
     entry.bar = barSpec;
     target = barSpec;
   }
@@ -326,7 +381,7 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
     const enc = dtypeCode === 1
       ? new Float64Array(raw.buffer, raw.byteOffset, raw.byteLength / 8)
       : new Float32Array(raw.buffer, raw.byteOffset, raw.byteLength / 4);
-    const meta = { len: gv.getUint32(28, true) };
+    const meta = { len: gv.getUint32(36, true) };
     if (dtypeCode === 1) meta.dtype = "f64";
     else {
       meta.offset = gv.getFloat64(16, true);
@@ -368,28 +423,28 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
     else if (key === "color_target") entry.color_target = spec;
   }
   const loLen = Number(sv.getBigUint64(88, true));
-  if (sv.getInt32(24, true) && loLen) {
+  if (sv.getInt32(28, true) && loLen) {
     const loOff = Number(sv.getBigUint64(80, true));
     const hiOff = Number(sv.getBigUint64(96, true));
     const hiLen = Number(sv.getBigUint64(104, true));
     const lo = new Uint32Array(blob.buffer, blob.byteOffset + loOff, loLen / 4);
     const hi = new Uint32Array(blob.buffer, blob.byteOffset + hiOff, hiLen / 4);
-    if (!sv.getInt32(20, true)) {
+    if (!sv.getInt32(24, true)) {
       entry.keys = { lo: pw.shipU32(lo), hi: pw.shipU32(hi) };
     } else {
       entry.keys = entry.keys ?? {};
       entry.keys.lo = pw.shipU32(lo);
       entry.keys.hi = pw.shipU32(hi);
     }
-  } else if (sv.getInt32(24, true) && sv.getInt32(60, true)) {
+  } else if (sv.getInt32(28, true) && sv.getInt32(60, true)) {
     entry.animation_fallback = sv.getInt32(60, true);
   }
-  if (sv.getInt32(28, true)) {
+  if (sv.getInt32(32, true)) {
     const sel = t.shipped_sel;
-    entry.tooltip_rows = sv.getInt32(32, true)
+    entry.tooltip_rows = sv.getInt32(36, true)
       ? (sel ?? []).map((i) => ({ ...t.tooltip_rows[i] }))
       : t.tooltip_rows.map((row) => ({ ...row }));
-  } else if (t.tooltip_rows != null && !sv.getInt32(36, true)) {
+  } else if (t.tooltip_rows != null && !sv.getInt32(40, true)) {
     throw new RangeError(`${t.kind} tooltip rows must match geometry`);
   }
   if (path === PAYLOAD_TRACE_EMIT_PATH_HEATMAP_RGBA) {
@@ -402,14 +457,14 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
     };
     return entry;
   }
-  if (path === PAYLOAD_TRACE_EMIT_PATH_HEATMAP_GRID && sv.getInt32(156, true)) {
+  if (path === PAYLOAD_TRACE_EMIT_PATH_HEATMAP_GRID && sv.getInt32(160, true)) {
     const rows = t.grid_shape[0];
     const cols = t.grid_shape[1];
-    const gridOff = Number(sv.getBigUint64(176, true));
-    const gridLen = Number(sv.getBigUint64(184, true));
+    const gridOff = Number(sv.getBigUint64(184, true));
+    const gridLen = Number(sv.getBigUint64(192, true));
     let bufIdx;
     let encoding;
-    if (sv.getInt32(168, true)) {
+    if (sv.getInt32(180, true)) {
       bufIdx = pw.borrowF64(t.grid.values ?? t.grid);
       encoding = "canonical-f64";
     } else {
@@ -418,7 +473,7 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
       encoding = null;
     }
     let cmap = t.style?.colormap;
-    if (sv.getInt32(164, true) && cmap == null) {
+    if (sv.getInt32(172, true) && cmap == null) {
       cmap = [[0.22, 0.53, 0.9], [0.22, 0.53, 0.9]];
     }
     entry.heatmap = {
@@ -429,9 +484,9 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
       y_range: [...t.style.y_range],
       colormap: cmap,
       domain: [...domain],
-      ...(sv.getInt32(166, true) && encoding ? { enc: encoding } : {}),
+      ...(sv.getInt32(176, true) && encoding ? { enc: encoding } : {}),
     };
-    if (sv.getInt32(164, true)) {
+    if (sv.getInt32(172, true)) {
       entry.color = { mode: "continuous", colormap: cmap, domain: [...domain] };
     }
     return entry;

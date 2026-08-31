@@ -198,9 +198,40 @@ def _column_desc(col: Column | None):
     )
 
 
+def _style_wire_channel(ch: Any):
+    if not ch:
+        return None
+    if isinstance(ch, dict):
+        if not ch:
+            return None
+        return next(iter(ch.values()))
+    return ch
+
+
 def _channel_desc(ch: Any):
+    ch = _style_wire_channel(ch)
     if not ch:
         return _TraceChannelDesc(), np.empty(0, dtype=np.float64), np.empty(0, dtype=np.uint8)
+    if getattr(ch, "mode", None) is None and getattr(ch, "values", None) is not None:
+        mode = 5
+        f64 = np.ascontiguousarray(ch.values, dtype=np.float64).reshape(-1)
+        dom = (0.0, 1.0)
+        u8 = np.empty(0, dtype=np.uint8)
+        return (
+            _TraceChannelDesc(
+                1,
+                mode,
+                0,
+                float(dom[0]),
+                float(dom[1]),
+                len(f64),
+                len(u8),
+                int(getattr(ch, "dtype", "") == "u8"),
+                0,
+            ),
+            f64,
+            u8,
+        )
     mode = {
         "constant": 0,
         "continuous": 1,
