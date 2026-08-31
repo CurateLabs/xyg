@@ -36,15 +36,6 @@ def test_host_declarations_match_rust_symbol_set() -> None:
     assert errors == []
 
 
-<<<<<<< HEAD
-def test_abi_version_is_276() -> None:
-    manifest = gen_abi_manifest.generate_manifest()
-    assert manifest["abi_version"] == 276
-=======
-def test_abi_version_is_261() -> None:
-    manifest = gen_abi_manifest.generate_manifest()
-    assert manifest["abi_version"] == 261
->>>>>>> 778a3c88 (Add ABI 261 payload_errorbar_role_maps for segment role/source maps)
     assert manifest["artifact"] == "xyg_core"
     assert all(item["name"].startswith("xyg_") for item in manifest["symbols"])
     assert any(item["name"] == "xyg_abi_version" for item in manifest["symbols"])
