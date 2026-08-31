@@ -175,7 +175,7 @@
       "python": "ready",
       "node": "ready",
       "rust": "ready",
-      "notes": "Python and packages/xy-node omitted-bin composition histograms use bounded xy_histogram_edges(auto) plus xy_histogram_uniform; tests/test_histogram_auto_scene.py proves exact cross-host Scene bytes for unsorted/repeated/non-finite, constant, authored-range, fixed-bin, empty, density, and cumulative cases; tests/fixtures/payload_cross_host.json histogram_fixed_bins packed blob"
+      "notes": "Python and packages/xy-node omitted-bin composition histograms use bounded xy_histogram_edges(auto) plus xy_histogram_uniform; tests/test_histogram_auto_scene.py proves exact cross-host Scene bytes for unsorted/repeated/non-finite, constant, authored-range, fixed-bin, empty, density, and cumulative cases; tests/fixtures/payload_cross_host.json histogram_fixed_bins and histogram_finite_sel packed blobs (NaN bin rectFiniteSel parity)"
     },
     {
       "kind": "area",

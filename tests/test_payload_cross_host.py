@@ -79,6 +79,22 @@ def _build_case(name: str) -> tuple[Figure, dict[str, object]]:
         fig.histogram([0.0, 1.0, 1.0, 2.0, 3.0], bins=3, range=(0.0, 3.0))
         fig.traces[0].id = 10
         return fig, {}
+    if name == "histogram_finite_sel":
+        fig = Figure(width=240, height=160)
+        fig._append_rect_trace(
+            "histogram",
+            np.array([0.0, 1.0]),
+            np.array([1.0, 2.0]),
+            np.array([0.0, 0.0]),
+            np.array([1.0, np.nan]),
+            name=None,
+            color="#3987e5",
+            opacity=0.85,
+            role="histogram",
+            count=4,
+        )
+        fig.traces[0].id = 17
+        return fig, {}
     if name == "segments_pass_through":
         fig = Figure(width=240, height=160)
         fig.segments([0.0, 1.0], [0.0, 1.0], [1.0, 2.0], [1.0, 0.0])
@@ -150,12 +166,13 @@ def test_fixture_contract(fixture: dict) -> None:
     assert fixture["schema"] == "xyg.payload-cross-host/v1"
     assert fixture["protocol"] == PROTOCOL_VERSION
     assert int(fixture["abi_version"]) == int(_native.ABI_VERSION)
-    assert len(fixture["cases"]) == 9
+    assert len(fixture["cases"]) == 10
     assert {case["name"] for case in fixture["cases"]} == {
         "scatter_direct",
         "scatter_categorical_color",
         "line_transition_keys",
         "histogram_fixed_bins",
+        "histogram_finite_sel",
         "segments_pass_through",
         "hexbin_colormap",
         "bar_compact",
@@ -171,6 +188,7 @@ def test_fixture_contract(fixture: dict) -> None:
         "scatter_categorical_color",
         "line_transition_keys",
         "histogram_fixed_bins",
+        "histogram_finite_sel",
         "segments_pass_through",
         "hexbin_colormap",
         "bar_compact",
@@ -194,6 +212,7 @@ def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> Non
         "scatter_categorical_color",
         "line_transition_keys",
         "histogram_fixed_bins",
+        "histogram_finite_sel",
         "segments_pass_through",
         "hexbin_colormap",
         "bar_compact",
