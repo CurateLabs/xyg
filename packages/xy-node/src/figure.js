@@ -1973,8 +1973,8 @@ export class Figure {
       } else if (kind === "dropped_channels") {
         density.dropped_channels = droppedChannels;
       } else if (kind === "constant_color") {
-        if (t.style?.color) {
-          density.color = t.style.color;
+        if (t.color_ch?.constant != null) {
+          density.color = t.color_ch.constant;
         }
       } else if (kind === "overlay_rows_exceed") {
         density.overlay_omitted = "rows_exceed_u32";

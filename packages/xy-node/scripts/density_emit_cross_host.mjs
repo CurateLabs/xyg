@@ -78,6 +78,7 @@ function caseEntry(name, build, { split = false, gridMeta = false } = {}) {
     tier: trace.tier ?? null,
     visible: trace.visible ?? null,
     density_colormap: density.colormap ?? null,
+    density_color: density.color ?? null,
     density_dropped_channels: density.dropped_channels ?? [],
     density_channels_dropped: density.channels_dropped ?? false,
     density_color_agg: density.color_agg ?? null,
@@ -108,6 +109,11 @@ const cases = [
     });
     fig.traces[0].id = 24;
     fig.traces[0].color_ch = { ...fig.traces[0].color_ch, colormap: "inferno" };
+  }),
+  caseEntry("scatter_density_constant_color", (fig) => {
+    fig.scatter([0, 1, 2], [0, 1, 0.5], { forceDensity: true, style: { color: "#112233" } });
+    fig.traces[0].id = 25;
+    fig.traces[0].color_ch = { mode: "constant", constant: "#22c55e" };
   }),
   caseEntry("scatter_density_dropped_channels", (fig) => {
     fig.scatter([0, 1, 2], [0, 1, 0.5], { forceDensity: true, size: [1, 2, 3] });
