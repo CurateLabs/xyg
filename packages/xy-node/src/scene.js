@@ -74,7 +74,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, DEFAULT_PALETTE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -3396,6 +3396,32 @@ export function packXyTcFillOpacity(style, kindClass) {
   return packed.fillOpacity;
 }
 
+/** XYTC ribbon color2 flags. Python `_pack_xytc` color2 branch. */
+export function packXyTcColor2(trace, paintFlags, gradientBlob) {
+  const color2Class = classifyRibbonColor2(trace);
+  let gradientPacked = 0;
+  let outBlob = gradientBlob;
+  if (
+    color2Class === "gradient"
+    && (paintFlags & (XYTC_HAS_FILL | XYTC_HAS_GRADIENT_SPEC)) === 0
+  ) {
+    const spec = ribbonColor2GradientSpec(trace);
+    const packed = spec == null ? null : packGradientSpec(spec);
+    if (packed && packed.length) {
+      gradientPacked = 1;
+      outBlob = packed;
+    }
+  }
+  return {
+    flags: sceneXytcColor2FlagsPack(
+      COLOR2_CLASS_TO_CODE[color2Class] ?? 4,
+      paintFlags,
+      gradientPacked,
+    ),
+    gradientBlob: outBlob,
+  };
+}
+
 /** XYTC joined fill. Python `_pack_xytc` reads `style.get("joined_fill")` only. */
 export function packXyTcJoinedFill(trace) {
   const style = trace?.style ?? {};
@@ -3598,19 +3624,9 @@ function packXyTc(figure) {
       colorMode = packedChannel.mode;
       colorConst = packedChannel.constant;
     }
-    const color2Class = classifyRibbonColor2(trace);
-    if (color2Class === "fail") flags |= XYTC_COLOR2;
-    else if (color2Class === "gradient") {
-      if (flags & (XYTC_HAS_FILL | XYTC_HAS_GRADIENT_SPEC)) flags |= XYTC_COLOR2;
-      else {
-        const spec = ribbonColor2GradientSpec(trace);
-        const packed = spec == null ? null : packGradientSpec(spec);
-        if (packed && packed.length) {
-          flags |= XYTC_HAS_FILL | XYTC_HAS_GRADIENT_SPEC;
-          gradientBlob = packed;
-        } else flags |= XYTC_COLOR2;
-      }
-    }
+    const packedColor2 = packXyTcColor2(trace, flags, gradientBlob);
+    flags |= packedColor2.flags;
+    gradientBlob = packedColor2.gradientBlob;
     let markerBlob = new Uint8Array();
     let markerPathPresent = 0;
     let markerPacked = 0;

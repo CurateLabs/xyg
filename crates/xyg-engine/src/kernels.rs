@@ -1632,6 +1632,40 @@ const XYTC_HAS_NAME: u32 = 1 << 16;
 const XYTC_HAS_MARKER: u32 = 1 << 18;
 const XYTC_HAS_GLYPH: u32 = 1 << 24;
 const XYTC_JOINED_FILL: u32 = 1 << 25;
+const XYTC_COLOR2: u32 = 1 << 13;
+
+/// Pack XYTC ribbon ``color2`` flag bits (ABI 271).
+///
+/// ``color2_class`` uses [`scene_ribbon_color2_classify`] codes (0–4).
+/// ``gradient_packed``: host already built/packed the ribbon gradient blob.
+/// Gradient spec construction stays host.
+pub fn scene_xytc_color2_flags_pack(
+    color2_class: i32,
+    paint_flags: u32,
+    gradient_packed: i32,
+) -> Option<u32> {
+    if !matches!(color2_class, 0..=4) {
+        return None;
+    }
+    if !matches!(gradient_packed, 0 | 1) {
+        return None;
+    }
+    let mut flags = 0u32;
+    match color2_class {
+        SCENE_RIBBON_COLOR2_FAIL => flags |= XYTC_COLOR2,
+        SCENE_RIBBON_COLOR2_GRADIENT => {
+            if paint_flags & (XYTC_HAS_FILL | XYTC_HAS_GRADIENT_SPEC) != 0 {
+                flags |= XYTC_COLOR2;
+            } else if gradient_packed != 0 {
+                flags |= XYTC_HAS_FILL | XYTC_HAS_GRADIENT_SPEC;
+            } else {
+                flags |= XYTC_COLOR2;
+            }
+        }
+        _ => {}
+    }
+    Some(flags)
+}
 
 /// Pack XYTC trace meta flag bits (ABI 270).
 ///
@@ -11041,6 +11075,28 @@ mod fuzz {
             0
         );
         assert!(scene_xytc_meta_flags_pack(2, 0, "scatter", 0, 0, 0, 0, 0).is_none());
+    }
+
+    #[test]
+    fn scene_xytc_color2_flags_pack_matches_host_table() {
+        assert_eq!(
+            scene_xytc_color2_flags_pack(SCENE_RIBBON_COLOR2_FAIL, 0, 0).unwrap(),
+            XYTC_COLOR2
+        );
+        assert_eq!(
+            scene_xytc_color2_flags_pack(SCENE_RIBBON_COLOR2_GRADIENT, XYTC_HAS_FILL, 0).unwrap(),
+            XYTC_COLOR2
+        );
+        assert_eq!(
+            scene_xytc_color2_flags_pack(SCENE_RIBBON_COLOR2_GRADIENT, 0, 1).unwrap(),
+            XYTC_HAS_FILL | XYTC_HAS_GRADIENT_SPEC
+        );
+        assert_eq!(
+            scene_xytc_color2_flags_pack(SCENE_RIBBON_COLOR2_GRADIENT, 0, 0).unwrap(),
+            XYTC_COLOR2
+        );
+        assert_eq!(scene_xytc_color2_flags_pack(SCENE_RIBBON_COLOR2_ABSENT, 0, 0), Some(0));
+        assert!(scene_xytc_color2_flags_pack(5, 0, 0).is_none());
     }
 
     #[test]

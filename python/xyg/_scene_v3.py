@@ -2837,6 +2837,39 @@ def _pack_gradient_spec(fill: dict[str, Any]) -> bytes | None:
     )
 
 
+_COLOR2_CLASS_TO_CODE = {
+    "absent": 0,
+    "solid": 1,
+    "gradient": 2,
+    "ends": 3,
+    "fail": 4,
+}
+
+
+def _pack_xytc_color2(
+    trace: Any,
+    paint_flags: int,
+    gradient_blob: bytes,
+) -> tuple[int, bytes]:
+    color2_class = _classify_ribbon_color2(trace)
+    gradient_packed = 0
+    out_blob = gradient_blob
+    if color2_class == "gradient" and not (
+        paint_flags & (_XYTC_HAS_FILL | _XYTC_HAS_GRADIENT_SPEC)
+    ):
+        spec = _ribbon_color2_gradient_spec(trace)
+        packed = _pack_gradient_spec(spec) if spec is not None else None
+        if packed:
+            gradient_packed = 1
+            out_blob = packed
+    flags = _native.scene_xytc_color2_flags_pack(
+        _COLOR2_CLASS_TO_CODE[color2_class],
+        paint_flags,
+        gradient_packed,
+    )
+    return flags, out_blob
+
+
 def _pack_xytc_meta_flags(
     trace: Any,
     show_legend: bool,
@@ -3044,20 +3077,8 @@ def _pack_xytc(figure: Any) -> bytes:
         color_css = str(style["color"]).encode("utf-8") if "color" in style else b""
         ch_flags, color_mode, color_const = _pack_xytc_color_channel(trace)
         flags |= ch_flags
-        color2_class = _classify_ribbon_color2(trace)
-        if color2_class == "fail":
-            flags |= _XYTC_COLOR2
-        elif color2_class == "gradient":
-            if flags & (_XYTC_HAS_FILL | _XYTC_HAS_GRADIENT_SPEC):
-                flags |= _XYTC_COLOR2
-            else:
-                spec = _ribbon_color2_gradient_spec(trace)
-                packed_gradient = _pack_gradient_spec(spec) if spec is not None else None
-                if packed_gradient:
-                    flags |= _XYTC_HAS_FILL | _XYTC_HAS_GRADIENT_SPEC
-                    gradient_blob = packed_gradient
-                else:
-                    flags |= _XYTC_COLOR2
+        color2_flags, gradient_blob = _pack_xytc_color2(trace, flags, gradient_blob)
+        flags |= color2_flags
         marker_blob = b""
         marker_path_present = 0
         marker_packed = 0
