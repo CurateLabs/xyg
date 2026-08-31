@@ -162,7 +162,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 306;
+pub const ABI_VERSION: u32 = 307;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -17116,6 +17116,175 @@ pub unsafe extern "C" fn xyg_scene_xyta_trace_dispatch_plan(
             pack_scatter_paint: u32::from(plan.pack_scatter_paint != 0),
             pack_density: u32::from(plan.pack_density != 0),
         };
+        1
+    })
+}
+
+/// Packed XYFS figure orchestration plan (ABI 307).
+#[repr(C)]
+pub struct XygSceneFigureSupportFigurePlan {
+    pub polar: u32,
+}
+
+/// Figure-level XYFS support orchestration (ABI 307).
+///
+/// Hosts coerce ``polar`` from figure coords. Rust owns the polar gate passed
+/// into per-trace rect-extra support probes and axis-key filtering.
+///
+/// # Safety
+/// ``out`` must be valid for writes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_figure_support_figure_plan(
+    polar: i32,
+    out: *mut XygSceneFigureSupportFigurePlan,
+) -> i32 {
+    ffi_guard(0, || {
+        if out.is_null() {
+            return 0;
+        }
+        let mut resolved = 0i32;
+        if scene_pack_orchestrate::scene_figure_support_figure_plan(polar, &mut resolved) == 0 {
+            return 0;
+        }
+        (*out).polar = u32::from(resolved != 0);
+        1
+    })
+}
+
+/// Packed per-trace XYFS support dispatch plan (ABI 307).
+#[repr(C)]
+pub struct XygSceneFigureSupportTraceDispatchPlan {
+    pub kind_class: u32,
+    pub probe_marker_glyph: u32,
+    pub probe_marker_path: u32,
+    pub probe_curve_smooth: u32,
+    pub probe_rect_extra: u32,
+    pub probe_hexbin_reduce: u32,
+    pub probe_heatmap_colormap: u32,
+    pub probe_non_css_fill: u32,
+}
+
+/// Per-trace XYFS support dispatch orchestration (ABI 307).
+///
+/// Owns kind-class gates and support-probe branch routing before hosts run
+/// per-field style observations.
+///
+/// # Safety
+/// ``kind`` must address ``kind_len`` readable bytes when ``kind_len`` is
+/// non-zero. ``out`` must be valid for writes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_figure_support_trace_dispatch_plan(
+    kind: *const u8,
+    kind_len: usize,
+    marker_glyph_present: i32,
+    marker_path_present: i32,
+    curve_present: i32,
+    fill_present: i32,
+    out: *mut XygSceneFigureSupportTraceDispatchPlan,
+) -> i32 {
+    ffi_guard(0, || {
+        if out.is_null() {
+            return 0;
+        }
+        let kind_text = if kind_len == 0 {
+            ""
+        } else {
+            if kind.is_null() {
+                return 0;
+            }
+            let slice = std::slice::from_raw_parts(kind, kind_len);
+            match std::str::from_utf8(slice) {
+                Ok(text) => text,
+                Err(_) => return 0,
+            }
+        };
+        let mut plan = scene_pack_orchestrate::FigureSupportTraceDispatchPlan {
+            kind_class: 0,
+            probe_marker_glyph: 0,
+            probe_marker_path: 0,
+            probe_curve_smooth: 0,
+            probe_rect_extra: 0,
+            probe_hexbin_reduce: 0,
+            probe_heatmap_colormap: 0,
+            probe_non_css_fill: 0,
+        };
+        if scene_pack_orchestrate::scene_figure_support_trace_dispatch_plan(
+            kind_text,
+            marker_glyph_present,
+            marker_path_present,
+            curve_present,
+            fill_present,
+            &mut plan,
+        ) == 0
+        {
+            return 0;
+        }
+        *out = XygSceneFigureSupportTraceDispatchPlan {
+            kind_class: plan.kind_class as u32,
+            probe_marker_glyph: u32::from(plan.probe_marker_glyph != 0),
+            probe_marker_path: u32::from(plan.probe_marker_path != 0),
+            probe_curve_smooth: u32::from(plan.probe_curve_smooth != 0),
+            probe_rect_extra: u32::from(plan.probe_rect_extra != 0),
+            probe_hexbin_reduce: u32::from(plan.probe_hexbin_reduce != 0),
+            probe_heatmap_colormap: u32::from(plan.probe_heatmap_colormap != 0),
+            probe_non_css_fill: u32::from(plan.probe_non_css_fill != 0),
+        };
+        1
+    })
+}
+
+/// Packed XYCL figure orchestration plan (ABI 307).
+#[repr(C)]
+pub struct XygSceneXyclFigurePlan {
+    pub polar: u32,
+}
+
+/// Figure-level XYCL column attach orchestration (ABI 307).
+///
+/// # Safety
+/// ``out`` must be valid for writes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_xycl_figure_plan(
+    polar: i32,
+    out: *mut XygSceneXyclFigurePlan,
+) -> i32 {
+    ffi_guard(0, || {
+        if out.is_null() {
+            return 0;
+        }
+        let mut resolved = 0i32;
+        if scene_pack_orchestrate::scene_xycl_figure_plan(polar, &mut resolved) == 0 {
+            return 0;
+        }
+        (*out).polar = u32::from(resolved != 0);
+        1
+    })
+}
+
+/// Packed XYNM figure orchestration plan (ABI 307).
+#[repr(C)]
+pub struct XygSceneXynmFigurePlan {
+    pub show_legend: u32,
+}
+
+/// Figure-level XYNM name attach orchestration (ABI 307).
+///
+/// # Safety
+/// ``out`` must be valid for writes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_xynm_figure_plan(
+    show_legend: i32,
+    out: *mut XygSceneXynmFigurePlan,
+) -> i32 {
+    ffi_guard(0, || {
+        if out.is_null() {
+            return 0;
+        }
+        let mut resolved = 0i32;
+        if scene_pack_orchestrate::scene_xynm_figure_plan(show_legend, &mut resolved) == 0 {
+            return 0;
+        }
+        (*out).show_legend = u32::from(resolved != 0);
         1
     })
 }

@@ -428,6 +428,31 @@ def load() -> ctypes.CDLL:
         ctypes.c_int32,
         ctypes.c_void_p,
     ]
+    lib.xyg_scene_figure_support_figure_plan.restype = ctypes.c_int32
+    lib.xyg_scene_figure_support_figure_plan.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_void_p,
+    ]
+    lib.xyg_scene_figure_support_trace_dispatch_plan.restype = ctypes.c_int32
+    lib.xyg_scene_figure_support_trace_dispatch_plan.argtypes = [
+        U8P,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_void_p,
+    ]
+    lib.xyg_scene_xycl_figure_plan.restype = ctypes.c_int32
+    lib.xyg_scene_xycl_figure_plan.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_void_p,
+    ]
+    lib.xyg_scene_xynm_figure_plan.restype = ctypes.c_int32
+    lib.xyg_scene_xynm_figure_plan.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_void_p,
+    ]
     lib.xyg_scene_xytc_color2_flags_pack.restype = ctypes.c_int32
     lib.xyg_scene_xytc_color2_flags_pack.argtypes = [
         ctypes.c_int32,
@@ -5905,6 +5930,39 @@ def main() -> None:
         and xyta_dispatch[7] == 1
         and xyta_dispatch[6] == 0,
         "scene_xyta_trace_dispatch_plan scatter density",
+    )
+    xyfs_figure = (ctypes.c_uint32 * 1)()
+    ok(
+        lib.xyg_scene_figure_support_figure_plan(1, ctypes.byref(xyfs_figure)) == 1
+        and xyfs_figure[0] == 1,
+        "scene_figure_support_figure_plan polar",
+    )
+    xyfs_dispatch = (ctypes.c_uint32 * 8)()
+    bar_kind = array("B", b"bar")
+    ok(
+        lib.xyg_scene_figure_support_trace_dispatch_plan(
+            _ptr(bar_kind, ctypes.c_uint8),
+            len(bar_kind),
+            0,
+            0,
+            0,
+            0,
+            ctypes.byref(xyfs_dispatch),
+        )
+        == 1
+        and xyfs_dispatch[4] == 1
+        and xyfs_dispatch[3] == 0,
+        "scene_figure_support_trace_dispatch_plan bar rect extra",
+    )
+    xycl_figure = (ctypes.c_uint32 * 1)()
+    ok(
+        lib.xyg_scene_xycl_figure_plan(1, ctypes.byref(xycl_figure)) == 1 and xycl_figure[0] == 1,
+        "scene_xycl_figure_plan polar",
+    )
+    xynm_figure = (ctypes.c_uint32 * 1)()
+    ok(
+        lib.xyg_scene_xynm_figure_plan(0, ctypes.byref(xynm_figure)) == 1 and xynm_figure[0] == 0,
+        "scene_xynm_figure_plan show_legend",
     )
     density_color_mode = ctypes.c_int32(-1)
     density_categorical = ctypes.c_int32(-1)

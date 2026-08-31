@@ -74,7 +74,7 @@ import {
   xySceneVersion,
   polarAbiInputPointer,
 } from "./native.js";
-import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneXytaFigurePlan, sceneXytaTraceDispatchPlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
+import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneXytaFigurePlan, sceneXytaTraceDispatchPlan, sceneFigureSupportFigurePlan, sceneFigureSupportTraceDispatchPlan, sceneXyclFigurePlan, sceneXynmFigurePlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
@@ -2821,8 +2821,10 @@ function significantSceneAxisKeys(options, polar = false) {
 function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
   const chromeStyles = figureChromeStyles(figure) ?? {};
   const annotations = [...(figure.annotations ?? [])];
+  const figurePlan = sceneFigureSupportFigurePlan({ polar: figure.coords === "polar" });
+  const polar = figurePlan.polar;
   let flags = 0;
-  if (figure.coords !== "cartesian") flags |= 1 << 0;
+  if (polar) flags |= 1 << 0;
   if (
     Object.values(chromeStyles).some((style) => chromeStyleHasFontFamily(style))
     || annotations.some((annotation) => annotationHasCustomTypography(annotation))
@@ -2884,7 +2886,7 @@ function packFigureSupport(figure, { colorbarUnsupported = false } = {}) {
   header.setUint32(16, traces.length, true);
   for (const [axisId, options] of axisEntries) {
     const axisCode = axisId === "x" ? 0 : axisId === "y" ? 1 : 255;
-    const keys = significantSceneAxisKeys(options, (flags & 1) !== 0);
+    const keys = significantSceneAxisKeys(options, polar);
     const axis = new Uint8Array(8);
     axis[0] = axisCode;
     new DataView(axis.buffer).setUint32(4, keys.length, true);
@@ -4323,7 +4325,8 @@ function packTraceAttach(compiled, attach) {
 
 function packXyCl(figure) {
   const traces = figure.traces ?? [];
-  const coords = (figure.coords ?? "cartesian") === "polar" ? 1 : 0;
+  const figurePlan = sceneXyclFigurePlan({ polar: figure.coords === "polar" });
+  const coords = figurePlan.polar ? 1 : 0;
   const records = [new Uint8Array(16)];
   const header = new DataView(records[0].buffer);
   records[0][0] = 88; records[0][1] = 89; records[0][2] = 67; records[0][3] = 76; // XYCL
@@ -4369,7 +4372,10 @@ function packTraceRows(attached, columns) {
   return decodePackedRows(packed, packed.length / 56);
 }
 
-function packXyNm(traces) {
+function packXyNm(traces, figure = null) {
+  if (figure != null) {
+    sceneXynmFigurePlan({ showLegend: figureShowLegend(figure) !== false });
+  }
   const records = [new Uint8Array(16)];
   const header = new DataView(records[0].buffer);
   records[0][0] = 88; records[0][1] = 89; records[0][2] = 78; records[0][3] = 77; // XYNM
@@ -5779,7 +5785,13 @@ export function rectExtraFlags(style, kind, polar) {
 export function figureTraceSupport(figure, trace) {
   const style = trace.style ?? {};
   const kind = String(trace.kind || "mark");
-  const kindClass = sceneKindClass(kind);
+  const dispatch = sceneFigureSupportTraceDispatchPlan({
+    kind,
+    markerGlyphPresent: style.marker_glyph != null,
+    markerPathPresent: style.marker_path != null,
+    curvePresent: style.curve != null,
+    fillPresent: Object.hasOwn(style, "fill"),
+  });
   let flags = 0;
   if (!sceneKindAdmit(kind)) flags |= XYFS_TRACE_UNSUPPORTED_KIND;
   if ((trace.x_axis ?? "x") !== "x" || (trace.y_axis ?? "y") !== "y") flags |= XYFS_TRACE_NON_PRIMARY_AXIS;
@@ -5788,12 +5800,12 @@ export function figureTraceSupport(figure, trace) {
     perItemChannelNames(trace).length > 0,
     densityAggregatesColor(trace),
   )) flags |= XYFS_TRACE_HIDDEN_OR_PER_ITEM;
-  if (style.marker_glyph != null) {
+  if (dispatch.probeMarkerGlyph) {
     if (kind !== "scatter" || style.marker_path != null || admittedMarkerGlyph(style.marker_glyph) == null) {
       flags |= XYFS_TRACE_DASHED_MARKERS;
     }
   }
-  if (style.marker_path != null) {
+  if (dispatch.probeMarkerPath) {
     if (kind !== "scatter") flags |= XYFS_TRACE_DASHED_MARKERS;
     else {
       const validated = validateMarkerPath(style.marker_path);
@@ -5806,7 +5818,7 @@ export function figureTraceSupport(figure, trace) {
   if (curve != null) {
     const curveCode = sceneCurveClassify(curve);
     if (curveCode === 1) {
-      if (!(kindClass & (SCENE_KIND_CLASS_LINE | SCENE_KIND_CLASS_BAND))) flags |= XYFS_TRACE_DASHED_MARKERS;
+      if (!dispatch.probeCurveSmooth) flags |= XYFS_TRACE_DASHED_MARKERS;
     } else if (curveCode !== 0) {
       flags |= XYFS_TRACE_DASHED_MARKERS;
     }
@@ -5816,10 +5828,10 @@ export function figureTraceSupport(figure, trace) {
     flags |= XYFS_TRACE_DASHED_MARKERS;
   }
   if (style.dash != null && parseSceneDash(style.dash) === false) flags |= XYFS_TRACE_DASHED_MARKERS;
-  if (kindClass & (SCENE_KIND_CLASS_RECT | SCENE_KIND_CLASS_HEATMAP)) flags |= rectExtraFlags(style, kind, figure.coords === "polar");
-  if (kindClass & SCENE_KIND_CLASS_HEXBIN && !sceneHexbinReduceAdmit(style.reduce)) flags |= XYFS_TRACE_CUSTOM_HEX_REDUCE;
+  if (dispatch.probeRectExtra) flags |= rectExtraFlags(style, kind, figure.coords === "polar");
+  if (dispatch.probeHexbinReduce && !sceneHexbinReduceAdmit(style.reduce)) flags |= XYFS_TRACE_CUSTOM_HEX_REDUCE;
   if (
-    kindClass & SCENE_KIND_CLASS_HEATMAP
+    dispatch.probeHeatmapColormap
     && sceneHeatmapColormapAdmit(
       style.truecolor ? 1 : 0,
       style.colormap != null ? 1 : 0,
@@ -5827,7 +5839,7 @@ export function figureTraceSupport(figure, trace) {
       trace.rgba != null ? 1 : 0,
     )
   ) flags |= XYFS_TRACE_HEATMAP_COLORMAP;
-  if (Object.hasOwn(style, "fill") && typeof style.fill !== "string") {
+  if (dispatch.probeNonCssFill && typeof style.fill !== "string") {
     if (admitFillGradient(trace) == null) flags |= XYFS_TRACE_NON_CSS_FILL;
   }
   return { flags, kind };
@@ -6020,7 +6032,7 @@ export function figureSceneV3(figure, { margins = null } = {}) {
     return encodeProduct(
       packXyTc(figure),
       packXyTa(figure, xDomain, yDomain),
-      packXyNm(figure.traces ?? []),
+      packXyNm(figure.traces ?? [], figure),
       packXyCl(figure),
       concatBytes(annotationParts),
       (figure.traces ?? []).length,

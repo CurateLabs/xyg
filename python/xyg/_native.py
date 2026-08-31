@@ -409,6 +409,37 @@ class _SceneXytaTraceDispatchPlan(ctypes.Structure):
     ]
 
 
+class _SceneFigureSupportFigurePlan(ctypes.Structure):
+    _fields_ = [
+        ("polar", ctypes.c_uint32),
+    ]
+
+
+class _SceneFigureSupportTraceDispatchPlan(ctypes.Structure):
+    _fields_ = [
+        ("kind_class", ctypes.c_uint32),
+        ("probe_marker_glyph", ctypes.c_uint32),
+        ("probe_marker_path", ctypes.c_uint32),
+        ("probe_curve_smooth", ctypes.c_uint32),
+        ("probe_rect_extra", ctypes.c_uint32),
+        ("probe_hexbin_reduce", ctypes.c_uint32),
+        ("probe_heatmap_colormap", ctypes.c_uint32),
+        ("probe_non_css_fill", ctypes.c_uint32),
+    ]
+
+
+class _SceneXyclFigurePlan(ctypes.Structure):
+    _fields_ = [
+        ("polar", ctypes.c_uint32),
+    ]
+
+
+class _SceneXynmFigurePlan(ctypes.Structure):
+    _fields_ = [
+        ("show_legend", ctypes.c_uint32),
+    ]
+
+
 PAYLOAD_DENSITY_TRACE_EMIT_PLAN_BYTES = ctypes.sizeof(_PayloadDensityTraceEmitPlan)
 
 
@@ -2110,6 +2141,75 @@ def scene_xyta_trace_dispatch_plan(
     if ok != 1:
         raise ValueError("invalid scene_xyta_trace_dispatch_plan arguments")
     return _scene_xyta_trace_dispatch_plan_dict(out)
+
+
+def scene_figure_support_figure_plan(*, polar: bool) -> dict[str, bool]:
+    """Figure-level XYFS support orchestration via ``xyg_scene_figure_support_figure_plan`` (ABI 307)."""
+    out = _SceneFigureSupportFigurePlan()
+    ok = int(_lib.xyg_scene_figure_support_figure_plan(1 if polar else 0, ctypes.byref(out)))
+    if ok != 1:
+        raise ValueError("invalid scene_figure_support_figure_plan arguments")
+    return {"polar": bool(out.polar)}
+
+
+def _scene_figure_support_trace_dispatch_plan_dict(
+    out: _SceneFigureSupportTraceDispatchPlan,
+) -> dict[str, bool | int]:
+    return {
+        "kind_class": int(out.kind_class),
+        "probe_marker_glyph": bool(out.probe_marker_glyph),
+        "probe_marker_path": bool(out.probe_marker_path),
+        "probe_curve_smooth": bool(out.probe_curve_smooth),
+        "probe_rect_extra": bool(out.probe_rect_extra),
+        "probe_hexbin_reduce": bool(out.probe_hexbin_reduce),
+        "probe_heatmap_colormap": bool(out.probe_heatmap_colormap),
+        "probe_non_css_fill": bool(out.probe_non_css_fill),
+    }
+
+
+def scene_figure_support_trace_dispatch_plan(
+    *,
+    kind: str,
+    marker_glyph_present: bool,
+    marker_path_present: bool,
+    curve_present: bool,
+    fill_present: bool,
+) -> dict[str, bool | int]:
+    """Per-trace XYFS support dispatch via ``xyg_scene_figure_support_trace_dispatch_plan`` (ABI 307)."""
+    kind_b = kind.encode("utf-8")
+    out = _SceneFigureSupportTraceDispatchPlan()
+    ok = int(
+        _lib.xyg_scene_figure_support_trace_dispatch_plan(
+            kind_b,
+            len(kind_b),
+            1 if marker_glyph_present else 0,
+            1 if marker_path_present else 0,
+            1 if curve_present else 0,
+            1 if fill_present else 0,
+            ctypes.byref(out),
+        )
+    )
+    if ok != 1:
+        raise ValueError("invalid scene_figure_support_trace_dispatch_plan arguments")
+    return _scene_figure_support_trace_dispatch_plan_dict(out)
+
+
+def scene_xycl_figure_plan(*, polar: bool) -> dict[str, bool]:
+    """Figure-level XYCL attach orchestration via ``xyg_scene_xycl_figure_plan`` (ABI 307)."""
+    out = _SceneXyclFigurePlan()
+    ok = int(_lib.xyg_scene_xycl_figure_plan(1 if polar else 0, ctypes.byref(out)))
+    if ok != 1:
+        raise ValueError("invalid scene_xycl_figure_plan arguments")
+    return {"polar": bool(out.polar)}
+
+
+def scene_xynm_figure_plan(*, show_legend: bool) -> dict[str, bool]:
+    """Figure-level XYNM attach orchestration via ``xyg_scene_xynm_figure_plan`` (ABI 307)."""
+    out = _SceneXynmFigurePlan()
+    ok = int(_lib.xyg_scene_xynm_figure_plan(1 if show_legend else 0, ctypes.byref(out)))
+    if ok != 1:
+        raise ValueError("invalid scene_xynm_figure_plan arguments")
+    return {"show_legend": bool(out.show_legend)}
 
 
 def scene_xytc_dash_pattern_pack(is_array: int) -> int:

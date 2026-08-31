@@ -159,6 +159,10 @@ import {
   sceneXytcTraceDispatchPlan,
   sceneXytaFigurePlan,
   sceneXytaTraceDispatchPlan,
+  sceneFigureSupportFigurePlan,
+  sceneFigureSupportTraceDispatchPlan,
+  sceneXyclFigurePlan,
+  sceneXynmFigurePlan,
   figureTraceSupport,
   fillIsGradientAuthoring,
   xyEfJoinedFill,
@@ -772,6 +776,25 @@ test("sceneXytaTraceDispatchPlan heatmap hexbin ribbon and density routing", () 
     useDensity: true,
   });
   assert.equal(density.packDensity, true);
+});
+
+test("sceneFigureSupportTraceDispatchPlan bar and scatter routing", () => {
+  const bar = sceneFigureSupportTraceDispatchPlan({ kind: "bar" });
+  assert.equal(bar.probeRectExtra, true);
+  assert.equal(bar.probeCurveSmooth, false);
+
+  const scatter = sceneFigureSupportTraceDispatchPlan({
+    kind: "scatter",
+    markerGlyphPresent: true,
+    fillPresent: true,
+  });
+  assert.equal(scatter.probeMarkerGlyph, true);
+  assert.equal(scatter.probeNonCssFill, true);
+  assert.equal(scatter.probeCurveSmooth, false);
+
+  assert.equal(sceneFigureSupportFigurePlan({ polar: true }).polar, true);
+  assert.equal(sceneXyclFigurePlan({ polar: true }).polar, true);
+  assert.equal(sceneXynmFigurePlan({ showLegend: false }).showLegend, false);
 });
 
 test("hexbinXyTaColormap uses channel.colormap only like Python", () => {
