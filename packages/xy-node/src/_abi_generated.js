@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 303;
-export const SIGNATURE_SHA256 = "d99d2f73e66bdacaeecc25eb05cb09afc1c3d6076089e1555a0af790b0c1cd62";
+export const ABI_VERSION = 304;
+export const SIGNATURE_SHA256 = "5a890f83965e4874a69d6460612f7beeb30118df9149f21dcd83e878e96d2726";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -154,6 +154,7 @@ export let xyMinMax;
 export let xyMonotoneTangents;
 export let xyNormalizeF32;
 export let xyPaintEffectiveRgba;
+export let xyPayloadAxisSpecAttachPlan;
 export let xyPayloadBarCompactAdmit;
 export let xyPayloadBarHistEmitPlan;
 export let xyPayloadBaseEntryPlan;
@@ -553,6 +554,7 @@ export function bindGeneratedAbi(lib) {
   xyMonotoneTangents = lib.func("size_t xyg_monotone_tangents(const double * x, const double * y, size_t n, double * out_m, size_t capacity)");
   xyNormalizeF32 = lib.func("int32_t xyg_normalize_f32(const double * data, size_t len, double lo, double hi, int32_t nan_mode, float * out)");
   xyPaintEffectiveRgba = lib.func("int32_t xyg_paint_effective_rgba(const double * intrinsic, size_t n, const double * artist_alpha, const double * opacity, double component_opacity, double * out)");
+  xyPayloadAxisSpecAttachPlan = lib.func("int32_t xyg_payload_axis_spec_attach_plan(int32_t coords_cartesian, int32_t axis_is_x, void * out)");
   xyPayloadBarCompactAdmit = lib.func("int32_t xyg_payload_bar_compact_admit(size_t n_widths, const double * widths, size_t n_value0, const double * value0, double * out_width, double * out_value0_const, int32_t * out_has_value0_const, int32_t * out_compact)");
   xyPayloadBarHistEmitPlan = lib.func("int32_t xyg_payload_bar_hist_emit_plan(int32_t kind, int32_t compact, size_t n_marks, int32_t style_color_is_none, int32_t x_axis_type, int32_t y_axis_type, int32_t orientation, int32_t * out_emit_bar, int32_t * out_tier_direct, size_t * out_n_marks, int32_t * out_apply_palette_default, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale, int32_t * out_pos_ship_scale, int32_t * out_value_ship_scale, int32_t * out_value_axis, int32_t * out_channel_slot, int32_t * out_include_trace_styles, int32_t * out_attach_transition)");
   xyPayloadBaseEntryPlan = lib.func("int32_t xyg_payload_base_entry_plan(int32_t has_trace_animation, size_t n_xv, int32_t style_color_is_none, int32_t x_axis_type, int32_t y_axis_type, int32_t * out_attach_animation, size_t * out_n_marks, int32_t * out_apply_palette_default, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale)");

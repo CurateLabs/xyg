@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 303
-SIGNATURE_SHA256 = "d99d2f73e66bdacaeecc25eb05cb09afc1c3d6076089e1555a0af790b0c1cd62"
+ABI_VERSION = 304
+SIGNATURE_SHA256 = "5a890f83965e4874a69d6460612f7beeb30118df9149f21dcd83e878e96d2726"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -606,6 +606,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_paint_effective_rgba
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_double, ctypes.c_void_p]
+    # int32_t xyg_payload_axis_spec_attach_plan(int32_t coords_cartesian, int32_t axis_is_x, void * out)
+    function = lib.xyg_payload_axis_spec_attach_plan
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p]
     # int32_t xyg_payload_bar_compact_admit(size_t n_widths, const double * widths, size_t n_value0, const double * value0, double * out_width, double * out_value0_const, int32_t * out_has_value0_const, int32_t * out_compact)
     function = lib.xyg_payload_bar_compact_admit
     function.restype = ctypes.c_int32

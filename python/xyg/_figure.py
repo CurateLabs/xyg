@@ -1617,6 +1617,10 @@ class Figure(AnnotationsMixin, PayloadMixin):
     def _axis_spec(self, axis_id: str, range_: tuple[float, float]) -> dict[str, Any]:
         axis = self._axis_dim(axis_id)
         opts = self.axis_options.get(axis_id, {})
+        attach = kernels.payload_axis_spec_attach_plan(
+            coords_cartesian=self.coords == "cartesian",
+            axis_is_x=axis == "x",
+        )
         if axis_id == "x":
             label = self.x_label
         elif axis_id == "y":
@@ -1653,83 +1657,91 @@ class Figure(AnnotationsMixin, PayloadMixin):
             )
         )
         kind = self._axis_kind(axis_id)
-        spec: dict[str, Any] = {
-            "id": axis_id,
-            "kind": kind,
-            "label": label,
-            "range": list(range_),
-            "side": opts.get("side", "bottom" if axis == "x" else "left"),
-        }
-        if opts.get("tick_sides") is not None:
+        spec: dict[str, Any] = {}
+        if attach["attach_id"]:
+            spec["id"] = axis_id
+        if attach["attach_kind"]:
+            spec["kind"] = kind
+        if attach["attach_label"]:
+            spec["label"] = label
+        if attach["attach_range"]:
+            spec["range"] = list(range_)
+        if attach["attach_side"]:
+            spec["side"] = opts.get("side", "bottom" if axis == "x" else "left")
+        if attach["attach_tick_sides"] and opts.get("tick_sides") is not None:
             spec["tick_sides"] = list(opts["tick_sides"])
-        if opts.get("tick_label_sides") is not None:
+        if attach["attach_tick_label_sides"] and opts.get("tick_label_sides") is not None:
             spec["tick_label_sides"] = list(opts["tick_label_sides"])
-        if label_position is not None:
+        if attach["attach_label_position"] and label_position is not None:
             spec["label_position"] = label_position
-        if label_offset is not None:
+        if attach["attach_label_offset"] and label_offset is not None:
             spec["label_offset"] = label_offset
-        if label_angle is not None:
+        if attach["attach_label_angle"] and label_angle is not None:
             spec["label_angle"] = label_angle
-        if tick_count is not None:
+        if attach["attach_ticks"] and tick_count is not None:
             spec["tick_count"] = tick_count
-        if opts.get("tick_values") is not None:
+        if attach["attach_ticks"] and opts.get("tick_values") is not None:
             spec["tick_values"] = list(opts["tick_values"])
-        if opts.get("minor_tick_values") is not None:
+        if attach["attach_ticks"] and opts.get("minor_tick_values") is not None:
             spec["minor_tick_values"] = list(opts["minor_tick_values"])
-        if opts.get("tick_labels") is not None:
+        if attach["attach_ticks"] and opts.get("tick_labels") is not None:
             spec["tick_labels"] = list(opts["tick_labels"])
-        if tick_label_angle is not None:
+        if attach["attach_tick_label_angle"] and tick_label_angle is not None:
             spec["tick_label_angle"] = tick_label_angle
-        if tick_label_strategy is not None:
+        if attach["attach_tick_label_strategy"] and tick_label_strategy is not None:
             spec["tick_label_strategy"] = tick_label_strategy
-        if tick_label_anchor is not None:
+        if attach["attach_tick_label_anchor"] and tick_label_anchor is not None:
             spec["tick_label_anchor"] = tick_label_anchor
-        if tick_label_min_gap is not None:
+        if attach["attach_tick_label_min_gap"] and tick_label_min_gap is not None:
             spec["tick_label_min_gap"] = tick_label_min_gap
         scale = self._axis_scale(axis_id)
-        if scale != "linear":
+        if attach["attach_scale"] and scale != "linear":
             spec["scale"] = scale
-        if scale == "symlog":
+        if attach["attach_constant"] and scale == "symlog":
             spec["constant"] = opts.get("constant") or 1.0
-        if scale == "log" and opts.get("nonpositive") is not None:
+        if attach["attach_nonpositive"] and scale == "log" and opts.get("nonpositive") is not None:
             spec["nonpositive"] = opts["nonpositive"]
-        if opts.get("reverse"):
+        if attach["attach_reverse"] and opts.get("reverse"):
             spec["reverse"] = True
-        if opts.get("domain") is not None:
+        if attach["attach_domain"] and opts.get("domain") is not None:
             spec["domain"] = list(opts["domain"])
         bounds = opts.get("bounds")
         if bounds == "data":
             # Resolve once on the Python side so the client receives concrete
             # limits even when an independent explicit domain sets view0.
             bounds = self._range(axis_id, use_domain=False)
-        if bounds is not None:
+        if attach["attach_bounds"] and bounds is not None:
             spec["bounds"] = sorted(bounds)
-        if opts.get("minor_style"):
+        if attach["attach_minor_style"] and opts.get("minor_style"):
             spec["minor_style"] = dict(opts["minor_style"])
-        if opts.get("format") is not None:
+        if attach["attach_format"] and opts.get("format") is not None:
             spec["format"] = opts["format"]
         style = styles.compile_axis_style(opts.get("style"), f"{axis_id} axis style")
-        if style:
+        if attach["attach_style"] and style:
             spec["style"] = style
-        if kind == "category":
+        if attach["attach_categories"] and kind == "category":
             spec["categories"] = list(self._axis_categories.get(axis_id, []))
-        if self.coords == "polar" and self._axis_dim(axis_id) == "x":
+        if attach["attach_theta_unit"]:
             # Angular configuration rides the x (theta) axis. Defaults are
             # spelled out rather than omitted so the client and both exporters
             # read one resolved value instead of each re-deriving a fallback.
             unit = opts.get("theta_unit") or "radians"
             spec["theta_unit"] = unit
-            spec["theta_zero"] = "E" if opts.get("theta_zero") is None else opts["theta_zero"]
-            spec["theta_direction"] = opts.get("theta_direction") or "counterclockwise"
-            turn = 360.0 if unit == "degrees" else 2.0 * math.pi
-            spec["sector"] = list(opts.get("sector") or (0.0, turn))
-            spec["grid_shape"] = opts.get("grid_shape") or "circular"
-        if self.coords == "polar" and self._axis_dim(axis_id) == "y":
+            if attach["attach_theta_zero"]:
+                spec["theta_zero"] = "E" if opts.get("theta_zero") is None else opts["theta_zero"]
+            if attach["attach_theta_direction"]:
+                spec["theta_direction"] = opts.get("theta_direction") or "counterclockwise"
+            if attach["attach_sector"]:
+                turn = 360.0 if unit == "degrees" else 2.0 * math.pi
+                spec["sector"] = list(opts.get("sector") or (0.0, turn))
+            if attach["attach_grid_shape"]:
+                spec["grid_shape"] = opts.get("grid_shape") or "circular"
+        if attach["attach_hole"]:
             # `hole` is always resolved on the wire. `r_origin` stays optional:
             # when absent, renderers use the current visible r_lo, so radial
             # zoom keeps the ordinary centre origin without a spec rewrite.
             spec["hole"] = opts.get("hole") or 0.0
-            if opts.get("r_origin") is not None:
+            if attach["attach_r_origin"] and opts.get("r_origin") is not None:
                 spec["r_origin"] = opts["r_origin"]
         return spec
 

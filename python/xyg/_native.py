@@ -332,6 +332,43 @@ class _PayloadBuildPlan(ctypes.Structure):
     ]
 
 
+class _PayloadAxisSpecAttachPlan(ctypes.Structure):
+    _fields_ = [
+        ("attach_id", ctypes.c_uint32),
+        ("attach_kind", ctypes.c_uint32),
+        ("attach_side", ctypes.c_uint32),
+        ("attach_label", ctypes.c_uint32),
+        ("attach_range", ctypes.c_uint32),
+        ("attach_scale", ctypes.c_uint32),
+        ("attach_ticks", ctypes.c_uint32),
+        ("attach_tick_sides", ctypes.c_uint32),
+        ("attach_tick_label_sides", ctypes.c_uint32),
+        ("attach_label_position", ctypes.c_uint32),
+        ("attach_label_offset", ctypes.c_uint32),
+        ("attach_label_angle", ctypes.c_uint32),
+        ("attach_tick_label_angle", ctypes.c_uint32),
+        ("attach_tick_label_strategy", ctypes.c_uint32),
+        ("attach_tick_label_anchor", ctypes.c_uint32),
+        ("attach_tick_label_min_gap", ctypes.c_uint32),
+        ("attach_constant", ctypes.c_uint32),
+        ("attach_nonpositive", ctypes.c_uint32),
+        ("attach_reverse", ctypes.c_uint32),
+        ("attach_domain", ctypes.c_uint32),
+        ("attach_bounds", ctypes.c_uint32),
+        ("attach_minor_style", ctypes.c_uint32),
+        ("attach_format", ctypes.c_uint32),
+        ("attach_style", ctypes.c_uint32),
+        ("attach_categories", ctypes.c_uint32),
+        ("attach_theta_unit", ctypes.c_uint32),
+        ("attach_theta_zero", ctypes.c_uint32),
+        ("attach_theta_direction", ctypes.c_uint32),
+        ("attach_sector", ctypes.c_uint32),
+        ("attach_grid_shape", ctypes.c_uint32),
+        ("attach_hole", ctypes.c_uint32),
+        ("attach_r_origin", ctypes.c_uint32),
+    ]
+
+
 PAYLOAD_DENSITY_TRACE_EMIT_PLAN_BYTES = ctypes.sizeof(_PayloadDensityTraceEmitPlan)
 
 
@@ -12552,6 +12589,63 @@ def payload_build_plan(
         "attach_animation": bool(out.attach_animation),
         "attach_graph": bool(out.attach_graph),
     }
+
+
+def _payload_axis_spec_attach_plan_dict(out: _PayloadAxisSpecAttachPlan) -> dict[str, bool]:
+    return {
+        "attach_id": bool(out.attach_id),
+        "attach_kind": bool(out.attach_kind),
+        "attach_side": bool(out.attach_side),
+        "attach_label": bool(out.attach_label),
+        "attach_range": bool(out.attach_range),
+        "attach_scale": bool(out.attach_scale),
+        "attach_ticks": bool(out.attach_ticks),
+        "attach_tick_sides": bool(out.attach_tick_sides),
+        "attach_tick_label_sides": bool(out.attach_tick_label_sides),
+        "attach_label_position": bool(out.attach_label_position),
+        "attach_label_offset": bool(out.attach_label_offset),
+        "attach_label_angle": bool(out.attach_label_angle),
+        "attach_tick_label_angle": bool(out.attach_tick_label_angle),
+        "attach_tick_label_strategy": bool(out.attach_tick_label_strategy),
+        "attach_tick_label_anchor": bool(out.attach_tick_label_anchor),
+        "attach_tick_label_min_gap": bool(out.attach_tick_label_min_gap),
+        "attach_constant": bool(out.attach_constant),
+        "attach_nonpositive": bool(out.attach_nonpositive),
+        "attach_reverse": bool(out.attach_reverse),
+        "attach_domain": bool(out.attach_domain),
+        "attach_bounds": bool(out.attach_bounds),
+        "attach_minor_style": bool(out.attach_minor_style),
+        "attach_format": bool(out.attach_format),
+        "attach_style": bool(out.attach_style),
+        "attach_categories": bool(out.attach_categories),
+        "attach_theta_unit": bool(out.attach_theta_unit),
+        "attach_theta_zero": bool(out.attach_theta_zero),
+        "attach_theta_direction": bool(out.attach_theta_direction),
+        "attach_sector": bool(out.attach_sector),
+        "attach_grid_shape": bool(out.attach_grid_shape),
+        "attach_hole": bool(out.attach_hole),
+        "attach_r_origin": bool(out.attach_r_origin),
+    }
+
+
+def payload_axis_spec_attach_plan(
+    *,
+    coords_cartesian: bool,
+    axis_is_x: bool,
+) -> dict[str, bool]:
+    """Axis-spec attach orchestration via ``xyg_payload_axis_spec_attach_plan`` (ABI 304).
+
+    Owns which ``_axis_spec`` slots may ship for cartesian vs polar x/y axes.
+    """
+    out = _PayloadAxisSpecAttachPlan()
+    ok = _lib.xyg_payload_axis_spec_attach_plan(
+        1 if coords_cartesian else 0,
+        1 if axis_is_x else 0,
+        ctypes.byref(out),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_axis_spec_attach_plan arguments")
+    return _payload_axis_spec_attach_plan_dict(out)
 
 
 def payload_segments_emit_plan(

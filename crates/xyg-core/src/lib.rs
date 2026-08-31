@@ -161,7 +161,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 303;
+pub const ABI_VERSION: u32 = 304;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -16715,6 +16715,169 @@ pub unsafe extern "C" fn xyg_payload_build_plan(
             attach_annotations: u32::from(attach_annotations != 0),
             attach_animation: u32::from(attach_animation != 0),
             attach_graph: u32::from(attach_graph != 0),
+        };
+        1
+    })
+}
+
+/// Packed axis-spec attach plan (ABI 304).
+#[repr(C)]
+pub struct XygPayloadAxisSpecAttachPlan {
+    pub attach_id: u32,
+    pub attach_kind: u32,
+    pub attach_side: u32,
+    pub attach_label: u32,
+    pub attach_range: u32,
+    pub attach_scale: u32,
+    pub attach_ticks: u32,
+    pub attach_tick_sides: u32,
+    pub attach_tick_label_sides: u32,
+    pub attach_label_position: u32,
+    pub attach_label_offset: u32,
+    pub attach_label_angle: u32,
+    pub attach_tick_label_angle: u32,
+    pub attach_tick_label_strategy: u32,
+    pub attach_tick_label_anchor: u32,
+    pub attach_tick_label_min_gap: u32,
+    pub attach_constant: u32,
+    pub attach_nonpositive: u32,
+    pub attach_reverse: u32,
+    pub attach_domain: u32,
+    pub attach_bounds: u32,
+    pub attach_minor_style: u32,
+    pub attach_format: u32,
+    pub attach_style: u32,
+    pub attach_categories: u32,
+    pub attach_theta_unit: u32,
+    pub attach_theta_zero: u32,
+    pub attach_theta_direction: u32,
+    pub attach_sector: u32,
+    pub attach_grid_shape: u32,
+    pub attach_hole: u32,
+    pub attach_r_origin: u32,
+}
+
+/// ``_axis_spec`` field attach orchestration (ABI 304).
+///
+/// Owns which axis-spec slots may ship for cartesian vs polar x/y axes.
+/// Hosts still resolve labels, compile styles, and gate optional values.
+///
+/// # Safety
+/// ``out`` must be valid for writes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_axis_spec_attach_plan(
+    coords_cartesian: i32,
+    axis_is_x: i32,
+    out: *mut XygPayloadAxisSpecAttachPlan,
+) -> i32 {
+    ffi_guard(0, || {
+        if out.is_null() {
+            return 0;
+        }
+        let mut attach_id = 0i32;
+        let mut attach_kind = 0i32;
+        let mut attach_side = 0i32;
+        let mut attach_label = 0i32;
+        let mut attach_range = 0i32;
+        let mut attach_scale = 0i32;
+        let mut attach_ticks = 0i32;
+        let mut attach_tick_sides = 0i32;
+        let mut attach_tick_label_sides = 0i32;
+        let mut attach_label_position = 0i32;
+        let mut attach_label_offset = 0i32;
+        let mut attach_label_angle = 0i32;
+        let mut attach_tick_label_angle = 0i32;
+        let mut attach_tick_label_strategy = 0i32;
+        let mut attach_tick_label_anchor = 0i32;
+        let mut attach_tick_label_min_gap = 0i32;
+        let mut attach_constant = 0i32;
+        let mut attach_nonpositive = 0i32;
+        let mut attach_reverse = 0i32;
+        let mut attach_domain = 0i32;
+        let mut attach_bounds = 0i32;
+        let mut attach_minor_style = 0i32;
+        let mut attach_format = 0i32;
+        let mut attach_style = 0i32;
+        let mut attach_categories = 0i32;
+        let mut attach_theta_unit = 0i32;
+        let mut attach_theta_zero = 0i32;
+        let mut attach_theta_direction = 0i32;
+        let mut attach_sector = 0i32;
+        let mut attach_grid_shape = 0i32;
+        let mut attach_hole = 0i32;
+        let mut attach_r_origin = 0i32;
+        let ok = payload_emit::payload_axis_spec_attach_plan(
+            coords_cartesian,
+            axis_is_x,
+            &mut attach_id,
+            &mut attach_kind,
+            &mut attach_side,
+            &mut attach_label,
+            &mut attach_range,
+            &mut attach_scale,
+            &mut attach_ticks,
+            &mut attach_tick_sides,
+            &mut attach_tick_label_sides,
+            &mut attach_label_position,
+            &mut attach_label_offset,
+            &mut attach_label_angle,
+            &mut attach_tick_label_angle,
+            &mut attach_tick_label_strategy,
+            &mut attach_tick_label_anchor,
+            &mut attach_tick_label_min_gap,
+            &mut attach_constant,
+            &mut attach_nonpositive,
+            &mut attach_reverse,
+            &mut attach_domain,
+            &mut attach_bounds,
+            &mut attach_minor_style,
+            &mut attach_format,
+            &mut attach_style,
+            &mut attach_categories,
+            &mut attach_theta_unit,
+            &mut attach_theta_zero,
+            &mut attach_theta_direction,
+            &mut attach_sector,
+            &mut attach_grid_shape,
+            &mut attach_hole,
+            &mut attach_r_origin,
+        );
+        if ok == 0 {
+            return 0;
+        }
+        *out = XygPayloadAxisSpecAttachPlan {
+            attach_id: u32::from(attach_id != 0),
+            attach_kind: u32::from(attach_kind != 0),
+            attach_side: u32::from(attach_side != 0),
+            attach_label: u32::from(attach_label != 0),
+            attach_range: u32::from(attach_range != 0),
+            attach_scale: u32::from(attach_scale != 0),
+            attach_ticks: u32::from(attach_ticks != 0),
+            attach_tick_sides: u32::from(attach_tick_sides != 0),
+            attach_tick_label_sides: u32::from(attach_tick_label_sides != 0),
+            attach_label_position: u32::from(attach_label_position != 0),
+            attach_label_offset: u32::from(attach_label_offset != 0),
+            attach_label_angle: u32::from(attach_label_angle != 0),
+            attach_tick_label_angle: u32::from(attach_tick_label_angle != 0),
+            attach_tick_label_strategy: u32::from(attach_tick_label_strategy != 0),
+            attach_tick_label_anchor: u32::from(attach_tick_label_anchor != 0),
+            attach_tick_label_min_gap: u32::from(attach_tick_label_min_gap != 0),
+            attach_constant: u32::from(attach_constant != 0),
+            attach_nonpositive: u32::from(attach_nonpositive != 0),
+            attach_reverse: u32::from(attach_reverse != 0),
+            attach_domain: u32::from(attach_domain != 0),
+            attach_bounds: u32::from(attach_bounds != 0),
+            attach_minor_style: u32::from(attach_minor_style != 0),
+            attach_format: u32::from(attach_format != 0),
+            attach_style: u32::from(attach_style != 0),
+            attach_categories: u32::from(attach_categories != 0),
+            attach_theta_unit: u32::from(attach_theta_unit != 0),
+            attach_theta_zero: u32::from(attach_theta_zero != 0),
+            attach_theta_direction: u32::from(attach_theta_direction != 0),
+            attach_sector: u32::from(attach_sector != 0),
+            attach_grid_shape: u32::from(attach_grid_shape != 0),
+            attach_hole: u32::from(attach_hole != 0),
+            attach_r_origin: u32::from(attach_r_origin != 0),
         };
         1
     })
