@@ -1,0 +1,56 @@
+{
+  "schema": "xyg.payload-chrome-cross-host/v1",
+  "authority": "python/xyg/_payload.py build_payload show_legend and _dom_spec",
+  "protocol": 12,
+  "abi_version": 315,
+  "cases": [
+    {
+      "name": "show_legend_default",
+      "show_legend": true,
+      "dom": null
+    },
+    {
+      "name": "show_legend_false",
+      "show_legend": false,
+      "dom": null
+    },
+    {
+      "name": "dom_class_name",
+      "show_legend": true,
+      "dom": {
+        "class_name": "root-node"
+      }
+    },
+    {
+      "name": "dom_style",
+      "show_legend": true,
+      "dom": {
+        "style": {
+          "width": "100%"
+        }
+      }
+    },
+    {
+      "name": "dom_class_names",
+      "show_legend": true,
+      "dom": {
+        "class_names": {
+          "title": "t"
+        }
+      }
+    },
+    {
+      "name": "chrome_combined",
+      "show_legend": false,
+      "dom": {
+        "class_name": "root-node",
+        "class_names": {
+          "canvas": "p"
+        },
+        "style": {
+          "height": "320px"
+        }
+      }
+    }
+  ]
+}
