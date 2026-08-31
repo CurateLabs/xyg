@@ -163,7 +163,7 @@ pub fn bin_coord_endpoints(
 /// Returns ``1`` when ``color_ch`` is present and ``mode`` is ``constant`` or
 /// ``continuous``; otherwise ``0`` (host falls back to ``DEFAULT_COLORMAP``).
 pub fn density_uses_channel_colormap(has_channel: i32, mode: &str) -> i32 {
-    if has_channel == 0 {
+    if has_channel != 1 {
         return 0;
     }
     i32::from(matches!(mode, "constant" | "continuous"))
