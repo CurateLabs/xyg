@@ -49,19 +49,12 @@ publish waits on the `@curatelabs` npm org (#13).
   Node `buildPayload` omits title_options.
   Node `buildPayload` omits padding.
   Node `buildPayload` omits dom.
-  Node `buildPayload` omits cartesian axis nonpositive.
-  Node `buildPayload` omits cartesian axis constant.
-  Node `buildPayload` omits cartesian axis categories.
   Node `_emitLine` skips M4 bin_x.
   Node `_emitArea` skips M4 bin_x.
   Node `_polarAxisSpecs` omits axis id.
   Node `_polarAxisSpecs` omits axis kind.
   Node `_polarAxisSpecs` omits axis side.
   Node `_polarAxisSpecs` omits axis label.
-  Node `_polarAxisSpecs` y scale stays linear.
-  Node `_polarAxisSpecs` omits axis nonpositive.
-  Node `_polarAxisSpecs` omits axis constant.
-  Node `_polarAxisSpecs` omits axis categories.
   Node density Scene omits scatter `color_ch`.
   Node `composeScatter` omits `color`.
   Node `composeScatter` omits `size`.
@@ -1527,6 +1520,10 @@ client must not grow a parallel “JS layout/LOD” product path.
   Node `_polarAxisSpecs` uses axis `minor_tick_values`.
   Node `_polarAxisSpecs` uses axis `tick_labels`.
   Node `_polarAxisSpecs` uses axis `tick_count`.
+  Node `_axisSpec` uses axis `nonpositive` on log axes.
+  Node `_axisSpec` uses axis `constant` on symlog axes.
+  Node `_axisSpec` uses `_axis_categories` on category axes.
+  Node `_axisSpec` ships non-linear `scale` on polar y when authored.
   Node `packPolarSceneInput` uses figure `_range` only.
   Node `shouldUseDensity` Boolean false stays auto.
   Node `_emitScatter` still passes `forceDirect`.

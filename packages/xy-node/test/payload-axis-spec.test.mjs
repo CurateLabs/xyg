@@ -93,6 +93,59 @@ test("buildPayload ships log axis scale like Python _axis_spec", () => {
   assert.equal(spec.y_axis.scale, undefined);
 });
 
+test("buildPayload ships symlog axis constant like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.setAxis("x", { type: "symlog", constant: 2 });
+  fig.scatter([-1, 1], [-1, 1]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.scale, "symlog");
+  assert.equal(spec.x_axis.constant, 2);
+});
+
+test("buildPayload ships log axis nonpositive like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.setAxis("x", { type: "log", nonpositive: "mask" });
+  fig.scatter([1, 10], [1, 10]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.nonpositive, "mask");
+});
+
+test("buildPayload ships category axis labels like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig._axis_categories = { x: ["a", "b", "c"] };
+  fig.scatter([0, 1, 2], [0, 1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.kind, "category");
+  assert.deepEqual(spec.x_axis.categories, ["a", "b", "c"]);
+});
+
+test("buildPayload polar ships symlog y scale and constant like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("y", { type: "symlog", constant: 2 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.y_axis.scale, "symlog");
+  assert.equal(spec.y_axis.constant, 2);
+});
+
+test("buildPayload polar ships log y nonpositive like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("y", { type: "log", nonpositive: "mask" });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.y_axis.scale, "log");
+  assert.equal(spec.y_axis.nonpositive, "mask");
+});
+
+test("buildPayload polar ships category x labels like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig._axis_categories = { x: ["a", "b"] };
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.kind, "category");
+  assert.deepEqual(spec.x_axis.categories, ["a", "b"]);
+});
+
 test("buildPayload ships cartesian axis tick_values like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);

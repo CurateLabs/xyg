@@ -1593,40 +1593,31 @@ test("buildPayload ships cartesian axis style like Python _axis_spec", () => {
   assert.equal(spec.y_axis.style, undefined);
 });
 
-test("buildPayload omits cartesian axis nonpositive unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `nonpositive` on log axes. Node cartesian payload
-  // axes omit that field even when axis nonpositive is set. Recorded
-  // emit-payload-axis-nonpositive stay-host.
+test("buildPayload ships cartesian axis nonpositive like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([1, 2], [1, 2]);
   fig.setAxis("x", { type: "log", nonpositive: "clip" });
   const { spec } = fig.buildPayload();
-  assert.equal(fig.axis_options.x.nonpositive, "clip");
-  assert.equal(spec.x_axis.nonpositive, undefined);
+  assert.equal(spec.x_axis.nonpositive, "clip");
+  assert.equal(spec.y_axis.nonpositive, undefined);
 });
 
-test("buildPayload omits cartesian axis constant unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `constant` on symlog axes. Node cartesian payload
-  // axes omit that field even when axis constant is set. Recorded
-  // emit-payload-axis-constant stay-host.
+test("buildPayload ships cartesian axis constant like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([1, 2], [1, 2]);
   fig.setAxis("x", { type: "symlog", constant: 2 });
   const { spec } = fig.buildPayload();
-  assert.equal(fig.axis_options.x.constant, 2);
-  assert.equal(spec.x_axis.constant, undefined);
+  assert.equal(spec.x_axis.constant, 2);
+  assert.equal(spec.y_axis.constant, undefined);
 });
 
-test("buildPayload omits cartesian axis categories unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `_axis_categories` for category axes. Node
-  // cartesian payload axes omit that field even when categories are set.
-  // Recorded emit-payload-axis-categories stay-host.
+test("buildPayload ships cartesian axis categories like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   fig._axis_categories = { x: ["a", "b"] };
   const { spec } = fig.buildPayload();
-  assert.deepEqual(fig._axis_categories.x, ["a", "b"]);
-  assert.equal(spec.x_axis.categories, undefined);
+  assert.deepEqual(spec.x_axis.categories, ["a", "b"]);
+  assert.equal(spec.y_axis.categories, undefined);
 });
 
 test("_emitLine skips M4 bin_x unlike Python _m4_decimate", () => {
@@ -1922,34 +1913,31 @@ test("buildPayload polar ships non-linear y scale like Python _axis_spec", () =>
   assert.equal(spec.y_axis.scale, "log");
 });
 
-test("buildPayload omits polar axis nonpositive unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `nonpositive` on log axes. Node `_polarAxisSpecs`
-  // omits that field. Recorded emit-polar-payload-axis-nonpositive stay-host.
+test("buildPayload ships polar axis nonpositive like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.setAxis("y", { type: "log", nonpositive: "mask" });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.y_axis.nonpositive, undefined);
+  assert.equal(spec.y_axis.nonpositive, "mask");
+  assert.equal(spec.x_axis.nonpositive, undefined);
 });
 
-test("buildPayload omits polar axis constant unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `constant` on symlog axes. Node `_polarAxisSpecs`
-  // omits that field. Recorded emit-polar-payload-axis-constant stay-host.
+test("buildPayload ships polar axis constant like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.setAxis("y", { type: "symlog", constant: 2 });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.y_axis.constant, undefined);
+  assert.equal(spec.y_axis.constant, 2);
+  assert.equal(spec.x_axis.constant, undefined);
 });
 
-test("buildPayload omits polar axis categories unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `_axis_categories` for category axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-categories stay-host.
+test("buildPayload ships polar axis categories like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
-  fig.setAxis("x", { type: "category", categories: ["a", "b"] });
+  fig._axis_categories = { x: ["a", "b"] };
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.categories, undefined);
+  assert.deepEqual(spec.x_axis.categories, ["a", "b"]);
+  assert.equal(spec.y_axis.categories, undefined);
 });
 
 test("nextTraceId starts at 1 unlike Python len(traces)", () => {
