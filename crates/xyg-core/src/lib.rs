@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 275;
+pub const ABI_VERSION: u32 = 276;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15553,6 +15553,46 @@ pub unsafe extern "C" fn xyg_density_format_binning(
 }
 
 /// POD first-paint density emit plan (ABI 132).
+/// Density scatter color-channel classify (ABI 260).
+///
+/// Returns ``1`` on success, ``0`` when ``channel_mode`` is invalid or outputs
+/// are null. Writes ``DENSITY_COLOR_MODE_*`` plus categorical/compact/stratified
+/// flags for ``xyg_density_emit_meta``.
+///
+/// # Safety
+/// Output pointers must be writable when non-null.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_density_color_classify(
+    channel_mode: i32,
+    codes_present: i32,
+    codes_u8: i32,
+    has_counts: i32,
+    out_color_mode: *mut i32,
+    out_categorical: *mut i32,
+    out_compact_categorical: *mut i32,
+    out_stratified_counts: *mut i32,
+) -> i32 {
+    ffi_guard(0, || {
+        if out_color_mode.is_null()
+            || out_categorical.is_null()
+            || out_compact_categorical.is_null()
+            || out_stratified_counts.is_null()
+        {
+            return 0;
+        }
+        density_emit::density_color_classify(
+            channel_mode,
+            codes_present,
+            codes_u8,
+            has_counts,
+            &mut *out_color_mode,
+            &mut *out_categorical,
+            &mut *out_compact_categorical,
+            &mut *out_stratified_counts,
+        )
+    })
+}
+
 #[repr(C)]
 pub struct XygDensityEmitMeta {
     pub grid_path: i32,
