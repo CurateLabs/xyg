@@ -2052,13 +2052,11 @@ test("nextTraceId starts at 1 unlike Python len(traces)", () => {
 });
 
 
-test("_emitScatterDensity visible stays n_points unlike Python _density_trace_spec", () => {
-  // Python `_density_trace_spec` sets visible from range indices. Node uses
-  // `t.x.length`. Recorded emit-density-visible stay-host.
+test("_emitScatterDensity visible uses range-index count like Python _density_trace_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1, NaN, 2], [1, 2, 3, 4], { forceDensity: true });
   const { spec } = fig.buildPayload();
-  assert.equal(spec.traces[0].visible, 4);
+  assert.equal(spec.traces[0].visible, 3);
 });
 
 

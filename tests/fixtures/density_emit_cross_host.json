@@ -315,6 +315,7 @@
       "name": "density_sample_nan_oov_filter",
       "trace_id": 36,
       "tier": "density",
+      "visible": 2,
       "density_colormap": "viridis",
       "density_dropped_channels": [],
       "density_channels_dropped": false,
