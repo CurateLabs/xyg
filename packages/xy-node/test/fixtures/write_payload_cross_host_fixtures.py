@@ -101,6 +101,12 @@ def main() -> None:
 
     fig = Figure(width=240, height=160)
     fig.set_axis("x", type_="log")
+    fig.area([1.0, 10.0], [1.0, 10.0])
+    fig.traces[0].id = 42
+    cases.append(_case("area_log_ship_scale", fig))
+
+    fig = Figure(width=240, height=160)
+    fig.set_axis("x", type_="log")
     fig.histogram([1.0, 2.0, 10.0], bins=2, range=(1.0, 10.0))
     fig.traces[0].id = 44
     cases.append(_case("histogram_log_ship_scale", fig))

@@ -102,6 +102,12 @@ def _build_case(name: str) -> tuple[Figure, dict[str, object]]:
         fig.scatter([1.0, 10.0], [1.0, 10.0])
         fig.traces[0].id = 41
         return fig, {}
+    if name == "area_log_ship_scale":
+        fig = Figure(width=240, height=160)
+        fig.set_axis("x", type_="log")
+        fig.area([1.0, 10.0], [1.0, 10.0])
+        fig.traces[0].id = 42
+        return fig, {}
     if name == "histogram_log_ship_scale":
         fig = Figure(width=240, height=160)
         fig.set_axis("x", type_="log")
@@ -329,7 +335,7 @@ def test_fixture_contract(fixture: dict) -> None:
     assert fixture["schema"] == "xyg.payload-cross-host/v1"
     assert fixture["protocol"] == PROTOCOL_VERSION
     assert int(fixture["abi_version"]) == int(_native.ABI_VERSION)
-    assert len(fixture["cases"]) == 29
+    assert len(fixture["cases"]) == 30
     assert {case["name"] for case in fixture["cases"]} == {
         "scatter_direct",
         "scatter_categorical_color",
@@ -338,6 +344,7 @@ def test_fixture_contract(fixture: dict) -> None:
         "line_transition_keys",
         "line_log_ship_scale",
         "scatter_log_ship_scale",
+        "area_log_ship_scale",
         "histogram_log_ship_scale",
         "histogram_fixed_bins",
         "histogram_finite_sel",
@@ -373,6 +380,7 @@ def test_fixture_contract(fixture: dict) -> None:
         "line_transition_keys",
         "line_log_ship_scale",
         "scatter_log_ship_scale",
+        "area_log_ship_scale",
         "histogram_log_ship_scale",
         "histogram_fixed_bins",
         "histogram_finite_sel",
@@ -416,6 +424,7 @@ def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> Non
         "line_transition_keys",
         "line_log_ship_scale",
         "scatter_log_ship_scale",
+        "area_log_ship_scale",
         "histogram_log_ship_scale",
         "histogram_fixed_bins",
         "histogram_finite_sel",

@@ -182,7 +182,7 @@
       "python": "ready",
       "node": "ready",
       "rust": "ready",
-      "notes": "packages/xy-node marks/area reuses line M4 ingest + base; tests/test_node_mark_parity.py stable-sort goldens"
+      "notes": "packages/xy-node marks/area reuses line M4 ingest + base; tests/test_node_mark_parity.py stable-sort goldens; tests/fixtures/payload_cross_host.json area_log_ship_scale packed blob (log-axis ship scale)"
     },
     {
       "kind": "bar",

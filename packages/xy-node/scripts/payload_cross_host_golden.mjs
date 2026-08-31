@@ -83,6 +83,11 @@ const cases = [
     fig.scatter([1, 10], [1, 10]);
     fig.traces[0].id = 41;
   }),
+  caseEntry("area_log_ship_scale", (fig) => {
+    fig.setAxis("x", { type: "log" });
+    fig.area([1, 10], [1, 10]);
+    fig.traces[0].id = 42;
+  }),
   caseEntry("histogram_log_ship_scale", (fig) => {
     fig.setAxis("x", { type: "log" });
     fig.histogram([1, 2, 10], { bins: 2, range: [1, 10] });
