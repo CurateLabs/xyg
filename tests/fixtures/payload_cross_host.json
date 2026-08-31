@@ -31,6 +31,19 @@
       "trace_keys": null
     },
     {
+      "name": "scatter_style_channels",
+      "width": 240,
+      "height": 160,
+      "trace_id": 34,
+      "kind": "scatter",
+      "tier": "direct",
+      "n_marks": 2,
+      "payload_blob_len": 24,
+      "payload_blob_sha256": "1ce4d3fdfc0edc04ca8b3b44338865ccfad7b0cb76e90cb19c30082f7e1fb5e5",
+      "payload_blob_hex": "000000bf0000003f000000bf0000003f0000004000004040",
+      "trace_keys": null
+    },
+    {
       "name": "line_transition_keys",
       "width": 240,
       "height": 160,
@@ -98,6 +111,19 @@
       "payload_blob_len": 40,
       "payload_blob_sha256": "11b6f4b1d8fba03ba7820002ceedd3912909f063b4a9caab54e0e6717abc9f52",
       "payload_blob_hex": "000000bf0000003f000000bf0000003f0000000000000000000080bf0000803fff0000ff00ff00ff",
+      "trace_keys": null
+    },
+    {
+      "name": "histogram_color_ch",
+      "width": 240,
+      "height": 160,
+      "trace_id": 35,
+      "kind": "histogram",
+      "tier": "direct",
+      "n_marks": 2,
+      "payload_blob_len": 32,
+      "payload_blob_sha256": "82194cc9c1c62de7c35591cb429bbc849ebdfbcf4d2863b0f1b9bab13501a794",
+      "payload_blob_hex": "000000bf0000003f000000bf0000003f0000000000000000000080bf0000803f",
       "trace_keys": null
     },
     {
