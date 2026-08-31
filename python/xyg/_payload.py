@@ -1107,10 +1107,6 @@ class PayloadMixin(_Host):
             column_plan,
             {"x0": x0v, "x1": x1v, "y0": slo, "y1": shi, "x": tlo, "y": thi},
         )
-        if plan["attach_color2"]:
-            entry["color_target"] = channels.ship_color_channel(
-                t.color2_ch, sel_arg, pw.ship_scalar, pw.ship_u8
-            )
         self._attach_tooltip_rows(entry, t, sel_arg)
         self._ship_trace_channel_attach(
             entry,
@@ -1119,6 +1115,7 @@ class PayloadMixin(_Host):
             pw,
             plan["channel_slot"],
             include_trace_styles=plan["include_trace_styles"],
+            has_color2_ch=plan["attach_color2"],
         )
         if plan["attach_transition"]:
             return self._transition_entry(entry, t, pw, sel_arg)
@@ -1393,25 +1390,31 @@ class PayloadMixin(_Host):
         slot: int,
         *,
         include_trace_styles: bool,
+        has_color2_ch: bool = False,
     ) -> None:  # noqa: ANN001
-        """Attach color/size/stroke/style channels per Rust-owned emit policy."""
-        attach = kernels.payload_trace_channels_ship_attach(
+        """Attach paint/style channels per Rust-owned channel ship registry (ABI 311)."""
+        plan = kernels.payload_channel_ship_plan(
             slot,
             include_trace_styles=include_trace_styles,
+            has_color2_ch=has_color2_ch,
             has_color_ch=t.color_ch is not None,
             has_stroke_ch=t.stroke_ch is not None,
             has_style_channels=bool(t.style_channels),
         )
-        if attach["ship_color"]:
-            entry["color"], entry["size"] = self._ship_channels(t, sel, pw.ship_scalar, pw.ship_u8)
-        if attach["ship_stroke"]:
-            entry["stroke"] = channels.ship_color_channel(
-                t.stroke_ch, sel, pw.ship_scalar, pw.ship_u8
-            )
-        if attach["ship_style_channels"]:
-            entry["channels"] = channels.ship_style_channels(
-                t.style_channels, sel, pw.ship_scalar, pw.ship_u8
-            )
+        for ch in plan["channels"]:
+            key = ch["registry_key"]
+            method = ch["ship_method"]
+            if method == "color_size":
+                entry["color"], entry["size"] = self._ship_channels(
+                    t, sel, pw.ship_scalar, pw.ship_u8
+                )
+            elif method == "color":
+                channel = getattr(t, ch["trace_slot"])
+                entry[key] = channels.ship_color_channel(channel, sel, pw.ship_scalar, pw.ship_u8)
+            elif method == "style":
+                entry[key] = channels.ship_style_channels(
+                    t.style_channels, sel, pw.ship_scalar, pw.ship_u8
+                )
 
     def _payload_column_ship_plan(self, t: Trace, *, kind: Optional[str] = None) -> dict:
         """Rust-owned geometry column registry and gather policy (ABI 310)."""

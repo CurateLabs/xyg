@@ -12761,6 +12761,91 @@ def payload_column_ship_plan(
     }
 
 
+class _PayloadChannelShipEntry(ctypes.Structure):
+    _fields_ = [
+        ("registry_key", ctypes.c_int32),
+        ("trace_slot", ctypes.c_int32),
+        ("ship_method", ctypes.c_int32),
+    ]
+
+
+_PAYLOAD_CHAN_REGISTRY_KEY_BY_CODE: tuple[str, ...] = (
+    "color",
+    "size",
+    "stroke",
+    "channels",
+    "color_target",
+)
+_PAYLOAD_CHAN_TRACE_SLOT_BY_CODE: tuple[str, ...] = (
+    "color_ch",
+    "size_ch",
+    "stroke_ch",
+    "style_channels",
+    "color2_ch",
+)
+_PAYLOAD_CHAN_SHIP_METHOD_BY_CODE: tuple[str, ...] = (
+    "color_size",
+    "color",
+    "style",
+)
+PAYLOAD_CHANNEL_SHIP_MAX = 5
+
+
+def payload_channel_ship_plan(
+    slot: int,
+    *,
+    include_trace_styles: bool,
+    has_color2_ch: bool = False,
+    has_color_ch: bool = False,
+    has_stroke_ch: bool = False,
+    has_style_channels: bool = False,
+) -> dict[str, int | list[dict[str, str]]]:
+    """Channel registry / attach-order plan via ``xyg_payload_channel_ship_plan`` (ABI 311).
+
+    Owns which trace channels ship under which spec keys and in what order.
+    Hosts still slice columns and ship buffers via ``channels.ship_*``.
+    """
+    n_channels = ctypes.c_size_t(0)
+    channels = (_PayloadChannelShipEntry * PAYLOAD_CHANNEL_SHIP_MAX)()
+    ok = _lib.xyg_payload_channel_ship_plan(
+        int(slot),
+        1 if include_trace_styles else 0,
+        1 if has_color2_ch else 0,
+        1 if has_color_ch else 0,
+        1 if has_stroke_ch else 0,
+        1 if has_style_channels else 0,
+        ctypes.byref(n_channels),
+        channels,
+        PAYLOAD_CHANNEL_SHIP_MAX,
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_channel_ship_plan arguments")
+    n = int(n_channels.value)
+    out_channels: list[dict[str, str]] = []
+    for idx in range(n):
+        entry = channels[idx]
+        key_code = int(entry.registry_key)
+        slot_code = int(entry.trace_slot)
+        method_code = int(entry.ship_method)
+        if not (0 <= key_code < len(_PAYLOAD_CHAN_REGISTRY_KEY_BY_CODE)):
+            raise ValueError("invalid payload_channel_ship_plan registry key")
+        if not (0 <= slot_code < len(_PAYLOAD_CHAN_TRACE_SLOT_BY_CODE)):
+            raise ValueError("invalid payload_channel_ship_plan trace slot")
+        if not (0 <= method_code < len(_PAYLOAD_CHAN_SHIP_METHOD_BY_CODE)):
+            raise ValueError("invalid payload_channel_ship_plan ship method")
+        out_channels.append(
+            {
+                "registry_key": _PAYLOAD_CHAN_REGISTRY_KEY_BY_CODE[key_code],
+                "trace_slot": _PAYLOAD_CHAN_TRACE_SLOT_BY_CODE[slot_code],
+                "ship_method": _PAYLOAD_CHAN_SHIP_METHOD_BY_CODE[method_code],
+            }
+        )
+    return {
+        "n_channels": n,
+        "channels": out_channels,
+    }
+
+
 def payload_ribbon_emit_plan(
     *,
     n_marks: int,

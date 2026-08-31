@@ -162,7 +162,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 310;
+pub const ABI_VERSION: u32 = 311;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -16083,6 +16083,76 @@ pub unsafe extern "C" fn xyg_payload_column_ship_plan(
                     ship_method: entry.ship_method,
                     ship_scale: entry.ship_scale,
                     gather: u32::from(entry.gather != 0),
+                };
+            }
+        }
+        1
+    })
+}
+
+/// One paint/style channel descriptor from ``payload_channel_ship_plan`` (ABI 311).
+#[repr(C)]
+pub struct XygPayloadChannelShipEntry {
+    pub registry_key: i32,
+    pub trace_slot: i32,
+    pub ship_method: i32,
+}
+
+/// Channel registry / attach-order plan from ``_ship_channels`` /
+/// ``_ship_trace_channel_attach`` (ABI 311).
+///
+/// Owns which trace channels ship under which spec keys and in what order.
+/// Hosts still slice columns and ship buffers via ``channels.ship_*``.
+///
+/// # Safety
+/// ``out_channels`` must be writable for ``capacity`` entries; ``out_n_channels``
+/// receives the filled count (``<= capacity``).
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_channel_ship_plan(
+    slot: i32,
+    include_trace_styles: i32,
+    has_color2_ch: i32,
+    has_color_ch: i32,
+    has_stroke_ch: i32,
+    has_style_channels: i32,
+    out_n_channels: *mut usize,
+    out_channels: *mut XygPayloadChannelShipEntry,
+    capacity: usize,
+) -> i32 {
+    ffi_guard(0, || {
+        if out_n_channels.is_null() || (capacity > 0 && out_channels.is_null()) {
+            return 0;
+        }
+        let cap = capacity.min(payload_emit::PAYLOAD_CHANNEL_SHIP_MAX);
+        let mut channels = [payload_emit::PayloadChannelShipEntry {
+            registry_key: 0,
+            trace_slot: 0,
+            ship_method: 0,
+        }; payload_emit::PAYLOAD_CHANNEL_SHIP_MAX];
+        let mut n_channels = 0usize;
+        let ok = payload_emit::payload_channel_ship_plan(
+            slot,
+            include_trace_styles,
+            has_color2_ch,
+            has_color_ch,
+            has_stroke_ch,
+            has_style_channels,
+            &mut n_channels,
+            &mut channels,
+        );
+        if ok == 0 {
+            return 0;
+        }
+        if n_channels > cap {
+            return 0;
+        }
+        *out_n_channels = n_channels;
+        if cap > 0 {
+            for (idx, entry) in channels.iter().take(n_channels).enumerate() {
+                *out_channels.add(idx) = XygPayloadChannelShipEntry {
+                    registry_key: entry.registry_key,
+                    trace_slot: entry.trace_slot,
+                    ship_method: entry.ship_method,
                 };
             }
         }

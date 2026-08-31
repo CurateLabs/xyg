@@ -63,6 +63,14 @@ class PayloadColumnShipEntry(ctypes.Structure):
     ]
 
 
+class PayloadChannelShipEntry(ctypes.Structure):
+    _fields_ = [
+        ("registry_key", ctypes.c_int32),
+        ("trace_slot", ctypes.c_int32),
+        ("ship_method", ctypes.c_int32),
+    ]
+
+
 def _lib_name() -> str:
     if sys.platform == "win32":
         return "xyg_core.dll"
@@ -1588,6 +1596,18 @@ def load() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_int32),
         ctypes.POINTER(ctypes.c_int32),
         ctypes.POINTER(PayloadColumnShipEntry),
+        ctypes.c_size_t,
+    ]
+    lib.xyg_payload_channel_ship_plan.restype = ctypes.c_int32
+    lib.xyg_payload_channel_ship_plan.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.POINTER(ctypes.c_size_t),
+        ctypes.POINTER(PayloadChannelShipEntry),
         ctypes.c_size_t,
     ]
     lib.xyg_payload_ribbon_emit_plan.restype = ctypes.c_int32
@@ -5643,6 +5663,29 @@ def main() -> None:
         and col_entries[4].trace_slot == 0
         and col_entries[4].ship_scale == 2,
         "payload_column_ship_plan ribbon registry",
+    )
+    chan_n = ctypes.c_size_t(0)
+    chan_entries = (PayloadChannelShipEntry * 5)()
+    ok(
+        lib.xyg_payload_channel_ship_plan(
+            1,
+            1,
+            1,
+            1,
+            0,
+            0,
+            ctypes.byref(chan_n),
+            chan_entries,
+            5,
+        )
+        == 1
+        and chan_n.value == 2
+        and chan_entries[0].registry_key == 4
+        and chan_entries[0].trace_slot == 4
+        and chan_entries[0].ship_method == 1
+        and chan_entries[1].registry_key == 0
+        and chan_entries[1].ship_method == 0,
+        "payload_channel_ship_plan ribbon color2 before color_size",
     )
     ribbon_tier_direct = ctypes.c_int32(-1)
     ribbon_n_marks = ctypes.c_size_t(0)

@@ -53,7 +53,7 @@ import {
   DENSITY_WASM_DENSITY_UNSUPPORTED,
   payloadSegmentsEmitGather,
   payloadSegmentsEmitPlan,
-  payloadTraceChannelsShipAttach,
+  payloadChannelShipPlan,
   payloadTransitionEntryAttach,
   payloadSegmentBudget,
   payloadSampleTargetIndices,
@@ -2174,44 +2174,54 @@ export class Figure {
     return entry;
   }
 
-  _shipTraceChannelAttach(entry, t, pw, sel, slot, { includeTraceStyles = false } = {}) {
+  _shipTraceChannelAttach(entry, t, pw, sel, slot, {
+    includeTraceStyles = false,
+    hasColor2Ch = false,
+  } = {}) {
     const styleChannels = t.style_channels;
     const hasStyleChannels = styleChannels != null
       && typeof styleChannels === "object"
       && Object.keys(styleChannels).length > 0;
-    const attach = payloadTraceChannelsShipAttach(slot, {
+    const plan = payloadChannelShipPlan({
+      slot,
       includeTraceStyles,
+      hasColor2Ch,
       hasColorCh: t.color_ch != null,
       hasStrokeCh: t.stroke_ch != null,
       hasStyleChannels,
     });
-    if (attach.shipColor) {
-      const color = this._shipColor(t.color_ch, pw, sel);
-      if (color != null) entry.color = color;
-      const sizeCh = t.size_ch;
-      if (sizeCh?.mode === "continuous" && sizeCh.values != null) {
-        let values = sizeCh.values instanceof Float64Array
-          ? sizeCh.values
-          : Float64Array.from(sizeCh.values, Number);
-        if (sel != null) values = gatherF64(values, sel);
-        const domain = sizeCh.domain ?? minMax(values) ?? [0, 1];
-        const lo = domain[0];
-        const hi = domain[0] === domain[1] ? domain[0] + 1 : domain[1];
-        entry.size = {
-          mode: "continuous",
-          range_px: sizeCh.range_px ?? [8, 22],
-          domain: [lo, hi],
-          buf: pw.shipScalar(normalizeF32(values, lo, hi)),
-        };
-      } else if (sizeCh?.mode === "constant") {
-        entry.size = { ...sizeCh };
+    for (const ch of plan.channels) {
+      const key = ch.registryKey;
+      if (ch.shipMethod === "color_size") {
+        const color = this._shipColor(t.color_ch, pw, sel);
+        if (color != null) entry.color = color;
+        const sizeCh = t.size_ch;
+        if (sizeCh?.mode === "continuous" && sizeCh.values != null) {
+          let values = sizeCh.values instanceof Float64Array
+            ? sizeCh.values
+            : Float64Array.from(sizeCh.values, Number);
+          if (sel != null) values = gatherF64(values, sel);
+          const domain = sizeCh.domain ?? minMax(values) ?? [0, 1];
+          const lo = domain[0];
+          const hi = domain[0] === domain[1] ? domain[0] + 1 : domain[1];
+          entry.size = {
+            mode: "continuous",
+            range_px: sizeCh.range_px ?? [8, 22],
+            domain: [lo, hi],
+            buf: pw.shipScalar(normalizeF32(values, lo, hi)),
+          };
+        } else if (sizeCh?.mode === "constant") {
+          entry.size = { ...sizeCh };
+        }
+      } else if (ch.shipMethod === "color") {
+        const traceSlot = ch.traceSlot === "color2_ch"
+          ? (t.color_target ?? t.color2_ch)
+          : t[ch.traceSlot];
+        const shipped = this._shipColor(traceSlot, pw, sel);
+        if (shipped != null) entry[key] = shipped;
       }
+      // Node style_channels wire stays host; Python ships via channels.ship_style_channels.
     }
-    if (attach.shipStroke) {
-      const stroke = this._shipColor(t.stroke_ch, pw, sel);
-      if (stroke != null) entry.stroke = stroke;
-    }
-    // Node style_channels wire stays host; Python ships via channels.ship_style_channels.
   }
 
   _shipColor(channel, pw, sel = null) {
@@ -2337,19 +2347,8 @@ export class Figure {
       pw,
       sel,
       plan.channelSlot,
-      { includeTraceStyles: plan.includeTraceStyles },
+      { includeTraceStyles: plan.includeTraceStyles, hasColor2Ch: plan.attachColor2 },
     );
-    // Node payload ribbon ships t.color. Python `_emit_ribbon` ships color_ch.
-    // Matching Python would ignore t.color. Recorded ribbon-ship-color stay-host.
-    const color = this._shipColor(t.color, pw);
-    if (color != null) entry.color = color;
-    // Node payload ribbon ships t.color_target. Python `_emit_ribbon` ships
-    // color2_ch. Matching Python would ignore t.color_target. Recorded
-    // ribbon-color-target stay-host.
-    if (plan.attachColor2) {
-      const colorTarget = this._shipColor(t.color_target ?? t.color2_ch, pw, sel);
-      if (colorTarget != null) entry.color_target = colorTarget;
-    }
     if (t.tooltip_rows != null) {
       // Node payload ribbon skips tooltip_rows length. Python
       // `_attach_tooltip_rows` rejects a mismatch with n_points. Matching
