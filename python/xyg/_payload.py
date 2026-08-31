@@ -688,8 +688,9 @@ class PayloadMixin(_Host):
         entry = self._base_entry(t, pw, xv, yv, "direct", dict(t.style))
         if t.transition_keys is not None:
             self._transition_entry(entry, t, pw, sel)
-        entry["color"], entry["size"] = self._ship_channels(t, sel, pw.ship_scalar, pw.ship_u8)
-        self._ship_trace_styles(entry, t, sel, pw)
+        self._ship_trace_channel_attach(
+            entry, t, sel, pw, kernels.PAYLOAD_SHIP_CHANNELS_ALWAYS, include_trace_styles=True
+        )
         self._attach_tooltip_rows(entry, t, sel)
         t.shipped_sel = sel  # pick/selection translation (§17)
         return entry
@@ -719,7 +720,9 @@ class PayloadMixin(_Host):
             "x": pw.ship_values(xv, scale=self._axis_scale(t.x_axis)),
             "y": pw.ship_values(yv, scale=self._axis_scale(t.y_axis)),
         }
-        entry["color"], _size = self._ship_channels(t, sel, pw.ship_scalar, pw.ship_u8)
+        self._ship_trace_channel_attach(
+            entry, t, sel, pw, kernels.PAYLOAD_SHIP_CHANNELS_ALWAYS, include_trace_styles=False
+        )
         return entry
 
     def _emit_histogram(
@@ -863,9 +866,14 @@ class PayloadMixin(_Host):
             "y0": pw.ship(y0v, t.y0, scale=self._axis_scale(t.y_axis)),
             "y1": pw.ship(y1v, t.y1, scale=self._axis_scale(t.y_axis)),
         }
-        if t.color_ch is not None:
-            entry["color"], _size = self._ship_channels(t, source_sel, pw.ship_scalar, pw.ship_u8)
-        self._ship_trace_styles(entry, t, source_sel, pw)
+        self._ship_trace_channel_attach(
+            entry,
+            t,
+            source_sel,
+            pw,
+            kernels.PAYLOAD_SHIP_CHANNELS_IF_COLOR,
+            include_trace_styles=True,
+        )
         self._attach_tooltip_rows(entry, t, source_sel)
         key_values = None
         if (
@@ -927,14 +935,19 @@ class PayloadMixin(_Host):
             "target_y0": pw.ship(tlo, t.x, scale=ys),
             "target_y1": pw.ship(thi, t.y, scale=ys),
         }
-        if t.color_ch is not None:
-            entry["color"], _size = self._ship_channels(t, sel_arg, pw.ship_scalar, pw.ship_u8)
         if t.color2_ch is not None:
             entry["color_target"] = channels.ship_color_channel(
                 t.color2_ch, sel_arg, pw.ship_scalar, pw.ship_u8
             )
         self._attach_tooltip_rows(entry, t, sel_arg)
-        self._ship_trace_styles(entry, t, sel_arg, pw)
+        self._ship_trace_channel_attach(
+            entry,
+            t,
+            sel_arg,
+            pw,
+            kernels.PAYLOAD_SHIP_CHANNELS_IF_COLOR,
+            include_trace_styles=True,
+        )
         return self._transition_entry(entry, t, pw, sel_arg)
 
     def _emit_triangle_mesh(
@@ -975,9 +988,14 @@ class PayloadMixin(_Host):
             "y1": pw.ship(y1v, t.y1, scale=self._axis_scale(t.y_axis)),
             "y2": pw.ship(y2v, t.y, scale=self._axis_scale(t.y_axis)),
         }
-        if t.color_ch is not None:
-            entry["color"], _size = self._ship_channels(t, sel_arg, pw.ship_scalar, pw.ship_u8)
-        self._ship_trace_styles(entry, t, sel_arg, pw)
+        self._ship_trace_channel_attach(
+            entry,
+            t,
+            sel_arg,
+            pw,
+            kernels.PAYLOAD_SHIP_CHANNELS_IF_COLOR,
+            include_trace_styles=True,
+        )
         return self._transition_entry(entry, t, pw, sel_arg)
 
     def _emit_errorbar(
@@ -1031,9 +1049,14 @@ class PayloadMixin(_Host):
             "y0": pw.ship(y0v, t.y0, scale=self._axis_scale(t.y_axis)),
             "y1": pw.ship(y1v, t.y1, scale=self._axis_scale(t.y_axis)),
         }
-        if t.color_ch is not None:
-            entry["color"], _size = self._ship_channels(t, sel_arg, pw.ship_scalar, pw.ship_u8)
-        self._ship_trace_styles(entry, t, sel_arg, pw)
+        self._ship_trace_channel_attach(
+            entry,
+            t,
+            sel_arg,
+            pw,
+            kernels.PAYLOAD_SHIP_CHANNELS_IF_COLOR,
+            include_trace_styles=True,
+        )
         return self._transition_entry(entry, t, pw, sel_arg)
 
     def _emit_bar_compact(
@@ -1106,10 +1129,44 @@ class PayloadMixin(_Host):
             "y_axis": t.y_axis,
             "bar": bar_spec,
         }
-        if t.color_ch is not None:
-            entry["color"], _size = self._ship_channels(t, sel_arg, pw.ship_scalar, pw.ship_u8)
-        self._ship_trace_styles(entry, t, sel_arg, pw)
+        self._ship_trace_channel_attach(
+            entry,
+            t,
+            sel_arg,
+            pw,
+            kernels.PAYLOAD_SHIP_CHANNELS_IF_COLOR,
+            include_trace_styles=True,
+        )
         return self._transition_entry(entry, t, pw, sel_arg)
+
+    def _ship_trace_channel_attach(
+        self,
+        entry: dict[str, Any],
+        t: Trace,
+        sel,
+        pw: "_PayloadWriter",
+        slot: int,
+        *,
+        include_trace_styles: bool,
+    ) -> None:  # noqa: ANN001
+        """Attach color/size/stroke/style channels per Rust-owned emit policy."""
+        attach = kernels.payload_trace_channels_ship_attach(
+            slot,
+            include_trace_styles=include_trace_styles,
+            has_color_ch=t.color_ch is not None,
+            has_stroke_ch=t.stroke_ch is not None,
+            has_style_channels=bool(t.style_channels),
+        )
+        if attach["ship_color"]:
+            entry["color"], entry["size"] = self._ship_channels(t, sel, pw.ship_scalar, pw.ship_u8)
+        if attach["ship_stroke"]:
+            entry["stroke"] = channels.ship_color_channel(
+                t.stroke_ch, sel, pw.ship_scalar, pw.ship_u8
+            )
+        if attach["ship_style_channels"]:
+            entry["channels"] = channels.ship_style_channels(
+                t.style_channels, sel, pw.ship_scalar, pw.ship_u8
+            )
 
     def _ship_channels(
         self, t: Trace, sel, ship_scalar, ship_u8, *, quantize_continuous: bool = False
@@ -1122,18 +1179,6 @@ class PayloadMixin(_Host):
         return channels.ship_channels(
             t, sel, ship_scalar, ship_u8, quantize_continuous=quantize_continuous
         )
-
-    @staticmethod
-    def _ship_trace_styles(entry: dict[str, Any], t: Trace, sel, pw: "_PayloadWriter") -> None:  # noqa: ANN001
-        """Attach outline paint and direct instance attributes to a trace spec."""
-        if t.stroke_ch is not None:
-            entry["stroke"] = channels.ship_color_channel(
-                t.stroke_ch, sel, pw.ship_scalar, pw.ship_u8
-            )
-        if t.style_channels:
-            entry["channels"] = channels.ship_style_channels(
-                t.style_channels, sel, pw.ship_scalar, pw.ship_u8
-            )
 
     def _density_sample_spec(
         self,
@@ -1160,7 +1205,6 @@ class PayloadMixin(_Host):
             )
         if len(sample_sel) == 0:
             return None
-        color_spec, size_spec = self._ship_channels(t, sample_sel, pw.ship_scalar, pw.ship_u8)
         style = dict(t.style)
         try:
             authored = float(style.get("opacity", 0.8))
@@ -1184,11 +1228,16 @@ class PayloadMixin(_Host):
             "y": {"col": y_col, **pw.columns[y_col]},
             "x_range": list(xr),
             "y_range": list(yr),
-            "color": color_spec,
-            "size": size_spec,
             "style": style,
         }
-        self._ship_trace_styles(sample, t, sample_sel, pw)
+        self._ship_trace_channel_attach(
+            sample,
+            t,
+            sample_sel,
+            pw,
+            kernels.PAYLOAD_SHIP_CHANNELS_ALWAYS,
+            include_trace_styles=True,
+        )
         return sample
 
     def _density_trace_spec(self, t: Trace, xr, yr, w, h, pw: "_PayloadWriter") -> dict[str, Any]:  # noqa: ANN001

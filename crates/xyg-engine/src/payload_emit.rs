@@ -11,6 +11,44 @@ use crate::lod_plan::{
 pub const PAYLOAD_SEGMENTS_TIER_DIRECT: i32 = 0;
 pub const PAYLOAD_SEGMENTS_TIER_DECIMATED: i32 = 1;
 
+/// Always ship color/size via ``_ship_channels`` (scatter, hexbin, density sample).
+pub const PAYLOAD_SHIP_CHANNELS_ALWAYS: i32 = 0;
+/// Ship color/size only when ``color_ch`` is present (geometry marks).
+pub const PAYLOAD_SHIP_CHANNELS_IF_COLOR: i32 = 1;
+
+/// Trace channel attach policy from ``_ship_channels`` / ``_ship_trace_styles``.
+///
+/// ``slot`` is ``PAYLOAD_SHIP_CHANNELS_ALWAYS`` or ``PAYLOAD_SHIP_CHANNELS_IF_COLOR``.
+/// When ``include_trace_styles`` is zero, stroke and style-channel slots stay off
+/// (hexbin). Returns ``1`` on success, ``0`` when ``slot`` is invalid.
+pub fn payload_trace_channels_ship_attach(
+    slot: i32,
+    include_trace_styles: i32,
+    has_color_ch: i32,
+    has_stroke_ch: i32,
+    has_style_channels: i32,
+    out_ship_color: &mut i32,
+    out_ship_size: &mut i32,
+    out_ship_stroke: &mut i32,
+    out_ship_style_channels: &mut i32,
+) -> i32 {
+    let ship_color_size = match slot {
+        PAYLOAD_SHIP_CHANNELS_ALWAYS => true,
+        PAYLOAD_SHIP_CHANNELS_IF_COLOR => has_color_ch != 0,
+        _ => return 0,
+    };
+    *out_ship_color = i32::from(ship_color_size);
+    *out_ship_size = i32::from(ship_color_size);
+    if include_trace_styles != 0 {
+        *out_ship_stroke = i32::from(has_stroke_ch != 0);
+        *out_ship_style_channels = i32::from(has_style_channels != 0);
+    } else {
+        *out_ship_stroke = 0;
+        *out_ship_style_channels = 0;
+    }
+    1
+}
+
 /// Segment emit gather orchestration from ``_emit_segments`` (ABI 292).
 ///
 /// Owns errorbar role-map setup plus stem/errorbar decimation index selection.
@@ -171,6 +209,121 @@ mod tests {
         assert_eq!(role_maps, 0);
         assert_eq!(keep_all, 0);
         assert_eq!(n_out, 1024);
+    }
+
+    #[test]
+    fn payload_trace_channels_ship_attach_scatter_always() {
+        let mut ship_color = -1;
+        let mut ship_size = -1;
+        let mut ship_stroke = -1;
+        let mut ship_style = -1;
+        assert_eq!(
+            payload_trace_channels_ship_attach(
+                PAYLOAD_SHIP_CHANNELS_ALWAYS,
+                1,
+                0,
+                1,
+                1,
+                &mut ship_color,
+                &mut ship_size,
+                &mut ship_stroke,
+                &mut ship_style,
+            ),
+            1
+        );
+        assert_eq!(ship_color, 1);
+        assert_eq!(ship_size, 1);
+        assert_eq!(ship_stroke, 1);
+        assert_eq!(ship_style, 1);
+    }
+
+    #[test]
+    fn payload_trace_channels_ship_attach_hexbin_skips_trace_styles() {
+        let mut ship_color = -1;
+        let mut ship_size = -1;
+        let mut ship_stroke = -1;
+        let mut ship_style = -1;
+        assert_eq!(
+            payload_trace_channels_ship_attach(
+                PAYLOAD_SHIP_CHANNELS_ALWAYS,
+                0,
+                0,
+                1,
+                1,
+                &mut ship_color,
+                &mut ship_size,
+                &mut ship_stroke,
+                &mut ship_style,
+            ),
+            1
+        );
+        assert_eq!(ship_color, 1);
+        assert_eq!(ship_stroke, 0);
+        assert_eq!(ship_style, 0);
+    }
+
+    #[test]
+    fn payload_trace_channels_ship_attach_geometry_if_color() {
+        let mut ship_color = -1;
+        let mut ship_size = -1;
+        let mut ship_stroke = -1;
+        let mut ship_style = -1;
+        assert_eq!(
+            payload_trace_channels_ship_attach(
+                PAYLOAD_SHIP_CHANNELS_IF_COLOR,
+                1,
+                0,
+                1,
+                0,
+                &mut ship_color,
+                &mut ship_size,
+                &mut ship_stroke,
+                &mut ship_style,
+            ),
+            1
+        );
+        assert_eq!(ship_color, 0);
+        assert_eq!(ship_size, 0);
+        assert_eq!(ship_stroke, 1);
+        assert_eq!(
+            payload_trace_channels_ship_attach(
+                PAYLOAD_SHIP_CHANNELS_IF_COLOR,
+                1,
+                1,
+                0,
+                1,
+                &mut ship_color,
+                &mut ship_size,
+                &mut ship_stroke,
+                &mut ship_style,
+            ),
+            1
+        );
+        assert_eq!(ship_color, 1);
+        assert_eq!(ship_stroke, 0);
+        assert_eq!(ship_style, 1);
+    }
+
+    #[test]
+    fn payload_trace_channels_ship_attach_rejects_unknown_slot() {
+        let mut ship_color = 0;
+        let mut ship_size = 0;
+        let mut ship_stroke = 0;
+        let mut ship_style = 0;
+        assert_eq!(
+            payload_trace_channels_ship_attach(
+                9,
+                1,
+                1,
+                1,
+                1,
+                &mut ship_color,
+                &mut ship_size,
+                &mut ship_stroke,
+                &mut ship_style,
+            ),
+            0
+        );
     }
 
     #[test]

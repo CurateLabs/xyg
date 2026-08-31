@@ -225,6 +225,9 @@ payload_even_indices = _impl.payload_even_indices
 payload_errorbar_role_keys = _impl.payload_errorbar_role_keys
 payload_errorbar_role_maps = _impl.payload_errorbar_role_maps
 payload_segments_emit_gather = _impl.payload_segments_emit_gather
+payload_trace_channels_ship_attach = _impl.payload_trace_channels_ship_attach
+PAYLOAD_SHIP_CHANNELS_ALWAYS = 0
+PAYLOAD_SHIP_CHANNELS_IF_COLOR = 1
 payload_bar_compact_admit = _impl.payload_bar_compact_admit
 payload_transition_keys_admit = _impl.payload_transition_keys_admit
 payload_errorbar_indices = _impl.payload_errorbar_indices
@@ -267,6 +270,8 @@ __all__ = [
     "DENSITY_WASM_DENSITY_AUTOMATIC",
     "DENSITY_WASM_DENSITY_NONE",
     "DENSITY_WASM_DENSITY_UNSUPPORTED",
+    "PAYLOAD_SHIP_CHANNELS_ALWAYS",
+    "PAYLOAD_SHIP_CHANNELS_IF_COLOR",
     "argsort_stable",
     "arrow_end_decoration",
     "arrow_geometry",
@@ -368,6 +373,7 @@ __all__ = [
     "payload_segment_budget",
     "payload_segments_emit_gather",
     "payload_tier",
+    "payload_trace_channels_ship_attach",
     "payload_transition_keys_admit",
     "payload_visible_indices",
     "payload_visible_mask",

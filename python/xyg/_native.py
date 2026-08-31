@@ -11621,6 +11621,45 @@ def payload_segments_emit_gather(
     return result
 
 
+def payload_trace_channels_ship_attach(
+    slot: int,
+    *,
+    include_trace_styles: bool,
+    has_color_ch: bool,
+    has_stroke_ch: bool,
+    has_style_channels: bool,
+) -> dict[str, bool]:
+    """Trace channel attach via ``xyg_payload_trace_channels_ship_attach`` (ABI 293).
+
+    Owns ``_ship_channels`` / ``_ship_trace_styles`` attach policy. Returns
+    booleans for color, size, stroke, and style-channel wire slots.
+    """
+    slot_i = int(slot)
+    ship_color = ctypes.c_int32(-1)
+    ship_size = ctypes.c_int32(-1)
+    ship_stroke = ctypes.c_int32(-1)
+    ship_style = ctypes.c_int32(-1)
+    ok = _lib.xyg_payload_trace_channels_ship_attach(
+        slot_i,
+        1 if include_trace_styles else 0,
+        1 if has_color_ch else 0,
+        1 if has_stroke_ch else 0,
+        1 if has_style_channels else 0,
+        ctypes.byref(ship_color),
+        ctypes.byref(ship_size),
+        ctypes.byref(ship_stroke),
+        ctypes.byref(ship_style),
+    )
+    if ok != 1:
+        raise ValueError("invalid payload_trace_channels_ship_attach arguments")
+    return {
+        "ship_color": int(ship_color.value) == 1,
+        "ship_size": int(ship_size.value) == 1,
+        "ship_stroke": int(ship_stroke.value) == 1,
+        "ship_style_channels": int(ship_style.value) == 1,
+    }
+
+
 def payload_bar_compact_admit(
     widths: npt.NDArray[np.float64],
     value0: npt.NDArray[np.float64],

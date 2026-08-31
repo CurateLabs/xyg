@@ -161,7 +161,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 292;
+pub const ABI_VERSION: u32 = 293;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15448,6 +15448,61 @@ pub unsafe extern "C" fn xyg_payload_segments_emit_gather(
             roles[..required].copy_from_slice(&roles_buf[..required]);
         }
         required
+    })
+}
+
+/// Trace channel attach policy from ``_ship_channels`` / ``_ship_trace_styles`` (ABI 293).
+///
+/// ``slot`` is ``0`` (always ship color/size) or ``1`` (only when ``has_color_ch``).
+/// ``include_trace_styles`` gates stroke/style-channel slots (hexbin passes ``0``).
+/// Output flags are ``1`` when the host should attach that wire field. Returns ``1``
+/// on success or ``0`` when ``slot`` is invalid.
+///
+/// # Safety
+/// All ``out_*`` pointers must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_trace_channels_ship_attach(
+    slot: i32,
+    include_trace_styles: i32,
+    has_color_ch: i32,
+    has_stroke_ch: i32,
+    has_style_channels: i32,
+    out_ship_color: *mut i32,
+    out_ship_size: *mut i32,
+    out_ship_stroke: *mut i32,
+    out_ship_style_channels: *mut i32,
+) -> i32 {
+    ffi_guard(0, || {
+        if out_ship_color.is_null()
+            || out_ship_size.is_null()
+            || out_ship_stroke.is_null()
+            || out_ship_style_channels.is_null()
+        {
+            return 0;
+        }
+        let mut ship_color = 0i32;
+        let mut ship_size = 0i32;
+        let mut ship_stroke = 0i32;
+        let mut ship_style = 0i32;
+        let ok = payload_emit::payload_trace_channels_ship_attach(
+            slot,
+            include_trace_styles,
+            has_color_ch,
+            has_stroke_ch,
+            has_style_channels,
+            &mut ship_color,
+            &mut ship_size,
+            &mut ship_stroke,
+            &mut ship_style,
+        );
+        if ok == 0 {
+            return 0;
+        }
+        *out_ship_color = ship_color;
+        *out_ship_size = ship_size;
+        *out_ship_stroke = ship_stroke;
+        *out_ship_style_channels = ship_style;
+        1
     })
 }
 
