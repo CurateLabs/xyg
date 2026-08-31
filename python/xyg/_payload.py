@@ -444,27 +444,6 @@ class PayloadMixin(_Host):
             raise ValueError(f"no payload emitter for trace kind {t.kind!r}")
         return emitter(t, pw, xr, yr, px_width)
 
-    def _base_entry(
-        self, t: Trace, pw: "_PayloadWriter", xv: np.ndarray, yv: np.ndarray, tier: str, style: dict
-    ) -> dict[str, Any]:
-        """The shared spec skeleton for any xy trace that ships x/y geometry."""
-        entry = {
-            "id": t.id,
-            "kind": t.kind,
-            "name": t.name,
-            "style": style,
-            "tier": tier,
-            "n_points": t.n_points,
-            "n_marks": int(len(xv)),
-            "x": pw.ship(xv, t.x, scale=self._axis_scale(t.x_axis)),
-            "y": pw.ship(yv, t.y, scale=self._axis_scale(t.y_axis)),
-            "x_axis": t.x_axis,
-            "y_axis": t.y_axis,
-        }
-        if t.animation is not None:
-            entry["animation"] = dict(t.animation)
-        return entry
-
     @staticmethod
     def _attach_tooltip_rows(entry: dict[str, Any], t: Trace, sel: Optional[np.ndarray]) -> None:
         """Ship optional semantic hover rows (Sankey / graph props), filtered with geometry."""
@@ -613,9 +592,46 @@ class PayloadMixin(_Host):
         Cycles the figure's palette (`xyg.theme(palette=...)`), which defaults
         to config.DEFAULT_PALETTE."""
         style = dict(t.style)
-        if style.get("color") is None:
+        plan = kernels.payload_base_entry_plan(
+            has_trace_animation=False,
+            n_xv=0,
+            style_color_is_none=style.get("color") is None,
+            x_axis_scale="linear",
+            y_axis_scale="linear",
+        )
+        if plan["apply_palette_default"]:
             style["color"] = self.palette_color(t.id)
         return style
+
+    def _base_entry(
+        self, t: Trace, pw: "_PayloadWriter", xv: np.ndarray, yv: np.ndarray, tier: str, style: dict
+    ) -> dict[str, Any]:
+        """The shared spec skeleton for any xy trace that ships x/y geometry."""
+        x_scale = self._axis_scale(t.x_axis)
+        y_scale = self._axis_scale(t.y_axis)
+        plan = kernels.payload_base_entry_plan(
+            has_trace_animation=t.animation is not None,
+            n_xv=len(xv),
+            style_color_is_none=False,
+            x_axis_scale=x_scale,
+            y_axis_scale=y_scale,
+        )
+        entry = {
+            "id": t.id,
+            "kind": t.kind,
+            "name": t.name,
+            "style": style,
+            "tier": tier,
+            "n_points": t.n_points,
+            "n_marks": plan["n_marks"],
+            "x": pw.ship(xv, t.x, scale=plan["x_ship_scale"]),
+            "y": pw.ship(yv, t.y, scale=plan["y_ship_scale"]),
+            "x_axis": t.x_axis,
+            "y_axis": t.y_axis,
+        }
+        if plan["attach_animation"]:
+            entry["animation"] = dict(t.animation)
+        return entry
 
     def _m4_decimate(
         self, t: Trace, xr: tuple, px_width: int, *arrays: np.ndarray

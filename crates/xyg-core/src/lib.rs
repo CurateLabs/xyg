@@ -161,7 +161,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 294;
+pub const ABI_VERSION: u32 = 295;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15595,6 +15595,68 @@ pub unsafe extern "C" fn xyg_payload_transition_entry_attach(
         *out_attach_tooltip = attach_tooltip;
         *out_filter_tooltip_by_sel = filter_tooltip_by_sel;
         *out_tooltip_length_ok = tooltip_length_ok;
+        1
+    })
+}
+
+/// Base-entry skeleton orchestration (ABI 295).
+///
+/// Owns ``_base_entry`` / ``_default_styled`` when-to-ship animation, ``n_marks``,
+/// palette default, and axis ship-scale selection. Hosts still copy trace fields
+/// and ship offset-encoded geometry columns.
+///
+/// ``x_axis_type`` / ``y_axis_type``: ``0`` linear, ``1`` log, ``2`` symlog
+/// (from ``Figure._axis_scale``).
+///
+/// # Safety
+/// All ``out_*`` pointers must be writable.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_payload_base_entry_plan(
+    has_trace_animation: i32,
+    n_xv: usize,
+    style_color_is_none: i32,
+    x_axis_type: i32,
+    y_axis_type: i32,
+    out_attach_animation: *mut i32,
+    out_n_marks: *mut usize,
+    out_apply_palette_default: *mut i32,
+    out_x_ship_scale: *mut i32,
+    out_y_ship_scale: *mut i32,
+) -> i32 {
+    ffi_guard(0, || {
+        if out_attach_animation.is_null()
+            || out_n_marks.is_null()
+            || out_apply_palette_default.is_null()
+            || out_x_ship_scale.is_null()
+            || out_y_ship_scale.is_null()
+        {
+            return 0;
+        }
+        let mut attach_animation = 0i32;
+        let mut n_marks = 0usize;
+        let mut apply_palette_default = 0i32;
+        let mut x_ship_scale = 0i32;
+        let mut y_ship_scale = 0i32;
+        let ok = payload_emit::payload_base_entry_plan(
+            has_trace_animation,
+            n_xv,
+            style_color_is_none,
+            x_axis_type,
+            y_axis_type,
+            &mut attach_animation,
+            &mut n_marks,
+            &mut apply_palette_default,
+            &mut x_ship_scale,
+            &mut y_ship_scale,
+        );
+        if ok == 0 {
+            return 0;
+        }
+        *out_attach_animation = attach_animation;
+        *out_n_marks = n_marks;
+        *out_apply_palette_default = apply_palette_default;
+        *out_x_ship_scale = x_ship_scale;
+        *out_y_ship_scale = y_ship_scale;
         1
     })
 }

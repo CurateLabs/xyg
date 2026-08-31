@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 294
-SIGNATURE_SHA256 = "188fc1d11a89def01ae5706d918d6ee84413e8b0146f9d0022f54871b9192323"
+ABI_VERSION = 295
+SIGNATURE_SHA256 = "0ad43977baf9a31a6dfa2718c65fa170fcf468778ef3e9110260d2c8a2e7cf8b"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -610,6 +610,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_payload_bar_compact_admit
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+    # int32_t xyg_payload_base_entry_plan(int32_t has_trace_animation, size_t n_xv, int32_t style_color_is_none, int32_t x_axis_type, int32_t y_axis_type, int32_t * out_attach_animation, size_t * out_n_marks, int32_t * out_apply_palette_default, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale)
+    function = lib.xyg_payload_base_entry_plan
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_size_t, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
     # size_t xyg_payload_errorbar_indices(size_t n_segments, size_t n_points, size_t budget, int32_t * out_keep_all, uint32_t * out, size_t capacity)
     function = lib.xyg_payload_errorbar_indices
     function.restype = ctypes.c_size_t

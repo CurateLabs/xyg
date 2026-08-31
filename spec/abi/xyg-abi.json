@@ -1,9 +1,9 @@
 {
-  "abi_version": 294,
+  "abi_version": 295,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "188fc1d11a89def01ae5706d918d6ee84413e8b0146f9d0022f54871b9192323",
+  "signature_sha256": "0ad43977baf9a31a6dfa2718c65fa170fcf468778ef3e9110260d2c8a2e7cf8b",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -20565,6 +20565,181 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_payload_bar_compact_admit(size_t n_widths, const double * widths, size_t n_value0, const double * value0, double * out_width, double * out_value0_const, int32_t * out_has_value0_const, int32_t * out_compact)"
+    },
+    {
+      "name": "xyg_payload_base_entry_plan",
+      "node_name": "xyPayloadBaseEntryPlan",
+      "nargs": 10,
+      "arguments": [
+        {
+          "name": "has_trace_animation",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "n_xv",
+          "type": {
+            "rust": "usize",
+            "c": "size_t",
+            "ctypes": "ctypes.c_size_t",
+            "koffi": "size_t",
+            "kind": "scalar",
+            "bits": "pointer",
+            "signed": false,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "style_color_is_none",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "x_axis_type",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "y_axis_type",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_attach_animation",
+          "type": {
+            "rust": "*mut i32",
+            "c": "int32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "int32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_n_marks",
+          "type": {
+            "rust": "*mut usize",
+            "c": "size_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "size_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_apply_palette_default",
+          "type": {
+            "rust": "*mut i32",
+            "c": "int32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "int32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_x_ship_scale",
+          "type": {
+            "rust": "*mut i32",
+            "c": "int32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "int32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        },
+        {
+          "name": "out_y_ship_scale",
+          "type": {
+            "rust": "*mut i32",
+            "c": "int32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "int32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_payload_base_entry_plan(int32_t has_trace_animation, size_t n_xv, int32_t style_color_is_none, int32_t x_axis_type, int32_t y_axis_type, int32_t * out_attach_animation, size_t * out_n_marks, int32_t * out_apply_palette_default, int32_t * out_x_ship_scale, int32_t * out_y_ship_scale)"
     },
     {
       "name": "xyg_payload_errorbar_indices",

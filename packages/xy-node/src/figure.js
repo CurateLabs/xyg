@@ -42,6 +42,8 @@ import {
   payloadEvenIndices,
   payloadErrorbarIndices,
   payloadM4Indices,
+  payloadBaseEntryPlan,
+  payloadTransitionEntryAttach,
   payloadSegmentBudget,
   payloadSampleTargetIndices,
   payloadVisibleIndices,
@@ -406,6 +408,56 @@ function finiteBounds(arr) {
   return mm == null ? [0.0, 0.0] : mm;
 }
 
+const MAX_ANIMATION_MATCH_ROWS = 200_000;
+
+function payloadAxisScale(figure, axisId) {
+  return figureAutorangeAxisScale(figureAutorangeAxisOptions(figure, axisId));
+}
+
+function attachTransitionEntry(entry, t, pw, sel = null) {
+  const plan = payloadTransitionEntryAttach({
+    hasTraceAnimation: t.animation != null,
+    entryHasAnimation: Object.prototype.hasOwnProperty.call(entry, "animation"),
+    hasTraceKeys: t.transition_keys != null,
+    hasKeyValues: false,
+    hasSel: sel != null,
+    tierDirect: entry.tier === "direct",
+    nMarks: entry.n_marks ?? 0,
+    nTraceKeyRows: t.transition_keys?.length ?? 0,
+    nKeyValueRows: 0,
+    nSelRows: sel?.length ?? 0,
+    maxRows: MAX_ANIMATION_MATCH_ROWS,
+    hasTooltipRows: false,
+    nTooltipRows: 0,
+    nPoints: entry.n_points ?? 0,
+  });
+  if (plan.attachAnimation) {
+    entry.animation = { ...t.animation };
+  }
+  if (!plan.attemptKeys) {
+    return entry;
+  }
+  let keys = t.transition_keys;
+  if (plan.filterKeysBySel) {
+    keys = gatherItems(keys, sel);
+  }
+  if (!plan.shipKeys) {
+    entry.animation_fallback = plan.animationFallback;
+    return entry;
+  }
+  const lo = new Uint32Array(keys.length);
+  const hi = new Uint32Array(keys.length);
+  for (let i = 0; i < keys.length; i++) {
+    lo[i] = Number(keys[i][0]) >>> 0;
+    hi[i] = Number(keys[i][1]) >>> 0;
+  }
+  entry.keys = {
+    lo: pw.shipU32(lo),
+    hi: pw.shipU32(hi),
+  };
+  return entry;
+}
+
 export class PayloadWriter {
   constructor({ split = false } = {}) {
     this.split = split;
@@ -482,6 +534,14 @@ export class PayloadWriter {
       this._pos += padding;
     }
     return idx;
+  }
+
+  shipU32(values) {
+    const enc =
+      values instanceof Uint32Array
+        ? values
+        : Uint32Array.from(values, (v) => Number(v) >>> 0);
+    return this._append(enc, { dtype: "u32" });
   }
 
   _append(enc, meta) {
@@ -1164,6 +1224,15 @@ export class Figure {
       xv = gatherF64(xv, sel);
       yv = gatherF64(yv, sel);
     }
+    const xAxis = t.x_axis ?? "x";
+    const yAxis = t.y_axis ?? "y";
+    const basePlan = payloadBaseEntryPlan({
+      hasTraceAnimation: t.animation != null,
+      nXv: xv.length,
+      styleColorIsNone: false,
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+    });
     const entry = {
       id: t.id,
       kind: "scatter",
@@ -1171,15 +1240,15 @@ export class Figure {
       style: { ...t.style },
       tier: "direct",
       n_points: t.x.length,
-      n_marks: xv.length,
-      // Node payload scatter omits ship scale. Python `_base_entry` passes
-      // `_axis_scale`. Matching Python would pin log-axis offset to 0.
-      // Recorded emit-scatter-ship-scale stay-host.
-      x: pw.ship(xv, sel == null ? xCol : new Column(xv)),
-      y: pw.ship(yv, sel == null ? yCol : new Column(yv)),
-      x_axis: t.x_axis ?? "x",
-      y_axis: t.y_axis ?? "y",
+      n_marks: basePlan.nMarks,
+      x: pw.ship(xv, sel == null ? xCol : new Column(xv), { scale: basePlan.xShipScale }),
+      y: pw.ship(yv, sel == null ? yCol : new Column(yv), { scale: basePlan.yShipScale }),
+      x_axis: xAxis,
+      y_axis: yAxis,
     };
+    if (basePlan.attachAnimation) {
+      entry.animation = { ...t.animation };
+    }
     // Node payload scatter ships t.color. Python `_emit_scatter` ships
     // color_ch via `_ship_channels`. Matching Python would ignore t.color.
     // Recorded scatter-ship-color stay-host.
@@ -1202,22 +1271,10 @@ export class Figure {
         range_px: t.sizeRange ?? [8, 22],
         domain: [lo, hi],
         buf: pw.shipScalar(norm),
-      };        // x_axis.categories. Recorded emit-payload-axis-categories stay-host.
-        // x_axis.nonpositive. Recorded emit-payload-axis-nonpositive stay-host.
-        // Recorded emit-payload-axis-minor-style stay-host.
-        // x_axis.tick_label_anchor. Recorded emit-payload-axis-tick-label-anchor
-        // x_axis.tick_label_angle. Recorded emit-payload-axis-tick-label-angle
-        // Recorded emit-payload-axis-label-offset stay-host.
-        // x_axis.tick_label_sides. Recorded emit-payload-axis-tick-label-sides
-        // emit-payload-axis-bounds stay-host.
-        // emit-payload-axis-domain stay-host.
-        // Recorded emit-payload-axis-tick-count stay-host.
-        // x_axis.minor_tick_values. Recorded emit-payload-axis-minor-ticks
-
+      };
     }
     if (t.tooltip_rows != null) {
-      // Node payload scatter skips tooltip_rows length. Python        // Recorded emit-payload-axis-tick-values stay-host.
-
+      // Node payload scatter skips tooltip_rows length. Python
       // `_attach_tooltip_rows` rejects a mismatch with n_points. Matching
       // Python would throw. Recorded emit-scatter-tooltip-len stay-host.
       entry.tooltip_rows = sel == null ? t.tooltip_rows : gatherItems(t.tooltip_rows, sel);
@@ -1228,12 +1285,9 @@ export class Figure {
     // Node payload scatter omits style_channels. Python `_emit_scatter` ships
     // them as `channels` via `_ship_trace_styles`. Matching Python would add
     // entry.channels. Recorded emit-scatter-channels stay-host.
-    // Node payload scatter omits transition_keys. Python `_emit_scatter` ships
-    // them via `_transition_entry`. Matching Python would add entry.keys.
-    // Recorded emit-scatter-transition stay-host.
-    // Node payload scatter omits animation. Python `_base_entry` ships
-    // t.animation. Matching Python would add entry.animation. Recorded
-    // emit-scatter-animation stay-host.
+    if (t.transition_keys != null) {
+      attachTransitionEntry(entry, t, pw, sel);
+    }
     return entry;
   }
 
@@ -1461,6 +1515,15 @@ export class Figure {
     }
     const shipX = vis == null ? xCol : new Column(xv);
     const shipY = vis == null ? yCol : new Column(yv);
+    const xAxis = t.x_axis ?? "x";
+    const yAxis = t.y_axis ?? "y";
+    const basePlan = payloadBaseEntryPlan({
+      hasTraceAnimation: t.animation != null,
+      nXv: xv.length,
+      styleColorIsNone: false,
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+    });
     const entry = {
       id: t.id,
       kind: "line",
@@ -1472,21 +1535,21 @@ export class Figure {
       style: { ...t.style },
       tier,
       n_points: t.x.length,
-      n_marks: xv.length,
-      // Node payload line omits ship scale. Python `_base_entry` passes
-      // `_axis_scale`. Matching Python would pin log-axis offset to 0.
-      // Recorded emit-line-ship-scale stay-host.
-      x: pw.ship(xv, shipX),
-      y: pw.ship(yv, shipY),
-      x_axis: t.x_axis ?? "x",
-      y_axis: t.y_axis ?? "y",
+      n_marks: basePlan.nMarks,
+      x: pw.ship(xv, shipX, { scale: basePlan.xShipScale }),
+      y: pw.ship(yv, shipY, { scale: basePlan.yShipScale }),
+      x_axis: xAxis,
+      y_axis: yAxis,
     };
+    if (basePlan.attachAnimation) {
+      entry.animation = { ...t.animation };
+    }
     if (tier === "decimated") {
       entry.decimation_px = pxWidth;
     }
-    // Node payload line omits transition_keys. Python `_emit_line` ships them
-    // via `_transition_entry`. Matching Python would add entry.keys.
-    // Recorded emit-line-transition stay-host.
+    if (t.transition_keys != null) {
+      attachTransitionEntry(entry, t, pw, vis);
+    }
     return entry;
   }
 
@@ -1771,6 +1834,15 @@ export class Figure {
     const shipX = vis == null ? xCol : new Column(xv);
     const shipY = vis == null ? yCol : new Column(yv);
     const shipB = vis == null ? baseCol : new Column(bv);
+    const xAxis = t.x_axis ?? "x";
+    const yAxis = t.y_axis ?? "y";
+    const basePlan = payloadBaseEntryPlan({
+      hasTraceAnimation: t.animation != null,
+      nXv: xv.length,
+      styleColorIsNone: false,
+      xAxisScale: payloadAxisScale(this, xAxis),
+      yAxisScale: payloadAxisScale(this, yAxis),
+    });
     const entry = {
       id: t.id,
       kind: t.kind === "error_band" ? "error_band" : "area",
@@ -1782,22 +1854,22 @@ export class Figure {
       style: { ...t.style },
       tier,
       n_points: t.x.length,
-      n_marks: xv.length,
-      // Node payload area omits ship scale. Python `_base_entry` passes
-      // `_axis_scale`. Matching Python would pin log-axis offset to 0.
-      // Recorded emit-area-ship-scale stay-host.
-      x: pw.ship(xv, shipX),
-      y: pw.ship(yv, shipY),
-      base: pw.ship(bv, shipB),
-      x_axis: t.x_axis ?? "x",
-      y_axis: t.y_axis ?? "y",
+      n_marks: basePlan.nMarks,
+      x: pw.ship(xv, shipX, { scale: basePlan.xShipScale }),
+      y: pw.ship(yv, shipY, { scale: basePlan.yShipScale }),
+      base: pw.ship(bv, shipB, { scale: basePlan.yShipScale }),
+      x_axis: xAxis,
+      y_axis: yAxis,
     };
+    if (basePlan.attachAnimation) {
+      entry.animation = { ...t.animation };
+    }
     if (tier === "decimated") {
       entry.decimation_px = pxWidth;
     }
-    // Node payload area omits transition_keys. Python `_emit_area` ships them
-    // via `_transition_entry`. Matching Python would add entry.keys.
-    // Recorded emit-area-transition stay-host.
+    if (t.transition_keys != null) {
+      attachTransitionEntry(entry, t, pw, vis);
+    }
     return entry;
   }
 

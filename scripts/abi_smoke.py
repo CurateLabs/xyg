@@ -1382,6 +1382,19 @@ def load() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_int32),
         ctypes.POINTER(ctypes.c_int32),
     ]
+    lib.xyg_payload_base_entry_plan.restype = ctypes.c_int32
+    lib.xyg_payload_base_entry_plan.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_size_t),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+    ]
     lib.xyg_density_color_classify.restype = ctypes.c_int32
     lib.xyg_density_color_classify.argtypes = [
         ctypes.c_int32,
@@ -5081,6 +5094,32 @@ def main() -> None:
         and filter_tooltip.value == 1
         and tooltip_ok.value == 1,
         "payload_transition_entry_attach filter keys and tooltip",
+    )
+    base_attach_animation = ctypes.c_int32(-1)
+    base_n_marks = ctypes.c_size_t(0)
+    base_apply_palette = ctypes.c_int32(-1)
+    base_x_scale = ctypes.c_int32(-1)
+    base_y_scale = ctypes.c_int32(-1)
+    ok(
+        lib.xyg_payload_base_entry_plan(
+            1,
+            42,
+            1,
+            1,
+            2,
+            ctypes.byref(base_attach_animation),
+            ctypes.byref(base_n_marks),
+            ctypes.byref(base_apply_palette),
+            ctypes.byref(base_x_scale),
+            ctypes.byref(base_y_scale),
+        )
+        == 1
+        and base_attach_animation.value == 1
+        and base_n_marks.value == 42
+        and base_apply_palette.value == 1
+        and base_x_scale.value == 1
+        and base_y_scale.value == 2,
+        "payload_base_entry_plan animation and scales",
     )
     density_color_mode = ctypes.c_int32(-1)
     density_categorical = ctypes.c_int32(-1)
