@@ -591,31 +591,23 @@ pub fn arrow_shapes(
 
     let mut offset = 0usize;
     if shaft_count > 0 {
-        for index in 0..shaft_count {
-            out_x[offset + index] = shaft_x[index];
-            out_y[offset + index] = shaft_y[index];
-        }
+        out_x[offset..offset + shaft_count].copy_from_slice(&shaft_x[..shaft_count]);
+        out_y[offset..offset + shaft_count].copy_from_slice(&shaft_y[..shaft_count]);
         offset += shaft_count;
     }
     if taper_count > 0 {
-        for index in 0..taper_count {
-            out_x[offset + index] = taper_x[index];
-            out_y[offset + index] = taper_y[index];
-        }
+        out_x[offset..offset + taper_count].copy_from_slice(&taper_x[..taper_count]);
+        out_y[offset..offset + taper_count].copy_from_slice(&taper_y[..taper_count]);
         offset += taper_count;
     }
     if head_n > 0 {
-        for index in 0..head_n {
-            out_x[offset + index] = head_x[index];
-            out_y[offset + index] = head_y[index];
-        }
+        out_x[offset..offset + head_n].copy_from_slice(&head_x[..head_n]);
+        out_y[offset..offset + head_n].copy_from_slice(&head_y[..head_n]);
         offset += head_n;
     }
     if tail_n > 0 {
-        for index in 0..tail_n {
-            out_x[offset + index] = tail_x[index];
-            out_y[offset + index] = tail_y[index];
-        }
+        out_x[offset..offset + tail_n].copy_from_slice(&tail_x[..tail_n]);
+        out_y[offset..offset + tail_n].copy_from_slice(&tail_y[..tail_n]);
     }
     Some(total)
 }
