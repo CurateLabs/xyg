@@ -48,6 +48,7 @@ pub mod compat_layout;
 pub mod css;
 pub mod dashboard;
 pub mod density_emit;
+pub mod density_grid_materialize;
 pub mod edge_route;
 pub mod geo;
 pub mod geo_viewport;

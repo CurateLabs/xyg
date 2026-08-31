@@ -1,6 +1,7 @@
 # M2 close contract
 
-**Status:** open. Tracker [#731](https://github.com/CurateLabs/xyg/issues/731).
+**Status:** closed (#731, 2026-08-31). Residual host materialization tracked in
+[`m2-big-pushes.md`](m2-big-pushes.md). Tracker [#731](https://github.com/CurateLabs/xyg/issues/731).
 Children: [#732](https://github.com/CurateLabs/xyg/issues/732),
 [#733](https://github.com/CurateLabs/xyg/issues/733).
 GitHub milestone 2 description matches this file.
@@ -61,10 +62,14 @@ differentials.
 
 ## Landing
 
-- One kernel twin per pull request versus `main`.
-- Do not start the whole `_payload.py` or `_scene_v3.py` module as one PR.
+Orchestration era (ABI 218–315): one kernel twin per PR — **complete**.
+
+Host materialization retirement: follow [`m2-big-pushes.md`](m2-big-pushes.md).
+Each big push is one PR (Rust + both hosts + fixtures + spec). Do not resume
+field-by-field stay-host slices for `_payload` grid compose or `_scene_v3` pack
+walks.
+
 - Bump `ABI_VERSION` and run `python3 scripts/gen_abi_manifest.py --write` on
   signature change; never edit generated ABI declarations by hand.
-- Wait until the exact PR head's three required checks are green before the
-  next push on that ref.
+- Required checks per push: `abi_smoke`, push-scoped pytest, Node npm test.
 - Related: #24, #58, #59.
