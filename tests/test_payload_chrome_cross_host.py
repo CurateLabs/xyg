@@ -1,7 +1,8 @@
 """Cross-host buildPayload chrome parity: Python vs @curatelabs/xyg-node.
 
-Compares top-level ``show_legend`` and partial ``dom`` (``class_name``,
-``class_names``, ``style`` only — not ``chrome_styles`` → ``dom.styles``).
+Compares top-level ``show_legend``, ``legend`` (from ``legend_options``), and
+partial ``dom`` (``class_name``, ``class_names``, ``style`` only — not
+``chrome_styles`` → ``dom.styles``).
 
 Run::
 
@@ -41,6 +42,8 @@ FIXTURE_JSON = ROOT / "tests" / "fixtures" / "payload_chrome_cross_host.json"
 CASE_NAMES = (
     "show_legend_default",
     "show_legend_false",
+    "legend_loc_upper_right",
+    "legend_loc_best",
     "dom_class_name",
     "dom_style",
     "dom_class_names",
@@ -69,6 +72,10 @@ def _build_case(name: str) -> Figure:
     fig = Figure(width=240, height=160)
     if name in ("show_legend_false", "chrome_combined"):
         fig.show_legend = False
+    if name == "legend_loc_upper_right":
+        fig.legend_options = {"loc": "upper right", "title": "Series"}
+    if name == "legend_loc_best":
+        fig.legend_options = {"loc": "best"}
     if name in ("dom_class_name", "chrome_combined"):
         fig.class_name = "root-node"
     if name == "dom_style":
@@ -86,6 +93,7 @@ def _build_case(name: str) -> Figure:
 def _chrome_entry(spec: dict) -> dict:
     return {
         "show_legend": spec["show_legend"],
+        "legend": spec.get("legend"),
         "dom": spec.get("dom"),
     }
 
@@ -135,6 +143,7 @@ def test_python_matches_checked_in_fixture(case_name: str, fixture: dict) -> Non
     spec, _ = _build_case(case_name).build_payload()
     assert _chrome_entry(spec) == {
         "show_legend": entry["show_legend"],
+        "legend": entry.get("legend"),
         "dom": entry["dom"],
     }
 
@@ -145,6 +154,7 @@ def test_node_live_matches_python(case_name: str, node_chrome_golden: dict) -> N
     spec, _ = _build_case(case_name).build_payload()
     assert _chrome_entry(spec) == {
         "show_legend": node_case["show_legend"],
+        "legend": node_case.get("legend"),
         "dom": node_case["dom"],
     }
 
@@ -167,6 +177,7 @@ def test_write_fixtures_and_match_node(node_chrome_golden: dict) -> None:
             entry for entry in node_chrome_golden["cases"] if entry["name"] == case["name"]
         )
         assert case["show_legend"] == node_case["show_legend"]
+        assert case.get("legend") == node_case.get("legend")
         assert case["dom"] == node_case["dom"]
 
 

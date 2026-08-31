@@ -116,6 +116,7 @@ import { toHtml } from "./html.js";
 import {
   figureSceneV3,
   resolveDensityBinColors,
+  resolveLegendBestLoc,
   scatterPaintChannelNames,
   scaleMap,
   sceneRasterCommands,
@@ -3206,6 +3207,13 @@ export class Figure {
     }
     if (buildPlan.attachDom) {
       spec.dom = dom;
+    }
+    if (buildPlan.attachLegend) {
+      let legend = { ...this.legend_options };
+      if (buildPlan.resolveLegendBest) {
+        legend = { ...legend, loc: resolveLegendBestLoc(this) };
+      }
+      spec.legend = legend;
     }
     if (split) {
       spec.buffer_layout = "split";

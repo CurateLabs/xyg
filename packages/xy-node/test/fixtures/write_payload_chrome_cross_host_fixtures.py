@@ -26,6 +26,8 @@ OUT = ROOT / "tests" / "fixtures" / "payload_chrome_cross_host.json"
 CASE_NAMES = (
     "show_legend_default",
     "show_legend_false",
+    "legend_loc_upper_right",
+    "legend_loc_best",
     "dom_class_name",
     "dom_style",
     "dom_class_names",
@@ -37,6 +39,10 @@ def _build_case(name: str) -> Figure:
     fig = Figure(width=240, height=160)
     if name == "show_legend_false" or name == "chrome_combined":
         fig.show_legend = False
+    if name == "legend_loc_upper_right":
+        fig.legend_options = {"loc": "upper right", "title": "Series"}
+    if name == "legend_loc_best":
+        fig.legend_options = {"loc": "best"}
     if name in ("dom_class_name", "chrome_combined"):
         fig.class_name = "root-node"
     if name == "dom_style":
@@ -59,12 +65,13 @@ def main() -> None:
             {
                 "name": name,
                 "show_legend": spec["show_legend"],
+                "legend": spec.get("legend"),
                 "dom": spec.get("dom"),
             }
         )
     payload = {
         "schema": "xyg.payload-chrome-cross-host/v1",
-        "authority": "python/xyg/_payload.py build_payload show_legend and _dom_spec",
+        "authority": "python/xyg/_payload.py build_payload show_legend, legend, and _dom_spec",
         "protocol": PROTOCOL_VERSION,
         "abi_version": int(_native.ABI_VERSION),
         "cases": cases,
