@@ -3982,9 +3982,9 @@ function xytaHexbinPlaneObservations(trace) {
   const hexbinColormapPlane = sceneHexbinColormapPlaneAdmit(
     channel.mode,
     channel.values != null,
-  ) === 1;
+  );
   let hexbinRgbaPlaneReady = false;
-  if (sceneHexbinRgbaPlaneAdmit(channel.mode) === 1) {
+  if (sceneHexbinRgbaPlaneAdmit(channel.mode)) {
     hexbinRgbaPlaneReady = hexbinCellRgba8(trace) != null;
   }
   return { hexbinColormapPlane, hexbinRgbaPlaneReady };
