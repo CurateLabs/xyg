@@ -1406,6 +1406,13 @@ def load() -> ctypes.CDLL:
     ]
     lib.xyg_density_grid_path_identity_state.restype = ctypes.c_int32
     lib.xyg_density_grid_path_identity_state.argtypes = [ctypes.c_int32]
+    lib.xyg_density_constant_color_wire_admit.restype = ctypes.c_int32
+    lib.xyg_density_constant_color_wire_admit.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+        ctypes.c_int32,
+    ]
     lib.xyg_payload_sample_target_indices.restype = ctypes.c_size_t
     lib.xyg_payload_sample_target_indices.argtypes = [
         ctypes.c_size_t,
@@ -4972,6 +4979,11 @@ def main() -> None:
         and lib.xyg_density_grid_path_identity_state(5) == 0
         and lib.xyg_density_grid_path_identity_state(99) == -1,
         "density_grid_path_identity_state",
+    )
+    ok(
+        lib.xyg_density_constant_color_wire_admit(1, b"constant", 8, 1) == 1
+        and lib.xyg_density_constant_color_wire_admit(1, b"continuous", 10, 1) == 0,
+        "density_constant_color_wire_admit",
     )
     sample_keep = ctypes.c_int32(-1)
     sample_n = lib.xyg_payload_sample_target_indices(

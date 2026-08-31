@@ -53,6 +53,7 @@ density_emit_plan = _impl.density_emit_plan
 density_color_classify = _impl.density_color_classify
 density_trace_color_classify = _impl.density_trace_color_classify
 density_uses_channel_colormap = _impl.density_uses_channel_colormap
+density_constant_color_wire_admit = _impl.density_constant_color_wire_admit
 DENSITY_REDUCTION_BIN2D = _impl.DENSITY_REDUCTION_BIN2D
 DENSITY_REDUCTION_PYRAMID_COUNT = _impl.DENSITY_REDUCTION_PYRAMID_COUNT
 density_reduction_kind = _impl.density_reduction_kind
@@ -287,6 +288,7 @@ __all__ = [
     "density_bin_coord_endpoints",
     "density_bin_window",
     "density_color_classify",
+    "density_constant_color_wire_admit",
     "density_emit_plan",
     "density_format_binning",
     "density_full_identity",
