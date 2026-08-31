@@ -370,6 +370,17 @@ def load() -> ctypes.CDLL:
         U8P,
         ctypes.c_size_t,
     ]
+    lib.xyg_scene_xytc_opacity_pack.restype = ctypes.c_int32
+    lib.xyg_scene_xytc_opacity_pack.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_double,
+        ctypes.c_double,
+        ctypes.c_double,
+        F64P,
+        F64P,
+        F64P,
+    ]
     lib.xyg_scene_xytc_hex_pitch_pack.restype = ctypes.c_int32
     lib.xyg_scene_xytc_hex_pitch_pack.argtypes = [
         ctypes.c_int32,
@@ -3483,6 +3494,26 @@ def main() -> None:
     ok(
         marker_n == 92 and bytes(marker_out[:8]) == bytes([1, 0, 0, 0, 1, 0, 0, 0]),
         "scene_marker_blob_pack diamond",
+    )
+    xytc_fill = ctypes.c_double(0.0)
+    xytc_stroke = ctypes.c_double(0.0)
+    xytc_line = ctypes.c_double(0.0)
+    ok(
+        lib.xyg_scene_xytc_opacity_pack(
+            1,
+            1,
+            0.5,
+            0.6,
+            0.7,
+            ctypes.byref(xytc_fill),
+            ctypes.byref(xytc_stroke),
+            ctypes.byref(xytc_line),
+        )
+        == 1
+        and xytc_fill.value == 0.5
+        and xytc_stroke.value == 0.6
+        and xytc_line.value == 0.7,
+        "scene_xytc_opacity_pack band+opacity",
     )
     xytc_hex_flags = ctypes.c_uint32(0)
     xytc_hex_dx = ctypes.c_double(0.0)

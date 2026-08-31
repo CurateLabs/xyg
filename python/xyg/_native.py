@@ -1720,6 +1720,39 @@ def scene_xytc_hex_pitch_pack(
     return int(flags.value), float(hex_dx.value), float(hex_dy.value)
 
 
+def scene_xytc_opacity_pack(
+    has_opacity_class: int,
+    has_band_class: int,
+    authored_fill: float,
+    authored_stroke: float,
+    authored_line: float,
+) -> tuple[float, float, float]:
+    """XYTC opacity trailer via ``xyg_scene_xytc_opacity_pack`` (ABI 267).
+
+    Hosts still pick kind_class gates and style opacity keys.
+    """
+    fill = ctypes.c_double(0.0)
+    stroke = ctypes.c_double(0.0)
+    line = ctypes.c_double(0.0)
+    ok = int(
+        _lib.xyg_scene_xytc_opacity_pack(
+            ctypes.c_int32(int(has_opacity_class)),
+            ctypes.c_int32(int(has_band_class)),
+            ctypes.c_double(float(authored_fill)),
+            ctypes.c_double(float(authored_stroke)),
+            ctypes.c_double(float(authored_line)),
+            ctypes.byref(fill),
+            ctypes.byref(stroke),
+            ctypes.byref(line),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-opacity-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-opacity-pack request")
+    return float(fill.value), float(stroke.value), float(line.value)
+
+
 def scene_xytc_stroke_perimeter_pack(
     band: int,
     present: int,
