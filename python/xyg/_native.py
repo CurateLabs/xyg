@@ -1781,6 +1781,43 @@ def scene_xytc_paint_presence_pack(
     return int(flags.value)
 
 
+def scene_xytc_meta_flags_pack(
+    has_name: int,
+    show_legend: int,
+    kind: str,
+    use_density: int,
+    joined_fill: int,
+    marker_path_present: int,
+    marker_packed: int,
+    glyph_packed: int,
+) -> int:
+    """XYTC trace meta flags via ``xyg_scene_xytc_meta_flags_pack`` (ABI 270).
+
+    Marker/glyph blob packing stays host; this kernel only sets flag bits.
+    """
+    kind_b = kind.encode("utf-8")
+    flags = ctypes.c_uint32(0)
+    ok = int(
+        _lib.xyg_scene_xytc_meta_flags_pack(
+            ctypes.c_int32(int(has_name)),
+            ctypes.c_int32(int(show_legend)),
+            kind_b,
+            len(kind_b),
+            ctypes.c_int32(int(use_density)),
+            ctypes.c_int32(int(joined_fill)),
+            ctypes.c_int32(int(marker_path_present)),
+            ctypes.c_int32(int(marker_packed)),
+            ctypes.c_int32(int(glyph_packed)),
+            ctypes.byref(flags),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-meta-flags-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-meta-flags-pack request")
+    return int(flags.value)
+
+
 def scene_xytc_dash_pattern_pack(is_array: int) -> int:
     """XYTC dash-array flag via ``xyg_scene_xytc_dash_pattern_pack`` (ABI 268).
 
