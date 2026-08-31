@@ -1455,6 +1455,158 @@ pub fn payload_column_ship_plan(
     1
 }
 
+/// Maximum u8 grid buffers returned by ``payload_density_grid_ship_plan``.
+pub const PAYLOAD_DENSITY_GRID_SHIP_MAX_BUFFERS: usize = 2;
+/// Maximum attach steps returned by ``payload_density_grid_ship_plan``.
+pub const PAYLOAD_DENSITY_GRID_SHIP_MAX_ATTACH: usize = 10;
+
+/// Density grid registry key: ``density["buf"]`` (log-u8 count plane).
+pub const PAYLOAD_DENSITY_KEY_BUF: i32 = 0;
+/// Density grid registry key: ``density["rgba"]`` (mean-color plane).
+pub const PAYLOAD_DENSITY_KEY_RGBA: i32 = 1;
+
+/// Host buffer slot: encoded count grid (``density_log_u8`` output).
+pub const PAYLOAD_DENSITY_SLOT_COUNT: i32 = 0;
+/// Host buffer slot: mean-color RGBA plane (pyramid or ``bin_2d_mean_color``).
+pub const PAYLOAD_DENSITY_SLOT_RGBA: i32 = 1;
+
+/// Ship via host ``ship_u8`` / ``pw.shipU8``.
+pub const PAYLOAD_DENSITY_SHIP_U8: i32 = 0;
+
+/// Attach ``density["wasm_source"]`` (f64 replay columns via column registry).
+pub const PAYLOAD_DENSITY_ATTACH_WASM_SOURCE: i32 = 0;
+/// Attach ``density["tiles"]`` (pyramid tile stats dict).
+pub const PAYLOAD_DENSITY_ATTACH_TILES: i32 = 1;
+/// Attach ``density["rgba"]`` and ``density["color_agg"] = "mean"``.
+pub const PAYLOAD_DENSITY_ATTACH_RGBA: i32 = 2;
+/// Attach ``density["channels_dropped"]`` compat scalar.
+pub const PAYLOAD_DENSITY_ATTACH_CHANNELS_DROPPED: i32 = 3;
+/// Attach ``density["dropped_channels"]`` filtered list.
+pub const PAYLOAD_DENSITY_ATTACH_DROPPED_CHANNELS: i32 = 4;
+/// Attach ``density["color"]`` constant CSS.
+pub const PAYLOAD_DENSITY_ATTACH_CONSTANT_COLOR: i32 = 5;
+/// Attach ``density["overlay_omitted"] = "rows_exceed_u32"``.
+pub const PAYLOAD_DENSITY_ATTACH_OVERLAY_ROWS_EXCEED: i32 = 6;
+/// Attach ``density["sample"]`` overlay spec.
+pub const PAYLOAD_DENSITY_ATTACH_SAMPLE: i32 = 7;
+/// Attach ``density["overlay_omitted"] = "static_raster"`` when sample omitted.
+pub const PAYLOAD_DENSITY_ATTACH_OVERLAY_STATIC_RASTER: i32 = 8;
+/// Attach slim categorical ``entry["color"]`` (legend toggle path).
+pub const PAYLOAD_DENSITY_ATTACH_ENTRY_COLOR: i32 = 9;
+
+/// One u8 grid buffer in the density registry.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PayloadDensityGridBufferEntry {
+    pub registry_key: i32,
+    pub buffer_slot: i32,
+    pub ship_method: i32,
+}
+
+/// One ordered attach step after the count grid ships.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PayloadDensityGridAttachEntry {
+    pub attach_kind: i32,
+}
+
+/// Density grid buffer registry and attach-order policy from ``_density_trace_spec``.
+///
+/// Owns which u8 planes ship under ``density["buf"]`` / ``density["rgba"]`` and
+/// the ordered nested attach steps (wasm_source, tiles, rgba/color_agg,
+/// dropped-channel metadata, constant color, overlay_omitted, sample,
+/// entry color). Hosts still run bin2d/pyramid compose, ``density_log_u8``,
+/// and buffer materialization.
+pub fn payload_density_grid_ship_plan(
+    ship_mean_color_rgba: i32,
+    ship_wasm_source: i32,
+    attach_sample: i32,
+    has_tiles: i32,
+    ship_constant_color: i32,
+    overlay_wire_rows_exceed: i32,
+    overlay_wire_static_raster: i32,
+    ship_categorical_entry_color: i32,
+    out_n_buffers: &mut usize,
+    out_buffers: &mut [PayloadDensityGridBufferEntry; PAYLOAD_DENSITY_GRID_SHIP_MAX_BUFFERS],
+    out_n_attach: &mut usize,
+    out_attach: &mut [PayloadDensityGridAttachEntry; PAYLOAD_DENSITY_GRID_SHIP_MAX_ATTACH],
+) -> i32 {
+    *out_n_buffers = 0;
+    *out_n_attach = 0;
+
+    out_buffers[0] = PayloadDensityGridBufferEntry {
+        registry_key: PAYLOAD_DENSITY_KEY_BUF,
+        buffer_slot: PAYLOAD_DENSITY_SLOT_COUNT,
+        ship_method: PAYLOAD_DENSITY_SHIP_U8,
+    };
+    *out_n_buffers = 1;
+    if ship_mean_color_rgba != 0 {
+        out_buffers[1] = PayloadDensityGridBufferEntry {
+            registry_key: PAYLOAD_DENSITY_KEY_RGBA,
+            buffer_slot: PAYLOAD_DENSITY_SLOT_RGBA,
+            ship_method: PAYLOAD_DENSITY_SHIP_U8,
+        };
+        *out_n_buffers = 2;
+    }
+
+    let mut n = 0usize;
+    fn push_attach(
+        out: &mut [PayloadDensityGridAttachEntry; PAYLOAD_DENSITY_GRID_SHIP_MAX_ATTACH],
+        n: &mut usize,
+        kind: i32,
+    ) {
+        out[*n] = PayloadDensityGridAttachEntry { attach_kind: kind };
+        *n += 1;
+    }
+
+    if ship_wasm_source != 0 {
+        push_attach(out_attach, &mut n, PAYLOAD_DENSITY_ATTACH_WASM_SOURCE);
+    }
+    if has_tiles != 0 {
+        push_attach(out_attach, &mut n, PAYLOAD_DENSITY_ATTACH_TILES);
+    }
+    if ship_mean_color_rgba != 0 {
+        push_attach(out_attach, &mut n, PAYLOAD_DENSITY_ATTACH_RGBA);
+    }
+    push_attach(
+        out_attach,
+        &mut n,
+        PAYLOAD_DENSITY_ATTACH_CHANNELS_DROPPED,
+    );
+    push_attach(
+        out_attach,
+        &mut n,
+        PAYLOAD_DENSITY_ATTACH_DROPPED_CHANNELS,
+    );
+    if ship_constant_color != 0 {
+        push_attach(
+            out_attach,
+            &mut n,
+            PAYLOAD_DENSITY_ATTACH_CONSTANT_COLOR,
+        );
+    }
+    if overlay_wire_rows_exceed != 0 {
+        push_attach(
+            out_attach,
+            &mut n,
+            PAYLOAD_DENSITY_ATTACH_OVERLAY_ROWS_EXCEED,
+        );
+    }
+    if attach_sample != 0 {
+        push_attach(out_attach, &mut n, PAYLOAD_DENSITY_ATTACH_SAMPLE);
+    } else if overlay_wire_static_raster != 0 {
+        push_attach(
+            out_attach,
+            &mut n,
+            PAYLOAD_DENSITY_ATTACH_OVERLAY_STATIC_RASTER,
+        );
+    }
+    if ship_categorical_entry_color != 0 {
+        push_attach(out_attach, &mut n, PAYLOAD_DENSITY_ATTACH_ENTRY_COLOR);
+    }
+
+    *out_n_attach = n;
+    1
+}
+
 /// Maximum paint/style channels returned by ``payload_channel_ship_plan``.
 pub const PAYLOAD_CHANNEL_SHIP_MAX: usize = 5;
 
@@ -4100,5 +4252,109 @@ mod tests {
             ),
             0
         );
+    }
+
+    fn run_density_grid_ship_plan(
+        ship_mean_color_rgba: i32,
+        ship_wasm_source: i32,
+        attach_sample: i32,
+        has_tiles: i32,
+        ship_constant_color: i32,
+        overlay_wire_rows_exceed: i32,
+        overlay_wire_static_raster: i32,
+        ship_categorical_entry_color: i32,
+    ) -> (
+        usize,
+        [PayloadDensityGridBufferEntry; PAYLOAD_DENSITY_GRID_SHIP_MAX_BUFFERS],
+        usize,
+        [PayloadDensityGridAttachEntry; PAYLOAD_DENSITY_GRID_SHIP_MAX_ATTACH],
+    ) {
+        let mut n_buffers = 0usize;
+        let mut buffers = [PayloadDensityGridBufferEntry {
+            registry_key: -1,
+            buffer_slot: -1,
+            ship_method: -1,
+        }; PAYLOAD_DENSITY_GRID_SHIP_MAX_BUFFERS];
+        let mut n_attach = 0usize;
+        let mut attach = [PayloadDensityGridAttachEntry { attach_kind: -1 };
+            PAYLOAD_DENSITY_GRID_SHIP_MAX_ATTACH];
+        let ok = payload_density_grid_ship_plan(
+            ship_mean_color_rgba,
+            ship_wasm_source,
+            attach_sample,
+            has_tiles,
+            ship_constant_color,
+            overlay_wire_rows_exceed,
+            overlay_wire_static_raster,
+            ship_categorical_entry_color,
+            &mut n_buffers,
+            &mut buffers,
+            &mut n_attach,
+            &mut attach,
+        );
+        assert_eq!(ok, 1);
+        (n_buffers, buffers, n_attach, attach)
+    }
+
+    #[test]
+    fn payload_density_grid_ship_plan_count_only() {
+        let (n_buf, bufs, n_attach, steps) = run_density_grid_ship_plan(0, 0, 0, 0, 0, 0, 0, 0);
+        assert_eq!(n_buf, 1);
+        assert_eq!(bufs[0].registry_key, PAYLOAD_DENSITY_KEY_BUF);
+        assert_eq!(bufs[0].buffer_slot, PAYLOAD_DENSITY_SLOT_COUNT);
+        assert_eq!(bufs[0].ship_method, PAYLOAD_DENSITY_SHIP_U8);
+        assert_eq!(n_attach, 2);
+        assert_eq!(
+            steps[0].attach_kind,
+            PAYLOAD_DENSITY_ATTACH_CHANNELS_DROPPED
+        );
+        assert_eq!(
+            steps[1].attach_kind,
+            PAYLOAD_DENSITY_ATTACH_DROPPED_CHANNELS
+        );
+    }
+
+    #[test]
+    fn payload_density_grid_ship_plan_full_identity_overlay() {
+        let (n_buf, bufs, n_attach, steps) =
+            run_density_grid_ship_plan(1, 1, 1, 1, 1, 0, 0, 1);
+        assert_eq!(n_buf, 2);
+        assert_eq!(bufs[1].registry_key, PAYLOAD_DENSITY_KEY_RGBA);
+        assert_eq!(n_attach, 8);
+        assert_eq!(
+            steps[0].attach_kind,
+            PAYLOAD_DENSITY_ATTACH_WASM_SOURCE
+        );
+        assert_eq!(steps[1].attach_kind, PAYLOAD_DENSITY_ATTACH_TILES);
+        assert_eq!(steps[2].attach_kind, PAYLOAD_DENSITY_ATTACH_RGBA);
+        assert_eq!(
+            steps[6].attach_kind,
+            PAYLOAD_DENSITY_ATTACH_SAMPLE
+        );
+        assert_eq!(
+            steps[7].attach_kind,
+            PAYLOAD_DENSITY_ATTACH_ENTRY_COLOR
+        );
+    }
+
+    #[test]
+    fn payload_density_grid_ship_plan_static_raster_when_sample_off() {
+        let (_, _, n_attach, steps) = run_density_grid_ship_plan(0, 0, 0, 0, 0, 0, 1, 0);
+        assert_eq!(n_attach, 3);
+        assert_eq!(
+            steps[2].attach_kind,
+            PAYLOAD_DENSITY_ATTACH_OVERLAY_STATIC_RASTER
+        );
+    }
+
+    #[test]
+    fn payload_density_grid_ship_plan_rows_exceed_before_sample() {
+        let (_, _, n_attach, steps) = run_density_grid_ship_plan(0, 0, 1, 0, 0, 1, 0, 0);
+        assert_eq!(n_attach, 4);
+        assert_eq!(
+            steps[2].attach_kind,
+            PAYLOAD_DENSITY_ATTACH_OVERLAY_ROWS_EXCEED
+        );
+        assert_eq!(steps[3].attach_kind, PAYLOAD_DENSITY_ATTACH_SAMPLE);
     }
 }

@@ -688,6 +688,77 @@ def test_payload_column_ship_plan_rejects_unknown_kind() -> None:
         )
 
 
+def test_payload_density_grid_ship_plan_count_only() -> None:
+    plan = kernels.payload_density_grid_ship_plan(
+        ship_mean_color_rgba=False,
+        ship_wasm_source=False,
+        attach_sample=False,
+        has_tiles=False,
+        ship_constant_color=False,
+        overlay_wire_rows_exceed=False,
+        overlay_wire_static_raster=False,
+        ship_categorical_entry_color=False,
+    )
+    assert plan == {
+        "n_buffers": 1,
+        "buffers": [
+            {
+                "registry_key": "buf",
+                "buffer_slot": "count",
+                "ship_method": "u8",
+            }
+        ],
+        "n_attach": 2,
+        "attach": [
+            {"attach_kind": "channels_dropped"},
+            {"attach_kind": "dropped_channels"},
+        ],
+    }
+
+
+def test_payload_density_grid_ship_plan_full_overlay() -> None:
+    plan = kernels.payload_density_grid_ship_plan(
+        ship_mean_color_rgba=True,
+        ship_wasm_source=True,
+        attach_sample=True,
+        has_tiles=True,
+        ship_constant_color=True,
+        overlay_wire_rows_exceed=False,
+        overlay_wire_static_raster=False,
+        ship_categorical_entry_color=True,
+    )
+    assert plan["n_buffers"] == 2
+    assert plan["buffers"][1]["registry_key"] == "rgba"
+    assert [step["attach_kind"] for step in plan["attach"]] == [
+        "wasm_source",
+        "tiles",
+        "rgba",
+        "channels_dropped",
+        "dropped_channels",
+        "constant_color",
+        "sample",
+        "entry_color",
+    ]
+
+
+def test_payload_density_grid_ship_plan_static_raster_when_sample_off() -> None:
+    plan = kernels.payload_density_grid_ship_plan(
+        ship_mean_color_rgba=False,
+        ship_wasm_source=False,
+        attach_sample=False,
+        has_tiles=False,
+        ship_constant_color=False,
+        overlay_wire_rows_exceed=False,
+        overlay_wire_static_raster=True,
+        ship_categorical_entry_color=False,
+    )
+    assert [step["attach_kind"] for step in plan["attach"]] == [
+        "channels_dropped",
+        "dropped_channels",
+        "overlay_static_raster",
+    ]
+
+
 def test_payload_channel_ship_plan_scatter() -> None:
     plan = kernels.payload_channel_ship_plan(
         kernels.PAYLOAD_SHIP_CHANNELS_ALWAYS,

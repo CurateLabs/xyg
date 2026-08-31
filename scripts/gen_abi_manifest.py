@@ -149,6 +149,8 @@ _POINTER_C: dict[str, str] = {
     "*mut XygSceneEncodeProductAttachPlan": "void *",
     "*mut XygPayloadColumnShipEntry": "void *",
     "*mut XygPayloadChannelShipEntry": "void *",
+    "*mut XygPayloadDensityGridBufferEntry": "void *",
+    "*mut XygPayloadDensityGridAttachEntry": "void *",
     "*const XygTemporalGraphSnapshotBuffers": "const void *",
     "*const i32": "const int32_t *",
     "*const *const f64": "const double *const *",
