@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 285;
+pub const ABI_VERSION: u32 = 286;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15906,6 +15906,25 @@ pub unsafe extern "C" fn xyg_density_wasm_source_admit(
             return 0;
         }
         density_emit::density_wasm_source_admit(split_payload, wasm_eligible)
+    })
+}
+
+/// Payload-level ``wasm_density`` wire kind for split builds (ABI 270).
+#[no_mangle]
+pub unsafe extern "C" fn xyg_density_wasm_density_wire_kind(
+    split_payload: i32,
+    wasm_source_count: u64,
+    has_density_tier: i32,
+) -> i32 {
+    ffi_guard(density_emit::DENSITY_WASM_DENSITY_NONE, || {
+        if !matches!(split_payload, 0 | 1) || !matches!(has_density_tier, 0 | 1) {
+            return density_emit::DENSITY_WASM_DENSITY_NONE;
+        }
+        density_emit::density_wasm_density_wire_kind(
+            split_payload,
+            wasm_source_count,
+            has_density_tier,
+        )
     })
 }
 

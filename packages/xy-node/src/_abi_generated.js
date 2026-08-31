@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 285;
-export const SIGNATURE_SHA256 = "f0ca532d13ba95e4231ba688162be1dfd88651c78b187a831bebe13653541ac8";
+export const ABI_VERSION = 286;
+export const SIGNATURE_SHA256 = "9469fce387ff24f5dcb52cbe830f9031aa51b12fef36b1f4dbf432a47e541476";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -74,6 +74,7 @@ export let xyDensityRgba;
 export let xyDensityRgbaLinear;
 export let xyDensityTraceColorClassify;
 export let xyDensityUsesChannelColormap;
+export let xyDensityWasmDensityWireKind;
 export let xyDensityWasmEligible;
 export let xyDensityWasmSourceAdmit;
 export let xyDirectRgbaAdmit;
@@ -454,6 +455,7 @@ export function bindGeneratedAbi(lib) {
   xyDensityRgbaLinear = lib.func("int32_t xyg_density_rgba_linear(const double * counts, size_t w, size_t h, double maximum, const uint8_t * stops, size_t stop_count, double opacity, uint8_t * out)");
   xyDensityTraceColorClassify = lib.func("int32_t xyg_density_trace_color_classify(int32_t has_channel, const uint8_t * mode, size_t mode_len, int32_t codes_present, int32_t codes_u8, int32_t has_counts, int32_t * out_color_mode, int32_t * out_categorical, int32_t * out_compact_categorical, int32_t * out_stratified_counts)");
   xyDensityUsesChannelColormap = lib.func("int32_t xyg_density_uses_channel_colormap(int32_t has_channel, const uint8_t * mode, size_t mode_len)");
+  xyDensityWasmDensityWireKind = lib.func("int32_t xyg_density_wasm_density_wire_kind(int32_t split_payload, uint64_t wasm_source_count, int32_t has_density_tier)");
   xyDensityWasmEligible = lib.func("int32_t xyg_density_wasm_eligible(int32_t cartesian, int32_t x_linear, int32_t y_linear, int32_t color_mode, int32_t x_has_nulls, int32_t y_has_nulls, uint64_t n_points)");
   xyDensityWasmSourceAdmit = lib.func("int32_t xyg_density_wasm_source_admit(int32_t split_payload, int32_t wasm_eligible)");
   xyDirectRgbaAdmit = lib.func("size_t xyg_direct_rgba_admit(const double * values, size_t n, size_t components, double * out, size_t capacity)");
