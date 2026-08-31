@@ -3709,12 +3709,6 @@ function marshalXyTcTraceRecord(trace, showLegend) {
   const symbolIsInt = typeof symbolRaw === "number" && typeof symbolRaw !== "boolean" ? 1 : 0;
   const nan = Number.NaN;
   const opacity = Number(style.opacity ?? 1);
-  const packedOpacity = sceneXytcOpacityPack(
-    dispatch.packOpacity ? 1 : 0,
-    dispatch.kindClass & SCENE_KIND_CLASS_BAND ? 1 : 0,
-    style,
-  );
-  const packedNumeric = sceneXytcNumericStylePack(trace, style);
   const rawDx = style.hex_dx ?? style.dx;
   const rawDy = style.hex_dy ?? style.dy;
   const hasHexDx = rawDx != null ? 1 : 0;
@@ -3809,9 +3803,9 @@ function marshalXyTcTraceRecord(trace, showLegend) {
       symbolIsInt,
       symbolInt: packedSymbol.symbolInt,
       opacity,
-      fillOpacity: packedOpacity.fillOpacity,
-      strokeOpacity: packedOpacity.strokeOpacity,
-      lineOpacity: packedOpacity.lineOpacity,
+      fillOpacity: Number(style.fill_opacity ?? 1),
+      strokeOpacity: Number(style.stroke_opacity ?? 1),
+      lineOpacity: Number(style.line_opacity ?? 1),
       hasStroke: Object.hasOwn(style, "stroke") ? 1 : 0,
       hasLineColor: Object.hasOwn(style, "line_color") ? 1 : 0,
       hasSize: Object.hasOwn(style, "size") ? 1 : 0,

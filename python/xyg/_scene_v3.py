@@ -2154,32 +2154,9 @@ def _marshal_xytc_trace_record(trace: Any, *, show_legend: bool) -> bytes:
     else:
         symbol_is_int, symbol_int = 0, 0
         symbol_b = str(symbol_raw or "circle").encode("utf-8")
-    kind_class = int(dispatch["kind_class"]) if dispatch["pack_opacity"] else 0
-    fill_opacity, stroke_opacity, line_opacity = _native.scene_xytc_opacity_pack(
-        1 if kind_class & _SCENE_KIND_CLASS_OPACITY else 0,
-        1 if kind_class & _SCENE_KIND_CLASS_BAND else 0,
-        float(style.get("fill_opacity", 1.0)),
-        float(style.get("stroke_opacity", 1.0)),
-        float(style.get("line_opacity", 1.0)),
-    )
     size_ch = getattr(trace, "size_ch", None)
     size_ch_constant = getattr(size_ch, "constant", None) if size_ch is not None else None
     has_size = 1 if "size" in style else 0
-    _num_flags, size, size_ch_value, stroke_width, width, line_width = (
-        _native.scene_xytc_numeric_style_pack(
-            has_size,
-            1 if size_ch is not None else 0,
-            1 if size_ch_constant is not None else 0,
-            1 if "stroke_width" in style else 0,
-            1 if "width" in style else 0,
-            1 if "line_width" in style else 0,
-            float(style["size"]) if has_size else nan,
-            float(size_ch_constant) if size_ch_constant is not None else nan,
-            float(style["stroke_width"]) if "stroke_width" in style else 0.0,
-            float(style["width"]) if "width" in style else 0.0,
-            float(style["line_width"]) if "line_width" in style else 0.0,
-        )
-    )
     raw_dx = style.get("hex_dx", style.get("dx"))
     raw_dy = style.get("hex_dy", style.get("dy"))
     has_hex_dx = 1 if raw_dx is not None else 0
@@ -2263,9 +2240,9 @@ def _marshal_xytc_trace_record(trace: Any, *, show_legend: bool) -> bytes:
         "symbol_is_int": symbol_is_int,
         "symbol_int": symbol_int,
         "opacity": float(style.get("opacity", 1.0)),
-        "fill_opacity": fill_opacity,
-        "stroke_opacity": stroke_opacity,
-        "line_opacity": line_opacity,
+        "fill_opacity": float(style.get("fill_opacity", 1.0)),
+        "stroke_opacity": float(style.get("stroke_opacity", 1.0)),
+        "line_opacity": float(style.get("line_opacity", 1.0)),
         "has_stroke": 1 if "stroke" in style else 0,
         "has_line_color": 1 if "line_color" in style else 0,
         "has_size": has_size,
