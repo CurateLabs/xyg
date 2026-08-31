@@ -167,6 +167,67 @@ def test_payload_segments_emit_gather_errorbar_role_maps() -> None:
     np.testing.assert_array_equal(gather["roles"][:12], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
 
 
+def test_payload_trace_channels_ship_attach_scatter() -> None:
+    attach = kernels.payload_trace_channels_ship_attach(
+        kernels.PAYLOAD_SHIP_CHANNELS_ALWAYS,
+        include_trace_styles=True,
+        has_color_ch=False,
+        has_stroke_ch=True,
+        has_style_channels=True,
+    )
+    assert attach == {
+        "ship_color": True,
+        "ship_size": True,
+        "ship_stroke": True,
+        "ship_style_channels": True,
+    }
+
+
+def test_payload_trace_channels_ship_attach_hexbin() -> None:
+    attach = kernels.payload_trace_channels_ship_attach(
+        kernels.PAYLOAD_SHIP_CHANNELS_ALWAYS,
+        include_trace_styles=False,
+        has_color_ch=False,
+        has_stroke_ch=True,
+        has_style_channels=True,
+    )
+    assert attach == {
+        "ship_color": True,
+        "ship_size": True,
+        "ship_stroke": False,
+        "ship_style_channels": False,
+    }
+
+
+def test_payload_trace_channels_ship_attach_geometry_if_color() -> None:
+    attach = kernels.payload_trace_channels_ship_attach(
+        kernels.PAYLOAD_SHIP_CHANNELS_IF_COLOR,
+        include_trace_styles=True,
+        has_color_ch=False,
+        has_stroke_ch=True,
+        has_style_channels=False,
+    )
+    assert attach == {
+        "ship_color": False,
+        "ship_size": False,
+        "ship_stroke": True,
+        "ship_style_channels": False,
+    }
+    attach = kernels.payload_trace_channels_ship_attach(
+        kernels.PAYLOAD_SHIP_CHANNELS_IF_COLOR,
+        include_trace_styles=True,
+        has_color_ch=True,
+        has_stroke_ch=False,
+        has_style_channels=True,
+    )
+    assert attach == {
+        "ship_color": True,
+        "ship_size": True,
+        "ship_stroke": False,
+        "ship_style_channels": True,
+    }
+
+
 def test_polar_line_stays_direct_over_m4_threshold() -> None:
     n = DECIMATION_THRESHOLD + 1
     fig = Figure(coords="polar").line(np.arange(n, dtype=float), np.ones(n))

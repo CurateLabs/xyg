@@ -1345,6 +1345,18 @@ def load() -> ctypes.CDLL:
         ctypes.c_size_t,
         ctypes.c_size_t,
     ]
+    lib.xyg_payload_trace_channels_ship_attach.restype = ctypes.c_int32
+    lib.xyg_payload_trace_channels_ship_attach.argtypes = [
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.c_int32,
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+    ]
     lib.xyg_density_color_classify.restype = ctypes.c_int32
     lib.xyg_density_color_classify.argtypes = [
         ctypes.c_int32,
@@ -4913,6 +4925,65 @@ def main() -> None:
     ok(
         lib.xyg_payload_transition_keys_admit(1, 1, 10, 10, 200_000) == 0,
         "payload_transition_keys_admit ship",
+    )
+    ship_color = ctypes.c_int32(-1)
+    ship_size = ctypes.c_int32(-1)
+    ship_stroke = ctypes.c_int32(-1)
+    ship_style = ctypes.c_int32(-1)
+    ok(
+        lib.xyg_payload_trace_channels_ship_attach(
+            0,
+            1,
+            0,
+            1,
+            1,
+            ctypes.byref(ship_color),
+            ctypes.byref(ship_size),
+            ctypes.byref(ship_stroke),
+            ctypes.byref(ship_style),
+        )
+        == 1
+        and ship_color.value == 1
+        and ship_size.value == 1
+        and ship_stroke.value == 1
+        and ship_style.value == 1,
+        "payload_trace_channels_ship_attach scatter always",
+    )
+    ok(
+        lib.xyg_payload_trace_channels_ship_attach(
+            0,
+            0,
+            0,
+            1,
+            1,
+            ctypes.byref(ship_color),
+            ctypes.byref(ship_size),
+            ctypes.byref(ship_stroke),
+            ctypes.byref(ship_style),
+        )
+        == 1
+        and ship_color.value == 1
+        and ship_stroke.value == 0
+        and ship_style.value == 0,
+        "payload_trace_channels_ship_attach hexbin skips trace styles",
+    )
+    ok(
+        lib.xyg_payload_trace_channels_ship_attach(
+            1,
+            1,
+            0,
+            1,
+            0,
+            ctypes.byref(ship_color),
+            ctypes.byref(ship_size),
+            ctypes.byref(ship_stroke),
+            ctypes.byref(ship_style),
+        )
+        == 1
+        and ship_color.value == 0
+        and ship_stroke.value == 1
+        and ship_style.value == 0,
+        "payload_trace_channels_ship_attach geometry if color",
     )
     density_color_mode = ctypes.c_int32(-1)
     density_categorical = ctypes.c_int32(-1)

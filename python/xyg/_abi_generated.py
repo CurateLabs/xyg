@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 292
-SIGNATURE_SHA256 = "1b6302befbcdea991e6996e271c03b5955047d5c1e8bdcfead49f107ac6f3ed8"
+ABI_VERSION = 293
+SIGNATURE_SHA256 = "f3840333d4ea9dfd6f373d6710d47ef46c81cbb245d21eec7ea40055cd2d0090"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -646,6 +646,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_payload_tier
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_uint64, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32]
+    # int32_t xyg_payload_trace_channels_ship_attach(int32_t slot, int32_t include_trace_styles, int32_t has_color_ch, int32_t has_stroke_ch, int32_t has_style_channels, int32_t * out_ship_color, int32_t * out_ship_size, int32_t * out_ship_stroke, int32_t * out_ship_style_channels)
+    function = lib.xyg_payload_trace_channels_ship_attach
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
     # int32_t xyg_payload_transition_keys_admit(int32_t has_keys, int32_t tier_direct, size_t n_keys, size_t n_marks, size_t max_rows)
     function = lib.xyg_payload_transition_keys_admit
     function.restype = ctypes.c_int32
