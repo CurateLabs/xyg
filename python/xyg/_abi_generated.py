@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 271
-SIGNATURE_SHA256 = "a08377b0370457a9dc95f72d24809c71da4a8fdcdc6902cb38b4adb89dd785ad"
+ABI_VERSION = 272
+SIGNATURE_SHA256 = "000d64752b5ce89f1d9490121a45f0982f72fb602752ddf69a3647e5c2dd47a9"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -1118,6 +1118,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_xytc_stroke_perimeter_pack
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_scene_xytc_symbol_int_pack(int32_t symbol_is_int, uint32_t * out_flags)
+    function = lib.xyg_scene_xytc_symbol_int_pack
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_void_p]
     # size_t xyg_sector_triangles(const double * values, size_t len, const double * explode, double center_x, double center_y, double radius, double inner_radius, double start_degrees, int32_t counterclockwise, int32_t normalize, double * out_x0, double * out_y0, double * out_x1, double * out_y1, double * out_x2, double * out_y2, double * out_sector, size_t capacity)
     function = lib.xyg_sector_triangles
     function.restype = ctypes.c_size_t

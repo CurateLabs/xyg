@@ -1,9 +1,9 @@
 {
-  "abi_version": 271,
+  "abi_version": 272,
   "artifact": "xyg_core",
   "prefix": "xyg_",
   "source": "crates/xyg-core/src/lib.rs",
-  "signature_sha256": "a08377b0370457a9dc95f72d24809c71da4a8fdcdc6902cb38b4adb89dd785ad",
+  "signature_sha256": "000d64752b5ce89f1d9490121a45f0982f72fb602752ddf69a3647e5c2dd47a9",
   "symbols": [
     {
       "name": "xyg_abi_version",
@@ -39613,6 +39613,57 @@
         "nullable": false
       },
       "c_signature": "int32_t xyg_scene_xytc_stroke_perimeter_pack(int32_t band, int32_t present, int32_t perimeter_is_bool, int32_t perimeter_true, uint32_t * out_flags)"
+    },
+    {
+      "name": "xyg_scene_xytc_symbol_int_pack",
+      "node_name": "xySceneXytcSymbolIntPack",
+      "nargs": 2,
+      "arguments": [
+        {
+          "name": "symbol_is_int",
+          "type": {
+            "rust": "i32",
+            "c": "int32_t",
+            "ctypes": "ctypes.c_int32",
+            "koffi": "int32_t",
+            "kind": "scalar",
+            "bits": 32,
+            "signed": true,
+            "pointer_depth": 0,
+            "direction": "value",
+            "nullable": false
+          }
+        },
+        {
+          "name": "out_flags",
+          "type": {
+            "rust": "*mut u32",
+            "c": "uint32_t *",
+            "ctypes": "ctypes.c_void_p",
+            "koffi": "uint32_t *",
+            "kind": "pointer",
+            "bits": "pointer",
+            "signed": null,
+            "pointer_depth": 1,
+            "direction": "out",
+            "nullable": "contract-defined",
+            "buffer_contract": "caller-owned writable storage; pointer/length requirements are documented by the symbol"
+          }
+        }
+      ],
+      "returns": {
+        "rust": "i32",
+        "c": "int32_t",
+        "ctypes": "ctypes.c_int32",
+        "koffi": "int32_t",
+        "kind": "scalar",
+        "bits": 32,
+        "signed": true,
+        "pointer_depth": 0,
+        "direction": "return",
+        "nullable": false
+      },
+      "c_signature": "int32_t xyg_scene_xytc_symbol_int_pack(int32_t symbol_is_int, uint32_t * out_flags)"
     },
     {
       "name": "xyg_sector_triangles",

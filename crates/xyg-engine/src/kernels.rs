@@ -1633,6 +1633,21 @@ const XYTC_HAS_MARKER: u32 = 1 << 18;
 const XYTC_HAS_GLYPH: u32 = 1 << 24;
 const XYTC_JOINED_FILL: u32 = 1 << 25;
 const XYTC_COLOR2: u32 = 1 << 13;
+const XYTC_SYMBOL_INT: u32 = 1 << 21;
+
+/// Pack XYTC numeric scatter symbol flag bit (ABI 272).
+///
+/// ``symbol_is_int``: ``style.symbol`` authored as a number. String symbol
+/// names and UTF-8 ``symbol_b`` bytes stay host.
+pub fn scene_xytc_symbol_int_pack(symbol_is_int: i32) -> Option<u32> {
+    if !matches!(symbol_is_int, 0 | 1) {
+        return None;
+    }
+    if symbol_is_int == 0 {
+        return Some(0);
+    }
+    Some(XYTC_SYMBOL_INT)
+}
 
 /// Pack XYTC ribbon ``color2`` flag bits (ABI 271).
 ///
@@ -11097,6 +11112,13 @@ mod fuzz {
         );
         assert_eq!(scene_xytc_color2_flags_pack(SCENE_RIBBON_COLOR2_ABSENT, 0, 0), Some(0));
         assert!(scene_xytc_color2_flags_pack(5, 0, 0).is_none());
+    }
+
+    #[test]
+    fn scene_xytc_symbol_int_pack_matches_host_table() {
+        assert_eq!(scene_xytc_symbol_int_pack(0), Some(0));
+        assert_eq!(scene_xytc_symbol_int_pack(1), Some(XYTC_SYMBOL_INT));
+        assert!(scene_xytc_symbol_int_pack(2).is_none());
     }
 
     #[test]
