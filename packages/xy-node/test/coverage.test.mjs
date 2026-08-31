@@ -1513,40 +1513,34 @@ test("buildPayload ships cartesian axis label_position like Python _axis_spec", 
   assert.equal(spec.y_axis.label_position, undefined);
 });
 
-test("buildPayload omits cartesian axis label_offset unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `label_offset`. Node cartesian payload axes omit
-  // that field even when axis label_offset is set. Recorded
-  // emit-payload-axis-label-offset stay-host.
+test("buildPayload ships cartesian axis label_offset like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   fig.setAxis("x", { label_offset: 8 });
   const { spec } = fig.buildPayload();
   assert.equal(fig.axis_options.x.label_offset, 8);
-  assert.equal(spec.x_axis.label_offset, undefined);
+  assert.equal(spec.x_axis.label_offset, 8);
+  assert.equal(spec.y_axis.label_offset, undefined);
 });
 
-test("buildPayload omits cartesian axis label_angle unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `label_angle`. Node cartesian payload axes omit
-  // that field even when axis label_angle is set. Recorded
-  // emit-payload-axis-label-angle stay-host.
+test("buildPayload ships cartesian axis label_angle like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   fig.setAxis("x", { label_angle: 45 });
   const { spec } = fig.buildPayload();
   assert.equal(fig.axis_options.x.label_angle, 45);
-  assert.equal(spec.x_axis.label_angle, undefined);
+  assert.equal(spec.x_axis.label_angle, 45);
+  assert.equal(spec.y_axis.label_angle, undefined);
 });
 
-test("buildPayload omits cartesian axis tick_label_angle unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_label_angle`. Node cartesian payload axes
-  // omit that field even when axis tick_label_angle is set. Recorded
-  // emit-payload-axis-tick-label-angle stay-host.
+test("buildPayload ships cartesian axis tick_label_angle like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.scatter([0, 1], [0, 1]);
   fig.setAxis("x", { tick_label_angle: 30 });
   const { spec } = fig.buildPayload();
   assert.equal(fig.axis_options.x.tick_label_angle, 30);
-  assert.equal(spec.x_axis.tick_label_angle, undefined);
+  assert.equal(spec.x_axis.tick_label_angle, 30);
+  assert.equal(spec.y_axis.tick_label_angle, undefined);
 });
 
 test("buildPayload omits cartesian axis tick_label_strategy unlike Python _axis_spec", () => {
@@ -1867,34 +1861,28 @@ test("buildPayload ships polar axis label_position like Python _axis_spec", () =
   assert.deepEqual(spec.x_axis.label_position, "end");
 });
 
-test("buildPayload omits polar axis label_offset unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `label_offset` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-label-offset stay-host.
+test("buildPayload ships polar axis label_offset like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.setAxis("x", { label_offset: 4 });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.label_offset, undefined);
+  assert.equal(spec.x_axis.label_offset, 4);
 });
 
-test("buildPayload omits polar axis label_angle unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `label_angle` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-label-angle stay-host.
+test("buildPayload ships polar axis label_angle like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.setAxis("x", { label_angle: 15 });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.label_angle, undefined);
+  assert.equal(spec.x_axis.label_angle, 15);
 });
 
-test("buildPayload omits polar axis tick_label_angle unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `tick_label_angle` on polar axes. Node
-  // `_polarAxisSpecs` omits that field. Recorded emit-polar-payload-axis-tick-label-angle stay-host.
+test("buildPayload ships polar axis tick_label_angle like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.setAxis("x", { tick_label_angle: 20 });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.tick_label_angle, undefined);
+  assert.equal(spec.x_axis.tick_label_angle, 20);
 });
 
 test("buildPayload omits polar axis tick_label_strategy unlike Python _axis_spec", () => {

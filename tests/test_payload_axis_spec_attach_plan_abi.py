@@ -218,6 +218,63 @@ def test_axis_spec_polar_label_position_cross_host_fixture() -> None:
     assert spec["x_axis"]["label_position"] == "end"
 
 
+def test_axis_spec_cartesian_label_offset_cross_host_fixture() -> None:
+    """Node buildPayload axis label_offset parity when attach_label_offset is set."""
+    fig = Figure(width=240, height=160)
+    fig.scatter([0.0, 1.0], [0.0, 1.0])
+    fig.set_axis("x", label_offset=8.0)
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["label_offset"] == 8.0
+    assert "label_offset" not in spec["y_axis"]
+
+
+def test_axis_spec_polar_label_offset_cross_host_fixture() -> None:
+    """Node buildPayload polar axis label_offset parity when attach_label_offset is set."""
+    fig = Figure(coords="polar", width=240, height=160)
+    fig.set_axis("x", label_offset=4.0)
+    fig.scatter([0.0, 1.0], [1.0, 2.0])
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["label_offset"] == 4.0
+
+
+def test_axis_spec_cartesian_label_angle_cross_host_fixture() -> None:
+    """Node buildPayload axis label_angle parity when attach_label_angle is set."""
+    fig = Figure(width=240, height=160)
+    fig.scatter([0.0, 1.0], [0.0, 1.0])
+    fig.set_axis("x", label_angle=45.0)
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["label_angle"] == 45.0
+    assert "label_angle" not in spec["y_axis"]
+
+
+def test_axis_spec_polar_label_angle_cross_host_fixture() -> None:
+    """Node buildPayload polar axis label_angle parity when attach_label_angle is set."""
+    fig = Figure(coords="polar", width=240, height=160)
+    fig.set_axis("x", label_angle=15.0)
+    fig.scatter([0.0, 1.0], [1.0, 2.0])
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["label_angle"] == 15.0
+
+
+def test_axis_spec_cartesian_tick_label_angle_cross_host_fixture() -> None:
+    """Node buildPayload axis tick_label_angle parity when attach_tick_label_angle is set."""
+    fig = Figure(width=240, height=160)
+    fig.scatter([0.0, 1.0], [0.0, 1.0])
+    fig.set_axis("x", tick_label_angle=30.0)
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["tick_label_angle"] == 30.0
+    assert "tick_label_angle" not in spec["y_axis"]
+
+
+def test_axis_spec_polar_tick_label_angle_cross_host_fixture() -> None:
+    """Node buildPayload polar axis tick_label_angle parity when attach_tick_label_angle is set."""
+    fig = Figure(coords="polar", width=240, height=160)
+    fig.set_axis("x", tick_label_angle=20.0)
+    fig.scatter([0.0, 1.0], [1.0, 2.0])
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["tick_label_angle"] == 20.0
+
+
 def test_axis_spec_omits_linear_scale() -> None:
     fig = Figure()
     fig.scatter([0.0, 1.0], [0.0, 1.0])

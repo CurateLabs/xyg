@@ -216,3 +216,54 @@ test("buildPayload ships polar axis label_position like Python _axis_spec", () =
   const { spec } = fig.buildPayload();
   assert.deepEqual(spec.x_axis.label_position, "end");
 });
+
+test("buildPayload ships cartesian axis label_offset like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { label_offset: 8 });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.label_offset, 8);
+  assert.equal(spec.y_axis.label_offset, undefined);
+});
+
+test("buildPayload ships cartesian axis label_angle like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { label_angle: 45 });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.label_angle, 45);
+  assert.equal(spec.y_axis.label_angle, undefined);
+});
+
+test("buildPayload ships cartesian axis tick_label_angle like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([0, 1], [0, 1]);
+  fig.setAxis("x", { tick_label_angle: 30 });
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_angle, 30);
+  assert.equal(spec.y_axis.tick_label_angle, undefined);
+});
+
+test("buildPayload ships polar axis label_offset like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { label_offset: 4 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.label_offset, 4);
+});
+
+test("buildPayload ships polar axis label_angle like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { label_angle: 15 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.label_angle, 15);
+});
+
+test("buildPayload ships polar axis tick_label_angle like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.setAxis("x", { tick_label_angle: 20 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.tick_label_angle, 20);
+});
