@@ -1610,6 +1610,26 @@ pub fn scene_gradient_spec_pack(
 
 const XYTC_HAS_CORNER_RADIUS: u32 = 1 << 22;
 const XYTC_HAS_WEDGE_GAP: u32 = 1 << 23;
+const XYTC_COLOR_CH: u32 = 1 << 11;
+const XYTC_COLOR_CH_CONSTANT: u32 = 1 << 12;
+
+/// Pack XYTC ``color_ch`` flag bits (ABI 263).
+///
+/// ``present``: channel object exists. ``has_constant``: ``constant`` field set.
+/// Mode/constant UTF-8 stays host.
+pub fn scene_xytc_color_channel_pack(present: i32, has_constant: i32) -> Option<u32> {
+    if !matches!(present, 0 | 1) || !matches!(has_constant, 0 | 1) {
+        return None;
+    }
+    if present == 0 {
+        return Some(0);
+    }
+    let mut flags = XYTC_COLOR_CH;
+    if has_constant != 0 {
+        flags |= XYTC_COLOR_CH_CONSTANT;
+    }
+    Some(flags)
+}
 
 /// Pack XYTC corner-radius and wedge-gap trailer fields (ABI 262).
 ///
@@ -10676,6 +10696,18 @@ mod fuzz {
         assert_eq!(scene_marker_blob_pack(1, &diamond, &lens, &mut out[..3]), -1);
         assert_eq!(scene_marker_blob_pack(1, &diamond[..5], &[5, 6], &mut out), 0);
         assert_eq!(scene_marker_blob_pack(2, &diamond, &lens, &mut out), 0);
+    }
+
+    #[test]
+    fn scene_xytc_color_channel_pack_matches_host_table() {
+        assert_eq!(scene_xytc_color_channel_pack(0, 0), Some(0));
+        assert_eq!(scene_xytc_color_channel_pack(1, 0), Some(1 << 11));
+        assert_eq!(
+            scene_xytc_color_channel_pack(1, 1),
+            Some((1 << 11) | (1 << 12))
+        );
+        assert!(scene_xytc_color_channel_pack(2, 0).is_none());
+        assert!(scene_xytc_color_channel_pack(1, 2).is_none());
     }
 
     #[test]

@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 262
-SIGNATURE_SHA256 = "2c0cb6f6a48c23c7721280b6e506facc0a92765d4d222d9b014997a9b680a040"
+ABI_VERSION = 263
+SIGNATURE_SHA256 = "3236347dc4367b6253fe07e10bb8f82550160203db5edc68160d42e759516a88"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -1078,6 +1078,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_xyta_colormap_pack
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    # int32_t xyg_scene_xytc_color_channel_pack(int32_t present, int32_t has_constant, uint32_t * out_flags)
+    function = lib.xyg_scene_xytc_color_channel_pack
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p]
     # int32_t xyg_scene_xytc_radius_pack(const uint8_t * kind, size_t kind_len, int32_t radius_seq, double r0, double r1, double wedge_gap_raw, uint32_t * out_flags, double * out_r_tip, double * out_r_base, double * out_wedge_gap)
     function = lib.xyg_scene_xytc_radius_pack
     function.restype = ctypes.c_int32

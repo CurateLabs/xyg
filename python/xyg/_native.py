@@ -1608,6 +1608,27 @@ def scene_xytc_radius_pack(
     return int(flags.value), float(r_tip.value), float(r_base.value), float(wedge_gap.value)
 
 
+def scene_xytc_color_channel_pack(present: int, has_constant: int) -> int:
+    """XYTC color_ch flag bits via ``xyg_scene_xytc_color_channel_pack`` (ABI 263).
+
+    Hosts still pick ``color_ch`` object presence and ``constant`` field.
+    Mode/constant UTF-8 stays host.
+    """
+    flags = ctypes.c_uint32(0)
+    ok = int(
+        _lib.xyg_scene_xytc_color_channel_pack(
+            ctypes.c_int32(int(present)),
+            ctypes.c_int32(int(has_constant)),
+            ctypes.byref(flags),
+        )
+    )
+    if ok == -2:
+        raise ValueError("invalid scene-xytc-color-channel-pack request")
+    if ok == 0:
+        raise ValueError("invalid scene-xytc-color-channel-pack request")
+    return int(flags.value)
+
+
 def scene_gradient_spec_pack(
     space: bytes,
     dir: bytes,
