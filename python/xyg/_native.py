@@ -11567,6 +11567,36 @@ def payload_bar_compact_admit(
     )
 
 
+def payload_transition_keys_admit(
+    *,
+    has_keys: bool,
+    tier_direct: bool,
+    n_keys: int,
+    n_marks: int,
+    max_rows: int,
+) -> str | None:
+    """Transition-key admit via ``xyg_payload_transition_keys_admit`` (ABI 259).
+
+    Returns an ``animation_fallback`` reason, or ``None`` when keys may ship.
+    """
+    code = _lib.xyg_payload_transition_keys_admit(
+        1 if has_keys else 0,
+        1 if tier_direct else 0,
+        int(n_keys),
+        int(n_marks),
+        int(max_rows),
+    )
+    if code == 0:
+        return None
+    if code == 1:
+        return "snap:aggregate"
+    if code == 2:
+        return "snap:key-limit"
+    if code == 3:
+        return "index:key-count-mismatch"
+    raise ValueError("invalid payload_transition_keys_admit result")
+
+
 def payload_sample_target_indices(
     n: int,
     target: int,

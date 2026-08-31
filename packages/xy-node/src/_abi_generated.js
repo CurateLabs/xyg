@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 274;
-export const SIGNATURE_SHA256 = "2536a081ea0961a90d68faf3f766784abf86b5cd3d48271ea589d9ebf8f89be5";
+export const ABI_VERSION = 275;
+export const SIGNATURE_SHA256 = "2db1c7b57397c19695ff262f171c39920af0fb89915472a503d24e70606c96b5";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -147,6 +147,7 @@ export let xyPayloadM4Indices;
 export let xyPayloadSampleTargetIndices;
 export let xyPayloadSegmentBudget;
 export let xyPayloadTier;
+export let xyPayloadTransitionKeysAdmit;
 export let xyPayloadVisibleIndices;
 export let xyPayloadVisibleMask;
 export let xyPayloadVisibleNeeded;
@@ -516,6 +517,7 @@ export function bindGeneratedAbi(lib) {
   xyPayloadSampleTargetIndices = lib.func("size_t xyg_payload_sample_target_indices(size_t n, size_t target, uint64_t seed, uint32_t level, double growth, int32_t * out_keep_all, uint32_t * out, size_t capacity)");
   xyPayloadSegmentBudget = lib.func("size_t xyg_payload_segment_budget(double px_width)");
   xyPayloadTier = lib.func("int32_t xyg_payload_tier(int32_t kind, uint64_t n_points, int32_t polar, int32_t force_density, int32_t force_direct, int32_t per_item)");
+  xyPayloadTransitionKeysAdmit = lib.func("int32_t xyg_payload_transition_keys_admit(int32_t has_keys, int32_t tier_direct, size_t n_keys, size_t n_marks, size_t max_rows)");
   xyPayloadVisibleIndices = lib.func("size_t xyg_payload_visible_indices(const double * x, const double * y, size_t n, int32_t x_log, int32_t y_log, const double * base, int32_t has_base, int32_t prefiltered, int32_t x_has_nulls, int32_t y_has_nulls, int32_t base_has_nulls, int32_t * out_keep_all, uint32_t * out, size_t capacity)");
   xyPayloadVisibleMask = lib.func("size_t xyg_payload_visible_mask(const double * x, const double * y, size_t n, int32_t x_log, int32_t y_log, const double * base, int32_t has_base, uint8_t * out, size_t capacity)");
   xyPayloadVisibleNeeded = lib.func("int32_t xyg_payload_visible_needed(int32_t x_log, int32_t y_log, int32_t prefiltered, int32_t x_has_nulls, int32_t y_has_nulls, int32_t has_base, int32_t base_has_nulls)");

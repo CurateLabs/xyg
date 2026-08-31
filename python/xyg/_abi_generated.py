@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 274
-SIGNATURE_SHA256 = "2536a081ea0961a90d68faf3f766784abf86b5cd3d48271ea589d9ebf8f89be5"
+ABI_VERSION = 275
+SIGNATURE_SHA256 = "2db1c7b57397c19695ff262f171c39920af0fb89915472a503d24e70606c96b5"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -578,6 +578,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_payload_tier
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_int32, ctypes.c_uint64, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32]
+    # int32_t xyg_payload_transition_keys_admit(int32_t has_keys, int32_t tier_direct, size_t n_keys, size_t n_marks, size_t max_rows)
+    function = lib.xyg_payload_transition_keys_admit
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t]
     # size_t xyg_payload_visible_indices(const double * x, const double * y, size_t n, int32_t x_log, int32_t y_log, const double * base, int32_t has_base, int32_t prefiltered, int32_t x_has_nulls, int32_t y_has_nulls, int32_t base_has_nulls, int32_t * out_keep_all, uint32_t * out, size_t capacity)
     function = lib.xyg_payload_visible_indices
     function.restype = ctypes.c_size_t

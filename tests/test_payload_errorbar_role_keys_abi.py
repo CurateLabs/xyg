@@ -30,3 +30,14 @@ def test_payload_errorbar_role_keys_collision() -> None:
             np.array([1, 0], dtype=np.uint32),
             np.array([0, 1], dtype=np.uint32),
         )
+
+
+def test_payload_errorbar_role_keys_noncontiguous_columns() -> None:
+    keys = np.array([[0, 0x85EBCA6B], [0x9E3779B9, 0]], dtype=np.uint32)
+    with pytest.raises(ValueError, match="role-qualified animation key collision"):
+        kernels.payload_errorbar_role_keys(
+            keys[:, 0],
+            keys[:, 1],
+            np.array([0, 1, 0, 1, 0, 1], dtype=np.uint32),
+            np.array([0, 0, 1, 1, 2, 2], dtype=np.uint32),
+        )

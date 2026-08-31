@@ -160,7 +160,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 274;
+pub const ABI_VERSION: u32 = 275;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -15291,6 +15291,21 @@ pub unsafe extern "C" fn xyg_payload_bar_compact_admit(
             &mut *out_compact,
         )
     })
+}
+
+/// Transition-key shipping admit (ABI 259).
+///
+/// Returns ``0`` when keys may ship, ``1`` for ``snap:aggregate``, ``2`` for
+/// ``snap:key-limit``, ``3`` for ``index:key-count-mismatch``.
+#[no_mangle]
+pub extern "C" fn xyg_payload_transition_keys_admit(
+    has_keys: i32,
+    tier_direct: i32,
+    n_keys: usize,
+    n_marks: usize,
+    max_rows: usize,
+) -> i32 {
+    lod_plan::payload_transition_keys_admit(has_keys, tier_direct, n_keys, n_marks, max_rows)
 }
 
 /// Density-overlay sample of implicit ids `0..n` (ABI 205). Owns

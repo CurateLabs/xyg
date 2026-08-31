@@ -531,6 +531,38 @@ pub fn payload_bar_compact_admit(
     1
 }
 
+/// Transition-key shipping admit (ABI 259).
+///
+/// Hosts pass row counts after gather/selection. Returns ``0`` when keys may
+/// ship, ``1`` for ``snap:aggregate``, ``2`` for ``snap:key-limit``, ``3`` for
+/// ``index:key-count-mismatch``. ``max_rows`` is the host ``MAX_ANIMATION_MATCH_ROWS``.
+pub const PAYLOAD_TRANSITION_SHIP: i32 = 0;
+pub const PAYLOAD_TRANSITION_SNAP_AGGREGATE: i32 = 1;
+pub const PAYLOAD_TRANSITION_SNAP_KEY_LIMIT: i32 = 2;
+pub const PAYLOAD_TRANSITION_KEY_COUNT_MISMATCH: i32 = 3;
+
+pub fn payload_transition_keys_admit(
+    has_keys: i32,
+    tier_direct: i32,
+    n_keys: usize,
+    n_marks: usize,
+    max_rows: usize,
+) -> i32 {
+    if has_keys == 0 {
+        return PAYLOAD_TRANSITION_SHIP;
+    }
+    if tier_direct == 0 {
+        return PAYLOAD_TRANSITION_SNAP_AGGREGATE;
+    }
+    if n_keys == n_marks {
+        if n_keys > max_rows {
+            return PAYLOAD_TRANSITION_SNAP_KEY_LIMIT;
+        }
+        return PAYLOAD_TRANSITION_SHIP;
+    }
+    PAYLOAD_TRANSITION_KEY_COUNT_MISMATCH
+}
+
 /// NumPy `linspace(0, n-1, count, dtype=np.int64)` as u32 (ABI 205).
 ///
 /// Truncates toward 0 and pins the last element to `n-1`. When `n <= count`
@@ -895,6 +927,27 @@ mod tests {
     }
 
     #[test]
+    fn payload_errorbar_role_keys_rejects_expanded_errorbar_collisions() {
+        let point_lo = [0u32, 0x9E3779B9];
+        let point_hi = [0u32, 0x85EBCA6B];
+        let sources = [0u32, 1, 0, 1, 0, 1];
+        let roles = [0u32, 0, 1, 1, 2, 2];
+        let mut out_lo = [0u32; 6];
+        let mut out_hi = [0u32; 6];
+        assert_eq!(
+            payload_errorbar_role_keys(
+                &point_lo,
+                &point_hi,
+                &sources,
+                &roles,
+                &mut out_lo,
+                &mut out_hi,
+            ),
+            Some(Err(true))
+        );
+    }
+
+    #[test]
     fn payload_bar_compact_admit_uniform_width_and_const_baseline() {
         let mut width = 0.0;
         let mut value0_const = 0.0;
@@ -937,6 +990,27 @@ mod tests {
         assert_eq!(compact, 0);
         assert!(width.is_nan());
         assert_eq!(has_value0_const, 0);
+    }
+
+    #[test]
+    fn payload_transition_keys_admit_matches_host_policy() {
+        assert_eq!(
+            payload_transition_keys_admit(1, 0, 10, 10, 200_000),
+            PAYLOAD_TRANSITION_SNAP_AGGREGATE,
+        );
+        assert_eq!(
+            payload_transition_keys_admit(1, 1, 200_001, 200_001, 200_000),
+            PAYLOAD_TRANSITION_SNAP_KEY_LIMIT,
+        );
+        assert_eq!(
+            payload_transition_keys_admit(1, 1, 10, 9, 200_000),
+            PAYLOAD_TRANSITION_KEY_COUNT_MISMATCH,
+        );
+        assert_eq!(
+            payload_transition_keys_admit(1, 1, 10, 10, 200_000),
+            PAYLOAD_TRANSITION_SHIP,
+        );
+        assert_eq!(payload_transition_keys_admit(0, 0, 0, 0, 200_000), PAYLOAD_TRANSITION_SHIP);
     }
 
     #[test]
