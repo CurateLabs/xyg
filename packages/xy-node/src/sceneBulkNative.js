@@ -1,4 +1,4 @@
-/** ctypes-compatible scene bulk packers (ABI 321-322). Mirrors python/xyg/_scene_bulk_native.py. */
+/** ctypes-compatible scene bulk packers (ABI 321-324). Mirrors python/xyg/_scene_bulk_native.py. */
 import koffi from "koffi";
 import { pointer } from "./native.js";
 import { u8Ptr, f64Ptr } from "./encode.js";
@@ -6,11 +6,13 @@ import {
   xySceneChromePack,
   xySceneFigureSupportMaterialize,
   xyScenePolarInputPack,
+  xySceneXyafBulkPack,
 } from "./native.js";
 
 const SCENE_XYCF_PACK_MAX = 1 << 20;
 const SCENE_FIGURE_SUPPORT_PACK_MAX = 1 << 18;
 const SCENE_POLAR_INPUT_PACK_MAX = 92;
+const SCENE_XYAF_BULK_PACK_MAX = 1 << 22;
 
 const StringRef = koffi.struct("XygStringRef", {
   ptr: "const uint8_t *",
@@ -577,4 +579,218 @@ export function scenePolarInputPack(kwargs) {
   if (code === -2) throw new RangeError("scenePolarInputPack output buffer too small");
   if (code !== 0) throw new RangeError("invalid scenePolarInputPack arguments");
   return out.subarray(0, Number(outLen[0]));
+}
+
+const ADMITTED_XYAF_STYLE_KEYS = new Set([
+  "color", "stroke_color", "label_color", "label_background", "label_border_color",
+  "dash", "linecap", "opacity", "width", "stroke_width", "label_opacity", "label_border_width", "rotation",
+]);
+
+const XyafBulkStyleIn = koffi.struct("XygXyafBulkStyleIn", {
+  color: StringRef,
+  stroke_color: StringRef,
+  label_color: StringRef,
+  label_background: StringRef,
+  label_border_color: StringRef,
+  dash: StringRef,
+  linecap: StringRef,
+  opacity_present: "int32_t",
+  opacity: "double",
+  width_present: "int32_t",
+  width: "double",
+  stroke_width_present: "int32_t",
+  stroke_width: "double",
+  label_opacity_present: "int32_t",
+  label_opacity: "double",
+  label_border_width_present: "int32_t",
+  label_border_width: "double",
+  rotation_present: "int32_t",
+  rotation: "double",
+  extra_style_key_count: "uint32_t",
+});
+
+const XyafBulkAnnotationIn = koffi.struct("XygXyafBulkAnnotationIn", {
+  kind: StringRef,
+  text: StringRef,
+  x_present: "int32_t",
+  x: "double",
+  y_present: "int32_t",
+  y: "double",
+  x0_present: "int32_t",
+  x0: "double",
+  y0_present: "int32_t",
+  y0: "double",
+  x1_present: "int32_t",
+  x1: "double",
+  y1_present: "int32_t",
+  y1: "double",
+  value_present: "int32_t",
+  value: "double",
+  start_present: "int32_t",
+  start: "double",
+  end_present: "int32_t",
+  end: "double",
+  dx_present: "int32_t",
+  dx: "double",
+  dy_present: "int32_t",
+  dy: "double",
+  size_present: "int32_t",
+  size: "double",
+  wrap_present: "int32_t",
+  wrap: "double",
+  rotation_present: "int32_t",
+  rotation: "double",
+  anchor_present: "int32_t",
+  anchor: StringRef,
+  axis_present: "int32_t",
+  axis: StringRef,
+  symbol_present: "int32_t",
+  symbol: StringRef,
+  index_override_present: "int32_t",
+  index_override: "uint32_t",
+  style: XyafBulkStyleIn,
+});
+
+function marshalXyafStyle(style, keep, { skipRotation = false } = {}) {
+  const typography = new Set([
+    "font_family", "font_size", "font_weight", "font_style",
+    "fontFamily", "fontSize", "fontWeight", "fontStyle",
+  ]);
+  const extraKeys = [];
+  const extraBlob = [];
+  for (const [key, value] of Object.entries(style ?? {})) {
+    if (value == null || key === "markup" || typography.has(key) || (skipRotation && key === "rotation")) continue;
+    if (!ADMITTED_XYAF_STYLE_KEYS.has(key)) extraKeys.push(key);
+  }
+  extraKeys.sort();
+  for (const key of extraKeys) {
+    const encoded = new TextEncoder().encode(key);
+    extraBlob.push(encoded.length & 0xff, (encoded.length >> 8) & 0xff, ...encoded);
+  }
+  const num = (key) => (Object.hasOwn(style, key) && style[key] != null ? [1, Number(style[key])] : [0, 0]);
+  const [opacityPresent, opacity] = num("opacity");
+  const [widthPresent, width] = num("width");
+  const [strokeWidthPresent, strokeWidth] = num("stroke_width");
+  const [labelOpacityPresent, labelOpacity] = num("label_opacity");
+  const [labelBorderWidthPresent, labelBorderWidth] = num("label_border_width");
+  const [rotationPresent, rotation] = num("rotation");
+  return {
+    style: {
+      color: stringRef(typeof style.color === "string" ? style.color : null, keep),
+      stroke_color: stringRef(typeof style.stroke_color === "string" ? style.stroke_color : null, keep),
+      label_color: stringRef(typeof style.label_color === "string" ? style.label_color : null, keep),
+      label_background: stringRef(typeof style.label_background === "string" ? style.label_background : null, keep),
+      label_border_color: stringRef(typeof style.label_border_color === "string" ? style.label_border_color : null, keep),
+      dash: stringRef(typeof style.dash === "string" ? style.dash : null, keep),
+      linecap: stringRef(style.linecap != null ? String(style.linecap) : null, keep),
+      opacity_present: opacityPresent,
+      opacity,
+      width_present: widthPresent,
+      width,
+      stroke_width_present: strokeWidthPresent,
+      stroke_width: strokeWidth,
+      label_opacity_present: labelOpacityPresent,
+      label_opacity: labelOpacity,
+      label_border_width_present: labelBorderWidthPresent,
+      label_border_width: labelBorderWidth,
+      rotation_present: skipRotation ? 0 : rotationPresent,
+      rotation,
+      extra_style_key_count: extraKeys.length,
+    },
+    extraBlob: new Uint8Array(extraBlob),
+  };
+}
+
+function marshalXyafAnnotation(annotation, { indexOverride = null } = {}) {
+  const keep = [];
+  const kind = String(annotation.kind ?? "");
+  const style = { ...(annotation.style ?? {}) };
+  const { style: styleIn, extraBlob } = marshalXyafStyle(style, keep, { skipRotation: ["text", "marker"].includes(kind) });
+  const num = (key) => (Object.hasOwn(annotation, key) ? [1, Number(annotation[key])] : [0, 0]);
+  const text = annotation.text != null && annotation.text !== "" ? String(annotation.text) : "";
+  const row = {
+    kind: stringRef(kind, keep),
+    text: stringRef(text, keep),
+    x_present: num("x")[0], x: num("x")[1],
+    y_present: num("y")[0], y: num("y")[1],
+    x0_present: num("x0")[0], x0: num("x0")[1],
+    y0_present: num("y0")[0], y0: num("y0")[1],
+    x1_present: num("x1")[0], x1: num("x1")[1],
+    y1_present: num("y1")[0], y1: num("y1")[1],
+    value_present: num("value")[0], value: num("value")[1],
+    start_present: num("start")[0], start: num("start")[1],
+    end_present: num("end")[0], end: num("end")[1],
+    dx_present: num("dx")[0], dx: num("dx")[1],
+    dy_present: num("dy")[0], dy: num("dy")[1],
+    size_present: num("size")[0], size: num("size")[1],
+    wrap_present: num("wrap")[0], wrap: num("wrap")[1],
+    rotation_present: num("rotation")[0], rotation: num("rotation")[1],
+    anchor_present: Object.hasOwn(annotation, "anchor") ? 1 : 0,
+    anchor: Object.hasOwn(annotation, "anchor") ? stringRef(String(annotation.anchor), keep) : stringRef("", keep),
+    axis_present: Object.hasOwn(annotation, "axis") ? 1 : 0,
+    axis: Object.hasOwn(annotation, "axis") ? stringRef(String(annotation.axis), keep) : stringRef("", keep),
+    symbol_present: Object.hasOwn(annotation, "symbol") ? 1 : 0,
+    symbol: Object.hasOwn(annotation, "symbol") ? stringRef(String(annotation.symbol), keep) : stringRef("", keep),
+    index_override_present: indexOverride == null ? 0 : 1,
+    index_override: indexOverride == null ? 0 : Number(indexOverride) >>> 0,
+    style: styleIn,
+  };
+  return { row, extraBlob, keep };
+}
+
+/** Bulk-pack authored annotations via `xyg_scene_xyaf_bulk_pack` (ABI 324). */
+export function sceneXyafBulkPack(annotations, { indices = null } = {}) {
+  if (indices != null && indices.length !== annotations.length) {
+    throw new RangeError("xyaf bulk pack indices length mismatch");
+  }
+  if (!annotations.length) return new Uint8Array();
+  const rows = [];
+  const extraParts = [];
+  const keepAll = [];
+  for (let pos = 0; pos < annotations.length; pos += 1) {
+    const { row, extraBlob, keep } = marshalXyafAnnotation(annotations[pos], {
+      indexOverride: indices == null ? null : Number(indices[pos]),
+    });
+    rows.push(row);
+    extraParts.push(extraBlob);
+    keepAll.push(...keep);
+  }
+  const annSize = koffi.sizeof(XyafBulkAnnotationIn);
+  const annBuf = Buffer.alloc(annSize * rows.length);
+  for (let i = 0; i < rows.length; i += 1) {
+    koffi.encode(annBuf.subarray(i * annSize, (i + 1) * annSize), XyafBulkAnnotationIn, rows[i]);
+  }
+  const extraBlob = concatBytes(extraParts);
+  const out = new Uint8Array(SCENE_XYAF_BULK_PACK_MAX);
+  const outLen = new BigUint64Array(1);
+  const errorIndex = new Uint32Array(1);
+  const code = Number(xySceneXyafBulkPack(
+    rows.length ? koffi.as(annBuf, "const void *") : 0,
+    BigInt(annotations.length),
+    extraBlob.length ? u8Ptr(extraBlob) : 0,
+    BigInt(extraBlob.length),
+    u8Ptr(out),
+    BigInt(out.length),
+    pointer(outLen, "size_t *"),
+    pointer(errorIndex, "uint32_t *"),
+  ));
+  if (code === -2) throw new RangeError("sceneXyafBulkPack output buffer too small");
+  if (code !== 0) {
+    const err = new RangeError(`sceneXyafBulkPack failed: code=${code} index=${errorIndex[0]}`);
+    err.code = code;
+    err.index = Number(errorIndex[0]);
+    throw err;
+  }
+  return out.subarray(0, Number(outLen[0]));
+}
+
+function concatBytes(parts) {
+  const total = parts.reduce((sum, part) => sum + part.length, 0);
+  const out = new Uint8Array(total);
+  let at = 0;
+  for (const part of parts) {
+    out.set(part, at);
+    at += part.length;
+  }
+  return out;
 }

@@ -64,6 +64,7 @@ use xyg_engine::payload_column_gather_materialize;
 use xyg_engine::payload_channel_materialize;
 include!("scene_bulk_pack_ffi.rs");
 include!("payload_trace_emit_ffi.rs");
+include!("scene_xyta_trace_observations_ffi.rs");
 use xyg_engine::scene_pack_orchestrate;
 use xyg_engine::scene_density::{self, DensityGridError};
 use xyg_engine::scene_colorbar::{self, ColorbarError};
@@ -172,7 +173,7 @@ unsafe fn borrowed_byte_spans<'a>(
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 322;
+pub const ABI_VERSION: u32 = 324;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]

@@ -1,4 +1,4 @@
-"""Cross-host Scene chrome/support pack parity for Push 3A (ABI 319+) and bulk packers (ABI 321-322)."""
+"""Cross-host Scene chrome/support pack parity for Push 3A (ABI 319+) and bulk packers (ABI 321-324)."""
 
 from __future__ import annotations
 
@@ -12,7 +12,11 @@ import pytest
 
 from xyg import _native
 from xyg._figure import Figure
-from xyg._scene_bulk_native import scene_chrome_pack, scene_figure_support_materialize
+from xyg._scene_bulk_native import (
+    scene_chrome_pack,
+    scene_figure_support_materialize,
+    scene_xyaf_bulk_pack,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 NODE_SCRIPT = ROOT / "packages" / "xy-node" / "scripts" / "scene_chrome_pack_cross_host.mjs"
@@ -32,7 +36,15 @@ def _text_annotation_figure() -> Figure:
     figure = Figure(width=320, height=240)
     figure.axis_options["x"]["domain"] = (0.0, 1.0)
     figure.axis_options["y"]["domain"] = (0.0, 1.0)
-    figure.annotate_text("hello", x=0.25, y=0.75, color="#667085")
+    figure.annotations.append(
+        {
+            "kind": "text",
+            "text": "hello",
+            "x": 0.25,
+            "y": 0.75,
+            "style": {"color": "#667085"},
+        }
+    )
     return figure
 
 
@@ -94,6 +106,70 @@ def test_scene_figure_support_pack_minimal() -> None:
     )
     assert packed[:4] == b"XYFS"
     assert int.from_bytes(packed[4:8], "little") == 2
+
+
+def test_scene_xyaf_bulk_pack_text_annotation() -> None:
+    annotation = {
+        "kind": "text",
+        "text": "hello",
+        "x": 0.5,
+        "y": 0.25,
+        "style": {"color": "#667085"},
+    }
+    packed = scene_xyaf_bulk_pack([annotation])
+    assert packed[:4] == b"XYAF"
+    assert packed[232:] == b"hello"
+
+
+def test_scene_xyaf_bulk_pack_matches_low_level_pack() -> None:
+    annotation = {
+        "kind": "text",
+        "text": "hi",
+        "x": 0.5,
+        "y": 0.25,
+        "style": {"color": "#667085"},
+    }
+    bulk = scene_xyaf_bulk_pack([annotation])
+    low = _native.scene_xyaf_pack(
+        index=0,
+        kind_code=0,
+        axis_code=0,
+        symbol=0,
+        anchor=255,
+        facts=(1 << 5) | (1 << 6) | (1 << 1),
+        style_bits=1,
+        linecap=255,
+        dash_count=0,
+        nums=[0.5, 0.25] + [float("nan")] * 16,
+        color=bytes([102, 112, 133, 255]),
+        stroke=bytes(4),
+        label_color=bytes(4),
+        label_fill=bytes(4),
+        label_border=bytes(4),
+        dash=[0.0] * 8,
+        text=b"hi",
+    )
+    assert bulk == low
+
+
+def test_scene_xyaf_bulk_pack_index_override() -> None:
+    annotation = {
+        "kind": "text",
+        "text": "hi",
+        "x": 0.5,
+        "y": 0.25,
+        "style": {"color": "#667085"},
+    }
+    packed = scene_xyaf_bulk_pack([annotation], indices=[7])
+    assert int.from_bytes(packed[8:12], "little") == 7
+
+
+def test_scene_xyaf_bulk_pack_via_scene_v3_helper() -> None:
+    from xyg._scene_v3 import _pack_xyaf_bulk
+
+    packed = _pack_xyaf_bulk(_text_annotation_figure().annotations)
+    assert packed[:4] == b"XYAF"
+    assert packed[232:] == b"hello"
 
 
 @pytest.mark.skipif(
@@ -214,3 +290,15 @@ def test_scene_bulk_pack_cross_host_node() -> None:
     )
     assert _sha256(py_xycf) == payload["xycf_sha256"]
     assert _sha256(py_xyfs) == payload["xyfs_sha256"]
+    py_xyaf = scene_xyaf_bulk_pack(
+        [
+            {
+                "kind": "text",
+                "text": "hello",
+                "x": 0.5,
+                "y": 0.25,
+                "style": {"color": "#667085"},
+            }
+        ]
+    )
+    assert _sha256(py_xyaf) == payload["xyaf_sha256"]

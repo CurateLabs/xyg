@@ -6,8 +6,8 @@ import ctypes
 
 # fmt: off
 
-ABI_VERSION = 322
-SIGNATURE_SHA256 = "a05b30645db89a3693c3ba5ee2a24859182cbe49142974dd5afe5a56d37af210"
+ABI_VERSION = 324
+SIGNATURE_SHA256 = "dde9d687c67528d15111e61a22153cc8bc0faa9ba50bd94a8dc67fd26a9f9b3f"
 
 
 def bind_abi_version(lib: ctypes.CDLL):
@@ -1278,6 +1278,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_xyaf_annotation_dispatch_plan
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_scene_xyaf_bulk_pack(const void * annotations, size_t annotation_count, const uint8_t * extra_style_keys_blob, size_t extra_style_keys_len, uint8_t * out, size_t out_cap, size_t * out_len, uint32_t * error_index)
+    function = lib.xyg_scene_xyaf_bulk_pack
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p]
     # int32_t xyg_scene_xyaf_pack(const void * input, const uint8_t * text, uint8_t * out, size_t out_cap, size_t * out_len)
     function = lib.xyg_scene_xyaf_pack
     function.restype = ctypes.c_int32
@@ -1314,6 +1318,10 @@ def bind_generated_abi(lib: ctypes.CDLL) -> None:
     function = lib.xyg_scene_xyta_trace_dispatch_plan
     function.restype = ctypes.c_int32
     function.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, ctypes.c_void_p]
+    # int32_t xyg_scene_xyta_trace_observations_materialize(const void * input, const uint8_t * fallback_color, const uint8_t * style_color, const uint8_t * style_stroke, const uint8_t * style_colormap_named, const uint8_t * style_colormap_stops, const double * grid_values, const uint8_t * rgba_u8, const double * rgba_grid_f64, const double * x_values, const double * y_values, const void * color_ch, const uint8_t * color_mode, const uint8_t * color_constant, const uint8_t * color_colormap, const double * color_values_f64, const uint8_t * color_rgba_u8, const uint8_t * color_codes_u8, const int64_t * color_codes_i64, const uint8_t *const * color_palette_ptrs, const size_t * color_palette_lens, const void * stroke_ch, const uint8_t * stroke_mode, const uint8_t * stroke_constant, const uint8_t * stroke_colormap, const double * stroke_values_f64, const uint8_t * stroke_rgba_u8, const uint8_t * stroke_codes_u8, const int64_t * stroke_codes_i64, const uint8_t *const * stroke_palette_ptrs, const size_t * stroke_palette_lens, const void * color2_ch, const uint8_t * color2_mode, const uint8_t * color2_constant, const uint8_t * color2_colormap, const double * color2_values_f64, const uint8_t * color2_rgba_u8, const uint8_t * color2_codes_u8, const int64_t * color2_codes_i64, const uint8_t *const * color2_palette_ptrs, const size_t * color2_palette_lens, const void * opacity_ch, const double * opacity_values, const void * artist_ch, const double * artist_values, const void * stroke_width_ch, const double * stroke_width_values, void * summary, uint8_t * out_bytes, size_t out_cap, size_t * out_len)
+    function = lib.xyg_scene_xyta_trace_observations_materialize
+    function.restype = ctypes.c_int32
+    function.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     # int32_t xyg_scene_xyta_trace_pack(const void * input, const uint8_t * grid, const uint8_t * rgba, const uint8_t * rgba_grid, const uint8_t * x, const uint8_t * y, const uint8_t * mean_rgba, const uint8_t * idx, const uint8_t * lut, const uint8_t * cmap, const uint8_t * stops, const uint8_t * color_ch, const uint8_t * style_color, uint8_t * out, size_t out_cap, size_t * out_len)
     function = lib.xyg_scene_xyta_trace_pack
     function.restype = ctypes.c_int32

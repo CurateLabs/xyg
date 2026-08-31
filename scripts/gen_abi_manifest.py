@@ -152,6 +152,10 @@ _POINTER_C: dict[str, str] = {
     "*mut XygSceneEncodeProductAttachPlan": "void *",
     "*const XygSceneXytcTracePackIn": "const void *",
     "*const XygSceneXytaTracePackIn": "const void *",
+    "*const XygSceneXytaTraceObservationsIn": "const void *",
+    "*mut XygSceneXytaTraceObservationsOut": "void *",
+    "*const XygSceneXytaColorChannelDesc": "const void *",
+    "*const XygSceneXytaStyleChannelDesc": "const void *",
     "*const XygSceneXyafPackIn": "const void *",
     "*const XygSceneXycfPackIn": "const void *",
     "*const XygSceneChromePackIn": "const void *",
@@ -160,6 +164,7 @@ _POINTER_C: dict[str, str] = {
     "*const XygFigureSupportAxisObsIn": "const void *",
     "*const XygFigureSupportTraceObsIn": "const void *",
     "*const XygScenePolarInputPackIn": "const void *",
+    "*const XygXyafBulkAnnotationIn": "const void *",
     "*const XygPayloadColumnMaterializeIn": "const void *",
     "*mut XygPayloadColumnMaterializeOut": "void *",
     "*const XygPayloadTraceEmitIn": "const void *",
@@ -473,7 +478,11 @@ def render_c_header(manifest: dict[str, Any]) -> str:
 def generate_manifest(root: Path = ROOT) -> dict[str, Any]:
     core = root / "crates/xyg-core/src"
     text = (core / "lib.rs").read_text(encoding="utf-8")
-    ffi_files = [core / "scene_bulk_pack_ffi.rs", core / "payload_trace_emit_ffi.rs"]
+    ffi_files = [
+        core / "scene_bulk_pack_ffi.rs",
+        core / "payload_trace_emit_ffi.rs",
+        core / "scene_xyta_trace_observations_ffi.rs",
+    ]
     for ffi in ffi_files:
         if ffi.is_file():
             text = text + "\n" + ffi.read_text(encoding="utf-8")

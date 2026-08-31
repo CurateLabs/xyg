@@ -1,4 +1,4 @@
-"""ctypes bindings for scene bulk packers (ABI 321-322)."""
+"""ctypes bindings for scene bulk packers (ABI 321-324)."""
 
 from __future__ import annotations
 
@@ -16,18 +16,27 @@ _optional_u8_ptr = None
 SCENE_XYCF_PACK_MAX = 1 << 20
 SCENE_FIGURE_SUPPORT_PACK_MAX = 1 << 18
 SCENE_POLAR_INPUT_PACK_MAX = 92
+SCENE_XYAF_BULK_PACK_MAX = 1 << 22
+SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES = 1 << 22
+SCENE_XYTA_TRACE_PACK_MAX_RECORD = 1 << 22
 
 
 def init(native: Any) -> None:
     """Wire host pointers after ``xyg._native`` finishes loading the cdylib."""
     global _lib, _ptr_u8, _ptr_f64, _optional_u8_ptr
-    global SCENE_XYCF_PACK_MAX, SCENE_FIGURE_SUPPORT_PACK_MAX
+    global SCENE_XYCF_PACK_MAX, SCENE_FIGURE_SUPPORT_PACK_MAX, SCENE_XYAF_BULK_PACK_MAX
+    global SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES, SCENE_XYTA_TRACE_PACK_MAX_RECORD
     _lib = native._lib
     _ptr_u8 = native._ptr_u8
     _ptr_f64 = native._ptr_f64
     _optional_u8_ptr = native._optional_u8_ptr
     SCENE_XYCF_PACK_MAX = native.SCENE_XYCF_PACK_MAX
     SCENE_FIGURE_SUPPORT_PACK_MAX = native.SCENE_FIGURE_SUPPORT_PACK_MAX
+    SCENE_XYAF_BULK_PACK_MAX = getattr(native, "SCENE_XYAF_BULK_PACK_MAX", 1 << 22)
+    SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES = getattr(
+        native, "SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES", 1 << 22
+    )
+    SCENE_XYTA_TRACE_PACK_MAX_RECORD = getattr(native, "SCENE_XYTA_TRACE_PACK_MAX_RECORD", 1 << 22)
 
 
 class _XygStringRef(ctypes.Structure):
@@ -642,4 +651,729 @@ def scene_polar_input_pack(**kwargs: Any) -> bytes:
         raise ValueError("scene_polar_input_pack output buffer too small")
     if code != 0:
         raise ValueError("invalid scene_polar_input_pack arguments")
+    return bytes(out[: int(out_len.value)])
+
+
+class _XygSceneXytaColorChannelDesc(ctypes.Structure):
+    _fields_ = [
+        ("present", ctypes.c_int32),
+        ("mode_len", ctypes.c_size_t),
+        ("constant_len", ctypes.c_size_t),
+        ("colormap_len", ctypes.c_size_t),
+        ("has_domain", ctypes.c_int32),
+        ("domain_lo", ctypes.c_double),
+        ("domain_hi", ctypes.c_double),
+        ("values_f64_len", ctypes.c_size_t),
+        ("rgba_u8_len", ctypes.c_size_t),
+        ("codes_u8_len", ctypes.c_size_t),
+        ("codes_i64_len", ctypes.c_size_t),
+        ("palette_count", ctypes.c_size_t),
+        ("n_categories", ctypes.c_size_t),
+    ]
+
+
+class _XygSceneXytaStyleChannelDesc(ctypes.Structure):
+    _fields_ = [
+        ("present", ctypes.c_int32),
+        ("values_f64_len", ctypes.c_size_t),
+    ]
+
+
+class _XygSceneXytaTraceObservationsIn(ctypes.Structure):
+    _fields_ = [
+        ("trace_id", ctypes.c_uint32),
+        ("pack_heatmap", ctypes.c_int32),
+        ("pack_hexbin_colormap", ctypes.c_int32),
+        ("pack_hexbin_rgba", ctypes.c_int32),
+        ("pack_ribbon_ends", ctypes.c_int32),
+        ("pack_mesh_faces", ctypes.c_int32),
+        ("pack_scatter_paint", ctypes.c_int32),
+        ("pack_density", ctypes.c_int32),
+        ("domain_x0", ctypes.c_double),
+        ("domain_x1", ctypes.c_double),
+        ("domain_y0", ctypes.c_double),
+        ("domain_y1", ctypes.c_double),
+        ("point_count", ctypes.c_size_t),
+        ("fallback_color_len", ctypes.c_size_t),
+        ("style_color_len", ctypes.c_size_t),
+        ("style_stroke_len", ctypes.c_size_t),
+        ("style_stroke_width", ctypes.c_double),
+        ("has_style_stroke_width", ctypes.c_int32),
+        ("style_opacity", ctypes.c_float),
+        ("has_style_opacity", ctypes.c_int32),
+        ("style_fill_opacity", ctypes.c_float),
+        ("has_style_fill_opacity", ctypes.c_int32),
+        ("style_truecolor", ctypes.c_int32),
+        ("style_domain_lo", ctypes.c_double),
+        ("style_domain_hi", ctypes.c_double),
+        ("has_style_domain", ctypes.c_int32),
+        ("style_colormap_mode", ctypes.c_int32),
+        ("style_colormap_named_len", ctypes.c_size_t),
+        ("style_colormap_stops_len", ctypes.c_size_t),
+        ("grid_shape_rows", ctypes.c_double),
+        ("grid_shape_cols", ctypes.c_double),
+        ("has_grid_shape", ctypes.c_int32),
+        ("grid_values_len", ctypes.c_size_t),
+        ("rgba_u8_len", ctypes.c_size_t),
+        ("rgba_grid_f64_len", ctypes.c_size_t),
+        ("x_values_len", ctypes.c_size_t),
+        ("y_values_len", ctypes.c_size_t),
+    ]
+
+
+class _XygSceneXytaTraceObservationsOut(ctypes.Structure):
+    _fields_ = [
+        ("trace_id", ctypes.c_uint32),
+        ("pack_heatmap", ctypes.c_int32),
+        ("pack_hexbin_colormap", ctypes.c_int32),
+        ("pack_hexbin_rgba", ctypes.c_int32),
+        ("pack_ribbon_ends", ctypes.c_int32),
+        ("pack_mesh_faces", ctypes.c_int32),
+        ("pack_scatter_paint", ctypes.c_int32),
+        ("pack_density", ctypes.c_int32),
+        ("grid_shape_rows", ctypes.c_double),
+        ("grid_shape_cols", ctypes.c_double),
+        ("has_grid_shape", ctypes.c_int32),
+        ("has_grid", ctypes.c_int32),
+        ("has_rgba", ctypes.c_int32),
+        ("has_rgba_grid", ctypes.c_int32),
+        ("truecolor", ctypes.c_int32),
+        ("has_cmap_domain", ctypes.c_int32),
+        ("cmap_lo", ctypes.c_double),
+        ("cmap_hi", ctypes.c_double),
+        ("has_color_ch", ctypes.c_int32),
+        ("has_style_color", ctypes.c_int32),
+        ("has_opacity", ctypes.c_int32),
+        ("has_fill_opacity", ctypes.c_int32),
+        ("opacity", ctypes.c_float),
+        ("fill_opacity", ctypes.c_float),
+        ("domain_x0", ctypes.c_double),
+        ("domain_x1", ctypes.c_double),
+        ("domain_y0", ctypes.c_double),
+        ("domain_y1", ctypes.c_double),
+        ("cmap_flags", ctypes.c_uint32),
+        ("rows", ctypes.c_int32),
+        ("cols", ctypes.c_int32),
+        ("grid_len", ctypes.c_size_t),
+        ("rgba_len", ctypes.c_size_t),
+        ("rgba_grid_len", ctypes.c_size_t),
+        ("x_len", ctypes.c_size_t),
+        ("y_len", ctypes.c_size_t),
+        ("mean_rgba_len", ctypes.c_size_t),
+        ("idx_len", ctypes.c_size_t),
+        ("lut_len", ctypes.c_size_t),
+        ("cmap_len", ctypes.c_size_t),
+        ("stops_len", ctypes.c_size_t),
+        ("color_ch_len", ctypes.c_size_t),
+        ("style_color_len", ctypes.c_size_t),
+        ("grid_off", ctypes.c_size_t),
+        ("rgba_off", ctypes.c_size_t),
+        ("rgba_grid_off", ctypes.c_size_t),
+        ("x_off", ctypes.c_size_t),
+        ("y_off", ctypes.c_size_t),
+        ("mean_rgba_off", ctypes.c_size_t),
+        ("idx_off", ctypes.c_size_t),
+        ("lut_off", ctypes.c_size_t),
+        ("cmap_off", ctypes.c_size_t),
+        ("stops_off", ctypes.c_size_t),
+        ("color_ch_off", ctypes.c_size_t),
+        ("style_color_off", ctypes.c_size_t),
+    ]
+
+
+def _xyta_palette_ptrs(
+    palette: Sequence[str],
+) -> tuple[ctypes.Array | None, ctypes.Array | None, list[bytes]]:
+    if not palette:
+        return None, None, []
+    keepers: list[bytes] = []
+    ptrs = (ctypes.c_void_p * len(palette))()
+    lens = (ctypes.c_size_t * len(palette))()
+    for index, entry in enumerate(palette):
+        encoded = str(entry).encode("utf-8")
+        keepers.append(encoded)
+        arr = np.frombuffer(encoded, dtype=np.uint8)
+        ptrs[index] = _ptr_u8(arr)
+        lens[index] = len(encoded)
+    return ptrs, lens, keepers
+
+
+def _xyta_color_channel_side(
+    channel: Mapping[str, Any],
+) -> tuple[
+    _XygSceneXytaColorChannelDesc,
+    bytes,
+    bytes,
+    bytes,
+    np.ndarray,
+    bytes,
+    bytes,
+    np.ndarray,
+    ctypes.Array | None,
+    ctypes.Array | None,
+    list[bytes],
+]:
+    mode_b = str(channel.get("mode") or "").encode("utf-8")
+    constant = channel.get("constant")
+    constant_b = b"" if constant is None else str(constant).encode("utf-8")
+    colormap = channel.get("colormap")
+    colormap_b = b"" if colormap is None else str(colormap).encode("utf-8")
+    values_f64 = np.ascontiguousarray(
+        channel.get("values_f64", np.empty(0, dtype=np.float64)), dtype=np.float64
+    ).reshape(-1)
+    rgba_u8 = channel.get("rgba_u8") or b""
+    codes_u8 = channel.get("codes_u8") or b""
+    codes_i64 = np.ascontiguousarray(
+        channel.get("codes_i64", np.empty(0, dtype=np.int64)), dtype=np.int64
+    ).reshape(-1)
+    palette = [str(entry) for entry in (channel.get("palette") or ())]
+    ptrs, lens, keepers = _xyta_palette_ptrs(palette)
+    desc = _XygSceneXytaColorChannelDesc(
+        1 if channel.get("present") else 0,
+        len(mode_b),
+        len(constant_b),
+        len(colormap_b),
+        1 if channel.get("has_domain") else 0,
+        float(channel.get("domain_lo", 0.0)),
+        float(channel.get("domain_hi", 0.0)),
+        len(values_f64),
+        len(rgba_u8),
+        len(codes_u8),
+        len(codes_i64),
+        len(palette),
+        int(channel.get("n_categories") or 0),
+    )
+    return desc, mode_b, constant_b, colormap_b, values_f64, rgba_u8, codes_u8, codes_i64, ptrs, lens, keepers
+
+
+def _xyta_style_channel_side(
+    channel: Mapping[str, Any],
+) -> tuple[_XygSceneXytaStyleChannelDesc, np.ndarray]:
+    values_f64 = np.ascontiguousarray(
+        channel.get("values_f64", np.empty(0, dtype=np.float64)), dtype=np.float64
+    ).reshape(-1)
+    return (
+        _XygSceneXytaStyleChannelDesc(
+            1 if channel.get("present") else 0,
+            len(values_f64),
+        ),
+        values_f64,
+    )
+
+
+def scene_xyta_trace_observations_materialize(obs: Mapping[str, Any]) -> dict[str, Any]:
+    """Materialize XYTA trace observations via ``xyg_scene_xyta_trace_observations_materialize`` (ABI 323)."""
+    dispatch = obs["dispatch"]
+    fallback_b = str(obs["fallback_color"]).encode("utf-8")
+    style_color = obs.get("style_color")
+    style_color_b = b"" if style_color is None else str(style_color).encode("utf-8")
+    style_stroke = obs.get("style_stroke")
+    style_stroke_b = b"" if style_stroke is None else str(style_stroke).encode("utf-8")
+    style_colormap_mode = int(obs.get("style_colormap_mode") or 0)
+    style_colormap_named_b = str(obs.get("style_colormap_named") or "").encode("utf-8")
+    style_colormap_stops = obs.get("style_colormap_stops") or b""
+    grid_values = np.ascontiguousarray(
+        obs.get("grid_values", np.empty(0, dtype=np.float64)), dtype=np.float64
+    ).reshape(-1)
+    rgba_u8 = obs.get("rgba_u8") or b""
+    rgba_grid_f64 = np.ascontiguousarray(
+        obs.get("rgba_grid_f64", np.empty(0, dtype=np.float64)), dtype=np.float64
+    ).reshape(-1)
+    x_values = np.ascontiguousarray(
+        obs.get("x_values", np.empty(0, dtype=np.float64)), dtype=np.float64
+    ).reshape(-1)
+    y_values = np.ascontiguousarray(
+        obs.get("y_values", np.empty(0, dtype=np.float64)), dtype=np.float64
+    ).reshape(-1)
+    style_domain = obs.get("style_domain")
+    has_style_domain = style_domain is not None and len(style_domain) == 2
+    pack_in = _XygSceneXytaTraceObservationsIn(
+        int(obs["trace_id"]) & 0xFFFFFFFF,
+        int(dispatch["pack_heatmap"]),
+        int(dispatch["pack_hexbin_colormap"]),
+        int(dispatch["pack_hexbin_rgba"]),
+        int(dispatch["pack_ribbon_ends"]),
+        int(dispatch["pack_mesh_faces"]),
+        int(dispatch["pack_scatter_paint"]),
+        int(dispatch["pack_density"]),
+        float(obs["domain_x0"]),
+        float(obs["domain_x1"]),
+        float(obs["domain_y0"]),
+        float(obs["domain_y1"]),
+        int(obs.get("point_count") or 0),
+        len(fallback_b),
+        len(style_color_b),
+        len(style_stroke_b),
+        float(obs.get("style_stroke_width") or 0.0),
+        1 if obs.get("has_style_stroke_width") else 0,
+        ctypes.c_float(float(obs.get("style_opacity") or float("nan"))),
+        1 if obs.get("has_style_opacity") else 0,
+        ctypes.c_float(float(obs.get("style_fill_opacity") or float("nan"))),
+        1 if obs.get("has_style_fill_opacity") else 0,
+        1 if obs.get("style_truecolor") else 0,
+        float(style_domain[0]) if has_style_domain else 0.0,
+        float(style_domain[1]) if has_style_domain else 0.0,
+        1 if has_style_domain else 0,
+        style_colormap_mode,
+        len(style_colormap_named_b) if style_colormap_mode == 1 else 0,
+        len(style_colormap_stops) if style_colormap_mode == 2 else 0,
+        float(obs.get("grid_shape_rows") or 0.0),
+        float(obs.get("grid_shape_cols") or 0.0),
+        1 if obs.get("has_grid_shape") else 0,
+        len(grid_values),
+        len(rgba_u8),
+        len(rgba_grid_f64),
+        len(x_values),
+        len(y_values),
+    )
+    color_side = _xyta_color_channel_side(obs["color_ch"])
+    stroke_side = _xyta_color_channel_side(obs["stroke_ch"])
+    color2_side = _xyta_color_channel_side(obs["color2_ch"])
+    opacity_desc, opacity_values = _xyta_style_channel_side(obs["opacity_ch"])
+    artist_desc, artist_values = _xyta_style_channel_side(obs["artist_alpha_ch"])
+    stroke_width_desc, stroke_width_values = _xyta_style_channel_side(obs["stroke_width_ch"])
+    keepers = [
+        fallback_b,
+        style_color_b,
+        style_stroke_b,
+        style_colormap_named_b,
+        style_colormap_stops,
+        rgba_u8,
+        color_side[1],
+        color_side[2],
+        color_side[3],
+        color_side[5],
+        color_side[6],
+        stroke_side[1],
+        stroke_side[2],
+        stroke_side[3],
+        stroke_side[5],
+        stroke_side[6],
+        color2_side[1],
+        color2_side[2],
+        color2_side[3],
+        color2_side[5],
+        color2_side[6],
+        *color_side[10],
+        *stroke_side[10],
+        *color2_side[10],
+    ]
+    summary = _XygSceneXytaTraceObservationsOut()
+    out_bytes = np.zeros(SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES, dtype=np.uint8)
+    out_len = ctypes.c_size_t(0)
+    code = int(
+        _lib.xyg_scene_xyta_trace_observations_materialize(
+            ctypes.byref(pack_in),
+            _ptr_u8(np.frombuffer(fallback_b, dtype=np.uint8)),
+            _ptr_u8(np.frombuffer(style_color_b, dtype=np.uint8)) if style_color_b else 0,
+            _ptr_u8(np.frombuffer(style_stroke_b, dtype=np.uint8)) if style_stroke_b else 0,
+            _ptr_u8(np.frombuffer(style_colormap_named_b, dtype=np.uint8))
+            if style_colormap_mode == 1 and style_colormap_named_b
+            else 0,
+            _ptr_u8(np.frombuffer(style_colormap_stops, dtype=np.uint8))
+            if style_colormap_mode == 2 and style_colormap_stops
+            else 0,
+            _ptr_f64(grid_values) if len(grid_values) else 0,
+            _ptr_u8(np.frombuffer(rgba_u8, dtype=np.uint8)) if rgba_u8 else 0,
+            _ptr_f64(rgba_grid_f64) if len(rgba_grid_f64) else 0,
+            _ptr_f64(x_values) if len(x_values) else 0,
+            _ptr_f64(y_values) if len(y_values) else 0,
+            ctypes.byref(color_side[0]),
+            _ptr_u8(np.frombuffer(color_side[1], dtype=np.uint8)) if color_side[1] else 0,
+            _ptr_u8(np.frombuffer(color_side[2], dtype=np.uint8)) if color_side[2] else 0,
+            _ptr_u8(np.frombuffer(color_side[3], dtype=np.uint8)) if color_side[3] else 0,
+            _ptr_f64(color_side[4]) if len(color_side[4]) else 0,
+            _ptr_u8(np.frombuffer(color_side[5], dtype=np.uint8)) if color_side[5] else 0,
+            _ptr_u8(np.frombuffer(color_side[6], dtype=np.uint8)) if color_side[6] else 0,
+            color_side[7].ctypes.data if len(color_side[7]) else 0,
+            ctypes.cast(color_side[8], ctypes.c_void_p) if color_side[8] is not None else 0,
+            ctypes.cast(color_side[9], ctypes.c_void_p) if color_side[9] is not None else 0,
+            ctypes.byref(stroke_side[0]),
+            _ptr_u8(np.frombuffer(stroke_side[1], dtype=np.uint8)) if stroke_side[1] else 0,
+            _ptr_u8(np.frombuffer(stroke_side[2], dtype=np.uint8)) if stroke_side[2] else 0,
+            _ptr_u8(np.frombuffer(stroke_side[3], dtype=np.uint8)) if stroke_side[3] else 0,
+            _ptr_f64(stroke_side[4]) if len(stroke_side[4]) else 0,
+            _ptr_u8(np.frombuffer(stroke_side[5], dtype=np.uint8)) if stroke_side[5] else 0,
+            _ptr_u8(np.frombuffer(stroke_side[6], dtype=np.uint8)) if stroke_side[6] else 0,
+            stroke_side[7].ctypes.data if len(stroke_side[7]) else 0,
+            ctypes.cast(stroke_side[8], ctypes.c_void_p) if stroke_side[8] is not None else 0,
+            ctypes.cast(stroke_side[9], ctypes.c_void_p) if stroke_side[9] is not None else 0,
+            ctypes.byref(color2_side[0]),
+            _ptr_u8(np.frombuffer(color2_side[1], dtype=np.uint8)) if color2_side[1] else 0,
+            _ptr_u8(np.frombuffer(color2_side[2], dtype=np.uint8)) if color2_side[2] else 0,
+            _ptr_u8(np.frombuffer(color2_side[3], dtype=np.uint8)) if color2_side[3] else 0,
+            _ptr_f64(color2_side[4]) if len(color2_side[4]) else 0,
+            _ptr_u8(np.frombuffer(color2_side[5], dtype=np.uint8)) if color2_side[5] else 0,
+            _ptr_u8(np.frombuffer(color2_side[6], dtype=np.uint8)) if color2_side[6] else 0,
+            color2_side[7].ctypes.data if len(color2_side[7]) else 0,
+            ctypes.cast(color2_side[8], ctypes.c_void_p) if color2_side[8] is not None else 0,
+            ctypes.cast(color2_side[9], ctypes.c_void_p) if color2_side[9] is not None else 0,
+            ctypes.byref(opacity_desc),
+            _ptr_f64(opacity_values) if len(opacity_values) else 0,
+            ctypes.byref(artist_desc),
+            _ptr_f64(artist_values) if len(artist_values) else 0,
+            ctypes.byref(stroke_width_desc),
+            _ptr_f64(stroke_width_values) if len(stroke_width_values) else 0,
+            ctypes.byref(summary),
+            _ptr_u8(out_bytes),
+            len(out_bytes),
+            ctypes.byref(out_len),
+        )
+    )
+    del keepers
+    if code == -2:
+        raise ValueError("scene_xyta_trace_observations_materialize output buffer too small")
+    if code != 0:
+        raise ValueError("invalid scene_xyta_trace_observations_materialize arguments")
+    blob = bytes(out_bytes[: int(out_len.value)])
+
+    def _slice(off: int, length: int) -> bytes:
+        return blob[off : off + length] if length else b""
+
+    return {
+        "trace_id": int(summary.trace_id),
+        "pack_heatmap": bool(summary.pack_heatmap),
+        "pack_hexbin_colormap": bool(summary.pack_hexbin_colormap),
+        "pack_hexbin_rgba": bool(summary.pack_hexbin_rgba),
+        "pack_ribbon_ends": bool(summary.pack_ribbon_ends),
+        "pack_mesh_faces": bool(summary.pack_mesh_faces),
+        "pack_scatter_paint": bool(summary.pack_scatter_paint),
+        "pack_density": bool(summary.pack_density),
+        "grid_shape_rows": float(summary.grid_shape_rows),
+        "grid_shape_cols": float(summary.grid_shape_cols),
+        "has_grid_shape": bool(summary.has_grid_shape),
+        "has_grid": bool(summary.has_grid),
+        "has_rgba": bool(summary.has_rgba),
+        "has_rgba_grid": bool(summary.has_rgba_grid),
+        "truecolor": bool(summary.truecolor),
+        "has_cmap_domain": bool(summary.has_cmap_domain),
+        "cmap_lo": float(summary.cmap_lo),
+        "cmap_hi": float(summary.cmap_hi),
+        "has_color_ch": bool(summary.has_color_ch),
+        "has_style_color": bool(summary.has_style_color),
+        "has_opacity": bool(summary.has_opacity),
+        "has_fill_opacity": bool(summary.has_fill_opacity),
+        "opacity": float(summary.opacity),
+        "fill_opacity": float(summary.fill_opacity),
+        "domain_x0": float(summary.domain_x0),
+        "domain_x1": float(summary.domain_x1),
+        "domain_y0": float(summary.domain_y0),
+        "domain_y1": float(summary.domain_y1),
+        "cmap_flags": int(summary.cmap_flags),
+        "rows": int(summary.rows),
+        "cols": int(summary.cols),
+        "grid": _slice(int(summary.grid_off), int(summary.grid_len)),
+        "rgba": _slice(int(summary.rgba_off), int(summary.rgba_len)),
+        "rgba_grid": _slice(int(summary.rgba_grid_off), int(summary.rgba_grid_len)),
+        "x": _slice(int(summary.x_off), int(summary.x_len)),
+        "y": _slice(int(summary.y_off), int(summary.y_len)),
+        "mean_rgba": _slice(int(summary.mean_rgba_off), int(summary.mean_rgba_len)),
+        "idx": _slice(int(summary.idx_off), int(summary.idx_len)),
+        "lut": _slice(int(summary.lut_off), int(summary.lut_len)),
+        "cmap": _slice(int(summary.cmap_off), int(summary.cmap_len)),
+        "stops": _slice(int(summary.stops_off), int(summary.stops_len)),
+        "color_ch": _slice(int(summary.color_ch_off), int(summary.color_ch_len)),
+        "style_color": _slice(int(summary.style_color_off), int(summary.style_color_len)),
+    }
+
+
+_ADMITTED_XYAF_STYLE_KEYS = frozenset(
+    {
+        "color",
+        "stroke_color",
+        "label_color",
+        "label_background",
+        "label_border_color",
+        "dash",
+        "linecap",
+        "opacity",
+        "width",
+        "stroke_width",
+        "label_opacity",
+        "label_border_width",
+        "rotation",
+    }
+)
+
+
+class _XygXyafBulkStyleIn(ctypes.Structure):
+    _fields_ = [
+        ("color", _XygStringRef),
+        ("stroke_color", _XygStringRef),
+        ("label_color", _XygStringRef),
+        ("label_background", _XygStringRef),
+        ("label_border_color", _XygStringRef),
+        ("dash", _XygStringRef),
+        ("linecap", _XygStringRef),
+        ("opacity_present", ctypes.c_int32),
+        ("opacity", ctypes.c_double),
+        ("width_present", ctypes.c_int32),
+        ("width", ctypes.c_double),
+        ("stroke_width_present", ctypes.c_int32),
+        ("stroke_width", ctypes.c_double),
+        ("label_opacity_present", ctypes.c_int32),
+        ("label_opacity", ctypes.c_double),
+        ("label_border_width_present", ctypes.c_int32),
+        ("label_border_width", ctypes.c_double),
+        ("rotation_present", ctypes.c_int32),
+        ("rotation", ctypes.c_double),
+        ("extra_style_key_count", ctypes.c_uint32),
+    ]
+
+
+class _XygXyafBulkAnnotationIn(ctypes.Structure):
+    _fields_ = [
+        ("kind", _XygStringRef),
+        ("text", _XygStringRef),
+        ("x_present", ctypes.c_int32),
+        ("x", ctypes.c_double),
+        ("y_present", ctypes.c_int32),
+        ("y", ctypes.c_double),
+        ("x0_present", ctypes.c_int32),
+        ("x0", ctypes.c_double),
+        ("y0_present", ctypes.c_int32),
+        ("y0", ctypes.c_double),
+        ("x1_present", ctypes.c_int32),
+        ("x1", ctypes.c_double),
+        ("y1_present", ctypes.c_int32),
+        ("y1", ctypes.c_double),
+        ("value_present", ctypes.c_int32),
+        ("value", ctypes.c_double),
+        ("start_present", ctypes.c_int32),
+        ("start", ctypes.c_double),
+        ("end_present", ctypes.c_int32),
+        ("end", ctypes.c_double),
+        ("dx_present", ctypes.c_int32),
+        ("dx", ctypes.c_double),
+        ("dy_present", ctypes.c_int32),
+        ("dy", ctypes.c_double),
+        ("size_present", ctypes.c_int32),
+        ("size", ctypes.c_double),
+        ("wrap_present", ctypes.c_int32),
+        ("wrap", ctypes.c_double),
+        ("rotation_present", ctypes.c_int32),
+        ("rotation", ctypes.c_double),
+        ("anchor_present", ctypes.c_int32),
+        ("anchor", _XygStringRef),
+        ("axis_present", ctypes.c_int32),
+        ("axis", _XygStringRef),
+        ("symbol_present", ctypes.c_int32),
+        ("symbol", _XygStringRef),
+        ("index_override_present", ctypes.c_int32),
+        ("index_override", ctypes.c_uint32),
+        ("style", _XygXyafBulkStyleIn),
+    ]
+
+
+def _marshal_xyaf_style(
+    style: dict[str, Any],
+    keepers: list[bytes],
+    *,
+    skip_rotation: bool,
+) -> tuple[_XygXyafBulkStyleIn, bytes]:
+    extra_blob = bytearray()
+    extra_keys: list[str] = []
+    typography = {
+        "font_family",
+        "font_size",
+        "font_weight",
+        "font_style",
+        "fontFamily",
+        "fontSize",
+        "fontWeight",
+        "fontStyle",
+    }
+    for key, value in style.items():
+        if value is None or key in {"markup", *typography} or (skip_rotation and key == "rotation"):
+            continue
+        if key not in _ADMITTED_XYAF_STYLE_KEYS:
+            extra_keys.append(str(key))
+    for key in sorted(extra_keys):
+        encoded = key.encode("utf-8")
+        extra_blob.extend(len(encoded).to_bytes(2, "little"))
+        extra_blob.extend(encoded)
+
+    def opt_css(key: str) -> _XygStringRef:
+        raw = style.get(key)
+        if raw is None:
+            return _XygStringRef(0, 0)
+        ref, encoded = _string_ref(str(raw))
+        keepers.append(encoded)
+        return ref
+
+    def opt_num(key: str) -> tuple[int, float]:
+        if key not in style or style[key] is None:
+            return 0, 0.0
+        return 1, float(style[key])
+
+    opacity_present, opacity = opt_num("opacity")
+    width_present, width = opt_num("width")
+    stroke_width_present, stroke_width = opt_num("stroke_width")
+    label_opacity_present, label_opacity = opt_num("label_opacity")
+    label_border_width_present, label_border_width = opt_num("label_border_width")
+    rotation_present, rotation = opt_num("rotation")
+    return (
+        _XygXyafBulkStyleIn(
+            opt_css("color"),
+            opt_css("stroke_color"),
+            opt_css("label_color"),
+            opt_css("label_background"),
+            opt_css("label_border_color"),
+            opt_css("dash") if isinstance(style.get("dash"), str) else _XygStringRef(0, 0),
+            opt_css("linecap") if style.get("linecap") is not None else _XygStringRef(0, 0),
+            opacity_present,
+            opacity,
+            width_present,
+            width,
+            stroke_width_present,
+            stroke_width,
+            label_opacity_present,
+            label_opacity,
+            label_border_width_present,
+            label_border_width,
+            rotation_present if not skip_rotation else 0,
+            rotation,
+            len(extra_keys),
+        ),
+        bytes(extra_blob),
+    )
+
+
+def _marshal_xyaf_annotation(
+    annotation: dict[str, Any],
+    *,
+    index_override: int | None = None,
+) -> tuple[_XygXyafBulkAnnotationIn, bytes, list[bytes]]:
+    annotation = dict(annotation)
+    kind = str(annotation.get("kind", ""))
+    style = dict(annotation.get("style") or {})
+    skip_rotation = kind in {"text", "marker"}
+    keepers: list[bytes] = []
+    style_in, extra_blob = _marshal_xyaf_style(style, keepers, skip_rotation=skip_rotation)
+
+    def opt_str_field(key: str) -> _XygStringRef:
+        raw = annotation.get(key)
+        if raw is None:
+            return _XygStringRef(0, 0)
+        ref, encoded = _string_ref(str(raw))
+        keepers.append(encoded)
+        return ref
+
+    def opt_num_field(key: str) -> tuple[int, float]:
+        if key not in annotation:
+            return 0, 0.0
+        return 1, float(annotation[key])
+
+    text = annotation.get("text")
+    text_ref, text_b = _string_ref(str(text) if text not in (None, "") else None)
+    keepers.append(text_b)
+    kind_ref, kind_b = _string_ref(kind)
+    keepers.append(kind_b)
+    x_present, x = opt_num_field("x")
+    y_present, y = opt_num_field("y")
+    x0_present, x0 = opt_num_field("x0")
+    y0_present, y0 = opt_num_field("y0")
+    x1_present, x1 = opt_num_field("x1")
+    y1_present, y1 = opt_num_field("y1")
+    value_present, value = opt_num_field("value")
+    start_present, start = opt_num_field("start")
+    end_present, end = opt_num_field("end")
+    dx_present, dx = opt_num_field("dx")
+    dy_present, dy = opt_num_field("dy")
+    size_present, size = opt_num_field("size")
+    wrap_present, wrap = opt_num_field("wrap")
+    rotation_present, rotation = opt_num_field("rotation")
+    row = _XygXyafBulkAnnotationIn(
+        kind_ref,
+        text_ref,
+        x_present,
+        x,
+        y_present,
+        y,
+        x0_present,
+        x0,
+        y0_present,
+        y0,
+        x1_present,
+        x1,
+        y1_present,
+        y1,
+        value_present,
+        value,
+        start_present,
+        start,
+        end_present,
+        end,
+        dx_present,
+        dx,
+        dy_present,
+        dy,
+        size_present,
+        size,
+        wrap_present,
+        wrap,
+        rotation_present,
+        rotation,
+        1 if "anchor" in annotation else 0,
+        opt_str_field("anchor") if "anchor" in annotation else _XygStringRef(0, 0),
+        1 if "axis" in annotation else 0,
+        opt_str_field("axis") if "axis" in annotation else _XygStringRef(0, 0),
+        1 if "symbol" in annotation else 0,
+        opt_str_field("symbol") if "symbol" in annotation else _XygStringRef(0, 0),
+        1 if index_override is not None else 0,
+        int(index_override or 0) & 0xFFFFFFFF,
+        style_in,
+    )
+    return row, extra_blob, keepers
+
+
+class SceneXyafBulkPackError(ValueError):
+    """Bulk XYAF pack failure from ``xyg_scene_xyaf_bulk_pack`` (ABI 324)."""
+
+    def __init__(self, code: int, index: int) -> None:
+        self.code = int(code)
+        self.index = int(index)
+        super().__init__(f"scene xyaf bulk pack failed: code={code} index={index}")
+
+
+def scene_xyaf_bulk_pack(
+    annotations: Sequence[Mapping[str, Any]],
+    *,
+    indices: Sequence[int] | None = None,
+) -> bytes:
+    """Bulk-pack authored annotations via ``xyg_scene_xyaf_bulk_pack`` (ABI 324)."""
+    if indices is not None and len(indices) != len(annotations):
+        raise ValueError("xyaf bulk pack indices length mismatch")
+    rows = (_XygXyafBulkAnnotationIn * len(annotations))()
+    extra_blob = bytearray()
+    keepers: list[bytes] = []
+    for pos, annotation in enumerate(annotations):
+        index_override = None if indices is None else int(indices[pos])
+        row, blob, row_keepers = _marshal_xyaf_annotation(
+            dict(annotation), index_override=index_override
+        )
+        rows[pos] = row
+        extra_blob.extend(blob)
+        keepers.extend(row_keepers)
+    keys_ptr, keys_len = _optional_u8_ptr(bytes(extra_blob))
+    out = np.zeros(SCENE_XYAF_BULK_PACK_MAX, dtype=np.uint8)
+    out_len = ctypes.c_size_t(0)
+    error_index = ctypes.c_uint32(0)
+    code = int(
+        _lib.xyg_scene_xyaf_bulk_pack(
+            ctypes.cast(rows, ctypes.c_void_p) if len(rows) else 0,
+            len(annotations),
+            keys_ptr,
+            keys_len,
+            _ptr_u8(out),
+            len(out),
+            ctypes.byref(out_len),
+            ctypes.byref(error_index),
+        )
+    )
+    del keepers, rows
+    if code == -2:
+        raise ValueError("scene_xyaf_bulk_pack output buffer too small")
+    if code != 0:
+        raise SceneXyafBulkPackError(code, int(error_index.value))
     return bytes(out[: int(out_len.value)])

@@ -76,7 +76,7 @@ import {
 } from "./native.js";
 import { asF64Array, DEFAULT_PALETTE, COLOR2_CLASS_TO_CODE, f64Ptr, legendBestLoc, legendNormalize, sceneDashAdmit, sceneLinecapAdmit, sceneMarkerPathAdmit, sceneAnnotationStyleAdmit, sceneArraysEqual, sceneConstantColorAdmit, sceneChannelConstantCss, sceneHiddenOrPerItemAdmit, sceneRibbonColor2Classify, sceneScatterPaintChannelAdmit, sceneTickLabelStrategy, sceneTickAnchor, sceneFillGradientAdmit, sceneFiniteAll, sceneParseLinearGradient, sceneRectExtraFlags, sceneGradientDir, sceneLinearGradientPrefix, sceneGradientSpace, sceneGradientSolidCss, sceneGradientSpecPack, sceneMarkerBlobPack, sceneXytcSymbolIntPack, sceneXytcColor2FlagsPack, sceneXytcMetaFlagsPack, sceneXytcPaintPresencePack, sceneXytcDashPatternPack, sceneXytcOpacityPack, sceneXytcHexPitchPack, sceneXytcStrokePerimeterPack, sceneXytcNumericStylePack, sceneXytcColorChannelPack, sceneXytcRadiusPack, sceneXytcFigurePlan, sceneXytcTraceDispatchPlan, sceneXytcTracePack, sceneXytaFigurePlan, sceneXytaTraceDispatchPlan, sceneXytaTracePack, sceneFigureSupportFigurePlan, sceneFigureSupportTraceDispatchPlan, scenePublicExportFigurePlan, scenePublicExportTraceDispatchPlan, sceneXyafAnnotationDispatchPlan, sceneXycfFigurePlan, sceneXyclFigurePlan, sceneXynmFigurePlan, scenePolarFigurePlan, sceneEncodeProductAttachPlan, sceneHexbinReduceAdmit, sceneCurveClassify, sceneMarkerGlyphAdmit, sceneKindAdmit, sceneKindClass, sceneHexbinColormapPlaneAdmit, sceneHexbinPitchAdmit, sceneHexbinRgbaPlaneAdmit, sceneHeatmapExtentAdmit, sceneHeatmapColormapAdmit, sceneHeatmapShapeAdmit, sceneMeshPaintPlaneAdmit, sceneItemApplyOpacity, sceneItemWidthsAdmit, sceneItemFillT, sceneXytaColormapPack, sceneXyhfColormapPack, shouldUseDensity, u32Ptr, u8Ptr, colormapLutRgba8, colormapNamedStops, colormapRgba, densityMeanColorWireAdmit } from "./encode.js";
 import { clipQuantizeU8, cssColorRgba8, cssColorsToRgba8, quantizeUnitU8 } from "./color.js";
-import { sceneChromePack, sceneFigureSupportMaterialize, scenePolarInputPack } from "./sceneBulkNative.js";
+import { sceneChromePack, sceneFigureSupportMaterialize, scenePolarInputPack, sceneXyafBulkPack } from "./sceneBulkNative.js";
 
 const USIZE_MAX_64 = (1n << 64n) - 1n;
 const MAX_SCENE_MARKS = 2_000_000;
@@ -251,183 +251,19 @@ function annotationHasCustomTypography(annotation) {
   return false;
 }
 
+function packXyAfBulk(annotations) {
+  if (!annotations.length) return new Uint8Array();
+  return sceneXyafBulkPack(annotations);
+}
+
 function packXyAf(annotation, index) {
-  // ABI 184 packs cartesian unwrapped text dx/dy/anchor as XYAW wrap=0.
-  // ABI 185 packs labelled cartesian marker dx/dy/anchor the same way in Rust.
-  // ABI 187 packs cartesian unwrapped text rotation as XYAW wrap=0 (XYAW v2).
-  // ABI 188 packs labelled cartesian marker rotation the same way (nums[8]).
-  // Annotation html is XYFS OBS_ANNOTATION_HTML (#305); Scene owns literal text.
-  // Annotation markup is XYFS OBS_ANNOTATION_MARKUP (#308).
-  // Annotation custom typography is XYFS OBS_CUSTOM_FONT (#309).
-  // Text/marker style.rotation lifts onto ABI 187/188 top-level rotation.
   annotation = { ...annotation };
   const kind = annotation.kind;
-  const kindCode = XYAF_KIND_CODES[kind];
-  if (kindCode == null) throw new RangeError(`Scene v12 annotations support rule, band, and unlabeled marker only; ${JSON.stringify(kind)} is deferred`);
   const style = { ...(annotation.style ?? {}) };
   if (["text", "marker"].includes(kind) && !Object.hasOwn(annotation, "rotation") && style.rotation != null) {
     annotation.rotation = style.rotation;
   }
-  const authoredWrap = ["text", "callout"].includes(kind) && Object.hasOwn(annotation, "wrap");
-  const layoutText = kind === "text" && ["dx", "dy", "anchor", "rotation"].some((key) => Object.hasOwn(annotation, key));
-  const dispatch = sceneXyafAnnotationDispatchPlan({ kind, authoredWrap, layoutText });
-  const wrapped = dispatch.wrapped;
-  const labelled = annotation.text != null && annotation.text !== "";
-  if (kind === "arrow" && labelled) throw new RangeError("Scene arrows do not encode text");
-  let encoded = new Uint8Array();
-  if (labelled) {
-    if (typeof annotation.text !== "string" || annotation.text.includes("\0") || (wrapped && annotation.text.includes("\r"))) {
-      throw new RangeError(wrapped ? "Scene wrapped annotations require nonempty NUL-free LF text" : kind === "text" ? "Scene v16 text annotations require nonempty NUL-free text" : kind === "callout" ? "Scene callouts require nonempty NUL-free text" : "Scene v16 annotation labels require nonempty NUL-free text");
-    }
-    encoded = new TextEncoder().encode(annotation.text);
-    if (encoded.length > 4096) throw new RangeError("Scene annotations are limited to 4,096 UTF-8 bytes");
-  } else if (kind === "text" || kind === "callout") {
-    throw new RangeError(kind === "callout" ? "Scene callouts require nonempty NUL-free text" : "Scene v16 text annotations require nonempty NUL-free text");
-  }
-  const skipStyle = new Set(["markup", ...ANNOTATION_TYPOGRAPHY_STYLE_KEYS]);
-  if (["text", "marker"].includes(kind)) skipStyle.add("rotation");
-  const unsupported = Object.keys(style).filter((key) => !skipStyle.has(key) && style[key] != null && !sceneAnnotationStyleAdmit(kind, wrapped, labelled, key)).sort();
-  if (unsupported.length) {
-    if (wrapped) throw new RangeError("Scene wrapped annotations do not encode class_name, custom fonts, CSS, markup, collision, or leader style");
-    if (kind === "arrow") throw new RangeError(`Scene arrow style does not encode ${JSON.stringify(unsupported)}`);
-    if (kind === "callout") throw new RangeError(`Scene callout style does not encode ${JSON.stringify(unsupported)}`);
-    if (kind === "text") throw new RangeError("Scene v23 text annotations support only color, opacity, label_background, and label_border_*");
-    throw new RangeError(`Scene v12 ${kind} annotation style does not encode ${JSON.stringify(unsupported)}`);
-  }
-  const nums = new Float64Array(18);
-  nums.fill(Number.NaN);
-  let facts = 0;
-  let styleBits = 0;
-  const zeros = new Uint8Array(4);
-  let color = zeros, stroke = zeros, labelColor = zeros, labelFill = zeros, labelBorder = zeros;
-  if (labelled) facts |= XYAF_FACT_HAS_TEXT;
-  if (wrapped) {
-    facts |= XYAF_FACT_HAS_WRAP;
-    nums[8] = Object.hasOwn(annotation, "wrap")
-      ? annotationNumber(annotation, "wrap", undefined, "wrapped width")
-      : 0;
-  }
-  const required = wrapped
-    ? [["x", 0, XYAF_FACT_HAS_X, "wrapped x"], ["y", 1, XYAF_FACT_HAS_Y, "wrapped y"]]
-    : {
-      arrow: [["x0", 2, XYAF_FACT_HAS_X0, "arrow x0"], ["y0", 3, XYAF_FACT_HAS_Y0, "arrow y0"], ["x1", 4, XYAF_FACT_HAS_X1, "arrow x1"], ["y1", 5, XYAF_FACT_HAS_Y1, "arrow y1"]],
-      callout: [["x", 0, XYAF_FACT_HAS_X, "callout x"], ["y", 1, XYAF_FACT_HAS_Y, "callout y"]],
-      text: [["x", 0, XYAF_FACT_HAS_X, "text x"], ["y", 1, XYAF_FACT_HAS_Y, "text y"]],
-      rule: [["value", 9, XYAF_FACT_HAS_VALUE, "rule value"]],
-      band: [["start", 10, XYAF_FACT_HAS_START, "band start"], ["end", 11, XYAF_FACT_HAS_END, "band end"]],
-      marker: [["x", 0, XYAF_FACT_HAS_X, "marker x"], ["y", 1, XYAF_FACT_HAS_Y, "marker y"]],
-    }[kind];
-  for (const [key, slot, flag, label] of required) {
-    nums[slot] = annotationNumber(annotation, key, undefined, label);
-    facts |= flag;
-  }
-  for (const [key, slot, flag, label] of [["dx", 6, XYAF_FACT_HAS_DX, wrapped ? "wrapped dx" : "callout dx"], ["dy", 7, XYAF_FACT_HAS_DY, wrapped ? "wrapped dy" : "callout dy"], ["size", 12, XYAF_FACT_HAS_SIZE, "marker size"]]) {
-    if (Object.hasOwn(annotation, key)) {
-      nums[slot] = annotationNumber(annotation, key, undefined, label);
-      facts |= flag;
-    }
-  }
-  if (kind === "text" && Object.hasOwn(annotation, "rotation")) {
-    nums[15] = annotationNumber(annotation, "rotation", undefined, "text rotation");
-    facts |= XYAF_FACT_HAS_ROTATION;
-    if (!Number.isFinite(nums[15])) throw new RangeError("Scene v16 text annotation rotation must be finite");
-  }
-  if (kind === "marker" && Object.hasOwn(annotation, "rotation")) {
-    nums[8] = annotationNumber(annotation, "rotation", undefined, "marker rotation");
-    facts |= XYAF_FACT_HAS_ROTATION;
-    if (!Number.isFinite(nums[8])) throw new RangeError("Scene v16 marker annotation rotation must be finite");
-  }
-  let axisCode = 0;
-  if (kind === "rule" || kind === "band") {
-    if (annotation.axis !== "x" && annotation.axis !== "y") throw new RangeError(`Scene v12 ${kind} annotation axis must be 'x' or 'y'`);
-    axisCode = annotation.axis === "x" ? 1 : 2;
-    facts |= XYAF_FACT_HAS_AXIS;
-  }
-  let symbol = 0;
-  if (kind === "marker") {
-    symbol = annotationSymbolCode(annotation.symbol ?? "circle");
-    if (Object.hasOwn(annotation, "symbol")) facts |= XYAF_FACT_HAS_SYMBOL;
-    if (Object.hasOwn(annotation, "size") && (!Number.isFinite(nums[12]) || nums[12] <= 0)) throw new RangeError("Scene v12 marker annotation size must be finite and positive");
-  }
-  let anchor = 255;
-  if (Object.hasOwn(annotation, "anchor") || kind === "callout" || wrapped) {
-    const anchorCode = { start: 0, middle: 1, end: 2 }[annotation.anchor ?? "start"];
-    if (anchorCode == null) throw new RangeError(wrapped ? "Scene wrapped annotation anchor must be start, middle, or end" : "Scene callout anchor must be start, middle, or end");
-    anchor = anchorCode;
-    facts |= XYAF_FACT_HAS_ANCHOR;
-  }
-  const kindLabel = wrapped ? "wrapped" : kind;
-  if (Object.hasOwn(style, "opacity")) {
-    nums[13] = annotationNumber(style, "opacity", undefined, `${kindLabel} opacity`);
-    styleBits |= XYAF_STYLE_OPACITY;
-    if (!Number.isFinite(nums[13]) || nums[13] < 0 || nums[13] > 1) throw new RangeError(kind === "arrow" ? "Scene arrow opacity must be in [0, 1] and width must be positive" : wrapped ? "Scene wrapped annotation values are invalid" : kind === "callout" ? "Scene callout opacity must be in [0, 1] and width must be positive" : `Scene v12 ${kind} annotation opacity must be finite and in [0, 1]`);
-  }
-  if (Object.hasOwn(style, "width")) {
-    nums[14] = annotationNumber(style, "width", undefined, `${kindLabel} width`);
-    styleBits |= XYAF_STYLE_WIDTH;
-    if ((kind === "arrow" || kind === "callout") && (!Number.isFinite(nums[14]) || nums[14] <= 0)) throw new RangeError(kind === "arrow" ? "Scene arrow opacity must be in [0, 1] and width must be positive" : "Scene callout opacity must be in [0, 1] and width must be positive");
-    if (kind === "rule" && (!Number.isFinite(nums[14]) || nums[14] <= 0)) throw new RangeError("Scene v12 rule annotation width must be finite and nonnegative");
-  }
-  if (Object.hasOwn(style, "stroke_width")) {
-    nums[15] = annotationNumber(style, "stroke_width", undefined, `${kind} width`);
-    styleBits |= XYAF_STYLE_STROKE_WIDTH;
-  }
-  if (Object.hasOwn(style, "label_opacity")) {
-    nums[16] = annotationNumber(style, "label_opacity", undefined, `${kind} label opacity`);
-    styleBits |= XYAF_STYLE_LABEL_OPACITY;
-  }
-  if (Object.hasOwn(style, "label_border_width")) {
-    nums[17] = annotationNumber(style, "label_border_width", undefined, `${kindLabel} label border width`);
-    styleBits |= XYAF_STYLE_LABEL_BORDER_WIDTH;
-    if (!Number.isFinite(nums[17]) || nums[17] <= 0) throw new RangeError("Scene v23 label border width must be positive and finite");
-  }
-  for (const [key, bit] of [["color", XYAF_STYLE_COLOR], ["stroke_color", XYAF_STYLE_STROKE_COLOR], ["label_color", XYAF_STYLE_LABEL_COLOR], ["label_background", XYAF_STYLE_LABEL_BACKGROUND], ["label_border_color", XYAF_STYLE_LABEL_BORDER_COLOR]]) {
-    if (Object.hasOwn(style, key)) {
-      const packed = rgba8(annotationColor(style, key, "", `${kindLabel} ${key.replaceAll("_", " ")}`), 1, kindLabel);
-      styleBits |= bit;
-      if (key === "color") color = packed;
-      else if (key === "stroke_color") stroke = packed;
-      else if (key === "label_color") labelColor = packed;
-      else if (key === "label_background") labelFill = packed;
-      else labelBorder = packed;
-    }
-  }
-  if ((style.label_border_color == null) !== (style.label_border_width == null)) throw new RangeError(wrapped ? "Scene wrapped label border requires color and width" : "Scene v23 label border requires color and width");
-  let parsedDash = null;
-  let parsedCap = null;
-  if (dispatch.packRuleDash || dispatch.packRuleLinecap) {
-    parsedDash = parseSceneDash(style.dash);
-    if (parsedDash === false) throw new RangeError("Scene v12 rule annotation dash is not a constant pattern");
-    if (parsedDash) styleBits |= XYAF_STYLE_DASH;
-    parsedCap = packXyAfLinecap(style);
-    if (parsedCap === false) throw new RangeError("Scene v12 rule annotation linecap is not a Scene cap");
-    if (parsedCap != null) styleBits |= XYAF_STYLE_LINECAP;
-  }
-  const out = new Uint8Array(232 + encoded.length);
-  const view = new DataView(out.buffer);
-  out[0] = 88; out[1] = 89; out[2] = 65; out[3] = 70; // XYAF
-  view.setUint32(4, 1, true);
-  view.setUint32(8, index >>> 0, true);
-  out[12] = kindCode;
-  out[13] = axisCode;
-  out[14] = symbol;
-  out[15] = anchor;
-  view.setUint32(16, facts >>> 0, true);
-  view.setUint32(20, styleBits >>> 0, true);
-  out[24] = parsedCap == null ? 255 : parsedCap;
-  out[25] = parsedDash ? parsedDash.length : 0;
-  view.setUint32(28, encoded.length, true);
-  for (let i = 0; i < 18; i += 1) view.setFloat64(32 + i * 8, nums[i], true);
-  out.set(color, 176);
-  out.set(stroke, 180);
-  out.set(labelColor, 184);
-  out.set(labelFill, 188);
-  out.set(labelBorder, 192);
-  if (parsedDash) {
-    for (let i = 0; i < parsedDash.length; i += 1) view.setFloat32(200 + i * 4, Number(parsedDash[i]), true);
-  }
-  out.set(encoded, 232);
-  return out;
+  return sceneXyafBulkPack([annotation], { indices: [Number(index)] });
 }
 
 function packAnnotationFacts(facts, styleRefBase, xDomain, yDomain) {
@@ -6110,17 +5946,14 @@ export function figureSceneV3(figure, { margins = null } = {}) {
   const attachPlan = sceneEncodeProductAttachPlan({ polar: figure.coords === "polar" });
   const xDomain = figure._range("x");
   const yDomain = figure._range("y");
-  const annotationParts = [];
-  for (const [annotationIndex, annotation] of (figure.annotations ?? []).entries()) {
-    annotationParts.push(packXyAf(annotation, annotationIndex));
-  }
+  const annotationFacts = packXyAfBulk(figure.annotations ?? []);
   try {
     return encodeProduct(
       packXyTc(figure),
       packXyTa(figure, xDomain, yDomain),
       packXyNm(figure.traces ?? [], figure),
       packXyCl(figure),
-      concatBytes(annotationParts),
+      concatBytes([annotationFacts]),
       (figure.traces ?? []).length,
       xDomain,
       yDomain,

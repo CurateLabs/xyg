@@ -100,8 +100,19 @@ pub mod scene_xyta_trace_pack;
 pub use scene_xyta_trace_pack::{
     scene_xyta_trace_pack, XytaTracePackInput, SCENE_XYTA_TRACE_PACK_MAX_RECORD,
 };
+pub mod scene_xyta_trace_observations_materialize;
+pub use scene_xyta_trace_observations_materialize::{
+    scene_xyta_trace_observations_materialize, SceneXytaColorChannelIn,
+    SceneXytaColormapInput, SceneXytaStyleChannelIn, SceneXytaTraceObservationsIn,
+    SceneXytaTraceObservationsOut, SCENE_XYTA_TRACE_OBSERVATIONS_MAX_BYTES,
+};
 pub mod scene_xyaf_pack;
 pub use scene_xyaf_pack::{scene_xyaf_pack, XyafPackInput, SCENE_XYAF_PACK_MAX_RECORD};
+pub mod scene_xyaf_bulk_pack;
+pub use scene_xyaf_bulk_pack::{
+    scene_xyaf_bulk_pack, XyafBulkAnnotationObs, XyafBulkError, XyafBulkPackError,
+    XyafBulkStyleObs, SCENE_XYAF_BULK_PACK_MAX,
+};
 pub mod scene_xycf_pack;
 pub use scene_xycf_pack::{
     scene_xycf_pack, XycfPackHeader, XycfPackSidecars, SCENE_XYCF_PACK_MAX, XYCF_HEADER_BYTES,

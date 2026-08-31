@@ -682,8 +682,59 @@ def _annotation_allowed_style(kind: str, wrapped: bool, labelled: bool) -> set[s
     }
 
 
+def _raise_xyaf_bulk_error(error: _native.SceneXyafBulkPackError, annotations: list[Any]) -> None:
+    code = int(error.code)
+    index = int(error.index)
+    annotation = annotations[index] if 0 <= index < len(annotations) else {}
+    kind = str(annotation.get("kind", ""))
+    if code == -3:
+        raise UnsupportedSceneV3(
+            f"Scene v12 annotations support rule, band, and unlabeled marker only; {kind!r} is deferred"
+        )
+    if code == -7:
+        raise UnsupportedSceneV3("Scene arrows do not encode text or class_name")
+    if code == -5:
+        if kind == "callout":
+            raise UnsupportedSceneV3("Scene callouts require nonempty NUL-free text")
+        if kind == "text":
+            raise UnsupportedSceneV3("Scene v16 text annotations require nonempty NUL-free text")
+        raise UnsupportedSceneV3("Scene v16 annotation labels require nonempty NUL-free text")
+    if code == -4:
+        raise UnsupportedSceneV3(
+            "Scene v23 text annotations support only color, opacity, label_background, and label_border_*"
+            if kind == "text"
+            else f"Scene v12 {kind} annotation style does not encode unsupported keys"
+        )
+    if code == -8:
+        raise UnsupportedSceneV3("Scene v12 rule annotation dash is not a constant pattern")
+    if code == -9:
+        raise UnsupportedSceneV3("Scene v12 rule annotation linecap is not a Scene cap")
+    if code == -10:
+        symbol_name = str(annotation.get("symbol", "circle"))
+        raise UnsupportedSceneV3(f"Scene v12 does not support marker symbol {symbol_name!r}")
+    if code == -11:
+        raise UnsupportedSceneV3("Scene callout anchor must be start, middle, or end")
+    if code == -12:
+        raise UnsupportedSceneV3("Scene v23 label border requires color and width")
+    if code == -13:
+        raise ValueError(f"Scene v12 {kind} annotation axis must be 'x' or 'y'")
+    if code == -6:
+        raise ValueError(f"Scene v12 annotation values are invalid at index {index}")
+    raise ValueError("invalid scene annotation packing")
+
+
+def _pack_xyaf_bulk(annotations: list[Any]) -> bytes:
+    """Marshal annotations and bulk-pack XYAF via Rust (ABI 324)."""
+    if not annotations:
+        return b""
+    try:
+        return _native.scene_xyaf_bulk_pack(annotations)
+    except _native.SceneXyafBulkPackError as error:
+        _raise_xyaf_bulk_error(error, annotations)
+
+
 def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
-    """Pack one authored annotation as XYAF v1; Rust classifies the family.
+    """Pack one authored annotation as XYAF v1 via ``xyg_scene_xyaf_bulk_pack`` (ABI 324).
 
     Annotation ``class_name`` is an XYFS observation (ABI 165 / #306), not an
     XYAF field. Scene SVG/raster do not encode CSS classes. Product encode
@@ -701,23 +752,9 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
     Annotation ``html`` is XYFS ``OBS_ANNOTATION_HTML`` (#305); Scene SVG/raster
     own literal text only. Product encode reports
     ``XYG_SCENE_UNSUPPORTED_ANNOTATION_HTML``.
-    ABI 184 packs cartesian unwrapped text ``dx``/``dy``/``anchor`` as XYAW
-    with ``wrap=0`` so Rust applies the offset without wrapping. ABI 185
-    packs labelled cartesian marker ``dx``/``dy``/``anchor`` the same way
-    (Rust keeps the marker mark row and skips AttachedRow). ABI 187 packs
-    cartesian unwrapped text ``rotation`` as XYAW with ``wrap=0`` (nonzero
-    rotation writes XYAW v2 / XYLB v6). ABI 188 packs labelled cartesian marker
-    ``rotation`` the same way (nums[8]; markers never wrap, and nums[15] stays
-    ``stroke_width``). ABI 189 packs raw heatmap/hexbin XYTA observations;
-    Rust owns cell-fill tessellation eligibility on the XYFS probe.
     """
     annotation = dict(annotation)
     kind = annotation.get("kind")
-    kind_code = _XYAF_KIND_CODES.get(str(kind) if kind is not None else "")
-    if kind_code is None:
-        raise UnsupportedSceneV3(
-            f"Scene v12 annotations support rule, band, and unlabeled marker only; {kind!r} is deferred"
-        )
     style = dict(annotation.get("style") or {})
     if (
         str(kind) in {"text", "marker"}
@@ -725,294 +762,10 @@ def _pack_xyaf(annotation: dict[str, Any], index: int) -> bytes:
         and style.get("rotation") is not None
     ):
         annotation["rotation"] = style["rotation"]
-    authored_wrap = kind in {"text", "callout"} and "wrap" in annotation
-    layout_text = kind == "text" and any(
-        key in annotation for key in ("dx", "dy", "anchor", "rotation")
-    )
-    dispatch = _native.scene_xyaf_annotation_dispatch_plan(
-        kind=str(kind),
-        authored_wrap=authored_wrap,
-        layout_text=layout_text,
-    )
-    wrapped = dispatch["wrapped"]
-    attached_text = annotation.get("text")
-    labelled = attached_text not in (None, "")
-    if kind == "arrow" and labelled:
-        raise UnsupportedSceneV3("Scene arrows do not encode text or class_name")
-    encoded = b""
-    if labelled:
-        if not isinstance(attached_text, str) or "\0" in attached_text:
-            if wrapped:
-                raise UnsupportedSceneV3(
-                    "Scene wrapped annotations require nonempty NUL-free LF text"
-                )
-            if kind == "text":
-                raise UnsupportedSceneV3(
-                    "Scene v16 text annotations require nonempty NUL-free text"
-                )
-            if kind == "callout":
-                raise UnsupportedSceneV3("Scene callouts require nonempty NUL-free text")
-            raise UnsupportedSceneV3("Scene v16 annotation labels require nonempty NUL-free text")
-        if wrapped and "\r" in attached_text:
-            raise UnsupportedSceneV3("Scene wrapped annotations require nonempty NUL-free LF text")
-        encoded = attached_text.encode("utf-8")
-        if len(encoded) > 4096:
-            if wrapped:
-                raise UnsupportedSceneV3(
-                    "Scene wrapped annotations are limited to 4,096 UTF-8 bytes"
-                )
-            if kind == "text":
-                raise UnsupportedSceneV3(
-                    "Scene v16 text annotations are limited to 4,096 UTF-8 bytes"
-                )
-            if kind == "callout":
-                raise UnsupportedSceneV3("Scene callouts are limited to 4,096 UTF-8 bytes")
-            raise UnsupportedSceneV3("Scene v16 annotation labels are limited to 4,096 UTF-8 bytes")
-    elif kind in {"text", "callout"}:
-        raise UnsupportedSceneV3(
-            "Scene callouts require nonempty NUL-free text"
-            if kind == "callout"
-            else "Scene v16 text annotations require nonempty NUL-free text"
-        )
-    skip_style = {"markup"} | _ANNOTATION_TYPOGRAPHY_STYLE_KEYS
-    if str(kind) in {"text", "marker"}:
-        skip_style = skip_style | {"rotation"}
-    unsupported = sorted(
-        key
-        for key, value in style.items()
-        if key not in skip_style
-        and value is not None
-        and not _native.scene_annotation_style_admit(str(kind), wrapped, labelled, str(key))
-    )
-    if unsupported:
-        if wrapped:
-            raise UnsupportedSceneV3(f"Scene wrapped annotations do not encode {unsupported!r}")
-        if kind == "arrow":
-            raise UnsupportedSceneV3(f"Scene arrow style does not encode {unsupported!r}")
-        if kind == "callout":
-            raise UnsupportedSceneV3(f"Scene callout style does not encode {unsupported!r}")
-        if kind == "text":
-            raise UnsupportedSceneV3(
-                "Scene v23 text annotations support only color, opacity, label_background, and label_border_*"
-            )
-        raise UnsupportedSceneV3(
-            f"Scene v12 {kind} annotation style does not encode {unsupported!r}"
-        )
-
-    def take_num(source: dict[str, Any], key: str, label: str) -> float:
-        return _annotation_number(source, key, None, label)
-
-    nums = [float("nan")] * 18
-    facts = 0
-    style_bits = 0
-    color = stroke = label_color = label_fill = label_border = bytes(4)
-    if labelled:
-        facts |= _XYAF_FACT_HAS_TEXT
-    if wrapped:
-        facts |= _XYAF_FACT_HAS_WRAP
-        if "wrap" in annotation:
-            nums[8] = take_num(annotation, "wrap", "wrapped width")
-        else:
-            nums[8] = 0.0
-    required = {
-        "arrow": (
-            ("x0", 2, _XYAF_FACT_HAS_X0, "arrow x0"),
-            ("y0", 3, _XYAF_FACT_HAS_Y0, "arrow y0"),
-            ("x1", 4, _XYAF_FACT_HAS_X1, "arrow x1"),
-            ("y1", 5, _XYAF_FACT_HAS_Y1, "arrow y1"),
-        ),
-        "callout": (
-            ("x", 0, _XYAF_FACT_HAS_X, "callout x"),
-            ("y", 1, _XYAF_FACT_HAS_Y, "callout y"),
-        ),
-        "text": (
-            ("x", 0, _XYAF_FACT_HAS_X, "text x"),
-            ("y", 1, _XYAF_FACT_HAS_Y, "text y"),
-        ),
-        "rule": (("value", 9, _XYAF_FACT_HAS_VALUE, "rule value"),),
-        "band": (
-            ("start", 10, _XYAF_FACT_HAS_START, "band start"),
-            ("end", 11, _XYAF_FACT_HAS_END, "band end"),
-        ),
-        "marker": (
-            ("x", 0, _XYAF_FACT_HAS_X, "marker x"),
-            ("y", 1, _XYAF_FACT_HAS_Y, "marker y"),
-        ),
-    }[str(kind)]
-    if wrapped:
-        required = (
-            ("x", 0, _XYAF_FACT_HAS_X, "wrapped x"),
-            ("y", 1, _XYAF_FACT_HAS_Y, "wrapped y"),
-        )
-    for key, slot, flag, label in required:
-        nums[slot] = take_num(annotation, key, label)
-        facts |= flag
-    for key, slot, flag, label in (
-        ("dx", 6, _XYAF_FACT_HAS_DX, "wrapped dx" if wrapped else "callout dx"),
-        ("dy", 7, _XYAF_FACT_HAS_DY, "wrapped dy" if wrapped else "callout dy"),
-        ("size", 12, _XYAF_FACT_HAS_SIZE, "marker size"),
-    ):
-        if key in annotation:
-            nums[slot] = take_num(annotation, key, label)
-            facts |= flag
-    if str(kind) == "text" and "rotation" in annotation:
-        nums[15] = take_num(annotation, "rotation", "text rotation")
-        facts |= _XYAF_FACT_HAS_ROTATION
-        if not np.isfinite(nums[15]):
-            raise ValueError("Scene v16 text annotation rotation must be finite")
-    if str(kind) == "marker" and "rotation" in annotation:
-        nums[8] = take_num(annotation, "rotation", "marker rotation")
-        facts |= _XYAF_FACT_HAS_ROTATION
-        if not np.isfinite(nums[8]):
-            raise ValueError("Scene v16 marker annotation rotation must be finite")
-    axis_code = 0
-    if str(kind) in {"rule", "band"}:
-        axis_name = annotation.get("axis")
-        if axis_name not in {"x", "y"}:
-            raise ValueError(f"Scene v12 {kind} annotation axis must be 'x' or 'y'")
-        axis_code = 1 if axis_name == "x" else 2
-        facts |= _XYAF_FACT_HAS_AXIS
-    symbol = 0
-    if str(kind) == "marker":
-        symbol_name = str(annotation.get("symbol", "circle"))
-        if symbol_name not in _SYMBOL_CODES:
-            raise UnsupportedSceneV3(f"Scene v12 does not support marker symbol {symbol_name!r}")
-        symbol = _SYMBOL_CODES[symbol_name]
-        if "symbol" in annotation:
-            facts |= _XYAF_FACT_HAS_SYMBOL
-        if "size" in annotation and (not np.isfinite(nums[12]) or nums[12] <= 0):
-            raise ValueError("Scene v12 marker annotation size must be finite and positive")
-    anchor = 255
-    if "anchor" in annotation or str(kind) == "callout" or wrapped:
-        anchor_name = annotation.get("anchor", "start")
-        anchor_code = {"start": 0, "middle": 1, "end": 2}.get(anchor_name)
-        if anchor_code is None:
-            raise UnsupportedSceneV3(
-                "Scene wrapped annotation anchor must be start, middle, or end"
-                if wrapped
-                else "Scene callout anchor must be start, middle, or end"
-            )
-        anchor = int(anchor_code)
-        facts |= _XYAF_FACT_HAS_ANCHOR
-    kind_label = "wrapped" if wrapped else str(kind)
-    if "opacity" in style:
-        nums[13] = take_num(style, "opacity", f"{kind_label} opacity")
-        style_bits |= _XYAF_STYLE_OPACITY
-        if not np.isfinite(nums[13]) or not 0.0 <= nums[13] <= 1.0:
-            if kind == "arrow":
-                raise ValueError("Scene arrow opacity must be in [0, 1] and width must be positive")
-            if wrapped:
-                raise ValueError("Scene wrapped annotation opacity must be in [0, 1]")
-            if kind == "callout":
-                raise ValueError(
-                    "Scene callout opacity must be in [0, 1] and width must be positive"
-                )
-            raise ValueError(f"Scene v12 {kind} annotation opacity must be finite and in [0, 1]")
-    if "width" in style:
-        nums[14] = take_num(style, "width", f"{kind_label} width")
-        style_bits |= _XYAF_STYLE_WIDTH
-        if kind in {"arrow", "callout"} and (not np.isfinite(nums[14]) or nums[14] <= 0):
-            raise ValueError(
-                "Scene arrow opacity must be in [0, 1] and width must be positive"
-                if kind == "arrow"
-                else "Scene callout opacity must be in [0, 1] and width must be positive"
-            )
-        if kind == "rule" and (not np.isfinite(nums[14]) or nums[14] <= 0):
-            raise ValueError("Scene v12 rule annotation width must be finite and nonnegative")
-    if "stroke_width" in style:
-        nums[15] = take_num(style, "stroke_width", f"{kind} width")
-        style_bits |= _XYAF_STYLE_STROKE_WIDTH
-        if not np.isfinite(nums[15]) or nums[15] < 0:
-            raise ValueError(f"Scene v12 {kind} annotation width must be finite and nonnegative")
-    if "label_opacity" in style:
-        nums[16] = take_num(style, "label_opacity", f"{kind} label opacity")
-        style_bits |= _XYAF_STYLE_LABEL_OPACITY
-        if not np.isfinite(nums[16]) or not 0.0 <= nums[16] <= 1.0:
-            raise ValueError(
-                f"Scene v16 {kind} annotation label opacity must be finite and in [0, 1]"
-            )
-    if "label_border_width" in style:
-        nums[17] = take_num(style, "label_border_width", f"{kind_label} label border width")
-        style_bits |= _XYAF_STYLE_LABEL_BORDER_WIDTH
-        if not np.isfinite(nums[17]) or nums[17] <= 0:
-            raise ValueError("Scene v23 label border width must be positive and finite")
-    for key, bit in (
-        ("color", _XYAF_STYLE_COLOR),
-        ("stroke_color", _XYAF_STYLE_STROKE_COLOR),
-        ("label_color", _XYAF_STYLE_LABEL_COLOR),
-        ("label_background", _XYAF_STYLE_LABEL_BACKGROUND),
-        ("label_border_color", _XYAF_STYLE_LABEL_BORDER_COLOR),
-    ):
-        if key in style:
-            packed = bytes(
-                _rgba(
-                    _annotation_color(style, key, "", f"{kind_label} {key.replace('_', ' ')}"),
-                    1.0,
-                )
-            )
-            style_bits |= bit
-            if key == "color":
-                color = packed
-            elif key == "stroke_color":
-                stroke = packed
-            elif key == "label_color":
-                label_color = packed
-            elif key == "label_background":
-                label_fill = packed
-            else:
-                label_border = packed
-    border_color_present = style.get("label_border_color") is not None
-    border_width_present = style.get("label_border_width") is not None
-    if border_color_present != border_width_present:
-        raise UnsupportedSceneV3(
-            "Scene wrapped label border requires color and width"
-            if wrapped
-            else "Scene v23 label border requires color and width"
-        )
-    parsed_dash: list[float] | None = None
-    parsed_cap: int | None = None
-    if dispatch["pack_rule_dash"] or dispatch["pack_rule_linecap"]:
-        dash_or_reject = _parse_scene_dash(style.get("dash"))
-        if isinstance(dash_or_reject, list):
-            parsed_dash = [float(value) for value in dash_or_reject]
-            style_bits |= _XYAF_STYLE_DASH
-        elif dash_or_reject is None:
-            parsed_dash = None
-        else:
-            raise UnsupportedSceneV3("Scene v12 rule annotation dash is not a constant pattern")
-        cap_or_reject = _parse_scene_linecap(style.get("linecap"))
-        if cap_or_reject is None:
-            parsed_cap = None
-        elif isinstance(cap_or_reject, int) and not isinstance(cap_or_reject, bool):
-            parsed_cap = cap_or_reject
-            style_bits |= _XYAF_STYLE_LINECAP
-        else:
-            raise UnsupportedSceneV3("Scene v12 rule annotation linecap is not a Scene cap")
-    dash = [0.0] * 8
-    dash_count = 0
-    if parsed_dash:
-        dash_count = len(parsed_dash)
-        dash[:dash_count] = [float(value) for value in parsed_dash]
-    linecap = 255 if parsed_cap is None else int(parsed_cap)
-    return _native.scene_xyaf_pack(
-        index=int(index),
-        kind_code=int(kind_code),
-        axis_code=int(axis_code),
-        symbol=int(symbol) & 0xFF,
-        anchor=int(anchor) & 0xFF,
-        facts=int(facts),
-        style_bits=int(style_bits),
-        linecap=int(linecap) & 0xFF,
-        dash_count=int(dash_count) & 0xFF,
-        nums=[float(value) for value in nums],
-        color=color,
-        stroke=stroke,
-        label_color=label_color,
-        label_fill=label_fill,
-        label_border=label_border,
-        dash=[float(value) for value in dash],
-        text=encoded,
-    )
+    try:
+        return _native.scene_xyaf_bulk_pack([annotation], indices=[int(index)])
+    except _native.SceneXyafBulkPackError as error:
+        _raise_xyaf_bulk_error(error, [annotation])
 
 
 _STYLE_KIND_CODES = {
@@ -1674,221 +1427,12 @@ def _xyta_hexbin_plane_observations(trace: Any) -> tuple[bool, bool]:
 
 
 def _marshal_xyta_trace_record(trace: Any, figure: Any, *, polar: bool) -> bytes:
-    """Marshal one attach trace and pack an XYTA record via Rust (ABI 318)."""
-    style = getattr(trace, "style", None) or {}
-    kind_name = str(trace.kind)
-    hexbin_colormap, hexbin_rgba_ready = _xyta_hexbin_plane_observations(trace)
-    dispatch = _native.scene_xyta_trace_dispatch_plan(
-        kind=kind_name,
-        polar=polar,
-        use_density=kind_name == "scatter" and trace.use_density(),
-        hexbin_colormap_plane=hexbin_colormap,
-        hexbin_rgba_plane_ready=hexbin_rgba_ready,
-        ribbon_color2_class=_ribbon_color2_class_code(trace),
-        mesh_paint_plane=_mesh_packs_paint_plane(trace),
-        scatter_paint_plane=_scatter_packs_paint_plane(trace),
-    )
-    nan = float("nan")
-    rows = cols = 0
-    grid = b""
-    rgba = b""
-    rgba_grid = b""
-    x = b""
-    y = b""
-    mean_rgba = b""
-    idx = b""
-    lut = b""
-    cmap = b""
-    stops = b""
-    color_ch_b = b""
-    style_color = b""
-    domain_x0 = domain_x1 = domain_y0 = domain_y1 = nan
-    cmap_lo = cmap_hi = nan
-    opacity = fill_opacity = nan
-    has_grid_shape = False
-    has_grid = False
-    has_rgba = False
-    has_rgba_grid = False
-    truecolor = False
-    has_cmap_domain = False
-    has_color_ch = False
-    has_style_color = False
-    has_opacity = False
-    has_fill_opacity = False
-    cmap_flags = 0
-    grid_shape_rows = grid_shape_cols = 0.0
-    if dispatch["pack_heatmap"]:
-        shape = getattr(trace, "grid_shape", None)
-        if shape is not None and len(shape) == 2:
-            has_grid_shape = True
-            try:
-                rows_f, cols_f = float(shape[0]), float(shape[1])
-            except (TypeError, ValueError):
-                rows = cols = 0
-                has_grid_shape = False
-            else:
-                grid_shape_rows, grid_shape_cols = rows_f, cols_f
-                if _native.scene_heatmap_shape_admit(rows_f, cols_f):
-                    rows, cols = int(rows_f), int(cols_f)
-        raw_grid = getattr(trace, "grid", None)
-        if raw_grid is not None:
-            has_grid = True
-            grid = np.ascontiguousarray(
-                np.asarray(getattr(raw_grid, "values", raw_grid), dtype=np.float64).reshape(-1)
-            ).tobytes()
-        packed = getattr(trace, "rgba", None)
-        if packed is not None:
-            has_rgba = True
-            rgba = np.ascontiguousarray(np.asarray(packed, dtype=np.uint8).reshape(-1)).tobytes()
-        planes = getattr(trace, "rgba_grid", None)
-        if planes is not None:
-            has_rgba_grid = True
-            if len(planes) == 4:
-                channels_f64 = [
-                    np.asarray(getattr(plane, "values", plane), dtype=np.float64).reshape(-1)
-                    for plane in planes
-                ]
-                rgba_grid = np.ascontiguousarray(np.stack(channels_f64, axis=-1)).tobytes()
-        cmap_flags, cmap, stops = _pack_xyta_colormap(style)
-        if style.get("truecolor"):
-            truecolor = True
-        domain = style.get("domain")
-        if domain is not None and len(domain) == 2:
-            has_cmap_domain = True
-            cmap_lo, cmap_hi = float(domain[0]), float(domain[1])
-    elif dispatch["pack_hexbin_colormap"]:
-        channel = trace.color_ch
-        values = np.ascontiguousarray(np.asarray(channel.values, dtype=np.float64).reshape(-1))
-        rows, cols = 1, int(values.size)
-        has_grid = True
-        grid = values.tobytes()
-        cmap_flags, cmap, stops = _pack_xyta_colormap({"colormap": channel.colormap})
-        domain = getattr(channel, "domain", None)
-        if domain is not None and len(domain) == 2:
-            has_cmap_domain = True
-            cmap_lo, cmap_hi = float(domain[0]), float(domain[1])
-    elif dispatch["pack_hexbin_rgba"]:
-        packed = _hexbin_cell_rgba8(trace)
-        if packed is not None:
-            n = len(packed) // 4
-            rows, cols = 1, n
-            has_grid = True
-            has_rgba = True
-            grid = np.zeros(n, dtype=np.float64).tobytes()
-            rgba = packed
-    elif dispatch["pack_ribbon_ends"]:
-        ends = _ribbon_end_rgba_pair(trace)
-        if ends is not None:
-            source, target = ends
-            rows, cols = 1, len(source) // 4
-            has_rgba = True
-            rgba = source
-            mean_rgba = target
-    elif dispatch["pack_mesh_faces"]:
-        fills = _mesh_face_fill_rgba8(trace)
-        strokes = _mesh_face_stroke_rgba8(trace, fills or b"")
-        widths = _mesh_face_widths(trace)
-        if fills is not None and strokes is not None and widths is not None:
-            n = len(fills) // 4
-            rows, cols = 1, n
-            has_rgba = True
-            rgba = fills
-            mean_rgba = strokes
-            x = widths
-    elif dispatch["pack_scatter_paint"]:
-        fills = _scatter_point_fill_rgba8(trace)
-        strokes = _scatter_point_stroke_rgba8(trace, fills or b"")
-        widths = _scatter_point_widths(trace)
-        if fills is not None and strokes is not None and widths is not None:
-            n = len(fills) // 4
-            rows, cols = 1, n
-            has_rgba = True
-            rgba = fills
-            mean_rgba = strokes
-            x = widths
-    elif dispatch["pack_density"]:
-        xv = _trace_column(trace, "x")
-        yv = _trace_column(trace, "y")
-        if xv is not None:
-            x = np.ascontiguousarray(xv, dtype=np.float64).tobytes()
-        if yv is not None:
-            y = np.ascontiguousarray(yv, dtype=np.float64).tobytes()
-        xr0, xr1 = (float(value) for value in figure._range("x"))
-        yr0, yr1 = (float(value) for value in figure._range("y"))
-        domain_x0, domain_x1, domain_y0, domain_y1 = xr0, xr1, yr0, yr1
-        cmap_flags, cmap, stops = _pack_xyta_colormap(style)
-        channel = getattr(trace, "color_ch", None)
-        if channel is not None and channel.mode == "constant" and channel.constant is not None:
-            has_color_ch = True
-            color_ch_b = str(channel.constant).encode("utf-8")
-        if style.get("color") is not None:
-            has_style_color = True
-            style_color = str(style.get("color")).encode("utf-8")
-        if "opacity" in style:
-            has_opacity = True
-            opacity = float(style["opacity"])
-        if "fill_opacity" in style:
-            has_fill_opacity = True
-            fill_opacity = float(style["fill_opacity"])
-        bin_colors = channels.resolve_bin_colors(channel, None)
-        if bin_colors:
-            if "rgba" in bin_colors:
-                mean_rgba = np.ascontiguousarray(
-                    np.asarray(bin_colors["rgba"], dtype=np.uint8).reshape(-1)
-                ).tobytes()
-            if "idx" in bin_colors:
-                idx = np.ascontiguousarray(
-                    np.asarray(bin_colors["idx"], dtype=np.uint8).reshape(-1)
-                ).tobytes()
-            if "lut" in bin_colors:
-                lut = np.ascontiguousarray(
-                    np.asarray(bin_colors["lut"], dtype=np.uint8).reshape(-1)
-                ).tobytes()
-    return _native.scene_xyta_trace_pack(
-        trace_id=int(getattr(trace, "id", 0)) & 0xFFFFFFFF,
-        pack_heatmap=bool(dispatch["pack_heatmap"]),
-        pack_hexbin_colormap=bool(dispatch["pack_hexbin_colormap"]),
-        pack_hexbin_rgba=bool(dispatch["pack_hexbin_rgba"]),
-        pack_ribbon_ends=bool(dispatch["pack_ribbon_ends"]),
-        pack_mesh_faces=bool(dispatch["pack_mesh_faces"]),
-        pack_scatter_paint=bool(dispatch["pack_scatter_paint"]),
-        pack_density=bool(dispatch["pack_density"]),
-        grid_shape_rows=grid_shape_rows,
-        grid_shape_cols=grid_shape_cols,
-        has_grid_shape=has_grid_shape,
-        has_grid=has_grid,
-        has_rgba=has_rgba,
-        has_rgba_grid=has_rgba_grid,
-        truecolor=truecolor,
-        has_cmap_domain=has_cmap_domain,
-        cmap_lo=cmap_lo,
-        cmap_hi=cmap_hi,
-        has_color_ch=has_color_ch,
-        has_style_color=has_style_color,
-        has_opacity=has_opacity,
-        has_fill_opacity=has_fill_opacity,
-        opacity=opacity,
-        fill_opacity=fill_opacity,
-        domain_x0=domain_x0,
-        domain_x1=domain_x1,
-        domain_y0=domain_y0,
-        domain_y1=domain_y1,
-        cmap_flags=cmap_flags,
-        rows=rows,
-        cols=cols,
-        grid=grid,
-        rgba=rgba,
-        rgba_grid=rgba_grid,
-        x=x,
-        y=y,
-        mean_rgba=mean_rgba,
-        idx=idx,
-        lut=lut,
-        cmap=cmap,
-        stops=stops,
-        color_ch=color_ch_b,
-        style_color=style_color,
-    )
+    """Marshal one attach trace and pack an XYTA record via Rust (ABI 323→318)."""
+    from xyg._scene_marshal import marshal_xyta_trace_obs
+
+    obs = marshal_xyta_trace_obs(trace, figure, polar=polar)
+    materialized = _native.scene_xyta_trace_observations_materialize(obs)
+    return _native.scene_xyta_trace_pack(**materialized)
 
 
 def _pack_xyta(figure: Any) -> bytes:
@@ -3062,9 +2606,7 @@ def figure_scene(
     y_span = tuple(float(value) for value in figure._range("y"))
     x_domain = (x_span[0], x_span[1])
     y_domain = (y_span[0], y_span[1])
-    annotation_facts = bytearray()
-    for annotation_index, annotation in enumerate(annotations):
-        annotation_facts.extend(_pack_xyaf(annotation, annotation_index))
+    annotation_facts = _pack_xyaf_bulk(annotations)
     w = int(width if width is not None else figure.width)
     h = int(height if height is not None else figure.height)
     try:
@@ -3073,7 +2615,7 @@ def figure_scene(
             attach_facts=_pack_xyta(figure),
             names=_pack_xynm(figure),
             columns=_pack_xycl(figure),
-            annotation_facts=bytes(annotation_facts),
+            annotation_facts=annotation_facts,
             style_ref_base=len(figure.traces),
             x_domain=x_domain,
             y_domain=y_domain,

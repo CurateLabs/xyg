@@ -1,7 +1,7 @@
 // Generated Koffi declarations. Do not edit; run scripts/gen_abi_manifest.py --write.
 
-export const ABI_VERSION = 322;
-export const SIGNATURE_SHA256 = "a05b30645db89a3693c3ba5ee2a24859182cbe49142974dd5afe5a56d37af210";
+export const ABI_VERSION = 324;
+export const SIGNATURE_SHA256 = "dde9d687c67528d15111e61a22153cc8bc0faa9ba50bd94a8dc67fd26a9f9b3f";
 
 export function bindAbiVersion(lib) {
   return lib.func("uint32_t xyg_abi_version()");
@@ -322,6 +322,7 @@ export let xySceneTickLabelLayout;
 export let xySceneTickLabelStrategy;
 export let xySceneVersion;
 export let xySceneXyafAnnotationDispatchPlan;
+export let xySceneXyafBulkPack;
 export let xySceneXyafPack;
 export let xySceneXycfFigurePlan;
 export let xySceneXycfPack;
@@ -331,6 +332,7 @@ export let xySceneXynmFigurePlan;
 export let xySceneXytaColormapPack;
 export let xySceneXytaFigurePlan;
 export let xySceneXytaTraceDispatchPlan;
+export let xySceneXytaTraceObservationsMaterialize;
 export let xySceneXytaTracePack;
 export let xySceneXytcColor2FlagsPack;
 export let xySceneXytcColorChannelPack;
@@ -752,6 +754,7 @@ export function bindGeneratedAbi(lib) {
   xySceneTickLabelStrategy = lib.func("int32_t xyg_scene_tick_label_strategy(const uint8_t * text, size_t text_len)");
   xySceneVersion = lib.func("uint32_t xyg_scene_version()");
   xySceneXyafAnnotationDispatchPlan = lib.func("int32_t xyg_scene_xyaf_annotation_dispatch_plan(const uint8_t * kind, size_t kind_len, int32_t authored_wrap, int32_t layout_text, void * out)");
+  xySceneXyafBulkPack = lib.func("int32_t xyg_scene_xyaf_bulk_pack(const void * annotations, size_t annotation_count, const uint8_t * extra_style_keys_blob, size_t extra_style_keys_len, uint8_t * out, size_t out_cap, size_t * out_len, uint32_t * error_index)");
   xySceneXyafPack = lib.func("int32_t xyg_scene_xyaf_pack(const void * input, const uint8_t * text, uint8_t * out, size_t out_cap, size_t * out_len)");
   xySceneXycfFigurePlan = lib.func("int32_t xyg_scene_xycf_figure_plan(int32_t show_legend, int32_t colorbar_ok, int32_t polar, void * out)");
   xySceneXycfPack = lib.func("int32_t xyg_scene_xycf_pack(const void * input, const uint8_t * title, const uint8_t * x_label, const uint8_t * y_label, const uint8_t * x_format, const uint8_t * y_format, const double * x_major, const double * x_minor, const double * y_major, const double * y_minor, const uint8_t * x_labels_blob, const uint8_t * y_labels_blob, const uint8_t * chrome, const uint8_t * legend_loc, const uint8_t * legend_title, const uint8_t * legend_meta, const uint32_t * legend_lens, const uint8_t * legend_blob, const uint8_t * colorbar_stops_blob, const double * colorbar_ticks, const uint8_t * colorbar_title, const uint8_t * collision_extra, uint8_t * out, size_t out_cap, size_t * out_len)");
@@ -761,6 +764,7 @@ export function bindGeneratedAbi(lib) {
   xySceneXytaColormapPack = lib.func("int32_t xyg_scene_xyta_colormap_pack(int32_t mode, const uint8_t * named, size_t named_len, const uint8_t * stop_rgb, size_t stop_len, uint32_t * out_flags, uint8_t * out_cmap, size_t cmap_cap, uint8_t * out_stops, size_t stops_cap)");
   xySceneXytaFigurePlan = lib.func("int32_t xyg_scene_xyta_figure_plan(int32_t polar, void * out)");
   xySceneXytaTraceDispatchPlan = lib.func("int32_t xyg_scene_xyta_trace_dispatch_plan(const uint8_t * kind, size_t kind_len, int32_t polar, int32_t use_density, int32_t hexbin_colormap_plane, int32_t hexbin_rgba_plane_ready, int32_t ribbon_color2_class, int32_t mesh_paint_plane, int32_t scatter_paint_plane, void * out)");
+  xySceneXytaTraceObservationsMaterialize = lib.func("int32_t xyg_scene_xyta_trace_observations_materialize(const void * input, const uint8_t * fallback_color, const uint8_t * style_color, const uint8_t * style_stroke, const uint8_t * style_colormap_named, const uint8_t * style_colormap_stops, const double * grid_values, const uint8_t * rgba_u8, const double * rgba_grid_f64, const double * x_values, const double * y_values, const void * color_ch, const uint8_t * color_mode, const uint8_t * color_constant, const uint8_t * color_colormap, const double * color_values_f64, const uint8_t * color_rgba_u8, const uint8_t * color_codes_u8, const int64_t * color_codes_i64, const uint8_t *const * color_palette_ptrs, const size_t * color_palette_lens, const void * stroke_ch, const uint8_t * stroke_mode, const uint8_t * stroke_constant, const uint8_t * stroke_colormap, const double * stroke_values_f64, const uint8_t * stroke_rgba_u8, const uint8_t * stroke_codes_u8, const int64_t * stroke_codes_i64, const uint8_t *const * stroke_palette_ptrs, const size_t * stroke_palette_lens, const void * color2_ch, const uint8_t * color2_mode, const uint8_t * color2_constant, const uint8_t * color2_colormap, const double * color2_values_f64, const uint8_t * color2_rgba_u8, const uint8_t * color2_codes_u8, const int64_t * color2_codes_i64, const uint8_t *const * color2_palette_ptrs, const size_t * color2_palette_lens, const void * opacity_ch, const double * opacity_values, const void * artist_ch, const double * artist_values, const void * stroke_width_ch, const double * stroke_width_values, void * summary, uint8_t * out_bytes, size_t out_cap, size_t * out_len)");
   xySceneXytaTracePack = lib.func("int32_t xyg_scene_xyta_trace_pack(const void * input, const uint8_t * grid, const uint8_t * rgba, const uint8_t * rgba_grid, const uint8_t * x, const uint8_t * y, const uint8_t * mean_rgba, const uint8_t * idx, const uint8_t * lut, const uint8_t * cmap, const uint8_t * stops, const uint8_t * color_ch, const uint8_t * style_color, uint8_t * out, size_t out_cap, size_t * out_len)");
   xySceneXytcColor2FlagsPack = lib.func("int32_t xyg_scene_xytc_color2_flags_pack(int32_t color2_class, uint32_t paint_flags, int32_t gradient_packed, uint32_t * out_flags)");
   xySceneXytcColorChannelPack = lib.func("int32_t xyg_scene_xytc_color_channel_pack(int32_t present, int32_t has_constant, uint32_t * out_flags)");

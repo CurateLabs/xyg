@@ -3,6 +3,7 @@
 use xyg_engine::scene_chrome_pack;
 use xyg_engine::scene_figure_support_materialize;
 use xyg_engine::scene_polar_input_pack;
+use xyg_engine::scene_xyaf_bulk_pack::{self, XyafBulkAnnotationObs, XyafBulkStyleObs};
 
 fn scene_optional_bytes<'a>(ptr: *const u8, len: usize) -> Option<&'a [u8]> {
     if len == 0 {
@@ -773,5 +774,331 @@ pub unsafe extern "C" fn xyg_scene_polar_input_pack(
         }
         Err(-1) => -1,
         Err(code) => code,
+    }
+}
+
+/// Style observation for ``xyg_scene_xyaf_bulk_pack`` (ABI 324).
+#[repr(C)]
+pub struct XygXyafBulkStyleIn {
+    pub color: XygStringRef,
+    pub stroke_color: XygStringRef,
+    pub label_color: XygStringRef,
+    pub label_background: XygStringRef,
+    pub label_border_color: XygStringRef,
+    pub dash: XygStringRef,
+    pub linecap: XygStringRef,
+    pub opacity_present: i32,
+    pub opacity: f64,
+    pub width_present: i32,
+    pub width: f64,
+    pub stroke_width_present: i32,
+    pub stroke_width: f64,
+    pub label_opacity_present: i32,
+    pub label_opacity: f64,
+    pub label_border_width_present: i32,
+    pub label_border_width: f64,
+    pub rotation_present: i32,
+    pub rotation: f64,
+    pub extra_style_key_count: u32,
+}
+
+/// One annotation observation for ``xyg_scene_xyaf_bulk_pack`` (ABI 324).
+#[repr(C)]
+pub struct XygXyafBulkAnnotationIn {
+    pub kind: XygStringRef,
+    pub text: XygStringRef,
+    pub x_present: i32,
+    pub x: f64,
+    pub y_present: i32,
+    pub y: f64,
+    pub x0_present: i32,
+    pub x0: f64,
+    pub y0_present: i32,
+    pub y0: f64,
+    pub x1_present: i32,
+    pub x1: f64,
+    pub y1_present: i32,
+    pub y1: f64,
+    pub value_present: i32,
+    pub value: f64,
+    pub start_present: i32,
+    pub start: f64,
+    pub end_present: i32,
+    pub end: f64,
+    pub dx_present: i32,
+    pub dx: f64,
+    pub dy_present: i32,
+    pub dy: f64,
+    pub size_present: i32,
+    pub size: f64,
+    pub wrap_present: i32,
+    pub wrap: f64,
+    pub rotation_present: i32,
+    pub rotation: f64,
+    pub anchor_present: i32,
+    pub anchor: XygStringRef,
+    pub axis_present: i32,
+    pub axis: XygStringRef,
+    pub symbol_present: i32,
+    pub symbol: XygStringRef,
+    pub index_override_present: i32,
+    pub index_override: u32,
+    pub style: XygXyafBulkStyleIn,
+}
+
+unsafe fn read_style_extra_keys<'a>(
+    blob: &'a [u8],
+    key_count: u32,
+) -> Result<(Vec<String>, usize), i32> {
+    let mut extra_keys = Vec::with_capacity(key_count as usize);
+    let mut at = 0usize;
+    for _ in 0..key_count {
+        if at + 2 > blob.len() {
+            return Err(-1);
+        }
+        let key_len = u16::from_le_bytes(blob[at..at + 2].try_into().unwrap()) as usize;
+        at += 2;
+        if at + key_len > blob.len() {
+            return Err(-1);
+        }
+        let key = match std::str::from_utf8(&blob[at..at + key_len]) {
+            Ok(text) => text.to_string(),
+            Err(_) => return Err(-1),
+        };
+        extra_keys.push(key);
+        at += key_len;
+    }
+    Ok((extra_keys, at))
+}
+
+struct XyafBulkAnnotationOwned {
+    kind: String,
+    text: Option<String>,
+    x: Option<f64>,
+    y: Option<f64>,
+    x0: Option<f64>,
+    y0: Option<f64>,
+    x1: Option<f64>,
+    y1: Option<f64>,
+    value: Option<f64>,
+    start: Option<f64>,
+    end: Option<f64>,
+    dx: Option<f64>,
+    dy: Option<f64>,
+    size: Option<f64>,
+    wrap: Option<f64>,
+    rotation: Option<f64>,
+    anchor: Option<String>,
+    axis: Option<String>,
+    symbol: Option<String>,
+    style_extra_keys: Vec<String>,
+    style_color: Option<String>,
+    style_stroke_color: Option<String>,
+    style_label_color: Option<String>,
+    style_label_background: Option<String>,
+    style_label_border_color: Option<String>,
+    style_dash: Option<String>,
+    style_linecap: Option<String>,
+    style_opacity: Option<f64>,
+    style_width: Option<f64>,
+    style_stroke_width: Option<f64>,
+    style_label_opacity: Option<f64>,
+    style_label_border_width: Option<f64>,
+    style_rotation: Option<f64>,
+    record_index: Option<u32>,
+}
+
+impl XyafBulkAnnotationOwned {
+    fn obs(&self) -> XyafBulkAnnotationObs<'_> {
+        XyafBulkAnnotationObs {
+            kind: &self.kind,
+            text: self.text.as_deref(),
+            x: self.x,
+            y: self.y,
+            x0: self.x0,
+            y0: self.y0,
+            x1: self.x1,
+            y1: self.y1,
+            value: self.value,
+            start: self.start,
+            end: self.end,
+            dx: self.dx,
+            dy: self.dy,
+            size: self.size,
+            wrap: self.wrap,
+            rotation: self.rotation,
+            anchor: self.anchor.as_deref(),
+            axis: self.axis.as_deref(),
+            symbol: self.symbol.as_deref(),
+            record_index: self.record_index,
+            style: XyafBulkStyleObs {
+                color: self.style_color.as_deref(),
+                stroke_color: self.style_stroke_color.as_deref(),
+                label_color: self.style_label_color.as_deref(),
+                label_background: self.style_label_background.as_deref(),
+                label_border_color: self.style_label_border_color.as_deref(),
+                dash: self.style_dash.as_deref(),
+                linecap: self.style_linecap.as_deref(),
+                opacity: self.style_opacity,
+                width: self.style_width,
+                stroke_width: self.style_stroke_width,
+                label_opacity: self.style_label_opacity,
+                label_border_width: self.style_label_border_width,
+                rotation: self.style_rotation,
+                extra_keys: &self.style_extra_keys,
+            },
+        }
+    }
+}
+
+unsafe fn xyaf_annotation_owned_from_c(
+    row: &XygXyafBulkAnnotationIn,
+    extra_keys_blob: &[u8],
+) -> Result<(XyafBulkAnnotationOwned, usize), i32> {
+    let Some(kind) = string_ref_opt(&row.kind) else {
+        return Err(-1);
+    };
+    let text = opt_str(&row.text)?.map(str::to_string);
+    let (style_extra_keys, consumed) =
+        read_style_extra_keys(extra_keys_blob, row.style.extra_style_key_count)?;
+    let style = &row.style;
+    Ok((
+        XyafBulkAnnotationOwned {
+            kind: kind.to_string(),
+            text,
+            x: if row.x_present != 0 { Some(row.x) } else { None },
+            y: if row.y_present != 0 { Some(row.y) } else { None },
+            x0: if row.x0_present != 0 { Some(row.x0) } else { None },
+            y0: if row.y0_present != 0 { Some(row.y0) } else { None },
+            x1: if row.x1_present != 0 { Some(row.x1) } else { None },
+            y1: if row.y1_present != 0 { Some(row.y1) } else { None },
+            value: if row.value_present != 0 { Some(row.value) } else { None },
+            start: if row.start_present != 0 { Some(row.start) } else { None },
+            end: if row.end_present != 0 { Some(row.end) } else { None },
+            dx: if row.dx_present != 0 { Some(row.dx) } else { None },
+            dy: if row.dy_present != 0 { Some(row.dy) } else { None },
+            size: if row.size_present != 0 { Some(row.size) } else { None },
+            wrap: if row.wrap_present != 0 { Some(row.wrap) } else { None },
+            rotation: if row.rotation_present != 0 {
+                Some(row.rotation)
+            } else {
+                None
+            },
+            anchor: opt_str(&row.anchor)?.map(str::to_string),
+            axis: opt_str(&row.axis)?.map(str::to_string),
+            symbol: opt_str(&row.symbol)?.map(str::to_string),
+            style_extra_keys,
+            style_color: opt_str(&style.color)?.map(str::to_string),
+            style_stroke_color: opt_str(&style.stroke_color)?.map(str::to_string),
+            style_label_color: opt_str(&style.label_color)?.map(str::to_string),
+            style_label_background: opt_str(&style.label_background)?.map(str::to_string),
+            style_label_border_color: opt_str(&style.label_border_color)?.map(str::to_string),
+            style_dash: opt_str(&style.dash)?.map(str::to_string),
+            style_linecap: opt_str(&style.linecap)?.map(str::to_string),
+            style_opacity: if style.opacity_present != 0 {
+                Some(style.opacity)
+            } else {
+                None
+            },
+            style_width: if style.width_present != 0 {
+                Some(style.width)
+            } else {
+                None
+            },
+            style_stroke_width: if style.stroke_width_present != 0 {
+                Some(style.stroke_width)
+            } else {
+                None
+            },
+            style_label_opacity: if style.label_opacity_present != 0 {
+                Some(style.label_opacity)
+            } else {
+                None
+            },
+            style_label_border_width: if style.label_border_width_present != 0 {
+                Some(style.label_border_width)
+            } else {
+                None
+            },
+            style_rotation: if style.rotation_present != 0 {
+                Some(style.rotation)
+            } else {
+                None
+            },
+            record_index: if row.index_override_present != 0 {
+                Some(row.index_override)
+            } else {
+                None
+            },
+        },
+        consumed,
+    ))
+}
+
+/// Bulk-pack authored annotations into concatenated XYAF v1 records (ABI 324).
+#[no_mangle]
+pub unsafe extern "C" fn xyg_scene_xyaf_bulk_pack(
+    annotations: *const XygXyafBulkAnnotationIn,
+    annotation_count: usize,
+    extra_style_keys_blob: *const u8,
+    extra_style_keys_len: usize,
+    out: *mut u8,
+    out_cap: usize,
+    out_len: *mut usize,
+    error_index: *mut u32,
+) -> i32 {
+    if out_len.is_null() {
+        return -1;
+    }
+    if out_cap > 0 && out.is_null() {
+        return -1;
+    }
+    let Some(keys_bytes) = scene_optional_bytes(extra_style_keys_blob, extra_style_keys_len) else {
+        return -1;
+    };
+    let mut owned_rows: Vec<XyafBulkAnnotationOwned> = Vec::with_capacity(annotation_count);
+    let mut keys_at = 0usize;
+    if annotation_count > 0 {
+        if annotations.is_null() {
+            return -1;
+        }
+        for index in 0..annotation_count {
+            let row = &*annotations.add(index);
+            let slice = &keys_bytes[keys_at..];
+            match xyaf_annotation_owned_from_c(row, slice) {
+                Ok((owned, consumed)) => {
+                    keys_at += consumed;
+                    owned_rows.push(owned);
+                }
+                Err(code) => {
+                    if !error_index.is_null() {
+                        *error_index = index as u32;
+                    }
+                    return code;
+                }
+            }
+        }
+    }
+    let ann_refs: Vec<_> = owned_rows.iter().map(XyafBulkAnnotationOwned::obs).collect();
+    match scene_xyaf_bulk_pack::scene_xyaf_bulk_pack(&ann_refs) {
+        Ok(packed) => {
+            if packed.len() > out_cap {
+                if !error_index.is_null() {
+                    *error_index = 0;
+                }
+                return -2;
+            }
+            if !packed.is_empty() {
+                std::ptr::copy_nonoverlapping(packed.as_ptr(), out, packed.len());
+            }
+            *out_len = packed.len();
+            0
+        }
+        Err(err) => {
+            if !error_index.is_null() {
+                *error_index = err.index;
+            }
+            err.abi_code()
+        }
     }
 }
