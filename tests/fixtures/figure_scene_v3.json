@@ -181,6 +181,8 @@
   "public_builtin_symbols_sha256": "2bba41b3065648a94983a05a4ab0aae28fc4c1ea6a3e1808ccc3ab7fe90805a7",
   "public_scatter_stroke_sha256": "887fbc4ff5e39a8726e2510554e1af20ca361919bdd008b27b6e568058f8cd66",
   "public_triangle_mesh_sha256": "a12b34deaa15d17c8f4c657fb36290f83fe158e89fcda7959c40b880db559aa1",
+  "public_triangle_mesh_xytc_sha256": "de239248bc33e010b80b3f6f9d3fc51dfdd48508af15e521e3c3bf70abfa5771",
+  "public_ribbon_xytc_sha256": "be265e235b5ec5a1456c61ebda8aa1aff57f51ddd2dddafbe821846fd90651f3",
   "public_hexbin_sha256": {
     "count": "ba88326fe6ab311346f6651a6b2282f760f1e08b417bbf4664296f25ae344ca6",
     "mean": "f3ed9bd6ca388441b8b3fbf68dcd4b6582832d5973f410a4ab4b30e94f0f7055",

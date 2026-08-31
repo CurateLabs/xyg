@@ -3,6 +3,7 @@
  */
 
 import { asF64Array } from "../encode.js";
+import { resolveColorChannel } from "../color.js";
 
 /**
  * @param {ArrayLike|TypedArray} x0
@@ -41,10 +42,10 @@ export function composeTriangleMesh(x0, y0, x1, y1, x2, y2, opts = {}) {
   if (opts.stroke != null && !strokeWidth) {
     strokeWidth = 1.0;
   }
+  const color = resolveColorChannel(opts.color, n);
   const style = {
     opacity,
     role: "triangle-mesh",
-    ...(opts.color != null ? { color: opts.color } : {}),
     ...(opts.stroke != null ? { stroke: opts.stroke } : {}),
     ...(strokeWidth ? { stroke_width: Number(strokeWidth) } : {}),
     ...(opts.style ?? {}),
@@ -61,6 +62,8 @@ export function composeTriangleMesh(x0, y0, x1, y1, x2, y2, opts = {}) {
         y0: cols[1],
         x1: cols[2],
         y1: cols[3],
+        color,
+        color_ch: color,
         style,
         count: n,
         x_axis: opts.xAxis ?? "x",

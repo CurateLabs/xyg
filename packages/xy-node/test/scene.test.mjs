@@ -5,7 +5,7 @@ import test from "node:test";
 
 import { axisTicks, tickFormat, tickLabelLayout, tickWindow, tickWindowFilter, legendBoxLayout, textBlockMeasure, textBlockRotatedExtent, yAxisLeftRoom, compatIsCompact, compatDefaultPadding, compatTitleWrapWidth, compatColorbarExtra, polarLegendRoom, polarLabelRoom, polarLayout, polarProject, polarWedgePoints, polarHeatmapInverseMap, recutPolarPlot, compatCombinePlot, tightLayoutSolve, tightLayoutFigureExtra, encodeJpeg, encodePng, encodeWebp, scaleMap, scatterSceneSvg, sceneBatchEncode, sceneBrowserPainter, sceneChannelConstantCss, sceneExportSupportReason, sceneSupportReason, sceneVersion, svgToPdf } from "../src/index.js";
 import { Figure, sceneRasterCommands, sceneStaticExport, sceneSvg } from "../src/index.js";
-import { packFigureXyTa } from "../src/scene.js";
+import { packFigureXyTa, packFigureXyTc } from "../src/scene.js";
 
 const sceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/scene_v3.json", import.meta.url), "utf8"));
 const figureSceneFixture = JSON.parse(fs.readFileSync(new URL("../../../tests/fixtures/figure_scene_v3.json", import.meta.url), "utf8"));
@@ -1113,6 +1113,45 @@ test("Node matches Python XYTA bytes for constant-style Cartesian density", () =
   assert.equal(
     crypto.createHash("sha256").update(packed).digest("hex"),
     figureSceneFixture.public_constant_density_xyta_sha256,
+  );
+});
+
+test("Node matches Python XYTC bytes for the bounded public literal triangle mesh", () => {
+  const figure = new Figure({ width: 360, height: 260 });
+  figure.setAxisDomain("x", [0, 2]);
+  figure.setAxisDomain("y", [0, 2]);
+  figure.triangleMesh(
+    [-0.25, 1], [0.25, 0.5], [0.75, 2.25], [0.25, 0.5], [0.25, 1.5], [1.25, 1.75],
+    { id: 0, name: "literal mesh", color: "#22c55e", opacity: 0.75 },
+  );
+  assert.equal(figure.traces[0].color_ch.mode, "constant");
+  assert.equal(figure.traces[0].color_ch.constant, "#22c55e");
+  const packed = packFigureXyTc(figure);
+  assert.equal(
+    crypto.createHash("sha256").update(packed).digest("hex"),
+    figureSceneFixture.public_triangle_mesh_xytc_sha256,
+  );
+});
+
+test("Node matches Python XYTC bytes for the public linear ribbon", () => {
+  const figure = new Figure({ width: 320, height: 240 });
+  figure.setAxisDomain("x", [0, 10]);
+  figure.setAxis("y", { type: "linear", domain: [-10, 1000] });
+  figure.ribbon([1], [9], [1], [10], [100], [1000], {
+    id: 7,
+    color: "#7c3aed",
+    opacity: 0.75,
+    strokeWidth: 2,
+    style: { "fill-opacity": 0.8, "stroke-opacity": 0.5 },
+  });
+  assert.equal(figure.traces[0].color_ch.mode, "constant");
+  assert.equal(figure.traces[0].color_ch.constant, "#7c3aed");
+  assert.equal(figure.traces[0].style.fill_opacity, 0.8);
+  assert.equal(figure.traces[0].style.stroke_opacity, 0.5);
+  const packed = packFigureXyTc(figure);
+  assert.equal(
+    crypto.createHash("sha256").update(packed).digest("hex"),
+    figureSceneFixture.public_ribbon_xytc_sha256,
   );
 });
 
