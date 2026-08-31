@@ -111,6 +111,42 @@
       "animation_fallback": null
     },
     {
+      "name": "scatter_density_wasm_source_split",
+      "trace_id": 41,
+      "tier": "density",
+      "density_colormap": "viridis",
+      "density_dropped_channels": [],
+      "density_channels_dropped": false,
+      "density_color_agg": null,
+      "density_has_rgba": false,
+      "has_sample": true,
+      "sample_n": 2,
+      "sample_visible": 2,
+      "sample_color": {
+        "mode": "constant",
+        "color": "#3987e5"
+      },
+      "sample_size": {
+        "mode": "constant",
+        "size": 4
+      },
+      "sample_stroke": null,
+      "sample_channels": null,
+      "sample_x_offset": 5.5,
+      "sample_y_offset": 5.5,
+      "animation_fallback": null,
+      "has_wasm_source": true,
+      "wasm_source_kind": "cartesian-count-f64-stream-v1",
+      "wasm_source_point_count": 2,
+      "wasm_source_trace_id": 41,
+      "wasm_source_capacity": 8000000,
+      "wasm_source_ownership": "retain-host-replay",
+      "wasm_source_x_dtype": "f64",
+      "wasm_source_y_dtype": "f64",
+      "wasm_density_automatic": true,
+      "buffer_layout": "split"
+    },
+    {
       "name": "density_sample_color_size",
       "trace_id": 31,
       "tier": "density",

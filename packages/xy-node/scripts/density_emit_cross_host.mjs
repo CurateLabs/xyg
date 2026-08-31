@@ -41,10 +41,35 @@ function sampleMeta(spec) {
   };
 }
 
-function caseEntry(name, build) {
+function columnDtype(columns, colRef) {
+  if (typeof colRef !== "number") return null;
+  if (Array.isArray(columns)) {
+    return columns[colRef]?.dtype ?? null;
+  }
+  return columns?.[colRef]?.dtype ?? null;
+}
+
+function wasmSourceMeta(spec) {
+  const wasmSource = spec.traces[0].density?.wasm_source ?? {};
+  const columns = spec.columns ?? {};
+  return {
+    has_wasm_source: Object.keys(wasmSource).length > 0,
+    wasm_source_kind: wasmSource.kind ?? null,
+    wasm_source_point_count: wasmSource.point_count ?? null,
+    wasm_source_trace_id: wasmSource.trace_id ?? null,
+    wasm_source_capacity: wasmSource.capacity ?? null,
+    wasm_source_ownership: wasmSource.ownership ?? null,
+    wasm_source_x_dtype: columnDtype(columns, wasmSource.x),
+    wasm_source_y_dtype: columnDtype(columns, wasmSource.y),
+    wasm_density_automatic: spec.wasm_density?.automatic ?? null,
+    buffer_layout: spec.buffer_layout ?? null,
+  };
+}
+
+function caseEntry(name, build, { split = false } = {}) {
   const fig = figure({ width: 240, height: 160 });
   build(fig);
-  const { spec } = fig.buildPayload();
+  const { spec } = fig.buildPayload(split ? { split: true } : {});
   const trace = spec.traces[0];
   const density = trace.density ?? {};
   return {
@@ -57,6 +82,7 @@ function caseEntry(name, build) {
     density_color_agg: density.color_agg ?? null,
     density_has_rgba: density.rgba != null,
     ...sampleMeta(spec),
+    ...(split ? wasmSourceMeta(spec) : {}),
   };
 }
 
@@ -78,6 +104,14 @@ const cases = [
     });
     fig.traces[0].id = 23;
   }),
+  caseEntry(
+    "scatter_density_wasm_source_split",
+    (fig) => {
+      fig.scatter([1, 10], [1, 10], { forceDensity: true });
+      fig.traces[0].id = 41;
+    },
+    { split: true },
+  ),
   caseEntry("density_sample_color_size", (fig) => {
     fig.scatter([0, 1, 2, 3, 4], [0, 1, 0.5, 0.2, 0.8], {
       forceDensity: true,

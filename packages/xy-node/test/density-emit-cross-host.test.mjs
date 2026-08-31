@@ -12,6 +12,7 @@ const CASE_NAMES = [
   "scatter_density_colormap",
   "scatter_density_dropped_channels",
   "scatter_density_mean_color_categorical",
+  "scatter_density_wasm_source_split",
   "density_sample_color_size",
   "density_sample_stroke",
   "density_sample_style_channels",
@@ -34,6 +35,21 @@ const SAMPLE_CASE_KEYS = new Set([
   "animation_fallback",
 ]);
 
+const WASM_SOURCE_CASE_KEYS = new Set([
+  "trace_id",
+  "tier",
+  "has_wasm_source",
+  "wasm_source_kind",
+  "wasm_source_point_count",
+  "wasm_source_trace_id",
+  "wasm_source_capacity",
+  "wasm_source_ownership",
+  "wasm_source_x_dtype",
+  "wasm_source_y_dtype",
+  "wasm_density_automatic",
+  "buffer_layout",
+]);
+
 function stripWireBuffers(obj) {
   if (obj == null || typeof obj !== "object") return obj;
   if (Array.isArray(obj)) return obj.map(stripWireBuffers);
@@ -43,6 +59,14 @@ function stripWireBuffers(obj) {
     out[key] = stripWireBuffers(value);
   }
   return out;
+}
+
+function columnDtype(columns, colRef) {
+  if (typeof colRef !== "number") return null;
+  if (Array.isArray(columns)) {
+    return columns[colRef]?.dtype ?? null;
+  }
+  return columns?.[colRef]?.dtype ?? null;
 }
 
 function sampleMeta(spec) {
@@ -62,7 +86,24 @@ function sampleMeta(spec) {
   };
 }
 
-function densityMeta(spec) {
+function wasmSourceMeta(spec) {
+  const wasmSource = spec.traces[0].density?.wasm_source ?? {};
+  const columns = spec.columns ?? {};
+  return {
+    has_wasm_source: Object.keys(wasmSource).length > 0,
+    wasm_source_kind: wasmSource.kind ?? null,
+    wasm_source_point_count: wasmSource.point_count ?? null,
+    wasm_source_trace_id: wasmSource.trace_id ?? null,
+    wasm_source_capacity: wasmSource.capacity ?? null,
+    wasm_source_ownership: wasmSource.ownership ?? null,
+    wasm_source_x_dtype: columnDtype(columns, wasmSource.x),
+    wasm_source_y_dtype: columnDtype(columns, wasmSource.y),
+    wasm_density_automatic: spec.wasm_density?.automatic ?? null,
+    buffer_layout: spec.buffer_layout ?? null,
+  };
+}
+
+function densityMeta(spec, { split = false } = {}) {
   const trace = spec.traces[0];
   const density = trace.density ?? {};
   return {
@@ -74,6 +115,7 @@ function densityMeta(spec) {
     density_color_agg: density.color_agg ?? null,
     density_has_rgba: density.rgba != null,
     ...sampleMeta(spec),
+    ...(split ? wasmSourceMeta(spec) : {}),
   };
 }
 
@@ -81,11 +123,15 @@ function caseKeys(caseName, entry) {
   if (caseName.startsWith("density_sample_")) {
     return Object.keys(entry).filter((key) => SAMPLE_CASE_KEYS.has(key));
   }
+  if (caseName.startsWith("scatter_density_wasm_source")) {
+    return Object.keys(entry).filter((key) => WASM_SOURCE_CASE_KEYS.has(key));
+  }
   return Object.keys(entry).filter((key) => key !== "name");
 }
 
 function buildCase(name) {
   const fig = figure({ width: 240, height: 160 });
+  let split = false;
   if (name === "scatter_density_colormap") {
     fig.scatter([0, 1, 2], [0, 1, 0.5], { forceDensity: true, colormap: "plasma" });
     fig.traces[0].id = 21;
@@ -100,6 +146,10 @@ function buildCase(name) {
       size: [1, 2, 3, 4, 5],
     });
     fig.traces[0].id = 23;
+  } else if (name === "scatter_density_wasm_source_split") {
+    fig.scatter([1, 10], [1, 10], { forceDensity: true });
+    fig.traces[0].id = 41;
+    split = true;
   } else if (name === "density_sample_color_size") {
     fig.scatter([0, 1, 2, 3, 4], [0, 1, 0.5, 0.2, 0.8], {
       forceDensity: true,
@@ -138,7 +188,7 @@ function buildCase(name) {
   } else {
     throw new Error(`unknown case ${name}`);
   }
-  return fig.buildPayload();
+  return { spec: fig.buildPayload(split ? { split: true } : {}).spec, split };
 }
 
 test("density emit cross-host fixture contract", () => {
@@ -151,8 +201,8 @@ test("density emit cross-host fixture contract", () => {
 
 for (const entry of fixture.cases) {
   test(`Node density wire metadata matches fixture for ${entry.name}`, () => {
-    const { spec } = buildCase(entry.name);
-    const meta = densityMeta(spec);
+    const { spec, split } = buildCase(entry.name);
+    const meta = densityMeta(spec, { split });
     for (const key of caseKeys(entry.name, entry)) {
       assert.deepEqual(meta[key], entry[key], key);
     }
