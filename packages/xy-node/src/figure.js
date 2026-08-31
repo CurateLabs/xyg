@@ -1614,6 +1614,9 @@ export class Figure {
     if (attach.attachScale && scale !== "linear") {
       spec.scale = scale;
     }
+    if (attach.attachTicks && opts.tick_values != null) {
+      spec.tick_values = [...opts.tick_values];
+    }
     if (attach.attachThetaUnit) {
       const unit = opts.theta_unit || "radians";
       spec.theta_unit = unit;

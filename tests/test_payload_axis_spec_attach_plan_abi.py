@@ -81,6 +81,16 @@ def test_axis_spec_cartesian_meta_cross_host_fixture() -> None:
     assert spec["y_axis"]["side"] == "left"
 
 
+def test_axis_spec_cartesian_tick_values_cross_host_fixture() -> None:
+    """Node buildPayload axis tick_values parity when attach_ticks is set."""
+    fig = Figure(width=240, height=160)
+    fig.scatter([0.0, 1.0], [0.0, 1.0])
+    fig.set_axis("x", tick_values=[0.0, 0.5, 1.0], domain=[0.0, 1.0], format=".2f")
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["tick_values"] == [0.0, 0.5, 1.0]
+    assert "tick_values" not in spec["y_axis"]
+
+
 def test_axis_spec_omits_linear_scale() -> None:
     fig = Figure()
     fig.scatter([0.0, 1.0], [0.0, 1.0])
