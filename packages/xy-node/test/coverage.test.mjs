@@ -493,15 +493,21 @@ test("buildPayload ships wasm_density automatic on split density with wasm_sourc
   assert.equal(spec.wasm_density.source, spec.traces[0].density.wasm_source);
 });
 
-test("buildPayload cartesian axes stay linear unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `_axis_scale` when it is not linear. Node
-  // cartesian payload axes keep scale linear. Recorded
-  // emit-payload-axis-scale stay-host.
+test("buildPayload omits linear axis scale like Python _axis_spec", () => {
+  const fig = figure({ width: 240, height: 160 });
+  fig.scatter([1, 10], [1, 10]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.x_axis.scale, undefined);
+  assert.equal(spec.y_axis.scale, undefined);
+});
+
+test("buildPayload ships non-linear axis scale like Python _axis_spec", () => {
   const fig = figure({ width: 240, height: 160 });
   fig.setAxis("x", { type: "log" });
   fig.scatter([1, 10], [1, 10]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.x_axis.scale, "linear");
+  assert.equal(spec.x_axis.scale, "log");
+  assert.equal(spec.y_axis.scale, undefined);
 });
 
 test("_emitScatterDensity ships wasm_source on split via registry plan", () => {
@@ -1981,14 +1987,19 @@ test("buildPayload omits polar axis style unlike Python _axis_spec", () => {
   assert.equal(spec.x_axis.style, undefined);
 });
 
-test("buildPayload polar y stays linear unlike Python _axis_spec", () => {
-  // Python `_axis_spec` ships `_axis_scale` when it is not linear. Node polar
-  // y_axis keeps scale linear. Recorded emit-polar-payload-axis-scale stay-host.
+test("buildPayload polar omits linear y scale like Python _axis_spec", () => {
+  const fig = figure({ coords: "polar", width: 240, height: 160 });
+  fig.scatter([0, 1], [1, 2]);
+  const { spec } = fig.buildPayload();
+  assert.equal(spec.y_axis.scale, undefined);
+});
+
+test("buildPayload polar ships non-linear y scale like Python _axis_spec", () => {
   const fig = figure({ coords: "polar", width: 240, height: 160 });
   fig.setAxis("y", { type: "log" });
   fig.scatter([0, 1], [1, 2]);
   const { spec } = fig.buildPayload();
-  assert.equal(spec.y_axis.scale, "linear");
+  assert.equal(spec.y_axis.scale, "log");
 });
 
 test("buildPayload omits polar axis nonpositive unlike Python _axis_spec", () => {

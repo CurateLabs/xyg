@@ -76,8 +76,26 @@ def test_axis_spec_cartesian_meta_cross_host_fixture() -> None:
         assert axis["id"] == axis_id
         assert axis["kind"] == "linear"
         assert axis["label"] is None
+        assert "scale" not in axis
     assert spec["x_axis"]["side"] == "bottom"
     assert spec["y_axis"]["side"] == "left"
+
+
+def test_axis_spec_omits_linear_scale() -> None:
+    fig = Figure()
+    fig.scatter([0.0, 1.0], [0.0, 1.0])
+    spec, _ = fig.build_payload()
+    assert "scale" not in spec["x_axis"]
+    assert "scale" not in spec["y_axis"]
+
+
+def test_axis_spec_ships_log_scale() -> None:
+    fig = Figure()
+    fig.set_axis("x", type_="log")
+    fig.scatter([1.0, 10.0], [1.0, 10.0])
+    spec, _ = fig.build_payload()
+    assert spec["x_axis"]["scale"] == "log"
+    assert "scale" not in spec["y_axis"]
 
 
 def test_axis_spec_uses_kernel_attach_plan_polar() -> None:
