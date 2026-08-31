@@ -27,6 +27,7 @@ const SAMPLE_CASE_KEYS = new Set([
   "has_sample",
   "sample_n",
   "sample_visible",
+  "visible",
   "sample_color",
   "sample_size",
   "sample_stroke",
@@ -110,6 +111,7 @@ function densityMeta(spec, { split = false } = {}) {
   return {
     trace_id: trace.id,
     tier: trace.tier ?? null,
+    visible: trace.visible ?? null,
     density_colormap: density.colormap ?? null,
     density_dropped_channels: density.dropped_channels ?? [],
     density_channels_dropped: density.channels_dropped ?? false,

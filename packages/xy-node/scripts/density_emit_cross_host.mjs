@@ -76,6 +76,7 @@ function caseEntry(name, build, { split = false } = {}) {
     name,
     trace_id: trace.id,
     tier: trace.tier ?? null,
+    visible: trace.visible ?? null,
     density_colormap: density.colormap ?? null,
     density_dropped_channels: density.dropped_channels ?? [],
     density_channels_dropped: density.channels_dropped ?? false,

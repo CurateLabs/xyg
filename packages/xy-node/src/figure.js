@@ -1860,7 +1860,7 @@ export class Figure {
       tier: "density",
       n_points: t.x.length,
       n_marks: wire.nMarks,
-      visible: t.x.length,
+      visible,
       x_axis: t.x_axis ?? "x",
       y_axis: t.y_axis ?? "y",
       density,
